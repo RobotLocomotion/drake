@@ -15,10 +15,11 @@ These are breaking changes that did not undergo a deprecation period:
 * The drake::systems::Subvector and drake::systems::Supervector are now marked
   final (`#13907`_)
 * For drake::yaml::YamlReadArchive, it's now an error for yaml data to remain
-  unparsed, unless the user opts in to allowing it. Users who want a different
-  behavior should change the Options at construction-time. (`#13900`_)
+  unparsed, unless the user opts in to allowing it; users who want a different
+  behavior should change the Options at construction-time (`#13900`_).
 * The drake::examples::rod2d::Rod2D::pose_output() port has been removed, as
   the system no longer connects to the systems::rendering API (`#13890`_).
+* Remove pydrake.systems.framework.kAutoSize (`#13981`_).
 
 Changes since v0.22.0
 ---------------------
@@ -27,12 +28,11 @@ Dynamical Systems
 ~~~~~~~~~~~~~~~~~
 
 .. <relnotes for systems go here>
-* TBD framework: Deprecate kAutoSize (`#13981`_)  # In pydrake, remove it immediately.  (As of Python 3.6, there is no official support for deprecating attributes; it's new as of 3.7.) This is a breaking change.
-* TBD Allow PassThroughSystem to emit default values (`#13976`_)  # I originally wrote this as a brand new system for optional values, but realized I was almost completely duplicating the PassThroughSystem.  I *think* this is the best place for it.
 
 New features
 
 * Provide System::get_input_port() and get_output_port() sugar (`#13883`_, `#13894`_, `#13895`_, `#13896`_, `#13897`_, `#13898`_)
+* Allow PassThrough to emit default values (`#13976`_)
 * Optionally suppress simulator initialization events (`#13872`_)
 * Add SequentialExpressionManager::GetSequentialExpressionNames (`#13925`_)
 * Implement derivatives for PiecewiseQuaternion (`#13972`_)
@@ -62,12 +62,11 @@ Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for geometry,multibody go here>
-* TBD parameterizes rigid bodies in MBP (`#13860`_)
-* TBD Add SpatialMomentum to documentation for multibody_quantities_html (`#13959`_)  # * Respond to Sherm's comments.
 
 New features
 
 * Add API to compute SpatialAccelerationInWorld (`#13773`_)
+* Add API to set mass, center of pass, and spatial intertia in a Context (`#13860`_)
 * Support parsing massless bodies (`#13908`_, `#13927`_)
 * New hydroelastic contact model in progress (`#13864`_)
 
@@ -86,10 +85,9 @@ Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for common,math,lcm,lcmtypes,manipulation,perception go here>
-[manipulation,multibody,solvers,systems,tools] * TBD Remove deprecated code (2020-09) (`#13939`_)
-* TBD trajectories: add bindings for PiecewiseQuaternionSlerp (`#13974`_)
 * manipulation: Add DifferentialInverseKinematicsIntegrator (`#13877`_, `#13919`_, `#13920`_)
 * manipulation: Make Schunk WSG limit input port optional (`#13878`_)
+* meshcat: Support caching mesh geometry on the zmq server (`#13971`_)
 * schema: Add stochastic, rotation, and transform types (`#13943`_, `#13949`_)
 * yaml: Allow omitting the root name while writing (`#13915`_)
 * yaml: It's an error by default for yaml data to remain unparsed (`#13900`_)
@@ -98,12 +96,11 @@ pydrake bindings
 ~~~~~~~~~~~~~~~~
 
 .. <relnotes for bindings go here>
-* TBD pydrake: Copy yaml utilities from Anzu (`#13982`_)  # Co-authored-by: Eric Cousineau <eric.cousineau@tri.global> Co-authored-by: Grant Gould <ggould@tri.global> Co-authored-by: Sam Creasey <sam.creasey@tri.global>
-* TBD pydrake: Adapt yaml utilities to Drake and add to BUILD (`#13982`_)
 
 New features
 
 * Add pydrake.systems.jupyter_widgets.WidgetSystem (`#13882`_)
+* Copy and adapt yaml utilities from Anzu (`#13982`_)
 
 Fixes
 
@@ -113,23 +110,24 @@ Fixes
 Newly bound
 
 * pydrake.geometry.render.MakeRenderEngineOspray (`#13893`_)
+* pydrake.trajectories.PiecewiseQuaternionSlerp (`#13974`_)
 
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for attic,cmake,doc,setup,third_party,tools go here>
-* TBD workspace: Upgrade fcl to latest commit (`#13965`_)
-* TBD MeshcatVisualizer: Tweaks to support caching mesh geometry on the zmq server (`#13971`_)  # Adds an argument to the constructor to avoid deleting the entire tree on every run. Sets uuids deterministically based on the mesh file so that they can be recognized as identical on the server. See https://github.com/rdeits/meshcat-python/pull/75 This makes a *dramatic* improvement in the workflow of using meshcat on colab (at least as we use it in drake), because we don't have to repeatedly download large meshfiles from repeated simulations.
-[doc,tools] * TBD tools: Improve relnotes tooling (`#13955`_)  # Automatically bootstrap from our project template. Automatically read and update commit ranges in the document. Automatically place new commits into sections. Automatically update PR hyperlinks.
 * Upgrade bazel_skylib to latest release 1.0.3 (`#13969`_)
+* Upgrade fcl to latest commit (`#13965`_)
 * Upgrade fmt to latest release 7.0.3 (`#13968`_)
 * Upgrade ghc_filesystem to latest release 1.3.4 (`#13966`_)
+* Upgrade meshcat_python to latest commit (`#13971`_)
 * Upgrade ros_xacro to latest release 1.13.8 (`#13967`_)
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
 
 * drake::systems::Subvector 1-argument constructor (`#13907`_)
+* drake::systems::kAutoSize (`#13981`_)
 
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -179,7 +177,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#13941: https://github.com/RobotLocomotion/drake/pull/13941
 .. _#13943: https://github.com/RobotLocomotion/drake/pull/13943
 .. _#13955: https://github.com/RobotLocomotion/drake/pull/13955
-.. _#13959: https://github.com/RobotLocomotion/drake/pull/13959
 .. _#13965: https://github.com/RobotLocomotion/drake/pull/13965
 .. _#13966: https://github.com/RobotLocomotion/drake/pull/13966
 .. _#13967: https://github.com/RobotLocomotion/drake/pull/13967
