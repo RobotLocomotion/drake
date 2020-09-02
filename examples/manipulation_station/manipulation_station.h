@@ -52,7 +52,7 @@ enum class Setup { kNone, kManipulationClass, kClutterClearing, kPlanarIiwa };
 /// name: ManipulationStation
 /// input_ports:
 /// - iiwa_position
-/// - iiwa_feedforward_torque
+/// - iiwa_feedforward_torque (optional)
 /// - wsg_position
 /// - wsg_force_limit (optional)
 /// output_ports:

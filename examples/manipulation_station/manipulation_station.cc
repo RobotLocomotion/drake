@@ -613,7 +613,14 @@ void ManipulationStation<T>::Finalize(
         builder.template AddSystem<systems::Adder>(2, num_iiwa_positions);
     builder.Connect(iiwa_controller->get_output_port_control(),
                     adder->get_input_port(0));
-    builder.ExportInput(adder->get_input_port(1), "iiwa_feedforward_torque");
+    // Use a passthrough to make the port optional.  (Will provide zero values
+    // if not connected).
+    auto torque_passthrough = builder.template AddSystem<systems::PassThrough>(
+        Eigen::VectorXd::Zero(num_iiwa_positions));
+    builder.Connect(torque_passthrough->get_output_port(),
+                    adder->get_input_port(1));
+    builder.ExportInput(torque_passthrough->get_input_port(),
+                        "iiwa_feedforward_torque");
     builder.Connect(adder->get_output_port(), plant_->get_actuation_input_port(
                                                   iiwa_model_.model_instance));
 

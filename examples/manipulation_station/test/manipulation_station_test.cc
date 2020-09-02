@@ -80,11 +80,16 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
                                   .get_value()));
 
   // Check feedforward_torque command.
-  station.GetInputPort("iiwa_feedforward_torque")
-      .FixValue(context.get(), VectorXd::Zero(7));
   VectorXd tau_with_no_ff = station.GetOutputPort("iiwa_torque_commanded")
                                 .Eval<BasicVector<double>>(*context)
                                 .get_value();
+  // Confirm that default values are zero.
+  station.GetInputPort("iiwa_feedforward_torque")
+      .FixValue(context.get(), VectorXd::Zero(7));
+  EXPECT_TRUE(CompareMatrices(tau_with_no_ff,
+                              station.GetOutputPort("iiwa_torque_commanded")
+                                  .Eval<BasicVector<double>>(*context)
+                                  .get_value()));
   station.GetInputPort("iiwa_feedforward_torque")
       .FixValue(context.get(), tau_ff);
   EXPECT_TRUE(CompareMatrices(tau_with_no_ff + tau_ff,
