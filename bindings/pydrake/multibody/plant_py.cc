@@ -656,6 +656,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
             py::arg("diffuse_color"), py::arg("scene_graph") = nullptr,
             doc_iso3_deprecation)
+        .def("GetVisualGeometriesForBody", &Class::GetVisualGeometriesForBody,
+            py::arg("body"), cls_doc.GetVisualGeometriesForBody.doc)
         .def("RegisterCollisionGeometry",
             py::overload_cast<const Body<T>&, const RigidTransform<double>&,
                 const geometry::Shape&, const std::string&,

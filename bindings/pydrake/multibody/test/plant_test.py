@@ -189,6 +189,7 @@ class TestPlant(unittest.TestCase):
             plant.RegisterVisualGeometry(
                 body=body, X_BG=body_X_BG, shape=box, name="new_body_visual",
                 diffuse_color=[1., 0.64, 0.0, 0.5])
+            self.assertGreater(len(plant.GetVisualGeometriesForBody(body)), 0)
             plant.RegisterCollisionGeometry(
                 body=body, X_BG=body_X_BG, shape=box,
                 name="new_body_collision", coulomb_friction=body_friction)
