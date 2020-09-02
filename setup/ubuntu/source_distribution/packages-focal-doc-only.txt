@@ -1,0 +1,6 @@
+fonts-dejavu-core
+fonts-dejavu-extra
+graphviz
+python3-docutils
+python3-sphinx
+python3-sphinx-rtd-theme

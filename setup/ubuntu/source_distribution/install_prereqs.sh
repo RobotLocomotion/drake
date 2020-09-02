@@ -8,6 +8,7 @@
 
 set -euo pipefail
 
+with_doc_only=1
 with_kcov=0
 with_maintainer_only=0
 with_test_only=1
@@ -26,9 +27,15 @@ while [ "${1:-}" != "" ]; do
     --with-maintainer-only)
       with_maintainer_only=1
       ;;
+    # Do NOT install prerequisites that are only needed to build documentation,
+    # i.e., those prerequisites that are dependencies of bazel { build, run }
+    # { //doc:gen_sphinx, //bindings/pydrake/doc:gen_sphinx, //doc:doxygen }
+    --without-doc-only)
+      with_doc_only=0
+      ;;
     # Do NOT install prerequisites that are only needed to build and/or run
     # unit tests, i.e., those prerequisites that are not dependencies of
-    # bazel build //:install and/or bazel run //:install.
+    # bazel { build, run } //:install.
     --without-test-only)
       with_test_only=0
       ;;
@@ -67,6 +74,9 @@ apt-get update
 apt-get install --no-install-recommends \
   $(cat "${BASH_SOURCE%/*}/packages-${codename}.txt")
 
+# Ensure that we have available a locale that supports UTF-8 for generating a
+# C++ header containing Python API documentation during the build.
+apt-get install --no-install-recommends locales
 locale-gen en_US.UTF-8
 
 if [[ "${codename}" == 'focal' ]]; then
@@ -77,6 +87,11 @@ if [[ "${codename}" == 'focal' ]]; then
   else
     echo "/usr/bin/python is already installed"
   fi
+fi
+
+if [[ "${with_doc_only}" -eq 1 ]]; then
+  apt-get install --no-install-recommends \
+    $(cat "${BASH_SOURCE%/*}/packages-${codename}-doc-only.txt")
 fi
 
 if [[ "${with_test_only}" -eq 1 ]]; then
