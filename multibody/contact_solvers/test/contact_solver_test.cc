@@ -169,14 +169,14 @@ class ParticleTest : public ::testing::Test {
     const int nq = plant.num_positions();
     const int nv = plant.num_velocities();
     // Assert plant sizes.
-    ASSERT_EQ(nq, 7);
-    ASSERT_EQ(nv, 6);
+    ASSERT_EQ(nq, 7);  // 4 dofs for a quaternion, 3 dofs for translation.
+    ASSERT_EQ(nv, 6);  // 6 dofs for angular and translational velocity.
     solver_ = &driver_.mutable_plant().set_contact_solver(
         std::make_unique<ParticleSolver<double>>(kParticleMass_));
 
     // Verify that solvers/test/particle.sdf is in sync with this test.
     const double mass = particle.get_default_mass();
-    EXPECT_NEAR(mass, kParticleMass_, kEpsilon);
+    ASSERT_NEAR(mass, kParticleMass_, kEpsilon);
 
     // MultibodyPlant state.
     SetInitialState();
@@ -200,10 +200,10 @@ class ParticleTest : public ::testing::Test {
   // This allow us to verify:
   //  - Proper invocation of the contact solver.
   //  - The proper data flow out from MultibodyPlant as contact results.
-  const PointPairContactInfo<double>& GetPointPairInfo() const {
+  const PointPairContactInfo<double>& EvalPointPairInfo() const {
     // Only one contact pair.
     const ContactResults<double>& contact_results = driver_.GetContactResults();
-    // ASSERT_EQ(contact_results.num_point_pair_contacts(), 1);
+    DRAKE_DEMAND(contact_results.num_point_pair_contacts() == 1u);
     const PointPairContactInfo<double>& point_pair_contact_info =
         contact_results.point_pair_contact_info(0);
     return point_pair_contact_info;
@@ -218,7 +218,7 @@ class ParticleTest : public ::testing::Test {
     const auto& particle = driver_.plant().GetBodyByName("particle");
     // We'll verify the expected results and therefore that MultibodyPlant was
     // able to properly load the contact results.
-    const PointPairContactInfo<double>& info = GetPointPairInfo();
+    const PointPairContactInfo<double>& info = EvalPointPairInfo();
     double direction = info.bodyB_index() == particle.index() ? 1.0 : -1.0;
     // Force on the particle P at contact point C.
     const Vector3d f_Pc_W = direction * info.contact_force();
@@ -233,13 +233,14 @@ class ParticleTest : public ::testing::Test {
   // In addition to contact results, MultibodyPlant also reports contact
   // computations as generalized forces. This helper verifies those results.
   // @param f_Pc_W_expected expected contact force on the particle P at the
+  // contact point C, expressed in world frame W.
   void VerifyGeneralizedContactForces(const Vector3d& f_Pc_W_expected) const {
     const auto& particle = driver_.plant().GetBodyByName("particle");
     const auto tau_c = driver_.plant()
                            .get_generalized_contact_forces_output_port(
                                particle.model_instance())
                            .Eval(driver_.plant_context());
-    // We last three components should correspond to the expected force on P.
+    // The last three components should correspond to the expected force on P.
     EXPECT_TRUE(CompareMatrices(tau_c.tail<3>(), f_Pc_W_expected, kEpsilon,
                                 MatrixCompareType::absolute));
 
@@ -268,6 +269,8 @@ TEST_F(ParticleTest, Stiction) {
   const auto& particle = driver_.plant().GetBodyByName("particle");
   driver_.FixAppliedForce(particle, fapplied_P_W);
 
+  // In stiction we expect the contact force to exactly balance the external
+  // forces.
   const Vector3d weight_P_W(0.0, 0.0, -5.0);
   const Vector3d f_Pc_W_expected = -(weight_P_W + fapplied_P_W);
 

@@ -10,8 +10,9 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 
-/// This class specifies the dynamics of the physical system as needed by
-/// ContactSolver. Refer to ContactSolver's class documentation for details.
+/// This class specifies the set of parameters needed to describe contact
+/// constraints as needed by ContactSolver. Refer to ContactSolver's class
+/// documentation for details.
 template <typename T>
 class PointContactData {
  public:
@@ -70,7 +71,7 @@ class PointContactData {
   /// @anchor point_contact_data_accessors
   /// @name   Data getters
   /// These methods provide access to the underlying contact data. We
-  /// purposedely use the naming convention `get_foo()` so that calling code can
+  /// purposely use the naming convention `get_foo()` so that calling code can
   /// still use `foo` as a variable name.
   /// @{
   const VectorX<T>& get_phi0() const { return *phi0_; }

@@ -16,11 +16,11 @@ class SystemDynamicsData {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemDynamicsData)
 
-  /// Specifies the dynamics of the system by providing a linear operator form
-  /// of the system dynamics Jacobian matrix A⁻¹ and the vector of predicted
-  /// generalized velocities v^*. Refer to ContactSolver for details. This class
-  /// will keep a reference to the input data Ainv and v_star and therefore it
-  /// is required that they outlive this object.
+  /// Specifies the dynamics of the system by providing Ainv, a linear operator
+  /// form of the inverse of the system dynamics Jacobian matrix A and the
+  /// vector of predicted generalized velocities v^*. Refer to ContactSolver for
+  /// details. This class will keep a reference to the input data Ainv and
+  /// v_star and therefore it is required that they outlive this object.
   ///
   /// @param Ainv The system's dynamics matrix inverse operator. Of size nv x
   /// nv, with nv = num_velocities().
@@ -41,7 +41,7 @@ class SystemDynamicsData {
   const VectorX<T>& get_v_star() const { return *v_star_; }
 
  private:
-  int nv_;
+  int nv_{0};
   const LinearOperator<T>* Ainv_{nullptr};
   const VectorX<T>* v_star_{nullptr};
 };

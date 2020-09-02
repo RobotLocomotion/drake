@@ -25,7 +25,7 @@ using math::RigidTransformd;
 
 // This class helps reduce the amount of boiler plate needed to setup a
 // multibody simulation for unit testing. It provides a minimum API to aid the
-// quick prototyping of unit tests from an SDF/URDF description and to retrive
+// quick prototyping of unit tests from an SDF/URDF description and to retrieve
 // results relevant to contact dynamics.
 class MultibodySimDriver {
  public:

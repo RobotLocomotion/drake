@@ -38,8 +38,9 @@ struct ContactJacobians {
 
   /// Full contact jacobian.
   /// `Jc` is a matrix of size `3⋅nc x nv` such that `vc = Jc⋅v` concatenates
-  /// the full 3D contact velocities. Refer to solvers::MergeNormalAndTangent()
-  /// for detials on the specific layout of vc.
+  /// the full 3D contact velocities. Refer to
+  /// contact_solvers::MergeNormalAndTangent() for details on the specific
+  /// layout of vc.
   MatrixX<T> Jc;
 
   /// List of contact frames orientation R_WC in the world frame W for each

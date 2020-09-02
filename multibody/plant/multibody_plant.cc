@@ -1934,7 +1934,7 @@ void MultibodyPlant<T>::CalcTamsiResults(
   VectorX<T> q0 = x0.topRows(nq);
   VectorX<T> v0 = x0.bottomRows(nv);
 
-  // Mass matrix and its factorization.
+  // Mass matrix.
   MatrixX<T> M0(nv, nv);
   internal_tree().CalcMassMatrix(context0, &M0);
 
@@ -2076,7 +2076,15 @@ void MultibodyPlant<T>::CallContactSolver(
     const VectorX<T>& minus_tau, const VectorX<T>& phi0, const MatrixX<T>& Jc,
     const VectorX<T>& stiffness, const VectorX<T>& damping,
     const VectorX<T>& mu, internal::TamsiSolverResults<T>* results) const {
+  // Only numeric values are supported. We detect that T is a Drake numeric type
+  // using scalar_predicate::is_bool. That is true for numeric types and false
+  // for symbolic.
+  // If the semantics of scalar_predicate changes (or Drake types change), this
+  // test may have to be revisited.
   if constexpr (scalar_predicate<T>::is_bool) {
+    // Tolerance larger than machine epsilon by an arbitrary factor. Just large
+    // enough so that entries close to machine epsilon, due to round-off errors,
+    // still get pruned.
     const double kPruneTolerance = 20 * std::numeric_limits<double>::epsilon();
     // TODO(amcastro-tri): Here MultibodyPlant should provide an actual O(n)
     // operator per #12210.

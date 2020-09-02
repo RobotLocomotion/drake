@@ -27,9 +27,9 @@ enum class ContactSolverResult {
 };
 
 /// This class defines a general interface for all of our contact solvers. By
-/// having a common interace, client code such as MultibodyPlant only needs to
+/// having a common interface, client code such as MultibodyPlant only needs to
 /// learn how to talk to %ContactSolver, allowing to swap contact solvers that
-/// share this commong interface without having to re-wire the client's
+/// share this common interface without having to re-wire the client's
 /// internals.
 ///
 /// <h3> Mechanical systems and state </h3>
@@ -42,7 +42,7 @@ enum class ContactSolverResult {
 ///
 /// For instance, the dynamics of rigid multibody systems can be stated as:
 /// <pre>
-///   M(q)⋅v̇ + C(q,v) = τₑₓₜ(q, v)
+///   M(q)⋅v̇ + C(q,v) = τₑₓₜ(t, q, v)
 ///   q̇ = N(q)⋅v
 /// </pre>
 /// where M(q) is the mass matrix, `C(q,v)` contains the Coriolis and
@@ -59,10 +59,15 @@ enum class ContactSolverResult {
 /// </pre>
 ///
 /// Using this framework in terms of generalized positions and velocities we can
-/// describe any mechanical system. For instance, for FEM models, the
-/// configuration q will corresponds to the Lagrangian coordinates of material
-/// points in a solid and in this case q̇ = v, i.e. `N(q)` is the identity
-/// mapping.
+/// describe any mechanical system. For instance, for FEM models, the momentum
+/// equations can be briefly summarized as: <pre>
+///   F(v) = M⋅(v−v₀) + dt⋅Fᵢₙₜ(q, v)
+/// </pre>
+/// where with `Fᵢₙₜ(q, v)` we denote the term containing the contribution due
+/// to internal stresses in the deformable object. In this case, the
+/// configuration `q` will will correspond to the Lagrangian coordinates of
+/// material points in a solid and in this case q̇ = v, i.e. `N(q)` is the
+/// identity mapping.
 ///
 /// <h3> Contact constraints </h3>
 ///
@@ -88,7 +93,7 @@ enum class ContactSolverResult {
 ///    i.e. always a repulsive force (adhesive or “sticky" contact needs special
 ///    consideration).
 ///
-/// This interface leaves open how exactly this constraints are imposed so that
+/// This interface leaves open how exactly these constraints are imposed so that
 /// specific solvers have the freedom to choose other model approximations. For
 /// instance, we allow solvers to accommodate for the convex relaxation of
 /// friction [Anitescu, 2006], regularization of constraints [Lacoursiere
@@ -96,7 +101,7 @@ enum class ContactSolverResult {
 /// general formulation of frictional contact is a Non-linear Complementarity
 /// Problem (NCP), %ContactSolver's interface makes no assumption on the
 /// underlying solver therefore also allowing for optimization based methods,
-/// [Todorov, 2014; [Kaufman et al., 2008].
+/// [Todorov, 2014; Kaufman et al., 2008].
 ///
 /// <h3> Solving the discrete contact problem </h3>
 ///
@@ -110,7 +115,7 @@ enum class ContactSolverResult {
 /// implicit Euler we'd write `q(v*) = q₀+ dt⋅v*`.
 /// The next step velocity is then approximated as `v = v* + Δv` where Δv is
 /// computed in a corrector step satisfying the equation: <pre>
-///   F(q(v* + Δv), v* + Δv) = F(v* + Δv) = Jcᵀ⋅γ
+///   F(v* + Δv) = F(v* + Δv) = Jcᵀ⋅γ
 /// </pre>
 /// We can linearize this equation at v*, leading to: <pre>
 ///   F(v*) + A⋅Δv = Jcᵀ⋅γ
@@ -244,32 +249,33 @@ class ContactSolver {
   /// num_velocities().
   virtual const VectorX<T>& GetContactVelocities() const = 0;
 
-  /// Returns a copy to the vector π of normal impulses, with units of [Ns]. Of
-  /// size num_contacts().
+  /// Makes a copy to the vector π of normal impulses, with units of [Ns].
+  /// @pre pi must be of size 2*num_contacts().
   /// Refer to ExtractNormal() for storage details.
   void CopyNormalImpulses(VectorX<T>* pi) const {
     DRAKE_DEMAND(pi != nullptr);
     ExtractNormal(GetImpulses(), pi);
   }
 
-  /// Returns a copy to the vector β of normal impulses, with units of [Ns]. Of
-  /// 2*size num_contacts().
+  /// Makes a copy to the vector β of normal impulses, with units of [Ns].
+  /// @pre beta must be of size 2*num_contacts().
   /// Refer to ExtractTangent() for storage details.
   void CopyFrictionImpulses(VectorX<T>* beta) const {
     DRAKE_DEMAND(beta != nullptr);
     ExtractTangent(GetImpulses(), beta);
   }
 
-  /// Retrives the vector of normal contact velocities vn, of size
-  /// num_contacts(). Refer to ExtractNormal() for storage details.
+  /// Retrieves the vector of normal contact velocities vn.
+  /// Refer to ExtractNormal() for storage details.
+  /// @pre vn must be of size num_contacts().
   void CopyNormalContactVelocities(VectorX<T>* vn) const {
     DRAKE_DEMAND(vn != nullptr);
     ExtractNormal(GetContactVelocities(), vn);
   }
 
-  /// Retrives the vector of tangent contact velocities vt, of size
-  /// 2*num_contacts().
+  /// Retrieves the vector of tangent contact velocities vt.
   /// Refer to ExtractTangent() for storage details.
+  /// @pre vt must be of size 2*num_contacts().
   void CopyTangentialContactVelocities(VectorX<T>* vt) const {
     DRAKE_DEMAND(vt != nullptr);
     ExtractTangent(GetContactVelocities(), vt);
@@ -280,22 +286,28 @@ class ContactSolver {
   /// form it whether if used directly, as part of a pre-processing stage or to
   /// just determine scaling factors.
   ///
-  /// Computes W = G * Mi * Jᵀ each j-th column at a time by multiplying with
+  /// Computes W = G * Ainv * Jᵀ each j-th column at a time by multiplying with
   /// basis vector ej (zero vector with a "1" at the j-th element).
   ///
+  /// Typically Ainv will be the linear operator corresponding to the inverse of
+  /// the dynamics matrix A as described in this class's documentation.
+  /// J and G will usually correspond to the contact constraints Jacobian Jc as
+  /// described in the class's documentation, though some schemes might build a
+  /// different approximation of W in which J and G are different.
+  ///
   /// @pre G must have size 3nc x nv.
-  /// @pre Mi must have size nv x nv.
+  /// @pre Ainv must have size nv x nv.
   /// @pre J must have size 3nc x nv.
   /// @pre J must provide an implementation to MultiplyByTranspose().
   /// @pre W is not nullptr and is of size 3nc x 3nc.
   void FormDelassusOperatorMatrix(const LinearOperator<T>& G,
-                                  const LinearOperator<T>& Mi,
+                                  const LinearOperator<T>& Ainv,
                                   const LinearOperator<T>& J,
                                   Eigen::SparseMatrix<T>* W) const {
     DRAKE_DEMAND(G.rows() == 3 * num_contacts());
     DRAKE_DEMAND(G.cols() == num_velocities());
-    DRAKE_DEMAND(Mi.rows() == num_velocities());
-    DRAKE_DEMAND(Mi.cols() == num_velocities());
+    DRAKE_DEMAND(Ainv.rows() == num_velocities());
+    DRAKE_DEMAND(Ainv.cols() == num_velocities());
     DRAKE_DEMAND(J.rows() == 3 * num_contacts());
     DRAKE_DEMAND(J.cols() == num_velocities());
     DRAKE_DEMAND(W->rows() == 3 * num_contacts());
@@ -309,11 +321,11 @@ class ContactSolver {
     ej.coeffRef(0) = 1.0;  // Effectively allocate one non-zero entry.
 
     Eigen::SparseVector<T> JTcolj(nv);
-    Eigen::SparseVector<T> MiJTcolj(nv);
+    Eigen::SparseVector<T> AinvJTcolj(nv);
     Eigen::SparseVector<T> Wcolj(3 * nc);
     // Reserve maximum number of non-zeros.
     JTcolj.reserve(nv);
-    MiJTcolj.reserve(nv);
+    AinvJTcolj.reserve(nv);
     Wcolj.reserve(3 * nc);
 
     // Loop over the j-th column.
@@ -324,13 +336,13 @@ class ContactSolver {
 
       // Reset to nnz = 0. Memory is not freed.
       JTcolj.setZero();
-      MiJTcolj.setZero();
+      AinvJTcolj.setZero();
       Wcolj.setZero();
 
       // Apply each operator in sequence.
-      J.MultiplyByTranspose(ej, &JTcolj);  // JTcolj = JT * ej
-      Mi.Multiply(JTcolj, &MiJTcolj);
-      G.Multiply(MiJTcolj, &Wcolj);
+      J.MultiplyByTranspose(ej, &JTcolj);  // JTcolj = Jᵀ * ej
+      Ainv.Multiply(JTcolj, &AinvJTcolj);
+      G.Multiply(AinvJTcolj, &Wcolj);
       W->col(j) = Wcolj;
     }
   }
