@@ -12,6 +12,7 @@
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
+namespace internal {
 
 /// A LinearOperator that wraps an existing Eigen::SparseMatrix.
 ///
@@ -63,9 +64,10 @@ class SparseLinearOperator final : public LinearOperator<T> {
   const Eigen::SparseMatrix<T>* A_{nullptr};
 };
 
+}  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::SparseLinearOperator)
+    class ::drake::multibody::contact_solvers::internal::SparseLinearOperator)

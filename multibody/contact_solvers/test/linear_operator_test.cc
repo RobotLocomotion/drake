@@ -9,6 +9,7 @@
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
+namespace internal {
 namespace {
 
 using Eigen::MatrixXd;
@@ -102,6 +103,7 @@ GTEST_TEST(LinearOperator, AssembleMatrix) {
 }
 
 }  // namespace
+}  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake

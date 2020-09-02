@@ -8,6 +8,7 @@
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
+namespace internal {
 
 /// This class specifies the dynamics of the physical system as needed by
 /// ContactSolver. Refer to ContactSolver's class documentation for details.
@@ -46,9 +47,10 @@ class SystemDynamicsData {
   const VectorX<T>* v_star_{nullptr};
 };
 
+}  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::SystemDynamicsData)
+    class ::drake::multibody::contact_solvers::internal::SystemDynamicsData)

@@ -9,6 +9,7 @@
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
+namespace internal {
 
 /// This class specifies the set of parameters needed to describe contact
 /// constraints as needed by ContactSolver. Refer to ContactSolver's class
@@ -90,9 +91,10 @@ class PointContactData {
   const VectorX<T>* mu_{nullptr};
 };
 
+}  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::contact_solvers::PointContactData)
+    class ::drake::multibody::contact_solvers::internal::PointContactData)

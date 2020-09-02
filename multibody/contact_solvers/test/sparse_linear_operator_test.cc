@@ -8,6 +8,7 @@
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
+namespace internal {
 namespace {
 
 using SparseMatrixd = Eigen::SparseMatrix<double>;
@@ -146,6 +147,7 @@ TEST_F(ContactJacobianTest, AssembleMatrix) {
 }
 
 }  // namespace
+}  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake

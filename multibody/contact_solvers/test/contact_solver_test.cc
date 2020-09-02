@@ -17,6 +17,7 @@ namespace multibody {
 using test::MultibodySimDriver;
 
 namespace contact_solvers {
+namespace internal {
 namespace {
 
 using Eigen::Matrix3d;
@@ -298,6 +299,7 @@ TEST_F(ParticleTest, Sliding) {
 }
 
 }  // namespace
+}  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake

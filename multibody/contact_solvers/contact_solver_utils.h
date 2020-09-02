@@ -7,6 +7,7 @@
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
+namespace internal {
 
 /// Given a contact vector xc of size 3nc, this method copies the normal
 /// components of xc into xn, of size nc. Refer to MergeNormalAndTangent() for
@@ -79,6 +80,7 @@ void MergeNormalAndTangent(const Eigen::MatrixBase<xn_t>& xn,
   }
 }
 
+}  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake

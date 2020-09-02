@@ -2089,13 +2089,14 @@ void MultibodyPlant<T>::CallContactSolver(
     // TODO(amcastro-tri): Here MultibodyPlant should provide an actual O(n)
     // operator per #12210.
     const Eigen::SparseMatrix<T> Jc_sparse = Jc.sparseView(kPruneTolerance);
-    const contact_solvers::SparseLinearOperator<T> Jc_op("Jc", &Jc_sparse);
+    const contact_solvers::internal::SparseLinearOperator<T> Jc_op("Jc",
+                                                                   &Jc_sparse);
 
     class MassMatrixInverseOperator
-        : public contact_solvers::LinearOperator<T> {
+        : public contact_solvers::internal::LinearOperator<T> {
      public:
       MassMatrixInverseOperator(const std::string& name, const MatrixX<T>* M)
-          : contact_solvers::LinearOperator<T>(name) {
+          : contact_solvers::internal::LinearOperator<T>(name) {
         DRAKE_DEMAND(M != nullptr);
         nv_ = M->rows();
         M_ldlt_ = M->ldlt();
@@ -2131,16 +2132,17 @@ void MultibodyPlant<T>::CallContactSolver(
     Minv_op.Multiply(minus_tau, &v_star);  // v_star = -M⁻¹⋅tau
     v_star = v0 - time_step() * v_star;    // v_star = v₀ + dt⋅M⁻¹⋅τ
 
-    contact_solvers::SystemDynamicsData<T> dynamics_data(&Minv_op, &v_star);
-    contact_solvers::PointContactData<T> contact_data(&phi0, &Jc_op, &stiffness,
-                                                      &damping, &mu);
+    contact_solvers::internal::SystemDynamicsData<T> dynamics_data(&Minv_op,
+                                                                   &v_star);
+    contact_solvers::internal::PointContactData<T> contact_data(
+        &phi0, &Jc_op, &stiffness, &damping, &mu);
     contact_solver_->SetSystemDynamicsData(&dynamics_data);
     contact_solver_->SetPointContactData(&contact_data);
 
-    const contact_solvers::ContactSolverResult info =
+    const contact_solvers::internal::ContactSolverResult info =
         contact_solver_->SolveWithGuess(v0);
 
-    if (info != contact_solvers::ContactSolverResult::kSuccess) {
+    if (info != contact_solvers::internal::ContactSolverResult::kSuccess) {
       const std::string msg =
           fmt::format("MultibodyPlant's contact solver of type '" +
                           NiceTypeName::Get(*contact_solver_) +

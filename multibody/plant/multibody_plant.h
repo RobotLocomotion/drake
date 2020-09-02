@@ -1497,15 +1497,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // this call.
   // @pre solver must not be nullptr.
   // @pre SolverType must be a subclass of
-  // multibody::contact_solvers::ContactSolver.
+  // multibody::contact_solvers::internal::ContactSolver.
   // @returns a mutable reference to `solver`, now owned by `this`
   // MultibodyPlant.
   template <class SolverType>
   SolverType& set_contact_solver(std::unique_ptr<SolverType> solver) {
     DRAKE_DEMAND(solver != nullptr);
-    static_assert(
-        std::is_base_of<contact_solvers::ContactSolver<T>, SolverType>::value,
-        "SolverType must be a sub-class of ContactSolver.");
+    static_assert(std::is_base_of<contact_solvers::internal::ContactSolver<T>,
+                                  SolverType>::value,
+                  "SolverType must be a sub-class of ContactSolver.");
     SolverType* solver_ptr = solver.get();
     contact_solver_ = std::move(solver);
     return *solver_ptr;
@@ -4509,7 +4509,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   std::unique_ptr<TamsiSolver<T>> tamsi_solver_;
 
   // When not the nullptr, this is the solver to be used for discrete updates.
-  std::unique_ptr<contact_solvers::ContactSolver<T>> contact_solver_;
+  std::unique_ptr<contact_solvers::internal::ContactSolver<T>> contact_solver_;
 
   hydroelastics::internal::HydroelasticEngine<T> hydroelastics_engine_;
 
