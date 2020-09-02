@@ -19,6 +19,9 @@ namespace schema {
 ///
 /// For an overview of configuring stochastic transforms, see
 /// @ref schema_transform and @ref schema_stochastic.
+///
+/// See @ref serialize_tips for implementation details, especially the
+/// unusually public member fields.
 class Rotation {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Rotation)
@@ -100,10 +103,6 @@ class Rotation {
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(value));
   }
-
-  // N.B. As is standard for classes implementing Serialize(), we declare all
-  // of our members fields as public since they are effectively so anyway, and
-  // we omit the trailing underscore from the field names.
 
   using Variant = std::variant<Identity, Rpy, AngleAxis, Uniform>;
   Variant value;
