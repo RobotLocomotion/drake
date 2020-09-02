@@ -1,7 +1,7 @@
 #pragma once
 /// @file
 /// Provides directives for building scenes (*not* scenarios).
-/// See `common/schema/README.md` for more info.
+/// See `multibody/parsing/README_model_directives.md` for more info.
 
 #include <optional>
 #include <string>

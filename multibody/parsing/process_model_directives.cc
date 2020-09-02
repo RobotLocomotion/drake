@@ -1,4 +1,4 @@
-#include "drake/multibody/parsing/dev/process_model_directives.h"
+#include "drake/multibody/parsing/process_model_directives.h"
 
 #include <memory>
 #include <optional>
