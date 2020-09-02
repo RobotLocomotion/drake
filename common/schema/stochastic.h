@@ -195,12 +195,11 @@ rotations, translations, and transforms using stochastic schemas.
 
 @} */
 
-// N.B. As is standard for classes implementing Serialize(), below we always
-// declare all of our members fields as public since they are effectively so
-// anyway, and we omit the trailing underscore from the field names.
-
 /// Base class for a single distribution, to be used with YAML archives.
 /// (See class DistributionVector for vector-valued distributions.)
+///
+/// See @ref serialize_tips for implementation details, especially the
+/// unusually public member fields in our subclasses.
 class Distribution {
  public:
   virtual ~Distribution();
@@ -346,6 +345,9 @@ double GetDeterministicValue(const DistributionVariant& var);
 
 /// Base class for a vector of distributions, to be used with YAML archives.
 /// (See class Distribution for scalar-valued distributions.)
+///
+/// See @ref serialize_tips for implementation details, especially the
+/// unusually public member fields in our subclasses.
 class DistributionVector {
  public:
   virtual ~DistributionVector();

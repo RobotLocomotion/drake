@@ -187,6 +187,38 @@ drake::VectorX<Expression> ToSymbolic(
   return result;
 }
 
+bool IsDeterministic(const DistributionVariant& var) {
+  return std::visit(overloaded {
+    [](const double&) -> bool {
+      return true;
+    },
+    [](const Deterministic&) -> bool {
+      return true;
+    },
+    [](const Gaussian& arg) -> bool {
+      return arg.stddev == 0.0;
+    },
+    [](const Uniform& arg) -> bool {
+      return arg.min == arg.max;
+    },
+    [](const UniformDiscrete& arg) -> bool {
+      return arg.values.size() == 1;
+    },
+  }, var);
+}
+
+double GetDeterministicValue(const DistributionVariant& var) {
+  if (!IsDeterministic(var)) {
+    std::visit([](auto&& arg) {
+      using ContainedType = std::decay_t<decltype(arg)>;
+      throw std::logic_error(fmt::format(
+          "Attempt to GetDeterministicValue() on a variant that contains a {}",
+          drake::NiceTypeName::Get<ContainedType>()));
+    }, var);
+  }
+  return ToDistribution(var)->Mean();
+}
+
 DistributionVector::DistributionVector() {}
 
 DistributionVector::~DistributionVector() {}
@@ -318,38 +350,6 @@ drake::VectorX<Expression> UniformVector<Size>::ToSymbolic() const {
     result(i) = Uniform(min(i), max(i)).ToSymbolic();
   }
   return result;
-}
-
-bool IsDeterministic(const DistributionVariant& var) {
-  return std::visit(overloaded {
-    [](const double&) -> bool {
-      return true;
-    },
-    [](const Deterministic&) -> bool {
-      return true;
-    },
-    [](const Gaussian& arg) -> bool {
-      return arg.stddev == 0.0;
-    },
-    [](const Uniform& arg) -> bool {
-      return arg.min == arg.max;
-    },
-    [](const UniformDiscrete& arg) -> bool {
-      return arg.values.size() == 1;
-    },
-  }, var);
-}
-
-double GetDeterministicValue(const DistributionVariant& var) {
-  if (!IsDeterministic(var)) {
-    std::visit([](auto&& arg) {
-      using ContainedType = std::decay_t<decltype(arg)>;
-      throw std::logic_error(fmt::format(
-          "Attempt to GetDeterministicValue() on a variant that contains a {}",
-          drake::NiceTypeName::Get<ContainedType>()));
-    }, var);
-  }
-  return ToDistribution(var)->Mean();
 }
 
 template <int Size>
