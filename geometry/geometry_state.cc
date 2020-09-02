@@ -271,6 +271,28 @@ int GeometryState<T>::NumGeometriesWithRole(FrameId frame_id, Role role) const {
 }
 
 template <typename T>
+std::vector<GeometryId> GeometryState<T>::GetGeometries(
+    FrameId frame_id, std::optional<Role> role) const {
+  FindOrThrow(frame_id, frames_, [frame_id]() {
+    return fmt::format(
+        "Cannot report geometries associated with invalid frame id: {}",
+        frame_id);
+  });
+  const InternalFrame& frame = frames_.at(frame_id);
+
+  std::vector<GeometryId> ids;
+  ids.reserve(frame.child_geometries().size());
+  for (GeometryId g_id : frame.child_geometries()) {
+    if (role.has_value()) {
+      if (!geometries_.at(g_id).has_role(*role)) continue;
+    }
+    ids.push_back(g_id);
+  }
+  std::sort(ids.begin(), ids.end());
+  return ids;
+}
+
+template <typename T>
 GeometryId GeometryState<T>::GetGeometryIdByName(
     FrameId frame_id, Role role, const std::string& name) const {
   const std::string canonical_name = internal::CanonicalizeStringName(name);

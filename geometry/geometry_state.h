@@ -173,6 +173,10 @@ class GeometryState {
    */
   int NumGeometriesForFrameWithRole(FrameId frame_id, Role role) const;
 
+  /** Implementation of SceneGraphInspector::GetGeometries.  */
+  std::vector<GeometryId> GetGeometries(FrameId frame_id,
+                                        std::optional<Role> role) const;
+
   // TODO(SeanCurtis-TRI): Redundant w.r.t. NumGeometriesForFrameWithRole().
   /** Reports the number of child geometries for this frame that have the
    indicated role assigned. This only includes the immediate child geometries of
