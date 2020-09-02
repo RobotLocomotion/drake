@@ -201,6 +201,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.GetSourceName.doc)
         .def("GetFrameId", &Class::GetFrameId, py::arg("geometry_id"),
             cls_doc.GetFrameId.doc)
+        .def("GetGeometries", &Class::GetGeometries, py::arg("frame_id"),
+            py::arg("role") = std::nullopt, cls_doc.GetGeometries.doc)
         .def("GetGeometryIdByName", &Class::GetGeometryIdByName,
             py::arg("frame_id"), py::arg("role"), py::arg("name"),
             cls_doc.GetGeometryIdByName.doc)

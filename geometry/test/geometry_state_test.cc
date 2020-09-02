@@ -991,6 +991,57 @@ TEST_F(GeometryStateTest, GetNumGeometryTests) {
   }
 }
 
+// Tests GetGeometries(FrameId, Role).
+TEST_F(GeometryStateTest, GetGeometryTest) {
+  SetUpSingleSourceTree(Assign::kProximity);
+  // We want some heterogeneity in the roles the registered geometries have.
+  //  - The single source tree applies proximity properties to all of the
+  //    tree geometries.
+  //  - We'll add illustration properties to one geometry in every frame.
+  //  - We'll add an *additional* geometry to every frame (with no role).
+  //  So, every geometry should report:
+  //    - kGeometryCount + 1 = 3 total geometries.
+  //    - 2 with proximity role
+  //    - 1 with illustration role
+  //    - 1 with unassigned
+  //    - 0 with perception.
+
+  // Assign illustration roles.
+  for (int i = 0; i < kFrameCount * kGeometryCount; i += kGeometryCount) {
+    const GeometryId g_id = geometries_[i];
+    geometry_state_.AssignRole(source_id_, g_id, IllustrationProperties());
+  }
+
+  const vector<GeometryId> empty_ids;
+  for (int i = 0; i < kFrameCount; ++i) {
+    const FrameId f_id = frames_[i];
+
+    // Add new geometry with unassigned role.
+    auto instance = make_unique<GeometryInstance>(
+        RigidTransformd::Identity(), make_unique<Sphere>(1), "shape");
+    const GeometryId new_id =
+        geometry_state_.RegisterGeometry(source_id_, f_id, move(instance));
+
+    // Build the expected answers.
+    const auto first_geometry_iter = geometries_.begin() + i * kGeometryCount;
+    const vector<GeometryId> proximity_ids{
+        first_geometry_iter, first_geometry_iter + kGeometryCount};
+    vector<GeometryId> all_ids(proximity_ids);
+    all_ids.push_back(new_id);
+
+    EXPECT_EQ(geometry_state_.NumGeometriesForFrame(f_id), kGeometryCount + 1);
+    EXPECT_EQ(geometry_state_.GetGeometries(f_id, Role::kPerception),
+              empty_ids);
+    EXPECT_EQ(geometry_state_.GetGeometries(f_id, Role::kProximity),
+              proximity_ids);
+    EXPECT_EQ(geometry_state_.GetGeometries(f_id, Role::kIllustration),
+              vector<GeometryId>{geometries_[i * kGeometryCount]});
+    EXPECT_EQ(geometry_state_.GetGeometries(f_id, Role::kUnassigned),
+              vector<GeometryId>{new_id});
+    EXPECT_EQ(geometry_state_.GetGeometries(f_id, std::nullopt), all_ids);
+  }
+}
+
 // Tests that an attempt to add a frame to an invalid source throws an exception
 // with meaningful message.
 TEST_F(GeometryStateTest, AddFrameToInvalidSource) {

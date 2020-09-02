@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
 #include <unordered_set>
@@ -238,6 +239,20 @@ class SceneGraphInspector {
   int NumGeometriesForFrameWithRole(FrameId id, Role role) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->NumGeometriesForFrameWithRole(id, role);
+  }
+
+  /** Returns geometry ids that have been registered directly to the frame
+   indicated by `frame_id`. If a `role` is provided, only geometries with that
+   role assigned will be returned, otherwise all geometries will be returned.
+   @param frame_id    The id of the frame in question.
+   @param role  The requested role; if omitted, all geometries registered to the
+                frame are returned.
+   @returns The requested unique geometry ids in a consistent order.
+   @throws std::logic_error if `id` does not map to a registered frame.  */
+  std::vector<GeometryId> GetGeometries(
+      FrameId frame_id, const std::optional<Role>& role = std::nullopt) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->GetGeometries(frame_id, role);
   }
 
   /** Reports the id of the geometry with the given `name` and `role`, attached
