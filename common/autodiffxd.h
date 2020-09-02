@@ -2,7 +2,7 @@
 
 // This file is a modification of Eigen-3.3.3's AutoDiffScalar.h file which is
 // available at
-// https://bitbucket.org/eigen/eigen/raw/67e894c6cd8f5f1f604b27d37ed47fdf012674ff/unsupported/Eigen/src/AutoDiff/AutoDiffScalar.h
+// https://gitlab.com/libeigen/eigen/-/blob/3.3.3/unsupported/Eigen/src/AutoDiff/AutoDiffScalar.h
 //
 // Copyright (C) 2009 Gael Guennebaud <gael.guennebaud@inria.fr>
 // Copyright (C) 2017 Drake Authors
@@ -46,6 +46,20 @@ namespace Eigen {
 //
 // TODO(soonho-tri): Next time when we upgrade Eigen, please check if we still
 // need these specializations.
+//
+// @note move-aware arithmetic
+// Prior implementations of arithmetic overloads required construction of new
+// objects at each operation, which induced costly heap allocations. In modern
+// C++, it is possible to instead exploit move semantics to avoid allocation in
+// many cases. In particular, the compiler can implicitly use moves to satisfy
+// pass-by-value parameters in cases where moves are possible (move construction
+// and assignment are available), and the storage in question is not needed
+// afterward. This allows definitions of operators that pass and return by
+// value, and only allocate when needed, as determined by the compiler. For C++
+// considerations, see Scott Meyers' _Effective Modern C++_ Item 41. See #13985
+// for more discussion of Drake considerations.
+//
+// TODO(rpoyner-tri): Convert more operations to exploit move-awareness.
 template <>
 class AutoDiffScalar<VectorXd>
     : public internal::auto_diff_special_op<VectorXd, false> {
@@ -94,6 +108,11 @@ class AutoDiffScalar<VectorXd>
 
   AutoDiffScalar(const AutoDiffScalar& other)
       : m_value(other.value()), m_derivatives(other.derivatives()) {}
+
+  // Move construction and assignment are trivial, but need to be explicitly
+  // requested, since we have user-declared copy and assignment operators.
+  AutoDiffScalar(AutoDiffScalar&&) = default;
+  AutoDiffScalar& operator=(AutoDiffScalar&&) = default;
 
   template <typename OtherDerType>
   inline AutoDiffScalar& operator=(const AutoDiffScalar<OtherDerType>& other) {
@@ -171,145 +190,184 @@ class AutoDiffScalar<VectorXd>
     return m_value != b.value();
   }
 
-  inline const AutoDiffScalar<DerType> operator+(const Scalar& other) const {
-    return AutoDiffScalar<DerType>(m_value + other, m_derivatives);
+  // The arithmetic operators below exploit move-awareness to avoid heap
+  // allocations. See note `move-aware arithmetic` above. Particular details
+  // will be called out below, the first time they appear.
+
+  // Using a friend operator instead of a method allows the ADS parameter to be
+  // used as storage when move optimizations are possible.
+  friend inline AutoDiffScalar operator+(AutoDiffScalar a, const Scalar& b) {
+    a += b;
+    return a;
   }
 
-  friend inline const AutoDiffScalar<DerType> operator+(
-      const Scalar& a, const AutoDiffScalar& b) {
-    return AutoDiffScalar<DerType>(a + b.value(), b.derivatives());
+  friend inline AutoDiffScalar operator+(const Scalar& a, AutoDiffScalar b) {
+    b += a;
+    return b;
   }
 
+  // Compound assignment operators contain the primitive implementations, since
+  // the choice of writable storage is clear. Binary operations invoke the
+  // compound assignments.
   inline AutoDiffScalar& operator+=(const Scalar& other) {
     value() += other;
     return *this;
   }
 
+  // It is possible that further overloads could exploit more move-awareness
+  // here. However, overload ambiguities are difficult to resolve. Currently
+  // only the left-hand operand is available for optimizations.
+  // TODO(rpoyner-tri) investigate further optimizations.
   template <typename OtherDerType>
-  inline const AutoDiffScalar<DerType> operator+(
-      const AutoDiffScalar<OtherDerType>& other) const {
-    const bool has_this_der = m_derivatives.size() > 0;
-    const bool has_both_der = has_this_der && (other.derivatives().size() > 0);
-    return MakeAutoDiffScalar(
-        m_value + other.value(),
-        has_both_der
-            ? VectorXd(m_derivatives + other.derivatives())
-            : has_this_der ? m_derivatives : VectorXd(other.derivatives()));
+  friend inline AutoDiffScalar<DerType> operator+(
+      AutoDiffScalar<DerType> a, const AutoDiffScalar<OtherDerType>& b) {
+    a += b;
+    return a;
   }
 
   template <typename OtherDerType>
   inline AutoDiffScalar& operator+=(const AutoDiffScalar<OtherDerType>& other) {
-    (*this) = (*this) + other;
+    const bool has_this_der = m_derivatives.size() > 0;
+    const bool has_both_der = has_this_der && (other.derivatives().size() > 0);
+    m_value += other.value();
+    if (has_both_der) {
+      m_derivatives += other.derivatives();
+    } else if (has_this_der) {
+      // noop
+    } else {
+      m_derivatives = other.derivatives();
+    }
     return *this;
   }
 
-  inline const AutoDiffScalar<DerType> operator-(const Scalar& b) const {
-    return AutoDiffScalar<DerType>(m_value - b, m_derivatives);
+  friend inline AutoDiffScalar operator-(AutoDiffScalar a, const Scalar& b) {
+    a -= b;
+    return a;
   }
 
-  friend inline const AutoDiffScalar<DerType> operator-(
-      const Scalar& a, const AutoDiffScalar& b) {
-    return AutoDiffScalar<DerType>(a - b.value(), -b.derivatives());
+  // Scalar-on-the-left non-commutative operations must also contain primitive
+  // implementations.
+  friend inline AutoDiffScalar operator-(const Scalar& a, AutoDiffScalar b) {
+    b.value() = a - b.value();
+    b.derivatives() *= -1;
+    return b;
   }
 
   inline AutoDiffScalar& operator-=(const Scalar& other) {
-    value() -= other;
+    m_value -= other;
     return *this;
   }
 
   template <typename OtherDerType>
-  inline const AutoDiffScalar<DerType> operator-(
-      const AutoDiffScalar<OtherDerType>& other) const {
-    const bool has_this_der = m_derivatives.size() > 0;
-    const bool has_both_der = has_this_der && (other.derivatives().size() > 0);
-    return MakeAutoDiffScalar(
-        m_value - other.value(),
-        has_both_der
-            ? VectorXd(m_derivatives - other.derivatives())
-            : has_this_der ? m_derivatives : VectorXd(-other.derivatives()));
+  friend inline AutoDiffScalar<DerType> operator-(
+      AutoDiffScalar<DerType> a, const AutoDiffScalar<OtherDerType>& other) {
+    a -= other;
+    return a;
   }
 
   template <typename OtherDerType>
   inline AutoDiffScalar& operator-=(const AutoDiffScalar<OtherDerType>& other) {
-    *this = *this - other;
+    const bool has_this_der = m_derivatives.size() > 0;
+    const bool has_both_der = has_this_der && (other.derivatives().size() > 0);
+    m_value -= other.value();
+    if (has_both_der) {
+      m_derivatives -= other.derivatives();
+    } else if (has_this_der) {
+      // noop
+    } else {
+      m_derivatives = -other.derivatives();
+    }
     return *this;
   }
 
-  inline const AutoDiffScalar<DerType> operator-() const {
-    return AutoDiffScalar<DerType>(-m_value, -m_derivatives);
+  // Phrasing unary negation as a value-passing friend permits some move
+  // optimizations.
+  friend inline AutoDiffScalar operator-(AutoDiffScalar a) {
+    a.value() *= -1;
+    a.derivatives() *= -1;
+    return a;
   }
 
-  inline const AutoDiffScalar<DerType> operator*(const Scalar& other) const {
-    return MakeAutoDiffScalar(m_value * other, m_derivatives * other);
+  friend inline AutoDiffScalar operator*(AutoDiffScalar a, const Scalar& b) {
+    a *= b;
+    return a;
   }
 
-  friend inline const AutoDiffScalar<DerType> operator*(
-      const Scalar& other, const AutoDiffScalar& a) {
-    return MakeAutoDiffScalar(a.value() * other, a.derivatives() * other);
+  friend inline AutoDiffScalar operator*(const Scalar& a, AutoDiffScalar b) {
+    b *= a;
+    return b;
   }
 
-  inline const AutoDiffScalar<DerType> operator/(const Scalar& other) const {
-    return MakeAutoDiffScalar(m_value / other,
-                              (m_derivatives * (Scalar(1) / other)));
+  friend inline AutoDiffScalar operator/(AutoDiffScalar a, const Scalar& b) {
+    a /= b;
+    return a;
   }
 
-  friend inline const AutoDiffScalar<DerType> operator/(
-      const Scalar& other, const AutoDiffScalar& a) {
-    return MakeAutoDiffScalar(
-        other / a.value(),
-        a.derivatives() * (Scalar(-other) / (a.value() * a.value())));
-  }
-
-  template <typename OtherDerType>
-  inline const AutoDiffScalar<DerType> operator/(
-      const AutoDiffScalar<OtherDerType>& other) const {
-    const auto& this_der = m_derivatives;
-    const auto& other_der = other.derivatives();
-    const bool has_this_der = m_derivatives.size() > 0;
-    const bool has_both_der = has_this_der && (other.derivatives().size() > 0);
-    const double scale = 1. / (other.value() * other.value());
-    return MakeAutoDiffScalar(
-        m_value / other.value(),
-        has_both_der ?
-            VectorXd(this_der * other.value() - other_der * m_value) * scale :
-        has_this_der ?
-            VectorXd(this_der * other.value()) * scale :
-        // has_other_der || has_neither
-            VectorXd(other_der * -m_value) * scale);
+  friend inline AutoDiffScalar operator/(const Scalar& a, AutoDiffScalar b) {
+    b.derivatives() *= Scalar(-a) / (b.value() * b.value());
+    b.value() = a / b.value();
+    return b;
   }
 
   template <typename OtherDerType>
-  inline const AutoDiffScalar<DerType> operator*(
-      const AutoDiffScalar<OtherDerType>& other) const {
-    const bool has_this_der = m_derivatives.size() > 0;
-    const bool has_both_der = has_this_der && (other.derivatives().size() > 0);
-    return MakeAutoDiffScalar(
-        m_value * other.value(),
-        has_both_der ? VectorXd(m_derivatives * other.value() +
-                                other.derivatives() * m_value)
-                     : has_this_der ? VectorXd(m_derivatives * other.value())
-                                    : VectorXd(other.derivatives() * m_value));
+  friend inline AutoDiffScalar<DerType> operator/(
+      AutoDiffScalar<DerType> a, const AutoDiffScalar<OtherDerType>& b) {
+    a /= b;
+    return a;
+  }
+
+  template <typename OtherDerType>
+  friend inline AutoDiffScalar<DerType> operator*(
+      AutoDiffScalar<DerType> a, const AutoDiffScalar<OtherDerType>& b) {
+    a *= b;
+    return a;
   }
 
   inline AutoDiffScalar& operator*=(const Scalar& other) {
-    *this = *this * other;
+    m_value *= other;
+    m_derivatives *= other;
     return *this;
   }
 
   template <typename OtherDerType>
   inline AutoDiffScalar& operator*=(const AutoDiffScalar<OtherDerType>& other) {
-    *this = *this * other;
+    const bool has_this_der = m_derivatives.size() > 0;
+    const bool has_both_der = has_this_der && (other.derivatives().size() > 0);
+    if (has_both_der) {
+      m_derivatives *= other.value();
+      m_derivatives += other.derivatives() * m_value;
+    } else if (has_this_der) {
+      m_derivatives *= other.value();
+    } else {
+      m_derivatives = other.derivatives() * m_value;
+    }
+    m_value *= other.value();
     return *this;
   }
 
   inline AutoDiffScalar& operator/=(const Scalar& other) {
-    *this = *this / other;
+    m_value /= other;
+    m_derivatives *= Scalar(1) / other;
     return *this;
   }
 
   template <typename OtherDerType>
   inline AutoDiffScalar& operator/=(const AutoDiffScalar<OtherDerType>& other) {
-    *this = *this / other;
+    auto& this_der = m_derivatives;
+    const auto& other_der = other.derivatives();
+    const bool has_this_der = m_derivatives.size() > 0;
+    const bool has_both_der = has_this_der && (other.derivatives().size() > 0);
+    const Scalar scale = Scalar(1) / (other.value() * other.value());
+    if (has_both_der) {
+      this_der *= other.value();
+      this_der -= other_der * m_value;
+      this_der *= scale;
+    } else if (has_this_der) {
+      this_der *= Scalar(1) / other.value();
+    } else {
+      this_der = other_der * -m_value * scale;
+    }
+    m_value /= other.value();
     return *this;
   }
 
