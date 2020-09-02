@@ -209,6 +209,25 @@ GTEST_TEST(ShapeMeshesTest, ConfirmUtilities) {
   EXPECT_EQ(CalcTriCentroid(vertices, indices, 0), Vector3f(0.5f, 0.5f, 0));
 }
 
+/* Testing utility to test various characteristics of the primitive shapes. As
+ they are all convex and defined centered on their local origin, there are
+ general tests that we can assert for all of them (sharing the logic), relying
+ on the shape-specific tests to evaluate shape-specified invariants. This tests
+ the following invariants:
+
+   - The winding of the faces always point *away* from the origin.
+ */
+void TestGenericPrimitiveTraits(const VertexBuffer& vertices,
+                                const IndexBuffer& indices) {
+  // All face normals point outward
+  for (int t = 0; t < indices.rows(); ++t) {
+    Vector3f c = CalcTriCentroid(vertices, indices, t);
+    Vector3f n = CalcTriNormal(vertices, indices, t);
+    // If the winding were backwards, this dot product would be negative.
+    EXPECT_GT(n.dot(c), 0) << "for triangle " << t;
+  }
+}
+
 /* The tests for these tessellated primitives are merely suggestive; they don't
  guarantee correct meshes. We *might* consider confirming there are no holes in
  the mesh. In practice that may not be necessary; those kinds of artifacts would
@@ -223,29 +242,23 @@ GTEST_TEST(PrimitiveMeshTests, MakeLongLatUnitSphere) {
 
   float prev_area = 0;
   for (int resolution : {3, 10, 20, 40}) {
-    auto [vertices, indices] = MakeLongLatUnitSphere(resolution, resolution);
+    SCOPED_TRACE(fmt::format("Sphere with resolution {}", resolution));
+    const auto [vertices, indices] =
+        MakeLongLatUnitSphere(resolution, resolution);
 
     // Confirm area converges towards (but not above) ideal area.
     float curr_area = CalcTotalArea(vertices, indices);
-    EXPECT_GT(curr_area, prev_area) << "for resolution " << resolution;
-    EXPECT_LE(curr_area, kIdealArea) << "for resolution " << resolution;
+    EXPECT_GT(curr_area, prev_area);
+    EXPECT_LE(curr_area, kIdealArea);
     prev_area = curr_area;
 
     // All vertices lie on the unit sphere.
     for (int v_i = 0; v_i < vertices.rows(); ++v_i) {
       const auto& v = vertices.block<1, 3>(v_i, 0);
-      EXPECT_NEAR(v.norm(), 1.f, kEps)
-          << "for resolution: " << resolution << " and vertex " << v_i;
+      EXPECT_NEAR(v.norm(), 1.f, kEps) << "for vertex " << v_i;
     }
 
-    // All face normals point outward
-    for (int t = 0; t < indices.rows(); ++t) {
-      Vector3f c = CalcTriCentroid(vertices, indices, t);
-      Vector3f n = CalcTriNormal(vertices, indices, t);
-      // If the winding were backwards, this dot product would be negative.
-      EXPECT_GT(n.dot(c), 0)
-          << "for resolution: " << resolution << " and triangle " << t;
-    }
+    TestGenericPrimitiveTraits(vertices, indices);
   }
 }
 
@@ -260,27 +273,26 @@ GTEST_TEST(PrimitiveMeshTests, MakeUnitCylinder) {
 
   float prev_area = 0;
   for (int resolution : {3, 10, 20, 40}) {
-    auto [vertices, indices] = MakeUnitCylinder(resolution, resolution);
+    SCOPED_TRACE(fmt::format("Cylinder with resolution {}", resolution));
+    const auto [vertices, indices] = MakeUnitCylinder(resolution, resolution);
 
     // Confirm area converges towards (but not above) ideal area.
     float curr_area = CalcTotalArea(vertices, indices);
-    EXPECT_GT(curr_area, prev_area) << "for resolution " << resolution;
-    EXPECT_LE(curr_area, kIdealArea) << "for resolution " << resolution;
+    EXPECT_GT(curr_area, prev_area);
+    EXPECT_LE(curr_area, kIdealArea);
     prev_area = curr_area;
 
     // All vertices (except first and last) are 1 unit away from z-axis.
     for (int v_i = 1; v_i < vertices.rows() - 1; ++v_i) {
       Vector3f v = vertices.block<1, 3>(v_i, 0);
       v(2) = 0;
-      EXPECT_NEAR(v.norm(), 1.f, kEps)
-          << "for resolution: " << resolution << " and vertex " << v_i;
+      EXPECT_NEAR(v.norm(), 1.f, kEps) << "for vertex " << v_i;
     }
     // First and last vertices are *on* the z axis.
     for (int v_i : {0, static_cast<int>(vertices.rows() - 1)}) {
       Vector3f v = vertices.block<1, 3>(v_i, 0);
       v(2) = 0;
-      EXPECT_NEAR(v.norm(), 0.f, kEps)
-          << "for resolution: " << resolution << " and vertex " << v_i;
+      EXPECT_NEAR(v.norm(), 0.f, kEps) << "for vertex " << v_i;
     }
 
     // The first resolution + 1 vertices should be at z = 0.5. The last
@@ -293,14 +305,7 @@ GTEST_TEST(PrimitiveMeshTests, MakeUnitCylinder) {
       EXPECT_EQ(vertices(v_i, 2), -0.5);
     }
 
-    // All face normals point outward
-    for (int t = 0; t < indices.rows(); ++t) {
-      Vector3f c = CalcTriCentroid(vertices, indices, t);
-      Vector3f n = CalcTriNormal(vertices, indices, t);
-      // If the winding were backwards, this dot product would be negative.
-      EXPECT_GT(n.dot(c), 0)
-          << "for resolution: " << resolution << " and triangle " << t;
-    }
+    TestGenericPrimitiveTraits(vertices, indices);
   }
 }
 
@@ -311,7 +316,7 @@ GTEST_TEST(PrimitiveMeshTests, MakeSquarePatch) {
   const GLfloat kArea = kMeasure * kMeasure;
 
   for (int resolution : {1, 4, 15}) {
-    auto [vertices, indices] = MakeSquarePatch(kMeasure, resolution);
+    const auto [vertices, indices] = MakeSquarePatch(kMeasure, resolution);
 
     // The tolerance we select is going to be a scaled machine epsilon. The
     // first scale factor is the actual expected area; this makes our tolerance
@@ -346,21 +351,14 @@ GTEST_TEST(PrimitiveMeshTests, MakeUnitBox) {
   const GLfloat kEps = std::numeric_limits<GLfloat>::epsilon();
   const GLfloat kMax = std::numeric_limits<GLfloat>::max();
 
-  auto [vertices, indices] = MakeUnitBox();
+  SCOPED_TRACE("Box");
+  const auto [vertices, indices] = MakeUnitBox();
 
   // In computing total area, we scale epsilon by the expected area and also
   // the number of triangles, as per-triangle area gets magnified.
   EXPECT_NEAR(CalcTotalArea(vertices, indices), 6.f, kEps);
   EXPECT_EQ(vertices.rows(), 8);
   EXPECT_EQ(indices.rows(), 12);
-
-  // All face normals point outward
-  for (int t = 0; t < indices.rows(); ++t) {
-    Vector3f c = CalcTriCentroid(vertices, indices, t);
-    Vector3f n = CalcTriNormal(vertices, indices, t);
-    // If the winding were backwards, this dot product would be negative.
-    EXPECT_GT(n.dot(c), 0);
-  }
 
   // Confirm the bounding box is what we would expected.
   Vector3f min_pt{kMax, kMax, kMax};
@@ -373,6 +371,42 @@ GTEST_TEST(PrimitiveMeshTests, MakeUnitBox) {
   const Vector3f corner{0.5f, 0.5f, 0.5};
   EXPECT_TRUE(CompareMatrices(min_pt, -corner, kEps));
   EXPECT_TRUE(CompareMatrices(max_pt, corner, kEps));
+
+  TestGenericPrimitiveTraits(vertices, indices);
+}
+
+GTEST_TEST(PrimitiveMeshTests, MakeCapsule) {
+  const GLfloat kEps = std::numeric_limits<GLfloat>::epsilon();
+  constexpr double kRadius = 0.75;
+  constexpr double kLength = 2.5;
+  for (int resolution : {3, 10, 25}) {
+    SCOPED_TRACE(fmt::format("Capsule with resolution {}", resolution));
+    const auto [vertices, indices] = MakeCapsule(resolution, kRadius, kLength);
+
+    // The first half of vertices belong to a hemisphere with center at
+    // (0, 0, kLength / 2). Confirm that the vertex positions lie on the sphere.
+    // Repeat with the second half, with a sphere center at
+    // (0, 0, -kLength / 2).
+    const int num_vertices = vertices.rows();
+    {
+      const Vector3f p_MC(0, 0, kLength / 2);
+      for (int v = 0; v < num_vertices / 2; ++v) {
+        const Vector3f p_MV = vertices.block<1, 3>(v, 0);
+        const Vector3f p_CV = p_MV - p_MC;
+        ASSERT_NEAR(p_CV.norm(), kRadius, kEps);
+      }
+    }
+    {
+      const Vector3f p_MC(0, 0, -kLength / 2);
+      for (int v = num_vertices / 2; v < num_vertices; ++v) {
+        const Vector3f p_MV = vertices.block<1, 3>(v, 0);
+        const Vector3f p_CV = p_MV - p_MC;
+        ASSERT_NEAR(p_CV.norm(), kRadius, kEps);
+      }
+    }
+
+    TestGenericPrimitiveTraits(vertices, indices);
+  }
 }
 
 }  // namespace
