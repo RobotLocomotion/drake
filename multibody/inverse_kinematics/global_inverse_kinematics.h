@@ -1,9 +1,9 @@
+
 #pragma once
 
 #include <vector>
 
-#include "drake/attic_warning.h"
-#include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mathematical_program_result.h"
 #include "drake/solvers/mixed_integer_rotation_constraint.h"
@@ -18,12 +18,10 @@ namespace multibody {
  * If the global inverse kinematics returns a solution, the posture should
  * approximately satisfy the kinematics constraints, with some error.
  * The approach is described in Global Inverse Kinematics via Mixed-integer
- * Convex Optimization by Hongkai Dai, Gregory Izatt and Russ Tedrake, ISRR,
- * 2017.
+ * Convex Optimization by Hongkai Dai, Gregory Izatt and Russ Tedrake,
+ * International Journal of Robotics Research, 2019.
  */
-class GlobalInverseKinematics : public solvers::MathematicalProgram {
-// TODO(hongkai.dai): create a function globalIK, with interface similar to
-// inverseKin(), that accepts RigidBodyConstraint objects and cost function.
+class GlobalInverseKinematics {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GlobalInverseKinematics)
 
@@ -52,15 +50,19 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * each body inside the robot kinematics tree, adds the constraint on each
    * body pose, so that the adjacent bodies are connected correctly by the joint
    * in between the bodies.
-   * @param robot The robot on which the inverse kinematics problem is solved.
+   * @param plant The robot on which the inverse kinematics problem is solved.
    * @param options The options to relax SO(3) constraint as mixed-integer
    * convex constraints. Refer to MixedIntegerRotationConstraintGenerator for
    * more details on the parameters in options.
    */
-  explicit GlobalInverseKinematics(const RigidBodyTreed& robot,
+  explicit GlobalInverseKinematics(const MultibodyPlant<double>& plant,
                                    const Options& options = Options());
 
-  ~GlobalInverseKinematics() override {}
+  ~GlobalInverseKinematics() {}
+
+  const solvers::MathematicalProgram& prog() const { return prog_; }
+
+  solvers::MathematicalProgram* get_mutable_prog() { return &prog_; }
 
   /** Getter for the decision variables on the rotation matrix `R_WB` for a body
    * with the specified index. This is the orientation of body i's frame
@@ -205,14 +207,14 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * @param body_position_cost  The cost for each body's position error. Unit is
    * [1/m] (one over meters).
    * @pre
-   * 1. body_position_cost.rows() == robot->get_num_bodies(), where `robot`
+   * 1. body_position_cost.rows() == plant.num_bodies(), where `plant`
    *    is the input argument in the constructor of the class.
    * 2. body_position_cost(i) is non-negative.
    * @throws std::runtime_error if the precondition is not satisfied.
    * @param body_orientation_cost The cost for each body's orientation error.
    * @pre
-   * 1. body_orientation_cost.rows() == robot->get_num_bodies() , where
-   *    `robot` is the input argument in the constructor of the class.
+   * 1. body_orientation_cost.rows() == plant.num_bodies() , where
+   *    `plant` is the input argument in the constructor of the class.
    * 2. body_position_cost(i) is non-negative.
    * @throws std::runtime_error if the precondition is not satisfied.
    */
@@ -342,13 +344,15 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
       Eigen::Ref<Eigen::VectorXd> q,
       std::vector<Eigen::Matrix3d>* reconstruct_R_WB) const;
 
-  const RigidBodyTree<double>* robot_;
+  solvers::MathematicalProgram prog_;
+
+  const MultibodyPlant<double>& plant_;
 
   // joint_lower_bounds_ and joint_upper_bounds_ are column vectors of size
-  // robot_->get_num_positions() x 1.
+  // plant->get_num_positions() x 1.
   // joint_lower_bounds_(i) is the lower bound of the i'th joint.
   // joint_upper_bounds_(i) is the upper bound of the i'th joint.
-  // These joint bounds include those specified in the robot (like in the URDF
+  // These joint bounds include those specified in the plant (like in the URDF
   // file), and the bounds imposed by the user, through AddJointLimitConstraint.
   Eigen::VectorXd joint_lower_bounds_;
   Eigen::VectorXd joint_upper_bounds_;
