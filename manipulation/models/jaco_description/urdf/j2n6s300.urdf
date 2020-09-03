@@ -41,21 +41,7 @@
 -->
   <!-- Director seems to really want a link named "base", so this is
        renamed from "root" -->
-  <link name="base">
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <box size="0 0 0"/>
-      </geometry>
-      <!--<material name="Black" /> -->
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <box size="0 0 0"/>
-      </geometry>
-    </collision>
-  </link>
+  <link name="base"/>
   <gazebo>
     <plugin filename="libgazebo_ros_control.so" name="gazebo_ros_control">
       <robotNamespace>j2n6s300</robotNamespace>
@@ -354,16 +340,6 @@
     </actuator>
   </transmission>
   <link name="j2n6s300_end_effector">
-    <visual>
-      <geometry>
-        <box size="0 0 0"/>
-      </geometry>
-    </visual>
-    <collision>
-      <geometry>
-        <box size="0 0 0"/>
-      </geometry>
-    </collision>
   </link>
   <joint name="j2n6s300_joint_end_effector" type="fixed">
     <parent link="j2n6s300_link_6"/>
