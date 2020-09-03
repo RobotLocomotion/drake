@@ -422,6 +422,16 @@ class TestGeometry(unittest.TestCase):
             prop.GetProperty(group_name=default_group, name="to_update"),
             20)
 
+        # Property copying.
+        for PropertyType in [mut.ProximityProperties,
+                             mut.IllustrationProperties,
+                             mut.PerceptionProperties]:
+            props = PropertyType()
+            props.AddProperty("g", "p", 10)
+            self.assertTrue(props.HasProperty("g", "p"))
+            props_copy = PropertyType(other=props)
+            self.assertTrue(props_copy.HasProperty("g", "p"))
+
     def test_render_engine_vtk_params(self):
         # Confirm default construction of params.
         params = mut.render.RenderEngineVtkParams()

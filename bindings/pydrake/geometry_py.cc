@@ -869,13 +869,19 @@ void DoScalarIndependentDefinitions(py::module m) {
 
   py::class_<ProximityProperties, GeometryProperties>(
       m, "ProximityProperties", doc.ProximityProperties.doc)
-      .def(py::init(), doc.ProximityProperties.ctor.doc);
+      .def(py::init(), doc.ProximityProperties.ctor.doc)
+      .def(py::init<const ProximityProperties&>(), py::arg("other"),
+          "Creates a copy of the properties");
   py::class_<IllustrationProperties, GeometryProperties>(
       m, "IllustrationProperties", doc.IllustrationProperties.doc)
-      .def(py::init(), doc.IllustrationProperties.ctor.doc);
+      .def(py::init(), doc.IllustrationProperties.ctor.doc)
+      .def(py::init<const IllustrationProperties&>(), py::arg("other"),
+          "Creates a copy of the properties");
   py::class_<PerceptionProperties, GeometryProperties>(
       m, "PerceptionProperties", doc.PerceptionProperties.doc)
-      .def(py::init(), doc.PerceptionProperties.ctor.doc);
+      .def(py::init(), doc.PerceptionProperties.ctor.doc)
+      .def(py::init<const PerceptionProperties&>(), py::arg("other"),
+          "Creates a copy of the properties");
   m.def("MakePhongIllustrationProperties", &MakePhongIllustrationProperties,
       py_rvp::reference_internal, py::arg("diffuse"),
       doc.MakePhongIllustrationProperties.doc);
