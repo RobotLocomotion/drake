@@ -197,7 +197,7 @@ class ParticleTest : public ::testing::Test {
   // Helper to retrieve contact results. Notice that this method will trigger
   // the computation of contact results through MultibodyPlant and therefore,
   // unless results were previously cached by MultibodyPlant, this method will
-  // result on the invocation of ParticleSolver::SolveWithGuess().
+  // result in the invocation of ParticleSolver::SolveWithGuess().
   // This allow us to verify:
   //  - Proper invocation of the contact solver.
   //  - The proper data flow out from MultibodyPlant as contact results.

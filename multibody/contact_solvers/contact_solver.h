@@ -66,7 +66,7 @@ enum class ContactSolverResult {
 /// </pre>
 /// where with `Fᵢₙₜ(q, v)` we denote the term containing the contribution due
 /// to internal stresses in the deformable object. In this case, the
-/// configuration `q` will will correspond to the Lagrangian coordinates of
+/// configuration `q` will correspond to the Lagrangian coordinates of
 /// material points in a solid and in this case q̇ = v, i.e. `N(q)` is the
 /// identity mapping.
 ///
@@ -153,18 +153,19 @@ enum class ContactSolverResult {
 /// contact for which, without diving into the details, the momentum equations
 /// can be briefly summarized as:
 /// <pre>
-///   F(v) = M⋅(v−v₀) + dt⋅Fᵢₙₜ(q, v)
+///   F(v) = M⋅(v−v₀) + dt⋅Fᵢₙₜ(q(v), v)
+///   q(v) = q₀ + dt⋅v
 /// </pre>
-/// where with `Fᵢₙₜ(q, v)` we denote the term containing the contribution due
-/// to internal stresses in the deformable object. Using a predictor as in
-/// [Duriez, 2013], `F(v*) = 0`, leads to the system's dynamics matrix
-/// `A(v*) = M + dt⋅D + dt²⋅K`, where `M` is the mass matrix, `D = ∂Fᵢₙₜ/∂v` is
-/// the damping matrix and `K = ∂Fᵢₙₜ/∂q` is the stiffness matrix. For the
-/// modeling of large deformations `Fᵢₙₜ(q, v)` is a non-linear function of both
-/// q and v and therefore v* requires the solution of the non-linear system of
-/// equations `Fᵢₙₜ(q(v*), v*) = 0` usually with a Newton method. As a side
-/// effect of this solution the operator form of `A⁻¹` at v* will be available,
-/// typically as a factorization of the sparse matrix `A`.
+/// where with `Fᵢₙₜ(q, v)` we denote the force terms containing the
+/// contribution due to internal stresses in the deformable object. Using a
+/// predictor as in [Duriez, 2013], `F(v*) = 0`, leads to the system's dynamics
+/// matrix `A(v*) = M + dt⋅D + dt²⋅K`, where `M` is the mass matrix, `D =
+/// ∂Fᵢₙₜ/∂v` is the damping matrix and `K = ∂Fᵢₙₜ/∂q` is the stiffness matrix.
+/// For the modeling of large deformations `Fᵢₙₜ(q, v)` is a non-linear function
+/// of both q and v and therefore v* requires the solution of the non-linear
+/// system of equations `Fᵢₙₜ(q(v*), v*) = 0` usually with a Newton method. As a
+/// side effect of this solution the operator form of `A⁻¹` at v* will be
+/// available, typically as a factorization of the sparse matrix `A`.
 ///
 /// It should be noted that while in the previous two examples we used the
 /// backward Euler method to obtain a discrte approximation in time for
