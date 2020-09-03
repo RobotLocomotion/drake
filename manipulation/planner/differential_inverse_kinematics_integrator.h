@@ -48,6 +48,12 @@ class DifferentialInverseKinematicsIntegrator
   values of this context will be overwritten during integration; you only need
   to pass this in if the robot has any non-default parameters.  @default
   `robot.CreateDefaultContext()`.
+  @param log_only_when_result_state_changes is a boolean that determines whether
+  the system will log on every differential IK failure, or only when the failure
+  state changes.  When the value is `true`, it will cause the system to have an
+  additional discrete state variable to store the most recent
+  DifferentialInverseKinematicsStatus.  Set this to `false` if you want
+  IsDifferenceEquationSystem() to return `true`.
 
   Note: All references must remain valid for the lifetime of this system.
   */
@@ -56,7 +62,8 @@ class DifferentialInverseKinematicsIntegrator
       const multibody::Frame<double>& frame_E, double time_step,
       // Note: parameters last so they could be optional in the future.
       const DifferentialInverseKinematicsParameters& parameters,
-      const systems::Context<double>* robot_context = nullptr);
+      const systems::Context<double>* robot_context = nullptr,
+      bool log_only_when_result_state_changes = true);
 
   /** Sets the joint positions, which are stored as state in the context. It is
   recommended that the user calls this method to initialize the position
