@@ -62,6 +62,13 @@ def _convert_mesh(geom):
         RotationMatrix(Quaternion(geom.quaternion)),
         geom.position).GetAsMatrix4()
 
+    # Short-circuit if the geometry scale is invalid.
+    # (All uses of float data should be strictly positive:
+    # edge lengths for boxes, radius and length for
+    # spheres and cylinders, and scaling for meshes.)
+    if not all([x > 0 for x in geom.float_data]):
+        return meshcat_geom, material, element_local_tf
+
     if geom.type == geom.BOX:
         assert geom.num_float_data == 3
         meshcat_geom = meshcat.geometry.Box(geom.float_data)

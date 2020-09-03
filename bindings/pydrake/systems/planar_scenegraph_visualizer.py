@@ -201,6 +201,13 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                 if geom.color[3] == 0:
                     continue
 
+                # Short-circuit if the geometry scale is invalid.
+                # (All uses of float data should be strictly positive:
+                # edge lengths for boxes, radius and length for
+                # spheres and cylinders, and scaling for meshes.)
+                if not all([x > 0 for x in geom.float_data]):
+                    continue
+
                 X_BG = RigidTransform(
                     RotationMatrix(Quaternion(geom.quaternion)),
                     geom.position)
