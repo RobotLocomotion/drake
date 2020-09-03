@@ -40,19 +40,6 @@
    finger_distal      58
 -->
   <link name="root">
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <box size="0 0 0"/>
-      </geometry>
-      <!--<material name="Black" /> -->
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <box size="0 0 0"/>
-      </geometry>
-    </collision>
   </link>
   <!-- for gazebo -->
   <link name="world"/>
@@ -335,16 +322,6 @@
     </actuator>
   </transmission>
   <link name="j2n6s300_end_effector">
-    <visual>
-      <geometry>
-        <box size="0 0 0"/>
-      </geometry>
-    </visual>
-    <collision>
-      <geometry>
-        <box size="0 0 0"/>
-      </geometry>
-    </collision>
   </link>
   <joint name="j2n6s300_joint_end_effector" type="fixed">
     <parent link="j2n6s300_link_6"/>
