@@ -143,6 +143,11 @@ class TestTrajectories(unittest.TestCase):
         v = pp.vector_values([0, 4])
         self.assertEqual(v.shape, (3, 2))
 
+    def test_addition(self):
+        pp1 = PiecewisePolynomial([1, 2, 3])
+        pp2 = pp1 + pp1
+        self.assertTrue((pp2.value(0) == 2 * pp1.value(0)).all())
+
     def test_quaternion_slerp(self):
         # Test empty constructor.
         pq = PiecewiseQuaternionSlerp()
