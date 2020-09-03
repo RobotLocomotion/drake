@@ -349,6 +349,7 @@ def _generate_pybind_documentation_header_impl(ctx):
     target_deps = _collect_cc_header_info(ctx.attr.target_deps)
 
     args = ctx.actions.args()
+    args.add("-DDRAKE_COMMON_SYMBOLIC_DETAIL_HEADER")
     args.add_all(
         targets.compile_flags + target_deps.compile_flags,
         uniquify = True,
