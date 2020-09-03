@@ -186,7 +186,7 @@ class Transform {
 
   /// Samples this Transform.  If this is deterministic, the result is the same
   /// as GetDeterministicValue.
-  math::RigidTransformd Sample(RandomGenerator* random) const;
+  math::RigidTransformd Sample(RandomGenerator* generator) const;
 
   template <typename Archive>
   void Serialize(Archive* a) {

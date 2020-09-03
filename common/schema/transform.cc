@@ -60,7 +60,7 @@ math::RigidTransformd Transform::Mean() const {
 }
 
 math::RigidTransformd Transform::Sample(
-    RandomGenerator* random) const {
+    RandomGenerator* generator) const {
   // It is somewhat yak-shavey to get an actual materialized transform here.
   // We convert to symbolic, convert the symbolic to a vector and matrix of
   // symbolic, `Evaluate` those, convert the result back to a
@@ -76,12 +76,12 @@ math::RigidTransformd Transform::Sample(
   const Vector3<Expression> symbolic_translation =
       symbolic_transform.translation();
   const Eigen::Vector3d concrete_translation =
-      symbolic::Evaluate(symbolic_translation, {}, random);
+      symbolic::Evaluate(symbolic_translation, {}, generator);
 
   const math::RotationMatrix<Expression> symbolic_rotation =
       symbolic_transform.rotation();
   const math::RotationMatrixd concrete_rotation(
-      symbolic::Evaluate(symbolic_rotation.matrix(), {}, random));
+      symbolic::Evaluate(symbolic_rotation.matrix(), {}, generator));
 
   return math::RigidTransformd{concrete_rotation, concrete_translation};
 }

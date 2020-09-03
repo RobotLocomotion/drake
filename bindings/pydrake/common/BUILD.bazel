@@ -322,6 +322,20 @@ drake_py_library(
     ],
 )
 
+drake_pybind_library(
+    name = "schema_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake:symbolic_types_pybind",
+    ],
+    cc_srcs = ["schema_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        "//bindings/pydrake:math_py",
+    ],
+)
+
 drake_py_library(
     name = "yaml_py",
     srcs = ["yaml.py"],
@@ -333,6 +347,7 @@ drake_py_library(
 PY_LIBRARIES_WITH_INSTALL = [
     ":_init_py",
     ":eigen_geometry_py",
+    ":schema_py",
     ":value_py",
 ]
 
@@ -595,6 +610,13 @@ drake_py_unittest(
     name = "wrap_pybind_test",
     deps = [
         ":wrap_test_util_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "schema_test",
+    deps = [
+        ":schema_py",
     ],
 )
 
