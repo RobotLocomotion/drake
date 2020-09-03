@@ -34,8 +34,10 @@ drake_cc_package_library(
         ":detail_scene_graph",
         ":detail_sdf_parser",
         ":detail_urdf_parser",
+        ":model_directives",
         ":package_map",
         ":parser",
+        ":process_model_directives",
     ],
 )
 
@@ -188,10 +190,10 @@ drake_cc_library(
     ],
     deps = [
         ":model_directives",
+        ":parser",
         "//common:filesystem",
         "//common:find_resource",
         "//common/yaml:yaml_read_archive",
-        "//multibody/parsing",
         "//multibody/plant",
     ],
 )
