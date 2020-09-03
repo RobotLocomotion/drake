@@ -158,6 +158,7 @@ PYBIND11_MODULE(trajectories, m) {
           doc.PiecewisePolynomial.slice.doc)
       .def("shiftRight", &PiecewisePolynomial<T>::shiftRight, py::arg("offset"),
           doc.PiecewisePolynomial.shiftRight.doc)
+      .def(py::self + py::self)
       .def("setPolynomialMatrixBlock",
           &PiecewisePolynomial<T>::setPolynomialMatrixBlock,
           py::arg("replacement"), py::arg("segment_index"),
