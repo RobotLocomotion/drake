@@ -124,10 +124,16 @@ PYBIND11_MODULE(sensors, m) {
             self->height(), self->width(), int{ImageTraitsT::kNumChannels});
       };
       auto get_data = [=](const ImageT* self) {
-        return ToArray(self->at(0, 0), self->size(), get_shape(self));
+        py::object array =
+            ToArray(self->at(0, 0), self->size(), get_shape(self));
+        py_keep_alive(array, py::cast(self));
+        return array;
       };
       auto get_mutable_data = [=](ImageT* self) {
-        return ToArray(self->at(0, 0), self->size(), get_shape(self));
+        py::object array =
+            ToArray(self->at(0, 0), self->size(), get_shape(self));
+        py_keep_alive(array, py::cast(self));
+        return array;
       };
 
       py::class_<ImageT> image(m, TemporaryClassName<ImageT>().c_str());
@@ -145,9 +151,8 @@ PYBIND11_MODULE(sensors, m) {
               doc.Image.at.doc_2args_x_y_nonconst)
           // Non-C++ properties. Make them Pythonic.
           .def_property_readonly("shape", get_shape)
-          .def_property_readonly("data", get_data, py_rvp::reference_internal)
-          .def_property_readonly(
-              "mutable_data", get_mutable_data, py_rvp::reference_internal);
+          .def_property_readonly("data", get_data)
+          .def_property_readonly("mutable_data", get_mutable_data);
       // Constants.
       image.attr("Traits") = traits;
       // - Do not duplicate aliases (e.g. `kNumChannels`) for now.

@@ -1,5 +1,6 @@
 import pydrake.systems.sensors as mut
 
+import gc
 import unittest
 
 import numpy as np
@@ -153,6 +154,17 @@ class TestSensors(unittest.TestCase):
                 for ih in range(h):
                     self.assertTrue(
                         np.allclose(data[ih, iw, :], image.at(iw, ih)))
+
+            # Ensure that keep alive works by using temporary objects.
+
+            def check_keep_alive():
+                image = ImageT(w, h, channel_default)
+                return (image.data, image.mutable_data)
+
+            data, mutable_data = check_keep_alive()
+            gc.collect()
+            np.testing.assert_array_equal(data, channel_default)
+            np.testing.assert_array_equal(mutable_data, channel_default)
 
     def test_constants(self):
         # Simply ensure we can access the constants.
