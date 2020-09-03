@@ -11,7 +11,7 @@ if [[ "${EUID}" -eq 0 ]]; then
 fi
 
 if command -v conda &>/dev/null; then
-  echo 'WARNING: Anaconda is NOT supported. Please remove the Anaconda bin directory from the PATH.' >&2
+  echo 'WARNING: Anaconda is NOT supported for building and using the Drake Python bindings' >&2
 fi
 
 if ! command -v /usr/local/bin/brew &>/dev/null; then
