@@ -1,5 +1,20 @@
 ---
-Checks: 'clang-diagnostic-*,clang-analyzer-*,cppcoreguidelines-*,google-*,modernize-*,performance-*,readability-*,-modernize-use-using,-modernize-use-bool-literals,-readability-named-parameter,-cppcoreguidelines-pro-bounds-array-to-pointer-decay,-cppcoreguidelines-pro-bounds-pointer-arithmetic,-cppcoreguidelines-pro-type-static-cast-downcast,-modernize-use-transparent-functors,-readability-else-after-return'
+Checks: >
+        clang-analyzer-*,
+        clang-diagnostic-*,
+        cppcoreguidelines-*,
+        google-*,
+        modernize-*,
+        performance-*,
+        readability-*,
+        -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+        -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+        -cppcoreguidelines-pro-type-static-cast-downcast,
+        -modernize-use-bool-literals,
+        -modernize-use-transparent-functors,
+        -modernize-use-using,
+        -readability-else-after-return,
+        -readability-named-parameter,
 
 CheckOptions:
   - { key: readability-identifier-naming.ClassCase,           value: CamelCase  }
