@@ -567,41 +567,19 @@ class RotationalInertia {
             p(0), p(1), p(2), epsilon);
   }
 
-  /// Re-expresses `this` rotational inertia `I_BP_E` to `I_BP_A`.
+  /// Re-expresses `this` rotational inertia `I_BP_E` in place to `I_BP_A`.
   /// In other words, starts with `this` rotational inertia of a body (or
   /// composite body) B about-point P expressed-in frame E and re-expresses
-  /// to B's rotational inertia about-point P expressed-in frame A, i.e.,
-  /// `I_BP_A = R_AE * I_BP_E * (R_AE)ᵀ`.
+  /// to B's rotational inertia about-point P expressed-in frame A. More
+  /// concisely, we compute `I_BP_A = R_AE * I_BP_E * (R_AE)ᵀ`.
+  ///
   /// @param[in] R_AE RotationMatrix relating frames A and E.
   /// @return A reference to `this` rotational inertia about-point P, but
-  ///         with `this` expressed in frame A (instead of frame E).
+  ///         with `this` now expressed in frame A (instead of frame E).
   /// @throws std::logic_error for Debug builds if the rotational inertia that
   /// is re-expressed-in frame A violates CouldBePhysicallyValid().
   /// @see ReExpress().
-  RotationalInertia<T>& ReExpressInPlace(const math::RotationMatrix<T>& R_AE) {
-    // There is an interesting discussion on Eigen's forum here:
-    // https://forum.kde.org/viewtopic.php?f=74&t=97282
-    // That discussion tell us that really here we don't have a significant
-    // performance gain for small matrices when writing on one of the triangular
-    // parts only. The gain is in accuracy, by having RotationalInertia to only
-    // deal with one triangular portion of the matrix.
-
-    // Local copy to avoid aliasing that occurs if using triangular view.
-    Matrix3<T> I_BP_A;
-    I_BP_A.noalias() = R_AE.matrix()
-                     * I_SP_E_.template selfadjointView<Eigen::Lower>()
-                     * R_AE.matrix().transpose();
-
-    // Note: There is no guarantee of a symmetric result in I_SP_A (although it
-    // should be symmetric within round-off error). Here we discard the upper-
-    // triangular elements (which could slightly differ from the lower ones).
-    this->get_mutable_triangular_view() = I_BP_A;
-
-    // If both `this` and `R_AE` were valid upon entry to this method, the
-    // returned rotational inertia should be valid.  Otherwise, it may not be.
-    DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid());
-    return *this;
-  }
+  RotationalInertia<T>& ReExpressInPlace(const math::RotationMatrix<T>& R_AE);
 
   /// Re-expresses `this` rotational inertia `I_BP_E` to `I_BP_A`
   /// i.e., re-expresses body B's rotational inertia from frame E to frame A.
@@ -1068,6 +1046,111 @@ std::ostream& operator<<(std::ostream& o,
     o << "]" << std::endl;
   }
   return o;
+}
+
+// (This implementation is adapted from Simbody's Rotation::reexpressSymMat33.)
+// Use sneaky tricks from Featherstone to rotate a symmetric dyadic matrix.
+// See Featherstone 2008, Appendix A.5, pg 254.
+//
+// Let the current rotational inertia matrix be I=I_EE, meaning it is a dyadic
+// expressed in E (only the expressed-in frame matters here so we're switching
+// notation to emphasize that). We're given a rotation matrix R_AE and would
+// like to efficiently calculate I' = I_AA = R_AE I_EE R_AEᵀ, writing the result
+// in place.
+//
+// If the calculation were actually performed by multiplying three generic 3x3
+// matrices, it would take 90 flops (as used here a "flop" is a floating-point
+// multiply or add), or 75 flops if we leveraged the symmetry of the I_AA and
+// I_EE inertia matrices (each matrix only has 6 unique elements). However,
+// with the clever algorithm below, the calculation cost is only 57 flops.
+//
+// We'll work with I's elements: I =[ a d e ]
+//                                  [ d b f ]
+//                                  [ e f c ]
+//
+// First, split I into I=L+D+v× with v=[-f e 0]ᵀ (× means cross product matrix):
+//        [a-c   d   0]       [c 0 0]        [ 0  0  e]
+//    L = [ d   b-c  0]   D = [0 c 0]   v× = [ 0  0  f]
+//        [2e   2f   0]       [0 0 c]        [-e -f  0]
+// (4 flops to calculate L)
+//
+// A cross product matrix identity says R v× Rᵀ=(Rv)×, so:
+//    I' = R I Rᵀ = R L Rᵀ + D + (Rv)×.
+// Let Y' = R L, Z = Y' Rᵀ. We only need the lower triangle of Z and a
+// 2x2 square of Y'.
+//
+// Don't-care's below are marked "-". Below we'll use square bracket [i]
+// index of a matrix to mean "row i", round bracket (j) means "column j".
+//
+//        [  -   -  0 ]
+//   Y' = [ Y00 Y01 0 ]   Y = [ R[1]•L(0)  R[1]•L(1) ]     20 flops
+//        [ Y10 Y11 0 ]       [ R[2]•L(0)  R[2]•L(1) ]
+//
+//   Z = [   Z00          -          -     ]
+//       [ Y[0]•R[0]  Y[0]•R[1]      -     ]   15 flops (use only 2
+//       [ Y[1]•R[0]  Y[1]•R[1]  Y[1]•R[2] ]   elements of R's rows)
+//
+//   Z00 = (L00+L11)-(Z11+Z22)  3 flops (because rotation preserves trace)
+//
+//         [e R01 - f R00]           [  0       -    -  ]
+//    Rv = [e R11 - f R10]   (Rv)× = [ Rv[2]    0    -  ]
+//         [e R21 - f R20]           [-Rv[1]  Rv[0]  0  ]
+// (Rv is 9 flops)
+//
+//        [ Z00 + c          -           -    ]
+//   I' = [ Z10 + Rv[2]  Z11 + c         -    ]
+//        [ Z20 - Rv[1]  Z21 + Rv[0]  Z22 + c ]
+//
+// which takes 6 more flops. Total 6 + 9Rv + 18Z + 20Y + 4L = 57.
+//
+// (Looking at the generated assembly code for gcc 7.5 -O3 in Godbolt showed
+// exactly 57 inline flops, no loops or function calls. Clang 6.0 -O3
+// failed to inline several of the Eigen methods although it made much better
+// use of packed SSE2 operations.)
+template <typename T>
+RotationalInertia<T>& RotationalInertia<T>::ReExpressInPlace(
+    const math::RotationMatrix<T>& R_AE) {
+  const Matrix3<T>& R = R_AE.matrix();
+
+  // We're going to write back into this lower triangle.
+  T& a = I_SP_E_(0, 0);
+  T& d = I_SP_E_(1, 0); T& b = I_SP_E_(1, 1);
+  T& e = I_SP_E_(2, 0); T& f = I_SP_E_(2, 1); T& c = I_SP_E_(2, 2);
+
+  Eigen::Matrix<T, 3, 2> L;
+  L << a-c ,  d,
+        d  , b-c,
+       2*e , 2*f;
+
+  // For convenience below, the first two rows of Rᵀ.
+  Eigen::Matrix<T, 2, 3> Rt;
+  Rt << R(0, 0), R(1, 0), R(2, 0),
+        R(0, 1), R(1, 1), R(2, 1);
+
+  const Vector3<T> Rv(e * Rt.row(1) - f * Rt.row(0));
+
+  Matrix2<T> Y;
+  Y << R.row(1) * L.col(0), R.row(1) * L.col(1),
+       R.row(2) * L.col(0), R.row(2) * L.col(1);
+
+  // We'll do Z elementwise due to element interdependence.
+  const T Z11 = Y.row(0) * Rt.col(1);
+  const T Z22 = Y.row(1) * Rt.col(2);
+  const T Z00 = (L(0, 0) + L(1, 1)) - (Z11 + Z22);
+  const T Z10 = Y.row(0) * Rt.col(0);
+  const T Z20 = Y.row(1) * Rt.col(0);
+  const T Z21 = Y.row(1) * Rt.col(1);
+
+  // Assign result back into lower triangle. Don't set c until we're done
+  // with the previous value!
+  a = Z00 + c;
+  d = Z10 + Rv[2]; b = Z11 + c;
+  e = Z20 - Rv[1]; f = Z21 + Rv[0]; c += Z22;
+
+  // If both `this` and `R_AE` were valid upon entry to this method, the
+  // returned rotational inertia should be valid.  Otherwise, it may not be.
+  DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid());
+  return *this;
 }
 
 }  // namespace multibody
