@@ -47,6 +47,7 @@ from pydrake.systems.primitives import (
     StateInterpolatorWithDiscreteDerivative,
     StateInterpolatorWithDiscreteDerivative_,
     SymbolicVectorSystem, SymbolicVectorSystem_,
+    TrajectoryAffineSystem, TrajectoryAffineSystem_,
     TrajectorySource,
     WrapToSystem, WrapToSystem_,
     ZeroOrderHold, ZeroOrderHold_,
@@ -91,6 +92,8 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(Sine_)
         self._check_instantiations(StateInterpolatorWithDiscreteDerivative_)
         self._check_instantiations(SymbolicVectorSystem_)
+        self._check_instantiations(TrajectoryAffineSystem_,
+                                   supports_symbolic=False)
         self._check_instantiations(WrapToSystem_)
         self._check_instantiations(ZeroOrderHold_)
 
@@ -222,6 +225,42 @@ class TestGeneral(unittest.TestCase):
 
         system = MatrixGain(D=A)
         self.assertTrue((system.D() == A).all())
+
+        system = TrajectoryAffineSystem(
+            PiecewisePolynomial(A),
+            PiecewisePolynomial(B),
+            PiecewisePolynomial(f0),
+            PiecewisePolynomial(C),
+            PiecewisePolynomial(D),
+            PiecewisePolynomial(y0),
+            .1)
+        self.assertEqual(system.get_input_port(0), system.get_input_port())
+        self.assertEqual(system.get_output_port(0), system.get_output_port())
+        context = system.CreateDefaultContext()
+        self.assertEqual(system.get_input_port(0).size(), 1)
+        self.assertEqual(context.get_discrete_state_vector().size(), 2)
+        self.assertEqual(system.get_output_port(0).size(), 1)
+        for t in np.linspace(0., 1., 5):
+            self.assertTrue((system.A(t) == A).all())
+            self.assertTrue((system.B(t) == B).all())
+            self.assertTrue((system.f0(t) == f0).all())
+            self.assertTrue((system.C(t) == C).all())
+            self.assertEqual(system.D(t), D)
+            self.assertEqual(system.y0(t), y0)
+        self.assertEqual(system.time_period(), .1)
+        x0 = np.array([1, 2])
+        system.configure_default_state(x0=x0)
+        system.SetDefaultContext(context)
+        np.testing.assert_equal(
+            context.get_discrete_state_vector().CopyToVector(), x0)
+        generator = RandomGenerator()
+        system.SetRandomContext(context, generator)
+        np.testing.assert_equal(
+            context.get_discrete_state_vector().CopyToVector(), x0)
+        system.configure_random_state(covariance=np.eye(2))
+        system.SetRandomContext(context, generator)
+        self.assertNotEqual(
+            context.get_discrete_state_vector().CopyToVector()[1], x0[1])
 
     def test_linear_system_zero_size(self):
         # Explicitly test #12633.
