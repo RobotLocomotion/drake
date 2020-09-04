@@ -94,6 +94,10 @@ class TestAll(unittest.TestCase):
             "cos",
             # geometry
             "SceneGraph",
+            # yaml
+            "yaml_load_data",
+            # schema
+            "ToDistributionVector",
             # - render
             "CameraProperties",
             # lcm
