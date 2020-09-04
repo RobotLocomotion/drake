@@ -4,6 +4,7 @@
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
+#include "drake/common/unused.h"
 
 using std::pair;
 using std::runtime_error;
@@ -463,7 +464,9 @@ TEST_F(MonomialBasisElementTest, Evaluate) {
 TEST_F(MonomialBasisElementTest, EvaluateException) {
   const MonomialBasisElement m{{{var_x_, 1}, {var_y_, 2}}};  // xy^2
   const Environment env{{{var_x_, 1.0}}};
-  EXPECT_THROW(m.Evaluate(env), std::invalid_argument);
+  double dummy{};
+  EXPECT_THROW(dummy = m.Evaluate(env), std::invalid_argument);
+  unused(dummy);
 }
 
 TEST_F(MonomialBasisElementTest, EvaluatePartial) {

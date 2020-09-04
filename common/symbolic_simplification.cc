@@ -45,8 +45,8 @@ class UnificationVisitor {
   //
   // In this case, there is no way to match `e` with `p` because `a + b` is not
   // matched with `x * y`.  Therefore, `Unify(p, e)` returns `nullopt`.
-  std::optional<Substitution> Unify(const Pattern& p,
-                                    const Expression& e) const {
+  [[nodiscard]] std::optional<Substitution> Unify(const Pattern& p,
+                                                  const Expression& e) const {
     Substitution subst;
     if (Unify(p, e, &subst)) {
       return subst;

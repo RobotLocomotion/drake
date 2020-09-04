@@ -44,7 +44,7 @@ class RationalFunction {
    * can be decision variables in the numerator.
    * @throws std::logic_error if the precondition is not satisfied.
    */
-  RationalFunction(const Polynomial& numerator, const Polynomial& denominator);
+  RationalFunction(Polynomial numerator, Polynomial denominator);
 
   /**
    * Constructs the rational function: p / 1. Note that we use 1 as the
@@ -63,10 +63,10 @@ class RationalFunction {
   ~RationalFunction() = default;
 
   /// Getter for the numerator.
-  const Polynomial& numerator() const { return numerator_; }
+  [[nodiscard]] const Polynomial& numerator() const { return numerator_; }
 
   /// Getter for the denominator.
-  const Polynomial& denominator() const { return denominator_; }
+  [[nodiscard]] const Polynomial& denominator() const { return denominator_; }
 
   RationalFunction& operator+=(const RationalFunction& f);
   RationalFunction& operator+=(const Polynomial& p);
@@ -85,9 +85,15 @@ class RationalFunction {
   RationalFunction& operator/=(double c);
 
   /**
+   * Unary minus operation for rational function.
+   * if f(x) = p(x) / q(x), then -f(x) = (-p(x)) / q(x)
+   */
+  friend RationalFunction operator-(RationalFunction f);
+
+  /**
    * Returns true if this rational function and f are structurally equal.
    */
-  bool EqualTo(const RationalFunction& f) const;
+  [[nodiscard]] bool EqualTo(const RationalFunction& f) const;
 
   /**
    * Returns a symbolic formula representing the condition where this rational
@@ -112,12 +118,6 @@ class RationalFunction {
   Polynomial denominator_;
 };
 
-/**
- * Unary minus operation for rational function.
- * if f(x) = p(x) / q(x), then -f(x) = (-p(x)) / q(x)
- */
-RationalFunction operator-(RationalFunction f);
-
 RationalFunction operator+(RationalFunction f1, const RationalFunction& f2);
 RationalFunction operator+(RationalFunction f, const Polynomial& p);
 RationalFunction operator+(const Polynomial& p, RationalFunction f);
@@ -126,7 +126,7 @@ RationalFunction operator+(double c, RationalFunction f);
 
 RationalFunction operator-(RationalFunction f1, const RationalFunction& f2);
 RationalFunction operator-(RationalFunction f, const Polynomial& p);
-RationalFunction operator-(const Polynomial& p, RationalFunction f);
+RationalFunction operator-(const Polynomial& p, const RationalFunction& f);
 RationalFunction operator-(RationalFunction f, double c);
 RationalFunction operator-(double c, RationalFunction f);
 

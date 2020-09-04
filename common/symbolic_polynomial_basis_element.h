@@ -51,7 +51,7 @@ class PolynomialBasisElement {
    * Constructs a polynomial basis with empty var_to_degree map. This element
    * should be interpreted as 1.
    */
-  PolynomialBasisElement();
+  PolynomialBasisElement() = default;
 
   /**
    * Constructs a polynomial basis given the variable and the degree of that
@@ -73,7 +73,7 @@ class PolynomialBasisElement {
 
   virtual ~PolynomialBasisElement() = default;
 
-  const std::map<Variable, int>& var_to_degree_map() const {
+  [[nodiscard]] const std::map<Variable, int>& var_to_degree_map() const {
     return var_to_degree_map_;
   }
 
@@ -83,32 +83,32 @@ class PolynomialBasisElement {
    * get_powers() function. We will remove this get_powers() function when
    * Monomial class is deprecated.
    */
-  const std::map<Variable, int>& get_powers() const {
+  [[nodiscard]] const std::map<Variable, int>& get_powers() const {
     return var_to_degree_map_;
   }
 
   /** Returns the total degree of a polynomial basis. This is the summation of
    * the degree for each variable. */
-  int total_degree() const { return total_degree_; }
+  [[nodiscard]] int total_degree() const { return total_degree_; }
 
   /** Returns the degree of this PolynomialBasisElement in a variable @p v. If
    * @p v is not a variable in this PolynomialBasisElement, then returns 0.*/
-  int degree(const Variable& v) const;
+  [[nodiscard]] int degree(const Variable& v) const;
 
-  Variables GetVariables() const;
+  [[nodiscard]] Variables GetVariables() const;
 
   /** Evaluates under a given environment @p env.
    *
    * @throws std::invalid_argument exception if there is a variable in this
    * monomial whose assignment is not provided by @p env.
    */
-  double Evaluate(const Environment& env) const;
+  [[nodiscard]] double Evaluate(const Environment& env) const;
 
   bool operator==(const PolynomialBasisElement& other) const;
 
   bool operator!=(const PolynomialBasisElement& other) const;
 
-  symbolic::Expression ToExpression() const;
+  [[nodiscard]] Expression ToExpression() const;
 
  protected:
   /**
@@ -116,9 +116,10 @@ class PolynomialBasisElement {
    * function is meant to be called by the derived class, to compare two
    * polynomial basis of the same derived class.
    */
-  bool lexicographical_compare(const PolynomialBasisElement& other) const;
+  [[nodiscard]] bool lexicographical_compare(
+      const PolynomialBasisElement& other) const;
 
-  virtual bool EqualTo(const PolynomialBasisElement& other) const;
+  [[nodiscard]] virtual bool EqualTo(const PolynomialBasisElement& other) const;
 
   // Partially evaluate a polynomial basis element, where @p e does not
   // necessarily contain all the variables in this basis element. The
@@ -137,9 +138,10 @@ class PolynomialBasisElement {
   // a given degree. For example, for a monomial basis, this evaluates xⁿ where
   // x is the variable value and n is the degree; for a Chebyshev basis, this
   // evaluats the Chebyshev polynomial Tₙ(x).
-  virtual double DoEvaluate(double variable_val, int degree) const = 0;
+  [[nodiscard]] virtual double DoEvaluate(double variable_val,
+                                          int degree) const = 0;
 
-  virtual Expression DoToExpression() const = 0;
+  [[nodiscard]] virtual Expression DoToExpression() const = 0;
 
   // Internally, the polynomial basis is represented as a mapping from a
   // variable to its degree.
