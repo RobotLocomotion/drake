@@ -136,13 +136,15 @@ def _update(args, rst_filename, gh, drake):
         commits.append(commit)
         if len(commits) == args.max_num_commits:
             raise RuntimeError("Reached max_num_commits")
-    new_newest_commit = commits[0].sha
 
+    
     # Edit the newest_commit annotation.
-    old_line = lines[prior_newest_commit_line]
-    new_line = re.sub(r"[0-9a-f]{40}", new_newest_commit, old_line)
-    assert new_line != old_line
-    lines[prior_newest_commit_line] = new_line
+    if commits:
+        new_newest_commit = commits[0].sha
+        old_line = lines[prior_newest_commit_line]
+        new_line = re.sub(r"[0-9a-f]{40}", new_newest_commit, old_line)
+        assert new_line != old_line
+        lines[prior_newest_commit_line] = new_line
 
     # Add each commit to a section, based on its package.
     for commit in commits:
