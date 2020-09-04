@@ -56,7 +56,7 @@ New features
 
 Fixes
 
-* TBD
+* None
 
 Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
@@ -155,7 +155,25 @@ Newly-deprecated APIs
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* TBD Remove deprecated code (2020-09) (`#13939`_)
+* All code for RigidBodyPlant and the drake "attic" (`#13889`_).
+* drake::manipulation::kuka_iiwa::IiwaCommandReceiver::get_input_port (`#13939`_)
+* drake::manipulation::kuka_iiwa::IiwaCommandReceiver::set_initial_position (`#13939`_)
+* drake::manipulation::schunk_wsg::SchunkWsgPositionController::set_initial_position (`#13939`_)
+* drake::multibody::MultibodyPlant::CalcBiasForJacobianSpatialVelocity (`#13939`_)
+* drake::multibody::MultibodyPlant::CalcBiasForJacobianTranslationalVelocity (`#13939`_)
+* drake::multibody::MultibodyPlant::default_coulomb_friction  (`#13939`_)
+* drake::solvers::GetInfeasibleConstraints (`#13939`_)
+* drake::solvers::SolverBase one constructor (`#13939`_)
+* drake::systems::estimators::LuenbergerObserver one constructor (`#13939`_)
+* drake::systems::rendering::PoseBundle::get_pose (`#13939`_)
+* drake::systems::rendering::PoseBundle::set_pose (`#13939`_)
+* drake::systems::rendering::PoseVector::get_isometry (`#13939`_)
+* pydrake.multibody.VectorExternallyAppliedSpatialForced (`#13939`_)
+* pydrake.systems.rendering.PoseBundle.get_pose (`#13939`_)
+* pydrake.systems.rendering.PoseBundle.set_pose (`#13939`_)
+* pydrake.systems.rendering.PoseVector.get_isometry (`#13939`_)
+* The octomap external (`#13939`_)
+* The ruby external (`#13939`_)
 
 Notes
 -----
