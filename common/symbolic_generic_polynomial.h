@@ -68,29 +68,34 @@ class GenericPolynomial {
   GenericPolynomial(const BasisElement& m);
 
   /** Returns the indeterminates of this generic polynomial. */
-  const Variables& indeterminates() const { return indeterminates_; }
+  [[nodiscard]] const Variables& indeterminates() const {
+    return indeterminates_;
+  }
 
   /** Returns the decision variables of this generic polynomial. */
-  const Variables& decision_variables() const { return decision_variables_; }
+  [[nodiscard]] const Variables& decision_variables() const {
+    return decision_variables_;
+  }
 
   /** Returns the map from each basis element to its coefficient. */
-  const MapType& basis_element_to_coefficient_map() const {
+  [[nodiscard]] const MapType& basis_element_to_coefficient_map() const {
     return basis_element_to_coefficient_map_;
   }
 
   /** Returns the highest degree of this generic polynomial in an indeterminate
    * @p v. */
-  int Degree(const Variable& v) const;
+  [[nodiscard]] int Degree(const Variable& v) const;
 
   /** Returns the total degree of this generic polynomial. */
-  int TotalDegree() const;
+  [[nodiscard]] int TotalDegree() const;
 
   /**
    * Differentiates this generic polynomial with respect to the variable @p x.
    * Note that a variable @p x can be either a decision variable or an
    * indeterminate.
    */
-  GenericPolynomial<BasisElement> Differentiate(const Variable& x) const;
+  [[nodiscard]] GenericPolynomial<BasisElement> Differentiate(
+      const Variable& x) const;
 
   /** Computes the Jacobian matrix J of the generic polynomial with respect to
    * @p vars. J(0,i) contains ∂f/∂vars(i). @p vars should be an Eigen column
@@ -120,13 +125,14 @@ class GenericPolynomial {
    * @throws std::invalid_argument if there is a variable in this generic
    * polynomial whose assignment is not provided by @p env.
    */
-  double Evaluate(const Environment& env) const;
+  [[nodiscard]] double Evaluate(const Environment& env) const;
 
   /** Partially evaluates this generic polynomial using an environment @p env.
 
    * @throws std::runtime_error if NaN is detected during evaluation.
    */
-  GenericPolynomial<BasisElement> EvaluatePartial(const Environment& env) const;
+  [[nodiscard]] GenericPolynomial<BasisElement> EvaluatePartial(
+      const Environment& env) const;
 
   /** Partially evaluates this generic polynomial by substituting @p var with @p
    * c.
@@ -134,8 +140,8 @@ class GenericPolynomial {
    * @throws std::runtime_error if NaN is detected at any point during
    * evaluation.
    */
-  GenericPolynomial<BasisElement> EvaluatePartial(const Variable& var,
-                                                  double c) const;
+  [[nodiscard]] GenericPolynomial<BasisElement> EvaluatePartial(
+      const Variable& var, double c) const;
 
   /** Adds @p coeff * @p m to this generic polynomial. */
   GenericPolynomial<BasisElement> AddProduct(const Expression& coeff,
@@ -150,12 +156,12 @@ class GenericPolynomial {
    * @retval polynomial_cleaned A generic polynomial whose terms with small
    * coefficients are removed.
    */
-  GenericPolynomial<BasisElement> RemoveTermsWithSmallCoefficients(
-      double coefficient_tol) const;
+  [[nodiscard]] GenericPolynomial<BasisElement>
+  RemoveTermsWithSmallCoefficients(double coefficient_tol) const;
 
   /** Returns true if this generic polynomial and @p p are structurally equal.
    */
-  bool EqualTo(const GenericPolynomial<BasisElement>& p) const;
+  [[nodiscard]] bool EqualTo(const GenericPolynomial<BasisElement>& p) const;
 
  private:
   // Throws std::runtime_error if there is a variable appeared in both of

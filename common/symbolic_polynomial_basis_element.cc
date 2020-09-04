@@ -33,8 +33,7 @@ std::map<Variable, int> ToVarToDegreeMap(
 }
 }  // namespace
 
-PolynomialBasisElement::PolynomialBasisElement()
-    : var_to_degree_map_{}, total_degree_{0} {}
+PolynomialBasisElement::PolynomialBasisElement() : var_to_degree_map_{} {}
 
 PolynomialBasisElement::PolynomialBasisElement(
     const std::map<Variable, int>& var_to_degree_map) {

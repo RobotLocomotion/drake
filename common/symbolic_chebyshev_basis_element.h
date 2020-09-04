@@ -44,7 +44,7 @@ class ChebyshevBasisElement : public PolynomialBasisElement {
   ChebyshevBasisElement(const Eigen::Ref<const VectorX<Variable>>& vars,
                         const Eigen::Ref<const Eigen::VectorXi>& degrees);
 
-  ~ChebyshevBasisElement() = default;
+  ~ChebyshevBasisElement() override = default;
 
   /**
    * Compares two ChebyshevBasisElement in lexicographic order.
@@ -65,7 +65,7 @@ class ChebyshevBasisElement : public PolynomialBasisElement {
    * variable in `this`, then we return an empty map.
    * @param var A variable to differentiate with.
    */
-  std::map<ChebyshevBasisElement, double> Differentiate(
+  [[nodiscard]] std::map<ChebyshevBasisElement, double> Differentiate(
       const Variable& var) const;
 
   /**
@@ -79,7 +79,8 @@ class ChebyshevBasisElement : public PolynomialBasisElement {
    * example, ∫ T₂(x)T₃(y)dx = 1/6*T₃(x)T₃(y) − 1/2 * T₁(x)T₃(y), then the
    * result is the map containing {T₃(x)T₃(y), 1/6} and {T₁(x)T₃(y), -1/2}.
    */
-  std::map<ChebyshevBasisElement, double> Integrate(const Variable& var) const;
+  [[nodiscard]] std::map<ChebyshevBasisElement, double> Integrate(
+      const Variable& var) const;
 
   /** Partially evaluates using a given environment @p env. The evaluation
    * result is of type pair<double, ChebyshevBasisElement>. The first component
@@ -91,7 +92,7 @@ class ChebyshevBasisElement : public PolynomialBasisElement {
    * is T₂(3)*T₃(2)*T₁(z) = 17 * 26 * T₁(z) = 442*T₁(z), then we return the pair
    * (442, T₁(z)).
    */
-  std::pair<double, ChebyshevBasisElement> EvaluatePartial(
+  [[nodiscard]] std::pair<double, ChebyshevBasisElement> EvaluatePartial(
       const Environment& env) const;
 
   /** Implements the @ref hash_append concept. */
@@ -106,8 +107,9 @@ class ChebyshevBasisElement : public PolynomialBasisElement {
   }
 
  private:
-  double DoEvaluate(double variable_val, int degree) const override;
-  Expression DoToExpression() const override;
+  [[nodiscard]] double DoEvaluate(double variable_val,
+                                  int degree) const override;
+  [[nodiscard]] Expression DoToExpression() const override;
 };
 
 /**

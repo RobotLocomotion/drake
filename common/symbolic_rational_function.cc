@@ -7,9 +7,8 @@ namespace symbolic {
 RationalFunction::RationalFunction()
     : numerator_{} /* zero polynomial */, denominator_{1} {}
 
-RationalFunction::RationalFunction(const Polynomial& numerator,
-                                   const Polynomial& denominator)
-    : numerator_{numerator}, denominator_{denominator} {
+RationalFunction::RationalFunction(Polynomial numerator, Polynomial denominator)
+    : numerator_{std::move(numerator)}, denominator_{std::move(denominator)} {
   if (denominator_.EqualTo(Polynomial() /* zero polynomial */)) {
     throw std::invalid_argument(
         "RationalFunction: the denominator should not be 0.");
@@ -138,7 +137,7 @@ RationalFunction& RationalFunction::operator/=(double c) {
   return *this;
 }
 
-RationalFunction operator-(RationalFunction f) {
+RationalFunction operator-(const RationalFunction& f) {
   return RationalFunction(-f.numerator(), f.denominator());
 }
 
@@ -166,8 +165,8 @@ RationalFunction operator-(RationalFunction f, const Polynomial& p) {
   return f -= p;
 }
 
-RationalFunction operator-(const Polynomial& p, RationalFunction f) {
-  return f = -f + p;
+RationalFunction operator-(const Polynomial& p, const RationalFunction& f) {
+  return -f + p;
 }
 
 RationalFunction operator-(RationalFunction f, double c) { return f -= c; }

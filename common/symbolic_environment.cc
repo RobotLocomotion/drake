@@ -119,7 +119,7 @@ const Environment::mapped_type& Environment::operator[](
     oss << "Environment::operator[] is called with a dummy variable.";
     throw runtime_error(oss.str());
   }
-  if (!map_.count(key)) {
+  if (map_.count(key) == 0) {
     ostringstream oss;
     oss << "Environment::operator[] was called on a const Environment "
         << "with a missing key \"" << key << "\".";

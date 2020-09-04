@@ -88,7 +88,7 @@ class MonomialBasisElement : public PolynomialBasisElement {
    *     (x³*y²).EvaluatePartial({{x, 2}})
    *   = (2³ = 8, y²).
    */
-  std::pair<double, MonomialBasisElement> EvaluatePartial(
+  [[nodiscard]] std::pair<double, MonomialBasisElement> EvaluatePartial(
       const Environment& env) const;
 
   /** Returns this monomial raised to @p p.
@@ -109,7 +109,7 @@ class MonomialBasisElement : public PolynomialBasisElement {
    * If @p var is not a variable in MonomialBasisElement, then returns an empty
    * map.
    */
-  std::map<MonomialBasisElement, double> Differentiate(
+  [[nodiscard]] std::map<MonomialBasisElement, double> Differentiate(
       const Variable& var) const;
 
   /**
@@ -120,7 +120,8 @@ class MonomialBasisElement : public PolynomialBasisElement {
    * = 1/4 x⁴y². If @p var is not a variable in this MonomialBasisElement, for
    * example ∫ x³y²dz = x³y²z, then we return (x³y²z → 1)
    */
-  std::map<MonomialBasisElement, double> Integrate(const Variable& var) const;
+  [[nodiscard]] std::map<MonomialBasisElement, double> Integrate(
+      const Variable& var) const;
 
   /** Implements the @ref hash_append concept. */
   template <class HashAlgorithm>
@@ -145,11 +146,13 @@ class MonomialBasisElement : public PolynomialBasisElement {
    * When this = x²y³, it returns {[T₂(x)T₃(y)⇒1/8], [T₂(x)T₁(y)⇒3/8],
    * [T₀(x)T₃(y)⇒1/8], [T₀(x)T₁(y)⇒3/8]}.
    */
-  std::map<ChebyshevBasisElement, double> ToChebyshevBasis() const;
+  [[nodiscard]] std::map<ChebyshevBasisElement, double> ToChebyshevBasis()
+      const;
 
  private:
-  double DoEvaluate(double variable_val, int degree) const override;
-  Expression DoToExpression() const override;
+  [[nodiscard]] double DoEvaluate(double variable_val,
+                                  int degree) const override;
+  [[nodiscard]] Expression DoToExpression() const override;
 };
 
 std::ostream& operator<<(std::ostream& out, const MonomialBasisElement& m);
