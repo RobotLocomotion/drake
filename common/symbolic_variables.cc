@@ -11,7 +11,6 @@
 #include "drake/common/hash.h"
 #include "drake/common/symbolic.h"
 
-using std::accumulate;
 using std::includes;
 using std::initializer_list;
 using std::inserter;

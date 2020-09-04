@@ -107,7 +107,7 @@ namespace internal {
 template <typename MonomialOrder>
 void AddMonomialsOfDegreeN(const Variables& vars, int degree, const Monomial& b,
                            std::set<Monomial, MonomialOrder>* const bin) {
-  DRAKE_ASSERT(vars.size() > 0);
+  DRAKE_ASSERT(!vars.empty());
   if (degree == 0) {
     bin->insert(b);
     return;
@@ -120,7 +120,6 @@ void AddMonomialsOfDegreeN(const Variables& vars, int degree, const Monomial& b,
   for (int i{degree - 1}; i >= 0; --i) {
     AddMonomialsOfDegreeN(vars - var, degree - i, b * Monomial{var, i}, bin);
   }
-  return;
 }
 
 enum class DegreeType {
@@ -142,7 +141,7 @@ template <int rows>
 Eigen::Matrix<Monomial, rows, 1> ComputeMonomialBasis(
     const Variables& vars, int degree,
     DegreeType degree_type = DegreeType::kAny) {
-  DRAKE_DEMAND(vars.size() > 0);
+  DRAKE_DEMAND(!vars.empty());
   DRAKE_DEMAND(degree >= 0);
   // 1. Collect monomials.
   std::set<Monomial, GradedReverseLexOrder<std::less<Variable>>> monomials;

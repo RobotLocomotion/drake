@@ -4,6 +4,7 @@
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
+#include "drake/common/unused.h"
 #define DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
 #include "drake/common/symbolic_expression_cell.h"
 #undef DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
@@ -155,8 +156,10 @@ TEST_F(SymbolicPolynomialBasisElementTest, Evaluate) {
   // p1=y²
   EXPECT_EQ(p1.Evaluate(env2), 9);
   // p2=xy², but env2 does not contain value for x.
-  DRAKE_EXPECT_THROWS_MESSAGE(p2.Evaluate(env2), std::invalid_argument,
+  double dummy{};
+  DRAKE_EXPECT_THROWS_MESSAGE(dummy = p2.Evaluate(env2), std::invalid_argument,
                               ".* x is not in env");
+  unused(dummy);
 }
 
 TEST_F(SymbolicPolynomialBasisElementTest, LessThan) {
