@@ -31,7 +31,7 @@ Dynamical Systems
 
 New features
 
-* Provide System::get_input_port() and get_output_port() sugar (`#13883`_, `#13894`_, `#13895`_, `#13896`_, `#13897`_, `#13898`_)
+* Provide System::get_input_port and get_output_port sugar (`#13883`_, `#13894`_, `#13895`_, `#13896`_, `#13897`_, `#13898`_)
 * Allow PassThrough to emit default values (`#13976`_, `#13996`_)
 * Optionally suppress simulator initialization events (`#13872`_)
 * Add SequentialExpressionManager::GetSequentialExpressionNames (`#13925`_)
@@ -82,6 +82,7 @@ Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for examples,tutorials go here>
+
 * In manipulation station, offer better Schunk WSG models (`#13922`_)
 * In manipulation station, make iiwa feedforward torques input optional (`#13995`_)
 * In rod2d, use modern SceneGraph conventions for visualization (`#13890`_)
@@ -135,6 +136,7 @@ Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for attic,cmake,doc,setup,third_party,tools go here>
+
 * Upgrade recommended Bazel version to 3.5 (`#14005`_)
 * Upgrade bazel_skylib to latest release 1.0.3 (`#13969`_)
 * Upgrade fcl to latest commit (`#13965`_)
