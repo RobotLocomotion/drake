@@ -131,9 +131,9 @@ def _update(args, rst_filename, gh, drake):
     # Find new commits from newest to oldest.
     commits = []
     for commit in drake.commits(sha='master'):
-        commits.append(commit)
         if commit.sha == prior_newest_commit:
             break
+        commits.append(commit)
         if len(commits) == args.max_num_commits:
             raise RuntimeError("Reached max_num_commits")
     new_newest_commit = commits[0].sha
