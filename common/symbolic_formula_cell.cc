@@ -29,9 +29,8 @@ using std::string;
 FormulaCell::FormulaCell(const FormulaKind k) : kind_{k} {}
 
 RelationalFormulaCell::RelationalFormulaCell(const FormulaKind k,
-                                             const Expression& lhs,
-                                             const Expression& rhs)
-    : FormulaCell{k}, e_lhs_{lhs}, e_rhs_{rhs} {}
+                                             Expression lhs, Expression rhs)
+    : FormulaCell{k}, e_lhs_{std::move(lhs)}, e_rhs_{std::move(rhs)} {}
 
 void RelationalFormulaCell::HashAppendDetail(DelegatingHasher* hasher) const {
   DRAKE_ASSERT(hasher);
@@ -66,9 +65,8 @@ bool RelationalFormulaCell::Less(const FormulaCell& f) const {
   return e_rhs_.Less(rel_f.e_rhs_);
 }
 
-NaryFormulaCell::NaryFormulaCell(const FormulaKind k,
-                                 const set<Formula>& formulas)
-    : FormulaCell{k}, formulas_{formulas} {}
+NaryFormulaCell::NaryFormulaCell(const FormulaKind k, set<Formula> formulas)
+    : FormulaCell{k}, formulas_{std::move(formulas)} {}
 
 void NaryFormulaCell::HashAppendDetail(DelegatingHasher* hasher) const {
   DRAKE_ASSERT(hasher);
@@ -107,7 +105,7 @@ bool NaryFormulaCell::Less(const FormulaCell& f) const {
 ostream& NaryFormulaCell::DisplayWithOp(ostream& os, const string& op) const {
   const set<Formula>& formulas{get_operands()};
   auto it(formulas.cbegin());
-  DRAKE_ASSERT(formulas.size() > 1u);
+  DRAKE_ASSERT(formulas.size() > 1U);
   os << "(";
   os << *it;
   ++it;
@@ -173,8 +171,8 @@ Formula FormulaFalse::Substitute(const Substitution&) const {
 
 ostream& FormulaFalse::Display(ostream& os) const { return os << "False"; }
 
-FormulaVar::FormulaVar(const Variable& v)
-    : FormulaCell{FormulaKind::Var}, var_{v} {
+FormulaVar::FormulaVar(Variable v)
+    : FormulaCell{FormulaKind::Var}, var_{std::move(v)} {
   // Dummy symbolic variable (ID = 0) should not be used in constructing
   // symbolic formulas.
   DRAKE_DEMAND(!var_.is_dummy());
@@ -337,7 +335,7 @@ ostream& FormulaLeq::Display(ostream& os) const {
 
 FormulaAnd::FormulaAnd(const set<Formula>& formulas)
     : NaryFormulaCell{FormulaKind::And, formulas} {
-  DRAKE_ASSERT(get_operands().size() > 1u);
+  DRAKE_ASSERT(get_operands().size() > 1U);
 }
 
 FormulaAnd::FormulaAnd(const Formula& f1, const Formula& f2)
@@ -370,7 +368,7 @@ ostream& FormulaAnd::Display(ostream& os) const {
 
 FormulaOr::FormulaOr(const set<Formula>& formulas)
     : NaryFormulaCell{FormulaKind::Or, formulas} {
-  DRAKE_ASSERT(get_operands().size() > 1u);
+  DRAKE_ASSERT(get_operands().size() > 1U);
 }
 
 FormulaOr::FormulaOr(const Formula& f1, const Formula& f2)
@@ -401,8 +399,8 @@ ostream& FormulaOr::Display(ostream& os) const {
   return DisplayWithOp(os, "or");
 }
 
-FormulaNot::FormulaNot(const Formula& f)
-    : FormulaCell{FormulaKind::Not}, f_{f} {}
+FormulaNot::FormulaNot(Formula f)
+    : FormulaCell{FormulaKind::Not}, f_{std::move(f)} {}
 
 void FormulaNot::HashAppendDetail(DelegatingHasher* hasher) const {
   DRAKE_ASSERT(hasher);
@@ -438,8 +436,10 @@ ostream& FormulaNot::Display(ostream& os) const {
   return os << "!(" << f_ << ")";
 }
 
-FormulaForall::FormulaForall(const Variables& vars, const Formula& f)
-    : FormulaCell{FormulaKind::Forall}, vars_{vars}, f_{f} {}
+FormulaForall::FormulaForall(Variables vars, Formula f)
+    : FormulaCell{FormulaKind::Forall},
+      vars_{std::move(vars)},
+      f_{std::move(f)} {}
 
 void FormulaForall::HashAppendDetail(DelegatingHasher* hasher) const {
   DRAKE_ASSERT(hasher);
@@ -495,8 +495,8 @@ ostream& FormulaForall::Display(ostream& os) const {
   return os << "forall(" << vars_ << ". " << f_ << ")";
 }
 
-FormulaIsnan::FormulaIsnan(const Expression& e)
-    : FormulaCell{FormulaKind::Isnan}, e_{e} {}
+FormulaIsnan::FormulaIsnan(Expression e)
+    : FormulaCell{FormulaKind::Isnan}, e_{std::move(e)} {}
 
 void FormulaIsnan::HashAppendDetail(DelegatingHasher* hasher) const {
   DRAKE_ASSERT(hasher);

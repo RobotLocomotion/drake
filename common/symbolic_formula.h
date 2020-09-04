@@ -133,11 +133,11 @@ class Formula {
    */
   explicit Formula(const Variable& var);
 
-  FormulaKind get_kind() const;
+  [[nodiscard]] FormulaKind get_kind() const;
   /** Gets free variables (unquantified variables). */
-  Variables GetFreeVariables() const;
+  [[nodiscard]] Variables GetFreeVariables() const;
   /** Checks structural equality. */
-  bool EqualTo(const Formula& f) const;
+  [[nodiscard]] bool EqualTo(const Formula& f) const;
   /** Checks lexicographical ordering between this and @p e.
    *
    * If the two formulas f1 and f2 have different kinds k1 and k2 respectively,
@@ -160,7 +160,7 @@ class Formula {
    * This function is used as a compare function in
    * std::map<symbolic::Formula> and std::set<symbolic::Formula> via
    * std::less<symbolic::Formula>. */
-  bool Less(const Formula& f) const;
+  [[nodiscard]] bool Less(const Formula& f) const;
 
   /** Evaluates using a given environment (by default, an empty environment) and
    * a random number generator. If there is a random variable in this formula
@@ -186,7 +186,8 @@ class Formula {
    * with @p e.
    * @throws std::runtime_error if NaN is detected during substitution.
    */
-  Formula Substitute(const Variable& var, const Expression& e) const;
+  [[nodiscard]] Formula Substitute(const Variable& var,
+                                   const Expression& e) const;
 
   /** Returns a copy of this formula replacing all occurrences of the
    * variables in @p s with corresponding expressions in @p s. Note that the
@@ -194,10 +195,10 @@ class Formula {
    * 0).Substitute({{x, y}, {y, x}}) gets (y / x > 0).
    * @throws std::runtime_error if NaN is detected during substitution.
    */
-  Formula Substitute(const Substitution& s) const;
+  [[nodiscard]] Formula Substitute(const Substitution& s) const;
 
   /** Returns string representation of Formula. */
-  std::string to_string() const;
+  [[nodiscard]] std::string to_string() const;
 
   static Formula True();
   static Formula False();
@@ -1097,8 +1098,8 @@ typename std::enable_if<
 operator>=(const DerivedA& m1, const DerivedB& m2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
-  return m1.binaryExpr(m2, std::greater_equal<void>()).redux(
-      internal::logic_and);
+  return m1.binaryExpr(m2, std::greater_equal<void>())
+      .redux(internal::logic_and);
 }
 
 }  // namespace symbolic

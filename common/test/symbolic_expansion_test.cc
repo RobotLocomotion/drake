@@ -237,12 +237,14 @@ TEST_F(SymbolicExpansionTest, NaN) {
   // and throws an exception.
   EXPECT_FALSE(Expression::NaN().is_expanded());
   // NaN should be detected during expansion and throw runtime_error.
-  EXPECT_THROW(Expression::NaN().Expand(), runtime_error);
+  Expression dummy;
+  EXPECT_THROW(dummy = Expression::NaN().Expand(), runtime_error);
 }
 
 TEST_F(SymbolicExpansionTest, IfThenElse) {
   const Expression e{if_then_else(x_ > y_, pow(x_ + y_, 2), pow(x_ - y_, 2))};
-  EXPECT_THROW(e.Expand(), runtime_error);
+  Expression dummy;
+  EXPECT_THROW(dummy = e.Expand(), runtime_error);
   // An if-then-else expression is considered as not expanded so that
   // ExpressionIfThenElse::Expand() is called and throws an exception.
   EXPECT_FALSE(e.is_expanded());
