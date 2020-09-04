@@ -126,6 +126,8 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
         vel_upper_limits_(vel_upper_limits),
         acc_lower_limits_(acc_lower_limits),
         acc_upper_limits_(acc_upper_limits) {
+    // TODO(Mitiguy) Per discussion in PR# 13961 and issues #12789 and #13040,
+    //  consider changing frame F to frame Jp and changing frame M to frame Jc.
     // Notice `this` joint references `frame_on_parent` and `frame_on_child` and
     // therefore they must outlive it.
     DRAKE_DEMAND(pos_lower_limits.size() == pos_upper_limits.size());

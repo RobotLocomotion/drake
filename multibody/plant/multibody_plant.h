@@ -978,6 +978,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const std::optional<math::RigidTransform<double>>& X_PF,
       const Body<T>& child,
       const std::optional<math::RigidTransform<double>>& X_BM, Args&&... args) {
+    // TODO(Mitiguy) Per discussion in PR# 13961 and issues #12789 and #13040,
+    //  consider changing frame F to frame Jp and changing frame M to frame Jc.
     static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
                   "JointType<T> must be a sub-class of Joint<T>.");
 
