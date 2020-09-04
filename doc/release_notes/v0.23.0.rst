@@ -6,6 +6,7 @@ Announcements
 -------------
 
 * All code for RigidBodyPlant and the drake "attic" has been removed (`#13889`_).
+  Refer to `v0.22.0`_ for the final release that contained this code.
 
 Breaking changes since v0.22.0
 ------------------------------
@@ -13,7 +14,7 @@ Breaking changes since v0.22.0
 These are breaking changes that did not undergo a deprecation period:
 
 * The drake::systems::Subvector and drake::systems::Supervector are now marked
-  final (`#13907`_)
+  final (`#13907`_).
 * For drake::yaml::YamlReadArchive, it's now an error for yaml data to remain
   unparsed, unless the user opts in to allowing it; users who want a different
   behavior should change the Options at construction-time (`#13900`_).
@@ -190,6 +191,8 @@ Drake binary releases incorporate a pre-compiled version of `SNOPT
 `Mathematical Program toolbox
 <https://drake.mit.edu/doxygen_cxx/group__solvers.html>`__. Thanks to
 Philip E. Gill and Elizabeth Wong for their kind support.
+
+.. _v0.22.0: https://github.com/RobotLocomotion/drake/releases/tag/v0.22.0
 
 .. <begin issue links>
 .. _#13773: https://github.com/RobotLocomotion/drake/pull/13773
