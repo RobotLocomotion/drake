@@ -28,6 +28,7 @@ Dynamical Systems
 ~~~~~~~~~~~~~~~~~
 
 .. <relnotes for systems go here>
+* TBD systems: Fix crash in discrete time TimeVaryingAffineSystem (`#14008`_)  # Closes #14006.
 
 New features
 
@@ -62,6 +63,10 @@ Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for geometry,multibody go here>
+* TBD Use a faster inertia matrix rotation method (`#13962`_)  # * Use a faster method to re-express inertia matrices.
+* TBD [geometry] API to get a frame's geometries (`#13999`_)  # * API to get a frame's geometries This introduces a new API. Given a frame id, the ids of the frame's geometries can be returned. It can be filtered on a particular role. This includes the C++ and python interface. (In the process of adding tests to the new pydrake bindings, I noticed that there were tests missing for previously existing python APIs. They were added and the *order* of the existing tests were changed to match the order of the bindings to ease future reading.)
+* TBD adds parameters for LinearBushingRollPitchYaw (`#14000`_)
+* TBD Geometry world pose as up to date as possible after Registration (`#13990`_)  # Prior to this, the world pose of the geometry was ignored upon registration. It was assumed that any query that depended on geometry world pose would be preceded by a call that updates the frames' poses. However, it is possible to - Update frame poses - Add a geometry - perform a query In that case, the added geometry will not have the correct world pose. This change stores a value for X_WG based on the assumption that X_WF is meaningful. If the assumption is correct, X_WG will likewise be meaningful. If the assumption is wrong, we are not harmed. Furthermore, for the queries (e.g., illustration, perception, and proximity to work, those values need to propagate downwards). Work for proximity and perception has been done. The illustration role has no further copies of the pose beyond that in GeometryState.
 
 New features
 
@@ -78,6 +83,7 @@ Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for examples,tutorials go here>
+* TBD manipulation_station: make iiwa feedforward torques input optional (`#13995`_)
 * In manipulation station, offer better Schunk WSG models (`#13922`_)
 * In rod2d, use modern SceneGraph conventions for visualization (`#13890`_)
 
@@ -85,6 +91,12 @@ Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for common,math,lcm,lcmtypes,manipulation,perception go here>
+* TBD Add Evaluate and EvaluatePartial to GenericPolynomial (`#13980`_)  # Add AddProduct and RemoveTermsWithSmallCoefficients to GenericPolynomial
+* TBD schema: Tidy up nits (`#13991`_)  # * Purge redundant kStrict from unit tests * Add more docs for Serialize * Reorder cc file to match h file * Use Drake GSG multi-line """ convention
+[common,examples,multibody] * TBD AutoDiffScalar: move-aware rewrite of arithmetic (`#13988`_)  # Relevant to #13985. See this comment in the ticket for benchmark results: https://github.com/RobotLocomotion/drake/issues/13985#issuecomment-684987211 Summary of changes * add compiler-default move-aware constructor and assignment * rewrite arithmetic operators to take advantage of move semantics * make foo= the primitive and rewrite binary operators in terms of those. * use pass-by-value and rvalue optimizations to remove some allocations. * See Effective C++ Item 41 for discussion. * fix a client program so the compiler can tell all values are initialized. It is possible that pass-by-value and rvalue optimizations leave some efficiency gains still on the table. Such gains would have to be won by very careful overloading of templated functions within a templated class, while (somehow) avoiding introduction of ambiguous overloads. In contrast, this implementation achieves significant gains and is still fairly readable.
+* TBD Convert a monomial basis element to the sum of chebyshev basis elements (`#13994`_)
+* TBD DifferentialIKSystem: Add (optional) discrete state to "warn once" (`#14004`_)  # This significantly improves the robustness of the teleoperation demo on colab.  Currently, if a user drives the robot into singularity (and it is relatively common mistake), then the diff IK spews so many warnings that the sliders disappear (and so does the "stop simulation" button).  This quiets that behavior significantly.
+* TBD pydrake: Add bindings for common.schema (`#14014`_)  # This only binds the variable-sized stochastic vector types. The fixed-size stochastic vector type are not yet available. Also add missing pydrake.all entry for pydrake.common.yaml.
 * manipulation: Add DifferentialInverseKinematicsIntegrator (`#13877`_, `#13919`_, `#13920`_)
 * manipulation: Make Schunk WSG limit input port optional (`#13878`_)
 * meshcat: Support caching mesh geometry on the zmq server (`#13971`_)
@@ -96,6 +108,12 @@ pydrake bindings
 ~~~~~~~~~~~~~~~~
 
 .. <relnotes for bindings go here>
+* TBD pydrake.primitives: add binding for new PassThrough constructor (`#13996`_)
+* TBD Add bindings for random rotations (`#13993`_)
+* TBD pydrake multibody: Add bindings for CalcJacobianCenterOfMassTranslationalVelocity and CalcBiasCenterOfMassTranslationalAcceleration (`#13997`_)  # * Add binding for CalcJacobianCenterOfMassTranslationalVelocity and CalcBiasCenterOfMassTranslationalAcceleration
+* TBD pydrake: Bind TrajectoryAffineSystem (`#14009`_)  # * pydrake: Bind addition for PiecewisePolynomial
+* TBD [pydrake] Enable GeometryProperty copy construction in pydrake (`#14010`_)  # * Enable GeometryProperty copy construction in pydrake The {Proximity|Illustration|Perception}Properties now have a copy constructor in pydrake. This facilitates the ability to update/replace properties. It also enables copy.copy and copy.deepcopy.
+* TBD Ignore geometry with invalid sizes in meshcat and pyplot visualizers (`#14013`_)  # * Ignore geometry invalid sizes in meshcat and pyplot visualizers.
 
 New features
 
@@ -116,6 +134,13 @@ Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for attic,cmake,doc,setup,third_party,tools go here>
+* TBD workspace: Deprecate now-unused bullet,freetype2 (`#13986`_)
+* TBD Separate out dependencies related to documentation generation (`#13984`_)
+* TBD Move installation of bazel dependencies into shell script immediately before its own installation (`#13984`_)
+[doc,tutorials] * TBD Update references to binder release URL (`#13979`_)  # Update URLs in drake from `https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release` to `https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release-binder`. Resolves #13209
+[doc,setup] * TBD setup: Upgrade recommended Bazel version to 3.5 (`#14005`_)
+[doc,setup] * TBD Relax warnings about Python environments supplied by Anaconda (`#13998`_)
+* TBD Reformat .clang-tidy (`#14007`_)
 * Upgrade bazel_skylib to latest release 1.0.3 (`#13969`_)
 * Upgrade fcl to latest commit (`#13965`_)
 * Upgrade fmt to latest release 7.0.3 (`#13968`_)
@@ -176,7 +201,7 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#13940: https://github.com/RobotLocomotion/drake/pull/13940
 .. _#13941: https://github.com/RobotLocomotion/drake/pull/13941
 .. _#13943: https://github.com/RobotLocomotion/drake/pull/13943
-.. _#13955: https://github.com/RobotLocomotion/drake/pull/13955
+.. _#13962: https://github.com/RobotLocomotion/drake/pull/13962
 .. _#13965: https://github.com/RobotLocomotion/drake/pull/13965
 .. _#13966: https://github.com/RobotLocomotion/drake/pull/13966
 .. _#13967: https://github.com/RobotLocomotion/drake/pull/13967
@@ -186,10 +211,33 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#13972: https://github.com/RobotLocomotion/drake/pull/13972
 .. _#13974: https://github.com/RobotLocomotion/drake/pull/13974
 .. _#13976: https://github.com/RobotLocomotion/drake/pull/13976
+.. _#13979: https://github.com/RobotLocomotion/drake/pull/13979
+.. _#13980: https://github.com/RobotLocomotion/drake/pull/13980
 .. _#13981: https://github.com/RobotLocomotion/drake/pull/13981
 .. _#13982: https://github.com/RobotLocomotion/drake/pull/13982
+.. _#13984: https://github.com/RobotLocomotion/drake/pull/13984
+.. _#13986: https://github.com/RobotLocomotion/drake/pull/13986
+.. _#13988: https://github.com/RobotLocomotion/drake/pull/13988
+.. _#13990: https://github.com/RobotLocomotion/drake/pull/13990
+.. _#13991: https://github.com/RobotLocomotion/drake/pull/13991
+.. _#13993: https://github.com/RobotLocomotion/drake/pull/13993
+.. _#13994: https://github.com/RobotLocomotion/drake/pull/13994
+.. _#13995: https://github.com/RobotLocomotion/drake/pull/13995
+.. _#13996: https://github.com/RobotLocomotion/drake/pull/13996
+.. _#13997: https://github.com/RobotLocomotion/drake/pull/13997
+.. _#13998: https://github.com/RobotLocomotion/drake/pull/13998
+.. _#13999: https://github.com/RobotLocomotion/drake/pull/13999
+.. _#14000: https://github.com/RobotLocomotion/drake/pull/14000
+.. _#14004: https://github.com/RobotLocomotion/drake/pull/14004
+.. _#14005: https://github.com/RobotLocomotion/drake/pull/14005
+.. _#14007: https://github.com/RobotLocomotion/drake/pull/14007
+.. _#14008: https://github.com/RobotLocomotion/drake/pull/14008
+.. _#14009: https://github.com/RobotLocomotion/drake/pull/14009
+.. _#14010: https://github.com/RobotLocomotion/drake/pull/14010
+.. _#14013: https://github.com/RobotLocomotion/drake/pull/14013
+.. _#14014: https://github.com/RobotLocomotion/drake/pull/14014
 .. <end issue links>
 
 ..
   Current oldest_commit 0de592fdd53d55132b45a7a7c86b979a99f561e4 (exclusive).
-  Current newest_commit 3fa01607422543965b4e368796e894a5c29687b7 (inclusive).
+  Current newest_commit 3ec0276f10bd50df3520262a2c91ca47031e9c1c (inclusive).
