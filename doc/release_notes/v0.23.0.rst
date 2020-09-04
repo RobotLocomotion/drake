@@ -209,15 +209,28 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#13890: https://github.com/RobotLocomotion/drake/pull/13890
 .. _#13891: https://github.com/RobotLocomotion/drake/pull/13891
 .. _#13893: https://github.com/RobotLocomotion/drake/pull/13893
+.. _#13894: https://github.com/RobotLocomotion/drake/pull/13894
+.. _#13895: https://github.com/RobotLocomotion/drake/pull/13895
+.. _#13896: https://github.com/RobotLocomotion/drake/pull/13896
+.. _#13897: https://github.com/RobotLocomotion/drake/pull/13897
+.. _#13898: https://github.com/RobotLocomotion/drake/pull/13898
 .. _#13900: https://github.com/RobotLocomotion/drake/pull/13900
 .. _#13907: https://github.com/RobotLocomotion/drake/pull/13907
 .. _#13908: https://github.com/RobotLocomotion/drake/pull/13908
 .. _#13915: https://github.com/RobotLocomotion/drake/pull/13915
+.. _#13919: https://github.com/RobotLocomotion/drake/pull/13919
+.. _#13920: https://github.com/RobotLocomotion/drake/pull/13920
 .. _#13922: https://github.com/RobotLocomotion/drake/pull/13922
 .. _#13925: https://github.com/RobotLocomotion/drake/pull/13925
+.. _#13927: https://github.com/RobotLocomotion/drake/pull/13927
+.. _#13928: https://github.com/RobotLocomotion/drake/pull/13928
+.. _#13933: https://github.com/RobotLocomotion/drake/pull/13933
 .. _#13939: https://github.com/RobotLocomotion/drake/pull/13939
+.. _#13940: https://github.com/RobotLocomotion/drake/pull/13940
 .. _#13941: https://github.com/RobotLocomotion/drake/pull/13941
 .. _#13943: https://github.com/RobotLocomotion/drake/pull/13943
+.. _#13949: https://github.com/RobotLocomotion/drake/pull/13949
+.. _#13953: https://github.com/RobotLocomotion/drake/pull/13953
 .. _#13962: https://github.com/RobotLocomotion/drake/pull/13962
 .. _#13965: https://github.com/RobotLocomotion/drake/pull/13965
 .. _#13966: https://github.com/RobotLocomotion/drake/pull/13966
@@ -228,22 +241,28 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#13972: https://github.com/RobotLocomotion/drake/pull/13972
 .. _#13974: https://github.com/RobotLocomotion/drake/pull/13974
 .. _#13976: https://github.com/RobotLocomotion/drake/pull/13976
+.. _#13980: https://github.com/RobotLocomotion/drake/pull/13980
 .. _#13981: https://github.com/RobotLocomotion/drake/pull/13981
 .. _#13982: https://github.com/RobotLocomotion/drake/pull/13982
 .. _#13984: https://github.com/RobotLocomotion/drake/pull/13984
 .. _#13986: https://github.com/RobotLocomotion/drake/pull/13986
 .. _#13988: https://github.com/RobotLocomotion/drake/pull/13988
 .. _#13990: https://github.com/RobotLocomotion/drake/pull/13990
+.. _#13991: https://github.com/RobotLocomotion/drake/pull/13991
 .. _#13993: https://github.com/RobotLocomotion/drake/pull/13993
+.. _#13994: https://github.com/RobotLocomotion/drake/pull/13994
 .. _#13995: https://github.com/RobotLocomotion/drake/pull/13995
+.. _#13996: https://github.com/RobotLocomotion/drake/pull/13996
 .. _#13997: https://github.com/RobotLocomotion/drake/pull/13997
 .. _#13999: https://github.com/RobotLocomotion/drake/pull/13999
 .. _#14000: https://github.com/RobotLocomotion/drake/pull/14000
+.. _#14004: https://github.com/RobotLocomotion/drake/pull/14004
 .. _#14005: https://github.com/RobotLocomotion/drake/pull/14005
 .. _#14008: https://github.com/RobotLocomotion/drake/pull/14008
 .. _#14009: https://github.com/RobotLocomotion/drake/pull/14009
 .. _#14010: https://github.com/RobotLocomotion/drake/pull/14010
 .. _#14013: https://github.com/RobotLocomotion/drake/pull/14013
+.. _#14014: https://github.com/RobotLocomotion/drake/pull/14014
 .. <end issue links>
 
 ..
