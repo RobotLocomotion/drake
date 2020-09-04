@@ -183,10 +183,13 @@ def _update(args, rst_filename, gh, drake):
     for i, one_line in enumerate(lines):
         if begin < i < end:
             continue
-        match = re.search("`#([0-9]*)`_", one_line)
-        if match:
+        while True:
+            match = re.search("`#([0-9]*)`_", one_line)
+            if not match:
+                break
             (number,) = match.groups()
             pr_numbers.add(number)
+            one_line = one_line[match.end(0):]
     pr_links = [
         f".. _#{n}: https://github.com/RobotLocomotion/drake/pull/{n}\n"
         for n in sorted(list(pr_numbers))
