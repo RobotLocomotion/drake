@@ -580,5 +580,86 @@ TEST_F(MonomialBasisElementTest, Integrate) {
       1. / 4);
 }
 
+TEST_F(MonomialBasisElementTest, ToChebyshevBasisUnivariate) {
+  // Test ToChebyshevBasis for univariate monomials.
+  // 1 = T0()
+  const std::map<ChebyshevBasisElement, double> result1 =
+      MonomialBasisElement().ToChebyshevBasis();
+  EXPECT_EQ(result1.size(), 1);
+  EXPECT_EQ(result1.at(ChebyshevBasisElement()), 1.);
+
+  // x = T1(x)
+  const std::map<ChebyshevBasisElement, double> result2 =
+      MonomialBasisElement(var_x_).ToChebyshevBasis();
+  EXPECT_EQ(result2.size(), 1);
+  EXPECT_EQ(result2.at(ChebyshevBasisElement(var_x_)), 1.);
+
+  // x² = 0.5T₂(x)+0.5T₀(x)
+  const std::map<ChebyshevBasisElement, double> result3 =
+      MonomialBasisElement(var_x_, 2).ToChebyshevBasis();
+  EXPECT_EQ(result3.size(), 2);
+  EXPECT_EQ(result3.at(ChebyshevBasisElement(var_x_, 2)), 0.5);
+  EXPECT_EQ(result3.at(ChebyshevBasisElement()), 0.5);
+
+  // x³ = 0.25T₃(x)+0.75T₁(x)
+  const std::map<ChebyshevBasisElement, double> result4 =
+      MonomialBasisElement(var_x_, 3).ToChebyshevBasis();
+  EXPECT_EQ(result4.size(), 2);
+  EXPECT_EQ(result4.at(ChebyshevBasisElement(var_x_, 3)), 0.25);
+  EXPECT_EQ(result4.at(ChebyshevBasisElement(var_x_, 1)), 0.75);
+
+  // x⁴ = 1/8T₄(x)+1/2T₂(x)+3/8T₀(x)
+  const std::map<ChebyshevBasisElement, double> result5 =
+      MonomialBasisElement(var_x_, 4).ToChebyshevBasis();
+  EXPECT_EQ(result5.size(), 3);
+  EXPECT_EQ(result5.at(ChebyshevBasisElement(var_x_, 4)), 1.0 / 8);
+  EXPECT_EQ(result5.at(ChebyshevBasisElement(var_x_, 2)), 1.0 / 2);
+  EXPECT_EQ(result5.at(ChebyshevBasisElement(var_x_, 0)), 3.0 / 8);
+
+  // The coefficient of the Chebyshev polynomial of T20(x) for x^20 is 1/(2^19).
+  const std::map<ChebyshevBasisElement, double> result6 =
+      MonomialBasisElement(var_x_, 20).ToChebyshevBasis();
+  EXPECT_EQ(result6.at(ChebyshevBasisElement(var_x_, 20)), std::pow(0.5, 19));
+}
+
+TEST_F(MonomialBasisElementTest, ToChebyshevBasisMultivariate) {
+  // xy = T1(x)T1(y)
+  const std::map<ChebyshevBasisElement, double> result1 =
+      MonomialBasisElement({{var_x_, 1}, {var_y_, 1}}).ToChebyshevBasis();
+  EXPECT_EQ(result1.size(), 1);
+  EXPECT_EQ(result1.at(ChebyshevBasisElement({{var_x_, 1}, {var_y_, 1}})), 1.);
+
+  // xyz = T1(x)T1(y)T1(z)
+  const std::map<ChebyshevBasisElement, double> result2 =
+      MonomialBasisElement({{var_x_, 1}, {var_y_, 1}, {var_z_, 1}})
+          .ToChebyshevBasis();
+  EXPECT_EQ(result2.size(), 1);
+  EXPECT_EQ(result2.at(
+                ChebyshevBasisElement({{var_x_, 1}, {var_y_, 1}, {var_z_, 1}})),
+            1.);
+
+  // x²y = 0.5T₂(x)T₁(y)+0.5T₁(y)
+  const std::map<ChebyshevBasisElement, double> result3 =
+      MonomialBasisElement({{var_x_, 2}, {var_y_, 1}}).ToChebyshevBasis();
+  EXPECT_EQ(result3.size(), 2);
+  EXPECT_EQ(result3.at(ChebyshevBasisElement({{var_x_, 2}, {var_y_, 1}})), 0.5);
+  EXPECT_EQ(result3.at(ChebyshevBasisElement(var_y_)), 0.5);
+
+  // x³y²z=1/8T₃(x)T₂(y)T₁(z)+3/8T₁(x)T₂(y)T₁(z)+1/8T₃(x)T₁(z)+3/8T₁(x)T₁(z)
+  const std::map<ChebyshevBasisElement, double> result4 =
+      MonomialBasisElement({{var_x_, 3}, {var_y_, 2}, {var_z_, 1}})
+          .ToChebyshevBasis();
+  EXPECT_EQ(result4.size(), 4);
+  EXPECT_EQ(result4.at(
+                ChebyshevBasisElement({{var_x_, 3}, {var_y_, 2}, {var_z_, 1}})),
+            1.0 / 8);
+  EXPECT_EQ(result4.at(
+                ChebyshevBasisElement({{var_x_, 1}, {var_y_, 2}, {var_z_, 1}})),
+            3.0 / 8);
+  EXPECT_EQ(result4.at(ChebyshevBasisElement({{var_x_, 3}, {var_z_, 1}})),
+            1.0 / 8);
+  EXPECT_EQ(result4.at(ChebyshevBasisElement({{var_x_, 1}, {var_z_, 1}})),
+            3.0 / 8);
+}
 }  // namespace symbolic
 }  // namespace drake

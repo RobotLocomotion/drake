@@ -93,7 +93,7 @@ enum ImageType {
 // A package of data required to register a visual geometry.
 struct RegistrationData {
   const PerceptionProperties& properties;
-  const RigidTransformd& X_FG;
+  const RigidTransformd& X_WG;
   const GeometryId id;
   // The file name if the shape being registered is a mesh.
   std::optional<std::string> mesh_filename;
@@ -270,9 +270,9 @@ void RenderEngineVtk::ImplementGeometry(const Convex& convex, void* user_data) {
 
 bool RenderEngineVtk::DoRegisterVisual(
     GeometryId id, const Shape& shape, const PerceptionProperties& properties,
-    const RigidTransformd& X_FG) {
+    const RigidTransformd& X_WG) {
   // Note: the user_data interface on reification requires a non-const pointer.
-  RegistrationData data{properties, X_FG, id};
+  RegistrationData data{properties, X_WG, id};
   shape.Reify(this, &data);
   return true;
 }
@@ -567,16 +567,13 @@ void RenderEngineVtk::ImplementGeometry(vtkPolyDataAlgorithm* source,
   const RegistrationData& data =
       *reinterpret_cast<RegistrationData*>(user_data);
 
-  // If the geometry is anchored, X_FG = X_WG so I'm setting the pose for
-  // anchored geometry -- for all other values of F, it is dynamic and will be
-  // re-written in the first pose update.
-  vtkSmartPointer<vtkTransform> vtk_X_PG = ConvertToVtkTransform(data.X_FG);
+  vtkSmartPointer<vtkTransform> vtk_X_WG = ConvertToVtkTransform(data.X_WG);
 
   // Adds the actor into the specified pipeline.
   auto connect_actor = [this, &actors, &mappers,
-                        &vtk_X_PG](ImageType image_type) {
+                        &vtk_X_WG](ImageType image_type) {
     actors[image_type]->SetMapper(mappers[image_type].Get());
-    actors[image_type]->SetUserTransform(vtk_X_PG);
+    actors[image_type]->SetUserTransform(vtk_X_WG);
     pipelines_[image_type]->renderer->AddActor(actors[image_type].Get());
   };
 

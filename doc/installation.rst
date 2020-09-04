@@ -14,7 +14,7 @@ Binder:
 
 .. raw:: html
 
-    <a target="_doc" href="https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release?filepath=tutorials">
+    <a target="_doc" href="https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release-binder?filepath=tutorials">
       <img src="https://mybinder.org/badge_logo.svg"/>
     </a>
 

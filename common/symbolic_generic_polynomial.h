@@ -92,6 +92,67 @@ class GenericPolynomial {
    */
   GenericPolynomial<BasisElement> Differentiate(const Variable& x) const;
 
+  /** Computes the Jacobian matrix J of the generic polynomial with respect to
+   * @p vars. J(0,i) contains ∂f/∂vars(i). @p vars should be an Eigen column
+   * vector of symbolic variables.
+   */
+  template <typename Derived>
+  Eigen::Matrix<GenericPolynomial<BasisElement>, 1, Derived::RowsAtCompileTime>
+  Jacobian(const Eigen::MatrixBase<Derived>& vars) const {
+    static_assert(
+        std::is_same_v<typename Derived::Scalar, Variable> &&
+            (Derived::ColsAtCompileTime == 1),
+        "The argument of GenericPolynomial::Jacobian() should be a vector of "
+        "symbolic variables.");
+    const VectorX<Expression>::Index n{vars.size()};
+    Eigen::Matrix<GenericPolynomial<BasisElement>, 1,
+                  Derived::RowsAtCompileTime>
+        J{n};
+    for (VectorX<Expression>::Index i = 0; i < n; ++i) {
+      J(i) = this->Differentiate(vars(i));
+    }
+    return J;
+  }
+
+  /**
+   * Evaluates this generic polynomial under a given environment @p env.
+   *
+   * @throws std::invalid_argument if there is a variable in this generic
+   * polynomial whose assignment is not provided by @p env.
+   */
+  double Evaluate(const Environment& env) const;
+
+  /** Partially evaluates this generic polynomial using an environment @p env.
+
+   * @throws std::runtime_error if NaN is detected during evaluation.
+   */
+  GenericPolynomial<BasisElement> EvaluatePartial(const Environment& env) const;
+
+  /** Partially evaluates this generic polynomial by substituting @p var with @p
+   * c.
+
+   * @throws std::runtime_error if NaN is detected at any point during
+   * evaluation.
+   */
+  GenericPolynomial<BasisElement> EvaluatePartial(const Variable& var,
+                                                  double c) const;
+
+  /** Adds @p coeff * @p m to this generic polynomial. */
+  GenericPolynomial<BasisElement> AddProduct(const Expression& coeff,
+                                             const BasisElement& m);
+
+  /** Removes the terms whose absolute value of the coefficients are smaller
+   * than or equal to @p coefficient_tol.
+   * For example, if the generic polynomial is 2x² + 3xy + 10⁻⁴x - 10⁻⁵,
+   * then after calling RemoveTermsWithSmallCoefficients(1e-3), the returned
+   * polynomial becomes 2x² + 3xy.
+   * @param coefficient_tol A positive scalar.
+   * @retval polynomial_cleaned A generic polynomial whose terms with small
+   * coefficients are removed.
+   */
+  GenericPolynomial<BasisElement> RemoveTermsWithSmallCoefficients(
+      double coefficient_tol) const;
+
   /** Returns true if this generic polynomial and @p p are structurally equal.
    */
   bool EqualTo(const GenericPolynomial<BasisElement>& p) const;
@@ -126,3 +187,25 @@ extern template class GenericPolynomial<MonomialBasisElement>;
 extern template class GenericPolynomial<ChebyshevBasisElement>;
 }  // namespace symbolic
 }  // namespace drake
+
+#if !defined(DRAKE_DOXYGEN_CXX)
+namespace Eigen {
+
+// Defines Eigen traits needed for Matrix<drake::symbolic::Polynomial>.
+template <>
+struct NumTraits<
+    drake::symbolic::GenericPolynomial<drake::symbolic::MonomialBasisElement>>
+    : GenericNumTraits<drake::symbolic::GenericPolynomial<
+          drake::symbolic::MonomialBasisElement>> {
+  static inline int digits10() { return 0; }
+};
+
+template <>
+struct NumTraits<
+    drake::symbolic::GenericPolynomial<drake::symbolic::ChebyshevBasisElement>>
+    : GenericNumTraits<drake::symbolic::GenericPolynomial<
+          drake::symbolic::ChebyshevBasisElement>> {
+  static inline int digits10() { return 0; }
+};
+}  // namespace Eigen
+#endif  // !defined(DRAKE_DOXYGEN_CXX)

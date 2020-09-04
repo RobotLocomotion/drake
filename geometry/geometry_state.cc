@@ -21,6 +21,7 @@
 namespace drake {
 namespace geometry {
 
+using internal::convert_to_double;
 using internal::GeometryStateCollisionFilterAttorney;
 using internal::InternalFrame;
 using internal::InternalGeometry;
@@ -268,6 +269,28 @@ int GeometryState<T>::NumGeometriesWithRole(FrameId frame_id, Role role) const {
     if (geometries_.at(id).has_role(role)) ++count;
   }
   return count;
+}
+
+template <typename T>
+std::vector<GeometryId> GeometryState<T>::GetGeometries(
+    FrameId frame_id, std::optional<Role> role) const {
+  FindOrThrow(frame_id, frames_, [frame_id]() {
+    return fmt::format(
+        "Cannot report geometries associated with invalid frame id: {}",
+        frame_id);
+  });
+  const InternalFrame& frame = frames_.at(frame_id);
+
+  std::vector<GeometryId> ids;
+  ids.reserve(frame.child_geometries().size());
+  for (GeometryId g_id : frame.child_geometries()) {
+    if (role.has_value()) {
+      if (!geometries_.at(g_id).has_role(*role)) continue;
+    }
+    ids.push_back(g_id);
+  }
+  std::sort(ids.begin(), ids.end());
+  return ids;
 }
 
 template <typename T>
@@ -558,7 +581,7 @@ GeometryId GeometryState<T>::RegisterGeometry(
 
   // pose() is always RigidTransform<double>. To account for
   // GeometryState<AutoDiff>, we need to cast it to the common type T.
-  X_WGs_[geometry_id] = geometry->pose().cast<T>();
+  X_WGs_[geometry_id] = X_WF_[frame.index()] * geometry->pose().cast<T>();
 
   geometries_.emplace(
       geometry_id,
@@ -672,7 +695,9 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
       geometry.SetRole(std::move(properties));
       if (geometry.is_dynamic()) {
         // Pass the geometry to the engine.
-        geometry_engine_->AddDynamicGeometry(geometry.shape(), geometry_id,
+        const RigidTransformd& X_WG = convert_to_double(X_WGs_.at(geometry_id));
+        geometry_engine_->AddDynamicGeometry(geometry.shape(), X_WG,
+                                             geometry_id,
                                              *geometry.proximity_properties());
 
         InternalFrame& frame = frames_[geometry.frame_id()];
@@ -758,13 +783,14 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
 
   geometry.SetRole(std::move(properties));
 
+  const RigidTransformd& X_WG = convert_to_double(X_WGs_.at(geometry_id));
   bool added_to_renderer{false};
   for (auto& [name, engine] : render_engines_) {
     if (accepting_renderers.empty() || accepting_renderers.count(name) > 0) {
       added_to_renderer =
           engine->RegisterVisual(
               geometry_id, geometry.shape(), *geometry.perception_properties(),
-              RigidTransformd(geometry.X_FG()), geometry.is_dynamic()) ||
+              X_WG, geometry.is_dynamic()) ||
           added_to_renderer;
     }
   }

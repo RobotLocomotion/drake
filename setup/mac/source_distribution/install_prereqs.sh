@@ -7,6 +7,7 @@
 
 set -euxo pipefail
 
+with_doc_only=1
 with_maintainer_only=0
 with_test_only=1
 
@@ -17,9 +18,15 @@ while [ "${1:-}" != "" ]; do
     --with-maintainer-only)
       with_maintainer_only=1
       ;;
+    # Do NOT install prerequisites that are only needed to build documentation,
+    # i.e., those prerequisites that are dependencies of bazel { build, run }
+    # { //doc:gen_sphinx, //bindings/pydrake/doc:gen_sphinx, //doc:doxygen }
+    --without-doc-only)
+      with_doc_only=0
+      ;;
     # Do NOT install prerequisites that are only needed to build and/or run
     # unit tests, i.e., those prerequisites that are not dependencies of
-    # bazel build //:install and/or bazel run //:install.
+    # bazel { build, run } //:install.
     --without-test-only)
       with_test_only=0
       ;;
@@ -41,11 +48,16 @@ if ! command -v /usr/local/bin/brew &>/dev/null; then
 fi
 
 /usr/local/bin/brew update
-
 /usr/local/bin/brew bundle --file="${BASH_SOURCE%/*}/Brewfile" --no-lock
 
+if [[ "${with_doc_only}" -eq 1 ]]; then
+  /usr/local/bin/brew bundle \
+    --file="${BASH_SOURCE%/*}/Brewfile-doc-only" --no-lock
+fi
+
 if [[ "${with_maintainer_only}" -eq 1 ]]; then
-  /usr/local/bin/brew bundle --file="${BASH_SOURCE%/*}/Brewfile-maintainer-only" --no-lock
+  /usr/local/bin/brew bundle \
+    --file="${BASH_SOURCE%/*}/Brewfile-maintainer-only" --no-lock
 fi
 
 if ! command -v /usr/local/opt/python@3.8/bin/pip3  &>/dev/null; then

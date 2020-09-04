@@ -181,6 +181,93 @@ std::map<MonomialBasisElement, double> MonomialBasisElement::Integrate(
   return {{MonomialBasisElement(new_var_to_degree_map), 1. / (degree + 1)}};
 }
 
+namespace {
+// Convert a univariate monomial to a weighted sum of Chebyshev polynomials
+// For example x³ = 0.25T₃(x) + 0.75T₁(x)
+// We return a vector of (degree, coeff) to represent the weighted sum of
+// Chebyshev polynomials. For example, 0.25T₃(x) + 0.75T₁(x) is represented
+// as [(3, 0.25), (1, 0.75)].
+std::vector<std::pair<int, double>> UnivariateMonomialToChebyshevBasis(
+    int degree) {
+  if (degree == 0) {
+    // Return T0(x)
+    return std::vector<std::pair<int, double>>{{{0, 1}}};
+  }
+  // According to equation 3.35 of
+  // https://archive.siam.org/books/ot99/OT99SampleChapter.pdf, we know that
+  // xⁿ = 2 ¹⁻ⁿ∑ₖ cₖ Tₙ₋₂ₖ(x), k = 0, ..., floor(n/2)
+  // where cₖ = 0.5 nchoosek(n, k) if k=n/2, and cₖ = nchoosek(n, k)
+  // otherwise
+  // Note that the euqation 3.35 of the referenced doc is not entirely correct,
+  // specifically the special case (half the coefficient) should be k = n/2
+  // instead of k=0.
+  const int half_n = degree / 2;
+  std::vector<std::pair<int, double>> result(half_n + 1);
+  result[0] = std::make_pair(degree, std::pow(2, 1 - degree));
+  for (int k = 1; k < half_n + 1; ++k) {
+    // Use the relationshipe nchoosek(n, k) = nchoosek(n, k-1) * (n-k+1)/k
+    double new_coeff = result[k - 1].second *
+                       static_cast<double>(degree - k + 1) /
+                       static_cast<double>(k);
+    if (2 * k == degree) {
+      new_coeff /= 2;
+    }
+    result[k] = std::make_pair(degree - 2 * k, new_coeff);
+  }
+  return result;
+}
+
+std::map<ChebyshevBasisElement, double> MonomialToChebyshevBasisRecursive(
+    std::map<Variable, int> var_to_degree_map) {
+  if (var_to_degree_map.empty()) {
+    // 1 = T0()
+    return {{ChebyshevBasisElement(), 1}};
+  }
+  auto it = var_to_degree_map.begin();
+  const Variable var_first = it->first;
+  // If we want to convert xⁿyᵐzˡ to Chebyshev basis, we could first convert xⁿ
+  // to Chebyshev basis as xⁿ=∑ᵢcᵢTᵢ(x), and convert yᵐzˡ to Chebyshev basis as
+  // yᵐzˡ = ∑ⱼ,ₖdⱼₖTⱼ(y)Tₖ(z), then we multiply them as
+  // xⁿyᵐzˡ
+  // = xⁿ*(yᵐzˡ)
+  // = ∑ᵢcᵢTᵢ(x) * ∑ⱼ,ₖdⱼₖTⱼ(y)Tₖ(z)
+  // = ∑ᵢ,ⱼ,ₖcᵢdⱼₖTᵢ(x)Tⱼ(y)Tₖ(z)
+
+  // first_univariate_in_chebyshev contains the degree/coefficient pairs (i, cᵢ)
+  // above.
+  const std::vector<std::pair<int, double>> first_univariate_in_chebyshev =
+      UnivariateMonomialToChebyshevBasis(it->second);
+
+  var_to_degree_map.erase(it);
+  // remaining_chebyshevs contains the chebyshev polynomial/coefficient pair
+  // (Tⱼ(y)Tₖ(z), dⱼₖ)
+  const std::map<ChebyshevBasisElement, double> remaining_chebyshevs =
+      MonomialToChebyshevBasisRecursive(var_to_degree_map);
+  std::map<ChebyshevBasisElement, double> result;
+  for (const auto& [degree_x, coeff_x] : first_univariate_in_chebyshev) {
+    for (const auto& [remaining_vars, coeff_remaining_vars] :
+         remaining_chebyshevs) {
+      std::map<Variable, int> new_chebyshev_var_to_degree_map =
+          remaining_vars.var_to_degree_map();
+      // Multiply Tᵢ(x) to each term Tⱼ(y)Tₖ(z) to get the new
+      // ChebyshevBasisElement.
+      new_chebyshev_var_to_degree_map.emplace_hint(
+          new_chebyshev_var_to_degree_map.end(), var_first, degree_x);
+      // Multiply cᵢ to dⱼₖ to get the new coefficient.
+      const double new_coeff = coeff_remaining_vars * coeff_x;
+      result.emplace(ChebyshevBasisElement(new_chebyshev_var_to_degree_map),
+                     new_coeff);
+    }
+  }
+  return result;
+}
+}  // namespace
+
+std::map<ChebyshevBasisElement, double> MonomialBasisElement::ToChebyshevBasis()
+    const {
+  return MonomialToChebyshevBasisRecursive(var_to_degree_map());
+}
+
 std::map<MonomialBasisElement, double> operator*(
     const MonomialBasisElement& m1, const MonomialBasisElement& m2) {
   std::map<Variable, int> var_to_degree_map_product = m1.var_to_degree_map();

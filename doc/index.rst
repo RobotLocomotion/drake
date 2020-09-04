@@ -48,10 +48,10 @@ Core Library
         </tr>
         <tr>
             <td style="text-align:center">
-                <a target="_doc" href="https://drake.mit.edu/doxygen_cxx/group__systems.html">doc</a> | <a target="_tutorial" href="https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release?filepath=tutorials/dynamical_systems.ipynb">tutorial</a>
+                <a target="_doc" href="https://drake.mit.edu/doxygen_cxx/group__systems.html">doc</a> | <a target="_tutorial" href="https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release-binder?filepath=tutorials/dynamical_systems.ipynb">tutorial</a>
             </td>
             <td style="text-align:center">
-                <a target="_doc" href="https://drake.mit.edu/doxygen_cxx/group__solvers.html">doc</a> | <a target="_tutorial" href="https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release?filepath=tutorials/mathematical_program.ipynb">tutorial</a>
+                <a target="_doc" href="https://drake.mit.edu/doxygen_cxx/group__solvers.html">doc</a> | <a target="_tutorial" href="https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release-binder?filepath=tutorials/mathematical_program.ipynb">tutorial</a>
             </td>
             <td style="text-align:center">
                 <a target="_doc" href="https://drake.mit.edu/doxygen_cxx/group__multibody.html">doc</a>
@@ -76,7 +76,7 @@ use nbviewer to only preview the notebook (where startup time is fast):
 
 .. raw:: html
 
-    <a target="_doc" href="https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release?filepath=tutorials">
+    <a target="_doc" href="https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release-binder?filepath=tutorials">
       <img src="https://mybinder.org/badge_logo.svg"/>
     </a>
     <a target="_doc" href="https://nbviewer.jupyter.org/github/RobotLocomotion/drake/blob/nightly-release/tutorials/">

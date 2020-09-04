@@ -146,6 +146,9 @@ For an explanation of `!Uniform`, `!UniformVector`, and other available options
 ///
 /// For an overview of configuring stochastic transforms, see
 /// @ref schema_transform and @ref schema_stochastic.
+///
+/// See @ref serialize_tips for implementation details, especially the
+/// unusually public member fields.
 class Transform {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Transform)
@@ -183,7 +186,7 @@ class Transform {
 
   /// Samples this Transform.  If this is deterministic, the result is the same
   /// as GetDeterministicValue.
-  math::RigidTransformd Sample(RandomGenerator* random) const;
+  math::RigidTransformd Sample(RandomGenerator* generator) const;
 
   template <typename Archive>
   void Serialize(Archive* a) {
@@ -209,10 +212,6 @@ class Transform {
       this->set_rotation_rpy_deg(*maybe_rpy);
     }
   }
-
-  // N.B. As is standard for classes implementing Serialize(), we declare all
-  // of our members fields as public since they are effectively so anyway, and
-  // we omit the trailing underscore from the field names.
 
   /// An optional base frame name for this transform.  When left unspecified,
   /// the default depends on the semantics of the enclosing struct.

@@ -1,6 +1,7 @@
 import pydrake.geometry as mut
 import pydrake.geometry._testing as mut_testing
 
+import copy
 import sys
 import unittest
 import warnings
@@ -49,15 +50,18 @@ class TestGeometry(unittest.TestCase):
         global_geometry = scene_graph.RegisterGeometry(
             source_id=global_source, frame_id=global_frame,
             geometry=mut.GeometryInstance(X_PG=RigidTransform_[float](),
-                                          shape=mut.Sphere(1.), name="sphere"))
+                                          shape=mut.Sphere(1.),
+                                          name="sphere1"))
         global_geometry_2 = scene_graph.RegisterGeometry(
             source_id=global_source, geometry_id=global_geometry,
             geometry=mut.GeometryInstance(X_PG=RigidTransform_[float](),
-                                          shape=mut.Sphere(1.), name="sphere"))
+                                          shape=mut.Sphere(1.),
+                                          name="sphere2"))
         anchored_geometry = scene_graph.RegisterAnchoredGeometry(
             source_id=global_source,
             geometry=mut.GeometryInstance(X_PG=RigidTransform_[float](),
-                                          shape=mut.Sphere(1.), name="sphere"))
+                                          shape=mut.Sphere(1.),
+                                          name="sphere3"))
         self.assertIsInstance(
             scene_graph.get_source_pose_port(global_source), InputPort)
         self.assertIsInstance(
@@ -74,19 +78,34 @@ class TestGeometry(unittest.TestCase):
 
         # Test SceneGraphInspector API
         inspector = scene_graph.model_inspector()
-        self.assertEqual(inspector.num_frames(), 3)
         self.assertEqual(inspector.num_sources(), 2)
+        self.assertEqual(inspector.num_frames(), 3)
         self.assertEqual(inspector.num_geometries(), 3)
+        self.assertEqual(len(inspector.GetAllGeometryIds()), 3)
         self.assertEqual(
             inspector.NumGeometriesWithRole(role=mut.Role.kUnassigned), 3)
         self.assertEqual(inspector.NumDynamicGeometries(), 2)
         self.assertEqual(inspector.NumAnchoredGeometries(), 1)
         self.assertTrue(inspector.SourceIsRegistered(id=global_source))
         self.assertEqual(inspector.GetSourceName(id=global_source), "anchored")
+        self.assertEqual(inspector.GetFrameId(global_geometry), global_frame)
+        self.assertEqual(len(inspector.GetGeometries(frame_id=global_frame)),
+                         2)
+        self.assertTrue(
+            global_geometry in inspector.GetGeometries(frame_id=global_frame))
+        self.assertEqual(
+            len(inspector.GetGeometries(frame_id=global_frame,
+                                        role=mut.Role.kProximity)),
+            0)
+        self.assertEqual(
+            inspector.GetGeometryIdByName(frame_id=global_frame,
+                                          role=mut.Role.kUnassigned,
+                                          name="sphere1"),
+            global_geometry)
         self.assertEqual(
             inspector.GetName(frame_id=global_frame), "anchored_frame")
         self.assertEqual(
-            inspector.GetName(geometry_id=global_geometry), "sphere")
+            inspector.GetName(geometry_id=global_geometry), "sphere1")
 
         with catch_drake_warnings(expected_count=2):
             self.assertEqual(
@@ -94,7 +113,7 @@ class TestGeometry(unittest.TestCase):
                 "anchored_frame")
             self.assertEqual(
                 inspector.GetNameByGeometryId(geometry_id=global_geometry),
-                "sphere")
+                "sphere1")
 
         self.assertIsInstance(
             inspector.GetPoseInParent(geometry_id=global_geometry),
@@ -421,6 +440,20 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(
             prop.GetProperty(group_name=default_group, name="to_update"),
             20)
+
+        # Property copying.
+        for PropertyType in [mut.ProximityProperties,
+                             mut.IllustrationProperties,
+                             mut.PerceptionProperties]:
+            props = PropertyType()
+            props.AddProperty("g", "p", 10)
+            self.assertTrue(props.HasProperty("g", "p"))
+            props_copy = PropertyType(other=props)
+            self.assertTrue(props_copy.HasProperty("g", "p"))
+            props_copy2 = copy.copy(props)
+            self.assertTrue(props_copy2.HasProperty("g", "p"))
+            props_copy3 = copy.deepcopy(props)
+            self.assertTrue(props_copy3.HasProperty("g", "p"))
 
     def test_render_engine_vtk_params(self):
         # Confirm default construction of params.

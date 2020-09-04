@@ -970,7 +970,6 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
 // Tests the GetNum*Geometry*Methods.
 TEST_F(GeometryStateTest, GetNumGeometryTests) {
   SetUpSingleSourceTree(Assign::kProximity);
-
   EXPECT_EQ(single_tree_total_geometry_count(),
             geometry_state_.get_num_geometries());
   EXPECT_EQ(single_tree_total_geometry_count(),
@@ -988,6 +987,57 @@ TEST_F(GeometryStateTest, GetNumGeometryTests) {
                   frames_[i], Role::kPerception));
     EXPECT_EQ(0, geometry_state_.NumGeometriesForFrameWithRole(
                      frames_[i], Role::kIllustration));
+  }
+}
+
+// Tests GetGeometries(FrameId, Role).
+TEST_F(GeometryStateTest, GetGeometryTest) {
+  SetUpSingleSourceTree(Assign::kProximity);
+  // We want some heterogeneity in the roles the registered geometries have.
+  //  - The single source tree applies proximity properties to all of the
+  //    tree geometries.
+  //  - We'll add illustration properties to one geometry in every frame.
+  //  - We'll add an *additional* geometry to every frame (with no role).
+  //  So, every geometry should report:
+  //    - kGeometryCount + 1 = 3 total geometries.
+  //    - 2 with proximity role
+  //    - 1 with illustration role
+  //    - 1 with unassigned
+  //    - 0 with perception.
+
+  // Assign illustration roles.
+  for (int i = 0; i < kFrameCount * kGeometryCount; i += kGeometryCount) {
+    const GeometryId g_id = geometries_[i];
+    geometry_state_.AssignRole(source_id_, g_id, IllustrationProperties());
+  }
+
+  const vector<GeometryId> empty_ids;
+  for (int i = 0; i < kFrameCount; ++i) {
+    const FrameId f_id = frames_[i];
+
+    // Add new geometry with unassigned role.
+    auto instance = make_unique<GeometryInstance>(
+        RigidTransformd::Identity(), make_unique<Sphere>(1), "shape");
+    const GeometryId new_id =
+        geometry_state_.RegisterGeometry(source_id_, f_id, move(instance));
+
+    // Build the expected answers.
+    const auto first_geometry_iter = geometries_.begin() + i * kGeometryCount;
+    const vector<GeometryId> proximity_ids{
+        first_geometry_iter, first_geometry_iter + kGeometryCount};
+    vector<GeometryId> all_ids(proximity_ids);
+    all_ids.push_back(new_id);
+
+    EXPECT_EQ(geometry_state_.NumGeometriesForFrame(f_id), kGeometryCount + 1);
+    EXPECT_EQ(geometry_state_.GetGeometries(f_id, Role::kPerception),
+              empty_ids);
+    EXPECT_EQ(geometry_state_.GetGeometries(f_id, Role::kProximity),
+              proximity_ids);
+    EXPECT_EQ(geometry_state_.GetGeometries(f_id, Role::kIllustration),
+              vector<GeometryId>{geometries_[i * kGeometryCount]});
+    EXPECT_EQ(geometry_state_.GetGeometries(f_id, Role::kUnassigned),
+              vector<GeometryId>{new_id});
+    EXPECT_EQ(geometry_state_.GetGeometries(f_id, std::nullopt), all_ids);
   }
 }
 
@@ -1122,6 +1172,37 @@ TEST_F(GeometryStateTest, RegisterGeometryGoodSource) {
   const auto& geometry = gs_tester_.get_geometries().at(g_id);
   EXPECT_TRUE(geometry.is_child_of_frame(f_id));
   EXPECT_FALSE(geometry.parent_id());
+}
+
+// Confirms that when adding a geometry G, X_WG is up-to-date with the best
+// possible data.
+TEST_F(GeometryStateTest, AddGeometryUpdatesX_WG) {
+  // Configure the basic tree and set all frame poses to the default poses.
+  const SourceId s_id = SetUpSingleSourceTree(Assign::kProximity);
+  FramePoseVector<double> poses;
+  for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
+    poses.set_value(frames_[f], X_PFs_[f]);
+  }
+  gs_tester_.SetFramePoses(s_id, poses);
+  gs_tester_.FinalizePoseUpdate();
+
+  // Registering a geometry to a frame F should report X_WG = X_WF * X_FG.
+
+  vector<pair<FrameId, RigidTransformd>> parent_frames = {
+      {InternalFrame::world_frame_id(), RigidTransformd{}},
+      {frames_[0], X_WFs_[0]},
+      {frames_[1], X_WFs_[1]},
+      {frames_[2], X_WFs_[2]}};
+  for (const auto& [f_id, X_WF] : parent_frames) {
+    auto instance = make_unique<GeometryInstance>(
+        instance_pose_, make_unique<Sphere>(1.0), "instance");
+    const GeometryId g_id =
+        geometry_state_.RegisterGeometry(s_id, f_id, move(instance));
+    const RigidTransformd X_WG_expected = X_WF * instance_->pose();
+    EXPECT_TRUE(
+        CompareMatrices(geometry_state_.get_pose_in_world(g_id).GetAsMatrix34(),
+                        X_WG_expected.GetAsMatrix34()));
+  }
 }
 
 // Confirms that registering two geometries with the same id causes failure.

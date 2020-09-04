@@ -151,11 +151,13 @@ PYBIND11_MODULE(planner, m) {
                  const multibody::Frame<double>&, double,
                  const manipulation::planner::
                      DifferentialInverseKinematicsParameters&,
-                 const systems::Context<double>*>(),
+                 const systems::Context<double>*, bool>(),
             // Keep alive, reference: `self` keeps `robot` alive.
             py::keep_alive<1, 2>(), py::arg("robot"), py::arg("frame_E"),
             py::arg("time_step"), py::arg("parameters"),
-            py::arg("robot_context") = nullptr, cls_doc.ctor.doc)
+            py::arg("robot_context") = nullptr,
+            py::arg("log_only_when_result_state_changes") = true,
+            cls_doc.ctor.doc)
         .def("SetPositions", &Class::SetPositions, py::arg("context"),
             py::arg("positions"), cls_doc.SetPositions.doc)
         .def("ForwardKinematics", &Class::ForwardKinematics, py::arg("context"),

@@ -195,6 +195,140 @@ TEST_F(SymbolicGenericPolynomialTest, DifferentiateForChebyshevBasis2) {
                p_a);
 }
 
+TEST_F(SymbolicGenericPolynomialTest, Jacobian) {
+  // p = ax²y + (3a+b)xz²
+  const GenericPolynomial<MonomialBasisElement> p{
+      {{MonomialBasisElement({{var_x_, 2}, {var_y_, 1}}), a_},
+       {MonomialBasisElement({{var_x_, 1}, {var_z_, 2}}), 3 * a_ + b_}}};
+
+  const Vector2<Variable> vars_xy(var_x_, var_y_);
+  const auto J_xy = p.Jacobian(vars_xy);
+  static_assert(decltype(J_xy)::RowsAtCompileTime == 1 &&
+                    decltype(J_xy)::ColsAtCompileTime == 2,
+                "The size of J_xy should be 1 x 2.");
+  // dp/dx = 2axy + (3a+b)z²
+  const GenericPolynomial<MonomialBasisElement> p_x(
+      {{MonomialBasisElement({{var_x_, 1}, {var_y_, 1}}), 2 * a_},
+       {MonomialBasisElement(var_z_, 2), 3 * a_ + b_}});
+  // dp/dy = ax²
+  const GenericPolynomial<MonomialBasisElement> p_y(
+      {{MonomialBasisElement(var_x_, 2), a_}});
+  EXPECT_PRED2(GenericPolyEqual<MonomialBasisElement>, J_xy(0), p_x);
+  EXPECT_PRED2(GenericPolyEqual<MonomialBasisElement>, J_xy(1), p_y);
+
+  // dp/da = x²y + 3xz²
+  const GenericPolynomial<MonomialBasisElement> p_a(
+      {{MonomialBasisElement({{var_x_, 2}, {var_y_, 1}}), 1},
+       {MonomialBasisElement({{var_x_, 1}, {var_z_, 2}}), 3}});
+  // dp/db = xz²
+  const GenericPolynomial<MonomialBasisElement> p_b(
+      MonomialBasisElement({{var_x_, 1}, {var_z_, 2}}));
+  const Vector2<Variable> var_ab(var_a_, var_b_);
+  const auto J_ab = p.Jacobian(var_ab);
+  EXPECT_PRED2(GenericPolyEqual<MonomialBasisElement>, J_ab(0), p_a);
+  EXPECT_PRED2(GenericPolyEqual<MonomialBasisElement>, J_ab(1), p_b);
+}
+
+TEST_F(SymbolicGenericPolynomialTest, Evaluate) {
+  // p = ax²y + bxy + cz
+  const GenericPolynomial<MonomialBasisElement> p{
+      {{MonomialBasisElement({{var_x_, 2}, {var_y_, 1}}), a_},
+       {MonomialBasisElement({{var_x_, 1}, {var_y_, 1}}), b_},
+       {MonomialBasisElement(var_z_), c_}}};
+
+  const Environment env1{{
+      {var_a_, 1.0},
+      {var_b_, 2.0},
+      {var_c_, 3.0},
+      {var_x_, -1.0},
+      {var_y_, -2.0},
+      {var_z_, -3.0},
+  }};
+  const double expected1{1.0 * -1.0 * -1.0 * -2.0 + 2.0 * -1.0 * -2.0 +
+                         3.0 * -3.0};
+  EXPECT_EQ(p.Evaluate(env1), expected1);
+
+  const Environment env2{{
+      {var_a_, 4.0},
+      {var_b_, 1.0},
+      {var_c_, 2.0},
+      {var_x_, -7.0},
+      {var_y_, -5.0},
+      {var_z_, -2.0},
+  }};
+  const double expected2{4.0 * -7.0 * -7.0 * -5.0 + 1.0 * -7.0 * -5.0 +
+                         2.0 * -2.0};
+  EXPECT_EQ(p.Evaluate(env2), expected2);
+
+  const Environment partial_env{{
+      {var_a_, 4.0},
+      {var_c_, 2.0},
+      {var_x_, -7.0},
+      {var_z_, -2.0},
+  }};
+  EXPECT_THROW(p.Evaluate(partial_env), std::invalid_argument);
+}
+
+TEST_F(SymbolicGenericPolynomialTest, PartialEvaluate1) {
+  // p1 = a*x² + b*x + c
+  // p2 = p1[x ↦ 3.0] = 3²a + 3b + c.
+  const GenericPolynomial<MonomialBasisElement> p1{
+      {{MonomialBasisElement(var_x_, 2), a_},
+       {MonomialBasisElement(var_x_), b_},
+       {MonomialBasisElement(), c_}}};
+  const GenericPolynomial<MonomialBasisElement> p2{
+      {{MonomialBasisElement(), a_ * 3.0 * 3.0 + b_ * 3.0 + c_}}};
+  const Environment env{{{var_x_, 3.0}}};
+  EXPECT_PRED2(GenericPolyEqual<MonomialBasisElement>, p1.EvaluatePartial(env),
+               p2);
+  EXPECT_PRED2(GenericPolyEqual<MonomialBasisElement>,
+               p1.EvaluatePartial(var_x_, 3.0), p2);
+}
+
+TEST_F(SymbolicGenericPolynomialTest, PartialEvaluate2) {
+  // p1 = a*xy² - a*xy + c
+  // p2 = p1[y ↦ 2.0] = (4a - 2a)*x + c = 2ax + c
+  const GenericPolynomial<MonomialBasisElement> p1{
+      {{MonomialBasisElement({{var_x_, 1}, {var_y_, 2}}), a_},
+       {MonomialBasisElement({{var_x_, 1}, {var_y_, 1}}), -a_},
+       {MonomialBasisElement(), c_}}};
+  const GenericPolynomial<MonomialBasisElement> p2{
+      {{MonomialBasisElement(var_x_), 2 * a_}, {MonomialBasisElement(), c_}}};
+  const Environment env{{{var_y_, 2.0}}};
+  EXPECT_PRED2(GenericPolyEqual<MonomialBasisElement>, p1.EvaluatePartial(env),
+               p2);
+  EXPECT_PRED2(GenericPolyEqual<MonomialBasisElement>,
+               p1.EvaluatePartial(var_y_, 2.0), p2);
+}
+
+TEST_F(SymbolicGenericPolynomialTest, PartialEvaluate3) {
+  // p1 = a*x² + b*x + c
+  // p2 = p1[a ↦ 2.0, x ↦ 3.0] = 2*3² + 3b + c
+  //                           = 18 + 3b + c
+  const GenericPolynomial<MonomialBasisElement> p1{
+      {{MonomialBasisElement(var_x_, 2), a_},
+       {MonomialBasisElement(var_x_), b_},
+       {MonomialBasisElement(), c_}}};
+  const GenericPolynomial<MonomialBasisElement> p2{
+      {{MonomialBasisElement(), 18 + 3 * b_ + c_}}};
+  const Environment env{{{var_a_, 2.0}, {var_x_, 3.0}}};
+  EXPECT_PRED2(GenericPolyEqual<MonomialBasisElement>, p1.EvaluatePartial(env),
+               p2);
+}
+
+TEST_F(SymbolicGenericPolynomialTest, PartialEvaluate4) {
+  // p = (a + c / b + c)*x² + b*x + c
+  //
+  // Partially evaluating p with [a ↦ 0, b ↦ 0, c ↦ 0] throws `runtime_error`
+  // because of the divide-by-zero
+  const GenericPolynomial<MonomialBasisElement> p{
+      {{MonomialBasisElement(var_x_, 2), (a_ + c_) / (b_ + c_)},
+       {MonomialBasisElement(var_x_), b_},
+       {MonomialBasisElement(), c_}}};
+  const Environment env{{{var_a_, 0.0}, {var_b_, 0.0}, {var_c_, 0.0}}};
+  EXPECT_THROW(p.EvaluatePartial(env), runtime_error);
+}
+
 TEST_F(SymbolicGenericPolynomialTest, EqualTo) {
   EXPECT_PRED2(GenericPolyEqual<MonomialBasisElement>,
                GenericPolynomial<MonomialBasisElement>(),
@@ -228,6 +362,85 @@ TEST_F(SymbolicGenericPolynomialTest, EqualTo) {
                        {{MonomialBasisElement(var_x_), 1},
                         {MonomialBasisElement(var_x_, 2), 2}})));
 }
+
+TEST_F(SymbolicGenericPolynomialTest, AddProduct1) {
+  // p = ax² + bxy
+  // p + cz² = ax² + cz² + bxy
+  // The added term and p doesn't share basis element.
+  GenericPolynomial<MonomialBasisElement> p(
+      {{MonomialBasisElement(var_x_, 2), a_},
+       {MonomialBasisElement({{var_x_, 1}, {var_y_, 1}}), b_}});
+  const GenericPolynomial<MonomialBasisElement> sum =
+      p.AddProduct(c_, MonomialBasisElement(var_z_, 2));
+  EXPECT_PRED2(GenericPolyEqual<MonomialBasisElement>, sum, p);
+  const GenericPolynomial<MonomialBasisElement> sum_expected(
+      {{MonomialBasisElement(var_x_, 2), a_},
+       {MonomialBasisElement(var_z_, 2), c_},
+       {MonomialBasisElement({{var_x_, 1}, {var_y_, 1}}), b_}});
+  EXPECT_PRED2(GenericPolyEqual<MonomialBasisElement>, sum, sum_expected);
+  EXPECT_EQ(p.decision_variables(), Variables({var_a_, var_b_, var_c_}));
+  EXPECT_EQ(p.indeterminates(), Variables({var_x_, var_y_, var_z_}));
+}
+
+TEST_F(SymbolicGenericPolynomialTest, AddProduct2) {
+  // p = ay² + bxy
+  // p + cx² = (a+c)x² + bxy
+  // The added term and p shares basis element.
+  GenericPolynomial<MonomialBasisElement> p(
+      {{MonomialBasisElement(var_x_, 2), a_},
+       {MonomialBasisElement({{var_x_, 1}, {var_y_, 1}}), b_}});
+  const GenericPolynomial<MonomialBasisElement> sum =
+      p.AddProduct(c_, MonomialBasisElement(var_x_, 2));
+  EXPECT_PRED2(GenericPolyEqual<MonomialBasisElement>, sum, p);
+  const GenericPolynomial<MonomialBasisElement> sum_expected(
+      {{MonomialBasisElement(var_x_, 2), a_ + c_},
+       {MonomialBasisElement({{var_x_, 1}, {var_y_, 1}}), b_}});
+  EXPECT_PRED2(GenericPolyEqual<MonomialBasisElement>, sum, sum_expected);
+  EXPECT_EQ(p.decision_variables(), Variables({var_a_, var_b_, var_c_}));
+  EXPECT_EQ(p.indeterminates(), Variables({var_x_, var_y_}));
+}
+
+TEST_F(SymbolicGenericPolynomialTest, RemoveTermsWithSmallCoefficients) {
+  // Single term.
+  GenericPolynomial<MonomialBasisElement> p1{
+      {{MonomialBasisElement(var_x_, 2), 1e-5}}};
+  EXPECT_PRED2(GenericPolyEqual<MonomialBasisElement>,
+               p1.RemoveTermsWithSmallCoefficients(1E-4),
+               GenericPolynomial<MonomialBasisElement>(0));
+  EXPECT_PRED2(GenericPolyEqual<MonomialBasisElement>,
+               p1.RemoveTermsWithSmallCoefficients(1E-5),
+               GenericPolynomial<MonomialBasisElement>(0));
+  EXPECT_PRED2(GenericPolyEqual<MonomialBasisElement>,
+               p1.RemoveTermsWithSmallCoefficients(1E-6), p1);
+
+  // Multiple terms.
+  const GenericPolynomial<MonomialBasisElement> p2{
+      {{MonomialBasisElement(var_x_, 2), 2},
+       {MonomialBasisElement({{var_x_, 1}, {var_y_, 1}}), 3},
+       {MonomialBasisElement(var_x_), 1E-4},
+       {MonomialBasisElement(), -1E-4}}};
+  const GenericPolynomial<MonomialBasisElement> p2_cleaned{
+      {{MonomialBasisElement(var_x_, 2), 2},
+       {MonomialBasisElement({{var_x_, 1}, {var_y_, 1}}), 3}}};
+  EXPECT_PRED2(GenericPolyEqual<MonomialBasisElement>,
+               p2.RemoveTermsWithSmallCoefficients(1E-4), p2_cleaned);
+
+  // Coefficients are expressions.
+  GenericPolynomial<MonomialBasisElement>::MapType p3_map{};
+  p3_map.emplace(MonomialBasisElement(var_x_, 2), 2 * sin(y_));
+  p3_map.emplace(MonomialBasisElement(var_x_, 1), 1E-4 * cos(y_));
+  p3_map.emplace(MonomialBasisElement(var_x_, 3), 1E-4 * y_);
+  p3_map.emplace(MonomialBasisElement(), 1E-6);
+  GenericPolynomial<MonomialBasisElement>::MapType p3_expected_map{};
+  p3_expected_map.emplace(MonomialBasisElement(var_x_, 2), 2 * sin(y_));
+  p3_expected_map.emplace(MonomialBasisElement(var_x_, 1), 1E-4 * cos(y_));
+  p3_expected_map.emplace(MonomialBasisElement(var_x_, 3), 1E-4 * y_);
+  EXPECT_PRED2(GenericPolyEqual<MonomialBasisElement>,
+               GenericPolynomial<MonomialBasisElement>(p3_map)
+                   .RemoveTermsWithSmallCoefficients(1E-3),
+               GenericPolynomial<MonomialBasisElement>(p3_expected_map));
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
