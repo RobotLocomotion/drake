@@ -132,6 +132,12 @@ class PolynomialBasisElement {
     return &var_to_degree_map_;
   }
 
+  // Merge this basis element with another basis element by merging their
+  // var_to_degree_map. After merging, the degree of each variable is rasied to
+  // the sum of the degree in each basis element (if a variable does not show up
+  // in either one of the basis element, we regard its degree to be 0).
+  void DoMergeBasisElementInPlace(const PolynomialBasisElement& other);
+
  private:
   // This function evaluates the polynomial basis for a univariate polynomial at
   // a given degree. For example, for a monomial basis, this evaluates xⁿ where

@@ -661,5 +661,17 @@ TEST_F(MonomialBasisElementTest, ToChebyshevBasisMultivariate) {
   EXPECT_EQ(result4.at(ChebyshevBasisElement({{var_x_, 1}, {var_z_, 1}})),
             3.0 / 8);
 }
+
+TEST_F(MonomialBasisElementTest, MergeBasisElementInPlace) {
+  // x²y³ * xyz² = x³y⁴z²
+  MonomialBasisElement basis_element1({{var_x_, 2}, {var_y_, 3}});
+  basis_element1.MergeBasisElementInPlace(
+      MonomialBasisElement({{var_x_, 1}, {var_y_, 1}, {var_z_, 2}}));
+  EXPECT_EQ(basis_element1.var_to_degree_map().size(), 3);
+  EXPECT_EQ(basis_element1.var_to_degree_map().at(var_x_), 3);
+  EXPECT_EQ(basis_element1.var_to_degree_map().at(var_y_), 4);
+  EXPECT_EQ(basis_element1.var_to_degree_map().at(var_z_), 2);
+  EXPECT_EQ(basis_element1.total_degree(), 9);
+}
 }  // namespace symbolic
 }  // namespace drake
