@@ -30,7 +30,7 @@ def process_ipywidget_events(num_events_to_process=1):
 
     shell = get_ipython()
     # Ok to do nothing if running from console.
-    if shell is None:
+    if shell is None or not hasattr(shell, 'kernel'):
         return
     kernel = shell.kernel
     events = []
