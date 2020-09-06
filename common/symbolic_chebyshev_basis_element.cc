@@ -80,6 +80,11 @@ std::map<ChebyshevBasisElement, double> ChebyshevBasisElement::Integrate(
   return result;
 }
 
+void ChebyshevBasisElement::MergeBasisElementInPlace(
+    const ChebyshevBasisElement& other) {
+  this->DoMergeBasisElementInPlace(other);
+}
+
 std::pair<double, ChebyshevBasisElement> ChebyshevBasisElement::EvaluatePartial(
     const Environment& env) const {
   double coeff;
