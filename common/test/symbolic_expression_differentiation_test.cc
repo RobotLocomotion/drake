@@ -213,15 +213,16 @@ TEST_F(SymbolicDifferentiationTest, NotDifferentiable) {
   const Expression& y{var_y_};
   // abs, min, max, ceil, floor, if_then_else are not differentiable with
   // respect to a variable if an argument includes the variable.
-  EXPECT_ANY_THROW(abs(x).Differentiate(var_x_));
-  EXPECT_ANY_THROW(ceil(x).Differentiate(var_x_));
-  EXPECT_ANY_THROW(floor(x).Differentiate(var_x_));
-  EXPECT_ANY_THROW(min(x, y).Differentiate(var_x_));
-  EXPECT_ANY_THROW(min(x, y).Differentiate(var_y_));
-  EXPECT_ANY_THROW(max(x, y).Differentiate(var_x_));
-  EXPECT_ANY_THROW(max(x, y).Differentiate(var_y_));
-  EXPECT_ANY_THROW(if_then_else(x > y, x, y).Differentiate(var_x_));
-  EXPECT_ANY_THROW(if_then_else(x > y, x, y).Differentiate(var_y_));
+  Expression dummy;
+  EXPECT_ANY_THROW(dummy = abs(x).Differentiate(var_x_));
+  EXPECT_ANY_THROW(dummy = ceil(x).Differentiate(var_x_));
+  EXPECT_ANY_THROW(dummy = floor(x).Differentiate(var_x_));
+  EXPECT_ANY_THROW(dummy = min(x, y).Differentiate(var_x_));
+  EXPECT_ANY_THROW(dummy = min(x, y).Differentiate(var_y_));
+  EXPECT_ANY_THROW(dummy = max(x, y).Differentiate(var_x_));
+  EXPECT_ANY_THROW(dummy = max(x, y).Differentiate(var_y_));
+  EXPECT_ANY_THROW(dummy = if_then_else(x > y, x, y).Differentiate(var_x_));
+  EXPECT_ANY_THROW(dummy = if_then_else(x > y, x, y).Differentiate(var_y_));
   // However, those functions are still differentiable if the variable for
   // differentiation does not occur in the function body.
   EXPECT_EQ(abs(x).Differentiate(var_y_), 0.0);
@@ -334,8 +335,9 @@ TEST_F(SymbolicDifferentiationTest, NumericalTests2) {
 
 TEST_F(SymbolicDifferentiationTest, UninterpretedFunction) {
   const Expression uf{uninterpreted_function("uf", {var_x_, var_y_})};
-  EXPECT_THROW(uf.Differentiate(var_x_), std::runtime_error);
-  EXPECT_THROW(uf.Differentiate(var_y_), std::runtime_error);
+  Expression dummy;
+  EXPECT_THROW(dummy = uf.Differentiate(var_x_), std::runtime_error);
+  EXPECT_THROW(dummy = uf.Differentiate(var_y_), std::runtime_error);
   EXPECT_PRED2(ExprEqual, uf.Differentiate(var_z_), Expression::Zero());
 }
 
