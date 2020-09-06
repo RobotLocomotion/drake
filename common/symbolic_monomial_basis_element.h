@@ -122,6 +122,12 @@ class MonomialBasisElement : public PolynomialBasisElement {
    */
   std::map<MonomialBasisElement, double> Integrate(const Variable& var) const;
 
+  /** Merges this basis element with another basis element @p other by merging
+   * their var_to_degree_map. This is equivalent to multiplying this monomial
+   * basis element in place with monomial basis element @p other.
+   */
+  void MergeBasisElementInPlace(const MonomialBasisElement& other);
+
   /** Implements the @ref hash_append concept. */
   template <class HashAlgorithm>
   friend void hash_append(HashAlgorithm& hasher,

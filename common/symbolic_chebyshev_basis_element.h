@@ -81,6 +81,15 @@ class ChebyshevBasisElement : public PolynomialBasisElement {
    */
   std::map<ChebyshevBasisElement, double> Integrate(const Variable& var) const;
 
+  /** Merges this Chebyshev basis element with another Chebyshev basis element
+   * @p other by merging their var_to_degree_map. After merging, the degree of
+   * each variable is raised to the sum of the degree in each basis element (if
+   * a variable does not show up in either one of the basis element, we regard
+   * its degree to be 0). For example, merging T₁(x)T₃(y) and T₂(x)T₄(z) gets
+   * T₃(x)T₃(y)T₄(z).
+   */
+  void MergeBasisElementInPlace(const ChebyshevBasisElement& other);
+
   /** Partially evaluates using a given environment @p env. The evaluation
    * result is of type pair<double, ChebyshevBasisElement>. The first component
    * (: double) represents the coefficient part while the second component

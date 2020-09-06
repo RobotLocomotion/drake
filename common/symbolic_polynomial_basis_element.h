@@ -39,6 +39,7 @@ namespace symbolic {
  * - std::map<Derived, double> Derived::Integrate(const Variable& var) const;
  * - bool Derived::operator<(const Derived& other) const;
  * - std::pair<double, Derived> EvaluatePartial(const Environment& e) const;
+ * - void MergeBasisElementInPlace(const Derived& other)
  *
  * The function lexicographical_compare can be used when implementing operator<.
  * The function DoEvaluatePartial can be used when implementing EvaluatePartial
@@ -131,6 +132,13 @@ class PolynomialBasisElement {
   std::map<Variable, int>* get_mutable_var_to_degree_map() {
     return &var_to_degree_map_;
   }
+
+  /** Merge this basis element with another basis element by merging their
+   * var_to_degree_map. After merging, the degree of each variable is raised to
+   * the sum of the degree in each basis element (if a variable does not show up
+   * in either one of the basis element, we regard its degree to be 0).
+   */
+  void DoMergeBasisElementInPlace(const PolynomialBasisElement& other);
 
  private:
   // This function evaluates the polynomial basis for a univariate polynomial at

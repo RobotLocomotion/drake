@@ -268,6 +268,11 @@ std::map<ChebyshevBasisElement, double> MonomialBasisElement::ToChebyshevBasis()
   return MonomialToChebyshevBasisRecursive(var_to_degree_map());
 }
 
+void MonomialBasisElement::MergeBasisElementInPlace(
+    const MonomialBasisElement& other) {
+  this->DoMergeBasisElementInPlace(other);
+}
+
 std::map<MonomialBasisElement, double> operator*(
     const MonomialBasisElement& m1, const MonomialBasisElement& m2) {
   std::map<Variable, int> var_to_degree_map_product = m1.var_to_degree_map();
