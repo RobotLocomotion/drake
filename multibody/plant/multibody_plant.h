@@ -1172,7 +1172,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Registers `this` plant to serve as a source for an instance of
   /// SceneGraph. This registration allows %MultibodyPlant to
   /// register geometry with `scene_graph` for visualization and/or
-  /// collision queries.
+  /// collision queries.  The string returned by `this->get_name()` is passed
+  /// to SceneGraph's RegisterSource, so it is highly recommended that you give
+  /// the plant a recognizable name before calling this.
   /// Successive registration calls with SceneGraph **must** be performed on
   /// the same instance to which the pointer argument `scene_graph` points
   /// to. Failure to do so will result in runtime exceptions.
