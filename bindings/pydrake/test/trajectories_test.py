@@ -4,6 +4,7 @@ import unittest
 from pydrake.common import ToleranceType
 from pydrake.common.eigen_geometry import AngleAxis, Quaternion
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.math import RotationMatrix
 from pydrake.polynomial import Polynomial
 from pydrake.trajectories import (
     PiecewisePolynomial, PiecewiseQuaternionSlerp
@@ -161,6 +162,7 @@ class TestTrajectories(unittest.TestCase):
         q = Quaternion()
         m = np.identity(3)
         a = AngleAxis()
+        R = RotationMatrix()
 
         # Test quaternion constructor.
         pq = PiecewiseQuaternionSlerp(breaks=t, quaternions=[q, q, q])
@@ -176,3 +178,13 @@ class TestTrajectories(unittest.TestCase):
         pq = PiecewiseQuaternionSlerp(breaks=t, angle_axes=[a, a, a])
         self.assertEqual(pq.get_number_of_segments(), 2)
         np.testing.assert_equal(pq.value(0.5), np.eye(3))
+
+        # Test rotation matrix constructor.
+        pq = PiecewiseQuaternionSlerp(breaks=t, rotation_matrices=[R, R, R])
+        self.assertEqual(pq.get_number_of_segments(), 2)
+        np.testing.assert_equal(pq.value(0.5), np.eye(3))
+
+        # Test append operations.
+        pq.Append(time=3., quaternion=q)
+        pq.Append(time=4., rotation_matrix=R)
+        pq.Append(time=5., angle_axis=a)
