@@ -63,6 +63,7 @@ class TestTrajectories(unittest.TestCase):
 
         deriv = pp.MakeDerivative(derivative_order=1)
         np.testing.assert_equal(np.array([[2.], [2.]]), deriv.value(.5))
+        pp.AppendFirstOrderSegment(time=3., sample=[-0.4, .57])
 
     def test_hermite(self):
         t = [0., 1., 2.]

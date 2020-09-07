@@ -331,6 +331,15 @@ GTEST_TEST(SplineTests, RandomizedLinearSplineTest) {
     EXPECT_TRUE(CheckContinuity(spline, 1e-12, 0));
     EXPECT_TRUE(CheckValues(spline, {Y}, 1e-12));
     EXPECT_TRUE(CheckInterpolatedValuesAtBreakTime(spline, T, Y, 1e-12));
+
+    // Now test that we could have constructed the same trajectory
+    // incrementally.
+    PiecewisePolynomial<double> incremental =
+        PiecewisePolynomial<double>::FirstOrderHold({T[0], T[1]}, {Y[0], Y[1]});
+    for (int i = 2; i < N; i++) {
+      incremental.AppendFirstOrderSegment(T[i], Y[i]);
+    }
+    EXPECT_TRUE(spline.isApprox(incremental, 1e-10));
   }
 }
 

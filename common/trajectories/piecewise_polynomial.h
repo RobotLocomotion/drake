@@ -702,6 +702,13 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
       const T& time, const Eigen::Ref<const MatrixX<T>>& sample,
       const Eigen::Ref<const MatrixX<T>>& sample_dot);
 
+  /**
+   * Given a new sample, this method adds one segment to the end of `this` using
+   * a first-order hold, where the start sample is taken as the value at the
+   * final break of `this`. */
+  void AppendFirstOrderSegment(
+      const T& time, const Eigen::Ref<const MatrixX<T>>& sample);
+
   /** Removes the final segment from the trajectory, reducing the number of
    * segments by 1.
    * @pre `this` is not empty()
