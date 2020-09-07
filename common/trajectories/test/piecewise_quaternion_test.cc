@@ -6,6 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/math/wrap_to.h"
 
 namespace drake {
@@ -98,6 +99,7 @@ GTEST_TEST(TestPiecewiseQuaternionSlerp,
       GenerateRandomQuaternions<double>(N, &generator);
 
   PiecewiseQuaternionSlerp<double> rot_spline(time, quat);
+  const auto rot_spline_deriv = rot_spline.MakeDerivative(1);
 
   // Check dense interpolated quaternions.
   for (double t = time.front(); t < time.back(); t += 0.01) {
@@ -105,6 +107,33 @@ GTEST_TEST(TestPiecewiseQuaternionSlerp,
   }
 
   EXPECT_TRUE(CheckClosest(rot_spline.get_quaternion_samples()));
+
+  // Test that I can build the equivalent spline incrementally.
+  PiecewiseQuaternionSlerp<double> incremental;
+  for (int i = 0; i < N; i++) {
+    incremental.Append(time[i], quat[i]);
+  }
+  incremental.is_approx(rot_spline, 0.0);
+  for (double t = time.front(); t < time.back(); t += 0.1) {
+    EXPECT_EQ(incremental.EvalDerivative(t), rot_spline.EvalDerivative(t));
+  }
+
+  // And again with the other types.
+  PiecewiseQuaternionSlerp<double> incremental_rotation_matrices,
+      incremental_angle_axes;
+  for (int i = 0; i < N; i++) {
+    incremental_rotation_matrices.Append(time[i],
+                                         math::RotationMatrix<double>(quat[i]));
+    incremental_angle_axes.Append(time[i], AngleAxis<double>(quat[i]));
+  }
+  incremental_rotation_matrices.is_approx(rot_spline, 1e-14);
+  incremental_angle_axes.is_approx(rot_spline, 1e-14);
+  for (double t = time.front(); t < time.back(); t += 0.1) {
+    EXPECT_TRUE(CompareMatrices(incremental_rotation_matrices.EvalDerivative(t),
+              rot_spline.EvalDerivative(t), 1e-12));
+    EXPECT_TRUE(CompareMatrices(incremental_angle_axes.EvalDerivative(t),
+              rot_spline.EvalDerivative(t), 1e-12));
+  }
 }
 
 // Tests when the given quaternions are not "closest" to the previous one.
