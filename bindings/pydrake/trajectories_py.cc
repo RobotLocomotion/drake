@@ -147,6 +147,10 @@ PYBIND11_MODULE(trajectories, m) {
           &PiecewisePolynomial<T>::AppendCubicHermiteSegment, py::arg("time"),
           py::arg("sample"), py::arg("sample_dot"),
           doc.PiecewisePolynomial.AppendCubicHermiteSegment.doc)
+      .def("AppendFirstOrderSegment",
+          &PiecewisePolynomial<T>::AppendFirstOrderSegment, py::arg("time"),
+          py::arg("sample"),
+          doc.PiecewisePolynomial.AppendFirstOrderSegment.doc)
       .def("RemoveFinalSegment", &PiecewisePolynomial<T>::RemoveFinalSegment,
           doc.PiecewisePolynomial.RemoveFinalSegment.doc)
       .def("ReverseTime", &PiecewisePolynomial<T>::ReverseTime,
