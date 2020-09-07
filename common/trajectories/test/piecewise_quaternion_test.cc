@@ -105,6 +105,24 @@ GTEST_TEST(TestPiecewiseQuaternionSlerp,
   }
 
   EXPECT_TRUE(CheckClosest(rot_spline.get_quaternion_samples()));
+
+  // Test that I can build the equivalent spline incrementally.
+  PiecewiseQuaternionSlerp<double> incremental;
+  for (int i = 0; i < N; i++) {
+    incremental.Append(time[i], quat[i]);
+  }
+  incremental.is_approx(rot_spline, 0.0);
+
+  // And again with the other types.
+  PiecewiseQuaternionSlerp<double> incremental_rotation_matrices,
+      incremental_angle_axes;
+  for (int i = 0; i < N; i++) {
+    incremental_rotation_matrices.Append(time[i],
+                                         math::RotationMatrix<double>(quat[i]));
+    incremental_angle_axes.Append(time[i], AngleAxis<double>(quat[i]));
+  }
+  incremental_rotation_matrices.is_approx(rot_spline, 1e-14);
+  incremental_angle_axes.is_approx(rot_spline, 1e-14);
 }
 
 // Tests when the given quaternions are not "closest" to the previous one.
