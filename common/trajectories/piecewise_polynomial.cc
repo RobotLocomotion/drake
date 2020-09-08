@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <utility>
 
 #include <fmt/format.h>
 
@@ -333,7 +334,32 @@ void PiecewisePolynomial<T>::AppendCubicHermiteSegment(
       matrix(row, col) = Polynomial<T>(coeffs);
     }
   }
-  polynomials_.push_back(matrix);
+  polynomials_.push_back(std::move(matrix));
+  this->get_mutable_breaks().push_back(time);
+}
+
+template <typename T>
+void PiecewisePolynomial<T>::AppendFirstOrderSegment(
+    const T& time, const Eigen::Ref<const MatrixX<T>>& sample) {
+  DRAKE_DEMAND(!empty());
+  DRAKE_DEMAND(time > this->end_time());
+  DRAKE_DEMAND(sample.rows() == rows());
+  DRAKE_DEMAND(sample.cols() == cols());
+
+  const int segment_index = polynomials_.size() - 1;
+  const T dt = time - this->end_time();
+
+  PolynomialMatrix matrix(rows(), cols());
+
+  for (int row = 0; row < rows(); ++row) {
+    for (int col = 0; col < cols(); ++col) {
+      const T start = EvaluateSegmentAbsoluteTime(
+          segment_index, this->end_time(), row, col);
+      matrix(row, col) = Polynomial<T>(
+          Eigen::Matrix<T, 2, 1>(start, (sample(row, col) - start) / dt));
+    }
+  }
+  polynomials_.push_back(std::move(matrix));
   this->get_mutable_breaks().push_back(time);
 }
 

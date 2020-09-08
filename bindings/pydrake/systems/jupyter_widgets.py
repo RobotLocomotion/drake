@@ -2,8 +2,9 @@
 Provides support for using ipywidgets with the systems framework, and a number
 of useful widget systems.
 
-This is gui code; to test changes, please manually run
-//bindings/pydrake/systems/jupyter_widgets_examples.ipynb.
+This is gui code; to test changes, please manually execute:
+
+    bazel run //bindings/pydrake/systems:jupyter_widgets_examples
 """
 
 import numpy as np

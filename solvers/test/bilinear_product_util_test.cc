@@ -187,16 +187,18 @@ TEST_F(BilinearProductTest, WIncludesXY) {
 }
 
 TEST_F(BilinearProductTest, WIsExpression0) {
-  EXPECT_PRED2(ExprEqual, ReplaceBilinearTerms(x_(0) * y_(0), x_.head<3>(),
-                                               y_.head<3>(), Z1_ - Z2_),
+  EXPECT_PRED2(ExprEqual,
+               ReplaceBilinearTerms(x_(0) * y_(0), x_.head<3>(), y_.head<3>(),
+                                    Z1_ - Z2_),
                Z1_(0, 0) - Z2_(0, 0));
 }
 
 TEST_F(BilinearProductTest, WIsExpression1) {
-  EXPECT_PRED2(ExprEqual, ReplaceBilinearTerms(
-                              x_(0) * y_(0), x_.head<3>(), y_.head<3>(),
-                              Z1_ + 2 * Z2_ + 2 * Eigen::Matrix3d::Identity()),
-               Z1_(0, 0) + 2 * Z2_(0, 0) + 2);
+  EXPECT_PRED2(
+      ExprEqual,
+      ReplaceBilinearTerms(x_(0) * y_(0), x_.head<3>(), y_.head<3>(),
+                           Z1_ + 2 * Z2_ + 2 * Eigen::Matrix3d::Identity()),
+      Z1_(0, 0) + 2 * Z2_(0, 0) + 2);
 }
 
 TEST_F(BilinearProductTest, WIsExpression2) {
@@ -212,8 +214,10 @@ TEST_F(BilinearProductTest, WIsExpression3) {
   // W is an expression, that contains x or y. This is not allowed.
   Eigen::Matrix<symbolic::Expression, 3, 4> W = xy_;
   W(0, 1) += x_(0);
-  EXPECT_THROW(ReplaceBilinearTerms(x_(0) + x_(0) * y_(1), x_, y_, W).Expand(),
-               std::runtime_error);
+  symbolic::Expression dummy;
+  EXPECT_THROW(
+      dummy = ReplaceBilinearTerms(x_(0) + x_(0) * y_(1), x_, y_, W).Expand(),
+      std::runtime_error);
 }
 
 TEST_F(BilinearProductTest, DuplicateEntry) {

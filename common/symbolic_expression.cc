@@ -176,7 +176,6 @@ double Expression::Evaluate(const Environment& env,
   if (random_generator == nullptr) {
     return ptr_->Evaluate(env);
   } else {
-    Environment env_with_random_variables{env};
     return ptr_->Evaluate(
         PopulateRandomVariables(env, GetVariables(), random_generator));
   }
@@ -361,7 +360,8 @@ Expression& Expression::operator--() {
 }
 
 Expression Expression::operator--(int) {
-  const Expression copy(*this);
+  // Declare as non-const to allow move.
+  Expression copy(*this);
   --*this;
   return copy;
 }
@@ -557,6 +557,7 @@ class PrecisionGuard {
       : os_{os}, original_precision_{os->precision()} {
     os_->precision(new_precision);
   }
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PrecisionGuard)
   ~PrecisionGuard() { os_->precision(original_precision_); }
 
  private:
@@ -938,12 +939,12 @@ class IsAffineVisitor {
     found_non_affine_element_ = found_non_affine_element_ || IsNotAffine(e);
   }
 
-  bool result() const { return !found_non_affine_element_; }
+  [[nodiscard]] bool result() const { return !found_non_affine_element_; }
 
  private:
   // Returns true if `e` is *not* affine in variables_ (if exists) or all
   // variables in `e`.
-  bool IsNotAffine(const Expression& e) const {
+  [[nodiscard]] bool IsNotAffine(const Expression& e) const {
     if (!e.is_polynomial()) {
       return true;
     }
