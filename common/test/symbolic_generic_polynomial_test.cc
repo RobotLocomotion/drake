@@ -35,6 +35,38 @@ class SymbolicGenericPolynomialTest : public ::testing::Test {
   const Expression a_{var_a_};
   const Expression b_{var_b_};
   const Expression c_{var_c_};
+
+  const vector<Expression> exprs_{
+      0,
+      -1,
+      3,
+      x_,
+      5 * x_,
+      -3 * x_,
+      y_,
+      x_* y_,
+      2 * x_* x_,
+      2 * x_* x_,
+      6 * x_* y_,
+      3 * x_* x_* y_ + 4 * pow(y_, 3) * z_ + 2,
+      y_*(3 * x_ * x_ + 4 * y_ * y_ * z_) + 2,
+      6 * pow(x_, 3) * pow(y_, 2),
+      2 * pow(x_, 3) * 3 * pow(y_, 2),
+      pow(x_, 3) - 4 * x_* y_* y_ + 2 * x_* x_* y_ - 8 * pow(y_, 3),
+      pow(x_ + 2 * y_, 2) * (x_ - 2 * y_),
+      (x_ + 2 * y_) * (x_ * x_ - 4 * y_ * y_),
+      (x_ * x_ + 4 * x_ * y_ + 4 * y_ * y_) * (x_ - 2 * y_),
+      pow(x_ + y_ + 1, 4),
+      pow(x_ + y_ + 1, 3),
+      1 + x_* x_ + 2 * (y_ - 0.5 * x_ * x_ - 0.5),
+      Expression(5.0) / 2.0,     // constant / constant
+      x_ / 3.0,                  // var / constant
+      pow(x_, 2) / 2,            // pow / constant
+      pow(x_* y_ / 3.0, 2) / 2,  // pow / constant
+      (x_ + y_) / 2.0,           // sum / constant
+      (x_* y_* z_ * 3) / 2.0,    // product / constant
+      (x_* y_ / -5.0) / 2.0,     // div / constant
+  };
 };
 
 // Tests that default constructor and EIGEN_INITIALIZE_MATRICES_BY_ZERO
@@ -85,6 +117,58 @@ TEST_F(SymbolicGenericPolynomialTest, ConstructFromSingleElement) {
                p1.basis_element_to_coefficient_map().at(
                    ChebyshevBasisElement({{var_x_, 1}, {var_y_, 2}})),
                Expression(1));
+}
+
+TEST_F(SymbolicPolynomialTest, ConstructFromExpression) {
+  // Expression -------------------> Polynomial
+  //     | .Expand()                     | .ToExpression()
+  //    \/                              \/
+  // Expanded Expression     ==      Expression
+  for (const Expression& e : exprs_) {
+    const Expression expanded_expr{e.Expand()};
+    const Expression expr_from_polynomial{Polynomial{e}.ToExpression()};
+    EXPECT_PRED2(ExprEqual, expanded_expr, expr_from_polynomial);
+  }
+}
+
+TEST_F(SymbolicPolynomialTest, ConstructorFromExpressionAndIndeterminates1) {
+  const Polynomial p1{1.0, var_xyz_};  // p₁ = 1.0,
+  EXPECT_EQ(p1.monomial_to_coefficient_map(),
+            Polynomial::MapType({{Monomial{}, Expression(1.0)}}));
+  // p₂ = ax + by + cz + 10
+  const Polynomial p2{a_ * x_ + b_ * y_ + c_ * z_ + 10, var_xyz_};
+  EXPECT_EQ(p2.monomial_to_coefficient_map(),
+            Polynomial::MapType({{Monomial{var_x_}, a_},
+                                 {Monomial{var_y_}, b_},
+                                 {Monomial{var_z_}, c_},
+                                 {Monomial{}, 10}}));
+  // p₃ = 3ab²*x²y -bc*z³
+  const Polynomial p3{
+      3 * a_ * pow(b_, 2) * pow(x_, 2) * y_ - b_ * c_ * pow(z_, 3), var_xyz_};
+  EXPECT_EQ(p3.monomial_to_coefficient_map(),
+            Polynomial::MapType(
+                // x²y ↦ 3ab²
+                {{Monomial{{{var_x_, 2}, {var_y_, 1}}}, 3 * a_ * pow(b_, 2)},
+                 // z³ ↦ -bc
+                 {Monomial{{{var_z_, 3}}}, -b_ * c_}}));
+
+  // p₄ = 3ab²*x²y - bc*x³
+  const Polynomial p4{
+      3 * a_ * pow(b_, 2) * pow(x_, 2) * y_ - b_ * c_ * pow(x_, 3), var_xyz_};
+  EXPECT_EQ(p4.monomial_to_coefficient_map(),
+            Polynomial::MapType(
+                {{Monomial{{{var_x_, 2}, {var_y_, 1}}}, 3 * a_ * pow(b_, 2)},
+                 {Monomial{{{var_x_, 3}}}, -b_ * c_}}));
+}
+
+TEST_F(SymbolicPolynomialTest, ConstructorFromExpressionAndIndeterminates2) {
+  const Expression e{x_ * x_ + y_ * y_};  // e = x² + y².
+  // Show that providing a set of indeterminates {x, y, z} which is a super-set
+  // of what appeared in `e`, {x, y}, doesn't change the constructed polynomial
+  // .
+  const Polynomial p1{e, {var_x_, var_y_}};
+  const Polynomial p2{e, {var_x_, var_y_, var_z_}};
+  EXPECT_EQ(p1, p2);
 }
 
 TEST_F(SymbolicGenericPolynomialTest, DegreeAndTotalDegree) {
