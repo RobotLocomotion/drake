@@ -346,7 +346,7 @@ geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForSceneGraph(
   // Save the GS pointer so that on later geometry registrations can use this
   // instance. This will be nullified at Finalize().
   scene_graph_ = scene_graph;
-  source_id_ = member_scene_graph().RegisterSource();
+  source_id_ = member_scene_graph().RegisterSource(this->get_name());
   const geometry::FrameId world_frame_id =
       member_scene_graph().world_frame_id();
   body_index_to_frame_id_[world_index()] = world_frame_id;
