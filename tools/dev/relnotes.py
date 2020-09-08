@@ -137,7 +137,6 @@ def _update(args, rst_filename, gh, drake):
         if len(commits) == args.max_num_commits:
             raise RuntimeError("Reached max_num_commits")
 
-    
     # Edit the newest_commit annotation.
     if commits:
         new_newest_commit = commits[0].sha
