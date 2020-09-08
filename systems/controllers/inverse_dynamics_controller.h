@@ -82,6 +82,8 @@ class InverseDynamicsController : public Diagram<T>,
    *  - The model is not fully actuated.
    *  - Vector kp, ki and kd do not all have the same size equal to the number
    *    of generalized positions.
+   *
+   * @pydrake_mkdoc_identifier{5args_referenced_plant}
    */
   InverseDynamicsController(
       const multibody::MultibodyPlant<T>& plant,
@@ -89,6 +91,18 @@ class InverseDynamicsController : public Diagram<T>,
       const VectorX<double>& ki,
       const VectorX<double>& kd,
       bool has_reference_acceleration);
+
+  /**
+   * Constructs an inverse dynamics controller and takes the ownership of the
+   * input `plant`.
+   *
+   * @pydrake_mkdoc_identifier{5args_owned_plant}
+   */
+  InverseDynamicsController(std::unique_ptr<multibody::MultibodyPlant<T>> plant,
+                            const VectorX<double>& kp,
+                            const VectorX<double>& ki,
+                            const VectorX<double>& kd,
+                            bool has_reference_acceleration);
 
   ~InverseDynamicsController() override;
 
@@ -138,10 +152,10 @@ class InverseDynamicsController : public Diagram<T>,
 
  private:
   void SetUp(const VectorX<double>& kp, const VectorX<double>& ki,
-      const VectorX<double>& kd,
-      const controllers::InverseDynamics<T>& inverse_dynamics,
-      DiagramBuilder<T>* diagram_builder);
+             const VectorX<double>& kd);
 
+  const std::unique_ptr<multibody::MultibodyPlant<T>>
+      owned_plant_for_control_{};
   const multibody::MultibodyPlant<T>* multibody_plant_for_control_{nullptr};
   PidController<T>* pid_{nullptr};
   const bool has_reference_acceleration_{false};
