@@ -10,6 +10,7 @@ namespace drake {
 namespace symbolic {
 namespace {
 using std::runtime_error;
+using std::vector;
 
 using test::ExprEqual;
 using test::GenericPolyEqual;
@@ -119,56 +120,247 @@ TEST_F(SymbolicGenericPolynomialTest, ConstructFromSingleElement) {
                Expression(1));
 }
 
-TEST_F(SymbolicPolynomialTest, ConstructFromExpression) {
+TEST_F(SymbolicGenericPolynomialTest, ConstructFromExpressionMonomialBasis) {
+  // p1 = 2x²+3x
+  const GenericPolynomial<MonomialBasisElement> p1(var_x_ * var_x_ * 2 +
+                                                   3 * var_x_);
+  EXPECT_EQ(p1.basis_element_to_coefficient_map().size(), 2);
+  EXPECT_PRED2(
+      ExprEqual,
+      p1.basis_element_to_coefficient_map().at(MonomialBasisElement(var_x_, 2)),
+      Expression(2));
+  EXPECT_PRED2(
+      ExprEqual,
+      p1.basis_element_to_coefficient_map().at(MonomialBasisElement(var_x_)),
+      Expression(3));
+
+  // p2 = 4xy+5y²+3xz³+2
+  const GenericPolynomial<MonomialBasisElement> p2(
+      4 * var_x_ * var_y_ + 5 * pow(var_y_, 2) + 3 * var_x_ * pow(var_z_, 3) +
+      2);
+  EXPECT_EQ(p2.basis_element_to_coefficient_map().size(), 4);
+  EXPECT_PRED2(ExprEqual,
+               p2.basis_element_to_coefficient_map().at(
+                   MonomialBasisElement({{var_x_, 1}, {var_y_, 1}})),
+               Expression(4));
+  EXPECT_PRED2(
+      ExprEqual,
+      p2.basis_element_to_coefficient_map().at(MonomialBasisElement(var_y_, 2)),
+      Expression(5));
+  EXPECT_PRED2(ExprEqual,
+               p2.basis_element_to_coefficient_map().at(
+                   MonomialBasisElement({{var_x_, 1}, {var_z_, 3}})),
+               Expression(3));
+  EXPECT_PRED2(ExprEqual,
+               p2.basis_element_to_coefficient_map().at(MonomialBasisElement()),
+               Expression(2));
+}
+
+TEST_F(SymbolicGenericPolynomialTest, ConstructFromExpressionChebyshevBasis) {
+  // 1 = T0().
+  const GenericPolynomial<ChebyshevBasisElement> p1(Expression(1.));
+  EXPECT_EQ(p1.basis_element_to_coefficient_map().size(), 1);
+  EXPECT_PRED2(
+      ExprEqual,
+      p1.basis_element_to_coefficient_map().at(ChebyshevBasisElement()),
+      Expression(1.));
+
+  // T₂(x)=2x²−1
+  const GenericPolynomial<ChebyshevBasisElement> p2(2 * pow(var_x_, 2) - 1);
+  EXPECT_EQ(p2.basis_element_to_coefficient_map().size(), 1);
+  EXPECT_PRED2(ExprEqual,
+               p2.basis_element_to_coefficient_map().at(
+                   ChebyshevBasisElement(var_x_, 2)),
+               Expression(1.));
+
+  // T₂(x)T₃(y)=(2x²−1)(4y³−3y)
+  const GenericPolynomial<ChebyshevBasisElement> p3(
+      (2 * pow(var_x_, 2) - 1) * (4 * pow(var_y_, 3) - 3 * var_y_));
+  EXPECT_EQ(p3.basis_element_to_coefficient_map().size(), 1);
+  EXPECT_PRED2(ExprEqual,
+               p3.basis_element_to_coefficient_map().at(
+                   ChebyshevBasisElement({{var_x_, 2}, {var_y_, 3}})),
+               Expression(1.));
+
+  // 2T₂(x)T₃(y)+T₁(x)T₂(y)=2(2x²−1)(4y³−3y)+x(2y²−1) = 16x²y³ −
+  // 8y³−12x²y+6y+2xy²−x
+  const GenericPolynomial<ChebyshevBasisElement> p4(
+      16 * pow(var_x_, 2) * pow(var_y_, 3) - 8 * pow(var_y_, 3) -
+      12 * pow(var_x_, 2) * var_y_ + 6 * var_y_ + 2 * var_x_ * pow(var_y_, 2) -
+      var_x_);
+  EXPECT_EQ(p4.basis_element_to_coefficient_map().size(), 2);
+  EXPECT_PRED2(ExprEqual,
+               p4.basis_element_to_coefficient_map().at(
+                   ChebyshevBasisElement({{var_x_, 2}, {var_y_, 3}})),
+               Expression(2.));
+  EXPECT_PRED2(ExprEqual,
+               p4.basis_element_to_coefficient_map().at(
+                   ChebyshevBasisElement({{var_x_, 1}, {var_y_, 2}})),
+               Expression(1.));
+
+  // 3T₀()+2T₁(x)+4T₂(x)+3T₃(x) = 3 + 2x + 8x²−4+12x³−9x=12x³+8x²−7x−1
+  const GenericPolynomial<ChebyshevBasisElement> p5(
+      12 * pow(var_x_, 3) + 8 * pow(var_x_, 2) - 7 * var_x_ - 1);
+  EXPECT_EQ(p5.basis_element_to_coefficient_map().size(), 4);
+  EXPECT_PRED2(
+      ExprEqual,
+      p5.basis_element_to_coefficient_map().at(ChebyshevBasisElement()),
+      Expression(3));
+  EXPECT_PRED2(
+      ExprEqual,
+      p5.basis_element_to_coefficient_map().at(ChebyshevBasisElement(var_x_)),
+      Expression(2));
+  EXPECT_PRED2(ExprEqual,
+               p5.basis_element_to_coefficient_map().at(
+                   ChebyshevBasisElement(var_x_, 2)),
+               Expression(4));
+  EXPECT_PRED2(ExprEqual,
+               p5.basis_element_to_coefficient_map().at(
+                   ChebyshevBasisElement(var_x_, 3)),
+               Expression(3));
+
+  // 2T₃(x)+1=8x³−6x+1
+  // Note that although the polynomial contains a term 6x, when represented by
+  // Chebyshev basis, it doesn' contain T₁(x) (The coefficient for T₁(x) is 0).
+  const GenericPolynomial<ChebyshevBasisElement> p6(8 * pow(var_x_, 3) -
+                                                    6 * x_ + 1);
+  EXPECT_EQ(p6.basis_element_to_coefficient_map().size(), 2);
+  EXPECT_PRED2(ExprEqual,
+               p6.basis_element_to_coefficient_map().at(
+                   ChebyshevBasisElement(var_x_, 3)),
+               Expression(2));
+  EXPECT_PRED2(
+      ExprEqual,
+      p6.basis_element_to_coefficient_map().at(ChebyshevBasisElement()),
+      Expression(1));
+}
+
+TEST_F(SymbolicGenericPolynomialTest,
+       ConstructFromExpressionIndeterminatesMonomialBasis) {
+  // Test constructing GenericPolynomial<MonomialBasisElement> from expression
+  // and indeterminates
+
+  // ax²+(a+b)xy²+c
+  const GenericPolynomial<MonomialBasisElement> p1(
+      var_a_ * pow(var_x_, 2) + (a_ + b_) * pow(var_y_, 2) * var_x_ + c_,
+      indeterminates_);
+  EXPECT_EQ(p1.basis_element_to_coefficient_map().size(), 3);
+  EXPECT_EQ(p1.indeterminates(), indeterminates_);
+  EXPECT_EQ(p1.decision_variables(), Variables({var_a_, var_b_, var_c_}));
+  EXPECT_PRED2(
+      ExprEqual,
+      p1.basis_element_to_coefficient_map().at(MonomialBasisElement(var_x_, 2)),
+      a_);
+  EXPECT_PRED2(ExprEqual,
+               p1.basis_element_to_coefficient_map().at(
+                   MonomialBasisElement({{var_x_, 1}, {var_y_, 2}})),
+               a_ + b_);
+  EXPECT_PRED2(ExprEqual,
+               p1.basis_element_to_coefficient_map().at(MonomialBasisElement()),
+               c_);
+}
+
+TEST_F(SymbolicGenericPolynomialTest,
+       ConstructFromExpressionIndeterminatesChebyshevBasis) {
+  // Test constructing GenericPolynomial<ChebyshevBasisElement> from expression
+  // and indeterminates.
+
+  // aT₂(x)+(a+b)T₁(x)T₂(y)+cT₀()
+  const GenericPolynomial<ChebyshevBasisElement> p1(
+      a_ * (2 * pow(var_x_, 2) - 1) +
+          (a_ + b_) * x_ * (2 * pow(var_y_, 2) - 1) + c_,
+      indeterminates_);
+  EXPECT_EQ(p1.basis_element_to_coefficient_map().size(), 3);
+  EXPECT_EQ(p1.indeterminates(), indeterminates_);
+  EXPECT_EQ(p1.decision_variables(), Variables({var_a_, var_b_, var_c_}));
+  EXPECT_PRED2(ExprEqual,
+               p1.basis_element_to_coefficient_map().at(
+                   ChebyshevBasisElement(var_x_, 2)),
+               a_);
+  EXPECT_PRED2(ExprEqual,
+               p1.basis_element_to_coefficient_map()
+                   .at(ChebyshevBasisElement({{var_x_, 1}, {var_y_, 2}}))
+                   .Expand(),
+               a_ + b_);
+  EXPECT_PRED2(
+      ExprEqual,
+      p1.basis_element_to_coefficient_map().at(ChebyshevBasisElement()), c_);
+}
+
+TEST_F(SymbolicGenericPolynomialTest,
+       ConstructFromExpressionExpandMonomialBasis) {
   // Expression -------------------> Polynomial
   //     | .Expand()                     | .ToExpression()
   //    \/                              \/
   // Expanded Expression     ==      Expression
   for (const Expression& e : exprs_) {
     const Expression expanded_expr{e.Expand()};
-    const Expression expr_from_polynomial{Polynomial{e}.ToExpression()};
+    const Expression expr_from_polynomial{
+        GenericPolynomial<MonomialBasisElement>{e}.ToExpression()};
     EXPECT_PRED2(ExprEqual, expanded_expr, expr_from_polynomial);
   }
 }
 
-TEST_F(SymbolicPolynomialTest, ConstructorFromExpressionAndIndeterminates1) {
-  const Polynomial p1{1.0, var_xyz_};  // p₁ = 1.0,
-  EXPECT_EQ(p1.monomial_to_coefficient_map(),
-            Polynomial::MapType({{Monomial{}, Expression(1.0)}}));
-  // p₂ = ax + by + cz + 10
-  const Polynomial p2{a_ * x_ + b_ * y_ + c_ * z_ + 10, var_xyz_};
-  EXPECT_EQ(p2.monomial_to_coefficient_map(),
-            Polynomial::MapType({{Monomial{var_x_}, a_},
-                                 {Monomial{var_y_}, b_},
-                                 {Monomial{var_z_}, c_},
-                                 {Monomial{}, 10}}));
-  // p₃ = 3ab²*x²y -bc*z³
-  const Polynomial p3{
-      3 * a_ * pow(b_, 2) * pow(x_, 2) * y_ - b_ * c_ * pow(z_, 3), var_xyz_};
-  EXPECT_EQ(p3.monomial_to_coefficient_map(),
-            Polynomial::MapType(
-                // x²y ↦ 3ab²
-                {{Monomial{{{var_x_, 2}, {var_y_, 1}}}, 3 * a_ * pow(b_, 2)},
-                 // z³ ↦ -bc
-                 {Monomial{{{var_z_, 3}}}, -b_ * c_}}));
-
-  // p₄ = 3ab²*x²y - bc*x³
-  const Polynomial p4{
-      3 * a_ * pow(b_, 2) * pow(x_, 2) * y_ - b_ * c_ * pow(x_, 3), var_xyz_};
-  EXPECT_EQ(p4.monomial_to_coefficient_map(),
-            Polynomial::MapType(
-                {{Monomial{{{var_x_, 2}, {var_y_, 1}}}, 3 * a_ * pow(b_, 2)},
-                 {Monomial{{{var_x_, 3}}}, -b_ * c_}}));
+TEST_F(SymbolicGenericPolynomialTest,
+       ConstructFromExpressionExpandChebyshevBasis) {
+  // Expression -------------------> Polynomial
+  //     | .Expand()                     | .ToExpression()
+  //    \/                              \/
+  // Expanded Expression     ==      Expression
+  for (const Expression& e : exprs_) {
+    const Expression expanded_expr{e.Expand()};
+    const Expression expr_from_polynomial{
+        GenericPolynomial<ChebyshevBasisElement>{e}.ToExpression()};
+    EXPECT_PRED2(ExprEqual, expanded_expr, expr_from_polynomial);
+  }
 }
 
-TEST_F(SymbolicPolynomialTest, ConstructorFromExpressionAndIndeterminates2) {
+TEST_F(SymbolicGenericPolynomialTest,
+       ConstructorFromExpressionAndIndeterminates1) {
+  const GenericPolynomial<MonomialBasisElement> p1{1.0, var_xyz_};  // p₁ = 1.0,
+  EXPECT_EQ(p1.basis_element_to_coefficient_map(),
+            GenericPolynomial<MonomialBasisElement>::MapType(
+                {{MonomialBasisElement{}, Expression(1.0)}}));
+  // p₂ = ax + by + cz + 10
+  const GenericPolynomial<MonomialBasisElement> p2{
+      a_ * x_ + b_ * y_ + c_ * z_ + 10, var_xyz_};
+  EXPECT_EQ(p2.basis_element_to_coefficient_map(),
+            GenericPolynomial<MonomialBasisElement>::MapType(
+                {{MonomialBasisElement{var_x_}, a_},
+                 {MonomialBasisElement{var_y_}, b_},
+                 {MonomialBasisElement{var_z_}, c_},
+                 {MonomialBasisElement{}, 10}}));
+  // p₃ = 3ab²*x²y -bc*z³
+  const GenericPolynomial<MonomialBasisElement> p3{
+      3 * a_ * pow(b_, 2) * pow(x_, 2) * y_ - b_ * c_ * pow(z_, 3), var_xyz_};
+  EXPECT_EQ(p3.basis_element_to_coefficient_map(),
+            GenericPolynomial<MonomialBasisElement>::MapType(
+                // x²y ↦ 3ab²
+                {{MonomialBasisElement{{{var_x_, 2}, {var_y_, 1}}},
+                  3 * a_ * pow(b_, 2)},
+                 // z³ ↦ -bc
+                 {MonomialBasisElement{{{var_z_, 3}}}, -b_ * c_}}));
+
+  // p₄ = 3ab²*x²y - bc*x³
+  const GenericPolynomial<MonomialBasisElement> p4{
+      3 * a_ * pow(b_, 2) * pow(x_, 2) * y_ - b_ * c_ * pow(x_, 3), var_xyz_};
+  EXPECT_EQ(p4.basis_element_to_coefficient_map(),
+            GenericPolynomial<MonomialBasisElement>::MapType(
+                {{MonomialBasisElement{{{var_x_, 2}, {var_y_, 1}}},
+                  3 * a_ * pow(b_, 2)},
+                 {MonomialBasisElement{{{var_x_, 3}}}, -b_ * c_}}));
+}
+
+TEST_F(SymbolicGenericPolynomialTest,
+       ConstructorFromExpressionAndIndeterminates2) {
   const Expression e{x_ * x_ + y_ * y_};  // e = x² + y².
   // Show that providing a set of indeterminates {x, y, z} which is a super-set
   // of what appeared in `e`, {x, y}, doesn't change the constructed polynomial
   // .
-  const Polynomial p1{e, {var_x_, var_y_}};
-  const Polynomial p2{e, {var_x_, var_y_, var_z_}};
-  EXPECT_EQ(p1, p2);
+  const GenericPolynomial<MonomialBasisElement> p1{e, {var_x_, var_y_}};
+  const GenericPolynomial<MonomialBasisElement> p2{e, {var_x_, var_y_, var_z_}};
+  EXPECT_EQ(p1.basis_element_to_coefficient_map(),
+            p2.basis_element_to_coefficient_map());
 }
 
 TEST_F(SymbolicGenericPolynomialTest, DegreeAndTotalDegree) {
