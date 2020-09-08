@@ -82,7 +82,9 @@ void AddPolynomialBasisElementsOfDegreeN(
     bin->insert(b);
     return;
   }
-  if (vars.size() == 0) return;
+  if (vars.empty()) {
+    return;
+  }
   const Variable& var{*vars.cbegin()};
   for (int var_degree = degree; var_degree >= 0; --var_degree) {
     std::map<Variable, int> new_var_to_degree_map = b.get_powers();
@@ -117,7 +119,7 @@ void AddPolynomialBasisElementsOfDegreeN(
 template <int rows, typename BasisElement>
 Eigen::Matrix<BasisElement, rows, 1> ComputePolynomialBasisUpToDegree(
     const Variables& vars, int degree, internal::DegreeType degree_type) {
-  DRAKE_DEMAND(vars.size() > 0);
+  DRAKE_DEMAND(!vars.empty());
   DRAKE_DEMAND(degree >= 0);
   // 1. Collect elements.
   std::set<BasisElement,

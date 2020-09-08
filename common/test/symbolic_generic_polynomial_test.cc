@@ -4,6 +4,7 @@
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
+#include "drake/common/unused.h"
 
 namespace drake {
 namespace symbolic {
@@ -266,7 +267,9 @@ TEST_F(SymbolicGenericPolynomialTest, Evaluate) {
       {var_x_, -7.0},
       {var_z_, -2.0},
   }};
-  EXPECT_THROW(p.Evaluate(partial_env), std::invalid_argument);
+  double dummy{};
+  EXPECT_THROW(dummy = p.Evaluate(partial_env), std::invalid_argument);
+  unused(dummy);
 }
 
 TEST_F(SymbolicGenericPolynomialTest, PartialEvaluate1) {
@@ -326,7 +329,8 @@ TEST_F(SymbolicGenericPolynomialTest, PartialEvaluate4) {
        {MonomialBasisElement(var_x_), b_},
        {MonomialBasisElement(), c_}}};
   const Environment env{{{var_a_, 0.0}, {var_b_, 0.0}, {var_c_, 0.0}}};
-  EXPECT_THROW(p.EvaluatePartial(env), runtime_error);
+  GenericPolynomial<MonomialBasisElement> dummy;
+  EXPECT_THROW(dummy = p.EvaluatePartial(env), runtime_error);
 }
 
 TEST_F(SymbolicGenericPolynomialTest, EqualTo) {

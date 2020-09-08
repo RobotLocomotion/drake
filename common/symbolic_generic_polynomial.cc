@@ -272,8 +272,8 @@ bool GenericPolynomialEqual(const GenericPolynomial<BasisElement>& p1,
 
 template <typename BasisElement>
 bool GenericPolynomial<BasisElement>::EqualTo(
-    const GenericPolynomial<BasisElement>& other) const {
-  return GenericPolynomialEqual<BasisElement>(*this, other, false);
+    const GenericPolynomial<BasisElement>& p) const {
+  return GenericPolynomialEqual<BasisElement>(*this, p, false);
 }
 
 template class GenericPolynomial<MonomialBasisElement>;
