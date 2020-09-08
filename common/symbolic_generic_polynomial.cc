@@ -10,6 +10,7 @@
 #undef DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
 
 using std::accumulate;
+using std::make_pair;
 using std::map;
 using std::ostringstream;
 using std::pair;
@@ -18,6 +19,8 @@ using std::runtime_error;
 namespace drake {
 namespace symbolic {
 namespace {
+using MonomialBasisMapType = GenericPolynomial<MonomialBasisElement>::MapType;
+
 // Helper function to add coeff * m to a map (BasisElement→ Expression).
 // Used to implement DecomposePolynomialVisitor::VisitAddition and
 // GenericPolynomial::Add.
@@ -55,60 +58,55 @@ void DoAddProduct(
 // w.r.t. indeterminates.
 class DecomposePolynomialVisitor {
  public:
-  Polynomial::MapType Decompose(const Expression& e,
-                                const Variables& indeterminates) const {
+  MonomialBasisMapType Decompose(const Expression& e,
+                                 const Variables& indeterminates) const {
     // Note that it calls `Expression::Expand()` here.
     return Visit(e.Expand(), indeterminates);
   }
 
  private:
-  Polynomial::MapType Visit(const Expression& e,
-                            const Variables& indeterminates) const {
-    return VisitExpression<Polynomial::MapType>(this, e, indeterminates);
+  MonomialBasisMapType Visit(const Expression& e,
+                             const Variables& indeterminates) const {
+    return VisitExpression<MonomialBasisMapType>(this, e, indeterminates);
   }
 
-  Polynomial::MapType VisitVariable(const Expression& e,
-                                    const Variables& indeterminates) const {
+  MonomialBasisMapType VisitVariable(const Expression& e,
+                                     const Variables& indeterminates) const {
     const Variable& var{get_variable(e)};
     if (indeterminates.include(var)) {
       // Monomial : var, coefficient : 1
-      return Polynomial::MapType{{{Monomial{var}, 1}}};
+      return MonomialBasisMapType{{{MonomialBasisElement{var}, 1}}};
     } else {
       // Monomial : 1, coefficient : var
-      return Polynomial::MapType{{{Monomial{}, var}}};
+      return MonomialBasisMapType{{{MonomialBasisElement{}, var}}};
     }
   }
 
-  Polynomial::MapType VisitConstant(const Expression& e,
-                                    const Variables&) const {
+  MonomialBasisMapType VisitConstant(const Expression& e,
+                                     const Variables&) const {
     const double v{get_constant_value(e)};
     if (v != 0) {
-      return Polynomial::MapType{{{Monomial(), v}}};  // = v.
+      return MonomialBasisMapType{{{MonomialBasisElement(), v}}};  // = v.
     }
-    return Polynomial::MapType{};  // = 0.
+    return MonomialBasisMapType{};  // = 0.
   }
 
-  Polynomial::MapType VisitAddition(const Expression& e,
-                                    const Variables& indeterminates) const {
+  MonomialBasisMapType VisitAddition(const Expression& e,
+                                     const Variables& indeterminates) const {
     // e = c₀ + ∑ᵢ (cᵢ * eᵢ)
-    Polynomial::MapType new_map;
+    MonomialBasisMapType new_map;
     const double c_0{get_constant_in_addition(e)};
     if (c_0 != 0) {
-      new_map.emplace(Monomial{}, c_0);
+      new_map.emplace(MonomialBasisElement{}, c_0);
     }
-    for (const pair<const Expression, double>& p :
-         get_expr_to_coeff_map_in_addition(e)) {
-      const Expression& e_i{p.first};
-      const double c_i{p.second};
+    for (const auto& [e_i, c_i] : get_expr_to_coeff_map_in_addition(e)) {
       // e = c₀ + ∑ᵢ (cᵢ * eᵢ) = c₀ + ∑ᵢ (cᵢ * (∑ⱼ mⱼ * cⱼ))
       //                                   ~~~~~~~~~~~
       //                                  Monomial of eᵢ
       //                     = c₀ + ∑ᵢ ∑ⱼ ((cᵢ * cⱼ) * mⱼ)
       // Note that we have cᵢ ≠ 0 ∧ cⱼ ≠ 0 → (cᵢ * cⱼ) ≠ 0.
-      const Polynomial::MapType map_i = Visit(e_i, indeterminates);
-      for (const pair<const Monomial, Expression>& term : map_i) {
-        const Monomial& m_j{term.first};
-        const Expression& c_j{term.second};
+      const MonomialBasisMapType map_i = Visit(e_i, indeterminates);
+      for (const auto& [m_j, c_j] : map_i) {
         // Add (cᵢ * cⱼ) * mⱼ.
         DoAddProduct(c_i * c_j, m_j, &new_map);
       }
@@ -116,29 +114,24 @@ class DecomposePolynomialVisitor {
     return new_map;
   }
 
-  Polynomial::MapType VisitMultiplication(
+  MonomialBasisMapType VisitMultiplication(
       const Expression& e, const Variables& indeterminates) const {
     // e = c * ∏ᵢ pow(baseᵢ, exponentᵢ).
     const double c = get_constant_in_multiplication(e);
     Expression coeff{c};
-    Monomial m{};
-    for (const pair<const Expression, Expression>& p :
+    MonomialBasisElement m{};
+    for (const auto& [base_i, exponent_i] :
          get_base_to_exponent_map_in_multiplication(e)) {
-      const Expression& base_i{p.first};
-      const Expression& exponent_i{p.second};
-      const pair<Monomial, Expression> result_i{
-          VisitPow(base_i, exponent_i, indeterminates)};
-      const Monomial& m_i{result_i.first};
-      const Expression& coeff_i{result_i.second};
-      m *= m_i;
+      const auto [m_i, coeff_i] = VisitPow(base_i, exponent_i, indeterminates);
+      m.MergeBasisElementInPlace(m_i);
       coeff *= coeff_i;
     }
-    return Polynomial::MapType{{m, coeff}};
+    return MonomialBasisMapType{{m, coeff}};
   }
 
-  pair<Monomial, Expression> VisitPow(const Expression& base,
-                                      const Expression& exponent,
-                                      const Variables& indeterminates) const {
+  pair<MonomialBasisElement, Expression> VisitPow(
+      const Expression& base, const Expression& exponent,
+      const Variables& indeterminates) const {
     if (intersect(base.GetVariables(), indeterminates).empty()) {
       // Case: vars(baseᵢ) ∩ indeterminates = ∅.
       if (!intersect(exponent.GetVariables(), indeterminates).empty()) {
@@ -151,9 +144,10 @@ class DecomposePolynomialVisitor {
             << indeterminates << ".";
         throw runtime_error(oss.str());
       }
-      return make_pair(Monomial{}, pow(base, exponent));
+      return make_pair(MonomialBasisElement{}, pow(base, exponent));
     } else {
-      // Case: vars(baseᵢ) ∩ indeterminates ≠ ∅.
+      // Case: vars(baseᵢ) ∩ indeterminates ≠ ∅. Moreover, we have
+      // vars(baseᵢ) ⊆ indeterminates as baseᵢ is already expanded.
       // exponentᵢ should be a positive integer.
       if (!is_constant(exponent) ||
           !is_positive_integer(get_constant_value(exponent))) {
@@ -164,38 +158,33 @@ class DecomposePolynomialVisitor {
       }
 
       const int n{static_cast<int>(get_constant_value(exponent))};
-      Expression coeff{1.0};
-      Monomial m{};
-      // `base` should be a product of indeterminates because `e` is a
-      // pre-expanded term.
-      if (!is_variable(base) && !is_multiplication(base)) {
+      // `base` should be an indeterminate because `e` is a pre-expanded term.
+      if (!is_variable(base)) {
         ostringstream oss;
-        oss << "Base " << base << " is not a product of indeterminates, "
+        oss << "Base " << base << " is not an indeterminate, "
             << indeterminates;
         throw runtime_error(oss.str());
       }
-      for (const Variable& var : base.GetVariables()) {
-        if (indeterminates.include(var)) {
-          m *= Monomial{var, n};
-        } else {
-          coeff *= pow(Expression{var}, exponent);
-        }
-      }
-      return make_pair(m, coeff);
+      // Since we call e.Expand() before `Visit` function, `base` is already
+      // expanded. If the variables in base intersect with indeterminates, then
+      // it has to be a subset of indeterminates.
+      DRAKE_ASSERT(base.GetVariables().IsSubsetOf(indeterminates));
+      DRAKE_ASSERT(base.GetVariables().size() == 1);
+      return make_pair(MonomialBasisElement{get_variable(base), n}, 1.0);
     }
   }
 
-  Polynomial::MapType VisitPow(const Expression& e,
-                               const Variables& indeterminates) const {
+  MonomialBasisMapType VisitPow(const Expression& e,
+                                const Variables& indeterminates) const {
     const Expression& base{get_first_argument(e)};
     const Expression& exponent{get_second_argument(e)};
-    const pair<Monomial, Expression> result{
+    const pair<MonomialBasisElement, Expression> result{
         VisitPow(base, exponent, indeterminates)};
-    return Polynomial::MapType{{{result.first, result.second}}};
+    return MonomialBasisMapType{{{result.first, result.second}}};
   }
 
-  Polynomial::MapType VisitDivision(const Expression& e,
-                                    const Variables& indeterminates) const {
+  MonomialBasisMapType VisitDivision(const Expression& e,
+                                     const Variables& indeterminates) const {
     // e = e₁ / e₂
     const Expression& e1{get_first_argument(e)};
     const Expression& e2{get_second_argument(e)};
@@ -223,7 +212,7 @@ class DecomposePolynomialVisitor {
     // where monomialᵢ is a monomial of indeterminates and cᵢ/e₂ is an
     // expression free of indeterminates (which possibly includes decision
     // variables).
-    Polynomial::MapType map{Visit(e1, indeterminates)};
+    MonomialBasisMapType map{Visit(e1, indeterminates)};
     for (auto& item : map) {
       item.second /= e2;
     }
@@ -235,7 +224,7 @@ class DecomposePolynomialVisitor {
   // {x})` returns `{1 ↦ sin(a + b)}`. However, `VisitNonPolynomialTerm(sin(a +
   // x), {x})` throws an exception because `sin(a + x)` includes an
   // indeterminate `x`.
-  Polynomial::MapType VisitNonPolynomialTerm(
+  MonomialBasisMapType VisitNonPolynomialTerm(
       const Expression& e, const Variables& indeterminates) const {
     // vars(e) ∩ indeterminates = ∅.
     if (!intersect(e.GetVariables(), indeterminates).empty()) {
@@ -244,96 +233,97 @@ class DecomposePolynomialVisitor {
           << " should be free of the indeterminates " << indeterminates << ".";
       throw runtime_error(oss.str());
     }
-    return {{Monomial{}, e}};  // = {1 ↦ e}.
+    return {{MonomialBasisElement{}, e}};  // = {1 ↦ e}.
   }
 
-  Polynomial::MapType VisitAbs(const Expression& e,
-                               const Variables& indeterminates) const {
-    return VisitNonPolynomialTerm(e, indeterminates);
-  }
-  Polynomial::MapType VisitLog(const Expression& e,
-                               const Variables& indeterminates) const {
-    return VisitNonPolynomialTerm(e, indeterminates);
-  }
-  Polynomial::MapType VisitExp(const Expression& e,
-                               const Variables& indeterminates) const {
-    return VisitNonPolynomialTerm(e, indeterminates);
-  }
-  Polynomial::MapType VisitSqrt(const Expression& e,
+  MonomialBasisMapType VisitAbs(const Expression& e,
                                 const Variables& indeterminates) const {
     return VisitNonPolynomialTerm(e, indeterminates);
   }
-  Polynomial::MapType VisitSin(const Expression& e,
-                               const Variables& indeterminates) const {
-    return VisitNonPolynomialTerm(e, indeterminates);
-  }
-  Polynomial::MapType VisitCos(const Expression& e,
-                               const Variables& indeterminates) const {
-    return VisitNonPolynomialTerm(e, indeterminates);
-  }
-  Polynomial::MapType VisitTan(const Expression& e,
-                               const Variables& indeterminates) const {
-    return VisitNonPolynomialTerm(e, indeterminates);
-  }
-  Polynomial::MapType VisitAsin(const Expression& e,
+  MonomialBasisMapType VisitLog(const Expression& e,
                                 const Variables& indeterminates) const {
     return VisitNonPolynomialTerm(e, indeterminates);
   }
-  Polynomial::MapType VisitAcos(const Expression& e,
+  MonomialBasisMapType VisitExp(const Expression& e,
                                 const Variables& indeterminates) const {
     return VisitNonPolynomialTerm(e, indeterminates);
   }
-  Polynomial::MapType VisitAtan(const Expression& e,
-                                const Variables& indeterminates) const {
-    return VisitNonPolynomialTerm(e, indeterminates);
-  }
-  Polynomial::MapType VisitAtan2(const Expression& e,
+  MonomialBasisMapType VisitSqrt(const Expression& e,
                                  const Variables& indeterminates) const {
     return VisitNonPolynomialTerm(e, indeterminates);
   }
-  Polynomial::MapType VisitSinh(const Expression& e,
+  MonomialBasisMapType VisitSin(const Expression& e,
                                 const Variables& indeterminates) const {
     return VisitNonPolynomialTerm(e, indeterminates);
   }
-  Polynomial::MapType VisitCosh(const Expression& e,
+  MonomialBasisMapType VisitCos(const Expression& e,
                                 const Variables& indeterminates) const {
     return VisitNonPolynomialTerm(e, indeterminates);
   }
-  Polynomial::MapType VisitTanh(const Expression& e,
+  MonomialBasisMapType VisitTan(const Expression& e,
                                 const Variables& indeterminates) const {
     return VisitNonPolynomialTerm(e, indeterminates);
   }
-  Polynomial::MapType VisitMin(const Expression& e,
-                               const Variables& indeterminates) const {
-    return VisitNonPolynomialTerm(e, indeterminates);
-  }
-  Polynomial::MapType VisitMax(const Expression& e,
-                               const Variables& indeterminates) const {
-    return VisitNonPolynomialTerm(e, indeterminates);
-  }
-  Polynomial::MapType VisitCeil(const Expression& e,
-                                const Variables& indeterminates) const {
-    return VisitNonPolynomialTerm(e, indeterminates);
-  }
-  Polynomial::MapType VisitFloor(const Expression& e,
+  MonomialBasisMapType VisitAsin(const Expression& e,
                                  const Variables& indeterminates) const {
     return VisitNonPolynomialTerm(e, indeterminates);
   }
-  Polynomial::MapType VisitIfThenElse(const Expression& e,
-                                      const Variables& indeterminates) const {
+  MonomialBasisMapType VisitAcos(const Expression& e,
+                                 const Variables& indeterminates) const {
     return VisitNonPolynomialTerm(e, indeterminates);
   }
-  Polynomial::MapType VisitUninterpretedFunction(
+  MonomialBasisMapType VisitAtan(const Expression& e,
+                                 const Variables& indeterminates) const {
+    return VisitNonPolynomialTerm(e, indeterminates);
+  }
+  MonomialBasisMapType VisitAtan2(const Expression& e,
+                                  const Variables& indeterminates) const {
+    return VisitNonPolynomialTerm(e, indeterminates);
+  }
+  MonomialBasisMapType VisitSinh(const Expression& e,
+                                 const Variables& indeterminates) const {
+    return VisitNonPolynomialTerm(e, indeterminates);
+  }
+  MonomialBasisMapType VisitCosh(const Expression& e,
+                                 const Variables& indeterminates) const {
+    return VisitNonPolynomialTerm(e, indeterminates);
+  }
+  MonomialBasisMapType VisitTanh(const Expression& e,
+                                 const Variables& indeterminates) const {
+    return VisitNonPolynomialTerm(e, indeterminates);
+  }
+  MonomialBasisMapType VisitMin(const Expression& e,
+                                const Variables& indeterminates) const {
+    return VisitNonPolynomialTerm(e, indeterminates);
+  }
+  MonomialBasisMapType VisitMax(const Expression& e,
+                                const Variables& indeterminates) const {
+    return VisitNonPolynomialTerm(e, indeterminates);
+  }
+  MonomialBasisMapType VisitCeil(const Expression& e,
+                                 const Variables& indeterminates) const {
+    return VisitNonPolynomialTerm(e, indeterminates);
+  }
+  MonomialBasisMapType VisitFloor(const Expression& e,
+                                  const Variables& indeterminates) const {
+    return VisitNonPolynomialTerm(e, indeterminates);
+  }
+  MonomialBasisMapType VisitIfThenElse(const Expression& e,
+                                       const Variables& indeterminates) const {
+    return VisitNonPolynomialTerm(e, indeterminates);
+  }
+  MonomialBasisMapType VisitUninterpretedFunction(
       const Expression& e, const Variables& indeterminates) const {
     return VisitNonPolynomialTerm(e, indeterminates);
   }
 
   // Makes VisitExpression a friend of this class so that it can use private
   // methods.
-  friend Polynomial::MapType
-  drake::symbolic::VisitExpression<Polynomial::MapType>(
+  friend MonomialBasisMapType
+  drake::symbolic::VisitExpression<MonomialBasisMapType>(
       const DecomposePolynomialVisitor*, const Expression&, const Variables&);
 };
+
 template <typename BasisElement>
 Variables GetIndeterminates(
     const typename GenericPolynomial<BasisElement>::MapType& m) {
@@ -394,6 +384,37 @@ GenericPolynomial<BasisElement>::GenericPolynomial(const BasisElement& m)
 }
 
 template <typename BasisElement>
+GenericPolynomial<BasisElement>::GenericPolynomial(const Expression& e)
+    : GenericPolynomial<BasisElement>{e, e.GetVariables()} {
+  // No need to call CheckInvariant() because the following should hold.
+  DRAKE_ASSERT(decision_variables().empty());
+}
+
+template <typename BasisElement>
+GenericPolynomial<BasisElement>::GenericPolynomial(const Expression& e,
+                                                   Variables indeterminates)
+    : indeterminates_{std::move(indeterminates)} {
+  const std::map<MonomialBasisElement, Expression> monomial_to_coefficient_map =
+      DecomposePolynomialVisitor{}.Decompose(e, indeterminates_);
+  if constexpr (std::is_same_v<BasisElement, MonomialBasisElement>) {
+    basis_element_to_coefficient_map_ = std::move(monomial_to_coefficient_map);
+  } else {
+    for (const auto& [monomial, coeff] : monomial_to_coefficient_map) {
+      const std::map<BasisElement, double> monomial_to_basis_element =
+          monomial.template ToBasis<BasisElement>();
+      for (const auto& [basis_element, coeff2] : monomial_to_basis_element) {
+        DoAddProduct(coeff2 * coeff, basis_element,
+                     &basis_element_to_coefficient_map_);
+      }
+    }
+  }
+  decision_variables_ =
+      GetDecisionVariables<BasisElement>(basis_element_to_coefficient_map_);
+  // No need to call CheckInvariant() because DecomposePolynomialVisitor is
+  // supposed to make sure the invariant holds as a post-condition.
+}
+
+template <typename BasisElement>
 int GenericPolynomial<BasisElement>::Degree(const Variable& v) const {
   int degree{0};
   for (const pair<const BasisElement, Expression>& p :
@@ -411,6 +432,20 @@ int GenericPolynomial<BasisElement>::TotalDegree() const {
     degree = std::max(degree, p.first.total_degree());
   }
   return degree;
+}
+
+template <typename BasisElement>
+Expression GenericPolynomial<BasisElement>::ToExpression() const {
+  // Returns ∑ᵢ (cᵢ * mᵢ).
+  return accumulate(basis_element_to_coefficient_map_.begin(),
+                    basis_element_to_coefficient_map_.end(), Expression{0.0},
+                    [](const Expression& init,
+                       const pair<const BasisElement, Expression>& p) {
+                      const BasisElement& m{p.first};
+                      const Expression& coeff{p.second};
+                      return init + (coeff * m.ToExpression());
+                    })
+      .Expand();
 }
 
 template <typename BasisElement>
@@ -558,6 +593,12 @@ template <typename BasisElement>
 bool GenericPolynomial<BasisElement>::EqualTo(
     const GenericPolynomial<BasisElement>& p) const {
   return GenericPolynomialEqual<BasisElement>(*this, p, false);
+}
+
+template <typename BasisElement>
+bool GenericPolynomial<BasisElement>::EqualToAfterExpansion(
+    const GenericPolynomial<BasisElement>& p) const {
+  return GenericPolynomialEqual<BasisElement>(*this, p, true);
 }
 
 template class GenericPolynomial<MonomialBasisElement>;
