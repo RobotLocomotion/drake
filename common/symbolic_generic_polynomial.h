@@ -67,21 +67,23 @@ class GenericPolynomial {
   // NOLINTNEXTLINE(runtime/explicit)
   GenericPolynomial(const BasisElement& m);
 
-  /// Constructs a polynomial from an expression @p e. Note that all variables
-  /// in `e` are considered as indeterminates.
-  ///
-  /// @throws std::runtime_error if @p e is not a polynomial.
-  explicit Polynomial(const Expression& e);
+  /** Constructs a polynomial from an expression @p e. Note that all variables
+   * in `e` are considered as indeterminates.
+   *
+   * @throws std::runtime_error if @p e is not a polynomial.
+   */
+  explicit GenericPolynomial(const Expression& e);
 
-  /// Constructs a polynomial from an expression @p e by decomposing it with
-  /// respect to @p indeterminates.
-  ///
-  /// @note It collects the intersection of the variables appeared in `e` and
-  /// the provided @p indeterminates.
-  ///
-  /// @throws std::runtime_error if @p e is not a polynomial in @p
-  /// indeterminates.
-  Polynomial(const Expression& e, Variables indeterminates);
+  /** Constructs a polynomial from an expression @p e by decomposing it with
+   * respect to @p indeterminates.
+   *
+   * @note It collects the intersection of the variables appeared in `e` and
+   * the provided @p indeterminates.
+   *
+   * @throws std::runtime_error if @p e is not a polynomial in @p
+   * indeterminates.
+   */
+  GenericPolynomial(const Expression& e, Variables indeterminates);
 
   /** Returns the indeterminates of this generic polynomial. */
   [[nodiscard]] const Variables& indeterminates() const {
@@ -104,6 +106,9 @@ class GenericPolynomial {
 
   /** Returns the total degree of this generic polynomial. */
   [[nodiscard]] int TotalDegree() const;
+
+  /** Returns an equivalent symbolic expression of this generic polynomial.*/
+  [[nodiscard]] Expression ToExpression() const;
 
   /**
    * Differentiates this generic polynomial with respect to the variable @p x.

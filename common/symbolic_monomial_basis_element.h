@@ -154,6 +154,27 @@ class MonomialBasisElement : public PolynomialBasisElement {
   [[nodiscard]] std::map<ChebyshevBasisElement, double> ToChebyshevBasis()
       const;
 
+  /**
+   * Converts this monomial to a weighted sum of basis elements of type
+   * BasisElement. We return the map from each BasisElement to its coefficient.
+   * For example, if BasisElement=ChebyshevBasisElement, then when this = x²y³,
+   * it returns {[T₂(x)T₃(y)⇒1/8], [T₂(x)T₁(y)⇒3/8], [T₀(x)T₃(y)⇒1/8],
+   * [T₀(x)T₁(y)⇒3/8]}.
+   * @note Currently we only support @tparam BasisElement being
+   * MonomialBasisElement and ChebyshevBasisElement.
+   */
+  template <typename BasisElement>
+  std::map<BasisElement, double> ToBasis() const {
+    static_assert(std::is_same_v<BasisElement, MonomialBasisElement> ||
+                      std::is_same_v<BasisElement, ChebyshevBasisElement>,
+                  "MonomialBasisElement::ToBasis() does not support this "
+                  "BasisElement type.");
+    if constexpr (std::is_same_v<BasisElement, MonomialBasisElement>) {
+      return {{*this, 1.}};
+    }
+    return ToChebyshevBasis();
+  }
+
  private:
   [[nodiscard]] double DoEvaluate(double variable_val,
                                   int degree) const override;
