@@ -21,6 +21,7 @@ These are breaking changes that did not undergo a deprecation period:
 * The drake::examples::rod2d::Rod2D::pose_output() port has been removed, as
   the system no longer connects to the systems::rendering API (`#13890`_).
 * Remove pydrake.systems.framework.kAutoSize (`#13981`_).
+* Add [[nodiscard]] attributes to symbolic functions (`#14020`_).
 
 Changes since v0.22.0
 ---------------------
@@ -54,10 +55,11 @@ New features
 * Change IPOPT eval_g to use double version of constraint evaluation (`#13891`_)
 * Add generic polynomial and MonomialBasisElement (`#13867`_, `#13940`_, `#13980`_, `#13994`_)
 * Add a function to compute polynomial basis up to a given order (`#13870`_)
+* Add PiecewisePolynomial::AppendFirstOrderSegment (`#14030`_)
 
 Fixes
 
-* None
+* Add [[nodiscard]] attributes to symbolic functions (`#14020`_)
 
 Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
@@ -92,8 +94,6 @@ Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for common,math,lcm,lcmtypes,manipulation,perception go here>
-[common,solvers] * TBD Refactor symbolic expression / formula (`#14020`_)  # - Adds [[nodiscard]] attributes to member functions in order to highlight at compile time which return values should not be ignored. Update the affected test cases. - Make deleted methods public so that a compiler can give a proper warning (delete method). Otherwise, a compiler indicates that the method is private. - modernize-pass-by-value. Read our C++ guideline, https://drake.mit.edu/styleguide/cppguide.html#Pass_By_Value - `auto&` => `const auto&` in for-loop - Remove redundant declarations in symbolic_{expression,formula}_cell.h as they are already in symbolic_{expression,formula}.h
-* TBD trajectories: Adds PiecewisePolynomial::AppendFirstOrderSegment (`#14030`_)  # for incremental construction of first-order polynomial trajectories.
 
 * autodiff: Improve performance by reducing heap use  (`#13988`_)
 * manipulation: Add DifferentialInverseKinematicsIntegrator (`#13877`_, `#13919`_, `#13920`_, `#14004`_)
@@ -108,20 +108,19 @@ pydrake bindings
 ~~~~~~~~~~~~~~~~
 
 .. <relnotes for bindings go here>
-* TBD py sensors: Ensure keep_alive for Image[].data is honored (`#14015`_)  # Test does not indicate a difference in Drake, but avoids a segfault in Anzu
-* TBD jupyter: more robust fail fast when running as non-interactive kernel (`#14025`_)  # my bazel test script on travis ubuntu has been failing because get_ipython() returns an object, but not one that has a usable kernel. https://github.com/RussTedrake/manipulation/runs/1077702318?check_suite_focus=true This makes it more robust.
-* TBD Add jupyter widget version of JointSliders (`#14017`_)  # Co-authored-by: Russ Tedrake <russt@mit.edu>
-* TBD jupyter_widgets: Make testing instructions more explicit (`#14027`_)
 
 New features
 
 * Add pydrake.systems.jupyter_widgets.WidgetSystem (`#13882`_)
+* Add jupyter widget version of JointSliders (`#14017`_)
 * Copy and adapt yaml utilities from Anzu (`#13982`_)
 
 Fixes
 
 * Ensure that multiply (matmul) preserves input shape (`#13886`_)
 * Add missing import for jupyter widgets (`#13941`_)
+* Ensure keep_alive for Image[].data is honored (`#14015`_)
+* Make Jupyter fail fast when running as non-interactive kernel (`#14025`_)
 
 Newly bound
 
@@ -276,7 +275,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#14017: https://github.com/RobotLocomotion/drake/pull/14017
 .. _#14020: https://github.com/RobotLocomotion/drake/pull/14020
 .. _#14025: https://github.com/RobotLocomotion/drake/pull/14025
-.. _#14027: https://github.com/RobotLocomotion/drake/pull/14027
 .. _#14030: https://github.com/RobotLocomotion/drake/pull/14030
 .. <end issue links>
 
