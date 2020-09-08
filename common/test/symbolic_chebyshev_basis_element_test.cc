@@ -296,5 +296,17 @@ TEST_F(SymbolicChebyshevBasisElementTest, EvaluatePartial) {
   EXPECT_EQ(coeff, 17 * 26);
   EXPECT_EQ(new_basis_element, ChebyshevBasisElement(y_, 4));
 }
+
+TEST_F(SymbolicChebyshevBasisElementTest, MergeBasisElementInPlace) {
+  // Merge T₁(x)T₃(y) and T₁(x)T₂(z) gets T₂(x)T₃(y)T₂(z)
+  ChebyshevBasisElement basis_element1({{x_, 1}, {y_, 3}});
+  basis_element1.MergeBasisElementInPlace(
+      ChebyshevBasisElement({{x_, 1}, {z_, 2}}));
+  EXPECT_EQ(basis_element1.var_to_degree_map().size(), 3);
+  EXPECT_EQ(basis_element1.var_to_degree_map().at(x_), 2);
+  EXPECT_EQ(basis_element1.var_to_degree_map().at(y_), 3);
+  EXPECT_EQ(basis_element1.var_to_degree_map().at(z_), 2);
+  EXPECT_EQ(basis_element1.total_degree(), 7);
+}
 }  // namespace symbolic
 }  // namespace drake

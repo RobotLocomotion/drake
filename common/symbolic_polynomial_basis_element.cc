@@ -165,5 +165,33 @@ void PolynomialBasisElement::DoEvaluatePartial(
     }
   }
 }
+
+void PolynomialBasisElement::DoMergeBasisElementInPlace(
+    const PolynomialBasisElement& other) {
+  DRAKE_ASSERT(typeid(*this) == typeid(other));
+  auto it1 = this->var_to_degree_map_.begin();
+  auto it2 = other.var_to_degree_map_.begin();
+  while (it1 != this->var_to_degree_map_.end() &&
+         it2 != other.var_to_degree_map_.end()) {
+    if (it1->first.equal_to(it2->first)) {
+      it1->second += it2->second;
+      it1++;
+      it2++;
+    } else if (it2->first.less(it1->first)) {
+      this->var_to_degree_map_.insert(it1,
+                                      std::make_pair(it2->first, it2->second));
+      it2++;
+    } else {
+      // it1->first < it2->first.
+      it1++;
+    }
+  }
+  while (it2 != other.var_to_degree_map_.end()) {
+    this->var_to_degree_map_.insert(this->var_to_degree_map_.end(),
+                                    std::make_pair(it2->first, it2->second));
+    it2++;
+  }
+  total_degree_ += other.total_degree_;
+}
 }  // namespace symbolic
 }  // namespace drake
