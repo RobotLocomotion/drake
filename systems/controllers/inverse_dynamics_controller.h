@@ -90,6 +90,33 @@ class InverseDynamicsController : public Diagram<T>,
       const VectorX<double>& kd,
       bool has_reference_acceleration);
 
+  /**
+   * Constructs an inverse dynamics controller for the given `plant` model.
+   * Different from the other constructor, this contructor allows the
+   * %InverseDynamicsController to own the unique pointer of the given
+   * MultibodyPlant object.
+   * @param plant The unique pointer of the model of the plant for control.
+   * @param kp Position gain.
+   * @param ki Integral gain.
+   * @param kd Velocity gain.
+   * @param has_reference_acceleration If true, there is an extra BasicVector
+   * input port for `vd*`. If false, `vd*` is treated as zero, and no extra
+   * input port is declared.
+   * @pre `plant` has been finalized (plant.is_finalized() returns `true`).
+   * @throws std::exception if
+   *  - The plant is not finalized (see MultibodyPlant::Finalize()).
+   *  - The number of generalized velocities is not equal to the number of
+   *    generalized positions.
+   *  - The model is not fully actuated.
+   *  - Vector kp, ki and kd do not all have the same size equal to the number
+   *    of generalized positions.
+   */
+  InverseDynamicsController(std::unique_ptr<multibody::MultibodyPlant<T>> plant,
+                            const VectorX<double>& kp,
+                            const VectorX<double>& ki,
+                            const VectorX<double>& kd,
+                            bool has_reference_acceleration);
+
   ~InverseDynamicsController() override;
 
   /**
@@ -138,9 +165,7 @@ class InverseDynamicsController : public Diagram<T>,
 
  private:
   void SetUp(const VectorX<double>& kp, const VectorX<double>& ki,
-      const VectorX<double>& kd,
-      const controllers::InverseDynamics<T>& inverse_dynamics,
-      DiagramBuilder<T>* diagram_builder);
+             const VectorX<double>& kd);
 
   const multibody::MultibodyPlant<T>* multibody_plant_for_control_{nullptr};
   PidController<T>* pid_{nullptr};
