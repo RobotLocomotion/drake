@@ -47,16 +47,21 @@ enum class ContactSolverResult {
 ///   q̇ = N(q)⋅v
 /// </pre>
 /// where M(q) is the mass matrix, `C(q,v)` contains the Coriolis and
-/// centrifugal contributions and `τₑₓₜ(q, v)` are external contributions,
-/// including actuation for robotic applications.
+/// centrifugal contributions and `τₑₓₜ(t, q, v)` are external contributions.
+/// For robotics applications we can further expand the external contributions
+/// as: <pre>
+///   τₑₓₜ(t, q, v) = τₐₚₚ(t, q, v) + B⋅u(t)
+/// </pre>
+/// where `u(t)` corresponds to external __actuation__ and matrix `B`,
+/// independent of state and time, maps input actuation to generalized forces.
 /// Here we will focus on discretizing these equations at the velocity level in
 /// which the unknowns of the system are the generalized velocities.
 /// For instance, if we use a semi-implicit Euler approximation with a time step
 /// dt, given the previous step velocity `v₀`, we approximate the accelerations
-/// as `v̇ = (v − v₀)/dt`, the generalized positions derivatives as `q̇ =
-/// N(q₀)⋅v` and the next step positions as `q = q₀ + dt⋅q̇`. Therefore the
-/// discrete momentum equations will read: <pre>
-///   M(q₀)⋅(v−v₀) + dt⋅C(q₀,v) = dt⋅τₑₓₜ(q₀, v)
+/// as `v̇ = (v − v₀)/dt`, the generalized positions derivatives as
+/// `q̇ = N(q₀)⋅v` and the next step positions as `q = q₀ + dt⋅q̇`. Therefore
+/// the discrete momentum equations will read: <pre>
+///   M(q₀)⋅(v−v₀) + dt⋅C(q₀,v) = dt⋅τₑₓₜ(t₀,q₀,v)
 /// </pre>
 ///
 /// Using this framework in terms of generalized positions and velocities we can
@@ -83,7 +88,7 @@ enum class ContactSolverResult {
 /// `F(v)` describes the balance of momentum already discretized at the
 /// velocity level. As an example, consider the dynamics of rigid bodies
 /// discretized using the semi-implicit Euler scheme presented earlier. In this
-/// case we have `F(v) = M(q₀)⋅(v−v₀) - dt⋅C(q₀,v) - dt⋅τₑₓₜ(q₀, v)`.
+/// case we have `F(v) = M(q₀)⋅(v−v₀) + dt⋅C(q₀,v₀) - dt⋅τₑₓₜ(t₀, q₀, v₀)`.
 /// With "Contact constraints" we mean:
 /// - Contact forces follow Coulomb's law of friction, i.e. γᵢ is inside the
 ///    friction cone.
@@ -142,7 +147,7 @@ enum class ContactSolverResult {
 ///
 /// As an example of application, consider the rigid multibody dynamics
 /// equations discretized using an explicit approach for all non-contact forces,
-/// as for instance in [Castro et al., 2019]. In this case F(q, v) takes the
+/// as for instance in [Castro et al., 2019]. In this case F(v) takes the
 /// form: <pre>
 ///   F(v) = M(q₀)⋅(v−v₀) − dt⋅τ₀
 /// </pre>
@@ -223,13 +228,17 @@ class ContactSolver {
   virtual ~ContactSolver() = default;
 
   /// Sets the information describing the dynamics of the physical system.
-  /// Derived classes will keep a reference to the input `data` and therefore it
-  /// is required that it outlives this object.
+  /// Derived classes will keep a reference to the input `data`, which is
+  /// required to be alive within the scope SolveWithGuess() gets called.
+  /// This class has no means to enforce this requirement and therefore it is
+  /// the responsability of the client code to do so.
   virtual void SetSystemDynamicsData(const SystemDynamicsData<T>* data) = 0;
 
   /// Sets the information describing the set of possible discrete contacts.
-  /// Derived classes will keep a reference to the input `data` and therefore it
-  /// is required that it outlives this object.
+  /// Derived classes will keep a reference to the input `data`, which is
+  /// required to be alive within the scope SolveWithGuess() gets called.
+  /// This class has no means to enforce this requirement and therefore it is
+  /// the responsability of the client code to do so.
   virtual void SetPointContactData(const PointContactData<T>* data) = 0;
 
   /// Returns the number of generalized velocities in accordance to the data
@@ -256,7 +265,7 @@ class ContactSolver {
   /// num_velocities().
   virtual const VectorX<T>& GetVelocities() const = 0;
 
-  /// Retrieve generalized contact impulses τc = Jcᵀ⋅γ, of size
+  /// Retrieve generalized contact impulses jc = Jcᵀ⋅γ, of size
   /// num_velocities().
   virtual const VectorX<T>& GetGeneralizedContactImpulses() const = 0;
 
