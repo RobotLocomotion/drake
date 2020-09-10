@@ -92,7 +92,7 @@ void AddWeldWithOptionalError(
     const Frame<double>& child_frame,
     ModelWeldErrorFunction error_func,
     MultibodyPlant<double>* plant,
-    std::vector<ModelInfo>* added_models) {
+    std::vector<ModelInstanceInfo>* added_models) {
   // TODO(eric.cousineau): This hack really shouldn't belong in model
   // directives. Instead, it should live externally as a transformation on
   // ModelDirectives (either flattened or recursive).
@@ -114,12 +114,12 @@ void AddWeldWithOptionalError(
     plant->WeldFrames(parent_frame, child_frame);
   }
   if (added_models) {
-    // Record weld info into crappy ModelInfo struct.
+    // Record weld info into crappy ModelInstanceInfo struct.
     bool found = false;
     for (auto& info : *added_models) {
       if (info.model_instance == child_frame.model_instance()) {
         found = true;
-        // See warning in ModelInfo about these members.
+        // See warning in ModelInstanceInfo about these members.
         info.parent_frame_name = parent_frame.name();
         info.child_frame_name = child_frame.name();
       }
@@ -130,7 +130,7 @@ void AddWeldWithOptionalError(
 
 void ProcessModelDirectivesImpl(
     const ModelDirectives& directives, MultibodyPlant<double>* plant,
-    std::vector<ModelInfo>* added_models, Parser* parser,
+    std::vector<ModelInstanceInfo>* added_models, Parser* parser,
     const std::string& model_namespace,
     ModelWeldErrorFunction error_func) {
   drake::log()->debug("ProcessModelDirectives(MultibodyPlant)");
@@ -159,7 +159,7 @@ void ProcessModelDirectivesImpl(
 
   for (auto& directive : directives.directives) {
     if (directive.add_model) {
-      ModelInfo info;
+      ModelInstanceInfo info;
       auto& model = *directive.add_model;
       const std::string name = PrefixName(model_namespace, model.name);
       drake::log()->debug("  add_model: {}\n    {}", name, model.file);
@@ -181,6 +181,10 @@ void ProcessModelDirectivesImpl(
     } else if (directive.add_frame) {
       auto& frame = *directive.add_frame;
       drake::log()->debug("  add_frame: {}", frame.name);
+      if (!frame.X_PF.base_frame) {
+        throw std::logic_error(
+            "add_frame directive with empty base frame is ambiguous");
+      }
       // Only override instance if scope is explicitly specified.
       std::optional<ModelInstanceIndex> instance;
       ScopedName parsed = ParseScopedName(frame.name);
@@ -305,11 +309,11 @@ const std::string GetScopedFrameName(
 
 void ProcessModelDirectives(
     const ModelDirectives& directives, MultibodyPlant<double>* plant,
-    std::vector<ModelInfo>* added_models, Parser* parser,
+    std::vector<ModelInstanceInfo>* added_models, Parser* parser,
     ModelWeldErrorFunction error_func) {
   auto tmp_parser = ConstructIfNullAndReassign<Parser>(&parser, plant);
   auto tmp_added_model =
-      ConstructIfNullAndReassign<std::vector<ModelInfo>>(&added_models);
+      ConstructIfNullAndReassign<std::vector<ModelInstanceInfo>>(&added_models);
   const std::string model_namespace = "";
   internal::ProcessModelDirectivesImpl(
       directives, plant, added_models, parser, model_namespace, error_func);
@@ -346,12 +350,13 @@ void FlattenModelDirectives(
   }
 }
 
-ModelInfo MakeModelInfo(const std::string& model_name,
-                        const std::string& model_path,
-                        const std::string& parent_frame_name,
-                        const std::string& child_frame_name,
-                        const drake::math::RigidTransformd& X_PC) {
-  ModelInfo info;
+ModelInstanceInfo MakeModelInstanceInfo(
+    const std::string& model_name,
+    const std::string& model_path,
+    const std::string& parent_frame_name,
+    const std::string& child_frame_name,
+    const drake::math::RigidTransformd& X_PC) {
+  ModelInstanceInfo info;
   info.model_name = model_name;
   info.model_path = model_path;
   info.parent_frame_name = parent_frame_name;
@@ -363,7 +368,7 @@ ModelInfo MakeModelInfo(const std::string& model_name,
 // TODO(eric.cousineau): Do we *really* need this function? This seems like
 // it'd be better handled as an MBP subgraph.
 ModelDirectives MakeModelsAttachedToFrameDirectives(
-    const std::vector<ModelInfo>& models_to_add) {
+    const std::vector<ModelInstanceInfo>& models_to_add) {
   ModelDirectives directives;
 
   // One for add frame, one for add model, one for add weld.
@@ -371,7 +376,7 @@ ModelDirectives MakeModelsAttachedToFrameDirectives(
 
   int index = 0;
   for (size_t i = 0; i < models_to_add.size(); i++) {
-    const ModelInfo& model_to_add = models_to_add.at(i);
+    const ModelInstanceInfo& model_to_add = models_to_add.at(i);
     std::string attachment_frame_name = model_to_add.parent_frame_name;
 
     // Add frame first.

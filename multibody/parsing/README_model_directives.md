@@ -30,8 +30,8 @@ Within this group are a series of directives:
    should generally be avoided.
  * `AddFrame` takes a `name` and a `X_PF` transform and adds a new frame to
    the model.  Note that the transform is as specified in the `Transform`
-   scenario schema and can reference an optional base frame, in which case
-   the frame will be added to the base frame's model instance.
+   scenario schema, but *must* reference a base frame; the newly created
+   frame will be added to the base frame's model instance.
  * `AddDirectives` takes a `file` naming a model directives file and an
    optional `model_namespace`; it loads the model directives from that file
    with the namespace prefixed to them (see Scoping, below).
@@ -59,16 +59,27 @@ uses the model directives to populate the plant.
 ## Scoping
 
 Elements (frames, bodies, etc.) in `MultibodyPlant` belong to model instances.
-Model instances can have any name specifiers, and can contain the "namespace"
-delimiter `::`. Element names should not contain `::`.
+To acknowledge this, and support "faux" composition, we introduce scoping via
+names.
 
-Examples:
+Names can be scoped implicitly or explicitly, and this scoping supports
+multiple levels of "nesting" -- insofar as model instances in MultibodyPlant
+can denote hierarchy (see #14043 for more info).
 
-- `my_frame` implies no explicit model instance.
-- `my_model::my_frame` implies the model instance `my_model`, the frame
-`my_frame`.
-- `top_level::my_model::my_frame` implies the model instance
-`top_level::my_model`, the frame `my_frame`.
+Names are delimited by `::`; the last name portion indicates the element name,
+and all preceding portions indicate the model instance name. For this reason,
+element names themselves should not contain `::`.
+
+(The `::` convention is used for consistency with the emerging namespace
+syntax for SDFormat, soon to be required in SDFormat 1.8.)
+
+Thus:
+
+- `my_frame`: No explicit model instance, the frame is `my_frame`.
+- `my_model::my_frame`: The model instance is `my_model`, the frame is
+  `my_frame`.
+- `top_level::my_model::my_frame`: The model instance is
+  `top_level::my_model`, the frame is `my_frame`.
 
 
 ## Conditions for deprecation
@@ -79,7 +90,9 @@ SDF format properly specifies, and Drake supports, the following:
 
  * What `<include/>` statements should *really* do (e.g. namespacing models,
    joints, etc.) without kludging Drake's parsing
+   * See http://sdformat.org/tutorials?tut=composition_proposal&cat=pose_semantics_docs& for the progress of the proposed formal semantics.
  * How to weld models together with joints external to the models
+
 
 OR if we find a mechanism whereby xacro could accomplish the same thing:
 

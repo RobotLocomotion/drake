@@ -1,6 +1,6 @@
 #pragma once
 /// @file
-/// Provides directives for building scenes (*not* scenarios).
+/// Provides directives for building scenes.
 /// See `multibody/parsing/README_model_directives.md` for more info.
 
 #include <optional>
@@ -20,6 +20,7 @@ namespace drake {
 namespace multibody {
 namespace parsing {
 
+/// Directive to add a weld between two named frames, a parent and a child.
 struct AddWeld {
   bool IsValid() const {
     if (parent.empty()) {
@@ -44,6 +45,8 @@ struct AddWeld {
   std::string child;
 };
 
+/// Directive to add a model from a urdf or sdf file to a scene, using a given
+/// name for the added instance.
 struct AddModel {
   bool IsValid() const {
     if (file.empty()) {
@@ -67,6 +70,7 @@ struct AddModel {
   std::string name;
 };
 
+/// Directive to add an empty, named model instance to a scene.
 struct AddModelInstance {
   bool IsValid() const {
     if (name.empty()) {
@@ -83,6 +87,10 @@ struct AddModelInstance {
   std::string name;
 };
 
+/// Directive to add a path in the filesystem to the resolution of
+/// `package://` URIs during the processing of model directives and the
+/// models they load.
+/// NOTE:  This is expected to be deprecated soon.
 struct AddPackagePath {
   bool IsValid() const {
     if (name.empty()) {
@@ -105,6 +113,8 @@ struct AddPackagePath {
   std::string path;
 };
 
+/// Adds a Frame to the scene.  The added frame must have a name and a
+/// transform with a base frame and offset.
 struct AddFrame {
   bool IsValid() const {
     if (name.empty()) {
@@ -131,6 +141,8 @@ struct AddFrame {
   drake::schema::Transform X_PF;
 };
 
+/// Directive to incorporate another model directives file, optionally with
+/// its elements prefixed with a namespace.
 struct AddDirectives {
   bool IsValid() const {
     if (file.empty()) {
@@ -160,6 +172,7 @@ struct AddDirectives {
   std::optional<std::string> model_namespace;
 };
 
+/// Union structure for top-level model directives yaml file elements.
 struct ModelDirective {
   bool IsValid() const {
     const bool unique =
@@ -204,6 +217,7 @@ struct ModelDirective {
   std::optional<AddDirectives> add_directives;
 };
 
+/// Struct for the model directives yaml file schema.
 struct ModelDirectives {
   bool IsValid() const {
     for (auto& directive : directives) {
