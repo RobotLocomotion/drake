@@ -181,9 +181,28 @@ PYBIND11_MODULE(trajectories, m) {
           py::arg("breaks"), py::arg("rotation_matrices"),
           doc.PiecewiseQuaternionSlerp.ctor.doc_2args_breaks_rotation_matrices)
       .def(py::init<const std::vector<double>&,
+               const std::vector<math::RotationMatrix<T>>&>(),
+          py::arg("breaks"), py::arg("rotation_matrices"),
+          doc.PiecewiseQuaternionSlerp.ctor.doc_2args_breaks_rotation_matrices)
+      .def(py::init<const std::vector<double>&,
                const std::vector<AngleAxis<T>>&>(),
           py::arg("breaks"), py::arg("angle_axes"),
-          doc.PiecewiseQuaternionSlerp.ctor.doc_2args_breaks_angle_axes);
+          doc.PiecewiseQuaternionSlerp.ctor.doc_2args_breaks_angle_axes)
+      .def("Append",
+          py::overload_cast<const T&, const Quaternion<T>&>(
+              &PiecewiseQuaternionSlerp<T>::Append),
+          py::arg("time"), py::arg("quaternion"),
+          doc.PiecewiseQuaternionSlerp.Append.doc_2args_time_quaternion)
+      .def("Append",
+          py::overload_cast<const T&, const math::RotationMatrix<T>&>(
+              &PiecewiseQuaternionSlerp<T>::Append),
+          py::arg("time"), py::arg("rotation_matrix"),
+          doc.PiecewiseQuaternionSlerp.Append.doc_2args_time_rotation_matrix)
+      .def("Append",
+          py::overload_cast<const T&, const AngleAxis<T>&>(
+              &PiecewiseQuaternionSlerp<T>::Append),
+          py::arg("time"), py::arg("angle_axis"),
+          doc.PiecewiseQuaternionSlerp.Append.doc_2args_time_angle_axis);
 }
 
 }  // namespace pydrake

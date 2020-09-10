@@ -1,8 +1,7 @@
 #pragma once
 
 #ifndef DRAKE_COMMON_SYMBOLIC_HEADER
-// TODO(soonho-tri): Change to #error, when #6613 merged.
-#warning Do not directly include this file. Include "drake/common/symbolic.h".
+#error Do not directly include this file. Include "drake/common/symbolic.h".
 #endif
 
 #include <cstddef>
@@ -60,10 +59,7 @@ class Variable {
    *  It is allowed to construct a dummy variable but it should not be used to
    *  construct a symbolic expression.
    */
-  Variable()
-      : id_{0},
-        type_{Type::CONTINUOUS},
-        name_{std::make_shared<std::string>()} {}
+  Variable() : name_{std::make_shared<std::string>()} {}
 
   /** Constructs a default value.  This overload is used by Eigen when
    * EIGEN_INITIALIZE_MATRICES_BY_ZERO is enabled.
@@ -76,17 +72,21 @@ class Variable {
 
   /** Checks if this is a dummy variable (ID = 0) which is created by
    *  the default constructor. */
-  bool is_dummy() const { return get_id() == 0; }
-  Id get_id() const;
-  Type get_type() const;
-  std::string get_name() const;
-  std::string to_string() const;
+  [[nodiscard]] bool is_dummy() const { return get_id() == 0; }
+  [[nodiscard]] Id get_id() const;
+  [[nodiscard]] Type get_type() const;
+  [[nodiscard]] std::string get_name() const;
+  [[nodiscard]] std::string to_string() const;
 
   /// Checks the equality of two variables based on their ID values.
-  bool equal_to(const Variable& v) const { return get_id() == v.get_id(); }
+  [[nodiscard]] bool equal_to(const Variable& v) const {
+    return get_id() == v.get_id();
+  }
 
   /// Compares two variables based on their ID values.
-  bool less(const Variable& v) const { return get_id() < v.get_id(); }
+  [[nodiscard]] bool less(const Variable& v) const {
+    return get_id() < v.get_id();
+  }
 
   /** Implements the @ref hash_append concept. */
   template <class HashAlgorithm>

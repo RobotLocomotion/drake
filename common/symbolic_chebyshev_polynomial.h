@@ -1,7 +1,6 @@
 #pragma once
 #ifndef DRAKE_COMMON_SYMBOLIC_HEADER
-// TODO(soonho-tri): Change to #error, when #6613 merged.
-#warning Do not directly include this file. Include "drake/common/symbolic.h".
+#error Do not directly include this file. Include "drake/common/symbolic.h".
 #endif
 
 #include <ostream>
@@ -39,20 +38,20 @@ class ChebyshevPolynomial {
   ChebyshevPolynomial(Variable var, int degree);
 
   /** Getter for the variable. */
-  const Variable& var() const { return var_; }
+  [[nodiscard]] const Variable& var() const { return var_; }
 
   /** Getter for the degree of the Chebyshev polynomial. */
-  int degree() const { return degree_; }
+  [[nodiscard]] int degree() const { return degree_; }
 
   /**
    * Converts this Chebyshev polynomial to a polynomial with monomial basis.
    */
-  Polynomial ToPolynomial() const;
+  [[nodiscard]] Polynomial ToPolynomial() const;
 
   /**
    * Evaluates this Chebyshev polynomial at @p var_val.
    */
-  double Evaluate(double var_val) const;
+  [[nodiscard]] double Evaluate(double var_val) const;
 
   /**
    * Checks if this and @p other represent the same Chebyshev polynomial. Two
@@ -97,7 +96,8 @@ class ChebyshevPolynomial {
    * chebyshev_coeff_pairs[0] = (T₀(x), n).
    * For the special case when degree() == 0, we return an empty vector.
    */
-  std::vector<std::pair<ChebyshevPolynomial, double>> Differentiate() const;
+  [[nodiscard]] std::vector<std::pair<ChebyshevPolynomial, double>>
+  Differentiate() const;
 
   /** Implements the @ref hash_append concept. */
   template <class HashAlgorithm>
@@ -119,10 +119,10 @@ std::ostream& operator<<(std::ostream& out, const ChebyshevPolynomial& p);
 
 /**
  * Evaluates a Chebyshev polynomial at a given value.
- * @param variable_val The value of the variable.
+ * @param var_val The value of the variable.
  * @param degree The degree of the Chebyshev polynomial.
  */
-double EvaluateChebyshevPolynomial(double variable_val, int degree);
+double EvaluateChebyshevPolynomial(double var_val, int degree);
 }  // namespace symbolic
 }  // namespace drake
 

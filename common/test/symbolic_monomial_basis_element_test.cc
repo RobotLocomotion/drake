@@ -4,6 +4,7 @@
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
+#include "drake/common/unused.h"
 
 using std::pair;
 using std::runtime_error;
@@ -463,7 +464,9 @@ TEST_F(MonomialBasisElementTest, Evaluate) {
 TEST_F(MonomialBasisElementTest, EvaluateException) {
   const MonomialBasisElement m{{{var_x_, 1}, {var_y_, 2}}};  // xy^2
   const Environment env{{{var_x_, 1.0}}};
-  EXPECT_THROW(m.Evaluate(env), std::invalid_argument);
+  double dummy{};
+  EXPECT_THROW(dummy = m.Evaluate(env), std::invalid_argument);
+  unused(dummy);
 }
 
 TEST_F(MonomialBasisElementTest, EvaluatePartial) {
@@ -660,6 +663,18 @@ TEST_F(MonomialBasisElementTest, ToChebyshevBasisMultivariate) {
             1.0 / 8);
   EXPECT_EQ(result4.at(ChebyshevBasisElement({{var_x_, 1}, {var_z_, 1}})),
             3.0 / 8);
+}
+
+TEST_F(MonomialBasisElementTest, MergeBasisElementInPlace) {
+  // x²y³ * xyz² = x³y⁴z²
+  MonomialBasisElement basis_element1({{var_x_, 2}, {var_y_, 3}});
+  basis_element1.MergeBasisElementInPlace(
+      MonomialBasisElement({{var_x_, 1}, {var_y_, 1}, {var_z_, 2}}));
+  EXPECT_EQ(basis_element1.var_to_degree_map().size(), 3);
+  EXPECT_EQ(basis_element1.var_to_degree_map().at(var_x_), 3);
+  EXPECT_EQ(basis_element1.var_to_degree_map().at(var_y_), 4);
+  EXPECT_EQ(basis_element1.var_to_degree_map().at(var_z_), 2);
+  EXPECT_EQ(basis_element1.total_degree(), 9);
 }
 }  // namespace symbolic
 }  // namespace drake

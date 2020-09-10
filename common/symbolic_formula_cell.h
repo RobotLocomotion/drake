@@ -8,8 +8,7 @@
 /// `DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER` before. Without it, you have
 /// compile-time errors.
 #ifndef DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
-// TODO(soonho-tri): Change to #error, when #6613 merged.
-#warning Do not include this file unless you implement symbolic libraries.
+#error Do not include this file unless you implement symbolic libraries.
 #endif
 
 #include <memory>

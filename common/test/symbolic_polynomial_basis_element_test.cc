@@ -4,6 +4,7 @@
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
+#include "drake/common/unused.h"
 #define DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
 #include "drake/common/symbolic_expression_cell.h"
 #undef DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
@@ -33,6 +34,10 @@ class DerivedBasisA : public PolynomialBasisElement {
     return std::make_pair(coeff, DerivedBasisA(new_var_to_degree_map));
   }
 
+  void MergeBasisElementInPlace(const DerivedBasisA& other) {
+    this->DoMergeBasisElementInPlace(other);
+  }
+
  private:
   double DoEvaluate(double variable_val, int degree) const override {
     return std::pow(variable_val, degree);
@@ -58,6 +63,10 @@ class DerivedBasisB : public PolynomialBasisElement {
 
   bool operator<(const DerivedBasisB& other) const {
     return this->lexicographical_compare(other);
+  }
+
+  void MergeBasisElementInPlace(const DerivedBasisB& other) {
+    this->DoMergeBasisElementInPlace(other);
   }
 
  private:
@@ -155,8 +164,10 @@ TEST_F(SymbolicPolynomialBasisElementTest, Evaluate) {
   // p1=y²
   EXPECT_EQ(p1.Evaluate(env2), 9);
   // p2=xy², but env2 does not contain value for x.
-  DRAKE_EXPECT_THROWS_MESSAGE(p2.Evaluate(env2), std::invalid_argument,
+  double dummy{};
+  DRAKE_EXPECT_THROWS_MESSAGE(dummy = p2.Evaluate(env2), std::invalid_argument,
                               ".* x is not in env");
+  unused(dummy);
 }
 
 TEST_F(SymbolicPolynomialBasisElementTest, LessThan) {
@@ -227,6 +238,58 @@ TEST_F(SymbolicPolynomialBasisElementTest, BasisElementGradedReverseLexOrder) {
       }
     }
   }
+}
+
+TEST_F(SymbolicPolynomialBasisElementTest, MergeBasisElementInPlace) {
+  // Merge [(x->1), (y->2)] and [(x->2), (y->1)] gets [(x->3), (y->3)]
+  DerivedBasisA basis_element1({{x_, 1}, {y_, 2}});
+  basis_element1.MergeBasisElementInPlace(DerivedBasisA({{x_, 2}, {y_, 1}}));
+  EXPECT_EQ(basis_element1.var_to_degree_map().size(), 2);
+  EXPECT_EQ(basis_element1.var_to_degree_map().at(x_), 3);
+  EXPECT_EQ(basis_element1.var_to_degree_map().at(y_), 3);
+  EXPECT_EQ(basis_element1.total_degree(), 6);
+
+  // Merge [(x->2), (z->1)] and [(x->3), (y->4)] gets [(x->5), (y->4), (z->1)]
+  DerivedBasisA basis_element2({{x_, 2}, {z_, 1}});
+  basis_element2.MergeBasisElementInPlace(DerivedBasisA({{x_, 3}, {y_, 4}}));
+  EXPECT_EQ(basis_element2.var_to_degree_map().size(), 3);
+  EXPECT_EQ(basis_element2.var_to_degree_map().at(x_), 5);
+  EXPECT_EQ(basis_element2.var_to_degree_map().at(y_), 4);
+  EXPECT_EQ(basis_element2.var_to_degree_map().at(z_), 1);
+  EXPECT_EQ(basis_element2.total_degree(), 10);
+
+  // Merge [(z->3)] and [(x->1), (y->2)] gets [(x->1), (y->2), (z->3)]
+  DerivedBasisA basis_element3({{z_, 3}});
+  basis_element3.MergeBasisElementInPlace(DerivedBasisA({{x_, 1}, {y_, 2}}));
+  EXPECT_EQ(basis_element3.var_to_degree_map().size(), 3);
+  EXPECT_EQ(basis_element3.var_to_degree_map().at(x_), 1);
+  EXPECT_EQ(basis_element3.var_to_degree_map().at(y_), 2);
+  EXPECT_EQ(basis_element3.var_to_degree_map().at(z_), 3);
+  EXPECT_EQ(basis_element3.total_degree(), 6);
+
+  // Merge [(x->2)] and [(x->1), (y->3), (z->2)] gets [(x->3), (y->3), (z->2)]
+  DerivedBasisA basis_element4({{x_, 2}});
+  basis_element4.MergeBasisElementInPlace(
+      DerivedBasisA({{x_, 1}, {y_, 3}, {z_, 2}}));
+  EXPECT_EQ(basis_element4.var_to_degree_map().size(), 3);
+  EXPECT_EQ(basis_element4.var_to_degree_map().at(x_), 3);
+  EXPECT_EQ(basis_element4.var_to_degree_map().at(y_), 3);
+  EXPECT_EQ(basis_element4.var_to_degree_map().at(z_), 2);
+  EXPECT_EQ(basis_element4.total_degree(), 8);
+
+  // Merge [] with [(x->1)] gets [(x->1)]
+  DerivedBasisA basis_element5{};
+  basis_element5.MergeBasisElementInPlace(DerivedBasisA({{x_, 1}}));
+  EXPECT_EQ(basis_element5.var_to_degree_map().size(), 1);
+  EXPECT_EQ(basis_element5.var_to_degree_map().at(x_), 1);
+  EXPECT_EQ(basis_element5.total_degree(), 1);
+
+  // Merge [(x->1)] with [] gets [(x->1)]
+  DerivedBasisA basis_element6{{{x_, 1}}};
+  basis_element6.MergeBasisElementInPlace(DerivedBasisA());
+  EXPECT_EQ(basis_element6.var_to_degree_map().size(), 1);
+  EXPECT_EQ(basis_element6.var_to_degree_map().at(x_), 1);
+  EXPECT_EQ(basis_element6.total_degree(), 1);
 }
 }  // namespace symbolic
 }  // namespace drake
