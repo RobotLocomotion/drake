@@ -181,6 +181,10 @@ void ProcessModelDirectivesImpl(
     } else if (directive.add_frame) {
       auto& frame = *directive.add_frame;
       drake::log()->debug("  add_frame: {}", frame.name);
+      if (!frame.X_PF.base_frame) {
+        throw std::logic_error(
+            "add_frame directive with empty base frame is ambiguous");
+      }
       // Only override instance if scope is explicitly specified.
       std::optional<ModelInstanceIndex> instance;
       ScopedName parsed = ParseScopedName(frame.name);

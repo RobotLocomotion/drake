@@ -30,8 +30,8 @@ Within this group are a series of directives:
    should generally be avoided.
  * `AddFrame` takes a `name` and a `X_PF` transform and adds a new frame to
    the model.  Note that the transform is as specified in the `Transform`
-   scenario schema and can reference an optional base frame, in which case
-   the frame will be added to the base frame's model instance.
+   scenario schema, but *must* reference a base frame; the newly created
+   frame will be added to the base frame's model instance.
  * `AddDirectives` takes a `file` naming a model directives file and an
    optional `model_namespace`; it loads the model directives from that file
    with the namespace prefixed to them (see Scoping, below).
