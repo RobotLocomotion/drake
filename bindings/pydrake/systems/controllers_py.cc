@@ -92,7 +92,8 @@ PYBIND11_MODULE(controllers, m) {
           py::arg("robot"), py::arg("kp"), py::arg("ki"), py::arg("kd"),
           py::arg("has_reference_acceleration"),
           // Keep alive, reference: `self` keeps `robot` alive.
-          py::keep_alive<1, 2>(), doc.InverseDynamicsController.ctor.doc)
+          py::keep_alive<1, 2>(),
+          doc.InverseDynamicsController.ctor.doc_5args_referenced_plant)
       .def("set_integral_value",
           &InverseDynamicsController<double>::set_integral_value,
           doc.InverseDynamicsController.set_integral_value.doc)
