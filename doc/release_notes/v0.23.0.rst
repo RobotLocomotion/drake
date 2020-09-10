@@ -21,7 +21,8 @@ These are breaking changes that did not undergo a deprecation period:
 * The drake::examples::rod2d::Rod2D::pose_output() port has been removed, as
   the system no longer connects to the systems::rendering API (`#13890`_).
 * Remove pydrake.systems.framework.kAutoSize (`#13981`_).
-* Add [[nodiscard]] attributes to symbolic functions (`#14020`_).
+* Add [[nodiscard]] attributes to symbolic functions (`#14020`_, `#14021`_).
+* The drake/common/symbolic.h headers now ``#error`` when included incorrectly (`#14003`_).
 
 Changes since v0.22.0
 ---------------------
@@ -53,20 +54,19 @@ Mathematical Program
 New features
 
 * Change IPOPT eval_g to use double version of constraint evaluation (`#13891`_)
-* Add generic polynomial and MonomialBasisElement (`#13867`_, `#13940`_, `#13980`_, `#13994`_)
+* Add generic polynomial and MonomialBasisElement (`#13867`_, `#13940`_, `#13980`_, `#13994`_, `#14023`_, `#14036`_)
 * Add a function to compute polynomial basis up to a given order (`#13870`_)
 * Add PiecewisePolynomial::AppendFirstOrderSegment (`#14030`_)
+* Add PiecewiseQuaternionSlerp::Append (`#14031`_)
 
 Fixes
 
-* Add [[nodiscard]] attributes to symbolic functions (`#14020`_)
+* Add [[nodiscard]] attributes to symbolic functions (`#14020`_, `#14021`_)
 
 Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for geometry,multibody go here>
-* TBD multibodyplant: tell scenegraph my name when registering as a source (`#14024`_)
-* TBD [render] Adds Capsule and Ellipse to RenderEngineGl (`#14001`_)  # * Adds Capsule and Ellipse to RenderEngineGl - mesh generation (shape_meshes.*) - Generate an arbitrary capsule. - incidental typos corrected in header file. - unit tests to confirm capsule geometry satisfies certain invariants. - unit tests slightly refactored to re-use code; an invariant for all convex shapes centered on the origin placed into its own function. (This function will expand in the future.) - mesh rendering - RenderEngineGl models an Ellipse with a Sphere and non-uniform scale. - Treats every Capsule as unique. - unit tests are copied verbatim from render_engine_vtk_test.cc for capsule and ellipse.
 
 New features
 
@@ -75,6 +75,7 @@ New features
 * Add API to set LinearBushingRollPitchYaw parameters in a Context (`#14000`_)
 * Add API to get a frame's geometries (`#13999`_)
 * Support parsing massless bodies (`#13908`_, `#13927`_)
+* Add Capsule and Ellipse to RenderEngineGl (`#14001`_)
 * New hydroelastic contact model in progress (`#13864`_)
 
 Fixes
@@ -82,6 +83,7 @@ Fixes
 * Fix reported world poses when queried before any updates (`#13990`_)
 * Eliminate heap use from CalcMassMatrix() (`#13873`_, `#13928`_, `#13933`_, `#13953`_)
 * Use a faster inertia matrix rotation method (`#13962`_)
+* Propagate the MultibodyPlant name to the SceneGraph (`#14024`_)
 
 Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -96,20 +98,13 @@ Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for common,math,lcm,lcmtypes,manipulation,perception go here>
-* TBD trajectories: implement Append for PiecewiseQuaternionSlerp (`#14031`_)
-* TBD Refactor other symbolic classes (`#14021`_)  # - Adds [[nodiscard]] attributes to member functions in order to highlight at compile time which return values should not be ignored. Update the affected test cases. - modernize-pass-by-value. Read our C++ guideline, https://drake.mit.edu/styleguide/cppguide.html#Pass_By_Value. - Remove implicit Boolean conversion for readability - RationalFunction::operator-, change parameter types
-[common,tools] * TBD symbolic: Change #warning to #error (`#14003`_)
-* TBD Add a function to merge another basis element in place (`#14023`_)
-* TBD autodiffxd tests: Establish heap use baselines (`#14018`_)  # Relevant to: #13985 Extend and use LimitMalloc to measure and enforce heap use of AutoDiffXd math operators. These limits will help clarify the effect of subsequent changes on the implementation of AutoDiffXd. Summary of changes * LimitMalloc: * Add params() accessor and .min_num_allocations parameter * Adjust error messages for clarity * Extend unit tests to cover new features * Disarm automatically under leak sanitizer builds * Introduce autodiffxd_heap_test * Add cases for global function overrides in autodiffxd.h
-* TBD Remove invalid geometry from the jaco model (`#14042`_)  # An upcoming PR will mention this model in a `data=` line, which will cause it to be validity checked.
-[common,tools] * TBD limit_malloc: Disarm under valgrind (`#14040`_)  # Fixes a nightly build failure seen here: https://drake-cdash.csail.mit.edu/viewTest.php?onlydelta&buildid=1336134 This solution may seem like overkill, when I could have just set tags in bazel rules. Here are some reasons why I didn't do that: * bazel tags don't (yet^) propagate up dependency chains, so any library module that induces the need for tags just sets off an endless game of whack-a-mole. ^yet: see https://github.com/bazelbuild/bazel/issues/8830 * solving LSAN at the source but not similar valgrind problems seems inconsistent. Another alternative not taken: checking RUNNING_ON_VALGRIND from valgrind.h. This solution would have required a bunch of apple-aware build hacks and/or fighting with Homebrew to ensure that valgrind.h was installed and available. Summary of changes: * LimitMalloc: * Rewrite IsLeakSanitizerBuild() as IsSupportedConfguration() * opposite sign, but more general * add valgrind non-support via VALGRIND_OPTS env var check * Update doc * for sherm1: convert a static global function to namespace{} * valgrind shell scripts: * Ensure the VALGRIND_OPTS variable is always set and exported
-* TBD Construct generic polynomial from expression (`#14036`_)  # Copy code from symbolic::Polynomial to symbolic::GenericPolynomial.
 
 * autodiff: Improve performance by reducing heap use  (`#13988`_)
 * manipulation: Add DifferentialInverseKinematicsIntegrator (`#13877`_, `#13919`_, `#13920`_, `#14004`_)
 * manipulation: Make Schunk WSG limit input port optional (`#13878`_)
 * meshcat: Support caching mesh geometry on the zmq server (`#13971`_)
 * meshcat: Ignore geometry with invalid sizes (`#14013`_)
+* models: Remove invalid geometry from the jaco model (`#14042`_)
 * schema: Add stochastic, rotation, and transform types (`#13943`_, `#13949`_, `#13991`_, `#14014`_)
 * yaml: Allow omitting the root name while writing (`#13915`_)
 * yaml: It's an error by default for yaml data to remain unparsed (`#13900`_)
@@ -152,7 +147,6 @@ Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for attic,cmake,doc,setup,third_party,tools go here>
-* TBD workspace: Update pybind11 fork to latest commit (`#14028`_)
 
 * Upgrade recommended Bazel version to 3.5 (`#14005`_)
 * Upgrade bazel_skylib to latest release 1.0.3 (`#13969`_)
@@ -160,6 +154,7 @@ Build system and dependencies
 * Upgrade fmt to latest release 7.0.3 (`#13968`_)
 * Upgrade ghc_filesystem to latest release 1.3.4 (`#13966`_)
 * Upgrade meshcat_python to latest commit (`#13971`_)
+* Upgrade pybind11 fork to latest commit (`#14028`_)
 * Upgrade ros_xacro to latest release 1.13.8 (`#13967`_)
 * Separate out dependencies related to documentation generation (`#13984`_)
 
@@ -286,7 +281,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#14014: https://github.com/RobotLocomotion/drake/pull/14014
 .. _#14015: https://github.com/RobotLocomotion/drake/pull/14015
 .. _#14017: https://github.com/RobotLocomotion/drake/pull/14017
-.. _#14018: https://github.com/RobotLocomotion/drake/pull/14018
 .. _#14020: https://github.com/RobotLocomotion/drake/pull/14020
 .. _#14021: https://github.com/RobotLocomotion/drake/pull/14021
 .. _#14023: https://github.com/RobotLocomotion/drake/pull/14023
@@ -296,7 +290,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#14030: https://github.com/RobotLocomotion/drake/pull/14030
 .. _#14031: https://github.com/RobotLocomotion/drake/pull/14031
 .. _#14036: https://github.com/RobotLocomotion/drake/pull/14036
-.. _#14040: https://github.com/RobotLocomotion/drake/pull/14040
 .. _#14042: https://github.com/RobotLocomotion/drake/pull/14042
 .. <end issue links>
 
