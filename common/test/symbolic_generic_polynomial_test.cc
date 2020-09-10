@@ -9,7 +9,9 @@
 namespace drake {
 namespace symbolic {
 namespace {
+using std::pair;
 using std::runtime_error;
+using std::vector;
 
 using test::ExprEqual;
 using test::GenericPolyEqual;
@@ -35,6 +37,38 @@ class SymbolicGenericPolynomialTest : public ::testing::Test {
   const Expression a_{var_a_};
   const Expression b_{var_b_};
   const Expression c_{var_c_};
+
+  const vector<Expression> exprs_{
+      0,
+      -1,
+      3,
+      x_,
+      5 * x_,
+      -3 * x_,
+      y_,
+      x_* y_,
+      2 * x_* x_,
+      2 * x_* x_,
+      6 * x_* y_,
+      3 * x_* x_* y_ + 4 * pow(y_, 3) * z_ + 2,
+      y_*(3 * x_ * x_ + 4 * y_ * y_ * z_) + 2,
+      6 * pow(x_, 3) * pow(y_, 2),
+      2 * pow(x_, 3) * 3 * pow(y_, 2),
+      pow(x_, 3) - 4 * x_* y_* y_ + 2 * x_* x_* y_ - 8 * pow(y_, 3),
+      pow(x_ + 2 * y_, 2) * (x_ - 2 * y_),
+      (x_ + 2 * y_) * (x_ * x_ - 4 * y_ * y_),
+      (x_ * x_ + 4 * x_ * y_ + 4 * y_ * y_) * (x_ - 2 * y_),
+      pow(x_ + y_ + 1, 4),
+      pow(x_ + y_ + 1, 3),
+      1 + x_* x_ + 2 * (y_ - 0.5 * x_ * x_ - 0.5),
+      Expression(5.0) / 2.0,     // constant / constant
+      x_ / 3.0,                  // var / constant
+      pow(x_, 2) / 2,            // pow / constant
+      pow(x_* y_ / 3.0, 2) / 2,  // pow / constant
+      (x_ + y_) / 2.0,           // sum / constant
+      (x_* y_* z_ * 3) / 2.0,    // product / constant
+      (x_* y_ / -5.0) / 2.0,     // div / constant
+  };
 };
 
 // Tests that default constructor and EIGEN_INITIALIZE_MATRICES_BY_ZERO
@@ -85,6 +119,261 @@ TEST_F(SymbolicGenericPolynomialTest, ConstructFromSingleElement) {
                p1.basis_element_to_coefficient_map().at(
                    ChebyshevBasisElement({{var_x_, 1}, {var_y_, 2}})),
                Expression(1));
+}
+
+TEST_F(SymbolicGenericPolynomialTest, ConstructFromExpressionMonomialBasis) {
+  // p1 = 2x²+3x
+  const GenericPolynomial<MonomialBasisElement> p1(var_x_ * var_x_ * 2 +
+                                                   3 * var_x_);
+  EXPECT_EQ(p1.basis_element_to_coefficient_map().size(), 2);
+  EXPECT_PRED2(
+      ExprEqual,
+      p1.basis_element_to_coefficient_map().at(MonomialBasisElement(var_x_, 2)),
+      Expression(2));
+  EXPECT_PRED2(
+      ExprEqual,
+      p1.basis_element_to_coefficient_map().at(MonomialBasisElement(var_x_)),
+      Expression(3));
+
+  // p2 = 4xy+5y²+3xz³+2
+  const GenericPolynomial<MonomialBasisElement> p2(
+      4 * var_x_ * var_y_ + 5 * pow(var_y_, 2) + 3 * var_x_ * pow(var_z_, 3) +
+      2);
+  EXPECT_EQ(p2.basis_element_to_coefficient_map().size(), 4);
+  EXPECT_PRED2(ExprEqual,
+               p2.basis_element_to_coefficient_map().at(
+                   MonomialBasisElement({{var_x_, 1}, {var_y_, 1}})),
+               Expression(4));
+  EXPECT_PRED2(
+      ExprEqual,
+      p2.basis_element_to_coefficient_map().at(MonomialBasisElement(var_y_, 2)),
+      Expression(5));
+  EXPECT_PRED2(ExprEqual,
+               p2.basis_element_to_coefficient_map().at(
+                   MonomialBasisElement({{var_x_, 1}, {var_z_, 3}})),
+               Expression(3));
+  EXPECT_PRED2(ExprEqual,
+               p2.basis_element_to_coefficient_map().at(MonomialBasisElement()),
+               Expression(2));
+}
+
+TEST_F(SymbolicGenericPolynomialTest, ConstructFromExpressionChebyshevBasis) {
+  // 1 = T0().
+  const GenericPolynomial<ChebyshevBasisElement> p1(Expression(1.));
+  EXPECT_EQ(p1.basis_element_to_coefficient_map().size(), 1);
+  EXPECT_PRED2(
+      ExprEqual,
+      p1.basis_element_to_coefficient_map().at(ChebyshevBasisElement()),
+      Expression(1.));
+
+  // T₂(x)=2x²−1
+  const GenericPolynomial<ChebyshevBasisElement> p2(2 * pow(var_x_, 2) - 1);
+  EXPECT_EQ(p2.basis_element_to_coefficient_map().size(), 1);
+  EXPECT_PRED2(ExprEqual,
+               p2.basis_element_to_coefficient_map().at(
+                   ChebyshevBasisElement(var_x_, 2)),
+               Expression(1.));
+
+  // T₂(x)T₃(y)=(2x²−1)(4y³−3y)
+  const GenericPolynomial<ChebyshevBasisElement> p3(
+      (2 * pow(var_x_, 2) - 1) * (4 * pow(var_y_, 3) - 3 * var_y_));
+  EXPECT_EQ(p3.basis_element_to_coefficient_map().size(), 1);
+  EXPECT_PRED2(ExprEqual,
+               p3.basis_element_to_coefficient_map().at(
+                   ChebyshevBasisElement({{var_x_, 2}, {var_y_, 3}})),
+               Expression(1.));
+
+  // 2T₂(x)T₃(y)+T₁(x)T₂(y)=2(2x²−1)(4y³−3y)+x(2y²−1)
+  //                       = 16x²y³−8y³−12x²y+6y+2xy²−x
+  const GenericPolynomial<ChebyshevBasisElement> p4(
+      16 * pow(var_x_, 2) * pow(var_y_, 3) - 8 * pow(var_y_, 3) -
+      12 * pow(var_x_, 2) * var_y_ + 6 * var_y_ + 2 * var_x_ * pow(var_y_, 2) -
+      var_x_);
+  EXPECT_EQ(p4.basis_element_to_coefficient_map().size(), 2);
+  EXPECT_PRED2(ExprEqual,
+               p4.basis_element_to_coefficient_map().at(
+                   ChebyshevBasisElement({{var_x_, 2}, {var_y_, 3}})),
+               Expression(2.));
+  EXPECT_PRED2(ExprEqual,
+               p4.basis_element_to_coefficient_map().at(
+                   ChebyshevBasisElement({{var_x_, 1}, {var_y_, 2}})),
+               Expression(1.));
+
+  // 3T₀()+2T₁(x)+4T₂(x)+3T₃(x) = 3+2x+8x²−4+12x³−9x
+  //                            = 12x³+8x²−7x−1
+  const GenericPolynomial<ChebyshevBasisElement> p5(
+      12 * pow(var_x_, 3) + 8 * pow(var_x_, 2) - 7 * var_x_ - 1);
+  EXPECT_EQ(p5.basis_element_to_coefficient_map().size(), 4);
+  EXPECT_PRED2(
+      ExprEqual,
+      p5.basis_element_to_coefficient_map().at(ChebyshevBasisElement()),
+      Expression(3));
+  EXPECT_PRED2(
+      ExprEqual,
+      p5.basis_element_to_coefficient_map().at(ChebyshevBasisElement(var_x_)),
+      Expression(2));
+  EXPECT_PRED2(ExprEqual,
+               p5.basis_element_to_coefficient_map().at(
+                   ChebyshevBasisElement(var_x_, 2)),
+               Expression(4));
+  EXPECT_PRED2(ExprEqual,
+               p5.basis_element_to_coefficient_map().at(
+                   ChebyshevBasisElement(var_x_, 3)),
+               Expression(3));
+
+  // 2T₃(x)+1=8x³−6x+1
+  // Note that although the polynomial contains a term 6x, when represented by
+  // Chebyshev basis, it doesn't contain T₁(x) (The coefficient for T₁(x) is 0).
+  const GenericPolynomial<ChebyshevBasisElement> p6(8 * pow(var_x_, 3) -
+                                                    6 * x_ + 1);
+  EXPECT_EQ(p6.basis_element_to_coefficient_map().size(), 2);
+  EXPECT_PRED2(ExprEqual,
+               p6.basis_element_to_coefficient_map().at(
+                   ChebyshevBasisElement(var_x_, 3)),
+               Expression(2));
+  EXPECT_PRED2(
+      ExprEqual,
+      p6.basis_element_to_coefficient_map().at(ChebyshevBasisElement()),
+      Expression(1));
+}
+
+TEST_F(SymbolicGenericPolynomialTest,
+       ConstructFromExpressionIndeterminatesMonomialBasis) {
+  // Test constructing GenericPolynomial<MonomialBasisElement> from expression
+  // and indeterminates
+
+  // e=a²x²+(a+b)xy²+c, indeterminates = {x, y, z}.
+  const GenericPolynomial<MonomialBasisElement> p1(
+      pow(var_a_, 2) * pow(var_x_, 2) + (a_ + b_) * var_x_ * pow(var_y_, 2) +
+          c_,
+      indeterminates_);
+  EXPECT_EQ(p1.basis_element_to_coefficient_map().size(), 3);
+  EXPECT_EQ(p1.indeterminates(), indeterminates_);
+  EXPECT_EQ(p1.decision_variables(), Variables({var_a_, var_b_, var_c_}));
+  EXPECT_PRED2(
+      ExprEqual,
+      p1.basis_element_to_coefficient_map().at(MonomialBasisElement(var_x_, 2)),
+      pow(var_a_, 2));
+  EXPECT_PRED2(ExprEqual,
+               p1.basis_element_to_coefficient_map().at(
+                   MonomialBasisElement({{var_x_, 1}, {var_y_, 2}})),
+               a_ + b_);
+  EXPECT_PRED2(ExprEqual,
+               p1.basis_element_to_coefficient_map().at(MonomialBasisElement()),
+               c_);
+}
+
+TEST_F(SymbolicGenericPolynomialTest,
+       ConstructFromExpressionIndeterminatesChebyshevBasis) {
+  // Test constructing GenericPolynomial<ChebyshevBasisElement> from expression
+  // and indeterminates.
+
+  // e=aT₂(x)+(a+b)T₁(x)T₂(y)+cT₀(), indeterminates={x, y, z}.
+  const GenericPolynomial<ChebyshevBasisElement> p1(
+      a_ * (2 * pow(var_x_, 2) - 1) +
+          (a_ + b_) * x_ * (2 * pow(var_y_, 2) - 1) + c_,
+      indeterminates_);
+  EXPECT_EQ(p1.basis_element_to_coefficient_map().size(), 3);
+  EXPECT_EQ(p1.indeterminates(), indeterminates_);
+  EXPECT_EQ(p1.decision_variables(), Variables({var_a_, var_b_, var_c_}));
+  EXPECT_PRED2(ExprEqual,
+               p1.basis_element_to_coefficient_map().at(
+                   ChebyshevBasisElement(var_x_, 2)),
+               a_);
+  EXPECT_PRED2(ExprEqual,
+               p1.basis_element_to_coefficient_map()
+                   .at(ChebyshevBasisElement({{var_x_, 1}, {var_y_, 2}}))
+                   .Expand(),
+               a_ + b_);
+  EXPECT_PRED2(
+      ExprEqual,
+      p1.basis_element_to_coefficient_map().at(ChebyshevBasisElement()), c_);
+}
+
+TEST_F(SymbolicGenericPolynomialTest,
+       ConstructFromExpressionExpandMonomialBasis) {
+  // Expression -------------------> Polynomial
+  //     | .Expand()                     | .ToExpression()
+  //    \/                              \/
+  // Expanded Expression     ==      Expression
+  for (const Expression& e : exprs_) {
+    const Expression expanded_expr{e.Expand()};
+    const Expression expr_from_polynomial{
+        GenericPolynomial<MonomialBasisElement>{e}.ToExpression()};
+    EXPECT_PRED2(ExprEqual, expanded_expr, expr_from_polynomial);
+  }
+}
+
+TEST_F(SymbolicGenericPolynomialTest,
+       ConstructFromExpressionExpandChebyshevBasis) {
+  // Expression -------------------> Polynomial
+  //     | .Expand()                     | .ToExpression()
+  //    \/                              \/
+  // Expanded Expression     ==      Expression
+  for (const Expression& e : exprs_) {
+    const Expression expanded_expr{e.Expand()};
+    const Expression expr_from_polynomial{
+        GenericPolynomial<ChebyshevBasisElement>{e}.ToExpression()};
+    EXPECT_PRED2(ExprEqual, expanded_expr, expr_from_polynomial);
+  }
+}
+
+TEST_F(SymbolicGenericPolynomialTest,
+       ConstructorFromExpressionAndIndeterminates1) {
+  const GenericPolynomial<MonomialBasisElement> p1{1.0, var_xyz_};  // p₁ = 1.0,
+  EXPECT_EQ(p1.basis_element_to_coefficient_map(),
+            GenericPolynomial<MonomialBasisElement>::MapType(
+                {{MonomialBasisElement{}, Expression(1.0)}}));
+  // p₂ = ax + by + cz + 10
+  const GenericPolynomial<MonomialBasisElement> p2{
+      a_ * x_ + b_ * y_ + c_ * z_ + 10, var_xyz_};
+  EXPECT_EQ(p2.basis_element_to_coefficient_map(),
+            GenericPolynomial<MonomialBasisElement>::MapType(
+                {{MonomialBasisElement{var_x_}, a_},
+                 {MonomialBasisElement{var_y_}, b_},
+                 {MonomialBasisElement{var_z_}, c_},
+                 {MonomialBasisElement{}, 10}}));
+  // p₃ = 3ab²*x²y -bc*z³ + b²
+  const GenericPolynomial<MonomialBasisElement> p3{
+      3 * a_ * pow(b_, 2) * pow(x_, 2) * y_ - b_ * c_ * pow(z_, 3) + pow(b_, 2),
+      var_xyz_};
+  EXPECT_EQ(p3.basis_element_to_coefficient_map(),
+            GenericPolynomial<MonomialBasisElement>::MapType(
+                // x²y ↦ 3ab²
+                {{MonomialBasisElement{{{var_x_, 2}, {var_y_, 1}}},
+                  3 * a_ * pow(b_, 2)},
+                 // z³ ↦ -bc
+                 {MonomialBasisElement{{{var_z_, 3}}}, -b_ * c_},
+                 // 1 ↦ b²
+                 {MonomialBasisElement(), pow(b_, 2)}}));
+
+  // p₄ = 3ab²*x²y - bc*x³
+  const GenericPolynomial<MonomialBasisElement> p4{
+      3 * a_ * pow(b_, 2) * pow(x_, 2) * y_ - b_ * c_ * pow(x_, 3), var_xyz_};
+  EXPECT_EQ(p4.basis_element_to_coefficient_map(),
+            GenericPolynomial<MonomialBasisElement>::MapType(
+                {{MonomialBasisElement{{{var_x_, 2}, {var_y_, 1}}},
+                  3 * a_ * pow(b_, 2)},
+                 {MonomialBasisElement{{{var_x_, 3}}}, -b_ * c_}}));
+
+  // p₅ = (ax)³
+  const GenericPolynomial<MonomialBasisElement> p5{pow(a_ * x_, 3), var_xyz_};
+  EXPECT_EQ(p5.indeterminates(), var_xyz_);
+  EXPECT_EQ(p5.basis_element_to_coefficient_map().size(), 1);
+  EXPECT_EQ(
+      p5.basis_element_to_coefficient_map().at(MonomialBasisElement(var_x_, 3)),
+      pow(a_, 3));
+}
+
+TEST_F(SymbolicGenericPolynomialTest,
+       ConstructorFromExpressionAndIndeterminates2) {
+  const Expression e{x_ * x_ + y_ * y_};  // e = x² + y².
+  // Show that providing a set of indeterminates {x, y, z} which is a super-set
+  // of what appeared in `e`, {x, y}, doesn't change the constructed polynomial.
+  const GenericPolynomial<MonomialBasisElement> p1{e, {var_x_, var_y_}};
+  const GenericPolynomial<MonomialBasisElement> p2{e, {var_x_, var_y_, var_z_}};
+  EXPECT_EQ(p1.basis_element_to_coefficient_map(),
+            p2.basis_element_to_coefficient_map());
 }
 
 TEST_F(SymbolicGenericPolynomialTest, DegreeAndTotalDegree) {
@@ -228,6 +517,236 @@ TEST_F(SymbolicGenericPolynomialTest, Jacobian) {
   const auto J_ab = p.Jacobian(var_ab);
   EXPECT_PRED2(GenericPolyEqual<MonomialBasisElement>, J_ab(0), p_a);
   EXPECT_PRED2(GenericPolyEqual<MonomialBasisElement>, J_ab(1), p_b);
+}
+
+TEST_F(SymbolicGenericPolynomialTest, ConstructNonPolynomialCoefficients) {
+  // Given a pair of Expression and Polynomial::MapType, `(e, map)`, we check
+  // `Polynomial(e, indeterminates)` has the expected map, `map`.
+  vector<pair<Expression, GenericPolynomial<MonomialBasisElement>::MapType>>
+      testcases;
+
+  // sin(a)x = sin(a) * x
+  testcases.emplace_back(sin(a_) * x_,
+                         GenericPolynomial<MonomialBasisElement>::MapType{
+                             {{MonomialBasisElement{x_}, sin(a_)}}});
+
+  // cos(a)(x + 1)² = cos(a) * x² + 2cos(a) * x + cos(a) * 1
+  testcases.emplace_back(cos(a_) * pow(x_ + 1, 2),
+                         GenericPolynomial<MonomialBasisElement>::MapType{
+                             {{MonomialBasisElement{{{var_x_, 2}}}, cos(a_)},
+                              {MonomialBasisElement{x_}, 2 * cos(a_)},
+                              {MonomialBasisElement{}, cos(a_)}}});
+
+  //   log(a)(x + 1)² / sqrt(b)
+  // = log(a)/sqrt(b) * x² + 2log(a)/sqrt(b) * x + log(a)/sqrt(b) * 1
+  testcases.emplace_back(
+      log(a_) * pow(x_ + 1, 2) / sqrt(b_),
+      GenericPolynomial<MonomialBasisElement>::MapType{
+          {{MonomialBasisElement{{{var_x_, 2}}}, log(a_) / sqrt(b_)},
+           {MonomialBasisElement{x_}, 2 * log(a_) / sqrt(b_)},
+           {MonomialBasisElement{}, log(a_) / sqrt(b_)}}});
+
+  //   (tan(a)x + 1)²
+  // = (tan(a))² * x² + 2tan(a) * x + 1
+  testcases.emplace_back(
+      pow(tan(a_) * x_ + 1, 2),
+      GenericPolynomial<MonomialBasisElement>::MapType{
+          {{MonomialBasisElement{{{var_x_, 2}}}, pow(tan(a_), 2)},
+           {MonomialBasisElement{x_}, 2 * tan(a_)},
+           {MonomialBasisElement{}, 1}}});
+
+  //   abs(b + 1)x + asin(a) + acos(a) - atan(c) * x
+  // = (abs(b + 1) - atan(c)) * x + (asin(a) + acos(a))
+  testcases.emplace_back(
+      abs(b_ + 1) * x_ + asin(a_) + acos(a_) - atan(c_) * x_,
+      GenericPolynomial<MonomialBasisElement>::MapType{
+          {{MonomialBasisElement{x_}, abs(b_ + 1) - atan(c_)},
+           {MonomialBasisElement{}, asin(a_) + acos(a_)}}});
+
+  //   atan(b)x * atan2(a, c)y
+  // = (atan(b) * atan2(a, c)) * xy
+  testcases.emplace_back(
+      abs(b_) * x_ * atan2(a_, c_) * y_,
+      GenericPolynomial<MonomialBasisElement>::MapType{
+          {{MonomialBasisElement{{{var_x_, 1}, {var_y_, 1}}},  // xy
+            abs(b_) * atan2(a_, c_)}}});
+
+  //     (sinh(a)x + cosh(b)y + tanh(c)z) / (5 * min(a, b) * max(b, c))
+  // =   (sinh(a) / (5 * min(a, b) * max(b, c))) * x
+  //   + (cosh(b) / (5 * min(a, b) * max(b, c))) * y
+  //   + (tanh(c) / (5 * min(a, b) * max(b, c))) * z
+  testcases.emplace_back((sinh(a_) * x_ + cosh(b_) * y_ + tanh(c_) * z_) /
+                             (5 * min(a_, b_) * max(b_, c_)),
+                         GenericPolynomial<MonomialBasisElement>::MapType{
+                             {{
+                                  MonomialBasisElement{x_},
+                                  sinh(a_) / (5 * min(a_, b_) * max(b_, c_)),
+                              },
+                              {
+                                  MonomialBasisElement{y_},
+                                  cosh(b_) / (5 * min(a_, b_) * max(b_, c_)),
+                              },
+                              {
+                                  MonomialBasisElement{z_},
+                                  tanh(c_) / (5 * min(a_, b_) * max(b_, c_)),
+                              }}});
+
+  //     (ceil(a) * x + floor(b) * y)²
+  // =   pow(ceil(a), 2) * x²
+  // = + 2 * ceil(a) * floor(b) * xy
+  // = + pow(floor(a), 2) * y²
+  testcases.emplace_back(
+      pow(ceil(a_) * x_ + floor(b_) * y_, 2),
+      GenericPolynomial<MonomialBasisElement>::MapType{
+          {{MonomialBasisElement{{{var_x_, 2}}}, ceil(a_) * ceil(a_)},
+           {MonomialBasisElement{{{var_x_, 1}, {var_y_, 1}}},
+            2 * ceil(a_) * floor(b_)},
+           {MonomialBasisElement{{{var_y_, 2}}}, floor(b_) * floor(b_)}}});
+
+  //     (ceil(a) * x + floor(b) * y)²
+  // =   pow(ceil(a), 2) * x²
+  // = + 2 * ceil(a) * floor(b) * xy
+  // = + pow(floor(a), 2) * y²
+  testcases.emplace_back(
+      pow(ceil(a_) * x_ + floor(b_) * y_, 2),
+      GenericPolynomial<MonomialBasisElement>::MapType{
+          {{MonomialBasisElement{{{var_x_, 2}}}, ceil(a_) * ceil(a_)},
+           {MonomialBasisElement{{{var_x_, 1}, {var_y_, 1}}},
+            2 * ceil(a_) * floor(b_)},
+           {MonomialBasisElement{{{var_y_, 2}}}, floor(b_) * floor(b_)}}});
+
+  //   UF("unnamed1", {a})) * x * UF("unnamed2", {b}) * x
+  // = UF("unnamed1", {a})) * UF("unnamed2", {b}) * x².
+  const Expression uf1{uninterpreted_function("unnamed1", {var_a_})};
+  const Expression uf2{uninterpreted_function("unnamed2", {var_b_})};
+  testcases.emplace_back(
+      uf1 * x_ * uf2 * x_,
+      GenericPolynomial<MonomialBasisElement>::MapType{
+          {{MonomialBasisElement{{{var_x_, 2}}}, uf1 * uf2}}});
+
+  //   (x + y)² = x² + 2xy + y²
+  testcases.emplace_back(
+      pow(x_ + y_, 2),
+      GenericPolynomial<MonomialBasisElement>::MapType{{
+          {MonomialBasisElement{{{var_x_, 2}}}, 1},
+          {MonomialBasisElement{{{var_x_, 1}, {var_y_, 1}}}, 2},
+          {MonomialBasisElement{{{var_y_, 2}}}, 1},
+      }});
+
+  // pow(pow(x, 2.5), 2) = x⁵
+  testcases.emplace_back(pow(pow(x_, 2.5), 2),
+                         GenericPolynomial<MonomialBasisElement>::MapType{
+                             {{MonomialBasisElement{{{var_x_, 5}}}, 1}}});
+
+  // pow(pow(x * y, 2.5), 2) = (xy)⁵
+  testcases.emplace_back(
+      pow(pow(x_ * y_, 2.5), 2),
+      GenericPolynomial<MonomialBasisElement>::MapType{
+          {{MonomialBasisElement{{{var_x_, 5}, {var_y_, 5}}}, 1}}});
+
+  for (const auto& [e, expected_map] : testcases) {
+    const GenericPolynomial<MonomialBasisElement> p{e, indeterminates_};
+    EXPECT_EQ(p.basis_element_to_coefficient_map(), expected_map);
+  }
+}
+
+TEST_F(SymbolicGenericPolynomialTest, NegativeTestConstruction1) {
+  // sin(a) * x is a polynomial.
+  const Expression e1{sin(a_) * x_};
+  DRAKE_EXPECT_NO_THROW(
+      GenericPolynomial<MonomialBasisElement>(e1, indeterminates_));
+
+  // sin(x) * x is a not polynomial.
+  const Expression e2{sin(x_) * x_};
+  EXPECT_THROW(GenericPolynomial<MonomialBasisElement>(e2, indeterminates_),
+               runtime_error);
+}
+
+TEST_F(SymbolicGenericPolynomialTest, NegativeTestConstruction2) {
+  // aˣ x is not a polynomial.
+  const Expression e{pow(a_, x_)};
+  EXPECT_THROW(GenericPolynomial<MonomialBasisElement>(e, indeterminates_),
+               runtime_error);
+}
+
+TEST_F(SymbolicGenericPolynomialTest, NegativeTestConstruction3) {
+  // x⁻¹ is not a polynomial.
+  const Expression e{pow(x_, -1)};
+  EXPECT_THROW(GenericPolynomial<MonomialBasisElement>(e, indeterminates_),
+               runtime_error);
+}
+
+TEST_F(SymbolicGenericPolynomialTest, NegativeTestConstruction4) {
+  // x^(2.5) is not a polynomial.
+  const Expression e{pow(x_, 2.5)};
+  EXPECT_THROW(GenericPolynomial<MonomialBasisElement>(e, indeterminates_),
+               runtime_error);
+}
+
+TEST_F(SymbolicGenericPolynomialTest, NegativeTestConstruction5) {
+  // xˣ is not a polynomial.
+  const Expression e{pow(x_, x_)};
+  EXPECT_THROW(GenericPolynomial<MonomialBasisElement>(e, indeterminates_),
+               runtime_error);
+}
+
+TEST_F(SymbolicGenericPolynomialTest, NegativeTestConstruction6) {
+  // 1 / a is polynomial.
+  const Expression e1{1 / a_};
+  DRAKE_EXPECT_NO_THROW(
+      GenericPolynomial<MonomialBasisElement>(e1, indeterminates_));
+
+  // However, 1 / x is not a polynomial.
+  const Expression e2{1 / x_};
+  EXPECT_THROW(GenericPolynomial<MonomialBasisElement>(e2, indeterminates_),
+               runtime_error);
+}
+
+TEST_F(SymbolicGenericPolynomialTest, NegativeTestConstruction7) {
+  // sin(x + a) is not a polynomial.
+  const Expression e{sin(x_ + a_)};
+  EXPECT_THROW(GenericPolynomial<MonomialBasisElement>(e, indeterminates_),
+               runtime_error);
+}
+
+TEST_F(SymbolicGenericPolynomialTest, NegativeTestConstruction) {
+  std::vector<Expression> bad_expressions;
+  // tan(x) is not a polynomial.
+  bad_expressions.push_back(tan(x_));
+  // abs(x + a) is not a polynomial.
+  bad_expressions.push_back(abs(x_ + a_));
+  // exp(x + a) is not a polynomial.
+  bad_expressions.push_back(exp(x_ + a_));
+  // sqrt(x  * x_ + 1) is not a polynomial.
+  bad_expressions.push_back(sqrt(x_ * x_ + 1));
+  // atan(x  * x_ + 1) is not a polynomial.
+  bad_expressions.push_back(atan(x_ * x_ + 1));
+  // atan2(2, x  * x_ + 1) is not a polynomial.
+  bad_expressions.push_back(atan2(2, x_ * x_ + 1));
+  // sinh(x  * x_ + 1) is not a polynomial.
+  bad_expressions.push_back(sinh(x_ * x_ + 1));
+  // cosh(x  * x_ + 1) is not a polynomial.
+  bad_expressions.push_back(cosh(x_ * x_ + 1));
+  // tanh(x  * x_ + 1) is not a polynomial.
+  bad_expressions.push_back(tanh(x_ * x_ + 1));
+  // min(x  * x_ + 1, x_* x_) is not a polynomial.
+  bad_expressions.push_back(min(x_ * x_ + 1, x_ * x_));
+  // max(x  * x_ + 1, x_* x_) is not a polynomial.
+  bad_expressions.push_back(max(x_ * x_ + 1, x_ * x_));
+  // ceil(x  * x_ + 1) is not a polynomial.
+  bad_expressions.push_back(ceil(x_ * x_ + 1));
+  // floor(x  * x_ + 1) is not a polynomial.
+  bad_expressions.push_back(floor(x_ * x_ + 1));
+  // IfThenElse(x_, x_, x  * x_ + 1) is not a polynomial.
+  bad_expressions.push_back(if_then_else(x_ > 0, x_, x_ * x_ + 1));
+  // (sin(x+a))³ is not a polynomial.
+  bad_expressions.push_back(pow(sin(x_ + a_), 3));
+  // (sin(x))³ is not a polynomial.
+  bad_expressions.push_back(pow(sin(x_), 3));
+  for (const auto& e : bad_expressions) {
+    EXPECT_THROW(GenericPolynomial<MonomialBasisElement>(e, indeterminates_),
+                 runtime_error);
+  }
 }
 
 TEST_F(SymbolicGenericPolynomialTest, Evaluate) {
@@ -443,6 +962,18 @@ TEST_F(SymbolicGenericPolynomialTest, RemoveTermsWithSmallCoefficients) {
                GenericPolynomial<MonomialBasisElement>(p3_map)
                    .RemoveTermsWithSmallCoefficients(1E-3),
                GenericPolynomial<MonomialBasisElement>(p3_expected_map));
+}
+
+TEST_F(SymbolicGenericPolynomialTest, EqualToAfterExpansion) {
+  // Test equal with / without expansion.
+  const GenericPolynomial<MonomialBasisElement> p1(
+      {{MonomialBasisElement(var_x_, 2), (a_ + b_) * (a_ + c_)}});
+  const GenericPolynomial<MonomialBasisElement> p2(
+      {{MonomialBasisElement(var_x_, 2),
+        pow(var_a_, 2) + a_ * b_ + a_ * c_ + b_ * c_}});
+  // No expansion
+  EXPECT_FALSE(p1.EqualTo(p2));
+  EXPECT_TRUE(p1.EqualToAfterExpansion(p2));
 }
 
 }  // namespace
