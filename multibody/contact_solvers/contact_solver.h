@@ -33,7 +33,7 @@ enum class ContactSolverResult {
 /// share this common interface without having to re-wire the client's
 /// internals.
 ///
-/// <h3> Mechanical systems and state </h3>
+/// <h3> Mechanical Systems and State </h3>
 ///
 /// In what follows, we describe the state of the system by the vector of
 /// generalized positions q, or configuration, and the vector of generalized
@@ -41,88 +41,123 @@ enum class ContactSolverResult {
 /// though in general `nq != nv`, the kinematic mapping `q̇ = N(q)⋅v` relates
 /// the generalized velocities to time derivatives of the generalized positions.
 ///
-/// For instance, the dynamics of rigid multibody systems can be stated as:
-/// <pre>
-///   M(q)⋅v̇ + C(q,v) = τₑₓₜ(t, q, v)
-///   q̇ = N(q)⋅v
+/// In the absence of contact, we write the dynamics of a general mechanical
+/// system as: <pre>
+///   M(q)⋅v̇ = τ(t,x,u)                                               (1)
+///        q̇ = N(q)⋅v
 /// </pre>
-/// where M(q) is the mass matrix, `C(q,v)` contains the Coriolis and
-/// centrifugal contributions and `τₑₓₜ(t, q, v)` are external contributions.
-/// For robotics applications we can further expand the external contributions
-/// as: <pre>
-///   τₑₓₜ(t, q, v) = τₐₚₚ(t, q, v) + B⋅u(t)
+/// where `x = [q; v]` is the full state of the system, `M(q)` is its mass
+/// matrix, and the generalized forces `τ(t,x,u)` are further split into a state
+/// dependent term `τₓ(t,x)` and externally applied actuation `τᵤ(u)` as: <pre>
+///   τ(t,x,u) = τₓ(t,x) + τᵤ(u)
+///      τᵤ(u) = B⋅u(t)
 /// </pre>
 /// where `u(t)` corresponds to external __actuation__ and matrix `B`,
 /// independent of state and time, maps input actuation to generalized forces.
-/// Here we will focus on discretizing these equations at the velocity level in
-/// which the unknowns of the system are the generalized velocities.
-/// For instance, if we use a semi-implicit Euler approximation with a time step
-/// dt, given the previous step velocity `v₀`, we approximate the accelerations
-/// as `v̇ = (v − v₀)/dt`, the generalized positions derivatives as
-/// `q̇ = N(q₀)⋅v` and the next step positions as `q = q₀ + dt⋅q̇`. Therefore
-/// the discrete momentum equations will read: <pre>
-///   M(q₀)⋅(v−v₀) + dt⋅C(q₀,v) = dt⋅τₑₓₜ(t₀,q₀,v)
-/// </pre>
 ///
-/// Using this framework in terms of generalized positions and velocities we can
-/// describe any mechanical system. For instance, for FEM models, the momentum
-/// equations can be briefly summarized as: <pre>
-///   F(v) = M⋅(v−v₀) + dt⋅Fᵢₙₜ(q, v)
-/// </pre>
-/// where with `Fᵢₙₜ(q, v)` we denote the term containing the contribution due
-/// to internal stresses in the deformable object. In this case, the
-/// configuration `q` will correspond to the Lagrangian coordinates of
-/// material points in a solid and in this case q̇ = v, i.e. `N(q)` is the
-/// identity mapping.
+/// Consider the dynamics of rigid multibody systems. For this case `τₓ(t,x)`
+/// contains the Coriolis and centrifugal contributions `C(q,v)` (actually
+/// -C(q,v)), gravity `τg(q)`, and state dependent terms related to the modeling
+/// of forcing elements such as drag, springs and dampers.
 ///
-/// <h3> Contact constraints </h3>
+/// Another example of mechanical system is that of a FEM model for which
+/// `τₓ(t,x)` contains the contribution due to internal stresses in the
+/// deformable object. In this case, the configuration `q` will correspond to
+/// the Lagrangian coordinates of material points in the solid. Moreover q̇ = v,
+/// i.e. `N(q)` is the identity mapping.
 ///
-/// Generally, we are interested on solving a set of momentum equations subject
-/// to contact constraints of the form: <pre>
-///   F(v) = Jcᵀ⋅γ                                                          (1)
-///   s.t. Contact constraints.                                             (2)
+/// Finally, it is evident that this same framework allows for a model
+/// containing both rigid and soft objects.
+///
+// TODO(amcastro-tri): add sections specific to bilateral and unilateral
+// constraints.
+///
+/// <h3> Mechanical Systems with Frictional Contact </h3>
+///
+/// Mechanical systems with contact are subject to additional constraints to
+/// enforce non-interpenetration and to model friction. Therefore Eq. (1) is
+/// augmented to: <pre>
+///   M(q)⋅v̇ = τ(t,x,u) + Jcᵀ⋅fc                                            (2)
+///        q̇ = N(q)⋅v                                                       (3)
+///   s.t. Contact constraints.                                             (4)
 /// </pre>
-/// where γ concatenates the all nc contact impulses γᵢ ∈ ℝ³ into a vector of
+/// where fc concatenates the all nc contact forces fcᵢ ∈ ℝ³ into a vector of
 /// size 3nc and `Jc`, of size `3nc x nv`, is the "contact Jacobian" defined
 /// such that contact velocities vc are given by vc = Jc⋅v.
-/// `F(v)` describes the balance of momentum already discretized at the
-/// velocity level. As an example, consider the dynamics of rigid bodies
-/// discretized using the semi-implicit Euler scheme presented earlier. In this
-/// case we have `F(v) = M(q₀)⋅(v−v₀) + dt⋅C(q₀,v₀) - dt⋅τₑₓₜ(t₀, q₀, v₀)`.
+///
 /// With "Contact constraints" we mean:
-/// - Contact forces follow Coulomb's law of friction, i.e. γᵢ is inside the
+/// - Contact forces follow Coulomb's law of friction, i.e. fcᵢ is inside the
 ///    friction cone.
-/// - The friction component of γ, which we refer to as β, satisfies the
+/// - The friction component of fc, which we refer to as ft, satisfies the
 ///    principle of maximum dissipation for sliding contacts.
-/// - The normal component of γ, which we refer to as π, is non-negative
+/// - The normal component of fc, which we refer to as fn, is non-negative
 ///    i.e. always a repulsive force (adhesive or “sticky" contact needs special
 ///    consideration).
-/// The unknowns in this formulation are next step velocities v and contact
-/// impulses γ. These are solved from the discrete momentum equations (1) and
-/// the contact constraints (2).
+/// The unknowns in this formulation is the full state `x=[q;v]` and contact
+/// forces `fc`. These are solved from Eqs. (2)-(3) subject to the contact
+/// constraints (4).
 ///
-/// This interface leaves open how exactly these constraints are imposed so that
-/// specific solvers have the freedom to choose other model approximations. For
-/// instance, we allow solvers to accommodate for the convex relaxation of
-/// friction [Anitescu, 2006], regularization of constraints [Lacoursiere
-/// et al. 2011] or compliant contact [Castro et al., 2019]. While the
-/// general formulation of frictional contact is a Non-linear Complementarity
-/// Problem (NCP), %ContactSolver's interface makes no assumption on the
-/// underlying solver therefore also allowing for optimization based methods,
-/// [Todorov, 2014; Kaufman et al., 2008].
+/// %ContactSolver's interface leaves open how exactly these constraints are
+/// imposed so that specific solvers have the freedom to choose other model
+/// approximations. For instance, we allow solvers to accommodate for the convex
+/// relaxation of friction [Anitescu, 2006], regularization of constraints
+/// [Lacoursiere et al. 2011] or compliant contact [Castro et al., 2019]. While
+/// the general formulation of frictional contact is a Non-linear
+/// Complementarity Problem (NCP), %ContactSolver's interface makes no
+/// assumption on the underlying solver therefore also allowing for optimization
+/// based methods, [Todorov, 2014; Kaufman et al., 2008].
 ///
-/// <h3> Solving the discrete contact problem </h3>
+/// <h3> Time Discretization </h3>
+///
+/// Our objective is to discretize the differential-algebraic system of
+/// equations (DAEs), Eqs. (2)-(4), in time in order to advance the solution
+/// from state `x₀=[q₀;v₀]` at time `t₀` to state `x=[q;v]` at time
+/// `t = t₀ + dt`, where dt is a pre-specified time step.
+/// The framework proposed below allows the discretization of the continuous
+/// component of the DAEs, Eq. (1), using a variety of discretization schemes
+/// with different stability properties and/or order of accuracy.
+///
+/// To be concrete, consider an implicit Euler method applied to Eqs. (2)-(4)
+/// written as: <pre>
+///  M(q₀)⋅v = M(q₀)⋅v₀ + dt⋅τᵤ(u₀) + dt⋅τₓ(t,q,v) + Jcᵀ(q₀)⋅γ              (5)
+///     q(v) = q₀ + dt⋅N(q₀)⋅v                                              (6)
+///   s.t. Contact constraints.                                             (7)
+/// </pre>
+/// where:
+/// - We defined the contact impulses as `γ = dt⋅fc`.
+/// - This particular example is not fully implicit in that `M`, `Jcᵀ` and `N`
+///    are "frozen" at `t₀`. This is a very popular approximation choice also
+///    consistently 1ˢᵗ order with the rest of the fully implicit terms.
+/// - State dependent forces `τₓ` are fully implicit.
+/// - Actuation `τᵤ` is "frozen" at `t₀`. This will generally be true given that
+///   since these are external to the physics engine, we will have no means to
+///   provide either an implicit or higher order approximation.
+/// - In this particular example, we decided to "freeze" the kinematic mapping
+///   at N(q₀), an approximation consistent with the order of accuracy of the
+///   scheme.
+///
+/// In general, for any time stepping scheme, we can write: <pre>
+///   F(v) = Jcᵀ⋅γ                                                          (8)
+///   s.t. Contact constraints.                                             (9)
+/// </pre>
+/// For the particular example scheme outlined in Eqs. (5)-(7) we have: <pre>
+///        F(v) = M(q₀)⋅(v - v₀) - dt⋅τₓ(t,q(v),v) - dt⋅τᵤ(u₀)
+///   with q(v) = q₀ + dt⋅N(q₀)⋅v.
+/// </pre>
+///
+/// %ContactSolver works with the model equations in the form of Eqs. (8)-(9)
+/// once a particular time discretization scheme was made, and it is agnostic to
+/// the particular mechanical system model.
+///
+/// <h3> Solving the Discrete Contact problem </h3>
 ///
 /// A general approach for solving the contact problem will include a predictor
 /// step to compute velocities v* satisfying the predictor equations
 /// `F(v*) = 0`. That is, v* corresponds to the velocities the system would
 /// evolve with in the absence of contact forces, see for instance [Duriez,
-/// 2013] for a case in which `F(v*)` = 0 is highly non-linear. Recall that
-/// `F(v)` describes the "discrete" balance of momentum at the velocity level.
-/// We already approximated the configuration `q(v*)`. For instance, for
-/// implicit Euler we'd write `q(v*) = q₀+ dt⋅v*`.
-/// The next step velocity is then approximated as `v = v* + Δv` where Δv is
-/// computed in a corrector step satisfying the equations: <pre>
+/// 2013] for a case in which `F(v*) = 0` is highly non-linear. The next step
+/// velocity is then approximated as `v = v* + Δv` where Δv is computed in a
+/// corrector step satisfying the equations: <pre>
 ///   F(v* + Δv) = F(v* + Δv) = Jcᵀ⋅γ
 ///   s.t. Contact constraints
 /// </pre>
@@ -138,7 +173,7 @@ enum class ContactSolverResult {
 ///   A⋅Δv = Jcᵀ⋅γ
 ///   s.t. Contact constraints
 /// </pre>
-/// Note that even when this approximation is O(dt) for the impulses, the
+/// Notice that even when this approximation is O(dt) for the impulses, the
 /// predictor step to compute v* from `F(v*) = 0` can use a higher order time
 /// discretization scheme. A low order scheme on the constraints has a very
 /// desired stabilization side effect, since higher order schemes might lead to
@@ -172,30 +207,19 @@ enum class ContactSolverResult {
 /// side effect of this solution the operator form of `A⁻¹` at v* will be
 /// available, typically as a factorization of the sparse matrix `A`.
 ///
-/// It should be noted that while in the previous two examples we used the
-/// backward Euler method to obtain a discrte approximation in time for
-/// `F(q, v)`, %ContactSolver does not make this or any other assumption on the
-/// time stepping scheme chosen to obtain `F(v)`. In the previous examples any
-/// other methods such as Crank–Nicolson, Newmark (very common in elasticity) or
-/// Linear Multistep could be used to achieve higher order approximations or
-/// desired stability properties.
-///
-// TODO(amcastro-tri): add sections specific to bilateral and unilateral
-// constraints.
-///
 /// <h3> Problem data </h3>
 /// %ContactSolver needs the following information to properly define the
 /// contact problem:
-/// - The inverse operator of A and the predicted velocity v*. This essentially
-/// defines the "dynamics" of the system. This is specified as a
-/// SystemDynamicsData with SetSystemDynamicsData().
+/// - The inverse operator A⁻¹ and the predicted velocity v*. This essentially
+///   defines the "dynamics" of the system. This is specified as a
+///   SystemDynamicsData with SetSystemDynamicsData().
 /// - Contact information. Initial penetration, contact Jacobian, possibly
-/// stiffness and damping, friction coefficients, etc. This is specified as a
-/// PointContactData with SetPointContactData().
+///   stiffness and damping, friction coefficients, etc. This is specified as a
+///   PointContactData with SetPointContactData().
 ///
 /// Once the problem is set, SolveWithGuess() is used to invoke the solver.
-/// Methods such as GetImpulses() and GetVelocities() are then used to retrieve
-/// the solution γ and v, respectively.
+/// Methods such as CopyImpulses() and CopyVelocities() are then used to
+/// retrieve the solution γ and v, respectively.
 ///
 /// <h3> References: </h3>
 /// - [Anitescu, 2006] Anitescu, M., 2006. Optimization-based simulation of
