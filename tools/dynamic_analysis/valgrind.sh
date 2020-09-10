@@ -15,6 +15,9 @@ export G_SLICE=always-malloc
 # tests.
 export GTEST_DEATH_TEST_USE_FORK=1
 
+# If unset, set to empty string.
+export VALGRIND_OPTS="$VALGRIND_OPTS"
+
 valgrind \
     --error-exitcode=1 \
     --gen-suppressions=all \

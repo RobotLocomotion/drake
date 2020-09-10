@@ -21,16 +21,17 @@
 // platform-specific enabling of observations.
 static void EvaluateMinNumAllocations(int observed, int min_num_allocations);
 
-// LimitMalloc does not work properly with leak sanitizer builds. Check this
-// predicate and disarm to avoid erroneous results.
-static bool IsLeakSanitizerBuild() {
-  static const bool is_lsan{!!std::getenv("LSAN_OPTIONS")};
-  return is_lsan;
-}
-
 namespace drake {
 namespace test {
 namespace {
+
+// LimitMalloc does not work properly with some configurations. Check this
+// predicate and disarm to avoid erroneous results.
+bool IsSupportedConfiguration() {
+  static const bool is_supported{!std::getenv("LSAN_OPTIONS") &&
+                                 !std::getenv("VALGRIND_OPTS")};
+  return is_supported;
+}
 
 // This variable is used as an early short-circuit for our malloc hooks.  When
 // false, we execute as minimal code footprint as possible.  This keeps dl_init
@@ -152,7 +153,7 @@ class ActiveMonitor {
 };
 
 void Monitor::ObserveAllocation() {
-  if (IsLeakSanitizerBuild()) { return; }
+  if (!IsSupportedConfiguration()) { return; }
 
   bool failure = false;
 
@@ -182,9 +183,9 @@ void Monitor::ObserveAllocation() {
 LimitMalloc::LimitMalloc() : LimitMalloc({ .max_num_allocations = 0 }) {}
 
 LimitMalloc::LimitMalloc(LimitMallocParams args) {
-  // Make sure the leak-sanitizer check is warm before trying it within a
-  // malloc call stack.
-  IsLeakSanitizerBuild();
+  // Make sure the configuration check is warm before trying it within a malloc
+  // call stack.
+  IsSupportedConfiguration();
 
   // Prepare a monitor with our requested limits.
   auto monitor = std::make_shared<Monitor>(this, std::move(args));
@@ -247,7 +248,7 @@ void* realloc(void* ptr, size_t size) {
 }
 
 static void EvaluateMinNumAllocations(int observed, int min_num_allocations) {
-  if (IsLeakSanitizerBuild()) { return; }
+  if (!drake::test::IsSupportedConfiguration()) { return; }
 
   if ((min_num_allocations >= 0) && (observed < min_num_allocations)) {
     std::cerr << "abort due to scope end with "

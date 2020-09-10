@@ -20,8 +20,10 @@ struct LimitMallocParams {
 /// Instantiate this class in a unit test scope where malloc (and realloc,
 /// etc.) should be disallowed or curtailed.
 ///
-/// @note This class is currently a no-op on macOS.
-/// @note This class is currently a no-op in leak sanitizer runs.
+/// @note This class is currently a no-op in some build configurations:
+///       - macOS
+///       - leak sanitizer
+///       - valgrind tools
 ///
 /// Example:
 /// @code
