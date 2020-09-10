@@ -32,6 +32,13 @@ using Eigen::Vector3d;
 //  explained *somewhere* in the documentation. The layout of the texture on the
 //  box and (eventually) its ability to be transformed. But also for all shapes.
 
+// TODO(SeanCurtis-TRI): The vtkCylinderSource has a similar artifact as the
+//  cube source. The top and bottom faces tile the texture across those faces.
+//  The corner of the texture is located at the center of the face and then
+//  tiles once per each unit the face spans. This is a horrible behavior.
+//  Create a DrakeCylinderSource that matches the Cylinder used in the
+//  RenderEngineGl geometry for consistency.
+
 /* A custom poly data algorithm for creating a Box for Drake. This differs from
  (and is preferred over) the vtkCubeSource for the following reasons.
 

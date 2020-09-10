@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <sstream>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -18,7 +19,9 @@ namespace internal {
 namespace {
 
 using Eigen::AngleAxisf;
+using Vector2f = Vector2<GLfloat>;
 using Vector3f = Vector3<GLfloat>;
+using std::vector;
 
 GTEST_TEST(LoadMeshFromObjTest, ErrorModes) {
   {
@@ -49,10 +52,34 @@ GTEST_TEST(LoadMeshFromObjTest, ErrorModes) {
     std::stringstream in_stream(R"""(
 v 1 2 3
 vn 0 0 1
+vt 0 1
 f 1 2 3
 )""");
     DRAKE_EXPECT_THROWS_MESSAGE(LoadMeshFromObj(&in_stream), std::runtime_error,
                                 "Not all faces reference normals.+");
+  }
+  {
+    // Case: The obj has no uvs. Note: the face specification is otherwise
+    // invalid in that it references vertex positions that don't exist.
+    std::stringstream in_stream("v 1 2 3\nvn 0 0 1\nf 1 2 3\n");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        LoadMeshFromObj(&in_stream), std::runtime_error,
+        "OBJ has no texture coordinates; RenderEngineGl requires OBJs with "
+        "texture coordinates.+");
+  }
+  {
+    // Case: not all faces reference uvs. Note: the face specification is
+    // otherwise invalid in that it references vertex positions that don't
+    // exist.
+    std::stringstream in_stream(R"""()
+v 1 2 3
+vn 0 0 1
+vt 0 0
+f 1//0 2//0 3//0
+)""");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        LoadMeshFromObj(&in_stream), std::runtime_error,
+        "Not all faces reference texture coordinates.+");
   }
 }
 
@@ -66,7 +93,7 @@ GTEST_TEST(LoadMeshFromObjTest, ReadingFile) {
   MeshData mesh_data = LoadMeshFromObj(filename);
   EXPECT_EQ(mesh_data.positions.rows(), 24);
   EXPECT_EQ(mesh_data.normals.rows(), 24);
-  EXPECT_EQ(mesh_data.uvs.rows(), 0);
+  EXPECT_EQ(mesh_data.uvs.rows(), 24);
   EXPECT_EQ(mesh_data.indices.rows(), 12);
 
   DRAKE_EXPECT_THROWS_MESSAGE(LoadMeshFromObj("Bad file name"),
@@ -74,8 +101,22 @@ GTEST_TEST(LoadMeshFromObjTest, ReadingFile) {
                               "Cannot load the obj file 'Bad file name'");
 }
 
-// Confirms that non-triangular faces get triangulated. This also tests that
-// per-vertex normals are as expected.
+// Helpful struct for specifying multiple cases in the TriangluatePolygons test.
+struct TriangluateTestParmas {
+  std::string name;
+  std::string obj_spec;
+  int position_count;
+  // The expected normal and texture coordinate for the vertices in face 0 (f0).
+  Vector3f n0;
+  Vector2f uv0;
+  // The expected normal and texture coordinate for the vertices in face 1 (f1).
+  Vector3f n1;
+  Vector2f uv1;
+};
+
+// Confirms that non-triangular faces get triangulated. This also confirms that
+// duplication occurs due to associations of vertex positions with multiple
+// normals or texture coordinates.
 GTEST_TEST(LoadMeshFromObjTest, TriangulatePolygons) {
   /*
              o 4
@@ -83,52 +124,97 @@ GTEST_TEST(LoadMeshFromObjTest, TriangulatePolygons) {
            ╱    ╲           should be triangulated into three and two
           ╱      ╲          triangles respectively. But with the same
          ╱        ╲         vertices.
-        ╱          ╲
+        ╱    f0    ╲
      5 o            o 3     The upper and lower polygons have *different*
         ╲          ╱        normals. So, vertices 1 & 2 will be copied.
-         ╲        ╱
-       1  o──────o 2
-          │      │
+         ╲        ╱         All vertices have the same texture coordinate, so
+       1  o──────o 2        its value does not trigger duplication.
+          │  f1  │
           o──────o
           6      7
   */
-  std::stringstream in_stream(R"""(
+  constexpr char positions[] = R"""(
   v -1 -1 0
   v 1 -1 0
   v 2 1 0
   v 0 2 0
   v -2 1 0
   v -1 -2 0
-  v 1 -2 0
-  vn 0 0 1
-  vn 0 1 0
-  f 1//1 2//1 3//1 4//1 5//1
-  f 6//2 7//2 2//2 1//2
-  )""");
-  MeshData mesh_data = LoadMeshFromObj(&in_stream);
-  EXPECT_EQ(mesh_data.positions.rows(), 9);
-  EXPECT_EQ(mesh_data.normals.rows(), 9);
-  EXPECT_EQ(mesh_data.uvs.rows(), 0);
-  EXPECT_EQ(mesh_data.indices.rows(), 5);
-  // The first three faces have a normal in the <0, 0, 1> direction.
-  const auto pos_z = Vector3<GLfloat>::UnitZ().transpose();
-  for (int t = 0; t < 3; ++t) {
-    for (int i = 0; i < 3; ++i) {
-      const int n_index = mesh_data.indices(t, i);
-      EXPECT_TRUE(CompareMatrices(mesh_data.normals.row(n_index), pos_z));
+  v 1 -2 0)""";
+
+  const Vector3f unit3_z = Vector3f::UnitZ();
+  const Vector3f unit3_y = Vector3f::UnitY();
+  const Vector2f zero2 = Vector2f::Zero();
+  const Vector2f ones2(1, 1);
+
+  vector<TriangluateTestParmas> test_params{
+      // Every vertex is associated with a single normal and texture coordinate.
+      {"Unique vertices", R"""(
+      vn 0 0 1
+      vt 0 0
+      f 1/1/1 2/1/1 3/1/1 4/1/1 5/1/1
+      f 6/1/1 7/1/1 2/1/1 1/1/1)""",
+       7, unit3_z, zero2, unit3_z, zero2},
+      // Upper and lower faces have different normals; vertices 1 & 2 will be
+      // duplicated.
+      {"Vertices with multiple normals", R"""(
+      vn 0 0 1
+      vn 0 1 0
+      vt 0 0
+      f 1/1/1 2/1/1 3/1/1 4/1/1 5/1/1
+      f 6/1/2 7/1/2 2/1/2 1/1/2)""",
+       9, unit3_z, zero2, unit3_y, zero2},
+      // Upper and lower faces have different uvs; vertices 1 & 2 will be
+      // duplicated.
+      {"Vertices with multiple uvs", R"""(
+      vn 0 0 1
+      vt 0 0
+      vt 1 1
+      f 1/1/1 2/1/1 3/1/1 4/1/1 5/1/1
+      f 6/2/1 7/2/1 2/2/1 1/2/1)""",
+       9, unit3_z, zero2, unit3_z, ones2},
+  };
+
+  for (const auto& params : test_params) {
+    SCOPED_TRACE(params.name);
+    std::stringstream in_stream;
+    in_stream << positions;
+    in_stream << params.obj_spec;
+    MeshData mesh_data = LoadMeshFromObj(&in_stream);
+    EXPECT_EQ(mesh_data.positions.rows(), params.position_count);
+    EXPECT_EQ(mesh_data.normals.rows(), params.position_count);
+    EXPECT_EQ(mesh_data.uvs.rows(), params.position_count);
+    // The two faces will always be triangulated into five triangles.
+    EXPECT_EQ(mesh_data.indices.rows(), 5);
+
+    // The first three triangles come from f0, and all have the expected normal
+    // and texture coordinate.
+    for (int t = 0; t < 3; ++t) {
+      for (int i = 0; i < 3; ++i) {
+        const int index = mesh_data.indices(t, i);
+        EXPECT_TRUE(CompareMatrices(mesh_data.normals.row(index),
+                                    params.n0.transpose()));
+        EXPECT_TRUE(CompareMatrices(mesh_data.uvs.row(index),
+                                    params.uv0.transpose()));
+      }
     }
-  }
-  // The last two in the <0, 1, 0> direction.
-  const auto pos_y = Vector3<GLfloat>::UnitY().transpose();
-  for (int t = 3; t < 5; ++t) {
-    for (int i = 0; i < 3; ++i) {
-      const int n_index = mesh_data.indices(t, i);
-      EXPECT_TRUE(CompareMatrices(mesh_data.normals.row(n_index), pos_y));
+    // The last two triangles come from f1 and all have the expected normal and
+    // texture coordinate.
+    for (int t = 3; t < 5; ++t) {
+      for (int i = 0; i < 3; ++i) {
+        const int index = mesh_data.indices(t, i);
+        EXPECT_TRUE(CompareMatrices(mesh_data.normals.row(index),
+                                    params.n1.transpose()));
+        EXPECT_TRUE(CompareMatrices(mesh_data.uvs.row(index),
+                                    params.uv1.transpose()));
+      }
     }
   }
 }
 
-// Geometry already triangulated gets preserved.
+// Geometry already triangulated gets preserved. This doesn't do variations on
+// whether vertex positions need copying due to associations with multiple
+// normals/uvs. It relies on `TriangulatePolygons` to handle that.
 GTEST_TEST(LoadMeshFromObjTest, PreserveTriangulation) {
   /*
              o 4
@@ -154,16 +240,17 @@ GTEST_TEST(LoadMeshFromObjTest, PreserveTriangulation) {
   v -1 -2 0
   v 1 -2 0
   vn 0 0 1
-  f 1//1 2//1 5//1
-  f 2//1 3//1 5//1
-  f 3//1 4//1 5//1
-  f 1//1 6//1 7//1
-  f 1//1 7//1 2//1
+  vt 0 0
+  f 1/1/1 2/1/1 5/1/1
+  f 2/1/1 3/1/1 5/1/1
+  f 3/1/1 4/1/1 5/1/1
+  f 1/1/1 6/1/1 7/1/1
+  f 1/1/1 7/1/1 2/1/1
   )""");
   MeshData mesh_data = LoadMeshFromObj(&in_stream);
   EXPECT_EQ(mesh_data.positions.rows(), 7);
   EXPECT_EQ(mesh_data.normals.rows(), 7);
-  EXPECT_EQ(mesh_data.uvs.rows(), 0);
+  EXPECT_EQ(mesh_data.uvs.rows(), 7);
   EXPECT_EQ(mesh_data.indices.rows(), 5);
 }
 
@@ -185,16 +272,17 @@ GTEST_TEST(LoadMeshFromObjTest, RemoveUnreferencedVertices) {
   v 1 -1 0
   v 1 1 0
   v -1 1 0
-  v 3 0 0    # Unreferenced vertex to the right of the box.
-  v -1 -1 0  # Duplicate of vertex 1.
+  v 3 0 0    # Unreferenced vertex to the right of the box (omitted).
+  v -1 -1 0  # Duplicate of vertex 1 but propagated through.
   vn 0 0 1
-  f 1//1 2//1 3//1
-  f 6//1 3//1 4//1
+  vt 0 0
+  f 1/1/1 2/1/1 3/1/1
+  f 6/1/1 3/1/1 4/1/1
   )""");
   MeshData mesh_data = LoadMeshFromObj(&in_stream);
   EXPECT_EQ(mesh_data.positions.rows(), 5);
   EXPECT_EQ(mesh_data.normals.rows(), 5);
-  EXPECT_EQ(mesh_data.uvs.rows(), 0);
+  EXPECT_EQ(mesh_data.uvs.rows(), 5);
   EXPECT_EQ(mesh_data.indices.rows(), 2);
 }
 
@@ -239,7 +327,7 @@ Vector3f CalcTriCentroid(const MeshData& data, int tri_index) {
 }
 
 // Simply confirm that the utility functions above report good values.
-GTEST_TEST(ShapeMeshesTest, ConfirmUtilities) {
+GTEST_TEST(PrimitiveMeshTests, ConfirmUtilities) {
   MeshData data;
   data.positions.resize(3, 3);
   /*
@@ -458,28 +546,49 @@ GTEST_TEST(PrimitiveMeshTests, NormalCone) {
  on the shape-specific tests to evaluate shape-specified invariants. This tests
  the following invariants:
 
+   - Confirm that the number of normals, positions, and uvs all match.
    - The winding of the faces always point *away* from the origin.
    - The face normals lie within the corresponding face's normal cones.
    - All normals have unit length.
+   - Confirm all uvs lie in the range [0, 1].
+
+ @param mesh              The mesh data to test.
+ @param origin_is_inside  Reports if we have the expectation that the origin is
+                          "inside" the mesh.
  */
-void TestGenericPrimitiveTraits(const MeshData& mesh) {
+void TestGenericPrimitiveTraits(const MeshData& mesh,
+                                bool origin_is_inside = true) {
   const GLfloat kEps = std::numeric_limits<GLfloat>::epsilon();
+
+  ASSERT_EQ(mesh.positions.rows(), mesh.normals.rows());
+  ASSERT_EQ(mesh.positions.rows(), mesh.uvs.rows());
 
   // All normals have unit length.
   for (int n_i = 0; n_i < mesh.normals.rows(); ++n_i) {
     const Vector3f n = mesh.normals.row(n_i);
-    EXPECT_NEAR(n.norm(), 1, kEps);
+    ASSERT_NEAR(n.norm(), 1, kEps);
   }
 
   // Face normals point outward, within the face's normal cone.
   for (int t = 0; t < mesh.indices.rows(); ++t) {
-    Vector3f c = CalcTriCentroid(mesh, t);
     Vector3f n_face = CalcTriNormal(mesh, t);
-    // If the winding were backwards, this dot product would be negative.
-    EXPECT_GT(n_face.dot(c), 0) << "for triangle " << t;
+    if (origin_is_inside) {
+      Vector3f c = CalcTriCentroid(mesh, t);
+      // If the winding were backwards, this dot product would be negative.
+      ASSERT_GT(n_face.dot(c), 0) << "for triangle " << t;
+    }
     const NormalCone cone(mesh, t);
-    EXPECT_TRUE(cone.Contains(n_face))
+    ASSERT_TRUE(cone.Contains(n_face))
         << "for triangle " << t << "\n  face normal: " << n_face.transpose();
+  }
+
+  // UVs lie in the expected range.
+  ASSERT_EQ(mesh.uvs.rows(), mesh.positions.rows());
+  for (int i = 0; i < mesh.uvs.rows(); ++i) {
+    const GLfloat u = mesh.uvs(i, 0);
+    const GLfloat v = mesh.uvs(i, 1);
+    ASSERT_TRUE((0 <= u) && (u <= 1));
+    ASSERT_TRUE((0 <= v) && (v <= 1));
   }
 }
 
@@ -517,6 +626,20 @@ GTEST_TEST(PrimitiveMeshTests, MakeLongLatUnitSphere) {
     }
 
     TestGenericPrimitiveTraits(mesh_data);
+
+    // TestGenericPrimitiveTraits has confirmed all UVs coordinates lie in the
+    // range [0, 1]. Writing a test to validate the texture coordinates
+    // exhaustively would require essentially duplicating the uv-generation
+    // code. Instead, we'll rely on a coarse sampling and users complaining
+    // about bad looking renderings to detect more subtle bugs in the
+    // texture coordinates.
+    // We'll confirm the north and south poles (first and last vertices) are
+    // where we expect them.
+    EXPECT_TRUE(CompareMatrices(mesh_data.uvs.row(0),
+                                Vector2f(0, 1).transpose()));
+    const int row_count = mesh_data.uvs.rows();
+    EXPECT_TRUE(CompareMatrices(mesh_data.uvs.row(row_count - 1),
+                                Vector2f(0, 0).transpose()));
   }
 }
 
@@ -564,6 +687,13 @@ GTEST_TEST(PrimitiveMeshTests, MakeUnitCylinder) {
     }
 
     TestGenericPrimitiveTraits(mesh_data);
+
+    // See note in MakeLongLatUnitSphere about testing texture coordinates.
+    EXPECT_TRUE(CompareMatrices(mesh_data.uvs.row(0),
+                                Vector2f(0, 1).transpose()));
+    const int row_count = mesh_data.uvs.rows();
+    EXPECT_TRUE(CompareMatrices(mesh_data.uvs.row(row_count - 1),
+                                Vector2f(0, 0).transpose()));
   }
 }
 
@@ -574,7 +704,10 @@ GTEST_TEST(PrimitiveMeshTests, MakeSquarePatch) {
   const GLfloat kArea = kMeasure * kMeasure;
 
   for (int resolution : {1, 4, 15}) {
+    SCOPED_TRACE(fmt::format("Square patch with resolution {}", resolution));
     const MeshData mesh_data = MakeSquarePatch(kMeasure, resolution);
+
+    TestGenericPrimitiveTraits(mesh_data, false /* origin_is_inside */);
 
     // The tolerance we select is going to be a scaled machine epsilon. The
     // first scale factor is the actual expected area; this makes our tolerance
@@ -607,6 +740,15 @@ GTEST_TEST(PrimitiveMeshTests, MakeSquarePatch) {
     for (int v = 0; v < mesh_data.positions.rows(); ++v) {
       ASSERT_TRUE(CompareMatrices(mesh_data.normals.row(v), expected_n));
     }
+
+    // Coarse sampling of UVs. The first vertex should be at (0, 0) the last
+    // at (1, 1). See note on texture coordinate testing in
+    // MakeLongLatUnitSphere.
+    EXPECT_TRUE(CompareMatrices(mesh_data.uvs.row(0),
+                                Vector2f(0, 0).transpose()));
+    const int row_count = mesh_data.uvs.rows();
+    EXPECT_TRUE(CompareMatrices(mesh_data.uvs.row(row_count - 1),
+                                Vector2f(1, 1).transpose()));
   }
 }
 
@@ -637,6 +779,19 @@ GTEST_TEST(PrimitiveMeshTests, MakeUnitBox) {
   EXPECT_TRUE(CompareMatrices(max_pt, corner, kEps));
 
   TestGenericPrimitiveTraits(mesh_data);
+
+  // We expect the UVs to have the pattern (0, 0) -> (1, 0) -> (1, 1) -> (1, 0)
+  // once for each face. We'll test that explicitly.
+  for (int row = 0; row < mesh_data.uvs.rows(); row += 4) {
+    ASSERT_TRUE(CompareMatrices(mesh_data.uvs.row(row),
+                                Vector2f(0, 0).transpose()));
+    ASSERT_TRUE(CompareMatrices(mesh_data.uvs.row(row + 1),
+                                Vector2f(1, 0).transpose()));
+    ASSERT_TRUE(CompareMatrices(mesh_data.uvs.row(row + 2),
+                                Vector2f(1, 1).transpose()));
+    ASSERT_TRUE(CompareMatrices(mesh_data.uvs.row(row + 3),
+                                Vector2f(0, 1).transpose()));
+  }
 }
 
 GTEST_TEST(PrimitiveMeshTests, MakeCapsule) {
@@ -677,6 +832,15 @@ GTEST_TEST(PrimitiveMeshTests, MakeCapsule) {
     }
 
     TestGenericPrimitiveTraits(mesh_data);
+
+    // See note in MakeLongLatUnitSphere about testing texture coordinates.
+    EXPECT_TRUE(CompareMatrices(mesh_data.uvs.row(0),
+                                Vector2f(0, 1).transpose()));
+    const int row_count = mesh_data.uvs.rows();
+    EXPECT_TRUE(CompareMatrices(mesh_data.uvs.row(row_count - 1),
+                                Vector2f(0, 0).transpose()));
+    // TODO(SeanCurtis-TRI) Consider testing the v-values of the two equators
+    //  to make sure the distribution from 0-1 is arc-length parameterized.
   }
 }
 
