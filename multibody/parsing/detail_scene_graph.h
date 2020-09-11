@@ -170,7 +170,7 @@ math::RigidTransformd MakeGeometryPoseFromSdfCollision(
    4. If no meaningful friction coefficients are found, a default value will be
       created (see default_friction()).
  As long as no exception is thrown, the resulting ProximityProperties will have
- the ('material', 'coulomb_friction') property.  */
+ the material/coulomb_friction property.  */
 geometry::ProximityProperties MakeProximityPropertiesForCollision(
         const sdf::Collision& sdf_collision);
 

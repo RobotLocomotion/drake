@@ -532,7 +532,7 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
                                    const char* group, const char* property,
                                    double value) {
     ASSERT_TRUE(properties.HasProperty(group, property))
-        << fmt::format("  for property: ('{}', '{}')", group, property);
+        << fmt::format("  for property: {}/{}", group, property);
     EXPECT_EQ(properties.GetProperty<double>(group, property), value);
   };
 
