@@ -106,8 +106,8 @@ int do_main() {
 
   if (FLAGS_render_on) {
     PerceptionProperties properties;
-    properties.AddProperty("phong", "diffuse", Vector4d{0.8, 0.8, 0.8, 1.0});
-    properties.AddProperty("label", "id", RenderLabel(ground_id.get_value()));
+    properties.Add("phong/diffuse", Vector4d{0.8, 0.8, 0.8, 1.0})
+        .Add("label/id", RenderLabel(ground_id.get_value()));
     scene_graph->AssignRole(global_source, ground_id, properties);
 
     // Create the camera.

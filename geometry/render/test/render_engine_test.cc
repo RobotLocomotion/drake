@@ -79,7 +79,7 @@ GTEST_TEST(RenderEngine, RegistrationAndUpdate) {
   // failure when providing an invalid render label. (See Case 1.)
   auto make_properties = [](RenderLabel label) {
     PerceptionProperties properties;
-    properties.AddProperty("label", "id", label);
+    properties.Add("label/id", label);
     return properties;
   };
 

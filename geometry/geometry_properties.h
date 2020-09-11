@@ -10,6 +10,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/copyable_unique_ptr.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/value.h"
 #include "drake/geometry/rgba.h"
@@ -366,22 +367,27 @@ class GeometryProperties {
 
   /** Returns `true` if any property starts with the string `group_name + "/"`.
    */
+  DRAKE_DEPRECATED("2020-11-01", "Groups will no longer be used")
   bool HasGroup(const std::string& group_name) const;
 
   /** Reports the number of "groups" (see HasGroup() for definition of a group).
    */
+  DRAKE_DEPRECATED("2020-11-01", "Groups will no longer be used")
   int num_groups() const;
 
   /** Returns a *copy* of all of the properties whose names begin with the
    substring `group_name + "/"`.  */
+  DRAKE_DEPRECATED("2020-11-01", "Groups will no longer be used")
   Group GetPropertiesInGroup(const std::string& group_name) const;
 
   /** Returns all the unique group names (see HasGroup() for the definition of
    a group).  */
+  DRAKE_DEPRECATED("2020-11-01", "Groups will no longer be used")
   std::set<std::string> GetGroupNames() const;
 
   /** Variant of Add() on the property "group_name/name".  */
   template <typename ValueType>
+  DRAKE_DEPRECATED("2020-11-01", "Please use Add instead of AddProperty")
   void AddProperty(const std::string& group_name, const std::string& name,
                    const ValueType& value) {
     Add(encode_group(group_name, name), value);
@@ -389,12 +395,15 @@ class GeometryProperties {
 
   /** Variant of Update() on the property "group_name/name".  */
   template <typename ValueType>
+  DRAKE_DEPRECATED("2020-11-01", "Please use Update instead of UpdateProperty")
   void UpdateProperty(const std::string& group_name, const std::string& name,
                       const ValueType& value) {
     Update(encode_group(group_name, name), value);
   }
 
   /** Variant of AddAbstract() on the property "group_name/name".  */
+  DRAKE_DEPRECATED("2020-11-01", "Please use AddAbstract instead of "
+                                 "AddPropertyAbstract")
   void AddPropertyAbstract(const std::string& group_name,
                            const std::string& name,
                            const AbstractValue& value) {
@@ -402,6 +411,8 @@ class GeometryProperties {
   }
 
   /** Variant of UpdateAbstract() on the property "group_name/name".  */
+  DRAKE_DEPRECATED("2020-11-01", "Please use UpdateAbstract instead of "
+                                 "UpdatePropertyAbstract")
   void UpdatePropertyAbstract(const std::string& group_name,
                               const std::string& name,
                               const AbstractValue& value) {
@@ -409,6 +420,8 @@ class GeometryProperties {
   }
 
   /** Variant of HasProperty() on the property "group_name/name".  */
+  DRAKE_DEPRECATED("2020-11-01", "Please use HasProperty(string) "
+                                 "instead of HasProperty(string, string)")
   bool HasProperty(const std::string& group_name,
                    const std::string& name) const {
     return HasProperty(encode_group(group_name, name));
@@ -416,12 +429,15 @@ class GeometryProperties {
 
   /** Variant of Get() on the property "group_name/name".  */
   template <typename ValueType>
+  DRAKE_DEPRECATED("2020-11-01", "Please use Get instead of GetProperty")
   decltype(auto) GetProperty(const std::string& group_name,
                              const std::string& name) const {
     return Get<ValueType>(encode_group(group_name, name));
   }
 
   /** Variant of GetAbstract() on the property "group_name/name".  */
+  DRAKE_DEPRECATED("2020-11-01", "Please use GetAbstract instead of "
+                                 "GetPropertyAbstract")
   const AbstractValue& GetPropertyAbstract(const std::string& group_name,
                                            const std::string& name) const {
     return GetAbstract(encode_group(group_name, name));
@@ -429,6 +445,9 @@ class GeometryProperties {
 
   /** Variant of GetPropertyOrDefault() on the property "group_name/name".  */
   template <typename ValueType>
+  DRAKE_DEPRECATED("2020-11-01",
+                   "Please use GetPropertyOrDefault(string, value) "
+                   "instead of GetPropertyOrDefault(string, string, value)")
   ValueType GetPropertyOrDefault(const std::string& group_name,
                                  const std::string& name,
                                  ValueType default_value) const {
@@ -438,12 +457,15 @@ class GeometryProperties {
   /** Returns the default group name. There is no guarantee as to _what_ string
    corresponds to the default group. Therefore it should always be accessed via
    this method.  */
+  DRAKE_DEPRECATED("2020-11-01", "Groups will no longer be used")
   static const std::string& default_group_name() {
     static const never_destroyed<std::string> kDefaultGroup("");
     return kDefaultGroup.access();
   }
 
   /** Variant of Remove() where ('group_name', 'name') are given explicitly.  */
+  DRAKE_DEPRECATED("2020-11-01",
+                   "Please use Remove instead of RemoveProperty")
   bool RemoveProperty(const std::string& group_name, const std::string& name) {
     return Remove(encode_group(group_name, name));
   }
@@ -452,22 +474,27 @@ class GeometryProperties {
 
 #ifndef DRAKE_DOXYGEN_CXX
   // Note: these overloads of the property access methods exist to enable
-  // calls like `properties.Add({"group", "property"}, "string literal");
+  // calls like `properties.Add("group/property", "string literal");
   // Template matching would deduce that the `ValueType` in this case is a const
   // char* (which is not copyable). By explicitly declaring this API, we can
   // implicitly convert the string literals to copyable std::strings. We assume
   // that the user is never actually trying to store const char*. We omit
   // these from the doxygen because they provide no value there.
+  DRAKE_DEPRECATED("2020-11-01", "Please use Add instead of AddProperty")
   void AddProperty(const std::string& group_name, const std::string& name,
                    const char* value) {
     Add<std::string>(encode_group(group_name, name), value);
   }
 
+  DRAKE_DEPRECATED("2020-11-01", "Please use Uppdate instead of UpdateProperty")
   void UpdateProperty(const std::string& group_name, const std::string& name,
                       const char* value) {
     Update<std::string>(encode_group(group_name, name), value);
   }
 
+  DRAKE_DEPRECATED("2020-11-01",
+                   "Please use GetPropertyOrDefault(string, value) "
+                   "instead of GetPropertyOrDefault(string, string, value)")
   std::string GetPropertyOrDefault(const std::string& group_name,
                                    const std::string& name,
                                    const char* default_value) const {

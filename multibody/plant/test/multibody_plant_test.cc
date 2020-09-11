@@ -1442,35 +1442,35 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   const double sphere1_stiffness = 980;    // N/m
   const double sphere1_dissipation = 3.2;  // s/m
   geometry::ProximityProperties sphere1_properties;
-  sphere1_properties.AddProperty(geometry::internal::kMaterialGroup,
-                                 geometry::internal::kFriction,
-                                 sphere1_friction);
-  sphere1_properties.AddProperty(geometry::internal::kMaterialGroup,
-                                 geometry::internal::kPointStiffness,
-                                 sphere1_stiffness);
-  sphere1_properties.AddProperty(geometry::internal::kMaterialGroup,
-                                 geometry::internal::kHcDissipation,
-                                 sphere1_dissipation);
+  sphere1_properties
+      .Add({geometry::internal::kMaterialGroup, geometry::internal::kFriction},
+           sphere1_friction)
+      .Add({geometry::internal::kMaterialGroup,
+            geometry::internal::kPointStiffness},
+           sphere1_stiffness)
+      .Add({geometry::internal::kMaterialGroup,
+            geometry::internal::kHcDissipation},
+           sphere1_dissipation);
   GeometryId sphere1_id = plant.RegisterCollisionGeometry(
       sphere1, RigidTransformd::Identity(), geometry::Sphere(radius),
       "collision", std::move(sphere1_properties));
 
   geometry::ProximityProperties sphere2_properties;
-  sphere2_properties.AddProperty("test", "dummy", 7);
+  sphere2_properties.Add("test/dummy", 7);
   CoulombFriction<double> sphere2_friction(0.7, 0.6);
   // estimated parameters for mass=1kg, penetration_tolerance=0.05m
   // and gravity g=9.8 m/s^2.
   const double sphere2_stiffness = 196;    // N/m
   const double sphere2_dissipation = 1.4;  // s/m
-  sphere2_properties.AddProperty(geometry::internal::kMaterialGroup,
-                                 geometry::internal::kFriction,
-                                 sphere2_friction);
-  sphere2_properties.AddProperty(geometry::internal::kMaterialGroup,
-                                 geometry::internal::kPointStiffness,
-                                 sphere2_stiffness);
-  sphere2_properties.AddProperty(geometry::internal::kMaterialGroup,
-                                 geometry::internal::kHcDissipation,
-                                 sphere2_dissipation);
+  sphere2_properties
+      .Add({geometry::internal::kMaterialGroup, geometry::internal::kFriction},
+           sphere2_friction)
+      .Add({geometry::internal::kMaterialGroup,
+            geometry::internal::kPointStiffness},
+           sphere2_stiffness)
+      .Add({geometry::internal::kMaterialGroup,
+            geometry::internal::kHcDissipation},
+           sphere2_dissipation);
   const RigidBody<double>& sphere2 =
       plant.AddRigidBody("Sphere2", SpatialInertia<double>());
   GeometryId sphere2_id = plant.RegisterCollisionGeometry(
@@ -1483,8 +1483,8 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
               nullptr);
     const geometry::ProximityProperties& props =
         *scene_graph.model_inspector().GetProximityProperties(sphere2_id);
-    EXPECT_TRUE(props.HasProperty("test", "dummy"));
-    EXPECT_EQ(props.GetProperty<int>("test", "dummy"), 7);
+    EXPECT_TRUE(props.HasProperty({"test", "dummy"}));
+    EXPECT_EQ(props.Get<int>({"test", "dummy"}), 7);
   }
 
   // We are done defining the model.
@@ -1542,29 +1542,32 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   const geometry::ProximityProperties& sphere2_props =
       *scene_graph.model_inspector().GetProximityProperties(sphere2_id);
 
-  EXPECT_TRUE(ground_props.GetProperty<CoulombFriction<double>>(
-                  geometry::internal::kMaterialGroup,
-                  geometry::internal::kFriction) == ground_friction);
-  EXPECT_TRUE(sphere1_props.GetProperty<CoulombFriction<double>>(
-                  geometry::internal::kMaterialGroup,
-                  geometry::internal::kFriction) == sphere1_friction);
-  EXPECT_TRUE(sphere2_props.GetProperty<CoulombFriction<double>>(
-                  geometry::internal::kMaterialGroup,
-                  geometry::internal::kFriction) == sphere2_friction);
+  EXPECT_EQ(
+      ground_props.Get<CoulombFriction<double>>(
+          {geometry::internal::kMaterialGroup, geometry::internal::kFriction}),
+      ground_friction);
+  EXPECT_EQ(
+      sphere1_props.Get<CoulombFriction<double>>(
+          {geometry::internal::kMaterialGroup, geometry::internal::kFriction}),
+      sphere1_friction);
+  EXPECT_EQ(
+      sphere2_props.Get<CoulombFriction<double>>(
+          {geometry::internal::kMaterialGroup, geometry::internal::kFriction}),
+      sphere2_friction);
 
-  EXPECT_TRUE(sphere1_props.GetProperty<double>(
-                  geometry::internal::kMaterialGroup,
-                  geometry::internal::kPointStiffness) == sphere1_stiffness);
-  EXPECT_TRUE(sphere2_props.GetProperty<double>(
-                  geometry::internal::kMaterialGroup,
-                  geometry::internal::kPointStiffness) == sphere2_stiffness);
+  EXPECT_EQ(sphere1_props.Get<double>({geometry::internal::kMaterialGroup,
+                                       geometry::internal::kPointStiffness}),
+            sphere1_stiffness);
+  EXPECT_EQ(sphere2_props.Get<double>({geometry::internal::kMaterialGroup,
+                                       geometry::internal::kPointStiffness}),
+            sphere2_stiffness);
 
-  EXPECT_TRUE(sphere1_props.GetProperty<double>(
-                  geometry::internal::kMaterialGroup,
-                  geometry::internal::kHcDissipation) == sphere1_dissipation);
-  EXPECT_TRUE(sphere2_props.GetProperty<double>(
-                  geometry::internal::kMaterialGroup,
-                  geometry::internal::kHcDissipation) == sphere2_dissipation);
+  EXPECT_EQ(sphere1_props.Get<double>({geometry::internal::kMaterialGroup,
+                                       geometry::internal::kHcDissipation}),
+            sphere1_dissipation);
+  EXPECT_EQ(sphere2_props.Get<double>({geometry::internal::kMaterialGroup,
+                                       geometry::internal::kHcDissipation}),
+            sphere2_dissipation);
 }
 
 // Verifies the process of visual geometry registration with a SceneGraph.
@@ -1611,10 +1614,9 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
       plant.AddRigidBody("Sphere2", SpatialInertia<double>());
   IllustrationProperties sphere2_props;
   const Vector4<double> sphere2_diffuse{0.1, 0.9, 0.1, 0.5};
-  sphere2_props.AddProperty("phong", "diffuse", sphere2_diffuse);
-  sphere2_props.AddProperty("phong", "diffuse_map", "empty.png");
-  sphere2_props.AddProperty("renderer", "accepting",
-                            std::set<std::string>{"not_dummy"});
+  sphere2_props.Add("phong/diffuse", sphere2_diffuse)
+      .Add("phong/diffuse_map", "empty.png")
+      .Add("renderer/accepting"}, std::set<std::string>{"not_dummy");
   GeometryId sphere2_id = plant.RegisterVisualGeometry(
       sphere2, RigidTransformd::Identity(), geometry::Sphere(radius), "visual",
       sphere2_props);
@@ -1644,7 +1646,7 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
         inspector.GetIllustrationProperties(ground_id);
     ASSERT_NE(material, nullptr);
     // Undefined property value indicates use of default value.
-    EXPECT_FALSE(material->HasProperty("phong", "diffuse"));
+    EXPECT_FALSE(material->HasProperty({"phong", "diffuse"}));
   }
 
   // This implicitly assumes that there *is* a "phong"|"diffuse" material. An
@@ -1653,7 +1655,7 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
     const IllustrationProperties* material =
         inspector.GetIllustrationProperties(id);
     return
-        material->GetProperty<Vector4<double>>("phong", "diffuse");
+        material->Get<Vector4<double>>({"phong", "diffuse"});
   };
   {
     const Vector4<double>& test_diffuse = get_diffuse_color(sphere1_id);
@@ -1667,8 +1669,8 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
                                 MatrixCompareType::absolute));
     const IllustrationProperties* material =
         inspector.GetIllustrationProperties(sphere2_id);
-    ASSERT_TRUE(material->HasProperty("phong", "diffuse_map"));
-    EXPECT_EQ(material->GetProperty<std::string>("phong", "diffuse_map"),
+    ASSERT_TRUE(material->HasProperty({"phong", "diffuse_map"}));
+    EXPECT_EQ(material->Get<std::string>({"phong", "diffuse_map"}),
         "empty.png");
   }
 }

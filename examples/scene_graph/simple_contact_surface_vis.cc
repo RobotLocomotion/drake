@@ -114,7 +114,7 @@ class MovingBall final : public LeafSystem<double> {
     scene_graph->AssignRole(source_id_, geometry_id_, prox_props);
 
     IllustrationProperties illus_props;
-    illus_props.AddProperty("phong", "diffuse", Vector4d(0.8, 0.1, 0.1, 0.25));
+    illus_props.Add("phong/diffuse", Vector4d(0.8, 0.1, 0.1, 0.25));
     scene_graph->AssignRole(source_id_, geometry_id_, illus_props);
 
     geometry_pose_port_ =
@@ -292,8 +292,7 @@ int do_main() {
   AddRigidHydroelasticProperties(edge_len, &rigid_props);
   scene_graph.AssignRole(source_id, ground_id, rigid_props);
   IllustrationProperties illustration_box;
-  illustration_box.AddProperty("phong", "diffuse",
-                               Vector4d{0.5, 0.5, 0.45, 1.0});
+  illustration_box.Add("phong/diffuse", Vector4d{0.5, 0.5, 0.45, 1.0});
   scene_graph.AssignRole(source_id, ground_id, illustration_box);
 
   // Add arbitrary cylinder to bang into -- this should crash in strict
@@ -308,8 +307,8 @@ int do_main() {
   }
   scene_graph.AssignRole(source_id, can_id, std::move(proximity_cylinder));
   IllustrationProperties illustration_cylinder;
-  illustration_cylinder.AddProperty("phong", "diffuse",
-                                    Vector4d{0.5, 0.5, 0.45, 0.5});
+  illustration_cylinder.Add("phong/diffuse",
+                            Vector4d{0.5, 0.5, 0.45, 0.5});
   scene_graph.AssignRole(source_id, can_id, illustration_cylinder);
 
   // Make and visualize contacts.

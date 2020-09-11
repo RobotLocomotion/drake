@@ -15,10 +15,12 @@ using internal::kComplianceType;
 using internal::kElastic;
 using internal::kFriction;
 using internal::kHcDissipation;
-using internal::kPointStiffness;
 using internal::kHydroGroup;
 using internal::kMaterialGroup;
+using internal::kPointStiffness;
 using internal::kRezHint;
+using internal::kSlabThickness;
+using internal::PropName;
 using CoulombFrictiond = multibody::CoulombFriction<double>;
 
 GTEST_TEST(ProximityPropertiesTest, AddContactMaterial) {
@@ -31,11 +33,11 @@ GTEST_TEST(ProximityPropertiesTest, AddContactMaterial) {
   {
     ProximityProperties p;
     EXPECT_NO_THROW(AddContactMaterial(E, d, ps, mu, &p));
-    EXPECT_EQ(p.GetProperty<double>(kMaterialGroup, kElastic), E);
-    EXPECT_EQ(p.GetProperty<double>(kMaterialGroup, kHcDissipation), d);
-    EXPECT_EQ(p.GetProperty<double>(kMaterialGroup, kPointStiffness), ps);
+    EXPECT_EQ(p.Get<double>(PropName(kMaterialGroup, kElastic)), E);
+    EXPECT_EQ(p.Get<double>(PropName(kMaterialGroup, kHcDissipation)), d);
+    EXPECT_EQ(p.Get<double>(PropName(kMaterialGroup, kPointStiffness)), ps);
     const CoulombFrictiond& mu_stored =
-        p.GetProperty<CoulombFrictiond>(kMaterialGroup, kFriction);
+        p.Get<CoulombFrictiond>(PropName(kMaterialGroup, kFriction));
     EXPECT_EQ(mu_stored.static_friction(), mu.static_friction());
     EXPECT_EQ(mu_stored.dynamic_friction(), mu.dynamic_friction());
   }
@@ -43,7 +45,7 @@ GTEST_TEST(ProximityPropertiesTest, AddContactMaterial) {
   // Error case: Already has elastic_modulus.
   {
     ProximityProperties p;
-    p.AddProperty(kMaterialGroup, kElastic, E);
+    p.Add(PropName(kMaterialGroup, kElastic), E);
     DRAKE_EXPECT_THROWS_MESSAGE(
         AddContactMaterial(E, d, ps, mu, &p), std::logic_error,
         ".+ Trying to add property .+ name already exists");
@@ -52,7 +54,7 @@ GTEST_TEST(ProximityPropertiesTest, AddContactMaterial) {
   // Error case: Already has dissipation.
   {
     ProximityProperties p;
-    p.AddProperty(kMaterialGroup, kHcDissipation, d);
+    p.Add(PropName(kMaterialGroup, kHcDissipation), d);
     DRAKE_EXPECT_THROWS_MESSAGE(
         AddContactMaterial(E, d, ps, mu, &p), std::logic_error,
         ".+ Trying to add property .+ name already exists");
@@ -61,7 +63,7 @@ GTEST_TEST(ProximityPropertiesTest, AddContactMaterial) {
   // Error case: Already has stiffness.
   {
     ProximityProperties p;
-    p.AddProperty(kMaterialGroup, kPointStiffness, ps);
+    p.Add(PropName(kMaterialGroup, kPointStiffness), ps);
     DRAKE_EXPECT_THROWS_MESSAGE(
         AddContactMaterial(E, d, ps, mu, &p), std::logic_error,
         ".+ Trying to add property .+ name already exists");
@@ -70,7 +72,7 @@ GTEST_TEST(ProximityPropertiesTest, AddContactMaterial) {
   // Error case: Already has friction.
   {
     ProximityProperties p;
-    p.AddProperty(kMaterialGroup, kFriction, mu);
+    p.Add(PropName(kMaterialGroup, kFriction), mu);
     DRAKE_EXPECT_THROWS_MESSAGE(
         AddContactMaterial(E, d, ps, mu, &p), std::logic_error,
         ".+ Trying to add property .+ name already exists");
@@ -121,17 +123,18 @@ GTEST_TEST(ProximityPropertiesTest, AddRigidProperties) {
   for (double length : {1e-5, 1.25, 1e7}) {
     ProximityProperties props;
     AddRigidHydroelasticProperties(length, &props);
-    EXPECT_TRUE(props.HasProperty(kHydroGroup, kComplianceType));
-    EXPECT_EQ(props.GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
-              HydroelasticType::kRigid);
-    EXPECT_TRUE(props.HasProperty(kHydroGroup, kRezHint));
-    EXPECT_EQ(props.GetProperty<double>(kHydroGroup, kRezHint), length);
+    EXPECT_TRUE(props.HasProperty(PropName(kHydroGroup, kComplianceType)));
+    EXPECT_EQ(
+        props.Get<HydroelasticType>(PropName(kHydroGroup, kComplianceType)),
+        HydroelasticType::kRigid);
+    EXPECT_TRUE(props.HasProperty(PropName(kHydroGroup, kRezHint)));
+    EXPECT_EQ(props.Get<double>(PropName(kHydroGroup, kRezHint)), length);
   }
 
   ProximityProperties props;
   AddRigidHydroelasticProperties(&props);
-  EXPECT_TRUE(props.HasProperty(kHydroGroup, kComplianceType));
-  EXPECT_EQ(props.GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
+  EXPECT_TRUE(props.HasProperty(PropName(kHydroGroup, kComplianceType)));
+  EXPECT_EQ(props.Get<HydroelasticType>(PropName(kHydroGroup, kComplianceType)),
             HydroelasticType::kRigid);
 }
 
@@ -143,17 +146,18 @@ GTEST_TEST(ProximityPropertiesTest, AddSoftProperties) {
   for (double length : {1e-5, 1.25, 1e7}) {
     ProximityProperties props;
     AddSoftHydroelasticProperties(length, &props);
-    EXPECT_TRUE(props.HasProperty(kHydroGroup, kComplianceType));
-    EXPECT_EQ(props.GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
-              HydroelasticType::kSoft);
-    EXPECT_TRUE(props.HasProperty(kHydroGroup, kRezHint));
-    EXPECT_EQ(props.GetProperty<double>(kHydroGroup, kRezHint), length);
+    EXPECT_TRUE(props.HasProperty(PropName(kHydroGroup, kComplianceType)));
+    EXPECT_EQ(
+        props.Get<HydroelasticType>(PropName(kHydroGroup, kComplianceType)),
+        HydroelasticType::kSoft);
+    EXPECT_TRUE(props.HasProperty(PropName(kHydroGroup, kRezHint)));
+    EXPECT_EQ(props.Get<double>(PropName(kHydroGroup, kRezHint)), length);
   }
 
   ProximityProperties props;
   AddSoftHydroelasticProperties(&props);
-  EXPECT_TRUE(props.HasProperty(kHydroGroup, kComplianceType));
-  EXPECT_EQ(props.GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
+  EXPECT_TRUE(props.HasProperty(PropName(kHydroGroup, kComplianceType)));
+  EXPECT_EQ(props.Get<HydroelasticType>(PropName(kHydroGroup, kComplianceType)),
             HydroelasticType::kSoft);
 }
 
@@ -163,15 +167,15 @@ GTEST_TEST(ProximityPropertiesTest, AddHalfSpaceSoftProperties) {
   const double E = 1.5e8;
   for (double thickness : {1e-5, 1.25, 1e7}) {
     ProximityProperties props;
-    props.AddProperty(internal::kMaterialGroup, internal::kElastic, E);
+    props.Add(PropName(kMaterialGroup, kElastic), E);
     AddSoftHydroelasticPropertiesForHalfSpace(thickness, &props);
-    EXPECT_TRUE(
-        props.HasProperty(internal::kHydroGroup, internal::kSlabThickness));
-    EXPECT_EQ(props.GetProperty<double>(internal::kHydroGroup,
-                                        internal::kSlabThickness),
+    EXPECT_TRUE(props.HasProperty(PropName(kHydroGroup, kSlabThickness)));
+    EXPECT_EQ(props.Get<double>(
+                  PropName(internal::kHydroGroup, internal::kSlabThickness)),
               thickness);
-    EXPECT_EQ(props.GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
-              HydroelasticType::kSoft);
+    EXPECT_EQ(
+        props.Get<HydroelasticType>(PropName(kHydroGroup, kComplianceType)),
+        HydroelasticType::kSoft);
   }
 }
 

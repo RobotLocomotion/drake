@@ -237,10 +237,10 @@ class RenderEngineOsprayTest : public ::testing::Test {
 
     if (add_terrain) {
       PerceptionProperties material;
-      material.AddProperty("label", "id", RenderLabel::kDontCare);
-      material.AddProperty(
-          "phong", "diffuse",
-          Vector4d{kTerrainColorD.r, kTerrainColorD.g, kTerrainColorD.b, 1.0});
+      material.Add("label/id", RenderLabel::kDontCare)
+          .Add("phong/diffuse",
+               Vector4d{kTerrainColorD.r, kTerrainColorD.g, kTerrainColorD.b,
+                        1.0});
       engine->RegisterVisual(GeometryId::get_new_id(), HalfSpace(), material,
                              RigidTransformd::Identity(),
                              false /* needs update */);
@@ -252,12 +252,11 @@ class RenderEngineOsprayTest : public ::testing::Test {
     PerceptionProperties material;
     Vector4d color_n(default_color_.r / 255., default_color_.g / 255.,
                      default_color_.b / 255., default_color_.a / 255.);
-    material.AddProperty("phong", "diffuse", color_n);
+    material.Add("phong/diffuse", color_n);
     if (use_texture) {
-      material.AddProperty(
-          "phong", "diffuse_map",
-          FindResourceOrThrow(
-              "drake/systems/sensors/test/models/meshes/box.png"));
+      material.Add("phong/diffuse_map",
+                   FindResourceOrThrow(
+                       "drake/systems/sensors/test/models/meshes/box.png"));
     }
     return material;
   }
@@ -435,13 +434,12 @@ TEST_F(RenderEngineOsprayTest, BoxTest) {
       // the untiled default behavior and the ability to scale the texture.
       PerceptionProperties props = simple_material(false);
       if (use_texture) {
-        props.AddProperty(
-            "phong", "diffuse_map",
-            FindResourceOrThrow(
-                "drake/geometry/render/test/diag_gradient.png"));
+        props.Add("phong/diffuse_map",
+                  FindResourceOrThrow(
+                      "drake/geometry/render/test/diag_gradient.png"));
         if (texture_scaled) {
-          props.AddProperty(
-              "phong", "diffuse_scale", Vector2d{texture_scale, texture_scale});
+          props.Add("phong/diffuse_scale",
+                    Vector2d{texture_scale, texture_scale});
         }
       }
       renderer_->RegisterVisual(id, box, props,
@@ -690,7 +688,7 @@ TEST_F(RenderEngineOsprayTest, MeshTest) {
       FindResourceOrThrow("drake/systems/sensors/test/models/meshes/box.obj");
   Mesh mesh(filename);
   PerceptionProperties material = simple_material();
-  material.AddProperty("phong", "diffuse_map", "bad_path");
+  material.Add("phong/diffuse_map", "bad_path");
   const GeometryId id = GeometryId::get_new_id();
   renderer_->RegisterVisual(id, mesh, material, RigidTransformd::Identity(),
                             true /* needs update */);
@@ -709,8 +707,8 @@ TEST_F(RenderEngineOsprayTest, TextureMeshTest) {
       FindResourceOrThrow("drake/systems/sensors/test/models/meshes/box.obj");
   Mesh mesh(filename);
   PerceptionProperties material = simple_material();
-  material.AddProperty(
-      "phong", "diffuse_map",
+  material.Add(
+      {"phong", "diffuse_map"},
       FindResourceOrThrow("drake/systems/sensors/test/models/meshes/box.png"));
   const GeometryId id = GeometryId::get_new_id();
   renderer_->RegisterVisual(id, mesh, material, RigidTransformd::Identity(),
@@ -800,7 +798,7 @@ TEST_F(RenderEngineOsprayTest, RemoveVisual) {
     Vector4d norm_diffuse{diffuse.r / 255., diffuse.g / 255., diffuse.b / 255.,
                           diffuse.a / 255.};
     PerceptionProperties material;
-    material.AddProperty("phong", "diffuse", norm_diffuse);
+    material.Add("phong/diffuse", norm_diffuse);
 
     renderer_->RegisterVisual(geometry_id, sphere, material,
                               RigidTransformd::Identity());

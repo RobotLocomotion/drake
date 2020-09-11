@@ -56,11 +56,17 @@ bool GeometryProperties::Remove(const string& name) {
 }
 
 bool GeometryProperties::HasGroup(const string& group_name) const {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   return GetGroupNames().count(group_name) > 0;
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 }
 
 int GeometryProperties::num_groups() const {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   return static_cast<int>(GetGroupNames().size());
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 }
 
 GeometryProperties::Group GeometryProperties::GetPropertiesInGroup(

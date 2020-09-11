@@ -9,6 +9,7 @@
 
 #include <optional>
 #include <ostream>
+#include <string>
 
 #include "drake/geometry/geometry_roles.h"
 #include "drake/multibody/plant/coulomb_friction.h"
@@ -68,6 +69,11 @@ extern const char* const kSlabThickness;    ///< Slab thickness property name
                                             ///< (for half spaces).
 
 //@}
+
+// TODO(SeanCurtis-TRI) This is a short-term hack to convert call sites that
+//  look like {group, prop} into the single string format. Remove this when
+//  I kill off all of the above char*.
+std::string PropName(const std::string& group, const std::string& prop);
 
 // TODO(SeanCurtis-TRI): Update this to have an additional classification: kBoth
 //  when we have the need from the algorithm. For example: when we have two

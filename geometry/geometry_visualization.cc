@@ -229,7 +229,7 @@ lcmt_viewer_load_robot GeometryVisualizationImpl::BuildLoadMessage(
       if (props != nullptr) {
         const Shape& shape = geometry.shape();
         const Vector4d& color = props->GetPropertyOrDefault(
-            "phong", "diffuse", default_color);
+            "phong/diffuse", default_color);
         message.link[0].geom[geom_index] = MakeGeometryData(
             shape, geometry.X_FG(), color);
         ++geom_index;
@@ -259,7 +259,7 @@ lcmt_viewer_load_robot GeometryVisualizationImpl::BuildLoadMessage(
       if (props != nullptr) {
         const Shape& shape = geometry.shape();
         const Vector4d& color = props->GetPropertyOrDefault(
-            "phong", "diffuse", default_color);
+            "phong/diffuse", default_color);
         message.link[link_index].geom[geom_index] =
             MakeGeometryData(shape, geometry.X_FG(), color);
         ++geom_index;

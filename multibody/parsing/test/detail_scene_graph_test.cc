@@ -555,30 +555,28 @@ GTEST_TEST(SceneGraphParserDetail, MakeEmptyGeometryInstanceFromSdfVisual) {
 // exist with the given type and have the same value.
 template <typename T, typename Compare>
 ::testing::AssertionResult HasExpectedProperty(
-    const char* group, const char* property, std::optional<T> expected_value,
+    const std::string& property, std::optional<T> expected_value,
     const IllustrationProperties& properties, Compare matches) {
   ::testing::AssertionResult failure = ::testing::AssertionFailure();
-  const bool has_property = properties.HasProperty(group, property);
+  const bool has_property = properties.HasProperty(property);
   if (expected_value.has_value()) {
     if (has_property) {
       // This will throw if the property is of the wrong type.
-      const T& value = properties.GetProperty<T>(group, property);
+      const T& value = properties.Get<T>(property);
       if (matches(value, *expected_value)) {
         return ::testing::AssertionSuccess();
       } else {
-        failure << "\nIncorrect values for ('" << group << "', " << property
-                << "'):" << "\n  expected: " << (*expected_value)
+        failure << "\nIncorrect values for " << property
+                << "\n  expected: " << (*expected_value)
                 << "\n  found:    " << value;
       }
     } else {
-      failure << "\n  missing expected property ('" << group << "', '"
-              << property << "')";
+      failure << "\n  missing expected property " << property;
     }
   } else {
     if (!has_property) return ::testing::AssertionSuccess();
 
-    failure << "\n  found unexpected property ('" << group << "', '" << property
-            << "')";
+    failure << "\n  found unexpected property " << property;
   }
   failure << "\n";
   return failure;
@@ -606,7 +604,7 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
                           const char* name,
                           const std::optional<Vector4d> ref_color) {
       auto result =
-          HasExpectedProperty("phong", name, ref_color, dut,
+          HasExpectedProperty({"phong", name}, ref_color, dut,
                               [](const Vector4d& a, const Vector4d& b) {
                                 return static_cast<bool>(CompareMatrices(a, b));
                               });
@@ -622,7 +620,7 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
         test_color("ambient", ambient);
         test_color("emissive", emissive);
         auto result = HasExpectedProperty(
-            "phong", "diffuse_map", diffuse_map, dut,
+            {"phong", "diffuse_map"}, diffuse_map, dut,
             [](const std::string& a, const std::string& b) { return a == b; });
         if (!result) {
           failure << result;
@@ -877,7 +875,7 @@ GTEST_TEST(SceneGraphParseDetail, AcceptingRenderers) {
         "</visual>");
     IllustrationProperties material =
         MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
-    EXPECT_FALSE(material.HasProperty(group, property));
+    EXPECT_FALSE(material.HasProperty({group, property}));
   }
 
   // Case: single <drake:accepting_renderer> tag.
@@ -897,9 +895,8 @@ GTEST_TEST(SceneGraphParseDetail, AcceptingRenderers) {
         "</visual>");
     IllustrationProperties material =
         MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
-    EXPECT_TRUE(material.HasProperty(group, property));
-    const auto& names =
-        material.GetProperty<std::set<std::string>>(group, property);
+    EXPECT_TRUE(material.HasProperty({group, property}));
+    const auto& names = material.Get<std::set<std::string>>({group, property});
     EXPECT_EQ(names.size(), 1);
     EXPECT_EQ(names.count("renderer1"), 1);
   }
@@ -922,9 +919,8 @@ GTEST_TEST(SceneGraphParseDetail, AcceptingRenderers) {
         "</visual>");
     IllustrationProperties material =
         MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
-    EXPECT_TRUE(material.HasProperty(group, property));
-    const auto& names =
-        material.GetProperty<std::set<std::string>>(group, property);
+    EXPECT_TRUE(material.HasProperty({group, property}));
+    const auto& names = material.Get<std::set<std::string>>({group, property});
     EXPECT_EQ(names.size(), 2);
     EXPECT_EQ(names.count("renderer1"), 1);
     EXPECT_EQ(names.count("renderer2"), 1);
@@ -1036,20 +1032,20 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
 
   auto assert_friction = [](const ProximityProperties& properties,
                             const CoulombFriction<double>& expected_friction) {
-    ASSERT_TRUE(properties.HasProperty(geometry::internal::kMaterialGroup,
-                                       geometry::internal::kFriction));
-    const auto& friction = properties.GetProperty<CoulombFriction<double>>(
-        geometry::internal::kMaterialGroup, geometry::internal::kFriction);
+    ASSERT_TRUE(properties.HasProperty({geometry::internal::kMaterialGroup,
+                                        geometry::internal::kFriction}));
+    const auto& friction = properties.Get<CoulombFriction<double>>(
+        {geometry::internal::kMaterialGroup, geometry::internal::kFriction});
     EXPECT_EQ(friction.static_friction(), expected_friction.static_friction());
     EXPECT_EQ(friction.dynamic_friction(),
               expected_friction.dynamic_friction());
   };
 
   auto assert_single_property = [](const ProximityProperties& properties,
-                                   const char* group, const char* property,
+                                   const std::string& property,
                                    double value) {
-    ASSERT_TRUE(properties.HasProperty(group, property));
-    EXPECT_EQ(properties.GetProperty<double>(group, property), value);
+    ASSERT_TRUE(properties.HasProperty(property));
+    EXPECT_EQ(properties.Get<double>(property), value);
   };
 
   // This parser uses the ParseProximityProperties found in detail_common
@@ -1067,12 +1063,12 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
   </drake:proximity_properties>)""");
     ProximityProperties properties =
         MakeProximityPropertiesForCollision(*sdf_collision);
-    assert_single_property(properties, geometry::internal::kHydroGroup,
-                           geometry::internal::kRezHint, 2.5);
-    assert_single_property(properties, geometry::internal::kMaterialGroup,
-                           geometry::internal::kElastic, 3.5);
-    assert_single_property(properties, geometry::internal::kMaterialGroup,
-                           geometry::internal::kHcDissipation, 4.5);
+    assert_single_property(properties, {geometry::internal::kHydroGroup,
+                           geometry::internal::kRezHint}, 2.5);
+    assert_single_property(properties, {geometry::internal::kMaterialGroup,
+                           geometry::internal::kElastic}, 3.5);
+    assert_single_property(properties, {geometry::internal::kMaterialGroup,
+                           geometry::internal::kHcDissipation}, 4.5);
     assert_friction(properties, {4.75, 4.5});
   }
 
@@ -1084,10 +1080,10 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
   </drake:proximity_properties>)""");
     ProximityProperties properties =
         MakeProximityPropertiesForCollision(*sdf_collision);
-    ASSERT_TRUE(properties.HasProperty(geometry::internal::kHydroGroup,
-                                       geometry::internal::kComplianceType));
-    EXPECT_EQ(properties.GetProperty<geometry::internal::HydroelasticType>(
-        geometry::internal::kHydroGroup, geometry::internal::kComplianceType),
+    ASSERT_TRUE(properties.HasProperty({geometry::internal::kHydroGroup,
+                                        geometry::internal::kComplianceType}));
+    EXPECT_EQ(properties.Get<geometry::internal::HydroelasticType>(
+        {geometry::internal::kHydroGroup, geometry::internal::kComplianceType}),
               geometry::internal::HydroelasticType::kRigid);
   }
 
@@ -1099,10 +1095,10 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
   </drake:proximity_properties>)""");
     ProximityProperties properties =
         MakeProximityPropertiesForCollision(*sdf_collision);
-    ASSERT_TRUE(properties.HasProperty(geometry::internal::kHydroGroup,
-                                       geometry::internal::kComplianceType));
-    EXPECT_EQ(properties.GetProperty<geometry::internal::HydroelasticType>(
-        geometry::internal::kHydroGroup, geometry::internal::kComplianceType),
+    ASSERT_TRUE(properties.HasProperty({geometry::internal::kHydroGroup,
+                                        geometry::internal::kComplianceType}));
+    EXPECT_EQ(properties.Get<geometry::internal::HydroelasticType>(
+        {geometry::internal::kHydroGroup, geometry::internal::kComplianceType}),
               geometry::internal::HydroelasticType::kSoft);
   }
 

@@ -779,7 +779,7 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
   //  need to handle these changes.
 
   auto accepting_renderers =
-      properties.GetPropertyOrDefault("renderer", "accepting", set<string>{});
+      properties.GetPropertyOrDefault("renderer/accepting", set<string>{});
 
   geometry.SetRole(std::move(properties));
 
@@ -806,7 +806,7 @@ template <typename T>
 void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                   IllustrationProperties properties,
                                   RoleAssign assign) {
-  if (properties.HasProperty("phong", "diffuse_map")) {
+  if (properties.HasProperty("phong/diffuse_map")) {
     static logging::Warn log_once(
         "Explicitly defined values for the phong/diffuse_map property "
         "are not currently used in illustration roles -- only perception "

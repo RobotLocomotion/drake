@@ -51,7 +51,7 @@ unique_ptr<GeometryInstance> MakeShape(const RigidTransformd& pose,
   auto instance = make_unique<GeometryInstance>(
       pose, make_unique<Shape>(std::forward<ShapeArgs>(args)...), name);
   IllustrationProperties properties;
-  properties.AddProperty("phong", "diffuse", diffuse);
+  properties.Add("phong/diffuse", diffuse);
   instance->set_illustration_properties(properties);
   return instance;
 }

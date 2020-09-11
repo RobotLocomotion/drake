@@ -49,10 +49,10 @@ using Eigen::Vector4d;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
-using math::RigidTransformd;
 using geometry::GeometryInstance;
 using geometry::IllustrationProperties;
 using geometry::ProximityProperties;
+using math::RigidTransformd;
 
 // Confirms the logic for reconciling named references to materials.
 GTEST_TEST(DetailUrdfGeometryTest, AddMaterialToMaterialMap) {
@@ -339,9 +339,9 @@ TEST_F(UrdfGeometryTests, TestParseMaterial1) {
   const geometry::IllustrationProperties* properties =
       visual.illustration_properties();
   ASSERT_NE(properties, nullptr);
-  EXPECT_TRUE(properties->HasProperty("phong", "diffuse"));
+  EXPECT_TRUE(properties->HasProperty({"phong", "diffuse"}));
   EXPECT_TRUE(
-      CompareMatrices(properties->GetProperty<Vector4d>("phong", "diffuse"),
+      CompareMatrices(properties->Get<Vector4d>({"phong", "diffuse"}),
                       *(materials_.at("green").rgba)));
 
   const geometry::Box* box =
@@ -380,11 +380,10 @@ TEST_F(UrdfGeometryTests, TestParseMaterial2) {
 
   const auto& visual = visual_instances_[0];
   EXPECT_TRUE(
-      visual.illustration_properties()->HasProperty("phong", "diffuse"));
-  EXPECT_TRUE(
-      CompareMatrices(visual.illustration_properties()->GetProperty<Vector4d>(
-                          "phong", "diffuse"),
-                      brown, 1e-14));
+      visual.illustration_properties()->HasProperty({"phong", "diffuse"}));
+  EXPECT_TRUE(CompareMatrices(
+      visual.illustration_properties()->Get<Vector4d>({"phong", "diffuse"}),
+      brown, 1e-14));
   const RigidTransformd expected_pose(Eigen::Vector3d(0, 0, 0.3));
   EXPECT_TRUE(CompareMatrices(
       visual.pose().GetAsMatrix34(), expected_pose.GetAsMatrix34()));
@@ -407,12 +406,12 @@ TEST_F(UrdfGeometryTests, TestParseMaterial2) {
             mesh_filename.size() - obj_name.size());
 
   const auto& sphere_visual = visual_instances_[2];
+  EXPECT_TRUE(sphere_visual.illustration_properties()->HasProperty(
+      {"phong", "diffuse"}));
   EXPECT_TRUE(
-      sphere_visual.illustration_properties()->HasProperty("phong", "diffuse"));
-  EXPECT_TRUE(CompareMatrices(
-      sphere_visual.illustration_properties()->GetProperty<Vector4d>("phong",
-                                                                     "diffuse"),
-      brown, 1e-14));
+      CompareMatrices(sphere_visual.illustration_properties()->Get<Vector4d>(
+                          {"phong", "diffuse"}),
+                      brown, 1e-14));
 
   ASSERT_EQ(collision_instances_.size(), 1);
   const auto& collision = collision_instances_.front();
@@ -529,19 +528,19 @@ TEST_F(UrdfGeometryTests, TestParseConvexMesh) {
 TEST_F(UrdfGeometryTests, CollisionProperties) {
   // Verifies that the property exists with the given double-typed value.
   auto verify_single_property = [](const ProximityProperties& properties,
-                                   const char* group, const char* property,
+                                   const std::string& property,
                                    double value) {
-    ASSERT_TRUE(properties.HasProperty(group, property))
-        << fmt::format("  for property: {}/{}", group, property);
-    EXPECT_EQ(properties.GetProperty<double>(group, property), value);
+    ASSERT_TRUE(properties.HasProperty(property))
+        << fmt::format("  for property: {}", property);
+    EXPECT_EQ(properties.Get<double>(property), value);
   };
 
   // Verifies that the properties has friction and it matches the given values.
   auto verify_friction = [](const ProximityProperties& properties,
                             const CoulombFriction<double>& expected_friction) {
-    ASSERT_TRUE(properties.HasProperty("material", "coulomb_friction"));
-    const auto& friction = properties.GetProperty<CoulombFriction<double>>(
-        "material", "coulomb_friction");
+    ASSERT_TRUE(properties.HasProperty({"material", "coulomb_friction"}));
+    const auto& friction = properties.Get<CoulombFriction<double>>(
+        {"material", "coulomb_friction"});
     EXPECT_EQ(friction.static_friction(), expected_friction.static_friction());
     EXPECT_EQ(friction.dynamic_friction(),
               expected_friction.dynamic_friction());
@@ -569,12 +568,12 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
         ParseCollision("link_name", package_map, root_dir, collision_node);
     ASSERT_NE(instance.proximity_properties(), nullptr);
     const ProximityProperties& properties = *instance.proximity_properties();
-    verify_single_property(properties, geometry::internal::kHydroGroup,
-                           geometry::internal::kRezHint, 2.5);
-    verify_single_property(properties, geometry::internal::kMaterialGroup,
-                           geometry::internal::kElastic, 3.5);
-    verify_single_property(properties, geometry::internal::kMaterialGroup,
-                           geometry::internal::kHcDissipation, 3.5);
+    verify_single_property(properties, {geometry::internal::kHydroGroup,
+                           geometry::internal::kRezHint}, 2.5);
+    verify_single_property(properties, {geometry::internal::kMaterialGroup,
+                           geometry::internal::kElastic}, 3.5);
+    verify_single_property(properties, {geometry::internal::kMaterialGroup,
+                           geometry::internal::kHcDissipation}, 3.5);
     verify_friction(properties, {3.5, 3.25});
   }
 
@@ -590,10 +589,10 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
         ParseCollision("link_name", package_map, root_dir, collision_node);
     ASSERT_NE(instance.proximity_properties(), nullptr);
     const ProximityProperties& properties = *instance.proximity_properties();
-    ASSERT_TRUE(properties.HasProperty(geometry::internal::kHydroGroup,
-                                       geometry::internal::kComplianceType));
-    EXPECT_EQ(properties.GetProperty<geometry::internal::HydroelasticType>(
-        geometry::internal::kHydroGroup, geometry::internal::kComplianceType),
+    ASSERT_TRUE(properties.HasProperty({geometry::internal::kHydroGroup,
+                                        geometry::internal::kComplianceType}));
+    EXPECT_EQ(properties.Get<geometry::internal::HydroelasticType>(
+        {geometry::internal::kHydroGroup, geometry::internal::kComplianceType}),
             geometry::internal::HydroelasticType::kRigid);
   }
 
@@ -609,10 +608,10 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
         ParseCollision("link_name", package_map, root_dir, collision_node);
     ASSERT_NE(instance.proximity_properties(), nullptr);
     const ProximityProperties& properties = *instance.proximity_properties();
-    ASSERT_TRUE(properties.HasProperty(geometry::internal::kHydroGroup,
-                                       geometry::internal::kComplianceType));
-    EXPECT_EQ(properties.GetProperty<geometry::internal::HydroelasticType>(
-        geometry::internal::kHydroGroup, geometry::internal::kComplianceType),
+    ASSERT_TRUE(properties.HasProperty({geometry::internal::kHydroGroup,
+                                        geometry::internal::kComplianceType}));
+    EXPECT_EQ(properties.Get<geometry::internal::HydroelasticType>(
+        {geometry::internal::kHydroGroup, geometry::internal::kComplianceType}),
               geometry::internal::HydroelasticType::kSoft);
   }
 
@@ -693,17 +692,15 @@ TEST_F(UrdfGeometryTests, AcceptingRenderers) {
     EXPECT_NE(instance.illustration_properties(), nullptr);
     const IllustrationProperties& props = *instance.illustration_properties();
     if (instance.name() == "all_renderers") {
-      EXPECT_FALSE(props.HasProperty(group, property));
+      EXPECT_FALSE(props.HasProperty({group, property}));
     } else if (instance.name() == "single_renderer") {
-      EXPECT_TRUE(props.HasProperty(group, property));
-      const auto& names =
-          props.GetProperty<std::set<std::string>>(group, property);
+      EXPECT_TRUE(props.HasProperty({group, property}));
+      const auto& names = props.Get<std::set<std::string>>({group, property});
       EXPECT_EQ(names.size(), 1);
       EXPECT_EQ(names.count("renderer1"), 1);
     } else if (instance.name() == "multi_renderer") {
-      EXPECT_TRUE(props.HasProperty(group, property));
-      const auto& names =
-          props.GetProperty<std::set<std::string>>(group, property);
+      EXPECT_TRUE(props.HasProperty({group, property}));
+      const auto& names = props.Get<std::set<std::string>>({group, property});
       EXPECT_EQ(names.size(), 2);
       EXPECT_EQ(names.count("renderer1"), 1);
       EXPECT_EQ(names.count("renderer2"), 1);

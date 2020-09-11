@@ -52,8 +52,8 @@ class HydroelasticEngineTest : public ::testing::Test {
                              double dissipation) {
     GeometryId id = AddGeometry(name);
     ProximityProperties props;
-    props.AddProperty("material", "elastic_modulus", elastic_modulus);
-    props.AddProperty("material", "hunt_crossley_dissipation", dissipation);
+    props.Add("material/elastic_modulus", elastic_modulus)
+        .Add("material/hunt_crossley_dissipation", dissipation);
     scene_graph_.AssignRole(source_id_, id, props);
     return id;
   }

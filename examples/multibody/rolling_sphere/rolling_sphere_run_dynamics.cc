@@ -119,7 +119,7 @@ int do_main() {
                                     "wall_collision", std::move(prox_prop));
 
     geometry::IllustrationProperties illus_prop;
-    illus_prop.AddProperty("phong", "diffuse", Vector4d(0.7, 0.5, 0.4, 0.5));
+    illus_prop.Add("phong/diffuse", Vector4d(0.7, 0.5, 0.4, 0.5));
     plant.RegisterVisualGeometry(plant.world_body(), X_WB, wall, "wall_visual",
                                  std::move(illus_prop));
   }
