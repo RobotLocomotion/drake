@@ -606,6 +606,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "multibody_plant_momentum_energy_test",
+    deps = [
+        ":plant",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
     name = "multibody_plant_hydroelastic_contact_results_output_test",
     deps = [
         ":plant",
