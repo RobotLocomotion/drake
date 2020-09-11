@@ -42,30 +42,15 @@ class ParticleSolver final : public ContactSolver<T> {
 
   virtual ~ParticleSolver() = default;
 
-  void SetSystemDynamicsData(const SystemDynamicsData<T>* data) final {
-    DRAKE_DEMAND(data != nullptr);
-    dynamics_data_ = data;
-  }
-
-  void SetPointContactData(const PointContactData<T>* data) final {
-    DRAKE_DEMAND(data != nullptr);
-    contact_data_ = data;
-  }
-
-  int num_contacts() const final { return contact_data_->num_contacts(); };
-  int num_velocities() const final { return dynamics_data_->num_velocities(); }
-
   // This implementation of SolveWithGuess() in addition makes a numver of tests
   // on the data supplied by MultibodyPlant. We must perform these tests at this
   // scope to ensure data references are still "alive".
   ContactSolverResult SolveWithGuess(const VectorX<T>& v_guess) final {
-    // N.B. These checks can only be performed at this scope, when the data
-    // referenced to by the solver is still alive.
     // Verify the problem data has the expected sizes.
-    EXPECT_EQ(num_velocities(), 6);
-    EXPECT_EQ(num_contacts(), 1);
+    EXPECT_EQ(this->num_velocities(), 6);
+    EXPECT_EQ(this->num_contacts(), 1);
 
-    const int nc = num_contacts();
+    const int nc = this->num_contacts();
 
     // Verify the expected Delassus operator is computed by
     // ContactSolver::FormDelassusOperatorMatrix().
@@ -131,16 +116,16 @@ class ParticleSolver final : public ContactSolver<T> {
 
  private:
   // Quick accessors to problem data.
-  const LinearOperator<T>& get_Jc() const { return contact_data_->get_Jc(); }
-  const LinearOperator<T>& get_Ainv() const {
-    return dynamics_data_->get_Ainv();
+  const LinearOperator<T>& get_Jc() const {
+    return this->contact_data().get_Jc();
   }
-  const VectorX<T>& get_v_star() const { return dynamics_data_->get_v_star(); }
-  const VectorX<T>& get_mu() const { return contact_data_->get_mu(); }
-
-  // Problem data.
-  const SystemDynamicsData<T>* dynamics_data_{nullptr};
-  const PointContactData<T>* contact_data_{nullptr};
+  const LinearOperator<T>& get_Ainv() const {
+    return this->dynamics_data().get_Ainv();
+  }
+  const VectorX<T>& get_v_star() const {
+    return this->dynamics_data().get_v_star();
+  }
+  const VectorX<T>& get_mu() const { return this->contact_data().get_mu(); }
 
   // The solver's state.
   VectorX<T> gamma_{3};  // Contact impulse.

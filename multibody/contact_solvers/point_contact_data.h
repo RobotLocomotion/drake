@@ -17,7 +17,7 @@ namespace internal {
 template <typename T>
 class PointContactData {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PointContactData)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PointContactData)
 
   /// Specifies the set of possible discrete contacts characterized by:
   ///  1. Signed distance phi0, negative when objects interpenetrate.

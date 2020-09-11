@@ -2136,8 +2136,8 @@ void MultibodyPlant<T>::CallContactSolver(
                                                                    &v_star);
     contact_solvers::internal::PointContactData<T> contact_data(
         &phi0, &Jc_op, &stiffness, &damping, &mu);
-    contact_solver_->SetSystemDynamicsData(&dynamics_data);
-    contact_solver_->SetPointContactData(&contact_data);
+    contact_solver_->SetSystemDynamicsData(dynamics_data);
+    contact_solver_->SetPointContactData(contact_data);
 
     const contact_solvers::internal::ContactSolverResult info =
         contact_solver_->SolveWithGuess(v0);

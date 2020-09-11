@@ -15,7 +15,7 @@ namespace internal {
 template <typename T>
 class SystemDynamicsData {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemDynamicsData)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SystemDynamicsData)
 
   /// Specifies the dynamics of the system by providing Ainv, a linear operator
   /// form of the inverse of the system dynamics Jacobian matrix A and the
