@@ -12,6 +12,7 @@
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/common/unused.h"
 #include "drake/common/value.h"
 #include "drake/geometry/rgba.h"
 
@@ -522,8 +523,46 @@ class GeometryProperties {
    they can make themselves constructible.  */
   GeometryProperties() = default;
 
-  // Final subclasses are allowed to make copy/move/assign public.
+  // Derived subclasses are allowed to make copy/move/assign public.
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryProperties)
+
+  /** Derived classes can optionally enforce invariants on properties. When a
+   property is to be added or updated, it will be passed to this method. The
+   derived class can determine that the type or value adheres to arbitrary
+   restrictions and throw if it doesn't meet requirements. The default
+   implementation considers all parameters valid.  */
+  virtual void DoThrowIfInvalid(const PropertyName& property,
+                                const AbstractValue& value) const {
+    unused(property, value);
+  }
+
+  /** Utility function for derived classes to use to implement DoThrowIfInvalid.
+   First it tests to see if the `value` contains a value of type `ValueType`
+   and then passes it to the `is_valid` method to determine if it is valid
+   (throwing if not).
+
+   @param property    The ('group', 'property') name of the validated property.
+   @param value       The type-erased value to test.
+   @param is_valid    Validation function, should return `true` if the value in
+                      `value` is acceptable.
+   @param condition   A description of the condition that is_valid tests for.
+   @throws std::logic_error  If type is wrong, or is_valid reports `false`.  */
+  template <typename ValueType>
+  void ValidateOrThrow(const PropertyName& property, const AbstractValue& value,
+                       std::function<bool(const ValueType&)> is_valid,
+                       const char* condition) const {
+    if (value.type_info() != typeid(ValueType)) {
+      throw std::logic_error(fmt::format(
+          "Failed to validate property {}; expected type {}, given type {}",
+          property, NiceTypeName::Get<ValueType>(), value.GetNiceTypeName()));
+    }
+    if (!is_valid(value.get_value<ValueType>())) {
+      throw std::logic_error(
+          fmt::format("Failed to validate property {}; value {} doesn't "
+                      "satisfy the condition: {}",
+                      property, value.get_value<ValueType>(), condition));
+    }
+  }
 
  private:
   // TODO(SeanCurtis-TRI) Remove these helpers when the (group, name) API is

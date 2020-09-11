@@ -22,6 +22,31 @@ class TestProperties : public GeometryProperties {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TestProperties);
 
   TestProperties() = default;
+
+  static PropertyName validated_must_be_int() {
+    return PropertyName("validated", "must_be_int");
+  }
+
+  static PropertyName validated_positive_double() {
+    return PropertyName("validated", "positive_double");
+  }
+
+ protected:
+  // To test the derived property type's ability to screen properties, we'll
+  // reserve the "validated" group and screen for two different properties.
+  // One strictly cares about type, the other cares about type and value.
+  void DoThrowIfInvalid(const PropertyName& property,
+                        const AbstractValue& value) const override {
+    // Note: This implicitly tests the operator== for PropertyName.
+    if (property == validated_must_be_int()) {
+      ValidateOrThrow<int>(property, value, [](const int&) { return true; },
+                           "n/a");
+    } else if (property == validated_positive_double()) {
+      ValidateOrThrow<double>(
+          property, value, [](const double& v) { return v > 0.0; },
+          "must be positive");
+    }
+  }
 };
 
 // Tests adding properties (successfully and otherwise). Uses a call to
@@ -406,6 +431,82 @@ GTEST_TEST(GeometryProperties, ChainingWrites) {
       .UpdateAbstract("p3", Value(3));
   for (int i = 0; i < 4; ++i) {
     EXPECT_EQ(props.Get<int>(fmt::format("p{}", i)), i);
+  }
+}
+
+// Confirms that properties get validated when the derived class implements
+// DoThrowIfInvalid().
+GTEST_TEST(GeometryProperties, ValidatedProperties) {
+  const PropertyName int_prop = TestProperties::validated_must_be_int();
+  {
+    TestProperties props;
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        props.Add(int_prop, "I'm a string"), std::logic_error,
+        fmt::format("Failed to validate property {}; expected type int, given "
+        "type std::string", int_prop));
+    EXPECT_NO_THROW(props.Add(int_prop, 3));
+  }
+
+  {
+    TestProperties props;
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        props.Update(int_prop, "I'm a string"), std::logic_error,
+        fmt::format("Failed to validate property {}; expected type int, given "
+        "type std::string", int_prop));
+
+    EXPECT_NO_THROW(props.Update(int_prop, -3));
+  }
+
+  const PropertyName pos_double_prop =
+      TestProperties::validated_positive_double();
+  {
+    TestProperties props;
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        props.Add(pos_double_prop, "I'm a string"), std::logic_error,
+        fmt::format("Failed to validate property {}; expected type double, "
+                    "given type std::string",
+                    pos_double_prop));
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        props.Add(pos_double_prop, -0.5), std::logic_error,
+        fmt::format("Failed to validate property {}; value -0.5 doesn't "
+                    "satisfy the condition: must be positive",
+                    pos_double_prop));
+    EXPECT_NO_THROW(props.Add(pos_double_prop, 3.0));
+  }
+
+  {
+    TestProperties props;
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        props.Update(pos_double_prop, "I'm a string"), std::logic_error,
+        fmt::format("Failed to validate property {}; expected type double, "
+                    "given type std::string",
+                    pos_double_prop));
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        props.Update(pos_double_prop, -0.5), std::logic_error,
+        fmt::format("Failed to validate property {}; value -0.5 doesn't "
+                    "satisfy the condition: must be positive",
+                    pos_double_prop));
+    EXPECT_NO_THROW(props.Add(pos_double_prop, 3.0));
+  }
+
+  // Given the testing above of Add and Update, and exploiting the knowledge
+  // that they are implemented in terms of the AddAbstract and UpdateAbstract,
+  // we'll just do a couple of token invocations of those two APIs directly.
+
+  {
+    TestProperties props;
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        props.UpdateAbstract(pos_double_prop,
+                             Value<std::string>("I'm a string")),
+        std::logic_error,
+        fmt::format("Failed to validate property {}; expected type double, "
+                    "given type std::string",
+                    pos_double_prop));
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        props.AddAbstract(pos_double_prop, Value(-0.5)), std::logic_error,
+        fmt::format("Failed to validate property {}; value -0.5 doesn't "
+                    "satisfy the condition: must be positive",
+                    pos_double_prop));
   }
 }
 
