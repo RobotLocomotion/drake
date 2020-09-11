@@ -89,7 +89,7 @@ bool Obb::HasOverlap(const Obb& bv, const Plane<double>& plane_P,
 
   // The box's canonical frame B is posed in the hierarchy frame H.
   const RigidTransformd& X_HB = bv.pose();
-  const auto R_PB = X_PH.rotation() * X_HB.rotation();
+  const RotationMatrixd R_PB = X_PH.rotation() * X_HB.rotation();
   // The corner of the box that will have the *greatest* height value w.r.t.
   // the plane measured from the box's frame's origin (Bo) but expressed in the
   // plane's frame.
@@ -317,17 +317,15 @@ Obb ObbMaker<MeshType>::CalcOrientedBox(const RotationMatrixd& R_MB) const {
   // measured and expressed in frame F: p_FU, p_FL. We cannot do it in frame
   // B because we do not know the origin Bo of frame B yet. It is not true in
   // general that Bo is the average positions of the vertices.
-  Vector3d p_FL; p_FL.setConstant(std::numeric_limits<double>::max());
-  Vector3d p_FU; p_FU.setConstant(std::numeric_limits<double>::lowest());
+  Vector3d p_FL = Vector3d::Constant(std::numeric_limits<double>::max());
+  Vector3d p_FU = -p_FL;
   const RotationMatrixd R_FM = R_MF.inverse();
   for (typename MeshType::VertexIndex v : vertices_) {
     // Since frame F is a rotation of frame M with the same origin, we can use
     // the rotation R_FM for the transform X_FM.
     const Vector3d p_FV = R_FM * mesh_M_.vertex(v).r_MV();
-    for (int axis = 0; axis < 3; ++axis) {
-      if (p_FV[axis] < p_FL[axis]) p_FL[axis] = p_FV[axis];
-      if (p_FV[axis] > p_FU[axis]) p_FU[axis] = p_FV[axis];
-    }
+    p_FL = p_FL.cwiseMin(p_FV);
+    p_FU = p_FU.cwiseMax(p_FV);
   }
   // Since frame B and frame F are aligned, the half_width vector expressed
   // in frame B is the same expression as in frame F.
@@ -385,9 +383,10 @@ Obb ObbMaker<MeshType>::OptimizeObbVolume(const Obb& box0) const {
   double volume = volume0;
   Obb box = box0;
   const Vector3d dV_dRPY = CalcVolumeGradient(box0);
-  const double kMinVolumeImprovement = 0.001;  // 0.1% or give up.
+  const double kMinVolumeImprovement = 0.001;
   // Set initial step to attempt 0.1 volume reduction.
   double increment = 0.1 * volume0 / dV_dRPY.norm();
+  // This threshold allows shrinking the initial step size by 1/10 for 6 times.
   const double min_increment = increment / 1000000.;
   double step = 0.;
   for (int i = 0; i < 20; ++i) {
