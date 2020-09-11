@@ -666,6 +666,18 @@ class TestPlant(unittest.TestCase):
             self.assert_sane(Js_v_AB_E)
             self.assertEqual(Js_v_AB_E.shape, (9, nw))
 
+        L_WSP_W = plant.CalcSpatialMomentumInWorldAboutPoint(
+            context=context, p_WoP_W=np.zeros(3))
+        self.assert_sane(L_WSP_W.translational(), nonzero=False)
+        self.assert_sane(L_WSP_W.rotational(), nonzero=False)
+        self.assertIsInstance(L_WSP_W, SpatialMomentum_[T])
+        L_WSP_W = plant.CalcSpatialMomentumInWorldAboutPoint(
+            context=context, model_instances=[default_model_instance()],
+            p_WoP_W=np.zeros(3))
+        self.assert_sane(L_WSP_W.translational(), nonzero=False)
+        self.assert_sane(L_WSP_W.rotational(), nonzero=False)
+        self.assertIsInstance(L_WSP_W, SpatialMomentum_[T])
+
         abias_ACcm_E = plant.CalcBiasCenterOfMassTranslationalAcceleration(
             context=context, with_respect_to=JacobianWrtVariable.kV,
             frame_A=world_frame, frame_E=world_frame)
