@@ -81,7 +81,7 @@ enum class ContactSolverResult {
 ///        q̇ = N(q)⋅v                                                       (3)
 ///   s.t. Contact constraints.                                             (4)
 /// </pre>
-/// where fc concatenates the all nc contact forces fcᵢ ∈ ℝ³ into a vector of
+/// where fc concatenates all nc contact forces fcᵢ ∈ ℝ³ into a vector of
 /// size 3nc and `Jc`, of size `3nc x nv`, is the "contact Jacobian" defined
 /// such that contact velocities vc are given by vc = Jc⋅v.
 ///
@@ -252,26 +252,26 @@ class ContactSolver {
   virtual ~ContactSolver() = default;
 
   /// Sets the information describing the dynamics of the physical system.
-  /// Derived classes will keep a reference to the input `data`, which is
-  /// required to be alive within the scope SolveWithGuess() gets called.
-  /// This class has no means to enforce this requirement and therefore it is
-  /// the responsability of the client code to do so.
-  virtual void SetSystemDynamicsData(const SystemDynamicsData<T>* data) = 0;
+  /// The data referenced to by `data` is required to be alive within the scope
+  /// SolveWithGuess() gets called. This class has no means to enforce this
+  /// requirement and therefore it is the responsability of the client code to
+  /// do so.
+  void SetSystemDynamicsData(SystemDynamicsData<T> data);
 
   /// Sets the information describing the set of possible discrete contacts.
-  /// Derived classes will keep a reference to the input `data`, which is
-  /// required to be alive within the scope SolveWithGuess() gets called.
-  /// This class has no means to enforce this requirement and therefore it is
-  /// the responsability of the client code to do so.
-  virtual void SetPointContactData(const PointContactData<T>* data) = 0;
+  /// The data referenced to by `data` is required to be alive within the scope
+  /// SolveWithGuess() gets called. This class has no means to enforce this
+  /// requirement and therefore it is the responsability of the client code to
+  /// do so.
+  void SetPointContactData(PointContactData<T> data);
 
   /// Returns the number of generalized velocities in accordance to the data
   /// specified by the last call to SetSystemDynamicsData().
-  virtual int num_velocities() const = 0;
+  int num_velocities() const;
 
   /// Returns the number of contacts in accordance to the data specified by the
   /// last call to SetPointContactData().
-  virtual int num_contacts() const = 0;
+  int num_contacts() const;
 
   /// Generic interface to invoke the contact solver given an initial guess
   /// `v_guess`. Some solvers might decide to ingore this guess, refer to each
@@ -330,6 +330,18 @@ class ContactSolver {
   }
 
  protected:
+  /// Returns a const reference to the system's dynamics data.
+  const SystemDynamicsData<T>& dynamics_data() const {
+    DRAKE_DEMAND(dynamics_data_ != nullptr);
+    return *dynamics_data_;
+  }
+
+  /// Returns a const reference to the point contact data.
+  const PointContactData<T>& contact_data() const {
+    DRAKE_DEMAND(contact_data_ != nullptr);
+    return *contact_data_;
+  }
+
   /// Helper method to form the Delassus operator. Most solvers will need to
   /// form it whether if used directly, as part of a pre-processing stage or to
   /// just determine scaling factors.
@@ -394,6 +406,16 @@ class ContactSolver {
       W->col(j) = Wcolj;
     }
   }
+
+  // Problem data.
+  // N.B. Since these structs provide no default constructor, but we do want to
+  // provide a default ContactSolver constructor, we own the copy to the
+  // user's provided data using a unique_ptr.
+  std::unique_ptr<SystemDynamicsData<T>> dynamics_data_;
+  std::unique_ptr<PointContactData<T>> contact_data_;
+  // Problem size since the last time the user provided new data.
+  int num_velocities_{0};
+  int num_contacts_{0};
 };
 }  // namespace internal
 }  // namespace contact_solvers

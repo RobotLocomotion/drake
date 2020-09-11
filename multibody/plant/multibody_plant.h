@@ -4679,6 +4679,17 @@ template <>
 void MultibodyPlant<double>::CalcHydroelasticWithFallback(
     const systems::Context<double>&,
     internal::HydroelasticFallbackCacheData<double>*) const;
+template <>
+void MultibodyPlant<symbolic::Expression>::CallContactSolver(
+    const symbolic::Expression&, const VectorX<symbolic::Expression>&,
+    const MatrixX<symbolic::Expression>&,
+    const VectorX<symbolic::Expression>&,
+    const VectorX<symbolic::Expression>&,
+    const MatrixX<symbolic::Expression>&,
+    const VectorX<symbolic::Expression>&,
+    const VectorX<symbolic::Expression>&,
+    const VectorX<symbolic::Expression>&,
+    internal::TamsiSolverResults<symbolic::Expression>*) const;
 #endif
 
 }  // namespace multibody
