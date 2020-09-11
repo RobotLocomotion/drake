@@ -31,6 +31,9 @@ PYBIND11_MODULE(trajectories, m) {
           py::arg("derivative_order") = 1, doc.Trajectory.EvalDerivative.doc)
       .def("MakeDerivative", &Trajectory<T>::MakeDerivative,
           py::arg("derivative_order") = 1, doc.Trajectory.MakeDerivative.doc)
+      .def("start_time", &Trajectory<T>::start_time,
+          doc.Trajectory.start_time.doc)
+      .def("end_time", &Trajectory<T>::end_time, doc.Trajectory.end_time.doc)
       .def("rows", &Trajectory<T>::rows, doc.Trajectory.rows.doc)
       .def("cols", &Trajectory<T>::cols, doc.Trajectory.cols.doc);
 
