@@ -7,11 +7,16 @@ from pydrake.common.test_utilities import numpy_compare
 from pydrake.math import RotationMatrix
 from pydrake.polynomial import Polynomial
 from pydrake.trajectories import (
-    PiecewisePolynomial, PiecewiseQuaternionSlerp
+    PiecewisePolynomial, PiecewiseQuaternionSlerp, Trajectory
 )
 
 
 class TestTrajectories(unittest.TestCase):
+    def test_trajectory_start_end_time(self):
+        # Acceptance check to ensure we have these base methods exposed.
+        Trajectory.start_time
+        Trajectory.end_time
+
     def test_piecewise_polynomial_empty_constructor(self):
         pp = PiecewisePolynomial()
 
