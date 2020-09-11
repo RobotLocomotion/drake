@@ -1,5 +1,2 @@
-The graphics file BodyParentChildJoint.png was created by Canvas X (technical illustration program package Canvas X.
-Canvas X is a technical illustration program  has tools for vector object and raster images, and imports more than 72 file formats.
-Canvas X is available at https://www.canvasgfx.com/en/products/canvas-x/
-Note: This graphics file can be easily reproduced using other drawing tools (e.g., Adobe Illustrator).
-
+The graphics file BodyParentChildJoint.png was created by Canvas X (commercial PC/Windows technical illustration program).
+Raster graphics (PNG) was chosen because it better rendered the fonts as compared to vector graphics (SVG).
