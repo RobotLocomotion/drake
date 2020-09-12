@@ -351,7 +351,7 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
 };
 
 TEST_F(TwoDOFPlanarPendulumTest, CalcBiasAccelerations) {
-  Eigen::VectorXd state = Eigen::Vector4d(0, 0, wAz_, wBz_);
+  Eigen::VectorXd state = Eigen::Vector4d(0.0, 0.0, wAz_, wBz_);
   joint1_->set_angle(context_.get(), state[0]);
   joint2_->set_angle(context_.get(), state[1]);
   joint1_->set_angular_rate(context_.get(), state[2]);
@@ -361,7 +361,7 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcBiasAccelerations) {
   // and link B.  Calculate Ap's bias spatial acceleration in world W.
   const Frame<double>& frame_A = bodyA_->body_frame();
   const Frame<double>& frame_W = plant_->world_frame();
-  const Vector3<double> p_AoAp_A(0.5 * link_length_, 0, 0);
+  const Vector3<double> p_AoAp_A(0.5 * link_length_, 0.0, 0.0);
   const SpatialAcceleration<double> aBias_WAp_W =
       plant_->CalcBiasSpatialAcceleration(*context_, JacobianWrtVariable::kV,
           frame_A, p_AoAp_A, frame_W, frame_W);
@@ -378,7 +378,7 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcBiasAccelerations) {
   // Point Bp is the point of B located at the most distal end of link B.
   // Calculate Bp's bias spatial acceleration in world W.
   const Frame<double>& frame_B = bodyB_->body_frame();
-  const Vector3<double> p_BoBp_B(0.5 * link_length_, 0, 0);
+  const Vector3<double> p_BoBp_B(0.5 * link_length_, 0.0, 0.0);
   const SpatialAcceleration<double> aBias_WBp_W =
       plant_->CalcBiasSpatialAcceleration(*context_, JacobianWrtVariable::kV,
                                           frame_B, p_BoBp_B, frame_W, frame_W);

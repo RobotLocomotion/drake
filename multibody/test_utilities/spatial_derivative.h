@@ -53,6 +53,10 @@ SpatialAcceleration<double> CalcSpatialAccelerationViaSpatialVelocityDerivative(
   std::unique_ptr<systems::Context<AutoDiffXd>> context_autodiff =
       plant_autodiff->CreateDefaultContext();
 
+  // Per Alejandro, the next line may be needed if the context has time != 0 or
+  // there are externally-set parameters.
+  context_autodiff->SetTimeStateAndParametersFrom(context);
+
   // Aggregate the state into a temporary vector for AutoDiffXd computations.
   // Set the context for AutoDiffXd computations.
   VectorX<AutoDiffXd> x_autodiff(plant.num_multibody_states());
