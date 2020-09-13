@@ -759,7 +759,7 @@ class MeshcatPointCloudVisualizer(LeafSystem):
     """
 
     def __init__(self, meshcat_viz, draw_period=_DEFAULT_PUBLISH_PERIOD,
-                 name="point_cloud", X_WP=Isometry3.Identity(),
+                 name="point_cloud", X_WP=RigidTransform.Identity(),
                  default_rgb=[255., 255., 255.]):
         """
         Args:
@@ -776,7 +776,7 @@ class MeshcatPointCloudVisualizer(LeafSystem):
         LeafSystem.__init__(self)
 
         self._meshcat_viz = _get_native_visualizer(meshcat_viz)
-        self._X_WP = X_WP
+        self._X_WP = RigidTransform(X_WP)
         self._default_rgb = np.array(default_rgb)
         self._name = name
 
@@ -807,7 +807,7 @@ class MeshcatPointCloudVisualizer(LeafSystem):
         rgbs = rgbs / 255.  # Do not use in-place so we can promote types.
         # Send to meshcat.
         self._meshcat_viz[self._name].set_object(g.PointCloud(p_PQs, rgbs))
-        self._meshcat_viz[self._name].set_transform(self._X_WP.matrix())
+        self._meshcat_viz[self._name].set_transform(self._X_WP.GetAsMatrix4())
 
 
 def ConnectMeshcatVisualizer(builder, scene_graph, output_port=None, **kwargs):
