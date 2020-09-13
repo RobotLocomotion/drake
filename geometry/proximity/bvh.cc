@@ -24,11 +24,11 @@ Bvh<MeshType>::Bvh(const MeshType& mesh) {
   }
 
   root_node_ =
-      BuildBVTree(mesh, element_centroids.begin(), element_centroids.end());
+      BuildBvTree(mesh, element_centroids.begin(), element_centroids.end());
 }
 
 template <class MeshType>
-std::unique_ptr<BvNode<MeshType>> Bvh<MeshType>::BuildBVTree(
+std::unique_ptr<BvNode<MeshType>> Bvh<MeshType>::BuildBvTree(
     const MeshType& mesh_M,
     const typename std::vector<CentroidPair>::iterator& start,
     const typename std::vector<CentroidPair>::iterator& end) {
@@ -86,7 +86,7 @@ std::unique_ptr<BvNode<MeshType>> Bvh<MeshType>::BuildBVTree(
     const typename std::vector<CentroidPair>::iterator mid =
         start + num_elements / 2;
     return std::make_unique<BvNode<MeshType>>(
-        bv, BuildBVTree(mesh_M, start, mid), BuildBVTree(mesh_M, mid, end));
+        bv, BuildBvTree(mesh_M, start, mid), BuildBvTree(mesh_M, mid, end));
   }
 }
 

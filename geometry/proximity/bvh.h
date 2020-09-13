@@ -40,7 +40,7 @@ class BvNode {
   static constexpr int kMaxElementPerLeaf =
       MeshTraits<MeshType>::kMaxElementPerBvhLeaf;
 
-  /* A leaf node can store as many element indices as kMaxElementPerLeaf.
+  /* A leaf node can store as many as kMaxElementPerLeaf elements.
    The actual number of stored element indices is `num_index`. */
   struct LeafData {
     int num_index;
@@ -69,28 +69,27 @@ class BvNode {
   const Obb& bv() const { return bv_; }
 
   /* Returns the number of element indices.
-   @pre Assumes that is_leaf() returns true. */
-  int num_element_index() const {
+   @pre is_leaf() returns true. */
+  int num_element_indices() const {
     return std::get<LeafData>(child_).num_index;
   }
 
-  /* Returns the i-th entry of the leaf data, which is an index into the mesh's
-   elements.
-   @pre Assumes that is_leaf() returns true.
-   @pre Assumes that `i` is less than LeafData::num_index */
+  /* Returns the i-th element index in the leaf data.
+   @pre is_leaf() returns true.
+   @pre `i` is less than LeafData::num_index, and i >= 0. */
   typename MeshType::ElementIndex element_index(int i) const {
-    DRAKE_DEMAND(0 <= i && i < std::get<LeafData>(child_).num_index);
+    DRAKE_ASSERT(0 <= i && i < std::get<LeafData>(child_).num_index);
     return std::get<LeafData>(child_).indices[i];
   }
 
   /* Returns the left child branch.
-   @pre Assumes that is_leaf() returns false.  */
+   @pre is_leaf() returns false.  */
   const BvNode<MeshType>& left() const {
     return *(std::get<NodeChildren>(child_).left);
   }
 
   /* Returns the right child branch.
-   @pre Assumes that is_leaf() returns false.  */
+   @pre is_leaf() returns false.  */
   const BvNode<MeshType>& right() const {
     return *(std::get<NodeChildren>(child_).right);
   }
@@ -101,13 +100,13 @@ class BvNode {
   }
 
   /* Compare this leaf node with the other leaf node.
-   @pre Assumes that both nodes are leaves.  */
+   @pre both nodes are leaves.  */
   bool EqualLeaf(const BvNode<MeshType>& other_leaf) const {
     if (this == &other_leaf) return true;
-    if (this->num_element_index() != other_leaf.num_element_index()) {
+    if (this->num_element_indices() != other_leaf.num_element_indices()) {
       return false;
     }
-    for (int i = 0; i <  this->num_element_index(); ++i) {
+    for (int i = 0; i < this->num_element_indices(); ++i) {
       if (this->element_index(i) != other_leaf.element_index(i)) {
         return false;
       }
@@ -171,7 +170,7 @@ using BvttCallback = std::function<BvttCallbackResult(
  hierarchy's frame H. Leaf nodes contain element indices into elements of the
  mesh. The BVH needs a reference to the mesh in order to build the tree, but
  does not own the mesh.
- @pre    Assumes that the mesh is not mutable. Modifications to the mesh after
+ @pre    The mesh is not mutable. Modifications to the mesh after
          constructing the BVH will make the BVH invalid.
  @tparam MeshType SurfaceMesh<double> or VolumeMesh<double> (Exotic types like
          SurfaceMesh<AutoDiffXd> are not supported).  */
@@ -218,10 +217,10 @@ class Bvh {
       // Run the callback on the pair if they are both leaf nodes, otherwise
       // check each branch.
       if (node_a.is_leaf() && node_b.is_leaf()) {
-        const int num_a_element = node_a.num_element_index();
-        const int num_b_element = node_b.num_element_index();
-        for (int a = 0; a < num_a_element; ++a) {
-          for (int b = 0; b < num_b_element; ++b) {
+        const int num_a_elements = node_a.num_element_indices();
+        const int num_b_elements = node_b.num_element_indices();
+        for (int a = 0; a < num_a_elements; ++a) {
+          for (int b = 0; b < num_b_elements; ++b) {
             BvttCallbackResult result =
                 callback(node_a.element_index(a), node_b.element_index(b));
             if (result == BvttCallbackResult::Terminate) return;  // Exit early.
@@ -278,8 +277,8 @@ class Bvh {
       }
       // Run the call back if `node` is a leaf.
       if (node->is_leaf()) {
-        const int num_element = node->num_element_index();
-        for (int i = 0; i < num_element; ++i) {
+        const int num_elements = node->num_element_indices();
+        for (int i = 0; i < num_elements; ++i) {
           BvttCallbackResult result = callback(node->element_index(i));
           if (result == BvttCallbackResult::Terminate) return;  // Exit early.
         }
@@ -324,7 +323,7 @@ class Bvh {
 
   using CentroidPair = std::pair<IndexType, Vector3<double>>;
 
-  static std::unique_ptr<BvNode<MeshType>> BuildBVTree(
+  static std::unique_ptr<BvNode<MeshType>> BuildBvTree(
       const MeshType& mesh,
       const typename std::vector<CentroidPair>::iterator& start,
       const typename std::vector<CentroidPair>::iterator& end);

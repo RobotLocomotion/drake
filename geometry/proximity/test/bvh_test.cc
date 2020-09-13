@@ -168,7 +168,7 @@ TEST_F(BVHTest, TestBuildBVTree) {
       // We should reach the leaf node with valid and unique elements instead
       // of more branches.
       EXPECT_TRUE(node.is_leaf());
-      for (int i = 0; i < node.num_element_index(); ++i) {
+      for (int i = 0; i < node.num_element_indices(); ++i) {
         EXPECT_GE(node.element_index(i), 0);
         EXPECT_LT(node.element_index(i), num_elements);
         EXPECT_EQ(element_indices.count(node.element_index(i)), 0);
