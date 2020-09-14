@@ -2107,6 +2107,7 @@ void MultibodyPlant<T>::CallContactSolver(
       DRAKE_DEMAND(M != nullptr);
       nv_ = M->rows();
       M_ldlt_ = M->ldlt();
+      // TODO(sherm1) Eliminate heap allocation.
       tmp_.resize(nv_);
     }
     ~MassMatrixInverseOperator() = default;
@@ -2135,7 +2136,7 @@ void MultibodyPlant<T>::CallContactSolver(
   // TODO(amcastro-tri): here the predictor step could be implicit in tau so
   // that for instance we'd be able do deal with force elements implicitly.
   const int nv = num_velocities();
-  VectorX<T> v_star(nv);
+  VectorX<T> v_star(nv);  // TODO(sherm1) Eliminate heap allocation.
   Minv_op.Multiply(minus_tau, &v_star);  // v_star = -M⁻¹⋅τ
   v_star *= -time_step();                // v_star = M⁻¹⋅τ
   v_star += v0;                          // v_star = v₀ + M⁻¹⋅τ
