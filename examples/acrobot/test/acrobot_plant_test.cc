@@ -14,7 +14,7 @@ GTEST_TEST(AcrobotPlantTest, ImplicitTimeDerivatives) {
 
   AcrobotPlant<double> plant;
   auto context = plant.CreateDefaultContext();
-  context->FixInputPort(0, Vector1d(-.32));
+  plant.get_input_port(0).FixValue(context.get(), -.32);
   context->SetContinuousState(Eigen::Vector4d(.1, .2, .3, .4));
 
   Eigen::VectorXd residual = plant.AllocateImplicitTimeDerivativesResidual();

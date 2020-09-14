@@ -45,9 +45,8 @@ def run_pendulum_example(args):
     # Fix the input port to zero.
     plant_context = diagram.GetMutableSubsystemContext(
         plant, simulator.get_mutable_context())
-    plant_context.FixInputPort(
-        plant.get_actuation_input_port().get_index(),
-        np.zeros(plant.num_actuators()))
+    plant.get_actuation_input_port().FixValue(
+        plant_context, np.zeros(plant.num_actuators()))
     plant_context.SetContinuousState([0.5, 0.1])
     simulator.AdvanceTo(args.duration)
 
