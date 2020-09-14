@@ -5,7 +5,9 @@
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <fmt/format.h>
@@ -19,12 +21,16 @@ namespace geometry {
 namespace render {
 namespace internal {
 
+using Eigen::Vector2d;
+using Eigen::Vector3d;
 using std::make_pair;
+using std::map;
 using std::pair;
 using std::string;
 using std::vector;
 
-pair<VertexBuffer, IndexBuffer> LoadMeshFromObj(std::istream* input_stream) {
+MeshData LoadMeshFromObj(std::istream* input_stream,
+                         const std::string& filename) {
   tinyobj::attrib_t attrib;
   vector<tinyobj::shape_t> shapes;
   vector<tinyobj::material_t> materials;
@@ -47,55 +53,127 @@ pair<VertexBuffer, IndexBuffer> LoadMeshFromObj(std::istream* input_stream) {
   DRAKE_DEMAND(ret == true);
 
   if (shapes.empty()) {
-    throw std::runtime_error(
+    throw std::runtime_error(fmt::format(
         "The OBJ data appears to have no faces; it could be missing faces or "
-        "might not be an OBJ file");
+        "might not be an OBJ file: {}",
+        filename));
   }
 
-  // Accumulate vertices.
-  const vector<tinyobj::real_t>& verts = attrib.vertices;
-  const int v_count = static_cast<int>(verts.size()) / 3;
-  DRAKE_DEMAND(static_cast<int>(verts.size()) == v_count * 3);
-  VertexBuffer vertices{v_count, 3};
-  for (int v = 0; v < v_count; ++v) {
-    const int i = v * 3;
-    vertices.block<1, 3>(v, 0) << verts[i], verts[i + 1], verts[i + 2];
+  // The parsed product needs to be further processed. The MeshData assumes
+  // that all vertex quantities (positions, normals, texture coordinates) are
+  // indexed with a common index; a face that references vertex i, will get its
+  // position from positions[i], its normal from normals[i], and its texture
+  // coordinate from uvs[i]. However, we _cannot_ assume that each vertex
+  // position is associated with a single per-vertex quantity (normal, uv) in
+  // the OBJ file. OBJ allows a vertex position to be associated with arbitrary
+  // per-vertex quantities in each face definition independently. So, we need to
+  // create the unique association here.
+  //
+  // To accomplish this:
+  //  1. Every vertex referenced by a face in the parsed OBJ is a "meta"
+  //     vertex consisting of a pair of indices: (p, n), the index in vertex
+  //     positions and normals. For example, imagine one face refers to meta
+  //     index (p, n₀) and another face refers to index (p, n₁). Although the
+  //     two faces appear to share a single vertex, those vertices have
+  //     different normals which require two different vertices in the mesh
+  //     data. We copy the vertex position and associate one copy with each
+  //     normal.
+  //  2. Given a mapping (p, n) --> i (a mapping from the meta vertex in the
+  //     parsed OBJ data to the unique index in the resultant mesh data), we
+  //     can build the faces in the final mesh data by mapping the (p, n)
+  //     pair in the OBJ face specification to the final mesh data vertex
+  //     index i.
+  //  3. When done, we should have an equal number of vertex positions as
+  //     we have normals. And all indices in the faces should be valid
+  //     indices into both vectors of data.
+  // NOTE: In the case of meta vertices (p, n₀) and (p, n₁) we are not actually
+  // confirming that normals[n₀] and normals[n₁] are actually different normals;
+  // we're assuming different indices implies different values.
+  //
+  // TODO(SeanCurtis-TRI) Extend this to include texture coordinates (and any
+  // other per-vertex quantity we eventually support).
+
+  // The map from (p, n) --> i.
+  map<pair<int, int>, int> obj_vertex_to_new_vertex;
+  // Accumulators for vertex positions, normals, and triangles.
+  vector<Vector3d> positions;
+  vector<Vector3d> normals;
+  vector<Vector3<int>> triangles;
+
+  // TODO(SeanCurtis-TRI) Revisit how we handle normals:
+  //   1. If normals are absent, generate normals so that we get faceted meshes.
+  //   2. Make use of smoothing groups.
+  if (attrib.normals.size() == 0) {
+    throw std::runtime_error(fmt::format(
+        "OBJ has no normals; RenderEngineGl requires OBJs with normals: {}",
+        filename));
   }
 
-  // Accumulate faces.
-  int tri_count = 0;
   for (const auto& shape : shapes) {
-    const tinyobj::mesh_t& raw_mesh = shape.mesh;
-    DRAKE_DEMAND(raw_mesh.indices.size() ==
-                 raw_mesh.num_face_vertices.size() * 3);
-    tri_count += raw_mesh.num_face_vertices.size();
-  }
-
-  IndexBuffer indices{tri_count, 3};
-  int tri_index = 0;
-  for (const auto& shape : shapes) {
-    const tinyobj::mesh_t& raw_mesh = shape.mesh;
-    for (int sub_index = 0;
-         sub_index < static_cast<int>(raw_mesh.num_face_vertices.size());
-         ++sub_index) {
-      const int i = sub_index * 3;
-      indices.block<1, 3>(tri_index, 0)
-          << static_cast<GLuint>(raw_mesh.indices[i].vertex_index),
-          static_cast<GLuint>(raw_mesh.indices[i + 1].vertex_index),
-          static_cast<GLuint>(raw_mesh.indices[i + 2].vertex_index);
-      ++tri_index;
+    // The faces are encoded in a series of index values [i0, i1, ..., iN]
+    // Each face is a block (e.g., [(i0, i1, i2), (i2, i3, i4), ... ]). We
+    // know that the block size must be three. So, we'll march through the
+    // faces and maintain an index into the vector of indices so we can always
+    // pull out the next index.
+    int v_index = 0;
+    const auto& shape_mesh = shape.mesh;
+    const int num_faces = static_cast<int>(shape_mesh.num_face_vertices.size());
+    for (int f = 0; f < num_faces; ++f) {
+      DRAKE_DEMAND(shape_mesh.num_face_vertices[f] == 3);
+      // Captures the [i0, i1, i2] new index values for the face.
+      int face_vertices[3] = {-1, -1, -1};
+      for (int i = 0; i < 3; ++i) {
+        const int position_index = shape_mesh.indices[v_index].vertex_index;
+        const int norm_index = shape_mesh.indices[v_index].normal_index;
+        if (norm_index < 0) {
+          throw std::runtime_error(
+              fmt::format("Not all faces reference normals: {}", filename));
+        }
+        const auto obj_indices = make_pair(position_index, norm_index);
+        if (obj_vertex_to_new_vertex.count(obj_indices) == 0) {
+          obj_vertex_to_new_vertex[obj_indices] =
+              static_cast<int>(positions.size());
+          // Guarantee that the positions.size() == normals.size() by always
+          // growing them in lock step.
+          positions.emplace_back(
+              Vector3d{attrib.vertices[3 * position_index],
+                       attrib.vertices[3 * position_index + 1],
+                       attrib.vertices[3 * position_index + 2]});
+          normals.emplace_back(attrib.normals[3 * norm_index],
+                               attrib.normals[3 * norm_index + 1],
+                               attrib.normals[3 * norm_index + 2]);
+        }
+        face_vertices[i] = obj_vertex_to_new_vertex[obj_indices];
+        ++v_index;
+      }
+      triangles.emplace_back(&face_vertices[0]);
     }
   }
-  return make_pair(vertices, indices);
+
+  MeshData mesh_data;
+  mesh_data.indices.resize(triangles.size(), 3);
+  for (int t = 0; t < mesh_data.indices.rows(); ++t) {
+    mesh_data.indices.row(t) = triangles[t].cast<GLuint>();
+  }
+  mesh_data.positions.resize(positions.size(), 3);
+  for (int v = 0; v < mesh_data.positions.rows(); ++v) {
+    mesh_data.positions.row(v) = positions[v].cast<GLfloat>();
+  }
+  mesh_data.normals.resize(normals.size(), 3);
+  for (int n = 0; n < mesh_data.normals.rows(); ++n) {
+    mesh_data.normals.row(n) = normals[n].cast<GLfloat>();
+  }
+
+  return mesh_data;
 }
 
-pair<VertexBuffer, IndexBuffer> LoadMeshFromObj(const string& filename) {
+MeshData LoadMeshFromObj(const string& filename) {
   std::ifstream input_stream(filename);
   if (!input_stream.is_open()) {
     throw std::runtime_error(
         fmt::format("Cannot load the obj file '{}'", filename));
   }
-  return LoadMeshFromObj(&input_stream);
+  return LoadMeshFromObj(&input_stream, filename);
 }
 
 namespace {
@@ -125,10 +203,9 @@ namespace {
                              circle center along the z axis.
  @pre `calc_radius_i(0)` and `calc_radius_i(curve_sample_count - 1) = 0`.
  */
-pair<VertexBuffer, IndexBuffer> MakeRevoluteShape(
-    int rotate_sample_count, int curve_sample_count,
-    const std::function<GLfloat(int i)>& calc_radius_i,
-    const std::function<GLfloat(int i)>& calc_z_i) {
+MeshData MakeRevoluteShape(int rotate_sample_count, int curve_sample_count,
+                           const std::function<GLfloat(int i)>& calc_radius_i,
+                           const std::function<GLfloat(int i)>& calc_z_i) {
   const GLfloat delta_theta =
       static_cast<GLfloat>(2 * M_PI / rotate_sample_count);
 
@@ -151,15 +228,18 @@ pair<VertexBuffer, IndexBuffer> MakeRevoluteShape(
   const int vert_count = (curve_sample_count - 2) * rotate_sample_count + 2;
   const int tri_count = (curve_sample_count - 2) * 2 * rotate_sample_count;
 
-  VertexBuffer vertices{vert_count, 3};
-  IndexBuffer indices{tri_count, 3};
+  MeshData mesh_data;
+  auto& vertices = mesh_data.positions;
+  vertices.resize(vert_count, 3);
+  auto& indices = mesh_data.indices;
+  indices.resize(tri_count, 3);
 
   // Insertion points into vertices and indices for each new vertex and tri.
   int v_index = 0;
   int t_index = 0;
 
   // Ring 0 is a single point; add that "ring".
-  vertices.block<1, 3>(v_index, 0) << 0, 0, calc_z_i(0);
+  vertices.row(v_index) << 0, 0, calc_z_i(0);
   ++v_index;
 
   // Index of the ring whose vertices are being added, the ring's position on
@@ -184,8 +264,8 @@ pair<VertexBuffer, IndexBuffer> MakeRevoluteShape(
     const GLfloat theta = v_j * delta_theta;
     const GLfloat v_x = r_i * ::cosf(theta);
     const GLfloat v_y = r_i * ::sinf(theta);
-    vertices.block<1, 3>(v_index, 0) << v_x, v_y, z_i;
-    indices.block<1, 3>(t_index++, 0) << 0, p, v_index;
+    vertices.row(v_index) << v_x, v_y, z_i;
+    indices.row(t_index++) << 0, p, v_index;
     p = v_index++;
   }
 
@@ -219,18 +299,18 @@ pair<VertexBuffer, IndexBuffer> MakeRevoluteShape(
       const GLfloat theta = v_j * delta_theta;
       const GLfloat v_x = r_i * ::cosf(theta);
       const GLfloat v_y = r_i * ::sinf(theta);
-      vertices.block<1, 3>(v_index, 0) << v_x, v_y, z_i;
+      vertices.row(v_index) << v_x, v_y, z_i;
       const int b = v_index - rotate_sample_count;
       const int c = p - rotate_sample_count;
-      indices.block<1, 3>(t_index++, 0) << v_index, c, p;
-      indices.block<1, 3>(t_index++, 0) << v_index, b, c;
+      indices.row(t_index++) << v_index, c, p;
+      indices.row(t_index++) << v_index, b, c;
       p = v_index++;
     }
   }
 
   // Triangles spanning ring C-2 to ring C-1; a triangle fan around the last
   // vertex.
-  vertices.block<1, 3>(v_index, 0) << 0.f, 0.f, calc_z_i(ring_i);
+  vertices.row(v_index) << 0.f, 0.f, calc_z_i(ring_i);
   const int prev_ring_start = v_index - rotate_sample_count;
   // Post-increment v_index so its value represents the total number of
   // vertices added.
@@ -239,7 +319,7 @@ pair<VertexBuffer, IndexBuffer> MakeRevoluteShape(
   // We have all the vertices, we just need to create the spanning triangles.
   for (int v_j = 0; v_j < rotate_sample_count; ++v_j) {
     const int v = prev_ring_start + v_j;
-    indices.block<1, 3>(t_index++, 0) << v, p, ring_C_vertex;
+    indices.row(t_index++) << v, p, ring_C_vertex;
     p = v;
   }
 
@@ -247,13 +327,12 @@ pair<VertexBuffer, IndexBuffer> MakeRevoluteShape(
   DRAKE_DEMAND(v_index == vert_count);
   DRAKE_DEMAND(t_index == tri_count);
 
-  return make_pair(vertices, indices);
+  return mesh_data;
 }
 
 }  // namespace
 
-pair<VertexBuffer, IndexBuffer> MakeLongLatUnitSphere(int longitude_bands,
-                                                      int latitude_bands) {
+MeshData MakeLongLatUnitSphere(int longitude_bands, int latitude_bands) {
   /*
    For notational convenience:
     T = number of latitude bands
@@ -312,25 +391,32 @@ pair<VertexBuffer, IndexBuffer> MakeLongLatUnitSphere(int longitude_bands,
   const GLfloat delta_phi = static_cast<GLfloat>(M_PI / latitude_bands);
   auto calc_z_i = [delta_phi, latitude_bands](int ring_i) {
     DRAKE_DEMAND(ring_i >= 0 && ring_i <= latitude_bands);
-    return ::cosf(ring_i * delta_phi); };
+    return ::cosf(ring_i * delta_phi);
+  };
   auto calc_radius_i = [calc_z_i, latitude_bands](int ring_i) {
     DRAKE_DEMAND(ring_i >= 0 && ring_i <= latitude_bands);
     if (ring_i == 0 || ring_i == latitude_bands) return 0.f;
     const GLfloat z_i = calc_z_i(ring_i);
     return sqrtf(1.0 - z_i * z_i);
   };
-  auto buffers = MakeRevoluteShape(longitude_bands, latitude_bands + 1,
-                                   calc_radius_i, calc_z_i);
+  MeshData mesh_data = MakeRevoluteShape(longitude_bands, latitude_bands + 1,
+                                         calc_radius_i, calc_z_i);
 
   // The process of building should match our predicted counts.
-  DRAKE_DEMAND(buffers.first.rows() == vert_count);
-  DRAKE_DEMAND(buffers.second.rows() == tri_count);
+  DRAKE_DEMAND(mesh_data.positions.rows() == vert_count);
+  DRAKE_DEMAND(mesh_data.indices.rows() == tri_count);
 
-  return buffers;
+  // We can add the normals in a post-hoc manner.
+  mesh_data.normals.resize(mesh_data.positions.rows(), 3);
+  for (int v = 0; v < mesh_data.positions.rows(); ++v) {
+    const auto p_MV = mesh_data.positions.row(v);
+    mesh_data.normals.row(v) = p_MV.normalized();
+  }
+
+  return mesh_data;
 }
 
-pair<VertexBuffer, IndexBuffer> MakeUnitCylinder(int num_strips,
-                                                 int num_bands) {
+MeshData MakeUnitCylinder(int num_strips, int num_bands) {
   /*
    For notational convenience
      S = number of strips
@@ -357,10 +443,17 @@ pair<VertexBuffer, IndexBuffer> MakeUnitCylinder(int num_strips,
    fans consisting of S triangles around a central vertex. The barrel is
    decomposed into B bands of 2S triangles each.
 
-   Vertex count
-   There are B + 1 rings of vertices plus two more vertices in the centers of
-   the caps. Each ring has S vertices for a total vertex count of:
-   (B + 1) * S + 2.
+   Revolute vertex count
+   We create the cylinder by creating a single revolute surface and then
+   subsequently breaking it apart to introduce normal discontinuities. In the
+   revolute, connected cylinder mesh, there are B + 1 rings of vertices
+   plus two more vertices in the centers of the caps. Each ring has S vertices
+   for a total vertex count of:
+      (B + 1) * S + 2.
+
+   The final mesh duplicates Ring 1 and Ring B + 2 (see the notes below on
+   creating normals). This leads to a final vertex count of:
+      (B + 1) * S + 2 + S * 2 = (B + 3) * S + 2.
 
    Triange count
    Each band on the barrel creates 2S triangles. Each cap produces S triangles
@@ -395,7 +488,7 @@ pair<VertexBuffer, IndexBuffer> MakeUnitCylinder(int num_strips,
   DRAKE_DEMAND(num_strips >= 3);
   DRAKE_DEMAND(num_bands >= 1);
 
-  const int vert_count = (num_bands + 1) * num_strips + 2;
+  const int rev_vert_count = (num_bands + 1) * num_strips + 2;
   const int tri_count = 2 * (num_bands + 1) * num_strips;
 
   // The height of each band along the length of the barrel.
@@ -418,26 +511,93 @@ pair<VertexBuffer, IndexBuffer> MakeUnitCylinder(int num_strips,
     if (ring_i == 0 || ring_i == num_bands + 2) return 0.f;
     return 1.f;
   };
-  auto buffers = MakeRevoluteShape(num_strips, num_bands + 3,
-                                   calc_radius_i, calc_z_i);
+  MeshData mesh_data =
+      MakeRevoluteShape(num_strips, num_bands + 3, calc_radius_i, calc_z_i);
 
   // The process of building should match our predicted counts.
-  DRAKE_DEMAND(buffers.first.rows() == vert_count);
-  DRAKE_DEMAND(buffers.second.rows() == tri_count);
+  DRAKE_DEMAND(mesh_data.positions.rows() == rev_vert_count);
+  DRAKE_DEMAND(mesh_data.indices.rows() == tri_count);
 
-  return buffers;
+  /* To have a hard-edge on the cylinder cap, we need to have 2 * num_strips
+   more vertices; the vertices on the top and bottom rings (those that run
+   along the perimeter of the caps) need to be duplicated. The vertices returned
+   by MakeRevoluteShape are as follows:
+
+    |__|___|___|...|___|___|___|...|___|___|...|___|__|
+     c₀ r₁₁ r₁₂ ... r₁ₙ r₂₁ r₂₂ ... rₘ₁ rₘ₂ ... rₘₙ c₁
+
+   The first and last vertices (c₀ and c₁) are the centers of the top and
+   bottom caps. There are M = num_bands + 1 blocks of N = num_strips vertices
+   representing a single "ring" of vertices. Each vertex is denoted as rⱼᵢ for
+   the iᵗʰ vertex in ring j. The first and last rings (r₁ and rₘ₋₁) will
+   be duplicated. The first ring will be duplicated immediately after c₀ and
+   the last ring directly before c₁. All triangle indices will be modified
+   to reflect the shift.  */
+
+  const int old_v_count = mesh_data.positions.rows();
+  DRAKE_DEMAND(old_v_count > 0);
+  const int new_v_count = old_v_count + 2 * num_strips;
+  MeshData full_mesh_data;
+  full_mesh_data.positions.resize(new_v_count, 3);
+  full_mesh_data.normals.resize(new_v_count, 3);
+  const int t_count = mesh_data.indices.rows();
+  full_mesh_data.indices.resize(t_count, 3);
+
+  const int cap_v_count = num_strips + 1;
+  const int barrel_v_count = old_v_count - 2;
+  // Copy vertex positions; the first N + 1 vertices are the bottom cap and the
+  // last N + 1 are the top cap.
+  full_mesh_data.positions.block(0, 0, cap_v_count, 3) =
+      mesh_data.positions.block(0, 0, cap_v_count, 3);
+  full_mesh_data.positions.block(cap_v_count, 0, barrel_v_count, 3) =
+      mesh_data.positions.block(1, 0, barrel_v_count, 3);
+  full_mesh_data.positions.block(new_v_count - cap_v_count, 0, cap_v_count, 3) =
+      mesh_data.positions.block(old_v_count - cap_v_count, 0, cap_v_count, 3);
+
+  // Write all the normal data.
+  // Top cap.
+  int v = 0;
+  for (; v < cap_v_count; ++v) {
+    full_mesh_data.normals.row(v) << 0, 0, 1;
+  }
+  // All barrel vertices.
+  for (; v < barrel_v_count + cap_v_count; ++v) {
+    const auto p_MV = full_mesh_data.positions.row(v);
+    const Vector2d p_MV_xy(p_MV(0, 0), p_MV(0, 1));
+    const Vector2d n_MV_xy = p_MV_xy.normalized();
+    full_mesh_data.normals.row(v) << n_MV_xy(0), n_MV_xy(1), 0;
+  }
+  // Bottom cap.
+  for (; v < new_v_count; ++v) {
+    full_mesh_data.normals.row(v) << 0, 0, -1;
+  }
+
+  // Transform indices in the triangles.
+  // Top cap remains unchanged; so we'll skip the first num_strips triangles.
+  full_mesh_data.indices = mesh_data.indices;
+  const auto offset = Vector3<GLuint>::Constant(num_strips).transpose();
+  int t = num_strips;
+  for (; t < t_count - num_strips; ++t) {
+    full_mesh_data.indices.row(t) += offset;
+  }
+  for (; t < t_count; ++t) {
+    full_mesh_data.indices.row(t) += 2 * offset;
+  }
+
+  return full_mesh_data;
 }
 
-pair<VertexBuffer, IndexBuffer> MakeSquarePatch(GLfloat measure,
-                                                int resolution) {
+MeshData MakeSquarePatch(GLfloat measure, int resolution) {
   DRAKE_DEMAND(measure > 0);
   DRAKE_DEMAND(resolution >= 1);
 
   const int vert_count = (resolution + 1) * (resolution + 1);
   const int tri_count = 2 * resolution * resolution;
 
-  VertexBuffer vertices{vert_count, 3};
-  IndexBuffer indices{tri_count, 3};
+  MeshData mesh_data;
+  mesh_data.positions.resize(vert_count, 3);
+  mesh_data.normals.resize(vert_count, 3);
+  mesh_data.indices.resize(tri_count, 3);
 
   // The size of each square sub-patch.
   const GLfloat delta = measure / resolution;
@@ -474,8 +634,9 @@ pair<VertexBuffer, IndexBuffer> MakeSquarePatch(GLfloat measure,
   for (int i = 0; i <= resolution; ++i) {
     const GLfloat y = y0 + i * delta;
     for (int j = 0; j <= resolution; ++j) {
+      mesh_data.normals.row(v_index) << 0, 0, 1;
       const GLfloat x = x0 + j * delta;
-      vertices.block<1, 3>(v_index++, 0) << x, y, 0;
+      mesh_data.positions.row(v_index++) << x, y, 0;
     }
   }
 
@@ -501,58 +662,102 @@ pair<VertexBuffer, IndexBuffer> MakeSquarePatch(GLfloat measure,
       const int n = v + 1;
       const int v_u = v + resolution + 1;
       const int n_u = n + resolution + 1;
-      indices.block<1, 3>(t_index++, 0) << v, n, n_u;
-      indices.block<1, 3>(t_index++, 0) << v, n_u, v_u;
+      mesh_data.indices.row(t_index++) << v, n, n_u;
+      mesh_data.indices.row(t_index++) << v, n_u, v_u;
     }
     ++v_index;
   }
   DRAKE_DEMAND(t_index == tri_count);
 
-  return make_pair(vertices, indices);
+  return mesh_data;
 }
 
-std::pair<VertexBuffer, IndexBuffer> MakeUnitBox() {
-  /* The box is simply eight vertices and twelve faces, explicitly
-   enumerated.
+MeshData MakeUnitBox() {
+  /* The box is 24 vertices (8 vertex positions duplicated three times each --
+   once per adjacent face) and twelve faces. We duplicate the vertex positions
+   because each adjacent face requires a different normal direction.
 
-               7____ 6            z
+               h____ g            z
               /│    /│            │   y
-            3/_│__2/ │            │ /
+            d/_│__c/ │            │ /
             │  │   │ │            │/____ x
-            │ 4│___│_│ 5
+            │ e│___│_│ f
             │ /    │ /
             │/_____│/
-            0      1
+            a      b
   */
-  VertexBuffer vertices{8, 3};
-  IndexBuffer indices{12, 3};
+  MeshData mesh_data;
+  mesh_data.positions.resize(24, 3);
+  mesh_data.normals.resize(24, 3);
+  mesh_data.indices.resize(12, 3);
   /* clang-format off */
-  vertices << -0.5f, -0.5f, -0.5f,
-               0.5f, -0.5f, -0.5f,
-               0.5f, -0.5f,  0.5f,
-              -0.5f, -0.5f,  0.5f,
-              -0.5f,  0.5f, -0.5f,
-               0.5f,  0.5f, -0.5f,
-               0.5f,  0.5f,  0.5f,
-              -0.5f,  0.5f,  0.5f;
-  indices << 0, 1, 2,
-             0, 2, 3,
-             1, 5, 6,
-             1, 6, 2,
-             2, 6, 7,
-             2, 7, 3,
-             3, 7, 4,
-             3, 4, 0,
-             7, 6, 5,
-             7, 5, 4,
-             1, 0, 4,
-             1, 4, 5;
+  mesh_data.positions << -0.5f, -0.5f, -0.5f,  // -y face: a b c d.
+                          0.5f, -0.5f, -0.5f,
+                          0.5f, -0.5f,  0.5f,
+                         -0.5f, -0.5f,  0.5f,
+                          0.5f, -0.5f, -0.5f,  // +x face: b f g c.
+                          0.5f,  0.5f, -0.5f,
+                          0.5f,  0.5f,  0.5f,
+                          0.5f, -0.5f,  0.5f,
+                         -0.5f, -0.5f,  0.5f,  // +z face: d c g h
+                          0.5f, -0.5f,  0.5f,
+                          0.5f,  0.5f,  0.5f,
+                         -0.5f,  0.5f,  0.5f,
+                         -0.5f, -0.5f, -0.5f,  // -x face: a d h e
+                         -0.5f, -0.5f,  0.5f,
+                         -0.5f,  0.5f,  0.5f,
+                         -0.5f,  0.5f, -0.5f,
+                         -0.5f, -0.5f, -0.5f,  // -z face: a e f b
+                         -0.5f,  0.5f, -0.5f,
+                          0.5f,  0.5f, -0.5f,
+                          0.5f, -0.5f, -0.5f,
+                          0.5f,  0.5f, -0.5f,  //  +y face: f e h g
+                         -0.5f,  0.5f, -0.5f,
+                         -0.5f,  0.5f,  0.5f,
+                          0.5f,  0.5f,  0.5f;
+
+  mesh_data.normals <<  0, -1,  0,
+                        0, -1,  0,
+                        0, -1,  0,
+                        0, -1,  0,
+                        1,  0,  0,
+                        1,  0,  0,
+                        1,  0,  0,
+                        1,  0,  0,
+                        0,  0,  1,
+                        0,  0,  1,
+                        0,  0,  1,
+                        0,  0,  1,
+                       -1,  0,  0,
+                       -1,  0,  0,
+                       -1,  0,  0,
+                       -1,  0,  0,
+                        0,  0, -1,
+                        0,  0, -1,
+                        0,  0, -1,
+                        0,  0, -1,
+                        0,  1,  0,
+                        0,  1,  0,
+                        0,  1,  0,
+                        0,  1,  0;
+
+  mesh_data.indices << 0, 1, 2,
+                       0, 2, 3,
+                       4, 5, 6,
+                       4, 6, 7,
+                       8, 9, 10,
+                       8, 10, 11,
+                       12, 13, 14,
+                       12, 14, 15,
+                       16, 17, 18,
+                       16, 18, 19,
+                       20, 21, 22,
+                       20, 22, 23;
   /* clang-format on */
-  return make_pair(vertices, indices);
+  return mesh_data;
 }
 
-pair<VertexBuffer, IndexBuffer> MakeCapsule(int samples, double radius,
-                                            double length) {
+MeshData MakeCapsule(int samples, double radius, double length) {
   /* Based on samples, we'll create a unit sphere, guaranteeing that there are
    vertices on the equator. We'll use the unit sphere to create the capsule
    by duplicating the equator vertices, translating the northern hemisphere
@@ -567,9 +772,7 @@ pair<VertexBuffer, IndexBuffer> MakeCapsule(int samples, double radius,
    of bands to guarantee vertices at the equator).  */
   const int half_samples = samples / 2;
   const int lat_bands = half_samples + (half_samples % 2);
-  const auto sphere_data = MakeLongLatUnitSphere(samples, lat_bands);
-  const VertexBuffer& sphere_verts = sphere_data.first;
-  const IndexBuffer& sphere_tris = sphere_data.second;
+  const MeshData sphere_data = MakeLongLatUnitSphere(samples, lat_bands);
 
   /* There should be `2H + samples` vertices in the sphere, where H is the
    number of vertices in a hemisphere *excluding* the vertices on the equator.
@@ -577,38 +780,41 @@ pair<VertexBuffer, IndexBuffer> MakeCapsule(int samples, double radius,
    The resulting capsule will have `2H + 2 * samples` vertices and normals and
    `T + 2 * samples` triangles, where T is the number of triangles in the
    sphere.  */
-  const int H = (sphere_verts.rows() - samples) / 2;
-  DRAKE_DEMAND(2 * H + samples == sphere_verts.rows());
+  const int H = (sphere_data.positions.rows() - samples) / 2;
+  DRAKE_DEMAND(2 * H + samples == sphere_data.positions.rows());
 
+  MeshData data;
   const int vert_count = 2 * (H + samples);
-  VertexBuffer vertices{vert_count, 3};
-  const int tri_count = sphere_tris.rows() + (2 * samples);
-  IndexBuffer indices{tri_count, 3};
+  data.positions.resize(vert_count, 3);
+  data.normals.resize(vert_count, 3);
+  const int tri_count = sphere_data.indices.rows() + (2 * samples);
+  data.indices.resize(tri_count, 3);
 
-  /* Process vertices. Vertices get scaled around a "local" sphere center by
-   radius and offset half the length. */
+  /* Process vertices and normals. Vertices get scaled by radius and offset
+   half the length, normals get copied. */
   int sphere_v = -1;
   int capsule_v = -1;
   // Northern hemisphere plus the equator.
   const Vector3<GLfloat> offset(0, 0, length / 2);
   for (int i = 0; i < H + samples; ++i) {
-    const Vector3<GLfloat> p_SV = sphere_verts.block<1, 3>(++sphere_v, 0);
-    vertices.block<1, 3>(++capsule_v, 0) = p_SV * radius + offset;
+    const Vector3<GLfloat> p_SV = sphere_data.positions.row(++sphere_v);
+    data.positions.row(++capsule_v) = p_SV * radius + offset;
+    data.normals.row(capsule_v) = sphere_data.normals.row(sphere_v);
   }
-  // Southern hemisphere plus the equator. This copies the equator.
   sphere_v -= samples;
   for (int i = 0; i < H + samples; ++i) {
-    const Vector3<GLfloat> p_SV = sphere_verts.block<1, 3>(++sphere_v, 0);
-    vertices.block<1, 3>(++capsule_v, 0) = p_SV * radius - offset;
+    const Vector3<GLfloat> p_SV = sphere_data.positions.row(++sphere_v);
+    data.positions.row(++capsule_v) = p_SV * radius - offset;
+    data.normals.row(capsule_v) = sphere_data.normals.row(sphere_v);
   }
 
   /* Process the faces. The first half can be taken verbatim. Then we inject
    the barrel vertices (connecting the two equators), the southern hemisphere
    needs all indices offset by `samples`.  */
 
-  const int hemisphere_tri_count = sphere_tris.rows() / 2;
-  indices.block(0, 0, hemisphere_tri_count, 3) =
-      sphere_tris.block(0, 0, hemisphere_tri_count, 3);
+  const int hemisphere_tri_count = sphere_data.indices.rows() / 2;
+  data.indices.block(0, 0, hemisphere_tri_count, 3) =
+      sphere_data.indices.block(0, 0, hemisphere_tri_count, 3);
   /* We add all the triangles for the barrel spanning the two equators. Given
    a moving pair of indices lying on the southern equator (p, v) we walk around
    the equator building triangle pairs as shown:
@@ -631,20 +837,20 @@ pair<VertexBuffer, IndexBuffer> MakeCapsule(int samples, double radius,
   int v = H + samples;      // the "first" vertex of the southern equator.
   int p = v + samples - 1;  // the "last" vertex on the southern equator.
   for (int i = 0; i < samples; ++i, ++v, capsule_t += 2) {
-    indices.block<1, 3>(capsule_t, 0) << p, v, p - samples;
-    indices.block<1, 3>(capsule_t + 1, 0) << v, v - samples, p - samples;
+    data.indices.row(capsule_t) << p, v, p - samples;
+    data.indices.row(capsule_t + 1) << v, v - samples, p - samples;
     p = v;
   }
   /* Now the southern hemisphere gets its indices offset to account for the
    injection of `samples` new vertices.  */
   const Vector3<GLuint> i_offset(samples, samples, samples);
-  for (int sphere_t = hemisphere_tri_count; sphere_t < sphere_tris.rows();
-       ++sphere_t, ++capsule_t) {
-    auto tri = sphere_tris.block<1, 3>(sphere_t, 0);
-    indices.block<1, 3>(capsule_t, 0) = tri + i_offset.transpose();
+  for (int sphere_t = hemisphere_tri_count;
+       sphere_t < sphere_data.indices.rows(); ++sphere_t, ++capsule_t) {
+    auto tri = sphere_data.indices.row(sphere_t);
+    data.indices.row(capsule_t) = tri + i_offset.transpose();
   }
 
-  return make_pair(vertices, indices);
+  return data;
 }
 
 }  // namespace internal
