@@ -225,7 +225,8 @@ TEST_F(KukaTest, CollisionAvoidanceTest) {
           plant_->get_body(BodyIndex{link6_idx}).body_frame());
   for (int i = 0; i < static_cast<int>(link5_pts.size()); ++i) {
     CheckPtCollisionFree(
-        link5_pose_ik_with_collision_avoidance.linear() * link5_pts[i] +
+        link5_pose_ik_with_collision_avoidance.rotation().matrix() *
+                link5_pts[i] +
             link5_pose_ik_with_collision_avoidance.translation(),
         box_pos, box_size);
     const auto& link5_collision_avoidance_binary_val =
@@ -234,7 +235,8 @@ TEST_F(KukaTest, CollisionAvoidanceTest) {
   }
   for (int i = 0; i < static_cast<int>(link6_pts.size()); ++i) {
     CheckPtCollisionFree(
-        link6_pose_ik_with_collision_avoidance.linear() * link6_pts[i] +
+        link6_pose_ik_with_collision_avoidance.rotation().matrix() *
+                link6_pts[i] +
             link6_pose_ik_with_collision_avoidance.translation(),
         box_pos, box_size);
     const auto& link6_collision_avoidance_binary_val =

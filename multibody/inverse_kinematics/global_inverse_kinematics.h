@@ -1,6 +1,7 @@
-
 #pragma once
 
+#include <map>
+#include <unordered_set>
 #include <vector>
 
 #include "drake/multibody/plant/multibody_plant.h"
@@ -331,6 +332,8 @@ class GlobalInverseKinematics {
   // body_idx should have been reconstructed, in reconstruct_R_WB.
   void ReconstructGeneralizedPositionSolutionForBody(
       const solvers::MathematicalProgramResult& result, int body_idx,
+      const std::map<BodyIndex, JointIndex>& body_to_joint_map,
+      const std::unordered_set<BodyIndex>& weld_to_world_body_index_set,
       Eigen::Ref<Eigen::VectorXd> q,
       std::vector<Eigen::Matrix3d>* reconstruct_R_WB) const;
 
