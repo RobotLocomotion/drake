@@ -53,7 +53,7 @@ GTEST_TEST(GlobalInverseKinematicsTest, BodySphereInOneOfPolytopesTest) {
   // Add a sphere of radius 0.5 in one of the polytopes.
   const double radius = 0.5;
   const Eigen::Vector3d p_BQ(0.1, 0.3, 0.4);
-  const int link_idx = 1;
+  const BodyIndex link_idx = single_body->GetBodyByName("body1").index();
 
   std::vector<Box> boxes;
   boxes.emplace_back(Eigen::Vector3d(0.2, 0.4, 1.2),
@@ -179,8 +179,8 @@ TEST_F(KukaTest, CollisionAvoidanceTest) {
       (ee_pose_ik_without_collision_avoidance.translation() - ee_pos).norm(),
       0.11);
 
-  int link6_idx = plant_->GetBodyByName("iiwa_link_6").index();
-  int link5_idx = plant_->GetBodyByName("iiwa_link_5").index();
+  const BodyIndex link6_idx = plant_->GetBodyByName("iiwa_link_6").index();
+  const BodyIndex link5_idx = plant_->GetBodyByName("iiwa_link_5").index();
   std::vector<Eigen::Vector3d> link5_pts;
   std::vector<Eigen::Vector3d> link6_pts;
   // Currently only make sure the origin of the body is collision free. We can
@@ -225,7 +225,8 @@ TEST_F(KukaTest, CollisionAvoidanceTest) {
           plant_->get_body(BodyIndex{link6_idx}).body_frame());
   for (int i = 0; i < static_cast<int>(link5_pts.size()); ++i) {
     CheckPtCollisionFree(
-        link5_pose_ik_with_collision_avoidance.linear() * link5_pts[i] +
+        link5_pose_ik_with_collision_avoidance.rotation().matrix() *
+                link5_pts[i] +
             link5_pose_ik_with_collision_avoidance.translation(),
         box_pos, box_size);
     const auto& link5_collision_avoidance_binary_val =
@@ -234,7 +235,8 @@ TEST_F(KukaTest, CollisionAvoidanceTest) {
   }
   for (int i = 0; i < static_cast<int>(link6_pts.size()); ++i) {
     CheckPtCollisionFree(
-        link6_pose_ik_with_collision_avoidance.linear() * link6_pts[i] +
+        link6_pose_ik_with_collision_avoidance.rotation().matrix() *
+                link6_pts[i] +
             link6_pose_ik_with_collision_avoidance.translation(),
         box_pos, box_size);
     const auto& link6_collision_avoidance_binary_val =

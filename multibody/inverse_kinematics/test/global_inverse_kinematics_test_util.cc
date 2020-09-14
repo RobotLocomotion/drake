@@ -61,7 +61,7 @@ void KukaTest::CheckGlobalIKSolution(
   // TODO(hongkai.dai): replace this print out with error check. We have not
   // derived a rigorous bound on the rotation matrix relaxation yet. Should be
   // able to get a more meaningful bound when we have some theoretical proof.
-  for (int i = 1; i < plant_->num_bodies(); ++i) {
+  for (BodyIndex i{1}; i < plant_->num_bodies(); ++i) {
     // Compute forward kinematics.
     const auto& body_pose_fk = plant_->CalcRelativeTransform(
         *context, plant_->world_frame(),

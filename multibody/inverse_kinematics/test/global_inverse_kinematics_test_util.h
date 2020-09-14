@@ -48,7 +48,7 @@ class KukaTest : public ::testing::Test {
  protected:
   std::unique_ptr<MultibodyPlant<double>> plant_;
   GlobalInverseKinematics global_ik_;
-  int ee_idx_;  // end effector's body index.
+  BodyIndex ee_idx_;  // end effector's body index.
 };
 }  // namespace multibody
 }  // namespace drake

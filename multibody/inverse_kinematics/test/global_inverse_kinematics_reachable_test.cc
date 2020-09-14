@@ -69,20 +69,24 @@ TEST_F(KukaTest, ReachableTest) {
                      q_global_ik, q_global_ik, 1);
 
     // Now tighten the joint limits, the problem should be feasible.
-    global_ik_.AddJointLimitConstraint(3, 0.5, 0.5);
-    global_ik_.AddJointLimitConstraint(4, -0.5, -0.4);
+    const Body<double>& iiwa_link_2 = plant_->GetBodyByName("iiwa_link_2");
+    const Body<double>& iiwa_link_3 = plant_->GetBodyByName("iiwa_link_3");
+    global_ik_.AddJointLimitConstraint(iiwa_link_2.index(), 0.5, 0.5);
+    global_ik_.AddJointLimitConstraint(iiwa_link_3.index(), -0.5, -0.4);
     result = gurobi_solver.Solve(global_ik_.prog());
     EXPECT_TRUE(result.is_success());
     q_global_ik = global_ik_.ReconstructGeneralizedPositionSolution(result);
     // The reconstructed posture should be within the user specified bound.
-    // body 3's position index is 1
-    EXPECT_NEAR(q_global_ik(1), 0.5, 1e-3);
-    // body 4's position index is 2
-    EXPECT_GE(q_global_ik(2), -0.5);
-    EXPECT_LE(q_global_ik(2), -0.4);
+    EXPECT_NEAR(q_global_ik(plant_->GetJointByName("iiwa_joint_2").index()),
+                0.5, 1e-3);
+    const JointIndex iiwa_joint_3_index =
+        plant_->GetJointByName("iiwa_joint_3").index();
+    EXPECT_GE(q_global_ik(iiwa_joint_3_index), -0.5);
+    EXPECT_LE(q_global_ik(iiwa_joint_3_index), -0.4);
 
     // Now further tighten the joint limits, the problem should be infeasible
-    global_ik_.AddJointLimitConstraint(5, 0.5, 0.55);
+    global_ik_.AddJointLimitConstraint(
+        plant_->GetBodyByName("iiwa_link_4").index(), 0.5, 0.55);
     result = gurobi_solver.Solve(global_ik_.prog());
     EXPECT_TRUE(result.get_solution_result() ==
                     solvers::SolutionResult::kInfeasibleConstraints ||

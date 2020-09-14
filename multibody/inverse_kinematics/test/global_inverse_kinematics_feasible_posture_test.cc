@@ -27,7 +27,7 @@ TEST_F(KukaTest, FeasiblePostureTest) {
       body_position_constraint;
   std::vector<solvers::Binding<solvers::BoundingBoxConstraint>>
       body_orientation_constraint;
-  for (int body = 1; body < plant_->num_bodies(); ++body) {
+  for (BodyIndex body{1}; body < plant_->num_bodies(); ++body) {
     // body = 0 is the WORLD link, we should not constrain the pose of the
     // WORLD.
     body_position_constraint.push_back(

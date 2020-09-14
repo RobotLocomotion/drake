@@ -1,6 +1,7 @@
-
 #pragma once
 
+#include <map>
+#include <unordered_set>
 #include <vector>
 
 #include "drake/multibody/plant/multibody_plant.h"
@@ -74,7 +75,7 @@ class GlobalInverseKinematics {
    * than or equal to the total number of bodies in the robot.
    */
   const solvers::MatrixDecisionVariable<3, 3>& body_rotation_matrix(
-      int body_index) const;
+      BodyIndex body_index) const;
 
   /** Getter for the decision variables on the position p_WBo of the body B's
    * origin measured and expressed in the world frame.
@@ -83,7 +84,8 @@ class GlobalInverseKinematics {
    * @throws std::runtime_error if the index is smaller than 1, or greater than
    * or equal to the total number of bodies in the robot.
    */
-  const solvers::VectorDecisionVariable<3>& body_position(int body_index) const;
+  const solvers::VectorDecisionVariable<3>& body_position(
+      BodyIndex body_index) const;
 
   /**
    * After solving the inverse kinematics problem and finding out the pose of
@@ -145,7 +147,7 @@ class GlobalInverseKinematics {
    * variables.
    */
   solvers::Binding<solvers::LinearConstraint> AddWorldPositionConstraint(
-      int body_idx, const Eigen::Vector3d& p_BQ,
+      BodyIndex body_idx, const Eigen::Vector3d& p_BQ,
       const Eigen::Vector3d& box_lb_F, const Eigen::Vector3d& box_ub_F,
       const Eigen::Isometry3d& X_WF = Eigen::Isometry3d::Identity());
 
@@ -172,7 +174,7 @@ class GlobalInverseKinematics {
    * variables.
    */
   solvers::Binding<solvers::LinearConstraint> AddWorldOrientationConstraint(
-      int body_idx, const Eigen::Quaterniond& desired_orientation,
+      BodyIndex body_idx, const Eigen::Quaterniond& desired_orientation,
       double angle_tol);
 
   /** Penalizes the deviation to the desired posture.
@@ -248,7 +250,7 @@ class GlobalInverseKinematics {
    * if the precondition is not satisfied.
    */
   solvers::VectorXDecisionVariable BodyPointInOneOfRegions(
-      int body_index, const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+      BodyIndex body_index, const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
       const std::vector<Eigen::Matrix3Xd>& region_vertices);
 
   /**
@@ -302,7 +304,7 @@ class GlobalInverseKinematics {
    * one of z(i) to be 1.
    */
   solvers::VectorXDecisionVariable BodySphereInOneOfPolytopes(
-      int body_index, const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+      BodyIndex body_index, const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
       double radius, const std::vector<Polytope3D>& polytopes);
 
   /**
@@ -320,7 +322,7 @@ class GlobalInverseKinematics {
    * is further relaxed, on top of SO(3) relaxation, but potentially with faster
    * computation. @default is false.
    */
-  void AddJointLimitConstraint(int body_index, double joint_lower_bound,
+  void AddJointLimitConstraint(BodyIndex body_index, double joint_lower_bound,
                                double joint_upper_bound,
                                bool linear_constraint_approximation = false);
 
@@ -330,7 +332,9 @@ class GlobalInverseKinematics {
   // index body_idx. Note that the orientation of the parent link of the body
   // body_idx should have been reconstructed, in reconstruct_R_WB.
   void ReconstructGeneralizedPositionSolutionForBody(
-      const solvers::MathematicalProgramResult& result, int body_idx,
+      const solvers::MathematicalProgramResult& result, BodyIndex body_idx,
+      const std::map<BodyIndex, JointIndex>& body_to_joint_map,
+      const std::unordered_set<BodyIndex>& weld_to_world_body_index_set,
       Eigen::Ref<Eigen::VectorXd> q,
       std::vector<Eigen::Matrix3d>* reconstruct_R_WB) const;
 
