@@ -182,6 +182,21 @@ class GenericPolynomial {
   [[nodiscard]] GenericPolynomial<BasisElement>
   RemoveTermsWithSmallCoefficients(double coefficient_tol) const;
 
+  Polynomial& operator+=(const Polynomial& p);
+  Polynomial& operator+=(const Monomial& m);
+  Polynomial& operator+=(double c);
+  Polynomial& operator+=(const Variable& v);
+
+  Polynomial& operator-=(const Polynomial& p);
+  Polynomial& operator-=(const Monomial& m);
+  Polynomial& operator-=(double c);
+  Polynomial& operator-=(const Variable& v);
+
+  Polynomial& operator*=(const Polynomial& p);
+  Polynomial& operator*=(const Monomial& m);
+  Polynomial& operator*=(double c);
+  Polynomial& operator*=(const Variable& v);
+
   /** Returns true if this generic polynomial and @p p are structurally equal.
    */
   [[nodiscard]] bool EqualTo(const GenericPolynomial<BasisElement>& p) const;
@@ -190,6 +205,11 @@ class GenericPolynomial {
    * the coefficients. */
   [[nodiscard]] bool EqualToAfterExpansion(
       const GenericPolynomial<BasisElement>& p) const;
+
+  /// Returns true if this polynomial and @p are almost equal (the difference
+  /// in the corresponding coefficients are all less than @p tol), after
+  /// expanding the coefficients.
+  bool CoefficientsAlmostEqual(const Polynomial& p, double tol) const;
 
  private:
   // Throws std::runtime_error if there is a variable appeared in both of
@@ -200,6 +220,43 @@ class GenericPolynomial {
   Variables indeterminates_;
   Variables decision_variables_;
 };
+
+/// Unary minus operation for polynomial.
+Polynomial operator-(const Polynomial& p);
+
+Polynomial operator+(Polynomial p1, const Polynomial& p2);
+Polynomial operator+(Polynomial p, const Monomial& m);
+Polynomial operator+(Polynomial p, double c);
+Polynomial operator+(const Monomial& m, Polynomial p);
+Polynomial operator+(const Monomial& m1, const Monomial& m2);
+Polynomial operator+(const Monomial& m, double c);
+Polynomial operator+(double c, Polynomial p);
+Polynomial operator+(double c, const Monomial& m);
+Polynomial operator+(Polynomial p, const Variable& v);
+Polynomial operator+(const Variable& v, Polynomial p);
+
+Polynomial operator-(Polynomial p1, const Polynomial& p2);
+Polynomial operator-(Polynomial p, const Monomial& m);
+Polynomial operator-(Polynomial p, double c);
+Polynomial operator-(const Monomial& m, Polynomial p);
+Polynomial operator-(const Monomial& m1, const Monomial& m2);
+Polynomial operator-(const Monomial& m, double c);
+Polynomial operator-(double c, Polynomial p);
+Polynomial operator-(double c, const Monomial& m);
+Polynomial operator-(Polynomial p, const Variable& v);
+Polynomial operator-(const Variable& v, const Polynomial& p);
+
+Polynomial operator*(Polynomial p1, const Polynomial& p2);
+Polynomial operator*(Polynomial p, const Monomial& m);
+Polynomial operator*(Polynomial p, double c);
+Polynomial operator*(const Monomial& m, Polynomial p);
+// Note that `Monomial * Monomial -> Monomial` is provided in
+// symbolic_monomial.h file.
+Polynomial operator*(const Monomial& m, double c);
+Polynomial operator*(double c, Polynomial p);
+Polynomial operator*(double c, const Monomial& m);
+Polynomial operator*(Polynomial p, const Variable& v);
+Polynomial operator*(const Variable& v, Polynomial p);
 
 template <typename BasisElement>
 std::ostream& operator<<(std::ostream& os,

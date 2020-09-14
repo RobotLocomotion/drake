@@ -515,6 +515,113 @@ GenericPolynomial<BasisElement>::EvaluatePartial(const Environment& env) const {
   return GenericPolynomial<BasisElement>(new_map);
 }
 
+Polynomial& Polynomial::operator+=(const Polynomial& p) {
+  for (const pair<const Monomial, Expression>& item :
+       p.monomial_to_coefficient_map_) {
+    const Monomial& m{item.first};
+    const Expression& coeff{item.second};
+    DoAddProduct(coeff, m, &monomial_to_coefficient_map_);
+  }
+  indeterminates_ += p.indeterminates();
+  decision_variables_ += p.decision_variables();
+  DRAKE_ASSERT_VOID(CheckInvariant());
+  return *this;
+}
+
+Polynomial& Polynomial::operator+=(const Monomial& m) {
+  // No need to call CheckInvariant() since it's called inside of Add.
+  return AddProduct(1.0, m);
+}
+
+Polynomial& Polynomial::operator+=(const double c) {
+  // No need to call CheckInvariant() since it's called inside of Add.
+  return AddProduct(c, Monomial{});
+}
+
+Polynomial& Polynomial::operator+=(const Variable& v) {
+  if (indeterminates().include(v)) {
+    return AddProduct(1.0, Monomial{v});
+  } else {
+    return AddProduct(v, Monomial{});
+  }
+}
+
+Polynomial& Polynomial::operator-=(const Polynomial& p) {
+  // No need to call CheckInvariant() since it's called inside of operator+=.
+  return *this += -p;
+}
+
+Polynomial& Polynomial::operator-=(const Monomial& m) {
+  // No need to call CheckInvariant() since it's called inside of Add.
+  return AddProduct(-1.0, m);
+}
+
+Polynomial& Polynomial::operator-=(const double c) {
+  // No need to call CheckInvariant() since it's called inside of Add.
+  return AddProduct(-c, Monomial{});
+}
+
+Polynomial& Polynomial::operator-=(const Variable& v) {
+  if (indeterminates().include(v)) {
+    return AddProduct(-1.0, Monomial{v});
+  } else {
+    return AddProduct(-v, Monomial{});
+  }
+}
+
+Polynomial& Polynomial::operator*=(const Polynomial& p) {
+  // (c₁₁ * m₁₁ + ... + c₁ₙ * m₁ₙ) * (c₂₁ * m₂₁ + ... + c₂ₘ * m₂ₘ)
+  // = (c₁₁ * m₁₁ + ... + c₁ₙ * m₁ₙ) * c₂₁ * m₂₁ + ... +
+  //   (c₁₁ * m₁₁ + ... + c₁ₙ * m₁ₙ) * c₂ₘ * m₂ₘ
+  MapType new_map{};
+  for (const auto& p1 : monomial_to_coefficient_map_) {
+    for (const auto& p2 : p.monomial_to_coefficient_map()) {
+      const Monomial new_monomial{p1.first * p2.first};
+      const Expression new_coeff{p1.second * p2.second};
+      DoAddProduct(new_coeff, new_monomial, &new_map);
+    }
+  }
+  monomial_to_coefficient_map_ = std::move(new_map);
+  indeterminates_ += p.indeterminates();
+  decision_variables_ += p.decision_variables();
+  DRAKE_ASSERT_VOID(CheckInvariant());
+  return *this;
+}
+
+Polynomial& Polynomial::operator*=(const Monomial& m) {
+  MapType new_map;
+  for (const pair<const Monomial, Expression>& p :
+       monomial_to_coefficient_map_) {
+    const Monomial& m_i{p.first};
+    const Expression& coeff_i{p.second};
+    new_map.emplace(m * m_i, coeff_i);
+  }
+  monomial_to_coefficient_map_ = std::move(new_map);
+  indeterminates_ += m.GetVariables();
+  DRAKE_ASSERT_VOID(CheckInvariant());
+  return *this;
+}
+
+Polynomial& Polynomial::operator*=(const double c) {
+  for (pair<const Monomial, Expression>& p : monomial_to_coefficient_map_) {
+    Expression& coeff = p.second;
+    coeff *= c;
+  }  // No need to call CheckInvariant() since `c` doesn't include a variable.
+  return *this;
+}
+
+Polynomial& Polynomial::operator*=(const Variable& v) {
+  if (indeterminates().include(v)) {
+    return *this *= Monomial{v};
+  } else {
+    for (auto& p : monomial_to_coefficient_map_) {
+      Expression& coeff = p.second;
+      coeff *= v;
+    }
+    return *this;
+  }
+}
+
 template <typename BasisElement>
 GenericPolynomial<BasisElement> GenericPolynomial<BasisElement>::AddProduct(
     const Expression& coeff, const BasisElement& m) {
@@ -599,6 +706,12 @@ template <typename BasisElement>
 bool GenericPolynomial<BasisElement>::EqualToAfterExpansion(
     const GenericPolynomial<BasisElement>& p) const {
   return GenericPolynomialEqual<BasisElement>(*this, p, true);
+}
+
+bool Polynomial::CoefficientsAlmostEqual(const Polynomial& p,
+                                         double tol) const {
+  return PolynomialEqual((*this - p).RemoveTermsWithSmallCoefficients(tol),
+                         Polynomial(0), true);
 }
 
 template class GenericPolynomial<MonomialBasisElement>;
