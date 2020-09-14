@@ -15,14 +15,18 @@ These are breaking changes that did not undergo a deprecation period:
 
 * The drake::systems::Subvector and drake::systems::Supervector are now marked
   final (`#13907`_).
+* Add [[nodiscard]] attributes to symbolic functions (`#14020`_, `#14021`_).
+* The drake/common/symbolic.h headers now ``#error`` when included incorrectly
 * For drake::yaml::YamlReadArchive, it's now an error for yaml data to remain
   unparsed, unless the user opts in to allowing it; users who want a different
   behavior should change the Options at construction-time (`#13900`_).
 * The drake::examples::rod2d::Rod2D::pose_output() port has been removed, as
   the system no longer connects to the systems::rendering API (`#13890`_).
 * Remove pydrake.systems.framework.kAutoSize (`#13981`_).
-* Add [[nodiscard]] attributes to symbolic functions (`#14020`_, `#14021`_).
-* The drake/common/symbolic.h headers now ``#error`` when included incorrectly (`#14003`_).
+  (`#14003`_).
+* If you are using CMake to consume pydrake and you compile your own bindings
+  using pybind11_add_module, you must now reset your target's default
+  visibility to "default" (not "hidden") (`#14048`_).
 
 Changes since v0.22.0
 ---------------------
@@ -197,7 +201,7 @@ Notes
 
 This release provides `pre-compiled binaries
 <https://github.com/RobotLocomotion/drake/releases/tag/v0.23.0>`__ named
-``drake-YYYYMMDD-{bionic|focal|mac}.tar.gz``. See :ref:`Nightly Releases
+``drake-20200913-{bionic|focal|mac}.tar.gz``. See :ref:`Nightly Releases
 <nightly-releases>` for instructions on how to use them.
 
 Drake binary releases incorporate a pre-compiled version of `SNOPT
