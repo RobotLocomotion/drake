@@ -131,18 +131,19 @@ def _update(args, rst_filename, gh, drake):
     # Find new commits from newest to oldest.
     commits = []
     for commit in drake.commits(sha='master'):
-        commits.append(commit)
         if commit.sha == prior_newest_commit:
             break
+        commits.append(commit)
         if len(commits) == args.max_num_commits:
             raise RuntimeError("Reached max_num_commits")
-    new_newest_commit = commits[0].sha
 
     # Edit the newest_commit annotation.
-    old_line = lines[prior_newest_commit_line]
-    new_line = re.sub(r"[0-9a-f]{40}", new_newest_commit, old_line)
-    assert new_line != old_line
-    lines[prior_newest_commit_line] = new_line
+    if commits:
+        new_newest_commit = commits[0].sha
+        old_line = lines[prior_newest_commit_line]
+        new_line = re.sub(r"[0-9a-f]{40}", new_newest_commit, old_line)
+        assert new_line != old_line
+        lines[prior_newest_commit_line] = new_line
 
     # Add each commit to a section, based on its package.
     for commit in commits:
@@ -181,10 +182,13 @@ def _update(args, rst_filename, gh, drake):
     for i, one_line in enumerate(lines):
         if begin < i < end:
             continue
-        match = re.search("`#([0-9]*)`_", one_line)
-        if match:
+        while True:
+            match = re.search("`#([0-9]*)`_", one_line)
+            if not match:
+                break
             (number,) = match.groups()
             pr_numbers.add(number)
+            one_line = one_line[match.end(0):]
     pr_links = [
         f".. _#{n}: https://github.com/RobotLocomotion/drake/pull/{n}\n"
         for n in sorted(list(pr_numbers))
