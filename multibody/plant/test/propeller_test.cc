@@ -50,7 +50,7 @@ GTEST_TEST(PropellerTest, SinglePropTest) {
   auto context = diagram->CreateDefaultContext();
 
   for (const double command : {0.0, -1.4, 2.3}) {
-    context->FixInputPort(0, Vector1d(command));
+    diagram->get_input_port(0).FixValue(context.get(), command);
     const Eigen::VectorXd acceleration = diagram->EvalTimeDerivatives(*context)
                                              .get_generalized_velocity()
                                              .CopyToVector();
@@ -72,7 +72,7 @@ GTEST_TEST(PropellerTest, SinglePropTest) {
           Eigen::Vector3d::Ones()));
 
   for (const double command : {0.0, -1.4, 2.3}) {
-    context->FixInputPort(0, Vector1d(command));
+    diagram->get_input_port(0).FixValue(context.get(), command);
     const Eigen::VectorXd acceleration = diagram->EvalTimeDerivatives(*context)
                                              .get_generalized_velocity()
                                              .CopyToVector();
@@ -131,7 +131,7 @@ GTEST_TEST(PropellerTest, BiRotorTest) {
   auto context = diagram->CreateDefaultContext();
 
   const Eigen::Vector2d command(.3, .4);
-  context->FixInputPort(0, command);
+  diagram->get_input_port(0).FixValue(context.get(), command);
   const Eigen::VectorXd acceleration = diagram->EvalTimeDerivatives(*context)
                                             .get_generalized_velocity()
                                             .CopyToVector();

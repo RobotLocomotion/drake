@@ -291,7 +291,7 @@ class TestControllers(unittest.TestCase):
                          InputPortSelection.kUseFirstInputIfItExists)
 
         context = double_integrator.CreateDefaultContext()
-        context.FixInputPort(0, [0.0])
+        double_integrator.get_input_port(0).FixValue(context, 0.0)
 
         result = FiniteHorizonLinearQuadraticRegulator(
             system=double_integrator,
