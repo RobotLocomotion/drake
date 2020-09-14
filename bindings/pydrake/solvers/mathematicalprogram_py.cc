@@ -926,6 +926,21 @@ top-level documentation for :py:mod:`pydrake.math`.
       .def("indeterminates_index", &MathematicalProgram::indeterminates_index,
           doc.MathematicalProgram.indeterminates_index.doc)
       .def(
+          "EvalBindingAtMultipleValues",
+          [](const MathematicalProgram& prog,
+              const Binding<EvaluatorBase>& binding,
+              const MatrixX<double>& prog_var_vals) {
+            MatrixX<double> Y(
+                binding.evaluator()->num_outputs(), prog_var_vals.cols());
+            for (int i = 0; i < prog_var_vals.cols(); ++i) {
+              Y.col(i) = prog.EvalBinding(binding, prog_var_vals.col(i));
+            }
+            return Y;
+          },
+          py::arg("binding"), py::arg("prog_var_vals"),
+          R""(A "vectorized" version of EvalBinding.  It evaluates the binding 
+for every column of ``prog_var_vals``. )"")
+      .def(
           "EvalBinding",
           [](const MathematicalProgram& prog,
               const Binding<EvaluatorBase>& binding,
