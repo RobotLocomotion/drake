@@ -31,6 +31,7 @@ Dynamical Systems
 ~~~~~~~~~~~~~~~~~
 
 .. <relnotes for systems go here>
+* TBD Add a construtor to allow IDC to own the input plant (`#14037`_)
 
 New features
 
@@ -67,6 +68,7 @@ Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for geometry,multibody go here>
+* TBD Add .png schematic and improved documentation to show Parent/Child bodies and joint M/F frames (aka Jp/Jc frames) (`#13961`_)
 
 New features
 
@@ -98,6 +100,7 @@ Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for common,math,lcm,lcmtypes,manipulation,perception go here>
+* TBD AutoDiffScalar: move-aware rewrites of more math (`#14045`_)  # Relevant to: #13985, #14039 Rewrite various global-scope math functions on AutoDiffScalars to exploit pass-by-value optimizations; demonstrate resulting improvements via lowered allocation counts in the heap test. The issues noted above give more context.
 
 * autodiff: Improve performance by reducing heap use  (`#13988`_)
 * manipulation: Add DifferentialInverseKinematicsIntegrator (`#13877`_, `#13919`_, `#13920`_, `#14004`_)
@@ -113,6 +116,7 @@ pydrake bindings
 ~~~~~~~~~~~~~~~~
 
 .. <relnotes for bindings go here>
+* TBD pydrake: Add {start,end}_time() to Trajectory (`#14049`_)
 
 New features
 
@@ -147,6 +151,8 @@ Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for attic,cmake,doc,setup,third_party,tools go here>
+* TBD Revert "workspace: Update pybind11 fork to latest commit" (`#14046`_)  # We believe the PR #14028 "workspace: Update pybind11 fork to latest commit" caused a failure in drake-external-examples:macos catalina 10.15. This reverts commit 21035a5554457737ae5707ba964472f3a3cb7765.
+* TBD Restore "workspace: Update pybind11 fork to latest commit" (`#14048`_)  # This reverts commit 690a7eacd136c842d2a7aeda7a5228cfa9d7af95.
 
 * Upgrade recommended Bazel version to 3.5 (`#14005`_)
 * Upgrade bazel_skylib to latest release 1.0.3 (`#13969`_)
@@ -245,6 +251,7 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#13943: https://github.com/RobotLocomotion/drake/pull/13943
 .. _#13949: https://github.com/RobotLocomotion/drake/pull/13949
 .. _#13953: https://github.com/RobotLocomotion/drake/pull/13953
+.. _#13961: https://github.com/RobotLocomotion/drake/pull/13961
 .. _#13962: https://github.com/RobotLocomotion/drake/pull/13962
 .. _#13965: https://github.com/RobotLocomotion/drake/pull/13965
 .. _#13966: https://github.com/RobotLocomotion/drake/pull/13966
@@ -290,9 +297,14 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#14030: https://github.com/RobotLocomotion/drake/pull/14030
 .. _#14031: https://github.com/RobotLocomotion/drake/pull/14031
 .. _#14036: https://github.com/RobotLocomotion/drake/pull/14036
+.. _#14037: https://github.com/RobotLocomotion/drake/pull/14037
 .. _#14042: https://github.com/RobotLocomotion/drake/pull/14042
+.. _#14045: https://github.com/RobotLocomotion/drake/pull/14045
+.. _#14046: https://github.com/RobotLocomotion/drake/pull/14046
+.. _#14048: https://github.com/RobotLocomotion/drake/pull/14048
+.. _#14049: https://github.com/RobotLocomotion/drake/pull/14049
 .. <end issue links>
 
 ..
   Current oldest_commit 0de592fdd53d55132b45a7a7c86b979a99f561e4 (exclusive).
-  Current newest_commit 5c5fc0830e2717ebf6ff211d61722f1b697f3d3a (inclusive).
+  Current newest_commit 6bd5f8c25cdcbb4049e57ec0f49f6e2c136d864a (inclusive).
