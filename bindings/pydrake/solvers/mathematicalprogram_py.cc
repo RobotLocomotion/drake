@@ -926,6 +926,22 @@ top-level documentation for :py:mod:`pydrake.math`.
       .def("indeterminates_index", &MathematicalProgram::indeterminates_index,
           doc.MathematicalProgram.indeterminates_index.doc)
       .def(
+          "EvalBindingVectorized",
+          [](const MathematicalProgram& prog,
+              const Binding<EvaluatorBase>& binding,
+              const MatrixX<double>& prog_var_vals) {
+            DRAKE_DEMAND(prog_var_vals.rows() == prog.num_vars());
+            MatrixX<double> Y(
+                binding.evaluator()->num_outputs(), prog_var_vals.cols());
+            for (int i = 0; i < prog_var_vals.cols(); ++i) {
+              Y.col(i) = prog.EvalBinding(binding, prog_var_vals.col(i));
+            }
+            return Y;
+          },
+          py::arg("binding"), py::arg("prog_var_vals"),
+          R"""(A "vectorized" version of EvalBinding.  It evaluates the binding 
+for every column of ``prog_var_vals``. )""")
+      .def(
           "EvalBinding",
           [](const MathematicalProgram& prog,
               const Binding<EvaluatorBase>& binding,
@@ -1158,6 +1174,19 @@ top-level documentation for :py:mod:`pydrake.math`.
           doc.Constraint.lower_bound.doc)
       .def("upper_bound", &Constraint::upper_bound,
           doc.Constraint.upper_bound.doc)
+      .def(
+          "CheckSatisfiedVectorized",
+          [](Constraint& self, const Eigen::Ref<const Eigen::MatrixXd>& x,
+              double tol) {
+            DRAKE_DEMAND(x.rows() == self.num_vars());
+            std::vector<bool> satisfied(x.cols());
+            for (int i = 0; i < x.cols(); ++i) {
+              satisfied[i] = self.CheckSatisfied(x.col(i), tol);
+            }
+            return satisfied;
+          },
+          py::arg("x"), py::arg("tol"),
+          R"""(A "vectorized" version of CheckSatisfied.  It evaluates the constraint for every column of ``x``. )""")
       .def(
           "CheckSatisfied",
           [](Constraint& self, const Eigen::Ref<const Eigen::VectorXd>& x,
