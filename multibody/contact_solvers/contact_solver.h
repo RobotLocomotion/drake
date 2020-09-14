@@ -50,10 +50,12 @@ enum class ContactSolverResult {
 /// matrix, and the generalized forces `τ(t,x,u)` are further split into a state
 /// dependent term `τₓ(t,x)` and externally applied actuation `τᵤ(u)` as: <pre>
 ///   τ(t,x,u) = τₓ(t,x) + τᵤ(u)
-///      τᵤ(u) = B⋅u(t)
+///      τᵤ(u) = B⋅u(t) +  Jᵀ(q)⋅Fₑₓₜ
 /// </pre>
-/// where `u(t)` corresponds to external __actuation__ and matrix `B`,
-/// independent of state and time, maps input actuation to generalized forces.
+/// where `u(t)` applies external __actuation__ to specific mobilities through
+/// mapping `B`, independent of state and time, from actuation to generalized
+/// forces. The term `Jᵀ(q)⋅Fₑₓₜ` accounts for externally applied spatial
+/// forces.
 ///
 /// Consider the dynamics of rigid multibody systems. For this case `τₓ(t,x)`
 /// contains the Coriolis and centrifugal contributions `C(q,v)` (actually
@@ -126,8 +128,8 @@ enum class ContactSolverResult {
 /// where:
 /// - We defined the contact impulses as `γ = dt⋅fc`.
 /// - This particular example is not fully implicit in that `M`, `Jcᵀ` and `N`
-///    are "frozen" at `t₀`. This is a very popular approximation choice also
-///    consistently 1ˢᵗ order with the rest of the fully implicit terms.
+///   are "frozen" at `t₀`. This is a very popular approximation choice also
+///   consistently 1ˢᵗ order with the rest of the fully implicit terms.
 /// - State dependent forces `τₓ` are fully implicit.
 /// - Actuation `τᵤ` is "frozen" at `t₀`. This will generally be true given that
 ///   since these are external to the physics engine, we will have no means to
@@ -281,7 +283,7 @@ class ContactSolver {
   // progresses.
   virtual ContactSolverResult SolveWithGuess(const VectorX<T>& v_guess) = 0;
 
-  /// Retrive contact impulses γ, with units of [Ns]. Of size 3*num_contacts().
+  /// Retrieve contact impulses γ, with units of [Ns]. Of size 3*num_contacts().
   /// Refer to MergeNormalAndTangent() for storage details.
   virtual const VectorX<T>& GetImpulses() const = 0;
 

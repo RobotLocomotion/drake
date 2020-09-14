@@ -1914,6 +1914,8 @@ MultibodyPlant<T>::CalcDiscreteContactPairs(
   }
 }
 
+// TODO(amcastro-tri): Rename this to CalcDiscreteSolverResults(), since also
+// applicable to all of our ContactSolver classes.
 template <typename T>
 void MultibodyPlant<T>::CalcTamsiResults(
     const drake::systems::Context<T>& context0,
@@ -2038,18 +2040,14 @@ void MultibodyPlant<T>::CallTamsiSolver(
     const std::string msg = fmt::format(
         "MultibodyPlant's discrete update solver failed to converge at "
         "simulation time = {:7.3g} with discrete update period = {:7.3g}. "
-        "This "
-        "usually means that the plant's discrete update period is too large "
-        "to "
-        "resolve the system's dynamics for the given simulation conditions. "
-        "This is often the case during abrupt collisions or during complex "
-        "and fast changing contact configurations. Another common cause is "
-        "the "
-        "use of high gains in the simulation of closed loop systems. These "
-        "might cause numerical instabilities given our discrete solver uses "
-        "an "
-        "explicit treatment of actuation inputs. Possible solutions "
-        "include:\n"
+        "This usually means that the plant's discrete update period is too "
+        "large to resolve the system's dynamics for the given simulation "
+        "conditions. This is often the case during abrupt collisions or during "
+        "complex and fast changing contact configurations. Another common "
+        "cause is the use of high gains in the simulation of closed loop "
+        "systems. These might cause numerical instabilities given our discrete "
+        "solver uses an explicit treatment of actuation inputs. Possible "
+        "solutions include:\n"
         "  1. reduce the discrete update period set at construction,\n"
         "  2. decrease the high gains in your controller whenever possible,\n"
         "  3. switch to a continuous model (discrete update period is zero), "
@@ -2138,8 +2136,9 @@ void MultibodyPlant<T>::CallContactSolver(
   // that for instance we'd be able do deal with force elements implicitly.
   const int nv = num_velocities();
   VectorX<T> v_star(nv);
-  Minv_op.Multiply(minus_tau, &v_star);  // v_star = -M⁻¹⋅tau
-  v_star = v0 - time_step() * v_star;    // v_star = v₀ + dt⋅M⁻¹⋅τ
+  Minv_op.Multiply(minus_tau, &v_star);  // v_star = -M⁻¹⋅τ
+  v_star *= -time_step();                // v_star = M⁻¹⋅τ
+  v_star += v0;                          // v_star = v₀ + M⁻¹⋅τ
 
   contact_solvers::internal::SystemDynamicsData<T> dynamics_data(&Minv_op,
                                                                  &v_star);
