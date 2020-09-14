@@ -2,10 +2,11 @@
 Provides some useful systems using ipywidgets and MultibodyPlant.
 
 This is gui code; to test changes, please manually run
-//bindings/pydrake/multibody/jupyter_widgets_examples.ipynb.
+//bindings/pydrake/multibody/examples/jupyter_widgets_examples.ipynb.
 """
 
 import numpy as np
+from functools import partial
 
 from ipywidgets import FloatSlider, Layout
 
@@ -128,3 +129,93 @@ class JointSliders(VectorSystem):
         output[:] = self._default_position
         for i in range(0, len(self._slider)):
             output[self._slider_position_start[i]] = self._slider[i].value
+
+
+def MakeJointSlidersThatPublishOnCallback(
+    plant, publishing_system, root_context, my_callback=None,
+        lower_limit=-10., upper_limit=10., resolution=0.01, length=200):
+    """
+    Creates an ipywidget slider for each joint in the plant.  Unlike the
+    JointSliders System, we do not expect this to be used in a Simulator.  It
+    simply updates the context and calls Publish directly from the slider
+    callback.
+
+    Args:
+        plant:        A MultibodyPlant.
+        publishing_system: The System whos Publish method will be called.  Can
+                           be the entire Diagram, but can also be a subsystem.
+        root_context: A mutable root Context of the Diagram containing both the
+                      ``plant`` and the ``publishing_system``; we will extract
+                      the subcontext's using `GetMyContextFromRoot`.
+        my_callback:  An optional additional callback function that will be
+                      called once immediately and again whenever the sliders
+                      are moved, using ``my_callback(plant_context)``.
+        lower_limit:  A scalar or vector of length robot.num_positions().
+                      The lower limit of the slider will be the maximum
+                      value of this number and any limit specified in the
+                      Joint.
+        upper_limit:  A scalar or vector of length robot.num_positions().
+                      The upper limit of the slider will be the minimum
+                      value of this number and any limit specified in the
+                      Joint.
+        resolution:   A scalar or vector of length robot.num_positions()
+                      that specifies the discretization of the slider.
+        length:       The length of the sliders.
+
+    Returns:
+        A list of the slider widget objects that are created.
+
+    Note: Some publishers (like MeshcatVisualizer) use an initialization event
+    to "load" the geometry.  You should call that *before* calling this method
+    (e.g. with `meshcat.load()`).
+    """
+
+    def _reshape(x, num):
+        x = np.array(x)
+        assert len(x.shape) <= 1
+        return np.array(x) * np.ones(num)
+
+    lower_limit = _reshape(lower_limit, plant.num_positions())
+    upper_limit = _reshape(upper_limit, plant.num_positions())
+    resolution = _reshape(resolution, plant.num_positions())
+
+    publishing_context = publishing_system.GetMyContextFromRoot(root_context)
+    plant_context = plant.GetMyContextFromRoot(root_context)
+    positions = plant.GetPositions(plant_context)
+
+    # Publish once immediately.
+    publishing_system.Publish(publishing_context)
+    if my_callback:
+        my_callback(plant_context)
+
+    def _slider_callback(change, index):
+        positions[index] = change.new
+        plant.SetPositions(plant_context, positions)
+        publishing_system.Publish(publishing_context)
+        if my_callback:
+            my_callback(plant_context)
+
+    slider_widgets = []
+    k = 0
+    for i in range(0, plant.num_joints()):
+        joint = plant.get_joint(JointIndex(i))
+        low = joint.position_lower_limits()
+        upp = joint.position_upper_limits()
+        for j in range(0, joint.num_positions()):
+            index = joint.position_start() + j
+            slider = FloatSlider(
+                value=positions[index],
+                min=max(low[j], lower_limit[k]),
+                max=min(upp[j], upper_limit[k]),
+                step=resolution[k],
+                continuous_update=True,
+                description=joint.name(),
+                style={'description_width': 'initial'},
+                layout=Layout(width=f"'{length}'"))
+            slider.observe(partial(_slider_callback, index=index),
+                           names='value')
+            display(slider)
+            slider_widgets.append(slider)
+            k += 1
+
+    return slider_widgets
