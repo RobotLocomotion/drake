@@ -2138,8 +2138,8 @@ void MultibodyPlant<T>::CallContactSolver(
   const int nv = num_velocities();
   VectorX<T> v_star(nv);  // TODO(sherm1) Eliminate heap allocation.
   Minv_op.Multiply(minus_tau, &v_star);  // v_star = -M⁻¹⋅τ
-  v_star *= -time_step();                // v_star = M⁻¹⋅τ
-  v_star += v0;                          // v_star = v₀ + M⁻¹⋅τ
+  v_star *= -time_step();                // v_star = dt⋅M⁻¹⋅τ
+  v_star += v0;                          // v_star = v₀ + dt⋅M⁻¹⋅τ
 
   contact_solvers::internal::SystemDynamicsData<T> dynamics_data(&Minv_op,
                                                                  &v_star);

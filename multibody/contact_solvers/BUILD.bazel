@@ -111,7 +111,7 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "contact_solver_test",
-    data = ["test/particle.sdf"],
+    data = ["test/particle_with_infinite_inertia.sdf"],
     deps = [
         ":contact_solver",
         ":multibody_sim_driver",

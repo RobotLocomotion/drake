@@ -42,7 +42,7 @@ class ParticleSolver final : public ContactSolver<T> {
 
   virtual ~ParticleSolver() = default;
 
-  // This implementation of SolveWithGuess() in addition makes a numver of tests
+  // This implementation of SolveWithGuess() in addition makes a number of tests
   // on the data supplied by MultibodyPlant. We must perform these tests at this
   // scope to ensure data references are still "alive".
   ContactSolverResult SolveWithGuess(const VectorX<T>& v_guess) final {
@@ -143,7 +143,8 @@ class ParticleTest : public ::testing::Test {
  public:
   void SetUp() override {
     const std::string model_file =
-        "drake/multibody/contact_solvers/test/particle.sdf";
+        "drake/multibody/contact_solvers/test/"
+        "particle_with_infinite_inertia.sdf";
     driver_.BuildModel(dt_, model_file);
     const auto& plant = driver_.plant();
     const auto& particle = plant.GetBodyByName("particle");
