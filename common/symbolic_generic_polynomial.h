@@ -226,245 +226,196 @@ class GenericPolynomial {
   Variables decision_variables_;
 };
 
+/** Defines an explicit SFINAE alias for use with return types to dissuade CTAD
+  * from trying to instantiate an invalid GenericElement<> for operator
+  * overloads.
+  * See discussion for more info:
+  * https://github.com/robotlocomotion/drake/pull/14053#pullrequestreview-488744679
+  */
 template <typename BasisElement>
-typename std::enable_if<
-    std::is_base_of<PolynomialBasisElement, BasisElement>::value,
-    GenericPolynomial<BasisElement>>::type
+using GenericPolynomialEnable = std::enable_if_t<
+    std::is_base_of_v<PolynomialBasisElement, BasisElement>,
+    GenericPolynomial<BasisElement>>;
+
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement>
 operator-(const GenericPolynomial<BasisElement>& p) {
   return -1. * p;
 }
 
 template <typename BasisElement>
-typename std::enable_if<
-    std::is_base_of<PolynomialBasisElement, BasisElement>::value,
-    GenericPolynomial<BasisElement>>::type
+GenericPolynomialEnable<BasisElement>
 operator+(GenericPolynomial<BasisElement> p1,
           const GenericPolynomial<BasisElement>& p2) {
   return p1 += p2;
 }
 
 template <typename BasisElement>
-typename std::enable_if<
-    std::is_base_of<PolynomialBasisElement, BasisElement>::value,
-    GenericPolynomial<BasisElement>>::type
+GenericPolynomialEnable<BasisElement>
 operator+(GenericPolynomial<BasisElement> p, const BasisElement& m) {
   return p += m;
 }
 
 template <typename BasisElement>
-typename std::enable_if<
-    std::is_base_of<PolynomialBasisElement, BasisElement>::value,
-    GenericPolynomial<BasisElement>>::type
+GenericPolynomialEnable<BasisElement>
 operator+(GenericPolynomial<BasisElement> p, double c) {
   return p += c;
 }
 
 template <typename BasisElement>
-typename std::enable_if<
-    std::is_base_of<PolynomialBasisElement, BasisElement>::value,
-    GenericPolynomial<BasisElement>>::type
+GenericPolynomialEnable<BasisElement>
 operator+(const BasisElement& m, GenericPolynomial<BasisElement> p) {
   return p += m;
 }
 
 template <typename BasisElement>
-typename std::enable_if<
-    std::is_base_of<PolynomialBasisElement, BasisElement>::value,
-    GenericPolynomial<BasisElement>>::type
+GenericPolynomialEnable<BasisElement>
 operator+(const BasisElement& m1, const BasisElement& m2) {
   return GenericPolynomial<BasisElement>(m1) + m2;
 }
 
 template <typename BasisElement>
-typename std::enable_if<
-    std::is_base_of<PolynomialBasisElement, BasisElement>::value,
-    GenericPolynomial<BasisElement>>::type
+GenericPolynomialEnable<BasisElement>
 operator+(const BasisElement& m, double c) {
   return GenericPolynomial<BasisElement>(m) + c;
 }
 
 template <typename BasisElement>
-typename std::enable_if<
-    std::is_base_of<PolynomialBasisElement, BasisElement>::value,
-    GenericPolynomial<BasisElement>>::type
+GenericPolynomialEnable<BasisElement>
 operator+(double c, GenericPolynomial<BasisElement> p) {
   return p += c;
 }
 
 template <typename BasisElement>
-typename std::enable_if<
-    std::is_base_of<PolynomialBasisElement, BasisElement>::value,
-    GenericPolynomial<BasisElement>>::type
+GenericPolynomialEnable<BasisElement>
 operator+(double c, const BasisElement& m) {
   return GenericPolynomial<BasisElement>(m) + c;
 }
 
 template <typename BasisElement>
-typename std::enable_if<
-    std::is_base_of<PolynomialBasisElement, BasisElement>::value,
-    GenericPolynomial<BasisElement>>::type
+GenericPolynomialEnable<BasisElement>
 operator+(GenericPolynomial<BasisElement> p, const Variable& v) {
   return p += v;
 }
 
 template <typename BasisElement>
-typename std::enable_if<
-    std::is_base_of<PolynomialBasisElement, BasisElement>::value,
-    GenericPolynomial<BasisElement>>::type
+GenericPolynomialEnable<BasisElement>
 operator+(const Variable& v, GenericPolynomial<BasisElement> p) {
   return p += v;
 }
 
 template <typename BasisElement>
-typename std::enable_if<
-    std::is_base_of<PolynomialBasisElement, BasisElement>::value,
-    GenericPolynomial<BasisElement>>::type
+GenericPolynomialEnable<BasisElement>
 operator-(GenericPolynomial<BasisElement> p1,
           const GenericPolynomial<BasisElement>& p2) {
   return p1 -= p2;
 }
 
 template <typename BasisElement>
-typename std::enable_if<
-    std::is_base_of<PolynomialBasisElement, BasisElement>::value,
-    GenericPolynomial<BasisElement>>::type
+GenericPolynomialEnable<BasisElement>
 operator-(GenericPolynomial<BasisElement> p, const BasisElement& m) {
   return p -= m;
 }
 
 template <typename BasisElement>
-typename std::enable_if<
-    std::is_base_of<PolynomialBasisElement, BasisElement>::value,
-    GenericPolynomial<BasisElement>>::type
+GenericPolynomialEnable<BasisElement>
 operator-(GenericPolynomial<BasisElement> p, double c) {
   return p -= c;
 }
 
 template <typename BasisElement>
-typename std::enable_if<
-    std::is_base_of<PolynomialBasisElement, BasisElement>::value,
-    GenericPolynomial<BasisElement>>::type
+GenericPolynomialEnable<BasisElement>
 operator-(const BasisElement& m, GenericPolynomial<BasisElement> p) {
   return p = -1 * p + m;
 }
 
 template <typename BasisElement>
-typename std::enable_if<
-    std::is_base_of<PolynomialBasisElement, BasisElement>::value,
-    GenericPolynomial<BasisElement>>::type
+GenericPolynomialEnable<BasisElement>
 operator-(const BasisElement& m1, const BasisElement& m2) {
   return GenericPolynomial<BasisElement>(m1) - m2;
 }
 
 template <typename BasisElement>
-typename std::enable_if<
-    std::is_base_of<PolynomialBasisElement, BasisElement>::value,
-    GenericPolynomial<BasisElement>>::type
+GenericPolynomialEnable<BasisElement>
 operator-(const BasisElement& m, double c) {
   return GenericPolynomial<BasisElement>(m) - c;
 }
 
 template <typename BasisElement>
-typename std::enable_if<
-    std::is_base_of<PolynomialBasisElement, BasisElement>::value,
-    GenericPolynomial<BasisElement>>::type
+GenericPolynomialEnable<BasisElement>
 operator-(double c, GenericPolynomial<BasisElement> p) {
   return p = -p + c;
 }
 
 template <typename BasisElement>
-typename std::enable_if<
-    std::is_base_of<PolynomialBasisElement, BasisElement>::value,
-    GenericPolynomial<BasisElement>>::type
+GenericPolynomialEnable<BasisElement>
 operator-(double c, const BasisElement& m) {
   return c - GenericPolynomial<BasisElement>(m);
 }
 
 template <typename BasisElement>
-typename std::enable_if<
-    std::is_base_of<PolynomialBasisElement, BasisElement>::value,
-    GenericPolynomial<BasisElement>>::type
+GenericPolynomialEnable<BasisElement>
 operator-(GenericPolynomial<BasisElement> p, const Variable& v) {
   return p -= v;
 }
 
 template <typename BasisElement>
-typename std::enable_if<
-    std::is_base_of<PolynomialBasisElement, BasisElement>::value,
-    GenericPolynomial<BasisElement>>::type
+GenericPolynomialEnable<BasisElement>
 operator-(const Variable& v, GenericPolynomial<BasisElement> p) {
   return GenericPolynomial<BasisElement>(v, p.indeterminates()) - p;
 }
 
 template <typename BasisElement>
-typename std::enable_if<
-    std::is_base_of<PolynomialBasisElement, BasisElement>::value,
-    GenericPolynomial<BasisElement>>::type
+GenericPolynomialEnable<BasisElement>
 operator*(GenericPolynomial<BasisElement> p1,
           const GenericPolynomial<BasisElement>& p2) {
   return p1 *= p2;
 }
 
 template <typename BasisElement>
-typename std::enable_if<
-    std::is_base_of<PolynomialBasisElement, BasisElement>::value,
-    GenericPolynomial<BasisElement>>::type
+GenericPolynomialEnable<BasisElement>
 operator*(GenericPolynomial<BasisElement> p, const BasisElement& m) {
   return p *= m;
 }
 
 template <typename BasisElement>
-typename std::enable_if<
-    std::is_base_of<PolynomialBasisElement, BasisElement>::value,
-    GenericPolynomial<BasisElement>>::type
+GenericPolynomialEnable<BasisElement>
 operator*(GenericPolynomial<BasisElement> p, double c) {
   return p *= c;
 }
 
 template <typename BasisElement>
-typename std::enable_if<
-    std::is_base_of<PolynomialBasisElement, BasisElement>::value,
-    GenericPolynomial<BasisElement>>::type
+GenericPolynomialEnable<BasisElement>
 operator*(const BasisElement& m, GenericPolynomial<BasisElement> p) {
   return p *= m;
 }
 
 template <typename BasisElement>
-typename std::enable_if<
-    std::is_base_of<PolynomialBasisElement, BasisElement>::value,
-    GenericPolynomial<BasisElement>>::type
+GenericPolynomialEnable<BasisElement>
 operator*(const BasisElement& m, double c) {
   return GenericPolynomial<BasisElement>(m) * c;
 }
 
 template <typename BasisElement>
-typename std::enable_if<
-    std::is_base_of<PolynomialBasisElement, BasisElement>::value,
-    GenericPolynomial<BasisElement>>::type
+GenericPolynomialEnable<BasisElement>
 operator*(double c, GenericPolynomial<BasisElement> p) {
   return p *= c;
 }
 
 template <typename BasisElement>
-typename std::enable_if<
-    std::is_base_of<PolynomialBasisElement, BasisElement>::value,
-    GenericPolynomial<BasisElement>>::type
+GenericPolynomialEnable<BasisElement>
 operator*(double c, const BasisElement& m) {
   return GenericPolynomial<BasisElement>(m) * c;
 }
 
 template <typename BasisElement>
-typename std::enable_if<
-    std::is_base_of<PolynomialBasisElement, BasisElement>::value,
-    GenericPolynomial<BasisElement>>::type
+GenericPolynomialEnable<BasisElement>
 operator*(GenericPolynomial<BasisElement> p, const Variable& v) {
   return p *= v;
 }
 
 template <typename BasisElement>
-typename std::enable_if<
-    std::is_base_of<PolynomialBasisElement, BasisElement>::value,
-    GenericPolynomial<BasisElement>>::type
+GenericPolynomialEnable<BasisElement>
 operator*(const Variable& v, GenericPolynomial<BasisElement> p) {
   return p *= v;
 }
