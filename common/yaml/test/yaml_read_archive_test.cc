@@ -371,9 +371,19 @@ TEST_P(YamlReadArchiveTest, Optional) {
     }
   };
 
-  test("doc: {}", std::nullopt);
+  if (GetParam().allow_cpp_with_no_yaml) {
+    test("doc: {}", kNominalDouble);
+  } else {
+    test("doc: {}", std::nullopt);
+  }
   if (GetParam().allow_yaml_with_no_cpp) {
-    test("doc:\n  foo: bar", std::nullopt);
+    test("doc:\n  foo: bar\n  value: 1.0", 1.0);
+    test("doc:\n  foo: bar\n  value:", std::nullopt);
+    if (GetParam().allow_cpp_with_no_yaml) {
+      test("doc:\n  foo: bar", kNominalDouble);
+    } else {
+      test("doc:\n  foo: bar", std::nullopt);
+    }
   }
   test("doc:\n  value:", std::nullopt);
   test("doc:\n  value: 1.0", 1.0);

@@ -293,15 +293,24 @@ class YamlReadArchive final {
     // or has an empty value.  In yaml-cpp, presence is denoted by IsDefined(),
     // and empty is denoted by IsNull().
     const auto& sub_node = MaybeGetSubNode(nvp.name());
-    if (!sub_node.IsDefined() || sub_node.IsNull()) {
+
+    if ((!sub_node.IsDefined() && !options_.allow_cpp_with_no_yaml) ||
+        (sub_node.IsDefined() && sub_node.IsNull())) {
       *nvp.value() = std::nullopt;
       return;
     }
 
-    // Visit the unpacked optional as if it weren't wrapped in optional<>.
+    // Ensure we have a fully constructed object because either the YAML has a
+    // non-NULL entry, or the value is allowed to be defaulted by setting
+    // options_.allow_cpp_with_no_yaml to true
     using T = typename NVP::value_type::value_type;
     std::optional<T>& storage = *nvp.value();
     if (!storage) { storage = T{}; }
+
+    if (!sub_node.IsDefined() && options_.allow_cpp_with_no_yaml) {
+      return;
+    }
+    // Visit the unpacked optional as if it weren't wrapped in optional<>.
     this->Visit(drake::MakeNameValue(nvp.name(), &storage.value()),
                 VisitShouldMemorizeType::kNo);
   }
