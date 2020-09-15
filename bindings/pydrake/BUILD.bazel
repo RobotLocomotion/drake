@@ -10,6 +10,7 @@ load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
+    "drake_py_test",
     "drake_py_unittest",
 )
 load(
@@ -339,6 +340,12 @@ drake_py_unittest(
         ":all_py",
         "//bindings/pydrake/common/test_utilities:deprecation_py",
     ],
+)
+
+drake_py_unittest(
+    name = "all_each_import_test",
+    timeout = "moderate",
+    deps = [":all_py"],
 )
 
 drake_py_library(
