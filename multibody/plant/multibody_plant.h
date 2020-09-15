@@ -20,10 +20,10 @@
 #include "drake/multibody/hydroelastics/hydroelastic_engine.h"
 #include "drake/multibody/plant/contact_jacobians.h"
 #include "drake/multibody/plant/contact_results.h"
+#include "drake/multibody/plant/contact_solver_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
 #include "drake/multibody/plant/tamsi_solver.h"
-#include "drake/multibody/plant/tamsi_solver_results.h"
 #include "drake/multibody/topology/multibody_graph.h"
 #include "drake/multibody/tree/force_element.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
@@ -3827,17 +3827,17 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // TamsiSolver to advance the model's state stored in
   // `context0` taking a time step of size time_step().
   // Contact forces and velocities are computed and stored in `results`. See
-  // TamsiSolverResults for further details on the returned data.
+  // ContactSolverResults for further details on the returned data.
   void CalcTamsiResults(
       const drake::systems::Context<T>& context0,
-      internal::TamsiSolverResults<T>* results) const;
+      internal::ContactSolverResults<T>* results) const;
 
   // Eval version of the method CalcTamsiResults().
-  const internal::TamsiSolverResults<T>& EvalTamsiResults(
+  const internal::ContactSolverResults<T>& EvalTamsiResults(
       const systems::Context<T>& context) const {
     return this
         ->get_cache_entry(cache_indexes_.tamsi_solver_results)
-        .template Eval<internal::TamsiSolverResults<T>>(context);
+        .template Eval<internal::ContactSolverResults<T>>(context);
   }
 
   // Computes the vector of ContactSurfaces for hydroelastic contact.
@@ -4028,7 +4028,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Calc method to output per model instance vector of generalized contact
   // forces.
   void CopyGeneralizedContactForcesOut(
-      const internal::TamsiSolverResults<T>&,
+      const internal::ContactSolverResults<T>&,
       ModelInstanceIndex, systems::BasicVector<T>* tau_vector) const;
 
   // Helper method to declare output ports used by this plant to communicate

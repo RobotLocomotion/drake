@@ -1383,7 +1383,7 @@ void MultibodyPlant<T>::CalcContactResultsDiscrete(
       EvalPointPairPenetrations(context);
   const std::vector<RotationMatrix<T>>& R_WC_set =
       EvalContactJacobians(context).R_WC_list;
-  const internal::TamsiSolverResults<T>& solver_results =
+  const internal::ContactSolverResults<T>& solver_results =
       EvalTamsiResults(context);
 
   const VectorX<T>& fn = solver_results.fn;
@@ -1915,7 +1915,7 @@ MultibodyPlant<T>::CalcDiscreteContactPairs(
 template <typename T>
 void MultibodyPlant<T>::CalcTamsiResults(
     const drake::systems::Context<T>& context0,
-    internal::TamsiSolverResults<T>* results) const {
+    internal::ContactSolverResults<T>* results) const {
   // Assert this method was called on a context storing discrete state.
   DRAKE_ASSERT(context0.num_discrete_state_groups() == 1);
   DRAKE_ASSERT(context0.num_continuous_states() == 0);
@@ -2175,7 +2175,7 @@ void MultibodyPlant<T>::DoCalcForwardDynamicsDiscrete(
   DRAKE_DEMAND(is_discrete());
 
   // Evaluate contact results.
-  const internal::TamsiSolverResults<T>& solver_results =
+  const internal::ContactSolverResults<T>& solver_results =
       EvalTamsiResults(context0);
 
   // Retrieve the solution velocity for the next time step.
@@ -2372,7 +2372,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
       auto calc = [this, model_instance_index](
                       const systems::Context<T>& context,
                       systems::BasicVector<T>* result) {
-        const internal::TamsiSolverResults<T>& solver_results =
+        const internal::ContactSolverResults<T>& solver_results =
             EvalTamsiResults(context);
         this->CopyGeneralizedContactForcesOut(solver_results,
                                               model_instance_index, result);
@@ -2505,13 +2505,13 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       std::string("Implicit Stribeck solver computations."),
       []() {
         return AbstractValue::Make(
-            internal::TamsiSolverResults<T>());
+            internal::ContactSolverResults<T>());
       },
       [this](const systems::ContextBase& context_base,
              AbstractValue* cache_value) {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
         auto& tamsi_solver_cache = cache_value->get_mutable_value<
-            internal::TamsiSolverResults<T>>();
+            internal::ContactSolverResults<T>>();
         this->CalcTamsiResults(context,
                                           &tamsi_solver_cache);
       },
@@ -2522,7 +2522,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       // as S = S(t, x, u).
       // Even though this variables can change continuously with time, we want
       // the solver solution to be updated periodically (with period
-      // time_step()) only. That is, TamsiSolverResults should be
+      // time_step()) only. That is, ContactSolverResults should be
       // handled as an abstract state with periodic updates. In the systems::
       // framework terminology, we'd like to have an "unrestricted update" with
       // a periodic event trigger.
@@ -2649,7 +2649,7 @@ void MultibodyPlant<T>::CopyMultibodyStateOut(
 
 template <typename T>
 void MultibodyPlant<T>::CopyGeneralizedContactForcesOut(
-    const internal::TamsiSolverResults<T>& solver_results,
+    const internal::ContactSolverResults<T>& solver_results,
     ModelInstanceIndex model_instance, BasicVector<T>* tau_vector) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(is_discrete());

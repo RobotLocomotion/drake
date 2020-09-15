@@ -8,12 +8,12 @@ namespace multibody {
 namespace internal {
 
 /// This struct stores the results from a computation performed with
-/// TamsiSolver. See the TamsiSolver class's documentation
-/// for further details.
+/// a discrete contact solver. For instance, we can store the results from
+/// TamsiSolver in this class.
 /// We denote `nv` the size of the vector of generalized velocities and `nc` the
 /// number of contact points.
 template <class T>
-struct TamsiSolverResults {
+struct ContactSolverResults {
   /// Vector of generalized velocities at the next time step.
   VectorX<T> v_next;
 
@@ -39,4 +39,4 @@ struct TamsiSolverResults {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    struct ::drake::multibody::internal::TamsiSolverResults)
+    struct ::drake::multibody::internal::ContactSolverResults)
