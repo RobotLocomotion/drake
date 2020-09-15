@@ -40,11 +40,13 @@ class TranslatorSystem final : public LeafSystem<double> {
 LcmPublisherSystem* ConnectLcmScope(const OutputPort<double>& src,
                                     const std::string& channel,
                                     systems::DiagramBuilder<double>* builder,
-                                    drake::lcm::DrakeLcmInterface* lcm) {
+                                    drake::lcm::DrakeLcmInterface* lcm,
+                                    double publish_period) {
   DRAKE_DEMAND(builder != nullptr);
   auto translator = builder->AddSystem<TranslatorSystem>(src.size());
   auto publisher = builder->AddSystem(
-      LcmPublisherSystem::Make<lcmt_drake_signal>(channel, lcm));
+      LcmPublisherSystem::Make<lcmt_drake_signal>(
+          channel, lcm, publish_period));
   builder->Connect(src, translator->get_input_port(0));
   builder->Connect(*translator, *publisher);
   return publisher;

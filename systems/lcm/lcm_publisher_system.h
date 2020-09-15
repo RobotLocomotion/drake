@@ -223,6 +223,11 @@ class LcmPublisherSystem : public LeafSystem<double> {
     return *lcm_;
   }
 
+  /**
+   * Returns the publish_period provided at construction time.
+   */
+  double get_publish_period() const;
+
  private:
   EventStatus PublishInputAsLcmMessage(const Context<double>& context) const;
 
@@ -245,8 +250,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
   // object or the owned_lcm_ object above.
   drake::lcm::DrakeLcmInterface* const lcm_;
 
-  // TODO(edrumwri) Remove this when set_publish_period() is removed.
-  bool disable_internal_per_step_publish_events_{false};
+  const double publish_period_;
 };
 
 }  // namespace lcm
