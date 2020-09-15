@@ -63,6 +63,9 @@ class Binding {
     return false;
   }
 
+  /**
+   * Returns the number of variables associated with this evaluator.
+   */
   size_t GetNumElements() const {
     // TODO(ggould-tri) assumes that no index appears more than once in the
     // view, which is nowhere asserted (but seems assumed elsewhere).
