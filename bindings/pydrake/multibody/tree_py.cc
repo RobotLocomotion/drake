@@ -18,6 +18,7 @@
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/joint.h"
 #include "drake/multibody/tree/joint_actuator.h"
+#include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
 #include "drake/multibody/tree/linear_spring_damper.h"
 #include "drake/multibody/tree/multibody_forces.h"
 #include "drake/multibody/tree/multibody_tree.h"  // `JacobianWrtVariable`
@@ -33,6 +34,7 @@
 namespace drake {
 namespace pydrake {
 
+using Eigen::Vector3d;
 using std::string;
 
 using math::RigidTransform;
@@ -542,6 +544,65 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("angle"), cls_doc.CalcHingeSpringTorque.doc)
         .def("CalcHingeTorque", &Class::CalcHingeTorque, py::arg("angle"),
             py::arg("angular_rate"), cls_doc.CalcHingeTorque.doc);
+  }
+
+  {
+    using Class = LinearBushingRollPitchYaw<T>;
+    constexpr auto& cls_doc = doc.LinearBushingRollPitchYaw;
+    auto cls = DefineTemplateClassWithDefault<Class, ForceElement<T>>(
+        m, "LinearBushingRollPitchYaw", param, cls_doc.doc);
+    cls  // BR
+        .def(py::init<const Frame<T>&, const Frame<T>&, const Vector3d&,
+                 const Vector3d&, const Vector3d&, const Vector3d&>(),
+            py::arg("frameA"), py::arg("frameC"),
+            py::arg("torque_stiffness_constants"),
+            py::arg("torque_damping_constants"),
+            py::arg("force_stiffness_constants"),
+            py::arg("force_damping_constants"), cls_doc.ctor.doc)
+        .def("link0", &Class::link0, py_rvp::reference_internal,
+            cls_doc.link0.doc)
+        .def("link1", &Class::link1, py_rvp::reference_internal,
+            cls_doc.link1.doc)
+        .def("frameA", &Class::frameA, py_rvp::reference_internal,
+            cls_doc.frameA.doc)
+        .def("frameC", &Class::frameC, py_rvp::reference_internal,
+            cls_doc.frameC.doc)
+        .def("torque_stiffness_constants", &Class::torque_stiffness_constants,
+            cls_doc.torque_stiffness_constants.doc)
+        .def("torque_damping_constants", &Class::torque_damping_constants,
+            cls_doc.torque_damping_constants.doc)
+        .def("force_stiffness_constants", &Class::force_stiffness_constants,
+            cls_doc.force_stiffness_constants.doc)
+        .def("force_damping_constants", &Class::force_damping_constants,
+            cls_doc.force_damping_constants.doc)
+        .def("GetTorqueStiffnessConstants", &Class::GetTorqueStiffnessConstants,
+            py::arg("context"), cls_doc.GetTorqueStiffnessConstants.doc)
+        .def("GetTorqueDampingConstants", &Class::GetTorqueDampingConstants,
+            py::arg("context"), cls_doc.GetTorqueDampingConstants.doc)
+        .def("GetForceStiffnessConstants", &Class::GetForceStiffnessConstants,
+            py::arg("context"), cls_doc.GetForceStiffnessConstants.doc)
+        .def("GetForceDampingConstants", &Class::GetForceDampingConstants,
+            py::arg("context"), cls_doc.GetForceDampingConstants.doc)
+        .def("GetTorqueStiffnessConstants", &Class::GetTorqueStiffnessConstants,
+            py::arg("context"), cls_doc.GetTorqueStiffnessConstants.doc)
+        .def("SetTorqueStiffnessConstants", &Class::SetTorqueStiffnessConstants,
+            py::arg("context"), py::arg("torque_stiffness"),
+            cls_doc.SetTorqueStiffnessConstants.doc)
+        .def("SetTorqueDampingConstants", &Class::SetTorqueDampingConstants,
+            py::arg("context"), py::arg("torque_damping"),
+            cls_doc.SetTorqueDampingConstants.doc)
+        .def("SetForceStiffnessConstants", &Class::SetForceStiffnessConstants,
+            py::arg("context"), py::arg("force_stiffness"),
+            cls_doc.SetForceStiffnessConstants.doc)
+        .def("SetForceDampingConstants", &Class::SetForceDampingConstants,
+            py::arg("context"), py::arg("force_damping"),
+            cls_doc.SetForceDampingConstants.doc)
+        .def("CalcBushingSpatialForceOnFrameA",
+            &Class::CalcBushingSpatialForceOnFrameA, py::arg("context"),
+            cls_doc.CalcBushingSpatialForceOnFrameA.doc)
+        .def("CalcBushingSpatialForceOnFrameC",
+            &Class::CalcBushingSpatialForceOnFrameC, py::arg("context"),
+            cls_doc.CalcBushingSpatialForceOnFrameC.doc);
   }
 
   // MultibodyForces
