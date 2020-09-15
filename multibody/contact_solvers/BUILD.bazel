@@ -13,13 +13,9 @@ package(
     default_visibility = ["//visibility:public"],
 )
 
-# The purpose of default_visibility to be private is to be able to develop this
-# code on master, but without yet exposing it to users until we're sure it is
-# API-stable. Furthermore, the code in this directory is meant for advanced
-# developers working on contact solvers.
 drake_cc_package_library(
     name = "contact_solvers",
-    visibility = ["//visibility:private"],
+    visibility = ["//visibility:public"],
     deps = [
         ":contact_solver",
         ":contact_solver_utils",
