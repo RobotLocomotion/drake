@@ -23,6 +23,7 @@ from pydrake.multibody.tree import (
     JointActuator_,
     JointActuatorIndex,
     JointIndex,
+    LinearBushingRollPitchYaw_,
     LinearSpringDamper_,
     ModelInstanceIndex,
     MultibodyForces_,
@@ -463,10 +464,17 @@ class TestPlant(unittest.TestCase):
         LinearSpringDamper = LinearSpringDamper_[T]
         RevoluteSpring = RevoluteSpring_[T]
         DoorHinge = DoorHinge_[T]
+        LinearBushingRollPitchYaw = LinearBushingRollPitchYaw_[T]
         SpatialInertia = SpatialInertia_[float]
+        UnitInertia = UnitInertia_[float]
+        SpatialForce = SpatialForce_[T]
 
         plant = MultibodyPlant(0.0)
-        spatial_inertia = SpatialInertia()
+        spatial_inertia = SpatialInertia(
+            mass=1,
+            p_PScm_E=[0, 0, 0],
+            G_SP_E=UnitInertia(1, 1, 1),
+        )
         body_a = plant.AddRigidBody(name="body_a",
                                     M_BBo_B=spatial_inertia)
         body_b = plant.AddRigidBody(name="body_b",
@@ -488,7 +496,21 @@ class TestPlant(unittest.TestCase):
         door_hinge_config = DoorHingeConfig()
         door_hinge = plant.AddForceElement(DoorHinge(
             joint=revolute_joint, config=door_hinge_config))
+
+        torque_stiffness = np.array([10.0, 11.0, 12.0])
+        torque_damping = np.array([1.0, 1.1, 1.2])
+        force_stiffness = np.array([20.0, 21.0, 22.0])
+        force_damping = np.array([2.0, 2.1, 2.2])
+        bushing = plant.AddForceElement(LinearBushingRollPitchYaw(
+            frameA=body_a.body_frame(),
+            frameC=body_b.body_frame(),
+            torque_stiffness_constants=torque_stiffness,
+            torque_damping_constants=torque_damping,
+            force_stiffness_constants=force_stiffness,
+            force_damping_constants=force_damping,
+        ))
         plant.Finalize()
+        context = plant.CreateDefaultContext()
 
         # Test LinearSpringDamper accessors
         self.assertEqual(linear_spring.bodyA(), body_a)
@@ -523,6 +545,42 @@ class TestPlant(unittest.TestCase):
                 angle=0.01), -2.265)
             self.assertEqual(door_hinge.CalcHingeTorque(
                 angle=0.01, angular_rate=0.0), -2.265)
+
+        # Test LinearBushingRollPitchYaw accessors.
+        self.assertIs(bushing.link0(), body_a)
+        self.assertIs(bushing.link1(), body_b)
+        self.assertIs(bushing.frameA(), body_a.body_frame())
+        self.assertIs(bushing.frameC(), body_b.body_frame())
+        numpy_compare.assert_float_equal(
+            bushing.torque_stiffness_constants(), torque_stiffness)
+        numpy_compare.assert_float_equal(
+            bushing.torque_damping_constants(), torque_damping)
+        numpy_compare.assert_float_equal(
+            bushing.force_stiffness_constants(), force_stiffness)
+        numpy_compare.assert_float_equal(
+            bushing.force_damping_constants(), force_damping)
+        # Set to 2x the original value and ensure it was updated in the given
+        # context.
+        bushing.SetTorqueStiffnessConstants(
+            context=context, torque_stiffness=2 * torque_stiffness)
+        numpy_compare.assert_float_equal(
+            bushing.GetTorqueStiffnessConstants(context=context),
+            2 * torque_stiffness)
+        bushing.SetTorqueDampingConstants(
+            context=context, torque_damping=2 * torque_damping)
+        numpy_compare.assert_float_equal(
+            bushing.GetTorqueDampingConstants(context=context),
+            2 * torque_damping)
+        bushing.SetForceStiffnessConstants(
+            context=context, force_stiffness=2 * force_stiffness)
+        numpy_compare.assert_float_equal(
+            bushing.GetForceStiffnessConstants(context=context),
+            2 * force_stiffness)
+        bushing.SetForceDampingConstants(
+            context=context, force_damping=2 * force_damping)
+        numpy_compare.assert_float_equal(
+            bushing.GetForceDampingConstants(context=context),
+            2 * force_damping)
 
     @numpy_compare.check_all_types
     def test_multibody_gravity_default(self, T):
