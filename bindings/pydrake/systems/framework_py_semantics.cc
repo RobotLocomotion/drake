@@ -440,6 +440,20 @@ void DefineFrameworkPySemantics(py::module m) {
             py::keep_alive<2, 1>(), doc.DiagramBuilder.AddSystem.doc)
         .def("empty", &DiagramBuilder<T>::empty, doc.DiagramBuilder.empty.doc)
         .def(
+            "GetSystems",
+            [](DiagramBuilder<T>* self) {
+              py::list out;
+              py::object self_py = py::cast(self, py_rvp::reference);
+              for (const auto* system : self->GetSystems()) {
+                py::object system_py = py::cast(system, py_rvp::reference);
+                // Keep alive, ownership: `system` keeps `self` alive.
+                py_keep_alive(system_py, self_py);
+                out.append(system_py);
+              }
+              return out;
+            },
+            doc.DiagramBuilder.GetSystems.doc)
+        .def(
             "GetMutableSystems",
             [](DiagramBuilder<T>* self) {
               py::list out;

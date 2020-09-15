@@ -122,6 +122,11 @@ class DiagramBuilder {
   bool empty() const { return registered_systems_.empty(); }
 
   /// Returns the list of contained Systems.
+  /// See also GetMutableSystems().
+  std::vector<const System<T>*> GetSystems() const;
+
+  /// Returns the list of contained Systems.
+  /// See also GetSystems().
   std::vector<System<T>*> GetMutableSystems();
 
   /// Declares that input port @p dest is connected to output port @p src.

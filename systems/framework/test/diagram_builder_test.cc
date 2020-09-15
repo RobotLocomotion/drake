@@ -530,13 +530,15 @@ TEST_F(DiagramBuilderSolePortsTest, TooManySrcInputs) {
   EXPECT_THROW(builder_.Connect(*in1out2_, *in1out1_), std::exception);
 }
 
-// Test for GetMutableSystems.
+// Test for GetSystems and GetMutableSystems.
 GTEST_TEST(DiagramBuilderTest, GetMutableSystems) {
   DiagramBuilder<double> builder;
   auto adder1 = builder.AddSystem<Adder>(1 /* inputs */, 1 /* size */);
   adder1->set_name("adder1");
   auto adder2 = builder.AddSystem<Adder>(1 /* inputs */, 1 /* size */);
   adder2->set_name("adder2");
+  EXPECT_EQ((std::vector<const System<double>*>{adder1, adder2}),
+            builder.GetSystems());
   EXPECT_EQ((std::vector<System<double>*>{adder1, adder2}),
             builder.GetMutableSystems());
 }
