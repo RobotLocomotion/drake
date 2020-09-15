@@ -31,4 +31,5 @@ pkg-config
 EOF
 )
 
-apt-get install --no-install-recommends $(cat "${BASH_SOURCE%/*}/packages-${codename}.txt")
+packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}.txt")
+apt-get install --no-install-recommends ${packages}
