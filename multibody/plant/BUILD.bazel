@@ -20,6 +20,7 @@ drake_cc_package_library(
         ":calc_distance_and_time_derivative",
         ":contact_jacobians",
         ":contact_results",
+        ":contact_solver_results",
         ":coulomb_friction",
         ":discrete_contact_pair",
         ":externally_applied_spatial_force",
@@ -30,7 +31,6 @@ drake_cc_package_library(
         ":point_pair_contact_info",
         ":propeller",
         ":tamsi_solver",
-        ":tamsi_solver_results",
     ],
 )
 
@@ -66,12 +66,12 @@ drake_cc_library(
     deps = [
         ":contact_jacobians",
         ":contact_results",
+        ":contact_solver_results",
         ":coulomb_friction",
         ":discrete_contact_pair",
         ":externally_applied_spatial_force",
         ":hydroelastic_traction",
         ":tamsi_solver",
-        ":tamsi_solver_results",
         "//common:default_scalars",
         "//common:essential",
         "//geometry:geometry_ids",
@@ -144,12 +144,12 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "tamsi_solver_results",
+    name = "contact_solver_results",
     srcs = [
-        "tamsi_solver_results.cc",
+        "contact_solver_results.cc",
     ],
     hdrs = [
-        "tamsi_solver_results.h",
+        "contact_solver_results.h",
     ],
     deps = [
         "//common:default_scalars",
