@@ -284,6 +284,9 @@ class TestMathematicalProgram(unittest.TestCase):
         ce = prog.AddLinearEqualityConstraint(2*x0, 1).evaluator()
 
         self.assertTrue(c.CheckSatisfied([2.], tol=1e-3))
+        satisfied = c.CheckSatisfiedVectorized(
+            np.array([1., 2., 3.]).reshape((1, 3)), tol=1e-3)
+        self.assertEqual(satisfied, [False, True, True])
         self.assertFalse(c.CheckSatisfied([AutoDiffXd(1.)]))
         self.assertIsInstance(c.CheckSatisfied([x0]), sym.Formula)
 
@@ -351,11 +354,26 @@ class TestMathematicalProgram(unittest.TestCase):
         for (constraint, value_expected) in enum:
             value = result.EvalBinding(constraint)
             self.assertTrue(np.allclose(value, value_expected))
+            value = prog.EvalBinding(constraint, x_expected)
+            self.assertTrue(np.allclose(value, value_expected))
+            value = prog.EvalBindingVectorized(
+                constraint,
+                np.vstack((x_expected, x_expected)).T)
+            a = np.vstack((value_expected, value_expected)).T
+            self.assertTrue(np.allclose(
+                value, np.vstack((value_expected, value_expected)).T))
 
         enum = zip(costs, cost_values_expected)
         for (cost, value_expected) in enum:
             value = result.EvalBinding(cost)
             self.assertTrue(np.allclose(value, value_expected))
+            value = prog.EvalBinding(cost, x_expected)
+            self.assertTrue(np.allclose(value, value_expected))
+            value = prog.EvalBindingVectorized(
+                cost,
+                np.vstack((x_expected, x_expected)).T)
+            self.assertTrue(np.allclose(
+                value, np.vstack((value_expected, value_expected)).T))
 
         self.assertIsInstance(
             result.EvalBinding(costs[0]), np.ndarray)
