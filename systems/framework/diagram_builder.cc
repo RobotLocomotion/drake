@@ -19,6 +19,16 @@ template <typename T>
 DiagramBuilder<T>::~DiagramBuilder() {}
 
 template <typename T>
+std::vector<const System<T>*> DiagramBuilder<T>::GetSystems() const {
+  std::vector<const System<T>*> result;
+  result.reserve(registered_systems_.size());
+  for (const auto& system : registered_systems_) {
+    result.push_back(system.get());
+  }
+  return result;
+}
+
+template <typename T>
 std::vector<System<T>*> DiagramBuilder<T>::GetMutableSystems() {
   std::vector<System<T>*> result;
   result.reserve(registered_systems_.size());

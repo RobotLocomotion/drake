@@ -457,6 +457,9 @@ class TestGeneral(unittest.TestCase):
         integrator.set_name("integrator")
 
         self.assertEqual(
+            builder.GetSystems(),
+            [adder0, adder1, integrator])
+        self.assertEqual(
             builder.GetMutableSystems(),
             [adder0, adder1, integrator])
 
