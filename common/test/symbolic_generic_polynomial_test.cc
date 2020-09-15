@@ -396,6 +396,9 @@ TEST_F(SymbolicGenericPolynomialTest, DegreeAndTotalDegree) {
   EXPECT_EQ(p1.Degree(var_a_), 0);
 }
 
+// Could use the type_visit trick mentioned in the comment
+// https://github.com/RobotLocomotion/drake/pull/14053#pullrequestreview-490104889
+// to construct these templated tests.
 template <typename BasisElement>
 void CheckAdditionPolynomialPolynomial(const std::vector<Expression>& exprs,
                                        double tol) {

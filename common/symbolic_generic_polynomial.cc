@@ -531,14 +531,14 @@ GenericPolynomial<BasisElement>& GenericPolynomial<BasisElement>::operator+=(
 template <typename BasisElement>
 GenericPolynomial<BasisElement>& GenericPolynomial<BasisElement>::operator+=(
     const BasisElement& m) {
-  // No need to call CheckInvariant since it's called inside of Add.
+  // No need to call CheckInvariant since it's called inside of AddProduct.
   return AddProduct(1.0, m);
 }
 
 template <typename BasisElement>
 GenericPolynomial<BasisElement>& GenericPolynomial<BasisElement>::operator+=(
     const double c) {
-  // No need to call CheckInvariant since it's called inside of Add.
+  // No need to call CheckInvariant since it's called inside of AddProduct.
   return AddProduct(c, BasisElement{});
 }
 
