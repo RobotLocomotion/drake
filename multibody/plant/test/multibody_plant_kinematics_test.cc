@@ -256,6 +256,16 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialAccelerationViaVectorDerivative) {
       test_utilities::CalcSpatialAccelerationViaSpatialVelocityDerivative(
           *plant_, *context_, vDt, frame_A, frame_W, frame_A);
 
+  // TODO(Mitiguy) Compare results from the previous utility function with
+  //  results from the method MultibodyPlant::CalcSpatialAcceleration() --
+  //  which is in a pending PR.  The sample commented-out code below shows how
+  //  that new method might be tested.
+  //  const SpatialAcceleration<double> A_WAo_W_alternate =
+  //   plant_->CalcSpatialAcceleration(*context_, frame_A, p_AoAp_A,
+  //       frame_W, frame_A);
+  //  EXPECT_TRUE(CompareMatrices(A_WAo_W_alternate.get_coeffs(),
+  //                             A_WAo_W.get_coeffs(), 16 * kTolerance));
+
   // Compare results with the following by-hand analytical results.
   // DtW(w_WA_A) = DtA(w_WA_A) + w_WA_A x w_WA_A
   //             = Dt(wAz) Az
