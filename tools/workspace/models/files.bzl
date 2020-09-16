@@ -55,6 +55,12 @@ def jaco_description_mesh_files():
         "jaco_description/meshes/wrist_spherical_2.obj",
     ]
 
+def realsense2_description_mesh_files():
+    return [
+        "realsense2_description/LICENSE",
+        "realsense2_description/meshes/d415.stl",
+    ]
+
 def skydio_2_mesh_files():
     return [
         "skydio_2/skydio_2_1000_poly.mtl",

@@ -8,6 +8,7 @@ exports_files(
         "dishes/**",
         "franka_description/**",
         "jaco_description/**",
+        "realsense2_description/**",
         "skydio_2/**",
         "wsg_50_description/**",
         "ycb/meshes/**",
