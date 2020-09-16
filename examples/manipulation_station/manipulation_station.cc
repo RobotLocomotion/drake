@@ -54,7 +54,8 @@ namespace internal {
 SpatialInertia<double> MakeCompositeGripperInertia(
     const std::string& wsg_sdf_path,
     const std::string& gripper_body_frame_name) {
-  MultibodyPlant<double> plant(0.0);
+  // Set timestep to 1.0 since it is arbitrary, to quiet joint limit warnings.
+  MultibodyPlant<double> plant(1.0);
   multibody::Parser parser(&plant);
   parser.AddModelFromFile(wsg_sdf_path);
   plant.Finalize();
@@ -157,9 +158,9 @@ ManipulationStation<T>::ManipulationStation(double time_step)
     : owned_plant_(std::make_unique<MultibodyPlant<T>>(time_step)),
       owned_scene_graph_(std::make_unique<SceneGraph<T>>()),
       // Given the controller does not compute accelerations, it is irrelevant
-      // whether the plant is continuous or discrete. We arbitrarily make it
-      // continuous.
-      owned_controller_plant_(std::make_unique<MultibodyPlant<T>>(0.0)) {
+      // whether the plant is continuous or discrete. We make it
+      // discrete to avoid warnings about joint limits.
+      owned_controller_plant_(std::make_unique<MultibodyPlant<T>>(1.0)) {
   // This class holds the unique_ptrs explicitly for plant and scene_graph
   // until Finalize() is called (when they are moved into the Diagram). Grab
   // the raw pointers, which should stay valid for the lifetime of the Diagram.
