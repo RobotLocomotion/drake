@@ -4,7 +4,8 @@ Parses and visualizes Realsense d415.
 
 An example of showing a Realsense d415 at a 5s interval:
 
- $ bazel run //manipulation/models/realsense2_description:realsense_parse_test -- --visualize_sec=5
+$ bazel run //manipulation/models/realsense2_description:realsense_parse_test \
+   -- --visualize_sec=5
 
 */
 

@@ -7,7 +7,10 @@ load(
 load("@drake//tools/install:install_data.bzl", "install_data")
 load("@drake//tools/lint:lint.bzl", "add_lint_tests")
 load("@drake//tools/workspace:forward_files.bzl", "forward_files")
-load("@drake//tools/workspace/models:files.bzl", "realsense2_description_mesh_files")
+load(
+    "@drake//tools/workspace/models:files.bzl",
+    "realsense2_description_mesh_files",
+)
 
 # This package is public so that other packages can refer to
 # individual files in model from their bazel rules.
