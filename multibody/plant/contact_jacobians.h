@@ -28,13 +28,20 @@ struct ContactJacobians {
   /// moving away from each other.
   MatrixX<T> Jn;
 
-  /// Tangential contact forces Jacobian.
+  /// Tangential contact Jacobian.
   /// `Jt` is a matrix of size `2⋅nc x nv` such that `vt = Jt⋅v` concatenates
   /// the tangential components of the relative velocity vector `v_AcBc`
   /// in the frame C of contact, for each pair. That is, for the k-th contact
   /// pair, `vt.segment<2>(2 * ik)` stores the components of `v_AcBc` in the
   /// `Cx` and `Cy` directions.
   MatrixX<T> Jt;
+
+  /// Full contact jacobian.
+  /// `Jc` is a matrix of size `3⋅nc x nv` such that `vc = Jc⋅v` concatenates
+  /// the full 3D contact velocities. Refer to
+  /// contact_solvers::MergeNormalAndTangent() for details on the specific
+  /// layout of vc.
+  MatrixX<T> Jc;
 
   /// List of contact frames orientation R_WC in the world frame W for each
   /// contact pair.

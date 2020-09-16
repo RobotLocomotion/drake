@@ -5,6 +5,7 @@
 
 namespace drake {
 namespace multibody {
+namespace contact_solvers {
 namespace internal {
 
 /// This struct stores the results from a computation performed with
@@ -14,6 +15,17 @@ namespace internal {
 /// number of contact points.
 template <class T>
 struct ContactSolverResults {
+  /// Resizes `this` object to store the contact results for a problem with
+  /// `num_velocities` and `num_contacts`.
+  void Resize(int num_velocities, int num_contacts) {
+    v_next.resize(num_velocities);
+    fn.resize(num_contacts);
+    ft.resize(2 * num_contacts);
+    vn.resize(num_contacts);
+    vt.resize(2 * num_contacts);
+    tau_contact.resize(num_velocities);
+  }
+
   /// Vector of generalized velocities at the next time step.
   VectorX<T> v_next;
 
@@ -35,8 +47,9 @@ struct ContactSolverResults {
 };
 
 }  // namespace internal
+}  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    struct ::drake::multibody::internal::ContactSolverResults)
+    struct ::drake::multibody::contact_solvers::internal::ContactSolverResults)
