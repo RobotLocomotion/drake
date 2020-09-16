@@ -149,6 +149,24 @@ struct OptionalStruct {
   std::optional<double> value;
 };
 
+struct OptionalStructNoDefault {
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(value));
+  }
+
+  OptionalStructNoDefault()
+      : value(std::nullopt) {}
+
+  explicit OptionalStructNoDefault(const double value_in)
+      : OptionalStructNoDefault(std::optional<double>(value_in)) {}
+
+  explicit OptionalStructNoDefault(const std::optional<double>& value_in)
+      : value(value_in) {}
+
+  std::optional<double> value;
+};
+
 using Variant4 = std::variant<std::string, double, DoubleStruct, StringStruct>;
 
 std::ostream& operator<<(std::ostream& os, const Variant4& value) {

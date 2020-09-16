@@ -360,8 +360,8 @@ doc:
 }
 
 TEST_P(YamlReadArchiveTest, Optional) {
-  const auto test = [](const std::string& doc,
-                       const std::optional<double>& expected) {
+  const auto test_with_default = [](const std::string& doc,
+                                    const std::optional<double>& expected) {
     const auto& x = AcceptNoThrow<OptionalStruct>(Load(doc));
     if (expected.has_value()) {
       ASSERT_TRUE(x.value.has_value()) << *expected;
@@ -370,23 +370,67 @@ TEST_P(YamlReadArchiveTest, Optional) {
       EXPECT_FALSE(x.value.has_value());
     }
   };
+  const auto test_no_default = [](const std::string& doc,
+                                  const std::optional<double>& expected) {
+    const auto& x = AcceptNoThrow<OptionalStructNoDefault>(Load(doc));
+    if (expected.has_value()) {
+      ASSERT_TRUE(x.value.has_value()) << *expected;
+      EXPECT_EQ(x.value.value(), expected.value()) << *expected;
+    } else {
+      EXPECT_FALSE(x.value.has_value());
+    }
+  };
+
+  /*
+     # | yaml   | acwny | store || want
+    ===+========+=======+=======++========
+     1 | Absent | False | False || False
+     2 | Absent | False | True  || False
+     3 | Absent | True  | False || False
+     4 | Absent | True  | True  || True
+     5 | Null   | False | False || False
+     6 | Null   | False | True  || False
+     7 | Null   | True  | False || False
+     8 | Null   | True  | True  || False
+     9 | Scalar | False | False || Scalar
+    10 | Scalar | False | True  || Scalar
+    11 | Scalar | True  | False || Scalar
+    12 | Scalar | True  | True  || Scalar
+
+    yaml = node type present in yaml file
+    acwny = Options.allow_cpp_with_no_yaml
+    store = nvp.value().has_value() initial condition
+    want = nvp.value() desired final condition
+  */
 
   if (GetParam().allow_cpp_with_no_yaml) {
-    test("doc: {}", kNominalDouble);
+    test_no_default("doc: {}", std::nullopt);      // # 3
+    test_with_default("doc: {}", kNominalDouble);  // # 4
   } else {
-    test("doc: {}", std::nullopt);
+    test_no_default("doc: {}", std::nullopt);    // # 1
+    test_with_default("doc: {}", std::nullopt);  // # 2
   }
+
+  test_no_default("doc:\n  value:", std::nullopt);    // # 5, 7
+  test_with_default("doc:\n  value:", std::nullopt);  // # 6, 8
+  test_no_default("doc:\n  value: 1.0", 1.0);         // # 9, 11
+  test_with_default("doc:\n  value: 1.0", 1.0);       // # 10, 12
+
+
   if (GetParam().allow_yaml_with_no_cpp) {
-    test("doc:\n  foo: bar\n  value: 1.0", 1.0);
-    test("doc:\n  foo: bar\n  value:", std::nullopt);
     if (GetParam().allow_cpp_with_no_yaml) {
-      test("doc:\n  foo: bar", kNominalDouble);
+      test_no_default("doc:\n  foo: bar", std::nullopt);      // # 3
+      test_with_default("doc:\n  foo: bar", kNominalDouble);  // # 4
     } else {
-      test("doc:\n  foo: bar", std::nullopt);
+      test_no_default("doc:\n  foo: bar", std::nullopt);    // # 1
+      test_with_default("doc:\n  foo: bar", std::nullopt);  // # 2
     }
+
+    test_no_default("doc:\n  foo: bar\n  value:", std::nullopt);    // # 5, 7
+    test_with_default("doc:\n  foo: bar\n  value:", std::nullopt);  // # 6, 8
+    test_no_default("doc:\n  foo: bar\n  value: 1.0", 1.0);         // # 9, 11
+    test_with_default("doc:\n  foo: bar\n  value: 1.0", 1.0);       // # 10, 12
   }
-  test("doc:\n  value:", std::nullopt);
-  test("doc:\n  value: 1.0", 1.0);
 }
 
 TEST_P(YamlReadArchiveTest, Variant) {
