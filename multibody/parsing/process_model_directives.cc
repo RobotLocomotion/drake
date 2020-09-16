@@ -10,6 +10,7 @@
 #include "drake/common/schema/transform.h"
 #include "drake/common/yaml/yaml_read_archive.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/parsing/scoped_names.h"
 
 namespace drake {
 namespace multibody {
@@ -45,41 +46,7 @@ std::unique_ptr<T> ConstructIfNullAndReassign(T** ptr, Args&&... args) {
 
 }  // namespace
 
-namespace internal {
-
-ScopedName ParseScopedName(const std::string& full_name) {
-  const std::string delim = "::";
-  size_t pos = full_name.rfind(delim);
-  ScopedName result;
-  if (pos == std::string::npos) {
-    result.name = full_name;
-  } else {
-    result.instance_name = full_name.substr(0, pos);
-    // "Global scope" (e.g. "::my_frame") not supported.
-    DRAKE_DEMAND(!result.instance_name.empty());
-    result.name = full_name.substr(pos + delim.size());
-  }
-  return result;
-}
-
-std::string PrefixName(const std::string& namespace_, const std::string& name) {
-  if (namespace_.empty())
-    return name;
-  else if (name.empty())
-    return namespace_;
-  else
-    return namespace_ + "::" + name;
-}
-
-std::string GetInstanceScopeName(
-    const MultibodyPlant<double>& plant,
-    ModelInstanceIndex instance) {
-  if (instance != plant.world_body().model_instance()) {
-    return plant.GetModelInstanceName(instance);
-  } else {
-    return "";
-  }
-}
+namespace {
 
 // Add a new weld joint to @p plant from @p parent_frame as indicated by @p
 // weld (as resolved relative to @p model_namespace) and update the @p info
@@ -245,7 +212,7 @@ void ProcessModelDirectivesImpl(
   }
 }
 
-}  // namespace internal
+}  // namespace
 
 std::string ResolveModelDirectiveUri(const std::string& uri,
                                      const PackageMap& package_map) {
@@ -280,33 +247,6 @@ std::string ResolveModelDirectiveUri(const std::string& uri,
   return package_map.GetPath(package_name) + "/" + path_in_package;
 }
 
-const drake::multibody::Frame<double>*
-GetScopedFrameByNameMaybe(
-    const drake::multibody::MultibodyPlant<double>& plant,
-    const std::string& full_name) {
-  if (full_name == "world")
-    return &plant.world_frame();
-  auto result = internal::ParseScopedName(full_name);
-  if (!result.instance_name.empty()) {
-    auto instance = plant.GetModelInstanceByName(result.instance_name);
-    if (plant.HasFrameNamed(result.name, instance)) {
-      return &plant.GetFrameByName(result.name, instance);
-    }
-  } else if (plant.HasFrameNamed(result.name)) {
-    return &plant.GetFrameByName(result.name);
-  }
-  return nullptr;
-}
-
-const std::string GetScopedFrameName(
-    const drake::multibody::MultibodyPlant<double>& plant,
-    const drake::multibody::Frame<double>& frame) {
-  if (&frame == &plant.world_frame())
-    return "world";
-  return internal::PrefixName(internal::GetInstanceScopeName(
-      plant, frame.model_instance()), frame.name());
-}
-
 void ProcessModelDirectives(
     const ModelDirectives& directives, MultibodyPlant<double>* plant,
     std::vector<ModelInstanceInfo>* added_models, Parser* parser,
@@ -315,7 +255,7 @@ void ProcessModelDirectives(
   auto tmp_added_model =
       ConstructIfNullAndReassign<std::vector<ModelInstanceInfo>>(&added_models);
   const std::string model_namespace = "";
-  internal::ProcessModelDirectivesImpl(
+  ProcessModelDirectivesImpl(
       directives, plant, added_models, parser, model_namespace, error_func);
 }
 

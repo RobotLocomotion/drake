@@ -38,6 +38,7 @@ drake_cc_package_library(
         ":package_map",
         ":parser",
         ":process_model_directives",
+        ":scoped_names",
     ],
 )
 
@@ -191,9 +192,19 @@ drake_cc_library(
     deps = [
         ":model_directives",
         ":parser",
+        ":scoped_names",
         "//common:filesystem",
         "//common:find_resource",
         "//common/yaml:yaml_read_archive",
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
+    name = "scoped_names",
+    srcs = ["scoped_names.cc"],
+    hdrs = ["scoped_names.h"],
+    deps = [
         "//multibody/plant",
     ],
 )

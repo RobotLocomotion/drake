@@ -91,45 +91,6 @@ void ProcessModelDirectives(
     drake::multibody::Parser* parser = nullptr,
     ModelWeldErrorFunction = nullptr);
 
-/// Finds an optionally model-scoped frame according to
-/// `internal::ScopedNameParser::Parse`.
-const drake::multibody::Frame<double>*
-GetScopedFrameByNameMaybe(
-    const drake::multibody::MultibodyPlant<double>& plant,
-    const std::string& full_name);
-
-/// Required version of `GetScopedFrameByNameMaybe`.
-inline const drake::multibody::Frame<double>&
-GetScopedFrameByName(
-    const drake::multibody::MultibodyPlant<double>& plant,
-    const std::string& full_name) {
-  auto* frame = GetScopedFrameByNameMaybe(plant, full_name);
-  if (frame == nullptr) {
-    throw std::runtime_error("Could not find frame: " + full_name);
-  }
-  return *frame;
-}
-
-const std::string GetScopedFrameName(
-    const drake::multibody::MultibodyPlant<double>& plant,
-    const drake::multibody::Frame<double>& frame);
-
-namespace internal {
-
-struct ScopedName {
-  // If empty, implies no scope.
-  std::string instance_name;
-  std::string name;
-};
-
-// Attempts to find a name using the following scoping rules:
-// - The delimiter "::" may appear zero or more times.
-// - If one more delimiters are present, the full name is split by the *last*
-// delimiter. The provided model instance name must exist.
-ScopedName ParseScopedName(const std::string& full_name);
-
-}  // namespace internal
-
 }  // namespace parsing
 }  // namespace multibody
 }  // namespace drake
