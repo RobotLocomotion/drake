@@ -53,8 +53,6 @@ SpatialAcceleration<double> CalcSpatialAccelerationViaSpatialVelocityDerivative(
   std::unique_ptr<systems::Context<AutoDiffXd>> context_autodiff =
       plant_autodiff->CreateDefaultContext();
 
-  // Per Alejandro, the next line may be needed if the context has time != 0 or
-  // there are externally-set parameters.
   context_autodiff->SetTimeStateAndParametersFrom(context);
 
   // Aggregate the state into a temporary vector for AutoDiffXd computations.
@@ -75,20 +73,18 @@ SpatialAcceleration<double> CalcSpatialAccelerationViaSpatialVelocityDerivative(
       frame_B_autodiff.CalcSpatialVelocity(*context_autodiff, frame_A_autodiff,
                                            frame_A_autodiff);
 
-  // Form spatial acceleration via AutoDiffXd results.
-  const SpatialAcceleration<double> A_AB_A(
-      math::autoDiffToGradientMatrix(V_AB_A_autodiff.get_coeffs()));
+  // Shift spatial velocity from Bo to Bq.
+  const math::RotationMatrix<AutoDiffXd> R_AB_autodiff =
+      frame_B_autodiff.CalcRotationMatrix(*context_autodiff, frame_A_autodiff);
+  const Vector3<AutoDiffXd> p_BoBq_B_autodiff(p_BoBq_B);
+  const Vector3<AutoDiffXd> p_BoBq_A_autodiff =
+      R_AB_autodiff * p_BoBq_B_autodiff;
+  const SpatialVelocity<AutoDiffXd> V_ABq_A_autodiff =
+      V_AB_A_autodiff.Shift(p_BoBq_A_autodiff);
 
-  // Shift translational acceleration to point Q.
-  SpatialAcceleration<double> A_ABq_A = A_AB_A;  // Calculation continues ,,,
-  if (!p_BoBq_B.isZero()) {
-    const math::RotationMatrix<double> R_AB =
-        frame_B.CalcRotationMatrix(context, frame_A);
-    const Vector3<double> p_BoBq_A = R_AB * p_BoBq_B;
-    const Vector3<double> w_AB_A =
-        math::autoDiffToValueMatrix(V_AB_A_autodiff.rotational());
-    A_ABq_A.ShiftInPlace(p_BoBq_A,  w_AB_A);
-  }
+  // Form spatial acceleration via AutoDiffXd results.
+  const SpatialAcceleration<double> A_ABq_A(
+      math::autoDiffToGradientMatrix(V_ABq_A_autodiff.get_coeffs()));
 
   // Shortcut return if frame_A == frame_E.
   if (frame_E.index() == frame_A.index()) return A_ABq_A;
