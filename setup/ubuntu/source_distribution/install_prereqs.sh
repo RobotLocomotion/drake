@@ -71,8 +71,8 @@ if [[ "${codename}" == 'bionic' ]] && [[ "${with_kcov}" -eq 1 ]]; then
 fi
 
 apt-get update
-apt-get install --no-install-recommends \
-  $(cat "${BASH_SOURCE%/*}/packages-${codename}.txt")
+packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}.txt")
+apt-get install --no-install-recommends ${packages}
 
 # Ensure that we have available a locale that supports UTF-8 for generating a
 # C++ header containing Python API documentation during the build.
@@ -90,20 +90,20 @@ if [[ "${codename}" == 'focal' ]]; then
 fi
 
 if [[ "${with_doc_only}" -eq 1 ]]; then
-  apt-get install --no-install-recommends \
-    $(cat "${BASH_SOURCE%/*}/packages-${codename}-doc-only.txt")
+  packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}-doc-only.txt")
+  apt-get install --no-install-recommends ${packages}
 fi
 
 if [[ "${with_test_only}" -eq 1 ]]; then
+  packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}-test-only.txt")
   # Suppress Python 3.8 warnings when installing python3-pandas on Focal.
   PYTHONWARNINGS=ignore::SyntaxWarning \
-    apt-get install --no-install-recommends \
-      $(cat "${BASH_SOURCE%/*}/packages-${codename}-test-only.txt")
+    apt-get install --no-install-recommends ${packages}
 fi
 
 if [[ "${with_maintainer_only}" -eq 1 ]]; then
-  apt-get install --no-install-recommends \
-    $(cat "${BASH_SOURCE%/*}/packages-${codename}-maintainer.txt")
+  packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}-maintainer-only.txt")
+  apt-get install --no-install-recommends ${packages}
 fi
 
 dpkg_install_from_wget() {
