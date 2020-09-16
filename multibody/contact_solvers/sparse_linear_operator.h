@@ -7,11 +7,12 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/solvers/linear_operator.h"
+#include "drake/multibody/contact_solvers/linear_operator.h"
 
 namespace drake {
 namespace multibody {
-namespace solvers {
+namespace contact_solvers {
+namespace internal {
 
 /// A LinearOperator that wraps an existing Eigen::SparseMatrix.
 ///
@@ -63,9 +64,10 @@ class SparseLinearOperator final : public LinearOperator<T> {
   const Eigen::SparseMatrix<T>* A_{nullptr};
 };
 
-}  // namespace solvers
+}  // namespace internal
+}  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::solvers::SparseLinearOperator)
+    class ::drake::multibody::contact_solvers::internal::SparseLinearOperator)

@@ -12,7 +12,8 @@
 
 namespace drake {
 namespace multibody {
-namespace solvers {
+namespace contact_solvers {
+namespace internal {
 
 /// This abstract class provides a generic interface for linear operators
 /// A ∈ ℝⁿˣᵐ defined by their application from ℝᵐ into ℝⁿ, y = A⋅x.
@@ -153,9 +154,10 @@ class LinearOperator {
   }
 };
 
-}  // namespace solvers
+}  // namespace internal
+}  // namespace contact_solvers
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::solvers::LinearOperator)
+    class ::drake::multibody::contact_solvers::internal::LinearOperator)

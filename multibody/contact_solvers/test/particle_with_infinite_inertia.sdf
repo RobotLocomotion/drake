@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <model name="Particle">
+    <!-- Particle of mass m = 0.5 Kg and zero size. 
+    In Drake we model it as a 6DOF body, with infinite moments of inertia so
+    that rotational motions are negligible. -->
+    <link name="particle">
+      <inertial>
+        <pose>0 0 0.0 0 0 0</pose>
+        <mass>0.5</mass>
+        <!-- Inertia values are set to very large values so that rotational
+        motions are negligible. This is so that rotational contributions become
+        negligible in the computation of the Delassus operator for unit testing.
+        -->
+        <inertia>
+          <ixx>1.0e40</ixx>
+          <iyy>1.0e40</iyy>
+          <izz>1.0e40</izz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
+        </inertia>
+      </inertial>
+
+      <visual name="visual">
+        <pose>0.0 0.0 0.0 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.005</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 0 0 1</diffuse>
+        </material>
+      </visual>
+      <collision name="collision">
+        <pose>0.0 0.0 0.0 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.0</radius>
+          </sphere>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:mu_dynamic>0.5</drake:mu_dynamic>
+          <drake:mu_static>0.5</drake:mu_static>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>
