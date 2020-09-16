@@ -125,6 +125,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
 PYBIND11_MODULE(math, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
+
+  py::module::import("pydrake.autodiffutils");
+  py::module::import("pydrake.symbolic");
+
   m.doc() = "Bindings for multibody math.";
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
       CommonScalarPack{});
