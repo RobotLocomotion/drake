@@ -516,7 +516,149 @@ GenericPolynomial<BasisElement>::EvaluatePartial(const Environment& env) const {
 }
 
 template <typename BasisElement>
-GenericPolynomial<BasisElement> GenericPolynomial<BasisElement>::AddProduct(
+GenericPolynomial<BasisElement>& GenericPolynomial<BasisElement>::operator+=(
+    const GenericPolynomial<BasisElement>& p) {
+  for (const auto& [basis_element, coeff] :
+       p.basis_element_to_coefficient_map()) {
+    DoAddProduct(coeff, basis_element, &basis_element_to_coefficient_map_);
+  }
+  indeterminates_ += p.indeterminates();
+  decision_variables_ += p.decision_variables();
+  DRAKE_ASSERT_VOID(CheckInvariant());
+  return *this;
+}
+
+template <typename BasisElement>
+GenericPolynomial<BasisElement>& GenericPolynomial<BasisElement>::operator+=(
+    const BasisElement& m) {
+  // No need to call CheckInvariant since it's called inside of AddProduct.
+  return AddProduct(1.0, m);
+}
+
+template <typename BasisElement>
+GenericPolynomial<BasisElement>& GenericPolynomial<BasisElement>::operator+=(
+    const double c) {
+  // No need to call CheckInvariant since it's called inside of AddProduct.
+  return AddProduct(c, BasisElement{});
+}
+
+template <typename BasisElement>
+GenericPolynomial<BasisElement>& GenericPolynomial<BasisElement>::operator+=(
+    const Variable& v) {
+  if (indeterminates().include(v)) {
+    this->AddProduct(1.0, BasisElement{v});
+  } else {
+    this->AddProduct(v, BasisElement{});
+  }
+  return *this;
+}
+
+template <typename BasisElement>
+GenericPolynomial<BasisElement>& GenericPolynomial<BasisElement>::operator-=(
+    const GenericPolynomial<BasisElement>& p) {
+  return *this += -p;
+}
+
+template <typename BasisElement>
+GenericPolynomial<BasisElement>& GenericPolynomial<BasisElement>::operator-=(
+    const BasisElement& m) {
+  // No need to call CheckInvariant() since it's called inside of Add.
+  return AddProduct(-1.0, m);
+}
+
+template <typename BasisElement>
+GenericPolynomial<BasisElement>& GenericPolynomial<BasisElement>::operator-=(
+    double c) {
+  // No need to call CheckInvariant() since it's called inside of Add.
+  return AddProduct(-c, BasisElement{});
+}
+
+template <typename BasisElement>
+GenericPolynomial<BasisElement>& GenericPolynomial<BasisElement>::operator-=(
+    const Variable& v) {
+  if (indeterminates().include(v)) {
+    return AddProduct(-1.0, BasisElement{v});
+  } else {
+    return AddProduct(-v, BasisElement{});
+  }
+}
+
+template <typename BasisElement>
+GenericPolynomial<BasisElement>& GenericPolynomial<BasisElement>::operator*=(
+    const GenericPolynomial<BasisElement>& p) {
+  // (c₁₁ * m₁₁ + ... + c₁ₙ * m₁ₙ) * (c₂₁ * m₂₁ + ... + c₂ₘ * m₂ₘ)
+  // = (c₁₁ * m₁₁ + ... + c₁ₙ * m₁ₙ) * c₂₁ * m₂₁ + ... +
+  //   (c₁₁ * m₁₁ + ... + c₁ₙ * m₁ₙ) * c₂ₘ * m₂ₘ
+  // Notice that m₁ᵢ * m₂ⱼ = ∑ₖ dᵢⱼₖ mᵢⱼₖ, namely the product of two basis
+  // elements m₁ᵢ * m₂ⱼ is the weighted sum of a series of new basis elements.
+  // For example, when we use MonomialBasisElement, m₁ᵢ * m₂ⱼ = 1 * mᵢⱼ; when we
+  // use ChebyshevBasisElement, Tᵢ(x) * Tⱼ(x) = 0.5 * Tᵢ₊ⱼ(x) + 0.5 * Tᵢ₋ⱼ(x)
+  MapType new_map{};
+  for (const auto& [basis_element1, coeff1] :
+       basis_element_to_coefficient_map()) {
+    for (const auto& [basis_element2, coeff2] :
+         p.basis_element_to_coefficient_map()) {
+      // basis_element_products stores the product of two basis elements as a
+      // weighted sum of new basis elements.
+      const std::map<BasisElement, double> basis_element_products{
+          basis_element1 * basis_element2};
+      const Expression coeff_product{coeff1 * coeff2};
+      for (const auto& [new_basis, new_basis_coeff] : basis_element_products) {
+        DoAddProduct(new_basis_coeff * coeff_product, new_basis, &new_map);
+      }
+    }
+  }
+  basis_element_to_coefficient_map_ = std::move(new_map);
+  indeterminates_ += p.indeterminates();
+  decision_variables_ += p.decision_variables();
+  DRAKE_ASSERT_VOID(CheckInvariant());
+  return *this;
+}
+
+template <typename BasisElement>
+GenericPolynomial<BasisElement>& GenericPolynomial<BasisElement>::operator*=(
+    const BasisElement& m) {
+  MapType new_map;
+  for (const auto& [basis_element, coeff] : basis_element_to_coefficient_map_) {
+    const std::map<BasisElement, double> basis_element_product{basis_element *
+                                                               m};
+    for (const auto& [new_basis_element, coeff_product] :
+         basis_element_product) {
+      DoAddProduct(coeff_product * coeff, new_basis_element, &new_map);
+    }
+  }
+  basis_element_to_coefficient_map_ = std::move(new_map);
+  indeterminates_ += m.GetVariables();
+  DRAKE_ASSERT_VOID(CheckInvariant());
+  return *this;
+}
+
+template <typename BasisElement>
+GenericPolynomial<BasisElement>& GenericPolynomial<BasisElement>::operator*=(
+    double c) {
+  for (auto& p : basis_element_to_coefficient_map_) {
+    Expression& coeff = p.second;
+    coeff *= c;
+  }
+  return *this;
+}
+
+template <typename BasisElement>
+GenericPolynomial<BasisElement>& GenericPolynomial<BasisElement>::operator*=(
+    const Variable& v) {
+  if (indeterminates().include(v)) {
+    return *this *= BasisElement{v};
+  } else {
+    for (auto& p : basis_element_to_coefficient_map_) {
+      Expression& coeff = p.second;
+      coeff *= v;
+    }
+    return *this;
+  }
+}
+
+template <typename BasisElement>
+GenericPolynomial<BasisElement>& GenericPolynomial<BasisElement>::AddProduct(
     const Expression& coeff, const BasisElement& m) {
   DoAddProduct(coeff, m, &basis_element_to_coefficient_map_);
   indeterminates_ += m.GetVariables();
@@ -529,7 +671,7 @@ template <typename BasisElement>
 GenericPolynomial<BasisElement>
 GenericPolynomial<BasisElement>::RemoveTermsWithSmallCoefficients(
     double coefficient_tol) const {
-  DRAKE_DEMAND(coefficient_tol > 0);
+  DRAKE_DEMAND(coefficient_tol >= 0);
   MapType cleaned_polynomial{};
   for (const auto& [basis_element, coeff] : basis_element_to_coefficient_map_) {
     if (is_constant(coeff) &&
@@ -599,6 +741,65 @@ template <typename BasisElement>
 bool GenericPolynomial<BasisElement>::EqualToAfterExpansion(
     const GenericPolynomial<BasisElement>& p) const {
   return GenericPolynomialEqual<BasisElement>(*this, p, true);
+}
+
+template <typename BasisElement>
+bool GenericPolynomial<BasisElement>::CoefficientsAlmostEqual(
+    const GenericPolynomial<BasisElement>& p, double tol) const {
+  auto it1 = this->basis_element_to_coefficient_map_.begin();
+  auto it2 = p.basis_element_to_coefficient_map_.begin();
+  while (it1 != this->basis_element_to_coefficient_map_.end() &&
+         it2 != this->basis_element_to_coefficient_map().end()) {
+    if (it1->first == it2->first) {
+      const symbolic::Expression coeff_diff = it1->second - it2->second;
+      if (is_constant(coeff_diff) &&
+          std::abs(get_constant_value(coeff_diff)) <= tol) {
+        it1++;
+        it2++;
+        continue;
+      } else {
+        return false;
+      }
+    } else if (it1->first < it2->first) {
+      if (is_constant(it1->second) &&
+          std::abs(get_constant_value(it1->second)) < tol) {
+        it1++;
+        continue;
+      } else {
+        return false;
+      }
+    } else {
+      if (is_constant(it2->second) &&
+          std::abs(get_constant_value(it2->second)) < tol) {
+        it2++;
+        continue;
+      } else {
+        return false;
+      }
+    }
+  }
+
+  while (it1 != this->basis_element_to_coefficient_map().end()) {
+    if (is_constant(it1->second) &&
+        std::abs(get_constant_value(it1->second)) < tol) {
+      it1++;
+      continue;
+    } else {
+      return false;
+    }
+  }
+
+  while (it2 != p.basis_element_to_coefficient_map().end()) {
+    if (is_constant(it2->second) &&
+        std::abs(get_constant_value(it2->second)) < tol) {
+      it2++;
+      continue;
+    } else {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 template class GenericPolynomial<MonomialBasisElement>;

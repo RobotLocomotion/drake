@@ -96,6 +96,13 @@ template <typename BasisElement>
   return !p1.EqualToAfterExpansion(p2);
 }
 
+template <typename BasisElement>
+[[nodiscard]] bool GenericPolyAlmostEqual(
+    const GenericPolynomial<BasisElement>& p1,
+    const GenericPolynomial<BasisElement>& p2, double tol) {
+  return p1.CoefficientsAlmostEqual(p2, tol);
+}
+
 [[nodiscard]] inline bool PolyEqual(const Polynomial& p1,
                                       const Polynomial& p2) {
   return p1.EqualTo(p2);

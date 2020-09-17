@@ -31,6 +31,15 @@ class SymbolicGenericPolynomialTest : public ::testing::Test {
   const Variables var_xyz_{var_x_, var_y_, var_z_};
   const Variables var_abc_{var_a_, var_b_, var_c_};
 
+  const VectorX<MonomialBasisElement> monomials_{
+      ComputePolynomialBasisUpToDegree<Eigen::Dynamic, MonomialBasisElement>(
+          var_xyz_, 3, internal::DegreeType::kAny)};
+  const VectorX<ChebyshevBasisElement> chebyshev_basis_{
+      ComputePolynomialBasisUpToDegree<Eigen::Dynamic, ChebyshevBasisElement>(
+          var_xyz_, 3, internal::DegreeType::kAny)};
+
+  const vector<double> doubles_{-9999.0, -5.0, -1.0, 0.0, 1.0, 5.0, 9999.0};
+
   const Expression x_{var_x_};
   const Expression y_{var_y_};
   const Expression z_{var_z_};
@@ -385,6 +394,658 @@ TEST_F(SymbolicGenericPolynomialTest, DegreeAndTotalDegree) {
   EXPECT_EQ(p1.Degree(var_y_), 2);
   EXPECT_EQ(p1.Degree(var_z_), 0);
   EXPECT_EQ(p1.Degree(var_a_), 0);
+}
+
+// Could use the type_visit trick mentioned in the comment
+// https://github.com/RobotLocomotion/drake/pull/14053#pullrequestreview-490104889
+// to construct these templated tests.
+template <typename BasisElement>
+void CheckAdditionPolynomialPolynomial(const std::vector<Expression>& exprs,
+                                       double tol) {
+  // (Polynomial(e₁) + Polynomial(e₂)) = Polynomial(e₁ + e₂)
+  for (const Expression& e1 : exprs) {
+    for (const Expression& e2 : exprs) {
+      EXPECT_PRED3(test::GenericPolyAlmostEqual<BasisElement>,
+                   (GenericPolynomial<BasisElement>{e1} +
+                    GenericPolynomial<BasisElement>{e2}),
+                   GenericPolynomial<BasisElement>(e1 + e2), tol);
+    }
+  }
+  // Test Polynomial& operator+=(Polynomial& c);
+  for (const Expression& e1 : exprs) {
+    for (const Expression& e2 : exprs) {
+      GenericPolynomial<BasisElement> p{e1};
+      p += GenericPolynomial<BasisElement>{e2};
+      EXPECT_PRED3(test::GenericPolyAlmostEqual<BasisElement>, p,
+                   GenericPolynomial<BasisElement>(e1 + e2, p.indeterminates()),
+                   tol);
+    }
+  }
+}
+
+TEST_F(SymbolicGenericPolynomialTest,
+       AdditionPolynomialPolynomialMonomialBasis) {
+  CheckAdditionPolynomialPolynomial<MonomialBasisElement>(exprs_, 0.);
+}
+
+TEST_F(SymbolicGenericPolynomialTest,
+       AdditionPolynomialPolynomialChebyshevBasis) {
+  CheckAdditionPolynomialPolynomial<ChebyshevBasisElement>(exprs_, 1E-10);
+}
+
+template <typename BasisElement>
+void CheckAdditionPolynomialBasisElement(
+    const std::vector<Expression>& exprs,
+    const VectorX<BasisElement>& basis_elements) {
+  // (Polynomial(e) + m).ToExpression() = (e + m.ToExpression()).Expand()
+  // (m + Polynomial(e)).ToExpression() = (m.ToExpression() + e).Expand()
+  for (const Expression& e : exprs) {
+    for (int i = 0; i < basis_elements.size(); ++i) {
+      const BasisElement& m{basis_elements[i]};
+      EXPECT_PRED2(ExprEqual,
+                   (GenericPolynomial<BasisElement>(e) + m).ToExpression(),
+                   (e + m.ToExpression()).Expand());
+      EXPECT_PRED2(ExprEqual,
+                   (m + GenericPolynomial<BasisElement>(e)).ToExpression(),
+                   (m.ToExpression() + e).Expand());
+    }
+  }
+  // Test Polynomial& operator+=(const Monomial& m);
+  for (const Expression& e : exprs) {
+    for (int i = 0; i < basis_elements.size(); ++i) {
+      const BasisElement& m{basis_elements[i]};
+      GenericPolynomial<BasisElement> p{e};
+      p += m;
+      EXPECT_PRED2(ExprEqual, p.ToExpression(),
+                   (e + m.ToExpression()).Expand());
+    }
+  }
+}
+
+TEST_F(SymbolicGenericPolynomialTest, AdditionPolynomialMonomial) {
+  CheckAdditionPolynomialBasisElement<MonomialBasisElement>(exprs_, monomials_);
+}
+
+TEST_F(SymbolicGenericPolynomialTest, AdditionPolynomialChebyshevBasisElement) {
+  CheckAdditionPolynomialBasisElement<ChebyshevBasisElement>(exprs_,
+                                                             chebyshev_basis_);
+}
+
+template <typename BasisElement>
+void CheckAdditionPolynomialDouble(const std::vector<Expression>& exprs,
+                                   const std::vector<double>& doubles) {
+  //   (Polynomial(e) + c).ToExpression() = (e + c).Expand()
+  //   (c + Polynomial(e)).ToExpression() = (c + e).Expand()
+  for (const Expression& e : exprs) {
+    for (const double c : doubles) {
+      EXPECT_PRED2(ExprEqual,
+                   (GenericPolynomial<BasisElement>(e) + c).ToExpression(),
+                   (e + c).Expand());
+      EXPECT_PRED2(ExprEqual,
+                   (c + GenericPolynomial<BasisElement>(e)).ToExpression(),
+                   (c + e).Expand());
+    }
+  }
+  // Test Polynomial& operator+=(double c).
+  for (const Expression& e : exprs) {
+    for (const double c : doubles) {
+      GenericPolynomial<BasisElement> p{e};
+      p += c;
+      EXPECT_PRED2(ExprEqual, p.ToExpression(), (e + c).Expand());
+    }
+  }
+}
+
+TEST_F(SymbolicGenericPolynomialTest, AdditionPolynomialDoubleMonomialBasis) {
+  CheckAdditionPolynomialDouble<MonomialBasisElement>(exprs_, doubles_);
+}
+
+TEST_F(SymbolicGenericPolynomialTest, AdditionPolynomialDoubleChebyshevBasis) {
+  CheckAdditionPolynomialDouble<ChebyshevBasisElement>(exprs_, doubles_);
+}
+
+template <typename BasisElement>
+void CheckAdditionPolynomialVariable(const std::vector<Expression>& exprs,
+                                     const Variables& vars) {
+  //   (Polynomial(e) + v).ToExpression() = (e + v).Expand()
+  //   (v + Polynomial(e)).ToExpression() = (v + e).Expand()
+  for (const Expression& e : exprs) {
+    for (const Variable& v : vars) {
+      EXPECT_PRED2(ExprEqual,
+                   (GenericPolynomial<BasisElement>(e) + v).ToExpression(),
+                   (e + v).Expand());
+      EXPECT_PRED2(ExprEqual,
+                   (v + GenericPolynomial<BasisElement>(e)).ToExpression(),
+                   (v + e).Expand());
+    }
+  }
+  // Test Polynomial& operator+=(Variable v).
+  for (const Expression& e : exprs) {
+    for (const Variable& v : vars) {
+      GenericPolynomial<BasisElement> p{e};
+      p += v;
+      EXPECT_PRED2(ExprEqual, p.ToExpression(), (e + v).Expand());
+    }
+  }
+}
+
+TEST_F(SymbolicGenericPolynomialTest, AdditionPolynomialVariableMonomialBasis) {
+  CheckAdditionPolynomialVariable<MonomialBasisElement>(exprs_, var_xyz_);
+}
+
+TEST_F(SymbolicGenericPolynomialTest,
+       AdditionPolynomialVariableChebyshevBasis) {
+  CheckAdditionPolynomialVariable<ChebyshevBasisElement>(exprs_, var_xyz_);
+}
+
+template <typename BasisElement>
+void CheckSubtractionPolynomialPolynomial(const std::vector<Expression>& exprs,
+                                          double tol) {
+  // (Polynomial(e₁) - Polynomial(e₂)) = Polynomial(e₁ - e₂)
+  for (const Expression& e1 : exprs) {
+    for (const Expression& e2 : exprs) {
+      EXPECT_PRED3(test::GenericPolyAlmostEqual<BasisElement>,
+                   GenericPolynomial<BasisElement>{e1} -
+                       GenericPolynomial<BasisElement>{e2},
+                   GenericPolynomial<BasisElement>(e1 - e2), tol);
+    }
+  }
+  // Test Polynomial& operator-=(Polynomial& c);
+  for (const Expression& e1 : exprs) {
+    for (const Expression& e2 : exprs) {
+      GenericPolynomial<BasisElement> p{e1};
+      p -= GenericPolynomial<BasisElement>{e2};
+      EXPECT_PRED3(test::GenericPolyAlmostEqual<BasisElement>, p,
+                   GenericPolynomial<BasisElement>(e1 - e2), tol);
+    }
+  }
+}
+
+TEST_F(SymbolicGenericPolynomialTest,
+       SubtractionPolynomialPolynomialMonomialBasis) {
+  CheckSubtractionPolynomialPolynomial<MonomialBasisElement>(exprs_, 0.);
+}
+
+TEST_F(SymbolicGenericPolynomialTest,
+       SubtractionPolynomialPolynomialChebyshevBasis) {
+  CheckSubtractionPolynomialPolynomial<ChebyshevBasisElement>(exprs_, 1E-15);
+}
+
+template <typename BasisElement>
+void CheckSubtractionPolynomialBasisElement(
+    const std::vector<Expression>& exprs,
+    const VectorX<BasisElement>& basis_elements) {
+  // (Polynomial(e) - m).ToExpression() = (e - m.ToExpression()).Expand()
+  // (m - Polynomial(e)).ToExpression() = (m.ToExpression() - e).Expand()
+  for (const Expression& e : exprs) {
+    for (int i = 0; i < basis_elements.size(); ++i) {
+      const BasisElement& m{basis_elements[i]};
+      EXPECT_PRED2(ExprEqual,
+                   (GenericPolynomial<BasisElement>(e) - m).ToExpression(),
+                   (e - m.ToExpression()).Expand());
+      EXPECT_PRED2(ExprEqual,
+                   (m - GenericPolynomial<BasisElement>(e)).ToExpression(),
+                   (m.ToExpression() - e).Expand());
+    }
+  }
+  // Test Polynomial& operator-=(const Monomial& m);
+  for (const Expression& e : exprs) {
+    for (int i = 0; i < basis_elements.size(); ++i) {
+      const BasisElement& m{basis_elements[i]};
+      GenericPolynomial<BasisElement> p{e};
+      p -= m;
+      EXPECT_PRED2(ExprEqual, p.ToExpression(),
+                   (e - m.ToExpression()).Expand());
+    }
+  }
+}
+
+TEST_F(SymbolicGenericPolynomialTest, SubtractionPolynomialMonomial) {
+  CheckSubtractionPolynomialBasisElement(exprs_, monomials_);
+}
+
+TEST_F(SymbolicGenericPolynomialTest, SubtractionPolynomialChebyshev) {
+  CheckSubtractionPolynomialBasisElement(exprs_, chebyshev_basis_);
+}
+
+template <typename BasisElement>
+void CheckSubtractionPolynomialDouble(const std::vector<Expression>& exprs,
+                                      const std::vector<double>& doubles) {
+  // (Polynomial(e) - c).ToExpression() = (e - c).Expand()
+  // (c - Polynomial(e)).ToExpression() = (c - e).Expand()
+  for (const Expression& e : exprs) {
+    for (const double c : doubles) {
+      EXPECT_PRED2(ExprEqual,
+                   (GenericPolynomial<BasisElement>(e) - c).ToExpression(),
+                   (e - c).Expand());
+      EXPECT_PRED2(ExprEqual,
+                   (c - GenericPolynomial<BasisElement>(e)).ToExpression(),
+                   (c - e).Expand());
+    }
+  }
+  // Test Polynomial& operator-=(double c).
+  for (const Expression& e : exprs) {
+    for (const double c : doubles) {
+      GenericPolynomial<BasisElement> p{e};
+      p -= c;
+      EXPECT_PRED2(ExprEqual, p.ToExpression(), (e - c).Expand());
+    }
+  }
+}
+
+TEST_F(SymbolicGenericPolynomialTest,
+       SubtractionPolynomialDoubleMonomialBasis) {
+  CheckSubtractionPolynomialDouble<MonomialBasisElement>(exprs_, doubles_);
+}
+
+TEST_F(SymbolicGenericPolynomialTest,
+       SubtractionPolynomialDoubleChebyshevBasis) {
+  CheckSubtractionPolynomialDouble<ChebyshevBasisElement>(exprs_, doubles_);
+}
+
+template <typename BasisElement>
+void CheckSubtractionBasisElementBasisElement(
+    const VectorX<BasisElement>& basis_elements) {
+  // (m1 - m2).ToExpression().Expand() = (m1.ToExpression() -
+  // m2.ToExpression()).Expand()
+  for (int i = 0; i < basis_elements.size(); ++i) {
+    const BasisElement& m_i{basis_elements[i]};
+    for (int j = 0; j < basis_elements.size(); ++j) {
+      const BasisElement& m_j{basis_elements[j]};
+      EXPECT_PRED2(ExprEqual, (m_i - m_j).ToExpression().Expand(),
+                   (m_i.ToExpression() - m_j.ToExpression()).Expand());
+    }
+  }
+}
+
+TEST_F(SymbolicGenericPolynomialTest, SubtractionMonomialMonomial) {
+  CheckSubtractionBasisElementBasisElement(monomials_);
+}
+
+TEST_F(SymbolicGenericPolynomialTest, SubtractionChebyshevChebyshev) {
+  CheckSubtractionBasisElementBasisElement(chebyshev_basis_);
+}
+
+template <typename BasisElement>
+void CheckSubtractionBasisElementDouble(
+    const VectorX<BasisElement>& basis_elements,
+    const std::vector<double>& doubles) {
+  // (m - c).ToExpression() = m.ToExpression() - c
+  // (c - m).ToExpression() = c - m.ToExpression()
+  for (int i = 0; i < basis_elements.size(); ++i) {
+    const BasisElement& m{basis_elements[i]};
+    for (const double c : doubles) {
+      EXPECT_PRED2(ExprEqual, (m - c).ToExpression().Expand(),
+                   (m.ToExpression() - c).Expand());
+      EXPECT_PRED2(ExprEqual, (c - m).ToExpression().Expand(),
+                   (c - m.ToExpression()).Expand());
+    }
+  }
+}
+
+TEST_F(SymbolicGenericPolynomialTest, SubtractionMonomialDouble) {
+  CheckSubtractionBasisElementDouble(monomials_, doubles_);
+}
+
+TEST_F(SymbolicGenericPolynomialTest, SubtractionChebyshevDouble) {
+  CheckSubtractionBasisElementDouble(chebyshev_basis_, doubles_);
+}
+
+template <typename BasisElement>
+void CheckUnaryMinus(const std::vector<Expression>& exprs) {
+  // (-Polynomial(e)).ToExpression() = -(e.Expand())
+  for (const Expression& e : exprs) {
+    EXPECT_PRED2(ExprEqual,
+                 (-GenericPolynomial<BasisElement>(e)).ToExpression(),
+                 -(e.Expand()));
+  }
+}
+
+TEST_F(SymbolicGenericPolynomialTest, UnaryMinusMonomialBasis) {
+  CheckUnaryMinus<MonomialBasisElement>(exprs_);
+}
+
+TEST_F(SymbolicGenericPolynomialTest, UnaryMinusChebyshevBasis) {
+  CheckUnaryMinus<ChebyshevBasisElement>(exprs_);
+}
+
+template <typename BasisElement>
+void CheckMultiplicationPolynomialPolynomial(
+    const std::vector<Expression>& exprs, double tol) {
+  // (Polynomial(e₁) * Polynomial(e₂)) = Polynomial(e₁ * e₂)
+  for (const Expression& e1 : exprs) {
+    for (const Expression& e2 : exprs) {
+      EXPECT_PRED3(test::GenericPolyAlmostEqual<BasisElement>,
+                   (GenericPolynomial<BasisElement>{e1} *
+                    GenericPolynomial<BasisElement>{e2}),
+                   GenericPolynomial<BasisElement>(e1 * e2), tol);
+    }
+  }
+  // Test Polynomial& operator*=(Polynomial& c);
+  for (const Expression& e1 : exprs) {
+    for (const Expression& e2 : exprs) {
+      GenericPolynomial<BasisElement> p{e1};
+      p *= GenericPolynomial<BasisElement>{e2};
+      EXPECT_PRED3(test::GenericPolyAlmostEqual<BasisElement>, p,
+                   GenericPolynomial<BasisElement>(e1 * e2), tol);
+    }
+  }
+}
+
+TEST_F(SymbolicGenericPolynomialTest,
+       MultiplicationPolynomialPolynomialMonoialBasis1) {
+  CheckMultiplicationPolynomialPolynomial<MonomialBasisElement>(exprs_, 1E-12);
+}
+
+TEST_F(SymbolicGenericPolynomialTest,
+       MultiplicationPolynomialPolynomialChebyshev1) {
+  CheckMultiplicationPolynomialPolynomial<ChebyshevBasisElement>(exprs_, 1E-12);
+}
+
+template <typename BasisElement>
+void CheckMultiplicationPolynomialBasisElement(
+    const std::vector<Expression>& exprs,
+    const VectorX<BasisElement>& basis_elements, double tol) {
+  // (Polynomial(e) * m) = Polynomial(e * m)
+  // (m * Polynomial(e)) = Polynomial(m * e)
+  for (const Expression& e : exprs) {
+    for (int i = 0; i < basis_elements.size(); ++i) {
+      const BasisElement& m{basis_elements[i]};
+      EXPECT_PRED3(test::GenericPolyAlmostEqual<BasisElement>,
+                   GenericPolynomial<BasisElement>(e) * m,
+                   GenericPolynomial<BasisElement>(e * m.ToExpression()), tol);
+      EXPECT_PRED3(test::GenericPolyAlmostEqual<BasisElement>,
+                   GenericPolynomial<BasisElement>(m.ToExpression() * e),
+                   m * GenericPolynomial<BasisElement>(e), tol);
+    }
+  }
+  // Test Polynomial& operator*=(const BasisElement& m);
+  for (const Expression& e : exprs) {
+    for (int i = 0; i < basis_elements.size(); ++i) {
+      const BasisElement& m{basis_elements[i]};
+      GenericPolynomial<BasisElement> p{e};
+      p *= m;
+      EXPECT_PRED3(test::GenericPolyAlmostEqual<BasisElement>, p,
+                   GenericPolynomial<BasisElement>(e * m.ToExpression()), tol);
+    }
+  }
+}
+
+TEST_F(SymbolicGenericPolynomialTest, MultiplicationPolynomialMonomial) {
+  CheckMultiplicationPolynomialBasisElement<MonomialBasisElement>(
+      exprs_, monomials_, 0.);
+}
+
+TEST_F(SymbolicGenericPolynomialTest, MultiplicationPolynomialChebyshev) {
+  CheckMultiplicationPolynomialBasisElement<ChebyshevBasisElement>(
+      exprs_, chebyshev_basis_, 1E-15);
+}
+
+template <typename BasisElement>
+void CheckMultiplicationPolynomialDouble(const std::vector<Expression>& exprs,
+                                         const std::vector<double>& doubles) {
+  // (Polynomial(e) * c).ToExpression() = (e * c).Expand()
+  // (c * Polynomial(e)).ToExpression() = (c * e).Expand()
+  for (const Expression& e : exprs) {
+    for (const double c : doubles) {
+      EXPECT_PRED2(ExprEqual,
+                   (GenericPolynomial<BasisElement>(e) * c).ToExpression(),
+                   (e * c).Expand());
+      EXPECT_PRED2(ExprEqual,
+                   (c * GenericPolynomial<BasisElement>(e)).ToExpression(),
+                   (c * e).Expand());
+    }
+  }
+  // Test Polynomial& operator*=(double c).
+  for (const Expression& e : exprs) {
+    for (const double c : doubles) {
+      GenericPolynomial<BasisElement> p{e};
+      p *= c;
+      EXPECT_PRED2(ExprEqual, p.ToExpression(), (e * c).Expand());
+    }
+  }
+}
+
+TEST_F(SymbolicGenericPolynomialTest,
+       MultiplicationPolynomialDoubleMonomialBasis) {
+  CheckMultiplicationPolynomialDouble<MonomialBasisElement>(exprs_, doubles_);
+}
+
+TEST_F(SymbolicGenericPolynomialTest,
+       MultiplicationPolynomialDoubleChebyshevBasis) {
+  CheckMultiplicationPolynomialDouble<ChebyshevBasisElement>(exprs_, doubles_);
+}
+
+template <typename BasisElement>
+void CheckMultiplicationBasisElementDouble(
+    const VectorX<BasisElement>& basis_elements,
+    const std::vector<double>& doubles) {
+  // (m * c).ToExpression() = (m.ToExpression() * c).Expand()
+  // (c * m).ToExpression() = (c * m.ToExpression()).Expand()
+  for (int i = 0; i < basis_elements.size(); ++i) {
+    const BasisElement& m{basis_elements[i]};
+    for (const double c : doubles) {
+      EXPECT_PRED2(ExprEqual, (m * c).ToExpression(),
+                   (m.ToExpression() * c).Expand());
+      EXPECT_PRED2(ExprEqual, (c * m).ToExpression(),
+                   (c * m.ToExpression()).Expand());
+    }
+  }
+}
+
+TEST_F(SymbolicGenericPolynomialTest, MultiplicationMonomialDouble) {
+  CheckMultiplicationBasisElementDouble(monomials_, doubles_);
+}
+
+TEST_F(SymbolicGenericPolynomialTest, MultiplicationChebyshevDouble) {
+  CheckMultiplicationBasisElementDouble(chebyshev_basis_, doubles_);
+}
+
+TEST_F(SymbolicGenericPolynomialTest,
+       MultiplicationPolynomialPolynomialMonomialBasis2) {
+  // Evaluates (1 + x) * (1 - x) to confirm that the cross term 0 * x is
+  // erased from the product.
+  const GenericPolynomial<MonomialBasisElement> p1(1 + x_);
+  const GenericPolynomial<MonomialBasisElement> p2(1 - x_);
+  GenericPolynomial<MonomialBasisElement>::MapType product_map_expected{};
+  product_map_expected.emplace(MonomialBasisElement(), 1);
+  product_map_expected.emplace(MonomialBasisElement(var_x_, 2), -1);
+  EXPECT_EQ(product_map_expected, (p1 * p2).basis_element_to_coefficient_map());
+}
+
+TEST_F(SymbolicGenericPolynomialTest,
+       MultiplicationPolynomialPolynomialChebyshevBasis2) {
+  // Evaluates (1 + x) * (1 - x) to confirm that the cross term 0 * x is
+  // erased from the product.
+  const GenericPolynomial<ChebyshevBasisElement> p1(1 + x_);
+  const GenericPolynomial<ChebyshevBasisElement> p2(1 - x_);
+  GenericPolynomial<ChebyshevBasisElement>::MapType product_map_expected{};
+  product_map_expected.emplace(ChebyshevBasisElement(), 0.5);
+  product_map_expected.emplace(ChebyshevBasisElement(var_x_, 2), -0.5);
+  EXPECT_EQ(product_map_expected, (p1 * p2).basis_element_to_coefficient_map());
+}
+
+TEST_F(SymbolicGenericPolynomialTest,
+       BinaryOperationBetweenPolynomialAndVariableMonomialBasis) {
+  // p = 2a²x² + 3ax + 7.
+  const GenericPolynomial<MonomialBasisElement> p{
+      2 * pow(a_, 2) * pow(x_, 2) + 3 * a_ * x_ + 7, {var_x_}};
+  const MonomialBasisElement m_x_cube{var_x_, 3};
+  const MonomialBasisElement m_x_sq{var_x_, 2};
+  const MonomialBasisElement m_x{var_x_, 1};
+  const MonomialBasisElement m_one;
+
+  // Checks addition.
+  {
+    const GenericPolynomial<MonomialBasisElement> result1{p + var_a_};
+    const GenericPolynomial<MonomialBasisElement> result2{var_a_ + p};
+    // result1 = 2a²x² + 3ax + (7 + a).
+    EXPECT_TRUE(result1.EqualTo(result2));
+    EXPECT_EQ(result1.basis_element_to_coefficient_map().size(), 3);
+    EXPECT_EQ(result1.indeterminates(), p.indeterminates());
+    EXPECT_PRED2(ExprEqual,
+                 result1.basis_element_to_coefficient_map().at(m_one), 7 + a_);
+
+    const GenericPolynomial<MonomialBasisElement> result3{p + var_x_};
+    const GenericPolynomial<MonomialBasisElement> result4{var_x_ + p};
+    // result3 = 2a²x² + (3a + 1)x + 7.
+    EXPECT_TRUE(result3.EqualTo(result4));
+    EXPECT_EQ(result3.basis_element_to_coefficient_map().size(), 3);
+    EXPECT_EQ(result3.indeterminates(), p.indeterminates());
+    EXPECT_PRED2(ExprEqual, result3.basis_element_to_coefficient_map().at(m_x),
+                 3 * a_ + 1);
+  }
+
+  // Checks subtraction.
+  {
+    const GenericPolynomial<MonomialBasisElement> result1{p - var_a_};
+    // result1 = 2a²x² + 3ax + (7 - a).
+    EXPECT_EQ(result1.indeterminates(), p.indeterminates());
+    EXPECT_EQ(result1.basis_element_to_coefficient_map().size(), 3);
+    EXPECT_PRED2(ExprEqual,
+                 result1.basis_element_to_coefficient_map().at(m_one), 7 - a_);
+
+    const GenericPolynomial<MonomialBasisElement> result2{var_a_ - p};
+    EXPECT_TRUE((-result2).EqualTo(result1));
+
+    const GenericPolynomial<MonomialBasisElement> result3{p - var_x_};
+    // result3 = 2a²x² + (3a - 1)x + 7.
+    EXPECT_EQ(result3.indeterminates(), p.indeterminates());
+    EXPECT_EQ(result3.basis_element_to_coefficient_map().size(), 3);
+    EXPECT_PRED2(ExprEqual, result3.basis_element_to_coefficient_map().at(m_x),
+                 3 * a_ - 1);
+
+    const GenericPolynomial<MonomialBasisElement> result4{var_x_ - p};
+    EXPECT_TRUE((-result4).EqualTo(result3));
+  }
+
+  // Checks multiplication.
+  {
+    const GenericPolynomial<MonomialBasisElement> result1{p * var_a_};
+    // result1 = 2a³x² + 3a²x + 7a.
+    EXPECT_EQ(result1.indeterminates(), p.indeterminates());
+    EXPECT_EQ(result1.basis_element_to_coefficient_map().size(), 3);
+    EXPECT_PRED2(ExprEqual,
+                 result1.basis_element_to_coefficient_map().at(m_x_sq),
+                 2 * pow(a_, 3));
+    EXPECT_PRED2(ExprEqual, result1.basis_element_to_coefficient_map().at(m_x),
+                 3 * pow(a_, 2));
+    EXPECT_PRED2(ExprEqual,
+                 result1.basis_element_to_coefficient_map().at(m_one), 7 * a_);
+
+    const GenericPolynomial<MonomialBasisElement> result2{var_a_ * p};
+    EXPECT_TRUE(result2.EqualTo(result1));
+
+    const GenericPolynomial<MonomialBasisElement> result3{p * var_x_};
+    // result3 = 2a²x³ + 3ax² + 7x.
+    EXPECT_EQ(result3.indeterminates(), p.indeterminates());
+    EXPECT_EQ(result3.basis_element_to_coefficient_map().size(), 3);
+    EXPECT_PRED2(ExprEqual,
+                 result3.basis_element_to_coefficient_map().at(m_x_cube),
+                 2 * pow(a_, 2));
+    EXPECT_PRED2(ExprEqual,
+                 result3.basis_element_to_coefficient_map().at(m_x_sq), 3 * a_);
+    EXPECT_PRED2(ExprEqual, result3.basis_element_to_coefficient_map().at(m_x),
+                 7);
+
+    const GenericPolynomial<MonomialBasisElement> result4{var_x_ * p};
+    EXPECT_TRUE(result4.EqualTo(result3));
+  }
+}
+
+TEST_F(SymbolicGenericPolynomialTest,
+       BinaryOperationBetweenPolynomialAndVariableChebyshevBasis) {
+  // p = 2a²T₂(x)+3aT₁(x)+7T₀()
+  const GenericPolynomial<ChebyshevBasisElement> p{
+      {{ChebyshevBasisElement(var_x_, 2), 2 * pow(a_, 2)},
+       {ChebyshevBasisElement(var_x_), 3 * a_},
+       {ChebyshevBasisElement(), 7}}};
+
+  const ChebyshevBasisElement t_x_cube{var_x_, 3};
+  const ChebyshevBasisElement t_x_sq{var_x_, 2};
+  const ChebyshevBasisElement t_x{var_x_, 1};
+  const ChebyshevBasisElement t_zero;
+
+  // Checks addition.
+  {
+    const GenericPolynomial<ChebyshevBasisElement> result1{p + var_a_};
+    const GenericPolynomial<ChebyshevBasisElement> result2{var_a_ + p};
+    // result1 = 2a²T₂(x)+3aT₁(x)+(7+a)T₀()
+    EXPECT_TRUE(result1.EqualTo(result2));
+    EXPECT_EQ(result1.basis_element_to_coefficient_map().size(), 3);
+    EXPECT_EQ(result1.indeterminates(), p.indeterminates());
+    EXPECT_PRED2(ExprEqual,
+                 result1.basis_element_to_coefficient_map().at(t_zero), 7 + a_);
+
+    const GenericPolynomial<ChebyshevBasisElement> result3{p + var_x_};
+    const GenericPolynomial<ChebyshevBasisElement> result4{var_x_ + p};
+    // result3 = 2a²T₂(x)+(3a + 1) T₁(x)+7T₀()
+    EXPECT_TRUE(result3.EqualTo(result4));
+    EXPECT_EQ(result3.basis_element_to_coefficient_map().size(), 3);
+    EXPECT_EQ(result3.indeterminates(), p.indeterminates());
+    EXPECT_PRED2(ExprEqual, result3.basis_element_to_coefficient_map().at(t_x),
+                 3 * a_ + 1);
+  }
+
+  // Checks subtraction.
+  {
+    const GenericPolynomial<ChebyshevBasisElement> result1{p - var_a_};
+    // result1 = 2a²T₂(x)+3aT₁(x)+(7-a)T₀()
+    EXPECT_EQ(result1.indeterminates(), p.indeterminates());
+    EXPECT_EQ(result1.basis_element_to_coefficient_map().size(), 3);
+    EXPECT_PRED2(ExprEqual,
+                 result1.basis_element_to_coefficient_map().at(t_zero), 7 - a_);
+
+    const GenericPolynomial<ChebyshevBasisElement> result2{var_a_ - p};
+    EXPECT_TRUE((-result2).EqualTo(result1));
+
+    const GenericPolynomial<ChebyshevBasisElement> result3{p - var_x_};
+    // result3 = 2a²T₂(x)+(3a-1)T₁(x)+7T₀()
+    EXPECT_EQ(result3.indeterminates(), p.indeterminates());
+    EXPECT_EQ(result3.basis_element_to_coefficient_map().size(), 3);
+    EXPECT_PRED2(ExprEqual, result3.basis_element_to_coefficient_map().at(t_x),
+                 3 * a_ - 1);
+
+    const GenericPolynomial<ChebyshevBasisElement> result4{var_x_ - p};
+    EXPECT_TRUE((-result4).EqualTo(result3));
+  }
+
+  // Checks multiplication.
+  {
+    const GenericPolynomial<ChebyshevBasisElement> result1{p * var_a_};
+    // result1 = 2a³T₂(x)+3a²T₁(x)+7aT₀()
+    EXPECT_EQ(result1.indeterminates(), p.indeterminates());
+    EXPECT_EQ(result1.basis_element_to_coefficient_map().size(), 3);
+    EXPECT_PRED2(ExprEqual,
+                 result1.basis_element_to_coefficient_map().at(t_x_sq),
+                 2 * pow(a_, 3));
+    EXPECT_PRED2(ExprEqual, result1.basis_element_to_coefficient_map().at(t_x),
+                 3 * pow(a_, 2));
+    EXPECT_PRED2(ExprEqual,
+                 result1.basis_element_to_coefficient_map().at(t_zero), 7 * a_);
+
+    const GenericPolynomial<ChebyshevBasisElement> result2{var_a_ * p};
+    EXPECT_TRUE(result2.EqualTo(result1));
+
+    const GenericPolynomial<ChebyshevBasisElement> result3{p * var_x_};
+    // result3 = a²T₃(x)+1.5aT₂(x)+(7+a²)T₁(x)+1.5aT₀()
+    EXPECT_EQ(result3.indeterminates(), p.indeterminates());
+    EXPECT_EQ(result3.basis_element_to_coefficient_map().size(), 4);
+    EXPECT_PRED2(ExprEqual,
+                 result3.basis_element_to_coefficient_map().at(t_x_cube),
+                 pow(a_, 2));
+    EXPECT_PRED2(ExprEqual,
+                 result3.basis_element_to_coefficient_map().at(t_x_sq),
+                 1.5 * a_);
+    EXPECT_PRED2(ExprEqual, result3.basis_element_to_coefficient_map().at(t_x),
+                 7 + pow(a_, 2));
+    EXPECT_PRED2(ExprEqual,
+                 result3.basis_element_to_coefficient_map().at(t_zero),
+                 1.5 * a_);
+
+    const GenericPolynomial<ChebyshevBasisElement> result4{var_x_ * p};
+    EXPECT_TRUE(result4.EqualTo(result3));
+  }
 }
 
 TEST_F(SymbolicGenericPolynomialTest, DifferentiateForMonomialBasis) {
@@ -921,6 +1582,45 @@ TEST_F(SymbolicGenericPolynomialTest, AddProduct2) {
   EXPECT_PRED2(GenericPolyEqual<MonomialBasisElement>, sum, sum_expected);
   EXPECT_EQ(p.decision_variables(), Variables({var_a_, var_b_, var_c_}));
   EXPECT_EQ(p.indeterminates(), Variables({var_x_, var_y_}));
+}
+
+TEST_F(SymbolicGenericPolynomialTest, CoefficientsAlmostEqual) {
+  GenericPolynomial<MonomialBasisElement> p1{x_ * x_};
+  // Two polynomials with the same number of terms.
+  EXPECT_TRUE(p1.CoefficientsAlmostEqual(
+      GenericPolynomial<MonomialBasisElement>{x_ * x_}, 1e-6));
+  EXPECT_TRUE(p1.CoefficientsAlmostEqual(
+      GenericPolynomial<MonomialBasisElement>{(1 + 1e-7) * x_ * x_}, 1e-6));
+  EXPECT_FALSE(p1.CoefficientsAlmostEqual(
+      GenericPolynomial<MonomialBasisElement>{2 * x_ * x_}, 1e-6));
+  // Another polynomial with an additional small constant term.
+  EXPECT_TRUE(p1.CoefficientsAlmostEqual(
+      GenericPolynomial<MonomialBasisElement>{x_ * x_ + 1e-7}, 1e-6));
+  EXPECT_FALSE(p1.CoefficientsAlmostEqual(
+      GenericPolynomial<MonomialBasisElement>{x_ * x_ + 2e-6}, 1e-6));
+  EXPECT_TRUE(GenericPolynomial<MonomialBasisElement>{x_ * x_ + 1e-7}
+                  .CoefficientsAlmostEqual(p1, 1e-6));
+  EXPECT_FALSE(GenericPolynomial<MonomialBasisElement>{x_ * x_ + 2e-6}
+                   .CoefficientsAlmostEqual(p1, 1e-6));
+  // Another polynomial with small difference on coefficients.
+  EXPECT_TRUE(p1.CoefficientsAlmostEqual(
+      GenericPolynomial<MonomialBasisElement>{(1. - 1e-7) * x_ * x_ + 1e-7},
+      1e-6));
+  EXPECT_FALSE(p1.CoefficientsAlmostEqual(
+      GenericPolynomial<MonomialBasisElement>{(1. + 2e-6) * x_ * x_ + 1e-7},
+      1e-6));
+
+  // Another polynomial with decision variables in the coefficient.
+  const symbolic::GenericPolynomial<MonomialBasisElement> p2(a_ * x_ * x_,
+                                                             {indeterminates_});
+  EXPECT_TRUE(p2.CoefficientsAlmostEqual(
+      GenericPolynomial<MonomialBasisElement>{(a_ + 1e-7) * x_ * x_,
+                                              {indeterminates_}},
+      1e-6));
+  EXPECT_FALSE(p2.CoefficientsAlmostEqual(
+      GenericPolynomial<MonomialBasisElement>{(a_ + 1e-7) * x_ * x_,
+                                              {indeterminates_}},
+      1e-8));
 }
 
 TEST_F(SymbolicGenericPolynomialTest, RemoveTermsWithSmallCoefficients) {
