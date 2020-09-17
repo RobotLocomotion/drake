@@ -187,6 +187,7 @@ drake_cc_library(
     srcs = ["process_model_directives.cc"],
     hdrs = ["process_model_directives.h"],
     data = [
+        # TODO(#13624) Required for workaround for a missing package.
         "//manipulation/models/jaco_description:models",
     ],
     deps = [

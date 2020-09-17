@@ -16,16 +16,19 @@ namespace parsing {
 
 ModelDirectives LoadModelDirectives(const std::string& filename);
 
+/// Converts URIs into filesystem absolute paths.
+///
 /// ModelDirectives refer to their resources by URIs like
 /// `package://somepackage/somepath/somefile.sdf`, where somepackage refers to
-/// the ROS-style package.xml system.  This method converts those URIs into
-/// filesystem absolute paths.
+/// the ROS-style package.xml system.
 std::string ResolveModelDirectiveUri(
     const std::string& uri,
     const drake::multibody::PackageMap& package_map);
 
-// TODO(eric.cousineau): Burn this in a dumpster fire pending real model
-// composition / extraction in Drake. This is just dumb.
+// TODO(#13074): Burn this in a dumpster fire pending real model
+// composition / extraction in Drake.
+// TODO(#14084): This structure might combine with the implementation of 14084:
+// https://github.com/RobotLocomotion/drake/issues/14084#issuecomment-694394869
 /// Convenience structure to hold all of the information to add a model
 /// instance from a file.
 struct ModelInstanceInfo {
@@ -41,31 +44,24 @@ struct ModelInstanceInfo {
   drake::multibody::ModelInstanceIndex model_instance;
 };
 
+// TODO(ggould-tri): This method may be replacable in practice with {}
+// initialization or even aggregate initialization.  If that proves to be
+// the case, delete this method.  See discussion in #14038.
 ModelInstanceInfo MakeModelInstanceInfo(
     const std::string& model_name, const std::string& model_path,
     const std::string& parent_frame_name, const std::string& child_frame_name,
     const drake::math::RigidTransformd& X_PC = drake::math::RigidTransformd());
 
-/**
- * If `X_PC` is not identity, a AddFrame directive is made to insert a
- * new frame named "model_name_attachment_frame" that's offset from
- * `parent_frame_name` by `X_PC`, and the subsequent AddModel directive is
- * made to weld `model_name`'s `child_frame_name` to this new frame.
- * Otherwise, a AddModel directive is made to weld `model_name`'s
- * `child_frame_name` to `parent_frame_name` directly. The `model_instance`
- * field is ignored for this purposes.
- */
-ModelDirectives MakeModelsAttachedToFrameDirectives(
-    const std::vector<ModelInstanceInfo>& models_to_add);
-
-// Flatten model directives.
+/// Flatten model directives.
 void FlattenModelDirectives(const ModelDirectives& directives,
                             const drake::multibody::PackageMap& package_map,
                             ModelDirectives* out);
 
-// TODO(#13520) This rather ugly mechanism is needed because a caller cannot
+// TODO(#13520) This rather ugly mechanism was added because a caller cannot
 // add model error after `ProcessModelDirectives` and so needs to pass any
-// requested error in beforehand.
+// requested error in beforehand.  However:
+// TODO(#14084) It is likely that we will remove this mechanism in the future
+// and replace it with a separate model directives transform stage.
 //
 /// (Advanced) Provides a magical way to inject error into model directives,
 /// for instance if the caller has modeling error to add that is not reflected
@@ -74,16 +70,17 @@ void FlattenModelDirectives(const ModelDirectives& directives,
 /// is no error, then nullopt should be returned.
 using ModelWeldErrorFunction =
     std::function<std::optional<drake::math::RigidTransformd>(
-        const drake::multibody::Frame<double>&,
-        const drake::multibody::Frame<double>&)>;
+        const std::string& parent,
+        const std::string& child)>;
 
 /// Processes model directives for a given MultibodyPlant.
 ///
-/// Note: The passed-in parser will be mutated to add the jaco_description
+/// @note: The passed-in parser will be mutated to add the jaco_description
 /// package to its package map (since model directives and their contents are
 /// allowed to refer to the package directly for workaround reasons).
 ///
-/// @p
+/// @note the ModelWeldErrorFunction argument, described above, is likely to
+/// go away when a cleaner mechanism is developed.
 void ProcessModelDirectives(
     const ModelDirectives& directives,
     drake::multibody::MultibodyPlant<double>* plant,

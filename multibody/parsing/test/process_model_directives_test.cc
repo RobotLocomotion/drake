@@ -112,13 +112,11 @@ GTEST_TEST(ProcessModelDirectivesTest, SmokeTestInjectWeldError) {
   // frame.
   MultibodyPlant<double> plant(0.0);
 
-  auto error = [&](const Frame<double>& parent, const Frame<double>& child) {
-    auto& error_parent = plant.GetFrameByName(
-        "frame", plant.GetModelInstanceByName("simple_model"));
-    auto& error_child = plant.GetFrameByName(
-        "base", plant.GetModelInstanceByName("extra_model"));
+  auto error = [&](const std::string& parent, const std::string& child) {
+    const std::string error_parent = "simple_model::frame";
+    const std::string error_child = "extra_model::base";
     optional<RigidTransformd> out;
-    if (&parent == &error_parent && &child == &error_child)
+    if (parent == error_parent && child == error_child)
         out = error_transform;
     return out;
   };

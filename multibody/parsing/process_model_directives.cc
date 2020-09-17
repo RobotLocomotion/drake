@@ -63,8 +63,14 @@ void AddWeldWithOptionalError(
   // TODO(eric.cousineau): This hack really shouldn't belong in model
   // directives. Instead, it should live externally as a transformation on
   // ModelDirectives (either flattened or recursive).
+  std::string parent_full_name =
+      PrefixName(GetInstanceScopeName(*plant, parent_frame.model_instance()),
+                 parent_frame.name());
+  std::string child_full_name =
+      PrefixName(GetInstanceScopeName(*plant, child_frame.model_instance()),
+                 child_frame.name());
   std::optional<RigidTransformd> X_PCe =
-      error_func ? error_func(parent_frame, child_frame) : std::nullopt;
+      error_func ? error_func(parent_full_name, child_full_name) : std::nullopt;
   if (X_PCe.has_value()) {
     // N.B. Since this will belong in the child_frame's model instance, we
     // shouldn't worry about name collisions.
@@ -149,6 +155,7 @@ void ProcessModelDirectivesImpl(
       auto& frame = *directive.add_frame;
       drake::log()->debug("  add_frame: {}", frame.name);
       if (!frame.X_PF.base_frame) {
+        // This would be caught elsewhere, but it is clearer to throw here.
         throw std::logic_error(
             "add_frame directive with empty base frame is ambiguous");
       }
@@ -303,52 +310,6 @@ ModelInstanceInfo MakeModelInstanceInfo(
   info.child_frame_name = child_frame_name;
   info.X_PC = X_PC;
   return info;
-}
-
-// TODO(eric.cousineau): Do we *really* need this function? This seems like
-// it'd be better handled as an MBP subgraph.
-ModelDirectives MakeModelsAttachedToFrameDirectives(
-    const std::vector<ModelInstanceInfo>& models_to_add) {
-  ModelDirectives directives;
-
-  // One for add frame, one for add model, one for add weld.
-  directives.directives.resize(models_to_add.size() * 3);
-
-  int index = 0;
-  for (size_t i = 0; i < models_to_add.size(); i++) {
-    const ModelInstanceInfo& model_to_add = models_to_add.at(i);
-    std::string attachment_frame_name = model_to_add.parent_frame_name;
-
-    // Add frame first.
-    if (!model_to_add.X_PC.IsExactlyIdentity()) {
-      AddFrame frame_dir;
-      attachment_frame_name = model_to_add.model_name + "_attachment_frame";
-      frame_dir.name = attachment_frame_name;
-      frame_dir.X_PF.base_frame = model_to_add.parent_frame_name;
-      frame_dir.X_PF.translation =
-          drake::Vector<double, 3>(model_to_add.X_PC.translation());
-      frame_dir.X_PF.rotation =
-          drake::schema::Rotation{model_to_add.X_PC.rotation()};
-
-      directives.directives.at(index++).add_frame = frame_dir;
-    }
-
-    // Add model
-    AddModel model_dir;
-    model_dir.file = model_to_add.model_path;
-    model_dir.name = model_to_add.model_name;
-
-    directives.directives.at(index++).add_model = model_dir;
-
-    AddWeld weld_dir;
-    weld_dir.parent = attachment_frame_name;
-    weld_dir.child =
-        model_to_add.model_name + "::" + model_to_add.child_frame_name;
-    directives.directives.at(index++).add_weld = weld_dir;
-  }
-  directives.directives.resize(index);
-
-  return directives;
 }
 
 }  // namespace parsing
