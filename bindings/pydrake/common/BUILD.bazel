@@ -28,6 +28,7 @@ load(
     "@drake//tools/skylark:pybind.bzl",
     "add_pybind_coverage_data",
 )
+load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
 
 package(default_visibility = [
     "//bindings/pydrake:__subpackages__",
@@ -144,6 +145,14 @@ drake_py_library(
     name = "jupyter_py",
     srcs = ["jupyter.py"],
     imports = PACKAGE_INFO.py_imports,
+)
+
+drake_jupyter_py_binary(
+    name = "jupyter_example",
+    add_test_rule = 1,
+    deps = [
+        ":jupyter_py",
+    ],
 )
 
 drake_pybind_library(

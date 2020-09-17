@@ -46,6 +46,7 @@ python3-ipywidgets
 python3-lxml
 python3-matplotlib
 python3-numpy
+python3-packaging
 python3-pydot
 python3-scipy
 python3-tk
