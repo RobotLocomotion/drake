@@ -22,6 +22,13 @@ void BindSpatialVectorMixin(PyClass* pcls) {
   using Class = typename PyClass::type;
   auto& cls = *pcls;
   cls  // BR
+      .def(py::init([]() { return Class::Zero(); }), R"""(
+      Constructs to all zeros.
+
+      Note:
+          This is different from C++, which in Release builds may leave memory
+          uninitialized. For more details, see issue #14086.
+      )""")
       .def(
           "rotational",
           [](const Class* self) -> const Vector3<T> {
@@ -58,7 +65,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
         m, "SpatialVelocity", param, cls_doc.doc);
     BindSpatialVectorMixin<T>(&cls);
     cls  // BR
-        .def(py::init(), cls_doc.ctor.doc_0args)
         .def(py::init<const Eigen::Ref<const Vector3<T>>&,
                  const Eigen::Ref<const Vector3<T>>&>(),
             py::arg("w"), py::arg("v"), cls_doc.ctor.doc_2args)
@@ -75,7 +81,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
         m, "SpatialMomentum", param, cls_doc.doc);
     BindSpatialVectorMixin<T>(&cls);
     cls  // BR
-        .def(py::init(), cls_doc.ctor.doc_0args)
         .def(py::init<const Eigen::Ref<const Vector3<T>>&,
                  const Eigen::Ref<const Vector3<T>>&>(),
             py::arg("h"), py::arg("l"), cls_doc.ctor.doc_2args)
@@ -92,7 +97,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
         m, "SpatialAcceleration", param, cls_doc.doc);
     BindSpatialVectorMixin<T>(&cls);
     cls  // BR
-        .def(py::init(), cls_doc.ctor.doc_0args)
         .def(py::init<const Eigen::Ref<const Vector3<T>>&,
                  const Eigen::Ref<const Vector3<T>>&>(),
             py::arg("alpha"), py::arg("a"), cls_doc.ctor.doc_2args)
@@ -109,7 +113,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
         m, "SpatialForce", param, cls_doc.doc);
     BindSpatialVectorMixin<T>(&cls);
     cls  // BR
-        .def(py::init(), cls_doc.ctor.doc_0args)
         .def(py::init<const Eigen::Ref<const Vector3<T>>&,
                  const Eigen::Ref<const Vector3<T>>&>(),
             py::arg("tau"), py::arg("f"), cls_doc.ctor.doc_2args)

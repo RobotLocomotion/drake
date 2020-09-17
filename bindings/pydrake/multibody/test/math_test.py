@@ -19,10 +19,8 @@ class TestMultibodyTreeMath(unittest.TestCase):
             self, cls, coeffs_name, rotation_name, translation_name):
         vec = cls()
         # - Accessors.
-        self.assertTrue(isinstance(vec.rotational(), np.ndarray))
-        self.assertTrue(isinstance(vec.translational(), np.ndarray))
-        self.assertEqual(vec.rotational().shape, (3,))
-        self.assertEqual(vec.translational().shape, (3,))
+        numpy_compare.assert_float_equal(vec.rotational(), [0.0, 0.0, 0.0])
+        numpy_compare.assert_float_equal(vec.translational(), [0.0, 0.0, 0.0])
         # - Fully-parameterized constructor.
         rotation_expected = [0.1, 0.3, 0.5]
         translation_expected = [0., 1., 2.]
