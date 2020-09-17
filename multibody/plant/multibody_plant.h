@@ -1983,6 +1983,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& u_instance,
       EigenPtr<VectorX<T>> u) const {
+    DRAKE_DEMAND(u != nullptr);
     internal_tree().SetActuationInArray(model_instance, u_instance, u);
   }
 
@@ -2005,6 +2006,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& q_instance,
       EigenPtr<VectorX<T>> q) const {
+    DRAKE_DEMAND(q != nullptr);
     internal_tree().SetPositionsInArray(model_instance, q_instance, q);
   }
 
@@ -2027,6 +2029,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& v_instance,
       EigenPtr<VectorX<T>> v) const {
+    DRAKE_DEMAND(v != nullptr);
     internal_tree().SetVelocitiesInArray(model_instance, v_instance, v);
   }
   /// @} <!-- State accessors and mutators -->
@@ -2361,6 +2364,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Eigen::Ref<const MatrixX<T>>& p_BQi,
       const Frame<T>& frame_A,
       EigenPtr<MatrixX<T>> p_AQi) const {
+    DRAKE_DEMAND(p_AQi != nullptr);
     return internal_tree().CalcPointsPositions(
         context, frame_B, p_BQi, frame_A, p_AQi);
   }
@@ -2548,6 +2552,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v,
       EigenPtr<VectorX<T>> qdot) const {
+    DRAKE_DEMAND(qdot != nullptr);
     return internal_tree().MapVelocityToQDot(context, v, qdot);
   }
 
@@ -2580,6 +2585,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& qdot,
       EigenPtr<VectorX<T>> v) const {
+    DRAKE_DEMAND(v != nullptr);
     internal_tree().MapQDotToVelocity(context, qdot, v);
   }
   /// @} <!-- Kinematic and dynamic computations -->
@@ -2631,6 +2637,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// mass matrix whenever possible.
   void CalcMassMatrixViaInverseDynamics(
       const systems::Context<T>& context, EigenPtr<MatrixX<T>> M) const {
+    DRAKE_DEMAND(M != nullptr);
     internal_tree().CalcMassMatrixViaInverseDynamics(context, M);
   }
 
@@ -2651,6 +2658,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// mass matrix whenever possible.
   void CalcMassMatrix(const systems::Context<T>& context,
                       EigenPtr<MatrixX<T>> M) const {
+    DRAKE_DEMAND(M != nullptr);
     internal_tree().CalcMassMatrix(context, M);
   }
 
@@ -2676,6 +2684,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   proper size.
   void CalcBiasTerm(
       const systems::Context<T>& context, EigenPtr<VectorX<T>> Cv) const {
+    DRAKE_DEMAND(Cv != nullptr);
     internal_tree().CalcBiasTerm(context, Cv);
   }
 
@@ -2818,6 +2827,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                    const Frame<T>& frame_A,
                                    const Frame<T>& frame_E,
                                    EigenPtr<MatrixX<T>> Js_V_ABp_E) const {
+    DRAKE_DEMAND(Js_V_ABp_E != nullptr);
     internal_tree().CalcJacobianSpatialVelocity(context, with_respect_to,
                                                 frame_B, p_BoBp_B, frame_A,
                                                 frame_E, Js_V_ABp_E);
@@ -2854,6 +2864,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                    const Frame<T>& frame_A,
                                    const Frame<T>& frame_E,
                                    EigenPtr<Matrix3X<T>> Js_w_AB_E) const {
+    DRAKE_DEMAND(Js_w_AB_E != nullptr);
     return internal_tree().CalcJacobianAngularVelocity(
         context, with_respect_to, frame_B, frame_A, frame_E, Js_w_AB_E);
   }
@@ -2903,6 +2914,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       EigenPtr<MatrixX<T>> Js_v_ABi_E) const {
     // TODO(amcastro-tri): provide the Jacobian-times-vector operation.  For
     // some applications it is all we need and it is more efficient to compute.
+    DRAKE_DEMAND(Js_v_ABi_E != nullptr);
     internal_tree().CalcJacobianTranslationalVelocity(
         context, with_respect_to, frame_B, frame_B, p_BoBi_B, frame_A, frame_E,
         Js_v_ABi_E);
@@ -2937,6 +2949,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       EigenPtr<Matrix3X<T>> Js_v_ACcm_E) const {
     // TODO(yangwill): Add an optional parameter to calculate this for a
     // subset of bodies instead of the full system
+    DRAKE_DEMAND(Js_v_ACcm_E != nullptr);
     internal_tree().CalcJacobianCenterOfMassTranslationalVelocity(
         context, with_respect_to, frame_A, frame_E, Js_v_ACcm_E);
   }

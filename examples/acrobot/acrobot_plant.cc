@@ -129,6 +129,7 @@ void AcrobotPlant<T>::DoCalcImplicitTimeDerivativesResidual(
     const systems::Context<T>& context,
     const systems::ContinuousState<T>& proposed_derivatives,
     EigenPtr<VectorX<T>> residual) const {
+  DRAKE_DEMAND(residual != nullptr);
   const AcrobotState<T>& state = get_state(context);
   const T& tau = get_tau(context);
 
