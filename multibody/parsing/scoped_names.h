@@ -4,18 +4,26 @@
 
 #include "drake/multibody/plant/multibody_plant.h"
 
+/// @file Implements the namespace scoping semantics described in
+/// `README_model_directives.md` for multibody plants built from model
+/// directives (and possibly future SDFormat files).
+
 namespace drake {
 namespace multibody {
 namespace parsing {
 
 /// Finds an optionally model-scoped frame according to
 /// `internal::ScopedNameParser::Parse`.
+///
+/// Returns `nullptr` if the frame is not found, as well as all the error
+/// cases of `MultibodyPlant::HasFrameByName(std::string)`.
 const drake::multibody::Frame<double>*
 GetScopedFrameByNameMaybe(
     const drake::multibody::MultibodyPlant<double>& plant,
     const std::string& full_name);
 
-/// Required version of `GetScopedFrameByNameMaybe`.
+/// Equivalent to `GetScopedFrameByNameMaybe`, but throws if the frame
+/// is not found.
 inline const drake::multibody::Frame<double>&
 GetScopedFrameByName(
     const drake::multibody::MultibodyPlant<double>& plant,
@@ -27,9 +35,14 @@ GetScopedFrameByName(
   return *frame;
 }
 
+/// Convenience class for a scoped name.
 struct ScopedName {
-  // If empty, implies no scope.
+  /// The name of the multibody instance part of a scoped name.  If empty,
+  /// implies no multibody instance scope.
   std::string instance_name;
+
+  /// The model-instance-specific part of the name, ie the name of the frame,
+  /// body, etc. within the instance.
   std::string name;
 };
 
@@ -39,10 +52,10 @@ struct ScopedName {
 ///   delimiter. The provided model instance name must exist.
 ScopedName ParseScopedName(const std::string& full_name);
 
-/// Compose a "namespace::name" name from its components.
+/// Composes a "namespace::name" name from its components.
 std::string PrefixName(const std::string& namespace_, const std::string& name);
 
-/// Get the namespace prefix for a given model instance.
+/// Gets the namespace prefix for a given model instance.
 std::string GetInstanceScopeName(
     const drake::multibody::MultibodyPlant<double>&,
     drake::multibody::ModelInstanceIndex);

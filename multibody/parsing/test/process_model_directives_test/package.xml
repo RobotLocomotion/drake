@@ -5,7 +5,7 @@
   <description>
     Unit test data for `process_model_directives.cc`
   </description>
-  <maintainer email="user@example.com">John Doe</maintainer>
-  <author>Jane Doe</author>
+  <maintainer email="ggould@tri.global">Grant Gould</maintainer>
+  <author>Grant Gould</author>
   <license>N/A</license>
 </package>
