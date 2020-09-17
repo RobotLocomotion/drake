@@ -3205,7 +3205,7 @@ TEST_F(GeometryStateTest, AddRendererAfterGeometry) {
 
   EXPECT_FALSE(other_renderer->has_geometry(id_no_perception));
 
-  for (const GeometryId id : geometries_) {
+  for (const GeometryId& id : geometries_) {
     EXPECT_TRUE(other_renderer->has_geometry(id));
   }
 }

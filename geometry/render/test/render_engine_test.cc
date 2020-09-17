@@ -84,7 +84,7 @@ GTEST_TEST(RenderEngine, RegistrationAndUpdate) {
   };
 
   // Case 1: Explicitly providing the unspecified or empty render label throws.
-  for (const auto label : {RenderLabel::kEmpty, RenderLabel::kUnspecified}) {
+  for (const auto& label : {RenderLabel::kEmpty, RenderLabel::kUnspecified}) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.RegisterVisual(GeometryId::get_new_id(), sphere,
                               make_properties(label), {},

@@ -2962,7 +2962,7 @@ void MultibodyPlant<T>::CalcFramePoseOutput(
   // TODO(amcastro-tri): Make use of Body::EvalPoseInWorld(context) once caching
   // lands.
   poses->clear();
-  for (const auto it : body_index_to_frame_id_) {
+  for (const auto& it : body_index_to_frame_id_) {
     const BodyIndex body_index = it.first;
     if (body_index == world_index()) continue;
     const Body<T>& body = get_body(body_index);
