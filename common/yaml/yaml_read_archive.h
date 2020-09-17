@@ -303,7 +303,7 @@ class YamlReadArchive final {
       return;
     }
 
-    if (sub_node.IsDefined() && sub_node.IsNull()) {
+    if (sub_node.IsNull()) {
       *nvp.value() = std::nullopt;
       return;
     }
