@@ -293,7 +293,17 @@ class YamlReadArchive final {
     // or has an empty value.  In yaml-cpp, presence is denoted by IsDefined(),
     // and empty is denoted by IsNull().
     const auto& sub_node = MaybeGetSubNode(nvp.name());
-    if (!sub_node.IsDefined() || sub_node.IsNull()) {
+
+    if (!sub_node.IsDefined()) {
+      // If the YAML has no data, ensure that the CPP has no data unless the
+      // right flag is set
+      if (!options_.allow_cpp_with_no_yaml) {
+        *nvp.value() = std::nullopt;
+      }
+      return;
+    }
+
+    if (sub_node.IsNull()) {
       *nvp.value() = std::nullopt;
       return;
     }

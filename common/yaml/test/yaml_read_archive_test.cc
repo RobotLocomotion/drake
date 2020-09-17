@@ -360,8 +360,8 @@ doc:
 }
 
 TEST_P(YamlReadArchiveTest, Optional) {
-  const auto test = [](const std::string& doc,
-                       const std::optional<double>& expected) {
+  const auto test_with_default = [](const std::string& doc,
+                                    const std::optional<double>& expected) {
     const auto& x = AcceptNoThrow<OptionalStruct>(Load(doc));
     if (expected.has_value()) {
       ASSERT_TRUE(x.value.has_value()) << *expected;
@@ -370,13 +370,77 @@ TEST_P(YamlReadArchiveTest, Optional) {
       EXPECT_FALSE(x.value.has_value());
     }
   };
+  const auto test_no_default = [](const std::string& doc,
+                                  const std::optional<double>& expected) {
+    const auto& x = AcceptNoThrow<OptionalStructNoDefault>(Load(doc));
+    if (expected.has_value()) {
+      ASSERT_TRUE(x.value.has_value()) << *expected;
+      EXPECT_EQ(x.value.value(), expected.value()) << *expected;
+    } else {
+      EXPECT_FALSE(x.value.has_value());
+    }
+  };
 
-  test("doc: {}", std::nullopt);
-  if (GetParam().allow_yaml_with_no_cpp) {
-    test("doc:\n  foo: bar", std::nullopt);
+  /*
+    If the YAML data provided a value for the optional key, then we should
+    always take that value (1-4). If the YAML data provided an explicit null for
+    the optional key, then we should always take that null (5-8). If the YAML
+    data did not mention the key (9-12), the situation is more subtle. In the
+    case where allow_cpp_with_no_yaml is false, then every C++ member field must
+    match up with YAML -- with the caveat that optional members can be omitted;
+    in that case, an absent YAML node must interpreted as nullopt so that C++
+    and YAML remain congruent (9, 11). In the case where allow_cpp_with_no_yaml
+    is true, we should only be changing C++ values when the yaml data mentions
+    the key; unmentioned values should stay undisturbed; in that case, a missing
+    key should have no effect (10, 12); only an explicit null key (7, 8) should
+    evidence a change.
+
+     # | yaml   | store | acwny || want
+    ===+========+=======+=======++========
+     1 | Scalar | False | False || Scalar
+     2 | Scalar | False | True  || Scalar
+     3 | Scalar | True  | False || Scalar
+     4 | Scalar | True  | True  || Scalar
+     5 | Null   | False | False || False
+     6 | Null   | False | True  || False
+     7 | Null   | True  | False || False
+     8 | Null   | True  | True  || False
+     9 | Absent | False | False || False
+    10 | Absent | False | True  || False
+    11 | Absent | True  | False || False
+    12 | Absent | True  | True  || True
+
+    yaml = node type present in yaml file
+    store = nvp.value().has_value() initial condition
+    acwny = Options.allow_cpp_with_no_yaml
+    want = nvp.value() desired final condition
+  */
+
+  test_no_default("doc:\n  value: 1.0", 1.0);         // # 1, 2
+  test_with_default("doc:\n  value: 1.0", 1.0);       // # 3, 4
+  test_no_default("doc:\n  value:", std::nullopt);    // # 5, 6
+  test_with_default("doc:\n  value:", std::nullopt);  // # 7, 8
+
+  test_no_default("doc: {}", std::nullopt);  // # 9, 10
+  if (GetParam().allow_cpp_with_no_yaml) {
+    test_with_default("doc: {}", kNominalDouble);  // # 12
+  } else {
+    test_with_default("doc: {}", std::nullopt);  // # 11
   }
-  test("doc:\n  value:", std::nullopt);
-  test("doc:\n  value: 1.0", 1.0);
+
+  if (GetParam().allow_yaml_with_no_cpp) {
+    test_no_default("doc:\n  foo: bar\n  value: 1.0", 1.0);         // # 1, 2
+    test_with_default("doc:\n  foo: bar\n  value: 1.0", 1.0);       // # 3, 4
+    test_no_default("doc:\n  foo: bar\n  value:", std::nullopt);    // # 5, 6
+    test_with_default("doc:\n  foo: bar\n  value:", std::nullopt);  // # 7, 8
+
+    test_no_default("doc:\n  foo: bar", std::nullopt);  // # 9, 10
+    if (GetParam().allow_cpp_with_no_yaml) {
+      test_with_default("doc:\n  foo: bar", kNominalDouble);  // # 12
+    } else {
+      test_with_default("doc:\n  foo: bar", std::nullopt);  // # 11
+    }
+  }
 }
 
 TEST_P(YamlReadArchiveTest, Variant) {
