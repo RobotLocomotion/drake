@@ -44,13 +44,9 @@ class SpatialVector {
   // Make it available to implementations using SpatialVector.
   typedef T ScalarType;
 
-  /// Default constructor. In Release builds the elements of the newly
-  /// constructed spatial vector are left uninitialized resulting in a zero
-  /// cost operation. However in Debug builds those entries are set to NaN so
-  /// that operations using this uninitialized spatial vector fail fast,
-  /// allowing fast bug detection.
+  /// Default constructor. All elements will be initialized to zero.
   SpatialVector() {
-    DRAKE_ASSERT_VOID(SetNaN());
+    SetZero();
   }
 
   /// SpatialVector constructor from an rotational component @p w and a linear
