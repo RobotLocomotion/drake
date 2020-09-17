@@ -363,10 +363,10 @@ class EigenPtr {
     return assign(other);
   }
 
-  /// @throws std::runtime_error if this is a null dereference.
+  /// @pre the pointer is not null.
   RefType& operator*() const { return get_reference(); }
 
-  /// @throws std::runtime_error if this is a null dereference.
+  /// @pre the pointer is not null.
   RefType* operator->() const { return &get_reference(); }
 
   /// Returns whether or not this contains a valid reference.
@@ -443,8 +443,8 @@ class EigenPtr {
 
   // Consolidate getting a reference here.
   RefType& get_reference() const {
-    if (!m_.has_value())
-      throw std::runtime_error("EigenPtr: nullptr dereference");
+    // Keep this tiny so it inlines.
+    DRAKE_ASSERT(m_.has_value());
     return m_.value();
   }
 

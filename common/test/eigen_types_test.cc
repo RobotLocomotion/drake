@@ -93,7 +93,6 @@ GTEST_TEST(EigenTypesTest, EigenPtr_Null) {
   EXPECT_FALSE(null_ptr != nullptr);
   EXPECT_TRUE(!null_ptr);
   EXPECT_TRUE(null_ptr == nullptr);
-  EXPECT_THROW(*null_ptr, std::runtime_error);
 
   Matrix3d X;
   X.setConstant(0);
@@ -132,12 +131,10 @@ GTEST_TEST(EigenTypesTest, EigenPtr) {
   // Tests set.
   set(&M1, 0, 0, 1);       // Sets M1(0,0) = 1
   EXPECT_EQ(M1(0, 0), 1);  // Checks M1(0, 0) = 1
-  EXPECT_THROW(set(nullptr, 0, 0, 1), std::runtime_error);
 
   // Tests get.
   EXPECT_EQ(get(&M1, 0, 0), 1);  // Checks M1(0, 0) = 1
   EXPECT_EQ(get(&M2, 0, 0), 0);  // Checks M2(0, 0) = 1
-  EXPECT_THROW(get(nullptr, 0, 0), std::runtime_error);
 
   // Shows how to use EigenPtr with .block(). Here we introduce `tmp` to avoid
   // taking the address of temporary object.
