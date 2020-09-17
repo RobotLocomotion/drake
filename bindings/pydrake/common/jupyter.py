@@ -7,11 +7,15 @@ This is gui code; to test changes, please manually run
 """
 
 import asyncio
+from contextlib import contextmanager
+import functools
+from packaging import version
 import sys
 from warnings import warn
 
 from IPython import get_ipython
-
+from IPython.display import clear_output, display
+import ipywidgets as widgets
 
 # Note: The implementation below was inspired by
 # https://github.com/Kirill888/jupyter-ui-poll , though I suspect it can be
@@ -21,6 +25,7 @@ from IPython import get_ipython
 # https://ipywidgets.readthedocs.io/en/latest/examples/Widget%20Asynchronous.html  # noqa
 # describes the problem but it only offers the solution of using separate
 # threads for execution; a workflow that we do not wish to impose on users.
+
 
 def process_ipywidget_events(num_events_to_process=1):
     """
@@ -69,3 +74,68 @@ def process_ipywidget_events(num_events_to_process=1):
                  "unresponsive, you may need to restart the UI itself.\n"
                  "To avoid this behavior, avoid requesting execution of "
                  "future cells before or during execution of this cell.")
+
+
+def _maybe_show_inline_matplotlib_plots():
+    if version.parse(widgets.__version__) >= version.parse("7.0.0"):
+        widgets.widgets.interaction.show_inline_matplotlib_plots()
+
+
+@contextmanager
+def interactive_update(out, *, capture_errors=False):
+    """
+    Provides a context that will clear an Output widget beforehand and then
+    redirect output to the widget.
+
+    Arguments:
+        out (Output): The Output widget to which output should be directed.
+        capture_errors: If True, will redirect errors to widgets. If False
+            (Default), will capture the error and re-throw them. It is
+            suggested to leave this at its default value.
+
+    Note:
+        This is a more generalized form of ``interactive_output``:
+        https://github.com/jupyter-widgets/ipywidgets/blob/7.5.1/ipywidgets/widgets/interaction.py#L65-L85
+
+    Warning:
+        On ipywidgets<7.0.0, redirecting the output of matplotlib plots and
+        widgets to Output widgets  is supported.
+        However, on ipywidgets>=7.0.0, they appear to be. For an example of
+        such, please see:
+        https://github.com/RobotLocomotion/drake/pull/14082#pullrequestreview-490546550
+    """  # noqa
+    assert isinstance(out, widgets.Output), out
+    error = None
+    with out:
+        clear_output(wait=True)
+        if capture_errors:
+            yield
+            _maybe_show_inline_matplotlib_plots()
+        else:
+            try:
+                yield
+                _maybe_show_inline_matplotlib_plots()
+            except Exception as e:
+                error = e
+    if error is not None:
+        raise error
+
+
+def decorate_interactive_update(out, *, capture_errors=False):
+    """
+    Decorates a function to be executed within a ``interactive_update`` context.
+
+    See ``interactive_update`` for arguments.
+    """
+    assert isinstance(out, widgets.Output), out
+
+    def decorator(f):
+
+        @functools.wraps(f)
+        def wrapped(*args, **kwargs):
+            with interactive_update(out, capture_errors=capture_errors):
+                return f(*args, **kwargs)
+
+        return wrapped
+
+    return decorator

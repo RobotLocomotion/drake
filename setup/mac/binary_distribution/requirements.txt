@@ -1,6 +1,7 @@
 ipywidgets
 lxml
 matplotlib
+packaging
 notebook
 pydot
 PyYAML
