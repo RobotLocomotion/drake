@@ -104,7 +104,7 @@ _vector_gen = rule(
     implementation = _vector_gen_impl,
 )
 
-def drake_cc_vector_gen(
+def cc_vector_gen(
         name,
         srcs = [],
         include_prefix = None,
@@ -137,6 +137,7 @@ def drake_cc_vector_gen(
         include_prefix = include_prefix,
         visibility = visibility,
         env = hermetic_python_env(),
+        **kwargs
     )
     return struct(
         srcs = outs.srcs,
@@ -158,8 +159,12 @@ def drake_cc_vector_gen_library(
     """Given *_named_vector.yaml files in `srcs`, declare a drake_cc_library
     with the given `name`, containing the generated BasicVector subclasses for
     those `srcs`.  The `deps` are passed through to the declared library.
+
+    This macro is inteded for use only within Drake itself.  Other projects
+    using vector_gen should copy this macro and adapt it as necessary, e.g.,
+    by setting drake_workspace_name correctly.
     """
-    generated = drake_cc_vector_gen(
+    generated = cc_vector_gen(
         name = name + "_codegen",
         srcs = srcs,
         include_prefix = "drake",
@@ -174,13 +179,16 @@ def drake_cc_vector_gen_library(
         **kwargs
     )
 
-def drake_vector_gen_lcm_sources(
+def vector_gen_lcm_sources(
         name,
         srcs = [],
         **kwargs):
     """Given *_named_vector.yaml files in `srcs`, generate matching LCM message
     definition source files.  For a src named foo/bar.named_vector, the output
     file will be named foo/lcmt_bar_t.lcm.
+
+    This macro is not limited to use within Drake itself; other projects are
+    intended to use it.
     """
     outs = _vector_gen_outs(srcs = srcs, kind = "lcm")
     _vector_gen(
@@ -190,3 +198,13 @@ def drake_vector_gen_lcm_sources(
         env = hermetic_python_env(),
         **kwargs
     )
+
+def drake_cc_vector_gen(name, **kwargs):
+    """Deprecated alias for cc_vector_gen."""
+    print("DRAKE DEPRECATED: The drake_cc_vector_gen macro has been renamed to cc_vector_gen; this forwarder for the old name will be removed from Drake on or after 2021-01-01.")  # noqa
+    cc_vector_gen(name = name, **kwargs)
+
+def drake_vector_gen_lcm_sources(name, **kwargs):
+    """Deprecated alias for vector_gen_lcm_sources."""
+    print("DRAKE DEPRECATED: The drake_vector_gen_lcm_sources macro has been renamed to vector_gen_lcm_sources; this forwarder for the old name will be removed from Drake on or after 2021-01-01.")  # noqa
+    vector_gen_lcm_sources(name = name, **kwargs)

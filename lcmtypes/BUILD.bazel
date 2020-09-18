@@ -25,10 +25,6 @@ load(
     "drake_lcm_java_library",
     "drake_lcm_py_library",
 )
-load(
-    "@drake//tools/vector_gen:vector_gen.bzl",
-    "drake_vector_gen_lcm_sources",
-)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_lcm_cc_library(
