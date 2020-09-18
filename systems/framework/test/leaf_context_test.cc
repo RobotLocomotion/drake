@@ -55,7 +55,7 @@ class LeafContextTest : public ::testing::Test {
     // counter here so this test can add more ticketed things later.
     // (That's not allowed in user code.)
     for (int i = 0; i < kNumInputPorts; ++i) {
-      context_.FixInputPort(i, BasicVector<double>(kInputSize[i]));
+      context_.FixInputPort(i, Value<BasicVector<double>>(kInputSize[i]));
       ++next_ticket_;
     }
 
@@ -354,7 +354,8 @@ TEST_F(LeafContextTest, GetVectorInput) {
   AddInputPorts(2, &context);
 
   // Add input port 0 to the context, but leave input port 1 uninitialized.
-  context.FixInputPort(0, {5.0, 6.0});
+  context.FixInputPort(0,
+                       Value<BasicVector<double>>(Eigen::Vector2d(5.0, 6.0)));
 
   // Test that port 0 is retrievable.
   VectorX<double> expected(2);
@@ -430,6 +431,8 @@ TEST_F(LeafContextTest, SetAndGetCache) {
   EXPECT_EQ(99, entry_value.get_value<int>());
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 TEST_F(LeafContextTest, FixInputPort) {
   const InputPortIndex index{0};
   const int size = kInputSize[index];
@@ -490,6 +493,7 @@ TEST_F(LeafContextTest, FixInputPort) {
         "Bad type drake::Value<std::string>");
   }
 }
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
 TEST_F(LeafContextTest, Clone) {
   std::unique_ptr<Context<double>> clone = context_.Clone();

@@ -1099,9 +1099,11 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
   dut.reset();
 
   // The first port should only accept a 1d vector.
-  context->FixInputPort(0, VectorXd::Constant(1, 0.0));
+  context->FixInputPort(0,
+                        Value<BasicVector<double>>(VectorXd::Constant(1, 0.0)));
   DRAKE_EXPECT_THROWS_MESSAGE(
-      context->FixInputPort(0, VectorXd::Constant(2, 0.0)),
+      context->FixInputPort(
+          0, Value<BasicVector<double>>(VectorXd::Constant(2, 0.0))),
       std::exception,
       "System::FixInputPortTypeCheck\\(\\): expected value of type "
       "drake::systems::BasicVector<double> with size=1 "

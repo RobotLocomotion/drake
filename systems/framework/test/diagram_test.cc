@@ -342,7 +342,7 @@ GTEST_TEST(BadDiagramTest, UnconnectedInsideInputPort) {
   BadDiagram diagram;
   auto context = diagram.AllocateContext();
 
-  context->FixInputPort(0, {1});
+  diagram.get_input_port(0).FixValue(context.get(), 1.0);
 
   const Context<double>& inside_context =
       diagram.GetSubsystemContext(diagram.inside(), *context);
@@ -587,9 +587,9 @@ class DiagramTest : public ::testing::Test {
   }
 
   void AttachInputs() {
-    context_->FixInputPort(0, input0_);
-    context_->FixInputPort(1, input1_);
-    context_->FixInputPort(2, input2_);
+    diagram_->get_input_port(0).FixValue(context_.get(), input0_);
+    diagram_->get_input_port(1).FixValue(context_.get(), input1_);
+    diagram_->get_input_port(2).FixValue(context_.get(), input2_);
   }
 
   Adder<double>* adder0() { return diagram_->adder0(); }
@@ -600,9 +600,9 @@ class DiagramTest : public ::testing::Test {
 
   std::unique_ptr<ExampleDiagram> diagram_;
 
-  const BasicVector<double> input0_{1, 2, 4};
-  const BasicVector<double> input1_{8, 16, 32};
-  const BasicVector<double> input2_{64, 128, 256};
+  const Vector3d input0_{1, 2, 4};
+  const Vector3d input1_{8, 16, 32};
+  const Vector3d input2_{64, 128, 256};
 
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
@@ -974,9 +974,9 @@ TEST_F(DiagramTest, ToAutoDiffXd) {
   /// adder2_: (A + B)             -> output 1
   /// integrator1_: A              -> C
   /// integrator2_: C              -> output 2
-  BasicVector<AutoDiffXd> input0(3);
-  BasicVector<AutoDiffXd> input1(3);
-  BasicVector<AutoDiffXd> input2(3);
+  VectorX<AutoDiffXd> input0(3);
+  VectorX<AutoDiffXd> input1(3);
+  VectorX<AutoDiffXd> input2(3);
   for (int i = 0; i < 3; ++i) {
     input0[i].value() = 1 + 0.1 * i;
     input0[i].derivatives() = VectorXd::Unit(9, i);
@@ -985,9 +985,9 @@ TEST_F(DiagramTest, ToAutoDiffXd) {
     input2[i].value() = 3 + 0.3 * i;
     input2[i].derivatives() = VectorXd::Unit(9, 6 + i);
   }
-  context->FixInputPort(0, input0);
-  context->FixInputPort(1, input1);
-  context->FixInputPort(2, input2);
+  ad_diagram->get_input_port(0).FixValue(context.get(), input0);
+  ad_diagram->get_input_port(1).FixValue(context.get(), input1);
+  ad_diagram->get_input_port(2).FixValue(context.get(), input2);
 
   ad_diagram->CalcOutput(*context, output.get());
   ASSERT_EQ(kSize, output->num_ports());
@@ -1057,9 +1057,7 @@ TEST_F(DiagramTest, ToSymbolic) {
 // Tests that the same diagram can be evaluated into the same output with
 // different contexts interchangeably.
 TEST_F(DiagramTest, Clone) {
-  context_->FixInputPort(0, input0_);
-  context_->FixInputPort(1, input1_);
-  context_->FixInputPort(2, input2_);
+  AttachInputs();
 
   // Compute the output with the default inputs and sanity-check it.
   diagram_->CalcOutput(*context_, output_.get());
@@ -1092,7 +1090,7 @@ TEST_F(DiagramTest, Clone) {
       &clone_state.get_discrete_state()));
 
   DRAKE_DEMAND(kSize == 3);
-  clone->FixInputPort(0, {3, 6, 9});
+  diagram_->get_input_port(0).FixValue(clone.get(), Vector3d(3, 6, 9));
 
   // Recompute the output and check the values.
   diagram_->CalcOutput(*clone, output_.get());
@@ -1170,9 +1168,9 @@ class DiagramOfDiagramsTest : public ::testing::Test {
 
     output_ = diagram_->AllocateOutput();
 
-    context_->FixInputPort(0, {8});
-    context_->FixInputPort(1, {64});
-    context_->FixInputPort(2, {512});
+    diagram_->get_input_port(0).FixValue(context_.get(), 8.0);
+    diagram_->get_input_port(1).FixValue(context_.get(), 64.0);
+    diagram_->get_input_port(2).FixValue(context_.get(), 512.0);
 
     // Initialize the integrator states.
     Context<double>& d0_context =
@@ -1304,9 +1302,8 @@ TEST_F(DiagramOfDiagramsTest, EvalOutput) {
   //   output0 = 586 + 660 + 9 = 1255
   //   output1 = output0 + 586 + 660 = 2501
   //   output2 = 81 (state of integrator1_)
-  auto value10 = BasicVector<double>::Make({10});
   FixedInputPortValue& port_value =
-      context_->FixInputPort(0, std::move(value10));
+      diagram_->get_input_port(0).FixValue(context_.get(), 10.0);
   EXPECT_EQ(1255, diagram_->get_output_port(0).
       Eval<BasicVector<double>>(*context_)[0]);
   EXPECT_EQ(2501, diagram_->get_output_port(1).
@@ -1369,7 +1366,7 @@ GTEST_TEST(DiagramSubclassTest, TwelvePlusSevenIsNineteen) {
   ASSERT_TRUE(context != nullptr);
   ASSERT_TRUE(output != nullptr);
 
-  context->FixInputPort(0, {12.0});
+  plus_seven.get_input_port(0).FixValue(context.get(), 12.0);
   plus_seven.CalcOutput(*context, output.get());
 
   ASSERT_EQ(1, output->num_ports());
@@ -1872,8 +1869,8 @@ class DiscreteStateTest : public ::testing::Test {
  public:
   void SetUp() override {
     context_ = diagram_.CreateDefaultContext();
-    context_->FixInputPort(0, {17.0});
-    context_->FixInputPort(1, {23.0});
+    diagram_.get_input_port(0).FixValue(context_.get(), 17.0);
+    diagram_.get_input_port(1).FixValue(context_.get(), 23.0);
   }
 
  protected:
@@ -2803,7 +2800,7 @@ GTEST_TEST(MutateSubcontextTest, DiagramRecalculatesOnSubcontextChange) {
 
   auto diagram_context = diagram->AllocateContext();
   diagram_context->EnableCaching();
-  diagram_context->FixInputPort(0, {1.5});  // u(=u0)
+  diagram->get_input_port(0).FixValue(diagram_context.get(), 1.5);  // u(=u0)
 
   // Hunt down the cache entry for the Diagram's derivative computation so we
   // can verify that it gets invalidated and recomputed as we expect.
@@ -2837,7 +2834,8 @@ GTEST_TEST(MutateSubcontextTest, DiagramRecalculatesOnSubcontextChange) {
   // Must set the dangling input port to a value to evaluate derivatives.
   Context<double>& context2 =
       diagram->GetMutableSubsystemContext(*integ2, &*diagram_context);
-  FixedInputPortValue& u2_value = context2.FixInputPort(0, {0.75});
+  FixedInputPortValue& u2_value =
+      integ2->get_input_port(0).FixValue(&context2, 0.75);
 
   // The diagram derivatives should be (u0,u1,u2)=(u,x0,u2).
   auto& eval_derivs =
