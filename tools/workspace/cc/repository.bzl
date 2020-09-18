@@ -147,7 +147,10 @@ def _impl(repository_ctx):
 
 COMPILER_ID = "{}"
 
-""".format(compiler_id)
+COMPILER_VERSION_MAJOR = {}
+COMPILER_VERSION_MINOR = {}
+
+""".format(compiler_id, compiler_version_major, compiler_version_minor)
 
     repository_ctx.file(
         "compiler.bzl",
