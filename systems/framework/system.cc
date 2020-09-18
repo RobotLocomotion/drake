@@ -132,10 +132,10 @@ void System<T>::AllocateFixedInputs(Context<T>* context) const {
   for (InputPortIndex i(0); i < num_input_ports(); ++i) {
     const InputPort<T>& port = get_input_port(i);
     if (port.get_data_type() == kVectorValued) {
-      context->FixInputPort(port.get_index(), AllocateInputVector(port));
+      port.FixValue(context, *AllocateInputVector(port));
     } else {
       DRAKE_DEMAND(port.get_data_type() == kAbstractValued);
-      context->FixInputPort(port.get_index(), AllocateInputAbstract(port));
+      port.FixValue(context, *AllocateInputAbstract(port));
     }
   }
 }
@@ -823,7 +823,7 @@ void System<T>::FixInputPortsFrom(const System<double>& other_system,
         for (int j = 0; j < our_vec->size(); ++j) {
           (*our_vec)[j] = T(other_vec[j]);
         }
-        target_context->FixInputPort(i, *our_vec);
+        input_port.FixValue(target_context, *our_vec);
         continue;
       }
       case kAbstractValued: {
@@ -831,7 +831,7 @@ void System<T>::FixInputPortsFrom(const System<double>& other_system,
         // it to the port.
         const auto& other_value =
             other_port.Eval<AbstractValue>(other_context);
-        target_context->FixInputPort(i, other_value);
+        input_port.FixValue(target_context, other_value);
         continue;
       }
     }

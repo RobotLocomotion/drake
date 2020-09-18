@@ -22,14 +22,16 @@ FixedInputPortValue& Context<T>::FixInputPort(
 template <typename T>
 FixedInputPortValue& Context<T>::FixInputPort(
     int index, const Eigen::Ref<const VectorX<T>>& data) {
-  return FixInputPort(index, BasicVector<T>(data));
+  return ContextBase::FixInputPort(
+    index, std::make_unique<Value<BasicVector<T>>>(data));
 }
 
 template <typename T>
 FixedInputPortValue& Context<T>::FixInputPort(
     int index, std::unique_ptr<BasicVector<T>> vec) {
   DRAKE_THROW_UNLESS(vec.get() != nullptr);
-  return FixInputPort(index, *vec);
+  return ContextBase::FixInputPort(
+    index, std::make_unique<Value<BasicVector<T>>>(vec->Clone()));
 }
 
 template <typename T>

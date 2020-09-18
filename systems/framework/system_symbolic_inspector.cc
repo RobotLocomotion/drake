@@ -84,7 +84,7 @@ void SystemSymbolicInspector::InitializeVectorInputs(
       input_variables_[i][j] = symbolic::Variable(name.str());
       value->SetAtIndex(j, input_variables_[i][j]);
     }
-    context_->FixInputPort(i, *value);
+    system.get_input_port(i).FixValue(context_.get(), *value);
   }
 }
 
