@@ -11,6 +11,7 @@ import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import RandomGenerator
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue, Value
 from pydrake.examples.pendulum import PendulumPlant
 from pydrake.examples.rimless_wheel import RimlessWheel
@@ -778,14 +779,16 @@ class TestGeneral(unittest.TestCase):
         dt = 0.1  # Arbitrary.
         system_vec = ZeroOrderHold(period_sec=dt, vector_size=1)
         context_vec = system_vec.CreateDefaultContext()
-        context_vec.FixInputPort(index=0, data=[0.])
-        context_vec.FixInputPort(index=0, vec=BasicVector([0.]))
+        with catch_drake_warnings(expected_count=2):
+            context_vec.FixInputPort(index=0, data=[0.])
+            context_vec.FixInputPort(index=0, vec=BasicVector([0.]))
         # Test abstract.
         model_value = AbstractValue.Make("Hello")
         system_abstract = ZeroOrderHold(
             period_sec=dt, abstract_model_value=model_value.Clone())
         context_abstract = system_abstract.CreateDefaultContext()
-        context_abstract.FixInputPort(index=0, value=model_value.Clone())
+        with catch_drake_warnings(expected_count=1):
+            context_abstract.FixInputPort(index=0, value=model_value.Clone())
 
     def test_event_status(self):
         system = ZeroOrderHold(period_sec=0.1, vector_size=1)

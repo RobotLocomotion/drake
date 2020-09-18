@@ -449,6 +449,8 @@ class Context : public ContextBase {
   /// input port that has previously been passed into a call to
   /// DiagramBuilder::Connect(), causes FixedInputPortValue to override any
   /// other value present on that port.
+  DRAKE_DEPRECATED("2021-01-01",
+      "Use input_port.FixValue() instead of context.FixInputPort().")
   FixedInputPortValue& FixInputPort(int index, const BasicVector<T>& vec);
 
   /// Same as above method but starts with an Eigen vector whose contents are
@@ -457,6 +459,8 @@ class Context : public ContextBase {
   /// input port that has previously been passed into a call to
   /// DiagramBuilder::Connect(), causes FixedInputPortValue to override any
   /// other value present on that port.
+  DRAKE_DEPRECATED("2021-01-01",
+      "Use input_port.FixValue() instead of context.FixInputPort().")
   FixedInputPortValue& FixInputPort(
       int index, const Eigen::Ref<const VectorX<T>>& data);
 
@@ -474,6 +478,8 @@ class Context : public ContextBase {
   /// the other overloads instead.
   ///
   /// @exclude_from_pydrake_mkdoc{Will be deprecated; not bound in pydrake.}
+  DRAKE_DEPRECATED("2021-01-01",
+      "Use input_port.FixValue() instead of context.FixInputPort().")
   FixedInputPortValue& FixInputPort(
       int index, std::unique_ptr<BasicVector<T>> vec);
 
