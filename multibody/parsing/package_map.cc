@@ -128,8 +128,13 @@ void PackageMap::AddPackageIfNew(const string& package_name,
   if (!Contains(package_name)) {
     Add(package_name, path);
   } else {
-    drake::log()->warn("Package \"{}\" was found more than once in the "
-                       "search space.", package_name);
+    const string existing_path = GetPath(package_name);
+    if (path != existing_path) {
+      drake::log()->warn(
+          "PackageMap is ignoring newly-found path \"{}\" for package \"{}\""
+          " and will continue using the previously-known path at \"{}\".",
+          path, package_name, existing_path);
+    }
   }
 }
 
