@@ -9,6 +9,7 @@ import numpy as np
 from functools import partial
 
 from ipywidgets import FloatSlider, Layout
+from IPython.display import display
 
 from pydrake.common.jupyter import process_ipywidget_events
 from pydrake.multibody.tree import JointIndex
