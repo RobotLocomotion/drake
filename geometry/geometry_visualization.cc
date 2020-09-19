@@ -223,7 +223,7 @@ lcmt_viewer_load_robot GeometryVisualizationImpl::BuildLoadMessage(
     int geom_index = 0;
     const InternalFrame& world_frame =
         state.frames_.at(InternalFrame::world_frame_id());
-    for (const GeometryId id : world_frame.child_geometries()) {
+    for (const GeometryId& id : world_frame.child_geometries()) {
       const InternalGeometry& geometry = state.geometries_.at(id);
       const GeometryProperties* props = get_properties(geometry, role);
       if (props != nullptr) {

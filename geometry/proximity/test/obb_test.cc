@@ -163,7 +163,7 @@ GTEST_TEST(ObbMakerTest, VerifyEigenvalues) {
   {
     Matrix3d covariance_M = Matrix3d::Zero();
     Vector3d p_MC(1. / 3., 1. / 3., 1. / 3.);
-    for (const Vector3d& p_MV :
+    for (const auto& p_MV :
          {Vector3d::UnitX(), Vector3d::UnitY(), Vector3d::UnitZ()}) {
       const Vector3d p_CV_M = p_MV - p_MC;
       covariance_M += p_CV_M * p_CV_M.transpose();
@@ -449,7 +449,7 @@ bool Contain(const Obb& obb_M, const MeshType& mesh_M,
              const std::set<typename MeshType::VertexIndex>& vertices) {
   const RigidTransformd& X_MB = obb_M.pose();
   const RigidTransformd X_BM = X_MB.inverse();
-  for (const typename MeshType::VertexIndex v : vertices) {
+  for (const typename MeshType::VertexIndex& v : vertices) {
     Vector3d p_MV = mesh_M.vertex(v).r_MV();
     Vector3d p_BV = X_BM * p_MV;
     if ((p_BV.array() > obb_M.half_width().array()).any()) {

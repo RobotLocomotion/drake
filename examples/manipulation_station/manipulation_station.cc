@@ -526,7 +526,7 @@ void ManipulationStation<T>::Finalize(
   const auto iiwa_joint_indices =
       plant_->GetJointIndices(iiwa_model_.model_instance);
   int q0_index = 0;
-  for (const auto joint_index : iiwa_joint_indices) {
+  for (const auto& joint_index : iiwa_joint_indices) {
     multibody::RevoluteJoint<T>* joint =
         dynamic_cast<multibody::RevoluteJoint<T>*>(
             &plant_->get_mutable_joint(joint_index));

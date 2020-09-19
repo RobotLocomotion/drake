@@ -104,7 +104,7 @@ SceneGraph<T>::SceneGraph(const SceneGraph<U>& other) : SceneGraph() {
   // Therefore, for SourceIds i and j, the if i > j, then the port indices for
   // source i must all be greater than those for j.
   vector<SourceId> source_ids;
-  for (const auto pair : other.input_source_ids_) {
+  for (const auto& pair : other.input_source_ids_) {
     source_ids.push_back(pair.first);
   }
   auto comparator = [](const SourceId& a, const SourceId& b) {
@@ -112,7 +112,7 @@ SceneGraph<T>::SceneGraph(const SceneGraph<U>& other) : SceneGraph() {
   };
   std::sort(source_ids.begin(), source_ids.end(), comparator);
 
-  for (const auto source_id : source_ids) {
+  for (const auto& source_id : source_ids) {
     MakeSourcePorts(source_id);
     const auto& new_ports = input_source_ids_[source_id];
     const auto& ref_ports = other.input_source_ids_.at(source_id);

@@ -59,7 +59,7 @@ void MultibodySimDriver::SetPointContactParameters(const Body<double>& body,
       plant_->GetCollisionGeometriesForBody(body);
 
   const auto& inspector = GetInspector();
-  for (const auto id : geometries) {
+  for (const auto& id : geometries) {
     const geometry::ProximityProperties* old_props =
         inspector.GetProximityProperties(id);
     DRAKE_DEMAND(old_props);
@@ -86,7 +86,7 @@ std::vector<double> MultibodySimDriver::GetDynamicFrictionCoefficients(
       plant_->GetCollisionGeometriesForBody(body);
   const auto& inspector = GetInspector();
   std::vector<double> params;
-  for (const auto id : geometries) {
+  for (const auto& id : geometries) {
     const geometry::ProximityProperties* props =
         inspector.GetProximityProperties(id);
     DRAKE_DEMAND(props);

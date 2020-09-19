@@ -1939,7 +1939,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     CheckValidState(state);
     internal_tree().SetDefaultState(context, state);
-    for (const BodyIndex index : GetFloatingBaseBodies()) {
+    for (const BodyIndex& index : GetFloatingBaseBodies()) {
       SetFreeBodyPose(
           context, state, internal_tree().get_body(index),
           X_WB_default_list_[index].template cast<T>());
