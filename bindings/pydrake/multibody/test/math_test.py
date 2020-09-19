@@ -1,3 +1,4 @@
+import copy
 import unittest
 
 import numpy as np
@@ -6,6 +7,7 @@ from pydrake.common.cpp_param import List
 from pydrake.common.value import Value
 import pydrake.common.test_utilities.numpy_compare as numpy_compare
 from pydrake.symbolic import Expression
+from pydrake.math import RotationMatrix_
 from pydrake.multibody.math import (
     SpatialAcceleration_,
     SpatialForce_,
@@ -16,7 +18,7 @@ from pydrake.multibody.math import (
 
 class TestMultibodyTreeMath(unittest.TestCase):
     def check_spatial_vector(
-            self, cls, coeffs_name, rotation_name, translation_name):
+            self, T, cls, coeffs_name, rotation_name, translation_name):
         vec = cls()
         # - Accessors.
         self.assertTrue(isinstance(vec.rotational(), np.ndarray))
@@ -43,14 +45,44 @@ class TestMultibodyTreeMath(unittest.TestCase):
         coeffs_args = {coeffs_name: coeffs_expected}
         numpy_compare.assert_float_equal(
                 cls(**coeffs_args).get_coeffs(), coeffs_expected)
+        # Test operators.
+        numpy_compare.assert_float_equal(
+            (-vec1).get_coeffs(), -coeffs_expected)
+        new = copy.copy(vec1)
+        # - Ensure in-place ops do not return a new object.
+        pre_inplace = new
+        new += vec1
+        self.assertIs(pre_inplace, new)
+        numpy_compare.assert_float_equal(new.get_coeffs(), 2 * coeffs_expected)
+        numpy_compare.assert_float_equal(
+            (vec1 + vec1).get_coeffs(), 2 * coeffs_expected)
+        new = copy.copy(vec1)
+        pre_inplace = new
+        new -= vec1
+        self.assertIs(pre_inplace, new)
+        numpy_compare.assert_float_equal(new.get_coeffs(), np.zeros(6))
+        numpy_compare.assert_float_equal(
+            (vec1 - vec1).get_coeffs(), np.zeros(6))
+        new = copy.copy(vec1)
+        pre_inplace = new
+        new *= T(2)
+        self.assertIs(pre_inplace, new)
+        numpy_compare.assert_float_equal(new.get_coeffs(), 2 * coeffs_expected)
+        numpy_compare.assert_float_equal(
+            (vec1 * T(2)).get_coeffs(), 2 * coeffs_expected)
+        numpy_compare.assert_float_equal(
+            (T(2) * vec1).get_coeffs(), 2 * coeffs_expected)
+        R = RotationMatrix_[T]()
+        numpy_compare.assert_float_equal((
+            vec1.Rotate(R_FE=R)).get_coeffs(), coeffs_expected)
 
     @numpy_compare.check_all_types
     def test_spatial_vector_types(self, T):
-        self.check_spatial_vector(SpatialVelocity_[T], "V", "w", "v")
-        self.check_spatial_vector(SpatialMomentum_[T], "L", "h", "l")
+        self.check_spatial_vector(T, SpatialVelocity_[T], "V", "w", "v")
+        self.check_spatial_vector(T, SpatialMomentum_[T], "L", "h", "l")
         self.check_spatial_vector(
-                SpatialAcceleration_[T], "A", "alpha", "a")
-        self.check_spatial_vector(SpatialForce_[T], "F", "tau", "f")
+                T, SpatialAcceleration_[T], "A", "alpha", "a")
+        self.check_spatial_vector(T, SpatialForce_[T], "F", "tau", "f")
 
     @numpy_compare.check_all_types
     def test_value_instantiations(self, T):
@@ -63,3 +95,40 @@ class TestMultibodyTreeMath(unittest.TestCase):
         Value[List[SpatialAcceleration_[T]]]
         Value[SpatialForce_[T]]
         Value[List[SpatialForce_[T]]]
+
+    @numpy_compare.check_all_types
+    def test_spatial_velocity(self, T):
+        """
+        Provides basic acceptance tests for SpatialVelocity, beyond what's
+        tested in `test_spatial_vector_types`.
+        """
+        # Basic acceptance tests.
+        V = SpatialVelocity_[T].Zero()
+        to_T = np.vectorize(T)
+        p = to_T(np.zeros(3))
+        self.assertIs(V.ShiftInPlace(p_BpBq_E=p), V)
+        self.assertIsInstance(V.Shift(p_BpBq_E=p), SpatialVelocity_[T])
+        self.assertIsInstance(
+            V.ComposeWithMovingFrameVelocity(p_PoBo_E=p, V_PB_E=V),
+            SpatialVelocity_[T])
+        F = SpatialForce_[T].Zero()
+        self.assertIsInstance(V.dot(F_Q_E=F), T)
+        self.assertIsInstance(V @ F, T)
+        L = SpatialMomentum_[T].Zero()
+        self.assertIsInstance(V.dot(L_NBp_E=L), T)
+        self.assertIsInstance(V @ L, T)
+
+    @numpy_compare.check_all_types
+    def test_spatial_force(self, T):
+        """
+        Provides basic acceptance tests for SpatialForce, beyond what's
+        tested in `test_spatial_vector_types`.
+        """
+        F = SpatialForce_[T].Zero()
+        to_T = np.vectorize(T)
+        p = to_T(np.zeros(3))
+        self.assertIs(F.ShiftInPlace(p_BpBq_E=p), F)
+        self.assertIsInstance(F.Shift(p_BpBq_E=p), SpatialForce_[T])
+        V = SpatialVelocity_[T].Zero()
+        self.assertIsInstance(F.dot(V_IBp_E=V), T)
+        self.assertIsInstance(F @ V, T)
