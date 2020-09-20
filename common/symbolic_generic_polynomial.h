@@ -99,22 +99,24 @@ class GenericPolynomial {
     return decision_variables_;
   }
 
-  /// Sets the indeterminates to `new_indeterminates`.
-  ///
-  /// Changing the indeterminates would change `monomial_to_coefficient_map()`,
-  /// and also potentially the degree of the polynomial. Here is an example.
-  ///
-  /// @code
-  /// // p is a quadratic polynomial with x being the indeterminates.
-  /// symbolic::Polynomial p(a * x * x + b * x + c, {x});
-  /// // p.monomial_to_coefficient_map() contains {1: c, x: b, x*x:a}.
-  /// std::cout << p.TotalDegree(); // prints 2.
-  /// // Now set (a, b, c) to the indeterminates. p becomes a linear
-  /// // polynomial of a, b, c.
-  /// p.SetIndeterminates({a, b, c});
-  /// // p.monomial_to_coefficient_map() now is {a: x * x, b: x, c: 1}.
-  /// std::cout << p.TotalDegree(); // prints 1.
-  /// @endcode
+  /** Sets the indeterminates to `new_indeterminates`.
+   *
+   * Changing the indeterminates would change `monomial_to_coefficient_map()`,
+   * and also potentially the degree of the polynomial. Here is an example.
+   *
+   * @code
+   * // p is a quadratic polynomial with x being the indeterminates.
+   * symbolic::GenericPolynomial<MonomialBasisElement> p(a * x * x + b * x + c,
+   * {x});
+   * // p.basis_element_to_coefficient_map() contains {1: c, x: b, x*x:a}.
+   * std::cout << p.TotalDegree(); // prints 2.
+   * // Now set (a, b, c) to the indeterminates. p becomes a linear
+   * // polynomial of a, b, c.
+   * p.SetIndeterminates({a, b, c});
+   * // p.basis_element_to_coefficient_map() now is {a: x * x, b: x, c: 1}.
+   * std::cout << p.TotalDegree(); // prints 1.
+   * @endcode
+   */
   void SetIndeterminates(const Variables& new_indeterminates);
 
   /** Returns the map from each basis element to its coefficient. */
@@ -220,7 +222,7 @@ class GenericPolynomial {
   GenericPolynomial<BasisElement>& operator*=(double c);
   GenericPolynomial<BasisElement>& operator*=(const Variable& v);
 
-  friend Polynomial operator/(Polynomial p, double v);
+  GenericPolynomial<BasisElement>& operator/=(double c);
 
   /** Returns true if this and @p p are structurally equal.
    */
@@ -238,20 +240,23 @@ class GenericPolynomial {
   bool CoefficientsAlmostEqual(const GenericPolynomial<BasisElement>& p,
                                double tol) const;
 
-  /// Returns a symbolic formula representing the condition where this
-  /// polynomial and @p p are the same.
-  Formula operator==(const Polynomial& p) const;
+  /** Returns a symbolic formula representing the condition where this
+   * polynomial and @p p are the same.
+   */
+  Formula operator==(const GenericPolynomial<BasisElement>& p) const;
 
-  /// Returns a symbolic formula representing the condition where this
-  /// polynomial and @p p are not the same.
-  Formula operator!=(const Polynomial& p) const;
+  /** Returns a symbolic formula representing the condition where this
+   * polynomial and @p p are not the same.
+   */
+  Formula operator!=(const GenericPolynomial<BasisElement>& p) const;
 
-  /// Implements the @ref hash_append concept.
+  /** Implements the @ref hash_append concept.*/
   template <class HashAlgorithm>
-  friend void hash_append(HashAlgorithm& hasher,
-                          const Polynomial& item) noexcept {
+  friend void hash_append(
+      HashAlgorithm& hasher,
+      const GenericPolynomial<BasisElement>& item) noexcept {
     using drake::hash_append;
-    for (const auto& p : item.monomial_to_coefficient_map_) {
+    for (const auto& p : item.basis_element_to_coefficient_map_) {
       hash_append(hasher, p.first);
       hash_append(hasher, p.second);
     }
@@ -461,8 +466,12 @@ operator*(const Variable& v, GenericPolynomial<BasisElement> p) {
   return p *= v;
 }
 
-/// Returns `p / v`.
-Polynomial operator/(Polynomial p, double v);
+/** Returns `p / v`. */
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement> operator/(
+    GenericPolynomial<BasisElement> p, double v) {
+  return p /= v;
+}
 
 template <typename BasisElement>
 std::ostream& operator<<(std::ostream& os,
@@ -486,16 +495,18 @@ extern template class GenericPolynomial<ChebyshevBasisElement>;
 }  // namespace drake
 
 namespace std {
-/* Provides std::hash<drake::symbolic::Polynomial>. */
-template <>
-struct hash<drake::symbolic::Polynomial> : public drake::DefaultHash {};
+/* Provides std::hash<drake::symbolic::GenericPolynomial<BasisElement>>. */
+template <typename BasisElement>
+struct hash<drake::symbolic::GenericPolynomial<BasisElement>>
+    : public drake::DefaultHash {};
 #if defined(__GLIBCXX__)
 // Inform GCC that this hash function is not so fast (i.e. for-loop inside).
 // This will enforce caching of hash results. See
 // https://gcc.gnu.org/onlinedocs/libstdc++/manual/unordered_associative.html
 // for details.
-template <>
-struct __is_fast_hash<hash<drake::symbolic::Polynomial>> : std::false_type {};
+template <typename BasisElement>
+struct __is_fast_hash<hash<drake::symbolic::GenericPolynomial<BasisElement>>>
+    : std::false_type {};
 #endif
 }  // namespace std
 
