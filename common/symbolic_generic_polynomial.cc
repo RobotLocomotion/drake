@@ -414,6 +414,17 @@ GenericPolynomial<BasisElement>::GenericPolynomial(const Expression& e,
   // supposed to make sure the invariant holds as a post-condition.
 }
 
+void Polynomial::SetIndeterminates(const Variables& new_indeterminates) {
+  if (new_indeterminates.IsSupersetOf(indeterminates_) &&
+      intersect(decision_variables_, new_indeterminates).empty()) {
+    indeterminates_ = new_indeterminates;
+  } else {
+    // TODO(soonho-tri): Optimize this part.
+    *this = Polynomial{ToExpression(), new_indeterminates};
+  }
+}
+
+
 template <typename BasisElement>
 int GenericPolynomial<BasisElement>::Degree(const Variable& v) const {
   int degree{0};
@@ -657,6 +668,13 @@ GenericPolynomial<BasisElement>& GenericPolynomial<BasisElement>::operator*=(
   }
 }
 
+Polynomial operator/(Polynomial p, const double v) {
+  for (auto& item : p.monomial_to_coefficient_map_) {
+    item.second /= v;
+  }
+  return p;
+}
+
 template <typename BasisElement>
 GenericPolynomial<BasisElement>& GenericPolynomial<BasisElement>::AddProduct(
     const Expression& coeff, const BasisElement& m) {
@@ -800,6 +818,24 @@ bool GenericPolynomial<BasisElement>::CoefficientsAlmostEqual(
   }
 
   return true;
+}
+
+Formula Polynomial::operator==(const Polynomial& p) const {
+  // 1) Let diff = p - (this polynomial).
+  // 2) Extract the condition where diff is zero.
+  //    That is, all coefficients should be zero.
+  const Polynomial diff{p - *this};
+  Formula ret{Formula::True()};
+  for (const pair<const Monomial, Expression>& item :
+       diff.monomial_to_coefficient_map_) {
+    const Expression& coeff{item.second};
+    ret = ret && (coeff == 0.0);
+  }
+  return ret;
+}
+
+Formula Polynomial::operator!=(const Polynomial& p) const {
+  return !(*this == p);
 }
 
 template class GenericPolynomial<MonomialBasisElement>;

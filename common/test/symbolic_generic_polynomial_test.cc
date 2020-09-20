@@ -1048,6 +1048,15 @@ TEST_F(SymbolicGenericPolynomialTest,
   }
 }
 
+TEST_F(SymbolicPolynomialTest, DivideByConstant) {
+  for (double v = -5.5; v <= 5.5; v += 1.0) {
+    for (const Expression& e : exprs_) {
+      EXPECT_PRED2(ExprEqual, (Polynomial(e) / v).ToExpression(),
+                   Polynomial(e / v).ToExpression());
+    }
+  }
+}
+
 TEST_F(SymbolicGenericPolynomialTest, DifferentiateForMonomialBasis) {
   // p = 2a²bx² + 3bc²x + 7ac.
   const GenericPolynomial<MonomialBasisElement> p{
@@ -1584,6 +1593,17 @@ TEST_F(SymbolicGenericPolynomialTest, AddProduct2) {
   EXPECT_EQ(p.indeterminates(), Variables({var_x_, var_y_}));
 }
 
+TEST_F(SymbolicPolynomialTest, Hash) {
+  const auto h = std::hash<Polynomial>{};
+  Polynomial p1{x_ * x_};
+  const Polynomial p2{x_ * x_};
+  EXPECT_EQ(p1, p2);
+  EXPECT_EQ(h(p1), h(p2));
+  p1 += Polynomial{y_};
+  EXPECT_NE(p1, p2);
+  EXPECT_NE(h(p1), h(p2));
+}
+
 TEST_F(SymbolicGenericPolynomialTest, CoefficientsAlmostEqual) {
   GenericPolynomial<MonomialBasisElement> p1{x_ * x_};
   // Two polynomials with the same number of terms.
@@ -1674,6 +1694,51 @@ TEST_F(SymbolicGenericPolynomialTest, EqualToAfterExpansion) {
   // No expansion
   EXPECT_FALSE(p1.EqualTo(p2));
   EXPECT_TRUE(p1.EqualToAfterExpansion(p2));
+}
+
+TEST_F(SymbolicPolynomialTest, SetIndeterminates) {
+  // ax² + bx + c
+  const Expression e{a_ * x_ * x_ + b_ * x_ + c_};
+
+  {
+    // {x} -> {x, a}
+    Polynomial p{e, {var_x_}};
+    const Variables new_indeterminates{var_x_, var_a_};
+    p.SetIndeterminates(new_indeterminates);
+    EXPECT_PRED2(PolyEqual, p, Polynomial(e, new_indeterminates));
+  }
+
+  {
+    // {x} -> {x, y}, note that y ∉ variables(e).
+    Polynomial p{e, {var_x_}};
+    const Variables new_indeterminates{var_x_, var_y_};
+    p.SetIndeterminates(new_indeterminates);
+    EXPECT_PRED2(PolyEqual, p, Polynomial(e, new_indeterminates));
+  }
+
+  {
+    // {x, a} -> {x}
+    Polynomial p{e, {var_x_, var_a_}};
+    const Variables new_indeterminates{var_x_};
+    p.SetIndeterminates(new_indeterminates);
+    EXPECT_PRED2(PolyEqual, p, Polynomial(e, new_indeterminates));
+  }
+
+  {
+    // {x, a} -> {a}
+    Polynomial p{e, {var_x_, var_a_}};
+    const Variables new_indeterminates{var_a_};
+    p.SetIndeterminates(new_indeterminates);
+    EXPECT_PRED2(PolyEqual, p, Polynomial(e, new_indeterminates));
+  }
+
+  {
+    // {x, a, b, c} -> {x}
+    Polynomial p{e, {var_x_, var_a_, var_b_, var_c_}};
+    const Variables new_indeterminates{var_x_};
+    p.SetIndeterminates(new_indeterminates);
+    EXPECT_PRED2(PolyEqual, p, Polynomial(e, new_indeterminates));
+  }
 }
 
 }  // namespace
