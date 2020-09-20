@@ -377,6 +377,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "expmap_test",
+    copts = [
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":expmap",
         "//common/test_utilities:eigen_matrix_compare",
