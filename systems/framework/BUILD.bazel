@@ -80,6 +80,8 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:dummy_value",
         "//common:essential",
+        "//common:nice_type_name",
+        "//common:unused",
     ],
 )
 

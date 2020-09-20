@@ -66,8 +66,8 @@ TEST_F(SupervectorTest, ArrayOperator) {
 }
 
 TEST_F(SupervectorTest, OutOfRange) {
-  EXPECT_THROW(supervector_->GetAtIndex(-1), std::out_of_range);
-  EXPECT_THROW(supervector_->GetAtIndex(10), std::out_of_range);
+  EXPECT_THROW(supervector_->GetAtIndex(-1), std::exception);
+  EXPECT_THROW(supervector_->GetAtIndex(10), std::exception);
 }
 
 TEST_F(SupervectorTest, Empty) {

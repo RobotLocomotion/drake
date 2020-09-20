@@ -23,7 +23,7 @@ class SubvectorTest : public ::testing::Test {
 };
 
 TEST_F(SubvectorTest, NullptrVector) {
-  EXPECT_THROW(Subvector<double> subvec(nullptr, 0, 0), std::logic_error);
+  EXPECT_THROW(Subvector<double> subvec(nullptr, 0, 0), std::exception);
 }
 
 TEST_F(SubvectorTest, EmptySubvectorDeprecated) {
@@ -32,18 +32,18 @@ TEST_F(SubvectorTest, EmptySubvectorDeprecated) {
   Subvector<double> subvec(vector_.get());
 #pragma GCC diagnostic pop
   EXPECT_EQ(0, subvec.size());
-  EXPECT_THROW(subvec.GetAtIndex(0), std::runtime_error);
+  EXPECT_THROW(subvec.GetAtIndex(0), std::exception);
 }
 
 TEST_F(SubvectorTest, OutOfBoundsSubvector) {
-  EXPECT_THROW(Subvector<double>(vector_.get(), 1, 4), std::out_of_range);
+  EXPECT_THROW(Subvector<double>(vector_.get(), 1, 4), std::exception);
 }
 
 TEST_F(SubvectorTest, Access) {
   Subvector<double> subvec(vector_.get(), 1, kSubVectorLength);
   EXPECT_EQ(2, subvec.GetAtIndex(0));
   EXPECT_EQ(3, subvec.GetAtIndex(1));
-  EXPECT_THROW(subvec.GetAtIndex(2), std::runtime_error);
+  EXPECT_THROW(subvec.GetAtIndex(2), std::exception);
 }
 
 TEST_F(SubvectorTest, Copy) {
@@ -127,13 +127,13 @@ TEST_F(SubvectorTest, ScaleAndAddToVector) {
 TEST_F(SubvectorTest, PlusEqInvalidSize) {
   BasicVector<double> addend(1);
   Subvector<double> subvec(vector_.get(), 1, kSubVectorLength);
-  EXPECT_THROW(subvec += addend, std::out_of_range);
+  EXPECT_THROW(subvec += addend, std::exception);
 }
 
 TEST_F(SubvectorTest, AddToVectorInvalidSize) {
   VectorX<double> target(3);
   Subvector<double> subvec(vector_.get(), 1, kSubVectorLength);
-  EXPECT_THROW(subvec.ScaleAndAddToVector(1, &target), std::out_of_range);
+  EXPECT_THROW(subvec.ScaleAndAddToVector(1, &target), std::exception);
 }
 
 // Tests SetZero functionality in VectorBase.

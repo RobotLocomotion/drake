@@ -1,18 +1,13 @@
 #pragma once
 
-#include <cstdint>
 #include <initializer_list>
-#include <iostream>
-#include <limits>
 #include <memory>
-#include <stdexcept>
 #include <utility>
-
-#include <Eigen/Dense>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/dummy_value.h"
+#include "drake/common/eigen_types.h"
 #include "drake/systems/framework/vector_base.h"
 
 namespace drake {
@@ -71,13 +66,10 @@ class BasicVector : public VectorBase<T> {
 
   /// Sets the vector to the given value. After a.set_value(b.get_value()), a
   /// must be identical to b.
-  /// @throws std::out_of_range if the new value has different dimensions.
+  /// @throws std::exception if the new value has different dimensions.
   void set_value(const Eigen::Ref<const VectorX<T>>& value) {
-    if (value.rows() != values_.rows()) {
-      throw std::out_of_range(
-          "Cannot set a BasicVector of size " + std::to_string(values_.rows()) +
-          " with a value of size " + std::to_string(value.rows()));
-    }
+    const int n = value.rows();
+    if (n != size()) { this->ThrowMismatchedSize(n); }
     values_ = value;
   }
 
@@ -101,9 +93,8 @@ class BasicVector : public VectorBase<T> {
   void ScaleAndAddToVector(const T& scale,
                            EigenPtr<VectorX<T>> vec) const final {
     DRAKE_THROW_UNLESS(vec != nullptr);
-    if (vec->rows() != size()) {
-      throw std::out_of_range("Addends must be the same size.");
-    }
+    const int n = vec->rows();
+    if (n != size()) { this->ThrowMismatchedSize(n); }
     *vec += scale * values_;
   }
 
@@ -121,13 +112,23 @@ class BasicVector : public VectorBase<T> {
   }
 
  protected:
-  const T& DoGetAtIndex(int index) const final {
-    DRAKE_THROW_UNLESS(index < size());
+  const T& DoGetAtIndexUnchecked(int index) const final {
+    DRAKE_ASSERT(index < size());
     return values_[index];
   }
 
-  T& DoGetAtIndex(int index) final {
-    DRAKE_THROW_UNLESS(index < size());
+  T& DoGetAtIndexUnchecked(int index) final {
+    DRAKE_ASSERT(index < size());
+    return values_[index];
+  }
+
+  const T& DoGetAtIndexChecked(int index) const final {
+    if (index >= size()) { this->ThrowOutOfRange(index); }
+    return values_[index];
+  }
+
+  T& DoGetAtIndexChecked(int index) final {
+    if (index >= size()) { this->ThrowOutOfRange(index); }
     return values_[index];
   }
 

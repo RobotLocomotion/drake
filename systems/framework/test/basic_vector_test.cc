@@ -146,7 +146,7 @@ GTEST_TEST(BasicVectorTest, ReinitializeInvalid) {
   BasicVector<double> vec(2);
   Eigen::Vector3d next_value;
   next_value << 3, 4, 5;
-  EXPECT_THROW(vec.set_value(next_value), std::out_of_range);
+  EXPECT_THROW(vec.set_value(next_value), std::exception);
 }
 
 // Tests all += * operations for BasicVector.

@@ -101,10 +101,10 @@ TEST_F(ContinuousStateTest, ArrayOperator) {
 
 TEST_F(ContinuousStateTest, OutOfBoundsAccess) {
   EXPECT_THROW(continuous_state_->get_generalized_position().GetAtIndex(2),
-               std::runtime_error);
+               std::exception);
   EXPECT_THROW(
       continuous_state_->get_mutable_generalized_velocity().SetAtIndex(1, 42),
-      std::runtime_error);
+      std::exception);
 }
 
 // Tests that std::out_of_range is thrown if the component dimensions do not
