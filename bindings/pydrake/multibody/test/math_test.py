@@ -6,6 +6,7 @@ from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common.cpp_param import List
 from pydrake.common.value import Value
 import pydrake.common.test_utilities.numpy_compare as numpy_compare
+from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.symbolic import Expression
 from pydrake.math import RotationMatrix_
 from pydrake.multibody.math import (
@@ -75,6 +76,8 @@ class TestMultibodyTreeMath(unittest.TestCase):
         R = RotationMatrix_[T]()
         numpy_compare.assert_float_equal((
             vec1.Rotate(R_FE=R)).get_coeffs(), coeffs_expected)
+        # Test pickling.
+        assert_pickle(self, vec1, cls.get_coeffs, T=T)
 
     @numpy_compare.check_all_types
     def test_spatial_vector_types(self, T):
