@@ -114,7 +114,7 @@ void TestVolumeToSurfaceMesh() {
   // so we can use `set`.
   using Coords = std::tuple<T, T, T>;
   std::set<Coords> boundary_vertex_coords;
-  for (const VolumeVertex<T> vertex : volume.vertices()) {
+  for (const VolumeVertex<T>& vertex : volume.vertices()) {
     const Vector3<T>& r_MV = vertex.r_MV();
     // A vertex is on the boundary of a box when one of its coordinates
     // matches an extremal value.
