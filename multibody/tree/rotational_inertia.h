@@ -1103,10 +1103,11 @@ std::ostream& operator<<(std::ostream& o,
 //
 // which takes 6 more flops. Total 6 + 9Rv + 18Z + 20Y + 4L = 57.
 //
-// (Looking at the generated assembly code for gcc 7.5 -O3 in Godbolt showed
-// exactly 57 inline flops, no loops or function calls. Clang 6.0 -O3
-// failed to inline several of the Eigen methods although it made much better
-// use of packed SSE2 operations.)
+// (Looking at the generated assembly code for gcc 7.5 -O2 in Drake showed
+// exactly 57 flops. clang 9.0 -O2 generated a few extra flops but in many fewer
+// instructions since it was able to make much better use of SSE2 packed
+// instructions. Both compilers were fully able to inline the Eigen methods here
+// so there are no loops or function calls.)
 template <typename T>
 RotationalInertia<T>& RotationalInertia<T>::ReExpressInPlace(
     const math::RotationMatrix<T>& R_AE) {
@@ -1117,21 +1118,23 @@ RotationalInertia<T>& RotationalInertia<T>::ReExpressInPlace(
   T& d = I_SP_E_(1, 0); T& b = I_SP_E_(1, 1);
   T& e = I_SP_E_(2, 0); T& f = I_SP_E_(2, 1); T& c = I_SP_E_(2, 2);
 
+  // Avoid use of Eigen's comma initializer since the compilers don't
+  // reliably inline it.
   Eigen::Matrix<T, 3, 2> L;
-  L << a-c ,  d,
-        d  , b-c,
-       2*e , 2*f;
+  L(0, 0) = a-c; L(0, 1) = d;
+  L(1, 0) = d;   L(1, 1) = b-c;
+  L(2, 0) = 2*e; L(2, 1) = 2*f;
 
   // For convenience below, the first two rows of Rᵀ.
   Eigen::Matrix<T, 2, 3> Rt;
-  Rt << R(0, 0), R(1, 0), R(2, 0),
-        R(0, 1), R(1, 1), R(2, 1);
+  Rt(0, 0) = R(0, 0); Rt(0, 1) = R(1, 0); Rt(0, 2) = R(2, 0);
+  Rt(1, 0) = R(0, 1); Rt(1, 1) = R(1, 1); Rt(1, 2) = R(2, 1);
 
   const Vector3<T> Rv(e * Rt.row(1) - f * Rt.row(0));
 
   Matrix2<T> Y;
-  Y << R.row(1) * L.col(0), R.row(1) * L.col(1),
-       R.row(2) * L.col(0), R.row(2) * L.col(1);
+  Y(0, 0) = R.row(1).dot(L.col(0)); Y(0, 1) = R.row(1).dot(L.col(1));
+  Y(1, 0) = R.row(2).dot(L.col(0)); Y(1, 1) = R.row(2).dot(L.col(1));
 
   // We'll do Z elementwise due to element interdependence.
   const T Z11 = Y.row(0) * Rt.col(1);

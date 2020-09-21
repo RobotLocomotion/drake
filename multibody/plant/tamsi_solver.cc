@@ -263,6 +263,7 @@ void TamsiSolver<T>::SetOneWayCoupledProblemData(
     EigenPtr<const MatrixX<T>> Jn, EigenPtr<const MatrixX<T>> Jt,
     EigenPtr<const VectorX<T>> p_star,
     EigenPtr<const VectorX<T>> fn, EigenPtr<const VectorX<T>> mu) {
+  DRAKE_DEMAND(M && Jn && Jt && p_star && fn && mu);
   nc_ = fn->size();
   DRAKE_THROW_UNLESS(p_star->size() == nv_);
   DRAKE_THROW_UNLESS(M->rows() == nv_ && M->cols() == nv_);
@@ -280,6 +281,8 @@ void TamsiSolver<T>::SetTwoWayCoupledProblemData(
     EigenPtr<const MatrixX<T>> Jt, EigenPtr<const VectorX<T>> p_star,
     EigenPtr<const VectorX<T>> fn0, EigenPtr<const VectorX<T>> stiffness,
     EigenPtr<const VectorX<T>> dissipation, EigenPtr<const VectorX<T>> mu) {
+  DRAKE_DEMAND(M && Jn && Jt && p_star && fn0 && stiffness && dissipation
+                   && mu);
   nc_ = fn0->size();
   DRAKE_THROW_UNLESS(p_star->size() == nv_);
   DRAKE_THROW_UNLESS(M->rows() == nv_ && M->cols() == nv_);

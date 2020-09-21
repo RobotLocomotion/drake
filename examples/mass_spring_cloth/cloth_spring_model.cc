@@ -253,6 +253,7 @@ void ClothSpringModel<T>::UpdateDiscreteState(
 template <typename T>
 void ClothSpringModel<T>::AccumulateContinuousSpringForce(
     const systems::Context<T>& context, EigenPtr<VectorX<T>> forces) const {
+  DRAKE_DEMAND(forces != nullptr);
   const VectorX<T> continuous_states =
       context.get_continuous_state().CopyToVector();
   const auto& q = continuous_states.head(num_positions());
@@ -267,6 +268,7 @@ void ClothSpringModel<T>::AccumulateElasticForce(
     const ClothSpringModelParams<T>& param,
     const Eigen::Ref<const VectorX<T>>& q,
     EigenPtr<VectorX<T>> elastic_force) const {
+  DRAKE_DEMAND(elastic_force != nullptr);
   for (const Spring& s : springs_) {
     // Get the positions of the two particles connected by the spring.
     const int p0 = s.particle0;
@@ -291,6 +293,7 @@ void ClothSpringModel<T>::AccumulateDampingForce(
     const Eigen::Ref<const VectorX<T>>& q,
     const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> damping_force) const {
+  DRAKE_DEMAND(damping_force != nullptr);
   for (const Spring& s : springs_) {
     // Get the positions and velocities of the two particles connected by
     // the spring.

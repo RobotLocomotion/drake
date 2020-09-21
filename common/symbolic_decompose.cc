@@ -47,6 +47,7 @@ void DecomposeLinearExpressions(
     const Eigen::Ref<const VectorX<Expression>>& expressions,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& vars,
     EigenPtr<Eigen::MatrixXd> M) {
+  DRAKE_DEMAND(M != nullptr);
   DRAKE_DEMAND(M->rows() == expressions.rows() && M->cols() == vars.rows());
   for (int i = 0; i < expressions.size(); ++i) {
     const Expression& e{expressions(i)};
@@ -73,6 +74,7 @@ void DecomposeAffineExpressions(
     const Eigen::Ref<const VectorX<Expression>>& expressions,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& vars,
     EigenPtr<Eigen::MatrixXd> M, EigenPtr<Eigen::VectorXd> v) {
+  DRAKE_DEMAND(M != nullptr && v != nullptr);
   DRAKE_DEMAND(M->rows() == expressions.rows() && M->cols() == vars.rows());
   DRAKE_DEMAND(v->rows() == expressions.rows());
   for (int i = 0; i < expressions.size(); ++i) {

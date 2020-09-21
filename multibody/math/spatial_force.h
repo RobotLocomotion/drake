@@ -141,6 +141,7 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   /// @see ShiftInPlace(const Vector3<T>&) for details.
   static void ShiftInPlace(EigenPtr<Matrix6X<T>> F_Bp_E_all,
                            const Vector3<T>& p_BpBq_E) {
+    DRAKE_ASSERT(F_Bp_E_all != nullptr);  // ASSERT because inner loop method.
     const int ncol = F_Bp_E_all->cols();
     for (int j = 0; j < ncol; ++j) {
       // These are Eigen intermediate types; better not to look!

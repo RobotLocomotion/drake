@@ -141,6 +141,7 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
    the quantity vectors.*/
   static void set_particle_state(int particle_index, const Vector3<T>& state,
                                  EigenPtr<VectorX<T>> vec) {
+    DRAKE_ASSERT(vec != nullptr);
     const int p_index = particle_index * 3;
     (*vec)[p_index] = state(0);
     (*vec)[p_index + 1] = state(1);
@@ -154,6 +155,7 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
   static void accumulate_particle_state(int particle_index,
                                         const Vector3<T>& state,
                                         EigenPtr<VectorX<T>> vec) {
+    DRAKE_ASSERT(vec != nullptr);
     const int p_index = particle_index * 3;
     (*vec)[p_index] += state(0);
     (*vec)[p_index + 1] += state(1);
