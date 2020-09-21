@@ -4,14 +4,18 @@
 
 #include "drake/common/name_value.h"
 
-// TODO(jeremy.nimmer) Move this file into Drake once we like how it works.
-// See https://github.com/RobotLocomotion/drake/issues/12903.
+namespace drake {
+namespace systems {
 
-namespace anzu {
-namespace sim {
-
-// N.B. The names and defaults here match drake/systems/analysis exactly.
-/// The set of configurable properties on a simulator.
+// N.B. The default values here match simulator.h
+// and runge_kutta3_integrator.[h/cc]. For example
+// drake::systems::internal::kDefaultIntegratorName is "runge_kutta3".
+// TODO(dale.mcconachie) Ensure that the default SimulatorConfig remains
+// congruent with a default initialized Simulator.
+// TODO(dale.mcconachie) Update to include all configurable properties of
+// IntegratorBase. Currently, initial_step_size_target, minimum_step_size, and
+// throw_on_minimum_step_size_violation are missing.
+/// The set of all configurable properties on a Simulator and IntegratorBase.
 struct SimulatorConfig {
   template <typename Archive>
   void Serialize(Archive* a) {
@@ -28,8 +32,11 @@ struct SimulatorConfig {
   double accuracy{1.0e-2};
   bool use_error_control{true};
   double target_realtime_rate{0.0};
-  double publish_every_time_step{false};
+  /// Sets Simulator::set_publish_at_initialization() in addition to
+  /// Simulator::set_publish_every_time_step() when applied by
+  /// ApplySimulatorConfig().
+  bool publish_every_time_step{false};
 };
 
-}  // namespace sim
-}  // namespace anzu
+}  // namespace systems
+}  // namespace drake
