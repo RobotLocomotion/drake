@@ -252,7 +252,7 @@ drake_py_unittest(
     name = "math_test",
     deps = [
         ":math_py",
-        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+        "//bindings/pydrake/common/test_utilities",
     ],
 )
 
