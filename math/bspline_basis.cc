@@ -54,7 +54,6 @@ bool less_than_with_cast(const T& val, const T& other) {
 template <typename T>
 BsplineBasis<T>::BsplineBasis(int order, std::vector<T> knots)
     : order_(order),
-      num_basis_functions_(knots.size() - order),
       knots_(std::move(knots)) {
   if (static_cast<int>(knots_.size()) < 2 * order) {
     throw std::invalid_argument(
@@ -62,8 +61,7 @@ BsplineBasis<T>::BsplineBasis(int order, std::vector<T> knots)
                     "equal to twice the order ({}).",
                     knots_.size(), 2 * order));
   }
-  DRAKE_ASSERT(
-      std::is_sorted(knots_.begin(), knots_.end(), less_than_with_cast<T>));
+  DRAKE_ASSERT(CheckInvariants());
 }
 
 template <typename T>
@@ -142,6 +140,12 @@ boolean<T> BsplineBasis<T>::operator==(const BsplineBasis<T>& other) const {
 template <typename T>
 boolean<T> BsplineBasis<T>::operator!=(const BsplineBasis<T>& other) const {
   return !this->operator==(other);
+}
+
+template<typename T>
+bool BsplineBasis<T>::CheckInvariants() const {
+  return std::is_sorted(knots_.begin(), knots_.end(), less_than_with_cast<T>) &&
+      static_cast<int>(knots_.size()) >= 2 * order_;
 }
 }  // namespace math
 }  // namespace drake
