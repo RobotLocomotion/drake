@@ -123,6 +123,10 @@ GTEST_TEST(PackageMapTest, TestPopulateUpstreamToDrake) {
   };
 
   VerifyMatch(package_map, expected_packages);
+
+  // Call it again to exercise the "don't add things twice" code.
+  package_map.PopulateUpstreamToDrake(sdf_file_name);
+  VerifyMatch(package_map, expected_packages);
 }
 
 // Tests that PackageMap can be populated from an env var.

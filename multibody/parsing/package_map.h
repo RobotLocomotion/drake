@@ -77,8 +77,9 @@ class PackageMap {
   void CrawlForPackages(const std::string& path);
 
   // This method is the same as Add() except it first checks to ensure that
-  // package_name is not already in this PackageMap. If it is not, this
-  // method prints a warning and returns.
+  // package_name is not already in this PackageMap. If it was already present
+  // with a different path, then this method prints a warning and returns
+  // without adding the new path.
   void AddPackageIfNew(const std::string& package_name,
       const std::string& path);
 
