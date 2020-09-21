@@ -35,6 +35,8 @@ drake_cc_package_library(
         ":scalar_view_dense_output",
         ":semi_explicit_euler_integrator",
         ":simulator",
+        ":simulator_config",
+        ":simulator_config_functions",
         ":simulator_flags",
         ":simulator_print_stats",
         ":simulator_status",
@@ -79,6 +81,27 @@ drake_cc_library(
     deps = [
         ":simulator_flags",
         "@gflags",
+    ],
+)
+
+drake_cc_library(
+    name = "simulator_config",
+    srcs = ["simulator_config.cc"],
+    hdrs = ["simulator_config.h"],
+    deps = [
+        "//common:name_value",
+    ],
+)
+
+drake_cc_library(
+    name = "simulator_config_functions",
+    srcs = ["simulator_config_functions.cc"],
+    hdrs = ["simulator_config_functions.h"],
+    deps = [
+        ":simulator",
+        ":simulator_config",
+        ":simulator_flags",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -401,6 +424,16 @@ drake_cc_googletest(
         ":simulator_flags",
         "//common:nice_type_name",
         "//systems/primitives:constant_vector_source",
+    ],
+)
+
+drake_cc_googletest(
+    name = "simulator_config_functions_test",
+    deps = [
+        ":simulator",
+        ":simulator_config_functions",
+        "//common/yaml",
+        "//systems/framework:leaf_system",
     ],
 )
 
