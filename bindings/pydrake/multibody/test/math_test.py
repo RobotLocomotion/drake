@@ -22,10 +22,16 @@ class TestMultibodyTreeMath(unittest.TestCase):
             self, T, cls, coeffs_name, rotation_name, translation_name):
         vec = cls()
         # - Accessors.
-        self.assertTrue(isinstance(vec.rotational(), np.ndarray))
-        self.assertTrue(isinstance(vec.translational(), np.ndarray))
-        self.assertEqual(vec.rotational().shape, (3,))
-        self.assertEqual(vec.translational().shape, (3,))
+        if T == Expression:
+            # TODO(eric.cousineau): Teach `numpy_compare` to handle NaN in
+            # symbolic expressions, without having to evaluate the expressions.
+            self.assertEqual(vec.rotational().shape, (3,))
+            self.assertEqual(vec.translational().shape, (3,))
+        else:
+            numpy_compare.assert_float_equal(
+                vec.rotational(), np.full(3, np.nan))
+            numpy_compare.assert_float_equal(
+                vec.translational(), np.full(3, np.nan))
         # - Fully-parameterized constructor.
         rotation_expected = [0.1, 0.3, 0.5]
         translation_expected = [0., 1., 2.]
@@ -84,7 +90,7 @@ class TestMultibodyTreeMath(unittest.TestCase):
         self.check_spatial_vector(T, SpatialVelocity_[T], "V", "w", "v")
         self.check_spatial_vector(T, SpatialMomentum_[T], "L", "h", "l")
         self.check_spatial_vector(
-                T, SpatialAcceleration_[T], "A", "alpha", "a")
+            T, SpatialAcceleration_[T], "A", "alpha", "a")
         self.check_spatial_vector(T, SpatialForce_[T], "F", "tau", "f")
 
     @numpy_compare.check_all_types
