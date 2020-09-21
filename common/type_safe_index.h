@@ -62,8 +62,9 @@ namespace drake {
 /// `std::optional<Index>` instead.
 ///
 /// It is the designed intent of this class, that indices derived from this
-/// class can be passed and returned by value. Passing indices by const
-/// reference should be considered a misuse.
+/// class can be passed and returned by value. (Drake's typical calling
+/// convention requires passing input arguments by const reference, or by value
+/// when moved from. That convention does not apply to this class.)
 ///
 /// This is the recommended method to create a unique index type associated with
 /// class `Foo`:
