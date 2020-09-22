@@ -24,7 +24,7 @@ drake_cc_binary(
     ],
     deps = [
         "//common",
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//geometry:scene_graph",
         "//lcmtypes:contact_results_for_viz",
         "//systems/analysis:explicit_euler_integrator",
