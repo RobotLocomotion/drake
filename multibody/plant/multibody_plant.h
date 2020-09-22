@@ -2422,9 +2422,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   plant, measured in the world frame W, about point P, expressed in W.
   /// @note To calculate the spatial momentum of this system S in W about Scm
   /// (the system's center of mass), use something like: <pre>
-  ///   Vector3<T> p_WoScm_W = CalcCenterOfMassPosition(context);
-  ///    SpatialMomentum<T> L_WScm_W =
-  ///    CalcSpatialMomentumInWorldAboutPoint(context, p_WoScm_W);
+  ///   MultibodyPlant<T> plant;
+  ///   ... code to load a model ....
+  ///   const Vector3<T> p_WoScm_W = CalcCenterOfMassPosition(context);
+  ///   const SpatialMomentum<T> L_WScm_W =
+  ///     CalcSpatialMomentumInWorldAboutPoint(context, p_WoScm_W);
   /// </pre>
   SpatialMomentum<T> CalcSpatialMomentumInWorldAboutPoint(
       const systems::Context<T>& context,
@@ -2433,19 +2435,24 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                                                 p_WoP_W);
   }
 
-  /// This method returns the spatial momentum of an array of model instances in
+  /// This method returns the spatial momentum of a set of model instances in
   /// the world frame W, about a designated point P, expressed in frame W.
   /// @param[in] context Contains the state of the model.
-  /// @param[in] model_instances Array of selected model instances.
+  /// @param[in] model_instances Set of selected model instances.
   /// @param[in] p_WoP_W Position from Wo (origin of the world frame W) to an
   ///            arbitrary point P, expressed in the world frame W.
   /// @retval L_WSP_W, spatial momentum of the system S represented by the
   /// model_instances, measured in world frame W, about point P, expressed in W.
   /// @note To calculate the spatial momentum of this system S in W about Scm
   /// (the system's center of mass), use something like: <pre>
-  /// Vector3<T> p_WoScm_W = CalcCenterOfMassPosition(context, model_instances);
-  /// SpatialMomentum<T> L_WScm_W = CalcSpatialMomentumInWorldAboutPoint(
-  ///                                      context, model_instances, p_WoScm_W);
+  ///   ... code to create a set of selected model instances, e.g., ....
+  ///   std::vector<ModelInstanceIndex> model_instances;
+  ///   model_instances.push_back(bodyA_model_instance);
+  ///   ... more code to add additional objects to model_instances, ....
+  ///   const Vector3<T> p_WoScm_W =
+  ///     CalcCenterOfMassPosition(context, model_instances);
+  ///   SpatialMomentum<T> L_WScm_W = CalcSpatialMomentumInWorldAboutPoint(
+  ///     context, model_instances, p_WoScm_W);
   /// </pre>
   SpatialMomentum<T> CalcSpatialMomentumInWorldAboutPoint(
       const systems::Context<T>& context,

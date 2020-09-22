@@ -36,6 +36,9 @@ GTEST_TEST(EmptyMultibodyPlantMomentumTest, CalcSpatialMomentumEmptyPlant) {
 // where frame F is fixed/welded to link A and frame M is fixed to link B.
 // In the baseline configuration, the origin points Wo Ao Fo Mo Bo are
 // sequential along the links (they form a line parallel to Wx = Ax = Bx).
+// Note: The applied forces (such as gravity) on this system are irrelevant as
+// the plan for this text fixture is limited to testing spatial momentum and
+// kinetic energy for an instantaneous given state.
 class TwoDOFPlanarPendulumTest : public ::testing::Test {
  public:
   // Setup the MBP.
@@ -76,15 +79,40 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
     // Finalize the plant and create a context to store this plant's state.
     plant_->Finalize();
     context_ = plant_->CreateDefaultContext();
+
+    // Set joints angle and rates to default values.
+    const double qA = 0.0, qB = 0;  // Link angles.
+    joint1_->set_angle(context_.get(), qA);
+    joint2_->set_angle(context_.get(), qB);
+    joint1_->set_angular_rate(context_.get(), wAz_);
+    joint2_->set_angular_rate(context_.get(), wBz_);
+
+    // Calculate the expected spatial momentum of each body by separately
+    // calculating the translational and angular momentum of each body in world.
+    // Analytical result for each body's translational momentum in world.
+    const double vA = 0.5 * link_length_ * wAz_;
+    const double vB = link_length_ * wAz_ + 0.5 * link_length_ *(wAz_ + wBz_);
+    const Vector3<double> bodyA_translational_momentum_expected =
+        mass_link_ * vA * Vector3<double>::UnitY();
+    const Vector3<double> bodyB_translational_momentum_expected =
+        mass_link_ * vB * Vector3<double>::UnitY();
+
+    // Analytical result for each body's angular momentum in world about Wo.
+    const double mLL = mass_link_ * link_length_ * link_length_;
+    const Vector3<double> bodyA_angular_momentum_about_Wo =
+        (Izz_ * wAz_ + 0.25 * mLL * wAz_) * Vector3<double>::UnitZ();
+    const Vector3<double> bodyB_angular_momentum_about_Wo =
+        (Izz_ * (wAz_ + wBz_) + 2.25 * mLL * wAz_ + 0.75 * mLL * wBz_) *
+        Vector3<double>::UnitZ();
+
+    // Consolidate translational and angular momentum into spatial momentum.
+    L_WAWo_W_expected_ = SpatialMomentum<double>(
+        bodyA_angular_momentum_about_Wo, bodyA_translational_momentum_expected);
+    L_WBWo_W_expected_ = SpatialMomentum<double>(
+        bodyB_angular_momentum_about_Wo, bodyB_translational_momentum_expected);
   }
 
  protected:
-  const double mass_link_ = 5.0;    // kg
-  const double link_length_ = 4.0;  // meters
-  const double Izz_ = mass_link_ * link_length_ * link_length_ / 12.0;
-  const double wAz_ = 3.0;          // rad/sec
-  const double wBz_ = 2.0;          // rad/sec
-
   std::unique_ptr<MultibodyPlant<double>> plant_;
   std::unique_ptr<systems::Context<double>> context_;
   const RigidBody<double>* bodyA_{nullptr};
@@ -93,99 +121,89 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
   const RevoluteJoint<double>* joint2_{nullptr};
   ModelInstanceIndex bodyA_model_instance_;
   ModelInstanceIndex bodyB_model_instance_;
-};
 
-TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialMomentumInWorldAboutPoint) {
+  // Expected results to be used in the tests below.
+  SpatialMomentum<double> L_WAWo_W_expected_;
+  SpatialMomentum<double> L_WBWo_W_expected_;
+
   // Since the maximum speed in this test is ≈ ω * (2 * link_length) ≈ 24,
   // and mass_link_ = 5, we test that the errors in translational momentum
   // calculations are less than 24 * 5 = 120, ≈ 7 bits (2^7 = 128).
-  const double kTolerance = 128 * std::numeric_limits<double>::epsilon();
+  const double kTolerance_ = 128 * std::numeric_limits<double>::epsilon();
 
-  Eigen::VectorXd state = Eigen::Vector4d(0.0, 0.0, wAz_, wBz_);
-  joint1_->set_angle(context_.get(), state[0]);
-  joint2_->set_angle(context_.get(), state[1]);
-  joint1_->set_angular_rate(context_.get(), state[2]);
-  joint2_->set_angular_rate(context_.get(), state[3]);
+ private:
+  const double mass_link_ = 5.0;    // kg
+  const double link_length_ = 4.0;  // meters
 
-  // Form the plant S's spatial momentum in world W about Wo, expressed in W.
-  const Vector3<double> p_WoWo_W = Vector3<double>::Zero();
-  const SpatialMomentum<double> L_WSWo_W =
-      plant_->CalcSpatialMomentumInWorldAboutPoint(*context_, p_WoWo_W);
+  // Ixx = 0, Iyy = Izz = m L^2 / 12 are principal moments of inertia for a thin
+  // link of mass m and length L about its center of mass.
+  const double Izz_ = mass_link_ * link_length_ * link_length_ / 12.0;
 
-  // By-hand analysis gives: v_WAcm_W = 0.5 L wAz Wy
-  //                  and    v_WBcm_W = (1.0 L wAz + 0.5 L wBz) Wy,
-  // so the plant's translational momentum is mass_link_ 2 L wAz Wy.
-  const double v1 = 0.5 * link_length_ * wAz_;
-  const double v2 = link_length_ * wAz_ + 0.5 * link_length_ *(wAz_ + wBz_);
-  const double mv1 = mass_link_ * v1;
-  const double mv2 = mass_link_ * v2;
-  const Vector3<double> mv_expected = (mv1 + mv2) * Vector3<double>::UnitY();
-  EXPECT_TRUE(CompareMatrices(L_WSWo_W.translational(),
-      mv_expected, kTolerance));
+  // Default rates of this double pendulum's revolute joints.
+  const double wAz_ = 3.0;          // rad/sec
+  const double wBz_ = 2.0;          // rad/sec
+};
 
-  // MotionGenesis result: Izz*wBz + 2*Izz*wAz + 0.75*m*L^2*wBz + 2.5*m*L^2*wAz
-  const double mLL = mass_link_ * link_length_ * link_length_;
-  const double bodyA_angular_momentum_about_Wo_z =
-      (Izz_ * wAz_ + 0.25 * mLL * wAz_);
-  const double bodyB_angular_momentum_about_Wo_z =
-      (Izz_ * (wAz_ + wBz_) + 2.25 * mLL * wAz_ + 0.75 * mLL * wBz_);
-  const Vector3<double> system_angular_momentum_expected =
-      (bodyA_angular_momentum_about_Wo_z + bodyB_angular_momentum_about_Wo_z) *
-      Vector3<double>::UnitZ();
-  EXPECT_TRUE(CompareMatrices(L_WSWo_W.rotational(),
-                              system_angular_momentum_expected, kTolerance));
-
+TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialMomentumEmptySet) {
   // Form the spatial momentum in the world frame W for an empty list E of
-  // ModelInstanceIndexe about an arbitrary point P, expressed in W.
-  std::vector<ModelInstanceIndex> model_instances;
+  // ModelInstanceIndex about an arbitrary point P, expressed in W.
+  const std::vector<ModelInstanceIndex> model_instances;
   const Vector3<double> p_WoP_W(4, 6, 8);
   const SpatialMomentum<double> L_WEP_W =
-      plant_->CalcSpatialMomentumInWorldAboutPoint(*context_, model_instances,
-                                                   p_WoP_W);
+    plant_->CalcSpatialMomentumInWorldAboutPoint(*context_, model_instances,
+                                                 p_WoP_W);
   EXPECT_EQ(L_WEP_W.get_coeffs(), Vector6<double>::Zero());
+}
 
+TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialMomentumNonsenseSet) {
+  // Ensure a bad error instance in model_instances throws an exception.
+  std::vector<ModelInstanceIndex> model_instances;
+  ModelInstanceIndex error_index(123);  // 123 is intentionally nonsensical.
+  model_instances.push_back(error_index);
+  const Vector3<double> p_WoWo_W = Vector3<double>::Zero();
+  EXPECT_THROW(plant_->CalcSpatialMomentumInWorldAboutPoint(*context_,
+    model_instances, p_WoWo_W), std::runtime_error);
+}
 
+TEST_F(TwoDOFPlanarPendulumTest, CalcBodyASpatialMomentumInWorldAboutPoint) {
   // Calculate body A's spatial momentum in world W, about Wo, expressed in W.
+  // Compare to expected results.
+  std::vector<ModelInstanceIndex> model_instances;
   model_instances.push_back(bodyA_model_instance_);
+  const Vector3<double> p_WoWo_W = Vector3<double>::Zero();
   const SpatialMomentum<double> L_WAWo_W =
-      plant_->CalcSpatialMomentumInWorldAboutPoint(*context_, model_instances,
-                                                   p_WoWo_W);
-  const Vector3<double> mv1_expected = mv1 * Vector3<double>::UnitY();
-  EXPECT_TRUE(CompareMatrices(L_WAWo_W.translational(),
-                              mv1_expected, kTolerance));
-  const Vector3<double> bodyA_angular_momentum_about_Wo =
-    bodyA_angular_momentum_about_Wo_z *  Vector3<double>::UnitZ();
-  EXPECT_TRUE(CompareMatrices(L_WAWo_W.rotational(),
-                              bodyA_angular_momentum_about_Wo, kTolerance));
+    plant_->CalcSpatialMomentumInWorldAboutPoint(*context_, model_instances,
+                                                 p_WoWo_W);
+  EXPECT_TRUE(CompareMatrices(L_WAWo_W.get_coeffs(),
+                              L_WAWo_W_expected_.get_coeffs(), kTolerance_));
 
   // Calculate body A's spatial momentum in world W, about Acm, expressed in W.
+  // Compare to expected results.
   const Vector3<double> p_WoAcm_W = plant_->CalcCenterOfMassPosition(*context_,
-      model_instances);
+                                                               model_instances);
   const SpatialMomentum<double> L_WAcm_W =
-      plant_->CalcSpatialMomentumInWorldAboutPoint(*context_, model_instances,
-                                                   p_WoAcm_W);
-  EXPECT_TRUE(CompareMatrices(L_WAcm_W.translational(),
-                              mv1_expected, kTolerance));
-  const Vector3<double> bodyA_angular_momentum_about_Acm =
-      Izz_ * wAz_ * Vector3<double>::UnitZ();
-  EXPECT_TRUE(CompareMatrices(L_WAcm_W.rotational(),
-                              bodyA_angular_momentum_about_Acm, kTolerance));
+    plant_->CalcSpatialMomentumInWorldAboutPoint(*context_, model_instances,
+                                                 p_WoAcm_W);
+  const SpatialMomentum<double> L_WAcm_W_expected =
+    L_WAWo_W_expected_.Shift(p_WoAcm_W);
+  EXPECT_TRUE(CompareMatrices(L_WAcm_W.get_coeffs(),
+                              L_WAcm_W_expected.get_coeffs(), kTolerance_));
+}
 
+TEST_F(TwoDOFPlanarPendulumTest, CalcBodyBSpatialMomentumInWorldAboutPoint) {
   // Calculate body B's spatial momentum in world W, about Bcm, expressed in W.
-  model_instances.pop_back();
+  // Compare to expected results.
+  std::vector<ModelInstanceIndex> model_instances;
   model_instances.push_back(bodyB_model_instance_);
   const Vector3<double> p_WoBcm_W = plant_->CalcCenterOfMassPosition(*context_,
       model_instances);
   const SpatialMomentum<double> L_WBcm_W =
       plant_->CalcSpatialMomentumInWorldAboutPoint(*context_, model_instances,
                                                    p_WoBcm_W);
-  const Vector3<double> mv2_expected = mv2 * Vector3<double>::UnitY();
-  EXPECT_TRUE(CompareMatrices(L_WBcm_W.translational(),
-                              mv2_expected, kTolerance));
-  const Vector3<double> bodyB_angular_momentum_about_Bcm =
-      Izz_ * (wAz_ + wBz_) * Vector3<double>::UnitZ();
-  EXPECT_TRUE(CompareMatrices(L_WBcm_W.rotational(),
-      bodyB_angular_momentum_about_Bcm, 8 * kTolerance));
+  const SpatialMomentum<double> L_WBcm_W_expected =
+      L_WBWo_W_expected_.Shift(p_WoBcm_W);
+  EXPECT_TRUE(CompareMatrices(L_WBcm_W.get_coeffs(),
+                              L_WBcm_W_expected.get_coeffs(), kTolerance_));
 
   // For the system S consisting of bodyA and bodyB, form the system S's spatial
   // momentum in world W about Scm (the system's center of mass) expressed in W.
@@ -195,21 +213,44 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialMomentumInWorldAboutPoint) {
   SpatialMomentum<double> L_WScm_W =
       plant_->CalcSpatialMomentumInWorldAboutPoint(*context_, model_instances,
                                                    p_WoScm_W);
-  const SpatialMomentum<double> L_WScm_W_expected = L_WSWo_W.Shift(p_WoScm_W);
+  const SpatialMomentum<double> L_WSWo_W_expected =
+      L_WAWo_W_expected_ + L_WBWo_W_expected_;
+  const SpatialMomentum<double> L_WScm_W_expected =
+      L_WSWo_W_expected.Shift(p_WoScm_W);
   EXPECT_TRUE(CompareMatrices(L_WScm_W.get_coeffs(),
-                              L_WScm_W_expected.get_coeffs(), kTolerance));
+                              L_WScm_W_expected.get_coeffs(), kTolerance_));
 
   // Form the plant system S's spatial momentum in world W about Scm (the
   // system's center of mass), expressed in W.
   L_WScm_W = plant_->CalcSpatialMomentumInWorldAboutPoint(*context_, p_WoScm_W);
   EXPECT_TRUE(CompareMatrices(L_WScm_W.get_coeffs(),
-                              L_WScm_W_expected.get_coeffs(), kTolerance));
+                              L_WScm_W_expected.get_coeffs(), kTolerance_));
+}
 
-  // Try error instance in model_instances.
-  ModelInstanceIndex error_index(123);
-  model_instances.push_back(error_index);
-  EXPECT_THROW(plant_->CalcSpatialMomentumInWorldAboutPoint(*context_,
-      model_instances, p_WoP_W), std::runtime_error);
+TEST_F(TwoDOFPlanarPendulumTest, CalcSystemSpatialMomentumInWorldAboutPoint) {
+  // For the system S consisting of bodyA and bodyB, form the system S's spatial
+  // momentum in world W about Scm (the system's center of mass) expressed in W.
+  // Compare to expected results.
+  std::vector<ModelInstanceIndex> model_instances;
+  model_instances.push_back(bodyB_model_instance_);
+  model_instances.push_back(bodyA_model_instance_);
+  const Vector3<double> p_WoScm_W =
+      plant_->CalcCenterOfMassPosition(*context_, model_instances);
+  SpatialMomentum<double> L_WScm_W =
+      plant_->CalcSpatialMomentumInWorldAboutPoint(*context_, model_instances,
+                                                   p_WoScm_W);
+  const SpatialMomentum<double> L_WSWo_W_expected =
+      L_WAWo_W_expected_ + L_WBWo_W_expected_;
+  const SpatialMomentum<double> L_WScm_W_expected =
+      L_WSWo_W_expected.Shift(p_WoScm_W);
+  EXPECT_TRUE(CompareMatrices(L_WScm_W.get_coeffs(),
+                              L_WScm_W_expected.get_coeffs(), kTolerance_));
+
+  // Use a different MultibodyPlant method to form the plant system S's spatial
+  // momentum in world W about Scm (system's center of mass), expressed in W.
+  L_WScm_W = plant_->CalcSpatialMomentumInWorldAboutPoint(*context_, p_WoScm_W);
+  EXPECT_TRUE(CompareMatrices(L_WScm_W.get_coeffs(),
+                              L_WScm_W_expected.get_coeffs(), kTolerance_));
 }
 
 }  // namespace
