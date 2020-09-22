@@ -8,11 +8,13 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/extract_double.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/yaml/yaml_read_archive.h"
 
 namespace drake {
 namespace math {
 
 using symbolic::Expression;
+using yaml::YamlReadArchive;
 
 template <typename T>
 class BsplineBasisTests : public ::testing::Test {};
@@ -306,6 +308,44 @@ TYPED_TEST(BsplineBasisTests, OperatorEqualsTest) {
   // Test that objects with different orders and different knots are not equal.
   EXPECT_NE(BsplineBasis<T>(order, knots),
             BsplineBasis<T>(order + 1, other_knots));
+}
+
+const char* const good = R"""(
+order: 3
+knots: [0., 1., 1.5, 1.6, 2., 2.5, 3.]
+)""";
+
+GTEST_TEST(BsplineBasisSerializeTests, GoodTest) {
+  const int kOrder{3};
+  const std::vector<double> knots{0., 1., 1.5, 1.6, 2., 2.5, 3.};
+  BsplineBasis<double> dut{};
+  YamlReadArchive(YAML::Load(good)).Accept(&dut);
+  EXPECT_EQ(dut, BsplineBasis<double>(kOrder, knots));
+}
+
+const char* const not_enough_knots = R"""(
+order: 3
+knots: [0., 1., 1.5, 1.6, 2.]
+)""";
+
+GTEST_TEST(BsplineBasisSerializeTests, NotEnoughKnotsTest) {
+  BsplineBasis<double> dut{};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      YamlReadArchive(YAML::Load(not_enough_knots)).Accept(&dut),
+      std::runtime_error,
+      ".*CheckInvariants.*");
+}
+
+const char* const unsorted_knots = R"""(
+order: 3
+knots: [0., 2.5, 1., 1.5, 1.6, 2., 3.]
+)""";
+GTEST_TEST(BsplineBasisSerializeTests, UnsortedKnotsTest) {
+  BsplineBasis<double> dut{};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      YamlReadArchive(YAML::Load(unsorted_knots)).Accept(&dut),
+      std::runtime_error,
+      ".*CheckInvariants.*");
 }
 
 }  // namespace math
