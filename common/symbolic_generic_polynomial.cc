@@ -415,6 +415,18 @@ GenericPolynomial<BasisElement>::GenericPolynomial(const Expression& e,
 }
 
 template <typename BasisElement>
+void GenericPolynomial<BasisElement>::SetIndeterminates(
+    const Variables& new_indeterminates) {
+  if (new_indeterminates.IsSupersetOf(indeterminates_) &&
+      intersect(decision_variables_, new_indeterminates).empty()) {
+    indeterminates_ = new_indeterminates;
+  } else {
+    // TODO(soonho-tri): Optimize this part.
+    *this = GenericPolynomial<BasisElement>{ToExpression(), new_indeterminates};
+  }
+}
+
+template <typename BasisElement>
 int GenericPolynomial<BasisElement>::Degree(const Variable& v) const {
   int degree{0};
   for (const pair<const BasisElement, Expression>& p :
@@ -658,6 +670,15 @@ GenericPolynomial<BasisElement>& GenericPolynomial<BasisElement>::operator*=(
 }
 
 template <typename BasisElement>
+GenericPolynomial<BasisElement>& GenericPolynomial<BasisElement>::operator/=(
+    double c) {
+  for (auto& item : basis_element_to_coefficient_map_) {
+    item.second /= c;
+  }
+  return *this;
+}
+
+template <typename BasisElement>
 GenericPolynomial<BasisElement>& GenericPolynomial<BasisElement>::AddProduct(
     const Expression& coeff, const BasisElement& m) {
   DoAddProduct(coeff, m, &basis_element_to_coefficient_map_);
@@ -800,6 +821,30 @@ bool GenericPolynomial<BasisElement>::CoefficientsAlmostEqual(
   }
 
   return true;
+}
+
+template <typename BasisElement>
+Formula GenericPolynomial<BasisElement>::operator==(
+    const GenericPolynomial<BasisElement>& p) const {
+  // 1) Let diff = p - (this polynomial).
+  // 2) Extract the condition where diff is zero.
+  //    That is, all coefficients should be zero.
+  const GenericPolynomial<BasisElement> diff{p - *this};
+  Formula ret{Formula::True()};
+  for (const pair<const BasisElement, Expression>& item :
+       diff.basis_element_to_coefficient_map_) {
+    const Expression& coeff{item.second};
+    // ret is the conjunction of symbolic formulas. Don't confuse `&&` here
+    // with the "logical and" operation between booleans.
+    ret = ret && (coeff == 0.0);
+  }
+  return ret;
+}
+
+template <typename BasisElement>
+Formula GenericPolynomial<BasisElement>::operator!=(
+    const GenericPolynomial<BasisElement>& p) const {
+  return !(*this == p);
 }
 
 template class GenericPolynomial<MonomialBasisElement>;

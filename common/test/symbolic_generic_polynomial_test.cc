@@ -1048,6 +1048,21 @@ TEST_F(SymbolicGenericPolynomialTest,
   }
 }
 
+template <typename BasisElement>
+void CheckDivideByConstant(const std::vector<Expression>& exprs, double tol) {
+  for (double v = -5.5; v <= 5.5; v += 1.0) {
+    for (const Expression& e : exprs) {
+      EXPECT_PRED3(test::GenericPolyAlmostEqual<BasisElement>,
+                   GenericPolynomial<BasisElement>(e) / v,
+                   GenericPolynomial<BasisElement>(e / v), tol);
+    }
+  }
+}
+TEST_F(SymbolicGenericPolynomialTest, DivideByConstant) {
+  CheckDivideByConstant<MonomialBasisElement>(exprs_, 0.);
+  CheckDivideByConstant<ChebyshevBasisElement>(exprs_, 1E-15);
+}
+
 TEST_F(SymbolicGenericPolynomialTest, DifferentiateForMonomialBasis) {
   // p = 2a²bx² + 3bc²x + 7ac.
   const GenericPolynomial<MonomialBasisElement> p{
@@ -1584,6 +1599,22 @@ TEST_F(SymbolicGenericPolynomialTest, AddProduct2) {
   EXPECT_EQ(p.indeterminates(), Variables({var_x_, var_y_}));
 }
 
+template <typename BasisElement>
+void CheckHash(const Expression& x, const Expression& y) {
+  const auto h = std::hash<Polynomial>{};
+  GenericPolynomial<BasisElement> p1{x * x};
+  const GenericPolynomial<BasisElement> p2{x * x};
+  EXPECT_EQ(p1, p2);
+  EXPECT_EQ(h(p1), h(p2));
+  p1 += GenericPolynomial<BasisElement>{y};
+  EXPECT_NE(p1, p2);
+  EXPECT_NE(h(p1), h(p2));
+}
+TEST_F(SymbolicGenericPolynomialTest, Hash) {
+  CheckHash<MonomialBasisElement>(x_, y_);
+  CheckHash<ChebyshevBasisElement>(x_, y_);
+}
+
 TEST_F(SymbolicGenericPolynomialTest, CoefficientsAlmostEqual) {
   GenericPolynomial<MonomialBasisElement> p1{x_ * x_};
   // Two polynomials with the same number of terms.
@@ -1674,6 +1705,74 @@ TEST_F(SymbolicGenericPolynomialTest, EqualToAfterExpansion) {
   // No expansion
   EXPECT_FALSE(p1.EqualTo(p2));
   EXPECT_TRUE(p1.EqualToAfterExpansion(p2));
+}
+
+TEST_F(SymbolicGenericPolynomialTest, SetIndeterminates) {
+  // ax² + bx + c
+  const Expression e{a_ * x_ * x_ + b_ * x_ + c_};
+
+  {
+    // {x} -> {x, a}
+    // Grow the indeterminates with a varible moves from decision variables
+    // to indeterminates.
+    GenericPolynomial<MonomialBasisElement> p{e, {var_x_}};
+    const Variables new_indeterminates{var_x_, var_a_};
+    p.SetIndeterminates(new_indeterminates);
+    EXPECT_PRED2(
+        GenericPolyEqual<MonomialBasisElement>, p,
+        GenericPolynomial<MonomialBasisElement>(e, new_indeterminates));
+  }
+
+  {
+    // {x} -> {x, y}, note that y ∉ variables(e).
+    GenericPolynomial<MonomialBasisElement> p{e, {var_x_}};
+    const Variables new_indeterminates{var_x_, var_y_};
+    p.SetIndeterminates(new_indeterminates);
+    EXPECT_PRED2(
+        GenericPolyEqual<MonomialBasisElement>, p,
+        GenericPolynomial<MonomialBasisElement>(e, new_indeterminates));
+  }
+
+  {
+    // {x} -> {x, a, b, c}
+    GenericPolynomial<MonomialBasisElement> p{e, {var_x_}};
+    const Variables new_indeterminates{var_x_, var_a_, var_b_, var_c_};
+    p.SetIndeterminates(new_indeterminates);
+    EXPECT_PRED2(
+        GenericPolyEqual<MonomialBasisElement>, p,
+        GenericPolynomial<MonomialBasisElement>(e, new_indeterminates));
+  }
+
+  {
+    // {x, a} -> {x}
+    GenericPolynomial<MonomialBasisElement> p{e, {var_x_, var_a_}};
+    const Variables new_indeterminates{var_x_};
+    p.SetIndeterminates(new_indeterminates);
+    EXPECT_PRED2(
+        GenericPolyEqual<MonomialBasisElement>, p,
+        GenericPolynomial<MonomialBasisElement>(e, new_indeterminates));
+  }
+
+  {
+    // {x, a} -> {a}
+    GenericPolynomial<MonomialBasisElement> p{e, {var_x_, var_a_}};
+    const Variables new_indeterminates{var_a_};
+    p.SetIndeterminates(new_indeterminates);
+    EXPECT_PRED2(
+        GenericPolyEqual<MonomialBasisElement>, p,
+        GenericPolynomial<MonomialBasisElement>(e, new_indeterminates));
+  }
+
+  {
+    // {x, a, b, c} -> {x}
+    GenericPolynomial<MonomialBasisElement> p{e,
+                                              {var_x_, var_a_, var_b_, var_c_}};
+    const Variables new_indeterminates{var_x_};
+    p.SetIndeterminates(new_indeterminates);
+    EXPECT_PRED2(
+        GenericPolyEqual<MonomialBasisElement>, p,
+        GenericPolynomial<MonomialBasisElement>(e, new_indeterminates));
+  }
 }
 
 }  // namespace
