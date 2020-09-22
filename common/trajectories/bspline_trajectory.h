@@ -5,7 +5,9 @@
 
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/name_value.h"
 #include "drake/common/trajectories/trajectory.h"
 #include "drake/math/bspline_basis.h"
 
@@ -18,6 +20,8 @@ template <typename T>
 class BsplineTrajectory final : public trajectories::Trajectory<T> {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BsplineTrajectory);
+
+  BsplineTrajectory() : BsplineTrajectory<T>({}, {}) {}
 
   /** Constructs a B-spline trajectory with the given `basis` and
   `control_points`.
@@ -111,9 +115,27 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
 
   boolean<T> operator==(const BsplineTrajectory<T>& other) const;
 
+  /** Passes this object to an Archive; see @ref serialize_tips for background.
+  This method is only available when T = double. */
+  template <typename Archive>
+#ifdef DRAKE_DOXYGEN_CXX
+  void
+#else
+  // Restrict this method to T = double only; we must mix "Archive" into the
+  // conditional type for SFINAE to work, so we just check it against void.
+  std::enable_if_t<std::is_same_v<T, double> && !std::is_void<Archive>::value>
+#endif
+  Serialize(Archive* a) {
+    a->Visit(MakeNameValue("basis", &basis_));
+    a->Visit(MakeNameValue("control_points", &control_points_));
+    DRAKE_THROW_UNLESS(CheckInvariants());
+  }
+
  private:
   std::unique_ptr<trajectories::Trajectory<T>> DoMakeDerivative(
       int derivative_order) const override;
+
+  bool CheckInvariants() const;
 
   math::BsplineBasis<T> basis_;
   std::vector<MatrixX<T>> control_points_;
