@@ -638,7 +638,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
         m, "RotationalInertia", param, cls_doc.doc);
     cls  // BR
         .def("CopyToFullMatrix3", &Class::CopyToFullMatrix3,
-            cls_doc.CopyToFullMatrix3.doc);
+            cls_doc.CopyToFullMatrix3.doc)
+        .def("ReExpress", &Class::ReExpress, py::arg("R_AE"),
+            cls_doc.ReExpress.doc);
   }
   {
     using Class = UnitInertia<T>;
@@ -648,7 +650,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
     cls  // BR
         .def(py::init(), cls_doc.ctor.doc_0args)
         .def(py::init<const T&, const T&, const T&>(), py::arg("Ixx"),
-            py::arg("Iyy"), py::arg("Izz"), cls_doc.ctor.doc_3args);
+            py::arg("Iyy"), py::arg("Izz"), cls_doc.ctor.doc_3args)
+        .def("ReExpress", &Class::ReExpress, py::arg("R_FE"),
+            cls_doc.ReExpress.doc);
   }
 
   // SpatialInertia

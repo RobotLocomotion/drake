@@ -419,11 +419,13 @@ class TestPlant(unittest.TestCase):
         SpatialForce = SpatialForce_[T]
         SpatialVelocity = SpatialVelocity_[T]
         SpatialMomentum = SpatialMomentum_[T]
-        # Test unit inertia construction.
+        # Test unit inertia construction and API.
         UnitInertia()
         unit_inertia = UnitInertia(Ixx=2.0, Iyy=2.3, Izz=2.4)
         self.assertIsInstance(unit_inertia, RotationalInertia)
         self.assertIsInstance(unit_inertia.CopyToFullMatrix3(), np.ndarray)
+        self.assertIsInstance(
+            unit_inertia.ReExpress(R_FE=RotationMatrix()), UnitInertia)
         # Test spatial inertia construction.
         SpatialInertia()
         spatial_inertia = SpatialInertia(
@@ -432,15 +434,19 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(spatial_inertia.get_com(), np.ndarray)
         self.assertIsInstance(spatial_inertia.CalcComMoment(), np.ndarray)
         self.assertIsInstance(spatial_inertia.get_unit_inertia(), UnitInertia)
+        rotational_inertia = spatial_inertia.CalcRotationalInertia()
+        # - Briefly test rotational inertia API.
+        self.assertIsInstance(rotational_inertia, RotationalInertia)
         self.assertIsInstance(
-            spatial_inertia.CalcRotationalInertia(), RotationalInertia)
+            rotational_inertia.ReExpress(R_AE=RotationMatrix()),
+            RotationalInertia)
         # N.B. `numpy_compare.assert_equal(IsPhysicallyValid(), True)` does not
         # work.
         if T != Expression:
             self.assertTrue(spatial_inertia.IsPhysicallyValid())
         self.assertIsInstance(spatial_inertia.CopyToFullMatrix6(), np.ndarray)
         self.assertIsInstance(
-            spatial_inertia.ReExpress(RotationMatrix()), SpatialInertia)
+            spatial_inertia.ReExpress(R_AE=RotationMatrix()), SpatialInertia)
         self.assertIsInstance(
             spatial_inertia.Shift([1, 2, 3]), SpatialInertia)
         spatial_inertia += spatial_inertia
