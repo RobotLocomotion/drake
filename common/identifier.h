@@ -68,8 +68,9 @@ namespace drake {
  prefer the practice of returning std::optional<Identifier> instead.
 
  It is the designed intent of this class, that ids derived from this class can
- be passed and returned by value. Passing ids by const reference should be
- considered a misuse.
+ be passed and returned by value. (Drake's typical calling convention requires
+ passing input arguments by const reference, or by value when moved from. That
+ convention does not apply to this class.)
 
  The following alias will create a unique identifier type for class `Foo`:
  @code{.cpp}
