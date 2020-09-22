@@ -6,6 +6,8 @@
  contact model. This is decoupled from dynamics so that just the geometric
  components can be evaluated in as light-weight a fashion as possible. The
  ball moves moderately and stays in contact with the bowl all the time.
+ Optionally it can use a rigid ball or a rigid box instead of the rigid bowl.
+ It can also use a soft box instead of the soft ball.
 */
 
 #include <cmath>
@@ -18,12 +20,12 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/value.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
-#include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/query_results/contact_surface.h"
@@ -46,8 +48,9 @@ namespace contact_surface {
 
 using Eigen::Vector3d;
 using Eigen::Vector4d;
-using geometry::ConnectDrakeVisualizer;
+using geometry::Box;
 using geometry::ContactSurface;
+using geometry::DrakeVisualizer;
 using geometry::FrameId;
 using geometry::FramePoseVector;
 using geometry::GeometryFrame;
@@ -79,20 +82,30 @@ using systems::Simulator;
 DEFINE_double(simulation_time, 10.0,
               "Desired duration of the simulation in seconds. "
               "By default, it is 10 seconds, which is the time for the "
-              "moving soft ball to complete one period of sinusoidal "
-              "vertical motion while contacting the rigid bowl.");
+              "moving soft geometry to complete one period of sinusoidal "
+              "vertical motion while contacting the rigid geometry.");
 DEFINE_double(real_time, 1.0, "Real time factor.");
 DEFINE_double(resolution_hint, 0.0125,
               "Target resolution for the soft ball's mesh-- smaller "
               "numbers produce a denser, more expensive mesh. The soft ball "
               "is 2.5cm in radius. By default, its mesh resolution is "
-              "1.25cm, which is half the radius.");
+              "1.25cm, which is half the radius. This parameter affects "
+              "none of the rigid bowl, the rigid box, or the soft box.");
+DEFINE_string(rigid, "bowl",
+              "Specify the shape of the rigid geometry.\n"
+              "[--rigid={ball,bowl,box}]\n"
+              "By default, it is the bowl.\n");
+DEFINE_string(soft, "ball",
+              "Specify the shape of the soft geometry.\n"
+              "[--soft={ball,box}]\n"
+              "By default, it is the ball.\n");
 
-/* Places a ball and defines its velocity as being sinusoidal in time
- in World z direction.
+/* Places a soft geometry (a ball by default) and defines its velocity as being
+ sinusoidal in time in World z direction.
 
- The center of the moving soft ball starts from a point O at the mid-height of
- the bowl.
+ The center of the moving soft geometry starts from a point O at the
+ mid-height of the default rigid bowl, which can change to a rigid ball or a
+ rigid box via a command-line option.
    1. It goes up to the rim of the bowl, creating the smallest contact patch
       (in terms of area).
    2. It comes back to O.
@@ -108,16 +121,16 @@ DEFINE_double(resolution_hint, 0.0125,
  motion, and T is the time period.
 
  @system
- name: MovingBall
+ name: MovingSoftGeometry
  output_ports:
  - geometry_pose
  @endsystem
 
  This system's output is strictly a function of time and has no state.
  */
-class MovingBall final : public LeafSystem<double> {
+class MovingSoftGeometry final : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MovingBall)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MovingSoftGeometry)
 
   // Ball radius 2.5cm.
   static constexpr double kRadius = 0.025;
@@ -131,17 +144,31 @@ class MovingBall final : public LeafSystem<double> {
   // Amplitude of motion, A = 0.5cm.
   static constexpr double kA = 0.005;
 
-  explicit MovingBall(SceneGraph<double>* scene_graph) {
-    // Add geometry for a ball that moves based on sinusoidal derivatives.
-    source_id_ = scene_graph->RegisterSource("moving_ball");
+  explicit MovingSoftGeometry(SceneGraph<double>* scene_graph) {
+    // Add a soft geometry that moves based on sinusoidal derivatives.
+    source_id_ = scene_graph->RegisterSource("moving_geometry");
     frame_id_ =
         scene_graph->RegisterFrame(source_id_, GeometryFrame("moving_frame"));
-    geometry_id_ = scene_graph->RegisterGeometry(
-        source_id_, frame_id_,
-        make_unique<GeometryInstance>(
-            RigidTransformd(), make_unique<Sphere>(kRadius), "soft ball"));
+    if (FLAGS_soft == "box") {
+      geometry_id_ = scene_graph->RegisterGeometry(
+          source_id_, frame_id_,
+          make_unique<GeometryInstance>(
+              RigidTransformd(), make_unique<Box>(Box::MakeCube(1.5 * kRadius)),
+              "soft box"));
+    } else {
+      geometry_id_ = scene_graph->RegisterGeometry(
+          source_id_, frame_id_,
+          make_unique<GeometryInstance>(
+              RigidTransformd(), make_unique<Sphere>(kRadius), "soft ball"));
+      if (FLAGS_soft != "ball") {
+        std::cout << "Unsupported value for --soft==" << FLAGS_rigid
+                  << ", default to a soft ball.\n"
+                  << "Supported values are ball or box." << std::endl;
+      }
+    }
     ProximityProperties prox_props;
     AddContactMaterial(1e8, {}, {}, &prox_props);
+    // Resolution Hint affects the soft ball but not the soft box.
     AddSoftHydroelasticProperties(FLAGS_resolution_hint, &prox_props);
     scene_graph->AssignRole(source_id_, geometry_id_, prox_props);
 
@@ -150,8 +177,8 @@ class MovingBall final : public LeafSystem<double> {
     scene_graph->AssignRole(source_id_, geometry_id_, illus_props);
 
     geometry_pose_port_ =
-        this->DeclareAbstractOutputPort("geometry_pose",
-                                        &MovingBall::CalcFramePoseOutput)
+        this->DeclareAbstractOutputPort(
+                "geometry_pose", &MovingSoftGeometry::CalcFramePoseOutput)
             .get_index();
   }
 
@@ -270,10 +297,10 @@ int do_main() {
 
   auto& scene_graph = *builder.AddSystem<SceneGraph<double>>();
 
-  // Add the bouncing ball.
-  auto& moving_ball = *builder.AddSystem<MovingBall>(&scene_graph);
-  builder.Connect(moving_ball.get_geometry_pose_output_port(),
-                  scene_graph.get_source_pose_port(moving_ball.source_id()));
+  auto& moving_geometry = *builder.AddSystem<MovingSoftGeometry>(&scene_graph);
+  builder.Connect(
+      moving_geometry.get_geometry_pose_output_port(),
+      scene_graph.get_source_pose_port(moving_geometry.source_id()));
 
   SourceId source_id = scene_graph.RegisterSource("world");
 
@@ -286,16 +313,33 @@ int do_main() {
   // place B at 5cm in +Y direction in World frame, so the soft ball moving
   // along Z-axis in World frame will contact the edge of the bowl.
   const RigidTransformd X_WB(Vector3d(0, 0.05, 0.0305));
-  GeometryId rigid_bowl_id = scene_graph.RegisterAnchoredGeometry(
-      source_id,
-      make_unique<GeometryInstance>(
-          X_WB, make_unique<Mesh>(bowl_absolute_path), "rigid bowl"));
+  GeometryId rigid_geometry_id;
+  if (FLAGS_rigid == "ball") {
+    rigid_geometry_id = scene_graph.RegisterAnchoredGeometry(
+        source_id, make_unique<GeometryInstance>(
+                       X_WB, make_unique<Sphere>(0.04), "rigid ball"));
+  } else if (FLAGS_rigid == "box") {
+    rigid_geometry_id = scene_graph.RegisterAnchoredGeometry(
+        source_id, make_unique<GeometryInstance>(
+                       X_WB, make_unique<Box>(0.15, 0.15, 0.02), "rigid box"));
+  } else {
+    rigid_geometry_id = scene_graph.RegisterAnchoredGeometry(
+        source_id,
+        make_unique<GeometryInstance>(
+            X_WB, make_unique<Mesh>(bowl_absolute_path), "rigid bowl"));
+    if (FLAGS_rigid != "bowl") {
+      std::cout << "Unsupported value for --rigid==" << FLAGS_rigid
+                << ", default to bowl.\n"
+                << "Supported values are ball, bowl, or box." << std::endl;
+    }
+  }
   ProximityProperties rigid_props;
-  AddRigidHydroelasticProperties(&rigid_props);
-  scene_graph.AssignRole(source_id, rigid_bowl_id, rigid_props);
+  // Resolution Hint affects the ball but neither the box nor the bowl.
+  AddRigidHydroelasticProperties(FLAGS_resolution_hint, &rigid_props);
+  scene_graph.AssignRole(source_id, rigid_geometry_id, rigid_props);
   IllustrationProperties illus_props;
   illus_props.AddProperty("phong", "diffuse", Vector4d{0.5, 0.5, 0.45, 0.25});
-  scene_graph.AssignRole(source_id, rigid_bowl_id, illus_props);
+  scene_graph.AssignRole(source_id, rigid_geometry_id, illus_props);
 
   // Make and visualize contacts.
   auto& contact_results = *builder.AddSystem<ContactResultMaker>();
@@ -306,7 +350,9 @@ int do_main() {
   DrakeLcm lcm;
 
   // Visualize geometry.
-  ConnectDrakeVisualizer(&builder, scene_graph, &lcm);
+  auto& visualizer = *builder.AddSystem<DrakeVisualizer>(&lcm);
+  builder.Connect(scene_graph.get_query_output_port(),
+                  visualizer.query_object_input_port());
 
   // Visualize contacts.
   auto& contact_to_lcm =
