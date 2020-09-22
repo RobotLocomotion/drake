@@ -33,7 +33,7 @@ designed so users can assess the relative cost of the renderers on their own
 hardware configuration, aiding in design decisions for understanding the cost of
 renderer choice.
 * [mesh_intersection_benchmark.cc](./mesh_intersection_benchmark.cc):
-Benchmark program to compare different mesh intersection optimizations with
-varying mesh attributes and overlaps. It is targeted toward developers during
-the process of optimizing the performance of hydroelastic contact and may be
-removed once sufficient work has been done in that effort.
+Benchmark program to evaluate bounding volume hierarchy impact on mesh-mesh
+intersections across varying mesh attributes and overlaps. It is targeted toward
+developers during the process of optimizing the performance of hydroelastic
+contact and may be removed once sufficient work has been done in that effort.

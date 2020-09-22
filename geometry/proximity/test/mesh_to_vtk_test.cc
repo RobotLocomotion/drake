@@ -60,23 +60,25 @@ GTEST_TEST(MeshToVtkTest, BoxTetrahedraPressureField) {
 unique_ptr<ContactSurface<double>> BoxContactSurface() {
   const Box soft_box(4., 4., 2.);
   // resolution_hint 0.5 is enough to have vertices on the medial axis.
-  const auto soft_mesh = MakeBoxVolumeMesh<double>(soft_box, 0.5);
+  const VolumeMesh<double> mesh_S = MakeBoxVolumeMesh<double>(soft_box, 0.5);
   const double kElasticModulus = 1.0e+5;
-  const auto soft_pressure =
-      MakeBoxPressureField<double>(soft_box, &soft_mesh, kElasticModulus);
+  const VolumeMeshFieldLinear<double, double> field_S =
+      MakeBoxPressureField<double>(soft_box, &mesh_S, kElasticModulus);
+  const Bvh<VolumeMesh<double>> bvh_S(mesh_S);
   // The soft box is at the center of World.
   RigidTransformd X_WS = RigidTransformd::Identity();
 
   const Box rigid_box(4, 4, 2);
   // Very coarse resolution_hint 4.0 should give the coarsest mesh.
-  const auto rigid_mesh = MakeBoxSurfaceMesh<double>(rigid_box, 4.0);
+  const SurfaceMesh<double> mesh_R = MakeBoxSurfaceMesh<double>(rigid_box, 4.0);
+  const Bvh<SurfaceMesh<double>> bvh_rigid(mesh_R);
   // The rigid box intersects the soft box in a unit cube at the corner
   // (2.0, 2.0, 1.0).
   RigidTransformd X_WR(Vector3d{3., 3., 1.});
 
   return ComputeContactSurfaceFromSoftVolumeRigidSurface(
-      GeometryId::get_new_id(), soft_pressure, X_WS,
-      GeometryId::get_new_id(), rigid_mesh, X_WR);
+      GeometryId::get_new_id(), field_S, bvh_S, X_WS, GeometryId::get_new_id(),
+      mesh_R, bvh_rigid, X_WR);
 }
 
 GTEST_TEST(MeshToVtkTest, BoxContactSurfacePressure) {

@@ -23,13 +23,13 @@ namespace internal {
 template <class MeshType>
 struct MeshTraits;
 
-template <>
-struct MeshTraits<SurfaceMesh<double>> {
+template <typename U>
+struct MeshTraits<SurfaceMesh<U>> {
   static constexpr int kMaxElementPerBvhLeaf = 3;
 };
 
-template <>
-struct MeshTraits<VolumeMesh<double>> {
+template <typename U>
+struct MeshTraits<VolumeMesh<U>> {
   static constexpr int kMaxElementPerBvhLeaf = 1;
 };
 
@@ -350,3 +350,12 @@ extern template class drake::geometry::internal::Bvh<
     drake::geometry::SurfaceMesh<double>>;
 extern template class drake::geometry::internal::Bvh<
     drake::geometry::VolumeMesh<double>>;
+
+// TODO(SeanCurtis-TRI): Remove support for building a Bvh on an AutoDiff-valued
+//  mesh after we've cleaned up the scalar types in hydroelastics. Specifically,
+//  this is here to support the unit tests in mesh_intersection_test.cc. Also
+//  the calls to convert_to_double should be removed.
+extern template class drake::geometry::internal::Bvh<
+    drake::geometry::SurfaceMesh<drake::AutoDiffXd>>;
+extern template class drake::geometry::internal::Bvh<
+    drake::geometry::VolumeMesh<drake::AutoDiffXd>>;

@@ -1007,9 +1007,12 @@ void TestComputeContactSurfaceSoftRigid() {
   auto id_A = GeometryId::get_new_id();
   auto id_B = GeometryId::get_new_id();
   EXPECT_LT(id_A, id_B);
-  auto mesh_S = OctahedronVolume<T>();
-  auto field_S = OctahedronPressureField<T>(mesh_S.get());
-  auto surface_R = PyramidSurface<T>();
+  unique_ptr<VolumeMesh<T>> mesh_S = OctahedronVolume<T>();
+  unique_ptr<VolumeMeshFieldLinear<T, T>> field_S =
+      OctahedronPressureField<T>(mesh_S.get());
+  const Bvh<VolumeMesh<T>> bvh_S(*mesh_S);
+  unique_ptr<SurfaceMesh<T>> surface_R = PyramidSurface<T>();
+  const Bvh<SurfaceMesh<T>> bvh_R(*surface_R);
   // Move the rigid pyramid up, so only its square base intersects the top
   // part of the soft octahedron.
   const auto X_SR = RigidTransform<T>(Vector3<T>(0, 0, 0.5));
@@ -1026,7 +1029,7 @@ void TestComputeContactSurfaceSoftRigid() {
   // In this case, we assign id_A to soft and we already know that id_A < id_B.
   // Confirm order
   auto contact_SR = ComputeContactSurfaceFromSoftVolumeRigidSurface(
-      id_A, *field_S, X_WS, id_B, *surface_R, X_WR);
+      id_A, *field_S, bvh_S, X_WS, id_B, *surface_R, bvh_R, X_WR);
   EXPECT_EQ(contact_SR->id_M(), id_A);
   EXPECT_EQ(contact_SR->id_N(), id_B);
   EXPECT_TRUE(contact_SR->HasGradE_M());
@@ -1036,7 +1039,7 @@ void TestComputeContactSurfaceSoftRigid() {
   // is less than id_B, but we should further satisfy various invariants
   // (listed below).
   auto contact_RS = ComputeContactSurfaceFromSoftVolumeRigidSurface(
-      id_B, *field_S, X_WS, id_A, *surface_R, X_WR);
+      id_B, *field_S, bvh_S, X_WS, id_A, *surface_R, bvh_R, X_WR);
   EXPECT_EQ(contact_RS->id_M(), id_A);
   EXPECT_EQ(contact_RS->id_N(), id_B);
   EXPECT_FALSE(contact_RS->HasGradE_M());
@@ -1154,11 +1157,14 @@ bool FindElement(Vector3d p_MQ, const VolumeMesh<double>& volume_M,
 GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidMoving) {
   // Soft octahedron volume S with pressure field.
   auto s_id = GeometryId::get_new_id();
-  auto s_mesh_S = OctahedronVolume<double>();
-  auto s_pressure_S = OctahedronPressureField<double>(s_mesh_S.get());
+  unique_ptr<VolumeMesh<double>> s_mesh_S = OctahedronVolume<double>();
+  const Bvh<VolumeMesh<double>> bvh_S(*s_mesh_S);
+  unique_ptr<VolumeMeshFieldLinear<double, double>> s_pressure_S =
+      OctahedronPressureField<double>(s_mesh_S.get());
   // Rigid pyramid surface R.
   auto r_id = GeometryId::get_new_id();
-  auto r_mesh_R = PyramidSurface<double>();
+  unique_ptr<SurfaceMesh<double>> r_mesh_R = PyramidSurface<double>();
+  const Bvh<SurfaceMesh<double>> bvh_R(*r_mesh_R);
 
   // We use 1e-14 instead of std::numeric_limits<double>::epsilon() to
   // compensate for the rounding due to general rigid transform.
@@ -1177,7 +1183,7 @@ GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidMoving) {
     const auto X_WR = X_WS * X_SR;
     // Contact surface C is expressed in World frame.
     const auto contact = ComputeContactSurfaceFromSoftVolumeRigidSurface(
-        s_id, *s_pressure_S, X_WS, r_id, *r_mesh_R, X_WR);
+        s_id, *s_pressure_S, bvh_S, X_WS, r_id, *r_mesh_R, bvh_R, X_WR);
     // TODO(DamrongGuoy): More comprehensive checks on the mesh of the contact
     //  surface. Here we only check the number of triangles.
     EXPECT_EQ(12, contact->mesh_W().num_faces());
@@ -1230,7 +1236,7 @@ GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidMoving) {
         RigidTransformd(RollPitchYawd(M_PI / 2., 0., 0.), Vector3d{0, -0.5, 0});
     const auto X_WR = X_WS * X_SR;
     auto contact = ComputeContactSurfaceFromSoftVolumeRigidSurface(
-        s_id, *s_pressure_S, X_WS, r_id, *r_mesh_R, X_WR);
+        s_id, *s_pressure_S, bvh_S, X_WS, r_id, *r_mesh_R, bvh_R, X_WR);
     // TODO(DamrongGuoy): More comprehensive checks on the mesh of the contact
     //  surface.  Here we only check the number of triangles.
     EXPECT_EQ(12, contact->mesh_W().num_faces());
@@ -1259,139 +1265,20 @@ GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidMoving) {
 // This confirms the exception.
 GTEST_TEST(MeshIntersectionTest, DoubleAutoDiffMixed) {
   unique_ptr<VolumeMesh<double>> soft_mesh = OctahedronVolume<double>();
+  const Bvh<VolumeMesh<double>> bvh_S(*soft_mesh);
   unique_ptr<VolumeMeshFieldLinear<double, double>> soft_field =
       OctahedronPressureField<double>(soft_mesh.get());
   unique_ptr<SurfaceMesh<double>> rigid_mesh = PyramidSurface<double>();
+  const Bvh<SurfaceMesh<double>> bvh_R(*rigid_mesh);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       ComputeContactSurfaceFromSoftVolumeRigidSurface(
-          GeometryId::get_new_id(), *soft_field, RigidTransform<AutoDiffXd>(),
-          GeometryId::get_new_id(), *rigid_mesh, RigidTransform<AutoDiffXd>()),
+          GeometryId::get_new_id(), *soft_field, bvh_S,
+          RigidTransform<AutoDiffXd>(), GeometryId::get_new_id(), *rigid_mesh,
+          bvh_R, RigidTransform<AutoDiffXd>()),
       std::logic_error,
       "AutoDiff-valued ContactSurface calculation between meshes is not"
       "currently supported");
-}
-
-// Checks if two surfaces meshes are equivalent. To be equivalent, there must be
-// a bijective mapping between the two sets of triangles such that each mapped
-// pair of triangles spans the same domain with the same winding (i.e., normal
-// direction). Note that equivalence is a generous relationship. For example, a
-// "triangle-soup" mesh and a watertight topology which represent the same
-// manifold would be considered equivalent. Similarly, a mesh with extraneous,
-// unreferenced vertices would also be considered equivalent. Those details are
-// irrelevant for this test.
-bool IsEquivalent(const SurfaceMesh<double>& mesh_a,
-                  const SurfaceMesh<double>& mesh_b) {
-  // The number of triangles should be equal.
-  if (mesh_a.num_elements() != mesh_b.num_elements()) {
-    return false;
-  }
-
-  // Check that the triangles are equivalent in that they consist of vertices in
-  // the same domain. We do this by representing each triangle by a vector of
-  // its 3 vertices, sorting them in a consistent manner, and comparing them
-  // across both meshes. We also keep metadata of the face index so that we
-  // can use the original 3 vertices to test face winding order later.
-  using SurfaceFacePair = std::pair<SurfaceFaceIndex, std::array<Vector3d, 3>>;
-  std::vector<SurfaceFacePair> tri_vertices_a;
-  std::vector<SurfaceFacePair> tri_vertices_b;
-  // Comparison function that defines a lexical ordering for Vector3d.
-  auto vector_comp = [](const Vector3d& vector_a,
-                        const Vector3d& vector_b) -> bool {
-    // Sort based on x, then y, then z values.
-    if (vector_a[0] < vector_b[0]) {
-      return true;
-    } else if (vector_a[0] > vector_b[0]) {
-      return false;
-    } else if (vector_a[1] < vector_b[1]) {
-      return true;
-    } else if (vector_a[1] > vector_b[1]) {
-      return false;
-    } else {
-      return vector_a[2] < vector_b[2];
-    }
-  };
-  for (SurfaceFaceIndex f(0); f < mesh_a.num_elements(); ++f) {
-    std::array<Vector3d, 3> vectors_a;
-    std::array<Vector3d, 3> vectors_b;
-    for (int v = 0; v < 3; ++v) {
-      vectors_a[v] = mesh_a.vertex(mesh_a.element(f).vertex(v)).r_MV();
-      vectors_b[v] = mesh_b.vertex(mesh_b.element(f).vertex(v)).r_MV();
-    }
-    std::sort(vectors_a.begin(), vectors_a.end(), vector_comp);
-    std::sort(vectors_b.begin(), vectors_b.end(), vector_comp);
-    tri_vertices_a.emplace_back(f, vectors_a);
-    tri_vertices_b.emplace_back(f, vectors_b);
-  }
-  // Comparison function that defines a lexical ordering for SurfaceFacePair.
-  auto comp = [&vector_comp](const SurfaceFacePair& pair_a,
-                             const SurfaceFacePair& pair_b) -> bool {
-    // Sort according to the first vertex, followed by the second and so on if
-    // there is a tie.
-    if (!CompareMatrices(pair_a.second[0], pair_b.second[0])) {
-      return vector_comp(pair_a.second[0], pair_b.second[0]);
-    } else if (!CompareMatrices(pair_a.second[1], pair_b.second[1])) {
-      return vector_comp(pair_a.second[1], pair_b.second[1]);
-    } else {
-      return vector_comp(pair_a.second[2], pair_b.second[2]);
-    }
-  };
-  std::sort(tri_vertices_a.begin(), tri_vertices_a.end(), comp);
-  std::sort(tri_vertices_b.begin(), tri_vertices_b.end(), comp);
-
-  // Now we can compare matching triangles across the two meshes.
-  const double kEps = std::numeric_limits<double>::epsilon();
-  for (std::vector<SurfaceFacePair>::size_type i = 0; i < tri_vertices_a.size();
-       ++i) {
-    // Compare that the vertices span the same domain.
-    for (int v = 0; v < 3; ++v) {
-      if (!CompareMatrices(tri_vertices_a[i].second[v],
-                           tri_vertices_b[i].second[v])) {
-        return false;
-      }
-    }
-    // Since we kept track of the face index metadata, we can retrieve the
-    // original triangles and and check on face winding order by comparing the
-    // cross product (normal) between the two.
-    const Vector3d& face_normal_a = mesh_a.face_normal(tri_vertices_a[i].first);
-    const Vector3d& face_normal_b = mesh_b.face_normal(tri_vertices_b[i].first);
-    // Since they've been normalised to unit vectors we can check that the dot
-    // product should be almost equal to 1, bar an epsilon tolerance.
-    if (face_normal_a.dot(face_normal_b) < (1 - kEps)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-// Tests ComputeContactSurfaceFromSoftVolumeRigidSurface using BVH broadphase
-// culling produces an equivalent contact surface.
-GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidBVH) {
-  auto id_S = GeometryId::get_new_id();
-  auto id_R = GeometryId::get_new_id();
-  auto mesh_S = OctahedronVolume<double>();
-  auto field_S = OctahedronPressureField<double>(mesh_S.get());
-  auto surface_R = PyramidSurface<double>();
-  // Move the rigid pyramid up, so only its square base intersects the top
-  // part of the soft octahedron.
-  const auto X_SR = RigidTransformd(Vector3d(0, 0, 0.5));
-
-  // The relationship between the frames for the soft body and the
-  // world frame is irrelevant for this test.
-  const auto X_WS = RigidTransformd::Identity();
-  const auto X_WR = X_WS * X_SR;
-
-  auto contact_SR = ComputeContactSurfaceFromSoftVolumeRigidSurface(
-      id_S, *field_S, X_WS, id_R, *surface_R, X_WR);
-
-  // Compute the contact surface using the BVHs.
-  auto bvh_S = Bvh<VolumeMesh<double>>(*mesh_S);
-  auto bvh_R = Bvh<SurfaceMesh<double>>(*surface_R);
-  auto bvh_contact_SR = ComputeContactSurfaceFromSoftVolumeRigidSurface(
-      id_S, *field_S, bvh_S, X_WS, id_R, *surface_R, bvh_R, X_WR);
-
-  EXPECT_TRUE(IsEquivalent(contact_SR->mesh_W(), bvh_contact_SR->mesh_W()));
 }
 
 }  // namespace
