@@ -46,6 +46,7 @@ namespace contact_surface {
 
 using Eigen::Vector3d;
 using Eigen::Vector4d;
+using geometry::Box;
 using geometry::ConnectDrakeVisualizer;
 using geometry::ContactSurface;
 using geometry::FrameId;
@@ -87,6 +88,12 @@ DEFINE_double(resolution_hint, 0.0125,
               "numbers produce a denser, more expensive mesh. The soft ball "
               "is 2.5cm in radius. By default, its mesh resolution is "
               "1.25cm, which is half the radius.");
+DEFINE_bool(rigid_box, false,
+            "When true, use a rigid box as replacement for the rigid bowl."
+            " By default, it is false, so we use the rigid bowl.");
+DEFINE_bool(soft_box, false,
+            "When true, use a soft box as replacement for the soft ball."
+            "By default, it is false, so we use the soft ball.");
 
 /* Places a ball and defines its velocity as being sinusoidal in time
  in World z direction.
@@ -136,12 +143,21 @@ class MovingBall final : public LeafSystem<double> {
     source_id_ = scene_graph->RegisterSource("moving_ball");
     frame_id_ =
         scene_graph->RegisterFrame(source_id_, GeometryFrame("moving_frame"));
-    geometry_id_ = scene_graph->RegisterGeometry(
-        source_id_, frame_id_,
-        make_unique<GeometryInstance>(
-            RigidTransformd(), make_unique<Sphere>(kRadius), "soft ball"));
+    geometry_id_ = FLAGS_soft_box
+                       ? scene_graph->RegisterGeometry(
+                             source_id_, frame_id_,
+                             make_unique<GeometryInstance>(
+                                 RigidTransformd(),
+                                 make_unique<Box>(Box::MakeCube(1.5 * kRadius)),
+                                 "soft box"))
+                       : scene_graph->RegisterGeometry(
+                             source_id_, frame_id_,
+                             make_unique<GeometryInstance>(
+                                 RigidTransformd(),
+                                 make_unique<Sphere>(kRadius), "soft ball"));
     ProximityProperties prox_props;
     AddContactMaterial(1e8, {}, {}, &prox_props);
+    // Resolution Hint affects the soft ball but not the soft box.
     AddSoftHydroelasticProperties(FLAGS_resolution_hint, &prox_props);
     scene_graph->AssignRole(source_id_, geometry_id_, prox_props);
 
@@ -286,10 +302,16 @@ int do_main() {
   // place B at 5cm in +Y direction in World frame, so the soft ball moving
   // along Z-axis in World frame will contact the edge of the bowl.
   const RigidTransformd X_WB(Vector3d(0, 0.05, 0.0305));
-  GeometryId rigid_bowl_id = scene_graph.RegisterAnchoredGeometry(
-      source_id,
-      make_unique<GeometryInstance>(
-          X_WB, make_unique<Mesh>(bowl_absolute_path), "rigid bowl"));
+  GeometryId rigid_bowl_id =
+      FLAGS_rigid_box
+          ? scene_graph.RegisterAnchoredGeometry(
+                source_id,
+                make_unique<GeometryInstance>(
+                    X_WB, make_unique<Box>(0.15, 0.15, 0.02), "rigid box"))
+          : scene_graph.RegisterAnchoredGeometry(
+                source_id,
+                make_unique<GeometryInstance>(
+                    X_WB, make_unique<Mesh>(bowl_absolute_path), "rigid bowl"));
   ProximityProperties rigid_props;
   AddRigidHydroelasticProperties(&rigid_props);
   scene_graph.AssignRole(source_id, rigid_bowl_id, rigid_props);

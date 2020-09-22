@@ -625,11 +625,6 @@ Sphere make_default_shape<Sphere>() {
 }
 
 template <>
-Box make_default_shape<Box>() {
-  return Box(0.5, 1.25, 3.5);
-}
-
-template <>
 Cylinder make_default_shape<Cylinder>() {
   return Cylinder(0.5, 1.25);
 }
@@ -748,7 +743,7 @@ TYPED_TEST_P(HydroelasticRigidGeometryErrorTests, BadResolutionHint) {
 
 REGISTER_TYPED_TEST_SUITE_P(HydroelasticRigidGeometryErrorTests,
                             BadResolutionHint);
-typedef ::testing::Types<Sphere, Cylinder, Box, Ellipsoid> RigidErrorShapeTypes;
+typedef ::testing::Types<Sphere, Cylinder, Ellipsoid> RigidErrorShapeTypes;
 INSTANTIATE_TYPED_TEST_SUITE_P(My, HydroelasticRigidGeometryErrorTests,
                               RigidErrorShapeTypes);
 
@@ -926,15 +921,13 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
 TEST_F(HydroelasticSoftGeometryTest, Box) {
   const Box box_spec(0.2, 0.4, 0.8);
 
-  // Confirm that characteristic length is being fed in properly. The length
-  // 0.1 should create mesh vertices on a 3 x 5 x 9 Cartesian grid.
-  ProximityProperties properties = soft_properties(0.1);
+  ProximityProperties properties = soft_properties();
   std::optional<SoftGeometry> box =
       MakeSoftRepresentation(box_spec, properties);
 
   // Smoke test the mesh and the pressure field. It relies on unit tests for
   // the generators of the mesh and the pressure field.
-  const int expected_num_vertices = 3 * 5 * 9;
+  const int expected_num_vertices = 12;
   EXPECT_EQ(box->mesh().num_vertices(), expected_num_vertices);
   const double E =
       properties.GetPropertyOrDefault(kMaterialGroup, kElastic, 1e8);
@@ -1106,7 +1099,7 @@ TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadSlabThickness) {
 REGISTER_TYPED_TEST_SUITE_P(HydroelasticSoftGeometryErrorTests,
                             BadResolutionHint, BadElasticModulus,
                             BadSlabThickness);
-typedef ::testing::Types<Sphere, Cylinder, Box, Ellipsoid, HalfSpace>
+typedef ::testing::Types<Sphere, Cylinder, Ellipsoid, HalfSpace>
     SoftErrorShapeTypes;
 INSTANTIATE_TYPED_TEST_SUITE_P(My, HydroelasticSoftGeometryErrorTests,
                                SoftErrorShapeTypes);
