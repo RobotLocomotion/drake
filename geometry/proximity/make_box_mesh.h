@@ -14,6 +14,76 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
+/* Generates a tetrahedral volume mesh of a given box by medial axis (MA)
+ subdivision. The box is subdivided into blocks using its MA, and then the
+ blocks are subdivided into tetrahedra. Using this mesh with MeshFieldLinear,
+ we can represent the distance-to-boundary function φ of the box accurately and
+ economically. The same thing is true for a hydroelastic pressure field that
+ is a constant scaling of φ.
+
+ The box's MA is the set of all points having more than one closest point on
+ the box's boundary. (See https://en.wikipedia.org/wiki/Medial_axis for more
+ about the medial axis.)
+
+ The following picture schematically shows the analogy of MA in two dimensions.
+ MA of the rectangle (drawn with "--", "|", and "+") consists of the (open)
+ line segments (drawn with arrows) from each of the rectangle's vertices to a
+ medial vertex (drawn with "o") and the line (drawn with "==") connecting the
+ two medial vertices.
+
+      U                          V                    U           V
+      +--------------------------+                    +-----------+
+      | ↘                      ↙ |                    | ↘       ↙ |
+      |   ↘                  ↙   |                    |   ↘   ↙   |
+      |  M₀ o==============o M₁  |                    |  M₀ o     |
+      |   ↗                  ↖   |                    |   ↗   ↖   |
+      | ↗                      ↖ |                    | ↗       ↖ |
+      +--------------------------+                    +-----------+
+  In 2D, a rectangle's MA has 2 vertices.   In 2D, a square's MA has 1 vertex.
+
+ In three dimensions, a box B's MA has one, two, or four vertices Mᵢ at
+ the points having four or more closest points on the box's boundary.
+ The MA comprises (L for set of lines, P for set of polygons):
+
+ L1. the eight (open) line segments from B's vertex to MA's vertex,
+ L2. zero, one, or four line segments (aligned to B's frame) connecting MA's
+     vertices Mᵢ and Mⱼ together,
+ P3. the twelve polygons that are isosceles trapezoids or isosceles triangles.
+     (Each polygon is bounded by an edge UV of the box B, two lines UMᵢ and
+     VMⱼ in L1, and, for trapezoids, the line MᵢMⱼ in L2, i.e., Mᵢ ≠ Mⱼ),
+ P4. possibly one rectangle or square of four MA's vertices bounded by the
+     four lines in L2. (The rectangle degenerates to one MA's vertex for a
+     cube and the line in L2 for a long box with two small square faces.)
+
+ The output mesh will have these properties:
+
+   1. The generated vertices are unique. There is no repeating vertices in
+      the list of vertex coordinates.
+   2. The generated tetrahedra are _conforming_. Two tetrahedra intersect in
+      their shared face, or shared edge, or shared vertex, or not at all.
+      There is no partial overlapping of two tetrahedra.
+   3. Depending on the shape of the box, the mesh has 12, 16, or 24
+      tetrahedra and 9, 10, or 12 vertices, respectively.
+      3.1 The mesh of a cube has 12 tetrahedra. (MA has only one vertex
+          in the cube's interior.)
+      3.2 The mesh of a long box with two small square faces has 16
+          tetrahedra. (MA has only two vertices in the box's interior
+          forming a line segment.)
+      3.3 The mesh of a shallow box with two big square faces has 24
+          tetrahedra. (MA has four vertices in the box's interior forming a
+          square.)
+      3.4 The mesh of a box with three distinct dimensions also has 24
+          tetrahedra. (MA has four vertices in the box's interior forming a
+          rectangle.)
+
+ @param[in] box
+     The box shape specification (see drake::geometry::Box).
+ @retval volume_mesh
+ @tparam_nonsymbolic_scalar
+ */
+template <typename T>
+VolumeMesh<T> MakeBoxVolumeMeshWithMa(const Box& box);
+
 /*
  Generates a tetrahedral volume mesh of a given box by subdividing the box
  into _rectangular cells_ (volume bounded by six axis-aligned faces) and
