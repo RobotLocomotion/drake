@@ -52,6 +52,7 @@ from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph,
     CalcContactFrictionFromSurfaceProperties,
     ConnectContactResultsToDrakeVisualizer,
+    ContactModel,
     ContactResults_,
     ContactResultsToLcmSystem,
     CoulombFriction_,
@@ -1563,6 +1564,17 @@ class TestPlant(unittest.TestCase):
         # ContactResults
         contact_results = ContactResults()
         self.assertTrue(contact_results.num_point_pair_contacts() == 0)
+
+    def test_contact_model(self):
+        plant = MultibodyPlant_[float](0.1)
+        models = [
+            ContactModel.kHydroelasticsOnly,
+            ContactModel.kPointContactOnly,
+            ContactModel.kHydroelasticWithFallback,
+        ]
+        for model in models:
+            plant.set_contact_model(model)
+            self.assertEqual(plant.get_contact_model(), model)
 
     def test_contact_results_to_lcm(self):
         # ContactResultsToLcmSystem

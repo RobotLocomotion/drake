@@ -804,6 +804,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("is_finalized", &Class::is_finalized, cls_doc.is_finalized.doc)
         .def("Finalize", py::overload_cast<>(&Class::Finalize),
             cls_doc.Finalize.doc)
+        .def("set_contact_model", &Class::set_contact_model, py::arg("model"),
+            cls_doc.set_contact_model.doc)
+        .def("get_contact_model", &Class::get_contact_model,
+            cls_doc.get_contact_model.doc)
         .def("set_penetration_allowance", &Class::set_penetration_allowance,
             py::arg("penetration_allowance") = 0.001,
             cls_doc.set_penetration_allowance.doc)
@@ -1099,6 +1103,18 @@ PYBIND11_MODULE(plant, m) {
           doc.PropellerInfo.thrust_ratio.doc)
       .def_readwrite("moment_ratio", &PropellerInfo::moment_ratio,
           doc.PropellerInfo.moment_ratio.doc);
+
+  {
+    using Class = ContactModel;
+    constexpr auto& cls_doc = doc.ContactModel;
+    py::enum_<Class>(m, "ContactModel", cls_doc.doc)
+        .value("kHydroelasticsOnly", Class::kHydroelasticsOnly,
+            cls_doc.kHydroelasticsOnly.doc)
+        .value("kPointContactOnly", Class::kPointContactOnly,
+            cls_doc.kPointContactOnly.doc)
+        .value("kHydroelasticWithFallback", Class::kHydroelasticWithFallback,
+            cls_doc.kHydroelasticWithFallback.doc);
+  }
 }  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake
