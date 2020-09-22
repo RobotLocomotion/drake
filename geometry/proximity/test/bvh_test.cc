@@ -560,6 +560,19 @@ GTEST_TEST(BoundingVolumeHierarchyTest, TestEqual) {
   EXPECT_TRUE(bvh_ellipsoid.Equal(bvh_ellipsoid));
 }
 
+// Simply confirms that an Obb can be built from an autodiff mesh. We apply a
+// limited smoke test to indicate success -- the bounding volume of the root
+// node is the same as if the mesh were double-valued.
+GTEST_TEST(BoundingVolumeHierarchyTest, BvhFromAutodiffmesh) {
+  SurfaceMesh<AutoDiffXd> mesh_ad =
+      MakeSphereSurfaceMesh<AutoDiffXd>(Sphere(1.5), 3);
+  Bvh<SurfaceMesh<AutoDiffXd>> bvh_ad(mesh_ad);
+  SurfaceMesh<double> mesh_d =
+      MakeSphereSurfaceMesh<double>(Sphere(1.5), 3);
+  Bvh<SurfaceMesh<double>> bvh_d(mesh_d);
+  EXPECT_TRUE(bvh_ad.root_node().bv().Equal(bvh_d.root_node().bv()));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace geometry

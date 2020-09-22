@@ -5,6 +5,8 @@
 #include <set>
 #include <vector>
 
+#include "drake/geometry/utilities.h"
+
 namespace drake {
 namespace geometry {
 namespace internal {
@@ -114,7 +116,8 @@ Vector3d Bvh<MeshType>::ComputeCentroid(const MeshType& mesh,
   const auto& element = mesh.element(i);
   // Calculate average from all vertices.
   for (int v = 0; v < kElementVertexCount; ++v) {
-    const auto& vertex = mesh.vertex(element.vertex(v)).r_MV();
+    const Vector3d& vertex =
+        convert_to_double(mesh.vertex(element.vertex(v)).r_MV());
     centroid += vertex;
   }
   centroid /= kElementVertexCount;
@@ -149,3 +152,12 @@ template class drake::geometry::internal::Bvh<
     drake::geometry::SurfaceMesh<double>>;
 template class drake::geometry::internal::Bvh<
     drake::geometry::VolumeMesh<double>>;
+
+// TODO(SeanCurtis-tri) These are here to allow creating a BVH for an
+//  AutoDiffXd-valued mesh. Currently, the code doesn't strictly disallow this
+//  although projected uses are only double-valued. If we choose to definitively
+//  close the door on autodiff-valued meshes, we can remove these.
+template class drake::geometry::internal::Bvh<
+    drake::geometry::SurfaceMesh<drake::AutoDiffXd>>;
+template class drake::geometry::internal::Bvh<
+    drake::geometry::VolumeMesh<drake::AutoDiffXd>>;
