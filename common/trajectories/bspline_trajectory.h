@@ -5,7 +5,9 @@
 
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/name_value.h"
 #include "drake/common/trajectories/trajectory.h"
 #include "drake/math/bspline_basis.h"
 
@@ -18,6 +20,8 @@ template <typename T>
 class BsplineTrajectory final : public trajectories::Trajectory<T> {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BsplineTrajectory);
+
+  BsplineTrajectory() = default;
 
   /** Constructs a B-spline trajectory with the given `basis` and
   `control_points`.
@@ -111,9 +115,18 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
 
   boolean<T> operator==(const BsplineTrajectory<T>& other) const;
 
+  template <typename Archive>
+  std::enable_if_t<std::is_same_v<T, double>, void> Serialize(Archive* a) {
+    a->Visit(MakeNameValue("basis", &basis_));
+    a->Visit(MakeNameValue("control_points", &control_points_));
+    DRAKE_THROW_UNLESS(CheckInvariants());
+  }
+
  private:
   std::unique_ptr<trajectories::Trajectory<T>> DoMakeDerivative(
       int derivative_order) const override;
+
+  bool CheckInvariants() const;
 
   math::BsplineBasis<T> basis_;
   std::vector<MatrixX<T>> control_points_;

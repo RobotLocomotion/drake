@@ -98,6 +98,7 @@ drake_cc_library(
     ],
     deps = [
         ":trajectory",
+        "//common:name_value",
         "//math:bspline_basis",
     ],
 )
@@ -185,6 +186,7 @@ drake_cc_googletest(
         "//common:find_resource",
         "//common/proto:call_python",
         "//common/test_utilities",
+        "//common/yaml",
         "//math:compute_numerical_gradient",
         "//math:gradient",
     ],

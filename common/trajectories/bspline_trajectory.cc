@@ -24,8 +24,7 @@ template <typename T>
 BsplineTrajectory<T>::BsplineTrajectory(BsplineBasis<T> basis,
                                         std::vector<MatrixX<T>> control_points)
     : basis_(std::move(basis)), control_points_(std::move(control_points)) {
-  DRAKE_DEMAND(static_cast<int>(control_points_.size()) ==
-               basis_.num_basis_functions());
+  DRAKE_DEMAND(CheckInvariants());
 }
 
 template <typename T>
@@ -181,6 +180,12 @@ boolean<T> BsplineTrajectory<T>::operator==(
   } else {
     return boolean<T>{false};
   }
+}
+
+template <typename T>
+bool BsplineTrajectory<T>::CheckInvariants() const {
+  return static_cast<int>(control_points_.size()) ==
+      basis_.num_basis_functions();
 }
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(

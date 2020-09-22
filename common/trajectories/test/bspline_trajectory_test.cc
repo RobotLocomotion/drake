@@ -11,6 +11,7 @@
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/trajectories/trajectory.h"
+#include "drake/common/yaml/yaml_read_archive.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/bspline_basis.h"
 #include "drake/math/compute_numerical_gradient.h"
@@ -35,6 +36,7 @@ using math::KnotVectorType;
 using math::NumericalGradientMethod;
 using math::NumericalGradientOption;
 using symbolic::Expression;
+using yaml::YamlReadArchive;
 
 namespace {
 template <typename T = double>
@@ -289,6 +291,61 @@ GTEST_TEST(BsplineTrajectoryDerivativeTests, AutoDiffTest) {
     EXPECT_TRUE(CompareMatrices(derivative_value, expected_derivative_value,
                                 kTolerance));
   }
+}
+
+const char* good = R"""(
+  basis: !BsplineBasis
+    order: 2
+    knots: [0., 1., 1.5, 1.6, 2.]
+  control_points:
+    -
+      - [0.0, 0.1, 0.2]
+      - [0.3, 0.4, 0.5]
+    -
+      - [1.0, 1.1, 1.2]
+      - [1.3, 1.4, 1.5]
+    -
+      - [2.0, 2.1, 2.2]
+      - [2.3, 2.4, 2.5]
+)""";
+
+GTEST_TEST(BsplineTrajectorySerializeTests, GoodTest) {
+  const int kOrder{2};
+  const std::vector<double> knots{0., 1., 1.5, 1.6, 2.};
+  const std::vector<MatrixX<double>> control_points{
+      (MatrixX<double>(2, 3) << 0.0, 0.1, 0.2,
+                                0.3, 0.4, 0.5).finished(),
+      (MatrixX<double>(2, 3) << 1.0, 1.1, 1.2,
+                                1.3, 1.4, 1.5).finished(),
+      (MatrixX<double>(2, 3) << 2.0, 2.1, 2.2,
+                                2.3, 2.4, 2.5).finished(),
+  };
+  BsplineTrajectory<double> dut{};
+  YamlReadArchive(YAML::Load(good)).Accept(&dut);
+  EXPECT_EQ(
+      dut,
+      BsplineTrajectory<double>(
+          BsplineBasis<double>(kOrder, knots),
+          control_points));
+}
+
+const char* not_enough_control_points = R"""(
+  basis: !BsplineBasis
+    order: 2
+    knots: [0., 1., 1.5, 1.6, 2.]
+  control_points:
+    -
+      - [0.0, 0.1, 0.2]
+      - [0.3, 0.4, 0.5]
+    -
+      - [1.0, 1.1, 1.2]
+      - [1.3, 1.4, 1.5]
+)""";
+GTEST_TEST(BsplineTrajectorySerializeTests, NotEnoughControlPointsTest) {
+  BsplineTrajectory<double> dut{};
+  EXPECT_THROW(
+      YamlReadArchive(YAML::Load(not_enough_control_points)).Accept(&dut),
+      std::runtime_error);
 }
 
 }  // namespace trajectories
