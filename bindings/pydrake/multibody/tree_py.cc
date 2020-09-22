@@ -651,7 +651,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(py::init(), cls_doc.ctor.doc_0args)
         .def(py::init<const T&, const T&, const T&>(), py::arg("Ixx"),
             py::arg("Iyy"), py::arg("Izz"), cls_doc.ctor.doc_3args)
-        .def("ReExpress", &Class::ReExpress, py::arg("R_FE"),
+        .def("ReExpress", &Class::ReExpress, py::arg("R_AE"),
             cls_doc.ReExpress.doc);
   }
 
