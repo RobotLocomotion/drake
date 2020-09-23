@@ -65,12 +65,9 @@ ibex_repository = repository_rule(
         # in the pkg_config_repository rule.
         "pkg_config_paths": attr.string_list(
             default = [
-                # TODO(soonho-tri): Remove the following two lines.
                 "/usr/local/opt/clp/lib/pkgconfig",
                 "/usr/local/opt/coinutils/lib/pkgconfig",
-                "/usr/local/opt/clp@1.17/lib/pkgconfig",
                 "/usr/local/opt/ibex@{}/share/pkgconfig".format(IBEX_VERSION),
-                "/usr/local/opt/nlopt/lib/pkgconfig",
             ],
         ),
         # On macOS we are using IBEX from homebrew, so Drake's installation
