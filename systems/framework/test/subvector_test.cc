@@ -23,7 +23,7 @@ class SubvectorTest : public ::testing::Test {
 };
 
 TEST_F(SubvectorTest, NullptrVector) {
-  EXPECT_THROW(Subvector<double> subvec(nullptr, 0, 0), std::logic_error);
+  EXPECT_THROW(Subvector<double> subvec(nullptr, 0, 0), std::exception);
 }
 
 TEST_F(SubvectorTest, EmptySubvectorDeprecated) {
@@ -32,18 +32,29 @@ TEST_F(SubvectorTest, EmptySubvectorDeprecated) {
   Subvector<double> subvec(vector_.get());
 #pragma GCC diagnostic pop
   EXPECT_EQ(0, subvec.size());
-  EXPECT_THROW(subvec.GetAtIndex(0), std::runtime_error);
+  EXPECT_THROW(subvec.GetAtIndex(0), std::exception);
 }
 
 TEST_F(SubvectorTest, OutOfBoundsSubvector) {
-  EXPECT_THROW(Subvector<double>(vector_.get(), 1, 4), std::out_of_range);
+  EXPECT_THROW(Subvector<double>(vector_.get(), 1, 4), std::exception);
 }
 
 TEST_F(SubvectorTest, Access) {
   Subvector<double> subvec(vector_.get(), 1, kSubVectorLength);
   EXPECT_EQ(2, subvec.GetAtIndex(0));
   EXPECT_EQ(3, subvec.GetAtIndex(1));
-  EXPECT_THROW(subvec.GetAtIndex(2), std::runtime_error);
+  const auto& const_subvec = subvec;
+  EXPECT_EQ(2, const_subvec.GetAtIndex(0));
+  EXPECT_EQ(3, const_subvec.GetAtIndex(1));
+}
+
+// Tests that access out of bounds throws an exception.
+TEST_F(SubvectorTest, OutOfRange) {
+  Subvector<double> subvec(vector_.get(), 1, kSubVectorLength);
+  EXPECT_THROW(subvec.GetAtIndex(-1), std::exception);
+  EXPECT_THROW(subvec.GetAtIndex(kSubVectorLength), std::exception);
+  EXPECT_THROW(subvec.SetAtIndex(-1, 0.0), std::exception);
+  EXPECT_THROW(subvec.SetAtIndex(kSubVectorLength, 0.0), std::exception);
 }
 
 TEST_F(SubvectorTest, Copy) {
@@ -75,6 +86,8 @@ TEST_F(SubvectorTest, Mutation) {
   EXPECT_EQ(5, vector_->GetAtIndex(1));
   EXPECT_EQ(42, vector_->GetAtIndex(2));
   EXPECT_EQ(4, vector_->GetAtIndex(3));
+
+  EXPECT_THROW(subvec.SetFromVector(Eigen::Vector3d::Zero()), std::exception);
 }
 
 // Tests that a subvector can be SetFrom another VectorBase.
@@ -84,6 +97,9 @@ TEST_F(SubvectorTest, SetFrom) {
   subvec.SetFrom(*next_value);
   EXPECT_EQ(7, subvec.GetAtIndex(0));
   EXPECT_EQ(8, subvec.GetAtIndex(1));
+
+  auto bad_value = BasicVector<double>::Make({1, 2, 3});
+  EXPECT_THROW(subvec.SetFrom(*bad_value), std::exception);
 }
 
 // Tests that the Subvector can be addressed as an array.
@@ -91,7 +107,9 @@ TEST_F(SubvectorTest, ArrayOperator) {
   Subvector<double> subvec(vector_.get(), 1, kSubVectorLength);
   subvec[0] = 42;
   EXPECT_EQ(42, vector_->GetAtIndex(1));
-  EXPECT_EQ(3, subvec[1]);
+
+  const auto& const_subvec = subvec;
+  EXPECT_EQ(3, const_subvec[1]);
 }
 
 // Tests that a VectorBase can be added to a Subvector.
@@ -127,13 +145,13 @@ TEST_F(SubvectorTest, ScaleAndAddToVector) {
 TEST_F(SubvectorTest, PlusEqInvalidSize) {
   BasicVector<double> addend(1);
   Subvector<double> subvec(vector_.get(), 1, kSubVectorLength);
-  EXPECT_THROW(subvec += addend, std::out_of_range);
+  EXPECT_THROW(subvec += addend, std::exception);
 }
 
 TEST_F(SubvectorTest, AddToVectorInvalidSize) {
   VectorX<double> target(3);
   Subvector<double> subvec(vector_.get(), 1, kSubVectorLength);
-  EXPECT_THROW(subvec.ScaleAndAddToVector(1, &target), std::out_of_range);
+  EXPECT_THROW(subvec.ScaleAndAddToVector(1, &target), std::exception);
 }
 
 // Tests SetZero functionality in VectorBase.
