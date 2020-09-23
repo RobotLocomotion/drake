@@ -9,8 +9,6 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/math/spatial_acceleration.h"
-// N.B. We need this to instantiate definitions of `::dot` (#14097).
-#include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/math/spatial_force.h"
 #include "drake/multibody/math/spatial_momentum.h"
 #include "drake/multibody/math/spatial_velocity.h"
