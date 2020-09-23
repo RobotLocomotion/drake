@@ -31,9 +31,11 @@ class SupervectorTest : public ::testing::Test {
 };
 
 TEST_F(SupervectorTest, GetAtIndex) {
+  const auto& const_supervector = *supervector_;
   ASSERT_EQ(kLength, supervector_->size());
   for (int i = 0; i < kLength; ++i) {
     EXPECT_EQ(i, supervector_->GetAtIndex(i));
+    EXPECT_EQ(i, const_supervector.GetAtIndex(i));
   }
 }
 
@@ -57,17 +59,44 @@ TEST_F(SupervectorTest, SetAtIndex) {
   EXPECT_EQ(16, vec4_->GetAtIndex(2));
 }
 
-
 // Tests that the Supervector can be addressed as an array.
 TEST_F(SupervectorTest, ArrayOperator) {
   (*supervector_)[5] = 42;
   EXPECT_EQ(42, (*vec2_)[1]);
-  EXPECT_EQ(8, (*supervector_)[8]);
+
+  const auto& const_supervector = *supervector_;
+  EXPECT_EQ(8, const_supervector[8]);
 }
 
 TEST_F(SupervectorTest, OutOfRange) {
-  EXPECT_THROW(supervector_->GetAtIndex(-1), std::out_of_range);
-  EXPECT_THROW(supervector_->GetAtIndex(10), std::out_of_range);
+  EXPECT_THROW(supervector_->GetAtIndex(-1), std::exception);
+  EXPECT_THROW(supervector_->GetAtIndex(10), std::exception);
+  EXPECT_THROW(supervector_->SetAtIndex(-1, 0.0), std::exception);
+  EXPECT_THROW(supervector_->SetAtIndex(10, 0.0), std::exception);
+}
+
+// Tests that a supervector can be SetFrom another vector.
+TEST_F(SupervectorTest, SetFromVector) {
+  auto next_value = BasicVector<double>::Make({
+      10, 11, 12, 13, 14, 15, 16, 17, 18});
+  supervector_->SetFromVector(next_value->CopyToVector());
+  EXPECT_EQ(10, supervector_->GetAtIndex(0));
+  EXPECT_EQ(11, supervector_->GetAtIndex(1));
+
+  EXPECT_THROW(supervector_->SetFromVector(Eigen::Vector3d::Zero()),
+               std::exception);
+}
+
+// Tests that a supervector can be SetFrom another VectorBase.
+TEST_F(SupervectorTest, SetFrom) {
+  auto next_value = BasicVector<double>::Make({
+      10, 11, 12, 13, 14, 15, 16, 17, 18});
+  supervector_->SetFrom(*next_value);
+  EXPECT_EQ(10, supervector_->GetAtIndex(0));
+  EXPECT_EQ(11, supervector_->GetAtIndex(1));
+
+  auto bad_value = BasicVector<double>::Make(3);
+  EXPECT_THROW(supervector_->SetFrom(*bad_value), std::exception);
 }
 
 TEST_F(SupervectorTest, Empty) {
