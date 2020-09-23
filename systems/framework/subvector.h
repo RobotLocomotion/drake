@@ -1,9 +1,8 @@
 #pragma once
 
-#include <cstdint>
 #include <stdexcept>
 
-#include <Eigen/Dense>
+#include <fmt/format.h>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
@@ -35,8 +34,11 @@ class Subvector final : public VectorBase<T> {
     if (vector_ == nullptr) {
       throw std::logic_error("Cannot create Subvector of a nullptr vector.");
     }
-    if (first_element_ + num_elements_ > vector_->size()) {
-      throw std::out_of_range("Subvector out of bounds.");
+    if ((first_element < 0) || (num_elements < 0) ||
+        (first_element + num_elements > vector->size())) {
+      throw std::logic_error(fmt::format(
+          "Subvector range [{}, {}) falls outside the valid range [{}, {}).",
+          first_element, first_element + num_elements, 0, vector->size()));
     }
   }
 
@@ -50,18 +52,27 @@ class Subvector final : public VectorBase<T> {
 
   int size() const final { return num_elements_; }
 
- protected:
-  const T& DoGetAtIndex(int index) const final {
-    DRAKE_THROW_UNLESS(index < size());
-    return (*vector_)[first_element_ + index];
-  }
-
-  T& DoGetAtIndex(int index) final {
-    DRAKE_THROW_UNLESS(index < size());
-    return (*vector_)[first_element_ + index];
-  }
-
  private:
+  const T& DoGetAtIndexUnchecked(int index) const final {
+    DRAKE_ASSERT(index < size());
+    return (*vector_)[first_element_ + index];
+  }
+
+  T& DoGetAtIndexUnchecked(int index) final {
+    DRAKE_ASSERT(index < size());
+    return (*vector_)[first_element_ + index];
+  }
+
+  const T& DoGetAtIndexChecked(int index) const final {
+    if (index >= size()) { this->ThrowOutOfRange(index); }
+    return (*vector_)[first_element_ + index];
+  }
+
+  T& DoGetAtIndexChecked(int index) final {
+    if (index >= size()) { this->ThrowOutOfRange(index); }
+    return (*vector_)[first_element_ + index];
+  }
+
   VectorBase<T>* vector_{nullptr};
   int first_element_{0};
   int num_elements_{0};
