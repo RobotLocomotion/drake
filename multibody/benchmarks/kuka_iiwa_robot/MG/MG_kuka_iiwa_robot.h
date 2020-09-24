@@ -6,7 +6,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/MG/MG_kuka_iiwa_robot_auto_generated.h"
-#include "drake/multibody/math/spatial_force.h"
+#include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/test_utilities/spatial_kinematics.h"
 
 namespace drake {

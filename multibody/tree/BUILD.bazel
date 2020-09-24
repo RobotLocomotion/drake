@@ -70,8 +70,7 @@ drake_cc_library(
         ":articulated_body_inertia",
         ":multibody_tree_topology",
         "//common:autodiff",
-        "//multibody/math:spatial_acceleration",
-        "//multibody/math:spatial_velocity",
+        "//multibody/math:spatial_algebra",
         "//systems/framework:leaf_context",
     ],
 )

@@ -232,7 +232,7 @@ drake_cc_library(
     hdrs = ["externally_applied_spatial_force.h"],
     deps = [
         "//common:default_scalars",
-        "//multibody/math:spatial_force",
+        "//multibody/math:spatial_algebra",
         "//multibody/tree:multibody_tree_indexes",
     ],
 )
