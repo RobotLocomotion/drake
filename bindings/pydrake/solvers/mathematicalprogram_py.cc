@@ -733,7 +733,30 @@ top-level documentation for :py:mod:`pydrake.math`.
           static_cast<Binding<LorentzConeConstraint> (MathematicalProgram::*)(
               const Eigen::Ref<const VectorX<drake::symbolic::Expression>>&)>(
               &MathematicalProgram::AddLorentzConeConstraint),
-          doc.MathematicalProgram.AddLorentzConeConstraint.doc)
+          py::arg("v"),
+          doc.MathematicalProgram.AddLorentzConeConstraint.doc_1args_v)
+      .def(
+          "AddLorentzConeConstraint",
+          [](MathematicalProgram* self,
+              const symbolic::Expression& linear_expression,
+              const symbolic::Expression& quadratic_expression, double tol) {
+            return self->AddLorentzConeConstraint(
+                linear_expression, quadratic_expression, tol);
+          },
+          py::arg("linear_expression"), py::arg("quadratic_expression"),
+          py::arg("tol") = 0.,
+          doc.MathematicalProgram.AddLorentzConeConstraint
+              .doc_3args_linear_expression_quadratic_expression_tol)
+      .def(
+          "AddLorentzConeConstraint",
+          [](MathematicalProgram* self,
+              const Eigen::Ref<const Eigen::MatrixXd>& A,
+              const Eigen::Ref<const Eigen::VectorXd>& b,
+              const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+            return self->AddLorentzConeConstraint(A, b, vars);
+          },
+          py::arg("A"), py::arg("b"), py::arg("vars") = 0.,
+          doc.MathematicalProgram.AddLorentzConeConstraint.doc_3args_A_b_vars)
       .def(
           "AddPositiveSemidefiniteConstraint",
           [](MathematicalProgram* self,

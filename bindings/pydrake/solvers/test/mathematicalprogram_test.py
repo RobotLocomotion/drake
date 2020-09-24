@@ -837,6 +837,19 @@ class TestMathematicalProgram(unittest.TestCase):
         x_expected = np.array([1-2**(-0.5), 1-2**(-0.5)])
         self.assertTrue(np.allclose(result.GetSolution(x), x_expected))
 
+    def test_add_lorentz_cone_constraint(self):
+        # Call AddLorentzConeConstraint, make sure no error is thrown.
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(3)
+
+        prog.AddLorentzConeConstraint(np.array([x[0]+1, x[1]+x[2], 2*x[1]]))
+        prog.AddLorentzConeConstraint(
+            x[0] + x[1] + 1,
+            x[0] * x[0] + x[1] * x[1] + 2 * x[0] * x[1] + 1, tol=0.)
+        prog.AddLorentzConeConstraint(
+            np.array([[1, 0], [0, 1], [1, 0], [0, 0]]), np.array([1, 1, 0, 2]),
+            x[:2])
+
     def test_solver_options(self):
         prog = mp.MathematicalProgram()
 
