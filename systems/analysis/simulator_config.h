@@ -28,8 +28,8 @@ struct SimulatorConfig {
   }
 
   std::string integration_scheme{"runge_kutta3"};
-  double max_step_size{1.0e-3};
-  double accuracy{1.0e-2};
+  double max_step_size{0.1};
+  double accuracy{1.0e-4};
   bool use_error_control{true};
   double target_realtime_rate{0.0};
   /// Sets Simulator::set_publish_at_initialization() in addition to
