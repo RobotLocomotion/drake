@@ -426,7 +426,7 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(unit_inertia, RotationalInertia)
         self.assertIsInstance(unit_inertia.CopyToFullMatrix3(), np.ndarray)
         self.assertIsInstance(
-            unit_inertia.ReExpress(R_FE=RotationMatrix()), UnitInertia)
+            unit_inertia.ReExpress(R_AE=RotationMatrix()), UnitInertia)
         # Test spatial inertia construction.
         SpatialInertia()
         spatial_inertia = SpatialInertia(
