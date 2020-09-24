@@ -7,11 +7,6 @@
 namespace drake {
 namespace systems {
 
-// N.B. The default values here match simulator.h
-// and runge_kutta3_integrator.[h/cc]. For example
-// drake::systems::internal::kDefaultIntegratorName is "runge_kutta3".
-// TODO(dale.mcconachie) Ensure that the default SimulatorConfig remains
-// congruent with a default initialized Simulator.
 // TODO(dale.mcconachie) Update to include all configurable properties of
 // IntegratorBase. Currently, initial_step_size_target, minimum_step_size, and
 // throw_on_minimum_step_size_violation are missing.
@@ -28,8 +23,8 @@ struct SimulatorConfig {
   }
 
   std::string integration_scheme{"runge_kutta3"};
-  double max_step_size{1.0e-3};
-  double accuracy{1.0e-2};
+  double max_step_size{0.1};
+  double accuracy{1.0e-4};
   bool use_error_control{true};
   double target_realtime_rate{0.0};
   /// Sets Simulator::set_publish_at_initialization() in addition to

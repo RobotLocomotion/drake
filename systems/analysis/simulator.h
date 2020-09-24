@@ -14,6 +14,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/extract_double.h"
 #include "drake/systems/analysis/integrator_base.h"
+#include "drake/systems/analysis/simulator_config.h"
 #include "drake/systems/analysis/simulator_status.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
@@ -21,18 +22,6 @@
 
 namespace drake {
 namespace systems {
-
-namespace internal {
-// Default value of target_realtime_rate_.
-const double kDefaultTargetRealtimeRate = 0.0;
-
-// Default integrator used by a Simulator.
-const char* const kDefaultIntegratorName = "runge_kutta3";
-
-// Default value of both publish_every_time_step_ and
-// publish_at_initialization_.
-const bool kDefaultPublishEveryTimeStep = false;
-}  // namespace internal
 
 /// @ingroup simulation
 /// Parameters for fine control of simulator initialization.
@@ -786,9 +775,6 @@ class Simulator {
     return std::numeric_limits<double>::quiet_NaN();
   }
 
-  static constexpr double kDefaultAccuracy = 1e-3;  // 1/10 of 1%.
-  static constexpr double kDefaultInitialStepSizeAttempt = 1e-3;
-
   // Do not use this.  This is valid iff the constructor is passed a
   // unique_ptr (allowing the Simulator to maintain ownership).  Use the
   // system_ variable instead, which is valid always.
@@ -802,11 +788,11 @@ class Simulator {
   VectorX<T> w0_, wf_;
 
   // Slow down to this rate if possible (user settable).
-  double target_realtime_rate_{internal::kDefaultTargetRealtimeRate};
+  double target_realtime_rate_{SimulatorConfig{}.target_realtime_rate};
 
-  bool publish_every_time_step_{internal::kDefaultPublishEveryTimeStep};
+  bool publish_every_time_step_{SimulatorConfig{}.publish_every_time_step};
 
-  bool publish_at_initialization_{internal::kDefaultPublishEveryTimeStep};
+  bool publish_at_initialization_{SimulatorConfig{}.publish_every_time_step};
 
   // These are recorded at initialization or statistics reset.
   double initial_simtime_{nan()};  // Simulated time at start of period.
