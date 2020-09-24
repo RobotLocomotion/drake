@@ -210,7 +210,7 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffMassMatrix)
 
   for (int k = 0; k < 3; k++) {
     // @see LimitMalloc note above.
-    LimitMalloc guard(LimitReleaseOnly(31426));
+    LimitMalloc guard(LimitReleaseOnly(31273));
 
     compute();
 
@@ -247,7 +247,7 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffInverseDynamics)
 
   for (int k = 0; k < 3; k++) {
     // @see LimitMalloc note above.
-    LimitMalloc guard(LimitReleaseOnly(38049));
+    LimitMalloc guard(LimitReleaseOnly(37698));
 
     compute();
 

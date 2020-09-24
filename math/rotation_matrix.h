@@ -67,6 +67,7 @@ class RotationMatrix {
   /// @param[in] R an allegedly valid rotation matrix.
   /// @throws std::exception in debug builds if R fails IsValid(R).
   explicit RotationMatrix(const Matrix3<T>& R) { set(R); }
+  explicit RotationMatrix(Matrix3<T>&& R) { set(std::move(R)); }
 
   /// Constructs a %RotationMatrix from an Eigen::Quaternion.
   /// @param[in] quaternion a non-zero, finite quaternion which may or may not
@@ -357,6 +358,10 @@ class RotationMatrix {
   void set(const Matrix3<T>& R) {
     DRAKE_ASSERT_VOID(ThrowIfNotValid(R));
     SetUnchecked(R);
+  }
+  void set(Matrix3<T>&& R) {
+    DRAKE_ASSERT_VOID(ThrowIfNotValid(R));
+    SetUnchecked(std::move(R));
   }
 
   /// Returns the 3x3 identity %RotationMatrix.
@@ -736,6 +741,7 @@ class RotationMatrix {
   // test whether or not the parameter R is a valid rotation matrix.
   // @param[in] R an allegedly valid rotation matrix.
   void SetUnchecked(const Matrix3<T>& R) { R_AB_ = R; }
+  void SetUnchecked(Matrix3<T>&& R) { R_AB_ = std::move(R); }
 
   // Sets `this` %RotationMatrix `R_AB` from right-handed orthogonal unit
   // vectors `Bx`, `By`, `Bz` so that the columns of `this` are `[Bx, By, Bz]`.
