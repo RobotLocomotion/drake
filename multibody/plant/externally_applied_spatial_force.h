@@ -1,7 +1,7 @@
 #pragma once
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/math/spatial_force.h"
+#include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 
 namespace drake {

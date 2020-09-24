@@ -1,7 +1,13 @@
 #pragma once
 
+#ifndef DRAKE_SPATIAL_ALGEBRA_HEADER
+// NOLINTNEXTLINE(whitespace/line_length)
+#warning DRAKE_DEPRECATED: Do not directly include this file. Include "drake/multibody/math/spatial_algebra.h". This warning will be promoted to an error on 2021-01-01.
+#endif
+
 #include <limits>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -219,7 +225,9 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   ///
   /// @warning The result of this method cannot be interpreted as power unless
   ///          the spatial velocity is measured in an inertial frame I.
-  T dot(const SpatialVelocity<T>& V_IBp_E) const;
+  inline T dot(const SpatialVelocity<T>& V_IBp_E) const;
+  // The dot() method is implemented in spatial_velocity.h. We need the inline
+  // keyword to ensure the method is still inlined even with `extern template`.
 };
 
 /// Computes the resultant spatial force as the addition of two spatial forces
@@ -254,3 +262,6 @@ inline SpatialForce<T> operator-(const SpatialForce<T>& F1_Sp_E,
 
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::SpatialForce)

@@ -6,7 +6,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/nice_type_name.h"
-#include "drake/multibody/math/spatial_velocity.h"
+#include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/tree/frame_base.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
