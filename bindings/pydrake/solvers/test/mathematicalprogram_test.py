@@ -842,15 +842,35 @@ class TestMathematicalProgram(unittest.TestCase):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(3)
 
-        prog.AddLorentzConeConstraint(v=np.array([x[0]+1, x[1]+x[2], 2*x[1]]))
+        prog.AddLorentzConeConstraint(
+            v=np.array([x[0]+1, x[1]+x[2], 2*x[1]]))
         prog.AddLorentzConeConstraint(
             linear_expression=x[0] + x[1] + 1,
             quadratic_expression=x[0]*x[0] + x[1] * x[1] + 2 * x[0] * x[1] + 1,
             tol=0.)
-        prog.AddLorentzConeConstraint(
-            A=np.array([[1, 0], [0, 1], [1, 0], [0, 0]]),
-            b=np.array([1, 1, 0, 2]),
-            vars=x[:2])
+        A = np.array([[1, 0], [0, 1], [1, 0], [0, 0]])
+        b = np.array([1, 1, 0, 2])
+        constraint = prog.AddLorentzConeConstraint(A=A, b=b, vars=x[:2])
+        np.testing.assert_allclose(
+            constraint.evaluator().A().todense(), A)
+        np.testing.assert_allclose(constraint.evaluator().b(), b)
+
+    def test_add_rotated_lorentz_cone_constraint(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(3)
+
+        A = np.array([[1, 0], [1, 1], [1, 0], [0, 1], [0, 0]])
+        b = np.array([1, 0, 1, 0, 2])
+        constraint = prog.AddRotatedLorentzConeConstraint(A=A, b=b, vars=x[:2])
+        np.testing.assert_allclose(
+            constraint.evaluator().A().todense(), A)
+        np.testing.assert_allclose(constraint.evaluator().b(), b)
+
+        prog.AddRotatedLorentzConeConstraint(
+            v=[x[0]+1, x[0]+x[1], x[0], x[2]+1, 2])
+        constraint = prog.AddRotatedLorentzConeConstraint(
+            linear_expression1=x[0]+1, linear_expression2=x[0]+x[1],
+            quadratic_expression=x[0]*x[0] + 2*x[0] + x[1]*x[1] + 5)
 
     def test_solver_options(self):
         prog = mp.MathematicalProgram()
