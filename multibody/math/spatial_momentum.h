@@ -1,7 +1,13 @@
 #pragma once
 
+#ifndef DRAKE_SPATIAL_ALGEBRA_HEADER
+// NOLINTNEXTLINE(whitespace/line_length)
+#warning DRAKE_DEPRECATED: Do not directly include this file. Include "drake/multibody/math/spatial_algebra.h". This warning will be promoted to an error on 2021-01-01.
+#endif
+
 #include <limits>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -11,6 +17,7 @@ namespace drake {
 namespace multibody {
 
 // Forward declaration to define dot product with a spatial velocity.
+// The dot method is defined in spatial_algebra.h.
 template <typename T> class SpatialVelocity;
 
 /// This class is used to represent the _spatial momentum_ of a particle, system
@@ -177,6 +184,7 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
   /// when changing point P, see SpatialMomentum::Shift() and
   /// SpatialVelocity::Shift().
   T dot(const SpatialVelocity<T>& V_NBp_E) const;
+  // The dot() method is implemented in spatial_velocity.h.
 };
 
 /// Computes the resultant spatial momentum as the addition of two spatial
@@ -212,3 +220,6 @@ inline SpatialMomentum<T> operator-(const SpatialMomentum<T>& L1_NSp_E,
 
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::SpatialMomentum)
