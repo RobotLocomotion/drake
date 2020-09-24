@@ -11,7 +11,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/multibody/math/spatial_acceleration.h"
+#include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/tree/multibody_tree.h"
 #include "drake/systems/controllers/test_utilities/compute_torque.h"

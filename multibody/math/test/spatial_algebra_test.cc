@@ -3,13 +3,9 @@
 #include <sstream>
 #include <string>
 
-#include <Eigen/Dense>
 #include <gtest/gtest.h>
 
-#include "drake/common/autodiff.h"
-#include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
-#include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 
 namespace drake {

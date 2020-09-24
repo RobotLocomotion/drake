@@ -6,7 +6,7 @@
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/multibody/math/spatial_velocity.h"
+#include "drake/multibody/math/spatial_algebra.h"
 #include "drake/systems/rendering/frame_velocity.h"
 #include "drake/systems/rendering/multibody_position_to_geometry_pose.h"
 #include "drake/systems/rendering/pose_aggregator.h"
