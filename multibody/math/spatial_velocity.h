@@ -7,7 +7,6 @@
 
 #include <limits>
 
-#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -332,6 +331,3 @@ T SpatialVelocity<T>::dot(const SpatialMomentum<T>& L_NBp_E) const {
 
 }  // namespace multibody
 }  // namespace drake
-
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::SpatialVelocity)

@@ -7,7 +7,6 @@
 
 #include <limits>
 
-#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -456,6 +455,3 @@ inline SpatialAcceleration<T> operator-(const SpatialAcceleration<T>& A1,
 
 }  // namespace multibody
 }  // namespace drake
-
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::SpatialAcceleration)
