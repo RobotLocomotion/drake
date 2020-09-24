@@ -26,22 +26,18 @@ Simulator<T>::Simulator(const System<T>* system,
     : owned_system_(std::move(owned_system)),
       system_(owned_system_ ? *owned_system_ : *system),
       context_(std::move(context)) {
-  // Setup defaults that should be generally reasonable.
-  const double max_step_size = 0.1;
-  const double initial_step_size = 1e-4;
-  const double default_accuracy = 1e-4;
-
   // Create a context if necessary.
   if (!context_) context_ = system_.CreateDefaultContext();
 
   // Create a default integrator and initialize it.
-  // N.B. Keep this in sync with systems::internal::kDefaultIntegratorName at
-  // the top of this file.
+  // N.B. Keep this in sync with systems::internal::kDefaultIntegratorName in
+  // simulator.h
   integrator_ = std::unique_ptr<IntegratorBase<T>>(
       new RungeKutta3Integrator<T>(system_, context_.get()));
-  integrator_->request_initial_step_size_target(initial_step_size);
-  integrator_->set_maximum_step_size(max_step_size);
-  integrator_->set_target_accuracy(default_accuracy);
+  integrator_->request_initial_step_size_target(
+      internal::kDefaultInitialStepSizeAttempt);
+  integrator_->set_maximum_step_size(internal::kDefaultMaxStepSize);
+  integrator_->set_target_accuracy(internal::kDefaultAccuracy);
   integrator_->Initialize();
 
   // Allocate the necessary temporaries for storing state in update calls

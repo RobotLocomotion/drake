@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
+#include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/simulator_config_functions.h"
 
 // === Simulator's parameters ===
@@ -41,12 +42,12 @@ DEFINE_string(simulator_integration_scheme,
               "'semi_explicit_euler', "
               "'velocity_implicit_euler'");
 
-DEFINE_double(simulator_max_time_step, 1.0E-3,
+DEFINE_double(simulator_max_time_step,
+              drake::systems::internal::kDefaultMaxStepSize,
               "[Integrator flag] Maximum simulation time step used for "
               "integration. [s].");
 
-const double kDefaultSimulatorAccuracy = 1.0e-2;
-DEFINE_double(simulator_accuracy, kDefaultSimulatorAccuracy,
+DEFINE_double(simulator_accuracy, drake::systems::internal::kDefaultAccuracy,
               "[Integrator flag] Sets the simulation accuracy for variable "
               "step size integrators with error control.");
 
@@ -75,7 +76,7 @@ IntegratorBase<double>& ResetIntegratorFromGflags(
   } else {
     // Integrator is running in fixed step mode, therefore we warn the user if
     // the accuracy flag was changed from the command line.
-    if (FLAGS_simulator_accuracy != kDefaultSimulatorAccuracy)
+    if (FLAGS_simulator_accuracy != drake::systems::internal::kDefaultAccuracy)
       log()->warn(
           "Integrator accuracy provided, however the integrator is running in "
           "fixed step mode. The 'simulator_accuracy' flag will be ignored. "

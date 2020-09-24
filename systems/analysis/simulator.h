@@ -27,7 +27,17 @@ namespace internal {
 const double kDefaultTargetRealtimeRate = 0.0;
 
 // Default integrator used by a Simulator.
+// N.B. Keep this in sync with the Simulator constructor in `simulator.cc`.
 const char* const kDefaultIntegratorName = "runge_kutta3";
+
+// Default integration accuracy used by the integrator.
+static constexpr double kDefaultAccuracy = 1e-4;
+
+// Default initial step size used by the integrator.
+static constexpr double kDefaultInitialStepSizeAttempt = 1e-4;
+
+// Default max step size used by the integrator.
+static constexpr double kDefaultMaxStepSize = 0.1;
 
 // Default value of both publish_every_time_step_ and
 // publish_at_initialization_.
@@ -785,9 +795,6 @@ class Simulator {
   static constexpr double nan() {
     return std::numeric_limits<double>::quiet_NaN();
   }
-
-  static constexpr double kDefaultAccuracy = 1e-3;  // 1/10 of 1%.
-  static constexpr double kDefaultInitialStepSizeAttempt = 1e-3;
 
   // Do not use this.  This is valid iff the constructor is passed a
   // unique_ptr (allowing the Simulator to maintain ownership).  Use the
