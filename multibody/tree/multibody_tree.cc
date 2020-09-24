@@ -1284,6 +1284,13 @@ SpatialMomentum<T> MultibodyTree<T>::CalcSpatialMomentumInWorldAboutPoint(
   // Assemble a list of BodyIndex.
   std::vector<BodyIndex> body_indexes;
   for (auto model_instance : model_instances) {
+    // If invalid model_instance, throw an exception with a helpful message.
+    if (model_instance >= instance_name_to_index_.size()) {
+      throw std::runtime_error(
+          "CalcSpatialMomentumInWorldAboutPoint(): This MultibodyPlant method"
+          " contains an invalid model_instance.");
+    }
+
     const std::vector<BodyIndex> body_index_in_instance =
         GetBodyIndices(model_instance);
     for (BodyIndex body_index : body_index_in_instance)
@@ -1317,6 +1324,12 @@ SpatialMomentum<T> MultibodyTree<T>::CalcBodiesSpatialMomentumInWorldAboutWo(
   for (BodyIndex body_index : body_indexes) {
     if (body_index == 0) continue;  // No contribution from the world body.
 
+    // If invalid body_index, throw an exception with a helpful message.
+    if (body_index >= num_bodies()) {
+      throw std::runtime_error(
+          "CalcSpatialMomentumInWorldAboutPoint(): This MultibodyPlant method"
+          " contains an invalid body_index.");
+    }
     // Form the current body's spatial momentum in W about Bo, expressed in W.
     const BodyNodeIndex body_node_index = get_body(body_index).node_index();
     const SpatialInertia<T>& M_BBo_W = M_Bi_W[body_node_index];

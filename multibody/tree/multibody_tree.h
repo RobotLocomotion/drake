@@ -1320,6 +1320,8 @@ class MultibodyTree {
   /// @param[in] model_instances Array of selected model instances.
   /// @param[in] p_WoP_W Position from Wo (origin of the world frame W) to an
   ///            arbitrary point P, expressed in the world frame W.
+  /// @throws std::runtime_error if model_instances contains an invalid
+  ///         ModelInstanceIndex.
   SpatialMomentum<T> CalcSpatialMomentumInWorldAboutPoint(
       const systems::Context<T>& context,
       const std::vector<ModelInstanceIndex>& model_instances,
@@ -1331,6 +1333,9 @@ class MultibodyTree {
   /// @param[in] body_indexes Array of selected bodies.  This method does not
   ///  distinguish between welded bodies, joint-connected bodies,
   ///  floating bodies, the world_body(), or repeated bodies.
+  /// @throws std::runtime_error if model_instances contains an invalid
+  /// ModelInstanceIndex.
+  /// @throws std::runtime_error if body_indexes contains an invalid BodyIndex.
   SpatialMomentum<T> CalcBodiesSpatialMomentumInWorldAboutWo(
       const systems::Context<T>& context,
       const std::vector<BodyIndex>& body_indexes) const;

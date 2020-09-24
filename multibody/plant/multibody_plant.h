@@ -2448,12 +2448,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   ... code to create a set of selected model instances, e.g., ....
   ///   std::vector<ModelInstanceIndex> model_instances;
   ///   model_instances.push_back(bodyA_model_instance);
-  ///   ... more code to add additional objects to model_instances, ....
+  ///   model_instances.push_back(bodyB_model_instance);  // ... etc.
   ///   const Vector3<T> p_WoScm_W =
   ///     CalcCenterOfMassPosition(context, model_instances);
   ///   SpatialMomentum<T> L_WScm_W = CalcSpatialMomentumInWorldAboutPoint(
   ///     context, model_instances, p_WoScm_W);
   /// </pre>
+  /// @throws std::runtime_error if model_instances contains an invalid
+  ///         ModelInstanceIndex.
   SpatialMomentum<T> CalcSpatialMomentumInWorldAboutPoint(
       const systems::Context<T>& context,
       const std::vector<ModelInstanceIndex>& model_instances,
