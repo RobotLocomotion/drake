@@ -9,7 +9,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/query_results/contact_surface.h"
-#include "drake/multibody/math/spatial_force.h"
+#include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/plant/hydroelastic_quadrature_point_data.h"
 
 namespace drake {

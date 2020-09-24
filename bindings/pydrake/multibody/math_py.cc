@@ -8,10 +8,7 @@
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/multibody/math/spatial_acceleration.h"
-#include "drake/multibody/math/spatial_force.h"
-#include "drake/multibody/math/spatial_momentum.h"
-#include "drake/multibody/math/spatial_velocity.h"
+#include "drake/multibody/math/spatial_algebra.h"
 
 #pragma GCC diagnostic push
 // Similar to `symbolic_py.cc`, we must suppress `-Wself-assign-overloaded` to
@@ -126,10 +123,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("V_PB_E"), cls_doc.ComposeWithMovingFrameVelocity.doc)
         .def("dot",
             overload_cast_explicit<T, const SpatialForce<T>&>(&Class::dot),
-            py::arg("F_Q_E"), cls_doc.dot.doc_1args_F)
+            py::arg("F_Q_E"), cls_doc.dot.doc_1args_F_Q_E)
         .def("dot",
             overload_cast_explicit<T, const SpatialMomentum<T>&>(&Class::dot),
-            py::arg("L_NBp_E"), cls_doc.dot.doc_1args_L);
+            py::arg("L_NBp_E"), cls_doc.dot.doc_1args_L_NBp_E);
     cls.attr("__matmul__") = cls.attr("dot");
     AddValueInstantiation<Class>(m);
     // Some ports need `Value<std::vector<Class>>`.

@@ -67,7 +67,7 @@ drake_cc_library(
     hdrs = ["frame_velocity.h"],
     deps = [
         "//common:default_scalars",
-        "//multibody/math:spatial_velocity",
+        "//multibody/math:spatial_algebra",
         "//systems/framework:vector",
     ],
 )
