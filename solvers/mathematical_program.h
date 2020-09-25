@@ -2008,6 +2008,17 @@ class MathematicalProgram {
    *    positive semidefinite matrix, and the quadratic expression needs
    *    to be non-negative for any x.
    * @throws std::runtime_error if the preconditions are not satisfied.
+   *
+   * For example, to add the rotated Lorentz cone constraint
+   *
+   *     (x+1)(x+y) >= x²+z²+2z+5
+   *     x+1 >= 0
+   *     x+y >= 0
+   * The user could call
+   * @code{cc}
+   * prog.AddRotatedLorentzConeConstraint(x+1, x+y, pow(x, 2) + pow(z, 2) +
+   * 2*z+5);
+   * @endcode
    */
   Binding<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
       const symbolic::Expression& linear_expression1,
@@ -2026,6 +2037,18 @@ class MathematicalProgram {
    * decision variables.
    * @retval binding The newly added rotated Lorentz cone constraint, together
    * with the bound variables.
+   *
+   * For example, to add the rotated Lorentz cone constraint
+   *
+   *     (x+1)(x+y) >= x²+z²+2z+5 = x² + (z+1)² + 2²
+   *     x+1 >= 0
+   *     x+y >= 0
+   * The user could call
+   * @code{cc}
+   * Eigen::Matrix<symbolic::Expression, 5, 1> v;
+   * v << x+1, x+y, x, z+1, 2;
+   * prog.AddRotatedLorentzConeConstraint(v);
+   * @endcode
    */
   Binding<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
       const Eigen::Ref<const VectorX<symbolic::Expression>>& v);
