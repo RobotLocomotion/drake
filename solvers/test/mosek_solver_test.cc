@@ -362,6 +362,20 @@ GTEST_TEST(MosekTest, UnivariateNonnegative1) {
     dut.CheckResult(result, 1E-9);
   }
 }
+
+GTEST_TEST(MosekTest, QuadraticCostNonlinearConstraint) {
+  // Mosek can't solve a problem with quadratic cost and Lorentz cone
+  // constraint.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+  prog.AddQuadraticCost(x[0] * x[0]);
+  prog.AddLorentzConeConstraint(x);
+
+  MosekSolver solver;
+  if (solver.available()) {
+    EXPECT_FALSE(MosekSolver::ProgramAttributesSatisfied(prog));
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
