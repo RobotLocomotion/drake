@@ -63,7 +63,8 @@ namespace sensors {
  -->
  In terms of the camera intrinsics outlined in CameraInfo, this sensor assumes
  that each camera's principal point is in the center of the image and that the
- focal lengths in both the x- and y-directions are equal.
+ focal lengths in both the x- and y-directions are equal. The camera looks
+ along the positive `z` axis, and the `y` axis points down.
 
  Output port image formats:
 
