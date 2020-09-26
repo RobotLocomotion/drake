@@ -29,23 +29,10 @@ drake_cc_package_library(
     name = "util",
     visibility = ["//visibility:public"],
     deps = [
-        ":bot_core_lcm_encode_decode",
         ":move_ik_demo_base",
         ":moving_average_filter",
         ":robot_plan_utils",
         ":trajectory_utils",
-    ],
-)
-
-drake_cc_library(
-    name = "bot_core_lcm_encode_decode",
-    srcs = ["bot_core_lcm_encode_decode.cc"],
-    hdrs = ["bot_core_lcm_encode_decode.h"],
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        "//math:geometric_transform",
-        "@eigen",
-        "@lcmtypes_bot2_core",
     ],
 )
 
@@ -135,15 +122,6 @@ drake_py_binary(
 )
 
 # === test/ ===
-
-drake_cc_googletest(
-    name = "bot_core_lcm_encode_decode_test",
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":bot_core_lcm_encode_decode",
-        "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
 
 drake_cc_googletest(
     name = "move_ik_demo_base_test",

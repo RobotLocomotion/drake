@@ -1,5 +1,4 @@
 import pydrake.math as mut
-import pydrake.math._test as mtest
 from pydrake.math import (BarycentricMesh, wrap_to)
 from pydrake.common import RandomGenerator
 from pydrake.common.cpp_param import List
@@ -7,7 +6,6 @@ from pydrake.common.eigen_geometry import Isometry3_, Quaternion_, AngleAxis_
 from pydrake.common.value import Value
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 import pydrake.common.test_utilities.numpy_compare as numpy_compare
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 
@@ -189,27 +187,6 @@ class TestMath(unittest.TestCase):
             X_AB.multiply(p_BoQ_B=p_BQlist), p_AQlist)
         # Test pickling.
         assert_pickle(self, X_AB, RigidTransform.GetAsMatrix4, T=T)
-
-    @numpy_compare.check_all_types
-    def test_isometry_implicit(self, T):
-        Isometry3 = Isometry3_[T]
-        # Explicitly disabled, to mirror C++ API.
-        with self.assertRaises(TypeError):
-            self.assertTrue(mtest.TakeRigidTransform(Isometry3()))
-        with catch_drake_warnings(expected_count=1):
-            self.assertTrue(mtest.TakeIsometry3(mut.RigidTransform()))
-
-    @numpy_compare.check_all_types
-    def test_rigid_transform_deprecated_isometry3_workalikes(self, T):
-        X_AB = mut.RigidTransform()
-        with catch_drake_warnings(expected_count=1):
-            mat = X_AB.matrix()
-        with catch_drake_warnings(expected_count=1):
-            lin = X_AB.linear()
-        self.assertIsInstance(mat, np.ndarray)
-        self.assertIsInstance(lin, np.ndarray)
-        self.assertEqual(mat.shape, (4, 4))
-        self.assertEqual(lin.shape, (3, 3))
 
     @numpy_compare.check_all_types
     def test_rotation_matrix(self, T):
