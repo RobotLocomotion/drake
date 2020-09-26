@@ -8,7 +8,6 @@
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
@@ -118,19 +117,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
               return *self * p_BoQ_B;
             },
             py::arg("p_BoQ_B"),
-            cls_doc.operator_mul.doc_1args_constEigenMatrixBase);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
-    cls  // BR
-        .def("matrix",
-            WrapDeprecated(cls_doc.matrix.doc_deprecated, &Class::matrix),
-            cls_doc.matrix.doc_deprecated)
-        .def("linear",
-            WrapDeprecated(cls_doc.linear.doc_deprecated, &Class::linear),
-            cls_doc.linear.doc_deprecated);
-#pragma GCC diagnostic pop
-    cls  // BR
+            cls_doc.operator_mul.doc_1args_constEigenMatrixBase)
         .def(py::pickle([](const Class& self) { return self.GetAsMatrix34(); },
             [](const Eigen::Matrix<T, 3, 4>& matrix) {
               return Class(matrix);
@@ -272,14 +259,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
     DefCopyAndDeepCopy(&cls);
     // N.B. `RollPitchYaw::cast` is not defined in C++.
   }
-
-  auto eigen_geometry_py = py::module::import("pydrake.common.eigen_geometry");
-  // Install constructor to Isometry3 to permit `implicitly_convertible` to
-  // work.
-  py::class_<Isometry3<T>>(eigen_geometry_py.attr("Isometry3"))
-      .def(py_init_deprecated<Isometry3<T>, const RigidTransform<T>&>(
-          doc.RigidTransform.operator_Transform.doc_deprecated));
-  py::implicitly_convertible<RigidTransform<T>, Isometry3<T>>();
 }
 
 void DoScalarIndependentDefinitions(py::module m) {
@@ -440,15 +419,6 @@ void DoScalarIndependentDefinitions(py::module m) {
         return X.inverse();
       });
 
-  // Add testing module.
-  {
-    auto mtest = m.def_submodule("_test");
-    // Implicit conversions.
-    mtest.def("TakeIsometry3", [](const Isometry3<T>&) { return true; });
-    mtest.def(
-        "TakeRigidTransform", [](const RigidTransform<T>&) { return true; });
-  }
-
   // See TODO in corresponding header file - these should be removed soon!
   pydrake::internal::BindAutoDiffMathOverloads(&m);
   pydrake::internal::BindSymbolicMathOverloads(&m);
@@ -459,6 +429,7 @@ PYBIND11_MODULE(math, m) {
   // N.B. Docstring contained in `_math_extra.py`.
 
   py::module::import("pydrake.autodiffutils");
+  py::module::import("pydrake.common.eigen_geometry");
   py::module::import("pydrake.symbolic");
 
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
