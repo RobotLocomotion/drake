@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <limits>
+#include <string>
 
 #include <Eigen/Dense>
 
@@ -239,6 +240,19 @@ class RollPitchYaw {
     return DoesCosPitchAngleViolateGimbalLockTolerance(cos(pitch_angle()));
   }
 
+  /// Returns a message that the pitch-angle `p` violates the internally-defined
+  /// gimbal-lock tolerance, which occurs when `cos(p) ≈ 0`, which means
+  /// `p ≈ (n*π + π/2)` where `n = 0, ±1, ±2, ...`.
+  /// @param[in] function_name name of the calling function/method.
+  /// @param[in] file_name name of the file with the calling function/method.
+  /// @param[in] line_number the line number in file_name that made the call.
+  /// @param[in] pitch_angle pitch angle `p` (in radians).
+  /// @param[in] extra_info extra information located at the end of the message.
+  /// @see DoesCosPitchAngleViolateGimbalLockTolerance()
+  static std::string PitchAngleGimbalLockMessage(const char* function_name,
+      const char* file_name, const int line_number, const T& pitch_angle,
+      const char* extra_info);
+
   /// Returns the internally-defined allowable closeness (in radians) of the
   /// pitch angle `p` to gimbal-lock, i.e., the allowable proximity of `p` to
   /// `(n*π + π/2)` where `n = 0, ±1, ±2, ...`.
@@ -444,7 +458,6 @@ class RollPitchYaw {
   static void ThrowPitchAngleViolatesGimbalLockTolerance(
     const char* function_name, const char* file_name, const int line_number,
     const T& pitch_angle);
-
 
   // Uses a quaternion and its associated rotation matrix `R` to accurately
   // and efficiently set the roll-pitch-yaw angles (SpaceXYZ Euler angles)

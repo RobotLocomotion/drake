@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
@@ -487,6 +488,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   /// (−𝐭 + p_AoAp × −𝐟) and the net bushing force on A (−𝐟 expressed in A).
   /// @param[in] context The state of the multibody system.
   /// @see CalcBushingSpatialForceOnFrameC().
+  /// @throws std::logic_error if cos(p) ≈ 0 (pitch angle p near gimbal-lock).
   SpatialForce<T> CalcBushingSpatialForceOnFrameA(
       const systems::Context<T>& context) const;
 
@@ -495,6 +497,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   /// (𝐭 + p_CoCp × 𝐟) and the resultant bushing force on C (𝐟 expressed in C).
   /// @param[in] context The state of the multibody system.
   /// @see CalcBushingSpatialForceOnFrameA().
+  /// @throws std::logic_error if cos(p) ≈ 0 (pitch angle p near gimbal-lock).
   SpatialForce<T> CalcBushingSpatialForceOnFrameC(
       const systems::Context<T>& context) const;
 
@@ -627,6 +630,19 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   Vector3<T> CalcBushingRollPitchYawAngleRates(
       const systems::Context<T>& context,
       const math::RollPitchYaw<T>& rpy) const {
+    // Throw an exception with an appropriate error message if the bushing's
+    // orientation is near gimbal lock.
+    if (rpy.DoesPitchAngleViolateGimbalLockTolerance()) {
+      const char* extra_info = "  To avoid this orientation singularity, use "
+                               "a reasonable default alignment of the frames "
+                               "associated with this LinearBushingRollPitchYaw "
+                               "and/or choose stiffness and damping properties "
+                               "that help avoid pitch angles near gimbal lock.";
+      std::string message = math::RollPitchYaw<T>::PitchAngleGimbalLockMessage(
+          __func__, __FILE__, __LINE__, rpy.pitch_angle(), extra_info);
+      throw std::logic_error(message);
+    }
+
     const Vector3<T> w_AC_A = Calcw_AC_A(context);
     return rpy.CalcRpyDtFromAngularVelocityInParent(w_AC_A);
   }
@@ -702,6 +718,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   // @param[in] context The state of the multibody system.
   // @see CalcBushingSpatialForceOnFrameA(),
   //      CalcBushingSpatialForceOnFrameC().
+  // @throws std::logic_error if cos(p) ≈ 0 (pitch angle p is near gimbal-lock).
   Vector3<T> CalcBushingTorqueOnCExpressedInA(
       const systems::Context<T>& context) const;
 

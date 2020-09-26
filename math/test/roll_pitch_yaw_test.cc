@@ -214,7 +214,7 @@ GTEST_TEST(RollPitchYaw, CalcAngularVelocityFromRpyDtAndViceVersa) {
   // Check that CalcMatrixRelatingRpyDtToAngularVelocityInParent() throws near
   // gimbal lock.
   const char* expected_messageA =
-      "RollPitchYaw::CalcMatrixRelatingRpyDtToAngularVelocityInParent()"
+      "CalcMatrixRelatingRpyDtToAngularVelocityInParent()"
       ".*gimbal-lock.*"
       "roll_pitch_yaw.h.*";
   const RollPitchYaw<double> rpyA(0.2, M_PI / 2, 0.4);
@@ -229,10 +229,9 @@ GTEST_TEST(RollPitchYaw, CalcAngularVelocityFromRpyDtAndViceVersa) {
                               MatrixCompareType::absolute));
 
   // Check that CalcRpyDtFromAngularVelocityInParent() throws near gimbal lock.
-  const char* expected_messageB =
-      "RollPitchYaw::CalcRpyDtFromAngularVelocityInParent()"
-      ".*gimbal-lock.*"
-      "roll_pitch_yaw.h.*";
+  const char* expected_messageB = "CalcRpyDtFromAngularVelocityInParent()"
+                                  ".*gimbal-lock.*"
+                                  "roll_pitch_yaw.h.*";
   DRAKE_EXPECT_THROWS_MESSAGE(rpyA.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
                               std::logic_error, expected_messageB);
 
@@ -277,14 +276,13 @@ GTEST_TEST(RollPitchYaw, PrecisionOfAngularVelocityFromRpyDtAndViceVersa) {
     Vector3d rpyDt, rpyDDt;
     if (is_imprecise) {
       ++number_of_imprecise_cases;
-      const char* expected_message =
-          "RollPitchYaw::CalcRpyDtFromAngularVelocityInParent().*gimbal-lock.*";
+      const char* expected_message = "CalcRpyDtFromAngularVelocityInParent()"
+                                     ".*gimbal-lock.*";
       DRAKE_EXPECT_THROWS_MESSAGE(
           rpyDt = rpy.CalcRpyDtFromAngularVelocityInParent(wA),
           std::logic_error, expected_message);
-      expected_message =
-          "RollPitchYaw::CalcRpyDDtFromRpyDtAndAngularAccelInParent().*gimbal-"
-          "lock.*";
+      expected_message = "CalcRpyDDtFromRpyDtAndAngularAccelInParent()"
+                         ".*gimbal-lock.*";
       DRAKE_EXPECT_THROWS_MESSAGE(rpyDDt =
         rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt, alphaA),
         std::logic_error, expected_message);
@@ -379,14 +377,13 @@ GTEST_TEST(RollPitchYaw, CalcRpyDDtFromAngularAccel) {
         Vector3d rpyDDt, rpyDDt_verify;
         if (rpy.DoesPitchAngleViolateGimbalLockTolerance()) {
           const char* expected_message =
-              "RollPitchYaw::CalcRpyDDtFromRpyDtAndAngularAccelInParent().*"
-              "gimbal-lock.*";
+              "CalcRpyDDtFromRpyDtAndAngularAccelInParent()"
+              ".*gimbal-lock.*";
           DRAKE_EXPECT_THROWS_MESSAGE(rpyDDt =
              rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt, alpha_AD_A),
              std::logic_error, expected_message);
-          expected_message =
-              "RollPitchYaw::CalcRpyDDtFromAngularAccelInChild().*"
-                  "gimbal-lock.*";
+          expected_message = "CalcRpyDDtFromAngularAccelInChild()"
+                             ".*gimbal-lock.*";
           DRAKE_EXPECT_THROWS_MESSAGE(rpyDDt_verify =
              rpy.CalcRpyDDtFromAngularAccelInChild(rpyDt, alpha_AD_D),
              std::logic_error, expected_message);
