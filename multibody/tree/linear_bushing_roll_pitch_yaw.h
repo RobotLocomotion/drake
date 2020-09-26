@@ -487,6 +487,8 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   /// (−𝐭 + p_AoAp × −𝐟) and the net bushing force on A (−𝐟 expressed in A).
   /// @param[in] context The state of the multibody system.
   /// @see CalcBushingSpatialForceOnFrameC().
+  /// @throws std::exception if pitch angle is near gimbal-lock.  For more info,
+  /// @see RollPitchYaw::DoesCosPitchAngleViolateGimbalLockTolerance().
   SpatialForce<T> CalcBushingSpatialForceOnFrameA(
       const systems::Context<T>& context) const;
 
@@ -495,6 +497,8 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   /// (𝐭 + p_CoCp × 𝐟) and the resultant bushing force on C (𝐟 expressed in C).
   /// @param[in] context The state of the multibody system.
   /// @see CalcBushingSpatialForceOnFrameA().
+  /// @throws std::exception if pitch angle is near gimbal-lock.  For more info,
+  /// @see RollPitchYaw::DoesCosPitchAngleViolateGimbalLockTolerance().
   SpatialForce<T> CalcBushingSpatialForceOnFrameC(
       const systems::Context<T>& context) const;
 
@@ -593,6 +597,16 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   // @param[in] R_AC The rotation matrix that relates frames A and C.
   static math::RotationMatrix<T> CalcR_AB(math::RotationMatrix<T> R_AC);
 
+  // Throws an exception with a message that the pitch-angle `p` violates the
+  // internally-defined gimbal-lock tolerance, which occurs when `cos(p) ≈ 0`,
+  // which means `p ≈ (n*π + π/2)` where `n = 0, ±1, ±2, ...`.
+  // @param[in] pitch_angle pitch angle `p` (in radians).
+  // @param[in] function_name name of the calling function/method.
+  // @throws std::exception if pitch angle is near gimbal-lock.  For more info,
+  // @see RollPitchYaw::DoesCosPitchAngleViolateGimbalLockTolerance().
+  static void ThrowPitchAngleViolatesGimbalLockTolerance(
+    const T& pitch_angle, const char* function_name);
+
   // The efficient algorithm CalcR_AB() above is verified in debug builds by
   // calculating the `θ λ` AngleAxis from R_AC and then forming R_AB_expected
   // from the AngleAxis `θ/2 λ`.  The function below throws an exception if
@@ -627,6 +641,13 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   Vector3<T> CalcBushingRollPitchYawAngleRates(
       const systems::Context<T>& context,
       const math::RollPitchYaw<T>& rpy) const {
+    // Throw an exception with an appropriate error message if the bushing's
+    // orientation is near gimbal lock.  This happens when the pitch-angle p
+    // violates the internally-defined gimbal-lock tolerance, which occurs when
+    // `cos(p) ≈ 0`, e.g., p ≈ ±π/2.
+    if (rpy.DoesPitchAngleViolateGimbalLockTolerance())
+      ThrowPitchAngleViolatesGimbalLockTolerance(rpy.pitch_angle(), __func__);
+
     const Vector3<T> w_AC_A = Calcw_AC_A(context);
     return rpy.CalcRpyDtFromAngularVelocityInParent(w_AC_A);
   }
@@ -702,6 +723,8 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   // @param[in] context The state of the multibody system.
   // @see CalcBushingSpatialForceOnFrameA(),
   //      CalcBushingSpatialForceOnFrameC().
+  // @throws std::exception if pitch angle is near gimbal-lock.  For more info,
+  // @see RollPitchYaw::DoesCosPitchAngleViolateGimbalLockTolerance().
   Vector3<T> CalcBushingTorqueOnCExpressedInA(
       const systems::Context<T>& context) const;
 
