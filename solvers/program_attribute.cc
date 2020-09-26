@@ -82,5 +82,17 @@ std::ostream& operator<<(std::ostream& os, const ProgramAttributes& attrs) {
   return os;
 }
 
+bool HasQuadraticCostAndNonlinearConicConstraint(
+    const ProgramAttributes& required) {
+  if (required.count(ProgramAttribute::kQuadraticCost) > 0 &&
+      (required.count(ProgramAttribute::kLorentzConeConstraint) > 0 ||
+       required.count(ProgramAttribute::kRotatedLorentzConeConstraint) > 0 ||
+       required.count(ProgramAttribute::kPositiveSemidefiniteConstraint) > 0 ||
+       required.count(ProgramAttribute::kExponentialConeConstraint) > 0)) {
+    return true;
+  }
+  return false;
+}
+
 }  // namespace solvers
 }  // namespace drake

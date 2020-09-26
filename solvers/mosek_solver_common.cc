@@ -6,7 +6,6 @@
 #include <cstring>
 
 #include "drake/common/never_destroyed.h"
-#include "drake/common/text_logging.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
@@ -48,22 +47,8 @@ bool MosekSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
   // When the program has quadratic cost and nonlinear constraints, the user
   // should convert the quadratic cost to second order cone constraint using a
   // slack variable.
-  if (prog.required_capabilities().count(ProgramAttribute::kQuadraticCost) >
-          0 &&
-      (prog.required_capabilities().count(
-           ProgramAttribute::kLorentzConeConstraint) > 0 ||
-       prog.required_capabilities().count(
-           ProgramAttribute::kRotatedLorentzConeConstraint) > 0 ||
-       prog.required_capabilities().count(
-           ProgramAttribute::kPositiveSemidefiniteConstraint) > 0 ||
-       prog.required_capabilities().count(
-           ProgramAttribute::kExponentialConeConstraint) > 0)) {
-    drake::log()->warn(
-        "The program contains quadratic cost and nonlinear convex conic "
-        "constraints. Consider to re-formulate the quadratic cost with a "
-        "slack variable and Lorentz cone constraint. Refer to "
-        "https://docs.mosek.com/modeling-cookbook/qcqo.html for more "
-        "details");
+  if (HasQuadraticCostAndNonlinearConicConstraint(
+          prog.required_capabilities())) {
     return false;
   }
   return true;

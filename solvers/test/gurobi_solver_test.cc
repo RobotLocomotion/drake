@@ -487,6 +487,23 @@ GTEST_TEST(GurobiTest, SOCPDualSolution2) {
   }
 }
 
+GTEST_TEST(GurobiTest, QuadraticCostNonlinearConicConstraint) {
+  // Gurobi can solve problem with quadratic cost and nonlinear conic
+  // constraint.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+  prog.AddQuadraticCost(x[0] * x[0]);
+  prog.AddLorentzConeConstraint(x);
+
+  GurobiSolver solver;
+  if (solver.available()) {
+    auto result = solver.Solve(prog);
+    EXPECT_TRUE(result.is_success());
+    EXPECT_TRUE(
+        CompareMatrices(result.GetSolution(x), Eigen::Vector3d::Zero(), 1E-6));
+  }
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

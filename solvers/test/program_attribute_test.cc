@@ -24,6 +24,28 @@ GTEST_TEST(ProgramAttributeTest, ToString) {
   EXPECT_EQ(os.str(), "{ProgramAttributes: GenericCost, GenericConstraint}");
 }
 
+GTEST_TEST(HasQuadraticCostAndNonlinearConicConstraintTest, Test) {
+  EXPECT_TRUE(HasQuadraticCostAndNonlinearConicConstraint(
+      ProgramAttributes{ProgramAttribute::kQuadraticCost,
+                        ProgramAttribute::kLorentzConeConstraint}));
+  EXPECT_TRUE(HasQuadraticCostAndNonlinearConicConstraint(
+      ProgramAttributes{ProgramAttribute::kQuadraticCost,
+                        ProgramAttribute::kRotatedLorentzConeConstraint}));
+  EXPECT_TRUE(HasQuadraticCostAndNonlinearConicConstraint(
+      ProgramAttributes{ProgramAttribute::kQuadraticCost,
+                        ProgramAttribute::kPositiveSemidefiniteConstraint}));
+  EXPECT_TRUE(HasQuadraticCostAndNonlinearConicConstraint(
+      ProgramAttributes{ProgramAttribute::kQuadraticCost,
+                        ProgramAttribute::kExponentialConeConstraint}));
+  EXPECT_FALSE(HasQuadraticCostAndNonlinearConicConstraint(
+      ProgramAttributes{ProgramAttribute::kQuadraticCost,
+                        ProgramAttribute::kQuadraticConstraint}));
+  EXPECT_FALSE(HasQuadraticCostAndNonlinearConicConstraint(ProgramAttributes{
+      ProgramAttribute::kQuadraticCost, ProgramAttribute::kLinearConstraint}));
+  EXPECT_FALSE(HasQuadraticCostAndNonlinearConicConstraint(
+      ProgramAttributes{ProgramAttribute::kQuadraticCost,
+                        ProgramAttribute::kLinearEqualityConstraint}));
+}
 }  // namespace
 }  // namespace test
 }  // namespace solvers
