@@ -551,7 +551,8 @@ class MeshcatContactVisualizer(LeafSystem):
                  meshcat_viz,
                  force_threshold=1e-2,
                  contact_force_scale=10,
-                 plant=None):
+                 plant=None,
+                 contact_force_radius=0.01):
         """
         Args:
             meshcat_viz: A pydrake MeshcatVisualizer instance.
@@ -561,6 +562,8 @@ class MeshcatContactVisualizer(LeafSystem):
                 displayed as a cylinder with length F/contact_force_scale
                 (in meters).
             plant: the MultibodyPlant associated with meshcat_viz.scene_graph.
+            contact_force_radius: sets the constant radius of the cylinder used
+                to visualize the forces.
         """
         LeafSystem.__init__(self)
         assert plant is not None
@@ -568,6 +571,7 @@ class MeshcatContactVisualizer(LeafSystem):
         self._force_threshold = force_threshold
         self._contact_force_scale = contact_force_scale
         self._plant = plant
+        self._radius = contact_force_radius
 
         self.set_name('meshcat_contact_visualizer')
         self.DeclarePeriodicPublish(self._meshcat_viz.draw_period, 0.0)
@@ -673,10 +677,11 @@ class MeshcatContactVisualizer(LeafSystem):
                 self._contacts.append(new_contact)
                 self._contact_key_counter += 1
                 # create cylinders with small radius.
+                radius = self._radius / self._force_cylinder_radial_scale
                 vis[prefix]["contact_forces"][new_contact.key].set_object(
                     meshcat.geometry.Cylinder(
                         height=1. / self._force_cylinder_longitudinal_scale,
-                        radius=0.01 / self._force_cylinder_radial_scale),
+                        radius=radius),
                     meshcat.geometry.MeshLambertMaterial(color=0xff0000))
             else:
                 # contact is not new, but it's valid.
