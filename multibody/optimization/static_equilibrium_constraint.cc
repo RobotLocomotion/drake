@@ -62,14 +62,15 @@ void StaticEquilibriumConstraint::DoEval(
   }
   const auto& query_object =
       query_port.Eval<geometry::QueryObject<AutoDiffXd>>(*context_);
-  const std::vector<geometry::SignedDistancePair<AutoDiffXd>>
-      signed_distance_pairs =
-          query_object.ComputeSignedDistancePairwiseClosestPoints();
   const geometry::SceneGraphInspector<AutoDiffXd>& inspector =
       query_object.inspector();
   const int lambda_start_index_in_x =
       plant_->num_positions() + plant_->num_actuated_dofs();
-  for (const auto& signed_distance_pair : signed_distance_pairs) {
+  for (const auto& [contact_pair, evaluator] :
+       contact_pair_to_wrench_evaluator_) {
+    const geometry::SignedDistancePair<AutoDiffXd> signed_distance_pair =
+        query_object.ComputeSignedDistancePairClosestPoints(
+            contact_pair.first(), contact_pair.second());
     const geometry::FrameId frame_A_id =
         inspector.GetFrameId(signed_distance_pair.id_A);
     const geometry::FrameId frame_B_id =
@@ -101,29 +102,19 @@ void StaticEquilibriumConstraint::DoEval(
                                         frameB, p_BCb, plant_->world_frame(),
                                         plant_->world_frame(), &Jv_V_WCb);
 
-    const SortedPair<geometry::GeometryId> contact_pair(
-        signed_distance_pair.id_A, signed_distance_pair.id_B);
     // Find the lambda corresponding to the geometry pair (id_A, id_B).
-    const auto it = contact_pair_to_wrench_evaluator_.find(contact_pair);
-    if (it == contact_pair_to_wrench_evaluator_.end()) {
-      throw std::runtime_error(
-          "The input argument contact_pair_to_wrench_evaluator in the "
-          "StaticEquilibriumConstraint constructor doesn't include all "
-          "possible contact pairs.");
-    }
-
     VectorX<AutoDiffXd> lambda(
-        it->second.contact_wrench_evaluator->num_lambda());
+        evaluator.contact_wrench_evaluator->num_lambda());
 
     for (int i = 0; i < lambda.rows(); ++i) {
       lambda(i) = x(lambda_start_index_in_x +
-                    it->second.lambda_indices_in_all_lambda[i]);
+                    evaluator.lambda_indices_in_all_lambda[i]);
     }
 
     AutoDiffVecXd F_AB_W;
-    it->second.contact_wrench_evaluator->Eval(
-        it->second.contact_wrench_evaluator->ComposeVariableValues(*context_,
-                                                                   lambda),
+    evaluator.contact_wrench_evaluator->Eval(
+        evaluator.contact_wrench_evaluator->ComposeVariableValues(*context_,
+                                                                  lambda),
         &F_AB_W);
 
     // By definition, F_AB_W is the contact wrench applied to id_B from id_A,
