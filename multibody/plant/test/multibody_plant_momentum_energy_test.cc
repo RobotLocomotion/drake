@@ -162,7 +162,7 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialMomentumNonsenseSet) {
   const Vector3<double> p_WoWo_W = Vector3<double>::Zero();
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_.CalcSpatialMomentumInWorldAboutPoint(*context_, model_instances,
-          p_WoWo_W), std::runtime_error,
+          p_WoWo_W), std::exception,
       "CalcSpatialMomentumInWorldAboutPoint\\(\\): This MultibodyPlant method"
       " contains an invalid model_instance.");
 }

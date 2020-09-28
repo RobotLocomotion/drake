@@ -1267,6 +1267,8 @@ SpatialMomentum<T> MultibodyTree<T>::CalcSpatialMomentumInWorldAboutPoint(
     const systems::Context<T>& context,
     const Vector3<T>& p_WoP_W) const {
   // Assemble a list of ModelInstanceIndex.
+  // Skip model_instance_index(0) which always contains the "world" body -- the
+  // spatial momentum of the world body measured in the world is always zero.
   std::vector<ModelInstanceIndex> model_instances;
   for (ModelInstanceIndex model_instance_index(1);
        model_instance_index < num_model_instances(); ++model_instance_index)
@@ -1286,7 +1288,7 @@ SpatialMomentum<T> MultibodyTree<T>::CalcSpatialMomentumInWorldAboutPoint(
   for (auto model_instance : model_instances) {
     // If invalid model_instance, throw an exception with a helpful message.
     if (model_instance >= instance_name_to_index_.size()) {
-      throw std::runtime_error(
+      throw std::logic_error(
           "CalcSpatialMomentumInWorldAboutPoint(): This MultibodyPlant method"
           " contains an invalid model_instance.");
     }
@@ -1318,7 +1320,7 @@ SpatialMomentum<T> MultibodyTree<T>::CalcBodiesSpatialMomentumInWorldAboutWo(
 
   // Accumulate each body's spatial momentum in the world frame W to this system
   // S's spatial momentum in W about Wo (the origin of W), expressed in W.
-  SpatialMomentum<T> L_WS_W(Vector6<T>::Zero());
+  SpatialMomentum<T> L_WS_W = SpatialMomentum<T>::Zero();
 
   // Add contributions from each body Bi.
   for (BodyIndex body_index : body_indexes) {
@@ -1326,7 +1328,7 @@ SpatialMomentum<T> MultibodyTree<T>::CalcBodiesSpatialMomentumInWorldAboutWo(
 
     // If invalid body_index, throw an exception with a helpful message.
     if (body_index >= num_bodies()) {
-      throw std::runtime_error(
+      throw std::logic_error(
           "CalcSpatialMomentumInWorldAboutPoint(): This MultibodyPlant method"
           " contains an invalid body_index.");
     }

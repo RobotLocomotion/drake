@@ -1306,39 +1306,15 @@ class MultibodyTree {
       const systems::Context<T>& context,
       const std::vector<BodyIndex>& body_indexes) const;
 
-  /// This method returns the spatial momentum of `this` MultibodyTree in the
-  /// world frame W, about a designated point P, expressed in the world frame W.
-  /// @param[in] context Contains the state of the model.
-  /// @param[in] p_WoP_W Position from Wo (origin of the world frame W) to an
-  ///            arbitrary point P, expressed in the world frame W.
+  /// See MultibodyPlant method.
   SpatialMomentum<T> CalcSpatialMomentumInWorldAboutPoint(
       const systems::Context<T>& context, const Vector3<T>& p_WoP_W) const;
 
-  /// This method returns the spatial momentum of a list of model instances in
-  /// the world frame W, about a designated point P, expressed in frame W.
-  /// @param[in] context Contains the state of the model.
-  /// @param[in] model_instances Array of selected model instances.
-  /// @param[in] p_WoP_W Position from Wo (origin of the world frame W) to an
-  ///            arbitrary point P, expressed in the world frame W.
-  /// @throws std::runtime_error if model_instances contains an invalid
-  ///         ModelInstanceIndex.
+  /// See MultibodyPlant method.
   SpatialMomentum<T> CalcSpatialMomentumInWorldAboutPoint(
       const systems::Context<T>& context,
       const std::vector<ModelInstanceIndex>& model_instances,
       const Vector3<T>& p_WoP_W) const;
-
-  /// This method returns the spatial momentum of a list of bodies in the
-  /// world frame W, about the world origin Wo, expressed in the world frame W.
-  /// @param[in] context Contains the state of the model.
-  /// @param[in] body_indexes Array of selected bodies.  This method does not
-  ///  distinguish between welded bodies, joint-connected bodies,
-  ///  floating bodies, the world_body(), or repeated bodies.
-  /// @throws std::runtime_error if model_instances contains an invalid
-  /// ModelInstanceIndex.
-  /// @throws std::runtime_error if body_indexes contains an invalid BodyIndex.
-  SpatialMomentum<T> CalcBodiesSpatialMomentumInWorldAboutWo(
-      const systems::Context<T>& context,
-      const std::vector<BodyIndex>& body_indexes) const;
 
   /// See MultibodyPlant method.
   const math::RigidTransform<T>& EvalBodyPoseInWorld(
@@ -2653,6 +2629,19 @@ class MultibodyTree {
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
       std::vector<SpatialAcceleration<T>>* AsBias_WB_all) const;
+
+  // This method returns the spatial momentum of a list of bodies in the
+  // world frame W, about the world origin Wo, expressed in the world frame W.
+  // @param[in] context Contains the state of the model.
+  // @param[in] body_indexes Array of selected bodies.  This method does not
+  //  distinguish between welded bodies, joint-connected bodies,
+  //  floating bodies, the world_body(), or repeated bodies.
+  // @throws std::runtime_error if model_instances contains an invalid
+  // ModelInstanceIndex.
+  // @throws std::exception if body_indexes contains an invalid BodyIndex.
+  SpatialMomentum<T> CalcBodiesSpatialMomentumInWorldAboutWo(
+      const systems::Context<T>& context,
+      const std::vector<BodyIndex>& body_indexes) const;
 
   // Helper method to access the mobilizer of a free body.
   // If `body` is a free body in the model, this method will return the

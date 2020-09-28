@@ -2424,9 +2424,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// (the system's center of mass), use something like: <pre>
   ///   MultibodyPlant<T> plant;
   ///   ... code to load a model ....
-  ///   const Vector3<T> p_WoScm_W = CalcCenterOfMassPosition(context);
+  ///   const Vector3<T> p_WoScm_W = plant.CalcCenterOfMassPosition(context);
   ///   const SpatialMomentum<T> L_WScm_W =
-  ///     CalcSpatialMomentumInWorldAboutPoint(context, p_WoScm_W);
+  ///     plant.CalcSpatialMomentumInWorldAboutPoint(context, p_WoScm_W);
   /// </pre>
   SpatialMomentum<T> CalcSpatialMomentumInWorldAboutPoint(
       const systems::Context<T>& context,
@@ -2445,16 +2445,18 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// model_instances, measured in world frame W, about point P, expressed in W.
   /// @note To calculate the spatial momentum of this system S in W about Scm
   /// (the system's center of mass), use something like: <pre>
+  ///   MultibodyPlant<T> plant;
   ///   ... code to create a set of selected model instances, e.g., ....
   ///   std::vector<ModelInstanceIndex> model_instances;
   ///   model_instances.push_back(bodyA_model_instance);
   ///   model_instances.push_back(bodyB_model_instance);  // ... etc.
   ///   const Vector3<T> p_WoScm_W =
-  ///     CalcCenterOfMassPosition(context, model_instances);
-  ///   SpatialMomentum<T> L_WScm_W = CalcSpatialMomentumInWorldAboutPoint(
-  ///     context, model_instances, p_WoScm_W);
+  ///     plant.CalcCenterOfMassPosition(context, model_instances);
+  ///   SpatialMomentum<T> L_WScm_W =
+  ///     plant.CalcSpatialMomentumInWorldAboutPoint(context, model_instances,
+  ///                                                p_WoScm_W);
   /// </pre>
-  /// @throws std::runtime_error if model_instances contains an invalid
+  /// @throws std::exception if model_instances contains an invalid
   ///         ModelInstanceIndex.
   SpatialMomentum<T> CalcSpatialMomentumInWorldAboutPoint(
       const systems::Context<T>& context,
