@@ -616,6 +616,9 @@ class TestPlant(unittest.TestCase):
         X_WL = plant.CalcRelativeTransform(
             context, frame_A=world_frame, frame_B=base_frame)
         self.assertIsInstance(X_WL, RigidTransform)
+        free_bodies = plant.GetFloatingBaseBodies()
+        self.assertEqual(len(free_bodies), 1)
+        self.assertTrue(base.index() in free_bodies)
 
         p_AQi = plant.CalcPointsPositions(
             context=context, frame_B=base_frame,
