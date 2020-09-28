@@ -82,22 +82,14 @@ std::vector<ContactWrench> StaticEquilibriumProblem::GetContactWrenchSolution(
   }
   const auto& query_object =
       query_port.Eval<geometry::QueryObject<AutoDiffXd>>(*context_);
-  // TODO(hongkai.dai) compute the signed distance between a specific pair of
-  // contact, rather than all pairs of contact.
-  const std::vector<geometry::SignedDistancePair<AutoDiffXd>>
-      signed_distance_pairs =
-          query_object.ComputeSignedDistancePairwiseClosestPoints();
   const geometry::SceneGraphInspector<AutoDiffXd>& inspector =
       query_object.inspector();
   std::vector<ContactWrench> contact_wrench_sol;
   contact_wrench_sol.reserve(contact_wrench_evaluators_and_lambda_.size());
-  for (const auto& contact_wrench_evaluator_and_lambda :
+  for (const auto& [contact_wrench_evaluator, lambda] :
        contact_wrench_evaluators_and_lambda_) {
-    const std::shared_ptr<ContactWrenchEvaluator>& contact_wrench_evaluator =
-        contact_wrench_evaluator_and_lambda.first;
     // Compute the contact wrench
-    const auto lambda_sol =
-        result.GetSolution(contact_wrench_evaluator_and_lambda.second);
+    const auto lambda_sol = result.GetSolution(lambda);
     Eigen::VectorXd F_Cb_W;
     contact_wrench_evaluator->Eval(
         contact_wrench_evaluator->ComposeVariableValues(q_sol, lambda_sol),
@@ -107,30 +99,27 @@ std::vector<ContactWrench> StaticEquilibriumProblem::GetContactWrenchSolution(
     const SortedPair<geometry::GeometryId>& contact_pair =
         contact_wrench_evaluator->geometry_id_pair();
     BodyIndex body_A_index, body_B_index;
-    for (const auto& signed_distance_pair : signed_distance_pairs) {
-      if (signed_distance_pair.id_A == contact_pair.first() &&
-          signed_distance_pair.id_B == contact_pair.second()) {
-        const geometry::FrameId frame_Fa_id =
-            inspector.GetFrameId(signed_distance_pair.id_A);
-        const geometry::FrameId frame_Fb_id =
-            inspector.GetFrameId(signed_distance_pair.id_B);
-        const Frame<AutoDiffXd>& frame_Fa =
-            plant_.GetBodyFromFrameId(frame_Fa_id)->body_frame();
-        const Frame<AutoDiffXd>& frame_Fb =
-            plant_.GetBodyFromFrameId(frame_Fb_id)->body_frame();
-        body_A_index = frame_Fa.body().index();
-        body_B_index = frame_Fb.body().index();
-        // Define Body B's frame as Fb, the geometry attached to body B has
-        // frame Gb, and the witness point on geometry Gb is Cb.
-        const auto& X_FbGb = inspector.GetPoseInFrame(signed_distance_pair.id_B)
-                                 .template cast<AutoDiffXd>();
-        const auto& p_GbCb = signed_distance_pair.p_BCb;
-        const Vector3<AutoDiffXd> p_FbCb = X_FbGb * p_GbCb;
-        plant_.CalcPointsPositions(*context_, frame_Fb, p_FbCb,
-                                   plant_.world_frame(), &p_WCb);
-        break;
-      }
-    }
+    const geometry::SignedDistancePair<AutoDiffXd> signed_distance_pair =
+        query_object.ComputeSignedDistancePairClosestPoints(
+            contact_pair.first(), contact_pair.second());
+    const geometry::FrameId frame_Fa_id =
+        inspector.GetFrameId(signed_distance_pair.id_A);
+    const geometry::FrameId frame_Fb_id =
+        inspector.GetFrameId(signed_distance_pair.id_B);
+    const Frame<AutoDiffXd>& frame_Fa =
+        plant_.GetBodyFromFrameId(frame_Fa_id)->body_frame();
+    const Frame<AutoDiffXd>& frame_Fb =
+        plant_.GetBodyFromFrameId(frame_Fb_id)->body_frame();
+    body_A_index = frame_Fa.body().index();
+    body_B_index = frame_Fb.body().index();
+    // Define Body B's frame as Fb, the geometry attached to body B has
+    // frame Gb, and the witness point on geometry Gb is Cb.
+    const auto& X_FbGb = inspector.GetPoseInFrame(signed_distance_pair.id_B)
+                             .template cast<AutoDiffXd>();
+    const auto& p_GbCb = signed_distance_pair.p_BCb;
+    const Vector3<AutoDiffXd> p_FbCb = X_FbGb * p_GbCb;
+    plant_.CalcPointsPositions(*context_, frame_Fb, p_FbCb,
+                               plant_.world_frame(), &p_WCb);
     contact_wrench_sol.emplace_back(
         body_A_index, body_B_index, math::autoDiffToValueMatrix(p_WCb),
         SpatialForce<double>(Vector6<double>(F_Cb_W)));
