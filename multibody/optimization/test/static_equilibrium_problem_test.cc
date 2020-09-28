@@ -212,6 +212,6 @@ GTEST_TEST(TestStaticEquilibriumProblem, TwoSpheresWithinBin) {
   q_init.tail<3>() << -0.1, 0, radii[1] + 0.01;
   dut.prog().SetDecisionVariableValueInVector(dut.q_vars(), q_init, &x_init);
   check_static_equilibrium_problem_solve(x_init);
-}  // namespace multibody
+}
 }  // namespace multibody
 }  // namespace drake

@@ -96,61 +96,44 @@ void StaticFrictionConeComplementarityNonlinearConstraint::DoEval(
   }
   const auto& query_object =
       query_port.Eval<geometry::QueryObject<AutoDiffXd>>(context);
-  const std::vector<geometry::SignedDistancePair<AutoDiffXd>>
-      signed_distance_pairs =
-          query_object.ComputeSignedDistancePairwiseClosestPoints();
-  bool found_geometry_pair = false;
-  for (const auto& signed_distance_pair : signed_distance_pairs) {
-    if (signed_distance_pair.id_A ==
-            contact_wrench_evaluator_->geometry_id_pair().first() &&
-        signed_distance_pair.id_B ==
-            contact_wrench_evaluator_->geometry_id_pair().second()) {
-      found_geometry_pair = true;
-      // Compute the friction.
-      const geometry::ProximityProperties& geometryA_props =
-          *query_object.inspector().GetProximityProperties(
-              signed_distance_pair.id_A);
-      const geometry::ProximityProperties& geometryB_props =
-          *query_object.inspector().GetProximityProperties(
-              signed_distance_pair.id_B);
+  const geometry::SignedDistancePair<AutoDiffXd> signed_distance_pair =
+      query_object.ComputeSignedDistancePairClosestPoints(
+          contact_wrench_evaluator_->geometry_id_pair().first(),
+          contact_wrench_evaluator_->geometry_id_pair().second());
+  // Compute the friction.
+  const geometry::ProximityProperties& geometryA_props =
+      *query_object.inspector().GetProximityProperties(
+          signed_distance_pair.id_A);
+  const geometry::ProximityProperties& geometryB_props =
+      *query_object.inspector().GetProximityProperties(
+          signed_distance_pair.id_B);
 
-      const CoulombFriction<double>& geometryA_friction =
-          geometryA_props.GetProperty<CoulombFriction<double>>(
-              "material", "coulomb_friction");
-      const CoulombFriction<double>& geometryB_friction =
-          geometryB_props.GetProperty<CoulombFriction<double>>(
-              "material", "coulomb_friction");
+  const CoulombFriction<double>& geometryA_friction =
+      geometryA_props.GetProperty<CoulombFriction<double>>("material",
+                                                           "coulomb_friction");
+  const CoulombFriction<double>& geometryB_friction =
+      geometryB_props.GetProperty<CoulombFriction<double>>("material",
+                                                           "coulomb_friction");
 
-      CoulombFriction<double> combined_friction =
-          CalcContactFrictionFromSurfaceProperties(geometryA_friction,
-                                                   geometryB_friction);
+  CoulombFriction<double> combined_friction =
+      CalcContactFrictionFromSurfaceProperties(geometryA_friction,
+                                               geometryB_friction);
 
-      const auto& nhat_BA_W = signed_distance_pair.nhat_BA_W;
-      // The constraint f_Wᵀ * ((μ² + 1)* n_W * n_Wᵀ - I) * f_W >= 0
-      (*y)(0) =
-          f_AB_W.dot(((std::pow(combined_friction.static_friction(), 2) + 1) *
-                          nhat_BA_W * nhat_BA_W.transpose() -
-                      Eigen::Matrix3d::Identity()) *
-                     f_AB_W);
+  const auto& nhat_BA_W = signed_distance_pair.nhat_BA_W;
+  // The constraint f_Wᵀ * ((μ² + 1)* n_W * n_Wᵀ - I) * f_W >= 0
+  (*y)(0) = f_AB_W.dot(((std::pow(combined_friction.static_friction(), 2) + 1) *
+                            nhat_BA_W * nhat_BA_W.transpose() -
+                        Eigen::Matrix3d::Identity()) *
+                       f_AB_W);
 
-      // The constraint n̂_AB_W.dot(f_AB_W) - α = 0
-      (*y)(1) = -nhat_BA_W.dot(f_AB_W) - alpha;
+  // The constraint n̂_AB_W.dot(f_AB_W) - α = 0
+  (*y)(1) = -nhat_BA_W.dot(f_AB_W) - alpha;
 
-      // The constraint sdf - β = 0
-      (*y)(2) = signed_distance_pair.distance - beta;
+  // The constraint sdf - β = 0
+  (*y)(2) = signed_distance_pair.distance - beta;
 
-      // The constraint α * β <= ε
-      (*y)(3) = alpha * beta;
-
-      break;
-    }
-  }
-  if (!found_geometry_pair) {
-    throw std::runtime_error(
-        "StaticFrictionConeComplementarityNonlinearConstraint: the input "
-        "contact_wrench_evaluator contains a pair of geometry, that has not "
-        "been registered to the SceneGraph for distance computation.");
-  }
+  // The constraint α * β <= ε
+  (*y)(3) = alpha * beta;
 }
 
 void StaticFrictionConeComplementarityNonlinearConstraint::DoEval(
