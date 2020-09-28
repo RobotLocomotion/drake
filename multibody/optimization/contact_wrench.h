@@ -27,9 +27,18 @@ struct ContactWrench {
         bodyB_index(bodyB_index_in),
         p_WCb_W(std::move(p_WCb_W_in)),
         F_Cb_W(std::move(F_Cb_W_in)) {}
+
+  /** The index of Body A.*/
   BodyIndex bodyA_index;
+  /** The index of Body B.*/
   BodyIndex bodyB_index;
+  /** The position of the point Cb (where the wrench is applied) expressed in
+   * the world frame W.
+   */
   Eigen::Vector3d p_WCb_W;
+  /** F_Cb_W_in The wrench (spatial force) applied at point Cb from Body A
+   * to Body B, measured in the world frame.
+   */
   SpatialForce<double> F_Cb_W;
 };
 }  // namespace multibody
