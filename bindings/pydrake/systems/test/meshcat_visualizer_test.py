@@ -249,7 +249,8 @@ class TestMeshcat(unittest.TestCase):
                 meshcat_viz=viz,
                 force_threshold=0,
                 contact_force_scale=10,
-                plant=plant))
+                plant=plant,
+                contact_force_radius=0.01))
         contact_input_port = contact_viz.GetInputPort("contact_results")
         builder.Connect(
             plant.GetOutputPort("contact_results"),
