@@ -699,6 +699,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("coulomb_friction"),
             cls_doc.RegisterCollisionGeometry
                 .doc_5args_body_X_BG_shape_name_coulomb_friction)
+        .def("GetFloatingBaseBodies", &Class::GetFloatingBaseBodies,
+            cls_doc.GetFloatingBaseBodies.doc)
         .def("get_source_id", &Class::get_source_id, cls_doc.get_source_id.doc)
         .def("get_geometry_query_input_port",
             &Class::get_geometry_query_input_port, py_rvp::reference_internal,
