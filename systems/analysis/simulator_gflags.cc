@@ -5,7 +5,7 @@
 
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
-#include "drake/systems/analysis/simulator_flags.h"
+#include "drake/systems/analysis/simulator_config_functions.h"
 
 // === Simulator's parameters ===
 
@@ -25,7 +25,7 @@ DEFINE_bool(simulator_publish_every_time_step,
 // === Integrator's parameters ===
 
 // N.B. The list here must be kept in sync with GetSupportedIntegrators() in
-// simulator_flags.cc.
+// simulator_config_functions.cc.
 DEFINE_string(simulator_integration_scheme,
               drake::systems::internal::kDefaultIntegratorName,
               "[Integrator flag] Integration scheme to be used. Available "
@@ -88,15 +88,16 @@ std::unique_ptr<Simulator<double>> MakeSimulatorFromGflags(
     const System<double>& system, std::unique_ptr<Context<double>> context) {
   auto simulator =
       std::make_unique<Simulator<double>>(system, std::move(context));
-  ResetIntegratorFromGflags(simulator.get());
-  simulator->set_target_realtime_rate(FLAGS_simulator_target_realtime_rate);
 
-  // It is almost always the case we want these two next flags to be either both
-  // true or both false. Otherwise we could miss the first publish at t = 0.
-  simulator->set_publish_at_initialization(
-      FLAGS_simulator_publish_every_time_step);
-  simulator->set_publish_every_time_step(
-      FLAGS_simulator_publish_every_time_step);
+  const SimulatorConfig config {
+    FLAGS_simulator_integration_scheme,
+    FLAGS_simulator_max_time_step,
+    FLAGS_simulator_accuracy,
+    FLAGS_simulator_use_error_control,
+    FLAGS_simulator_target_realtime_rate,
+    FLAGS_simulator_publish_every_time_step
+  };
+  ApplySimulatorConfig(simulator.get(), config);
 
   simulator->Initialize();
   return simulator;
