@@ -1,13 +1,16 @@
 <?xml version="1.0"?>
 <package>
-  <name>kinova_description</name>
+  <name>jaco_description</name>
   <version>0.0.1</version>
   <description>
       3D model of various Kinova robotic arms.
-      Includes the model and URDF files for working with an arm in RViz or Gazebo.
+      Includes the model and URDF files for working with an arm in Drake (and
+      possibly RViz and/or Gazebo).
   </description>
   <maintainer email="ros@kinovarobotics.com">Kinova ROS Support</maintainer>
+  <maintainer email="drake-users@mit.edu">Drake Users</maintainer>
   <author>Kinova ROS Support</author>
+  <author email="drake-users@mit.edu">Drake Users</author>
   <license>BSD</license>
   <url>http://ros.org/wiki/kinova_description</url>
 
