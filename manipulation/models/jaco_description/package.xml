@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package>
+  <name>kinova_description</name>
+  <version>0.0.1</version>
+  <description>
+      3D model of various Kinova robotic arms.
+      Includes the model and URDF files for working with an arm in RViz or Gazebo.
+  </description>
+  <maintainer email="ros@kinovarobotics.com">Kinova ROS Support</maintainer>
+  <author>Kinova ROS Support</author>
+  <license>BSD</license>
+  <url>http://ros.org/wiki/kinova_description</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>urdf</build_depend>
+  <build_depend>xacro</build_depend>
+
+  <run_depend>urdf</run_depend>
+  <run_depend>xacro</run_depend>
+
+</package>
