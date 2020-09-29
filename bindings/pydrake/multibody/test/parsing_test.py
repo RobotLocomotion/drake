@@ -3,6 +3,8 @@
 from pydrake.multibody.parsing import (
     Parser,
     PackageMap,
+    LoadModelDirectives,
+    ProcessModelDirectives,
 )
 
 import os
@@ -82,3 +84,23 @@ class TestParsing(unittest.TestCase):
         result = parser.AddModelFromString(
             file_contents=sdf_contents, file_type="sdf")
         self.assertIsInstance(result, ModelInstanceIndex)
+
+    def test_model_directives(self):
+        model_dir = os.path.dirname(FindResourceOrThrow(
+            "drake/multibody/parsing/test/"
+            "process_model_directives_test/package.xml"))
+        plant = MultibodyPlant(time_step=0.01)
+        parser = Parser(plant=plant)
+        parser.package_map().PopulateFromFolder(model_dir)
+        directives_file = model_dir + "/add_scoped_top.yaml"
+        directives = LoadModelDirectives(directives_file)
+        added_models = ProcessModelDirectives(
+            directives=directives, plant=plant, parser=parser)
+        # Check for an instance.
+        model_names = [model.model_name for model in added_models]
+        self.assertIn("extra_model", model_names)
+        plant.GetModelInstanceByName("extra_model")
+
+    def test_model_directives_doc(self):
+        """Check that the warning note in the docstring was added."""
+        self.assertIn("Note:\n", ProcessModelDirectives.__doc__)

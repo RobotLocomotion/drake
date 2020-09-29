@@ -5,6 +5,7 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/parsing/process_model_directives.h"
 
 using drake::geometry::SceneGraph;
 using drake::multibody::MultibodyPlant;
@@ -57,6 +58,49 @@ PYBIND11_MODULE(parsing, m) {
             py::arg("file_contents"), py::arg("file_type"),
             py::arg("model_name") = "", cls_doc.AddModelFromString.doc);
   }
+
+  // Model Directives
+  {
+    using Class = parsing::ModelDirectives;
+    py::class_<Class>(m, "ModelDirectives", doc.parsing.ModelDirectives.doc);
+  }
+
+  m.def("LoadModelDirectives", &parsing::LoadModelDirectives,
+      py::arg("filename"), doc.parsing.LoadModelDirectives.doc);
+
+  // ModelInstanceInfo
+  {
+    using Class = parsing::ModelInstanceInfo;
+    constexpr auto& cls_doc = doc.parsing.ModelInstanceInfo;
+    py::class_<Class>(m, "ModelInstanceInfo", cls_doc.doc)
+        .def_readonly("model_name", &Class::model_name, cls_doc.model_name.doc)
+        .def_readonly("model_path", &Class::model_path, cls_doc.model_path.doc)
+        .def_readonly("parent_frame_name", &Class::parent_frame_name,
+            cls_doc.parent_frame_name.doc)
+        .def_readonly("child_frame_name", &Class::child_frame_name,
+            cls_doc.child_frame_name.doc)
+        .def_readonly("X_PC", &Class::X_PC, cls_doc.X_PC.doc)
+        .def_readonly("model_instance", &Class::model_instance,
+            cls_doc.model_instance.doc);
+  }
+
+  constexpr char kWeldErrorDisclaimer[] = R"""(
+    Note:
+        pydrake does not currently support `ModelWeldErrorFunction`.
+    )""";
+  m.def(
+      "ProcessModelDirectives",
+      [](const parsing::ModelDirectives& directives,
+          MultibodyPlant<double>* plant, Parser* parser = nullptr) {
+        std::vector<parsing::ModelInstanceInfo> added_models;
+        parsing::ProcessModelDirectives(
+            directives, plant, &added_models, parser);
+        return added_models;
+      },
+      py::arg("directives"), py::arg("plant"), py::arg("parser"),
+      (std::string(doc.parsing.ProcessModelDirectives.doc) +
+          kWeldErrorDisclaimer)
+          .c_str());
 }
 
 }  // namespace pydrake
