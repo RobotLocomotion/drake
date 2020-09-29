@@ -192,25 +192,7 @@ class Transform {
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(base_frame));
     a->Visit(DRAKE_NVP(translation));
-
-    // Visit the `rotation` field as if it were optional, to allow it to be
-    // missing during a schema transition window.
-    // TODO(anzu#4772) Once rotation_rpy_deg is gone, this should be
-    // `Visit(MakeNameValue("rotation", &rotation.value))` instead.
-    std::optional<Rotation::Variant> maybe_rotation = rotation.value;
-    a->Visit(MakeNameValue("rotation", &maybe_rotation));
-    if (maybe_rotation) {
-      rotation.value = *maybe_rotation;
-    }
-
-    // Visit the legacy `rotation_rpy_deg` field as an empty optional, to allow
-    // it to be read and obeyed (but not written) during a transition window.
-    // TODO(anzu#4772) Remove this compatibility shim once nothing is using it.
-    std::optional<Eigen::Vector3d> maybe_rpy;
-    a->Visit(MakeNameValue("rotation_rpy_deg", &maybe_rpy));
-    if (maybe_rpy) {
-      this->set_rotation_rpy_deg(*maybe_rpy);
-    }
+    a->Visit(MakeNameValue("rotation", &rotation.value));
   }
 
   /// An optional base frame name for this transform.  When left unspecified,

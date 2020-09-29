@@ -37,27 +37,6 @@ GTEST_TEST(DeterministicTest, TransformTest) {
       expected.GetAsMatrix34()));
 }
 
-const char* deprecated_rpy = R"""(
-translation: [1., 2., 3.]
-rotation_rpy_deg: [10., 20., 30.]
-)""";
-
-GTEST_TEST(DeprecatedDeterministicTest, TransformTest) {
-  Transform transform;
-  YamlReadArchive(YAML::Load(deprecated_rpy)).Accept(&transform);
-
-  drake::math::RigidTransformd expected(
-      drake::math::RollPitchYawd(
-          Eigen::Vector3d(10., 20., 30.) * (M_PI / 180.0)),
-      Eigen::Vector3d(1., 2., 3.));
-  EXPECT_TRUE(drake::CompareMatrices(
-      transform.GetDeterministicValue().GetAsMatrix34(),
-      expected.GetAsMatrix34()));
-  EXPECT_TRUE(drake::CompareMatrices(
-      transform.Mean().GetAsMatrix34(),
-      expected.GetAsMatrix34()));
-}
-
 const char* random = R"""(
 base_frame: bar
 translation: !UniformVector { min: [1., 2., 3.], max: [4., 5., 6.] }
