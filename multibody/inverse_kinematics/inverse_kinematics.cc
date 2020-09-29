@@ -9,6 +9,7 @@
 #include "drake/multibody/inverse_kinematics/orientation_constraint.h"
 #include "drake/multibody/inverse_kinematics/point_to_point_distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/position_constraint.h"
+#include "drake/multibody/inverse_kinematics/unit_quaternion_constraint.h"
 
 namespace drake {
 namespace multibody {
@@ -23,8 +24,7 @@ InverseKinematics::InverseKinematics(const MultibodyPlant<double>& plant,
     prog_->AddBoundingBoxConstraint(plant.GetPositionLowerLimits(),
                                     plant.GetPositionUpperLimits(), q_);
   }
-  // TODO(hongkai.dai) Add other position constraints, such as unit length
-  // quaternion constraint here.
+  AddUnitQuaternionConstraintOnPlant(plant, q_, prog_.get());
 }
 
 InverseKinematics::InverseKinematics(const MultibodyPlant<double>& plant,
