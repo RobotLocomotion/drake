@@ -57,7 +57,7 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
         SpatialInertia<double>::MakeFromCentralInertia(mass_link, p_BoBcm_B,
                                                        I_BBcm);
 
-    // Create an empty MultibodyPlant and then add the two links.
+    // Add the two links to the MultibodyPlant.
     bodyA_ = &plant_.AddRigidBody("BodyA", M_Bcm);
     bodyB_ = &plant_.AddRigidBody("BodyB", M_Bcm);
 
