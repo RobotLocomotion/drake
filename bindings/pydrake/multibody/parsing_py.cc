@@ -5,6 +5,7 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/parsing/process_model_directives.h"
 
 using drake::geometry::SceneGraph;
 using drake::multibody::MultibodyPlant;
@@ -56,6 +57,39 @@ PYBIND11_MODULE(parsing, m) {
         .def("AddModelFromString", &Class::AddModelFromString,
             py::arg("file_contents"), py::arg("file_type"),
             py::arg("model_name") = "", cls_doc.AddModelFromString.doc);
+  }
+
+  // Model Directives
+  {
+    constexpr auto& parsing_doc = doc.parsing;
+    py::class_<parsing::ModelDirectives>(
+        m, "ModelDirectives", parsing_doc.ModelDirectives.doc);
+    m.def("LoadModelDirectives", &parsing::LoadModelDirectives,
+        py::arg("filename"));
+    py::class_<parsing::ModelInstanceInfo>(m, "ModelInstanceInfo")
+        .def_readonly("model_name", &parsing::ModelInstanceInfo::model_name)
+        .def_readonly("model_path", &parsing::ModelInstanceInfo::model_path)
+        .def_readonly(
+            "parent_frame_name", &parsing::ModelInstanceInfo::parent_frame_name)
+        .def_readonly(
+            "child_frame_name", &parsing::ModelInstanceInfo::child_frame_name)
+        .def_readonly("X_PC", &parsing::ModelInstanceInfo::X_PC)
+        .def_readonly(
+            "model_instance", &parsing::ModelInstanceInfo::model_instance);
+    m.def(
+        "ProcessModelDirectives",
+        [](const parsing::ModelDirectives& directives,
+           MultibodyPlant<double>* plant,
+           Parser* parser = nullptr) {
+          std::vector<parsing::ModelInstanceInfo> added_models;
+          parsing::ProcessModelDirectives(directives, plant, &added_models,
+                                          parser);
+          return added_models;
+        },
+        py::arg("directives"), py::arg("plant"), py::arg("parser"),
+        (std::string(parsing_doc.ProcessModelDirectives.doc) +
+         "\nNOTE:  pydrake does not support `ModelWeldErrorFunction`.")
+        .c_str());
   }
 }
 

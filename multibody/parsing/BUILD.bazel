@@ -268,6 +268,9 @@ filegroup(
     name = "process_model_directives_test_models",
     testonly = True,
     data = glob(["test/process_model_directives_test/**"]),
+    visibility = [
+        "//visibility:public",
+    ],
 )
 
 drake_cc_googletest(
