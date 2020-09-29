@@ -1,7 +1,13 @@
 #pragma once
 /// @file
-/// Provides directives for building scenes (*not* scenarios).
-/// See `common/schema/README.md` for more info.
+/// Defines the YAML schema for the model directives language, which is used
+/// to assemble multiple SDF and URDF files in a single MultibodyPlant.
+///
+/// For more information on how structures are converted to and from YAML via
+/// the Serialize/Archive mechanism, see `common/name_value.h` and
+/// drake::yaml::YamlReadArchive.
+///
+/// See `multibody/parsing/README_model_directives.md` for more info.
 
 #include <optional>
 #include <string>
@@ -20,6 +26,7 @@ namespace drake {
 namespace multibody {
 namespace parsing {
 
+/// Directive to add a weld between two named frames, a parent and a child.
 struct AddWeld {
   bool IsValid() const {
     if (parent.empty()) {
@@ -38,12 +45,14 @@ struct AddWeld {
     a->Visit(DRAKE_NVP(child));
   }
 
-  // Parent frame. Can specify scope.
+  /// Parent frame. Can specify scope.
   std::string parent;
-  // Child frame. Can (and should) specify scope.
+  /// Child frame. Can (and should) specify scope.
   std::string child;
 };
 
+/// Directive to add a model from a URDF or SDFormat file to a scene, using a
+/// given name for the added instance.
 struct AddModel {
   bool IsValid() const {
     if (file.empty()) {
@@ -62,11 +71,13 @@ struct AddModel {
     a->Visit(DRAKE_NVP(name));
   }
 
+  /// The `package://` URI of the file to add.
   std::string file;
-  // Model instance name.
+  /// The model instance name.
   std::string name;
 };
 
+/// Directive to add an empty, named model instance to a scene.
 struct AddModelInstance {
   bool IsValid() const {
     if (name.empty()) {
@@ -80,9 +91,14 @@ struct AddModelInstance {
     a->Visit(DRAKE_NVP(name));
   }
 
+  /// The model instance name.
   std::string name;
 };
 
+/// Directive to add a path in the filesystem to the resolution of
+/// `package://` URIs during the processing of model directives and the
+/// models they load.
+/// @warning:  This is expected to be deprecated soon.
 struct AddPackagePath {
   bool IsValid() const {
     if (name.empty()) {
@@ -101,10 +117,14 @@ struct AddPackagePath {
     a->Visit(DRAKE_NVP(path));
   }
 
+  /// The model instance name.
   std::string name;
+  /// The filesystem path to the package root.
   std::string path;
 };
 
+/// Directive to add a Frame to the scene.  The added frame must have a name
+/// and a transform with a base frame and offset.
 struct AddFrame {
   bool IsValid() const {
     if (name.empty()) {
@@ -123,14 +143,16 @@ struct AddFrame {
     a->Visit(DRAKE_NVP(X_PF));
   }
 
-  // Name of frame to be added. If scope is specified, will override model
-  // instance; otherwise, will use `X_PF.base_frame`s instance.
+  /// Name of frame to be added. If scope is specified, will override model
+  /// instance; otherwise, will use `X_PF.base_frame`s instance.
   std::string name;
-  // Pose of frame to be added, `F`, w.r.t. parent frame `P` (as defined by
-  // `X_PF.base_frame`).
+  /// Pose of frame to be added, `F`, w.r.t. parent frame `P` (as defined by
+  /// `X_PF.base_frame`).
   drake::schema::Transform X_PF;
 };
 
+/// Directive to incorporate another model directives file, optionally with
+/// its elements prefixed with a namespace.
 struct AddDirectives {
   bool IsValid() const {
     if (file.empty()) {
@@ -146,20 +168,27 @@ struct AddDirectives {
     a->Visit(DRAKE_NVP(model_namespace));
   }
 
+  /// The `package://` URI of the file to add.
   std::string file;
-  // Namespaces base model instance for processing directive files.
-  // Affects scoping (i.e. the following members):
-  // - AddModel::name
-  // - AddModelInstance::name
-  // - AddFrame::name
-  // - AddWeld::parent
-  // - AddWeld::child
-  // - AddFrame::X_PF::base_frame
-  // - AddDirectives::model_namespace
-  // See `README.md` for example references and namespacing.
+  /// Namespaces base model instance for processing directive files.
+  /// Affects scoping (i.e. the following members):
+  /// - AddModel::name
+  /// - AddModelInstance::name
+  /// - AddFrame::name
+  /// - AddWeld::parent
+  /// - AddWeld::child
+  /// - AddFrame::X_PF::base_frame
+  /// - AddDirectives::model_namespace
+  /// See `README.md` for example references and namespacing.
   std::optional<std::string> model_namespace;
 };
 
+// TODO(eric.cousineau): Change this (and relevant YAML files) to use tags.
+/// Union structure for model directives.
+///
+/// @note This was designed before support for `std::variant<>` was around,
+/// and thus we used a parent field, rather than a YAML tag, to designate the
+/// intended type for the directive.
 struct ModelDirective {
   bool IsValid() const {
     const bool unique =
@@ -204,6 +233,7 @@ struct ModelDirective {
   std::optional<AddDirectives> add_directives;
 };
 
+/// Top-level structure for a model directives yaml file schema.
 struct ModelDirectives {
   bool IsValid() const {
     for (auto& directive : directives) {
@@ -219,20 +249,6 @@ struct ModelDirectives {
 
   std::vector<ModelDirective> directives;
 };
-
-/// Syntactic sugar for a common idiom: Construct an add_package_path
-/// directive and insert it at the beginning of a ModelDirectives.
-inline void AddPackageToModelDirectives(const std::string& package_name,
-                                        const std::string& package_path,
-                                        ModelDirectives* directives) {
-  AddPackagePath add_package_path;
-  add_package_path.name = package_name;
-  add_package_path.path = package_path;
-  ModelDirective directive;
-  directive.add_package_path = add_package_path;
-  directives->directives.insert(
-      directives->directives.begin(), directive);
-}
 
 }  // namespace parsing
 }  // namespace multibody

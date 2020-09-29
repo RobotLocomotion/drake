@@ -52,6 +52,9 @@ void VerifyMatchWithTestDataRoot(const PackageMap& package_map) {
         "package_map_test_package_d/"},
     {"box_model", root_path +
         "box_package/"},
+    // TODO(#10531) This should use `package://drake`.
+    {"process_model_directives_test", root_path +
+        "process_model_directives_test/"},
   };
   VerifyMatch(package_map, expected_packages);
 }

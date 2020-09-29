@@ -1,5 +1,5 @@
 // Minimal test to make sure stuff doesn't explode.
-#include "drake/multibody/parsing/dev/model_directives.h"
+#include "drake/multibody/parsing/model_directives.h"
 
 #include <gtest/gtest.h>
 
@@ -11,10 +11,6 @@ namespace drake {
 namespace multibody {
 namespace parsing {
 namespace {
-
-// TODO(jeremy.nimmer) We can remove this argument from the call sites below
-// once Drake's YamlReadArchive constructor default changes to be strict.
-constexpr YamlReadArchive::Options kStrict;
 
 GTEST_TEST(ModelDirectivesTest, Success) {
   const char* contents = R"""(
@@ -44,7 +40,7 @@ directives:
     model_namespace: right
 )""";
   ModelDirectives directives;
-  YamlReadArchive(YAML::Load(contents), kStrict).Accept(&directives);
+  YamlReadArchive(YAML::Load(contents)).Accept(&directives);
   EXPECT_TRUE(directives.IsValid());
 }
 

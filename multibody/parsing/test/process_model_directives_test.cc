@@ -1,4 +1,4 @@
-#include "drake/multibody/parsing/dev/process_model_directives.h"
+#include "drake/multibody/parsing/process_model_directives.h"
 
 #include <memory>
 
@@ -7,6 +7,7 @@
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/multibody/parsing/scoped_names.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
@@ -23,7 +24,7 @@ using drake::multibody::Parser;
 using drake::systems::DiagramBuilder;
 
 const char* const kTestDir =
-    "drake/multibody/parsing/dev/test/process_model_directives_test";
+    "drake/multibody/parsing/test/process_model_directives_test";
 
 // Our unit test's package is not normally loaded; construct a parser that
 // has it and can resolve package://process_model_directives_test urls.
@@ -111,13 +112,11 @@ GTEST_TEST(ProcessModelDirectivesTest, SmokeTestInjectWeldError) {
   // frame.
   MultibodyPlant<double> plant(0.0);
 
-  auto error = [&](const Frame<double>& parent, const Frame<double>& child) {
-    auto& error_parent = plant.GetFrameByName(
-        "frame", plant.GetModelInstanceByName("simple_model"));
-    auto& error_child = plant.GetFrameByName(
-        "base", plant.GetModelInstanceByName("extra_model"));
+  auto error = [&](const std::string& parent, const std::string& child) {
+    const std::string error_parent = "simple_model::frame";
+    const std::string error_child = "extra_model::base";
     optional<RigidTransformd> out;
-    if (&parent == &error_parent && &child == &error_child)
+    if (parent == error_parent && child == error_child)
         out = error_transform;
     return out;
   };
