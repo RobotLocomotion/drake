@@ -35,6 +35,7 @@ drake_cc_library(
         "orientation_constraint.cc",
         "point_to_point_distance_constraint.cc",
         "position_constraint.cc",
+        "unit_quaternion_constraint.cc",
     ],
     hdrs = [
         "angle_between_vectors_constraint.h",
@@ -46,12 +47,14 @@ drake_cc_library(
         "orientation_constraint.h",
         "point_to_point_distance_constraint.h",
         "position_constraint.h",
+        "unit_quaternion_constraint.h",
     ],
     deps = [
         "//math:geometric_transform",
         "//math:gradient",
         "//multibody/plant",
         "//solvers:constraint",
+        "//solvers:mathematical_program",
         "//solvers:minimum_value_constraint",
     ],
 )
@@ -169,6 +172,17 @@ drake_cc_googletest(
         ":inverse_kinematics_test_utilities",
         ":kinematic_constraint",
         "//solvers/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "unit_quaternion_constraint_test",
+    deps = [
+        ":inverse_kinematics_test_utilities",
+        ":kinematic_constraint",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:symbolic_test_util",
+        "//solvers:solve",
     ],
 )
 
