@@ -96,25 +96,31 @@ SpatialAcceleration<double> CalcSpatialAccelerationViaSpatialVelocityDerivative(
   return A_ABq_E;
 }
 
-// Returns A_AB_E, frame B's spatial acceleration in a frame_A, expressed in
-// a frame E, evaluated at values of q, v, v̇ which are passed to this method
-// in the arguments `context` and `vdot` (generalized accelerations).
+// Returns A_AB_E, frame B's spatial acceleration in a frame_A, expressed in a
+// frame E, evaluated at values of q, v, which are passed to this method
+// in the arguments `context`.
 // @param[in] plant The plant associated with the system and context.
 // @param[in] context The state of the multibody system.
-// @param[in] vdot Generalized acceleration values used for this calculation.
-// @param[in] frame_B The frame for which spatial acceleration is calculated.B.
+// @param[in] frame_B The frame for which spatial acceleration is calculated.
 // @param[in] frame_A The measured-in frame for spatial acceleration.
 // @param[in] frame_E The expressed-in frame for spatial acceleration.
-SpatialAcceleration<double> CalcSpatialAccelerationViaSpatialVelocityDerivative(
+SpatialAcceleration<double>
+    CalcSpatialAccelerationFromForwardDynamicVdotAndSpatialVelocity(
     const MultibodyPlant<double>& plant,
     const systems::Context<double>& context,
-    const VectorX<double>& vdot,
     const Frame<double>& frame_B,
     const Frame<double>& frame_A,
     const Frame<double>& frame_E) {
-  const Vector3<double>& p_BoQ_B = Vector3<double>::Zero();
-  return CalcSpatialAccelerationViaSpatialVelocityDerivative(plant, context,
-      vdot, frame_B, p_BoQ_B, frame_A, frame_E);
+  // Spatial acceleration is a function of the generalized accelerations vdot.
+  // Use forward dynamics to calculate values for vdot (for the given q, v).
+  const systems::ContinuousState<double>& derivs =
+      plant.EvalTimeDerivatives(context);
+  const VectorX<double> vdot(derivs.get_generalized_velocity().CopyToVector());
+  EXPECT_EQ(vdot.size(), plant.num_velocities());
+
+  const Vector3<double> p_BoBo_B = Vector3<double>::Zero();
+  return CalcSpatialAccelerationViaSpatialVelocityDerivative(
+      plant, context, vdot, frame_B, p_BoBo_B, frame_A, frame_E);
 }
 
 }  // namespace test_utilities
