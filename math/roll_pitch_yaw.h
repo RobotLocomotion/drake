@@ -2,7 +2,6 @@
 
 #include <cmath>
 #include <limits>
-#include <string>
 
 #include <Eigen/Dense>
 
@@ -61,14 +60,14 @@ class RollPitchYaw {
 
   /// Constructs a %RollPitchYaw from a 3x1 array of angles.
   /// @param[in] rpy 3x1 array with roll, pitch, yaw angles (units of radians).
-  /// @throws std::logic_error in debug builds if !IsValid(rpy).
+  /// @throws std::exception in debug builds if !IsValid(rpy).
   explicit RollPitchYaw(const Vector3<T>& rpy) { set(rpy); }
 
   /// Constructs a %RollPitchYaw from roll, pitch, yaw angles (radian units).
   /// @param[in] roll x-directed angle in SpaceXYZ rotation sequence.
   /// @param[in] pitch y-directed angle in SpaceXYZ rotation sequence.
   /// @param[in] yaw z-directed angle in SpaceXYZ rotation sequence.
-  /// @throws std::logic_error in debug builds if
+  /// @throws std::exception in debug builds if
   /// !IsValid(Vector3<T>(roll, pitch, yaw)).
   RollPitchYaw(const T& roll, const T& pitch, const T& yaw) {
     set(roll, pitch, yaw);
@@ -90,14 +89,14 @@ class RollPitchYaw {
   /// @param[in] quaternion unit %Quaternion.
   /// @note This new high-accuracy algorithm avoids numerical round-off issues
   /// encountered by some algorithms when pitch is within 1E-6 of π/2 or -π/2.
-  /// @throws std::logic_error in debug builds if !IsValid(rpy).
+  /// @throws std::exception in debug builds if !IsValid(rpy).
   explicit RollPitchYaw(const Eigen::Quaternion<T>& quaternion) {
     SetFromQuaternion(quaternion);
   }
 
   /// Sets `this` %RollPitchYaw from a 3x1 array of angles.
   /// @param[in] rpy 3x1 array with roll, pitch, yaw angles (units of radians).
-  /// @throws std::logic_error in debug builds if !IsValid(rpy).
+  /// @throws std::exception in debug builds if !IsValid(rpy).
   RollPitchYaw<T>& set(const Vector3<T>& rpy) {
     return SetOrThrowIfNotValidInDebugBuild(rpy);
   }
@@ -106,7 +105,7 @@ class RollPitchYaw {
   /// @param[in] roll x-directed angle in SpaceXYZ rotation sequence.
   /// @param[in] pitch y-directed angle in SpaceXYZ rotation sequence.
   /// @param[in] yaw z-directed angle in SpaceXYZ rotation sequence.
-  /// @throws std::logic_error in debug builds if
+  /// @throws std::exception in debug builds if
   /// !IsValid(Vector3<T>(roll, pitch, yaw)).
   RollPitchYaw<T>& set(const T& roll, const T& pitch, const T& yaw) {
     return set(Vector3<T>(roll, pitch, yaw));
@@ -118,7 +117,7 @@ class RollPitchYaw {
   /// @param[in] quaternion unit %Quaternion.
   /// @note This new high-accuracy algorithm avoids numerical round-off issues
   /// encountered by some algorithms when pitch is within 1E-6 of π/2 or -π/2.
-  /// @throws std::logic_error in debug builds if !IsValid(rpy).
+  /// @throws std::exception in debug builds if !IsValid(rpy).
   void SetFromQuaternion(const Eigen::Quaternion<T>& quaternion);
 
   /// Uses a high-accuracy efficient algorithm to set the roll-pitch-yaw
@@ -240,19 +239,6 @@ class RollPitchYaw {
     return DoesCosPitchAngleViolateGimbalLockTolerance(cos(pitch_angle()));
   }
 
-  /// Returns a message that the pitch-angle `p` violates the internally-defined
-  /// gimbal-lock tolerance, which occurs when `cos(p) ≈ 0`, which means
-  /// `p ≈ (n*π + π/2)` where `n = 0, ±1, ±2, ...`.
-  /// @param[in] function_name name of the calling function/method.
-  /// @param[in] file_name name of the file with the calling function/method.
-  /// @param[in] line_number the line number in file_name that made the call.
-  /// @param[in] pitch_angle pitch angle `p` (in radians).
-  /// @param[in] extra_info extra information located at the end of the message.
-  /// @see DoesCosPitchAngleViolateGimbalLockTolerance()
-  static std::string PitchAngleGimbalLockMessage(const char* function_name,
-      const char* file_name, const int line_number, const T& pitch_angle,
-      const char* extra_info);
-
   /// Returns the internally-defined allowable closeness (in radians) of the
   /// pitch angle `p` to gimbal-lock, i.e., the allowable proximity of `p` to
   /// `(n*π + π/2)` where `n = 0, ±1, ±2, ...`.
@@ -320,7 +306,7 @@ class RollPitchYaw {
   /// %RollPitchYaw whose angles `[r; p; y]` orient two generic frames A and D.
   /// @param[in] w_AD_A, frame D's angular velocity in frame A, expressed in A.
   /// @returns `[ṙ; ṗ; ẏ]`, the 1ˢᵗ time-derivative of `this` %RollPitchYaw.
-  /// @throws std::logic_error if `cos(p) ≈ 0` (`p` is near gimbal-lock).
+  /// @throws std::exception if `cos(p) ≈ 0` (`p` is near gimbal-lock).
   /// @note This method has a divide-by-zero error (singularity) when the cosine
   /// of the pitch angle `p` is zero [i.e., `cos(p) = 0`].  This problem (called
   /// "gimbal lock") occurs when `p = n π  + π / 2`, where n is any integer.
@@ -344,7 +330,7 @@ class RollPitchYaw {
   /// to `[wx; wy; wz]ₐ` (which is w_AD_A expressed in A).
   /// In other words, `rpyDt = M * w_AD_A`.
   /// @param[in] function_name name of the calling function/method.
-  /// @throws std::logic_error if `cos(p) ≈ 0` (`p` is near gimbal-lock).
+  /// @throws std::exception if `cos(p) ≈ 0` (`p` is near gimbal-lock).
   /// @note This method has a divide-by-zero error (singularity) when the cosine
   /// of the pitch angle `p` is zero [i.e., `cos(p) = 0`].  This problem (called
   /// "gimbal lock") occurs when `p = n π  + π / 2`, where n is any integer.
@@ -362,7 +348,7 @@ class RollPitchYaw {
   /// @param[in] alpha_AD_A, frame D's angular acceleration in frame A,
   /// expressed in frame A.
   /// @returns `[r̈, p̈, ÿ]`, the 2ⁿᵈ time-derivative of `this` %RollPitchYaw.
-  /// @throws std::logic_error if `cos(p) ≈ 0` (`p` is near gimbal-lock).
+  /// @throws std::exception if `cos(p) ≈ 0` (`p` is near gimbal-lock).
   /// @note This method has a divide-by-zero error (singularity) when the cosine
   /// of the pitch angle `p` is zero [i.e., `cos(p) = 0`].  This problem (called
   /// "gimbal lock") occurs when `p = n π  + π / 2`, where n is any integer.
@@ -386,7 +372,7 @@ class RollPitchYaw {
   /// @param[in] alpha_AD_D, frame D's angular acceleration in frame A,
   /// expressed in frame D.
   /// @returns `[r̈, p̈, ÿ]`, the 2ⁿᵈ time-derivative of `this` %RollPitchYaw.
-  /// @throws std::logic_error if `cos(p) ≈ 0` (`p` is near gimbal-lock).
+  /// @throws std::exception if `cos(p) ≈ 0` (`p` is near gimbal-lock).
   /// @note This method has a divide-by-zero error (singularity) when the cosine
   /// of the pitch angle `p` is zero [i.e., `cos(p) = 0`].  This problem (called
   /// "gimbal lock") occurs when `p = n π  + π / 2`, where n is any integer.
@@ -454,7 +440,7 @@ class RollPitchYaw {
   // @param[in] file_name name of the file with the calling function/method.
   // @param[in] line_number the line number in file_name that made the call.
   // @param[in] pitch_angle pitch angle `p` (in radians).
-  // @throws std::logic_error with a message that `p` is too near gimbal-lock.
+  // @throws std::exception with a message that `p` is too near gimbal-lock.
   static void ThrowPitchAngleViolatesGimbalLockTolerance(
     const char* function_name, const char* file_name, const int line_number,
     const T& pitch_angle);
@@ -467,7 +453,7 @@ class RollPitchYaw {
   // range `-π <= r <= π`, `-π/2 <= p <= π/2`, `-π <= y <= π`.
   // @param[in] quaternion unit quaternion with elements `[e0, e1, e2, e3]`.
   // @param[in] R The %RotationMatrix corresponding to `quaternion`.
-  // @throws std::logic_error in debug builds if rpy fails IsValid(rpy).
+  // @throws std::exception in debug builds if rpy fails IsValid(rpy).
   // @note Aborts in debug builds if `quaternion` does not correspond to `R`.
   void SetFromQuaternionAndRotationMatrix(
       const Eigen::Quaternion<T>& quaternion, const RotationMatrix<T>& R);
@@ -579,7 +565,7 @@ class RollPitchYaw {
   // @param[in] function_name name of the calling function/method.
   // @param[in] file_name name of the file with the calling function/method.
   // @param[in] line_number the line number in file_name that made the call.
-  // @throws std::logic_error if `cos(p) ≈ 0` (`p` is near gimbal-lock).
+  // @throws std::exception if `cos(p) ≈ 0` (`p` is near gimbal-lock).
   // @note This method has a divide-by-zero error (singularity) when the cosine
   // of the pitch angle `p` is zero [i.e., `cos(p) = 0`].  This problem (called
   // "gimbal lock") occurs when `p = n π  + π / 2`, where n is any integer.
@@ -617,7 +603,7 @@ class RollPitchYaw {
 
   // Sets `this` %RollPitchYaw from a Vector3.
   // @param[in] rpy allegedly valid roll-pitch-yaw angles.
-  // @throws std::logic_error in debug builds if rpy fails IsValid(rpy).
+  // @throws std::exception in debug builds if rpy fails IsValid(rpy).
   RollPitchYaw<T>& SetOrThrowIfNotValidInDebugBuild(const Vector3<T>& rpy) {
     DRAKE_ASSERT_VOID(ThrowIfNotValid(rpy));
     roll_pitch_yaw_ = rpy;

@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <utility>
+#include <string>
 #include <vector>
 
 #include "drake/multibody/tree/body.h"
@@ -277,6 +278,23 @@ Vector3<T> LinearBushingRollPitchYaw<T>::CalcBushingTorqueOnCExpressedInA(
   // bushing forces on C have their resultant force 𝐟 applied at Cp (not Co).
   const Vector3<T> t_Cp_A = N.transpose() * tau;
   return t_Cp_A;  // [tx ty tz]ᴀ
+}
+
+template <typename T>
+void LinearBushingRollPitchYaw<T>::ThrowPitchAngleViolatesGimbalLockTolerance(
+    const T& pitch_angle, const char* function_name) {
+    const double pitch_radians = ExtractDoubleOrThrow(pitch_angle);
+    std::string message = fmt::format("LinearBushingRollPitchYaw::{}():"
+        " Pitch angle p = {:G} degrees is close to gimbal-lock which means"
+        " p ≈ (n*π ± π/2) where n = 0, 1, 2, ..."
+        " There is a divide-by-zero error (singularity) at gimbal-lock.  Pitch"
+        " angles near gimbal-lock cause numerical inaccuracies.  To avoid this"
+        " orientation singularity, use a reasonable default alignment of the"
+        " frames associated with this LinearBushingRollPitchYaw"
+        " and/or choose stiffness and damping properties"
+        " that help avoid pitch angles near gimbal lock.",
+        function_name, pitch_radians * 180 / M_PI);
+    throw std::runtime_error(message);
 }
 
 template <typename T>

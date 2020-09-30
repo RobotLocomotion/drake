@@ -1,5 +1,7 @@
 #include "drake/math/roll_pitch_yaw.h"
 
+#include <string>
+
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
@@ -178,7 +180,7 @@ void RollPitchYaw<T>::SetFromQuaternionAndRotationMatrix(
         " formed by the Quaternion passed to this method.  To avoid this"
         " inconsistency, ensure the orientation of R and Quaternion align."
         " ({}:{}).", __func__, tolerance, __FILE__, __LINE__);
-    throw std::logic_error(message);
+    throw std::runtime_error(message);
   }
 
   // This algorithm converts a quaternion and %RotationMatrix to %RollPitchYaw.
@@ -209,36 +211,22 @@ boolean<T> RollPitchYaw<T>::IsNearlySameOrientation(
 }
 
 template <typename T>
-std::string RollPitchYaw<T>::PitchAngleGimbalLockMessage(
-    const char* function_name, const char* file_name,
-    const int line_number, const T& pitch_angle, const char* extra_info) {
-  DRAKE_ASSERT(function_name != nullptr);
-  DRAKE_ASSERT(file_name != nullptr);
-  DRAKE_ASSERT(line_number >= 0);
-  if (extra_info == nullptr) extra_info = "";
-  const double pitch_radians = ExtractDoubleOrThrow(pitch_angle);
-  const double cos_pitch_angle = std::cos(pitch_radians);
-  DRAKE_ASSERT(DoesCosPitchAngleViolateGimbalLockTolerance(cos_pitch_angle));
-  const double tolerance_degrees =
-      GimbalLockPitchAngleTolerance() * 180 / M_PI;
-  std::string message = fmt::format("{}():"
-     " Pitch angle p = {:G} degrees is within {:G} degrees of gimbal-lock."
-     " There is a divide-by-zero error (singularity) at gimbal-lock.  Pitch"
-     " angles near gimbal-lock cause numerical inaccuracies.{}"
-     " ({}:{}).", function_name, pitch_radians * 180 / M_PI,
-                  tolerance_degrees, extra_info, file_name, line_number);
-  return message;
-}
-
-template <typename T>
 void RollPitchYaw<T>::ThrowPitchAngleViolatesGimbalLockTolerance(
     const char* function_name, const char* file_name, const int line_number,
     const T& pitch_angle) {
-    const char* extra_info = "  To avoid this orientation singularity, "
-                             "use a quaternion -- not RollPitchYaw.";
-    std::string message = PitchAngleGimbalLockMessage(function_name, file_name,
-        line_number, pitch_angle, extra_info);
-    throw std::logic_error(message);
+    const double pitch_radians = ExtractDoubleOrThrow(pitch_angle);
+    const double cos_pitch_angle = std::cos(pitch_radians);
+    DRAKE_ASSERT(DoesCosPitchAngleViolateGimbalLockTolerance(cos_pitch_angle));
+    const double tolerance_degrees =
+        GimbalLockPitchAngleTolerance() * 180 / M_PI;
+    std::string message = fmt::format("RollPitchYaw::{}():"
+        " Pitch angle p = {:G} degrees is within {:G} degrees of gimbal-lock."
+        " There is a divide-by-zero error (singularity) at gimbal-lock.  Pitch"
+        " angles near gimbal-lock cause numerical inaccuracies.  To avoid this"
+        " orientation singularity, use a quaternion -- not RollPitchYaw."
+        " ({}:{}).", function_name, pitch_radians * 180 / M_PI,
+                     tolerance_degrees, file_name, line_number);
+    throw std::runtime_error(message);
 }
 
 }  // namespace math
