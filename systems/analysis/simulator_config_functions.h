@@ -27,7 +27,7 @@ system associated with `simulator` according to the given arguments.
 @param[in] scheme Integration scheme to be used, e.g., "runge_kutta2".  See
   GetIntegrationSchemes() for a the list of valid options.
 @param[in] max_step_size The IntegratorBase::set_maximum_step_size() value.
-@returns A reference to the the newly created integrator owned by `simulator`.
+@returns A reference to the newly created integrator owned by `simulator`.
 
 @tparam_default_nonsymbolic_scalar
 @ingroup simulator_configuration */

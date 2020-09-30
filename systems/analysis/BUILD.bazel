@@ -423,6 +423,7 @@ drake_cc_googletest(
         ":simulator",
         ":simulator_config_functions",
         "//common:nice_type_name",
+        "//common/test_utilities:expect_no_throw",
         "//common/yaml",
         "//systems/framework:leaf_system",
         "//systems/primitives:constant_vector_source",

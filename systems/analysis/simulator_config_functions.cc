@@ -29,7 +29,6 @@ using std::function;
 using std::pair;
 using std::string;
 using std::vector;
-using symbolic::Expression;
 
 // A functor that implements ResetIntegrator.
 template <typename T>
@@ -176,7 +175,7 @@ const vector<string>& GetIntegrationSchemes() {
 }
 
 // Explicit instantiations.
-// We can't support T=Expression because Simulator doesn't support it.
+// We can't support T=symbolic::Expression because Simulator doesn't support it.
 template IntegratorBase<double>& ResetIntegratorFromFlags(
     Simulator<double>*, const string&, const double&);
 template IntegratorBase<AutoDiffXd>& ResetIntegratorFromFlags(

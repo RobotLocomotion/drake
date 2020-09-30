@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/nice_type_name.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/yaml/yaml_read_archive.h"
 #include "drake/common/yaml/yaml_write_archive.h"
 #include "drake/systems/analysis/simulator.h"
@@ -36,7 +37,8 @@ GTEST_TEST(SimulatorFlagsTest, GetSchemes) {
   ConstantVectorSource<double> source(2);
   Simulator<double> simulator(source);
   for (const auto& one_scheme : schemes) {
-    ResetIntegratorFromFlags(&simulator, one_scheme, 0.001);
+    DRAKE_EXPECT_NO_THROW(
+        ResetIntegratorFromFlags(&simulator, one_scheme, 0.001));
   }
 }
 
