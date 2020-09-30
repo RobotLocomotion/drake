@@ -333,11 +333,15 @@ class AutoDiffScalar<VectorXd>
   inline AutoDiffScalar& operator*=(const AutoDiffScalar<OtherDerType>& other) {
     const bool has_this_der = m_derivatives.size() > 0;
     const bool has_both_der = has_this_der && (other.derivatives().size() > 0);
+    // Some of the math below may look tempting to rewrite using `*=`, but
+    // performance measurement and analysis show that this formulation is
+    // faster because it results in better expression tree optimization and
+    // inlining.
     if (has_both_der) {
-      m_derivatives *= other.value();
-      m_derivatives += other.derivatives() * m_value;
+      m_derivatives = m_derivatives * other.value() +
+                      other.derivatives() * m_value;
     } else if (has_this_der) {
-      m_derivatives *= other.value();
+      m_derivatives = m_derivatives * other.value();
     } else {
       m_derivatives = other.derivatives() * m_value;
     }
