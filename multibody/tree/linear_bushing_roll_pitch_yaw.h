@@ -487,7 +487,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   /// (−𝐭 + p_AoAp × −𝐟) and the net bushing force on A (−𝐟 expressed in A).
   /// @param[in] context The state of the multibody system.
   /// @see CalcBushingSpatialForceOnFrameC().
-  /// @throws std::exception if pitch angle is near gimbal-lock.
+  /// @throws std::exception if pitch angle is near gimbal-lock.  For more info,
   /// @see RollPitchYaw::DoesCosPitchAngleViolateGimbalLockTolerance().
   SpatialForce<T> CalcBushingSpatialForceOnFrameA(
       const systems::Context<T>& context) const;
@@ -497,7 +497,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   /// (𝐭 + p_CoCp × 𝐟) and the resultant bushing force on C (𝐟 expressed in C).
   /// @param[in] context The state of the multibody system.
   /// @see CalcBushingSpatialForceOnFrameA().
-  /// @throws std::exception if pitch angle is near gimbal-lock.
+  /// @throws std::exception if pitch angle is near gimbal-lock.  For more info,
   /// @see RollPitchYaw::DoesCosPitchAngleViolateGimbalLockTolerance().
   SpatialForce<T> CalcBushingSpatialForceOnFrameC(
       const systems::Context<T>& context) const;
@@ -602,7 +602,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   // which means `p ≈ (n*π + π/2)` where `n = 0, ±1, ±2, ...`.
   // @param[in] pitch_angle pitch angle `p` (in radians).
   // @param[in] function_name name of the calling function/method.
-  // @throws std::exception if pitch angle is near gimbal-lock.
+  // @throws std::exception if pitch angle is near gimbal-lock.  For more info,
   // @see RollPitchYaw::DoesCosPitchAngleViolateGimbalLockTolerance().
   static void ThrowPitchAngleViolatesGimbalLockTolerance(
     const T& pitch_angle, const char* function_name);
@@ -723,7 +723,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   // @param[in] context The state of the multibody system.
   // @see CalcBushingSpatialForceOnFrameA(),
   //      CalcBushingSpatialForceOnFrameC().
-  // @throws std::exception if pitch angle is near gimbal-lock.
+  // @throws std::exception if pitch angle is near gimbal-lock.  For more info,
   // @see RollPitchYaw::DoesCosPitchAngleViolateGimbalLockTolerance().
   Vector3<T> CalcBushingTorqueOnCExpressedInA(
       const systems::Context<T>& context) const;

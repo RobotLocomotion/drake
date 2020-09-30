@@ -1,8 +1,8 @@
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
 
 #include <limits>
-#include <utility>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "drake/multibody/tree/body.h"
