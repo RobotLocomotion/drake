@@ -2446,7 +2446,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @note To calculate the spatial momentum of this system S in W about Scm
   /// (the system's center of mass), use something like: <pre>
   ///   MultibodyPlant<T> plant;
-  ///   // ... code to create a set of selected model instances, e.g., ....
+  ///   // ... code to create a set of selected model instances, e.g., ...
   ///   std::vector<ModelInstanceIndex> model_instances;
   ///   model_instances.push_back(bodyA_model_instance);
   ///   model_instances.push_back(bodyB_model_instance);  // ... etc.
