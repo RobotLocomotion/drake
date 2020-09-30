@@ -685,19 +685,18 @@ TEST_F(LinearBushingRollPitchYawTester, TestGimbalLock) {
   mobilizer_->set_translational_velocity(&context, v_zero);
 
   const char* expected_message =
-      ".*CalcBushingRollPitchYawAngleRates()"
-      ".*gimbal-lock"
-      ".*linear_bushing_roll_pitch_yaw.h.*";
+      "LinearBushingRollPitchYaw::CalcBushingRollPitchYawAngleRates()"
+      ".*gimbal-lock.*";
 
   // Check that CalcBushingSpatialForceOnFrameA() throws near gimbal lock.
   DRAKE_EXPECT_THROWS_MESSAGE(
       bushing_->CalcBushingSpatialForceOnFrameA(context),
-      std::logic_error, expected_message);
+      std::runtime_error, expected_message);
 
   // Check that CalcBushingSpatialForceOnFrameC() throws near gimbal lock.
   DRAKE_EXPECT_THROWS_MESSAGE(
       bushing_->CalcBushingSpatialForceOnFrameC(context),
-      std::logic_error, expected_message);
+      std::runtime_error, expected_message);
 }
 
 // Verify algorithm that calculates rotation matrix R_AB.
