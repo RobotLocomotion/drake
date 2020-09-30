@@ -180,6 +180,9 @@ drake_cc_library(
         "//common/schema:transform",
         "//math:geometric_transform",
     ],
+    visibility = [
+        "//visibility:public",
+    ],
 )
 
 drake_cc_library(
@@ -194,6 +197,9 @@ drake_cc_library(
         "//common:find_resource",
         "//common/yaml:yaml_read_archive",
         "//multibody/plant",
+    ],
+    visibility = [
+        "//visibility:public",
     ],
 )
 

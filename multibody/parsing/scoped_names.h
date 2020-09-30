@@ -35,6 +35,11 @@ GetScopedFrameByName(
   return *frame;
 }
 
+/// Constructs and returns a scoped frame name for the requested frame.
+std::string GetScopedFrameName(
+    const drake::multibody::MultibodyPlant<double>& plant,
+    const drake::multibody::Frame<double>& frame);
+
 /// Convenience class for a scoped name.
 struct ScopedName {
   /// The name of the multibody instance part of a scoped name.  If empty,

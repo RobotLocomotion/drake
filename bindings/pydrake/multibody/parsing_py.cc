@@ -6,6 +6,7 @@
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/parsing/process_model_directives.h"
+#include "drake/multibody/parsing/scoped_names.h"
 
 using drake::geometry::SceneGraph;
 using drake::multibody::MultibodyPlant;
@@ -101,6 +102,15 @@ PYBIND11_MODULE(parsing, m) {
       (std::string(doc.parsing.ProcessModelDirectives.doc) +
           kWeldErrorDisclaimer)
           .c_str());
+
+  m.def("GetScopedFrameByName", &parsing::GetScopedFrameByName,
+      py::arg("plant"), py::arg("full_name"),
+      py::return_value_policy::reference,
+      py::keep_alive<0, 1>(),  // `return` keeps `plant` alive.
+      doc.parsing.GetScopedFrameByName.doc);
+
+  m.def("GetScopedFrameName", &parsing::GetScopedFrameName, py::arg("plant"),
+      py::arg("frame"), doc.parsing.GetScopedFrameName.doc);
 }
 
 }  // namespace pydrake
