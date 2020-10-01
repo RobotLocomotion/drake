@@ -6,6 +6,7 @@ load("@cc//:compiler.bzl", "COMPILER_ID", "COMPILER_VERSION_MAJOR")
 # building with any compiler.
 CXX_FLAGS = [
     "-Werror=all",
+    "-Werror=cpp",
     "-Werror=deprecated",
     "-Werror=deprecated-declarations",
     "-Werror=ignored-qualifiers",
