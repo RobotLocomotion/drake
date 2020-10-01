@@ -23,9 +23,7 @@ namespace test_utilities {
 //            of frame Bq, expressed in frame_B.
 // @param[in] frame_A The measured-in frame for spatial acceleration.
 // @param[in] frame_E The expressed-in frame for spatial acceleration.
-// TODO(Mitiguy) Merge these functions developed in connection with PR #13593
-//  with the associated function implemented in PR #13773 into a utility file.
-SpatialAcceleration<double> CalcSpatialAccelerationViaSpatialVelocityDerivative(
+SpatialAcceleration<double> CalcSpatialAccelerationViaAutomaticDifferentation(
     const MultibodyPlant<double>& plant,
     const systems::Context<double>& context,
     const VectorX<double>& vdot,
@@ -105,7 +103,7 @@ SpatialAcceleration<double> CalcSpatialAccelerationViaSpatialVelocityDerivative(
 // @param[in] frame_A The measured-in frame for spatial acceleration.
 // @param[in] frame_E The expressed-in frame for spatial acceleration.
 SpatialAcceleration<double>
-    CalcSpatialAccelerationFromForwardDynamicVdotAndSpatialVelocity(
+    CalcSpatialAccelerationViaAutomaticDifferentation(
     const MultibodyPlant<double>& plant,
     const systems::Context<double>& context,
     const Frame<double>& frame_B,
@@ -119,7 +117,7 @@ SpatialAcceleration<double>
   EXPECT_EQ(vdot.size(), plant.num_velocities());
 
   const Vector3<double> p_BoBo_B = Vector3<double>::Zero();
-  return CalcSpatialAccelerationViaSpatialVelocityDerivative(
+  return CalcSpatialAccelerationViaAutomaticDifferentation(
       plant, context, vdot, frame_B, p_BoBo_B, frame_A, frame_E);
 }
 
