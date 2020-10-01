@@ -213,7 +213,7 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcSystemSpatialMomentumInWorldAboutWo) {
   const ModelInstanceIndex bodyA_model_instance =
     plant_.GetModelInstanceByName("bodyA_model_instance");
   const ModelInstanceIndex bodyB_model_instance =
-    plant_.GetBodyByName("bodyB").model_instance();
+    plant_.GetBodyByName("BodyB").model_instance();
   const std::vector<ModelInstanceIndex> model_instances{bodyA_model_instance,
                                                         bodyB_model_instance};
 
