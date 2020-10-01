@@ -907,7 +907,7 @@ void FailWithInvalidWorld(const std::string& inner) {
       ParseTestString(inner),
       std::runtime_error,
       R"([\s\S]*(attached_to|relative_to) name\[world\] specified by frame )"
-      R"(with name\[.*\] does not match a link, joint, or )"
+      R"(with name\[.*\] does not match a nested model, link, joint, or )"
       R"(frame name in model with name\[bad\][\s\S]*)");
 }
 
