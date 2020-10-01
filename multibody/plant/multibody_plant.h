@@ -2447,9 +2447,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// (the system's center of mass), use something like: <pre>
   ///   MultibodyPlant<T> plant;
   ///   // ... code to create a set of selected model instances, e.g., ...
-  ///   std::vector<ModelInstanceIndex> model_instances;
-  ///   model_instances.push_back(bodyA_model_instance);
-  ///   model_instances.push_back(bodyB_model_instance);  // ... etc.
+  ///   const ModelInstanceIndex gripper_model_instance =
+  ///     plant.GetModelInstanceByName("gripper");
+  ///   const ModelInstanceIndex robot_model_instance =
+  ///     plant.GetBodyByName("end_effector").model_instance();
+  ///   const std::vector<ModelInstanceIndex> model_instances{
+  ///     gripper_model_instance, robot_model_instance};
   ///   const Vector3<T> p_WoScm_W =
   ///     plant.CalcCenterOfMassPosition(context, model_instances);
   ///   SpatialMomentum<T> L_WScm_W =

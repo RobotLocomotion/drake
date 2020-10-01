@@ -206,27 +206,35 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcBodyBSpatialMomentumInWorldAboutPoint) {
       L_WBWo_W_expected_.Shift(p_WoBcm_W);
   EXPECT_TRUE(CompareMatrices(L_WBcm_W.get_coeffs(),
                               L_WBcm_W_expected.get_coeffs(), kTolerance_));
+}
 
-  // For the system S consisting of bodyA and bodyB, form the system S's spatial
-  // momentum in world W about Scm (the system's center of mass) expressed in W.
-  model_instances.push_back(bodyA_model_instance_);
-  const Vector3<double> p_WoScm_W = plant_.CalcCenterOfMassPosition(*context_,
-      model_instances);
-  SpatialMomentum<double> L_WScm_W =
+TEST_F(TwoDOFPlanarPendulumTest, CalcSystemSpatialMomentumInWorldAboutWo) {
+  // Assemble model instances using methods typically employed by end-users.
+  const ModelInstanceIndex bodyA_model_instance =
+    plant_.GetModelInstanceByName("bodyA_model_instance");
+  const ModelInstanceIndex bodyB_model_instance =
+    plant_.GetBodyByName("bodyB").model_instance();
+  const std::vector<ModelInstanceIndex> model_instances{bodyA_model_instance,
+                                                        bodyB_model_instance};
+
+  // For the system S consisting of bodyA and bodyB, form the system S's
+  // spatial momentum in world W about Wo, expressed in W.
+  const Vector3<double> p_WoWo_W = Vector3<double>::Zero();
+  SpatialMomentum<double> L_WSWo_W =
       plant_.CalcSpatialMomentumInWorldAboutPoint(*context_, model_instances,
-                                                   p_WoScm_W);
+                                                   p_WoWo_W);
+
+  // Form S's expected spatial momentum and compare previous answer.
   const SpatialMomentum<double> L_WSWo_W_expected =
       L_WAWo_W_expected_ + L_WBWo_W_expected_;
-  const SpatialMomentum<double> L_WScm_W_expected =
-      L_WSWo_W_expected.Shift(p_WoScm_W);
-  EXPECT_TRUE(CompareMatrices(L_WScm_W.get_coeffs(),
-                              L_WScm_W_expected.get_coeffs(), kTolerance_));
+  EXPECT_TRUE(CompareMatrices(L_WSWo_W.get_coeffs(),
+                              L_WSWo_W_expected.get_coeffs(), kTolerance_));
 
-  // Form the plant system S's spatial momentum in world W about Scm (the
-  // system's center of mass), expressed in W.
-  L_WScm_W = plant_.CalcSpatialMomentumInWorldAboutPoint(*context_, p_WoScm_W);
-  EXPECT_TRUE(CompareMatrices(L_WScm_W.get_coeffs(),
-                              L_WScm_W_expected.get_coeffs(), kTolerance_));
+  // Use a different MultibodyPlant method to form the plant system S's spatial
+  // momentum in world W about Scm (system's center of mass), expressed in W.
+  L_WSWo_W = plant_.CalcSpatialMomentumInWorldAboutPoint(*context_, p_WoWo_W);
+  EXPECT_TRUE(CompareMatrices(L_WSWo_W.get_coeffs(),
+                              L_WSWo_W_expected.get_coeffs(), kTolerance_));
 }
 
 TEST_F(TwoDOFPlanarPendulumTest, CalcSystemSpatialMomentumInWorldAboutPoint) {
@@ -254,6 +262,7 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcSystemSpatialMomentumInWorldAboutPoint) {
   EXPECT_TRUE(CompareMatrices(L_WScm_W.get_coeffs(),
                               L_WScm_W_expected.get_coeffs(), kTolerance_));
 }
+
 
 }  // namespace
 }  // namespace multibody
