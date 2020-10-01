@@ -13,7 +13,6 @@ from drake import lcmt_viewer_load_robot, lcmt_viewer_draw
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue, Value
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform_
@@ -106,14 +105,6 @@ class TestGeometry(unittest.TestCase):
             inspector.GetName(frame_id=global_frame), "anchored_frame")
         self.assertEqual(
             inspector.GetName(geometry_id=global_geometry), "sphere1")
-
-        with catch_drake_warnings(expected_count=2):
-            self.assertEqual(
-                inspector.GetNameByFrameId(frame_id=global_frame),
-                "anchored_frame")
-            self.assertEqual(
-                inspector.GetNameByGeometryId(geometry_id=global_geometry),
-                "sphere1")
 
         self.assertIsInstance(
             inspector.GetPoseInParent(geometry_id=global_geometry),

@@ -8,7 +8,6 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -163,10 +162,6 @@ void def_geometry_render(py::module m) {
   AddValueInstantiation<RenderLabel>(m);
 }
 
-const char* doc_inspector_get_name_deprecation =
-    "Please use SceneGraphInspector.GetName() instead. This method will be "
-    "removed on or after 2020-10-01.";
-
 template <typename T>
 void DoScalarDependentDefinitions(py::module m, T) {
   py::tuple param = GetPyParam<T>();
@@ -216,22 +211,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::GetName),
             py_rvp::reference_internal, py::arg("geometry_id"),
             cls_doc.GetName.doc_1args_geometry_id)
-        .def(
-            "GetNameByFrameId",
-            [](SceneGraphInspector<T>* self, FrameId frame_id) {
-              WarnDeprecated(doc_inspector_get_name_deprecation);
-              return self->GetName(frame_id);
-            },
-            py_rvp::reference_internal, py::arg("frame_id"),
-            doc_inspector_get_name_deprecation)
-        .def(
-            "GetNameByGeometryId",
-            [](SceneGraphInspector<T>* self, GeometryId frame_id) {
-              WarnDeprecated(doc_inspector_get_name_deprecation);
-              return self->GetName(frame_id);
-            },
-            py_rvp::reference_internal, py::arg("geometry_id"),
-            doc_inspector_get_name_deprecation)
         .def("GetShape", &Class::GetShape, py_rvp::reference_internal,
             py::arg("geometry_id"), cls_doc.GetShape.doc)
         .def("GetPoseInParent", &Class::GetPoseInParent,
