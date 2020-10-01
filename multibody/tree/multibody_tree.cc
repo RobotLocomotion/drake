@@ -589,6 +589,22 @@ void MultibodyTree<T>::CalcSpatialInertiasInWorld(
 }
 
 template <typename T>
+void MultibodyTree<T>::CalcReflectedInertia(
+    const systems::Context<T>& context, VectorX<T>* reflected_inertia) const {
+  DRAKE_THROW_UNLESS(reflected_inertia != nullptr);
+  DRAKE_THROW_UNLESS(static_cast<int>(reflected_inertia->size()) ==
+                     num_velocities());
+
+  // See JointActuator::reflected_inertia().
+  *reflected_inertia = VectorX<double>::Zero(num_velocities());
+  for (const auto& actuator : owned_actuators_) {
+    const int joint_velocity_index = actuator->joint().velocity_start();
+    (*reflected_inertia)(joint_velocity_index) =
+        actuator->calc_reflected_inertia(context);
+  }
+}
+
+template <typename T>
 void MultibodyTree<T>::CalcCompositeBodyInertiasInWorld(
     const systems::Context<T>& context,
     std::vector<SpatialInertia<T>>* Mc_B_W_all) const {
@@ -835,6 +851,8 @@ void MultibodyTree<T>::CalcInverseDynamics(
 
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
 
+  const VectorX<T>& reflected_inertia = EvalReflectedInertiaCache(context);
+
   // Eval M_Bo_W(q).
   const std::vector<SpatialInertia<T>>& spatial_inertia_in_world_cache =
       EvalSpatialInertiaInWorldCache(context);
@@ -878,6 +896,12 @@ void MultibodyTree<T>::CalcInverseDynamics(
           *A_WB_array, Fapplied_Bo_W, tau_applied_mobilizer, F_BMo_W_array,
           tau_array);
     }
+  }
+
+  // Add the effect of reflected inertias.
+  // See JointActuator::reflected_inertia().
+  for (int i = 0; i < num_velocities(); ++i) {
+    (*tau_array)(i) += reflected_inertia(i) * known_vdot(i);
   }
 }
 
@@ -1008,10 +1032,13 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
       EvalCompositeBodyInertiaInWorldCache(context);
   const std::vector<Vector6<T>>& H_PB_W_cache =
       EvalAcrossNodeJacobianWrtVExpressedInWorld(context);
+  const VectorX<T>& reflected_inertia = EvalReflectedInertiaCache(context);
 
   // The algorithm below does not recurse zero entries and therefore these must
   // be set a priori.
-  M->setZero();
+  // In addition, we initialize diagonal entries to include the effect of rotor
+  // reflected inertia. See JointActuator::reflected_inertia().
+  (*M) = reflected_inertia.asDiagonal();
 
   // Perform tip-to-base recursion for each composite body, skipping the world.
   for (int depth = tree_height() - 1; depth > 0; --depth) {
@@ -1057,7 +1084,7 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
       const int composite_start = composite_node.velocity_start();
 
       // Diagonal block corresponding to current node (composite_node_index).
-      M->block(composite_start, composite_start, cnv, cnv) =
+      M->block(composite_start, composite_start, cnv, cnv) +=
           H_CpC_W.transpose() * Fm_CCo_W;
 
       // We recurse the tree inwards from C all the way to the root. We define
@@ -1090,10 +1117,10 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
           // Compute the corresponding bnv x cnv block.
           const MatrixUpTo6<T> HtFm = H_PB_W.transpose() * Fm_CBo_W;
           const int body_start = body_node->velocity_start();
-          M->block(body_start, composite_start, bnv, cnv) = HtFm;
+          M->block(body_start, composite_start, bnv, cnv) += HtFm;
 
           // And copy to its symmetric block.
-          M->block(composite_start, body_start, cnv, bnv) = HtFm.transpose();
+          M->block(composite_start, body_start, cnv, bnv) += HtFm.transpose();
         }
 
         child_node = body_node;                      // Update child node Bc.
@@ -2089,6 +2116,7 @@ T MultibodyTree<T>::CalcKineticEnergy(
   const std::vector<SpatialInertia<T>>& M_Bi_W =
       EvalSpatialInertiaInWorldCache(context);
   const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
+  const VectorX<T>& reflected_inertia = EvalReflectedInertiaCache(context);
   T twice_kinetic_energy_W = 0.0;
   // Add contributions from each body (except World).
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
@@ -2099,6 +2127,15 @@ T MultibodyTree<T>::CalcKineticEnergy(
 
     twice_kinetic_energy_W += L_WB.dot(V_WB);
   }
+
+  // Account for reflected inertia.
+  // See JointActuator::reflected_inertia().
+  const Eigen::VectorBlock<const VectorX<T>> v =
+      get_state_vector(context).nestedExpression().tail(num_velocities());
+
+  twice_kinetic_energy_W +=
+      (v.array() * reflected_inertia.array() * v.array()).sum();
+
   return twice_kinetic_energy_W / 2.;
 }
 
@@ -2166,6 +2203,7 @@ void MultibodyTree<T>::CalcArticulatedBodyInertiaCache(
       EvalAcrossNodeJacobianWrtVExpressedInWorld(context);
   const std::vector<SpatialInertia<T>>& spatial_inertia_in_world_cache =
       EvalSpatialInertiaInWorldCache(context);
+  const VectorX<T>& reflected_inertia = EvalReflectedInertiaCache(context);
 
   // Perform tip-to-base recursion, skipping the world.
   for (int depth = tree_height() - 1; depth > 0; --depth) {
@@ -2179,7 +2217,7 @@ void MultibodyTree<T>::CalcArticulatedBodyInertiaCache(
           spatial_inertia_in_world_cache[body_node_index];
 
       node.CalcArticulatedBodyInertiaCache_TipToBase(
-          context, pc, H_PB_W, M_B_W, abic);
+          context, pc, H_PB_W, M_B_W, reflected_inertia, abic);
     }
   }
 }
