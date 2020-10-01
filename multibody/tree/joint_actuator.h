@@ -122,6 +122,32 @@ class JointActuator final
   /// Returns the actuator effort limit.
   double effort_limit() const { return effort_limit_; }
 
+  /// Returns the rotor's reflected inertia.
+  /// It has units of kg for prismatic joints and units of kg⋅m² for revolute
+  /// joints. A zero value indicates reflected inertia is not modeled.
+  ///
+  /// <h3> Actuated revolute joints </h3>
+  /// For an actuator driving a revolute joint, the reflected inertia can be
+  /// estimated from the rotational inertia Iᵣ of the actuator's rotor about
+  /// its axis of rotation and from the dimensionaless gear ratio ρ. The gear
+  /// ratio is defined as the ratio of the rotor angular velocity of the joint's
+  /// shaft angular velocity, typically ≫ 1 for robotic systems. For this case
+  /// the reflected inertia will be: Irefl = ρ²⋅Iᵣ.
+  ///
+  /// <h3> Actuated prismatic joints </h3>
+  /// For prismatic joints the gear ratio ρ will encode the "pitch" of the gear
+  /// box. That is, the linear velocity v of the joint relates to the angular
+  /// velocity ω of the rotor's shaft by ω = ρ⋅v. Notice that in this case the
+  /// gear ratio has units of 1/m (one over meter). Given the inertia of the
+  /// rotor Iᵣ, the reflected inertia will be Irefl = ρ²⋅Iᵣ. Notice that in this
+  /// case Irefl properly has units of mass, i.e. kg.
+  double reflected_inertia() const { return reflected_inertia_; }
+
+  /// Mutable version of reflected_inertia().
+  void set_reflected_inertia(double reflected_inertia) {
+    reflected_inertia_ = reflected_inertia;
+  }
+
   /// @cond
   // For internal use only.
   // NVI to DoCloneToScalar() templated on the scalar type of the new clone to
@@ -141,8 +167,11 @@ class JointActuator final
 
   // Private constructor used for cloning.
   JointActuator(const std::string& name, JointIndex joint_index,
-                double effort_limit)
-      : name_(name), joint_index_(joint_index), effort_limit_(effort_limit) {}
+                double effort_limit, double reflected_inertia)
+      : name_(name),
+        joint_index_(joint_index),
+        effort_limit_(effort_limit),
+        reflected_inertia_(reflected_inertia) {}
 
   // Helper to clone an actuator (templated on T) to an actuator templated on
   // `double`.
@@ -170,6 +199,9 @@ class JointActuator final
 
   // Actuator effort limit. It must be greater than 0.
   double effort_limit_;
+
+  // The rotor's reflected inertia for this actuator.
+  double reflected_inertia_{0.0};
 
   // The topology of this actuator. Only valid post- MultibodyTree::Finalize().
   internal::JointActuatorTopology topology_;

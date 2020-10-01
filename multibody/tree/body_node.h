@@ -925,6 +925,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       const PositionKinematicsCache<T>& pc,
       const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
       const SpatialInertia<T>& M_B_W,
+      const VectorX<T>& reflected_inertia,
       ArticulatedBodyInertiaCache<T>* abic) const {
     DRAKE_THROW_UNLESS(topology_.body != world_index());
     DRAKE_THROW_UNLESS(abic != nullptr);
@@ -1040,6 +1041,12 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       // Compute the articulated body hinge inertia, D_B, using (5).
       MatrixUpTo6<T> D_B(nv, nv);
       D_B.template triangularView<Eigen::Lower>() = U_B_W * H_PB_W;
+
+      // Add the effect of reflected inertia.
+      // See [Featherstone, 2008], Chapter 9.6 on gears.
+      if (nv == 1) {
+        D_B(0, 0) += reflected_inertia(this->velocity_start());
+      }
 
       // Compute the LDLT factorization of D_B as ldlt_D_B.
       // TODO(bobbyluig): Test performance against inverse().
