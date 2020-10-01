@@ -23,7 +23,7 @@ namespace test_utilities {
 //            of frame Bq, expressed in frame_B.
 // @param[in] frame_A The measured-in frame for spatial acceleration.
 // @param[in] frame_E The expressed-in frame for spatial acceleration.
-SpatialAcceleration<double> CalcSpatialAccelerationViaAutomaticDifferentation(
+SpatialAcceleration<double> CalcSpatialAccelerationViaAutomaticDifferentiation(
     const MultibodyPlant<double>& plant,
     const systems::Context<double>& context,
     const VectorX<double>& vdot,
@@ -103,7 +103,7 @@ SpatialAcceleration<double> CalcSpatialAccelerationViaAutomaticDifferentation(
 // @param[in] frame_A The measured-in frame for spatial acceleration.
 // @param[in] frame_E The expressed-in frame for spatial acceleration.
 SpatialAcceleration<double>
-    CalcSpatialAccelerationViaAutomaticDifferentation(
+    CalcSpatialAccelerationViaAutomaticDifferentiation(
     const MultibodyPlant<double>& plant,
     const systems::Context<double>& context,
     const Frame<double>& frame_B,
@@ -117,7 +117,7 @@ SpatialAcceleration<double>
   EXPECT_EQ(vdot.size(), plant.num_velocities());
 
   const Vector3<double> p_BoBo_B = Vector3<double>::Zero();
-  return CalcSpatialAccelerationViaAutomaticDifferentation(
+  return CalcSpatialAccelerationViaAutomaticDifferentiation(
       plant, context, vdot, frame_B, p_BoBo_B, frame_A, frame_E);
 }
 

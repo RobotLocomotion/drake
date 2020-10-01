@@ -172,7 +172,7 @@ TEST_F(KukaIiwaModelTests, CalcSpatialAcceleration) {
       frame_H_->CalcSpatialAccelerationInWorld(*context_);
   const Frame<double>& frame_W = plant_->world_frame();
   const SpatialAcceleration<double> A_WH_W_expected = test_utilities::
-      CalcSpatialAccelerationViaAutomaticDifferentation(
+      CalcSpatialAccelerationViaAutomaticDifferentiation(
           *plant_, *context_, *frame_H_, frame_W, frame_W);
   EXPECT_TRUE(CompareMatrices(A_WH_W.get_coeffs(),
                               A_WH_W_expected.get_coeffs(),
