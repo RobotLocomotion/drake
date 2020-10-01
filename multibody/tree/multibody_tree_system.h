@@ -135,6 +135,14 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<std::vector<SpatialInertia<T>>>(context);
   }
 
+  /* Returns a reference to the upd to date cache of per-dof reflected inertias
+  in the given Context, recalculating it first if necessary. */
+  const VectorX<T>& EvalReflectedInertiaCache(
+      const systems::Context<T>& context) const {
+    return this->get_cache_entry(cache_indexes_.reflected_inertia)
+        .template Eval<VectorX<T>>(context);
+  }
+
   /* Returns a reference to the up to date cache of composite-body inertias
   in the given Context, recalculating it first if necessary. */
   const std::vector<SpatialInertia<T>>& EvalCompositeBodyInertiaInWorldCache(
@@ -340,6 +348,11 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     internal_tree().CalcSpatialInertiasInWorld(context, spatial_inertias);
   }
 
+  void CalcReflectedInertia(const systems::Context<T>& context,
+                            VectorX<T>* reflected_inertia) const {
+    internal_tree().CalcReflectedInertia(context, reflected_inertia);
+  }
+
   void CalcCompositeBodyInertiasInWorld(
       const systems::Context<T>& context,
       std::vector<SpatialInertia<T>>* composite_body_inertias) const {
@@ -455,6 +468,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     systems::CacheIndex composite_body_inertia_in_world;
     systems::CacheIndex spatial_acceleration_bias;
     systems::CacheIndex velocity_kinematics;
+    systems::CacheIndex reflected_inertia;
   };
 
   // This is the one real constructor. From the public API, a null tree is
