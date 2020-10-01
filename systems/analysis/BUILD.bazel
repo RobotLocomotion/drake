@@ -50,18 +50,7 @@ drake_cc_library(
     srcs = ["simulator_flags.cc"],
     hdrs = ["simulator_flags.h"],
     deps = [
-        ":bogacki_shampine3_integrator",
-        ":explicit_euler_integrator",
-        ":implicit_euler_integrator",
-        ":radau_integrator",
-        ":runge_kutta2_integrator",
-        ":runge_kutta3_integrator",
-        ":runge_kutta5_integrator",
-        ":semi_explicit_euler_integrator",
-        ":simulator",
-        ":velocity_implicit_euler_integrator",
-        "//common:essential",
-        "//common:nice_type_name",
+        ":simulator_config_functions",
     ],
 )
 
@@ -79,7 +68,8 @@ drake_cc_library(
     ],
     visibility = ["//:__subpackages__"],
     deps = [
-        ":simulator_flags",
+        ":simulator_config",
+        ":simulator_config_functions",
         "@gflags",
     ],
 )
@@ -98,9 +88,19 @@ drake_cc_library(
     srcs = ["simulator_config_functions.cc"],
     hdrs = ["simulator_config_functions.h"],
     deps = [
+        ":bogacki_shampine3_integrator",
+        ":explicit_euler_integrator",
+        ":implicit_euler_integrator",
+        ":radau_integrator",
+        ":runge_kutta2_integrator",
+        ":runge_kutta3_integrator",
+        ":runge_kutta5_integrator",
+        ":semi_explicit_euler_integrator",
         ":simulator",
         ":simulator_config",
-        ":simulator_flags",
+        ":velocity_implicit_euler_integrator",
+        "//common:essential",
+        "//common:nice_type_name",
         "//systems/framework:leaf_system",
     ],
 )
@@ -418,22 +418,15 @@ drake_cc_library(
 # === test/ ===
 
 drake_cc_googletest(
-    name = "simulator_flags_test",
-    deps = [
-        ":simulator",
-        ":simulator_flags",
-        "//common:nice_type_name",
-        "//systems/primitives:constant_vector_source",
-    ],
-)
-
-drake_cc_googletest(
     name = "simulator_config_functions_test",
     deps = [
         ":simulator",
         ":simulator_config_functions",
+        "//common:nice_type_name",
+        "//common/test_utilities:expect_no_throw",
         "//common/yaml",
         "//systems/framework:leaf_system",
+        "//systems/primitives:constant_vector_source",
     ],
 )
 
