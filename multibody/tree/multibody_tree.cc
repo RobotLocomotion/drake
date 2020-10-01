@@ -221,6 +221,14 @@ void MultibodyTree<T>::FinalizeInternals() {
   }
 
   CreateModelInstances();
+
+  // We load the vector of reflected inertias here now the model including
+  // joints and actuators is complete.
+  reflected_inertia_ = VectorX<double>::Zero(num_velocities());
+  for (const auto& actuator : owned_actuators_) {
+    const int v = actuator->joint().velocity_start();
+    reflected_inertia_(v) = actuator->reflected_inertia();
+  }
 }
 
 template <typename T>
@@ -879,6 +887,11 @@ void MultibodyTree<T>::CalcInverseDynamics(
           tau_array);
     }
   }
+
+  // Add the effect of reflected inertias.
+  for (int v = 0; v < num_velocities(); ++v) {
+    (*tau_array)(v) += reflected_inertia_(v) * known_vdot(v);
+  }
 }
 
 template <typename T>
@@ -1011,7 +1024,9 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
 
   // The algorithm below does not recurse zero entries and therefore these must
   // be set a priori.
-  M->setZero();
+  // In addition, we initialize diagonal entries to include the effect of rotor
+  // reflected inertia.
+  (*M) = reflected_inertia_.asDiagonal();
 
   // Perform tip-to-base recursion for each composite body, skipping the world.
   for (int depth = tree_height() - 1; depth > 0; --depth) {
@@ -1057,7 +1072,7 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
       const int composite_start = composite_node.velocity_start();
 
       // Diagonal block corresponding to current node (composite_node_index).
-      M->block(composite_start, composite_start, cnv, cnv) =
+      M->block(composite_start, composite_start, cnv, cnv) +=
           H_CpC_W.transpose() * Fm_CCo_W;
 
       // We recurse the tree inwards from C all the way to the root. We define
@@ -1090,10 +1105,10 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
           // Compute the corresponding bnv x cnv block.
           const MatrixUpTo6<T> HtFm = H_PB_W.transpose() * Fm_CBo_W;
           const int body_start = body_node->velocity_start();
-          M->block(body_start, composite_start, bnv, cnv) = HtFm;
+          M->block(body_start, composite_start, bnv, cnv) += HtFm;
 
           // And copy to its symmetric block.
-          M->block(composite_start, body_start, cnv, bnv) = HtFm.transpose();
+          M->block(composite_start, body_start, cnv, bnv) += HtFm.transpose();
         }
 
         child_node = body_node;                      // Update child node Bc.
@@ -2179,7 +2194,7 @@ void MultibodyTree<T>::CalcArticulatedBodyInertiaCache(
           spatial_inertia_in_world_cache[body_node_index];
 
       node.CalcArticulatedBodyInertiaCache_TipToBase(
-          context, pc, H_PB_W, M_B_W, abic);
+          context, pc, H_PB_W, M_B_W, reflected_inertia_, abic);
     }
   }
 }

@@ -3438,6 +3438,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().get_joint_actuator(actuator_index);
   }
 
+  /// Returns a mutable reference to the joint actuator with unique index
+  /// `actuator_index`.
+  /// @throws std::exception if `actuator_index` does not correspond to a joint
+  /// actuator in this tree.
+  JointActuator<T>& get_mutable_joint_actuator(
+      JointActuatorIndex actuator_index) const {
+    return internal_tree().get_mutable_joint_actuator(actuator_index);
+  }
+
   /// @returns `true` if an actuator named `name` was added to this model.
   /// @see AddJointActuator().
   /// @throws std::logic_error if the actuator name occurs in multiple model

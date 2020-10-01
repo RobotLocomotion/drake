@@ -459,6 +459,20 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "multibody_plant_reflected_inertia_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
+    ],
+    deps = [
+        ":plant",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
     name = "multibody_plant_reaction_forces_test",
     deps = [
         ":plant",

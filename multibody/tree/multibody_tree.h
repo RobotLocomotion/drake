@@ -664,6 +664,13 @@ class MultibodyTree {
   }
 
   /// See MultibodyPlant method.
+  JointActuator<T>& get_mutable_joint_actuator(
+      JointActuatorIndex actuator_index) const {
+    DRAKE_THROW_UNLESS(actuator_index < num_actuators());
+    return *owned_actuators_[actuator_index];
+  }
+
+  /// See MultibodyPlant method.
   const Frame<T>& get_frame(FrameIndex frame_index) const {
     DRAKE_THROW_UNLESS(frame_index < num_frames());
     return *frames_[frame_index];
@@ -2954,6 +2961,12 @@ class MultibodyTree {
 
   // The gravity field force element.
   UniformGravityFieldElement<T>* gravity_field_{nullptr};
+
+  // Vector of size num_velocities() that stores rotor reflected inertia for
+  // each mobility corresponding to a 1-dof mobilizer (i.e. revolute,
+  // prismatic). By default it is intialized to the zero vector, meaning we do
+  // not model the effect of reflected inertia.
+  VectorX<double> reflected_inertia_;
 
   // TODO(amcastro-tri): Consider moving these maps into MultibodyTreeTopology
   // since they are not templated on <T>.
