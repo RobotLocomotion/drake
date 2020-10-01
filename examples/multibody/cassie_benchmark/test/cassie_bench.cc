@@ -214,13 +214,17 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffMassMatrix)
   // The first iteration allocates more memory than subsequent runs.
   compute();
 
-  for (auto _ : state) {
+  for (int k = 0; k < 3; k++) {
     // @see LimitMalloc note above.
     LimitMalloc guard(LimitReleaseOnly(31426));
 
     compute();
 
     tracker.Update(guard.num_allocations());
+  }
+
+  for (auto _ : state) {
+    compute();
   }
 }
 
@@ -247,13 +251,17 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffInverseDynamics)
   // The first iteration allocates more memory than subsequent runs.
   compute();
 
-  for (auto _ : state) {
+  for (int k = 0; k < 3; k++) {
     // @see LimitMalloc note above.
     LimitMalloc guard(LimitReleaseOnly(38027));
 
     compute();
 
     tracker.Update(guard.num_allocations());
+  }
+
+  for (auto _ : state) {
+    compute();
   }
 }
 
@@ -279,13 +287,17 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffForwardDynamics)
   // The first iteration allocates more memory than subsequent runs.
   compute();
 
-  for (auto _ : state) {
+  for (int k = 0; k < 3; k++) {
     // @see LimitMalloc note above.
     LimitMalloc guard(LimitReleaseOnly(57693));
 
     compute();
 
     tracker.Update(guard.num_allocations());
+  }
+
+  for (auto _ : state) {
+    compute();
   }
 }
 
