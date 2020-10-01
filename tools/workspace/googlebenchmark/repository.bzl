@@ -8,8 +8,8 @@ def googlebenchmark_repository(
     github_archive(
         name = name,
         repository = "google/benchmark",
-        commit = "v1.5.1",
-        sha256 = "23082937d1663a53b90cb5b61df4bcc312f6dee7018da78ba00dd6bd669dfef2",  # noqa
+        commit = "v1.5.2",
+        sha256 = "dccbdab796baa1043f04982147e67bb6e118fe610da2c65f88912d73987e700c",  # noqa
         mirrors = mirrors,
         patches = [
             # Suppress warnings from compiling Google Benchmark due to the
