@@ -54,19 +54,20 @@ void JointActuator<T>::DoSetTopology(
 }
 
 template <typename T>
-std::unique_ptr<JointActuator<double>>
-JointActuator<T>::DoCloneToScalar(
+std::unique_ptr<JointActuator<double>> JointActuator<T>::DoCloneToScalar(
     const internal::MultibodyTree<double>&) const {
   return std::unique_ptr<JointActuator<double>>(
-      new JointActuator<double>(name_, joint_index_, effort_limit_));
+      new JointActuator<double>(name_, joint_index_, effort_limit_,
+                                default_rotor_inertia_, default_gear_ratio_));
 }
 
 template <typename T>
-std::unique_ptr<JointActuator<AutoDiffXd>>
-JointActuator<T>::DoCloneToScalar(
+std::unique_ptr<JointActuator<AutoDiffXd>> JointActuator<T>::DoCloneToScalar(
     const internal::MultibodyTree<AutoDiffXd>&) const {
   return std::unique_ptr<JointActuator<AutoDiffXd>>(
-      new JointActuator<AutoDiffXd>(name_, joint_index_, effort_limit_));
+      new JointActuator<AutoDiffXd>(name_, joint_index_, effort_limit_,
+                                    default_rotor_inertia_,
+                                    default_gear_ratio_));
 }
 
 template <typename T>
@@ -74,8 +75,9 @@ std::unique_ptr<JointActuator<symbolic::Expression>>
 JointActuator<T>::DoCloneToScalar(
     const internal::MultibodyTree<symbolic::Expression>&) const {
   return std::unique_ptr<JointActuator<symbolic::Expression>>(
-      new JointActuator<symbolic::Expression>(name_, joint_index_,
-                                              effort_limit_));
+      new JointActuator<symbolic::Expression>(
+          name_, joint_index_, effort_limit_, default_rotor_inertia_,
+          default_gear_ratio_));
 }
 
 }  // namespace multibody
