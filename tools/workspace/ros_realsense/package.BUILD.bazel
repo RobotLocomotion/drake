@@ -1,0 +1,13 @@
+# -*- python -*-
+
+licenses(["notice"])  # Apache-2.0
+
+package(default_visibility = ["//visibility:private"])
+
+exports_files(
+    srcs = glob([
+        "LICENSE",
+        "realsense2_description/**",
+    ], allow_empty = False),
+    visibility = ["//visibility:public"],
+)
