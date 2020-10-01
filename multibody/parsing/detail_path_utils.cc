@@ -60,7 +60,7 @@ std::optional<string> GetPackagePath(
     return package_map.GetPath(package);
   } else {
     drake::log()->warn("Couldn't find package '{}' in the supplied package"
-                       "path.", package);
+                       "path: {}", package, package_map);
     return std::nullopt;
   }
 }

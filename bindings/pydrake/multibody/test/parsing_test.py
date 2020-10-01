@@ -5,6 +5,10 @@ from pydrake.multibody.parsing import (
     PackageMap,
     LoadModelDirectives,
     ProcessModelDirectives,
+    ModelInstanceInfo,
+    AddFrame,
+    GetScopedFrameByName,
+    GetScopedFrameName,
 )
 
 import os
@@ -100,6 +104,17 @@ class TestParsing(unittest.TestCase):
         model_names = [model.model_name for model in added_models]
         self.assertIn("extra_model", model_names)
         plant.GetModelInstanceByName("extra_model")
+        # Test that other bound symbols exist.
+        ModelInstanceInfo.model_name
+        ModelInstanceInfo.model_path
+        ModelInstanceInfo.parent_frame_name
+        ModelInstanceInfo.child_frame_name
+        ModelInstanceInfo.X_PC
+        ModelInstanceInfo.model_instance
+        AddFrame.name
+        AddFrame.X_PF
+        frame = GetScopedFrameByName(plant, "world")
+        self.assertIsNotNone(GetScopedFrameName(plant, frame))
 
     def test_model_directives_doc(self):
         """Check that the warning note in the docstring was added."""

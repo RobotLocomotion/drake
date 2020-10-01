@@ -6,6 +6,7 @@
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/parsing/process_model_directives.h"
+#include "drake/multibody/parsing/scoped_names.h"
 
 using drake::geometry::SceneGraph;
 using drake::multibody::MultibodyPlant;
@@ -84,6 +85,17 @@ PYBIND11_MODULE(parsing, m) {
             cls_doc.model_instance.doc);
   }
 
+  // Individual directives are not bound here (they are generally loaded from
+  // yaml rather than constructed explicitly), but some downstream users use
+  // this type as a return value which requires an explicit binding.
+  {
+    using Class = drake::multibody::parsing::AddFrame;
+    constexpr auto& cls_doc = doc.parsing.AddFrame;
+    py::class_<Class>(m, "AddFrame")
+        .def_readonly("name", &Class::name, cls_doc.name.doc)
+        .def_readonly("X_PF", &Class::X_PF, cls_doc.X_PF.doc);
+  }
+
   constexpr char kWeldErrorDisclaimer[] = R"""(
     Note:
         pydrake does not currently support `ModelWeldErrorFunction`.
@@ -101,6 +113,15 @@ PYBIND11_MODULE(parsing, m) {
       (std::string(doc.parsing.ProcessModelDirectives.doc) +
           kWeldErrorDisclaimer)
           .c_str());
+
+  m.def("GetScopedFrameByName", &parsing::GetScopedFrameByName,
+      py::arg("plant"), py::arg("full_name"),
+      py::return_value_policy::reference,
+      py::keep_alive<0, 1>(),  // `return` keeps `plant` alive.
+      doc.parsing.GetScopedFrameByName.doc);
+
+  m.def("GetScopedFrameName", &parsing::GetScopedFrameName, py::arg("plant"),
+      py::arg("frame"), doc.parsing.GetScopedFrameName.doc);
 }
 
 }  // namespace pydrake

@@ -24,7 +24,7 @@ GetScopedFrameByNameMaybe(
   return nullptr;
 }
 
-const std::string GetScopedFrameName(
+std::string GetScopedFrameName(
     const drake::multibody::MultibodyPlant<double>& plant,
     const drake::multibody::Frame<double>& frame) {
   if (&frame == &plant.world_frame())
