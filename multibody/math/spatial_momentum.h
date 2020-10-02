@@ -52,13 +52,14 @@ template <typename T> class SpatialVelocity;
 /// %SpatialMomentum object; they must be understood from context. It is the
 /// responsibility of the user to keep track of the about-point and the
 /// expressed-in frame. That is best accomplished through disciplined notation.
-/// In source code we use monogram notation where L is used to designate a
-/// spatial momentum quantity. We write a point P fixed to body (or frame) B as
-/// @f$B_P@f$ which appears in code and comments as `Bp`. Then we write as
-/// @f$[^NL^{S/B_P}]_E@f$, which appears in code as `L_NBp_E`, the spatial
-/// momentum of a body B in a reference frame N, about a point P and, expressed
-/// in frame E. Very often the about-point will be the body origin `Bo`; if no
-/// point is shown the origin is understood, thus `L_NB_E` means `L_NBo_E`.
+/// In source code we use monogram notation where L designates a spatial
+/// momentum quantity. The spatial momentum of a system S in a frame N about an
+/// arbitrary point P, expressed in a frame E is typeset as @f$[^NL^{S/P}]_E@f$,
+/// which appears in code as `L_NSP_E`. The spatial momentum of a body B in a
+/// frame N about the body origin Bo is explicitly typeset as L_NBBo_E, but we
+/// abbreviate it as L_NBo_E.  Similarly, the spatial momentum of a system S in
+/// a frame N about Scm (the system center of mass), expressed in a frame E is
+/// explicitly typeset as L_NSScm_E, but we abbreviate it as L_NScm_E.
 /// For a more detailed introduction on spatial vectors and the monogram
 /// notation please refer to section @ref multibody_spatial_vectors.
 ///

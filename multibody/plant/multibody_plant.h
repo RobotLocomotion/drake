@@ -2413,6 +2413,62 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().CalcCenterOfMassPosition(context, model_instances);
   }
 
+  /// This method returns the spatial momentum of `this` MultibodyPlant in the
+  /// world frame W, about a designated point P, expressed in the world frame W.
+  /// @param[in] context Contains the state of the model.
+  /// @param[in] p_WoP_W Position from Wo (origin of the world frame W) to an
+  ///            arbitrary point P, expressed in the world frame W.
+  /// @retval L_WSP_W, spatial momentum of the system S represented by `this`
+  ///   plant, measured in the world frame W, about point P, expressed in W.
+  /// @note To calculate the spatial momentum of this system S in W about Scm
+  /// (the system's center of mass), use something like: <pre>
+  ///   MultibodyPlant<T> plant;
+  ///   // ... code to load a model ....
+  ///   const Vector3<T> p_WoScm_W = plant.CalcCenterOfMassPosition(context);
+  ///   const SpatialMomentum<T> L_WScm_W =
+  ///     plant.CalcSpatialMomentumInWorldAboutPoint(context, p_WoScm_W);
+  /// </pre>
+  SpatialMomentum<T> CalcSpatialMomentumInWorldAboutPoint(
+      const systems::Context<T>& context,
+      const Vector3<T>& p_WoP_W) const {
+    return internal_tree().CalcSpatialMomentumInWorldAboutPoint(context,
+                                                                p_WoP_W);
+  }
+
+  /// This method returns the spatial momentum of a set of model instances in
+  /// the world frame W, about a designated point P, expressed in frame W.
+  /// @param[in] context Contains the state of the model.
+  /// @param[in] model_instances Set of selected model instances.
+  /// @param[in] p_WoP_W Position from Wo (origin of the world frame W) to an
+  ///            arbitrary point P, expressed in the world frame W.
+  /// @retval L_WSP_W, spatial momentum of the system S represented by the
+  /// model_instances, measured in world frame W, about point P, expressed in W.
+  /// @note To calculate the spatial momentum of this system S in W about Scm
+  /// (the system's center of mass), use something like: <pre>
+  ///   MultibodyPlant<T> plant;
+  ///   // ... code to create a set of selected model instances, e.g., ...
+  ///   const ModelInstanceIndex gripper_model_instance =
+  ///     plant.GetModelInstanceByName("gripper");
+  ///   const ModelInstanceIndex robot_model_instance =
+  ///     plant.GetBodyByName("end_effector").model_instance();
+  ///   const std::vector<ModelInstanceIndex> model_instances{
+  ///     gripper_model_instance, robot_model_instance};
+  ///   const Vector3<T> p_WoScm_W =
+  ///     plant.CalcCenterOfMassPosition(context, model_instances);
+  ///   SpatialMomentum<T> L_WScm_W =
+  ///     plant.CalcSpatialMomentumInWorldAboutPoint(context, model_instances,
+  ///                                                p_WoScm_W);
+  /// </pre>
+  /// @throws std::exception if model_instances contains an invalid
+  ///         ModelInstanceIndex.
+  SpatialMomentum<T> CalcSpatialMomentumInWorldAboutPoint(
+      const systems::Context<T>& context,
+      const std::vector<ModelInstanceIndex>& model_instances,
+      const Vector3<T>& p_WoP_W) const {
+    return internal_tree().CalcSpatialMomentumInWorldAboutPoint(context,
+        model_instances, p_WoP_W);
+  }
+
   /// Given the state of this model in `context` and a known vector
   /// of generalized accelerations `known_vdot`, this method computes the
   /// spatial acceleration `A_WB` for each body as measured and expressed in the
