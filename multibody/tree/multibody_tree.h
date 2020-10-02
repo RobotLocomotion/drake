@@ -2636,7 +2636,7 @@ class MultibodyTree {
   // @param[in] body_indexes Array of selected bodies.  This method does not
   //  distinguish between welded bodies, joint-connected bodies,
   //  floating bodies, the world_body(), or repeated bodies.
-  // @throws std::runtime_error if model_instances contains an invalid
+  // @throws std::exception if model_instances contains an invalid
   // ModelInstanceIndex.
   // @throws std::exception if body_indexes contains an invalid BodyIndex.
   SpatialMomentum<T> CalcBodiesSpatialMomentumInWorldAboutWo(

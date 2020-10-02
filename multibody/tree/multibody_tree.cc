@@ -1326,12 +1326,9 @@ SpatialMomentum<T> MultibodyTree<T>::CalcBodiesSpatialMomentumInWorldAboutWo(
   for (BodyIndex body_index : body_indexes) {
     if (body_index == 0) continue;  // No contribution from the world body.
 
-    // If invalid body_index, throw an exception with a helpful message.
-    if (body_index >= num_bodies()) {
-      throw std::logic_error(
-          "CalcSpatialMomentumInWorldAboutPoint(): This MultibodyPlant method"
-          " contains an invalid body_index.");
-    }
+    // Ensure MultibodyPlant method contains a valid body_index.
+    DRAKE_DEMAND(body_index < num_bodies());
+
     // Form the current body's spatial momentum in W about Bo, expressed in W.
     const BodyNodeIndex body_node_index = get_body(body_index).node_index();
     const SpatialInertia<T>& M_BBo_W = M_Bi_W[body_node_index];
