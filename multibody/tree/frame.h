@@ -252,8 +252,6 @@ class Frame : public FrameBase<T> {
         body().EvalPoseInWorld(context).rotation();
     const Vector3<T> p_BoFo_B = CalcPoseInBodyFrame(context).translation();
     const Vector3<T> p_BoFo_W = R_WB * p_BoFo_B;
-    const SpatialAcceleration<T>& A_WB_W =
-        body().EvalSpatialAccelerationInWorld(context);
     const Vector3<T>& w_WB_W =
         body().EvalSpatialVelocityInWorld(context).rotational();
     const SpatialAcceleration<T> A_WF_W = A_WB_W.Shift(p_BoFo_W, w_WB_W);
