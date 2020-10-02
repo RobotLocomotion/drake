@@ -284,16 +284,18 @@ template <typename T>
 void LinearBushingRollPitchYaw<T>::ThrowPitchAngleViolatesGimbalLockTolerance(
     const T& pitch_angle, const char* function_name) {
     const double pitch_radians = ExtractDoubleOrThrow(pitch_angle);
+    const double pitch_tolerance =
+        math::RollPitchYaw<double>::GimbalLockPitchAngleTolerance();
     std::string message = fmt::format("LinearBushingRollPitchYaw::{}():"
-        " Pitch angle p = {:G} degrees is close to gimbal-lock which means"
-        " p ≈ (n*π ± π/2) where n = 0, 1, 2, ..."
-        " There is a divide-by-zero error (singularity) at gimbal-lock.  Pitch"
-        " angles near gimbal-lock cause numerical inaccuracies.  To avoid this"
-        " orientation singularity, use a reasonable default alignment of the"
-        " frames associated with this LinearBushingRollPitchYaw"
-        " and/or choose stiffness and damping properties"
-        " that help avoid pitch angles near gimbal lock.",
-        function_name, pitch_radians * 180 / M_PI);
+        " Pitch angle p = {:G} degrees is within {:G} degrees of gimbal-lock"
+        " which means p ≈ (n*π ± π/2) where n = 0, 1, 2, ..."
+        " There is a divide-by-zero error (singularity) at gimbal-lock due to"
+        " this bushing's mathematical dependence on roll-pitch-yaw angles."
+        " A pitch angle near gimbal-lock cause numerical inaccuracies.  To"
+        " avoid this pitch angle problem, use a reasonable default alignment of"
+        " the frames associated with this bushing and/or choose stiffness and"
+        " damping properties that help avoid pitch angles near gimbal lock.",
+        function_name, pitch_radians * 180 / M_PI, pitch_tolerance);
     throw std::runtime_error(message);
 }
 
