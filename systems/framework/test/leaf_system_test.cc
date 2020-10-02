@@ -1099,9 +1099,11 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
   dut.reset();
 
   // The first port should only accept a 1d vector.
-  context->FixInputPort(0, VectorXd::Constant(1, 0.0));
+  context->FixInputPort(0, std::make_unique<Value<BasicVector<double>>>(
+                               VectorXd::Constant(1, 0.0)));
   DRAKE_EXPECT_THROWS_MESSAGE(
-      context->FixInputPort(0, VectorXd::Constant(2, 0.0)),
+      context->FixInputPort(0, std::make_unique<Value<BasicVector<double>>>(
+                                   VectorXd::Constant(2, 0.0))),
       std::exception,
       "System::FixInputPortTypeCheck\\(\\): expected value of type "
       "drake::systems::BasicVector<double> with size=1 "
@@ -1109,7 +1111,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
       "drake::systems::BasicVector<double> with size=2. "
       "\\(System ::dut\\)");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      context->FixInputPort(0, Value<std::string>{}),
+      context->FixInputPort(0, std::make_unique<Value<std::string>>()),
       std::exception,
       "System::FixInputPortTypeCheck\\(\\): expected value of type "
       "drake::Value<drake::systems::BasicVector<double>> "
@@ -1118,9 +1120,9 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
       "\\(System ::dut\\)");
 
   // The second port should only accept ints.
-  context->FixInputPort(2, Value<int>(11));
+  context->FixInputPort(2, std::make_unique<Value<int>>(11));
   DRAKE_EXPECT_THROWS_MESSAGE(
-      context->FixInputPort(2, Value<std::string>{}),
+      context->FixInputPort(2, std::make_unique<Value<std::string>>()),
       std::exception,
       "System::FixInputPortTypeCheck\\(\\): expected value of type "
       "int "

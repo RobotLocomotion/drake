@@ -150,8 +150,10 @@ class DiagramContextTest : public ::testing::Test {
   }
 
   void AttachInputPorts() {
-    context_->FixInputPort(0, {128.0});
-    context_->FixInputPort(1, {256.0});
+    context_->FixInputPort(0, std::make_unique<Value<BasicVector<double>>>(
+                                  Vector1<double>(128.0)));
+    context_->FixInputPort(1, std::make_unique<Value<BasicVector<double>>>(
+                                  Vector1<double>(256.0)));
   }
 
   // Reads a FixedInputPortValue connected to @p context at @p index.
