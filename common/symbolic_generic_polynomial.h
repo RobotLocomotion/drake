@@ -8,6 +8,7 @@
 #include <ostream>
 
 #include <Eigen/Core>
+#include <fmt/format.h>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/symbolic.h"
@@ -475,6 +476,29 @@ template <typename BasisElement>
 GenericPolynomialEnable<BasisElement> operator/(
     GenericPolynomial<BasisElement> p, double v) {
   return p /= v;
+}
+
+/** Returns polynomial @p raised to @p n.
+ * @param p The base polynomial.
+ * @param n The exponent of the power. @pre n>=0.
+ * */
+template <typename BasisElement>
+GenericPolynomialEnable<BasisElement> pow(
+    const GenericPolynomial<BasisElement>& p, int n) {
+  if (n < 0) {
+    throw std::runtime_error(
+        fmt::format("pow(): the degree should be non-negative, got {}.", n));
+  } else if (n == 0) {
+    return GenericPolynomial<BasisElement>(BasisElement());
+  } else if (n == 1) {
+    return p;
+  } else if (n % 2 == 0) {
+    const GenericPolynomial<BasisElement> half = pow(p, n / 2);
+    return half * half;
+  } else {
+    const GenericPolynomial<BasisElement> half = pow(p, n / 2);
+    return half * half * p;
+  }
 }
 
 template <typename BasisElement>
