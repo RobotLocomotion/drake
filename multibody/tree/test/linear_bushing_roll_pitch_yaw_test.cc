@@ -669,6 +669,36 @@ TEST_F(LinearBushingRollPitchYawTester, VariousPosesAndMotion) {
   CompareToMotionGenesisResult(rpy,      p_AoCo_A, w_AC_A, v_ACo_A);
 }
 
+// Test that an exception is thrown near gimbal lock singularity.
+TEST_F(LinearBushingRollPitchYawTester, TestGimbalLock) {
+  const math::RollPitchYaw<double> rpy_gimbal_lock(0, M_PI/2, 0);
+  const Vector3<double> p_zero(0, 0, 0);
+  const Vector3<double> w_zero(0, 0, 0);
+  const Vector3<double> v_zero(0, 0, 0);
+
+  // Use the mobilizer to set frame C's pose and motion in frame A.
+  const RotationMatrixd R_AC(rpy_gimbal_lock);
+  systems::Context<double>& context = *(context_.get());
+  mobilizer_->SetFromRotationMatrix(&context, R_AC);
+  mobilizer_->set_position(&context, p_zero);
+  mobilizer_->set_angular_velocity(&context, w_zero);
+  mobilizer_->set_translational_velocity(&context, v_zero);
+
+  const char* expected_message =
+      "LinearBushingRollPitchYaw::CalcBushingRollPitchYawAngleRates()"
+      ".*gimbal-lock.*";
+
+  // Check that CalcBushingSpatialForceOnFrameA() throws near gimbal lock.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      bushing_->CalcBushingSpatialForceOnFrameA(context),
+      std::runtime_error, expected_message);
+
+  // Check that CalcBushingSpatialForceOnFrameC() throws near gimbal lock.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      bushing_->CalcBushingSpatialForceOnFrameC(context),
+      std::runtime_error, expected_message);
+}
+
 // Verify algorithm that calculates rotation matrix R_AB.
 TEST_F(LinearBushingRollPitchYawTester, HalfAngleAxisAlgorithm) {
   // This test uses a generic unit vector for the "axis" part of AngleAxis.
