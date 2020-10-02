@@ -76,7 +76,7 @@ IntegratorBase<double>& ResetIntegratorFromGflags(
   } else {
     // Integrator is running in fixed step mode, therefore we warn the user if
     // the accuracy flag was changed from the command line.
-    if (FLAGS_simulator_accuracy != drake::systems::internal::kDefaultAccuracy)
+    if (FLAGS_simulator_accuracy != drake::systems::SimulatorConfig{}.accuracy)
       log()->warn(
           "Integrator accuracy provided, however the integrator is running in "
           "fixed step mode. The 'simulator_accuracy' flag will be ignored. "
