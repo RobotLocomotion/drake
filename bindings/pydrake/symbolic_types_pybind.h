@@ -40,8 +40,10 @@ void BindSymbolicMathOverloads(PyObject* obj) {
       .def("abs", &symbolic::abs)
       .def("exp", &symbolic::exp)
       .def("sqrt", &symbolic::sqrt)
-      .def("pow", py::overload_cast<const Expression&, const Expression&>(
-                      &symbolic::pow))
+      .def("pow",
+          [](const Expression& base, const Expression& exponent) {
+            return pow(base, exponent);
+          })
       .def("sin", &symbolic::sin)
       .def("cos", &symbolic::cos)
       .def("tan", &symbolic::tan)
