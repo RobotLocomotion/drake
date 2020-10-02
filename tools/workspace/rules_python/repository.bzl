@@ -12,7 +12,7 @@ def rules_python_repository(
     github_archive(
         name = name,
         repository = "bazelbuild/rules_python",  # License: Apache-2.0
-        commit = "0.0.2",
-        sha256 = "a1b2797d85abb395468915f2ab652cee65e9a44e31bff559cd7de0dedf056363",  # noqa
+        commit = "0.0.3",
+        sha256 = "3720faae8aed1415c3af58d241ecffccfa4d31f2bb70ffa2f6dfb68ca9729626",  # noqa
         mirrors = mirrors,
     )
