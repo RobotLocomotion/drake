@@ -47,21 +47,26 @@ class DummySystem final : public drake::systems::LeafSystem<double> {
   DummySystem() {}
 };
 
-GTEST_TEST(SimulatorConfigFunctionsTest, ExtractDefaultsTest) {
+GTEST_TEST(SimulatorConfigFunctionsTest, SimulatorConfigCongruenceTest) {
+  // Ensure that a default constructed SimulatorConfig has the same values as a
+  // default constructed Simulator.
+  // N.B. Due to the RoundTripTest, we know that ExtractSimulatorConfig is doing
+  // actual work, not just returning a default constructed SimulatorConfig.
+
   const DummySystem dummy;
   Simulator<double> simulator(dummy);
 
-  // We can always extract the defaults.
-  const SimulatorConfig defaults = ExtractSimulatorConfig(simulator);
-  EXPECT_EQ(defaults.integration_scheme, "runge_kutta3");
-  // TODO(jeremy.nimmer) The integrators return incorrect defaults for
-  // max_step_size and accuracy.  Once Drake is fixed, we should EXPECT_EQ
-  // instead here.
-  EXPECT_GT(defaults.max_step_size, 0);
-  EXPECT_GT(defaults.accuracy, 0);
-  EXPECT_EQ(defaults.use_error_control, true);
-  EXPECT_EQ(defaults.target_realtime_rate, 0.0);
-  EXPECT_EQ(defaults.publish_every_time_step, false);
+  const SimulatorConfig config_defaults;
+  const SimulatorConfig sim_defaults = ExtractSimulatorConfig(simulator);
+  EXPECT_EQ(sim_defaults.integration_scheme,
+            config_defaults.integration_scheme);
+  EXPECT_EQ(sim_defaults.max_step_size, config_defaults.max_step_size);
+  EXPECT_EQ(sim_defaults.accuracy, config_defaults.accuracy);
+  EXPECT_EQ(sim_defaults.use_error_control, config_defaults.use_error_control);
+  EXPECT_EQ(sim_defaults.target_realtime_rate,
+            config_defaults.target_realtime_rate);
+  EXPECT_EQ(sim_defaults.publish_every_time_step,
+            config_defaults.publish_every_time_step);
 }
 
 GTEST_TEST(SimulatorConfigFunctionsTest, RoundTripTest) {
