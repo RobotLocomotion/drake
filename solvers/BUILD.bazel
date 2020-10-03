@@ -52,6 +52,7 @@ drake_cc_package_library(
         ":nlopt_solver",
         ":non_convex_optimization_util",
         ":osqp_solver",
+        ":parse_mathematical_program",
         ":program_attribute",
         ":rotation_constraint",
         ":scs_solver",
@@ -363,6 +364,16 @@ drake_cc_library(
         ":solver_id",
         ":solver_options",
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "parse_mathematical_program",
+    srcs = ["parse_mathematical_program.cc"],
+    hdrs = ["parse_mathematical_program.h"],
+    deps = [
+        ":binding",
+        ":cost",
     ],
 )
 
@@ -1676,6 +1687,15 @@ drake_cc_googletest(
     deps = [
         ":solve",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "parse_mathematical_program_test",
+    deps = [
+        ":parse_mathematical_program",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
