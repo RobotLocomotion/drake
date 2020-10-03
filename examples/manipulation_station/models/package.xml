@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<package>
+  <name>manipulation_station</name>
+  <version>1.0.0</version>
+  <description>
+    This package contains miscellaneous models authored by the drake developers for use in the manipulation station examples.
+  </description>
+  <author email="drake-users@mit.edu">Drake Users</author>
+  <maintainer email="drake-users@mit.edu">Drake Users</maintainer>
+  <license>BSD</license>
+</package>
