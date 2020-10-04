@@ -1238,7 +1238,7 @@ class TestPlant(unittest.TestCase):
         iiwa_sdf_path = FindResourceOrThrow(
             "drake/manipulation/models/"
             "iiwa_description/sdf/iiwa14_no_collision.sdf")
-        # Use floating base to effectively add a quatnerion in the generalized
+        # Use floating base to effectively add a quaternion in the generalized
         # quaternion.
         iiwa_model = Parser(plant=plant_f).AddModelFromFile(
             file_name=iiwa_sdf_path, model_name='robot')
@@ -1251,10 +1251,16 @@ class TestPlant(unittest.TestCase):
         q_init = np.linspace(start=1.0, stop=nq, num=nq)
         plant.SetPositions(context, q_init)
         # Overwrite the (invalid) base coordinates, wherever in `q` they are.
+        link0 = plant.GetBodyByName("iiwa_link_0")
         plant.SetFreeBodyPose(
-            context, plant.GetBodyByName("iiwa_link_0"),
+            context, link0,
             RigidTransform(RollPitchYaw([0.1, 0.2, 0.3]),
                            p=[0.4, 0.5, 0.6]))
+        numpy_compare.assert_float_allclose(
+            plant.GetFreeBodyPose(context, link0).translation(),
+            [0.4, 0.5, 0.6])
+        self.assertNotEqual(link0.floating_positions_start(), -1)
+        self.assertNotEqual(link0.floating_velocities_start(), -1)
         v_expected = np.linspace(start=-1.0, stop=-nv, num=nv)
         qdot = plant.MapVelocityToQDot(context, v_expected)
         v_remap = plant.MapQDotToVelocity(context, qdot)

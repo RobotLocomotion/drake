@@ -290,6 +290,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("context"), py::arg("with_respect_to"), py::arg("frame_A"),
             py::arg("frame_E"),
             cls_doc.CalcJacobianCenterOfMassTranslationalVelocity.doc)
+        .def("GetFreeBodyPose", &Class::GetFreeBodyPose, py::arg("context"),
+            py::arg("body"), cls_doc.GetFreeBodyPose.doc)
         .def("SetFreeBodyPose",
             overload_cast_explicit<void, Context<T>*, const Body<T>&,
                 const RigidTransform<T>&>(&Class::SetFreeBodyPose),
