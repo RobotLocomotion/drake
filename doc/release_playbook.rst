@@ -9,7 +9,7 @@ who regularly handle the release process.
 We publish a minor release approximately once per month in the middle of the
 calendar month, with version number is ``v0.N.0`` where ``N`` is monotonically
 increasing.
-   
+
 Minor releases
 ==============
 
@@ -47,8 +47,7 @@ Prior to release
 
    a. To help ensure that the "newly deprecated APIs" section is accurate, grep
       the code for ``YYYY-MM-01`` deprecation notations, for the ``MM`` values
-      that would have been associated with our +3 months typical period. (Or
-      alternatively, diff prior_tag..master and grep for DRAKE_DEPRECATED?)
+      that would have been associated with our +3 months typical period.
 
 Polishing the release notes
 ---------------------------
@@ -59,8 +58,9 @@ the main body of the document:
 * Many commit messages can be cut down to their summary strings and used as-is.
 * Expand all acronyms (eg, MBP -> MultibodyPlant, SG -> SceneGraph).
 * Commits can be omitted if they only affect tests or non-installed examples.
-* In general you should literally mention added or removed classes and methods
-  by name.
+  TODO(jwnimmer-tri) Explain how to check if something is installed.
+* In general you should mention removed classes and methods using their exact
+  name (for easier searching).
 
   * In the pydrake and deprecation sections in fact you can just put the
     fully-qualified name as the whole line item; the meaning is clear from
@@ -105,7 +105,8 @@ Cutting the release
       builds for that night and make sure they share the same git sha (``HEAD``
       from the moment they were launched).  Note it.
 
-      i. If the git sha for the two does not match, wait and try again tomorrow night.
+      i. If the git sha for all three does not match, wait and try again
+         tomorrow night.
 
    d. Check the logs for those packaging builds and find the URLs they posted
       to.  It will be ``YYYYMMDD`` with today's date (they kick off after
@@ -150,8 +151,8 @@ Cutting the release
       i. If you don't have "Build now" click "Log in" first in upper right.
 
 10. Open https://github.com/RobotLocomotion/drake/releases and choose "Draft a
-    new release".  Note that this page does not have history nor undo.  Be slow
-    and careful!
+    new release".  Note that this page does has neither history nor undo.  Be
+    slow and careful!
 
     a. Tag version is: v0.N.0
     b. Target is: [the git sha from above]
@@ -172,4 +173,4 @@ Cutting the release
     a. Check that the link to drake.mit.edu docs from the GitHub release draft
        page actually works.
     b. Click "Publish release"
-    c. Party on, wayne.
+    c. Party on, Wayne.
