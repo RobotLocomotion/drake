@@ -336,3 +336,4 @@ Version Control
 
     no_push_to_origin
     model_version_control
+    release_playbook
