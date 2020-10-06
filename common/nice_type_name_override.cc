@@ -14,7 +14,7 @@ NiceTypeNamePtrOverride& ptr_override() {
 }  // namespace
 
 void SetNiceTypeNamePtrOverride(NiceTypeNamePtrOverride new_ptr_override) {
-  DRAKE_DEMAND(!!new_ptr_override);
+  DRAKE_DEMAND(new_ptr_override);
   DRAKE_DEMAND(!ptr_override());
   ptr_override() = new_ptr_override;
 }

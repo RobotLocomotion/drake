@@ -84,7 +84,7 @@ LcmPublisherSystem::~LcmPublisherSystem() {}
 
 void LcmPublisherSystem::AddInitializationMessage(
     InitializationPublisher initialization_publisher) {
-  DRAKE_DEMAND(!!initialization_publisher);
+  DRAKE_DEMAND(initialization_publisher);
 
   initialization_publisher_ = std::move(initialization_publisher);
 

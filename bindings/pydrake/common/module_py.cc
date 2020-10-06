@@ -39,7 +39,7 @@ py::handle ResolvePyObject(const type_erased_ptr& ptr) {
 
 // Gets a class's fully-qualified name.
 std::string GetPyClassName(py::handle obj) {
-  DRAKE_DEMAND(!!obj);
+  DRAKE_DEMAND(obj);
   py::handle cls = obj.get_type();
   return py::str("{}.{}").format(
       cls.attr("__module__"), cls.attr("__qualname__"));
