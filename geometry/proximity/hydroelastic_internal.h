@@ -402,6 +402,11 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Mesh& mesh, const ProximityProperties& props);
 
+/* Rigid convex support. It doesn't depend on any of the proximity properties.
+ */
+std::optional<RigidGeometry> MakeRigidRepresentation(
+    const Convex& convex, const ProximityProperties& props);
+
 /* Rigid half space support.  */
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const HalfSpace& half_space, const ProximityProperties& props);

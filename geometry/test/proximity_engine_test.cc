@@ -175,7 +175,7 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
               HydroelasticType::kRigid);
   }
 
-  // Case: meshes.
+  // Case: rigid mesh.
   {
     Mesh mesh{
         drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj"),
@@ -186,7 +186,7 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
               HydroelasticType::kRigid);
   }
 
-  // Case: rigid convex (unsupported)
+  // Case: rigid convex.
   {
     Convex convex{
         drake::FindResourceOrThrow("drake/geometry/test/quad_cube.obj"),
@@ -194,7 +194,7 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
     const GeometryId convex_id = GeometryId::get_new_id();
     engine.AddDynamicGeometry(convex, {}, convex_id, rigid_properties);
     EXPECT_EQ(ProximityEngineTester::hydroelastic_type(convex_id, engine),
-              HydroelasticType::kUndefined);
+              HydroelasticType::kRigid);
   }
 }
 
