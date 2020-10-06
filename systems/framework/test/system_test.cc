@@ -412,11 +412,15 @@ TEST_F(SystemTest, PortNameTest) {
   EXPECT_EQ(&system_.GetInputPort("u0"), &unnamed_input);
   EXPECT_EQ(&system_.GetInputPort("my_input"), &named_input);
   EXPECT_EQ(&system_.GetInputPort("abstract"), &named_abstract_input);
+  EXPECT_EQ(system_.HasInputPort("u0"), true);
+  EXPECT_EQ(system_.HasInputPort("fake_name"), false);
 
   // Test output port names.
   const auto& output_port = system_.AddAbstractOutputPort();
   EXPECT_EQ(output_port.get_name(), "y0");
   EXPECT_EQ(&system_.GetOutputPort("y0"), &output_port);
+  EXPECT_EQ(system_.HasOutputPort("y0"), true);
+  EXPECT_EQ(system_.HasOutputPort("fake_name"), false);
 
   // Requesting a non-existing port name should throw.
   DRAKE_EXPECT_THROWS_MESSAGE(
