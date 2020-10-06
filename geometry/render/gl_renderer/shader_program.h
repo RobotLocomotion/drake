@@ -48,12 +48,14 @@ namespace internal {
  shader code and any idiosyncratic details. To be compatible with *this*
  shader abstraction, a shader must meet some minimum requirements:
 
-   - It must specify a uniform mat4 called "model_view_matrix" - this transforms
-     vertices from the geometry's canonical frame G to the OpenGl camera frame
-     C.
-   - It must specify a uniform mat4 called "projection_matrix" - this transforms
-     vertices from the geometry's canonical frame G to the OpenGl device frame
-     D.  */
+   - It must specify a uniform mat4 called "T_CM" - this transforms
+     vertices from the geometry's canonical frame M to the OpenGl camera frame
+     C. This transform may include scale factors (meaning it is not necessarily
+     a RigidTransform).
+   - It must specify a uniform mat4 called "T_DC" - this transforms
+     vertices from the camera's frame C to the OpenGl normalized device frame
+     D. This is a projective transform, taking points in ℜ³ and mapping them
+     to ℜ². */
 class ShaderProgram {
  public:
   ShaderProgram() : id_(ShaderId::get_new_id()) {}
@@ -120,7 +122,7 @@ class ShaderProgram {
   /* Sets the OpenGl projection matrix state. The projection matrix transforms a
    vertex from the camera frame C to the OpenGl 2D device frame D -- it
    projects a point in 3D to a point on the image.  */
-  void SetProjectionMatrix(const Eigen::Matrix4f& X_DC) const;
+  void SetProjectionMatrix(const Eigen::Matrix4f& T_DC) const;
 
   /* Sets the OpenGl model view matrix (and allows the shader to do any other
    (instance, camera)-dependent configuration). The model view matrix X_CM

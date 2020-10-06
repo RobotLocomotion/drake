@@ -18,6 +18,7 @@
 #include "drake/geometry/render/gl_renderer/render_engine_gl_params.h"
 #include "drake/geometry/render/gl_renderer/shader_program.h"
 #include "drake/geometry/render/gl_renderer/shape_meshes.h"
+#include "drake/geometry/render/gl_renderer/texture_library.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/systems/sensors/image.h"
@@ -92,6 +93,13 @@ class RenderEngineGl final : public RenderEngine {
  private:
   friend class RenderEngineGlTester;
 
+  // Mangles the mesh data before adding it to the engine to support the
+  // legacy behavior of mapping mesh.obj -> mesh.png, applying it as a diffuse
+  // texture, if found. When we eliminate that behavior, we can eliminate this
+  // method.
+  void ImplementMesh(const internal::OpenGlGeometry& geometry, void* user_data,
+                     const Vector3<double>& scale,
+                     const std::string& file_name);
 
   // @see RenderEngine::DoRegisterVisual().
   bool DoRegisterVisual(GeometryId id, const Shape& shape,
@@ -150,7 +158,7 @@ class RenderEngineGl final : public RenderEngine {
 
   // Computes the projection matrix based on the given camera. This is the
   // matrix that projects a point from the camera frame C to the 2D image device
-  // frame D.
+  // frame D: T_DC.
   Eigen::Matrix4f ComputeGlProjectionMatrix(const CameraProperties& camera,
                                             double clip_near,
                                             double clip_far) const;
@@ -205,11 +213,14 @@ class RenderEngineGl final : public RenderEngine {
   //
   //   OpenGlGeometry - the geometry buffers (copy safe)
   //   RenderTarget - frame buffer objects (copy safe)
+  //   TextureLibrary - the textures (shared)
   //   ShaderProgram - the compiled shader programs (copy safe)
   //
   // So, all of these quantities are simple copy-safe POD (e.g., OpenGlGeometry)
   // or are stashed in a shared pointer.
   std::shared_ptr<internal::OpenGlContext> opengl_context_;
+
+  std::shared_ptr<internal::TextureLibrary> texture_library_;
 
   // The engine's configuration parameters.
   RenderEngineGlParams parameters_;
