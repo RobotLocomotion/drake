@@ -311,7 +311,8 @@ Quantity             |Symbol|     Typeset              | Monogram   | Meaning â€
 ---------------------|:----:|:------------------------:|:----------:|----------------------------
 Rotation matrix      |  R   |@f$^BR^C@f$               |`R_BC`      |Frame C's orientation in frame B
 Position vector      |  p   |@f$^Pp^Q@f$               |`p_PQ`      |Position from point P to point Q
-Transform/pose       |  X   |@f$^BX^C@f$               |`X_BC`      |Frame C's transform (pose) in frame B
+Transform/pose       |  X   |@f$^BX^C@f$               |`X_BC`      |Frame C's *rigid* transform (pose) in frame B
+General Transform    |  T   |@f$^BT^C@f$               |`T_BC`      |The relationship between two spaces -- it may be affine, projective, isometric, etc. Every X_AB can be written as T_AB, but not every T_AB can be written as X_AB.
 Angular velocity     |  w   |@f$^B\omega^C@f$          |`w_BC`      |Frame C's angular velocity in frame B â€ 
 Velocity             |  v   |@f$^Bv^Q@f$               |`v_BQ`      |%Point Q's translational velocity in frame B
 Spatial velocity     |  V   |@f$^BV^{C}@f$             |`V_BC`      |Frame C's spatial velocity in frame B
