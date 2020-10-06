@@ -1,5 +1,6 @@
 #include "drake/common/drake_assert.h"
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -36,10 +37,15 @@ GTEST_TEST(DrakeAssertDeathTest, DemandTest) {
 }
 
 struct BoolConvertible { operator bool() const { return true; } };
+struct BoolExplicitConvertible {
+  explicit operator bool() const { return true; }
+};
 GTEST_TEST(DrakeAssertDeathTest, AssertSyntaxTest) {
   // These should compile.
   DRAKE_ASSERT((2 + 2) == 4);
   DRAKE_ASSERT(BoolConvertible());
+  DRAKE_ASSERT(BoolExplicitConvertible());
+  DRAKE_ASSERT(std::optional<int>{3});
 }
 
 GTEST_TEST(DrakeAssertDeathTest, AssertFalseTest) {

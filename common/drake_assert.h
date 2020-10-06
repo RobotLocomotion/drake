@@ -98,9 +98,10 @@ namespace assert {
 // require special handling.
 template <typename Condition>
 struct ConditionTraits {
-  static constexpr bool is_valid = std::is_convertible<Condition, bool>::value;
+  static constexpr bool is_valid =
+      std::is_constructible<bool, Condition>::value;
   static bool Evaluate(const Condition& value) {
-    return value;
+    return static_cast<bool>(value);
   }
 };
 }  // namespace assert
