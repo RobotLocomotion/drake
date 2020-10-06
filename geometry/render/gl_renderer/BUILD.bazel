@@ -40,6 +40,7 @@ drake_cc_package_library_gl_per_os(
         ":opengl_geometry",
         ":render_engine_gl",
         ":render_engine_gl_factory",
+        ":render_engine_gl_params",
         ":shader_program",
         ":shader_program_data",
         ":shape_meshes",
@@ -94,6 +95,7 @@ drake_cc_library_gl_ubuntu_only(
     deps = [
         ":opengl_context",
         ":opengl_geometry",
+        ":render_engine_gl_params",
         ":shader_program",
         ":shader_program_data",
         ":shape_meshes",
@@ -119,12 +121,21 @@ drake_cc_library(
     ],
     deps = select({
         "//tools/cc_toolchain:apple": [
+            ":render_engine_gl_params",
             "//geometry/render:render_engine",
         ],
         "//conditions:default": [
             ":render_engine_gl",
         ],
     }),
+)
+
+drake_cc_library(
+    name = "render_engine_gl_params",
+    hdrs = ["render_engine_gl_params.h"],
+    deps = [
+        "//geometry:rgba",
+    ],
 )
 
 drake_cc_library_gl_ubuntu_only(
@@ -204,6 +215,7 @@ drake_cc_googletest_gl_ubuntu_only(
     deps = [
         ":render_engine_gl",
         "//common:find_resource",
+        "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "//geometry/render:render_label",
         "//systems/sensors:color_palette",
