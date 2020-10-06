@@ -634,6 +634,17 @@ const InputPort<T>& System<T>::GetInputPort(
 }
 
 template <typename T>
+bool System<T>::HasInputPort(
+    const std::string& port_name) const {
+  for (InputPortIndex i{0}; i < num_input_ports(); i++) {
+    if (port_name == get_input_port_base(i).get_name()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+template <typename T>
 const OutputPort<T>* System<T>::get_output_port_selection(
     std::variant<OutputPortSelection, OutputPortIndex> port_index) const {
   if (std::holds_alternative<OutputPortIndex>(port_index)) {
@@ -662,6 +673,17 @@ const OutputPort<T>& System<T>::GetOutputPort(
   throw std::logic_error("System " + GetSystemName() +
                          " does not have an output port named " +
                          port_name);
+}
+
+template <typename T>
+bool System<T>::HasOutputPort(
+    const std::string& port_name) const {
+  for (OutputPortIndex i{0}; i < num_output_ports(); i++) {
+    if (port_name == get_output_port_base(i).get_name()) {
+      return true;
+    }
+  }
+  return false;
 }
 
 template <typename T>
