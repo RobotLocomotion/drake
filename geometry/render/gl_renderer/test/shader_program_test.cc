@@ -87,12 +87,12 @@ class TestShader final : public ShaderProgram {
 
 constexpr char kVertexSource[] = R"""(
   #version 330
-  uniform mat4 model_view_matrix;
-  uniform mat4 projection_matrix;
+  uniform mat4 T_CM;
+  uniform mat4 T_DC;
   out vec4 p_CV;
   void main() {
-    gl_Position = projection_matrix * vec4(0.0, 0.0, 0.0, 1.0);
-    p_CV = model_view_matrix * vec4(0.0, 0.0, 0.0, 1.0);
+    gl_Position = T_DC * vec4(0.0, 0.0, 0.0, 1.0);
+    p_CV = T_CM * vec4(0.0, 0.0, 0.0, 1.0);
   }
 )""";
 
@@ -249,16 +249,16 @@ TEST_F(ShaderProgramTest, LoadShadersError) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         program.LoadFromSources(R"""(
   #version 330
-  uniform mat4 model_view_matrix;
-  uniform mat4 projection_matrix;
+  uniform mat4 T_CM;
+  uniform mat4 T_DC;
   out vec4 p_CV;
   void main() {
     gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
-    p_CV = model_view_matrix * vec4(0.0, 0.0, 0.0, 1.0);
+    p_CV = T_CM * vec4(0.0, 0.0, 0.0, 1.0);
   }
 )""",
                                 kFragmentSource),
-        std::runtime_error, "Cannot get shader uniform 'projection_matrix'");
+        std::runtime_error, "Cannot get shader uniform 'T_DC'");
   }
 
   {
@@ -267,16 +267,16 @@ TEST_F(ShaderProgramTest, LoadShadersError) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         program.LoadFromSources(R"""(
   #version 330
-  uniform mat4 model_view_matrix;
-  uniform mat4 projection_matrix;
+  uniform mat4 T_CM;
+  uniform mat4 T_DC;
   out vec4 p_CV;
   void main() {
-    gl_Position = projection_matrix * vec4(0.0, 0.0, 0.0, 1.0);
+    gl_Position = T_DC * vec4(0.0, 0.0, 0.0, 1.0);
     p_CV = vec4(0.0, 0.0, 0.0, 1.0);
   }
 )""",
                                 kFragmentSource),
-        std::runtime_error, "Cannot get shader uniform 'model_view_matrix'");
+        std::runtime_error, "Cannot get shader uniform 'T_CM'");
   }
 }
 
