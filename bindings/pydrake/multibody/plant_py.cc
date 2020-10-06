@@ -266,6 +266,25 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::CalcCenterOfMassPosition),
             py::arg("context"), cls_doc.CalcCenterOfMassPosition.doc_1args)
         .def(
+            "CalcSpatialMomentumInWorldAboutPoint",
+            [](const Class* self, const Context<T>& context,
+                const Vector3<T>& p_WoP_W) {
+              return self->CalcSpatialMomentumInWorldAboutPoint(
+                  context, p_WoP_W);
+            },
+            py::arg("context"), py::arg("p_WoP_W"),
+            cls_doc.CalcSpatialMomentumInWorldAboutPoint.doc_2args)
+        .def(
+            "CalcSpatialMomentumInWorldAboutPoint",
+            [](const Class* self, const Context<T>& context,
+                const std::vector<ModelInstanceIndex>& model_instances,
+                const Vector3<T>& p_WoP_W) {
+              return self->CalcSpatialMomentumInWorldAboutPoint(
+                  context, model_instances, p_WoP_W);
+            },
+            py::arg("context"), py::arg("model_instances"), py::arg("p_WoP_W"),
+            cls_doc.CalcSpatialMomentumInWorldAboutPoint.doc_3args)
+        .def(
             "CalcBiasCenterOfMassTranslationalAcceleration",
             [](const Class* self, const Context<T>& context,
                 JacobianWrtVariable with_respect_to, const Frame<T>& frame_A,
