@@ -430,10 +430,6 @@ TEST_F(HydroelasticRigidGeometryTest, UnsupportedRigidShapes) {
   ProximityProperties props = rigid_properties();
 
   EXPECT_EQ(MakeRigidRepresentation(Capsule(1, 1), props), std::nullopt);
-
-  // Note: the file name doesn't have to be valid for this (and the Mesh) test.
-  const std::string obj = "drake/geometry/proximity/test/no_such_files.obj";
-  EXPECT_EQ(MakeRigidRepresentation(Convex(obj, 1.0), props), std::nullopt);
 }
 
 // Confirm support for a rigid half space. Tests that a hydroelastic
@@ -584,6 +580,28 @@ TEST_F(HydroelasticRigidGeometryTest, Mesh) {
   const SurfaceMesh<double>& surface_mesh = mesh_rigid_geometry->mesh();
   EXPECT_EQ(surface_mesh.num_vertices(), 5);
   EXPECT_EQ(surface_mesh.num_faces(), 6);
+}
+
+// Confirm support for a rigid Convex. Tests that a hydroelastic representation
+// is made.
+TEST_F(HydroelasticRigidGeometryTest, Convex) {
+  std::string file =
+    FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+  const double scale = 1.1;
+  // Empty props since its contents do not matter.
+  ProximityProperties props;
+
+  std::optional<RigidGeometry> convex_rigid_geometry =
+      MakeRigidRepresentation(Convex(file, scale), props);
+  ASSERT_NE(convex_rigid_geometry, std::nullopt);
+  ASSERT_FALSE(convex_rigid_geometry->is_half_space());
+
+  // We only check that the obj file was read by verifying the number of
+  // vertices and triangles, which depend on the specific content of
+  // the obj file.
+  const SurfaceMesh<double>& surface_mesh = convex_rigid_geometry->mesh();
+  EXPECT_EQ(surface_mesh.num_vertices(), 8);
+  EXPECT_EQ(surface_mesh.num_faces(), 12);
 }
 
 // Template magic to instantiate a particular kind of shape at compile time.

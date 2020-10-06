@@ -238,6 +238,15 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
   return RigidGeometry(RigidMesh(move(mesh)));
 }
 
+std::optional<RigidGeometry> MakeRigidRepresentation(
+    const Convex& convex_spec, const ProximityProperties&) {
+  // Convex does not use any properties.
+  auto mesh = make_unique<SurfaceMesh<double>>(
+      ReadObjToSurfaceMesh(convex_spec.filename(), convex_spec.scale()));
+
+  return RigidGeometry(RigidMesh(move(mesh)));
+}
+
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Sphere& sphere, const ProximityProperties& props) {
   PositiveDouble validator("Sphere", "soft");
