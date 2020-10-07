@@ -349,13 +349,6 @@ class TestInverseKinematics(unittest.TestCase):
         self.assertTrue(result.is_success())
         self.assertTrue(np.allclose(result.GetSolution(ik.q()), q_val))
 
-    def test_AddUnitQuaternionConstraintOnPlant(self):
-        prog = mp.MathematicalProgram()
-        q = prog.NewContinuousVariables(self.plant.num_positions())
-        ik.AddUnitQuaternionConstraintOnPlant(self.plant, q, prog)
-        plant_ad = self.plant.ToAutoDiffXd()
-        ik.AddUnitQuaternionConstraintOnPlant(plant_ad, q, prog)
-
 
 class TestConstraints(unittest.TestCase):
     """
@@ -492,9 +485,4 @@ class TestConstraints(unittest.TestCase):
             plant=variables.plant, geometry_pair=(frame_id1, frame_id2),
             distance_lower=0.1, distance_upper=0.2,
             plant_context=variables.plant_context)
-        self.assertIsInstance(constraint, mp.Constraint)
-
-    @check_type_variables
-    def test_unit_quaternion_constraint(self, variables):
-        constraint = ik.UnitQuaternionConstraint()
         self.assertIsInstance(constraint, mp.Constraint)

@@ -13,7 +13,6 @@
 #include "drake/multibody/inverse_kinematics/orientation_constraint.h"
 #include "drake/multibody/inverse_kinematics/point_to_point_distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/position_constraint.h"
-#include "drake/multibody/inverse_kinematics/unit_quaternion_constraint.h"
 
 namespace drake {
 namespace pydrake {
@@ -375,23 +374,6 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
             py::keep_alive<1, 8>(), ctor_doc_ad);
-  }
-  {
-    using Class = UnitQuaternionConstraint;
-    constexpr auto& cls_doc = doc.UnitQuaternionConstraint;
-    using Ptr = std::shared_ptr<Class>;
-    py::class_<Class, Constraint, Ptr>(
-        m, "UnitQuaternionConstraint", cls_doc.doc)
-        .def(py::init([]() { return std::make_unique<Class>(); }),
-            cls_doc.ctor.doc);
-    m.def("AddUnitQuaternionConstraintOnPlant",
-        &AddUnitQuaternionConstraintOnPlant<double>, py::arg("plant"),
-        py::arg("q_vars"), py::arg("prog"),
-        doc.AddUnitQuaternionConstraintOnPlant.doc);
-    m.def("AddUnitQuaternionConstraintOnPlant",
-        &AddUnitQuaternionConstraintOnPlant<AutoDiffXd>, py::arg("plant"),
-        py::arg("q_vars"), py::arg("prog"),
-        doc.AddUnitQuaternionConstraintOnPlant.doc);
   }
 }
 
