@@ -430,10 +430,6 @@ TEST_F(HydroelasticRigidGeometryTest, UnsupportedRigidShapes) {
   ProximityProperties props = rigid_properties();
 
   EXPECT_EQ(MakeRigidRepresentation(Capsule(1, 1), props), std::nullopt);
-
-  // Note: the file name doesn't have to be valid for this (and the Mesh) test.
-  const std::string obj = "drake/geometry/proximity/test/no_such_files.obj";
-  EXPECT_EQ(MakeRigidRepresentation(Convex(obj, 1.0), props), std::nullopt);
 }
 
 // Confirm support for a rigid half space. Tests that a hydroelastic
@@ -494,9 +490,9 @@ TEST_F(HydroelasticRigidGeometryTest, Box) {
   EXPECT_EQ(mesh.num_vertices(), 8);
   // Because it is a cube centered at the origin, the distance from the origin
   // to each vertex should be sqrt(3) * edge_len / 2.
-  const double expecte_dist = std::sqrt(3) * edge_len / 2;
+  const double expected_dist = std::sqrt(3) * edge_len / 2;
   for (SurfaceVertexIndex v(0); v < mesh.num_vertices(); ++v) {
-    ASSERT_NEAR(mesh.vertex(v).r_MV().norm(), expecte_dist, 1e-15);
+    ASSERT_NEAR(mesh.vertex(v).r_MV().norm(), expected_dist, 1e-15);
   }
 }
 
@@ -564,26 +560,55 @@ TEST_F(HydroelasticRigidGeometryTest, Ellipsoid) {
   }
 }
 
-// Confirm support for a rigid Mesh. Tests that a hydroelastic representation
-// is made.
-TEST_F(HydroelasticRigidGeometryTest, Mesh) {
-  std::string file =
-    FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj");
-  const double scale = 1.1;
+// Confirm that a mesh type (convex/mesh) has a rigid representation. We rely
+// on the fact that we're loading a unit cube (vertices one unit away from the
+// origin along each axis) to confirm that the correct mesh got loaded. We also
+// confirm that the scale factor is included in the rigid representation.
+template <typename MeshType>
+void TestRigidMeshType() {
+  std::string file = FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
   // Empty props since its contents do not matter.
   ProximityProperties props;
 
-  std::optional<RigidGeometry> mesh_rigid_geometry =
-      MakeRigidRepresentation(Mesh(file, scale), props);
-  ASSERT_NE(mesh_rigid_geometry, std::nullopt);
-  ASSERT_FALSE(mesh_rigid_geometry->is_half_space());
+  constexpr double kEps = 2 * std::numeric_limits<double>::epsilon();
 
-  // We only check that the obj file was read by verifying the number of
-  // vertices and triangles, which depend on the specific content of
-  // the obj file.
-  const SurfaceMesh<double>& surface_mesh = mesh_rigid_geometry->mesh();
-  EXPECT_EQ(surface_mesh.num_vertices(), 5);
-  EXPECT_EQ(surface_mesh.num_faces(), 6);
+  for (const double scale : {1.0, 5.1, 0.4}) {
+    std::optional<RigidGeometry> geometry =
+        MakeRigidRepresentation(MeshType(file, scale), props);
+    ASSERT_NE(geometry, std::nullopt);
+    ASSERT_FALSE(geometry->is_half_space());
+
+    // We only check that the obj file was read by verifying the number of
+    // vertices and triangles, which depend on the specific content of
+    // the obj file.
+    const SurfaceMesh<double>& surface_mesh = geometry->mesh();
+    EXPECT_EQ(surface_mesh.num_vertices(), 8);
+    EXPECT_EQ(surface_mesh.num_faces(), 12);
+
+    // The scale factor multiplies the measure of every vertex position, so
+    // the expected distance of the vertex to the origin should be:
+    // scale * sqrt(3) (because the original mesh was the unit sphere).
+    const double expected_dist = std::sqrt(3) * scale;
+    for (SurfaceVertexIndex v(0); v < surface_mesh.num_vertices(); ++v) {
+      const double dist = surface_mesh.vertex(v).r_MV().norm();
+      ASSERT_NEAR(dist, expected_dist, scale * kEps)
+          << "for scale: " << scale << " at vertex " << v;
+    }
+  }
+}
+
+// Confirm support for a rigid Mesh. Tests that a hydroelastic representation
+// is made.
+TEST_F(HydroelasticRigidGeometryTest, Mesh) {
+  SCOPED_TRACE("Rigid Mesh");
+  TestRigidMeshType<Mesh>();
+}
+
+// Confirm support for a rigid Convex. Tests that a hydroelastic representation
+// is made.
+TEST_F(HydroelasticRigidGeometryTest, Convex) {
+  SCOPED_TRACE("Rigid Convex");
+  TestRigidMeshType<Convex>();
 }
 
 // Template magic to instantiate a particular kind of shape at compile time.
