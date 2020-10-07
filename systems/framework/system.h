@@ -953,6 +953,10 @@ class System : public SystemBase {
   @throws std::logic_error if port_name is not found. */
   const InputPort<T>& GetInputPort(const std::string& port_name) const;
 
+  /** Returns true iff the system has an InputPort of the given @p
+   port_name. */
+  bool HasInputPort(const std::string& port_name) const;
+
   // TODO(sherm1) Make this an OutputPortIndex.
   /** Returns the typed output port at index @p port_index. */
   const OutputPort<T>& get_output_port(int port_index) const {
@@ -983,6 +987,11 @@ class System : public SystemBase {
   get_output_port() when performance is a concern.
   @throws std::logic_error if port_name is not found. */
   const OutputPort<T>& GetOutputPort(const std::string& port_name) const;
+
+  /** Returns true iff the system has an OutputPort of the given @p
+   port_name. */
+  bool HasOutputPort(const std::string& port_name) const;
+
 
   /** Returns the number of constraints specified for the system. */
   int num_constraints() const;
