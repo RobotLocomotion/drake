@@ -40,6 +40,8 @@ namespace {
 
 using math::RigidTransformd;
 using math::RollPitchYawd;
+using multibody::JointActuator;
+using multibody::JointActuatorIndex;
 using multibody::MultibodyPlant;
 
 DEFINE_double(simulation_time, std::numeric_limits<double>::infinity(),
@@ -49,10 +51,29 @@ DEFINE_bool(use_right_hand, true,
 DEFINE_bool(add_gravity, false,
             "Whether adding gravity (9.81 m/s^2) in the simulation");
 DEFINE_double(
-    mbp_discrete_update_period, 1.5e-4,
+    mbp_discrete_update_period, 1.0e-2,
     "The fixed-time step period (in seconds) of discrete updates for the "
     "multibody plant modeled as a discrete system. Strictly positive. "
     "Set to zero for a continuous plant model.");
+DEFINE_bool(with_reflected_inertia, true,
+            "If true, it models the effect of reflected inertia at the very "
+            "high gear ratio actuators of each finger.");
+DEFINE_double(
+    pid_frequency, 10.0,
+    "This frequency determines the time scale of the PID controller.");
+
+// Modeling the Allegro hand with and without reflected inertia.
+// The default command line parameters are set to model an Allegro hand that
+// includes the effect of reflected inertia due to the high gear ratio of the
+// actuators.
+// In these notes we provide recommended values of the parameters for when
+// reflected inertia is not modeled. Notice in particular that we need to reduce
+// the time step significantly.
+//
+// When reflected inertia is not modeled we recommend:
+//   with_reflected_inertia = false.
+//   mbp_discrete_update_period = 1.5e-4 sec.
+//   pid_frequency = 30 Hz.
 
 void DoMain() {
   DRAKE_DEMAND(FLAGS_simulation_time > 0);
@@ -91,13 +112,12 @@ void DoMain() {
                                        std::nullopt,
                                        RigidTransformd::Identity());
 
-  // Model gear ratio and rotor inertia at each finger.
-  // In order to model the effect of reflected inertia, we need to have the gear
-  // ratio and rotor inertia of the actuators. 
-  // We know from the Allegro hand's specs that the gear ratio is ρ = 369.
-  // We do not know the exact motor used in the actuator. However we only need
-  // an approximate estimate of the rotor inertia. 
-  // What we know from the Allegro hand's specs:
+  // Model gear ratio and rotor inertia at each finger. In order to model the
+  // effect of reflected inertia, we need to have the gear ratio and rotor
+  // inertia of the actuators. We know from the Allegro hand's specs that the
+  // gear ratio is ρ = 369. We do not know the exact motor used in the actuator.
+  // However we only need an approximate estimate of the rotor inertia. What we
+  // know from the Allegro hand's specs:
   // 1. High gear ratio of ρ = 369.
   // 2. maximum actuator torque: 0.7 Nm, i.e. 0.7/369 = 1.9 mN⋅m at the motor.
   //    That is, the stall torque of the motor is in the order of 1.9 mN⋅m.
@@ -128,10 +148,20 @@ void DoMain() {
   // 3000 times smaller than the reflected inertia!.
   // That is, the effective inertia of the joint is 0.14 kg⋅m².
   // We the estimate the time it'd take to move the joint a full revolution from
-  // zero velocity when applying the maximum torque of 0.7 Nm. 
+  // zero velocity when applying the maximum torque of 0.7 Nm.
   // We obtain t = sqrt(2θ/ẇ) = 1.6 secs, which seems consistent with
   // experience.
-  const double Irefl = 0.14;  // In kg⋅m².
+  const double Irefl = FLAGS_with_reflected_inertia ? 0.14 : 0.0;
+  // We expect all fingers to be actuated.
+  DRAKE_DEMAND(plant.num_actuators() == 16);
+  // N.B. This change MUST be performed before Finalize() in order to take
+  // effect.
+  for (JointActuatorIndex actuator_index(0);
+       actuator_index < plant.num_actuators(); ++actuator_index) {
+    JointActuator<double>& actuator =
+        plant.get_mutable_joint_actuator(actuator_index);
+    actuator.set_reflected_inertia(Irefl);
+  }
 
   if (!FLAGS_add_gravity) {
     plant.mutable_gravity_field().set_gravity_vector(
@@ -153,11 +183,21 @@ void DoMain() {
   // Publish contact results for visualization.
   multibody::ConnectContactResultsToDrakeVisualizer(&builder, plant, lcm);
 
+  // Estimate rotational inertia for an average finger of mass 0.17/3 kg (0.17
+  // is the mass of one finger) and length 5 cm. We estimate it using the
+  // rotational inertia for a rod about its end, i.e. I = 1/3⋅m⋅ℓ².
+  const double mass_finger = 0.17 / 3.0;
+  const double length_finger = 0.05;
+  const double Ifinger = mass_finger / 3.0 * length_finger * length_finger;
+
+  // Approximate effective finger inertia.
+  const double Ieff = Ifinger + Irefl;
+
   // PID controller for position control of the finger joints
   VectorX<double> kp, kd, ki;
   MatrixX<double> Sx, Sy;
   GetControlPortMapping(plant, &Sx, &Sy);
-  SetPositionControlledGains(&kp, &ki, &kd);
+  SetPositionControlledGains(FLAGS_pid_frequency, Ieff, &kp, &ki, &kd);
   auto& hand_controller = *builder.AddSystem<
       systems::controllers::PidController>(Sx, Sy, kp, ki, kd);
   builder.Connect(plant.get_state_output_port(),
