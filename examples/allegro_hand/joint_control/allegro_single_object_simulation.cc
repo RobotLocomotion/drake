@@ -91,6 +91,48 @@ void DoMain() {
                                        std::nullopt,
                                        RigidTransformd::Identity());
 
+  // Model gear ratio and rotor inertia at each finger.
+  // In order to model the effect of reflected inertia, we need to have the gear
+  // ratio and rotor inertia of the actuators. 
+  // We know from the Allegro hand's specs that the gear ratio is ρ = 369.
+  // We do not know the exact motor used in the actuator. However we only need
+  // an approximate estimate of the rotor inertia. 
+  // What we know from the Allegro hand's specs:
+  // 1. High gear ratio of ρ = 369.
+  // 2. maximum actuator torque: 0.7 Nm, i.e. 0.7/369 = 1.9 mN⋅m at the motor.
+  //    That is, the stall torque of the motor is in the order of 1.9 mN⋅m.
+  // 3. From drawings, we see the finger has a cross section of about 20 mm
+  //    wide. Therefore the diameter of the motor should be Ø ≲ 20 mm.
+  // 4. The hand's power requirement is 7.5 V and at 5 A (minimum). Therefore at
+  //    a minimum it runs at 37 Watts. For 16 actuators, we estimate motors of
+  //    about 2 Watts.
+  // 5. Max. joint speed of 0.11 sec/60° or 91 RPM. Thus the motor speed is
+  //    about 33500 RPM.
+  //
+  // We looked at brushed DC motors from Maxon at
+  // https://www.maxongroup.com/maxon/view/product/
+  // For motors in the range 14-16 mm in diameter, 2.5 W, we find that RPM and
+  // stall torque are in the right order of magnitude.
+  // We also find that most of them have a rotor inertia of about 1 g⋅cm².
+  //
+  // This information then lead us to the following actuator parameters:
+  //   - Gear ratio ρ = 369.
+  //   - Rotor inertia Iᵣ = 1×10⁻⁶ kg⋅m².
+  //
+  // This allow us to esimate the reflected inertia as:
+  //   - Irefl = ρ²⋅Iᵣ = 0.14 kg⋅m².
+  //
+  // As a reference, the mass of a finger is 0.17 kg. Each finger has phalanges
+  // of about 5 cm length. Therefore we estimate their rotational inertia as
+  // that for a rod about its end (1/3⋅m⋅ℓ²) at about 4.7×10⁻⁵ kg⋅m². That's
+  // 3000 times smaller than the reflected inertia!.
+  // That is, the effective inertia of the joint is 0.14 kg⋅m².
+  // We the estimate the time it'd take to move the joint a full revolution from
+  // zero velocity when applying the maximum torque of 0.7 Nm. 
+  // We obtain t = sqrt(2θ/ẇ) = 1.6 secs, which seems consistent with
+  // experience.
+  const double Irefl = 0.14;  // In kg⋅m².
+
   if (!FLAGS_add_gravity) {
     plant.mutable_gravity_field().set_gravity_vector(
         Eigen::Vector3d::Zero());
