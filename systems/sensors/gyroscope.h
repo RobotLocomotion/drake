@@ -1,5 +1,5 @@
 #pragma once
-// TODO(Posa): Rename header to gyroscope.h to match the class name.
+
 #include <memory>
 #include <vector>
 

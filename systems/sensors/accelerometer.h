@@ -1,5 +1,5 @@
 #pragma once
-// TODO(Posa): Rename header to accelerometer.h to match the class name.
+
 #include <memory>
 #include <vector>
 
