@@ -104,6 +104,23 @@ task-and-motion-planning framework.
 *Source Code:* https://github.com/caelan/pddlstream#drake
 
 
+Modelling Closed Loop Topologies
+================================
+
+Drake has examples of combining its rigid body kinematic tree dynamics with
+penalty forces to model a closed loop topology, such as a four bar linkage.
+
+.. raw :: html
+
+  <div>
+  <iframe width="539" height="480" src="https://www.youtube.com/embed/X34hCwJ_iq8" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+  <iframe width="539" height="480" src="https://www.youtube.com/embed/MGdETFQVqMg" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+  </div>
+
+*Four Bar Source Code:* https://github.com/RobotLocomotion/drake/tree/master/examples/multibody/four_bar
+
+*Strandbeest Source Code:* https://github.com/RobotLocomotion/drake/tree/master/examples/multibody/strandbeest
+
 Third Party Documentation / Tutorials
 =====================================
 
