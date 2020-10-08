@@ -21,6 +21,7 @@ drake_cc_package_library(
     name = "solvers",
     visibility = ["//visibility:public"],
     deps = [
+        ":aggregate_costs_constraints",
         ":bilinear_product_util",
         ":binding",
         ":branch_and_bound",
@@ -363,6 +364,16 @@ drake_cc_library(
         ":solver_id",
         ":solver_options",
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "aggregate_costs_constraints",
+    srcs = ["aggregate_costs_constraints.cc"],
+    hdrs = ["aggregate_costs_constraints.h"],
+    deps = [
+        ":binding",
+        ":cost",
     ],
 )
 
@@ -1676,6 +1687,15 @@ drake_cc_googletest(
     deps = [
         ":solve",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "aggregate_costs_constraints_test",
+    deps = [
+        ":aggregate_costs_constraints",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
