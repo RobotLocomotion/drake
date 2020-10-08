@@ -48,8 +48,8 @@ TEST_F(TwoFreeBodiesConstraintTest, AddUnitQuaternionConstraintOnPlant) {
   auto q = prog.NewContinuousVariables(plant_->num_positions());
   AddUnitQuaternionConstraintOnPlant(*plant_, q, &prog);
   EXPECT_EQ(prog.generic_constraints().size(), 2);
-  Eigen::VectorXd q_val(14);
-  q_val.head<4>() << 0.5, -0.5, 0.5, -1.5;
+  Eigen::VectorXd q_val = Eigen::VectorXd::Zero(14);
+  q_val.head<4>() << 0.5, -0.5, 0.5, -1.;
   q_val.segment<4>(7) << 1.0 / 3, 2.0 / 3, 2.0 / 3, 0.5;
   EXPECT_EQ(prog.generic_constraints()[0].variables().rows(), 4);
   EXPECT_EQ(prog.generic_constraints()[1].variables().rows(), 4);
