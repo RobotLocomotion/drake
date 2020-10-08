@@ -18,8 +18,8 @@ def _impl(repo_ctx):
     )
 
     if os_result.is_macos:
-        # On macOS, just symlink Doxygen from Homebrew.
-        repo_ctx.symlink("/usr/local/bin/doxygen", "doxygen")
+        # On macOS, just symlink Doxygen from our Homebrew tap.
+        repo_ctx.symlink("/usr/local/bin/doxygen-1.8.15", "doxygen")
     elif os_result.is_ubuntu:
         # On Ubuntu, download and extract Drake's pre-compiled Doxygen binary.
         archive = "doxygen-1.8.15-{codename}-x86_64.tar.gz".format(

@@ -6,5 +6,5 @@ tap 'robotlocomotion/director'
 
 cask 'font-dejavu' unless File.exist? '/Library/Fonts/DejaVuSans.ttf'
 
-brew 'doxygen'
+brew 'robotlocomotion/director/doxygen@1.8.15'
 brew 'robotlocomotion/director/sphinx-doc@1.8'
