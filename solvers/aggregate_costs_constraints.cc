@@ -4,66 +4,151 @@
 
 namespace drake {
 namespace solvers {
-namespace internal {
-void AggregateQuadraticCosts(
+namespace {
+// A helper class to add variable to an ordered vector while aggregating
+// costs/constraints.
+class VariableVector {
+ public:
+  VariableVector() {}
+
+  // Get the index of a variable if it is in the vector already, otherwise add
+  // it to the vector. Returns the index of this variable in the vector.
+  int GetOrAdd(const symbolic::Variable& var) {
+    const auto it = var_to_index_map_.find(var.get_id());
+    int var_index = -1;
+    if (it == var_to_index_map_.end()) {
+      var_index = vars_.size();
+      vars_.push_back(var);
+      var_to_index_map_.emplace_hint(it, var.get_id(), var_index);
+    } else {
+      var_index = it->second;
+    }
+    return var_index;
+  }
+
+  // Returns the variable as an Eigen vector.
+  VectorX<symbolic::Variable> CopyToEigen() const {
+    VectorX<symbolic::Variable> result(vars_.size());
+    for (int i = 0; i < static_cast<int>(vars_.size()); ++i) {
+      result(i) = vars_[i];
+    }
+    return result;
+  }
+
+  int size() const { return vars_.size(); }
+
+ private:
+  std::vector<symbolic::Variable> vars_;
+  std::map<symbolic::Variable::Id, int> var_to_index_map_;
+};
+
+// @param Q_lower[out] the lower triangular matrix of Q.
+// @param quadratic_var_vec[out] A vector containing all the variables shown
+// up in the quadratic cost.
+// @param linear_coeff_triplets[in/out] The coefficients of the linear cost.
+// @param linear_var_vec[in/out] The variables in the linear costs.
+// @param constant_cost[in/out] The total constant term in the quadratic cost.
+void AggregateQuadraticCostsHelper(
     const std::vector<Binding<QuadraticCost>>& quadratic_costs,
-    Eigen::SparseMatrix<double>* Q_lower,
-    Eigen::SparseVector<double>* linear_coeff,
-    VectorX<symbolic::Variable>* vars, double* constant_cost) {
-  // We first store all the variables in vars_vec, and convert it to VectorX
-  // object in the end.
-  std::vector<symbolic::Variable> vars_vec{};
-  // Get all the variables shown up in `quadratic_costs`, and store their index
-  // in `vars`.
-  std::map<symbolic::Variable::Id, int> var_to_index_map;
+    Eigen::SparseMatrix<double>* Q_lower, VariableVector* quadratic_var_vec,
+    std::vector<Eigen::Triplet<double>>* linear_coeff_triplets,
+    VariableVector* linear_var_vec, double* constant_cost) {
   std::vector<Eigen::Triplet<double>> Q_lower_triplets;
-  std::vector<Eigen::Triplet<double>> linear_coeff_triplets;
-  *constant_cost = 0;
   for (const auto& quadratic_cost : quadratic_costs) {
     const int num_cost_var = quadratic_cost.variables().rows();
-    // cost_var_indices[i] stores the index of quadratic_cost.variables()(i) in
-    // `vars`.
-    std::vector<int> cost_var_indices(num_cost_var);
+    // cost_quadratic_var_indices[i] stores the index of
+    // quadratic_cost.variables()(i) in `quadratic_vars`.
+    std::vector<int> cost_quadratic_var_indices(num_cost_var);
     for (int i = 0; i < num_cost_var; ++i) {
-      int var_index = -1;
       const symbolic::Variable& var = quadratic_cost.variables()(i);
-      auto it = var_to_index_map.find(var.get_id());
-      if (it != var_to_index_map.end()) {
-        var_index = it->second;
-      } else {
-        var_index = vars_vec.size();
-        var_to_index_map.emplace_hint(it, var.get_id(), var_index);
-        vars_vec.push_back(var);
-      }
-      cost_var_indices[i] = var_index;
+      cost_quadratic_var_indices[i] = quadratic_var_vec->GetOrAdd(var);
     }
     for (int i = 0; i < num_cost_var; ++i) {
       if (quadratic_cost.evaluator()->b()(i) != 0) {
-        linear_coeff_triplets.emplace_back(cost_var_indices[i], 0,
-                                           quadratic_cost.evaluator()->b()(i));
+        const symbolic::Variable& var_i = quadratic_cost.variables()(i);
+        const int linear_var_index = linear_var_vec->GetOrAdd(var_i);
+
+        linear_coeff_triplets->emplace_back(linear_var_index, 0,
+                                            quadratic_cost.evaluator()->b()(i));
       }
-      for (int j = 0; j <= i; ++j) {
+      for (int j = 0; j < num_cost_var; ++j) {
         if (quadratic_cost.evaluator()->Q()(i, j) != 0) {
-          Q_lower_triplets.emplace_back(cost_var_indices[i],
-                                        cost_var_indices[j],
-                                        quadratic_cost.evaluator()->Q()(i, j));
+          if (cost_quadratic_var_indices[i] >= cost_quadratic_var_indices[j]) {
+            Q_lower_triplets.emplace_back(
+                cost_quadratic_var_indices[i], cost_quadratic_var_indices[j],
+                quadratic_cost.evaluator()->Q()(i, j));
+          }
         }
       }
     }
     *constant_cost += quadratic_cost.evaluator()->c();
   }
 
-  *Q_lower = Eigen::SparseMatrix<double>(vars_vec.size(), vars_vec.size());
+  *Q_lower = Eigen::SparseMatrix<double>(quadratic_var_vec->size(),
+                                         quadratic_var_vec->size());
   Q_lower->setFromTriplets(Q_lower_triplets.begin(), Q_lower_triplets.end());
-  *linear_coeff = Eigen::SparseVector<double>(vars_vec.size());
+}
+
+// @param linear_coeff_triplets[in/out] The coefficient of linear costs.
+// @param var_vec[in/out] The linear variables.
+// @param constant_cost[in/out] The constant term in the cost.
+void AggregateLinearCostsHelper(
+    const std::vector<Binding<LinearCost>>& linear_costs,
+    std::vector<Eigen::Triplet<double>>* linear_coeff_triplets,
+    VariableVector* var_vec, double* constant_cost) {
+  for (const auto& cost : linear_costs) {
+    const Eigen::SparseVector<double> cost_coeff =
+        cost.evaluator()->a().sparseView();
+    for (Eigen::SparseVector<double>::InnerIterator it(cost_coeff); it; ++it) {
+      const symbolic::Variable var = cost.variables()(it.index());
+      const int var_index = var_vec->GetOrAdd(var);
+      linear_coeff_triplets->emplace_back(var_index, 0, it.value());
+    }
+    *constant_cost += cost.evaluator()->b();
+  }
+}
+}  // namespace
+
+void AggregateLinearCosts(const std::vector<Binding<LinearCost>>& linear_costs,
+                          Eigen::SparseVector<double>* linear_coeff,
+                          VectorX<symbolic::Variable>* vars,
+                          double* constant_cost) {
+  std::vector<Eigen::Triplet<double>> linear_coeff_triplets;
+  // We first store all the variables in var_vec, and convert it to VectorX
+  // object in the end.
+  VariableVector var_vec{};
+  *constant_cost = 0;
+  AggregateLinearCostsHelper(linear_costs, &linear_coeff_triplets, &var_vec,
+                             constant_cost);
+  *linear_coeff = Eigen::SparseVector<double>(var_vec.size());
   for (const auto& triplet : linear_coeff_triplets) {
     linear_coeff->coeffRef(triplet.row()) += triplet.value();
   }
-  vars->resize(vars_vec.size());
-  for (int i = 0; i < static_cast<int>(vars_vec.size()); ++i) {
-    (*vars)(i) = vars_vec[i];
-  }
+  *vars = var_vec.CopyToEigen();
 }
-}  // namespace internal
+
+void AggregateQuadraticAndLinearCosts(
+    const std::vector<Binding<QuadraticCost>>& quadratic_costs,
+    const std::vector<Binding<LinearCost>>& linear_costs,
+    Eigen::SparseMatrix<double>* Q_lower,
+    VectorX<symbolic::Variable>* quadratic_vars,
+    Eigen::SparseVector<double>* linear_coeff,
+    VectorX<symbolic::Variable>* linear_vars, double* constant_cost) {
+  VariableVector quadratic_var_vec{};
+  std::vector<Eigen::Triplet<double>> linear_coeff_triplets;
+  VariableVector linear_var_vec{};
+  *constant_cost = 0;
+  AggregateQuadraticCostsHelper(quadratic_costs, Q_lower, &quadratic_var_vec,
+                                &linear_coeff_triplets, &linear_var_vec,
+                                constant_cost);
+  AggregateLinearCostsHelper(linear_costs, &linear_coeff_triplets,
+                             &linear_var_vec, constant_cost);
+  *linear_coeff = Eigen::SparseVector<double>(linear_var_vec.size());
+  for (const auto& triplet : linear_coeff_triplets) {
+    linear_coeff->coeffRef(triplet.row()) += triplet.value();
+  }
+  *linear_vars = linear_var_vec.CopyToEigen();
+  *quadratic_vars = quadratic_var_vec.CopyToEigen();
+}
 }  // namespace solvers
 }  // namespace drake
