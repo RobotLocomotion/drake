@@ -2,6 +2,12 @@
 
 namespace drake {
 namespace geometry {
+
+GeometryVersion::GeometryVersion()
+    : proximity_version_id_(RoleVersionId::get_new_id()),
+      perception_version_id_(RoleVersionId::get_new_id()),
+      illustration_version_id_(RoleVersionId::get_new_id()) {}
+
 bool GeometryVersion::IsSameAs(const GeometryVersion& other, Role role) const {
   switch (role) {
     case Role::kUnassigned:
@@ -16,11 +22,6 @@ bool GeometryVersion::IsSameAs(const GeometryVersion& other, Role role) const {
   }
   DRAKE_UNREACHABLE();
 }
-
-GeometryVersion::GeometryVersion()
-    : proximity_version_id_(RoleVersionId::get_new_id()),
-      perception_version_id_(RoleVersionId::get_new_id()),
-      illustration_version_id_(RoleVersionId::get_new_id()) {}
 
 void GeometryVersion::modify_proximity() {
   proximity_version_id_ = RoleVersionId::get_new_id();

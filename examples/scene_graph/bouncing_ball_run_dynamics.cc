@@ -4,8 +4,8 @@
 #include <gflags/gflags.h>
 
 #include "drake/examples/scene_graph/bouncing_ball_plant.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/geometry_instance.h"
-#include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/render/render_engine_vtk_factory.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
@@ -36,7 +36,7 @@ namespace {
 
 using Eigen::Vector3d;
 using Eigen::Vector4d;
-using geometry::ConnectDrakeVisualizer;
+using geometry::DrakeVisualizer;
 using geometry::GeometryInstance;
 using geometry::SceneGraph;
 using geometry::GeometryId;
@@ -102,7 +102,9 @@ int do_main() {
                   bouncing_ball2->get_geometry_query_input_port());
 
   DrakeLcm lcm;
-  ConnectDrakeVisualizer(&builder, *scene_graph, &lcm);
+  auto visualizer = builder.AddSystem<DrakeVisualizer>(&lcm);
+  builder.Connect(scene_graph->get_query_output_port(),
+                  visualizer->query_object_input_port());
 
   if (FLAGS_render_on) {
     PerceptionProperties properties;
