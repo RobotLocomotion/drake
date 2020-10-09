@@ -226,8 +226,22 @@ class SceneGraph final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SceneGraph)
 
-  /** Constructs a default (empty) scene graph. */
-  SceneGraph();
+  /** Constructs a default (empty) scene graph.
+
+   By default, the geometry data (aka geometry state) is stored as State in the
+   Context. As such, it can be modified via an unrestricted update event.
+   Alternatively, %SceneGraph can be configured to store its geometry data as
+   a Parameter. As a Parameter, it can only be modified outside the normal
+   simulation loop, but leaves SceneGraph completely stateless.
+
+   It's worth noting that this choice does not affect the cost of copying a
+   Context or calling Context::SetTimeStateAndParametersFrom(). The only real
+   impact is *when* the geometry data can be changed and whether a %SceneGraph
+   instance reports having state or not.
+
+   @param data_as_state  `true` stores the data as State; `false` stores it as a
+                         Parameter.  */
+  explicit SceneGraph(bool data_as_state = true);
 
   /** Constructor used for scalar conversions. It should only be used to convert
    _from_ double _to_ other scalar types.  */
@@ -819,6 +833,18 @@ class SceneGraph final : public systems::LeafSystem<T> {
   // evaluate inputs on the context.
   friend class QueryObject<T>;
 
+  // If SceneGraph has been configured to store the geometry data as state,
+  // writes the current version of the geometry data to the context's abstract
+  // state.
+  void SetDefaultState(const systems::Context<T>& context,
+                       systems::State<T>* state) const override;
+
+  // If %SceneGraph has been configured to store the geometry data as a
+  // Parameter, writes the current version of the geometry data to the context's
+  // abstract parameter.
+  void SetDefaultParameters(const systems::Context<T>& context,
+                            systems::Parameters<T>* parameters) const override;
+
   // Helper class to register input ports for a source id.
   void MakeSourcePorts(SourceId source_id);
 
@@ -886,14 +912,16 @@ class SceneGraph final : public systems::LeafSystem<T> {
   // The index of the output port with the QueryObject abstract value.
   int query_port_index_{-1};
 
-  // A raw pointer to the default geometry state (which serves as the model for
-  // allocating contexts for this system). The instance is owned by
-  // model_abstract_states_.
-  GeometryState<T>* initial_state_{};
+  // SceneGraph owns its configured model; it gets copied into the context when
+  // the context is set to its "default" state.
+  GeometryState<T> model_;
 
   SceneGraphInspector<T> model_inspector_;
 
-  // The index of the geometry state in the context's abstract state.
+  // The geometry state is stored in the Context either as State or as a
+  // Parameter (based on data_as_state_). Either way, the stored index
+  // is its index in that block of Context data.
+  bool data_as_state_{};
   int geometry_state_index_{-1};
 
   // The cache index for the pose update cache entry.
