@@ -82,6 +82,7 @@ class TestGeometry(unittest.TestCase):
         inspector = scene_graph.model_inspector()
         self.assertEqual(inspector.num_sources(), 2)
         self.assertEqual(inspector.num_frames(), 3)
+        self.assertIsInstance(inspector.world_frame_id(), mut.FrameId)
         self.assertEqual(inspector.num_geometries(), 3)
         self.assertEqual(len(inspector.GetAllGeometryIds()), 3)
         self.assertEqual(
@@ -145,10 +146,22 @@ class TestGeometry(unittest.TestCase):
             inspector.GetProximityProperties(geometry_id=global_geometry),
             mut.ProximityProperties)
         self.assertIsInstance(
+            inspector.GetProperties(geometry_id=global_geometry,
+                                    role=mut.Role.kProximity),
+            mut.ProximityProperties)
+        self.assertIsInstance(
             inspector.GetIllustrationProperties(geometry_id=global_geometry),
             mut.IllustrationProperties)
         self.assertIsInstance(
+            inspector.GetProperties(geometry_id=global_geometry,
+                                    role=mut.Role.kIllustration),
+            mut.IllustrationProperties)
+        self.assertIsInstance(
             inspector.GetPerceptionProperties(geometry_id=global_geometry),
+            mut.PerceptionProperties)
+        self.assertIsInstance(
+            inspector.GetProperties(geometry_id=global_geometry,
+                                    role=mut.Role.kPerception),
             mut.PerceptionProperties)
         self.assertIsInstance(
             inspector.CloneGeometryInstance(geometry_id=global_geometry),
@@ -214,6 +227,40 @@ class TestGeometry(unittest.TestCase):
             lcm.HandleSubscriptions(0)
             self.assertEqual(load_subscriber.count, 2)
             self.assertEqual(draw_subscriber.count, 1)
+
+    def test_drake_visualizer(self):
+        # Test visualization API.
+        T = float
+        SceneGraph = mut.SceneGraph_[T]
+        DiagramBuilder = DiagramBuilder_[T]
+        Simulator = Simulator_[T]
+        lcm = DrakeLcm()
+        role = mut.Role.kIllustration
+
+        # Build the diagram.
+        builder = DiagramBuilder()
+        scene_graph = builder.AddSystem(SceneGraph())
+        params = mut.DrakeVisualizerParams(
+            publish_period=0.1, role=mut.Role.kIllustration,
+            default_color=mut.Rgba(0.1, 0.2, 0.3, 0.4))
+        visualizer = builder.AddSystem(mut.DrakeVisualizer(lcm=lcm))
+        builder.Connect(scene_graph.get_query_output_port(),
+                        visualizer.query_object_input_port())
+
+        # Add some subscribers to detect message broadcast.
+        load_channel = "DRAKE_VIEWER_LOAD_ROBOT"
+        draw_channel = "DRAKE_VIEWER_DRAW"
+        load_subscriber = Subscriber(
+            lcm, load_channel, lcmt_viewer_load_robot)
+        draw_subscriber = Subscriber(
+            lcm, draw_channel, lcmt_viewer_draw)
+
+        # Simulate to t = 0 to send initial load and draw messages.
+        diagram = builder.Build()
+        Simulator(diagram).AdvanceTo(0)
+        lcm.HandleSubscriptions(0)
+        self.assertEqual(load_subscriber.count, 1)
+        self.assertEqual(draw_subscriber.count, 1)
 
     @numpy_compare.check_nonsymbolic_types
     def test_frame_pose_vector_api(self, T):
@@ -388,6 +435,13 @@ class TestGeometry(unittest.TestCase):
                                           role=mut.Role.kPerception))
         self.assertTrue(version0.IsSameAs(other=version2,
                                           role=mut.Role.kIllustration))
+        version3 = mut.GeometryVersion()
+        self.assertFalse(version0.IsSameAs(other=version3,
+                                           role=mut.Role.kProximity))
+        self.assertFalse(version0.IsSameAs(other=version3,
+                                           role=mut.Role.kPerception))
+        self.assertFalse(version0.IsSameAs(other=version3,
+                                           role=mut.Role.kIllustration))
 
     def test_rgba_api(self):
         r, g, b, a = 0.75, 0.5, 0.25, 1.

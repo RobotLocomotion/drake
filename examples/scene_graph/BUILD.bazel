@@ -40,7 +40,7 @@ drake_cc_binary(
     ],
     deps = [
         ":bouncing_ball_plant",
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//geometry:scene_graph",
         "//geometry/render:render_engine_vtk",
         "//systems/analysis:simulator",
@@ -61,7 +61,7 @@ drake_cc_binary(
         "--simulation_time=0.01",
     ],
     deps = [
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//geometry:scene_graph",
         "//lcmtypes:contact_results_for_viz",
         "//systems/analysis:simulator",
@@ -106,7 +106,7 @@ drake_cc_binary(
     ],
     deps = [
         ":solar_system",
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//geometry:scene_graph",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
