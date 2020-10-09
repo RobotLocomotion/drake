@@ -428,8 +428,7 @@ def add_pybind_coverage_data(
     added to each package where coverage is desired."""
     native.filegroup(
         name = name,
-        srcs = native.glob(["*_py*.cc"]),
-        data = [
+        srcs = native.glob(["*_py*.cc"], allow_empty = False) + [
             subpackage + ":pybind_coverage_data"
             for subpackage in subpackages
         ],
