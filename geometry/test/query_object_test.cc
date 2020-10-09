@@ -120,7 +120,8 @@ TEST_F(QueryObjectTest, CopySemantics) {
   QueryObject<double> from_default{default_object};
   EXPECT_TRUE(is_default(from_default));
 
-  unique_ptr<Context<double>> live_context = scene_graph_.AllocateContext();
+  unique_ptr<Context<double>> live_context =
+      scene_graph_.CreateDefaultContext();
   unique_ptr<QueryObject<double>> live_query_object =
       MakeQueryObject(live_context.get(), &scene_graph_);
   EXPECT_TRUE(is_live(*live_query_object));
@@ -226,7 +227,7 @@ TEST_F(QueryObjectTest, CreateValidInspector) {
   GeometryId geometry_id = scene_graph_.RegisterGeometry(
       source_id, frame_id, make_unique<GeometryInstance>(
                                identity, make_unique<Sphere>(1.0), "sphere"));
-  unique_ptr<Context<double>> context = scene_graph_.AllocateContext();
+  unique_ptr<Context<double>> context = scene_graph_.CreateDefaultContext();
   unique_ptr<QueryObject<double>> query_object =
       MakeQueryObject(context.get(), &scene_graph_);
 
@@ -244,7 +245,7 @@ TEST_F(QueryObjectTest, CreateValidInspector) {
 TEST_F(QueryObjectTest, BakedCopyHasFullUpdate) {
   SourceId s_id = scene_graph_.RegisterSource("BakeTest");
   FrameId frame_id = scene_graph_.RegisterFrame(s_id, GeometryFrame("frame"));
-  unique_ptr<Context<double>> context = scene_graph_.AllocateContext();
+  unique_ptr<Context<double>> context = scene_graph_.CreateDefaultContext();
   RigidTransformd X_WF{Vector3d{1, 2, 3}};
   FramePoseVector<double> poses{{frame_id, X_WF}};
   scene_graph_.get_source_pose_port(s_id).FixValue(context.get(), poses);

@@ -84,6 +84,18 @@ class SceneGraphTester {
                              PoseBundle<T>* bundle) {
     return scene_graph.CalcPoseBundle(context, bundle);
   }
+
+  template <typename T>
+  static const GeometryState<T>& GetGeometryState(
+      const SceneGraph<T>& scene_graph, const systems::Context<T>& context) {
+    return scene_graph.geometry_state(context);
+  }
+
+  template <typename T>
+  static GeometryState<T>& GetMutableGeometryState(
+      const SceneGraph<T>& scene_graph, systems::Context<T>* context) {
+    return scene_graph.mutable_geometry_state(context);
+  }
 };
 
 namespace {
@@ -96,7 +108,7 @@ std::unique_ptr<GeometryInstance> make_sphere_instance(
 }
 
 // Testing harness to facilitate working with/testing the SceneGraph. Before
-// performing *any* queries in tests, `AllocateContext` must be explicitly
+// performing *any* queries in tests, `CreateDefaultContext` must be explicitly
 // invoked in the test.
 
 class SceneGraphTest : public ::testing::Test {
@@ -106,19 +118,19 @@ class SceneGraphTest : public ::testing::Test {
         query_object_(QueryObjectTest::MakeNullQueryObject<double>()) {}
 
  protected:
-  void AllocateContext() {
+  void CreateDefaultContext() {
     // TODO(SeanCurtis-TRI): This will probably have to be moved into an
     // explicit call so it can be run *after* topology has been set.
-    context_ = scene_graph_.AllocateContext();
+    context_ = scene_graph_.CreateDefaultContext();
     QueryObjectTest::set_query_object(&query_object_, &scene_graph_,
                                       context_.get());
   }
 
   const QueryObject<double>& query_object() const {
-    // The `AllocateContext()` method must have been called *prior* to this
+    // The `CreateDefaultContext()` method must have been called *prior* to this
     // method.
     if (!context_)
-      throw std::runtime_error("Must call AllocateContext() first.");
+      throw std::runtime_error("Must call CreateDefaultContext() first.");
     return query_object_;
   }
 
@@ -128,9 +140,30 @@ class SceneGraphTest : public ::testing::Test {
 
  private:
   // Keep this private so tests must access it through the getter so we can
-  // determine if AllocateContext() has been invoked.
+  // determine if CreateDefaultContext() has been invoked.
   QueryObject<double> query_object_;
 };
+
+// Confirms that the SceneGraph can be instantiated with the geometry data
+// stored as state or parameter (abstract either way). Because this
+// architectural choice is nicely embedded in SceneGraph's geometry_state() and
+// mutable_geometry_state() methods, we don't run *every* unit test in both
+// configurations. If this proves to be overly optimistic, we can parameterize
+// `SceneGraphTest` on that parameter and run those tests.
+TEST_F(SceneGraphTest, DataAsParameterVsState) {
+  for (bool data_as_state : {true, false}) {
+    SceneGraph<double> sg(data_as_state);
+    auto context = sg.CreateDefaultContext();
+    EXPECT_EQ(context->get_state().get_abstract_state().size(),
+              data_as_state ? 1 : 0);
+    EXPECT_EQ(context->get_parameters().num_abstract_parameters(),
+              data_as_state ? 0 : 1);
+    // A smoke test to confirm that we can acquire the geometry state.
+    EXPECT_NO_THROW(SceneGraphTester::GetGeometryState(sg, *context));
+    EXPECT_NO_THROW(
+        SceneGraphTester::GetMutableGeometryState(sg, context.get()));
+  }
+}
 
 // Test sources.
 
@@ -158,7 +191,7 @@ TEST_F(SceneGraphTest, RegisterSourceSpecifiedName) {
 // allocated context.. It also implicitly tests that the model inspector is
 // available _after_ allocation.
 TEST_F(SceneGraphTest, RegisterSourcePostContext) {
-  AllocateContext();
+  CreateDefaultContext();
   const std::string new_source_name = "register_source_post_context";
   SourceId new_source = scene_graph_.RegisterSource(new_source_name);
   EXPECT_TRUE(scene_graph_.SourceIsRegistered(new_source));
@@ -174,7 +207,7 @@ TEST_F(SceneGraphTest, RegisterSourcePostContext) {
 // Tests ability to report if a source is registered or not.
 TEST_F(SceneGraphTest, SourceIsRegistered) {
   SourceId id = scene_graph_.RegisterSource();
-  AllocateContext();
+  CreateDefaultContext();
   EXPECT_TRUE(scene_graph_.SourceIsRegistered(id));
   EXPECT_FALSE(scene_graph_.SourceIsRegistered(SourceId::get_new_id()));
 }
@@ -195,7 +228,7 @@ TEST_F(SceneGraphTest, InputPortsForInvalidSource) {
 TEST_F(SceneGraphTest, AcquireInputPortsAfterAllocation) {
   SourceId id = scene_graph_.RegisterSource();
   DRAKE_EXPECT_NO_THROW(scene_graph_.get_source_pose_port(id));
-  AllocateContext();
+  CreateDefaultContext();
   // Port which *hadn't* been accessed is still accessible.
   DRAKE_EXPECT_NO_THROW(scene_graph_.get_source_pose_port(id));
 }
@@ -213,7 +246,7 @@ TEST_F(SceneGraphTest, TopologyAfterAllocation) {
   GeometryId old_geometry_id = scene_graph_.RegisterGeometry(id, old_frame_id,
       make_sphere_instance());
 
-  AllocateContext();
+  CreateDefaultContext();
 
   FrameId parent_frame_id =
       scene_graph_.RegisterFrame(id, GeometryFrame("frame"));
@@ -270,7 +303,7 @@ TEST_F(SceneGraphTest, DirectFeedThrough) {
 // Simple, toy case: there are no geometry sources; evaluate of pose update
 // should be, essentially a no op.
 TEST_F(SceneGraphTest, FullPoseUpdateEmpty) {
-  AllocateContext();
+  CreateDefaultContext();
   DRAKE_EXPECT_NO_THROW(
       SceneGraphTester::FullPoseUpdate(scene_graph_, *context_));
 }
@@ -280,7 +313,7 @@ TEST_F(SceneGraphTest, FullPoseUpdateEmpty) {
 TEST_F(SceneGraphTest, FullPoseUpdateAnchoredOnly) {
   SourceId s_id = scene_graph_.RegisterSource();
   scene_graph_.RegisterAnchoredGeometry(s_id, make_sphere_instance());
-  AllocateContext();
+  CreateDefaultContext();
   DRAKE_EXPECT_NO_THROW(
       SceneGraphTester::FullPoseUpdate(scene_graph_, *context_));
 }
@@ -298,7 +331,7 @@ TEST_F(SceneGraphTest, TransmogrifyWithoutAllocation) {
       scene_graph_ad.RegisterAnchoredGeometry(s_id, make_sphere_instance()));
 
   // After allocation, registration should _still_ be valid.
-  AllocateContext();
+  CreateDefaultContext();
   system_ad = scene_graph_.ToAutoDiffXd();
   SceneGraph<AutoDiffXd>& scene_graph_ad2 =
       *dynamic_cast<SceneGraph<AutoDiffXd>*>(system_ad.get());
@@ -309,7 +342,7 @@ TEST_F(SceneGraphTest, TransmogrifyWithoutAllocation) {
 // Tests that the ports are correctly mapped.
 TEST_F(SceneGraphTest, TransmogrifyPorts) {
   SourceId s_id = scene_graph_.RegisterSource();
-  AllocateContext();
+  CreateDefaultContext();
   std::unique_ptr<systems::System<AutoDiffXd>> system_ad =
       scene_graph_.ToAutoDiffXd();
   SceneGraph<AutoDiffXd>& scene_graph_ad =
@@ -318,33 +351,41 @@ TEST_F(SceneGraphTest, TransmogrifyPorts) {
             scene_graph_.num_input_ports());
   EXPECT_EQ(scene_graph_ad.get_source_pose_port(s_id).get_index(),
             scene_graph_.get_source_pose_port(s_id).get_index());
-  std::unique_ptr<systems::Context<AutoDiffXd>> context_ad =
-      scene_graph_ad.AllocateContext();
+  EXPECT_NO_THROW(scene_graph_ad.CreateDefaultContext());
 }
 
 // Tests that the work to "set" the context values for the transmogrified system
 // behaves correctly.
 TEST_F(SceneGraphTest, TransmogrifyContext) {
-  SourceId s_id = scene_graph_.RegisterSource();
-  // Register geometry that should be successfully transmogrified.
-  GeometryId g_id =
-      scene_graph_.RegisterAnchoredGeometry(s_id, make_sphere_instance());
-  AllocateContext();
-  std::unique_ptr<System<AutoDiffXd>> system_ad = scene_graph_.ToAutoDiffXd();
-  SceneGraph<AutoDiffXd>& scene_graph_ad =
-      *dynamic_cast<SceneGraph<AutoDiffXd>*>(system_ad.get());
-  std::unique_ptr<Context<AutoDiffXd>> context_ad =
-      scene_graph_ad.AllocateContext();
-  context_ad->SetTimeStateAndParametersFrom(*context_);
-  // Pull out GeometryState from context by exploiting knowledge that it is
-  // zero-indexed.
-  const GeometryState<AutoDiffXd>& geo_state_ad =
-      context_ad->get_state().get_abstract_state<GeometryState<AutoDiffXd>>(0);
-  // If the anchored geometry were not ported over, this would throw an
-  // exception.
-  EXPECT_TRUE(geo_state_ad.BelongsToSource(g_id, s_id));
-  EXPECT_THROW(geo_state_ad.BelongsToSource(GeometryId::get_new_id(), s_id),
-               std::logic_error);
+  for (bool data_as_state : {true, false}) {
+    SceneGraph<double> sg(data_as_state);
+    SourceId s_id = sg.RegisterSource();
+    // Register geometry that should be successfully transmogrified.
+    GeometryId g_id =
+        sg.RegisterAnchoredGeometry(s_id, make_sphere_instance());
+    std::unique_ptr<Context<double>> context = sg.CreateDefaultContext();
+    // This should transmogrify the internal *model*, so when I allocate the
+    // transmogrified context, I should get the "same" values (considering type
+    // change).
+    std::unique_ptr<System<AutoDiffXd>> system_ad = sg.ToAutoDiffXd();
+    SceneGraph<AutoDiffXd>& scene_graph_ad =
+        *dynamic_cast<SceneGraph<AutoDiffXd>*>(system_ad.get());
+    std::unique_ptr<Context<AutoDiffXd>> context_ad =
+        scene_graph_ad.CreateDefaultContext();
+
+    // Extract the GeometryState and query some invariants on it directly.
+    const GeometryState<AutoDiffXd>& geo_state_ad =
+        SceneGraphTester::GetGeometryState(scene_graph_ad, *context_ad);
+    // If the anchored geometry were not ported over, this would throw an
+    // exception.
+    EXPECT_TRUE(geo_state_ad.BelongsToSource(g_id, s_id));
+    EXPECT_THROW(geo_state_ad.BelongsToSource(GeometryId::get_new_id(), s_id),
+                 std::logic_error);
+
+    // Quick reality check that this is still valid although unnecessary vis a
+    // vis the GeometryState.
+    DRAKE_EXPECT_NO_THROW(context_ad->SetTimeStateAndParametersFrom(*context));
+  }
 }
 
 // Tests that exercising the collision filtering logic *after* allocation is
@@ -353,7 +394,7 @@ TEST_F(SceneGraphTest, PostAllocationCollisionFiltering) {
   SourceId source_id = scene_graph_.RegisterSource("filter_after_allocation");
   FrameId frame_id =
       scene_graph_.RegisterFrame(source_id, GeometryFrame("dummy"));
-  AllocateContext();
+  CreateDefaultContext();
 
   GeometrySet geometry_set{frame_id};
   DRAKE_EXPECT_NO_THROW(scene_graph_.ExcludeCollisionsWithin(geometry_set));
@@ -511,7 +552,7 @@ GTEST_TEST(SceneGraphConnectionTest, FullPoseUpdateConnected) {
                   scene_graph->get_source_pose_port(source_id));
   auto diagram = builder.Build();
 
-  auto diagram_context = diagram->AllocateContext();
+  auto diagram_context = diagram->CreateDefaultContext();
   diagram->SetDefaultContext(diagram_context.get());
   const auto& sg_context =
       diagram->GetMutableSubsystemContext(*scene_graph, diagram_context.get());
@@ -528,7 +569,7 @@ GTEST_TEST(SceneGraphConnectionTest, FullPoseUpdateDisconnected) {
   auto source_system = builder.AddSystem<GeometrySourceSystem>(scene_graph);
   source_system->set_name("source_system");
   auto diagram = builder.Build();
-  auto diagram_context = diagram->AllocateContext();
+  auto diagram_context = diagram->CreateDefaultContext();
   diagram->SetDefaultContext(diagram_context.get());
   const auto& sg_context =
       diagram->GetMutableSubsystemContext(*scene_graph, diagram_context.get());
@@ -548,7 +589,7 @@ GTEST_TEST(SceneGraphConnectionTest, FullPoseUpdateNoConnections) {
   auto source_system = builder.AddSystem<GeometrySourceSystem>(scene_graph);
   source_system->set_name("source_system");
   auto diagram = builder.Build();
-  auto diagram_context = diagram->AllocateContext();
+  auto diagram_context = diagram->CreateDefaultContext();
   diagram->SetDefaultContext(diagram_context.get());
   const auto& sg_context =
       diagram->GetMutableSubsystemContext(*scene_graph, diagram_context.get());
@@ -563,7 +604,7 @@ GTEST_TEST(SceneGraphConnectionTest, FullPoseUpdateNoConnections) {
 GTEST_TEST(SceneGraphAutoDiffTest, InstantiateAutoDiff) {
   SceneGraph<AutoDiffXd> scene_graph;
   scene_graph.RegisterSource("dummy_source");
-  auto context = scene_graph.AllocateContext();
+  auto context = scene_graph.CreateDefaultContext();
 
   QueryObject<AutoDiffXd> handle =
       QueryObjectTest::MakeNullQueryObject<AutoDiffXd>();
@@ -578,7 +619,7 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
     SceneGraph<double> scene_graph;
     PoseBundle<double> poses = SceneGraphTester::MakePoseBundle(scene_graph);
     EXPECT_EQ(0, poses.get_num_poses());
-    auto context = scene_graph.AllocateContext();
+    auto context = scene_graph.CreateDefaultContext();
     DRAKE_EXPECT_NO_THROW(
         SceneGraphTester::CalcPoseBundle(scene_graph, *context, &poses));
   }
@@ -588,7 +629,7 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
     SceneGraph<double> scene_graph;
     PoseBundle<double> poses(1);
     EXPECT_EQ(poses.get_num_poses(), 1);
-    auto context = scene_graph.AllocateContext();
+    auto context = scene_graph.CreateDefaultContext();
     DRAKE_EXPECT_NO_THROW(
         SceneGraphTester::CalcPoseBundle(scene_graph, *context, &poses));
     EXPECT_EQ(poses.get_num_poses(), 0);
@@ -600,7 +641,7 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
     scene_graph.RegisterSource("dummy");
     PoseBundle<double> poses = SceneGraphTester::MakePoseBundle(scene_graph);
     EXPECT_EQ(0, poses.get_num_poses());
-    auto context = scene_graph.AllocateContext();
+    auto context = scene_graph.CreateDefaultContext();
     DRAKE_EXPECT_NO_THROW(
         SceneGraphTester::CalcPoseBundle(scene_graph, *context, &poses));
   }
@@ -616,7 +657,7 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
                                       make_unique<Sphere>(1.0), "sphere"));
     PoseBundle<double> poses = SceneGraphTester::MakePoseBundle(scene_graph);
     EXPECT_EQ(0, poses.get_num_poses());
-    auto context = scene_graph.AllocateContext();
+    auto context = scene_graph.CreateDefaultContext();
     DRAKE_EXPECT_NO_THROW(
         SceneGraphTester::CalcPoseBundle(scene_graph, *context, &poses));
   }
@@ -636,7 +677,7 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
     // The frame has no illustration geometry, so it is not part of the pose
     // bundle.
     EXPECT_EQ(0, poses.get_num_poses());
-    auto context = scene_graph.AllocateContext();
+    auto context = scene_graph.CreateDefaultContext();
     const FramePoseVector<double> pose_vector{
         {f_id, RigidTransformd::Identity()}};
     scene_graph.get_source_pose_port(s_id).FixValue(context.get(), pose_vector);
@@ -662,7 +703,7 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
     // The dynamic geometry has no illustration role, so it doesn't lead the
     // frame to be included in the bundle.
     EXPECT_EQ(0, poses.get_num_poses());
-    auto context = scene_graph.AllocateContext();
+    auto context = scene_graph.CreateDefaultContext();
     const FramePoseVector<double> pose_vector{
         {f_id, RigidTransformd::Identity()}};
     scene_graph.get_source_pose_port(s_id).FixValue(context.get(), pose_vector);
@@ -680,11 +721,11 @@ GTEST_TEST(SceneGraphContextModifier, RegisterGeometry) {
   SourceId source_id = scene_graph.RegisterSource("source");
   FrameId frame_id =
       scene_graph.RegisterFrame(source_id, GeometryFrame("frame"));
-  auto context = scene_graph.AllocateContext();
+  auto context = scene_graph.CreateDefaultContext();
 
   // Confirms the state. NOTE: All subsequent actions modify `context` in place.
   // This allows us to use this same query_object and inspector throughout the
-  // test without requiring any updates or changes to them..
+  // test without requiring any updates or changes to them.
   QueryObject<double> query_object;
   SceneGraphTester::GetQueryObjectPortValue(scene_graph, *context,
                                             &query_object);
@@ -741,7 +782,7 @@ GTEST_TEST(SceneGraphContextModifier, CollisionFilters) {
   EXPECT_FALSE(scene_graph.model_inspector().CollisionFiltered(g_id1, g_id3));
   EXPECT_FALSE(scene_graph.model_inspector().CollisionFiltered(g_id2, g_id3));
 
-  auto context = scene_graph.AllocateContext();
+  auto context = scene_graph.CreateDefaultContext();
 
   // Confirms the state. NOTE: Because we're not copying the query object or
   // changing context, this query object and inspector are valid for querying

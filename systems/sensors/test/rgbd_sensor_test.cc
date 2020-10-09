@@ -219,7 +219,7 @@ class RgbdSensorTest : public ::testing::Test {
     builder.Connect(scene_graph_->get_query_output_port(),
                     sensor_->query_object_input_port());
     diagram_ = builder.Build();
-    context_ = diagram_->AllocateContext();
+    context_ = diagram_->CreateDefaultContext();
     context_->DisableCaching();
     scene_graph_context_ =
         &diagram_->GetMutableSubsystemContext(*scene_graph_, context_.get());
