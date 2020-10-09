@@ -9,29 +9,25 @@ components, (2) limit dependencies, and (3) prevent circular dependencies.
 
 .. _directory_structure_special_directories:
 
-Special Directories
-===================
+Dev Directories
+===============
 
-All code that implements core functionality in Drake must adhere to the strict
-code standards described in :ref:`Developer Notes <developer_notes>`, and must
-have unit test coverage via code implemented in a ``test`` subdirectory
-immediately below the core implementation.
+All code in Drake must adhere to the code standards described in
+:ref:`Developer Notes <developer_notes>` and must be covered by tests, unless
+the code lives in a subdirectory named ``dev``.
 
-To promote rapid development of research ideas within the code base,
-we allow for some exceptions to this rule for experimental code.  This includes
-any subdirectory labeled ``dev`` and directories with a special ``README.md``
-file describing the protocol for that directory.  For PRs that affect only these
-experimental directories, one feature review is sufficient; platform review is
-not required.  If build or test targets in these directories break, and the PR
-author or on-call build cop cannot trivially resolve them, a GitHub issue will
-be assigned to the author of the code. If the issue is not resolved within 24
-hours, the core development team may disable the offending targets.
+To promote rapid development of research ideas, experimental code may be placed
+in a subdirectory named ``dev``.  We do not enforce code standards nor test
+coverage within ``dev`` directories.  For pull requests that affect only
+``dev`` directories, one feature review is sufficient; platform review is not
+required.  If build or test targets in ``dev`` directories break, the response
+from the on-call build cop will be to disable the offending targets.
 
-The ``BUILD.bazel`` rules for special directories must live within the
-directory itself, not a parent directory.  (For example, ``foo/BUILD.bazel``
-must **not** say ``srcs = ["dev/bar.cc"],``; instead, ``foo/dev/BUILD.bazel``
-must exist and must say ``srcs = ["bar.cc"],``.)  This ensures that all ``dev``
-code has a package name that clearly denotes it as such.
+The ``BUILD.bazel`` file for ``dev`` directories must live within the directory
+itself, not a parent directory.  (For example, ``foo/BUILD.bazel`` must **not**
+say ``srcs = ["dev/bar.cc"],``; instead, ``foo/dev/BUILD.bazel`` must exist and
+must say ``srcs = ["bar.cc"],``.)  This ensures that all ``dev`` code has a
+package name (``//foo/dev``) that clearly denotes it as such.
 
 .. _directory_structure_controlling_dependencies:
 
