@@ -32,6 +32,10 @@ class GeometryVersion {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryVersion);
 
+  /** Constructs a default-initialized instance; guaranteed to be different
+   from every other instance. */
+  GeometryVersion();
+
   /** Returns true if `this` GeometryVersion has the same `role`
    version as the `other` GeometryVersion. */
   bool IsSameAs(const GeometryVersion& other, Role role) const;
@@ -47,10 +51,6 @@ class GeometryVersion {
 
   /* Facilitates testing. */
   friend class GeometryVersionTest;
-
-  /* Create unique version id for all roles so that the new geometry version
-   unique. */
-  GeometryVersion();
 
   void modify_proximity();
 
