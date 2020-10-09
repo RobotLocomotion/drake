@@ -10,6 +10,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/rotation_matrix.h"
 
@@ -44,10 +45,12 @@ class SpatialVector {
   };
 
   /// The type of the underlying in-memory representation using an Eigen vector.
-  typedef Vector6<T> CoeffsEigenType;
+  using CoeffsEigenType = Vector6<T>;
 
   // Make it available to implementations using SpatialVector.
-  typedef T ScalarType;
+  using ScalarType
+      DRAKE_DEPRECATED("2021-02-01", "The ScalarType alias will be removed.")
+      = T;
 
   /// Default constructor. In Release builds the elements of the newly
   /// constructed spatial vector are left uninitialized resulting in a zero
