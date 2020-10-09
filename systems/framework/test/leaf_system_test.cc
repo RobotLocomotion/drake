@@ -124,6 +124,11 @@ class TestSystem : public LeafSystem<T> {
     this->set_name("TestSystem");
     this->DeclareNumericParameter(BasicVector<T>{13.0, 7.0});
     this->DeclareAbstractParameter(Value<std::string>("parameter value"));
+    // This is in support of systems (like SceneGraph) that mutate their model
+    // post declaration, even if it is stored as a parameter.
+    auto i_value = AbstractValue::Make<int>(5);
+    model_value_ = &i_value->get_mutable_value<int>();
+    this->DeclareAbstractParameter(std::move(i_value));
 
     this->DeclareDiscreteState(3);
     this->DeclareAbstractState(AbstractValue::Make<int>(5));
@@ -140,6 +145,14 @@ class TestSystem : public LeafSystem<T> {
   using LeafSystem<T>::DeclareVectorOutputPort;
   using LeafSystem<T>::DeclareAbstractOutputPort;
   using LeafSystem<T>::DeclarePerStepEvent;
+
+  // Mechanisms for confirming that an aliased abstract parameter can be mutated
+  // by the system and that it propagates to the system.
+  int model_value(const Context<T>& context) {
+    return context.get_parameters().template get_abstract_parameter<int>(1);
+  }
+  int model_value() const { return *model_value_; }
+  void set_model_value(int new_value) const { *model_value_ = new_value; }
 
   void AddPeriodicUpdate() {
     const double period = 10.0;
@@ -350,6 +363,9 @@ class TestSystem : public LeafSystem<T> {
   mutable bool publish_callback_called_{false};
   mutable bool discrete_update_callback_called_{false};
   mutable bool unrestricted_update_callback_called_{false};
+
+  // A pointer to the mutable parameter (index 1); see double_model_parameter();
+  int* model_value_{};
 };
 
 class LeafSystemTest : public ::testing::Test {
@@ -759,7 +775,7 @@ TEST_F(LeafSystemTest, AbstractParameters) {
   mutable_param = "modified parameter value";
   EXPECT_EQ("modified parameter value", param);
 
-  EXPECT_EQ(system_.num_abstract_parameters(), 1);
+  EXPECT_EQ(system_.num_abstract_parameters(), 2);
   const DependencyTracker& pa_tracker =
       context->get_tracker(system_.pa_ticket());
   for (AbstractParameterIndex i(0); i < system_.num_abstract_parameters();
@@ -769,6 +785,23 @@ TEST_F(LeafSystemTest, AbstractParameters) {
     EXPECT_TRUE(pa_tracker.HasPrerequisite(tracker));
     EXPECT_TRUE(tracker.HasSubscriber(pa_tracker));
   }
+}
+
+// Tests that a system that aliases a Parameter model can mutate that model
+// and have those changes propagate to contexts.
+TEST_F(LeafSystemTest, MutableAbstractParameters) {
+  std::unique_ptr<Context<double>> context1 = system_.CreateDefaultContext();
+  EXPECT_EQ(system_.model_value(*context1), system_.model_value());
+
+  // Change the model and confirm change.
+  const int original_value = system_.model_value();
+  system_.set_model_value(original_value * 2);
+  EXPECT_EQ(system_.model_value(), original_value * 2);
+
+  // Confirm propagation to context.
+  std::unique_ptr<Context<double>> context2 = system_.CreateDefaultContext();
+  EXPECT_EQ(system_.model_value(*context2), system_.model_value());
+  EXPECT_NE(system_.model_value(*context1), system_.model_value(*context2));
 }
 
 // Tests that the leaf system reserved the declared misc continuous state.

@@ -255,6 +255,12 @@ class LeafSystem : public System<T> {
   parameter. */
   int DeclareAbstractParameter(const AbstractValue& model_value);
 
+  /** Declares an abstract parameter.
+  @param abstract_param The abstract parameter; its ownership is transferred.
+  @return index of the declared abstract parameter. */
+  AbstractParameterIndex DeclareAbstractParameter(
+      std::unique_ptr<AbstractValue> abstract_param);
+
   // =========================================================================
   /** @anchor declare_periodic_events
   @name                  Declare periodic events

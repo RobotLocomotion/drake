@@ -485,8 +485,14 @@ int LeafSystem<T>::DeclareNumericParameter(const BasicVector<T>& model_vector) {
 
 template <typename T>
 int LeafSystem<T>::DeclareAbstractParameter(const AbstractValue& model_value) {
+  return this->DeclareAbstractParameter(model_value.Clone());
+}
+
+template <typename T>
+AbstractParameterIndex LeafSystem<T>::DeclareAbstractParameter(
+    std::unique_ptr<AbstractValue> abstract_param) {
   const AbstractParameterIndex index(model_abstract_parameters_.size());
-  model_abstract_parameters_.AddModel(index, model_value.Clone());
+  model_abstract_parameters_.AddModel(index, std::move(abstract_param));
   this->AddAbstractParameter(index);
   return index;
 }

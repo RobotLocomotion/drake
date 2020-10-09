@@ -226,8 +226,23 @@ class SceneGraph final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SceneGraph)
 
-  /** Constructs a default (empty) scene graph. */
-  SceneGraph();
+  /** Constructs a default (empty) scene graph.
+
+   By default, the geometry data (aka geometry state) is stored as State in the
+   Context. As such, it can be modified via an unrestricted update event.
+   Alternatively, %SceneGraph can be configured to store its geometry data as
+   a Parameter. As a Parameter, it can only be modified outside the normal
+   simulation loop, but leaves SceneGraph completely stateless.
+
+   It's worth noting that this choice does not affect the cost of copying a
+   Context. But it *will* affect the cost of calling
+   Context::SetTimeStateAndParametersFrom(). If the geometry data is stored
+   as a Parameter, the full geometry data will be copied. If stored as a state,
+   it will be untouched by this call.
+
+   @param data_as_state  `true` stores the data as state; `false` stores it as a
+                         Parameter.  */
+  explicit SceneGraph(bool data_as_state = true);
 
   /** Constructor used for scalar conversions. It should only be used to convert
    _from_ double _to_ other scalar types.  */
@@ -893,7 +908,11 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   SceneGraphInspector<T> model_inspector_;
 
-  // The index of the geometry state in the context's abstract state.
+  // The index of the geometry state in the context. If ss abstract state.
+  // The geometry state is stored in the context either as state or as a
+  // parameter (based on data_as_state_). Either way, the stored index
+  // is its index in that classification of data.
+  bool data_as_state_{};
   int geometry_state_index_{-1};
 
   // The cache index for the pose update cache entry.

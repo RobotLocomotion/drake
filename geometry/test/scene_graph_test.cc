@@ -84,6 +84,18 @@ class SceneGraphTester {
                              PoseBundle<T>* bundle) {
     return scene_graph.CalcPoseBundle(context, bundle);
   }
+
+  template <typename T>
+  static const GeometryState<T>& GetGeometryState(
+      const SceneGraph<T>& scene_graph, const systems::Context<T>& context) {
+    return scene_graph.geometry_state(context);
+  }
+
+  template <typename T>
+  static GeometryState<T>& GetMutableGeometryState(
+      const SceneGraph<T>& scene_graph, systems::Context<T>* context) {
+    return scene_graph.mutable_geometry_state(context);
+  }
 };
 
 namespace {
@@ -131,6 +143,27 @@ class SceneGraphTest : public ::testing::Test {
   // determine if AllocateContext() has been invoked.
   QueryObject<double> query_object_;
 };
+
+// Confirms that the SceneGraph can be instantiated with the geometry data
+// stored as state or parameter (abstract either way). Because this
+// architectural choice is nicely embedded in SceneGraph's geometry_state() and
+// mutable_geometry_state() methods, we don't run *every* unit test in both
+// configurations. If this proves to be overly optimistic, we can parameterize
+// `SceneGraphTest` on that parameter and run those tests.
+TEST_F(SceneGraphTest, DataAsParameterVsState) {
+  for (bool data_as_state : {true, false}) {
+    SceneGraph<double> sg(data_as_state);
+    auto context = sg.AllocateContext();
+    EXPECT_EQ(context->get_state().get_abstract_state().size(),
+              data_as_state ? 1 : 0);
+    EXPECT_EQ(context->get_parameters().num_abstract_parameters(),
+              data_as_state ? 0 : 1);
+    // A smoke test to confirm that we can acquire the geometry state.
+    EXPECT_NO_THROW(SceneGraphTester::GetGeometryState(sg, *context));
+    EXPECT_NO_THROW(
+        SceneGraphTester::GetMutableGeometryState(sg, context.get()));
+  }
+}
 
 // Test sources.
 
@@ -325,26 +358,36 @@ TEST_F(SceneGraphTest, TransmogrifyPorts) {
 // Tests that the work to "set" the context values for the transmogrified system
 // behaves correctly.
 TEST_F(SceneGraphTest, TransmogrifyContext) {
-  SourceId s_id = scene_graph_.RegisterSource();
-  // Register geometry that should be successfully transmogrified.
-  GeometryId g_id =
-      scene_graph_.RegisterAnchoredGeometry(s_id, make_sphere_instance());
-  AllocateContext();
-  std::unique_ptr<System<AutoDiffXd>> system_ad = scene_graph_.ToAutoDiffXd();
-  SceneGraph<AutoDiffXd>& scene_graph_ad =
-      *dynamic_cast<SceneGraph<AutoDiffXd>*>(system_ad.get());
-  std::unique_ptr<Context<AutoDiffXd>> context_ad =
-      scene_graph_ad.AllocateContext();
-  context_ad->SetTimeStateAndParametersFrom(*context_);
-  // Pull out GeometryState from context by exploiting knowledge that it is
-  // zero-indexed.
-  const GeometryState<AutoDiffXd>& geo_state_ad =
-      context_ad->get_state().get_abstract_state<GeometryState<AutoDiffXd>>(0);
-  // If the anchored geometry were not ported over, this would throw an
-  // exception.
-  EXPECT_TRUE(geo_state_ad.BelongsToSource(g_id, s_id));
-  EXPECT_THROW(geo_state_ad.BelongsToSource(GeometryId::get_new_id(), s_id),
-               std::logic_error);
+  for (bool data_as_state : {true, false}) {
+    SceneGraph<double> sg(data_as_state);
+    SourceId s_id = sg.RegisterSource();
+    // Register geometry that should be successfully transmogrified.
+    GeometryId g_id =
+        sg.RegisterAnchoredGeometry(s_id, make_sphere_instance());
+    std::unique_ptr<Context<double>> context = sg.AllocateContext();
+    // This should transmogrify the internal *model*, so when I allocate the
+    // transmogrified context, I should get the "same" values (considering type
+    // change).
+    std::unique_ptr<System<AutoDiffXd>> system_ad = sg.ToAutoDiffXd();
+    SceneGraph<AutoDiffXd>& scene_graph_ad =
+        *dynamic_cast<SceneGraph<AutoDiffXd>*>(system_ad.get());
+    std::unique_ptr<Context<AutoDiffXd>> context_ad =
+        scene_graph_ad.AllocateContext();
+
+    // Extract the GeometryState directly and query some invariants on it
+    // directly.
+    const GeometryState<AutoDiffXd>& geo_state_ad =
+        SceneGraphTester::GetGeometryState(scene_graph_ad, *context_ad);
+    // If the anchored geometry were not ported over, this would throw an
+    // exception.
+    EXPECT_TRUE(geo_state_ad.BelongsToSource(g_id, s_id));
+    EXPECT_THROW(geo_state_ad.BelongsToSource(GeometryId::get_new_id(), s_id),
+                 std::logic_error);
+
+    // Quick reality check that this is still valid although unnecessary vis a
+    // vis the GeometryState.
+    EXPECT_NO_THROW(context_ad->SetTimeStateAndParametersFrom(*context));
+  }
 }
 
 // Tests that exercising the collision filtering logic *after* allocation is

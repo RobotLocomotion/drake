@@ -61,12 +61,18 @@ class GeometryStateValue final : public Value<GeometryState<T>> {
 }  // namespace
 
 template <typename T>
-SceneGraph<T>::SceneGraph()
+SceneGraph<T>::SceneGraph(bool data_as_state)
     : LeafSystem<T>(SystemTypeTag<SceneGraph>{}) {
   auto state_value = make_unique<GeometryStateValue<T>>();
   initial_state_ = &state_value->get_mutable_value();
   model_inspector_.set(initial_state_);
-  geometry_state_index_ = this->DeclareAbstractState(std::move(state_value));
+  data_as_state_ = data_as_state;
+  if (data_as_state_) {
+    geometry_state_index_ = this->DeclareAbstractState(std::move(state_value));
+  } else {
+    geometry_state_index_ =
+        this->DeclareAbstractParameter(std::move(state_value));
+  }
 
   bundle_port_index_ = this->DeclareAbstractOutputPort(
                                "lcm_visualization", &SceneGraph::MakePoseBundle,
@@ -85,11 +91,14 @@ SceneGraph<T>::SceneGraph()
 
 template <typename T>
 template <typename U>
-SceneGraph<T>::SceneGraph(const SceneGraph<U>& other) : SceneGraph() {
+SceneGraph<T>::SceneGraph(const SceneGraph<U>& other)
+    : SceneGraph(other.data_as_state_) {
   // NOTE: If other.initial_state_ is not null, it means we're converting a
   // system that hasn't had its context allocated yet. We want the converted
   // system to persist the same state.
   if (other.initial_state_ != nullptr) {
+    // Note: This is particularly bad because we're assuming that T must be
+    // AutoDiffXd to make any sense.
     *initial_state_ = *(other.initial_state_->ToAutoDiffXd());
     model_inspector_.set(initial_state_);
   }
@@ -474,16 +483,28 @@ void SceneGraph<T>::ThrowUnlessRegistered(SourceId source_id,
 template <typename T>
 GeometryState<T>& SceneGraph<T>::mutable_geometry_state(
     Context<T>* context) const {
-  return context->get_mutable_state()
-      .template get_mutable_abstract_state<GeometryState<T>>(
-          geometry_state_index_);
+  if (data_as_state_) {
+    return context->get_mutable_state()
+        .template get_mutable_abstract_state<GeometryState<T>>(
+            geometry_state_index_);
+  } else {
+    return context->get_mutable_parameters()
+        .template get_mutable_abstract_parameter<GeometryState<T>>(
+            geometry_state_index_);
+  }
 }
 
 template <typename T>
 const GeometryState<T>& SceneGraph<T>::geometry_state(
     const Context<T>& context) const {
-  return context.get_state().template get_abstract_state<GeometryState<T>>(
-      geometry_state_index_);
+  if (data_as_state_) {
+    return context.get_state().template get_abstract_state<GeometryState<T>>(
+        geometry_state_index_);
+  } else {
+    return context.get_parameters()
+        .template get_abstract_parameter<GeometryState<T>>(
+            geometry_state_index_);
+  }
 }
 
 // Explicitly instantiates on the most common scalar types.
