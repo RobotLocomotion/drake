@@ -11,6 +11,7 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_state.h"
+#include "drake/geometry/internal_frame.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
@@ -96,6 +97,12 @@ class SceneGraphInspector {
   typename GeometryState<T>::FrameIdRange all_frame_ids() const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->get_frame_ids();
+  }
+
+  /** Reports the id for the world frame.  */
+  FrameId world_frame_id() const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return internal::InternalFrame::world_frame_id();
   }
 
   /** Reports the _total_ number of geometries in the scene graph.  */
@@ -345,6 +352,27 @@ class SceneGraphInspector {
   const math::RigidTransform<double>& GetPoseInFrame(GeometryId id) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->GetPoseInFrame(id);
+  }
+
+  /** Return a pointer to the const properties indicated by `role` of the
+   geometry with the given `id`.
+   @param id    The identifier for the queried geometry.
+   @param role  The role whose properties are acquired.
+   @return A pointer to the properties (or `nullptr` if there are no such
+           properties).
+   @throws std::exception if `id` does not map to a registered geometry.  */
+  const GeometryProperties* GetProperties(GeometryId id, Role role) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    switch (role) {
+      case Role::kProximity:
+        return state_->GetProximityProperties(id);
+      case Role::kIllustration:
+        return state_->GetIllustrationProperties(id);
+      case Role::kPerception:
+        return state_->GetPerceptionProperties(id);
+      default:
+        return nullptr;
+    }
   }
 
   /** Returns a pointer to the const proximity properties of the geometry with

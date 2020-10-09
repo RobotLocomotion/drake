@@ -15,13 +15,10 @@ namespace geometry {
 class GeometryVersionTest : public ::testing::Test {
  protected:
   void SetUp() {}
-  GeometryVersion version_;
 
   void modify_proximity(GeometryVersion* v) { v->modify_proximity(); }
   void modify_perception(GeometryVersion* v) { v->modify_perception(); }
   void modify_illustration(GeometryVersion* v) { v->modify_illustration(); }
-
-  GeometryVersion CreateGeometryVersion() const { return GeometryVersion(); }
 
   void VerifySameRole(const GeometryVersion& v1, const GeometryVersion& v2,
                       Role role) const {
@@ -50,6 +47,8 @@ class GeometryVersionTest : public ::testing::Test {
     VerifyDistinctRole(v1, v2, Role::kPerception);
     VerifyDistinctRole(v1, v2, Role::kIllustration);
   }
+
+  GeometryVersion version_;
 };
 
 namespace {
@@ -133,7 +132,7 @@ TEST_F(GeometryVersionTest, Transitivity) {
 // Tests property 5.
 TEST_F(GeometryVersionTest, DefaultConstruct) {
   // Each default constructed version is unique.
-  GeometryVersion new_version = CreateGeometryVersion();
+  GeometryVersion new_version;
   VerifyDistinctVersions(new_version, version_);
 }
 }  // namespace
