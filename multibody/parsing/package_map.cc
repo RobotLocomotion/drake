@@ -220,9 +220,9 @@ void PackageMap::CrawlForPackages(const string& path) {
   }
 }
 
-void PackageMap::AddPackageXml(const string& package_xml_filename) {
-  const string package_name = GetPackageName(package_xml_filename);
-  const string package_path = GetParentDirectory(package_xml_filename);
+void PackageMap::AddPackageXml(const string& filename) {
+  const string package_name = GetPackageName(filename);
+  const string package_path = GetParentDirectory(filename);
   Add(package_name, package_path);
 }
 

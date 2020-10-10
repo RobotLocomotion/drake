@@ -34,9 +34,9 @@ class PackageMap {
   const std::string& GetPath(const std::string& package_name) const;
 
   /// Adds an entry into this PackageMap for the given `package.xml` filename.
-  /// Throws if @p package_xml_filename does not exist or its embedded name
-  /// already exists in this map.
-  void AddPackageXml(const std::string& package_xml_filename);
+  /// Throws if @p filename does not exist or its embedded name already exists
+  /// in this map.
+  void AddPackageXml(const std::string& filename);
 
   /// Crawls down the directory tree starting at @p path searching for
   /// directories containing the file `package.xml`. For each of these

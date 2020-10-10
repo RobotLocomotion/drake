@@ -238,6 +238,7 @@ drake_py_unittest(
         "//examples/atlas:models",
         "//multibody/benchmarks/acrobot:models",
         "//multibody/parsing:process_model_directives_test_models",
+        "//multibody/parsing:test_models",
     ],
     deps = [
         ":parsing_py",

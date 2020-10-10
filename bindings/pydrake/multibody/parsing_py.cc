@@ -29,16 +29,22 @@ PYBIND11_MODULE(parsing, m) {
     constexpr auto& cls_doc = doc.PackageMap;
     py::class_<Class>(m, "PackageMap", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc)
-        .def("Add", &Class::Add, cls_doc.Add.doc)
-        .def("Contains", &Class::Contains, cls_doc.Contains.doc)
+        .def("Add", &Class::Add, py::arg("package_name"),
+            py::arg("package_path"), cls_doc.Add.doc)
+        .def("Contains", &Class::Contains, py::arg("package_name"),
+            cls_doc.Contains.doc)
         .def("size", &Class::size, cls_doc.size.doc)
-        .def("GetPath", &Class::GetPath, cls_doc.GetPath.doc)
-        .def("PopulateFromFolder", &Class::PopulateFromFolder,
+        .def("GetPath", &Class::GetPath, py::arg("package_name"),
+            cls_doc.GetPath.doc)
+        .def("AddPackageXml", &Class::AddPackageXml, py::arg("filename"),
+            cls_doc.AddPackageXml.doc)
+        .def("PopulateFromFolder", &Class::PopulateFromFolder, py::arg("path"),
             cls_doc.PopulateFromFolder.doc)
         .def("PopulateFromEnvironment", &Class::PopulateFromEnvironment,
+            py::arg("environment_variable"),
             cls_doc.PopulateFromEnvironment.doc)
         .def("PopulateUpstreamToDrake", &Class::PopulateUpstreamToDrake,
-            cls_doc.PopulateUpstreamToDrake.doc);
+            py::arg("model_file"), cls_doc.PopulateUpstreamToDrake.doc);
   }
 
   // Parser
