@@ -14,7 +14,7 @@ class SymbolicChebyshevBasisElementTest : public ::testing::Test {
   const Variable z_{"z"};
 };
 
-TEST_F(SymbolicChebyshevBasisElementTest, less_than) {
+TEST_F(SymbolicChebyshevBasisElementTest, LessThan) {
   const ChebyshevBasisElement p1({{x_, 1}, {y_, 2}});
   const ChebyshevBasisElement p2({{y_, 3}});
   const ChebyshevBasisElement p3({{x_, 3}});

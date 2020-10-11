@@ -57,14 +57,14 @@ TEST_F(SymbolicRationalFunctionTest, Constructor) {
   EXPECT_PRED2(PolyEqual, f_p1_p2.denominator(), p2);
 }
 
-TEST_F(SymbolicRationalFunctionTest, Constructor_with_polynomial) {
+TEST_F(SymbolicRationalFunctionTest, ConstructorWithPolynomial) {
   // Constructor with numerator only.
   RationalFunction f1(p1_);
   EXPECT_PRED2(PolyEqual, f1.numerator(), p1_);
   EXPECT_PRED2(PolyEqual, f1.denominator(), polynomial_one_);
 }
 
-TEST_F(SymbolicRationalFunctionTest, Constructor_with_double) {
+TEST_F(SymbolicRationalFunctionTest, ConstructorWithDouble) {
   // Constructor with a double scalar.
   const double c = 5;
   RationalFunction f1(c);
