@@ -115,8 +115,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("w"), py::arg("v"), cls_doc.ctor.doc_2args)
         .def(
             py::init<const Vector6<T>&>(), py::arg("V"), cls_doc.ctor.doc_1args)
-        .def("ShiftInPlace", &Class::ShiftInPlace, py::arg("p_BpBq_E"),
-            py_rvp::reference, cls_doc.ShiftInPlace.doc)
         .def("Shift", &Class::Shift, py::arg("p_BpBq_E"), cls_doc.Shift.doc)
         .def("ComposeWithMovingFrameVelocity",
             &Class::ComposeWithMovingFrameVelocity, py::arg("p_PoBo_E"),
@@ -176,11 +174,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("tau"), py::arg("f"), cls_doc.ctor.doc_2args)
         .def(
             py::init<const Vector6<T>&>(), py::arg("F"), cls_doc.ctor.doc_1args)
-        .def("ShiftInPlace",
-            overload_cast_explicit<Class&, const Vector3<T>&>(
-                &Class::ShiftInPlace),
-            py::arg("p_BpBq_E"), py_rvp::reference,
-            cls_doc.ShiftInPlace.doc_1args)
         .def("Shift",
             overload_cast_explicit<Class, const Vector3<T>&>(&Class::Shift),
             py::arg("p_BpBq_E"), cls_doc.Shift.doc_1args)

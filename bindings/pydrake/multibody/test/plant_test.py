@@ -3,7 +3,6 @@
 import unittest
 
 import numpy as np
-import warnings
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression, Variable
@@ -405,10 +404,6 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(joint_actuator.name(), str)
         self.assertIsInstance(joint_actuator.joint(), Joint)
         self.assertIsInstance(joint_actuator.effort_limit(), float)
-
-    def check_old_spelling_exists(self, value):
-        # Just to make it obvious when this is being tested.
-        self.assertIsNot(value, None)
 
     @numpy_compare.check_all_types
     def test_inertia_api(self, T):

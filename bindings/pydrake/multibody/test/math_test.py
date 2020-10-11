@@ -115,7 +115,6 @@ class TestMultibodyTreeMath(unittest.TestCase):
         V = SpatialVelocity_[T].Zero()
         to_T = np.vectorize(T)
         p = to_T(np.zeros(3))
-        self.assertIs(V.ShiftInPlace(p_BpBq_E=p), V)
         self.assertIsInstance(V.Shift(p_BpBq_E=p), SpatialVelocity_[T])
         self.assertIsInstance(
             V.ComposeWithMovingFrameVelocity(p_PoBo_E=p, V_PB_E=V),
@@ -136,7 +135,6 @@ class TestMultibodyTreeMath(unittest.TestCase):
         F = SpatialForce_[T].Zero()
         to_T = np.vectorize(T)
         p = to_T(np.zeros(3))
-        self.assertIs(F.ShiftInPlace(p_BpBq_E=p), F)
         self.assertIsInstance(F.Shift(p_BpBq_E=p), SpatialForce_[T])
         V = SpatialVelocity_[T].Zero()
         self.assertIsInstance(F.dot(V_IBp_E=V), T)
