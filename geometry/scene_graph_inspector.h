@@ -412,6 +412,13 @@ class SceneGraphInspector {
   std::unique_ptr<GeometryInstance>
   CloneGeometryInstance(GeometryId id) const;
 
+  /** Obtains a geometry revision numbers that may be served to detect changes
+   to roles that geometries take.
+   @return A copy of GeometryRevision that stores the current revision numbers
+           of the geometries.                                                */
+  GeometryRevision GetGeometryRevision() const {
+      return state_->GetGeometryRevision();
+  }
   //@}
 
  private:

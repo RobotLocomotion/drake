@@ -14,6 +14,7 @@
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_index.h"
+#include "drake/geometry/geometry_revision.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/internal_frame.h"
@@ -130,6 +131,10 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::GetCollisionCandidates().  */
   std::set<std::pair<GeometryId, GeometryId>> GetCollisionCandidates() const;
 
+  /** Implementation of SceneGraphInspector::GetGeometryRevision().  */
+  GeometryRevision GetGeometryRevision() const {
+      return geometry_revision_;
+  }
   //@}
 
   /** @name          Sources and source-related data  */
@@ -851,6 +856,11 @@ class GeometryState {
   // The collection of all registered renderers.
   std::unordered_map<std::string, copyable_unique_ptr<render::RenderEngine>>
       render_engines_;
+
+  // The revision numbers of the each class of role of geometries. Downstream
+  // systems may acquire a copy of geometry_revision_ and store it to detect
+  // changes to any geometry changes that affect a particular role.
+  GeometryRevision geometry_revision_;
 };
 }  // namespace geometry
 }  // namespace drake

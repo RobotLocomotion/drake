@@ -690,6 +690,7 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
   InternalGeometry& geometry =
       ValidateRoleAssign(source_id, geometry_id, Role::kProximity, assign);
 
+  geometry_revision_.increment_proximity_revision();
   switch (assign) {
     case RoleAssign::kNew:
       geometry.SetRole(std::move(properties));
@@ -800,6 +801,11 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
         "Perception role assigned to geometry {}, but no renderer accepted it",
         geometry_id);
   }
+  if (added_to_renderer) {
+    // Increment revision number only if some renderer picks up the role
+    // assignment.
+    geometry_revision_.increment_perception_revision();
+  }
 }
 
 template <typename T>
@@ -832,6 +838,8 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
 
   InternalGeometry& geometry =
       ValidateRoleAssign(source_id, geometry_id, Role::kIllustration, assign);
+
+  geometry_revision_.increment_illustration_revision();
 
   geometry.SetRole(std::move(properties));
 }
@@ -924,6 +932,8 @@ void GeometryState<T>::ExcludeCollisionsWithin(const GeometrySet& set) {
   std::unordered_set<GeometryId> anchored;
   CollectIds(set, &dynamic, &anchored);
 
+  geometry_revision_.increment_proximity_revision();
+
   geometry_engine_->ExcludeCollisionsWithin(dynamic, anchored);
 }
 
@@ -936,6 +946,9 @@ void GeometryState<T>::ExcludeCollisionsBetween(const GeometrySet& setA,
   std::unordered_set<GeometryId> dynamic2;
   std::unordered_set<GeometryId> anchored2;
   CollectIds(setB, &dynamic2, &anchored2);
+
+  geometry_revision_.increment_proximity_revision();
+
   geometry_engine_->ExcludeCollisionsBetween(dynamic1, anchored1, dynamic2,
                                              anchored2);
 }
@@ -949,16 +962,23 @@ void GeometryState<T>::AddRenderer(
   }
   render::RenderEngine* render_engine = renderer.get();
   render_engines_[name] = move(renderer);
+  bool accepted = false;
   for (auto& id_geo_pair : geometries_) {
     InternalGeometry& geometry = id_geo_pair.second;
     if (geometry.has_perception_role()) {
       const GeometryId id = id_geo_pair.first;
       const PerceptionProperties* properties = geometry.perception_properties();
       DRAKE_DEMAND(properties != nullptr);
-      render_engine->RegisterVisual(id, geometry.shape(), *properties,
-                                    RigidTransformd(geometry.X_FG()),
-                                    geometry.is_dynamic());
+      accepted = render_engine->RegisterVisual(
+                     id, geometry.shape(), *properties,
+                     RigidTransformd(geometry.X_FG()), geometry.is_dynamic()) ||
+                 accepted;
     }
+  }
+  // Increment revision number if any geometry is registered to the new
+  // renderer.
+  if (accepted) {
+    geometry_revision_.increment_perception_revision();
   }
 }
 
@@ -1332,6 +1352,7 @@ bool GeometryState<T>::RemoveFromRendererUnchecked(
     // The engine has reported the belief that it has geometry `id`. Therefore,
     // removal should report true.
     DRAKE_DEMAND(engine->RemoveGeometry(id) == true);
+    geometry_revision_.increment_perception_revision();
     return true;
   }
   return false;
@@ -1348,6 +1369,7 @@ bool GeometryState<T>::RemoveProximityRole(GeometryId geometry_id) {
   // Geometry *is* registered; do the work to remove it.
   geometry_engine_->RemoveGeometry(geometry_id, geometry->is_dynamic());
   geometry->RemoveProximityRole();
+  geometry_revision_.increment_proximity_revision();
   return true;
 }
 
@@ -1360,6 +1382,7 @@ bool GeometryState<T>::RemoveIllustrationRole(GeometryId geometry_id) {
   if (!geometry->has_illustration_role()) return false;
 
   geometry->RemoveIllustrationRole();
+  geometry_revision_.increment_illustration_revision();
   return true;
 }
 
@@ -1377,6 +1400,10 @@ bool GeometryState<T>::RemovePerceptionRole(GeometryId geometry_id) {
     const std::string& engine_name = name_engine_pair.first;
     RemoveFromRendererUnchecked(engine_name, geometry_id);
   }
+  // Note that we only increment the perception role if a geometry is removed
+  // from a renderer. If the geometry with perception role are registered with
+  // multiply renderers, the perception revision number will increment by more
+  // than one.
   geometry->RemovePerceptionRole();
   return true;
 }
