@@ -212,6 +212,59 @@ class QueryObject;
  across systems.
  <!-- TODO(SeanCurtis-TRI): Add context-modifying variants of all methods. -->
 
+@section  scene_graph_versioning Detecting changes
+
+ The geometry data associated with %SceneGraph is coarsely versioned. Consumers
+ of the geometry can query for the version of the data and recognize if the
+ data has been modified since last examined.
+
+ The versioning is associated with geometry roles: proximity, illustration, and
+ perception; each role has its own, independent version. Any operation
+ that affects geometry with one of those roles will modify the corresponding
+ version. For example:
+
+ @code
+ // Does *not* modify any version; no roles have been assigned.
+ const GeometryId geometry_id = scene_graph.RegisterGeometry(
+     source_id, frame_id, make_unique<GeometryInstance>(...));
+ // Modifies the proximity version.
+ scene_graph.AssignRole(source_id, geometry_id, ProximityProperties());
+ // Modifies the illustration version.
+ scene_graph.AssignRole(source_id, geometry_id, IllustrationProperties());
+ // Modifies the perception version if there exists a renderer that accepts the
+ // geometry.
+ scene_graph.AssignRole(source_id, geometry_id, PerceptionProperties());
+ // Modifies the illustration version.
+ scene_graph.RemoveRole(source_id, geometry_id, Role::kIllustration);
+ // Modifies proximity version and perception version if the geometry is
+ // registered with any renderer.
+ scene_graph.RemoveGeometry(source_id, geometry_id);
+ @endcode
+
+ Each copy of geometry data maintains its own set of versions.
+ %SceneGraph's model has its own version, and that version is the same as the
+ version in the Context provided by SceneGraph::CreateDefaultContext().
+ Modifications to the geometry data contained in a Context modifies *that*
+ data's version, but the original model data's version is unmodified,
+ reflecting the unchanged model data.
+
+ The geometry data's version is accessed via a SceneGraphInspector instance.
+ model_inspector() will give access to %SceneGraph's model version. And
+ QueryObject::inspector() will give access to the geometry data stored in a
+ Context.
+
+ Current versions can be compared against previously examined versions. If
+ the versions match, then the geometry data is guaranteed to be the same.
+ If they don't match, that indicates that the two sets of data underwent
+ different revision processes. That, however, doesn't necessarily imply that the
+ two sets of data are distinct. In other words, the versioning will report
+ a difference unless it can guarantee equivalence.
+
+ It is possible that two different contexts have different versions and a
+ downstream system can be evaluated with each context alternatingly. If the
+ system behavior depends on the geometry version, this will cause it to thrash
+ whatever components depends on geometry version. The system should *clearly*
+ document this fact.
  @cond
  // TODO(SeanCurtis-TRI): Future work which will require add'l documentation:
  //   - velocity kinematics.
@@ -375,7 +428,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
    GeometryInstance `geometry` has had properties assigned.
 
    This method modifies the underlying model and requires a new Context to be
-   allocated.
+   allocated. Potentially modifies proximity, perception, and illustration
+   versions based on the roles assigned to the geometry (see @ref
+   scene_graph_versioning).
 
    @param source_id   The id for the source registering the geometry.
    @param frame_id    The id for the frame F to hang the geometry on.
@@ -407,7 +462,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
    GeometryInstance `geometry` has had properties assigned.
 
    This method modifies the underlying model and requires a new Context to be
-   allocated.
+   allocated. Potentially modifies proximity, perception, and illustration
+   versions based on the roles assigned to the geometry (see @ref
+   scene_graph_versioning).
 
    @param source_id    The id for the source registering the geometry.
    @param geometry_id  The id for the parent geometry P.
@@ -437,7 +494,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
    GeometryInstance `geometry` has had properties assigned.
 
    This method modifies the underlying model and requires a new Context to be
-   allocated.
+   allocated. Potentially modifies proximity, perception, and illustration
+   versions based on the roles assigned to the geometry (see @ref
+   scene_graph_versioning).
 
    @param source_id     The id for the source registering the frame.
    @param geometry      The anchored geometry G to add to the world.
@@ -454,7 +513,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
    this geometry will also be removed.
 
    This method modifies the underlying model and requires a new Context to be
-   allocated.
+   allocated. Potentially modifies proximity, perception, and illustration
+   versions based on the roles assigned to the geometry (see @ref
+   scene_graph_versioning).
 
    @param source_id   The identifier for the owner geometry source.
    @param geometry_id The identifier of the geometry to remove (can be dynamic
@@ -497,6 +558,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
    GeometryId id3 = scene_graph.RegisterGeometry(source_id, ...);
    scene_graph.AssignRole(source_id, id3, PerceptionProperties());
    ```
+
+   Modifies the perception version if `renderer` accepts any previously
+   existing geometries (see @ref scene_graph_versioning).
 
    @param name      The unique name of the renderer.
    @param renderer  The `renderer` to add.
@@ -593,10 +657,11 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
    Calling `RemoveRole()` will remove the properties and _role_ entirely.
 
-   These methods include the model- and context-modifying variants.  */
+   These methods include the model- and context-modifying variants.    */
   //@{
 
   /** Assigns the proximity role to the geometry indicated by `geometry_id`.
+   Modifies the proximity version (see @ref scene_graph_versioning).
    @pydrake_mkdoc_identifier{proximity_direct}
    */
   void AssignRole(SourceId source_id, GeometryId geometry_id,
@@ -622,6 +687,8 @@ class SceneGraph final : public systems::LeafSystem<T> {
    all the renderers that _may_ reify it. If no property is defined (or an
    empty set is given), then the default behavior of all renderers attempting
    to reify it will be restored.
+   Modifies the perception version if the geometry is added to any renderer (see
+   @ref scene_graph_versioning).
    @pydrake_mkdoc_identifier{perception_direct}
    */
   void AssignRole(SourceId source_id, GeometryId geometry_id,
@@ -639,6 +706,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
                   RoleAssign assign = RoleAssign::kNew) const;
 
   /** Assigns the illustration role to the geometry indicated by `geometry_id`.
+   Modifies the illustration version (see @ref scene_graph_versioning).
 
    @warning When changing illustration properties
    (`assign = RoleAssign::kReplace`), there is no guarantee that these changes
@@ -677,6 +745,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   /** Removes the indicated `role` from any geometry directly registered to the
    frame indicated by `frame_id` (if the geometry has the role).
+   Potentially modifies the proximity, perception, or illustration version based
+   on the role being removed from the geometry (see @ref
+   scene_graph_versioning).
    @returns The number of geometries affected by the removed role.
    @throws std::logic_error if a) `source_id` does not map to a registered
                             source,
@@ -694,6 +765,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
                   FrameId frame_id, Role role) const;
 
   /** Removes the indicated `role` from the geometry indicated by `geometry_id`.
+   Potentially modifies the proximity, perception, or illustration version based
+   on the role being removed from the geometry (see @ref
+   scene_graph_versioning).
    @returns One if the geometry had the role removed and zero if the geometry
             did not have the role assigned in the first place.
    @throws std::logic_error if a) `source_id` does not map to a registered
@@ -770,7 +844,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
    `G = {g₀, g₁, ..., gₘ}` is the input `set` of geometries.
 
    This method modifies the underlying model and requires a new Context to be
-   allocated.
+   allocated. Modifies the proximity version (see @ref scene_graph_versioning).
 
    @sa @ref scene_graph_collision_filtering for requirements and how collision
    filtering works.
@@ -789,7 +863,8 @@ class SceneGraph final : public systems::LeafSystem<T> {
    candidate pair set `C = C - P`, where `P = {(a, b)}, ∀ a ∈ A, b ∈ B` and
    `A = {a₀, a₁, ..., aₘ}` and `B = {b₀, b₁, ..., bₙ}` are the input sets of
    geometries `setA` and `setB`, respectively. This does _not_ preclude
-   collisions between members of the _same_ set.
+   collisions between members of the _same_ set. Modifies the proximity version
+   (see @ref scene_graph_versioning).
 
    @sa @ref scene_graph_collision_filtering for requirements and how collision
    filtering works.

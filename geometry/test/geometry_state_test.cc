@@ -19,6 +19,7 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_set.h"
+#include "drake/geometry/geometry_version.h"
 #include "drake/geometry/internal_frame.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/geometry/shape_specification.h"
@@ -140,6 +141,10 @@ class GeometryStateTester {
   const unordered_map<string, copyable_unique_ptr<render::RenderEngine>>&
   render_engines() const {
     return state_->render_engines_;
+  }
+
+  const GeometryVersion& geometry_version() const {
+      return state_->geometry_version_;
   }
 
  private:
@@ -627,8 +632,88 @@ class GeometryStateTestBase {
 // (via the SetUpSingleSourceTree() method).
 class GeometryStateTest : public GeometryStateTestBase, public ::testing::Test {
  protected:
-  void SetUp() override {
-    TestInit();
+  void SetUp() override { TestInit(); }
+
+  // Helpers for forwarding member methods of Geometry State and verifying
+  // behaviors of Geometry Versions.
+  //
+  // The helpers are templatized on the return type of the method and two sets
+  // of arguments, DeclaredArgs and GivenArgs. While generally one would
+  // assume the two sets of args are of the same type, separating them this
+  // way facilitates type deduction. For example, passing in a string literal
+  // as a parameter to a function that expects a const string would defy type
+  // deduction with just a single argument template. But separating them at
+  // the call to this function, defers the resolution to the actual call of
+  // the function.
+
+  // Forward a function call to a member method of GeometryState and return the
+  // GeometryVersions before and after the call.
+  template <typename ReturnType, typename... DeclaredArgs,
+            typename... GivenArgs>
+  std::tuple<GeometryVersion, GeometryVersion> ForwardAndGetRevisions(
+      ReturnType (GeometryState<double>::*f)(DeclaredArgs...),
+      GivenArgs&&... args) {
+    GeometryVersion old_version = geometry_state_.geometry_version();
+    (geometry_state_.*f)(std::forward<GivenArgs>(args)...);
+    GeometryVersion new_version = geometry_state_.geometry_version();
+    return {old_version, new_version};
+  }
+
+  // Forward a call to a member function in GeometryState and verify that the
+  // version of the given `role` is modified but all other versions are
+  // unchanged in this function.
+  template <typename ReturnType, typename... DeclaredArgs,
+            typename... GivenArgs>
+  void VerifyRoleVersionModified(
+      Role role, ReturnType (GeometryState<double>::*f)(DeclaredArgs...),
+      GivenArgs&&... args) {
+    auto [old_version, new_version] =
+        ForwardAndGetRevisions(f, std::forward<GivenArgs>(args)...);
+    for (Role test_role :
+         {Role::kProximity, Role::kPerception, Role::kIllustration}) {
+      // We expect versions to match when the test_role is different from the
+      // declared role.
+      EXPECT_EQ(old_version.IsSameAs(new_version, test_role),
+                role != test_role);
+    }
+  }
+
+  // Forward a call to a non-void member function in GeometryState and verify
+  // that all versions are unchanged in this function. Return the return
+  // value of the forwarded call.
+  template <typename ReturnType, typename... DeclaredArgs,
+            typename... GivenArgs>
+  ReturnType VerifyVersionUnchanged(
+      ReturnType (GeometryState<double>::*f)(DeclaredArgs...),
+      GivenArgs&&... args) {
+    GeometryVersion old_version = geometry_state_.geometry_version();
+    ReturnType ret = (geometry_state_.*f)(std::forward<GivenArgs>(args)...);
+    GeometryVersion new_version = geometry_state_.geometry_version();
+    EXPECT_TRUE(old_version.IsSameAs(new_version, Role::kProximity));
+    EXPECT_TRUE(old_version.IsSameAs(new_version, Role::kPerception));
+    EXPECT_TRUE(old_version.IsSameAs(new_version, Role::kIllustration));
+    return ret;
+  }
+
+  // Forward a call to a void member function in GeometryState and verify that
+  // all versions are unchanged in this function.
+  template <typename... DeclaredArgs, typename... GivenArgs>
+  void VerifyVersionUnchanged(void (GeometryState<double>::*f)(DeclaredArgs...),
+                              GivenArgs&&... args) {
+    auto [old_version, new_version] =
+        ForwardAndGetRevisions(f, std::forward<GivenArgs>(args)...);
+    EXPECT_TRUE(old_version.IsSameAs(new_version, Role::kProximity));
+    EXPECT_TRUE(old_version.IsSameAs(new_version, Role::kPerception));
+    EXPECT_TRUE(old_version.IsSameAs(new_version, Role::kIllustration));
+  }
+
+  void VerifyIdenticalVersions(const GeometryState<double>& gs1,
+                               const GeometryState<double>& gs2) const {
+    const auto& v1 = gs1.geometry_version();
+    const auto& v2 = gs2.geometry_version();
+    EXPECT_TRUE(v1.IsSameAs(v2, Role::kProximity));
+    EXPECT_TRUE(v1.IsSameAs(v2, Role::kPerception));
+    EXPECT_TRUE(v1.IsSameAs(v2, Role::kIllustration));
   }
 };
 
@@ -3406,6 +3491,220 @@ TEST_F(GeometryStateTest, RendererPoseUpdate) {
   expected_ids = get_expected_ids();
   expect_poses(second_engine->updated_ids(), expected_ids);
   expect_poses(render_engine_->updated_ids(), expected_ids);
+}
+
+// This tests the equivalence of versions among copies of GeometryState
+// instances; two copies are equivalent and equivalence is transitive. So, for
+// state s: copy(s) == s and copy(copy(s)) == s.
+TEST_F(GeometryStateTest, GeometryVersionCopies) {
+  SetUpSingleSourceTree(Assign::kProximity);
+  // Create a few copies of geometry state with the following tree of create
+  // where a child node is copied from the parent node.
+  //
+  //                 geometry_state_
+  //                ________|________
+  //                |               |
+  //               gs1              g2
+  //                |
+  //               gs3
+  //
+  // Verify that they are share the exact same version for all roles.
+  GeometryState<double> gs1(geometry_state_);
+  GeometryState<double> gs2(geometry_state_);
+  GeometryState<double> gs3(gs1);
+  VerifyIdenticalVersions(gs1, geometry_state_);
+  VerifyIdenticalVersions(gs2, geometry_state_);
+  VerifyIdenticalVersions(gs1, gs2);
+  VerifyIdenticalVersions(gs3, geometry_state_);
+  VerifyIdenticalVersions(gs3, gs1);
+  VerifyIdenticalVersions(gs3, gs2);
+}
+
+// Confirms that geometry_version_ is updated correctly in each public method of
+// geometry state. Every (non-const) API in GeometryState should be added to
+// this test function so we can fully characterize every API's effect on
+// geometry version.
+TEST_F(GeometryStateTest, GeometryVersionUpdate) {
+  SetUpSingleSourceTree();
+
+  SourceId new_source = VerifyVersionUnchanged(
+      &GeometryState<double>::RegisterNewSource, "my_new_source");
+  // Registering a new frame does not modify the versions.
+  FrameId new_frame_0 =
+      VerifyVersionUnchanged(static_cast<FrameId(GeometryState<double>::*)(
+                                 SourceId, const GeometryFrame&)>(
+                                 &GeometryState<double>::RegisterFrame),
+                             new_source, GeometryFrame("new_f0"));
+  VerifyVersionUnchanged(static_cast<FrameId(GeometryState<double>::*)(
+                             SourceId, FrameId, const GeometryFrame&)>(
+                             &GeometryState<double>::RegisterFrame),
+                         new_source, new_frame_0, GeometryFrame("new_f1"));
+
+  // Registering geometries with no roles assigned does not change the versions.
+  GeometryId new_geometry_0 = VerifyVersionUnchanged(
+      &GeometryState<double>::RegisterGeometry, new_source, new_frame_0,
+      std::make_unique<GeometryInstance>(
+          RigidTransformd(), make_unique<Sphere>(1), "new_geometry_0"));
+  VerifyVersionUnchanged(
+      &GeometryState<double>::RegisterGeometryWithParent, new_source,
+      new_geometry_0,
+      std::make_unique<GeometryInstance>(
+          RigidTransformd(), make_unique<Sphere>(1), "new_geometry_1"));
+  VerifyVersionUnchanged(
+      &GeometryState<double>::RegisterAnchoredGeometry, new_source,
+      std::make_unique<GeometryInstance>(
+          RigidTransformd(), make_unique<Sphere>(1), "new_geometry_2"));
+
+  // Adding a new proximity role or replacing a proximity role modifies the
+  // proximity version, but not the other versions.
+  VerifyRoleVersionModified(
+      Role::kProximity,
+      static_cast<void(GeometryState<double>::*)(
+          SourceId, GeometryId, ProximityProperties, RoleAssign)>(
+          &GeometryState<double>::AssignRole),
+      source_id_, geometries_[0], ProximityProperties(), RoleAssign::kNew);
+
+  VerifyRoleVersionModified(
+      Role::kProximity,
+      static_cast<void(GeometryState<double>::*)(
+          SourceId, GeometryId, ProximityProperties, RoleAssign)>(
+          &GeometryState<double>::AssignRole),
+      source_id_, geometries_[0], ProximityProperties(), RoleAssign::kReplace);
+
+  // Add a new perception role that is accepted by a renderer modifies the
+  // perception version, but not the other versions.
+  PerceptionProperties base_perception_properties =
+      DummyRenderEngine().accepting_properties();
+  base_perception_properties.AddProperty("phong", "diffuse",
+                                         Vector4<double>{0.8, 0.8, 0.8, 1.0});
+  base_perception_properties.AddProperty("label", "id", RenderLabel::kDontCare);
+  {
+    PerceptionProperties perception_properties(base_perception_properties);
+    perception_properties.AddProperty("renderer", "accepting",
+                                      set<string>{kDummyRenderName});
+    VerifyRoleVersionModified(
+        Role::kPerception,
+        static_cast<void(GeometryState<double>::*)(
+            SourceId, GeometryId, PerceptionProperties, RoleAssign)>(
+            &GeometryState<double>::AssignRole),
+        source_id_, geometries_[1], perception_properties, RoleAssign::kNew);
+  }
+
+  // If the perception property is not accepted by any renderer, the perception
+  // version is not modified.
+  {
+    PerceptionProperties perception_properties(base_perception_properties);
+    perception_properties.AddProperty("renderer", "accepting",
+                                      set<string>{"junk"});
+    VerifyVersionUnchanged(
+        static_cast<void(GeometryState<double>::*)(
+            SourceId, GeometryId, PerceptionProperties, RoleAssign)>(
+            &GeometryState<double>::AssignRole),
+        source_id_, geometries_[2], perception_properties, RoleAssign::kNew);
+  }
+
+  // Adding a new illustration role modifies the illustration version, but not
+  // the other versions.
+  IllustrationProperties illustration_properties;
+  illustration_properties.AddProperty("phong", "diffuse",
+                                      Vector4<double>{0.8, 0.8, 0.8, 1.0});
+  VerifyRoleVersionModified(
+      Role::kIllustration,
+      static_cast<void(GeometryState<double>::*)(
+          SourceId, GeometryId, IllustrationProperties, RoleAssign)>(
+          &GeometryState<double>::AssignRole),
+      source_id_, geometries_[3], illustration_properties, RoleAssign::kNew);
+
+  // Removing a proximity role modifies the proximity version but not the other
+  // versions.
+  VerifyRoleVersionModified(
+      Role::kProximity,
+      static_cast<int (GeometryState<double>::*)(SourceId, GeometryId, Role)>(
+          &GeometryState<double>::RemoveRole),
+      source_id_, geometries_[0], Role::kProximity);
+
+  // Removing a perception role from a geometry registered in a renderer
+  // modifies the perception version but not the other versions.
+  VerifyRoleVersionModified(
+      Role::kPerception,
+      static_cast<int (GeometryState<double>::*)(SourceId, GeometryId, Role)>(
+          &GeometryState<double>::RemoveRole),
+      source_id_, geometries_[1], Role::kPerception);
+
+  // Removing the perception role from a geometry not registered in any renderer
+  // does not modify any version.
+  VerifyVersionUnchanged(
+      static_cast<int (GeometryState<double>::*)(SourceId, GeometryId, Role)>(
+          &GeometryState<double>::RemoveRole),
+      source_id_, geometries_[2], Role::kPerception);
+
+  // Removing a illustration role modifies the illustration version but not the
+  // other versions.
+  VerifyRoleVersionModified(
+      Role::kIllustration,
+      static_cast<int (GeometryState<double>::*)(SourceId, GeometryId, Role)>(
+          &GeometryState<double>::RemoveRole),
+      source_id_, geometries_[3], Role::kIllustration);
+
+  // Removing a non-existing role does not modify the versions.
+  VerifyVersionUnchanged(
+      static_cast<int (GeometryState<double>::*)(SourceId, GeometryId, Role)>(
+          &GeometryState<double>::RemoveRole),
+      source_id_, geometries_[3], Role::kIllustration);
+  VerifyVersionUnchanged(
+      static_cast<int (GeometryState<double>::*)(SourceId, GeometryId, Role)>(
+          &GeometryState<double>::RemoveRole),
+      source_id_, geometries_[3], Role::kPerception);
+
+  // Removing a geometry without any perception role from a renderer does not
+  // modify any version.
+  VerifyVersionUnchanged(static_cast<int(GeometryState<double>::*)(
+                             const std::string&, SourceId, GeometryId)>(
+                             &GeometryState<double>::RemoveFromRenderer),
+                         kDummyRenderName, source_id_, geometries_[1]);
+
+  // Add the perception property back on geometries_[1].
+  PerceptionProperties perception_properties(base_perception_properties);
+  perception_properties.AddProperty("renderer", "accepting",
+                                    set<string>{kDummyRenderName});
+  geometry_state_.AssignRole(source_id_, geometries_[1], perception_properties,
+                             RoleAssign::kNew);
+
+  // Removing a geometry with perception role from a renderer does modify
+  // the perception version.
+  VerifyRoleVersionModified(Role::kPerception,
+                            static_cast<int(GeometryState<double>::*)(
+                                const std::string&, SourceId, GeometryId)>(
+                                &GeometryState<double>::RemoveFromRenderer),
+                            kDummyRenderName, source_id_, geometries_[1]);
+
+  // Assign proximity role to the first three geometries to test versions on
+  // proximity filters.
+  for (int i = 0; i < 3; ++i) {
+    geometry_state_.AssignRole(source_id_, geometries_[i],
+                               ProximityProperties(), RoleAssign::kNew);
+  }
+  VerifyRoleVersionModified(Role::kProximity,
+                            &GeometryState<double>::ExcludeCollisionsWithin,
+                            GeometrySet{geometries_[0], geometries_[1]});
+  VerifyRoleVersionModified(
+      Role::kProximity, &GeometryState<double>::ExcludeCollisionsBetween,
+      GeometrySet{geometries_[0], geometries_[1]}, GeometrySet{geometries_[2]});
+
+  // Note that geometries_[1] has perception role now.
+  // When there exist geometries with perception properties, adding a renderer
+  // that accepts those geometries modifies the perception version.
+  VerifyRoleVersionModified(Role::kPerception,
+                            &GeometryState<double>::AddRenderer, "second",
+                            make_unique<DummyRenderEngine>());
+
+  // Remove the perception role of the only two geometries that have perception
+  // roles.
+  geometry_state_.RemoveRole(source_id_, geometries_[1], Role::kPerception);
+  // Adding a renderer when there's no geometry with perception role does not
+  // modify version.
+  VerifyVersionUnchanged(&GeometryState<double>::AddRenderer, "third",
+                         make_unique<DummyRenderEngine>());
 }
 
 // The framework for testing the removal of roles, generally, parameterized on

@@ -114,6 +114,7 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   EXPECT_NE(geometry_instance_clone->proximity_properties(), nullptr);
   EXPECT_EQ(geometry_instance_clone->perception_properties(), nullptr);
   EXPECT_EQ(geometry_instance_clone->illustration_properties(), nullptr);
+  inspector.geometry_version();
 }
 
 }  // namespace

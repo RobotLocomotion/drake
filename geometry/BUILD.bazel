@@ -23,6 +23,7 @@ drake_cc_package_library(
         ":geometry_roles",
         ":geometry_set",
         ":geometry_state",
+        ":geometry_version",
         ":geometry_visualization",
         ":internal_frame",
         ":internal_geometry",
@@ -131,6 +132,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "geometry_version",
+    srcs = ["geometry_version.cc"],
+    hdrs = ["geometry_version.h"],
+    deps = [
+        ":geometry_roles",
+        "//common:essential",
+        "//common:identifier",
+    ],
+)
+
+drake_cc_library(
     name = "geometry_roles",
     srcs = ["geometry_roles.cc"],
     hdrs = ["geometry_roles.h"],
@@ -157,6 +169,7 @@ drake_cc_library(
         ":geometry_index",
         ":geometry_instance",
         ":geometry_set",
+        ":geometry_version",
         ":internal_frame",
         ":internal_geometry",
         ":proximity_engine",
@@ -345,6 +358,13 @@ drake_cc_googletest(
     deps = [
         ":geometry_properties",
         "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "geometry_version_test",
+    deps = [
+        ":geometry_version",
     ],
 )
 
