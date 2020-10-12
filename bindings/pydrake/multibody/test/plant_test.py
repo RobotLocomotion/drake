@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import unittest
+import copy
 
 import numpy as np
 
@@ -405,8 +406,93 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(joint_actuator.joint(), Joint)
         self.assertIsInstance(joint_actuator.effort_limit(), float)
 
+    def _test_rotational_inertia_or_unit_inertia_api(self, T, Class):
+        """
+        Tests the given Class (either RotationInertia or UnitInertia) for the
+        API subset that they both share.
+        """
+        RotationMatrix = RotationMatrix_[T]
+        Class()
+        Class(Ixx=1.0, Iyy=1.0, Izz=1.0, Ixy=0.1, Ixz=0.1, Iyz=0.1)
+        Class(Ixx=1.0, Iyy=1.0, Izz=1.0)
+        dut = Class.TriaxiallySymmetric(I_triaxial=1.0)
+        self.assertIsInstance(dut, Class)
+        dut.rows()
+        dut.cols()
+        self.assertIsInstance(dut.get_moments(), np.ndarray)
+        self.assertIsInstance(dut.get_products(), np.ndarray)
+        self.assertIsInstance(dut.Trace(), T)
+        dut.CalcMaximumPossibleMomentOfInertia()
+        self.assertIsInstance(dut[0, 0], T)
+        with self.assertRaisesRegex(
+                Exception, r"incompatible function arguments"):
+            dut[0]
+        with self.assertRaisesRegex(
+                Exception, r"Unable to cast"):
+            dut[0.0, 0.0]
+        with self.assertRaisesRegex(
+                Exception, r"Expected \[i,j\]"):
+            dut[0, 0, 0]
+        self.assertIsInstance(dut.CopyToFullMatrix3(), np.ndarray)
+        dut.IsNearlyEqualTo(other=dut, precision=0.0)
+        dut.SetToNaN()
+        dut.IsNaN()
+        dut.SetZero()
+        self.assertIsInstance(dut.CalcPrincipalMomentsOfInertia(), np.ndarray)
+        dut.CouldBePhysicallyValid()
+        self.assertIsInstance(dut.ReExpress(R_AE=RotationMatrix()), Class)
+        self.assertIsInstance(copy.copy(dut), Class)
+
     @numpy_compare.check_all_types
-    def test_inertia_api(self, T):
+    def test_rotational_inertia_api(self, T):
+        """Tests rotational inertia construction and API."""
+        Class = RotationalInertia_[T]
+        self._test_rotational_inertia_or_unit_inertia_api(T, Class)
+        # Test methods present only on RotationalInernia, not UnitInertia.
+        p = [0.1, 0.2, 0.3]
+        dut = Class(mass=1.0, p_PQ_E=p)
+        self.assertIsInstance(
+            dut.ShiftFromCenterOfMass(mass=1.0, p_BcmQ_E=p), Class)
+        self.assertIsInstance(
+            dut.ShiftToCenterOfMass(mass=1.0, p_QBcm_E=p), Class)
+        self.assertIsInstance(
+            dut.ShiftToThenAwayFromCenterOfMass(
+                mass=1.0, p_PBcm_E=p, p_QBcm_E=p),
+            Class)
+        # Test operators.
+        zero = Class(Ixx=0.0, Iyy=0.0, Izz=0.0)
+        self.assertIsInstance(dut + zero, Class)
+        self.assertIsInstance(dut - zero, Class)
+        self.assertIsInstance(dut * T(1.0), Class)
+        self.assertIsInstance(T(1.0) * dut, Class)
+        self.assertIsInstance(dut * p, np.ndarray)
+        self.assertIsInstance(dut / T(1.0), Class)
+        dut += zero
+        self.assertIsInstance(dut, Class)
+        dut -= zero
+        self.assertIsInstance(dut, Class)
+        dut *= T(1.0)
+        self.assertIsInstance(dut, Class)
+        dut /= T(1.0)
+        self.assertIsInstance(dut, Class)
+
+    @numpy_compare.check_all_types
+    def test_unit_inertia_api(self, T):
+        """Tests unit inertia construction and API."""
+        UnitInertia = UnitInertia_[T]
+        self._test_rotational_inertia_or_unit_inertia_api(T, UnitInertia)
+        # Test methods present only on UnitInertia, not RotationalInernia.
+        p = [0.1, 0.2, 0.3]
+        dut = UnitInertia(I=RotationalInertia_[T](mass=1.0, p_PQ_E=p))
+        self.assertIsInstance(
+            dut.ShiftFromCenterOfMass(p_BcmQ_E=p), UnitInertia)
+        self.assertIsInstance(
+            dut.ShiftToCenterOfMass(p_QBcm_E=p), UnitInertia)
+        # N.B. There are NO valid operators on UnitInertia.  They are inherited
+        # through implementation reuse, but they are broken (#6109).
+
+    @numpy_compare.check_all_types
+    def test_spatial_inertia_api(self, T):
         RotationalInertia = RotationalInertia_[T]
         UnitInertia = UnitInertia_[T]
         SpatialInertia = SpatialInertia_[T]
@@ -415,27 +501,19 @@ class TestPlant(unittest.TestCase):
         SpatialForce = SpatialForce_[T]
         SpatialVelocity = SpatialVelocity_[T]
         SpatialMomentum = SpatialMomentum_[T]
-        # Test unit inertia construction and API.
-        UnitInertia()
-        unit_inertia = UnitInertia(Ixx=2.0, Iyy=2.3, Izz=2.4)
-        self.assertIsInstance(unit_inertia, RotationalInertia)
-        self.assertIsInstance(unit_inertia.CopyToFullMatrix3(), np.ndarray)
-        self.assertIsInstance(
-            unit_inertia.ReExpress(R_AE=RotationMatrix()), UnitInertia)
-        # Test spatial inertia construction.
         SpatialInertia()
+        SpatialInertia.MakeFromCentralInertia(
+            mass=1.3, p_PScm_E=[0.1, -0.2, 0.3],
+            I_SScm_E=RotationalInertia(Ixx=2.0, Iyy=2.3, Izz=2.4))
         spatial_inertia = SpatialInertia(
-            mass=2.5, p_PScm_E=[0.1, -0.2, 0.3], G_SP_E=unit_inertia)
+            mass=2.5, p_PScm_E=[0.1, -0.2, 0.3],
+            G_SP_E=UnitInertia(Ixx=2.0, Iyy=2.3, Izz=2.4))
         numpy_compare.assert_float_equal(spatial_inertia.get_mass(), 2.5)
         self.assertIsInstance(spatial_inertia.get_com(), np.ndarray)
         self.assertIsInstance(spatial_inertia.CalcComMoment(), np.ndarray)
         self.assertIsInstance(spatial_inertia.get_unit_inertia(), UnitInertia)
-        rotational_inertia = spatial_inertia.CalcRotationalInertia()
-        # - Briefly test rotational inertia API.
-        self.assertIsInstance(rotational_inertia, RotationalInertia)
         self.assertIsInstance(
-            rotational_inertia.ReExpress(R_AE=RotationMatrix()),
-            RotationalInertia)
+            spatial_inertia.CalcRotationalInertia(), RotationalInertia)
         # N.B. `numpy_compare.assert_equal(IsPhysicallyValid(), True)` does not
         # work.
         if T != Expression:
@@ -1531,6 +1609,7 @@ class TestPlant(unittest.TestCase):
 
         forces = MultibodyForces(plant=plant)
         plant.CalcForceElementsContribution(context=context, forces=forces)
+        copy.copy(forces)
 
         # Test generalized forces.
         # N.B. Cannot use `ndarray[object]` to reference existing C arrays
@@ -1540,6 +1619,11 @@ class TestPlant(unittest.TestCase):
             np.testing.assert_equal(forces.generalized_forces(), 1)
             forces.SetZero()
             np.testing.assert_equal(forces.generalized_forces(), 0)
+
+        # Test standalone construction.
+        standalone_forces = MultibodyForces(nb=1, nv=2)
+        self.assertEqual(standalone_forces.num_bodies(), 1)
+        self.assertEqual(standalone_forces.num_velocities(), 2)
 
         # Test body force accessors and mutators.
         link2 = plant.GetBodyByName("Link2")

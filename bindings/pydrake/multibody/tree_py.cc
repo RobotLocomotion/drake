@@ -1,5 +1,6 @@
 #include "pybind11/eigen.h"
 #include "pybind11/eval.h"
+#include "pybind11/operators.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
@@ -30,6 +31,13 @@
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/universal_joint.h"
 #include "drake/multibody/tree/weld_joint.h"
+
+#pragma GCC diagnostic push
+// It is fine to use this at a file-wide scope since in practice we only
+// encounter these warnings in bindings due to pybind11's operators.
+#if (__clang__) && (__clang_major__ >= 9)
+#pragma GCC diagnostic ignored "-Wself-assign-overloaded"
+#endif
 
 namespace drake {
 namespace pydrake {
@@ -628,7 +636,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
           return std::make_unique<Class>(plant);
         }),
             py::arg("plant"), cls_doc.ctor.doc_1args_plant)
+        .def(py::init<int, int>(), py::arg("nb"), py::arg("nv"),
+            cls_doc.ctor.doc_2args_nb_nv)
         .def("SetZero", &Class::SetZero, cls_doc.SetZero.doc)
+        .def("num_bodies", &Class::num_bodies, cls_doc.num_bodies.doc)
+        .def("num_velocities", &Class::num_velocities,
+            cls_doc.num_velocities.doc)
         .def("generalized_forces", &Class::generalized_forces,
             cls_doc.generalized_forces.doc)
         .def("mutable_generalized_forces", &Class::mutable_generalized_forces,
@@ -637,6 +650,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         // they use `internal::BodyNodeIndex`. Instead, use force API in Body.
         .def("AddInForces", &Class::AddInForces, py::arg("addend"),
             cls_doc.AddInForces.doc);
+    DefCopyAndDeepCopy(&cls);
   }
 
   // Inertias
@@ -646,10 +660,72 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "RotationalInertia", param, cls_doc.doc);
     cls  // BR
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
+        .def(py::init<const T&, const T&, const T&>(), py::arg("Ixx"),
+            py::arg("Iyy"), py::arg("Izz"), cls_doc.ctor.doc_3args)
+        .def(py::init<const T&, const T&, const T&, const T&, const T&,
+                 const T&>(),
+            py::arg("Ixx"), py::arg("Iyy"), py::arg("Izz"), py::arg("Ixy"),
+            py::arg("Ixz"), py::arg("Iyz"), cls_doc.ctor.doc_6args)
+        .def(py::init<const T&, const Vector3<T>&>(), py::arg("mass"),
+            py::arg("p_PQ_E"), cls_doc.ctor.doc_2args)
+        .def_static("TriaxiallySymmetric", &Class::TriaxiallySymmetric,
+            py::arg("I_triaxial"), cls_doc.TriaxiallySymmetric.doc)
+        .def("rows", &Class::rows, cls_doc.rows.doc)
+        .def("cols", &Class::cols, cls_doc.cols.doc)
+        .def("get_moments", &Class::get_moments, cls_doc.get_moments.doc)
+        .def("get_products", &Class::get_products, cls_doc.get_products.doc)
+        .def("Trace", &Class::Trace, cls_doc.Trace.doc)
+        .def("CalcMaximumPossibleMomentOfInertia",
+            &Class::CalcMaximumPossibleMomentOfInertia,
+            cls_doc.CalcMaximumPossibleMomentOfInertia.doc)
+        .def(
+            "__getitem__",
+            [](const Class& self, py::tuple key) -> T {
+              if (key.size() != 2) {
+                throw std::out_of_range("Expected [i,j] for __getitem__.");
+              }
+              const int i = py::cast<int>(key[0]);
+              const int j = py::cast<int>(key[1]);
+              return self(i, j);
+            },
+            cls_doc.operator_call.doc)
         .def("CopyToFullMatrix3", &Class::CopyToFullMatrix3,
             cls_doc.CopyToFullMatrix3.doc)
+        .def("IsNearlyEqualTo", &Class::IsNearlyEqualTo, py::arg("other"),
+            py::arg("precision"), cls_doc.IsNearlyEqualTo.doc)
+        .def(py::self += py::self, cls_doc.operator_iadd.doc)
+        .def(py::self + py::self, cls_doc.operator_add.doc)
+        .def(py::self -= py::self, cls_doc.operator_isub.doc)
+        .def(py::self - py::self, cls_doc.operator_sub.doc)
+        .def(py::self *= T{}, cls_doc.operator_imul.doc)
+        .def(py::self * T{}, cls_doc.operator_mul.doc)
+        .def(T{} * py::self, cls_doc.operator_mul.doc)
+        .def(py::self * Vector3<T>{}, cls_doc.operator_mul.doc)
+        .def(py::self /= T{}, cls_doc.operator_idiv.doc)
+        .def(py::self / T{}, cls_doc.operator_div.doc)
+        .def("SetToNaN", &Class::SetToNaN, cls_doc.SetToNaN.doc)
+        .def("SetZero", &Class::SetZero, cls_doc.SetZero.doc)
+        .def("IsNaN", &Class::IsNaN, cls_doc.IsNaN.doc)
+        // TODO(jwnimmer-tri) Need to bind cast<>.
+        .def("CalcPrincipalMomentsOfInertia",
+            &Class::CalcPrincipalMomentsOfInertia,
+            cls_doc.CalcPrincipalMomentsOfInertia.doc)
+        .def("CouldBePhysicallyValid", &Class::CouldBePhysicallyValid,
+            cls_doc.CouldBePhysicallyValid.doc)
         .def("ReExpress", &Class::ReExpress, py::arg("R_AE"),
-            cls_doc.ReExpress.doc);
+            cls_doc.ReExpress.doc)
+        .def("ShiftFromCenterOfMass", &Class::ShiftFromCenterOfMass,
+            py::arg("mass"), py::arg("p_BcmQ_E"),
+            cls_doc.ShiftFromCenterOfMass.doc)
+        .def("ShiftToCenterOfMass", &Class::ShiftToCenterOfMass,
+            py::arg("mass"), py::arg("p_QBcm_E"),
+            cls_doc.ShiftToCenterOfMass.doc)
+        .def("ShiftToThenAwayFromCenterOfMass",
+            &Class::ShiftToThenAwayFromCenterOfMass, py::arg("mass"),
+            py::arg("p_PBcm_E"), py::arg("p_QBcm_E"),
+            cls_doc.ShiftToThenAwayFromCenterOfMass.doc);
+    DefCopyAndDeepCopy(&cls);
   }
   {
     using Class = UnitInertia<T>;
@@ -660,8 +736,45 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(py::init(), cls_doc.ctor.doc_0args)
         .def(py::init<const T&, const T&, const T&>(), py::arg("Ixx"),
             py::arg("Iyy"), py::arg("Izz"), cls_doc.ctor.doc_3args)
+        .def(py::init<const T&, const T&, const T&, const T&, const T&,
+                 const T&>(),
+            py::arg("Ixx"), py::arg("Iyy"), py::arg("Izz"), py::arg("Ixy"),
+            py::arg("Ixz"), py::arg("Iyz"), cls_doc.ctor.doc_6args)
+        .def(py::init([](const RotationalInertia<T>& I) { return Class(I); }),
+            py::arg("I"), cls_doc.ctor.doc_1args)
+        .def("SetFromRotationalInertia", &Class::SetFromRotationalInertia,
+            py::arg("I"), py::arg("mass"), py_rvp::reference,
+            cls_doc.SetFromRotationalInertia.doc)
         .def("ReExpress", &Class::ReExpress, py::arg("R_AE"),
-            cls_doc.ReExpress.doc);
+            cls_doc.ReExpress.doc)
+        .def("ShiftFromCenterOfMass", &Class::ShiftFromCenterOfMass,
+            py::arg("p_BcmQ_E"), cls_doc.ShiftFromCenterOfMass.doc)
+        .def("ShiftToCenterOfMass", &Class::ShiftToCenterOfMass,
+            py::arg("p_QBcm_E"), cls_doc.ShiftToCenterOfMass.doc)
+        .def_static("PointMass", &Class::PointMass, py::arg("p_FQ"),
+            cls_doc.PointMass.doc)
+        .def_static("SolidSphere", &Class::SolidSphere, py::arg("r"),
+            cls_doc.SolidSphere.doc)
+        .def_static("HollowSphere", &Class::HollowSphere, py::arg("r"),
+            cls_doc.HollowSphere.doc)
+        .def_static("SolidBox", &Class::SolidBox, py::arg("Lx"), py::arg("Ly"),
+            py::arg("Lz"), cls_doc.SolidBox.doc)
+        .def_static(
+            "SolidCube", &Class::SolidCube, py::arg("L"), cls_doc.SolidCube.doc)
+        .def_static("SolidCylinder", &Class::SolidCylinder, py::arg("r"),
+            py::arg("L"), py::arg("b_E") = Vector3<T>::UnitZ().eval(),
+            cls_doc.SolidCylinder.doc)
+        .def_static("SolidCylinderAboutEnd", &Class::SolidCylinderAboutEnd,
+            py::arg("r"), py::arg("L"), cls_doc.SolidCylinderAboutEnd.doc)
+        .def_static("AxiallySymmetric", &Class::AxiallySymmetric, py::arg("J"),
+            py::arg("K"), py::arg("b_E"), cls_doc.AxiallySymmetric.doc)
+        .def_static("StraightLine", &Class::StraightLine, py::arg("K"),
+            py::arg("b_E"), cls_doc.StraightLine.doc)
+        .def_static("ThinRod", &Class::ThinRod, py::arg("L"), py::arg("b_E"),
+            cls_doc.ThinRod.doc)
+        .def_static("TriaxiallySymmetric", &Class::TriaxiallySymmetric,
+            py::arg("I_triaxial"), cls_doc.TriaxiallySymmetric.doc);
+    DefCopyAndDeepCopy(&cls);
   }
 
   // SpatialInertia
@@ -671,11 +784,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "SpatialInertia", param, cls_doc.doc);
     cls  // BR
+        .def_static("MakeFromCentralInertia", &Class::MakeFromCentralInertia,
+            py::arg("mass"), py::arg("p_PScm_E"), py::arg("I_SScm_E"),
+            cls_doc.MakeFromCentralInertia.doc)
         .def(py::init(), cls_doc.ctor.doc_0args)
         .def(py::init<const T&, const Eigen::Ref<const Vector3<T>>&,
                  const UnitInertia<T>&, const bool>(),
             py::arg("mass"), py::arg("p_PScm_E"), py::arg("G_SP_E"),
             py::arg("skip_validity_check") = false, cls_doc.ctor.doc_4args)
+        // TODO(jwnimmer-tri) Need to bind cast<>.
         .def("get_mass", &Class::get_mass, cls_doc.get_mass.doc)
         .def("get_com", &Class::get_com, cls_doc.get_com.doc)
         .def("CalcComMoment", &Class::CalcComMoment, cls_doc.CalcComMoment.doc)
@@ -716,3 +833,5 @@ PYBIND11_MODULE(tree, m) {
 
 }  // namespace pydrake
 }  // namespace drake
+
+#pragma GCC diagnostic pop
