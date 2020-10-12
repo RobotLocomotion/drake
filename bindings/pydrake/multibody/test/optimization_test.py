@@ -14,7 +14,7 @@ from pydrake.multibody.tree import (
 )
 import pydrake.multibody.inverse_kinematics as ik
 import pydrake.solvers.mathematicalprogram as mp
-from pydrake.solvers.ipopt import IpoptSolver
+from pydrake.solvers.snopt import SnoptSolver
 from pydrake.systems.framework import DiagramBuilder_
 from pydrake.geometry import (
     Box,
@@ -125,7 +125,8 @@ class TestStaticEquilibriumProblem(unittest.TestCase):
 
         # Now set the complementarity tolerance.
         dut.UpdateComplementarityTolerance(0.002)
-        result = mp.Solve(dut.prog())
+        solver = SnoptSolver()
+        result = solver.Solve(dut.prog())
         self.assertTrue(result.is_success())
         q_sol = result.GetSolution(dut.q_vars())
         box_quat_sol, box_xyz_sol = split_se3(q_sol)
@@ -166,11 +167,18 @@ class TestStaticEquilibriumProblem(unittest.TestCase):
             box_quat, box_xyz = split_se3(
                 dut.q_vars()[box_quaternion_start:box_quaternion_start+7])
             dut.get_mutable_prog().SetInitialGuess(
-                box_quat, np.array([0.5, 0.5, 0.5, 0.5]))
+                box_quat, np.array([0.5, -0.5, 0.5, 0.5]))
             dut.get_mutable_prog().SetInitialGuess(
                 box_xyz, np.array([0, 0, 0.3 + 0.2 * i]))
 
-        dut.UpdateComplementarityTolerance(0.001)
-        ipopt_solver = IpoptSolver()
-        result = ipopt_solver.Solve(dut.prog())
+        dut.UpdateComplementarityTolerance(0.1)
+        snopt_solver = SnoptSolver()
+        result = snopt_solver.Solve(dut.prog())
         self.assertTrue(result.is_success())
+        # Now progressively tighten the tolerance and solve it again.
+        for tol in (0.05, 0.01, 0.005, 0.001):
+            dut.UpdateComplementarityTolerance(tol)
+            dut.get_mutable_prog().SetInitialGuessForAllVariables(
+                result.get_x_val())
+            result = snopt_solver.Solve(dut.prog())
+            self.assertTrue(result.is_success())
