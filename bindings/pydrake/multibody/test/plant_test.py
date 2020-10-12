@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import copy
 import unittest
 import copy
 
@@ -536,7 +537,9 @@ class TestPlant(unittest.TestCase):
     @numpy_compare.check_all_types
     def test_friction_api(self, T):
         CoulombFriction = CoulombFriction_[T]
+        CoulombFriction()
         CoulombFriction(static_friction=0.7, dynamic_friction=0.6)
+        copy.copy(CoulombFriction())
 
     @numpy_compare.check_all_types
     def test_multibody_force_element(self, T):
@@ -965,6 +968,12 @@ class TestPlant(unittest.TestCase):
                 SpatialAcceleration_[T])
         # TODO(eric.cousineau): Merge `check_applied_force_input_ports` into
         # this test.
+
+    @numpy_compare.check_all_types
+    def test_externally_applied_spatial_force(self, T):
+        ExternallyAppliedSpatialForce = ExternallyAppliedSpatialForce_[T]
+        dut = ExternallyAppliedSpatialForce()
+        copy.copy(dut)
 
     @TemplateSystem.define("AppliedForceTestSystem_")
     def AppliedForceTestSystem_(T):
@@ -1676,10 +1685,12 @@ class TestPlant(unittest.TestCase):
         self.assertTrue(isinstance(contact_info.slip_speed(), T))
         self.assertIsInstance(
             contact_info.point_pair(), PenetrationAsPointPair)
+        copy.copy(contact_info)
 
         # ContactResults
         contact_results = ContactResults()
         self.assertTrue(contact_results.num_point_pair_contacts() == 0)
+        copy.copy(contact_results)
 
     def test_contact_model(self):
         plant = MultibodyPlant_[float](0.1)
@@ -1830,6 +1841,7 @@ class TestPlant(unittest.TestCase):
                              moment_ratio=0.1)
         self.assertEqual(info.thrust_ratio, 1.0)
         self.assertEqual(info.moment_ratio, 0.1)
+        copy.copy(info)
 
         prop = Propeller_[float](body_index=BodyIndex(1),
                                  X_BP=RigidTransform_[float](),
