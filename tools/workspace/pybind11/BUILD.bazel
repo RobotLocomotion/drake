@@ -39,7 +39,6 @@ py_binary(
     name = "mkdoc",
     srcs = ["mkdoc.py"],
     data = [
-        "generate_pybind_coverage.py",
         "pybind_coverage_libclang_parser.py",
         "pybind_coverage_xml_parser.py",
     ],
