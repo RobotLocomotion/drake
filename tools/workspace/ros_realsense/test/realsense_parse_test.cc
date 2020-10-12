@@ -7,6 +7,10 @@ An example of showing a Realsense d415 at a 5s interval:
  $ bazel run //tools/workspace/ros_realsense:realsense_parse_test -- \
    --visualize_sec=5
 
+If you wish to visualize this mesh, in a new terminal run:
+
+ $ bazel-bin/tools/drake_visualizer
+
 */
 
 #include <chrono>
@@ -43,7 +47,7 @@ class ParseTest : public testing::TestWithParam<std::string> {};
 TEST_P(ParseTest, Quantities) {
   const std::string object_name = GetParam();
   const std::string filename = FindResourceOrThrow(fmt::format(
-      "drake/tools/workspace/ros_realsense/urdf/{}.urdf",
+      "drake/external/ros_realsense/realsense2_description/urdf/{}.urdf",
       object_name));
 
   DiagramBuilder<double> builder;

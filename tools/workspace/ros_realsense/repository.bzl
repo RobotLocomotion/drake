@@ -14,13 +14,10 @@ def ros_realsense_repository(
         commit = "2.2.17",
         sha256 = "babffbd3b2d20c94431436fc50606fddf8712dd7e9392d9da3fd228b432f9cfe",  # noqa
         build_file = "@drake//tools/workspace/ros_realsense:package.BUILD.bazel",  # noqa
-        patches = [
-            #"@drake//tools/workspace/ros_xacro:disable-console-print.patch",
-        ],
         patch_cmds = [
-            "sed -i.orig -e 's|$(find realsense2_description)/urdf/||' realsense2_description/urdf/*.xacro",
-            "sed -i -e 's|$(arg use_nominal_extrinsics)|false|' realsense2_description/urdf/*.xacro",
-            "sed -i -e 's|$(arg add_plug)|false|' realsense2_description/urdf/*.xacro",
+            "sed -i.orig -e 's|$(find realsense2_description)/urdf/||' realsense2_description/urdf/*.xacro",  # noqa
+            "sed -i -e 's|$(arg use_nominal_extrinsics)|false|' realsense2_description/urdf/*.xacro",  # noqa
+            "sed -i -e 's|$(arg add_plug)|false|' realsense2_description/urdf/*.xacro",  # noqa
         ],
         mirrors = mirrors,
     )

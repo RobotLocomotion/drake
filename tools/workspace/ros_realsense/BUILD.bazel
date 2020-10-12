@@ -1,14 +1,10 @@
 # -*- python -*-
 
 load("@drake//tools/lint:lint.bzl", "add_lint_tests")
-load("@drake//tools/workspace:forward_files.bzl", "forward_files")
-load("@drake//tools/install:install_data.bzl", "install_data")
 load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
 )
-load("@drake//tools/workspace/ros_xacro:defs.bzl", "xacro_file")
-load(":files.bzl", "realsense2_description_files")
 
 # This package is public so that other packages can refer to
 # individual files in model from their bazel rules.
@@ -16,42 +12,20 @@ package(
     default_visibility = ["//visibility:public"],
 )
 
-_REALSENSE2_DESCRIPTION_FILES = forward_files(
-    srcs = [
-        "@ros_realsense//:" + x
-        for x in realsense2_description_files()
-    ],
-    dest_prefix = "",
-    strip_prefix = "@ros_realsense//:",
-    visibility = ["//visibility:private"],
-)
-
-install_data(
-    extra_prod_models = _REALSENSE2_DESCRIPTION_FILES,
-)
-
-xacro_file(
-    name = "urdf/d415.urdf",
-    src = "realsense2_description/urdf/test_d415_camera.urdf.xacro",
-    data = [
-        "realsense2_description/urdf/_d415.urdf.xacro",
-        "realsense2_description/urdf/_materials.urdf.xacro",
-        "realsense2_description/urdf/_usb_plug.urdf.xacro",
-    ],
-)
-
 drake_cc_googletest(
     name = "realsense_parse_test",
     data = [
-        "realsense2_description/meshes/d415.stl",
-        ":realsense2_description/package.xml",
-        ":urdf/d415.urdf",
+        "@ros_realsense//:realsense2_description/meshes/d415.stl",
+        "@ros_realsense//:realsense2_description/package.xml",
+        "@ros_realsense//:realsense2_description/urdf/d415.urdf",
     ],
     deps = [
         "//common:find_resource",
         "//geometry:geometry_visualization",
+        "//geometry:scene_graph",
         "//multibody/parsing",
         "//systems/analysis:simulator",
+        "//systems/framework:diagram_builder",
     ],
 )
 
