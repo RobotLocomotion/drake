@@ -96,6 +96,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("separation_speed", &Class::separation_speed,
             cls_doc.separation_speed.doc)
         .def("point_pair", &Class::point_pair, cls_doc.point_pair.doc);
+    DefCopyAndDeepCopy(&cls);
   }
 
   // ContactResults
@@ -110,6 +111,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.num_point_pair_contacts.doc)
         .def("point_pair_contact_info", &Class::point_pair_contact_info,
             py::arg("i"), cls_doc.point_pair_contact_info.doc);
+    DefCopyAndDeepCopy(&cls);
     AddValueInstantiation<Class>(m);
   }
 
@@ -120,12 +122,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "CoulombFriction", param, cls_doc.doc);
     cls  // BR
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<const T&, const T&>(), py::arg("static_friction"),
             py::arg("dynamic_friction"), cls_doc.ctor.doc_2args)
         .def("static_friction", &Class::static_friction,
             cls_doc.static_friction.doc)
         .def("dynamic_friction", &Class::dynamic_friction,
             cls_doc.dynamic_friction.doc);
+    DefCopyAndDeepCopy(&cls);
 
     AddValueInstantiation<CoulombFriction<T>>(m);
 
@@ -1024,6 +1028,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_readwrite("body_index", &Class::body_index, cls_doc.body_index.doc)
         .def_readwrite("p_BoBq_B", &Class::p_BoBq_B, cls_doc.p_BoBq_B.doc)
         .def_readwrite("F_Bq_W", &Class::F_Bq_W, cls_doc.F_Bq_W.doc);
+    DefCopyAndDeepCopy(&cls);
     AddValueInstantiation<Class>(m);
     // Some ports need `Value<std::vector<Class>>`.
     AddValueInstantiation<std::vector<Class>>(m);
@@ -1113,19 +1118,24 @@ PYBIND11_MODULE(plant, m) {
       py::keep_alive<3, 1>(),
       doc.ConnectContactResultsToDrakeVisualizer.doc_3args);
 
-  py::class_<PropellerInfo>(m, "PropellerInfo", doc.PropellerInfo.doc)
-      .def(py::init<const BodyIndex&, const math::RigidTransform<double>&,
-               double, double>(),
-          py::arg("body_index"),
-          py::arg("X_BP") = math::RigidTransform<double>::Identity(),
-          py::arg("thrust_ratio") = 1.0, py::arg("moment_ratio") = 0.0)
-      .def_readwrite("body_index", &PropellerInfo::body_index,
-          doc.PropellerInfo.body_index.doc)
-      .def_readwrite("X_BP", &PropellerInfo::X_BP, doc.PropellerInfo.X_BP.doc)
-      .def_readwrite("thrust_ratio", &PropellerInfo::thrust_ratio,
-          doc.PropellerInfo.thrust_ratio.doc)
-      .def_readwrite("moment_ratio", &PropellerInfo::moment_ratio,
-          doc.PropellerInfo.moment_ratio.doc);
+  {
+    using Class = PropellerInfo;
+    constexpr auto& cls_doc = doc.PropellerInfo;
+    py::class_<Class> cls(m, "PropellerInfo", cls_doc.doc);
+    cls  // BR
+        .def(py::init<const BodyIndex&, const math::RigidTransform<double>&,
+                 double, double>(),
+            py::arg("body_index"),
+            py::arg("X_BP") = math::RigidTransform<double>::Identity(),
+            py::arg("thrust_ratio") = 1.0, py::arg("moment_ratio") = 0.0)
+        .def_readwrite("body_index", &Class::body_index, cls_doc.body_index.doc)
+        .def_readwrite("X_BP", &Class::X_BP, cls_doc.X_BP.doc)
+        .def_readwrite(
+            "thrust_ratio", &Class::thrust_ratio, cls_doc.thrust_ratio.doc)
+        .def_readwrite(
+            "moment_ratio", &Class::moment_ratio, cls_doc.moment_ratio.doc);
+    DefCopyAndDeepCopy(&cls);
+  }
 
   {
     using Class = ContactModel;

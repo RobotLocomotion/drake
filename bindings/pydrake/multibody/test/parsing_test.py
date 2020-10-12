@@ -31,19 +31,21 @@ class TestParsing(unittest.TestCase):
         model = FindResourceOrThrow(
             "drake/examples/atlas/urdf/atlas_minimal_contact.urdf")
 
-        # Simple coverage test for Add, Contains, size, GetPath.
-        dut.Add("root", tmpdir)
+        # Simple coverage test for Add, Contains, size, GetPath, AddPackageXml.
+        dut.Add(package_name="root", package_path=tmpdir)
         self.assertEqual(dut.size(), 1)
-        self.assertTrue(dut.Contains("root"))
-        self.assertEqual(dut.GetPath("root"), tmpdir)
+        self.assertTrue(dut.Contains(package_name="root"))
+        self.assertEqual(dut.GetPath(package_name="root"), tmpdir)
+        dut.AddPackageXml(filename=FindResourceOrThrow(
+            "drake/multibody/parsing/test/box_package/package.xml"))
 
         # Simple coverage test for Drake paths.
-        dut.PopulateUpstreamToDrake(model)
+        dut.PopulateUpstreamToDrake(model_file=model)
         self.assertGreater(dut.size(), 1)
 
         # Simple coverage test for folder and environment.
-        dut.PopulateFromEnvironment('TEST_TMPDIR')
-        dut.PopulateFromFolder(tmpdir)
+        dut.PopulateFromEnvironment(environment_variable='TEST_TMPDIR')
+        dut.PopulateFromFolder(path=tmpdir)
 
     def test_parser_file(self):
         """Calls every combination of arguments for the Parser methods which
