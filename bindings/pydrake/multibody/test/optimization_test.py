@@ -125,7 +125,8 @@ class TestStaticEquilibriumProblem(unittest.TestCase):
 
         # Now set the complementarity tolerance.
         dut.UpdateComplementarityTolerance(0.002)
-        result = mp.Solve(dut.prog())
+        solver = IpoptSolver()
+        result = solver.Solve(dut.prog())
         self.assertTrue(result.is_success())
         q_sol = result.GetSolution(dut.q_vars())
         box_quat_sol, box_xyz_sol = split_se3(q_sol)
