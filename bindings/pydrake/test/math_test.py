@@ -319,6 +319,38 @@ class TestMath(unittest.TestCase):
         # Test pickling.
         assert_pickle(self, rpy, RollPitchYaw.vector, T=T)
 
+    @numpy_compare.check_all_types
+    def test_bspline_basis(self, T):
+        BsplineBasis = mut.BsplineBasis_[T]
+
+        bspline = BsplineBasis()
+        self.assertEqual(bspline.order(), 0)
+        self.assertEqual(BsplineBasis(other=bspline).order(), 0)
+        bspline = BsplineBasis(order=2, knots=[0, 1, 3, 5])
+        self.assertEqual(bspline.order(), 2)
+        bspline = BsplineBasis(order=2, num_basis_functions=3,
+                               type=mut.KnotVectorType.kUniform,
+                               initial_parameter_value=5.,
+                               final_parameter_value=6.)
+        self.assertEqual(bspline.order(), 2)
+        self.assertEqual(bspline.degree(), 1)
+        self.assertEqual(bspline.num_basis_functions(), 3)
+        numpy_compare.assert_float_equal(bspline.knots(),
+                                         [4.5, 5.0, 5.5, 6.0, 6.5])
+        numpy_compare.assert_float_equal(bspline.initial_parameter_value(), 5.)
+        numpy_compare.assert_float_equal(bspline.final_parameter_value(), 6.)
+        self.assertEqual(
+            bspline.FindContainingInterval(parameter_value=5.2), 1)
+        self.assertEqual(
+            bspline.ComputeActiveBasisFunctionIndices(
+                parameter_interval=[5.2, 5.7]),
+            [0, 1, 2])
+        self.assertEqual(
+            bspline.ComputeActiveBasisFunctionIndices(parameter_value=5.4),
+            [0, 1])
+        numpy_compare.assert_float_equal(
+            bspline.EvaluateBasisFunctionI(i=0, parameter_value=5.7), 0.)
+
     def test_orthonormal_basis(self):
         R = mut.ComputeBasisFromAxis(axis_index=0, axis_W=[1, 0, 0])
         self.assertAlmostEqual(np.linalg.det(R), 1.0)

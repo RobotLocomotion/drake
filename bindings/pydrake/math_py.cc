@@ -15,6 +15,7 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/math/barycentric.h"
+#include "drake/math/bspline_basis.h"
 #include "drake/math/continuous_algebraic_riccati_equation.h"
 #include "drake/math/continuous_lyapunov_equation.h"
 #include "drake/math/discrete_algebraic_riccati_equation.h"
@@ -259,6 +260,48 @@ void DoScalarDependentDefinitions(py::module m, T) {
     DefCopyAndDeepCopy(&cls);
     // N.B. `RollPitchYaw::cast` is not defined in C++.
   }
+
+  {
+    using Class = BsplineBasis<T>;
+    constexpr auto& cls_doc = doc.BsplineBasis;
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "BsplineBasis", param, cls_doc.doc);
+    cls  // BR
+        .def(py::init())
+        .def(py::init<int, std::vector<T>>(), py::arg("order"),
+            py::arg("knots"), cls_doc.ctor.doc_2args)
+        .def(py::init<int, int, KnotVectorType, const T&, const T&>(),
+            py::arg("order"), py::arg("num_basis_functions"),
+            py::arg("type") = KnotVectorType::kClampedUniform,
+            py::arg("initial_parameter_value") = 0.0,
+            py::arg("final_parameter_value") = 1.0, cls_doc.ctor.doc_5args)
+        .def(py::init<const Class&>(), py::arg("other"))
+        .def("order", &Class::order, cls_doc.order.doc)
+        .def("degree", &Class::degree, cls_doc.degree.doc)
+        .def("num_basis_functions", &Class::num_basis_functions,
+            cls_doc.num_basis_functions.doc)
+        .def("knots", &Class::knots, cls_doc.knots.doc)
+        .def("initial_parameter_value", &Class::initial_parameter_value,
+            cls_doc.initial_parameter_value.doc)
+        .def("final_parameter_value", &Class::final_parameter_value,
+            cls_doc.final_parameter_value.doc)
+        .def("FindContainingInterval", &Class::FindContainingInterval,
+            py::arg("parameter_value"), cls_doc.FindContainingInterval.doc)
+        .def("ComputeActiveBasisFunctionIndices",
+            overload_cast_explicit<std::vector<int>, const std::array<T, 2>&>(
+                &Class::ComputeActiveBasisFunctionIndices),
+            py::arg("parameter_interval"),
+            cls_doc.ComputeActiveBasisFunctionIndices
+                .doc_1args_parameter_interval)
+        .def("ComputeActiveBasisFunctionIndices",
+            overload_cast_explicit<std::vector<int>, const T&>(
+                &Class::ComputeActiveBasisFunctionIndices),
+            py::arg("parameter_value"),
+            cls_doc.ComputeActiveBasisFunctionIndices.doc_1args_parameter_value)
+        .def("EvaluateBasisFunctionI", &Class::EvaluateBasisFunctionI,
+            py::arg("i"), py::arg("parameter_value"),
+            cls_doc.EvaluateBasisFunctionI.doc);
+  }
 }
 
 void DoScalarIndependentDefinitions(py::module m) {
@@ -312,6 +355,15 @@ void DoScalarIndependentDefinitions(py::module m) {
           doc.BarycentricMesh.Eval.doc_2args)
       .def("MeshValuesFrom", &BarycentricMesh<T>::MeshValuesFrom,
           doc.BarycentricMesh.MeshValuesFrom.doc);
+
+  {
+    using Class = KnotVectorType;
+    constexpr auto& cls_doc = doc.KnotVectorType;
+    py::enum_<Class>(m, "KnotVectorType", py::arithmetic(), cls_doc.doc)
+        .value("kUniform", Class::kUniform, cls_doc.kUniform.doc)
+        .value("kClampedUniform", Class::kClampedUniform,
+            cls_doc.kClampedUniform.doc);
+  }
 
   // Random Rotations
   m  // BR
@@ -432,9 +484,9 @@ PYBIND11_MODULE(math, m) {
   py::module::import("pydrake.common.eigen_geometry");
   py::module::import("pydrake.symbolic");
 
+  DoScalarIndependentDefinitions(m);
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
       CommonScalarPack{});
-  DoScalarIndependentDefinitions(m);
 
   ExecuteExtraPythonCode(m);
 }
