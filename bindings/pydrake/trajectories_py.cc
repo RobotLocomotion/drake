@@ -7,6 +7,7 @@
 #include "drake/bindings/pydrake/polynomial_types_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/polynomial.h"
+#include "drake/common/trajectories/bspline_trajectory.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/common/trajectories/piecewise_quaternion.h"
 #include "drake/common/trajectories/trajectory.h"
@@ -36,6 +37,32 @@ PYBIND11_MODULE(trajectories, m) {
       .def("end_time", &Trajectory<T>::end_time, doc.Trajectory.end_time.doc)
       .def("rows", &Trajectory<T>::rows, doc.Trajectory.rows.doc)
       .def("cols", &Trajectory<T>::cols, doc.Trajectory.cols.doc);
+
+  py::class_<BsplineTrajectory<T>, Trajectory<T>>(
+      m, "BsplineTrajectory", doc.BsplineTrajectory.doc)
+      .def(py::init<>())
+      .def(py::init<math::BsplineBasis<T>, std::vector<MatrixX<T>>>(),
+          py::arg("basis"), py::arg("control_points"),
+          doc.BsplineTrajectory.ctor.doc)
+      .def("Clone", &BsplineTrajectory<T>::Clone,
+          doc.BsplineTrajectory.Clone.doc)
+      .def("num_control_points", &BsplineTrajectory<T>::num_control_points,
+          doc.BsplineTrajectory.num_control_points.doc)
+      .def("control_points", &BsplineTrajectory<T>::control_points,
+          doc.BsplineTrajectory.control_points.doc)
+      .def("InitialValue", &BsplineTrajectory<T>::InitialValue,
+          doc.BsplineTrajectory.InitialValue.doc)
+      .def("FinalValue", &BsplineTrajectory<T>::FinalValue,
+          doc.BsplineTrajectory.FinalValue.doc)
+      .def("basis", &BsplineTrajectory<T>::basis,
+          doc.BsplineTrajectory.basis.doc)
+      .def("InsertKnots", &BsplineTrajectory<T>::InsertKnots,
+          py::arg("additional_knots"), doc.BsplineTrajectory.InsertKnots.doc)
+      .def("CopyBlock", &BsplineTrajectory<T>::CopyBlock, py::arg("start_row"),
+          py::arg("start_col"), py::arg("block_rows"), py::arg("block_cols"),
+          doc.BsplineTrajectory.CopyBlock.doc)
+      .def("CopyHead", &BsplineTrajectory<T>::CopyHead, py::arg("n"),
+          doc.BsplineTrajectory.CopyHead.doc);
 
   py::class_<PiecewiseTrajectory<T>, Trajectory<T>>(
       m, "PiecewiseTrajectory", doc.PiecewiseTrajectory.doc)
