@@ -414,10 +414,10 @@ class SceneGraphInspector {
 
   /** Obtains a geometry revision numbers that may be served to detect changes
    to roles that geometries take.
-   @return A copy of GeometryRevision that stores the current revision numbers
+   @return A copy of GeometryVersion that stores the current revision numbers
            of the geometries.                                                */
-  GeometryRevision GetGeometryRevision() const {
-      return state_->GetGeometryRevision();
+  GeometryVersion GetGeometryVersion() const {
+      return state_->GetGeometryVersion();
   }
   //@}
 

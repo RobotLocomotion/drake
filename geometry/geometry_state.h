@@ -14,9 +14,9 @@
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_index.h"
-#include "drake/geometry/geometry_revision.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_set.h"
+#include "drake/geometry/geometry_version.h"
 #include "drake/geometry/internal_frame.h"
 #include "drake/geometry/internal_geometry.h"
 #include "drake/geometry/proximity_engine.h"
@@ -131,9 +131,9 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::GetCollisionCandidates().  */
   std::set<std::pair<GeometryId, GeometryId>> GetCollisionCandidates() const;
 
-  /** Implementation of SceneGraphInspector::GetGeometryRevision().  */
-  GeometryRevision GetGeometryRevision() const {
-      return geometry_revision_;
+  /** Implementation of SceneGraphInspector::GetGeometryVersion().  */
+  GeometryVersion GetGeometryVersion() const {
+      return geometry_version_;
   }
   //@}
 
@@ -857,10 +857,8 @@ class GeometryState {
   std::unordered_map<std::string, copyable_unique_ptr<render::RenderEngine>>
       render_engines_;
 
-  // The revision numbers of the each class of role of geometries. Downstream
-  // systems may acquire a copy of geometry_revision_ and store it to detect
-  // changes to any geometry changes that affect a particular role.
-  GeometryRevision geometry_revision_;
+  // The version for this geometry data.
+  GeometryVersion geometry_version_;
 };
 }  // namespace geometry
 }  // namespace drake

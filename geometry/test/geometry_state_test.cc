@@ -17,9 +17,9 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
-#include "drake/geometry/geometry_revision.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_set.h"
+#include "drake/geometry/geometry_version.h"
 #include "drake/geometry/internal_frame.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/geometry/shape_specification.h"
@@ -143,8 +143,8 @@ class GeometryStateTester {
     return state_->render_engines_;
   }
 
-  const GeometryRevision& geometry_revision() const {
-      return state_->geometry_revision_;
+  const GeometryVersion& geometry_version() const {
+      return state_->geometry_version_;
   }
 
  private:
@@ -635,95 +635,95 @@ class GeometryStateTest : public GeometryStateTestBase, public ::testing::Test {
   void SetUp() override { TestInit(); }
 
   // Forward a function call to a member method of GeometryState and return the
-  // revision numbers before and after the call.
+  // version numbers before and after the call.
   template <typename ReturnType, typename... Args1, typename... Args2>
-  std::tuple<GeometryRevision, GeometryRevision> ForwardAndGetRevisions(
+  std::tuple<GeometryVersion, GeometryVersion> ForwardAndGetRevisions(
       ReturnType (GeometryState<double>::*f)(Args1...), Args2&&... args) {
-    GeometryRevision old_revision = geometry_state_.GetGeometryRevision();
+    GeometryVersion old_version = geometry_state_.GetGeometryVersion();
     (geometry_state_.*f)(std::forward<Args2>(args)...);
-    GeometryRevision new_revision = geometry_state_.GetGeometryRevision();
-    return {old_revision, new_revision};
+    GeometryVersion new_version = geometry_state_.GetGeometryVersion();
+    return {old_version, new_version};
   }
 
   // Forward a call to a member function in GeometryState and verify that
-  // proximity revision number incremented but all other revision numbers are
+  // proximity version number incremented but all other version numbers are
   // unchanged in this function.
   template <typename ReturnType, typename... Args1, typename... Args2>
   void VerifyProximityIncremented(
       ReturnType (GeometryState<double>::*f)(Args1...), Args2&&... args) {
-    auto [old_revision, new_revision] =
+    auto [old_version, new_version] =
         ForwardAndGetRevisions(f, std::forward<Args2>(args)...);
-    EXPECT_TRUE(old_revision.proximity_revision() <
-                new_revision.proximity_revision());
-    EXPECT_EQ(old_revision.perception_revision(),
-              new_revision.perception_revision());
-    EXPECT_EQ(old_revision.illustration_revision(),
-              new_revision.illustration_revision());
+    EXPECT_TRUE(old_version.proximity() <
+                new_version.proximity());
+    EXPECT_EQ(old_version.perception(),
+              new_version.perception());
+    EXPECT_EQ(old_version.illustration(),
+              new_version.illustration());
   }
 
   // Forward a call to a member function in GeometryState and verify that
-  // perception revision number incremented but all other revision numbers are
+  // perception version number incremented but all other version numbers are
   // unchanged in this function.
   template <typename ReturnType, typename... Args1, typename... Args2>
   void VerifyPerceptionIncremented(
       ReturnType (GeometryState<double>::*f)(Args1...), Args2&&... args) {
-    auto [old_revision, new_revision] =
+    auto [old_version, new_version] =
         ForwardAndGetRevisions(f, std::forward<Args2>(args)...);
-    EXPECT_EQ(old_revision.proximity_revision(),
-              new_revision.proximity_revision());
-    EXPECT_TRUE(old_revision.perception_revision() <
-                new_revision.perception_revision());
-    EXPECT_EQ(old_revision.illustration_revision(),
-              new_revision.illustration_revision());
+    EXPECT_EQ(old_version.proximity(),
+              new_version.proximity());
+    EXPECT_TRUE(old_version.perception() <
+                new_version.perception());
+    EXPECT_EQ(old_version.illustration(),
+              new_version.illustration());
   }
 
   // Forward a call to a member function in GeometryState and verify that
-  // illustration revision number incremented but all other revision numbers are
+  // illustration version number incremented but all other version numbers are
   // unchanged in this function.
   template <typename ReturnType, typename... Args1, typename... Args2>
   void VerifyIllustrationIncremented(
       ReturnType (GeometryState<double>::*f)(Args1...), Args2&&... args) {
-    auto [old_revision, new_revision] =
+    auto [old_version, new_version] =
         ForwardAndGetRevisions(f, std::forward<Args2>(args)...);
-    EXPECT_EQ(old_revision.proximity_revision(),
-              new_revision.proximity_revision());
-    EXPECT_EQ(old_revision.perception_revision(),
-              new_revision.perception_revision());
-    EXPECT_TRUE(old_revision.illustration_revision() <
-                new_revision.illustration_revision());
+    EXPECT_EQ(old_version.proximity(),
+              new_version.proximity());
+    EXPECT_EQ(old_version.perception(),
+              new_version.perception());
+    EXPECT_TRUE(old_version.illustration() <
+                new_version.illustration());
   }
 
   // Forward a call to a non-void member function in GeometryState and verify
-  // that all revision numbers are unchanged in this function. Return the return
+  // that all version numbers are unchanged in this function. Return the return
   // value of the forwarded call.
   template <typename ReturnType, typename... Args1, typename... Args2>
   ReturnType VerifyRevisionUnchanged(
       ReturnType (GeometryState<double>::*f)(Args1...), Args2&&... args) {
-    GeometryRevision old_revision = geometry_state_.GetGeometryRevision();
+    GeometryVersion old_version = geometry_state_.GetGeometryVersion();
     ReturnType ret = (geometry_state_.*f)(std::forward<Args2>(args)...);
-    GeometryRevision new_revision = geometry_state_.GetGeometryRevision();
-    EXPECT_EQ(old_revision.proximity_revision(),
-              new_revision.proximity_revision());
-    EXPECT_EQ(old_revision.perception_revision(),
-              new_revision.perception_revision());
-    EXPECT_EQ(old_revision.illustration_revision(),
-              new_revision.illustration_revision());
+    GeometryVersion new_version = geometry_state_.GetGeometryVersion();
+    EXPECT_EQ(old_version.proximity(),
+              new_version.proximity());
+    EXPECT_EQ(old_version.perception(),
+              new_version.perception());
+    EXPECT_EQ(old_version.illustration(),
+              new_version.illustration());
     return ret;
   }
 
   // Forward a call to a void member function in GeometryState and verify that
-  // all revision numbers are unchanged in this function.
+  // all version numbers are unchanged in this function.
   template <typename... Args1, typename... Args2>
   void VerifyRevisionUnchanged(void (GeometryState<double>::*f)(Args1...),
                                Args2&&... args) {
-    auto [old_revision, new_revision] =
+    auto [old_version, new_version] =
         ForwardAndGetRevisions(f, std::forward<Args2>(args)...);
-    EXPECT_EQ(old_revision.proximity_revision(),
-              new_revision.proximity_revision());
-    EXPECT_EQ(old_revision.perception_revision(),
-              new_revision.perception_revision());
-    EXPECT_EQ(old_revision.illustration_revision(),
-              new_revision.illustration_revision());
+    EXPECT_EQ(old_version.proximity(),
+              new_version.proximity());
+    EXPECT_EQ(old_version.perception(),
+              new_version.perception());
+    EXPECT_EQ(old_version.illustration(),
+              new_version.illustration());
   }
 };
 
@@ -3503,30 +3503,30 @@ TEST_F(GeometryStateTest, RendererPoseUpdate) {
   expect_poses(render_engine_->updated_ids(), expected_ids);
 }
 
-TEST_F(GeometryStateTest, GetGeometryRevision) {
+TEST_F(GeometryStateTest, GetGeometryVersion) {
   SetUpSingleSourceTree();
-  const auto& revision_copy = geometry_state_.GetGeometryRevision();
-  // Modify the geometry_state_ such that geometry revision number changes.
+  const auto& version_copy = geometry_state_.GetGeometryVersion();
+  // Modify the geometry_state_ such that geometry version number changes.
   geometry_state_.AssignRole(source_id_, geometries_[0], ProximityProperties(),
                              RoleAssign::kNew);
-  // The copy of the revision number should help detect a change in the geometry
+  // The copy of the version number should help detect a change in the geometry
   // state.
-  EXPECT_FALSE(revision_copy.proximity_revision() ==
-               geometry_state_.GetGeometryRevision().proximity_revision());
+  EXPECT_FALSE(version_copy.proximity() ==
+               geometry_state_.GetGeometryVersion().proximity());
 }
 
-// Confirms that geometry_revision is updated correctly in each public method of
+// Confirms that geometry_version_ is updated correctly in each public method of
 // geometry state.
-TEST_F(GeometryStateTest, GeometryRevisionUpdate) {
+TEST_F(GeometryStateTest, GeometryVersionUpdate) {
   SetUpSingleSourceTree();
-  // With no roles assigned, all revision number should be zero.
-  EXPECT_EQ(gs_tester_.geometry_revision().proximity_revision(), 0);
-  EXPECT_EQ(gs_tester_.geometry_revision().perception_revision(), 0);
-  EXPECT_EQ(gs_tester_.geometry_revision().illustration_revision(), 0);
+  // With no roles assigned, all version number should be zero.
+  EXPECT_EQ(gs_tester_.geometry_version().proximity(), 0);
+  EXPECT_EQ(gs_tester_.geometry_version().perception(), 0);
+  EXPECT_EQ(gs_tester_.geometry_version().illustration(), 0);
 
   SourceId new_source = VerifyRevisionUnchanged(
       &GeometryState<double>::RegisterNewSource, "my_new_source");
-  // Registering a new frame does not increment the revision numbers.
+  // Registering a new frame does not increment the version numbers.
   FrameId new_frame_0 =
       VerifyRevisionUnchanged(static_cast<FrameId(GeometryState<double>::*)(
                                   SourceId, const GeometryFrame&)>(
@@ -3537,7 +3537,7 @@ TEST_F(GeometryStateTest, GeometryRevisionUpdate) {
                               &GeometryState<double>::RegisterFrame),
                           new_source, new_frame_0, GeometryFrame("new_f1"));
 
-  // Registering geometries with no roles assigned does not change the revision
+  // Registering geometries with no roles assigned does not change the version
   // number.
   GeometryId new_geometry_0 = VerifyRevisionUnchanged(
       &GeometryState<double>::RegisterGeometry, new_source, new_frame_0,
@@ -3554,7 +3554,7 @@ TEST_F(GeometryStateTest, GeometryRevisionUpdate) {
           RigidTransformd(), make_unique<Sphere>(1), "new_geometry_2"));
 
   // Adding a new proximity role or replacing a proximity role increments the
-  // proximity revision number, but not the other revision numbers.
+  // proximity version number, but not the other version numbers.
   VerifyProximityIncremented(
       static_cast<void(GeometryState<double>::*)(
           SourceId, GeometryId, ProximityProperties, RoleAssign)>(
@@ -3568,7 +3568,7 @@ TEST_F(GeometryStateTest, GeometryRevisionUpdate) {
       source_id_, geometries_[0], ProximityProperties(), RoleAssign::kReplace);
 
   // Add a new perception role that is accepted by a renderer increments the
-  // perception revision number, but not the other revision numbers.
+  // perception version number, but not the other version numbers.
   PerceptionProperties base_perception_properties =
       DummyRenderEngine().accepting_properties();
   base_perception_properties.AddProperty("phong", "diffuse",
@@ -3586,7 +3586,7 @@ TEST_F(GeometryStateTest, GeometryRevisionUpdate) {
   }
 
   // If the perception property is not accepted by any renderer, the perception
-  // revision number does not increment.
+  // version number does not increment.
   {
     PerceptionProperties perception_properties(base_perception_properties);
     perception_properties.AddProperty("renderer", "accepting",
@@ -3598,8 +3598,8 @@ TEST_F(GeometryStateTest, GeometryRevisionUpdate) {
         source_id_, geometries_[2], perception_properties, RoleAssign::kNew);
   }
 
-  // Adding a new illustration role increments the illustration revision number,
-  // but not the other revision numbers.
+  // Adding a new illustration role increments the illustration version number,
+  // but not the other version numbers.
   IllustrationProperties illustration_properties;
   illustration_properties.AddProperty("phong", "diffuse",
                                       Vector4<double>{0.8, 0.8, 0.8, 1.0});
@@ -3609,15 +3609,15 @@ TEST_F(GeometryStateTest, GeometryRevisionUpdate) {
           &GeometryState<double>::AssignRole),
       source_id_, geometries_[3], illustration_properties, RoleAssign::kNew);
 
-  // Removing a proximity role increments the proximity revision number but not
-  // the other revision numbers.
+  // Removing a proximity role increments the proximity version number but not
+  // the other version numbers.
   VerifyProximityIncremented(
       static_cast<int(GeometryState<double>::*)(SourceId, GeometryId, Role)>(
           &GeometryState<double>::RemoveRole),
       source_id_, geometries_[0], Role::kProximity);
 
   // Removing a perception role from a geometry registered in a renderer
-  // increments the perception revision number but not the other revision
+  // increments the perception version number but not the other version
   // numbers.
   VerifyPerceptionIncremented(
       static_cast<int(GeometryState<double>::*)(SourceId, GeometryId, Role)>(
@@ -3625,20 +3625,20 @@ TEST_F(GeometryStateTest, GeometryRevisionUpdate) {
       source_id_, geometries_[1], Role::kPerception);
 
   // Removing the perception role from a geometry not registered in any renderer
-  // does not increment any revision number.
+  // does not increment any version number.
   VerifyRevisionUnchanged(
       static_cast<int(GeometryState<double>::*)(SourceId, GeometryId, Role)>(
           &GeometryState<double>::RemoveRole),
       source_id_, geometries_[2], Role::kPerception);
 
-  // Removing a illustration role increments the illustration revision number
-  // but not the other revision numbers.
+  // Removing a illustration role increments the illustration version number
+  // but not the other version numbers.
   VerifyIllustrationIncremented(
       static_cast<int(GeometryState<double>::*)(SourceId, GeometryId, Role)>(
           &GeometryState<double>::RemoveRole),
       source_id_, geometries_[3], Role::kIllustration);
 
-  // Removing a non-existing role does not change the revision number.
+  // Removing a non-existing role does not change the version number.
   VerifyRevisionUnchanged(
       static_cast<int(GeometryState<double>::*)(SourceId, GeometryId, Role)>(
           &GeometryState<double>::RemoveRole),
@@ -3649,7 +3649,7 @@ TEST_F(GeometryStateTest, GeometryRevisionUpdate) {
       source_id_, geometries_[3], Role::kPerception);
 
   //  Removing a geometry without any a perception role from a renderer does not
-  //  increment any revision number.
+  //  increment any version number.
   VerifyRevisionUnchanged(static_cast<int(GeometryState<double>::*)(
                               const std::string&, SourceId, GeometryId)>(
                               &GeometryState<double>::RemoveFromRenderer),
@@ -3663,13 +3663,13 @@ TEST_F(GeometryStateTest, GeometryRevisionUpdate) {
                              RoleAssign::kNew);
 
   //  Removing a geometry with perception role from a renderer does increment
-  //  the perception revision number.
+  //  the perception version number.
   VerifyPerceptionIncremented(static_cast<int(GeometryState<double>::*)(
                                   const std::string&, SourceId, GeometryId)>(
                                   &GeometryState<double>::RemoveFromRenderer),
                               kDummyRenderName, source_id_, geometries_[1]);
 
-  // Assign proximity role to the first three geometries to test revisions on
+  // Assign proximity role to the first three geometries to test versions on
   // proximity filters.
   for (int i = 0; i < 3; ++i) {
     geometry_state_.AssignRole(source_id_, geometries_[i],
@@ -3683,7 +3683,7 @@ TEST_F(GeometryStateTest, GeometryRevisionUpdate) {
 
   // Note that geometries_[1] has perception role now.
   // When there exists geometries with perception properties, adding a renderer
-  // that accepts those geometries increments the perception revision number.
+  // that accepts those geometries increments the perception version number.
   VerifyPerceptionIncremented(&GeometryState<double>::AddRenderer, "second",
                               make_unique<DummyRenderEngine>());
 
@@ -3691,7 +3691,7 @@ TEST_F(GeometryStateTest, GeometryRevisionUpdate) {
   // roles.
   geometry_state_.RemoveRole(source_id_, geometries_[1], Role::kPerception);
   // Adding a renderer when there's no geometry with perception role does not
-  // increment revision number.
+  // increment version number.
   VerifyRevisionUnchanged(&GeometryState<double>::AddRenderer, "third",
                           make_unique<DummyRenderEngine>());
 }

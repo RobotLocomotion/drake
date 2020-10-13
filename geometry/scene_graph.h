@@ -375,7 +375,10 @@ class SceneGraph final : public systems::LeafSystem<T> {
    GeometryInstance `geometry` has had properties assigned.
 
    This method modifies the underlying model and requires a new Context to be
-   allocated.
+   allocated. Increments the corresponding version numbers if the geometry has
+   proximity and/or illustration role. Increments the perception version number
+   if the geometry has perception role and there exists a renderer that accepts
+   it.
 
    @param source_id   The id for the source registering the geometry.
    @param frame_id    The id for the frame F to hang the geometry on.
@@ -407,7 +410,10 @@ class SceneGraph final : public systems::LeafSystem<T> {
    GeometryInstance `geometry` has had properties assigned.
 
    This method modifies the underlying model and requires a new Context to be
-   allocated.
+   allocated. Increments the corresponding version numbers if the geometry has
+   proximity and/or illustration role. Increments the perception version number
+   if the geometry has perception role and there exists a renderer that accepts
+   it.
 
    @param source_id    The id for the source registering the geometry.
    @param geometry_id  The id for the parent geometry P.
@@ -454,7 +460,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
    this geometry will also be removed.
 
    This method modifies the underlying model and requires a new Context to be
-   allocated.
+   allocated. Increments the corresponding version numbers if the geometry has
+   proximity and/or illustration role. Increments the perception version number
+   if the geometry has perception role and is registered with a renderer.
 
    @param source_id   The identifier for the owner geometry source.
    @param geometry_id The identifier of the geometry to remove (can be dynamic
@@ -497,6 +505,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
    GeometryId id3 = scene_graph.RegisterGeometry(source_id, ...);
    scene_graph.AssignRole(source_id, id3, PerceptionProperties());
    ```
+
+   Increments the perception version number if there exist geometries with
+   perception roles that the rendered being added accepts.
 
    @param name      The unique name of the renderer.
    @param renderer  The `renderer` to add.
@@ -597,6 +608,8 @@ class SceneGraph final : public systems::LeafSystem<T> {
   //@{
 
   /** Assigns the proximity role to the geometry indicated by `geometry_id`.
+   Increments the proximity version number the geometries owned by `this` scene
+   graph.
    @pydrake_mkdoc_identifier{proximity_direct}
    */
   void AssignRole(SourceId source_id, GeometryId geometry_id,
@@ -621,7 +634,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
    property. Its type is std::set<std::string> and it contains the names of
    all the renderers that _may_ reify it. If no property is defined (or an
    empty set is given), then the default behavior of all renderers attempting
-   to reify it will be restored.
+   to reify it will be restored. If the geometry with the newly assigned
+   perception role is reified by any render::RenderEngine instance, the
+   perception version number of the geometries in `this` scene graph increments.
    @pydrake_mkdoc_identifier{perception_direct}
    */
   void AssignRole(SourceId source_id, GeometryId geometry_id,
@@ -646,6 +661,8 @@ class SceneGraph final : public systems::LeafSystem<T> {
    "initialize" itself after changes to properties that will affect how a
    geometry appears. If changing a geometry's illustration properties doesn't
    seem to be affecting the visualization, retrigger its initialization action.
+   Increments the illustration version number the geometries owned by `this`
+   scene graph.
    @pydrake_mkdoc_identifier{illustration_direct}
    */
   void AssignRole(SourceId source_id, GeometryId geometry_id,
@@ -676,7 +693,11 @@ class SceneGraph final : public systems::LeafSystem<T> {
                   RoleAssign assign = RoleAssign::kNew) const;
 
   /** Removes the indicated `role` from any geometry directly registered to the
-   frame indicated by `frame_id` (if the geometry has the role).
+   frame indicated by `frame_id` (if the geometry has the role). Increments
+   the corresponding version number in `this` scene graph if the role of the
+   geometry is removed. However, if the geometry does not have the indicated
+   role, or if a perception role is removed from the geometry that is not
+   registered in any renderer, the version numbers do not increment.
    @returns The number of geometries affected by the removed role.
    @throws std::logic_error if a) `source_id` does not map to a registered
                             source,
@@ -694,6 +715,10 @@ class SceneGraph final : public systems::LeafSystem<T> {
                   FrameId frame_id, Role role) const;
 
   /** Removes the indicated `role` from the geometry indicated by `geometry_id`.
+   Increments the corresponding version number in `this` scene graph if the role
+   of the geometry is removed. However, if the geometry does not have the
+   indicated role, or if a perception role is removed from the geometry that is
+   not registered in any renderer, the version numbers do not increment.
    @returns One if the geometry had the role removed and zero if the geometry
             did not have the role assigned in the first place.
    @throws std::logic_error if a) `source_id` does not map to a registered
@@ -770,7 +795,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
    `G = {g₀, g₁, ..., gₘ}` is the input `set` of geometries.
 
    This method modifies the underlying model and requires a new Context to be
-   allocated.
+   allocated. Increments the proximity version number.
 
    @sa @ref scene_graph_collision_filtering for requirements and how collision
    filtering works.
@@ -789,7 +814,8 @@ class SceneGraph final : public systems::LeafSystem<T> {
    candidate pair set `C = C - P`, where `P = {(a, b)}, ∀ a ∈ A, b ∈ B` and
    `A = {a₀, a₁, ..., aₘ}` and `B = {b₀, b₁, ..., bₙ}` are the input sets of
    geometries `setA` and `setB`, respectively. This does _not_ preclude
-   collisions between members of the _same_ set.
+   collisions between members of the _same_ set. Increments the proximity
+   version number.
 
    @sa @ref scene_graph_collision_filtering for requirements and how collision
    filtering works.
