@@ -224,7 +224,7 @@ class PlanarJoint final : public Joint<T> {
 
   /// Sets the default angle of this joint.
   /// @param[in] theta The desired default angle of the joint
-  void set_default_rotation(const double& theta) {
+  void set_default_rotation(double theta) {
     Vector3<double> state = this->default_positions();
     state[2] = theta;
     this->set_default_positions(state);
@@ -233,7 +233,7 @@ class PlanarJoint final : public Joint<T> {
   /// Sets the default position and angle of this joint.
   /// @param[in] p_FoMo_F The desired default position of the joint
   /// @param[in] theta The desired default angle of the joint
-  void set_default_pose(const Vector2<double>& p_FoMo_F, const double& theta) {
+  void set_default_pose(const Vector2<double>& p_FoMo_F, double theta) {
     Vector3<double> state(p_FoMo_F[0], p_FoMo_F[1], theta);
     this->set_default_positions(state);
   }
