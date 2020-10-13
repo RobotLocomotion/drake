@@ -639,9 +639,9 @@ class GeometryStateTest : public GeometryStateTestBase, public ::testing::Test {
   template <typename ReturnType, typename... Args1, typename... Args2>
   std::tuple<GeometryVersion, GeometryVersion> ForwardAndGetRevisions(
       ReturnType (GeometryState<double>::*f)(Args1...), Args2&&... args) {
-    GeometryVersion old_version = geometry_state_.GetGeometryVersion();
+    GeometryVersion old_version = geometry_state_.geometry_version();
     (geometry_state_.*f)(std::forward<Args2>(args)...);
-    GeometryVersion new_version = geometry_state_.GetGeometryVersion();
+    GeometryVersion new_version = geometry_state_.geometry_version();
     return {old_version, new_version};
   }
 
@@ -699,9 +699,9 @@ class GeometryStateTest : public GeometryStateTestBase, public ::testing::Test {
   template <typename ReturnType, typename... Args1, typename... Args2>
   ReturnType VerifyRevisionUnchanged(
       ReturnType (GeometryState<double>::*f)(Args1...), Args2&&... args) {
-    GeometryVersion old_version = geometry_state_.GetGeometryVersion();
+    GeometryVersion old_version = geometry_state_.geometry_version();
     ReturnType ret = (geometry_state_.*f)(std::forward<Args2>(args)...);
-    GeometryVersion new_version = geometry_state_.GetGeometryVersion();
+    GeometryVersion new_version = geometry_state_.geometry_version();
     EXPECT_EQ(old_version.proximity(),
               new_version.proximity());
     EXPECT_EQ(old_version.perception(),
@@ -3505,14 +3505,14 @@ TEST_F(GeometryStateTest, RendererPoseUpdate) {
 
 TEST_F(GeometryStateTest, GetGeometryVersion) {
   SetUpSingleSourceTree();
-  const auto& version_copy = geometry_state_.GetGeometryVersion();
+  const auto& version_copy = geometry_state_.geometry_version();
   // Modify the geometry_state_ such that geometry version number changes.
   geometry_state_.AssignRole(source_id_, geometries_[0], ProximityProperties(),
                              RoleAssign::kNew);
   // The copy of the version number should help detect a change in the geometry
   // state.
   EXPECT_FALSE(version_copy.proximity() ==
-               geometry_state_.GetGeometryVersion().proximity());
+                       geometry_state_.geometry_version().proximity());
 }
 
 // Confirms that geometry_version_ is updated correctly in each public method of

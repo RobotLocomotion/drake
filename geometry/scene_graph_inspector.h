@@ -417,7 +417,7 @@ class SceneGraphInspector {
    @return A copy of GeometryVersion that stores the current revision numbers
            of the geometries.                                                */
   GeometryVersion GetGeometryVersion() const {
-      return state_->GetGeometryVersion();
+      return state_->geometry_version();
   }
   //@}
 
