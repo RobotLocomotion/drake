@@ -181,6 +181,26 @@ GTEST_TEST(VolumeMeshTest, TestCalcTetrahedronVolumeAutoDiffXd) {
   TestCalcTetrahedronVolume<AutoDiffXd>();
 }
 
+template <typename T>
+void TestCalcVolume() {
+  const RigidTransform<T> X_WM(
+      RollPitchYaw<T>(M_PI / 6.0, 2.0 * M_PI / 3.0, 7.0 * M_PI / 4.0),
+      Vector3<T>(1.0, 2.0, 3.0));
+  auto volume_mesh = TestVolumeMesh<T>(X_WM);
+  // Estimate 4 multiply+add, each introduces 2 epsilons.
+  const double kTolerance(8.0 * std::numeric_limits<double>::epsilon());
+
+  const double expected_volume(1. / 3.);
+  const double volume = ExtractDoubleOrThrow(volume_mesh->CalcVolume());
+  EXPECT_NEAR(expected_volume, volume, kTolerance);
+}
+
+GTEST_TEST(VolumeMeshTest, TestCalcVolumeDouble) { TestCalcVolume<double>(); }
+
+GTEST_TEST(VolumeMeshTest, TestCalcVolumeAutoDiffXd) {
+  TestCalcVolume<AutoDiffXd>();
+}
+
 template<typename T>
 void TestCalcBarycentric() {
   const RigidTransform<T> X_WM(
