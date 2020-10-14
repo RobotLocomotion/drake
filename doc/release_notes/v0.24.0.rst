@@ -12,7 +12,7 @@ Announcements
 Breaking changes since v0.23.0
 ------------------------------
 
-* TBD
+* TBD Improve inlining for EigenPtr (`#14088`_)
 
 Changes since v0.23.0
 ---------------------
@@ -34,6 +34,7 @@ Dynamical Systems
 * TBD Add Context::SetStateAndParametersFrom() (`#14156`_)  # * Resolves #14138. Add the method Context::SetStateAndParametersFrom() to allow copying state and parameters from another context to a non-root context. Change the documentation for Context::SetTimeStateAndParametersFrom() to reflect what it does.
 * TBD Fix throwing-Get methods missing Has counterparts (`#14176`_)  # If a class exposes a `Foo& GetFoo(string)` method that throws if there is no Foo of that name, then it must expose a corresponding `HasFoo` method that allows a caller to know whether the getter will throw.  Otherwise the no-catches standard makes safe use of the getter impossible. We've stomped most of these in the codebase but I just found these two stragglers.
 * TBD Rename foo_sensor.h --> foo.h (`#14185`_)
+* TBD Versatile error message for gimbal-lock singularity -- helps end-users debug bushing problems and resolves issue #14114 (`#14126`_) [math,multibody] 
 
 New features
 
@@ -52,9 +53,14 @@ New features
 
 * AggregateLinearCosts (`#14190`_)
 * AggregateQuadraticAndLinearCosts (`#14165`_)
+* TBD Add operator +, -, * to GenericPolynomial (`#14053`_)
+* TBD Add hash and divide to GenericPolynomial (`#14100`_)
+* TBD Add pow to GenericPolynomial (`#14158`_)
 
 Fixes
 
+* TBD Improve inlining for EigenPtr (`#14088`_)
+* TBD autodiffxd: Optimize `operator*=` a bit more (`#14171`_)
 * Document that CSDP supports SOCP (`#14122`_)
 
 Multibody Dynamics
@@ -87,6 +93,7 @@ Multibody Dynamics
 * TBD pydrake: Bind some missing multibody plant-related items (`#14192`_)
 * TBD pydrake: Bind some missing multibody tree-related items (`#14195`_)
 * TBD multibody: Use spatial_algebra.h as the sole header for the package (`#14117`_)  # Including the individual headers one at a time might leave the dot product operations undefined. Use DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS.
+* TBD Improve inlining for RotationalInertia::ReExpress (`#14088`_)
 
 New features
 
@@ -101,30 +108,17 @@ Tutorials and examples
 
 .. <relnotes for examples,tutorials go here>
 
-* TBD manipulation_station: change controller plant to discrete time (`#14079`_)  # It has no impact on the manipulation station behavior, but avoids the noisy warnings about unsupported joint limits for continuous time models.
-* TBD cassie_bench: Catch up on audodiff allocation improvements (`#14115`_)  # These gains resulted from @sherm1's PR #13962 but went unclaimed.
-* TBD cassie_bench: Separate autodiff malloc counts from benchmark timing (`#14146`_)  # Relevant to: #10991, #13902 I finally realized that LimitMalloc counting was contributing significant overhead to autodiff benchmark timings, owing to necessary synchronization primitives in that module. This patch separates the two measurements, to clarify the things we want to focus on. Notice that this change of measurement will require some revision of our timings for older versions, to keep comparisons sensible. Reviewers should look for updates to the tracking issue #13902.
-* TBD manipulation_station: add package.xml (`#14164`_)  # so that I can find the files in manipulation_station/models from outside of drake via the model directives.  (yeah!) * ycb: add package.xml
+* manipulation_station: Add package.xml (`#14164`_)
+* manipulation_station: Remove noisy warnings about unsupported joint limits (`#14079`_)
 
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for common,math,lcm,lcmtypes,manipulation,perception go here>
 
-* TBD yaml: Bugfix in std::optional handling (`#14076`_)  # This change allows the allow_cpp_with_no_yaml = true option to correctly return std::optional objects that are valid, even when the yaml string does have have the given field.
-* TBD Add operator +, -, * to GenericPolynomial (`#14053`_)  # Add +,-,* operators to GenericPolynomial. Co-authored-by: Eric Cousineau <eric.cousineau@tri.global>
-* TBD Improve inlining for EigenPtr and RotationalInertia::ReExpress (`#14088`_) [common,examples,math,multibody]
-* TBD vector_gen: Clarify which macros are to be used outside of Drake (`#14092`_)
-* TBD common: Don't defect use of TypeSafeIndex or Identifier references (`#14105`_)
-* TBD Add hash and divide to GenericPolynomial (`#14100`_)  # Add hash and divide to GenericPolynomial
-* TBD bsplines: Add Serialize() for Bspline{Basis,Trajectory}<double> (`#14106`_)  # This allows parsing of these objects from YAML. [common,math] 
-* TBD jaco: Copy package.xml from upstream cited in LICENSE.txt (`#14134`_)
-* TBD jaco: Modify and test for package.xml (`#14134`_)  # package_map: Add trace statements for debugging package paths [manipulation,multibody] 
-* TBD schema: Remove rotation_rpy_deg backwards compatibility (`#14143`_)
-* TBD Versatile error message for gimbal-lock singularity -- helps end-users debug bushing problems and resolves issue #14114 (`#14126`_) [math,multibody] 
-* TBD Add pow to GenericPolynomial (`#14158`_)
-* TBD autodiffxd: Optimize `operator*=` a bit more (`#14171`_)  # Relevant to: #10991, #13902 It turns out that relying on eigen's Matrix::operator*= too heavily results in slower code. Rewrite AutoDiffXd::operator*= for autodiff inputs so that it gets better optimization and inlining from Eigen. Supporting benchmark measurements will be provided in #13902.
-* TBD Remove underscores in Googletest test names (`#14191`_)  # See https://github.com/google/googletest/blob/master/googletest/docs/faq.md#why-should-test-suite-names-and-test-names-not-contain-underscore.
+* jaco_description: Add package.xml (`#14134`_)
+* yaml: Fix in std::optional handling (`#14076`_)
+* yaml: Add support for BsplineBasis and BsplineTrajectory (`#14106`_)
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
@@ -175,9 +169,10 @@ Build system and dependencies
 * Upgrade rules_python to latest release 0.0.3 (`#14161`_)
 * Upgrade libsdformat to latest release 9.3.0 (`#14147`_)
 * Upgrade spdlog to latest release 1.8.1 (`#14153`_)
-* Cleanup pkg-config path for ibex (`#14109`_)
-* Downgrade doxygen to 1.8.15 on Mac (`#14169`_)
+* Downgrade doxygen to 1.8.15 on macOS (`#14169`_)
 * Fix snopt external for Bazel 3.6 (`#14179`_)
+* Cleanup pkg-config path for ibex (`#14109`_)
+* Clarify which vector_gen macros are to be used outside of Drake (`#14092`_)
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
@@ -194,6 +189,7 @@ Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * TBD (`#14128`_)
+* TBD schema: Remove rotation_rpy_deg backwards compatibility (`#14143`_)
 
 Notes
 -----
