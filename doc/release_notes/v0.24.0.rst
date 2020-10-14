@@ -12,8 +12,10 @@ Announcements
 Breaking changes since v0.23.0
 ------------------------------
 
-* TBD Improve inlining for EigenPtr (`#14088`_)
-* TBD framework: Regularize VectorBase bounds checking (`#14101`_)  # In preparing to move some methods into cc files, it became clear that a good code split between h and cc would be difficult given the current idioms for bounds checking. This commit adjusts operator[] access to not check bounds (it was already documented not to check, but was doing so anyway) and unifies the exception formatting into the VectorBase class. This is a breaking change in the sense that the exception subclass being thrown may be different now; the API promises are weakened to only promise to throw a std::exception, not any specific kind of exception.  The unit tests are weakened to reflect this. This is breaking change in demoting BasicVector::DoGetAtIndex from protected to private. Also add a Doxygen comment to specify SetZero. Also adjust #include statements to remove unused inclusions.
+* De-referencing a drake::EigenPtr no longer checks for nullptr (`#14088`_).
+  Users relying on the nullptr checks should add their own before dereferencing.
+* The exact exception subclasses thrown by VectorBase changed  (`#14101`_).
+* BasicVector::DoGetAtIndex changed from protected to private.
 
 Changes since v0.23.0
 ---------------------
@@ -47,14 +49,12 @@ New features
 
 * AggregateLinearCosts (`#14190`_)
 * AggregateQuadraticAndLinearCosts (`#14165`_)
-* TBD Add operator +, -, * to GenericPolynomial (`#14053`_)
-* TBD Add hash and divide to GenericPolynomial (`#14100`_)
-* TBD Add pow to GenericPolynomial (`#14158`_)
+* GenericPolynomial operators (+, -, \*, /, ==, pow, hash) (`#14053`_, `#14100`_, `#14158`_)
 
 Fixes
 
-* TBD Improve inlining for EigenPtr (`#14088`_)
-* TBD autodiffxd: Optimize `operator*=` a bit more (`#14171`_)
+* Improve inlining for EigenPtr (`#14088`_)
+* Improve inlining for AutoDiffXd::operator*= (`#14171`_)
 * Document that CSDP supports SOCP (`#14122`_)
 
 Multibody Dynamics
@@ -183,8 +183,25 @@ Newly-deprecated APIs
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* TBD (`#14128`_)
-* TBD schema: Remove rotation_rpy_deg backwards compatibility (`#14143`_)
+* pydrake.geometry.SceneGraphInspector.GetNameByFrameId (`#14128`_)
+* pydrake.geometry.SceneGraphInspector.GetNameByGeometryId (`#14128`_)
+* schema::Rotation backwards compatibility for rotation_rpy_deg (`#14143`_)
+* Automatic conversion and interop between RigidTransform/Isometry3 (`#14128`_)
+
+  * drake::math::RigidTransform::linear
+  * drake::math::RigidTransform::matrix
+  * drake::math::RigidTransform::operator Isometry3
+
+* All functions within manipulation/util/bot_core_lcm_encode_decode.h (`#14128`_)
+
+  * ::EncodeVector3d
+  * ::DecodeVector3d
+  * ::EncodeQuaternion
+  * ::DecodeQuaternion
+  * ::EncodePose
+  * ::DecodePose
+  * ::EncodeTwist
+  * ::DecodeTwist
 
 Notes
 -----
