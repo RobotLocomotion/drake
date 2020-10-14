@@ -19,34 +19,36 @@ Prior to release
 ----------------
 
 1. Choose the next version number.
-2. Create a local Drake branch named ``release_notes-v0.N.0`` (so that
-   others can easily find and push to it after the PR is opened).
-3. As the first commit on the branch, mimic the first commit
-   (`link <https://github.com/RobotLocomotion/drake/pull/12474/commits/5ec2a6955a4d4f506457c5804ea15ccc84b90bb3>`_)
-   from `PR 12474 <https://github.com/RobotLocomotion/drake/pull/12474>`_
+2. Create a local Drake branch named ``release_notes-v0.N.0`` (so that others
+   can easily find and push to it after the PR is opened).
+3. As the first commit on the branch, mimic the commit
+   (`link <https://github.com/RobotLocomotion/drake/pull/12408/commits/674b84877bc08448b59a2243f3b910a7b6dbab43>`_)
+   from `PR 12408 <https://github.com/RobotLocomotion/drake/pull/12408>`_
    in order to disable CI.  A quick way to do this might be::
 
-     git fetch upstream pull/12474/head
-     git cherry-pick 5ec2a6955a4d4f506457c5804ea15ccc84b90bb3
+     git fetch upstream pull/12408/head
+     git cherry-pick 674b84877bc08448b59a2243f3b910a7b6dbab43
 
 4. Push that branch and then open a new pull request titled::
 
      doc: Add release notes v0.N.0
 
-   Make sure that "Allow edits from maintainers" on the GitHub PR page
-   is enabled (the checkbox is checked).
+   Make sure that "Allow edits from maintainers" on the GitHub PR page is
+   enabled (the checkbox is checked).
 5. For release notes, on an ongoing basis, add recent commit messages to the
    release notes draft using the ``tools/dev/relnotes`` tooling.
+   run,
 
-   a. TODO(jwnimmer-tri) Describe how to use the command-line flags.
-   b. From time to time, merge ``upstream/master`` into your
-      ``origin/release_notes-v0.N.0`` branch (so that it doesn't go stale).
-      Never rebase or force-push to the branch.  We expect that several people
-      will clone and push to it concurrently.
+   a. On the first run, use ``--action=create`` to bootstrap the file.
+   a. On the subsequent runs, use ``--action=update`` to refresh the file.
 
 6. For release notes, on an ongoing basis, clean up and relocate the commit
    notes to properly organized and wordsmithed bullet points.
-7. As the release is nearly ready, post a call for action for feature teams to
+7. From time to time, merge ``upstream/master`` into your
+   ``origin/release_notes-v0.N.0`` branch (so that it doesn't go stale).
+   Never rebase or force-push to the branch.  We expect that several people
+   will clone and push to it concurrently.
+8. As the release is nearly ready, post a call for action for feature teams to
    look at the draft document and provide suggestions (in reviewable) or fixes
    (as pushes).
 
