@@ -123,6 +123,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "autodiff",
+    srcs = ["autodiff.cc"],
     hdrs = [
         "autodiff.h",
         "autodiff_overloads.h",

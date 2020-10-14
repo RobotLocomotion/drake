@@ -99,7 +99,7 @@ class PointShapeAutoDiffSignedDistanceTester {
       error = true;
       failure << "Test distance has no derivatives";
     }
-    const Vector3d ddistance_dp_WQ = result.distance.derivatives();
+    const Vector3d ddistance_dp_WQ = result.distance.const_derivatives();
     const Vector3d grad_W_val = math::autoDiffToValueMatrix(result.grad_W);
     if (grad_W_val.array().isNaN().any()) {
       if (error) failure << "\n";
