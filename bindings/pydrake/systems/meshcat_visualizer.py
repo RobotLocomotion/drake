@@ -536,17 +536,6 @@ class MeshcatContactVisualizer(LeafSystem):
     MultibodyPlant.
     """
 
-    class _ContactState:
-        def __init__(self, key, needs_pruning, info, p_BC):
-            # Key for use with meshcat.
-            self.key = key
-            # Implies contact should be pruned / removed.
-            self.needs_pruning = needs_pruning
-            # ContactInfo instance.
-            self.info = info
-            # Position of contact `C` w.r.t. body `B`.
-            self.p_BC = p_BC
-
     def __init__(self,
                  meshcat_viz,
                  force_threshold=1e-2,
@@ -575,6 +564,7 @@ class MeshcatContactVisualizer(LeafSystem):
 
         self.set_name('meshcat_contact_visualizer')
         self.DeclarePeriodicPublish(self._meshcat_viz.draw_period, 0.0)
+
         # Pose bundle (from SceneGraph) input port.
         self.DeclareAbstractInputPort("pose_bundle",
                                       AbstractValue.Make(PoseBundle(0)))
@@ -582,147 +572,78 @@ class MeshcatContactVisualizer(LeafSystem):
         self.DeclareAbstractInputPort(
             "contact_results", AbstractValue.Make(ContactResults()))
 
-        # Make force cylinders smaller at initialization.
-        self._force_cylinder_radial_scale = 1.
-        self._force_cylinder_longitudinal_scale = 100.
-
         # This system has undeclared states, see #4330.
-        # - All contacts (previous and current), of type `_ContactState`.
+        self._warned_pose_bundle_input_port_connected = False
         self._contacts = []
-        # - Unique key for contacts in meshcat.
-        self._contact_key_counter = 0
-        # - Previous time at which contact was published.
-        self._t_previous = 0.
+
+        # Zap any previous contact forces on this prefix
+        vis = self._meshcat_viz.vis[self._meshcat_viz.prefix]["contact_forces"]
+        vis.delete()
 
     def DoPublish(self, context, event):
         LeafSystem.DoPublish(self, context, event)
-        pose_bundle = self.EvalAbstractInput(context, 0).get_value()
-        X_WB_map = self._get_pose_map(pose_bundle)
-        self._draw_contact_forces(context, X_WB_map)
 
-    def _get_pose_map(self, pose_bundle):
-        # - Stores poses of all bodies in self._plant and its associated plant.
-        # Created via `_store_pose_map`, keyed by
-        # (int(body.model_index()), body.name()).
-        X_WB_map = dict()
-        for frame_i in range(pose_bundle.get_num_poses()):
-            # SceneGraph currently sets the name in PoseBundle as
-            # `{source_name}::{frame_name}`.
-            (source_name, frame_name) = self._meshcat_viz._parse_name(
-                pose_bundle.get_name(frame_i))
-            model_instance = pose_bundle.get_model_instance_id(frame_i)
-            pose_matrix = pose_bundle.get_transform(frame_i)
-            _, frame_name = frame_name.split("::")
-            key = (model_instance, frame_name)
-            X_WB_map[key] = pose_matrix
-        return X_WB_map
+        if (not self._warned_pose_bundle_input_port_connected
+                and self.get_input_port(0).HasValue(context)):
+            warnings.warn(
+                "The pose_bundle input port of MeshcatContactVisualizer is no "
+                "longer used and will be removed after 2021-01-01.")
+            self._warned_pose_bundle_input_port_connected = True
 
-    def _find_duplicate_contact(self, new, dt):
-        # Return first stored contact that is close enough, or None if contact
-        # is new.
-        assert isinstance(new, self._ContactState)
-        for old in self._contacts:
-            # Use order-insensitive comparison using `set`s.
-            old_bodies = {int(old.info.bodyA_index()),
-                          int(old.info.bodyB_index())}
-            new_bodies = {int(new.info.bodyA_index()),
-                          int(new.info.bodyB_index())}
-            if old_bodies == new_bodies:
-                # Reaching here means that `old` and `new`
-                # describe contact between the same pair of bodies.
-                v = np.sqrt(old.info.separation_speed()**2
-                            + old.info.slip_speed()**2)
-                if np.linalg.norm(new.p_BC - old.p_BC) < v * dt:
-                    old.info = new.info
-                    old.p_BC = new.p_BC
-                    return old
-        return None
-
-    def _draw_contact_forces(self, context, X_WB_map):
         contact_results = self.EvalAbstractInput(context, 1).get_value()
-        t = context.get_time()
 
-        # First, set all existing contacts to be pruned.
-        for contact in self._contacts:
-            contact.needs_pruning = True
+        # self._contacts contains a list of geometry ID pairs.  We copy the
+        # list from the last publish, and delete any that did not persist into
+        # this publish.  It is tempting to just delete() the root branch, but
+        # this leads to visual artifacts (flickering) in the browser.
+        vis = self._meshcat_viz.vis[self._meshcat_viz.prefix]["contact_forces"]
+        to_delete = self._contacts.copy()
+        self._contacts = []
 
-        # Check if every element in contact_results is already in
-        #   self._contacts.
-        # If True, update the magnitude and location of
-        #   the _ContactState in self._contacts.
-        # If False, add the new contact to self._contacts
-        vis = self._meshcat_viz.vis
-        prefix = self._meshcat_viz.prefix
         for i_contact in range(contact_results.num_point_pair_contacts()):
-            contact_info_i = contact_results.point_pair_contact_info(i_contact)
+            contact_info = contact_results.point_pair_contact_info(i_contact)
 
             # Do not display small forces.
-            force_norm = np.linalg.norm(contact_info_i.contact_force())
+            force_norm = np.linalg.norm(contact_info.contact_force())
             if force_norm < self._force_threshold:
                 continue
 
-            # contact point in frame B
-            bodyB = self._plant.get_body(contact_info_i.bodyB_index())
-            X_WB_key = (int(bodyB.model_instance()), bodyB.name())
-            X_WB = X_WB_map[X_WB_key]
-            p_BC = X_WB.inverse().multiply(contact_info_i.contact_point())
-            new_contact = self._ContactState(
-                key=str(self._contact_key_counter), needs_pruning=False,
-                info=contact_info_i, p_BC=p_BC)
-
-            contact = self._find_duplicate_contact(
-                new_contact, dt=t - self._t_previous)
-            if contact is None:
-                # contact is new
-                self._contacts.append(new_contact)
-                self._contact_key_counter += 1
-                # create cylinders with small radius.
-                radius = self._radius / self._force_cylinder_radial_scale
-                vis[prefix]["contact_forces"][new_contact.key].set_object(
-                    meshcat.geometry.Cylinder(
-                        height=1. / self._force_cylinder_longitudinal_scale,
-                        radius=radius),
-                    meshcat.geometry.MeshLambertMaterial(color=0xff0000))
+            point_pair = contact_info.point_pair()
+            key = (point_pair.id_A.get_value(), point_pair.id_B.get_value())
+            self._contacts.append(key)
+            if key in to_delete:
+                to_delete.remove(key)
+            cvis = vis[str(key)]
+            height = force_norm/self._contact_force_scale
+            # Note: The performance of sending a new object on every publish
+            # seems fine.  If we experience hardship here, we could imagine
+            # accomplishing the same with only a shear transformation.
+            cvis.set_object(meshcat.geometry.Cylinder(
+                height=height, radius=self._radius),
+                meshcat.geometry.MeshLambertMaterial(color=0x33cc33))
+            # This Contact frame has the force in [0, 1, 0].
+            X_ContactGeom = tf.translation_matrix([0, height/2.0, 0])
+            # C is located at the contact point, but with the world frame
+            # orientation.
+            if force_norm < 1e-12:
+                X_CContact = tf.identity_matrix()
             else:
-                # contact is not new, but it's valid.
-                contact.needs_pruning = False
+                # Rotates [0,1,0] to contact_force/force_norm.
+                angle_axis = np.cross(np.array([0, 1, 0]),
+                                      contact_info.contact_force()/force_norm)
+                X_CContact = tf.rotation_matrix(
+                    np.arcsin(np.linalg.norm(angle_axis)), angle_axis)
+            X_WC = tf.translation_matrix(contact_info.contact_point())
+            cvis.set_transform(X_WC.dot(X_CContact).dot(X_ContactGeom))
+            cvis["head"].set_object(meshcat.geometry.Cylinder(
+                height=self._radius*2.0,
+                radiusTop=0, radiusBottom=self._radius*2.0),
+                meshcat.geometry.MeshLambertMaterial(color=0x00dd00))
+            cvis["head"].set_transform(tf.translation_matrix(
+                [0, height/2.0 + self._radius, 0.0]))
 
-        # Prune old contact forces
-        for contact in list(self._contacts):
-            if contact.needs_pruning:
-                self._contacts.remove(contact)
-                vis[prefix]["contact_forces"][contact.key].delete()
-
-        # visualize all valid contact forces
-        for contact in self._contacts:
-            # Compute pose of contact cylinder `C` in world frame `W`.
-            R = np.zeros((3, 3))
-            magnitude = np.linalg.norm(contact.info.contact_force())
-            y = contact.info.contact_force() / magnitude
-            R[:, 1] = y
-            R[:, 0] = [0, -y[2], y[1]]
-            R[:, 2] = np.cross(R[:, 0], y)
-            X_WC = np.eye(4)
-            X_WC[0:3, 0:3] = R
-            X_WC[0:3, 3] = contact.info.contact_point()
-            # Scale cylinder
-            visual_magnitude = self._get_visual_magnitude(magnitude)
-            T_scale = tf.translation_matrix(
-                [0, visual_magnitude / 2, 0])
-            T_scale[1, 1] = \
-                visual_magnitude * self._force_cylinder_longitudinal_scale
-            # - "expand" cylinders to a visible size.
-            T_scale[0, 0] *= self._force_cylinder_radial_scale
-            T_scale[2, 2] *= self._force_cylinder_radial_scale
-            # Publish.
-            vis[prefix]["contact_forces"][contact.key].set_transform(
-                X_WC.dot(T_scale))
-
-        # update time
-        self._t_previous = t
-
-    def _get_visual_magnitude(self, magnitude):
-        return magnitude / self._contact_force_scale
+        for key in to_delete:
+            vis[str(key)].delete()
 
 
 def _get_native_visualizer(viz):
