@@ -22,7 +22,6 @@ Dynamical Systems
 
 .. <relnotes for systems go here>
 
-* TBD Fix typo in doxygen comment argument name (`#14060`_)
 * TBD framework: Add DiagramBuilder::GetSystems (`#14066`_)
 * TBD lcm: Add publish_period option to ConnectLcmScope (`#14062`_)
 * TBD framework: Regularize VectorBase bounds checking (`#14101`_)  # In preparing to move some methods into cc files, it became clear that a good code split between h and cc would be difficult given the current idioms for bounds checking. This commit adjusts operator[] access to not check bounds (it was already documented not to check, but was doing so anyway) and unifies the exception formatting into the VectorBase class. This is a breaking change in the sense that the exception subclass being thrown may be different now; the API promises are weakened to only promise to throw a std::exception, not any specific kind of exception.  The unit tests are weakened to reflect this. This is breaking change in demoting BasicVector::DoGetAtIndex from protected to private. Also add a Doxygen comment to specify SetZero. Also adjust #include statements to remove unused inclusions.
@@ -49,20 +48,14 @@ Mathematical Program
 
 .. <relnotes for solvers go here>
 
-* TBD Add documentation to Binding.GetNumElements() (`#14065`_)
-* TBD add pybind for AddLorentzConeConstraint (`#14119`_)
-* TBD Update solve matrix doxygen, CSDP supports socp (`#14122`_)
-* TBD Add python binding for AddRotatedLorentzConeConstraint (`#14120`_)
-* TBD Add AggregateQuadraticCosts (`#14165`_)  # Many solvers need to aggregate all the quadratic costs into one quadratic cost (as the summation of individual cost), and the add this aggregated cost using the solver's API. This function takes this common functionality out from each individual solver.
-* TBD add AggregateLinearCosts (`#14190`_)  # change AggregateQuadraticCosts to AggregateQuadraticAndLinearCosts.
-
 New features
 
-* TBD
+* AggregateLinearCosts (`#14190`_)
+* AggregateQuadraticAndLinearCosts (`#14165`_)
 
 Fixes
 
-* TBD
+* Document that CSDP supports SOCP (`#14122`_)
 
 Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
@@ -153,6 +146,8 @@ Fixes
 
 Newly bound
 
+* TBD AddRotatedLorentzConeConstraint (`#14120`_)
+* TBD AddLorentzConeConstraint (`#14119`_)
 * TBD RotationalInertia and UnitInertia's ReExpress (`#14111`_, `#14194`_)
 * TBD operators for SpatialVector; shifting for velocity and force (`#14098`_)
 * TBD ContactModel enumeration and accessor/mutators (`#14108`_)
