@@ -39,7 +39,7 @@ from pydrake.systems.meshcat_visualizer import (
     MeshcatPointCloudVisualizer
 )
 from pydrake.common.eigen_geometry import Isometry3
-from pydrake.math import RigidTransform
+from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.plant import CoulombFriction, MultibodyPlant
 from pydrake.multibody.tree import SpatialInertia, UnitInertia
 
@@ -224,13 +224,14 @@ class TestMeshcat(unittest.TestCase):
         builder = DiagramBuilder()
         plant = MultibodyPlant(0.002)
         _, scene_graph = AddMultibodyPlantSceneGraph(builder, plant)
-        object_model = Parser(plant=plant).AddModelFromFile(object_file_path)
         table_model = Parser(plant=plant).AddModelFromFile(table_file_path)
+        object_model = Parser(plant=plant).AddModelFromFile(object_file_path)
 
         # Weld table to world.
         plant.WeldFrames(
             A=plant.world_frame(),
-            B=plant.GetFrameByName("link", table_model))
+            B=plant.GetFrameByName("link", table_model),
+            X_AB=RigidTransform(RotationMatrix.MakeXRotation(0.1)))
 
         plant.Finalize()
 
@@ -248,16 +249,13 @@ class TestMeshcat(unittest.TestCase):
             MeshcatContactVisualizer(
                 meshcat_viz=viz,
                 force_threshold=0,
-                contact_force_scale=10,
+                contact_force_scale=1,
                 plant=plant,
-                contact_force_radius=0.01))
+                contact_force_radius=0.005))
         contact_input_port = contact_viz.GetInputPort("contact_results")
         builder.Connect(
             plant.GetOutputPort("contact_results"),
             contact_input_port)
-        builder.Connect(
-            scene_graph.get_pose_bundle_output_port(),
-            contact_viz.GetInputPort("pose_bundle"))
 
         diagram = builder.Build()
 
@@ -286,7 +284,7 @@ class TestMeshcat(unittest.TestCase):
             contact_input_port.get_index()).get_value()
 
         self.assertGreater(contact_results.num_point_pair_contacts(), 0)
-        self.assertEqual(contact_viz._contact_key_counter, 4)
+        self.assertEqual(len(contact_viz._contacts), 4)
 
     def test_texture_override(self):
         """Draws a textured box to test the texture override pathway."""
