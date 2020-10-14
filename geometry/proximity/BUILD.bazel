@@ -440,6 +440,9 @@ drake_cc_library(
     srcs = ["proximity_utilities.cc"],
     hdrs = ["proximity_utilities.h"],
     deps = [
+        ":sorted_triplet",
+        ":volume_mesh",
+        "//common:sorted_pair",
         "//geometry:geometry_ids",
         "//geometry:geometry_index",
         "//geometry:shape_specification",
@@ -637,7 +640,7 @@ drake_cc_googletest(
     size = "medium",
     deps = [
         ":make_cylinder_mesh",
-        ":sorted_triplet",
+        ":proximity_utilities",
     ],
 )
 

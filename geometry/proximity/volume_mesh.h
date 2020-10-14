@@ -223,6 +223,17 @@ class VolumeMesh {
     return volume;
   }
 
+  /** Calculates the volume of `this` mesh by taking the sum of the volume of
+   *  each tetrahedral element.
+   */
+  T CalcVolume() const {
+    T volume(0.0);
+    for (int e = 0; e < num_elements(); ++e) {
+      volume += CalcTetrahedronVolume(VolumeElementIndex(e));
+    }
+    return volume;
+  }
+
   /** Calculate barycentric coordinates with respect to the tetrahedron `e`
    of the point Q'. This operation is expensive compared with going from
    barycentric to Cartesian.
