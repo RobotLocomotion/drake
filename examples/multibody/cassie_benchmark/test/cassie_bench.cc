@@ -226,6 +226,9 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffMassMatrix)
   for (auto _ : state) {
     compute();
   }
+
+  std::cout << "Pool maxsize=" << drake::internal::PoolVectorXd::pool_max_size()
+            << "\n";
 }
 
 BENCHMARK_F(CassieAutodiffFixture, AutodiffInverseDynamics)
@@ -263,6 +266,9 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffInverseDynamics)
   for (auto _ : state) {
     compute();
   }
+
+  std::cout << "Pool maxsize=" << drake::internal::PoolVectorXd::pool_max_size()
+            << "\n";
 }
 
 BENCHMARK_F(CassieAutodiffFixture, AutodiffForwardDynamics)
@@ -299,6 +305,9 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffForwardDynamics)
   for (auto _ : state) {
     compute();
   }
+
+  std::cout << "Pool maxsize=" << drake::internal::PoolVectorXd::pool_max_size()
+            << "\n";
 }
 
 }  // namespace

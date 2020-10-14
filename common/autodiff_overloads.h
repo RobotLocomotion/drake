@@ -121,7 +121,7 @@ pow(const Eigen::AutoDiffScalar<DerTypeA>& base,
           typename internal::remove_all<DerTypeB>::type::PlainObject>::value,
       "The derivative types must match.");
 
-  internal::make_coherent(base.derivatives(), exponent.derivatives());
+  // internal::make_coherent(base.derivatives(), exponent.derivatives());
 
   const auto& x = base.value();
   const auto& xgrad = base.derivatives();
@@ -131,12 +131,23 @@ pow(const Eigen::AutoDiffScalar<DerTypeA>& base,
   using std::pow;
   using std::log;
   const auto x_to_the_y = pow(x, y);
+  const auto yx_to_the_ym1 = y * pow(x, y - 1);
   if (ygrad.isZero(std::numeric_limits<double>::epsilon()) ||
       ygrad.size() == 0) {
     // The derivative only depends on ∂(x^y)/∂x -- this prevents undefined
     // behavior in the corner case where ∂(x^y)/∂y is infinite when x = 0,
     // despite ∂y/∂v being 0.
-    return Eigen::MakeAutoDiffScalar(x_to_the_y, y * pow(x, y - 1) * xgrad);
+    if (xgrad.size() == 0) {
+      const auto zero_xgrad = 0 * ygrad;
+      return Eigen::MakeAutoDiffScalar(x_to_the_y, yx_to_the_ym1 * zero_xgrad);
+    }
+    return Eigen::MakeAutoDiffScalar(x_to_the_y, yx_to_the_ym1 * xgrad);
+  }
+  if (xgrad.size() == 0) {
+    const auto zero_xgrad = 0 * ygrad;  // A zero of the right size.
+    return Eigen::MakeAutoDiffScalar(
+        x_to_the_y,
+        yx_to_the_ym1 * zero_xgrad + x_to_the_y * log(x) * ygrad);
   }
   return Eigen::MakeAutoDiffScalar(
       // The value is x ^ y.
@@ -144,7 +155,7 @@ pow(const Eigen::AutoDiffScalar<DerTypeA>& base,
       // The multivariable chain rule states:
       // df/dv_i = (∂f/∂x * dx/dv_i) + (∂f/∂y * dy/dv_i)
       // ∂f/∂x is y*x^(y-1)
-      y * pow(x, y - 1) * xgrad +
+      yx_to_the_ym1 * xgrad +
       // ∂f/∂y is (x^y)*ln(x)
       x_to_the_y * log(x) * ygrad);
 }

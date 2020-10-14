@@ -23,6 +23,14 @@ GTEST_TEST(AutodiffOverloadsTest, Casting) {
   VectorXd dx0(3);
   dx0.setZero();
 
+  const size_t sv = sizeof(VectorXd);
+  const size_t sa = sizeof(AutoDiffXd);
+  const size_t s3 = sizeof(Eigen::Vector3d);
+  (void)sv; (void)sa; (void)s3;
+
+  const uint64_t* p = reinterpret_cast<const uint64_t*>(&dx0);
+  (void)p;
+
   // No derivatives supplied.
   AutoDiffXd x(1);
   EXPECT_EQ(x.value(), 1);
