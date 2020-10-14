@@ -175,15 +175,20 @@ void ProcessModelDirectivesImpl(
       drake::log()->debug("  add_package_path: {}", package_path.name);
       const fs::path abspath_xml =
           drake::FindResourceOrThrow(package_path.path + "/package.xml");
-      std::string path = abspath_xml.parent_path().string();
+      std::string path =
+          abspath_xml.parent_path().lexically_normal().string();
 
       // It is possible to get the same `add_package_path` directive twice,
       // e.g. by including the same directives yaml twice.  That's fine so
       // long as they agree.
       if (parser->package_map().Contains(package_path.name)) {
         std::string old_path = parser->package_map().GetPath(package_path.name);
+        old_path = fs::path(old_path).lexically_normal().string();
         if (old_path.back() == '/') old_path.pop_back();
         if (path.back() == '/') path.pop_back();
+        drake::log()->debug("    compare:");
+        drake::log()->debug("      path: {}", path);
+        drake::log()->debug("      old_path: {}", old_path);
         DRAKE_DEMAND(path == old_path);
       } else {
         parser->package_map().Add(package_path.name, path);
