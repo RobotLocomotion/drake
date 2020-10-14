@@ -153,7 +153,14 @@ RlocationOrError FindRunfile(const std::string& resource_path) {
 
   // Locate the file on the manifest and in the directory.
   const std::string by_man = singleton.runfiles->Rlocation(resource_path);
-  const std::string by_dir = singleton.runfiles_dir + "/" + resource_path;
+  // N.B. We must normalize the path; otherwise the path may include
+  // `parent/./path` if the binary was run using `./bazel-bin/target` vs
+  // `bazel-bin/target`.
+  // TODO(eric.cousineau): Show this in Drake itself. This behavior was
+  // encountered in Anzu issue 5653, in a Python binary.
+  const std::string by_dir =
+      filesystem::path(singleton.runfiles_dir + "/" + resource_path)
+      .lexically_normal().string();
   const bool by_man_ok = filesystem::is_regular_file({by_man});
   const bool by_dir_ok = filesystem::is_regular_file({by_dir});
   drake::log()->debug(
