@@ -21,6 +21,7 @@ Dynamical Systems
 ~~~~~~~~~~~~~~~~~
 
 .. <relnotes for systems go here>
+
 * TBD Fix typo in doxygen comment argument name (`#14060`_)
 * TBD framework: Add DiagramBuilder::GetSystems (`#14066`_)
 * TBD lcm: Add publish_period option to ConnectLcmScope (`#14062`_)
@@ -49,6 +50,7 @@ Mathematical Program
 ~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for solvers go here>
+
 * TBD Add documentation to Binding.GetNumElements() (`#14065`_)
 * TBD add pybind for AddLorentzConeConstraint (`#14119`_)
 * TBD Update solve matrix doxygen, CSDP supports socp (`#14122`_)
@@ -68,7 +70,8 @@ Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for geometry,multibody go here>
-[geometry,systems] * TBD [render] Add normal computation for parsed/generated meshes (`#14035`_)  # - shape_meshes.* - Introduces a new struct: MeshData - it encapsulates more data than the previous "vertex position" and triangle construction. It adds normals and uvs. - Mesh loading parses normal data from the obj (throwing exceptions if normals are missing). - All primitives come with normals. - render_engine_gl.* - Instantiate the OpenGl geometry from MeshData instead of the old IndexBuffer and VertexBuffer types.
+
+* TBD [render] Add normal computation for parsed/generated meshes (`#14035`_)  # - shape_meshes.* - Introduces a new struct: MeshData - it encapsulates more data than the previous "vertex position" and triangle construction. It adds normals and uvs. - Mesh loading parses normal data from the obj (throwing exceptions if normals are missing). - All primitives come with normals. - render_engine_gl.* - Instantiate the OpenGl geometry from MeshData instead of the old IndexBuffer and VertexBuffer types.
 * TBD Refactors TamsiContactResults --> ContactSolverResults (`#14069`_)
 * TBD Bring global_inverse_kinematics out from attic (`#13921`_)  # Bring global_inverse_kinematics out from attic folder to multibody folder. Rewrite GlobalInverseKinematics using MBP public API.
 * TBD Introduce ContactSolver and MBP::set_contact_solver() (`#13958`_)
@@ -82,7 +85,6 @@ Multibody Dynamics
 * TBD This commit applies all of the post-dev changes to model directives: (`#14038`_)  # * Sync with upstream changes * Rewrite to not reference dev * Removing invalid geometry from the jaco (as mentioning it in a data= line causes it to be validity checked) * Factor the scoped names mechanism out of model directives * Rewrite the weld error API to be future-proof against a future refactor.
 * TBD Add pydrake bindings for model directives (`#14144`_)  # * Weld error support omitted for simplicity. * Follow-up to #14038 * Completes #13282
 * TBD Adds parameters for FixedOffsetFrame (`#14137`_)
-[multibody,tools] * TBD workspace: Upgrade libsdformat to latest release 9.3.0 (`#14147`_)
 * TBD Cleanups of issues revealed in integrating model directives downstream (`#14145`_)
 * TBD Utility function that uses AutoDiff and vector differentiation in a non-world frame.  Useful as an independent test for methods such as CalcBiasSpatialAcceleration() and CalcSpatialAcceleration().  Resolves issue #13562 (`#13593`_)
 * TBD Code and test for spatial momentum of a plant or subset of bodies (`#13916`_)
@@ -94,6 +96,7 @@ Multibody Dynamics
 * TBD multibody: Deprecate dead code (`#14188`_)
 * TBD pydrake: Bind some missing multibody plant-related items (`#14192`_)
 * TBD pydrake: Bind some missing multibody tree-related items (`#14195`_)
+* TBD multibody: Use spatial_algebra.h as the sole header for the package (`#14117`_)  # Including the individual headers one at a time might leave the dot product operations undefined. Use DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS.
 
 New features
 
@@ -107,41 +110,38 @@ Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for examples,tutorials go here>
+
 * TBD manipulation_station: change controller plant to discrete time (`#14079`_)  # It has no impact on the manipulation station behavior, but avoids the noisy warnings about unsupported joint limits for continuous time models.
-[examples,geometry,multibody] * TBD Fix range-loop-analysis warnings (`#14094`_)
 * TBD cassie_bench: Catch up on audodiff allocation improvements (`#14115`_)  # These gains resulted from @sherm1's PR #13962 but went unclaimed.
-[examples,manipulation,multibody,systems] * TBD multibody: Use spatial_algebra.h as the sole header for the package (`#14117`_)  # Including the individual headers one at a time might leave the dot product operations undefined. Use DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS.
 * TBD cassie_bench: Separate autodiff malloc counts from benchmark timing (`#14146`_)  # Relevant to: #10991, #13902 I finally realized that LimitMalloc counting was contributing significant overhead to autodiff benchmark timings, owing to necessary synchronization primitives in that module. This patch separates the two measurements, to clarify the things we want to focus on. Notice that this change of measurement will require some revision of our timings for older versions, to keep comparisons sensible. Reviewers should look for updates to the tracking issue #13902.
-[examples,multibody,systems,tutorials] * TBD systems: Deprecate context.FixInputPort() (`#14093`_)  # Change remaining uses of context.FixInputPort() to port.FixValue()
-[examples,manipulation] * TBD manipulation_station: add package.xml (`#14164`_)  # so that I can find the files in manipulation_station/models from outside of drake via the model directives.  (yeah!) * ycb: add package.xml
-* TBD
+* TBD manipulation_station: add package.xml (`#14164`_)  # so that I can find the files in manipulation_station/models from outside of drake via the model directives.  (yeah!) * ycb: add package.xml
 
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for common,math,lcm,lcmtypes,manipulation,perception go here>
+
 * TBD yaml: Bugfix in std::optional handling (`#14076`_)  # This change allows the allow_cpp_with_no_yaml = true option to correctly return std::optional objects that are valid, even when the yaml string does have have the given field.
 * TBD Add operator +, -, * to GenericPolynomial (`#14053`_)  # Add +,-,* operators to GenericPolynomial. Co-authored-by: Eric Cousineau <eric.cousineau@tri.global>
 * TBD math: Deprecate expmap.h (`#14099`_)
-[common,examples,math,multibody] * TBD Improve inlining for EigenPtr and RotationalInertia::ReExpress (`#14088`_)
-[lcmtypes,tools] * TBD vector_gen: Clarify which macros are to be used outside of Drake (`#14092`_)  # This renames some macros (providing deprecation stubs in the meantime). Also remove a dead import within lcmtypes.
+* TBD Improve inlining for EigenPtr and RotationalInertia::ReExpress (`#14088`_) [common,examples,math,multibody]
+* TBD vector_gen: Clarify which macros are to be used outside of Drake (`#14092`_)  # This renames some macros (providing deprecation stubs in the meantime). Also remove a dead import within lcmtypes. [lcmtypes,tools] 
 * TBD common: Don't defect use of TypeSafeIndex or Identifier references (`#14105`_)
 * TBD Add hash and divide to GenericPolynomial (`#14100`_)  # Add hash and divide to GenericPolynomial
-[common,math] * TBD bsplines: Add Serialize() for Bspline{Basis,Trajectory}<double> (`#14106`_)  # This allows parsing of these objects from YAML.
+* TBD bsplines: Add Serialize() for Bspline{Basis,Trajectory}<double> (`#14106`_)  # This allows parsing of these objects from YAML. [common,math] 
 * TBD jaco: Copy package.xml from upstream cited in LICENSE.txt (`#14134`_)
-[manipulation,multibody] * TBD jaco: Modify and test for package.xml (`#14134`_)  # package_map: Add trace statements for debugging package paths
+* TBD jaco: Modify and test for package.xml (`#14134`_)  # package_map: Add trace statements for debugging package paths [manipulation,multibody] 
 * TBD schema: Remove rotation_rpy_deg backwards compatibility (`#14143`_)
-[manipulation,math] * TBD Remove deprecated code (2020-10) (`#14128`_)
-[math,multibody] * TBD Versatile error message for gimbal-lock singularity -- helps end-users debug bushing problems and resolves issue #14114 (`#14126`_)
+* TBD Versatile error message for gimbal-lock singularity -- helps end-users debug bushing problems and resolves issue #14114 (`#14126`_) [math,multibody] 
 * TBD Add pow to GenericPolynomial (`#14158`_)
 * TBD autodiffxd: Optimize `operator*=` a bit more (`#14171`_)  # Relevant to: #10991, #13902 It turns out that relying on eigen's Matrix::operator*= too heavily results in slower code. Rewrite AutoDiffXd::operator*= for autodiff inputs so that it gets better optimization and inlining from Eigen. Supporting benchmark measurements will be provided in #13902.
 * TBD Remove underscores in Googletest test names (`#14191`_)  # See https://github.com/google/googletest/blob/master/googletest/docs/faq.md#why-should-test-suite-names-and-test-names-not-contain-underscore.
-* TBD
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
 
 .. <relnotes for bindings go here>
+
 * TBD meshcat: replace use of deprecated .matrix() (`#14057`_)
 * TBD solvers.py: Add vectorized version of EvalBinding (for python) (`#14064`_)  # * solvers.py: Add vectorized version of EvalBinding and CheckSatisfied
 * TBD py mpb: Add bindings for LinearBushingRollPitchYaw (`#14070`_)
@@ -179,41 +179,34 @@ Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for attic,cmake,doc,setup,third_party,tools go here>
-[doc,tools] * TBD Release notes v0.23.0 (`#13956`_)
-* TBD doc: Fix typo in v0.23 release notes (`#14061`_)
-* TBD workspace: Upgrade fcl to latest commit (`#14063`_)  # Bring in the recent bug fix in signed distance queries.
-* TBD setup: Fix typo in Ubuntu maintainer-only code (`#14074`_)  # Rewrite the apt-get command lines to fail-fast if there is a filename typo in the future.
-* TBD Use dreal-4.20.09.1 (`#14083`_)
-* TBD Disable range-loop-analysis warnings for Clang 10 and Apple Clang 12 (`#14091`_)
-* TBD Cleanup pkg-config path for ibex (`#14109`_)
-* TBD Deprecate the numpy repository (`#14116`_)  # Closes #8544.
-* TBD Upgrade to Xcode 12 on Catalina (`#14142`_)
-* TBD workspace: Upgrade buildifier to latest release 3.5.0 (`#14152`_)
-* TBD workspace: Upgrade spdlog to latest release 1.8.1 (`#14153`_)
-* TBD workspace: Upgrade googlebenchmark to latest release (`#14154`_)
-* TBD workspace: Upgrade ignition_math to latest release 6.6.0 (`#14148`_)
-* TBD Added flag to convert #warning to errors (`#14155`_)
-* TBD Revert "Added flag to convert #warning to errors" (`#14163`_)  # This reverts commit d3d71d62b2531c1268be595f491fe7789124b87d.
-* TBD workspace: Upgrade rules_python to latest release 0.0.3 (`#14161`_)
-* TBD doc: Add snapshot of current release playbook (`#14170`_)
-* TBD doc: Added git clang-format instructions for Ubuntu (`#14173`_)  # * Added git clang-format instructions for Ubuntu
-* TBD Update the Drake credits list (`#14162`_)
-* TBD Add fourbar and strandbeest to the gallery (`#14181`_)  # * add fourbar and strandbeest to the gallery
-* TBD Add (unused) attribute to snopt rule (`#14179`_)  # The argument 'recursive_init_submodules' was added in Bazel 3.6
-[setup,tools] * TBD Use doxygen 1.8.15 on Mac (`#14169`_)
-* TBD doc: Clarify policy on dev directories (`#14186`_)  # We now require that they must be named 'dev'; a README will not suffice; this allows Reviewable to easily know the difference. Back away from "unit test" rules specifically; just talk about testing at all. Back away from 24 hours policy for build breaks; in practice, we enforce a faster turn-around time.
-* TBD Fix pydrake's bindings coverage report (`#14187`_)  # The subpackages (e.g., multibody) were not being counted, because they were omitted from the coverage rule's filegroup's srcs. Also remove a stray dependency that caused the bindings to be rebuilt unnecessarily when the coverage reporting tool changed.
-* TBD
+
+* Upgrade to Xcode 12 on Catalina (`#14142`_)
+
+  * Disable range-loop-analysis warnings for Clang 10 and Apple Clang 12 (`#14091`_, `#14094`_)
+
+* Upgrade buildifier to latest release 3.5.0 (`#14152`_)
+* Upgrade dreal to latest release 4.20.09.1 (`#14083`_)
+* Upgrade fcl to latest commit (`#14063`_)
+* Upgrade googlebenchmark to latest release (`#14154`_)
+* Upgrade ignition_math to latest release 6.6.0 (`#14148`_)
+* Upgrade rules_python to latest release 0.0.3 (`#14161`_)
+* Upgrade libsdformat to latest release 9.3.0 (`#14147`_)
+* Upgrade spdlog to latest release 1.8.1 (`#14153`_)
+* Cleanup pkg-config path for ibex (`#14109`_)
+* Downgrade doxygen to 1.8.15 on Mac (`#14169`_)
+* Fix snopt external for Bazel 3.6 (`#14179`_)
+* Deprecate the numpy external (`#14116`_)
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
 
-* TBD
+* The numpy external (`#14116`_)
+* Deprecate context.FixInputPort() (`#14093`_)
 
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* TBD
+* TBD Remove deprecated code (2020-10) (`#14128`_) [manipulation,math] 
 
 Notes
 -----

@@ -40,7 +40,8 @@ Prior to release
    run,
 
    a. On the first run, use ``--action=create`` to bootstrap the file.
-   a. On the subsequent runs, use ``--action=update`` to refresh the file.
+      Be sure to cite the new file from the list in ``doc/release_notes.rst``.
+   b. On the subsequent runs, use ``--action=update`` to refresh the file.
 
 6. For release notes, on an ongoing basis, clean up and relocate the commit
    notes to properly organized and wordsmithed bullet points.
