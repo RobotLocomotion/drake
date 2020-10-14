@@ -639,6 +639,7 @@ class TestGeneral(unittest.TestCase):
         self.assertIsInstance(fixed.GetMutableData(), AbstractValue)
         input_port = system.get_input_port(0)
 
+        self.assertTrue(input_port.HasValue(context))
         value = input_port.Eval(context)
         self.assertEqual(type(value), type(model_value.get_value()))
         self.assertEqual(value, model_value.get_value())
@@ -655,6 +656,7 @@ class TestGeneral(unittest.TestCase):
         system.get_input_port(0).FixValue(context, np_value)
         input_port = system.get_input_port(0)
 
+        self.assertTrue(input_port.HasValue(context))
         value = input_port.Eval(context)
         self.assertEqual(type(value), np.ndarray)
         np.testing.assert_equal(value, np_value)
