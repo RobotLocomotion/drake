@@ -132,7 +132,7 @@ class GeometryState {
   std::set<std::pair<GeometryId, GeometryId>> GetCollisionCandidates() const;
 
   /** Implementation of SceneGraphInspector::GetGeometryVersion().  */
-  GeometryVersion geometry_version() const {
+  const GeometryVersion& geometry_version() const {
       return geometry_version_;
   }
   //@}
@@ -377,6 +377,10 @@ class GeometryState {
   int RemoveFromRenderer(const std::string& renderer_name, SourceId source_id,
                          GeometryId geometry_id);
 
+  /** Increments the unique id number of the geometry state when the geometry
+   state is cloned by the Clone() method in GeometryStateValue.
+   Internal use only. */
+  void increment_state_id() { geometry_version_.increment_state_id(); }
   //@}
 
   //----------------------------------------------------------------------------
@@ -572,7 +576,8 @@ class GeometryState {
         geometries_(source.geometries_),
         frame_index_to_id_map_(source.frame_index_to_id_map_),
         geometry_engine_(std::move(source.geometry_engine_->ToAutoDiffXd())),
-        render_engines_(source.render_engines_) {
+        render_engines_(source.render_engines_),
+        geometry_version_(source.geometry_version_) {
     auto convert_pose_vector = [](const std::vector<math::RigidTransform<U>>& s,
                                   std::vector<math::RigidTransform<T>>* d) {
       std::vector<math::RigidTransform<T>>& dest = *d;

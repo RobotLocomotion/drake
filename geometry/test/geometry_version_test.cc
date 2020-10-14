@@ -6,61 +6,58 @@ namespace drake {
 namespace geometry {
 class GeometryVersionTest : public ::testing::Test {
  protected:
-  void SetUp() {}
-  GeometryVersion version_;
+  void SetUp() {
+    version_ = std::unique_ptr<GeometryVersion>(
+        new GeometryVersion(GeometryVersion::GeometryVersionId::get_new_id()));
+  }
+  std::unique_ptr<GeometryVersion> version_;
 
-  void increment_proximity() { version_.increment_proximity(); }
+  void increment_proximity() { version_->increment_proximity(); }
 
-  void increment_perception() { version_.increment_perception(); }
+  void increment_perception() { version_->increment_perception(); }
 
-  void increment_illustration() { version_.increment_illustration(); }
+  void increment_illustration() { version_->increment_illustration(); }
+
+  void increment_state_id() {
+    version_->state_id_ = GeometryVersion::GeometryVersionId::get_new_id();
+  }
 };
 
 namespace {
-TEST_F(GeometryVersionTest, Initialization) {
-  // Default values for all version numbers are 0.
-  EXPECT_EQ(version_.proximity(), 0);
-  EXPECT_EQ(version_.perception(), 0);
-  EXPECT_EQ(version_.illustration(), 0);
-}
-
 TEST_F(GeometryVersionTest, Proximity) {
-  int old_proximity_version = version_.proximity();
-  int old_perception_version = version_.perception();
-  int old_illustration_version = version_.illustration();
+  GeometryVersion old_version = *version_;
   increment_proximity();
-  int new_proximity_version = version_.proximity();
-  int new_perception_version = version_.perception();
-  int new_illustration_version = version_.illustration();
-  EXPECT_EQ(old_proximity_version + 1, new_proximity_version);
-  EXPECT_EQ(old_perception_version, new_perception_version);
-  EXPECT_EQ(old_illustration_version, new_illustration_version);
+  const auto& new_version = *version_;
+  EXPECT_FALSE(old_version.SameProximityAs(new_version));
+  EXPECT_TRUE(old_version.SamePerceptionAs(new_version));
+  EXPECT_TRUE(old_version.SameIllustrationAs(new_version));
 }
 
 TEST_F(GeometryVersionTest, Perception) {
-  int old_proximity_version = version_.proximity();
-  int old_perception_version = version_.perception();
-  int old_illustration_version = version_.illustration();
+  GeometryVersion old_version = *version_;
   increment_perception();
-  int new_proximity_version = version_.proximity();
-  int new_perception_version = version_.perception();
-  int new_illustration_version = version_.illustration();
-  EXPECT_EQ(old_proximity_version, new_proximity_version);
-  EXPECT_EQ(old_perception_version + 1, new_perception_version);
-  EXPECT_EQ(old_illustration_version, new_illustration_version);
+  const auto& new_version = *version_;
+  EXPECT_TRUE(old_version.SameProximityAs(new_version));
+  EXPECT_FALSE(old_version.SamePerceptionAs(new_version));
+  EXPECT_TRUE(old_version.SameIllustrationAs(new_version));
 }
 
 TEST_F(GeometryVersionTest, Illustration) {
-  int old_proximity_version = version_.proximity();
-  int old_perception_version = version_.perception();
-  int old_illustration_version = version_.illustration();
+  GeometryVersion old_version = *version_;
   increment_illustration();
-  int new_proximity_version = version_.proximity();
-  int new_perception_version = version_.perception();
-  int new_illustration_version = version_.illustration();
-  EXPECT_EQ(old_proximity_version, new_proximity_version);
-  EXPECT_EQ(old_perception_version, new_perception_version);
-  EXPECT_EQ(old_illustration_version + 1, new_illustration_version);
+  const auto& new_version = *version_;
+  EXPECT_TRUE(old_version.SameProximityAs(new_version));
+  EXPECT_TRUE(old_version.SamePerceptionAs(new_version));
+  EXPECT_FALSE(old_version.SameIllustrationAs(new_version));
+}
+
+TEST_F(GeometryVersionTest, Id) {
+  GeometryVersion old_version = *version_;
+  increment_state_id();
+  const auto& new_version = *version_;
+  EXPECT_FALSE(old_version.SameProximityAs(new_version));
+  EXPECT_FALSE(old_version.SamePerceptionAs(new_version));
+  EXPECT_FALSE(old_version.SameIllustrationAs(new_version));
 }
 }  // namespace
 }  // namespace geometry

@@ -136,6 +136,7 @@ drake_cc_library(
     hdrs = ["geometry_version.h"],
     deps = [
         "//common:essential",
+        "//common:identifier",
     ],
 )
 

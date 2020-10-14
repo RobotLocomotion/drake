@@ -634,97 +634,106 @@ class GeometryStateTest : public GeometryStateTestBase, public ::testing::Test {
  protected:
   void SetUp() override { TestInit(); }
 
+  //   Helpers for forwarding member methods of Geometry State and verifying
+  //   behaviors of Geometry Versions.
+  //
+  //   The helpers are templatized on the return type of the method and two sets
+  //   of arguments, DeclaredArgs and GivenArgs. While generally one would
+  //   assume the two sets of args are of the same type, separating them this
+  //   way facilitates type deduction. For example, passing in a string literal
+  //   as a parameter to a function that expects a const string would defy type
+  //   deduction with just a single argument template. But separating them at
+  //   the call to this function, defers the resolution to the actual call of
+  //   the function.
+
+  //@{
   // Forward a function call to a member method of GeometryState and return the
-  // version numbers before and after the call.
-  template <typename ReturnType, typename... Args1, typename... Args2>
+  // GeometryVersions before and after the call.
+  template <typename ReturnType, typename... DeclaredArgs,
+            typename... GivenArgs>
   std::tuple<GeometryVersion, GeometryVersion> ForwardAndGetRevisions(
-      ReturnType (GeometryState<double>::*f)(Args1...), Args2&&... args) {
+      ReturnType (GeometryState<double>::*f)(DeclaredArgs...),
+      GivenArgs&&... args) {
     GeometryVersion old_version = geometry_state_.geometry_version();
-    (geometry_state_.*f)(std::forward<Args2>(args)...);
+    (geometry_state_.*f)(std::forward<GivenArgs>(args)...);
     GeometryVersion new_version = geometry_state_.geometry_version();
     return {old_version, new_version};
   }
 
-  // Forward a call to a member function in GeometryState and verify that
-  // proximity version number incremented but all other version numbers are
+  // Forward a call to a member function in GeometryState and verify that the
+  // proximity version number is modified but all other version numbers are
   // unchanged in this function.
-  template <typename ReturnType, typename... Args1, typename... Args2>
+  template <typename ReturnType, typename... DeclaredArgs,
+            typename... GivenArgs>
   void VerifyProximityIncremented(
-      ReturnType (GeometryState<double>::*f)(Args1...), Args2&&... args) {
+      ReturnType (GeometryState<double>::*f)(DeclaredArgs...),
+      GivenArgs&&... args) {
     auto [old_version, new_version] =
-        ForwardAndGetRevisions(f, std::forward<Args2>(args)...);
-    EXPECT_TRUE(old_version.proximity() <
-                new_version.proximity());
-    EXPECT_EQ(old_version.perception(),
-              new_version.perception());
-    EXPECT_EQ(old_version.illustration(),
-              new_version.illustration());
+        ForwardAndGetRevisions(f, std::forward<GivenArgs>(args)...);
+    EXPECT_FALSE(old_version.SameProximityAs(new_version));
+    EXPECT_TRUE(old_version.SamePerceptionAs(new_version));
+    EXPECT_TRUE(old_version.SameIllustrationAs(new_version));
   }
 
-  // Forward a call to a member function in GeometryState and verify that
-  // perception version number incremented but all other version numbers are
+  // Forward a call to a member function in GeometryState and verify that the
+  // perception version number is modified but all other version numbers are
   // unchanged in this function.
-  template <typename ReturnType, typename... Args1, typename... Args2>
+  template <typename ReturnType, typename... DeclaredArgs,
+            typename... GivenArgs>
   void VerifyPerceptionIncremented(
-      ReturnType (GeometryState<double>::*f)(Args1...), Args2&&... args) {
+      ReturnType (GeometryState<double>::*f)(DeclaredArgs...),
+      GivenArgs&&... args) {
     auto [old_version, new_version] =
-        ForwardAndGetRevisions(f, std::forward<Args2>(args)...);
-    EXPECT_EQ(old_version.proximity(),
-              new_version.proximity());
-    EXPECT_TRUE(old_version.perception() <
-                new_version.perception());
-    EXPECT_EQ(old_version.illustration(),
-              new_version.illustration());
+        ForwardAndGetRevisions(f, std::forward<GivenArgs>(args)...);
+    EXPECT_TRUE(old_version.SameProximityAs(new_version));
+    EXPECT_FALSE(old_version.SamePerceptionAs(new_version));
+    EXPECT_TRUE(old_version.SameIllustrationAs(new_version));
   }
 
-  // Forward a call to a member function in GeometryState and verify that
-  // illustration version number incremented but all other version numbers are
+  // Forward a call to a member function in GeometryState and verify that the
+  // illustration version number is modified but all other version numbers are
   // unchanged in this function.
-  template <typename ReturnType, typename... Args1, typename... Args2>
+  template <typename ReturnType, typename... DeclaredArgs,
+            typename... GivenArgs>
   void VerifyIllustrationIncremented(
-      ReturnType (GeometryState<double>::*f)(Args1...), Args2&&... args) {
+      ReturnType (GeometryState<double>::*f)(DeclaredArgs...),
+      GivenArgs&&... args) {
     auto [old_version, new_version] =
-        ForwardAndGetRevisions(f, std::forward<Args2>(args)...);
-    EXPECT_EQ(old_version.proximity(),
-              new_version.proximity());
-    EXPECT_EQ(old_version.perception(),
-              new_version.perception());
-    EXPECT_TRUE(old_version.illustration() <
-                new_version.illustration());
+        ForwardAndGetRevisions(f, std::forward<GivenArgs>(args)...);
+    EXPECT_TRUE(old_version.SameProximityAs(new_version));
+    EXPECT_TRUE(old_version.SamePerceptionAs(new_version));
+    EXPECT_FALSE(old_version.SameIllustrationAs(new_version));
   }
 
   // Forward a call to a non-void member function in GeometryState and verify
   // that all version numbers are unchanged in this function. Return the return
   // value of the forwarded call.
-  template <typename ReturnType, typename... Args1, typename... Args2>
+  template <typename ReturnType, typename... DeclaredArgs,
+            typename... GivenArgs>
   ReturnType VerifyRevisionUnchanged(
-      ReturnType (GeometryState<double>::*f)(Args1...), Args2&&... args) {
+      ReturnType (GeometryState<double>::*f)(DeclaredArgs...),
+      GivenArgs&&... args) {
     GeometryVersion old_version = geometry_state_.geometry_version();
-    ReturnType ret = (geometry_state_.*f)(std::forward<Args2>(args)...);
+    ReturnType ret = (geometry_state_.*f)(std::forward<GivenArgs>(args)...);
     GeometryVersion new_version = geometry_state_.geometry_version();
-    EXPECT_EQ(old_version.proximity(),
-              new_version.proximity());
-    EXPECT_EQ(old_version.perception(),
-              new_version.perception());
-    EXPECT_EQ(old_version.illustration(),
-              new_version.illustration());
+    EXPECT_TRUE(old_version.SameProximityAs(new_version));
+    EXPECT_TRUE(old_version.SamePerceptionAs(new_version));
+    EXPECT_TRUE(old_version.SameIllustrationAs(new_version));
     return ret;
   }
 
   // Forward a call to a void member function in GeometryState and verify that
   // all version numbers are unchanged in this function.
-  template <typename... Args1, typename... Args2>
-  void VerifyRevisionUnchanged(void (GeometryState<double>::*f)(Args1...),
-                               Args2&&... args) {
+  template <typename... DeclaredArgs, typename... GivenArgs>
+  void VerifyRevisionUnchanged(
+      void (GeometryState<double>::*f)(DeclaredArgs...), GivenArgs&&... args) {
     auto [old_version, new_version] =
-        ForwardAndGetRevisions(f, std::forward<Args2>(args)...);
-    EXPECT_EQ(old_version.proximity(),
-              new_version.proximity());
-    EXPECT_EQ(old_version.perception(),
-              new_version.perception());
-    EXPECT_EQ(old_version.illustration(),
-              new_version.illustration());
+        ForwardAndGetRevisions(f, std::forward<GivenArgs>(args)...);
+    EXPECT_TRUE(old_version.SameProximityAs(new_version));
+    EXPECT_TRUE(old_version.SamePerceptionAs(new_version));
+    EXPECT_TRUE(old_version.SameIllustrationAs(new_version));
   }
+  // @}
 };
 
 // Confirms that a new GeometryState has no data.
@@ -3505,24 +3514,21 @@ TEST_F(GeometryStateTest, RendererPoseUpdate) {
 
 TEST_F(GeometryStateTest, GetGeometryVersion) {
   SetUpSingleSourceTree();
-  const auto& version_copy = geometry_state_.geometry_version();
+  auto old_version = geometry_state_.geometry_version();
   // Modify the geometry_state_ such that geometry version number changes.
   geometry_state_.AssignRole(source_id_, geometries_[0], ProximityProperties(),
                              RoleAssign::kNew);
   // The copy of the version number should help detect a change in the geometry
   // state.
-  EXPECT_FALSE(version_copy.proximity() ==
-                       geometry_state_.geometry_version().proximity());
+  EXPECT_FALSE(old_version.SameProximityAs(geometry_state_.geometry_version()));
 }
 
 // Confirms that geometry_version_ is updated correctly in each public method of
-// geometry state.
+// geometry state. Every (non-const) API in SceneGraph that calls upon
+// GeometryState should be added to this test function so we can fully
+// characterize every API's effect on geometry version.
 TEST_F(GeometryStateTest, GeometryVersionUpdate) {
   SetUpSingleSourceTree();
-  // With no roles assigned, all version number should be zero.
-  EXPECT_EQ(gs_tester_.geometry_version().proximity(), 0);
-  EXPECT_EQ(gs_tester_.geometry_version().perception(), 0);
-  EXPECT_EQ(gs_tester_.geometry_version().illustration(), 0);
 
   SourceId new_source = VerifyRevisionUnchanged(
       &GeometryState<double>::RegisterNewSource, "my_new_source");

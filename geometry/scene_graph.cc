@@ -35,7 +35,10 @@ class GeometryStateValue final : public Value<GeometryState<T>> {
       : Value<GeometryState<T>>(state) {}
 
   std::unique_ptr<AbstractValue> Clone() const override {
-    return make_unique<GeometryStateValue<T>>(this->get_value());
+    auto copy = make_unique<GeometryStateValue<T>>(this->get_value());
+    // Make sure the cloned geometry state has a different state id.
+    copy->get_mutable_value().increment_state_id();
+    return copy;
   }
 
   void SetFrom(const AbstractValue& other) override {

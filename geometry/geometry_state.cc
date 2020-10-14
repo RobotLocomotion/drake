@@ -115,7 +115,8 @@ std::string get_missing_id_message<GeometryId>(const GeometryId& key) {
 template <typename T>
 GeometryState<T>::GeometryState()
     : self_source_(SourceId::get_new_id()),
-      geometry_engine_(make_unique<internal::ProximityEngine<T>>()) {
+      geometry_engine_(make_unique<internal::ProximityEngine<T>>()),
+      geometry_version_(GeometryVersion::GeometryVersionId::get_new_id()) {
   source_names_[self_source_] = "SceneGraphInternal";
 
   const FrameId world = InternalFrame::world_frame_id();
@@ -1400,10 +1401,8 @@ bool GeometryState<T>::RemovePerceptionRole(GeometryId geometry_id) {
     const std::string& engine_name = name_engine_pair.first;
     RemoveFromRendererUnchecked(engine_name, geometry_id);
   }
-  // Note that we only increment the perception role if a geometry is removed
-  // from a renderer. If the geometry with perception role are registered with
-  // multiply renderers, the perception version number will increment by more
-  // than one.
+  // Note that we only modify the perception role if a geometry is removed
+  // from a renderer.
   geometry->RemovePerceptionRole();
   return true;
 }
