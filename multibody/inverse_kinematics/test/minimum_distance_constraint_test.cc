@@ -55,7 +55,7 @@ class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
     EXPECT_TRUE(constraint.CheckSatisfied(q_autodiff));
     EXPECT_EQ(y_double(0), 0);
     EXPECT_TRUE(CompareMatrices(
-        y_autodiff(0).derivatives(),
+        y_autodiff(0).const_derivatives(),
         Eigen::Matrix<double, kNumPositionsForTwoFreeBodies, 1>::Zero()));
     CheckConstraintEvalNonsymbolic(constraint, q_autodiff, 1E-12);
   }
