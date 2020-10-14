@@ -13,6 +13,7 @@ Breaking changes since v0.23.0
 ------------------------------
 
 * TBD Improve inlining for EigenPtr (`#14088`_)
+* TBD framework: Regularize VectorBase bounds checking (`#14101`_)  # In preparing to move some methods into cc files, it became clear that a good code split between h and cc would be difficult given the current idioms for bounds checking. This commit adjusts operator[] access to not check bounds (it was already documented not to check, but was doing so anyway) and unifies the exception formatting into the VectorBase class. This is a breaking change in the sense that the exception subclass being thrown may be different now; the API promises are weakened to only promise to throw a std::exception, not any specific kind of exception.  The unit tests are weakened to reflect this. This is breaking change in demoting BasicVector::DoGetAtIndex from protected to private. Also add a Doxygen comment to specify SetZero. Also adjust #include statements to remove unused inclusions.
 
 Changes since v0.23.0
 ---------------------
@@ -22,27 +23,20 @@ Dynamical Systems
 
 .. <relnotes for systems go here>
 
-* TBD framework: Add DiagramBuilder::GetSystems (`#14066`_)
-* TBD lcm: Add publish_period option to ConnectLcmScope (`#14062`_)
-* TBD framework: Regularize VectorBase bounds checking (`#14101`_)  # In preparing to move some methods into cc files, it became clear that a good code split between h and cc would be difficult given the current idioms for bounds checking. This commit adjusts operator[] access to not check bounds (it was already documented not to check, but was doing so anyway) and unifies the exception formatting into the VectorBase class. This is a breaking change in the sense that the exception subclass being thrown may be different now; the API promises are weakened to only promise to throw a std::exception, not any specific kind of exception.  The unit tests are weakened to reflect this. This is breaking change in demoting BasicVector::DoGetAtIndex from protected to private. Also add a Doxygen comment to specify SetZero. Also adjust #include statements to remove unused inclusions.
-* TBD simulator: copy configuration helpers from Anzu (`#14103`_)  # - Co-authored-by: Jeremy Nimmer <jeremy.nimmer@tri.global>
-* TBD Updates to merge into drake codebase (`#14103`_)  # Switch all references to drake from anzu. Other assorted improvements from code review.
-* TBD analysis: Break simulator_test dependency on MultibodyPlant (`#14125`_)
-* TBD Integrate SimulatorConfig into existing configuration code (`#14135`_)  # * Moved `simulator_flags` code to `simulator_config_functions`.
-* TBD Make compatible with Eigen-3.3.8 (`#14159`_)  # Eigen introduces Eigen::all[1], so we need this patch to avoid name conflicts with drake::all. [1]: http://eigen.tuxfamily.org/dox-devel/group__Core__Module.html#ga790ab6c4226ef5f678b9eb532a3eab14
-* TBD simulator: resolved mismatch of simulator integrator defaults (`#14150`_)  # * Resolved mismatch of simulator integrator defaults - Removed duplication of integrator defaults. - Updated test to check if SimulatorConfig defaults are congruent with integrator defaults. - Removed extraneous definitions from header file.
-* TBD Add Context::SetStateAndParametersFrom() (`#14156`_)  # * Resolves #14138. Add the method Context::SetStateAndParametersFrom() to allow copying state and parameters from another context to a non-root context. Change the documentation for Context::SetTimeStateAndParametersFrom() to reflect what it does.
-* TBD Fix throwing-Get methods missing Has counterparts (`#14176`_)  # If a class exposes a `Foo& GetFoo(string)` method that throws if there is no Foo of that name, then it must expose a corresponding `HasFoo` method that allows a caller to know whether the getter will throw.  Otherwise the no-catches standard makes safe use of the getter impossible. We've stomped most of these in the codebase but I just found these two stragglers.
-* TBD Rename foo_sensor.h --> foo.h (`#14185`_)
-* TBD Versatile error message for gimbal-lock singularity -- helps end-users debug bushing problems and resolves issue #14114 (`#14126`_) [math,multibody] 
-
 New features
 
-* TBD
+* Add System::HasInputPort and System::HasOutputPort (`#14176`_)
+* Add DiagramBuilder::GetSystems (`#14066`_)
+* Add Context::SetStateAndParametersFrom (`#14156`_)
+* Add SimulatorConfig, ApplySimulatorConfig, ExtractSimulatorConfig (`#14103`_, `#14135`_, `#14150`_)
+* Add publish_period option to ConnectLcmScope (`#14062`_)
 
 Fixes
 
-* TBD
+* Remove VectorBase::operator[] bounds checking (`#14101`_)
+* Improve error message for bushing gimbal-lock singularity (`#14126`_)
+* Rename accelerometer_sensor.h to accelerometer.h (`#14185`_)
+* Rename gyroscope_sensor.h to gyroscope.h (`#14185`_)
 
 Mathematical Program
 ~~~~~~~~~~~~~~~~~~~~
@@ -171,6 +165,7 @@ Build system and dependencies
 * Upgrade spdlog to latest release 1.8.1 (`#14153`_)
 * Downgrade doxygen to 1.8.15 on macOS (`#14169`_)
 * Fix snopt external for Bazel 3.6 (`#14179`_)
+* Fix compilation errors vs Eigen 3.3.8 (`#14159`_)
 * Cleanup pkg-config path for ibex (`#14109`_)
 * Clarify which vector_gen macros are to be used outside of Drake (`#14092`_)
 
