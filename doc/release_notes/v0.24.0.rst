@@ -138,37 +138,30 @@ pydrake bindings
 
 .. <relnotes for bindings go here>
 
-* TBD solvers.py: Add vectorized version of EvalBinding (for python) (`#14064`_)  # * solvers.py: Add vectorized version of EvalBinding and CheckSatisfied
-* TBD py mpb: Add bindings for LinearBushingRollPitchYaw (`#14070`_)
-* TBD py mbp: Fix missing runtime module import (`#14072`_)
-* TBD pydrake: Add all_each_import_test (`#14072`_)
-* TBD jupyter: Add joint sliders using publishing callback (`#14059`_)
-* TBD jupyter_widgets: add missing display import (`#14095`_)
-* TBD py mbp: Bind operators for SpatialVector; bind shifting for velocity and force (`#14098`_)
-* TBD py mbp: Allow SpatialVector's to be pickled (`#14104`_)
-* TBD py mbp: Make SpatialVector's default constructor initialize to NaN (`#14096`_)
-* TBD py mbp: Expose ContactModel enumeration and accessor/mutators (`#14108`_)
-* TBD py mbp: Bind RotationalInertia and UnitInertia's ReExpress (`#14111`_)
-* TBD jupyter: better description for joints with multiple positions (but just one joint name) (`#14130`_)  # Before this, the planar joint sliders came out as 3 sliders with identical names
-* TBD meshcat: add option to set contact cylinder radius (`#14131`_)
-* TBD multibody: add binding for GetFloatingBaseBodies (`#14139`_)
-* TBD py multibody: add bindings for floating base accessors (`#14166`_)
-* TBD Pybind add and test bindings for calc spatial momentum in world about point (`#14078`_)  # * Add and test bindings for CalcSpatialMomentumInWorldAboutPoint
-* TBD pydrake: Remove the recently-added ShiftInPlace bindings (`#14194`_)  # We choose not to bind these on SpatialVelocity and SpatialForce because their performance micro-optimization makes no sense in Python. Also remove some dead plant_test code while we're here.
-* TBD pydrake: Bind some missing multibody math-related items (`#14193`_)
-* TBD pydrake: Add bindings for BsplineTrajectory and BsplineBasis (`#14201`_)  # * Add bindings for BsplineTrajectory and BsplineBasis
-
 New features
 
-* TBD
+* TBD solvers: Add vectorized version of EvalBinding (for python) (`#14064`_)
+* TBD mbp: Allow SpatialVector's to be pickled (`#14104`_)
+* TBD mbp: Make SpatialVector's default constructor initialize to NaN (`#14096`_)
+* TBD jupyter: Add joint sliders using publishing callback (`#14059`_)
+* TBD meshcat: add option to set contact cylinder radius (`#14131`_)
 
 Fixes
 
-* TBD
+* Improve descriptive text for joint sliders (`#14130`_)
+* Fix missing runtime module imports (`#14072`_, `#14095`_)
 
 Newly bound
 
-* TBD
+* TBD RotationalInertia and UnitInertia's ReExpress (`#14111`_, `#14194`_)
+* TBD operators for SpatialVector; shifting for velocity and force (`#14098`_)
+* TBD ContactModel enumeration and accessor/mutators (`#14108`_)
+* TBD GetFloatingBaseBodies (`#14139`_)
+* TBD floating base accessors (`#14166`_)
+* TBD calc spatial momentum in world about point (`#14078`_)
+* TBD multibody math-related items (`#14193`_)
+* TBD BsplineTrajectory and BsplineBasis (`#14201`_)
+* TBD LinearBushingRollPitchYaw (`#14070`_)
 
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
