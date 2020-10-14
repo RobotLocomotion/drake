@@ -19,18 +19,23 @@ Prior to release
 ----------------
 
 1. Choose the next version number.
-2. Open a new pull request titled::
+2. Create a local Drake branch named ``release_notes-v0.N.0`` (so that
+   others can easily find and push to it after the PR is opened).
+3. As the first commit on the branch, mimic the first commit
+   (`link <https://github.com/RobotLocomotion/drake/pull/12474/commits/5ec2a6955a4d4f506457c5804ea15ccc84b90bb3>`_)
+   from `PR 12474 <https://github.com/RobotLocomotion/drake/pull/12474>`_
+   in order to disable CI.  A quick way to do this might be::
+
+     git fetch upstream pull/12474/head
+     git cherry-pick 5ec2a6955a4d4f506457c5804ea15ccc84b90bb3
+
+4. Push that branch and then open a new pull request titled::
 
      doc: Add release notes v0.N.0
 
-   As the first commit, mimic the first commit
-   (`link <https://github.com/RobotLocomotion/drake/pull/12474/commits/5ec2a6955a4d4f506457c5804ea15ccc84b90bb3>`_)
-   from `PR 12474 <https://github.com/RobotLocomotion/drake/pull/12474>`_
-   in order to disable CI.  Your branch name should be ``release_notes-v0.N.0``
-   so that others can easily find and push to it.  Make sure that "Allow edits
-   from maintainers" on the GitHub PR page is enabled (the checkbox is
-   checked).
-3. For release notes, on an ongoing basis, add recent commit messages to the
+   Make sure that "Allow edits from maintainers" on the GitHub PR page
+   is enabled (the checkbox is checked).
+5. For release notes, on an ongoing basis, add recent commit messages to the
    release notes draft using the ``tools/dev/relnotes`` tooling.
 
    a. TODO(jwnimmer-tri) Describe how to use the command-line flags.
@@ -39,9 +44,9 @@ Prior to release
       Never rebase or force-push to the branch.  We expect that several people
       will clone and push to it concurrently.
 
-4. For release notes, on an ongoing basis, clean up and relocate the commit
+6. For release notes, on an ongoing basis, clean up and relocate the commit
    notes to properly organized and wordsmithed bullet points.
-5. As the release is nearly ready, post a call for action for feature teams to
+7. As the release is nearly ready, post a call for action for feature teams to
    look at the draft document and provide suggestions (in reviewable) or fixes
    (as pushes).
 
