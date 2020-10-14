@@ -29,14 +29,12 @@ Dynamical Systems
 * TBD simulator: copy configuration helpers from Anzu (`#14103`_)  # - Co-authored-by: Jeremy Nimmer <jeremy.nimmer@tri.global>
 * TBD Updates to merge into drake codebase (`#14103`_)  # Switch all references to drake from anzu. Other assorted improvements from code review.
 * TBD analysis: Break simulator_test dependency on MultibodyPlant (`#14125`_)
-* TBD Integrate SimulatorConfig into existing configuration code (`#14135`_)  # * Moved `simulator_flags` code to `simulator_config_functions`. * Deprecated `simulator_flags`. * Added additional documentation.
-* TBD Squelch deprecation warning when building (`#14149`_)
+* TBD Integrate SimulatorConfig into existing configuration code (`#14135`_)  # * Moved `simulator_flags` code to `simulator_config_functions`.
 * TBD Make compatible with Eigen-3.3.8 (`#14159`_)  # Eigen introduces Eigen::all[1], so we need this patch to avoid name conflicts with drake::all. [1]: http://eigen.tuxfamily.org/dox-devel/group__Core__Module.html#ga790ab6c4226ef5f678b9eb532a3eab14
 * TBD simulator: resolved mismatch of simulator integrator defaults (`#14150`_)  # * Resolved mismatch of simulator integrator defaults - Removed duplication of integrator defaults. - Updated test to check if SimulatorConfig defaults are congruent with integrator defaults. - Removed extraneous definitions from header file.
 * TBD Add Context::SetStateAndParametersFrom() (`#14156`_)  # * Resolves #14138. Add the method Context::SetStateAndParametersFrom() to allow copying state and parameters from another context to a non-root context. Change the documentation for Context::SetTimeStateAndParametersFrom() to reflect what it does.
 * TBD Fix throwing-Get methods missing Has counterparts (`#14176`_)  # If a class exposes a `Foo& GetFoo(string)` method that throws if there is no Foo of that name, then it must expose a corresponding `HasFoo` method that allows a caller to know whether the getter will throw.  Otherwise the no-catches standard makes safe use of the getter impossible. We've stomped most of these in the codebase but I just found these two stragglers.
-* TBD Rename foo_sensor.h --> foo.h (`#14185`_)  # - Modified references to `foo_sensor.h` to `foo.h` in the .cc and test files. - Updated build file.
-* TBD Add back deprecated foo_sensor.h files (`#14185`_)  # The "restored" header files simply emit deprecation warnings and include `foo.h`. The restored headers are added to the build file.
+* TBD Rename foo_sensor.h --> foo.h (`#14185`_)
 
 New features
 
@@ -91,9 +89,8 @@ Multibody Dynamics
 * TBD Add unit length constraint on quaternion variables (`#14141`_)
 * TBD [proximity] Adds hydroelastic support for Convex shapes (`#14178`_)  # Declaring a Convex shape to be rigid, will now produce a hydroelastic representation. It is treated the same as a more general Mesh. Updated `quad_cube.obj` as it wasn't really a cube; one of the vertex positions was *slightly* out of position.
 * TBD Fix unit_quaternion_constraint_test failure on CI (`#14182`_)
-* TBD [geometry] Removing the now unused contact_surface_from_level_set functionality (`#14184`_)  # This was stop-gap code that has been supplanted by SceneGraph support and, more generally, this approach has issues; bad relative scales between level set representation and mesh can cause valid contact to not register valid ContactSurfaces. Note: the functionality contained within this PR is wholly contained in the internal namespace. As such, it requires no deprecation (even though we *are* removing an otherwise public build target from bazel).
+* TBD [geometry] Removing the now unused contact_surface_from_level_set functionality (`#14184`_)  # This was stop-gap code that has been supplanted by SceneGraph support and, more generally, this approach has issues; bad relative scales between level set representation and mesh can cause valid contact to not register valid ContactSurfaces. Note: the functionality contained within this PR is wholly contained in the internal namespace.
 * TBD Add python binding for static equlibrium problem (`#14140`_)  # Also use ComputeSignedDistancePairwiseClosestPoints() to avoid redundant computation.
-* TBD multibody: Deprecate dead code (`#14188`_)
 * TBD pydrake: Bind some missing multibody plant-related items (`#14192`_)
 * TBD pydrake: Bind some missing multibody tree-related items (`#14195`_)
 * TBD multibody: Use spatial_algebra.h as the sole header for the package (`#14117`_)  # Including the individual headers one at a time might leave the dot product operations undefined. Use DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS.
@@ -123,9 +120,8 @@ Miscellaneous features and fixes
 
 * TBD yaml: Bugfix in std::optional handling (`#14076`_)  # This change allows the allow_cpp_with_no_yaml = true option to correctly return std::optional objects that are valid, even when the yaml string does have have the given field.
 * TBD Add operator +, -, * to GenericPolynomial (`#14053`_)  # Add +,-,* operators to GenericPolynomial. Co-authored-by: Eric Cousineau <eric.cousineau@tri.global>
-* TBD math: Deprecate expmap.h (`#14099`_)
 * TBD Improve inlining for EigenPtr and RotationalInertia::ReExpress (`#14088`_) [common,examples,math,multibody]
-* TBD vector_gen: Clarify which macros are to be used outside of Drake (`#14092`_)  # This renames some macros (providing deprecation stubs in the meantime). Also remove a dead import within lcmtypes. [lcmtypes,tools] 
+* TBD vector_gen: Clarify which macros are to be used outside of Drake (`#14092`_)
 * TBD common: Don't defect use of TypeSafeIndex or Identifier references (`#14105`_)
 * TBD Add hash and divide to GenericPolynomial (`#14100`_)  # Add hash and divide to GenericPolynomial
 * TBD bsplines: Add Serialize() for Bspline{Basis,Trajectory}<double> (`#14106`_)  # This allows parsing of these objects from YAML. [common,math] 
@@ -142,7 +138,6 @@ pydrake bindings
 
 .. <relnotes for bindings go here>
 
-* TBD meshcat: replace use of deprecated .matrix() (`#14057`_)
 * TBD solvers.py: Add vectorized version of EvalBinding (for python) (`#14064`_)  # * solvers.py: Add vectorized version of EvalBinding and CheckSatisfied
 * TBD py mpb: Add bindings for LinearBushingRollPitchYaw (`#14070`_)
 * TBD py mbp: Fix missing runtime module import (`#14072`_)
@@ -195,18 +190,22 @@ Build system and dependencies
 * Cleanup pkg-config path for ibex (`#14109`_)
 * Downgrade doxygen to 1.8.15 on Mac (`#14169`_)
 * Fix snopt external for Bazel 3.6 (`#14179`_)
-* Deprecate the numpy external (`#14116`_)
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
 
 * The numpy external (`#14116`_)
-* Deprecate context.FixInputPort() (`#14093`_)
+* TBD context.FixInputPort() (`#14093`_)
+* TBD foo_sensor.h files (`#14185`_)
+* TBD simulator_flags.h (`#14135`_)
+* TBD multibody dead code (`#14188`_)
+* TBD math/expmap.h (`#14099`_)
+* TBD vector_gen macros (`#14092`_)
 
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* TBD Remove deprecated code (2020-10) (`#14128`_) [manipulation,math] 
+* TBD (`#14128`_)
 
 Notes
 -----
