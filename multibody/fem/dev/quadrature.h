@@ -2,6 +2,7 @@
 
 #include <array>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "drake/common/eigen_types.h"
@@ -43,9 +44,10 @@ class Quadrature {
   }
 
  protected:
-  Quadrature(std::vector<VectorD>&& points, std::vector<T>&& weights)
-      : points_(points.begin(), points.end()),
-        weights_(weights.begin(), weights.end()) {}
+  explicit Quadrature(
+      std::pair<std::vector<VectorD>, std::vector<T>>&& points_and_weights)
+      : points_(std::move(points_and_weights.first)),
+        weights_(std::move(points_and_weights.second)) {}
 
  private:
   std::vector<VectorD> points_;
@@ -73,10 +75,10 @@ class SimplexGaussianQuadrature : public Quadrature<T, NaturalDimension> {
   using VectorD = typename Quadrature<T, NaturalDimension>::VectorD;
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SimplexGaussianQuadrature);
   SimplexGaussianQuadrature()
-      : Quadrature<T, NaturalDimension>(GetPoints(), GetWeights()) {}
+      : Quadrature<T, NaturalDimension>(ComputePointsAndWeights()) {}
 
  private:
-  std::vector<VectorD> GetPoints() {
+  std::pair<std::vector<VectorD>, std::vector<T>> ComputePointsAndWeights() {
     static_assert(1 <= QuadratureOrder && QuadratureOrder <= 3,
                   "Only linear, quadratic and cubic quadratures are supported");
     if constexpr (NaturalDimension == 2) {
@@ -85,7 +87,8 @@ class SimplexGaussianQuadrature : public Quadrature<T, NaturalDimension> {
         // quadrature point location,  weight/area
         //  (1/3, 1/3)                     1.0
         std::vector<VectorD> points = {{1.0 / 3.0, 1.0 / 3.0}};
-        return points;
+        std::vector<T> weights = {0.5};
+        return std::make_pair(std::move(points), std::move(weights));
         // TODO(xuchenhan-tri): fix the bug in cpplint as described in
         // https://github.com/google/styleguide/issues/541. A solution has been
         // proposed at https://github.com/cpplint/cpplint/pull/136.
@@ -102,7 +105,8 @@ class SimplexGaussianQuadrature : public Quadrature<T, NaturalDimension> {
         points[0] = {1.0 / 6.0, 1.0 / 6.0};
         points[1] = {2.0 / 3.0, 1.0 / 6.0};
         points[2] = {1.0 / 6.0, 2.0 / 3.0};
-        return points;
+        std::vector<T> weights = {1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0};
+        return std::make_pair(std::move(points), std::move(weights));
         // NOLINTNEXTLINE(readability/braces)
       } else if constexpr (QuadratureOrder == 3) {
         // quadrature point location,  weight/area
@@ -115,7 +119,9 @@ class SimplexGaussianQuadrature : public Quadrature<T, NaturalDimension> {
         points[1] = {0.6, 0.2};
         points[2] = {0.2, 0.6};
         points[3] = {0.2, 0.2};
-        return points;
+        std::vector<T> weights = {-9.0 / 32.0, 25.0 / 96.0, 25.0 / 96.0,
+                                  25.0 / 96.0};
+        return std::make_pair(std::move(points), std::move(weights));
       } else {
         DRAKE_UNREACHABLE();
       }
@@ -126,7 +132,8 @@ class SimplexGaussianQuadrature : public Quadrature<T, NaturalDimension> {
         // quadrature point location,  weight/area
         //  (1/4, 1/4, 1/4)                1.0
         std::vector<VectorD> points = {{0.25, 0.25, 0.25}};
-        return points;
+        std::vector<T> weights = {1.0 / 6.0};
+        return std::make_pair(std::move(points), std::move(weights));
         // NOLINTNEXTLINE(readability/braces)
       } else if constexpr (QuadratureOrder == 2) {
         // quadrature point location,  weight/area
@@ -142,7 +149,9 @@ class SimplexGaussianQuadrature : public Quadrature<T, NaturalDimension> {
         points[1] = {b, a, b};
         points[2] = {b, b, a};
         points[3] = {b, b, b};
-        return points;
+        std::vector<T> weights = {1.0 / 24.0, 1.0 / 24.0, 1.0 / 24.0,
+                                  1.0 / 24.0};
+        return std::make_pair(std::move(points), std::move(weights));
         // NOLINTNEXTLINE(readability/braces)
       } else if constexpr (QuadratureOrder == 3) {
         // quadrature point location,  weight/area
@@ -160,77 +169,9 @@ class SimplexGaussianQuadrature : public Quadrature<T, NaturalDimension> {
         points[2] = {b, a, b};
         points[3] = {b, b, a};
         points[4] = {b, b, b};
-        return points;
-      } else {
-        DRAKE_UNREACHABLE();
-      }
-    } else {
-      DRAKE_UNREACHABLE();
-    }
-  }
-
-  std::vector<T> GetWeights() {
-    static_assert(1 <= QuadratureOrder && QuadratureOrder <= 3,
-                  "Only linear, quadratic and cubic quadratures are supported");
-    if constexpr (NaturalDimension == 2) {
-      // For a unit triangle, area = 0.5.
-      if constexpr (QuadratureOrder == 1) {
-        // quadrature point location,  weight/area
-        //  (1/3, 1/3)                     1.0
-        std::vector<T> weights = {0.5};
-        return weights;
-        // NOLINTNEXTLINE(readability/braces)
-      } else if constexpr (QuadratureOrder == 2) {
-        // quadrature point location,  weight/area
-        //  (1/6, 1/6)                     1/3
-        //  (2/3, 1/6)                     1/3
-        //  (1/6, 2/3)                     1/3
-        std::vector<T> weights = {1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0};
-        return weights;
-        // NOLINTNEXTLINE(readability/braces)
-      } else if constexpr (QuadratureOrder == 3) {
-        // quadrature point location,  weight/area
-        //  (1/3, 1/3)                     -9/16
-        //  (3/5, 1/5)                     25/48
-        //  (1/5, 3/5)                     25/48
-        //  (1/5, 1/5)                     25/48
-        std::vector<T> weights = {-9.0 / 32.0, 25.0 / 96.0, 25.0 / 96.0,
-                                  25.0 / 96.0};
-        return weights;
-      } else {
-        DRAKE_UNREACHABLE();
-      }
-      // NOLINTNEXTLINE(readability/braces)
-    } else if constexpr (NaturalDimension == 3) {
-      // For a unit tetrahedron, area = 1/6.
-      if constexpr (QuadratureOrder == 1) {
-        // quadrature point location,  weight/area
-        //  (1/4, 1/4, 1/4)                1.0
-        std::vector<T> weights = {1.0 / 6.0};
-        return weights;
-        // NOLINTNEXTLINE(readability/braces)
-      } else if constexpr (QuadratureOrder == 2) {
-        // quadrature point location,  weight/area
-        //  (a, b, b)                      1/4
-        //  (b, a, b)                      1/4
-        //  (b, b, a)                      1/4
-        //  (b, b, b)                      1/4
-        // where a = (1+3*sqrt(1/5))/4, b = (1-1/sqrt(1/5))/4.
-        std::vector<T> weights = {1.0 / 24.0, 1.0 / 24.0, 1.0 / 24.0,
-                                  1.0 / 24.0};
-        return weights;
-        // NOLINTNEXTLINE(readability/braces)
-      } else if constexpr (QuadratureOrder == 3) {
-        // quadrature point location,  weight/area
-        //  (1/4, 1/4, 1/4)               -4/5
-        //  (a, b, b)                      9/20
-        //  (b, a, b)                      9/20
-        //  (b, b, a)                      9/20
-        //  (b, b, b)                      9/20
-        // where a = 1/2, b = 1/6.
         std::vector<T> weights = {-2.0 / 15.0, 3.0 / 40.0, 3.0 / 40.0,
                                   3.0 / 40.0, 3.0 / 40.0};
-        return weights;
+        return std::make_pair(std::move(points), std::move(weights));
       } else {
         DRAKE_UNREACHABLE();
       }
