@@ -62,42 +62,49 @@ Multibody Dynamics
 
 .. <relnotes for geometry,multibody go here>
 
-* TBD Migrates volume mesh testing utilities (`#14209`_)  # * migrate volume mesh testing utilities
-* TBD Add quadrature class for FEM (`#14202`_)  # Create the API for a general quadrature rule class for FEM applications. Add a concrete class, SimplexGaussianQuadrature that implements the APIs.
-* TBD [render] Add normal computation for parsed/generated meshes (`#14035`_)  # - shape_meshes.* - Introduces a new struct: MeshData - it encapsulates more data than the previous "vertex position" and triangle construction. It adds normals and uvs. - Mesh loading parses normal data from the obj (throwing exceptions if normals are missing). - All primitives come with normals. - render_engine_gl.* - Instantiate the OpenGl geometry from MeshData instead of the old IndexBuffer and VertexBuffer types.
-* TBD Refactors TamsiContactResults --> ContactSolverResults (`#14069`_)
-* TBD Bring global_inverse_kinematics out from attic (`#13921`_)  # Bring global_inverse_kinematics out from attic folder to multibody folder. Rewrite GlobalInverseKinematics using MBP public API.
-* TBD Introduce ContactSolver and MBP::set_contact_solver() (`#13958`_)
-* TBD [geometry] Add Obb (Oriented Bounding Box) (`#13808`_)
-* TBD parsing: Don't warn when re-discovering the same package.xml (`#14089`_)
-* TBD [geometry] Bvh(Bounding Volume Hierarchy) uses Obb (`#13978`_)
-* TBD multibody/math: Merge all targets into :spatial_algebra (`#14113`_)  # Encapsulates linking artifacts due to dependency cycle
-* TBD unit_inertia: Change ReExpress to use frame A instead of frame F (`#14112`_)  # For consistency with rotational_inertia and spatial_inertia
-* TBD Move model directives mechanism out of dev (`#14038`_)
-* TBD [geometry] Remove the non-BVH interface for rigid-soft mesh intersection (`#14110`_)  # For historical reasons, computing intersection between a soft volume mesh and a rigid surface mesh had two separate APIs. One used broadphase acceleration with a bounding volume hierarchy (BVH) one did not. Both APIs were propagated as a basis for measuring improvement. The need for both APIs is long gone. So, we'll simplify the API and eliminate the slow version. Going forward, improvements should be against strictly the best possible results. This change had several implications: - mesh_intersection_benchmark now only considers one case -- it reports the performance of queries with the *current* BVH implementation. - Unit tests in mesh_intersection_test would exploit the BVH-free API to shorten the tests. They needed to be expanded to use the BVH API. - One test in particular would produce a smoke test confirming that the test could be used with AutoDiffXd-valued meshes. That used the old BVH-free API. In removing that API, we need to be able to build a BVH for an AutoDiffXd-valued mesh. - Bvh and obb (and tests) have been updated to allow constructing a BVH for an AutoDiffXd-valued mesh. - Incidentally, cleaned up names of meshes to match the quantity_F notation.
-* TBD This commit applies all of the post-dev changes to model directives: (`#14038`_)  # * Sync with upstream changes * Rewrite to not reference dev * Removing invalid geometry from the jaco (as mentioning it in a data= line causes it to be validity checked) * Factor the scoped names mechanism out of model directives * Rewrite the weld error API to be future-proof against a future refactor.
-* TBD Add pydrake bindings for model directives (`#14144`_)  # * Weld error support omitted for simplicity. * Follow-up to #14038 * Completes #13282
-* TBD Adds parameters for FixedOffsetFrame (`#14137`_)
-* TBD Cleanups of issues revealed in integrating model directives downstream (`#14145`_)
-* TBD Utility function that uses AutoDiff and vector differentiation in a non-world frame.  Useful as an independent test for methods such as CalcBiasSpatialAcceleration() and CalcSpatialAcceleration().  Resolves issue #13562 (`#13593`_)
-* TBD Code and test for spatial momentum of a plant or subset of bodies (`#13916`_)
-* TBD Add unit length constraint on quaternion variables (`#14141`_)
-* TBD [proximity] Adds hydroelastic support for Convex shapes (`#14178`_)  # Declaring a Convex shape to be rigid, will now produce a hydroelastic representation. It is treated the same as a more general Mesh. Updated `quad_cube.obj` as it wasn't really a cube; one of the vertex positions was *slightly* out of position.
-* TBD Fix unit_quaternion_constraint_test failure on CI (`#14182`_)
-* TBD [geometry] Removing the now unused contact_surface_from_level_set functionality (`#14184`_)  # This was stop-gap code that has been supplanted by SceneGraph support and, more generally, this approach has issues; bad relative scales between level set representation and mesh can cause valid contact to not register valid ContactSurfaces. Note: the functionality contained within this PR is wholly contained in the internal namespace.
-* TBD Add python binding for static equlibrium problem (`#14140`_)  # Also use ComputeSignedDistancePairwiseClosestPoints() to avoid redundant computation.
-* TBD pydrake: Bind some missing multibody plant-related items (`#14192`_)
-* TBD pydrake: Bind some missing multibody tree-related items (`#14195`_)
-* TBD multibody: Use spatial_algebra.h as the sole header for the package (`#14117`_)  # Including the individual headers one at a time might leave the dot product operations undefined. Use DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS.
-* TBD Improve inlining for RotationalInertia::ReExpress (`#14088`_)
-
 New features
 
-* TBD
+* [plant] Code and test for spatial momentum of a plant or subset of bodies (`#13916`_)
+* Rewrite GlobalInverseKinematics using MultibodyPlant public API. (`#13921`_)
+* [plant] Introduce ContactSolver and MultibodyPlant::set_contact_solver() (`#13958`_)
+* [plant] Refactor TamsiContactResults --> ContactSolverResults (`#14069`_)
+* [plant] Add parameters for FixedOffsetFrame (`#14137`_)
+
+* [dev] Add quadrature class for FEM (`#14202`_)
+
+* [geometry] Add normal computation for parsed/generated meshes (`#14035`_)
+* [geometry] Add Obb (Oriented Bounding Box) (`#13808`_)
+* [geometry] Make BoundingVolumeHierarchy uses Obb (Oriented Bounding Box) (`#13978`_)
+* [geometry] Remove the non-BoundingVolumeHierarchy interface for rigid-soft mesh intersection (`#14110`_)
+* [geometry] Add hydroelastic support for Convex shapes (`#14178`_)
+* [geometry] Add volume mesh testing utilities to :proximity_utilities (`#14209`_)
+
+* [pydrake] Add pydrake bindings for model directives (`#14144`_)
+* [pydrake] Add python binding for static equlibrium problem (`#14140`_)
+
+* [model directives] Move model directives mechanism out of dev (`#14038`_)
+* [model directives] This commit applies all of the post-dev changes to model directives: (`#14038`_)
 
 Fixes
 
-* Improve error message for bushing gimbal-lock singularity (`#14126`_)
+* [plant] Add unit length constraint on quaternion variables (`#14141`_)
+* [plant] Improve inlining for RotationalInertia::ReExpress (`#14088`_)
+* [plant] Change UnitInertia::ReExpress to use frame A instead of frame F (`#14112`_)
+* [plant] Don't warn when re-discovering the same package.xml (`#14089`_)
+* [plant] Merge all multibody/math targets into :spatial_algebra (`#14113`_)
+* [plant] Use spatial_algebra.h as the sole header for the  package (`#14117`_)
+* [plant] Improve error message for LinearBushingRollPitchYaw gimbal-lock singularity (`#14126`_)
+* [plant] Fix unit_quaternion_constraint_test failure on CI (`#14182`_)
+
+* [pydrake] Bind some missing MultibodyPlant-related items (`#14192`_)
+* [pydrake] Bind some missing MultibodyTree-related items (`#14195`_)
+
+* [model directives] Cleanups of issues revealed in integrating model directives downstream (`#14145`_)
+
+
+REMOVE THE FOLLOWING:
+* TBD Add utility function that uses AutoDiff and vector differentiation in a non-world frame.  Resolves issue #13562 (`#13593`_)
+
 
 Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
