@@ -17,9 +17,65 @@
 #endif
 
 #include <cmath>
+#include <memory>
 #include <ostream>
+#include <vector>
 
 #include <Eigen/Dense>
+
+namespace drake {
+namespace internal {
+namespace autodiff {
+
+// A pool of objects that get reused without returning storage to the global
+// heap. Use this to speed up computations that would otherwise thrash the heap
+// creating and destroying many objects of the same type. The type parameter T
+// must support default construction.
+template <typename T>
+class Pool {
+ public:
+  Pool() {
+    for (int k = 0; k < 10; ++k) {
+      put(new T(0));
+    }
+  }
+
+  // Get an object from the pool, or make a new one from the global heap if
+  // none are available. Use this where you would otherwise use `new` or
+  // malloc().
+  inline T* get(int dim) {
+    if (pool_.empty()) {
+      return new T(dim);
+    } else {
+      T* result{};
+      result = pool_.back();
+      pool_.pop_back();
+      result->resize(dim);
+      return result;
+    }
+    DRAKE_UNREACHABLE();
+  }
+
+  // Put an object in the pool. Use this where you would otherwise use `delete`
+  // or free().
+  inline void put(T* p) {
+    if (!p) return;
+    pool_.push_back(p);
+  }
+
+  ~Pool() {
+    // This class is designed to be leaked, so its destructor should never be
+    // invoked.
+    DRAKE_UNREACHABLE();
+  }
+
+ private:
+  std::vector<T*> pool_;
+};
+
+}  // namespace autodiff
+}  // namespace internal
+}  // namespace drake
 
 namespace Eigen {
 
@@ -67,23 +123,33 @@ class AutoDiffScalar<VectorXd>
   typedef typename internal::traits<DerType>::Scalar Scalar;
   typedef typename NumTraits<Scalar>::Real Real;
 
+  // Use a capped-size vector type for derivatives storage, together with an
+  // object pooling strategy.
+  using VectorUpTo1024d = Matrix<double, Dynamic, 1, 0, 1024, 1>;
+  // Avoid repeating the size cap everywhere.
+  using PoolVector = VectorUpTo1024d;
+
   using Base::operator+;
   using Base::operator*;
 
-  AutoDiffScalar() {}
+  AutoDiffScalar() : m_derivatives(s_pool_fn()->get(0)) {}
 
   AutoDiffScalar(const Scalar& value, int nbDer, int derNumber)
-      : m_value(value), m_derivatives(DerType::Zero(nbDer)) {
-    m_derivatives.coeffRef(derNumber) = Scalar(1);
+      : m_value(value), m_derivatives(s_pool_fn()->get(nbDer)) {
+    m_derivatives->setZero();
+    m_derivatives->coeffRef(derNumber) = Scalar(1);
   }
 
   // NOLINTNEXTLINE(runtime/explicit): Code from Eigen.
-  AutoDiffScalar(const Real& value) : m_value(value) {
-    if (m_derivatives.size() > 0) m_derivatives.setZero();
+  AutoDiffScalar(const Real& value)
+      : m_value(value), m_derivatives(s_pool_fn()->get(0)) {
+    if (m_derivatives->size() > 0) m_derivatives->setZero();
   }
 
   AutoDiffScalar(const Scalar& value, const DerType& der)
-      : m_value(value), m_derivatives(der) {}
+      : m_value(value), m_derivatives(s_pool_fn()->get(der.size())) {
+    *m_derivatives = der;
+  }
 
   template <typename OtherDerType>
   AutoDiffScalar(
@@ -97,7 +163,9 @@ class AutoDiffScalar<VectorXd>
           void*>::type = 0
 #endif
       )
-      : m_value(other.value()), m_derivatives(other.derivatives()) {
+      : m_value(other.value()),
+        m_derivatives(s_pool_fn()->get(other.derivatives().size())) {
+    *m_derivatives = other.derivatives();
   }
 
   friend std::ostream& operator<<(std::ostream& s, const AutoDiffScalar& a) {
@@ -105,7 +173,10 @@ class AutoDiffScalar<VectorXd>
   }
 
   AutoDiffScalar(const AutoDiffScalar& other)
-      : m_value(other.value()), m_derivatives(other.derivatives()) {}
+      : m_value(other.value()),
+        m_derivatives(s_pool_fn()->get(other.derivatives().size())) {
+    *m_derivatives = other.derivatives();
+  }
 
   // Move construction and assignment are trivial, but need to be explicitly
   // requested, since we have user-declared copy and assignment operators.
@@ -115,27 +186,27 @@ class AutoDiffScalar<VectorXd>
   template <typename OtherDerType>
   inline AutoDiffScalar& operator=(const AutoDiffScalar<OtherDerType>& other) {
     m_value = other.value();
-    m_derivatives = other.derivatives();
+    *m_derivatives = other.derivatives();
     return *this;
   }
 
   inline AutoDiffScalar& operator=(const AutoDiffScalar& other) {
     m_value = other.value();
-    m_derivatives = other.derivatives();
+    *m_derivatives = other.derivatives();
     return *this;
   }
 
   inline AutoDiffScalar& operator=(const Scalar& other) {
     m_value = other;
-    if (m_derivatives.size() > 0) m_derivatives.setZero();
+    if (m_derivatives->size() > 0) m_derivatives->setZero();
     return *this;
   }
 
   inline const Scalar& value() const { return m_value; }
   inline Scalar& value() { return m_value; }
 
-  inline const DerType& derivatives() const { return m_derivatives; }
-  inline DerType& derivatives() { return m_derivatives; }
+  inline const PoolVector& derivatives() const { return *m_derivatives; }
+  inline PoolVector& derivatives() { return *m_derivatives; }
 
   inline bool operator<(const Scalar& other) const { return m_value < other; }
   inline bool operator<=(const Scalar& other) const { return m_value <= other; }
@@ -225,15 +296,16 @@ class AutoDiffScalar<VectorXd>
 
   template <typename OtherDerType>
   inline AutoDiffScalar& operator+=(const AutoDiffScalar<OtherDerType>& other) {
-    const bool has_this_der = m_derivatives.size() > 0;
-    const bool has_both_der = has_this_der && (other.derivatives().size() > 0);
+    const bool has_this_der = m_derivatives->size() > 0;
+    const bool has_both_der =
+        has_this_der && (other.derivatives().size() > 0);
     m_value += other.value();
     if (has_both_der) {
-      m_derivatives += other.derivatives();
+      *m_derivatives += other.derivatives();
     } else if (has_this_der) {
       // noop
     } else {
-      m_derivatives = other.derivatives();
+      *m_derivatives = other.derivatives();
     }
     return *this;
   }
@@ -265,15 +337,16 @@ class AutoDiffScalar<VectorXd>
 
   template <typename OtherDerType>
   inline AutoDiffScalar& operator-=(const AutoDiffScalar<OtherDerType>& other) {
-    const bool has_this_der = m_derivatives.size() > 0;
-    const bool has_both_der = has_this_der && (other.derivatives().size() > 0);
+    const bool has_this_der = m_derivatives->size() > 0;
+    const bool has_both_der =
+        has_this_der && (other.derivatives().size() > 0);
     m_value -= other.value();
     if (has_both_der) {
-      m_derivatives -= other.derivatives();
+      *m_derivatives -= other.derivatives();
     } else if (has_this_der) {
       // noop
     } else {
-      m_derivatives = -other.derivatives();
+      *m_derivatives = -other.derivatives();
     }
     return *this;
   }
@@ -323,25 +396,26 @@ class AutoDiffScalar<VectorXd>
 
   inline AutoDiffScalar& operator*=(const Scalar& other) {
     m_value *= other;
-    m_derivatives *= other;
+    *m_derivatives *= other;
     return *this;
   }
 
   template <typename OtherDerType>
   inline AutoDiffScalar& operator*=(const AutoDiffScalar<OtherDerType>& other) {
-    const bool has_this_der = m_derivatives.size() > 0;
-    const bool has_both_der = has_this_der && (other.derivatives().size() > 0);
+    const bool has_this_der = m_derivatives->size() > 0;
+    const bool has_both_der =
+        has_this_der && (other.derivatives().size() > 0);
     // Some of the math below may look tempting to rewrite using `*=`, but
     // performance measurement and analysis show that this formulation is
     // faster because it results in better expression tree optimization and
     // inlining.
     if (has_both_der) {
-      m_derivatives = m_derivatives * other.value() +
+      *m_derivatives = *m_derivatives * other.value() +
                       other.derivatives() * m_value;
     } else if (has_this_der) {
-      m_derivatives = m_derivatives * other.value();
+      *m_derivatives = *m_derivatives * other.value();
     } else {
-      m_derivatives = other.derivatives() * m_value;
+      *m_derivatives = other.derivatives() * m_value;
     }
     m_value *= other.value();
     return *this;
@@ -349,16 +423,17 @@ class AutoDiffScalar<VectorXd>
 
   inline AutoDiffScalar& operator/=(const Scalar& other) {
     m_value /= other;
-    m_derivatives *= Scalar(1) / other;
+    *m_derivatives *= Scalar(1) / other;
     return *this;
   }
 
   template <typename OtherDerType>
   inline AutoDiffScalar& operator/=(const AutoDiffScalar<OtherDerType>& other) {
-    auto& this_der = m_derivatives;
+    auto& this_der = *m_derivatives;
     const auto& other_der = other.derivatives();
-    const bool has_this_der = m_derivatives.size() > 0;
-    const bool has_both_der = has_this_der && (other.derivatives().size() > 0);
+    const bool has_this_der = m_derivatives->size() > 0;
+    const bool has_both_der =
+        has_this_der && (other.derivatives().size() > 0);
     const Scalar scale = Scalar(1) / (other.value() * other.value());
     if (has_both_der) {
       this_der *= other.value();
@@ -373,10 +448,60 @@ class AutoDiffScalar<VectorXd>
     return *this;
   }
 
+
  protected:
   Scalar m_value;
-  DerType m_derivatives;
+
+  // Pools are thread-local, to avoid synchronized bookkeeping.
+  using VectorPool = drake::internal::autodiff::Pool<PoolVector>;
+  static thread_local VectorPool* s_pool;
+
+  // Letting the compiler protect thread-local access results in expensive
+  // access functions at every use site. Instead, use an access function that
+  // is expensive on the first access in a thread, and cheap thereafter.
+  using PoolFn = VectorPool* (*)();
+  static thread_local PoolFn s_pool_fn;
+
+  // The cheap pool access function.
+  static VectorPool* pool() { return s_pool; }
+
+  // The expensive pool initialization function. It builds the pool and
+  // replaces itself with the cheap function.
+  static VectorPool* pool_init_thunk() {
+    DRAKE_ASSERT(!s_pool);
+    s_pool_fn = pool;
+    s_pool = new VectorPool;
+    return s_pool;
+  }
+
+  // This function is a convenience wrapper to help construct a custom
+  // unique_ptr type that knows to return storage to the pool.
+  static inline void deleter(PoolVector* p) { s_pool_fn()->put(p); }
+
+  // Use some template magic to construct a custom unique_ptr type whose custom
+  // deleter is fixed at compile time.  See also StackOverflow article here:
+  // https://stackoverflow.com/questions/19053351/how-do-i-use-a-custom-deleter-with-a-stdunique-ptr-member
+  template <auto fn>
+  using DeleterFromFn = std::integral_constant<decltype(fn), fn>;
+  template <typename T, auto fn>
+  using DeleterUniquePtr = std::unique_ptr<T, DeleterFromFn<fn>>;
+  using PoolPtr = DeleterUniquePtr<PoolVector, deleter>;
+  static_assert(sizeof(PoolPtr) == sizeof(void*),
+                "PoolPtr is wasting storage for the custom deleter.");
+
+  PoolPtr m_derivatives;
 };
+
+// Initialize the pointer to the thread-local pool to nullptr, in an attempt
+// to avoid compiler-supplied wrapper functions. See here for some discussion:
+// https://stackoverflow.com/questions/13106049/what-is-the-performance-penalty-of-c11-thread-local-variables-in-gcc-4-8
+inline thread_local AutoDiffScalar<VectorXd>::VectorPool*
+AutoDiffScalar<VectorXd>::s_pool{};
+
+// Initialize the pool function to the once-only init thunk, which will replace
+// itself with a cheap accessor when it is executed.
+inline thread_local AutoDiffScalar<VectorXd>::PoolFn
+AutoDiffScalar<VectorXd>::s_pool_fn{AutoDiffScalar<VectorXd>::pool_init_thunk};
 
 #define DRAKE_EIGEN_AUTODIFFXD_DECLARE_GLOBAL_UNARY(FUNC, CODE) \
   inline AutoDiffScalar<VectorXd> FUNC(                         \
