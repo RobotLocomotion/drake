@@ -43,7 +43,7 @@ using systems::Simulator;
 
 class ParseTest : public testing::TestWithParam<std::string> {};
 
-TEST_P(ParseTest, ParsesURDFAndVisualizes) {
+TEST_P(ParseTest, ParsesUrdfAndVisualizes) {
   const std::string object_name = GetParam();
   const std::string filename = FindResourceOrThrow(fmt::format(
       "drake/manipulation/models/realsense2_description/urdf/{}.urdf",
