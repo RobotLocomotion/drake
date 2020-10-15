@@ -22,7 +22,12 @@ This includes API documentation
 When using Bazel
 ================
 
-To generate the website and serve it locally with
+First. run the appropriate prerequisites with the ``--with-doc-only`` command
+line option, e.g., ::
+
+    $ ./setup/ubuntu/install_prereqs.sh --with-doc-only
+
+Then, to generate the website and serve it locally with
 `webbrowser <https://docs.python.org/2/library/webbrowser.html>`_::
 
     $ bazel run //doc:serve_sphinx [-- --browser=false]
