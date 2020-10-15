@@ -162,6 +162,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         ibex_repository(name = "ibex")
     if "ignition_math" not in excludes:
         ignition_math_repository(name = "ignition_math", mirrors = mirrors)
+    if "intel_realsense_ros" not in excludes:
+        intel_realsense_ros_repository(name = "intel_realsense_ros", mirrors = mirrors)  # noqa
     if "ipopt" not in excludes:
         ipopt_repository(name = "ipopt")
     if "jsoncpp" not in excludes:
@@ -226,8 +228,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         qdldl_repository(name = "qdldl", mirrors = mirrors)
     if "ros_xacro" not in excludes:
         ros_xacro_repository(name = "ros_xacro", mirrors = mirrors)
-    if "intel_realsense_ros" not in excludes:
-        intel_realsense_ros_repository(name = "intel_realsense_ros", mirrors = mirrors)
     if "rules_pkg" not in excludes:
         rules_pkg_repository(name = "rules_pkg", mirrors = mirrors)
     if "rules_python" not in excludes:

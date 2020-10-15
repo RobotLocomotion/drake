@@ -20,5 +20,4 @@ exports_files(
     srcs = glob([
         "realsense2_description/**",
     ], allow_empty = False),
-    visibility = ["//visibility:public"],
 )
