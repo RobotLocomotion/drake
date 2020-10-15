@@ -24,7 +24,6 @@ Dynamical Systems
 ~~~~~~~~~~~~~~~~~
 
 .. <relnotes for systems go here>
-[systems,tools] * TBD Convert #warnings to errors (`#14174`_)
 
 New features
 
@@ -37,7 +36,6 @@ New features
 Fixes
 
 * Remove VectorBase::operator[] bounds checking (`#14101`_)
-* TBD [move to multibody] Improve error message for bushing gimbal-lock singularity (`#14126`_)
 * Improve error message for bushing gimbal-lock singularity (`#14126`_)
 * Rename accelerometer_sensor.h to accelerometer.h (`#14185`_)
 * Rename gyroscope_sensor.h to gyroscope.h (`#14185`_)
@@ -63,9 +61,9 @@ Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for geometry,multibody go here>
+
 * TBD Migrates volume mesh testing utilities (`#14209`_)  # * migrate volume mesh testing utilities
 * TBD Add quadrature class for FEM (`#14202`_)  # Create the API for a general quadrature rule class for FEM applications. Add a concrete class, SimplexGaussianQuadrature that implements the APIs.
-
 * TBD [render] Add normal computation for parsed/generated meshes (`#14035`_)  # - shape_meshes.* - Introduces a new struct: MeshData - it encapsulates more data than the previous "vertex position" and triangle construction. It adds normals and uvs. - Mesh loading parses normal data from the obj (throwing exceptions if normals are missing). - All primitives come with normals. - render_engine_gl.* - Instantiate the OpenGl geometry from MeshData instead of the old IndexBuffer and VertexBuffer types.
 * TBD Refactors TamsiContactResults --> ContactSolverResults (`#14069`_)
 * TBD Bring global_inverse_kinematics out from attic (`#13921`_)  # Bring global_inverse_kinematics out from attic folder to multibody folder. Rewrite GlobalInverseKinematics using MBP public API.
@@ -99,7 +97,7 @@ New features
 
 Fixes
 
-* TBD
+* Improve error message for bushing gimbal-lock singularity (`#14126`_)
 
 Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -113,8 +111,8 @@ Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for common,math,lcm,lcmtypes,manipulation,perception go here>
-* TBD find_runfiles: Always return a normalized path (`#14211`_)  # Otherwise, we can get different runfiles paths if you run a binary via `./bazel-bin/target` vs. `bazel-bin/target`
 
+* find_runfiles: Always return a normalized path (`#14211`_)
 * jaco_description: Add package.xml (`#14134`_)
 * yaml: Fix in std::optional handling (`#14076`_)
 * yaml: Add support for BsplineBasis and BsplineTrajectory (`#14106`_)
@@ -123,13 +121,12 @@ pydrake bindings
 ~~~~~~~~~~~~~~~~
 
 .. <relnotes for bindings go here>
-* TBD Call Ipopt solver explicitly when solving static equilibrium problem (`#14199`_)  # * Call snopt solver explicitly when solving static equilibrium problem.
-* TBD Rewrite of MeshcatContactVisualizer (`#14210`_)  # I looked more closely at the code because I hit a bug where the contact force IDs were incrementing unstably even though my scene was in steady state.  It caused flickering contact forces, and ground the performance in meshcat to a halt. I found the current implementation to be unnecessarily complex and inefficient.  This PR cleans it up. As a bonus, I've also added arrow heads to the cylinders, and changed the colors to match the contact forces in drake visualizer.  The overall result improves the visualization quite a bit.
 
 New features
 
 * jupyter: Add joint sliders using publishing callback (`#14059`_)
 * meshcat: Add option to set contact cylinder radius (`#14131`_)
+* meshcat: Rewrite MeshcatContactVisualizer (`#14210`_)
 * multibody: Allow SpatialVector's to be pickled (`#14104`_)
 * solvers: Add vectorized version of EvalBinding (`#14064`_)
 
@@ -332,7 +329,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#14166: https://github.com/RobotLocomotion/drake/pull/14166
 .. _#14169: https://github.com/RobotLocomotion/drake/pull/14169
 .. _#14171: https://github.com/RobotLocomotion/drake/pull/14171
-.. _#14174: https://github.com/RobotLocomotion/drake/pull/14174
 .. _#14176: https://github.com/RobotLocomotion/drake/pull/14176
 .. _#14178: https://github.com/RobotLocomotion/drake/pull/14178
 .. _#14179: https://github.com/RobotLocomotion/drake/pull/14179
@@ -345,7 +341,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#14193: https://github.com/RobotLocomotion/drake/pull/14193
 .. _#14194: https://github.com/RobotLocomotion/drake/pull/14194
 .. _#14195: https://github.com/RobotLocomotion/drake/pull/14195
-.. _#14199: https://github.com/RobotLocomotion/drake/pull/14199
 .. _#14201: https://github.com/RobotLocomotion/drake/pull/14201
 .. _#14202: https://github.com/RobotLocomotion/drake/pull/14202
 .. _#14209: https://github.com/RobotLocomotion/drake/pull/14209
