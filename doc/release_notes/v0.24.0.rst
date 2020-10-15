@@ -14,7 +14,7 @@ Breaking changes since v0.23.0
 
 * De-referencing a drake::EigenPtr no longer checks for nullptr (`#14088`_).
   Users relying on the nullptr checks should add their own before dereferencing.
-* The exact exception subclasses thrown by VectorBase changed  (`#14101`_).
+* The exact exception subclasses thrown by VectorBase changed (`#14101`_).
 * BasicVector::DoGetAtIndex changed from protected to private.
 
 Changes since v0.23.0
@@ -36,6 +36,7 @@ New features
 Fixes
 
 * Remove VectorBase::operator[] bounds checking (`#14101`_)
+* TBD [move to multibody] Improve error message for bushing gimbal-lock singularity (`#14126`_)
 * Improve error message for bushing gimbal-lock singularity (`#14126`_)
 * Rename accelerometer_sensor.h to accelerometer.h (`#14185`_)
 * Rename gyroscope_sensor.h to gyroscope.h (`#14185`_)
