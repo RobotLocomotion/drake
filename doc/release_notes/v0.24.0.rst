@@ -121,30 +121,50 @@ pydrake bindings
 
 New features
 
-* TBD solvers: Add vectorized version of EvalBinding (for python) (`#14064`_)
-* TBD mbp: Allow SpatialVector's to be pickled (`#14104`_)
-* TBD mbp: Make SpatialVector's default constructor initialize to NaN (`#14096`_)
-* TBD jupyter: Add joint sliders using publishing callback (`#14059`_)
-* TBD meshcat: add option to set contact cylinder radius (`#14131`_)
+* jupyter: Add joint sliders using publishing callback (`#14059`_)
+* meshcat: Add option to set contact cylinder radius (`#14131`_)
+* multibody: Allow SpatialVector's to be pickled (`#14104`_)
+* solvers: Add vectorized version of EvalBinding (`#14064`_)
 
 Fixes
 
-* Improve descriptive text for joint sliders (`#14130`_)
+* multibody: SpatialVector default constructor initializes to NaN (`#14096`_)
+* jupyter: Improve descriptive text for joint sliders (`#14130`_)
 * Fix missing runtime module imports (`#14072`_, `#14095`_)
 
 Newly bound
 
-* TBD AddRotatedLorentzConeConstraint (`#14120`_)
-* TBD AddLorentzConeConstraint (`#14119`_)
-* TBD RotationalInertia and UnitInertia's ReExpress (`#14111`_, `#14194`_)
-* TBD operators for SpatialVector; shifting for velocity and force (`#14098`_)
-* TBD ContactModel enumeration and accessor/mutators (`#14108`_)
-* TBD GetFloatingBaseBodies (`#14139`_)
-* TBD floating base accessors (`#14166`_)
-* TBD calc spatial momentum in world about point (`#14078`_)
-* TBD multibody math-related items (`#14193`_)
-* TBD BsplineTrajectory and BsplineBasis (`#14201`_)
-* TBD LinearBushingRollPitchYaw (`#14070`_)
+* pydrake.math.BsplineBasis (`#14201`_)
+* pydrake.math.BsplineTrajectory (`#14201`_)
+* pydrake.multibody.math.SpatialAcceleration.ComposeWithMovingFrameAcceleration (`#14193`_)
+* pydrake.multibody.math.SpatialAcceleration.Shift (`#14193`_)
+* pydrake.multibody.math.SpatialForce.Shift (`#14098`_)
+* pydrake.multibody.math.SpatialForce.dot (`#14098`_)
+* pydrake.multibody.math.SpatialMomentum.Shift (`#14193`_)
+* pydrake.multibody.math.SpatialMomentum.dot (`#14193`_)
+* pydrake.multibody.math.SpatialVector arithmetic operators (`#14098`_)
+* pydrake.multibody.math.SpatialVelocity.ComposeWithMovingFrameVelocity (`#14098`_)
+* pydrake.multibody.math.SpatialVelocity.Shift (`#14098`_)
+* pydrake.multibody.math.SpatialVelocity.dot (`#14098`_)
+* pydrake.multibody.plant.ContactModel (`#14108`_)
+* pydrake.multibody.plant.MultibodyPlant.CalcSpatialMomentumInWorldAboutPoint (`#14078`_)
+* pydrake.multibody.plant.MultibodyPlant.GetFloatingBaseBodies (`#14139`_)
+* pydrake.multibody.plant.MultibodyPlant.GetFreeBodyPose (`#14166`_)
+* pydrake.multibody.plant.MultibodyPlant.get_contact_model (`#14108`_)
+* pydrake.multibody.plant.MultibodyPlant.set_contact_model (`#14108`_)
+* pydrake.multibody.tree.Body.floating_positions_start (`#14166`_)
+* pydrake.multibody.tree.Body.floating_velocities_start (`#14166`_)
+* pydrake.multibody.tree.LinearBushingRollPitchYaw (`#14070`_)
+* pydrake.multibody.tree.MultibodyForces ctor (`#14193`_)
+* pydrake.multibody.tree.MultibodyForces.num_bodies (`#14193`_)
+* pydrake.multibody.tree.MultibodyForces.num_velocities (`#14193`_)
+* pydrake.multibody.tree.RotationalInertia (many methods) (`#14193`_)
+* pydrake.multibody.tree.RotationalInertia.ReExpress (`#14111`_, `#14194`_)
+* pydrake.multibody.tree.RotationalInertia.UnitInertia.ReExpress (`#14111`_, `#14194`_)
+* pydrake.multibody.tree.SpatialInertia.MakeFromCentralInertia (`#14193`_)
+* pydrake.multibody.tree.UnitInertia (many methods) (`#14193`_)
+* pydrake.solvers.mathematicalprogram.MathematicalProgram.AddLorentzConeConstraint (`#14119`_)
+* pydrake.solvers.mathematicalprogram.MathematicalProgram.AddRotatedLorentzConeConstraint (`#14120`_)
 
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
