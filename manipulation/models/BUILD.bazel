@@ -11,6 +11,7 @@ install(
         "//manipulation/models/franka_description:install_data",
         "//manipulation/models/iiwa_description:install_data",
         "//manipulation/models/jaco_description:install_data",
+        "//manipulation/models/realsense2_description:install_data",
         "//manipulation/models/wsg_50_description:install_data",
         "//manipulation/models/ycb:install_data",
     ],

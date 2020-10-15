@@ -1,21 +1,20 @@
-/**
+/*
 @file
 Parses and visualizes Realsense d415.
 
-An example of showing a Realsense d415 at a 5s interval:
-
- $ bazel run //tools/workspace/ros_realsense:realsense_parse_test -- \
-   --visualize_sec=5
-
-If you wish to visualize this mesh, in a new terminal run:
+If you wish to visualize this mesh, in it's own terminal run:
 
  $ bazel-bin/tools/drake_visualizer
 
+In a new terminal, run example of showing a Realsense d415:
+
+ $ bazel run \
+   //manipulation/models/realsense2_description:realsense_parse_test -- \
+   --visualize=true
+
 */
 
-#include <chrono>
 #include <string>
-#include <thread>
 
 #include <fmt/format.h>
 #include <gflags/gflags.h>
@@ -28,8 +27,8 @@ If you wish to visualize this mesh, in a new terminal run:
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 
-DEFINE_double(
-    visualize_sec, 0., "Pause and visualize to Drake Visualizer.");
+DEFINE_bool(
+    visualize, false, "Publish model to Drake Visualizer.");
 
 namespace drake {
 namespace manipulation {
@@ -44,10 +43,10 @@ using systems::Simulator;
 
 class ParseTest : public testing::TestWithParam<std::string> {};
 
-TEST_P(ParseTest, Quantities) {
+TEST_P(ParseTest, ParsesURDFAndVisualizes) {
   const std::string object_name = GetParam();
   const std::string filename = FindResourceOrThrow(fmt::format(
-      "drake/external/ros_realsense/realsense2_description/urdf/{}.urdf",
+      "drake/manipulation/models/realsense2_description/urdf/{}.urdf",
       object_name));
 
   DiagramBuilder<double> builder;
@@ -60,27 +59,21 @@ TEST_P(ParseTest, Quantities) {
   plant.Finalize();
   auto diagram = builder.Build();
 
-  // Expect three model instances: world, modeling elements, and
-  // the realsense model itself
+  // MultibodyPlant always creates at least two model instances, one for the
+  // world and one for a default model instance for unspecified modeling
+  // elements. Finally, there is one model instance for the realsense model
   EXPECT_EQ(plant.num_model_instances(), 3);
 
-  // Expect the world body, and three realsense link bodies
-  EXPECT_EQ(plant.num_bodies(), 4);
-
   // Visualize via publishing, if requested
-  if (FLAGS_visualize_sec > 0.) {
+  if (FLAGS_visualize) {
     drake::log()->info("Visualize: {}", object_name);
     Simulator<double>(*diagram).Initialize();
     auto context = diagram->CreateDefaultContext();
     diagram->Publish(*context);
-    drake::log()->info("Pausing for {} sec...", FLAGS_visualize_sec);
-    std::this_thread::sleep_for(
-        std::chrono::milliseconds(
-            static_cast<int>(1000 * FLAGS_visualize_sec)));
   }
 }
 
-INSTANTIATE_TEST_SUITE_P(Both, ParseTest, testing::Values("d415"));
+INSTANTIATE_TEST_SUITE_P(RealsenseD415, ParseTest, testing::Values("d415"));
 
 }  // namespace
 }  // namespace manipulation

@@ -34,6 +34,7 @@ load("@drake//tools/workspace/gtest:repository.bzl", "gtest_repository")
 load("@drake//tools/workspace/gurobi:repository.bzl", "gurobi_repository")
 load("@drake//tools/workspace/ibex:repository.bzl", "ibex_repository")
 load("@drake//tools/workspace/ignition_math:repository.bzl", "ignition_math_repository")  # noqa
+load("@drake//tools/workspace/intel_realsense_ros:repository.bzl", "intel_realsense_ros_repository")  # noqa
 load("@drake//tools/workspace/ipopt:repository.bzl", "ipopt_repository")
 load("@drake//tools/workspace/jsoncpp:repository.bzl", "jsoncpp_repository")
 load("@drake//tools/workspace/lapack:repository.bzl", "lapack_repository")
@@ -66,7 +67,6 @@ load("@drake//tools/workspace/pygame_py:repository.bzl", "pygame_py_repository")
 load("@drake//tools/workspace/python:repository.bzl", "python_repository")
 load("@drake//tools/workspace/qdldl:repository.bzl", "qdldl_repository")
 load("@drake//tools/workspace/ros_xacro:repository.bzl", "ros_xacro_repository")  # noqa
-load("@drake//tools/workspace/ros_realsense:repository.bzl", "ros_realsense_repository")  # noqa
 load("@drake//tools/workspace/rules_pkg:repository.bzl", "rules_pkg_repository")  # noqa
 load("@drake//tools/workspace/rules_python:repository.bzl", "rules_python_repository")  # noqa
 load("@drake//tools/workspace/scs:repository.bzl", "scs_repository")
@@ -226,8 +226,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         qdldl_repository(name = "qdldl", mirrors = mirrors)
     if "ros_xacro" not in excludes:
         ros_xacro_repository(name = "ros_xacro", mirrors = mirrors)
-    if "ros_realsense" not in excludes:
-        ros_realsense_repository(name = "ros_realsense", mirrors = mirrors)
+    if "intel_realsense_ros" not in excludes:
+        intel_realsense_ros_repository(name = "intel_realsense_ros", mirrors = mirrors)
     if "rules_pkg" not in excludes:
         rules_pkg_repository(name = "rules_pkg", mirrors = mirrors)
     if "rules_python" not in excludes:

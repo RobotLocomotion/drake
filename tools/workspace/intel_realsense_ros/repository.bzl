@@ -2,7 +2,7 @@
 
 load("@drake//tools/workspace:github.bzl", "github_archive")
 
-def ros_realsense_repository(
+def intel_realsense_ros_repository(
         name,
         mirrors = None):
     github_archive(
@@ -13,7 +13,7 @@ def ros_realsense_repository(
         # released for Ubuntu 18.04.
         commit = "2.2.17",
         sha256 = "babffbd3b2d20c94431436fc50606fddf8712dd7e9392d9da3fd228b432f9cfe",  # noqa
-        build_file = "@drake//tools/workspace/ros_realsense:package.BUILD.bazel",  # noqa
+        build_file = "@drake//tools/workspace/intel_realsense_ros:package.BUILD.bazel",  # noqa
         patch_cmds = [
             "sed -i.orig -e 's|$(find realsense2_description)/urdf/||' realsense2_description/urdf/*.xacro",  # noqa
             "sed -i -e 's|$(arg use_nominal_extrinsics)|false|' realsense2_description/urdf/*.xacro",  # noqa

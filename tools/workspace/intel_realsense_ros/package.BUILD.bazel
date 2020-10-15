@@ -1,7 +1,6 @@
 # -*- python -*-
 
 load("@drake//tools/workspace/ros_xacro:defs.bzl", "xacro_file")
-load("@drake//tools/install:install.bzl", "install")
 
 licenses(["notice"])  # Apache-2.0
 
@@ -19,22 +18,7 @@ xacro_file(
 
 exports_files(
     srcs = glob([
-        "LICENSE",
         "realsense2_description/**",
     ], allow_empty = False),
     visibility = ["//visibility:public"],
-)
-
-install(
-    name = "install",
-    targets = [
-        "LICENSE",
-        "realsense2_description/package.xml",
-        "realsense2_description/meshes/d415.stl",
-        "realsense2_description/urdf/d415.urdf",
-    ],
-    visibility = ["//visibility:public"],
-    docs = [
-        "LICENSE",
-    ],
 )
