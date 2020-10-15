@@ -627,6 +627,8 @@ void DefineFrameworkPySemantics(py::module m) {
             py::arg("context"), py::arg("value"), py_rvp::reference,
             // Keep alive, ownership: `return` keeps `context` alive.
             py::keep_alive<0, 2>(), doc.InputPort.FixValue.doc)
+        .def("HasValue", &InputPort<T>::HasValue, py::arg("context"),
+            doc.InputPort.HasValue.doc)
         .def("get_system", &InputPort<T>::get_system, py_rvp::reference,
             doc.InputPort.get_system.doc);
 

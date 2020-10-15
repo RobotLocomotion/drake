@@ -49,7 +49,7 @@ drake_cc_library(
     name = "simulator_flags",
     srcs = ["simulator_flags.cc"],
     hdrs = ["simulator_flags.h"],
-    copts = ["-w"],
+    copts = ["-Wno-cpp"],
     deps = [
         ":simulator_config_functions",
     ],

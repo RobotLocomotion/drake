@@ -1,33 +1,15 @@
 #include "drake/geometry/proximity/make_cylinder_mesh.h"
 
-#include <algorithm>
-#include <fstream>
-#include <set>
-#include <unordered_set>
-#include <vector>
-
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/geometry/proximity/sorted_triplet.h"
+#include "drake/geometry/proximity/proximity_utilities.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 
 namespace drake {
 namespace geometry {
 namespace internal {
 namespace {
-
-// TODO(DamrongGuoy): Move this function to VolumeMesh.
-
-// Computes the total volume of a VolumeMesh by summing up the contribution
-// of each tetrahedron.
-double CalcTetrahedronMeshVolume(const VolumeMesh<double>& mesh) {
-  double volume = 0.0;
-  for (int e = 0; e < mesh.num_elements(); e++) {
-    volume += mesh.CalcTetrahedronVolume(VolumeElementIndex(e));
-  }
-  return volume;
-}
 
 GTEST_TEST(MakeCylinderVolumeMesh, CoarsestMesh) {
   const double radius = 1.0;
@@ -100,7 +82,7 @@ GTEST_TEST(MakeCylinderVolumeMesh, VolumeConvergence) {
   auto mesh0 =
       MakeCylinderVolumeMesh<double>(Cylinder(radius, height), resolution_hint);
 
-  const double volume0 = CalcTetrahedronMeshVolume(mesh0);
+  const double volume0 = mesh0.CalcVolume();
   const double cylinder_volume = height * radius * radius * M_PI;
 
   // Initial error in the computation of the volume.
@@ -126,7 +108,7 @@ GTEST_TEST(MakeCylinderVolumeMesh, VolumeConvergence) {
 
     // Verify that the volume monotonically converges towards the exact volume
     // of the given cylinder.
-    const double volume = CalcTetrahedronMeshVolume(mesh);
+    const double volume = mesh.CalcVolume();
     const double error = cylinder_volume - volume;
 
     EXPECT_GT(error, 0.0);
@@ -137,58 +119,14 @@ GTEST_TEST(MakeCylinderVolumeMesh, VolumeConvergence) {
   }
 }
 
-// Counts the unique 1-simplices in the mesh
-int CountEdges(const VolumeMesh<double>& mesh) {
-  std::unordered_set<SortedPair<VolumeVertexIndex>> edges;
-
-  for (auto& t : mesh.tetrahedra()) {
-    // 6 edges of a tetrahedron
-    edges.insert(MakeSortedPair(t.vertex(0), t.vertex(1)));
-    edges.insert(MakeSortedPair(t.vertex(1), t.vertex(2)));
-    edges.insert(MakeSortedPair(t.vertex(0), t.vertex(2)));
-    edges.insert(MakeSortedPair(t.vertex(0), t.vertex(3)));
-    edges.insert(MakeSortedPair(t.vertex(1), t.vertex(3)));
-    edges.insert(MakeSortedPair(t.vertex(2), t.vertex(3)));
-  }
-  return edges.size();
-}
-
-// Counts the unique 2-simplices in the face
-int CountFaces(const VolumeMesh<double>& mesh) {
-  std::set<SortedTriplet<VolumeVertexIndex>> faces;
-
-  for (const auto& t : mesh.tetrahedra()) {
-    // 4 faces of a tetrahedron, all facing in
-    faces.insert(SortedTriplet<VolumeVertexIndex>(t.vertex(0), t.vertex(1),
-                                                  t.vertex(2)));
-    faces.insert(SortedTriplet<VolumeVertexIndex>(t.vertex(1), t.vertex(0),
-                                                  t.vertex(3)));
-    faces.insert(SortedTriplet<VolumeVertexIndex>(t.vertex(2), t.vertex(1),
-                                                  t.vertex(3)));
-    faces.insert(SortedTriplet<VolumeVertexIndex>(t.vertex(0), t.vertex(2),
-                                                  t.vertex(3)));
-  }
-
-  return faces.size();
-}
-
-int ComputeEulerCharacteristic(const VolumeMesh<double>& mesh) {
-  const int k0 = mesh.vertices().size();
-  const int k1 = CountEdges(mesh);
-  const int k2 = CountFaces(mesh);
-  const int k3 = mesh.tetrahedra().size();
-
-  return k0 - k1 + k2 - k3;
-}
-
 // Confirm that the mesh is well formed (i.e., with no duplicate vertices or
 // tetrahedra) by computing its Euler characteristic. Looking at the
 // tetrahedral mesh as a convex 4 dimensional simplicial complex, this test
-// computes the generalized euler characteristic:
+// computes the generalized Euler characteristic:
 //
-// χ = k_0 - k_1 + k_2 - k_3
+// χ = k₀ - k₁ + k₂ - k₃
 //
-// where k_i is the number of i-simplexes in the complex. For a convex mesh that
+// where kᵢ is the number of i-simplexes in the complex. For a convex mesh that
 // is homeomorphic to a 3 dimensional ball, χ = 1.
 GTEST_TEST(MakeCylinderVolumeMesh, EulerCharacteristic) {
   const double height = 2;
