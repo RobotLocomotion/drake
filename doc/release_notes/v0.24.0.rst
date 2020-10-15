@@ -172,13 +172,24 @@ Build system and dependencies
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
 
+* drake/math/expmap.h include path (`#14099`_)
+* drake/multibody/math/spatial_acceleration.h include path (`#14117`_)
+* drake/multibody/math/spatial_force.h include path (`#14117`_)
+* drake/multibody/math/spatial_momentum.h include path (`#14117`_)
+* drake/multibody/math/spatial_vector.h include path (`#14117`_)
+* drake/multibody/math/spatial_velocity.h include path (`#14117`_)
+* drake/systems/analysis/simulator_flags.h include path (`#14135`_)
+* drake/systems/sensors/accelerometer_sensor.h include path (`#14185`_)
+* drake/systems/sensors/gyroscope_sensor.h include path (`#14185`_)
+* drake::math::closestExpmap (`#14099`_)
+* drake::math::expmap2quat (`#14099`_)
+* drake::math::quat2expmap (`#14099`_)
+* drake::math::quat2expmapSequence (`#14099`_)
+* drake::multibody::math::SpatialVector::ScalarType (`#14188`_)
+* drake::systems::Context::FixInputPort() (`#14093`_)
+* tools/vector_gen/vector_gen.bzl:drake_cc_vector_gen (`#14092`_)
+* tools/vector_gen/vector_gen.bzl:drake_vector_gen_lcm_sources (`#14092`_)
 * The numpy external (`#14116`_)
-* TBD context.FixInputPort() (`#14093`_)
-* TBD foo_sensor.h files (`#14185`_)
-* TBD simulator_flags.h (`#14135`_)
-* TBD multibody dead code (`#14188`_)
-* TBD math/expmap.h (`#14099`_)
-* TBD vector_gen macros (`#14092`_)
 
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
