@@ -63,8 +63,14 @@ GTEST_TEST(OpenGlInstanceTest, Construction) {
   const OpenGlGeometry geometry(1, 2, 3, 4);
   const RigidTransformd X_WG{Vector3d{-1, -2, 3}};
   const Vector3d scale{0.25, 0.5, 0.75};
-  const RenderLabel label(17);
-  const OpenGlInstance instance{geometry, X_WG, scale, label};
+  // We'll create a pretend block of depth data; simply a double value with no
+  // real meaning.
+  const ShaderProgramData depth_data{ShaderId::get_new_id(),
+                                     AbstractValue::Make(7.3)};
+  const ShaderProgramData label_data{ShaderId::get_new_id(),
+                                     AbstractValue::Make(RenderLabel(13))};
+
+  const OpenGlInstance instance{geometry, X_WG, scale, depth_data, label_data};
 
   EXPECT_EQ(instance.geometry.vertex_array, geometry.vertex_array);
   EXPECT_EQ(instance.geometry.vertex_buffer, geometry.vertex_buffer);
@@ -73,7 +79,17 @@ GTEST_TEST(OpenGlInstanceTest, Construction) {
   EXPECT_TRUE(
       CompareMatrices(instance.X_WG.GetAsMatrix34(), X_WG.GetAsMatrix34()));
   EXPECT_TRUE(CompareMatrices(instance.scale, scale));
-  EXPECT_EQ(instance.label, label);
+
+  EXPECT_EQ(
+      instance.shader_data[RenderType::kDepth].value().get_value<double>(),
+      depth_data.value().get_value<double>());
+  EXPECT_EQ(instance.shader_data[RenderType::kDepth].shader_id(),
+            depth_data.shader_id());
+  EXPECT_EQ(
+      instance.shader_data[RenderType::kLabel].value().get_value<RenderLabel>(),
+      label_data.value().get_value<RenderLabel>());
+  EXPECT_EQ(instance.shader_data[RenderType::kLabel].shader_id(),
+            label_data.shader_id());
 }
 
 }  // namespace

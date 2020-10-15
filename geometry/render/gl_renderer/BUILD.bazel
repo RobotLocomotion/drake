@@ -35,14 +35,23 @@ drake_cc_package_library_gl_per_os(
         ":render_engine_gl_factory",
     ],
     ubuntu_deps = [
+        ":gl_common",
         ":opengl_context",
         ":opengl_geometry",
         ":render_engine_gl",
         ":render_engine_gl_factory",
         ":shader_program",
+        ":shader_program_data",
         ":shape_meshes",
     ],
     visibility = ["//visibility:public"],
+)
+
+drake_cc_library_gl_ubuntu_only(
+    name = "gl_common",
+    hdrs = [
+        "gl_common.h",
+    ],
 )
 
 drake_cc_library_gl_ubuntu_only(
@@ -65,7 +74,9 @@ drake_cc_library_gl_ubuntu_only(
     name = "opengl_geometry",
     hdrs = ["opengl_geometry.h"],
     deps = [
+        ":gl_common",
         ":opengl_context",
+        ":shader_program_data",
         "//geometry/render:render_label",
         "//math:geometric_transform",
     ],
@@ -84,6 +95,7 @@ drake_cc_library_gl_ubuntu_only(
         ":opengl_context",
         ":opengl_geometry",
         ":shader_program",
+        ":shader_program_data",
         ":shape_meshes",
         "//common:essential",
         "//geometry/render:render_engine",
@@ -120,8 +132,21 @@ drake_cc_library_gl_ubuntu_only(
     srcs = ["shader_program.cc"],
     hdrs = ["shader_program.h"],
     deps = [
+        ":shader_program_data",
         "//common:essential",
+        "//geometry:geometry_roles",
+        "//geometry/render:render_engine",
         "//geometry/render/gl_renderer:opengl_context",
+    ],
+)
+
+drake_cc_library_gl_ubuntu_only(
+    name = "shader_program_data",
+    hdrs = ["shader_program_data.h"],
+    deps = [
+        "//common:copyable_unique_ptr",
+        "//common:identifier",
+        "//common:value",
     ],
 )
 
@@ -218,6 +243,7 @@ drake_cc_googletest_gl_ubuntu_only(
         ":opengl_context",
         ":shader_program",
         "//common:temp_directory",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],
 )
