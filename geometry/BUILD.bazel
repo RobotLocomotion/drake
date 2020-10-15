@@ -135,6 +135,7 @@ drake_cc_library(
     name = "geometry_version",
     hdrs = ["geometry_version.h"],
     deps = [
+        ":geometry_roles",
         "//common:essential",
         "//common:identifier",
     ],
@@ -198,6 +199,7 @@ drake_cc_library(
     ],
     deps = [
         ":geometry_state",
+        ":geometry_version",
         ":scene_graph_inspector",
         "//common:essential",
         "//geometry/query_results:contact_surface",

@@ -67,7 +67,9 @@ using FrameIdSet = std::unordered_set<FrameId>;
 template <typename T>
 class GeometryState {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryState)
+  GeometryState& operator=(const GeometryState<T>&) = default;
+  GeometryState(GeometryState<T>&&) = default;
+  GeometryState<T>& operator=(GeometryState<T>&&) = default;
 
   /** An object that represents the range of FrameId values in the state. It
    is used in range-based for loops to iterate through registered frames.  */
@@ -89,6 +91,24 @@ class GeometryState {
     GeometryState<T> temp{other};
     return *this = temp;
   }
+
+  GeometryState(const GeometryState<T>& source)
+      : self_source_(source.self_source_),
+        source_frame_id_map_(source.source_frame_id_map_),
+        source_root_frame_map_(source.source_root_frame_map_),
+        source_names_(source.source_names_),
+        source_anchored_geometry_map_(source.source_anchored_geometry_map_),
+        frames_(source.frames_),
+        geometries_(source.geometries_),
+        frame_index_to_id_map_(source.frame_index_to_id_map_),
+        X_PF_(source.X_PF_),
+        X_WGs_(source.X_WGs_),
+        X_WF_(source.X_WF_),
+        geometry_engine_(source.geometry_engine_),
+        render_engines_(source.render_engines_),
+        geometry_version_(source.geometry_version_.parent_data_,
+                          source.geometry_version_.self_data_,
+                          source.geometry_version_.version_id_) {}
 
   /** @name        Scene-graph wide introspection  */
   //@{
@@ -376,11 +396,6 @@ class GeometryState {
                             d) the context has already been allocated.  */
   int RemoveFromRenderer(const std::string& renderer_name, SourceId source_id,
                          GeometryId geometry_id);
-
-  /** Increments the unique id number of the geometry state when the geometry
-   state is cloned by the Clone() method in GeometryStateValue.
-   Internal use only. */
-  void increment_state_id() { geometry_version_.increment_state_id(); }
   //@}
 
   //----------------------------------------------------------------------------
@@ -577,7 +592,9 @@ class GeometryState {
         frame_index_to_id_map_(source.frame_index_to_id_map_),
         geometry_engine_(std::move(source.geometry_engine_->ToAutoDiffXd())),
         render_engines_(source.render_engines_),
-        geometry_version_(source.geometry_version_) {
+        geometry_version_(source.geometry_version_.parent_data_,
+                          source.geometry_version_.self_data_,
+                          source.geometry_version_.version_id_) {
     auto convert_pose_vector = [](const std::vector<math::RigidTransform<U>>& s,
                                   std::vector<math::RigidTransform<T>>* d) {
       std::vector<math::RigidTransform<T>>& dest = *d;

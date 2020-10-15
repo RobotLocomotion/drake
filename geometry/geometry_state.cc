@@ -115,8 +115,7 @@ std::string get_missing_id_message<GeometryId>(const GeometryId& key) {
 template <typename T>
 GeometryState<T>::GeometryState()
     : self_source_(SourceId::get_new_id()),
-      geometry_engine_(make_unique<internal::ProximityEngine<T>>()),
-      geometry_version_(GeometryVersion::GeometryVersionId::get_new_id()) {
+      geometry_engine_(make_unique<internal::ProximityEngine<T>>()) {
   source_names_[self_source_] = "SceneGraphInternal";
 
   const FrameId world = InternalFrame::world_frame_id();
