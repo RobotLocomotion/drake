@@ -67,7 +67,7 @@ using FrameIdSet = std::unordered_set<FrameId>;
 template <typename T>
 class GeometryState {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryState)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryState);
 
   /** An object that represents the range of FrameId values in the state. It
    is used in range-based for loops to iterate through registered frames.  */
@@ -376,11 +376,6 @@ class GeometryState {
                             d) the context has already been allocated.  */
   int RemoveFromRenderer(const std::string& renderer_name, SourceId source_id,
                          GeometryId geometry_id);
-
-  /** Increments the unique id number of the geometry state when the geometry
-   state is cloned by the Clone() method in GeometryStateValue.
-   Internal use only. */
-  void increment_state_id() { geometry_version_.increment_state_id(); }
   //@}
 
   //----------------------------------------------------------------------------

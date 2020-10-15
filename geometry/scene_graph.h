@@ -216,7 +216,7 @@ class QueryObject;
 
  The geometry data associated with %SceneGraph is coarsely versioned. Consumers
  of the geometry can query for the version of the data and recognize if the
- data has changed since last examined.
+ data has been modified since last examined.
 
  The versioning is associated with geometry roles: proximity, illustration, and
  perception; each role has its own, independent version value. Any operation
@@ -232,17 +232,17 @@ class QueryObject;
  // Modifies the illustration version.
  scene_graph.AssignRole(source_id, geometry_id, IllustrationProperties());
  // Modifies the perception version if there exists a renderer that accepts the
- geometry. scene_graph.AssignRole(source_id, geometry_id,
- PerceptionProperties());
+ geometry.
+ scene_graph.AssignRole(source_id, geometry_id, PerceptionProperties());
  // Modifies the illustration version.
  scene_graph.RemoveRole(source_id, geometry_id, Role::kIllustration);
  // Modifies proximity version and perception version if the geometry is
- registered with any renderer. scene_graph.RemoveGeometry(source_id,
- geometry_id);
+ registered with any renderer.
+ scene_graph.RemoveGeometry(source_id, geometry_id);
  @endcode
 
  Each copy of geometry data maintains its own set of version values.
- %SceneGraph's model has its own version, and that version is different from the
+ %SceneGraph's model has its own version, and that version is the same as the
  one in the allocated Context when SceneGraph allocates its context.
  Modifications to the geometry data contained in a Context advances *that*
  data's version, but the original model data's version does not advance,
@@ -255,15 +255,16 @@ class QueryObject;
 
  Current version values can be compared against previously examined values. If
  the version values match, then the geometry data is guaranteed to be the same.
- If they don't match, then something may different in the geometry data, but
-they are not guaranteed to be different. Two copies of the same context would
-report different version values.
+ If they don't match, that indicates that the two sets of data underwent
+ different revision processes. That, however, doesn't necessarily imply that the
+ two sets of data are distinct. In other words, the version value will report
+ a difference unless it can guarantee equivalence.
 
- It is possible that two different
- contexts have different versions and a downstream system can be evaluated with
- each context, alternatingly. If the system behavior depends on the geometry
- version, this will cause it to thrash whatever components depends on geometry
- version. The system should *clearly* document this fact.
+ It is possible that two different contexts have different versions and a
+ downstream system can be evaluated with each context, alternatingly. If the
+ system behavior depends on the geometry version, this will cause it to thrash
+ whatever components depends on geometry version. The system should *clearly*
+ document this fact.
  @cond
  // TODO(SeanCurtis-TRI): Future work which will require add'l documentation:
  //   - velocity kinematics.
