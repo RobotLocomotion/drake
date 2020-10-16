@@ -73,6 +73,11 @@ drake_cc_library(
         "detail_path_utils.h",
         "detail_tinyxml.h",
     ],
+    install_hdrs_exclude = [
+        # This header includes `ignition` directly, which we do not
+        # want to expose externally.
+        "detail_ignition.h",
+    ],
     deps = [
         ":package_map",
         "//common:essential",
