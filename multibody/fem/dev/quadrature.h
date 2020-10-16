@@ -60,7 +60,7 @@ class Quadrature {
  triangle has vertices located at (0,0), (1,0) and (0,1). The 3D unit
  tetrahedron has vertices located at (0,0,0), (1,0,0), (0,1,0) and (0,0,1).
  @tparam QuadratureOrder order of the quadrature rule. Must be 1, 2, or 3. The
- quadrature role will be exact for polynomials of degree less than or equal to
+ quadrature rule will be exact for polynomials of degree less than or equal to
  QuadratureOrder.
  @tparam NaturalDimension dimension of the unit simplex. Must be 2, or 3.
 

@@ -6,9 +6,9 @@ namespace fem {
 template <typename T, int NaturalDim>
 std::vector<VectorX<T>>
 LinearSimplexElement<T, NaturalDim>::CalcShapeFunctionsHelper() const {
-  std::vector<VectorX<T>> S(this->num_points());
+  std::vector<VectorX<T>> S(this->num_sample_locations());
   const auto& locations = this->locations();
-  for (int q = 0; q < this->num_points(); ++q) {
+  for (int q = 0; q < this->num_sample_locations(); ++q) {
     VectorX<T> Sq = VectorX<T>::Zero(num_nodes());
     // Sₐ = ξₐ₋₁ for a = 1, ..., num_nodes() - 1
     for (int a = 1; a < num_nodes(); ++a) {
@@ -28,7 +28,7 @@ std::vector<MatrixX<T>> LinearSimplexElement<
   dSdxi_q.template topRows<1>() = -1.0 * VectorX<T>::Ones(NaturalDim);
   dSdxi_q.template bottomRows<NaturalDim>() =
       MatrixX<T>::Identity(NaturalDim, NaturalDim);
-  std::vector<MatrixX<T>> dSdxi(this->num_points(), dSdxi_q);
+  std::vector<MatrixX<T>> dSdxi(this->num_sample_locations(), dSdxi_q);
   return dSdxi;
 }
 

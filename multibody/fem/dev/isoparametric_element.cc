@@ -13,9 +13,9 @@ std::vector<MatrixX<T>>
 IsoparametricElement<T, NaturalDim>::CalcJacobian(
     const Eigen::Ref<const MatrixX<T>>& xa) const {
   DRAKE_DEMAND(xa.cols() == num_nodes());
-  std::vector<MatrixX<T>> dxdxi(num_points());
+  std::vector<MatrixX<T>> dxdxi(num_sample_locations());
   const std::vector<MatrixX<T>>& dSdxi = CalcGradientInParentCoordinates();
-  for (int q = 0; q < num_points(); ++q) {
+  for (int q = 0; q < num_sample_locations(); ++q) {
     dxdxi[q] = xa * dSdxi[q];
   }
   return dxdxi;
@@ -37,9 +37,9 @@ template <typename T, int NaturalDim>
 std::vector<MatrixX<T>>
 IsoparametricElement<T, NaturalDim>::CalcJacobianInverse(
     const std::vector<MatrixX<T>>& dxdxi) const {
-  DRAKE_DEMAND(static_cast<int>(dxdxi.size()) == num_points());
-  std::vector<MatrixX<T>> dxidx(num_points());
-  for (int q = 0; q < num_points(); ++q) {
+  DRAKE_DEMAND(static_cast<int>(dxdxi.size()) == num_sample_locations());
+  std::vector<MatrixX<T>> dxidx(num_sample_locations());
+  for (int q = 0; q < num_sample_locations(); ++q) {
     Eigen::HouseholderQR<MatrixX<T>> qr(dxdxi[q]);
     const int nsd = dxdxi[q].rows();
     DRAKE_DEMAND(dxdxi[q].cols() == NaturalDim);
@@ -60,8 +60,8 @@ std::vector<T> IsoparametricElement<T, NaturalDim>::InterpolateScalar(
     const Eigen::Ref<const VectorX<T>>& ua) const {
   DRAKE_DEMAND(ua.size() == num_nodes());
   const std::vector<VectorX<T>>& S = CalcShapeFunctions();
-  std::vector<T> interpolated_value(num_points());
-  for (int q = 0; q < num_points(); ++q) {
+  std::vector<T> interpolated_value(num_sample_locations());
+  for (int q = 0; q < num_sample_locations(); ++q) {
     interpolated_value[q] = ua.dot(S[q]);
   }
   return interpolated_value;
@@ -72,8 +72,8 @@ std::vector<VectorX<T>> IsoparametricElement<T, NaturalDim>::InterpolateVector(
     const Eigen::Ref<const MatrixX<T>>& ua) const {
   DRAKE_DEMAND(ua.cols() == num_nodes());
   const std::vector<VectorX<T>>& S = CalcShapeFunctions();
-  std::vector<VectorX<T>> interpolated_value(num_points());
-  for (int q = 0; q < num_points(); ++q) {
+  std::vector<VectorX<T>> interpolated_value(num_sample_locations());
+  for (int q = 0; q < num_sample_locations(); ++q) {
     interpolated_value[q] = ua * S[q];
   }
   return interpolated_value;

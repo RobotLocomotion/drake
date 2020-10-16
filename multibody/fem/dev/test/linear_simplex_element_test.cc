@@ -92,12 +92,9 @@ TEST_F(LinearSimplexElementTest, ShapeFunctionDerivative3D) {
   // So the derivatives with respect to x is [-1, 1, 0, 0],
   // the derivative with respect to y is [-1, 0, 1, 0],
   // and the derivative with respect to z is [-1, 0, 0, 1].
-  VectorX<double> x_deriv(4);
-  x_deriv << -1, 1, 0, 0;
-  VectorX<double> y_deriv(4);
-  y_deriv << -1, 0, 1, 0;
-  VectorX<double> z_deriv(4);
-  z_deriv << -1, 0, 0, 1;
+  const VectorX<double> x_deriv = Vector4<double>(-1, 1, 0, 0);
+  const VectorX<double> y_deriv = Vector4<double>(-1, 0, 1, 0);
+  const VectorX<double> z_deriv = Vector4<double>(-1, 0, 0, 1);
   for (int q = 0; q < kNumQuads; ++q) {
     // There are four vertices in a tetrahedron.
     EXPECT_EQ(dSdxi[q].rows(), 4);

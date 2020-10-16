@@ -15,6 +15,8 @@ namespace fem {
  following way: the 0-th node is placed at the origin and the i-th node for 0 <
  i <= NaturalDim is placed at the point whose i-th coordinate is 1 and all other
  coordinates are 0. */
+// TODO(xuchenhan-tri) Also support segments. Need to add instantiations as
+// well as unit tests.
 template <typename T, int NaturalDim>
 class LinearSimplexElement : public IsoparametricElement<T, NaturalDim> {
  public:

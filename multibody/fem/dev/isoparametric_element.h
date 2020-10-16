@@ -49,7 +49,7 @@ class IsoparametricElement {
 
   /** The number of locations to evaluate various quantities in the
    element. */
-  int num_points() const { return locations_.size(); }
+  int num_sample_locations() const { return locations_.size(); }
 
   /** Returns a vector of locations ξ in the parent domain at which this class
   evaluates elemental quantities, as provided at construction. */
@@ -59,8 +59,8 @@ class IsoparametricElement {
       S(ξ) = [S₀(ξ); S₁(ξ); ... Sₐ(ξ); ... Sₙ₋₁(ξ)]
    at each ξ in the parent domain provided at construction. The a-th component
    of S(ξ) corresponds to the shape function Sₐ(ξ) for node a.
-   @returns S Vector of size equal to 'num_points()`. The q-th entry of
-   the output contains vector S(ξ), of size num_nodes(), evaluated at the
+   @returns S Vector of size equal to 'num_sample_locations()`. The q-th entry
+   of the output contains vector S(ξ), of size num_nodes(), evaluated at the
    q-th ξ in the parent domain provided at construction. */
   virtual const std::vector<VectorX<T>>& CalcShapeFunctions() const = 0;
 
@@ -68,8 +68,8 @@ class IsoparametricElement {
    at each ξ in the parent domain provided at construction.
    @returns dSdxi The gradient of the shape function with respect to the
    parent coordinates evaluated at each ξ in the parent domain provided at
-   construction. dSdxi is a vector of size `num_points()`. The q-th entry
-   contains dS/dξ evaluated at the q-th ξ in the parent domain provided at
+   construction. dSdxi is a vector of size `num_sample_locations()`. The q-th
+   entry contains dS/dξ evaluated at the q-th ξ in the parent domain provided at
    construction. */
   virtual const std::vector<MatrixX<T>>& CalcGradientInParentCoordinates()
       const = 0;
@@ -82,9 +82,9 @@ class IsoparametricElement {
    @param xa Spatial coordinates for each element node.
    @returns jacobian The Jacobian of the spatial coordinates with respect to
    parent coordinates evaluated at each ξ in the parent domain provided at
-   construction. 'jacobian' is represented by a vector of size `num_points()`.
-   The q-th entry contains the dx/dξ evaluated at the q-th ξ in the parent
-   domain provided at construction.
+   construction. 'jacobian' is represented by a vector of size
+   `num_sample_locations()`. The q-th entry contains the dx/dξ evaluated at the
+   q-th ξ in the parent domain provided at construction.
    @pre `xa` must have `num_nodes()` columns. */
   std::vector<MatrixX<T>> CalcJacobian(
       const Eigen::Ref<const MatrixX<T>>& xa) const;
@@ -105,11 +105,11 @@ class IsoparametricElement {
 
   /** Preferred signature for computing dξ/dx when the Jacobians are
    available so as to avoid recomputing the Jacobians.
-   @param jacobian A vector of size `num_points()` with the q-th entry
+   @param jacobian A vector of size `num_sample_locations()` with the q-th entry
    containing the element Jacobian evaluated at the q-th ξ
    in the parent domain provided at construction.
-   @pre `jacobian.size()` must be equal to `num_points()`. Each entry in
-  `jacobian` must have `NaturalDim` columns.
+   @pre `jacobian.size()` must be equal to `num_sample_locations()`. Each entry
+   in `jacobian` must have `NaturalDim` columns.
    @see CalcJacobian(). */
   std::vector<MatrixX<T>> CalcJacobianInverse(
       const std::vector<MatrixX<T>>& jacobian) const;
