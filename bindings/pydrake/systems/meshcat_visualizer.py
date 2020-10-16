@@ -610,37 +610,44 @@ class MeshcatContactVisualizer(LeafSystem):
 
             point_pair = contact_info.point_pair()
             key = (point_pair.id_A.get_value(), point_pair.id_B.get_value())
+            cvis = vis[str(key)]
             self._contacts.append(key)
             if key in to_delete:
                 to_delete.remove(key)
-            cvis = vis[str(key)]
+            else:
+                # New key, so create the geometry
+                cvis["cylinder"].set_object(meshcat.geometry.Cylinder(
+                    height=2.0, radius=self._radius),
+                    meshcat.geometry.MeshLambertMaterial(color=0x33cc33))
+                cvis["head"].set_object(meshcat.geometry.Cylinder(
+                    height=self._radius*2.0,
+                    radiusTop=0, radiusBottom=self._radius*2.0),
+                    meshcat.geometry.MeshLambertMaterial(color=0x00dd00))
+                cvis["tail"].set_object(meshcat.geometry.Cylinder(
+                    height=self._radius*2.0,
+                    radiusTop=self._radius*2.0, radiusBottom=0),
+                    meshcat.geometry.MeshLambertMaterial(color=0x00dd00))
+
             height = force_norm/self._contact_force_scale
-            # Note: The performance of sending a new object on every publish
-            # seems fine.  If we experience hardship here, we could imagine
-            # accomplishing the same with only a shear transformation.
-            cvis.set_object(meshcat.geometry.Cylinder(
-                height=height, radius=self._radius),
-                meshcat.geometry.MeshLambertMaterial(color=0x33cc33))
-            # This Contact frame has the force in [0, 1, 0].
-            X_ContactGeom = tf.translation_matrix([0, height/2.0, 0])
+            cvis["cylinder"].set_transform(tf.scale_matrix(
+                height, direction=[0, 1, 0]))
+            cvis["head"].set_transform(tf.translation_matrix(
+                [0, height + self._radius, 0.0]))
+            cvis["tail"].set_transform(tf.translation_matrix(
+                [0, -height - self._radius, 0.0]))
+
             # C is located at the contact point, but with the world frame
             # orientation.
-            if force_norm < 1e-12:
-                X_CContact = tf.identity_matrix()
+            if force_norm < 1e-6:
+                X_CGeom = tf.identity_matrix()
             else:
                 # Rotates [0,1,0] to contact_force/force_norm.
                 angle_axis = np.cross(np.array([0, 1, 0]),
                                       contact_info.contact_force()/force_norm)
-                X_CContact = tf.rotation_matrix(
+                X_CGeom = tf.rotation_matrix(
                     np.arcsin(np.linalg.norm(angle_axis)), angle_axis)
             X_WC = tf.translation_matrix(contact_info.contact_point())
-            cvis.set_transform(X_WC.dot(X_CContact).dot(X_ContactGeom))
-            cvis["head"].set_object(meshcat.geometry.Cylinder(
-                height=self._radius*2.0,
-                radiusTop=0, radiusBottom=self._radius*2.0),
-                meshcat.geometry.MeshLambertMaterial(color=0x00dd00))
-            cvis["head"].set_transform(tf.translation_matrix(
-                [0, height/2.0 + self._radius, 0.0]))
+            cvis.set_transform(X_WC.dot(X_CGeom))
 
         for key in to_delete:
             vis[str(key)].delete()
