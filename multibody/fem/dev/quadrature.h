@@ -55,20 +55,19 @@ class Quadrature {
 };
 
 /** Calculates the Gaussian quadrature rule for 2D and 3D unit simplices
-(triangles and tetrahedrons up to cubic order as described section 3 in [Hammer,
-1956] as well as section 9.10 of [Zienkiewics, 2005]. The 2D unit triangle has
-vertices located at (0,0), (1,0) and (0,1). The 3D unit tetrahedron has vertices
-located at (0,0,0), (1,0,0), (0,1,0) and (0,0,1).
+ (triangles and tetrahedrons up to cubic order as described section 3 in
+ [Hammer, 1956] as well as section 9.10 of [Zienkiewics, 2005]. The 2D unit
+ triangle has vertices located at (0,0), (1,0) and (0,1). The 3D unit
+ tetrahedron has vertices located at (0,0,0), (1,0,0), (0,1,0) and (0,0,1).
  @tparam QuadratureOrder order of the quadrature rule. Must be 1, 2, or 3. The
-quadrature role will be exact for polynomials of degree less than or equal to
-QuadratureOrder.
+ quadrature role will be exact for polynomials of degree less than or equal to
+ QuadratureOrder.
  @tparam NaturalDimension dimension of the unit simplex. Must be 2, or 3.
 
-[Hammer, 1956] P.C. Hammer, O.P. Marlowe, and A.H. Stroud. Numerical integration
-over simplexes and cones. Math. Tables Aids Comp. 10, 130-7, 1956.
-[Zienkiewicz, 2005] Zienkiewicz, Olek C., Robert L. Taylor, and Jian Z. Zhu. The
-finite element method: its basis and fundamentals. Elsevier, 2005.
- */
+ [Hammer, 1956] P.C. Hammer, O.P. Marlowe, and A.H. Stroud. Numerical
+ integration over simplexes and cones. Math. Tables Aids Comp. 10, 130-7, 1956.
+ [Zienkiewicz, 2005] Zienkiewicz, Olek C., Robert L. Taylor, and Jian Z. Zhu.
+ The finite element method: its basis and fundamentals. Elsevier, 2005. */
 template <typename T, int QuadratureOrder, int NaturalDimension>
 class SimplexGaussianQuadrature : public Quadrature<T, NaturalDimension> {
  public:

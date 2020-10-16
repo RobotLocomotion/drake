@@ -6,14 +6,39 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
-load(
-    "@drake//tools/vector_gen:vector_gen.bzl",
-    "drake_cc_vector_gen_library",
-)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(
     default_visibility = ["//visibility:public"],
+)
+
+drake_cc_library(
+    name = "isoparametric_element",
+    srcs = [
+        "isoparametric_element.cc",
+    ],
+    hdrs = [
+        "isoparametric_element.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "linear_simplex_element",
+    srcs = [
+        "linear_simplex_element.cc",
+    ],
+    hdrs = [
+        "linear_simplex_element.h",
+    ],
+    deps = [
+        ":isoparametric_element",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
 )
 
 drake_cc_library(
@@ -24,6 +49,22 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:nice_type_name",
+    ],
+)
+
+drake_cc_googletest(
+    name = "isoparametric_element_test",
+    deps = [
+        ":isoparametric_element",
+        ":linear_simplex_element",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "linear_simplex_element_test",
+    deps = [
+        ":linear_simplex_element",
     ],
 )
 
