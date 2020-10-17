@@ -24,6 +24,8 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/never_destroyed.h"
+
 // Comment this out to use the heap instead of the pool.
 #define DRAKE_AUTODIFF_USE_POOL
 
@@ -44,12 +46,14 @@ class Pool {
   }
 
   ~Pool() {
+#ifdef NOTDEF
     while (!pool_.empty()) {
       double* p = pool_.back();
       DRAKE_DEMAND(p[0] == kMagic);
       delete[] p;
       pool_.pop_back();
     }
+#endif
   }
 
   // Note that the caller does not get a pointer to the beginning of the
@@ -74,6 +78,7 @@ class Pool {
     if (p_offset == nullptr) return;
     double* p = p_offset - kOffset;
     DRAKE_DEMAND(p[0] == kMagic);
+    DRAKE_DEMAND(!PoolContains(p));
     pool_.push_back(p);
     if (size() > max_size())  // Statistics; not needed for operation.
       max_size_ = size();
@@ -84,6 +89,10 @@ class Pool {
   int max_size() const { return max_size_; }
 
  private:
+  bool PoolContains(double* p) const {
+    return std::find(pool_.begin(), pool_.end(), p) != pool_.end();
+  }
+
   const int dim_;
   int max_size_{0};
   std::vector<double*> pool_;
@@ -102,7 +111,7 @@ class PoolVectorXd {
   }
 
   ~PoolVectorXd() {
-    my_delete(data_);
+    my_delete(&data_);
   }
 
   // Copy constructor.
@@ -127,7 +136,7 @@ class PoolVectorXd {
 
   // Copy assignment from raw data.
   PoolVectorXd& SetFromData(const double* data, int64_t dsize) {
-    DRAKE_DEMAND(data == nullptr || data != data_);
+    DRAKE_DEMAND(data == nullptr || data != data_ || dsize == size_);
     resize(dsize);  // Does nothing if already the right size.
     std::copy(data, data + dsize, data_);
     return *this;
@@ -205,7 +214,7 @@ class PoolVectorXd {
 
   void resize(int64_t dsize) {
     if (size_ != dsize) {
-      my_delete(data_);
+      my_delete(&data_);
       data_ = my_new(dsize);
       size_ = dsize;
     }
@@ -342,32 +351,36 @@ class PoolVectorXd {
   }
 
   static int pool_max_size() {
-    return pool_.max_size();
+    return pool().max_size();
+  }
+
+  static Pool& pool() {
+    static drake::never_destroyed<Pool> the_pool(128, 10);
+    return the_pool.access();
   }
 
  private:
   static double* my_new(int64_t sz) {
 #ifdef DRAKE_AUTODIFF_USE_POOL
-    return pool_.alloc(sz);
+    return pool().alloc(sz);
 #else
     return new double[sz];
 #endif
   }
 
-  static void my_delete(double* data) {
+  static void my_delete(double** data) {
 #ifdef DRAKE_AUTODIFF_USE_POOL
-    pool_.free(data);
+    pool().free(*data);
 #else
-    delete[] data;
+    delete[] *data;
 #endif
+    *data = nullptr;
   }
 
   // This layout has to match Eigen's VectorXd in memory. (Enforced at compile
   // time via a static_assert above.)
   double* data_{};
   int64_t size_{0};
-
-  static Pool pool_;
 };
 
 }  // namespace internal
