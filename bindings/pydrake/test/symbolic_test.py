@@ -713,6 +713,12 @@ class TestSymbolicMonomial(unittest.TestCase):
         self.assertEqual(powers_out[y], 3)
         self.assertEqual(powers_out[z], 4)
 
+    def test_constructor_vars_exponents(self):
+        m = sym.Monomial([x, y], [1, 2])
+        powers_out = EqualToDict(m.get_powers())
+        self.assertEqual(powers_out[x], 1)
+        self.assertEqual(powers_out[y], 2)
+
     def test_comparison(self):
         # m1 = m2 = x²
         m1 = sym.Monomial(x, 2)
