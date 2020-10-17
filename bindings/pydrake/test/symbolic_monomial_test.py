@@ -3,6 +3,7 @@
 import unittest
 import numpy as np
 import pydrake.symbolic as sym
+from pydrake.common.containers import EqualToDict
 
 # Define global variables to make the tests less verbose.
 x = sym.Variable("x")
@@ -24,10 +25,16 @@ class TestSymbolicMonomial(unittest.TestCase):
     def test_constructor_map(self):
         powers_in = {x: 2, y: 3, z: 4}
         m = sym.Monomial(powers_in)
-        powers_out = m.get_powers()
+        powers_out = EqualToDict(m.get_powers())
         self.assertEqual(powers_out[x], 2)
         self.assertEqual(powers_out[y], 3)
         self.assertEqual(powers_out[z], 4)
+
+    def test_constructor_vars_exponents(self):
+        m = sym.Monomial([x, y], [1, 2])
+        powers_out = EqualToDict(m.get_powers())
+        self.assertEqual(powers_out[x], 1)
+        self.assertEqual(powers_out[y], 2)
 
     def test_comparison(self):
         # m1 = m2 = x²
@@ -53,7 +60,7 @@ class TestSymbolicMonomial(unittest.TestCase):
     def test_str(self):
         m1 = sym.Monomial(x, 2)
         self.assertEqual(str(m1), "x^2")
-        m2 = m1 * y
+        m2 = m1 * sym.Monomial(y)
         self.assertEqual(str(m2), "x^2 * y")
 
     def test_multiplication1(self):
@@ -65,8 +72,8 @@ class TestSymbolicMonomial(unittest.TestCase):
 
     def test_multiplication2(self):
         m1 = sym.Monomial(x, 2)
-        m2 = m1 * y
-        m3 = y * m1
+        m2 = m1 * sym.Monomial(y)
+        m3 = sym.Monomial(y) * m1
         self.assertEqual(m2.degree(x), 2)
         self.assertEqual(m2.degree(y), 1)
         self.assertEqual(m2, m3)
@@ -79,18 +86,18 @@ class TestSymbolicMonomial(unittest.TestCase):
 
     def test_multiplication_assignment2(self):
         m = sym.Monomial(x, 2)
-        m *= y
+        m *= sym.Monomial(y)
         self.assertEqual(m.degree(x), 2)
         self.assertEqual(m.degree(y), 1)
 
     def test_pow(self):
-        m1 = sym.Monomial(x, 2) * y  # m1 = x²y
+        m1 = sym.Monomial({x: 2, y: 1})  # m1 = x²y
         m2 = m1 ** 2                 # m2 = x⁴y²
         self.assertEqual(m2.degree(x), 4)
         self.assertEqual(m2.degree(y), 2)
 
     def test_pow_in_place(self):
-        m1 = sym.Monomial(x, 2) * y  # m1 = x²y
+        m1 = sym.Monomial({x: 2, y: 1})  # m1 = x²y
         m2 = m1.pow_in_place(2)      # m1 = m2 = x⁴y²
         self.assertEqual(m1.degree(x), 4)
         self.assertEqual(m1.degree(y), 2)
@@ -98,18 +105,18 @@ class TestSymbolicMonomial(unittest.TestCase):
         self.assertEqual(m2.degree(y), 2)
 
     def test_get_powers(self):
-        m = sym.Monomial(x, 2) * y  # m = x²y
-        powers = m.get_powers()
+        m = sym.Monomial({x: 2, y: 1})  # m = x²y
+        powers = EqualToDict(m.get_powers())
         self.assertEqual(powers[x], 2)
         self.assertEqual(powers[y], 1)
 
     def test_to_expression(self):
-        m = sym.Monomial(x, 3) * y  # m = x³y
+        m = sym.Monomial({x: 3, y: 1})  # m = x³y
         e = m.ToExpression()
         self.assertEqual(str(e), "(pow(x, 3) * y)")
 
     def test_get_variables(self):
-        m = sym.Monomial(x, 3) * y  # m = x³y
+        m = sym.Monomial({x: 3, y: 1})  # m = x³y
         vars = m.GetVariables()  # = [x, y]
         self.assertEqual(vars.size(), 2)
 
