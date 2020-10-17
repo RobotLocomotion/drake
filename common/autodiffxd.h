@@ -46,20 +46,18 @@ class Pool {
   }
 
   ~Pool() {
-#ifdef NOTDEF
     while (!pool_.empty()) {
       double* p = pool_.back();
-      DRAKE_DEMAND(p[0] == kMagic);
+      DRAKE_ASSERT(p[0] == kMagic);
       delete[] p;
       pool_.pop_back();
     }
-#endif
   }
 
   // Note that the caller does not get a pointer to the beginning of the
   // block, but rather some offset into the block.
   double* alloc(int64_t size) {
-    DRAKE_DEMAND(size <= dim() - kOffset);
+    DRAKE_ASSERT(size <= dim() - kOffset);
     if (size == 0) return nullptr;
     double* p;
     if (pool_.empty()) {
@@ -77,8 +75,8 @@ class Pool {
   void free(double* p_offset) {
     if (p_offset == nullptr) return;
     double* p = p_offset - kOffset;
-    DRAKE_DEMAND(p[0] == kMagic);
-    DRAKE_DEMAND(!PoolContains(p));
+    DRAKE_ASSERT(p[0] == kMagic);
+    DRAKE_ASSERT(!PoolContains(p));
     pool_.push_back(p);
     if (size() > max_size())  // Statistics; not needed for operation.
       max_size_ = size();
@@ -111,7 +109,7 @@ class PoolVectorXd {
   }
 
   ~PoolVectorXd() {
-    my_delete(&data_);
+    my_delete(data_);
   }
 
   // Copy constructor.
@@ -214,7 +212,7 @@ class PoolVectorXd {
 
   void resize(int64_t dsize) {
     if (size_ != dsize) {
-      my_delete(&data_);
+      my_delete(data_);
       data_ = my_new(dsize);
       size_ = dsize;
     }
@@ -240,9 +238,9 @@ class PoolVectorXd {
   }
 
   PoolVectorXd& operator/=(const double& d) {
-    // TODO(sherm1) Use reciprocal?
+    const double ood = 1. / d;
     for (int64_t i = 0; i < size_; ++i)
-      data_[i] /= d;
+      data_[i] *= ood;
     return *this;
   }
 
@@ -368,13 +366,12 @@ class PoolVectorXd {
 #endif
   }
 
-  static void my_delete(double** data) {
+  static void my_delete(double* data) {
 #ifdef DRAKE_AUTODIFF_USE_POOL
-    pool().free(*data);
+    pool().free(data);
 #else
-    delete[] *data;
+    delete[] data;
 #endif
-    *data = nullptr;
   }
 
   // This layout has to match Eigen's VectorXd in memory. (Enforced at compile
