@@ -64,26 +64,15 @@ Multibody Dynamics
 
 New features
 
-* [plant] Code and test for spatial momentum of a plant or subset of bodies (`#13916`_)
-* Rewrite GlobalInverseKinematics using MultibodyPlant public API. (`#13921`_)
-* [plant] Introduce ContactSolver and MultibodyPlant::set_contact_solver() (`#13958`_)
-* [plant] Refactor TamsiContactResults --> ContactSolverResults (`#14069`_)
+* [plant] Add new methods to MultibodyPlant to calculate the spatial momentum of a subset of model instances. (`#13916`_)
+* [plant] Rewrite GlobalInverseKinematics using MultibodyPlant public API. (`#13921`_)
 * [plant] Add parameters for FixedOffsetFrame (`#14137`_)
 
-* [dev] Add quadrature class for FEM (`#14202`_)
+* [rendering] Add normal computation for parsed/generated meshes (`#14035`_)
 
-* [geometry] Add normal computation for parsed/generated meshes (`#14035`_)
-* [geometry] Add Obb (Oriented Bounding Box) (`#13808`_)
-* [geometry] Make BoundingVolumeHierarchy uses Obb (Oriented Bounding Box) (`#13978`_)
-* [geometry] Remove the non-BoundingVolumeHierarchy interface for rigid-soft mesh intersection (`#14110`_)
-* [geometry] Add hydroelastic support for Convex shapes (`#14178`_)
-* [geometry] Add volume mesh testing utilities to :proximity_utilities (`#14209`_)
+* [geometry] New hydroelastic contact model in progress (`#14178`_, `#14110`_, `#13978`_, `#13808`_)
 
-* [pydrake] Add pydrake bindings for model directives (`#14144`_)
-* [pydrake] Add python binding for static equlibrium problem (`#14140`_)
-
-* [model directives] Move model directives mechanism out of dev (`#14038`_)
-* [model directives] This commit applies all of the post-dev changes to model directives: (`#14038`_)
+* [model directives] Add model directives mechanism. (`#14038`_, `#14038`_, `#14144`_, `#14145`_)
 
 Fixes
 
@@ -91,19 +80,8 @@ Fixes
 * [plant] Improve inlining for RotationalInertia::ReExpress (`#14088`_)
 * [plant] Change UnitInertia::ReExpress to use frame A instead of frame F (`#14112`_)
 * [plant] Don't warn when re-discovering the same package.xml (`#14089`_)
-* [plant] Merge all multibody/math targets into :spatial_algebra (`#14113`_)
-* [plant] Use spatial_algebra.h as the sole header for the  package (`#14117`_)
+* [plant] Merge all multibody/math targets into a single package :spatial_algebra, with header spatial_algebra.h (`#14113`_,`#14117`_)
 * [plant] Improve error message for LinearBushingRollPitchYaw gimbal-lock singularity (`#14126`_)
-* [plant] Fix unit_quaternion_constraint_test failure on CI (`#14182`_)
-
-* [pydrake] Bind some missing MultibodyPlant-related items (`#14192`_)
-* [pydrake] Bind some missing MultibodyTree-related items (`#14195`_)
-
-* [model directives] Cleanups of issues revealed in integrating model directives downstream (`#14145`_)
-
-
-REMOVE THE FOLLOWING:
-* TBD Add utility function that uses AutoDiff and vector differentiation in a non-world frame.  Resolves issue #13562 (`#13593`_)
 
 
 Tutorials and examples
@@ -176,6 +154,10 @@ Newly bound
 * pydrake.multibody.tree.UnitInertia (many methods) (`#14193`_)
 * pydrake.solvers.mathematicalprogram.MathematicalProgram.AddLorentzConeConstraint (`#14119`_)
 * pydrake.solvers.mathematicalprogram.MathematicalProgram.AddRotatedLorentzConeConstraint (`#14120`_)
+
+* TBD [pydrake] Add python binding for static equlibrium problem (`#14140`_)
+* TBD [pydrake] Bind some missing MultibodyPlant-related items (`#14192`_)
+* TBD [pydrake] Bind some missing MultibodyTree-related items (`#14195`_)
 
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
