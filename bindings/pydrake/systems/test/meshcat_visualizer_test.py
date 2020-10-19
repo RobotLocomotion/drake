@@ -231,7 +231,7 @@ class TestMeshcat(unittest.TestCase):
         plant.WeldFrames(
             A=plant.world_frame(),
             B=plant.GetFrameByName("link", table_model),
-            X_AB=RigidTransform(RotationMatrix.MakeXRotation(0.1)))
+            X_AB=RigidTransform(RotationMatrix.MakeXRotation(0.2)))
 
         plant.Finalize()
 
@@ -284,7 +284,7 @@ class TestMeshcat(unittest.TestCase):
             contact_input_port.get_index()).get_value()
 
         self.assertGreater(contact_results.num_point_pair_contacts(), 0)
-        self.assertEqual(len(contact_viz._contacts), 4)
+        self.assertEqual(len(contact_viz._published_contacts), 4)
 
     def test_texture_override(self):
         """Draws a textured box to test the texture override pathway."""
