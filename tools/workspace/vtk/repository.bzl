@@ -441,6 +441,7 @@ licenses([
         hdrs = [
             "vtkAbstractPolyDataReader.h",
             "vtkIOCoreModule.h",
+            "vtkWriter.h",
         ],
         deps = [
             ":vtkCommonCore",
@@ -519,6 +520,8 @@ licenses([
         hdrs = [
             "vtkIOGeometryModule.h",
             "vtkOBJReader.h",
+            "vtkOBJWriter.h",
+            "vtkSTLReader.h",
         ],
         deps = [
             ":vtkCommonCore",

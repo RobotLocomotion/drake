@@ -9,6 +9,28 @@ load("//tools/install:install_data.bzl", "install_data")
 
 package(default_visibility = ["//visibility:public"])
 
+# Convert the *.stl meshes to *.obj meshes, because many geometry and
+# visualization tools in Drake only support *.obj meshes.
+
+_STLS = glob(
+    ["models/**/*.stl"],
+    allow_empty = False,
+)
+
+_OBJS = [x[:-3] + "obj" for x in _STLS]
+
+[
+    genrule(
+        name = obj + "_genrule",
+        srcs = [stl],
+        outs = [obj],
+        cmd = "$(location //manipulation/util:stl2obj) --input $< --output $@",
+        tools = ["//manipulation/util:stl2obj"],
+        visibility = ["//visibility:private"],
+    )
+    for stl, obj in zip(_STLS, _OBJS)
+]
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -20,6 +42,8 @@ drake_cc_googletest(
     ],
 )
 
-install_data()
+install_data(
+    extra_prod_models = _OBJS,
+)
 
 add_lint_tests()
