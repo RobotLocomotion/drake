@@ -221,6 +221,8 @@ def _create(args, notes_dir, rst_filename, gh, drake):
         oldest_commit_exclusive=prior_sha,
         newest_commit_inclusive=prior_sha,
     )
+    # TODO(jwnimmer-tri) Strip out "This document is the template ..."
+    # boilerplate before writing out the file.
 
     # Write the notes skeleton to disk.
     with open(rst_filename, "w") as f:
