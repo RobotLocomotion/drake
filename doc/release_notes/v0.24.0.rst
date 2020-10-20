@@ -61,9 +61,6 @@ Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for geometry,multibody go here>
-* TBD [render] Refactor RenderEngineGl shader logic (`#14177`_)  # * Refactor RenderEngineGl shader logic - ShaderProgram is now an abstract class; it provides interfaces for shader program implementations to interact with the RenderEngine but mask many of the details. - Geometries are grouped by the shader they use so that we can reduce changes in the OpenGl context during rendering. - Each shader knows what properties of an instance are important and can extract them and provide them in a type-erased container to be associated with that instance. - Change the depth and label to be derived classes of ShaderProgram - Refactor the nested enum ImageType to RenderType and make it available to multiple uses (e.g., RenderEngine and OpenGlInstance) - Clean up - OpenGlContext::MakeCurrent() corrected to being a const method. - Make render_engine_gl_test better match render_engine_vtk_test.
-* TBD Add isoparametric element for FEM (`#14213`_)
-[geometry,multibody,tools] * TBD Tidy up build system nits (`#14221`_)  # Do not install internal headers that #include private libraries (such as FCL or ignition). Run build_components_refresh.
 
 New features
 
@@ -109,13 +106,12 @@ pydrake bindings
 ~~~~~~~~~~~~~~~~
 
 .. <relnotes for bindings go here>
-* TBD meshcat: tweak contact visualization (`#14218`_)  # don't call set_object unless a new contact pair appears in the contact results draw both contact forces (equal and opposite)
 
 New features
 
 * jupyter: Add joint sliders using publishing callback (`#14059`_)
 * meshcat: Add option to set contact cylinder radius (`#14131`_)
-* meshcat: Rewrite MeshcatContactVisualizer (`#14210`_)
+* meshcat: Rewrite MeshcatContactVisualizer (`#14210`_, `#14218`_)
 * multibody: Allow SpatialVector's to be pickled (`#14104`_)
 * solvers: Add vectorized version of EvalBinding (`#14064`_)
 
@@ -167,7 +163,6 @@ Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for attic,cmake,doc,setup,third_party,tools go here>
-* TBD workspace: Upgrade styleguide latest commit (`#14217`_)
 
 * Upgrade to Xcode 12 on Catalina (`#14142`_)
 
@@ -179,11 +174,13 @@ Build system and dependencies
 * Upgrade googlebenchmark to latest release (`#14154`_)
 * Upgrade ignition_math to latest release 6.6.0 (`#14148`_)
 * Upgrade rules_python to latest release 0.0.3 (`#14161`_)
-* Upgrade libsdformat to latest release 9.3.0 (`#14147`_)
+* Upgrade sdformat to latest release 9.3.0 (`#14147`_)
 * Upgrade spdlog to latest release 1.8.1 (`#14153`_)
+* Upgrade styleguide latest commit (`#14217`_)
 * Downgrade doxygen to 1.8.15 on macOS (`#14169`_)
 * Fix snopt external for Bazel 3.6 (`#14179`_)
 * Fix compilation errors vs Eigen 3.3.8 (`#14159`_)
+* Do not install certain private headers (`#14221`_)
 * Cleanup pkg-config path for ibex (`#14109`_)
 * Clarify which vector_gen macros are to be used outside of Drake (`#14092`_)
 
