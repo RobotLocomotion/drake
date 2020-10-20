@@ -434,6 +434,16 @@ GTEST_TEST(DiagramBuilderTest, SetPortNamesTest) {
   const auto source2_out =
       builder.ExportOutput(source2->get_output_port(0), "source2");
 
+  EXPECT_TRUE(builder.HasExportedInputNamed("sink1"));
+  EXPECT_EQ(&builder.GetExportedInputPort("sink1"),
+            &sink1->get_input_port(0));
+  EXPECT_FALSE(builder.HasExportedInputNamed("sink3"));
+
+  EXPECT_TRUE(builder.HasExportedOutputNamed("source1"));
+  EXPECT_EQ(&builder.GetExportedOutputPort("source1"),
+            &source1->get_output_port(0));
+  EXPECT_FALSE(builder.HasExportedOutputNamed("source3"));
+
   auto diagram = builder.Build();
 
   EXPECT_EQ(diagram->get_input_port(sink1_in).get_name(), "sink1");

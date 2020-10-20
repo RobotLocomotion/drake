@@ -169,6 +169,12 @@ class DiagramBuilder {
       const InputPort<T>& input,
       std::variant<std::string, UseDefaultName> name = kUseDefaultName);
 
+  /// Return whether an input port has been exported with the given @p name.
+  bool HasExportedInputNamed(std::string name);
+
+  /// Return the exported input port named @p name.
+  const InputPort<T>& GetExportedInputPort(std::string name);
+
   /// Declares that the given @p output port of a constituent system is an
   /// output of the entire diagram.  @p name is an optional name for the output
   /// port; if it is unspecified, then a default name will be provided.
@@ -177,6 +183,12 @@ class DiagramBuilder {
   OutputPortIndex ExportOutput(
       const OutputPort<T>& output,
       std::variant<std::string, UseDefaultName> name = kUseDefaultName);
+
+  /// Return whether an output port has been exported with the given @p name.
+  bool HasExportedOutputNamed(std::string name);
+
+  /// Return the exported output port named @p name.
+  const OutputPort<T>& GetExportedOutputPort(std::string name);
 
   /// Builds the Diagram that has been described by the calls to Connect,
   /// ExportInput, and ExportOutput.

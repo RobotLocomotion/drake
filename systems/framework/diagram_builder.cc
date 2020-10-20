@@ -119,6 +119,25 @@ InputPortIndex DiagramBuilder<T>::ExportInput(
 }
 
 template <typename T>
+bool DiagramBuilder<T>::HasExportedInputNamed(std::string name) {
+  return (std::find(input_port_names_.begin(), input_port_names_.end(), name)
+          != input_port_names_.end());
+}
+
+template <typename T>
+const InputPort<T>& DiagramBuilder<T>::GetExportedInputPort(std::string name) {
+  for (size_t i = 0; i < input_port_names_.size(); ++i) {
+    if (input_port_names_[i] == name) {
+      return input_port_ids_[i].first->get_input_port(
+          input_port_ids_[i].second);
+    }
+  }
+  throw std::logic_error(fmt::format(
+      "GetExportedInputPort(\"{}\"): No input port by that name was exported",
+      name));
+}
+
+template <typename T>
 OutputPortIndex DiagramBuilder<T>::ExportOutput(
     const OutputPort<T>& output,
     std::variant<std::string, UseDefaultName> name) {
@@ -137,6 +156,26 @@ OutputPortIndex DiagramBuilder<T>::ExportOutput(
   output_port_names_.emplace_back(std::move(port_name));
 
   return return_id;
+}
+
+template <typename T>
+bool DiagramBuilder<T>::HasExportedOutputNamed(std::string name) {
+  return (std::find(output_port_names_.begin(), output_port_names_.end(), name)
+          != output_port_names_.end());
+}
+
+template <typename T>
+const OutputPort<T>& DiagramBuilder<T>::GetExportedOutputPort(
+    std::string name) {
+  for (size_t i = 0; i < output_port_names_.size(); ++i) {
+    if (output_port_names_[i] == name) {
+      return output_port_ids_[i].first->get_output_port(
+          output_port_ids_[i].second);
+    }
+  }
+  throw std::logic_error(fmt::format(
+      "GetExportedOutputPort(\"{}\"): No output port by that name was exported",
+      name));
 }
 
 template <typename T>
