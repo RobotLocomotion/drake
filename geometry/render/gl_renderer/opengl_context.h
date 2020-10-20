@@ -27,7 +27,7 @@ class OpenGlContext {
 
   /* Makes this context current.
    @throw std::runtime_error if not successful.  */
-  void MakeCurrent();
+  void MakeCurrent() const;
 
   /* Displays the window at the given dimensions. Calling this redundantly (on
    an already visible window of the given size) has no effect.  */

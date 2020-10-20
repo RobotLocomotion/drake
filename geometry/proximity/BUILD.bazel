@@ -88,6 +88,11 @@ drake_cc_library(
     name = "collisions_exist_callback",
     srcs = ["collisions_exist_callback.cc"],
     hdrs = ["collisions_exist_callback.h"],
+    install_hdrs_exclude = [
+        # This header includes `fcl` directly, which we do not want to
+        # expose externally.
+        "collisions_exist_callback.h",
+    ],
     deps = [
         ":collision_filter_legacy",
         "//geometry:geometry_ids",
@@ -107,6 +112,11 @@ drake_cc_library(
 drake_cc_library(
     name = "distance_to_point_callback",
     hdrs = ["distance_to_point_callback.h"],
+    install_hdrs_exclude = [
+        # This header includes `fcl` directly, which we do not want to
+        # expose externally.
+        "distance_to_point_callback.h",
+    ],
     deps = [
         ":proximity_utilities",
         "//common:essential",
@@ -121,6 +131,11 @@ drake_cc_library(
     name = "distance_to_point_with_gradient",
     srcs = ["distance_to_point_with_gradient.cc"],
     hdrs = ["distance_to_point_with_gradient.h"],
+    install_hdrs_exclude = [
+        # This header includes `fcl` directly, which we do not want to
+        # expose externally.
+        "distance_to_point_with_gradient.h",
+    ],
     deps = [
         ":distance_to_point_callback",
         ":proximity_utilities",
@@ -134,6 +149,11 @@ drake_cc_library(
 drake_cc_library(
     name = "distance_to_shape_callback",
     hdrs = ["distance_to_shape_callback.h"],
+    install_hdrs_exclude = [
+        # This header includes `fcl` directly, which we do not want to
+        # expose externally.
+        "distance_to_shape_callback.h",
+    ],
     deps = [
         ":collision_filter_legacy",
         ":distance_to_point_callback",
@@ -146,6 +166,11 @@ drake_cc_library(
     name = "find_collision_candidates_callback",
     srcs = ["find_collision_candidates_callback.cc"],
     hdrs = ["find_collision_candidates_callback.h"],
+    install_hdrs_exclude = [
+        # This header includes `fcl` directly, which we do not want to
+        # expose externally.
+        "find_collision_candidates_callback.h",
+    ],
     deps = [
         ":collision_filter_legacy",
         ":proximity_utilities",
@@ -158,6 +183,11 @@ drake_cc_library(
 drake_cc_library(
     name = "hydroelastic_callback",
     hdrs = [
+        "hydroelastic_callback.h",
+    ],
+    install_hdrs_exclude = [
+        # This header includes `fcl` directly, which we do not want to
+        # expose externally.
         "hydroelastic_callback.h",
     ],
     deps = [
@@ -412,6 +442,11 @@ drake_cc_library(
     name = "penetration_as_point_pair_callback",
     srcs = ["penetration_as_point_pair_callback.cc"],
     hdrs = ["penetration_as_point_pair_callback.h"],
+    install_hdrs_exclude = [
+        # This header includes `fcl` directly, which we do not want to
+        # expose externally.
+        "penetration_as_point_pair_callback.h",
+    ],
     deps = [
         ":collision_filter_legacy",
         ":proximity_utilities",
@@ -439,6 +474,11 @@ drake_cc_library(
     name = "proximity_utilities",
     srcs = ["proximity_utilities.cc"],
     hdrs = ["proximity_utilities.h"],
+    install_hdrs_exclude = [
+        # This header includes `fcl` directly, which we do not want to
+        # expose externally.
+        "proximity_utilities.h",
+    ],
     deps = [
         ":sorted_triplet",
         ":volume_mesh",

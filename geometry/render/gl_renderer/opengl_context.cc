@@ -181,7 +181,7 @@ class OpenGlContext::Impl {
     XDestroyWindow(display(), window_);
   }
 
-  void MakeCurrent() {
+  void MakeCurrent() const {
     if (glXGetCurrentContext() != context_ &&
         !glXMakeCurrent(display(), window_, context_)) {
       throw std::runtime_error("Error making an OpenGL context current");
@@ -289,7 +289,7 @@ OpenGlContext::OpenGlContext(bool debug)
 
 OpenGlContext::~OpenGlContext() = default;
 
-void OpenGlContext::MakeCurrent() { impl_->MakeCurrent(); }
+void OpenGlContext::MakeCurrent() const { impl_->MakeCurrent(); }
 
 void OpenGlContext::DisplayWindow(const int width, const int height) {
   impl_->DisplayWindow(width, height);
