@@ -66,7 +66,7 @@ New features
 * [plant] Rewrite GlobalInverseKinematics using MultibodyPlant public API. (`#13921`_)
 * [plant] Add parameters for FixedOffsetFrame (`#14137`_)
 
-* [rendering] Add normal computation for parsed/generated meshes (`#14035`_)
+* [rendering] WIP Completing RenderEngineGl's implementation of RenderEngine API (`#14035`_)
 
 * [geometry] New hydroelastic contact model in progress (`#14178`_, `#14110`_, `#13978`_, `#13808`_)
 
