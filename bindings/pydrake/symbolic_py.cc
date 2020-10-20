@@ -500,6 +500,10 @@ PYBIND11_MODULE(symbolic, m) {
           doc.Monomial.ctor.doc_2args_var_exponent)
       .def(py::init<const map<Variable, int>&>(),
           doc.Monomial.ctor.doc_1args_powers)
+      .def(py::init<const Eigen::Ref<const VectorX<Variable>>&,
+               const Eigen::Ref<const Eigen::VectorXi>&>(),
+          py::arg("vars"), py::arg("exponents"),
+          doc.Monomial.ctor.doc_2args_vars_exponents)
       .def("degree", &Monomial::degree, doc.Monomial.degree.doc)
       .def("total_degree", &Monomial::total_degree,
           doc.Monomial.total_degree.doc)
