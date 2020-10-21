@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
@@ -17,9 +18,20 @@ namespace fem {
 template <typename T>
 class ConstitutiveModel {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConstitutiveModel);
+  /** @name     Does not allow copy, move, or assignment. */
+  /** @{ */
+  /* Copy constructor is made "protected" to facilitate Clone() and therefore it
+   is not publicly available. */
+  ConstitutiveModel(ConstitutiveModel&&) = delete;
+  ConstitutiveModel& operator=(ConstitutiveModel&&) = delete;
+  ConstitutiveModel& operator=(const ConstitutiveModel&) = delete;
+  /** @} */
 
   ConstitutiveModel() = default;
+
+  /** Creates an identical copy of the concrete ConstitutiveModel object.
+   */
+  std::unique_ptr<ConstitutiveModel<T>> Clone() const { return DoClone(); }
 
   virtual ~ConstitutiveModel() {}
 
@@ -36,7 +48,7 @@ class ConstitutiveModel {
    passed in matches the %ConstitutiveModel. */
 
   /** Calculates the energy density per unit reference volume, in unit J/m³,
-   * given the model cache. */
+   given the model cache. */
   std::vector<T> CalcElasticEnergyDensity(
       const DeformationGradientCache<T>& cache) const {
     std::vector<T> Psi(cache.num_quads());
@@ -70,7 +82,26 @@ class ConstitutiveModel {
     DoCalcFirstPiolaStress(cache, P);
   }
 
+  /** Creates a DeformationGradientCache that is compatible with this
+   %ConstitutiveModel. See ElasticityElement for more about the compatibility
+   requirement. */
+  std::unique_ptr<DeformationGradientCache<T>> MakeDeformationGradientCache(
+      ElementIndex element_index, int num_quads) const {
+    DRAKE_DEMAND(element_index.is_valid());
+    DRAKE_DEMAND(num_quads > 0);
+    return DoMakeDeformationGradientCache(element_index, num_quads);
+  }
+
  protected:
+  /* Copy constructor for the base ConstitutiveModel class to facilitate
+   `DoClone()` in derived classes. */
+  ConstitutiveModel(const ConstitutiveModel&) = default;
+
+  /* Creates an identical copy of the concrete ConstitutiveModel object.
+   Derived classes must implement this so that it performs the complete
+   deep copy of the object, including all base class members. */
+  virtual std::unique_ptr<ConstitutiveModel<T>> DoClone() const = 0;
+
   /* Calculates the energy density, in unit J/m³, given the model cache. */
   virtual void DoCalcElasticEnergyDensity(
       const DeformationGradientCache<T>& cache, std::vector<T>* Psi) const = 0;
@@ -78,6 +109,12 @@ class ConstitutiveModel {
   /* Calculates the First Piola stress, in unit Pa, given the model cache. */
   virtual void DoCalcFirstPiolaStress(const DeformationGradientCache<T>& cache,
                                       std::vector<Matrix3<T>>* P) const = 0;
+
+  /* Creates a DeformationGradientCache that is compatible with this
+   ConstitutiveModel. */
+  virtual std::unique_ptr<DeformationGradientCache<T>>
+  DoMakeDeformationGradientCache(ElementIndex element_index,
+                                 int num_quads) const = 0;
 };
 }  // namespace fem
 }  // namespace multibody

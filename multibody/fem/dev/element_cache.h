@@ -25,8 +25,8 @@ class ElementCache {
  public:
   /** @name     Does not allow copy, move, or assignment. */
   /** @{ */
-  /* Copy constructor is used only to facilitate implementation of Clone()
-   in derived classes. */
+  /* Copy constructor is made "protected" to facilitate Clone() and therefore it
+   is not publicly available. */
   ElementCache(ElementCache&&) = delete;
   ElementCache& operator=(ElementCache&&) = delete;
   ElementCache& operator=(const ElementCache&) = delete;

@@ -39,6 +39,14 @@ void LinearElasticityModel<T>::DoCalcFirstPiolaStress(
 }
 
 template <typename T>
+std::unique_ptr<DeformationGradientCache<T>>
+LinearElasticityModel<T>::DoMakeDeformationGradientCache(
+    ElementIndex element_index, int num_quads) const {
+  return std::make_unique<LinearElasticityModelCache<T>>(element_index,
+                                                         num_quads);
+}
+
+template <typename T>
 void LinearElasticityModel<T>::VerifyParameterValidity(
     const T& youngs_modulus, const T& poisson_ratio) const {
   if (youngs_modulus < 0.0) {

@@ -12,8 +12,8 @@
 namespace drake {
 namespace multibody {
 namespace fem {
-/** Cached quantities per element that are used in the element routine
- ElasticityElement. Implements the abstract interface ElementCache.
+/** Cached quantities per element that are used in ElasticityElement. Implements
+ the abstract interface ElementCache.
 
  See ElasticityElement for the corresponding FemElement for
  %ElasticityElementCache.
@@ -23,8 +23,8 @@ class ElasticityElementCache : public ElementCache<T> {
  public:
   /** @name     Does not allow copy, move, or assignment. */
   /** @{ */
-  /* Copy constructor is used only to facilitate implementation of Clone()
-   in derived classes. */
+  /* Copy constructor is made "protected" to facilitate Clone() and therefore it
+   is not publicly available. */
   ElasticityElementCache(ElasticityElementCache&&) = delete;
   ElasticityElementCache& operator=(ElasticityElementCache&&) = delete;
   ElasticityElementCache& operator=(const ElasticityElementCache&) = delete;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
@@ -19,7 +20,14 @@ continuum mechanics. Cambridge University Press, 2008. */
 template <typename T>
 class LinearElasticityModel final : public ConstitutiveModel<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearElasticityModel);
+  /** @name     Does not allow copy, move, or assignment. */
+  /** @{ */
+  /* Copy constructor is made "protected" to facilitate Clone() and therefore it
+   is not publicly available. */
+  LinearElasticityModel(LinearElasticityModel&&) = delete;
+  LinearElasticityModel& operator=(LinearElasticityModel&&) = delete;
+  LinearElasticityModel& operator=(const LinearElasticityModel&) = delete;
+  /** @} */
 
   /** Constructs a %LinearElasticityModel constitutive model with the prescribed
    Young's modulus and Poisson ratio.
@@ -41,6 +49,16 @@ class LinearElasticityModel final : public ConstitutiveModel<T> {
   T lame_first_parameter() const { return lambda_; }
 
  protected:
+  /* Copy constructor to facilitate the `DoClone()` method. */
+  LinearElasticityModel(const LinearElasticityModel&) = default;
+
+  /* Creates an identical copy of the LinearElasticityModel object. */
+  std::unique_ptr<ConstitutiveModel<T>> DoClone() const final {
+    // Can't use std::make_unique because the copy constructor is protected.
+    return std::unique_ptr<ConstitutiveModel<T>>(
+        new LinearElasticityModel<T>(*this));
+  }
+
   /* Calculates the energy density, in unit J/m³, given the model cache. */
   void DoCalcElasticEnergyDensity(const DeformationGradientCache<T>& cache,
                                   std::vector<T>* Psi) const final;
@@ -48,6 +66,11 @@ class LinearElasticityModel final : public ConstitutiveModel<T> {
   /* Calculates the First Piola stress, in unit Pa, given the model cache. */
   void DoCalcFirstPiolaStress(const DeformationGradientCache<T>& cache,
                               std::vector<Matrix3<T>>* P) const final;
+
+  /* Creates a LinearElasticityModelCache that is compatible with this
+   LinearElasticityModel. */
+  std::unique_ptr<DeformationGradientCache<T>> DoMakeDeformationGradientCache(
+      ElementIndex element_index, int num_quads) const final;
 
  private:
   /* Set the Lamé parameters from Young's modulus and Poisson ratio. It's

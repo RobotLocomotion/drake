@@ -6,11 +6,8 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/fem/dev/constitutive_model.h"
 #include "drake/multibody/fem/dev/fem_indexes.h"
 #include "drake/multibody/fem/dev/fem_state.h"
-#include "drake/multibody/fem/dev/isoparametric_element.h"
-#include "drake/multibody/fem/dev/quadrature.h"
 
 namespace drake {
 namespace multibody {
@@ -46,8 +43,15 @@ class FemElement {
   /** The dimension of the codomain of the PDE's solution u. */
   virtual int solution_dimension() const = 0;
 
+  /** Number of quadrature points at which element-wise quantities are
+   evaluated. */
+  virtual int num_quads() const = 0;
+
   /** Number of nodes associated with this element. */
   virtual int num_nodes() const = 0;
+
+  /** Creates an ElementCache that is compatible with this element. */
+  virtual std::unique_ptr<ElementCache<T>> MakeElementCache() const = 0;
 
   /** Calculates the element residual of this element evaluated at the input
    `state`. This method updates the cached quantities in the input `state` if

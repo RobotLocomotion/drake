@@ -1,6 +1,7 @@
 #include "drake/multibody/fem/dev/elasticity_element.h"
 
 #include "drake/common/default_scalars.h"
+#include "drake/multibody/fem/dev/elasticity_element_cache.h"
 #include "drake/multibody/fem/dev/linear_simplex_element.h"
 
 namespace drake {
@@ -13,7 +14,7 @@ ElasticityElement<T, IsoparametricElementType, QuadratureType>::
                       const T& density,
                       std::unique_ptr<ConstitutiveModel<T>> constitutive_model,
                       const Matrix3X<T>& reference_positions)
-    : FemElement<T>(element_index, node_indices),
+    : ElasticityElementBase<T>(element_index, node_indices),
       density_(density),
       constitutive_model_(std::move(constitutive_model)),
       dxidX_(num_quads()),
@@ -73,6 +74,17 @@ ElasticityElement<T, IsoparametricElementType, QuadratureType>::
   for (int q = 0; q < num_quads(); ++q) {
     dxidX_[q] = Eigen::Ref<const MatrixD3>(dxidX[q]);
   }
+}
+
+template <typename T, class IsoparametricElementType, class QuadratureType>
+std::unique_ptr<ElementCache<T>> ElasticityElement<
+    T, IsoparametricElementType, QuadratureType>::MakeElementCache() const {
+  std::unique_ptr<DeformationGradientCache<T>> deformation_gradient_cache =
+      constitutive_model_->MakeDeformationGradientCache(this->element_index(),
+                                                        this->num_quads());
+  return std::make_unique<ElasticityElementCache<T>>(
+      this->element_index(), this->num_quads(),
+      std::move(deformation_gradient_cache));
 }
 
 template <typename T, class IsoparametricElementType, class QuadratureType>
@@ -155,7 +167,7 @@ ElasticityElement<T, IsoparametricElementType, QuadratureType>::
           state.mutable_element_cache(this->element_index()));
   DeformationGradientCache<T>& deformation_gradient_cache =
       mutable_cache.mutable_deformation_gradient_cache();
-  // TODO(xuchenhan-tri): Enable cahing when caching is in place.
+  // TODO(xuchenhan-tri): Enable caching when caching is in place.
   std::vector<Matrix3<T>> F(num_quads());
   CalcDeformationGradient(state, &F);
   deformation_gradient_cache.UpdateCache(F);
@@ -178,8 +190,6 @@ void ElasticityElement<T, IsoparametricElementType, QuadratureType>::
     CalcFirstPiolaStress(const FemState<T>& state,
                          std::vector<Matrix3<T>>* P) const {
   P->resize(num_quads());
-  // TODO(xuchenhan-tri): Use the corresponding Eval method when cache is in
-  // place.
   const DeformationGradientCache<T>& deformation_gradient_cache =
       EvalDeformationGradientCache(state);
   constitutive_model_->CalcFirstPiolaStress(deformation_gradient_cache, P);

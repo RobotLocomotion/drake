@@ -1,0 +1,118 @@
+#include "drake/multibody/fem/dev/elasticity_model.h"
+
+#include <memory>
+
+#include <gtest/gtest.h>
+
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/geometry/proximity/make_box_mesh.h"
+#include "drake/math/autodiff_gradient.h"
+#include "drake/multibody/fem/dev/fem_state.h"
+#include "drake/multibody/fem/dev/linear_elasticity_model.h"
+#include "drake/multibody/fem/dev/linear_simplex_element.h"
+#include "drake/multibody/fem/dev/quadrature.h"
+
+namespace drake {
+namespace multibody {
+namespace fem {
+namespace {
+constexpr int kNaturalDim = 3;
+constexpr int kSpatialDim = 3;
+constexpr int kQuadratureOrder = 1;
+constexpr int kNumQuads = 1;
+constexpr int kNumVertices = 8;
+constexpr int kDof = kSpatialDim * kNumVertices;
+constexpr double kMassDensity(10);
+constexpr double kYoungsModulus(2);
+constexpr double kPoissonRatio(0.25);
+
+class ElasticityModelTest : public ::testing::Test {
+ protected:
+  using Scalar = AutoDiffXd;
+  using IsoparametricElementType = LinearSimplexElement<Scalar, kNaturalDim>;
+  using QuadratureType =
+      SimplexGaussianQuadrature<Scalar, kQuadratureOrder, kNaturalDim>;
+
+  void SetUp() override {
+    /* Make a unit cube and subdivide it into tetrahedra. */
+    const double length = 1;
+    geometry::Box box(length, length, length);
+    const geometry::VolumeMesh<Scalar> mesh =
+        geometry::internal::MakeBoxVolumeMesh<Scalar>(box, 1);
+    LinearElasticityModel<Scalar> linear_elasticity_model(kYoungsModulus,
+                                                          kPoissonRatio);
+    Scalar density(kMassDensity);
+    elasticity_model_.AddElasticityElementsFromTetMesh<IsoparametricElementType,
+                                                       QuadratureType>(
+        mesh, density, linear_elasticity_model);
+  }
+
+  /* Creates arbitrary node positions along with derivatives 1. */
+  VectorX<Scalar> MakePositions() {
+    Eigen::Matrix<double, kDof, 1> x;
+    x << 0.18, 0.63, 0.54, 0.13, 0.92, 0.17, 0.03, 0.86, 0.85, 0.25, 0.53, 0.67,
+        0.81, 0.36, 0.45, 0.31, 0.29, 0.71, 0.30, 0.68, 0.58, 0.52, 0.35, 0.76;
+    const Eigen::Matrix<double, kDof, Eigen::Dynamic> gradient =
+        MatrixX<double>::Identity(kDof, kDof);
+    const VectorX<Scalar> x_autodiff =
+        math::initializeAutoDiffGivenGradientMatrix(x, gradient);
+    return x_autodiff;
+  }
+
+  /* The ElasticityModel under test. */
+  ElasticityModel<Scalar> elasticity_model_;
+};
+
+TEST_F(ElasticityModelTest, Basic) {
+  EXPECT_EQ(elasticity_model_.num_nodes(), kNumVertices);
+  /* Each cube is split into 6 tetrahedra. */
+  EXPECT_EQ(elasticity_model_.num_elements(), 6);
+  EXPECT_EQ(elasticity_model_.solution_dimension(), 3);
+}
+
+TEST_F(ElasticityModelTest, MakeState) {
+  std::unique_ptr<FemState<Scalar>> state = elasticity_model_.MakeFemState();
+  ASSERT_TRUE(state != nullptr);
+  EXPECT_EQ(state->num_element_cache(), elasticity_model_.num_elements());
+  for (ElementIndex i(0); i < state->num_element_cache(); ++i) {
+    /* The element cache should be of type ElasticityElementCache. */
+    const auto* element_cache =
+        dynamic_cast<const ElasticityElementCache<Scalar>*>(
+            &state->element_cache(i));
+    ASSERT_TRUE(element_cache != nullptr);
+    /* The DeformationGradientCache should be of type
+     LinearElasticityModelCache. */
+    const auto* linear_elasticity_cache =
+        dynamic_cast<const LinearElasticityModelCache<Scalar>*>(
+            &element_cache->deformation_gradient_cache());
+    /* Verify that the cache is properly set up. */
+    ASSERT_TRUE(linear_elasticity_cache != nullptr);
+    EXPECT_EQ(linear_elasticity_cache->element_index(), i);
+    EXPECT_EQ(linear_elasticity_cache->num_quads(), kNumQuads);
+    EXPECT_EQ(linear_elasticity_cache->strain().size(), kNumQuads);
+    EXPECT_EQ(linear_elasticity_cache->trace_strain().size(), kNumQuads);
+    EXPECT_EQ(linear_elasticity_cache->deformation_gradient().size(),
+              kNumQuads);
+  }
+  EXPECT_EQ(state->num_generalized_positions(), kDof);
+  /* The default qdot should be zero. */
+  EXPECT_EQ(state->qdot(), VectorX<Scalar>::Zero(kDof));
+}
+
+TEST_F(ElasticityModelTest, ResidualIsEnergyDerivative) {
+  std::unique_ptr<FemState<Scalar>> state = elasticity_model_.MakeFemState();
+  /* Move to arbitrary positions. */
+  state->set_q(MakePositions());
+  Scalar energy = elasticity_model_.CalcElasticEnergy(*state);
+  VectorX<Scalar> residual(state->num_generalized_positions());
+  elasticity_model_.CalcResidual(*state, &residual);
+  /* TODO(xuchenhan-tri): Damping and inertia terms need to be added to this
+   test when they are in place. */
+  EXPECT_TRUE(CompareMatrices(energy.derivatives(), residual,
+                              std::numeric_limits<double>::epsilon()));
+}
+
+}  // namespace
+}  // namespace fem
+}  // namespace multibody
+}  // namespace drake
