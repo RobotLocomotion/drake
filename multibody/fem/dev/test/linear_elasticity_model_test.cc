@@ -5,7 +5,6 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff_gradient.h"
-#include "drake/math/jacobian.h"
 
 namespace drake {
 namespace multibody {
