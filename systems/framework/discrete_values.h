@@ -57,6 +57,7 @@ class DiscreteValues {
 
   /// Constructs a %DiscreteValues that owns the underlying @p data. Every entry
   /// must be non-null.
+  /// @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
   explicit DiscreteValues(std::vector<std::unique_ptr<BasicVector<T>>>&& data)
       : owned_data_(std::move(data)) {
     // Initialize the unowned pointers.
