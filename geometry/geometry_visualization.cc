@@ -281,7 +281,7 @@ void DispatchLoadMessage(const SceneGraph<double>& scene_graph,
                          lcm::DrakeLcmInterface* lcm, Role role) {
   lcmt_viewer_load_robot message =
       internal::GeometryVisualizationImpl::BuildLoadMessage(
-          *scene_graph.initial_state_, role);
+          scene_graph.model_, role);
   // Send a load message.
   Publish(lcm, "DRAKE_VIEWER_LOAD_ROBOT", message);
 }
