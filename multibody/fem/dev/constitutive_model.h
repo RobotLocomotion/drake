@@ -35,47 +35,49 @@ class ConstitutiveModel {
    that match the derived %ConstitutiveModel. Make sure the `cache` that is
    passed in matches the %ConstitutiveModel. */
 
-  /** Calculates the energy density, in unit J/m³, given the model cache. */
-  std::vector<T> CalcPsi(const DeformationGradientCache<T>& cache) const {
+  /** Calculates the energy density per unit reference volume, in unit J/m³,
+   * given the model cache. */
+  std::vector<T> CalcElasticEnergyDensity(
+      const DeformationGradientCache<T>& cache) const {
     std::vector<T> Psi(cache.num_quads());
-    CalcPsi(cache, &Psi);
+    CalcElasticEnergyDensity(cache, &Psi);
     return Psi;
   }
 
-  /** Alternative signature for CalcPsi that writes the result in the output
-   argument. */
-  void CalcPsi(const DeformationGradientCache<T>& cache,
-               std::vector<T>* Psi) const {
+  /** Alternative signature for CalcElasticEnergyDensity that writes the result
+   in the output argument. */
+  void CalcElasticEnergyDensity(const DeformationGradientCache<T>& cache,
+                                std::vector<T>* Psi) const {
     DRAKE_DEMAND(Psi != nullptr);
     DRAKE_DEMAND(static_cast<int>(Psi->size()) == cache.num_quads());
-    DoCalcPsi(cache, Psi);
+    DoCalcElasticEnergyDensity(cache, Psi);
   }
 
   /** Calculates the First Piola stress, in unit Pa, given the model cache. */
-  std::vector<Matrix3<T>> CalcP(
+  std::vector<Matrix3<T>> CalcFirstPiolaStress(
       const DeformationGradientCache<T>& cache) const {
     std::vector<Matrix3<T>> P(cache.num_quads());
-    CalcP(cache, &P);
+    CalcFirstPiolaStress(cache, &P);
     return P;
   }
 
-  /** Alternative signature for CalcP that writes the result in the output
-   argument. */
-  void CalcP(const DeformationGradientCache<T>& cache,
-             std::vector<Matrix3<T>>* P) const {
+  /** Alternative signature for CalcFirstPiolaStress that writes the result in
+   the output argument. */
+  void CalcFirstPiolaStress(const DeformationGradientCache<T>& cache,
+                            std::vector<Matrix3<T>>* P) const {
     DRAKE_DEMAND(P != nullptr);
     DRAKE_DEMAND(static_cast<int>(P->size()) == cache.num_quads());
-    DoCalcP(cache, P);
+    DoCalcFirstPiolaStress(cache, P);
   }
 
  protected:
   /* Calculates the energy density, in unit J/m³, given the model cache. */
-  virtual void DoCalcPsi(const DeformationGradientCache<T>& cache,
-                         std::vector<T>* Psi) const = 0;
+  virtual void DoCalcElasticEnergyDensity(
+      const DeformationGradientCache<T>& cache, std::vector<T>* Psi) const = 0;
 
   /* Calculates the First Piola stress, in unit Pa, given the model cache. */
-  virtual void DoCalcP(const DeformationGradientCache<T>& cache,
-                       std::vector<Matrix3<T>>* P) const = 0;
+  virtual void DoCalcFirstPiolaStress(const DeformationGradientCache<T>& cache,
+                                      std::vector<Matrix3<T>>* P) const = 0;
 };
 }  // namespace fem
 }  // namespace multibody

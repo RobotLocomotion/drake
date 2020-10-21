@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include "drake/common/eigen_types.h"
@@ -22,7 +23,20 @@ namespace fem {
 template <typename T>
 class DeformationGradientCache {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeformationGradientCache);
+  /** @name     Does not allow copy, move, or assignment. */
+  /** @{ */
+  /* Copy constructor is made "protected" to facilitate Clone() and therefore it
+   is not publicly available. */
+  DeformationGradientCache(DeformationGradientCache&&) = delete;
+  DeformationGradientCache& operator=(DeformationGradientCache&&) = delete;
+  DeformationGradientCache& operator=(const DeformationGradientCache&) = delete;
+  /** @} */
+
+  /** Creates an identical copy of the concrete DeformationGradientCache object.
+   */
+  std::unique_ptr<DeformationGradientCache<T>> Clone() const {
+    return DoClone();
+  }
 
   virtual ~DeformationGradientCache() = default;
 
@@ -31,7 +45,7 @@ class DeformationGradientCache {
    locations for the associated element.
    @pre The size of `F` must be the same as `num_quads()`. */
   void UpdateCache(const std::vector<Matrix3<T>>& F) {
-    DRAKE_DEMAND(static_cast<int>(F.size()) == num_quads_);
+    DRAKE_ASSERT(static_cast<int>(F.size()) == num_quads_);
     deformation_gradient_ = F;
     DoUpdateCache(F);
   }
@@ -62,9 +76,18 @@ class DeformationGradientCache {
       : element_index_(element_index),
         num_quads_(num_quads),
         deformation_gradient_(num_quads) {
-    DRAKE_DEMAND(element_index.is_valid());
-    DRAKE_DEMAND(num_quads > 0);
+    DRAKE_ASSERT(element_index.is_valid());
+    DRAKE_ASSERT(num_quads > 0);
   }
+
+  /* Copy constructor for the base DeformationGradientCache class to facilitate
+   `DoClone()` in derived classes. */
+  DeformationGradientCache(const DeformationGradientCache&) = default;
+
+  /* Creates an identical copy of the concrete DeformationGradientCache object.
+   Derived classes must implement this so that it performs the complete
+   deep copy of the object, including all base class members. */
+  virtual std::unique_ptr<DeformationGradientCache<T>> DoClone() const = 0;
 
   /* Updates the cached quantities with the given deformation gradients.
    @param F The up-to-date deformation gradients evaluated at the quadrature
