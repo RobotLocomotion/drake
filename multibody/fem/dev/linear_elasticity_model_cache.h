@@ -21,8 +21,8 @@ class LinearElasticityModelCache : public DeformationGradientCache<T> {
  public:
   /** @name     Does not allow copy, move, or assignment. */
   /** @{ */
-  /* Copy constructor is used only to facilitate implementation of Clone()
-   in derived classes. */
+  /* Copy constructor is made "protected" to facilitate Clone() and therefore it
+   is not publicly available. */
   LinearElasticityModelCache(LinearElasticityModelCache&&) = delete;
   LinearElasticityModelCache& operator=(LinearElasticityModelCache&&) = delete;
   LinearElasticityModelCache& operator=(const LinearElasticityModelCache&) =
@@ -33,13 +33,14 @@ class LinearElasticityModelCache : public DeformationGradientCache<T> {
    number of quadrature locations.
    @param element_index The index of the FemElement associated with this
    DeformationGradientCache.
-   @param num_quads The number of quadrature locations at which cached
-   quantities need to be evaluated.
-   @pre `num_quads` must be positive. */
-  LinearElasticityModelCache(ElementIndex element_index, int num_quads)
-      : DeformationGradientCache<T>(element_index, num_quads),
-        strain_(num_quads, Matrix3<T>::Zero()),
-        trace_strain_(num_quads, 0) {}
+   @param num_quadrature_points The number of quadrature locations at which
+   cached quantities need to be evaluated.
+   @pre `num_quadrature_points` must be positive. */
+  LinearElasticityModelCache(ElementIndex element_index,
+                             int num_quadrature_points)
+      : DeformationGradientCache<T>(element_index, num_quadrature_points),
+        strain_(num_quadrature_points, Matrix3<T>::Zero()),
+        trace_strain_(num_quadrature_points, 0) {}
 
   /** Returns the infinitesimal strains evaluated at the quadrature locations
    for the associated element. */
@@ -49,14 +50,14 @@ class LinearElasticityModelCache : public DeformationGradientCache<T> {
    quadrature locations for the associated element. */
   const std::vector<T>& trace_strain() const { return trace_strain_; }
 
- protected:
+ private:
   /* Copy constructor to facilitate the `DoClone()` method. */
   LinearElasticityModelCache(const LinearElasticityModelCache&) = default;
 
   /* Updates the cached quantities with the given deformation gradients.
    @param F The up-to-date deformation gradients evaluated at the quadrature
    locations for the associated element.
-   @pre The size of `F` must be the same as `num_quads()`. */
+   @pre The size of `F` must be the same as `num_quadrature_points()`. */
   void DoUpdateCache(const std::vector<Matrix3<T>>& F) final;
 
   /* Creates an identical copy of the LinearElasticityModelCache object. */
@@ -66,7 +67,6 @@ class LinearElasticityModelCache : public DeformationGradientCache<T> {
         new LinearElasticityModelCache<T>(*this));
   }
 
- private:
   // Infinitesimal strain = 0.5 * (F + Fᵀ) - I.
   std::vector<Matrix3<T>> strain_;
   // Trace of `strain_`.

@@ -16,7 +16,7 @@ void LinearElasticityModel<T>::DoCalcElasticEnergyDensity(
     const DeformationGradientCache<T>& cache, std::vector<T>* Psi) const {
   const LinearElasticityModelCache<T>& linear_cache =
       static_cast<const LinearElasticityModelCache<T>&>(cache);
-  for (int i = 0; i < linear_cache.num_quads(); ++i) {
+  for (int i = 0; i < linear_cache.num_quadrature_points(); ++i) {
     const auto& strain = linear_cache.strain()[i];
     const auto& trace_strain = linear_cache.trace_strain()[i];
     (*Psi)[i] = mu_ * strain.squaredNorm() +
@@ -30,12 +30,20 @@ void LinearElasticityModel<T>::DoCalcFirstPiolaStress(
     std::vector<Matrix3<T>>* P) const {
   const LinearElasticityModelCache<T>& linear_cache =
       static_cast<const LinearElasticityModelCache<T>&>(cache);
-  for (int i = 0; i < linear_cache.num_quads(); ++i) {
+  for (int i = 0; i < linear_cache.num_quadrature_points(); ++i) {
     const auto& strain = linear_cache.strain()[i];
     const auto& trace_strain = linear_cache.trace_strain()[i];
     (*P)[i] =
         2.0 * mu_ * strain + lambda_ * trace_strain * Matrix3<T>::Identity();
   }
+}
+
+template <typename T>
+std::unique_ptr<DeformationGradientCache<T>>
+LinearElasticityModel<T>::DoMakeDeformationGradientCache(
+    ElementIndex element_index, int num_quadrature_points) const {
+  return std::make_unique<LinearElasticityModelCache<T>>(element_index,
+                                                         num_quadrature_points);
 }
 
 template <typename T>
