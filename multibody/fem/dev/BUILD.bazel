@@ -13,6 +13,27 @@ package(
 )
 
 drake_cc_library(
+    name = "constitutive_model",
+    hdrs = [
+        "constitutive_model.h",
+    ],
+    deps = [
+        ":constitutive_model_cache",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "constitutive_model_cache",
+    hdrs = [
+        "constitutive_model_cache.h",
+    ],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "isoparametric_element",
     srcs = [
         "isoparametric_element.cc",
@@ -21,6 +42,21 @@ drake_cc_library(
         "isoparametric_element.h",
     ],
     deps = [
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "linear_elasticity",
+    srcs = [
+        "linear_elasticity.cc",
+    ],
+    hdrs = [
+        "linear_elasticity.h",
+    ],
+    deps = [
+        ":constitutive_model",
         "//common:default_scalars",
         "//common:essential",
     ],
@@ -49,6 +85,14 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:nice_type_name",
+    ],
+)
+
+drake_cc_googletest(
+    name = "linear_elasticity_test",
+    deps = [
+        ":linear_elasticity",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
