@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cstdint>
-
 #include "drake/common/drake_copyable.h"
 #include "drake/common/identifier.h"
 #include "drake/geometry/geometry_roles.h"
@@ -17,19 +15,19 @@ made available through SceneGraphInspector.
 
 The geometry data is partitioned by geometric role and have independent role
 version values. Some of SceneGraph's API (as variously documented) will cause
-one or more role versions to change. This class provides the API `SameVersionAs`
+one or more role versions to change. This class provides the API `IsSameAs`
 that takes another GeometryVersion as well as a Role to help detect whether the
 provided role of the geometries may have changed. For example:
 
  @code
  // Downstream system holds an instance of GeometryVersion `old_version` as a
- reference to compare against.
+ // reference to compare against.
  // Get the version under test from SceneGraphInspector.
  const GeometryVersion& test_version =
- scene_graph_inspector.GetGeometryVersion();
+     scene_graph_inspector.GetGeometryVersion();
  // Determine if two versions have the same proximity data.
- bool same_proximity = old_version.SameVersionAs(test_version,
- Role::kProximity);
+ bool same_proximity = old_version.IsSameAs(test_version,
+     Role::kProximity);
  @endcode
 */
 class GeometryVersion {
@@ -38,7 +36,7 @@ class GeometryVersion {
 
   /** Returns true if `this` GeometryVersion has the same `role`
    version as the `other` GeometryVersion. */
-  bool SameVersionAs(const GeometryVersion& other, Role role) const {
+  bool IsSameAs(const GeometryVersion& other, Role role) const {
     switch (role) {
       case Role::kUnassigned:
         throw std::logic_error(
@@ -72,19 +70,18 @@ class GeometryVersion {
         perception_version_id_(RoleVersionId::get_new_id()),
         illustration_version_id_(RoleVersionId::get_new_id()) {}
 
-  void increment_proximity() {
+  void modify_proximity() {
     proximity_version_id_ = RoleVersionId::get_new_id();
   }
 
-  void increment_perception() {
+  void modify_perception() {
     perception_version_id_ = RoleVersionId::get_new_id();
   }
 
-  void increment_illustration() {
+  void modify_illustration() {
     illustration_version_id_ = RoleVersionId::get_new_id();
   }
 
- private:
   RoleVersionId proximity_version_id_;
   RoleVersionId perception_version_id_;
   RoleVersionId illustration_version_id_;

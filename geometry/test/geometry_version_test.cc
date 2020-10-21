@@ -11,26 +11,26 @@ class GeometryVersionTest : public ::testing::Test {
   void SetUp() {}
   GeometryVersion version_;
 
-  void increment_proximity(GeometryVersion* v) { v->increment_proximity(); }
-  void increment_perception(GeometryVersion* v) { v->increment_perception(); }
+  void increment_proximity(GeometryVersion* v) { v->modify_proximity(); }
+  void increment_perception(GeometryVersion* v) { v->modify_perception(); }
   void increment_illustration(GeometryVersion* v) {
-    v->increment_illustration();
+      v->modify_illustration();
   }
 
   GeometryVersion CreateGeometryVersion() const { return GeometryVersion(); }
 
   void VerifySameRole(const GeometryVersion& v1, const GeometryVersion& v2,
                       Role role) const {
-    EXPECT_TRUE(v1.SameVersionAs(v2, role));
+    EXPECT_TRUE(v1.IsSameAs(v2, role));
     // Verify commutativity.
-    EXPECT_TRUE(v2.SameVersionAs(v1, role));
+    EXPECT_TRUE(v2.IsSameAs(v1, role));
   }
 
   void VerifyDistinctRole(const GeometryVersion& v1, const GeometryVersion& v2,
                           Role role) const {
-    EXPECT_FALSE(v1.SameVersionAs(v2, role));
+    EXPECT_FALSE(v1.IsSameAs(v2, role));
     // Verify commutativity.
-    EXPECT_FALSE(v2.SameVersionAs(v1, role));
+    EXPECT_FALSE(v2.IsSameAs(v1, role));
   }
 
   void VerifyIdenticalVersions(const GeometryVersion& v1,
@@ -79,7 +79,7 @@ TEST_F(GeometryVersionTest, Illustration) {
 TEST_F(GeometryVersionTest, Unassigned) {
   GeometryVersion old_version = version_;
   const auto& new_version = version_;
-  EXPECT_THROW(old_version.SameVersionAs(new_version, Role::kUnassigned),
+  EXPECT_THROW(old_version.IsSameAs(new_version, Role::kUnassigned),
                std::logic_error);
 }
 
