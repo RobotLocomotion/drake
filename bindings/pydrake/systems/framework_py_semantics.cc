@@ -743,15 +743,64 @@ void DefineFrameworkPySemantics(py::module m) {
             doc.State.get_mutable_abstract_state.doc);
 
     // - Constituents.
-    DefineTemplateClassWithDefault<ContinuousState<T>>(
-        m, "ContinuousState", GetPyParam<T>(), doc.ContinuousState.doc)
+    auto continuous_state = DefineTemplateClassWithDefault<ContinuousState<T>>(
+        m, "ContinuousState", GetPyParam<T>(), doc.ContinuousState.doc);
+    DefClone(&continuous_state);
+    continuous_state
+        .def(py::init<unique_ptr<VectorBase<T>>>(), py::arg("state"),
+            doc.ContinuousState.ctor.doc_1args_state)
+        .def(py::init<unique_ptr<VectorBase<T>>, int, int, int>(),
+            py::arg("state"), py::arg("num_q"), py::arg("num_v"),
+            py::arg("num_z"),
+            doc.ContinuousState.ctor.doc_4args_state_num_q_num_v_num_z)
         .def(py::init<>(), doc.ContinuousState.ctor.doc_0args)
         .def("size", &ContinuousState<T>::size, doc.ContinuousState.size.doc)
+        .def("num_q", &ContinuousState<T>::num_q, doc.ContinuousState.num_q.doc)
+        .def("num_v", &ContinuousState<T>::num_v, doc.ContinuousState.num_v.doc)
+        .def("num_z", &ContinuousState<T>::num_z, doc.ContinuousState.num_z.doc)
+        .def(
+            "__getitem__",
+            [](const ContinuousState<T>& self, int index) -> T {
+              return self[index];
+            },
+            doc.ContinuousState.operator_array.doc)
         .def("get_vector", &ContinuousState<T>::get_vector,
             py_rvp::reference_internal, doc.ContinuousState.get_vector.doc)
         .def("get_mutable_vector", &ContinuousState<T>::get_mutable_vector,
             py_rvp::reference_internal,
             doc.ContinuousState.get_mutable_vector.doc)
+        .def("get_generalized_position",
+            &ContinuousState<T>::get_generalized_position,
+            py_rvp::reference_internal,
+            doc.ContinuousState.get_generalized_position.doc)
+        .def("get_mutable_generalized_position",
+            &ContinuousState<T>::get_mutable_generalized_position,
+            py_rvp::reference_internal,
+            doc.ContinuousState.get_mutable_generalized_position.doc)
+        .def("get_generalized_velocity",
+            &ContinuousState<T>::get_generalized_velocity,
+            py_rvp::reference_internal,
+            doc.ContinuousState.get_generalized_velocity.doc)
+        .def("get_mutable_generalized_velocity",
+            &ContinuousState<T>::get_mutable_generalized_velocity,
+            py_rvp::reference_internal,
+            doc.ContinuousState.get_mutable_generalized_velocity.doc)
+        .def("get_misc_continuous_state",
+            &ContinuousState<T>::get_misc_continuous_state,
+            py_rvp::reference_internal,
+            doc.ContinuousState.get_misc_continuous_state.doc)
+        .def("get_mutable_misc_continuous_state",
+            &ContinuousState<T>::get_mutable_misc_continuous_state,
+            py_rvp::reference_internal,
+            doc.ContinuousState.get_mutable_misc_continuous_state.doc)
+        .def(
+            "SetFrom",
+            [](ContinuousState<T>* self, const ContinuousState<double>& other) {
+              self->SetFrom(other);
+            },
+            doc.ContinuousState.SetFrom.doc)
+        .def("SetFromVector", &ContinuousState<T>::SetFromVector,
+            py::arg("value"), doc.ContinuousState.SetFromVector.doc)
         .def("CopyToVector", &ContinuousState<T>::CopyToVector,
             doc.ContinuousState.CopyToVector.doc);
 
