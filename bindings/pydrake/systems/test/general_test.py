@@ -276,6 +276,47 @@ class TestGeneral(unittest.TestCase):
         is_diff_eq, period = system2.IsDifferenceEquationSystem()
         self.assertFalse(is_diff_eq)
 
+    def test_continuous_state_api(self):
+        self.assertEqual(ContinuousState().size(), 0)
+        self.assertEqual(ContinuousState(state=BasicVector(2)).size(), 2)
+        state = ContinuousState(state=BasicVector(np.arange(6)), num_q=3,
+                                num_v=2, num_z=1)
+        state_clone = state.Clone()
+        self.assertTrue(state_clone is not state)
+        self.assertEqual(state.size(), 6)
+        self.assertEqual(state.num_q(), 3)
+        self.assertEqual(state.num_v(), 2)
+        self.assertEqual(state.num_z(), 1)
+        self.assertEqual(state[1], 1.0)
+        state[1] = 11.
+        self.assertEqual(state[1], 11.)
+        self.assertEqual(state.get_vector().size(), 6)
+        self.assertEqual(state.get_mutable_vector().size(), 6)
+        self.assertEqual(state.get_generalized_position().size(), 3)
+        self.assertEqual(state.get_mutable_generalized_position().size(), 3)
+        self.assertEqual(state.get_generalized_velocity().size(), 2)
+        self.assertEqual(state.get_mutable_generalized_velocity().size(), 2)
+        self.assertEqual(state.get_misc_continuous_state().size(), 1)
+        self.assertEqual(state.get_mutable_misc_continuous_state().size(), 1)
+        state.SetFrom(ContinuousState(BasicVector(6), 3, 2, 1))
+        state.SetFromVector(value=3*np.arange(6))
+        self.assertEqual(len(state.CopyToVector()), 6)
+
+    def test_discrete_value_api(self):
+        self.assertEqual(DiscreteValues().num_groups(), 0)
+        discrete_values = DiscreteValues(data=[BasicVector(1), BasicVector(2)])
+        self.assertEqual(discrete_values.num_groups(), 2)
+        discrete_values = DiscreteValues(datum=BasicVector(np.arange(3)))
+        self.assertEqual(discrete_values.size(), 3)
+        discrete_values_clone = discrete_values.Clone()
+        self.assertTrue(discrete_values_clone is not discrete_values)
+        self.assertEqual(len(discrete_values.get_data()), 1)
+        self.assertEqual(discrete_values.get_vector(index=0).size(), 3)
+        self.assertEqual(discrete_values.get_mutable_vector(index=0).size(), 3)
+        discrete_values[1] = 5.
+        self.assertEqual(discrete_values[1], 5.)
+        discrete_values.SetFrom(DiscreteValues(BasicVector(3)))
+
     def test_instantiations(self):
         # Quick check of instantiations for given types.
         # N.B. These checks are ordered according to their binding definitions

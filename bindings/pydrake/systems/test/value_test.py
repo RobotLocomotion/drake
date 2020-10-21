@@ -34,6 +34,7 @@ class TestValue(unittest.TestCase):
                 expected_init = wrap([float(x) for x in range(n)])
                 expected_add = wrap([x + 1 for x in expected_init])
                 expected_set = wrap([x + 10 for x in expected_init])
+                expected_plus_eq = wrap([3*x for x in expected_set])
 
                 value_data = BasicVector(expected_init)
                 value = value_data.get_mutable_value()
@@ -50,15 +51,43 @@ class TestValue(unittest.TestCase):
                     np.allclose(value_data.get_mutable_value(), expected_add))
 
                 # Set value from `BasicVector`.
-                value_data.SetFromVector(expected_set)
+                value_data.SetFromVector(value=expected_set)
                 self.assertTrue(np.allclose(value, expected_set))
                 self.assertTrue(
                     np.allclose(value_data.get_value(), expected_set))
                 self.assertTrue(
                     np.allclose(value_data.get_mutable_value(), expected_set))
+
+                # Set value to zero.
+                old_value = value_data.CopyToVector()
+                value_data.SetZero()
+                if n > 0:
+                    self.assertFalse(np.allclose(old_value, np.zeros(n)))
+                self.assertTrue(np.allclose(value, np.zeros(n)))
+                self.assertTrue(
+                    np.allclose(value_data.get_value(), np.zeros(n)))
+                self.assertTrue(
+                    np.allclose(value_data.get_mutable_value(), np.zeros(n)))
+
+                # Set value from `BasicVector`.
+                value_data.set_value(expected_set)
+                self.assertTrue(np.allclose(value, expected_set))
+                self.assertTrue(
+                    np.allclose(value_data.get_value(), expected_set))
+                self.assertTrue(
+                    np.allclose(value_data.get_mutable_value(), expected_set))
+
                 # Ensure we can construct from size.
+                old_value_data = value_data
                 value_data = BasicVector(n)
                 self.assertEqual(value_data.size(), n)
+                value_data.SetFrom(value=old_value_data)
+                self.assertTrue(
+                    np.allclose(value_data.get_value(), expected_set))
+                new_value_data = value_data.PlusEqScaled(scale=2,
+                                                         rhs=old_value_data)
+                self.assertTrue(
+                    np.allclose(value_data.get_value(), expected_plus_eq))
                 # Ensure we can clone.
                 value_copies = [
                     value_data.Clone(),
@@ -71,9 +100,11 @@ class TestValue(unittest.TestCase):
 
     def test_basic_vector_set_get(self):
         value = BasicVector(np.arange(3., 5.))
-        self.assertEqual(value.GetAtIndex(1), 4.)
-        value.SetAtIndex(1, 5.)
-        self.assertEqual(value.GetAtIndex(1), 5.)
+        self.assertEqual(value.GetAtIndex(index=1), 4.)
+        value.SetAtIndex(index=1, value=5.)
+        self.assertEqual(value[1], 5.)
+        value[1] = 6.
+        self.assertEqual(value[1], 6.)
 
     def assert_basic_vector_equal(self, a, b):
         self.assertIs(type(a), type(b))
