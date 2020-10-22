@@ -22,6 +22,7 @@ Dynamical Systems
 ~~~~~~~~~~~~~~~~~
 
 .. <relnotes for systems go here>
+* TBD pydrake systems: Add missing bindings to ContinuousState, DiscreteValues, VectorBase, and BasicVector (`#14231`_)
 
 New features
 
@@ -59,6 +60,8 @@ Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for geometry,multibody go here>
+* TBD [render] Add texture coordinates for all RenderEngineGl shapes (`#14175`_)  # * Add texture coordinates for all RenderEngineGl shapes - Meshes: texture coordinates, like normals, are required for all objs. - In the future, relax this requirement so that it's only an error if a texture map is applied to an obj without texture coordinates. - Primitives - Texture coordinates are generated for all primitives. - MakeRevoluteShape now introduces a seam in vertex positions around the revolute axis. On each ring, the first and last vertex positions are identical. This allows for discontinuities in texture coordinates when going around that axis. - Testing is nominal - Almost impossible to create real tests without duplicating the code under the test. Instead, we have some token smoke tests and will rely on *obvious* visual artifacts to reveal if texture coordinates are broken. - Special note: - The texture coordinates on the cylinder are *different* than in VTK. The cylinder, essentially, gets spherical coordinates projected onto it. The vtkCylinderSource treats the cap faces like the vtkCubeSource treated the faces.
+[geometry,systems] * TBD [geometry] SceneGraph can store geometry data as State or Parameter (`#14189`_)  # While this provides the ability to choose whether the giant geometry data blob for SceneGraph is stored as Parameter or State, the default behavior remains State to maintain backwards compatibility. - SceneGraph's "model" is now an instance of GeometryState directly owned by the system. This had one implication *outside* of scene_graph.*; geometry_visualization.cc was directly accessing the model. - SetDefault{State|Parameters} have been overridden to copy the model into the context. - The GeometryStateValue (in scene_graph.cc) has received documentation to make its role clear for future readers. - Unit tests have been: - extended to test new funtionality - updated from expecting that "AllocateContext" copies the model (an invalid assumption based on quirks of previous implementation) to preferring CreateDefaultContext(). This affected a few other unit tests as well.
 
 New features
 
@@ -86,6 +89,8 @@ Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for examples,tutorials go here>
+[examples,manipulation,tools] * TBD Add stl2obj to deal with robot stl meshes (`#14219`_)  # Convert the pr2 example to use stl2obj.  Previously, we had both copies of the meshes in git.  Now, we keep only the upstream stl meshes in git and we create the obj meshes during the build. As a side-effect, we now create and install kinect_mount.obj, whereas previously it was only installed in *.stl form.
+* TBD examples: Fix the list of absent examples (`#14232`_)
 
 * manipulation_station: Add package.xml (`#14164`_)
 * manipulation_station: Remove noisy warnings about unsupported joint limits (`#14079`_)
@@ -104,6 +109,8 @@ pydrake bindings
 ~~~~~~~~~~~~~~~~
 
 .. <relnotes for bindings go here>
+* TBD Bind a constructor for symbolic::Monomial (`#14222`_)
+* TBD py geometry: Expose RenderEngine API and trampoline for inheritance (`#13835`_)  # Co-Authored-By: Duy-Nguyen Ta <duynguyen.ta@tri.global>
 
 New features
 
@@ -295,6 +302,7 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 
 .. <begin issue links>
 .. _#13808: https://github.com/RobotLocomotion/drake/pull/13808
+.. _#13835: https://github.com/RobotLocomotion/drake/pull/13835
 .. _#13916: https://github.com/RobotLocomotion/drake/pull/13916
 .. _#13921: https://github.com/RobotLocomotion/drake/pull/13921
 .. _#13978: https://github.com/RobotLocomotion/drake/pull/13978
@@ -367,12 +375,13 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#14166: https://github.com/RobotLocomotion/drake/pull/14166
 .. _#14169: https://github.com/RobotLocomotion/drake/pull/14169
 .. _#14171: https://github.com/RobotLocomotion/drake/pull/14171
+.. _#14175: https://github.com/RobotLocomotion/drake/pull/14175
 .. _#14176: https://github.com/RobotLocomotion/drake/pull/14176
-.. _#14177: https://github.com/RobotLocomotion/drake/pull/14177
 .. _#14178: https://github.com/RobotLocomotion/drake/pull/14178
 .. _#14179: https://github.com/RobotLocomotion/drake/pull/14179
 .. _#14185: https://github.com/RobotLocomotion/drake/pull/14185
 .. _#14188: https://github.com/RobotLocomotion/drake/pull/14188
+.. _#14189: https://github.com/RobotLocomotion/drake/pull/14189
 .. _#14190: https://github.com/RobotLocomotion/drake/pull/14190
 .. _#14192: https://github.com/RobotLocomotion/drake/pull/14192
 .. _#14193: https://github.com/RobotLocomotion/drake/pull/14193
@@ -381,12 +390,15 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#14201: https://github.com/RobotLocomotion/drake/pull/14201
 .. _#14210: https://github.com/RobotLocomotion/drake/pull/14210
 .. _#14211: https://github.com/RobotLocomotion/drake/pull/14211
-.. _#14213: https://github.com/RobotLocomotion/drake/pull/14213
 .. _#14217: https://github.com/RobotLocomotion/drake/pull/14217
 .. _#14218: https://github.com/RobotLocomotion/drake/pull/14218
+.. _#14219: https://github.com/RobotLocomotion/drake/pull/14219
 .. _#14221: https://github.com/RobotLocomotion/drake/pull/14221
+.. _#14222: https://github.com/RobotLocomotion/drake/pull/14222
+.. _#14231: https://github.com/RobotLocomotion/drake/pull/14231
+.. _#14232: https://github.com/RobotLocomotion/drake/pull/14232
 .. <end issue links>
 
 ..
   Current oldest_commit 6bd5f8c25cdcbb4049e57ec0f49f6e2c136d864a (exclusive).
-  Current newest_commit 7b7bf9e95a88f4b03aca4905f1335625228a60ce (inclusive).
+  Current newest_commit 9b7a97b302214002a320088761b4d76196503618 (inclusive).
