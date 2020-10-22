@@ -67,23 +67,21 @@ Multibody Dynamics
 
 New features
 
-* [plant] Add new methods to MultibodyPlant to calculate the spatial momentum of a subset of model instances. (`#13916`_)
-* [plant] Rewrite GlobalInverseKinematics using MultibodyPlant public API. (`#13921`_)
-* [plant] Add parameters for FixedOffsetFrame (`#14137`_)
-
-* [geometry] SceneGraph can store geometry data as State or Parameter (`#14189`_)
-* [geometry] New hydroelastic contact model in progress (`#14178`_, `#14110`_, `#13978`_, `#13808`_)
-
-* [model directives] Add model directives mechanism. (`#14038`_, `#14038`_, `#14144`_, `#14145`_)
+* MultibodyPlant calculates the spatial momentum of a subset of model instances (`#13916`_)
+* Rewrite GlobalInverseKinematics using MultibodyPlant public API (`#13921`_)
+* Add parameters for FixedOffsetFrame (`#14137`_)
+* SceneGraph can store geometry data as State or Parameter (`#14189`_)
+* Add model directives tooling for scene assembly (`#14038`_, `#14038`_, `#14144`_, `#14145`_)
+* New hydroelastic contact model in progress (`#14178`_, `#14110`_, `#13978`_, `#13808`_)
 
 Fixes
 
-* [plant] Add unit length constraint on quaternion variables (`#14141`_)
-* [plant] Improve inlining for RotationalInertia::ReExpress (`#14088`_)
-* [plant] Change UnitInertia::ReExpress to use frame A instead of frame F (`#14112`_)
-* [plant] Don't warn when re-discovering the same package.xml (`#14089`_)
-* [plant] Merge all multibody/math targets into a single package :spatial_algebra, with header spatial_algebra.h (`#14113`_,`#14117`_)
-* [plant] Improve error message for LinearBushingRollPitchYaw gimbal-lock singularity (`#14126`_)
+* Add unit length constraint on quaternion variables (`#14141`_)
+* Improve inlining for RotationalInertia::ReExpress (`#14088`_)
+* Change UnitInertia::ReExpress to use frame A instead of frame F (`#14112`_)
+* Don't warn when re-discovering the same package.xml (`#14089`_)
+* Merge all multibody/math targets into a single package :spatial_algebra, with header spatial_algebra.h (`#14113`_, `#14117`_)
+* Improve error message for LinearBushingRollPitchYaw gimbal-lock singularity (`#14126`_)
 
 
 Tutorials and examples
