@@ -22,7 +22,6 @@ Dynamical Systems
 ~~~~~~~~~~~~~~~~~
 
 .. <relnotes for systems go here>
-* TBD pydrake systems: Add missing bindings to ContinuousState, DiscreteValues, VectorBase, and BasicVector (`#14231`_)
 
 New features
 
@@ -60,8 +59,6 @@ Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for geometry,multibody go here>
-* TBD [render] Add texture coordinates for all RenderEngineGl shapes (`#14175`_)  # * Add texture coordinates for all RenderEngineGl shapes - Meshes: texture coordinates, like normals, are required for all objs. - In the future, relax this requirement so that it's only an error if a texture map is applied to an obj without texture coordinates. - Primitives - Texture coordinates are generated for all primitives. - MakeRevoluteShape now introduces a seam in vertex positions around the revolute axis. On each ring, the first and last vertex positions are identical. This allows for discontinuities in texture coordinates when going around that axis. - Testing is nominal - Almost impossible to create real tests without duplicating the code under the test. Instead, we have some token smoke tests and will rely on *obvious* visual artifacts to reveal if texture coordinates are broken. - Special note: - The texture coordinates on the cylinder are *different* than in VTK. The cylinder, essentially, gets spherical coordinates projected onto it. The vtkCylinderSource treats the cap faces like the vtkCubeSource treated the faces.
-[geometry,systems] * TBD [geometry] SceneGraph can store geometry data as State or Parameter (`#14189`_)  # While this provides the ability to choose whether the giant geometry data blob for SceneGraph is stored as Parameter or State, the default behavior remains State to maintain backwards compatibility. - SceneGraph's "model" is now an instance of GeometryState directly owned by the system. This had one implication *outside* of scene_graph.*; geometry_visualization.cc was directly accessing the model. - SetDefault{State|Parameters} have been overridden to copy the model into the context. - The GeometryStateValue (in scene_graph.cc) has received documentation to make its role clear for future readers. - Unit tests have been: - extended to test new funtionality - updated from expecting that "AllocateContext" copies the model (an invalid assumption based on quirks of previous implementation) to preferring CreateDefaultContext(). This affected a few other unit tests as well.
 
 New features
 
@@ -71,6 +68,7 @@ New features
 
 * [rendering] Add normal computation for parsed/generated meshes (`#14035`_)
 
+* [geometry] SceneGraph can store geometry data as State or Parameter (`#14189`_)
 * [geometry] New hydroelastic contact model in progress (`#14178`_, `#14110`_, `#13978`_, `#13808`_)
 
 * [model directives] Add model directives mechanism. (`#14038`_, `#14038`_, `#14144`_, `#14145`_)
@@ -89,8 +87,6 @@ Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for examples,tutorials go here>
-[examples,manipulation,tools] * TBD Add stl2obj to deal with robot stl meshes (`#14219`_)  # Convert the pr2 example to use stl2obj.  Previously, we had both copies of the meshes in git.  Now, we keep only the upstream stl meshes in git and we create the obj meshes during the build. As a side-effect, we now create and install kinect_mount.obj, whereas previously it was only installed in *.stl form.
-* TBD examples: Fix the list of absent examples (`#14232`_)
 
 * manipulation_station: Add package.xml (`#14164`_)
 * manipulation_station: Remove noisy warnings about unsupported joint limits (`#14079`_)
@@ -102,6 +98,7 @@ Miscellaneous features and fixes
 
 * find_runfiles: Always return a normalized path (`#14211`_)
 * jaco_description: Add package.xml (`#14134`_)
+* pr2: Remove ``*.obj`` files from git and use stl2obj instead (`#14219`_)
 * yaml: Fix in std::optional handling (`#14076`_)
 * yaml: Add support for BsplineBasis and BsplineTrajectory (`#14106`_)
 
@@ -109,8 +106,6 @@ pydrake bindings
 ~~~~~~~~~~~~~~~~
 
 .. <relnotes for bindings go here>
-* TBD Bind a constructor for symbolic::Monomial (`#14222`_)
-* TBD py geometry: Expose RenderEngine API and trampoline for inheritance (`#13835`_)  # Co-Authored-By: Duy-Nguyen Ta <duynguyen.ta@tri.global>
 
 New features
 
@@ -127,6 +122,10 @@ Fixes
 * Fix missing runtime module imports (`#14072`_, `#14095`_)
 
 Newly bound
+
+* TBD ContinuousState, DiscreteValues, VectorBase, and BasicVector (`#14231`_)
+* TBD symbolic::Monomial ctor (`#14222`_)
+* TBD RenderEngine API and trampoline for inheritance (`#13835`_)
 
 * pydrake.math.BsplineBasis (`#14201`_)
 * pydrake.math.BsplineTrajectory (`#14201`_)
