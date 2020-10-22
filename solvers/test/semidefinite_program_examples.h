@@ -93,6 +93,20 @@ void SolveSDPwithSecondOrderConeExample2(const SolverInterface& solver,
  */
 void SolveSDPwithOverlappingVariables(const SolverInterface& solver,
                                       double tol);
+
+/** Solve an SDP with quadratic cost and two PSD constraints, where each PSD
+ * constraint has duplicate entries and the two PSD matrix share a common
+ * variables.
+ * min x0² + 2*x0 + x2
+ * s.t ⎡x0 x1⎤ is psd
+ *     ⎣x1 x0⎦
+ *     ⎡x0 x1⎤ is psd
+ *     ⎣x1 x0⎦
+ *     x1 == 1
+ *
+ * The optimal solution will be x = (1, 1, -1).
+ */
+void SolveSDPwithQuadraticCosts(const SolverInterface& solver, double tol);
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

@@ -20,6 +20,7 @@ namespace math {
  * @pre 1. Y is positive semidefinite.
  *      2. zero_tol is non-negative.
  * @throws std::runtime_error when the pre-conditions are not satisfied.
+ * @note We only use the lower triangular part of Y.
  */
 Eigen::MatrixXd DecomposePSDmatrixIntoXtransposeTimesX(
     const Eigen::Ref<const Eigen::MatrixXd>& Y, double zero_tol);
