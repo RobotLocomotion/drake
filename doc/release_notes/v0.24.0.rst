@@ -5,7 +5,7 @@ Drake v0.24.0
 Announcements
 -------------
 
-* TBD
+* TBD Some caution about macOS homebrew vs VTK support.
 
 Breaking changes since v0.23.0
 ------------------------------
