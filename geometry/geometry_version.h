@@ -19,16 +19,14 @@ one or more role versions to change. This class provides the API `IsSameAs`
 that takes another GeometryVersion as well as a Role to help detect whether the
 provided role of the geometries may have changed. For example:
 
- @code
- // Downstream system holds an instance of GeometryVersion `old_version` as a
- // reference to compare against.
- // Get the version under test from SceneGraphInspector.
- const GeometryVersion& test_version =
-     scene_graph_inspector.GetGeometryVersion();
- // Determine if two versions have the same proximity data.
- bool same_proximity = old_version.IsSameAs(test_version,
-     Role::kProximity);
- @endcode
+@code
+// Downstream system holds an instance of GeometryVersion `old_version` as a
+// reference to compare against.
+// Get the version under test from SceneGraphInspector.
+const GeometryVersion& test_version = scene_graph_inspector.geometry_version();
+// Determine if two versions have the same proximity data.
+bool same_proximity = old_version.IsSameAs(test_version, Role::kProximity);
+@endcode
 */
 class GeometryVersion {
  public:
@@ -36,20 +34,7 @@ class GeometryVersion {
 
   /** Returns true if `this` GeometryVersion has the same `role`
    version as the `other` GeometryVersion. */
-  bool IsSameAs(const GeometryVersion& other, Role role) const {
-    switch (role) {
-      case Role::kUnassigned:
-        throw std::logic_error(
-            "Trying to compare the version of unassigned roles.");
-      case Role::kProximity:
-        return proximity_version_id_ == other.proximity_version_id_;
-      case Role::kIllustration:
-        return illustration_version_id_ == other.illustration_version_id_;
-      case Role::kPerception:
-        return perception_version_id_ == other.perception_version_id_;
-    }
-    DRAKE_UNREACHABLE();
-  }
+  bool IsSameAs(const GeometryVersion& other, Role role) const;
 
  private:
   using RoleVersionId = Identifier<class RoleVersionTag>;
@@ -65,22 +50,13 @@ class GeometryVersion {
 
   /* Create unique version id for all roles so that the new geometry version
    unique. */
-  GeometryVersion()
-      : proximity_version_id_(RoleVersionId::get_new_id()),
-        perception_version_id_(RoleVersionId::get_new_id()),
-        illustration_version_id_(RoleVersionId::get_new_id()) {}
+  GeometryVersion();
 
-  void modify_proximity() {
-    proximity_version_id_ = RoleVersionId::get_new_id();
-  }
+  void modify_proximity();
 
-  void modify_perception() {
-    perception_version_id_ = RoleVersionId::get_new_id();
-  }
+  void modify_perception();
 
-  void modify_illustration() {
-    illustration_version_id_ = RoleVersionId::get_new_id();
-  }
+  void modify_illustration();
 
   RoleVersionId proximity_version_id_;
   RoleVersionId perception_version_id_;

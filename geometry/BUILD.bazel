@@ -133,6 +133,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "geometry_version",
+    srcs = ["geometry_version.cc"],
     hdrs = ["geometry_version.h"],
     deps = [
         ":geometry_roles",

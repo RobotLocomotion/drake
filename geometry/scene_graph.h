@@ -844,8 +844,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
    `G = {g₀, g₁, ..., gₘ}` is the input `set` of geometries.
 
    This method modifies the underlying model and requires a new Context to be
-   allocated. Modifies the proximity version (see @ref
-   scene_graph_versioning).
+   allocated. Modifies the proximity version (see @ref scene_graph_versioning).
 
    @sa @ref scene_graph_collision_filtering for requirements and how collision
    filtering works.

@@ -112,6 +112,8 @@ class TestGeometry(unittest.TestCase):
         self.assertIsInstance(
             inspector.GetPoseInFrame(geometry_id=global_geometry),
             RigidTransform_[float])
+        self.assertIsInstance(inspector.geometry_version(),
+                              mut.GeometryVersion)
 
         # Check AssignRole bits.
         proximity = mut.ProximityProperties()
@@ -363,6 +365,19 @@ class TestGeometry(unittest.TestCase):
                               mut.PerceptionProperties)
         self.assertIsInstance(geometry.perception_properties(),
                               mut.PerceptionProperties)
+
+    def test_geometry_version_api(self):
+        SceneGraph = mut.SceneGraph_[float]
+        scene_graph = SceneGraph()
+        inspector = scene_graph.model_inspector()
+        version0 = inspector.geometry_version()
+        version1 = mut.GeometryVersion(version0)
+        self.assertTrue(version0.IsSameAs(other=version1,
+                                          role=mut.Role.kProximity))
+        self.assertTrue(version0.IsSameAs(other=version1,
+                                          role=mut.Role.kPerception))
+        self.assertTrue(version0.IsSameAs(other=version1,
+                                          role=mut.Role.kIllustration))
 
     def test_rgba_api(self):
         r, g, b, a = 0.75, 0.5, 0.25, 1.
