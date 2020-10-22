@@ -48,7 +48,8 @@ import sys
 
 from xml.dom import minidom
 import xml.etree.ElementTree as ET
-from clang import cindex
+import pygccxml
+#from clang import cindex
 from clang.cindex import AccessSpecifier, CursorKind, TypeKind
 
 from drake.tools.workspace.pybind11.mkdoc_comment import process_comment
@@ -263,13 +264,13 @@ def get_name_chain(cursor):
     # TODO(eric.cousineau): Try to restrict the name_chain to end with name. I
     # briefly tried this once by culling based on accepted cursors, but lost
     # needed symbols because of it.
-    name = utf8(cursor.spelling)
+    name = cursor.name
     name_chain = [name]
-    p = cursor.semantic_parent
-    while p and p.kind != CursorKind.TRANSLATION_UNIT:
-        piece = utf8(p.spelling)
+    p = cursor.parent
+    while p and p.name != "::":
+        piece = p.name
         name_chain.insert(0, piece)
-        p = p.semantic_parent
+        p = p.parent
     # Do not try to specify names for anonymous structs.
     while '' in name_chain:
         name_chain.remove('')
@@ -312,6 +313,52 @@ class SymbolTree:
             return self.children_map[piece]
 
 
+
+
+def pygccxml_extract(include_file_map, data_structure, symbol_tree, deprecations=None):
+    """
+    Extracts pygccxml objects and adds the comments to a symbol tree.
+    :param include_file_map:
+    :param data_structure: pygccxml information structure
+    :param symbol_tree:
+    :param deprecations:
+    :return:
+    """
+    node = None
+    name_chain = get_name_chain(data_structure)
+    object = data_structure
+    def get_node():
+        node = symbol_tree.get_node(name_chain)
+        if not node:
+            node = Node()
+        if node.first_symbol is None:
+            node.first_symbol = Symbol(
+                object, name_chain, "", "", None)
+        return node
+
+    get_node()
+    if "declarations" in dir(data_structure):
+        for object in data_structure.declarations:
+            name_chain = get_name_chain(object)
+            for i in data_structure.declarations:
+                if node is None:
+                    node = get_node()
+                pygccxml_extract(include_file_map,
+                                 i,
+                                 symbol_tree,
+                                 deprecations)
+            #if not is_accepted_cursor(cursor, name_chain):
+            #    return
+            if "comment" in dir(object) and object.comment.text:
+                if node is None:
+                    node = get_node()
+                comment = "\n".join(object.comment.text)
+                print(comment)
+                comment = process_comment(comment)
+                symbol = Symbol(object, name_chain, "", "", comment)
+                node.doc_symbols.append(symbol)
+
+
 def extract(include_file_map, cursor, symbol_tree, deprecations=None):
     """
     Extracts libclang cursors and add to a symbol tree.
@@ -338,18 +385,11 @@ def extract(include_file_map, cursor, symbol_tree, deprecations=None):
         return
     node = None
 
-    def get_node():
-        node = symbol_tree.get_node(name_chain)
-        if node.first_symbol is None:
-            node.first_symbol = Symbol(
-                cursor, name_chain, include, line, None)
-        return node
-
     if cursor.kind in RECURSE_LIST:
         if node is None:
             node = get_node()
         for i in cursor.get_children():
-            extract(include_file_map, i, symbol_tree, deprecations)
+            pygccxml_extract(include_file_map, i, symbol_tree, deprecations)
     if cursor.kind in PRINT_LIST:
         if node is None:
             node = get_node()
@@ -437,25 +477,25 @@ def choose_doc_var_names(symbols):
                 # that nevertheless have identical documentation.
                 result[i] = None
                 continue
-            elif cursor.is_copy_constructor():
+            elif isinstance(cursor, pygccxml.declarations.constructor_t):
                 # Here, the semantics are distinct ("special member function")
                 # so we should never use the "how many arguments" or "what are
                 # the argument types" heuristics.
                 result[i] = "doc_copy"
-            elif cursor.is_move_constructor():
+            #elif cursor.is_move_constructor():
                 # Here, the semantics are distinct ("special member function")
                 # so we should never use the "how many arguments" or "what are
                 # the argument types" heuristics.
-                result[i] = "doc_move"
-            elif (  # Look for a constructor like Foo<T>(const Foo<U>&).
-                cursor.kind == CursorKind.FUNCTION_TEMPLATE
-                and cursor.semantic_parent.kind == CursorKind.CLASS_TEMPLATE
-                and re.search(r"^(.*)<T>\(const \1<U> *&\)$",
-                              utf8(cursor.displayname))):
+            #    result[i] = "doc_move"
+            #elif (  # Look for a constructor like Foo<T>(const Foo<U>&).
+            #    cursor.kind == CursorKind.FUNCTION_TEMPLATE
+            #    and cursor.semantic_parent.kind == CursorKind.CLASS_TEMPLATE
+            #    and re.search(r"^(.*)<T>\(const \1<U> *&\)$",
+            #                  utf8(cursor.displayname))):
                 # Special case for scalar conversion constructors; we want to
                 # have a nice short name for these, that doesn't necessarily
                 # conflte with any *other* 1-argument constructor.
-                result[i] = "doc_copyconvert"
+            #    result[i] = "doc_copyconvert"
             elif "\nDeprecated:" in symbols[i].comment:
                 result[i] = "doc_deprecated" + result[i][3:]
                 # Don't consolidate as if this were a "well known" name.
@@ -483,7 +523,8 @@ def choose_doc_var_names(symbols):
         return result
 
     # All of the below heuristics only work for function overloads.
-    if symbols[0].cursor.type.kind != TypeKind.FUNCTIONPROTO:
+    if isinstance(symbols[0].cursor,
+                  pygccxml.declarations.free_function_type_t):
         return failure_result
 
     # Find the function argument types and (maybe) names.
@@ -557,7 +598,7 @@ def print_symbols(f, name, node, level=0, *, tree_parser_doc,
         assert name == name_chain[-1]
         full_name = "::".join(name_chain)
         # Override variable.
-        if node.first_symbol.cursor.kind == CursorKind.CONSTRUCTOR:
+        if isinstance(node.first_symbol.cursor, pygccxml.declarations.constructor_t):
             name_var = "ctor"
 
     name_var = sanitize_name(name_var)
@@ -570,7 +611,7 @@ def print_symbols(f, name, node, level=0, *, tree_parser_doc,
     iprint('{}struct /* {} */ {{'.format(modifier, name_var))
 
     root = tree_parser_xpath[-1]
-    kind = node.first_symbol.cursor.kind if node.first_symbol else None
+    kind = type(node.first_symbol.cursor) if node.first_symbol else None
 
     tree_parser_doc.append(name_var)
 
@@ -687,6 +728,8 @@ def main():
     for item in sys.argv[1:]:
         if item == '-quiet':
             quiet = True
+        elif item.startswith('-castxml='):
+            castxml_executable = item[len('-castxml='):]
         elif item.startswith('-output='):
             output_filename = item[len('-output='):]
         elif item.startswith('-output_xml='):
@@ -785,30 +828,43 @@ def main():
         glue_f.flush()
         if not quiet:
             eprint("Parse headers...")
-        index = cindex.Index(
-            cindex.conf.lib.clang_createIndex(False, True))
-        translation_unit = index.parse(
-            glue_filename, parameters,
-            options=cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD)
-        if not translation_unit:
+        #index = cindex.Index(
+        #    cindex.conf.lib.clang_createIndex(False, True))
+        castxml_config = pygccxml.parser.xml_generator_configuration_t(
+            xml_generator_path=castxml_executable,
+            xml_generator="castxml",
+            # CastXML pygccxml/castxml doesn't like c++17 for some reason
+            cflags=std.replace("7","4"),
+            castxml_epic_version=1,
+            include_paths=include_paths,
+        )
+        #translation_unit = index.parse(
+        #    glue_filename, parameters,
+        #    options=cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD)
+        total = pygccxml.parser.parse(
+            [glue_filename],
+            castxml_config,
+            compilation_mode=pygccxml.parser.COMPILATION_MODE.ALL_AT_ONCE,
+        )
+        if not total:
             raise RuntimeError(
                 "Parsing headers using the clang library failed")
-        severities = [
-            diagnostic.severity for diagnostic in translation_unit.diagnostics
-            if diagnostic.severity >= cindex.Diagnostic.Error
-        ]
-        if severities:
-            raise RuntimeError(
-                ("Parsing headers using the clang library failed with {} "
-                 "error(s) and {} fatal error(s)").format(
-                     severities.count(cindex.Diagnostic.Error),
-                     severities.count(cindex.Diagnostic.Fatal)))
+        #severities = [
+        #    diagnostic.severity for diagnostic in translation_unit.diagnostics
+        #    if diagnostic.severity >= cindex.Diagnostic.Error
+        #]
+        #if severities:
+        #    raise RuntimeError(
+        #        ("Parsing headers using the clang library failed with {} "
+        #         "error(s) and {} fatal error(s)").format(
+        #             severities.count(cindex.Diagnostic.Error),
+        #             severities.count(cindex.Diagnostic.Fatal)))
     shutil.rmtree(tmpdir)
     # Extract symbols.
     if not quiet:
         eprint("Extract relevant symbols...")
     symbol_tree = SymbolTree()
-    extract(include_file_map, translation_unit.cursor, symbol_tree)
+    pygccxml_extract(include_file_map, total[0].namespace("drake"), symbol_tree)
     # Write header file.
     if not quiet:
         eprint("Writing header file...")
