@@ -126,10 +126,12 @@ Fixes
 
 Newly bound
 
-* TBD ContinuousState, DiscreteValues, VectorBase, and BasicVector (`#14231`_)
-* TBD symbolic::Monomial ctor (`#14222`_)
-* TBD RenderEngine API and trampoline for inheritance (`#13835`_)
-
+* pydrake.geometry.render.ClippingRange (`#13835`_)
+* pydrake.geometry.render.ColorRenderCamera (`#13835`_)
+* pydrake.geometry.render.DepthRange (`#13835`_)
+* pydrake.geometry.render.DepthRenderCamera (`#13835`_)
+* pydrake.geometry.render.RenderCameraCore (`#13835`_)
+* pydrake.geometry.render.RenderEngine (`#13835`_)
 * pydrake.math.BsplineBasis (`#14201`_)
 * pydrake.math.BsplineTrajectory (`#14201`_)
 * pydrake.multibody.math.SpatialAcceleration.ComposeWithMovingFrameAcceleration (`#14193`_)
@@ -217,6 +219,27 @@ Newly bound
 * pydrake.multibody.tree.UniversalJoint.set_default_angles (`#14195`_)
 * pydrake.solvers.mathematicalprogram.MathematicalProgram.AddLorentzConeConstraint (`#14119`_)
 * pydrake.solvers.mathematicalprogram.MathematicalProgram.AddRotatedLorentzConeConstraint (`#14120`_)
+* pydrake.symbolic.Monomial ctor (`#14222`_)
+* pydrake.systems.framework.BasicVector.set_value (`#14231`_)
+* pydrake.systems.framework.ContinuousState.SetFrom (`#14231`_)
+* pydrake.systems.framework.ContinuousState.SetFromVector (`#14231`_)
+* pydrake.systems.framework.ContinuousState.ctors (`#14231`_)
+* pydrake.systems.framework.ContinuousState.get_generalized_position (`#14231`_)
+* pydrake.systems.framework.ContinuousState.get_generalized_velocity (`#14231`_)
+* pydrake.systems.framework.ContinuousState.get_misc_continuous_state (`#14231`_)
+* pydrake.systems.framework.ContinuousState.get_mutable_generalized_position (`#14231`_)
+* pydrake.systems.framework.ContinuousState.get_mutable_generalized_velocity (`#14231`_)
+* pydrake.systems.framework.ContinuousState.get_mutable_misc_continuous_state (`#14231`_)
+* pydrake.systems.framework.ContinuousState.num_q (`#14231`_)
+* pydrake.systems.framework.ContinuousState.num_v (`#14231`_)
+* pydrake.systems.framework.ContinuousState.num_z (`#14231`_)
+* pydrake.systems.framework.ContinuousState.operator[] (`#14231`_)
+* pydrake.systems.framework.DiscreteValues ctors (`#14231`_)
+* pydrake.systems.framework.DiscreteValues.SetFrom (`#14231`_)
+* pydrake.systems.framework.DiscreteValues.operator[] (`#14231`_)
+* pydrake.systems.framework.VectorBase.PlusEqScaled (`#14231`_)
+* pydrake.systems.framework.VectorBase.SetFrom (`#14231`_)
+* pydrake.systems.framework.VectorBase.operator[] (`#14231`_)
 
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
