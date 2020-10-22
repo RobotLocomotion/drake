@@ -15,7 +15,6 @@ framework:
 
  - Airplane2D
  - CartPole
- - CompassGait
  - DubinsCar
  - FurutaPendulum
  - Glider
@@ -26,11 +25,9 @@ framework:
  - PlanarMonopodHopper
  - PlanarNLink
  - Quadrotor2D
- - RimlessWheel
  - SimpleDoublePendulum
  - SimplePulleys
  - SpringLoadedInvertedPendulum
- - Strandbeest
  - TwoWheeledInvertedPendulum
  - UnderwaterAcrobot
  - Wingeron

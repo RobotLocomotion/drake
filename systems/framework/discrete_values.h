@@ -47,6 +47,7 @@ class DiscreteValues {
   /// Constructs a %DiscreteValues that does not own the underlying @p data.
   /// The referenced data must outlive this DiscreteValues. Every entry must be
   /// non-null.
+  /// @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
   explicit DiscreteValues(const std::vector<BasicVector<T>*>& data)
       : data_(data) {
     for (BasicVector<T>* basic_vector_ptr : data_) {

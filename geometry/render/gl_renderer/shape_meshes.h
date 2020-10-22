@@ -12,9 +12,6 @@ namespace geometry {
 namespace render {
 namespace internal {
 
-// TODO(SeanCurtis-TRI): All of these methods ultimately need to provide
-//  texture coordinates.
-
 /* The data representing a mesh. The triangle mesh is defined by `indices`. Row
  t represents a triangle by the triplet of vertex indices: tᵥ₀, tᵥ₁, tᵥ₂. The
  indices map into the rows of `positions`, `normals`, and `uvs`. I.e., for
@@ -22,8 +19,9 @@ namespace internal {
  corresponding normal is at `normals.row(v)`, and its texture coordinates are at
  `uvs.row(v)`.
 
- For now, uvs will be empty. Only `positions`, `indices`, and `normals` are
- guaranteed. Texture coordinates will come in the near future.  */
+ For now, all vertex quantities (`positions`, `normals` and `uvs`) are
+ guaranteed (as well as the `indices` data). In the future, `uvs` may become
+ optional.  */
 struct MeshData {
   Eigen::Matrix<GLfloat, Eigen::Dynamic, 3, Eigen::RowMajor> positions;
   Eigen::Matrix<GLfloat, Eigen::Dynamic, 3, Eigen::RowMajor> normals;
@@ -31,13 +29,16 @@ struct MeshData {
   Eigen::Matrix<GLuint, Eigen::Dynamic, 3, Eigen::RowMajor> indices;
 };
 
-// TODO(SeanCurtis-TRI): Also parse texture coordinates.
-
 /* Loads a mesh's vertices and indices (faces) from an OBJ description given
  in the input stream. It does not load textures. Note that while this
  functionality seems similar to ReadObjToSurfaceMesh, RenderEngineGl cannot use
  SurfaceMesh. Rendering requires normals and texture coordinates; SurfaceMesh
- was not designed with those quantities in mind.  */
+ was not designed with those quantities in mind.
+
+ @throws std::runtime_error if a) there are no normals, b) faces fail to
+                               reference normals, c) there are no texture
+                               coordinates, or d) faces fail to reference the
+                               texture coordinates.  */
 MeshData LoadMeshFromObj(std::istream* input_stream,
                          const std::string& filename = "from_string");
 
@@ -47,8 +48,15 @@ MeshData LoadMeshFromObj(const std::string& filename);
 
 // TODO(SeanCurtis-TRI): Provide a geodesic sphere (or a tessellation like that
 //  produced for hydroelastics).
+
 /* Creates an OpenGL-compatible mesh representation of a unit sphere
  (radius = 1). The sphere is tessellated along longitude and latitude bands.
+
+ Texture coordinates are assigned with the u-direction mapping to changes in
+ longitude (i.e., in an east-west direction) and the v-direction maps to changes
+ in latitude (i.e., in a north-south direction). The south pole has minimum
+ v = 0 and the north pole has maximum v = 1. U ranges from [0, 1] with a seam at
+ an arbitrary "prime meridian".
 
  @param longitude_bands     The number of triangle bands running from pole to
                             pole.
@@ -69,6 +77,11 @@ MeshData MakeLongLatUnitSphere(int longitude_bands = 50,
  circular caps a triangular fan is created from a vertex at the center of each
  circular cap to all of the vertices on the edge where cap and barrel meet.
 
+ Texture coordinates are assigned akin to how they are assigned to the sphere.
+ The u-values change in the radial direction while the v-values change along the
+ length direction. There is a seam in the mapping along an arbitrary
+ longitudinal line (u = 0 on one side and u = 1 on the other).
+
  This mesh's triangles will not all be topologically connected via shared
  vertices. Discontinuities in surface normals lead to disjoint meshes (i.e.,
  the caps are separate from the barrel).
@@ -80,11 +93,14 @@ MeshData MakeLongLatUnitSphere(int longitude_bands = 50,
  @pre `num_bands` >= 1.  */
 MeshData MakeUnitCylinder(int num_strips = 50, int num_bands = 1);
 
-/* Creates an OpenGL-compaptible mesh reprepsenting a square patch. The patch
+/* Creates an OpenGL-compatible mesh reprepsenting a square patch. The patch
  has edge length `measure` units long. The square patch is defined lying on the
  z = 0 plane in its canonical frame C, centered on the origin Co. The faces are
  wound such that the right-handed face normal points in the direction of the
  positive z-axis of Frame C.
+
+ Texture coordinates are assigned so that the "mimimum" (smallest x- and
+ y-values) map to (0, 0) and the opposite corner is (1, 1).
 
  The domain of the patch is divided into square sub regions based on the given
  `resolution`. There will be `resolution^2` square patches (each defined by
@@ -97,6 +113,11 @@ MeshData MakeSquarePatch(GLfloat measure = 200, int resolution = 1);
  are length 1. The box is centered on the origin of its canonical frame C with
  its edges aligned to the frame's basis. Each face of the box is divided into a
  single pair of triangles.
+
+ Texture coordinates are assigned so that the texture will be fully applied to
+ each face once. The +/-x and +/-y faces are all oriented so that the top of
+ the texture map will be in the +z direction. For the +z and -z faces, the
+ orientation is not guaranteed.
 
  This mesh's triangles will not all be topologically connected via shared
  vertices. Discontinuities in surface normals lead to disjoint meshes (each box
@@ -112,6 +133,11 @@ MeshData MakeUnitBox();
  conceptually, a cylinder capped with two hemispheres. The `length` is the
  measure of the cylinder's length. So, the *total* length of the capsule would
  be `length + 2 * radius`.
+
+ Texture coordinates are assigned akin to the sphere and cylinder. The u-values
+ change from 0 to 1 in the radial direction (with a seam at an arbitrary
+ longitudinal line), and the v-values change from 0 to 1 from the south to the
+ north poles based on fraction of the geodesic distance from pole to pole.
 
  The capsule is tessellated according to `samples`. The circular cross section
  of the cylindrical region of the capsule will have `samples` number of
