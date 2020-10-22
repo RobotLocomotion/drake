@@ -14,6 +14,11 @@ Breaking changes since v0.23.0
   Users relying on the nullptr checks should add their own before dereferencing.
 * The exact exception subclasses thrown by VectorBase changed (`#14101`_).
 * BasicVector::DoGetAtIndex changed from protected to private.
+* SceneGraph::AllocateContext now returns an empty context without any geometry.
+  Users should call CreateDefaultContext instead (`#14189`_).  Note that
+  System::AllocateContext generally only ever guarantees allocated storage, not
+  any particular value; in this case, though, it was easy to accidentally rely
+  on geometry being present by default.
 
 Changes since v0.23.0
 ---------------------
