@@ -371,7 +371,7 @@ class TestGeometry(unittest.TestCase):
         scene_graph = SceneGraph()
         inspector = scene_graph.model_inspector()
         version0 = inspector.geometry_version()
-        version1 = mut.GeometryVersion(version0)
+        version1 = copy.deepcopy(version0)
         self.assertTrue(version0.IsSameAs(other=version1,
                                           role=mut.Role.kProximity))
         self.assertTrue(version0.IsSameAs(other=version1,

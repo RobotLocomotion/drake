@@ -6,6 +6,12 @@
 
 namespace drake {
 namespace geometry {
+/* GeometryVersionTest tests the following properties of GeometryVersion:
+  1. Role versions within a GeometryVersion are independent from each other.
+  2. Copies of GeometryVersion are equivalent immediately after the copy.
+  3. The equivalence in the second property is transitive upon copying.
+  4. Copies of GeometryVersion then are modified independently after the copy.
+  5. Each GeometryVersion created from scratch is unique. */
 class GeometryVersionTest : public ::testing::Test {
  protected:
   void SetUp() {}
@@ -47,6 +53,7 @@ class GeometryVersionTest : public ::testing::Test {
 };
 
 namespace {
+// Tests property 1.
 TEST_F(GeometryVersionTest, Proximity) {
   GeometryVersion old_version = version_;
   modify_proximity(&version_);
@@ -56,6 +63,7 @@ TEST_F(GeometryVersionTest, Proximity) {
   VerifySameRole(old_version, new_version, Role::kIllustration);
 }
 
+// Tests property 1.
 TEST_F(GeometryVersionTest, Perception) {
   GeometryVersion old_version = version_;
   modify_perception(&version_);
@@ -65,6 +73,7 @@ TEST_F(GeometryVersionTest, Perception) {
   VerifySameRole(old_version, new_version, Role::kIllustration);
 }
 
+// Tests property 1.
 TEST_F(GeometryVersionTest, Illustration) {
   GeometryVersion old_version = version_;
   modify_illustration(&version_);
@@ -74,6 +83,7 @@ TEST_F(GeometryVersionTest, Illustration) {
   VerifyDistinctRole(old_version, new_version, Role::kIllustration);
 }
 
+// Test for unsupported role.
 TEST_F(GeometryVersionTest, Unassigned) {
   GeometryVersion old_version = version_;
   const auto& new_version = version_;
@@ -81,71 +91,50 @@ TEST_F(GeometryVersionTest, Unassigned) {
                std::logic_error);
 }
 
+// Tests properties 2 and 4 for assignment.
 TEST_F(GeometryVersionTest, Assignment) {
   GeometryVersion copied_version = version_;
   VerifyIdenticalVersions(copied_version, version_);
   modify_illustration(&version_);
-  // The version numbers in the copy move independently of the original ones.
+  // The role versions in the copy move independently of the original ones.
   VerifySameRole(version_, copied_version, Role::kProximity);
   VerifySameRole(version_, copied_version, Role::kPerception);
   VerifyDistinctRole(version_, copied_version, Role::kIllustration);
 }
 
+// Tests properties 2 and 4 for copy constructor.
 TEST_F(GeometryVersionTest, CopyConstruct) {
-  // Copy constructed version should be identical to the original version.
+  // Copy constructed version should be equivalent to the original version.
   GeometryVersion copied_version(version_);
   VerifyIdenticalVersions(copied_version, version_);
   modify_illustration(&version_);
-  // The version numbers in the copy move independently of the original ones.
+  // The role versions in the copy move independently of the original ones.
   VerifySameRole(version_, copied_version, Role::kProximity);
   VerifySameRole(version_, copied_version, Role::kPerception);
   VerifyDistinctRole(version_, copied_version, Role::kIllustration);
 }
 
-TEST_F(GeometryVersionTest, DefaultConstruct) {
-  // Each default constructed version is distinct from each other.
-  GeometryVersion new_version = CreateGeometryVersion();
-  VerifyDistinctVersions(new_version, version_);
-}
-
-TEST_F(GeometryVersionTest, Siblings) {
-  // Each version constructed with the same parent is identical to each other.
+// Tests properties 3 and 4.
+TEST_F(GeometryVersionTest, Transitivity) {
   GeometryVersion v1(version_);
   GeometryVersion v2(version_);
+  // The equivalence is transitive at the time of the copy.
   VerifyIdenticalVersions(v1, v2);
-  // They then evolve independently for each role.
+  // The copies then evolve independently for each role.
   modify_perception(&v1);
   modify_proximity(&v2);
   VerifyDistinctRole(v1, v2, Role::kProximity);
   VerifyDistinctRole(v1, v2, Role::kPerception);
-  // The version values of the roles that remain unmodified since the two
-  // versions were constructed from the parent remain equal to each other.
+  // The illustration role version remains unmodified since the two
+  // versions were copied from the parent.
   VerifySameRole(v1, v2, Role::kIllustration);
 }
 
-TEST_F(GeometryVersionTest, Parent) {
-  // Child should be identical to parent at time when it's created.
-  GeometryVersion v1(version_);
-  VerifyIdenticalVersions(v1, version_);
-  // They then evolve independently for each role.
-  modify_perception(&version_);
-  modify_proximity(&v1);
-  VerifyDistinctRole(v1, version_, Role::kProximity);
-  VerifyDistinctRole(v1, version_, Role::kPerception);
-  // The version values of the roles that remain unmodified since the child
-  // was constructed from the parent remain equal to those of the parent.
-  VerifySameRole(v1, version_, Role::kIllustration);
-}
-
-TEST_F(GeometryVersionTest, IndependentInstance) {
-  // v1 and v2 are equivalent to version_.
-  GeometryVersion v1(version_);
-  GeometryVersion v2(version_);
-  // Modifying v1 does not change equivalence between v2 and version_.
-  modify_perception(&v1);
-  modify_proximity(&v1);
-  modify_illustration(&v1);
-  VerifyIdenticalVersions(v2, version_);
+// Tests property 5.
+TEST_F(GeometryVersionTest, DefaultConstruct) {
+  // Each default constructed version is unique.
+  GeometryVersion new_version = CreateGeometryVersion();
+  VerifyDistinctVersions(new_version, version_);
 }
 }  // namespace
 }  // namespace geometry
