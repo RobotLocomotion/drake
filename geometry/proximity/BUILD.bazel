@@ -255,6 +255,7 @@ drake_cc_library(
     srcs = ["make_box_mesh.cc"],
     hdrs = ["make_box_mesh.h"],
     deps = [
+        ":proximity_utilities",
         ":surface_mesh",
         ":volume_mesh",
         ":volume_to_surface_mesh",
@@ -659,6 +660,7 @@ drake_cc_googletest(
     name = "make_box_mesh_test",
     deps = [
         ":make_box_mesh",
+        ":proximity_utilities",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
