@@ -362,6 +362,38 @@ GTEST_TEST(MosekTest, UnivariateNonnegative1) {
     dut.CheckResult(result, 1E-9);
   }
 }
+
+GTEST_TEST(MosekTest, MinimalDistanceFromSphereProblem) {
+  for (bool with_linear_cost : {true, false}) {
+    MinimalDistanceFromSphereProblem<3> dut1(Eigen::Vector3d(0, 0, 0),
+                                             Eigen::Vector3d(0, 0, 0), 1,
+                                             with_linear_cost);
+    MinimalDistanceFromSphereProblem<3> dut2(Eigen::Vector3d(0, 0, 1),
+                                             Eigen::Vector3d(0, 0, 0), 1,
+                                             with_linear_cost);
+    MinimalDistanceFromSphereProblem<3> dut3(Eigen::Vector3d(0, 1, 1),
+                                             Eigen::Vector3d(0, 0, 0), 1,
+                                             with_linear_cost);
+    MinimalDistanceFromSphereProblem<3> dut4(Eigen::Vector3d(0, 1, 1),
+                                             Eigen::Vector3d(-1, -1, 0), 1,
+                                             with_linear_cost);
+    MosekSolver solver;
+    if (solver.available()) {
+      const double tol = 1E-4;
+      dut1.SolveAndCheckSolution(solver, tol);
+      dut2.SolveAndCheckSolution(solver, tol);
+      dut3.SolveAndCheckSolution(solver, tol);
+      dut4.SolveAndCheckSolution(solver, tol);
+    }
+  }
+}
+
+GTEST_TEST(MosekTest, SolveSDPwithQuadraticCosts) {
+  MosekSolver solver;
+  if (solver.available()) {
+    SolveSDPwithQuadraticCosts(solver, 1E-8);
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

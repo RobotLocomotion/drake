@@ -5,6 +5,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solver_interface.h"
 
@@ -249,6 +250,75 @@ class SmallestEllipsoidCoveringProblem1
 
 void SolveAndCheckSmallestEllipsoidCoveringProblems(
     const SolverInterface& solver, double tol);
+
+/**
+ * Computes the minimal distance to a point from a sphere.
+ * This problem has a quadratic cost and Lorentz cone constraint.
+ * min (x - pt)²
+ * s.t |x - center| <= radius
+ */
+template <int Dim>
+class MinimalDistanceFromSphereProblem {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MinimalDistanceFromSphereProblem);
+
+  /** @param with_linear_cost If set to true, we add the quadratic cost as the
+   * sum of a quadratic and a linear cost. Otherwise we add it as a single
+   * quadratic cost.
+   */
+  MinimalDistanceFromSphereProblem(const Eigen::Matrix<double, Dim, 1>& pt,
+                                   const Eigen::Matrix<double, Dim, 1>& center,
+                                   double radius, bool with_linear_cost)
+      : prog_{},
+        x_{prog_.NewContinuousVariables<Dim>()},
+        pt_{pt},
+        center_{center},
+        radius_{radius} {
+    if (with_linear_cost) {
+      prog_.AddQuadraticCost(2 * Eigen::Matrix<double, Dim, Dim>::Identity(),
+                             Eigen::Matrix<double, Dim, 1>::Zero(),
+                             0.5 * pt_.squaredNorm(), x_);
+      prog_.AddLinearCost(-2 * pt_, 0.5 * pt_.squaredNorm(), x_);
+    } else {
+      prog_.AddQuadraticErrorCost(Eigen::Matrix<double, Dim, Dim>::Identity(),
+                                  pt_, x_);
+    }
+    VectorX<symbolic::Expression> lorentz_cone_expr(Dim + 1);
+    lorentz_cone_expr(0) = radius_;
+    lorentz_cone_expr.tail(Dim) = x_ - center_;
+
+    prog_.AddLorentzConeConstraint(lorentz_cone_expr);
+  }
+
+  MathematicalProgram* get_mutable_prog() { return &prog_; }
+
+  void SolveAndCheckSolution(const SolverInterface& solver, double tol) const {
+    if (solver.available()) {
+      MathematicalProgramResult result;
+      solver.Solve(prog_, {}, {}, &result);
+      EXPECT_TRUE(result.is_success());
+      const Eigen::Matrix<double, Dim, 1> x_sol = result.GetSolution(x_);
+      // If pt is inside the sphere, then the optimal solution is x=pt.
+      if ((pt_ - center_).norm() <= radius_) {
+        EXPECT_TRUE(CompareMatrices(x_sol, pt_, tol));
+        EXPECT_NEAR(result.get_optimal_cost(), 0, tol);
+      } else {
+        // pt should be the intersection of the ray from center to pt, and the
+        // sphere surface.
+        Eigen::Matrix<double, Dim, 1> ray = pt_ - center_;
+        EXPECT_TRUE(CompareMatrices(
+            x_sol, center_ + radius_ * (ray.normalized()), tol));
+      }
+    }
+  }
+
+ private:
+  MathematicalProgram prog_;
+  Eigen::Matrix<symbolic::Variable, Dim, 1> x_;
+  Eigen::Matrix<double, Dim, 1> pt_;
+  Eigen::Matrix<double, Dim, 1> center_;
+  double radius_;
+};
 
 }  // namespace test
 }  // namespace solvers
