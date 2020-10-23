@@ -32,11 +32,11 @@ class GeometryStateTester {
   // the renderer with the given name *is* a DummyRenderEngine. (If no renderer
   // with that name exists, it will simply throw.)
   static const internal::DummyRenderEngine& GetDummyRenderEngine(
-      systems::Context<T>* context, const std::string& name) {
+      const systems::Context<T>& context, const std::string& name) {
     // Technically brittle, but relatively safe assumption that GeometryState
-    // is abstract state value 0.
-    auto& geo_state = context->get_mutable_state()
-        .template get_mutable_abstract_state<GeometryState<T>>(0);
+    // is abstract Parameter value 0.
+    auto& geo_state = context.get_parameters()
+                          .template get_abstract_parameter<GeometryState<T>>(0);
     const render::RenderEngine& engine = geo_state.GetRenderEngineOrThrow(name);
     return dynamic_cast<const internal::DummyRenderEngine&>(engine);
   }
@@ -227,7 +227,7 @@ class RgbdSensorTest : public ::testing::Test {
         &diagram_->GetMutableSubsystemContext(*sensor_, context_.get());
     // Must get the render engine instance from the context itself.
     render_engine_ = &GeometryStateTester<double>::GetDummyRenderEngine(
-        scene_graph_context_, kRendererName);
+        *scene_graph_context_, kRendererName);
   }
 
   // Confirms that the member sensor_ matches the expected properties.
