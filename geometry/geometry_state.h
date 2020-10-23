@@ -16,6 +16,7 @@
 #include "drake/geometry/geometry_index.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_set.h"
+#include "drake/geometry/geometry_version.h"
 #include "drake/geometry/internal_frame.h"
 #include "drake/geometry/internal_geometry.h"
 #include "drake/geometry/proximity_engine.h"
@@ -66,7 +67,7 @@ using FrameIdSet = std::unordered_set<FrameId>;
 template <typename T>
 class GeometryState {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryState)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryState);
 
   /** An object that represents the range of FrameId values in the state. It
    is used in range-based for loops to iterate through registered frames.  */
@@ -130,6 +131,10 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::GetCollisionCandidates().  */
   std::set<std::pair<GeometryId, GeometryId>> GetCollisionCandidates() const;
 
+  /** Implementation of SceneGraphInspector::GetGeometryVersion().  */
+  const GeometryVersion& geometry_version() const {
+      return geometry_version_;
+  }
   //@}
 
   /** @name          Sources and source-related data  */
@@ -371,7 +376,6 @@ class GeometryState {
                             d) the context has already been allocated.  */
   int RemoveFromRenderer(const std::string& renderer_name, SourceId source_id,
                          GeometryId geometry_id);
-
   //@}
 
   //----------------------------------------------------------------------------
@@ -567,7 +571,8 @@ class GeometryState {
         geometries_(source.geometries_),
         frame_index_to_id_map_(source.frame_index_to_id_map_),
         geometry_engine_(std::move(source.geometry_engine_->ToAutoDiffXd())),
-        render_engines_(source.render_engines_) {
+        render_engines_(source.render_engines_),
+        geometry_version_(source.geometry_version_) {
     auto convert_pose_vector = [](const std::vector<math::RigidTransform<U>>& s,
                                   std::vector<math::RigidTransform<T>>* d) {
       std::vector<math::RigidTransform<T>>& dest = *d;
@@ -851,6 +856,9 @@ class GeometryState {
   // The collection of all registered renderers.
   std::unordered_map<std::string, copyable_unique_ptr<render::RenderEngine>>
       render_engines_;
+
+  // The version for this geometry data.
+  GeometryVersion geometry_version_;
 };
 }  // namespace geometry
 }  // namespace drake

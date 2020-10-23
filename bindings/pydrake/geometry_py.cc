@@ -488,7 +488,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py_rvp::reference_internal, py::arg("geometry_id"),
             cls_doc.GetPerceptionProperties.doc)
         .def("CloneGeometryInstance", &Class::CloneGeometryInstance,
-            py::arg("geometry_id"), cls_doc.CloneGeometryInstance.doc);
+            py::arg("geometry_id"), cls_doc.CloneGeometryInstance.doc)
+        .def("geometry_version", &Class::geometry_version,
+            py_rvp::reference_internal, cls_doc.geometry_version.doc);
   }
 
   //  SceneGraph
@@ -1111,6 +1113,18 @@ void DoScalarIndependentDefinitions(py::module m) {
     constexpr auto& cls_doc = doc.GeometrySet;
     py::class_<Class>(m, "GeometrySet", cls_doc.doc)
         .def(py::init(), doc.GeometrySet.ctor.doc);
+  }
+
+  // GeometryVersion
+  {
+    using Class = GeometryVersion;
+    constexpr auto& cls_doc = doc.GeometryVersion;
+    py::class_<Class> cls(m, "GeometryVersion", cls_doc.doc);
+    cls.def(py::init<const GeometryVersion&>(), py::arg("other"),
+           "Creates a copy of the GeometryVersion.")
+        .def("IsSameAs", &Class::IsSameAs, py::arg("other"), py::arg("role"),
+            cls_doc.IsSameAs.doc);
+    DefCopyAndDeepCopy(&cls);
   }
 
   // ProximityProperties
