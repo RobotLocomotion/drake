@@ -1,10 +1,12 @@
 #include "drake/solvers/aggregate_costs_constraints.h"
 
+#include <limits>
 #include <map>
 
 namespace drake {
 namespace solvers {
 namespace {
+const double kInf = std::numeric_limits<double>::infinity();
 // A helper class to add variable to an ordered vector while aggregating
 // costs/constraints.
 class VariableVector {
@@ -149,6 +151,51 @@ void AggregateQuadraticAndLinearCosts(
   }
   *linear_vars = linear_var_vec.CopyToEigen();
   *quadratic_vars = quadratic_var_vec.CopyToEigen();
+}
+
+std::unordered_map<symbolic::Variable, Bound> AggregateBoundingBoxConstraints(
+    const std::vector<Binding<BoundingBoxConstraint>>&
+        bounding_box_constraints) {
+  std::unordered_map<symbolic::Variable, Bound> bounds;
+  for (const auto& constraint : bounding_box_constraints) {
+    for (int i = 0; i < constraint.variables().rows(); ++i) {
+      const symbolic::Variable& var = constraint.variables()(i);
+      const double var_lower = constraint.evaluator()->lower_bound()(i);
+      const double var_upper = constraint.evaluator()->upper_bound()(i);
+      auto it = bounds.find(var);
+      if (it == bounds.end()) {
+        bounds.emplace_hint(it, var,
+                            Bound{.lower = var_lower, .upper = var_upper});
+      } else {
+        if (var_lower > it->second.lower) {
+          it->second.lower = var_lower;
+        }
+        if (var_upper < it->second.upper) {
+          it->second.upper = var_upper;
+        }
+      }
+    }
+  }
+  return bounds;
+}
+
+void AggregateBoundingBoxConstraints(const MathematicalProgram& prog,
+                                     Eigen::VectorXd* lower,
+                                     Eigen::VectorXd* upper) {
+  *lower = Eigen::VectorXd::Constant(prog.num_vars(), -kInf);
+  *upper = Eigen::VectorXd::Constant(prog.num_vars(), kInf);
+  for (const auto& constraint : prog.bounding_box_constraints()) {
+    for (int i = 0; i < constraint.variables().rows(); ++i) {
+      const int var_index =
+          prog.FindDecisionVariableIndex(constraint.variables()(i));
+      if (constraint.evaluator()->lower_bound()(i) > (*lower)(var_index)) {
+        (*lower)(var_index) = constraint.evaluator()->lower_bound()(i);
+      }
+      if (constraint.evaluator()->upper_bound()(i) < (*upper)(var_index)) {
+        (*upper)(var_index) = constraint.evaluator()->upper_bound()(i);
+      }
+    }
+  }
 }
 }  // namespace solvers
 }  // namespace drake
