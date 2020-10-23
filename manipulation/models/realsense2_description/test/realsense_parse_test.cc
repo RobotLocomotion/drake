@@ -2,7 +2,7 @@
 @file
 Parses and visualizes Realsense d415.
 
-If you wish to visualize this mesh, in it's own terminal run:
+If you wish to visualize this mesh, in its own terminal run:
 
  $ bazel-bin/tools/drake_visualizer
 
@@ -51,21 +51,20 @@ TEST_P(ParseTest, ParsesUrdfAndVisualizes) {
 
   DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  // Record the default number of models before a new model is added.
+  const int default_num_models = plant.num_model_instances();
 
   // Check to ensure URDF is parsable
   EXPECT_NO_THROW(Parser(&plant).AddModelFromFile(filename));
 
-  ConnectDrakeVisualizer(&builder, scene_graph);
-  plant.Finalize();
-  auto diagram = builder.Build();
-
-  // MultibodyPlant always creates at least two model instances, one for the
-  // world and one for a default model instance for unspecified modeling
-  // elements. Finally, there is one model instance for the realsense model
-  EXPECT_EQ(plant.num_model_instances(), 3);
+  // Ensure there was exactly one model instance added for the new model.
+  EXPECT_EQ(plant.num_model_instances() - default_num_models, 1);
 
   // Visualize via publishing, if requested
   if (FLAGS_visualize) {
+    ConnectDrakeVisualizer(&builder, scene_graph);
+    plant.Finalize();
+    auto diagram = builder.Build();
     drake::log()->info("Visualize: {}", object_name);
     Simulator<double>(*diagram).Initialize();
     auto context = diagram->CreateDefaultContext();
@@ -73,6 +72,9 @@ TEST_P(ParseTest, ParsesUrdfAndVisualizes) {
   }
 }
 
+// Note: We use a test suite here, even if currently for only one value, to
+// allow for easily adding more models under test in the future without
+// rewriting the test code.
 INSTANTIATE_TEST_SUITE_P(RealsenseD415, ParseTest, testing::Values("d415"));
 
 }  // namespace
