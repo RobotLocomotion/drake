@@ -155,6 +155,6 @@ EOF
 )
 
 dpkg_install_from_wget \
-  bazel 3.5.0 \
-  https://releases.bazel.build/3.5.0/release/bazel_3.5.0-linux-x86_64.deb \
-  08b71237eccc3c313e62976894fc260d9e1c1ecdfa5b14fc7477fce1c36c618c
+  bazel 3.7.0 \
+  https://releases.bazel.build/3.7.0/release/bazel_3.7.0-linux-x86_64.deb \
+  2fc8dfb85328112a9d67f614e33026be74c2ac95645ed8e88896366eaa3d8fc3
