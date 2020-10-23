@@ -2,20 +2,16 @@ import pydrake.geometry as mut
 import pydrake.geometry._testing as mut_testing
 
 import copy
-import sys
 import unittest
-import warnings
 from math import pi
 
 import numpy as np
 
 from drake import lcmt_viewer_load_robot, lcmt_viewer_draw
-from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.value import AbstractValue, Value
 from pydrake.lcm import DrakeLcm, Subscriber
-from pydrake.symbolic import Expression
 from pydrake.math import RigidTransform, RigidTransform_
 from pydrake.systems.analysis import (
     Simulator_,
@@ -46,7 +42,7 @@ class TestGeometry(unittest.TestCase):
         global_source = scene_graph.RegisterSource("anchored")
         global_frame = scene_graph.RegisterFrame(
             source_id=global_source, frame=mut.GeometryFrame("anchored_frame"))
-        global_frame_2 = scene_graph.RegisterFrame(
+        scene_graph.RegisterFrame(
             source_id=global_source, parent_id=global_frame,
             frame=mut.GeometryFrame("anchored_frame"))
         global_geometry = scene_graph.RegisterGeometry(
@@ -54,12 +50,12 @@ class TestGeometry(unittest.TestCase):
             geometry=mut.GeometryInstance(X_PG=RigidTransform_[float](),
                                           shape=mut.Sphere(1.),
                                           name="sphere1"))
-        global_geometry_2 = scene_graph.RegisterGeometry(
+        scene_graph.RegisterGeometry(
             source_id=global_source, geometry_id=global_geometry,
             geometry=mut.GeometryInstance(X_PG=RigidTransform_[float](),
                                           shape=mut.Sphere(1.),
                                           name="sphere2"))
-        anchored_geometry = scene_graph.RegisterAnchoredGeometry(
+        scene_graph.RegisterAnchoredGeometry(
             source_id=global_source,
             geometry=mut.GeometryInstance(X_PG=RigidTransform_[float](),
                                           shape=mut.Sphere(1.),
@@ -174,7 +170,6 @@ class TestGeometry(unittest.TestCase):
         Simulator = Simulator_[T]
         lcm = DrakeLcm()
         role = mut.Role.kIllustration
-        test_prefix = "TEST_PREFIX_"
 
         def normal(builder, scene_graph):
             mut.ConnectDrakeVisualizer(
