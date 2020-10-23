@@ -34,6 +34,7 @@ load("@drake//tools/workspace/gtest:repository.bzl", "gtest_repository")
 load("@drake//tools/workspace/gurobi:repository.bzl", "gurobi_repository")
 load("@drake//tools/workspace/ibex:repository.bzl", "ibex_repository")
 load("@drake//tools/workspace/ignition_math:repository.bzl", "ignition_math_repository")  # noqa
+load("@drake//tools/workspace/intel_realsense_ros:repository.bzl", "intel_realsense_ros_repository")  # noqa
 load("@drake//tools/workspace/ipopt:repository.bzl", "ipopt_repository")
 load("@drake//tools/workspace/jsoncpp:repository.bzl", "jsoncpp_repository")
 load("@drake//tools/workspace/lapack:repository.bzl", "lapack_repository")
@@ -161,6 +162,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         ibex_repository(name = "ibex")
     if "ignition_math" not in excludes:
         ignition_math_repository(name = "ignition_math", mirrors = mirrors)
+    if "intel_realsense_ros" not in excludes:
+        intel_realsense_ros_repository(name = "intel_realsense_ros", mirrors = mirrors)  # noqa
     if "ipopt" not in excludes:
         ipopt_repository(name = "ipopt")
     if "jsoncpp" not in excludes:
