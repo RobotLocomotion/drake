@@ -1,8 +1,12 @@
 #pragma once
+#include <unordered_map>>
+#include <utility>
 #include <vector>
 
 #include "drake/solvers/binding.h"
+#include "drake/solvers/constraint.h"
 #include "drake/solvers/cost.h"
+#include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace solvers {
@@ -38,5 +42,29 @@ void AggregateQuadraticAndLinearCosts(
     VectorX<symbolic::Variable>* quadratic_vars,
     Eigen::SparseVector<double>* linear_coeff,
     VectorX<symbolic::Variable>* linear_vars, double* constant_cost);
+
+/**
+ * Aggregate many bounding box constraints, return the intersection (the
+ * tightest bounds) of these constraints.
+ * @param bounding_box_constraints The constraints to be aggregated.
+ * @return aggregated_bounds aggregated_bounds[var.get_id()] returns the pair
+ * (lower, upper) bounds of that variable as the tightest bounds of @p
+ * bounding_box_constraints.
+ */
+std::unordered_map<symbolic::Variable, std::pair<double, double>>
+AggregateBoundingBoxConstraints(
+    const std::vector<Binding<BoundingBoxConstraint>>&
+        bounding_box_constraints);
+
+/**
+ * Aggregate all the BoundingBoxConstraints inside @p prog, returns the lower
+ * and upper bound for each variable in @p prog.
+ * @param prog The optimization program containing decision variables and
+ * BoundingBoxConstraints.
+ * @return (lower, upper) lower(i)/upper(i) is the lower/upper bound of
+ * prog.decision_variable(i),
+ */
+std::pair<Eigen::VectorXd, Eigen::VectorXd> AggregateBoundingBoxConstraints(
+    const MathematicalProgram& prog);
 }  // namespace solvers
 }  // namespace drake
