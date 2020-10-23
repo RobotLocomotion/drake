@@ -1,0 +1,23 @@
+# -*- python -*-
+
+load("@drake//tools/workspace/ros_xacro:defs.bzl", "xacro_file")
+
+licenses(["notice"])  # Apache-2.0
+
+package(default_visibility = ["//visibility:public"])
+
+xacro_file(
+    name = "realsense2_description/urdf/d415.urdf",
+    src = "realsense2_description/urdf/test_d415_camera.urdf.xacro",
+    data = [
+        "realsense2_description/urdf/_d415.urdf.xacro",
+        "realsense2_description/urdf/_materials.urdf.xacro",
+        "realsense2_description/urdf/_usb_plug.urdf.xacro",
+    ],
+)
+
+exports_files(
+    srcs = glob([
+        "realsense2_description/**",
+    ], allow_empty = False),
+)
