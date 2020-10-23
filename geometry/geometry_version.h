@@ -40,8 +40,8 @@ class GeometryVersion {
   using RoleVersionId = Identifier<class RoleVersionTag>;
   /* Only GeometryState can update the role versions and construct
    GeometryVersion from scratch. Downstream systems should obtain a reference
-   through the API provided by SceneGraphInspector if they wish to inquire the
-   version. They then may choose to retain a copy if needed. */
+   through the API provided by SceneGraphInspector if they want the version.
+   They then may choose to retain a copy if needed. */
   template <typename T>
   friend class GeometryState;
 

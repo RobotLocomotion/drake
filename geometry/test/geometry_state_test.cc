@@ -634,17 +634,17 @@ class GeometryStateTest : public GeometryStateTestBase, public ::testing::Test {
  protected:
   void SetUp() override { TestInit(); }
 
-  //   Helpers for forwarding member methods of Geometry State and verifying
-  //   behaviors of Geometry Versions.
+  // Helpers for forwarding member methods of Geometry State and verifying
+  // behaviors of Geometry Versions.
   //
-  //   The helpers are templatized on the return type of the method and two sets
-  //   of arguments, DeclaredArgs and GivenArgs. While generally one would
-  //   assume the two sets of args are of the same type, separating them this
-  //   way facilitates type deduction. For example, passing in a string literal
-  //   as a parameter to a function that expects a const string would defy type
-  //   deduction with just a single argument template. But separating them at
-  //   the call to this function, defers the resolution to the actual call of
-  //   the function.
+  // The helpers are templatized on the return type of the method and two sets
+  // of arguments, DeclaredArgs and GivenArgs. While generally one would
+  // assume the two sets of args are of the same type, separating them this
+  // way facilitates type deduction. For example, passing in a string literal
+  // as a parameter to a function that expects a const string would defy type
+  // deduction with just a single argument template. But separating them at
+  // the call to this function, defers the resolution to the actual call of
+  // the function.
 
   // Forward a function call to a member method of GeometryState and return the
   // GeometryVersions before and after the call.
@@ -660,7 +660,7 @@ class GeometryStateTest : public GeometryStateTestBase, public ::testing::Test {
   }
 
   // Forward a call to a member function in GeometryState and verify that the
-  // version number of the given `role` is modified but all other versions are
+  // version of the given `role` is modified but all other versions are
   // unchanged in this function.
   template <typename ReturnType, typename... DeclaredArgs,
             typename... GivenArgs>
@@ -679,7 +679,7 @@ class GeometryStateTest : public GeometryStateTestBase, public ::testing::Test {
   }
 
   // Forward a call to a non-void member function in GeometryState and verify
-  // that all version numbers are unchanged in this function. Return the return
+  // that all versions are unchanged in this function. Return the return
   // value of the forwarded call.
   template <typename ReturnType, typename... DeclaredArgs,
             typename... GivenArgs>
@@ -696,7 +696,7 @@ class GeometryStateTest : public GeometryStateTestBase, public ::testing::Test {
   }
 
   // Forward a call to a void member function in GeometryState and verify that
-  // all version numbers are unchanged in this function.
+  // all versions are unchanged in this function.
   template <typename... DeclaredArgs, typename... GivenArgs>
   void VerifyVersionUnchanged(void (GeometryState<double>::*f)(DeclaredArgs...),
                               GivenArgs&&... args) {
@@ -3529,7 +3529,7 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
 
   SourceId new_source = VerifyVersionUnchanged(
       &GeometryState<double>::RegisterNewSource, "my_new_source");
-  // Registering a new frame does not increment the version numbers.
+  // Registering a new frame does not modify the versions.
   FrameId new_frame_0 =
       VerifyVersionUnchanged(static_cast<FrameId(GeometryState<double>::*)(
                                  SourceId, const GeometryFrame&)>(
@@ -3540,8 +3540,7 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
                              &GeometryState<double>::RegisterFrame),
                          new_source, new_frame_0, GeometryFrame("new_f1"));
 
-  // Registering geometries with no roles assigned does not change the version
-  // number.
+  // Registering geometries with no roles assigned does not change the versions.
   GeometryId new_geometry_0 = VerifyVersionUnchanged(
       &GeometryState<double>::RegisterGeometry, new_source, new_frame_0,
       std::make_unique<GeometryInstance>(
@@ -3556,8 +3555,8 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
       std::make_unique<GeometryInstance>(
           RigidTransformd(), make_unique<Sphere>(1), "new_geometry_2"));
 
-  // Adding a new proximity role or replacing a proximity role increments the
-  // proximity version number, but not the other version numbers.
+  // Adding a new proximity role or replacing a proximity role modifies the
+  // proximity version, but not the other versions.
   VerifyRoleVersionModified(
       Role::kProximity,
       static_cast<void(GeometryState<double>::*)(
@@ -3572,8 +3571,8 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
           &GeometryState<double>::AssignRole),
       source_id_, geometries_[0], ProximityProperties(), RoleAssign::kReplace);
 
-  // Add a new perception role that is accepted by a renderer increments the
-  // perception version number, but not the other version numbers.
+  // Add a new perception role that is accepted by a renderer modifies the
+  // perception version, but not the other versions.
   PerceptionProperties base_perception_properties =
       DummyRenderEngine().accepting_properties();
   base_perception_properties.AddProperty("phong", "diffuse",
@@ -3592,7 +3591,7 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
   }
 
   // If the perception property is not accepted by any renderer, the perception
-  // version number does not increment.
+  // version is not modified.
   {
     PerceptionProperties perception_properties(base_perception_properties);
     perception_properties.AddProperty("renderer", "accepting",
@@ -3604,8 +3603,8 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
         source_id_, geometries_[2], perception_properties, RoleAssign::kNew);
   }
 
-  // Adding a new illustration role increments the illustration version number,
-  // but not the other version numbers.
+  // Adding a new illustration role modifies the illustration version, but not
+  // the other versions.
   IllustrationProperties illustration_properties;
   illustration_properties.AddProperty("phong", "diffuse",
                                       Vector4<double>{0.8, 0.8, 0.8, 1.0});
@@ -3616,8 +3615,8 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
           &GeometryState<double>::AssignRole),
       source_id_, geometries_[3], illustration_properties, RoleAssign::kNew);
 
-  // Removing a proximity role increments the proximity version number but not
-  // the other version numbers.
+  // Removing a proximity role modifies the proximity version but not the other
+  // versions.
   VerifyRoleVersionModified(
       Role::kProximity,
       static_cast<int (GeometryState<double>::*)(SourceId, GeometryId, Role)>(
@@ -3625,8 +3624,7 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
       source_id_, geometries_[0], Role::kProximity);
 
   // Removing a perception role from a geometry registered in a renderer
-  // increments the perception version number but not the other version
-  // numbers.
+  // modifies the perception version but not the other versions.
   VerifyRoleVersionModified(
       Role::kPerception,
       static_cast<int (GeometryState<double>::*)(SourceId, GeometryId, Role)>(
@@ -3634,21 +3632,21 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
       source_id_, geometries_[1], Role::kPerception);
 
   // Removing the perception role from a geometry not registered in any renderer
-  // does not increment any version number.
+  // does not modify any version.
   VerifyVersionUnchanged(
       static_cast<int (GeometryState<double>::*)(SourceId, GeometryId, Role)>(
           &GeometryState<double>::RemoveRole),
       source_id_, geometries_[2], Role::kPerception);
 
-  // Removing a illustration role increments the illustration version number
-  // but not the other version numbers.
+  // Removing a illustration role modifies the illustration version but not the
+  // other versions.
   VerifyRoleVersionModified(
       Role::kIllustration,
       static_cast<int (GeometryState<double>::*)(SourceId, GeometryId, Role)>(
           &GeometryState<double>::RemoveRole),
       source_id_, geometries_[3], Role::kIllustration);
 
-  // Removing a non-existing role does not change the version number.
+  // Removing a non-existing role does not modify the versions.
   VerifyVersionUnchanged(
       static_cast<int (GeometryState<double>::*)(SourceId, GeometryId, Role)>(
           &GeometryState<double>::RemoveRole),
@@ -3658,8 +3656,8 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
           &GeometryState<double>::RemoveRole),
       source_id_, geometries_[3], Role::kPerception);
 
-  //  Removing a geometry without any a perception role from a renderer does not
-  //  increment any version number.
+  // Removing a geometry without any perception role from a renderer does not
+  // modify any version.
   VerifyVersionUnchanged(static_cast<int(GeometryState<double>::*)(
                              const std::string&, SourceId, GeometryId)>(
                              &GeometryState<double>::RemoveFromRenderer),
@@ -3672,8 +3670,8 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
   geometry_state_.AssignRole(source_id_, geometries_[1], perception_properties,
                              RoleAssign::kNew);
 
-  //  Removing a geometry with perception role from a renderer does increment
-  //  the perception version number.
+  // Removing a geometry with perception role from a renderer does modify
+  // the perception version.
   VerifyRoleVersionModified(Role::kPerception,
                             static_cast<int(GeometryState<double>::*)(
                                 const std::string&, SourceId, GeometryId)>(
@@ -3694,8 +3692,8 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
       GeometrySet{geometries_[0], geometries_[1]}, GeometrySet{geometries_[2]});
 
   // Note that geometries_[1] has perception role now.
-  // When there exists geometries with perception properties, adding a renderer
-  // that accepts those geometries increments the perception version number.
+  // When there exist geometries with perception properties, adding a renderer
+  // that accepts those geometries modifies the perception version.
   VerifyRoleVersionModified(Role::kPerception,
                             &GeometryState<double>::AddRenderer, "second",
                             make_unique<DummyRenderEngine>());
@@ -3704,7 +3702,7 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
   // roles.
   geometry_state_.RemoveRole(source_id_, geometries_[1], Role::kPerception);
   // Adding a renderer when there's no geometry with perception role does not
-  // increment version number.
+  // modify version.
   VerifyVersionUnchanged(&GeometryState<double>::AddRenderer, "third",
                          make_unique<DummyRenderEngine>());
 }
