@@ -969,10 +969,9 @@ void GeometryState<T>::AddRenderer(
       const GeometryId id = id_geo_pair.first;
       const PerceptionProperties* properties = geometry.perception_properties();
       DRAKE_DEMAND(properties != nullptr);
-      accepted = render_engine->RegisterVisual(
+      accepted |= render_engine->RegisterVisual(
                      id, geometry.shape(), *properties,
-                     RigidTransformd(geometry.X_FG()), geometry.is_dynamic()) ||
-                 accepted;
+                     RigidTransformd(geometry.X_FG()), geometry.is_dynamic());
     }
   }
   // Increment version number if any geometry is registered to the new

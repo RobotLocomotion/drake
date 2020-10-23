@@ -855,8 +855,10 @@ void DoScalarIndependentDefinitions(py::module m) {
     using Class = GeometryVersion;
     constexpr auto& cls_doc = doc.GeometryVersion;
     py::class_<Class> cls(m, "GeometryVersion", cls_doc.doc);
-    cls.def("IsSameAs", &Class::IsSameAs, py::arg("other"), py::arg("role"),
-        cls_doc.IsSameAs.doc);
+    cls.def(py::init<const GeometryVersion&>(), py::arg("other"),
+           "Creates a copy of the GeometryVersion.")
+        .def("IsSameAs", &Class::IsSameAs, py::arg("other"), py::arg("role"),
+            cls_doc.IsSameAs.doc);
     DefCopyAndDeepCopy(&cls);
   }
 

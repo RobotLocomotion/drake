@@ -378,6 +378,13 @@ class TestGeometry(unittest.TestCase):
                                           role=mut.Role.kPerception))
         self.assertTrue(version0.IsSameAs(other=version1,
                                           role=mut.Role.kIllustration))
+        version2 = mut.GeometryVersion(other=version0)
+        self.assertTrue(version0.IsSameAs(other=version2,
+                                          role=mut.Role.kProximity))
+        self.assertTrue(version0.IsSameAs(other=version2,
+                                          role=mut.Role.kPerception))
+        self.assertTrue(version0.IsSameAs(other=version2,
+                                          role=mut.Role.kIllustration))
 
     def test_rgba_api(self):
         r, g, b, a = 0.75, 0.5, 0.25, 1.
