@@ -836,7 +836,19 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::init<std::vector<SurfaceFace>, std::vector<SurfaceVertex<T>>>(),
             py::arg("faces"), py::arg("vertices"), doc.SurfaceMesh.ctor.doc)
         .def("faces", &Class::faces, doc.SurfaceMesh.faces.doc)
-        .def("vertices", &Class::vertices, doc.SurfaceMesh.vertices.doc);
+        .def("vertices", &Class::vertices, doc.SurfaceMesh.vertices.doc)
+        .def("centroid", &Class::centroid, doc.SurfaceMesh.centroid.doc);
+  }
+
+  // ContactSurface
+  {
+    using Class = ContactSurface<T>;
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "ContactSurface", param, doc.ContactSurface.doc);
+    cls  // BR
+        .def("id_M", &Class::id_M, doc.ContactSurface.id_M.doc)
+        .def("id_N", &Class::id_N, doc.ContactSurface.id_N.doc)
+        .def("mesh_W", &Class::mesh_W, doc.ContactSurface.mesh_W.doc);
   }
 }
 
