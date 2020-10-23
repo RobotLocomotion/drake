@@ -54,21 +54,21 @@ TEST_P(ParseTest, ParsesUrdfAndVisualizes) {
   // Record the default number of models before a new model is added.
   const int default_num_models = plant.num_model_instances();
 
-  // Check to ensure URDF is parsable
+  // Check to ensure URDF is parsable.
   EXPECT_NO_THROW(Parser(&plant).AddModelFromFile(filename));
 
   // Ensure there was exactly one model instance added for the new model.
   EXPECT_EQ(plant.num_model_instances() - default_num_models, 1);
 
-  // Visualize via publishing, if requested
+  // Visualize via publishing, if requested.
   if (FLAGS_visualize) {
     ConnectDrakeVisualizer(&builder, scene_graph);
     plant.Finalize();
     auto diagram = builder.Build();
     drake::log()->info("Visualize: {}", object_name);
-    Simulator<double>(*diagram).Initialize();
-    auto context = diagram->CreateDefaultContext();
-    diagram->Publish(*context);
+    Simulator<double> simulator(*diagram);
+    simulator.Initialize();
+    diagram->Publish(simulator.get_context());
   }
 }
 

@@ -13,7 +13,7 @@ load(
 )
 
 # This package is public so that other packages can refer to
-# individual files in model from their bazel rules.
+# individual files in models from their bazel rules.
 package(
     default_visibility = ["//visibility:public"],
 )

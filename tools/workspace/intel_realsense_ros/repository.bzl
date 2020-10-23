@@ -8,7 +8,7 @@ def intel_realsense_ros_repository(
     github_archive(
         name = name,
         repository = "IntelRealSense/realsense-ros",
-        # N.B. Even though 2.2.x series is not the highst-numbered release, we
+        # N.B. Even though 2.2.x series is not the highest-numbered release, we
         # are using it here because it aligns with the ROS Melodic version
         # released for Ubuntu 18.04.
         commit = "2.2.17",
