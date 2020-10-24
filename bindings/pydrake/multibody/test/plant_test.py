@@ -698,7 +698,7 @@ class TestPlant(unittest.TestCase):
         file_name = FindResourceOrThrow(
             "drake/bindings/pydrake/multibody/test/double_pendulum.sdf")
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
-        Parser(plant_f).AddModelFromFile(file_name)
+        instance = Parser(plant_f).AddModelFromFile(file_name)
         plant_f.Finalize()
         plant = to_type(plant_f, T)
         context = plant.CreateDefaultContext()
@@ -719,6 +719,9 @@ class TestPlant(unittest.TestCase):
         self.assertTupleEqual(p_AQi.shape, (2, 3))
 
         p_com = plant.CalcCenterOfMassPosition(context=context)
+        self.assertTupleEqual(p_com.shape, (3, ))
+        p_com = plant.CalcCenterOfMassPosition(
+            context=context, model_instances=[instance])
         self.assertTupleEqual(p_com.shape, (3, ))
 
         nq = plant.num_positions()
