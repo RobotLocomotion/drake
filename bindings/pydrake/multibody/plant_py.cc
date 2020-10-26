@@ -287,6 +287,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
             overload_cast_explicit<Vector3<T>, const Context<T>&>(
                 &Class::CalcCenterOfMassPosition),
             py::arg("context"), cls_doc.CalcCenterOfMassPosition.doc_1args)
+        .def("CalcCenterOfMassPosition",
+            overload_cast_explicit<Vector3<T>, const Context<T>&,
+                const std::vector<ModelInstanceIndex>&>(
+                &Class::CalcCenterOfMassPosition),
+            py::arg("context"), py::arg("model_instances"),
+            cls_doc.CalcCenterOfMassPosition.doc_2args)
         .def(
             "CalcSpatialMomentumInWorldAboutPoint",
             [](const Class* self, const Context<T>& context,
