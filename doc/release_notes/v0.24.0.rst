@@ -5,11 +5,19 @@ Drake v0.24.0
 Announcements
 -------------
 
-* TBD Some caution about macOS homebrew vs VTK support.
+This release of Drake does NOT support macOS.  The macOS homebrew dependencies
+are rapidly shifting, and we have been unable to keep up.
+
+  * The python3.9 upgrade remains an unsolved problem (`#14243`_).
+  * VTK and drake-visualizer binaries remain an unsolved problem (`#14206`_).
+
+As soon as macOS functionality is restored, we will release new version of
+Drake that re-adds support.
 
 Breaking changes since v0.23.0
 ------------------------------
 
+* Temporary removal of macOS support.
 * De-referencing a drake::EigenPtr no longer checks for nullptr (`#14088`_).
   Users relying on the nullptr checks should add their own before dereferencing.
 * The exact exception subclasses thrown by VectorBase changed (`#14101`_).
@@ -64,7 +72,6 @@ Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for geometry,multibody go here>
-
 
 New features
 
@@ -424,6 +431,10 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#14222: https://github.com/RobotLocomotion/drake/pull/14222
 .. _#14231: https://github.com/RobotLocomotion/drake/pull/14231
 .. <end issue links>
+
+.. Links from the issue announcements, not PRs.
+.. _#14206: https://github.com/RobotLocomotion/drake/issues/14206
+.. _#14243: https://github.com/RobotLocomotion/drake/issues/14243
 
 ..
   Current oldest_commit 6bd5f8c25cdcbb4049e57ec0f49f6e2c136d864a (exclusive).
