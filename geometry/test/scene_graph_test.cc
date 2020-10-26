@@ -151,6 +151,10 @@ class SceneGraphTest : public ::testing::Test {
 // configurations. If this proves to be overly optimistic, we can parameterize
 // `SceneGraphTest` on that parameter and run those tests.
 TEST_F(SceneGraphTest, DataAsParameterVsState) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // TODO(SeanCurtis-TRI) When deprecation is completed, remove this whole test.
+
   for (bool data_as_state : {true, false}) {
     SceneGraph<double> sg(data_as_state);
     auto context = sg.CreateDefaultContext();
@@ -163,6 +167,7 @@ TEST_F(SceneGraphTest, DataAsParameterVsState) {
     EXPECT_NO_THROW(
         SceneGraphTester::GetMutableGeometryState(sg, context.get()));
   }
+#pragma GCC diagnostic pop
 }
 
 // Test sources.
@@ -357,6 +362,10 @@ TEST_F(SceneGraphTest, TransmogrifyPorts) {
 // Tests that the work to "set" the context values for the transmogrified system
 // behaves correctly.
 TEST_F(SceneGraphTest, TransmogrifyContext) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // TODO(SeanCurtis-TRI) When deprecation is completed, leave the test, but
+  // remove the outer loop.
   for (bool data_as_state : {true, false}) {
     SceneGraph<double> sg(data_as_state);
     SourceId s_id = sg.RegisterSource();
@@ -386,6 +395,7 @@ TEST_F(SceneGraphTest, TransmogrifyContext) {
     // vis the GeometryState.
     DRAKE_EXPECT_NO_THROW(context_ad->SetTimeStateAndParametersFrom(*context));
   }
+#pragma GCC diagnostic pop
 }
 
 // Tests that exercising the collision filtering logic *after* allocation is

@@ -82,7 +82,13 @@ class GeometryStateValue final : public Value<GeometryState<T>> {
 }  // namespace
 
 template <typename T>
-SceneGraph<T>::SceneGraph(bool data_as_state)
+SceneGraph<T>::SceneGraph() : SceneGraph(false, 0) {}
+
+template <typename T>
+SceneGraph<T>::SceneGraph(bool data_as_state) : SceneGraph(data_as_state, 0) {}
+
+template <typename T>
+SceneGraph<T>::SceneGraph(bool data_as_state, int)
     : LeafSystem<T>(SystemTypeTag<SceneGraph>{}),
       data_as_state_(data_as_state) {
   model_inspector_.set(&model_);
@@ -112,7 +118,7 @@ SceneGraph<T>::SceneGraph(bool data_as_state)
 template <typename T>
 template <typename U>
 SceneGraph<T>::SceneGraph(const SceneGraph<U>& other)
-    : SceneGraph(other.data_as_state_) {
+    : SceneGraph(other.data_as_state_, 0) {
   // TODO(SeanCurtis-TRI) This is very brittle; we are essentially assuming that
   //  T = AutoDiffXd. For now, that's true. If we ever support
   //  symbolic::Expression, this U --> T conversion will have to be more

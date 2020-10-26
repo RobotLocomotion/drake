@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/geometry_state.h"
 #include "drake/geometry/query_object.h"
@@ -279,34 +280,30 @@ class SceneGraph final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SceneGraph)
 
-  /* TODO(SeanCurtis-TRI) Deprecate "data as state" behavior. Here's the
-   strategy:
+  /** Constructs a default (empty) scene graph. */
+  SceneGraph();
 
-     1. Addition of data-as-parameter as *alternative* goes in one PR.
-     2. Follow up PR reverses the semantics.
-        - Split single constructor into two:
-          - Default constructor has data-as-parameter behavior.
-          - Constructor with non-default-value bool parameter gets deprecation
-            tag warning people to prefer the default constructor.
-          - Only update Drake call sites where there is a proven need for
-            data as State.
-      3. After deprecation period, remove SceneGraph(bool) constructor.  */
   /** Constructs a default (empty) scene graph.
 
-   For historical reasons, the geometry data (aka geometry state) is stored as
-   State in the Context. As such, it can be modified via an unrestricted update
-   event. Alternatively, %SceneGraph can be configured to store its geometry
-   data as a Parameter. As such, it can only be modified outside the normal
-   simulation loop, but leaves SceneGraph completely stateless.
+   Historically, geometry data (aka GeometryState) has been stored as State in
+   the Context. This is no longer the default; now it is stored as a Parameter.
+   This deprecated constructor allows you to exercise the legacy behavior during
+   the deprecation period (by passing `true`).
 
-   @warning In the future, the "geometry-data-as-state" behavior will be
-   deprecated. There will be a transition period where the default configuration
-   is switched from State to Parameter, followed by the removal of the State
-   option.
+   The expectation is there are no current uses of SceneGraph that *require*
+   the data to be stored in State and, as such, this constructor should largely
+   go unused. If you *do* feel you require it, please post an issue so we can
+   resolve it prior to complete deprecation of this behavior.
 
    @param data_as_state  `true` stores the data as State; `false` stores it as a
                          Parameter.  */
-  explicit SceneGraph(bool data_as_state = true);
+  DRAKE_DEPRECATED(
+      "2021-02-01",
+      "The choice of storing geometry data as State has been deprecated. "
+      "Please use the default constructor which sets the geometry data as a "
+      "Parameter. If this doesn't work for you please submit an issue in Drake "
+      "describing your problem.")
+  explicit SceneGraph(bool data_as_state);
 
   /** Constructor used for scalar conversions. It should only be used to convert
    _from_ double _to_ other scalar types.  */
@@ -919,6 +916,13 @@ class SceneGraph final : public systems::LeafSystem<T> {
   // Give (at least temporarily) QueryObject access to the system API to
   // evaluate inputs on the context.
   friend class QueryObject<T>;
+
+  // Special constructor to help with constructor deprecation. The public API
+  // for declaring whether the geometry data should be stored as State or
+  // Parameter is deprecated. However, during the deprecation period, we need
+  // to maintain the functionality. This private constructor allows the copy
+  // constructor to propagate deprecated behavior without throwing warnings.
+  SceneGraph(bool data_as_state, int magic_key);
 
   // If SceneGraph has been configured to store the geometry data as state,
   // writes the current version of the geometry data to the context's abstract
