@@ -65,6 +65,9 @@ Multibody Dynamics
 
 .. <relnotes for geometry,multibody go here>
 
+* TBD [geometry] New tetrahedral mesh of Box conforms to its medial axis (`#14216`_)
+* TBD Add GeometryRevision (`#14196`_)  # * Add GeometryVersion. Resolves #13176. GeometryState owns a GeometryVersion that enables a easy query when the roles of the underlying geometries change. Downstream systems may query the version through SceneGraphInspector.
+
 New features
 
 * MultibodyPlant calculates the spatial momentum of a subset of model instances (`#13916`_)
@@ -97,6 +100,9 @@ Miscellaneous features and fixes
 
 .. <relnotes for common,math,lcm,lcmtypes,manipulation,perception go here>
 
+[common,examples] * TBD autodiff, cassie_bench: Retire some TODOs (`#14240`_)  # Get rid of some TODOs I no longer believe have any value. Where helpful, add some issue numbers.
+[manipulation,tools] * TBD Adds realsense-ros dependency for URDF and meshes (`#14203`_)  # This commit provides Drake the ability to fetch the realsense-ros upstream repository during build: IntelRealSense/realsense-ros: - It gives Drake access to the realsense d415 xacro and mesh files - After the download, xacro files are modified to cleanly stitch into a URDF in a Drake environment (rather than their native ROS environment) - A test is provided that is closely based (copied + slightly modified) on the YCB meshes simple parsing tests
+
 * find_runfiles: Always return a normalized path (`#14211`_)
 * jaco_description: Add package.xml (`#14134`_)
 * pr2: Remove ``*.obj`` files from git and use stl2obj instead (`#14219`_)
@@ -107,6 +113,8 @@ pydrake bindings
 ~~~~~~~~~~~~~~~~
 
 .. <relnotes for bindings go here>
+
+* TBD py geometry_test: Fix existing flake8 defects (`#14233`_)
 
 New features
 
@@ -408,17 +416,22 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#14193: https://github.com/RobotLocomotion/drake/pull/14193
 .. _#14194: https://github.com/RobotLocomotion/drake/pull/14194
 .. _#14195: https://github.com/RobotLocomotion/drake/pull/14195
+.. _#14196: https://github.com/RobotLocomotion/drake/pull/14196
 .. _#14201: https://github.com/RobotLocomotion/drake/pull/14201
+.. _#14203: https://github.com/RobotLocomotion/drake/pull/14203
 .. _#14210: https://github.com/RobotLocomotion/drake/pull/14210
 .. _#14211: https://github.com/RobotLocomotion/drake/pull/14211
+.. _#14216: https://github.com/RobotLocomotion/drake/pull/14216
 .. _#14217: https://github.com/RobotLocomotion/drake/pull/14217
 .. _#14218: https://github.com/RobotLocomotion/drake/pull/14218
 .. _#14219: https://github.com/RobotLocomotion/drake/pull/14219
 .. _#14221: https://github.com/RobotLocomotion/drake/pull/14221
 .. _#14222: https://github.com/RobotLocomotion/drake/pull/14222
 .. _#14231: https://github.com/RobotLocomotion/drake/pull/14231
+.. _#14233: https://github.com/RobotLocomotion/drake/pull/14233
+.. _#14240: https://github.com/RobotLocomotion/drake/pull/14240
 .. <end issue links>
 
 ..
   Current oldest_commit 6bd5f8c25cdcbb4049e57ec0f49f6e2c136d864a (exclusive).
-  Current newest_commit 9b7a97b302214002a320088761b4d76196503618 (inclusive).
+  Current newest_commit b0b75133ad6de545f6634e5380878c4b706e15dc (inclusive).
