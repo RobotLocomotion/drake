@@ -8,6 +8,7 @@ import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression, Variable
+from pydrake.math import RigidTransform
 from pydrake.multibody.tree import (
     BallRpyJoint_,
     Body_,
@@ -1944,3 +1945,30 @@ class TestPlant(unittest.TestCase):
 
         prop2 = Propeller_[float]([info, info])
         self.assertEqual(prop2.num_propellers(), 2)
+
+    def test_hydroelastic_contact_results(self):
+        builder = DiagramBuilder_[float]()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        Parser(plant).AddModelFromFile(
+            FindResourceOrThrow(
+                "drake/bindings/pydrake/multibody/test/hydroelastic.sdf"))
+        plant.set_contact_model(ContactModel.kHydroelasticsOnly)
+        plant.Finalize()
+
+        diagram = builder.Build()
+        context = diagram.CreateDefaultContext()
+        plant_context = plant.GetMyContextFromRoot(context)
+
+        body1 = plant.GetBodyByName("body1")
+        X_WB = RigidTransform(p=[0, 0, 0.25])
+        plant.SetFreeBodyPose(plant_context, body1, X_WB)
+
+        contact_results = (
+            plant.get_contact_results_output_port().Eval(plant_context))
+
+        self.assertEqual(contact_results.num_hydroelastic_contacts(), 1)
+        contact_info = contact_results.hydroelastic_contact_info(0)
+        contact_info.contact_surface().id_M()
+        contact_info.contact_surface().id_N()
+        contact_info.contact_surface().mesh_W().centroid()
+        contact_info.F_Ac_W().get_coeffs()
