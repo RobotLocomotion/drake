@@ -99,6 +99,20 @@ void DoScalarDependentDefinitions(py::module m, T) {
     DefCopyAndDeepCopy(&cls);
   }
 
+  // HydroelasticContactInfo
+  {
+    using Class = HydroelasticContactInfo<T>;
+    constexpr auto& cls_doc = doc.HydroelasticContactInfo;
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "HydroelasticContactInfo", param, cls_doc.doc);
+    cls  // BR
+        .def("contact_surface", &Class::contact_surface,
+            cls_doc.contact_surface.doc)
+        .def("F_Ac_W", &Class::F_Ac_W, cls_doc.F_Ac_W.doc);
+    DefCopyAndDeepCopy(&cls);
+    AddValueInstantiation<Class>(m);
+  }
+
   // ContactResults
   {
     using Class = ContactResults<T>;
@@ -110,7 +124,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("num_point_pair_contacts", &Class::num_point_pair_contacts,
             cls_doc.num_point_pair_contacts.doc)
         .def("point_pair_contact_info", &Class::point_pair_contact_info,
-            py::arg("i"), cls_doc.point_pair_contact_info.doc);
+            py::arg("i"), cls_doc.point_pair_contact_info.doc)
+        .def("num_hydroelastic_contacts", &Class::num_hydroelastic_contacts,
+            cls_doc.num_hydroelastic_contacts.doc)
+        .def("hydroelastic_contact_info", &Class::hydroelastic_contact_info,
+            py::arg("i"), cls_doc.hydroelastic_contact_info.doc);
     DefCopyAndDeepCopy(&cls);
     AddValueInstantiation<Class>(m);
   }
