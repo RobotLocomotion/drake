@@ -423,8 +423,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#14221: https://github.com/RobotLocomotion/drake/pull/14221
 .. _#14222: https://github.com/RobotLocomotion/drake/pull/14222
 .. _#14231: https://github.com/RobotLocomotion/drake/pull/14231
-.. _#14233: https://github.com/RobotLocomotion/drake/pull/14233
-.. _#14240: https://github.com/RobotLocomotion/drake/pull/14240
 .. <end issue links>
 
 ..
