@@ -58,8 +58,6 @@ namespace Eigen {
 // value, and only allocate when needed, as determined by the compiler. For C++
 // considerations, see Scott Meyers' _Effective Modern C++_ Item 41. See #13985
 // for more discussion of Drake considerations.
-//
-// TODO(rpoyner-tri): Convert more operations to exploit move-awareness.
 template <>
 class AutoDiffScalar<VectorXd>
     : public internal::auto_diff_special_op<VectorXd, false> {
@@ -216,8 +214,8 @@ class AutoDiffScalar<VectorXd>
 
   // It is possible that further overloads could exploit more move-awareness
   // here. However, overload ambiguities are difficult to resolve. Currently
-  // only the left-hand operand is available for optimizations.
-  // TODO(rpoyner-tri) investigate further optimizations.
+  // only the left-hand operand is available for optimizations.  See #13985,
+  // #14039 for discussion.
   template <typename OtherDerType>
   friend inline AutoDiffScalar<DerType> operator+(
       AutoDiffScalar<DerType> a, const AutoDiffScalar<OtherDerType>& b) {

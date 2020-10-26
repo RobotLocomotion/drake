@@ -24,8 +24,6 @@ namespace {
 // limits, maintainers should not hesitate to change them. If they are exceeded
 // without a good reason, maintainers should revisit their changes to see why
 // heap usage has increased.
-// TODO(rpoyner-tri): replace LimitMalloc usage with a benchmark statistics
-//   implementation that counts malloc use, but doesn't try to enforce caps.
 
 // TODO(sherm1) Remove this if AutoDiffXd heap usage can be made the same
 //   in Release and Debug builds (higher in Debug currently).
