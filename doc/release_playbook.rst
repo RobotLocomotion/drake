@@ -22,11 +22,11 @@ Prior to release
 2. Create a local Drake branch named ``release_notes-v0.N.0`` (so that others
    can easily find and push to it after the PR is opened).
 3. As the first commit on the branch, mimic the commit
-   (`link <https://github.com/RobotLocomotion/drake/pull/12408/commits/674b84877bc08448b59a2243f3b910a7b6dbab43>`_)
-   from `PR 12408 <https://github.com/RobotLocomotion/drake/pull/12408>`_
+   (`link <https://github.com/RobotLocomotion/drake/pull/14208/commits/674b84877bc08448b59a2243f3b910a7b6dbab43>`_)
+   from `PR 14208 <https://github.com/RobotLocomotion/drake/pull/14208>`_
    in order to disable CI.  A quick way to do this might be::
 
-     git fetch upstream pull/12408/head
+     git fetch upstream pull/14208/head
      git cherry-pick 674b84877bc08448b59a2243f3b910a7b6dbab43
 
 4. Push that branch and then open a new pull request titled::
@@ -36,8 +36,8 @@ Prior to release
    Make sure that "Allow edits from maintainers" on the GitHub PR page is
    enabled (the checkbox is checked).
 5. For release notes, on an ongoing basis, add recent commit messages to the
-   release notes draft using the ``tools/dev/relnotes`` tooling.
-   run,
+   release notes draft using the ``tools/dev/relnotes`` tooling.  (Instructions
+   for using ``relnotes`` are found atop its source code.)
 
    a. On the first run, use ``--action=create`` to bootstrap the file.
       Be sure to cite the new file from the list in ``doc/release_notes.rst``.
