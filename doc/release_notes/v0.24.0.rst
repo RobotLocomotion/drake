@@ -65,8 +65,6 @@ Multibody Dynamics
 
 .. <relnotes for geometry,multibody go here>
 
-* TBD [geometry] New tetrahedral mesh of Box conforms to its medial axis (`#14216`_)
-* TBD Add GeometryRevision (`#14196`_)  # * Add GeometryVersion. Resolves #13176. GeometryState owns a GeometryVersion that enables a easy query when the roles of the underlying geometries change. Downstream systems may query the version through SceneGraphInspector.
 
 New features
 
@@ -74,8 +72,9 @@ New features
 * Rewrite GlobalInverseKinematics using MultibodyPlant public API (`#13921`_)
 * Add parameters for FixedOffsetFrame (`#14137`_)
 * SceneGraph can store geometry data as State or Parameter (`#14189`_)
+* SceneGraph provides GeometryVersion to track geometry changes (`#14196`_)
 * Add model directives tooling for scene assembly (`#14038`_, `#14038`_, `#14144`_, `#14145`_)
-* New hydroelastic contact model in progress (`#14178`_, `#14110`_, `#13978`_, `#13808`_)
+* New hydroelastic contact model in progress (`#14178`_, `#14110`_, `#13978`_, `#13808`_, `#14216`_)
 
 Fixes
 
@@ -100,12 +99,10 @@ Miscellaneous features and fixes
 
 .. <relnotes for common,math,lcm,lcmtypes,manipulation,perception go here>
 
-[common,examples] * TBD autodiff, cassie_bench: Retire some TODOs (`#14240`_)  # Get rid of some TODOs I no longer believe have any value. Where helpful, add some issue numbers.
-[manipulation,tools] * TBD Adds realsense-ros dependency for URDF and meshes (`#14203`_)  # This commit provides Drake the ability to fetch the realsense-ros upstream repository during build: IntelRealSense/realsense-ros: - It gives Drake access to the realsense d415 xacro and mesh files - After the download, xacro files are modified to cleanly stitch into a URDF in a Drake environment (rather than their native ROS environment) - A test is provided that is closely based (copied + slightly modified) on the YCB meshes simple parsing tests
-
 * find_runfiles: Always return a normalized path (`#14211`_)
 * jaco_description: Add package.xml (`#14134`_)
 * pr2: Remove ``*.obj`` files from git and use stl2obj instead (`#14219`_)
+* realsense2_description: Add d415 camera model (`#14203`_) 
 * yaml: Fix in std::optional handling (`#14076`_)
 * yaml: Add support for BsplineBasis and BsplineTrajectory (`#14106`_)
 
@@ -113,8 +110,6 @@ pydrake bindings
 ~~~~~~~~~~~~~~~~
 
 .. <relnotes for bindings go here>
-
-* TBD py geometry_test: Fix existing flake8 defects (`#14233`_)
 
 New features
 
