@@ -324,7 +324,7 @@ Notes
 
 This release provides `pre-compiled binaries
 <https://github.com/RobotLocomotion/drake/releases/tag/v0.24.0>`__ named
-``drake-YYYYMMDD-{bionic|focal|mac}.tar.gz``. See :ref:`Nightly Releases
+``drake-20201026-{bionic|focal|mac}.tar.gz``. See :ref:`Nightly Releases
 <nightly-releases>` for instructions on how to use them.
 
 Drake binary releases incorporate a pre-compiled version of `SNOPT
