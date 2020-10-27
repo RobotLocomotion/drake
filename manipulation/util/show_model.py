@@ -32,6 +32,13 @@ remove the need for `--find_resource`:
         --meshcat default \
         ${PWD}/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
 
+If the model uses package path (e.g. "package://package_name/model_sdf.obj") to
+refer mesh files, you also have to provide the argument `--package_path`:
+    ./bazel-bin/manipulation/util/show_model \
+        --package_path \
+        manipulation/models/iiwa_description \
+        ./manipulation/models/iiwa_description/iiwa7/iiwa7_no_collision.sdf
+
 Note:
     If `--meshcat` is not specified, no meshcat visualization will take
 place.
