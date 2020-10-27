@@ -1,4 +1,4 @@
-#include "drake/multibody/fem/dev/linear_elasticity_cache.h"
+#include "drake/multibody/fem/dev/linear_elasticity_model_cache.h"
 
 #include <vector>
 

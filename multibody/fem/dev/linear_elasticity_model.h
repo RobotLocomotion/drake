@@ -5,7 +5,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/fem/dev/constitutive_model.h"
-#include "drake/multibody/fem/dev/linear_elasticity_cache.h"
+#include "drake/multibody/fem/dev/linear_elasticity_model_cache.h"
 
 namespace drake {
 namespace multibody {

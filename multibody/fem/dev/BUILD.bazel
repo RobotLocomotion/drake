@@ -60,28 +60,28 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "linear_elasticity",
+    name = "linear_elasticity_model",
     srcs = [
-        "linear_elasticity.cc",
+        "linear_elasticity_model.cc",
     ],
     hdrs = [
-        "linear_elasticity.h",
+        "linear_elasticity_model.h",
     ],
     deps = [
         ":constitutive_model",
-        ":linear_elasticitiy_cache",
+        ":linear_elasticity_model_cache",
         "//common:default_scalars",
         "//common:essential",
     ],
 )
 
 drake_cc_library(
-    name = "linear_elasticitiy_cache",
+    name = "linear_elasticity_model_cache",
     srcs = [
-        "linear_elasticity_cache.cc",
+        "linear_elasticity_model_cache.cc",
     ],
     hdrs = [
-        "linear_elasticity_cache.h",
+        "linear_elasticity_model_cache.h",
     ],
     deps = [
         ":constitutive_model_cache",
@@ -117,17 +117,17 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
-    name = "linear_elasticity_cache_test",
+    name = "linear_elasticity_model_cache_test",
     deps = [
-        ":linear_elasticity",
+        ":linear_elasticity_model_cache",
         "//common/test_utilities:expect_throws_message",
     ],
 )
 
 drake_cc_googletest(
-    name = "linear_elasticity_test",
+    name = "linear_elasticity_model_test",
     deps = [
-        ":linear_elasticity",
+        ":linear_elasticity_model",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//math:gradient",

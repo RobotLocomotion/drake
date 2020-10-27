@@ -1,4 +1,4 @@
-#include "drake/multibody/fem/dev/linear_elasticity.h"
+#include "drake/multibody/fem/dev/linear_elasticity_model.h"
 
 #include <gtest/gtest.h>
 
