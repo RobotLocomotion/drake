@@ -17,26 +17,20 @@ namespace fem {
 [Gonzalez, 2008] Gonzalez, Oscar, and Andrew M. Stuart. A first course in
 continuum mechanics. Cambridge University Press, 2008. */
 template <typename T>
-class LinearElasticity final : public ConstitutiveModel<T> {
+class LinearElasticityModel final : public ConstitutiveModel<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearElasticity);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearElasticityModel);
 
-  /** Constructs a LinearElasticity constitutive model with the prescribed
+  /** Constructs a LinearElasticityModel constitutive model with the prescribed
    Young's modulus and Poisson ratio.
    @param youngs_modulus Young's modulus of the model, with unit N/m²
    @param poisson_ratio Poisson ratio of the model, unitless.
    @pre youngs_modulus must be non-negative.
-   @pre poisson_ratio must be greater than -1 and smaller than 0.5. */
-  LinearElasticity(const T& youngs_modulus, const T& poisson_ratio);
+   @pre poisson_ratio must be strictly greater than -1 and strictly smaller than
+   0.5. */
+  LinearElasticityModel(const T& youngs_modulus, const T& poisson_ratio);
 
-  ~LinearElasticity() = default;
-
-  /** Calculates the energy density, in unit J/m³, given the model cache. */
-  std::vector<T> CalcPsi(const ConstitutiveModelCache<T>& cache) const final;
-
-  /** Calculates the First Piola stress, in unit Pa, given the model cache. */
-  std::vector<Matrix3<T>> CalcP(
-      const ConstitutiveModelCache<T>& cache) const final;
+  ~LinearElasticityModel() = default;
 
   T youngs_modulus() const { return E_; }
 
@@ -45,6 +39,15 @@ class LinearElasticity final : public ConstitutiveModel<T> {
   T shear_modulus() const { return mu_; }
 
   T lame_first_parameter() const { return lambda_; }
+
+ protected:
+  /* Calculates the energy density, in unit J/m³, given the model cache. */
+  void DoCalcPsi(const DeformationGradientCache<T>& cache,
+                 std::vector<T>* Psi) const final;
+
+  /* Calculates the First Piola stress, in unit Pa, given the model cache. */
+  void DoCalcP(const DeformationGradientCache<T>& cache,
+               std::vector<Matrix3<T>>* P) const final;
 
  private:
   /* Set the Lamé parameters from Young's modulus and Poisson ratio. It's
@@ -63,5 +66,5 @@ class LinearElasticity final : public ConstitutiveModel<T> {
 }  // namespace fem
 }  // namespace multibody
 }  // namespace drake
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::fem::LinearElasticity);
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::fem::LinearElasticityModel);
