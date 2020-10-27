@@ -785,10 +785,12 @@ drake_cc_library(
     hdrs = ["mosek_solver.h"],
     deps = select({
         "//tools:with_mosek": [
+            ":aggregate_costs_constraints",
             ":mathematical_program",
             ":mathematical_program_result",
             ":solver_base",
             "//common:scoped_singleton",
+            "//math:quadratic_form",
             "@mosek",
         ],
         "//conditions:default": [

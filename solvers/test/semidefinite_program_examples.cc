@@ -275,6 +275,25 @@ void SolveSDPwithOverlappingVariables(const SolverInterface& solver,
       CompareMatrices(result.GetSolution(x), Eigen::Vector3d(1, 1, -1), tol));
   EXPECT_NEAR(result.get_optimal_cost(), 1, tol);
 }
+
+void SolveSDPwithQuadraticCosts(const SolverInterface& solver, double tol) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+  prog.AddPositiveSemidefiniteConstraint(
+      (Matrix2<symbolic::Variable>() << x(0), x(1), x(1), x(0)).finished());
+  prog.AddPositiveSemidefiniteConstraint(
+      (Matrix2<symbolic::Variable>() << x(0), x(2), x(2), x(0)).finished());
+  prog.AddBoundingBoxConstraint(1, 1, x(1));
+  prog.AddQuadraticCost(x(0) * x(0));
+  prog.AddLinearCost(2 * x(0) + x(2));
+
+  MathematicalProgramResult result;
+  solver.Solve(prog, {}, {}, &result);
+  EXPECT_TRUE(result.is_success());
+  EXPECT_TRUE(
+      CompareMatrices(result.GetSolution(x), Eigen::Vector3d(1, 1, -1), tol));
+  EXPECT_NEAR(result.get_optimal_cost(), 2, tol);
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

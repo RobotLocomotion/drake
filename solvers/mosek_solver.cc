@@ -18,6 +18,8 @@
 #include "drake/common/never_destroyed.h"
 #include "drake/common/scoped_singleton.h"
 #include "drake/common/text_logging.h"
+#include "drake/math/quadratic_form.h"
+#include "drake/solvers/aggregate_costs_constraints.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
@@ -736,100 +738,6 @@ MSKrescodee AddLinearMatrixInequalityConstraint(
   return rescode;
 }
 
-MSKrescodee AggregateQuadraticCosts(
-    const MathematicalProgram& prog,
-    const std::unordered_map<int, int>&
-        decision_variable_index_to_mosek_nonmatrix_variable,
-    std::vector<Eigen::Triplet<double>>* Q_lower_triplets,
-    std::vector<Eigen::Triplet<double>>* linear_term_triplets,
-    double* constant_cost) {
-  MSKrescodee rescode = MSK_RES_OK;
-  for (const auto& binding : prog.quadratic_costs()) {
-    const auto& cost = binding.evaluator();
-    // The quadratic cost is of form 0.5*x'*Q*x + b*x.
-    const auto& Q = cost->Q();
-    const auto& b = cost->b();
-    *constant_cost += cost->c();
-    std::vector<int> var_indices(Q.rows());
-
-    for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
-      const int decision_var_index =
-          prog.FindDecisionVariableIndex(binding.variables()(i));
-      auto it = decision_variable_index_to_mosek_nonmatrix_variable.find(
-          decision_var_index);
-      if (it == decision_variable_index_to_mosek_nonmatrix_variable.end()) {
-        throw std::runtime_error(
-            "MosekSolver: we currently do not support an optimization variable "
-            "with both positive semidefinite constraint and quadratic cost, "
-            "with a variable in the psd matrix also having quadratic cost.");
-      }
-
-      var_indices[i] = it->second;
-    }
-
-    for (int i = 0; i < Q.rows(); ++i) {
-      int var_index_i = var_indices[i];
-      for (int j = 0; j < i; ++j) {
-        const double Qij = (Q(i, j) + Q(j, i)) / 2;
-        if (std::abs(Qij) > Eigen::NumTraits<double>::epsilon()) {
-          if (var_index_i > var_indices[j]) {
-            Q_lower_triplets->push_back(
-                Eigen::Triplet<double>(var_index_i, var_indices[j], Qij));
-          } else {
-            Q_lower_triplets->push_back(
-                Eigen::Triplet<double>(var_indices[j], var_index_i, Qij));
-          }
-        }
-      }
-      if (std::abs(Q(i, i)) > Eigen::NumTraits<double>::epsilon()) {
-        Q_lower_triplets->push_back(
-            Eigen::Triplet<double>(var_index_i, var_index_i, Q(i, i)));
-      }
-      if (std::abs(b(i)) > Eigen::NumTraits<double>::epsilon()) {
-        linear_term_triplets->push_back(
-            Eigen::Triplet<double>(var_index_i, 0, b(i)));
-      }
-    }
-  }
-  return rescode;
-}
-
-MSKrescodee AggregateLinearCosts(
-    const MathematicalProgram& prog,
-    const std::unordered_map<int, MatrixVariableEntry>&
-        decision_variable_index_to_mosek_matrix_variable,
-    const std::unordered_map<int, int>&
-        decision_variable_index_to_mosek_nonmatrix_variable,
-    std::vector<Eigen::Triplet<double>>* linear_term_triplets,
-    double* constant_cost,
-    std::vector<std::vector<Eigen::Triplet<double>>>* C_bar_lower_triplets) {
-  MSKrescodee rescode = MSK_RES_OK;
-  for (const auto& binding : prog.linear_costs()) {
-    const auto& c = binding.evaluator()->a();
-    *constant_cost += binding.evaluator()->b();
-    for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
-      if (std::abs(c(i)) > Eigen::NumTraits<double>::epsilon()) {
-        const int decision_variable_index =
-            prog.FindDecisionVariableIndex(binding.variables()(i));
-        auto it1 = decision_variable_index_to_mosek_nonmatrix_variable.find(
-            decision_variable_index);
-        if (it1 != decision_variable_index_to_mosek_nonmatrix_variable.end()) {
-          linear_term_triplets->push_back(
-              Eigen::Triplet<double>(it1->second, 0, c(i)));
-        } else {
-          auto it2 = decision_variable_index_to_mosek_matrix_variable.find(
-              decision_variable_index);
-          (*C_bar_lower_triplets)[it2->second.bar_matrix_index()].emplace_back(
-              it2->second.row_index(), it2->second.col_index(),
-              it2->second.row_index() == it2->second.col_index() ? c(i)
-                                                                 : c(i) / 2);
-        }
-      }
-    }
-  }
-  return rescode;
-}
-
 // Given a vector of triplets (which might contain duplicated entries in the
 // matrix), returns the vector of rows, columns and values.
 void ConvertTripletsToVectors(
@@ -855,68 +763,49 @@ void ConvertTripletsToVectors(
   }
 }
 
-MSKrescodee AddCosts(const MathematicalProgram& prog,
-                     const std::unordered_map<int, MatrixVariableEntry>&
-                         decision_variable_index_to_mosek_matrix_variable,
-                     const std::unordered_map<int, int>&
-                         decision_variable_index_to_mosek_nonmatrix_variable,
-                     MSKtask_t* task) {
-  // Add the cost in the form 0.5 * x' * Q_all * x + linear_terms' * x + ∑ᵢ <C̅ᵢ,
-  // X̅ᵢ>, where X̅ᵢ is the i'th matrix variable stored inside Mosek.
+MSKrescodee AddLinearCost(
+    const Eigen::SparseVector<double>& linear_coeff,
+    const VectorX<symbolic::Variable>& linear_vars,
+    const MathematicalProgram& prog,
+    const std::unordered_map<int, MatrixVariableEntry>&
+        decision_variable_index_to_mosek_matrix_variable,
+    const std::unordered_map<int, int>&
+        decision_variable_index_to_mosek_nonmatrix_variable,
+    MSKtask_t* task) {
   MSKrescodee rescode = MSK_RES_OK;
-  const int xDim = decision_variable_index_to_mosek_nonmatrix_variable.size();
-  // Mosek takes the lower triangular part of Q_all. Q_lower_triplets include
-  // the triplets (row_index, col_index, val) on the lower triangular part
-  // of Q_all.
-  std::vector<Eigen::Triplet<double>> Q_lower_triplets;
-  std::vector<Eigen::Triplet<double>> linear_term_triplets;
-  double constant_cost = 0.;
-
+  // The cost linear_coeff' * linear_vars could be written as
+  // c' * x + ∑ᵢ <C̅ᵢ, X̅ᵢ>, where X̅ᵢ is the i'th matrix variable stored
+  // inside Mosek, x are the non-matrix variables in Mosek. Mosek API
+  // requires adding the cost for matrix and non-matrix variables separately.
   int num_bar_var = 0;
   rescode = MSK_getnumbarvar(*task, &num_bar_var);
   if (rescode != MSK_RES_OK) {
     return rescode;
   }
-  // C_bar_lower_triplets[i] stores the triplets for C̅ᵢ.
   std::vector<std::vector<Eigen::Triplet<double>>> C_bar_lower_triplets(
       num_bar_var);
-
-  // Aggregate the quadratic costs.
-  rescode = AggregateQuadraticCosts(
-      prog, decision_variable_index_to_mosek_nonmatrix_variable,
-      &Q_lower_triplets, &linear_term_triplets, &constant_cost);
-  if (rescode != MSK_RES_OK) {
-    return rescode;
-  }
-  // Aggregate the linear costs.
-  rescode = AggregateLinearCosts(
-      prog, decision_variable_index_to_mosek_matrix_variable,
-      decision_variable_index_to_mosek_nonmatrix_variable,
-      &linear_term_triplets, &constant_cost, &C_bar_lower_triplets);
-  if (rescode != MSK_RES_OK) {
-    return rescode;
-  }
-
-  // Add the quadratic cost.
-  std::vector<MSKint32t> qrow, qcol;
-  std::vector<double> qval;
-  ConvertTripletsToVectors(Q_lower_triplets, xDim, xDim, &qrow, &qcol, &qval);
-  const int Q_nnz = static_cast<int>(qrow.size());
-  rescode = MSK_putqobj(*task, Q_nnz, qrow.data(), qcol.data(), qval.data());
-  if (rescode != MSK_RES_OK) {
-    return rescode;
-  }
-
-  // Add the linear cost.
-  Eigen::SparseMatrix<double, Eigen::ColMajor> linear_terms(xDim, 1);
-  linear_terms.setFromTriplets(linear_term_triplets.begin(),
-                               linear_term_triplets.end());
-  for (Eigen::SparseMatrix<double, Eigen::ColMajor>::InnerIterator it(
-           linear_terms, 0);
-       it; ++it) {
-    rescode = MSK_putcj(*task, static_cast<MSKint32t>(it.row()), it.value());
-    if (rescode != MSK_RES_OK) {
-      return rescode;
+  for (Eigen::SparseVector<double>::InnerIterator it(linear_coeff); it; ++it) {
+    const symbolic::Variable& var = linear_vars(it.row());
+    const int var_index = prog.FindDecisionVariableIndex(var);
+    auto it1 =
+        decision_variable_index_to_mosek_nonmatrix_variable.find(var_index);
+    if (it1 != decision_variable_index_to_mosek_nonmatrix_variable.end()) {
+      // This variable is a non-matrix variable.
+      rescode =
+          MSK_putcj(*task, static_cast<MSKint32t>(it1->second), it.value());
+      if (rescode != MSK_RES_OK) {
+        return rescode;
+      }
+    } else {
+      // Aggregate the matrix C̅ᵢ
+      auto it2 =
+          decision_variable_index_to_mosek_matrix_variable.find(var_index);
+      DRAKE_DEMAND(it2 !=
+                   decision_variable_index_to_mosek_matrix_variable.end());
+      C_bar_lower_triplets[it2->second.bar_matrix_index()].emplace_back(
+          it2->second.row_index(), it2->second.col_index(),
+          it2->second.row_index() == it2->second.col_index() ? it.value()
+                                                             : it.value() / 2);
     }
   }
 
@@ -945,6 +834,188 @@ MSKrescodee AddCosts(const MathematicalProgram& prog,
       // Now add the cost <C̅ᵢ, X̅ᵢ>
       const MSKrealt weight{1.0};
       rescode = MSK_putbarcj(*task, i, 1, &Ci_bar_index, &weight);
+    }
+  }
+  return rescode;
+}
+
+MSKrescodee AddQuadraticCostAsLinearCost(
+    const Eigen::SparseMatrix<double>& Q_lower,
+    const VectorX<symbolic::Variable>& quadratic_vars,
+    const MathematicalProgram& prog,
+    const std::unordered_map<int, MatrixVariableEntry>&
+        decision_variable_index_to_mosek_matrix_variable,
+    const std::unordered_map<int, int>&
+        decision_variable_index_to_mosek_nonmatrix_variable,
+    std::unordered_map<MatrixVariableEntry::Id, MSKint64t>*
+        matrix_variable_entry_to_selection_matrix_id,
+    MSKtask_t* task) {
+  // We can add the quaratic cost 0.5 * quadratic_vars' * Q * quadratic_vars as
+  // a linear cost with a rotated Lorentz cone constraint. To do so, we
+  // introduce a slack variable s, with the rotated Lorentz cone constraint
+  // 2s >= | L * quadratic_vars|²,
+  // where L'L = Q. We then minimize s. In Mosek, we
+  // add new variables z, such that
+  // z[0] = 1
+  // z[1] = s
+  // z[2:] = L * quadratic_vars
+  // And z is in the rotated Lorentz cone.
+  MSKrescodee rescode = MSK_RES_OK;
+  // Unfortunately the sparse Cholesky decomposition in Eigen requires GPL
+  // license, which is incompatible with Drake's license, so we convert the
+  // sparse Q_lower matrix to a dense matrix, and use the dense Cholesky
+  // decomposition instead.
+  const Eigen::MatrixXd L = math::DecomposePSDmatrixIntoXtransposeTimesX(
+      Eigen::MatrixXd(Q_lower), std::numeric_limits<double>::epsilon());
+  MSKint32t num_mosek_vars = 0;
+  rescode = MSK_getnumvar(*task, &num_mosek_vars);
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
+  const int num_z = L.rows() + 2;
+  rescode = MSK_appendvars(*task, num_z);
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
+  std::vector<MSKint32t> new_var_indices(num_z);
+  for (int i = 0; i < num_z; ++i) {
+    new_var_indices[i] = num_mosek_vars + i;
+    if (i >= 1) {
+      rescode = MSK_putvarbound(*task, new_var_indices[i], MSK_BK_FR,
+                                -MSK_INFINITY, MSK_INFINITY);
+      if (rescode != MSK_RES_OK) {
+        return rescode;
+      }
+    }
+  }
+  // Add the constraint z(0) = 1
+  rescode = MSK_putvarbound(*task, new_var_indices[0], MSK_BK_FX, 1., 1.);
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
+  // Add the rotated Lorentz cone constraint.
+  rescode =
+      MSK_appendcone(*task, MSK_CT_RQUAD, 0.0, num_z, new_var_indices.data());
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
+  // Now add the linear constraint
+  // z[2:] = L * quadratic_vars
+  std::vector<MSKint32t> z2_mosek_indices(L.rows());
+  for (int i = 0; i < L.rows(); ++i) {
+    z2_mosek_indices[i] = new_var_indices[i + 2];
+  }
+  Eigen::SparseMatrix<double> B_sparse(L.rows(), L.rows());
+  B_sparse.setIdentity();
+  rescode = AddLinearConstraintToMosek(
+      prog, -L.sparseView(), B_sparse, Eigen::VectorXd::Zero(L.rows()),
+      Eigen::VectorXd::Zero(L.rows()), quadratic_vars, z2_mosek_indices,
+      LinearConstraintBoundType::kEquality,
+      decision_variable_index_to_mosek_matrix_variable,
+      decision_variable_index_to_mosek_nonmatrix_variable,
+      matrix_variable_entry_to_selection_matrix_id, *task);
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
+
+  // Now add the linear cost on s = z[1]
+  rescode = MSK_putcj(*task, new_var_indices[1], 1.);
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
+  return rescode;
+}
+
+MSKrescodee AddQuadraticCost(
+    const Eigen::SparseMatrix<double>& Q_quadratic_vars,
+    const VectorX<symbolic::Variable>& quadratic_vars,
+    const MathematicalProgram& prog,
+    const std::unordered_map<int, int>&
+        decision_variable_index_to_mosek_nonmatrix_variable,
+    MSKtask_t* task) {
+  MSKrescodee rescode = MSK_RES_OK;
+  // Add the quadratic cost 0.5 * quadratic_vars' * Q_quadratic_vars *
+  // quadratic_vars to Mosek. Q_lower_triplets correspond to the matrix that
+  // multiplies with all the non-matrix decision variables in Mosek, not with
+  // `quadratic_vars`. We need to map each variable in `quadratic_vars` to its
+  // index in Mosek non-matrix variables.
+  std::vector<int> var_indices(quadratic_vars.rows());
+  for (int i = 0; i < quadratic_vars.rows(); ++i) {
+    var_indices[i] = decision_variable_index_to_mosek_nonmatrix_variable.at(
+        prog.FindDecisionVariableIndex(quadratic_vars(i)));
+  }
+  std::vector<Eigen::Triplet<double>> Q_lower_triplets;
+  for (int j = 0; j < Q_quadratic_vars.outerSize(); ++j) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(Q_quadratic_vars, j); it;
+         ++it) {
+      Q_lower_triplets.emplace_back(var_indices[it.row()],
+                                    var_indices[it.col()], it.value());
+    }
+  }
+  std::vector<MSKint32t> qrow, qcol;
+  std::vector<double> qval;
+  const int xDim = decision_variable_index_to_mosek_nonmatrix_variable.size();
+  ConvertTripletsToVectors(Q_lower_triplets, xDim, xDim, &qrow, &qcol, &qval);
+  const int Q_nnz = static_cast<int>(qrow.size());
+  rescode = MSK_putqobj(*task, Q_nnz, qrow.data(), qcol.data(), qval.data());
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
+  return rescode;
+}
+
+MSKrescodee AddCosts(const MathematicalProgram& prog,
+                     const std::unordered_map<int, MatrixVariableEntry>&
+                         decision_variable_index_to_mosek_matrix_variable,
+                     const std::unordered_map<int, int>&
+                         decision_variable_index_to_mosek_nonmatrix_variable,
+                     std::unordered_map<MatrixVariableEntry::Id, MSKint64t>*
+                         matrix_variable_entry_to_selection_matrix_id,
+                     MSKtask_t* task) {
+  // Add the cost in the form 0.5 * x' * Q_all * x + linear_coeff' * x + ∑ᵢ <C̅ᵢ,
+  // X̅ᵢ>, where X̅ᵢ is the i'th matrix variable stored inside Mosek.
+
+  // First aggregate all the linear and quadratic costs.
+  Eigen::SparseMatrix<double> Q_lower;
+  VectorX<symbolic::Variable> quadratic_vars;
+  Eigen::SparseVector<double> linear_coeff;
+  VectorX<symbolic::Variable> linear_vars;
+  double constant_cost;
+  AggregateQuadraticAndLinearCosts(prog.quadratic_costs(), prog.linear_costs(),
+                                   &Q_lower, &quadratic_vars, &linear_coeff,
+                                   &linear_vars, &constant_cost);
+
+  MSKrescodee rescode = MSK_RES_OK;
+  // Add linear cost.
+  rescode =
+      AddLinearCost(linear_coeff, linear_vars, prog,
+                    decision_variable_index_to_mosek_matrix_variable,
+                    decision_variable_index_to_mosek_nonmatrix_variable, task);
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
+  if (!prog.quadratic_costs().empty()) {
+    if (prog.lorentz_cone_constraints().empty() &&
+        prog.rotated_lorentz_cone_constraints().empty() &&
+        prog.linear_matrix_inequality_constraints().empty() &&
+        prog.positive_semidefinite_constraints().empty() &&
+        prog.exponential_cone_constraints().empty()) {
+      rescode = AddQuadraticCost(
+          Q_lower, quadratic_vars, prog,
+          decision_variable_index_to_mosek_nonmatrix_variable, task);
+
+      if (rescode != MSK_RES_OK) {
+        return rescode;
+      }
+    } else {
+      rescode = AddQuadraticCostAsLinearCost(
+          Q_lower, quadratic_vars, prog,
+          decision_variable_index_to_mosek_matrix_variable,
+          decision_variable_index_to_mosek_nonmatrix_variable,
+          matrix_variable_entry_to_selection_matrix_id, task);
+      if (rescode != MSK_RES_OK) {
+        return rescode;
+      }
     }
   }
 
@@ -1355,9 +1426,9 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
   }
   // Add costs
   if (rescode == MSK_RES_OK) {
-    rescode =
-        AddCosts(prog, decision_variable_index_to_mosek_matrix_variable,
-                 decision_variable_index_to_mosek_nonmatrix_variable, &task);
+    rescode = AddCosts(prog, decision_variable_index_to_mosek_matrix_variable,
+                       decision_variable_index_to_mosek_nonmatrix_variable,
+                       &matrix_variable_entry_to_selection_matrix_id, &task);
   }
   // Add bounding box constraints on decision variables.
   if (rescode == MSK_RES_OK) {
