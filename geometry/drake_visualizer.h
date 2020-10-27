@@ -10,8 +10,10 @@
 #include "drake/geometry/geometry_version.h"
 #include "drake/geometry/query_object.h"
 #include "drake/lcm/drake_lcm_interface.h"
+#include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/input_port.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/framework/output_port.h"
 
 namespace drake {
 namespace geometry {
@@ -108,6 +110,13 @@ struct DrakeVisualizerParams {
      such that the data in the per-thread systems::Context varies.
    - Evaluating multiple instances of %DrakeVisualizer in a single thread that
      share the same lcm::DrakeLcmInterface.
+
+ <h3>Ad hoc broadcasting</h3>
+
+ In addition to functioning within the framework, %DrakeVisualizer provides a
+ collection of static methods that can be used to broadcast geometry data
+ in an ad hoc manner. For more details see
+ @ref drake_viz_add_hoc "Ad hoc broadcasting".
 */
 class DrakeVisualizer : public systems::LeafSystem<double> {
  public:
@@ -132,20 +141,95 @@ class DrakeVisualizer : public systems::LeafSystem<double> {
     return this->get_input_port(query_object_input_port_);
   }
 
+  /** @name Utility functions for instantiating and connecting a visualizer
+
+   These methods provide a convenient mechanism for adding a DrakeVisualizer
+   instance to an existing diagram, handling the necessary connections. The
+   DrakeVisualizer instance must be connected to a QueryObject-valued output
+   port. The difference between the two methods is how that output port is
+   identifier. Otherwise, the two methods have the same parameters and results.
+
+   Both methods can be invoked with optional parameters:
+
+     - `lcm`: The DrakeVisualizer will use the lcm object provided, otherwise,
+        if omitted, the DrakeVisualizer instance will create its own
+        self-configured lcm::DrakeLcmInterface object.
+     - `params`: The DrakeVisualizer will be configured according to the
+        provided parameters. If omitted, it uses default parameters.  */
+  //@{
+
+  /** Connects the newly added DrakeVisualizer to the given SceneGraph's
+   QueryObject-valued output port.  */
+  static const DrakeVisualizer& AddToBuilder(
+      systems::DiagramBuilder<double>* builder,
+      const SceneGraph<double>& scene_graph,
+      lcm::DrakeLcmInterface* lcm = nullptr, DrakeVisualizerParams params = {});
+
+  /** Connects the newly added DrakeVisualizer to the given QueryObject-valued
+   output port.  */
+  static const DrakeVisualizer& AddToBuilder(
+      systems::DiagramBuilder<double>* builder,
+      const systems::OutputPort<double>& query_object_port,
+      lcm::DrakeLcmInterface* lcm = nullptr, DrakeVisualizerParams params = {});
+  //@}
+
+  /** @name Ad hoc broadcasting
+
+   @anchor drake_viz_add_hoc
+   (Advanced) These methods provide ad hoc access to broadcasting geometry in
+   both draw and load messages. The geometry can be the model geometry stored in
+   a SceneGraph instance, or a particular instance of it stored in SceneGraph's
+   Context.
+
+   Load and draw messages must be coordinated. If a load message is broadcast
+   for one scene, but a draw message is broadcast for another, the result will
+   be nonsensical (and most likely lead to errors in the receiving visualizer).
+   It is the responsibility of the caller to make sure load and draw messages
+   are propertly coordinated.
+
+   The LCM interface *must* be provided by the caller and cannot be `nullptr`.
+
+   The messages can be configured via an instance of DrakeVisualizerParams to
+   have the same effect as documented for DrakeVisualizer.
+
+   @note There is no `Context`-free variant of`BroadcastDraw`. The draw message
+   requires poses which can only come from the context.   */
+  //@{
+
+  /** Broadcasts a load message for the *model* geometry for the given
+   SceneGraph instance. The load message's time value will be zero.
+   @pre `lcm != nullptr`.  */
+  static void BroadcastLoad(const SceneGraph<double>& scene_graph,
+                            lcm::DrakeLcmInterface* lcm,
+                            DrakeVisualizerParams params = {});
+
+  /** Broadcasts a load message for the geometry stored in the given
+   SceneGraph Context instance. The load message's time value will be drawn
+   from the context.
+   @pre `context` must be allocated by `scene_graph`.
+   @pre `lcm != nullptr`.  */
+  static void BroadcastLoad(const systems::Context<double>& context,
+                            const SceneGraph<double>& scene_graph,
+                            lcm::DrakeLcmInterface* lcm,
+                            DrakeVisualizerParams params = {});
+
+  /** Broadcasts a draw message for the geometry stored in the given
+   SceneGraph Context instance. The draw message's time value will be drawn
+   from the context.
+   @pre `context` must be allocated by `scene_graph`.
+   @pre `lcm != nullptr`.  */
+  static void BroadcastDraw(const systems::Context<double>& context,
+                            const SceneGraph<double>& scene_graph,
+                            lcm::DrakeLcmInterface* lcm,
+                            DrakeVisualizerParams params = {});
+  //@}
+
  private:
   friend class DrakeVisualizerTest;
 
   /* The periodic event handler. It tests to see if the last scene description
    is valid (if not, updates it) and then broadcasts poses.  */
   void SendGeometryMessage(const systems::Context<double>& context) const;
-
-  /* Dispatches a "load geometry" message; replacing the whole scene with the
-   current scene.  */
-  void SendLoadMessage(const systems::Context<double>& context) const;
-
-  /* Dispatches a "update pose" message for geometry that is known to have been
-   loaded.  */
-  void SendPoseMessage(const systems::Context<double>& context) const;
 
   /* Data stored in the cache; populated when we transmit a load message and
    read from for a pose message.  */
@@ -155,10 +239,42 @@ class DrakeVisualizer : public systems::LeafSystem<double> {
     std::string name;
   };
 
+  /* Dispatches a "load geometry" message; replacing the whole scene with the
+   current scene.  */
+  static void SendLoadMessage(
+      const SceneGraphInspector<double>& inspector,
+      const DrakeVisualizerParams& params,
+      const std::vector<DynamicFrameData>& dynamic_frames,
+      double time,
+      lcm::DrakeLcmInterface* lcm);
+
+  /* Dispatches a "draw" message for geometry that is known to have been
+   loaded.  */
+  static void SendDrawMessage(
+      const QueryObject<double>& query_object,
+      const std::vector<DynamicFrameData>& dynamic_frames,
+      double time,
+      lcm::DrakeLcmInterface* lcm);
+
   /* Identifies all of the frames with dynamic data and stores them (with
    additional data) in the given vector `frame_data`. */
   void CalcDynamicFrameData(const systems::Context<double>& context,
                             std::vector<DynamicFrameData>* frame_data) const;
+
+  /* Refreshes the cached dynamic frame data. */
+  const std::vector<DynamicFrameData>& RefreshDynamicFrameData(
+      const systems::Context<double>& context) const;
+
+  /* Simple wrapper for evaluating the dynamic frame data cache entry.  */
+  const std::vector<DynamicFrameData>& EvalDynamicFrameData(
+      const systems::Context<double>& context) const;
+
+  /* Generic utility for populating the dynamic frames. Available ot the ad hoc
+   publishing methods as well as the cache-entry instance method.  */
+  static void PopulateDynamicFrameData(
+      const SceneGraphInspector<double>& inspector,
+      const DrakeVisualizerParams& params,
+      std::vector<DynamicFrameData>* frame_data);
 
   /* DrakeVisualizer stores a "model" of what it thinks is registered in the
    drake_visualizer application. Because drake_visualizer is not part of the

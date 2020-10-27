@@ -1000,7 +1000,49 @@ void DoScalarIndependentDefinitions(py::module m) {
             py::keep_alive<1, 2>(),  // BR
             cls_doc.ctor.doc)
         .def("query_object_input_port", &Class::query_object_input_port,
-            py_rvp::reference_internal, cls_doc.query_object_input_port.doc);
+            py_rvp::reference_internal, cls_doc.query_object_input_port.doc)
+        .def_static("AddToBuilder",
+            py::overload_cast<systems::DiagramBuilder<double>*,
+                const SceneGraph<double>&, lcm::DrakeLcmInterface*,
+                DrakeVisualizerParams>(&DrakeVisualizer::AddToBuilder),
+            py::arg("builder"), py::arg("scene_graph"),
+            py::arg("lcm") = nullptr,
+            py::arg("params") = DrakeVisualizerParams{},
+            // Keep alive, ownership: `return` keeps `builder` alive.
+            py::keep_alive<0, 1>(),
+            // Keep alive, ownership: `builder` keeps `lcm` alive.
+            py::keep_alive<1, 3>(), py_rvp::reference,
+            cls_doc.AddToBuilder.doc_4args_builder_scene_graph_lcm_params)
+        .def_static("AddToBuilder",
+            py::overload_cast<systems::DiagramBuilder<double>*,
+                const systems::OutputPort<double>&, lcm::DrakeLcmInterface*,
+                DrakeVisualizerParams>(&DrakeVisualizer::AddToBuilder),
+            py::arg("builder"), py::arg("query_object_port"),
+            py::arg("lcm") = nullptr,
+            py::arg("params") = DrakeVisualizerParams{},
+            // Keep alive, ownership: `return` keeps `builder` alive.
+            py::keep_alive<0, 1>(),
+            // Keep alive, ownership: `builder` keeps `lcm` alive.
+            py::keep_alive<1, 3>(), py_rvp::reference,
+            cls_doc.AddToBuilder.doc_4args_builder_query_object_port_lcm_params)
+        .def_static("BroadcastLoad",
+            py::overload_cast<const SceneGraph<double>&,
+                lcm::DrakeLcmInterface*, DrakeVisualizerParams>(
+                &DrakeVisualizer::BroadcastLoad),
+            py::arg("scene_graph"), py::arg("lcm"),
+            py::arg("params") = DrakeVisualizerParams{},
+            cls_doc.BroadcastLoad.doc_3args)
+        .def_static("BroadcastLoad",
+            py::overload_cast<const systems::Context<double>&,
+                const SceneGraph<double>&, lcm::DrakeLcmInterface*,
+                DrakeVisualizerParams>(&DrakeVisualizer::BroadcastLoad),
+            py::arg("context"), py::arg("scene_graph"), py::arg("lcm"),
+            py::arg("params") = DrakeVisualizerParams{},
+            cls_doc.BroadcastLoad.doc_4args)
+        .def_static("BroadcastDraw", &DrakeVisualizer::BroadcastDraw,
+            py::arg("context"), py::arg("scene_graph"), py::arg("lcm"),
+            py::arg("params") = DrakeVisualizerParams{},
+            cls_doc.BroadcastDraw.doc);
   }
 
   // Shape constructors

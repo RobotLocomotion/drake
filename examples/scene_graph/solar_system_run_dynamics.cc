@@ -31,9 +31,7 @@ int do_main() {
   builder.Connect(solar_system->get_geometry_pose_output_port(),
                   scene_graph->get_source_pose_port(solar_system->source_id()));
 
-  auto visualizer = builder.AddSystem<geometry::DrakeVisualizer>();
-  builder.Connect(scene_graph->get_query_output_port(),
-                  visualizer->query_object_input_port());
+  geometry::DrakeVisualizer::AddToBuilder(&builder, *scene_graph);
 
   auto diagram = builder.Build();
 
