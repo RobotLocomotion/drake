@@ -1,5 +1,7 @@
 #include "drake/solvers/aggregate_costs_constraints.h"
 
+#include <limits>
+
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 
@@ -8,9 +10,10 @@
 
 namespace drake {
 namespace solvers {
-class TestAggregateCosts : public ::testing::Test {
+const double kInf = std::numeric_limits<double>::infinity();
+class TestAggregateCostsAndConstraints : public ::testing::Test {
  public:
-  TestAggregateCosts() {
+  TestAggregateCostsAndConstraints() {
     for (int i = 0; i < 4; ++i) {
       x_.push_back(symbolic::Variable(fmt::format("x{}", i)));
     }
@@ -20,7 +23,7 @@ class TestAggregateCosts : public ::testing::Test {
   std::vector<symbolic::Variable> x_;
 };
 
-TEST_F(TestAggregateCosts, TestQuadraticCostsOnly) {
+TEST_F(TestAggregateCostsAndConstraints, TestQuadraticCostsOnly) {
   // Test a single quadratic cost.
   std::vector<Binding<QuadraticCost>> quadratic_costs;
   Eigen::Matrix2d Q1;
@@ -119,7 +122,7 @@ TEST_F(TestAggregateCosts, TestQuadraticCostsOnly) {
   EXPECT_EQ(constant_cost, c1 + c2 + c3);
 }
 
-TEST_F(TestAggregateCosts, LinearCostsOnly) {
+TEST_F(TestAggregateCostsAndConstraints, LinearCostsOnly) {
   // Test a single cost. This cost has a sparse linear coefficient.
   std::vector<Binding<LinearCost>> linear_costs;
   const Eigen::Vector3d a1(1, 0, 2);
@@ -156,7 +159,7 @@ TEST_F(TestAggregateCosts, LinearCostsOnly) {
                (a1.dot(var1) + a2.dot(var2)).Expand());
 }
 
-TEST_F(TestAggregateCosts, QuadraticAndLinearCosts) {
+TEST_F(TestAggregateCostsAndConstraints, QuadraticAndLinearCosts) {
   std::vector<Binding<QuadraticCost>> quadratic_costs;
   std::vector<Binding<LinearCost>> linear_costs;
   // One quadratic and one linear cost.
@@ -239,6 +242,70 @@ TEST_F(TestAggregateCosts, QuadraticAndLinearCosts) {
   EXPECT_EQ(linear_vars(2).get_id(), x_[3].get_id());
   EXPECT_EQ(linear_vars(3).get_id(), x_[2].get_id());
   EXPECT_EQ(constant_cost, c1 + c2 + c3 + c4);
+}
+
+TEST_F(TestAggregateCostsAndConstraints, AggregateBoundingBoxConstraints1) {
+  // Test AggregateBoundingBoxConstraints with input being
+  // std::vector<Binding<BoundingBoxConstraint>>
+  std::vector<Binding<BoundingBoxConstraint>> bounding_box_constraints{};
+  auto result = AggregateBoundingBoxConstraints(bounding_box_constraints);
+  EXPECT_EQ(result.size(), 0);
+  // 1 <= x0 <= 2
+  // 3 <= x2 <= 5
+  bounding_box_constraints.emplace_back(
+      std::make_shared<BoundingBoxConstraint>(Eigen::Vector2d(1, 3),
+                                              Eigen::Vector2d(2, 5)),
+      Vector2<symbolic::Variable>(x_[0], x_[2]));
+  result = AggregateBoundingBoxConstraints(bounding_box_constraints);
+  EXPECT_EQ(result.size(), 2);
+  EXPECT_EQ(result.at(x_[0]).lower, 1);
+  EXPECT_EQ(result.at(x_[0]).upper, 2);
+  EXPECT_EQ(result.at(x_[2]).lower, 3);
+  EXPECT_EQ(result.at(x_[2]).upper, 5);
+
+  // 2 <= x2 <= 4
+  // 1.5 <= x0 <= inf
+  // 4 <= x1 <= inf
+  bounding_box_constraints.emplace_back(
+      std::make_shared<BoundingBoxConstraint>(Eigen::Vector3d(2, 1.5, 4),
+                                              Eigen::Vector3d(4, kInf, kInf)),
+      Vector3<symbolic::Variable>(x_[2], x_[0], x_[1]));
+  result = AggregateBoundingBoxConstraints(bounding_box_constraints);
+  EXPECT_EQ(result.size(), 3);
+  EXPECT_EQ(result.at(x_[0]).lower, 1.5);
+  EXPECT_EQ(result.at(x_[0]).upper, 2);
+  EXPECT_EQ(result.at(x_[1]).lower, 4);
+  EXPECT_EQ(result.at(x_[1]).upper, kInf);
+  EXPECT_EQ(result.at(x_[2]).lower, 3);
+  EXPECT_EQ(result.at(x_[2]).upper, 4);
+
+  // -inf <= x1 <= 2. The returned bounds for x1 should be 4 <= x1 <= 2. This
+  // test that we can return the bounds even if the lower bound is higher than
+  // the upper bound.
+  bounding_box_constraints.emplace_back(std::make_shared<BoundingBoxConstraint>(
+      Vector1d(-kInf), Vector1d(2)), Vector1<symbolic::Variable>(x_[1]));
+  result = AggregateBoundingBoxConstraints(bounding_box_constraints);
+  EXPECT_EQ(result.size(), 3);
+  // Only the bound of x_[1] should change, the rest should be the same.
+  EXPECT_EQ(result.at(x_[0]).lower, 1.5);
+  EXPECT_EQ(result.at(x_[0]).upper, 2);
+  EXPECT_EQ(result.at(x_[1]).lower, 4);
+  EXPECT_EQ(result.at(x_[1]).upper, 2);
+  EXPECT_EQ(result.at(x_[2]).lower, 3);
+  EXPECT_EQ(result.at(x_[2]).upper, 4);
+}
+
+TEST_F(TestAggregateCostsAndConstraints, AggregateBoundingBoxConstraints2) {
+  // Test AggregateBoundingBoxConstraints with input being MathematicalPorgram.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<4>();
+  prog.AddBoundingBoxConstraint(1, 3, x.tail<2>());
+  prog.AddBoundingBoxConstraint(-1, 2, x(0));
+  prog.AddBoundingBoxConstraint(-kInf, 2, x(3));
+  Eigen::VectorXd lower, upper;
+  AggregateBoundingBoxConstraints(prog, &lower, &upper);
+  EXPECT_TRUE(CompareMatrices(lower, Eigen::Vector4d(-1, -kInf, 1, 1)));
+  EXPECT_TRUE(CompareMatrices(upper, Eigen::Vector4d(2, kInf, 3, 2)));
 }
 }  // namespace solvers
 }  // namespace drake

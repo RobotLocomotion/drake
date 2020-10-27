@@ -1,8 +1,12 @@
 #pragma once
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "drake/solvers/binding.h"
+#include "drake/solvers/constraint.h"
 #include "drake/solvers/cost.h"
+#include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace solvers {
@@ -38,5 +42,42 @@ void AggregateQuadraticAndLinearCosts(
     VectorX<symbolic::Variable>* quadratic_vars,
     Eigen::SparseVector<double>* linear_coeff,
     VectorX<symbolic::Variable>* linear_vars, double* constant_cost);
+
+/**
+ * Stores the lower and upper bound of a variable.
+ */
+struct Bound {
+  /** Lower bound. */
+  double lower{};
+  /** Upper bound. */
+  double upper{};
+};
+
+/**
+ * Aggregates many bounding box constraints, returns the intersection (the
+ * tightest bounds) of these constraints.
+ * @param bounding_box_constraints The constraints to be aggregated.
+ * @retval aggregated_bounds aggregated_bounds[var.get_id()] returns the
+ * (lower, upper) bounds of that variable as the tightest bounds of @p
+ * bounding_box_constraints.
+ */
+std::unordered_map<symbolic::Variable, Bound> AggregateBoundingBoxConstraints(
+    const std::vector<Binding<BoundingBoxConstraint>>&
+        bounding_box_constraints);
+
+/**
+ * Aggregates all the BoundingBoxConstraints inside @p prog, returns the
+ * intersection of the bounding box constraints as the lower and upper bound for
+ * each variable in @p prog.
+ * @param prog The optimization program containing decision variables and
+ * BoundingBoxConstraints.
+ * @param[out] lower (*lower)[i] is the lower bound of
+ * prog.decision_variable(i).
+ * @param[out] upper (*upper)[i] is the upper bound of
+ * prog.decision_variable(i).
+ */
+void AggregateBoundingBoxConstraints(const MathematicalProgram& prog,
+                                     Eigen::VectorXd* lower,
+                                     Eigen::VectorXd* upper);
 }  // namespace solvers
 }  // namespace drake
