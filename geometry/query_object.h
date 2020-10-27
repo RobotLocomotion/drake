@@ -482,7 +482,7 @@ class QueryObject {
 
    @param camera                The intrinsic properties of the camera.
    @param parent_frame          The id for the camera's parent frame.
-   @param X_PC                  The pose of the camera body in the world frame.
+   @param X_PC                  The pose of the camera body in the parent frame.
    @param show_window           If true, the render window will be displayed.
    @param[out] color_image_out  The rendered color image. */
   void RenderColorImage(const render::CameraProperties& camera,
@@ -504,7 +504,7 @@ class QueryObject {
 
    @param camera                The intrinsic properties of the camera.
    @param parent_frame          The id for the camera's parent frame.
-   @param X_PC                  The pose of the camera body in the world frame.
+   @param X_PC                  The pose of the camera body in the parent frame.
    @param[out] depth_image_out  The rendered depth image. */
   void RenderDepthImage(const render::DepthCameraProperties& camera,
                         FrameId parent_frame,
@@ -520,7 +520,7 @@ class QueryObject {
 
    @param camera                The intrinsic properties of the camera.
    @param parent_frame          The id for the camera's parent frame.
-   @param X_PC                  The pose of the camera body in the world frame.
+   @param X_PC                  The pose of the camera body in the parent frame.
    @param show_window           If true, the render window will be displayed.
    @param[out] label_image_out  The rendered label image. */
   void RenderLabelImage(const render::CameraProperties& camera,
