@@ -5,6 +5,7 @@
 
 #include "drake/common/value.h"
 #include "drake/geometry/query_object.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
@@ -17,7 +18,6 @@ namespace drake {
 namespace geometry {
 
 using Eigen::Quaterniond;
-using lcm::DrakeLcm;
 using math::RigidTransformd;
 using std::make_unique;
 using std::vector;
@@ -149,7 +149,7 @@ class ShapeToLcm : public ShapeReifier {
 DrakeVisualizer::DrakeVisualizer(lcm::DrakeLcmInterface* lcm,
                                  DrakeVisualizerParams params)
     : LeafSystem<double>(),
-      owned_lcm_(lcm ? nullptr : new DrakeLcm()),
+      owned_lcm_(lcm ? nullptr : new lcm::DrakeLcm()),
       lcm_(lcm ? lcm : owned_lcm_.get()),
       params_(std::move(params)) {
   if (params_.publish_period <= 0) {
@@ -180,6 +180,34 @@ DrakeVisualizer::DrakeVisualizer(lcm::DrakeLcmInterface* lcm,
           .cache_index();
 }
 
+const DrakeVisualizer& DrakeVisualizer::AddToBuilder(
+    systems::DiagramBuilder<double>* builder,
+    const SceneGraph<double>& scene_graph, lcm::DrakeLcmInterface* lcm,
+    DrakeVisualizerParams params) {
+  return AddToBuilder(builder, scene_graph.get_query_output_port(), lcm,
+                      params);
+}
+
+const DrakeVisualizer& DrakeVisualizer::AddToBuilder(
+    systems::DiagramBuilder<double>* builder,
+    const systems::OutputPort<double>& query_object_port,
+    lcm::DrakeLcmInterface* lcm, DrakeVisualizerParams params) {
+  auto& visualizer = *builder->AddSystem<DrakeVisualizer>(lcm, params);
+  builder->Connect(query_object_port, visualizer.query_object_input_port());
+  return visualizer;
+}
+
+void DrakeVisualizer::DispatchLoadMessage(const SceneGraph<double>& scene_graph,
+                                    lcm::DrakeLcmInterface* lcm,
+                                    DrakeVisualizerParams params) {
+  DRAKE_DEMAND(lcm != nullptr);
+  vector<DynamicFrameData> dynamic_frames;
+  PopulateDynamicFrameData(scene_graph.model_inspector(), params,
+                           &dynamic_frames);
+  SendLoadMessage(scene_graph.model_inspector(), params, dynamic_frames, 0,
+                  lcm);
+}
+
 void DrakeVisualizer::SendGeometryMessage(
     const Context<double>& context) const {
   const auto& query_object =
@@ -196,28 +224,24 @@ void DrakeVisualizer::SendGeometryMessage(
     }
   }
   if (send_load_message) {
-    SendLoadMessage(context);
+    SendLoadMessage(query_object.inspector(), params_,
+                    RefreshDynamicFrameData(context), context.get_time(), lcm_);
   }
-  SendPoseMessage(context);
+
+  SendDrawMessage(query_object, EvalDynamicFrameData(context),
+                  context.get_time(), lcm_);
 }
 
-void DrakeVisualizer::SendLoadMessage(const Context<double>& context) const {
-  const auto& query_object =
-      query_object_input_port().Eval<QueryObject<double>>(context);
-  const SceneGraphInspector<double>& inspector = query_object.inspector();
-
+void DrakeVisualizer::SendLoadMessage(
+    const SceneGraphInspector<double>& inspector,
+    const DrakeVisualizerParams& params,
+    const std::vector<DynamicFrameData>& dynamic_frames, double time,
+    lcm::DrakeLcmInterface* lcm) {
   lcmt_viewer_load_robot message{};
 
-  // We'll need to make sure our knowledge of dynamic frames can get updated.
-  get_cache_entry(dynamic_data_cache_index_)
-      .get_mutable_cache_entry_value(context)
-      .mark_out_of_date();
-  const vector<DynamicFrameData>& dynamic_frames =
-      get_cache_entry(dynamic_data_cache_index_)
-          .Eval<vector<DynamicFrameData>>(context);
   // Add the world frame if it has geometries with the specified role.
   const int anchored_count = inspector.NumGeometriesForFrameWithRole(
-      inspector.world_frame_id(), params_.role);
+      inspector.world_frame_id(), params.role);
   const int frame_count =
       static_cast<int>(dynamic_frames.size()) + (anchored_count > 0 ? 1 : 0);
 
@@ -225,15 +249,15 @@ void DrakeVisualizer::SendLoadMessage(const Context<double>& context) const {
   message.link.resize(frame_count);
 
   // Helper utility to create lcm geometry description from geometry id.
-  auto make_geometry = [this, &inspector](GeometryId g_id) {
+  auto make_geometry = [&params, &inspector](GeometryId g_id) {
     const GeometryProperties* props =
-        inspector.GetProperties(g_id, params_.role);
+        inspector.GetProperties(g_id, params.role);
     // We assume that the g_id was obtained by asking for geometries with the
     // indicated role. So, by definition, the properties should be non-null.
     DRAKE_ASSERT(props != nullptr);
     const Shape& shape = inspector.GetShape(g_id);
-    Rgba default_color = params_.default_color;
-    if (params_.role != Role::kIllustration) {
+    Rgba default_color = params.default_color;
+    if (params.role != Role::kIllustration) {
       const GeometryProperties* illus_props =
           inspector.GetIllustrationProperties(g_id);
       if (illus_props) {
@@ -255,7 +279,7 @@ void DrakeVisualizer::SendLoadMessage(const Context<double>& context) const {
     message.link[0].geom.resize(anchored_count);
     int geom_index = -1;  // We'll pre-increment before using.
     for (const GeometryId& g_id :
-         inspector.GetGeometries(inspector.world_frame_id(), params_.role)) {
+         inspector.GetGeometries(inspector.world_frame_id(), params.role)) {
       message.link[0].geom[++geom_index] = make_geometry(g_id);
     }
     link_index = 1;
@@ -269,34 +293,31 @@ void DrakeVisualizer::SendLoadMessage(const Context<double>& context) const {
     message.link[link_index].geom.resize(geometry_count);
     int geom_index = -1;  // We'll pre-increment before using.
     for (const GeometryId& g_id :
-         inspector.GetGeometries(frame_id, params_.role)) {
+         inspector.GetGeometries(frame_id, params.role)) {
       message.link[link_index].geom[++geom_index] = make_geometry(g_id);
     }
     ++link_index;
   }
 
-  lcm::Publish(lcm_, "DRAKE_VIEWER_LOAD_ROBOT", message, context.get_time());
+  lcm::Publish(lcm, "DRAKE_VIEWER_LOAD_ROBOT", message, time);
 }
 
-void DrakeVisualizer::SendPoseMessage(const Context<double>& context) const {
-  const auto& query_object =
-      query_object_input_port().Eval<QueryObject<double>>(context);
-  const SceneGraphInspector<double>& inspector = query_object.inspector();
-
+void DrakeVisualizer::SendDrawMessage(
+    const QueryObject<double>& query_object,
+    const vector<DynamicFrameData>& dynamic_frames, double time,
+    lcm::DrakeLcmInterface* lcm) {
   lcmt_viewer_draw message{};
 
-  const vector<DynamicFrameData>& dynamic_frames =
-      get_cache_entry(dynamic_data_cache_index_)
-          .Eval<vector<DynamicFrameData>>(context);
   const int frame_count = static_cast<int>(dynamic_frames.size());
 
-  message.timestamp = static_cast<int64_t>(context.get_time() * 1000.0);
+  message.timestamp = static_cast<int64_t>(time * 1000.0);
   message.num_links = frame_count;
   message.link_name.resize(frame_count);
   message.robot_num.resize(frame_count);
   message.position.resize(frame_count);
   message.quaternion.resize(frame_count);
 
+  const SceneGraphInspector<double>& inspector = query_object.inspector();
   for (int i = 0; i < frame_count; ++i) {
     const FrameId frame_id = dynamic_frames[i].frame_id;
     message.robot_num[i] = inspector.GetFrameGroup(frame_id);
@@ -316,7 +337,7 @@ void DrakeVisualizer::SendPoseMessage(const Context<double>& context) const {
     message.quaternion[i][3] = q.z();
   }
 
-  lcm::Publish(lcm_, "DRAKE_VIEWER_DRAW", message, context.get_time());
+  lcm::Publish(lcm, "DRAKE_VIEWER_DRAW", message, time);
 }
 
 void DrakeVisualizer::CalcDynamicFrameData(
@@ -324,7 +345,29 @@ void DrakeVisualizer::CalcDynamicFrameData(
     vector<DynamicFrameData>* frame_data) const {
   const auto& query_object =
       query_object_input_port().Eval<QueryObject<double>>(context);
-  const SceneGraphInspector<double>& inspector = query_object.inspector();
+  PopulateDynamicFrameData(query_object.inspector(), params_, frame_data);
+}
+
+const vector<DrakeVisualizer::DynamicFrameData>&
+DrakeVisualizer::RefreshDynamicFrameData(const Context<double>& context) const {
+  // We'll need to make sure our knowledge of dynamic frames can get updated.
+  get_cache_entry(dynamic_data_cache_index_)
+      .get_mutable_cache_entry_value(context)
+      .mark_out_of_date();
+
+  return EvalDynamicFrameData(context);
+}
+
+const vector<DrakeVisualizer::DynamicFrameData>&
+DrakeVisualizer::EvalDynamicFrameData(const Context<double>& context) const {
+  return get_cache_entry(dynamic_data_cache_index_)
+      .Eval<vector<DynamicFrameData>>(context);
+}
+
+void DrakeVisualizer::PopulateDynamicFrameData(
+    const SceneGraphInspector<double>& inspector,
+    const DrakeVisualizerParams& params,
+    vector<DynamicFrameData>* frame_data) {
   // Collect the dynamic frames that actually have geometries of the
   // specified role. These are the frames broadcast in a draw message and are
   // also part of the load message (plus possibly the world frame).
@@ -335,7 +378,7 @@ void DrakeVisualizer::CalcDynamicFrameData(
     // We'll handle the world frame special.
     if (frame_id == inspector.world_frame_id()) continue;
     const int count =
-        inspector.NumGeometriesForFrameWithRole(frame_id, params_.role);
+        inspector.NumGeometriesForFrameWithRole(frame_id, params.role);
     if (count > 0) {
       dynamic_frames.push_back({frame_id, count,
                                 inspector.GetOwningSourceName(frame_id) +

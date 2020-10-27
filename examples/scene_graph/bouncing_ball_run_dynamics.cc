@@ -102,9 +102,7 @@ int do_main() {
                   bouncing_ball2->get_geometry_query_input_port());
 
   DrakeLcm lcm;
-  auto visualizer = builder.AddSystem<DrakeVisualizer>(&lcm);
-  builder.Connect(scene_graph->get_query_output_port(),
-                  visualizer->query_object_input_port());
+  DrakeVisualizer::AddToBuilder(&builder, *scene_graph, &lcm);
 
   if (FLAGS_render_on) {
     PerceptionProperties properties;
