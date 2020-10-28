@@ -33,6 +33,7 @@ drake_cc_package_library_gl_per_os(
     name = "gl_renderer",
     macos_deps = [
         ":render_engine_gl_factory",
+        ":render_engine_gl_params",
     ],
     ubuntu_deps = [
         ":gl_common",
