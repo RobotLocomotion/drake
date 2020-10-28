@@ -109,9 +109,7 @@ drake_cc_library_gl_ubuntu_only(
 drake_cc_library(
     name = "render_engine_gl_factory",
     srcs = select({
-        "//tools/cc_toolchain:apple": [
-            "no_render_engine_gl_factory.cc",
-        ],
+        "//tools/cc_toolchain:apple": [],
         "//conditions:default": [
             "render_engine_gl_factory.cc",
         ],
@@ -121,13 +119,31 @@ drake_cc_library(
     ],
     deps = select({
         "//tools/cc_toolchain:apple": [
-            ":render_engine_gl_params",
-            "//geometry/render:render_engine",
+            ":apple_only_no_render_engine_gl_factory",
         ],
         "//conditions:default": [
             ":render_engine_gl",
         ],
     }),
+)
+
+drake_cc_library(
+    name = "apple_only_no_render_engine_gl_factory",
+    srcs = [
+        # Always compile this on every platform, to ensure it is well-formed.
+        "no_render_engine_gl_factory.cc",
+    ],
+    hdrs = [
+        "render_engine_gl_factory.h",
+    ],
+    tags = [
+        # We should only every _link_ it on macOS.
+        "exclude_from_package",
+    ],
+    deps = [
+        ":render_engine_gl_params",
+        "//geometry/render:render_engine",
+    ],
 )
 
 drake_cc_library(
