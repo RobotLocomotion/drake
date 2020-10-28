@@ -4,7 +4,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/fem/dev/constitutive_model_cache.h"
+#include "drake/multibody/fem/dev/deformation_gradient_cache.h"
 #include "drake/multibody/fem/dev/fem_indexes.h"
 
 namespace drake {

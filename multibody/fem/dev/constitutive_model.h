@@ -4,7 +4,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/fem/dev/constitutive_model_cache.h"
+#include "drake/multibody/fem/dev/deformation_gradient_cache.h"
 
 namespace drake {
 namespace multibody {

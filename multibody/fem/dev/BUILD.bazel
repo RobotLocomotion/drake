@@ -18,15 +18,15 @@ drake_cc_library(
         "constitutive_model.h",
     ],
     deps = [
-        ":constitutive_model_cache",
+        ":deformation_gradient_cache",
         "//common:essential",
     ],
 )
 
 drake_cc_library(
-    name = "constitutive_model_cache",
+    name = "deformation_gradient_cache",
     hdrs = [
-        "constitutive_model_cache.h",
+        "deformation_gradient_cache.h",
     ],
     deps = [
         ":fem_indexes",
@@ -84,7 +84,7 @@ drake_cc_library(
         "linear_elasticity_model_cache.h",
     ],
     deps = [
-        ":constitutive_model_cache",
+        ":deformation_gradient_cache",
         "//common:default_scalars",
         "//common:essential",
     ],
