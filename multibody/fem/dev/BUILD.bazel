@@ -13,6 +13,39 @@ package(
 )
 
 drake_cc_library(
+    name = "constitutive_model",
+    hdrs = [
+        "constitutive_model.h",
+    ],
+    deps = [
+        ":deformation_gradient_cache",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "deformation_gradient_cache",
+    hdrs = [
+        "deformation_gradient_cache.h",
+    ],
+    deps = [
+        ":fem_indexes",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_indexes",
+    hdrs = [
+        "fem_indexes.h",
+    ],
+    deps = [
+        "//common:essential",
+        "//common:type_safe_index",
+    ],
+)
+
+drake_cc_library(
     name = "isoparametric_element",
     srcs = [
         "isoparametric_element.cc",
@@ -21,6 +54,37 @@ drake_cc_library(
         "isoparametric_element.h",
     ],
     deps = [
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "linear_elasticity_model",
+    srcs = [
+        "linear_elasticity_model.cc",
+    ],
+    hdrs = [
+        "linear_elasticity_model.h",
+    ],
+    deps = [
+        ":constitutive_model",
+        ":linear_elasticity_model_cache",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "linear_elasticity_model_cache",
+    srcs = [
+        "linear_elasticity_model_cache.cc",
+    ],
+    hdrs = [
+        "linear_elasticity_model_cache.h",
+    ],
+    deps = [
+        ":deformation_gradient_cache",
         "//common:default_scalars",
         "//common:essential",
     ],
@@ -49,6 +113,25 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:nice_type_name",
+    ],
+)
+
+drake_cc_googletest(
+    name = "linear_elasticity_model_cache_test",
+    deps = [
+        ":linear_elasticity_model_cache",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "linear_elasticity_model_test",
+    deps = [
+        ":linear_elasticity_model",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//math:gradient",
+        "//math:jacobian",
     ],
 )
 
