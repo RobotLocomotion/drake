@@ -13,7 +13,7 @@ namespace internal {
  structures. Because it serves as an index, we use kTypeCount to declare the
  *number* of index values available (relying on C++'s default behavior of
  assigning sequential values in enumerations).  */
-enum RenderType { kColor = 0, kLabel, kDepth, kTypeCount };
+enum RenderType { kLabel = 0, kDepth, kTypeCount };
 
 }  // namespace internal
 }  // namespace render

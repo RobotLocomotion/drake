@@ -46,7 +46,7 @@ class BufferDim {
  The `frame_buffer` is configured with two additional objects:
 
    - the `value_texture` which stores the result of the rendering operations
-     (i.e., depth, color, or label values).
+     (i.e., depth values, and, soon, color values and label values).
    - A z-buffer that OpenGL uses to do hidden surface removal. The values in
      this buffer are strictly for internal OpenGL consumption.
 */

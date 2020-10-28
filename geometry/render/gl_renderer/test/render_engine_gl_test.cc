@@ -7,7 +7,6 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
@@ -54,7 +53,6 @@ using std::make_unique;
 using std::unique_ptr;
 using std::unordered_map;
 using systems::sensors::ColorI;
-using systems::sensors::ColorD;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
@@ -67,10 +65,6 @@ const double kZNear = 0.1;
 const double kZFar = 5.;
 const double kFovY = M_PI_4;
 const bool kShowWindow = false;
-
-// Each channel of the color image must be within the expected color +/- 1
-// (where each channel is in the range [0, 255]).
-const double kColorPixelTolerance = 1;
 
 // NOTE: The depth tolerance is this large mostly due to the combination of
 // several factors:
@@ -88,15 +82,10 @@ const double kColorPixelTolerance = 1;
 // larger (in area) than the default image size.
 const double kDepthTolerance = 1e-3;  // meters.
 
-// Background (sky) and terrain colors.
-const Rgba kBgColor{254 / 255.0, 127 / 255.0, 0.0, 1.0};
-const Rgba kTerrainColor{0, 0, 0, 1};
 // Provide a default visual color for this tests -- it is intended to be
 // different from the default color of the OpenGL render engine.
-const Rgba kDefaultVisualColor{229 / 255.0, 229 / 255.0, 229/ 255.0, 1.0};
+const ColorI kDefaultVisualColor = {229u, 229u, 229u};
 const float kDefaultDistance{3.f};
-
-const RenderLabel kDefaultLabel{13531};
 
 // Values to be used with the "centered shape" tests.
 // The amount inset from the edge of the images to *still* expect terrain
@@ -124,55 +113,21 @@ struct RgbaColor {
   RgbaColor(const ColorI& c, int alpha)
       : r(c.r), g(c.g), b(c.b), a(alpha) {}
   explicit RgbaColor(const uint8_t* p) : r(p[0]), g(p[1]), b(p[2]), a(p[3]) {}
-  // We'll allow *implicit* conversion from Rgba to RgbaColor to increase the
-  // utility of IsColorNear(), but only in the scope of this test.
-  // NOLINTNEXTLINE(runtime/explicit)
-  RgbaColor(const Rgba& rgba)
-      : r(static_cast<int>(rgba.r() * 255)),
-        g(static_cast<int>(rgba.g() * 255)),
-        b(static_cast<int>(rgba.b() * 255)),
-        a(static_cast<int>(rgba.a() * 255)) {}
+  explicit RgbaColor(const Vector4d& norm_color)
+      : r(static_cast<int>(norm_color(0) * 255)),
+        g(static_cast<int>(norm_color(1) * 255)),
+        b(static_cast<int>(norm_color(2) * 255)),
+        a(static_cast<int>(norm_color(3) * 255)) {}
   int r;
   int g;
   int b;
   int a;
 };
 
-std::ostream& operator<<(std::ostream& out, const RgbaColor& c) {
-  out << "(" << c.r << ", " << c.g << ", " << c.b << ", " << c.a << ")";
-  return out;
-}
-
-// Tests color within tolerance.
-bool IsColorNear(
-    const RgbaColor& expected, const RgbaColor& tested,
-    double tolerance = kColorPixelTolerance) {
-  using std::abs;
-  return (abs(expected.r - tested.r) <= tolerance &&
-      abs(expected.g - tested.g) <= tolerance &&
-      abs(expected.b - tested.b) <= tolerance &&
-      abs(expected.a - tested.a) <= tolerance);
-}
-
-// Tests that the color in the given `image` located at screen coordinate `p`
-// matches the `expected` color to within the given `tolerance`.
-::testing::AssertionResult CompareColor(
-    const RgbaColor& expected, const ImageRgba8U& image, const ScreenCoord& p,
-    double tolerance = kColorPixelTolerance) {
-  RgbaColor tested(image.at(p.x, p.y));
-  if (IsColorNear(expected, tested, tolerance)) {
-    return ::testing::AssertionSuccess();
-  }
-  return ::testing::AssertionFailure()
-         << "At pixel " << p << "\n  Expected: " << expected
-         << "\n  Found: " << tested << "\n  with tolerance: " << tolerance;
-}
-
 class RenderEngineGlTest : public ::testing::Test {
  public:
   RenderEngineGlTest()
-      : color_(kWidth, kHeight),
-        depth_(kWidth, kHeight),
+      : depth_(kWidth, kHeight),
         label_(kWidth, kHeight),
         // Looking straight down from 3m above the ground.
         X_WR_(RotationMatrixd{AngleAxisd(M_PI, Vector3d::UnitY()) *
@@ -187,29 +142,14 @@ class RenderEngineGlTest : public ::testing::Test {
   // test.
   void Render(RenderEngineGl* renderer = nullptr,
               const DepthCameraProperties* camera_in = nullptr,
-              ImageRgba8U* color_out = nullptr,
               ImageDepth32F* depth_in = nullptr,
               ImageLabel16I* label_in = nullptr) {
     if (!renderer) renderer = renderer_.get();
     const DepthCameraProperties& camera = camera_in ? *camera_in : camera_;
     ImageLabel16I* label = label_in ? label_in : &label_;
     ImageDepth32F* depth = depth_in ? depth_in : &depth_;
-    ImageRgba8U* color = color_out ? color_out : &color_;
     EXPECT_NO_THROW(renderer->RenderDepthImage(camera, depth));
     EXPECT_NO_THROW(renderer->RenderLabelImage(camera, kShowWindow, label));
-    EXPECT_NO_THROW(renderer->RenderColorImage(camera, kShowWindow, color));
-  }
-
-  // Confirms that all pixels in the member color image have the same value.
-  void VerifyUniformColor(const Rgba& rgba,
-                          const ImageRgba8U* color = nullptr) {
-    if (color == nullptr) color = &color_;
-    const RgbaColor test_color{rgba};
-    for (int y = 0; y < color->height(); ++y) {
-      for (int x = 0; x < color->width(); ++x) {
-        ASSERT_TRUE(CompareColor(test_color, *color, ScreenCoord{x, y}));
-      }
-    }
   }
 
   // Confirms that all pixels in the member label image have the same value.
@@ -291,15 +231,12 @@ class RenderEngineGlTest : public ::testing::Test {
   // member images will be tested.
   void VerifyOutliers(const RenderEngineGl& renderer,
                       const DepthCameraProperties& camera,
-                      const ImageRgba8U* color_in = nullptr,
-                      const ImageDepth32F* depth_in = nullptr,
-                      const ImageLabel16I* label_in = nullptr) const {
-    const ImageRgba8U& color = color_in ? *color_in : color_;
-    const ImageDepth32F& depth = depth_in ? *depth_in : depth_;
-    const ImageLabel16I& label = label_in ? *label_in : label_;
+                      ImageDepth32F* depth_in = nullptr,
+                      ImageLabel16I* label_in = nullptr) {
+    ImageDepth32F& depth = depth_in ? *depth_in : depth_;
+    ImageLabel16I& label = label_in ? *label_in : label_;
 
     for (const auto& screen_coord : GetOutliers(camera)) {
-      EXPECT_TRUE(CompareColor(expected_outlier_color_, color, screen_coord));
       EXPECT_TRUE(IsExpectedDepth(depth, screen_coord, expected_outlier_depth_,
                                   kDepthTolerance))
           << "Depth at: " << screen_coord;
@@ -309,70 +246,42 @@ class RenderEngineGlTest : public ::testing::Test {
     }
   }
 
-  void SetUp() override {
-    ResetExpectations();
-  }
+  void SetUp() override {}
 
   // All tests on this class must invoke this first.
   void SetUp(const RigidTransformd& X_WR, bool add_terrain = false) {
-    // TODO(SeanCurtis-TRI): When GCC supports non-trivial designated
-    //  initialization turn this back into:
-    //  const RenderEngineGlParams params{.default_clear_color = kBgColor};
-    RenderEngineGlParams params;
-    params.default_clear_color = kBgColor;
-    renderer_ = make_unique<RenderEngineGl>(params);
-    InitializeRenderer(X_WR, add_terrain, renderer_.get());
-    // Ensure that we the test default visual color is different from the
-    // render engine's default color.
-    EXPECT_FALSE(IsColorNear(kDefaultVisualColor,
-                             renderer_->parameters().default_diffuse));
-  }
-
-  // Tests that instantiate their own renderers can initialize their renderers
-  // with this method.
-  void InitializeRenderer(const RigidTransformd& X_WR, bool add_terrain,
-                          RenderEngineGl* engine) {
-    engine->UpdateViewpoint(X_WR);
+    renderer_ = make_unique<RenderEngineGl>();
+    renderer_->UpdateViewpoint(X_WR);
 
     if (add_terrain) {
+      const GeometryId ground_id = GeometryId::get_new_id();
       PerceptionProperties material;
       material.AddProperty("label", "id", RenderLabel::kDontCare);
-      material.AddProperty("phong", "diffuse", kTerrainColor);
-      engine->RegisterVisual(GeometryId::get_new_id(), HalfSpace(), material,
-                             RigidTransformd::Identity(),
-                             false /* needs update */);
+      renderer_->RegisterVisual(ground_id, HalfSpace(), material,
+                                RigidTransformd::Identity(),
+                                false /* needs update */);
     }
   }
 
   // Creates a simple perception properties set for fixed, known results.
   PerceptionProperties simple_material() const {
     PerceptionProperties material;
-    material.AddProperty("phong", "diffuse", default_color_);
+    Vector4d color(kDefaultVisualColor.r / 255., kDefaultVisualColor.g / 255.,
+                   kDefaultVisualColor.b / 255., 1.);
+    material.AddProperty("phong", "diffuse", color);
     material.AddProperty("label", "id", expected_label_);
     return material;
-  }
-
-  // Resets all expected values to the initial, default values.
-  void ResetExpectations() {
-    expected_color_ = RgbaColor{kDefaultVisualColor};
-    expected_outlier_color_ = RgbaColor{kTerrainColor};
-    expected_outlier_depth_ = 3.0f;
-    expected_object_depth_ = 2.0f;
-    // We expect each test to explicitly set this.
-    expected_label_ = RenderLabel();
-    expected_outlier_label_ = RenderLabel::kDontCare;
   }
 
   // Populates the given renderer with the sphere required for
   // PerformCenterShapeTest().
   void PopulateSphereTest(RenderEngineGl* renderer) {
-    const double r = 0.5;
-    Sphere sphere{r};
+    Sphere sphere{0.5};
     expected_label_ = RenderLabel(12345);  // an arbitrary value.
     renderer->RegisterVisual(geometry_id_, sphere, simple_material(),
                              RigidTransformd::Identity(),
                              true /* needs update */);
-    RigidTransformd X_WV{Vector3d{0, 0, r}};
+    RigidTransformd X_WV{Vector3d{0, 0, 0.5}};
     X_WV_.clear();
     X_WV_.insert({geometry_id_, X_WV});
     renderer->UpdatePoses(X_WV_);
@@ -386,26 +295,15 @@ class RenderEngineGlTest : public ::testing::Test {
     const DepthCameraProperties& cam = camera ? *camera : camera_;
     // Can't use the member images in case the camera has been configured to a
     // different size than the default camera_ configuration.
-    ImageRgba8U color(cam.width, cam.height);
     ImageDepth32F depth(cam.width, cam.height);
     ImageLabel16I label(cam.width, cam.height);
-    Render(renderer, &cam, &color, &depth, &label);
+    Render(renderer, &cam, &depth, &label);
 
-    VerifyCenterShapeTest(*renderer, cam, color, depth, label);
-  }
-
-  void VerifyCenterShapeTest(const RenderEngineGl& renderer,
-                             const DepthCameraProperties& camera,
-                             const ImageRgba8U& color,
-                             const ImageDepth32F& depth,
-                             const ImageLabel16I& label) const {
-    VerifyOutliers(renderer, camera, &color, &depth, &label);
+    VerifyOutliers(*renderer, cam, &depth, &label);
 
     // Verifies inside the sphere.
-    const ScreenCoord inlier = GetInlier(camera);
+    const ScreenCoord inlier = GetInlier(cam);
 
-    EXPECT_TRUE(CompareColor(expected_color_, color, inlier))
-              << "Color at: " << inlier;
     EXPECT_TRUE(
         IsExpectedDepth(depth, inlier, expected_object_depth_, kDepthTolerance))
         << "Depth at: " << inlier;
@@ -414,18 +312,15 @@ class RenderEngineGlTest : public ::testing::Test {
         << "Label at: " << inlier;
   }
 
-  RgbaColor expected_color_{kDefaultVisualColor};
-  RgbaColor expected_outlier_color_{kTerrainColor};
-  float expected_outlier_depth_{kDefaultDistance};
+  float expected_outlier_depth_{3.f};
   float expected_object_depth_{2.f};
   RenderLabel expected_label_;
   RenderLabel expected_outlier_label_{RenderLabel::kDontCare};
-  Rgba default_color_{kDefaultVisualColor};
+  RgbaColor default_color_{kDefaultVisualColor, 255};
 
   const DepthCameraProperties camera_ = {kWidth, kHeight, kFovY,
-                                         "unused",  kZNear,  kZFar};
+                                         "n/a",  kZNear,  kZFar};
 
-  ImageRgba8U color_;
   ImageDepth32F depth_;
   ImageLabel16I label_;
   RigidTransformd X_WR_;
@@ -444,26 +339,8 @@ TEST_F(RenderEngineGlTest, NoBodyTest) {
   Render();
 
   SCOPED_TRACE("NoBodyTest");
-  VerifyUniformColor(kBgColor);
   VerifyUniformLabel(RenderLabel::kEmpty);
   VerifyUniformDepth(std::numeric_limits<float>::infinity());
-}
-
-// Confirm that the color image clear color gets successfully configured.
-TEST_F(RenderEngineGlTest, ControlBackgroundColor) {
-  std::vector<Rgba> backgrounds{Rgba{0.1, 0.2, 0.3, 1.0},
-                                Rgba{0.5, 0.6, 0.7, 1.0},
-                                Rgba{1.0, 0.1, 0.4, 0.5}};
-  for (const auto& bg : backgrounds) {
-    // TODO(SeanCurtis-TRI): When GCC supports non-trivial designated
-    //  initialization turn this back into:
-    //  const RenderEngineGlParams params{.default_clear_color = bg};
-    RenderEngineGlParams params;
-    params.default_clear_color = bg;
-    RenderEngineGl engine(params);
-    Render(&engine);
-    VerifyUniformColor(bg, 0u);
-  }
 }
 
 // Tests an image with *only* terrain (perpendicular to the camera's forward
@@ -607,8 +484,6 @@ TEST_F(RenderEngineGlTest, CapsuleRotatedTest) {
   for (const int& offset : offsets) {
     const int y = inlier.y + offset;
     const ScreenCoord offset_inlier = {x, y};
-    EXPECT_TRUE(CompareColor(expected_color_, color_, offset_inlier))
-        << "Color at: " << offset_inlier;
     EXPECT_TRUE(IsExpectedDepth(depth_, offset_inlier, expected_object_depth_,
                                 kDepthTolerance))
         << "Depth at: " << offset_inlier;
@@ -797,7 +672,6 @@ TEST_F(RenderEngineGlTest, RemoveVisual) {
     RenderLabel label = RenderLabel(5);
     PerceptionProperties material;
     material.AddProperty("label", "id", label);
-    material.AddProperty("phong", "diffuse", kDefaultVisualColor);
     // This will accept all registered geometries and therefore, (bool)index
     // should always be true.
     renderer_->RegisterVisual(geometry_id, sphere, material,
@@ -1025,69 +899,6 @@ TEST_F(RenderEngineGlTest, DefaultProperties) {
   EXPECT_NO_THROW(Render());
 }
 
-// Tests the ability to configure the RenderEngineGl's default render label.
-TEST_F(RenderEngineGlTest, DefaultProperties_RenderLabel) {
-  // A variation of PopulateSphereTest(), but uses an empty set of properties.
-  // The result should be compatible with the running the sphere test.
-  auto populate_default_sphere = [](auto* engine) {
-    Sphere sphere{0.5};
-    const GeometryId id = GeometryId::get_new_id();
-    engine->RegisterVisual(id, sphere, PerceptionProperties(),
-                           RigidTransformd::Identity(),
-                           true /* needs update */);
-    RigidTransformd X_WV{Vector3d{0, 0, 0.5}};
-    engine->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
-  };
-
-  // Case: No change to render engine's default must throw.
-  {
-    RenderEngineGl renderer;
-    InitializeRenderer(X_WR_, false /* no terrain */, &renderer);
-
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        populate_default_sphere(&renderer),
-        std::logic_error,
-        ".* geometry with the 'unspecified' or 'empty' render labels.*");
-  }
-
-  // Case: Change render engine's default to explicitly be unspecified; must
-  // throw.
-  {
-    RenderEngineGl renderer{{.default_label = RenderLabel::kUnspecified}};
-    InitializeRenderer(X_WR_, false /* no terrain */, &renderer);
-
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        populate_default_sphere(&renderer),
-        std::logic_error,
-        ".* geometry with the 'unspecified' or 'empty' render labels.*");
-  }
-
-  // Case: Change render engine's default to don't care. Label image should
-  // report don't care.
-  {
-    ResetExpectations();
-    RenderEngineGl renderer{{.default_label = RenderLabel::kDontCare}};
-    InitializeRenderer(X_WR_, true /* no terrain */, &renderer);
-
-    DRAKE_EXPECT_NO_THROW(populate_default_sphere(&renderer));
-    expected_label_ = RenderLabel::kDontCare;
-    expected_color_ = RgbaColor(renderer.parameters().default_diffuse);
-
-    SCOPED_TRACE("Default properties; don't care label");
-    PerformCenterShapeTest(&renderer);
-  }
-
-  // Case: Change render engine's default to invalid default value; must throw.
-  {
-    for (RenderLabel label :
-        {RenderLabel::kEmpty, RenderLabel(1), RenderLabel::kDoNotRender}) {
-      DRAKE_EXPECT_THROWS_MESSAGE(
-          RenderEngineGl({.default_label = label}), std::logic_error,
-          ".* default render label .* either 'kUnspecified' or 'kDontCare'.*");
-    }
-  }
-}
-
 // Tests to see if the two images are *exactly* equal - down to the last bit.
 ::testing::AssertionResult ImagesExactlyEqual(const ImageDepth32F& ref,
                                               const ImageDepth32F& test) {
@@ -1161,6 +972,15 @@ TEST_F(RenderEngineGlTest, RendererIndependence) {
   // the reference image.
   Render(&engine1);
   ASSERT_TRUE(ImagesExactlyEqual(reference_1, depth_));
+}
+
+TEST_F(RenderEngineGlTest, RenderColorImageThrows) {
+  RenderEngineGl engine;
+  CameraProperties camera{2, 2, M_PI, "junk"};
+  ImageRgba8U image{camera.width, camera.height};
+  DRAKE_EXPECT_THROWS_MESSAGE(engine.RenderColorImage(camera, false, &image),
+                              std::runtime_error,
+                              "RenderEngineGl cannot render color images");
 }
 
 // Confirms that passing in show_window = true "works". The test can't confirm

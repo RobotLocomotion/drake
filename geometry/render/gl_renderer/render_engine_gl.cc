@@ -6,8 +6,6 @@
 
 #include <fmt/format.h>
 
-#include "drake/common/unused.h"
-
 namespace drake {
 namespace geometry {
 namespace render {
@@ -51,110 +49,9 @@ struct RegistrationData {
   const PerceptionProperties& properties;
 };
 
-/* The built-in shader for Rgba diffuse colored objects. This shader supports
- all geometries because it provides a default diffuse color if none is given. */
-class DefaultRgbaColorShader final : public ShaderProgram {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DefaultRgbaColorShader)
-
-  explicit DefaultRgbaColorShader(const Rgba& default_diffuse)
-      : ShaderProgram(), default_diffuse_(default_diffuse) {
-    LoadFromSources(kVertexShader, kFragmentShader);
-    diffuse_color_loc_ = GetUniformLocation("diffuse_color");
-    normal_mat_loc_ = GetUniformLocation("normal_mat");
-  }
-
-  void SetInstanceParameters(const ShaderProgramData& data) const final {
-    glUniform4fv(diffuse_color_loc_, 1,
-                 data.value().get_value<Vector4<float>>().data());
-  }
-
- private:
-  std::unique_ptr<ShaderProgram> DoClone() const final {
-    return make_unique<DefaultRgbaColorShader>(*this);
-  }
-
-  std::optional<ShaderProgramData> DoCreateProgramData(
-      const PerceptionProperties& properties) const final {
-    const Rgba rgba =
-        properties.GetPropertyOrDefault("phong", "diffuse", default_diffuse_);
-    Vector4<float> v4{
-        static_cast<float>(rgba.r()), static_cast<float>(rgba.g()),
-        static_cast<float>(rgba.b()), static_cast<float>(rgba.a())};
-    return ShaderProgramData{shader_id(), AbstractValue::Make(v4)};
-  }
-
-  void DoModelViewMatrix(const Eigen::Matrix4f& X_CglM,
-                         const Vector3d& scale) const override {
-    // When rendering *illuminated* objects, we have to account for the surface
-    // normals. In principle, we only need to *rotate* the normals from the
-    // model frame to the camera frame. However, if the geometry has undergone
-    // non-uniform scaling, we must *first* scale the normals by the inverse
-    // scale. So, the normal_mat below handles the scaling and the rotation. It
-    // relies on the shader to handle normalization of the scaled normals.
-    // This is the quantity historically referred to as gl_NormalMatrix
-    // (available to glsl in the "compatibility profile"). See
-    // https://www.cs.upc.edu/~robert/teaching/idi/GLSLangSpec.4.50.pdf.
-    const Eigen::DiagonalMatrix<float, 3, 3> inv_scale(
-        Vector3<float>(1.0 / scale(0), 1.0 / scale(1), 1.0 / scale(2)));
-    const Eigen::Matrix3f normal_mat = X_CglM.block<3, 3>(0, 0) * inv_scale;
-    glUniformMatrix3fv(normal_mat_loc_, 1, GL_FALSE, normal_mat.data());
-  }
-
-  // The default diffuse value to apply if missing the ("phong", "diffuse")
-  // property.
-  Rgba default_diffuse_;
-
-  // The location of the "diffuse_color" uniform in the shader.
-  GLint diffuse_color_loc_{};
-
-  // The location of the "normal_mat" uniform in the shader.
-  GLint normal_mat_loc_{};
-
-  // The vertex shader:
-  //   - Transforms the vertex into device *and* camera coordinates.
-  //   - Transforms the normal into camera coordinates to be interpolated
-  //     across the triangle.
-  static constexpr char kVertexShader[] = R"""(
-#version 330
-layout(location = 0) in vec3 p_MV;
-layout(location = 1) in vec3 n_M;
-uniform mat4 model_view_matrix;
-uniform mat4 projection_matrix;
-uniform mat3 normal_mat;
-varying vec3 n_C;
-void main() {
-  // p_DV; the vertex position in device coordinates.
-  gl_Position = projection_matrix * model_view_matrix * vec4(p_MV, 1);
-
-  // R_CM = normal_mat (although R may also include scaling).
-  n_C = normal_mat * n_M;
-})""";
-
-  // For each fragment from a geometry, compute the per-fragment, illuminated
-  // color.
-  static constexpr char kFragmentShader[] = R"""(
-#version 330
-uniform vec4 diffuse_color;
-varying vec3 n_C;
-out vec4 color;
-void main() {
-  // The light is "infinitely" far away in the (0, 0, 1) direction; so it is
-  // a fixed direction to *every* point.
-  vec3 light_dir_C = vec3(0, 0, 1);
-  // NOTE: Depending on triangle size and variance of normal direction over
-  // that triangle, n_C may not be unit length; to play it safe, we blindly
-  // normalize it. Consider *not* normalizing it if it improves performance
-  // without degrading visual quality.
-  vec3 nhat_C = normalize(n_C);
-  vec3 alt_diffuse = diffuse_color.rgb / 200 + vec3(0, 0, 1);
-  color = vec4(diffuse_color.rgb * max(dot(nhat_C, light_dir_C), 0.0),
-               diffuse_color.a);
-})""";
-};
 /* The built-in shader for objects in depth images. By default, the shader
  supports all geometries.  */
-class DefaultDepthShader final : public ShaderProgram {
+class DefaultDepthShader final : public internal::ShaderProgram {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DefaultDepthShader)
 
@@ -240,7 +137,7 @@ void main() {
  gives for geometry depends on the label encoder function. The shader program
  assumes the encoder will either provide a label or throw based on the given
  perception properties.  */
-class DefaultLabelShader final : public ShaderProgram {
+class DefaultLabelShader final : public internal::ShaderProgram {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DefaultLabelShader)
 
@@ -306,28 +203,14 @@ void main() {
 
 }  // namespace
 
-RenderEngineGl::RenderEngineGl(RenderEngineGlParams params)
-    : RenderEngine(params.default_label),
-      opengl_context_(make_shared<OpenGlContext>()),
-      parameters_(std::move(params)) {
+RenderEngineGl::RenderEngineGl()
+    : RenderEngine(),
+      opengl_context_(make_shared<OpenGlContext>()) {
   // Configuration of basic OpenGl state.
   opengl_context_->MakeCurrent();
   glClipControl(GL_UPPER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
   glClearDepth(1.0);
   glEnable(GL_DEPTH_TEST);
-  // Generally, there should be no blending for depth and label images. We'll
-  // selectively enable blending for color images.
-  glDisable(GL_BLEND);
-  // We blend the rgb values (the first two parameters), but simply accumulate
-  // transparency (the last two parameters).
-  glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
-
-  // Color shaders. See documentation on GetShaderProgram. We want color from
-  // texture to be "more preferred" than color from rgba, so we add the
-  // texture color shader *after* the rgba color shader.
-  AddShader(make_unique<DefaultRgbaColorShader>(params.default_diffuse),
-            RenderType::kColor);
-
   // Depth shaders -- a single shader that accepts all geometry.
   AddShader(make_unique<DefaultDepthShader>(), RenderType::kDepth);
 
@@ -349,58 +232,9 @@ void RenderEngineGl::UpdateViewpoint(const RigidTransformd& X_WR) {
   X_CW_ = X_WR.inverse();
 }
 
-void RenderEngineGl::RenderColorImage(const CameraProperties& camera,
-                                      bool show_window,
-                                      ImageRgba8U* color_image_out) const {
-  opengl_context_->MakeCurrent();
-
-  // TODO(SeanCurtis-TRI): For transparency to work properly, I need to
-  //  segregate objects with transparency from those without. The transparent
-  //  geometries then need to be sorted from farthest to nearest the camera and
-  //  rendered in that order. This may lead to shader thrashing. Without this
-  //  ordering, I may not necessarily see objects through transparent surfaces.
-  //  Confirm that VTK handles transparency correctly and do the same.
-
-  const RenderTarget render_target =
-      GetRenderTarget(camera, RenderType::kColor);
-  // TODO(SeanCurtis-TRI) Consider converting Rgba to float[4] as a method on
-  //  Rgba.
-  const Rgba& clear = parameters_.default_clear_color;
-  float clear_color[4] = {
-      static_cast<float>(clear.r()), static_cast<float>(clear.g()),
-      static_cast<float>(clear.b()), static_cast<float>(clear.a())};
-  glClearNamedFramebufferfv(render_target.frame_buffer, GL_COLOR, 0,
-                            &clear_color[0]);
-  glClear(GL_DEPTH_BUFFER_BIT);
-  // We only want blending for color; not for label or depth.
-  glEnable(GL_BLEND);
-
-  // Matrix mapping a geometry vertex from the camera frame C to the device
-  // frame D.
-  const Eigen::Matrix4f X_DC =
-      ComputeGlProjectionMatrix(camera, kGlZNear, kGlZFar);
-
-  for (const auto& [shader_id, shader_ptr] :
-       shader_programs_[RenderType::kColor]) {
-    unused(shader_id);
-    const ShaderProgram& shader_program = *shader_ptr;
-    shader_program.Use();
-
-    shader_program.SetProjectionMatrix(X_DC);
-
-    // Now I need to render the geometries.
-    RenderAt(shader_program, RenderType::kColor);
-    shader_program.Unuse();
-  }
-  glDisable(GL_BLEND);
-
-  // Note: SetWindowVisibility must be called *after* the rendering; setting the
-  // visibility is responsible for taking the target buffer and bringing it to
-  // the front buffer; reversing the order means the image we've just rendered
-  // wouldn't be visible.
-  SetWindowVisibility(camera, show_window, render_target);
-  glGetTextureImage(render_target.value_texture, 0, GL_RGBA, GL_UNSIGNED_BYTE,
-                    color_image_out->size(), color_image_out->at(0, 0));
+void RenderEngineGl::RenderColorImage(const CameraProperties&, bool,
+                                      ImageRgba8U*) const {
+  throw std::runtime_error("RenderEngineGl cannot render color images");
 }
 
 void RenderEngineGl::RenderDepthImage(const DepthCameraProperties& camera,
@@ -426,8 +260,7 @@ void RenderEngineGl::RenderDepthImage(const DepthCameraProperties& camera,
   //  which rendered outside the depth range.
   const double near_clip = std::max(0.01, camera.z_near - 0.1);
   const double far_clip = camera.z_far + 0.1;
-  // Matrix mapping a geometry vertex from the camera frame C to the device
-  // frame D.
+  // Matrix mapping a geometry vertex from its frame G to the device frame D.
   const Eigen::Matrix4f X_DC =
       ComputeGlProjectionMatrix(camera, near_clip, far_clip);
 
@@ -463,8 +296,7 @@ void RenderEngineGl::RenderLabelImage(const CameraProperties& camera,
   glClearNamedFramebufferfv(render_target.frame_buffer, GL_COLOR, 0,
                             &clear_color[0]);
   glClear(GL_DEPTH_BUFFER_BIT);
-  // Matrix mapping a geometry vertex from the camera frame C to the device
-  // frame D.
+  // Matrix mapping a geometry vertex from its frame G to the device frame D.
   const Eigen::Matrix4f X_DC =
       ComputeGlProjectionMatrix(camera, kGlZNear, kGlZFar);
 
@@ -577,7 +409,6 @@ bool RenderEngineGl::DoRemoveGeometry(GeometryId id) {
       DRAKE_UNREACHABLE();
     };
     const OpenGlInstance& instance = iter->second;
-    remove_from_family(id, instance.shader_data, RenderType::kColor);
     remove_from_family(id, instance.shader_data, RenderType::kDepth);
     remove_from_family(id, instance.shader_data, RenderType::kLabel);
     visuals_.erase(iter);
@@ -624,21 +455,14 @@ void RenderEngineGl::RenderAt(const ShaderProgram& shader_program,
 void RenderEngineGl::ImplementGeometry(const OpenGlGeometry& geometry,
                                        void* user_data, const Vector3d& scale) {
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-  std::optional<ShaderProgramData> color_data =
-      GetShaderProgram(data.properties, RenderType::kColor);
   std::optional<ShaderProgramData> depth_data =
       GetShaderProgram(data.properties, RenderType::kDepth);
   std::optional<ShaderProgramData> label_data =
       GetShaderProgram(data.properties, RenderType::kLabel);
-  DRAKE_DEMAND(color_data.has_value() && depth_data.has_value() &&
-               label_data.has_value());
+  DRAKE_DEMAND(depth_data.has_value() && label_data.has_value());
+  visuals_.emplace(data.id, OpenGlInstance(geometry, data.X_WG, scale,
+                                           *depth_data, *label_data));
 
-  visuals_.emplace(data.id,
-                   OpenGlInstance(geometry, data.X_WG, scale, *color_data,
-                                  *depth_data, *label_data));
-
-  shader_families_[RenderType::kColor][color_data->shader_id()].push_back(
-      data.id);
   shader_families_[RenderType::kDepth][depth_data->shader_id()].push_back(
       data.id);
   shader_families_[RenderType::kLabel][label_data->shader_id()].push_back(
@@ -724,8 +548,6 @@ OpenGlGeometry RenderEngineGl::GetMesh(const string& filename) {
 std::tuple<GLint, GLenum, GLenum> RenderEngineGl::get_texture_format(
     RenderType render_type) {
   switch (render_type) {
-    case RenderType::kColor:
-      return std::make_tuple(GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE);
     case RenderType::kLabel:
       // TODO(SeanCurtis-TRI): Ultimately, this should be a 16-bit, signed int.
       return std::make_tuple(GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE);
@@ -860,49 +682,34 @@ OpenGlGeometry RenderEngineGl::CreateGlGeometry(const MeshData& mesh_data) {
   // Create the vertex array object (VAO).
   glCreateVertexArrays(1, &geometry.vertex_array);
 
+  const auto& vertices = mesh_data.positions;
+  const auto& indices = mesh_data.indices;
 
   // Create the vertex buffer object (VBO).
   glCreateBuffers(1, &geometry.vertex_buffer);
-
-  // We're representing the vertex data as a concatenation of positions and
-  // normals (i.e., (VVVNNN)). There should be an equal number of vertices and
-  // normals.
-  DRAKE_DEMAND(mesh_data.positions.rows() == mesh_data.normals.rows());
-  const int v_count = mesh_data.positions.rows();
-  vector<GLfloat> vertex_data;
-  // 3 floats each for position and normals.
-  vertex_data.reserve(v_count * (3 + 3));
-  vertex_data.insert(vertex_data.end(), mesh_data.positions.data(),
-                     mesh_data.positions.data() + v_count * 3);
-  vertex_data.insert(vertex_data.end(), mesh_data.normals.data(),
-                     mesh_data.normals.data() + v_count * 3);
   glNamedBufferStorage(geometry.vertex_buffer,
-                       vertex_data.size() * sizeof(GLfloat),
-                       vertex_data.data(), 0);
-  const int position_attrib = 0;
-  glVertexArrayVertexBuffer(geometry.vertex_array, position_attrib,
+                       vertices.size() * sizeof(GLfloat), vertices.data(), 0);
+  // Bind the VBO with the VAO.
+  const int kBindingIndex = 0;  // The binding point.
+  glVertexArrayVertexBuffer(geometry.vertex_array, kBindingIndex,
                             geometry.vertex_buffer, 0, 3 * sizeof(GLfloat));
-  glVertexArrayAttribFormat(geometry.vertex_array, position_attrib, 3, GL_FLOAT,
-                            GL_FALSE, 0);
-  glEnableVertexArrayAttrib(geometry.vertex_array, position_attrib);
 
-  const int normal_attrib = 1;
-  glVertexArrayVertexBuffer(
-      geometry.vertex_array, normal_attrib, geometry.vertex_buffer,
-      mesh_data.positions.size() * sizeof(GLfloat), 3 * sizeof(GLfloat));
-  glVertexArrayAttribFormat(geometry.vertex_array, normal_attrib, 3, GL_FLOAT,
-                            GL_FALSE, 0);
-  glEnableVertexArrayAttrib(geometry.vertex_array, normal_attrib);
+  // Bind the attribute in vertex shader to the VAO at the same binding point.
+  const int kLocP_ModelAttrib = 0;  // p_Model's location in vertex shader.
+  glVertexArrayAttribFormat(geometry.vertex_array, kLocP_ModelAttrib, 3,
+                            GL_FLOAT, GL_FALSE, 0);
+  glVertexArrayAttribBinding(geometry.vertex_array, kLocP_ModelAttrib,
+                             kBindingIndex);
+  glEnableVertexArrayAttrib(geometry.vertex_array, kLocP_ModelAttrib);
 
   // Create the index buffer object (IBO).
   glCreateBuffers(1, &geometry.index_buffer);
-  glNamedBufferStorage(geometry.index_buffer,
-                       mesh_data.indices.size() * sizeof(GLuint),
-                       mesh_data.indices.data(), 0);
+  glNamedBufferStorage(geometry.index_buffer, indices.size() * sizeof(GLuint),
+                       indices.data(), 0);
   // Bind IBO with the VAO.
   glVertexArrayElementBuffer(geometry.vertex_array, geometry.index_buffer);
 
-  geometry.index_buffer_size = mesh_data.indices.size();
+  geometry.index_buffer_size = indices.size();
 
   // Note: We won't need to call the corresponding glDeleteVertexArrays or
   // glDeleteBuffers. The meshes we store are "canonical" meshes. Even if a

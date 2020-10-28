@@ -15,7 +15,6 @@
 #include "drake/geometry/render/gl_renderer/gl_common.h"
 #include "drake/geometry/render/gl_renderer/opengl_context.h"
 #include "drake/geometry/render/gl_renderer/opengl_geometry.h"
-#include "drake/geometry/render/gl_renderer/render_engine_gl_params.h"
 #include "drake/geometry/render/gl_renderer/shader_program.h"
 #include "drake/geometry/render/gl_renderer/shape_meshes.h"
 #include "drake/geometry/render/render_engine.h"
@@ -41,8 +40,7 @@ class RenderEngineGl final : public RenderEngine {
   RenderEngineGl& operator=(RenderEngineGl&&) = delete;
   //@}}
 
-  /** Construct an instance of the render engine with the given `params`.  */
-  explicit RenderEngineGl(RenderEngineGlParams params = {});
+  RenderEngineGl();
 
   ~RenderEngineGl() final;
 
@@ -73,8 +71,6 @@ class RenderEngineGl final : public RenderEngine {
   void RenderLabelImage(
       const CameraProperties& camera, bool show_window,
       systems::sensors::ImageLabel16I* label_image_out) const final;
-
-  const RenderEngineGlParams& parameters() const { return parameters_; }
 
   /** @name    Shape reification  */
   //@{
@@ -210,9 +206,6 @@ class RenderEngineGl final : public RenderEngine {
   // So, all of these quantities are simple copy-safe POD (e.g., OpenGlGeometry)
   // or are stashed in a shared pointer.
   std::shared_ptr<internal::OpenGlContext> opengl_context_;
-
-  // The engine's configuration parameters.
-  RenderEngineGlParams parameters_;
 
   // A "shader family" is all of the shaders used to produce a particular image
   // type. Each unique shader is associated with the geometries to which it

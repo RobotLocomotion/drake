@@ -93,13 +93,11 @@ struct OpenGlInstance {
    @pre The shader program data has valid shader ids.  */
   OpenGlInstance(const OpenGlGeometry& g_in,
                  const math::RigidTransformd& pose_in,
-                 const Vector3<double>& scale_in, ShaderProgramData color_data,
-                 ShaderProgramData depth_data, ShaderProgramData label_data)
+                 const Vector3<double>& scale_in, ShaderProgramData depth_data,
+                 ShaderProgramData label_data)
       : geometry(g_in), X_WG(pose_in), scale(scale_in) {
-    DRAKE_DEMAND(color_data.shader_id().is_valid());
     DRAKE_DEMAND(depth_data.shader_id().is_valid());
     DRAKE_DEMAND(label_data.shader_id().is_valid());
-    shader_data[RenderType::kColor] = std::move(color_data);
     shader_data[RenderType::kDepth] = std::move(depth_data);
     shader_data[RenderType::kLabel] = std::move(label_data);
     DRAKE_DEMAND(geometry.is_defined());
