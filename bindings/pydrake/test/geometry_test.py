@@ -84,9 +84,22 @@ class TestGeometry(unittest.TestCase):
             inspector.NumGeometriesWithRole(role=mut.Role.kUnassigned), 3)
         self.assertEqual(inspector.NumDynamicGeometries(), 2)
         self.assertEqual(inspector.NumAnchoredGeometries(), 1)
+        self.assertEqual(len(inspector.GetCollisionCandidates()), 0)
         self.assertTrue(inspector.SourceIsRegistered(id=global_source))
         self.assertEqual(inspector.GetSourceName(id=global_source), "anchored")
-        self.assertEqual(inspector.GetFrameId(global_geometry), global_frame)
+        self.assertEqual(inspector.NumFramesForSource(id=global_source), 2)
+        self.assertTrue(global_frame in inspector.FramesForSource(
+            id=global_source))
+        self.assertTrue(inspector.BelongsToSource(
+            frame_id=global_frame, source_id=global_source))
+        self.assertEqual(inspector.GetOwningSourceName(id=global_frame),
+                         "anchored")
+        self.assertEqual(
+            inspector.GetName(frame_id=global_frame), "anchored_frame")
+        self.assertEqual(inspector.GetFrameGroup(id=global_frame), 0)
+        self.assertEqual(inspector.NumGeometriesForFrame(id=global_frame), 2)
+        self.assertEqual(inspector.NumGeometriesForFrameWithRole(
+            id=global_frame, role=mut.Role.kProximity), 0)
         self.assertEqual(len(inspector.GetGeometries(frame_id=global_frame)),
                          2)
         self.assertTrue(
@@ -100,11 +113,15 @@ class TestGeometry(unittest.TestCase):
                                           role=mut.Role.kUnassigned,
                                           name="sphere1"),
             global_geometry)
-        self.assertEqual(
-            inspector.GetName(frame_id=global_frame), "anchored_frame")
+        self.assertTrue(inspector.BelongsToSource(
+            geometry_id=global_geometry, source_id=global_source))
+        self.assertEqual(inspector.GetOwningSourceName(id=global_geometry),
+                         "anchored")
+        self.assertEqual(inspector.GetFrameId(global_geometry), global_frame)
         self.assertEqual(
             inspector.GetName(geometry_id=global_geometry), "sphere1")
-
+        self.assertIsInstance(inspector.GetShape(geometry_id=global_geometry),
+                              mut.Sphere)
         self.assertIsInstance(
             inspector.GetPoseInParent(geometry_id=global_geometry),
             RigidTransform_[float])
@@ -149,6 +166,8 @@ class TestGeometry(unittest.TestCase):
         self.assertIsInstance(
             inspector.CloneGeometryInstance(geometry_id=global_geometry),
             mut.GeometryInstance)
+        self.assertTrue(inspector.CollisionFiltered(
+            id1=global_geometry, id2=global_geometry))
 
         roles = [
             mut.Role.kProximity,
