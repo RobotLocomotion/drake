@@ -605,6 +605,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py_rvp::reference_internal, cls_doc.get_body.doc)
         .def("get_joint", &Class::get_joint, py::arg("joint_index"),
             py_rvp::reference_internal, cls_doc.get_joint.doc)
+        .def("get_mutable_joint", &Class::get_mutable_joint,
+            py::arg("joint_index"), py_rvp::reference_internal,
+            cls_doc.get_mutable_joint.doc)
         .def("get_joint_actuator", &Class::get_joint_actuator,
             py::arg("actuator_index"), py_rvp::reference_internal,
             cls_doc.get_joint_actuator.doc)
@@ -614,6 +617,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.gravity_field.doc)
         .def("mutable_gravity_field", &Class::mutable_gravity_field,
             py_rvp::reference_internal, cls_doc.mutable_gravity_field.doc)
+        .def("GetJointIndices", &Class::GetJointIndices,
+            py::arg("model_instance"), cls_doc.GetJointIndices.doc)
         .def("GetModelInstanceName",
             overload_cast_explicit<const string&, ModelInstanceIndex>(
                 &Class::GetModelInstanceName),
