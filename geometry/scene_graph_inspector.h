@@ -200,7 +200,8 @@ class SceneGraphInspector {
 
   /** Reports the _name_ of the geometry source that registered the frame with
    the given `id`.
-   @throws std::logic_error  If `id` does not map to a registered frame.  */
+   @throws std::logic_error  If `id` does not map to a registered frame.
+   @pydrake_mkdoc_identifier{1args_frame_id} */
   const std::string& GetOwningSourceName(FrameId id) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->GetOwningSourceName(id);
@@ -293,7 +294,8 @@ class SceneGraphInspector {
 
   /** Reports the _name_ of the geometry source that registered the geometry
    with the given `id`.
-   @throws std::logic_error  If `id` does not map to a registered geometry.  */
+   @throws std::logic_error  If `id` does not map to a registered geometry.
+   @pydrake_mkdoc_identifier{1args_geometry_id} */
   const std::string& GetOwningSourceName(GeometryId id) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->GetOwningSourceName(id);
