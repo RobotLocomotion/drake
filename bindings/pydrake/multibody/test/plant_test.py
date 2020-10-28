@@ -325,6 +325,10 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(plant.num_frames(), int)
         self.assertIsInstance(plant.get_body(body_index=BodyIndex(0)), Body)
         self.assertIs(shoulder, plant.get_joint(joint_index=JointIndex(0)))
+        self.assertIs(shoulder, plant.get_mutable_joint(
+            joint_index=JointIndex(0)))
+        self.assertEqual([JointIndex(0), JointIndex(1)],
+                         plant.GetJointIndices(model_instance=model_instance))
         joint_actuator = plant.get_joint_actuator(
             actuator_index=JointActuatorIndex(0))
         self.assertIsInstance(joint_actuator, JointActuator)
