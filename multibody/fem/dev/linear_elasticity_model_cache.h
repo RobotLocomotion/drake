@@ -18,11 +18,9 @@ namespace fem {
 template <typename T>
 class LinearElasticityModelCache : public DeformationGradientCache<T> {
  public:
-  /** Default copy and move constructors. */
-  LinearElasticityModelCache(const LinearElasticityModelCache<T>&) = default;
-  LinearElasticityModelCache(LinearElasticityModelCache<T>&&) = default;
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LinearElasticityModelCache);
 
-  /** Constructs a LinearElasticityModelCache with the given element index and
+  /** Constructs a %LinearElasticityModelCache with the given element index and
    number of quadrature locations.
    @param element_index The index of the FemElement associated with this
    DeformationGradientCache.

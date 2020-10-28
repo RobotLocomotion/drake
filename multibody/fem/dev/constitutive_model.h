@@ -32,8 +32,8 @@ class ConstitutiveModel {
    quantities required for these calculations. The constitutive model expects
    that the input cached quantities are up-to-date.
    @warning Derived classes will static cast `cache` into derived cache classes
-   that match the derived ConstitutiveModel. Make sure the `cache` that is
-   passed in matches the ConstitutiveModel. */
+   that match the derived %ConstitutiveModel. Make sure the `cache` that is
+   passed in matches the %ConstitutiveModel. */
 
   /** Calculates the energy density, in unit J/m³, given the model cache. */
   std::vector<T> CalcPsi(const DeformationGradientCache<T>& cache) const {

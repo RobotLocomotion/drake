@@ -15,7 +15,7 @@ const ElementIndex kDummyElementIndex(0);
 constexpr int kNumQuads = 2;
 
 GTEST_TEST(LinearElasticityTest, Parameters) {
-  const auto model = LinearElasticityModel<double>(100.0, 0.25);
+  const LinearElasticityModel<double> model(100.0, 0.25);
   const double mu = 40.0;
   const double lambda = 40.0;
   EXPECT_EQ(model.youngs_modulus(), 100.0);
@@ -55,10 +55,9 @@ GTEST_TEST(LinearElasticityTest, InvalidPoissonRatioBelowLowerLimit) {
 }
 
 GTEST_TEST(LinearElasticityTest, UndeformedState) {
-  const auto model = LinearElasticityModel<double>(100.0, 0.25);
+  const LinearElasticityModel<double> model(100.0, 0.25);
   LinearElasticityModelCache<double> cache(kDummyElementIndex, kNumQuads);
-  const auto F =
-      std::vector<Matrix3<double>>(kNumQuads, Matrix3<double>::Identity());
+  const std::vector<Matrix3<double>> F(kNumQuads, Matrix3<double>::Identity());
   cache.UpdateCache(F);
   // In undeformed state, the energy density should be zero.
   const std::vector<double> analytic_energy_density(kNumQuads, 0);
@@ -70,27 +69,32 @@ GTEST_TEST(LinearElasticityTest, UndeformedState) {
 }
 
 GTEST_TEST(LinearElasticityTest, PIsDerivativeOfPsi) {
-  const auto model_autodiff = LinearElasticityModel<AutoDiffXd>(100.0, 0.25);
+  const LinearElasticityModel<AutoDiffXd> model_autodiff(100.0, 0.25);
   LinearElasticityModelCache<AutoDiffXd> cache_autodiff(kDummyElementIndex,
                                                         kNumQuads);
   // Create random AutoDiffXd deformation.
-  auto Fs = std::vector<Matrix3<double>>(kNumQuads, Matrix3<double>::Random());
+  Matrix3<double> F;
+  F << 0.18, 0.63, 0.54,
+       0.13, 0.92, 0.17,
+       0.03, 0.86, 0.85;
+  const std::vector<Matrix3<double>> Fs(kNumQuads, F);
   std::vector<Matrix3<AutoDiffXd>> Fs_autodiff(kNumQuads);
   const Eigen::Matrix<double, 9, Eigen::Dynamic> gradient =
       MatrixX<double>::Identity(9, 9);
   for (int i = 0; i < kNumQuads; ++i) {
-    auto F_autodiff_flat = math::initializeAutoDiffGivenGradientMatrix(
-        Eigen::Map<Eigen::Matrix<double, 9, 1>>(Fs[i].data(), 9), gradient);
+    const auto F_autodiff_flat = math::initializeAutoDiffGivenGradientMatrix(
+        Eigen::Map<const Eigen::Matrix<double, 9, 1>>(Fs[i].data(), 9),
+        gradient);
     Fs_autodiff[i] =
-        Eigen::Map<Matrix3<AutoDiffXd>>(F_autodiff_flat.data(), 3, 3);
+        Eigen::Map<const Matrix3<AutoDiffXd>>(F_autodiff_flat.data(), 3, 3);
   }
   // P should be derivative of Psi.
   cache_autodiff.UpdateCache(Fs_autodiff);
-  auto energy = model_autodiff.CalcPsi(cache_autodiff);
-  auto P = model_autodiff.CalcP(cache_autodiff);
+  const auto energy = model_autodiff.CalcPsi(cache_autodiff);
+  const auto P = model_autodiff.CalcP(cache_autodiff);
   for (int i = 0; i < kNumQuads; ++i) {
     EXPECT_TRUE(CompareMatrices(
-        Eigen::Map<Matrix3<double>>(energy[i].derivatives().data(), 3, 3),
+        Eigen::Map<const Matrix3<double>>(energy[i].derivatives().data(), 3, 3),
         P[i]));
   }
 }

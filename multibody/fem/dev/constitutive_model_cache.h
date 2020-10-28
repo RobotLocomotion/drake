@@ -8,13 +8,13 @@
 namespace drake {
 namespace multibody {
 namespace fem {
-/** DeformationGradientCache stores per element cached quantities that work in
+/** %DeformationGradientCache stores per element cached quantities that work in
  tandem with ConstitutiveModel. It is an abstract interface that actual concrete
  constitutive models must inherit from to store the set of specific quantities
  that need to be cached for the specific model. There should be a one-to-one
  correspondence between the constitutive model `Foo` that inherits from
  ConstitutiveModel and its cached quantities `FooCache` that inherits from
- DeformationGradientCache. These cached quantities depend solely on deformation
+ %DeformationGradientCache. These cached quantities depend solely on deformation
  gradients, and they facilitate calculations such as energy density, stress and
  stress derivative in the constitutive model. ConstitutiveModel takes
  the corresponding cache as an argument when performing various calculations.
@@ -22,9 +22,7 @@ namespace fem {
 template <typename T>
 class DeformationGradientCache {
  public:
-  /** Default copy and move constructors. */
-  DeformationGradientCache(const DeformationGradientCache<T>&) = default;
-  DeformationGradientCache(DeformationGradientCache<T>&&) = default;
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeformationGradientCache);
 
   virtual ~DeformationGradientCache() = default;
 
@@ -75,8 +73,8 @@ class DeformationGradientCache {
   virtual void DoUpdateCache(const std::vector<Matrix3<T>>& F) = 0;
 
  private:
-  const ElementIndex element_index_;
-  const int num_quads_{-1};
+  ElementIndex element_index_;
+  int num_quads_{-1};
   std::vector<Matrix3<T>> deformation_gradient_;
 };
 }  // namespace fem

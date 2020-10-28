@@ -21,7 +21,7 @@ class LinearElasticityModel final : public ConstitutiveModel<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearElasticityModel);
 
-  /** Constructs a LinearElasticityModel constitutive model with the prescribed
+  /** Constructs a %LinearElasticityModel constitutive model with the prescribed
    Young's modulus and Poisson ratio.
    @param youngs_modulus Young's modulus of the model, with unit N/m²
    @param poisson_ratio Poisson ratio of the model, unitless.
