@@ -235,6 +235,16 @@ class TestAutoDiffXd(unittest.TestCase):
         Xinv = drake_math.inv(X)
         np.testing.assert_equal(numpy_compare.to_float(Xinv), Xinv_float)
 
+        # Same thing as above, but for `solve`.
+        b = np.array([3 * b_scalar, a_scalar])  # A tad arbitrary.
+        b_float = numpy_compare.to_float(b)
+        with self.assertRaises(TypeError):
+            y = np.linalg.solve(X, b)
+        # Use workaruond.
+        y_float = np.linalg.solve(X_float, b_float)
+        y = drake_math.solve(X, b)
+        np.testing.assert_equal(numpy_compare.to_float(y), y_float)
+
     def test_math_utils(self):
         a = initializeAutoDiff([1, 2, 3])
         np.testing.assert_array_equal(autoDiffToValueMatrix(a),

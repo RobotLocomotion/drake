@@ -3,6 +3,7 @@
 #include "pybind11/eigen.h"
 #include "pybind11/pybind11.h"
 
+#include "drake/bindings/pydrake/math_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/symbolic.h"
 
@@ -58,11 +59,13 @@ void BindSymbolicMathOverloads(PyObject* obj) {
       .def("max", &symbolic::max)
       .def("ceil", &symbolic::ceil)
       .def("floor", &symbolic::floor)
-      // TODO(eric.cousineau): This is not a NumPy-overridable method using
+      // TODO(eric.cousineau): These are not a NumPy-overridable methods using
       // dtype=object. Deprecate and move solely into `pydrake.math`.
-      .def("inv", [](const MatrixX<Expression>& X) -> MatrixX<Expression> {
-        return X.inverse();
-      });
+      .def("inv",
+          [](const MatrixX<Expression>& X) -> MatrixX<Expression> {
+            return X.inverse();
+          })
+      .def("solve", &internal::Solve<Expression>);
 }
 
 }  // namespace internal

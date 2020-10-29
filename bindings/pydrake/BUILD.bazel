@@ -102,7 +102,10 @@ drake_cc_library(
     hdrs = ["autodiff_types_pybind.h"],
     declare_installed_headers = 0,
     visibility = ["//visibility:public"],
-    deps = ["//:drake_shared_library"],
+    deps = [
+        "//:drake_shared_library",
+        "//bindings/pydrake:math_pybind",
+    ],
 )
 
 drake_pybind_library(
@@ -155,11 +158,20 @@ drake_pybind_library(
     py_srcs = ["_lcm_extra.py"],
 )
 
+drake_cc_library(
+    name = "math_pybind",
+    hdrs = ["math_pybind.h"],
+    declare_installed_headers = 0,
+    visibility = ["//visibility:public"],
+    deps = ["//:drake_shared_library"],
+)
+
 drake_pybind_library(
     name = "math_py",
     cc_deps = [
         "//bindings/pydrake:autodiff_types_pybind",
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake:math_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
@@ -220,7 +232,10 @@ drake_cc_library(
     hdrs = ["symbolic_types_pybind.h"],
     declare_installed_headers = 0,
     visibility = ["//visibility:public"],
-    deps = ["//:drake_shared_library"],
+    deps = [
+        "//:drake_shared_library",
+        "//bindings/pydrake:math_pybind",
+    ],
 )
 
 drake_pybind_library(

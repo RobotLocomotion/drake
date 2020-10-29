@@ -6,6 +6,7 @@
 #include "pybind11/pybind11.h"
 #include <Eigen/Core>
 
+#include "drake/bindings/pydrake/math_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 
 #ifndef __clang__
@@ -69,11 +70,13 @@ void BindAutoDiffMathOverloads(PyObject* obj) {
       .def("__ceil__", [](const AutoDiffXd& x) { return ceil(x); })
       .def("floor", [](const AutoDiffXd& x) { return floor(x); })
       .def("__floor__", [](const AutoDiffXd& x) { return floor(x); })
-      // TODO(eric.cousineau): This is not a NumPy-overridable method using
+      // TODO(eric.cousineau): These are not NumPy-overridable methods using
       // dtype=object. Deprecate and move solely into `pydrake.math`.
-      .def("inv", [](const MatrixX<AutoDiffXd>& X) -> MatrixX<AutoDiffXd> {
-        return X.inverse();
-      });
+      .def("inv",
+          [](const MatrixX<AutoDiffXd>& X) -> MatrixX<AutoDiffXd> {
+            return X.inverse();
+          })
+      .def("solve", &internal::Solve<AutoDiffXd>);
 }
 
 }  // namespace internal

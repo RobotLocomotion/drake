@@ -12,6 +12,7 @@
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/pydrake/math_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/math/barycentric.h"
@@ -467,9 +468,11 @@ void DoScalarIndependentDefinitions(py::module m) {
 
   // General vectorized / matrix overloads.
   m  // BR
-      .def("inv", [](const Eigen::MatrixXd& X) -> Eigen::MatrixXd {
-        return X.inverse();
-      });
+      .def("inv",
+          [](const Eigen::MatrixXd& X) -> Eigen::MatrixXd {
+            return X.inverse();
+          })
+      .def("solve", &internal::Solve<double>);
 
   // See TODO in corresponding header file - these should be removed soon!
   pydrake::internal::BindAutoDiffMathOverloads(&m);
