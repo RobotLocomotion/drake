@@ -22,12 +22,6 @@ namespace {
 GTEST_TEST(PydrakePybindTest, PyReturnValuePolicy) {
   static_assert(
       std::is_same_v<py_rvp, py::return_value_policy>, "Alias is wrong?");
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_EQ(py_rvp::reference, py_reference);
-  EXPECT_EQ(py_rvp::reference_internal, py_reference_internal);
-#pragma GCC diagnostic pop
 }
 
 // Expects that a given Python expression `expr` evaluates to true, using

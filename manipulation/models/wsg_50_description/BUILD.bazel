@@ -28,17 +28,6 @@ install_data(
 # === test/ ===
 
 drake_cc_googletest(
-    name = "wsg_50_mesh_collision_test",
-    srcs = ["urdf/test/wsg50_mesh_collision_test.cc"],
-    data = [":models"],
-    deps = [
-        "//common:find_resource",
-        "//multibody/parsing",
-        "//multibody/plant",
-    ],
-)
-
-drake_cc_googletest(
     name = "wsg_50_sdf_test",
     srcs = ["sdf/test/wsg_50_sdf_test.cc"],
     data = [":models"],
