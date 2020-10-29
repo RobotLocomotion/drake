@@ -11,6 +11,7 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_state.h"
+#include "drake/geometry/internal_frame.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
@@ -96,6 +97,12 @@ class SceneGraphInspector {
   typename GeometryState<T>::FrameIdRange all_frame_ids() const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->get_frame_ids();
+  }
+
+  /** Reports the id for the world frame.  */
+  FrameId world_frame_id() const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return internal::InternalFrame::world_frame_id();
   }
 
   /** Reports the _total_ number of geometries in the scene graph.  */
@@ -347,40 +354,67 @@ class SceneGraphInspector {
     return state_->GetPoseInFrame(id);
   }
 
-  /** Returns a pointer to the const proximity properties of the geometry with
-   the given `id`.
-   @param id   The identifier for the queried geometry.
-   @return A pointer to the properties (or nullptr if there are no such
+  /** Return a pointer to the const properties indicated by `role` of the
+   geometry with the given `geometry_id`.
+   @param geometry_id    The identifier for the queried geometry.
+   @param role           The role whose properties are acquired.
+   @return A pointer to the properties (or `nullptr` if there are no such
            properties).
-   @throws std::logic_error if `id` does not map to a registered geometry.  */
-  const ProximityProperties* GetProximityProperties(
-      GeometryId id) const {
+   @throws std::exception if `geometry_id` does not map to a registered
+           geometry.  */
+  const GeometryProperties* GetProperties(GeometryId geometry_id,
+                                          Role role) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->GetProximityProperties(id);
+    switch (role) {
+      case Role::kProximity:
+        return state_->GetProximityProperties(geometry_id);
+      case Role::kIllustration:
+        return state_->GetIllustrationProperties(geometry_id);
+      case Role::kPerception:
+        return state_->GetPerceptionProperties(geometry_id);
+      case Role::kUnassigned:
+        return nullptr;
+    }
+    return nullptr;
+  }
+
+  /** Returns a pointer to the const proximity properties of the geometry with
+   the given `geometry_id`.
+   @param geometry_id   The identifier for the queried geometry.
+   @return A pointer to the properties (or `nullptr` if there are no such
+           properties).
+   @throws std::exception if `geometry_id` does not map to a registered
+           geometry.  */
+  const ProximityProperties* GetProximityProperties(
+      GeometryId geometry_id) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->GetProximityProperties(geometry_id);
   }
 
   /** Returns a pointer to the const illustration properties of the geometry
-   with the given `id`.
-   @param id   The identifier for the queried geometry.
-   @return A pointer to the properties (or nullptr if there are no such
+   with the given `geometry_id`.
+   @param geometry_id   The identifier for the queried geometry.
+   @return A pointer to the properties (or `nullptr` if there are no such
            properties).
-   @throws std::logic_error if `id` does not map to a registered geometry.  */
+   @throws std::exception if `geometry_id` does not map to a registered
+           geometry.  */
   const IllustrationProperties* GetIllustrationProperties(
-      GeometryId id) const {
+      GeometryId geometry_id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->GetIllustrationProperties(id);
+    return state_->GetIllustrationProperties(geometry_id);
   }
 
   /** Returns a pointer to the const perception properties of the geometry
-   with the given `id`.
-   @param id   The identifier for the queried geometry.
-   @return A pointer to the properties (or nullptr if there are no such
+   with the given `geometry_id`.
+   @param geometry_id   The identifier for the queried geometry.
+   @return A pointer to the properties (or `nullptr` if there are no such
            properties).
-   @throws std::logic_error if `id` does not map to a registered geometry.  */
+   @throws std::exception if `geometry_id` does not map to a registered
+           geometry.  */
   const PerceptionProperties* GetPerceptionProperties(
-      GeometryId id) const {
+      GeometryId geometry_id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->GetPerceptionProperties(id);
+    return state_->GetPerceptionProperties(geometry_id);
   }
 
   /** Reports true if the two geometries with given ids `id1` and `id2`, define

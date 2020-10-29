@@ -12,6 +12,7 @@
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_instance.h"
@@ -439,6 +440,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
     cls  // BR
         .def("num_sources", &Class::num_sources, cls_doc.num_sources.doc)
         .def("num_frames", &Class::num_frames, cls_doc.num_frames.doc)
+        .def("world_frame_id", &Class::world_frame_id,
+            cls_doc.world_frame_id.doc)
         .def("num_geometries", &Class::num_geometries,
             cls_doc.num_geometries.doc)
         .def("GetAllGeometryIds", &Class::GetAllGeometryIds,
@@ -478,6 +481,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("GetPoseInFrame", &Class::GetPoseInFrame,
             py_rvp::reference_internal, py::arg("geometry_id"),
             cls_doc.GetPoseInFrame.doc)
+        .def("GetProperties", &Class::GetProperties, py_rvp::reference_internal,
+            py::arg("geometry_id"), py::arg("role"), cls_doc.GetProperties.doc)
         .def("GetProximityProperties", &Class::GetProximityProperties,
             py_rvp::reference_internal, py::arg("geometry_id"),
             cls_doc.GetProximityProperties.doc)
@@ -932,6 +937,32 @@ void DoScalarIndependentDefinitions(py::module m) {
       py::arg("lcm"), py::arg("role") = geometry::Role::kIllustration,
       doc.DispatchLoadMessage.doc);
 
+  {
+    using Class = DrakeVisualizerParams;
+    constexpr auto& cls_doc = doc.DrakeVisualizerParams;
+    py::class_<Class>(m, "DrakeVisualizerParams", cls_doc.doc)
+        .def(ParamInit<Class>())
+        .def_readwrite("publish_period", &DrakeVisualizerParams::publish_period,
+            cls_doc.publish_period.doc)
+        .def_readwrite("role", &DrakeVisualizerParams::role, cls_doc.role.doc)
+        .def_readwrite("default_color", &DrakeVisualizerParams::default_color,
+            cls_doc.default_color.doc);
+  }
+
+  {
+    using Class = DrakeVisualizer;
+    constexpr auto& cls_doc = doc.DrakeVisualizer;
+    py::class_<Class, LeafSystem<double>>(m, "DrakeVisualizer", cls_doc.doc)
+        .def(py::init<lcm::DrakeLcmInterface*, DrakeVisualizerParams>(),
+            py::arg("lcm") = nullptr,
+            py::arg("params") = DrakeVisualizerParams{},
+            // Keep alive, reference: `self` keeps `lcm` alive.
+            py::keep_alive<1, 2>(),  // BR
+            cls_doc.ctor.doc)
+        .def("query_object_input_port", &Class::query_object_input_port,
+            py_rvp::reference_internal, cls_doc.query_object_input_port.doc);
+  }
+
   // Shape constructors
   {
     py::class_<Shape> shape_cls(m, "Shape", doc.Shape.doc);
@@ -1132,8 +1163,9 @@ void DoScalarIndependentDefinitions(py::module m) {
     using Class = GeometryVersion;
     constexpr auto& cls_doc = doc.GeometryVersion;
     py::class_<Class> cls(m, "GeometryVersion", cls_doc.doc);
-    cls.def(py::init<const GeometryVersion&>(), py::arg("other"),
-           "Creates a copy of the GeometryVersion.")
+    cls.def(py::init(), cls_doc.ctor.doc)
+        .def(py::init<const GeometryVersion&>(), py::arg("other"),
+            "Creates a copy of the GeometryVersion.")
         .def("IsSameAs", &Class::IsSameAs, py::arg("other"), py::arg("role"),
             cls_doc.IsSameAs.doc);
     DefCopyAndDeepCopy(&cls);
