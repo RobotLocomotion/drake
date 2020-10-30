@@ -438,6 +438,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "SceneGraphInspector", param, cls_doc.doc);
     cls  // BR
+         // Scene-graph wide data.
         .def("num_sources", &Class::num_sources, cls_doc.num_sources.doc)
         .def("num_frames", &Class::num_frames, cls_doc.num_frames.doc)
         .def("world_frame_id", &Class::world_frame_id,
@@ -452,22 +453,58 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.NumDynamicGeometries.doc)
         .def("NumAnchoredGeometries", &Class::NumAnchoredGeometries,
             cls_doc.NumAnchoredGeometries.doc)
+        .def("GetCollisionCandidates", &Class::GetCollisionCandidates,
+            cls_doc.GetCollisionCandidates.doc)
+        // Sources and source-related data.
         .def("SourceIsRegistered", &Class::SourceIsRegistered, py::arg("id"),
             cls_doc.SourceIsRegistered.doc)
-        .def("GetSourceName", &Class::GetSourceName, py::arg("id"),
+        .def("GetSourceName", &Class::GetSourceName, py::arg("source_id"),
             cls_doc.GetSourceName.doc)
-        .def("GetFrameId", &Class::GetFrameId, py::arg("geometry_id"),
-            cls_doc.GetFrameId.doc)
-        .def("GetGeometries", &Class::GetGeometries, py::arg("frame_id"),
-            py::arg("role") = std::nullopt, cls_doc.GetGeometries.doc)
-        .def("GetGeometryIdByName", &Class::GetGeometryIdByName,
-            py::arg("frame_id"), py::arg("role"), py::arg("name"),
-            cls_doc.GetGeometryIdByName.doc)
+        .def("NumFramesForSource", &Class::NumFramesForSource,
+            py::arg("source_id"), cls_doc.NumFramesForSource.doc)
+        .def("FramesForSource", &Class::FramesForSource, py::arg("source_id"),
+            cls_doc.FramesForSource.doc)
+        // Frames and their properties.
+        .def("BelongsToSource",
+            overload_cast_explicit<bool, FrameId, SourceId>(
+                &Class::BelongsToSource),
+            py::arg("frame_id"), py::arg("source_id"),
+            cls_doc.BelongsToSource.doc_2args_frame_id_source_id)
+        .def("GetOwningSourceName",
+            overload_cast_explicit<const std::string&, FrameId>(
+                &Class::GetOwningSourceName),
+            py_rvp::reference_internal, py::arg("frame_id"),
+            cls_doc.GetOwningSourceName.doc_1args_frame_id)
         .def("GetName",
             overload_cast_explicit<const std::string&, FrameId>(
                 &Class::GetName),
             py_rvp::reference_internal, py::arg("frame_id"),
             cls_doc.GetName.doc_1args_frame_id)
+        .def("GetFrameGroup", &Class::GetFrameGroup, py::arg("frame_id"),
+            cls_doc.GetFrameGroup.doc)
+        .def("NumGeometriesForFrame", &Class::NumGeometriesForFrame,
+            py::arg("frame_id"), cls_doc.NumGeometriesForFrame.doc)
+        .def("NumGeometriesForFrameWithRole",
+            &Class::NumGeometriesForFrameWithRole, py::arg("frame_id"),
+            py::arg("role"), cls_doc.NumGeometriesForFrameWithRole.doc)
+        .def("GetGeometries", &Class::GetGeometries, py::arg("frame_id"),
+            py::arg("role") = std::nullopt, cls_doc.GetGeometries.doc)
+        .def("GetGeometryIdByName", &Class::GetGeometryIdByName,
+            py::arg("frame_id"), py::arg("role"), py::arg("name"),
+            cls_doc.GetGeometryIdByName.doc)
+        // Geometries and their properties.
+        .def("BelongsToSource",
+            overload_cast_explicit<bool, GeometryId, SourceId>(
+                &Class::BelongsToSource),
+            py::arg("geometry_id"), py::arg("source_id"),
+            cls_doc.BelongsToSource.doc_2args_geometry_id_source_id)
+        .def("GetOwningSourceName",
+            overload_cast_explicit<const std::string&, GeometryId>(
+                &Class::GetOwningSourceName),
+            py_rvp::reference_internal, py::arg("geometry_id"),
+            cls_doc.GetOwningSourceName.doc_1args_geometry_id)
+        .def("GetFrameId", &Class::GetFrameId, py::arg("geometry_id"),
+            cls_doc.GetFrameId.doc)
         .def("GetName",
             overload_cast_explicit<const std::string&, GeometryId>(
                 &Class::GetName),
@@ -492,6 +529,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("GetPerceptionProperties", &Class::GetPerceptionProperties,
             py_rvp::reference_internal, py::arg("geometry_id"),
             cls_doc.GetPerceptionProperties.doc)
+        .def("CollisionFiltered", &Class::CollisionFiltered,
+            py::arg("geometry_id1"), py::arg("geometry_id2"),
+            cls_doc.CollisionFiltered.doc)
         .def("CloneGeometryInstance", &Class::CloneGeometryInstance,
             py::arg("geometry_id"), cls_doc.CloneGeometryInstance.doc)
         .def("geometry_version", &Class::geometry_version,
