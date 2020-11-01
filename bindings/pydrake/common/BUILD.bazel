@@ -265,15 +265,6 @@ drake_cc_library(
     ],
 )
 
-drake_py_library(
-    name = "cpp_const_py",
-    srcs = ["cpp_const.py"],
-    deps = [
-        ":module_py",
-        "//bindings/pydrake/third_party:wrapt_py",
-    ],
-)
-
 drake_cc_library(
     name = "sorted_pair_pybind",
     hdrs = ["sorted_pair_pybind.h"],
@@ -354,7 +345,6 @@ PY_LIBRARIES_WITH_INSTALL = [
 PY_LIBRARIES = [
     ":compatibility_py",
     ":containers_py",
-    ":cpp_const_py",
     ":cpp_param_py",
     ":cpp_template_py",
     ":deprecation_py",
@@ -470,13 +460,6 @@ drake_py_unittest(
     name = "numpy_compare_test",
     deps = [
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
-    ],
-)
-
-drake_py_unittest(
-    name = "cpp_const_test",
-    deps = [
-        ":cpp_const_py",
     ],
 )
 
