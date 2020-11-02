@@ -77,7 +77,7 @@ class TestAnalysis(unittest.TestCase):
         status = simulator.AdvanceTo(1.)
         self.assertEqual(
             status.FormatMessage(),
-            "Simulator successfully reached the boundary time (1.0).")
+            "Simulator successfully reached the boundary time (1).")
         self.assertTrue(status.succeeded())
         self.assertEqual(status.boundary_time(), 1.)
         self.assertEqual(status.return_time(), 1.)
