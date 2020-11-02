@@ -5,6 +5,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <variant>
@@ -249,7 +250,11 @@ class YamlWriteArchive final {
   void VisitScalar(const NVP& nvp) {
     using T = typename NVP::value_type;
     const T& value = *nvp.value();
-    root_[nvp.name()] = fmt::format("{}", value);
+    if constexpr (std::is_floating_point_v<T>) {
+      root_[nvp.name()] = fmt::format("{:#}", value);
+    } else {
+      root_[nvp.name()] = fmt::format("{}", value);
+    }
   }
 
   template <typename NVP>
