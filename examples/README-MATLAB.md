@@ -20,6 +20,7 @@ framework:
  - Glider
  - HolonomicDrive
  - Hubo
+ - IRB140
  - KneedCompassGait
  - Manipulator2D
  - PlanarMonopodHopper
