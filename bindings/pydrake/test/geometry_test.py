@@ -10,6 +10,7 @@ import numpy as np
 from drake import lcmt_viewer_load_robot, lcmt_viewer_draw
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue, Value
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform, RigidTransform_
@@ -86,9 +87,15 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(inspector.NumDynamicGeometries(), 2)
         self.assertEqual(inspector.NumAnchoredGeometries(), 1)
         self.assertEqual(len(inspector.GetCollisionCandidates()), 0)
-        self.assertTrue(inspector.SourceIsRegistered(id=global_source))
-        self.assertEqual(inspector.GetSourceName(source_id=global_source),
-                         "anchored")
+        self.assertTrue(inspector.SourceIsRegistered(source_id=global_source))
+        # TODO(SeanCurtis-TRI) Remove this call at the same time as deprecating
+        # the subsequent deprecation tests; it is only here to show that the
+        # non-keyword call invokes the non-deprecated overload.
+        self.assertTrue(inspector.SourceIsRegistered(global_source))
+        with catch_drake_warnings(expected_count=2):
+            self.assertTrue(inspector.SourceIsRegistered(id=global_source))
+            self.assertEqual(inspector.GetSourceName(source_id=global_source),
+                             "anchored")
         self.assertEqual(inspector.NumFramesForSource(source_id=global_source),
                          2)
         self.assertTrue(global_frame in inspector.FramesForSource(
@@ -644,12 +651,21 @@ class TestGeometry(unittest.TestCase):
         query_object = scene_graph.get_query_output_port().Eval(context)
 
         self.assertIsInstance(query_object.inspector(), SceneGraphInspector)
+        with catch_drake_warnings(expected_count=3):
+            self.assertIsInstance(
+                query_object.X_WF(id=frame_id), RigidTransform_[T])
+            self.assertIsInstance(
+                query_object.X_PF(id=frame_id), RigidTransform_[T])
+            self.assertIsInstance(
+                query_object.X_WG(id=geometry_id), RigidTransform_[T])
         self.assertIsInstance(
-            query_object.X_WF(id=frame_id), RigidTransform_[T])
+            query_object.GetPoseInWorld(frame_id=frame_id), RigidTransform_[T])
         self.assertIsInstance(
-            query_object.X_PF(id=frame_id), RigidTransform_[T])
+            query_object.GetPoseInParent(frame_id=frame_id),
+            RigidTransform_[T])
         self.assertIsInstance(
-            query_object.X_WG(id=geometry_id), RigidTransform_[T])
+            query_object.GetPoseInWorld(geometry_id=geometry_id),
+            RigidTransform_[T])
 
         # Proximity queries -- all of these will produce empty results.
         results = query_object.ComputeSignedDistancePairwiseClosestPoints()
@@ -666,12 +682,30 @@ class TestGeometry(unittest.TestCase):
         # ids. There are none in this SceneGraph instance. Rather than
         # populating the SceneGraph, we look for the exception thrown in
         # response to invalid ids as evidence of correct binding.
+        with self.assertRaisesRegex(
+            RuntimeError,
+            r"The geometry given by id \d+ does not reference a geometry"
+                + " that can be used in a signed distance query"):
+            query_object.ComputeSignedDistancePairClosestPoints(
+                geometry_id_A=mut.GeometryId.get_new_id(),
+                geometry_id_B=mut.GeometryId.get_new_id())
+        # TODO(SeanCurtis-TRI) Remove this call at the same time as deprecating
+        # the subsequent deprecation test; it is only here to show that the
+        # non-keyword call invokes the non-deprecated overload.
         self.assertRaisesRegex(
             RuntimeError,
-            "The geometry given by id \\d+ does not reference a geometry"
+            r"The geometry given by id \d+ does not reference a geometry"
             + " that can be used in a signed distance query",
             query_object.ComputeSignedDistancePairClosestPoints,
             mut.GeometryId.get_new_id(), mut.GeometryId.get_new_id())
+        with catch_drake_warnings(expected_count=1):
+            with self.assertRaisesRegex(
+                RuntimeError,
+                r"The geometry given by id \d+ does not reference a geometry"
+                    + " that can be used in a signed distance query"):
+                query_object.ComputeSignedDistancePairClosestPoints(
+                    id_A=mut.GeometryId.get_new_id(),
+                    id_B=mut.GeometryId.get_new_id())
 
         # Confirm rendering API returns images of appropriate type.
         d_camera = mut.render.DepthCameraProperties(

@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_state.h"
@@ -159,14 +160,22 @@ class SceneGraphInspector {
   /** @name                Sources and source-related data  */
   //@{
 
-  /** Reports `true` if the given `id` maps to a registered source.  */
-  bool SourceIsRegistered(SourceId id) const {
+  /** Reports `true` if the given `source_id` maps to a registered source.  */
+  bool SourceIsRegistered(SourceId source_id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->SourceIsRegistered(id);
+    return state_->SourceIsRegistered(source_id);
+  }
+
+  /** Reports the name for the source with the given `source_id`.
+   @throws std::exception if `source_id` does not map to a registered source. */
+  const std::string& GetName(SourceId source_id) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->GetName(source_id);
   }
 
   /** Reports the name for the source with the given `id`.
    @throws std::logic_error if `id` does not map to a registered source. */
+  DRAKE_DEPRECATED("2021-03-01", "Please use GetName(SourceId) instead.")
   const std::string& GetSourceName(SourceId id) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->GetName(id);
