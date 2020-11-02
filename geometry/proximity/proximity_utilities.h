@@ -62,14 +62,10 @@ class EncodedData {
       : data_(reinterpret_cast<ValueType>(fcl_object.getUserData())) {}
 
   /* Constructs encoded data for the given id identified as dynamic.  */
-  static EncodedData encode_dynamic(GeometryId id) {
-    return {id, true};
-  }
+  static EncodedData encode_dynamic(GeometryId id) { return {id, true}; }
 
   /* Constructs encoded data for the given id identified as anchored.  */
-  static EncodedData encode_anchored(GeometryId id) {
-    return {id, false};
-  }
+  static EncodedData encode_anchored(GeometryId id) { return {id, false}; }
 
   /* Sets the encoded data to be dynamic.  */
   void set_dynamic() { data_ |= kIsDynamicMask; }
@@ -117,7 +113,7 @@ class EncodedData {
   // pack the encoding into a void*. So, we set the bit mask as the highest
   // order bit of something pointer sized.
   static const ValueType kIsDynamicMask = ValueType{1}
-      << (sizeof(void*) * 8 - 1);
+                                          << (sizeof(void*) * 8 - 1);
 
   // The encoded data - id and mobility type masked together.
   ValueType data_{};
@@ -150,6 +146,43 @@ int CountFaces(const VolumeMesh<double>& mesh);
   it is topologically equivalent to a solid ball.
 */
 int ComputeEulerCharacteristic(const VolumeMesh<double>& mesh);
+
+/*
+  Returns true if `tetrahedron` in `mesh` has its four vertices belonging to
+  the same block of the medial-axis subdivision of `mesh`, i.e., there is a
+  unique boundary face to which all four vertices are _closest_. Here a vertex
+  is _closest_ to a mesh's boundary face when the distance to that face
+  (provided by `distance_to_boundary_face()`) is approximately equal to the
+  distance to the boundary (provided by `distance_to_boundary()`). Notice that
+  a vertex may have multiple closest faces, i.e., it is on the medial axis.
+
+  Note: This function is written generically for a volume mesh, but is
+  particularly useful for meshes representing primitive shapes. In this case
+  the boundary distance functors can be implemented more efficiently than those
+  of a general volume mesh.
+
+  @param[in] `tetrahedron` The VolumeElement to test.
+  @param[in] `mesh` The VolumeMesh that `tetrahedron` belongs to.
+  @param[in] `distance_to_boundary` Functor to efficiently compute the distance
+              to the boundary of `mesh`.
+  @param[in] `distance_to_boundary_face` Functor to efficiently compute the
+              distance to the boundary face of a given index.
+  @param[in] `num_faces` Number of boundary faces of the underlying shape. This
+              may be different than the number of faces in `mesh`, particularly
+              when the mesh is representing a primitive shape.
+  @param[in] `tolerance` Value used for comparing distances.
+
+  @pre No vertex of the tetrahedron is outside the mesh.
+
+  Here we omit the frame notations because everything is expressed in the
+  frame of the mesh. It might change in the future.
+*/
+bool IsTetrahedronRespectingMa(
+    const VolumeElement& tetrahedron, const VolumeMesh<double>& mesh,
+    std::function<double(const Eigen::Vector3d&)> distance_to_boundary,
+    std::function<double(int, const Eigen::Vector3d&)>
+        distance_to_boundary_face,
+    int num_faces, const double tolerance);
 
 }  // namespace internal
 }  // namespace geometry

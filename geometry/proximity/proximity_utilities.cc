@@ -2,6 +2,7 @@
 
 #include <set>
 #include <unordered_set>
+#include <utility>
 
 #include "drake/common/sorted_pair.h"
 #include "drake/geometry/proximity/sorted_triplet.h"
@@ -86,6 +87,49 @@ int ComputeEulerCharacteristic(const VolumeMesh<double>& mesh) {
   const int k3 = mesh.tetrahedra().size();
 
   return k0 - k1 + k2 - k3;
+}
+
+bool IsTetrahedronRespectingMa(
+    const VolumeElement& tetrahedron, const VolumeMesh<double>& mesh,
+    std::function<double(const Eigen::Vector3d&)> distance_to_boundary,
+    std::function<double(int, const Eigen::Vector3d&)>
+        distance_to_boundary_face,
+    int num_faces, const double tolerance) {
+  DRAKE_ASSERT(mesh.kVertexPerElement > 0);
+
+  // For each vertex in `tetrahedron`, compute the set of "closest" faces.
+  // A vertex lying on the medial axis has multiple "closest" faces (by virtue
+  // of the definition of the medial axis.)
+  std::vector<std::vector<int>> closest_faces(mesh.kVertexPerElement);
+  for (int i = 0; i < mesh.kVertexPerElement; ++i) {
+    const Eigen::Vector3d vertex = mesh.vertex(tetrahedron.vertex(i)).r_MV();
+    const double vi_distance_to_boundary = distance_to_boundary(vertex);
+    for (int j = 0; j < num_faces; ++j) {
+      if (distance_to_boundary_face(j, vertex) - vi_distance_to_boundary <=
+          tolerance) {
+        closest_faces[i].push_back(j);
+      }
+    }
+  }
+
+  // Compute the intersection of the closest faces for all vertices.
+  // If the intersection is empty, then there exist two vertices of this tet
+  //   that belong to different blocks of the medial axis.
+  // If the intersection is non-empty and has size > 1, then all vertices
+  //   belong to the same facet of the medial axis. For a convex mesh, this
+  //   facet is planar and therefore the tet has zero volume.
+  // If the inetersection is non-empty and has size == 1, then the tet conforms
+  //   to a single block of the media axis subdivision of the shape.
+  std::vector<int> last_intersection = closest_faces[0];
+  std::vector<int> curr_intersection;
+  for (int i = 1; i < mesh.kVertexPerElement; ++i) {
+    std::set_intersection(last_intersection.begin(), last_intersection.end(),
+                          closest_faces[i].begin(), closest_faces[i].end(),
+                          std::back_inserter(curr_intersection));
+    std::swap(last_intersection, curr_intersection);
+    curr_intersection.clear();
+  }
+  return last_intersection.size() == 1;
 }
 
 }  // namespace internal

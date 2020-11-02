@@ -21,9 +21,6 @@ using std::find;
 using std::find_if;
 using std::for_each;
 
-// TODO(#14235): Move IsTetrahedronRespectingMa() to possibly
-//  proximity_utilities and extend it to other shape primitives.
-
 // Returns true if `tetrahedron` in `mesh` has its four vertices belonging to
 // the same block of the medial-axis subdivision of `box`, i.e., there is a
 // box's face to which all four vertices are _closest_. Here a vertex is
@@ -36,9 +33,9 @@ using std::for_each;
 //
 // Here we omit the frame notations because everything is expressed in the
 // frame of the box. It might change in the future.
-bool IsTetrahedronRespectingMa(const VolumeElement& tetrahedron,
-                               const VolumeMesh<double>& mesh, const Box& box,
-                               const double tolerance) {
+bool IsTetrahedronRespectingMaBox(const VolumeElement& tetrahedron,
+                                  const VolumeMesh<double>& mesh,
+                                  const Box& box, const double tolerance) {
   const Vector3d half_size = box.size() / 2.;
   auto distance_to_boundary = [&half_size](const Vector3d& point_in_box) {
     Vector3d abs_point = point_in_box.array().abs();
@@ -46,22 +43,21 @@ bool IsTetrahedronRespectingMa(const VolumeElement& tetrahedron,
     DRAKE_DEMAND((half_size.array() >= abs_point.array()).all());
     return (half_size - abs_point).minCoeff();
   };
-  // The six faces of the box are the ±X, ±Y, ±Z faces.
-  for (int axis = 0; axis < 3; ++axis) {
-    for (const double face_bound : {-half_size[axis], half_size[axis]}) {
-      bool closest_to_this_face = true;
-      for (int i = 0; i < mesh.kVertexPerElement && closest_to_this_face; ++i) {
-        const Vector3d vertex = mesh.vertex(tetrahedron.vertex(i)).r_MV();
-        const double distance_to_this_face = abs(vertex[axis] - face_bound);
-        closest_to_this_face =
-            tolerance >= distance_to_this_face - distance_to_boundary(vertex);
-      }
-      if (closest_to_this_face) {
-        return true;
-      }
-    }
-  }
-  return false;
+
+  // Face ordering: {+X, -X, +Y, -Y, +Z, -Z}
+  auto distance_to_boundary_face = [&half_size](int i,
+                                                const Vector3d& point_in_box) {
+    int axis = i / 2;
+    bool negate = i % 2 == 1;
+    return abs(point_in_box[axis] -
+               (negate ? -half_size[axis] : half_size[axis]));
+  };
+
+  const int num_faces = 6;
+
+  return IsTetrahedronRespectingMa(tetrahedron, mesh, distance_to_boundary,
+                                   distance_to_boundary_face, num_faces,
+                                   tolerance);
 }
 
 // Verifies that a tetrahedral mesh of a box from MakeBoxVolumeMeshWithMa()
@@ -203,8 +199,8 @@ bool VerifyBoxMeshWithMa(const VolumeMesh<double>& mesh, const Box& box) {
   // C3. Each tetrahedron conforms to MA.
   // Assume the mesh already passes B2 (no mesh's vertex is outside the box).
   for (const VolumeElement tetrahedron : mesh.tetrahedra()) {
-    bool tetrahedron_conform_to_MA =
-        IsTetrahedronRespectingMa(tetrahedron, mesh, box, distance_tolerance);
+    bool tetrahedron_conform_to_MA = IsTetrahedronRespectingMaBox(
+        tetrahedron, mesh, box, distance_tolerance);
     EXPECT_TRUE(tetrahedron_conform_to_MA)
         << "A tetrahedron does not conform to the medial axis of the box.";
     if (!tetrahedron_conform_to_MA) {
