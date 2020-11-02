@@ -47,6 +47,16 @@ QueryObject<T>& QueryObject<T>::operator=(const QueryObject<T>& query_object) {
 }
 
 template <typename T>
+const RigidTransform<T>& QueryObject<T>::GetPoseInWorld(
+    FrameId frame_id) const {
+  ThrowIfNotCallable();
+
+  FullPoseUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return state.get_pose_in_world(frame_id);
+}
+
+template <typename T>
 const RigidTransform<T>& QueryObject<T>::X_WF(FrameId id) const {
   ThrowIfNotCallable();
 
@@ -56,12 +66,32 @@ const RigidTransform<T>& QueryObject<T>::X_WF(FrameId id) const {
 }
 
 template <typename T>
+const RigidTransform<T>& QueryObject<T>::GetPoseInParent(
+    FrameId frame_id) const {
+  ThrowIfNotCallable();
+
+  FullPoseUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return state.get_pose_in_parent(frame_id);
+}
+
+template <typename T>
 const RigidTransform<T>& QueryObject<T>::X_PF(FrameId id) const {
   ThrowIfNotCallable();
 
   FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.get_pose_in_parent(id);
+}
+
+template <typename T>
+const RigidTransform<T>& QueryObject<T>::GetPoseInWorld(
+    GeometryId geometry_id) const {
+  ThrowIfNotCallable();
+
+  FullPoseUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return state.get_pose_in_world(geometry_id);
 }
 
 template <typename T>
@@ -139,12 +169,13 @@ QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints(
 
 template <typename T>
 SignedDistancePair<T> QueryObject<T>::ComputeSignedDistancePairClosestPoints(
-    GeometryId id_A, GeometryId id_B) const {
+    GeometryId geometry_id_A, GeometryId geometry_id_B) const {
   ThrowIfNotCallable();
 
   FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
-  return state.ComputeSignedDistancePairClosestPoints(id_A, id_B);
+  return state.ComputeSignedDistancePairClosestPoints(geometry_id_A,
+                                                      geometry_id_B);
 }
 
 template <typename T>

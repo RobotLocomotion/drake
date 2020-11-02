@@ -298,11 +298,11 @@ void DrakeVisualizer::SendPoseMessage(const Context<double>& context) const {
   message.quaternion.resize(frame_count);
 
   for (int i = 0; i < frame_count; ++i) {
-    const FrameId id = dynamic_frames[i].frame_id;
-    message.robot_num[i] = inspector.GetFrameGroup(id);
+    const FrameId frame_id = dynamic_frames[i].frame_id;
+    message.robot_num[i] = inspector.GetFrameGroup(frame_id);
     message.link_name[i] = dynamic_frames[i].name;
 
-    const RigidTransformd& X_WF = query_object.X_WF(id);
+    const RigidTransformd& X_WF = query_object.GetPoseInWorld(frame_id);
     message.position[i].resize(3);
     message.position[i][0] = X_WF.translation()[0];
     message.position[i][1] = X_WF.translation()[1];
