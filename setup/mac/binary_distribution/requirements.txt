@@ -2,8 +2,10 @@ ipywidgets
 lxml
 matplotlib
 notebook
+numpy
 pydot
 PyYAML
 pyzmq
+scipy
 tornado
 u-msgpack-python
