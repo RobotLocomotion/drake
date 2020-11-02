@@ -196,7 +196,7 @@ void RgbdSensor::CalcX_WB(const Context<double>& context,
     X_WB = X_PB_;
   } else {
     const QueryObject<double>& query_object = get_query_object(context);
-    X_WB = query_object.X_WF(parent_frame_id_) * X_PB_;
+    X_WB = query_object.GetPoseInWorld(parent_frame_id_) * X_PB_;
   }
 
   Translation3d trans{X_WB.translation()};

@@ -185,10 +185,10 @@ TEST_F(SceneGraphTest, RegisterSourceDefaultName) {
 // registered and that the name is available.
 TEST_F(SceneGraphTest, RegisterSourceSpecifiedName) {
   std::string name = "some_unique_name";
-  SourceId id = scene_graph_.RegisterSource(name);
-  EXPECT_TRUE(id.is_valid());
-  EXPECT_TRUE(scene_graph_.SourceIsRegistered(id));
-  EXPECT_EQ(scene_graph_.model_inspector().GetSourceName(id), name);
+  SourceId source_id = scene_graph_.RegisterSource(name);
+  EXPECT_TRUE(source_id.is_valid());
+  EXPECT_TRUE(scene_graph_.SourceIsRegistered(source_id));
+  EXPECT_EQ(scene_graph_.model_inspector().GetName(source_id), name);
 }
 
 // Tests that sources can be registered after context allocation; it should be
@@ -201,11 +201,11 @@ TEST_F(SceneGraphTest, RegisterSourcePostContext) {
   SourceId new_source = scene_graph_.RegisterSource(new_source_name);
   EXPECT_TRUE(scene_graph_.SourceIsRegistered(new_source));
   // Contained in scene graph.
-  EXPECT_EQ(scene_graph_.model_inspector().GetSourceName(new_source),
+  EXPECT_EQ(scene_graph_.model_inspector().GetName(new_source),
             new_source_name);
   // Not found in allocated context.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      query_object().inspector().GetSourceName(new_source),
+      query_object().inspector().GetName(new_source),
       std::logic_error, "Querying source name for an invalid source id.*");
 }
 
