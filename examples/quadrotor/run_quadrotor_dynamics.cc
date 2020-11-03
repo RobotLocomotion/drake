@@ -9,7 +9,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
-#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
@@ -36,7 +36,7 @@ class Quadrotor : public systems::Diagram<T> {
     systems::DiagramBuilder<T> builder;
     auto [plant, scene_graph] =
         multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
-    geometry::ConnectDrakeVisualizer(&builder, scene_graph);
+    geometry::DrakeVisualizer::AddToBuilder(&builder, scene_graph);
     multibody::Parser parser(&plant);
     parser.AddModelFromFile(
         FindResourceOrThrow("drake/examples/quadrotor/quadrotor.urdf"));

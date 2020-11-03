@@ -12,7 +12,7 @@ a way to model a kinematic loop. It shows:
 #include <gflags/gflags.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
 #include "drake/multibody/tree/revolute_joint.h"
@@ -122,7 +122,7 @@ int do_main() {
   // We are done defining the model. Finalize and build the diagram.
   four_bar.Finalize();
 
-  ConnectDrakeVisualizer(&builder, scene_graph);
+  geometry::DrakeVisualizer::AddToBuilder(&builder, scene_graph);
   auto diagram = builder.Build();
 
   // Create a context for this system and sub-context for the four bar system.

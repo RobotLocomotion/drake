@@ -11,7 +11,7 @@
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/examples/acrobot/acrobot_geometry.h"
 #include "drake/examples/acrobot/acrobot_plant.h"
-#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/solvers/snopt_solver.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h"
@@ -104,7 +104,7 @@ int do_main() {
   auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
   AcrobotGeometry::AddToBuilder(&builder, plant->get_output_port(0),
                                 scene_graph);
-  ConnectDrakeVisualizer(&builder, *scene_graph);
+  geometry::DrakeVisualizer::AddToBuilder(&builder, *scene_graph);
 
   auto diagram = builder.Build();
 

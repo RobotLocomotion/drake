@@ -2,7 +2,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/examples/planar_gripper/planar_gripper_common.h"
-#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -37,7 +37,7 @@ template <>
 void AddDrakeVisualizer<double>(
     systems::DiagramBuilder<double>* builder,
     const geometry::SceneGraph<double>& scene_graph) {
-  geometry::ConnectDrakeVisualizer(builder, scene_graph);
+  geometry::DrakeVisualizer::AddToBuilder(builder, scene_graph);
 }
 
 template <typename T>

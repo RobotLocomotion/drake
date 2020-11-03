@@ -215,20 +215,22 @@ class TestGeometry(unittest.TestCase):
         role = mut.Role.kIllustration
 
         def normal(builder, scene_graph):
-            mut.ConnectDrakeVisualizer(
-                builder=builder, scene_graph=scene_graph,
-                lcm=lcm, role=role)
-            mut.DispatchLoadMessage(
-                scene_graph=scene_graph, lcm=lcm, role=role)
+            with catch_drake_warnings(expected_count=2):
+                mut.ConnectDrakeVisualizer(
+                    builder=builder, scene_graph=scene_graph,
+                    lcm=lcm, role=role)
+                mut.DispatchLoadMessage(
+                    scene_graph=scene_graph, lcm=lcm, role=role)
 
         def port(builder, scene_graph):
-            mut.ConnectDrakeVisualizer(
-                builder=builder, scene_graph=scene_graph,
-                pose_bundle_output_port=(
-                    scene_graph.get_pose_bundle_output_port()),
-                lcm=lcm, role=role)
-            mut.DispatchLoadMessage(
-                scene_graph=scene_graph, lcm=lcm, role=role)
+            with catch_drake_warnings(expected_count=2):
+                mut.ConnectDrakeVisualizer(
+                    builder=builder, scene_graph=scene_graph,
+                    pose_bundle_output_port=(
+                        scene_graph.get_pose_bundle_output_port()),
+                    lcm=lcm, role=role)
+                mut.DispatchLoadMessage(
+                    scene_graph=scene_graph, lcm=lcm, role=role)
 
         for func in [normal, port]:
             # Create subscribers.

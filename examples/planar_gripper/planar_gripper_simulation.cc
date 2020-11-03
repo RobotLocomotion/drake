@@ -56,7 +56,7 @@
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/examples/planar_gripper/planar_gripper_common.h"
 #include "drake/examples/planar_gripper/planar_gripper_lcm.h"
-#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
@@ -349,7 +349,7 @@ int DoMain() {
                     plant.get_actuation_input_port());
   }
 
-  geometry::ConnectDrakeVisualizer(&builder, scene_graph, lcm);
+  geometry::DrakeVisualizer::AddToBuilder(&builder, scene_graph, lcm);
 
   // Publish contact results for visualization.
   if (FLAGS_visualize_contacts) {

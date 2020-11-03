@@ -17,7 +17,7 @@
 #include "drake/examples/acrobot/acrobot_geometry.h"
 #include "drake/examples/acrobot/acrobot_lcm.h"
 #include "drake/examples/acrobot/acrobot_plant.h"
-#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/lcmt_acrobot_u.hpp"
 #include "drake/lcmt_acrobot_x.hpp"
 #include "drake/systems/analysis/simulator.h"
@@ -53,7 +53,7 @@ int DoMain() {
   auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
   AcrobotGeometry::AddToBuilder(
       &builder, acrobot->get_output_port(0), scene_graph);
-  ConnectDrakeVisualizer(&builder, *scene_graph, lcm);
+  geometry::DrakeVisualizer::AddToBuilder(&builder, *scene_graph, lcm);
 
   // Creates command receiver and subscriber.
   auto command_sub = builder.AddSystem(

@@ -13,7 +13,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/examples/allegro_hand/allegro_common.h"
 #include "drake/examples/allegro_hand/allegro_lcm.h"
-#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/lcmt_allegro_command.hpp"
 #include "drake/lcmt_allegro_status.hpp"
 #include "drake/math/rotation_matrix.h"
@@ -100,7 +100,7 @@ void DoMain() {
   plant.Finalize();
 
   // Visualization
-  geometry::ConnectDrakeVisualizer(&builder, scene_graph);
+  geometry::DrakeVisualizer::AddToBuilder(&builder, scene_graph);
   DRAKE_DEMAND(!!plant.get_source_id());
   builder.Connect(
       plant.get_geometry_poses_output_port(),
@@ -166,7 +166,7 @@ void DoMain() {
 
   // Now the model is complete.
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
-  geometry::DispatchLoadMessage(scene_graph, lcm);
+
   // Create a context for this system:
   std::unique_ptr<systems::Context<double>> diagram_context =
       diagram->CreateDefaultContext();

@@ -434,7 +434,6 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "scene_graph_test",
     deps = [
-        ":geometry_visualization",
         ":scene_graph",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",

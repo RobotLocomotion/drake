@@ -21,7 +21,7 @@ In a new terminal, run example of showing a Realsense d415:
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/systems/analysis/simulator.h"
@@ -34,7 +34,7 @@ namespace drake {
 namespace manipulation {
 namespace {
 
-using geometry::ConnectDrakeVisualizer;
+using geometry::DrakeVisualizer;
 using geometry::SceneGraph;
 using multibody::AddMultibodyPlantSceneGraph;
 using multibody::Parser;
@@ -62,7 +62,7 @@ TEST_P(ParseTest, ParsesUrdfAndVisualizes) {
 
   // Visualize via publishing, if requested.
   if (FLAGS_visualize) {
-    ConnectDrakeVisualizer(&builder, scene_graph);
+    DrakeVisualizer::AddToBuilder(&builder, scene_graph);
     plant.Finalize();
     auto diagram = builder.Build();
     drake::log()->info("Visualize: {}", object_name);

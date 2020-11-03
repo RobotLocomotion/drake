@@ -28,7 +28,7 @@ drake_cc_binary(
         ":rod2d",
         ":rod2d_geometry",
         "//common:essential",
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//systems/analysis:implicit_euler_integrator",
         "//systems/analysis:runge_kutta3_integrator",
         "//systems/analysis:simulator",
