@@ -1,8 +1,10 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 #include <vector>
 
+#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/fem/dev/element_cache.h"
 #include "drake/multibody/fem/dev/fem_indexes.h"
@@ -11,80 +13,125 @@ namespace drake {
 namespace multibody {
 namespace fem {
 /** The states in the FEM simulation that are associated with the nodes and the
- elements. The states include the positions of the nodes, `x`, and their time
- derivatives, `v`. FemState also contains the cached quantities that are
- associated with the elements whose values depend on the states. See
+ elements. The states include the generalized positions of the nodes, `q`, and
+ their time derivatives, `qdot`. %FemState also contains the cached quantities
+ that are associated with the elements whose values depend on the states. See
  ElementCache for more on these state-dependent quantities.
  @tparam_nonsymbolic_scalar T. */
 template <typename T>
 class FemState {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FemState);
+  /** Copy, move and assign are disabled. Use Clone() if a deep copy is
+   required. Use SetFrom() if you want to set `this` %FemState from another
+   %FemState. */
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FemState);
 
   FemState() = default;
 
-  /** Resize the position and velocity states to the input `size`. The existing
-   values are unchanged if `size` is greater than or equal to the size of the
-   existing states. */
+  /** Constructs an %FemState with prescribed number of states. */
+  explicit FemState(int num_states) : qdot_(num_states), q_(num_states) {}
+
+  /** Takes ownership of the input `element_cache` and set it as the element
+   cache that `this` %FemState owns. This method is usually called right after
+   the construction of the %FemState to set the element cache to the desired
+   quantity. */
+  void ResetElementCache(
+      std::vector<std::unique_ptr<ElementCache<T>>> element_cache) const {
+    element_cache_.resize(element_cache.size());
+    for (int i = 0; i < static_cast<int>(element_cache.size()); ++i) {
+      element_cache_[i] = std::move(element_cache[i]);
+    }
+  }
+
+  /** Creates a deep identical copy of `this` %FemState with all its states and
+   * cache. Returns a unique pointer to the copy. */
+  std::unique_ptr<FemState<T>> Clone() const {
+    auto clone = std::make_unique<FemState<T>>(num_states());
+    clone->SetFrom(*this);
+    return clone;
+  }
+
+  /** Sets the states and cache of `this` %FemState from the input %FemState
+   * `other`. After this method is called, the state and cache in `this`
+   * %FemState will be an identical copy of those in the `other` %FemState. */
+  void SetFrom(const FemState<T>& other) {
+    Resize(other.num_states());
+    set_q(other.q());
+    set_qdot(other.qdot());
+    element_cache_ = other.element_cache_;
+  }
+
+  /** Resize the number of states to the input `size`. The existing values are
+   unchanged if `size` is greater than or equal to the size of the existing
+   states. */
   void Resize(int size) {
     DRAKE_DEMAND(size >= 0);
-    v_.conservativeResize(size);
-    x_.conservativeResize(size);
+    if (size == num_states()) return;
+    qdot_.conservativeResize(size);
+    q_.conservativeResize(size);
   }
 
-  /// State getters.
-  /// @{
-  const VectorX<T>& v() const { return v_; }
+  /** @name State getters.
+   @{ */
+  const VectorX<T>& qdot() const { return qdot_; }
 
-  const VectorX<T>& x() const { return x_; }
-  /// @}
+  const VectorX<T>& q() const { return q_; }
+  /** @} */
 
-  /// State setters. The value provided must match the current size of the
-  /// states.
-  /// @{
-  void set_v(const Eigen::Ref<const VectorX<T>>& value) {
-    DRAKE_DEMAND(value.size() == v_.size());
-    if (value == v_) return;
-    v_ = value;
+  /** @name State setters.
+   The size of the values provided must match the current size
+   of the states.
+   @{ */
+  void set_qdot(const Eigen::Ref<const VectorX<T>>& value) {
+    DRAKE_DEMAND(value.size() == qdot_.size());
+    if (value == qdot_) return;
+    mutable_qdot() = value;
   }
 
-  void set_x(const Eigen::Ref<const VectorX<T>>& value) {
-    DRAKE_DEMAND(value.size() == x_.size());
-    if (value == x_) return;
-    x_ = value;
+  void set_q(const Eigen::Ref<const VectorX<T>>& value) {
+    DRAKE_DEMAND(value.size() == q_.size());
+    if (value == q_) return;
+    mutable_q() = value;
   }
-  /// @}
+  /** @} */
 
-  /// Mutable state getters. The value of the states is mutable but the sizes of
-  /// the states are not allowed to change.
-  /// @{
-  Eigen::VectorBlock<VectorX<T>> mutable_v() { return v_.head(v_.size()); }
-
-  Eigen::VectorBlock<VectorX<T>> mutable_x() { return x_.head(x_.size()); }
-  /// @}
-
-  /// Getters and mutable getters for cached quantities.
-  /// @{
-  const std::vector<std::unique_ptr<ElementCache<T>>>& cache() const {
-    return cache_;
+  /** @name Mutable state getters.
+   The values of the states are mutable but the sizes
+   of the states are not allowed to change.
+   @{ */
+  Eigen::VectorBlock<VectorX<T>> mutable_qdot() {
+    return qdot_.head(qdot_.size());
   }
 
-  std::vector<std::unique_ptr<ElementCache<T>>>& mutable_cache() const {
-    return cache_;
+  Eigen::VectorBlock<VectorX<T>> mutable_q() { return q_.head(q_.size()); }
+  /** @} */
+
+  /** @name Getters and mutable getters for cached quantities.
+   @{ */
+  const ElementCache<T>& element_cache(ElementIndex e) const {
+    DRAKE_DEMAND(e.is_valid());
+    DRAKE_DEMAND(e < element_cache_.size());
+    DRAKE_DEMAND(element_cache_[e] != nullptr);
+    return *element_cache_[e];
   }
 
-  const ElementCache<T>& cache_at(ElementIndex e) const { return *cache_[e]; }
+  ElementCache<T>& mutable_element_cache(ElementIndex e) const {
+    DRAKE_DEMAND(e.is_valid());
+    DRAKE_DEMAND(e < element_cache_.size());
+    DRAKE_DEMAND(element_cache_[e] != nullptr);
+    return *element_cache_[e];
+  }
+  /** @} */
 
-  ElementCache<T>& mutable_cache_at(ElementIndex e) const { return *cache_[e]; }
-  /// @}
+  int num_states() const { return q_.size(); }
 
  private:
-  // Node velocities.
-  VectorX<T> v_;
-  // Node positions.
-  VectorX<T> x_;
-  // Owned cached quantities.
-  mutable std::vector<std::unique_ptr<ElementCache<T>>> cache_;
+  // Time derivatives of generalized node positions.
+  VectorX<T> qdot_;
+  // Generalized node positions.
+  VectorX<T> q_;
+  // Owned element cache quantities.
+  mutable std::vector<copyable_unique_ptr<ElementCache<T>>> element_cache_;
 };
 }  // namespace fem
 }  // namespace multibody

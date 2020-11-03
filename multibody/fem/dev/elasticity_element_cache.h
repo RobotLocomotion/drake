@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/fem/dev/deformation_gradient_cache.h"
 #include "drake/multibody/fem/dev/element_cache.h"
@@ -12,29 +13,38 @@ namespace drake {
 namespace multibody {
 namespace fem {
 /** Cached quantities per element that are used in the element routine
- FemElasticity. Implements the abstract interface ElementCache.
+ ElasticityElement. Implements the abstract interface ElementCache.
 
- See FemElasticity for the corresponding FemElement for %ElasticityElementCache.
+ See ElasticityElement for the corresponding FemElement for
+ %ElasticityElementCache.
  @tparam_nonsymbolic_scalar T. */
 template <typename T>
 class ElasticityElementCache : public ElementCache<T> {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ElasticityElementCache);
+  /** @name     Does not allow copy, move, or assignment. */
+  /** @{ */
+  /* Copy constructor is used only to facilitate implementation of Clone()
+   in derived classes. */
+  ElasticityElementCache(ElasticityElementCache&&) = delete;
+  ElasticityElementCache& operator=(ElasticityElementCache&&) = delete;
+  ElasticityElementCache& operator=(const ElasticityElementCache&) = delete;
+  /** @} */
 
   /** Constructs a new %ElasticityElementCache.
-   @param element_index The index of the FemElasticity associated with this
+   @param element_index The index of the ElasticityElement associated with this
    %ElasticityElementCache.
    @param num_quads The number of quadrature locations at which cached
    quantities need to be evaluated.
    @param deformation_gradient_cache The DeformationGradientCache associated
    with this element. Must be compatible with the ConstitutiveModel in the
-   FemElasticity routine corresponding to this %ElasticityElementCache.
+   ElasticityElement routine corresponding to this %ElasticityElementCache.
    @pre `num_quads` must be positive.
    @warning The input `deformation_gradient_cache` must be compatible with the
-   ConstitutiveModel in the FemElasticity that shares the same element index
+   ConstitutiveModel in the ElasticityElement that shares the same element index
    with this %ElasticityElementCache. More specifically, if the
-   ConstitutiveModel in the corresponding FemElasticity is of type "FooModel",
-   then the input `deformation_gradient_cache` must be of type "FooModelCache".
+   ConstitutiveModel in the corresponding ElasticityElement is of type
+   "FooModel", then the input `deformation_gradient_cache` must be of type
+   "FooModelCache".
   */
   ElasticityElementCache(
       ElementIndex element_index, int num_quads,
@@ -44,24 +54,33 @@ class ElasticityElementCache : public ElementCache<T> {
 
   virtual ~ElasticityElementCache() = default;
 
-  /// Getter for the const cache entries.
-  /// @{
-  const std::unique_ptr<DeformationGradientCache<T>>&
-  deformation_gradient_cache() const {
-    return deformation_gradient_cache_;
+  /** @name Getter for the const cache entries.
+   @{ */
+  const DeformationGradientCache<T>& deformation_gradient_cache() const {
+    return *deformation_gradient_cache_;
   }
-  /// @}
+  /** @} */
 
-  /// Getter for the mutable cache entries.
-  /// @{
-  std::unique_ptr<DeformationGradientCache<T>>&
-  mutable_deformation_gradient_cache() {
-    return deformation_gradient_cache_;
+  /** @name Getter for the mutable cache entries.
+   @{ */
+  DeformationGradientCache<T>& mutable_deformation_gradient_cache() {
+    return *deformation_gradient_cache_;
   }
-  /// @}
+  /** @} */
+
+ protected:
+  /* Copy constructor to facilitate the `DoClone()` method. */
+  ElasticityElementCache(const ElasticityElementCache&) = default;
+
+  /* Creates an identical copy of the ElasticityElementCache object. */
+  std::unique_ptr<ElementCache<T>> DoClone() const final {
+    // Can't use std::make_unique because the copy constructor is protected.
+    return std::unique_ptr<ElementCache<T>>(
+        new ElasticityElementCache<T>(*this));
+  }
 
  private:
-  std::unique_ptr<DeformationGradientCache<T>> deformation_gradient_cache_;
+  copyable_unique_ptr<DeformationGradientCache<T>> deformation_gradient_cache_;
 };
 }  // namespace fem
 }  // namespace multibody

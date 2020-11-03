@@ -1,5 +1,7 @@
 #include "drake/multibody/fem/dev/fem_element.h"
 
+#include <utility>
+
 #include "drake/common/default_scalars.h"
 
 namespace drake {
@@ -23,15 +25,15 @@ void FemElement<T, NaturalDim>::CalcResidual(
 template <typename T, int NaturalDim>
 FemElement<T, NaturalDim>::FemElement(
     ElementIndex element_index,
-    const IsoparametricElement<T, NaturalDim>& shape,
-    const Quadrature<T, NaturalDim>& quadrature,
+    std::unique_ptr<IsoparametricElement<T, NaturalDim>> shape,
+    std::unique_ptr<Quadrature<T, NaturalDim>> quadrature,
     const std::vector<NodeIndex>& node_indices)
     : element_index_(element_index),
-      shape_(shape),
-      quadrature_(quadrature),
+      shape_(std::move(shape)),
+      quadrature_(std::move(quadrature)),
       node_indices_(node_indices) {
   DRAKE_DEMAND(element_index_.is_valid());
-  DRAKE_DEMAND(shape_.num_nodes() == static_cast<int>(node_indices_.size()));
+  DRAKE_DEMAND(shape_->num_nodes() == static_cast<int>(node_indices_.size()));
 }
 
 template class FemElement<double, 2>;

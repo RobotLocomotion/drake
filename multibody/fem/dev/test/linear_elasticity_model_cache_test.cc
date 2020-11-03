@@ -33,6 +33,26 @@ TEST_F(LinearElasticityCacheTest, UpdateCache) {
   EXPECT_EQ(linear_elasticity_cache_.strain()[0], strain);
   EXPECT_EQ(linear_elasticity_cache_.trace_strain()[0], trace_strain);
 }
+
+TEST_F(LinearElasticityCacheTest, Clone) {
+  const std::unique_ptr<DeformationGradientCache<double>> clone =
+      linear_elasticity_cache_.Clone();
+  // Test that the Clone() method returns the correct concrete type.
+  const auto* linear_elasticity_cache_clone =
+      dynamic_cast<const LinearElasticityModelCache<double>*>(clone.get());
+  EXPECT_TRUE(linear_elasticity_cache_clone != nullptr);
+  // Test that the Clone() method returns an identical copy.
+  EXPECT_EQ(linear_elasticity_cache_clone->deformation_gradient(),
+            linear_elasticity_cache_.deformation_gradient());
+  EXPECT_EQ(linear_elasticity_cache_clone->strain(),
+            linear_elasticity_cache_.strain());
+  EXPECT_EQ(linear_elasticity_cache_clone->trace_strain(),
+            linear_elasticity_cache_.trace_strain());
+  EXPECT_EQ(linear_elasticity_cache_clone->num_quads(),
+            linear_elasticity_cache_.num_quads());
+  EXPECT_EQ(linear_elasticity_cache_clone->element_index(),
+            linear_elasticity_cache_.element_index());
+}
 }  // namespace
 }  // namespace fem
 }  // namespace multibody

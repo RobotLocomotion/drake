@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/fem/dev/fem_indexes.h"
 
@@ -21,9 +23,20 @@ namespace fem {
 template <typename T>
 class ElementCache {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ElementCache);
+  /** @name     Does not allow copy, move, or assignment. */
+  /** @{ */
+  /* Copy constructor is used only to facilitate implementation of Clone()
+   in derived classes. */
+  ElementCache(ElementCache&&) = delete;
+  ElementCache& operator=(ElementCache&&) = delete;
+  ElementCache& operator=(const ElementCache&) = delete;
+  /** @} */
 
   virtual ~ElementCache() = default;
+
+  /** Creates an identical copy of the concrete ElementCache object.
+   */
+  std::unique_ptr<ElementCache<T>> Clone() const { return DoClone(); }
 
   /** The index of the FemElement associated with this %ElementCache. */
   ElementIndex element_index() const { return element_index_; }
@@ -47,6 +60,15 @@ class ElementCache {
     DRAKE_DEMAND(element_index_.is_valid());
     DRAKE_DEMAND(num_quads > 0);
   }
+
+  /* Copy constructor for the base ElementCache class to facilitate
+   `DoClone()` in derived classes. */
+  ElementCache(const ElementCache&) = default;
+
+  /* Creates an identical copy of the concrete ElementCache object.
+   Derived classes must implement this so that it performs the complete
+   deep copy of the object, including all base class members. */
+  virtual std::unique_ptr<ElementCache<T>> DoClone() const = 0;
 
  private:
   ElementIndex element_index_;

@@ -5,11 +5,11 @@
 namespace drake {
 namespace multibody {
 namespace fem {
-/** The constant parameters used in the element routine FemElasticity. */
+/** The constant parameters used in the element routine ElasticityElement. */
 template <typename T>
-struct FemElasticityParameters {
+struct ElasticityElementParameters {
   // TODO(xuchenhan-tri): Add timestep when dynamic elasticity is introduced in
-  // FemElasticity.
+  // ElasticityElement.
   // TODO(xuchenhan-tri): Add damping model.
   Matrix3X<T> reference_positions;
   Vector3<T> gravity{0, 0, -9.81};

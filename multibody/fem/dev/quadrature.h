@@ -29,12 +29,12 @@ class Quadrature {
   /// The number of quadrature points for the quadrature rule.
   int num_points() const { return points_.size(); }
 
-  /// The position in parent coordinate of all quadrature points.
+  /// The position in parent coordinates of all quadrature points.
   const std::vector<VectorD>& get_points() const {
       return points_;
   }
 
-  /// The position in parent coordinate of the q-th quadrature point.
+  /// The position in parent coordinates of the q-th quadrature point.
   const VectorD& get_point(int q) const {
     DRAKE_DEMAND(q >= 0);
     DRAKE_DEMAND(q < num_points());

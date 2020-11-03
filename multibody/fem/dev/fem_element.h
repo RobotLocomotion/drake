@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
@@ -38,14 +39,15 @@ class FemElement {
 
   virtual ~FemElement() = default;
 
+  /** Global indices of the nodes of this element. */
   const std::vector<NodeIndex>& node_indices() const { return node_indices_; }
 
   /** Number of quadrature points at which element-wise quantities are
    evaluated. */
-  int num_quads() const { return quadrature_.num_points(); }
+  int num_quads() const { return quadrature_->num_points(); }
 
   /** Number of nodes associated with this element. */
-  int num_nodes() const { return shape_.num_nodes(); }
+  int num_nodes() const { return shape_->num_nodes(); }
 
   /** The number of spatial dimensions that this element lives in. */
   virtual int num_spatial_dim() const = 0;
@@ -77,8 +79,8 @@ class FemElement {
     @pre element_index must be valid.
     @pre shape.num_nodes() must be the same as size of node_indices. */
   FemElement(ElementIndex element_index,
-             const IsoparametricElement<T, NaturalDim>& shape,
-             const Quadrature<T, NaturalDim>& quadrature,
+             std::unique_ptr<IsoparametricElement<T, NaturalDim>> shape,
+             std::unique_ptr<Quadrature<T, NaturalDim>> quadrature,
              const std::vector<NodeIndex>& node_indices);
 
   /* Calculates the element residual of this element evaluated at the input
@@ -96,9 +98,9 @@ class FemElement {
   // The global index of this element.
   ElementIndex element_index_;
   // The isoparametric shape function used for this element.
-  const IsoparametricElement<T, NaturalDim>& shape_;
+  std::unique_ptr<IsoparametricElement<T, NaturalDim>> shape_;
   // The quadrature rule used for this element.
-  const Quadrature<T, NaturalDim>& quadrature_;
+  std::unique_ptr<Quadrature<T, NaturalDim>> quadrature_;
   // The global node indices of this element.
   std::vector<NodeIndex> node_indices_;
 };

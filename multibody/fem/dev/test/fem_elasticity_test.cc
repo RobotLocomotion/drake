@@ -16,35 +16,37 @@ namespace fem {
 constexpr int kNaturalDim = 3;
 constexpr int kSpatialDim = 3;
 constexpr int kQuadratureOrder = 1;
+constexpr int kNumQuads = 1;
 constexpr int kNumVertices = 4;
 constexpr int kDof = kSpatialDim * kNumVertices;
 const ElementIndex kDummyElementIndex(0);
 
-class FemElasticityTest : public ::testing::Test {
+class ElasticityElementTest : public ::testing::Test {
  protected:
-  void SetUp() override {
-    SetupElement();
-  }
+  void SetUp() override { SetupElement(); }
 
   void SetupElement() {
-    quadrature_ = std::make_unique<
-        SimplexGaussianQuadrature<AutoDiffXd, kQuadratureOrder, kSpatialDim>>();
-    shape_ = std::make_unique<LinearSimplexElement<AutoDiffXd, kNaturalDim>>(
-        quadrature_->get_points());
+    std::unique_ptr<Quadrature<AutoDiffXd, kNaturalDim>> quadrature =
+        std::make_unique<SimplexGaussianQuadrature<AutoDiffXd, kQuadratureOrder,
+                                                   kSpatialDim>>();
+    std::unique_ptr<IsoparametricElement<AutoDiffXd, kNaturalDim>> shape =
+        std::make_unique<LinearSimplexElement<AutoDiffXd, kNaturalDim>>(
+            quadrature->get_points());
     std::vector<NodeIndex> node_indices = {NodeIndex(0), NodeIndex(1),
                                            NodeIndex(2), NodeIndex(3)};
     linear_elasticity_ =
         std::make_unique<LinearElasticityModel<AutoDiffXd>>(100, 0.25);
-    FemElasticityParameters<AutoDiffXd> param;
+    ElasticityElementParameters<AutoDiffXd> param;
     param.reference_positions = get_reference_positions();
-    fem_elasticity_ = std::make_unique<FemElasticity<AutoDiffXd, kNaturalDim>>(
-        kDummyElementIndex, *shape_, *quadrature_, node_indices, param,
-        *linear_elasticity_);
+    fem_elasticity_ =
+        std::make_unique<ElasticityElement<AutoDiffXd, kNaturalDim>>(
+            kDummyElementIndex, std::move(shape), std::move(quadrature),
+            node_indices, param, std::move(linear_elasticity_));
   }
 
   void SetupState() {
     state_.Resize(kDof);
-    state_.set_v(VectorX<AutoDiffXd>::Zero(kDof));
+    state_.set_qdot(VectorX<AutoDiffXd>::Zero(kDof));
     // Set arbitrary node positions and the gradient.
     Eigen::Matrix<double, kDof, 1> x;
     x << 0.18, 0.63, 0.54, 0.13, 0.92, 0.17, 0.03, 0.86, 0.85, 0.25, 0.53, 0.67;
@@ -52,15 +54,15 @@ class FemElasticityTest : public ::testing::Test {
         MatrixX<double>::Identity(kDof, kDof);
     const VectorX<AutoDiffXd> x_autodiff =
         math::initializeAutoDiffGivenGradientMatrix(x, gradient);
-    state_.set_x(x_autodiff);
+    state_.set_q(x_autodiff);
     // Set up the element cache.
-    auto& cache = state_.mutable_cache();
     auto linear_elasticity_cache =
         std::make_unique<LinearElasticityModelCache<AutoDiffXd>>(
-            kDummyElementIndex, quadrature_->num_points());
+            kDummyElementIndex, kNumQuads);
+    std::vector<std::unique_ptr<ElementCache<AutoDiffXd>>> cache;
     cache.emplace_back(std::make_unique<ElasticityElementCache<AutoDiffXd>>(
-        kDummyElementIndex, quadrature_->num_points(),
-        std::move(linear_elasticity_cache)));
+        kDummyElementIndex, kNumQuads, std::move(linear_elasticity_cache)));
+    state_.ResetElementCache(std::move(cache));
   }
 
   // Set an arbitrary reference position such that the tetrahedron is not
@@ -79,21 +81,19 @@ class FemElasticityTest : public ::testing::Test {
     return neg_force;
   }
 
-  std::unique_ptr<FemElasticity<AutoDiffXd, kNaturalDim>> fem_elasticity_;
-  std::unique_ptr<IsoparametricElement<AutoDiffXd, kNaturalDim>> shape_;
-  std::unique_ptr<Quadrature<AutoDiffXd, kNaturalDim>> quadrature_;
+  std::unique_ptr<ElasticityElement<AutoDiffXd, kNaturalDim>> fem_elasticity_;
   std::unique_ptr<LinearElasticityModel<AutoDiffXd>> linear_elasticity_;
   FemState<AutoDiffXd> state_;
 };
 
 namespace {
-TEST_F(FemElasticityTest, Basic) {
+TEST_F(ElasticityElementTest, Basic) {
   EXPECT_EQ(fem_elasticity_->num_nodes(), kNumVertices);
-  EXPECT_EQ(fem_elasticity_->num_quads(), quadrature_->num_points());
+  EXPECT_EQ(fem_elasticity_->num_quads(), kNumQuads);
   EXPECT_EQ(fem_elasticity_->num_spatial_dim(), kSpatialDim);
 }
 
-TEST_F(FemElasticityTest, ElasticForceIsNegativeEnergyDerivative) {
+TEST_F(ElasticityElementTest, ElasticForceIsNegativeEnergyDerivative) {
   SetupState();
   AutoDiffXd energy = fem_elasticity_->CalcElasticEnergy(state_);
   VectorX<AutoDiffXd> neg_force = CalcNegativeElasticForce();

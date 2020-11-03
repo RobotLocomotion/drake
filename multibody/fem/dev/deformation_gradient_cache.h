@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include "drake/common/eigen_types.h"
@@ -22,7 +23,20 @@ namespace fem {
 template <typename T>
 class DeformationGradientCache {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeformationGradientCache);
+  /** @name     Does not allow copy, move, or assignment. */
+  /** @{ */
+  /* Copy constructor is used only to facilitate implementation of Clone()
+   in derived classes. */
+  DeformationGradientCache(DeformationGradientCache&&) = delete;
+  DeformationGradientCache& operator=(DeformationGradientCache&&) = delete;
+  DeformationGradientCache& operator=(const DeformationGradientCache&) = delete;
+  /** @} */
+
+  /** Creates an identical copy of the concrete DeformationGradientCache object.
+   */
+  std::unique_ptr<DeformationGradientCache<T>> Clone() const {
+    return DoClone();
+  }
 
   virtual ~DeformationGradientCache() = default;
 
@@ -65,6 +79,15 @@ class DeformationGradientCache {
     DRAKE_DEMAND(element_index.is_valid());
     DRAKE_DEMAND(num_quads > 0);
   }
+
+  /* Copy constructor for the base DeformationGradientCache class to facilitate
+   `DoClone()` in derived classes. */
+  DeformationGradientCache(const DeformationGradientCache&) = default;
+
+  /* Creates an identical copy of the concrete DeformationGradientCache object.
+   Derived classes must implement this so that it performs the complete
+   deep copy of the object, including all base class members. */
+  virtual std::unique_ptr<DeformationGradientCache<T>> DoClone() const = 0;
 
   /* Updates the cached quantities with the given deformation gradients.
    @param F The up-to-date deformation gradients evaluated at the quadrature
