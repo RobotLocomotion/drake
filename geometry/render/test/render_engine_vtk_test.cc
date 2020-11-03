@@ -1426,6 +1426,12 @@ Vector4<int> FindBoxEdges(const ImageType& image) {
 // configuration and we'll predict the contents of the image relative to a
 // baseline image, based on the change in rendering properties.
 TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
+  // TODO(11965) Now that the creation of the projection matrix is part
+  //  of RenderCameraCore (and tested there), this could be simplified. We rely
+  //  on the *correctness* of the projection matrix and merely confirm that
+  //  it is being computed at all. That would eliminate the many tweaks and
+  //  comparisons. Consider simplifying this when the render engine test
+  //  infrastructure is refactored.
   Init(X_WC_, true /* add_terrain */);
   PopulateSimpleBoxTest(renderer_.get());
 

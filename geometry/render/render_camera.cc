@@ -8,6 +8,9 @@ namespace drake {
 namespace geometry {
 namespace render {
 
+using math::RigidTransformd;
+using systems::sensors::CameraInfo;
+
 ClippingRange::ClippingRange(double near, double far) : near_(near), far_(far) {
   if (near <= 0 || far <= 0 || far <= near) {
     throw std::runtime_error(fmt::format(
@@ -15,6 +18,45 @@ ClippingRange::ClippingRange(double near, double far) : near_(near), far_(far) {
         "greater than near. Instantiated with near = {} and far = {}",
         near, far));
   }
+}
+
+RenderCameraCore::RenderCameraCore(const CameraProperties& camera,
+                                   double clipping_far)
+    : RenderCameraCore(camera.renderer_name,
+                       CameraInfo{camera.width, camera.height, camera.fov_y},
+                       ClippingRange{kClippingNear, clipping_far},
+                       RigidTransformd{}) {}
+
+void RenderCameraCore::SetProjectionMatrix(
+    const std::function<void(int, int, double)>& set_element) const {
+  /* Given the camera properties we compute the projection matrix as follows:
+   (See https://strawlab.org/2011/11/05/augmented-reality-with-OpenGL/)
+
+            │ 2*fx/w     0      (w - 2*cx) / w       0    │
+            │ 0        2*fy/h  -(h - 2*cy) / h       0    │
+            │ 0          0        -(f+n) / d   -2*f*n / d │
+            │ 0          0             -1            0    │
+
+   The symbols in the matrix are predominantly aliases for the input parameter
+   values (see below for details).
+   */
+  const double fx = intrinsics_.focal_x();
+  const double fy = intrinsics_.focal_y();
+  const double n = clipping().near();
+  const double f = clipping().far();
+  const int w = intrinsics_.width();
+  const int h = intrinsics_.height();
+  const double cx = intrinsics_.center_x();
+  const double cy = intrinsics_.center_y();
+  const double d = f - n;
+
+  set_element(0, 0, 2 * fx / w);
+  set_element(0, 2, (w - 2 * cx) / w);
+  set_element(1, 1, 2 * fy / h);
+  set_element(1, 2, -(h - 2 * cy) / h);
+  set_element(2, 2, -(f + n) / d);
+  set_element(2, 3, -2 * f * n / d);
+  set_element(3, 2, -1);
 }
 
 DepthRange::DepthRange(double min_in, double max_in)
