@@ -84,8 +84,8 @@ void ShaderProgram::LoadFromSources(const std::string& vertex_shader_source,
     throw std::runtime_error(error_prefix + info);
   }
 
-  projection_matrix_loc_ = GetUniformLocation("projection_matrix");
-  model_view_loc_ = GetUniformLocation("model_view_matrix");
+  projection_matrix_loc_ = GetUniformLocation("T_DC");
+  model_view_loc_ = GetUniformLocation("T_CM");
 }
 
 namespace {
@@ -105,8 +105,8 @@ void ShaderProgram::LoadFromFiles(const std::string& vertex_shader_file,
   LoadFromSources(LoadFile(vertex_shader_file), LoadFile(fragment_shader_file));
 }
 
-void ShaderProgram::SetProjectionMatrix(const Eigen::Matrix4f& X_DG) const {
-  glUniformMatrix4fv(projection_matrix_loc_, 1, GL_FALSE, X_DG.data());
+void ShaderProgram::SetProjectionMatrix(const Eigen::Matrix4f& T_DC) const {
+  glUniformMatrix4fv(projection_matrix_loc_, 1, GL_FALSE, T_DC.data());
 }
 
 void ShaderProgram::SetModelViewMatrix(const Eigen::Matrix4f& X_CM,
@@ -123,8 +123,8 @@ void ShaderProgram::SetModelViewMatrix(const Eigen::Matrix4f& X_CM,
           .finished();
   // clang-format on
   const Eigen::Matrix4f X_CglM = kX_CglC * X_CM;
-  Eigen::Matrix4f X_CglMscale = X_CglM * scale_mat;
-  glUniformMatrix4fv(model_view_loc_, 1, GL_FALSE, X_CglMscale.data());
+  Eigen::Matrix4f T_CglM = X_CglM * scale_mat;
+  glUniformMatrix4fv(model_view_loc_, 1, GL_FALSE, T_CglM.data());
   DoModelViewMatrix(X_CglM, scale);
 }
 
