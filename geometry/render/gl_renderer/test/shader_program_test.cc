@@ -52,7 +52,7 @@ class TestShader final : public ShaderProgram {
   }
 
   void SetDepthCameraParameters(
-      const DepthCameraProperties& /* camera */) const override {
+      const DepthRenderCamera& /* camera */) const override {
     set_depth_camera_called_ = true;
   }
 
@@ -361,7 +361,10 @@ TEST_F(ShaderProgramTest, SetDepthCameraParameters) {
   TestShader shader;
   const ShaderProgram* shader_ptr = &shader;
 
-  DepthCameraProperties camera{10, 10, M_PI, "", 0.1, 10.0};
+  DepthRenderCamera camera{
+      RenderCameraCore{"n/a", {10, 10, M_PI}, {0.1, 10.1}, {}},
+      DepthRange{0.1, 10}};
+
   ASSERT_FALSE(shader.CalledSetDepthCameraParameters());
   shader_ptr->SetDepthCameraParameters(camera);
   ASSERT_TRUE(shader.CalledSetDepthCameraParameters());
