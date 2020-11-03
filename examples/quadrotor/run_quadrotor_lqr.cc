@@ -11,7 +11,7 @@
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/examples/quadrotor/quadrotor_geometry.h"
 #include "drake/examples/quadrotor/quadrotor_plant.h"
-#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
@@ -53,7 +53,7 @@ int do_main() {
   auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
   QuadrotorGeometry::AddToBuilder(
       &builder, quadrotor->get_output_port(0), scene_graph);
-  geometry::ConnectDrakeVisualizer(&builder, *scene_graph);
+  geometry::DrakeVisualizer::AddToBuilder(&builder, *scene_graph);
 
   auto diagram = builder.Build();
   Simulator<double> simulator(*diagram);

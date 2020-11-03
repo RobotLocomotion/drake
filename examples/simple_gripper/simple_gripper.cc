@@ -6,7 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
-#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -244,7 +244,7 @@ int do_main() {
                   plant.get_geometry_query_input_port());
 
   DrakeLcm lcm;
-  geometry::ConnectDrakeVisualizer(&builder, scene_graph, &lcm);
+  geometry::DrakeVisualizer::AddToBuilder(&builder, scene_graph, &lcm);
   builder.Connect(
       plant.get_geometry_poses_output_port(),
       scene_graph.get_source_pose_port(plant.get_source_id().value()));

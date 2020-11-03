@@ -10,6 +10,7 @@ import numpy as np
 from drake import lcmt_viewer_load_robot, lcmt_viewer_draw
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue, Value
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform, RigidTransform_
@@ -208,20 +209,22 @@ class TestGeometry(unittest.TestCase):
         role = mut.Role.kIllustration
 
         def normal(builder, scene_graph):
-            mut.ConnectDrakeVisualizer(
-                builder=builder, scene_graph=scene_graph,
-                lcm=lcm, role=role)
-            mut.DispatchLoadMessage(
-                scene_graph=scene_graph, lcm=lcm, role=role)
+            with catch_drake_warnings(expected_count=2):
+                mut.ConnectDrakeVisualizer(
+                    builder=builder, scene_graph=scene_graph,
+                    lcm=lcm, role=role)
+                mut.DispatchLoadMessage(
+                    scene_graph=scene_graph, lcm=lcm, role=role)
 
         def port(builder, scene_graph):
-            mut.ConnectDrakeVisualizer(
-                builder=builder, scene_graph=scene_graph,
-                pose_bundle_output_port=(
-                    scene_graph.get_pose_bundle_output_port()),
-                lcm=lcm, role=role)
-            mut.DispatchLoadMessage(
-                scene_graph=scene_graph, lcm=lcm, role=role)
+            with catch_drake_warnings(expected_count=2):
+                mut.ConnectDrakeVisualizer(
+                    builder=builder, scene_graph=scene_graph,
+                    pose_bundle_output_port=(
+                        scene_graph.get_pose_bundle_output_port()),
+                    lcm=lcm, role=role)
+                mut.DispatchLoadMessage(
+                    scene_graph=scene_graph, lcm=lcm, role=role)
 
         for func in [normal, port]:
             # Create subscribers.
