@@ -3,7 +3,7 @@
 
 import io
 import os
-from subprocess import Popen, PIPE, CalledProcessError
+from subprocess import PIPE, CalledProcessError, Popen
 
 import drake.tools.lint.clang_format as clang_format_lib
 

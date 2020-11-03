@@ -1,9 +1,8 @@
-import pydrake.geometry as mut
-
 import sys
 import unittest
 
 from pydrake.common.test_utilities import numpy_compare
+import pydrake.geometry as mut
 
 
 @numpy_compare.check_nonsymbolic_types

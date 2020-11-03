@@ -1,4 +1,5 @@
 import unittest
+
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
@@ -7,12 +8,12 @@ from pydrake.examples.manipulation_station import (
     CreateManipulationClassYcbObjectList,
     IiwaCollisionModel,
     ManipulationStation,
-    ManipulationStationHardwareInterface
+    ManipulationStationHardwareInterface,
 )
 from pydrake.math import RigidTransform, RollPitchYaw
+from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.tree import ModelInstanceIndex
-from pydrake.multibody.parsing import Parser
 
 
 class TestManipulationStation(unittest.TestCase):

@@ -13,15 +13,15 @@ import webbrowser
 import numpy as np
 
 from drake import lcmt_viewer_load_robot
+from pydrake.common.eigen_geometry import Isometry3, Quaternion
 from pydrake.common.value import AbstractValue
-from pydrake.common.eigen_geometry import Quaternion, Isometry3
 from pydrake.geometry import DispatchLoadMessage, SceneGraph
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform, RotationMatrix
-from pydrake.systems.framework import LeafSystem, PublishEvent, TriggerType
-from pydrake.systems.rendering import PoseBundle
 from pydrake.multibody.plant import ContactResults
 import pydrake.perception as mut
+from pydrake.systems.framework import LeafSystem, PublishEvent, TriggerType
+from pydrake.systems.rendering import PoseBundle
 
 # TODO(eric.cousineau): Move this back to "third party" import positions
 # if/when PyCQA/pycodestyle#834 lands and is incorporated.
@@ -39,6 +39,7 @@ with warnings.catch_warnings():
         category=DeprecationWarning
     )
     import meshcat
+
 import meshcat.geometry as g  # noqa
 import meshcat.transformations as tf  # noqa
 from meshcat.animation import Animation

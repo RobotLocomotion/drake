@@ -1,21 +1,18 @@
-import pydrake.geometry as mut
-import pydrake.geometry._testing as mut_testing
-
 import copy
-import unittest
 from math import pi
+import unittest
 
 import numpy as np
 
-from drake import lcmt_viewer_load_robot, lcmt_viewer_draw
+from drake import lcmt_viewer_draw, lcmt_viewer_load_robot
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.value import AbstractValue, Value
+import pydrake.geometry as mut
+import pydrake.geometry._testing as mut_testing
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform, RigidTransform_
-from pydrake.systems.analysis import (
-    Simulator_,
-)
+from pydrake.systems.analysis import Simulator_
 from pydrake.systems.framework import (
     DiagramBuilder,
     DiagramBuilder_,
@@ -23,10 +20,10 @@ from pydrake.systems.framework import (
     OutputPort_,
 )
 from pydrake.systems.sensors import (
-    ImageRgba8U,
     ImageDepth16U,
     ImageDepth32F,
     ImageLabel16I,
+    ImageRgba8U,
     RgbdSensor,
 )
 

@@ -11,8 +11,8 @@ import os
 import shutil
 import subprocess
 import sys
-import warnings
 from urllib.request import urlretrieve
+import warnings
 
 
 def setup_drake(*, version, build='nightly'):

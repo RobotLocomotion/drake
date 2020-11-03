@@ -5,7 +5,9 @@ import unittest
 import warnings
 
 from pydrake.common.deprecation import (
-    DrakeDeprecationWarning, _forward_callables_as_deprecated)
+    DrakeDeprecationWarning,
+    _forward_callables_as_deprecated,
+)
 
 
 def get_completion_suffixes(namespace, prefix, max_count=1000):
@@ -47,6 +49,7 @@ class TestDeprecation(unittest.TestCase):
     def test_module_import_direct(self):
         # Test an import with direct access.
         import deprecation_example as mod
+
         # Check submodule access as a non-import.
         self.assertTrue(isinstance(mod.sub_module, str))
 
@@ -68,8 +71,8 @@ class TestDeprecation(unittest.TestCase):
     def test_module_import_from_all(self):
         # N.B. This is done in another module because `from x import *` is not
         # well supported for `exec`.
-        import deprecation_example.import_all
         import deprecation_example
+        import deprecation_example.import_all
         self.assertIsInstance(deprecation_example.sub_module, str)
 
     def test_module_import_exec(self):
@@ -224,7 +227,9 @@ class TestDeprecation(unittest.TestCase):
     def test_deprecation_pybind(self):
         """Test C++ usage in `deprecation_pybind.h`."""
         from deprecation_example.cc_module import (
-            ExampleCppClass, emit_deprecation)
+            ExampleCppClass,
+            emit_deprecation,
+        )
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("once", DrakeDeprecationWarning)
             # This is a descriptor, so it will trigger on class access.
@@ -259,6 +264,7 @@ class TestDeprecation(unittest.TestCase):
 
     def test_deprecated_callable(self):
         import deprecation_example.cc_module as m_new
+
         # Spoof module name.
         var_dict = dict(__name__="fake_module")
         _forward_callables_as_deprecated(var_dict, m_new, date="2038-01-19")

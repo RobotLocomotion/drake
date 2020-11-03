@@ -1,12 +1,11 @@
-import pydrake.perception as mut
-
 import unittest
 
 import numpy as np
 
 from pydrake.common.value import AbstractValue, Value
-from pydrake.systems.sensors import CameraInfo, PixelType
+import pydrake.perception as mut
 from pydrake.systems.framework import InputPort, OutputPort
+from pydrake.systems.sensors import CameraInfo, PixelType
 
 
 class TestPerception(unittest.TestCase):

@@ -5,29 +5,32 @@ try:
     import tkinter as tk
 except ImportError:
     import Tkinter as tk
-import numpy as np
 
-from pydrake.examples.manipulation_station import (
-    ManipulationStation, ManipulationStationHardwareInterface,
-    CreateClutterClearingYcbObjectList, SchunkCollisionModel)
-from pydrake.geometry import ConnectDrakeVisualizer
-from pydrake.manipulation.simple_ui import SchunkWsgButtons
-from pydrake.manipulation.planner import (
-    DifferentialInverseKinematicsParameters)
-from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
-from pydrake.systems.analysis import Simulator
-from pydrake.systems.framework import (BasicVector, DiagramBuilder,
-                                       LeafSystem)
-from pydrake.systems.lcm import LcmPublisherSystem
-from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
-from pydrake.systems.primitives import FirstOrderLowPassFilter, SignalLogger
-from pydrake.systems.sensors import ImageToLcmImageArrayT, PixelType
-from pydrake.systems.planar_scenegraph_visualizer import \
-    PlanarSceneGraphVisualizer
+import numpy as np
+from robotlocomotion import image_array_t
 
 from drake.examples.manipulation_station.differential_ik import DifferentialIK
-
-from robotlocomotion import image_array_t
+from pydrake.examples.manipulation_station import (
+    CreateClutterClearingYcbObjectList,
+    ManipulationStation,
+    ManipulationStationHardwareInterface,
+    SchunkCollisionModel,
+)
+from pydrake.geometry import ConnectDrakeVisualizer
+from pydrake.manipulation.planner import (
+    DifferentialInverseKinematicsParameters,
+)
+from pydrake.manipulation.simple_ui import SchunkWsgButtons
+from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
+from pydrake.systems.analysis import Simulator
+from pydrake.systems.framework import BasicVector, DiagramBuilder, LeafSystem
+from pydrake.systems.lcm import LcmPublisherSystem
+from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
+from pydrake.systems.planar_scenegraph_visualizer import (
+    PlanarSceneGraphVisualizer,
+)
+from pydrake.systems.primitives import FirstOrderLowPassFilter, SignalLogger
+from pydrake.systems.sensors import ImageToLcmImageArrayT, PixelType
 
 
 # TODO(russt): Generalize this and move it to pydrake.manipulation.simple_ui.

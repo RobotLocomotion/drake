@@ -11,32 +11,22 @@ import argparse
 
 import numpy as np
 
-from pydrake.common import (
-    RandomGenerator,
-    FindResourceOrThrow
-)
+from pydrake.common import FindResourceOrThrow, RandomGenerator
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import MultibodyPlant
-from pydrake.symbolic import (
-    Expression,
-    Variable
-)
+from pydrake.symbolic import Expression, Variable
 from pydrake.systems.analysis import (
     MonteCarloSimulation,
-    RandomSimulationResult,
     RandomSimulation,
-    Simulator
+    RandomSimulationResult,
+    Simulator,
 )
 from pydrake.systems.controllers import LinearQuadraticRegulator
-from pydrake.systems.framework import (
-    Context,
-    Diagram,
-    DiagramBuilder
-)
+from pydrake.systems.framework import Context, Diagram, DiagramBuilder
 from pydrake.systems.primitives import (
     ConstantVectorSource,
     Linearize,
-    Saturation
+    Saturation,
 )
 
 

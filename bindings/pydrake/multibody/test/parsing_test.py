@@ -1,26 +1,21 @@
 # -*- coding: utf-8 -*-
 
-from pydrake.multibody.parsing import (
-    Parser,
-    PackageMap,
-    LoadModelDirectives,
-    ProcessModelDirectives,
-    ModelInstanceInfo,
-    AddFrame,
-    GetScopedFrameByName,
-    GetScopedFrameName,
-)
-
 import os
 import unittest
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.multibody.tree import (
-    ModelInstanceIndex,
+from pydrake.multibody.parsing import (
+    AddFrame,
+    GetScopedFrameByName,
+    GetScopedFrameName,
+    LoadModelDirectives,
+    ModelInstanceInfo,
+    PackageMap,
+    Parser,
+    ProcessModelDirectives,
 )
-from pydrake.multibody.plant import (
-    MultibodyPlant,
-)
+from pydrake.multibody.plant import MultibodyPlant
+from pydrake.multibody.tree import ModelInstanceIndex
 
 
 class TestParsing(unittest.TestCase):

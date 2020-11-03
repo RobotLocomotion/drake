@@ -12,7 +12,6 @@ from warnings import warn
 
 from IPython import get_ipython
 
-
 # Note: The implementation below was inspired by
 # https://github.com/Kirill888/jupyter-ui-poll , though I suspect it can be
 # optimized.

@@ -1,7 +1,9 @@
 import unittest
+
 import numpy as np
-from pydrake.forwarddiff import sin, cos, derivative, gradient, jacobian
+
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.forwarddiff import cos, derivative, gradient, jacobian, sin
 
 
 class TestForwardDiff(unittest.TestCase):

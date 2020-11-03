@@ -12,30 +12,23 @@ specifically:
 *   src/python/director/cameraview.py (CameraImageView)
 *   src/app/ddBotImageQueue.cpp
 """
-import sys
 import argparse
 import math
+import sys
+import threading
 import time
 import zlib
-import threading
-
-import numpy as np
-import numpy.matlib
-
-import vtk
-from vtk.util.numpy_support import vtk_to_numpy, get_vtk_array_type
-
-from director import applogic
-from director import consoleapp
-from director import lcmUtils
-from director.timercallback import TimerCallback
 
 import PythonQt
 from PythonQt import QtGui
-
-import robotlocomotion as rl
-
 from _drake_visualizer_builtin_scripts import scoped_singleton_func
+from director import applogic, consoleapp, lcmUtils
+from director.timercallback import TimerCallback
+import numpy as np
+import numpy.matlib
+import robotlocomotion as rl
+import vtk
+from vtk.util.numpy_support import get_vtk_array_type, vtk_to_numpy
 
 _is_vtk_5 = vtk.vtkVersion().GetVTKMajorVersion() == 5
 

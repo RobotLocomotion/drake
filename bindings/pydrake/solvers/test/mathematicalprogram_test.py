@@ -1,15 +1,3 @@
-from pydrake.solvers import mathematicalprogram as mp
-from pydrake.solvers.gurobi import GurobiSolver
-from pydrake.solvers.snopt import SnoptSolver
-from pydrake.solvers.mathematicalprogram import (
-    LinearConstraint,
-    MathematicalProgramResult,
-    SolverOptions,
-    SolverType,
-    SolverId,
-    SolverInterface
-    )
-
 from functools import partial
 import unittest
 import warnings
@@ -17,13 +5,23 @@ import warnings
 import numpy as np
 
 import pydrake
-from pydrake.common import kDrakeAssertIsArmed
 from pydrake.autodiffutils import AutoDiffXd
+from pydrake.common import kDrakeAssertIsArmed
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.forwarddiff import jacobian
 from pydrake.math import ge
+from pydrake.solvers import mathematicalprogram as mp
+from pydrake.solvers.gurobi import GurobiSolver
+from pydrake.solvers.mathematicalprogram import (
+    LinearConstraint,
+    MathematicalProgramResult,
+    SolverId,
+    SolverInterface,
+    SolverOptions,
+    SolverType,
+)
+from pydrake.solvers.snopt import SnoptSolver
 import pydrake.symbolic as sym
-
 
 SNOPT_NO_GUROBI = SnoptSolver().available() and not GurobiSolver().available()
 # MathematicalProgram is only bound for float and AutoDiffXd.

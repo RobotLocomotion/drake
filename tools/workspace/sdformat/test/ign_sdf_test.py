@@ -1,7 +1,7 @@
 """Naively checks that `ign_sdf` works as intended."""
 
 import os
-from subprocess import run, PIPE
+from subprocess import PIPE, run
 import unittest
 
 EXAMPLE_INPUT = """\

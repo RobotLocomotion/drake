@@ -2,9 +2,9 @@
 command-line API through all corner cases.
 """
 
+import os
 import re
 import subprocess
-import os
 import sys
 import unittest
 

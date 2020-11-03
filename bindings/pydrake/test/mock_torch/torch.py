@@ -5,7 +5,6 @@
 import os as _dl_flags
 import sys
 
-
 # Make the check in `pydrake/__init__.py` pass, but then undo the change.
 _old_flags = sys.getdlopenflags()
 sys.setdlopenflags(_dl_flags.RTLD_GLOBAL)

@@ -5,11 +5,11 @@ This is gui code; to test changes, please manually run
 //bindings/pydrake/multibody/examples/jupyter_widgets_examples.ipynb.
 """
 
-import numpy as np
 from functools import partial
 
-from ipywidgets import FloatSlider, Layout
 from IPython.display import display
+from ipywidgets import FloatSlider, Layout
+import numpy as np
 
 from pydrake.common.jupyter import process_ipywidget_events
 from pydrake.multibody.tree import JointIndex

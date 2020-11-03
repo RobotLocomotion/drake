@@ -28,8 +28,9 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import pycodestyle
 import sys
+
+import pycodestyle
 
 
 def whitespace_around_named_parameter_equals_positive(logical_line, tokens):

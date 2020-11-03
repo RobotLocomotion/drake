@@ -1,27 +1,21 @@
-import unittest
 import typing
+import unittest
 
 import numpy as np
 
+from pydrake.autodiffutils import AutoDiffXd
+from pydrake.geometry import Box, Sphere
+from pydrake.math import RigidTransform
+import pydrake.multibody.inverse_kinematics as ik
 from pydrake.multibody.optimization import StaticEquilibriumProblem
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph,
-    CoulombFriction
+    CoulombFriction,
 )
-from pydrake.multibody.tree import (
-    UnitInertia,
-    SpatialInertia,
-)
-import pydrake.multibody.inverse_kinematics as ik
+from pydrake.multibody.tree import SpatialInertia, UnitInertia
 import pydrake.solvers.mathematicalprogram as mp
 from pydrake.solvers.snopt import SnoptSolver
 from pydrake.systems.framework import DiagramBuilder_
-from pydrake.geometry import (
-    Box,
-    Sphere,
-)
-from pydrake.math import RigidTransform
-from pydrake.autodiffutils import AutoDiffXd
 
 
 def construct_environment(masses: typing.List, box_sizes: typing.List):

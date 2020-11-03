@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 
-import pydrake.systems.framework as mut
-
 import copy
 from textwrap import dedent
+import unittest
 import warnings
 
-import unittest
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
@@ -19,52 +17,79 @@ from pydrake.symbolic import Expression
 from pydrake.systems.analysis import (
     GetIntegrationSchemes,
     InitializeParams,
-    IntegratorBase, IntegratorBase_,
+    IntegratorBase,
+    IntegratorBase_,
     PrintSimulatorStatistics,
     ResetIntegratorFromFlags,
     RungeKutta2Integrator,
-    SimulatorStatus, Simulator, Simulator_,
-    )
+    Simulator,
+    Simulator_,
+    SimulatorStatus,
+)
+import pydrake.systems.framework as mut
 from pydrake.systems.framework import (
-    BasicVector, BasicVector_,
-    Context, Context_,
-    ContinuousState, ContinuousState_,
-    Diagram, Diagram_,
-    DiagramBuilder, DiagramBuilder_,
-    DiscreteUpdateEvent, DiscreteUpdateEvent_,
-    DiscreteValues, DiscreteValues_,
-    Event, Event_,
+    BasicVector,
+    BasicVector_,
+    Context,
+    Context_,
+    ContinuousState,
+    ContinuousState_,
+    Diagram,
+    Diagram_,
+    DiagramBuilder,
+    DiagramBuilder_,
+    DiscreteUpdateEvent,
+    DiscreteUpdateEvent_,
+    DiscreteValues,
+    DiscreteValues_,
+    Event,
+    Event_,
     EventStatus,
     GenerateHtml,
-    InputPort, InputPort_,
-    kUseDefaultName,
-    LeafContext, LeafContext_,
-    LeafSystem, LeafSystem_,
-    OutputPort, OutputPort_,
-    Parameters, Parameters_,
+    InputPort,
+    InputPort_,
+    LeafContext,
+    LeafContext_,
+    LeafSystem,
+    LeafSystem_,
+    OutputPort,
+    OutputPort_,
+    Parameters,
+    Parameters_,
     PeriodicEventData,
-    PublishEvent, PublishEvent_,
-    State, State_,
-    Subvector, Subvector_,
-    Supervector, Supervector_,
-    System, System_,
+    PublishEvent,
+    PublishEvent_,
+    State,
+    State_,
+    Subvector,
+    Subvector_,
+    Supervector,
+    Supervector_,
+    System,
+    System_,
     SystemBase,
-    SystemOutput, SystemOutput_,
-    VectorBase, VectorBase_,
+    SystemOutput,
+    SystemOutput_,
     TriggerType,
-    VectorSystem, VectorSystem_,
-    )
+    VectorBase,
+    VectorBase_,
+    VectorSystem,
+    VectorSystem_,
+    kUseDefaultName,
+)
 from pydrake.systems.primitives import (
-    Adder, Adder_,
+    Adder,
+    Adder_,
     AffineSystem,
     ConstantValueSource,
-    ConstantVectorSource, ConstantVectorSource_,
+    ConstantVectorSource,
+    ConstantVectorSource_,
     Integrator,
     LinearSystem,
     PassThrough,
     SignalLogger,
     ZeroOrderHold,
-    )
+)
 
 # TODO(eric.cousineau): The scope of this test file and and `custom_test.py`
 # is poor. Move these tests into `framework_test` and `analysis_test`, and

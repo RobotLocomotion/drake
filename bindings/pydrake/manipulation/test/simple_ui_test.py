@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
 
-from pydrake.manipulation.simple_ui import JointSliders, SchunkWsgButtons
-
 import unittest
 
 import numpy as np
+
+from pydrake.manipulation.simple_ui import JointSliders, SchunkWsgButtons
+
 try:
     import tkinter as tk
 except ImportError:
     import Tkinter as tk
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.parsing import Parser
+from pydrake.multibody.plant import MultibodyPlant
 from pydrake.systems.framework import BasicVector
 
 

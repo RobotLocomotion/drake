@@ -1,5 +1,3 @@
-from pydrake.multibody import inverse_kinematics as ik
-
 from collections import namedtuple
 from functools import partial, wraps
 import math
@@ -11,9 +9,9 @@ import pydrake
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.eigen_geometry import Quaternion
 from pydrake.math import RigidTransform, RotationMatrix
+from pydrake.multibody import inverse_kinematics as ik
 from pydrake.multibody.parsing import Parser
-from pydrake.multibody.plant import (
-    MultibodyPlant, AddMultibodyPlantSceneGraph)
+from pydrake.multibody.plant import AddMultibodyPlantSceneGraph, MultibodyPlant
 import pydrake.solvers.mathematicalprogram as mp
 from pydrake.systems.framework import DiagramBuilder
 

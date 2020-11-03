@@ -1,7 +1,9 @@
 import unittest
+
 import numpy as np
-from pydrake.solvers import mathematicalprogram as mp
+
 from pydrake.solvers import branch_and_bound as bnb
+from pydrake.solvers import mathematicalprogram as mp
 from pydrake.solvers.osqp import OsqpSolver
 
 

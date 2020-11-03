@@ -70,19 +70,18 @@ import argparse
 
 import numpy as np
 
+from drake.manipulation.util.show_model import (
+    add_filename_and_parser_argparse_arguments,
+    add_visualizers_argparse_arguments,
+    parse_filename_and_parser,
+    parse_visualizers,
+)
 from pydrake.geometry import SceneGraph
 from pydrake.manipulation.simple_ui import JointSliders
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.rendering import MultibodyPositionToGeometryPose
-
-from drake.manipulation.util.show_model import (
-    add_filename_and_parser_argparse_arguments,
-    parse_filename_and_parser,
-    add_visualizers_argparse_arguments,
-    parse_visualizers,
-)
 
 
 def main():

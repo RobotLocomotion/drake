@@ -1,19 +1,20 @@
 import unittest
 
-from pydrake.symbolic import Variable, Expression
+from pydrake.symbolic import Expression, Variable
+from pydrake.systems.analysis import (
+    RegionOfAttraction,
+    RegionOfAttractionOptions,
+    RungeKutta2Integrator,
+    RungeKutta2Integrator_,
+    RungeKutta3Integrator,
+    Simulator,
+    SimulatorStatus,
+)
+from pydrake.systems.framework import EventStatus
 from pydrake.systems.primitives import (
     ConstantVectorSource,
     SymbolicVectorSystem,
     SymbolicVectorSystem_,
-)
-from pydrake.systems.framework import EventStatus
-from pydrake.systems.analysis import (
-    RungeKutta2Integrator_,
-    RungeKutta2Integrator, RungeKutta3Integrator,
-    RegionOfAttraction,
-    RegionOfAttractionOptions,
-    Simulator,
-    SimulatorStatus,
 )
 from pydrake.trajectories import PiecewisePolynomial
 

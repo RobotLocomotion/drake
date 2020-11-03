@@ -1,17 +1,15 @@
 # Note that this script runs in the main context of drake-visualizer,
 # where many modules and variables already exist in the global scope.
 
-from director import lcmUtils
-from director import applogic
+from PythonQt import QtCore, QtGui
+from _drake_visualizer_builtin_scripts import scoped_singleton_func
+from director import applogic, lcmUtils
 from director import objectmodel as om
 from director import visualization as vis
 from director.debugVis import DebugData
 import numpy as np
-from PythonQt import QtCore, QtGui
 
 import drake as lcmdrakemsg
-
-from _drake_visualizer_builtin_scripts import scoped_singleton_func
 
 
 # TODO(seancurtis-tri) Refactor this out of show_hydroelastic_contact.py and

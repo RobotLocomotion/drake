@@ -1,11 +1,10 @@
-import pydrake.common.compatibility as mut
-
 from functools import partial
 from threading import Thread
 import unittest
 
 import numpy as np
 
+import pydrake.common.compatibility as mut
 from pydrake.common.compatibility_test_util import invoke_callback
 
 numpy_formatters = mut._patches["numpy_formatters"]

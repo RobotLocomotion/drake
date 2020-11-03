@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import unittest
+
 import numpy as np
 
 from pydrake.common.value import AbstractValue
@@ -9,8 +10,11 @@ from pydrake.perception import BaseField, Fields, PointCloud
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.perception import (
-    PointCloudConcatenation, _ConcatenatePointClouds, _TileColors,
-    _TransformPoints)
+    PointCloudConcatenation,
+    _ConcatenatePointClouds,
+    _TileColors,
+    _TransformPoints,
+)
 
 
 class TestConcatenatePointClouds(unittest.TestCase):

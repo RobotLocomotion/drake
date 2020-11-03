@@ -7,17 +7,17 @@ This is gui code; to test changes, please manually execute:
     bazel run //bindings/pydrake/systems:jupyter_widgets_examples
 """
 
-import numpy as np
 from collections import namedtuple
 from functools import partial
 
 from IPython.display import display
 from ipywidgets import FloatSlider, Layout, Widget
+import numpy as np
 
 from pydrake.common.jupyter import process_ipywidget_events
 from pydrake.common.value import AbstractValue
-from pydrake.systems.framework import BasicVector, LeafSystem
 from pydrake.math import RigidTransform, RollPitchYaw
+from pydrake.systems.framework import BasicVector, LeafSystem
 
 
 class PoseSliders(LeafSystem):

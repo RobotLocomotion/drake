@@ -1,5 +1,6 @@
-import numpy as np
 import unittest
+
+import numpy as np
 
 from pydrake.examples.van_der_pol import VanDerPolOscillator
 from pydrake.systems.analysis import Simulator

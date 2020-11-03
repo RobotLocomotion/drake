@@ -6,14 +6,15 @@ import unittest
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
-from pydrake.common.value import AbstractValue, Value
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.value import AbstractValue, Value
 from pydrake.symbolic import Expression
 from pydrake.systems.framework import (
-    BasicVector, BasicVector_,
+    BasicVector,
+    BasicVector_,
     Parameters,
     VectorBase,
-    )
+)
 
 
 def pass_through(x):

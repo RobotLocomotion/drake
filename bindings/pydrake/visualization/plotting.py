@@ -3,11 +3,11 @@ Provides some general visualization tools using matplotlib.  This is not
 related to `rendering`.
 """
 
-import numpy as np
 import matplotlib as mpl
+import numpy as np
 
-from pydrake.symbolic import Evaluate, Jacobian, Polynomial
 from pydrake.solvers.mathematicalprogram import MathematicalProgram, Solve
+from pydrake.symbolic import Evaluate, Jacobian, Polynomial
 
 
 def plot_sublevelset_quadratic(ax, A, b=[0, 0], c=0, vertices=51, **kwargs):

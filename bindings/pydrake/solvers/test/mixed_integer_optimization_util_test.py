@@ -1,5 +1,7 @@
 import unittest
+
 import numpy as np
+
 from pydrake.solvers import mathematicalprogram as mp
 from pydrake.solvers import mixed_integer_optimization_util as mip_util
 

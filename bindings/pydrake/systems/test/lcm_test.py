@@ -1,15 +1,12 @@
 """
 Test bindings of LCM integration with the Systems framework.
 """
-import pydrake.systems.lcm as mut
-
 import collections
 from multiprocessing import Process
 import time
 import unittest
 
 import numpy as np
-
 from robotlocomotion import header_t, quaternion_t
 
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
@@ -17,6 +14,7 @@ from pydrake.common.value import AbstractValue
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import BasicVector, DiagramBuilder, LeafSystem
+import pydrake.systems.lcm as mut
 from pydrake.systems.primitives import ConstantVectorSource, LogOutput
 
 

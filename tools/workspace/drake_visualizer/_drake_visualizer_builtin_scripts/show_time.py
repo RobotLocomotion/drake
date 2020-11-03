@@ -1,11 +1,9 @@
 import time
 
-import bot_core as lcmbotcore
-from director import lcmUtils
-from director import applogic
-from director.visualization import updateText
-
 from _drake_visualizer_builtin_scripts import scoped_singleton_func
+import bot_core as lcmbotcore
+from director import applogic, lcmUtils
+from director.visualization import updateText
 
 
 class TimeVisualizer:

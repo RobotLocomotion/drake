@@ -3,10 +3,8 @@ import subprocess
 import sys
 import unittest
 
-from pydrake.common import FindResourceOrThrow
-
 from drake.examples.acrobot.dev.acrobot_io import load_output, load_scenario
-
+from pydrake.common import FindResourceOrThrow
 
 _backend = "py"
 

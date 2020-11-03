@@ -1,6 +1,5 @@
-import yaml
-
 import numpy as np
+import yaml
 
 # This is a magic tribool value described at
 #   https://github.com/yaml/pyyaml/pull/256

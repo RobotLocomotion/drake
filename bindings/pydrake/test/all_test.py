@@ -42,8 +42,12 @@ class TestAll(unittest.TestCase):
 
     def test_usage_all(self):
         from pydrake.all import (
-            AddMultibodyPlantSceneGraph, DiagramBuilder, FindResourceOrThrow,
-            Parser, Simulator)
+            AddMultibodyPlantSceneGraph,
+            DiagramBuilder,
+            FindResourceOrThrow,
+            Parser,
+            Simulator,
+        )
 
         builder = DiagramBuilder()
         plant, _ = AddMultibodyPlantSceneGraph(builder, 0.0)

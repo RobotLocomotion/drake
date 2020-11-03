@@ -1,5 +1,6 @@
-import numpy as np
 import unittest
+
+import numpy as np
 
 from pydrake.common import ToleranceType
 from pydrake.common.eigen_geometry import AngleAxis, Quaternion
@@ -7,8 +8,10 @@ from pydrake.common.test_utilities import numpy_compare
 from pydrake.math import BsplineBasis, RotationMatrix
 from pydrake.polynomial import Polynomial
 from pydrake.trajectories import (
-    BsplineTrajectory, PiecewisePolynomial, PiecewiseQuaternionSlerp,
-    Trajectory
+    BsplineTrajectory,
+    PiecewisePolynomial,
+    PiecewiseQuaternionSlerp,
+    Trajectory,
 )
 
 

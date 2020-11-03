@@ -1,8 +1,9 @@
+from warnings import warn
+
 import matplotlib
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import numpy as np
-from warnings import warn
 
 from pydrake.systems.framework import LeafSystem, PublishEvent, TriggerType
 from pydrake.systems.primitives import SignalLogger

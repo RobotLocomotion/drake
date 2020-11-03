@@ -1,5 +1,6 @@
 import gc
 import unittest
+
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
@@ -9,49 +10,62 @@ from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue
 from pydrake.symbolic import Expression, Variable
 from pydrake.systems.analysis import Simulator
-from pydrake.systems.framework import (
-    BasicVector,
-    DiagramBuilder,
-    VectorBase,
-)
-from pydrake.systems.test.test_util import (
-    MyVector2,
-)
+from pydrake.systems.framework import BasicVector, DiagramBuilder, VectorBase
 from pydrake.systems.primitives import (
-    Adder, Adder_,
+    Adder,
+    Adder_,
     AddRandomInputs,
-    AffineSystem, AffineSystem_,
-    ConstantValueSource, ConstantValueSource_,
-    ConstantVectorSource, ConstantVectorSource_,
+    AffineSystem,
+    AffineSystem_,
+    ConstantValueSource,
+    ConstantValueSource_,
+    ConstantVectorSource,
+    ConstantVectorSource_,
     ControllabilityMatrix,
-    Demultiplexer, Demultiplexer_,
-    DiscreteDerivative, DiscreteDerivative_,
-    DiscreteTimeDelay, DiscreteTimeDelay_,
+    Demultiplexer,
+    Demultiplexer_,
+    DiscreteDerivative,
+    DiscreteDerivative_,
+    DiscreteTimeDelay,
+    DiscreteTimeDelay_,
     FirstOrderLowPassFilter,
     FirstOrderTaylorApproximation,
-    Gain, Gain_,
-    Integrator, Integrator_,
+    Gain,
+    Gain_,
+    Integrator,
+    Integrator_,
     IsControllable,
     IsObservable,
     Linearize,
-    LinearSystem, LinearSystem_,
+    LinearSystem,
+    LinearSystem_,
     LogOutput,
     MatrixGain,
-    Multiplexer, Multiplexer_,
+    Multiplexer,
+    Multiplexer_,
     ObservabilityMatrix,
-    PassThrough, PassThrough_,
+    PassThrough,
+    PassThrough_,
     RandomSource,
-    Saturation, Saturation_,
-    SignalLogger, SignalLogger_,
-    Sine, Sine_,
+    Saturation,
+    Saturation_,
+    SignalLogger,
+    SignalLogger_,
+    Sine,
+    Sine_,
     StateInterpolatorWithDiscreteDerivative,
     StateInterpolatorWithDiscreteDerivative_,
-    SymbolicVectorSystem, SymbolicVectorSystem_,
-    TrajectoryAffineSystem, TrajectoryAffineSystem_,
+    SymbolicVectorSystem,
+    SymbolicVectorSystem_,
+    TrajectoryAffineSystem,
+    TrajectoryAffineSystem_,
     TrajectorySource,
-    WrapToSystem, WrapToSystem_,
-    ZeroOrderHold, ZeroOrderHold_,
+    WrapToSystem,
+    WrapToSystem_,
+    ZeroOrderHold,
+    ZeroOrderHold_,
 )
+from pydrake.systems.test.test_util import MyVector2
 from pydrake.trajectories import PiecewisePolynomial
 
 

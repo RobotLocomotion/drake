@@ -1,27 +1,26 @@
-import pydrake.autodiffutils as mut
-from pydrake.autodiffutils import (
-    autoDiffToGradientMatrix,
-    autoDiffToValueMatrix,
-    AutoDiffXd,
-    initializeAutoDiff,
-    initializeAutoDiffGivenGradientMatrix,
-    initializeAutoDiffTuple,
-)
-
 import copy
 import unittest
 
 import numpy as np
-import pydrake.math as drake_math
 
-from pydrake.test.algebra_test_util import ScalarAlgebra, VectorizedAlgebra
-from pydrake.test.autodiffutils_test_util import (
-    autodiff_scalar_pass_through,
-    autodiff_vector_pass_through,
-    autodiff_vector3_pass_through,
+import pydrake.autodiffutils as mut
+from pydrake.autodiffutils import (
+    AutoDiffXd,
+    autoDiffToGradientMatrix,
+    autoDiffToValueMatrix,
+    initializeAutoDiff,
+    initializeAutoDiffGivenGradientMatrix,
+    initializeAutoDiffTuple,
 )
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
+import pydrake.math as drake_math
+from pydrake.test.algebra_test_util import ScalarAlgebra, VectorizedAlgebra
+from pydrake.test.autodiffutils_test_util import (
+    autodiff_scalar_pass_through,
+    autodiff_vector3_pass_through,
+    autodiff_vector_pass_through,
+)
 
 # Use convenience abbreviation.
 AD = AutoDiffXd

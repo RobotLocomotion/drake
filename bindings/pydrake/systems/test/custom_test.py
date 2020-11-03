@@ -3,18 +3,19 @@
 import copy
 import unittest
 import warnings
+
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
+from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.value import AbstractValue
 from pydrake.symbolic import Expression
-from pydrake.systems.analysis import (
-    Simulator,
-    )
+from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (
     AbstractParameterIndex,
     AbstractStateIndex,
-    BasicVector, BasicVector_,
+    BasicVector,
+    BasicVector_,
     CacheIndex,
     Context,
     DependencyTicket,
@@ -22,7 +23,8 @@ from pydrake.systems.framework import (
     DiagramBuilder,
     DiscreteStateIndex,
     InputPortIndex,
-    LeafSystem, LeafSystem_,
+    LeafSystem,
+    LeafSystem_,
     NumericParameterIndex,
     PortDataType,
     PublishEvent,
@@ -32,18 +34,12 @@ from pydrake.systems.framework import (
     VectorSystem,
     WitnessFunctionDirection,
     kUseDefaultName,
-    )
-from pydrake.systems.primitives import (
-    Adder,
-    ZeroOrderHold,
-    )
-
+)
+from pydrake.systems.primitives import Adder, ZeroOrderHold
 from pydrake.systems.test.test_util import (
     call_leaf_system_overrides,
     call_vector_system_overrides,
-    )
-
-from pydrake.common.test_utilities import numpy_compare
+)
 
 
 def noop(*args, **kwargs):

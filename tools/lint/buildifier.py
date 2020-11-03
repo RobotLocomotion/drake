@@ -9,8 +9,8 @@ lint errors to a non-zero exitcode.
 import os
 import re
 import subprocess
+from subprocess import PIPE, STDOUT, Popen
 import sys
-from subprocess import Popen, PIPE, STDOUT
 
 from drake.tools.lint.find_data import find_data
 from drake.tools.lint.util import find_all_sources

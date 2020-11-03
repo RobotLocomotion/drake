@@ -1,19 +1,23 @@
+import os
 import unittest
 
 import numpy as np
-import os
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import Box, Mesh
 from pydrake.math import RigidTransform
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import (
-    AddMultibodyPlantSceneGraph, CoulombFriction)
+    AddMultibodyPlantSceneGraph,
+    CoulombFriction,
+)
 from pydrake.multibody.tree import SpatialInertia, UnitInertia
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.planar_scenegraph_visualizer import (
-   ConnectPlanarSceneGraphVisualizer, PlanarSceneGraphVisualizer)
+    ConnectPlanarSceneGraphVisualizer,
+    PlanarSceneGraphVisualizer,
+)
 
 
 class TestPlanarSceneGraphVisualizer(unittest.TestCase):

@@ -1,5 +1,3 @@
-import pydrake.systems.sensors as mut
-
 import gc
 import unittest
 
@@ -10,14 +8,9 @@ from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
 from pydrake.geometry import FrameId
 from pydrake.geometry.render import CameraProperties, DepthCameraProperties
-from pydrake.math import (
-    RigidTransform,
-    RollPitchYaw,
-    )
-from pydrake.systems.framework import (
-    InputPort,
-    OutputPort,
-    )
+from pydrake.math import RigidTransform, RollPitchYaw
+from pydrake.systems.framework import InputPort, OutputPort
+import pydrake.systems.sensors as mut
 
 # Shorthand aliases, to reduce verbosity.
 pt = mut.PixelType

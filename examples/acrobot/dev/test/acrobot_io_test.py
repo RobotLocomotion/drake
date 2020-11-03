@@ -1,10 +1,14 @@
-import numpy as np
 import unittest
 
-from pydrake.common import FindResourceOrThrow
+import numpy as np
+
 from drake.examples.acrobot.dev.acrobot_io import (
-    load_scenario, save_scenario,
-    load_output, save_output)
+    load_output,
+    load_scenario,
+    save_output,
+    save_scenario,
+)
+from pydrake.common import FindResourceOrThrow
 
 
 class TestIo(unittest.TestCase):

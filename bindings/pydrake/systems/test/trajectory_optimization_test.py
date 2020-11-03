@@ -5,15 +5,17 @@ import warnings
 import numpy as np
 
 from pydrake.examples.pendulum import PendulumPlant
-from pydrake.trajectories import PiecewisePolynomial
 from pydrake.solvers import mathematicalprogram as mp
 from pydrake.systems.framework import InputPortSelection
 from pydrake.systems.primitives import LinearSystem
 from pydrake.systems.trajectory_optimization import (
-    AddDirectCollocationConstraint, DirectCollocation,
-    DirectCollocationConstraint, DirectTranscription,
+    AddDirectCollocationConstraint,
+    DirectCollocation,
+    DirectCollocationConstraint,
+    DirectTranscription,
     TimeStep,
 )
+from pydrake.trajectories import PiecewisePolynomial
 
 
 class TestTrajectoryOptimization(unittest.TestCase):

@@ -1,7 +1,7 @@
 import argparse
 from http.server import SimpleHTTPRequestHandler
 import os
-from os import listdir, symlink, mkdir
+from os import listdir, mkdir, symlink
 from os.path import abspath, dirname, isabs, isdir, isfile, join
 from shutil import rmtree
 from socketserver import TCPServer

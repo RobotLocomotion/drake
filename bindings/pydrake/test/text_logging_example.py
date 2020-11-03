@@ -1,7 +1,7 @@
 import sys
 
-from pydrake.test.text_logging_test import do_log_test
 from pydrake.common import set_log_level
+from pydrake.test.text_logging_test import do_log_test
 
 
 def main():

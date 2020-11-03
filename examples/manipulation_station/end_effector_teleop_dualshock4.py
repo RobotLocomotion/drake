@@ -12,21 +12,23 @@ from textwrap import dedent
 
 import numpy as np
 
+from drake.examples.manipulation_station.differential_ik import DifferentialIK
 from pydrake.examples.manipulation_station import (
-    ManipulationStation, ManipulationStationHardwareInterface,
-    CreateClutterClearingYcbObjectList, SchunkCollisionModel)
+    CreateClutterClearingYcbObjectList,
+    ManipulationStation,
+    ManipulationStationHardwareInterface,
+    SchunkCollisionModel,
+)
 from pydrake.geometry import ConnectDrakeVisualizer
-from pydrake.multibody.plant import MultibodyPlant
 from pydrake.manipulation.planner import (
-    DifferentialInverseKinematicsParameters)
+    DifferentialInverseKinematicsParameters,
+)
 from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
+from pydrake.multibody.plant import MultibodyPlant
 from pydrake.systems.analysis import Simulator
-from pydrake.systems.framework import (BasicVector, DiagramBuilder,
-                                       LeafSystem)
+from pydrake.systems.framework import BasicVector, DiagramBuilder, LeafSystem
 from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
 from pydrake.systems.primitives import FirstOrderLowPassFilter
-
-from drake.examples.manipulation_station.differential_ik import DifferentialIK
 
 # On macOS, our setup scripts do not provide pygame so we need to skip this
 # program and its tests.  On Ubuntu, we do expect to have pygame.

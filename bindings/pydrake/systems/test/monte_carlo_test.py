@@ -10,9 +10,9 @@ import numpy as np
 from pydrake.common import RandomGenerator
 from pydrake.systems.analysis import (
     MonteCarloSimulation,
-    RandomSimulationResult,
     RandomSimulation,
-    Simulator
+    RandomSimulationResult,
+    Simulator,
 )
 from pydrake.systems.primitives import ConstantVectorSource
 

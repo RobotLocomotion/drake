@@ -53,8 +53,10 @@ import argparse
 import os
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.geometry import MakePhongIllustrationProperties
-from pydrake.geometry import ConnectDrakeVisualizer
+from pydrake.geometry import (
+    ConnectDrakeVisualizer,
+    MakePhongIllustrationProperties,
+)
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.systems.analysis import Simulator

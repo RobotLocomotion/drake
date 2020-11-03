@@ -5,7 +5,10 @@ Generates documentation for `pydrake`.
 from os.path import abspath, dirname, isabs, join
 import sys
 
+from drake.doc.sphinx_base import gen_main
 import pydrake.all
+# TODO(eric.cousineau): Indicate these as deprecated.
+from pydrake.common import cpp_param, cpp_template
 # TODO(eric.cousineau): Make an optional `.all` module.
 from pydrake.examples import (
     acrobot,
@@ -17,12 +20,6 @@ from pydrake.examples import (
     van_der_pol,
 )
 from pydrake.examples.multibody import cart_pole_passive_simulation
-# TODO(eric.cousineau): Indicate these as deprecated.
-from pydrake.common import (
-    cpp_param,
-    cpp_template,
-)
-from drake.doc.sphinx_base import gen_main
 
 EXCLUDE = []
 

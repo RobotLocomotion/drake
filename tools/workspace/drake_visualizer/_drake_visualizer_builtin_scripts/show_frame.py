@@ -1,14 +1,12 @@
 # Note that this script runs in the main context of drake-visulizer,
 # where many modules and variables already exist in the global scope.
 
-from director import lcmUtils
-from director import applogic
+from _drake_visualizer_builtin_scripts import scoped_singleton_func
+from director import applogic, lcmUtils
 from director import objectmodel as om
 from director import transformUtils
 from director import visualization as vis
 import robotlocomotion as lcmrobotlocomotion
-
-from _drake_visualizer_builtin_scripts import scoped_singleton_func
 
 
 class FrameChannel:

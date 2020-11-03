@@ -20,30 +20,31 @@ import meshcat
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.common.eigen_geometry import Isometry3
 from pydrake.common.value import AbstractValue
 from pydrake.geometry import (
     Box,
     GeometryInstance,
     IllustrationProperties,
-    SceneGraph
+    SceneGraph,
 )
-from pydrake.multibody.plant import (
-    AddMultibodyPlantSceneGraph)
+from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.parsing import Parser
+from pydrake.multibody.plant import (
+    AddMultibodyPlantSceneGraph,
+    CoulombFriction,
+    MultibodyPlant,
+)
+from pydrake.multibody.tree import SpatialInertia, UnitInertia
+import pydrake.perception as mut
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.meshcat_visualizer import (
     ConnectMeshcatVisualizer,
-    MeshcatVisualizer,
     MeshcatContactVisualizer,
-    MeshcatPointCloudVisualizer
+    MeshcatPointCloudVisualizer,
+    MeshcatVisualizer,
 )
-from pydrake.common.eigen_geometry import Isometry3
-from pydrake.math import RigidTransform, RotationMatrix
-from pydrake.multibody.plant import CoulombFriction, MultibodyPlant
-from pydrake.multibody.tree import SpatialInertia, UnitInertia
-
-import pydrake.perception as mut
 
 ZMQ_URL = os.environ.get("TEST_ZMQ_URL")
 
