@@ -172,7 +172,7 @@ void def_geometry_render(py::module m) {
     const auto& cls_doc = doc.ClippingRange;
     py::class_<Class>(m, "ClippingRange", cls_doc.doc)
         .def(py::init<Class const&>(), cls_doc.ctor.doc)
-        .def(py::init<double, double>(), cls_doc.near.doc, cls_doc.far.doc)
+        .def(py::init<double, double>(), cls_doc.ctor.doc, cls_doc.far.doc)
         .def("far", static_cast<double (Class::*)() const>(&Class::far),
             cls_doc.far.doc)
         .def("near", static_cast<double (Class::*)() const>(&Class::near),
@@ -183,9 +183,9 @@ void def_geometry_render(py::module m) {
     const auto& cls_doc = doc.ColorRenderCamera;
     py::class_<Class> cls(m, "ColorRenderCamera", cls_doc.doc);
     cls  // BR
-        .def(py::init<Class const&>(), cls_doc.ctor.doc)
-        .def(py::init<RenderCameraCore, bool>(), cls_doc.core.doc,
-            cls_doc.show_window.doc)
+        .def(py::init<Class const&>())
+        .def(py::init<RenderCameraCore, bool>(),
+            cls_doc.ctor.doc_2args_core_show_window)
         .def("core", static_cast<RenderCameraCore const& (Class::*)() const>(
                          &Class::core))
         .def("show_window",

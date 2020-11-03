@@ -43,10 +43,6 @@ using systems::sensors::InvalidDepth;
 
 namespace {
 
-// Set default boundaries for OpenGl clipping planes.
-const float kGlZNear = 0.01;
-const float kGlZFar = 100.0;
-
 // Data to pass through the reification process.
 struct RegistrationData {
   const GeometryId id;
@@ -300,9 +296,9 @@ class DefaultDepthShader final : public ShaderProgram {
   }
 
   void SetDepthCameraParameters(
-      const DepthCameraProperties& camera) const final {
-    glUniform1f(depth_z_near_loc_, camera.z_near);
-    glUniform1f(depth_z_far_loc_, camera.z_far);
+      const DepthRenderCamera& camera) const final {
+    glUniform1f(depth_z_near_loc_, camera.depth_range().min_depth());
+    glUniform1f(depth_z_far_loc_, camera.depth_range().max_depth());
   }
 
  private:
@@ -490,142 +486,24 @@ void RenderEngineGl::UpdateViewpoint(const RigidTransformd& X_WR) {
 void RenderEngineGl::RenderColorImage(const CameraProperties& camera,
                                       bool show_window,
                                       ImageRgba8U* color_image_out) const {
-  opengl_context_->MakeCurrent();
-
-  // TODO(SeanCurtis-TRI): For transparency to work properly, I need to
-  //  segregate objects with transparency from those without. The transparent
-  //  geometries then need to be sorted from farthest to nearest the camera and
-  //  rendered in that order. This may lead to shader thrashing. Without this
-  //  ordering, I may not necessarily see objects through transparent surfaces.
-  //  Confirm that VTK handles transparency correctly and do the same.
-
-  const RenderTarget render_target =
-      GetRenderTarget(camera, RenderType::kColor);
-  // TODO(SeanCurtis-TRI) Consider converting Rgba to float[4] as a method on
-  //  Rgba.
-  const Rgba& clear = parameters_.default_clear_color;
-  float clear_color[4] = {
-      static_cast<float>(clear.r()), static_cast<float>(clear.g()),
-      static_cast<float>(clear.b()), static_cast<float>(clear.a())};
-  glClearNamedFramebufferfv(render_target.frame_buffer, GL_COLOR, 0,
-                            &clear_color[0]);
-  glClear(GL_DEPTH_BUFFER_BIT);
-  // We only want blending for color; not for label or depth.
-  glEnable(GL_BLEND);
-
-  // Matrix mapping a geometry vertex from the camera frame C to the device
-  // frame D.
-  const Eigen::Matrix4f T_DC =
-      ComputeGlProjectionMatrix(camera, kGlZNear, kGlZFar);
-
-  for (const auto& [shader_id, shader_ptr] :
-       shader_programs_[RenderType::kColor]) {
-    unused(shader_id);
-    const ShaderProgram& shader_program = *shader_ptr;
-    shader_program.Use();
-
-    shader_program.SetProjectionMatrix(T_DC);
-
-    // Now I need to render the geometries.
-    RenderAt(shader_program, RenderType::kColor);
-    shader_program.Unuse();
-  }
-  glDisable(GL_BLEND);
-
-  // Note: SetWindowVisibility must be called *after* the rendering; setting the
-  // visibility is responsible for taking the target buffer and bringing it to
-  // the front buffer; reversing the order means the image we've just rendered
-  // wouldn't be visible.
-  SetWindowVisibility(camera, show_window, render_target);
-  glGetTextureImage(render_target.value_texture, 0, GL_RGBA, GL_UNSIGNED_BYTE,
-                    color_image_out->size(), color_image_out->at(0, 0));
+  const ColorRenderCamera cam(camera, show_window);
+  ThrowIfInvalid(cam.core().intrinsics(), color_image_out, "color");
+  DoRenderColorImage(ColorRenderCamera(camera, show_window), color_image_out);
 }
 
 void RenderEngineGl::RenderDepthImage(const DepthCameraProperties& camera,
                                       ImageDepth32F* depth_image_out) const {
-  opengl_context_->MakeCurrent();
-
-  const RenderTarget render_target =
-      GetRenderTarget(camera, RenderType::kDepth);
-
-  // We initialize the color buffer to be all "too far" values. This is the
-  // pixel value if nothing draws there -- i.e., nothing there implies that
-  // whatever *might* be there is "too far" beyond the depth range.
-  glClearNamedFramebufferfv(render_target.frame_buffer, GL_COLOR, 0,
-                            &InvalidDepth::kTooFar);
-  glClear(GL_DEPTH_BUFFER_BIT);
-
-  // TODO(SeanCurtis-TRI): When clipping planes get set by the user, conflict
-  //  between depth camera range and clipping range should be an error. For
-  //  now, we simply define the clipping planes to tightly (but not exactly)
-  //  bound the depth ranges. The tightness gives us the most precision in the
-  //  z-buffer in the depth range. The slightly larger (10 cm in front and 10
-  //  cm behind) domain will allow us to recognize at least *some* fragments
-  //  which rendered outside the depth range.
-  const double near_clip = std::max(0.01, camera.z_near - 0.1);
-  const double far_clip = camera.z_far + 0.1;
-  // Matrix mapping a geometry vertex from the camera frame C to the device
-  // frame D.
-  const Eigen::Matrix4f T_DC =
-      ComputeGlProjectionMatrix(camera, near_clip, far_clip);
-
-  for (const auto& id_shader_pair : shader_programs_[RenderType::kDepth]) {
-    const ShaderProgram& shader_program = *(id_shader_pair.second);
-    shader_program.Use();
-
-    shader_program.SetProjectionMatrix(T_DC);
-    shader_program.SetDepthCameraParameters(camera);
-    RenderAt(shader_program, RenderType::kDepth);
-
-    shader_program.Unuse();
-  }
-
-  glGetTextureImage(render_target.value_texture, 0, GL_RED, GL_FLOAT,
-                    depth_image_out->size() * sizeof(GLfloat),
-                    depth_image_out->at(0, 0));
+  DepthRenderCamera cam(camera);
+  ThrowIfInvalid(cam.core().intrinsics(), depth_image_out, "depth");
+  DoRenderDepthImage(cam, depth_image_out);
 }
 
 void RenderEngineGl::RenderLabelImage(const CameraProperties& camera,
                                       bool show_window,
                                       ImageLabel16I* label_image_out) const {
-  opengl_context_->MakeCurrent();
-
-  const RenderTarget render_target =
-      GetRenderTarget(camera, RenderType::kLabel);
-  // TODO(SeanCurtis-TRI) Consider converting Rgba to float[4] as a member.
-  const ColorD empty_color =
-      RenderEngine::GetColorDFromLabel(RenderLabel::kEmpty);
-  float clear_color[4] = {static_cast<float>(empty_color.r),
-                          static_cast<float>(empty_color.g),
-                          static_cast<float>(empty_color.b), 1.f};
-  glClearNamedFramebufferfv(render_target.frame_buffer, GL_COLOR, 0,
-                            &clear_color[0]);
-  glClear(GL_DEPTH_BUFFER_BIT);
-  // Matrix mapping a geometry vertex from the camera frame C to the device
-  // frame D.
-  const Eigen::Matrix4f T_DC =
-      ComputeGlProjectionMatrix(camera, kGlZNear, kGlZFar);
-
-  for (const auto& id_shader_pair : shader_programs_[RenderType::kLabel]) {
-    const ShaderProgram& shader_program = *(id_shader_pair.second);
-    shader_program.Use();
-
-    shader_program.SetProjectionMatrix(T_DC);
-    RenderAt(shader_program, RenderType::kLabel);
-
-    shader_program.Unuse();
-  }
-
-  // Note: SetWindowVisibility must be called *after* the rendering; setting the
-  // visibility is responsible for taking the target buffer and bringing it to
-  // the front buffer; reversing the order means the image we've just rendered
-  // wouldn't be visible.
-  SetWindowVisibility(camera, show_window, render_target);
-  // TODO(SeanCurtis-TRI): Apparently, we *should* be able to create a frame
-  // buffer texture consisting of a single-channel, 16-bit, signed int (to match
-  // the underlying RenderLabel value). Doing so would allow us to render labels
-  // directly and eliminate this additional pass.
-  GetLabelImage(label_image_out, render_target);
+  const ColorRenderCamera cam(camera, show_window);
+  ThrowIfInvalid(cam.core().intrinsics(), label_image_out, "label");
+  DoRenderLabelImage(ColorRenderCamera(camera, show_window), label_image_out);
 }
 
 void RenderEngineGl::ImplementGeometry(const Sphere& sphere, void* user_data) {
@@ -786,6 +664,137 @@ void RenderEngineGl::RenderAt(const ShaderProgram& shader_program,
   glBindVertexArray(0);
 }
 
+void RenderEngineGl::DoRenderColorImage(const ColorRenderCamera& camera,
+                                        ImageRgba8U* color_image_out) const {
+  opengl_context_->MakeCurrent();
+
+  // TODO(SeanCurtis-TRI): For transparency to work properly, I need to
+  //  segregate objects with transparency from those without. The transparent
+  //  geometries then need to be sorted from farthest to nearest the camera and
+  //  rendered in that order. This may lead to shader thrashing. Without this
+  //  ordering, I may not necessarily see objects through transparent surfaces.
+  //  Confirm that VTK handles transparency correctly and do the same.
+
+  const RenderTarget render_target =
+      GetRenderTarget(camera.core(), RenderType::kColor);
+  // TODO(SeanCurtis-TRI) Consider converting Rgba to float[4] as a method on
+  //  Rgba.
+  const Rgba& clear = parameters_.default_clear_color;
+  float clear_color[4] = {
+      static_cast<float>(clear.r()), static_cast<float>(clear.g()),
+      static_cast<float>(clear.b()), static_cast<float>(clear.a())};
+  glClearNamedFramebufferfv(render_target.frame_buffer, GL_COLOR, 0,
+                            &clear_color[0]);
+  glClear(GL_DEPTH_BUFFER_BIT);
+  // We only want blending for color; not for label or depth.
+  glEnable(GL_BLEND);
+
+  // Matrix mapping a geometry vertex from the camera frame C to the device
+  // frame D.
+  const Eigen::Matrix4f T_DC =
+      camera.core().CalcProjectionMatrix().cast<float>();
+
+  for (const auto& [shader_id, shader_ptr] :
+       shader_programs_[RenderType::kColor]) {
+    unused(shader_id);
+    const ShaderProgram& shader_program = *shader_ptr;
+    shader_program.Use();
+
+    shader_program.SetProjectionMatrix(T_DC);
+
+    // Now I need to render the geometries.
+    RenderAt(shader_program, RenderType::kColor);
+    shader_program.Unuse();
+  }
+  glDisable(GL_BLEND);
+
+  // Note: SetWindowVisibility must be called *after* the rendering; setting the
+  // visibility is responsible for taking the target buffer and bringing it to
+  // the front buffer; reversing the order means the image we've just rendered
+  // wouldn't be visible.
+  SetWindowVisibility(camera.core(), camera.show_window(), render_target);
+  glGetTextureImage(render_target.value_texture, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                    color_image_out->size(), color_image_out->at(0, 0));
+}
+
+void RenderEngineGl::DoRenderDepthImage(const DepthRenderCamera& camera,
+                                        ImageDepth32F* depth_image_out) const {
+  opengl_context_->MakeCurrent();
+
+  const RenderTarget render_target =
+      GetRenderTarget(camera.core(), RenderType::kDepth);
+
+  // We initialize the color buffer to be all "too far" values. This is the
+  // pixel value if nothing draws there -- i.e., nothing there implies that
+  // whatever *might* be there is "too far" beyond the depth range.
+  glClearNamedFramebufferfv(render_target.frame_buffer, GL_COLOR, 0,
+                            &InvalidDepth::kTooFar);
+  glClear(GL_DEPTH_BUFFER_BIT);
+
+  // Matrix mapping a geometry vertex from the camera frame C to the device
+  // frame D.
+  const Eigen::Matrix4f T_DC =
+      camera.core().CalcProjectionMatrix().cast<float>();
+
+  for (const auto& id_shader_pair : shader_programs_[RenderType::kDepth]) {
+    const ShaderProgram& shader_program = *(id_shader_pair.second);
+    shader_program.Use();
+
+    shader_program.SetProjectionMatrix(T_DC);
+    shader_program.SetDepthCameraParameters(camera);
+    RenderAt(shader_program, RenderType::kDepth);
+
+    shader_program.Unuse();
+  }
+
+  glGetTextureImage(render_target.value_texture, 0, GL_RED, GL_FLOAT,
+                    depth_image_out->size() * sizeof(GLfloat),
+                    depth_image_out->at(0, 0));
+}
+
+void RenderEngineGl::DoRenderLabelImage(const ColorRenderCamera& camera,
+                                        ImageLabel16I* label_image_out) const {
+  opengl_context_->MakeCurrent();
+
+  const RenderTarget render_target =
+      GetRenderTarget(camera.core(), RenderType::kLabel);
+  // TODO(SeanCurtis-TRI) Consider converting Rgba to float[4] as a member.
+  const ColorD empty_color =
+      RenderEngine::GetColorDFromLabel(RenderLabel::kEmpty);
+  float clear_color[4] = {static_cast<float>(empty_color.r),
+                          static_cast<float>(empty_color.g),
+                          static_cast<float>(empty_color.b), 1.f};
+  glClearNamedFramebufferfv(render_target.frame_buffer, GL_COLOR, 0,
+                            &clear_color[0]);
+  glClear(GL_DEPTH_BUFFER_BIT);
+
+  // Matrix mapping a geometry vertex from the camera frame C to the device
+  // frame D.
+  const Eigen::Matrix4f T_DC =
+      camera.core().CalcProjectionMatrix().cast<float>();
+
+  for (const auto& id_shader_pair : shader_programs_[RenderType::kLabel]) {
+    const ShaderProgram& shader_program = *(id_shader_pair.second);
+    shader_program.Use();
+
+    shader_program.SetProjectionMatrix(T_DC);
+    RenderAt(shader_program, RenderType::kLabel);
+
+    shader_program.Unuse();
+  }
+
+  // Note: SetWindowVisibility must be called *after* the rendering; setting the
+  // visibility is responsible for taking the target buffer and bringing it to
+  // the front buffer; reversing the order means the image we've just rendered
+  // wouldn't be visible.
+  SetWindowVisibility(camera.core(), camera.show_window(), render_target);
+  // TODO(SeanCurtis-TRI): Apparently, we *should* be able to create a frame
+  // buffer texture consisting of a single-channel, 16-bit, signed int (to match
+  // the underlying RenderLabel value). Doing so would allow us to render labels
+  // directly and eliminate this additional pass.
+  GetLabelImage(label_image_out, render_target);
+}
+
 void RenderEngineGl::ImplementGeometry(const OpenGlGeometry& geometry,
                                        void* user_data, const Vector3d& scale) {
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
@@ -903,15 +912,15 @@ std::tuple<GLint, GLenum, GLenum> RenderEngineGl::get_texture_format(
   DRAKE_UNREACHABLE();
 }
 
-RenderTarget RenderEngineGl::CreateRenderTarget(const CameraProperties& camera,
+RenderTarget RenderEngineGl::CreateRenderTarget(const RenderCameraCore& camera,
                                                 RenderType render_type) {
   // Create a framebuffer object (FBO).
   RenderTarget target;
   glCreateFramebuffers(1, &target.frame_buffer);
 
   // Create the texture object that will store the rendered result.
-  const int width = camera.width;
-  const int height = camera.height;
+  const int width = camera.intrinsics().width();
+  const int height = camera.intrinsics().height();
   glGenTextures(1, &target.value_texture);
   glBindTexture(GL_TEXTURE_2D, target.value_texture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -955,37 +964,6 @@ RenderTarget RenderEngineGl::CreateRenderTarget(const CameraProperties& camera,
   return target;
 }
 
-Eigen::Matrix4f RenderEngineGl::ComputeGlProjectionMatrix(
-    const CameraProperties& camera, double clip_near, double clip_far) const {
-  DRAKE_ASSERT(clip_far > clip_near);
-  const float inverse_frustum_depth = 1 / (clip_far - clip_near);
-  // https://unspecified.wordpress.com/2012/06/21/calculating-the-gluperspective-matrix-and-other-opengl-matrix-maths/
-  // An OpenGL projection matrix maps points in a camera coordinate to a "clip
-  // coordinate", in which the projection step maps a 3D point into 2D
-  // normalized device coordinate (NDC). Effectively, image corners are mapped
-  // into a square from -1 to 1 in NDC. Hence, the clip coordinate is
-  // essentially a scaled version of the camera coordinate, where the camera
-  // image frustum is scaled into a "square" frustum.
-  //
-  // Because the xy elements of the image corner [f*w/2, f*h/2] is mapped to
-  // [fx*f*w/2, fy*f*h/2] in the "square" clip coordinate by the OpenGL
-  // projection matrix P, we have: fx*f*w/2 == fy*f*h/2, i.e. fx*w == fy*h.
-
-  const float fy = 1.0f / static_cast<float>(tan(camera.fov_y * 0.5));
-  const float fx = fy * camera.height / camera.width;
-  const float A = -(clip_near + clip_far) * inverse_frustum_depth;
-  const float B = -2.0f * clip_near * clip_far * inverse_frustum_depth;
-  Eigen::Matrix4f P;
-  // Eigen matrices are col-major, similar to OpenGL.
-  // clang-format off
-  P << fx, 0.0,  0.0, 0.0,
-      0.0, fy,   0.0, 0.0,
-      0.0, 0.0,    A,   B,
-      0.0, 0.0, -1.0, 0.0;
-  // clang-format on
-  return P;
-}
-
 void RenderEngineGl::GetLabelImage(ImageLabel16I* label_image_out,
                                    const RenderTarget& target) const {
   ImageRgba8U image(label_image_out->width(), label_image_out->height());
@@ -1002,9 +980,10 @@ void RenderEngineGl::GetLabelImage(ImageLabel16I* label_image_out,
   }
 }
 
-RenderTarget RenderEngineGl::GetRenderTarget(const CameraProperties& camera,
+RenderTarget RenderEngineGl::GetRenderTarget(const RenderCameraCore& camera,
                                              RenderType render_type) const {
-  const BufferDim dim{camera.width, camera.height};
+  const auto& intrinsics = camera.intrinsics();
+  const BufferDim dim{intrinsics.width(), intrinsics.height()};
   RenderTarget target;
   std::unordered_map<BufferDim, RenderTarget>& frame_buffers =
       frame_buffers_[render_type];
@@ -1016,7 +995,7 @@ RenderTarget RenderEngineGl::GetRenderTarget(const CameraProperties& camera,
     target = iter->second;
   }
   glBindFramebuffer(GL_FRAMEBUFFER, target.frame_buffer);
-  glViewport(0, 0, camera.width, camera.height);
+  glViewport(0, 0, intrinsics.width(), intrinsics.height());
   return target;
 }
 
@@ -1087,19 +1066,22 @@ OpenGlGeometry RenderEngineGl::CreateGlGeometry(const MeshData& mesh_data) {
   return geometry;
 }
 
-void RenderEngineGl::SetWindowVisibility(const CameraProperties& camera,
+void RenderEngineGl::SetWindowVisibility(const RenderCameraCore& camera,
                                          bool show_window,
                                          const RenderTarget& target) const {
   if (show_window) {
+    const auto& intrinsics = camera.intrinsics();
     // Use the render target buffer as the read buffer and the default buffer
     // (0) as the draw buffer for displaying in the window. We transfer the full
     // image from source to destination. The semantics of glBlitNamedFrameBuffer
     // are inclusive of the "minimum" pixel (0, 0) and exclusive of the
     // "maximum" pixel (width, height).
-    opengl_context_->DisplayWindow(camera.width, camera.height);
+    opengl_context_->DisplayWindow(intrinsics.width(), intrinsics.height());
     glBlitNamedFramebuffer(target.frame_buffer, 0,
-                           0, 0, camera.width, camera.height,  // Src bounds.
-                           0, 0, camera.width, camera.height,  // Dest bounds.
+                           // Src bounds.
+                           0, 0, intrinsics.width(), intrinsics.height(),
+                           // Dest bounds.
+                           0, 0, intrinsics.width(), intrinsics.height(),
                            GL_COLOR_BUFFER_BIT, GL_NEAREST);
     opengl_context_->UpdateWindow();
   } else {

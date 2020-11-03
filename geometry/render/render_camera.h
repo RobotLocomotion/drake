@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/geometry/render/camera_properties.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/systems/sensors/camera_info.h"
 
@@ -43,6 +44,11 @@ class RenderCameraCore {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RenderCameraCore);
 
+  /** (Advanced) Constructs a %RenderCameraCore from the old, symmetric camera
+   representation. This constructor should only be used internally; it serves
+   as a stop gap measure until CameraProperties is fully deprecated.  */
+  RenderCameraCore(const CameraProperties& camera, double clipping_far);
+
   /** Fully-specified constructor. See the documentation on the member getter
    methods for documentation of parameters.  */
   RenderCameraCore(std::string renderer_name,
@@ -70,7 +76,19 @@ class RenderCameraCore {
     return X_BS_;
   }
 
+  /** Expresses `this` camera's pinhole camera properties as the projective
+   transform T_DC which transforms points in a camera's frame C to a 2D,
+   normalized device frame D. The transform is represented by a 4x4 matrix
+   (i.e., a
+   <a href="https://strawlab.org/2011/11/05/augmented-reality-with-OpenGL/">
+   classic OpenGl projection matrix</a>).  */
+  Eigen::Matrix4d CalcProjectionMatrix() const;
+
  private:
+  // Used to convert CameraProperties to RenderCameraCore; this is the legacy
+  // value used. Remove this when we remove the conversion constructor.
+  static constexpr double kClippingNear = 0.01;
+
   // See getter methods for documentation on these members.
   std::string renderer_name_;
   systems::sensors::CameraInfo intrinsics_;
@@ -88,6 +106,14 @@ class ColorRenderCamera {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ColorRenderCamera);
 
+  /** Constructs a %ColorRenderCamera from the old, symmetric camera
+   representation. This constructor should only be used internally; it serves
+   as a stop gap measure until CameraProperties is fully deprecated.  */
+  explicit ColorRenderCamera(const CameraProperties& camera,
+                             bool show_window = false)
+      : ColorRenderCamera(RenderCameraCore(camera, kClippingFar), show_window) {
+  }
+
   /** Fully-specified constructor. See the documentation on the member getter
    methods for documentation of parameters.  */
   explicit ColorRenderCamera(RenderCameraCore core, bool show_window = false)
@@ -100,6 +126,10 @@ class ColorRenderCamera {
   bool show_window() const { return show_window_; }
 
  private:
+  // Used to convert CameraProperties to ColorRenderCamera; this is the legacy
+  // value used. Remove this when we remove the conversion constructor.
+  static constexpr double kClippingFar = 100;
+
   // See getter methods for documentation on these members.
   RenderCameraCore core_;
   bool show_window_{false};
@@ -142,6 +172,13 @@ class DepthRange {
 class DepthRenderCamera {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DepthRenderCamera);
+
+  /** Constructs a %DepthRenderCamera from the old, symmetric camera
+   representation. This constructor should only be used internally; it serves
+   as a stop gap measure until CameraProperties is fully deprecated.  */
+  explicit DepthRenderCamera(const DepthCameraProperties& camera)
+      : DepthRenderCamera(RenderCameraCore(camera, camera.z_far * 1.1),
+                          DepthRange(camera.z_near, camera.z_far)) {}
 
   /** Fully-specified constructor. See the documentation on the member getter
    methods for documentation of parameters.
