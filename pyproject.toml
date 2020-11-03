@@ -7,7 +7,7 @@
 #
 # For more information:
 # - https://timothycrosley.github.io/isort/
-# - (Permalink) https://github.com/timothycrosley/isort/blob/5.1.3/README.md
+# - (Permalink) https://github.com/timothycrosley/isort/blob/5.6.4/README.md
 
 [tool.isort]
 # Based on `profile = black`, but with customizations.
@@ -22,7 +22,6 @@ ignore_comments = true
 skip = [
     ".git",
     "build",
-    "attic",
     "all.py",
 ]
 skip_glob = [
@@ -31,32 +30,22 @@ skip_glob = [
 
 # [ Sections ]
 # See: https://github.com/timothycrosley/isort#custom-sections-and-ordering
-known_robotlocomotion_upstream = [
-    "bot_core",
-    "bot_procman",
-    "director",
-    "robotlocomotion",
-]
-# Instead of `first_party`, use `drake` and `pydrake` explicitly.
-known_first_party = []
-known_drake = [
-    "_drake_visualizer_builtin_scripts",
-    "drake",
-    # TODO(eric.cousineau): This should be re-scoped to just drake.
-    "install_test_helper",
-]
-known_pydrake = [
-    "pydrake",
-]
 # This determines the ordering of imports.
 sections = [
+    # {builtin}
     "FUTURE",
+    # {builtin}
     "STDLIB",
+    # known_third_party
     "THIRDPARTY",
-    "ROBOTLOCOMOTION_UPSTREAM",
-    "DRAKE",
-    "PYDRAKE",
+    # known_first_party
     "FIRSTPARTY",
+    # {builtin}
     "LOCALFOLDER",
 ]
 default_section = "THIRDPARTY"
+known_third_party = []
+known_first_party = [
+    "drake",
+    "pydrake",
+]
