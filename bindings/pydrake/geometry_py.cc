@@ -8,6 +8,7 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -456,10 +457,29 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("GetCollisionCandidates", &Class::GetCollisionCandidates,
             cls_doc.GetCollisionCandidates.doc)
         // Sources and source-related data.
-        .def("SourceIsRegistered", &Class::SourceIsRegistered, py::arg("id"),
-            cls_doc.SourceIsRegistered.doc)
-        .def("GetSourceName", &Class::GetSourceName, py::arg("source_id"),
-            cls_doc.GetSourceName.doc)
+        .def("SourceIsRegistered", &Class::SourceIsRegistered,
+            py::arg("source_id"), cls_doc.SourceIsRegistered.doc)
+        .def("SourceIsRegistered",
+            WrapDeprecated(
+                "Please use SceneGraphInspector.SourceIsRegistered("
+                "source_id=value) instead. This variant will be removed after"
+                " after 2021-03-01",
+                &Class::SourceIsRegistered),
+            py::arg("id"), cls_doc.SourceIsRegistered.doc)
+        .def("GetName",
+            overload_cast_explicit<const std::string&, SourceId>(
+                &Class::GetName),
+            py_rvp::reference_internal, py::arg("source_id"),
+            cls_doc.GetName.doc_1args_source_id);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("GetSourceName",
+            WrapDeprecated(
+                cls_doc.GetSourceName.doc_deprecated, &Class::GetSourceName),
+            py::arg("source_id"), cls_doc.GetSourceName.doc_deprecated);
+#pragma GCC diagnostic pop
+    cls  // BR
         .def("NumFramesForSource", &Class::NumFramesForSource,
             py::arg("source_id"), cls_doc.NumFramesForSource.doc)
         .def("FramesForSource", &Class::FramesForSource, py::arg("source_id"),
@@ -723,38 +743,70 @@ void DoScalarDependentDefinitions(py::module m, T) {
   //  QueryObject
   {
     using Class = QueryObject<T>;
+    constexpr auto& cls_doc = doc.QueryObject;
     auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "QueryObject", param, doc.QueryObject.doc);
+        m, "QueryObject", param, cls_doc.doc);
     cls  // BR
-        .def(py::init(), doc.QueryObject.ctor.doc)
+        .def(py::init(), cls_doc.ctor.doc)
         .def("inspector", &QueryObject<T>::inspector,
-            py_rvp::reference_internal, doc.QueryObject.inspector.doc)
-        .def("X_WF", &QueryObject<T>::X_WF, py::arg("id"),
-            py_rvp::reference_internal, doc.QueryObject.X_WF.doc)
-        .def("X_PF", &QueryObject<T>::X_PF, py::arg("id"),
-            py_rvp::reference_internal, doc.QueryObject.X_PF.doc)
-        .def("X_WG", &QueryObject<T>::X_WG, py::arg("id"),
-            py_rvp::reference_internal, doc.QueryObject.X_WG.doc)
+            py_rvp::reference_internal, cls_doc.inspector.doc)
+        .def("GetPoseInWorld",
+            overload_cast_explicit<const math::RigidTransform<T>&, FrameId>(
+                &Class::GetPoseInWorld),
+            py::arg("frame_id"), py_rvp::reference_internal,
+            cls_doc.GetPoseInWorld.doc_1args_frame_id)
+        .def("GetPoseInParent", &Class::GetPoseInParent, py::arg("frame_id"),
+            py_rvp::reference_internal, cls_doc.GetPoseInParent.doc)
+        .def("GetPoseInWorld",
+            overload_cast_explicit<const math::RigidTransform<T>&, GeometryId>(
+                &Class::GetPoseInWorld),
+            py::arg("geometry_id"), py_rvp::reference_internal,
+            cls_doc.GetPoseInWorld.doc_1args_geometry_id);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("X_WF",
+            WrapDeprecated(cls_doc.X_WF.doc_deprecated, &QueryObject<T>::X_WF),
+            py::arg("id"), py_rvp::reference_internal,
+            cls_doc.X_WF.doc_deprecated)
+        .def("X_PF",
+            WrapDeprecated(cls_doc.X_PF.doc_deprecated, &QueryObject<T>::X_PF),
+            py::arg("id"), py_rvp::reference_internal,
+            cls_doc.X_PF.doc_deprecated)
+        .def("X_WG",
+            WrapDeprecated(cls_doc.X_WG.doc_deprecated, &QueryObject<T>::X_WG),
+            py::arg("id"), py_rvp::reference_internal,
+            cls_doc.X_WG.doc_deprecated);
+#pragma GCC diagnostic pop
+    cls  // BR
         .def("ComputeSignedDistancePairwiseClosestPoints",
             &QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints,
             py::arg("max_distance") = std::numeric_limits<double>::infinity(),
-            doc.QueryObject.ComputeSignedDistancePairwiseClosestPoints.doc)
+            cls_doc.ComputeSignedDistancePairwiseClosestPoints.doc)
         .def("ComputeSignedDistancePairClosestPoints",
             &QueryObject<T>::ComputeSignedDistancePairClosestPoints,
+            py::arg("geometry_id_A"), py::arg("geometry_id_B"),
+            cls_doc.ComputeSignedDistancePairClosestPoints.doc)
+        .def("ComputeSignedDistancePairClosestPoints",
+            WrapDeprecated("Please use "
+                           "QueryObject.ComputeSignedDistancePairClosestPoints("
+                           "geometry_id_A=value1, geometry_id_B=value2). This "
+                           "variant will be removed on or after 2021-03-01.",
+                &QueryObject<T>::ComputeSignedDistancePairClosestPoints),
             py::arg("id_A"), py::arg("id_B"),
-            doc.QueryObject.ComputeSignedDistancePairClosestPoints.doc)
+            cls_doc.ComputeSignedDistancePairClosestPoints.doc)
         .def("ComputePointPairPenetration",
             &QueryObject<T>::ComputePointPairPenetration,
-            doc.QueryObject.ComputePointPairPenetration.doc)
+            cls_doc.ComputePointPairPenetration.doc)
         .def("ComputeSignedDistanceToPoint",
             &QueryObject<T>::ComputeSignedDistanceToPoint, py::arg("p_WQ"),
             py::arg("threshold") = std::numeric_limits<double>::infinity(),
-            doc.QueryObject.ComputeSignedDistanceToPoint.doc)
+            cls_doc.ComputeSignedDistanceToPoint.doc)
         .def("FindCollisionCandidates",
             &QueryObject<T>::FindCollisionCandidates,
-            doc.QueryObject.FindCollisionCandidates.doc)
+            cls_doc.FindCollisionCandidates.doc)
         .def("HasCollisions", &QueryObject<T>::HasCollisions,
-            doc.QueryObject.HasCollisions.doc)
+            cls_doc.HasCollisions.doc)
         .def(
             "RenderColorImage",
             [](const Class* self, const render::CameraProperties& camera,
@@ -766,8 +818,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
               return img;
             },
             py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
-            py::arg("show_window") = false,
-            doc.QueryObject.RenderColorImage.doc)
+            py::arg("show_window") = false, cls_doc.RenderColorImage.doc)
         .def(
             "RenderDepthImage",
             [](const Class* self, const render::DepthCameraProperties& camera,
@@ -777,7 +828,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
               return img;
             },
             py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
-            doc.QueryObject.RenderDepthImage.doc)
+            cls_doc.RenderDepthImage.doc)
         .def(
             "RenderLabelImage",
             [](const Class* self, const render::CameraProperties& camera,
@@ -789,8 +840,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
               return img;
             },
             py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
-            py::arg("show_window") = false,
-            doc.QueryObject.RenderLabelImage.doc);
+            py::arg("show_window") = false, cls_doc.RenderLabelImage.doc);
 
     AddValueInstantiation<QueryObject<T>>(m);
   }

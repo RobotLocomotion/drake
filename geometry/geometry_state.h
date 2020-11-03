@@ -143,7 +143,7 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::SourceIsRegistered().  */
   bool SourceIsRegistered(SourceId source_id) const;
 
-  /** Implementation of SceneGraphInspector::GetSourceName().  */
+  /** Implementation of SceneGraphInspector::GetName().  */
   const std::string& GetName(SourceId id) const;
 
   /** Implementation of SceneGraphInspector::NumFramesForSource().  */
@@ -243,14 +243,14 @@ class GeometryState {
    registered frames.  */
   //@{
 
-  /** Implementation of QueryObject::X_WF().  */
+  /** Implementation of QueryObject::GetPoseInWorld(FrameId).  */
   const math::RigidTransform<T>& get_pose_in_world(FrameId frame_id) const;
 
-  /** Implementation of QueryObject::X_WG().  */
+  /** Implementation of QueryObject::GetPoseInWorld(GeometryId).  */
   const math::RigidTransform<T>& get_pose_in_world(
       GeometryId geometry_id) const;
 
-  /** Implementation of QueryObject::X_PF().  */
+  /** Implementation of QueryObject::GetPoseInParent().  */
   const math::RigidTransform<T>& get_pose_in_parent(FrameId frame_id) const;
 
   //@}

@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
@@ -104,24 +105,36 @@ class QueryObject {
    inspector() to access the SceneGraphInspector.  */
   //@{
 
-  // TODO(SeanCurtis-TRI): When I have RigidTransform internally, make these
-  // const references.
-  /** Reports the position of the frame indicated by `id` relative to the world
-   frame.
-   @throws std::logic_error if the frame `id` is not valid.  */
+  /** Reports the position of the frame indicated by `frame_id` relative to the
+   world frame.
+   @throws std::exception if the frame `frame_id` is not valid.  */
+  const math::RigidTransform<T>& GetPoseInWorld(FrameId frame_id) const;
+
+  /** Deprecated variant of GetPoseInWorld(FrameId).  */
+  DRAKE_DEPRECATED("2021-03-01", "Please use GetPoseInWorld(FrameId) instead.")
   const math::RigidTransform<T>& X_WF(FrameId id) const;
 
-  /** Reports the position of the frame indicated by `id` relative to its parent
-   frame. If the frame was registered with the world frame as its parent frame,
-   this value will be identical to that returned by X_WF().
-   @note This is analogous to but distinct from SceneGraphInspector::X_PG().
-   In this case, the pose will *always* be relative to another frame.
-   @throws std::logic_error if the frame `id` is not valid.  */
+  /** Reports the position of the frame indicated by `frame_id` relative to its
+   parent frame. If the frame was registered with the world frame as its parent
+   frame, this value will be identical to that returned by GetPoseInWorld().
+   @note This is analogous to but distinct from
+   SceneGraphInspector::GetPoseInParent(). In this case, the pose will *always*
+   be relative to another frame.
+   @throws std::exception if the frame `frame_id` is not valid.  */
+  const math::RigidTransform<T>& GetPoseInParent(FrameId frame_id) const;
+
+  /** Deprecated variant of GetPoseInParent().  */
+  DRAKE_DEPRECATED("2021-03-01", "Please use GetPoseInParent(FrameId) instead.")
   const math::RigidTransform<T>& X_PF(FrameId id) const;
 
-  /** Reports the position of the geometry indicated by `id` relative to the
-   world frame.
-   @throws std::logic_error if the geometry `id` is not valid.  */
+  /** Reports the position of the geometry indicated by `geometry_id` relative
+   to the world frame.
+   @throws std::exception if the geometry `geometry_id` is not valid.  */
+  const math::RigidTransform<T>& GetPoseInWorld(GeometryId geometry_id) const;
+
+  /** Deprecated variant of GetPoseInWorld(GeometryId).  */
+  DRAKE_DEPRECATED("2021-03-01",
+                   "Please use GetPoseInWorld(GeometryId) instead.")
   const math::RigidTransform<T>& X_WG(GeometryId id) const;
 
   //@}
@@ -372,10 +385,10 @@ class QueryObject {
    indicated by id. This function has the same restrictions on scalar report
    as ComputeSignedDistancePairwiseClosestPoints().
 
-   @throws if either geometry id is invalid, or if the pair (id_A, id_B) has
-           been marked as filtered.  */
+   @throws std::exception if either geometry id is invalid, or if the pair
+                          (A, B) has been marked as filtered.  */
   SignedDistancePair<T> ComputeSignedDistancePairClosestPoints(
-      GeometryId id_A, GeometryId id_B) const;
+      GeometryId geometry_id_A, GeometryId geometry_id_B) const;
 
   // TODO(DamrongGuoy): Improve and refactor documentation of
   // ComputeSignedDistanceToPoint(). Move the common sections into Signed

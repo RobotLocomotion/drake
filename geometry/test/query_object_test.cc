@@ -160,9 +160,15 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   // Enumerate *all* queries to confirm they throw the proper exception.
 
   // Scalar-dependent state queries.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_DEFAULT_ERROR(default_object.X_WF(FrameId::get_new_id()));
   EXPECT_DEFAULT_ERROR(default_object.X_PF(FrameId::get_new_id()));
   EXPECT_DEFAULT_ERROR(default_object.X_WG(GeometryId::get_new_id()));
+#pragma GCC diagnostic pop
+  EXPECT_DEFAULT_ERROR(default_object.GetPoseInWorld(FrameId::get_new_id()));
+  EXPECT_DEFAULT_ERROR(default_object.GetPoseInParent(FrameId::get_new_id()));
+  EXPECT_DEFAULT_ERROR(default_object.GetPoseInWorld(GeometryId::get_new_id()));
 
   // Penetration queries.
   EXPECT_DEFAULT_ERROR(default_object.ComputePointPairPenetration());
@@ -182,9 +188,6 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
 
   EXPECT_DEFAULT_ERROR(default_object.FindCollisionCandidates());
   EXPECT_DEFAULT_ERROR(default_object.HasCollisions());
-  EXPECT_DEFAULT_ERROR(default_object.X_WF(FrameId::get_new_id()));
-  EXPECT_DEFAULT_ERROR(default_object.X_PF(FrameId::get_new_id()));
-  EXPECT_DEFAULT_ERROR(default_object.X_WG(GeometryId::get_new_id()));
 
   // Render queries.
   const ColorRenderCamera color_camera{
