@@ -49,22 +49,24 @@ class FemElement {
   /** Number of nodes associated with this element. */
   int num_nodes() const { return shape_->num_nodes(); }
 
-  /** The number of spatial dimensions that this element lives in. */
-  virtual int num_spatial_dim() const = 0;
+  /** The number of dimensions of the PDE this element is trying to solve for.
+   For example, if the underlying PDE that this %FemElement is solving for is
+   F(u, ∇u) = 0, where F:Rⁿ→Rᵐ, then %num_problem_dim() returns m. */
+  virtual int num_problem_dim() const = 0;
 
   /** Calculates the element residual of this element evaluated at the input
    state. This method updates the cached quantities in the input FemState if
    they are out of date.
    @param[in] state The FEM state at which to evaluate the residual.
-   @returns a vector of residual of size `num_spatial_dim() * num_nodes()`. The
-   vector is ordered such that `{i * num_spatial_dim()}`-th to
-   `{(i+1) * num_spatial_dim() - 1}`-th entries of the vector stores the
+   @returns a vector of residual of size `num_problem_dim() * num_nodes()`. The
+   vector is ordered such that `{i * num_problem_dim()}`-th to
+   `{(i+1) * num_problem_dim() - 1}`-th entries of the vector stores the
    residual corresponding to the i-th node in this element. */
   VectorX<T> CalcResidual(const FemState<T>& s) const;
 
   /** Alternative signature that writes the residual in the output argument.
    @pre `residual` must not be the nullptr, and the vector it points to must
-   have size `num_nodes() * num_spatial_dim()`. */
+   have size `num_nodes() * num_problem_dim()`. */
   void CalcResidual(const FemState<T>& s, EigenPtr<VectorX<T>> residual) const;
 
   // TODO(xuchenhan-tri): Add CalcMassMatrix and CalcStiffnessMatrix etc.
@@ -91,7 +93,7 @@ class FemElement {
    `(i+1)*num_spatial_dim()-1`-th entries of the vector stores the residual
    corresponding to the i-th node in this element.
    @pre residual must not be the nullptr, and the vector it points to must have
-   size `num_nodes() * num_spatial_dim()`. */
+   size `num_nodes() * num_problem_dim()`. */
   virtual void DoCalcResidual(const FemState<T>& s,
                               EigenPtr<VectorX<T>> residual) const = 0;
 

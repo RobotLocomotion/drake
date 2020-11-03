@@ -9,7 +9,7 @@ namespace multibody {
 namespace fem {
 template <typename T, int NaturalDim>
 VectorX<T> FemElement<T, NaturalDim>::CalcResidual(const FemState<T>& s) const {
-  VectorX<T> residual(num_nodes() * num_spatial_dim());
+  VectorX<T> residual(num_nodes() * num_problem_dim());
   CalcResidual(s, &residual);
   return residual;
 }
@@ -18,7 +18,7 @@ template <typename T, int NaturalDim>
 void FemElement<T, NaturalDim>::CalcResidual(
     const FemState<T>& s, EigenPtr<VectorX<T>> residual) const {
   DRAKE_DEMAND(residual != nullptr);
-  DRAKE_DEMAND(residual->size() == num_spatial_dim() * num_nodes());
+  DRAKE_DEMAND(residual->size() == num_problem_dim() * num_nodes());
   DoCalcResidual(s, residual);
 }
 

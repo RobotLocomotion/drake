@@ -29,6 +29,7 @@ namespace fem {
  IsoparametricElement and pass the new locations into the constructor.
  @tparam_nonsymbolic_scalar T.
  @tparam NaturalDim The dimension of the parent domain. */
+/* TODO(xuchenhan-tri): Consider templatize on spatial dimension as well. */
 template <typename T, int NaturalDim>
 class IsoparametricElement {
  public:
@@ -37,7 +38,7 @@ class IsoparametricElement {
   using VectorD = Eigen::Matrix<T, NaturalDim, 1>;
 
   /** The dimension of the parent domain. */
-  enum : int {kNumNaturalDim = NaturalDim};
+  enum : int { kNumNaturalDim = NaturalDim };
 
   /** Constructs an isoparametric element that performs calculations at the
    locations specified by the input `locations`. */

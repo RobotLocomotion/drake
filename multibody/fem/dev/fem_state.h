@@ -13,23 +13,25 @@ namespace drake {
 namespace multibody {
 namespace fem {
 /** The states in the FEM simulation that are associated with the nodes and the
- elements. The states include the generalized positions of the nodes, `q`, and
- their time derivatives, `qdot`. %FemState also contains the cached quantities
- that are associated with the elements whose values depend on the states. See
- ElementCache for more on these state-dependent quantities.
+ elements. The states include the generalized positions associated with each
+ node, `q`, and their time derivatives, `qdot`. %FemState also contains the
+ cached quantities that are associated with the elements whose values depend on
+ the states. See ElementCache for more on these state-dependent quantities.
  @tparam_nonsymbolic_scalar T. */
 template <typename T>
 class FemState {
  public:
-  /** Copy, move and assign are disabled. Use Clone() if a deep copy is
-   required. Use SetFrom() if you want to set `this` %FemState from another
-   %FemState. */
+  /** Copy, move and assign are disabled. Copy constructors and assignment are
+   usually expensive for %FemState. If a copy is required, use Clone() if a deep
+   copy is required. Use SetFrom() if you want to set `this` %FemState from
+   another %FemState. */
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FemState);
 
   FemState() = default;
 
   /** Constructs an %FemState with prescribed number of states. */
-  explicit FemState(int num_states) : qdot_(num_states), q_(num_states) {}
+  explicit FemState(int num_generalized_positions)
+      : qdot_(num_generalized_positions), q_(num_generalized_positions) {}
 
   /** Takes ownership of the input `element_cache` and set it as the element
    cache that `this` %FemState owns. This method is usually called right after
@@ -44,31 +46,31 @@ class FemState {
   }
 
   /** Creates a deep identical copy of `this` %FemState with all its states and
-   * cache. Returns a unique pointer to the copy. */
+   cache. Returns a unique pointer to the copy. */
   std::unique_ptr<FemState<T>> Clone() const {
-    auto clone = std::make_unique<FemState<T>>(num_states());
+    auto clone = std::make_unique<FemState<T>>(num_generalized_positions());
     clone->SetFrom(*this);
     return clone;
   }
 
   /** Sets the states and cache of `this` %FemState from the input %FemState
-   * `other`. After this method is called, the state and cache in `this`
-   * %FemState will be an identical copy of those in the `other` %FemState. */
+   `other`. After this method is called, the state and cache in `this`
+   %FemState will be an identical copy of those in the `other` %FemState. */
   void SetFrom(const FemState<T>& other) {
-    Resize(other.num_states());
+    Resize(other.num_generalized_positions());
     set_q(other.q());
     set_qdot(other.qdot());
     element_cache_ = other.element_cache_;
   }
 
-  /** Resize the number of states to the input `size`. The existing values are
-   unchanged if `size` is greater than or equal to the size of the existing
-   states. */
-  void Resize(int size) {
-    DRAKE_DEMAND(size >= 0);
-    if (size == num_states()) return;
-    qdot_.conservativeResize(size);
-    q_.conservativeResize(size);
+  /** Resize the number of states to the input `num_generalized_positions`. The
+   existing values are unchanged if `num_generalized_positions` is greater than
+   or equal to the number of existing generalized positions. */
+  void Resize(int num_generalized_positions) {
+    DRAKE_DEMAND(num_generalized_positions >= 0);
+    if (num_generalized_positions == this->num_generalized_positions()) return;
+    qdot_.conservativeResize(num_generalized_positions);
+    q_.conservativeResize(num_generalized_positions);
   }
 
   /** @name State getters.
@@ -123,7 +125,7 @@ class FemState {
   }
   /** @} */
 
-  int num_states() const { return q_.size(); }
+  int num_generalized_positions() const { return q_.size(); }
 
  private:
   // Time derivatives of generalized node positions.

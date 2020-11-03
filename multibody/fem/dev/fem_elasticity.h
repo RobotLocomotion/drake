@@ -74,8 +74,8 @@ class ElasticityElement : public FemElement<T, NaturalDim> {
 
   virtual ~ElasticityElement() = default;
 
-  /** The number of spatial dimensions that this element lives in. */
-  int num_spatial_dim() const final { return 3; }
+  /** The number of dimensions of the elasticity problem. */
+  int num_problem_dim() const final { return 3; }
 
   /** Returns the elastic potential energy stored in this element in unit J. */
   T CalcElasticEnergy(const FemState<T>& s) const;

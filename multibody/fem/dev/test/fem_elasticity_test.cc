@@ -15,6 +15,7 @@ namespace multibody {
 namespace fem {
 constexpr int kNaturalDim = 3;
 constexpr int kSpatialDim = 3;
+constexpr int kProblemDim = 3;
 constexpr int kQuadratureOrder = 1;
 constexpr int kNumQuads = 1;
 constexpr int kNumVertices = 4;
@@ -90,7 +91,7 @@ namespace {
 TEST_F(ElasticityElementTest, Basic) {
   EXPECT_EQ(fem_elasticity_->num_nodes(), kNumVertices);
   EXPECT_EQ(fem_elasticity_->num_quads(), kNumQuads);
-  EXPECT_EQ(fem_elasticity_->num_spatial_dim(), kSpatialDim);
+  EXPECT_EQ(fem_elasticity_->num_problem_dim(), kProblemDim);
 }
 
 TEST_F(ElasticityElementTest, ElasticForceIsNegativeEnergyDerivative) {
