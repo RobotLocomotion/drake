@@ -165,7 +165,7 @@ class DrakeVisualizer : public systems::LeafSystem<double> {
       lcm::DrakeLcmInterface* lcm = nullptr, DrakeVisualizerParams params = {});
   //@}
 
-  // TODO(SeanCurtis-TRI) When we can easily bind lcmt_* messages, then replace
+  // TODO(#7820) When we can easily bind lcmt_* messages, then replace
   //  the DispatchLoadMessage API with something like:
   //  lcmt_load_robot CreateLoadMessage(...)
   //  (etc., for load from context, and draw from context).

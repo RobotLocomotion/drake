@@ -147,7 +147,7 @@ def MakeJointSlidersThatPublishOnCallback(
 
     Args:
         plant:        A MultibodyPlant.
-        publishing_system: The System whos Publish method will be called.  Can
+        publishing_system: The System whose Publish method will be called.  Can
                            be the entire Diagram, but can also be a subsystem.
         root_context: A mutable root Context of the Diagram containing both the
                       ``plant`` and the ``publishing_system``; we will extract

@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "drake/common/find_resource.h"
-#include "drake/geometry/geometry_visualization.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/externally_applied_spatial_force.h"

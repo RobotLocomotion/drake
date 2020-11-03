@@ -9,7 +9,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
-#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsing/parser.h"
@@ -104,7 +104,7 @@ void DoMain() {
   builder.Connect(scene_graph.get_query_output_port(),
                   plant.get_geometry_query_input_port());
 
-  geometry::ConnectDrakeVisualizer(&builder, scene_graph);
+  geometry::DrakeVisualizer::AddToBuilder(&builder, scene_graph);
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
 
   // Create a context for this system:

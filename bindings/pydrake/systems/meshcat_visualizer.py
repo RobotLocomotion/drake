@@ -15,7 +15,7 @@ import numpy as np
 from drake import lcmt_viewer_load_robot
 from pydrake.common.value import AbstractValue
 from pydrake.common.eigen_geometry import Quaternion, Isometry3
-from pydrake.geometry import DispatchLoadMessage, SceneGraph
+from pydrake.geometry import DrakeVisualizer, SceneGraph
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.systems.framework import LeafSystem, PublishEvent, TriggerType
@@ -404,7 +404,7 @@ class MeshcatVisualizer(LeafSystem):
             lcm=memq_lcm,
             channel="DRAKE_VIEWER_LOAD_ROBOT",
             lcm_type=lcmt_viewer_load_robot)
-        DispatchLoadMessage(self._scene_graph, memq_lcm)
+        DrakeVisualizer.DispatchLoadMessage(self._scene_graph, memq_lcm)
         memq_lcm.HandleSubscriptions(0)
         assert memq_lcm_subscriber.count > 0
         load_robot_msg = memq_lcm_subscriber.message
@@ -755,7 +755,7 @@ def ConnectMeshcatVisualizer(builder, scene_graph, output_port=None, **kwargs):
     """Creates an instance of MeshcatVisualizer, adds it to the
     diagram, and wires the scene_graph pose bundle output port to the input
     port of the visualizer.  Provides an interface comparable to
-    ConnectDrakeVisualizer.
+    DrakeVisualizer.AddToBuilder.
 
     Args:
         builder: The diagram builder used to construct the Diagram.

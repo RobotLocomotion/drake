@@ -4,7 +4,7 @@
 
 #include "drake/examples/rimless_wheel/rimless_wheel.h"
 #include "drake/examples/rimless_wheel/rimless_wheel_geometry.h"
-#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 
@@ -35,7 +35,7 @@ int DoMain() {
   RimlessWheelGeometry::AddToBuilder(
       &builder, rimless_wheel->get_floating_base_state_output_port(),
       scene_graph);
-  ConnectDrakeVisualizer(&builder, *scene_graph);
+  geometry::DrakeVisualizer::AddToBuilder(&builder, *scene_graph);
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);

@@ -6,7 +6,7 @@
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/examples/pendulum/pendulum_geometry.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
-#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/solvers/solve.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
@@ -105,7 +105,7 @@ int DoMain() {
   auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
   PendulumGeometry::AddToBuilder(
       &builder, pendulum_ptr->get_state_output_port(), scene_graph);
-  ConnectDrakeVisualizer(&builder, *scene_graph);
+  geometry::DrakeVisualizer::AddToBuilder(&builder, *scene_graph);
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);

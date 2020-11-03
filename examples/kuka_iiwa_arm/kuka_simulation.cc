@@ -14,7 +14,7 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/kuka_torque_controller.h"
-#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
@@ -74,7 +74,7 @@ int DoMain() {
 
   // Creates and adds LCM publisher for visualization.
   auto lcm = builder.AddSystem<systems::lcm::LcmInterfaceSystem>();
-  geometry::ConnectDrakeVisualizer(&builder, scene_graph, lcm);
+  geometry::DrakeVisualizer::AddToBuilder(&builder, scene_graph, lcm);
 
   // Since we welded the model to the world above, the only remaining joints
   // should be those in the arm.
