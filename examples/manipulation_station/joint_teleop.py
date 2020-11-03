@@ -11,7 +11,7 @@ import numpy as np
 from pydrake.examples.manipulation_station import (
     ManipulationStation, ManipulationStationHardwareInterface,
     CreateClutterClearingYcbObjectList)
-from pydrake.geometry import ConnectDrakeVisualizer
+from pydrake.geometry import DrakeVisualizer
 from pydrake.manipulation.simple_ui import JointSliders, SchunkWsgButtons
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.systems.framework import DiagramBuilder
@@ -78,8 +78,8 @@ def main():
 
         station.Finalize()
 
-        ConnectDrakeVisualizer(builder, station.get_scene_graph(),
-                               station.GetOutputPort("pose_bundle"))
+        DrakeVisualizer.AddToBuilder(builder,
+                                     station.GetOutputPort("query_object"))
         if args.meshcat:
             meshcat = builder.AddSystem(MeshcatVisualizer(
                     station.get_scene_graph(), zmq_url=args.meshcat,

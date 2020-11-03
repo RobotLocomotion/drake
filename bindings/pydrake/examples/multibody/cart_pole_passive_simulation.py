@@ -3,7 +3,7 @@
 import argparse
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.geometry import (ConnectDrakeVisualizer, SceneGraph)
+from pydrake.geometry import (DrakeVisualizer, SceneGraph)
 from pydrake.lcm import DrakeLcm
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.parsing import Parser
@@ -44,7 +44,7 @@ def main():
         cart_pole.get_geometry_poses_output_port(),
         scene_graph.get_source_pose_port(cart_pole.get_source_id()))
 
-    ConnectDrakeVisualizer(builder=builder, scene_graph=scene_graph)
+    DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph)
     diagram = builder.Build()
 
     diagram_context = diagram.CreateDefaultContext()

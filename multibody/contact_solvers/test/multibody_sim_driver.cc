@@ -1,4 +1,7 @@
 #include "drake/multibody/contact_solvers/test/multibody_sim_driver.h"
+
+#include "drake/geometry/drake_visualizer.h"
+
 namespace drake {
 namespace multibody {
 namespace test {
@@ -21,8 +24,13 @@ void MultibodySimDriver::Initialize() {
 
   // Add visualization.
   auto lcm = builder_.AddSystem<systems::lcm::LcmInterfaceSystem>();
-  geometry::DispatchLoadMessage(*scene_graph_, lcm);
-  geometry::ConnectDrakeVisualizer(&builder_, *scene_graph_);
+  // This guarantees an active drake_visualizer will show the loaded scene,
+  // even if we don't advance the simulator at all. If instead of calling
+  // simulator_->Initialize(), we called simulator_->AdvanceTo(), this line
+  // would not be required (as the DrakeVisualizer would broadcast both a load
+  // and a draw based on current state).
+  geometry::DrakeVisualizer::DispatchLoadMessage(*scene_graph_, lcm);
+  geometry::DrakeVisualizer::AddToBuilder(&builder_, *scene_graph_);
   diagram_ = builder_.Build();
 
   simulator_ = std::make_unique<systems::Simulator<double>>(*diagram_);

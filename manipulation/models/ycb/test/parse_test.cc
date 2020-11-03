@@ -21,7 +21,7 @@ Showing the first object for 1s:
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -36,7 +36,7 @@ namespace drake {
 namespace manipulation {
 namespace {
 
-using geometry::ConnectDrakeVisualizer;
+using geometry::DrakeVisualizer;
 using geometry::SceneGraph;
 using multibody::AddMultibodyPlantSceneGraph;
 using multibody::MultibodyPlant;
@@ -55,7 +55,7 @@ TEST_P(ParseTest, Quantities) {
   DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
   Parser(&plant).AddModelFromFile(filename);
-  ConnectDrakeVisualizer(&builder, scene_graph);
+  DrakeVisualizer::AddToBuilder(&builder, scene_graph);
   plant.Finalize();
   auto diagram = builder.Build();
 
