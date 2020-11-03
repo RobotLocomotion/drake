@@ -50,6 +50,10 @@ class RenderEngineGl final : public RenderEngine {
   /** @see RenderEngine::UpdateViewpoint().  */
   void UpdateViewpoint(const math::RigidTransformd& X_WR) final;
 
+  using RenderEngine::RenderColorImage;
+  using RenderEngine::RenderDepthImage;
+  using RenderEngine::RenderLabelImage;
+
   /** @see RenderEngine::RenderColorImage(). Currently unimplemented. Calling
    this will throw an exception.
 
@@ -116,6 +120,21 @@ class RenderEngineGl final : public RenderEngine {
   // @see RenderEngine::DoClone().
   std::unique_ptr<RenderEngine> DoClone() const final;
 
+  // @see RenderEngine::DoRenderColorImage().
+  void DoRenderColorImage(
+      const ColorRenderCamera& camera,
+      systems::sensors::ImageRgba8U* color_image_out) const final;
+
+  // @see RenderEngine::DoRenderDepthImage().
+  void DoRenderDepthImage(
+      const DepthRenderCamera& render_camera,
+      systems::sensors::ImageDepth32F* depth_image_out) const final;
+
+  // @see RenderEngine::DoRenderLabelImage().
+  void DoRenderLabelImage(
+      const ColorRenderCamera& camera,
+      systems::sensors::ImageLabel16I* label_image_out) const final;
+
   // Copy constructor used for cloning.
   RenderEngineGl(const RenderEngineGl& other) = default;
 
@@ -154,14 +173,7 @@ class RenderEngineGl final : public RenderEngine {
   // called if there is not already a cached render target for the camera's
   // reported image size (w, h) in render_targets_.
   static internal::RenderTarget CreateRenderTarget(
-      const CameraProperties& camera, internal::RenderType render_type);
-
-  // Computes the projection matrix based on the given camera. This is the
-  // matrix that projects a point from the camera frame C to the 2D image device
-  // frame D: T_DC.
-  Eigen::Matrix4f ComputeGlProjectionMatrix(const CameraProperties& camera,
-                                            double clip_near,
-                                            double clip_far) const;
+      const RenderCameraCore& camera, internal::RenderType render_type);
 
   // Obtains the label image rendered from a specific object pose. This is
   // slower than it has to be because it does per-pixel processing on the CPU.
@@ -173,7 +185,7 @@ class RenderEngineGl final : public RenderEngine {
   // target guarantees that the target will be ready for receiving OpenGL
   // draw commands.
   internal::RenderTarget GetRenderTarget(
-      const CameraProperties& camera, internal::RenderType render_type) const;
+      const RenderCameraCore& camera, internal::RenderType render_type) const;
 
   // Creates an OpenGlGeometry from the mesh defined by the given `mesh_data`.
   static internal::OpenGlGeometry CreateGlGeometry(
@@ -188,7 +200,7 @@ class RenderEngineGl final : public RenderEngine {
   //  - the window is made hidden (or remains hidden).
   // @pre RenderTarget's frame buffer has the same dimensions as reported by the
   // camera.
-  void SetWindowVisibility(const CameraProperties& camera, bool show_window,
+  void SetWindowVisibility(const RenderCameraCore& camera, bool show_window,
                            const internal::RenderTarget& target) const;
 
   // Adds a shader program to the set of candidate shaders for the given render
