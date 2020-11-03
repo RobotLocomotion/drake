@@ -18,7 +18,7 @@ with warnings.catch_warnings():  # noqa
 from drake import lcmt_viewer_load_robot
 from pydrake.common.eigen_geometry import Quaternion
 from pydrake.common.value import AbstractValue
-from pydrake.geometry import DispatchLoadMessage, ReadObjToSurfaceMesh
+from pydrake.geometry import DrakeVisualizer, ReadObjToSurfaceMesh
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.systems.pyplot_visualizer import PyPlotVisualizer
@@ -175,7 +175,7 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                                          lcm_type=lcmt_viewer_load_robot)
         # TODO(SeanCurtis-TRI): Use SceneGraph inspection instead of mocking
         # LCM and inspecting the generated message.
-        DispatchLoadMessage(self._scene_graph, memq_lcm)
+        DrakeVisualizer.DispatchLoadMessage(self._scene_graph, memq_lcm)
         memq_lcm.HandleSubscriptions(0)
         assert memq_lcm_subscriber.count > 0
         load_robot_msg = memq_lcm_subscriber.message
@@ -388,7 +388,7 @@ def ConnectPlanarSceneGraphVisualizer(builder,
     """Creates an instance of PlanarSceneGraphVisualizer, adds it to the
     diagram, and wires the scene_graph pose bundle output port to the input
     port of the visualizer.  Provides an interface comparable to
-    ConnectDrakeVisualizer.
+    DrakeVisualizer.AddToBuilder.
 
     Args:
         builder: The diagram builder used to construct the Diagram.

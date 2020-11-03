@@ -9,7 +9,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/manipulation/kinova_jaco/jaco_command_receiver.h"
 #include "drake/manipulation/kinova_jaco/jaco_constants.h"
@@ -91,7 +91,7 @@ int DoMain() {
 
   systems::lcm::LcmInterfaceSystem* lcm =
       builder.AddSystem<systems::lcm::LcmInterfaceSystem>();
-  geometry::ConnectDrakeVisualizer(&builder, *scene_graph, lcm);
+  geometry::DrakeVisualizer::AddToBuilder(&builder, *scene_graph, lcm);
 
   auto command_sub = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<drake::lcmt_jaco_command>(

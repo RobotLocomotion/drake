@@ -89,7 +89,7 @@ drake_cc_binary(
     ],
     deps = [
         ":manipulation_station",
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//lcm",
         "//manipulation/kuka_iiwa:iiwa_command_receiver",
         "//manipulation/kuka_iiwa:iiwa_status_sender",
@@ -115,7 +115,7 @@ drake_cc_binary(
     test_rule_timeout = "moderate",
     deps = [
         ":manipulation_station",
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//multibody/plant:contact_results_to_lcm",
         "//systems/analysis:simulator",
         "//systems/sensors:image_to_lcm_image_array_t",

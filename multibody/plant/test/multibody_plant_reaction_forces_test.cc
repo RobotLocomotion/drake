@@ -5,7 +5,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
@@ -74,7 +74,7 @@ class LadderTest : public ::testing::Test {
 
     // Add visualization for verification of the results when we have the
     // visualizer running.
-    ConnectDrakeVisualizer(&builder, *scene_graph_, &lcm_);
+    geometry::DrakeVisualizer::AddToBuilder(&builder, *scene_graph_, &lcm_);
     ConnectContactResultsToDrakeVisualizer(&builder, *plant_, &lcm_);
 
     diagram_ = builder.Build();

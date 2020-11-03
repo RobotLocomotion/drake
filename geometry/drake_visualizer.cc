@@ -198,8 +198,8 @@ const DrakeVisualizer& DrakeVisualizer::AddToBuilder(
 }
 
 void DrakeVisualizer::DispatchLoadMessage(const SceneGraph<double>& scene_graph,
-                                    lcm::DrakeLcmInterface* lcm,
-                                    DrakeVisualizerParams params) {
+                                          lcm::DrakeLcmInterface* lcm,
+                                          DrakeVisualizerParams params) {
   DRAKE_DEMAND(lcm != nullptr);
   vector<DynamicFrameData> dynamic_frames;
   PopulateDynamicFrameData(scene_graph.model_inspector(), params,

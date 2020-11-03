@@ -235,7 +235,7 @@ class DrakeVisualizerTest : public ::testing::Test {
                         const SourceFunctor& port_source) {
     {
       /* Case: Confirm successful construction, connection, and that the passed
-       lcm interface is used  */
+       lcm interface is used.  */
       DiagramBuilder<double> builder;
       const auto& scene_graph = *builder.AddSystem<SceneGraph<double>>();
       /* The fact that a visualizer is returned is proof that a DrakeVisualizer
@@ -716,7 +716,7 @@ TEST_F(DrakeVisualizerTest, AddToBuilderQueryObjectPort) {
 
  Operating with the understanding that this API uses the same machinery that
  the system itself uses in its event handler, we just need evidence that the
- machinery is being meaningfull exercised.
+ machinery is being meaningfully exercised.
 
  So, we'll populate a SceneGraph and broadcast twice, changing the role. We
  confirm 1 & 2 simultaneously by looking for the single frame with a name

@@ -3,7 +3,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsing/parser.h"
@@ -92,7 +92,7 @@ int do_main() {
   // Publish contact results for visualization.
   ConnectContactResultsToDrakeVisualizer(&builder, plant);
 
-  geometry::ConnectDrakeVisualizer(&builder, pair.scene_graph);
+  geometry::DrakeVisualizer::AddToBuilder(&builder, pair.scene_graph);
   auto diagram = builder.Build();
 
   // Create a context for this system:

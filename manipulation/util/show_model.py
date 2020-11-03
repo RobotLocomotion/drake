@@ -54,7 +54,7 @@ import os
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import MakePhongIllustrationProperties
-from pydrake.geometry import ConnectDrakeVisualizer
+from pydrake.geometry import DrakeVisualizer
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.systems.analysis import Simulator
@@ -156,7 +156,7 @@ def parse_visualizers(args_parser, args):
 
     def connect_visualizers(builder, plant, scene_graph):
         # Connect this to drake_visualizer.
-        ConnectDrakeVisualizer(builder=builder, scene_graph=scene_graph)
+        DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph)
 
         # Connect to Meshcat.
         if args.meshcat is not None:

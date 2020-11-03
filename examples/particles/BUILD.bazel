@@ -44,7 +44,7 @@ drake_cc_binary(
         ":particle",
         ":particle_geometry",
         "//common:add_text_logging_gflags",
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "//systems/primitives:constant_vector_source",

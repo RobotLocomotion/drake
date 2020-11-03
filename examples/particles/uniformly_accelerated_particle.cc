@@ -10,7 +10,7 @@
 
 #include "drake/examples/particles/particle.h"
 #include "drake/examples/particles/particle_geometry.h"
-#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
@@ -70,7 +70,7 @@ UniformlyAcceleratedParticle::UniformlyAcceleratedParticle(
   auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
   ParticleGeometry::AddToBuilder(
       &builder, particle->get_output_port(0), scene_graph);
-  ConnectDrakeVisualizer(&builder, *scene_graph);
+  geometry::DrakeVisualizer::AddToBuilder(&builder, *scene_graph);
   builder.BuildInto(this);
 }
 

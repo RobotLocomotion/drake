@@ -18,12 +18,6 @@
 namespace drake {
 namespace geometry {
 
-/* TODO(SeanCurtis-TRI): Here's the stuff that needs to happen:
-
-  - Static method that adds this to a diagram (including connections) so that
-    it can be done in a single call.
-*/
-
 /** The set of parameters for configuring DrakeVisualizer.  */
 struct DrakeVisualizerParams {
   /** The duration (in seconds) between published LCM messages that update the
@@ -121,8 +115,7 @@ class DrakeVisualizer : public systems::LeafSystem<double> {
                   remain valid for the lifetime of this object.
    @param params  The set of parameters to control this system's behavior.
    @throws std::exception if `params.publish_period <= 0`.
-   @throws std::exception if `params.role == Role::kUnassigned`.
-   */
+   @throws std::exception if `params.role == Role::kUnassigned`.  */
   DrakeVisualizer(lcm::DrakeLcmInterface* lcm = nullptr,
                   DrakeVisualizerParams params = {});
 
@@ -139,7 +132,7 @@ class DrakeVisualizer : public systems::LeafSystem<double> {
    instance to an existing diagram, handling the necessary connections. The
    DrakeVisualizer instance must be connected to a QueryObject-valued output
    port. The difference between the two methods is how that output port is
-   identifier. Otherwise, the two methods have the same parameters and results.
+   identified. Otherwise, the two methods have the same parameters and results.
 
    Both methods can be invoked with optional parameters:
 
@@ -165,7 +158,7 @@ class DrakeVisualizer : public systems::LeafSystem<double> {
       lcm::DrakeLcmInterface* lcm = nullptr, DrakeVisualizerParams params = {});
   //@}
 
-  // TODO(SeanCurtis-TRI) When we can easily bind lcmt_* messages, then replace
+  // TODO(#7820) When we can easily bind lcmt_* messages, then replace
   //  the DispatchLoadMessage API with something like:
   //  lcmt_load_robot CreateLoadMessage(...)
   //  (etc., for load from context, and draw from context).
@@ -213,11 +206,11 @@ class DrakeVisualizer : public systems::LeafSystem<double> {
       lcm::DrakeLcmInterface* lcm);
 
   /* Identifies all of the frames with dynamic data and stores them (with
-   additional data) in the given vector `frame_data`. */
+   additional data) in the given vector `frame_data`.  */
   void CalcDynamicFrameData(const systems::Context<double>& context,
                             std::vector<DynamicFrameData>* frame_data) const;
 
-  /* Refreshes the cached dynamic frame data. */
+  /* Refreshes the cached dynamic frame data.  */
   const std::vector<DynamicFrameData>& RefreshDynamicFrameData(
       const systems::Context<double>& context) const;
 
@@ -225,7 +218,7 @@ class DrakeVisualizer : public systems::LeafSystem<double> {
   const std::vector<DynamicFrameData>& EvalDynamicFrameData(
       const systems::Context<double>& context) const;
 
-  /* Generic utility for populating the dynamic frames. Available ot the ad hoc
+  /* Generic utility for populating the dynamic frames. Available to the ad hoc
    publishing methods as well as the cache-entry instance method.  */
   static void PopulateDynamicFrameData(
       const SceneGraphInspector<double>& inspector,

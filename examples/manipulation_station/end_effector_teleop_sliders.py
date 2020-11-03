@@ -10,7 +10,7 @@ import numpy as np
 from pydrake.examples.manipulation_station import (
     ManipulationStation, ManipulationStationHardwareInterface,
     CreateClutterClearingYcbObjectList, SchunkCollisionModel)
-from pydrake.geometry import ConnectDrakeVisualizer
+from pydrake.geometry import DrakeVisualizer
 from pydrake.manipulation.simple_ui import SchunkWsgButtons
 from pydrake.manipulation.planner import (
     DifferentialInverseKinematicsParameters)
@@ -262,8 +262,8 @@ def main():
             builder.Connect(station.GetOutputPort("pose_bundle"),
                             pyplot_visualizer.get_input_port(0))
         else:
-            ConnectDrakeVisualizer(builder, station.get_scene_graph(),
-                                   station.GetOutputPort("pose_bundle"))
+            DrakeVisualizer.AddToBuilder(builder,
+                                         station.GetOutputPort("query_object"))
             image_to_lcm_image_array = builder.AddSystem(
                 ImageToLcmImageArrayT())
             image_to_lcm_image_array.set_name("converter")

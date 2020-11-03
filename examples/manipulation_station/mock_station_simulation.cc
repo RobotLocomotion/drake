@@ -6,7 +6,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/examples/manipulation_station/manipulation_station.h"
-#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/lcmt_schunk_wsg_command.hpp"
@@ -74,8 +74,8 @@ int do_main(int argc, char* argv[]) {
   // #9747.
   station->Finalize();
 
-  geometry::ConnectDrakeVisualizer(&builder, station->get_scene_graph(),
-                                   station->GetOutputPort("pose_bundle"));
+  geometry::DrakeVisualizer::AddToBuilder(
+      &builder, station->GetOutputPort("query_object"));
 
   auto lcm = builder.AddSystem<systems::lcm::LcmInterfaceSystem>();
 
