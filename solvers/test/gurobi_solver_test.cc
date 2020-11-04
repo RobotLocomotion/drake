@@ -1,5 +1,6 @@
 #include "drake/solvers/gurobi_solver.h"
 
+#include <limits>
 #include <thread>
 
 #include <gtest/gtest.h>
@@ -15,6 +16,7 @@
 namespace drake {
 namespace solvers {
 namespace test {
+const double kInf = std::numeric_limits<double>::infinity();
 
 TEST_P(LinearProgramTest, TestLP) {
   GurobiSolver solver;
@@ -460,6 +462,23 @@ GTEST_TEST(GurobiTest, SOCPDualSolution1) {
     // cost (-sqrt(4 + eps) - 1)/3 w.r.t eps is -1/12.
     EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint1),
                                 Vector1d(-1. / 12), 1e-7));
+
+    // Now add a bounding box constraint to the program. By setting QCPDual to
+    // 0, the program should throw an error.
+    auto bb_con = prog.AddBoundingBoxConstraint(0, kInf, x(1));
+    options.SetOption(solver.id(), "QCPDual", 0);
+    result = solver.Solve(prog, std::nullopt, options);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        result.GetDualSolution(bb_con), std::invalid_argument,
+        "You used Gurobi to solve this optimization problem.*");
+    // Now set QCPDual = 1, we should be able to retrieve the dual solution to
+    // the bounding box constraint.
+    options.SetOption(solver.id(), "QCPDual", 1);
+    result = solver.Solve(prog, std::nullopt, options);
+    // The cost is x(1), hence the shadow price for the constraint x(1) >= 0
+    // should be 1.
+    EXPECT_TRUE(
+        CompareMatrices(result.GetDualSolution(bb_con), Vector1d(1.), 1E-8));
   }
 }
 

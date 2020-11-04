@@ -1105,8 +1105,20 @@ void GurobiSolver::DoSolve(
                                &prog_sol_vector);
       result->set_x_val(prog_sol_vector);
 
+      // If QCPDual is 0 and the program has quadratic constraints (including
+      // both Lorentz cone and rotated Lorentz cone constraints), then the dual
+      // variables are not computed.
+      int qcp_dual;
+      error = GRBgetintparam(model_env, "QCPDual", &qcp_dual);
+
+      int num_q_constrs = 0;
+      error = GRBgetintattr(model, "NumQConstrs", &num_q_constrs);
+
+      const bool compute_dual =
+          (num_q_constrs > 0 && qcp_dual == 0) ? false : true;
+
       // Set dual solutions.
-      if (!is_mip) {
+      if (!is_mip && compute_dual) {
         // Gurobi only provides dual solution for continuous models.
         // Gurobi stores its dual solution for each variable bounds in "reduced
         // cost".
@@ -1115,7 +1127,6 @@ void GurobiSolver::DoSolve(
                            reduced_cost.data());
         SetBoundingBoxDualSolution(prog, reduced_cost, bb_con_dual_indices,
                                    result);
-      }
 
       Eigen::VectorXd gurobi_dual_solutions(num_gurobi_linear_constraints);
       GRBgetdblattrarray(model, GRB_DBL_ATTR_PI, 0,
@@ -1124,10 +1135,7 @@ void GurobiSolver::DoSolve(
       SetLinearConstraintDualSolutions(prog, gurobi_dual_solutions,
                                        constraint_dual_start_row, result);
 
-      int compute_qcp_dual;
-      error = GRBgetintparam(model_env, "QCPDual", &compute_qcp_dual);
-      if (compute_qcp_dual) {
-        SetAllSecondOrderConeDualSolution(prog, model, result);
+      SetAllSecondOrderConeDualSolution(prog, model, result);
       }
 
       // Obtain optimal cost.
