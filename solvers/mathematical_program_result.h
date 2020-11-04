@@ -305,15 +305,17 @@ class MathematicalProgramResult final {
     auto it = dual_solutions_.find(constraint_cast);
     if (it == dual_solutions_.end()) {
       // Throws a more meaningful error message when the user wants to retrieve
-      // dual solution for second order cone constraint from Gurobi result, but
-      // forgot to explicitly turn on the flag to compute gurobi qcp dual.
-      if constexpr (std::is_same<C, LorentzConeConstraint>::value ||
-                    std::is_same<C, RotatedLorentzConeConstraint>::value) {
+      // a dual solution from a Gurobi result for a program containing second
+      // order cone constraints, but forgot to explicitly turn on the flag to
+      // compute Gurobi QCP dual.
+      if (solver_id_.name() == "Gurobi") {
         throw std::invalid_argument(fmt::format(
-            "You used {} to solve this optimization problem. If the solver is "
-            "Gurobi, you have to explicitly tell Gurobi solver to compute the "
-            "dual solution for the second order cone constraints by setting "
-            "the solver options. One example is as follows: "
+            "You used {} to solve this optimization problem. If the problem is "
+            "solved to optimality and doesn't contain binary/integer "
+            "variables, but you failed to get the dual solution, "
+            "check that you have explicitly told Gurobi solver to "
+            "compute the dual solution for the second order cone constraints "
+            "by setting the solver options. One example is as follows: "
             "SolverOptions options; "
             "options.SetOption(GurobiSolver::id(), \"QCPDual\", 1); "
             "auto result=Solve(prog, std::nullopt, options);",
