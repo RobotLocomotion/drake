@@ -726,9 +726,10 @@ void TestPropertyErrors(
 // Test suite for testing the common failure conditions for generating rigid
 // geometry. Specifically, they just need to be tessellated into a triangle mesh
 // and, therefore, only depend on the (hydroelastic, characteristic_length)
-// value. This actively excludes HalfSpace and Mesh because they don't get
-// tessellated (see the `RigidErrorShapeTypes` declaration below.) It should
-// include every *other* supported rigid shape type.
+// value. This actively excludes Box, Convex, HalfSpace and Mesh because they
+// don't depend on any of the proximity properties (see the
+// `RigidErrorShapeTypes` declaration below.) It should include every *other*
+// supported rigid shape type.
 template <typename ShapeType>
 class HydroelasticRigidGeometryErrorTests : public ::testing::Test {};
 
@@ -748,7 +749,7 @@ TYPED_TEST_P(HydroelasticRigidGeometryErrorTests, BadResolutionHint) {
 
 REGISTER_TYPED_TEST_SUITE_P(HydroelasticRigidGeometryErrorTests,
                             BadResolutionHint);
-typedef ::testing::Types<Sphere, Cylinder, Box, Ellipsoid> RigidErrorShapeTypes;
+typedef ::testing::Types<Sphere, Cylinder, Ellipsoid> RigidErrorShapeTypes;
 INSTANTIATE_TYPED_TEST_SUITE_P(My, HydroelasticRigidGeometryErrorTests,
                               RigidErrorShapeTypes);
 
@@ -926,15 +927,13 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
 TEST_F(HydroelasticSoftGeometryTest, Box) {
   const Box box_spec(0.2, 0.4, 0.8);
 
-  // Confirm that characteristic length is being fed in properly. The length
-  // 0.1 should create mesh vertices on a 3 x 5 x 9 Cartesian grid.
-  ProximityProperties properties = soft_properties(0.1);
+  ProximityProperties properties = soft_properties();
   std::optional<SoftGeometry> box =
       MakeSoftRepresentation(box_spec, properties);
 
   // Smoke test the mesh and the pressure field. It relies on unit tests for
   // the generators of the mesh and the pressure field.
-  const int expected_num_vertices = 3 * 5 * 9;
+  const int expected_num_vertices = 12;
   EXPECT_EQ(box->mesh().num_vertices(), expected_num_vertices);
   const double E =
       properties.GetPropertyOrDefault(kMaterialGroup, kElastic, 1e8);
@@ -1050,10 +1049,13 @@ TEST_F(HydroelasticSoftGeometryTest, Ellipsoid) {
 
 // Test suite for testing the common failure conditions for generating soft
 // geometry. Specifically, they need to be tessellated into a tet mesh
-// and define a pressure field. This actively excludes HalfSpace and Mesh
-// because they are treated specially (they don't get tessellated).
-// (See the `SoftErrorShapeTypes` declaration below.) It should include every
-// *other* supported soft shape type.
+// and define a pressure field. This actively excludes Convex and Mesh
+// because soft Convex and soft Mesh are not currently supported for
+// hydroelastic contact. (See the `SoftErrorShapeTypes` declaration below.)
+// It should include every *other* supported soft shape type. For HalfSpace
+// and Box, they are included in the test suite but exempt from
+// BadResolutionHint because they do not depend on the resolution hint
+// parameter. Only HalfSpace is tested in BadSlabThickness.
 template <typename ShapeType>
 class HydroelasticSoftGeometryErrorTests : public ::testing::Test {};
 
@@ -1062,7 +1064,8 @@ TYPED_TEST_SUITE_P(HydroelasticSoftGeometryErrorTests);
 TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadResolutionHint) {
   using ShapeType = TypeParam;
   ShapeType shape_spec = make_default_shape<ShapeType>();
-  if (ShapeName(shape_spec).name() != "HalfSpace") {
+  if (ShapeName(shape_spec).name() != "HalfSpace" &&
+      ShapeName(shape_spec).name() != "Box") {
     TestPropertyErrors<ShapeType, double>(
         shape_spec, kHydroGroup, kRezHint, "soft",
         [](const ShapeType& s, const ProximityProperties& p) {
@@ -1106,7 +1109,7 @@ TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadSlabThickness) {
 REGISTER_TYPED_TEST_SUITE_P(HydroelasticSoftGeometryErrorTests,
                             BadResolutionHint, BadElasticModulus,
                             BadSlabThickness);
-typedef ::testing::Types<Sphere, Cylinder, Box, Ellipsoid, HalfSpace>
+typedef ::testing::Types<Sphere, Box, Cylinder, Ellipsoid, HalfSpace>
     SoftErrorShapeTypes;
 INSTANTIATE_TYPED_TEST_SUITE_P(My, HydroelasticSoftGeometryErrorTests,
                                SoftErrorShapeTypes);

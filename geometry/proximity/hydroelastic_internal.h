@@ -383,8 +383,7 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Sphere& sphere, const ProximityProperties& props);
 
-/* Rigid box support. Requires the ('hydroelastic', 'resolution_hint')
- property.  */
+/* Rigid box support. It doesn't depend on any of the proximity properties. */
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Box& box, const ProximityProperties& props);
 
@@ -433,8 +432,7 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
     const Sphere& sphere, const ProximityProperties& props);
 
 /* Creates a soft box (assuming the proximity properties have sufficient
- information). Requires the ('hydroelastic', 'resolution_hint') and
- ('material', 'elastic_modulus') properties.  */
+ information). Requires the ('material', 'elastic_modulus') properties.  */
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Box& box, const ProximityProperties& props);
 
