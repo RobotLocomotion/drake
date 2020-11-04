@@ -79,7 +79,6 @@ LIBDRAKE_COMPONENTS = [
     "//systems/framework",
     "//systems/lcm",
     "//systems/optimization",
-    "//systems/plants/spring_mass_system",
     "//systems/primitives",
     "//systems/rendering",
     "//systems/sensors",

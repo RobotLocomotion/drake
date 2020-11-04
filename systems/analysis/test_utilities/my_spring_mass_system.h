@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
+#include "drake/systems/analysis/test_utilities/spring_mass_system.h"
 
 namespace drake {
 namespace systems {

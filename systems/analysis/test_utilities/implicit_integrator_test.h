@@ -11,9 +11,9 @@
 #include "drake/systems/analysis/test_utilities/linear_scalar_system.h"
 #include "drake/systems/analysis/test_utilities/robertson_system.h"
 #include "drake/systems/analysis/test_utilities/spring_mass_damper_system.h"
+#include "drake/systems/analysis/test_utilities/spring_mass_system.h"
 #include "drake/systems/analysis/test_utilities/stationary_system.h"
 #include "drake/systems/analysis/test_utilities/stiff_double_mass_spring_system.h"
-#include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 
 namespace drake {
 namespace systems {
