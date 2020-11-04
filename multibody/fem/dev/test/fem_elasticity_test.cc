@@ -24,25 +24,24 @@ const ElementIndex kDummyElementIndex(0);
 
 class ElasticityElementTest : public ::testing::Test {
  protected:
+  using QuadratureType =
+      SimplexGaussianQuadrature<AutoDiffXd, kQuadratureOrder, kSpatialDim>;
+  using ShapeType = LinearSimplexElement<AutoDiffXd, kNaturalDim>;
   void SetUp() override { SetupElement(); }
 
   void SetupElement() {
-    std::unique_ptr<Quadrature<AutoDiffXd, kNaturalDim>> quadrature =
-        std::make_unique<SimplexGaussianQuadrature<AutoDiffXd, kQuadratureOrder,
-                                                   kSpatialDim>>();
-    std::unique_ptr<IsoparametricElement<AutoDiffXd, kNaturalDim>> shape =
-        std::make_unique<LinearSimplexElement<AutoDiffXd, kNaturalDim>>(
-            quadrature->get_points());
+    QuadratureType quadrature;
+    ShapeType shape(quadrature.get_points());
     std::vector<NodeIndex> node_indices = {NodeIndex(0), NodeIndex(1),
                                            NodeIndex(2), NodeIndex(3)};
     linear_elasticity_ =
         std::make_unique<LinearElasticityModel<AutoDiffXd>>(100, 0.25);
     ElasticityElementParameters<AutoDiffXd> param;
     param.reference_positions = get_reference_positions();
-    fem_elasticity_ =
-        std::make_unique<ElasticityElement<AutoDiffXd, kNaturalDim>>(
-            kDummyElementIndex, std::move(shape), std::move(quadrature),
-            node_indices, param, std::move(linear_elasticity_));
+    fem_elasticity_ = std::make_unique<
+        ElasticityElement<AutoDiffXd, ShapeType, QuadratureType>>(
+        kDummyElementIndex, shape, quadrature, node_indices, param,
+        std::move(linear_elasticity_));
   }
 
   void SetupState() {
@@ -82,7 +81,8 @@ class ElasticityElementTest : public ::testing::Test {
     return neg_force;
   }
 
-  std::unique_ptr<ElasticityElement<AutoDiffXd, kNaturalDim>> fem_elasticity_;
+  std::unique_ptr<ElasticityElement<AutoDiffXd, ShapeType, QuadratureType>>
+      fem_elasticity_;
   std::unique_ptr<LinearElasticityModel<AutoDiffXd>> linear_elasticity_;
   FemState<AutoDiffXd> state_;
 };
@@ -101,8 +101,9 @@ TEST_F(ElasticityElementTest, ElasticForceIsNegativeEnergyDerivative) {
   EXPECT_TRUE(CompareMatrices(energy.derivatives(), neg_force, 1e-13));
   // TODO(xuchenhan-tri) Modify this to account for damping forces and inertia
   // terms.
-  EXPECT_TRUE(
-      CompareMatrices(fem_elasticity_->CalcResidual(state_), neg_force, 1e-13));
+  VectorX<AutoDiffXd> residual(kDof);
+  fem_elasticity_->CalcResidual(state_, &residual);
+  EXPECT_TRUE(CompareMatrices(residual, neg_force, 1e-13));
 }
 }  // namespace
 }  // namespace fem

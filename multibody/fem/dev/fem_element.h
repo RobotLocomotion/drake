@@ -29,10 +29,8 @@ namespace fem {
  correspondence must be compatible. More specifically, if the %FemElement is of
  concrete type `FemFoo`, then the ElementCache that shares the same element
  index must be of concrete type `FooElementCache`.
- @tparam_nonsymbolic_scalar T.
- @tparam NaturalDim The dimension of the parent domain of the FEM elements,
- e.g. 2 for triangles and 3 for tetrahedrons.  */
-template <typename T, int NaturalDim>
+ @tparam_nonsymbolic_scalar T.  */
+template <typename T>
 class FemElement {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FemElement);
@@ -42,31 +40,29 @@ class FemElement {
   /** Global indices of the nodes of this element. */
   const std::vector<NodeIndex>& node_indices() const { return node_indices_; }
 
-  /** Number of quadrature points at which element-wise quantities are
-   evaluated. */
-  int num_quads() const { return quadrature_->num_points(); }
-
-  /** Number of nodes associated with this element. */
-  int num_nodes() const { return shape_->num_nodes(); }
+  /** Global ElementIndex of this element. */
+  ElementIndex element_index() const { return element_index_; }
 
   /** The number of dimensions of the PDE this element is trying to solve for.
    For example, if the underlying PDE that this %FemElement is solving for is
    F(u, ∇u) = 0, where F:Rⁿ→Rᵐ, then %num_problem_dim() returns m. */
   virtual int num_problem_dim() const = 0;
 
+  /** Number of nodes associated with this element. */
+  virtual int num_nodes() const = 0;
+
   /** Calculates the element residual of this element evaluated at the input
    state. This method updates the cached quantities in the input FemState if
    they are out of date.
    @param[in] state The FEM state at which to evaluate the residual.
-   @returns a vector of residual of size `num_problem_dim() * num_nodes()`. The
-   vector is ordered such that `{i * num_problem_dim()}`-th to
-   `{(i+1) * num_problem_dim() - 1}`-th entries of the vector stores the
-   residual corresponding to the i-th node in this element. */
-  VectorX<T> CalcResidual(const FemState<T>& s) const;
-
-  /** Alternative signature that writes the residual in the output argument.
+   @param[out] residual The residual vector of size `num_problem_dim() *
+   num_nodes()`. The vector is ordered such that `i*num_problem_dim()`-th to
+   `(i+1)*num_problem_dim()-1`-th entries of the vector stores the residual
+   corresponding to the i-th node in this element.
+   @pre residual must not be the nullptr, and the vector it points to must have
+   size `num_nodes() * num_problem_dim()`.
    @pre `residual` must not be the nullptr, and the vector it points to must
-   have size `num_nodes() * num_problem_dim()`. */
+   have size `num_nodes() * num_problem_dim()` */
   void CalcResidual(const FemState<T>& s, EigenPtr<VectorX<T>> residual) const;
 
   // TODO(xuchenhan-tri): Add CalcMassMatrix and CalcStiffnessMatrix etc.
@@ -74,23 +70,19 @@ class FemElement {
  protected:
   /* Constructs a new FEM element.
     @param[in] element_index The global index of the new element.
-    @param[in] shape The shape function to be used for this element.
-    @param[in] quadrature The quadrature rule to be used for this element.
     @param[in] node_indices The global node indices of the nodes of this
     element.
     @pre element_index must be valid.
     @pre shape.num_nodes() must be the same as size of node_indices. */
   FemElement(ElementIndex element_index,
-             std::unique_ptr<IsoparametricElement<T, NaturalDim>> shape,
-             std::unique_ptr<Quadrature<T, NaturalDim>> quadrature,
              const std::vector<NodeIndex>& node_indices);
 
   /* Calculates the element residual of this element evaluated at the input
    state.
    @param[in] state The FEM state at which to evaluate the residual.
-   @param[out] a vector of residual of size `num_spatial_dim()*num_nodes()`.
-   The vector is ordered such that `i*num_spatial_dim()`-th to
-   `(i+1)*num_spatial_dim()-1`-th entries of the vector stores the residual
+   @param[out] a vector of residual of size `num_problem_dim()*num_nodes()`.
+   The vector is ordered such that `i*num_problem_dim()`-th to
+   `(i+1)*num_problem_dim()-1`-th entries of the vector stores the residual
    corresponding to the i-th node in this element.
    @pre residual must not be the nullptr, and the vector it points to must have
    size `num_nodes() * num_problem_dim()`. */
@@ -99,13 +91,11 @@ class FemElement {
 
   // The global index of this element.
   ElementIndex element_index_;
-  // The isoparametric shape function used for this element.
-  std::unique_ptr<IsoparametricElement<T, NaturalDim>> shape_;
-  // The quadrature rule used for this element.
-  std::unique_ptr<Quadrature<T, NaturalDim>> quadrature_;
   // The global node indices of this element.
   std::vector<NodeIndex> node_indices_;
 };
 }  // namespace fem
 }  // namespace multibody
 }  // namespace drake
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::fem::FemElement);

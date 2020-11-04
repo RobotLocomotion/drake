@@ -23,42 +23,32 @@ namespace fem {
  See ElasticityElementCache for the corresponding ElementCache for
  %ElasticityElement.
  @tparam_nonsymbolic_scalar T.
- @tparam NaturalDim The dimension of the parent domain of the FEM elements,
- e.g. 2 for triangles and 3 for tetrahedrons.  */
-/* TODO(xuchenhan-tri): Consider templatizing on IsoparametricElement and
- Quadrature so that num_quads() and num_nodes() are available at compile time
- and therefore eliminates most heap allocations. */
-template <typename T, int NaturalDim>
-class ElasticityElement : public FemElement<T, NaturalDim> {
+ @tparam IsoparametricElementType The type of IsoparametricElement used in this
+ ElasticityElement.
+ @tparam QuadratureType The type of Quadrature used in this ElasticityElement.
+ */
+/* TODO(xuchenhan-tri): Consider making num_quads() and num_nodes() available at
+ compile time and thereby eliminating heap allocations. */
+/* TODO(xuchenhan-tri): Consider abstracting out the IsoparametricElement and
+ the Quadrature to a FixedSizeFemElement class. */
+template <typename T, class IsoparametricElementType, class QuadratureType>
+class ElasticityElement : public FemElement<T> {
  public:
-  /* Make base class methods visible. */
-  using FemElement<T, NaturalDim>::num_nodes;
-  using FemElement<T, NaturalDim>::num_quads;
-
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ElasticityElement);
 
   /** Constructs a new FEM elasticity element.
    @param[in] element_index The global index of the new element.
-   @param[in] shape The shape function to be used for this element. The
-   %ElasticityElement being constructed will assume ownership of the
-   IsoparametricElement object.
-   @param[in] quadrature The quadrature rule to be used for this element. The
-   %ElasticityElement being constructed will assume ownership of the Quadrature
-   object.
+   @param[in] shape The shape function to be used for this element.
+   @param[in] quadrature The quadrature rule to be used for this element.
    @param[in] node_indices The global node indices of the nodes of this
    element.
    @param[in] param The ElasticityElementParameters to be used for this element.
-   @param[in] reference_positions The reference positions of the nodes of
-   this element. The i-th column of `reference_positions` must contain the
-   reference position of the node indexed by the i-th index in the
-   `node-indices` argument. Furthermore, the element formed by the nodes with
-   the given `reference_positions` must not be degenerate (flat or inverted).
-   @param[in] constitutive_model The constitutive model to be used for this
+   @param[in] constitutive_model The ConstitutiveModel to be used for this
    element.
    @pre element_index must be valid.
    @pre @p shape.num_nodes() must be the same as the size of @p node_indices.
    @pre @p shape.num_nodes() must be the same as the number of columns of @p
-   reference_positions.
+   param.reference_positions.
    @warning The input `constitutive_model` must be compatible with the
    DeformationGradientCache in the ElasticityElementCache that shares the same
    element index with this %ElasticityElement. More specifically, if the
@@ -66,8 +56,8 @@ class ElasticityElement : public FemElement<T, NaturalDim> {
    type "FooModelCache", then the input `constitutive_model` must be of type
    "FooModel". */
   ElasticityElement(ElementIndex element_index,
-                    std::unique_ptr<IsoparametricElement<T, NaturalDim>> shape,
-                    std::unique_ptr<Quadrature<T, NaturalDim>> quadrature,
+                    const IsoparametricElementType& shape,
+                    const QuadratureType& quadrature,
                     const std::vector<NodeIndex>& node_indices,
                     const ElasticityElementParameters<T>& param,
                     std::unique_ptr<ConstitutiveModel<T>> constitutive_model);
@@ -76,6 +66,13 @@ class ElasticityElement : public FemElement<T, NaturalDim> {
 
   /** The number of dimensions of the elasticity problem. */
   int num_problem_dim() const final { return 3; }
+
+  /** Number of quadrature points at which element-wise quantities are
+   evaluated. */
+  int num_quads() const { return quadrature_.num_points(); }
+
+  /** Number of nodes associated with this element. */
+  int num_nodes() const final { return shape_.num_nodes(); }
 
   /** Returns the elastic potential energy stored in this element in unit J. */
   T CalcElasticEnergy(const FemState<T>& s) const;
@@ -91,12 +88,8 @@ class ElasticityElement : public FemElement<T, NaturalDim> {
                       EigenPtr<VectorX<T>> residual) const final;
 
  private:
-  /* Make base class protected members visible. */
-  using FemElement<T, NaturalDim>::node_indices_;
-  using FemElement<T, NaturalDim>::element_index_;
-  using FemElement<T, NaturalDim>::shape_;
-
-  using MatrixD3 = Eigen::Matrix<T, NaturalDim, 3>;
+  using MatrixD3 =
+      Eigen::Matrix<T, IsoparametricElementType::kNumNaturalDim, 3>;
 
   friend class ElasticityElementTest;
 
@@ -110,7 +103,10 @@ class ElasticityElement : public FemElement<T, NaturalDim> {
   void CalcDeformationGradient(const FemState<T>& state,
                                std::vector<Matrix3<T>>* F) const;
 
-  const DeformationGradientCache<T>& CalcDeformationGradientCache(
+  /* Evaluates the DeformationGradientCache for this element. */
+  // TODO(xuchenhan-tri): This method unconditionally recomputes the
+  // DeformationGradientCache. Enable caching when caching is in place.
+  const DeformationGradientCache<T>& EvalDeformationGradientCache(
       const FemState<T>& state) const;
 
   /* Calculates the elastic energy density per unit reference volume, in unit
@@ -123,6 +119,10 @@ class ElasticityElement : public FemElement<T, NaturalDim> {
   void CalcFirstPiolaStress(const FemState<T>& state,
                             std::vector<Matrix3<T>>* P) const;
 
+  /* The isoparametric shape function used for this element. */
+  IsoparametricElementType shape_;
+  /* The quadrature rule used for this element. */
+  QuadratureType quadrature_;
   /* Parameters used in the element routine. */
   ElasticityElementParameters<T> param_;
   /* The constitutive model that describes the stress-strain relationship for
