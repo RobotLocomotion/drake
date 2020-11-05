@@ -497,6 +497,7 @@ drake_py_unittest(
         ":test_util_py",
         "//bindings/pydrake:geometry_py",
         "//bindings/pydrake:perception_py",
+        "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/multibody",
     ],
 )
