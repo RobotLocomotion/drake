@@ -16,7 +16,7 @@ namespace fem {
  is maintained by the shared element index that is assigned to both the
  FemElement and the %ElementCache in correspondence. Furthermore, the type of
  FemElement and %ElementCache in correspondence must be compatible. More
- specifically, if the FemElement is of concrete type `FemFoo`, then the
+ specifically, if the FemElement is of concrete type `FooElement`, then the
  %ElementCache that shares the same element index must be of concrete type
  `FooElementCache`.
  @tparam_nonsymbolic_scalar T. */

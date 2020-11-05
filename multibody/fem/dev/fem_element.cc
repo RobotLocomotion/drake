@@ -8,11 +8,11 @@ namespace drake {
 namespace multibody {
 namespace fem {
 template <typename T>
-void FemElement<T>::CalcResidual(const FemState<T>& s,
+void FemElement<T>::CalcResidual(const FemState<T>& state,
                                  EigenPtr<VectorX<T>> residual) const {
   DRAKE_DEMAND(residual != nullptr);
   DRAKE_DEMAND(residual->size() == num_problem_dim() * num_nodes());
-  DoCalcResidual(s, residual);
+  DoCalcResidual(state, residual);
 }
 
 template <typename T>

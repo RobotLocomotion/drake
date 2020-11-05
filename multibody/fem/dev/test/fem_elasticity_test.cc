@@ -65,7 +65,7 @@ class ElasticityElementTest : public ::testing::Test {
     state_.ResetElementCache(std::move(cache));
   }
 
-  // Set an arbitrary reference position such that the tetrahedron is not
+  // Set an arbitrary reference positions such that the tetrahedron is not
   // inverted.
   Matrix3X<AutoDiffXd> get_reference_positions() const {
     Matrix3X<AutoDiffXd> Q(kSpatialDim, kNumVertices);

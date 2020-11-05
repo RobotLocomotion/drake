@@ -27,7 +27,7 @@ namespace fem {
  that is assigned to both the %FemElement and the ElementCache in
  correspondence. Furthermore, the type of %FemElement and ElementCache in
  correspondence must be compatible. More specifically, if the %FemElement is of
- concrete type `FemFoo`, then the ElementCache that shares the same element
+ concrete type `FooElement`, then the ElementCache that shares the same element
  index must be of concrete type `FooElementCache`.
  @tparam_nonsymbolic_scalar T.  */
 template <typename T>
@@ -43,27 +43,24 @@ class FemElement {
   /** Global ElementIndex of this element. */
   ElementIndex element_index() const { return element_index_; }
 
-  /** The number of dimensions of the PDE this element is trying to solve for.
-   For example, if the underlying PDE that this %FemElement is solving for is
-   F(u, ∇u) = 0, where F:Rⁿ→Rᵐ, then %num_problem_dim() returns m. */
+  /** The dimension of the codomain of the PDE's solution u. */
   virtual int num_problem_dim() const = 0;
 
   /** Number of nodes associated with this element. */
   virtual int num_nodes() const = 0;
 
   /** Calculates the element residual of this element evaluated at the input
-   state. This method updates the cached quantities in the input FemState if
+   `state`. This method updates the cached quantities in the input `state` if
    they are out of date.
-   @param[in] state The FEM state at which to evaluate the residual.
+   @param[in] state The FemState at which to evaluate the residual.
    @param[out] residual The residual vector of size `num_problem_dim() *
    num_nodes()`. The vector is ordered such that `i*num_problem_dim()`-th to
    `(i+1)*num_problem_dim()-1`-th entries of the vector stores the residual
    corresponding to the i-th node in this element.
-   @pre residual must not be the nullptr, and the vector it points to must have
-   size `num_nodes() * num_problem_dim()`.
    @pre `residual` must not be the nullptr, and the vector it points to must
    have size `num_nodes() * num_problem_dim()` */
-  void CalcResidual(const FemState<T>& s, EigenPtr<VectorX<T>> residual) const;
+  void CalcResidual(const FemState<T>& state,
+                    EigenPtr<VectorX<T>> residual) const;
 
   // TODO(xuchenhan-tri): Add CalcMassMatrix and CalcStiffnessMatrix etc.
 
@@ -79,7 +76,7 @@ class FemElement {
 
   /* Calculates the element residual of this element evaluated at the input
    state.
-   @param[in] state The FEM state at which to evaluate the residual.
+   @param[in] state The FemState at which to evaluate the residual.
    @param[out] a vector of residual of size `num_problem_dim()*num_nodes()`.
    The vector is ordered such that `i*num_problem_dim()`-th to
    `(i+1)*num_problem_dim()-1`-th entries of the vector stores the residual

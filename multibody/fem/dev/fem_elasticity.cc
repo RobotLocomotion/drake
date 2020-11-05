@@ -21,7 +21,8 @@ ElasticityElement<T, IsoparametricElementType, QuadratureType>::
       constitutive_model_(std::move(constitutive_model)),
       dxidX_(num_quads()),
       reference_volume_(num_quads()) {
-
+  /* TODO(xuchenhan-tri): Consider removing the template NaturalDim from
+   IsoparametricElement and Quadrature (e.g. with CRTP). */
   static_assert(std::is_convertible<IsoparametricElementType*,
                                     IsoparametricElement<T, 2>*>::value ||
                     std::is_convertible<IsoparametricElementType*,
@@ -60,7 +61,7 @@ T ElasticityElement<T, IsoparametricElementType,
                     QuadratureType>::CalcElasticEnergy(const FemState<T>& s)
     const {
   T elastic_energy = 0;
-  // TODO(xuchenhan-tri): Use the corresponding Eval method with cache is in
+  // TODO(xuchenhan-tri): Use the corresponding Eval method when cache is in
   // place.
   std::vector<T> Psi(num_quads());
   CalcElasticEnergyDensity(s, &Psi);
@@ -89,7 +90,7 @@ void ElasticityElement<T, IsoparametricElementType, QuadratureType>::
   neg_force->setZero();
   auto neg_force_matrix =
       Eigen::Map<Matrix3X<T>>(neg_force->data(), 3, num_nodes());
-  // TODO(xuchenhan-tri): Use the corresponding Eval method with cache is in
+  // TODO(xuchenhan-tri): Use the corresponding Eval method when cache is in
   // place.
   std::vector<Matrix3<T>> P(num_quads());
   CalcFirstPiolaStress(state, &P);
@@ -144,7 +145,7 @@ void ElasticityElement<T, IsoparametricElementType, QuadratureType>::
     CalcElasticEnergyDensity(const FemState<T>& state,
                              std::vector<T>* Psi) const {
   Psi->resize(num_quads());
-  // TODO(xuchenhan-tri): Use the corresponding Eval method with cache is in
+  // TODO(xuchenhan-tri): Use the corresponding Eval method when cache is in
   // place.
   const DeformationGradientCache<T>& deformation_gradient_cache =
       EvalDeformationGradientCache(state);
@@ -157,7 +158,7 @@ void ElasticityElement<T, IsoparametricElementType, QuadratureType>::
     CalcFirstPiolaStress(const FemState<T>& state,
                          std::vector<Matrix3<T>>* P) const {
   P->resize(num_quads());
-  // TODO(xuchenhan-tri): Use the corresponding Eval method with cache is in
+  // TODO(xuchenhan-tri): Use the corresponding Eval method when cache is in
   // place.
   const DeformationGradientCache<T>& deformation_gradient_cache =
       EvalDeformationGradientCache(state);

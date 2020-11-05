@@ -44,8 +44,7 @@ class ElasticityElementCache : public ElementCache<T> {
    with this %ElasticityElementCache. More specifically, if the
    ConstitutiveModel in the corresponding ElasticityElement is of type
    "FooModel", then the input `deformation_gradient_cache` must be of type
-   "FooModelCache".
-  */
+   "FooModelCache". */
   ElasticityElementCache(
       ElementIndex element_index, int num_quads,
       std::unique_ptr<DeformationGradientCache<T>> deformation_gradient_cache)
@@ -74,7 +73,7 @@ class ElasticityElementCache : public ElementCache<T> {
 
   /* Creates an identical copy of the ElasticityElementCache object. */
   std::unique_ptr<ElementCache<T>> DoClone() const final {
-    // Can't use std::make_unique because the copy constructor is protected.
+    /* Can't use std::make_unique because the copy constructor is protected. */
     return std::unique_ptr<ElementCache<T>>(
         new ElasticityElementCache<T>(*this));
   }

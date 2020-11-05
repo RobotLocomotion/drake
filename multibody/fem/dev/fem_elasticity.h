@@ -24,8 +24,10 @@ namespace fem {
  %ElasticityElement.
  @tparam_nonsymbolic_scalar T.
  @tparam IsoparametricElementType The type of IsoparametricElement used in this
- ElasticityElement.
+ ElasticityElement. IsoparametricElementType must be a derived class from
+ IsoparametricElement.
  @tparam QuadratureType The type of Quadrature used in this ElasticityElement.
+ QuadratureType must be a derived class from Quadrature.
  */
 /* TODO(xuchenhan-tri): Consider making num_quads() and num_nodes() available at
  compile time and thereby eliminating heap allocations. */
@@ -75,7 +77,7 @@ class ElasticityElement : public FemElement<T> {
   int num_nodes() const final { return shape_.num_nodes(); }
 
   /** Returns the elastic potential energy stored in this element in unit J. */
-  T CalcElasticEnergy(const FemState<T>& s) const;
+  T CalcElasticEnergy(const FemState<T>& state) const;
 
  protected:
   /* Calculates the element residual of this element evaluated at the input
@@ -93,8 +95,8 @@ class ElasticityElement : public FemElement<T> {
 
   friend class ElasticityElementTest;
 
-  /* Calculates the elastic force on the nodes in this element. Returns a vector
-   of elastic force of size 3*num_nodes(). */
+  /* Calculates the elastic forces on the nodes in this element. Returns a
+   vector of elastic forces of size 3*num_nodes(). */
   void CalcNegativeElasticForce(const FemState<T>& state,
                                 EigenPtr<VectorX<T>> force) const;
 
@@ -104,8 +106,8 @@ class ElasticityElement : public FemElement<T> {
                                std::vector<Matrix3<T>>* F) const;
 
   /* Evaluates the DeformationGradientCache for this element. */
-  // TODO(xuchenhan-tri): This method unconditionally recomputes the
-  // DeformationGradientCache. Enable caching when caching is in place.
+  /* TODO(xuchenhan-tri): This method unconditionally recomputes the
+   DeformationGradientCache. Enable caching when caching is in place. */
   const DeformationGradientCache<T>& EvalDeformationGradientCache(
       const FemState<T>& state) const;
 
@@ -133,11 +135,10 @@ class ElasticityElement : public FemElement<T> {
   std::vector<MatrixD3> dxidX_;
   /* The volume evaluated at reference configuration occupied by the quadrature
    points in this element. To integrate a function f over the reference domain,
-   sum f(q)*reference_volume_[q] over all the quadrature points in the element.
-  */
+   sum f(q)*reference_volume_[q] over all the quadrature points q in the
+   element. */
   std::vector<T> reference_volume_;
 };
-
 }  // namespace fem
 }  // namespace multibody
 }  // namespace drake
