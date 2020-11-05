@@ -15,7 +15,8 @@ from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (BasicVector, DiagramBuilder,
                                        LeafSystem)
-from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
+from pydrake.systems.meshcat_visualizer import (
+    ConnectMeshcatVisualizer, MeshcatVisualizer)
 from pydrake.systems.primitives import FirstOrderLowPassFilter
 
 from drake.examples.manipulation_station.differential_ik import DifferentialIK
@@ -321,10 +322,9 @@ def main():
         DrakeVisualizer.AddToBuilder(builder,
                                      station.GetOutputPort("query_object"))
         if args.meshcat:
-            meshcat = builder.AddSystem(MeshcatVisualizer(
-                station.get_scene_graph(), zmq_url=args.meshcat))
-            builder.Connect(station.GetOutputPort("pose_bundle"),
-                            meshcat.get_input_port(0))
+            meshcat = ConnectMeshcatVisualizer(
+                builder, output_port=station.GetOutputPort("geometry_query"),
+                zmq_url=args.meshcat, open_browser=args.open_browser)
             if args.setup == 'planar':
                 meshcat.set_planar_viewpoint()
 
