@@ -1,5 +1,7 @@
+import numpy as np
+
 from pydrake.manipulation.planner import DoDifferentialInverseKinematics
-from pydrake.math import RigidTransform, RollPitchYaw
+from pydrake.math import AngleAxis, RigidTransform, RollPitchYaw
 from pydrake.systems.framework import BasicVector, LeafSystem, PortDataType
 
 

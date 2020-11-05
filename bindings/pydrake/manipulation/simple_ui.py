@@ -183,7 +183,7 @@ class SchunkWsgButtons(LeafSystem):
 
         if window is None:
             self.window = tk.Tk()
-            self.window.title(title)
+            self.window.title("Schunk WSG Buttons")
         else:
             self.window = window
 
