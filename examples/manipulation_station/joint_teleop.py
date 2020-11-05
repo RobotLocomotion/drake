@@ -81,11 +81,9 @@ def main():
         DrakeVisualizer.AddToBuilder(builder,
                                      station.GetOutputPort("query_object"))
         if args.meshcat:
-            meshcat = builder.AddSystem(MeshcatVisualizer(
-                    station.get_scene_graph(), zmq_url=args.meshcat,
-                    open_browser=args.open_browser))
-            builder.Connect(station.GetOutputPort("pose_bundle"),
-                            meshcat.get_input_port(0))
+            meshcat = ConnectMeshcatVisualizer(
+                builder, output_port=station.GetOutputPort("geometry_query"),
+                zmq_url=args.meshcat, open_browser=args.open_browser)
             if args.setup == 'planar':
                 meshcat.set_planar_viewpoint()
         if args.setup == 'planar':
