@@ -718,19 +718,38 @@ class TestGeometry(unittest.TestCase):
                     id_B=mut.GeometryId.get_new_id())
 
         # Confirm rendering API returns images of appropriate type.
-        d_camera = mut.render.DepthCameraProperties(
-            width=320, height=240, fov_y=pi/6, renderer_name=renderer_name,
-            z_near=0.1, z_far=5.0)
+        camera_core = mut.render.RenderCameraCore(
+            renderer_name, CameraInfo(width=10, height=10, fov_y=pi/6),
+            mut.render.ClippingRange(0.1, 10.0), RigidTransform())
+        color_camera = mut.render.ColorRenderCamera(camera_core, False)
+        depth_camera = mut.render.DepthRenderCamera(
+            camera_core, mut.render.DepthRange(0.1, 5.0))
         image = query_object.RenderColorImage(
-            camera=d_camera, parent_frame=SceneGraph.world_frame_id(),
-            X_PC=RigidTransform())
+                camera=color_camera, parent_frame=SceneGraph.world_frame_id(),
+                X_PC=RigidTransform())
         self.assertIsInstance(image, ImageRgba8U)
         image = query_object.RenderDepthImage(
-            camera=d_camera, parent_frame=SceneGraph.world_frame_id(),
+            camera=depth_camera, parent_frame=SceneGraph.world_frame_id(),
             X_PC=RigidTransform())
         self.assertIsInstance(image, ImageDepth32F)
         image = query_object.RenderLabelImage(
-            camera=d_camera, parent_frame=SceneGraph.world_frame_id(),
+            camera=color_camera, parent_frame=SceneGraph.world_frame_id(),
+            X_PC=RigidTransform())
+        self.assertIsInstance(image, ImageLabel16I)
+
+        depth_camera = mut.render.DepthCameraProperties(
+            width=320, height=240, fov_y=pi/6, renderer_name=renderer_name,
+            z_near=0.1, z_far=5.0)
+        image = query_object.RenderColorImage(
+            camera=depth_camera, parent_frame=SceneGraph.world_frame_id(),
+            X_PC=RigidTransform())
+        self.assertIsInstance(image, ImageRgba8U)
+        image = query_object.RenderDepthImage(
+            camera=depth_camera, parent_frame=SceneGraph.world_frame_id(),
+            X_PC=RigidTransform())
+        self.assertIsInstance(image, ImageDepth32F)
+        image = query_object.RenderLabelImage(
+            camera=depth_camera, parent_frame=SceneGraph.world_frame_id(),
             X_PC=RigidTransform())
         self.assertIsInstance(image, ImageLabel16I)
 
@@ -852,31 +871,16 @@ class TestGeometry(unittest.TestCase):
                 self.updated_ids = {}
                 self.include_group_name = "in_test"
                 self.X_WC = RigidTransform_[float]()
-                self.simple_color_count = 0
-                self.simple_depth_count = 0
-                self.simple_label_count = 0
-                self.color_props = None
-                self.depth_props = None
-                self.label_props = None
+                self.color_count = 0
+                self.depth_count = 0
+                self.label_count = 0
+                self.color_camera = None
+                self.depth_camera = None
+                self.label_camera = None
 
             def UpdateViewpoint(self, X_WC):
                 DummyRenderEngine.latest_instance = self
                 self.X_WC = X_WC
-
-            def DoRenderColorImage(self, camera, color_image_out):
-                DummyRenderEngine.latest_instance = self
-                self.simple_color_count += 1
-                self.color_props = camera
-
-            def DoRenderDepthImage(self, camera, depth_image_out):
-                DummyRenderEngine.latest_instance = self
-                self.simple_depth_count += 1
-                self.depth_props = camera
-
-            def DoRenderLabelImage(self, camera, label_image_out):
-                DummyRenderEngine.latest_instance = self
-                self.simple_label_count += 1
-                self.label_props = camera
 
             def ImplementGeometry(self, shape, user_data):
                 DummyRenderEngine.latest_instance = self
@@ -908,13 +912,28 @@ class TestGeometry(unittest.TestCase):
                 new.updated_ids = copy.copy(self.updated_ids)
                 new.include_group_name = copy.copy(self.include_group_name)
                 new.X_WC = copy.copy(self.X_WC)
-                new.simple_color_count = copy.copy(self.simple_color_count)
-                new.simple_depth_count = copy.copy(self.simple_depth_count)
-                new.simple_label_count = copy.copy(self.simple_label_count)
-                new.color_props = copy.copy(self.color_props)
-                new.depth_props = copy.copy(self.depth_props)
-                new.label_props = copy.copy(self.label_props)
+                new.color_count = copy.copy(self.color_count)
+                new.depth_count = copy.copy(self.depth_count)
+                new.label_count = copy.copy(self.label_count)
+                new.color_camera = copy.copy(self.color_camera)
+                new.depth_camera = copy.copy(self.depth_camera)
+                new.label_camera = copy.copy(self.label_camera)
                 return new
+
+            def DoRenderColorImage(self, camera, color_image_out):
+                DummyRenderEngine.latest_instance = self
+                self.color_count += 1
+                self.color_camera = camera
+
+            def DoRenderDepthImage(self, camera, depth_image_out):
+                DummyRenderEngine.latest_instance = self
+                self.depth_count += 1
+                self.depth_camera = camera
+
+            def DoRenderLabelImage(self, camera, label_image_out):
+                DummyRenderEngine.latest_instance = self
+                self.label_count += 1
+                self.label_camera = camera
 
         engine = DummyRenderEngine()
         self.assertIsInstance(engine, mut.render.RenderEngine)
@@ -950,19 +969,19 @@ class TestGeometry(unittest.TestCase):
         current_engine = DummyRenderEngine.latest_instance
         self.assertIsNot(current_engine, engine)
         self.assertIsInstance(image, ImageRgba8U)
-        self.assertEqual(current_engine.simple_color_count, 1)
+        self.assertEqual(current_engine.color_count, 1)
 
         image = sensor.depth_image_32F_output_port().Eval(sensor_context)
         self.assertIsInstance(image, ImageDepth32F)
-        self.assertEqual(current_engine.simple_depth_count, 1)
+        self.assertEqual(current_engine.depth_count, 1)
 
         image = sensor.depth_image_16U_output_port().Eval(sensor_context)
         self.assertIsInstance(image, ImageDepth16U)
-        self.assertEqual(current_engine.simple_depth_count, 2)
+        self.assertEqual(current_engine.depth_count, 2)
 
         image = sensor.label_image_output_port().Eval(sensor_context)
         self.assertIsInstance(image, ImageLabel16I)
-        self.assertEqual(current_engine.simple_label_count, 1)
+        self.assertEqual(current_engine.label_count, 1)
 
         # Confirm that the CameraProperties APIs are *not* available.
         cam = mut.render.CameraProperties(10, 10, np.pi / 4, "")

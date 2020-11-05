@@ -145,80 +145,6 @@ void RenderEngineVtk::UpdateViewpoint(const RigidTransformd& X_WC) {
   }
 }
 
-void RenderEngineVtk::RenderColorImage(const CameraProperties& camera,
-                                       bool show_window,
-                                       ImageRgba8U* color_image_out) const {
-  // TODO(SeanCurtis-TRI) Refactor these functions to use the DoRender*Image
-  //  APIs. See RenderEngineGl as an example.
-  UpdateWindow(camera, show_window, pipelines_[ImageType::kColor].get(),
-               "Color Image");
-  PerformVtkUpdate(*pipelines_[ImageType::kColor]);
-
-  // TODO(SeanCurtis-TRI): Determine if this copies memory (and find some way
-  // around copying).
-  pipelines_[ImageType::kColor]->exporter->Export(color_image_out->at(0, 0));
-}
-
-void RenderEngineVtk::RenderDepthImage(const DepthCameraProperties& camera,
-                                       ImageDepth32F* depth_image_out) const {
-  UpdateWindow(camera, pipelines_[ImageType::kDepth].get());
-  PerformVtkUpdate(*pipelines_[ImageType::kDepth]);
-
-  // TODO(SeanCurtis-TRI): This copies the image and *that's* a tragedy. It
-  // would be much better to process the pixels directly. The solution is to
-  // simply call exporter->GetPointerToData() and process the pixels myself.
-  // See the implementation in vtkImageExport::Export() for details.
-  ImageRgba8U image(camera.width, camera.height);
-  pipelines_[ImageType::kDepth]->exporter->Export(image.at(0, 0));
-
-  for (int v = 0; v < camera.height; ++v) {
-    for (int u = 0; u < camera.width; ++u) {
-      if (image.at(u, v)[0] == 255u &&
-          image.at(u, v)[1] == 255u &&
-          image.at(u, v)[2] == 255u) {
-        depth_image_out->at(u, v)[0] = InvalidDepth::kTooFar;
-      } else {
-        // Decoding three channel color values to a float value. For the detail,
-        // see depth_shaders.h.
-        float shader_value = image.at(u, v)[0] + image.at(u, v)[1] / 255. +
-                             image.at(u, v)[2] / (255. * 255.);
-
-        // Dividing by 255 so that the range gets to be [0, 1].
-        shader_value /= 255.f;
-        // TODO(kunimatsu-tri) Calculate this in a vertex shader.
-        depth_image_out->at(u, v)[0] =
-            CheckRangeAndConvertToMeters(shader_value, camera.z_near,
-                                         camera.z_far);
-      }
-    }
-  }
-}
-
-void RenderEngineVtk::RenderLabelImage(const CameraProperties& camera,
-                                       bool show_window,
-                                       ImageLabel16I* label_image_out) const {
-  UpdateWindow(camera, show_window, pipelines_[ImageType::kLabel].get(),
-               "Label Image");
-  PerformVtkUpdate(*pipelines_[ImageType::kLabel]);
-
-  // TODO(SeanCurtis-TRI): This copies the image and *that's* a tragedy. It
-  // would be much better to process the pixels directly. The solution is to
-  // simply call exporter->GetPointerToData() and process the pixels myself.
-  // See the implementation in vtkImageExport::Export() for details.
-  ImageRgba8U image(camera.width, camera.height);
-  pipelines_[ImageType::kLabel]->exporter->Export(image.at(0, 0));
-
-  ColorI color;
-  for (int v = 0; v < camera.height; ++v) {
-    for (int u = 0; u < camera.width; ++u) {
-      color.r = image.at(u, v)[0];
-      color.g = image.at(u, v)[1];
-      color.b = image.at(u, v)[2];
-      label_image_out->at(u, v)[0] = RenderEngine::LabelFromColor(color);
-    }
-  }
-}
-
 void RenderEngineVtk::ImplementGeometry(const Sphere& sphere, void* user_data) {
   vtkNew<vtkTexturedSphereSource> vtk_sphere;
   SetSphereOptions(vtk_sphere.GetPointer(), sphere.radius());
@@ -314,7 +240,7 @@ void RenderEngineVtk::DoRenderColorImage(
     const ColorRenderCamera& camera,
     ImageRgba8U* color_image_out) const {
   UpdateWindow(camera.core(), camera.show_window(),
-               pipelines_[ImageType::kColor].get(), "Color_image");
+               pipelines_[ImageType::kColor].get(), "Color Image");
   PerformVtkUpdate(*pipelines_[ImageType::kColor]);
 
   // TODO(SeanCurtis-TRI): Determine if this copies memory (and find some way
@@ -661,18 +587,6 @@ void RenderEngineVtk::PerformVtkUpdate(const RenderingPipeline& p) {
   p.window->Render();
   p.filter->Modified();
   p.filter->Update();
-}
-
-void RenderEngineVtk::UpdateWindow(const CameraProperties& camera,
-                                   bool show_window, const RenderingPipeline* p,
-                                   const char* name) const {
-  UpdateWindow(ColorRenderCamera(camera, show_window).core(), show_window, p,
-               name);
-}
-
-void RenderEngineVtk::UpdateWindow(const DepthCameraProperties& camera,
-                                   const RenderingPipeline* p) const {
-  UpdateWindow(DepthRenderCamera(camera), p);
 }
 
 void RenderEngineVtk::UpdateWindow(const RenderCameraCore& camera,
