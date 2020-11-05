@@ -709,10 +709,13 @@ void ManipulationStation<T>::Finalize(
     }
   }
 
-  // TODO(#10482) Kill this when we deprecate pose bundle.
+  // TODO(#10482).  Deprecate the pose_bundle output port.
   builder.ExportOutput(scene_graph_->get_pose_bundle_output_port(),
                        "pose_bundle");
   builder.ExportOutput(scene_graph_->get_query_output_port(), "query_object");
+
+  builder.ExportOutput(scene_graph_->get_query_output_port(),
+                       "geometry_query");
 
   builder.ExportOutput(plant_->get_contact_results_output_port(),
                        "contact_results");
