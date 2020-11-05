@@ -813,10 +813,34 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
             py::arg("show_window") = false, cls_doc.RenderColorImage.doc)
         .def(
+            "RenderColorImage",
+            [](const Class* self, const render::ColorRenderCamera& camera,
+                FrameId parent_frame, const math::RigidTransformd& X_PC) {
+              systems::sensors::ImageRgba8U img(
+                  camera.core().intrinsics().width(),
+                  camera.core().intrinsics().height());
+              self->RenderColorImage(camera, parent_frame, X_PC, &img);
+              return img;
+            },
+            py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
+            cls_doc.RenderColorImage.doc)
+        .def(
             "RenderDepthImage",
             [](const Class* self, const render::DepthCameraProperties& camera,
                 FrameId parent_frame, const math::RigidTransformd& X_PC) {
               systems::sensors::ImageDepth32F img(camera.width, camera.height);
+              self->RenderDepthImage(camera, parent_frame, X_PC, &img);
+              return img;
+            },
+            py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
+            cls_doc.RenderDepthImage.doc)
+        .def(
+            "RenderDepthImage",
+            [](const Class* self, const render::DepthRenderCamera& camera,
+                FrameId parent_frame, const math::RigidTransformd& X_PC) {
+              systems::sensors::ImageDepth32F img(
+                  camera.core().intrinsics().width(),
+                  camera.core().intrinsics().height());
               self->RenderDepthImage(camera, parent_frame, X_PC, &img);
               return img;
             },
@@ -833,10 +857,35 @@ void DoScalarDependentDefinitions(py::module m, T) {
               return img;
             },
             py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
-            py::arg("show_window") = false, cls_doc.RenderLabelImage.doc);
+            py::arg("show_window") = false, cls_doc.RenderLabelImage.doc)
+        .def(
+            "RenderLabelImage",
+            [](const Class* self, const render::ColorRenderCamera& camera,
+                FrameId parent_frame, const math::RigidTransformd& X_PC) {
+              systems::sensors::ImageLabel16I img(
+                  camera.core().intrinsics().width(),
+                  camera.core().intrinsics().height());
+              self->RenderLabelImage(camera, parent_frame, X_PC, &img);
+              return img;
+            },
+            py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
+            cls_doc.RenderLabelImage.doc);
 
     AddValueInstantiation<QueryObject<T>>(m);
   }
+}
+
+// Note: we're splitting DoScalarDependentDefinitions to satisfy linting that
+// hates functions with more than 500 lines.
+// TODO(SeanCurtis-TRI) Find some more elegant way of handling this.
+template <typename T>
+void DoScalarDependentDefinitions2(py::module m, T) {
+  py::tuple param = GetPyParam<T>();
+  constexpr auto& doc = pydrake_doc.drake.geometry;
+
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::geometry;
+  py::module::import("pydrake.systems.framework");
 
   // SignedDistancePair
   {
@@ -1335,6 +1384,8 @@ void DoScalarIndependentDefinitions(py::module m) {
 void def_geometry(py::module m) {
   DoScalarIndependentDefinitions(m);
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
+      NonSymbolicScalarPack{});
+  type_visit([m](auto dummy) { DoScalarDependentDefinitions2(m, dummy); },
       NonSymbolicScalarPack{});
 }
 
