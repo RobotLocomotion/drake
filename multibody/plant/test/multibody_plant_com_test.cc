@@ -23,7 +23,14 @@ GTEST_TEST(EmptyMultibodyPlantCenterOfMassTest, GetCenterOfMassPosition) {
       plant.CalcCenterOfMassPosition(*context_), std::runtime_error,
       "CalcCenterOfMassPosition\\(\\): this MultibodyPlant contains only "
       "world_body\\(\\) so its center of mass is undefined.");
-}
+
+  const Frame<double>& frame_W = plant.world_frame();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.CalcCenterOfMassTranslationalVelocity(*context_, frame_W, frame_W),
+      std::runtime_error,
+      "CalcCenterOfMassTranslationalVelocity\\(\\): this MultibodyPlant only "
+      "contains the world_body\\(\\) so its center of mass is undefined.");
+  }
 
 class MultibodyPlantCenterOfMassTest : public ::testing::Test {
  public:
@@ -55,8 +62,8 @@ class MultibodyPlantCenterOfMassTest : public ::testing::Test {
     context_ = plant_.CreateDefaultContext();
   }
 
-  void CheckCom(const math::RigidTransform<double>& X_WS,
-                const math::RigidTransform<double>& X_WT) {
+  void CheckCmPosition(const math::RigidTransform<double>& X_WS,
+                       const math::RigidTransform<double>& X_WT) {
     plant_.SetFreeBodyPose(context_.get(), plant_.GetBodyByName("Sphere1"),
                            X_WS);
     plant_.SetFreeBodyPose(context_.get(), plant_.GetBodyByName("Triangle1"),
@@ -72,6 +79,37 @@ class MultibodyPlantCenterOfMassTest : public ::testing::Test {
         (mass_S_ + mass_T_);
     Eigen::Vector3d p_WCcm = plant_.CalcCenterOfMassPosition(*context_);
     EXPECT_TRUE(CompareMatrices(p_WCcm, p_WCcm_expected, 1e-15));
+  }
+
+    void CheckCmTranslationalVelocity(const SpatialVelocity<double>& V_WS_W,
+                                      const SpatialVelocity<double>& V_WT_W) {
+    const Body<double>& sphere = plant_.GetBodyByName("Sphere1");
+    const Body<double>& triangle = plant_.GetBodyByName("Triangle1");
+    plant_.SetFreeBodySpatialVelocity(context_.get(), sphere, V_WS_W);
+    plant_.SetFreeBodySpatialVelocity(context_.get(), triangle, V_WT_W);
+
+    // Denoting Scm as the center of mass of the system formed by Sphere1 and
+    // Triangle1, form Scm's translational velocity in frame W, expressed in W.
+    const Frame<double>& frame_W = plant_.world_frame();
+    const Vector3<double> v_WScm_W =
+        plant_.CalcCenterOfMassTranslationalVelocity(*context_, frame_W,
+                                                     frame_W);
+
+    // By hand, calculate the expected results for that same quantity.
+    // Form the sphere's center of mass translational velocity in world frame.
+    const double mass_sphere = sphere.get_mass(*context_);
+    const double mass_triangle = triangle.get_mass(*context_);
+    const Vector3<double> mv_sphere = mass_sphere *
+        sphere.CalcCenterOfMassTranslationalVelocity(*context_, frame_W,
+                                                     frame_W);
+    const Vector3<double> mv_triangle = mass_triangle *
+        triangle.CalcCenterOfMassTranslationalVelocity(*context_, frame_W,
+                                                       frame_W);
+    const Vector3<double> v_WScm_W_expected = (mv_sphere + mv_triangle) /
+        (mass_sphere + mass_triangle);
+
+    const double kTolerance = 16 * std::numeric_limits<double>::epsilon();
+    EXPECT_TRUE(CompareMatrices(v_WScm_W, v_WScm_W_expected, kTolerance));
   }
 
  protected:
@@ -106,8 +144,19 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
       math::RotationMatrixd(Eigen::Matrix3d::Identity()), p_WSo_W);
   math::RigidTransformd X_WT1(
       math::RotationMatrixd(Eigen::Matrix3d::Identity()), p_WTo_W);
-  CheckCom(X_WS1, X_WT1);
+  CheckCmPosition(X_WS1, X_WT1);
 
+  // Verify center of mass translational velocity when there is no motion.
+  SpatialVelocity<double> V1 = SpatialVelocity<double>::Zero();
+  SpatialVelocity<double> V2 = SpatialVelocity<double>::Zero();
+  CheckCmTranslationalVelocity(V1, V2);
+
+  // Verify center of mass translational velocity at arbitrary motion.
+  V1 = SpatialVelocity<double>(Vector3<double>(1, 2, 3),
+                               Vector3<double>(4, 5, 6));
+  V1 = SpatialVelocity<double>(Vector3<double>(1, 2, 3),
+                               Vector3<double>(4, 5, 6));
+  CheckCmTranslationalVelocity(V1, V2);
   // Try empty model_instances.
   std::vector<ModelInstanceIndex> model_instances;
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -115,6 +164,14 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
       std::runtime_error,
       "CalcCenterOfMassPosition\\(\\): you must provide at least one selected "
       "body.");
+
+  const Frame<double>& frame_W = plant_.world_frame();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_.CalcCenterOfMassTranslationalVelocity(*context_,
+          frame_W, frame_W, model_instances),
+      std::runtime_error,
+      "CalcCenterOfMassTranslationalVelocity\\(\\): body_indexes is empty. "
+      "You must provide at least one selected one body.");
 
   // Try one instance in model_instances.
   model_instances.push_back(triangle_instance_);
@@ -139,7 +196,7 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
                               Eigen::Vector3d(5.2, -3.1, 10.9));
   math::RigidTransformd X_WT2(math::RollPitchYawd(-2.3, -3.5, 1.2),
                               Eigen::Vector3d(-70.2, 9.8, 843.1));
-  CheckCom(X_WS2, X_WT2);
+  CheckCmPosition(X_WS2, X_WT2);
 }
 
 }  // namespace

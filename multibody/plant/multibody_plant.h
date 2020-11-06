@@ -2413,8 +2413,45 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().CalcCenterOfMassPosition(context, model_instances);
   }
 
+  /// Denoting Scm as the center of mass of the system S stored by this plant,
+  /// this method calculates point Scm's translational velocity in a frame A,
+  /// expressed in a frame E.  Note: The world_body() is ignored.
+  /// @param[in] context The context contains the state of the model.
+  /// @param[in] frame_A The measured-in frame for Scm's translational velocity.
+  /// @param[in] frame_E The expressed-in frame for the returned result.
+  /// @retval v_AScm_E Scm's translational velocity in frame A, measured in E.
+  /// @throws std::runtime_error if `this` has no body except world_body().
+  /// @throws std::runtime_error if mₛ <= 0 (mₛ is the mass of `this` system S).
+  Vector3<T> CalcCenterOfMassTranslationalVelocity(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_A,
+      const Frame<T>& frame_E) const {
+    return internal_tree().CalcCenterOfMassTranslationalVelocity(
+         context, frame_A, frame_E);
+  }
+
+  /// Denoting Scm as the center of mass of the system S in model_instances,
+  /// this method calculates point Scm's translational velocity in a frame A,
+  /// expressed in a frame E. This method does not distinguish between welded
+  /// bodies, joint connected bodies, and free bodies.  world_body() is ignored.
+  /// @param[in] context The context contains the state of the model.
+  /// @param[in] frame_A The measured-in frame for Scm's translational velocity.
+  /// @param[in] frame_E The expressed-in frame for the returned result.
+  /// @param[in] model_instances The vector of selected model instances.
+  /// @retval v_AScm_E Scm's translational velocity in frame A, measured in E.
+  /// @throws std::runtime_error if `this` has no body except world_body().
+  /// @throws std::runtime_error if mₛ <= 0 (mₛ is the mass of `this` system S).
+  Vector3<T> CalcCenterOfMassTranslationalVelocity(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_A,
+      const Frame<T>& frame_E,
+      const std::vector<ModelInstanceIndex>& model_instances) const {
+    return internal_tree().CalcCenterOfMassTranslationalVelocity(
+         context, frame_A, frame_E, model_instances);
+  }
+
   /// This method returns the spatial momentum of `this` MultibodyPlant in the
-  /// world frame W, about a designated point P, expressed in the world frame W.
+  /// world frame W, about a designated point P, expressed in world frame W.
   /// @param[in] context Contains the state of the model.
   /// @param[in] p_WoP_W Position from Wo (origin of the world frame W) to an
   ///            arbitrary point P, expressed in the world frame W.
@@ -2428,11 +2465,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   const SpatialMomentum<T> L_WScm_W =
   ///     plant.CalcSpatialMomentumInWorldAboutPoint(context, p_WoScm_W);
   /// </pre>
-  SpatialMomentum<T> CalcSpatialMomentumInWorldAboutPoint(
-      const systems::Context<T>& context,
-      const Vector3<T>& p_WoP_W) const {
-    return internal_tree().CalcSpatialMomentumInWorldAboutPoint(context,
-                                                                p_WoP_W);
+   SpatialMomentum<T> CalcSpatialMomentumInWorldAboutPoint(
+       const systems::Context<T>& context, const Vector3<T>& p_WoP_W) const {
+     return internal_tree().CalcSpatialMomentumInWorldAboutPoint(context,
+                                                                 p_WoP_W);
   }
 
   /// This method returns the spatial momentum of a set of model instances in

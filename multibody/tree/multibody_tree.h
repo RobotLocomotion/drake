@@ -1307,6 +1307,37 @@ class MultibodyTree {
       const std::vector<BodyIndex>& body_indexes) const;
 
   /// See MultibodyPlant method.
+  Vector3<T> CalcCenterOfMassTranslationalVelocity(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_A,
+      const Frame<T>& frame_E) const;
+
+  /// See MultibodyPlant method.
+  Vector3<T> CalcCenterOfMassTranslationalVelocity(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_A,
+      const Frame<T>& frame_E,
+      const std::vector<ModelInstanceIndex>& model_instances) const;
+
+  /// Denoting Scm as the center of mass of the system S in body_indexes,
+  /// this method calculates point Scm's translational velocity in a frame A,
+  /// expressed in a frame E. This method does not distinguish between welded
+  /// bodies, joint connected bodies, and free bodies.  world_body() is ignored.
+  /// @param[in] context The context contains the state of the model.
+  /// @param[in] frame_A The measured-in frame for Scm's translational velocity.
+  /// @param[in] frame_E The expressed-in frame for the returned result.
+  /// @param[in] body_indexes The vector of selected bodies (cannot be empty).
+  /// @retval v_AScm_E Scm's translational velocity in frame A, measured in E.
+  /// @throws std::runtime_error if `this` has no body except world_body().
+  /// @throws std::runtime_error if mₛ <= 0 (mₛ is the mass of `this` system S).
+  /// @throws std::runtime_error if `body_indexes.empty() == true`.
+  Vector3<T> CalcCenterOfMassTranslationalVelocity(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_A,
+      const Frame<T>& frame_E,
+      const std::vector<BodyIndex>& body_indexes) const;
+
+  /// See MultibodyPlant method.
   SpatialMomentum<T> CalcSpatialMomentumInWorldAboutPoint(
       const systems::Context<T>& context, const Vector3<T>& p_WoP_W) const;
 
