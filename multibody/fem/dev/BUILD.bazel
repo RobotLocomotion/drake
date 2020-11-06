@@ -106,6 +106,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "mesh_utilities",
+    srcs = [
+        "mesh_utilities.cc",
+    ],
+    hdrs = [
+        "mesh_utilities.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+        "//geometry/proximity:volume_mesh",
+    ],
+)
+
+drake_cc_library(
     name = "quadrature",
     hdrs = [
         "quadrature.h",
@@ -117,21 +132,20 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
-    name = "linear_elasticity_model_cache_test",
-    deps = [
-        ":linear_elasticity_model_cache",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
     name = "linear_elasticity_model_test",
     deps = [
         ":linear_elasticity_model",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//math:gradient",
-        "//math:jacobian",
+    ],
+)
+
+drake_cc_googletest(
+    name = "linear_elasticity_model_cache_test",
+    deps = [
+        ":linear_elasticity_model_cache",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -148,6 +162,14 @@ drake_cc_googletest(
     name = "linear_simplex_element_test",
     deps = [
         ":linear_simplex_element",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mesh_utilities_test",
+    deps = [
+        ":mesh_utilities",
+        "//geometry/proximity:volume_mesh",
     ],
 )
 
