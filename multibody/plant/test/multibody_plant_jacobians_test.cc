@@ -332,6 +332,15 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
     context_ = plant_->CreateDefaultContext();
   }
 
+  const RigidBody<double>& rigid_bodyA() const {
+    DRAKE_ASSERT(bodyA_ != nullptr);
+    return *bodyA_;
+  }
+  const RigidBody<double>& rigid_bodyB() const {
+    DRAKE_ASSERT(bodyB_ != nullptr);
+    return *bodyB_;
+  }
+
  protected:
   // Since the maximum absolute value of acceleration in this test is
   // approximately ω² * (2 * link_length) ≈ 72 , we test that the errors in
@@ -441,46 +450,98 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcBiasAccelerations) {
 }
 
 TEST_F(TwoDOFPlanarPendulumTest,
-       CalcJacobianVelocityAndBiasAccelerationOfSystemCenterOfMass) {
+       CalcJacobianVelocityAndBiasAccelerationEtcOfSystemCenterOfMass) {
   Eigen::VectorXd state = Eigen::Vector4d(0.0, 0.0, wAz_, wBz_);
   joint1_->set_angle(context_.get(), state[0]);
   joint2_->set_angle(context_.get(), state[1]);
   joint1_->set_angular_rate(context_.get(), state[2]);
   joint2_->set_angular_rate(context_.get(), state[3]);
 
-  // Test for CalcJacobianCenterOfMassTranslationalVelocity()
-  Eigen::MatrixXd Js_v_WCcm_W(3, plant_->num_velocities());
+  // Test for CalcJacobianCenterOfMassTranslationalVelocity().
+  const Frame<double>& frame_W = plant_->world_frame();
+  Eigen::MatrixXd Js_v_WScm_W(3, plant_->num_velocities());
   plant_->CalcJacobianCenterOfMassTranslationalVelocity(
-      *context_, JacobianWrtVariable::kV, plant_->world_frame(),
-      plant_->world_frame(), &Js_v_WCcm_W);
+      *context_, JacobianWrtVariable::kV, frame_W, frame_W, &Js_v_WScm_W);
 
-  Eigen::MatrixXd Js_v_WCcm_W_expected(3, plant_->num_velocities());
-  // CCm's velocity in world W is expected to be (L wAz_ + 0.25 L wBz_) 𝐖𝐲,
-  // hence the CCm's translational Jacobian with respect to {wAz_ , wBz_} is
+  Eigen::MatrixXd Js_v_WScm_W_expected(3, plant_->num_velocities());
+  // Denoting Scm as the center of mass of the system formed by links A and B,
+  // Scm's velocity in world W is expected to be (L wAz_ + 0.25 L wBz_) 𝐖𝐲,
+  // hence Scm's translational Jacobian with respect to {wAz_ , wBz_} is
   // { L 𝐖𝐲, 0.25 L 𝐖𝐲 } = { [0, L, 0] [0, 0.25 L, 0] }
-  Js_v_WCcm_W_expected << 0.0, 0.0,
+  Js_v_WScm_W_expected << 0.0, 0.0,
                           link_length_, 0.25 * link_length_,
                           0.0, 0.0;
-  Vector3d v_WCcm_W_expected =
+  const Vector3d v_WScm_W_expected =
       (wAz_ * link_length_ + wBz_ * 0.25 * link_length_) * Vector3d::UnitY();
-
-  EXPECT_TRUE(CompareMatrices(Js_v_WCcm_W, Js_v_WCcm_W_expected, kTolerance));
+  EXPECT_TRUE(CompareMatrices(Js_v_WScm_W, Js_v_WScm_W_expected, kTolerance));
   EXPECT_TRUE(
-      CompareMatrices(Js_v_WCcm_W * state.tail(plant_->num_velocities()),
-                      v_WCcm_W_expected, kTolerance));
+      CompareMatrices(Js_v_WScm_W * state.tail(plant_->num_velocities()),
+                      v_WScm_W_expected, kTolerance));
 
   // Test for CalcBiasCenterOfMassTranslationalAcceleration()
-  const Vector3<double>& abias_WCcm_W =
+  const Vector3<double>& abias_WScm_W =
       plant_->CalcBiasCenterOfMassTranslationalAcceleration(
           *context_, JacobianWrtVariable::kV, plant_->world_frame(),
           plant_->world_frame());
 
-  // CCm's bias translational in world W is expected to be
-  // abias_WCcm = -L (wAz_² + 0.5 wAz_ wBz_ + 0.25 wBz_²) 𝐖𝐱
-  Vector3d abias_WCcm_W_expected =
+  // Scm's bias translational in world W is expected to be
+  // abias_WScm = -L (wAz_² + 0.5 wAz_ wBz_ + 0.25 wBz_²) 𝐖𝐱
+  Vector3d abias_WScm_W_expected =
       -link_length_ * (wAz_ * wAz_ + 0.5 * wAz_ * wBz_ + 0.25 * wBz_ * wBz_) *
       Vector3d::UnitX();
-  EXPECT_TRUE(CompareMatrices(abias_WCcm_W, abias_WCcm_W_expected, kTolerance));
+  EXPECT_TRUE(CompareMatrices(abias_WScm_W, abias_WScm_W_expected, kTolerance));
+
+  // Test method Body::CalcCenterOfMassTranslationalVelocity().
+  const RigidBody<double>& body_A = rigid_bodyA();
+  const RigidBody<double>& body_B = rigid_bodyB();
+  const Frame<double>& frame_A = body_A.body_frame();
+  const Frame<double>& frame_B = body_B.body_frame();
+
+  // Verify Body::CalcCenterOfMassTranslationalVelocity() for obvious results.
+  const Vector3d v_AAcm_A_expected = Vector3d::Zero();
+  const Vector3d v_BBcm_B_expected = Vector3d::Zero();
+  const Vector3d v_AAcm_A = body_A.CalcCenterOfMassTranslationalVelocity(
+      *context_, frame_A, frame_A);
+  const Vector3d v_BBcm_B = body_B.CalcCenterOfMassTranslationalVelocity(
+      *context_, frame_B, frame_B);
+  EXPECT_TRUE(CompareMatrices(v_AAcm_A, v_AAcm_A_expected, kTolerance));
+  EXPECT_TRUE(CompareMatrices(v_BBcm_B, v_BBcm_B_expected, kTolerance));
+
+  // Verify Body::CalcCenterOfMassTranslationalVelocity() with by-hand results
+  // for translational velocities measured in either frame_A or frame_B.
+  // Acm's translational velocity: v_BAcm_W = 0.5 L wBz_ 𝐖𝐲.
+  // Bcm's translational velocity: v_ABcm_W = 0.5 L wBz_ 𝐖𝐲.
+  const Vector3d v_BAcm_W_expected(0, 0.5 * link_length_ * wBz_, 0);
+  const Vector3d v_ABcm_W_expected(0, 0.5 * link_length_ * wBz_, 0);
+  const Vector3d v_BAcm_W = body_A.CalcCenterOfMassTranslationalVelocity(
+      *context_, frame_B, frame_W);
+  const Vector3d v_ABcm_W = body_B.CalcCenterOfMassTranslationalVelocity(
+      *context_, frame_A, frame_W);
+  EXPECT_TRUE(CompareMatrices(v_BAcm_W, v_BAcm_W_expected, kTolerance));
+  EXPECT_TRUE(CompareMatrices(v_ABcm_W, v_ABcm_W_expected, kTolerance));
+
+  // Verify Body::CalcCenterOfMassTranslationalVelocity() with by-hand results
+  // for translational velocities measured in the world frame W:
+  // Acm's translational velocity: v_WAcm_W = 0.5 L wAz_ 𝐖𝐲.
+  // Bcm's translational velocity: v_WBcm_W = (0.5 L wBz_ + 1.5 L wAz_) 𝐖𝐲.
+  const Vector3d v_WAcm_W_expected(0, 0.5 * link_length_ * wAz_, 0);
+  const Vector3d v_WBcm_W_expected(0, 0.5 * link_length_ * wBz_ +
+                                      1.5 * link_length_ * wAz_, 0);
+  const Vector3d v_WAcm_W = body_A.CalcCenterOfMassTranslationalVelocity(
+      *context_, frame_W, frame_W);
+  const Vector3d v_WBcm_W = body_B.CalcCenterOfMassTranslationalVelocity(
+      *context_, frame_W, frame_W);
+  EXPECT_TRUE(CompareMatrices(v_WAcm_W, v_WAcm_W_expected, kTolerance));
+  EXPECT_TRUE(CompareMatrices(v_WBcm_W, v_WBcm_W_expected, kTolerance));
+
+  // Verify MultibodyPlant::CalcCenterOfMassTranslationalVelocityInWorld().
+  const Vector3d v_WScm_W =
+      plant_->CalcCenterOfMassTranslationalVelocityInWorld(*context_);
+  EXPECT_TRUE(CompareMatrices(v_WScm_W, v_WScm_W_expected, kTolerance));
+  const Vector3d v_WScm_W_alternate = (mass_link_ * v_WAcm_W_expected
+                                    +  mass_link_ * v_WBcm_W_expected)
+                                    / (2 * mass_link_);
+  EXPECT_TRUE(CompareMatrices(v_WScm_W, v_WScm_W_alternate, kTolerance));
 }
 
 // Fixture for two degree-of-freedom 3D satellite tracker with bodies A and B.

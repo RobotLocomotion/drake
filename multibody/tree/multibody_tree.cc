@@ -1292,6 +1292,87 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPosition(
 }
 
 template <typename T>
+Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
+    const systems::Context<T>& context) const {
+  if (num_bodies() <= 1) {
+    throw std::runtime_error(
+        "CalcCenterOfMassTranslationalVelocityInWorld(): this MultibodyPlant "
+        "only contains the world_body() so its center of mass is undefined.");
+  }
+
+  std::vector<ModelInstanceIndex> model_instances;
+  for (ModelInstanceIndex model_instance_index(1);
+       model_instance_index < num_model_instances(); ++model_instance_index)
+    model_instances.push_back(model_instance_index);
+
+  return CalcCenterOfMassTranslationalVelocityInWorld(context, model_instances);
+}
+
+template <typename T>
+Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
+    const systems::Context<T>& context,
+    const std::vector<ModelInstanceIndex>& model_instances) const {
+  if (num_model_instances() <= 1) {
+    throw std::runtime_error(
+        "CalcCenterOfMassTranslationalVelocityInWorld(): this MultibodyPlant "
+        "only contains the world_body() so its center of mass is undefined.");
+  }
+
+  std::vector<BodyIndex> body_indexes;
+  for (auto model_instance : model_instances) {
+    const std::vector<BodyIndex> body_index_in_instance =
+        GetBodyIndices(model_instance);
+    for (BodyIndex body_index : body_index_in_instance)
+      body_indexes.push_back(body_index);
+  }
+
+  return CalcCenterOfMassTranslationalVelocityInWorld(context, body_indexes);
+}
+
+template <typename T>
+Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
+    const systems::Context<T>& context,
+    const std::vector<BodyIndex>& body_indexes) const {
+  if (num_bodies() <= 1) {
+    throw std::runtime_error(
+        "CalcCenterOfMassTranslationalVelocityInWorld(): this MultibodyPlant "
+        "only contains the world_body() so its center of mass is undefined.");
+  }
+  if (body_indexes.empty()) {
+    throw std::runtime_error(
+        "CalcCenterOfMassTranslationalVelocityInWorld(): body_indexes is empty."
+        " You must provide at least one selected one body.");
+  }
+  // For a system S with center of mass Scm, Scm's translational velocity in
+  // frame A is calculated as v_AScm = ∑ (mᵢ vᵢ)  / mₛ, where mₛ = ∑ mᵢ,
+  // mᵢ is the mass of the  iᵗʰ body, and vᵢ is the velocity of Bcm in frame A
+  // (Bcm is the center of mass of the iᵗʰ body).
+  T composite_mass = 0;                       // mₛ = ∑ mᵢ (mass of the system).
+  Vector3<T> sum_mi_vi = Vector3<T>::Zero();  // sum_mi_vi = ∑ (mᵢ vᵢ).
+
+  const Frame<T>& frame_W = world_frame();
+  for (BodyIndex body_index : body_indexes) {
+    if (body_index == 0) continue;
+
+    const Body<T>& body_B = get_body(body_index);
+    const Vector3<T> v_ABcm_E = body_B.CalcCenterOfMassTranslationalVelocity(
+        context, frame_W, frame_W);
+
+    // Form (mᵢ vᵢ) and add to sum, i.e., sum_mi_vi = ∑ (mᵢ vᵢ).
+    const T& body_mass = body_B.get_mass(context);
+    sum_mi_vi += body_mass * v_ABcm_E;
+    composite_mass += body_mass;
+  }
+
+  if (composite_mass <= 0) {
+    throw std::runtime_error(
+        "CalcCenterOfMassTranslationalVelocityInWorld(): the "
+        "system's total mass must be greater than zero.");
+  }
+  return sum_mi_vi / composite_mass;
+}
+
+template <typename T>
 SpatialMomentum<T> MultibodyTree<T>::CalcSpatialMomentumInWorldAboutPoint(
     const systems::Context<T>& context,
     const Vector3<T>& p_WoP_W) const {

@@ -2453,6 +2453,35 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().CalcCenterOfMassPosition(context, model_instances);
   }
 
+  /// Denoting Scm as the center of mass of the system S stored by `this` plant,
+  /// this method calculates Scm's translational velocity in the world frame W,
+  /// expressed in frame W.  Note: The world_body() is ignored.
+  /// @param[in] context The context contains the state of the model.
+  /// @retval v_WScm_W Scm's translational velocity in frame W, measured in W.
+  /// @throws std::runtime_error if `this` has no body except world_body().
+  /// @throws std::runtime_error if mₛ <= 0 (mₛ is the mass of `this` system S).
+  Vector3<T> CalcCenterOfMassTranslationalVelocityInWorld(
+      const systems::Context<T>& context) const {
+    return internal_tree().CalcCenterOfMassTranslationalVelocityInWorld(
+         context);
+  }
+
+  /// Denoting Scm as the center of mass of the system S in model_instances,
+  /// this method calculates Scm's translational velocity in the world frame W,
+  /// expressed in frame W. This method does not distinguish between welded
+  /// bodies, joint connected bodies, and free bodies.  world_body() is ignored.
+  /// @param[in] context The context contains the state of the model.
+  /// @param[in] model_instances The vector of selected model instances.
+  /// @retval v_WScm_W Scm's translational velocity in frame W, measured in W.
+  /// @throws std::runtime_error if `this` has no body except world_body().
+  /// @throws std::runtime_error if mₛ <= 0 (mₛ is the mass of `this` system S).
+  Vector3<T> CalcCenterOfMassTranslationalVelocityInWorld(
+      const systems::Context<T>& context,
+      const std::vector<ModelInstanceIndex>& model_instances) const {
+    return internal_tree().CalcCenterOfMassTranslationalVelocityInWorld(
+         context, model_instances);
+  }
+
   /// This method returns the spatial momentum of `this` MultibodyPlant in the
   /// world frame W, about a designated point P, expressed in the world frame W.
   /// @param[in] context Contains the state of the model.
