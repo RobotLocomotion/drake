@@ -603,7 +603,7 @@ GTEST_TEST(ProximityEngineTests, ReplaceProperties) {
   // it mindlessly attempts to update the hydroelastic representation.
   {
     ProximityProperties props;
-    props.AddProperty("foo", "bar", 1.0);
+    props.Add("foo/bar", 1.0);
     engine.AddDynamicGeometry(sphere.shape(), {}, sphere.id(), props);
     EXPECT_EQ(PET::hydroelastic_type(sphere.id(), engine), kUndefined);
     DRAKE_EXPECT_NO_THROW(
@@ -618,8 +618,8 @@ GTEST_TEST(ProximityEngineTests, ReplaceProperties) {
     // Pick a characteristic length sufficiently large that we create the
     // coarsest, cheapest mesh possible.
     EXPECT_EQ(PET::hydroelastic_type(sphere.id(), engine), kUndefined);
-    props.AddProperty(kMaterialGroup, kElastic,
-                      std::numeric_limits<double>::infinity());
+    props.Add({kMaterialGroup, kElastic},
+              std::numeric_limits<double>::infinity());
     AddRigidHydroelasticProperties(3 * radius, &props);
     DRAKE_EXPECT_NO_THROW(
         engine.UpdateRepresentationForNewProperties(sphere, props));
@@ -638,21 +638,20 @@ GTEST_TEST(ProximityEngineTests, ReplaceProperties) {
   // Create a baseline property set that requests a soft hydroelastic
   // representation, but is not necessarily sufficient to define one.
   ProximityProperties hydro_trigger;
-  hydro_trigger.AddProperty(kHydroGroup, kComplianceType,
-                            HydroelasticType::kSoft);
+  hydro_trigger.Add({kHydroGroup, kComplianceType}, HydroelasticType::kSoft);
 
   // Case: New properties request hydroelastic, but they are incomplete and
   // efforts to assign those properties throw.
   {
     ProximityProperties bad_props_no_elasticity(hydro_trigger);
-    bad_props_no_elasticity.AddProperty(kHydroGroup, kRezHint, 1.25);
+    bad_props_no_elasticity.Add({kHydroGroup, kRezHint}, 1.25);
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.UpdateRepresentationForNewProperties(sphere,
                                                     bad_props_no_elasticity),
         std::logic_error, "Cannot create soft Sphere; missing the .+ property");
 
     ProximityProperties bad_props_no_length(hydro_trigger);
-    bad_props_no_length.AddProperty(kMaterialGroup, kElastic, 5e8);
+    bad_props_no_length.Add({kMaterialGroup, kElastic}, 5e8);
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.UpdateRepresentationForNewProperties(sphere,
                                                     bad_props_no_length),

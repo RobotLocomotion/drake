@@ -262,7 +262,7 @@ vtkSmartPointer<vtkPolyDataAlgorithm> CreateVtkBox(
       vtkSmartPointer<DrakeCubeSource>::New();
   vtk_box->set_size({box.width(), box.depth(), box.height()});
   const Vector2d& uv_scale = properties.GetPropertyOrDefault(
-      "phong", "diffuse_scale", Vector2d{1, 1});
+      {"phong", "diffuse_scale"}, Vector2d{1, 1});
   vtk_box->set_uv_scale(uv_scale);
   return vtk_box;
 }

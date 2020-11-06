@@ -185,8 +185,8 @@ const double kFovY = M_PI_4;
 class RenderEngineBenchmark : public benchmark::Fixture {
  public:
   RenderEngineBenchmark() {
-    material_.AddProperty("phong", "diffuse", sphere_rgba_);
-    material_.AddProperty("label", "id", RenderLabel::kDontCare);
+    material_.Add("phong/diffuse", sphere_rgba_)
+        .Add("label/id", RenderLabel::kDontCare);
   }
 
   using benchmark::Fixture::SetUp;

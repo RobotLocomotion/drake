@@ -473,8 +473,7 @@ void RenderEngineOspray::ImplementGeometry(vtkPolyDataAlgorithm* source,
   // TODO(SeanCurtis-TRI): Modify this once OSPRay-specific materials are
   //  supported.
   const std::string& diffuse_map_name =
-      data.properties.GetPropertyOrDefault<std::string>("phong", "diffuse_map",
-                                                        "");
+      data.properties.GetPropertyOrDefault("phong/diffuse_map", "");
   // Legacy support for *implied* texture maps. If we have mesh.obj, we look for
   // mesh.png (unless one has been specifically called out in the properties).
   // TODO(SeanCurtis-TRI): Remove this legacy texture when objects and materials
@@ -506,7 +505,7 @@ void RenderEngineOspray::ImplementGeometry(vtkPolyDataAlgorithm* source,
     color_actor->SetTexture(texture.Get());
   } else {
     const Vector4d& diffuse =
-        data.properties.GetPropertyOrDefault("phong", "diffuse",
+        data.properties.GetPropertyOrDefault({"phong", "diffuse"},
                                              default_diffuse_);
     color_actor->GetProperty()->SetColor(diffuse(0), diffuse(1), diffuse(2));
     color_actor->GetProperty()->SetOpacity(diffuse(3));

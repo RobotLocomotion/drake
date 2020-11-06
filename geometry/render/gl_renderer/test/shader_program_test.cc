@@ -68,8 +68,8 @@ class TestShader final : public ShaderProgram {
   std::optional<ShaderProgramData> DoCreateProgramData(
       const PerceptionProperties& properties) const override {
     Data data;
-    data.i_value = properties.GetProperty<int>("test", "i_value");
-    data.d_value = properties.GetProperty<double>("test", "d_value");
+    data.i_value = properties.Get<int>("test/i_value");
+    data.d_value = properties.Get<double>("test/d_value");
     return ShaderProgramData{shader_id(), AbstractValue::Make(data)};
   }
 
@@ -333,8 +333,7 @@ TEST_F(ShaderProgramTest, CreateProgramData) {
   PerceptionProperties props;
   const int i_value{17};
   const double d_value{18.5};
-  props.AddProperty("test", "i_value", i_value);
-  props.AddProperty("test", "d_value", d_value);
+  props.Add("test/i_value", i_value).Add("test/d_value", d_value);
 
   std::optional<ShaderProgramData> data = shader_ptr->CreateProgramData(props);
   ASSERT_NE(data, std::nullopt);

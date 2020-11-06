@@ -40,14 +40,15 @@ GTEST_TEST(GeometryVisualization, SimpleScene) {
 
   // Floats because the lcm messages store floats.
   const float radius = 1.25f;
-  const float r = 1.0;
-  const float g = 0.5f;
-  const float b = 0.25f;
-  const float a = 0.125f;
   GeometryId sphere_id = scene_graph.RegisterGeometry(
       source_id, frame_id,
       make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                     make_unique<Sphere>(radius), "sphere"));
+
+  const float r = 1.0;
+  const float g = 0.5f;
+  const float b = 0.25f;
+  const float a = 0.125f;
   Vector4<double> color{r, g, b, a};
   scene_graph.AssignRole(source_id, sphere_id,
                          MakePhongIllustrationProperties(color));

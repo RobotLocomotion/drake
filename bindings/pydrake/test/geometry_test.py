@@ -146,7 +146,7 @@ class TestGeometry(unittest.TestCase):
         # Check AssignRole bits.
         proximity = mut.ProximityProperties()
         perception = mut.PerceptionProperties()
-        perception.AddProperty("label", "id", mut.render.RenderLabel(0))
+        perception.Add("label/id"), mut.render.RenderLabel(0))
         illustration = mut.IllustrationProperties()
         props = [
             proximity,
@@ -554,59 +554,61 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(prop.Get(name=default_to_update), 20)
 
     def test_geometry_properties_old_api(self):
-        # TODO(SeanCurtis-TRI): This whole test should be deprecated when the
-        #  old API gets deprecated.
-        # Test perception/ illustration properties (specifically Rgba).
-        test_vector = [0., 0., 1., 1.]
-        test_color = mut.Rgba(0., 0., 1., 1.)
-        phong_props = mut.MakePhongIllustrationProperties(test_vector)
-        self.assertIsInstance(phong_props, mut.IllustrationProperties)
-        actual_color = phong_props.GetProperty("phong", "diffuse")
-        self.assertEqual(actual_color, test_color)
-        # Ensure that we can create it manually.
-        phong_props = mut.IllustrationProperties()
-        phong_props.AddProperty("phong", "diffuse", test_color)
-        actual_color = phong_props.GetProperty("phong", "diffuse")
-        self.assertEqual(actual_color, test_color)
-        # Test proximity properties.
-        prop = mut.ProximityProperties()
-        self.assertEqual(str(prop), "drake::geometry::ProximityProperties")
-        default_group = prop.default_group_name()
-        self.assertTrue(prop.HasGroup(group_name=default_group))
-        self.assertEqual(prop.num_groups(), 1)
-        self.assertTrue(default_group in prop.GetGroupNames())
-        prop.AddProperty(group_name=default_group, name="test", value=3)
-        self.assertTrue(prop.HasProperty(group_name=default_group,
-                                         name="test"))
-        self.assertEqual(
-            prop.GetProperty(group_name=default_group, name="test"), 3)
-        self.assertEqual(
-            prop.GetPropertyOrDefault(
-                group_name=default_group, name="empty", default_value=5),
-            5)
-        group_values = prop.GetPropertiesInGroup(group_name=default_group)
-        for name, value in group_values.items():
-            self.assertIsInstance(name, str)
-            self.assertIsInstance(value, AbstractValue)
-        # Remove the property.
-        self.assertTrue(prop.RemoveProperty(group_name=default_group,
-                                            name="test"))
-        self.assertFalse(prop.HasProperty(group_name=default_group,
-                                          name="test"))
-        # Update a property.
-        prop.AddProperty(group_name=default_group, name="to_update", value=17)
-        self.assertTrue(prop.HasProperty(group_name=default_group,
-                                         name="to_update"))
-        self.assertEqual(
-            prop.GetProperty(group_name=default_group, name="to_update"), 17)
+        # We're simply going to catch *all* the deprecation warnings en masse.
+        with catch_drake_warnings(expected_count=15):
+            # Test perception/ illustration properties (specifically Rgba).
+            test_vector = [0., 0., 1., 1.]
+            test_color = mut.Rgba(0., 0., 1., 1.)
+            phong_props = mut.MakePhongIllustrationProperties(test_vector)
+            self.assertIsInstance(phong_props, mut.IllustrationProperties)
+            actual_color = phong_props.GetProperty("phong", "diffuse")
+            self.assertEqual(actual_color, test_color)
+            # Ensure that we can create it manually.
+            phong_props = mut.IllustrationProperties()
+            phong_props.AddProperty("phong", "diffuse", test_color)
+            actual_color = phong_props.GetProperty("phong", "diffuse")
+            self.assertEqual(actual_color, test_color)
+            # Test proximity properties.
+            prop = mut.ProximityProperties()
+            self.assertEqual(str(prop), "drake::geometry::ProximityProperties")
+            default_group = prop.default_group_name()
+            self.assertTrue(prop.HasGroup(group_name=default_group))
+            self.assertEqual(prop.num_groups(), 1)
+            self.assertTrue(default_group in prop.GetGroupNames())
+            prop.AddProperty(group_name=default_group, name="test", value=3)
+            self.assertTrue(prop.HasProperty(group_name=default_group,
+                                             name="test"))
+            self.assertEqual(
+                prop.GetProperty(group_name=default_group, name="test"), 3)
+            self.assertEqual(
+                prop.GetPropertyOrDefault(
+                    group_name=default_group, name="empty", default_value=5),
+                5)
+            group_values = prop.GetPropertiesInGroup(group_name=default_group)
+            for name, value in group_values.items():
+                self.assertIsInstance(name, str)
+                self.assertIsInstance(value, AbstractValue)
+            # Remove the property.
+            self.assertTrue(prop.RemoveProperty(group_name=default_group,
+                                                name="test"))
+            self.assertFalse(prop.HasProperty(group_name=default_group,
+                                              name="test"))
+            # Update a property.
+            prop.AddProperty(group_name=default_group, name="to_update",
+                             value=17)
+            self.assertTrue(prop.HasProperty(group_name=default_group,
+                                             name="to_update"))
+            self.assertEqual(
+                prop.GetProperty(group_name=default_group, name="to_update"),
+                17)
 
-        prop.UpdateProperty(group_name=default_group, name="to_update",
-                            value=20)
-        self.assertTrue(prop.HasProperty(group_name=default_group,
-                                         name="to_update"))
-        self.assertEqual(
-            prop.GetProperty(group_name=default_group, name="to_update"),
-            20)
+            prop.UpdateProperty(group_name=default_group, name="to_update",
+                                value=20)
+            self.assertTrue(prop.HasProperty(group_name=default_group,
+                                             name="to_update"))
+            self.assertEqual(
+                prop.GetProperty(group_name=default_group, name="to_update"),
+                20)
 
         # Property copying.
         for PropertyType in [mut.ProximityProperties,

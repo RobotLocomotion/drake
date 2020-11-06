@@ -271,7 +271,7 @@ IllustrationProperties MakeVisualPropertiesFromSdfVisual(
           throw std::runtime_error(fmt::format(
               "Unable to locate the texture file: {}", texture_name));
         }
-        properties.AddProperty("phong", "diffuse_map", resolved_path);
+        properties.Add("phong/diffuse_map", resolved_path);
       }
     }
 
@@ -286,7 +286,7 @@ IllustrationProperties MakeVisualPropertiesFromSdfVisual(
 
       Vector4<double> color{sdf_color.R(), sdf_color.G(), sdf_color.B(),
                             sdf_color.A()};
-      props->AddProperty("phong", property, color);
+      props->Add({"phong", property}, color);
     };
 
     add_property("diffuse", &properties);
@@ -314,7 +314,7 @@ IllustrationProperties MakeVisualPropertiesFromSdfVisual(
       accepting = accepting->GetNextElement(kAcceptingTag);
     }
     DRAKE_DEMAND(accepting_names.size() > 0);
-    properties.AddProperty("renderer", "accepting", move(accepting_names));
+    properties.Add("renderer/accepting", move(accepting_names));
   }
 
   return properties;
@@ -406,10 +406,10 @@ ProximityProperties MakeProximityPropertiesForCollision(
 
   // TODO(SeanCurtis-TRI): Remove all of this legacy parsing code based on
   //  issue #12598.
-  if (!properties.HasProperty(geometry::internal::kMaterialGroup,
-                              geometry::internal::kFriction)) {
-    properties.AddProperty(
-        geometry::internal::kMaterialGroup, geometry::internal::kFriction,
+  if (!properties.HasProperty({geometry::internal::kMaterialGroup,
+                               geometry::internal::kFriction})) {
+    properties.Add(
+        {geometry::internal::kMaterialGroup, geometry::internal::kFriction},
         MakeCoulombFrictionFromSdfCollisionOde(sdf_collision));
   } else {
     // We parsed friction from <drake:proximity_properties>; test for the

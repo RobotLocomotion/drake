@@ -1198,24 +1198,24 @@ void DoScalarIndependentDefinitions(py::module m) {
     constexpr auto& cls_doc = doc.GeometryProperties;
     py::handle abstract_value_cls =
         py::module::import("pydrake.common.value").attr("AbstractValue");
-    py::class_<Class>(m, "GeometryProperties", cls_doc.doc)
-        .def("HasGroup", &Class::HasGroup, py::arg("group_name"),
-            cls_doc.HasGroup.doc)
-        .def("num_groups", &Class::num_groups, cls_doc.num_groups.doc)
+    py::class_<Class> cls(m, "GeometryProperties", cls_doc.doc);
+    cls
         .def(
             "GetPropertiesInGroup",
-            [](const Class& self, const std::string& group_name) {
-              py::dict out;
-              py::object py_self = py::cast(&self, py_rvp::reference);
-              for (auto& [name, abstract] :
-                  self.GetPropertiesInGroup(group_name)) {
-                out[name.c_str()] = py::cast(
-                    abstract.get(), py_rvp::reference_internal, py_self);
-              }
-              return out;
+            WrapDeprecated(cls_doc.GetPropertiesInGroup.doc_deprecated,
+                [](const Class& self, const std::string& group_name) {
+      py::dict out;
+      py::object py_self = py::cast(&self, py_rvp::reference);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+      for (auto& [name, abstract] : self.GetPropertiesInGroup(group_name)) {
+        out[name.c_str()] =
+            py::cast(abstract.get(), py_rvp::reference_internal, py_self);
+      }
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+      return out;
             },
             py::arg("group_name"), cls_doc.GetPropertiesInGroup.doc)
-        .def("GetGroupNames", &Class::GetGroupNames, cls_doc.GetGroupNames.doc)
         .def(
             "Add",
             [abstract_value_cls](
@@ -1233,7 +1233,7 @@ void DoScalarIndependentDefinitions(py::module m) {
                   abstract.cast<const AbstractValue&>());
             },
             py::arg("group_name"), py::arg("name"), py::arg("value"),
-            cls_doc.AddProperty.doc)
+            cls_doc.AddProperty.doc_AddProperty_deprecated)
         .def(
             "Update",
             [abstract_value_cls](
@@ -1252,7 +1252,7 @@ void DoScalarIndependentDefinitions(py::module m) {
                   abstract.cast<const AbstractValue&>());
             },
             py::arg("group_name"), py::arg("name"), py::arg("value"),
-            cls_doc.UpdateProperty.doc)
+            cls_doc.UpdateProperty.doc_UpdateProperty_deprecated)
         .def(
             "HasProperty",
             pydrake::overload_cast_explicit<bool, const std::string&>(
@@ -1260,12 +1260,13 @@ void DoScalarIndependentDefinitions(py::module m) {
             py::arg("name"), cls_doc.HasProperty.doc_1args)
         .def(
             "HasProperty",
-            [](const Class& self, const std::string& group_name,
-                const std::string& name) {
-              return self.HasProperty(group_name + "/" + name);
-            },
+            WrapDeprecated(cls_doc.HasProperty.doc_deprecated,
+                [](const Class& self, const std::string& group_name,
+                    const std::string& name) {
+                  return self.HasProperty(group_name + "/" + name);
+                }),
             py::arg("group_name"), py::arg("name"),
-            cls_doc.HasProperty.doc_2args)
+            cls_doc.HasProperty.doc_deprecated)
         .def(
             "Get",
             [](const Class& self, const std::string& name) {
@@ -1283,7 +1284,8 @@ void DoScalarIndependentDefinitions(py::module m) {
                       py_rvp::reference);
               return abstract.attr("get_value")();
             },
-            py::arg("group_name"), py::arg("name"), cls_doc.GetProperty.doc)
+            py::arg("group_name"), py::arg("name"),
+            cls_doc.GetProperty.doc_deprecated)
         .def(
             "GetPropertyOrDefault",
             [](const Class& self, const std::string& name,
@@ -1298,23 +1300,25 @@ void DoScalarIndependentDefinitions(py::module m) {
               }
             },
             py::arg("name"), py::arg("default_value"),
-            cls_doc.GetPropertyOrDefault.doc_2args)
+            cls_doc.GetPropertyOrDefault.doc)
         .def(
             "GetPropertyOrDefault",
-            [](const Class& self, const std::string& group_name,
-                const std::string& name, py::object default_value) {
-              // For now, ignore typing. This is less efficient, but eh, it's
-              // Python.
-              const std::string property = group_name + "/" + name;
-              if (self.HasProperty(property)) {
-                py::object py_self = py::cast(&self, py_rvp::reference);
-                return py_self.attr("Get")(property);
-              } else {
-                return default_value;
-              }
-            },
+            WrapDeprecated(cls_doc.GetPropertyOrDefault
+                               .doc_GetPropertyOrDefault_deprecated,
+                [](const Class& self, const std::string& group_name,
+                    const std::string& name, py::object default_value) {
+                  // For now, ignore typing. This is less efficient, but eh,
+                  // it's Python.
+                  const std::string property = group_name + "/" + name;
+                  if (self.HasProperty(property)) {
+                    py::object py_self = py::cast(&self, py_rvp::reference);
+                    return py_self.attr("Get")(property);
+                  } else {
+                    return default_value;
+                  }
+                }),
             py::arg("group_name"), py::arg("name"), py::arg("default_value"),
-            cls_doc.GetPropertyOrDefault.doc_3args)
+            cls_doc.GetPropertyOrDefault.doc_GetPropertyOrDefault_deprecated)
         .def("Remove", &Class::Remove, py::arg("name"), cls_doc.Remove.doc)
         .def(
             "RemoveProperty",
@@ -1322,17 +1326,30 @@ void DoScalarIndependentDefinitions(py::module m) {
                 const std::string& name) {
               return self.Remove(group_name + "/" + name);
             },
-            py::arg("group_name"), py::arg("name"), cls_doc.RemoveProperty.doc)
+            py::arg("group_name"), py::arg("name"),
+            cls_doc.RemoveProperty.doc_deprecated)
         .def_static("default_group_name", &Class::default_group_name,
             cls_doc.default_group_name.doc)
-        .def(
-            "__str__",
+        .def("__str__",
             [](const Class& self) {
               std::stringstream ss;
               ss << self;
               return ss.str();
             },
             "Returns formatted string.");
+    DeprecateAttribute(
+        cls, "HasGroup", cls_doc.HasGroup.doc_HasGroup_deprecated);
+    DeprecateAttribute(
+        cls, "num_groups", cls_doc.num_groups.doc_num_groups_deprecated);
+    DeprecateAttribute(cls, "GetGroupNames",
+        cls_doc.GetGroupNames.doc_GetGroupNames_deprecated);
+    DeprecateAttribute(
+        cls, "AddProperty", cls_doc.AddProperty.doc_AddProperty_deprecated);
+    DeprecateAttribute(cls, "UpdateProperty",
+        cls_doc.UpdateProperty.doc_UpdateProperty_deprecated);
+    DeprecateAttribute(cls, "GetProperty", cls_doc.GetProperty.doc_deprecated);
+    DeprecateAttribute(
+        cls, "RemoveProperty", cls_doc.RemoveProperty.doc_deprecated);
   }
 
   // GeometrySet

@@ -14,15 +14,22 @@ using geometry::internal::kComplianceType;
 using geometry::internal::kElastic;
 using geometry::internal::kFriction;
 using geometry::internal::kHcDissipation;
-using geometry::internal::kPointStiffness;
 using geometry::internal::kHydroGroup;
 using geometry::internal::kMaterialGroup;
+using geometry::internal::kPointStiffness;
 using geometry::internal::kRezHint;
 using std::optional;
 
 using ReadDoubleFunc = std::function<optional<double>(const char*)>;
 const bool rigid{true};
 const bool soft{true};
+
+// TODO(SeanCurtis-TRI): Delete this when we're no longer accessing the group
+//  property char* from proximity_properties.h.
+std::string make_property_name(const std::string& group,
+                               const std::string& property) {
+  return group + "/" + property;
+}
 
 // A read_double implementation that always returns nullopt.
 optional<double> empty_read_double(const char*) { return {}; }
@@ -37,18 +44,17 @@ ReadDoubleFunc param_read_double(
 }
 
 // Tests for a particular value in the given properties.
-::testing::AssertionResult ExpectScalar(const char* group, const char* property,
+::testing::AssertionResult ExpectScalar(const std::string& property,
                                         double expected,
                                         const ProximityProperties& p) {
   ::testing::AssertionResult failure = ::testing::AssertionFailure();
-  const bool has_value = p.HasProperty(group, property);
+  const bool has_value = p.HasProperty(property);
   if (!has_value) {
-    return failure << "Expected (" << group << ", " << property
-                   << "); not found";
+    return failure << "Expected the " << property << " property; not found";
   }
-  const double value = p.GetProperty<double>(group, property);
+  const double value = p.Get<double>(property);
   if (value != expected) {
-    return failure << "Wrong value for (" << group << ", " << property << "):"
+    return failure << "Wrong value for the " << property << "property:"
                    << "\n  Expected: " << expected << "\n  Found: " << value;
   }
   return ::testing::AssertionSuccess();
@@ -59,14 +65,7 @@ ReadDoubleFunc param_read_double(
 GTEST_TEST(ParseProximityPropertiesTest, NoProperties) {
   ProximityProperties properties =
       ParseProximityProperties(empty_read_double, !rigid, !soft);
-  // It is empty if there is a single group: the default group with no
-  // properties.
-  ASSERT_EQ(properties.num_groups(), 1);
-  ASSERT_TRUE(properties.HasGroup(GeometryProperties::default_group_name()));
-  ASSERT_EQ(
-      properties.GetPropertiesInGroup(GeometryProperties::default_group_name())
-          .size(),
-      0u);
+  ASSERT_EQ(properties.GetAllProperties().size(), 0);
 }
 
 // Confirms successful parsing of hydroelastic properties.
@@ -80,13 +79,13 @@ GTEST_TEST(ParseProximityPropertiesTest, HydroelasticProperties) {
     DRAKE_DEMAND(!(is_rigid && is_soft));
     ::testing::AssertionResult failure = ::testing::AssertionFailure();
     const bool has_compliance_type =
-        p.HasProperty(kHydroGroup, kComplianceType);
+        p.HasProperty(make_property_name(kHydroGroup, kComplianceType));
     if (is_rigid || is_soft) {
       if (!has_compliance_type) {
         return failure << "Expected compliance; found none";
       }
       auto compliance =
-          p.GetProperty<HydroelasticType>(kHydroGroup, kComplianceType);
+          p.Get<HydroelasticType>({kHydroGroup, kComplianceType});
       if (is_rigid && compliance != HydroelasticType::kRigid) {
         return failure << "Expected rigid compliance; found " << compliance;
       } else if (is_soft && compliance != HydroelasticType::kSoft) {
@@ -104,19 +103,21 @@ GTEST_TEST(ParseProximityPropertiesTest, HydroelasticProperties) {
   {
     ProximityProperties properties =
         ParseProximityProperties(empty_read_double, rigid, !soft);
-    EXPECT_TRUE(expect_compliance(rigid, !soft, properties));
     // Compliance is the only property.
-    EXPECT_EQ(properties.GetPropertiesInGroup(kHydroGroup).size(), 1u);
+    EXPECT_TRUE(expect_compliance(rigid, !soft, properties));
+    EXPECT_EQ(properties.GetAllProperties().size(), 1);
   }
+
+  const std::string kRezName = make_property_name(kHydroGroup, kRezHint);
 
   // Case: Declared rigid with a resolution hint.
   {
     ProximityProperties properties = ParseProximityProperties(
         param_read_double(kTag, kRezHintValue), rigid, !soft);
-    EXPECT_TRUE(expect_compliance(rigid, !soft, properties));
     // Should have compliance and resolution.
-    EXPECT_EQ(properties.GetPropertiesInGroup(kHydroGroup).size(), 2u);
-    EXPECT_TRUE(ExpectScalar(kHydroGroup, kRezHint, kRezHintValue, properties));
+    EXPECT_TRUE(expect_compliance(rigid, !soft, properties));
+    EXPECT_EQ(properties.GetAllProperties().size(), 2);
+    EXPECT_TRUE(ExpectScalar(kRezName, kRezHintValue, properties));
   }
 
   // Case: Declared soft without a resolution hint.
@@ -125,27 +126,27 @@ GTEST_TEST(ParseProximityPropertiesTest, HydroelasticProperties) {
         ParseProximityProperties(empty_read_double, !rigid, soft);
     EXPECT_TRUE(expect_compliance(!rigid, soft, properties));
     // Compliance is the only property.
-    EXPECT_EQ(properties.GetPropertiesInGroup(kHydroGroup).size(), 1u);
+    EXPECT_EQ(properties.GetAllProperties().size(), 1);
   }
 
   // Case: Declared soft with a resolution hint.
   {
     ProximityProperties properties = ParseProximityProperties(
         param_read_double(kTag, kRezHintValue), !rigid, soft);
-    EXPECT_TRUE(expect_compliance(!rigid, soft, properties));
     // Should have compliance and resolution.
-    EXPECT_EQ(properties.GetPropertiesInGroup(kHydroGroup).size(), 2u);
-    EXPECT_TRUE(ExpectScalar(kHydroGroup, kRezHint, kRezHintValue, properties));
+    EXPECT_TRUE(expect_compliance(!rigid, soft, properties));
+    EXPECT_EQ(properties.GetAllProperties().size(), 2);
+    EXPECT_TRUE(ExpectScalar(kRezName, kRezHintValue, properties));
   }
 
   // Case: Resolution without any hydroelastic declaration.
   {
     ProximityProperties properties = ParseProximityProperties(
         param_read_double(kTag, kRezHintValue), !rigid, !soft);
-    EXPECT_TRUE(expect_compliance(!rigid, !soft, properties));
     // Resolution should be the only property.
-    EXPECT_EQ(properties.GetPropertiesInGroup(kHydroGroup).size(), 1u);
-    EXPECT_TRUE(ExpectScalar(kHydroGroup, kRezHint, kRezHintValue, properties));
+    EXPECT_TRUE(expect_compliance(!rigid, !soft, properties));
+    EXPECT_EQ(properties.GetAllProperties().size(), 1);
+    EXPECT_TRUE(ExpectScalar(kRezName, kRezHintValue, properties));
   }
 }
 
@@ -154,10 +155,10 @@ GTEST_TEST(ParseProximityPropertiesTest, ElasticModulus) {
   const double kValue = 1.75;
   ProximityProperties properties = ParseProximityProperties(
       param_read_double("drake:elastic_modulus", kValue), !rigid, !soft);
-  EXPECT_TRUE(ExpectScalar(kMaterialGroup, kElastic, kValue, properties));
+  EXPECT_TRUE(ExpectScalar(make_property_name(kMaterialGroup, kElastic), kValue,
+                           properties));
   // Elastic modulus is the only property.
-  EXPECT_EQ(properties.GetPropertiesInGroup(kMaterialGroup).size(), 1u);
-  EXPECT_EQ(properties.num_groups(), 2);  // Material and default groups.
+  EXPECT_EQ(properties.GetAllProperties().size(), 1);
 }
 
 // Confirms successful parsing of dissipation.
@@ -166,10 +167,10 @@ GTEST_TEST(ParseProximityPropertiesTest, Dissipation) {
   ProximityProperties properties = ParseProximityProperties(
       param_read_double("drake:hunt_crossley_dissipation", kValue), !rigid,
       !soft);
-  EXPECT_TRUE(ExpectScalar(kMaterialGroup, kHcDissipation, kValue, properties));
+  EXPECT_TRUE(ExpectScalar(make_property_name(kMaterialGroup, kHcDissipation),
+                           kValue, properties));
   // Dissipation is the only property.
-  EXPECT_EQ(properties.GetPropertiesInGroup(kMaterialGroup).size(), 1u);
-  EXPECT_EQ(properties.num_groups(), 2);  // Material and default groups.
+  EXPECT_EQ(properties.GetAllProperties().size(), 1);
 }
 
 // Confirms successful parsing of stiffness.
@@ -178,11 +179,10 @@ GTEST_TEST(ParseProximityPropertiesTest, Stiffness) {
   ProximityProperties properties = ParseProximityProperties(
       param_read_double("drake:point_contact_stiffness", kValue), !rigid,
       !soft);
-  EXPECT_TRUE(
-      ExpectScalar(kMaterialGroup, kPointStiffness, kValue, properties));
+  EXPECT_TRUE(ExpectScalar(make_property_name(kMaterialGroup, kPointStiffness),
+                           kValue, properties));
   // Stiffness is the only property.
-  EXPECT_EQ(properties.GetPropertiesInGroup(kMaterialGroup).size(), 1u);
-  EXPECT_EQ(properties.num_groups(), 2);  // Material and default groups.
+  EXPECT_EQ(properties.GetAllProperties().size(), 1);
 }
 
 // Confirms successful parsing of friction.
@@ -206,17 +206,17 @@ GTEST_TEST(ParseProximityPropertiesTest, Friction) {
       [](double mu_d, double mu_s,
          const ProximityProperties& p) -> ::testing::AssertionResult {
     ::testing::AssertionResult failure = ::testing::AssertionFailure();
-    const bool has_value = p.HasProperty(kMaterialGroup, kFriction);
+    const std::string kFrictionName =
+        make_property_name(kMaterialGroup, kFriction);
+    const bool has_value = p.HasProperty(kFrictionName);
     if (!has_value) {
-      return failure << "Expected (" << kMaterialGroup << ", " << kFriction
-                     << "); not found";
+      return failure << "Expected '" << kFrictionName << "'; not found";
     }
     const auto& friction =
-        p.GetProperty<CoulombFriction<double>>(kMaterialGroup, kFriction);
+        p.Get<CoulombFriction<double>>(kFrictionName);
     if (friction.dynamic_friction() != mu_d ||
         friction.static_friction() != mu_s) {
-      return failure << "Wrong value for (" << kMaterialGroup << ", "
-                     << kFriction << "):"
+      return failure << "Wrong value for '" << kFrictionName << "': "
                      << "\n  Expected mu_d: " << mu_d << ", mu_s: " << mu_s
                      << "\n  Found mu_d " << friction.dynamic_friction()
                      << ", mu_s: " << friction.static_friction();
@@ -230,10 +230,9 @@ GTEST_TEST(ParseProximityPropertiesTest, Friction) {
     ProximityProperties properties = ParseProximityProperties(
         friction_read_double(kValue, {}), !rigid,
         !soft);
-    EXPECT_TRUE(expect_friction(kValue, kValue, properties));
     // Friction is the only property.
-    EXPECT_EQ(properties.GetPropertiesInGroup(kMaterialGroup).size(), 1u);
-    EXPECT_EQ(properties.num_groups(), 2);  // Material and default groups.
+    EXPECT_TRUE(expect_friction(kValue, kValue, properties));
+    EXPECT_EQ(properties.GetAllProperties().size(), 1);
   }
 
   // Case: Only static -- both coefficients match static coefficient.
@@ -242,10 +241,9 @@ GTEST_TEST(ParseProximityPropertiesTest, Friction) {
     ProximityProperties properties = ParseProximityProperties(
         friction_read_double({}, kValue), !rigid,
         !soft);
-    EXPECT_TRUE(expect_friction(kValue, kValue, properties));
     // Friction is the only property.
-    EXPECT_EQ(properties.GetPropertiesInGroup(kMaterialGroup).size(), 1u);
-    EXPECT_EQ(properties.num_groups(), 2);  // Material and default groups.
+    EXPECT_TRUE(expect_friction(kValue, kValue, properties));
+    EXPECT_EQ(properties.GetAllProperties().size(), 1);
   }
 
   // Case: Both defined -- resulting coefficients match.
@@ -255,10 +253,9 @@ GTEST_TEST(ParseProximityPropertiesTest, Friction) {
     ProximityProperties properties = ParseProximityProperties(
         friction_read_double(kMuD, kMuS), !rigid,
         !soft);
-    EXPECT_TRUE(expect_friction(kMuD, kMuS, properties));
     // Friction is the only property.
-    EXPECT_EQ(properties.GetPropertiesInGroup(kMaterialGroup).size(), 1u);
-    EXPECT_EQ(properties.num_groups(), 2);  // Material and default groups.
+    EXPECT_TRUE(expect_friction(kMuD, kMuS, properties));
+    EXPECT_EQ(properties.GetAllProperties().size(), 1);
   }
 }
 

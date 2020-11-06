@@ -344,9 +344,9 @@ class RenderEngineVtkTest : public ::testing::Test {
 
     if (add_terrain) {
       PerceptionProperties material;
-      material.AddProperty("label", "id", RenderLabel::kDontCare);
-      material.AddProperty(
-          "phong", "diffuse",
+      material.Add("label/id", RenderLabel::kDontCare);
+      material.Add(
+          "phong/diffuse",
           Vector4d{kTerrainColorD.r, kTerrainColorD.g, kTerrainColorD.b, 1.0});
       engine->RegisterVisual(GeometryId::get_new_id(), HalfSpace(), material,
                              RigidTransformd::Identity(),
@@ -361,13 +361,12 @@ class RenderEngineVtkTest : public ::testing::Test {
     PerceptionProperties material;
     Vector4d color_n(default_color_.r / 255., default_color_.g / 255.,
                      default_color_.b / 255., default_color_.a / 255.);
-    material.AddProperty("phong", "diffuse", color_n);
-    material.AddProperty("label", "id", expected_label_);
+    material.Add("phong/diffuse", color_n)
+        .Add("label/id", expected_label_);
     if (use_texture) {
-      material.AddProperty(
-          "phong", "diffuse_map",
-          FindResourceOrThrow(
-              "drake/systems/sensors/test/models/meshes/box.png"));
+      material.Add("phong/diffuse_map",
+                   FindResourceOrThrow(
+                       "drake/systems/sensors/test/models/meshes/box.png"));
     }
     return material;
   }
@@ -616,13 +615,12 @@ TEST_F(RenderEngineVtkTest, BoxTest) {
       // the untiled default behavior and the ability to scale the texture.
       PerceptionProperties props = simple_material(false);
       if (use_texture) {
-        props.AddProperty(
-            "phong", "diffuse_map",
-            FindResourceOrThrow(
-                "drake/geometry/render/test/diag_gradient.png"));
+        props.Add("phong/diffuse_map",
+                  FindResourceOrThrow(
+                      "drake/geometry/render/test/diag_gradient.png"));
         if (texture_scaled) {
-          props.AddProperty(
-              "phong", "diffuse_scale", Vector2d{texture_scale, texture_scale});
+          props.Add("phong/diffuse_scale",
+                    Vector2d{texture_scale, texture_scale});
         }
       }
       renderer_->RegisterVisual(id, box, props,
@@ -891,7 +889,7 @@ TEST_F(RenderEngineVtkTest, MeshTest) {
   Mesh mesh(filename);
   expected_label_ = RenderLabel(3);
   PerceptionProperties material = simple_material();
-  material.AddProperty("phong", "diffuse_map", "bad_path");
+  material.Add("phong/diffuse_map", "bad_path");
   const GeometryId id = GeometryId::get_new_id();
   renderer_->RegisterVisual(id, mesh, material, RigidTransformd::Identity(),
                             true /* needs update */);
@@ -911,8 +909,8 @@ TEST_F(RenderEngineVtkTest, TextureMeshTest) {
   Mesh mesh(filename);
   expected_label_ = RenderLabel(4);
   PerceptionProperties material = simple_material();
-  material.AddProperty(
-      "phong", "diffuse_map",
+  material.Add(
+      "phong/diffuse_map",
       FindResourceOrThrow("drake/systems/sensors/test/models/meshes/box.png"));
   const GeometryId id = GeometryId::get_new_id();
   renderer_->RegisterVisual(id, mesh, material, RigidTransformd::Identity(),
@@ -1007,8 +1005,8 @@ TEST_F(RenderEngineVtkTest, RemoveVisual) {
                           diffuse.a / 255.};
     RenderLabel label = RenderLabel(5);
     PerceptionProperties material;
-    material.AddProperty("phong", "diffuse", norm_diffuse);
-    material.AddProperty("label", "id", label);
+    material.Add("phong/diffuse", norm_diffuse)
+        .Add("label/id", label);
     // This will accept all registered geometries and therefore, (bool)index
     // should always be true.
     renderer_->RegisterVisual(geometry_id, sphere, material,
@@ -1272,8 +1270,8 @@ TEST_F(RenderEngineVtkTest, PreservePropertyTexturesOverClone) {
   const GeometryId id = GeometryId::get_new_id();
   const RenderLabel label(12345);  // an arbitrary value.
   PerceptionProperties material;
-  material.AddProperty("phong", "diffuse", Vector4d{1.0, 1.0, 1.0, 1.0});
-  material.AddProperty("label", "id", label);
+  material.Add("phong/diffuse", Vector4d{1.0, 1.0, 1.0, 1.0})
+      .Add("label/id", label);
   engine.RegisterVisual(id, sphere, material, RigidTransformd(),
                         true /* needs update */);
   engine.ApplyColorTextureToGeometry(id, texture_name);

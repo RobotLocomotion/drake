@@ -91,7 +91,7 @@ class DummyRenderEngine : public render::RenderEngine {
    to _accept_ geometry during registration.  */
   PerceptionProperties accepting_properties() const {
     PerceptionProperties properties;
-    properties.AddProperty(include_group_name_, "ignored", 0);
+    properties.Add(include_name_, 0);
     return properties;
   }
 
@@ -172,7 +172,7 @@ class DummyRenderEngine : public render::RenderEngine {
                         const math::RigidTransformd& X_WG) override {
     X_WGs_[id] = X_WG;
     GetRenderLabelOrThrow(properties);
-    if (force_accept_ || properties.HasGroup(include_group_name_)) {
+    if (force_accept_ || properties.HasProperty(include_name_)) {
       registered_geometries_.insert(id);
       return true;
     }
@@ -212,9 +212,9 @@ class DummyRenderEngine : public render::RenderEngine {
   // Track each id that gets updated and what it has been updated to.
   std::map<GeometryId, math::RigidTransformd> updated_ids_;
 
-  // The group name whose presence will lead to a shape being added to the
+  // The property name whose presence will lead to a shape being added to the
   // engine.
-  std::string include_group_name_{"in_test"};
+  std::string include_name_{"dummy_renderer_accepts_if_present"};
 
   // The last updated camera pose (defaults to identity).
   math::RigidTransformd X_WC_;

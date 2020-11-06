@@ -70,7 +70,7 @@ bool RenderEngine::has_geometry(GeometryId id) const {
 RenderLabel RenderEngine::GetRenderLabelOrThrow(
     const PerceptionProperties& properties) const {
   RenderLabel label =
-      properties.GetPropertyOrDefault("label", "id", default_render_label_);
+      properties.GetPropertyOrDefault("label/id", default_render_label_);
   if (label == RenderLabel::kUnspecified || label == RenderLabel::kEmpty) {
     throw std::logic_error(
         "Cannot register a geometry with the 'unspecified' or 'empty' render "

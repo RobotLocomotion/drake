@@ -415,6 +415,9 @@ GTEST_TEST(GeometryProperties, ChainingWrites) {
 //  that API is removed, remove all tests from the test fixture:
 //  GeometryPropertiesOld.
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 GTEST_TEST(GeometryPropertiesOld, ManagingGroups) {
   TestProperties properties;
   const string& group_name{"some_group"};
@@ -784,6 +787,7 @@ GTEST_TEST(GeometryPropertiesOld, RgbaAndVector4) {
   // - Get<Vector4d>.
   EXPECT_EQ(vector, properties.GetProperty<Vector4d>(group_name, vector_name));
 }
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
 }  // namespace
 }  // namespace geometry

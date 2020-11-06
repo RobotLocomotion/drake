@@ -80,7 +80,7 @@ class DefaultRgbaColorShader final : public ShaderProgram {
   std::optional<ShaderProgramData> DoCreateProgramData(
       const PerceptionProperties& properties) const final {
     const Rgba rgba =
-        properties.GetPropertyOrDefault("phong", "diffuse", default_diffuse_);
+        properties.GetPropertyOrDefault("phong/diffuse", default_diffuse_);
     Vector4<float> v4{
         static_cast<float>(rgba.r()), static_cast<float>(rgba.g()),
         static_cast<float>(rgba.b()), static_cast<float>(rgba.a())};
@@ -193,16 +193,15 @@ class DefaultTextureColorShader final : public internal::ShaderProgram {
 
   std::optional<ShaderProgramData>
   DoCreateProgramData(const PerceptionProperties& properties) const final {
-    if (!properties.HasProperty("phong", "diffuse_map")) return std::nullopt;
+    if (!properties.HasProperty("phong/diffuse_map")) return std::nullopt;
 
-    const string& file_name =
-        properties.GetProperty<string>("phong", "diffuse_map");
+    const string& file_name = properties.Get<string>("phong/diffuse_map");
     std::optional<GLuint> texture_id = library_->GetTextureId(file_name);
 
     if (!texture_id.has_value()) return std::nullopt;
 
     const auto& scale = properties.GetPropertyOrDefault(
-        "phong", "diffuse_scale", Vector2d(1, 1));
+        "phong/diffuse_scale", Vector2d(1, 1));
     return ShaderProgramData{shader_id(), AbstractValue::Make(
       InstanceData{*texture_id, scale.cast<float>()})};
   }
@@ -689,7 +688,7 @@ void RenderEngineGl::ImplementMesh(const internal::OpenGlGeometry& geometry,
                                    const Vector3<double>& scale,
                                    const std::string& file_name) {
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-  if (data.properties.HasProperty("phong", "diffuse_map")) {
+  if (data.properties.HasProperty("phong/diffuse_map")) {
     ImplementGeometry(geometry, user_data, scale);
     return;
   }
@@ -704,7 +703,7 @@ void RenderEngineGl::ImplementMesh(const internal::OpenGlGeometry& geometry,
   PerceptionProperties temp_props(data.properties);
   filesystem::path file_path(file_name);
   const string png_name = file_path.replace_extension(".png").string();
-  temp_props.AddProperty("phong", "diffuse_map", png_name);
+  temp_props.Add("phong/diffuse_map", png_name);
   RegistrationData temp_data{data.id, data.X_WG, temp_props};
   ImplementGeometry(geometry, &temp_data, scale);
 }

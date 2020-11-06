@@ -17,9 +17,9 @@ namespace {
 template <typename Properties>
 std::pair<Properties, Properties> MakePropertyPair() {
   Properties p1;
-  p1.AddProperty("group1", "value", 1);
+  p1.Add("value1", 1);
   Properties p2;
-  p2.AddProperty("group2", "value", 2);
+  p2.Add("value2", 2);
   return std::make_pair(p1, p2);
 }
 
@@ -34,15 +34,15 @@ GTEST_TEST(InternalGeometryTest, PropertyAssignment) {
     DRAKE_EXPECT_NO_THROW(geometry.SetRole(p1));
     EXPECT_TRUE(geometry.has_proximity_role());
     EXPECT_TRUE(
-        geometry.proximity_properties()->HasProperty("group1", "value"));
+        geometry.proximity_properties()->HasProperty("value1"));
     EXPECT_FALSE(
-        geometry.proximity_properties()->HasProperty("group2", "value"));
+        geometry.proximity_properties()->HasProperty("value2"));
     // Resetting proximity properties is not an error.
     DRAKE_EXPECT_NO_THROW(geometry.SetRole(p2));
     EXPECT_FALSE(
-        geometry.proximity_properties()->HasProperty("group1", "value"));
+        geometry.proximity_properties()->HasProperty("value1"));
     EXPECT_TRUE(
-        geometry.proximity_properties()->HasProperty("group2", "value"));
+        geometry.proximity_properties()->HasProperty("value2"));
   }
 
   {
@@ -52,15 +52,15 @@ GTEST_TEST(InternalGeometryTest, PropertyAssignment) {
     DRAKE_EXPECT_NO_THROW(geometry.SetRole(p1));
     EXPECT_TRUE(geometry.has_illustration_role());
     EXPECT_TRUE(
-        geometry.illustration_properties()->HasProperty("group1", "value"));
+        geometry.illustration_properties()->HasProperty("value1"));
     EXPECT_FALSE(
-        geometry.illustration_properties()->HasProperty("group2", "value"));
+        geometry.illustration_properties()->HasProperty("value2"));
     // Resetting illustration properties is not an error.
     DRAKE_EXPECT_NO_THROW(geometry.SetRole(p2));
     EXPECT_FALSE(
-        geometry.illustration_properties()->HasProperty("group1", "value"));
+        geometry.illustration_properties()->HasProperty("value1"));
     EXPECT_TRUE(
-        geometry.illustration_properties()->HasProperty("group2", "value"));
+        geometry.illustration_properties()->HasProperty("value2"));
   }
 
   {

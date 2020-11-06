@@ -64,10 +64,8 @@ BouncingBallPlant<T>::BouncingBallPlant(SourceId source_id,
   scene_graph->AssignRole(source_id, ball_id_, IllustrationProperties());
   scene_graph->AssignRole(source_id, ball_id_, ProximityProperties());
   PerceptionProperties perception_properties;
-  perception_properties.AddProperty("phong", "diffuse",
-                                    Vector4d{0.8, 0.8, 0.8, 1.0});
-  perception_properties.AddProperty("label", "id",
-                                    RenderLabel(ball_id_.get_value()));
+  perception_properties.Add("phong/diffuse", Vector4d{0.8, 0.8, 0.8, 1.0})
+      .Add("label/id", RenderLabel(ball_id_.get_value()));
   scene_graph->AssignRole(source_id, ball_id_, perception_properties);
 
   // Allocate the output port now that the frame has been registered.

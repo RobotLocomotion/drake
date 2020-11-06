@@ -373,7 +373,7 @@ geometry::GeometryInstance ParseVisual(const std::string& parent_element_name,
       properties = geometry::MakePhongIllustrationProperties(*(material.rgba));
     }
     if (material.diffuse_map) {
-      properties.AddProperty("phong", "diffuse_map", *(material.diffuse_map));
+      properties.Add("phong/diffuse_map", *(material.diffuse_map));
     }
   }
 
@@ -397,7 +397,7 @@ geometry::GeometryInstance ParseVisual(const std::string& parent_element_name,
       accepting_node = accepting_node->NextSiblingElement(kAcceptingTag);
     }
     DRAKE_DEMAND(accepting_names.size() > 0);
-    properties.AddProperty("renderer", "accepting", std::move(accepting_names));
+    properties.Add("renderer/accepting", std::move(accepting_names));
   }
 
   std::string geometry_name;
@@ -559,14 +559,15 @@ geometry::GeometryInstance ParseCollision(
   // TODO(SeanCurtis-TRI): Remove all of this legacy parsing code based on
   //  issue #12598.
   // Now test to see how we should handle a potential <drake_compliance> tag.
-  if (!props.HasProperty(geometry::internal::kMaterialGroup,
-                         geometry::internal::kFriction)) {
+  if (!props.HasProperty({geometry::internal::kMaterialGroup,
+                          geometry::internal::kFriction})) {
     // We have no friction from <drake:proximity_properties> so we need the old
     // tag.
     CoulombFriction<double> friction =
         ParseCoulombFrictionFromDrakeCompliance(parent_element_name, node);
-    props.AddProperty(geometry::internal::kMaterialGroup,
-                      geometry::internal::kFriction, friction);
+    props.Add(
+        {geometry::internal::kMaterialGroup, geometry::internal::kFriction},
+        friction);
   } else {
     // We parsed friction from <drake:proximity_properties>; test for the
     // existence of <drake_compliance> and warn that it won't be used.

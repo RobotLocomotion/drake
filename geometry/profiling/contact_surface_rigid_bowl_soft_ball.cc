@@ -173,7 +173,7 @@ class MovingSoftGeometry final : public LeafSystem<double> {
     scene_graph->AssignRole(source_id_, geometry_id_, prox_props);
 
     IllustrationProperties illus_props;
-    illus_props.AddProperty("phong", "diffuse", Vector4d(0.8, 0.1, 0.1, 0.25));
+    illus_props.Add("phong/diffuse", Vector4d(0.8, 0.1, 0.1, 0.25));
     scene_graph->AssignRole(source_id_, geometry_id_, illus_props);
 
     geometry_pose_port_ =
@@ -338,7 +338,7 @@ int do_main() {
   AddRigidHydroelasticProperties(FLAGS_resolution_hint, &rigid_props);
   scene_graph.AssignRole(source_id, rigid_geometry_id, rigid_props);
   IllustrationProperties illus_props;
-  illus_props.AddProperty("phong", "diffuse", Vector4d{0.5, 0.5, 0.45, 0.25});
+  illus_props.Add("phong/diffuse", Vector4d{0.5, 0.5, 0.45, 0.25});
   scene_graph.AssignRole(source_id, rigid_geometry_id, illus_props);
 
   // Make and visualize contacts.

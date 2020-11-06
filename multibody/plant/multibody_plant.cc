@@ -400,20 +400,19 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
   // TODO(SeanCurtis-TRI): Eliminate the automatic assignment of perception
   //  and illustration in favor of a protocol that allows definition.
   geometry::PerceptionProperties perception_props;
-  perception_props.AddProperty("label", "id", RenderLabel(body.index()));
-  perception_props.AddProperty(
-      "phong", "diffuse",
-      properties.GetPropertyOrDefault(
-          "phong", "diffuse", Vector4<double>(0.9, 0.9, 0.9, 1.0)));
-  if (properties.HasProperty("phong", "diffuse_map")) {
-    perception_props.AddProperty(
-        "phong", "diffuse_map",
-        properties.GetProperty<std::string>("phong", "diffuse_map"));
+  perception_props.Add("label/id", RenderLabel(body.index()))
+      .Add("phong/diffuse",
+           properties.GetPropertyOrDefault(
+               {"phong", "diffuse"}, Vector4<double>(0.9, 0.9, 0.9, 1.0)));
+  if (properties.HasProperty({"phong", "diffuse_map"})) {
+    perception_props.Add(
+        {"phong", "diffuse_map"},
+        properties.Get<std::string>({"phong", "diffuse_map"}));
   }
-  if (properties.HasProperty("renderer", "accepting")) {
-    perception_props.AddProperty(
-      "renderer", "accepting",
-      properties.GetProperty<std::set<std::string>>("renderer", "accepting"));
+  if (properties.HasProperty({"renderer", "accepting"})) {
+    perception_props.Add(
+        {"renderer", "accepting"},
+        properties.Get<std::set<std::string>>({"renderer", "accepting"}));
   }
   member_scene_graph().AssignRole(*source_id_, id, perception_props);
 
@@ -437,12 +436,12 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
     geometry::ProximityProperties properties) {
   DRAKE_MBP_THROW_IF_FINALIZED();
   DRAKE_THROW_UNLESS(geometry_source_is_registered());
-  DRAKE_THROW_UNLESS(properties.HasProperty(geometry::internal::kMaterialGroup,
-                                            geometry::internal::kFriction));
+  DRAKE_THROW_UNLESS(properties.HasProperty({geometry::internal::kMaterialGroup,
+                                             geometry::internal::kFriction}));
 
   const CoulombFriction<double> coulomb_friction =
-      properties.GetProperty<CoulombFriction<double>>(
-          geometry::internal::kMaterialGroup, geometry::internal::kFriction);
+      properties.Get<CoulombFriction<double>>(
+          {geometry::internal::kMaterialGroup, geometry::internal::kFriction});
 
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register geometry that has a fixed path to world to the world body (i.e.,
@@ -469,8 +468,8 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
     const geometry::Shape& shape, const std::string& name,
     const CoulombFriction<double>& coulomb_friction) {
   geometry::ProximityProperties props;
-  props.AddProperty(geometry::internal::kMaterialGroup,
-                    geometry::internal::kFriction, coulomb_friction);
+  props.Add({geometry::internal::kMaterialGroup, geometry::internal::kFriction},
+            coulomb_friction);
   return RegisterCollisionGeometry(body, X_BG, shape, name, std::move(props));
 }
 
@@ -1536,17 +1535,17 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
         inspector.GetProximityProperties(geometryM_id);
     DRAKE_DEMAND(propM != nullptr);
     DRAKE_DEMAND(propN != nullptr);
-    DRAKE_THROW_UNLESS(propM->HasProperty(geometry::internal::kMaterialGroup,
-                                          geometry::internal::kFriction));
-    DRAKE_THROW_UNLESS(propN->HasProperty(geometry::internal::kMaterialGroup,
-                                          geometry::internal::kFriction));
+    DRAKE_THROW_UNLESS(propM->HasProperty({geometry::internal::kMaterialGroup,
+                                           geometry::internal::kFriction}));
+    DRAKE_THROW_UNLESS(propN->HasProperty({geometry::internal::kMaterialGroup,
+                                           geometry::internal::kFriction}));
 
     const CoulombFriction<double>& geometryM_friction =
-        propM->GetProperty<CoulombFriction<double>>(
-            geometry::internal::kMaterialGroup, geometry::internal::kFriction);
+        propM->Get<CoulombFriction<double>>({geometry::internal::kMaterialGroup,
+                                             geometry::internal::kFriction});
     const CoulombFriction<double>& geometryN_friction =
-        propN->GetProperty<CoulombFriction<double>>(
-            geometry::internal::kMaterialGroup, geometry::internal::kFriction);
+        propN->Get<CoulombFriction<double>>({geometry::internal::kMaterialGroup,
+                                             geometry::internal::kFriction});
 
     // Compute combined friction coefficient.
     const CoulombFriction<double> combined_friction =

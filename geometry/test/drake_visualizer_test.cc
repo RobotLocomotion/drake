@@ -141,7 +141,7 @@ class DrakeVisualizerTest : public ::testing::Test {
         make_unique<GeometryInstance>(RigidTransformd{},
                                       make_unique<Box>(1, 1, 1), "perception"));
     PerceptionProperties percep_prop;
-    percep_prop.AddProperty("phong", "diffuse", Rgba(0, 1, 0, 1));
+    percep_prop.Add("phong/diffuse", Rgba(0, 1, 0, 1));
     scene_graph_->AssignRole(source_id_, g0_id, percep_prop);
 
     // A cylinder has illustration properties with a blue color.
@@ -152,7 +152,7 @@ class DrakeVisualizerTest : public ::testing::Test {
         make_unique<GeometryInstance>(
             RigidTransformd{}, make_unique<Cylinder>(1, 1), "illustration"));
     IllustrationProperties illus_prop;
-    illus_prop.AddProperty("phong", "diffuse", Rgba(0, 1, 0, 1));
+    illus_prop.Add("phong/diffuse", Rgba(0, 1, 0, 1));
     scene_graph_->AssignRole(source_id_, g1_id, illus_prop);
 
     // A sphere has proximity properties with no color.
@@ -535,7 +535,7 @@ TEST_F(DrakeVisualizerTest, GeometryWithIllustrationFallback) {
   const Rgba expected_rgba{0.25, 0.125, 0.75, 0.5};
   ASSERT_NE(expected_rgba, DrakeVisualizerParams().default_color);
   IllustrationProperties illus_props;
-  illus_props.AddProperty("phong", "diffuse", expected_rgba);
+  illus_props.Add("phong/diffuse", expected_rgba);
   scene_graph_->AssignRole(source_id_, g_id, ProximityProperties());
   scene_graph_->AssignRole(source_id_, g_id, illus_props);
 
@@ -564,11 +564,11 @@ TEST_F(DrakeVisualizerTest, AllRolesCanDefineDiffuse) {
     ASSERT_NE(expected_rgba, DrakeVisualizerParams().default_color);
     if (role == Role::kProximity) {
       ProximityProperties props;
-      props.AddProperty("phong", "diffuse", expected_rgba);
+      props.Add("phong/diffuse", expected_rgba);
       scene_graph_->AssignRole(source_id_, g_id, props);
     } else if (role == Role::kPerception) {
       PerceptionProperties props;
-      props.AddProperty("phong", "diffuse", expected_rgba);
+      props.Add("phong/diffuse", expected_rgba);
       scene_graph_->AssignRole(source_id_, g_id, props);
     }
 

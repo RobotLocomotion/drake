@@ -633,7 +633,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
    @code
    ProximityProperties props;
-   props.AddProperty(....);  // Populate the properties.
+   props.Add(....);  // Populate the properties.
    scene_graph.AssignRole(source_id, geometry_id, props, RoleAssign::kReplace);
    @endcode
 
@@ -649,11 +649,11 @@ class SceneGraph final : public systems::LeafSystem<T> {
    DRAKE_DEMAND(old_props);
    ProximityProperties new_props(*old_props);
    // Add a new property.
-   new_props.AddProperty("group", "new_prop_name", some_value);
+   new_props.Add("new_prop_name", some_value);
    // Remove a property previously assigned.
-   new_props.RemoveProperty("old_group", "old_name_1");
+   new_props.Remove({"old_prop_name");
    // Update the *value* of an existing property (but enforce same type).
-   new_props.UpdateProperty("old_group", "old_name_2", new_value);
+   new_props.Update("old_prop_name_2", new_value);
    scene_graph.AssignRole(source_id, geometry_id, new_props,
                           RoleAssign::kReplace);
    @endcode

@@ -343,11 +343,11 @@ class RenderEngineGlTest : public ::testing::Test {
 
     if (add_terrain) {
       PerceptionProperties material;
-      material.AddProperty("label", "id", RenderLabel::kDontCare);
-      material.AddProperty("phong", "diffuse", kTerrainColor);
-      engine->RegisterVisual(GeometryId::get_new_id(), HalfSpace(), material,
-                             RigidTransformd::Identity(),
-                             false /* needs update */);
+      material.Add("label/id", RenderLabel::kDontCare);
+      material.Add("phong/diffuse", kTerrainColor);
+      renderer_->RegisterVisual(GeometryId::get_new_id(), HalfSpace(), material,
+                                RigidTransformd::Identity(),
+                                false /* needs update */);
     }
   }
 
@@ -356,13 +356,12 @@ class RenderEngineGlTest : public ::testing::Test {
   // this method.
   PerceptionProperties simple_material(bool use_texture = false) const {
     PerceptionProperties material;
-    material.AddProperty("phong", "diffuse", default_color_);
-    material.AddProperty("label", "id", expected_label_);
+    material.Add("phong/diffuse", default_color_);
+    material.Add("label/id", expected_label_);
     if (use_texture) {
-      material.AddProperty(
-          "phong", "diffuse_map",
-          FindResourceOrThrow(
-              "drake/systems/sensors/test/models/meshes/box.png"));
+      material.Add("phong/diffuse_map",
+                   FindResourceOrThrow(
+                       "drake/systems/sensors/test/models/meshes/box.png"));
     }
     return material;
   }
@@ -622,13 +621,13 @@ TEST_F(RenderEngineGlTest, BoxTest) {
       // the un-tiled default behavior and the ability to scale the texture.
       PerceptionProperties props = simple_material(false);
       if (use_texture) {
-        props.AddProperty(
-            "phong", "diffuse_map",
+        props.Add(
+            "phong/diffuse_map",
             FindResourceOrThrow(
                 "drake/geometry/render/test/diag_gradient.png"));
         if (texture_scaled) {
-          props.AddProperty(
-              "phong", "diffuse_scale", Vector2d{texture_scale, texture_scale});
+          props.Add(
+              "phong/diffuse_scale", Vector2d{texture_scale, texture_scale});
         }
       }
       renderer_->RegisterVisual(id, box, props,
@@ -925,7 +924,7 @@ TEST_F(RenderEngineGlTest, MeshTest) {
   // NOTE: Specifying a diffuse map with a known bad path, will force the box
   // to get the diffuse RGBA value (otherwise it would pick up the `box.png`
   // texture).
-  material.AddProperty("phong", "diffuse_map", "bad_path");
+  material.Add("phong/diffuse_map", "bad_path");
   const GeometryId id = GeometryId::get_new_id();
   renderer_->RegisterVisual(id, mesh, material, RigidTransformd::Identity(),
                             true /* needs update */);
@@ -946,8 +945,8 @@ TEST_F(RenderEngineGlTest, TextureMeshTest) {
   Mesh mesh(filename);
   expected_label_ = RenderLabel(4);
   PerceptionProperties material = simple_material();
-  material.AddProperty(
-      "phong", "diffuse_map",
+  material.Add(
+      "phong/diffuse_map",
       FindResourceOrThrow("drake/systems/sensors/test/models/meshes/box.png"));
   const GeometryId id = GeometryId::get_new_id();
   renderer_->RegisterVisual(id, mesh, material, RigidTransformd::Identity(),
@@ -1012,7 +1011,7 @@ TEST_F(RenderEngineGlTest, ConvexTest) {
   // NOTE: Specifying a diffuse map with a known bad path, will force the box
   // to get the diffuse RGBA value (otherwise it would pick up the `box.png`
   // texture.
-  material.AddProperty("phong", "diffuse_map", "bad_path");
+  material.Add("phong/diffuse_map", "bad_path");
   const GeometryId id = GeometryId::get_new_id();
   renderer_->RegisterVisual(id, convex, material, RigidTransformd::Identity(),
                             true /* needs update */);
@@ -1074,8 +1073,8 @@ TEST_F(RenderEngineGlTest, RemoveVisual) {
     const float depth = kDefaultDistance - kRadius - z;
     RenderLabel label = RenderLabel(5);
     PerceptionProperties material;
-    material.AddProperty("label", "id", label);
-    material.AddProperty("phong", "diffuse", kDefaultVisualColor);
+    material.Add("label/id", label);
+    material.Add("phong/diffuse", kDefaultVisualColor);
     // This will accept all registered geometries and therefore, (bool)index
     // should always be true.
     renderer_->RegisterVisual(geometry_id, sphere, material,
@@ -1293,7 +1292,7 @@ TEST_F(RenderEngineGlTest, DefaultProperties) {
       std::logic_error,
       ".* geometry with the 'unspecified' or 'empty' render labels.*");
   PerceptionProperties material;
-  material.AddProperty("label", "id", RenderLabel::kDontCare);
+  material.Add("label/id", RenderLabel::kDontCare);
   renderer_->RegisterVisual(id, box, material, RigidTransformd::Identity(),
                             true);
   RigidTransformd X_WV{Translation3d(0, 0, 0.5)};
@@ -1394,7 +1393,7 @@ TEST_F(RenderEngineGlTest, RendererIndependence) {
 
   auto add_terrain = [ground](auto* renderer) {
     PerceptionProperties material;
-    material.AddProperty("label", "id", RenderLabel::kDontCare);
+    material.Add("label/id", RenderLabel::kDontCare);
     renderer->RegisterVisual(ground, HalfSpace(), material,
                              RigidTransformd::Identity(),
                              false /* needs update */);

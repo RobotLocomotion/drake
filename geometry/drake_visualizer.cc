@@ -261,12 +261,12 @@ void DrakeVisualizer::SendLoadMessage(
       const GeometryProperties* illus_props =
           inspector.GetIllustrationProperties(g_id);
       if (illus_props) {
-        default_color = illus_props->GetPropertyOrDefault("phong", "diffuse",
+        default_color = illus_props->GetPropertyOrDefault("phong/diffuse",
                                                           default_color);
       }
     }
     const Rgba& color =
-        props->GetPropertyOrDefault("phong", "diffuse", default_color);
+        props->GetPropertyOrDefault("phong/diffuse", default_color);
     return ShapeToLcm().Convert(shape, inspector.GetPoseInFrame(g_id), color);
   };
 
