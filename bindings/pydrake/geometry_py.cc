@@ -85,24 +85,6 @@ class PyRenderEngine : public py::wrapper<RenderEngine> {
     PYBIND11_OVERLOAD_PURE(void, Base, UpdateViewpoint, X_WR);
   }
 
-  void RenderColorImage(CameraProperties const& camera, bool show_window,
-      ImageRgba8U* color_image_out) const override {
-    PYBIND11_OVERLOAD_PURE(
-        void, Base, RenderColorImage, camera, show_window, color_image_out);
-  }
-
-  void RenderDepthImage(DepthCameraProperties const& camera,
-      ImageDepth32F* depth_image_out) const override {
-    PYBIND11_OVERLOAD_PURE(
-        void, Base, RenderDepthImage, camera, depth_image_out);
-  }
-
-  void RenderLabelImage(CameraProperties const& camera, bool show_window,
-      ImageLabel16I* label_image_out) const override {
-    PYBIND11_OVERLOAD_PURE(
-        void, Base, RenderLabelImage, camera, show_window, label_image_out);
-  }
-
   bool DoRegisterVisual(GeometryId id, Shape const& shape,
       PerceptionProperties const& properties,
       RigidTransformd const& X_WG) override {
@@ -124,17 +106,20 @@ class PyRenderEngine : public py::wrapper<RenderEngine> {
 
   void DoRenderColorImage(ColorRenderCamera const& camera,
       ImageRgba8U* color_image_out) const override {
-    PYBIND11_OVERLOAD(void, Base, DoRenderColorImage, camera, color_image_out);
+    PYBIND11_OVERLOAD_PURE(
+        void, Base, DoRenderColorImage, camera, color_image_out);
   }
 
   void DoRenderDepthImage(DepthRenderCamera const& camera,
       ImageDepth32F* depth_image_out) const override {
-    PYBIND11_OVERLOAD(void, Base, DoRenderDepthImage, camera, depth_image_out);
+    PYBIND11_OVERLOAD_PURE(
+        void, Base, DoRenderDepthImage, camera, depth_image_out);
   }
 
   void DoRenderLabelImage(ColorRenderCamera const& camera,
       ImageLabel16I* label_image_out) const override {
-    PYBIND11_OVERLOAD(void, Base, DoRenderLabelImage, camera, label_image_out);
+    PYBIND11_OVERLOAD_PURE(
+        void, Base, DoRenderLabelImage, camera, label_image_out);
   }
 
   void SetDefaultLightPosition(Vector3d const& X_DL) override {
@@ -154,6 +139,31 @@ class PyRenderEngine : public py::wrapper<RenderEngine> {
   static void ThrowIfInvalid(const systems::sensors::CameraInfo& intrinsics,
       const ImageType* image, const char* image_type) {
     return Base::ThrowIfInvalid<ImageType>(intrinsics, image, image_type);
+  }
+
+ private:
+  // TODO(SeanCurtis-TRI) We will be removing the Render*Image API when we
+  // deprecate CameraProperties. They must be implemented in order to build
+  // this class; so we'll make sure they clearly signal if they get invoked.
+  void RenderColorImage(
+      CameraProperties const&, bool, ImageRgba8U*) const override {
+    throw std::runtime_error(
+        "Python should not be able to invoke RenderColorImage with "
+        "CameraProperties");
+  }
+
+  void RenderDepthImage(
+      DepthCameraProperties const&, ImageDepth32F*) const override {
+    throw std::runtime_error(
+        "Python should not be able to invoke RenderDepthImage with "
+        "CameraProperties");
+  }
+
+  void RenderLabelImage(
+      CameraProperties const&, bool, ImageLabel16I*) const override {
+    throw std::runtime_error(
+        "Python should not be able to invoke RenderLabelImage with "
+        "CameraProperties");
   }
 };
 
@@ -300,17 +310,17 @@ void def_geometry_render(py::module m) {
             static_cast<void (Class::*)(ColorRenderCamera const&, ImageRgba8U*)
                     const>(&Class::RenderColorImage),
             py::arg("camera"), py::arg("color_image_out"),
-            cls_doc.RenderColorImage.doc_2args)
+            cls_doc.RenderColorImage.doc)
         .def("RenderDepthImage",
             static_cast<void (Class::*)(DepthRenderCamera const&,
                 ImageDepth32F*) const>(&Class::RenderDepthImage),
             py::arg("camera"), py::arg("depth_image_out"),
-            cls_doc.RenderDepthImage.doc_was_unable_to_choose_unambiguous_names)
+            cls_doc.RenderDepthImage.doc)
         .def("RenderLabelImage",
             static_cast<void (Class::*)(ColorRenderCamera const&,
                 ImageLabel16I*) const>(&Class::RenderLabelImage),
             py::arg("camera"), py::arg("label_image_out"),
-            cls_doc.RenderLabelImage.doc_2args)
+            cls_doc.RenderLabelImage.doc)
         .def("default_render_label",
             static_cast<RenderLabel (Class::*)() const>(
                 &Class::default_render_label),
