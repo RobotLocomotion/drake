@@ -188,7 +188,7 @@ geometry::GeometryInstance ParseVisual(
       created (see default_friction()).
  As long as no exception is thrown, the returned geometry::GeometryInstance
  will contain a valid instance of geometry::ProximityProperties with (at least)
- the ('material', 'coulomb_friction') property.
+ the material/coulomb_friction property.
 
  @param[in] parent_element_name The name of the parent link element, used
  to construct default geometry names and for error reporting.

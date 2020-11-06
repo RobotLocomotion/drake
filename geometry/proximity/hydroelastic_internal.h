@@ -378,8 +378,7 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
   return {};
 }
 
-/* Rigid sphere support. Requires the ('hydroelastic', 'resolution_hint')
- property.  */
+/* Rigid sphere support. Requires the hydroelastic/resolution_hint property.  */
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Sphere& sphere, const ProximityProperties& props);
 
@@ -387,13 +386,13 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Box& box, const ProximityProperties& props);
 
-/* Rigid cylinder support. Requires the ('hydroelastic', 'resolution_hint')
- property.  */
+/* Rigid cylinder support. Requires the hydroelastic/resolution_hint property.
+ */
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Cylinder& cylinder, const ProximityProperties& props);
 
-/* Rigid ellipsoid support. Requires the ('hydroelastic', 'resolution_hint')
- property.  */
+/* Rigid ellipsoid support. Requires the hydroelastic/resolution_hint property.
+ */
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Ellipsoid& ellipsoid, const ProximityProperties& props);
 
@@ -426,31 +425,31 @@ std::optional<SoftGeometry> MakeSoftRepresentation(const Shape& shape,
 }
 
 /* Creates a soft sphere (assuming the proximity properties have sufficient
- information). Requires the ('hydroelastic', 'resolution_hint') and
- ('material', 'elastic_modulus') properties.  */
+ information). Requires the hydroelastic/resolution_hint and
+ material/elastic_modulus properties.  */
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Sphere& sphere, const ProximityProperties& props);
 
 /* Creates a soft box (assuming the proximity properties have sufficient
- information). Requires the ('material', 'elastic_modulus') properties.  */
+ information). Requires the material/elastic_modulus property.  */
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Box& box, const ProximityProperties& props);
 
 /* Creates a soft cylinder (assuming the proximity properties have sufficient
- information). Requires the ('hydroelastic', 'resolution_hint') and
- ('material', 'elastic_modulus') properties.  */
+ information). Requires the hydroelastic/resolution_hint and
+ material/elastic_modulus properties.  */
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Cylinder& cylinder, const ProximityProperties& props);
 
 /* Creates a soft ellipsoid (assuming the proximity properties have sufficient
- information). Requires the ('hydroelastic', 'resolution_hint') and
- ('material', 'elastic_modulus') properties.  */
+ information). Requires the hydroelastic/resolution_hint and
+ material/elastic_modulus properties.  */
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Ellipsoid& ellipsoid, const ProximityProperties& props);
 
 /* Creates a compliant half space (assuming the proximity properties have
- sufficient information). Requires the ('hydroelastic', 'slab_thickness') and
- ('material', 'elastic_modulus') properties.  */
+ sufficient information). Requires the hydroelastic/slab_thickness and
+ material/elastic_modulus properties.  */
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const HalfSpace& half_space, const ProximityProperties& props);
 

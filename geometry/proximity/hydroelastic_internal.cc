@@ -142,7 +142,7 @@ class Validator {
   const ValueType& Extract(const ProximityProperties& props,
                            const char* group_name, const char* property_name) {
     const std::string full_property_name =
-        fmt::format("('{}', '{}')", group_name, property_name);
+        fmt::format("{}/{}", group_name, property_name);
     if (!props.HasProperty(group_name, property_name)) {
       throw std::logic_error(
           fmt::format("Cannot create {} {}; missing the {} property",

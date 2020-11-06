@@ -705,7 +705,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
    By default, a geometry with a perception role will be reified by all
    render::RenderEngine instances. This behavior can be changed. Renderers can
-   be explicitly whitelisted via the ('renderer', 'accepting') perception
+   be explicitly whitelisted via the `renderer/accepting` perception
    property. Its type is std::set<std::string> and it contains the names of
    all the renderers that _may_ reify it. If no property is defined (or an
    empty set is given), then the default behavior of all renderers attempting

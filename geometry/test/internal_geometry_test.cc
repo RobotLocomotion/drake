@@ -13,7 +13,7 @@ namespace internal {
 namespace {
 
 // Create two instances of the given Properties type with different properties:
-// ('group1', 'value') in the first, ('group2', 'value') in the second.
+// group1/value in the first, group2/value in the second.
 template <typename Properties>
 std::pair<Properties, Properties> MakePropertyPair() {
   Properties p1;
