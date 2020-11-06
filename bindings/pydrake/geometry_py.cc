@@ -85,22 +85,37 @@ class PyRenderEngine : public py::wrapper<RenderEngine> {
     PYBIND11_OVERLOAD_PURE(void, Base, UpdateViewpoint, X_WR);
   }
 
+  // TODO(SeanCurtis-TRI) We will be removing the Render*Image API when we
+  // deprecate CameraProperties. These simply forward to the DoRender*Image
+  // API.
   void RenderColorImage(CameraProperties const& camera, bool show_window,
       ImageRgba8U* color_image_out) const override {
-    PYBIND11_OVERLOAD_PURE(
-        void, Base, RenderColorImage, camera, show_window, color_image_out);
+    const CameraInfo intrinsics(camera.width, camera.height, camera.fov_y);
+    ThrowIfInvalid(intrinsics, color_image_out, "color");
+    DoRenderColorImage(
+        ColorRenderCamera(
+            {camera.renderer_name, intrinsics, {0.01, 100.0}, {}}, show_window),
+        color_image_out);
   }
 
   void RenderDepthImage(DepthCameraProperties const& camera,
       ImageDepth32F* depth_image_out) const override {
-    PYBIND11_OVERLOAD_PURE(
-        void, Base, RenderDepthImage, camera, depth_image_out);
+    const CameraInfo intrinsics(camera.width, camera.height, camera.fov_y);
+    ThrowIfInvalid(intrinsics, depth_image_out, "depth");
+    DoRenderDepthImage(
+        DepthRenderCamera({camera.renderer_name, intrinsics, {0.01, 100.0}, {}},
+            {camera.z_near, camera.z_far}),
+        depth_image_out);
   }
 
   void RenderLabelImage(CameraProperties const& camera, bool show_window,
       ImageLabel16I* label_image_out) const override {
-    PYBIND11_OVERLOAD_PURE(
-        void, Base, RenderLabelImage, camera, show_window, label_image_out);
+    const CameraInfo intrinsics(camera.width, camera.height, camera.fov_y);
+    ThrowIfInvalid(intrinsics, label_image_out, "label");
+    DoRenderLabelImage(
+        ColorRenderCamera(
+            {camera.renderer_name, intrinsics, {0.01, 100.0}, {}}, show_window),
+        label_image_out);
   }
 
   bool DoRegisterVisual(GeometryId id, Shape const& shape,
@@ -296,21 +311,6 @@ void def_geometry_render(py::module m) {
             static_cast<void (Class::*)(RigidTransformd const&)>(
                 &Class::UpdateViewpoint),
             py::arg("X_WR"), cls_doc.UpdateViewpoint.doc)
-        .def("RenderColorImage",
-            static_cast<void (Class::*)(ColorRenderCamera const&, ImageRgba8U*)
-                    const>(&Class::RenderColorImage),
-            py::arg("camera"), py::arg("color_image_out"),
-            cls_doc.RenderColorImage.doc_2args)
-        .def("RenderDepthImage",
-            static_cast<void (Class::*)(DepthRenderCamera const&,
-                ImageDepth32F*) const>(&Class::RenderDepthImage),
-            py::arg("camera"), py::arg("depth_image_out"),
-            cls_doc.RenderDepthImage.doc_was_unable_to_choose_unambiguous_names)
-        .def("RenderLabelImage",
-            static_cast<void (Class::*)(ColorRenderCamera const&,
-                ImageLabel16I*) const>(&Class::RenderLabelImage),
-            py::arg("camera"), py::arg("label_image_out"),
-            cls_doc.RenderLabelImage.doc_2args)
         .def("default_render_label",
             static_cast<RenderLabel (Class::*)() const>(
                 &Class::default_render_label),
