@@ -71,14 +71,14 @@ def create_temporary_dir(name='tmp'):
 def get_python_executable():
     """Use appropriate Python executable
 
-    Call /usr/local/opt/python@3.8/bin/python3 on macOS to force using the
-    Python executable from the python@3.8 formula. Calling a different Python
+    Call /usr/local/opt/python@3.9/bin/python3 on macOS to force using the
+    Python executable from the python@3.9 formula. Calling a different Python
     executable would result in a crash since pydrake was not built against
     the Python library corresponding to that executable. On other systems, it
     will just fall back to the current Python executable.
     """
     if sys.platform == "darwin":
-        return "/usr/local/opt/python@3.8/bin/python3"
+        return "/usr/local/opt/python@3.9/bin/python3"
     else:
         return sys.executable
 
@@ -102,7 +102,7 @@ def run_and_kill(cmd, timeout=2.0, from_install_dir=True):
         cmd[0] = os.path.join(get_install_dir(), cmd[0])
     env = os.environ
     if sys.platform == 'darwin':
-        env['PATH'] = '/usr/local/opt/python@3.8/bin:' + env['PATH']
+        env['PATH'] = '/usr/local/opt/python@3.9/bin:' + env['PATH']
     proc = subprocess.Popen(cmd, cwd='/', env=env)
     start = time.time()
     while time.time() - start < timeout:
@@ -130,7 +130,7 @@ def check_call(args, *extra_args, **kwargs):
     else:
         env = os.environ
     if sys.platform == 'darwin':
-        env['PATH'] = '/usr/local/opt/python@3.8/bin:' + env['PATH']
+        env['PATH'] = '/usr/local/opt/python@3.9/bin:' + env['PATH']
     return subprocess.check_call(args, cwd='/', env=env, *extra_args, **kwargs)
 
 
@@ -147,7 +147,7 @@ def check_output(*args, **kwargs):
     else:
         env = os.environ
     if sys.platform == 'darwin':
-        env['PATH'] = '/usr/local/opt/python@3.8/bin:' + env['PATH']
+        env['PATH'] = '/usr/local/opt/python@3.9/bin:' + env['PATH']
     return subprocess.check_output(
         cwd='/', env=env, *args, **kwargs).decode('utf8')
 

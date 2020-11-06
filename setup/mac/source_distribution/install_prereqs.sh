@@ -67,17 +67,17 @@ if [[ "${with_maintainer_only}" -eq 1 ]]; then
     --file="${BASH_SOURCE%/*}/Brewfile-maintainer-only" --no-lock
 fi
 
-if ! command -v /usr/local/opt/python@3.8/bin/pip3  &>/dev/null; then
-  echo 'ERROR: pip3 for python@3.8 is NOT installed. The post-install step for the python@3.8 formula may have failed.' >&2
+if ! command -v /usr/local/opt/python@3.9/bin/pip3  &>/dev/null; then
+  echo 'ERROR: pip3 for python@3.9 is NOT installed. The post-install step for the python@3.9 formula may have failed.' >&2
   exit 2
 fi
 
 if [[ "${with_test_only}" -eq 1 ]]; then
-  /usr/local/opt/python@3.8/bin/pip3 install --upgrade --requirement \
+  /usr/local/opt/python@3.9/bin/pip3 install --upgrade --requirement \
     "${BASH_SOURCE%/*}/requirements-test-only.txt"
 fi
 
 if [[ "${with_maintainer_only}" -eq 1 ]]; then
-  /usr/local/opt/python@3.8/bin/pip3 install --upgrade --requirement \
+  /usr/local/opt/python@3.9/bin/pip3 install --upgrade --requirement \
     "${BASH_SOURCE%/*}/requirements-maintainer-only.txt"
 fi
