@@ -321,9 +321,7 @@ int do_main() {
   DrakeLcm lcm;
 
   // Visualize geometry.
-  auto& visualizer = *builder.AddSystem<DrakeVisualizer>(&lcm);
-  builder.Connect(scene_graph.get_query_output_port(),
-                  visualizer.query_object_input_port());
+  DrakeVisualizer::AddToBuilder(&builder, scene_graph, &lcm);
 
   // Visualize contacts.
   auto& contact_to_lcm =

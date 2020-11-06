@@ -29,6 +29,7 @@ namespace drake {
 namespace geometry {
 
 using Eigen::Vector3d;
+using lcm::DrakeLcmInterface;
 using math::RigidTransformd;
 using std::make_unique;
 using std::map;
@@ -91,16 +92,22 @@ class DrakeVisualizerTest : public ::testing::Test {
 
   /* Returns the pointer to the `visualizer`'s owned lcm interface (may be
    nullptr). */
-  static const lcm::DrakeLcmInterface* get_owned_interface(
+  static const DrakeLcmInterface* get_owned_interface(
       const DrakeVisualizer& visualizer) {
     return visualizer.owned_lcm_.get();
   }
 
   /* Returns the pointer to the `visualizer`'s active lcm interface -- the one
    being invoked to do work (can't be nullptr). */
-  static const lcm::DrakeLcmInterface* get_active_interface(
+  static const DrakeLcmInterface* get_active_interface(
       const DrakeVisualizer& visualizer) {
     return visualizer.lcm_;
+  }
+
+  /* Returns the parameters the given visualizer is configured with.  */
+  static const DrakeVisualizerParams& get_params(
+      const DrakeVisualizer& visualizer) {
+    return visualizer.params_;
   }
 
   /* Configures the diagram (and raw pointers) with a DrakeVisualizer configured
@@ -149,17 +156,17 @@ class DrakeVisualizerTest : public ::testing::Test {
     scene_graph_->AssignRole(source_id_, g1_id, illus_prop);
 
     // A sphere has proximity properties with no color.
-    const FrameId f2_id =
+    proximity_frame_id_ =
         scene_graph_->RegisterFrame(source_id_, GeometryFrame("proximity", 2));
     const GeometryId g2_id = scene_graph_->RegisterGeometry(
-        source_id_, f2_id,
+        source_id_, proximity_frame_id_,
         make_unique<GeometryInstance>(RigidTransformd{}, make_unique<Sphere>(1),
                                       "proximity"));
     scene_graph_->AssignRole(source_id_, g2_id, ProximityProperties());
 
     pose_source_->SetPoses({{f0_id, RigidTransformd{}},
                             {f1_id, RigidTransformd{}},
-                            {f2_id, RigidTransformd{}}});
+                            {proximity_frame_id_, RigidTransformd{}}});
   }
 
   /* Collection of data for reporting what is waiting in the LCM queue.  */
@@ -199,6 +206,101 @@ class DrakeVisualizerTest : public ::testing::Test {
     return ::testing::AssertionSuccess();
   }
 
+  /* Helper function to test the two variants of AddToBuilder. Both need to test
+   the same behaviors, but they differ in whether a SceneGraph reference is
+   provided directly vs providing a QueryObject-valued port. This function
+   attempts to provide a test that can test both with a single implementation.
+
+   We've templated it on the three parameters:
+
+     1. AddFunctor - the AddToBuild with four parameters.
+     2. AddFunctorNoParam - The AddToBuild with three parameters (rely on
+        default DrakeVisualizerParameters values).
+     3. SourceFunctor - a function takes the source *system* and determines
+        the source parameter (system or port) for the function call.
+
+  For both variants, we need to confirm:
+
+     1. DrakeVisualizer is created.
+     2. Connected to SceneGraph/port.
+     3. LCM is passed through to the DrakeVisualizer, or it creates its own.
+     4. The parameters propagate through appropriately.
+
+  The only thing this test *doesn't* cover is that the two-parameter version
+  doesn't default to lcm = nullptr.  */
+  template <typename AddFunctor, typename AddFunctorNoParam,
+            typename SourceFunctor>
+  void TestAddToBuilder(const AddFunctor& add_to_builder,
+                        const AddFunctorNoParam& add_to_builder_no_param,
+                        const SourceFunctor& port_source) {
+    {
+      /* Case: Confirm successful construction, connection, and that the passed
+       lcm interface is used.  */
+      DiagramBuilder<double> builder;
+      const auto& scene_graph = *builder.AddSystem<SceneGraph<double>>();
+      /* The fact that a visualizer is returned is proof that a DrakeVisualizer
+       was created.  */
+      const auto& visualizer =
+          add_to_builder_no_param(&builder, port_source(scene_graph), &lcm_);
+      auto diagram = builder.Build();
+      auto context = diagram->CreateDefaultContext();
+      /* We'll show they are connected because scene_graph's output port reports
+       the same GeometryVersion as visualizer's input port.  */
+      const auto& sg_context = scene_graph.GetMyContextFromRoot(*context);
+      const auto& viz_context = visualizer.GetMyContextFromRoot(*context);
+      const auto& sg_query_object =
+          scene_graph.get_query_output_port().Eval<QueryObject<double>>(
+              sg_context);
+      /* Not throwing is evidence of *some* connection.  */
+      const auto& viz_query_object =
+          visualizer.query_object_input_port()
+              .template Eval<QueryObject<double>>(viz_context);
+
+      /* Confirm correct connection.  */
+      EXPECT_TRUE(sg_query_object.inspector().geometry_version().IsSameAs(
+          viz_query_object.inspector().geometry_version(),
+          Role::kIllustration));
+
+      /* Confirm unowned active lcm interface.  */
+      EXPECT_EQ(get_owned_interface(visualizer), nullptr);
+      EXPECT_EQ(get_active_interface(visualizer), &lcm_);
+
+      /* Confirm default parameters used when non specified.  */
+      const DrakeVisualizerParams default_params;
+      const DrakeVisualizerParams& vis_params = get_params(visualizer);
+      EXPECT_EQ(vis_params.publish_period, default_params.publish_period);
+      EXPECT_EQ(vis_params.role, default_params.role);
+      EXPECT_EQ(vis_params.default_color, default_params.default_color);
+    }
+
+    {
+      /* Case: No Lcm provided, confirm owned lcm.  */
+      DiagramBuilder<double> builder;
+      const auto& scene_graph = *builder.AddSystem<SceneGraph<double>>();
+      const auto& visualizer =
+          add_to_builder_no_param(&builder, port_source(scene_graph), nullptr);
+      EXPECT_NE(get_owned_interface(visualizer), nullptr);
+      EXPECT_EQ(get_owned_interface(visualizer),
+                get_active_interface(visualizer));
+      /* NOTE: Don't do anything to broadcast here!  */
+    }
+
+    {
+      /* Case: Parameters given, confirm custom parameters get passed along.  */
+      DiagramBuilder<double> builder;
+      const auto& scene_graph = *builder.AddSystem<SceneGraph<double>>();
+      const DrakeVisualizerParams params{1 / 13.0, Role::kPerception,
+                                         Rgba{0.1, 0.2, 0.3, 0.4}};
+      const auto& visualizer =
+          add_to_builder(&builder, port_source(scene_graph), &lcm_, params);
+      const DrakeVisualizerParams& vis_params =
+          DrakeVisualizerTest::get_params(visualizer);
+      EXPECT_EQ(vis_params.publish_period, params.publish_period);
+      EXPECT_EQ(vis_params.role, params.role);
+      EXPECT_EQ(vis_params.default_color, params.default_color);
+    }
+  }
+
   static constexpr double kPublishPeriod = 1 / 60.0;
   /* The LCM channel names. We are implicitly confirming that DrakeVisualizer
    broadcasts on the right channels via the subscribers. The reception of
@@ -224,6 +326,9 @@ class DrakeVisualizerTest : public ::testing::Test {
   SourceId source_id_;
   /* A diagram containing scene graph and connected visualizer.  */
   unique_ptr<Diagram<double>> diagram_;
+  /* The id of the frame registered by PopulateScene() with the proximity
+   geometry.  */
+  FrameId proximity_frame_id_;
 };
 
 /* Confirms that the visualizer publishes at the specified period.  */
@@ -556,6 +661,95 @@ TEST_F(DrakeVisualizerTest, ChangesInVersion) {
           << "'\n";
       EXPECT_EQ(results.num_draw, 1);
     }
+  }
+}
+
+/* Tests the AddToBuilder method that connects directly to a provided SceneGraph
+ instance -- see TestAddToBuilder for testing details.  */
+TEST_F(DrakeVisualizerTest, AddToBuilderSceneGraph) {
+  auto add_to_builder =
+      [](DiagramBuilder<double>* builder, const SceneGraph<double>& scene_graph,
+         DrakeLcmInterface* lcm,
+         DrakeVisualizerParams params) -> const DrakeVisualizer& {
+    return DrakeVisualizer::AddToBuilder(builder, scene_graph, lcm, params);
+  };
+  auto add_to_builder_no_params =
+      [](DiagramBuilder<double>* builder, const SceneGraph<double>& scene_graph,
+         DrakeLcmInterface* lcm) -> const DrakeVisualizer& {
+    return DrakeVisualizer::AddToBuilder(builder, scene_graph, lcm);
+  };
+  auto pose_source =
+      [](const SceneGraph<double>& sg) -> const SceneGraph<double>& {
+    return sg;
+  };
+  TestAddToBuilder(add_to_builder, add_to_builder_no_params, pose_source);
+}
+
+/* Tests the AddToBuilder method that connects directly to a provided
+ QueryObject-valued port -- see TestAddToBuilder for testing details.  */
+TEST_F(DrakeVisualizerTest, AddToBuilderQueryObjectPort) {
+  auto add_to_builder =
+      [](DiagramBuilder<double>* builder,
+         const systems::OutputPort<double>& port, DrakeLcmInterface* lcm,
+         DrakeVisualizerParams params) -> const DrakeVisualizer& {
+    return DrakeVisualizer::AddToBuilder(builder, port, lcm, params);
+  };
+  auto add_to_builder_no_params =
+      [](DiagramBuilder<double>* builder,
+         const systems::OutputPort<double>& port,
+         DrakeLcmInterface* lcm) -> const DrakeVisualizer& {
+    return DrakeVisualizer::AddToBuilder(builder, port, lcm);
+  };
+  auto pose_source =
+      [](const SceneGraph<double>& sg) -> const systems::OutputPort<double>& {
+    return sg.get_query_output_port();
+  };
+  TestAddToBuilder(add_to_builder, add_to_builder_no_params, pose_source);
+}
+
+/* Confirms that DispatchLoadMessage works on the scene graph model. We need to
+ test the following:
+
+   1. The contents of the SceneGraph model are broadcast.
+   2. The provided parameters are used.
+   3. The given lcm is used.
+
+ Operating with the understanding that this API uses the same machinery that
+ the system itself uses in its event handler, we just need evidence that the
+ machinery is being meaningfully exercised.
+
+ So, we'll populate a SceneGraph and broadcast twice, changing the role. We
+ confirm 1 & 2 simultaneously by looking for the single frame with a name
+ that depends on the role broadcast. We confirm 3 in that we get messages at
+ all. */
+TEST_F(DrakeVisualizerTest, DispatchLoadMessageFromModel) {
+  ConfigureDiagram();
+  PopulateScene();
+
+  {
+    // Case: role = illustration (via default) --> one frame labeled with
+    // "illustration".
+    DrakeVisualizer::DispatchLoadMessage(*scene_graph_, &lcm_);
+    MessageResults results = ProcessMessages();
+    ASSERT_EQ(results.num_load, 1);
+    ASSERT_EQ(results.load_message.num_links, 1);
+    ASSERT_EQ(results.load_message.link[0].name,
+              string(kSourceName) + "::illustration");
+    ASSERT_EQ(results.load_message.link[0].num_geom, 1);
+    ASSERT_EQ(results.num_draw, 0);
+  }
+  {
+    // Case: role = proximity --> one frame labeled with "proximity".
+    DrakeVisualizerParams params;
+    params.role = Role::kProximity;
+    DrakeVisualizer::DispatchLoadMessage(*scene_graph_, &lcm_, params);
+    MessageResults results = ProcessMessages();
+    ASSERT_EQ(results.num_load, 1);
+    ASSERT_EQ(results.load_message.num_links, 1);
+    ASSERT_EQ(results.load_message.link[0].name,
+              string(kSourceName) + "::proximity");
+    ASSERT_EQ(results.load_message.link[0].num_geom, 1);
+    ASSERT_EQ(results.num_draw, 0);
   }
 }
 

@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.geometry import ConnectDrakeVisualizer, SceneGraph
+from pydrake.geometry import DrakeVisualizer, SceneGraph
 from pydrake.lcm import DrakeLcm
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import MultibodyPlant
@@ -30,7 +30,7 @@ builder.Connect(
     scene_graph.get_source_pose_port(cart_pole.get_source_id()))
 builder.ExportInput(cart_pole.get_actuation_input_port())
 
-ConnectDrakeVisualizer(builder=builder, scene_graph=scene_graph)
+DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph)
 
 diagram = builder.Build()
 diagram.set_name("graphviz_example")

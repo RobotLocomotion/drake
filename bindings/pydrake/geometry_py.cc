@@ -998,10 +998,13 @@ void DoScalarIndependentDefinitions(py::module m) {
         .value("kReplace", Class::kReplace, cls_doc.kReplace.doc);
   }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   m.def("ConnectDrakeVisualizer",
-      py::overload_cast<systems::DiagramBuilder<double>*,
-          const SceneGraph<double>&, lcm::DrakeLcmInterface*, geometry::Role>(
-          &ConnectDrakeVisualizer),
+      WrapDeprecated(doc.ConnectDrakeVisualizer.doc_deprecated_4args,
+          py::overload_cast<systems::DiagramBuilder<double>*,
+              const SceneGraph<double>&, lcm::DrakeLcmInterface*,
+              geometry::Role>(&ConnectDrakeVisualizer)),
       py::arg("builder"), py::arg("scene_graph"), py::arg("lcm") = nullptr,
       py::arg("role") = geometry::Role::kIllustration,
       // Keep alive, ownership: `return` keeps `builder` alive.
@@ -1009,11 +1012,13 @@ void DoScalarIndependentDefinitions(py::module m) {
       // Keep alive, ownership: `builder` keeps `lcm` alive.
       py::keep_alive<1, 3>(),
       // See #11531 for why `py_rvp::reference` is needed.
-      py_rvp::reference, doc.ConnectDrakeVisualizer.doc_4args);
+      py_rvp::reference, doc.ConnectDrakeVisualizer.doc_deprecated_4args);
   m.def("ConnectDrakeVisualizer",
-      py::overload_cast<systems::DiagramBuilder<double>*,
-          const SceneGraph<double>&, const systems::OutputPort<double>&,
-          lcm::DrakeLcmInterface*, geometry::Role>(&ConnectDrakeVisualizer),
+      WrapDeprecated(doc.ConnectDrakeVisualizer.doc_deprecated_5args,
+          py::overload_cast<systems::DiagramBuilder<double>*,
+              const SceneGraph<double>&, const systems::OutputPort<double>&,
+              lcm::DrakeLcmInterface*, geometry::Role>(
+              &ConnectDrakeVisualizer)),
       py::arg("builder"), py::arg("scene_graph"),
       py::arg("pose_bundle_output_port"), py::arg("lcm") = nullptr,
       py::arg("role") = geometry::Role::kIllustration,
@@ -1022,10 +1027,14 @@ void DoScalarIndependentDefinitions(py::module m) {
       // Keep alive, ownership: `builder` keeps `lcm` alive.
       py::keep_alive<1, 3>(),
       // See #11531 for why `py_rvp::reference` is needed.
-      py_rvp::reference, doc.ConnectDrakeVisualizer.doc_5args);
-  m.def("DispatchLoadMessage", &DispatchLoadMessage, py::arg("scene_graph"),
-      py::arg("lcm"), py::arg("role") = geometry::Role::kIllustration,
-      doc.DispatchLoadMessage.doc);
+      py_rvp::reference, doc.ConnectDrakeVisualizer.doc_deprecated_5args);
+  m.def("DispatchLoadMessage",
+      WrapDeprecated(
+          doc.DispatchLoadMessage.doc_deprecated, &DispatchLoadMessage),
+      py::arg("scene_graph"), py::arg("lcm"),
+      py::arg("role") = geometry::Role::kIllustration,
+      doc.DispatchLoadMessage.doc_deprecated);
+#pragma GCC diagnostic pop
 
   {
     using Class = DrakeVisualizerParams;
@@ -1050,7 +1059,35 @@ void DoScalarIndependentDefinitions(py::module m) {
             py::keep_alive<1, 2>(),  // BR
             cls_doc.ctor.doc)
         .def("query_object_input_port", &Class::query_object_input_port,
-            py_rvp::reference_internal, cls_doc.query_object_input_port.doc);
+            py_rvp::reference_internal, cls_doc.query_object_input_port.doc)
+        .def_static("AddToBuilder",
+            py::overload_cast<systems::DiagramBuilder<double>*,
+                const SceneGraph<double>&, lcm::DrakeLcmInterface*,
+                DrakeVisualizerParams>(&DrakeVisualizer::AddToBuilder),
+            py::arg("builder"), py::arg("scene_graph"),
+            py::arg("lcm") = nullptr,
+            py::arg("params") = DrakeVisualizerParams{},
+            // Keep alive, ownership: `return` keeps `builder` alive.
+            py::keep_alive<0, 1>(),
+            // Keep alive, reference: `return` keeps `lcm` alive.
+            py::keep_alive<0, 3>(), py_rvp::reference,
+            cls_doc.AddToBuilder.doc_4args_builder_scene_graph_lcm_params)
+        .def_static("AddToBuilder",
+            py::overload_cast<systems::DiagramBuilder<double>*,
+                const systems::OutputPort<double>&, lcm::DrakeLcmInterface*,
+                DrakeVisualizerParams>(&DrakeVisualizer::AddToBuilder),
+            py::arg("builder"), py::arg("query_object_port"),
+            py::arg("lcm") = nullptr,
+            py::arg("params") = DrakeVisualizerParams{},
+            // Keep alive, ownership: `return` keeps `builder` alive.
+            py::keep_alive<0, 1>(),
+            // Keep alive, reference: `return` keeps `lcm` alive.
+            py::keep_alive<0, 3>(), py_rvp::reference,
+            cls_doc.AddToBuilder.doc_4args_builder_query_object_port_lcm_params)
+        .def_static("DispatchLoadMessage",
+            &DrakeVisualizer::DispatchLoadMessage, py::arg("scene_graph"),
+            py::arg("lcm"), py::arg("params") = DrakeVisualizerParams{},
+            cls_doc.DispatchLoadMessage.doc);
   }
 
   // Shape constructors

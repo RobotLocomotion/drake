@@ -138,7 +138,7 @@ drake_cc_library(
     hdrs = ["test/optimization_with_contact_utilities.h"],
     visibility = ["//visibility:private"],
     deps = [
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//geometry:scene_graph",
         "//multibody/plant",
         "//systems/analysis:simulator",

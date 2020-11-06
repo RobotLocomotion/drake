@@ -463,7 +463,7 @@ drake_cc_googletest(
     deps = [
         ":plant",
         "//common/test_utilities:eigen_matrix_compare",
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//math:geometric_transform",
         "//multibody/plant:contact_results_to_lcm",
         "//systems/analysis:implicit_euler_integrator",
@@ -529,7 +529,7 @@ drake_cc_googletest(
     deps = [
         ":contact_results_to_lcm",
         "//common/test_utilities:eigen_geometry_compare",
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//multibody/benchmarks/acrobot",
         "//multibody/benchmarks/inclined_plane",
     ],

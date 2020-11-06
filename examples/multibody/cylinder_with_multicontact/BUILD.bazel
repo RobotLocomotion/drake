@@ -59,7 +59,7 @@ drake_cc_binary(
     deps = [
         ":make_cylinder_plant",
         "//common:add_text_logging_gflags",
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//multibody/plant:contact_results_to_lcm",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",

@@ -709,13 +709,19 @@ void ManipulationStation<T>::Finalize(
     }
   }
 
+  // TODO(#10482) Kill this when we deprecate pose bundle.
   builder.ExportOutput(scene_graph_->get_pose_bundle_output_port(),
                        "pose_bundle");
+  builder.ExportOutput(scene_graph_->get_query_output_port(), "query_object");
 
   builder.ExportOutput(plant_->get_contact_results_output_port(),
                        "contact_results");
   builder.ExportOutput(plant_->get_state_output_port(),
                        "plant_continuous_state");
+  // TODO(SeanCurtis-TRI) It seems with the scene graph query object port
+  // exported, this output port is superfluous/undesirable. This port
+  // contains the FramePoseVector that connects MBP to SG. Definitely better
+  // to simply rely on the query object output port.
   builder.ExportOutput(plant_->get_geometry_poses_output_port(),
                        "geometry_poses");
 

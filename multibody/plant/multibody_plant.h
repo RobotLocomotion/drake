@@ -1226,7 +1226,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Overload for visual geometry registration; it converts the `diffuse_color`
   /// (RGBA with values in the range [0, 1]) into a
-  /// geometry::ConnectDrakeVisualizer()-compatible set of
+  /// geometry::DrakeVisualizer-compatible set of
   /// geometry::IllustrationProperties.
   geometry::GeometryId RegisterVisualGeometry(
       const Body<T>& body, const math::RigidTransform<double>& X_BG,

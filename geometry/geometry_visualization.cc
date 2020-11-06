@@ -312,11 +312,15 @@ systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
   // documentation), along with the converter and publisher we just added.
   // Builder will transfer ownership of all of these objects to the Diagram it
   // eventually builds.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   publisher->AddInitializationMessage(
       [&scene_graph, role](const systems::Context<double>&,
                            lcm::DrakeLcmInterface* lcm) {
         DispatchLoadMessage(scene_graph, lcm, role);
       });
+#pragma GCC diagnostic pop
+
 
   // Note that this will fail if scene_graph is not actually in builder.
   builder->Connect(pose_bundle_output_port, converter->get_input_port(0));
@@ -329,9 +333,12 @@ systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const SceneGraph<double>& scene_graph, lcm::DrakeLcmInterface* lcm,
     Role role) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   return ConnectDrakeVisualizer(builder, scene_graph,
                                 scene_graph.get_pose_bundle_output_port(), lcm,
                                 role);
+#pragma GCC diagnostic pop
 }
 
 }  // namespace geometry

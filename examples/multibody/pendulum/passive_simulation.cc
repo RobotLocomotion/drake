@@ -3,7 +3,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
@@ -87,7 +87,7 @@ int do_main() {
       pendulum.get_geometry_poses_output_port(),
       scene_graph.get_source_pose_port(pendulum.get_source_id().value()));
 
-  geometry::ConnectDrakeVisualizer(&builder, scene_graph);
+  geometry::DrakeVisualizer::AddToBuilder(&builder, scene_graph);
   auto diagram = builder.Build();
 
   auto diagram_context = diagram->CreateDefaultContext();
