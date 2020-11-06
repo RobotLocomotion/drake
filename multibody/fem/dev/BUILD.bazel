@@ -68,22 +68,11 @@ drake_cc_library(
     deps = [
         ":constitutive_model",
         ":elasticity_element_cache",
-        ":fem_elasticity_parameters",
         ":fem_element",
         ":isoparametric_element",
         ":linear_simplex_element",
         ":quadrature",
         "//common:default_scalars",
-        "//common:essential",
-    ],
-)
-
-drake_cc_library(
-    name = "fem_elasticity_parameters",
-    hdrs = [
-        "fem_elasticity_parameters.h",
-    ],
-    deps = [
         "//common:essential",
     ],
 )
@@ -204,7 +193,6 @@ drake_cc_googletest(
     name = "fem_elasticity_test",
     deps = [
         ":fem_elasticity",
-        ":fem_elasticity_parameters",
         ":fem_state",
         ":linear_elasticity_model",
         ":linear_simplex_element",

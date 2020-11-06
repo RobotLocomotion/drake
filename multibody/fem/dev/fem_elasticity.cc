@@ -9,43 +9,62 @@ namespace fem {
 template <typename T, class IsoparametricElementType, class QuadratureType>
 ElasticityElement<T, IsoparametricElementType, QuadratureType>::
     ElasticityElement(ElementIndex element_index,
-                      const IsoparametricElementType& shape,
-                      const QuadratureType& quadrature,
                       const std::vector<NodeIndex>& node_indices,
-                      const ElasticityElementParameters<T>& param,
-                      std::unique_ptr<ConstitutiveModel<T>> constitutive_model)
+                      const T& density,
+                      std::unique_ptr<ConstitutiveModel<T>> constitutive_model,
+                      const Matrix3X<T>& reference_positions)
     : FemElement<T>(element_index, node_indices),
-      shape_(shape),
-      quadrature_(quadrature),
-      param_(param),
+      density_(density),
       constitutive_model_(std::move(constitutive_model)),
       dxidX_(num_quads()),
+      reference_positions_(reference_positions),
       reference_volume_(num_quads()) {
   /* TODO(xuchenhan-tri): Consider removing the template NaturalDim from
    IsoparametricElement and Quadrature (e.g. with CRTP). */
-  static_assert(std::is_convertible<IsoparametricElementType*,
-                                    IsoparametricElement<T, 2>*>::value ||
-                    std::is_convertible<IsoparametricElementType*,
-                                        IsoparametricElement<T, 3>*>::value,
-                "IsoparametricElementType must be a sub-class of "
+  static_assert(std::is_base_of<IsoparametricElement<T, 1>,
+                                IsoparametricElementType>::value ||
+                    std::is_base_of<IsoparametricElement<T, 2>,
+                                    IsoparametricElementType>::value ||
+                    std::is_base_of<IsoparametricElement<T, 3>,
+                                    IsoparametricElementType>::value,
+                "IsoparametricElementType must be a derived class of "
                 "IsoparametricElement<T, NaturalDim>, where NaturalDim can "
-                "be 2 or 3.");
+                "be 1, 2 or 3.");
+  static_assert(std::is_base_of<Quadrature<T, 1>, QuadratureType>::value ||
+                    std::is_base_of<Quadrature<T, 2>, QuadratureType>::value ||
+                    std::is_base_of<Quadrature<T, 3>, QuadratureType>::value,
+                "QuadratureType must be a derived class of "
+                "Quadrature<T, NaturalDim>, where NaturalDim can "
+                "be 1, 2 or 3.");
   static_assert(
-      std::is_convertible<QuadratureType*, Quadrature<T, 2>*>::value ||
-          std::is_convertible<QuadratureType*, Quadrature<T, 3>*>::value,
-      "QuadratureType must be a sub-class of "
-      "Quadrature<T, NaturalDim>, where NaturalDim can "
-      "be 2 or 3.");
-  DRAKE_DEMAND(num_nodes() == param_.reference_positions.cols());
-  DRAKE_DEMAND(num_nodes() == static_cast<int>(node_indices.size()));
+      IsoparametricElementType::kNaturalDim == QuadratureType::kNaturalDim,
+      "The dimension of the parent domain for IsoparametricElement and "
+      "Quadrature must be the same.");
+  DRAKE_ASSERT(num_nodes() == reference_positions.cols());
+  DRAKE_ASSERT(num_nodes() == static_cast<int>(node_indices.size()));
   // Record the quadrature point volumes for the new element.
   const std::vector<MatrixX<T>> dXdxi =
-      shape_.CalcJacobian(param_.reference_positions);
+      shape_.CalcJacobian(reference_positions);
   for (int q = 0; q < num_quads(); ++q) {
-    // Degenerate tetrahedron in the initial configuration is not allowed.
-    T det = dXdxi[q].determinant();
-    DRAKE_DEMAND(det > 0);
-    reference_volume_[q] = det * quadrature_.get_weight(q);
+    // The scale to transform quadrature weight in parent coordinates to
+    // reference coordinates.
+    T volume_scale;
+    if (kNaturalDim == 3) {
+      volume_scale = dXdxi[q].determinant();
+      // Degenerate tetrahedron in the initial configuration is not allowed.
+      DRAKE_ASSERT(volume_scale > 0);
+    } else if (kNaturalDim == 2) {
+      Eigen::ColPivHouseholderQR<MatrixX<T>> qr(dXdxi[q]);
+      volume_scale = abs(qr.matrixR()
+                             .topLeftCorner(kNaturalDim, kNaturalDim)
+                             .template triangularView<Eigen::Upper>()
+                             .determinant());
+    } else if (kNaturalDim) {
+      volume_scale = dXdxi[q].norm();
+    } else {
+      DRAKE_UNREACHABLE();
+    }
+    reference_volume_[q] = volume_scale * quadrature_.get_weight(q);
   }
 
   // Record the inverse Jacobian at the reference configuration which is used in
@@ -63,6 +82,7 @@ T ElasticityElement<T, IsoparametricElementType,
   T elastic_energy = 0;
   // TODO(xuchenhan-tri): Use the corresponding Eval method when cache is in
   // place.
+  // TODO(xuchenhan-tri): Use fixed size array here.
   std::vector<T> Psi(num_quads());
   CalcElasticEnergyDensity(s, &Psi);
   for (int q = 0; q < num_quads(); ++q) {
@@ -79,7 +99,6 @@ void ElasticityElement<T, IsoparametricElementType,
   // TODO(xuchenhan-tri): Add gravity and inertia terms when mass matrix is in
   // place.
   // TODO(xuchenhan-tri): Add damping force.
-  residual->resize(num_problem_dim() * num_nodes());
   CalcNegativeElasticForce(state, residual);
 }
 
@@ -97,10 +116,13 @@ void ElasticityElement<T, IsoparametricElementType, QuadratureType>::
   const std::vector<MatrixX<T>>& dSdxi =
       shape_.CalcGradientInParentCoordinates();
   for (int q = 0; q < num_quads(); ++q) {
-    // Negative force is the gradient of energy.
-    // -f = ∫dΨ/dx = ∫dΨ/dF : dF/dx dX.
-    neg_force_matrix += reference_volume_[q] * P[q] * dxidX_[q].transpose() *
-                        dSdxi[q].transpose();
+    /* Negative force is the gradient of energy.
+     -f = ∫dΨ/dx = ∫dΨ/dF : dF/dx dX.
+     Notice that Fᵢⱼ = xₐᵢdSₐ/dXⱼ, so dFᵢⱼ/dxᵦₖ = δₐᵦδᵢₖdSₐ/dXⱼ,
+     and dΨ/dFᵢⱼ = Pᵢⱼ, so the integrand becomes
+     PᵢⱼδₐᵦδᵢₖdSₐ/dXⱼ = PₖⱼdSᵦ/dXⱼ = P * dSdX.transpose() */
+    const auto& dSdX = dSdxi[q] * dxidX_[q];
+    neg_force_matrix += reference_volume_[q] * P[q] * dSdX.transpose();
   }
 }
 
@@ -145,8 +167,6 @@ void ElasticityElement<T, IsoparametricElementType, QuadratureType>::
     CalcElasticEnergyDensity(const FemState<T>& state,
                              std::vector<T>* Psi) const {
   Psi->resize(num_quads());
-  // TODO(xuchenhan-tri): Use the corresponding Eval method when cache is in
-  // place.
   const DeformationGradientCache<T>& deformation_gradient_cache =
       EvalDeformationGradientCache(state);
   constitutive_model_->CalcElasticEnergyDensity(deformation_gradient_cache,

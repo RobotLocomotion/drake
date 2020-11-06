@@ -4,7 +4,6 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff_gradient.h"
-#include "drake/multibody/fem/dev/fem_elasticity_parameters.h"
 #include "drake/multibody/fem/dev/fem_state.h"
 #include "drake/multibody/fem/dev/linear_elasticity_model.h"
 #include "drake/multibody/fem/dev/linear_simplex_element.h"
@@ -30,18 +29,16 @@ class ElasticityElementTest : public ::testing::Test {
   void SetUp() override { SetupElement(); }
 
   void SetupElement() {
-    QuadratureType quadrature;
-    ShapeType shape(quadrature.get_points());
     std::vector<NodeIndex> node_indices = {NodeIndex(0), NodeIndex(1),
                                            NodeIndex(2), NodeIndex(3)};
     linear_elasticity_ =
-        std::make_unique<LinearElasticityModel<AutoDiffXd>>(100, 0.25);
-    ElasticityElementParameters<AutoDiffXd> param;
-    param.reference_positions = get_reference_positions();
+        std::make_unique<LinearElasticityModel<AutoDiffXd>>(1, 0.25);
+    MatrixX<AutoDiffXd> reference_positions = get_reference_positions();
+    const AutoDiffXd DummyDensity(1.23);
     fem_elasticity_ = std::make_unique<
         ElasticityElement<AutoDiffXd, ShapeType, QuadratureType>>(
-        kDummyElementIndex, shape, quadrature, node_indices, param,
-        std::move(linear_elasticity_));
+        kDummyElementIndex, node_indices, DummyDensity,
+        std::move(linear_elasticity_), reference_positions);
   }
 
   void SetupState() {
@@ -60,6 +57,8 @@ class ElasticityElementTest : public ::testing::Test {
         std::make_unique<LinearElasticityModelCache<AutoDiffXd>>(
             kDummyElementIndex, kNumQuads);
     std::vector<std::unique_ptr<ElementCache<AutoDiffXd>>> cache;
+    // TODO(xuchenhan-tri): Add a method to FemElement that creates a compatible
+    // ElementCache.
     cache.emplace_back(std::make_unique<ElasticityElementCache<AutoDiffXd>>(
         kDummyElementIndex, kNumQuads, std::move(linear_elasticity_cache)));
     state_.ResetElementCache(std::move(cache));
@@ -91,20 +90,23 @@ namespace {
 TEST_F(ElasticityElementTest, Basic) {
   EXPECT_EQ(fem_elasticity_->num_nodes(), kNumVertices);
   EXPECT_EQ(fem_elasticity_->num_quads(), kNumQuads);
-  EXPECT_EQ(fem_elasticity_->num_problem_dim(), kProblemDim);
+  EXPECT_EQ(fem_elasticity_->solution_dimension(), kProblemDim);
 }
 
 TEST_F(ElasticityElementTest, ElasticForceIsNegativeEnergyDerivative) {
   SetupState();
   AutoDiffXd energy = fem_elasticity_->CalcElasticEnergy(state_);
   VectorX<AutoDiffXd> neg_force = CalcNegativeElasticForce();
-  EXPECT_TRUE(CompareMatrices(energy.derivatives(), neg_force, 1e-13));
+  EXPECT_TRUE(CompareMatrices(energy.derivatives(), neg_force,
+                              std::numeric_limits<double>::epsilon()));
   // TODO(xuchenhan-tri) Modify this to account for damping forces and inertia
   // terms.
   VectorX<AutoDiffXd> residual(kDof);
   fem_elasticity_->CalcResidual(state_, &residual);
-  EXPECT_TRUE(CompareMatrices(residual, neg_force, 1e-13));
+  EXPECT_TRUE(CompareMatrices(residual, neg_force));
 }
+// TODO(xuchenhan-tri): Add TEST_F as needed for damping and inertia terms
+// separately.
 }  // namespace
 }  // namespace fem
 }  // namespace multibody

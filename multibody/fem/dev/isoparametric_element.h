@@ -38,7 +38,7 @@ class IsoparametricElement {
   using VectorD = Eigen::Matrix<T, NaturalDim, 1>;
 
   /** The dimension of the parent domain. */
-  enum : int { kNumNaturalDim = NaturalDim };
+  static constexpr int kNaturalDim = NaturalDim;
 
   /** Constructs an isoparametric element that performs calculations at the
    locations specified by the input `locations`. */

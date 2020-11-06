@@ -67,7 +67,7 @@ class FemState {
    existing values are unchanged if `num_generalized_positions` is greater than
    or equal to the number of existing generalized positions. */
   void Resize(int num_generalized_positions) {
-    DRAKE_DEMAND(num_generalized_positions >= 0);
+    DRAKE_ASSERT(num_generalized_positions >= 0);
     if (num_generalized_positions == this->num_generalized_positions()) return;
     qdot_.conservativeResize(num_generalized_positions);
     q_.conservativeResize(num_generalized_positions);
@@ -85,13 +85,13 @@ class FemState {
    of the states.
    @{ */
   void set_qdot(const Eigen::Ref<const VectorX<T>>& value) {
-    DRAKE_DEMAND(value.size() == qdot_.size());
+    DRAKE_ASSERT(value.size() == qdot_.size());
     if (value == qdot_) return;
     mutable_qdot() = value;
   }
 
   void set_q(const Eigen::Ref<const VectorX<T>>& value) {
-    DRAKE_DEMAND(value.size() == q_.size());
+    DRAKE_ASSERT(value.size() == q_.size());
     if (value == q_) return;
     mutable_q() = value;
   }
@@ -111,16 +111,16 @@ class FemState {
   /** @name Getters and mutable getters for cached quantities.
    @{ */
   const ElementCache<T>& element_cache(ElementIndex e) const {
-    DRAKE_DEMAND(e.is_valid());
-    DRAKE_DEMAND(e < element_cache_.size());
-    DRAKE_DEMAND(element_cache_[e] != nullptr);
+    DRAKE_ASSERT(e.is_valid());
+    DRAKE_ASSERT(e < element_cache_.size());
+    DRAKE_ASSERT(element_cache_[e] != nullptr);
     return *element_cache_[e];
   }
 
   ElementCache<T>& mutable_element_cache(ElementIndex e) const {
-    DRAKE_DEMAND(e.is_valid());
-    DRAKE_DEMAND(e < element_cache_.size());
-    DRAKE_DEMAND(element_cache_[e] != nullptr);
+    DRAKE_ASSERT(e.is_valid());
+    DRAKE_ASSERT(e < element_cache_.size());
+    DRAKE_ASSERT(element_cache_[e] != nullptr);
     return *element_cache_[e];
   }
   /** @} */

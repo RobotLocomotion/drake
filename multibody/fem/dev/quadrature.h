@@ -11,18 +11,21 @@
 namespace drake {
 namespace multibody {
 namespace fem {
-template <typename T, int NaturalDimension>
 /** A class for quadratures that facilitates numerical integrations in FEM. The
  specification of particular quadrature rules will be provided in the derived
  classes.
  @tparam T the scalar type of the function being integrated over.
  @tparam NaturalDimension dimension of the domain of integration.
  */
+template <typename T, int NaturalDimension>
 class Quadrature {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Quadrature);
 
   using VectorD = Eigen::Matrix<T, NaturalDimension, 1>;
+
+  /** The dimension of the parent domain. */
+  static constexpr int kNaturalDim = NaturalDimension;
 
   virtual ~Quadrature() = default;
 

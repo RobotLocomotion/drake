@@ -8,7 +8,6 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/fem/dev/constitutive_model.h"
 #include "drake/multibody/fem/dev/elasticity_element_cache.h"
-#include "drake/multibody/fem/dev/fem_elasticity_parameters.h"
 #include "drake/multibody/fem/dev/fem_element.h"
 #include "drake/multibody/fem/dev/fem_state.h"
 #include "drake/multibody/fem/dev/isoparametric_element.h"
@@ -40,17 +39,18 @@ class ElasticityElement : public FemElement<T> {
 
   /** Constructs a new FEM elasticity element.
    @param[in] element_index The global index of the new element.
-   @param[in] shape The shape function to be used for this element.
-   @param[in] quadrature The quadrature rule to be used for this element.
    @param[in] node_indices The global node indices of the nodes of this
    element.
-   @param[in] param The ElasticityElementParameters to be used for this element.
+   @param[in] density The mass density of the element in the reference
+   configuration, with unit kg/m³.
    @param[in] constitutive_model The ConstitutiveModel to be used for this
    element.
+   @param[in] reference_positions The positions of the nodes of this element in
+   the reference configuration.
    @pre element_index must be valid.
-   @pre @p shape.num_nodes() must be the same as the size of @p node_indices.
-   @pre @p shape.num_nodes() must be the same as the number of columns of @p
-   param.reference_positions.
+   @pre node_indices.size() must be equal to
+   IsoparametricElementType::num_nodes().
+   @pre node_indices.size() must be equal to reference_positions.cols().
    @warning The input `constitutive_model` must be compatible with the
    DeformationGradientCache in the ElasticityElementCache that shares the same
    element index with this %ElasticityElement. More specifically, if the
@@ -58,16 +58,15 @@ class ElasticityElement : public FemElement<T> {
    type "FooModelCache", then the input `constitutive_model` must be of type
    "FooModel". */
   ElasticityElement(ElementIndex element_index,
-                    const IsoparametricElementType& shape,
-                    const QuadratureType& quadrature,
                     const std::vector<NodeIndex>& node_indices,
-                    const ElasticityElementParameters<T>& param,
-                    std::unique_ptr<ConstitutiveModel<T>> constitutive_model);
+                    const T& density,
+                    std::unique_ptr<ConstitutiveModel<T>> constitutive_model,
+                    const Matrix3X<T>& reference_positions);
 
   virtual ~ElasticityElement() = default;
 
   /** The number of dimensions of the elasticity problem. */
-  int num_problem_dim() const final { return 3; }
+  int solution_dimension() const final { return 3; }
 
   /** Number of quadrature points at which element-wise quantities are
    evaluated. */
@@ -90,8 +89,9 @@ class ElasticityElement : public FemElement<T> {
                       EigenPtr<VectorX<T>> residual) const final;
 
  private:
+  static constexpr int kNaturalDim = IsoparametricElementType::kNaturalDim;
   using MatrixD3 =
-      Eigen::Matrix<T, IsoparametricElementType::kNumNaturalDim, 3>;
+      Eigen::Matrix<T, kNaturalDim, 3>;
 
   friend class ElasticityElementTest;
 
@@ -121,18 +121,22 @@ class ElasticityElement : public FemElement<T> {
   void CalcFirstPiolaStress(const FemState<T>& state,
                             std::vector<Matrix3<T>>* P) const;
 
-  /* The isoparametric shape function used for this element. */
-  IsoparametricElementType shape_;
   /* The quadrature rule used for this element. */
   QuadratureType quadrature_;
-  /* Parameters used in the element routine. */
-  ElasticityElementParameters<T> param_;
+  /* The isoparametric shape function used for this element. */
+  IsoparametricElementType shape_{quadrature_.get_points()};
+  /* The mass density of the element in the reference configuration with unit
+   kg/m³. */
+  T density_;
   /* The constitutive model that describes the stress-strain relationship for
    this element. */
   std::unique_ptr<ConstitutiveModel<T>> constitutive_model_;
   /* The inverse element Jacobian evaluated at reference configuration at the
    quadrature points in this element. */
   std::vector<MatrixD3> dxidX_;
+  /* The positions of the nodes of this element in the reference configuration.
+   */
+  Matrix3X<T> reference_positions_;
   /* The volume evaluated at reference configuration occupied by the quadrature
    points in this element. To integrate a function f over the reference domain,
    sum f(q)*reference_volume_[q] over all the quadrature points q in the

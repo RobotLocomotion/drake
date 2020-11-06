@@ -44,7 +44,7 @@ class FemElement {
   ElementIndex element_index() const { return element_index_; }
 
   /** The dimension of the codomain of the PDE's solution u. */
-  virtual int num_problem_dim() const = 0;
+  virtual int solution_dimension() const = 0;
 
   /** Number of nodes associated with this element. */
   virtual int num_nodes() const = 0;
@@ -53,12 +53,12 @@ class FemElement {
    `state`. This method updates the cached quantities in the input `state` if
    they are out of date.
    @param[in] state The FemState at which to evaluate the residual.
-   @param[out] residual The residual vector of size `num_problem_dim() *
-   num_nodes()`. The vector is ordered such that `i*num_problem_dim()`-th to
-   `(i+1)*num_problem_dim()-1`-th entries of the vector stores the residual
+   @param[out] residual The residual vector of size `solution_dimension() *
+   num_nodes()`. The vector is ordered such that `i*solution_dimension()`-th to
+   `(i+1)*solution_dimension()-1`-th entries of the vector stores the residual
    corresponding to the i-th node in this element.
    @pre `residual` must not be the nullptr, and the vector it points to must
-   have size `num_nodes() * num_problem_dim()` */
+   have size `num_nodes() * solution_dimension()` */
   void CalcResidual(const FemState<T>& state,
                     EigenPtr<VectorX<T>> residual) const;
 
@@ -69,20 +69,19 @@ class FemElement {
     @param[in] element_index The global index of the new element.
     @param[in] node_indices The global node indices of the nodes of this
     element.
-    @pre element_index must be valid.
-    @pre shape.num_nodes() must be the same as size of node_indices. */
+    @pre element_index must be valid. */
   FemElement(ElementIndex element_index,
              const std::vector<NodeIndex>& node_indices);
 
   /* Calculates the element residual of this element evaluated at the input
    state.
    @param[in] state The FemState at which to evaluate the residual.
-   @param[out] a vector of residual of size `num_problem_dim()*num_nodes()`.
-   The vector is ordered such that `i*num_problem_dim()`-th to
-   `(i+1)*num_problem_dim()-1`-th entries of the vector stores the residual
+   @param[out] a vector of residual of size `solution_dimension()*num_nodes()`.
+   The vector is ordered such that `i*solution_dimension()`-th to
+   `(i+1)*solution_dimension()-1`-th entries of the vector stores the residual
    corresponding to the i-th node in this element.
    @pre residual must not be the nullptr, and the vector it points to must have
-   size `num_nodes() * num_problem_dim()`. */
+   size `num_nodes() * solution_dimension()`. */
   virtual void DoCalcResidual(const FemState<T>& s,
                               EigenPtr<VectorX<T>> residual) const = 0;
 

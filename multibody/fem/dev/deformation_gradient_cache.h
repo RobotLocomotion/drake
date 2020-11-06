@@ -25,8 +25,8 @@ class DeformationGradientCache {
  public:
   /** @name     Does not allow copy, move, or assignment. */
   /** @{ */
-  /* Copy constructor is used only to facilitate implementation of Clone()
-   in derived classes. */
+  /* Copy constructor is made "protected" to facilitate Clone() and therefore it
+   is not publicly available. */
   DeformationGradientCache(DeformationGradientCache&&) = delete;
   DeformationGradientCache& operator=(DeformationGradientCache&&) = delete;
   DeformationGradientCache& operator=(const DeformationGradientCache&) = delete;
@@ -45,7 +45,7 @@ class DeformationGradientCache {
    locations for the associated element.
    @pre The size of `F` must be the same as `num_quads()`. */
   void UpdateCache(const std::vector<Matrix3<T>>& F) {
-    DRAKE_DEMAND(static_cast<int>(F.size()) == num_quads_);
+    DRAKE_ASSERT(static_cast<int>(F.size()) == num_quads_);
     deformation_gradient_ = F;
     DoUpdateCache(F);
   }
@@ -76,8 +76,8 @@ class DeformationGradientCache {
       : element_index_(element_index),
         num_quads_(num_quads),
         deformation_gradient_(num_quads) {
-    DRAKE_DEMAND(element_index.is_valid());
-    DRAKE_DEMAND(num_quads > 0);
+    DRAKE_ASSERT(element_index.is_valid());
+    DRAKE_ASSERT(num_quads > 0);
   }
 
   /* Copy constructor for the base DeformationGradientCache class to facilitate

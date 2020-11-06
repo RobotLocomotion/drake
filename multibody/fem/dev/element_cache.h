@@ -57,8 +57,8 @@ class ElementCache {
    @pre `num_quads` must be positive. */
   ElementCache(ElementIndex element_index, int num_quads)
       : element_index_(element_index), num_quads_(num_quads) {
-    DRAKE_DEMAND(element_index_.is_valid());
-    DRAKE_DEMAND(num_quads > 0);
+    DRAKE_ASSERT(element_index_.is_valid());
+    DRAKE_ASSERT(num_quads > 0);
   }
 
   /* Copy constructor for the base ElementCache class to facilitate
