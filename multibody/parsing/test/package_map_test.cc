@@ -59,7 +59,7 @@ void VerifyMatchWithTestDataRoot(const PackageMap& package_map) {
   VerifyMatch(package_map, expected_packages);
 }
 
-// Tests that the PackageMap can be manually populated.
+// Tests that the PackageMap can be manually populated and unpopulated.
 GTEST_TEST(PackageMapTest, TestManualPopulation) {
   filesystem::create_directory("package_foo");
   filesystem::create_directory("package_bar");
@@ -74,6 +74,17 @@ GTEST_TEST(PackageMapTest, TestManualPopulation) {
   }
 
   VerifyMatch(package_map, expected_packages);
+
+  map<string, string> expected_remaining_packages(expected_packages);
+  for (const auto& it : expected_packages) {
+    package_map.Remove(it.first);
+    expected_remaining_packages.erase(it.first);
+    VerifyMatch(package_map, expected_remaining_packages);
+  }
+
+  VerifyMatch(package_map, std::map<string, string>());
+
+  EXPECT_THROW(package_map.Remove("package_baz"), std::runtime_error);
 }
 
 // Tests that PackageMap can be populated by a package.xml.
