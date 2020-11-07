@@ -59,7 +59,7 @@ ElasticityElement<T, IsoparametricElementType, QuadratureType>::
                              .topLeftCorner(kNaturalDim, kNaturalDim)
                              .template triangularView<Eigen::Upper>()
                              .determinant());
-    } else if (kNaturalDim) {
+    } else if (kNaturalDim == 1) {
       volume_scale = dXdxi[q].norm();
     } else {
       DRAKE_UNREACHABLE();
