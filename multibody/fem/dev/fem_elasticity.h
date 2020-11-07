@@ -31,7 +31,7 @@ namespace fem {
 /* TODO(xuchenhan-tri): Consider making num_quads() and num_nodes() available at
  compile time and thereby eliminating heap allocations. */
 /* TODO(xuchenhan-tri): Consider abstracting out the IsoparametricElement and
- the Quadrature to a FixedSizeFemElement class. */
+ the Quadrature to a FixedSizeFemElement class, see issue #14302. */
 template <typename T, class IsoparametricElementType, class QuadratureType>
 class ElasticityElement : public FemElement<T> {
  public:
