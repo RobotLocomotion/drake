@@ -525,6 +525,20 @@ TEST_F(DrakeVisualizerTest, TargetRole) {
   }
 }
 
+/* Confirms that a force publish is sufficient.  */
+TEST_F(DrakeVisualizerTest, ForcePublish) {
+  ConfigureDiagram(kPublishPeriod, Role::kIllustration);
+  PopulateScene();
+  auto context = diagram_->CreateDefaultContext();
+  const auto& vis_context = visualizer_->GetMyContextFromRoot(*context);
+  visualizer_->Publish(vis_context);
+
+  /* Confirm that messages were sent.  */
+  MessageResults results = ProcessMessages();
+  ASSERT_EQ(results.num_load, 1);
+  ASSERT_EQ(results.num_draw, 1);
+}
+
 /* When targeting a non-illustration role, if that same geometry *has* an
  illustration role with color, that value is used instead of the default.  */
 TEST_F(DrakeVisualizerTest, GeometryWithIllustrationFallback) {
