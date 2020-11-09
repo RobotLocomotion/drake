@@ -294,6 +294,29 @@ void SolveSDPwithQuadraticCosts(const SolverInterface& solver, double tol) {
       CompareMatrices(result.GetSolution(x), Eigen::Vector3d(1, 1, -1), tol));
   EXPECT_NEAR(result.get_optimal_cost(), 2, tol);
 }
+
+void TestSDPDualSolution1(const SolverInterface& solver, double tol) {
+  MathematicalProgram prog;
+  auto X = prog.NewSymmetricContinuousVariables<2>();
+  prog.AddPositiveSemidefiniteConstraint(X);
+  auto bb_con = prog.AddBoundingBoxConstraint(
+      Eigen::Vector2d(kInf, kInf), Eigen::Vector2d(4, 1),
+      Vector2<symbolic::Variable>(X(0, 0), X(1, 1)));
+  prog.AddLinearCost(X(1, 0));
+  MathematicalProgramResult result;
+  solver.Solve(prog, {}, {}, &result);
+  EXPECT_TRUE(result.is_success());
+
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(X),
+                              (Eigen::Matrix2d() << 4, -2, -2, 1).finished(),
+                              tol));
+  // The optimal cost is -sqrt(x0 * x2), hence the sensitivity to the
+  // bounding box constraint on x0 is -.25, and the sensitivity to the bounding
+  // box constraint on x2 is -1.
+  const Eigen::Vector2d bb_con_dual_expected(-0.25, -1);
+  EXPECT_TRUE(CompareMatrices(result.GetDualSolution(bb_con),
+                              bb_con_dual_expected, tol));
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
