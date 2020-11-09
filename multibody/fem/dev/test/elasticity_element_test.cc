@@ -1,4 +1,4 @@
-#include "drake/multibody/fem/dev/fem_elasticity.h"
+#include "drake/multibody/fem/dev/elasticity_element.h"
 
 #include <gtest/gtest.h>
 
@@ -38,7 +38,7 @@ class ElasticityElementTest : public ::testing::Test {
         std::make_unique<LinearElasticityModel<AutoDiffXd>>(1, 0.25);
     MatrixX<AutoDiffXd> reference_positions = get_reference_positions();
     const AutoDiffXd DummyDensity(1.23);
-    fem_elasticity_ = std::make_unique<
+    elasticity_element_ = std::make_unique<
         ElasticityElement<AutoDiffXd, ShapeType, QuadratureType>>(
         kDummyElementIndex, node_indices, DummyDensity,
         std::move(linear_elasticity_), reference_positions);
@@ -78,32 +78,32 @@ class ElasticityElementTest : public ::testing::Test {
   // Calculates the negative elastic force at state_.
   VectorX<AutoDiffXd> CalcNegativeElasticForce() const {
     VectorX<AutoDiffXd> neg_force(kDof);
-    fem_elasticity_->CalcNegativeElasticForce(*state_, &neg_force);
+    elasticity_element_->CalcNegativeElasticForce(*state_, &neg_force);
     return neg_force;
   }
 
   std::unique_ptr<ElasticityElement<AutoDiffXd, ShapeType, QuadratureType>>
-      fem_elasticity_;
+      elasticity_element_;
   std::unique_ptr<LinearElasticityModel<AutoDiffXd>> linear_elasticity_;
   std::unique_ptr<FemState<AutoDiffXd>> state_;
 };
 
 namespace {
 TEST_F(ElasticityElementTest, Basic) {
-  EXPECT_EQ(fem_elasticity_->num_nodes(), kNumVertices);
-  EXPECT_EQ(fem_elasticity_->num_quads(), kNumQuads);
-  EXPECT_EQ(fem_elasticity_->solution_dimension(), kProblemDim);
+  EXPECT_EQ(elasticity_element_->num_nodes(), kNumVertices);
+  EXPECT_EQ(elasticity_element_->num_quads(), kNumQuads);
+  EXPECT_EQ(elasticity_element_->solution_dimension(), kProblemDim);
 }
 
 TEST_F(ElasticityElementTest, ElasticForceIsNegativeEnergyDerivative) {
-  AutoDiffXd energy = fem_elasticity_->CalcElasticEnergy(*state_);
+  AutoDiffXd energy = elasticity_element_->CalcElasticEnergy(*state_);
   VectorX<AutoDiffXd> neg_force = CalcNegativeElasticForce();
   EXPECT_TRUE(CompareMatrices(energy.derivatives(), neg_force,
                               std::numeric_limits<double>::epsilon()));
   // TODO(xuchenhan-tri) Modify this to account for damping forces and inertia
   // terms.
   VectorX<AutoDiffXd> residual(kDof);
-  fem_elasticity_->CalcResidual(*state_, &residual);
+  elasticity_element_->CalcResidual(*state_, &residual);
   EXPECT_TRUE(CompareMatrices(residual, neg_force));
 }
 // TODO(xuchenhan-tri): Add TEST_F as needed for damping and inertia terms
