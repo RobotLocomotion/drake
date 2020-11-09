@@ -58,12 +58,12 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "fem_elasticity",
+    name = "elasticity_element",
     srcs = [
-        "fem_elasticity.cc",
+        "elasticity_element.cc",
     ],
     hdrs = [
-        "fem_elasticity.h",
+        "elasticity_element.h",
     ],
     deps = [
         ":constitutive_model",
@@ -190,9 +190,9 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
-    name = "fem_elasticity_test",
+    name = "elasticity_element_test",
     deps = [
-        ":fem_elasticity",
+        ":elasticity_element",
         ":fem_state",
         ":linear_elasticity_model",
         ":linear_simplex_element",
