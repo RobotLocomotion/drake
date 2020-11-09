@@ -5,7 +5,6 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff_gradient.h"
-#include "drake/math/jacobian.h"
 
 namespace drake {
 namespace multibody {
@@ -64,8 +63,8 @@ GTEST_TEST(LinearElasticityTest, UndeformedState) {
   // In undeformaed state, the stress should be zero.
   const std::vector<Matrix3<double>> analytic_stress(kNumQuads,
                                                      Matrix3<double>::Zero());
-  EXPECT_EQ(model.CalcPsi(cache), analytic_energy_density);
-  EXPECT_EQ(model.CalcP(cache), analytic_stress);
+  EXPECT_EQ(model.CalcElasticEnergyDensity(cache), analytic_energy_density);
+  EXPECT_EQ(model.CalcFirstPiolaStress(cache), analytic_stress);
 }
 
 GTEST_TEST(LinearElasticityTest, PIsDerivativeOfPsi) {
@@ -90,8 +89,8 @@ GTEST_TEST(LinearElasticityTest, PIsDerivativeOfPsi) {
   }
   // P should be derivative of Psi.
   cache_autodiff.UpdateCache(Fs_autodiff);
-  const auto energy = model_autodiff.CalcPsi(cache_autodiff);
-  const auto P = model_autodiff.CalcP(cache_autodiff);
+  const auto energy = model_autodiff.CalcElasticEnergyDensity(cache_autodiff);
+  const auto P = model_autodiff.CalcFirstPiolaStress(cache_autodiff);
   for (int i = 0; i < kNumQuads; ++i) {
     EXPECT_TRUE(CompareMatrices(
         Eigen::Map<const Matrix3<double>>(energy[i].derivatives().data(), 3, 3),

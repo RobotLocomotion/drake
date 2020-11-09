@@ -35,6 +35,67 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "elasticity_element_cache",
+    hdrs = [
+        "elasticity_element_cache.h",
+    ],
+    deps = [
+        ":deformation_gradient_cache",
+        ":element_cache",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "element_cache",
+    hdrs = [
+        "element_cache.h",
+    ],
+    deps = [
+        ":fem_indexes",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_elasticity",
+    srcs = [
+        "fem_elasticity.cc",
+    ],
+    hdrs = [
+        "fem_elasticity.h",
+    ],
+    deps = [
+        ":constitutive_model",
+        ":elasticity_element_cache",
+        ":fem_element",
+        ":isoparametric_element",
+        ":linear_simplex_element",
+        ":quadrature",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_element",
+    srcs = [
+        "fem_element.cc",
+    ],
+    hdrs = [
+        "fem_element.h",
+    ],
+    deps = [
+        ":constitutive_model",
+        ":fem_state",
+        ":isoparametric_element",
+        ":quadrature",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "fem_indexes",
     hdrs = [
         "fem_indexes.h",
@@ -42,6 +103,18 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:type_safe_index",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_state",
+    hdrs = [
+        "fem_state.h",
+    ],
+    deps = [
+        ":element_cache",
+        "//common:copyable_unique_ptr",
+        "//common:essential",
     ],
 )
 
@@ -117,10 +190,24 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
-    name = "linear_elasticity_model_cache_test",
+    name = "fem_elasticity_test",
     deps = [
-        ":linear_elasticity_model_cache",
+        ":fem_elasticity",
+        ":fem_state",
+        ":linear_elasticity_model",
+        ":linear_simplex_element",
+        ":quadrature",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "fem_state_test",
+    deps = [
+        ":element_cache",
+        ":fem_state",
     ],
 )
 
@@ -131,7 +218,14 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//math:gradient",
-        "//math:jacobian",
+    ],
+)
+
+drake_cc_googletest(
+    name = "linear_elasticity_model_cache_test",
+    deps = [
+        ":linear_elasticity_model_cache",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
