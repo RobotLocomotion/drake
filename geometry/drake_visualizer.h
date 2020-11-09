@@ -11,6 +11,7 @@
 #include "drake/geometry/query_object.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/framework/event_status.h"
 #include "drake/systems/framework/input_port.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/output_port.h"
@@ -178,7 +179,8 @@ class DrakeVisualizer : public systems::LeafSystem<double> {
 
   /* The periodic event handler. It tests to see if the last scene description
    is valid (if not, updates it) and then broadcasts poses.  */
-  void SendGeometryMessage(const systems::Context<double>& context) const;
+  systems::EventStatus SendGeometryMessage(
+      const systems::Context<double>& context) const;
 
   /* Data stored in the cache; populated when we transmit a load message and
    read from for a pose message.  */

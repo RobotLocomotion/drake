@@ -22,6 +22,7 @@ using math::RigidTransformd;
 using std::make_unique;
 using std::vector;
 using systems::Context;
+using systems::EventStatus;
 
 namespace {
 
@@ -166,6 +167,7 @@ DrakeVisualizer::DrakeVisualizer(lcm::DrakeLcmInterface* lcm,
 
   DeclarePeriodicPublishEvent(params_.publish_period, 0.0,
                               &DrakeVisualizer::SendGeometryMessage);
+  DeclareForcedPublishEvent(&DrakeVisualizer::SendGeometryMessage);
 
   query_object_input_port_ =
       this->DeclareAbstractInputPort("query_object",
@@ -208,7 +210,7 @@ void DrakeVisualizer::DispatchLoadMessage(const SceneGraph<double>& scene_graph,
                   lcm);
 }
 
-void DrakeVisualizer::SendGeometryMessage(
+EventStatus DrakeVisualizer::SendGeometryMessage(
     const Context<double>& context) const {
   const auto& query_object =
       query_object_input_port().Eval<QueryObject<double>>(context);
@@ -230,6 +232,8 @@ void DrakeVisualizer::SendGeometryMessage(
 
   SendDrawMessage(query_object, EvalDynamicFrameData(context),
                   context.get_time(), lcm_);
+
+  return EventStatus::Succeeded();
 }
 
 void DrakeVisualizer::SendLoadMessage(
