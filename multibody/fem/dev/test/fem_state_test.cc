@@ -31,7 +31,7 @@ class FemStateTest : public ::testing::Test {
   void SetUp() {
     state_ = std::make_unique<FemState<double>>(kDof);
     // Create a couple of cache entries.
-    state_->ResetElementCache(CreateCache());
+    state_->ResetElementCache(MakeElementCache());
     // Set default states.
     SetStates();
   }
@@ -47,7 +47,7 @@ class FemStateTest : public ::testing::Test {
     state_->set_q(q());
   }
 
-  std::vector<std::unique_ptr<ElementCache<double>>> CreateCache() const {
+  std::vector<std::unique_ptr<ElementCache<double>>> MakeElementCache() const {
     std::vector<std::unique_ptr<ElementCache<double>>> cache;
     std::vector<int> data = {3, 5};
     for (int i = 0; i < kNumCache; ++i) {
@@ -86,8 +86,8 @@ TEST_F(FemStateTest, Clone) {
         dynamic_cast<const MyElementCache*>(&clone->element_cache(i));
     const auto* original_cache =
         dynamic_cast<const MyElementCache*>(&state_->element_cache(i));
-    EXPECT_TRUE(cloned_cache != nullptr);
-    EXPECT_TRUE(original_cache != nullptr);
+    ASSERT_TRUE(cloned_cache != nullptr);
+    ASSERT_TRUE(original_cache != nullptr);
     EXPECT_EQ(cloned_cache->data(), original_cache->data());
   }
 }
@@ -97,11 +97,11 @@ TEST_F(FemStateTest, SetFrom) {
   dest.SetFrom(*state_);
   EXPECT_EQ(dest.qdot(), qdot());
   EXPECT_EQ(dest.q(), q());
-  const auto cache = CreateCache();
+  const auto cache = MakeElementCache();
   for (ElementIndex i(0); i < kNumCache; ++i) {
     const auto* dest_cache =
         dynamic_cast<const MyElementCache*>(&dest.element_cache(i));
-    EXPECT_TRUE(dest_cache != nullptr);
+    ASSERT_TRUE(dest_cache != nullptr);
     EXPECT_EQ(dest_cache->data(),
               static_cast<const MyElementCache*>(cache[i].get())->data());
   }

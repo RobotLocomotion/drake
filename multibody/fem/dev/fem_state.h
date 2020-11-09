@@ -38,7 +38,7 @@ class FemState {
    the construction of the %FemState to set the element cache to the desired
    quantity. */
   void ResetElementCache(
-      std::vector<std::unique_ptr<ElementCache<T>>> element_cache) const {
+      std::vector<std::unique_ptr<ElementCache<T>>> element_cache) {
     element_cache_.resize(element_cache.size());
     for (int i = 0; i < static_cast<int>(element_cache.size()); ++i) {
       element_cache_[i] = std::move(element_cache[i]);
@@ -133,7 +133,7 @@ class FemState {
   // Generalized node positions.
   VectorX<T> q_;
   // Owned element cache quantities.
-  mutable std::vector<copyable_unique_ptr<ElementCache<T>>> element_cache_;
+  std::vector<copyable_unique_ptr<ElementCache<T>>> element_cache_;
 };
 }  // namespace fem
 }  // namespace multibody
