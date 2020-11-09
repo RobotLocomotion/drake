@@ -168,7 +168,8 @@ void TestQPDualSolution2(const SolverInterface& solver);
  * Test getting the dual solution for a QP problem.
  * This QP problem has active bounding box constraints.
  */
-void TestQPDualSolution3(const SolverInterface& solver);
+void TestQPDualSolution3(const SolverInterface& solver, double tol1 = 1e-6,
+                         double tol2 = 2e-5);
 
 /**
  * Test getting the dual solution for an equality constrained QP.
