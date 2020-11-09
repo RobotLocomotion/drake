@@ -26,6 +26,10 @@ class PackageMap {
   /// Returns true if and only if this PackageMap contains @p package_name.
   bool Contains(const std::string& package_name) const;
 
+  /// Removes package @p package_name and its previously added path.
+  /// Throws if @p package_name is not present in this PackageMap.
+  void Remove(const std::string& package_name);
+
   /// Returns the number of entries in this PackageMap.
   int size() const;
 

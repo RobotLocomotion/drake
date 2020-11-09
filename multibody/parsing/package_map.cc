@@ -38,6 +38,14 @@ bool PackageMap::Contains(const string& package_name) const {
   return map_.find(package_name) != map_.end();
 }
 
+void PackageMap::Remove(const string& package_name) {
+  if (map_.erase(package_name) == 0) {
+    throw std::runtime_error(
+        "Could not find and remove package://" + package_name + " from the "
+        "search path.");
+  }
+}
+
 int PackageMap::size() const {
   return map_.size();
 }
