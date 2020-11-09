@@ -162,7 +162,7 @@ class RigidBody : public Body<T> {
   Vector3<T> CalcCenterOfMassTranslationalVelocity(
       const systems::Context<T>& context,
       const Frame<T>& frame_A,
-      const Frame<T>& frame_E) const {
+      const Frame<T>& frame_E) const override {
     const Body<T>& body_B = *this;
     const Frame<T>& frame_B = body_B.body_frame();
 
