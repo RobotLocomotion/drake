@@ -192,7 +192,8 @@ class RenderEngine : public ShapeReifier {
 
    @param camera                The intrinsic properties of the camera.
    @param show_window           If true, the render window will be displayed.
-   @param[out] color_image_out  The rendered color image.  */
+   @param[out] color_image_out  The rendered color image.
+   @pydrake_mkdoc_identifier{deprecated}  */
   virtual void RenderColorImage(
       const CameraProperties& camera, bool show_window,
       systems::sensors::ImageRgba8U* color_image_out) const = 0;
@@ -203,7 +204,8 @@ class RenderEngine : public ShapeReifier {
    depth images are not readily communicative to humans.
 
    @param camera                The intrinsic properties of the camera.
-   @param[out] depth_image_out  The rendered depth image.  */
+   @param[out] depth_image_out  The rendered depth image.
+   @pydrake_mkdoc_identifier{deprecated}  */
   virtual void RenderDepthImage(
       const DepthCameraProperties& camera,
       systems::sensors::ImageDepth32F* depth_image_out) const = 0;
@@ -213,7 +215,8 @@ class RenderEngine : public ShapeReifier {
 
    @param camera                The intrinsic properties of the camera.
    @param show_window           If true, the render window will be displayed.
-   @param[out] label_image_out  The rendered label image.  */
+   @param[out] label_image_out  The rendered label image.
+   @pydrake_mkdoc_identifier{deprecated}  */
   virtual void RenderLabelImage(
       const CameraProperties& camera,
       bool show_window,
