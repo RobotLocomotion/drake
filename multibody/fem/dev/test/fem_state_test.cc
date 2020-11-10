@@ -29,23 +29,14 @@ class MyElementCache final : public ElementCache<double> {
 class FemStateTest : public ::testing::Test {
  protected:
   void SetUp() {
-    state_ = std::make_unique<FemState<double>>(kDof);
+    state_ = std::make_unique<FemState<double>>(q(), qdot());
     // Create a couple of cache entries.
     state_->ResetElementCache(MakeElementCache());
-    // Set default states.
-    SetStates();
   }
 
   // Default values for the first kDof state entries.
   VectorX<double> qdot() const { return Vector3<double>(0.3, 0.4, 0.5); }
   VectorX<double> q() const { return Vector3<double>(0.7, 0.8, 0.9); }
-
-  // Set the states to default values.
-  void SetStates() {
-    // Set all states to their default values.
-    state_->set_qdot(qdot());
-    state_->set_q(q());
-  }
 
   std::vector<std::unique_ptr<ElementCache<double>>> MakeElementCache() const {
     std::vector<std::unique_ptr<ElementCache<double>>> cache;
@@ -62,15 +53,13 @@ class FemStateTest : public ::testing::Test {
 };
 
 // Verify setters and getters are working properly.
-TEST_F(FemStateTest, SetAndGet) {
-  SetStates();
+TEST_F(FemStateTest, GetStates) {
   EXPECT_EQ(state_->qdot(), qdot());
   EXPECT_EQ(state_->q(), q());
 }
 
 // Verify resizing does not thrash existing values.
 TEST_F(FemStateTest, ConservativeResize) {
-  SetStates();
   state_->Resize(2 * kDof);
   // The first kDof entres should remain unchanged.
   EXPECT_EQ(state_->qdot().head(kDof), qdot());
@@ -93,7 +82,8 @@ TEST_F(FemStateTest, Clone) {
 }
 
 TEST_F(FemStateTest, SetFrom) {
-  FemState<double> dest;
+  // Set up an arbitrary state.
+  FemState<double> dest(VectorX<double>::Zero(1), VectorX<double>::Zero(1));
   dest.SetFrom(*state_);
   EXPECT_EQ(dest.qdot(), qdot());
   EXPECT_EQ(dest.q(), q());

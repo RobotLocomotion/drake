@@ -27,11 +27,15 @@ class FemState {
    another %FemState. */
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FemState);
 
-  FemState() = default;
-
-  /** Constructs an %FemState with prescribed number of states. */
-  explicit FemState(int num_generalized_positions)
-      : qdot_(num_generalized_positions), q_(num_generalized_positions) {}
+  /** Constructs an %FemState with prescribed states.
+   @param[in] q The prescribed generalized positions.
+   @param[in] qdot The prescribed time derivatives of generalized positions.
+   @pre `q` and `qdot` must have the same size. */
+  FemState(const Eigen::Ref<const VectorX<T>>& q,
+           const Eigen::Ref<const VectorX<T>>& qdot)
+      : q_(q), qdot_(qdot) {
+    DRAKE_DEMAND(q.size() == qdot.size());
+  }
 
   /** Takes ownership of the input `element_cache` and set it as the element
    cache that `this` %FemState owns. This method is usually called right after
@@ -48,8 +52,8 @@ class FemState {
   /** Creates a deep identical copy of `this` %FemState with all its states and
    cache. Returns a unique pointer to the copy. */
   std::unique_ptr<FemState<T>> Clone() const {
-    auto clone = std::make_unique<FemState<T>>(num_generalized_positions());
-    clone->SetFrom(*this);
+    auto clone = std::make_unique<FemState<T>>(q(), qdot());
+    clone->element_cache_ = element_cache_;
     return clone;
   }
 
@@ -86,13 +90,11 @@ class FemState {
    @{ */
   void set_qdot(const Eigen::Ref<const VectorX<T>>& value) {
     DRAKE_ASSERT(value.size() == qdot_.size());
-    if (value == qdot_) return;
     mutable_qdot() = value;
   }
 
   void set_q(const Eigen::Ref<const VectorX<T>>& value) {
     DRAKE_ASSERT(value.size() == q_.size());
-    if (value == q_) return;
     mutable_q() = value;
   }
   /** @} */
@@ -128,10 +130,10 @@ class FemState {
   int num_generalized_positions() const { return q_.size(); }
 
  private:
-  // Time derivatives of generalized node positions.
-  VectorX<T> qdot_;
   // Generalized node positions.
   VectorX<T> q_;
+  // Time derivatives of generalized node positions.
+  VectorX<T> qdot_;
   // Owned element cache quantities.
   std::vector<copyable_unique_ptr<ElementCache<T>>> element_cache_;
 };
