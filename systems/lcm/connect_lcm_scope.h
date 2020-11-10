@@ -9,7 +9,12 @@ namespace drake {
 namespace systems {
 namespace lcm {
 
+// TODO(jwnimmer-tri) Add DRAKE_DEPRECATED onto here as of 2021-01-01 or so,
+// with the removal date the usual +3 months after the marker gets added.
 /**
+ (To be deprecated.) Prefer to use LcmScopeSystem::AddToBuilder instead of
+ this function; the LcmScopeSystem provides more detailed timestamps.
+
  Provides the ability to publish any vector-valued output port to the LCM
  @p channel, using the drake::lcmt_drake_signal LCM message type, by adding
  an appropriate LcmPublisherSystem to the @p builder.  If @p lcm is

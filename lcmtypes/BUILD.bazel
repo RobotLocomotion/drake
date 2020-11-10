@@ -235,6 +235,12 @@ drake_lcm_cc_library(
 )
 
 drake_lcm_cc_library(
+    name = "scope",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_scope.lcm"],
+)
+
+drake_lcm_cc_library(
     name = "support_data",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_support_data.lcm"],
@@ -384,6 +390,7 @@ LCMTYPES_CC = [
     ":qp_input",
     ":resolved_contact",
     ":schunk",
+    ":scope",
     ":support_data",
     ":viewer",
     ":viewer2_comms",
