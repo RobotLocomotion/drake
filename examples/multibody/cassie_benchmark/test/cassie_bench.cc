@@ -208,12 +208,19 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffMassMatrix)
     plant_autodiff_->CalcMassMatrix(*context_autodiff_, &M_autodiff);
   };
 
-  // The first iteration allocates more memory than subsequent runs.
-  compute();
+  // The first few iterations allocate more memory than subsequent runs.
+  for (int k = 0; k < 1; k++) {
+    LimitMalloc guard(LimitReleaseOnly(1679));
+    compute();
+  }
+  for (int k = 0; k < 1; k++) {
+    LimitMalloc guard(LimitReleaseOnly(367));
+    compute();
+  }
 
   for (int k = 0; k < 3; k++) {
     // @see LimitMalloc note above.
-    LimitMalloc guard(LimitReleaseOnly(31426));
+    LimitMalloc guard(LimitReleaseOnly(0));
 
     compute();
 
@@ -246,11 +253,14 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffInverseDynamics)
   };
 
   // The first iteration allocates more memory than subsequent runs.
-  compute();
+  for (int k = 0; k < 1; k++) {
+    LimitMalloc guard(LimitReleaseOnly(1789));
+    compute();
+  }
 
   for (int k = 0; k < 3; k++) {
     // @see LimitMalloc note above.
-    LimitMalloc guard(LimitReleaseOnly(38049));
+    LimitMalloc guard(LimitReleaseOnly(3));
 
     compute();
 
@@ -281,12 +291,19 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffForwardDynamics)
                                          derivatives_autodiff.get());
   };
 
-  // The first iteration allocates more memory than subsequent runs.
-  compute();
+  // The first few iterations allocate more memory than subsequent runs.
+  for (int k = 0; k < 1; k++) {
+    LimitMalloc guard(LimitReleaseOnly(2832));
+    compute();
+  }
+  for (int k = 0; k < 1; k++) {
+    LimitMalloc guard(LimitReleaseOnly(187));
+    compute();
+  }
 
   for (int k = 0; k < 3; k++) {
     // @see LimitMalloc note above.
-    LimitMalloc guard(LimitReleaseOnly(57693));
+    LimitMalloc guard(LimitReleaseOnly(22));
 
     compute();
 
