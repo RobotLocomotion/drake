@@ -7,6 +7,7 @@ python3-nbconvert
 python3-nbformat
 python3-numpy-dbg
 python3-pandas
+python3-psutil
 python3-scipy-dbg
 python3-tk-dbg
 python3-yaml-dbg
