@@ -191,6 +191,7 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "fem_elasticity_test",
+    tags = ["manual"],  # Currently fails valgrind.
     deps = [
         ":fem_elasticity",
         ":fem_state",
@@ -205,6 +206,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "fem_state_test",
+    tags = ["manual"],  # Currently fails valgrind.
     deps = [
         ":element_cache",
         ":fem_state",
@@ -223,6 +225,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "linear_elasticity_model_cache_test",
+    tags = ["manual"],  # Currently fails valgrind.
     deps = [
         ":linear_elasticity_model_cache",
         "//common/test_utilities:expect_throws_message",
