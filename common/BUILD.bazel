@@ -31,6 +31,7 @@ drake_cc_package_library(
         ":drake_bool",
         ":drake_path",
         ":dummy_value",
+        ":eigen_dense_storage_pools",
         ":essential",
         ":extract_double",
         ":find_resource",
@@ -127,6 +128,13 @@ drake_cc_library(
     srcs = ["pool_ladder_allocator.cc"],
     hdrs = ["pool_ladder_allocator.h"],
     deps = [":essential"],
+)
+
+drake_cc_library(
+    name = "eigen_dense_storage_pools",
+    srcs = ["eigen_dense_storage_pools.cc"],
+    hdrs = ["eigen_dense_storage_pools.h"],
+    deps = [":pool_ladder_allocator"],
 )
 
 drake_cc_library(
@@ -1372,6 +1380,13 @@ drake_cc_googletest(
     name = "pool_ladder_allocator_test",
     deps = [
         ":pool_ladder_allocator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "eigen_dense_storage_pools_test",
+    deps = [
+        ":eigen_dense_storage_pools",
     ],
 )
 
