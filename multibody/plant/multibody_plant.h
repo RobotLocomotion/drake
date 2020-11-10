@@ -2413,8 +2413,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().CalcCenterOfMassPosition(context, model_instances);
   }
 
-  /// Denoting Scm as the center of mass of the system S stored by this plant,
-  /// this method calculates point Scm's translational velocity in a frame A,
+  /// Denoting Scm as the center of mass of the system S stored by `this` plant,
+  /// this method calculates Scm's translational velocity in a frame A,
   /// expressed in a frame E.  Note: The world_body() is ignored.
   /// @param[in] context The context contains the state of the model.
   /// @param[in] frame_A The measured-in frame for Scm's translational velocity.
@@ -2431,7 +2431,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   /// Denoting Scm as the center of mass of the system S in model_instances,
-  /// this method calculates point Scm's translational velocity in a frame A,
+  /// this method calculates Scm's translational velocity in a frame A,
   /// expressed in a frame E. This method does not distinguish between welded
   /// bodies, joint connected bodies, and free bodies.  world_body() is ignored.
   /// @param[in] context The context contains the state of the model.
@@ -2451,7 +2451,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   /// This method returns the spatial momentum of `this` MultibodyPlant in the
-  /// world frame W, about a designated point P, expressed in world frame W.
+  /// world frame W, about a designated point P, expressed in the world frame W.
   /// @param[in] context Contains the state of the model.
   /// @param[in] p_WoP_W Position from Wo (origin of the world frame W) to an
   ///            arbitrary point P, expressed in the world frame W.
@@ -2466,7 +2466,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///     plant.CalcSpatialMomentumInWorldAboutPoint(context, p_WoScm_W);
   /// </pre>
    SpatialMomentum<T> CalcSpatialMomentumInWorldAboutPoint(
-       const systems::Context<T>& context, const Vector3<T>& p_WoP_W) const {
+       const systems::Context<T>& context,
+       const Vector3<T>& p_WoP_W) const {
      return internal_tree().CalcSpatialMomentumInWorldAboutPoint(context,
                                                                  p_WoP_W);
   }

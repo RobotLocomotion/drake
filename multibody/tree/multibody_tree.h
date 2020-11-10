@@ -1320,7 +1320,7 @@ class MultibodyTree {
       const std::vector<ModelInstanceIndex>& model_instances) const;
 
   /// Denoting Scm as the center of mass of the system S in body_indexes,
-  /// this method calculates point Scm's translational velocity in a frame A,
+  /// this method calculates Scm's translational velocity in a frame A,
   /// expressed in a frame E. This method does not distinguish between welded
   /// bodies, joint connected bodies, and free bodies.  world_body() is ignored.
   /// @param[in] context The context contains the state of the model.
