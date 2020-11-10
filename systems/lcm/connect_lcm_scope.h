@@ -10,6 +10,9 @@ namespace systems {
 namespace lcm {
 
 /**
+ (To be deprecated.) Prefer to use LcmScopeSystem::AddToBuilder instead of
+ this function; the LcmScopeSystem provides more detailed timestamps.
+
  Provides the ability to publish any vector-valued output port to the LCM
  @p channel, using the drake::lcmt_drake_signal LCM message type, by adding
  an appropriate LcmPublisherSystem to the @p builder.  If @p lcm is
