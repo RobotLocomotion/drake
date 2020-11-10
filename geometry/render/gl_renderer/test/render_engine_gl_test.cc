@@ -56,8 +56,9 @@ using math::RotationMatrixd;
 using std::make_unique;
 using std::unique_ptr;
 using std::unordered_map;
-using systems::sensors::ColorI;
+using systems::sensors::CameraInfo;
 using systems::sensors::ColorD;
+using systems::sensors::ColorI;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
@@ -220,27 +221,29 @@ class RenderEngineGlTest : public ::testing::Test {
   }
 
   // Confirms that all pixels in the member label image have the same value.
-  void VerifyUniformLabel(int16_t label) {
-    for (int y = 0; y < kHeight; ++y) {
-      for (int x = 0; x < kWidth; ++x) {
-        ASSERT_EQ(label_.at(x, y)[0], label)
+  void VerifyUniformLabel(int16_t value, const ImageLabel16I* label = nullptr) {
+    if (label == nullptr) label = &label_;
+    for (int y = 0; y < label->height(); ++y) {
+      for (int x = 0; x < label->width(); ++x) {
+        ASSERT_EQ(label->at(x, y)[0], value)
             << "At pixel (" << x << ", " << y << ")";
       }
     }
   }
 
   // Confirms that all pixels in the member depth image have the same value.
-  void VerifyUniformDepth(float depth) {
-    if (depth == std::numeric_limits<float>::infinity()) {
-      for (int y = 0; y < kHeight; ++y) {
-        for (int x = 0; x < kWidth; ++x) {
-          ASSERT_EQ(depth_.at(x, y)[0], depth);
+  void VerifyUniformDepth(float value, const ImageDepth32F* depth = nullptr) {
+    if (depth == nullptr) depth = &depth_;
+    if (value == std::numeric_limits<float>::infinity()) {
+      for (int y = 0; y < depth->height(); ++y) {
+        for (int x = 0; x < depth->width(); ++x) {
+          ASSERT_EQ(depth->at(x, y)[0], value);
         }
       }
     } else {
-      for (int y = 0; y < kHeight; ++y) {
-        for (int x = 0; x < kWidth; ++x) {
-          ASSERT_NEAR(depth_.at(x, y)[0], depth, kDepthTolerance);
+      for (int y = 0; y < depth->height(); ++y) {
+        for (int x = 0; x < depth->width(); ++x) {
+          ASSERT_NEAR(depth->at(x, y)[0], value, kDepthTolerance);
         }
       }
     }
@@ -1477,6 +1480,371 @@ TEST_F(RenderEngineGlTest, MeshGeometryReuse) {
   EXPECT_EQ(initial_geometry.index_buffer, second_geometry.index_buffer);
   EXPECT_EQ(initial_geometry.index_buffer_size,
             second_geometry.index_buffer_size);
+}
+
+// A reality check that confirms that the conversion from CameraProperties
+// to intrinsics is as expected -- they produce equivalent images.
+TEST_F(RenderEngineGlTest, CameraPropertiesVsCameraIntrinsics) {
+  Init(X_WR_, true /* add_terrain */);
+  PopulateSimpleBoxTest(renderer_.get());
+
+  // We're going to render some baseline images using the CameraProperties.
+  ImageRgba8U ref_color(camera_.width, camera_.height);
+  ImageDepth32F ref_depth(camera_.width, camera_.height);
+  ImageLabel16I ref_label(camera_.width, camera_.height);
+  Render(renderer_.get(), &camera_, &ref_color, &ref_depth, &ref_label);
+
+  // Instantiating camear models with the same data as in DepthCameraProperties
+  // should produce the *same* images.
+  const CameraInfo intrinsics{camera_.width, camera_.height, camera_.fov_y};
+  const ColorRenderCamera color_camera{camera_, kShowWindow};
+  const DepthRenderCamera depth_camera{camera_};
+
+  ImageRgba8U equiv_color(camera_.width, camera_.height);
+  ImageDepth32F equiv_depth(camera_.width, camera_.height);
+  ImageLabel16I equiv_label(camera_.width, camera_.height);
+  renderer_->RenderColorImage(color_camera, &equiv_color);
+  renderer_->RenderDepthImage(depth_camera, &equiv_depth);
+  renderer_->RenderLabelImage(color_camera, &equiv_label);
+
+  // The color and label images should be *bit* identical.
+  EXPECT_EQ(memcmp(ref_color.at(0, 0), equiv_color.at(0, 0), ref_color.size()),
+            0);
+
+  EXPECT_EQ(memcmp(ref_label.at(0, 0), equiv_label.at(0, 0), ref_label.size()),
+            0);
+  // The depth values take a slightly more numerically complex path and can
+  // lead to small rounding errors that the color channels are less
+  // susceptible to. To show the images are equal, we need to compare with
+  // tolerance.
+  for (int d = 0; d < ref_depth.size(); ++d) {
+    ASSERT_NEAR(ref_depth.at(0, 0)[d], equiv_depth.at(0, 0)[d],
+                4 * std::numeric_limits<float>::epsilon());
+  }
+}
+
+namespace {
+
+// Defines the relationship between two adjacent pixels in a rendering of a box.
+// Used to help find the edges of a rendered box.
+enum AdjacentPixel { Same, GroundToBox, BoxToGround };
+
+// Note: These overloads work because the pixel "types" ::T for each image type
+// is distinct.
+
+AdjacentPixel Compare(const typename ImageDepth32F::T* curr_pixel,
+                      const typename ImageDepth32F::T* next_pixel) {
+  // Box depth < ground depth.
+  if (*curr_pixel < *next_pixel) return BoxToGround;
+  if (*curr_pixel > *next_pixel) return GroundToBox;
+  return Same;
+}
+
+AdjacentPixel Compare(const typename ImageRgba8U::T* curr_pixel,
+                      const typename ImageRgba8U::T* next_pixel) {
+  const RgbaColor ground(kTerrainColor);
+  const RgbaColor curr(curr_pixel);
+  const RgbaColor next(next_pixel);
+
+  const bool curr_is_ground =
+      curr.r == ground.r && curr.g == ground.g && curr.b == ground.b;
+  const bool next_is_ground =
+      next.r == ground.r && next.g == ground.g && next.b == ground.b;
+  if (!curr_is_ground && next_is_ground) return BoxToGround;
+  if (curr_is_ground && !next_is_ground) return GroundToBox;
+  return Same;
+}
+
+AdjacentPixel Compare(const typename ImageLabel16I::T* curr_pixel,
+                      const typename ImageLabel16I::T* next_pixel) {
+  const bool curr_is_box = *curr_pixel == kDefaultLabel;
+  const bool next_is_box = *next_pixel == kDefaultLabel;
+
+  if (curr_is_box && !next_is_box) return BoxToGround;
+  if (!curr_is_box && next_is_box) return GroundToBox;
+  return Same;
+}
+
+// Find the edges of the box in the image. Using the single-channel depth
+// image simplifies finding the edges. The edges are encoded as follows:
+// left, top, right, bottom. (such that right > left, and top > bottom). It
+// represents the row/column in the image that represents the left-most,
+// top-most, etc. extents of the box. It is assumed that the box edges run
+// parallel with the image rows and columns and the box is wholly contained
+// within the image.
+template <typename ImageType>
+Vector4<int> FindBoxEdges(const ImageType& image) {
+  using T = typename ImageType::T;
+  Vector4<int> edges{-1, -1, -1, -1};
+
+  for (int x = 0; x < image.width() - 1; ++x) {
+    for (int y = 0; y < image.height() - 1; ++y) {
+      const T* curr_pixel = image.at(x, y);
+
+      // Look for edge between current pixel and pixel below.
+      const T* bottom_pixel = image.at(x, y + 1);
+      const AdjacentPixel bottom_result =
+          Compare(curr_pixel, bottom_pixel);
+      if (bottom_result == GroundToBox) {
+        // Current lies on the ground, next lies on the box; bottom edge.
+        DRAKE_DEMAND(edges(3) == -1 || edges(3) == y + 1);
+        edges(3) = y + 1;
+      } else if (bottom_result == BoxToGround) {
+        // Current lies on the box, next lies on the ground; top edges.
+        DRAKE_DEMAND(edges(1) == -1 || edges(1) == y);
+        edges(1) = y;
+      }
+
+      // Look for edge between current pixel and pixel to the right.
+      const T* right_pixel = image.at(x + 1, y);
+      const AdjacentPixel right_result =
+          Compare(curr_pixel, right_pixel);
+      if (right_result == GroundToBox) {
+        // Current lies on the ground, next lies on the box; left edge.
+        DRAKE_DEMAND(edges(0) == -1 || edges(0) == x + 1);
+        edges(0) = x + 1;
+      } else if (right_result == BoxToGround) {
+        // Current lies on the box, next lies on the ground; right edge.
+        DRAKE_DEMAND(edges(2) == -1 || edges(2) == x);
+        edges(2) = x;
+      }
+    }
+  }
+
+  return edges;
+  }
+
+}  // namespace
+
+// Confirm that all of the intrinsics values have the expected contribution.
+// We'll render a cube multiple times. Each rendering will have its own camera
+// configuration and we'll predict the contents of the image relative to a
+// baseline image, based on the change in rendering properties.
+TEST_F(RenderEngineGlTest, IntrinsicsAndRenderProperties) {
+  // TODO(#11965) Now that the creation of the projection matrix is part
+  //  of RenderCameraCore (and tested there), this could be simplified. We rely
+  //  on the *correctness* of the projection matrix and merely confirm that
+  //  it is being computed at all. That would eliminate the many tweaks and
+  //  comparisons. Consider simplifying this when the render engine test
+  //  infrastructure is refactored.
+  Init(X_WR_, true /* add_terrain */);
+  PopulateSimpleBoxTest(renderer_.get());
+
+  // Reference case: Vanilla, ideal camera: isotropic, centered lens. We'll
+  // define future expectations relative to this one. The actual parameters are
+  // arbitrary. The goal is to place the box inside the image. The focal
+  // length should not be too large, otherwise the box edges cannot be
+  // identified in the image.
+  const int w = 300;
+  const int h = w;
+  const double fx = 270;
+  const double fy = fx;
+  const double cx = w / 2.0 + 0.5;
+  const double cy = h / 2.0 + 0.5;
+  const double min_depth = 0.1;
+  const double max_depth = 5;
+  const double clip_n = 0.01;
+  const double clip_f = 10.0;
+
+  const CameraInfo ref_intrinsics{w, h, fx, fy, cx, cy};
+  const ColorRenderCamera ref_color_camera{
+      {"n/a", ref_intrinsics, {clip_n, clip_f}, {}}, kShowWindow};
+  const DepthRenderCamera ref_depth_camera{
+      {"n/a", ref_intrinsics, {clip_n, clip_f}, {}}, {min_depth, max_depth}};
+
+  ImageRgba8U ref_color(ref_intrinsics.width(), ref_intrinsics.height());
+  ImageDepth32F ref_depth(ref_intrinsics.width(), ref_intrinsics.height());
+  ImageLabel16I ref_label(ref_intrinsics.width(), ref_intrinsics.height());
+  renderer_->RenderColorImage(ref_color_camera, &ref_color);
+  renderer_->RenderDepthImage(ref_depth_camera, &ref_depth);
+  renderer_->RenderLabelImage(ref_color_camera, &ref_label);
+
+  // Confirm all edges were found, the box is square and centered in the
+  // image.
+  const Vector4<int> ref_box_edges = FindBoxEdges(ref_depth);
+  ASSERT_TRUE((ref_box_edges.array() > -1).all()) << ref_box_edges.transpose();
+  const int ref_box_width = ref_box_edges(2) - ref_box_edges(0);
+  const int ref_box_height = ref_box_edges(1) - ref_box_edges(3);
+  ASSERT_EQ(ref_box_width, ref_box_height);
+  ASSERT_EQ((ref_box_edges(2) + ref_box_edges(0)) / 2, w / 2);
+  ASSERT_EQ((ref_box_edges(1) + ref_box_edges(3)) / 2, h / 2);
+
+  {
+    // Also confirm the box is positioned the same in color and label images.
+    const Vector4<int> color_edges = FindBoxEdges(ref_color);
+    ASSERT_EQ(color_edges, ref_box_edges) << color_edges;
+    const Vector4<int> label_edges = FindBoxEdges(ref_label);
+    ASSERT_EQ(label_edges, ref_box_edges) << label_edges;
+  }
+
+  {
+    // Case: Modify image dimensions, focal length, and principal point; the
+    // box should move and stretch.
+    const int w2 = w + 100;
+    const int h2 = h + 50;
+    // There are limits on how much *bigger* a focal length can be. Too big
+    // and the box will no longer fit in the image and the test will fail
+    // because FindBoxEdges()'s assumptions will be broken.
+    const double fx2 = fx * 1.1;
+    const double fy2 = fy * 0.75;
+    const double offset_x = 10;
+    const double offset_y = -15;
+    const double cx2 = w2 / 2.0 + 0.5 + offset_x;
+    const double cy2 = h2 / 2.0 + 0.5 + offset_y;
+    const CameraInfo intrinsics{w2, h2, fx2, fy2, cx2, cy2};
+    const ColorRenderCamera color_camera{
+        {"n/a", intrinsics, {clip_n, clip_f}, {}}, kShowWindow};
+    const DepthRenderCamera depth_camera{
+        {"n/a", intrinsics, {clip_n, clip_f}, {}}, {min_depth, max_depth}};
+
+    // We don't test for image/camera size mismatches here. That has been
+    // tested in render_engine_test.cc.
+    ImageRgba8U color(intrinsics.width(), intrinsics.height());
+    ImageDepth32F depth(intrinsics.width(), intrinsics.height());
+    ImageLabel16I label(intrinsics.width(), intrinsics.height());
+    renderer_->RenderColorImage(color_camera, &color);
+    renderer_->RenderDepthImage(depth_camera, &depth);
+    renderer_->RenderLabelImage(color_camera, &label);
+
+    // We expect the following effects based on the change in intrinsics.
+    //
+    //  - The center of the box moves <offset_x, offset_y> pixels from the
+    //    center of the new image.
+    //  - Changing the focal length will change the measure of the box in the
+    //    corresponding dimension. So, if ratio_x = fx2 / fx, then
+    //    width2 = width * ratio_x. (Similarly for height.)
+    //  - Changing the image size alone will *not* change the appearance of the
+    //    box (unless the image size is reduced sufficiently to truncate the
+    //    box). With a fixed focal length, changing image size will merely
+    //    increase or decrease the amount of image around the box.
+
+    const Vector4<int> test_edges = FindBoxEdges(depth);
+    ASSERT_TRUE((test_edges.array() > -1).all()) << test_edges.transpose();
+    const int test_box_width = test_edges(2) - test_edges(0);
+    const int test_box_height = test_edges(1) - test_edges(3);
+
+    // Confirm the box gets squished.
+    const double fx_ratio = fx2 / fx;
+    const double fy_ratio = fy2 / fy;
+    EXPECT_NEAR(test_box_width, ref_box_width * fx_ratio, 1);
+    EXPECT_NEAR(test_box_height, ref_box_height * fy_ratio, 1);
+
+    // Confirm that its center is translated.
+    EXPECT_NEAR((test_edges(0) + test_edges(2)) / 2.0, w2 / 2.0 + offset_x, 1.0)
+        << test_edges.transpose();
+    EXPECT_NEAR((test_edges(1) + test_edges(3)) / 2.0, h2 / 2.0 + offset_y, 1.0)
+        << test_edges.transpose();
+
+    {
+      // Also confirm it matches for color and label.
+      const Vector4<int> color_edges = FindBoxEdges(color);
+      ASSERT_EQ(color_edges, test_edges) << color_edges.transpose();
+      const Vector4<int> label_edges = FindBoxEdges(label);
+      ASSERT_EQ(label_edges, test_edges) << label_edges.transpose();
+    }
+  }
+
+  {
+    // Case: far plane is in front of all geometry; nothing visible.
+    const double n_alt = expected_object_depth_ * 0.1;
+    const double f_alt = expected_object_depth_ * 0.9;
+    const ColorRenderCamera color_camera{
+        {"n/a", ref_intrinsics, {n_alt, f_alt}, {}}, kShowWindow};
+    // Set depth range to clipping range so we don't take a chance with the
+    // depth range lying outside the clipping range.
+    const DepthRenderCamera depth_camera{
+        {"n/a", ref_intrinsics, {n_alt, f_alt}, {}}, {n_alt, f_alt}};
+    ImageRgba8U color(ref_intrinsics.width(), ref_intrinsics.height());
+    ImageDepth32F depth(ref_intrinsics.width(), ref_intrinsics.height());
+    ImageLabel16I label(ref_intrinsics.width(), ref_intrinsics.height());
+    renderer_->RenderColorImage(color_camera, &color);
+    renderer_->RenderDepthImage(depth_camera, &depth);
+    renderer_->RenderLabelImage(color_camera, &label);
+
+    SCOPED_TRACE("Far plane in front of scene");
+    VerifyUniformColor(kBgColor, &color);
+    VerifyUniformLabel(RenderLabel::kEmpty, &label);
+    VerifyUniformDepth(std::numeric_limits<float>::infinity(), &depth);
+  }
+
+  {
+    // Case: near plane too far; nothing visible.
+    // We're assuming the box has an edge length <= 2.
+    const double n_alt = expected_object_depth_ + 2.1;
+    const double f_alt = expected_object_depth_ + 4.1;
+    const ColorRenderCamera color_camera{
+        {"n/a", ref_intrinsics, {n_alt, f_alt}, {}}, kShowWindow};
+    // Set depth range to clipping range so we don't take a chance with the
+    // depth range lying outside the clipping range.
+    const DepthRenderCamera depth_camera{
+        {"n/a", ref_intrinsics, {n_alt, f_alt}, {}}, {n_alt, f_alt}};
+    ImageRgba8U color(ref_intrinsics.width(), ref_intrinsics.height());
+    ImageDepth32F depth(ref_intrinsics.width(), ref_intrinsics.height());
+    ImageLabel16I label(ref_intrinsics.width(), ref_intrinsics.height());
+    renderer_->RenderColorImage(color_camera, &color);
+    renderer_->RenderDepthImage(depth_camera, &depth);
+    renderer_->RenderLabelImage(color_camera, &label);
+
+    SCOPED_TRACE("Near plane beyond scene");
+    VerifyUniformColor(kBgColor, &color);
+    VerifyUniformLabel(RenderLabel::kEmpty, &label);
+    VerifyUniformDepth(std::numeric_limits<float>::infinity(), &depth);
+  }
+
+  {
+    // Case: configure the depth range to lie _between_ the depth of the box's
+    // leading face and the ground. The box face should register as too close
+    // and the ground should be too far.
+    const double min_alt = expected_object_depth_ + 0.1;
+    const double max_alt = expected_outlier_depth_ - 0.1;
+    const DepthRenderCamera depth_camera{
+        {"n/a", ref_intrinsics, {clip_n, clip_f}, {}}, {min_alt, max_alt}};
+    ImageDepth32F depth(ref_intrinsics.width(), ref_intrinsics.height());
+    renderer_->RenderDepthImage(depth_camera, &depth);
+
+    // Confirm pixel in corner (ground) and pixel in center (box).
+    EXPECT_TRUE(IsExpectedDepth(depth, ScreenCoord{w / 2, h / 2},
+                                InvalidDepth::kTooClose, 0.0));
+    EXPECT_TRUE(
+        IsExpectedDepth(depth, ScreenCoord{0, 0}, InvalidDepth::kTooFar, 0.0));
+  }
+
+  {
+    // Case: The whole sensor depth range lies *in front* of the box's leading
+    // face. The whole depth image should report as too far.
+    const double min_alt = expected_object_depth_ * 0.5;
+    const double max_alt = expected_object_depth_ * 0.9;
+    const DepthRenderCamera depth_camera{
+        {"n/a", ref_intrinsics, {clip_n, clip_f}, {}}, {min_alt, max_alt}};
+    ImageDepth32F depth(ref_intrinsics.width(), ref_intrinsics.height());
+    renderer_->RenderDepthImage(depth_camera, &depth);
+
+    // Confirm pixel in corner (ground) and pixel in center (box).
+    EXPECT_TRUE(IsExpectedDepth(depth, ScreenCoord{w / 2, h / 2},
+                                InvalidDepth::kTooFar, 0.0));
+    EXPECT_TRUE(
+        IsExpectedDepth(depth, ScreenCoord{0, 0}, InvalidDepth::kTooFar, 0.0));
+  }
+
+  {
+    // Case: The whole sensor depth range lies beyond the ground. The whole
+    // depth image should report as too close. This result is in stark contrast
+    // to *clipping* the geometry away -- there, the distance reports as too
+    // far.
+    // We're assuming the box has an edge length <= 2.
+    const double min_alt = expected_object_depth_ + 2.1;
+    const double max_alt = expected_object_depth_ + 4.1;
+    const DepthRenderCamera depth_camera{
+        {"n/a", ref_intrinsics, {clip_n, clip_f}, {}}, {min_alt, max_alt}};
+    ImageDepth32F depth(ref_intrinsics.width(), ref_intrinsics.height());
+    renderer_->RenderDepthImage(depth_camera, &depth);
+
+    // Confirm pixel in corner (ground) and pixel in center (box).
+    EXPECT_TRUE(IsExpectedDepth(depth, ScreenCoord{w / 2, h / 2},
+                                InvalidDepth::kTooClose, 0.0));
+    EXPECT_TRUE(IsExpectedDepth(depth, ScreenCoord{0, 0},
+                                InvalidDepth::kTooClose, 0.0));
+  }
 }
 
 }  // namespace

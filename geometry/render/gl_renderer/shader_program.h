@@ -7,9 +7,9 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_roles.h"
-#include "drake/geometry/render/camera_properties.h"
 #include "drake/geometry/render/gl_renderer/opengl_includes.h"
 #include "drake/geometry/render/gl_renderer/shader_program_data.h"
+#include "drake/geometry/render/render_camera.h"
 #include "drake/geometry/rgba.h"
 
 namespace drake {
@@ -117,7 +117,7 @@ class ShaderProgram {
    properties. This should *not* include model -> camera -> device transforms.
    they are handled elsewhere.  */
   virtual void SetDepthCameraParameters(
-      const DepthCameraProperties& /* camera */) const {}
+      const DepthRenderCamera& /* camera */) const {}
 
   /* Sets the OpenGl projection matrix state. The projection matrix transforms a
    vertex from the camera frame C to the OpenGl 2D device frame D -- it

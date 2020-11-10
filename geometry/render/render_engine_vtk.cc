@@ -148,6 +148,8 @@ void RenderEngineVtk::UpdateViewpoint(const RigidTransformd& X_WC) {
 void RenderEngineVtk::RenderColorImage(const CameraProperties& camera,
                                        bool show_window,
                                        ImageRgba8U* color_image_out) const {
+  // TODO(SeanCurtis-TRI) Refactor these functions to use the DoRender*Image
+  //  APIs. See RenderEngineGl as an example.
   UpdateWindow(camera, show_window, pipelines_[ImageType::kColor].get(),
                "Color Image");
   PerformVtkUpdate(*pipelines_[ImageType::kColor]);
@@ -664,21 +666,13 @@ void RenderEngineVtk::PerformVtkUpdate(const RenderingPipeline& p) {
 void RenderEngineVtk::UpdateWindow(const CameraProperties& camera,
                                    bool show_window, const RenderingPipeline* p,
                                    const char* name) const {
-  const CameraInfo intrinsics(camera.width, camera.height, camera.fov_y);
-  const RenderCameraCore render_cam{
-      camera.renderer_name, intrinsics, {kClippingPlaneNear, 100.0}, {}};
-  UpdateWindow(render_cam, show_window, p, name);
+  UpdateWindow(ColorRenderCamera(camera, show_window).core(), show_window, p,
+               name);
 }
 
 void RenderEngineVtk::UpdateWindow(const DepthCameraProperties& camera,
                                    const RenderingPipeline* p) const {
-  const DepthRenderCamera render_cam{
-      {camera.renderer_name,
-       {camera.width, camera.height, camera.fov_y},
-       {kClippingPlaneNear, camera.z_far * 1.1},
-       {}},
-      {camera.z_near, camera.z_far}};
-  UpdateWindow(render_cam, p);
+  UpdateWindow(DepthRenderCamera(camera), p);
 }
 
 void RenderEngineVtk::UpdateWindow(const RenderCameraCore& camera,
@@ -693,62 +687,16 @@ void RenderEngineVtk::UpdateWindow(const RenderCameraCore& camera,
   p->window->SetOffScreenRendering(!show_window);
   if (show_window) p->window->SetWindowName(name);
 
-  // TODO(SeanCurtis-TRI): refactor this to support other matrix types as:
-  //  void SetIntrinsics(const RenderCameraCore&,
-  //                    std::function<void(int, int, double)> set_element);
-  //  Such that we can call something like:
-  //   set_element(0, 0, 2 * fx / 2);
-  //  This can be used to set vtkMatrix4x4, Eigen::Matrix4, double[16], etc.
-  //  It would have the pre-requisite that all unset elements are *zero*.
-  //  Calling it here would look like:
-  //
-  //   vtkCamera* vtk_camera = p->renderer->GetActiveCamera();
-  //   DRAKE_DEMAND(vtk_camera->GetUseExplicitProjectionTransformMatrix());
-  //   vtkMatrix4x4* proj_mat =
-  //       vtk_camera->GetExplicitProjectionTransformMatrix();
-  //   DRAKE_DEMAND(proj_mat != nullptr);
-  //   proj_mat->Zero();
-  //   SetIntrinsics(vtk_camera,
-  //                 [proj_mat](int i, int j, double value) {
-  //                     proj_mat->SetElement(i, j, value); });
-  //
-  //  I'll do the refactor when more render engine implementations support
-  //  full camera intrinsics.
-  /* Given the camera intrinsics and render cam properties we compute the
-   projection matrix as follows:
-   (See https://strawlab.org/2011/11/05/augmented-reality-with-OpenGL/)
-
-               │ 2*fx/w     0      (w - 2*cx) / w       0    │
-               │ 0        2*fy/h  -(h - 2*cy) / h       0    │
-               │ 0          0        -(f+n) / d   -2*f*n / d │
-               │ 0          0             -1            0    │
-
-   The symbols in the matrix are predominantly aliases for the input parameter
-   values (see below for details).
-  */
-  const double fx = intrinsics.focal_x();
-  const double fy = intrinsics.focal_y();
-  const double n = camera.clipping().near();
-  const double f = camera.clipping().far();
-  const int w = intrinsics.width();
-  const int h = intrinsics.height();
-  const double cx = intrinsics.center_x();
-  const double cy = intrinsics.center_y();
-  const double d = f - n;
-
   vtkCamera* vtk_camera = p->renderer->GetActiveCamera();
   DRAKE_DEMAND(vtk_camera->GetUseExplicitProjectionTransformMatrix());
-
   vtkMatrix4x4* proj_mat = vtk_camera->GetExplicitProjectionTransformMatrix();
   DRAKE_DEMAND(proj_mat != nullptr);
-  proj_mat->Zero();
-  proj_mat->SetElement(0, 0,  2 * fx / w);
-  proj_mat->SetElement(0, 2, (w - 2 * cx) / w);
-  proj_mat->SetElement(1, 1, 2 * fy / h);
-  proj_mat->SetElement(1, 2, -(h - 2 * cy) / h);
-  proj_mat->SetElement(2, 2, -(f + n) / d);
-  proj_mat->SetElement(2, 3, -2 * f * n / d);
-  proj_mat->SetElement(3, 2, -1);
+  const Eigen::Matrix4f T_DC = camera.CalcProjectionMatrix().cast<float>();
+  for (int i = 0; i < 4; ++i) {
+    for (int j = 0; j < 4; ++j) {
+      proj_mat->SetElement(i, j, T_DC(i, j));
+    }
+  }
   vtk_camera->Modified();
 }
 
