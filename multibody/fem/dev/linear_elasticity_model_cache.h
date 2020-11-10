@@ -38,8 +38,8 @@ class LinearElasticityModelCache : public DeformationGradientCache<T> {
    @pre `num_quads` must be positive. */
   LinearElasticityModelCache(ElementIndex element_index, int num_quads)
       : DeformationGradientCache<T>(element_index, num_quads),
-        strain_(num_quads),
-        trace_strain_(num_quads) {}
+        strain_(num_quads, Matrix3<T>::Zero()),
+        trace_strain_(num_quads, 0) {}
 
   /** Returns the infinitesimal strains evaluated at the quadrature locations
    for the associated element. */

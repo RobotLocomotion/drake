@@ -11,8 +11,18 @@ constexpr int kNumQuads = 1;
 
 class LinearElasticityCacheTest : public ::testing::Test {
  protected:
+  void SetUp() {
+    linear_elasticity_cache_.UpdateCache({MakeDeformationGradient()});
+  }
   LinearElasticityModelCache<double> linear_elasticity_cache_{kElementIndex,
                                                               kNumQuads};
+
+  // Make an arbitrary deformation gradient.
+  Matrix3<double> MakeDeformationGradient() {
+    Matrix3<double> F;
+    F << 1.2, 2.3, 3.4, 4.5, 5.6, 6.7, 7.8, 8.9, 9.0;
+    return F;
+  }
 };
 
 TEST_F(LinearElasticityCacheTest, LinearElasticityCacheInitialization) {
@@ -24,8 +34,7 @@ TEST_F(LinearElasticityCacheTest, LinearElasticityCacheInitialization) {
 }
 
 TEST_F(LinearElasticityCacheTest, UpdateCache) {
-  const Matrix3<double> F = Matrix3<double>::Random();
-  linear_elasticity_cache_.UpdateCache({F});
+  const Matrix3<double> F = MakeDeformationGradient();
   const Matrix3<double> strain =
       0.5 * (F + F.transpose()) - Matrix3<double>::Identity();
   const double trace_strain = strain.trace();

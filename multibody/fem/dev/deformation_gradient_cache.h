@@ -75,7 +75,7 @@ class DeformationGradientCache {
   DeformationGradientCache(ElementIndex element_index, int num_quads)
       : element_index_(element_index),
         num_quads_(num_quads),
-        deformation_gradient_(num_quads) {
+        deformation_gradient_(num_quads, Matrix3<T>::Identity()) {
     DRAKE_ASSERT(element_index.is_valid());
     DRAKE_ASSERT(num_quads > 0);
   }

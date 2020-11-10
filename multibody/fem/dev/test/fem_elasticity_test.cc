@@ -26,7 +26,10 @@ class ElasticityElementTest : public ::testing::Test {
   using QuadratureType =
       SimplexGaussianQuadrature<AutoDiffXd, kQuadratureOrder, kSpatialDim>;
   using ShapeType = LinearSimplexElement<AutoDiffXd, kNaturalDim>;
-  void SetUp() override { SetupElement(); }
+  void SetUp() override {
+    SetupElement();
+    SetupState();
+  }
 
   void SetupElement() {
     std::vector<NodeIndex> node_indices = {NodeIndex(0), NodeIndex(1),
@@ -42,8 +45,6 @@ class ElasticityElementTest : public ::testing::Test {
   }
 
   void SetupState() {
-    state_.Resize(kDof);
-    state_.set_qdot(VectorX<AutoDiffXd>::Zero(kDof));
     // Set arbitrary node positions and the gradient.
     Eigen::Matrix<double, kDof, 1> x;
     x << 0.18, 0.63, 0.54, 0.13, 0.92, 0.17, 0.03, 0.86, 0.85, 0.25, 0.53, 0.67;
@@ -51,7 +52,8 @@ class ElasticityElementTest : public ::testing::Test {
         MatrixX<double>::Identity(kDof, kDof);
     const VectorX<AutoDiffXd> x_autodiff =
         math::initializeAutoDiffGivenGradientMatrix(x, gradient);
-    state_.set_q(x_autodiff);
+    const VectorX<AutoDiffXd> v = VectorX<AutoDiffXd>::Zero(kDof);
+    state_ = std::make_unique<FemState<AutoDiffXd>>(x_autodiff, v);
     // Set up the element cache.
     auto linear_elasticity_cache =
         std::make_unique<LinearElasticityModelCache<AutoDiffXd>>(
@@ -61,7 +63,7 @@ class ElasticityElementTest : public ::testing::Test {
     // ElementCache.
     cache.emplace_back(std::make_unique<ElasticityElementCache<AutoDiffXd>>(
         kDummyElementIndex, kNumQuads, std::move(linear_elasticity_cache)));
-    state_.ResetElementCache(std::move(cache));
+    state_->ResetElementCache(std::move(cache));
   }
 
   // Set an arbitrary reference positions such that the tetrahedron is not
@@ -76,14 +78,14 @@ class ElasticityElementTest : public ::testing::Test {
   // Calculates the negative elastic force at state_.
   VectorX<AutoDiffXd> CalcNegativeElasticForce() const {
     VectorX<AutoDiffXd> neg_force(kDof);
-    fem_elasticity_->CalcNegativeElasticForce(state_, &neg_force);
+    fem_elasticity_->CalcNegativeElasticForce(*state_, &neg_force);
     return neg_force;
   }
 
   std::unique_ptr<ElasticityElement<AutoDiffXd, ShapeType, QuadratureType>>
       fem_elasticity_;
   std::unique_ptr<LinearElasticityModel<AutoDiffXd>> linear_elasticity_;
-  FemState<AutoDiffXd> state_;
+  std::unique_ptr<FemState<AutoDiffXd>> state_;
 };
 
 namespace {
@@ -94,15 +96,14 @@ TEST_F(ElasticityElementTest, Basic) {
 }
 
 TEST_F(ElasticityElementTest, ElasticForceIsNegativeEnergyDerivative) {
-  SetupState();
-  AutoDiffXd energy = fem_elasticity_->CalcElasticEnergy(state_);
+  AutoDiffXd energy = fem_elasticity_->CalcElasticEnergy(*state_);
   VectorX<AutoDiffXd> neg_force = CalcNegativeElasticForce();
   EXPECT_TRUE(CompareMatrices(energy.derivatives(), neg_force,
                               std::numeric_limits<double>::epsilon()));
   // TODO(xuchenhan-tri) Modify this to account for damping forces and inertia
   // terms.
   VectorX<AutoDiffXd> residual(kDof);
-  fem_elasticity_->CalcResidual(state_, &residual);
+  fem_elasticity_->CalcResidual(*state_, &residual);
   EXPECT_TRUE(CompareMatrices(residual, neg_force));
 }
 // TODO(xuchenhan-tri): Add TEST_F as needed for damping and inertia terms
