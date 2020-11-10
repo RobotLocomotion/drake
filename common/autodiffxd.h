@@ -12,8 +12,7 @@
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifndef DRAKE_COMMON_AUTODIFF_HEADER
-// TODO(soonho-tri): Change to #error.
-#warning Do not directly include this file. Include "drake/common/autodiff.h".
+#error Do not directly include this file. Include "drake/common/autodiff.h".
 #endif
 
 #include <cmath>
@@ -134,8 +133,8 @@ class AutoDiffScalar<VectorXd>
   inline const Scalar& value() const { return m_value; }
   inline Scalar& value() { return m_value; }
 
-  inline const DerType& derivatives() const { return m_derivatives; }
-  inline DerType& derivatives() { return m_derivatives; }
+  inline const drake::AutoDerXd& derivatives() const { return m_derivatives; }
+  inline drake::AutoDerXd& derivatives() { return m_derivatives; }
 
   inline bool operator<(const Scalar& other) const { return m_value < other; }
   inline bool operator<=(const Scalar& other) const { return m_value <= other; }
@@ -375,7 +374,7 @@ class AutoDiffScalar<VectorXd>
 
  protected:
   Scalar m_value;
-  DerType m_derivatives;
+  drake::AutoDerXd m_derivatives;
 };
 
 #define DRAKE_EIGEN_AUTODIFFXD_DECLARE_GLOBAL_UNARY(FUNC, CODE) \

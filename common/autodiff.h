@@ -26,6 +26,7 @@ static_assert(EIGEN_VERSION_AT_LEAST(3, 3, 4),
 // order-of-specialization-includes-changed mistakes.
 //
 // clang-format off
+#include "drake/common/eigen_dense_storage_pools.h"
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/autodiffxd.h"
 #include "drake/common/autodiff_overloads.h"
