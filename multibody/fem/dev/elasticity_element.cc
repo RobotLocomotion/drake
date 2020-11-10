@@ -1,4 +1,4 @@
-#include "drake/multibody/fem/dev/fem_elasticity.h"
+#include "drake/multibody/fem/dev/elasticity_element.h"
 
 #include "drake/common/default_scalars.h"
 #include "drake/multibody/fem/dev/linear_simplex_element.h"
