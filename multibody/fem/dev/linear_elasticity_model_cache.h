@@ -1,6 +1,5 @@
 #pragma once
 
-#include <memory>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
@@ -19,15 +18,7 @@ namespace fem {
 template <typename T>
 class LinearElasticityModelCache : public DeformationGradientCache<T> {
  public:
-  /** @name     Does not allow copy, move, or assignment. */
-  /** @{ */
-  /* Copy constructor is used only to facilitate implementation of Clone()
-   in derived classes. */
-  LinearElasticityModelCache(LinearElasticityModelCache&&) = delete;
-  LinearElasticityModelCache& operator=(LinearElasticityModelCache&&) = delete;
-  LinearElasticityModelCache& operator=(const LinearElasticityModelCache&) =
-      delete;
-  /** @} */
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LinearElasticityModelCache);
 
   /** Constructs a %LinearElasticityModelCache with the given element index and
    number of quadrature locations.
@@ -50,21 +41,11 @@ class LinearElasticityModelCache : public DeformationGradientCache<T> {
   const std::vector<T>& trace_strain() const { return trace_strain_; }
 
  protected:
-  /* Copy constructor to facilitate the `DoClone()` method. */
-  LinearElasticityModelCache(const LinearElasticityModelCache&) = default;
-
   /* Updates the cached quantities with the given deformation gradients.
    @param F The up-to-date deformation gradients evaluated at the quadrature
    locations for the associated element.
    @pre The size of `F` must be the same as `num_quads()`. */
   void DoUpdateCache(const std::vector<Matrix3<T>>& F) final;
-
-  /* Creates an identical copy of the LinearElasticityModelCache object. */
-  std::unique_ptr<DeformationGradientCache<T>> DoClone() const final {
-    // Can't use std::make_unique because the copy constructor is protected.
-    return std::unique_ptr<DeformationGradientCache<T>>(
-        new LinearElasticityModelCache<T>(*this));
-  }
 
  private:
   // Infinitesimal strain = 0.5 * (F + Fᵀ) - I.

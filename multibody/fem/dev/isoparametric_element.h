@@ -29,16 +29,12 @@ namespace fem {
  IsoparametricElement and pass the new locations into the constructor.
  @tparam_nonsymbolic_scalar T.
  @tparam NaturalDim The dimension of the parent domain. */
-/* TODO(xuchenhan-tri): Consider templatize on spatial dimension as well. */
 template <typename T, int NaturalDim>
 class IsoparametricElement {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IsoparametricElement);
 
   using VectorD = Eigen::Matrix<T, NaturalDim, 1>;
-
-  /** The dimension of the parent domain. */
-  static constexpr int kNaturalDim = NaturalDim;
 
   /** Constructs an isoparametric element that performs calculations at the
    locations specified by the input `locations`. */

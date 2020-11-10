@@ -12,7 +12,7 @@ LinearElasticityModel<T>::LinearElasticityModel(const T& youngs_modulus,
 }
 
 template <typename T>
-void LinearElasticityModel<T>::DoCalcElasticEnergyDensity(
+void LinearElasticityModel<T>::DoCalcPsi(
     const DeformationGradientCache<T>& cache, std::vector<T>* Psi) const {
   const LinearElasticityModelCache<T>& linear_cache =
       static_cast<const LinearElasticityModelCache<T>&>(cache);
@@ -25,9 +25,8 @@ void LinearElasticityModel<T>::DoCalcElasticEnergyDensity(
 }
 
 template <typename T>
-void LinearElasticityModel<T>::DoCalcFirstPiolaStress(
-    const DeformationGradientCache<T>& cache,
-    std::vector<Matrix3<T>>* P) const {
+void LinearElasticityModel<T>::DoCalcP(const DeformationGradientCache<T>& cache,
+                                       std::vector<Matrix3<T>>* P) const {
   const LinearElasticityModelCache<T>& linear_cache =
       static_cast<const LinearElasticityModelCache<T>&>(cache);
   for (int i = 0; i < linear_cache.num_quads(); ++i) {

@@ -42,12 +42,12 @@ class LinearElasticityModel final : public ConstitutiveModel<T> {
 
  protected:
   /* Calculates the energy density, in unit J/m³, given the model cache. */
-  void DoCalcElasticEnergyDensity(const DeformationGradientCache<T>& cache,
-                                  std::vector<T>* Psi) const final;
+  void DoCalcPsi(const DeformationGradientCache<T>& cache,
+                 std::vector<T>* Psi) const final;
 
   /* Calculates the First Piola stress, in unit Pa, given the model cache. */
-  void DoCalcFirstPiolaStress(const DeformationGradientCache<T>& cache,
-                              std::vector<Matrix3<T>>* P) const final;
+  void DoCalcP(const DeformationGradientCache<T>& cache,
+               std::vector<Matrix3<T>>* P) const final;
 
  private:
   /* Set the Lamé parameters from Young's modulus and Poisson ratio. It's

@@ -21,11 +21,6 @@ template <typename T, int NaturalDim>
 class LinearSimplexElement : public IsoparametricElement<T, NaturalDim> {
  public:
   using typename IsoparametricElement<T, NaturalDim>::VectorD;
-
-  /** Number of nodes in this simplex element that is available at compile time.
-   */
-  enum : int { kNumNodes = NaturalDim + 1 };
-
   explicit LinearSimplexElement(std::vector<VectorD> locations)
       : IsoparametricElement<T, NaturalDim>(std::move(locations)) {
     S_ = CalcShapeFunctionsHelper();
