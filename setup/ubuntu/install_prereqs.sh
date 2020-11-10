@@ -18,6 +18,12 @@ source_distribution_args=()
 
 while [ "${1:-}" != "" ]; do
   case "$1" in
+    # Install prerequisites that are only needed to build documentation,
+    # i.e., those prerequisites that are dependencies of bazel { build, run }
+    # { //doc:gen_sphinx, //bindings/pydrake/doc:gen_sphinx, //doc:doxygen }
+    --with-doc-only)
+      source_distribution_args+=(--with-doc-only)
+      ;;
     # Install the kcov code coverage analysis tool from the
     # drake-apt.csail.mit.edu apt repository on Ubuntu 18.04 (Bionic). Ignored
     # on Ubuntu 20.04 (Focal) where kcov is always installed from the Ubuntu

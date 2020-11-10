@@ -14,6 +14,12 @@ drake_py_library(
     name = "sphinx_base",
     srcs = ["sphinx_base.py"],
     data = ["@sphinx//:sphinx-build"],
+    tags = [
+        # This target requires the appropriate prerequisites script for each
+        # platform to be run with the optional --with-doc-only command line
+        # option.
+        "manual",
+    ],
     deps = ["@rules_python//python/runfiles"],
 )
 
@@ -37,6 +43,10 @@ drake_py_binary(
         # Some (currently disabled) Sphinx extensions try to reach out to the
         # network; we should fail-fast if someone tries to turn them on.
         "block-network",
+        # This target requires the appropriate prerequisites script for each
+        # platform to be run with the optional --with-doc-only command line
+        # option.
+        "manual",
         # Test exceeds timeout when run under Valgrind tools.
         "no_valgrind_tools",
     ],
@@ -52,6 +62,12 @@ drake_py_binary(
     name = "serve_sphinx",
     srcs = ["serve_sphinx.py"],
     data = [":gen_sphinx"],
+    tags = [
+        # This target requires the appropriate prerequisites script for each
+        # platform to be run with the optional --with-doc-only command line
+        # option.
+        "manual",
+    ],
     deps = [":sphinx_base"],
 )
 
@@ -76,6 +92,12 @@ drake_py_binary(
         "//:.bazelproject",
         "@bazel_tools//tools/python/runfiles",
         "@doxygen",
+    ],
+    tags = [
+        # This target requires the appropriate prerequisites script for each
+        # platform to be run with the optional --with-doc-only command line
+        # option.
+        "manual",
     ],
 )
 

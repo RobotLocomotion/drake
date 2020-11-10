@@ -9,6 +9,12 @@ source_distribution_args=()
 
 while [ "${1:-}" != "" ]; do
   case "$1" in
+    # Install prerequisites that are only needed to build documentation,
+    # i.e., those prerequisites that are dependencies of bazel { build, run }
+    # { //doc:gen_sphinx, //bindings/pydrake/doc:gen_sphinx, //doc:doxygen }
+    --with-doc-only)
+      source_distribution_args+=(--with-doc-only)
+      ;;
     # Install prerequisites that are only needed to run select maintainer
     # scripts. Most developers will not need to install these dependencies.
     --with-maintainer-only)
