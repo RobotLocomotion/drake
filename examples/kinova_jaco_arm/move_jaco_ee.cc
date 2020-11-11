@@ -19,7 +19,7 @@ DEFINE_string(urdf, "", "Name of urdf to load");
 DEFINE_string(lcm_status_channel, "KINOVA_JACO_STATUS",
               "Channel on which to listen for lcmt_jaco_status messages.");
 DEFINE_string(lcm_plan_channel, "COMMITTED_ROBOT_PLAN",
-              "Channel on which to send robot_plan_t messages.");
+              "Channel on which to send lcmt_robot_plan messages.");
 DEFINE_double(x, 0.3, "x coordinate (meters) to move to");
 DEFINE_double(y, -0.26, "y coordinate (meters) to move to");
 DEFINE_double(z, 0.5, "z coordinate (meters) to move to");
@@ -67,7 +67,7 @@ int DoMain() {
         }
         demo.HandleStatus(jaco_q);
         if (demo.status_count() == 1) {
-          std::optional<robotlocomotion::robot_plan_t> plan = demo.Plan(pose);
+          std::optional<lcmt_robot_plan> plan = demo.Plan(pose);
           if (plan.has_value()) {
             lc.publish(FLAGS_lcm_plan_channel, &plan.value());
           }

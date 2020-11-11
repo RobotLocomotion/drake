@@ -56,7 +56,7 @@ void MoveIkDemoBase::HandleStatus(
   }
 }
 
-std::optional<robotlocomotion::robot_plan_t> MoveIkDemoBase::Plan(
+std::optional<lcmt_robot_plan> MoveIkDemoBase::Plan(
     const math::RigidTransformd& goal_pose) {
 
   DRAKE_THROW_UNLESS(status_count_ > 0);
@@ -89,9 +89,8 @@ std::optional<robotlocomotion::robot_plan_t> MoveIkDemoBase::Plan(
 
     ApplyJointVelocityLimits(
         q_sol, joint_velocity_limits_, &times);
-    std::vector<int> info{1, 1};
-    robotlocomotion::robot_plan_t plan = EncodeKeyFrames(
-        joint_names_, times, info, q_sol);
+    lcmt_robot_plan plan = EncodeKeyFrames(
+        joint_names_, times, q_sol);
     return plan;
   }
 

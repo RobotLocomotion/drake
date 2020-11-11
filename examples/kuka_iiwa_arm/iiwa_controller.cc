@@ -6,7 +6,6 @@
 #include <iostream>
 #include <memory>
 
-#include "robotlocomotion/robot_plan_t.hpp"
 #include <gflags/gflags.h>
 
 #include "drake/common/find_resource.h"
@@ -15,14 +14,13 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
+#include "drake/lcmt_robot_plan.hpp"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
-
-using robotlocomotion::robot_plan_t;
 
 DEFINE_string(urdf, "", "Name of urdf to load");
 DEFINE_string(interp_type, "cubic",
@@ -32,7 +30,7 @@ DEFINE_string(lcm_status_channel, "IIWA_STATUS",
 DEFINE_string(lcm_command_channel, "IIWA_COMMAND",
               "Channel on which to publish lcmt_iiwa_command messages.");
 DEFINE_string(lcm_plan_channel, "COMMITTED_ROBOT_PLAN",
-              "Channel on which to listen for robot_plan_t messages.");
+              "Channel on which to listen for lcmt_robot_plan messages.");
 
 namespace drake {
 namespace examples {
@@ -85,8 +83,8 @@ int DoMain() {
       builder.AddSystem<LcmPlanInterpolator>(urdf, interpolator_type);
   const int kNumJoints = plan_interpolator->num_joints();
 
-  auto plan_sub =
-      builder.AddSystem(systems::lcm::LcmSubscriberSystem::Make<robot_plan_t>(
+  auto plan_sub = builder.AddSystem(
+      systems::lcm::LcmSubscriberSystem::Make<lcmt_robot_plan>(
           kLcmPlanChannel, &lcm));
   plan_sub->set_name("plan_sub");
 
@@ -129,7 +127,7 @@ int DoMain() {
       &plan_interpolator_context, status_sub.message());
 
   // Run forever, using the lcmt_iiwa_status message to dictate when simulation
-  // time advances.  The robot_plan_t message is handled whenever the next
+  // time advances.  The lcmt_robot_plan message is handled whenever the next
   // lcmt_iiwa_status occurs.
   drake::log()->info("Controller started");
   while (true) {

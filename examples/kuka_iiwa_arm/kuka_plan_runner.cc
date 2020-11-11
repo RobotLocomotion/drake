@@ -1,7 +1,7 @@
 /// @file
 ///
 /// kuka_plan_runner is designed to wait for LCM messages constraining
-/// a robot_plan_t message, and then execute the plan on an iiwa arm
+/// a lcmt_robot_plan message, and then execute the plan on an iiwa arm
 /// (also communicating via LCM using the
 /// lcmt_iiwa_command/lcmt_iiwa_status messages).
 ///
@@ -15,13 +15,13 @@
 #include <memory>
 
 #include "lcm/lcm-cpp.hpp"
-#include "robotlocomotion/robot_plan_t.hpp"
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
+#include "drake/lcmt_robot_plan.hpp"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
@@ -112,7 +112,7 @@ class RobotPlanRunner {
   }
 
   void HandlePlan(const ::lcm::ReceiveBuffer*, const std::string&,
-                  const robotlocomotion::robot_plan_t* plan) {
+                  const lcmt_robot_plan* plan) {
     std::cout << "New plan received." << std::endl;
     if (iiwa_status_.utime == -1) {
       std::cout << "Discarding plan, no status message received yet"
@@ -166,7 +166,7 @@ class RobotPlanRunner {
   }
 
   void HandleStop(const ::lcm::ReceiveBuffer*, const std::string&,
-                  const robotlocomotion::robot_plan_t*) {
+                  const lcmt_robot_plan*) {
     std::cout << "Received stop command. Discarding plan." << std::endl;
     plan_.reset();
   }

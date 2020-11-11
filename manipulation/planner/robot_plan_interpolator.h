@@ -22,7 +22,7 @@ enum class InterpolatorType {
 };
 
 /// This class implements a source of joint positions for a robot.
-/// It has one input port for robot_plan_t messages containing a
+/// It has one input port for lcmt_robot_plan messages containing a
 /// plan to follow.
 ///
 /// The system has two output ports, one with the current desired

@@ -64,10 +64,10 @@ drake_cc_library(
     ],
     deps = [
         ":robot_plan_utils",
+        "//lcmtypes:robot_plan",
         "//manipulation/planner:constraint_relaxing_ik",
         "//multibody/parsing",
         "//multibody/plant",
-        "@lcmtypes_robotlocomotion",
     ],
 )
 
@@ -80,8 +80,8 @@ drake_cc_library(
         "robot_plan_utils.h",
     ],
     deps = [
+        "//lcmtypes:robot_plan",
         "//multibody/plant",
-        "@lcmtypes_robotlocomotion",
     ],
 )
 

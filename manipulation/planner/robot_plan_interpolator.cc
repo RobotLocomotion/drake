@@ -8,13 +8,10 @@
 #include <utility>
 #include <vector>
 
-#include "robotlocomotion/robot_plan_t.hpp"
-
 #include "drake/common/text_logging.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
+#include "drake/lcmt_robot_plan.hpp"
 #include "drake/multibody/parsing/parser.h"
-
-using robotlocomotion::robot_plan_t;
 
 namespace drake {
 namespace manipulation {
@@ -41,7 +38,7 @@ RobotPlanInterpolator::RobotPlanInterpolator(
     const std::string& model_path, const InterpolatorType interp_type,
     double update_interval)
     : plan_input_port_(this->DeclareAbstractInputPort(
-          "plan", Value<robot_plan_t>()).get_index()),
+          "plan", Value<lcmt_robot_plan>()).get_index()),
       interp_type_(interp_type) {
   multibody::Parser(&plant_).AddModelFromFile(model_path);
 
@@ -179,8 +176,8 @@ void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
     systems::State<double>* state) const {
   PlanData& plan =
       state->get_mutable_abstract_state<PlanData>(plan_index_);
-  const robot_plan_t& plan_input =
-      get_plan_input_port().Eval<robot_plan_t>(context);
+  const lcmt_robot_plan& plan_input =
+      get_plan_input_port().Eval<lcmt_robot_plan>(context);
 
   // I (sammy-tri) wish I could think of a more effective way to
   // determine that a new message has arrived, but unfortunately

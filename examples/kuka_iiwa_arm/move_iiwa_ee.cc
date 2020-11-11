@@ -7,12 +7,12 @@
 /// during, and after the commanded motion.
 
 #include "lcm/lcm-cpp.hpp"
-#include "robotlocomotion/robot_plan_t.hpp"
 #include <gflags/gflags.h>
 
 #include "drake/common/find_resource.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcmt_iiwa_status.hpp"
+#include "drake/lcmt_robot_plan.hpp"
 #include "drake/manipulation/util/move_ik_demo_base.h"
 #include "drake/math/rigid_transform.h"
 
@@ -20,7 +20,7 @@ DEFINE_string(urdf, "", "Name of urdf to load");
 DEFINE_string(lcm_status_channel, "IIWA_STATUS",
               "Channel on which to listen for lcmt_iiwa_status messages.");
 DEFINE_string(lcm_plan_channel, "COMMITTED_ROBOT_PLAN",
-              "Channel on which to send robot_plan_t messages.");
+              "Channel on which to send lcmt_robot_plan messages.");
 DEFINE_double(x, 0., "x coordinate to move to");
 DEFINE_double(y, 0., "y coordinate to move to");
 DEFINE_double(z, 0., "z coordinate to move to");
@@ -61,7 +61,7 @@ int DoMain() {
         }
         demo.HandleStatus(iiwa_q);
         if (demo.status_count() == 1) {
-          std::optional<robotlocomotion::robot_plan_t> plan = demo.Plan(pose);
+          std::optional<lcmt_robot_plan> plan = demo.Plan(pose);
           if (plan.has_value()) {
             lc.publish(FLAGS_lcm_plan_channel, &plan.value());
           }

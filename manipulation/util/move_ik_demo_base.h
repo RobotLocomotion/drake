@@ -5,10 +5,9 @@
 #include <string>
 #include <vector>
 
-#include <robotlocomotion/robot_plan_t.hpp>
-
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/lcmt_robot_plan.hpp"
 #include "drake/manipulation/planner/constraint_relaxing_ik.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -72,7 +71,7 @@ class MoveIkDemoBase {
   /// nullopt if planning failed.
   ///
   /// @throw If HandleStatus has not been invoked.
-  std::optional<robotlocomotion::robot_plan_t> Plan(
+  std::optional<lcmt_robot_plan> Plan(
       const math::RigidTransformd& goal_pose);
 
   /// Returns a count of how many times `HandleStatus` has been called.
