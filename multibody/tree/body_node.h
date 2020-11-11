@@ -903,6 +903,9 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   ///   The `6 x nm` hinge matrix that relates `V_PB_W` (body B's spatial
   ///   velocity in its parent body P, expressed in world W) to this node's `nm`
   ///   generalized velocities (or mobilities) `v_B` as `V_PB_W = H_PB_W * v_B`.
+  /// @param[in] reflected_inertia
+  ///   Vector of scalar reflected inertia values for each degree of freedon.
+  ///   Used if this body node is the outboard body of a single-dof mobilizer.
   /// @param[out] abic
   ///   A pointer to a valid, non nullptr, articulated body cache.
   ///
@@ -925,9 +928,11 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       const PositionKinematicsCache<T>& pc,
       const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
       const SpatialInertia<T>& M_B_W,
+      const VectorX<T>& reflected_inertia,
       ArticulatedBodyInertiaCache<T>* abic) const {
     DRAKE_THROW_UNLESS(topology_.body != world_index());
     DRAKE_THROW_UNLESS(abic != nullptr);
+    DRAKE_THROW_UNLESS(this->velocity_start() < reflected_inertia.size());
 
     // As a guideline for developers, a summary of the computations performed in
     // this method is provided:
@@ -1040,6 +1045,14 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       // Compute the articulated body hinge inertia, D_B, using (5).
       MatrixUpTo6<T> D_B(nv, nv);
       D_B.template triangularView<Eigen::Lower>() = U_B_W * H_PB_W;
+
+      // Add the effect of reflected inertia.
+      // See JointActuator::reflected_inertia().
+      // Reminder: reflected_inertia is implemented only for revolute or
+      // prismatic joints (i.e., single degree-of-freedom joints, hence nv = 1).
+      if (nv == 1) {
+        D_B(0, 0) += reflected_inertia(this->velocity_start());
+      }
 
       // Compute the LDLT factorization of D_B as ldlt_D_B.
       // TODO(bobbyluig): Test performance against inverse().

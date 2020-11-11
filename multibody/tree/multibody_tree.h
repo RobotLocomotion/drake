@@ -664,6 +664,13 @@ class MultibodyTree {
   }
 
   /// See MultibodyPlant method.
+  JointActuator<T>& get_mutable_joint_actuator(
+      JointActuatorIndex actuator_index) const {
+    DRAKE_THROW_UNLESS(actuator_index < num_actuators());
+    return *owned_actuators_[actuator_index];
+  }
+
+  /// See MultibodyPlant method.
   const Frame<T>& get_frame(FrameIndex frame_index) const {
     DRAKE_THROW_UNLESS(frame_index < num_frames());
     return *frames_[frame_index];
@@ -1518,6 +1525,17 @@ class MultibodyTree {
   void CalcSpatialInertiasInWorld(
       const systems::Context<T>& context,
       std::vector<SpatialInertia<T>>* M_B_W_all) const;
+
+  /// Computes the reflected inertia Irefl for each velocity index.
+  /// @param[in] context
+  ///   The context storing the state of the model.
+  /// @param[out] reflected_inertia
+  ///   For each degree of freedom, reflected_inertia[i] contains the reflected
+  ///   inertia value for the i-th degree of freedom.
+  /// @throws std::exception if reflected_inertia is nullptr or if its size is
+  /// not num_velocities().
+  void CalcReflectedInertia(const systems::Context<T>& context,
+      VectorX<T>* reflected_inertia) const;
 
   /// Computes the composite body inertia Mc_B_W(q) for each body B in the
   /// model about its frame origin Bo and expressed in the world frame W.
@@ -2676,6 +2694,14 @@ class MultibodyTree {
       const systems::Context<T>& context) const {
     DRAKE_ASSERT(tree_system_ != nullptr);
     return tree_system_->EvalSpatialInertiaInWorldCache(context);
+  }
+
+  // Evaluates the cache entry stored in context with the reflected inertia for
+  // each degree of freedom in the system. These will be updated as needed.
+  const VectorX<T>& EvalReflectedInertiaCache(
+      const systems::Context<T>& context) const {
+    DRAKE_ASSERT(tree_system_ != nullptr);
+    return tree_system_->EvalReflectedInertiaCache(context);
   }
 
   const std::vector<SpatialInertia<T>>& EvalCompositeBodyInertiaInWorldCache(

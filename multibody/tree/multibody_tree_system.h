@@ -90,7 +90,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
 
   bool is_discrete() const { return is_discrete_; }
 
-  /* Returns a reference to the up to date PositionKinematicsCache in the
+  /* Returns a reference to the up-to-date PositionKinematicsCache in the
   given Context, recalculating it first if necessary. */
   const PositionKinematicsCache<T>& EvalPositionKinematics(
       const systems::Context<T>& context) const {
@@ -98,7 +98,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<PositionKinematicsCache<T>>(context);
   }
 
-  /* Returns a reference to the up to date VelocityKinematicsCache in the
+  /* Returns a reference to the up-to-date VelocityKinematicsCache in the
   given Context, recalculating it first if necessary. Also if necessary, the
   PositionKinematicsCache will be recalculated as well. */
   const VelocityKinematicsCache<T>& EvalVelocityKinematics(
@@ -107,7 +107,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<VelocityKinematicsCache<T>>(context);
   }
 
-  /* Returns a reference to the up to date AccelerationKinematicsCache in the
+  /* Returns a reference to the up-to-date AccelerationKinematicsCache in the
   given Context, recalculating it first via forward dynamics if necessary. Also
   if necessary, other cache entries such as PositionKinematicsCache and
   VelocityKinematicsCache will be recalculated as well. */
@@ -117,7 +117,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<AccelerationKinematicsCache<T>>(context);
   }
 
-  /* Returns a reference to the up to date ArticulatedBodyInertiaCache stored
+  /* Returns a reference to the up-to-date ArticulatedBodyInertiaCache stored
   in the given context, recalculating it first if necessary.
   See @ref internal_forward_dynamics
   "Articulated Body Algorithm Forward Dynamics" for further details. */
@@ -127,7 +127,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<ArticulatedBodyInertiaCache<T>>(context);
   }
 
-  /* Returns a reference to the up to date cache of per-body spatial inertias
+  /* Returns a reference to the up-to-date cache of per-body spatial inertias
   in the given Context, recalculating it first if necessary. */
   const std::vector<SpatialInertia<T>>& EvalSpatialInertiaInWorldCache(
       const systems::Context<T>& context) const {
@@ -135,7 +135,15 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<std::vector<SpatialInertia<T>>>(context);
   }
 
-  /* Returns a reference to the up to date cache of composite-body inertias
+  /* Returns a reference to the up-to-date cache of per-dof reflected inertias
+  in the given Context, recalculating it first if necessary. */
+  const VectorX<T>& EvalReflectedInertiaCache(
+      const systems::Context<T>& context) const {
+    return this->get_cache_entry(cache_indexes_.reflected_inertia)
+        .template Eval<VectorX<T>>(context);
+  }
+
+  /* Returns a reference to the up-to-date cache of composite-body inertias
   in the given Context, recalculating it first if necessary. */
   const std::vector<SpatialInertia<T>>& EvalCompositeBodyInertiaInWorldCache(
       const systems::Context<T>& context) const {
@@ -143,7 +151,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<std::vector<SpatialInertia<T>>>(context);
   }
 
-  /* Returns a reference to the up to date cache of per-body bias terms in
+  /* Returns a reference to the up-to-date cache of per-body bias terms in
   the given Context, recalculating it first if necessary.
   For a body B, this is the bias term `Fb_Bo_W(q, v)` in the equation
   `F_Bo_W = M_Bo_W * A_WB + Fb_Bo_W`, where `M_Bo_W` is the spatial inertia
@@ -155,7 +163,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<std::vector<SpatialForce<T>>>(context);
   }
 
-  /* Returns a reference to the up to date cache of per-body spatial
+  /* Returns a reference to the up-to-date cache of per-body spatial
   acceleration bias terms in the given Context, recalculating it first if
   necessary. For a body B, this is the spatial acceleration bias term
   `Ab_WB(q, v)`, function of both q and v, as it appears in the acceleration
@@ -340,6 +348,11 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     internal_tree().CalcSpatialInertiasInWorld(context, spatial_inertias);
   }
 
+  void CalcReflectedInertia(const systems::Context<T>& context,
+                            VectorX<T>* reflected_inertia) const {
+    internal_tree().CalcReflectedInertia(context, reflected_inertia);
+  }
+
   void CalcCompositeBodyInertiasInWorld(
       const systems::Context<T>& context,
       std::vector<SpatialInertia<T>>* composite_body_inertias) const {
@@ -455,6 +468,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     systems::CacheIndex composite_body_inertia_in_world;
     systems::CacheIndex spatial_acceleration_bias;
     systems::CacheIndex velocity_kinematics;
+    systems::CacheIndex reflected_inertia;
   };
 
   // This is the one real constructor. From the public API, a null tree is
