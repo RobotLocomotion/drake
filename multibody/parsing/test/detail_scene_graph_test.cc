@@ -430,7 +430,7 @@ GTEST_TEST(SceneGraphParserDetail, VisualGeometryNameRequirements) {
 
   // These whitespace characters are *not* considered to be whitespace by SDF.
   std::vector<std::pair<char, std::string>> ignored_whitespace{
-      {'\n', "\\n"}, {'\v', "\\v"}, {'\r', "\\r"}, {'\f', "\\f"}};
+      {'\v', "\\v"}, {'\f', "\\f"}};
   for (const auto& pair : ignored_whitespace) {
     // Case: Whitespace-only name.
     EXPECT_TRUE(valid_parse(fmt::format(visual_tag, pair.first)))
@@ -824,7 +824,7 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
         "</visual>");
     IllustrationProperties material =
         MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
-    Vector4<double> expected_diffuse{0, 1, 0, 1};
+    Vector4<double> expected_diffuse{0, 1, 1, 1};
     EXPECT_TRUE(expect_phong(material, true, expected_diffuse, {}, {}, {}, {}));
   }
 

@@ -7,21 +7,12 @@ def sdformat_repository(
         mirrors = None):
     github_archive(
         name = name,
+        # repository = "azeey/sdformat",
+        # commit = "732be0f20f00cfb1f5200f691c33abee3eee7a02",
+        # sha256 = "4d537b3cbebdefcea57039aea487ae8603058e581efac0402a5a69757194738c",  # noqa
         repository = "osrf/sdformat",
-        commit = "sdformat9_9.3.0",
-        sha256 = "6886cd905c74698000bf4e4bb378efe292411fab939d80d3263dfad430e50204",  # noqa
+        commit = "sdformat10_10.0.0",
+        sha256 = "3555ce443a736e9bd24577d894978e0236212bfd2b356022fd53b143b30152bf",  # noqa
         build_file = "@drake//tools/workspace/sdformat:package.BUILD.bazel",
-        patches = [
-            # TODO(jwnimmer-tri) This patch is cherry-picked from upstream; we
-            # should remove it once we reach a new enough version, probably for
-            # sdformat10 or so.
-            "@drake//tools/workspace/sdformat:3bbd303.patch",
-            # Disable logging to $HOME/.sdformat/sdformat.log
-            # TODO(jwnimmer-tri) Once osrf/sdformat#338 is released, we can
-            # remove this patch and set SDFORMAT_DISABLE_CONSOLE_LOGFILE=1
-            # instead, probably for sdformat10 or so.
-            "@drake//tools/workspace/sdformat:no-console-file.patch",
-        ],
-        patch_args = ["-p1"],
         mirrors = mirrors,
     )
