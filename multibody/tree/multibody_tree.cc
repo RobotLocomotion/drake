@@ -2039,6 +2039,13 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
     *Js_v_ACcm_E += body_mass * Jsi_v_ABcm_E;
     composite_mass += body_mass;
   }
+
+  if (composite_mass <= 0) {
+    throw std::runtime_error(
+        "CalcJacobianCenterOfMassTranslationalVelocity(): the "
+        "system's total mass must be greater than zero.");
+  }
+
   *Js_v_ACcm_E /= composite_mass;
 }
 
@@ -2066,6 +2073,12 @@ MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
     const T& body_mass = body.get_mass(context);
     asBias_ACcm_E += body_mass * AsBiasi_ACcm_E.translational();
     composite_mass += body_mass;
+  }
+
+  if (composite_mass <= 0) {
+    throw std::runtime_error(
+        "CalcJacobianCenterOfMassTranslationalVelocity(): the "
+        "system's total mass must be greater than zero.");
   }
   asBias_ACcm_E /= composite_mass;
   return asBias_ACcm_E;

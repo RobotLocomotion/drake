@@ -2997,8 +2997,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// pulled from the context).
   /// @throws std::runtime_error if CCm does not exist, which occurs if there
   /// are no massive bodies in MultibodyPlant (except world_body()).
-  /// @throws std::runtime_error unless composite_mass > 0, where composite_mass
-  /// is the total mass of all bodies except world_body() in MultibodyPlant.
+  /// @throws std::exception if composite_mass <= 0, where composite_mass is
+  /// the total mass of all bodies except world_body() in MultibodyPlant.
   void CalcJacobianCenterOfMassTranslationalVelocity(
       const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_A, const Frame<T>& frame_E,
@@ -3029,8 +3029,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// in frame A with respect to "speeds" 𝑠, expressed in frame E.
   /// @throws std::runtime_error if Ccm does not exist, which occurs if there
   /// are no massive bodies in MultibodyPlant (except world_body()).
-  /// @throws std::runtime_error unless composite_mass > 0, where composite_mass
-  /// is the total mass of all bodies except world_body() in MultibodyPlant.
+  /// @throws std::exception if composite_mass <= 0, where composite_mass is
+  /// the total mass of all bodies except world_body() in MultibodyPlant.
   /// @throws std::exception if frame_A is not the world frame.
   Vector3<T> CalcBiasCenterOfMassTranslationalAcceleration(
       const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
