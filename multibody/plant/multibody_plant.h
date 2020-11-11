@@ -2382,7 +2382,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws std::runtime_error if `MultibodyPlant` has no body except
   ///   `world_body()`.
-  /// @throws std::runtime_error unless `composite_mass > 0`.
+  /// @throws std::exception if `composite_mass <= 0`.
   Vector3<T> CalcCenterOfMassPosition(
       const systems::Context<T>& context) const {
     return internal_tree().CalcCenterOfMassPosition(context);
@@ -2406,7 +2406,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws std::runtime_error if `MultibodyPlant` has no model_instance
   ///   except `world_model_instance()`.
-  /// @throws std::runtime_error unless `composite_mass > 0`.
+  /// @throws std::exception if `composite_mass <= 0`.
   Vector3<T> CalcCenterOfMassPosition(
       const systems::Context<T>& context,
       const std::vector<ModelInstanceIndex>& model_instances) const {

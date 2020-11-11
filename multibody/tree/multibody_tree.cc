@@ -1255,10 +1255,12 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPosition(
     composite_mass += body_mass;
   }
 
-  if (!(composite_mass > 0)) {
+  if (composite_mass <= 0) {
     throw std::runtime_error(
-        "CalcCenterOfMassPosition(): the total mass must larger than zero.");
+        "CalcCenterOfMassPosition(): the "
+        "system's total mass must be greater than zero.");
   }
+
   return Mp / composite_mass;
 }
 
