@@ -44,6 +44,7 @@ drake_cc_package_library(
         ":nice_type_name",
         ":pointer_cast",
         ":polynomial",
+        ":pool_ladder_allocator",
         ":random",
         ":reset_after_move",
         ":reset_on_copy",
@@ -119,6 +120,13 @@ drake_cc_library(
     name = "double",
     srcs = ["double_overloads.cc"],
     hdrs = ["double_overloads.h"],
+)
+
+drake_cc_library(
+    name = "pool_ladder_allocator",
+    srcs = ["pool_ladder_allocator.cc"],
+    hdrs = ["pool_ladder_allocator.h"],
+    deps = [":essential"],
 )
 
 drake_cc_library(
@@ -1358,6 +1366,13 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "eigen_autodiff_types_test",
     deps = [":autodiff"],
+)
+
+drake_cc_googletest(
+    name = "pool_ladder_allocator_test",
+    deps = [
+        ":pool_ladder_allocator",
+    ],
 )
 
 drake_cc_googletest(
