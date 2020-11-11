@@ -23,7 +23,7 @@ namespace drake {
 namespace internal {
 
 /** The magic MaxRowsAtCompileTime value that invokes pools. */
-constexpr int kMaxRowsAtCompileTimeThatTriggersPools = 5446;
+constexpr int kMaxRowsAtCompileTimeThatTriggersPools = 5461;
 
 }  // namespace internal
 }  // namespace drake
