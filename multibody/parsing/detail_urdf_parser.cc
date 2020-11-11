@@ -561,7 +561,36 @@ void ParseTransmission(
     return;
   }
 
-  plant->AddJointActuator(actuator_name, joint, effort_iter->second);
+  const JointActuator<double>& actuator =
+      plant->AddJointActuator(actuator_name, joint, effort_iter->second);
+
+  // Parse and add the optional drake:rotor_inertia parameter.
+  XMLElement* rotor_inertia_node =
+      actuator_node->FirstChildElement("drake:rotor_inertia");
+  if (rotor_inertia_node) {
+    double rotor_inertia;
+    if (!ParseScalarAttribute(rotor_inertia_node, "value", &rotor_inertia)) {
+      throw std::runtime_error(
+          "ERROR: joint actuator " + actuator_name +
+          "'s drake:rotor_inertia does not have a \"value\" attribute!");
+    }
+    plant->get_mutable_joint_actuator(actuator.index())
+        .set_default_rotor_inertia(rotor_inertia);
+  }
+
+  // Parse and add the optional drake:gear_ratio parameter.
+  XMLElement* gear_ratio_node =
+      actuator_node->FirstChildElement("drake:gear_ratio");
+  if (gear_ratio_node) {
+    double gear_ratio;
+    if (!ParseScalarAttribute(gear_ratio_node, "value", &gear_ratio)) {
+      throw std::runtime_error(
+          "ERROR: joint actuator " + actuator_name +
+          "'s drake:gear_ratio does not have a \"value\" attribute!");
+    }
+    plant->get_mutable_joint_actuator(actuator.index())
+        .set_default_gear_ratio(gear_ratio);
+  }
 }
 
 void ParseFrame(ModelInstanceIndex model_instance,
