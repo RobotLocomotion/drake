@@ -59,7 +59,8 @@ from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
-from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
+from pydrake.systems.meshcat_visualizer import (
+    ConnectMeshcatVisualizer, MeshcatVisualizer)
 from pydrake.systems.planar_scenegraph_visualizer import (
     PlanarSceneGraphVisualizer,
 )
@@ -160,11 +161,8 @@ def parse_visualizers(args_parser, args):
 
         # Connect to Meshcat.
         if args.meshcat is not None:
-            meshcat_viz = builder.AddSystem(
-                MeshcatVisualizer(scene_graph, zmq_url=args.meshcat))
-            builder.Connect(
-                scene_graph.get_pose_bundle_output_port(),
-                meshcat_viz.get_input_port(0))
+            meshcat_viz = ConnectMeshcatVisualizer(
+                builder, scene_graph, zmq_url=args.meshcat)
 
         # Connect to PyPlot.
         if args.pyplot:

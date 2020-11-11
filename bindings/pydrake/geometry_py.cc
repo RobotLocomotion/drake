@@ -452,6 +452,17 @@ void DoScalarDependentDefinitions(py::module m, T) {
          // Scene-graph wide data.
         .def("num_sources", &Class::num_sources, cls_doc.num_sources.doc)
         .def("num_frames", &Class::num_frames, cls_doc.num_frames.doc)
+        .def(
+            "all_frame_ids",
+            [](Class* self) -> std::vector<FrameId> {
+              std::vector<FrameId> frame_ids;
+              frame_ids.reserve(self->num_frames());
+              for (FrameId id : self->all_frame_ids()) {
+                frame_ids.push_back(id);
+              }
+              return frame_ids;
+            },
+            cls_doc.all_frame_ids.doc)
         .def("world_frame_id", &Class::world_frame_id,
             cls_doc.world_frame_id.doc)
         .def("num_geometries", &Class::num_geometries,

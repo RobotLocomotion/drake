@@ -19,7 +19,8 @@ from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (BasicVector, DiagramBuilder,
                                        LeafSystem)
 from pydrake.systems.lcm import LcmPublisherSystem
-from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
+from pydrake.systems.meshcat_visualizer import (
+    ConnectMeshcatVisualizer, MeshcatVisualizer)
 from pydrake.systems.primitives import FirstOrderLowPassFilter, SignalLogger
 from pydrake.systems.sensors import ImageToLcmImageArrayT, PixelType
 from pydrake.systems.planar_scenegraph_visualizer import \
@@ -248,11 +249,9 @@ def main():
         # rendering only works with drake-visualizer. Without this check,
         # running this code in a docker container produces libGL errors.
         if args.meshcat:
-            meshcat = builder.AddSystem(MeshcatVisualizer(
-                station.get_scene_graph(), zmq_url=args.meshcat,
-                open_browser=args.open_browser))
-            builder.Connect(station.GetOutputPort("pose_bundle"),
-                            meshcat.get_input_port(0))
+            meshcat = ConnectMeshcatVisualizer(
+                builder, output_port=station.GetOutputPort("geometry_query"),
+                zmq_url=args.meshcat, open_browser=args.open_browser)
             if args.setup == 'planar':
                 meshcat.set_planar_viewpoint()
 
