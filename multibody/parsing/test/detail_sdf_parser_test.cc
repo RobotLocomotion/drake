@@ -1139,6 +1139,89 @@ GTEST_TEST(SdfParser, BushingParsing) {
                               "<drake:bushing_torque_damping> child tag.");
 }
 
+GTEST_TEST(SdfParser, ReflectedInertiaParametersParsing) {
+  // Test successful parsing of both parameters
+  {
+    auto [plant, scene_graph] = ParseTestString(R"(
+    <model name='ReflectedInertiaModel'>
+      <link name='A'/>
+      <link name='B'/>
+      <joint name='revolute_AB' type='revolute'>
+        <child>A</child>
+        <parent>B</parent>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <limit>
+            <effort>-1</effort>
+          </limit>
+        </axis>
+        <drake:rotor_inertia>1.5</drake:rotor_inertia>
+        <drake:gear_ratio>300.0</drake:gear_ratio>
+      </joint>
+    </model>)");
+
+    const JointActuator<double>& actuator =
+        plant->GetJointActuatorByName("revolute_AB");
+
+    EXPECT_EQ(actuator.default_rotor_inertia(), 1.5);
+    EXPECT_EQ(actuator.default_gear_ratio(), 300.0);
+  }
+
+  // Test successful parsing of rotor_inertia and default value for
+  // gear_ratio.
+  {
+    auto [plant, scene_graph] = ParseTestString(R"(
+    <model name='ReflectedInertiaModel'>
+      <link name='A'/>
+      <link name='B'/>
+      <joint name='revolute_AB' type='revolute'>
+        <child>A</child>
+        <parent>B</parent>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <limit>
+            <effort>-1</effort>
+          </limit>
+        </axis>
+        <drake:rotor_inertia>1.5</drake:rotor_inertia>
+      </joint>
+    </model>)");
+
+    const JointActuator<double>& actuator =
+        plant->GetJointActuatorByName("revolute_AB");
+
+    EXPECT_EQ(actuator.default_rotor_inertia(), 1.5);
+    EXPECT_EQ(actuator.default_gear_ratio(), 1.0);
+  }
+
+  // Test successful parsing of gear_ratio and default value for
+  // rotor_inertia.
+  {
+    auto [plant, scene_graph] = ParseTestString(R"(
+    <model name='ReflectedInertiaModel'>
+      <link name='A'/>
+      <link name='B'/>
+      <joint name='revolute_AB' type='revolute'>
+        <child>A</child>
+        <parent>B</parent>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <limit>
+            <effort>-1</effort>
+          </limit>
+        </axis>
+        <drake:gear_ratio>300.0</drake:gear_ratio>
+      </joint>
+    </model>)");
+
+    const JointActuator<double>& actuator =
+        plant->GetJointActuatorByName("revolute_AB");
+
+    EXPECT_EQ(actuator.default_rotor_inertia(), 0.0);
+    EXPECT_EQ(actuator.default_gear_ratio(), 300.0);
+  }
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody

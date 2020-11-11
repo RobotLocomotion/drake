@@ -733,6 +733,109 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
       " <drake:bushing_torque_stiffness> tag on line [0-9]+");
 }
 
+GTEST_TEST(MultibodyPlantUrdfParserTest, ReflectedInertiaParametersParsing) {
+  // Test successful parsing of both parameters
+  {
+    auto [plant, scene_graph] = ParseTestString(R"(
+    <robot name='reflected_inertia_test'>
+      <link name='A'/>
+      <link name='B'/>
+      <joint name='revolute_AB' type='revolute'>
+        <axis xyz='0 0 1'/>
+        <parent link='A'/>
+        <child link='B'/>
+        <origin rpy='0 0 0' xyz='0 0 0'/>
+        <limit effort='100' lower='-1' upper='2' velocity='100'/>
+        <dynamics damping='0.1'/>
+      </joint>
+      <transmission>
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name='revolute_AB'>
+          <hardwareInterface>PositionJointInterface</hardwareInterface>
+        </joint>
+        <actuator name='revolute_AB'>
+          <drake:rotor_inertia value='1.5' />
+          <drake:gear_ratio value='300.0' />
+        </actuator>
+      </transmission>
+    </robot>)");
+
+    const JointActuator<double>& actuator =
+        plant->GetJointActuatorByName("revolute_AB");
+
+    EXPECT_EQ(actuator.default_rotor_inertia(), 1.5);
+    EXPECT_EQ(actuator.default_gear_ratio(), 300.0);
+  }
+
+  // Test successful parsing of rotor_inertia and default value for
+  // gear_ratio.
+  {
+    auto [plant, scene_graph] = ParseTestString(R"(
+    <robot name='reflected_inertia_test'>
+      <link name='A'/>
+      <link name='B'/>
+      <joint name='revolute_AB' type='revolute'>
+        <axis xyz='0 0 1'/>
+        <parent link='A'/>
+        <child link='B'/>
+        <origin rpy='0 0 0' xyz='0 0 0'/>
+        <limit effort='100' lower='-1' upper='2' velocity='100'/>
+        <dynamics damping='0.1'/>
+      </joint>
+      <transmission>
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name='revolute_AB'>
+          <hardwareInterface>PositionJointInterface</hardwareInterface>
+        </joint>
+        <actuator name='revolute_AB'>
+          <drake:rotor_inertia value='1.5' />
+          <!-- missing drake:gear_ratio tag -->
+        </actuator>
+      </transmission>
+    </robot>)");
+
+    const JointActuator<double>& actuator =
+        plant->GetJointActuatorByName("revolute_AB");
+
+    EXPECT_EQ(actuator.default_rotor_inertia(), 1.5);
+    EXPECT_EQ(actuator.default_gear_ratio(), 1.0);
+  }
+
+  // Test successful parsing of gear_ratio and default value for
+  // rotor_inertia.
+  {
+    auto [plant, scene_graph] = ParseTestString(R"(
+    <robot name='reflected_inertia_test'>
+      <link name='A'/>
+      <link name='B'/>
+      <joint name='revolute_AB' type='revolute'>
+        <axis xyz='0 0 1'/>
+        <parent link='A'/>
+        <child link='B'/>
+        <origin rpy='0 0 0' xyz='0 0 0'/>
+        <limit effort='100' lower='-1' upper='2' velocity='100'/>
+        <dynamics damping='0.1'/>
+      </joint>
+      <transmission>
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name='revolute_AB'>
+          <hardwareInterface>PositionJointInterface</hardwareInterface>
+        </joint>
+        <actuator name='revolute_AB'>
+          <!-- missing drake:rotor_inertia tag -->
+          <drake:gear_ratio value='300.0' />
+        </actuator>
+      </transmission>
+    </robot>)");
+
+    const JointActuator<double>& actuator =
+        plant->GetJointActuatorByName("revolute_AB");
+
+    EXPECT_EQ(actuator.default_rotor_inertia(), 0.0);
+    EXPECT_EQ(actuator.default_gear_ratio(), 300.0);
+  }
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
