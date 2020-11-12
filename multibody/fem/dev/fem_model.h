@@ -28,9 +28,9 @@ namespace fem {
  FEM discretization, the PDE is reduced to a system of linear or nonlinear
  equations of the form:
 
-     G(u₁, u₂, ..., uₙ) = 0,
+     𝐆(u₁, u₂, ..., uₙ) = 0,
 
- where n is the number of nodes in the discretization and G is a function from
+ where n is the number of nodes in the discretization and 𝐆 is a function from
  Rⁿᵈ to Rⁿᵈ. The linear or nonlinear equation in the system associated with
  the node `a` has the form
 
@@ -42,8 +42,8 @@ namespace fem {
 
  %FemModel calculates various components of the system of linear or nonlinear
  equations that supports solving the system. For example, CalcResidual()
- calculates the value of G evaluated at the current state and
- CalcTangentMatrix() calculates ∇G at the current state.
+ calculates the value of 𝐆 evaluated at the current state and
+ CalcTangentMatrix() calculates ∇𝐆 at the current state.
  @tparam_nonsymbolic_scalar T. */
 template <typename T>
 class FemModel {
@@ -73,9 +73,8 @@ class FemModel {
   int num_nodes() const { return num_nodes_; }
 
   /** Calculates the residual at the given FemState. Suppose the linear or
-   nonlinear system generated from the FEM discretization is
-        G(u₁, u₂, ..., uₙ) = 0,
-   then the output `residual` is equal to the function G evaluated at the
+   nonlinear system generated from the FEM discretization is 𝐆(𝐮) = 0,
+   then the output `residual` is equal to the function 𝐆 evaluated at the
    input `state`.
    @param[in] state The FemState at which to evaluate the residual.
    @param[out] residual The output residual evaluated at `state`.
@@ -83,8 +82,29 @@ class FemModel {
   void CalcResidual(const FemState<T>& state,
                     EigenPtr<VectorX<T>> residual) const;
 
-  // TODO(xuchenhan-tri): Add missing methods such as CalcTangentMatrix and
-  // CalcMassMatrix etc.
+  /** Calculates the tangent matrix at the given FemState. The ij-th entry of
+   the tangent matrix is the derivative of the i-th entry of the residual
+   (calculated by CalcResidual()) with respect to the j-th generalized unknown
+   uⱼ.
+   @param[in] state The FemState to evaluate the residual at.
+   @param[out] tangent_matrix The output tangent_matrix. Suppose the linear or
+   nonlinear system generated from the FEM discretization is 𝐆(𝐮) = 0,
+   then `tangent_matrix` is equal to ∇𝐆 evaluated at the input `state`.
+   @pre `tangent_matrix` must not be the null pointer.
+   @pre The size of matrix pointed to by `tangent_matrix` must be
+   `num_dofs()`*`num_dofs()`. */
+  void CalcTangentMatrix(const FemState<T>& state,
+                         Eigen::SparseMatrix<T>* tangent_matrix) const;
+
+  /** Sets the sparsity pattern for the tangent matrix of this %FemModel.
+    @param[out] tangent_matrix The tangent matrix of this %FemModel. Its
+    sparsity pattern will be set and it will be ready to be passed into
+    CalcTangentMatrix.
+    @pre `tangent_matrix` must not be the null pointer. */
+  void SetTangentMatrixSparsityPattern(
+      Eigen::SparseMatrix<T>* tangent_matrix) const;
+
+  // TODO(xuchenhan-tri): Add missing method: CalcMassMatrix.
 
  protected:
   /** Derived class should create a new FemState with no element cache and

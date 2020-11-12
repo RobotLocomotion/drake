@@ -71,6 +71,12 @@ class LinearConstitutiveModel final : public ConstitutiveModel<T> {
       const DeformationGradientCacheEntry<T>& cache_entry,
       std::vector<Matrix3<T>>* P) const final;
 
+  /* Calculates the derivative of First Piola stress with respect to the
+   deformation gradient, given the model cache entry. */
+  void DoCalcFirstPiolaStressDerivative(
+      const DeformationGradientCacheEntry<T>& cache_entry,
+      std::vector<Eigen::Matrix<T, 9, 9>>* dPdF) const final;
+
   /* Creates a LinearElasticityModelCache that is compatible with this
    LinearConstitutiveModel. */
   std::unique_ptr<DeformationGradientCacheEntry<T>>
@@ -89,6 +95,8 @@ class LinearConstitutiveModel final : public ConstitutiveModel<T> {
   T nu_;      // Poisson ratio.
   T mu_;      // Lamé's second parameter/Shear modulus, N/m².
   T lambda_;  // Lamé's first parameter, N/m².
+  Eigen::Matrix<T, 9, 9>
+      dPdF_;  // The First Piola stress derivative is constant and precomputed.
 };
 }  // namespace fem
 }  // namespace multibody

@@ -16,6 +16,15 @@ void FemElement<T>::CalcResidual(const FemState<T>& state,
 }
 
 template <typename T>
+void FemElement<T>::CalcTangentMatrix(
+    const FemState<T>& state, EigenPtr<MatrixX<T>> tangent_matrix) const {
+  DRAKE_ASSERT(tangent_matrix != nullptr);
+  DRAKE_ASSERT(tangent_matrix->rows() == solution_dimension() * num_nodes());
+  DRAKE_ASSERT(tangent_matrix->cols() == solution_dimension() * num_nodes());
+  DoCalcTangentMatrix(state, tangent_matrix);
+}
+
+template <typename T>
 FemElement<T>::FemElement(ElementIndex element_index,
                           const std::vector<NodeIndex>& node_indices)
     : element_index_(element_index), node_indices_(node_indices) {
