@@ -4650,13 +4650,9 @@ template <>
 typename MultibodyPlant<symbolic::Expression>::SceneGraphStub&
 MultibodyPlant<symbolic::Expression>::member_scene_graph();
 template <>
-std::vector<geometry::PenetrationAsPointPair<double>>
-MultibodyPlant<double>::CalcPointPairPenetrations(
-    const systems::Context<double>&) const;
-template <>
-std::vector<geometry::PenetrationAsPointPair<AutoDiffXd>>
-MultibodyPlant<AutoDiffXd>::CalcPointPairPenetrations(
-    const systems::Context<AutoDiffXd>&) const;
+std::vector<geometry::PenetrationAsPointPair<symbolic::Expression>>
+MultibodyPlant<symbolic::Expression>::CalcPointPairPenetrations(
+    const systems::Context<symbolic::Expression>&) const;
 template <>
 std::vector<CoulombFriction<double>>
 MultibodyPlant<symbolic::Expression>::CalcCombinedFrictionCoefficients(

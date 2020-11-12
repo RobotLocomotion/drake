@@ -2166,10 +2166,10 @@ class SimplePenetrationTest : public ::testing::Test {
   template <typename T>
   void ExpectPenetration(GeometryId origin_sphere, GeometryId colliding_sphere,
                          ProximityEngine<T>* engine) {
-    std::vector<PenetrationAsPointPair<double>> penetration_results =
+    std::vector<PenetrationAsPointPair<T>> penetration_results =
         engine->ComputePointPairPenetration();
     ASSERT_EQ(penetration_results.size(), 1);
-    const PenetrationAsPointPair<double>& penetration = penetration_results[0];
+    const PenetrationAsPointPair<T>& penetration = penetration_results[0];
 
     std::vector<SignedDistancePair<T>> distance_results =
         engine->ComputeSignedDistancePairwiseClosestPoints(GetTypedPoses<T>(),
@@ -2240,7 +2240,7 @@ class SimplePenetrationTest : public ::testing::Test {
   void ExpectIgnoredPenetration(GeometryId origin_sphere,
                                 GeometryId colliding_sphere,
                                 ProximityEngine<T>* engine) {
-    std::vector<PenetrationAsPointPair<double>> penetration_results =
+    std::vector<PenetrationAsPointPair<T>> penetration_results =
         engine->ComputePointPairPenetration();
     EXPECT_EQ(penetration_results.size(), 0);
 
@@ -2325,7 +2325,9 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndAnchored) {
   // Test AutoDiffXd converted engine.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
       engine_.ToAutoDiffXd();
-  ExpectPenetration(anchored_id, dynamic_id, ad_engine.get());
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ad_engine->ComputePointPairPenetration(), std::runtime_error,
+      ".* Some of the bodies in the model are in contact.*");
 }
 
 // Performs the same collision test between two dynamic spheres which belong to
@@ -2356,7 +2358,9 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndDynamicSingleSource) {
   // Test AutoDiffXd converted engine.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
       engine_.ToAutoDiffXd();
-  ExpectPenetration(origin_id, collide_id, ad_engine.get());
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ad_engine->ComputePointPairPenetration(), std::runtime_error,
+      ".*Some of the bodies in the model are in contact.*");
 }
 
 // Tests if collisions exist between dynamic and anchored sphere. One case

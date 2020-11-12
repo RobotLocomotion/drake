@@ -1095,48 +1095,24 @@ void MultibodyPlant<T>::EstimatePointContactParameters(
   penalty_method_contact_parameters_.time_scale = time_scale;
 }
 
-// Specialize this function so that double is fully supported.
-template <>
-std::vector<PenetrationAsPointPair<double>>
-MultibodyPlant<double>::CalcPointPairPenetrations(
-    const systems::Context<double>& context) const {
+template <typename T>
+std::vector<PenetrationAsPointPair<T>>
+MultibodyPlant<T>::CalcPointPairPenetrations(
+    const systems::Context<T>& context) const {
   if (num_collision_geometries() > 0) {
     const auto& query_object = EvalGeometryQueryInput(context);
     return query_object.ComputePointPairPenetration();
   }
-  return std::vector<PenetrationAsPointPair<double>>();
+  return std::vector<PenetrationAsPointPair<T>>();
 }
 
-// Specialize this function so that AutoDiffXd is (partially) supported. This
-// AutoDiffXd specialization will throw if there are any collisions.
-// TODO(SeanCurtis-TRI): Move this logic into SceneGraph per #11454.
+// Specialize this function so that symbolic::Expression throws an error.
 template <>
-std::vector<PenetrationAsPointPair<AutoDiffXd>>
-MultibodyPlant<AutoDiffXd>::CalcPointPairPenetrations(
-    const systems::Context<AutoDiffXd>& context) const {
-  if (num_collision_geometries() > 0) {
-    const auto& query_object = EvalGeometryQueryInput(context);
-    auto results = query_object.ComputePointPairPenetration();
-    if (results.size() > 0) {
-      throw std::logic_error(
-          "CalcPointPairPenetration(): Some of the bodies in the model are in "
-          "contact for the state stored in the given context. Currently a "
-          "MultibodyPlant model cannot be auto-differentiated if contacts "
-          "are detected. Notice however that auto-differentiation is allowed "
-          "if there are no contacts for the given state. That is, you can "
-          "invoke penetration queries on a MultibodyPlant<AutoDiffXd> as long "
-          "as there are no unfiltered geometries in contact. "
-          "Refer to Github issues #11454 and #11455 for details.");
-    }
-  }
-  return {};
-}
-
-template<typename T>
-std::vector<PenetrationAsPointPair<T>>
-MultibodyPlant<T>::CalcPointPairPenetrations(const systems::Context<T>&) const {
-  throw std::domain_error(fmt::format("This method doesn't support T = {}.",
-                                      NiceTypeName::Get<T>()));
+std::vector<PenetrationAsPointPair<symbolic::Expression>>
+MultibodyPlant<symbolic::Expression>::CalcPointPairPenetrations(
+    const systems::Context<symbolic::Expression>&) const {
+  throw std::logic_error(
+      "This method doesn't support T = symbolic::Expression.");
 }
 
 template <>

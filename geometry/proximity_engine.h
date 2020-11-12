@@ -216,8 +216,7 @@ class ProximityEngine {
   // revisited (and ProximityEngineTest::Issue10577Regression_Osculation can
   // be updated).
   /* Implementation of GeometryState::ComputePointPairPenetration().  */
-  std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
-      const;
+  std::vector<PenetrationAsPointPair<T>> ComputePointPairPenetration() const;
 
   /* Implementation of GeometryState::ComputeContactSurfaces().
    This includes `X_WGs`, the current poses of all geometries in World in the
@@ -232,7 +231,7 @@ class ProximityEngine {
   void ComputeContactSurfacesWithFallback(
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs,
       std::vector<ContactSurface<T>>* surfaces,
-      std::vector<PenetrationAsPointPair<double>>* point_pairs) const;
+      std::vector<PenetrationAsPointPair<T>>* point_pairs) const;
 
   /* Implementation of GeometryState::FindCollisionCandidates().  */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const;
