@@ -83,8 +83,26 @@ class FemModel {
   void CalcResidual(const FemState<T>& state,
                     EigenPtr<VectorX<T>> residual) const;
 
-  // TODO(xuchenhan-tri): Add missing methods such as CalcTangentMatrix and
-  // CalcMassMatrix etc.
+  /** Calculates the tangent matrix at the given FemState.
+   @param[in] state The FemState to evaluate the residual at.
+   @param[out] tangent_matrix The output tangent_matrix. Suppose the linear or
+   nonlinear system generated from the FEM discretization is G(u₁, u₂, ..., uₙ)
+   = 0, then `tangent_matrix` is equal to ∇G evaluated at the input `state`.
+   @pre `tangent_matrix` must not be the null pointer.
+   @pre The size of matrix pointed to by `tangent_matrix` must be
+   `num_dofs()*num_dofs()`. */
+  void CalcTangentMatrix(const FemState<T>& state,
+                         Eigen::SparseMatrix<T>* tangent_matrix) const;
+
+  /** Sets the sparsity pattern for the tangent matrix of this %FemModel.
+    @param[out] tangent_matrix The tangent matrix of this %FemModel. Its
+    sparsity pattern will be set and it will be ready to be passed into
+    CalcTangentMatrix.
+    @pre `tangent_matrix` must not be the null pointer. */
+  void SetTangentMatrixSparsityPattern(
+      Eigen::SparseMatrix<T>* tangent_matrix) const;
+
+  // TODO(xuchenhan-tri): Add missing method: CalcMassMatrix.
 
  protected:
   /** Derived class should create a new FemState with no element cache and

@@ -69,7 +69,21 @@ class FemElement {
   void CalcResidual(const FemState<T>& state,
                     EigenPtr<VectorX<T>> residual) const;
 
-  // TODO(xuchenhan-tri): Add CalcMassMatrix and CalcStiffnessMatrix etc.
+  /** Calculates the element tangent matrix of this element evaluated at the
+   input state.
+   @param[in] state The FEM state at which to evaluate the residual.
+   @returns the tangent matrix of size
+   `solution_dimension()*num_nodes()`-by-`solution_dimension()*num_nodes()`.
+   The matrix is organized into `num_nodes()`-by-`num_nodes()` of
+   `solution_dimension()`-by-`solution_dimension()` blocks.
+   @pre `tangent_matrix` must not be the nullptr, and the matrix it
+   points to must have size
+   `solution_dimension()*num_nodes()`-by-`solution_dimension()*num_nodes()`.
+   */
+  void CalcTangentMatrix(const FemState<T>& state,
+                         EigenPtr<MatrixX<T>> tangent_matrix) const;
+
+  // TODO(xuchenhan-tri): Add CalcMassMatrix.
 
  protected:
   /** Constructs a new FEM element.
@@ -80,8 +94,8 @@ class FemElement {
   FemElement(ElementIndex element_index,
              const std::vector<NodeIndex>& node_indices);
 
-  /** Calculates the element residual of this element evaluated at the input
-   state.
+  /** Derived classes must implement this method to calculate the element
+   residual of this element evaluated at the input state.
    @param[in] state The FemState at which to evaluate the residual.
    @param[out] a vector of residual of size `solution_dimension()*num_nodes()`.
    The vector is ordered such that `i*solution_dimension()`-th to
@@ -91,6 +105,16 @@ class FemElement {
    size `num_nodes() * solution_dimension()`. */
   virtual void DoCalcResidual(const FemState<T>& s,
                               EigenPtr<VectorX<T>> residual) const = 0;
+
+  /** Derived classes must implement this method to calculate the element
+     tangent matrix of this element evaluated at the input state.
+     @param[in] state The FEM state at which to evaluate the residual.
+     @returns the tangent matrix of size
+     `solution_dimension()*num_nodes()`-by-`solution_dimension()*num_nodes()`.
+     The matrix is organized into `num_nodes()`-by-`num_nodes()` of
+     `solution_dimension()`-by-`solution_dimension()` blocks. */
+  virtual void DoCalcTangentMatrix(
+      const FemState<T>& state, EigenPtr<MatrixX<T>> tangent_matrix) const = 0;
 
  private:
   // The global index of this element.

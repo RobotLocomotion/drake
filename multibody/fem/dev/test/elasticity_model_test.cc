@@ -116,10 +116,30 @@ TEST_F(ElasticityModelTest, ResidualIsEnergyDerivative) {
   Scalar energy = elasticity_model_.CalcElasticEnergy(*state);
   VectorX<Scalar> residual(state->num_generalized_positions());
   elasticity_model_.CalcResidual(*state, &residual);
-  /* TODO(xuchenhan-tri): Damping and inertia terms need to be added to this
-   test when they are in place. */
   EXPECT_TRUE(CompareMatrices(energy.derivatives(), residual,
                               std::numeric_limits<double>::epsilon()));
+}
+
+TEST_F(ElasticityModelTest, TangentMatrixIsResidualDerivative) {
+  std::unique_ptr<FemState<Scalar>> state = elasticity_model_.MakeFemState();
+  /* Move to arbitrary positions. */
+  state->set_q(MakePositions());
+  VectorX<Scalar> residual(state->num_generalized_positions());
+  elasticity_model_.CalcResidual(*state, &residual);
+  Eigen::SparseMatrix<Scalar> tangent_matrix;
+  elasticity_model_.SetTangentMatrixSparsityPattern(&tangent_matrix);
+  elasticity_model_.CalcTangentMatrix(*state, &tangent_matrix);
+  /* In the discretization of the unit cube by 6 tetrahedra, there are 19 edges,
+   and 8 nodes, creating 19*2 + 8 blocks of 3-by-3 nonzero entries. Hence the
+   number of nonzero entries of the tangent matrix should be (19*2+8)*9. */
+  const int nnz = (19 * 2 + 8) * 9;
+  EXPECT_EQ(tangent_matrix.nonZeros(), nnz);
+  MatrixX<Scalar> dense_tangent_matrix(tangent_matrix);
+  for (int i = 0; i < state->num_generalized_positions(); ++i) {
+    EXPECT_TRUE(CompareMatrices(residual(i).derivatives(),
+                                dense_tangent_matrix.col(i),
+                                std::numeric_limits<double>::epsilon()));
+  }
 }
 
 }  // namespace
