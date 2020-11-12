@@ -16,7 +16,8 @@ namespace allegro_hand {
 constexpr int kAllegroNumJoints = 16;
 
 /// Set the feedback gains for the simulated position control
-void SetPositionControlledGains(Eigen::VectorXd* Kp, Eigen::VectorXd* Ki,
+void SetPositionControlledGains(double pid_frequency, double Ieff,
+                                Eigen::VectorXd* Kp, Eigen::VectorXd* Ki,
                                 Eigen::VectorXd* Kd);
 
 /// Creates selector matrices which extract state xₛ in a known order from the

@@ -1,5 +1,7 @@
 #include "drake/examples/allegro_hand/allegro_common.h"
 
+#include <iostream>
+
 namespace drake {
 namespace examples {
 namespace allegro_hand {
@@ -9,11 +11,20 @@ const double AllegroHandMotionState::velocity_thresh_ = 0.07;
 using drake::multibody::JointIndex;
 using drake::multibody::MultibodyPlant;
 
-void SetPositionControlledGains(Eigen::VectorXd* Kp, Eigen::VectorXd* Ki,
+void SetPositionControlledGains(double pid_frequency, double Ieff,
+                                Eigen::VectorXd* Kp, Eigen::VectorXd* Ki,
                                 Eigen::VectorXd* Kd) {
-  *Kp = Eigen::VectorXd::Ones(kAllegroNumJoints) * 0.05;
-  *Kd = Eigen::VectorXd::Constant(Kp->size(), 5e-3);
-  (*Kp)[0] = 0.08;
+  const double gain_prop = pid_frequency * pid_frequency * Ieff;
+  const double zeta = 0.4;  // 1.6
+  const double gain_der = 2.0 * gain_prop / pid_frequency * zeta;
+
+  std::cout << "PID frequency [Hz]: " << pid_frequency << std::endl;
+  std::cout << "Kp [Nm/rad]: " << gain_prop << std::endl;
+  std::cout << "Kd [Nms/rad]: " << gain_der << std::endl;
+
+  *Kp = Eigen::VectorXd::Ones(kAllegroNumJoints) * gain_prop;  // 0.05;
+  *Kd = Eigen::VectorXd::Constant(Kp->size(), gain_der);  // 5e-3
+  (*Kp)[0] *= 1.6;  // The thumb is slightly more massive.
   *Ki = Eigen::VectorXd::Zero(kAllegroNumJoints);
 }
 
