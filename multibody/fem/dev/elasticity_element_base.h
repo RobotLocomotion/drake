@@ -27,6 +27,16 @@ class ElasticityElementBase : public FemElement<T> {
   /** Returns the elastic potential energy stored in this element in unit J. */
   virtual T CalcElasticEnergy(const FemState<T>& state) const = 0;
 
+  /** Calculates the element stiffness matrix of this element, evaluated
+   at `state`. The stiffness is
+   given by the second derivative of the elastic energy with respect to the
+   vertex positions.
+   @param[in] state The FEM state at which to evaluate the stiffness matrix.
+   @param[out] K The stiffness matrix to be calculated.
+   @pre K must be of size 3*num_nodes()-by-3*num_nodes(). */
+  virtual void CalcStiffnessMatrix(const FemState<T>& state,
+                           EigenPtr<MatrixX<T>> K) const = 0;
+
  protected:
   ElasticityElementBase(ElementIndex element_index,
                         const std::vector<NodeIndex>& node_indices)

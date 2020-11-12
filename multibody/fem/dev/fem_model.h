@@ -83,8 +83,61 @@ class FemModel {
   void CalcResidual(const FemState<T>& state,
                     EigenPtr<VectorX<T>> residual) const;
 
-  // TODO(xuchenhan-tri): Add missing methods such as CalcTangentMatrix and
-  // CalcMassMatrix etc.
+  /** Calculates the tangent matrix at the given FemState.
+   @param[in] state The FemState to evaluate the residual at.
+   @param[out] tangent_matrix The output tangent_matrix. Suppose the linear or
+   nonlinear system generated from the FEM discretization is G(u₁, u₂, ..., uₙ)
+   = 0, then `tangent_matrix` is equal to ∇G evaluated at the input `state`.
+   @pre The size of `tangent_matrix` must be `solution_dimension()*
+   num_nodes()`-by-`solution_dimension()*num_nodes()`. */
+  void CalcTangentMatrix(const FemState<T>& state,
+                         Eigen::SparseMatrix<T>* tangent_matrix) const;
+
+  /** Sets the sparsity pattern for the tangent matrix of this %FemModel.
+    @param[out] tangent_matrix The tangent matrix of this %FemModel. Its
+    sparsity pattern will be set and it will be ready to be passed into
+    CalcTangentMatrix.
+    @pre `tangent_matrix` must not be the null pointer. */
+  void SetTangentMatrixSparsityPattern(
+      Eigen::SparseMatrix<T>* tangent_matrix) const {
+    /* Get an upper bound for the number of nonzero entries. */
+    const int num_dof = num_nodes() * solution_dimension();
+    tangent_matrix->resize(num_dof, num_dof);
+    std::vector<Eigen::Triplet<T>> non_zero_entries;
+    int nnz = 0;
+    const int solution_dim = solution_dimension();
+    for (int e = 0; e < num_elements(); ++e) {
+      const int element_num_nodes = elements_[e]->num_nodes();
+      const int element_dof = element_num_nodes * solution_dim;
+      /* Add in the maximum number of nonzero entries that can be contributed by
+       this element. There are likely node-pairs that appear in more than one
+       element that get counted multiple times, but that ok because duplicate
+       triplets will only be allocated once by Eigen::SparseMatrix. */
+      nnz += element_dof * element_dof;
+    }
+    non_zero_entries.reserve(nnz);
+    for (int e = 0; e < num_elements(); ++e) {
+      const std::vector<NodeIndex>& element_node_indices =
+          elements_[e]->node_indices();
+      const int element_num_nodes = elements_[e]->num_nodes();
+      for (int a = 0; a < element_num_nodes; ++a) {
+        for (int i = 0; i < 3; ++i) {
+          int row_index = solution_dim * element_node_indices[a] + i;
+          for (int b = 0; b < element_num_nodes; ++b) {
+            for (int j = 0; j < 3; ++j) {
+              int col_index = solution_dim * element_node_indices[b] + j;
+              non_zero_entries.emplace_back(row_index, col_index, 0);
+            }
+          }
+        }
+      }
+    }
+    tangent_matrix->setFromTriplets(non_zero_entries.begin(),
+                                    non_zero_entries.end());
+    tangent_matrix->makeCompressed();
+  }
+
+  // TODO(xuchenhan-tri): Add missing method: CalcMassMatrix.
 
  protected:
   /** Derived class should create a new FemState with no element cache and
