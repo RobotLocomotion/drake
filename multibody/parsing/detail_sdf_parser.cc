@@ -236,7 +236,22 @@ void AddJointActuatorFromSpecification(
   // as a way to specify un-actuated joints. Thus, the user would say
   // <effort>0</effort> for un-actuated joints.
   if (effort_limit != 0) {
-    plant->AddJointActuator(joint_spec.Name(), joint, effort_limit);
+    const JointActuator<double>& actuator =
+        plant->AddJointActuator(joint_spec.Name(), joint, effort_limit);
+
+    // Parse and add the optional drake:rotor_inertia parameter.
+    if (joint_spec.Element()->HasElement("drake:rotor_inertia")) {
+      plant->get_mutable_joint_actuator(actuator.index())
+          .set_default_rotor_inertia(
+              joint_spec.Element()->Get<double>("drake:rotor_inertia"));
+    }
+
+    // Parse and add the optional drake:gear_ratio parameter.
+    if (joint_spec.Element()->HasElement("drake:gear_ratio")) {
+      plant->get_mutable_joint_actuator(actuator.index())
+          .set_default_gear_ratio(
+              joint_spec.Element()->Get<double>("drake:gear_ratio"));
+    }
   }
 }
 
