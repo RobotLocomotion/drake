@@ -167,7 +167,40 @@ struct OptionalStructNoDefault {
   std::optional<double> value;
 };
 
-using Variant4 = std::variant<std::string, double, DoubleStruct, StringStruct>;
+template <int Rows, int Cols>
+struct EigenStruct {
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(value));
+  }
+
+  EigenStruct() {
+    if (value.size() == 0) {
+      value.resize(1, 1);
+    }
+    value.setConstant(kNominalDouble);
+  }
+
+  explicit EigenStruct(const Eigen::Matrix<double, Rows, Cols>& value_in)
+      : value(value_in) {}
+
+  Eigen::Matrix<double, Rows, Cols> value;
+};
+
+// This is used only for EXPECT_EQ, not by any YAML operations.
+template <int Rows, int Cols>
+bool operator==(const EigenStruct<Rows, Cols>& a,
+                const EigenStruct<Rows, Cols>& b) {
+  return a.value == b.value;
+}
+
+using EigenVecStruct = EigenStruct<Eigen::Dynamic, 1>;
+using EigenVec3Struct = EigenStruct<3, 1>;
+using EigenMatrixStruct = EigenStruct<Eigen::Dynamic, Eigen::Dynamic>;
+using EigenMatrix34Struct = EigenStruct<3, 4>;
+
+using Variant4 = std::variant<
+    std::string, double, DoubleStruct, EigenVecStruct>;
 
 std::ostream& operator<<(std::ostream& os, const Variant4& value) {
   if (value.index() == 0) {
@@ -177,7 +210,7 @@ std::ostream& operator<<(std::ostream& os, const Variant4& value) {
   } else if (value.index() == 2) {
     os << "DoubleStruct{" << std::get<2>(value).value << "}";
   } else {
-    os << "StringStruct{" << std::get<3>(value).value << "}";
+    os << "EigenVecStruct{" << std::get<3>(value).value << "}";
   }
   return os;
 }
@@ -206,31 +239,6 @@ struct VariantWrappingStruct {
 
   VariantStruct inner;
 };
-
-template <int Rows, int Cols>
-struct EigenStruct {
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  EigenStruct() {
-    if (value.size() == 0) {
-      value.resize(1, 1);
-    }
-    value.setConstant(kNominalDouble);
-  }
-
-  explicit EigenStruct(const Eigen::Matrix<double, Rows, Cols>& value_in)
-      : value(value_in) {}
-
-  Eigen::Matrix<double, Rows, Cols> value;
-};
-
-using EigenVecStruct = EigenStruct<Eigen::Dynamic, 1>;
-using EigenVec3Struct = EigenStruct<3, 1>;
-using EigenMatrixStruct = EigenStruct<Eigen::Dynamic, Eigen::Dynamic>;
-using EigenMatrix34Struct = EigenStruct<3, 4>;
 
 struct OuterStruct {
   struct InnerStruct {

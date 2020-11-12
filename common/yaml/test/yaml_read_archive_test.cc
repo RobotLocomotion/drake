@@ -828,7 +828,7 @@ TEST_P(YamlReadArchiveTest, VisitVariantFoundUnknownTag) {
       "has unsupported type tag !UnknownTag "
       "while selecting a variant<> entry for "
       "std::variant<std::string,double,drake::yaml::test::DoubleStruct,"
-      "drake::yaml::test::StringStruct> value.");
+      "drake::yaml::test::EigenStruct<-1,1>> value.");
 }
 
 // This finds nothing when an Eigen::Vector or Eigen::Matrix was wanted.

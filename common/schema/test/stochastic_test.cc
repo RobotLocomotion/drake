@@ -9,12 +9,14 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/common/yaml/yaml_read_archive.h"
+#include "drake/common/yaml/yaml_write_archive.h"
 
 using drake::symbolic::Expression;
 using drake::symbolic::test::ExprEqual;
 using drake::symbolic::Variable;
 using drake::symbolic::Variables;
 using drake::yaml::YamlReadArchive;
+using drake::yaml::YamlWriteArchive;
 
 namespace drake {
 namespace schema {
@@ -145,6 +147,24 @@ GTEST_TEST(StochasticTest, ScalarTest) {
   CheckUniformSymbolic(symbolic_vec(2), u.min, u.max);
   CheckUniformDiscreteSymbolic(symbolic_vec(3), ub.values);
   EXPECT_PRED2(ExprEqual, symbolic_vec(4), 3.2);
+
+  // Confirm that writeback works for every possible type.
+  YamlWriteArchive writer;
+  writer.Accept(variants);
+  EXPECT_EQ(writer.EmitString(), R"""(root:
+  vec:
+    - !Deterministic
+      value: 5.0
+    - !Gaussian
+      mean: 2.0
+      stddev: 4.0
+    - !Uniform
+      min: 1.0
+      max: 5.0
+    - !UniformDiscrete
+      values: [1.0, 1.5, 2.0]
+    - 3.2
+)""");
 
   // Try loading a value which looks like an ordinary vector.
   YamlReadArchive(YAML::Load(floats)).Accept(&variants);
@@ -313,6 +333,32 @@ GTEST_TEST(StochasticTest, VectorTest) {
   EXPECT_TRUE(CompareMatrices(
       ToDistributionVector(variants.uniform_scalar)->Mean(),
       Vector1d(1.5)));
+
+  // Confirm that writeback works for every possible type.
+  YamlWriteArchive writer;
+  writer.Accept(variants);
+  EXPECT_EQ(writer.EmitString(), R"""(root:
+  vector: [1.0, 2.0, 3.0]
+  deterministic: !DeterministicVector
+    value: [3.0, 4.0, 5.0]
+  gaussian1: !GaussianVector
+    mean: [1.1, 1.2, 1.3]
+    stddev: [0.1, 0.2, 0.3]
+  gaussian2: !GaussianVector
+    mean: [2.1, 2.2, 2.3, 2.4]
+    stddev: [1.0]
+  uniform: !UniformVector
+    min: [10.0, 20.0]
+    max: [11.0, 22.0]
+  deterministic_scalar: !Deterministic
+    value: 19.5
+  gaussian_scalar: !Gaussian
+    mean: 5.0
+    stddev: 1.0
+  uniform_scalar: !Uniform
+    min: 1.0
+    max: 2.0
+)""");
 }
 
 // Check the special cases of IsDeterministic for zero-size ranges.
