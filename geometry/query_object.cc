@@ -104,7 +104,7 @@ const RigidTransform<T>& QueryObject<T>::X_WG(GeometryId id) const {
 }
 
 template <typename T>
-std::vector<PenetrationAsPointPair<double>>
+std::vector<PenetrationAsPointPair<T>>
 QueryObject<T>::ComputePointPairPenetration() const {
   ThrowIfNotCallable();
 
@@ -145,7 +145,7 @@ QueryObject<T>::ComputeContactSurfaces() const {
 template <typename T>
 void QueryObject<T>::ComputeContactSurfacesWithFallback(
     std::vector<ContactSurface<T>>* surfaces,
-    std::vector<PenetrationAsPointPair<double>>* point_pairs) const {
+    std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
   DRAKE_DEMAND(surfaces);
   DRAKE_DEMAND(point_pairs);
 
