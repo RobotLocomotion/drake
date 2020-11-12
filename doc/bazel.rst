@@ -264,7 +264,7 @@ kcov
 ----
 
 ``kcov`` can analyze coverage for any binary that contains DWARF format
-debuggging symbols, and produce nicely formatted browse-able coverage reports.
+debugging symbols, and produce nicely formatted browse-able coverage reports.
 
 Drake's ``kcov`` build system integration is only supported on Ubuntu, not
 macOS.
@@ -282,5 +282,16 @@ Note that it disables compiler-optimization (``-O0``) to have a better and more
 precise coverage report.  If you have trouble with kcov and unoptimized programs,
 you can turn it back on by also supplying ``--copt -O2``.
 
-The coverage report is written to the ``drake/bazel-kcov`` directory.  To
-view it, browse to ``drake/bazel-kcov/index.html``.
+For each test program, individual coverage reports are written to per-target
+directories.  Use the ``kcov_tool`` to merge coverage data into a new directory::
+
+  tools/dynamic_analysis/kcov_tool merge [OUTPUT-DIR]
+
+To view the merged data, browse to ``index.html`` in the OUTPUT-DIR.
+
+In a local developer workspace, coverage data may accumulate over successive
+build jobs, even if source files or other dependencies have changed. The stale
+data would be scattered within the directory tree linked as
+``bazel-testlogs``. To clear out old data, use ``kcov_tool clean``::
+
+  tools/dynamic_analysis/kcov_tool clean

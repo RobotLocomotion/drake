@@ -112,7 +112,7 @@ let g:lt_quickfix_list_toggle_map = '<leader>lq'
 " ctrlp.vim
 "----------
 let g:ctrlp_working_path_mode = 'rw'
-let g:ctrlp_custom_ignore = '\v[\/](build|doc|bazel-kcov)$'
+let g:ctrlp_custom_ignore = '\v[\/](build|doc)$'
 " Launch CtrlP. Use this and then start typing fragments of the file path.
 nnoremap <leader>ff :CtrlP<cr>
 
