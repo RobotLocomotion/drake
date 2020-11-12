@@ -73,8 +73,8 @@ TEST_F(ElasticityModelTest, Basic) {
 TEST_F(ElasticityModelTest, MakeState) {
   std::unique_ptr<FemState<Scalar>> state = elasticity_model_.MakeFemState();
   ASSERT_TRUE(state != nullptr);
-  EXPECT_EQ(state->num_element_cache(), elasticity_model_.num_elements());
-  for (ElementIndex i(0); i < state->num_element_cache(); ++i) {
+  EXPECT_EQ(state->element_cache_size(), elasticity_model_.num_elements());
+  for (ElementIndex i(0); i < state->element_cache_size(); ++i) {
     /* The element cache should be of type ElasticityElementCache. */
     const auto* element_cache =
         dynamic_cast<const ElasticityElementCache<Scalar>*>(
@@ -88,7 +88,7 @@ TEST_F(ElasticityModelTest, MakeState) {
     /* Verify that the cache is properly set up. */
     ASSERT_TRUE(linear_elasticity_cache != nullptr);
     EXPECT_EQ(linear_elasticity_cache->element_index(), i);
-    EXPECT_EQ(linear_elasticity_cache->num_quads(), kNumQuads);
+    EXPECT_EQ(linear_elasticity_cache->num_quadrature_points(), kNumQuads);
     EXPECT_EQ(linear_elasticity_cache->strain().size(), kNumQuads);
     EXPECT_EQ(linear_elasticity_cache->trace_strain().size(), kNumQuads);
     EXPECT_EQ(linear_elasticity_cache->deformation_gradient().size(),

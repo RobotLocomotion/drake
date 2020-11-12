@@ -17,28 +17,29 @@ namespace fem {
 /** %FemModel calculates the components of the discretized FEM equations.
  Suppose the PDE at hand is of the form
 
-     F(u, ∇u, ...) = 0,
+     F(u, ∇u, ...) = 0.
 
- where u: Rᴰ → Rᵈ is the unknown function being solved for. After the
- FEM discretization, the PDE is reduced to a system of linear or
- nonlinear equations of the form:
+ In this PDE, u: Rᴰ → Rᵈ, where D is the dimension of the domain and d is the
+ solution dimension, is the unknown function being solved for, and F takes u and
+ its derivatives as arguments.  After the FEM discretization, the PDE is reduced
+ to a system of linear or nonlinear equations of the form:
 
      G(u₁, u₂, ..., uₙ) = 0,
 
  where n is the number of nodes in the discretization and G is a function from
- Rⁿ*ᵈ to Rⁿ*ᵈ. The linear or nonlinear equation in the system associated with
+ Rⁿᵈ to Rⁿᵈ. The linear or nonlinear equation in the system associated with
  the node `a` has the form
 
      Gₐ(u₁, u₂, ..., uₙ) = 0,
 
- where Gₐ is a function from Rⁿ*ᵈ → Rᵈ and a = 1, ..., n. The nodal values u₁,
+ where Gₐ is a function from Rⁿᵈ → Rᵈ and a = 1, ..., n. The nodal values u₁,
  u₂, ..., uₙ are solved for with a linear or nonlinear solver, and the solution
  u is interpolated from these nodal values.
 
  %FemModel calculates various components of the system of linear or nonlinear
  equations that supports solving the system. For example, CalcResidual()
  calculates the value of G evaluated at the current state and
- CalcTangentMatrix() calculates the gradient of G at the current state.
+ CalcTangentMatrix() calculates ∇G at the current state.
  @tparam_nonsymbolic_scalar T. */
 template <typename T>
 class FemModel {
@@ -62,16 +63,17 @@ class FemModel {
 
   /** The number of nodes that are associated with `this` %FemModel. */
   int num_nodes() const {
-    ThrowIfNodeIndicesAreInvalid();
+    DRAKE_ASSERT_VOID(ThrowIfNodeIndicesAreInvalid());
     return owned_node_indices_.size();
   }
 
-  /** Calculates the residual at the given FemState.
-   @param[in] state The FemState to evaluate the residual at.
-   @param[out] residual The output residual. Suppose the linear or nonlinear
-   system generated from the FEM discretization is
+  /** Calculates the residual at the given FemState. Suppose the linear or
+   nonlinear system generated from the FEM discretization is
         G(u₁, u₂, ..., uₙ) = 0,
-   then `residual` is equal to the function G evaluated at the input `state`.
+   then the output `residual` is equal to the function G evaluated at the
+   input `state`.
+   @param[in] state The FemState at which to evaluate the residual.
+   @param[out] residual The output residual evaluated at `state`.
    @pre The size of `residual` must be equal to `solution_dimension() *
    num_nodes()`. */
   void CalcResidual(const FemState<T>& state,
@@ -81,15 +83,16 @@ class FemModel {
   // CalcMassMatrix etc.
 
  protected:
-  /* Creates a new FemState with no element cache and initializes the per-node
-   states. */
+  /** Derived class should create a new FemState with no element cache and
+   initialize the per-node states. */
   virtual std::unique_ptr<FemState<T>> DoMakeFemState() const = 0;
 
-  /* Throws if the node indices in this FemModel are not consecutive from 0 to
+  /** Throws if the node indices in this FemModel are not consecutive from 0 to
    the num_nodes() - 1. */
   void ThrowIfNodeIndicesAreInvalid() const;
 
-  /* Takes ownership of the input `element` and adds it into `this` FemModel. */
+  /** Takes ownership of the input `element` and adds it into `this` FemModel.
+   */
   void AddElement(std::unique_ptr<FemElement<T>> element);
 
   const FemElement<T>& element(ElementIndex i) const {
@@ -98,7 +101,7 @@ class FemModel {
     return *elements_[i];
   }
 
-  /* Add the NodeIndex `i` to the list of registered node indices. */
+  /** Add the NodeIndex `i` to the list of registered node indices. */
   void AddNodeIndex(NodeIndex i);
 
  private:

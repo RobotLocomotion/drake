@@ -45,7 +45,7 @@ class FemElement {
 
   /** Number of quadrature points at which element-wise quantities are
    evaluated. */
-  virtual int num_quads() const = 0;
+  virtual int num_quadrature_points() const = 0;
 
   /** Number of nodes associated with this element. */
   virtual int num_nodes() const = 0;
@@ -69,7 +69,7 @@ class FemElement {
   // TODO(xuchenhan-tri): Add CalcMassMatrix and CalcStiffnessMatrix etc.
 
  protected:
-  /* Constructs a new FEM element.
+  /** Constructs a new FEM element.
     @param[in] element_index The global index of the new element.
     @param[in] node_indices The global node indices of the nodes of this
     element.
@@ -77,7 +77,7 @@ class FemElement {
   FemElement(ElementIndex element_index,
              const std::vector<NodeIndex>& node_indices);
 
-  /* Calculates the element residual of this element evaluated at the input
+  /** Calculates the element residual of this element evaluated at the input
    state.
    @param[in] state The FemState at which to evaluate the residual.
    @param[out] a vector of residual of size `solution_dimension()*num_nodes()`.
@@ -89,6 +89,7 @@ class FemElement {
   virtual void DoCalcResidual(const FemState<T>& s,
                               EigenPtr<VectorX<T>> residual) const = 0;
 
+ private:
   // The global index of this element.
   ElementIndex element_index_;
   // The global node indices of this element.

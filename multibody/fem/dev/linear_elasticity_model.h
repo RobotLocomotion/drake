@@ -48,7 +48,7 @@ class LinearElasticityModel final : public ConstitutiveModel<T> {
 
   T lame_first_parameter() const { return lambda_; }
 
- protected:
+ private:
   /* Copy constructor to facilitate the `DoClone()` method. */
   LinearElasticityModel(const LinearElasticityModel&) = default;
 
@@ -70,9 +70,8 @@ class LinearElasticityModel final : public ConstitutiveModel<T> {
   /* Creates a LinearElasticityModelCache that is compatible with this
    LinearElasticityModel. */
   std::unique_ptr<DeformationGradientCache<T>> DoMakeDeformationGradientCache(
-      ElementIndex element_index, int num_quads) const final;
+      ElementIndex element_index, int num_quadrature_points) const final;
 
- private:
   /* Set the Lamé parameters from Young's modulus and Poisson ratio. It's
   important to keep the Lamé Parameters in sync with Young's modulus and
   Poisson ratio as most computations use Lame parameters. */

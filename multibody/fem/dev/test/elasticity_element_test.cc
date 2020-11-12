@@ -88,7 +88,7 @@ class ElasticityElementTest : public ::testing::Test {
 namespace {
 TEST_F(ElasticityElementTest, Basic) {
   EXPECT_EQ(elasticity_element_->num_nodes(), kNumVertices);
-  EXPECT_EQ(elasticity_element_->num_quads(), kNumQuads);
+  EXPECT_EQ(elasticity_element_->num_quadrature_points(), kNumQuads);
   EXPECT_EQ(elasticity_element_->solution_dimension(), kProblemDim);
 }
 

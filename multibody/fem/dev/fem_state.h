@@ -129,7 +129,7 @@ class FemState {
 
   int num_generalized_positions() const { return q_.size(); }
 
-  int num_element_cache() const { return element_cache_.size(); }
+  int element_cache_size() const { return element_cache_.size(); }
 
  private:
   // Generalized node positions.

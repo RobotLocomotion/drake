@@ -23,12 +23,15 @@ template <typename T>
 void FemModel<T>::CalcResidual(const FemState<T>& state,
                                EigenPtr<VectorX<T>> residual) const {
   ThrowIfNodeIndicesAreInvalid();
+  DRAKE_DEMAND(residual->size() == num_nodes()*solution_dimension());
   /* Verify the size of the cache in the input state is consistent with the
    number of elements in the FemModel. */
-  DRAKE_DEMAND(state.num_element_cache() == num_elements());
+  DRAKE_DEMAND(state.element_cache_size() == num_elements());
   /* The values are accumulated in the residual, so it is important to clear
    the old data. */
   residual->setZero();
+  /* The size of `element_residual` depends on the number of nodes in the
+   element and may change from one element to the next. */
   VectorX<T> element_residual;
   for (int e = 0; e < num_elements(); ++e) {
     const int element_num_nodes = elements_[e]->num_nodes();
@@ -42,9 +45,10 @@ void FemModel<T>::CalcResidual(const FemState<T>& state,
     const std::vector<NodeIndex>& element_node_indices =
         elements_[e]->node_indices();
     for (int i = 0; i < element_num_nodes; ++i) {
-      for (int d = 0; d < solution_dimension(); ++d) {
-        (*residual)(element_node_indices[i] * solution_dimension() + d) +=
-            element_residual(solution_dimension() * i + d);
+      const int d_max = solution_dimension();
+      for (int d = 0; d < d_max; ++d) {
+        const int ei = element_node_indices[i];
+        (*residual)[ei * d_max + d] += element_residual[i * d_max + d];
       }
     }
   }

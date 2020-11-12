@@ -33,12 +33,12 @@ class ElasticityElementCache : public ElementCache<T> {
   /** Constructs a new %ElasticityElementCache.
    @param element_index The index of the ElasticityElement associated with this
    %ElasticityElementCache.
-   @param num_quads The number of quadrature locations at which cached
-   quantities need to be evaluated.
+   @param num_quadrature_points The number of quadrature locations at which
+   cached quantities need to be evaluated.
    @param deformation_gradient_cache The DeformationGradientCache associated
    with this element. Must be compatible with the ConstitutiveModel in the
    ElasticityElement routine corresponding to this %ElasticityElementCache.
-   @pre `num_quads` must be positive.
+   @pre `num_quadrature_points` must be positive.
    @warning The input `deformation_gradient_cache` must be compatible with the
    ConstitutiveModel in the ElasticityElement that shares the same element index
    with this %ElasticityElementCache. More specifically, if the
@@ -46,9 +46,9 @@ class ElasticityElementCache : public ElementCache<T> {
    "FooModel", then the input `deformation_gradient_cache` must be of type
    "FooModelCache". */
   ElasticityElementCache(
-      ElementIndex element_index, int num_quads,
+      ElementIndex element_index, int num_quadrature_points,
       std::unique_ptr<DeformationGradientCache<T>> deformation_gradient_cache)
-      : ElementCache<T>(element_index, num_quads),
+      : ElementCache<T>(element_index, num_quadrature_points),
         deformation_gradient_cache_(std::move(deformation_gradient_cache)) {}
 
   virtual ~ElasticityElementCache() = default;
@@ -67,7 +67,7 @@ class ElasticityElementCache : public ElementCache<T> {
   }
   /** @} */
 
- protected:
+ private:
   /* Copy constructor to facilitate the `DoClone()` method. */
   ElasticityElementCache(const ElasticityElementCache&) = default;
 
@@ -78,7 +78,6 @@ class ElasticityElementCache : public ElementCache<T> {
         new ElasticityElementCache<T>(*this));
   }
 
- private:
   copyable_unique_ptr<DeformationGradientCache<T>> deformation_gradient_cache_;
 };
 }  // namespace fem

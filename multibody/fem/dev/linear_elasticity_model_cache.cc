@@ -8,7 +8,7 @@ namespace fem {
 template <typename T>
 void LinearElasticityModelCache<T>::DoUpdateCache(
     const std::vector<Matrix3<T>>& F) {
-  for (int i = 0; i < this->num_quads(); ++i) {
+  for (int i = 0; i < this->num_quadrature_points(); ++i) {
     strain_[i] = 0.5 * (F[i] + F[i].transpose()) - Matrix3<T>::Identity();
     trace_strain_[i] = strain_[i].trace();
   }

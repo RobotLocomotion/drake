@@ -24,7 +24,7 @@ class LinearSimplexElement : public IsoparametricElement<T, NaturalDim> {
 
   /** Number of nodes in this simplex element that is available at compile time.
    */
-  enum : int { kNumNodes = NaturalDim + 1 };
+  static constexpr int kNumNodes = NaturalDim + 1;
 
   explicit LinearSimplexElement(std::vector<VectorD> locations)
       : IsoparametricElement<T, NaturalDim>(std::move(locations)) {
