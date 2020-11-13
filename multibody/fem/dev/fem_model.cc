@@ -5,7 +5,6 @@ namespace multibody {
 namespace fem {
 template <typename T>
 std::unique_ptr<FemState<T>> FemModel<T>::MakeFemState() const {
-  ThrowIfNodeIndicesAreInvalid();
   std::unique_ptr<FemState<T>> state = DoMakeFemState();
   /* Set up the element cache that are compatible with the elements owned by
    this model. */
@@ -22,8 +21,7 @@ std::unique_ptr<FemState<T>> FemModel<T>::MakeFemState() const {
 template <typename T>
 void FemModel<T>::CalcResidual(const FemState<T>& state,
                                EigenPtr<VectorX<T>> residual) const {
-  ThrowIfNodeIndicesAreInvalid();
-  DRAKE_DEMAND(residual->size() == num_nodes()*solution_dimension());
+  DRAKE_DEMAND(residual->size() == num_nodes() * solution_dimension());
   /* Verify the size of the cache in the input state is consistent with the
    number of elements in the FemModel. */
   DRAKE_DEMAND(state.element_cache_size() == num_elements());
@@ -55,11 +53,11 @@ void FemModel<T>::CalcResidual(const FemState<T>& state,
 }
 
 template <typename T>
-void FemModel<T>::ThrowIfNodeIndicesAreInvalid() const {
-  if (owned_node_indices_.size() == 0) return;
-  if (*owned_node_indices_.rbegin() !=
-          NodeIndex(owned_node_indices_.size() - 1) ||
-      *owned_node_indices_.begin() != NodeIndex(0)) {
+void FemModel<T>::ThrowIfNodeIndicesAreInvalid(
+    const std::set<int>& node_indices) const {
+  if (node_indices.size() == 0) return;
+  if (*node_indices.rbegin() != static_cast<int>(node_indices.size()) - 1 ||
+      *node_indices.begin() != 0) {
     throw std::runtime_error(
         "Node indices must be consecutive and start from zero and end with the "
         "number of nodes minus one.");
@@ -70,11 +68,6 @@ template <typename T>
 void FemModel<T>::AddElement(std::unique_ptr<FemElement<T>> element) {
   DRAKE_DEMAND(element != nullptr);
   elements_.emplace_back(std::move(element));
-}
-
-template <typename T>
-void FemModel<T>::AddNodeIndex(NodeIndex i) {
-  owned_node_indices_.insert(i);
 }
 }  // namespace fem
 }  // namespace multibody

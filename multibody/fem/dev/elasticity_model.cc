@@ -18,13 +18,16 @@ T ElasticityModel<T>::CalcElasticEnergy(const FemState<T>& state) const {
 
 template <typename T>
 std::unique_ptr<FemState<T>> ElasticityModel<T>::DoMakeFemState() const {
-  this->ThrowIfNodeIndicesAreInvalid();
   const int num_nodes = this->num_nodes();
   VectorX<T> q(num_nodes * solution_dimension());
   for (int i = 0; i < num_nodes; ++i) {
-      const Vector3<T>& q_WP = reference_positions_.at(NodeIndex(i));
-      q.segment(3 * i, 3) = q_WP;
+    const Vector3<T>& q_WP = reference_positions_.at(NodeIndex(i));
+    q.template segment<3>(3 * i) = q_WP;
   }
+  /* Velocity of the nodes are set to zero. If nonzero initial velocity is
+   desired, set it with SetInitialVelocity(). */
+  // TODO(xuchenhan-tri): Add SetInitialVelocity() to support configuring
+  // initial velocities.
   const VectorX<T> qdot = VectorX<T>::Zero(num_nodes * solution_dimension());
   return std::make_unique<FemState<T>>(q, qdot);
 }

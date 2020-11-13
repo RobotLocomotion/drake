@@ -42,8 +42,7 @@ class ElasticityModelTest : public ::testing::Test {
     LinearElasticityModel<Scalar> linear_elasticity_model(kYoungsModulus,
                                                           kPoissonRatio);
     Scalar density(kMassDensity);
-    elasticity_model_.AddElasticityElementsFromTetMesh<IsoparametricElementType,
-                                                       QuadratureType>(
+    elasticity_model_.AddElasticityElementsFromTetMesh<1>(
         mesh, density, linear_elasticity_model);
   }
 

@@ -19,10 +19,11 @@ namespace fem {
 
      F(u, ∇u, ...) = 0.
 
- In this PDE, u: Rᴰ → Rᵈ, where D is the dimension of the domain and d is the
- solution dimension, is the unknown function being solved for, and F takes u and
- its derivatives as arguments.  After the FEM discretization, the PDE is reduced
- to a system of linear or nonlinear equations of the form:
+ where ... indicates possible higher derivatives that we aren't concerned with
+ here. In this PDE, u: Rᴰ → Rᵈ, where D is the dimension of the domain and d is
+ the solution dimension, is the unknown function being solved for, and F takes u
+ and its derivatives as arguments.  After the FEM discretization, the PDE is
+ reduced to a system of linear or nonlinear equations of the form:
 
      G(u₁, u₂, ..., uₙ) = 0,
 
@@ -62,10 +63,7 @@ class FemModel {
   int num_elements() const { return elements_.size(); }
 
   /** The number of nodes that are associated with `this` %FemModel. */
-  int num_nodes() const {
-    DRAKE_ASSERT_VOID(ThrowIfNodeIndicesAreInvalid());
-    return owned_node_indices_.size();
-  }
+  int num_nodes() const { return num_nodes_; }
 
   /** Calculates the residual at the given FemState. Suppose the linear or
    nonlinear system generated from the FEM discretization is
@@ -87,9 +85,9 @@ class FemModel {
    initialize the per-node states. */
   virtual std::unique_ptr<FemState<T>> DoMakeFemState() const = 0;
 
-  /** Throws if the node indices in this FemModel are not consecutive from 0 to
-   the num_nodes() - 1. */
-  void ThrowIfNodeIndicesAreInvalid() const;
+  /** Throws if the `node_indices` are not consecutive from 0 to
+   the `node_indices.size()` - 1. */
+  void ThrowIfNodeIndicesAreInvalid(const std::set<int>& node_indices) const;
 
   /** Takes ownership of the input `element` and adds it into `this` FemModel.
    */
@@ -101,16 +99,14 @@ class FemModel {
     return *elements_[i];
   }
 
-  /** Add the NodeIndex `i` to the list of registered node indices. */
-  void AddNodeIndex(NodeIndex i);
+  /** Increment num_nodes by `num_new_nodes`. */
+  void increment_num_nodes(int num_new_nodes) { num_nodes_ += num_new_nodes; }
 
  private:
   /* FemElements owned by this model. */
   std::vector<std::unique_ptr<FemElement<T>>> elements_;
-  /* The global node indices of the nodes that appear in 'elements_'. The
-   purpose of the variable is to verify that the node indices in this model
-   are valid. */
-  std::set<NodeIndex> owned_node_indices_;
+  /* The total number of nodes in the system. */
+  int num_nodes_{0};
 };
 }  // namespace fem
 }  // namespace multibody
