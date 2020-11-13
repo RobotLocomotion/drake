@@ -21,11 +21,11 @@ ClippingRange::ClippingRange(double near, double far) : near_(near), far_(far) {
 }
 
 RenderCameraCore::RenderCameraCore(const CameraProperties& camera,
-                                   double clipping_far)
+                                   double clipping_far, RigidTransformd X_BS)
     : RenderCameraCore(camera.renderer_name,
                        CameraInfo{camera.width, camera.height, camera.fov_y},
                        ClippingRange{kClippingNear, clipping_far},
-                       RigidTransformd{}) {}
+                       std::move(X_BS)) {}
 
 Eigen::Matrix4d RenderCameraCore::CalcProjectionMatrix() const {
   /* Given the camera properties we compute the projection matrix as follows:

@@ -98,5 +98,34 @@ auto py_init_deprecated(py::str message, Func&& func) {
   return py::init(WrapDeprecated(message, std::forward<Func>(func)));
 }
 
+/// Returns a deprecated constructor for creating an instance of Class and
+/// initializing parameters (bound using `def_readwrite`).
+/// This provides an alternative to manually enumerating each
+/// parameter as an argument using `py::init<...>` and `py::arg(...)`, and is
+/// useful when the C++ class only has a default constructor. Example:
+/// @code
+/// using Class = ExampleClass;
+/// py::class_<Class>(m, "ExampleClass")  // BR
+///     .def(DeprecatedParamInit<Class>("This class is deprecated"));
+/// @endcode
+///
+/// @tparam Class The C++ class. Must have a default constructor.
+/// @note This should generally be used to deprecate the constructor of structs
+/// with a bound constructor originally defined by ParamInt<Class>().
+template <typename Class>
+auto DeprecatedParamInit(py::str message) {
+  return py::init(WrapDeprecated(message, [](py::kwargs kwargs) {
+    // N.B. We use `Class` here because `pybind11` strongly requires that we
+    // return the instance itself, not just `py::object`.
+    // TODO(eric.cousineau): This may hurt `keep_alive` behavior, as this
+    // reference may evaporate by the time the true holding pybind11 record is
+    // constructed. Would be alleviated using old-style pybind11 init :(
+    Class obj{};
+    py::object py_obj = py::cast(&obj, py_rvp::reference);
+    py::module::import("pydrake").attr("_setattr_kwargs")(py_obj, kwargs);
+    return obj;
+  }));
+}
+
 }  // namespace pydrake
 }  // namespace drake
