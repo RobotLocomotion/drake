@@ -10,7 +10,7 @@
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/multibody/fem/dev/elasticity_element.h"
 #include "drake/multibody/fem/dev/elasticity_element_base.h"
-#include "drake/multibody/fem/dev/elasticity_element_cache.h"
+#include "drake/multibody/fem/dev/elasticity_element_cache_entry.h"
 #include "drake/multibody/fem/dev/fem_model.h"
 #include "drake/multibody/fem/dev/linear_simplex_element.h"
 
