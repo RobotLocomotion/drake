@@ -260,7 +260,9 @@ class ManipulationStation : public systems::Diagram<T> {
       const multibody::Frame<T>& child_frame,
       const math::RigidTransform<double>& X_PC);
 
-  /// Registers a RGBD sensor. Must be called before Finalize().
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  /// Registers an RGBD sensor. Must be called before Finalize().
   /// @param name Name for the camera.
   /// @param parent_frame The parent frame (frame P). The body that
   /// @p parent_frame is attached to must have a corresponding
@@ -269,10 +271,41 @@ class ManipulationStation : public systems::Diagram<T> {
   /// see systems::sensors:::RgbdSensor for descriptions about how the
   /// camera body, RGB, and depth image frames are related.
   /// @param properties Properties for the RGBD camera.
+  /// @pydrake_mkdoc_identifier{single_properties}
+  DRAKE_DEPRECATED("2021-03-01",
+                   "CameraProperties are being deprecated. Please use the "
+                   "DepthRenderCamera variant.")
   void RegisterRgbdSensor(
       const std::string& name, const multibody::Frame<T>& parent_frame,
       const math::RigidTransform<double>& X_PCameraBody,
       const geometry::render::DepthCameraProperties& properties);
+#pragma GCC diagnostic pop
+
+  /// Registers an RGBD sensor. Must be called before Finalize().
+  /// @param name Name for the camera.
+  /// @param parent_frame The parent frame (frame P). The body that
+  /// @p parent_frame is attached to must have a corresponding
+  /// geometry::FrameId. Otherwise, an exception will be thrown in Finalize().
+  /// @param X_PCameraBody Transformation between frame P and the camera body.
+  /// see systems::sensors:::RgbdSensor for descriptions about how the
+  /// camera body, RGB, and depth image frames are related.
+  /// @param depth_camera Specification for the RGBD camera. The color render
+  /// camera is inferred from the depth_camera. The color camera will share the
+  /// RenderCameraCore and be configured to *not* show its window.
+  /// @pydrake_mkdoc_identifier{single_camera}
+  void RegisterRgbdSensor(
+      const std::string& name, const multibody::Frame<T>& parent_frame,
+      const math::RigidTransform<double>& X_PCameraBody,
+      const geometry::render::DepthRenderCamera& depth_camera);
+
+  /// Registers an RGBD sensor with uniquely characterized color/label and
+  /// depth cameras.
+  /// @pydrake_mkdoc_identifier{dual_camera}
+  void RegisterRgbdSensor(
+      const std::string& name, const multibody::Frame<T>& parent_frame,
+      const math::RigidTransform<double>& X_PCameraBody,
+      const geometry::render::ColorRenderCamera& color_camera,
+      const geometry::render::DepthRenderCamera& depth_camera);
 
   /// Adds a single object for the robot to manipulate
   /// @note Must be called before Finalize().
@@ -466,8 +499,14 @@ class ManipulationStation : public systems::Diagram<T> {
   struct CameraInformation {
     const multibody::Frame<T>* parent_frame{};
     math::RigidTransform<double> X_PC{math::RigidTransform<double>::Identity()};
-    geometry::render::DepthCameraProperties properties{
-        0, 0, 0, default_renderer_name_, 0, 0};
+    geometry::render::ColorRenderCamera color_camera{
+        {"", {2, 2, M_PI}, {0.1, 10}, {}},  // RenderCameraCore
+        false,  // show_window
+    };
+    geometry::render::DepthRenderCamera depth_camera{
+        {"", {2, 2, M_PI}, {0.1, 10}, {}},  // RenderCameraCore
+        {0.1, 0.2},  // DepthRange
+    };
   };
 
   // Assumes iiwa_model_info_ and wsg_model_info_ have already being populated.
