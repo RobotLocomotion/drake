@@ -17,15 +17,15 @@ namespace fem {
  single FEM element given the state of the FEM system. These quantities are
  then assembled into their global counterparts by FemModel.
 
- %FemElement should be used in tandem with ElementCache. There should be a
+ %FemElement should be used in tandem with ElementCacheEntry. There should be a
  one-to-one correspondence between each %FemElement that performs the element
- routine and each ElementCache that stores the state-dependent quantities used
- in the routine. This correspondence is maintained by the shared element index
- that is assigned to both the %FemElement and the ElementCache in
- correspondence. Furthermore, the type of %FemElement and ElementCache in
+ routine and each ElementCacheEntry that stores the state-dependent quantities
+ used in the routine. This correspondence is maintained by the shared element
+ index that is assigned to both the %FemElement and the ElementCacheEntry in
+ correspondence. Furthermore, the type of %FemElement and ElementCacheEntry in
  correspondence must be compatible. More specifically, if the %FemElement is of
- concrete type `FooElement`, then the ElementCache that shares the same element
- index must be of concrete type `FooElementCache`.
+ concrete type `FooElement`, then the ElementCacheEntry that shares the same
+ element index must be of concrete type `FooElementCacheEntry`.
  @tparam_nonsymbolic_scalar T.  */
 template <typename T>
 class FemElement {
@@ -52,12 +52,13 @@ class FemElement {
   /** Number of nodes associated with this element. */
   virtual int num_nodes() const = 0;
 
-  /** Creates an ElementCache that is compatible with this element. */
-  virtual std::unique_ptr<ElementCache<T>> MakeElementCache() const = 0;
+  /** Creates an ElementCacheEntry that is compatible with this element. */
+  virtual std::unique_ptr<ElementCacheEntry<T>> MakeElementCacheEntry()
+      const = 0;
 
   /** Calculates the element residual of this element evaluated at the input
-   `state`. This method updates the cached quantities in the input `state` if
-   they are out of date.
+   `state`. This method updates the element cache entry corresponding to `this`
+   element in the input `state` if they are out of date.
    @param[in] state The FemState at which to evaluate the residual.
    @param[out] residual The residual vector of size `solution_dimension() *
    num_nodes()`. The vector is ordered such that `i*solution_dimension()`-th to
