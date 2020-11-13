@@ -929,13 +929,11 @@ class TestGeometry(unittest.TestCase):
         sensor = builder.AddSystem(RgbdSensor(
             parent_id=scene_graph.world_frame_id(),
             X_PB=RigidTransform(),
-            properties=mut.render.DepthCameraProperties(
-                width=640, height=480, fov_y=np.pi/4,
-                renderer_name="renderer", z_near=0.1, z_far=5.0,
-            ),
-            camera_poses=RgbdSensor.CameraPoses(),
-            show_window=False,
-        ))
+            depth_camera=mut.render.DepthRenderCamera(
+                mut.render.RenderCameraCore(
+                    renderer_name, CameraInfo(640, 480, np.pi/4),
+                    mut.render.ClippingRange(0.1, 5.0), RigidTransform()),
+                mut.render.DepthRange(0.1, 5.0))))
         builder.Connect(
             scene_graph.get_query_output_port(),
             sensor.query_object_input_port(),
