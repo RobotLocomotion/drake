@@ -151,6 +151,41 @@ multibody::ModelInstanceIndex AddAndWeldModelFrom(
   return new_model;
 }
 
+std::pair<geometry::render::ColorRenderCamera,
+          geometry::render::DepthRenderCamera>
+MakeD415CameraModel(const std::string& renderer_name) {
+  // Typical D415 intrinsics for 848 x 480 resolution, note that rgb and
+  // depth are slightly different (in both intrinsics and relative to the
+  // camera body frame).
+  // RGB:
+  // - w: 848, h: 480, fx: 616.285, fy: 615.778, ppx: 405.418, ppy: 232.864
+  // DEPTH:
+  // - w: 848, h: 480, fx: 645.138, fy: 645.138, ppx: 420.789, ppy: 239.13
+  const int kHeight = 480;
+  const int kWidth = 848;
+
+  // To pose the two sensors relative to the camera body, we'll assume X_BC = I,
+  // and select a representative value for X_CD drawn from calibration to define
+  // X_BD.
+  geometry::render::ColorRenderCamera color_camera{
+      {renderer_name,
+       {kWidth, kHeight, 616.285, 615.778, 405.418, 232.864} /* intrinsics */,
+       {0.01, 3.0} /* clipping_range */,
+       {} /* X_BC */},
+      false};
+  const RigidTransformd X_BD(
+      RotationMatrix<double>(RollPitchYaw<double>(
+          -0.19 * M_PI / 180, -0.016 * M_PI / 180, -0.03 * M_PI / 180)),
+      Vector3d(0.015, -0.00019, -0.0001));
+  geometry::render::DepthRenderCamera depth_camera{
+      {renderer_name,
+       {kWidth, kHeight, 645.138, 645.138, 420.789, 239.13} /* intrinsics */,
+       {0.01, 3.0} /* clipping_range */,
+       X_BD},
+      {0.1, 2.0} /* depth_range */};
+  return {color_camera, depth_camera};
+}
+
 }  // namespace internal
 
 template <typename T>
@@ -214,27 +249,14 @@ void ManipulationStation<T>::SetupClutterClearingStation(
 
   // Add the camera.
   {
-    // Typical D415 intrinsics for 848 x 480 resolution, note that rgb and
-    // depth are slightly different. And we are not able to model that at the
-    // moment.
-    // RGB:
-    // - w: 848, h: 480, fx: 616.285, fy: 615.778, ppx: 405.418, ppy: 232.864
-    // DEPTH:
-    // - w: 848, h: 480, fx: 645.138, fy: 645.138, ppx: 420.789, ppy: 239.13
-    // For this camera, we are going to assume that fx = fy, and we can compute
-    // fov_y by: fy = height / 2 / tan(fov_y / 2)
-    const double kFocalY = 645.;
-    const int kHeight = 480;
-    const int kWidth = 848;
-    const double fov_y = std::atan(kHeight / 2. / kFocalY) * 2;
-    geometry::render::DepthCameraProperties camera_properties(
-        kWidth, kHeight, fov_y, default_renderer_name_, 0.1, 2.0);
+    const auto& [color_camera, depth_camera] =
+        internal::MakeD415CameraModel(default_renderer_name_);
 
     RegisterRgbdSensor("0", plant_->world_frame(),
                        X_WCameraBody.value_or(math::RigidTransform<double>(
                            math::RollPitchYaw<double>(-0.3, 0.8, 1.5),
                            Eigen::Vector3d(0, -1.5, 1.5))),
-                       camera_properties);
+                       color_camera, depth_camera);
   }
 
   AddDefaultIiwa(collision_model);
@@ -290,24 +312,11 @@ void ManipulationStation<T>::SetupManipulationClassStation(
   {
     std::map<std::string, RigidTransform<double>> camera_poses;
     internal::get_camera_poses(&camera_poses);
-    // Typical D415 intrinsics for 848 x 480 resolution, note that rgb and
-    // depth are slightly different. And we are not able to model that at the
-    // moment.
-    // RGB:
-    // - w: 848, h: 480, fx: 616.285, fy: 615.778, ppx: 405.418, ppy: 232.864
-    // DEPTH:
-    // - w: 848, h: 480, fx: 645.138, fy: 645.138, ppx: 420.789, ppy: 239.13
-    // For this camera, we are going to assume that fx = fy, and we can compute
-    // fov_y by: fy = height / 2 / tan(fov_y / 2)
-    const double kFocalY = 645.;
-    const int kHeight = 480;
-    const int kWidth = 848;
-    const double fov_y = std::atan(kHeight / 2. / kFocalY) * 2;
-    geometry::render::DepthCameraProperties camera_properties(
-        kWidth, kHeight, fov_y, default_renderer_name_, 0.1, 2.0);
+    const auto& [color_camera, depth_camera] =
+        internal::MakeD415CameraModel(default_renderer_name_);
     for (const auto& camera_pair : camera_poses) {
       RegisterRgbdSensor(camera_pair.first, plant_->world_frame(),
-                         camera_pair.second, camera_properties);
+                         camera_pair.second, color_camera, depth_camera);
     }
   }
 }
@@ -685,9 +694,8 @@ void ManipulationStation<T>::Finalize(
                                 MakeRenderEngineVtk(RenderEngineVtkParams()));
     }
 
-    for (const auto& info_pair : camera_information_) {
-      std::string camera_name = "camera_" + info_pair.first;
-      const CameraInformation& info = info_pair.second;
+    for (const auto& [name, info] : camera_information_) {
+      std::string camera_name = "camera_" + name;
 
       const std::optional<geometry::FrameId> parent_body_id =
           plant_->GetBodyFrameIdIfExists(info.parent_frame->body().index());
@@ -696,7 +704,7 @@ void ManipulationStation<T>::Finalize(
           info.parent_frame->GetFixedPoseInBodyFrame() * info.X_PC;
 
       auto camera = builder.template AddSystem<systems::sensors::RgbdSensor>(
-          parent_body_id.value(), X_PC, info.properties);
+          parent_body_id.value(), X_PC, info.color_camera, info.depth_camera);
       builder.Connect(scene_graph_->get_query_output_port(),
                       camera->query_object_input_port());
 
@@ -823,6 +831,9 @@ void ManipulationStation<T>::SetWsgVelocity(
                         velocities);
 }
 
+// TODO(SeanCurtis-TRI) This method does not deserve the snake_case name.
+//  See https://drake.mit.edu/styleguide/cppguide.html#Function_Names
+//  Deprecate and rename.
 template <typename T>
 std::vector<std::string> ManipulationStation<T>::get_camera_names() const {
   std::vector<std::string> names;
@@ -878,15 +889,40 @@ void ManipulationStation<T>::RegisterWsgControllerModel(
   wsg_model_.model_instance = wsg_instance;
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 template <typename T>
 void ManipulationStation<T>::RegisterRgbdSensor(
     const std::string& name, const multibody::Frame<T>& parent_frame,
     const RigidTransform<double>& X_PC,
     const geometry::render::DepthCameraProperties& properties) {
+  RegisterRgbdSensor(name, parent_frame, X_PC,
+                     geometry::render::DepthRenderCamera(properties));
+}
+#pragma GCC diagnostic pop
+
+template <typename T>
+void ManipulationStation<T>::RegisterRgbdSensor(
+    const std::string& name, const multibody::Frame<T>& parent_frame,
+    const RigidTransform<double>& X_PC,
+    const geometry::render::DepthRenderCamera& depth_camera) {
+  RegisterRgbdSensor(
+      name, parent_frame, X_PC,
+      geometry::render::ColorRenderCamera(depth_camera.core(), false),
+      depth_camera);
+}
+
+template <typename T>
+void ManipulationStation<T>::RegisterRgbdSensor(
+    const std::string& name, const multibody::Frame<T>& parent_frame,
+    const RigidTransform<double>& X_PC,
+      const geometry::render::ColorRenderCamera& color_camera,
+    const geometry::render::DepthRenderCamera& depth_camera) {
   CameraInformation info;
   info.parent_frame = &parent_frame;
   info.X_PC = X_PC;
-  info.properties = properties;
+  info.depth_camera = depth_camera;
+  info.color_camera = color_camera;
 
   camera_information_[name] = info;
 }
