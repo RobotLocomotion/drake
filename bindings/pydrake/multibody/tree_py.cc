@@ -174,12 +174,51 @@ void DoScalarDependentDefinitions(py::module m, T) {
         DefineTemplateClassWithDefault<Class>(m, "Frame", param, cls_doc.doc);
     BindMultibodyElementMixin<T>(&cls);
     cls  // BR
-        .def("name", &Class::name, cls_doc.name.doc)
         .def("body", &Class::body, py_rvp::reference_internal, cls_doc.body.doc)
+        .def("is_world_frame", &Class::is_world_frame,
+            cls_doc.is_world_frame.doc)
+        .def("is_body_frame", &Class::is_body_frame, cls_doc.is_body_frame.doc)
+        .def("name", &Class::name, cls_doc.name.doc)
         .def("GetFixedPoseInBodyFrame", &Frame<T>::GetFixedPoseInBodyFrame,
             cls_doc.GetFixedPoseInBodyFrame.doc)
         .def("CalcPoseInBodyFrame", &Frame<T>::CalcPoseInBodyFrame,
-            py::arg("context"), cls_doc.CalcPoseInBodyFrame.doc);
+            py::arg("context"), cls_doc.CalcPoseInBodyFrame.doc)
+        .def("CalcRotationMatrixInBodyFrame",
+            &Frame<T>::CalcRotationMatrixInBodyFrame, py::arg("context"),
+            cls_doc.CalcRotationMatrixInBodyFrame.doc)
+        .def("GetFixedPoseInBodyFrame", &Class::GetFixedPoseInBodyFrame,
+            cls_doc.GetFixedPoseInBodyFrame.doc)
+        .def("GetFixedRotationMatrixInBodyFrame",
+            &Class::GetFixedRotationMatrixInBodyFrame,
+            cls_doc.GetFixedRotationMatrixInBodyFrame.doc)
+        .def("CalcOffsetPoseInBody", &Class::CalcOffsetPoseInBody,
+            py::arg("context"), py::arg("X_FQ"),
+            cls_doc.CalcOffsetPoseInBody.doc)
+        .def("CalcOffsetRotationMatrixInBody",
+            &Class::CalcOffsetRotationMatrixInBody, py::arg("context"),
+            py::arg("R_FQ"), cls_doc.CalcOffsetRotationMatrixInBody.doc)
+        .def("GetFixedOffsetPoseInBody", &Class::GetFixedOffsetPoseInBody,
+            py::arg("X_FQ"), cls_doc.GetFixedOffsetPoseInBody.doc)
+        .def("GetFixedRotationMatrixInBody",
+            &Class::GetFixedRotationMatrixInBody, py::arg("R_FQ"),
+            cls_doc.GetFixedRotationMatrixInBody.doc)
+        .def("CalcPoseInWorld", &Class::CalcPoseInWorld, py::arg("context"),
+            cls_doc.CalcPoseInWorld.doc)
+        .def("CalcPose", &Class::CalcPose, py::arg("context"),
+            py::arg("frame_M"), cls_doc.CalcPose.doc)
+        .def("CalcRotationMatrix", &Class::CalcRotationMatrix,
+            py::arg("context"), py::arg("frame_M"),
+            cls_doc.CalcRotationMatrix.doc)
+        .def("CalcRotationMatrixInWorld", &Class::CalcRotationMatrixInWorld,
+            py::arg("context"), cls_doc.CalcRotationMatrixInWorld.doc)
+        .def("CalcSpatialVelocityInWorld", &Class::CalcSpatialVelocityInWorld,
+            py::arg("context"), cls_doc.CalcSpatialVelocityInWorld.doc)
+        .def("CalcSpatialVelocity", &Class::CalcSpatialVelocity,
+            py::arg("context"), py::arg("frame_M"), py::arg("frame_E"),
+            cls_doc.CalcSpatialVelocity.doc)
+        .def("CalcSpatialAccelerationInWorld",
+            &Class::CalcSpatialAccelerationInWorld, py::arg("context"),
+            cls_doc.CalcSpatialAccelerationInWorld.doc);
   }
 
   {
@@ -232,13 +271,35 @@ void DoScalarDependentDefinitions(py::module m, T) {
     BindMultibodyElementMixin<T>(&cls);
     cls  // BR
         .def("name", &Class::name, cls_doc.name.doc)
+        .def("get_num_flexible_positions", &Class::get_num_flexible_positions,
+            cls_doc.get_num_flexible_positions.doc)
+        .def("get_num_flexible_velocities", &Class::get_num_flexible_velocities,
+            cls_doc.get_num_flexible_velocities.doc)
         .def("body_frame", &Class::body_frame, py_rvp::reference_internal,
             cls_doc.body_frame.doc)
         .def("is_floating", &Class::is_floating, cls_doc.is_floating.doc)
+        .def("has_quaternion_dofs", &Class::has_quaternion_dofs,
+            cls_doc.has_quaternion_dofs.doc)
         .def("floating_positions_start", &Class::floating_positions_start,
             cls_doc.floating_positions_start.doc)
         .def("floating_velocities_start", &Class::floating_velocities_start,
             cls_doc.floating_velocities_start.doc)
+        .def("get_default_mass", &Class::get_default_mass,
+            cls_doc.get_default_mass.doc)
+        .def("get_mass", &Class::get_mass, py::arg("context"),
+            cls_doc.get_mass.doc)
+        .def("CalcCenterOfMassInBodyFrame", &Class::CalcCenterOfMassInBodyFrame,
+            py::arg("context"), cls_doc.CalcCenterOfMassInBodyFrame.doc)
+        .def("CalcSpatialInertiaInBodyFrame",
+            &Class::CalcSpatialInertiaInBodyFrame, py::arg("context"),
+            cls_doc.CalcSpatialInertiaInBodyFrame.doc)
+        .def("EvalPoseInWorld", &Class::EvalPoseInWorld, py::arg("context"),
+            cls_doc.EvalPoseInWorld.doc)
+        .def("EvalSpatialVelocityInWorld", &Class::EvalSpatialVelocityInWorld,
+            py::arg("context"), cls_doc.EvalSpatialVelocityInWorld.doc)
+        .def("EvalSpatialAccelerationInWorld",
+            &Class::EvalSpatialAccelerationInWorld, py::arg("context"),
+            cls_doc.EvalSpatialAccelerationInWorld.doc)
         .def("GetForceInWorld", &Class::GetForceInWorld, py::arg("context"),
             py::arg("forces"), cls_doc.GetForceInWorld.doc)
         .def("AddInForceInWorld", &Class::AddInForceInWorld, py::arg("context"),

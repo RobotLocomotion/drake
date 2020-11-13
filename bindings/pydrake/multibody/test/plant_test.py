@@ -353,7 +353,18 @@ class TestPlant(unittest.TestCase):
 
         self.assertIsInstance(frame, Frame)
         self._test_multibody_tree_element_mixin(T, frame)
+
+        self.assertIsInstance(frame.body(), Body_[T])
+        self.assertIsInstance(frame.is_world_frame(), bool)
+        self.assertIsInstance(frame.is_body_frame(), bool)
         self.assertIsInstance(frame.name(), str)
+
+        self.assertIsInstance(
+            frame.GetFixedPoseInBodyFrame(),
+            RigidTransform_[T])
+        self.assertIsInstance(
+            frame.GetFixedRotationMatrixInBodyFrame(),
+            RotationMatrix_[T])
 
     def _test_body_api(self, T, body):
         Body = Body_[T]
@@ -361,6 +372,43 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(body, Body)
         self._test_multibody_tree_element_mixin(T, body)
         self.assertIsInstance(body.name(), str)
+        self.assertIsInstance(body.get_num_flexible_positions(), int)
+        self.assertIsInstance(body.get_num_flexible_velocities(), int)
+        self.assertIsInstance(body.is_floating(), bool)
+        self.assertIsInstance(body.has_quaternion_dofs(), bool)
+        self.assertIsInstance(body.floating_positions_start(), int)
+        self.assertIsInstance(body.floating_velocities_start(), int)
+        self.assertIsInstance(body.get_default_mass(), float)
+
+    @numpy_compare.check_all_types
+    def test_body_context_methods(self, T):
+        plant = MultibodyPlant_[T](0.0)
+        dut = plant.AddRigidBody(
+            name="name", M_BBo_B=SpatialInertia_[float](
+                mass=1.0, p_PScm_E=[0.0, 0.0, 0.0],
+                G_SP_E=UnitInertia_[float](Ixx=1.0, Iyy=1.0, Izz=1.0)))
+        plant.Finalize()
+        context = plant.CreateDefaultContext()
+        self.assertIsInstance(
+            dut.get_mass(context=context),
+            T)
+        self.assertIsInstance(
+            dut.CalcCenterOfMassInBodyFrame(context=context),
+            np.ndarray)
+        self.assertIsInstance(
+            dut.CalcSpatialInertiaInBodyFrame(context=context),
+            SpatialInertia_[T])
+        self.assertIsInstance(
+            dut.EvalPoseInWorld(context=context),
+            RigidTransform_[T])
+        self.assertIsInstance(
+            dut.EvalSpatialVelocityInWorld(context=context),
+            SpatialVelocity_[T])
+        self.assertIsInstance(
+            dut.EvalSpatialAccelerationInWorld(context=context),
+            SpatialAcceleration_[T])
+        # The test_multibody_dynamics already covers GetForceInWorld,
+        # AddInForce, AddInForceInWorld.
 
     def _test_joint_api(self, T, joint):
         Joint = Joint_[T]
@@ -1647,6 +1695,52 @@ class TestPlant(unittest.TestCase):
         numpy_compare.assert_float_equal(
             frame.CalcPoseInBodyFrame(context).GetAsMatrix34(),
             numpy_compare.to_float(X_PF.GetAsMatrix34()))
+
+    @numpy_compare.check_all_types
+    def test_frame_context_methods(self, T):
+        plant = MultibodyPlant_[T](0.0)
+        dut = plant.AddFrame(frame=FixedOffsetFrame_[T](
+            name="name", P=plant.world_frame(), X_PF=RigidTransform_[float]()))
+        plant.Finalize()
+        context = plant.CreateDefaultContext()
+        X = RigidTransform_[T]()
+        self.assertIsInstance(
+            dut.CalcRotationMatrixInBodyFrame(context=context),
+            RotationMatrix_[T])
+        self.assertIsInstance(
+            dut.CalcOffsetPoseInBody(context=context, X_FQ=X),
+            RigidTransform_[T])
+        self.assertIsInstance(
+            dut.CalcOffsetRotationMatrixInBody(
+                context=context, R_FQ=X.rotation()),
+            RotationMatrix_[T])
+        self.assertIsInstance(
+            dut.GetFixedOffsetPoseInBody(X_FQ=X),
+            RigidTransform_[T])
+        self.assertIsInstance(
+            dut.GetFixedRotationMatrixInBody(R_FQ=X.rotation()),
+            RotationMatrix_[T])
+        self.assertIsInstance(
+            dut.CalcPoseInWorld(context=context),
+            RigidTransform_[T])
+        self.assertIsInstance(
+            dut.CalcPose(context=context, frame_M=dut),
+            RigidTransform_[T])
+        self.assertIsInstance(
+            dut.CalcRotationMatrix(context=context, frame_M=dut),
+            RotationMatrix_[T])
+        self.assertIsInstance(
+            dut.CalcRotationMatrixInWorld(context=context),
+            RotationMatrix_[T])
+        self.assertIsInstance(
+            dut.CalcSpatialVelocityInWorld(context=context),
+            SpatialVelocity_[T])
+        self.assertIsInstance(
+            dut.CalcSpatialVelocity(context=context, frame_M=dut, frame_E=dut),
+            SpatialVelocity_[T])
+        self.assertIsInstance(
+            dut.CalcSpatialAccelerationInWorld(context=context),
+            SpatialAcceleration_[T])
 
     @numpy_compare.check_all_types
     def test_fixed_offset_frame_api(self, T):
