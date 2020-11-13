@@ -193,8 +193,7 @@ void def_geometry_render(py::module m) {
     py::class_<Class> cls(m, "ColorRenderCamera", cls_doc.doc);
     cls  // BR
         .def(py::init<Class const&>())
-        .def(py::init<RenderCameraCore, bool>(),
-            cls_doc.ctor.doc_2args_core_show_window)
+        .def(py::init<RenderCameraCore, bool>(), cls_doc.ctor.doc_2args)
         .def("core", static_cast<RenderCameraCore const& (Class::*)() const>(
                          &Class::core))
         .def("show_window",

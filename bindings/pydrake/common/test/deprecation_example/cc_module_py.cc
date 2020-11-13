@@ -21,6 +21,23 @@ PYBIND11_MODULE(cc_module, m) {
   });
 
   {
+    using Class = ExampleCppStruct;
+    constexpr auto& cls_doc = doc.ExampleCppStruct;
+
+    // ParamInit would allow the following constructor:
+    //   o = ExampleCppStruct(i=1, j=2)
+    // We're deprecating it, such that the only non-deprecated way would be:
+    //   o = ExampleCppStruct()
+    //   o.i = 1
+    //   o.j = 2
+    py::class_<Class> cls(m, "ExampleCppStruct", cls_doc.doc);
+    cls  // BR
+        .def(DeprecatedParamInit<Class>("Deprecated as of 2038-01-19"))
+        .def_readwrite("i", &Class::i)
+        .def_readwrite("j", &Class::j);
+  }
+
+  {
     using Class = ExampleCppClass;
     constexpr auto& cls_doc = doc.ExampleCppClass;
     py::class_<Class> cls(m, "ExampleCppClass", cls_doc.doc);
