@@ -44,7 +44,6 @@ def main(workspace_name="drake"):
     my_env = os.environ.copy()
     my_env["PYTHONPATH"] = find_data(_AUTOPYBIND) + os.pathsep + my_env["PYTHONPATH"]
     my_env["PYTHONPATH"] = find_data("drake") + os.pathsep + my_env["PYTHONPATH"]
-    my_env["PYTHONPATH"] = find_data("PyYAML") + os.pathsep + my_env["PYTHONPATH"]
     my_env["PYTHONPATH"] = find_data("toposort") + os.pathsep + my_env["PYTHONPATH"]
     my_env["PYTHONPATH"] = find_data("ConfigArgParse") + os.pathsep + my_env["PYTHONPATH"]
 

@@ -68,7 +68,6 @@ load("@drake//tools/workspace/pycps:repository.bzl", "pycps_repository")
 load("@drake//tools/workspace/pygame_py:repository.bzl", "pygame_py_repository")  # noqa
 load("@drake//tools/workspace/pygccxml_py:repository.bzl", "pygccxml_py_repository")  # noqa
 load("@drake//tools/workspace/python:repository.bzl", "python_repository")
-load("@drake//tools/workspace/pyyaml_py:repository.bzl", "pyyaml_repository")
 load("@drake//tools/workspace/qdldl:repository.bzl", "qdldl_repository")
 load("@drake//tools/workspace/ros_xacro:repository.bzl", "ros_xacro_repository")  # noqa
 load("@drake//tools/workspace/rules_pkg:repository.bzl", "rules_pkg_repository")  # noqa
@@ -235,8 +234,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         pygccxml_py_repository(name = "pygccxml_py", mirrors = mirrors)
     if "python" not in excludes:
         python_repository(name = "python")
-    if "PyYAML" not in excludes:
-        pyyaml_repository(name = "PyYAML", mirrors = mirrors)
     if "qdldl" not in excludes:
         qdldl_repository(name = "qdldl", mirrors = mirrors)
     if "ros_xacro" not in excludes:
