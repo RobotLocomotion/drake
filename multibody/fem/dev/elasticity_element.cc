@@ -1,7 +1,7 @@
 #include "drake/multibody/fem/dev/elasticity_element.h"
 
 #include "drake/common/default_scalars.h"
-#include "drake/multibody/fem/dev/elasticity_element_cache.h"
+#include "drake/multibody/fem/dev/elasticity_element_cache_entry.h"
 #include "drake/multibody/fem/dev/linear_simplex_element.h"
 
 namespace drake {
@@ -70,14 +70,16 @@ ElasticityElement<T, IsoparametricElementType, QuadratureType>::
 }
 
 template <typename T, class IsoparametricElementType, class QuadratureType>
-std::unique_ptr<ElementCache<T>> ElasticityElement<
-    T, IsoparametricElementType, QuadratureType>::MakeElementCache() const {
-  std::unique_ptr<DeformationGradientCache<T>> deformation_gradient_cache =
-      constitutive_model_->MakeDeformationGradientCache(
-          this->element_index(), this->num_quadrature_points());
-  return std::make_unique<ElasticityElementCache<T>>(
+std::unique_ptr<ElementCacheEntry<T>>
+ElasticityElement<T, IsoparametricElementType,
+                  QuadratureType>::MakeElementCacheEntry() const {
+  std::unique_ptr<DeformationGradientCacheEntry<T>>
+      deformation_gradient_cache_entry =
+          constitutive_model_->MakeDeformationGradientCacheEntry(
+              this->element_index(), this->num_quadrature_points());
+  return std::make_unique<ElasticityElementCacheEntry<T>>(
       this->element_index(), this->num_quadrature_points(),
-      std::move(deformation_gradient_cache));
+      std::move(deformation_gradient_cache_entry));
 }
 
 template <typename T, class IsoparametricElementType, class QuadratureType>
@@ -152,19 +154,19 @@ void ElasticityElement<T, IsoparametricElementType, QuadratureType>::
 }
 
 template <typename T, class IsoparametricElementType, class QuadratureType>
-const DeformationGradientCache<T>&
+const DeformationGradientCacheEntry<T>&
 ElasticityElement<T, IsoparametricElementType, QuadratureType>::
-    EvalDeformationGradientCache(const FemState<T>& state) const {
-  ElasticityElementCache<T>& mutable_cache =
-      static_cast<ElasticityElementCache<T>&>(
-          state.mutable_element_cache(this->element_index()));
-  DeformationGradientCache<T>& deformation_gradient_cache =
-      mutable_cache.mutable_deformation_gradient_cache();
+    EvalDeformationGradientCacheEntry(const FemState<T>& state) const {
+  ElasticityElementCacheEntry<T>& mutable_cache_entry =
+      static_cast<ElasticityElementCacheEntry<T>&>(
+          state.mutable_element_cache_entry(this->element_index()));
+  DeformationGradientCacheEntry<T>& deformation_gradient_cache_entry =
+      mutable_cache_entry.mutable_deformation_gradient_cache_entry();
   // TODO(xuchenhan-tri): Enable caching when caching is in place.
   std::vector<Matrix3<T>> F(num_quadrature_points());
   CalcDeformationGradient(state, &F);
-  deformation_gradient_cache.UpdateCache(F);
-  return deformation_gradient_cache;
+  deformation_gradient_cache_entry.UpdateCacheEntry(F);
+  return deformation_gradient_cache_entry;
 }
 
 template <typename T, class IsoparametricElementType, class QuadratureType>
@@ -172,10 +174,10 @@ void ElasticityElement<T, IsoparametricElementType, QuadratureType>::
     CalcElasticEnergyDensity(const FemState<T>& state,
                              std::vector<T>* Psi) const {
   Psi->resize(num_quadrature_points());
-  const DeformationGradientCache<T>& deformation_gradient_cache =
-      EvalDeformationGradientCache(state);
-  constitutive_model_->CalcElasticEnergyDensity(deformation_gradient_cache,
-                                                Psi);
+  const DeformationGradientCacheEntry<T>& deformation_gradient_cache_entry =
+      EvalDeformationGradientCacheEntry(state);
+  constitutive_model_->CalcElasticEnergyDensity(
+      deformation_gradient_cache_entry, Psi);
 }
 
 template <typename T, class IsoparametricElementType, class QuadratureType>
@@ -183,9 +185,10 @@ void ElasticityElement<T, IsoparametricElementType, QuadratureType>::
     CalcFirstPiolaStress(const FemState<T>& state,
                          std::vector<Matrix3<T>>* P) const {
   P->resize(num_quadrature_points());
-  const DeformationGradientCache<T>& deformation_gradient_cache =
-      EvalDeformationGradientCache(state);
-  constitutive_model_->CalcFirstPiolaStress(deformation_gradient_cache, P);
+  const DeformationGradientCacheEntry<T>& deformation_gradient_cache_entry =
+      EvalDeformationGradientCacheEntry(state);
+  constitutive_model_->CalcFirstPiolaStress(deformation_gradient_cache_entry,
+                                            P);
 }
 template class ElasticityElement<double, LinearSimplexElement<double, 3>,
                                  SimplexGaussianQuadrature<double, 1, 3>>;

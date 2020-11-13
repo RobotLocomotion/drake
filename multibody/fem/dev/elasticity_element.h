@@ -20,7 +20,7 @@ namespace fem {
 /** The FEM element class for static and dynamic 3D elasticity problems.
  Implements the abstract interface of FemElement.
 
- See ElasticityElementCache for the corresponding ElementCache for
+ See ElasticityElementCacheEntry for the corresponding ElementCacheEntry for
  %ElasticityElement.
  @tparam_nonsymbolic_scalar T.
  @tparam IsoparametricElementType The type of IsoparametricElement used in this
@@ -54,11 +54,11 @@ class ElasticityElement : public ElasticityElementBase<T> {
    IsoparametricElementType::num_nodes().
    @pre node_indices.size() must be equal to reference_positions.cols().
    @warning The input `constitutive_model` must be compatible with the
-   DeformationGradientCache in the ElasticityElementCache that shares the same
-   element index with this %ElasticityElement. More specifically, if the
-   DeformationGradientCache in the corresponding ElasticityElementCache is of
-   type "FooModelCache", then the input `constitutive_model` must be of type
-   "FooModel". */
+   DeformationGradientCacheEntry in the ElasticityElementCacheEntry that shares
+   the same element index with this %ElasticityElement. More specifically, if
+   the DeformationGradientCacheEntry in the corresponding
+   ElasticityElementCacheEntry is of type "FooModelCacheEntry", then the input
+   `constitutive_model` must be of type "FooModel". */
   ElasticityElement(ElementIndex element_index,
                     const std::vector<NodeIndex>& node_indices,
                     const T& density,
@@ -67,8 +67,9 @@ class ElasticityElement : public ElasticityElementBase<T> {
 
   virtual ~ElasticityElement() = default;
 
-  /** Creates an ElasticityElementCache that is compatible with this element. */
-  std::unique_ptr<ElementCache<T>> MakeElementCache() const final;
+  /** Creates an ElasticityElementCacheEntry that is compatible with this
+   element. */
+  std::unique_ptr<ElementCacheEntry<T>> MakeElementCacheEntry() const final;
 
   /** Number of quadrature points at which element-wise quantities are
    evaluated. */
@@ -105,10 +106,10 @@ class ElasticityElement : public ElasticityElementBase<T> {
   void CalcDeformationGradient(const FemState<T>& state,
                                std::vector<Matrix3<T>>* F) const;
 
-  /* Evaluates the DeformationGradientCache for this element. */
+  /* Evaluates the DeformationGradientCacheEntry for this element. */
   /* TODO(xuchenhan-tri): This method unconditionally recomputes the
-   DeformationGradientCache. Enable caching when caching is in place. */
-  const DeformationGradientCache<T>& EvalDeformationGradientCache(
+   DeformationGradientCacheEntry. Enable caching when caching is in place. */
+  const DeformationGradientCacheEntry<T>& EvalDeformationGradientCacheEntry(
       const FemState<T>& state) const;
 
   /* Calculates the elastic energy density per unit reference volume, in unit

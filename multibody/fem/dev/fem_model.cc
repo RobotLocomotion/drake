@@ -8,9 +8,9 @@ std::unique_ptr<FemState<T>> FemModel<T>::MakeFemState() const {
   std::unique_ptr<FemState<T>> state = DoMakeFemState();
   /* Set up the element cache that are compatible with the elements owned by
    this model. */
-  std::vector<std::unique_ptr<ElementCache<T>>> cache;
+  std::vector<std::unique_ptr<ElementCacheEntry<T>>> cache;
   for (int i = 0; i < num_elements(); ++i) {
-    cache.emplace_back(elements_[i]->MakeElementCache());
+    cache.emplace_back(elements_[i]->MakeElementCacheEntry());
   }
   state->ResetElementCache(std::move(cache));
   return state;

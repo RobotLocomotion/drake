@@ -76,24 +76,27 @@ TEST_F(ElasticityModelTest, MakeState) {
   ASSERT_TRUE(state != nullptr);
   EXPECT_EQ(state->element_cache_size(), elasticity_model_.num_elements());
   for (ElementIndex i(0); i < state->element_cache_size(); ++i) {
-    /* The element cache should be of type ElasticityElementCache. */
-    const auto* element_cache =
-        dynamic_cast<const ElasticityElementCache<Scalar>*>(
-            &state->element_cache(i));
-    ASSERT_TRUE(element_cache != nullptr);
-    /* The DeformationGradientCache should be of type
-     LinearElasticityModelCache. */
-    const auto* linear_elasticity_cache =
-        dynamic_cast<const LinearElasticityModelCache<Scalar>*>(
-            &element_cache->deformation_gradient_cache());
+    /* The element cache should be of type ElasticityElementCacheEntry. */
+    const auto* element_cache_entry =
+        dynamic_cast<const ElasticityElementCacheEntry<Scalar>*>(
+            &state->element_cache_entry(i));
+    ASSERT_TRUE(element_cache_entry != nullptr);
+    /* The DeformationGradientCacheEntry should be of type
+     LinearElasticityModelCacheEntry. */
+    const auto* linear_elasticity_model_cache_entry =
+        dynamic_cast<const LinearElasticityModelCacheEntry<Scalar>*>(
+            &element_cache_entry->deformation_gradient_cache_entry());
     /* Verify that the cache is properly set up. */
-    ASSERT_TRUE(linear_elasticity_cache != nullptr);
-    EXPECT_EQ(linear_elasticity_cache->element_index(), i);
-    EXPECT_EQ(linear_elasticity_cache->num_quadrature_points(), kNumQuads);
-    EXPECT_EQ(linear_elasticity_cache->strain().size(), kNumQuads);
-    EXPECT_EQ(linear_elasticity_cache->trace_strain().size(), kNumQuads);
-    EXPECT_EQ(linear_elasticity_cache->deformation_gradient().size(),
+    ASSERT_TRUE(linear_elasticity_model_cache_entry != nullptr);
+    EXPECT_EQ(linear_elasticity_model_cache_entry->element_index(), i);
+    EXPECT_EQ(linear_elasticity_model_cache_entry->num_quadrature_points(),
               kNumQuads);
+    EXPECT_EQ(linear_elasticity_model_cache_entry->strain().size(), kNumQuads);
+    EXPECT_EQ(linear_elasticity_model_cache_entry->trace_strain().size(),
+              kNumQuads);
+    EXPECT_EQ(
+        linear_elasticity_model_cache_entry->deformation_gradient().size(),
+        kNumQuads);
   }
   EXPECT_EQ(state->num_generalized_positions(), kDof);
   /* The default qdot should be zero. */

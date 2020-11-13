@@ -55,11 +55,8 @@ class ElasticityElementTest : public ::testing::Test {
     const VectorX<AutoDiffXd> v = VectorX<AutoDiffXd>::Zero(kDof);
     state_ = std::make_unique<FemState<AutoDiffXd>>(x_autodiff, v);
     // Set up the element cache.
-    auto linear_elasticity_cache =
-        std::make_unique<LinearElasticityModelCache<AutoDiffXd>>(
-            kDummyElementIndex, kNumQuads);
-    std::vector<std::unique_ptr<ElementCache<AutoDiffXd>>> cache;
-    cache.emplace_back(elasticity_element_->MakeElementCache());
+    std::vector<std::unique_ptr<ElementCacheEntry<AutoDiffXd>>> cache;
+    cache.emplace_back(elasticity_element_->MakeElementCacheEntry());
     state_->ResetElementCache(std::move(cache));
   }
 

@@ -6,7 +6,7 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/fem/dev/element_cache.h"
+#include "drake/multibody/fem/dev/element_cache_entry.h"
 #include "drake/multibody/fem/dev/fem_indexes.h"
 
 namespace drake {
@@ -15,8 +15,8 @@ namespace fem {
 /** The states in the FEM simulation that are associated with the nodes and the
  elements. The states include the generalized positions associated with each
  node, `q`, and their time derivatives, `qdot`. %FemState also contains the
- cached quantities that are associated with the elements whose values depend on
- the states. See ElementCache for more on these state-dependent quantities.
+ cache entries that are associated with the elements whose values depend on
+ the states. See ElementCacheEntry for more on these state-dependent quantities.
  @tparam_nonsymbolic_scalar T. */
 template <typename T>
 class FemState {
@@ -42,7 +42,7 @@ class FemState {
    the construction of the %FemState to set the element cache to the desired
    quantity. */
   void ResetElementCache(
-      std::vector<std::unique_ptr<ElementCache<T>>> element_cache) {
+      std::vector<std::unique_ptr<ElementCacheEntry<T>>> element_cache) {
     element_cache_.resize(element_cache.size());
     for (int i = 0; i < static_cast<int>(element_cache.size()); ++i) {
       element_cache_[i] = std::move(element_cache[i]);
@@ -110,16 +110,16 @@ class FemState {
   Eigen::VectorBlock<VectorX<T>> mutable_q() { return q_.head(q_.size()); }
   /** @} */
 
-  /** @name Getters and mutable getters for cached quantities.
+  /** @name Getters and mutable getters for cache entries.
    @{ */
-  const ElementCache<T>& element_cache(ElementIndex e) const {
+  const ElementCacheEntry<T>& element_cache_entry(ElementIndex e) const {
     DRAKE_ASSERT(e.is_valid());
     DRAKE_ASSERT(e < element_cache_.size());
     DRAKE_ASSERT(element_cache_[e] != nullptr);
     return *element_cache_[e];
   }
 
-  ElementCache<T>& mutable_element_cache(ElementIndex e) const {
+  ElementCacheEntry<T>& mutable_element_cache_entry(ElementIndex e) const {
     DRAKE_ASSERT(e.is_valid());
     DRAKE_ASSERT(e < element_cache_.size());
     DRAKE_ASSERT(element_cache_[e] != nullptr);
@@ -136,8 +136,8 @@ class FemState {
   VectorX<T> q_;
   // Time derivatives of generalized node positions.
   VectorX<T> qdot_;
-  // Owned element cache quantities.
-  std::vector<copyable_unique_ptr<ElementCache<T>>> element_cache_;
+  // Owned element cache entries.
+  std::vector<copyable_unique_ptr<ElementCacheEntry<T>>> element_cache_;
 };
 }  // namespace fem
 }  // namespace multibody
