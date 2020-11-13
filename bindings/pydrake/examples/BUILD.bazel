@@ -62,6 +62,7 @@ drake_pybind_library(
     name = "manipulation_station_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
     ],
     cc_srcs = ["manipulation_station_py.cc"],
     package_info = PACKAGE_INFO,
@@ -174,6 +175,7 @@ drake_py_unittest(
     name = "manipulation_station_test",
     deps = [
         ":manipulation_station_py",
+        "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",
     ],
