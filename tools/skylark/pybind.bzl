@@ -15,6 +15,10 @@ load(
     "drake_py_library",
     "drake_py_test",
 )
+load(
+    "@drake//tools/workspace:generate_file.bzl",
+    "generate_file",
+)
 
 def pybind_py_library(
         name,
@@ -302,8 +306,25 @@ def drake_pybind_cc_googletest(
         allow_import_unittest = True,
     )
 
+def _write_cc_header_info_impl(ctx):
+    data = _collect_cc_header_info(ctx.attr.targets)
+    out = ctx.actions.declare_file("response.rsp")
+    rsp_content = "c_std: -std=c++17\n"
+    rsp_content += "defines: {}\n".format(";".join(data.define_list))
+    rsp_content += "includes: {}".format(";".join(data.include_list))
+    ctx.actions.write(
+        output = out,
+        content = rsp_content,
+    )
+    return [DefaultInfo(
+        files = depset([out]),
+        data_runfiles = ctx.runfiles(files = [out]),
+    )]
+
 def _collect_cc_header_info(targets):
     compile_flags = []
+    define_list = []
+    include_list = []
     transitive_headers_depsets = []
     package_headers_depsets = []
     for target in targets:
@@ -312,15 +333,19 @@ def _collect_cc_header_info(targets):
 
             for define in compilation_context.defines.to_list():
                 compile_flags.append("-D{}".format(define))
+                define_list.append(define)
             for system_include in compilation_context.system_includes.to_list():  # noqa
                 system_include = system_include or "."
                 compile_flags.append("-isystem{}".format(system_include))
+                include_list.append(system_include)
             for include in compilation_context.includes.to_list():
                 include = include or "."
                 compile_flags.append("-I{}".format(include))
+                include_list.append(include)
             for quote_include in compilation_context.quote_includes.to_list():
                 quote_include = quote_include or "."
                 compile_flags.append("-iquote{}".format(quote_include))
+                include_list.append(quote_include)
 
             transitive_headers_depset = compilation_context.headers
             transitive_headers_depsets.append(transitive_headers_depset)
@@ -337,10 +362,20 @@ def _collect_cc_header_info(targets):
 
     return struct(
         compile_flags = compile_flags,
+        define_list = define_list,
+        include_list = include_list,
         transitive_headers = depset(transitive = transitive_headers_depsets),
         package_headers = depset(transitive = package_headers_depsets),
     )
-
+write_cc_header_info = rule(attrs = {
+        "targets": attr.label_list(
+            mandatory = True,
+        ),
+    },
+    implementation = _write_cc_header_info_impl,
+    fragments = ["rsp"],
+    output_to_genfiles = True,
+    )
 def _generate_pybind_documentation_header_impl(ctx):
     targets = _collect_cc_header_info(ctx.attr.targets)
 
