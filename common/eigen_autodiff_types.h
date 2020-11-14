@@ -18,6 +18,15 @@
 
 namespace drake {
 
+/// The Eigen vector type used by drake::AutoDiffXd for its partials.
+using AutoDerXd = Eigen::Matrix<
+  /* _Scalar = */ double,
+  /* _Rows = */ Eigen::Dynamic,
+  /* _Cols = */ 1,
+  /* _Options = */ 0,
+  /* _MaxRows = */ internal::kMaxRowsAtCompileTimeThatTriggersPools,
+  /* _MaxCols = */ 1>;
+
 /// An autodiff variable with a dynamic number of partials.
 using AutoDiffXd = Eigen::AutoDiffScalar<Eigen::VectorXd>;
 

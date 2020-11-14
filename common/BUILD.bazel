@@ -148,7 +148,7 @@ drake_cc_library(
     deps = [
         ":cond",
         ":dummy_value",
-        ":essential",
+        ":eigen_dense_storage_pools",
     ],
 )
 

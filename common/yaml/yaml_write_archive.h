@@ -209,19 +209,20 @@ class YamlWriteArchive final {
     this->VisitVariant(nvp);
   }
 
-  // For Eigen::Vector.
-  template <typename NVP, typename T, int Rows>
-  void DoVisit(const NVP& nvp, const Eigen::Matrix<T, Rows, 1>&, int32_t) {
-    Eigen::Matrix<T, Rows, 1>& value = *nvp.value();
-    const bool empty = value.size() == 0;
-    this->VisitArrayLike<T>(nvp.name(), value.size(),
-                            empty ? nullptr : &value.coeffRef(0));
-  }
-
-  // For Eigen::Matrix.
-  template <typename NVP, typename T, int Rows, int Cols>
-  void DoVisit(const NVP& nvp, const Eigen::Matrix<T, Rows, Cols>&, int32_t) {
-    this->VisitMatrix<T>(nvp.name(), nvp.value());
+  // For Eigen::Vector and Eigen::Matrix.
+  template <typename NVP, typename T, int Rows, int Cols,
+            int MaxRows, int MaxCols>
+  void DoVisit(const NVP& nvp,
+               const Eigen::Matrix<T, Rows, Cols, 0, MaxRows, MaxCols>&,
+               int32_t) {
+    if constexpr (Cols == 1) {
+        Eigen::Matrix<T, Rows, 1, 0, MaxRows, MaxCols>* value = nvp.value();
+        const bool empty = value->size() == 0;
+        this->VisitArrayLike<T>(nvp.name(), value->size(),
+                                empty ? nullptr : &value->coeffRef(0));
+    } else {
+      this->VisitMatrix<T>(nvp.name(), nvp.value());
+    }
   }
 
   // If no other DoVisit matched, we'll treat the value as a scalar.
