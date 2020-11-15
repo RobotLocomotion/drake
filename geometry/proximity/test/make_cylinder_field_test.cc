@@ -6,6 +6,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/make_cylinder_mesh.h"
+#include "drake/geometry/proximity/mesh_to_vtk.h"
 
 namespace drake {
 namespace geometry {
@@ -62,7 +63,7 @@ void CheckMinMaxBoundaryValue(
   EXPECT_EQ(max_pressure, pressure_field.EvaluateAtVertex(center_vertex));
 }
 
-GTEST_TEST(MakeCylinderFieldTest, MakeCylinderPressureField) {
+GTEST_TEST(MakeCylinderFieldTest, MakePressureField) {
   // A cylinder with radius 5cm and length 30cm.
   const Cylinder cylinder(0.05, 0.30);
   // The resolution_hint 2cm should give a medium mesh with some boundary
@@ -77,6 +78,51 @@ GTEST_TEST(MakeCylinderFieldTest, MakeCylinderPressureField) {
       MakeCylinderPressureField<double>(cylinder, &mesh, kElasticModulus);
 
   CheckMinMaxBoundaryValue(pressure_field, kElasticModulus);
+}
+
+GTEST_TEST(MakeCylinderFieldTest, MakePressureFieldInMeshWithMa) {
+  {
+    // A cylinder with radius 5cm and length 30cm.
+    const Cylinder long_cylinder(0.05, 0.30);
+    // The resolution_hint 2cm should give a medium mesh with some boundary
+    // vertices on the curved barrel surface that do not have exact coordinates.
+    // In other words, we want the test to include these vertices, which are not
+    // exactly on the cylinder surface due to numerical roundings. We do not
+    // want to use the coarsest mesh (rectangular prism) for testing.
+    const auto mesh = MakeCylinderVolumeMeshWithMa<double>(long_cylinder, 0.02);
+
+    const double kElasticModulus = 1.0e5;
+    VolumeMeshFieldLinear<double, double> pressure_field =
+        MakeCylinderPressureField<double>(long_cylinder, &mesh,
+                                          kElasticModulus);
+    WriteVolumeMeshFieldLinearToVtk("LongCylinderWithMaPressureField.vtk",
+                                    pressure_field,
+                                    "LongCylinderWithMaPressureField");
+  }
+  {
+    const Cylinder medium_cylinder(0.05, 0.10);
+    const auto mesh =
+        MakeCylinderVolumeMeshWithMa<double>(medium_cylinder, 0.02);
+    const double kElasticModulus = 1.0e5;
+    VolumeMeshFieldLinear<double, double> pressure_field =
+        MakeCylinderPressureField<double>(medium_cylinder, &mesh,
+                                          kElasticModulus);
+    WriteVolumeMeshFieldLinearToVtk("MediumCylinderWithMaPressureField.vtk",
+                                    pressure_field,
+                                    "MediumCylinderWithMaPressureField");
+  }
+  {
+    const Cylinder short_cylinder(0.05, 0.05);
+    const auto mesh =
+        MakeCylinderVolumeMeshWithMa<double>(short_cylinder, 0.02);
+    const double kElasticModulus = 1.0e5;
+    VolumeMeshFieldLinear<double, double> pressure_field =
+        MakeCylinderPressureField<double>(short_cylinder, &mesh,
+                                          kElasticModulus);
+    WriteVolumeMeshFieldLinearToVtk("ShortCylinderWithMaPressureField.vtk",
+                                    pressure_field,
+                                    "ShortCylinderWithMaPressureField");
+  }
 }
 
 }  // namespace
