@@ -1,0 +1,57 @@
+#pragma once
+
+#include <vector>
+
+#include "drake/geometry/proximity/volume_mesh.h"
+
+namespace drake {
+namespace geometry {
+namespace internal {
+
+/* Subdivides a triangular prism into three tetrahedra such that they share the
+ diagonal v0v5 (see ordering below).
+
+ We assume the input vertex indices (represented as VolumeVertexIndex) are in
+ this ordering:
+   1. Three vertices v0,v1,v2 of the "bottom" face are in counterclockwise
+      order when look from "above" the prism.
+   2. Three vertices v3,v4,v5 of the "top" face match v0,v1,v2, respectively.
+
+                       v3
+                      /|
+                     / |\
+                    /  | \
+                   /   |  \
+                  /    v0  \
+                 /    /\    \
+                v4-----------v5
+                |   /    \   |
+                |  /      \  |
+                | /        \ |
+                |/          \|
+                v1-----------v2
+ */
+std::vector<VolumeElement> SplitTriangularPrismToTetrahedra(
+    VolumeVertexIndex v0, VolumeVertexIndex v1, VolumeVertexIndex v2,
+    VolumeVertexIndex v3, VolumeVertexIndex v4, VolumeVertexIndex v5);
+
+/* Subdivide a pyramid into two tetrahedra sharing the diagonal v0v2.
+
+                       v4
+                   ／  /\ ＼
+                v0-----------v1
+                |   /    \   |
+                |  /      \  |
+                | /        \ |
+                |/          \|
+                v3-----------v2
+ */
+std::vector<VolumeElement> SplitPyramidToTetrahedra(VolumeVertexIndex v0,
+                                                    VolumeVertexIndex v1,
+                                                    VolumeVertexIndex v2,
+                                                    VolumeVertexIndex v3,
+                                                    VolumeVertexIndex v4);
+
+}  // namespace internal
+}  // namespace geometry
+}  // namespace drake

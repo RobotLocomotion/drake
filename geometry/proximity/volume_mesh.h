@@ -99,10 +99,21 @@ class VolumeElement {
     return vertex_.at(i);
   }
 
+  /** Checks to see whether the given VolumeElement use the same four
+   VolumeVertexIndex's in the same order.
+   */
+  bool Equal(const VolumeElement& e) const {
+    return this->vertex_ == e.vertex_;
+  }
+
  private:
   // The vertices of this element.
   std::array<VolumeVertexIndex, 4> vertex_;
 };
+
+inline bool operator==(const VolumeElement& e1, const VolumeElement& e2) {
+  return e1.Equal(e2);
+}
 
 // Forward declaration of VolumeMeshTester<T>. VolumeMesh<T> will grant
 // friend access to VolumeMeshTester<T>.
@@ -283,10 +294,7 @@ class VolumeMesh {
 
     // Check tetrahedral elements.
     for (VolumeElementIndex i(0); i < this->num_elements(); ++i) {
-      const VolumeElement& element1 = this->element(i);
-      const VolumeElement& element2 = mesh.element(i);
-      for (int j = 0; j < 4; ++j)
-        if (element1.vertex(j) != element2.vertex(j)) return false;
+      if (!this->element(i).Equal(mesh.element(i))) return false;
     }
     // Check vertices.
     for (VolumeVertexIndex i(0); i < this->num_vertices(); ++i) {

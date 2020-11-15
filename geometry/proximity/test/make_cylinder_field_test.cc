@@ -62,7 +62,7 @@ void CheckMinMaxBoundaryValue(
   EXPECT_EQ(max_pressure, pressure_field.EvaluateAtVertex(center_vertex));
 }
 
-GTEST_TEST(MakeCylinderFieldTest, MakeCylinderPressureField) {
+GTEST_TEST(MakeCylinderFieldTest, MakePressureField) {
   // A cylinder with radius 5cm and length 30cm.
   const Cylinder cylinder(0.05, 0.30);
   // The resolution_hint 2cm should give a medium mesh with some boundary
