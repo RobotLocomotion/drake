@@ -11,6 +11,34 @@ namespace geometry {
 namespace internal {
 namespace {
 
+GTEST_TEST(MakeCylinderVolumeMeshWithMaTest, Long) {
+  const double radius = 1.0;
+  const double length = 3.0;
+  const double resolution_hint = radius/2;
+  VolumeMesh<double> mesh = MakeCylinderVolumeMeshWithMa<double>(
+      Cylinder(radius, length), resolution_hint);
+  EXPECT_EQ(1, ComputeEulerCharacteristic(mesh));
+}
+
+GTEST_TEST(MakeCylinderVolumeMeshWithMaTest, Medium) {
+  const double radius = 1.0;
+  const double length = 2.0;
+  const double resolution_hint = radius / 2;
+  VolumeMesh<double> mesh = MakeCylinderVolumeMeshWithMa<double>(
+      Cylinder(radius, length), resolution_hint);
+  EXPECT_EQ(1, ComputeEulerCharacteristic(mesh));
+}
+
+GTEST_TEST(MakeCylinderVolumeMeshWithMaTest, Short) {
+  const double radius = 1.0;
+  const double length = 1.0;
+  const double resolution_hint = radius/2;
+  VolumeMesh<double> mesh = MakeCylinderVolumeMeshWithMa<double>(
+      Cylinder(radius, length), resolution_hint);
+  EXPECT_EQ(1, ComputeEulerCharacteristic(mesh));
+}
+
+
 GTEST_TEST(MakeCylinderVolumeMesh, CoarsestMesh) {
   const double radius = 1.0;
   const double length = 2.0;
