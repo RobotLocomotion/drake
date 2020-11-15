@@ -18,6 +18,10 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
+template <typename T>
+VolumeMesh<T> MakeCylinderVolumeMeshWithMa(const Cylinder& cylinder,
+                                           double resolution_hint);
+
 // Helper methods for MakeCylinderVolumeMesh().
 #ifndef DRAKE_DOXYGEN_CXX
 

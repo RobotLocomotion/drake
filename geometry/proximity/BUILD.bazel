@@ -38,6 +38,7 @@ drake_cc_package_library(
         ":mesh_intersection",
         ":mesh_plane_intersection",
         ":mesh_to_vtk",
+        ":meshing_utilities",
         ":obb",
         ":obj_to_surface_mesh",
         ":penetration_as_point_pair_callback",
@@ -255,6 +256,7 @@ drake_cc_library(
     srcs = ["make_box_mesh.cc"],
     hdrs = ["make_box_mesh.h"],
     deps = [
+        ":meshing_utilities",
         ":proximity_utilities",
         ":surface_mesh",
         ":volume_mesh",
@@ -277,8 +279,10 @@ drake_cc_library(
 
 drake_cc_library(
     name = "make_cylinder_mesh",
+    srcs = ["make_cylinder_mesh.cc"],
     hdrs = ["make_cylinder_mesh.h"],
     deps = [
+        ":meshing_utilities",
         ":surface_mesh",
         ":volume_mesh",
         ":volume_to_surface_mesh",
@@ -409,6 +413,15 @@ drake_cc_library(
         ":surface_mesh",
         ":volume_mesh",
         "@fmt",
+    ],
+)
+
+drake_cc_library(
+    name = "meshing_utilities",
+    srcs = ["meshing_utilities.cc"],
+    hdrs = ["meshing_utilities.h"],
+    deps = [
+        ":volume_mesh",
     ],
 )
 
@@ -670,6 +683,7 @@ drake_cc_googletest(
     deps = [
         ":make_cylinder_field",
         ":make_cylinder_mesh",
+        ":mesh_to_vtk",
         ":volume_to_surface_mesh",
     ],
 )
