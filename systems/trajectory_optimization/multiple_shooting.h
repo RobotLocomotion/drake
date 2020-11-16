@@ -150,15 +150,19 @@ class MultipleShooting : public solvers::MathematicalProgram {
   /// state(), and/or input() placeholder variables, as well as placeholder
   /// variables returned by calls to NewSequentialVariable(), are substituted
   /// with the relevant variables for each time index.
-  void AddConstraintToAllKnotPoints(const symbolic::Formula& f) {
+  std::vector<solvers::Binding<solvers::Constraint>>
+  AddConstraintToAllKnotPoints(const symbolic::Formula& f) {
+    std::vector<solvers::Binding<solvers::Constraint>> constraints;
     for (int i = 0; i < N_; i++) {
       // TODO(russt): update this to AddConstraint once MathematicalProgram
       // supports AddConstraint for Formulas.
       // For now, non-linear constraints can be added by users by simply adding
       // the constraint manually for each
       // time index in a loop.
-      AddConstraint(SubstitutePlaceholderVariables(f, i));
+      constraints.push_back(
+          AddConstraint(SubstitutePlaceholderVariables(f, i)));
     }
+    return constraints;
   }
 
   // TODO(russt): Add additional cost/constraint wrappers that assign e.g.
@@ -177,7 +181,8 @@ class MultipleShooting : public solvers::MathematicalProgram {
   /// Adds constraints to enforce that all timesteps have equal duration.
   /// @throws std::runtime_error if timesteps are not declared as decision
   /// variables.
-  void AddEqualTimeIntervalsConstraints();
+  std::vector<solvers::Binding<solvers::LinearConstraint>>
+  AddEqualTimeIntervalsConstraints();
 
   /// Adds a constraint on the total duration of the trajectory.
   /// @throws std::runtime_error if timesteps are not declared as decision

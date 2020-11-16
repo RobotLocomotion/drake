@@ -253,7 +253,9 @@ GTEST_TEST(MultipleShootingTest, EqualTimeIntervalsTest) {
   MyDirectTrajOpt prog(kNumInputs, kNumStates, kNumSampleTimes, kMinTimeStep,
                        kMaxTimeStep);
 
-  prog.AddEqualTimeIntervalsConstraints();
+  std::vector<solvers::Binding<solvers::LinearConstraint>> equal_time_con =
+      prog.AddEqualTimeIntervalsConstraints();
+  EXPECT_EQ(equal_time_con.size(), kNumSampleTimes - 2);
 
   prog.SetInitialGuess(prog.timestep(0), Vector1d(.1));
   prog.SetInitialGuess(prog.timestep(1), Vector1d(.2));
@@ -299,7 +301,9 @@ GTEST_TEST(MultipleShootingTest, ConstraintAllKnotsTest) {
                        kMaxTimeStep);
 
   const Eigen::Vector2d state_value(4.0, 5.0);
-  prog.AddConstraintToAllKnotPoints(prog.state() == state_value);
+  std::vector<solvers::Binding<solvers::Constraint>> state_con =
+      prog.AddConstraintToAllKnotPoints(prog.state() == state_value);
+  EXPECT_EQ(state_con.size(), kNumSampleTimes);
 
   solvers::MathematicalProgramResult result = Solve(prog);
   ASSERT_TRUE(result.is_success());
