@@ -394,34 +394,6 @@ GTEST_TEST(MosekTest, SolveSDPwithQuadraticCosts) {
     SolveSDPwithQuadraticCosts(solver, 1E-8);
   }
 }
-
-GTEST_TEST(MosekTest, LPDualSolution2) {
-  MosekSolver solver;
-  if (solver.available()) {
-    TestLPDualSolution2(solver, 1E-8);
-  }
-}
-
-GTEST_TEST(MosekTest, LPDualSolution2Scaled) {
-  MosekSolver solver;
-  if (solver.available()) {
-    TestLPDualSolution2Scaled(solver, 1E-8);
-  }
-}
-
-GTEST_TEST(MosekTest, QPDualSolution3) {
-  MosekSolver solver;
-  if (solver.available()) {
-    TestQPDualSolution3(solver, 1E-6, 3E-4);
-  }
-}
-
-GTEST_TEST(MosekTest, SDPDualSolution1) {
-  MosekSolver solver;
-  if (solver.available()) {
-    TestSDPDualSolution1(solver, 3E-6);
-  }
-}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

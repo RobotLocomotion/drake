@@ -167,11 +167,8 @@ void TestQPDualSolution2(const SolverInterface& solver);
 /**
  * Test getting the dual solution for a QP problem.
  * This QP problem has active bounding box constraints.
- * @param tol The tolerance on checking the solution.
- * @param sensitivity_tol The tolerance on checking the constraint sensitivity.
  */
-void TestQPDualSolution3(const SolverInterface& solver, double tol = 1e-6,
-                         double sensitivity_tol = 2e-5);
+void TestQPDualSolution3(const SolverInterface& solver);
 
 /**
  * Test getting the dual solution for an equality constrained QP.

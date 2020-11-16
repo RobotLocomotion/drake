@@ -107,16 +107,6 @@ void SolveSDPwithOverlappingVariables(const SolverInterface& solver,
  * The optimal solution will be x = (1, 1, -1).
  */
 void SolveSDPwithQuadraticCosts(const SolverInterface& solver, double tol);
-
-/**
- * Test a simple SDP with only PSD constraint and bounding box constraint.
- * min x1
- * s.t ⎡x0 x1⎤ is psd
- *     ⎣x1 x2⎦
- *     x0 <= 4
- *     x2 <= 1
- */
-void TestSDPDualSolution1(const SolverInterface& solver, double tol);
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
