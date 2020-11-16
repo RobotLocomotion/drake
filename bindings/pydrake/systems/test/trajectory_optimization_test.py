@@ -42,11 +42,19 @@ class TestTrajectoryOptimization(unittest.TestCase):
         v2 = dircol.GetSequentialVariableAtIndex(name="test", index=2)
 
         dircol.AddRunningCost(x.dot(x))
-        dircol.AddConstraintToAllKnotPoints(u[0] == 0)
-        dircol.AddTimeIntervalBounds(lower_bound=0.3, upper_bound=0.4)
-        dircol.AddEqualTimeIntervalsConstraints()
-        dircol.AddDurationBounds(lower_bound=.3*21, upper_bound=0.4*21)
-        dircol.AddFinalCost(2*x.dot(x))
+        input_con = dircol.AddConstraintToAllKnotPoints(u[0] == 0)
+        self.assertEqual(len(input_con), 21)
+        interval_bound = dircol.AddTimeIntervalBounds(
+            lower_bound=0.3, upper_bound=0.4)
+        self.assertIsInstance(interval_bound.evaluator(),
+                              mp.BoundingBoxConstraint)
+        equal_time_con = dircol.AddEqualTimeIntervalsConstraints()
+        self.assertEqual(len(equal_time_con), 19)
+        duration_bound = dircol.AddDurationBounds(
+            lower_bound=.3*21, upper_bound=0.4*21)
+        self.assertIsInstance(duration_bound.evaluator(), mp.LinearConstraint)
+        final_cost = dircol.AddFinalCost(2*x.dot(x))
+        self.assertIsInstance(final_cost.evaluator(), mp.Cost)
 
         initial_u = PiecewisePolynomial.ZeroOrderHold([0, .3*21],
                                                       np.zeros((1, 2)))

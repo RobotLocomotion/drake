@@ -150,15 +150,20 @@ class MultipleShooting : public solvers::MathematicalProgram {
   /// state(), and/or input() placeholder variables, as well as placeholder
   /// variables returned by calls to NewSequentialVariable(), are substituted
   /// with the relevant variables for each time index.
-  void AddConstraintToAllKnotPoints(const symbolic::Formula& f) {
+  /// @return A vector of the constraints added to each knot point.
+  std::vector<solvers::Binding<solvers::Constraint>>
+  AddConstraintToAllKnotPoints(const symbolic::Formula& f) {
+    std::vector<solvers::Binding<solvers::Constraint>> constraints;
     for (int i = 0; i < N_; i++) {
       // TODO(russt): update this to AddConstraint once MathematicalProgram
       // supports AddConstraint for Formulas.
       // For now, non-linear constraints can be added by users by simply adding
       // the constraint manually for each
       // time index in a loop.
-      AddConstraint(SubstitutePlaceholderVariables(f, i));
+      constraints.push_back(
+          AddConstraint(SubstitutePlaceholderVariables(f, i)));
     }
+    return constraints;
   }
 
   // TODO(russt): Add additional cost/constraint wrappers that assign e.g.
@@ -170,19 +175,27 @@ class MultipleShooting : public solvers::MathematicalProgram {
   /// Adds bounds on all time intervals.
   /// @param lower_bound  A scalar double lower bound.
   /// @param upper_bound  A scalar double upper bound.
+  /// @return The bounding box constraint enforcing time interval bounds.
   /// @throws std::runtime_error if timesteps are not declared as decision
   /// variables.
-  void AddTimeIntervalBounds(double lower_bound, double upper_bound);
+  solvers::Binding<solvers::BoundingBoxConstraint> AddTimeIntervalBounds(
+      double lower_bound, double upper_bound);
 
   /// Adds constraints to enforce that all timesteps have equal duration.
+  /// @return A vector of constraints enforcing all time intervals are equal.
   /// @throws std::runtime_error if timesteps are not declared as decision
   /// variables.
-  void AddEqualTimeIntervalsConstraints();
+  std::vector<solvers::Binding<solvers::LinearConstraint>>
+  AddEqualTimeIntervalsConstraints();
 
   /// Adds a constraint on the total duration of the trajectory.
+  /// @param lower_bound  A scalar double lower bound.
+  /// @param upper_bound  A scalar double upper bound.
+  /// @return The constraint enforcing the duration bounds.
   /// @throws std::runtime_error if timesteps are not declared as decision
   /// variables.
-  void AddDurationBounds(double lower_bound, double upper_bound);
+  solvers::Binding<solvers::LinearConstraint> AddDurationBounds(
+      double lower_bound, double upper_bound);
 
   /// Adds a cost to the final time, of the form
   ///    @f[ cost = e(t,x,u), @f]
@@ -190,19 +203,21 @@ class MultipleShooting : public solvers::MathematicalProgram {
   /// variables, as well as placeholder variables returned by calls to
   /// NewSequentialVariable(), are substituted with the relevant variables for
   /// the final time index.
-  void AddFinalCost(const symbolic::Expression& e) {
-    AddCost(SubstitutePlaceholderVariables(e, N_ - 1));
+  /// @return The final cost added to the problem.
+  solvers::Binding<solvers::Cost> AddFinalCost(const symbolic::Expression& e) {
+    return AddCost(SubstitutePlaceholderVariables(e, N_ - 1));
   }
 
   /// Adds support for passing in a (scalar) matrix Expression, which is a
   /// common output of most symbolic linear algebra operations.
+  /// @return The final cost added to the problem.
   /// @note Derived classes will need to type
   ///    using MultipleShooting::AddFinalCost;
   /// to "unhide" this method.
-  void AddFinalCost(
+  solvers::Binding<solvers::Cost> AddFinalCost(
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& matrix) {
     DRAKE_DEMAND(matrix.rows() == 1 && matrix.cols() == 1);
-    AddFinalCost(matrix(0, 0));
+    return AddFinalCost(matrix(0, 0));
   }
 
   typedef std::function<
