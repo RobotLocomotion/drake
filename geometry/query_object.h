@@ -191,8 +191,8 @@ class QueryObject {
             point pairs. The ordering of the results is guaranteed to be
             consistent -- for fixed geometry poses, the results will remain
             the same.
-   @warning This silently ignores Mesh geometries (but Convex mesh geometries
-            are included). */
+   @warning For Mesh shapes, their convex hulls are used in this query. It is
+            *not* computationally efficient or particularly accurate.  */
   std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
       const;
 
@@ -218,7 +218,7 @@ class QueryObject {
        | Ellipsoid |  yes  |  yes  |
        | HalfSpace |  no   |  no   |
        | Mesh      |  no   |  yes  |
-       | Convex    |  no   |  no   |
+       | Convex    |  no   |  yes  |
 
      - One geometry must be soft, and the other must be rigid. There is no
        support for soft-soft collision or rigid-rigid collision. If such
@@ -281,15 +281,13 @@ class QueryObject {
 
    @returns A vector populated with collision pair candidates (the order will
             remain constant for a fixed population but can change as geometry
-            ids are added/removed).
-   @warning This silently ignores Mesh geometries (but Convex mesh geometries
-            are included). */
+            ids are added/removed).  */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const;
 
   /** Reports true if there are _any_ collisions between unfiltered pairs in the
    world.
-   @warning This silently ignores Mesh geometries (but Convex mesh geometries
-            are included). */
+   @warning For Mesh shapes, their convex hulls are used in this query. It is
+            *not* computationally efficient or particularly accurate.  */
   bool HasCollisions() const;
 
   //@}
@@ -375,7 +373,9 @@ class QueryObject {
 
    @returns The signed distance (and supporting data) for all unfiltered
             geometry pairs whose distance is less than or equal to
-            `max_distance`.  */
+            `max_distance`.
+   @warning For Mesh shapes, their convex hulls are used in this query. It is
+            *not* computationally efficient or particularly accurate.  */
   std::vector<SignedDistancePair<T>> ComputeSignedDistancePairwiseClosestPoints(
       const double max_distance =
           std::numeric_limits<double>::infinity()) const;
@@ -386,7 +386,9 @@ class QueryObject {
    as ComputeSignedDistancePairwiseClosestPoints().
 
    @throws std::exception if either geometry id is invalid, or if the pair
-                          (A, B) has been marked as filtered.  */
+                          (A, B) has been marked as filtered.
+   @warning For Mesh shapes, their convex hulls are used in this query. It is
+            *not* computationally efficient or particularly accurate.  */
   SignedDistancePair<T> ComputeSignedDistancePairClosestPoints(
       GeometryId geometry_id_A, GeometryId geometry_id_B) const;
 
