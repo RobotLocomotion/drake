@@ -261,6 +261,22 @@ GTEST_TEST(TestPiecewiseQuaternionSlerp, TestDerivatives) {
   }
 }
 
+template <typename T>
+void TestScalarType() {
+  std::vector<T> times = {1, 2};
+  std::vector<AngleAxis<T>> rot_samples(times.size());
+  rot_samples[0] = AngleAxis<T>(0.3, Vector3<T>::UnitX());
+  rot_samples[1] = AngleAxis<T>(-1, Vector3<T>::UnitY());
+
+  PiecewiseQuaternionSlerp<T> quat_traj(times, rot_samples);
+}
+
+GTEST_TEST(TestPiecewiseQuaternionSlerp, ScalarTypes) {
+  TestScalarType<double>();
+  TestScalarType<AutoDiffXd>();
+  TestScalarType<symbolic::Expression>();
+}
+
 }  // namespace
 }  // namespace trajectories
 }  // namespace drake
