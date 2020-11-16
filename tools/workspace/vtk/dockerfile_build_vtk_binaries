@@ -18,7 +18,6 @@ cmake \
   -DCMAKE_INSTALL_PREFIX:PATH=/opt/vtk \
   -DCMAKE_MODULE_LINKER_FLAGS:STRING='-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro' \
   -DCMAKE_SHARED_LINKER_FLAGS:STRING='-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro' \
-  -DModule_vtkRenderingOSPRay:BOOL=ON \
   -DOSPRAY_INSTALL_DIR:PATH=/opt/vtk \
   -DPYTHON_EXECUTABLE:PATH=/usr/bin/python3 \
   -DVTK_ENABLE_VTKPYTHON:BOOL=OFF \
