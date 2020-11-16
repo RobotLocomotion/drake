@@ -162,7 +162,6 @@ class ProximityProperties final : public GeometryProperties {
 
  Examples of functionality that depends on the perception role:
    - render::RenderEngineVtk
-   - render::RenderEngineOspray
  */
 class PerceptionProperties final : public GeometryProperties{
  public:

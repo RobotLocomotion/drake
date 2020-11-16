@@ -95,10 +95,6 @@ def _impl(repository_ctx):
         fail(os_result.error)
 
     if os_result.is_macos:
-        repository_ctx.symlink(
-            "/usr/local/opt/ospray@1.8/include",
-            "ospray_include",
-        )
         repository_ctx.symlink("/usr/local/opt/vtk@{}/include".format(
             VTK_MAJOR_MINOR_VERSION,
         ), "include")
@@ -690,103 +686,6 @@ licenses([
             ":vtksys",
             "@glew",
             "@opengl",
-        ],
-    )
-
-    if repository_ctx.os.name == "mac os x":
-        EMBREE_MAJOR_MINOR_VERSION = "3.5"
-        embree_lib_dir = "/usr/local/opt/embree@{}/lib".format(
-            EMBREE_MAJOR_MINOR_VERSION,
-        )
-        file_content += """
-cc_library(
-    name = "embree",
-    linkopts = [
-        "-L{0}",
-        "-lembree3",
-        "-Wl,-rpath,{0}",
-    ],
-    visibility = ["//visibility:private"],
-)
-""".format(embree_lib_dir)
-
-        OSPRAY_MAJOR_MINOR_VERSION = "1.8"
-        ospray_lib_dir = "/usr/local/opt/ospray@{}/lib".format(
-            OSPRAY_MAJOR_MINOR_VERSION,
-        )
-        file_content += """
-cc_library(
-    name = "ospray",
-    hdrs = [
-        "ospray_include/ospray/OSPDataType.h",
-        "ospray_include/ospray/OSPTexture.h",
-        "ospray_include/ospray/ospray.h",
-    ],
-    includes = ["ospray_include"],
-    linkopts = [
-        "-L{0}",
-        "-lospray",
-        "-Wl,-rpath,{0}",
-    ],
-    visibility = ["//visibility:public"],
-    deps = [":embree"],
-)
-""".format(ospray_lib_dir)
-
-    else:
-        file_content += """
-cc_library(
-    name = "embree",
-    srcs = glob(["lib/libembree3.so*"]),
-    visibility = ["//visibility:private"],
-)
-
-cc_library(
-    name = "ospray",
-    srcs = glob([
-        "lib/libembree3.so*",
-        "lib/libospray_common.so*",
-        "lib/libospray_module_ispc.so*",
-        "lib/libospray.so*",
-    ]),
-    hdrs = [
-        "include/ospray/OSPDataType.h",
-        "include/ospray/OSPTexture.h",
-        "include/ospray/ospray.h",
-    ],
-    includes = ["include"],
-    visibility = ["//visibility:public"],
-    deps = [":embree"],
-)
-"""
-
-    file_content += _vtk_cc_library(
-        repository_ctx.os.name,
-        "vtkRenderingOSPRay",
-        visibility = ["//visibility:public"],
-        hdrs = [
-            "vtkOSPRayLightNode.h",
-            "vtkOSPRayMaterialLibrary.h",
-            "vtkOSPRayPass.h",
-            "vtkOSPRayRendererNode.h",
-            "vtkRenderingOSPRayModule.h",
-            "vtkRenderingVolumeModule.h",
-        ],
-        deps = [
-            ":ospray",
-            ":vtkCommonCore",
-            ":vtkCommonDataModel",
-            ":vtkImagingCore",
-            ":vtkIOImage",
-            ":vtkIOLegacy",
-            ":vtkIOXML",
-            ":vtkRenderingCore",
-            ":vtkRenderingOpenGL2",
-            ":vtkRenderingSceneGraph",
-            ":vtkRenderingVolume",
-            ":vtkRenderingVolumeAMR",
-            ":vtksys",
-            "@jsoncpp",
         ],
     )
 

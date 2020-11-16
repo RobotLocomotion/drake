@@ -86,6 +86,11 @@ arbitrary fixed position in the simulation's world frame) of the controlled
 The material properties are simple to highlight the impact of the lighting model.
 (October 2018)
 
+(Update 2020) The OSPRay-based renderer had an impoverished API and was little
+used. For maintenance reasons, it has been removed. If, in the future, users
+feel they'd like to have it back, please post an issue and we can investigate
+its restoration and completion.
+
 .. raw :: html
 
   <iframe width="800" height="224" src="https://www.youtube.com/embed/UKxytyIJmq8" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
