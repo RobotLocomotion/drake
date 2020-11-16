@@ -1866,6 +1866,24 @@ GTEST_TEST(ProximityEngineTests, PenetrationSingleAnchored) {
   EXPECT_EQ(results.size(), 0);
 }
 
+GTEST_TEST(ProximityEngineTests, PenetrationSingleAnchoredAutoDiff) {
+  ProximityEngine<AutoDiffXd> engine;
+  Sphere sphere{0.5};
+  RigidTransform<double> pose = RigidTransform<double>::Identity();
+  const GeometryId id = GeometryId::get_new_id();
+  engine.AddAnchoredGeometry(sphere, pose, id);
+  // A scene with a single anchored geometry reports no penetrations.
+  auto results = engine.ComputePointPairPenetration();
+  EXPECT_EQ(results.size(), 0);
+  // Add another dynamics sphere in contact with the anchored sphere.
+  pose.set_translation(Eigen::Vector3d(0, 0, 0.1));
+  const GeometryId dynamic_sphere_id = GeometryId::get_new_id();
+  engine.AddDynamicGeometry(sphere, pose, dynamic_sphere_id);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.ComputePointPairPenetration(), std::runtime_error,
+      ".* Some of the bodies in the model are in contact.*");
+}
+
 // Tests that anchored geometry aren't collided against each other -- even if
 // they actually *are* in penetration.
 GTEST_TEST(ProximityEngineTests, PenetrationMultipleAnchored) {
