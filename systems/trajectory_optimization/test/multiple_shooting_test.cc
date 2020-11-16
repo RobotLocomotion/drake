@@ -237,7 +237,12 @@ GTEST_TEST(MultipleShootingTest, TimeIntervalBoundsTest) {
   MyDirectTrajOpt prog(kNumInputs, kNumStates, kNumSampleTimes, kMinTimeStep,
                        kMaxTimeStep);
 
-  prog.AddTimeIntervalBounds(.5, .5);
+  solvers::Binding<solvers::BoundingBoxConstraint> interval_bounds =
+      prog.AddTimeIntervalBounds(.5, .5);
+  EXPECT_EQ(interval_bounds.evaluator()->lower_bound(),
+            Eigen::Vector2d(0.5, 0.5));
+  EXPECT_EQ(interval_bounds.evaluator()->upper_bound(),
+            Eigen::Vector2d(0.5, 0.5));
   const solvers::MathematicalProgramResult result = Solve(prog);
   ASSERT_TRUE(result.is_success());
   EXPECT_TRUE(CompareMatrices(result.GetSolution(prog.h_vars()),
@@ -253,7 +258,9 @@ GTEST_TEST(MultipleShootingTest, EqualTimeIntervalsTest) {
   MyDirectTrajOpt prog(kNumInputs, kNumStates, kNumSampleTimes, kMinTimeStep,
                        kMaxTimeStep);
 
-  prog.AddEqualTimeIntervalsConstraints();
+  std::vector<solvers::Binding<solvers::LinearConstraint>> equal_time_con =
+      prog.AddEqualTimeIntervalsConstraints();
+  EXPECT_EQ(equal_time_con.size(), kNumSampleTimes - 2);
 
   prog.SetInitialGuess(prog.timestep(0), Vector1d(.1));
   prog.SetInitialGuess(prog.timestep(1), Vector1d(.2));
@@ -274,7 +281,10 @@ GTEST_TEST(MultipleShootingTest, DurationConstraintTest) {
   MyDirectTrajOpt prog(kNumInputs, kNumStates, kNumSampleTimes, kMinTimeStep,
                        kMaxTimeStep);
 
-  prog.AddDurationBounds(.5, .5);
+  solvers::Binding<solvers::LinearConstraint> duration_bound =
+      prog.AddDurationBounds(.5, .5);
+  EXPECT_EQ(duration_bound.evaluator()->lower_bound(), Vector1d(0.5));
+  EXPECT_EQ(duration_bound.evaluator()->upper_bound(), Vector1d(0.5));
 
   prog.SetInitialGuess(prog.timestep(0), Vector1d(.1));
   prog.SetInitialGuess(prog.timestep(1), Vector1d(.2));
@@ -299,7 +309,9 @@ GTEST_TEST(MultipleShootingTest, ConstraintAllKnotsTest) {
                        kMaxTimeStep);
 
   const Eigen::Vector2d state_value(4.0, 5.0);
-  prog.AddConstraintToAllKnotPoints(prog.state() == state_value);
+  std::vector<solvers::Binding<solvers::Constraint>> state_con =
+      prog.AddConstraintToAllKnotPoints(prog.state() == state_value);
+  EXPECT_EQ(state_con.size(), kNumSampleTimes);
 
   solvers::MathematicalProgramResult result = Solve(prog);
   ASSERT_TRUE(result.is_success());
@@ -338,10 +350,13 @@ GTEST_TEST(MultipleShootingTest, FinalCostTest) {
   const Eigen::Vector2d desired_state(2.0, 3.0);
   const auto error = prog.state() - desired_state;
 
-  prog.AddFinalCost(error.dot(error));
+  solvers::Binding<solvers::Cost> final_cost =
+      prog.AddFinalCost(error.dot(error));
   const solvers::MathematicalProgramResult result = Solve(prog);
   ASSERT_TRUE(result.is_success());
   EXPECT_NEAR(result.get_optimal_cost(), 0.0, kSolverTolerance);
+  EXPECT_TRUE(CompareMatrices(result.EvalBinding(final_cost), Vector1d(0.0),
+                              kSolverTolerance));
   EXPECT_TRUE(CompareMatrices(result.GetSolution(prog.state(1)), desired_state,
                               kSolverTolerance));
 }
