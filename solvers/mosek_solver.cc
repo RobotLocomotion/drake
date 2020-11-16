@@ -1435,47 +1435,52 @@ MSKrescodee SetDualSolution(
   // TODO(hongkai.dai): support other types of constraints, like linear
   // constraint, second order cone constraint, etc.
   MSKrescodee rescode{MSK_RES_OK};
-  int num_mosek_vars{0};
-  rescode = MSK_getnumvar(task, &num_mosek_vars);
-  if (rescode != MSK_RES_OK) {
-    return rescode;
+  if (which_sol != MSK_SOL_ITG) {
+    // Mosek cannot return dual solution if the solution type is MSK_SOL_ITG
+    // (which stands for mixed integer optimizer), see
+    // https://docs.mosek.com/9.0/capi/accessing-solution.html#available-solutions
+    int num_mosek_vars{0};
+    rescode = MSK_getnumvar(task, &num_mosek_vars);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+    // Mosek dual variables for variable lower bounds (slx) and upper bounds
+    // (sux). Refer to
+    // https://docs.mosek.com/9.0/capi/alphabetic-functionalities.html#mosek.task.getsolution
+    // for more explaination.
+    std::vector<MSKrealt> slx(num_mosek_vars);
+    std::vector<MSKrealt> sux(num_mosek_vars);
+    rescode = MSK_getslx(task, which_sol, slx.data());
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+    rescode = MSK_getsux(task, which_sol, sux.data());
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+    int num_linear_constraints{0};
+    rescode = MSK_getnumcon(task, &num_linear_constraints);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+    // Mosek dual variables for linear constraints lower bounds (slc) and upper
+    // bounds (suc). Refer to
+    // https://docs.mosek.com/9.0/capi/alphabetic-functionalities.html#mosek.task.getsolution
+    // for more explaination.
+    std::vector<MSKrealt> slc(num_linear_constraints);
+    std::vector<MSKrealt> suc(num_linear_constraints);
+    rescode = MSK_getslc(task, which_sol, slc.data());
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+    rescode = MSK_getsuc(task, which_sol, suc.data());
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+    // Set the duals for the bounding box constraint.
+    SetBoundingBoxDualSolution(prog.bounding_box_constraints(), slx, sux, slc,
+                               suc, bb_con_dual_indices, result);
   }
-  // Mosek dual variables for variable lower bounds (slx) and upper bounds
-  // (sux). Refer to
-  // https://docs.mosek.com/9.0/capi/alphabetic-functionalities.html#mosek.task.getsolution
-  // for more explaination.
-  std::vector<MSKrealt> slx(num_mosek_vars);
-  std::vector<MSKrealt> sux(num_mosek_vars);
-  rescode = MSK_getslx(task, which_sol, slx.data());
-  if (rescode != MSK_RES_OK) {
-    return rescode;
-  }
-  rescode = MSK_getsux(task, which_sol, sux.data());
-  if (rescode != MSK_RES_OK) {
-    return rescode;
-  }
-  int num_linear_constraints{0};
-  rescode = MSK_getnumcon(task, &num_linear_constraints);
-  if (rescode != MSK_RES_OK) {
-    return rescode;
-  }
-  // Mosek dual variables for linear constraints lower bounds (slc) and upper
-  // bounds (suc). Refer to
-  // https://docs.mosek.com/9.0/capi/alphabetic-functionalities.html#mosek.task.getsolution
-  // for more explaination.
-  std::vector<MSKrealt> slc(num_linear_constraints);
-  std::vector<MSKrealt> suc(num_linear_constraints);
-  rescode = MSK_getslc(task, which_sol, slc.data());
-  if (rescode != MSK_RES_OK) {
-    return rescode;
-  }
-  rescode = MSK_getsuc(task, which_sol, suc.data());
-  if (rescode != MSK_RES_OK) {
-    return rescode;
-  }
-  // Set the duals for the bounding box constraint.
-  SetBoundingBoxDualSolution(prog.bounding_box_constraints(), slx, sux, slc,
-                             suc, bb_con_dual_indices, result);
   return rescode;
 }
 
