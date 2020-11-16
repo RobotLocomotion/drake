@@ -31,9 +31,10 @@ void FemModel<T>::CalcResidual(const FemState<T>& state,
   /* The size of `element_residual` depends on the number of nodes in the
    element and may change from one element to the next. */
   VectorX<T> element_residual;
+  const int solution_dim = solution_dimension();
   for (int e = 0; e < num_elements(); ++e) {
     const int element_num_nodes = elements_[e]->num_nodes();
-    const int element_residual_size = element_num_nodes * solution_dimension();
+    const int element_residual_size = element_num_nodes * solution_dim;
     if (element_residual.size() != element_residual_size) {
       element_residual.resize(element_residual_size);
     }
@@ -43,10 +44,10 @@ void FemModel<T>::CalcResidual(const FemState<T>& state,
     const std::vector<NodeIndex>& element_node_indices =
         elements_[e]->node_indices();
     for (int i = 0; i < element_num_nodes; ++i) {
-      const int d_max = solution_dimension();
-      for (int d = 0; d < d_max; ++d) {
+      for (int d = 0; d < solution_dim; ++d) {
         const int ei = element_node_indices[i];
-        (*residual)[ei * d_max + d] += element_residual[i * d_max + d];
+        (*residual)[ei * solution_dim + d] +=
+            element_residual[i * solution_dim + d];
       }
     }
   }

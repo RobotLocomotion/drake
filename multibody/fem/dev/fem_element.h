@@ -41,6 +41,8 @@ class FemElement {
   ElementIndex element_index() const { return element_index_; }
 
   /** The dimension of the codomain of the PDE's solution u. */
+  // TODO(xuchenhan-tri): Remove this virtual method when we know the sizes of
+  // residual, stiffness/tangent matrix, etc at compile time. See issue #14302.
   virtual int solution_dimension() const = 0;
 
   /** Number of quadrature points at which element-wise quantities are

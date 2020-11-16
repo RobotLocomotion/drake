@@ -20,10 +20,13 @@ namespace fem {
      F(u, ∇u, ...) = 0.
 
  where ... indicates possible higher derivatives that we aren't concerned with
- here. In this PDE, u: Rᴰ → Rᵈ, where D is the dimension of the domain and d is
- the solution dimension, is the unknown function being solved for, and F takes u
- and its derivatives as arguments.  After the FEM discretization, the PDE is
- reduced to a system of linear or nonlinear equations of the form:
+ here. In this PDE, u: Ω ⊂ Rᴰ → Rᵈ, is the unknown function being solved for.
+ Here, Ω is the domain, D is the dimension of the domain, and d is the solution
+ dimension. For instance, if you are solving for the temperature of a 3D object,
+ then the domain is three-dimensional (D = 3), while the solution, which is the
+ temperature at a point within the object, is one-dimensional (d = 1). After the
+ FEM discretization, the PDE is reduced to a system of linear or nonlinear
+ equations of the form:
 
      G(u₁, u₂, ..., uₙ) = 0,
 

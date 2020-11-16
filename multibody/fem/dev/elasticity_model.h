@@ -42,7 +42,7 @@ class ElasticityModel : public FemModel<T> {
    %ElasticityElement's added. Must be 1, 2 or 3.
    @pre The vertices of the input `mesh` must be locally indexed, and the
    indices must be consecutive. That is, the vertices in the `mesh` must be
-   indexed consecutively from 0 to mesh.num_vertices(). */
+   indexed consecutively from 0 to mesh.num_vertices()-1. */
   template <int QuadratureOrder>
   void AddElasticityElementsFromTetMesh(
       const geometry::VolumeMesh<T>& mesh, T density,
@@ -116,19 +116,19 @@ class ElasticityModel : public FemModel<T> {
       const std::vector<NodeIndex>& node_indices, const T& density,
       std::unique_ptr<ConstitutiveModel<T>> constitutive_model,
       const Matrix3X<T>& reference_positions) {
-    static_assert(std::is_base_of<IsoparametricElement<T, 1>,
-                                  IsoparametricElementType>::value ||
-                      std::is_base_of<IsoparametricElement<T, 2>,
-                                      IsoparametricElementType>::value ||
-                      std::is_base_of<IsoparametricElement<T, 3>,
-                                      IsoparametricElementType>::value,
+    static_assert(std::is_base_of_v<IsoparametricElement<T, 1>,
+                                    IsoparametricElementType> ||
+                      std::is_base_of_v<IsoparametricElement<T, 2>,
+                                        IsoparametricElementType> ||
+                      std::is_base_of_v<IsoparametricElement<T, 3>,
+                                        IsoparametricElementType>,
                   "IsoparametricElementType must be a derived class of "
                   "IsoparametricElement<T, NaturalDim>, where NaturalDim can "
                   "be 1, 2 or 3.");
     static_assert(
-        std::is_base_of<Quadrature<T, 1>, QuadratureType>::value ||
-            std::is_base_of<Quadrature<T, 2>, QuadratureType>::value ||
-            std::is_base_of<Quadrature<T, 3>, QuadratureType>::value,
+        std::is_base_of_v<Quadrature<T, 1>, QuadratureType> ||
+            std::is_base_of_v<Quadrature<T, 2>, QuadratureType> ||
+            std::is_base_of_v<Quadrature<T, 3>, QuadratureType>,
         "QuadratureType must be a derived class of "
         "Quadrature<T, NaturalDim>, where NaturalDim can "
         "be 1, 2 or 3.");
