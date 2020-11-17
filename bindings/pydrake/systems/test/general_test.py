@@ -11,6 +11,7 @@ import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import RandomGenerator
+from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue, Value
 from pydrake.examples.pendulum import PendulumPlant
@@ -61,7 +62,7 @@ from pydrake.systems.primitives import (
     ConstantVectorSource, ConstantVectorSource_,
     Integrator,
     LinearSystem,
-    PassThrough,
+    PassThrough, PassThrough_,
     SignalLogger,
     ZeroOrderHold,
     )
@@ -767,43 +768,44 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(type(value), str)
         self.assertEqual(value, "string")
 
-    def test_vector_input_port_fix(self):
+    @numpy_compare.check_all_types
+    def test_vector_input_port_fix(self, T):
         np_zeros = np.array([0.])
         model_value = AbstractValue.Make(BasicVector(np_zeros))
-        system = PassThrough(len(np_zeros))
+        system = PassThrough_[T](len(np_zeros))
         context = system.CreateDefaultContext()
         input_port = system.get_input_port(0)
 
         # Fix to a scalar.
-        input_port.FixValue(context, 1.)
+        input_port.FixValue(context, T(1.))
         value = input_port.Eval(context)
         self.assertEqual(type(value), np.ndarray)
-        np.testing.assert_equal(value, np.array([1.]))
+        numpy_compare.assert_equal(value, np.array([T(1.)]))
 
         # Fix to an ndarray.
-        input_port.FixValue(context, np.array([2.]))
+        input_port.FixValue(context, np.array([T(2.)]))
         value = input_port.Eval(context)
         self.assertEqual(type(value), np.ndarray)
-        np.testing.assert_equal(value, np.array([2.]))
+        numpy_compare.assert_equal(value, np.array([T(2.)]))
 
         # Fix to a BasicVector.
-        input_port.FixValue(context, BasicVector([3.]))
+        input_port.FixValue(context, BasicVector_[T]([3.]))
         value = input_port.Eval(context)
         self.assertEqual(type(value), np.ndarray)
-        np.testing.assert_equal(value, np.array([3.]))
+        numpy_compare.assert_equal(value, np.array([T(3.)]))
 
         # Fix to a type-erased BasicVector.
-        input_port.FixValue(context, AbstractValue.Make(BasicVector([4.])))
+        input_port.FixValue(context, AbstractValue.Make(BasicVector_[T]([4.])))
         value = input_port.Eval(context)
         self.assertEqual(type(value), np.ndarray)
-        np.testing.assert_equal(value, np.array([4.]))
+        numpy_compare.assert_equal(value, np.array([T(4.)]))
 
         # Fix to wrong-sized vector.
         with self.assertRaises(RuntimeError):
             input_port.FixValue(context, np.array([0., 1.]))
         with self.assertRaises(RuntimeError):
             input_port.FixValue(
-                context, AbstractValue.Make(BasicVector([0., 1.])))
+                context, AbstractValue.Make(BasicVector_[T]([0., 1.])))
 
         # Fix to a non-vector.
         with self.assertRaises(TypeError):
