@@ -10,6 +10,7 @@
 #include "pybind11/eval.h"
 #include "pybind11/operators.h"
 #include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 #include <gtest/gtest.h>
 
 #include "drake/bindings/pydrake/test/test_util_pybind.h"
@@ -32,7 +33,43 @@ void PyExpectTrue(py::module m, const char* expr) {
   EXPECT_TRUE(value) << expr;
 }
 
-// TODO(eric.cousineau): Test coverage of `py_keep_alive`, etc.
+class Nonce {};
+
+class ExamplePyKeepAlive {
+ public:
+  const Nonce* a() const { return &a_; }
+  std::vector<const Nonce*> a_list() const { return {&a_}; }
+
+ private:
+  Nonce a_{};
+};
+
+GTEST_TEST(PydrakePybindTest, PyKeepAlive) {
+  py::module m("test");
+  {
+    using Class = Nonce;
+    py::class_<Class>(m, "Nonce");
+  }
+  {
+    using Class = ExamplePyKeepAlive;
+    py::class_<Class>(m, "ExamplePyKeepAlive")
+        .def(py::init())
+        .def("a",
+            [](const Class& self) {
+              return py_keep_alive(py::cast(self.a()), py::cast(&self));
+            })
+        .def("a_list", [](const Class& self) {
+          return py_keep_alive_iterable<py::list>(
+              py::cast(self.a_list()), py::cast(&self));
+        });
+  }
+
+  PyExpectTrue(m, "isinstance(ExamplePyKeepAlive().a(), Nonce)");
+  PyExpectTrue(m,
+      "isinstance(ExamplePyKeepAlive().a_list(), list) and "
+      "len(ExamplePyKeepAlive().a_list()) == 1 and "
+      "isinstance(ExamplePyKeepAlive().a_list()[0], Nonce)");
+}
 
 // Class which has a copy constructor, for testing `DefCopyAndDeepCopy`.
 struct ExampleDefCopyAndDeepCopy {
