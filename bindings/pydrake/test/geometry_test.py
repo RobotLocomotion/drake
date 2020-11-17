@@ -737,21 +737,22 @@ class TestGeometry(unittest.TestCase):
             X_PC=RigidTransform())
         self.assertIsInstance(image, ImageLabel16I)
 
-        depth_camera = mut.render.DepthCameraProperties(
-            width=320, height=240, fov_y=pi/6, renderer_name=renderer_name,
-            z_near=0.1, z_far=5.0)
-        image = query_object.RenderColorImage(
-            camera=depth_camera, parent_frame=SceneGraph.world_frame_id(),
-            X_PC=RigidTransform())
-        self.assertIsInstance(image, ImageRgba8U)
-        image = query_object.RenderDepthImage(
-            camera=depth_camera, parent_frame=SceneGraph.world_frame_id(),
-            X_PC=RigidTransform())
-        self.assertIsInstance(image, ImageDepth32F)
-        image = query_object.RenderLabelImage(
-            camera=depth_camera, parent_frame=SceneGraph.world_frame_id(),
-            X_PC=RigidTransform())
-        self.assertIsInstance(image, ImageLabel16I)
+        with catch_drake_warnings(expected_count=3):
+            depth_camera = mut.render.DepthCameraProperties(
+                width=320, height=240, fov_y=pi/6, renderer_name=renderer_name,
+                z_near=0.1, z_far=5.0)
+            image = query_object.RenderColorImage(
+                camera=depth_camera, parent_frame=SceneGraph.world_frame_id(),
+                X_PC=RigidTransform())
+            self.assertIsInstance(image, ImageRgba8U)
+            image = query_object.RenderDepthImage(
+                camera=depth_camera, parent_frame=SceneGraph.world_frame_id(),
+                X_PC=RigidTransform())
+            self.assertIsInstance(image, ImageDepth32F)
+            image = query_object.RenderLabelImage(
+                camera=depth_camera, parent_frame=SceneGraph.world_frame_id(),
+                X_PC=RigidTransform())
+            self.assertIsInstance(image, ImageLabel16I)
 
     def test_read_obj_to_surface_mesh(self):
         mesh_path = FindResourceOrThrow("drake/geometry/test/quad_cube.obj")

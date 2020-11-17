@@ -67,6 +67,8 @@ using systems::sensors::InvalidDepth;
 // Default camera properties.
 const int kWidth = 640;
 const int kHeight = 480;
+const double kClipNear = 0.01;
+const double kClipFar = 100.0;
 const double kZNear = 0.1;
 const double kZFar = 5.;
 const double kFovY = M_PI_4;
@@ -194,18 +196,20 @@ class RenderEngineGlTest : public ::testing::Test {
   // This interface allows that to be completely reconfigured by the calling
   // test.
   void Render(RenderEngineGl* renderer = nullptr,
-              const DepthCameraProperties* camera_in = nullptr,
+              const DepthRenderCamera* camera_in = nullptr,
               ImageRgba8U* color_out = nullptr,
               ImageDepth32F* depth_in = nullptr,
               ImageLabel16I* label_in = nullptr) {
     if (!renderer) renderer = renderer_.get();
-    const DepthCameraProperties& camera = camera_in ? *camera_in : camera_;
+    const DepthRenderCamera& depth_camera =
+        camera_in ? *camera_in : depth_camera_;
+    const ColorRenderCamera color_camera(depth_camera.core(), kShowWindow);
     ImageLabel16I* label = label_in ? label_in : &label_;
     ImageDepth32F* depth = depth_in ? depth_in : &depth_;
     ImageRgba8U* color = color_out ? color_out : &color_;
-    EXPECT_NO_THROW(renderer->RenderDepthImage(camera, depth));
-    EXPECT_NO_THROW(renderer->RenderLabelImage(camera, kShowWindow, label));
-    EXPECT_NO_THROW(renderer->RenderColorImage(camera, kShowWindow, color));
+    EXPECT_NO_THROW(renderer->RenderDepthImage(depth_camera, depth));
+    EXPECT_NO_THROW(renderer->RenderLabelImage(color_camera, label));
+    EXPECT_NO_THROW(renderer->RenderColorImage(color_camera, color));
   }
 
   // Confirms that all pixels in the member color image have the same value.
@@ -253,18 +257,18 @@ class RenderEngineGlTest : public ::testing::Test {
   // camera properties. These are the pixels that are drawn on by the
   // background (possibly flat plane, possibly sky) and not the primary
   // geometry.
-  static std::vector<ScreenCoord> GetOutliers(const CameraProperties& camera) {
+  static std::vector<ScreenCoord> GetOutliers(const CameraInfo& intrinsics) {
     return std::vector<ScreenCoord>{
         {kInset, kInset},
-        {kInset, camera.height - kInset - 1},
-        {camera.width - kInset - 1, camera.height - kInset - 1},
-        {camera.width - kInset - 1, kInset}};
+        {kInset, intrinsics.height() - kInset - 1},
+        {intrinsics.width() - kInset - 1, intrinsics.height() - kInset - 1},
+        {intrinsics.width() - kInset - 1, kInset}};
   }
 
   // Compute the coordinate of the pixel that is drawn on by the primary
   // geometry given a set of camera properties.
-  static ScreenCoord GetInlier(const CameraProperties& camera) {
-    return ScreenCoord(camera.width / 2, camera.height / 2);
+  static ScreenCoord GetInlier(const CameraInfo& intrinsics) {
+    return {intrinsics.width() / 2, intrinsics.height() / 2};
   }
 
   // Tests that the depth value in the given `image` at the given `coord` is
@@ -300,7 +304,7 @@ class RenderEngineGlTest : public ::testing::Test {
   // If images are provided, the given images will be tested, otherwise the
   // member images will be tested.
   void VerifyOutliers(const RenderEngineGl& renderer,
-                      const DepthCameraProperties& camera,
+                      const DepthRenderCamera& camera,
                       const ImageRgba8U* color_in = nullptr,
                       const ImageDepth32F* depth_in = nullptr,
                       const ImageLabel16I* label_in = nullptr) const {
@@ -308,7 +312,7 @@ class RenderEngineGlTest : public ::testing::Test {
     const ImageDepth32F& depth = depth_in ? *depth_in : depth_;
     const ImageLabel16I& label = label_in ? *label_in : label_;
 
-    for (const auto& screen_coord : GetOutliers(camera)) {
+    for (const auto& screen_coord : GetOutliers(camera.core().intrinsics())) {
       EXPECT_TRUE(CompareColor(expected_outlier_color_, color, screen_coord));
       EXPECT_TRUE(IsExpectedDepth(depth, screen_coord, expected_outlier_depth_,
                                   kDepthTolerance))
@@ -420,27 +424,29 @@ class RenderEngineGlTest : public ::testing::Test {
   // image. To pass, the renderer will have to have been populated with a
   // compliant sphere and camera configuration (e.g., PopulateSphereTest()).
   void PerformCenterShapeTest(RenderEngineGl* renderer,
-                              const DepthCameraProperties* camera = nullptr) {
-    const DepthCameraProperties& cam = camera ? *camera : camera_;
+                              const DepthRenderCamera* camera = nullptr) {
+    const DepthRenderCamera& cam = camera ? *camera : depth_camera_;
+    const int w = cam.core().intrinsics().width();
+    const int h = cam.core().intrinsics().height();
     // Can't use the member images in case the camera has been configured to a
     // different size than the default camera_ configuration.
-    ImageRgba8U color(cam.width, cam.height);
-    ImageDepth32F depth(cam.width, cam.height);
-    ImageLabel16I label(cam.width, cam.height);
+    ImageRgba8U color(w, h);
+    ImageDepth32F depth(w, h);
+    ImageLabel16I label(w, h);
     Render(renderer, &cam, &color, &depth, &label);
 
     VerifyCenterShapeTest(*renderer, cam, color, depth, label);
   }
 
   void VerifyCenterShapeTest(const RenderEngineGl& renderer,
-                             const DepthCameraProperties& camera,
+                             const DepthRenderCamera& camera,
                              const ImageRgba8U& color,
                              const ImageDepth32F& depth,
                              const ImageLabel16I& label) const {
     VerifyOutliers(renderer, camera, &color, &depth, &label);
 
     // Verifies inside the sphere.
-    const ScreenCoord inlier = GetInlier(camera);
+    const ScreenCoord inlier = GetInlier(camera.core().intrinsics());
 
     EXPECT_TRUE(CompareColor(expected_color_, color, inlier))
               << "Color at: " << inlier;
@@ -460,8 +466,11 @@ class RenderEngineGlTest : public ::testing::Test {
   RenderLabel expected_outlier_label_{RenderLabel::kDontCare};
   Rgba default_color_{kDefaultVisualColor};
 
-  const DepthCameraProperties camera_ = {kWidth, kHeight, kFovY,
-                                         "unused",  kZNear,  kZFar};
+  // We store a reference depth camera; we can always derive a color camera
+  // from it; they have the same intrinsics and we grab the global kShowWindow.
+  const DepthRenderCamera depth_camera_{
+      {"unused", {kWidth, kHeight, kFovY}, {kClipNear, kClipFar}, {}},
+      {kZNear, kZFar}};
 
   ImageRgba8U color_;
   ImageDepth32F depth_;
@@ -551,8 +560,8 @@ TEST_F(RenderEngineGlTest, HorizonTest) {
       AngleAxisd(M_PI_2, Vector3d::UnitY())}};
   Init(X_WR, true);
 
-  CameraProperties camera{camera_.width, camera_.height, camera_.fov_y,
-                          "ignored"};
+  const ColorRenderCamera camera(depth_camera_.core(), kShowWindow);
+  const auto& intrinsics = camera.core().intrinsics();
   // Returns y in [0, camera.height), index of horizon location in image
   // coordinate system under several assumptions:
   //   - the ground plane is not clipped by kClippingPlaneFar,
@@ -560,15 +569,15 @@ TEST_F(RenderEngineGlTest, HorizonTest) {
   //   - the ground is a square 100m on a side, centered on world origin.
   //   - camera is located above world origin with a view direction parallel to
   //     the ground (such that the horizon is a horizontal line).
-  auto CalcHorizon = [&camera](double z) {
+  auto CalcHorizon = [intrinsics](double z) {
     const double kTerrainHalfSize = 50.;
     const double kFocalLength =
-        camera.height * 0.5 / std::tan(0.5 * camera.fov_y);
+        intrinsics.height() * 0.5 / std::tan(0.5 * intrinsics.fov_y());
     // We assume the horizon is *below* the middle of the screen. So, we compute
     // the number of pixels below the screen center the horizon must lie, and
     // then add half screen height to that value to get the number of rows
     // from the top row of the image.
-    return 0.5 * camera.height + z / kTerrainHalfSize * kFocalLength;
+    return 0.5 * intrinsics.height() + z / kTerrainHalfSize * kFocalLength;
   };
 
   const RgbaColor bg_color(kBgColor);
@@ -577,14 +586,14 @@ TEST_F(RenderEngineGlTest, HorizonTest) {
   for (const double z : {2., 1., 0.5}) {
     X_WR.set_translation({p_WR(0), p_WR(1), z});
     renderer_->UpdateViewpoint(X_WR);
-    ImageRgba8U color(camera.width, camera.height);
-    renderer_->RenderColorImage(camera, kShowWindow, &color);
+    ImageRgba8U color(intrinsics.width(), intrinsics.height());
+    renderer_->RenderColorImage(camera, &color);
 
     int actual_horizon{0};
     // This test is looking for the *first* row that isn't exactly sky color.
     // That implies it's starting its search *in the sky*. That implies that the
     // top row is zero and the bottom row is height - 1.
-    for (int y = 0; y < camera.height; ++y) {
+    for (int y = 0; y < intrinsics.height(); ++y) {
       if ((static_cast<uint8_t>(bg_color.r != color.at(0, y)[0])) ||
           (static_cast<uint8_t>(bg_color.g != color.at(0, y)[1])) ||
           (static_cast<uint8_t>(bg_color.b != color.at(0, y)[2]))) {
@@ -600,6 +609,7 @@ TEST_F(RenderEngineGlTest, HorizonTest) {
 
 // Performs the shape-centered-in-the-image test with a box.
 TEST_F(RenderEngineGlTest, BoxTest) {
+  const auto& intrinsics = depth_camera_.core().intrinsics();
   for (const bool use_texture : {false, true}) {
     // Note the scale factors of 0.5 and 1.5 were selected so that the corner
     // of the box that is being tested will have the same color. Once because
@@ -647,7 +657,8 @@ TEST_F(RenderEngineGlTest, BoxTest) {
       // Because we have a radially symmetric lens, px = py and we can compute
       // that measure by with simple trigonometry.
       const double pixel_size = 4 * expected_object_depth_ *
-                                tan(camera_.fov_y / 2.0) / camera_.height;
+                                tan(intrinsics.fov_y() / 2.0) /
+                                intrinsics.height();
       RigidTransformd X_WV{RotationMatrixd{AngleAxisd(M_PI, Vector3d::UnitX())},
                            Vector3d{(-box.width() + pixel_size) * 0.5,
                                     (-box.depth() + pixel_size) * 0.5, 0.625}};
@@ -716,8 +727,10 @@ TEST_F(RenderEngineGlTest, TransparentSphereTest) {
   default_color_ = Rgba(kDefaultVisualColor.r(), kDefaultVisualColor.g(),
                         kDefaultVisualColor.b(), int_alpha / 255.0);
   PopulateSphereTest(&renderer);
-  ImageRgba8U color(camera_.width, camera_.height);
-  renderer.RenderColorImage(camera_, kShowWindow, &color);
+  const ColorRenderCamera camera(depth_camera_.core(), kShowWindow);
+  const auto& intrinsics = camera.core().intrinsics();
+  ImageRgba8U color(intrinsics.width(), intrinsics.height());
+  renderer.RenderColorImage(camera, &color);
 
   // Note: under CI this test runs with Xvfb - a virtual frame buffer. This does
   // *not* use the OpenGL drivers and, empirically, it has shown a different
@@ -743,7 +756,7 @@ TEST_F(RenderEngineGlTest, TransparentSphereTest) {
   const RgbaColor expect_quad{
       blend(kDefaultVisualColor, kTerrainColor, quad_factor)};
 
-  const ScreenCoord inlier = GetInlier(camera_);
+  const ScreenCoord inlier = GetInlier(intrinsics);
   const RgbaColor at_pixel(color.at(inlier.x, inlier.y));
   EXPECT_TRUE(CompareColor(expect_linear, color, inlier) ||
               CompareColor(expect_quad, color, inlier))
@@ -814,12 +827,12 @@ TEST_F(RenderEngineGlTest, CapsuleRotatedTest) {
   Render(renderer_.get());
 
   SCOPED_TRACE("Capsule rotated test");
-  VerifyOutliers(*renderer_, camera_);
+  VerifyOutliers(*renderer_, depth_camera_);
 
   // Verifies the inliers towards the ends of the capsule and ensures its
   // length attribute is respected as opposed to just its radius. This
   // distinguishes it from other shape tests, such as a sphere.
-  const ScreenCoord inlier = GetInlier(camera_);
+  const ScreenCoord inlier = GetInlier(depth_camera_.core().intrinsics());
   const int offsets[2] = {kHeight / 4, -kHeight / 4};
   const int x = inlier.x;
   for (const int& offset : offsets) {
@@ -1192,19 +1205,27 @@ TEST_F(RenderEngineGlTest, DifferentCameras) {
   Init(X_WR_, true);
   PopulateSphereTest(renderer_.get());
 
+  const auto& ref_core = depth_camera_.core();
+  const std::string& ref_name = ref_core.renderer_name();
+  const RigidTransformd ref_X_BS = ref_core.sensor_pose_in_camera_body();
+  const ClippingRange& ref_clipping = ref_core.clipping();
+  const auto& ref_intrinsics = ref_core.intrinsics();
+  const int ref_w = ref_intrinsics.width();
+  const int ref_h = ref_intrinsics.height();
+  const double ref_fov_y = ref_intrinsics.fov_y();
   {
     // Baseline -- confirm that all of the defaults in this test still produce
     // the expected outcome.
     SCOPED_TRACE("Camera change - baseline");
-    PerformCenterShapeTest(renderer_.get(), &camera_);
+    PerformCenterShapeTest(renderer_.get(), &depth_camera_);
   }
 
   // Test changes in sensor sizes.
   {
     // Now run it again with a camera with a smaller sensor (quarter area).
-    DepthCameraProperties small_camera{camera_};
-    small_camera.width /= 2;
-    small_camera.height /= 2;
+    const DepthRenderCamera small_camera{
+        {ref_name, {ref_w / 2, ref_h / 2, ref_fov_y}, ref_clipping, ref_X_BS},
+        depth_camera_.depth_range()};
     {
       SCOPED_TRACE("Camera change - small camera");
       PerformCenterShapeTest(renderer_.get(), &small_camera);
@@ -1212,9 +1233,9 @@ TEST_F(RenderEngineGlTest, DifferentCameras) {
 
     // Now run it again with a camera with a bigger sensor (4X area).
     {
-      DepthCameraProperties big_camera{camera_};
-      big_camera.width *= 2;
-      big_camera.height *= 2;
+      const DepthRenderCamera big_camera{
+          {ref_name, {ref_w * 2, ref_h * 2, ref_fov_y}, ref_clipping, ref_X_BS},
+          depth_camera_.depth_range()};
       SCOPED_TRACE("Camera change - big camera");
       PerformCenterShapeTest(renderer_.get(), &big_camera);
     }
@@ -1229,23 +1250,27 @@ TEST_F(RenderEngineGlTest, DifferentCameras) {
 
   // Test changes in fov (larger and smaller).
   {
-    DepthCameraProperties narrow_fov(camera_);
-    narrow_fov.fov_y /= 2;
+    const DepthRenderCamera narrow_fov{
+        {ref_name, {ref_w, ref_h, ref_fov_y / 2}, ref_clipping, ref_X_BS},
+        depth_camera_.depth_range()};
     SCOPED_TRACE("Camera change - narrow fov");
     PerformCenterShapeTest(renderer_.get(), &narrow_fov);
   }
 
   {
-    DepthCameraProperties wide_fov(camera_);
-    wide_fov.fov_y *= 2;
+    const DepthRenderCamera wide_fov{
+        {ref_name, {ref_w, ref_h, ref_fov_y * 2}, ref_clipping, ref_X_BS},
+        depth_camera_.depth_range()};
     SCOPED_TRACE("Camera change - wide fov");
     PerformCenterShapeTest(renderer_.get(), &wide_fov);
   }
 
   // Test changes to depth range.
   {
-    DepthCameraProperties clipping_far_plane(camera_);
-    clipping_far_plane.z_far = expected_outlier_depth_ - 0.1;
+    const auto& depth_range = depth_camera_.depth_range();
+    const DepthRenderCamera clipping_far_plane{
+        depth_camera_.core(),
+        {depth_range.min_depth(), expected_outlier_depth_ - 0.1}};
     const float old_outlier_depth = expected_outlier_depth_;
     expected_outlier_depth_ = std::numeric_limits<float>::infinity();
     {
@@ -1256,8 +1281,9 @@ TEST_F(RenderEngineGlTest, DifferentCameras) {
     }
 
     {
-      DepthCameraProperties clipping_near_plane(camera_);
-      clipping_near_plane.z_near = expected_object_depth_ + 0.1;
+      const DepthRenderCamera clipping_near_plane{
+        depth_camera_.core(),
+        {expected_object_depth_ + 0.1, depth_range.max_depth()}};
       const float old_object_depth = expected_object_depth_;
       expected_object_depth_ = 0;
       SCOPED_TRACE("Camera change - z near clips mesh");
@@ -1452,13 +1478,16 @@ TEST_F(RenderEngineGlTest, ShowRenderLabel) {
   RenderEngineGl engine;
   const internal::OpenGlContext& context =
       RenderEngineGlTester(&engine).opengl_context();
-  CameraProperties camera{640, 480, M_PI, "junk"};
-  ImageLabel16I image{camera.width, camera.height};
+  const int w = depth_camera_.core().intrinsics().width();
+  const int h = depth_camera_.core().intrinsics().height();
+  ImageLabel16I image{w, h};
 
   ASSERT_FALSE(context.IsWindowViewable());
-  engine.RenderLabelImage(camera, true, &image);
+  engine.RenderLabelImage(ColorRenderCamera{depth_camera_.core(), true},
+                          &image);
   ASSERT_TRUE(context.IsWindowViewable());
-  engine.RenderLabelImage(camera, false, &image);
+  engine.RenderLabelImage(ColorRenderCamera{depth_camera_.core(), false},
+                          &image);
   ASSERT_FALSE(context.IsWindowViewable());
 
   // TODO(SeanCurtis-TRI): Do the same for color labels when implemented.
