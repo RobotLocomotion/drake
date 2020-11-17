@@ -18,10 +18,10 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
+#include "drake/common/symbolic_decompose.h"
 #include "drake/common/symbolic_monomial_util.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/sos_basis_generator.h"
-#include "drake/solvers/symbolic_extraction.h"
 
 namespace drake {
 namespace solvers {
@@ -50,8 +50,6 @@ using symbolic::Variable;
 using symbolic::Variables;
 
 using internal::CreateBinding;
-using internal::DecomposeLinearExpression;
-using internal::SymbolicError;
 
 MathematicalProgram::MathematicalProgram()
     : x_initial_guess_(0),
@@ -1142,7 +1140,7 @@ MathematicalProgram::AddExponentialConeConstraint(
   Eigen::MatrixXd A{};
   Eigen::VectorXd b(3);
   VectorXDecisionVariable vars{};
-  internal::DecomposeLinearExpression(z, &A, &b, &vars);
+  symbolic::DecomposeAffineExpressions(z, &A, &b, &vars);
   return AddExponentialConeConstraint(A.sparseView(), Eigen::Vector3d(b), vars);
 }
 

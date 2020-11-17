@@ -5,8 +5,8 @@
 #include <sstream>
 
 #include "drake/common/symbolic.h"
+#include "drake/common/symbolic_decompose.h"
 #include "drake/math/quadratic_form.h"
-#include "drake/solvers/symbolic_extraction.h"
 
 namespace drake {
 namespace solvers {
@@ -29,12 +29,6 @@ using symbolic::Polynomial;
 using symbolic::Variable;
 using symbolic::Variables;
 
-using internal::DecomposeLinearExpression;
-using internal::DecomposeQuadraticPolynomial;
-using internal::ExtractAndAppendVariablesFromExpression;
-using internal::ExtractVariablesFromExpression;
-using internal::SymbolicError;
-
 Binding<Constraint> ParseConstraint(
     const Eigen::Ref<const VectorX<Expression>>& v,
     const Eigen::Ref<const Eigen::VectorXd>& lb,
@@ -55,7 +49,8 @@ Binding<Constraint> ParseConstraint(
   unordered_map<Variable::Id, int> map_var_to_index;
   VectorXDecisionVariable vars(0);
   for (int i = 0; i < v.size(); ++i) {
-    ExtractAndAppendVariablesFromExpression(v(i), &vars, &map_var_to_index);
+    symbolic::ExtractAndAppendVariablesFromExpression(v(i), &vars,
+                                                      &map_var_to_index);
   }
 
   // Construct A, new_lb, new_ub. map_var_to_index is used here.
@@ -67,14 +62,15 @@ Binding<Constraint> ParseConstraint(
   bool is_v_bounding_box = true;
   for (int i = 0; i < v.size(); ++i) {
     double constant_term = 0;
-    int num_vi_variables = DecomposeLinearExpression(v(i), map_var_to_index,
-                                                     A.row(i), &constant_term);
+    int num_vi_variables = symbolic::DecomposeAffineExpression(
+        v(i), map_var_to_index, A.row(i), &constant_term);
     if (num_vi_variables == 0 &&
         !(lb(i) <= constant_term && constant_term <= ub(i))) {
       // Unsatisfiable constraint with no variables, such as 1 <= 0 <= 2
-      throw SymbolicError(v(i), lb(i), ub(i),
-                          "unsatisfiable but called with"
-                          " ParseConstraint");
+      throw std::runtime_error(
+          fmt::format("Constraint {} <= {} <= {} is unsatisfiable but called "
+                      "with ParseConstraint.",
+                      lb(i), v(i).to_string(), ub(i)));
 
     } else {
       new_lb(i) = lb(i) - constant_term;
@@ -450,14 +446,16 @@ Binding<LinearEqualityConstraint> DoParseLinearEqualityConstraint(
   VectorXDecisionVariable vars(0);
   unordered_map<Variable::Id, int> map_var_to_index;
   for (int i = 0; i < v.rows(); ++i) {
-    ExtractAndAppendVariablesFromExpression(v(i), &vars, &map_var_to_index);
+    symbolic::ExtractAndAppendVariablesFromExpression(v(i), &vars,
+                                                      &map_var_to_index);
   }
   // TODO(hongkai.dai): use sparse matrix.
   Eigen::MatrixXd A = Eigen::MatrixXd::Zero(v.rows(), vars.rows());
   Eigen::VectorXd beq = Eigen::VectorXd::Zero(v.rows());
   for (int i = 0; i < v.rows(); ++i) {
     double constant_term(0);
-    DecomposeLinearExpression(v(i), map_var_to_index, A.row(i), &constant_term);
+    symbolic::DecomposeAffineExpression(v(i), map_var_to_index, A.row(i),
+                                        &constant_term);
     beq(i) = b(i) - constant_term;
   }
   return CreateBinding(make_shared<LinearEqualityConstraint>(A, beq), vars);
@@ -466,7 +464,7 @@ Binding<LinearEqualityConstraint> DoParseLinearEqualityConstraint(
 Binding<QuadraticConstraint> ParseQuadraticConstraint(
     const symbolic::Expression& e, double lower_bound, double upper_bound) {
   // First build an Eigen vector that contains all the bound variables.
-  auto p = ExtractVariablesFromExpression(e);
+  auto p = symbolic::ExtractVariablesFromExpression(e);
   const auto& vars_vec = p.first;
   const auto& map_var_to_index = p.second;
 
@@ -477,7 +475,8 @@ Binding<QuadraticConstraint> ParseQuadraticConstraint(
   Eigen::VectorXd b(vars_vec.size());
   double constant_term;
   // Decompose the polynomial as 0.5xᵀQx + bᵀx + k.
-  DecomposeQuadraticPolynomial(poly, map_var_to_index, &Q, &b, &constant_term);
+  symbolic::DecomposeQuadraticPolynomial(poly, map_var_to_index, &Q, &b,
+                                         &constant_term);
   // The constraint to be imposed is
   // lb - k ≤ 0.5 xᵀQx + bᵀx ≤ ub - k
   return CreateBinding(
@@ -539,7 +538,7 @@ Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
   Eigen::MatrixXd A{};
   Eigen::VectorXd b(v.size());
   VectorXDecisionVariable vars{};
-  DecomposeLinearExpression(v, &A, &b, &vars);
+  symbolic::DecomposeAffineExpressions(v, &A, &b, &vars);
   DRAKE_DEMAND(vars.rows() >= 1);
   return CreateBinding(make_shared<LorentzConeConstraint>(A, b), vars);
 }
@@ -547,14 +546,16 @@ Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
 Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
     const Expression& linear_expr, const Expression& quadratic_expr,
     double tol) {
-  const auto& quadratic_p = ExtractVariablesFromExpression(quadratic_expr);
+  const auto& quadratic_p =
+      symbolic::ExtractVariablesFromExpression(quadratic_expr);
   const auto& quadratic_vars = quadratic_p.first;
   const auto& quadratic_var_to_index_map = quadratic_p.second;
   const symbolic::Polynomial poly{quadratic_expr};
   Eigen::MatrixXd Q(quadratic_vars.size(), quadratic_vars.size());
   Eigen::VectorXd b(quadratic_vars.size());
   double a;
-  DecomposeQuadraticPolynomial(poly, quadratic_var_to_index_map, &Q, &b, &a);
+  symbolic::DecomposeQuadraticPolynomial(poly, quadratic_var_to_index_map, &Q,
+                                         &b, &a);
   // The constraint that the linear expression v1 satisfying
   // v1 >= sqrt(0.5 * x' * Q * x + b' * x + a), is equivalent to the vector
   // [z; y] being within a Lorentz cone, where
@@ -580,7 +581,7 @@ Binding<RotatedLorentzConeConstraint> ParseRotatedLorentzConeConstraint(
   Eigen::MatrixXd A{};
   Eigen::VectorXd b(v.size());
   VectorXDecisionVariable vars{};
-  DecomposeLinearExpression(v, &A, &b, &vars);
+  symbolic::DecomposeAffineExpressions(v, &A, &b, &vars);
   DRAKE_DEMAND(vars.rows() >= 1);
   return CreateBinding(std::make_shared<RotatedLorentzConeConstraint>(A, b),
                        vars);
@@ -590,14 +591,16 @@ Binding<RotatedLorentzConeConstraint> ParseRotatedLorentzConeConstraint(
     const symbolic::Expression& linear_expr1,
     const symbolic::Expression& linear_expr2,
     const symbolic::Expression& quadratic_expr, double tol) {
-  const auto& quadratic_p = ExtractVariablesFromExpression(quadratic_expr);
+  const auto& quadratic_p =
+      symbolic::ExtractVariablesFromExpression(quadratic_expr);
   const auto& quadratic_vars = quadratic_p.first;
   const auto& quadratic_var_to_index_map = quadratic_p.second;
   const symbolic::Polynomial poly{quadratic_expr};
   Eigen::MatrixXd Q(quadratic_vars.size(), quadratic_vars.size());
   Eigen::VectorXd b(quadratic_vars.size());
   double a;
-  DecomposeQuadraticPolynomial(poly, quadratic_var_to_index_map, &Q, &b, &a);
+  symbolic::DecomposeQuadraticPolynomial(poly, quadratic_var_to_index_map, &Q,
+                                         &b, &a);
 
   Eigen::MatrixXd C;
   Eigen::VectorXd d;
