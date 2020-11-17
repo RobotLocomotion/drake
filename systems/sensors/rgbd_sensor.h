@@ -116,8 +116,8 @@ class RgbdSensor final : public LeafSystem<double> {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // These deprecated methods make use of the deprecated struct CameraPoses.
-  // So, we disable the warnings.
+  // These deprecated methods make use of the deprecated structs
+  // *CameraProperties and CameraPoses. So, we disable the warnings.
 
   /** Constructs an %RgbdSensor whose frame `B` is rigidly affixed to the frame
    P, indicated by `parent_id`, and with the given "simple" camera properties.

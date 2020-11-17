@@ -141,6 +141,8 @@ class PyRenderEngine : public py::wrapper<RenderEngine> {
   }
 
  private:
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   // TODO(SeanCurtis-TRI) We will be removing the Render*Image API when we
   // deprecate CameraProperties. They must be implemented in order to build
   // this class; so we'll make sure they clearly signal if they get invoked.
@@ -164,6 +166,7 @@ class PyRenderEngine : public py::wrapper<RenderEngine> {
         "Python should not be able to invoke RenderLabelImage with "
         "CameraProperties");
   }
+#pragma GCC diagnostic pop
 };
 
 void def_geometry_render(py::module m) {
@@ -244,14 +247,18 @@ void def_geometry_render(py::module m) {
     DefCopyAndDeepCopy(&cls);
   }
 
-  // TODO(eric.cousineau): Deprecate these.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   {
     using Class = CameraProperties;
-    py::class_<Class> cls(m, "CameraProperties", doc.CameraProperties.doc);
+    py::class_<Class> cls(
+        m, "CameraProperties", doc.CameraProperties.doc_deprecated);
     cls  // BR
-        .def(py::init<int, int, double, std::string>(), py::arg("width"),
-            py::arg("height"), py::arg("fov_y"), py::arg("renderer_name"),
-            doc.CameraProperties.ctor.doc)
+        .def(py_init_deprecated<Class, int, int, double, std::string>(
+                 "Deprecated; due to be removed after 2021-03-01. Please use "
+                 "ColorRenderCamera instead"),
+            py::arg("width"), py::arg("height"), py::arg("fov_y"),
+            py::arg("renderer_name"), doc.CameraProperties.ctor.doc)
         .def_readwrite("width", &Class::width, doc.CameraProperties.width.doc)
         .def_readwrite(
             "height", &Class::height, doc.CameraProperties.height.doc)
@@ -264,9 +271,12 @@ void def_geometry_render(py::module m) {
   {
     using Class = DepthCameraProperties;
     py::class_<Class, CameraProperties> cls(
-        m, "DepthCameraProperties", doc.DepthCameraProperties.doc);
+        m, "DepthCameraProperties", doc.DepthCameraProperties.doc_deprecated);
     cls  // BR
-        .def(py::init<int, int, double, std::string, double, double>(),
+        .def(py_init_deprecated<Class, int, int, double, std::string, double,
+                 double>(
+                 "Deprecated; due to be removed after 2021-03-01. Please use "
+                 "DepthRenderCamera instead"),
             py::arg("width"), py::arg("height"), py::arg("fov_y"),
             py::arg("renderer_name"), py::arg("z_near"), py::arg("z_far"),
             doc.DepthCameraProperties.ctor.doc)
@@ -276,6 +286,7 @@ void def_geometry_render(py::module m) {
             "z_far", &Class::z_far, doc.DepthCameraProperties.z_far.doc);
     DefCopyAndDeepCopy(&cls);
   }
+#pragma GCC diagnostic pop
 
   {
     using Class = RenderEngine;
