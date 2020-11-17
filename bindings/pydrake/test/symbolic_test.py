@@ -520,6 +520,15 @@ class TestSymbolicExpression(unittest.TestCase):
         self.assertEqual(len(vars), 1)
         self.assertTrue(list(vars)[0].EqualTo(x))
 
+    def test_get_variable_vector(self):
+        vars_ = sym.GetVariableVector([e_x, e_y])
+        self.assertEqual(len(vars_), 2)
+        if vars_[0].get_id() == x.get_id():
+            self.assertEqual(vars_[1].get_id(), y.get_id())
+        else:
+            self.assertEqual(vars_[0].get_id(), y.get_id())
+            self.assertEqual(vars_[1].get_id(), x.get_id())
+
     def test_relational_operators(self):
         # TODO(eric.cousineau): Use `VectorizedAlgebra` overloads once #8315 is
         # resolved.
@@ -1210,3 +1219,84 @@ class TestSymbolicPolynomial(unittest.TestCase):
         numpy_compare.assert_equal(
             p.EvaluatePartial(a, 2),
             sym.Polynomial(2 * x * x + b * x + c, [x]))
+
+
+class TestExtractVariablesFromExpression(unittest.TestCase):
+    def test(self):
+        x = sym.Variable("x")
+        y = sym.Variable("y")
+        e = x + sym.sin(y) + x*y
+        variables, map_var_to_index = sym.ExtractVariablesFromExpression(e)
+        self.assertEqual(variables.shape, (2,))
+        self.assertNotEqual(variables[0].get_id(), variables[1].get_id())
+        self.assertEqual(len(map_var_to_index), 2)
+        for i in range(2):
+            self.assertEqual(map_var_to_index[variables[i].get_id()], i)
+
+
+class TestDecomposeAffineExpression(unittest.TestCase):
+    def test(self):
+        x = sym.Variable("x")
+        y = sym.Variable("y")
+        e = 2 * x + 3 * y + 4
+        variables, map_var_to_index = sym.ExtractVariablesFromExpression(e)
+        coeffs, constant_term = sym.DecomposeAffineExpression(
+            e, map_var_to_index)
+        self.assertEqual(constant_term, 4)
+        self.assertEqual(coeffs.shape, (2,))
+        self.assertEqual(coeffs[map_var_to_index[x.get_id()]], 2)
+        self.assertEqual(coeffs[map_var_to_index[y.get_id()]], 3)
+
+
+class TestDecomposeAffineExpressions(unittest.TestCase):
+    def test(self):
+        x = sym.Variable("x")
+        y = sym.Variable("y")
+        e = [2 * x + 3 * y + 4, 4 * x + 2 * y, 3 * x + 5]
+        M, v = sym.DecomposeAffineExpressions(e, [x, y])
+        np.testing.assert_allclose(M, np.array([[2, 3], [4., 2.], [3., 0.]]))
+        np.testing.assert_allclose(v, np.array([4., 0., 5.]))
+
+        A, b, variables = sym.DecomposeAffineExpressions(e)
+        self.assertEqual(variables.shape, (2,))
+        np.testing.assert_allclose(b, np.array([4., 0., 5.]))
+        if variables[0].get_id() == x.get_id():
+            np.testing.assert_allclose(
+                A, np.array([[2., 3.], [4., 2.], [3., 0.]]))
+            self.assertEqual(variables[1].get_id(), y.get_id())
+        else:
+            np.testing.assert_allclose(
+                A, np.array([[3., 2.], [2., 4.], [0., 3.]]))
+            self.assertEqual(variables[0].get_id(), y.get_id())
+            self.assertEqual(variables[1].get_id(), x.get_id())
+
+
+class TestDecomposeLinearExpressions(unittest.TestCase):
+    def test(self):
+        x = sym.Variable("x")
+        y = sym.Variable("y")
+        e = [2 * x + 3 * y, 4 * x + 2 * y, 3 * x]
+        M = sym.DecomposeLinearExpressions(e, [x, y])
+        np.testing.assert_array_equal(
+            M, np.array([[2, 3], [4., 2.], [3., 0.]]))
+
+
+class TestDecomposeQuadraticPolynomial(unittest.TestCase):
+    def test(self):
+        x = sym.Variable("x")
+        y = sym.Variable("y")
+        e = x * x + 2 * y * y + 4 * x * y + 3 * x + 2 * y + 4
+        poly = sym.Polynomial(e, [x, y])
+        variables, map_var_to_index = sym.ExtractVariablesFromExpression(e)
+        Q, b, c = sym.DecomposeQuadraticPolynomial(poly, map_var_to_index)
+        self.assertEqual(c, 4)
+        x_idx = map_var_to_index[x.get_id()]
+        y_idx = map_var_to_index[y.get_id()]
+        self.assertEqual(Q[x_idx, x_idx], 2)
+        self.assertEqual(Q[x_idx, y_idx], 4)
+        self.assertEqual(Q[y_idx, x_idx], 4)
+        self.assertEqual(Q[y_idx, y_idx], 4)
+        self.assertEqual(Q.shape, (2, 2))
+        self.assertEqual(b[x_idx], 3)
+        self.assertEqual(b[y_idx], 2)
+        self.assertEqual(b.shape, (2,))
