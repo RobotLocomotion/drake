@@ -200,8 +200,11 @@ void QueryObject<T>::RenderColorImage(const CameraProperties& camera,
 
   FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   return state.RenderColorImage(camera, parent_frame, X_PC, show_window,
                                 color_image_out);
+#pragma GCC diagnostic pop
 }
 
 template <typename T>
@@ -225,7 +228,10 @@ void QueryObject<T>::RenderDepthImage(const DepthCameraProperties& camera,
 
   FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   return state.RenderDepthImage(camera, parent_frame, X_PC, depth_image_out);
+#pragma GCC diagnostic pop
 }
 
 template <typename T>
@@ -250,8 +256,11 @@ void QueryObject<T>::RenderLabelImage(const CameraProperties& camera,
 
   FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   return state.RenderLabelImage(camera, parent_frame, X_PC, show_window,
                                 label_image_out);
+#pragma GCC diagnostic pop
 }
 
 template <typename T>

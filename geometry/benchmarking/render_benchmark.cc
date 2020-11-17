@@ -161,7 +161,7 @@ class RenderEngineBenchmark : public benchmark::Fixture {
   }
 
   using benchmark::Fixture::SetUp;
-  void SetUp(const ::benchmark::State&) { cameras_.clear(); }
+  void SetUp(const ::benchmark::State&) { depth_cameras_.clear(); }
 
   /* Set up the scene using the VTK render engine.
    @param sphere_count Number of spheres to include in the render.
@@ -243,8 +243,11 @@ class RenderEngineBenchmark : public benchmark::Fixture {
 
     // Add the cameras.
     for (int i = 0; i < camera_count; ++i) {
-      cameras_.emplace_back(width, height, kFovY, "unused" + std::to_string(i),
-                            kZNear, kZFar);
+      depth_cameras_.emplace_back(RenderCameraCore{"unused" + std::to_string(i),
+                                                   {width, height, kFovY},
+                                                   {0.01, 100.0},
+                                                   {}},
+                                  DepthRange{kZNear, kZFar});
     }
 
     // Offset the light from its default position shared with the camera, i.e.
@@ -267,7 +270,7 @@ class RenderEngineBenchmark : public benchmark::Fixture {
   static std::set<std::string> saved_image_paths;
 
   std::unique_ptr<RenderEngine> renderer_;
-  std::vector<DepthCameraProperties> cameras_;
+  std::vector<DepthRenderCamera> depth_cameras_;
   PerceptionProperties material_;
   ImageRgba8U color_image_;
   ImageDepth32F depth_image_;
@@ -285,8 +288,9 @@ BENCHMARK_DEFINE_F(RenderEngineBenchmark, VtkColor)
   SetupVtkRender(sphere_count, camera_count, width, height);
   for (auto _ : state) {
     for (int i = 0; i < camera_count; ++i) {
-      renderer_->RenderColorImage(cameras_[i], FLAGS_show_window,
-                                  &color_image_);
+      const ColorRenderCamera color_cam(depth_cameras_[i].core(),
+                                        FLAGS_show_window);
+      renderer_->RenderColorImage(color_cam, &color_image_);
     }
   }
   if (!FLAGS_save_image_path.empty()) {
@@ -312,7 +316,7 @@ BENCHMARK_DEFINE_F(RenderEngineBenchmark, VtkDepth)
   SetupVtkRender(sphere_count, camera_count, width, height);
   for (auto _ : state) {
     for (int i = 0; i < camera_count; ++i) {
-      renderer_->RenderDepthImage(cameras_[i], &depth_image_);
+      renderer_->RenderDepthImage(depth_cameras_[i], &depth_image_);
     }
   }
   if (!FLAGS_save_image_path.empty()) {
@@ -333,8 +337,9 @@ BENCHMARK_DEFINE_F(RenderEngineBenchmark, VtkLabel)
   SetupVtkRender(sphere_count, camera_count, width, height);
   for (auto _ : state) {
     for (int i = 0; i < camera_count; ++i) {
-      renderer_->RenderLabelImage(cameras_[i], FLAGS_show_window,
-                                  &label_image_);
+      const ColorRenderCamera color_cam(depth_cameras_[i].core(),
+                                        FLAGS_show_window);
+      renderer_->RenderLabelImage(color_cam, &label_image_);
     }
   }
   if (!FLAGS_save_image_path.empty()) {

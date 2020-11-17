@@ -564,7 +564,8 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   /** Adds a new render engine to this %SceneGraph. The %SceneGraph owns the
    render engine. The render engine's name should be referenced in the
-   @ref render::CameraProperties "CameraProperties" provided in the render
+   @ref render::ColorRenderCamera "ColorRenderCamera" or
+   @ref render::DepthRenderCamera "DepthRenderCamera" provided in the render
    queries (see QueryObject::RenderColorImage() as an example).
 
    There is no restriction on when a renderer is added relative to geometry
