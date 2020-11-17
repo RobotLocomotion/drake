@@ -199,6 +199,16 @@ template class ElasticityElement<double, LinearSimplexElement<double, 3>,
 template class ElasticityElement<AutoDiffXd,
                                  LinearSimplexElement<AutoDiffXd, 3>,
                                  SimplexGaussianQuadrature<AutoDiffXd, 1, 3>>;
+template class ElasticityElement<double, LinearSimplexElement<double, 3>,
+                                 SimplexGaussianQuadrature<double, 2, 3>>;
+template class ElasticityElement<AutoDiffXd,
+                                 LinearSimplexElement<AutoDiffXd, 3>,
+                                 SimplexGaussianQuadrature<AutoDiffXd, 2, 3>>;
+template class ElasticityElement<double, LinearSimplexElement<double, 3>,
+                                 SimplexGaussianQuadrature<double, 3, 3>>;
+template class ElasticityElement<AutoDiffXd,
+                                 LinearSimplexElement<AutoDiffXd, 3>,
+                                 SimplexGaussianQuadrature<AutoDiffXd, 3, 3>>;
 }  // namespace fem
 }  // namespace multibody
 }  // namespace drake
