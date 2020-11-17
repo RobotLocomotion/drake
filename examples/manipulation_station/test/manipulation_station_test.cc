@@ -393,6 +393,8 @@ GTEST_TEST(ManipulationStationTest, RegisterRgbdCameraTest) {
     multibody::MultibodyPlant<double>& plant =
         dut.get_mutable_multibody_plant();
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     geometry::render::DepthCameraProperties camera_properties(
         640, 480, M_PI_4, dut.default_renderer_name(), 0.1, 2.0);
 
@@ -401,8 +403,6 @@ GTEST_TEST(ManipulationStationTest, RegisterRgbdCameraTest) {
     const auto& frame0 =
         plant.AddFrame(std::make_unique<multibody::FixedOffsetFrame<double>>(
             "frame0", plant.world_frame(), X_WF0));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     dut.RegisterRgbdSensor("camera0", frame0, X_F0C0, camera_properties);
 
     const Eigen::Translation3d X_F0F1(0, -0.1, 0.2);

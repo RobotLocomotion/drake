@@ -446,10 +446,9 @@ GTEST_TEST(RenderEngine, OldApiDelegatesToNewApi) {
            cores_equal(test.core(), expected.core());
   };
 
-  const DepthCameraProperties properties{w, h, M_PI / 3, "n/a", 0.25, 11.5};
-
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  const DepthCameraProperties properties{w, h, M_PI / 3, "n/a", 0.25, 11.5};
 
   engine.RenderColorImage(properties, true, &color);
   EXPECT_EQ(engine.num_color_renders(), 1);
@@ -482,10 +481,13 @@ GTEST_TEST(RenderEngine, OldApiDelegatesToNewApi) {
 // detected.
 GTEST_TEST(RenderEngine, DetectUnimplementedRender) {
   // Set up cameras and images.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   const CameraProperties cam_props(10, 10, M_PI / 4, "n/a");
   const DepthCameraProperties depth_props(cam_props.width, cam_props.height,
                                           cam_props.fov_y,
                                           cam_props.renderer_name, 0.2, 8.0);
+#pragma GCC diagnostic pop
   const ColorRenderCamera color_cam(cam_props);
   const DepthRenderCamera depth_cam(depth_props);
   ImageRgba8U color_image(cam_props.width, cam_props.height);
@@ -518,6 +520,10 @@ GTEST_TEST(RenderEngine, DetectUnimplementedRender) {
       engine.RenderLabelImage(color_cam, &label_image), std::exception,
       ".+render a label image.+RenderLabelImage.+DoRenderLabelImage.+");
 }
+
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 // This class implements *only* the legacy API to validate forwarding of APIs.
 // Calls on the old API are counted, and the camera properties are cached for
@@ -623,6 +629,7 @@ GTEST_TEST(RenderEngine, NewApiDelegatesToOldApi) {
   EXPECT_TRUE(cameras_match(engine.last_label_camera_properties(),
                             color_camera.core()));
 }
+#pragma GCC diagnostic pop
 
 }  // namespace
 }  // namespace render

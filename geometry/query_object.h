@@ -484,6 +484,8 @@ class QueryObject {
    */
   //@{
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   /** Renders an RGB image for the given `camera` posed with respect to the
    indicated parent frame P.
 
@@ -500,6 +502,7 @@ class QueryObject {
                         const math::RigidTransformd& X_PC,
                         bool show_window,
                         systems::sensors::ImageRgba8U* color_image_out) const;
+#pragma GCC diagnostic pop
 
   /** Renders an RGB image for the given `camera` posed with respect to the
    indicated parent frame P.
@@ -512,6 +515,8 @@ class QueryObject {
                         FrameId parent_frame, const math::RigidTransformd& X_PC,
                         systems::sensors::ImageRgba8U* color_image_out) const;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   /** Renders a depth image for the given `camera` posed with respect to the
    indicated parent frame P.
 
@@ -530,6 +535,7 @@ class QueryObject {
                         FrameId parent_frame,
                         const math::RigidTransformd& X_PC,
                         systems::sensors::ImageDepth32F* depth_image_out) const;
+#pragma GCC diagnostic pop
 
   /** Renders a depth image for the given `camera` posed with respect to the
    indicated parent frame P.
@@ -546,6 +552,8 @@ class QueryObject {
                         FrameId parent_frame, const math::RigidTransformd& X_PC,
                         systems::sensors::ImageDepth32F* depth_image_out) const;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   /** Renders a label image for the given `camera` posed with respect to the
    indicated parent frame P.
 
@@ -562,6 +570,7 @@ class QueryObject {
                         const math::RigidTransformd& X_PC,
                         bool show_window,
                         systems::sensors::ImageLabel16I* label_image_out) const;
+#pragma GCC diagnostic pop
 
   /** Renders a label image for the given `camera` posed with respect to the
    indicated parent frame P.

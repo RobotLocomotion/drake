@@ -198,18 +198,10 @@ class RgbdSensorTest : public ::testing::Test {
       : ::testing::Test(),
         // N.B. This is using arbitrary yet different intrinsics for color vs.
         // depth.
-        color_properties_(640, 480, M_PI / 4, kRendererName),
-        depth_properties_(320, 240, M_PI / 6, kRendererName, 0.1, 10),
-        color_camera_(color_properties_, false),
-        depth_camera_(depth_properties_) {}
-/* TODO(SeanCurtis-TRI) When we finish deprecating the CameraProperties APIs
- the instantiation of the two RenderCameras will become the text below (to
- maintain test equivalence).
         color_camera_({kRendererName, {640, 480, M_PI / 4}, {0.1, 10.0}, {}},
                       false),
         depth_camera_({kRendererName, {320, 240, M_PI / 6}, {0.1, 10.0}, {}},
                       {0.1, 10}) {}
-*/
 
  protected:
   // Creates a Diagram with a SceneGraph and RgbdSensor connected appropriately.
@@ -285,8 +277,6 @@ class RgbdSensorTest : public ::testing::Test {
     return result;
   }
 
-  CameraProperties color_properties_;
-  DepthCameraProperties depth_properties_;
   ColorRenderCamera color_camera_;
   DepthRenderCamera depth_camera_;
   unique_ptr<Diagram<double>> diagram_;
@@ -319,31 +309,26 @@ TEST_F(RgbdSensorTest, PortNames) {
   EXPECT_EQ(sensor.X_WB_output_port().get_name(), "X_WB");
 }
 
-// Confirms that simple intrinsics (CameraProperties) gets translated to full
-// intrinsics (CameraInfo) correctly.
-TEST_F(RgbdSensorTest, ConstructFullySpecifiedCameraIntrinsics) {
-  const CameraInfo color_intrinsics{2, 2, M_PI};
-  const ColorRenderCamera color_camera(
-      {"name", color_intrinsics, {0.1, 10.0}, RigidTransformd{}}, true);
-  const CameraInfo depth_intrinsics{3, 3, M_PI * 0.9};
-  const DepthRenderCamera depth_camera(
-      {"name", depth_intrinsics, {0.1, 10.0}, RigidTransformd{}}, {1, 10});
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+TEST_F(RgbdSensorTest, ConstructDeprecatedCameraProperties) {
+  const CameraProperties color_props(2, 2, M_PI, "name");
+  const DepthCameraProperties depth_props(4, 4, M_PI / 4, "name", 1.0, 10.0);
 
   const FrameId parent_id = FrameId::get_new_id();
   const RigidTransformd X_PB;
 
   {
     // Case: Declare color and depth intrinsics separately.
-    RgbdSensor sensor{parent_id, X_PB, color_camera, depth_camera};
+    RgbdSensor sensor{parent_id, X_PB, color_props, depth_props};
 
     EXPECT_TRUE(
-        CompareCameraInfo(sensor.color_camera_info(), color_intrinsics));
-    EXPECT_TRUE(
-        CompareCameraInfo(sensor.depth_camera_info(), depth_intrinsics));
-    EXPECT_TRUE(Compare(sensor.color_render_camera(), color_camera));
-    EXPECT_TRUE(Compare(sensor.depth_render_camera(), depth_camera));
+        CompareCameraInfo(sensor.color_camera_info(), CameraInfo(2, 2, M_PI)));
+    EXPECT_TRUE(CompareCameraInfo(sensor.depth_camera_info(),
+                                  CameraInfo(4, 4, M_PI / 4)));
   }
 }
+#pragma GCC diagnostic pop
 
 // Tests that the anchored camera reports the correct parent frame and has the
 // right pose passed to the renderer.
@@ -354,7 +339,7 @@ TEST_F(RgbdSensorTest, ConstructAnchoredCamera) {
 
   auto make_sensor = [this, &X_WB](SceneGraph<double>*) {
     return make_unique<RgbdSensor>(SceneGraph<double>::world_frame_id(), X_WB,
-                                   color_properties_, depth_properties_);
+                                   color_camera_, depth_camera_);
   };
   MakeCameraDiagram(make_sensor);
 
@@ -381,8 +366,8 @@ TEST_F(RgbdSensorTest, ConstructFrameFixedCamera) {
                       &X_PB](SceneGraph<double>* graph) {
     source_id = graph->RegisterSource("source");
     graph->RegisterFrame(source_id, frame);
-    return make_unique<RgbdSensor>(frame.id(), X_PB, color_properties_,
-                                   depth_properties_);
+    return make_unique<RgbdSensor>(frame.id(), X_PB, color_camera_,
+                                   depth_camera_);
   };
   MakeCameraDiagram(make_sensor);
 
@@ -435,12 +420,24 @@ TEST_F(RgbdSensorTest, ConstructCameraWithNonTrivialOffsetsDeprecated) {
   // For uniqueness, simply invert X_BC.
   const RigidTransformd X_BD{X_BC.inverse()};
   const RigidTransformd X_WB;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  const RgbdSensor sensor(
-      scene_graph_->world_frame_id(), X_WB, color_properties_,
-      depth_properties_, RgbdSensor::CameraPoses{X_BC, X_BD});
-#pragma GCC diagnostic pop
+  const ColorRenderCamera color_camera(
+      {color_camera_.core().renderer_name(),
+       {color_camera_.core().intrinsics().width(),
+        color_camera_.core().intrinsics().height(),
+        color_camera_.core().intrinsics().fov_y()},
+       color_camera_.core().clipping(),
+       X_BC},
+      false);
+  const DepthRenderCamera depth_camera(
+      {depth_camera_.core().renderer_name(),
+       {depth_camera_.core().intrinsics().width(),
+        depth_camera_.core().intrinsics().height(),
+        depth_camera_.core().intrinsics().fov_y()},
+       depth_camera_.core().clipping(),
+       X_BD},
+      depth_camera_.depth_range());
+  const RgbdSensor sensor(scene_graph_->world_frame_id(), X_WB, color_camera,
+                          depth_camera);
   EXPECT_TRUE(CompareMatrices(
       sensor.X_BC().GetAsMatrix4(), X_BC.GetAsMatrix4()));
   EXPECT_TRUE(CompareMatrices(
@@ -486,7 +483,8 @@ TEST_F(RgbdSensorTest, DepthImage32FTo16U) {
 
 // Tests that the discrete sensor is properly constructed.
 GTEST_TEST(RgbdSensorDiscrete, Construction) {
-  DepthCameraProperties properties(640, 480, M_PI / 4, "render", 0.1, 10);
+  const DepthRenderCamera depth_camera(
+      {"render", {640, 480, M_PI / 4}, {0.1, 10.0}, {}}, {0.1, 10});
   const double kPeriod = 0.1;
 
   const bool include_render_port = true;
@@ -494,7 +492,7 @@ GTEST_TEST(RgbdSensorDiscrete, Construction) {
   // the `RgbdSensor` constructor which takes only `DepthCameraProperties`.
   RgbdSensorDiscrete sensor(
       make_unique<RgbdSensor>(SceneGraph<double>::world_frame_id(),
-                              RigidTransformd::Identity(), properties),
+                              RigidTransformd::Identity(), depth_camera),
       kPeriod, include_render_port);
   EXPECT_EQ(sensor.query_object_input_port().get_name(), "geometry_query");
   EXPECT_EQ(sensor.color_image_output_port().get_name(), "color_image");
@@ -511,12 +509,13 @@ GTEST_TEST(RgbdSensorDiscrete, Construction) {
 // Test that the diagram's internal architecture is correct and, likewise,
 // wired correctly.
 GTEST_TEST(RgbdSensorDiscrete, ImageHold) {
-  DepthCameraProperties properties(640, 480, M_PI / 4, "render", 0.1, 10);
+  const DepthRenderCamera depth_camera(
+      {"render", {640, 480, M_PI / 4}, {0.1, 10.0}, {}}, {0.1, 10});
   // N.B. In addition to testing a discrete sensor, this also tests
   // the `RgbdSensor` constructor which takes only `DepthCameraProperties`.
   auto sensor =
       make_unique<RgbdSensor>(SceneGraph<double>::world_frame_id(),
-                              RigidTransformd::Identity(), properties);
+                              RigidTransformd::Identity(), depth_camera);
   RgbdSensor* sensor_raw = sensor.get();
   const double kPeriod = 0.1;
   const bool include_render_port = true;
