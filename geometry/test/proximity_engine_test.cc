@@ -446,6 +446,8 @@ TEST_F(ProximityEngineMeshes, ComputeContactSurfaces) {
 //         conditions (e.g., same compliance types), it throws.
 //   - Enforce that the results are well-ordered. This aspect is confirmed in
 //     the ComputeContactSurfacesWithFallbackResultOrdering test below.
+//   - Confirm that for T=AutoDiffXd that if there is contact (hydroelastic
+//     or point pair), that it throws.
 // TODO(SeanCurtis-TRI): Update this test when soft meshes are supported.
 TEST_F(ProximityEngineMeshes, ComputeContactSurfaceWithFallback) {
   const bool anchored{true};
@@ -476,6 +478,53 @@ TEST_F(ProximityEngineMeshes, ComputeContactSurfaceWithFallback) {
       EXPECT_EQ(surfaces.size(), 1);
       EXPECT_EQ(point_pairs.size(), 0);
     }
+  }
+
+  // Case: Soft sphere and rigid mesh with AutoDiffXd -- contact would be a
+  // contact surface; throws for now.
+  {
+    ProximityEngine<double> engine_d;
+    const auto X_WGs_d = PopulateEngine(&engine_d, sphere, anchored, soft, mesh,
+                                        !anchored, !soft);
+
+    const auto engine_ad = engine_d.ToAutoDiffXd();
+    unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs_ad;
+    for (const auto& [id, X_WG_d] : X_WGs_d) {
+      X_WGs_ad[id] = RigidTransform<AutoDiffXd>(X_WG_d.GetAsMatrix34());
+    }
+
+    std::vector<ContactSurface<AutoDiffXd>> surfaces;
+    std::vector<PenetrationAsPointPair<AutoDiffXd>> point_pairs;
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        engine_ad->ComputeContactSurfacesWithFallback(X_WGs_ad, &surfaces,
+                                                      &point_pairs),
+        std::exception,
+        "Requested AutoDiff-valued contact surface between two geometries "
+        "with hydroelastic representation but for scalar type .+; not "
+        "currently supported.");
+  }
+
+  // Case: Rigid sphere and mesh with AutoDiffXd -- contact would be  a point
+  // pair; throws for now.
+  {
+    ProximityEngine<double> engine_d;
+    const auto X_WGs_d =
+        PopulateEngine(&engine_d, sphere, false, !soft, sphere, false, !soft);
+    const auto engine_ad = engine_d.ToAutoDiffXd();
+    unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs_ad;
+    for (const auto& [id, X_WG_d] : X_WGs_d) {
+      X_WGs_ad[id] = RigidTransform<AutoDiffXd>(X_WG_d.GetAsMatrix34());
+    }
+
+    std::vector<ContactSurface<AutoDiffXd>> surfaces;
+    std::vector<PenetrationAsPointPair<AutoDiffXd>> point_pairs;
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        engine_ad->ComputeContactSurfacesWithFallback(X_WGs_ad, &surfaces,
+                                                      &point_pairs),
+        std::exception,
+        "ComputeContactSurfacesWithFallback.. model has bodies in contact that "
+        "could not be resolved with hydroelastic contact. The fallback contact "
+        "model .penetration as point pair. only supports T = double.");
   }
 
   // TODO(SeanCurtis-TRI) The reasoning here is flawed. I could comment out

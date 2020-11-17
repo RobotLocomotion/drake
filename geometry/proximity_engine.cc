@@ -298,6 +298,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                            &engine->dynamic_mesh_tree_);
     BuildTreeFromReference(anchored_mesh_tree_, object_map,
                            &engine->anchored_mesh_tree_);
+    engine->hydroelastic_geometries_ = hydroelastic_geometries_;
 
     return engine;
   }
@@ -875,10 +876,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
         point_pairs->clear();
       } else {
         throw std::runtime_error(
-            "ComputeContactSurfacesWithFallback() model has bodies in contact, "
-            "we currently only support "
-            "ProximityEngine<double>::ComputeContactSurfacesWithFallback() "
-            "with bodies in contact.");
+            "ComputeContactSurfacesWithFallback() model has bodies in contact "
+            "that could not be resolved with hydroelastic contact. The "
+            "fallback contact model (penetration as point pair) only supports "
+            "T = double.");
       }
     }
   }
