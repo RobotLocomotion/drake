@@ -306,6 +306,9 @@ def drake_pybind_cc_googletest(
         allow_import_unittest = True,
     )
 
+#  This rule captures information from _collect_cc_header_info
+#  and writes the information that AutoPyBind11 uses to properly search
+#  and comb the desired code.
 def _write_cc_header_info_impl(ctx):
     data = _collect_cc_header_info(ctx.attr.targets)
     out = ctx.actions.declare_file("response.rsp")
