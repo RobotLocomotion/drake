@@ -2079,7 +2079,7 @@ MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
 
   if (composite_mass <= 0) {
     throw std::runtime_error(
-        "CalcJacobianCenterOfMassTranslationalVelocity(): the "
+        "CalcBiasCenterOfMassTranslationalAcceleration(): the "
         "system's total mass must be greater than zero.");
   }
   asBias_ACcm_E /= composite_mass;
