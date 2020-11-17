@@ -28,6 +28,11 @@ e_y = sym.Expression(y)
 
 
 class TestSymbolicVariable(unittest.TestCase):
+    def test_get_name(self):
+        self.assertEqual(a.get_name(), "a")
+        self.assertEqual(b.get_name(), "b")
+        self.assertEqual(c.get_name(), "c")
+
     def test_addition(self):
         numpy_compare.assert_equal(x + y, "(x + y)")
         numpy_compare.assert_equal(x + 1, "(1 + x)")
@@ -160,6 +165,41 @@ class TestSymbolicVariable(unittest.TestCase):
         value = str(np.array([x, y]))
         self.assertIn("Variable('x', Continuous)", value)
         self.assertIn("Variable('y', Continuous)", value)
+
+
+class TestMakeMatrixVariable(unittest.TestCase):
+    # Test both MakeMatrixVariable and MakeVectorVariable (and the variations)
+    def test_make_matrix_variable(self):
+        # Call MakeMatrixVariable with default variable type.
+        A = sym.MakeMatrixVariable(3, 2, "A")
+        self.assertEqual(A.shape, (3, 2))
+        for i in range(3):
+            for j in range(2):
+                self.assertEqual(
+                    repr(A[i, j]), f"Variable('A({i}, {j})', Continuous)")
+
+        # Call MakeMatrixVariable with specified variable type.
+        A = sym.MakeMatrixVariable(3, 2, "A", sym.Variable.Type.BINARY)
+        self.assertEqual(A.shape, (3, 2))
+        for i in range(3):
+            for j in range(2):
+                self.assertEqual(
+                    repr(A[i, j]), f"Variable('A({i}, {j})', Binary)")
+
+    def test_make_vector_variable(self):
+        # Call MakeVectorVariable with default variable type.
+        a = sym.MakeVectorVariable(3, "a")
+        self.assertEqual(a.shape, (3,))
+        self.assertEqual(repr(a[0]), "Variable('a(0)', Continuous)")
+        self.assertEqual(repr(a[1]), "Variable('a(1)', Continuous)")
+        self.assertEqual(repr(a[2]), "Variable('a(2)', Continuous)")
+
+        # Call MakeVectorVariable with specified type.
+        a = sym.MakeVectorVariable(3, "a", sym.Variable.Type.BINARY)
+        self.assertEqual(a.shape, (3,))
+        self.assertEqual(repr(a[0]), "Variable('a(0)', Binary)")
+        self.assertEqual(repr(a[1]), "Variable('a(1)', Binary)")
+        self.assertEqual(repr(a[2]), "Variable('a(2)', Binary)")
 
 
 class TestSymbolicVariables(unittest.TestCase):
