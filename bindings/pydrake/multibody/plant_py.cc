@@ -701,6 +701,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::GetModelInstanceByName),
             py::arg("name"), py_rvp::reference_internal,
             cls_doc.GetModelInstanceByName.doc)
+        .def(
+            "GetBodiesWeldedTo",
+            [](const Class& self, const Body<T>& body) {
+              auto welded_bodies = self.GetBodiesWeldedTo(body);
+              return py_keep_alive_iterable<py::list>(
+                  py::cast(welded_bodies), py::cast(&self));
+            },
+            py::arg("body"), cls_doc.GetBodiesWeldedTo.doc)
         .def("GetTopologyGraphvizString", &Class::GetTopologyGraphvizString,
             cls_doc.GetTopologyGraphvizString.doc);
     // Geometry.

@@ -1383,6 +1383,14 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesWeldedTo) {
               UnorderedElementsAre(&plant.world_body(), &extra));
   EXPECT_THAT(plant.GetBodiesWeldedTo(lower),
               UnorderedElementsAre(&upper, &lower));
+
+  // Briefly test scalar conversion.
+  // TODO(#14346): Make this a positive test once it's supported.
+  std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_ad =
+      systems::System<double>::ToAutoDiffXd(plant);
+  EXPECT_THROW(
+      plant_ad->GetBodiesWeldedTo(plant_ad->world_body()),
+      std::runtime_error);
 }
 
 // Utility to verify that the only ports of MultibodyPlant that are feedthrough
