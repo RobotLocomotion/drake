@@ -134,7 +134,7 @@ void DefineFrameworkPyValues(py::module m) {
         .def(
             "set_value",
             [](Value<BasicVector<T>>* self,
-                const Eigen::Ref<const Eigen::VectorXd>& value) {
+                const Eigen::Ref<const VectorX<T>>& value) {
               self->set_value(BasicVector<T>(value));
             },
             py::arg("value"));
