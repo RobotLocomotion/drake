@@ -162,7 +162,7 @@ TEST_F(YamlWriteArchiveDefaultsTest, DifferentVariantTag) {
   data.value = DoubleStruct{1.0};
 
   VariantStruct defaults;
-  defaults.value = StringStruct{"1.0"};
+  defaults.value = EigenVecStruct();
 
   EXPECT_EQ(SaveDataWithoutDefaults(data, defaults), R"""(doc:
   value: !DoubleStruct

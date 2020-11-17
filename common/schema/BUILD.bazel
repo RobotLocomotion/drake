@@ -77,6 +77,7 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:symbolic_test_util",
         "//common/yaml:yaml_read_archive",
+        "//common/yaml:yaml_write_archive",
     ],
 )
 

@@ -312,7 +312,13 @@ class YamlWriteArchive final {
           "Cannot YamlWriteArchive the variant type {} with a non-zero index",
           full_name));
     }
-    return NiceTypeName::RemoveNamespaces(full_name);
+    std::string short_name = NiceTypeName::RemoveNamespaces(full_name);
+    auto angle = short_name.find('<');
+    if (angle != std::string::npos) {
+      // Remove template arguments.
+      short_name.resize(angle);
+    }
+    return short_name;
   }
 
   template <typename T>
