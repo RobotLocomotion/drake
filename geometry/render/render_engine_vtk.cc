@@ -45,18 +45,6 @@ using systems::sensors::vtk_util::MakeVtkPointerArray;
 
 namespace {
 
-// A note on OpenGL clipping planes and DepthCameraProperties near and far.
-// The z near and far planes reported in DepthCameraProperties are properties of
-// the modeled sensor. They cannot produce reliable depths closer than z_near
-// or farther than z_far.
-// We *could* set the OpenGl clipping planes to [z_near, z_far], however, that
-// will lead to undesirable artifacts. Any geometry that lies at a distance
-// in the range [0, z_near) would be clipped away with *no* occluding effects.
-// So, instead, we render the depth image in the range [epsilon, z_far] and
-// then detect the occluding pixels that lie closer than the camera's supported
-// range and mark them as too close. Clipping all geometry beyond z_far is not
-// a problem because they can unambiguously be marked as too far.
-const double kClippingPlaneNear = 0.01;
 const double kTerrainSize = 100.;
 
 void SetModelTransformMatrixToVtkCamera(
@@ -112,8 +100,9 @@ std::string RemoveFileExtension(const std::string& filepath) {
 namespace internal {
 
 ShaderCallback::ShaderCallback() :
-    z_near_(kClippingPlaneNear),
-    // This value will be overwritten by the camera's z_far value.
+    // These values are arbitrary "reasonable" values, but we expect them to
+    // *both* be overwritten upon every usage.
+    z_near_(0.01),
     z_far_(100.0) {}
 
 }  // namespace internal

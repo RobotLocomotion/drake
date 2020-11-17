@@ -1003,7 +1003,10 @@ void GeometryState<T>::RenderColorImage(const render::CameraProperties& camera,
   // TODO(SeanCurtis-TRI): Invoke UpdateViewpoint() as part of a calc cache
   //  entry. Challenge: how to do that with a parameter passed here?
   const_cast<render::RenderEngine&>(engine).UpdateViewpoint(X_WC);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   engine.RenderColorImage(camera, show_window, color_image_out);
+#pragma GCC diagnostic pop
 }
 
 template <typename T>
@@ -1015,7 +1018,10 @@ void GeometryState<T>::RenderDepthImage(
       GetRenderEngineOrThrow(camera.renderer_name);
   // See note in RenderColorImage() about this const cast.
   const_cast<render::RenderEngine&>(engine).UpdateViewpoint(X_WC);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   engine.RenderDepthImage(camera, depth_image_out);
+#pragma GCC diagnostic pop
 }
 
 template <typename T>
@@ -1029,7 +1035,10 @@ void GeometryState<T>::RenderLabelImage(const render::CameraProperties& camera,
       GetRenderEngineOrThrow(camera.renderer_name);
   // See note in RenderColorImage() about this const cast.
   const_cast<render::RenderEngine&>(engine).UpdateViewpoint(X_WC);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   engine.RenderLabelImage(camera, show_window, label_image_out);
+#pragma GCC diagnostic pop
 }
 
 template <typename T>
