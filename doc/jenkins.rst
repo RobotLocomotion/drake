@@ -133,7 +133,7 @@ comment on an open pull request as follows:
 
 * ``@drake-jenkins-bot linux-bionic-unprovisioned-gcc-bazel-experimental-snopt-packaging please``
 * ``@drake-jenkins-bot linux-focal-unprovisioned-gcc-bazel-experimental-snopt-packaging please``
-* ``@drake-jenkins-bot mac-mojave-unprovisioned-clang-bazel-experimental-snopt-packaging please``
+* ``@drake-jenkins-bot mac-catalina-unprovisioned-clang-bazel-experimental-snopt-packaging please``
 
 or follow the :ref:`instructions above <scheduling-builds-via-the-jenkins-user-interface>`
 to schedule a build of one of the following jobs from the Jenkins user
@@ -141,7 +141,7 @@ interface:
 
 * linux-bionic-unprovisioned-gcc-bazel-experimental-snopt-packaging
 * linux-focal-unprovisioned-gcc-bazel-experimental-snopt-packaging
-* mac-mojave-unprovisioned-clang-bazel-experimental-snopt-packaging
+* mac-catalina-unprovisioned-clang-bazel-experimental-snopt-packaging
 
 The URL from which to download the built package will be indicated in the
 Jenkins console log for the completed build, for example::

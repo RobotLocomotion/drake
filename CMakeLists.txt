@@ -34,10 +34,10 @@ set(UNIX_DISTRIBUTION_ID)
 set(UNIX_DISTRIBUTION_CODENAME)
 
 if(APPLE)
-  if(CMAKE_SYSTEM_VERSION VERSION_LESS 18)
+  if(CMAKE_SYSTEM_VERSION VERSION_LESS 19)
     message(FATAL_ERROR
       "Darwin ${CMAKE_SYSTEM_VERSION} is NOT supported. Please use Darwin "
-      "18.x (macOS Mojave) or Darwin 19.x (macOS Catalina)."
+      "Darwin 19.x (macOS Catalina)."
     )
   endif()
 else()
