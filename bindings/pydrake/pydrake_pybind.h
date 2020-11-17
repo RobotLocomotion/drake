@@ -41,6 +41,14 @@ inline py::object py_keep_alive(py::object nurse, py::object patient) {
   return nurse;
 }
 
+/// Use this to manually cast a list. See pydrake_pybind_test for an example.
+inline py::list py_keep_alive_list(py::list nurses, py::object patient) {
+  for (py::object nurse : nurses) {
+    py_keep_alive(nurse, patient);
+  }
+  return nurses;
+}
+
 // Implementation for `overload_cast_explicit`. We must use this structure so
 // that we can constrain what is inferred. Otherwise, the ambiguity confuses
 // the compiler.

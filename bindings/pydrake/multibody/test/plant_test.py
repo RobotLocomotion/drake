@@ -312,6 +312,9 @@ class TestPlant(unittest.TestCase):
         self.assertTrue(plant.HasModelInstanceNamed(name="acrobot"))
         self.assertEqual(
             model_instance, plant.GetModelInstanceByName(name="acrobot"))
+        self.assertEqual(
+            plant.GetBodiesWeldedTo(plant.world_body()),
+            [plant.word_body(), link1])
         self.assertIsInstance(
             plant.get_actuation_input_port(), InputPort)
         self.assertIsInstance(
