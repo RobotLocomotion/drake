@@ -395,6 +395,13 @@ GTEST_TEST(MosekTest, SolveSDPwithQuadraticCosts) {
   }
 }
 
+GTEST_TEST(MosekTest, LPDualSolution1) {
+  MosekSolver solver;
+  if (solver.available()) {
+    TestLPDualSolution1(solver, 1E-8);
+  }
+}
+
 GTEST_TEST(MosekTest, LPDualSolution2) {
   MosekSolver solver;
   if (solver.available()) {
@@ -409,10 +416,51 @@ GTEST_TEST(MosekTest, LPDualSolution2Scaled) {
   }
 }
 
+GTEST_TEST(MosekTest, LPDualSolution3) {
+  MosekSolver solver;
+  if (solver.available()) {
+    TestLPDualSolution3(solver, 1E-8);
+  }
+}
+
+GTEST_TEST(MosekTest, QPDualSolution1) {
+  MosekSolver solver;
+  if (solver.available()) {
+    SolverOptions solver_options;
+    // The default tolerance is 1E-8, and one entry of the optimal solution is
+    // 0. This means the error on the primal and dual solution is in the order
+    // of 1E-4, that is too large.
+    solver_options.SetOption(solver.id(), "MSK_DPAR_INTPNT_QO_TOL_REL_GAP",
+                             1e-12);
+    TestQPDualSolution1(solver, solver_options, 4E-6);
+  }
+}
+
+GTEST_TEST(MosekTest, QPDualSolution2) {
+  MosekSolver solver;
+  if (solver.available()) {
+    TestQPDualSolution2(solver);
+  }
+}
+
 GTEST_TEST(MosekTest, QPDualSolution3) {
   MosekSolver solver;
   if (solver.available()) {
     TestQPDualSolution3(solver, 1E-6, 3E-4);
+  }
+}
+
+GTEST_TEST(MosekTest, EqualityConstrainedQPDualSolution1) {
+  MosekSolver solver;
+  if (solver.available()) {
+    TestEqualityConstrainedQPDualSolution1(solver);
+  }
+}
+
+GTEST_TEST(MosekTest, EqualityConstrainedQPDualSolution2) {
+  MosekSolver solver;
+  if (solver.available()) {
+    TestEqualityConstrainedQPDualSolution2(solver);
   }
 }
 

@@ -460,7 +460,8 @@ void TestQPonUnitBallExample(const SolverInterface& solver) {
   }
 }
 
-void TestQPDualSolution1(const SolverInterface& solver, double tol) {
+void TestQPDualSolution1(const SolverInterface& solver,
+                         const SolverOptions& solver_options, double tol) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>();
   auto constraint1 = prog.AddLinearConstraint(2 * x[0] + 3 * x[1], -2, 3);
@@ -469,8 +470,10 @@ void TestQPDualSolution1(const SolverInterface& solver, double tol) {
   prog.AddQuadraticCost(x[0] * x[0] + 2 * x[1] * x[1] + x[2] * x[2]);
   if (solver.available()) {
     MathematicalProgramResult result;
-    solver.Solve(prog, {}, {}, &result);
+    solver.Solve(prog, {}, solver_options, &result);
     EXPECT_TRUE(result.is_success());
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(x),
+                                Eigen::Vector3d(0, 1. / 11, 8. / 11.), tol));
     // At the optimal solution, the active constraints are
     // x[0] >= 0
     // x[1] + 4 * x[2] == 3
@@ -492,7 +495,7 @@ void TestQPDualSolution1(const SolverInterface& solver, double tol) {
     constraint2.evaluator()->set_bounds(Vector1d(3 + delta),
                                         Vector1d(3 + delta));
     MathematicalProgramResult result_updated;
-    solver.Solve(prog, {}, {}, &result_updated);
+    solver.Solve(prog, {}, solver_options, &result_updated);
     EXPECT_NEAR(
         (result_updated.get_optimal_cost() - result.get_optimal_cost()) / delta,
         dual_solution_expected, tol);
