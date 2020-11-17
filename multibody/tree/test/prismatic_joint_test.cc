@@ -168,6 +168,8 @@ TEST_F(PrismaticJointTest, Clone) {
   EXPECT_EQ(joint1_clone.acceleration_upper_limits(),
             joint1_->acceleration_upper_limits());
   EXPECT_EQ(joint1_clone.damping(), joint1_->damping());
+  EXPECT_EQ(joint1_clone.get_default_translation(),
+            joint1_->get_default_translation());
 }
 
 TEST_F(PrismaticJointTest, RandomTranslationTest) {

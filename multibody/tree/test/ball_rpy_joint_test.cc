@@ -160,6 +160,7 @@ TEST_F(BallRpyJointTest, Clone) {
   EXPECT_EQ(joint_clone.acceleration_upper_limits(),
             joint_->acceleration_upper_limits());
   EXPECT_EQ(joint_clone.damping(), joint_->damping());
+  EXPECT_EQ(joint_clone.get_default_angles(), joint_->get_default_angles());
 }
 
 TEST_F(BallRpyJointTest, SetVelocityAndAccelerationLimits) {
