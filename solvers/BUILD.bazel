@@ -146,11 +146,11 @@ drake_cc_library(
     deps = [
         ":decision_variable",
         ":evaluator_base",
-        ":symbolic_extraction",
         "//common:autodiff",
         "//common:essential",
         "//common:polynomial",
         "//common:symbolic",
+        "//common:symbolic_decompose",
         "//math:gradient",
         "//math:matrix_util",
     ],
@@ -184,12 +184,16 @@ drake_cc_library(
     name = "symbolic_extraction",
     srcs = ["symbolic_extraction.cc"],
     hdrs = ["symbolic_extraction.h"],
+    copts = [
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":decision_variable",
         "//common:autodiff",
         "//common:essential",
         "//common:polynomial",
         "//common:symbolic",
+        "//common:symbolic_decompose",
         "//math:matrix_util",
     ],
 )
@@ -201,10 +205,10 @@ drake_cc_library(
     deps = [
         ":binding",
         ":constraint",
-        ":symbolic_extraction",
         "//common:essential",
         "//common:polynomial",
         "//common:symbolic",
+        "//common:symbolic_decompose",
         "//math:quadratic_form",
     ],
 )
@@ -216,10 +220,10 @@ drake_cc_library(
     deps = [
         ":binding",
         ":cost",
-        ":symbolic_extraction",
         "//common:essential",
         "//common:polynomial",
         "//common:symbolic",
+        "//common:symbolic_decompose",
         "//common:unused",
     ],
 )
@@ -326,11 +330,11 @@ drake_cc_library(
         ":solver_id",
         ":solver_options",
         ":sos_basis_generator",
-        ":symbolic_extraction",
         "//common:autodiff",
         "//common:essential",
         "//common:polynomial",
         "//common:symbolic",
+        "//common:symbolic_decompose",
     ],
 )
 
@@ -1108,6 +1112,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "symbolic_extraction_test",
+    copts = [
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":symbolic_extraction",
         "//common/test_utilities:eigen_matrix_compare",

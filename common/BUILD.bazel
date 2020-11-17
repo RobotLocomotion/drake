@@ -1062,6 +1062,7 @@ drake_cc_googletest(
         ":essential",
         ":symbolic",
         ":symbolic_decompose",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

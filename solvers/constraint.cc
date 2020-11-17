@@ -7,9 +7,9 @@
 
 #include <fmt/format.h>
 
+#include "drake/common/symbolic_decompose.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/matrix_util.h"
-#include "drake/solvers/symbolic_extraction.h"
 
 using std::abs;
 
@@ -432,7 +432,7 @@ ExpressionConstraint::ExpressionConstraint(
   // Setup map_var_to_index_ and vars_ so that
   //   map_var_to_index_[vars_(i).get_id()] = i.
   for (int i = 0; i < expressions_.size(); ++i) {
-    internal::ExtractAndAppendVariablesFromExpression(expressions_(i), &vars_,
+    symbolic::ExtractAndAppendVariablesFromExpression(expressions_(i), &vars_,
                                                       &map_var_to_index_);
   }
 

@@ -1401,7 +1401,7 @@ Substitute(const Eigen::MatrixBase<Derived>& m, const Variable& var,
 /// @throws std::logic_error if there is an expression in @p vec which is not a
 /// variable.
 VectorX<Variable> GetVariableVector(
-    const Eigen::Ref<const VectorX<Expression>>& evec);
+    const Eigen::Ref<const VectorX<Expression>>& expressions);
 
 /// Computes the Jacobian matrix J of the vector function @p f with respect to
 /// @p vars. J(i,j) contains ∂f(i)/∂vars(j).
