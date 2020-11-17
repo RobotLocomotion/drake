@@ -105,7 +105,7 @@ Cutting the release
       has nothing still running (modulo the ``*-coverage`` builds, which we can
       ignore)
    c. Take
-      https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-mojave-unprovisioned-clang-bazel-nightly-snopt-packaging/
+      https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-catalina-unprovisioned-clang-bazel-nightly-snopt-packaging/
       and
       https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-bionic-unprovisioned-gcc-bazel-nightly-snopt-packaging/
       and
@@ -131,7 +131,7 @@ Cutting the release
 
    a. Make a local folder, maybe ``$HOME/tmp/v0.N.0``
    b. Fetch all the things (
-      https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-mojave-unprovisioned-clang-bazel-nightly-snopt-packaging/
+      https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-catalina-unprovisioned-clang-bazel-nightly-snopt-packaging/
       and
       https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-bionic-unprovisioned-gcc-bazel-nightly-snopt-packaging/
       and
