@@ -51,29 +51,13 @@ COPY dockerfile_build_embree_binaries /dockerfile_build_embree_binaries
 RUN git clone --branch v3.5.2 --config advice.detachedHead=false --depth 1 --quiet https://github.com/embree/embree.git \
   && ./dockerfile_build_embree_binaries \
   && rm -rf dockerfile_build_embree_binaries embree
-COPY dockerfile_build_ospray_binaries /dockerfile_build_ospray_binaries
-COPY ospray_no_fast_math.patch /ospray_no_fast_math.patch
-COPY ospray_ospcommon.patch /ospray_ospcommon.patch
-RUN git clone --branch v1.8.5 --config advice.detachedHead=false --depth 1 --quiet https://github.com/ospray/ospray.git \
-  && cd ospray \
-  && git apply ../ospray_no_fast_math.patch ../ospray_ospcommon.patch \
-  && cd .. \
-  && rm -f ospray_no_fast_math.patch ospray_ospcommon.patch \
-  && ./dockerfile_build_ospray_binaries \
-  && rm -rf dockerfile_build_ospray_binaries ospray
 COPY dockerfile_build_vtk_binaries /dockerfile_build_vtk_binaries
-COPY vtk_rendering_ospray.patch /vtk_rendering_ospray.patch
 RUN git clone --branch v8.2.0 --config advice.detachedHead=false --depth 1 --quiet https://gitlab.kitware.com/vtk/vtk.git \
-  && cd vtk \
-  && git apply ../vtk_rendering_ospray.patch \
-  && cd .. \
-  && rm -f vtk_rendering_ospray.patch \
   && ./dockerfile_build_vtk_binaries \
   && rm -rf dockerfile_build_vtk_binaries vtk \
   && sed -i 's|VTK_RUNTIME_DIRS "/opt/vtk/bin"|VTK_RUNTIME_DIRS "${VTK_INSTALL_PREFIX}/bin"|g' /opt/vtk/lib/cmake/vtk-*/VTKConfig.cmake \
   && sed -i 's|VTK_RUNTIME_DIRS "/opt/vtk/lib"|VTK_RUNTIME_DIRS "${VTK_INSTALL_PREFIX}/lib"|g' /opt/vtk/lib/cmake/vtk-*/VTKConfig.cmake \
   && sed -i 's|/opt/vtk|${_IMPORT_PREFIX}|g' /opt/vtk/lib/cmake/vtk-*/VTKTargets.cmake \
-  && sed -i 's|${_IMPORT_PREFIX}/include/ospray;${_IMPORT_PREFIX}/include/ospray/SDK|${_IMPORT_PREFIX}/include/ospray|g' /opt/vtk/lib/cmake/vtk-*/VTKTargets.cmake \
   && sed -i 's|VTK_PYTHONPATH "/opt/vtk/lib/python3"|VTK_PYTHONPATH "${VTK_INSTALL_PREFIX}/lib/python3"|g' /opt/vtk/lib/cmake/vtk-*/Modules/vtkPython.cmake
 RUN cd /opt/vtk \
   && tar -czf vtk-8.2.0-embree-3.5.2-ospray-1.8.5-python-$(python3 --version | sed -n -e 's/^.*\n*Python \([0-9]\+\)\.\([0-9]\+\)\.\([0-9]\+\).*/\1.\2.\3/p')-qt-$(qmake --version | sed -n -e 's/^.*\n*Qt version \([0-9]\+\)\.\([0-9]\+\)\.\([0-9]\+\).*/\1.\2.\3/p')-$(lsb_release --codename --short)-x86_64.tar.gz -- *
