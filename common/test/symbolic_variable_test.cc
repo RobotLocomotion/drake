@@ -226,6 +226,13 @@ TEST_F(VariableTest, MakeVectorVariable) {
   EXPECT_EQ(vec2[0].get_type(), Variable::Type::CONTINUOUS);
   EXPECT_EQ(vec2[1].get_name(), "x(1)");
   EXPECT_EQ(vec2[1].get_type(), Variable::Type::CONTINUOUS);
+
+  const VectorX<Variable> vec3{MakeVectorVariable(2, "x")};
+  const VectorX<Variable> vec4{MakeVectorVariable<2>("x")};
+  for (int i = 0; i < 2; ++i) {
+    EXPECT_EQ(vec3[i].get_type(), Variable::Type::CONTINUOUS);
+    EXPECT_EQ(vec4[i].get_type(), Variable::Type::CONTINUOUS);
+  }
 }
 
 TEST_F(VariableTest, MakeVectorBooleanVariable) {
@@ -304,6 +311,13 @@ TEST_F(VariableTest, MakeMatrixVariable) {
   EXPECT_EQ(m2(0, 0).get_type(), Variable::Type::CONTINUOUS);
   EXPECT_EQ(m2(0, 1).get_name(), "x(0, 1)");
   EXPECT_EQ(m2(0, 1).get_type(), Variable::Type::CONTINUOUS);
+
+  const MatrixX<Variable> m3{MakeMatrixVariable(1, 2, "x")};
+  const MatrixX<Variable> m4{MakeMatrixVariable<1, 2>("x")};
+  for (int i = 0; i < 2; ++i) {
+    EXPECT_EQ(m3(0, i).get_type(), Variable::Type::CONTINUOUS);
+    EXPECT_EQ(m4(0, i).get_type(), Variable::Type::CONTINUOUS);
+  }
 }
 
 TEST_F(VariableTest, MakeMatrixBooleanVariable) {

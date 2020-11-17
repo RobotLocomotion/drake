@@ -72,6 +72,7 @@ PYBIND11_MODULE(symbolic, m) {
       .def(py::init<const string&, Variable::Type>(), py::arg("name"),
           py::arg("type") = Variable::Type::CONTINUOUS, var_doc.ctor.doc_2args)
       .def("get_id", &Variable::get_id, var_doc.get_id.doc)
+      .def("get_name", &Variable::get_name, var_doc.get_name.doc)
       .def("get_type", &Variable::get_type, var_doc.get_type.doc)
       .def("__str__", &Variable::to_string, var_doc.to_string.doc)
       .def("__repr__",
@@ -150,7 +151,69 @@ PYBIND11_MODULE(symbolic, m) {
       .def(py::self != double());
   DefCopyAndDeepCopy(&var_cls);
 
-  // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
+  // Bind the free functions for MakeVectorXXXVariable
+  m  // BR
+      .def(
+          "MakeMatrixVariable",
+          [](int rows, int cols, const std::string& name, Variable::Type type) {
+            return symbolic::MakeMatrixVariable(rows, cols, name, type);
+          },
+          py::arg("rows"), py::arg("cols"), py::arg("name"),
+          py::arg("type") = symbolic::Variable::Type::CONTINUOUS,
+          doc.MakeMatrixVariable.doc_4args)
+      .def(
+          "MakeMatrixBinaryVariable",
+          [](int rows, int cols, const std::string& name) {
+            return symbolic::MakeMatrixBinaryVariable(rows, cols, name);
+          },
+          py::arg("rows"), py::arg("cols"), py::arg("name"),
+          doc.MakeMatrixBinaryVariable.doc_3args)
+      .def(
+          "MakeMatrixContinuousVariable",
+          [](int rows, int cols, const std::string& name) {
+            return symbolic::MakeMatrixContinuousVariable(rows, cols, name);
+          },
+          py::arg("rows"), py::arg("cols"), py::arg("name"),
+          doc.MakeMatrixContinuousVariable.doc_3args)
+      .def(
+          "MakeMatrixBooleanVariable",
+          [](int rows, int cols, const std::string& name) {
+            return symbolic::MakeMatrixBooleanVariable(rows, cols, name);
+          },
+          py::arg("rows"), py::arg("cols"), py::arg("name"),
+          doc.MakeMatrixBooleanVariable.doc_3args)
+      .def(
+          "MakeVectorVariable",
+          [](int rows, const std::string& name, Variable::Type type) {
+            return symbolic::MakeVectorVariable(rows, name, type);
+          },
+          py::arg("rows"), py::arg("name"),
+          py::arg("type") = symbolic::Variable::Type::CONTINUOUS,
+          doc.MakeVectorVariable.doc_3args)
+      .def(
+          "MakeVectorBinaryVariable",
+          [](int rows, const std::string& name) {
+            return symbolic::MakeVectorBinaryVariable(rows, name);
+          },
+          py::arg("rows"), py::arg("name"),
+          doc.MakeVectorBinaryVariable.doc_2args)
+      .def(
+          "MakeVectorBooleanVariable",
+          [](int rows, const std::string& name) {
+            return symbolic::MakeVectorBooleanVariable(rows, name);
+          },
+          py::arg("rows"), py::arg("name"),
+          doc.MakeVectorBooleanVariable.doc_2args)
+      .def(
+          "MakeVectorContinuousVariable",
+          [](int rows, const std::string& name) {
+            return symbolic::MakeVectorContinuousVariable(rows, name);
+          },
+          py::arg("rows"), py::arg("name"),
+          doc.MakeVectorContinuousVariable.doc_2args);
+
+  // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads,
+  // etc.
   py::class_<Variables>(m, "Variables", doc.Variables.doc)
       .def(py::init<>(), doc.Variables.ctor.doc_0args)
       .def(py::init<const Eigen::Ref<const VectorX<Variable>>&>(),
