@@ -219,6 +219,9 @@ void TestLPDualSolution2(const SolverInterface& solver, double tol = 1e-6);
  * scaled.*/
 void TestLPDualSolution2Scaled(const SolverInterface& solver,
                                double tol = 1e-6);
+
+/** This LP has only bounding box constraints. */
+void TestLPDualSolution3(const SolverInterface& solver, double tol = 1e-6);
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

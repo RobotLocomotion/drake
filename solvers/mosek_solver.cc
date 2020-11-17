@@ -92,11 +92,9 @@ class MatrixVariableEntry {
 // https://docs.mosek.com/9.0/capi/alphabetic-functionalities.html#mosek.task.getsolution
 // for more information.
 enum class DualVarType {
-  kLinearConstraintLowerBound,  ///< Corresponds to Mosek's slc.
-  kLinearConstraintUpperBound,  ///< Corresponds to Mosek's suc.
-  kVariableLowerBound,          ///< Corresponds to Mosek's slx.
-  kVariableUpperBound,          ///< Corresponds to Mosek's sux.
-  kNonlinearConic,              ///< Corresponds to Mosek's snx.
+  kLinearConstraint,  ///< Corresponds to Mosek's slc and suc.
+  kVariableBound,     ///< Corresponds to Mosek's slx and sux.
+  kNonlinearConic,    ///< Corresponds to Mosek's snx.
 };
 
 struct ConstraintDualIndex {
@@ -106,6 +104,8 @@ struct ConstraintDualIndex {
   // can never be active.
   int index{};
 };
+
+using ConstraintDualIndices = std::vector<ConstraintDualIndex>;
 
 // This function is used to print information for each iteration to the console,
 // it will show PRSTATUS, PFEAS, DFEAS, etc. For more information, check out
@@ -245,6 +245,10 @@ MSKrescodee AddLinearConstraintToMosek(
     return rescode;
   }
   for (int i = 0; i < lower.rows(); ++i) {
+    // It is important that AddLinearConstraintToMosek keeps the order of the
+    // linear constraint the same as in lower <= A * decision_vars + B *
+    // slack_vars <= upper. When we specify the dual variable indices, we rely
+    // on this order.
     rescode = SetMosekLinearConstraintBound(task, num_mosek_constraint + i,
                                             lower(i), upper(i), bound_type);
     if (rescode != MSK_RES_OK) {
@@ -375,6 +379,13 @@ MSKrescodee AddLinearConstraintToMosek(
   if (rescode != MSK_RES_OK) {
     return rescode;
   }
+  int num_mosek_constraints_after{};
+  rescode = MSK_getnumcon(task, &num_mosek_constraints_after);
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
+  DRAKE_DEMAND(num_mosek_constraints_after ==
+               num_mosek_constraint + lower.rows());
   return rescode;
 }
 
@@ -388,7 +399,8 @@ MSKrescodee AddLinearConstraintsFromBindings(
     const std::unordered_map<int, int>&
         decision_variable_index_to_mosek_nonmatrix_variable,
     std::unordered_map<MatrixVariableEntry::Id, MSKint64t>*
-        matrix_variable_entry_to_selection_matrix_id) {
+        matrix_variable_entry_to_selection_matrix_id,
+    std::unordered_map<Binding<C>, ConstraintDualIndices>* dual_indices) {
   MSKrescodee rescode{MSK_RES_OK};
   for (const auto& binding : constraint_list) {
     const auto& constraint = binding.evaluator();
@@ -397,11 +409,25 @@ MSKrescodee AddLinearConstraintsFromBindings(
     const Eigen::VectorXd& ub = constraint->upper_bound();
     Eigen::SparseMatrix<double> B_zero(A.rows(), 0);
     B_zero.setZero();
+    int num_linear_constraints{-1};
+    rescode = MSK_getnumcon(*task, &num_linear_constraints);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
     rescode = AddLinearConstraintToMosek(
         prog, A.sparseView(), B_zero, lb, ub, binding.variables(), {},
         bound_type, decision_variable_index_to_mosek_matrix_variable,
         decision_variable_index_to_mosek_nonmatrix_variable,
         matrix_variable_entry_to_selection_matrix_id, *task);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+    ConstraintDualIndices constraint_dual_indices(lb.rows());
+    for (int i = 0; i < lb.rows(); ++i) {
+      constraint_dual_indices[i].type = DualVarType::kLinearConstraint;
+      constraint_dual_indices[i].index = num_linear_constraints + i;
+    }
+    dual_indices->emplace(binding, constraint_dual_indices);
   }
   return rescode;
 }
@@ -414,13 +440,17 @@ MSKrescodee AddLinearConstraints(
         decision_variable_to_mosek_nonmatrix_variable,
     std::unordered_map<MatrixVariableEntry::Id, MSKint64t>*
         matrix_variable_entry_to_selection_matrix_id,
+    std::unordered_map<Binding<LinearConstraint>, ConstraintDualIndices>*
+        linear_con_dual_indices,
+    std::unordered_map<Binding<LinearEqualityConstraint>,
+                       ConstraintDualIndices>* lin_eq_con_dual_indices,
     MSKtask_t* task) {
   MSKrescodee rescode = AddLinearConstraintsFromBindings(
       task, prog.linear_equality_constraints(),
       LinearConstraintBoundType::kEquality, prog,
       decision_variable_to_mosek_matrix_variable,
       decision_variable_to_mosek_nonmatrix_variable,
-      matrix_variable_entry_to_selection_matrix_id);
+      matrix_variable_entry_to_selection_matrix_id, lin_eq_con_dual_indices);
   if (rescode != MSK_RES_OK) {
     return rescode;
   }
@@ -428,7 +458,7 @@ MSKrescodee AddLinearConstraints(
       task, prog.linear_constraints(), LinearConstraintBoundType::kInequality,
       prog, decision_variable_to_mosek_matrix_variable,
       decision_variable_to_mosek_nonmatrix_variable,
-      matrix_variable_entry_to_selection_matrix_id);
+      matrix_variable_entry_to_selection_matrix_id, linear_con_dual_indices);
   if (rescode != MSK_RES_OK) {
     return rescode;
   }
@@ -448,8 +478,7 @@ MSKrescodee AddBoundingBoxConstraints(
     std::unordered_map<MatrixVariableEntry::Id, MSKint64t>*
         matrix_variable_entry_to_selection_matrix_id,
     std::unordered_map<Binding<BoundingBoxConstraint>,
-                       std::pair<std::vector<ConstraintDualIndex>,
-                                 std::vector<ConstraintDualIndex>>>*
+                       std::pair<ConstraintDualIndices, ConstraintDualIndices>>*
         dual_indices,
     MSKtask_t* task) {
   int num_decision_vars = prog.num_vars();
@@ -566,10 +595,8 @@ MSKrescodee AddBoundingBoxConstraints(
                num_linear_constraints_before + bounded_matrix_var_count);
   // Add dual variables.
   for (const auto& binding : prog.bounding_box_constraints()) {
-    std::vector<ConstraintDualIndex> lower_bound_duals(
-        binding.variables().rows());
-    std::vector<ConstraintDualIndex> upper_bound_duals(
-        binding.variables().rows());
+    ConstraintDualIndices lower_bound_duals(binding.variables().rows());
+    ConstraintDualIndices upper_bound_duals(binding.variables().rows());
     for (int i = 0; i < binding.variables().rows(); ++i) {
       const int var_index =
           prog.FindDecisionVariableIndex(binding.variables()(i));
@@ -579,16 +606,16 @@ MSKrescodee AddBoundingBoxConstraints(
       if (it1 != decision_variable_index_to_mosek_nonmatrix_variable.end()) {
         // Add the dual variables for the constraint registered as bounds on
         // Mosek non-matrix variables.
-        lower_bound_duals[i].type = DualVarType::kVariableLowerBound;
-        upper_bound_duals[i].type = DualVarType::kVariableUpperBound;
+        lower_bound_duals[i].type = DualVarType::kVariableBound;
+        upper_bound_duals[i].type = DualVarType::kVariableBound;
         dual_variable_index_if_active = it1->second;
       } else {
         // This variable is a Mosek matrix variable. The bound on this variable
         // is imposed as a linear constraint.
         DRAKE_DEMAND(decision_variable_index_to_mosek_matrix_variable.count(
                          var_index) > 0);
-        lower_bound_duals[i].type = DualVarType::kLinearConstraintLowerBound;
-        upper_bound_duals[i].type = DualVarType::kLinearConstraintUpperBound;
+        lower_bound_duals[i].type = DualVarType::kLinearConstraint;
+        upper_bound_duals[i].type = DualVarType::kLinearConstraint;
         const int linear_constraint_index =
             num_linear_constraints_before +
             var_in_bounded_matrix_vars.at(binding.variables()(i).get_id());
@@ -1375,42 +1402,48 @@ void SetBoundingBoxDualSolution(
     const std::vector<Binding<BoundingBoxConstraint>>& constraints,
     const std::vector<MSKrealt>& slx, const std::vector<MSKrealt>& sux,
     const std::vector<MSKrealt>& slc, const std::vector<MSKrealt>& suc,
-    const std::unordered_map<Binding<BoundingBoxConstraint>,
-                             std::pair<std::vector<ConstraintDualIndex>,
-                                       std::vector<ConstraintDualIndex>>>&
+    const std::unordered_map<
+        Binding<BoundingBoxConstraint>,
+        std::pair<ConstraintDualIndices, ConstraintDualIndices>>&
         bb_con_dual_indices,
     MathematicalProgramResult* result) {
-  auto set_dual_sol =
-      [](int mosek_dual_index, const std::vector<MSKrealt>& mosek_dual_lower,
-         const std::vector<MSKrealt>& mosek_dual_upper, double* dual_sol) {
-        if (mosek_dual_index != -1) {
-          // Mosek defines all dual solutions as non-negative. However we use
-          // "reduced cost" as the dual solution, so the dual solution for a
-          // lower bound should be non-negative, while the dual solution for
-          // an upper bound should be non-positive.
-          if (mosek_dual_lower[mosek_dual_index] >
-              mosek_dual_upper[mosek_dual_index]) {
-            // We use the larger dual as the active one.
-            *dual_sol = mosek_dual_lower[mosek_dual_index];
-          } else {
-            *dual_sol = -mosek_dual_upper[mosek_dual_index];
-          }
-        }
-      };
+  auto set_dual_sol = [](int mosek_dual_lower_index, int mosek_dual_upper_index,
+                         const std::vector<MSKrealt>& mosek_dual_lower,
+                         const std::vector<MSKrealt>& mosek_dual_upper,
+                         double* dual_sol) {
+    const double dual_lower = mosek_dual_lower_index == -1
+                                  ? 0.
+                                  : mosek_dual_lower[mosek_dual_lower_index];
+    const double dual_upper = mosek_dual_upper_index == -1
+                                  ? 0.
+                                  : mosek_dual_upper[mosek_dual_upper_index];
+    // Mosek defines all dual solutions as non-negative. However we use
+    // "reduced cost" as the dual solution, so the dual solution for a
+    // lower bound should be non-negative, while the dual solution for
+    // an upper bound should be non-positive.
+    if (dual_lower > dual_upper) {
+      // We use the larger dual as the active one.
+      *dual_sol = dual_lower;
+    } else {
+      *dual_sol = -dual_upper;
+    }
+  };
   for (const auto& binding : constraints) {
-    std::vector<ConstraintDualIndex> lower_bound_duals, upper_bound_duals;
+    ConstraintDualIndices lower_bound_duals, upper_bound_duals;
     std::tie(lower_bound_duals, upper_bound_duals) =
         bb_con_dual_indices.at(binding);
     Eigen::VectorXd dual_sol =
         Eigen::VectorXd::Zero(binding.evaluator()->num_vars());
     for (int i = 0; i < binding.variables().rows(); ++i) {
       switch (lower_bound_duals[i].type) {
-        case DualVarType::kVariableLowerBound: {
-          set_dual_sol(lower_bound_duals[i].index, slx, sux, &(dual_sol(i)));
+        case DualVarType::kVariableBound: {
+          set_dual_sol(lower_bound_duals[i].index, upper_bound_duals[i].index,
+                       slx, sux, &(dual_sol(i)));
           break;
         }
-        case DualVarType::kLinearConstraintLowerBound: {
-          set_dual_sol(lower_bound_duals[i].index, slc, suc, &(dual_sol(i)));
+        case DualVarType::kLinearConstraint: {
+          set_dual_sol(lower_bound_duals[i].index, upper_bound_duals[i].index,
+                       slc, suc, &(dual_sol(i)));
           break;
         }
         default: {
@@ -1424,13 +1457,44 @@ void SetBoundingBoxDualSolution(
   }
 }
 
+template <typename C>
+void SetLinearConstraintDualSolution(
+    const std::vector<Binding<C>>& bindings, const std::vector<MSKrealt>& slc,
+    const std::vector<MSKrealt>& suc,
+    const std::unordered_map<Binding<C>, ConstraintDualIndices>&
+        linear_con_dual_indices,
+    MathematicalProgramResult* result) {
+  for (const auto& binding : bindings) {
+    const ConstraintDualIndices duals = linear_con_dual_indices.at(binding);
+    Eigen::VectorXd dual_sol =
+        Eigen::VectorXd::Zero(binding.evaluator()->num_constraints());
+    for (int i = 0; i < dual_sol.rows(); ++i) {
+      DRAKE_DEMAND(duals[i].type == DualVarType::kLinearConstraint);
+      // Mosek defines all dual solutions as non-negative. However we use
+      // "reduced cost" as the dual solution, so the dual solution for a
+      // lower bound should be non-negative, while the dual solution for
+      // an upper bound should be non-positive.
+      if (slc[duals[i].index] > suc[duals[i].index]) {
+        dual_sol[i] = slc[duals[i].index];
+      } else {
+        dual_sol[i] = -suc[duals[i].index];
+      }
+    }
+    result->set_dual_solution(binding, dual_sol);
+  }
+}
+
 MSKrescodee SetDualSolution(
     const MSKtask_t& task, MSKsoltypee which_sol,
     const MathematicalProgram& prog,
-    const std::unordered_map<Binding<BoundingBoxConstraint>,
-                             std::pair<std::vector<ConstraintDualIndex>,
-                                       std::vector<ConstraintDualIndex>>>&
+    const std::unordered_map<
+        Binding<BoundingBoxConstraint>,
+        std::pair<ConstraintDualIndices, ConstraintDualIndices>>&
         bb_con_dual_indices,
+    const std::unordered_map<Binding<LinearConstraint>, ConstraintDualIndices>&
+        linear_con_dual_indices,
+    const std::unordered_map<Binding<LinearEqualityConstraint>,
+                             ConstraintDualIndices>& lin_eq_con_dual_indices,
     MathematicalProgramResult* result) {
   // TODO(hongkai.dai): support other types of constraints, like linear
   // constraint, second order cone constraint, etc.
@@ -1480,6 +1544,12 @@ MSKrescodee SetDualSolution(
     // Set the duals for the bounding box constraint.
     SetBoundingBoxDualSolution(prog.bounding_box_constraints(), slx, sux, slc,
                                suc, bb_con_dual_indices, result);
+    // Set the duals for the linear constraint.
+    SetLinearConstraintDualSolution(prog.linear_constraints(), slc, suc,
+                                    linear_con_dual_indices, result);
+    // Set the duals for the linear equality constraint.
+    SetLinearConstraintDualSolution(prog.linear_equality_constraints(), slc,
+                                    suc, lin_eq_con_dual_indices, result);
   }
   return rescode;
 }
@@ -1658,8 +1728,7 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
   // lower bound dual variables, and upper_bound_indices are the indices of the
   // upper bound dual variables.
   std::unordered_map<Binding<BoundingBoxConstraint>,
-                     std::pair<std::vector<ConstraintDualIndex>,
-                               std::vector<ConstraintDualIndex>>>
+                     std::pair<ConstraintDualIndices, ConstraintDualIndices>>
       bb_con_dual_indices;
   // Add bounding box constraints on decision variables.
   if (rescode == MSK_RES_OK) {
@@ -1678,11 +1747,16 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
         &with_integer_or_binary_variable);
   }
   // Add linear constraints.
+  std::unordered_map<Binding<LinearConstraint>, ConstraintDualIndices>
+      linear_con_dual_indices;
+  std::unordered_map<Binding<LinearEqualityConstraint>, ConstraintDualIndices>
+      lin_eq_con_dual_indices;
   if (rescode == MSK_RES_OK) {
     rescode = AddLinearConstraints(
         prog, decision_variable_index_to_mosek_matrix_variable,
         decision_variable_index_to_mosek_nonmatrix_variable,
-        &matrix_variable_entry_to_selection_matrix_id, &task);
+        &matrix_variable_entry_to_selection_matrix_id, &linear_con_dual_indices,
+        &lin_eq_con_dual_indices, &task);
   }
 
   // Add Lorentz cone constraints.
@@ -1835,8 +1909,9 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
           if (rescode == MSK_RES_OK) {
             result->set_optimal_cost(optimal_cost);
           }
-          rescode = SetDualSolution(task, solution_type, prog,
-                                    bb_con_dual_indices, result);
+          rescode = SetDualSolution(
+              task, solution_type, prog, bb_con_dual_indices,
+              linear_con_dual_indices, lin_eq_con_dual_indices, result);
           DRAKE_ASSERT(rescode == MSK_RES_OK);
           break;
         }

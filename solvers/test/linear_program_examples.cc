@@ -495,6 +495,30 @@ void TestLPDualSolution2Scaled(const SolverInterface& solver, double tol) {
                                 Eigen::Vector2d(1, -1), tol));
   }
 }
+
+void TestLPDualSolution3(const SolverInterface& solver, double tol) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto constraint1 = prog.AddBoundingBoxConstraint(-2, 1, x);
+  auto constraint2 = prog.AddBoundingBoxConstraint(-1, 2, x[1]);
+  auto constraint3 = prog.AddBoundingBoxConstraint(-1, 3, x[0]);
+  prog.AddLinearCost(-x[0] + x[1]);
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    solver.Solve(prog, {}, {}, &result);
+    EXPECT_TRUE(result.is_success());
+    // The optimal solution is (1, -1).
+    // constraint1 has an upper bound x(0) <= 1 being active.
+    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint1),
+                                Eigen::Vector2d(-1, 0), tol));
+    // constraint2 has a lower bound x(1) >= -1 being active.
+    EXPECT_TRUE(
+        CompareMatrices(result.GetDualSolution(constraint2), Vector1d(1), tol));
+    // constraint 3 is not active.
+    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint3),
+                                Vector1d::Zero(), tol));
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
