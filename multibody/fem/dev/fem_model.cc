@@ -34,10 +34,8 @@ void FemModel<T>::CalcResidual(const FemState<T>& state,
   const int solution_dim = solution_dimension();
   for (int e = 0; e < num_elements(); ++e) {
     const int element_num_nodes = elements_[e]->num_nodes();
-    const int element_residual_size = element_num_nodes * solution_dim;
-    if (element_residual.size() != element_residual_size) {
-      element_residual.resize(element_residual_size);
-    }
+    const int element_dof = element_num_nodes * solution_dim;
+    element_residual.resize(element_dof);
     elements_[e]->CalcResidual(state, &element_residual);
     // TODO(xuchenhan-tri): This may become a repeating pattern. Consider
     // extracting it out into a method.

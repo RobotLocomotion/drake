@@ -8,10 +8,10 @@ namespace fem {
 template <typename T>
 T ElasticityModel<T>::CalcElasticEnergy(const FemState<T>& state) const {
   T energy(0);
-  for (int i = 0; i < this->num_elements(); ++i) {
-    const FemElement<T>& e = this->element(ElementIndex(i));
-    energy += static_cast<const ElasticityElementBase<T>&>(e).CalcElasticEnergy(
-        state);
+  for (ElementIndex element_index(0); element_index < this->num_elements();
+       ++element_index) {
+    const FemElement<T>& e = this->element(element_index);
+    energy += get_elasticity_element_base(e).CalcElasticEnergy(state);
   }
   return energy;
 }

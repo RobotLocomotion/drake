@@ -30,7 +30,9 @@ class ElasticityModel : public FemModel<T> {
   /** The number of dimensions of the elasticity problem. */
   int solution_dimension() const final { return 3; }
 
-  /** Add ElasticityElement's to the %ElasticityModel from a mesh.
+  /** Add ElasticityElement's to the %ElasticityModel from a mesh. The new
+   ElasticityElements created will be using LinearSimplexElement and
+   SimplexGaussianQuadrature.
    @param mesh The input tetrahedral mesh that describes the connectivity and
    the positions of the vertices. Each geometry::VolumeElement in the input
    `mesh` will generate an ElasticityElement in this %ElasticityModel.
@@ -38,44 +40,62 @@ class ElasticityModel : public FemModel<T> {
    configuration with unit kg/m³.
    @param constitutive_model The ConstitutiveModel to be used for all the
    ElasticityElements created.
-   @tparam QuadratureOrder The order of quadrature rule used for the
+   @param QuadratureOrder The order of quadrature rule used for the
    %ElasticityElement's added. Must be 1, 2 or 3.
    @pre The vertices of the input `mesh` must be locally indexed, and the
    indices must be consecutive. That is, the vertices in the `mesh` must be
-   indexed consecutively from 0 to mesh.num_vertices()-1. */
-  template <int QuadratureOrder>
+   indexed consecutively from 0 to mesh.num_vertices()-1.
+   @throws std::runtime_error if `quadrature_order` is not 1, 2 or 3. */
   void AddElasticityElementsFromTetMesh(
       const geometry::VolumeMesh<T>& mesh, T density,
-      const ConstitutiveModel<T>& constitutive_model) {
-    static_assert(
-        QuadratureOrder == 1 || QuadratureOrder == 2 || QuadratureOrder == 3,
-        "Only linear, quadratic, and cubic quadrature rule is supported for "
-        "SimplexGaussianQuadrature");
+      const ConstitutiveModel<T>& constitutive_model, int quadrature_order) {
+    if (!(quadrature_order == 1 || quadrature_order == 2 ||
+          quadrature_order == 3)) {
+      throw std::runtime_error(
+          "Only linear, quadratic, and cubic quadrature rule is supported for "
+          "SimplexGaussianQuadrature");
+    }
     DRAKE_DEMAND(density > 0);
     // global index = local_index + node_index_offset.
     const int num_nodes_in_mesh = mesh.num_vertices();
     const int node_index_offset = this->num_nodes();
     std::set<int> mesh_node_indices;
-    for (int i = 0; i < mesh.num_elements(); ++i) {
-      const geometry::VolumeElement& e =
-          mesh.element(geometry::VolumeElementIndex(i));
+    for (geometry::VolumeElementIndex element_index(0);
+         element_index < mesh.num_elements(); ++element_index) {
+      const geometry::VolumeElement& e = mesh.element(element_index);
       std::vector<NodeIndex> element_node_indices(
           geometry::VolumeMesh<T>::kVertexPerElement);
       Eigen::Matrix<T, 3, geometry::VolumeMesh<T>::kVertexPerElement>
           element_reference_positions;
-      for (int j = 0; j < geometry::VolumeMesh<T>::kVertexPerElement; ++j) {
-        const geometry::VolumeVertexIndex vid = e.vertex(j);
+      for (int local_vertex_index = 0;
+           local_vertex_index < geometry::VolumeMesh<T>::kVertexPerElement;
+           ++local_vertex_index) {
+        const geometry::VolumeVertexIndex vid = e.vertex(local_vertex_index);
         mesh_node_indices.insert(static_cast<int>(vid));
-        element_node_indices[j] =
+        element_node_indices[local_vertex_index] =
             NodeIndex(static_cast<int>(vid) + node_index_offset);
-        element_reference_positions.col(j) = mesh.vertex(vid).r_MV();
+        element_reference_positions.col(local_vertex_index) =
+            mesh.vertex(vid).r_MV();
       }
       std::unique_ptr<ConstitutiveModel<T>> constitutive_model_clone =
           constitutive_model.Clone();
-      AddElasticityElement<LinearSimplexElement<T, 3>,
-                           SimplexGaussianQuadrature<T, QuadratureOrder, 3>>(
-          element_node_indices, density, std::move(constitutive_model_clone),
-          element_reference_positions);
+      if (quadrature_order == 1) {
+        AddElasticityElement<LinearSimplexElement<T, 3>,
+                             SimplexGaussianQuadrature<T, 1, 3>>(
+            element_node_indices, density, std::move(constitutive_model_clone),
+            element_reference_positions);
+      } else if (quadrature_order == 2) {
+        AddElasticityElement<LinearSimplexElement<T, 3>,
+                             SimplexGaussianQuadrature<T, 2, 3>>(
+            element_node_indices, density, std::move(constitutive_model_clone),
+            element_reference_positions);
+      } else {
+        DRAKE_ASSERT(quadrature_order == 3);
+        AddElasticityElement<LinearSimplexElement<T, 3>,
+                             SimplexGaussianQuadrature<T, 3, 3>>(
+            element_node_indices, density, std::move(constitutive_model_clone),
+            element_reference_positions);
+      }
     }
     this->ThrowIfNodeIndicesAreInvalid(mesh_node_indices);
     this->increment_num_nodes(num_nodes_in_mesh);
@@ -125,13 +145,12 @@ class ElasticityModel : public FemModel<T> {
                   "IsoparametricElementType must be a derived class of "
                   "IsoparametricElement<T, NaturalDim>, where NaturalDim can "
                   "be 1, 2 or 3.");
-    static_assert(
-        std::is_base_of_v<Quadrature<T, 1>, QuadratureType> ||
-            std::is_base_of_v<Quadrature<T, 2>, QuadratureType> ||
-            std::is_base_of_v<Quadrature<T, 3>, QuadratureType>,
-        "QuadratureType must be a derived class of "
-        "Quadrature<T, NaturalDim>, where NaturalDim can "
-        "be 1, 2 or 3.");
+    static_assert(std::is_base_of_v<Quadrature<T, 1>, QuadratureType> ||
+                      std::is_base_of_v<Quadrature<T, 2>, QuadratureType> ||
+                      std::is_base_of_v<Quadrature<T, 3>, QuadratureType>,
+                  "QuadratureType must be a derived class of "
+                  "Quadrature<T, NaturalDim>, where NaturalDim can "
+                  "be 1, 2 or 3.");
     static_assert(
         IsoparametricElementType::kNaturalDim == QuadratureType::kNaturalDim,
         "The dimension of the parent domain for IsoparametricElement and "
@@ -161,6 +180,13 @@ class ElasticityModel : public FemModel<T> {
             ElasticityElement<T, IsoparametricElementType, QuadratureType>>(
             element_index, node_indices, density, std::move(constitutive_model),
             reference_positions));
+  }
+
+  /* Static cast the input `element` to be of type const
+   ElasticityElementBase<T>&. */
+  const ElasticityElementBase<T>& get_elasticity_element_base(
+      const FemElement<T>& element) const {
+    return static_cast<const ElasticityElementBase<T>&>(element);
   }
 
   /* 'reference_positions_' is used to verify mesh consistency. A single node
