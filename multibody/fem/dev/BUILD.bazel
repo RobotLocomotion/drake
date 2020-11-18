@@ -233,6 +233,19 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "fixed_size_quadrature",
+    srcs = [
+        "fixed_size_quadrature.cc",
+    ],
+    hdrs = [
+        "fixed_size_quadrature.h",
+    ],
+    deps = [
+        "//common:essential",
+    ],
+)
+
 drake_cc_googletest(
     name = "elasticity_model_test",
     deps = [
@@ -305,6 +318,13 @@ drake_cc_googletest(
     name = "simplex_gaussian_quadrature_test",
     deps = [
         ":quadrature",
+    ],
+)
+
+drake_cc_googletest(
+    name = "simplex_gaussian_linear_quadrature_test",
+    deps = [
+        ":fixed_size_quadrature",
     ],
 )
 
