@@ -50,35 +50,6 @@ class RenderEngineGl final : public RenderEngine {
   /** @see RenderEngine::UpdateViewpoint().  */
   void UpdateViewpoint(const math::RigidTransformd& X_WR) final;
 
-  using RenderEngine::RenderColorImage;
-  using RenderEngine::RenderDepthImage;
-  using RenderEngine::RenderLabelImage;
-
-  /** @see RenderEngine::RenderColorImage(). Currently unimplemented. Calling
-   this will throw an exception.
-
-   Note that the display window triggered by `show_window` is shared with
-   RenderLabelImage(), and only the last color or label image rendered will be
-   visible in the window (once these methods are implemented).  */
-  void RenderColorImage(
-      const CameraProperties& camera, bool show_window,
-      systems::sensors::ImageRgba8U* color_image_out) const final;
-
-  /** @see RenderEngine::RenderDepthImage().  */
-  void RenderDepthImage(
-      const DepthCameraProperties& camera,
-      systems::sensors::ImageDepth32F* depth_image_out) const final;
-
-  /** @see RenderEngine::RenderLabelImage(). Currently unimplemented. Calling
-   this will throw an exception.
-
-   Note that the display window triggered by `show_window` is shared with
-   RenderColorImage(), and only the last color or label image rendered will be
-   visible in the window (once these methods are implemented).  */
-  void RenderLabelImage(
-      const CameraProperties& camera, bool show_window,
-      systems::sensors::ImageLabel16I* label_image_out) const final;
-
   const RenderEngineGlParams& parameters() const { return parameters_; }
 
   /** @name    Shape reification  */

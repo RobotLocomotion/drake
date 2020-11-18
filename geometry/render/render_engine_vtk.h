@@ -107,25 +107,6 @@ class RenderEngineVtk : public RenderEngine,
   /** @see RenderEngine::UpdateViewpoint().  */
   void UpdateViewpoint(const math::RigidTransformd& X_WR) override;
 
-  using RenderEngine::RenderColorImage;
-  using RenderEngine::RenderDepthImage;
-  using RenderEngine::RenderLabelImage;
-
-  /** @see RenderEngine::RenderColorImage().  */
-  void RenderColorImage(
-      const CameraProperties& camera, bool show_window,
-      systems::sensors::ImageRgba8U* color_image_out) const override;
-
-  /** @see RenderEngine::RenderDepthImage().  */
-  void RenderDepthImage(
-      const DepthCameraProperties& camera,
-      systems::sensors::ImageDepth32F* depth_image_out) const override;
-
-  /** @see RenderEngine::RenderLabelImage().  */
-  void RenderLabelImage(
-      const CameraProperties& camera, bool show_window,
-      systems::sensors::ImageLabel16I* label_image_out) const override;
-
   /** @name    Shape reification  */
   //@{
   using RenderEngine::ImplementGeometry;
@@ -217,15 +198,6 @@ class RenderEngineVtk : public RenderEngine,
   // vtkWindowToImageFilter and vtkImageExporter, so that VTK reflects
   // vtkActors' pose update for rendering.
   static void PerformVtkUpdate(const RenderingPipeline& p);
-
-  // This actually modifies internal state; the pointer to a const pipeline
-  // allows mutation via the contained vtkNew pointers.
-  void UpdateWindow(const CameraProperties& camera, bool show_window,
-                    const RenderingPipeline* p, const char* name) const;
-
-  // Modifies the camera for the special case of the depth camera.
-  void UpdateWindow(const DepthCameraProperties& camera,
-                    const RenderingPipeline* p) const;
 
   // Configures the VTK model to reflect the given `camera`, this includes
   // render size camera intrinsics, visible windows, etc.

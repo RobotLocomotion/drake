@@ -483,29 +483,6 @@ void RenderEngineGl::UpdateViewpoint(const RigidTransformd& X_WR) {
   X_CW_ = X_WR.inverse();
 }
 
-void RenderEngineGl::RenderColorImage(const CameraProperties& camera,
-                                      bool show_window,
-                                      ImageRgba8U* color_image_out) const {
-  const ColorRenderCamera cam(camera, show_window);
-  ThrowIfInvalid(cam.core().intrinsics(), color_image_out, "color");
-  DoRenderColorImage(ColorRenderCamera(camera, show_window), color_image_out);
-}
-
-void RenderEngineGl::RenderDepthImage(const DepthCameraProperties& camera,
-                                      ImageDepth32F* depth_image_out) const {
-  DepthRenderCamera cam(camera);
-  ThrowIfInvalid(cam.core().intrinsics(), depth_image_out, "depth");
-  DoRenderDepthImage(cam, depth_image_out);
-}
-
-void RenderEngineGl::RenderLabelImage(const CameraProperties& camera,
-                                      bool show_window,
-                                      ImageLabel16I* label_image_out) const {
-  const ColorRenderCamera cam(camera, show_window);
-  ThrowIfInvalid(cam.core().intrinsics(), label_image_out, "label");
-  DoRenderLabelImage(ColorRenderCamera(camera, show_window), label_image_out);
-}
-
 void RenderEngineGl::ImplementGeometry(const Sphere& sphere, void* user_data) {
   OpenGlGeometry geometry = GetSphere();
   const double r = sphere.radius();

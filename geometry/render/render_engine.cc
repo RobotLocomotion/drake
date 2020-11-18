@@ -5,6 +5,7 @@
 #include <fmt/format.h>
 
 #include "drake/common/nice_type_name.h"
+#include "drake/common/scope_exit.h"
 #include "drake/common/text_logging.h"
 
 namespace drake {
@@ -83,13 +84,23 @@ RenderLabel RenderEngine::GetRenderLabelOrThrow(
 
 void RenderEngine::DoRenderColorImage(const ColorRenderCamera& camera,
                                       ImageRgba8U* color_image_out) const {
+  if (visited_color_) {
+    throw std::runtime_error(fmt::format(
+        "{}: attempting to render a color image without implementing "
+        "RenderColorImage (deprecated) or DoRenderColorImage (preferred).",
+        NiceTypeName::Get(*this)));
+  }
+  visited_color_ = true;
+  ScopeExit guard([this]() { visited_color_ = false; });
+
   // TODO(SeanCurtis-TRI): Consider modifying this warning (and those for the
   //  other image types) so that it only gets broadcast if the intrinsics *have*
   //  properties that would lose information.
   static const logging::Warn log_once(
-      "{}::DoRenderColorImage has not been implemented; using simple camera "
-      "model variant; if the camera intrinsics have anisotropic focal lengths "
-      "or a non-centered principal point, those details will be lost.",
+      "{}::DoRenderColorImage has not been implemented; attempting to use the "
+      "simple camera model variant; if the camera intrinsics have anisotropic "
+      "focal lengths or a non-centered principal point, those details will be "
+      "lost.",
       NiceTypeName::Get(*this));
 
   const CameraInfo& intrinsics = camera.core().intrinsics();
@@ -101,10 +112,20 @@ void RenderEngine::DoRenderColorImage(const ColorRenderCamera& camera,
 
 void RenderEngine::DoRenderDepthImage(const DepthRenderCamera& camera,
                                       ImageDepth32F* depth_image_out) const {
+  if (visited_depth_) {
+    throw std::runtime_error(fmt::format(
+        "{}: attempting to render a depth image without implementing "
+        "RenderDepthImage (deprecated) or DoRenderDepthImage (preferred).",
+        NiceTypeName::Get(*this)));
+  }
+  visited_depth_ = true;
+  ScopeExit guard([this]() { visited_depth_ = false; });
+
   static const logging::Warn log_once(
-      "{}::DoRenderDepthImage has not been implemented; using simple camera "
-      "model variant; if the camera intrinsics have anisotropic focal lengths "
-      "or a non-centered principal point, those details will be lost.",
+      "{}::DoRenderDepthImage has not been implemented; attempting to use the "
+      "simple camera model variant; if the camera intrinsics have anisotropic "
+      "focal lengths or a non-centered principal point, those details will be "
+      "lost.",
       NiceTypeName::Get(*this));
 
   const CameraInfo& intrinsics = camera.core().intrinsics();
@@ -119,10 +140,20 @@ void RenderEngine::DoRenderDepthImage(const DepthRenderCamera& camera,
 
 void RenderEngine::DoRenderLabelImage(const ColorRenderCamera& camera,
                                       ImageLabel16I* label_image_out) const {
+  if (visited_label_) {
+    throw std::runtime_error(fmt::format(
+        "{}: attempting to render a label image without implementing "
+        "RenderLabelImage (deprecated) or DoRenderLabelImage (preferred).",
+        NiceTypeName::Get(*this)));
+  }
+  visited_label_ = true;
+  ScopeExit guard([this]() { visited_label_ = false; });
+
   static const logging::Warn log_once(
-      "{}::DoRenderLabelImage has not been implemented; using simple camera "
-      "model variant; if the camera intrinsics have anisotropic focal lengths "
-      "or a non-centered principal point, those details will be lost.",
+      "{}::DoRenderLabelImage has not been implemented; attempting to use the "
+      "simple camera model variant; if the camera intrinsics have anisotropic "
+      "focal lengths or a non-centered principal point, those details will be "
+      "lost.",
       NiceTypeName::Get(*this));
 
   const CameraInfo& intrinsics = camera.core().intrinsics();

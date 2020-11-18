@@ -169,19 +169,57 @@ class RenderEngine : public ShapeReifier {
                 system.  */
   virtual void UpdateViewpoint(const math::RigidTransformd& X_WR) = 0;
 
+  /* Note to developers on deprecation strategy
+
+   https://github.com/RobotLocomotion/drake/issues/11880
+
+   Deprecation is rendered a bit tricky because full camera intrinsics was
+   introduced to make it backwards compatible. But now we have to "forward" it.
+   The strategy works as follows:
+
+   1. We want the Render*Image(CameraProperties) to delegate to the full
+      intrinsics. However, the backwards compatible implementation of the
+      DoRender*Image(RenderCamera) API delegates it right back.
+      - First, we document that people shouldn't do that!
+      - We put in a mechanism where we can recognize the unimplemented loop and
+        throw an appropriate message.
+      - We *can't* recognize if someone overrides the implementation and makes
+        their own delegation loop.  :-/
+    2. When we remove these methods:
+       - DoRender*Image implementations will simply throw a not-implemented
+         error.
+       - remove the mutable visited_foo_ tags.
+       - Update the documentation on DoRender*Image.
+       - Deprecate the CameraProperties and DepthCameraProperties structs
+         - They cannot be deprecated simultaneously.
+
+   There is an inherent challenge in this deprecation. Although we're
+   deprecating the virtual methods in RenderEngine, deprecation warnings do not
+   get emitted by implementing those methods in a derived class. Nor do they
+   get emitted if those methods are exercised by the derived class (as opposed
+   to the base class). So, downstream users who are directly accessing derived
+   RenderEngine implementations could still have usages that will suddenly
+   break when the deprecated methods here get deleted.
+   */
   /** @name Rendering using simple camera models
 
-   These methods use a simplified camera model. They allow specification of the
-   camera image size and the the focal length in the y-direction (via the
-   given field-of-view value). However, it assumes that the focal length in the
-   x direction is the same and further assumes that camera's principal point
-   projects onto the _center_ of the image.
+   These *legacy* methods use a simplified camera model. They allow
+   specification of the camera image size and the focal length in the
+   y-direction (via the given field-of-view value). However, it assumes that the
+   focal length in the x direction is the same and further assumes that camera's
+   principal point projects onto the _center_ of the image.
 
    For %RenderEngine implementations that also depend on near and far clipping
    planes, those planes are set arbitrarily by the implementation.
 
-   For full control over the camera model (and related rendering properties),
-   use the fully-specified variants defined below.
+   @warning These APIs (and the corresponding CameraProperties and
+   DepthCameraProperties) are all being deprecated. For existing %RenderEngine
+   implementations that have already overridden these methods, the
+   implementations should move to the `DoRender*Image()` variants (with
+   appropriate *minor* transformations from CameraProperties to RenderCamera
+   APIs). New %RenderEngine implementations should *not* override these methods
+   and simply implement the DoRender*Image() methods.
+   See https://github.com/RobotLocomotion/drake/issues/11880.
    */
   //@{
 
@@ -196,7 +234,11 @@ class RenderEngine : public ShapeReifier {
    @pydrake_mkdoc_identifier{deprecated}  */
   virtual void RenderColorImage(
       const CameraProperties& camera, bool show_window,
-      systems::sensors::ImageRgba8U* color_image_out) const = 0;
+      systems::sensors::ImageRgba8U* color_image_out) const {
+    const ColorRenderCamera cam(camera, show_window);
+    ThrowIfInvalid(cam.core().intrinsics(), color_image_out, "color");
+    DoRenderColorImage(cam, color_image_out);
+  }
 
   /** Renders the registered geometry into the given depth image based on
    a simplified camera model. In contrast to the other rendering operations,
@@ -208,7 +250,11 @@ class RenderEngine : public ShapeReifier {
    @pydrake_mkdoc_identifier{deprecated}  */
   virtual void RenderDepthImage(
       const DepthCameraProperties& camera,
-      systems::sensors::ImageDepth32F* depth_image_out) const = 0;
+      systems::sensors::ImageDepth32F* depth_image_out) const {
+    const DepthRenderCamera cam(camera);
+    ThrowIfInvalid(cam.core().intrinsics(), depth_image_out, "depth");
+    DoRenderDepthImage(cam, depth_image_out);
+  }
 
   /** Renders the registered geometry into the given label image based on
    a simplified camera model.
@@ -218,9 +264,12 @@ class RenderEngine : public ShapeReifier {
    @param[out] label_image_out  The rendered label image.
    @pydrake_mkdoc_identifier{deprecated}  */
   virtual void RenderLabelImage(
-      const CameraProperties& camera,
-      bool show_window,
-      systems::sensors::ImageLabel16I* label_image_out) const = 0;
+      const CameraProperties& camera, bool show_window,
+      systems::sensors::ImageLabel16I* label_image_out) const {
+    const ColorRenderCamera cam(camera, show_window);
+    ThrowIfInvalid(cam.core().intrinsics(), label_image_out, "label");
+    DoRenderLabelImage(cam, label_image_out);
+  }
 
   //@}
 
@@ -456,6 +505,14 @@ class RenderEngine : public ShapeReifier {
   // provide one. Default constructor is RenderLabel::kUnspecified via the
   // RenderLabel default constructor.
   RenderLabel default_render_label_{};
+
+  // Guard bits during the deprecation period for CameraProperties. These allow
+  // us to detect if an implementation of RenderEngine has failed to implement
+  // appropriate code. It prevents a stack overflow/infinite recursion between
+  // the default implementations.
+  mutable bool visited_color_{};
+  mutable bool visited_depth_{};
+  mutable bool visited_label_{};
 };
 
 }  // namespace render

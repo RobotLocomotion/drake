@@ -1285,49 +1285,6 @@ TEST_F(RenderEngineVtkTest, PreservePropertyTexturesOverClone) {
   ASSERT_TRUE(clone->GeometryHasColorTexture(id, texture_name));
 }
 
-// A reality check that confirms that the conversion from CameraProperties
-// to intrinsics is as expected -- they produce equivalent images.
-TEST_F(RenderEngineVtkTest, CameraPropertiesVsCameraIntrinsics) {
-  Init(X_WC_, true /* add_terrain */);
-  PopulateSimpleBoxTest(renderer_.get());
-
-  // We're going to render some baseline images using the CameraProperties.
-  ImageRgba8U ref_color(camera_.width, camera_.height);
-  ImageDepth32F ref_depth(camera_.width, camera_.height);
-  ImageLabel16I ref_label(camera_.width, camera_.height);
-  Render(renderer_.get(), &camera_, &ref_color, &ref_depth, &ref_label);
-
-  // Instantiating camear models with the same data as in DepthCameraProperties
-  // should produce the *same* images.
-  const CameraInfo intrinsics{camera_.width, camera_.height, camera_.fov_y};
-  const ColorRenderCamera color_camera{{"n/a", intrinsics, {0.1, 100.0}, {}},
-                                       kShowWindow};
-  const DepthRenderCamera depth_camera{{"n/a", intrinsics, {0.1, 100.0}, {}},
-                                       {camera_.z_near, camera_.z_far}};
-
-  ImageRgba8U equiv_color(camera_.width, camera_.height);
-  ImageDepth32F equiv_depth(camera_.width, camera_.height);
-  ImageLabel16I equiv_label(camera_.width, camera_.height);
-  renderer_->RenderColorImage(color_camera, &equiv_color);
-  renderer_->RenderDepthImage(depth_camera, &equiv_depth);
-  renderer_->RenderLabelImage(color_camera, &equiv_label);
-
-  // The color and label images should be *bit* identical.
-  EXPECT_EQ(memcmp(ref_color.at(0, 0), equiv_color.at(0, 0), ref_color.size()),
-            0);
-
-  EXPECT_EQ(memcmp(ref_label.at(0, 0), equiv_label.at(0, 0), ref_label.size()),
-            0);
-  // The depth values take a slightly more numerically complex path and can
-  // lead to small rounding errors that the color channels are less
-  // susceptible to. To show the images are equal, we need to compare with
-  // tolerance.
-  for (int d = 0; d < ref_depth.size(); ++d) {
-    ASSERT_NEAR(ref_depth.at(0, 0)[d], equiv_depth.at(0, 0)[d],
-                4 * std::numeric_limits<float>::epsilon());
-  }
-}
-
 namespace {
 
 // Defines the relationship between two adjacent pixels in a rendering of a box.
