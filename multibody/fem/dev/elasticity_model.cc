@@ -10,8 +10,9 @@ T ElasticityModel<T>::CalcElasticEnergy(const FemState<T>& state) const {
   T energy(0);
   for (ElementIndex element_index(0); element_index < this->num_elements();
        ++element_index) {
-    const FemElement<T>& e = this->element(element_index);
-    energy += get_elasticity_element_base(e).CalcElasticEnergy(state);
+    const ElasticityElementBase<T>& e =
+        this->get_elasticity_element_base(element_index);
+    energy += e.CalcElasticEnergy(state);
   }
   return energy;
 }
@@ -19,7 +20,7 @@ T ElasticityModel<T>::CalcElasticEnergy(const FemState<T>& state) const {
 template <typename T>
 std::unique_ptr<FemState<T>> ElasticityModel<T>::DoMakeFemState() const {
   const int num_nodes = this->num_nodes();
-  VectorX<T> q(num_nodes * solution_dimension());
+  VectorX<T> q(this->num_dofs());
   for (int i = 0; i < num_nodes; ++i) {
     const Vector3<T>& q_WP = reference_positions_.at(NodeIndex(i));
     q.template segment<3>(3 * i) = q_WP;
@@ -28,7 +29,7 @@ std::unique_ptr<FemState<T>> ElasticityModel<T>::DoMakeFemState() const {
    desired, set it with SetInitialVelocity(). */
   // TODO(xuchenhan-tri): Add SetInitialVelocity() to support configuring
   // initial velocities.
-  const VectorX<T> qdot = VectorX<T>::Zero(num_nodes * solution_dimension());
+  const VectorX<T> qdot = VectorX<T>::Zero(this->num_dofs());
   return std::make_unique<FemState<T>>(q, qdot);
 }
 }  // namespace fem

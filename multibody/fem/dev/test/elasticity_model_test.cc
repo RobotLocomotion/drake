@@ -37,29 +37,31 @@ class ElasticityModelTest : public ::testing::Test {
     /* Make a unit cube and subdivide it into tetrahedra. */
     const double length = 1;
     geometry::Box box(length, length, length);
-    const geometry::VolumeMesh<Scalar> mesh =
-        geometry::internal::MakeBoxVolumeMesh<Scalar>(box, 1);
+    mesh_ = std::make_unique<geometry::VolumeMesh<Scalar>>(
+        geometry::internal::MakeBoxVolumeMesh<Scalar>(box, 1));
     LinearElasticityModel<Scalar> linear_elasticity_model(kYoungsModulus,
                                                           kPoissonRatio);
     Scalar density(kMassDensity);
     elasticity_model_.AddElasticityElementsFromTetMesh(
-        mesh, density, linear_elasticity_model, kQuadratureOrder);
+        *mesh_, density, linear_elasticity_model, kQuadratureOrder);
   }
 
-  /* Creates arbitrary node positions along with derivatives 1. */
+  /* Creates arbitrary node positions along with derivatives 1. The position
+   could potentially cause elements to invert, but that should not affect the
+   result of the tests. */
   VectorX<Scalar> MakePositions() {
-    Eigen::Matrix<double, kDof, 1> x;
+    VectorX<double> x(kDof);
     x << 0.18, 0.63, 0.54, 0.13, 0.92, 0.17, 0.03, 0.86, 0.85, 0.25, 0.53, 0.67,
         0.81, 0.36, 0.45, 0.31, 0.29, 0.71, 0.30, 0.68, 0.58, 0.52, 0.35, 0.76;
-    const Eigen::Matrix<double, kDof, Eigen::Dynamic> gradient =
-        MatrixX<double>::Identity(kDof, kDof);
-    const VectorX<Scalar> x_autodiff =
-        math::initializeAutoDiffGivenGradientMatrix(x, gradient);
+    VectorX<AutoDiffXd> x_autodiff(kDof);
+    math::initializeAutoDiff(x, x_autodiff);
     return x_autodiff;
   }
 
   /* The ElasticityModel under test. */
   ElasticityModel<Scalar> elasticity_model_;
+  /* The geometry of the model. */
+  std::unique_ptr<geometry::VolumeMesh<Scalar>> mesh_;
 };
 
 TEST_F(ElasticityModelTest, Basic) {
@@ -95,6 +97,12 @@ TEST_F(ElasticityModelTest, MakeState) {
   }
   EXPECT_EQ(state->num_generalized_positions(), kDof);
   /* The default qdot should be zero. */
+  EXPECT_EQ(state->qdot(), VectorX<Scalar>::Zero(kDof));
+  /* The default q should be the reference position of the mesh. */
+  for (int i = 0; i < kNumVertices; ++i) {
+    EXPECT_EQ(state->q().segment<3>(3 * i),
+              mesh_->vertex(geometry::VolumeVertexIndex(i)).r_MV());
+  }
   EXPECT_EQ(state->qdot(), VectorX<Scalar>::Zero(kDof));
 }
 

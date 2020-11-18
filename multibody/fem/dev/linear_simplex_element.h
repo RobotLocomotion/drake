@@ -21,7 +21,7 @@ template <typename T, int NaturalDim>
 class LinearSimplexElement : public IsoparametricElement<T, NaturalDim> {
  public:
   static_assert(1 <= NaturalDim && NaturalDim <= 3,
-                "Only 1, 2 and 3 dimensional spaces are supported.");
+                "Only 1, 2 and 3 dimensional manifolds are supported.");
 
   using typename IsoparametricElement<T, NaturalDim>::VectorD;
 

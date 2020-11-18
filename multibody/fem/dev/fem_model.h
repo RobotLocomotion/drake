@@ -55,12 +55,16 @@ class FemModel {
   virtual ~FemModel() = default;
 
   /** Creates a new FemState. The new state's number of generalized positions is
-   equal to solution_dimension() * num_nodes(). The new state's element cache is
+   equal to `num_dofs()`. The new state's element cache is
    compatible with the FemElement's owned by this %FemModel. */
   std::unique_ptr<FemState<T>> MakeFemState() const;
 
   /** The dimension of the codomain of the PDE's solution u. */
   virtual int solution_dimension() const = 0;
+
+  /** The number of degrees of freedom in the model. It is equal to
+   `solution_dimension()` * `num_nodes()`. */
+  int num_dofs() const { return solution_dimension() * num_nodes(); }
 
   /** The number of FemElement's owned by `this` %FemModel. */
   int num_elements() const { return elements_.size(); }
@@ -75,8 +79,7 @@ class FemModel {
    input `state`.
    @param[in] state The FemState at which to evaluate the residual.
    @param[out] residual The output residual evaluated at `state`.
-   @pre The size of `residual` must be equal to `solution_dimension() *
-   num_nodes()`. */
+   @pre The size of `residual` must be equal to `num_dofs()`. */
   void CalcResidual(const FemState<T>& state,
                     EigenPtr<VectorX<T>> residual) const;
 

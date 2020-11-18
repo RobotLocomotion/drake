@@ -136,14 +136,14 @@ class ElasticityModel : public FemModel<T> {
       const std::vector<NodeIndex>& node_indices, const T& density,
       std::unique_ptr<ConstitutiveModel<T>> constitutive_model,
       const Matrix3X<T>& reference_positions) {
-      static_assert(is_isoparametric_element<IsoparametricElementType>::value,
-                    "IsoparametricElementType must be a derived class of "
-                    "IsoparametricElement<T, NaturalDim>, where NaturalDim can "
-                    "be 1, 2 or 3.");
-      static_assert(is_quadrature<QuadratureType>::value,
-                    "QuadratureType must be a derived class of "
-                    "Quadrature<T, NaturalDim>, where NaturalDim can "
-                    "be 1, 2 or 3.");
+    static_assert(is_isoparametric_element<IsoparametricElementType>::value,
+                  "IsoparametricElementType must be a derived class of "
+                  "IsoparametricElement<T, NaturalDim>, where NaturalDim can "
+                  "be 1, 2 or 3.");
+    static_assert(is_quadrature<QuadratureType>::value,
+                  "QuadratureType must be a derived class of "
+                  "Quadrature<T, NaturalDim>, where NaturalDim can "
+                  "be 1, 2 or 3.");
     static_assert(
         IsoparametricElementType::kNaturalDim == QuadratureType::kNaturalDim,
         "The dimension of the parent domain for IsoparametricElement and "
@@ -178,8 +178,9 @@ class ElasticityModel : public FemModel<T> {
   /* Static cast the input `element` to be of type const
    ElasticityElementBase<T>&. */
   const ElasticityElementBase<T>& get_elasticity_element_base(
-      const FemElement<T>& element) const {
-    return static_cast<const ElasticityElementBase<T>&>(element);
+      const ElementIndex& element_index) const {
+    return static_cast<const ElasticityElementBase<T>&>(
+        this->element(element_index));
   }
 
   /* 'reference_positions_' is used to verify mesh consistency. A single node

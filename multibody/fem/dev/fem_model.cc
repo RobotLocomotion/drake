@@ -21,7 +21,7 @@ std::unique_ptr<FemState<T>> FemModel<T>::MakeFemState() const {
 template <typename T>
 void FemModel<T>::CalcResidual(const FemState<T>& state,
                                EigenPtr<VectorX<T>> residual) const {
-  DRAKE_DEMAND(residual->size() == num_nodes() * solution_dimension());
+  DRAKE_DEMAND(residual->size() == num_dofs());
   /* Verify the size of the cache in the input state is consistent with the
    number of elements in the FemModel. */
   DRAKE_DEMAND(state.element_cache_size() == num_elements());
@@ -34,8 +34,8 @@ void FemModel<T>::CalcResidual(const FemState<T>& state,
   const int solution_dim = solution_dimension();
   for (int e = 0; e < num_elements(); ++e) {
     const int element_num_nodes = elements_[e]->num_nodes();
-    const int element_dof = element_num_nodes * solution_dim;
-    element_residual.resize(element_dof);
+    const int element_dofs = element_num_nodes * solution_dim;
+    element_residual.resize(element_dofs);
     elements_[e]->CalcResidual(state, &element_residual);
     // TODO(xuchenhan-tri): This may become a repeating pattern. Consider
     // extracting it out into a method.

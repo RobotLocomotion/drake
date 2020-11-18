@@ -11,6 +11,7 @@
 #include "drake/multibody/fem/dev/fem_element.h"
 #include "drake/multibody/fem/dev/fem_state.h"
 #include "drake/multibody/fem/dev/isoparametric_element.h"
+#include "drake/multibody/fem/dev/linear_simplex_element.h"
 #include "drake/multibody/fem/dev/quadrature.h"
 
 namespace drake {
@@ -142,6 +143,24 @@ class ElasticityElement : public ElasticityElementBase<T> {
    element. */
   std::vector<T> reference_volume_;
 };
+extern template class ElasticityElement<
+    double, LinearSimplexElement<double, 3>,
+    SimplexGaussianQuadrature<double, 1, 3>>;
+extern template class ElasticityElement<
+    AutoDiffXd, LinearSimplexElement<AutoDiffXd, 3>,
+    SimplexGaussianQuadrature<AutoDiffXd, 1, 3>>;
+extern template class ElasticityElement<
+    double, LinearSimplexElement<double, 3>,
+    SimplexGaussianQuadrature<double, 2, 3>>;
+extern template class ElasticityElement<
+    AutoDiffXd, LinearSimplexElement<AutoDiffXd, 3>,
+    SimplexGaussianQuadrature<AutoDiffXd, 2, 3>>;
+extern template class ElasticityElement<
+    double, LinearSimplexElement<double, 3>,
+    SimplexGaussianQuadrature<double, 3, 3>>;
+extern template class ElasticityElement<
+    AutoDiffXd, LinearSimplexElement<AutoDiffXd, 3>,
+    SimplexGaussianQuadrature<AutoDiffXd, 3, 3>>;
 }  // namespace fem
 }  // namespace multibody
 }  // namespace drake

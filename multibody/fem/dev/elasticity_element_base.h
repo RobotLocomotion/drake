@@ -8,6 +8,7 @@
 namespace drake {
 namespace multibody {
 namespace fem {
+// TODO(xuchenhan-tri): Remove this class after issue #14302 is resolved.
 /** %ElasticityElementBase serves two purposes.
  1. It provides non-templatized ElasticityElement functionalities shared by the
 templatized derived classes.
@@ -27,9 +28,9 @@ class ElasticityElementBase : public FemElement<T> {
   virtual T CalcElasticEnergy(const FemState<T>& state) const = 0;
 
  protected:
-  ElasticityElementBase(
-      ElementIndex element_index, const std::vector<NodeIndex>& node_indices)
-      : FemElement<T>(element_index, node_indices){}
+  ElasticityElementBase(ElementIndex element_index,
+                        const std::vector<NodeIndex>& node_indices)
+      : FemElement<T>(element_index, node_indices) {}
 };
 }  // namespace fem
 }  // namespace multibody
