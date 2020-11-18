@@ -95,8 +95,8 @@ GTEST_TEST(HydroelasticCallbackAutodiff, AutoDiffBlanketFailure) {
                                 &hydroelastic_geometries, &surfaces);
   DRAKE_EXPECT_THROWS_MESSAGE(
       Callback<AutoDiffXd>(&object_A, &object_B, &data), std::logic_error,
-      "AutoDiff-valued ContactSurface calculation between meshes is not"
-      "currently supported");
+      "Requested AutoDiff-valued contact surface between two geometries with "
+      "hydroelastic representation but for scalar type.*");
 
   vector<PenetrationAsPointPair<double>> point_pairs;
   CallbackWithFallbackData<AutoDiffXd> fallback_data{
@@ -105,8 +105,8 @@ GTEST_TEST(HydroelasticCallbackAutodiff, AutoDiffBlanketFailure) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       CallbackWithFallback<AutoDiffXd>(&object_A, &object_B, &fallback_data),
       std::logic_error,
-      "AutoDiff-valued ContactSurface calculation between meshes is not"
-      "currently supported");
+      "Requested AutoDiff-valued contact surface between two geometries with "
+      "hydroelastic representation but for scalar type.*");
 }
 
 // Specification of the shape types to use with TestScene.

@@ -1852,6 +1852,9 @@ class TestPlant(unittest.TestCase):
 
     @numpy_compare.check_nonsymbolic_types
     def test_scene_graph_queries(self, T):
+        # TODO(sean.curtis@tri.global) The unit test of QueryObject/SceneGraph
+        # don't belong in plant_test.py. They belong in geometry_test.py. This
+        # test should be moved.
         # SceneGraph does not support `Expression` type.
         PenetrationAsPointPair = PenetrationAsPointPair_[T]
 
@@ -1879,11 +1882,16 @@ class TestPlant(unittest.TestCase):
         # Implicitly require that this should be size 1.
         # TODO(hongkai.dai): currently if there are bodies in contact, then we
         # only support ComputePointPairPenetration() for T=float. After we
-        # resolve issue #11455 we should support AutoDiffXd for primitive
+        # resolve issue #11455 we should support AutoDiffXd for some primitive
         # geometries as well.
-        if isinstance(T, float):
+        if T == float:
             point_pair, = query_object.ComputePointPairPenetration()
             self.assertIsInstance(point_pair, PenetrationAsPointPair_[float])
+        else:
+            with self.assertRaisesRegex(
+                RuntimeError,
+                    ".*Some of the bodies in the model are in contact."):
+                query_object.ComputePointPairPenetration()
         signed_distance_pair, = query_object.\
             ComputeSignedDistancePairwiseClosestPoints()
         self.assertIsInstance(signed_distance_pair, SignedDistancePair_[T])
@@ -1920,7 +1928,8 @@ class TestPlant(unittest.TestCase):
             return body
 
         # TODO(hongkai.dai): currently if there are bodies in contact, then we
-        # only support ComputePointPairPenetration() for T=float. After we
+        # only support ComputePointPairPenetration() for T=float. Hence
+        # point_pair is only defined when T=float. After we
         # resolve issue #11455 we should support AutoDiffXd for primitive
         # geometries as well.
         if isinstance(T, float):
