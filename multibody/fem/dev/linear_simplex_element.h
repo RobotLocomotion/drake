@@ -20,6 +20,9 @@ namespace fem {
 template <typename T, int NaturalDim>
 class LinearSimplexElement : public IsoparametricElement<T, NaturalDim> {
  public:
+  static_assert(1 <= NaturalDim && NaturalDim <= 3,
+                "Only 1, 2 and 3 dimensional spaces are supported.");
+
   using typename IsoparametricElement<T, NaturalDim>::VectorD;
 
   /** Number of nodes in this simplex element that is available at compile time.
@@ -49,6 +52,11 @@ class LinearSimplexElement : public IsoparametricElement<T, NaturalDim> {
   std::vector<VectorX<T>> S_;
   // Shape function derivatives evaluated at points specified at construction.
   std::vector<MatrixX<T>> dSdxi_;
+};
+
+template <typename T, int NaturalDimension>
+struct is_isoparametric_element<LinearSimplexElement<T, NaturalDimension>> {
+  static constexpr bool value = true;
 };
 }  // namespace fem
 }  // namespace multibody

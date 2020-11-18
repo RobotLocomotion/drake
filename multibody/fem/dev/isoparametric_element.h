@@ -137,6 +137,12 @@ class IsoparametricElement {
   // element.
   std::vector<VectorD> locations_;
 };
+
+template <class QuadratureType, typename T = void, int NaturalDimension = 0>
+struct is_isoparametric_element {
+  static constexpr bool value = false;
+};
+
 }  // namespace fem
 }  // namespace multibody
 }  // namespace drake

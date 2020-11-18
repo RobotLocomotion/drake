@@ -22,18 +22,11 @@ ElasticityElement<T, IsoparametricElementType, QuadratureType>::
       reference_volume_(num_quadrature_points()) {
   /* TODO(xuchenhan-tri): Consider removing the template NaturalDim from
    IsoparametricElement and Quadrature (e.g. with CRTP). */
-  static_assert(
-      std::is_base_of_v<IsoparametricElement<T, 1>, IsoparametricElementType> ||
-          std::is_base_of_v<IsoparametricElement<T, 2>,
-                            IsoparametricElementType> ||
-          std::is_base_of_v<IsoparametricElement<T, 3>,
-                            IsoparametricElementType>,
+  static_assert(is_isoparametric_element<IsoparametricElementType>::value,
       "IsoparametricElementType must be a derived class of "
       "IsoparametricElement<T, NaturalDim>, where NaturalDim can "
       "be 1, 2 or 3.");
-  static_assert(std::is_base_of_v<Quadrature<T, 1>, QuadratureType> ||
-                    std::is_base_of_v<Quadrature<T, 2>, QuadratureType> ||
-                    std::is_base_of_v<Quadrature<T, 3>, QuadratureType>,
+  static_assert(is_quadrature<QuadratureType>::value,
                 "QuadratureType must be a derived class of "
                 "Quadrature<T, NaturalDim>, where NaturalDim can "
                 "be 1, 2 or 3.");
