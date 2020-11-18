@@ -163,6 +163,9 @@ class DiagramBuilder {
   /// Declares that the given @p input port of a constituent system is an input
   /// to the entire Diagram.  @p name is an optional name for the input port;
   /// if it is unspecified, then a default name will be provided.
+  /// @note If the same name is used in multiple calls to ExportInput(), then
+  /// all of the input ports supplied in those calls will be wired to the same
+  /// diagram input. As with ordinary connections, port data types must match.
   /// @pre If supplied at all, @p name must not be empty.
   /// @return The index of the exported input port of the entire diagram.
   InputPortIndex ExportInput(
@@ -220,6 +223,17 @@ class DiagramBuilder {
 
   // For fast membership queries: has this input port already been declared?
   std::set<InputPortLocator> diagram_input_set_;
+
+  // Input port fan-out requires tracking the index and input port type
+  // associated with a port name.
+  struct ExportedInputData {
+    // Track some prior port exported to a name; which one doesn't matter. It
+    // will be used to do port type comparisons.
+    InputPortLocator prior_exported_input{};
+    // Track the port index of the exported port.
+    InputPortIndex diagram_input_index{};
+  };
+  std::map<std::string, ExportedInputData> diagram_inputs_map_;
 
   // A map from the input ports of constituent systems, to the output ports of
   // the systems from which they get their values.

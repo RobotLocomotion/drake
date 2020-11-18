@@ -102,8 +102,6 @@ InputPortIndex DiagramBuilder<T>::ExportInput(
   InputPortLocator id{&input.get_system(), input.get_index()};
   ThrowIfInputAlreadyWired(id);
   ThrowIfSystemNotRegistered(&input.get_system());
-  InputPortIndex return_id(input_port_ids_.size());
-  input_port_ids_.push_back(id);
 
   // The requirement that subsystem names are unique guarantees uniqueness
   // of the port names.
@@ -112,6 +110,52 @@ InputPortIndex DiagramBuilder<T>::ExportInput(
           ? input.get_system().get_name() + "_" + input.get_name()
           : std::get<std::string>(std::move(name));
   DRAKE_DEMAND(!port_name.empty());
+
+  const auto iter = diagram_inputs_map_.find(port_name);
+  InputPortIndex return_id{};
+  if (iter != diagram_inputs_map_.end()) {
+    // Subsequent export; check that port types match.
+    ExportedInputData& data = iter->second;
+    InputPortLocator& prior_id = data.prior_exported_input;
+    return_id = data.diagram_input_index;
+    const InputPort<T>& prior = prior_id.first->get_input_port(prior_id.second);
+    if (prior.get_data_type() != input.get_data_type()) {
+      throw std::logic_error(fmt::format(
+          "DiagramBuilder::ExportInput: Cannot mix vector-valued and abstract-"
+          "valued ports while exporting input port {} of System {} to "
+          "input port {} of Diagram",
+          input.get_name(), input.get_system().get_name(), port_name));
+    }
+    if ((prior.get_data_type() != kAbstractValued) &&
+        (prior.size() != input.size())) {
+      throw std::logic_error(fmt::format(
+          "DiagramBuilder::ExportInput: Mismatched vector sizes while "
+          "exporting input port {} of System {} (size {}) to "
+          "input port {} of Diagram (size {})",
+          input.get_name(), input.get_system().get_name(), input.size(),
+          port_name, prior.size()));
+    }
+    if (prior.get_data_type() == kAbstractValued) {
+      auto model_prior = prior.get_system().AllocateInputAbstract(prior);
+      auto model_input = input.get_system().AllocateInputAbstract(input);
+      const std::type_info& prior_type = model_prior->static_type_info();
+      const std::type_info& input_type = model_input->static_type_info();
+      if (prior_type != input_type) {
+        throw std::logic_error(fmt::format(
+            "DiagramBuilder::ExportInput: Mismatched value types while "
+            "exporting input port {} of System {} (type {}) to "
+            "input port {} of Diagram (type {})",
+            input.get_name(), input.get_system().get_name(),
+            NiceTypeName::Get(input_type),
+            port_name, NiceTypeName::Get(prior_type)));
+      }
+    }
+  } else {
+    // First export; save bookkeeping data.
+    return_id = InputPortIndex(diagram_inputs_map_.size());
+    diagram_inputs_map_[port_name] = {id, return_id};
+  }
+  input_port_ids_.push_back(id);
   input_port_names_.emplace_back(std::move(port_name));
 
   diagram_input_set_.insert(id);
