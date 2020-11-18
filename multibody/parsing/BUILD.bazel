@@ -380,6 +380,21 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "drake_pkg_uri_test",
+    data = [
+        ":test_models",
+    ],
+    deps = [
+        "//common:find_resource",
+        "//geometry:drake_visualizer",
+        "//geometry:scene_graph",
+        "//multibody/parsing",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
     name = "detail_path_utils_test",
     data = [
         ":test_models",
