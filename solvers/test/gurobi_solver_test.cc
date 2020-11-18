@@ -412,7 +412,7 @@ GTEST_TEST(GurobiTest, SolutionPool) {
 
 GTEST_TEST(GurobiTest, QPDualSolution1) {
   GurobiSolver solver;
-  TestQPDualSolution1(solver, 1e-6);
+  TestQPDualSolution1(solver, {} /* solver_options */, 1e-6);
 }
 
 GTEST_TEST(GurobiTest, QPDualSolution2) {
@@ -438,6 +438,16 @@ GTEST_TEST(GurobiTest, EqualityConstrainedQPDualSolution2) {
 GTEST_TEST(GurobiTest, LPDualSolution1) {
   GurobiSolver solver;
   TestLPDualSolution1(solver);
+}
+
+GTEST_TEST(GurobiTest, LPDualSolution2) {
+  GurobiSolver solver;
+  TestLPDualSolution2(solver);
+}
+
+GTEST_TEST(GurobiTest, LPDualSolution3) {
+  GurobiSolver solver;
+  TestLPDualSolution3(solver);
 }
 
 GTEST_TEST(GurobiTest, SOCPDualSolution1) {
