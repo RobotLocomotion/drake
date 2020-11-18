@@ -422,9 +422,9 @@ class YamlReadArchive final {
     if (!sub_node) { return; }
 
     // Measure the YAML Sequence-of-Sequence dimensions.
-    const size_t rows = sub_node.size();
-    const size_t cols = sub_node[0].size();
-    for (size_t i = 0; i < rows; ++i) {
+    size_t rows = sub_node.size();
+    size_t cols = (rows == 0) ? 0 : sub_node[0].size();
+    for (size_t i = 1; i < rows; ++i) {
       const YAML::Node one_row = sub_node[i];
       const size_t one_row_size = one_row.size();
       if (one_row.Type() != YAML::NodeType::Sequence) {
@@ -437,6 +437,9 @@ class YamlReadArchive final {
         ReportError("has inconsistent cols dimensions");
         return;
       }
+    }
+    if (cols == 0) {
+      rows = 0;
     }
 
     // Check the YAML dimensions vs Eigen dimensions, then resize (if dynamic).

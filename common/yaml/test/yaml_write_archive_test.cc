@@ -242,6 +242,20 @@ TEST_F(YamlWriteArchiveTest, EigenMatrix) {
 )""");
 }
 
+TEST_F(YamlWriteArchiveTest, EigenMatrix00) {
+  const auto test = [](const std::string& expected) {
+    const Eigen::MatrixXd empty;
+    const EigenMatrixStruct x{empty};
+    EXPECT_EQ(Save(x), expected);
+    const EigenMatrix00Struct x00;
+    EXPECT_EQ(Save(x00), expected);
+  };
+
+  test(R"""(doc:
+  value: []
+)""");
+}
+
 TEST_F(YamlWriteArchiveTest, Nested) {
   OuterStruct x;
   x.inner_struct.inner_value = 2.0;
