@@ -10,6 +10,9 @@
 using std::map;
 using std::string;
 
+// FIXME(imcmahon): add constant for expected minumum package path
+// and then use it to check for the correct PackgeMap size
+
 namespace drake {
 namespace multibody {
 namespace {
@@ -27,7 +30,7 @@ string GetTestDataRoot() {
 
 void VerifyMatch(const PackageMap& package_map,
     const map<string, string>& expected_packages) {
-  EXPECT_EQ(package_map.size(), static_cast<int>(expected_packages.size()));
+  EXPECT_EQ(package_map.size()-1, static_cast<int>(expected_packages.size()));
   for (const auto& path_entry : expected_packages) {
     const std::string& package_name = path_entry.first;
     const std::string& package_path = path_entry.second;
@@ -147,14 +150,14 @@ GTEST_TEST(PackageMapTest, TestPopulateUpstreamToDrake) {
 GTEST_TEST(PackageMapTest, TestPopulateFromEnvironment) {
   PackageMap package_map;
 
-  // Test a null environment.
+  // Test a null environment with only the Drake package.
   package_map.PopulateFromEnvironment("FOOBAR");
-  EXPECT_EQ(package_map.size(), 0);
+  EXPECT_EQ(package_map.size(), 1);
 
-  // Test an empty environment.
+  // Test an empty environment with only the Drake package.
   ::setenv("FOOBAR", "", 1);
   package_map.PopulateFromEnvironment("FOOBAR");
-  EXPECT_EQ(package_map.size(), 0);
+  EXPECT_EQ(package_map.size(), 1);
 
   // Test three environment entries, concatenated:
   // - one bad path
@@ -194,7 +197,7 @@ GTEST_TEST(PackageMapTest, TestStreamingToString) {
 
   // Verifies that there are three lines in the resulting string.
   EXPECT_EQ(std::count(resulting_string.begin(), resulting_string.end(), '\n'),
-            3);
+            4);
 }
 
 }  // namespace

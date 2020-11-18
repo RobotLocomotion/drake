@@ -22,7 +22,15 @@ using std::string;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
-PackageMap::PackageMap() {}
+PackageMap::PackageMap() {
+  const std::optional<string> maybe_drake_path = MaybeGetDrakePath();
+  if (!maybe_drake_path) {
+    drake::log()->warn("Could not determine Drake's path.");
+  } else {
+    Add("drake", *maybe_drake_path);
+    // drake::log()->warn("Found Drake's path: {}", *maybe_drake_path);
+  }
+}
 
 void PackageMap::Add(const string& package_name, const string& package_path) {
   DRAKE_THROW_UNLESS(map_.count(package_name) == 0);
