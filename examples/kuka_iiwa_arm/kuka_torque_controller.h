@@ -57,10 +57,10 @@ class KukaTorqueController
 
  private:
   const multibody::MultibodyPlant<T>& plant_;
-  int input_port_index_estimated_state_{-1};
-  int input_port_index_desired_state_{-1};
-  int input_port_index_commanded_torque_{-1};
-  int output_port_index_control_{-1};
+  systems::InputPortIndex input_port_index_estimated_state_;
+  systems::InputPortIndex input_port_index_desired_state_;
+  systems::InputPortIndex input_port_index_commanded_torque_;
+  systems::OutputPortIndex output_port_index_control_;
 };
 
 }  // namespace kuka_iiwa_arm

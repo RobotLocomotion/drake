@@ -402,12 +402,26 @@ GTEST_TEST(KitchenSinkStateAndParametersTest, LeafSystemCounts) {
   EXPECT_EQ(kitchen_sink.num_abstract_parameters(), 7);
 }
 
+// Helper class that has one input port, and no output ports.
+template <typename T>
+class Sink final : public LeafSystem<T> {
+ public:
+  explicit Sink(int size) : LeafSystem<T>(SystemTypeTag<Sink>{}) {
+    this->DeclareInputPort("in", kVectorValued, size);
+  }
+
+  // Scalar-converting copy constructor. See @ref system_scalar_conversion.
+  template <typename U>
+  explicit Sink(const Sink<U>& other): Sink<T>(other.get_input_port().size()) {}
+};
+
 /* ExampleDiagram has the following structure:
 adder0_: (input0_ + input1_) -> A
 adder1_: (A + input2_)       -> B, output 0
 adder2_: (A + B)             -> output 1
 integrator1_: A              -> C
 integrator2_: C              -> output 2
+sink_ : (input2_)
 It also uses a StatelessSystem to verify Diagram's ability to retrieve
 witness functions from its subsystems.
 
@@ -421,21 +435,27 @@ witness functions from its subsystems.
           u1 |  +--------+ |  | Adder1    |  B   |       +-----------+  |
              |             |  |           +------+-------> u1        |  |
 64, 128, 256 |             |  |           | 73,146,292   |           |  |
-         +--------------------> u1        |              | Adder2    |  |
-          u2 |             |  +-----------+              |           +----->
-             |             |                 A           |           |  | y1
-             |             +-----------------------------> u0        |  |
-             |             |     9, 18, 36               +-----------+  |  82
-             |             |                                            | 164
-             |             |                                            | 328
-             |             |                                            |
-             |             |  +------------+             +-----------+  |
-             |             |  |            |             |           |  |
-             |           A |  |            |     C       |           |  |
-             |             +--> Integ0     +-------------> Integ1    +----->
-             |                |            |             |           |  | y2
-             |                |  3, 9, 27  |             |81,243,729 |  |
-             |                +------------+             +-----------+  |
+         +----------+---------> u1        |              | Adder2    |  |
+          u2 |      |      |  +-----------+              |           +----->
+             |      |      |                 A           |           |  | y1
+             |      |      +-----------------------------> u0        |  |
+             |      |      |     9, 18, 36               +-----------+  |  82
+             |      |      |                                            | 164
+             |      |      |                                            | 328
+             |      |      |                                            |
+             |      |      |  +------------+             +-----------+  |
+             |      |      |  |            |             |           |  |
+             |      |    A |  |            |     C       |           |  |
+             |      |      +--> Integ0     +-------------> Integ1    +----->
+             |      |         |            |             |           |  | y2
+             |      |         |  3, 9, 27  |             |81,243,729 |  |
+             |      |         +------------+             +-----------+  |
+             |      |                                                   |
+             |      |         +------+                                  |
+             |      |         |      |                                  |
+             |      +---------> Sink |                                  |
+             |                |      |                                  |
+             |                +------+                                  |
              |                                                          |
              |  +-----------+  +----------------+  +----------------+   |
              |  |           |  | ConstantVector |  |                |   |
@@ -466,6 +486,8 @@ class ExampleDiagram : public Diagram<double> {
     integrator0_->set_name("integrator0");
     integrator1_ = builder.AddSystem<Integrator<double>>(size);
     integrator1_->set_name("integrator1");
+    sink_ = builder.AddSystem<Sink>(size);
+    sink_->set_name("sink");
 
     builder.Connect(adder0_->get_output_port(), adder1_->get_input_port(0));
     builder.Connect(adder0_->get_output_port(), adder2_->get_input_port(0));
@@ -478,7 +500,8 @@ class ExampleDiagram : public Diagram<double> {
 
     builder.ExportInput(adder0_->get_input_port(0));
     builder.ExportInput(adder0_->get_input_port(1), "adder0");
-    builder.ExportInput(adder1_->get_input_port(1));
+    const auto port_index = builder.ExportInput(adder1_->get_input_port(1));
+    builder.ConnectInput(port_index, sink_->get_input_port());
     builder.ExportOutput(adder1_->get_output_port());
     builder.ExportOutput(adder2_->get_output_port(), "adder2");
     builder.ExportOutput(integrator1_->get_output_port());
@@ -501,6 +524,7 @@ class ExampleDiagram : public Diagram<double> {
   Adder<double>* adder2() { return adder2_; }
   Integrator<double>* integrator0() { return integrator0_; }
   Integrator<double>* integrator1() { return integrator1_; }
+  Sink<double>* sink() { return sink_; }
   analysis_test::StatelessSystem<double>* stateless() { return stateless_; }
   KitchenSinkStateAndParameters<double>* kitchen_sink() {
     return kitchen_sink_;
@@ -514,6 +538,7 @@ class ExampleDiagram : public Diagram<double> {
 
   Integrator<double>* integrator0_ = nullptr;
   Integrator<double>* integrator1_ = nullptr;
+  Sink<double>* sink_ = nullptr;
 
   KitchenSinkStateAndParameters<double>* kitchen_sink_ = nullptr;
 };
@@ -796,6 +821,11 @@ TEST_F(DiagramTest, Graphviz) {
   // [Diagram Input 2] -> [Adder 1, input 1]
   EXPECT_NE(std::string::npos, dot.find(
       "_" + id + "_u2 -> " + adder1_id + ":u1 [color=blue];")) << dot;
+  // [Diagram Input 2] -> [Sink, input]
+  const std::string sink_id = std::to_string(
+      reinterpret_cast<int64_t>(diagram_->sink()));
+  EXPECT_NE(std::string::npos, dot.find(
+      "_" + id + "_u2 -> " + sink_id + ":u0 [color=blue];")) << dot;
   // [Adder 2, output 0] -> [Diagram Output 1]
   EXPECT_NE(std::string::npos, dot.find(
       adder2_id + ":y0 -> _" + id + "_y1 [color=green];")) << dot;
@@ -958,8 +988,19 @@ TEST_F(DiagramTest, CachingChangePropagation) {
 
 // Tests that a diagram can be transmogrified to AutoDiffXd.
 TEST_F(DiagramTest, ToAutoDiffXd) {
+  std::string double_inputs;
+  for (int k = 0; k < diagram_->num_input_ports(); k++) {
+    double_inputs += diagram_->get_input_port(k).get_name();
+    double_inputs += ",";
+  }
   std::unique_ptr<System<AutoDiffXd>> ad_diagram =
       diagram_->ToAutoDiffXd();
+  std::string ad_inputs;
+  for (int k = 0; k < ad_diagram->num_input_ports(); k++) {
+    ad_inputs += ad_diagram->get_input_port(k).get_name();
+    ad_inputs += ",";
+  }
+  ASSERT_EQ(double_inputs, ad_inputs);
   std::unique_ptr<Context<AutoDiffXd>> context =
       ad_diagram->CreateDefaultContext();
   std::unique_ptr<SystemOutput<AutoDiffXd>> output =
@@ -1762,6 +1803,7 @@ GTEST_TEST(GetSystemsTest, GetSystems) {
                 diagram->adder0(), diagram->adder1(), diagram->adder2(),
                 diagram->stateless(),
                 diagram->integrator0(), diagram->integrator1(),
+                diagram->sink(),
                 diagram->kitchen_sink()
             }),
             diagram->GetSystems());
