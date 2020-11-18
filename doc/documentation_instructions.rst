@@ -4,6 +4,9 @@
 Documentation Generation Instructions
 *************************************
 
+Documentation generation and preview as described in this document are
+supported on Ubuntu only.
+
 *Note: Before proceeding, please*
 :ref:`build Drake from source <build_from_source>`. This is necessary because
 otherwise the various build targets mentioned below will not exist.
@@ -22,7 +25,7 @@ This includes API documentation
 When using Bazel
 ================
 
-First. run the appropriate prerequisites with the ``--with-doc-only`` command
+First, install the appropriate prerequisites with the ``--with-doc-only`` command
 line option, e.g., ::
 
     $ ./setup/ubuntu/install_prereqs.sh --with-doc-only
@@ -48,4 +51,4 @@ To generate the Python API documentation::
     $ bazel run //bindings/pydrake/doc:serve_sphinx [-- --browser=false]
 
 The contents of the Python API documentation are also available via
-``bazel build //bindings/pydrake/doc:sphinx.zip``).
+``bazel build //bindings/pydrake/doc:sphinx.zip``.

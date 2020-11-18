@@ -7,18 +7,11 @@
 
 set -euxo pipefail
 
-with_doc_only=0
 with_maintainer_only=0
 with_test_only=1
 
 while [ "${1:-}" != "" ]; do
   case "$1" in
-    # Install prerequisites that are only needed to build documentation,
-    # i.e., those prerequisites that are dependencies of bazel { build, run }
-    # { //doc:gen_sphinx, //bindings/pydrake/doc:gen_sphinx, //doc:doxygen }
-    --with-doc-only)
-      with_doc_only=1
-      ;;
     # Install prerequisites that are only needed to run select maintainer
     # scripts. Most developers will not need to install these dependencies.
     --with-maintainer-only)
@@ -29,7 +22,6 @@ while [ "${1:-}" != "" ]; do
     # { //doc:gen_sphinx, //bindings/pydrake/doc:gen_sphinx, //doc:doxygen }
     --without-doc-only)
       echo 'DEPRECATED: The --without-doc-only option is the default and will be deprecated on or after 2021-01-01' >&2
-      with_doc_only=0
       ;;
     # Do NOT install prerequisites that are only needed to build and/or run
     # unit tests, i.e., those prerequisites that are not dependencies of
@@ -56,11 +48,6 @@ fi
 
 /usr/local/bin/brew update
 /usr/local/bin/brew bundle --file="${BASH_SOURCE%/*}/Brewfile" --no-lock
-
-if [[ "${with_doc_only}" -eq 1 ]]; then
-  /usr/local/bin/brew bundle \
-    --file="${BASH_SOURCE%/*}/Brewfile-doc-only" --no-lock
-fi
 
 if [[ "${with_maintainer_only}" -eq 1 ]]; then
   /usr/local/bin/brew bundle \
