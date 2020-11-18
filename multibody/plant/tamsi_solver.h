@@ -511,6 +511,16 @@ class TamsiSolver {
   /// @throws std::exception if nv is non-positive.
   explicit TamsiSolver(int nv);
 
+  void ResizeIfNeeded(int nv) const {
+    // We allow empty worlds, with a trivial solution.
+    DRAKE_THROW_UNLESS(nv >= 0);
+    if (nv != nv_) {
+      nv_ = nv;
+      fixed_size_workspace_ = FixedSizeWorkspace(nv);
+      variable_size_workspace_ = VariableSizeWorkspace(128, nv);
+    }
+  }
+
   // TODO(amcastro-tri): submit a separate reformat PR changing /// by /**.
   /// Sets data for the problem to be solved as outlined by Eq. (3) in this
   /// class's documentation: <pre>
@@ -1134,7 +1144,7 @@ class TamsiSolver {
   // s = ‖v‖ / vₛ.
   static T RegularizedFrictionDerivative(const T& speed_BcAc, const T& mu);
 
-  int nv_;  // Number of generalized velocities.
+  mutable int nv_;  // Number of generalized velocities.
   int nc_;  // Number of contact points.
 
   // The parameters of the solver controlling the iteration strategy.

@@ -115,8 +115,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
         const VectorX<double>& vel_upper_limits,
         const VectorX<double>& acc_lower_limits,
         const VectorX<double>& acc_upper_limits)
-      : MultibodyElement<Joint, T, JointIndex>(
-        frame_on_child.model_instance()),
+      : MultibodyElement<Joint, T, JointIndex>(frame_on_child.model_instance()),
         name_(name),
         frame_on_parent_(frame_on_parent),
         frame_on_child_(frame_on_child),
@@ -153,24 +152,16 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   const std::string& name() const { return name_; }
 
   /// Returns a const reference to the parent body P.
-  const Body<T>& parent_body() const {
-    return frame_on_parent_.body();
-  }
+  const Body<T>& parent_body() const { return frame_on_parent_.body(); }
 
   /// Returns a const reference to the child body B.
-  const Body<T>& child_body() const {
-    return frame_on_child_.body();
-  }
+  const Body<T>& child_body() const { return frame_on_child_.body(); }
 
   /// Returns a const reference to the frame F attached on the parent body P.
-  const Frame<T>& frame_on_parent() const {
-    return frame_on_parent_;
-  }
+  const Frame<T>& frame_on_parent() const { return frame_on_parent_; }
 
   /// Returns a const reference to the frame M attached on the child body B.
-  const Frame<T>& frame_on_child() const {
-    return frame_on_child_;
-  }
+  const Frame<T>& frame_on_child() const { return frame_on_child_; }
 
   /// Returns a string identifying the type of `this` joint, such as "revolute"
   /// or "prismatic".
@@ -179,9 +170,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   /// Returns the index to the first generalized velocity for this joint
   /// within the vector v of generalized velocities for the full multibody
   /// system.
-  int velocity_start() const {
-    return do_get_velocity_start();
-  }
+  int velocity_start() const { return do_get_velocity_start(); }
 
   /// Returns the number of generalized velocities describing this joint.
   int num_velocities() const {
@@ -192,9 +181,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   /// Returns the index to the first generalized position for this joint
   /// within the vector q of generalized positions for the full multibody
   /// system.
-  int position_start() const {
-    return do_get_position_start();
-  }
+  int position_start() const { return do_get_position_start(); }
 
   /// Returns the number of generalized positions describing this joint.
   int num_positions() const {
@@ -246,11 +233,8 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   ///   `forces` is `nullptr` or if `forces` doest not have the right sizes to
   ///   accommodate a set of forces for the model to which this joint belongs.
   // NVI to DoAddInOneForce().
-  void AddInOneForce(
-      const systems::Context<T>& context,
-      int joint_dof,
-      const T& joint_tau,
-      MultibodyForces<T>* forces) const {
+  void AddInOneForce(const systems::Context<T>& context, int joint_dof,
+                     const T& joint_tau, MultibodyForces<T>* forces) const {
     DRAKE_DEMAND(forces != nullptr);
     DRAKE_DEMAND(0 <= joint_dof && joint_dof < num_velocities());
     DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
@@ -268,11 +252,27 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   ///   not have the right sizes to accommodate a set of forces for the model
   ///   to which this joint belongs.
   // NVI to DoAddInOneForce().
-  void AddInDamping(
-      const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  void AddInDamping(const systems::Context<T>& context,
+                    MultibodyForces<T>* forces) const {
     DRAKE_DEMAND(forces != nullptr);
     DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
     DoAddInDamping(context, forces);
+  }
+
+  void lock(systems::Context<T>* context) const {
+    context->get_mutable_abstract_parameter(is_locked_parameter_index_)
+        .set_value(true);
+    do_lock(context);
+  }
+
+  void unlock(systems::Context<T>* context) const {
+    context->get_mutable_abstract_parameter(is_locked_parameter_index_)
+        .set_value(false);
+  }
+
+  bool is_locked(const systems::Context<T>& context) const {
+    return context.get_parameters().template get_abstract_parameter<bool>(
+        is_locked_parameter_index_);
   }
 
   /// @name Methods to get and set the limits of `this` joint. For position
@@ -386,7 +386,8 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
 
     std::unique_ptr<typename Joint<ToScalar>::JointImplementation>
         implementation_clone =
-        this->get_implementation().template CloneToScalar<ToScalar>(tree_clone);
+            this->get_implementation().template CloneToScalar<ToScalar>(
+                tree_clone);
     joint_clone->OwnImplementation(std::move(implementation_clone));
 
     return joint_clone;
@@ -426,9 +427,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     }
 
     /// Returns the number of mobilizers in this implementation.
-    int num_mobilizers() const {
-      return static_cast<int>(mobilizers_.size());
-    }
+    int num_mobilizers() const { return static_cast<int>(mobilizers_.size()); }
 
     // Hide the following section from Doxygen.
 #ifndef DRAKE_DOXYGEN_CXX
@@ -522,11 +521,9 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   /// This method is only called by the public NVI AddInOneForce() and therefore
   /// input arguments were checked to be valid.
   /// @see The public NVI AddInOneForce() for details.
-  virtual void DoAddInOneForce(
-      const systems::Context<T>& context,
-      int joint_dof,
-      const T& joint_tau,
-      MultibodyForces<T>* forces) const = 0;
+  virtual void DoAddInOneForce(const systems::Context<T>& context,
+                               int joint_dof, const T& joint_tau,
+                               MultibodyForces<T>* forces) const = 0;
 
   /// Adds into MultibodyForces the forces due to damping within `this` joint.
   /// How forces are added to a MultibodyTree model depends on the underlying
@@ -534,8 +531,8 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   /// constraint) and therefore specific %Joint subclasses must provide a
   /// definition for this method.
   /// The default implementation is a no-op for joints with no damping.
-  virtual void DoAddInDamping(
-      const systems::Context<T>&, MultibodyForces<T>*) const {}
+  virtual void DoAddInDamping(const systems::Context<T>&,
+                              MultibodyForces<T>*) const {}
 
   // Implements MultibodyElement::DoSetTopology(). Joints have no topology
   // though we could require them to have one in the future.
@@ -573,6 +570,19 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   /// Returns whether `this` joint owns a particular implementation.
   /// If the MultibodyTree has been finalized, this will return true.
   bool has_implementation() const { return implementation_ != nullptr; }
+
+  // Subclasses of Joint should set their generalized velocities to 0.
+  virtual void do_lock(systems::Context<T>*) const {}
+
+  // Implementation for MultibodyElement::DoDeclareParameters().
+  void DoDeclareParameters(
+      internal::MultibodyTreeSystem<T>* tree_system) override {
+    // Declare parent classes' parameters
+    MultibodyElement<Joint, T, JointIndex>::DoDeclareParameters(tree_system);
+
+    is_locked_parameter_index_ =
+        this->DeclareAbstractParameter(tree_system, Value<bool>(false));
+  }
 
  private:
   // Make all other Joint<U> objects a friend of Joint<T> so they can make
@@ -612,6 +622,9 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
 
   // Joint default position. This vector has zero size for joints with no state.
   VectorX<double> default_positions_;
+
+  // System parameter index for `this` joint's lock state stored in a context.
+  systems::AbstractParameterIndex is_locked_parameter_index_;
 
   // The Joint<T> implementation:
   std::unique_ptr<JointImplementation> implementation_;

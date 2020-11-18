@@ -312,6 +312,10 @@ class RevoluteJoint final : public Joint<T> {
     }
   }
 
+  void do_lock(systems::Context<T>* context) const override {
+    set_angular_rate(context, T(0));
+  }
+
   const T& DoGetOnePosition(const systems::Context<T>& context) const override {
     return get_angle(context);
   }

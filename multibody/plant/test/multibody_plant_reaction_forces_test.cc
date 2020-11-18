@@ -60,14 +60,14 @@ namespace {
 // We perform this test for both continuous and discrete models.
 class LadderTest : public ::testing::Test {
  protected:
-  void BuildLadderModel(double discrete_update_period) {
+  void BuildLadderModel(double discrete_update_period, bool locked_joint) {
     systems::DiagramBuilder<double> builder;
     std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(
         &builder,
         std::make_unique<MultibodyPlant<double>>(discrete_update_period));
 
     AddWall();
-    AddPinnedLadder();
+    AddPinnedLadder(locked_joint);
     plant_->mutable_gravity_field().set_gravity_vector(
         Vector3d(0.0, 0.0, -kGravity_));
     plant_->Finalize();
@@ -92,6 +92,10 @@ class LadderTest : public ::testing::Test {
     // Fix the actuation.
     const Vector1d tau_actuation = kActuationTorque_ * Vector1d::Ones();
     plant_->get_actuation_input_port().FixValue(plant_context_, tau_actuation);
+
+    if(locked_joint) {
+        weld_->lock(plant_context_);
+    }
   }
 
   // Adds the model for a wall anchored to the wall.
@@ -109,7 +113,7 @@ class LadderTest : public ::testing::Test {
   }
 
   // Adds the model for the ladder pinned to the ground at the origin.
-  void AddPinnedLadder() {
+  void AddPinnedLadder(bool locked_joint) {
     // We split the ladder into two halves and join them with a weld joint so
     // that we can evaluate the reaction force right at the middle.
     // We define body frame Bl and Bu for the lower and upper portions of the
@@ -160,8 +164,14 @@ class LadderTest : public ::testing::Test {
 
     // Weld the two halves.
     const RigidTransformd X_BlBu(Vector3d(0.0, 0.0, kLadderLength_ / 2.0));
-    weld_ = &plant_->WeldFrames(ladder_lower_->body_frame(),
-                                ladder_upper_->body_frame(), X_BlBu);
+    if (locked_joint) {
+      weld_ = &plant_->AddJoint<RevoluteJoint>("Weld", *ladder_lower_, X_BlBu,
+                                               *ladder_upper_, {},
+                                               Vector3d::UnitY(), 0.0);
+    } else {
+      weld_ = &plant_->WeldFrames(ladder_lower_->body_frame(),
+                                  ladder_upper_->body_frame(), X_BlBu);
+    }
 
     // Add actuation.
     plant_->AddJointActuator("PinActuator", *pin_);
@@ -175,7 +185,7 @@ class LadderTest : public ::testing::Test {
 
     // Sanity check model size.
     ASSERT_EQ(plant_->num_bodies(), 3);
-    ASSERT_EQ(plant_->num_velocities(), 1);
+    //ASSERT_EQ(plant_->num_velocities(), 1);
     ASSERT_EQ(plant_->num_actuated_dofs(), 1);
 
     // We run a simulation to steady state so that contact forces balance
@@ -295,20 +305,29 @@ class LadderTest : public ::testing::Test {
   const RigidBody<double>* ladder_lower_{nullptr};
   const RigidBody<double>* ladder_upper_{nullptr};
   const RevoluteJoint<double>* pin_{nullptr};
-  const WeldJoint<double>* weld_{nullptr};
+  const Joint<double>* weld_{nullptr};
   std::unique_ptr<Diagram<double>> diagram_;
   std::unique_ptr<Context<double>> diagram_context_;
   Context<double>* plant_context_{nullptr};
 };
 
 TEST_F(LadderTest, PinReactionForcesContinuous) {
-  BuildLadderModel(0);
+  BuildLadderModel(0, false);
   ASSERT_FALSE(plant_->is_discrete());
   VerifyJointReactionForces();
 }
 
 TEST_F(LadderTest, PinReactionForcesDiscrete) {
-  BuildLadderModel(1.0e-3);
+  BuildLadderModel(1.0e-3, false);
+  ASSERT_TRUE(plant_->is_discrete());
+  VerifyJointReactionForces();
+}
+
+// TODO(joemasterjohn) Add the continuous locked joint test when continuous
+// joint locking is implemented.
+
+TEST_F(LadderTest, PinReactionForcesLockedJointDiscrete) {
+  BuildLadderModel(1.0e-3, true);
   ASSERT_TRUE(plant_->is_discrete());
   VerifyJointReactionForces();
 }

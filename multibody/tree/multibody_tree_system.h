@@ -553,6 +553,12 @@ class MultibodyTreeSystemElementAttorney {
     return systems::NumericParameterIndex{
         tree_system->DeclareNumericParameter(model_vector)};
   }
+
+  static systems::AbstractParameterIndex DeclareAbstractParameter(
+      MultibodyTreeSystem<T>* tree_system, const AbstractValue& model_value) {
+    return systems::AbstractParameterIndex{
+        tree_system->DeclareAbstractParameter(model_value)};
+  }
 };
 }  // namespace internal
 }  // namespace multibody

@@ -2161,14 +2161,96 @@ void MultibodyPlant<T>::CalcContactSolverResults(
     phi0[i] = contact_pairs[i].phi0;
   }
 
+  // Joint locking.
+  MatrixX<T> L = CalcJointLockingConstraintMatrix(context0);
+  MatrixX<T> L_T = L.transpose();
+
+  MatrixX<T> M0_locked = L_T * M0 * L;
+  VectorX<T> minus_tau_locked = L_T * minus_tau;
+  MatrixX<T> Jn_locked = contact_jacobians.Jn * L;
+  MatrixX<T> Jt_locked = contact_jacobians.Jt * L;
+  MatrixX<T> Jc_locked = contact_jacobians.Jc * L;
+
+  VectorX<T> v0_locked = L_T * v0;
+
+  // TAMSI is initialized with num_velocities(). Resize the internal solver
+  // workspace if needed.
+  tamsi_solver_->ResizeIfNeeded(L.cols());
+
+
+  contact_solvers::internal::ContactSolverResults<T> results_locked;
+  results_locked.Resize(L.cols(), num_contacts);
+
   if (contact_solver_ != nullptr) {
-    CallContactSolver(context0.get_time(), v0, M0, minus_tau, phi0,
-                      contact_jacobians.Jc, stiffness, damping, mu, results);
+    CallContactSolver(context0.get_time(), v0_locked, M0_locked,
+                      minus_tau_locked, phi0, Jc_locked, stiffness, damping, mu,
+                      &results_locked);
   } else {
-    CallTamsiSolver(context0.get_time(), v0, M0, minus_tau, fn0,
-                    contact_jacobians.Jn, contact_jacobians.Jt, stiffness,
-                    damping, mu, results);
+    CallTamsiSolver(context0.get_time(), v0_locked, M0_locked, minus_tau_locked,
+                    fn0, Jn_locked, Jt_locked, stiffness, damping, mu,
+                    &results_locked);
   }
+
+  results->v_next = L * results_locked.v_next;
+  results->tau_contact = contact_jacobians.Jn.transpose() * results_locked.fn;
+  results->tau_contact = results->tau_contact +
+                         contact_jacobians.Jt.transpose() * results_locked.ft;
+
+  results->fn = results_locked.fn;
+  results->ft = results_locked.ft;
+  results->vn = results_locked.vn;
+  results->vt = results_locked.vt;
+}
+
+template <typename T>
+MatrixX<T> MultibodyPlant<T>::CalcJointLockingConstraintMatrix(
+    const systems::Context<T>& context) const {
+  std::map<JointIndex, int> joint_index_map;
+  std::map<BodyIndex, int> body_index_map;
+
+  int nv_locked = 0;
+  for (JointIndex joint_index(0); joint_index < num_joints(); ++joint_index) {
+    const Joint<T>& joint = get_joint(joint_index);
+    if (!joint.is_locked(context)) {
+      joint_index_map[joint.index()] = nv_locked;
+      nv_locked += joint.num_velocities();
+    }
+  }
+
+  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
+    const Body<T>& body = get_body(body_index);
+    if (body.is_floating() && !body.is_locked(context)) {
+      body_index_map[body.index()] = nv_locked;
+      nv_locked += 6;
+    }
+  }
+
+  // If no joints or bodies are locked, don't do any work and just return
+  // identity.
+  if (nv_locked == num_velocities()) {
+    return MatrixX<T>::Identity(num_velocities(), num_velocities());
+  }
+
+  MatrixX<T> L = MatrixX<T>::Zero(num_velocities(), nv_locked);
+
+  for (JointIndex joint_index(0); joint_index < num_joints(); ++joint_index) {
+    const Joint<T>& joint = get_joint(joint_index);
+    if (!joint.is_locked(context)) {
+      L.block(joint.velocity_start(), joint_index_map[joint.index()],
+              joint.num_velocities(), joint.num_velocities()) =
+          MatrixX<T>::Identity(joint.num_velocities(), joint.num_velocities());
+    }
+  }
+
+  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
+    const Body<T>& body = get_body(body_index);
+    if (body.is_floating() && !body.is_locked(context)) {
+      L.block(body.floating_velocities_start() - num_positions(),
+              body_index_map[body.index()], 6, 6) = MatrixX<T>::Identity(6, 6);
+    }
+  }
+
+  return L;
 }
 
 template <typename T>
