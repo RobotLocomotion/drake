@@ -1279,7 +1279,7 @@ GTEST_TEST(MeshIntersectionTest, DoubleAutoDiffMixed) {
           RigidTransform<AutoDiffXd>(), GeometryId::get_new_id(), *surface_R,
           bvh_surface_R, RigidTransform<AutoDiffXd>()),
       std::logic_error,
-      "AutoDiff-valued ContactSurface calculation between meshes is not"
+      "AutoDiff-valued ContactSurface calculation between meshes is not "
       "currently supported");
 }
 

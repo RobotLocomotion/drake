@@ -1797,10 +1797,10 @@ void MultibodyPlant<symbolic::Expression>::CalcContactSurfaces(
       "This method doesn't support T = symbolic::Expression.");
 }
 
-template <>
-void MultibodyPlant<double>::CalcHydroelasticWithFallback(
-    const drake::systems::Context<double>& context,
-    internal::HydroelasticFallbackCacheData<double>* data) const {
+template <typename T>
+void MultibodyPlant<T>::CalcHydroelasticWithFallback(
+    const drake::systems::Context<T>& context,
+    internal::HydroelasticFallbackCacheData<T>* data) const {
   DRAKE_DEMAND(data != nullptr);
 
   if (num_collision_geometries() > 0) {
@@ -1813,14 +1813,15 @@ void MultibodyPlant<double>::CalcHydroelasticWithFallback(
   }
 }
 
-template <typename T>
-void MultibodyPlant<T>::CalcHydroelasticWithFallback(
-    const drake::systems::Context<T>&,
-    internal::HydroelasticFallbackCacheData<T>*) const {
+template <>
+void MultibodyPlant<symbolic::Expression>::CalcHydroelasticWithFallback(
+    const drake::systems::Context<symbolic::Expression>&,
+    internal::HydroelasticFallbackCacheData<symbolic::Expression>*) const {
   // TODO(SeanCurtis-TRI): Special case the AutoDiff scalar such that it works
   //  as long as there are no collisions -- akin to CalcPointPairPenetrations().
-  throw std::domain_error(fmt::format("This method doesn't support T = {}.",
-                                      NiceTypeName::Get<T>()));
+  throw std::domain_error(
+      fmt::format("This method doesn't support T = {}.",
+                  NiceTypeName::Get<symbolic::Expression>()));
 }
 
 template <typename T>

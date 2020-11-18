@@ -747,7 +747,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
         throw std::runtime_error(
             "ComputePointPairPenetration(): Some of the bodies in the model "
             "are in contact. Currently we only support computing penetration "
-            "for SceneGraph<double>. Refer to Github issues #11455 for "
+            "for SceneGraph<double>. Refer to Github issue #11455 for "
             "details.");
       }
     }
@@ -870,7 +870,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     std::sort(point_pairs_double.begin(), point_pairs_double.end(),
               OrderPointPair<double>);
     if constexpr (std::is_same<T, double>::value) {
-      *point_pairs = point_pairs_double;
+      *point_pairs = std::move(point_pairs_double);
     } else {
       if (point_pairs_double.size() == 0) {
         point_pairs->clear();

@@ -4674,9 +4674,9 @@ void MultibodyPlant<symbolic::Expression>::CalcContactSurfaces(
     const systems::Context<symbolic::Expression>&,
     std::vector<geometry::ContactSurface<symbolic::Expression>>*) const;
 template <>
-void MultibodyPlant<double>::CalcHydroelasticWithFallback(
-    const systems::Context<double>&,
-    internal::HydroelasticFallbackCacheData<double>*) const;
+void MultibodyPlant<symbolic::Expression>::CalcHydroelasticWithFallback(
+    const systems::Context<symbolic::Expression>&,
+    internal::HydroelasticFallbackCacheData<symbolic::Expression>*) const;
 template <>
 void MultibodyPlant<symbolic::Expression>::CallContactSolver(
     const symbolic::Expression&, const VectorX<symbolic::Expression>&,

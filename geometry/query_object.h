@@ -181,7 +181,10 @@ class QueryObject {
             consistent -- for fixed geometry poses, the results will remain
             the same.
    @warning This silently ignores Mesh geometries (but Convex mesh geometries
-            are included). */
+            are included).
+   @throws if T = AutoDiffXd and object actually collides. */
+  // TODO(hongkai.dai): allow T=AutodiffXd and some primitive geometries
+  // collide.
   std::vector<PenetrationAsPointPair<T>> ComputePointPairPenetration() const;
 
   /**
@@ -256,7 +259,11 @@ class QueryObject {
                             The vector will _not_ be cleared.
    @param[out] point_pairs  The vector that fall back point pair data will be
                             added to. The vector will _not_ be cleared.
-   @pre Neither `surfaces` nor `point_pairs` is nullptr.  */
+   @pre Neither `surfaces` nor `point_pairs` is nullptr.
+   @throws if T = AutoDiffXd and object actually collides. */
+
+  // TODO(hongkai.dai): allow T=AutodiffXd and some primitive geometries
+  // collide.
   void ComputeContactSurfacesWithFallback(
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<T>>* point_pairs) const;
