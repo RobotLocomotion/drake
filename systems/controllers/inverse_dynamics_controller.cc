@@ -8,7 +8,6 @@
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/demultiplexer.h"
-#include "drake/systems/primitives/pass_through.h"
 
 using drake::multibody::MultibodyPlant;
 
@@ -50,19 +49,8 @@ void InverseDynamicsController<T>::SetUp(const VectorX<double>& kp,
   // Adds a PID.
   pid_ = builder.template AddSystem<PidController<T>>(kp, ki, kd);
 
-  // Redirects estimated state input into PID and inverse dynamics.
-  auto pass_through = builder.template AddSystem<PassThrough<T>>(2 * dim);
-
   // Adds a adder to do PID's acceleration + reference acceleration.
   auto adder = builder.template AddSystem<Adder<T>>(2, dim);
-
-  // Connects estimated state to PID.
-  builder.Connect(pass_through->get_output_port(),
-                  pid_->get_input_port_estimated_state());
-
-  // Connects estimated state to inverse dynamics.
-  builder.Connect(pass_through->get_output_port(),
-                  inverse_dynamics->get_input_port_estimated_state());
 
   // Adds PID's output with reference acceleration
   builder.Connect(pid_->get_output_port_control(), adder->get_input_port(0));
@@ -71,9 +59,15 @@ void InverseDynamicsController<T>::SetUp(const VectorX<double>& kp,
   builder.Connect(adder->get_output_port(),
                   inverse_dynamics->get_input_port_desired_acceleration());
 
+
   // Exposes estimated state input port.
-  input_port_index_estimated_state_ =
-      builder.ExportInput(pass_through->get_input_port(), "estimated_state");
+  // Connects estimated state to PID.
+  input_port_index_estimated_state_ = builder.ExportInput(
+      pid_->get_input_port_estimated_state(), "estimated_state");
+
+  // Connects estimated state to inverse dynamics.
+  builder.ConnectInput(input_port_index_estimated_state_,
+                       inverse_dynamics->get_input_port_estimated_state());
 
   // Exposes reference state input port.
   input_port_index_desired_state_ = builder.ExportInput(

@@ -10,6 +10,7 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/primitives/adder.h"
+#include "drake/systems/primitives/discrete_derivative.h"
 #include "drake/systems/primitives/pass_through.h"
 
 namespace drake {
@@ -77,6 +78,17 @@ output_ports: [ { name: "y", id: "y0" }, ],
 { from: "subdiagram_u0", to: "adder", toPort: "u1", },
 { from: "subdiagram_u1", to: "pass", toPort: "u0", },
 { from: "adder", fromPort: "y0", to: "subdiagram_y0", },)"));
+}
+
+// Test a diagram that uses exported input fan-out.
+GTEST_TEST(SystemHtmlTest, SystemWithFanout) {
+  StateInterpolatorWithDiscreteDerivative<double> system(3, 0.05);
+  system.set_name("terp");
+  const std::string html = GenerateHtml(system);
+
+  // Proof of life test for fanout.
+  EXPECT_THAT(html, HasSubstr(R"(from: "terp_u0", to: "drake/systems/Multiplexer)"));
+  EXPECT_THAT(html, HasSubstr(R"(from: "terp_u0", to: "drake/systems/DiscreteDerivative)"));
 }
 
 GTEST_TEST(SystemHtmlTest, ManipulationStation) {

@@ -500,6 +500,14 @@ void DefineFrameworkPySemantics(py::module m) {
         .def("ExportInput", &DiagramBuilder<T>::ExportInput, py::arg("input"),
             py::arg("name") = kUseDefaultName, py_rvp::reference_internal,
             doc.DiagramBuilder.ExportInput.doc)
+        .def("ConnectInput",
+            py::overload_cast<const std::string&, const InputPort<T>&>(
+                &DiagramBuilder<T>::ConnectInput),
+            doc.DiagramBuilder.ConnectInput.doc)
+        .def("ConnectInput",
+            py::overload_cast<InputPortIndex, const InputPort<T>&>(
+                &DiagramBuilder<T>::ConnectInput),
+            doc.DiagramBuilder.ConnectInput.doc)
         .def("ExportOutput", &DiagramBuilder<T>::ExportOutput,
             py::arg("output"), py::arg("name") = kUseDefaultName,
             py_rvp::reference_internal, doc.DiagramBuilder.ExportOutput.doc)

@@ -7,7 +7,6 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/primitives/adder.h"
-#include "drake/systems/primitives/pass_through.h"
 
 namespace drake {
 namespace examples {
@@ -20,7 +19,6 @@ using drake::systems::BasicVector;
 using drake::systems::Context;
 using drake::systems::DiagramBuilder;
 using drake::systems::LeafSystem;
-using drake::systems::PassThrough;
 using drake::systems::controllers::PidController;
 
 template <typename T>
@@ -107,9 +105,6 @@ KukaTorqueController<T>::KukaTorqueController(
   (q*, v*)  ------>|PID with kd=ki=0|
   */
 
-  // Redirects estimated state input into PID and gravity compensation.
-  auto pass_through = builder.template AddSystem<PassThrough<T>>(2 * dim);
-
   // Adds gravity compensator.
   using drake::systems::controllers::InverseDynamics;
   auto gravity_comp =
@@ -131,26 +126,23 @@ KukaTorqueController<T>::KukaTorqueController(
   // feedforward torque.
   auto adder = builder.template AddSystem<Adder<T>>(4, dim);
 
-  // Connects the estimated state to the gravity compensator.
-  builder.Connect(pass_through->get_output_port(),
-                  gravity_comp->get_input_port_estimated_state());
-
-  // Connects the estimated state to the spring.
-  builder.Connect(pass_through->get_output_port(),
-                  spring->get_input_port_estimated_state());
-
-  // Connects the estimated state to the damper.
-  builder.Connect(pass_through->get_output_port(),
-                  damper->get_input_port(0));
-
   // Connects the gravity compensation, spring, and damper torques to the adder.
   builder.Connect(gravity_comp->get_output_port(0), adder->get_input_port(1));
   builder.Connect(spring->get_output_port(0), adder->get_input_port(2));
   builder.Connect(damper->get_output_port(0), adder->get_input_port(3));
 
   // Exposes the estimated state port.
-  input_port_index_estimated_state_ =
-      builder.ExportInput(pass_through->get_input_port());
+  // Connects the estimated state to the gravity compensator.
+  input_port_index_estimated_state_ = builder.ExportInput(
+      gravity_comp->get_input_port_estimated_state());
+
+  // Connects the estimated state to the spring.
+  builder.ConnectInput(input_port_index_estimated_state_,
+                       spring->get_input_port_estimated_state());
+
+  // Connects the estimated state to the damper.
+  builder.ConnectInput(input_port_index_estimated_state_,
+                       damper->get_input_port(0));
 
   // Exposes the desired state port.
   input_port_index_desired_state_ =
