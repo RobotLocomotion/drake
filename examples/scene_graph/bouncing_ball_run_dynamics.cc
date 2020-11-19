@@ -44,7 +44,8 @@ using geometry::HalfSpace;
 using geometry::IllustrationProperties;
 using geometry::PerceptionProperties;
 using geometry::ProximityProperties;
-using geometry::render::DepthCameraProperties;
+using geometry::render::ColorRenderCamera;
+using geometry::render::DepthRenderCamera;
 using geometry::render::RenderEngineVtkParams;
 using geometry::render::RenderLabel;
 using geometry::SceneGraph;
@@ -111,8 +112,9 @@ int do_main() {
     scene_graph->AssignRole(global_source, ground_id, properties);
 
     // Create the camera.
-    DepthCameraProperties camera_properties(640, 480, M_PI_4, render_name, 0.1,
-                                            2.0);
+    const ColorRenderCamera color_camera{
+        {render_name, {640, 480, M_PI_4}, {0.1, 2.0}, {}}, false};
+    const DepthRenderCamera depth_camera{color_camera.core(), {0.1, 2.0}};
     // We need to position and orient the camera. We have the camera body frame
     // B (see rgbd_sensor.h) and the camera frame C (see camera_info.h).
     // By default X_BC = I in the RgbdSensor. So, to aim the camera, Cz = Bz
@@ -130,7 +132,7 @@ int do_main() {
     const RigidTransformd X_WB(R_WB, p_WB);
 
     auto camera = builder.AddSystem<RgbdSensor>(
-        scene_graph->world_frame_id(), X_WB, camera_properties);
+        scene_graph->world_frame_id(), X_WB, color_camera, depth_camera);
     builder.Connect(scene_graph->get_query_output_port(),
                     camera->query_object_input_port());
 

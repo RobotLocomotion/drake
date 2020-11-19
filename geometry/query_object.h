@@ -492,12 +492,22 @@ class QueryObject {
    @param X_PC                  The pose of the camera body in the parent frame.
    @param show_window           If true, the render window will be displayed.
    @param[out] color_image_out  The rendered color image. */
+  DRAKE_DEPRECATED("2021-03-01",
+                   "CameraProperties are being deprecated. Please use the "
+                   "ColorRenderCamera variant.")
   void RenderColorImage(const render::CameraProperties& camera,
                         FrameId parent_frame,
                         const math::RigidTransformd& X_PC,
                         bool show_window,
                         systems::sensors::ImageRgba8U* color_image_out) const;
 
+  /** Renders an RGB image for the given `camera` posed with respect to the
+   indicated parent frame P.
+
+   @param camera                The camera to render from.
+   @param parent_frame          The id for the camera's parent frame.
+   @param X_PC                  The pose of the camera body in the parent frame.
+   @param[out] color_image_out  The rendered color image. */
   void RenderColorImage(const render::ColorRenderCamera& camera,
                         FrameId parent_frame, const math::RigidTransformd& X_PC,
                         systems::sensors::ImageRgba8U* color_image_out) const;
@@ -513,11 +523,25 @@ class QueryObject {
    @param parent_frame          The id for the camera's parent frame.
    @param X_PC                  The pose of the camera body in the parent frame.
    @param[out] depth_image_out  The rendered depth image. */
+  DRAKE_DEPRECATED("2021-03-01",
+                   "CameraProperties are being deprecated. Please use the "
+                   "DepthRenderCamera variant.")
   void RenderDepthImage(const render::DepthCameraProperties& camera,
                         FrameId parent_frame,
                         const math::RigidTransformd& X_PC,
                         systems::sensors::ImageDepth32F* depth_image_out) const;
 
+  /** Renders a depth image for the given `camera` posed with respect to the
+   indicated parent frame P.
+
+   In contrast to the other rendering methods, rendering depth images doesn't
+   provide the option to display the window; generally, basic depth images are
+   not readily communicative to humans.
+
+   @param camera                The camera to render from.
+   @param parent_frame          The id for the camera's parent frame.
+   @param X_PC                  The pose of the camera body in the parent frame.
+   @param[out] depth_image_out  The rendered depth image. */
   void RenderDepthImage(const render::DepthRenderCamera& camera,
                         FrameId parent_frame, const math::RigidTransformd& X_PC,
                         systems::sensors::ImageDepth32F* depth_image_out) const;
@@ -530,12 +554,22 @@ class QueryObject {
    @param X_PC                  The pose of the camera body in the parent frame.
    @param show_window           If true, the render window will be displayed.
    @param[out] label_image_out  The rendered label image. */
+  DRAKE_DEPRECATED("2021-03-01",
+                   "CameraProperties are being deprecated. Please use the "
+                   "ColorRenderCamera variant.")
   void RenderLabelImage(const render::CameraProperties& camera,
                         FrameId parent_frame,
                         const math::RigidTransformd& X_PC,
                         bool show_window,
                         systems::sensors::ImageLabel16I* label_image_out) const;
 
+  /** Renders a label image for the given `camera` posed with respect to the
+   indicated parent frame P.
+
+   @param camera                The camera to render from.
+   @param parent_frame          The id for the camera's parent frame.
+   @param X_PC                  The pose of the camera body in the parent frame.
+   @param[out] label_image_out  The rendered label image. */
   void RenderLabelImage(const render::ColorRenderCamera& camera,
                         FrameId parent_frame, const math::RigidTransformd& X_PC,
                         systems::sensors::ImageLabel16I* label_image_out) const;

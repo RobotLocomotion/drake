@@ -107,7 +107,10 @@ void RenderEngine::DoRenderColorImage(const ColorRenderCamera& camera,
   CameraProperties simple_props{intrinsics.width(), intrinsics.height(),
                                 intrinsics.fov_y(),
                                 camera.core().renderer_name()};
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   RenderColorImage(simple_props, camera.show_window(), color_image_out);
+#pragma GCC diagnostic pop
 }
 
 void RenderEngine::DoRenderDepthImage(const DepthRenderCamera& camera,
@@ -135,7 +138,10 @@ void RenderEngine::DoRenderDepthImage(const DepthRenderCamera& camera,
                                      camera.core().renderer_name(),
                                      camera.depth_range().min_depth(),
                                      camera.depth_range().max_depth()};
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   RenderDepthImage(simple_props, depth_image_out);
+#pragma GCC diagnostic pop
 }
 
 void RenderEngine::DoRenderLabelImage(const ColorRenderCamera& camera,
@@ -160,7 +166,10 @@ void RenderEngine::DoRenderLabelImage(const ColorRenderCamera& camera,
   CameraProperties simple_props{intrinsics.width(), intrinsics.height(),
                                 intrinsics.fov_y(),
                                 camera.core().renderer_name()};
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   RenderLabelImage(simple_props, camera.show_window(), label_image_out);
+#pragma GCC diagnostic pop
 }
 
 void RenderEngine::SetDefaultLightPosition(const Vector3<double>&) {}

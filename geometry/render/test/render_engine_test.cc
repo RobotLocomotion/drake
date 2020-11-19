@@ -56,8 +56,8 @@ using systems::sensors::ImageRgba8U;
 //    - UpdateViewpoint and DoUpdateVisualPose are no-ops.
 //    - DoRegisterVisual and DoRemoveGeometry do nothing and report such.
 //    - DoClone simply returns nullptr.
-//    - Implements no rendering interfaces (which means invoking rendering from
-//      any API should throw an exception).
+//    - Implements no rendering interfaces; invocations of
+//      MinimumEngine::Render*Image (in any variant) will throw.
 class MinimumEngine : public RenderEngine {
  public:
   void UpdateViewpoint(const math::RigidTransformd&) override {}
@@ -381,9 +381,9 @@ GTEST_TEST(RenderEngine, DetectDoCloneFailure) {
 }
 
 // Test infrastructure to support deprecation efforts. After completing the
-// deprecation, all of this test infrastructure can/should simply go away.
-// In the deprecation period there are three possible configurations of a child
-// RenderEngine class:
+// deprecation (2021-03-01), all of this test infrastructure can/should simply
+// go away. In the deprecation period there are three possible configurations of
+// a child RenderEngine class:
 //
 //   - Failed to implement either the old or new APIs.
 //     - This should be detected and an error thrown. See
@@ -448,6 +448,9 @@ GTEST_TEST(RenderEngine, OldApiDelegatesToNewApi) {
 
   const DepthCameraProperties properties{w, h, M_PI / 3, "n/a", 0.25, 11.5};
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
   engine.RenderColorImage(properties, true, &color);
   EXPECT_EQ(engine.num_color_renders(), 1);
   EXPECT_TRUE(color_cameras_equal(engine.last_color_camera(),
@@ -472,6 +475,7 @@ GTEST_TEST(RenderEngine, OldApiDelegatesToNewApi) {
   EXPECT_EQ(engine.num_label_renders(), 2);
   EXPECT_TRUE(color_cameras_equal(engine.last_label_camera(),
                                   ColorRenderCamera(properties, false)));
+#pragma GCC diagnostic pop
 }
 
 // Confirms that a RenderEngine that doesn't implement any rendering API is
@@ -491,6 +495,8 @@ GTEST_TEST(RenderEngine, DetectUnimplementedRender) {
   // Remember, MinimumEngine has implemented no rendering logic.
   MinimumEngine engine;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.RenderColorImage(cam_props, false, &color_image), std::exception,
       ".+render a color image.+RenderColorImage.+DoRenderColorImage.+");
@@ -500,6 +506,7 @@ GTEST_TEST(RenderEngine, DetectUnimplementedRender) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.RenderLabelImage(cam_props, false, &label_image), std::exception,
       ".+render a label image.+RenderLabelImage.+DoRenderLabelImage.+");
+#pragma GCC diagnostic pop
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.RenderColorImage(color_cam, &color_image), std::exception,

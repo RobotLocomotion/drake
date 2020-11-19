@@ -10,6 +10,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/render/camera_properties.h"
@@ -232,6 +233,10 @@ class RenderEngine : public ShapeReifier {
    @param show_window           If true, the render window will be displayed.
    @param[out] color_image_out  The rendered color image.
    @pydrake_mkdoc_identifier{deprecated}  */
+  DRAKE_DEPRECATED("2021-03-01",
+                   "CameraProperties are being deprecated. Prefer the "
+                   "ColorRenderCamera variant; implement the protected "
+                   "DoRenderColorImage() method.")
   virtual void RenderColorImage(
       const CameraProperties& camera, bool show_window,
       systems::sensors::ImageRgba8U* color_image_out) const {
@@ -246,8 +251,11 @@ class RenderEngine : public ShapeReifier {
    depth images are not readily communicative to humans.
 
    @param camera                The intrinsic properties of the camera.
-   @param[out] depth_image_out  The rendered depth image.
-   @pydrake_mkdoc_identifier{deprecated}  */
+   @param[out] depth_image_out  The rendered depth image.  */
+  DRAKE_DEPRECATED("2021-03-01",
+                   "DepthCameraProperties are being deprecated. Prefer the "
+                   "DepthRenderCamera variant; implement the protected "
+                   "DoRenderDepthImage() method.")
   virtual void RenderDepthImage(
       const DepthCameraProperties& camera,
       systems::sensors::ImageDepth32F* depth_image_out) const {
@@ -263,6 +271,10 @@ class RenderEngine : public ShapeReifier {
    @param show_window           If true, the render window will be displayed.
    @param[out] label_image_out  The rendered label image.
    @pydrake_mkdoc_identifier{deprecated}  */
+  DRAKE_DEPRECATED("2021-03-01",
+                   "CameraProperties are being deprecated. Prefer the "
+                   "ColorRenderCamera variant; implement the protected "
+                   "DoRenderLabelImage() method.")
   virtual void RenderLabelImage(
       const CameraProperties& camera, bool show_window,
       systems::sensors::ImageLabel16I* label_image_out) const {
@@ -382,8 +394,11 @@ class RenderEngine : public ShapeReifier {
    `color_image_out` is not `nullptr` and its size is consistent with the
    camera intrinsics.
 
-   The default implementation strips out intrinsics unsupported by the simple
-   render API and prints a warning. */
+   During the deprecation period, the default implementation strips out
+   intrinsics unsupported by the simple render API, prints a warning, and
+   attempts to delegate to the simple-camera RenderColorImage. After
+   the deprecation period, it will throw a "not implemented"-style exception.
+   */
   virtual void DoRenderColorImage(
       const ColorRenderCamera& camera,
       systems::sensors::ImageRgba8U* color_image_out) const;
@@ -393,8 +408,11 @@ class RenderEngine : public ShapeReifier {
    `depth_image_out` is not `nullptr` and its size is consistent with the
    camera intrinsics.
 
-   The default implementation strips out intrinsics unsupported by the simple
-   render API and prints a warning. */
+   During the deprecation period, the default implementation strips out
+   intrinsics unsupported by the simple render API, prints a warning, and
+   attempts to delegate to the simple-camera RenderDepthImage. After
+   the deprecation period, it will throw a "not implemented"-style exception.
+   */
   virtual void DoRenderDepthImage(
       const DepthRenderCamera& camera,
       systems::sensors::ImageDepth32F* depth_image_out) const;
@@ -404,8 +422,11 @@ class RenderEngine : public ShapeReifier {
    `label_image_out` is not `nullptr` and its size is consistent with the
    camera intrinsics.
 
-   The default implementation strips out intrinsics unsupported by the simple
-   render API and prints a warning. */
+   During the deprecation period, the default implementation strips out
+   intrinsics unsupported by the simple render API, prints a warning, and
+   attempts to delegate to the simple-camera RenderLabelImage. After
+   the deprecation period, it will throw a "not implemented"-style exception.
+   */
   virtual void DoRenderLabelImage(
       const ColorRenderCamera& camera,
       systems::sensors::ImageLabel16I* label_image_out) const;

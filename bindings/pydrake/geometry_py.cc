@@ -802,18 +802,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.HasCollisions.doc)
         .def(
             "RenderColorImage",
-            [](const Class* self, const render::CameraProperties& camera,
-                FrameId parent_frame, const math::RigidTransformd& X_PC,
-                bool show_window) {
-              systems::sensors::ImageRgba8U img(camera.width, camera.height);
-              self->RenderColorImage(
-                  camera, parent_frame, X_PC, show_window, &img);
-              return img;
-            },
-            py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
-            py::arg("show_window") = false, cls_doc.RenderColorImage.doc)
-        .def(
-            "RenderColorImage",
             [](const Class* self, const render::ColorRenderCamera& camera,
                 FrameId parent_frame, const math::RigidTransformd& X_PC) {
               systems::sensors::ImageRgba8U img(
@@ -824,16 +812,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
             cls_doc.RenderColorImage.doc)
-        .def(
-            "RenderDepthImage",
-            [](const Class* self, const render::DepthCameraProperties& camera,
-                FrameId parent_frame, const math::RigidTransformd& X_PC) {
-              systems::sensors::ImageDepth32F img(camera.width, camera.height);
-              self->RenderDepthImage(camera, parent_frame, X_PC, &img);
-              return img;
-            },
-            py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
-            cls_doc.RenderDepthImage.doc)
         .def(
             "RenderDepthImage",
             [](const Class* self, const render::DepthRenderCamera& camera,
@@ -848,18 +826,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.RenderDepthImage.doc)
         .def(
             "RenderLabelImage",
-            [](const Class* self, const render::CameraProperties& camera,
-                FrameId parent_frame, const math::RigidTransformd& X_PC,
-                bool show_window = false) {
-              systems::sensors::ImageLabel16I img(camera.width, camera.height);
-              self->RenderLabelImage(
-                  camera, parent_frame, X_PC, show_window, &img);
-              return img;
-            },
-            py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
-            py::arg("show_window") = false, cls_doc.RenderLabelImage.doc)
-        .def(
-            "RenderLabelImage",
             [](const Class* self, const render::ColorRenderCamera& camera,
                 FrameId parent_frame, const math::RigidTransformd& X_PC) {
               systems::sensors::ImageLabel16I img(
@@ -870,6 +836,50 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
             cls_doc.RenderLabelImage.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("RenderColorImage",
+            WrapDeprecated(cls_doc.RenderColorImage.doc_deprecated,
+                [](const Class* self, const render::CameraProperties& camera,
+                    FrameId parent_frame, const math::RigidTransformd& X_PC,
+                    bool show_window) {
+                  systems::sensors::ImageRgba8U img(
+                      camera.width, camera.height);
+                  self->RenderColorImage(
+                      camera, parent_frame, X_PC, show_window, &img);
+                  return img;
+                }),
+            py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
+            py::arg("show_window") = false,
+            cls_doc.RenderColorImage.doc_deprecated)
+        .def("RenderDepthImage",
+            WrapDeprecated(cls_doc.RenderDepthImage.doc_deprecated,
+                [](const Class* self,
+                    const render::DepthCameraProperties& camera,
+                    FrameId parent_frame, const math::RigidTransformd& X_PC) {
+                  systems::sensors::ImageDepth32F img(
+                      camera.width, camera.height);
+                  self->RenderDepthImage(camera, parent_frame, X_PC, &img);
+                  return img;
+                }),
+            py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
+            cls_doc.RenderDepthImage.doc_deprecated)
+        .def("RenderLabelImage",
+            WrapDeprecated(cls_doc.RenderLabelImage.doc_deprecated,
+                [](const Class* self, const render::CameraProperties& camera,
+                    FrameId parent_frame, const math::RigidTransformd& X_PC,
+                    bool show_window = false) {
+                  systems::sensors::ImageLabel16I img(
+                      camera.width, camera.height);
+                  self->RenderLabelImage(
+                      camera, parent_frame, X_PC, show_window, &img);
+                  return img;
+                }),
+            py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
+            py::arg("show_window") = false,
+            cls_doc.RenderLabelImage.doc_deprecated);
+#pragma GCC diagnostic pop
 
     AddValueInstantiation<QueryObject<T>>(m);
   }
