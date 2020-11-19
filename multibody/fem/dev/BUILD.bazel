@@ -322,7 +322,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "simplex_gaussian_linear_quadrature_test",
+    name = "fixed_size_simplex_gaussian_quadrature_test",
     deps = [
         ":fixed_size_quadrature",
     ],

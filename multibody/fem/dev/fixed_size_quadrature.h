@@ -41,15 +41,13 @@ class FixedSizeQuadrature {
 
   /** The position in parent coordinates of the q-th quadrature point. */
   const VectorD& get_point(int q) const {
-    DRAKE_ASSERT(q >= 0);
-    DRAKE_ASSERT(q < NumLocations);
+    DRAKE_ASSERT(0 <= q && q < NumLocations);
     return points_[q];
   }
 
   /** The weight of the q-th quadrature point. */
   T get_weight(int q) const {
-    DRAKE_ASSERT(q >= 0);
-    DRAKE_ASSERT(q < NumLocations);
+    DRAKE_ASSERT(0 <= q && q < NumLocations);
     return weights_[q];
   }
 
@@ -104,21 +102,16 @@ class FixedSizeSimplexGaussianQuadrature
       1 <= Order && Order <= 3,
       "Only linear, quadratic and cubic quadrature rules are supported.");
 
-  static constexpr int num_quadrature_points() {
-    return SimplexQuadratureNumLocations<NaturalDimension, Order>();
-  }
-
-  using Base =
-      FixedSizeQuadrature<T, NaturalDimension, num_quadrature_points()>;
+  using Base = FixedSizeQuadrature<
+      T, NaturalDimension,
+      SimplexQuadratureNumLocations<NaturalDimension, Order>()>;
   using VectorD = typename Base::VectorD;
   using LocationsType = typename Base::LocationsType;
   using WeightsType = typename Base::WeightsType;
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FixedSizeSimplexGaussianQuadrature);
 
-  FixedSizeSimplexGaussianQuadrature()
-      : FixedSizeQuadrature<T, NaturalDimension, num_quadrature_points()>(
-            ComputePointsAndWeights()) {}
+  FixedSizeSimplexGaussianQuadrature() : Base(ComputePointsAndWeights()) {}
 
  private:
   /* Helper function to initialize quadrature locations and weights. */
