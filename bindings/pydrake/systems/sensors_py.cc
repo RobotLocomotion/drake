@@ -7,6 +7,7 @@
 #include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
@@ -38,7 +39,9 @@ using Eigen::Map;
 using Eigen::Vector3d;
 using geometry::FrameId;
 using geometry::render::CameraProperties;
+using geometry::render::ColorRenderCamera;
 using geometry::render::DepthCameraProperties;
+using geometry::render::DepthRenderCamera;
 using math::RigidTransformd;
 using math::RollPitchYawd;
 
@@ -200,28 +203,45 @@ PYBIND11_MODULE(sensors, m) {
   py::class_<RgbdSensor, LeafSystem<T>> rgbd_sensor(
       m, "RgbdSensor", doc.RgbdSensor.doc);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   py::class_<RgbdSensor::CameraPoses>(
-      rgbd_sensor, "CameraPoses", doc.RgbdSensor.CameraPoses.doc)
-      .def(ParamInit<RgbdSensor::CameraPoses>())
+      rgbd_sensor, "CameraPoses", doc.RgbdSensor.CameraPoses.doc_deprecated)
+      .def(DeprecatedParamInit<RgbdSensor::CameraPoses>(
+          doc.RgbdSensor.CameraPoses.doc_deprecated))
       .def_readwrite("X_BC", &RgbdSensor::CameraPoses::X_BC)
       .def_readwrite("X_BD", &RgbdSensor::CameraPoses::X_BD);
 
   rgbd_sensor
-      .def(py::init<FrameId, const RigidTransformd&, const CameraProperties&,
-               const DepthCameraProperties&, const RgbdSensor::CameraPoses&,
-               bool>(),
+      .def(py_init_deprecated<RgbdSensor, FrameId, const RigidTransformd&,
+               const CameraProperties&, const DepthCameraProperties&,
+               const RgbdSensor::CameraPoses&, bool>(
+               doc.RgbdSensor.ctor.doc_legacy_individual_intrinsics),
           py::arg("parent_id"), py::arg("X_PB"), py::arg("color_properties"),
           py::arg("depth_properties"),
           py::arg("camera_poses") = RgbdSensor::CameraPoses{},
           py::arg("show_window") = false,
           doc.RgbdSensor.ctor.doc_legacy_individual_intrinsics)
-      .def(py::init<FrameId, const RigidTransformd&,
+      .def(py_init_deprecated<RgbdSensor, FrameId, const RigidTransformd&,
                const DepthCameraProperties&, const RgbdSensor::CameraPoses&,
-               bool>(),
+               bool>(doc.RgbdSensor.ctor.doc_legacy_combined_intrinsics),
           py::arg("parent_id"), py::arg("X_PB"), py::arg("properties"),
           py::arg("camera_poses") = RgbdSensor::CameraPoses{},
           py::arg("show_window") = false,
-          doc.RgbdSensor.ctor.doc_legacy_combined_intrinsics)
+          doc.RgbdSensor.ctor.doc_legacy_combined_intrinsics);
+#pragma GCC diagnostic pop
+
+  rgbd_sensor
+      .def(py::init<FrameId, const RigidTransformd&, ColorRenderCamera,
+               DepthRenderCamera>(),
+          py::arg("parent_id"), py::arg("X_PB"), py::arg("color_camera"),
+          py::arg("depth_camera"),
+          doc.RgbdSensor.ctor.doc_individual_intrinsics)
+      .def(py::init<FrameId, const RigidTransformd&, const DepthRenderCamera&,
+               bool>(),
+          py::arg("parent_id"), py::arg("X_PB"), py::arg("depth_camera"),
+          py::arg("show_window") = false,
+          doc.RgbdSensor.ctor.doc_combined_intrinsics)
       .def("color_camera_info", &RgbdSensor::color_camera_info,
           py_rvp::reference_internal, doc.RgbdSensor.color_camera_info.doc)
       .def("depth_camera_info", &RgbdSensor::depth_camera_info,

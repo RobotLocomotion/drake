@@ -199,7 +199,17 @@ class RgbdSensorTest : public ::testing::Test {
         // N.B. This is using arbitrary yet different intrinsics for color vs.
         // depth.
         color_properties_(640, 480, M_PI / 4, kRendererName),
-        depth_properties_(320, 240, M_PI / 6, kRendererName, 0.1, 10) {}
+        depth_properties_(320, 240, M_PI / 6, kRendererName, 0.1, 10),
+        color_camera_(color_properties_, false),
+        depth_camera_(depth_properties_) {}
+/* TODO(SeanCurtis-TRI) When we finish deprecating the CameraProperties APIs
+ the instantiation of the two RenderCameras will become the text below (to
+ maintain test equivalence).
+        color_camera_({kRendererName, {640, 480, M_PI / 4}, {0.1, 10.0}, {}},
+                      false),
+        depth_camera_({kRendererName, {320, 240, M_PI / 6}, {0.1, 10.0}, {}},
+                      {0.1, 10}) {}
+*/
 
  protected:
   // Creates a Diagram with a SceneGraph and RgbdSensor connected appropriately.
@@ -230,7 +240,10 @@ class RgbdSensorTest : public ::testing::Test {
         *scene_graph_context_, kRendererName);
   }
 
-  // Confirms that the member sensor_ matches the expected properties.
+  // Confirms that the member sensor_ matches the expected properties. Part
+  // of this confirmation entails rendering the camera which *may* pull on
+  // an input port. The optional `pre_render_callback` should do any work
+  // necessary to make the input port viable.
   ::testing::AssertionResult ValidateConstruction(
       FrameId parent_id, const RigidTransformd& X_WC_expected,
       std::function<void()> pre_render_callback = {}) const {
@@ -240,41 +253,19 @@ class RgbdSensorTest : public ::testing::Test {
              << ") does not match the expected id (" << parent_id << ")";
     }
     ::testing::AssertionResult result = ::testing::AssertionSuccess();
-    const CameraInfo expected_color_info(
-        color_properties_.width, color_properties_.height,
-        color_properties_.fov_y);
     result = CompareCameraInfo(
-        sensor_->color_camera_info(), expected_color_info);
+        sensor_->color_camera_info(), color_camera_.core().intrinsics());
     if (!result) return result;
 
-    constexpr double kNear = 0.01;
-    constexpr double kFar = 10.0;
-    const ColorRenderCamera expected_color_camera(
-        {
-            color_properties_.renderer_name,
-            expected_color_info,
-            {kNear, kFar},
-            RigidTransformd{},
-        },
-        false);
-    result = Compare(sensor_->color_render_camera(), expected_color_camera);
+    result = Compare(sensor_->color_render_camera(), color_camera_);
     if (!result) return result;
 
-    const CameraInfo expected_depth_info(depth_properties_.width,
-                                         depth_properties_.height,
-                                         depth_properties_.fov_y);
     result = CompareCameraInfo(
-        sensor_->depth_camera_info(), expected_depth_info);
+        sensor_->depth_camera_info(), depth_camera_.core().intrinsics());
     if (!result) return result;
-    const DepthRenderCamera expected_depth_camera(
-        {
-            depth_properties_.renderer_name,
-            expected_depth_info,
-            {kNear, kFar},
-            RigidTransformd{},
-        },
-        {depth_properties_.z_near, depth_properties_.z_far});
-    result = Compare(sensor_->depth_render_camera(), expected_depth_camera);
+
+    result = Compare(sensor_->depth_render_camera(), depth_camera_);
+    if (!result) return result;
 
     // By default, frames B, C, and D are aligned and coincident.
     EXPECT_TRUE(CompareMatrices(sensor_->X_BC().GetAsMatrix4(),
@@ -296,6 +287,8 @@ class RgbdSensorTest : public ::testing::Test {
 
   CameraProperties color_properties_;
   DepthCameraProperties depth_properties_;
+  ColorRenderCamera color_camera_;
+  DepthRenderCamera depth_camera_;
   unique_ptr<Diagram<double>> diagram_;
   unique_ptr<Context<double>> context_;
 
@@ -317,8 +310,7 @@ const char RgbdSensorTest::kRendererName[] = "renderer";
 // frame-fixed port.
 TEST_F(RgbdSensorTest, PortNames) {
   RgbdSensor sensor(SceneGraph<double>::world_frame_id(),
-                    RigidTransformd::Identity(), color_properties_,
-                    depth_properties_);
+                    RigidTransformd::Identity(), depth_camera_);
   EXPECT_EQ(sensor.query_object_input_port().get_name(), "geometry_query");
   EXPECT_EQ(sensor.color_image_output_port().get_name(), "color_image");
   EXPECT_EQ(sensor.depth_image_32F_output_port().get_name(), "depth_image_32f");
@@ -416,10 +408,39 @@ TEST_F(RgbdSensorTest, ConstructCameraWithNonTrivialOffsets) {
         Eigen::Vector3d(0, 0.02, 0)};
   // For uniqueness, simply invert X_BC.
   const RigidTransformd X_BD{X_BC.inverse()};
+  const ColorRenderCamera color_camera{
+      {color_camera_.core().renderer_name(), color_camera_.core().intrinsics(),
+       color_camera_.core().clipping(), X_BC},
+      color_camera_.show_window()};
+  const DepthRenderCamera depth_camera{
+    {depth_camera_.core().renderer_name(), depth_camera_.core().intrinsics(),
+       depth_camera_.core().clipping(), X_BD},
+      depth_camera_.depth_range()};
   const RigidTransformd X_WB;
+  const RgbdSensor sensor(scene_graph_->world_frame_id(), X_WB, color_camera,
+                          depth_camera);
+  EXPECT_TRUE(CompareMatrices(
+      sensor.X_BC().GetAsMatrix4(), X_BC.GetAsMatrix4()));
+  EXPECT_TRUE(CompareMatrices(
+      sensor.X_BD().GetAsMatrix4(), X_BD.GetAsMatrix4()));
+}
+
+TEST_F(RgbdSensorTest, ConstructCameraWithNonTrivialOffsetsDeprecated) {
+  const RigidTransformd X_BC{
+        math::RotationMatrixd::MakeFromOrthonormalRows(
+            Eigen::Vector3d(0, 0, 1),
+            Eigen::Vector3d(-1, 0, 0),
+            Eigen::Vector3d(0, -1, 0)),
+        Eigen::Vector3d(0, 0.02, 0)};
+  // For uniqueness, simply invert X_BC.
+  const RigidTransformd X_BD{X_BC.inverse()};
+  const RigidTransformd X_WB;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   const RgbdSensor sensor(
       scene_graph_->world_frame_id(), X_WB, color_properties_,
       depth_properties_, RgbdSensor::CameraPoses{X_BC, X_BD});
+#pragma GCC diagnostic pop
   EXPECT_TRUE(CompareMatrices(
       sensor.X_BC().GetAsMatrix4(), X_BC.GetAsMatrix4()));
   EXPECT_TRUE(CompareMatrices(

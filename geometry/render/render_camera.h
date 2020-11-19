@@ -47,7 +47,8 @@ class RenderCameraCore {
   /** (Advanced) Constructs a %RenderCameraCore from the old, symmetric camera
    representation. This constructor should only be used internally; it serves
    as a stop gap measure until CameraProperties is fully deprecated.  */
-  RenderCameraCore(const CameraProperties& camera, double clipping_far);
+  RenderCameraCore(const CameraProperties& camera, double clipping_far,
+                   math::RigidTransformd X_BS = {});
 
   /** Fully-specified constructor. See the documentation on the member getter
    methods for documentation of parameters.  */
@@ -110,9 +111,11 @@ class ColorRenderCamera {
    representation. This constructor should only be used internally; it serves
    as a stop gap measure until CameraProperties is fully deprecated.  */
   explicit ColorRenderCamera(const CameraProperties& camera,
-                             bool show_window = false)
-      : ColorRenderCamera(RenderCameraCore(camera, kClippingFar), show_window) {
-  }
+                             bool show_window = false,
+                             math::RigidTransformd X_BC = {})
+      : ColorRenderCamera(
+            RenderCameraCore(camera, kClippingFar, std::move(X_BC)),
+            show_window) {}
 
   /** Fully-specified constructor. See the documentation on the member getter
    methods for documentation of parameters.  */
@@ -176,9 +179,11 @@ class DepthRenderCamera {
   /** Constructs a %DepthRenderCamera from the old, symmetric camera
    representation. This constructor should only be used internally; it serves
    as a stop gap measure until CameraProperties is fully deprecated.  */
-  explicit DepthRenderCamera(const DepthCameraProperties& camera)
-      : DepthRenderCamera(RenderCameraCore(camera, camera.z_far * 1.1),
-                          DepthRange(camera.z_near, camera.z_far)) {}
+  explicit DepthRenderCamera(const DepthCameraProperties& camera,
+                             math::RigidTransformd X_BD = {})
+      : DepthRenderCamera(
+            RenderCameraCore(camera, camera.z_far * 1.1, std::move(X_BD)),
+            DepthRange(camera.z_near, camera.z_far)) {}
 
   /** Fully-specified constructor. See the documentation on the member getter
    methods for documentation of parameters.
