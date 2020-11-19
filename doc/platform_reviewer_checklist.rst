@@ -19,12 +19,17 @@ associated with the issue's ``team`` label.
 
 Search for `pull requests that need review
 <https://github.com/RobotLocomotion/drake/pulls?q=is%3Aopen+is%3Apr+no%3Aassignee+-label%3A%22status%3A+do+not+review%22>`_
-and (probably) assign a feature reviewer.  This is intended to make sure that
-requests from outside developers receive timely attention.  For a pull request
-by a core Drake Developer, leaving it unassigned may be acceptable when it is
-clearly an early work-in-progress -- but if it is unassigned for several days,
-you should probably encourage the developer to label it "do not review" for
-clarity.
+and (probably) assign a feature reviewer.  This is intended to make sure that requests from outside developers receive timely attention.
+
+* For a draft PR, the author may simply be trying to get a reviewable view and
+  CI coverage for incomplete, but they might also be asking for feedback.  You
+  should read the PR description and comments to determine whether to add a
+  reviewer or a "do not review" label.
+
+* For a pull request by a core Drake Developer, leaving it unassigned may be
+  acceptable when it is clearly an early work-in-progress -- but if it is
+  unassigned for several days, you should probably encourage the developer to
+  label it "do not review" for clarity.
 
 For PRs assigned to you that have passed all commit checks (other than needing
 a squash), merge the PR to master on behalf of the author -- unless it is
