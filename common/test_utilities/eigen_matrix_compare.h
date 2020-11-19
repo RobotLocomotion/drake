@@ -3,10 +3,13 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <type_traits>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include "drake/common/autodiffxd.h"
+#include "drake/common/eigen_autodiffxd_types.h"
 #include "drake/common/text_logging.h"
 
 namespace drake {
@@ -17,6 +20,8 @@ enum class MatrixCompareType { absolute, relative };
  * Compares two matrices to determine whether they are equal to within a certain
  * threshold.
  *
+ * If m1 and m2 are autodiff matrices, then the gradients are also compared.
+ *
  * @param m1 The first matrix to compare.
  * @param m2 The second matrix to compare.
  * @param tolerance The tolerance for determining equivalence.
@@ -26,12 +31,20 @@ enum class MatrixCompareType { absolute, relative };
  * to `nullptr`. If this is `nullptr` and @p m1 and @p m2 are not equal, an
  * explanation is logged as an error message.
  * @return true if the two matrices are equal based on the specified tolerance.
+ * @pre The scalar types of m1 and m2 must be identical.
  */
-template <typename DerivedA, typename DerivedB>
+template <typename Derived1, typename Derived2>
 [[nodiscard]] ::testing::AssertionResult CompareMatrices(
-    const Eigen::MatrixBase<DerivedA>& m1,
-    const Eigen::MatrixBase<DerivedB>& m2, double tolerance = 0.0,
+    const Eigen::MatrixBase<Derived1>& m1,
+    const Eigen::MatrixBase<Derived2>& m2, double tolerance = 0.0,
     MatrixCompareType compare_type = MatrixCompareType::absolute) {
+  using T = typename Derived1::ScalarType;
+  using T2 = typename Derived2::ScalarType;
+
+  static_assert(
+      std::is_same_v<T, T2>,
+      "Can only compare exactly the same scalar types.");
+
   if (m1.rows() != m2.rows() || m1.cols() != m2.cols()) {
     return ::testing::AssertionFailure()
            << "Matrix size mismatch: (" << m1.rows() << " x " << m1.cols()
@@ -104,6 +117,19 @@ template <typename DerivedA, typename DerivedB>
                  << (m1 - m2);
         }
       }
+
+      if constexpr (is_autodiff_scalar_v<T>) {
+        auto result = CompareMatrices(
+            m1(ii, jj).derivatives(),
+            m2(ii, jj).derivatives(),
+            tolerance,
+            compare_type);
+        if (!result) {
+          return ::testing::AssertionFailure()
+              << "Gradients at (" << ii << ", " << jj << "): "
+              << result;
+        }
+      }
     }
   }
 
@@ -112,5 +138,7 @@ template <typename DerivedA, typename DerivedB>
                                        << "\nis approximately equal to m2 =\n"
                                        << m2;
 }
+
+
 
 }  // namespace drake

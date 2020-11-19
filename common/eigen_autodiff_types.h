@@ -35,4 +35,18 @@ using AutoDiffVecd = Eigen::Matrix<AutoDiffd<num_vars>, rows, 1>;
 /// vector of partials.
 typedef AutoDiffVecd<Eigen::Dynamic, Eigen::Dynamic> AutoDiffVecXd;
 
+// TODO(eric): Try to remember right SFINAE stuff for this.
+template <typename T, typename>
+struct is_autodiff_scalar {
+  using value = std::false_type;
+}
+
+template <typename T>
+struct is_autodiff_scalar<> {
+  using value = std::true_type;
+};
+
+template <typename T>
+using is_autodiff_scalar_v = is_autodiff_scalar<T>::value;
+
 }  // namespace drake
