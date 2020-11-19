@@ -182,9 +182,12 @@ class QueryObject {
             point pairs. The ordering of the results is guaranteed to be
             consistent -- for fixed geometry poses, the results will remain
             the same.
-    @warning For Mesh shapes, their convex hulls are used in this query. It is
+   @warning For Mesh shapes, their convex hulls are used in this query. It is
             *not* computationally efficient or particularly accurate.
-   @throws if T = AutoDiffXd and object actually collides. */
+   @throws if T = AutoDiffXd and an unsupported pair of geometries are in
+   collision. Currently for T = AutoDiffXd, we support the collision between a
+   sphere with another simple geometry including box, cylinder, capsule and
+   halfspace.*/
   std::vector<PenetrationAsPointPair<T>> ComputePointPairPenetration() const;
 
   /**
@@ -225,8 +228,8 @@ class QueryObject {
    <h3>Scalar support</h3>
 
    This method provides support only for double. Attempting to invoke this
-   method with T = AutoDiffXd will throw an exception if there are *any*
-   geometry pairs that couldn't be culled.
+   method with T = AutoDiffXd will throw an exception if there are unsupported
+   geometry pairs (like box-to-box) that couldn't be culled.
 
    @returns A vector populated with all detected intersections characterized as
             contact surfaces. The ordering of the results is guaranteed to be
@@ -262,7 +265,8 @@ class QueryObject {
    @param[out] point_pairs  The vector that fall back point pair data will be
                             added to. The vector will _not_ be cleared.
    @pre Neither `surfaces` nor `point_pairs` is nullptr.
-   @throws if T = AutoDiffXd and object actually collides. */
+   @throws if T = AutoDiffXd and unsupported object (like box-to-box) actually
+   collides. */
   void ComputeContactSurfacesWithFallback(
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<T>>* point_pairs) const;
