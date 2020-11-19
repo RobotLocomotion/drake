@@ -9,10 +9,10 @@ using std::pair;
 using std::sqrt;
 
 template <typename T, int NaturalDimension, int QuadratureOrder>
-pair<typename FixedSizeSimplexGaussianQuadrature<
-         T, NaturalDimension, QuadratureOrder>::Traits::QuadratureLocationsType,
-     typename FixedSizeSimplexGaussianQuadrature<
-         T, NaturalDimension, QuadratureOrder>::Traits::WeightsType>
+pair<typename QuadratureTraits<FixedSizeSimplexGaussianQuadrature<
+         T, NaturalDimension, QuadratureOrder>>::LocationsType,
+     typename QuadratureTraits<FixedSizeSimplexGaussianQuadrature<
+         T, NaturalDimension, QuadratureOrder>>::WeightsType>
 FixedSizeSimplexGaussianQuadrature<
     T, NaturalDimension, QuadratureOrder>::ComputePointsAndWeights() const {
   static_assert(1 <= QuadratureOrder && QuadratureOrder <= 3,

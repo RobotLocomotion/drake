@@ -10,39 +10,67 @@ namespace drake {
 namespace multibody {
 namespace fem {
 /* Forward declaration for template specialization. */
+template <typename T, int NaturalDimensions, int NumQuadratureLocations>
+class FixedSizeQuadrature;
 template <typename T, int NaturalDimensions, int QuadratureOrder>
 class FixedSizeSimplexGaussianQuadrature;
 
-template <class...>
-struct QuadratureTraits {};
+/** The Trait class for quadrature rules used in numerical integration.
+ Specialization of the class must provide the following:
+ 1. The integral constant kNumQuadratureLocations, that specifies the number of
+ locations to evaluate the quadratures rules for QuadratureType.
+ 2. The type VectorD, that specifies the type of the location of the quadrature
+ position.
+ 3. The type LocationsType, that should be std::array<VectorD,
+ kNumQuadratureLocations>.
+ 4. The type WeightsType, that should be std::array<T, kNumQuadratureLocations>,
+ where T is the scalar type of the quadrature rule. */
+template <class QuadratureType>
+struct QuadratureTraits {
+  static constexpr int kNumQuadratureLocations =
+      QuadratureType::kNumQuadratureLocations;
+  using VectorD = typename QuadratureType::VectorD;
+  using LocationsType = typename QuadratureType::LocationsType;
+  using WeightsType = typename QuadratureType::WeightsType;
+};
 
-/* Traits for linear quadratures. */
+/* Traits general quadratures. */
+template <typename T, int NaturalDimensions, int NumQuadratureLocations>
+struct QuadratureTraits<
+    FixedSizeQuadrature<T, NaturalDimensions, NumQuadratureLocations>> {
+  static constexpr int kNumQuadratureLocations = NumQuadratureLocations;
+  using VectorD = Eigen::Matrix<T, NaturalDimensions, 1>;
+  using LocationsType = std::array<VectorD, kNumQuadratureLocations>;
+  using WeightsType = std::array<T, kNumQuadratureLocations>;
+};
+
+/* Traits for linear simplex quadratures. */
 template <typename T, int NaturalDimensions>
 struct QuadratureTraits<
     FixedSizeSimplexGaussianQuadrature<T, NaturalDimensions, 1>> {
   static constexpr int kNumQuadratureLocations = 1;
   using VectorD = Eigen::Matrix<T, NaturalDimensions, 1>;
-  using QuadratureLocationsType = std::array<VectorD, kNumQuadratureLocations>;
+  using LocationsType = std::array<VectorD, kNumQuadratureLocations>;
   using WeightsType = std::array<T, kNumQuadratureLocations>;
 };
 
-/* Traits for quadratic quadratures. */
+/* Traits for quadratic simplex quadratures. */
 template <typename T, int NaturalDimensions>
 struct QuadratureTraits<
     FixedSizeSimplexGaussianQuadrature<T, NaturalDimensions, 2>> {
   static constexpr int kNumQuadratureLocations = NaturalDimensions + 1;
   using VectorD = Eigen::Matrix<T, NaturalDimensions, 1>;
-  using QuadratureLocationsType = std::array<VectorD, kNumQuadratureLocations>;
+  using LocationsType = std::array<VectorD, kNumQuadratureLocations>;
   using WeightsType = std::array<T, kNumQuadratureLocations>;
 };
 
-/* Traits for cubic quadratures. */
+/* Traits for cubic simplex quadratures. */
 template <typename T, int NaturalDimensions>
 struct QuadratureTraits<
     FixedSizeSimplexGaussianQuadrature<T, NaturalDimensions, 3>> {
   static constexpr int kNumQuadratureLocations = NaturalDimensions + 2;
   using VectorD = Eigen::Matrix<T, NaturalDimensions, 1>;
-  using QuadratureLocationsType = std::array<VectorD, kNumQuadratureLocations>;
+  using LocationsType = std::array<VectorD, kNumQuadratureLocations>;
   using WeightsType = std::array<T, kNumQuadratureLocations>;
 };
 
@@ -60,18 +88,21 @@ class FixedSizeQuadrature {
   static_assert(1 <= NumQuadratureLocations);
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FixedSizeQuadrature);
 
-  using VectorD = Eigen::Matrix<T, NaturalDimension, 1>;
+  using Traits = QuadratureTraits<
+      FixedSizeQuadrature<T, NaturalDimension, NumQuadratureLocations>>;
+  using VectorD = typename Traits::VectorD;
+  using LocationsType = typename Traits::LocationsType;
+  using WeightsType = typename Traits::WeightsType;
 
   /** The dimension of the parent domain. */
   static constexpr int kNaturalDim = NaturalDimension;
 
   /** The number of quadrature locations. */
-  static constexpr int kNumQuadratureLocations = NumQuadratureLocations;
+  static constexpr int kNumQuadratureLocations =
+      Traits::kNumQuadratureLocations;
 
   /** The position in parent coordinates of all quadrature points. */
-  const std::array<VectorD, NumQuadratureLocations>& get_points() const {
-    return points_;
-  }
+  const LocationsType& get_points() const { return points_; }
 
   /** The position in parent coordinates of the q-th quadrature point. */
   const VectorD& get_point(int q) const {
@@ -89,14 +120,13 @@ class FixedSizeQuadrature {
 
  protected:
   explicit FixedSizeQuadrature(
-      std::pair<std::array<VectorD, NumQuadratureLocations>,
-                std::array<T, NumQuadratureLocations>>&& points_and_weights)
+      std::pair<LocationsType, WeightsType>&& points_and_weights)
       : points_(std::move(points_and_weights.first)),
         weights_(std::move(points_and_weights.second)) {}
 
  private:
-  std::array<VectorD, NumQuadratureLocations> points_;
-  std::array<T, NumQuadratureLocations> weights_;
+  LocationsType points_;
+  WeightsType weights_;
 };
 
 /** Calculates the Gaussian quadrature rule for 2D and 3D unit simplices
@@ -124,7 +154,9 @@ class FixedSizeSimplexGaussianQuadrature
       FixedSizeSimplexGaussianQuadrature<T, NaturalDimension, QuadratureOrder>>;
   static constexpr int kNumQuadratureLocations =
       Traits::kNumQuadratureLocations;
-  using VectorD = Eigen::Matrix<T, NaturalDimension, 1>;
+  using VectorD = typename Traits::VectorD;
+  using LocationsType = typename Traits::LocationsType;
+  using WeightsType = typename Traits::WeightsType;
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FixedSizeSimplexGaussianQuadrature);
   FixedSizeSimplexGaussianQuadrature()
       : FixedSizeQuadrature<T, NaturalDimension, kNumQuadratureLocations>(
@@ -132,9 +164,7 @@ class FixedSizeSimplexGaussianQuadrature
 
  private:
   /* Helper function to initialize quadrature locations and weights. */
-  std::pair<typename Traits::QuadratureLocationsType,
-            typename Traits::WeightsType>
-  ComputePointsAndWeights() const;
+  std::pair<LocationsType, WeightsType> ComputePointsAndWeights() const;
 };
 
 }  // namespace fem
