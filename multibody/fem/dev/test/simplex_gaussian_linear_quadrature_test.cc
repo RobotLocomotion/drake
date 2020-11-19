@@ -151,7 +151,7 @@ class FixedSizeSimplexGaussianQuadratureTest : public ::testing::Test {
 
 TEST_F(FixedSizeSimplexGaussianQuadratureTest, Linear2D) {
   // Linear Guassuan quadrature only needs 1 quadrature point.
-  EXPECT_EQ(linear_2d_quadrature_.kNumQuadratureLocations, 1);
+  EXPECT_EQ(linear_2d_quadrature_.num_quadrature_points(), 1);
   // Numerical integral of f = ∑ᵢ wᵢ f(xᵢ) where wᵢ is the weight of the i-th
   // quadrature point and xᵢ is the location of the i-th quadrature point.
   double numerical_integral =
@@ -162,7 +162,7 @@ TEST_F(FixedSizeSimplexGaussianQuadratureTest, Linear2D) {
 
 TEST_F(FixedSizeSimplexGaussianQuadratureTest, Linear3D) {
   // Linear Guassuan quadrature only needs 1 quadrature point.
-  EXPECT_EQ(linear_3d_quadrature_.kNumQuadratureLocations, 1);
+  EXPECT_EQ(linear_3d_quadrature_.num_quadrature_points(), 1);
   // Numerical integral of f = ∑ᵢ wᵢ f(xᵢ) where wᵢ is the weight of the i-th
   // quadrature point and xᵢ is the location of the i-th quadrature point.
   double numerical_integral =
@@ -173,7 +173,7 @@ TEST_F(FixedSizeSimplexGaussianQuadratureTest, Linear3D) {
 
 TEST_F(FixedSizeSimplexGaussianQuadratureTest, Quadratic2D) {
   // Quadratic Guassuan quadrature needs 3 quadrature point.
-  EXPECT_EQ(quadratic_2d_quadrature_.kNumQuadratureLocations, 3);
+  EXPECT_EQ(quadratic_2d_quadrature_.num_quadrature_points(), 3);
   // Numerical integral of f = ∑ᵢ wᵢ f(xᵢ) where wᵢ is the weight of the i-th
   // quadrature point and xᵢ is the location of the i-th quadrature point.
   double numerical_integral =
@@ -184,7 +184,7 @@ TEST_F(FixedSizeSimplexGaussianQuadratureTest, Quadratic2D) {
 
 TEST_F(FixedSizeSimplexGaussianQuadratureTest, Quadratic3D) {
   // Quadratic Guassuan quadrature needs 3 quadrature point.
-  EXPECT_EQ(quadratic_3d_quadrature_.kNumQuadratureLocations, 4);
+  EXPECT_EQ(quadratic_3d_quadrature_.num_quadrature_points(), 4);
   // Numerical integral of f = ∑ᵢ wᵢ f(xᵢ) where wᵢ is the weight of the i-th
   // quadrature point and xᵢ is the location of the i-th quadrature point.
   double numerical_integral =
