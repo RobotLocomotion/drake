@@ -452,6 +452,8 @@ drake_py_library(
 drake_py_unittest(
     name = "deprecation_test",
     deps = [
+        # N.B. We include this here due to awkward setup for `pydrake.common`.
+        ":module_py",
         ":deprecation_example",
     ],
 )
