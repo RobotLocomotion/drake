@@ -42,7 +42,49 @@ class ClippingRange {
  I.e., it wouldn't apply to a ray-tracing based implementation.  */
 class RenderCameraCore {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RenderCameraCore);
+  // DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RenderCameraCore);
+  RenderCameraCore(const RenderCameraCore& other)
+      : renderer_name_(other.renderer_name_),
+        intrinsics_(other.intrinsics_),
+        clipping_(other.clipping_),
+        X_BS_(other.X_BS_) {
+    std::cerr << "RenderCameraCore::CopyConstructor\n"
+              << "   From (" << (&other)
+              << ") name = " << other.renderer_name_ << "\n   To ("
+              << this << ") name = " << renderer_name_
+              << "\n";
+  }
+  RenderCameraCore(RenderCameraCore&& other)
+      : renderer_name_(std::move(other.renderer_name_)),
+        intrinsics_(std::move(other.intrinsics_)),
+        clipping_(std::move(other.clipping_)),
+        X_BS_(std::move(other.X_BS_)) {
+    std::cerr << "RenderCameraCore::MoveConstructor\n"
+              << "   From (" << (&other)
+              << ") name = " << other.renderer_name_ << "\n   To ("
+              << this << ") name = " << renderer_name_
+              << "\n";
+        }
+  RenderCameraCore& operator=(const RenderCameraCore& other) {
+    if (this == &other) return *this;
+    renderer_name_ = other.renderer_name_;
+    intrinsics_ = other.intrinsics_;
+    clipping_ = other.clipping_;
+    X_BS_ = other.X_BS_;
+    std::cerr << "RenderCameraCore::CopyAssignment: name = " << renderer_name_
+              << "\n";
+    return *this;
+  }
+  RenderCameraCore& operator=(RenderCameraCore&& other) {
+    if (this == &other) return *this;
+    renderer_name_ = std::move(other.renderer_name_);
+    intrinsics_ = std::move(other.intrinsics_);
+    clipping_ = std::move(other.clipping_);
+    X_BS_ = std::move(other.X_BS_);
+    std::cerr << "RenderCameraCore::MoveAssignment: name = " << renderer_name_
+              << "\n";
+    return *this;
+  }
 
   /** (Advanced) Constructs a %RenderCameraCore from the old, symmetric camera
    representation. This constructor should only be used internally; it serves
