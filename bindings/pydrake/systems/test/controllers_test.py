@@ -25,7 +25,7 @@ from pydrake.systems.controllers import (
     PidControlledSystem,
     PidController,
 )
-from pydrake.systems.framework import InputPortSelection
+from pydrake.systems.framework import DiagramBuilder, InputPortSelection
 from pydrake.systems.primitives import Integrator, LinearSystem
 from pydrake.trajectories import Trajectory
 
@@ -193,6 +193,50 @@ class TestControllers(unittest.TestCase):
         controller.CalcOutput(context, output)
         self.assertTrue(np.allclose(output.get_vector_data(0).CopyToVector(),
                                     tau_id))
+
+    def test_issue14355(self):
+        """
+        DiagramBuilder.AddSystem() may not propagate keep alive relationships.
+        We use this test to show resolution at a known concrete point of
+        failure.
+        https://github.com/RobotLocomotion/drake/issues/14355
+        """
+
+        def make_diagram():
+            # Use a nested function to ensure that all locals get garbage
+            # collected quickly.
+
+            # Construct a trivial plant and ID controller.
+            # N.B. We explicitly do *not* add this plant to the diagram.
+            controller_plant = MultibodyPlant(time_step=0.002)
+            controller_plant.Finalize()
+            builder = DiagramBuilder()
+            controller = builder.AddSystem(
+                InverseDynamicsController(
+                    controller_plant,
+                    kp=[],
+                    ki=[],
+                    kd=[],
+                    has_reference_acceleration=False,
+                )
+            )
+            # Forward ports for ease of testing.
+            builder.ExportInput(
+                controller.get_input_port_estimated_state(), "x_estimated")
+            builder.ExportInput(
+                controller.get_input_port_desired_state(), "x_desired")
+            builder.ExportOutput(controller.get_output_port_control(), "u")
+            diagram = builder.Build()
+            return diagram
+
+        diagram = make_diagram()
+        # N.B. Without the workaround for #14355, we get a segfault when
+        # creating the context.
+        context = diagram.CreateDefaultContext()
+        diagram.GetInputPort("x_estimated").FixValue(context, [])
+        diagram.GetInputPort("x_desired").FixValue(context, [])
+        u = diagram.GetOutputPort("u").Eval(context)
+        np.testing.assert_equal(u, [])
 
     def test_pid_controlled_system(self):
         controllers = [
