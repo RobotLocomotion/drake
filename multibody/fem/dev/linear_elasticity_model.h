@@ -6,7 +6,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/fem/dev/constitutive_model.h"
-#include "drake/multibody/fem/dev/linear_elasticity_model_cache.h"
+#include "drake/multibody/fem/dev/linear_elasticity_model_cache_entry.h"
 
 namespace drake {
 namespace multibody {
@@ -59,18 +59,23 @@ class LinearElasticityModel final : public ConstitutiveModel<T> {
         new LinearElasticityModel<T>(*this));
   }
 
-  /* Calculates the energy density, in unit J/m³, given the model cache. */
-  void DoCalcElasticEnergyDensity(const DeformationGradientCache<T>& cache,
-                                  std::vector<T>* Psi) const final;
+  /* Calculates the energy density, in unit J/m³, given the model cache entry.
+   */
+  void DoCalcElasticEnergyDensity(
+      const DeformationGradientCacheEntry<T>& cache_entry,
+      std::vector<T>* Psi) const final;
 
-  /* Calculates the First Piola stress, in unit Pa, given the model cache. */
-  void DoCalcFirstPiolaStress(const DeformationGradientCache<T>& cache,
-                              std::vector<Matrix3<T>>* P) const final;
+  /* Calculates the First Piola stress, in unit Pa, given the model cache entry.
+   */
+  void DoCalcFirstPiolaStress(
+      const DeformationGradientCacheEntry<T>& cache_entry,
+      std::vector<Matrix3<T>>* P) const final;
 
   /* Creates a LinearElasticityModelCache that is compatible with this
    LinearElasticityModel. */
-  std::unique_ptr<DeformationGradientCache<T>> DoMakeDeformationGradientCache(
-      ElementIndex element_index, int num_quadrature_points) const final;
+  std::unique_ptr<DeformationGradientCacheEntry<T>>
+  DoMakeDeformationGradientCacheEntry(ElementIndex element_index,
+                                      int num_quadrature_points) const final;
 
   /* Set the Lamé parameters from Young's modulus and Poisson ratio. It's
   important to keep the Lamé Parameters in sync with Young's modulus and

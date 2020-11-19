@@ -8,18 +8,19 @@ namespace {
 constexpr int kDof = 3;
 constexpr int kNumQuads = 1;
 constexpr int kNumCache = 2;
-// A toy element cache.
-class MyElementCache final : public ElementCache<double> {
+// A toy element cache entry.
+class MyElementCacheEntry final : public ElementCacheEntry<double> {
  public:
-  MyElementCache(ElementIndex element_index, int num_quadrature_points,
-                 int data)
-      : ElementCache(element_index, num_quadrature_points), data_(data) {}
+  MyElementCacheEntry(ElementIndex element_index, int num_quadrature_points,
+                      int data)
+      : ElementCacheEntry(element_index, num_quadrature_points), data_(data) {}
 
   int data() const { return data_; }
 
  protected:
-  std::unique_ptr<ElementCache<double>> DoClone() const final {
-    return std::unique_ptr<ElementCache<double>>(new MyElementCache(*this));
+  std::unique_ptr<ElementCacheEntry<double>> DoClone() const final {
+    return std::unique_ptr<ElementCacheEntry<double>>(
+        new MyElementCacheEntry(*this));
   }
 
  private:
@@ -39,12 +40,13 @@ class FemStateTest : public ::testing::Test {
   VectorX<double> qdot() const { return Vector3<double>(0.3, 0.4, 0.5); }
   VectorX<double> q() const { return Vector3<double>(0.7, 0.8, 0.9); }
 
-  std::vector<std::unique_ptr<ElementCache<double>>> MakeElementCache() const {
-    std::vector<std::unique_ptr<ElementCache<double>>> cache;
+  std::vector<std::unique_ptr<ElementCacheEntry<double>>> MakeElementCache()
+      const {
+    std::vector<std::unique_ptr<ElementCacheEntry<double>>> cache;
     std::vector<int> data = {3, 5};
     for (int i = 0; i < kNumCache; ++i) {
-      cache.emplace_back(std::make_unique<MyElementCache>(ElementIndex(i),
-                                                          kNumQuads, data[i]));
+      cache.emplace_back(std::make_unique<MyElementCacheEntry>(
+          ElementIndex(i), kNumQuads, data[i]));
     }
     return cache;
   }
@@ -72,13 +74,13 @@ TEST_F(FemStateTest, Clone) {
   EXPECT_EQ(clone->qdot(), qdot());
   EXPECT_EQ(clone->q(), q());
   for (ElementIndex i(0); i < kNumCache; ++i) {
-    const auto* cloned_cache =
-        dynamic_cast<const MyElementCache*>(&clone->element_cache(i));
-    const auto* original_cache =
-        dynamic_cast<const MyElementCache*>(&state_->element_cache(i));
-    ASSERT_TRUE(cloned_cache != nullptr);
-    ASSERT_TRUE(original_cache != nullptr);
-    EXPECT_EQ(cloned_cache->data(), original_cache->data());
+    const auto* cloned_cache_entry = dynamic_cast<const MyElementCacheEntry*>(
+        &clone->element_cache_entry(i));
+    const auto* original_cache_entry = dynamic_cast<const MyElementCacheEntry*>(
+        &state_->element_cache_entry(i));
+    ASSERT_TRUE(cloned_cache_entry != nullptr);
+    ASSERT_TRUE(original_cache_entry != nullptr);
+    EXPECT_EQ(cloned_cache_entry->data(), original_cache_entry->data());
   }
 }
 
@@ -90,11 +92,11 @@ TEST_F(FemStateTest, SetFrom) {
   EXPECT_EQ(dest.q(), q());
   const auto cache = MakeElementCache();
   for (ElementIndex i(0); i < kNumCache; ++i) {
-    const auto* dest_cache =
-        dynamic_cast<const MyElementCache*>(&dest.element_cache(i));
-    ASSERT_TRUE(dest_cache != nullptr);
-    EXPECT_EQ(dest_cache->data(),
-              static_cast<const MyElementCache*>(cache[i].get())->data());
+    const auto* dest_cache_entry =
+        dynamic_cast<const MyElementCacheEntry*>(&dest.element_cache_entry(i));
+    ASSERT_TRUE(dest_cache_entry != nullptr);
+    EXPECT_EQ(dest_cache_entry->data(),
+              static_cast<const MyElementCacheEntry*>(cache[i].get())->data());
   }
 }
 }  // namespace

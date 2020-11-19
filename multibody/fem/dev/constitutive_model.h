@@ -5,7 +5,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/fem/dev/deformation_gradient_cache.h"
+#include "drake/multibody/fem/dev/deformation_gradient_cache_entry.h"
 
 namespace drake {
 namespace multibody {
@@ -37,60 +37,65 @@ class ConstitutiveModel {
 
   // TODO(xuchenhan-tri) Update the list of methods here as more methods are
   // introduced.
-  // TODO(xuchenhan-tri) Clarify that FemElement is responsible for updating
-  // the cached quantities once FemElement is introduced.
   /** @name "Calc" Methods
-   "Calc" methods that calculate the energy density and stress given the cached
-   quantities required for these calculations. The constitutive model expects
-   that the input cached quantities are up-to-date.
-   @warning Derived classes will static cast `cache` into derived cache classes
-   that match the derived %ConstitutiveModel. Make sure the `cache` that is
-   passed in matches the %ConstitutiveModel. */
+   "Calc" methods that calculate the energy density and stress given the cache
+   entry required for these calculations. The constitutive model expects
+   that the input cache entries are up-to-date. FemElement is responsible for
+   updating these cache entries. ConstitutiveModel will not and cannot verify
+   the cache entries provided are up-to-date.
+   @warning Derived classes will static cast `cache_entry` into derived cache
+   entry classes that match the derived %ConstitutiveModel. Make sure the
+   `cache_entry` that is passed in matches the %ConstitutiveModel. */
 
   /** Calculates the energy density per unit reference volume, in unit J/m³,
-   given the model cache. */
+   given the model cache entry. */
   std::vector<T> CalcElasticEnergyDensity(
-      const DeformationGradientCache<T>& cache) const {
-    std::vector<T> Psi(cache.num_quadrature_points());
-    CalcElasticEnergyDensity(cache, &Psi);
+      const DeformationGradientCacheEntry<T>& cache_entry) const {
+    std::vector<T> Psi(cache_entry.num_quadrature_points());
+    CalcElasticEnergyDensity(cache_entry, &Psi);
     return Psi;
   }
 
   /** Alternative signature for CalcElasticEnergyDensity that writes the result
    in the output argument. */
-  void CalcElasticEnergyDensity(const DeformationGradientCache<T>& cache,
-                                std::vector<T>* Psi) const {
+  void CalcElasticEnergyDensity(
+      const DeformationGradientCacheEntry<T>& cache_entry,
+      std::vector<T>* Psi) const {
     DRAKE_DEMAND(Psi != nullptr);
     DRAKE_DEMAND(static_cast<int>(Psi->size()) ==
-                 cache.num_quadrature_points());
-    DoCalcElasticEnergyDensity(cache, Psi);
+                 cache_entry.num_quadrature_points());
+    DoCalcElasticEnergyDensity(cache_entry, Psi);
   }
 
-  /** Calculates the First Piola stress, in unit Pa, given the model cache. */
+  /** Calculates the First Piola stress, in unit Pa, given the model cache
+   entry. */
   std::vector<Matrix3<T>> CalcFirstPiolaStress(
-      const DeformationGradientCache<T>& cache) const {
-    std::vector<Matrix3<T>> P(cache.num_quadrature_points());
-    CalcFirstPiolaStress(cache, &P);
+      const DeformationGradientCacheEntry<T>& cache_entry) const {
+    std::vector<Matrix3<T>> P(cache_entry.num_quadrature_points());
+    CalcFirstPiolaStress(cache_entry, &P);
     return P;
   }
 
   /** Alternative signature for CalcFirstPiolaStress that writes the result in
    the output argument. */
-  void CalcFirstPiolaStress(const DeformationGradientCache<T>& cache,
+  void CalcFirstPiolaStress(const DeformationGradientCacheEntry<T>& cache_entry,
                             std::vector<Matrix3<T>>* P) const {
     DRAKE_DEMAND(P != nullptr);
-    DRAKE_DEMAND(static_cast<int>(P->size()) == cache.num_quadrature_points());
-    DoCalcFirstPiolaStress(cache, P);
+    DRAKE_DEMAND(static_cast<int>(P->size()) ==
+                 cache_entry.num_quadrature_points());
+    DoCalcFirstPiolaStress(cache_entry, P);
   }
 
-  /** Creates a DeformationGradientCache that is compatible with this
+  /** Creates a DeformationGradientCacheEntry that is compatible with this
    %ConstitutiveModel. See ElasticityElement for more about the compatibility
    requirement. */
-  std::unique_ptr<DeformationGradientCache<T>> MakeDeformationGradientCache(
-      ElementIndex element_index, int num_quadrature_points) const {
+  std::unique_ptr<DeformationGradientCacheEntry<T>>
+  MakeDeformationGradientCacheEntry(ElementIndex element_index,
+                                    int num_quadrature_points) const {
     DRAKE_DEMAND(element_index.is_valid());
     DRAKE_DEMAND(num_quadrature_points > 0);
-    return DoMakeDeformationGradientCache(element_index, num_quadrature_points);
+    return DoMakeDeformationGradientCacheEntry(element_index,
+                                               num_quadrature_points);
   }
 
  protected:
@@ -104,20 +109,22 @@ class ConstitutiveModel {
   virtual std::unique_ptr<ConstitutiveModel<T>> DoClone() const = 0;
 
   /** Derived class must calculate the energy density, in unit J/m³, given the
-   model cache. */
+   model cache entry. */
   virtual void DoCalcElasticEnergyDensity(
-      const DeformationGradientCache<T>& cache, std::vector<T>* Psi) const = 0;
+      const DeformationGradientCacheEntry<T>& cache_entry,
+      std::vector<T>* Psi) const = 0;
 
   /** Derived class must calculate the First Piola stress, in unit Pa, given the
-   model cache. */
-  virtual void DoCalcFirstPiolaStress(const DeformationGradientCache<T>& cache,
-                                      std::vector<Matrix3<T>>* P) const = 0;
+   model cache entry. */
+  virtual void DoCalcFirstPiolaStress(
+      const DeformationGradientCacheEntry<T>& cache_entry,
+      std::vector<Matrix3<T>>* P) const = 0;
 
-  /** Derived class must create a DeformationGradientCache that is compatible
-   with this ConstitutiveModel. */
-  virtual std::unique_ptr<DeformationGradientCache<T>>
-  DoMakeDeformationGradientCache(ElementIndex element_index,
-                                 int num_quadrature_points) const = 0;
+  /** Derived class must create a DeformationGradientCacheEntry that is
+   compatible with this ConstitutiveModel. */
+  virtual std::unique_ptr<DeformationGradientCacheEntry<T>>
+  DoMakeDeformationGradientCacheEntry(ElementIndex element_index,
+                                      int num_quadrature_points) const = 0;
 };
 }  // namespace fem
 }  // namespace multibody
