@@ -20,6 +20,9 @@ namespace fem {
 template <typename T, int NaturalDimension>
 class Quadrature {
  public:
+  static_assert(1 <= NaturalDimension && NaturalDimension <= 3,
+                  "Only 1, 2 and 3 dimensional spaces are supported.");
+
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Quadrature);
 
   using VectorD = Eigen::Matrix<T, NaturalDimension, 1>;
@@ -33,9 +36,7 @@ class Quadrature {
   int num_points() const { return points_.size(); }
 
   /// The position in parent coordinates of all quadrature points.
-  const std::vector<VectorD>& get_points() const {
-      return points_;
-  }
+  const std::vector<VectorD>& get_points() const { return points_; }
 
   /// The position in parent coordinates of the q-th quadrature point.
   const VectorD& get_point(int q) const {
@@ -186,6 +187,18 @@ class SimplexGaussianQuadrature : public Quadrature<T, NaturalDimension> {
       DRAKE_UNREACHABLE();
     }
   }
+};
+
+template <class QuadratureType, typename T = void, int QuadratureOrder = 0,
+          int NaturalDimension = 0>
+struct is_quadrature {
+  static constexpr bool value = false;
+};
+
+template <typename T, int QuadratureOrder, int NaturalDimension>
+struct is_quadrature<
+    SimplexGaussianQuadrature<T, QuadratureOrder, NaturalDimension>> {
+  static constexpr bool value = true;
 };
 }  // namespace fem
 }  // namespace multibody

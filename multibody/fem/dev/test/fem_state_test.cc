@@ -11,8 +11,9 @@ constexpr int kNumCache = 2;
 // A toy element cache.
 class MyElementCache final : public ElementCache<double> {
  public:
-  MyElementCache(ElementIndex element_index, int num_quads, int data)
-      : ElementCache(element_index, num_quads), data_(data) {}
+  MyElementCache(ElementIndex element_index, int num_quadrature_points,
+                 int data)
+      : ElementCache(element_index, num_quadrature_points), data_(data) {}
 
   int data() const { return data_; }
 

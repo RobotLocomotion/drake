@@ -27,7 +27,7 @@ class LinearElasticityCacheTest : public ::testing::Test {
 
 TEST_F(LinearElasticityCacheTest, LinearElasticityCacheInitialization) {
   EXPECT_EQ(linear_elasticity_cache_.element_index(), kElementIndex);
-  EXPECT_EQ(linear_elasticity_cache_.num_quads(), kNumQuads);
+  EXPECT_EQ(linear_elasticity_cache_.num_quadrature_points(), kNumQuads);
   EXPECT_EQ(linear_elasticity_cache_.deformation_gradient().size(), kNumQuads);
   EXPECT_EQ(linear_elasticity_cache_.strain().size(), kNumQuads);
   EXPECT_EQ(linear_elasticity_cache_.trace_strain().size(), kNumQuads);
@@ -57,8 +57,8 @@ TEST_F(LinearElasticityCacheTest, Clone) {
             linear_elasticity_cache_.strain());
   EXPECT_EQ(linear_elasticity_cache_clone->trace_strain(),
             linear_elasticity_cache_.trace_strain());
-  EXPECT_EQ(linear_elasticity_cache_clone->num_quads(),
-            linear_elasticity_cache_.num_quads());
+  EXPECT_EQ(linear_elasticity_cache_clone->num_quadrature_points(),
+            linear_elasticity_cache_.num_quadrature_points());
   EXPECT_EQ(linear_elasticity_cache_clone->element_index(),
             linear_elasticity_cache_.element_index());
 }

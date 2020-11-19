@@ -43,9 +43,9 @@ class DeformationGradientCache {
   /** Updates the cached quantities with the given deformation gradients.
    @param F The up-to-date deformation gradients evaluated at the quadrature
    locations for the associated element.
-   @pre The size of `F` must be the same as `num_quads()`. */
+   @pre The size of `F` must be the same as `num_quadrature_points()`. */
   void UpdateCache(const std::vector<Matrix3<T>>& F) {
-    DRAKE_ASSERT(static_cast<int>(F.size()) == num_quads_);
+    DRAKE_ASSERT(static_cast<int>(F.size()) == num_quadrature_points_);
     deformation_gradient_ = F;
     DoUpdateCache(F);
   }
@@ -56,7 +56,7 @@ class DeformationGradientCache {
 
   /** The number of quadrature locations at which cached quantities need to be
    evaluated. */
-  int num_quads() const { return num_quads_; }
+  int num_quadrature_points() const { return num_quadrature_points_; }
 
   const std::vector<Matrix3<T>>& deformation_gradient() const {
     return deformation_gradient_;
@@ -69,35 +69,36 @@ class DeformationGradientCache {
    caches (e.g. LinearElasticityModelCache) that invoke the base constructor.
    @param element_index The index of the FemElement associated with this
    DeformationGradientCache.
-   @param num_quads The number of quadrature locations at which cached
-   quantities need to be evaluated.
-   @pre `num_quads` must be positive. */
-  DeformationGradientCache(ElementIndex element_index, int num_quads)
+   @param num_quadrature_points The number of quadrature locations at which
+   cached quantities need to be evaluated.
+   @pre `num_quadrature_points` must be positive. */
+  DeformationGradientCache(ElementIndex element_index,
+                           int num_quadrature_points)
       : element_index_(element_index),
-        num_quads_(num_quads),
-        deformation_gradient_(num_quads, Matrix3<T>::Identity()) {
+        num_quadrature_points_(num_quadrature_points),
+        deformation_gradient_(num_quadrature_points, Matrix3<T>::Identity()) {
     DRAKE_ASSERT(element_index.is_valid());
-    DRAKE_ASSERT(num_quads > 0);
+    DRAKE_ASSERT(num_quadrature_points > 0);
   }
 
-  /* Copy constructor for the base DeformationGradientCache class to facilitate
+  /** Copy constructor for the base DeformationGradientCache class to facilitate
    `DoClone()` in derived classes. */
   DeformationGradientCache(const DeformationGradientCache&) = default;
 
-  /* Creates an identical copy of the concrete DeformationGradientCache object.
+  /** Creates an identical copy of the concrete DeformationGradientCache object.
    Derived classes must implement this so that it performs the complete
    deep copy of the object, including all base class members. */
   virtual std::unique_ptr<DeformationGradientCache<T>> DoClone() const = 0;
 
-  /* Updates the cached quantities with the given deformation gradients.
+  /** Updates the cached quantities with the given deformation gradients.
    @param F The up-to-date deformation gradients evaluated at the quadrature
    locations for the associated element.
-   @pre The size of `F` must be the same as `num_quads()`. */
+   @pre The size of `F` must be the same as `num_quadrature_points()`. */
   virtual void DoUpdateCache(const std::vector<Matrix3<T>>& F) = 0;
 
  private:
   ElementIndex element_index_;
-  int num_quads_{-1};
+  int num_quadrature_points_{-1};
   std::vector<Matrix3<T>> deformation_gradient_;
 };
 }  // namespace fem

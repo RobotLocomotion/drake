@@ -35,6 +35,37 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "elasticity_element",
+    srcs = [
+        "elasticity_element.cc",
+    ],
+    hdrs = [
+        "elasticity_element.h",
+    ],
+    deps = [
+        ":constitutive_model",
+        ":elasticity_element_base",
+        ":elasticity_element_cache",
+        ":linear_simplex_element",
+        ":quadrature",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "elasticity_element_base",
+    hdrs = [
+        "elasticity_element_base.h",
+    ],
+    deps = [
+        ":fem_element",
+        ":fem_state",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "elasticity_element_cache",
     hdrs = [
         "elasticity_element_cache.h",
@@ -43,6 +74,26 @@ drake_cc_library(
         ":deformation_gradient_cache",
         ":element_cache",
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "elasticity_model",
+    srcs = [
+        "elasticity_model.cc",
+    ],
+    hdrs = [
+        "elasticity_model.h",
+    ],
+    deps = [
+        ":constitutive_model",
+        ":elasticity_element",
+        ":elasticity_element_base",
+        ":fem_model",
+        ":linear_simplex_element",
+        ":quadrature",
+        "//common:essential",
+        "//geometry/proximity:volume_mesh",
     ],
 )
 
@@ -58,26 +109,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "elasticity_element",
-    srcs = [
-        "elasticity_element.cc",
-    ],
-    hdrs = [
-        "elasticity_element.h",
-    ],
-    deps = [
-        ":constitutive_model",
-        ":elasticity_element_cache",
-        ":fem_element",
-        ":isoparametric_element",
-        ":linear_simplex_element",
-        ":quadrature",
-        "//common:default_scalars",
-        "//common:essential",
-    ],
-)
-
-drake_cc_library(
     name = "fem_element",
     srcs = [
         "fem_element.cc",
@@ -86,10 +117,7 @@ drake_cc_library(
         "fem_element.h",
     ],
     deps = [
-        ":constitutive_model",
         ":fem_state",
-        ":isoparametric_element",
-        ":quadrature",
         "//common:default_scalars",
         "//common:essential",
     ],
@@ -103,6 +131,22 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:type_safe_index",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_model",
+    srcs = [
+        "fem_model.cc",
+    ],
+    hdrs = [
+        "fem_model.h",
+    ],
+    deps = [
+        ":fem_element",
+        ":fem_state",
+        "//common:default_scalars",
+        "//common:essential",
     ],
 )
 
@@ -186,6 +230,18 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:nice_type_name",
+    ],
+)
+
+drake_cc_googletest(
+    name = "elasticity_model_test",
+    deps = [
+        ":elasticity_model",
+        ":linear_elasticity_model",
+        ":linear_simplex_element",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry/proximity:make_box_mesh",
+        "//math:gradient",
     ],
 )
 

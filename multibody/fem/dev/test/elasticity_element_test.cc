@@ -59,10 +59,7 @@ class ElasticityElementTest : public ::testing::Test {
         std::make_unique<LinearElasticityModelCache<AutoDiffXd>>(
             kDummyElementIndex, kNumQuads);
     std::vector<std::unique_ptr<ElementCache<AutoDiffXd>>> cache;
-    // TODO(xuchenhan-tri): Add a method to FemElement that creates a compatible
-    // ElementCache.
-    cache.emplace_back(std::make_unique<ElasticityElementCache<AutoDiffXd>>(
-        kDummyElementIndex, kNumQuads, std::move(linear_elasticity_cache)));
+    cache.emplace_back(elasticity_element_->MakeElementCache());
     state_->ResetElementCache(std::move(cache));
   }
 
@@ -91,7 +88,7 @@ class ElasticityElementTest : public ::testing::Test {
 namespace {
 TEST_F(ElasticityElementTest, Basic) {
   EXPECT_EQ(elasticity_element_->num_nodes(), kNumVertices);
-  EXPECT_EQ(elasticity_element_->num_quads(), kNumQuads);
+  EXPECT_EQ(elasticity_element_->num_quadrature_points(), kNumQuads);
   EXPECT_EQ(elasticity_element_->solution_dimension(), kProblemDim);
 }
 

@@ -7,33 +7,35 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/fem/dev/constitutive_model.h"
-#include "drake/multibody/fem/dev/elasticity_element_cache.h"
+#include "drake/multibody/fem/dev/elasticity_element_base.h"
 #include "drake/multibody/fem/dev/fem_element.h"
 #include "drake/multibody/fem/dev/fem_state.h"
 #include "drake/multibody/fem/dev/isoparametric_element.h"
+#include "drake/multibody/fem/dev/linear_simplex_element.h"
 #include "drake/multibody/fem/dev/quadrature.h"
 
 namespace drake {
 namespace multibody {
 namespace fem {
-/** The FEM element routine for static and dynamic 3D elasticity problems.
+/** The FEM element class for static and dynamic 3D elasticity problems.
  Implements the abstract interface of FemElement.
 
  See ElasticityElementCache for the corresponding ElementCache for
  %ElasticityElement.
  @tparam_nonsymbolic_scalar T.
  @tparam IsoparametricElementType The type of IsoparametricElement used in this
- ElasticityElement. IsoparametricElementType must be a derived class from
+ %ElasticityElement. IsoparametricElementType must be a derived class from
  IsoparametricElement.
- @tparam QuadratureType The type of Quadrature used in this ElasticityElement.
+ @tparam QuadratureType The type of Quadrature used in this %ElasticityElement.
  QuadratureType must be a derived class from Quadrature.
  */
-/* TODO(xuchenhan-tri): Consider making num_quads() and num_nodes() available at
- compile time and thereby eliminating heap allocations. */
+/* TODO(xuchenhan-tri): Consider making num_quadrature_points() and num_nodes()
+ available at compile time and thereby eliminating heap allocations in this
+ class. */
 /* TODO(xuchenhan-tri): Consider abstracting out the IsoparametricElement and
  the Quadrature to a FixedSizeFemElement class, see issue #14302. */
 template <typename T, class IsoparametricElementType, class QuadratureType>
-class ElasticityElement : public FemElement<T> {
+class ElasticityElement : public ElasticityElementBase<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ElasticityElement);
 
@@ -65,20 +67,25 @@ class ElasticityElement : public FemElement<T> {
 
   virtual ~ElasticityElement() = default;
 
-  /** The number of dimensions of the elasticity problem. */
-  int solution_dimension() const final { return 3; }
+  /** Creates an ElasticityElementCache that is compatible with this element. */
+  std::unique_ptr<ElementCache<T>> MakeElementCache() const final;
 
   /** Number of quadrature points at which element-wise quantities are
    evaluated. */
-  int num_quads() const { return quadrature_.num_points(); }
+  int num_quadrature_points() const final { return quadrature_.num_points(); }
 
   /** Number of nodes associated with this element. */
   int num_nodes() const final { return shape_.num_nodes(); }
 
   /** Returns the elastic potential energy stored in this element in unit J. */
-  T CalcElasticEnergy(const FemState<T>& state) const;
+  T CalcElasticEnergy(const FemState<T>& state) const final;
 
- protected:
+ private:
+  static constexpr int kNaturalDim = IsoparametricElementType::kNaturalDim;
+  using MatrixD3 = Eigen::Matrix<T, kNaturalDim, 3>;
+
+  friend class ElasticityElementTest;
+
   /* Calculates the element residual of this element evaluated at the input
    state.
    @param[in] state The FEM state at which to evaluate the residual.
@@ -87,13 +94,6 @@ class ElasticityElement : public FemElement<T> {
    residual corresponding to the i-th node in this element. */
   void DoCalcResidual(const FemState<T>& state,
                       EigenPtr<VectorX<T>> residual) const final;
-
- private:
-  static constexpr int kNaturalDim = IsoparametricElementType::kNaturalDim;
-  using MatrixD3 =
-      Eigen::Matrix<T, kNaturalDim, 3>;
-
-  friend class ElasticityElementTest;
 
   /* Calculates the elastic forces on the nodes in this element. Returns a
    vector of elastic forces of size 3*num_nodes(). */
@@ -143,6 +143,24 @@ class ElasticityElement : public FemElement<T> {
    element. */
   std::vector<T> reference_volume_;
 };
+extern template class ElasticityElement<
+    double, LinearSimplexElement<double, 3>,
+    SimplexGaussianQuadrature<double, 1, 3>>;
+extern template class ElasticityElement<
+    AutoDiffXd, LinearSimplexElement<AutoDiffXd, 3>,
+    SimplexGaussianQuadrature<AutoDiffXd, 1, 3>>;
+extern template class ElasticityElement<
+    double, LinearSimplexElement<double, 3>,
+    SimplexGaussianQuadrature<double, 2, 3>>;
+extern template class ElasticityElement<
+    AutoDiffXd, LinearSimplexElement<AutoDiffXd, 3>,
+    SimplexGaussianQuadrature<AutoDiffXd, 2, 3>>;
+extern template class ElasticityElement<
+    double, LinearSimplexElement<double, 3>,
+    SimplexGaussianQuadrature<double, 3, 3>>;
+extern template class ElasticityElement<
+    AutoDiffXd, LinearSimplexElement<AutoDiffXd, 3>,
+    SimplexGaussianQuadrature<AutoDiffXd, 3, 3>>;
 }  // namespace fem
 }  // namespace multibody
 }  // namespace drake
