@@ -215,8 +215,12 @@ class ProximityEngine {
   // and drake issue #10577. Once that is resolved, this definition can be
   // revisited (and ProximityEngineTest::Issue10577Regression_Osculation can
   // be updated).
-  /* Implementation of GeometryState::ComputePointPairPenetration().  */
-  std::vector<PenetrationAsPointPair<T>> ComputePointPairPenetration() const;
+  /* Implementation of GeometryState::ComputePointPairPenetration().
+   This includes `X_WGs`, the current poses of all geometries in World in the
+   current scalar type, keyed on each geometry's GeometryId.  */
+  std::vector<PenetrationAsPointPair<T>> ComputePointPairPenetration(
+      const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs)
+      const;
 
   /* Implementation of GeometryState::ComputeContactSurfaces().
    This includes `X_WGs`, the current poses of all geometries in World in the
