@@ -143,6 +143,13 @@ drake_lcm_cc_library(
 )
 
 drake_lcm_cc_library(
+    name = "manipulator_plan_move_end_effector",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_manipulator_plan_move_end_effector.lcm"],
+    deps = ["@lcmtypes_bot2_core"],
+)
+
+drake_lcm_cc_library(
     name = "piecewise_polynomial",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_piecewise_polynomial.lcm"],
@@ -348,6 +355,7 @@ drake_lcm_py_library(
     lcm_srcs = glob(["*.lcm"]),
     deps = [
         "//:module_py",
+        "@lcmtypes_bot2_core//:lcmtypes_bot2_core_py",
     ],
 )
 
@@ -355,6 +363,7 @@ drake_lcm_java_library(
     name = "lcmtypes_drake_java",
     lcm_package = "drake",
     lcm_srcs = glob(["*.lcm"]),
+    deps = ["@lcmtypes_bot2_core//:lcmtypes_bot2_core_java"],
 )
 
 # This should list every LCM type that is known to Drake.
@@ -377,6 +386,7 @@ LCMTYPES_CC = [
     ":inverse_dynamics_debug_info",
     ":jaco",
     ":joint_pd_override",
+    ":manipulator_plan_move_end_effector",
     ":panda",
     ":piecewise_polynomial",
     ":planar_manipuland_status",
@@ -407,6 +417,7 @@ drake_java_binary(
     visibility = ["//visibility:private"],
     runtime_deps = [
         ":lcmtypes_drake_java",
+        "@lcmtypes_bot2_core//:lcmtypes_bot2_core_java",
         "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion_java",
         "@optitrack_driver//lcmtypes:lcmtypes_optitrack",
     ],
