@@ -175,7 +175,7 @@ struct EigenStruct {
   }
 
   EigenStruct() {
-    if (value.size() == 0) {
+    if ((value.size() == 0) && (Rows != 0) && (Cols != 0)) {
       value.resize(1, 1);
     }
     value.setConstant(kNominalDouble);
@@ -198,6 +198,7 @@ using EigenVecStruct = EigenStruct<Eigen::Dynamic, 1>;
 using EigenVec3Struct = EigenStruct<3, 1>;
 using EigenMatrixStruct = EigenStruct<Eigen::Dynamic, Eigen::Dynamic>;
 using EigenMatrix34Struct = EigenStruct<3, 4>;
+using EigenMatrix00Struct = EigenStruct<0, 0>;
 
 using Variant4 = std::variant<
     std::string, double, DoubleStruct, EigenVecStruct>;
