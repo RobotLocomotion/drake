@@ -269,7 +269,7 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
 template <typename T>
 struct CallbackWithFallbackData {
   CallbackData<T> data;
-  std::vector<PenetrationAsPointPair<double>>* point_pairs;
+  std::vector<PenetrationAsPointPair<T>>* point_pairs;
 };
 
 /* Assess contact between two objects -- if it can't be determined with
@@ -298,7 +298,6 @@ bool CallbackWithFallback(fcl::CollisionObjectd* object_A_ptr,
 
     // Surface calculated; we're done.
     if (result == CalcContactSurfaceResult::kCalculated) return false;
-
     if (result == CalcContactSurfaceResult::kUnsupportedScalar) {
       throw std::logic_error(fmt::format(
           "Requested AutoDiff-valued contact surface between two geometries "
@@ -308,12 +307,10 @@ bool CallbackWithFallback(fcl::CollisionObjectd* object_A_ptr,
     }
 
     // Fall back to point pair.
-    // TODO(SeanCurtis-TRI): This is a problem; point pair is only double.
-    //   fallback can only be double.
-    penetration_as_point_pair::CallbackData point_data{
-        &data.data.collision_filter, data.point_pairs};
-    penetration_as_point_pair::Callback(object_A_ptr, object_B_ptr,
-                                        &point_data);
+    penetration_as_point_pair::CallbackData<T> point_data{
+        &data.data.collision_filter, &(data.data.X_WGs), data.point_pairs};
+    penetration_as_point_pair::Callback<T>(object_A_ptr, object_B_ptr,
+                                           &point_data);
   }
   // Tell the broadphase to keep searching.
   return false;
