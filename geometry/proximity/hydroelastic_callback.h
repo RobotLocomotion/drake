@@ -84,7 +84,8 @@ enum class CalcContactSurfaceResult {
   kUnsupported,         //< Contact surface can't be computed for the geometry
                         //< pair.
   kHalfSpaceHalfSpace,  //< Contact between two half spaces; not allowed.
-  kSameCompliance       //< The two geometries have the same compliance type.
+  kSameCompliance,      //< The two geometries have the same compliance type.
+  kUnsupportedScalar,   //< The computation scalar type is unsupported.
 };
 
 /* Computes ContactSurface using the algorithm appropriate to the Shape types
@@ -156,6 +157,12 @@ CalcContactSurfaceResult MaybeCalcContactSurface(
   }
   if (type_A == type_B) {
     return CalcContactSurfaceResult::kSameCompliance;
+  }
+
+  // If we have *generally* bad configured hydroelastics, we want that to be
+  // reported over a "bad" scalar type.
+  if constexpr (!std::is_same<T, double>::value) {
+    return CalcContactSurfaceResult::kUnsupportedScalar;
   }
 
   bool A_is_rigid = type_A == HydroelasticType::kRigid;
@@ -235,8 +242,15 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
         throw std::logic_error(fmt::format(
             "Requested contact between two half spaces with ids {} and {}; "
             "that is not allowed", encoding_a.id(), encoding_b.id()));
-      default:
-        DRAKE_UNREACHABLE();
+      case CalcContactSurfaceResult::kUnsupportedScalar:
+        throw std::logic_error(fmt::format(
+            "Requested AutoDiff-valued contact surface between two geometries "
+            "with hydroelastic representation but for scalar type {}; not "
+            "currently supported.",
+            NiceTypeName::Get<T>()));
+      case CalcContactSurfaceResult::kCalculated:
+        // Already handled above.
+        break;
     }
   }
 
@@ -284,6 +298,14 @@ bool CallbackWithFallback(fcl::CollisionObjectd* object_A_ptr,
 
     // Surface calculated; we're done.
     if (result == CalcContactSurfaceResult::kCalculated) return false;
+
+    if (result == CalcContactSurfaceResult::kUnsupportedScalar) {
+      throw std::logic_error(fmt::format(
+          "Requested AutoDiff-valued contact surface between two geometries "
+          "with hydroelastic representation but for scalar type {}; not "
+          "currently supported.",
+          NiceTypeName::Get<T>()));
+    }
 
     // Fall back to point pair.
     // TODO(SeanCurtis-TRI): This is a problem; point pair is only double.

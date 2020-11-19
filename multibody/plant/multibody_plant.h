@@ -4650,13 +4650,9 @@ template <>
 typename MultibodyPlant<symbolic::Expression>::SceneGraphStub&
 MultibodyPlant<symbolic::Expression>::member_scene_graph();
 template <>
-std::vector<geometry::PenetrationAsPointPair<double>>
-MultibodyPlant<double>::CalcPointPairPenetrations(
-    const systems::Context<double>&) const;
-template <>
-std::vector<geometry::PenetrationAsPointPair<AutoDiffXd>>
-MultibodyPlant<AutoDiffXd>::CalcPointPairPenetrations(
-    const systems::Context<AutoDiffXd>&) const;
+std::vector<geometry::PenetrationAsPointPair<symbolic::Expression>>
+MultibodyPlant<symbolic::Expression>::CalcPointPairPenetrations(
+    const systems::Context<symbolic::Expression>&) const;
 template <>
 std::vector<CoulombFriction<double>>
 MultibodyPlant<symbolic::Expression>::CalcCombinedFrictionCoefficients(
@@ -4678,9 +4674,9 @@ void MultibodyPlant<symbolic::Expression>::CalcContactSurfaces(
     const systems::Context<symbolic::Expression>&,
     std::vector<geometry::ContactSurface<symbolic::Expression>>*) const;
 template <>
-void MultibodyPlant<double>::CalcHydroelasticWithFallback(
-    const systems::Context<double>&,
-    internal::HydroelasticFallbackCacheData<double>*) const;
+void MultibodyPlant<symbolic::Expression>::CalcHydroelasticWithFallback(
+    const systems::Context<symbolic::Expression>&,
+    internal::HydroelasticFallbackCacheData<symbolic::Expression>*) const;
 template <>
 void MultibodyPlant<symbolic::Expression>::CallContactSolver(
     const symbolic::Expression&, const VectorX<symbolic::Expression>&,

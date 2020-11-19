@@ -384,8 +384,7 @@ class GeometryState {
   //@{
 
   /** Implementation of QueryObject::ComputePointPairPenetration().  */
-  std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
-      const {
+  std::vector<PenetrationAsPointPair<T>> ComputePointPairPenetration() const {
     return geometry_engine_->ComputePointPairPenetration();
   }
 
@@ -397,7 +396,7 @@ class GeometryState {
   /** Implementation of QueryObject::ComputeContactSurfacesWithFallback().  */
   void ComputeContactSurfacesWithFallback(
       std::vector<ContactSurface<T>>* surfaces,
-      std::vector<PenetrationAsPointPair<double>>* point_pairs) const {
+      std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
     DRAKE_DEMAND(surfaces);
     DRAKE_DEMAND(point_pairs);
     return geometry_engine_->ComputeContactSurfacesWithFallback(

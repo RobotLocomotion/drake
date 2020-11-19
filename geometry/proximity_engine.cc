@@ -203,8 +203,9 @@ void FclDistance(const fcl::DynamicAABBTreeCollisionManager<double>& tree1,
 }
 
 // Compare function to use with ordering PenetrationAsPointPairs.
-bool OrderPointPair(const PenetrationAsPointPair<double>& p1,
-                    const PenetrationAsPointPair<double>& p2) {
+template <typename T>
+bool OrderPointPair(const PenetrationAsPointPair<T>& p1,
+                    const PenetrationAsPointPair<T>& p2) {
   if (p1.id_A != p2.id_A) return p1.id_A < p2.id_A;
   return p1.id_B < p2.id_B;
 }
@@ -297,6 +298,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                            &engine->dynamic_mesh_tree_);
     BuildTreeFromReference(anchored_mesh_tree_, object_map,
                            &engine->anchored_mesh_tree_);
+    engine->hydroelastic_geometries_ = hydroelastic_geometries_;
 
     return engine;
   }
@@ -720,8 +722,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return distances;
   }
 
-  std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
-      const {
+  std::vector<PenetrationAsPointPair<T>> ComputePointPairPenetration() const {
     std::vector<PenetrationAsPointPair<double>> contacts;
     penetration_as_point_pair::CallbackData data{&collision_filter_, &contacts};
 
@@ -733,9 +734,23 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     FclCollide(dynamic_tree_, anchored_tree_, &data,
                penetration_as_point_pair::Callback);
 
-    std::sort(contacts.begin(), contacts.end(), OrderPointPair);
+    std::sort(contacts.begin(), contacts.end(), OrderPointPair<double>);
 
-    return contacts;
+    if constexpr (std::is_same<T, double>::value) {
+      return contacts;
+    } else {
+      // TODO(hongkai.dai): for T != double, compute the contacts for allowable
+      // primitives (sphere-to-sphere, sphere-to-box, etc).
+      if (contacts.size() == 0) {
+        return std::vector<PenetrationAsPointPair<T>>();
+      } else {
+        throw std::runtime_error(
+            "ComputePointPairPenetration(): Some of the bodies in the model "
+            "are in contact. Currently we only support computing penetration "
+            "for SceneGraph<double>. Refer to Github issue #11455 for "
+            "details.");
+      }
+    }
   }
 
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const {
@@ -806,14 +821,16 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   void ComputeContactSurfacesWithFallback(
       const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
       std::vector<ContactSurface<T>>* surfaces,
-      std::vector<PenetrationAsPointPair<double>>* point_pairs) const {
+      std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
     DRAKE_DEMAND(surfaces);
     DRAKE_DEMAND(point_pairs);
+
+    std::vector<PenetrationAsPointPair<double>> point_pairs_double;
     // All these quantities are aliased in the callback data.
     hydroelastic::CallbackWithFallbackData<T> data{
         hydroelastic::CallbackData<T>{&collision_filter_, &X_WGs,
                                       &hydroelastic_geometries_, surfaces},
-        point_pairs};
+        &point_pairs_double};
 
     // Dynamic vs dynamic and dynamic vs anchored represent all the geometries
     // that we can support with the point-pair fallback. Do those first.
@@ -850,7 +867,21 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     std::sort(surfaces->begin(), surfaces->end(), OrderContactSurface<T>);
 
-    std::sort(point_pairs->begin(), point_pairs->end(), OrderPointPair);
+    std::sort(point_pairs_double.begin(), point_pairs_double.end(),
+              OrderPointPair<double>);
+    if constexpr (std::is_same<T, double>::value) {
+      *point_pairs = std::move(point_pairs_double);
+    } else {
+      if (point_pairs_double.size() == 0) {
+        point_pairs->clear();
+      } else {
+        throw std::runtime_error(
+            "ComputeContactSurfacesWithFallback() model has bodies in contact "
+            "that could not be resolved with hydroelastic contact. The "
+            "fallback contact model (penetration as point pair) only supports "
+            "T = double.");
+      }
+    }
   }
 
   // TODO(SeanCurtis-TRI): Update this with the new collision filter method.
@@ -1303,7 +1334,7 @@ bool ProximityEngine<T>::HasCollisions() const {
 }
 
 template <typename T>
-std::vector<PenetrationAsPointPair<double>>
+std::vector<PenetrationAsPointPair<T>>
 ProximityEngine<T>::ComputePointPairPenetration() const {
   return impl_->ComputePointPairPenetration();
 }
@@ -1318,7 +1349,7 @@ template <typename T>
 void ProximityEngine<T>::ComputeContactSurfacesWithFallback(
     const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
     std::vector<ContactSurface<T>>* surfaces,
-    std::vector<PenetrationAsPointPair<double>>* point_pairs) const {
+    std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
   return impl_->ComputeContactSurfacesWithFallback(X_WGs, surfaces,
                                                    point_pairs);
 }

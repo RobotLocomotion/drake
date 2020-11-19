@@ -139,6 +139,8 @@ class QueryObject {
 
   //@}
 
+  // TODO(hongkai.dai): allow T=AutodiffXd and some primitive geometries
+  // collide.
   /**
    @anchor collision_queries
    @name                Collision Queries
@@ -176,25 +178,14 @@ class QueryObject {
    <h3>Scalar support</h3>
    This method only provides double-valued penetration results.
 
-   <!--
-   TODO(SeanCurtis-TRI): This can/should be changed to offer at least partial
-   AutoDiffXd support. At the very least, it should be declared on T and throw
-   for AutoDiffXd. This is related to PR 11143
-   https://github.com/RobotLocomotion/drake/pull/11143. In that PR, MBP is
-   taking responsibility to know whether or not QueryObject supports AutoDiff
-   penetration queries; MBP should not be responsible for that knowledge. By
-   moving the exception into SceneGraph, it removes the false dependency and
-   allows us to gradually increase the AutoDiff support for penetration.
-   -->
-
    @returns A vector populated with all detected penetrations characterized as
             point pairs. The ordering of the results is guaranteed to be
             consistent -- for fixed geometry poses, the results will remain
             the same.
    @warning This silently ignores Mesh geometries (but Convex mesh geometries
-            are included). */
-  std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
-      const;
+            are included).
+   @throws if T = AutoDiffXd and object actually collides. */
+  std::vector<PenetrationAsPointPair<T>> ComputePointPairPenetration() const;
 
   /**
    Reports pairwise intersections and characterizes each non-empty
@@ -243,6 +234,8 @@ class QueryObject {
             the same.  */
   std::vector<ContactSurface<T>> ComputeContactSurfaces() const;
 
+  // TODO(hongkai.dai): allow T=AutodiffXd and some primitive geometries
+  // collide.
   /** Reports pair-wise intersections and characterizes each non-empty
    intersection as a ContactSurface _where possible_ and as a
    PenetrationAsPointPair where not.
@@ -268,10 +261,11 @@ class QueryObject {
                             The vector will _not_ be cleared.
    @param[out] point_pairs  The vector that fall back point pair data will be
                             added to. The vector will _not_ be cleared.
-   @pre Neither `surfaces` nor `point_pairs` is nullptr.  */
+   @pre Neither `surfaces` nor `point_pairs` is nullptr.
+   @throws if T = AutoDiffXd and object actually collides. */
   void ComputeContactSurfacesWithFallback(
       std::vector<ContactSurface<T>>* surfaces,
-      std::vector<PenetrationAsPointPair<double>>* point_pairs) const;
+      std::vector<PenetrationAsPointPair<T>>* point_pairs) const;
 
   /** Applies a conservative culling mechanism to create a subset of all
    possible geometry pairs based on non-zero intersections. A geometry pair

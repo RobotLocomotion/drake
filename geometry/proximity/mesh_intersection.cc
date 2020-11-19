@@ -471,7 +471,7 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const GeometryId, const SurfaceMesh<double>&,
     const Bvh<SurfaceMesh<double>>&, const math::RigidTransform<AutoDiffXd>&) {
   throw std::logic_error(
-      "AutoDiff-valued ContactSurface calculation between meshes is not"
+      "AutoDiff-valued ContactSurface calculation between meshes is not "
       "currently supported");
 }
 

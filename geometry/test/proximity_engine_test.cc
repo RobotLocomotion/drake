@@ -446,6 +446,8 @@ TEST_F(ProximityEngineMeshes, ComputeContactSurfaces) {
 //         conditions (e.g., same compliance types), it throws.
 //   - Enforce that the results are well-ordered. This aspect is confirmed in
 //     the ComputeContactSurfacesWithFallbackResultOrdering test below.
+//   - Confirm that for T=AutoDiffXd that if there is contact (hydroelastic
+//     or point pair), that it throws.
 // TODO(SeanCurtis-TRI): Update this test when soft meshes are supported.
 TEST_F(ProximityEngineMeshes, ComputeContactSurfaceWithFallback) {
   const bool anchored{true};
@@ -476,6 +478,53 @@ TEST_F(ProximityEngineMeshes, ComputeContactSurfaceWithFallback) {
       EXPECT_EQ(surfaces.size(), 1);
       EXPECT_EQ(point_pairs.size(), 0);
     }
+  }
+
+  // Case: Soft sphere and rigid mesh with AutoDiffXd -- contact would be a
+  // contact surface; throws for now.
+  {
+    ProximityEngine<double> engine_d;
+    const auto X_WGs_d = PopulateEngine(&engine_d, sphere, anchored, soft, mesh,
+                                        !anchored, !soft);
+
+    const auto engine_ad = engine_d.ToAutoDiffXd();
+    unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs_ad;
+    for (const auto& [id, X_WG_d] : X_WGs_d) {
+      X_WGs_ad[id] = RigidTransform<AutoDiffXd>(X_WG_d.GetAsMatrix34());
+    }
+
+    std::vector<ContactSurface<AutoDiffXd>> surfaces;
+    std::vector<PenetrationAsPointPair<AutoDiffXd>> point_pairs;
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        engine_ad->ComputeContactSurfacesWithFallback(X_WGs_ad, &surfaces,
+                                                      &point_pairs),
+        std::exception,
+        "Requested AutoDiff-valued contact surface between two geometries "
+        "with hydroelastic representation but for scalar type .+; not "
+        "currently supported.");
+  }
+
+  // Case: Rigid sphere and mesh with AutoDiffXd -- contact would be  a point
+  // pair; throws for now.
+  {
+    ProximityEngine<double> engine_d;
+    const auto X_WGs_d =
+        PopulateEngine(&engine_d, sphere, false, !soft, sphere, false, !soft);
+    const auto engine_ad = engine_d.ToAutoDiffXd();
+    unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs_ad;
+    for (const auto& [id, X_WG_d] : X_WGs_d) {
+      X_WGs_ad[id] = RigidTransform<AutoDiffXd>(X_WG_d.GetAsMatrix34());
+    }
+
+    std::vector<ContactSurface<AutoDiffXd>> surfaces;
+    std::vector<PenetrationAsPointPair<AutoDiffXd>> point_pairs;
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        engine_ad->ComputeContactSurfacesWithFallback(X_WGs_ad, &surfaces,
+                                                      &point_pairs),
+        std::exception,
+        "ComputeContactSurfacesWithFallback.. model has bodies in contact that "
+        "could not be resolved with hydroelastic contact. The fallback contact "
+        "model .penetration as point pair. only supports T = double.");
   }
 
   // TODO(SeanCurtis-TRI) The reasoning here is flawed. I could comment out
@@ -2166,10 +2215,10 @@ class SimplePenetrationTest : public ::testing::Test {
   template <typename T>
   void ExpectPenetration(GeometryId origin_sphere, GeometryId colliding_sphere,
                          ProximityEngine<T>* engine) {
-    std::vector<PenetrationAsPointPair<double>> penetration_results =
+    std::vector<PenetrationAsPointPair<T>> penetration_results =
         engine->ComputePointPairPenetration();
     ASSERT_EQ(penetration_results.size(), 1);
-    const PenetrationAsPointPair<double>& penetration = penetration_results[0];
+    const PenetrationAsPointPair<T>& penetration = penetration_results[0];
 
     std::vector<SignedDistancePair<T>> distance_results =
         engine->ComputeSignedDistancePairwiseClosestPoints(GetTypedPoses<T>(),
@@ -2240,7 +2289,7 @@ class SimplePenetrationTest : public ::testing::Test {
   void ExpectIgnoredPenetration(GeometryId origin_sphere,
                                 GeometryId colliding_sphere,
                                 ProximityEngine<T>* engine) {
-    std::vector<PenetrationAsPointPair<double>> penetration_results =
+    std::vector<PenetrationAsPointPair<T>> penetration_results =
         engine->ComputePointPairPenetration();
     EXPECT_EQ(penetration_results.size(), 0);
 
@@ -2325,7 +2374,9 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndAnchored) {
   // Test AutoDiffXd converted engine.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
       engine_.ToAutoDiffXd();
-  ExpectPenetration(anchored_id, dynamic_id, ad_engine.get());
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ad_engine->ComputePointPairPenetration(), std::runtime_error,
+      ".* Some of the bodies in the model are in contact.*");
 }
 
 // Performs the same collision test between two dynamic spheres which belong to
@@ -2356,7 +2407,9 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndDynamicSingleSource) {
   // Test AutoDiffXd converted engine.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
       engine_.ToAutoDiffXd();
-  ExpectPenetration(origin_id, collide_id, ad_engine.get());
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ad_engine->ComputePointPairPenetration(), std::runtime_error,
+      ".*Some of the bodies in the model are in contact.*");
 }
 
 // Tests if collisions exist between dynamic and anchored sphere. One case
