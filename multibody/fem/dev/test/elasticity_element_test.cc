@@ -5,7 +5,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/fem/dev/fem_state.h"
-#include "drake/multibody/fem/dev/linear_elasticity_model.h"
+#include "drake/multibody/fem/dev/linear_constitutive_model.h"
 #include "drake/multibody/fem/dev/linear_simplex_element.h"
 #include "drake/multibody/fem/dev/quadrature.h"
 
@@ -35,7 +35,7 @@ class ElasticityElementTest : public ::testing::Test {
     std::vector<NodeIndex> node_indices = {NodeIndex(0), NodeIndex(1),
                                            NodeIndex(2), NodeIndex(3)};
     linear_elasticity_ =
-        std::make_unique<LinearElasticityModel<AutoDiffXd>>(1, 0.25);
+        std::make_unique<LinearConstitutiveModel<AutoDiffXd>>(1, 0.25);
     MatrixX<AutoDiffXd> reference_positions = get_reference_positions();
     const AutoDiffXd DummyDensity(1.23);
     elasticity_element_ = std::make_unique<
@@ -78,7 +78,7 @@ class ElasticityElementTest : public ::testing::Test {
 
   std::unique_ptr<ElasticityElement<AutoDiffXd, ShapeType, QuadratureType>>
       elasticity_element_;
-  std::unique_ptr<LinearElasticityModel<AutoDiffXd>> linear_elasticity_;
+  std::unique_ptr<LinearConstitutiveModel<AutoDiffXd>> linear_elasticity_;
   std::unique_ptr<FemState<AutoDiffXd>> state_;
 };
 

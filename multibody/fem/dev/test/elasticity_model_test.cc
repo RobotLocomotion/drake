@@ -8,7 +8,7 @@
 #include "drake/geometry/proximity/make_box_mesh.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/fem/dev/fem_state.h"
-#include "drake/multibody/fem/dev/linear_elasticity_model.h"
+#include "drake/multibody/fem/dev/linear_constitutive_model.h"
 #include "drake/multibody/fem/dev/linear_simplex_element.h"
 #include "drake/multibody/fem/dev/quadrature.h"
 
@@ -39,8 +39,8 @@ class ElasticityModelTest : public ::testing::Test {
     geometry::Box box(length, length, length);
     mesh_ = std::make_unique<geometry::VolumeMesh<Scalar>>(
         geometry::internal::MakeBoxVolumeMesh<Scalar>(box, 1));
-    LinearElasticityModel<Scalar> linear_elasticity_model(kYoungsModulus,
-                                                          kPoissonRatio);
+    LinearConstitutiveModel<Scalar> linear_elasticity_model(kYoungsModulus,
+                                                            kPoissonRatio);
     Scalar density(kMassDensity);
     elasticity_model_.AddElasticityElementsFromTetMesh(
         *mesh_, density, linear_elasticity_model, kQuadratureOrder);
@@ -82,9 +82,9 @@ TEST_F(ElasticityModelTest, MakeState) {
             &state->element_cache_entry(i));
     ASSERT_TRUE(element_cache_entry != nullptr);
     /* The DeformationGradientCacheEntry should be of type
-     LinearElasticityModelCacheEntry. */
+     LinearConstitutiveModelCacheEntry. */
     const auto* linear_elasticity_model_cache_entry =
-        dynamic_cast<const LinearElasticityModelCacheEntry<Scalar>*>(
+        dynamic_cast<const LinearConstitutiveModelCacheEntry<Scalar>*>(
             &element_cache_entry->deformation_gradient_cache_entry());
     /* Verify that the cache is properly set up. */
     ASSERT_TRUE(linear_elasticity_model_cache_entry != nullptr);

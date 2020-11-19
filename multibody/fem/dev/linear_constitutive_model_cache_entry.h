@@ -11,35 +11,36 @@
 namespace drake {
 namespace multibody {
 namespace fem {
-/** Cache entry for the LinearElasticityModel constitutive model.
- See LinearElasticityModel for how the cache entry is used. See
+/** Cache entry for the LinearConstitutiveModel constitutive model.
+ See LinearConstitutiveModel for how the cache entry is used. See
  DeformationGradientCacheEntry for more about cached quantities for constitutive
  models.
  @tparam_nonsymbolic_scalar T. */
 template <typename T>
-class LinearElasticityModelCacheEntry
+class LinearConstitutiveModelCacheEntry
     : public DeformationGradientCacheEntry<T> {
  public:
   /** @name     Does not allow copy, move, or assignment. */
   /** @{ */
   /* Copy constructor is made "protected" to facilitate Clone() and therefore it
    is not publicly available. */
-  LinearElasticityModelCacheEntry(LinearElasticityModelCacheEntry&&) = delete;
-  LinearElasticityModelCacheEntry& operator=(
-      LinearElasticityModelCacheEntry&&) = delete;
-  LinearElasticityModelCacheEntry& operator=(
-      const LinearElasticityModelCacheEntry&) = delete;
+  LinearConstitutiveModelCacheEntry(LinearConstitutiveModelCacheEntry&&) =
+      delete;
+  LinearConstitutiveModelCacheEntry& operator=(
+      LinearConstitutiveModelCacheEntry&&) = delete;
+  LinearConstitutiveModelCacheEntry& operator=(
+      const LinearConstitutiveModelCacheEntry&) = delete;
   /** @} */
 
-  /** Constructs a %LinearElasticityModelCacheEntry with the given element index
-   and number of quadrature locations.
+  /** Constructs a %LinearConstitutiveModelCacheEntry with the given element
+   index and number of quadrature locations.
    @param element_index The index of the FemElement associated with this
    DeformationGradientCacheEntry.
    @param num_quadrature_points The number of quadrature locations at which the
    cache entry needs to be evaluated.
    @pre `num_quadrature_points` must be positive. */
-  LinearElasticityModelCacheEntry(ElementIndex element_index,
-                                  int num_quadrature_points)
+  LinearConstitutiveModelCacheEntry(ElementIndex element_index,
+                                    int num_quadrature_points)
       : DeformationGradientCacheEntry<T>(element_index, num_quadrature_points),
         strain_(num_quadrature_points, Matrix3<T>::Zero()),
         trace_strain_(num_quadrature_points, 0) {}
@@ -54,7 +55,7 @@ class LinearElasticityModelCacheEntry
 
  private:
   /* Copy constructor to facilitate the `DoClone()` method. */
-  LinearElasticityModelCacheEntry(const LinearElasticityModelCacheEntry&) =
+  LinearConstitutiveModelCacheEntry(const LinearConstitutiveModelCacheEntry&) =
       default;
 
   /* Updates the cache entry with the given deformation gradients.
@@ -63,11 +64,12 @@ class LinearElasticityModelCacheEntry
    @pre The size of `F` must be the same as `num_quadrature_points()`. */
   void DoUpdateCacheEntry(const std::vector<Matrix3<T>>& F) final;
 
-  /* Creates an identical copy of the LinearElasticityModelCacheEntry object. */
+  /* Creates an identical copy of the LinearConstitutiveModelCacheEntry object.
+   */
   std::unique_ptr<DeformationGradientCacheEntry<T>> DoClone() const final {
     // Can't use std::make_unique because the copy constructor is protected.
     return std::unique_ptr<DeformationGradientCacheEntry<T>>(
-        new LinearElasticityModelCacheEntry<T>(*this));
+        new LinearConstitutiveModelCacheEntry<T>(*this));
   }
 
   // Infinitesimal strain = 0.5 * (F + Fᵀ) - I.
@@ -79,4 +81,4 @@ class LinearElasticityModelCacheEntry
 }  // namespace multibody
 }  // namespace drake
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::fem::LinearElasticityModelCacheEntry);
+    class ::drake::multibody::fem::LinearConstitutiveModelCacheEntry);

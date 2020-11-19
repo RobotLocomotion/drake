@@ -1,22 +1,22 @@
-#include "drake/multibody/fem/dev/linear_elasticity_model.h"
+#include "drake/multibody/fem/dev/linear_constitutive_model.h"
 
 namespace drake {
 namespace multibody {
 namespace fem {
 template <typename T>
-LinearElasticityModel<T>::LinearElasticityModel(const T& youngs_modulus,
-                                                const T& poisson_ratio)
+LinearConstitutiveModel<T>::LinearConstitutiveModel(const T& youngs_modulus,
+                                                    const T& poisson_ratio)
     : E_(youngs_modulus), nu_(poisson_ratio) {
   VerifyParameterValidity(E_, nu_);
   SetLameParameters(E_, nu_);
 }
 
 template <typename T>
-void LinearElasticityModel<T>::DoCalcElasticEnergyDensity(
+void LinearConstitutiveModel<T>::DoCalcElasticEnergyDensity(
     const DeformationGradientCacheEntry<T>& cache_entry,
     std::vector<T>* Psi) const {
-  const LinearElasticityModelCacheEntry<T>& linear_cache_entry =
-      static_cast<const LinearElasticityModelCacheEntry<T>&>(cache_entry);
+  const LinearConstitutiveModelCacheEntry<T>& linear_cache_entry =
+      static_cast<const LinearConstitutiveModelCacheEntry<T>&>(cache_entry);
   for (int i = 0; i < linear_cache_entry.num_quadrature_points(); ++i) {
     const auto& strain = linear_cache_entry.strain()[i];
     const auto& trace_strain = linear_cache_entry.trace_strain()[i];
@@ -26,11 +26,11 @@ void LinearElasticityModel<T>::DoCalcElasticEnergyDensity(
 }
 
 template <typename T>
-void LinearElasticityModel<T>::DoCalcFirstPiolaStress(
+void LinearConstitutiveModel<T>::DoCalcFirstPiolaStress(
     const DeformationGradientCacheEntry<T>& cache_entry,
     std::vector<Matrix3<T>>* P) const {
-  const LinearElasticityModelCacheEntry<T>& linear_cache_entry =
-      static_cast<const LinearElasticityModelCacheEntry<T>&>(cache_entry);
+  const LinearConstitutiveModelCacheEntry<T>& linear_cache_entry =
+      static_cast<const LinearConstitutiveModelCacheEntry<T>&>(cache_entry);
   for (int i = 0; i < linear_cache_entry.num_quadrature_points(); ++i) {
     const auto& strain = linear_cache_entry.strain()[i];
     const auto& trace_strain = linear_cache_entry.trace_strain()[i];
@@ -41,14 +41,14 @@ void LinearElasticityModel<T>::DoCalcFirstPiolaStress(
 
 template <typename T>
 std::unique_ptr<DeformationGradientCacheEntry<T>>
-LinearElasticityModel<T>::DoMakeDeformationGradientCacheEntry(
+LinearConstitutiveModel<T>::DoMakeDeformationGradientCacheEntry(
     ElementIndex element_index, int num_quadrature_points) const {
-  return std::make_unique<LinearElasticityModelCacheEntry<T>>(
+  return std::make_unique<LinearConstitutiveModelCacheEntry<T>>(
       element_index, num_quadrature_points);
 }
 
 template <typename T>
-void LinearElasticityModel<T>::VerifyParameterValidity(
+void LinearConstitutiveModel<T>::VerifyParameterValidity(
     const T& youngs_modulus, const T& poisson_ratio) const {
   if (youngs_modulus < 0.0) {
     throw std::logic_error("Young's modulus must be nonnegative.");
@@ -59,8 +59,8 @@ void LinearElasticityModel<T>::VerifyParameterValidity(
 }
 
 template <typename T>
-void LinearElasticityModel<T>::SetLameParameters(const T& youngs_modulus,
-                                                 const T& poisson_ratio) {
+void LinearConstitutiveModel<T>::SetLameParameters(const T& youngs_modulus,
+                                                   const T& poisson_ratio) {
   mu_ = youngs_modulus / (2.0 * (1.0 + poisson_ratio));
   lambda_ = youngs_modulus * poisson_ratio /
             ((1.0 + poisson_ratio) * (1.0 - 2.0 * poisson_ratio));
@@ -69,4 +69,4 @@ void LinearElasticityModel<T>::SetLameParameters(const T& youngs_modulus,
 }  // namespace multibody
 }  // namespace drake
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::fem::LinearElasticityModel);
+    class ::drake::multibody::fem::LinearConstitutiveModel);
