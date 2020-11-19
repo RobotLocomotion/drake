@@ -1,4 +1,4 @@
-#include "drake/multibody/fem/dev/linear_elasticity_model_cache_entry.h"
+#include "drake/multibody/fem/dev/linear_constitutive_model_cache_entry.h"
 
 #include <gtest/gtest.h>
 
@@ -9,13 +9,13 @@ namespace {
 const ElementIndex kElementIndex(3);
 constexpr int kNumQuads = 1;
 
-class LinearElasticityCacheEntryTest : public ::testing::Test {
+class LinearConstitutiveModelCacheEntryTest : public ::testing::Test {
  protected:
   void SetUp() {
     linear_elasticity_cache_entry_.UpdateCacheEntry(
         {MakeDeformationGradient()});
   }
-  LinearElasticityModelCacheEntry<double> linear_elasticity_cache_entry_{
+  LinearConstitutiveModelCacheEntry<double> linear_elasticity_cache_entry_{
       kElementIndex, kNumQuads};
 
   // Make an arbitrary deformation gradient.
@@ -26,7 +26,7 @@ class LinearElasticityCacheEntryTest : public ::testing::Test {
   }
 };
 
-TEST_F(LinearElasticityCacheEntryTest,
+TEST_F(LinearConstitutiveModelCacheEntryTest,
        LinearElasticityCacheEntryInitialization) {
   EXPECT_EQ(linear_elasticity_cache_entry_.element_index(), kElementIndex);
   EXPECT_EQ(linear_elasticity_cache_entry_.num_quadrature_points(), kNumQuads);
@@ -36,7 +36,7 @@ TEST_F(LinearElasticityCacheEntryTest,
   EXPECT_EQ(linear_elasticity_cache_entry_.trace_strain().size(), kNumQuads);
 }
 
-TEST_F(LinearElasticityCacheEntryTest, UpdateCacheEntry) {
+TEST_F(LinearConstitutiveModelCacheEntryTest, UpdateCacheEntry) {
   const Matrix3<double> F = MakeDeformationGradient();
   const Matrix3<double> strain =
       0.5 * (F + F.transpose()) - Matrix3<double>::Identity();
@@ -46,12 +46,13 @@ TEST_F(LinearElasticityCacheEntryTest, UpdateCacheEntry) {
   EXPECT_EQ(linear_elasticity_cache_entry_.trace_strain()[0], trace_strain);
 }
 
-TEST_F(LinearElasticityCacheEntryTest, Clone) {
+TEST_F(LinearConstitutiveModelCacheEntryTest, Clone) {
   const std::unique_ptr<DeformationGradientCacheEntry<double>> clone =
       linear_elasticity_cache_entry_.Clone();
   // Test that the Clone() method returns the correct concrete type.
   const auto* linear_elasticity_cache_entry_clone =
-      dynamic_cast<const LinearElasticityModelCacheEntry<double>*>(clone.get());
+      dynamic_cast<const LinearConstitutiveModelCacheEntry<double>*>(
+          clone.get());
   EXPECT_TRUE(linear_elasticity_cache_entry_clone != nullptr);
   // Test that the Clone() method returns an identical copy.
   EXPECT_EQ(linear_elasticity_cache_entry_clone->deformation_gradient(),

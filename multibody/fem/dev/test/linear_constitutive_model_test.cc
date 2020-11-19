@@ -1,4 +1,4 @@
-#include "drake/multibody/fem/dev/linear_elasticity_model.h"
+#include "drake/multibody/fem/dev/linear_constitutive_model.h"
 
 #include <gtest/gtest.h>
 
@@ -13,8 +13,8 @@ namespace {
 const ElementIndex kDummyElementIndex(0);
 constexpr int kNumQuads = 2;
 
-GTEST_TEST(LinearElasticityTest, Parameters) {
-  const LinearElasticityModel<double> model(100.0, 0.25);
+GTEST_TEST(LinearConstitutiveModelTest, Parameters) {
+  const LinearConstitutiveModel<double> model(100.0, 0.25);
   const double mu = 40.0;
   const double lambda = 40.0;
   EXPECT_EQ(model.youngs_modulus(), 100.0);
@@ -23,40 +23,40 @@ GTEST_TEST(LinearElasticityTest, Parameters) {
   EXPECT_EQ(model.lame_first_parameter(), lambda);
 }
 
-GTEST_TEST(LinearElasticityTest, InvalidYoungsModulus) {
-  DRAKE_EXPECT_THROWS_MESSAGE(LinearElasticityModel<double>(-1.0, 0.25),
+GTEST_TEST(LinearConstitutiveModelTest, InvalidYoungsModulus) {
+  DRAKE_EXPECT_THROWS_MESSAGE(LinearConstitutiveModel<double>(-1.0, 0.25),
                               std::logic_error,
                               "Young's modulus must be nonnegative.");
 }
 
-GTEST_TEST(LinearElasticityTest, InvalidPoissonRatioAtUpperLimit) {
-  DRAKE_EXPECT_THROWS_MESSAGE(LinearElasticityModel<double>(100.0, 0.5),
+GTEST_TEST(LinearConstitutiveModelTest, InvalidPoissonRatioAtUpperLimit) {
+  DRAKE_EXPECT_THROWS_MESSAGE(LinearConstitutiveModel<double>(100.0, 0.5),
                               std::logic_error,
                               "Poisson ratio must be in \\(-1, 0.5\\).");
 }
 
-GTEST_TEST(LinearElasticityTest, InvalidPoissonRatioOverUpperLimit) {
-  DRAKE_EXPECT_THROWS_MESSAGE(LinearElasticityModel<double>(100.0, 0.6),
+GTEST_TEST(LinearConstitutiveModelTest, InvalidPoissonRatioOverUpperLimit) {
+  DRAKE_EXPECT_THROWS_MESSAGE(LinearConstitutiveModel<double>(100.0, 0.6),
                               std::logic_error,
                               "Poisson ratio must be in \\(-1, 0.5\\).");
 }
 
-GTEST_TEST(LinearElasticityTest, InvalidPoissonRatioAtLower) {
-  DRAKE_EXPECT_THROWS_MESSAGE(LinearElasticityModel<double>(100.0, -1.0),
+GTEST_TEST(LinearConstitutiveModelTest, InvalidPoissonRatioAtLower) {
+  DRAKE_EXPECT_THROWS_MESSAGE(LinearConstitutiveModel<double>(100.0, -1.0),
                               std::logic_error,
                               "Poisson ratio must be in \\(-1, 0.5\\).");
 }
 
-GTEST_TEST(LinearElasticityTest, InvalidPoissonRatioBelowLowerLimit) {
-  DRAKE_EXPECT_THROWS_MESSAGE(LinearElasticityModel<double>(100.0, -1.1),
+GTEST_TEST(LinearConstitutiveModelTest, InvalidPoissonRatioBelowLowerLimit) {
+  DRAKE_EXPECT_THROWS_MESSAGE(LinearConstitutiveModel<double>(100.0, -1.1),
                               std::logic_error,
                               "Poisson ratio must be in \\(-1, 0.5\\).");
 }
 
-GTEST_TEST(LinearElasticityTest, UndeformedState) {
-  const LinearElasticityModel<double> model(100.0, 0.25);
-  LinearElasticityModelCacheEntry<double> cache_entry(kDummyElementIndex,
-                                                      kNumQuads);
+GTEST_TEST(LinearConstitutiveModelTest, UndeformedState) {
+  const LinearConstitutiveModel<double> model(100.0, 0.25);
+  LinearConstitutiveModelCacheEntry<double> cache_entry(kDummyElementIndex,
+                                                        kNumQuads);
   const std::vector<Matrix3<double>> F(kNumQuads, Matrix3<double>::Identity());
   cache_entry.UpdateCacheEntry(F);
   // In undeformed state, the energy density should be zero.
@@ -69,9 +69,9 @@ GTEST_TEST(LinearElasticityTest, UndeformedState) {
   EXPECT_EQ(model.CalcFirstPiolaStress(cache_entry), analytic_stress);
 }
 
-GTEST_TEST(LinearElasticityTest, PIsDerivativeOfPsi) {
-  const LinearElasticityModel<AutoDiffXd> model_autodiff(100.0, 0.25);
-  LinearElasticityModelCacheEntry<AutoDiffXd> cache_entry_autodiff(
+GTEST_TEST(LinearConstitutiveModelTest, PIsDerivativeOfPsi) {
+  const LinearConstitutiveModel<AutoDiffXd> model_autodiff(100.0, 0.25);
+  LinearConstitutiveModelCacheEntry<AutoDiffXd> cache_entry_autodiff(
       kDummyElementIndex, kNumQuads);
   // Create random AutoDiffXd deformation.
   Matrix3<double> F;

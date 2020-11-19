@@ -69,7 +69,7 @@ class DeformationGradientCacheEntry {
   /* Constructs a DeformationGradientCacheEntry with the given element index and
    number of quadrature locations. Users should not directly construct
    DeformationGradientCacheEntry. They should construct the specific
-   constitutive model cache entry (e.g. LinearElasticityModelCacheEntry) that
+   constitutive model cache entry (e.g. LinearConstitutiveModelCacheEntry) that
    invokes the base constructor.
    @param element_index The index of the FemElement associated with this
    DeformationGradientCacheEntry.
