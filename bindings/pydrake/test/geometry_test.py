@@ -921,6 +921,7 @@ class TestGeometry(unittest.TestCase):
         self.assertIsInstance(engine.Clone(), DummyRenderEngine)
 
         # Test implementation of C++ interface by using RgbdSensor.
+        print("Testing RenderEngine via RgbdSensor")
         renderer_name = "renderer"
         builder = DiagramBuilder()
         scene_graph = builder.AddSystem(mut.SceneGraph())
@@ -931,7 +932,7 @@ class TestGeometry(unittest.TestCase):
             X_PB=RigidTransform(),
             depth_camera=mut.render.DepthRenderCamera(
                 mut.render.RenderCameraCore(
-                    "renderer", CameraInfo(640, 480, np.pi/4),
+                    renderer_name, CameraInfo(640, 480, np.pi/4),
                     mut.render.ClippingRange(0.1, 5.0), RigidTransform()),
                 mut.render.DepthRange(0.1, 5.0))))
         builder.Connect(

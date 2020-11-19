@@ -67,7 +67,12 @@ RgbdSensor::RgbdSensor(FrameId parent_id, const RigidTransformd& X_PB,
                        DepthRenderCamera depth_camera, bool show_color_window)
     : RgbdSensor(parent_id, X_PB,
                  ColorRenderCamera(depth_camera.core(), show_color_window),
-                 move(depth_camera)) {}
+                 move(depth_camera)) {
+  std::cerr << "Color camera renderer: " << color_camera_.core().renderer_name()
+            << "\n";
+  std::cerr << "Depth camera renderer: " << depth_camera_.core().renderer_name()
+            << "\n";
+}
 
 RgbdSensor::RgbdSensor(FrameId parent_id, const RigidTransformd& X_PB,
                        ColorRenderCamera color_camera,
