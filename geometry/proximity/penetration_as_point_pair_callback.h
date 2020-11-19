@@ -1,12 +1,15 @@
 #pragma once
 
+#include <unordered_map>
 #include <vector>
 
 #include <fcl/fcl.h>
 
 #include "drake/geometry/proximity/collision_filter_legacy.h"
+#include "drake/geometry/proximity/distance_to_point_callback.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
+#include "drake/geometry/query_results/signed_distance_to_point.h"
 
 namespace drake {
 namespace geometry {
@@ -20,15 +23,20 @@ namespace penetration_as_point_pair {
 
     - A collision filter instance.
     - An fcl collision request.
+    - The poses. Aliased.
     - A vector of point pairs -- one instance of PenetrationAsPointPair for
       every supported, unfiltered penetrating pair.  */
+template <typename T>
 struct CallbackData {
   CallbackData(
       const CollisionFilterLegacy* collision_filter_in,
-      std::vector<PenetrationAsPointPair<double>>* point_pairs_in)
-  : collision_filter(*collision_filter_in),
-    point_pairs(*point_pairs_in) {
+      const std::unordered_map<GeometryId, math::RigidTransform<T>>* X_WGs_in,
+      std::vector<PenetrationAsPointPair<T>>* point_pairs_in)
+      : collision_filter(*collision_filter_in),
+        X_WGs(*X_WGs_in),
+        point_pairs(*point_pairs_in) {
     DRAKE_DEMAND(collision_filter_in);
+    DRAKE_DEMAND(X_WGs_in);
     DRAKE_DEMAND(point_pairs_in);
     request.num_max_contacts = 1;
     request.enable_contact = true;
@@ -47,14 +55,17 @@ struct CallbackData {
   /* The parameters for the fcl object-object collision function.  */
   fcl::CollisionRequestd request;
 
+  const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs;
+
   /* The results of the collision query.  */
-  std::vector<PenetrationAsPointPair<double>>& point_pairs;
+  std::vector<PenetrationAsPointPair<T>>& point_pairs;
 };
 
 /* Callback function for FCL's collide() function for retrieving a *single*
  contact. As documented by QueryObject::ComputePointPairPenetration(), the
  result added to the output data is the same, regardless of the order of
  the two fcl objects.  */
+template <typename T>
 bool Callback(fcl::CollisionObjectd* fcl_object_A_ptr,
               fcl::CollisionObjectd* fcl_object_B_ptr, void* callback_data);
 

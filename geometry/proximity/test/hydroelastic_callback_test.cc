@@ -98,7 +98,7 @@ GTEST_TEST(HydroelasticCallbackAutodiff, AutoDiffBlanketFailure) {
       "Requested AutoDiff-valued contact surface between two geometries with "
       "hydroelastic representation but for scalar type.*");
 
-  vector<PenetrationAsPointPair<double>> point_pairs;
+  vector<PenetrationAsPointPair<AutoDiffXd>> point_pairs;
   CallbackWithFallbackData<AutoDiffXd> fallback_data{
       {&collision_filter, &X_WGs, &hydroelastic_geometries, &surfaces},
       &point_pairs};
