@@ -10,6 +10,8 @@ namespace drake {
 namespace pydrake {
 namespace {
 
+// Please review the end-result deprecation behavior in `deprecation_test.py`.
+
 PYBIND11_MODULE(cc_module, m) {
   constexpr auto& doc = pydrake_doc.drake.example_class;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -23,13 +25,6 @@ PYBIND11_MODULE(cc_module, m) {
   {
     using Class = ExampleCppStruct;
     constexpr auto& cls_doc = doc.ExampleCppStruct;
-
-    // ParamInit would allow the following constructor:
-    //   o = ExampleCppStruct(i=1, j=2)
-    // We're deprecating it, such that the only non-deprecated way would be:
-    //   o = ExampleCppStruct()
-    //   o.i = 1
-    //   o.j = 2
     py::class_<Class> cls(m, "ExampleCppStruct", cls_doc.doc);
     cls  // BR
         .def(DeprecatedParamInit<Class>("Deprecated as of 2038-01-19"))
