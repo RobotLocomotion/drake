@@ -182,9 +182,12 @@ class QueryObject {
             point pairs. The ordering of the results is guaranteed to be
             consistent -- for fixed geometry poses, the results will remain
             the same.
-    @warning For Mesh shapes, their convex hulls are used in this query. It is
+   @warning For Mesh shapes, their convex hulls are used in this query. It is
             *not* computationally efficient or particularly accurate.
-   @throws if T = AutoDiffXd and object actually collides. */
+   @throws if T = AutoDiffXd and an unsupported pair of geometries are in
+   collision. Currently for T = AutoDiffXd, we support the collision between a
+   sphere with another simple geometry including box, cylinder, capsule and
+   halfspace.*/
   std::vector<PenetrationAsPointPair<T>> ComputePointPairPenetration() const;
 
   /**
@@ -225,8 +228,8 @@ class QueryObject {
    <h3>Scalar support</h3>
 
    This method provides support only for double. Attempting to invoke this
-   method with T = AutoDiffXd will throw an exception if there are *any*
-   geometry pairs that couldn't be culled.
+   method with T = AutoDiffXd will throw an exception if there are unsupported
+   geometry pairs (like box-to-box) that couldn't be culled.
 
    @returns A vector populated with all detected intersections characterized as
             contact surfaces. The ordering of the results is guaranteed to be
@@ -257,12 +260,27 @@ class QueryObject {
    The ordering of the _added_ results is guaranteed to be consistent -- for
    fixed geometry poses, the results will remain the same.
 
+   @warning Invoking this with T = AutoDiffXd may throw an exception. The logic
+   controlling when this throws is subtle; it is dependent on the behavior when
+   T = double. For T = double, contact between a colliding pair of geometries
+   (g1, g2) will be reported as either ContactSurface or PenetrationAsPointPair
+   (depending on the geometry properties). The guiding principle is that a
+   contact should always be characterized with the same collision type
+   (regardless of scalar type). If that collision type is not supported for a
+   particular scalar, this query throws.
+   - If (g1, g2) produces a ContactSurface for T = double, T = AutoDiffXd will
+     definitely throw.
+   - If (g1, g2) produces a PenetrationAsPointPair for T = double,
+     T = AutoDiffXd will throw under the same conditions as documented in
+     ComputePointPairPenetration().
+
    @param[out] surfaces     The vector that contact surfaces will be added to.
                             The vector will _not_ be cleared.
    @param[out] point_pairs  The vector that fall back point pair data will be
                             added to. The vector will _not_ be cleared.
    @pre Neither `surfaces` nor `point_pairs` is nullptr.
-   @throws if T = AutoDiffXd and object actually collides. */
+   @throws if T = AutoDiffXd and unsupported object (like box-to-box) actually
+   collides. */
   void ComputeContactSurfacesWithFallback(
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<T>>* point_pairs) const;

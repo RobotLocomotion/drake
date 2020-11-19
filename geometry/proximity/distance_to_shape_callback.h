@@ -297,8 +297,8 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
   const fcl::CollisionObjectd& o = a_is_sphere ? b : a;
   const fcl::CollisionGeometryd* s_geometry = s.collisionGeometry().get();
   const fcl::CollisionGeometryd* o_geometry = o.collisionGeometry().get();
-  const math::RigidTransform<T> X_WS(a_is_sphere ? X_WA : X_WB);
-  const math::RigidTransform<T> X_WO(a_is_sphere ? X_WB : X_WA);
+  const math::RigidTransform<T>& X_WS(a_is_sphere ? X_WA : X_WB);
+  const math::RigidTransform<T>& X_WO(a_is_sphere ? X_WB : X_WA);
   const auto id_S = EncodedData(s).id();
   const auto id_O = EncodedData(o).id();
   DistancePairGeometry<T> distance_pair(id_S, id_O, X_WS, X_WO, result);
