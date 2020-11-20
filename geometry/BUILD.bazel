@@ -323,6 +323,7 @@ filegroup(
     name = "test_obj_files",
     testonly = 1,
     srcs = [
+        "test/extruded_u.obj",
         "test/forbidden_two_cubes.obj",
         "test/non_convex_mesh.obj",
         "test/quad_cube.mtl",
