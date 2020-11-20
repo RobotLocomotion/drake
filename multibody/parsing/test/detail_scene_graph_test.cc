@@ -852,7 +852,7 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
         MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename),
         std::runtime_error,
         "All values must be within the range \\[0, 1\\]. Values provided: "
-        "\\(r=0, g=1, b=255, a=1\\)");
+        "\\(r=0(\\.0)?, g=1(\\.0)?, b=255(\\.0)?, a=1(\\.0)?\\)");
   }
 }
 
