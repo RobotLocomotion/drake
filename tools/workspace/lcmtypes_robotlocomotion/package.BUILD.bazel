@@ -17,21 +17,24 @@ load(
     "lcm_py_library",
 )
 
-LCM_SRCS = glob(["lcmtypes/*.lcm"])
+LCM_SRCS = glob(["lcmtypes/*.lcm"], exclude = [
+    "lcmtypes/grasp_transition_state_t.lcm",
+    "lcmtypes/robot_plan_t.lcm",
+    "lcmtypes/robot_plan_w_keyframes_t.lcm",
+    "lcmtypes/robot_plan_with_supports_t.lcm",
+])
 
 lcm_cc_library(
     name = "lcmtypes_robotlocomotion",
     includes = ["lcmtypes"],
     lcm_package = "robotlocomotion",
     lcm_srcs = LCM_SRCS,
-    deps = ["@lcmtypes_bot2_core"],
 )
 
 lcm_java_library(
     name = "lcmtypes_robotlocomotion_java",
     lcm_package = "robotlocomotion",
     lcm_srcs = LCM_SRCS,
-    deps = ["@lcmtypes_bot2_core//:lcmtypes_bot2_core_java"],
 )
 
 lcm_py_library(
@@ -39,7 +42,6 @@ lcm_py_library(
     imports = ["lcmtypes"],
     lcm_package = "robotlocomotion",
     lcm_srcs = LCM_SRCS,
-    deps = ["@lcmtypes_bot2_core//:lcmtypes_bot2_core_py"],
 )
 
 CMAKE_PACKAGE = "robotlocomotion-lcmtypes"
