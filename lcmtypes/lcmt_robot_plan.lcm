@@ -1,0 +1,8 @@
+package drake;
+
+struct lcmt_robot_plan
+{
+  int64_t utime;
+  int32_t num_states;
+  lcmt_robot_state plan[num_states]; // each individual state is also timed.
+}

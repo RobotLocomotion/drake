@@ -235,6 +235,15 @@ drake_lcm_cc_library(
 )
 
 drake_lcm_cc_library(
+    name = "robot_plan",
+    lcm_package = "drake",
+    lcm_srcs = [
+        "lcmt_robot_plan.lcm",
+        "lcmt_robot_state.lcm",
+    ],
+)
+
+drake_lcm_cc_library(
     name = "scope",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_scope.lcm"],
@@ -389,6 +398,7 @@ LCMTYPES_CC = [
     ":qp_controller_input",
     ":qp_input",
     ":resolved_contact",
+    ":robot_plan",
     ":schunk",
     ":scope",
     ":support_data",

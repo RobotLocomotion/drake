@@ -1,12 +1,11 @@
 #pragma once
 
-/// @file Functions to help with the creation of robot_plan_t messages.
+/// @file Functions to help with the creation of lcmt_robot_plan messages.
 
 #include <string>
 #include <vector>
 
-#include "robotlocomotion/robot_plan_t.hpp"
-
+#include "drake/lcmt_robot_plan.hpp"
 #include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
@@ -34,15 +33,15 @@ void ApplyJointVelocityLimits(
     const Eigen::VectorXd& limits,
     std::vector<double>* times);
 
-/// Makes a robotlocomotion::robot_plan_t message.  The entries in @p
+/// Makes an lcmt_robot_plan message.  The entries in @p
 /// joint_names should be unique, though the behavior if names are duplicated
 /// depends on how the returned plan is evaluated.  The size of each vector in
 /// @p keyframes must match the size of @p joint_names.  The size of @p
 /// keyframes must match the size of @p times.  Times must be in strictly
 /// increasing order.
-robotlocomotion::robot_plan_t EncodeKeyFrames(
+lcmt_robot_plan EncodeKeyFrames(
     const std::vector<std::string>& joint_names,
-    const std::vector<double>& times, const std::vector<int>& info,
+    const std::vector<double>& times,
     const std::vector<Eigen::VectorXd>& keyframes);
 
 }  // namespace util

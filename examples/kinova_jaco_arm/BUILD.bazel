@@ -31,8 +31,6 @@ drake_cc_binary(
         "//systems/primitives:demultiplexer",
         "//systems/primitives:multiplexer",
         "@gflags",
-        "@lcmtypes_bot2_core",
-        "@lcmtypes_robotlocomotion",
     ],
 )
 
@@ -71,8 +69,6 @@ drake_cc_binary(
         "//manipulation/util:move_ik_demo_base",
         "//math:geometric_transform",
         "@lcm",
-        "@lcmtypes_bot2_core",
-        "@lcmtypes_robotlocomotion",
     ],
 )
 
