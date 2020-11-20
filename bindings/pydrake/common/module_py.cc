@@ -84,6 +84,12 @@ void def_testing(py::module m) {
   m.def("make_cc_unregistered_derived_type", []() {
     return std::unique_ptr<RegisteredType>(new UnregisteredDerivedType());
   });
+
+  m.def("trigger_segfault", []() {
+    py::print("This is going to segfault.", py::arg("flush") = true);
+    int* value{};
+    *value = 0xbadf00d;
+  });
 }
 }  // namespace testing
 
