@@ -251,6 +251,9 @@ class YamlWriteArchive final {
     using T = typename NVP::value_type;
     const T& value = *nvp.value();
     if constexpr (std::is_floating_point_v<T>) {
+      // Different versions of fmt disagree on whether to omit the trailing
+      // ".0" when formatting integer-valued floating-point numbers.  Force
+      // the ".0" in all cases by using the "#" option.
       root_[nvp.name()] = fmt::format("{:#}", value);
     } else {
       root_[nvp.name()] = fmt::format("{}", value);

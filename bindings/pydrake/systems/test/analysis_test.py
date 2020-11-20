@@ -75,9 +75,9 @@ class TestAnalysis(unittest.TestCase):
         system = ConstantVectorSource([1.])
         simulator = Simulator(system)
         status = simulator.AdvanceTo(1.)
-        self.assertEqual(
+        self.assertRegex(
             status.FormatMessage(),
-            "Simulator successfully reached the boundary time (1).")
+            "^Simulator successfully reached the boundary time")
         self.assertTrue(status.succeeded())
         self.assertEqual(status.boundary_time(), 1.)
         self.assertEqual(status.return_time(), 1.)
