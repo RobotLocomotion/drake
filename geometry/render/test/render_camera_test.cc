@@ -56,33 +56,6 @@ GTEST_TEST(RenderCameraCoreTest, Constructor) {
                               X_BS.GetAsMatrix4()));
 }
 
-/* Test the converstion constructor. This will be removed when CameraProperties
- is removed.  */
-GTEST_TEST(RenderCameraCoreTest, CameraPropertiesConversion) {
-  const CameraProperties props{640, 480, M_PI / 3, "some_name"};
-  const RigidTransformd X_BS(Vector3d{1, 2, 3});
-  for (const double clipping_far : {15.0, 22.5}) {
-    const CameraInfo expected_intrinsics(props.width, props.height,
-                                         props.fov_y);
-    const RenderCameraCore cam{props, clipping_far, X_BS};
-    EXPECT_EQ(cam.intrinsics().width(), expected_intrinsics.width());
-    EXPECT_EQ(cam.intrinsics().height(), expected_intrinsics.height());
-    EXPECT_EQ(cam.intrinsics().fov_y(), expected_intrinsics.fov_y());
-    EXPECT_EQ(cam.intrinsics().fov_x(), expected_intrinsics.fov_x());
-    EXPECT_EQ(cam.intrinsics().center_x(), expected_intrinsics.center_x());
-    EXPECT_EQ(cam.intrinsics().center_y(), expected_intrinsics.center_y());
-    EXPECT_EQ(cam.renderer_name(), props.renderer_name);
-    EXPECT_EQ(cam.clipping().far(), clipping_far);
-    // We're not putting a strict value on the near clipping plane; just that
-    // it's strictly positive and less than the far value.
-    EXPECT_GT(cam.clipping().near(), 0);
-    EXPECT_LT(cam.clipping().near(), cam.clipping().far());
-    EXPECT_TRUE(
-        CompareMatrices(cam.sensor_pose_in_camera_body().GetAsMatrix34(),
-                        X_BS.GetAsMatrix34()));
-  }
-}
-
 /* Confirm that the correct projection matrix is created. Note: this doesn't
 test that the matrix as defined as below is correct; for that, we appeal to
 authority (the provided link). We merely show that the matrix is implemented
@@ -235,28 +208,6 @@ GTEST_TEST(ColorRenderCameraTest, Constructor) {
   EXPECT_EQ(camera.show_window(), show_window);
 }
 
-/* Test the converstion constructor. This will be removed when CameraProperties
- is removed.  */
-GTEST_TEST(ColorRenderCameraTest, CameraPropertiesConversion) {
-  const CameraProperties props{640, 480, M_PI / 3, "some_name"};
-  const RigidTransformd X_BS(Vector3d{1, 2, 3});
-  for (const bool show_window : {true, false}) {
-    const ColorRenderCamera cam{props, show_window, X_BS};
-    // We'll test a single feature of the core camera data, assuming that its
-    // success implies that the core data was correctly converted.
-    EXPECT_EQ(cam.core().intrinsics().width(), props.width);
-    // We *will* confirm that the conversion sets up valid clipping planes:
-    // strictly positive with near < far.
-    EXPECT_GT(cam.core().clipping().near(), 0);
-    EXPECT_LT(cam.core().clipping().near(), cam.core().clipping().far());
-    EXPECT_EQ(cam.show_window(), show_window);
-    // Confirm that the pose gets passed along.
-    EXPECT_TRUE(
-        CompareMatrices(cam.core().sensor_pose_in_camera_body().GetAsMatrix34(),
-                        X_BS.GetAsMatrix34()));
-  }
-}
-
 GTEST_TEST(DepthRangeTest, Constructor) {
   {
     // Case: Valid values.
@@ -321,7 +272,59 @@ GTEST_TEST(DepthRenderCameraTest, Constructor) {
       ".+, far = .+, min. depth = .+, max. depth = .+");
 }
 
-/* Test the converstion constructor. This will be removed when
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
+/* Test the conversion constructor. This will be removed when CameraProperties
+ is removed.  */
+GTEST_TEST(RenderCameraCoreTest, CameraPropertiesConversion) {
+  const CameraProperties props{640, 480, M_PI / 3, "some_name"};
+  const RigidTransformd X_BS(Vector3d{1, 2, 3});
+  for (const double clipping_far : {15.0, 22.5}) {
+    const CameraInfo expected_intrinsics(props.width, props.height,
+                                         props.fov_y);
+    const RenderCameraCore cam{props, clipping_far, X_BS};
+    EXPECT_EQ(cam.intrinsics().width(), expected_intrinsics.width());
+    EXPECT_EQ(cam.intrinsics().height(), expected_intrinsics.height());
+    EXPECT_EQ(cam.intrinsics().fov_y(), expected_intrinsics.fov_y());
+    EXPECT_EQ(cam.intrinsics().fov_x(), expected_intrinsics.fov_x());
+    EXPECT_EQ(cam.intrinsics().center_x(), expected_intrinsics.center_x());
+    EXPECT_EQ(cam.intrinsics().center_y(), expected_intrinsics.center_y());
+    EXPECT_EQ(cam.renderer_name(), props.renderer_name);
+    EXPECT_EQ(cam.clipping().far(), clipping_far);
+    // We're not putting a strict value on the near clipping plane; just that
+    // it's strictly positive and less than the far value.
+    EXPECT_GT(cam.clipping().near(), 0);
+    EXPECT_LT(cam.clipping().near(), cam.clipping().far());
+    EXPECT_TRUE(
+        CompareMatrices(cam.sensor_pose_in_camera_body().GetAsMatrix34(),
+                        X_BS.GetAsMatrix34()));
+  }
+}
+
+/* Test the conversion constructor. This will be removed when CameraProperties
+ is removed.  */
+GTEST_TEST(ColorRenderCameraTest, CameraPropertiesConversion) {
+  const CameraProperties props{640, 480, M_PI / 3, "some_name"};
+  const RigidTransformd X_BS(Vector3d{1, 2, 3});
+  for (const bool show_window : {true, false}) {
+    const ColorRenderCamera cam{props, show_window, X_BS};
+    // We'll test a single feature of the core camera data, assuming that its
+    // success implies that the core data was correctly converted.
+    EXPECT_EQ(cam.core().intrinsics().width(), props.width);
+    // We *will* confirm that the conversion sets up valid clipping planes:
+    // strictly positive with near < far.
+    EXPECT_GT(cam.core().clipping().near(), 0);
+    EXPECT_LT(cam.core().clipping().near(), cam.core().clipping().far());
+    EXPECT_EQ(cam.show_window(), show_window);
+    // Confirm that the pose gets passed along.
+    EXPECT_TRUE(
+        CompareMatrices(cam.core().sensor_pose_in_camera_body().GetAsMatrix34(),
+                        X_BS.GetAsMatrix34()));
+  }
+}
+
+/* Test the conversion constructor. This will be removed when
  DepthCameraProperties is removed.  */
 GTEST_TEST(DepthRenderCameraTest, CameraPropertiesConversion) {
   const DepthCameraProperties props{640, 480, M_PI / 3, "some_name", 0.25, 7.5};
@@ -344,6 +347,7 @@ GTEST_TEST(DepthRenderCameraTest, CameraPropertiesConversion) {
         CompareMatrices(cam.core().sensor_pose_in_camera_body().GetAsMatrix34(),
                         X_BS.GetAsMatrix34()));
 }
+#pragma GCC diagnostic pop
 
 }  // namespace
 }  // namespace render
