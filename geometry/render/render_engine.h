@@ -224,8 +224,8 @@ class RenderEngine : public ShapeReifier {
    */
   //@{
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // TODO(SeanCurtis-TRI): Deprecate these (Depth)CameraProperties variants
+  //  of the render functions.
   /** Renders the registered geometry into the given color (rgb) image based on
    a simplified camera model.
 
@@ -283,7 +283,6 @@ class RenderEngine : public ShapeReifier {
     DoRenderLabelImage(cam, label_image_out);
   }
 
-#pragma GCC diagnostic pop
   //@}
 
   /** @name Rendering using fully-specified camera models

@@ -4,8 +4,6 @@
 #include <string>
 #include <utility>
 
-#include "drake/common/drake_deprecated.h"
-
 namespace drake {
 namespace geometry {
 namespace render {
@@ -25,9 +23,7 @@ namespace render {
 
  The focal length is inferred by the sensor format (width and height) and the
  field of view along the y-axis. */
-struct DRAKE_DEPRECATED("2021-03-01",
-                        "CameraProperties are being deprecated. Please use "
-                        "ColorRenderCamera.") CameraProperties {
+struct CameraProperties {
   CameraProperties(int width_in, int height_in, double fov_y_in,
                    std::string renderer_name_in)
       : width(width_in),
@@ -45,10 +41,7 @@ struct DRAKE_DEPRECATED("2021-03-01",
  intrinsic properties of the render camera but extended with additional
  depth-specific parameters.
  @see CameraProperties */
-struct DRAKE_DEPRECATED("2021-03-01",
-                        "DepthCameraProperties are being deprecated. Please "
-                        "use DepthRenderCamera.")
-DepthCameraProperties : public CameraProperties {
+struct DepthCameraProperties : public CameraProperties {
   DepthCameraProperties(int width_in, int height_in, double fov_y_in,
                         std::string renderer_name_in, double z_near_in,
                         double z_far_in)

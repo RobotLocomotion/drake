@@ -44,14 +44,11 @@ class RenderCameraCore {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RenderCameraCore);
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   /** (Advanced) Constructs a %RenderCameraCore from the old, symmetric camera
    representation. This constructor should only be used internally; it serves
    as a stop gap measure until CameraProperties is fully deprecated.  */
   RenderCameraCore(const CameraProperties& camera, double clipping_far,
                    math::RigidTransformd X_BS = {});
-#pragma GCC diagnostic pop
 
   /** Fully-specified constructor. See the documentation on the member getter
    methods for documentation of parameters.  */
@@ -110,8 +107,6 @@ class ColorRenderCamera {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ColorRenderCamera);
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   /** Constructs a %ColorRenderCamera from the old, symmetric camera
    representation. This constructor should only be used internally; it serves
    as a stop gap measure until CameraProperties is fully deprecated.  */
@@ -121,7 +116,6 @@ class ColorRenderCamera {
       : ColorRenderCamera(
             RenderCameraCore(camera, kClippingFar, std::move(X_BC)),
             show_window) {}
-#pragma GCC diagnostic pop
 
   /** Fully-specified constructor. See the documentation on the member getter
    methods for documentation of parameters.  */
@@ -182,8 +176,6 @@ class DepthRenderCamera {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DepthRenderCamera);
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   /** Constructs a %DepthRenderCamera from the old, symmetric camera
    representation. This constructor should only be used internally; it serves
    as a stop gap measure until CameraProperties is fully deprecated.  */
@@ -192,7 +184,6 @@ class DepthRenderCamera {
       : DepthRenderCamera(
             RenderCameraCore(camera, camera.z_far * 1.1, std::move(X_BD)),
             DepthRange(camera.z_near, camera.z_far)) {}
-#pragma GCC diagnostic pop
 
   /** Fully-specified constructor. See the documentation on the member getter
    methods for documentation of parameters.

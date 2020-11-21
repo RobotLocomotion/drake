@@ -206,10 +206,10 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   EXPECT_DEFAULT_ERROR(default_object.RenderLabelImage(
       color_camera, FrameId::get_new_id(), X_WC, &label));
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   const DepthCameraProperties properties(2, 2, M_PI, "dummy_renderer", 0.1,
                                          5.0);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_DEFAULT_ERROR(default_object.RenderColorImage(
       properties, FrameId::get_new_id(), X_WC, false, &color));
   EXPECT_DEFAULT_ERROR(default_object.RenderDepthImage(

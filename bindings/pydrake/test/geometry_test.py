@@ -599,11 +599,11 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(params.default_label, label)
         self.assertTrue((params.default_diffuse == diffuse).all())
 
-    def test_render_depth_camera_properties_deprecated(self):
-        with catch_drake_warnings(expected_count=1):
-            obj = mut.render.DepthCameraProperties(
-                width=320, height=240, fov_y=pi/6,
-                renderer_name="test_renderer", z_near=0.1, z_far=5.0)
+    def test_render_depth_camera_properties(self):
+        obj = mut.render.DepthCameraProperties(width=320, height=240,
+                                               fov_y=pi/6,
+                                               renderer_name="test_renderer",
+                                               z_near=0.1, z_far=5.0)
         self.assertEqual(obj.width, 320)
         self.assertEqual(obj.height, 240)
         self.assertEqual(obj.fov_y, pi/6)
@@ -737,9 +737,7 @@ class TestGeometry(unittest.TestCase):
             X_PC=RigidTransform())
         self.assertIsInstance(image, ImageLabel16I)
 
-        with catch_drake_warnings(expected_count=4):
-            # One deprecation warning for constructing DepthCameraProperties
-            # and one for each invocation of Render*Image.
+        with catch_drake_warnings(expected_count=3):
             depth_camera = mut.render.DepthCameraProperties(
                 width=320, height=240, fov_y=pi/6, renderer_name=renderer_name,
                 z_near=0.1, z_far=5.0)
@@ -985,10 +983,7 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(current_engine.label_count, 1)
 
         # Confirm that the CameraProperties APIs are *not* available.
-        with catch_drake_warnings(expected_count=2):
-            cam = mut.render.CameraProperties(10, 10, np.pi / 4, "")
-            depth_cam = mut.render.DepthCameraProperties(10, 10, np.pi / 4, "",
-                                                         0.1, 5)
+        cam = mut.render.CameraProperties(10, 10, np.pi / 4, "")
         with self.assertRaises(TypeError):
             engine.RenderColorImage(
                 cam, True, ImageRgba8U(cam.width, cam.height))
@@ -996,6 +991,8 @@ class TestGeometry(unittest.TestCase):
             engine.RenderLabelImage(
                 cam, True, ImageLabel16I(cam.width, cam.height))
 
+        depth_cam = mut.render.DepthCameraProperties(10, 10, np.pi / 4, "",
+                                                     0.1, 5)
         with self.assertRaises(TypeError):
             engine.RenderDepthImage(
                 depth_cam, True,

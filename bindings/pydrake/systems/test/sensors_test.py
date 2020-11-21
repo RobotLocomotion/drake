@@ -273,7 +273,7 @@ class TestSensors(unittest.TestCase):
 
         def construct_deprecated(parent_id, X_PB):
             # One deprecation warning for CameraPoses and one for RgbdSensor.
-            with catch_drake_warnings(expected_count=4):
+            with catch_drake_warnings(expected_count=2):
                 color_properties = CameraProperties(
                     width=width, height=height, fov_y=np.pi/6,
                     renderer_name="renderer")
@@ -303,7 +303,7 @@ class TestSensors(unittest.TestCase):
                                   depth_camera=depth_camera)
 
         def construct_single_deprecated(parent_id, X_PB):
-            with catch_drake_warnings(expected_count=3):
+            with catch_drake_warnings(expected_count=2):
                 depth_properties = DepthCameraProperties(
                         width=width, height=height, fov_y=np.pi/6,
                         renderer_name="renderer", z_near=0.1, z_far=5.5)
