@@ -473,6 +473,60 @@ void SolveAndCheckSmallestEllipsoidCoveringProblems(
     prob_4d.CheckSolution(result, tol);
   }
 }
+
+void TestSocpDualSolution1(const SolverInterface& solver,
+                           const SolverOptions& solver_options, double tol) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto constraint1 = prog.AddLorentzConeConstraint(
+      Vector3<symbolic::Expression>(2., 2 * x(0), 3 * x(1) + 1));
+  prog.AddLinearCost(x(1));
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    solver.Solve(prog, {} /* empty initial guess */, solver_options, &result);
+    // The dual solution for lorentz cone constraint are the values of the dual
+    // variables, lies in the dual cone of a Lorentz cone (which is also a
+    // Lorentz cone). Notice that this is NOT the shadow price as in the linear
+    // constraints.
+    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint1),
+                                Eigen::Vector3d(1. / 3, 0, 1. / 3), tol));
+
+    auto bb_con = prog.AddBoundingBoxConstraint(0.1, kInf, x(1));
+    solver.Solve(prog, {}, solver_options, &result);
+    ASSERT_TRUE(result.is_success());
+    EXPECT_NEAR(result.GetSolution(x(1)), 0.1, tol);
+    // The cost is x(1), hence the shadow price for the constraint x(1) >= 0
+    // should be 1.
+    EXPECT_TRUE(
+        CompareMatrices(result.GetDualSolution(bb_con), Vector1d(1.), tol));
+  }
+}
+
+void TestSocpDualSolution2(const SolverInterface& solver,
+                           const SolverOptions& solver_options, double tol,
+                           bool rotated_lorentz_cone_with_coefficient_two) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<1>()(0);
+  auto constraint1 = prog.AddRotatedLorentzConeConstraint(
+      Vector3<symbolic::Expression>(2., x + 1.5, x));
+  auto constraint2 =
+      prog.AddLorentzConeConstraint(Vector2<symbolic::Expression>(1, x + 1));
+  prog.AddLinearCost(x);
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    solver.Solve(prog, {}, solver_options, &result);
+    ASSERT_TRUE(result.is_success());
+    const Eigen::Vector3d constraint1_dual =
+        rotated_lorentz_cone_with_coefficient_two
+            ? Eigen::Vector3d(0.25, 0.5, 0.5)
+            : Eigen::Vector3d(0.5, 0.5, 0.5);
+    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint1),
+                                constraint1_dual, tol));
+    // This Lorentz cone is not activated, hence its dual should be zero.
+    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint2),
+                                Eigen::Vector2d(0, 0), tol));
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
