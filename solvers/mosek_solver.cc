@@ -659,13 +659,14 @@ MSKrescodee AddBoundingBoxConstraints(
 template <typename C>
 MSKrescodee AddConeConstraints(
     const MathematicalProgram& prog,
-    const std::vector<Binding<C>>& second_order_cone_constraints,
+    const std::vector<Binding<C>>& cone_constraints,
     const std::unordered_map<int, MatrixVariableEntry>&
         decision_variable_index_to_mosek_matrix_variable,
     const std::unordered_map<int, int>&
         decision_variable_index_to_mosek_nonmatrix_variable,
     std::unordered_map<MatrixVariableEntry::Id, MSKint64t>*
         matrix_variable_entry_to_selection_matrix_id,
+    std::unordered_map<Binding<C>, ConstraintDualIndices>* dual_indices,
     MSKtask_t* task) {
   static_assert(std::is_same<C, LorentzConeConstraint>::value ||
                     std::is_same<C, RotatedLorentzConeConstraint>::value ||
@@ -675,7 +676,7 @@ MSKrescodee AddConeConstraints(
   const bool is_rotated_cone =
       std::is_same<C, RotatedLorentzConeConstraint>::value;
   MSKrescodee rescode = MSK_RES_OK;
-  for (auto const& binding : second_order_cone_constraints) {
+  for (auto const& binding : cone_constraints) {
     const auto& A = binding.evaluator()->A();
     const auto& b = binding.evaluator()->b();
     const int num_z = A.rows();
@@ -707,6 +708,14 @@ MSKrescodee AddConeConstraints(
     } else {
       DRAKE_UNREACHABLE();
     }
+    // The dual cone has the same size as the nonlinear cones (Lorentz cone,
+    // rotated Lorentz cone, exponential cone, etc).
+    ConstraintDualIndices duals(num_z);
+    for (int i = 0; i < num_z; ++i) {
+      duals[i].type = DualVarType::kNonlinearConic;
+      duals[i].index = num_mosek_vars + i;
+    }
+    dual_indices->emplace(binding, duals);
     rescode =
         MSK_appendcone(*task, cone_type, 0.0, num_z, new_var_indices.data());
     if (rescode != MSK_RES_OK) {
@@ -1484,6 +1493,22 @@ void SetLinearConstraintDualSolution(
   }
 }
 
+template <typename C>
+void SetNonlinearConstraintDualSolution(
+    const std::vector<Binding<C>>& bindings, const std::vector<MSKrealt>& snx,
+    const std::unordered_map<Binding<C>, ConstraintDualIndices>& dual_indices,
+    MathematicalProgramResult* result) {
+  for (const auto& binding : bindings) {
+    const ConstraintDualIndices duals = dual_indices.at(binding);
+    Eigen::VectorXd dual_sol = Eigen::VectorXd::Zero(duals.size());
+    for (int i = 0; i < dual_sol.rows(); ++i) {
+      DRAKE_DEMAND(duals[i].type == DualVarType::kNonlinearConic);
+      dual_sol[i] = snx[duals[i].index];
+    }
+    result->set_dual_solution(binding, dual_sol);
+  }
+}
+
 MSKrescodee SetDualSolution(
     const MSKtask_t& task, MSKsoltypee which_sol,
     const MathematicalProgram& prog,
@@ -1495,6 +1520,13 @@ MSKrescodee SetDualSolution(
         linear_con_dual_indices,
     const std::unordered_map<Binding<LinearEqualityConstraint>,
                              ConstraintDualIndices>& lin_eq_con_dual_indices,
+    const std::unordered_map<Binding<LorentzConeConstraint>,
+                             ConstraintDualIndices>& lorentz_cone_dual_indices,
+    const std::unordered_map<Binding<RotatedLorentzConeConstraint>,
+                             ConstraintDualIndices>&
+        rotated_lorentz_cone_dual_indices,
+    const std::unordered_map<Binding<ExponentialConeConstraint>,
+                             ConstraintDualIndices>& exp_cone_dual_indices,
     MathematicalProgramResult* result) {
   // TODO(hongkai.dai): support other types of constraints, like linear
   // constraint, second order cone constraint, etc.
@@ -1550,6 +1582,23 @@ MSKrescodee SetDualSolution(
     // Set the duals for the linear equality constraint.
     SetLinearConstraintDualSolution(prog.linear_equality_constraints(), slc,
                                     suc, lin_eq_con_dual_indices, result);
+    // Set the duals for the nonlinear conic constraint.
+    // Mosek provides the dual solution for nonlinear conic constraints only if
+    // the program is solved through interior point approach.
+    if (which_sol == MSK_SOL_ITR) {
+      std::vector<MSKrealt> snx(num_mosek_vars);
+      rescode = MSK_getsnx(task, which_sol, snx.data());
+      if (rescode != MSK_RES_OK) {
+        return rescode;
+      }
+      SetNonlinearConstraintDualSolution(prog.lorentz_cone_constraints(), snx,
+                                         lorentz_cone_dual_indices, result);
+      SetNonlinearConstraintDualSolution(
+          prog.rotated_lorentz_cone_constraints(), snx,
+          rotated_lorentz_cone_dual_indices, result);
+      SetNonlinearConstraintDualSolution(prog.exponential_cone_constraints(),
+                                         snx, exp_cone_dual_indices, result);
+    }
   }
   return rescode;
 }
@@ -1760,21 +1809,28 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
   }
 
   // Add Lorentz cone constraints.
+  std::unordered_map<Binding<LorentzConeConstraint>, ConstraintDualIndices>
+      lorentz_cone_dual_indices;
   if (rescode == MSK_RES_OK) {
-    rescode = AddConeConstraints(
-        prog, prog.lorentz_cone_constraints(),
-        decision_variable_index_to_mosek_matrix_variable,
-        decision_variable_index_to_mosek_nonmatrix_variable,
-        &matrix_variable_entry_to_selection_matrix_id, &task);
+    rescode =
+        AddConeConstraints(prog, prog.lorentz_cone_constraints(),
+                           decision_variable_index_to_mosek_matrix_variable,
+                           decision_variable_index_to_mosek_nonmatrix_variable,
+                           &matrix_variable_entry_to_selection_matrix_id,
+                           &lorentz_cone_dual_indices, &task);
   }
 
   // Add rotated Lorentz cone constraints.
+  std::unordered_map<Binding<RotatedLorentzConeConstraint>,
+                     ConstraintDualIndices>
+      rotated_lorentz_cone_dual_indices;
   if (rescode == MSK_RES_OK) {
-    rescode = AddConeConstraints(
-        prog, prog.rotated_lorentz_cone_constraints(),
-        decision_variable_index_to_mosek_matrix_variable,
-        decision_variable_index_to_mosek_nonmatrix_variable,
-        &matrix_variable_entry_to_selection_matrix_id, &task);
+    rescode =
+        AddConeConstraints(prog, prog.rotated_lorentz_cone_constraints(),
+                           decision_variable_index_to_mosek_matrix_variable,
+                           decision_variable_index_to_mosek_nonmatrix_variable,
+                           &matrix_variable_entry_to_selection_matrix_id,
+                           &rotated_lorentz_cone_dual_indices, &task);
   }
 
   // Add linear matrix inequality constraints.
@@ -1786,12 +1842,15 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
   }
 
   // Add exponential cone constraints.
+  std::unordered_map<Binding<ExponentialConeConstraint>, ConstraintDualIndices>
+      exp_cone_dual_indices;
   if (rescode == MSK_RES_OK) {
-    rescode = AddConeConstraints(
-        prog, prog.exponential_cone_constraints(),
-        decision_variable_index_to_mosek_matrix_variable,
-        decision_variable_index_to_mosek_nonmatrix_variable,
-        &matrix_variable_entry_to_selection_matrix_id, &task);
+    rescode =
+        AddConeConstraints(prog, prog.exponential_cone_constraints(),
+                           decision_variable_index_to_mosek_matrix_variable,
+                           decision_variable_index_to_mosek_nonmatrix_variable,
+                           &matrix_variable_entry_to_selection_matrix_id,
+                           &exp_cone_dual_indices, &task);
   }
 
   // log file.
@@ -1911,7 +1970,9 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
           }
           rescode = SetDualSolution(
               task, solution_type, prog, bb_con_dual_indices,
-              linear_con_dual_indices, lin_eq_con_dual_indices, result);
+              linear_con_dual_indices, lin_eq_con_dual_indices,
+              lorentz_cone_dual_indices, rotated_lorentz_cone_dual_indices,
+              exp_cone_dual_indices, result);
           DRAKE_ASSERT(rescode == MSK_RES_OK);
           break;
         }
