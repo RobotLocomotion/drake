@@ -12,13 +12,15 @@ namespace solvers {
 namespace test {
 const double kInf = std::numeric_limits<double>::infinity();
 
-void ExponentialConeTrivialExample(const SolverInterface& solver, double tol) {
+void ExponentialConeTrivialExample(const SolverInterface& solver, double tol,
+                                   bool check_dual) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<1>()(0);
   auto y = prog.NewContinuousVariables<1>()(0);
   auto z = prog.NewContinuousVariables<1>()(0);
-  prog.AddExponentialConeConstraint(Vector3<symbolic::Expression>(x, y, z));
-  prog.AddLinearEqualityConstraint(y + z == 1);
+  auto exp_constr =
+      prog.AddExponentialConeConstraint(Vector3<symbolic::Expression>(x, y, z));
+  auto lin_eq_constr = prog.AddLinearEqualityConstraint(y + z == 1);
   prog.AddLinearCost(x);
 
   MathematicalProgramResult result;
@@ -30,6 +32,14 @@ void ExponentialConeTrivialExample(const SolverInterface& solver, double tol) {
   // Namely y =1
   EXPECT_NEAR(result.GetSolution(y), 1, tol);
   EXPECT_NEAR(result.GetSolution(z), 0, tol);
+
+  // Check the dual solution.
+  if (check_dual) {
+    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(exp_constr),
+                                Eigen::Vector3d(1, -1, -1), tol));
+    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(lin_eq_constr),
+                                Vector1d(1), tol));
+  }
 }
 
 void MinimizeKLDivergence(const SolverInterface& solver, double tol) {
