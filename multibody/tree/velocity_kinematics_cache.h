@@ -70,12 +70,16 @@ class VelocityKinematicsCache {
   ///                            BodyNode object associated with body B.
   /// @returns `V_WB` the spatial velocity of the body frame B measured and
   ///                 expressed in the world frame W.
+  /// @note The returned spatial velocity's translational part is v_WBo_W,
+  /// the velocity of Bo (body B's origin) in world W, expressed in W.
   const SpatialVelocity<T>& get_V_WB(BodyNodeIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return V_WB_pool_[body_node_index];
   }
 
   /// Mutable version of get_V_WB().
+  /// @note The returned spatial velocity's translational part is v_WBo_W,
+  /// the velocity of Bo (body B's origin) in world W, expressed in W.
   SpatialVelocity<T>& get_mutable_V_WB(BodyNodeIndex body_node_index) {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return V_WB_pool_[body_node_index];

@@ -55,6 +55,8 @@ class AccelerationKinematicsCache {
   ///                            BodyNode object associated with body B.
   /// @retval A_WB the spatial acceleration of the body frame B measured and
   ///              expressed in the world frame W.
+  /// @note The returned spatial acceleration's translational part is a_WBo_W,
+  /// the acceleration of Bo (body B's origin) in world W, expressed in W.
   const SpatialAcceleration<T>& get_A_WB(BodyNodeIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < get_num_nodes());
     return A_WB_pool_[body_node_index];

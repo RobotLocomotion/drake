@@ -1529,18 +1529,22 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
 
   // Returns a const reference to the spatial velocity of the body B associated
   // with this node as measured and expressed in the world frame W.
+  // @note The returned spatial velocity's translational part is v_WBo_W,
+  // the velocity of Bo (body B's origin) in world W, expressed in W.
   const SpatialVelocity<T>& get_V_WB(
       const VelocityKinematicsCache<T>& vc) const {
     return vc.get_V_WB(topology_.index);
   }
 
   /// Mutable version of get_V_WB().
+  /// @note The returned spatial velocity's translational part is v_WBo_W,
+  /// the velocity of Bo (body B's origin) in world W, expressed in W.
   SpatialVelocity<T>& get_mutable_V_WB(VelocityKinematicsCache<T>* vc) const {
     return vc->get_mutable_V_WB(topology_.index);
   }
 
-  // Returns the spatial velocity `V_WP` of the body P in the parent node as
-  // measured and expressed in the world frame.
+  // Returns the spatial velocity `V_WP` of the body frame P in the parent node
+  // as measured and expressed in the world frame.
   const SpatialVelocity<T>& get_V_WP(
       const VelocityKinematicsCache<T>& vc) const {
     return vc.get_V_WB(topology_.parent_body_node);
@@ -1577,6 +1581,8 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
 
   // Returns a const reference to the spatial acceleration of the body B
   // associated with this node as measured and expressed in the world frame W.
+  // @note The returned spatial acceleration's translational part is a_WBo_W,
+  // the acceleration of Bo (body B's origin) in world W, expressed in W.
   const SpatialAcceleration<T>& get_A_WB(
       const AccelerationKinematicsCache<T>& ac) const {
     return ac.get_A_WB(topology_.index);

@@ -299,6 +299,8 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
 
   /// Returns the spatial velocity `V_WB` of this body B in the world frame W
   /// as a function of the state of the model stored in `context`.
+  /// @note The returned spatial velocity's translational part is v_WBo_W,
+  /// the velocity of Bo (body B's origin) in world W, expressed in W.
   const SpatialVelocity<T>& EvalSpatialVelocityInWorld(
       const systems::Context<T>& context) const {
     return this->get_parent_tree().EvalBodySpatialVelocityInWorld(
@@ -310,6 +312,8 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
   /// @note When cached values are out of sync with the state stored in context,
   /// this method performs an expensive forward dynamics computation, whereas
   /// once evaluated, successive calls to this method are inexpensive.
+  /// @note The returned spatial acceleration's translational part is a_WBo_W,
+  /// the acceleration of Bo (body B's origin) in world W, expressed in W.
   const SpatialAcceleration<T>& EvalSpatialAccelerationInWorld(
       const systems::Context<T>& context) const {
     const MultibodyPlant<T>& parent_plant = this->GetParentPlant();
