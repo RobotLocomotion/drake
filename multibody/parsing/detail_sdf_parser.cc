@@ -1,5 +1,6 @@
 #include "drake/multibody/parsing/detail_sdf_parser.h"
 
+#include <cstring>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -42,6 +43,28 @@ using std::unique_ptr;
 
 // Unnamed namespace for free functions local to this file.
 namespace {
+
+const char kSdfScopeDelimiter[] = "::";
+
+// Split a given absolute name into the parent model name and the local name.
+// If the give name is not scoped, this will return an empty string for the
+// parent model name and the given name as the local name.
+std::pair<std::string, std::string> SplitName(
+    const std::string& absolute_name) {
+  auto pos = absolute_name.rfind(kSdfScopeDelimiter);
+  if (pos != std::string::npos) {
+    const std::string first = absolute_name.substr(0, pos);
+    const std::string second =
+        absolute_name.substr(pos + std::strlen(kSdfScopeDelimiter));
+    return {first, second};
+  }
+  return {"", absolute_name};
+}
+
+std::string JoinName(const std::string& absolute_name,
+                     const std::string& local_name) {
+  return absolute_name + kSdfScopeDelimiter + local_name;
+}
 // Given an ignition::math::Inertial object, extract a RotationalInertia object
 // for the rotational inertia of body B, about its center of mass Bcm and,
 // expressed in the inertial frame Bi (as specified in <inertial> in the SDF
@@ -102,6 +125,17 @@ Eigen::Vector3d ResolveAxisXyz(const sdf::JointAxis& axis) {
   return ToVector3(xyz);
 }
 
+std::string ResolveJointParentLinkName(const sdf::Joint& joint) {
+  std::string link;
+  ThrowAnyErrors(joint.ResolveParentLink(link));
+  return link;
+}
+std::string ResolveJointChildLinkName(const sdf::Joint& joint) {
+  std::string link;
+  ThrowAnyErrors(joint.ResolveChildLink(link));
+  return link;
+}
+
 // Helper method to extract the SpatialInertia M_BBo_B of body B, about its body
 // frame origin Bo and, expressed in body frame B, from an ignition::Inertial
 // object.
@@ -145,7 +179,7 @@ SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
 
 // Helper method to retrieve a Body given the name of the link specification.
 const Body<double>& GetBodyByLinkSpecificationName(
-    const sdf::Model& model, const std::string& link_name,
+    const std::string& link_name,
     ModelInstanceIndex model_instance, const MultibodyPlant<double>& plant) {
   // SDF's convention to indicate a joint is connected to the world is to either
   // name the corresponding link "world" or just leave it unnamed.
@@ -153,13 +187,18 @@ const Body<double>& GetBodyByLinkSpecificationName(
   if (link_name.empty() || link_name == "world") {
     return plant.world_body();
   } else {
-    // TODO(amcastro-tri): Remove this when sdformat guarantees a model
-    // with basic structural checks.
-    if (!model.LinkNameExists(link_name)) {
-      throw std::logic_error("There is no parent link named '" +
-          link_name + "' in the model.");
+    auto [parent_name, local_name] = SplitName(link_name);
+    ModelInstanceIndex parent_model_instance = model_instance;
+
+    if (!parent_name.empty()) {
+      const std::string parent_model_absolute_name =
+        JoinName(plant.GetModelInstanceName(model_instance), parent_name);
+
+      parent_model_instance =
+          plant.GetModelInstanceByName(parent_model_absolute_name);
     }
-    return plant.GetBodyByName(link_name, model_instance);
+
+    return plant.GetBodyByName(local_name, parent_model_instance);
   }
 }
 
@@ -343,9 +382,9 @@ void AddJointFromSpecification(
     MultibodyPlant<double>* plant,
     std::set<sdf::JointType>* joint_types) {
   const Body<double>& parent_body = GetBodyByLinkSpecificationName(
-      model_spec, joint_spec.ParentLinkName(), model_instance, *plant);
+      ResolveJointParentLinkName(joint_spec), model_instance, *plant);
   const Body<double>& child_body = GetBodyByLinkSpecificationName(
-      model_spec, joint_spec.ChildLinkName(), model_instance, *plant);
+      ResolveJointChildLinkName(joint_spec), model_instance, *plant);
 
   // Get the pose of frame J in the frame of the child link C, as specified in
   // <joint> <pose> ... </pose></joint>. The default `relative_to` pose of a
@@ -714,21 +753,40 @@ ModelInstanceIndex AddModelFromSpecification(
   ThrowIfPoseFrameSpecified(model.Element());
   const RigidTransformd X_WM = ToRigidTransform(model.RawPose());
 
+  // Add nested models at root-level of <model>.
+  // Do this before the resolving canonical link because the link might be in a
+  // nested model.
+  drake::log()->trace("sdf_parser: Add nested models");
+  for (uint64_t model_index = 0; model_index < model.ModelCount();
+       ++model_index) {
+    const sdf::Model& nested_model = *model.ModelByIndex(model_index);
+    AddModelFromSpecification(
+        nested_model, JoinName(model_name, nested_model.Name()), plant,
+        package_map, root_dir);
+  }
+
   drake::log()->trace("sdf_parser: Add links");
   std::vector<LinkInfo> added_link_infos = AddLinksFromSpecification(
       model_instance, model, X_WM, plant, package_map, root_dir);
 
   drake::log()->trace("sdf_parser: Resolve canonical link");
-  std::string canonical_link_name = model.CanonicalLinkName();
-  if (canonical_link_name.empty()) {
-    // TODO(eric.cousineau): Should libsdformat auto-resolve this?
-    DRAKE_DEMAND(model.LinkCount() > 0);
-    canonical_link_name = model.LinkByIndex(0)->Name();
+  const auto [canonical_link, canonical_link_name] =
+      model.CanonicalLinkAndRelativeName();
+
+  DRAKE_DEMAND(canonical_link != nullptr);
+  ModelInstanceIndex parent_model_instance = model_instance;
+  auto [parent_name, local_name] = SplitName(canonical_link_name);
+  if (!parent_name.empty()) {
+    const std::string parent_model_absolute_name =
+        JoinName(model.Name(), parent_name);
+
+    parent_model_instance =
+      plant->GetModelInstanceByName(parent_model_absolute_name);
   }
-  const Frame<double>& canonical_link_frame = plant->GetFrameByName(
-      canonical_link_name, model_instance);
-  const RigidTransformd X_MLc = ResolveRigidTransform(
-      model.LinkByName(canonical_link_name)->SemanticPose());
+  const Frame<double>& canonical_link_frame =
+      plant->GetFrameByName(local_name, parent_model_instance);
+  const RigidTransformd X_MLc =
+      ResolveRigidTransform(canonical_link->SemanticPose());
 
   // Add the SDF "model frame" given the model name so that way any frames added
   // to the plant are associated with this current model instance.

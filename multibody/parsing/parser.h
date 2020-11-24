@@ -49,9 +49,11 @@ class Parser final {
   std::vector<ModelInstanceIndex> AddAllModelsFromFile(
       const std::string& file_name);
 
-  /// Parses the SDF or URDF file named in @p file_name and adds one model to
-  /// @p plant.  It is an error to call this using an SDF file with more than
-  /// one `<model>` element.
+  /// Parses the SDF or URDF file named in @p file_name and adds one or more
+  /// models to @p plant. It is an error to call this using an SDF file with
+  /// more than one `<model>` element. However, this function might create
+  /// additional model instances corresponding to nested models found in the
+  /// top level model.
   ///
   /// @param file_name The name of the SDF or URDF file to be parsed.  The file
   ///   type will be inferred from the extension.
@@ -65,8 +67,10 @@ class Parser final {
       const std::string& model_name = {});
 
   /// Parses the SDF or URDF XML data passed given in @p file_contents and adds
-  /// one model to @p plant.  It is an error to call this using an SDF with
-  /// more than one `<model>` element.
+  /// one or more models to @p plant. It is an error to call this using an SDF
+  /// with more than one `<model>` element. However, this function might create
+  /// additional model instances corresponding to nested models found in the
+  /// top level model.
   ///
   /// @param file_contents The XML data to be parsed.
   /// @param file_type The data format; must be either "sdf" or "urdf".

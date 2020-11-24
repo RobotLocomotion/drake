@@ -570,14 +570,14 @@ GTEST_TEST(SdfParser, IncludeTags) {
   plant.Finalize();
 
   // We should have loaded 3 more models.
-  EXPECT_EQ(plant.num_model_instances(), 5);
+  EXPECT_EQ(plant.num_model_instances(), 7);
   // The models should have added 8 more bodies.
   EXPECT_EQ(plant.num_bodies(), 9);
   // The models should have added 5 more joints.
   EXPECT_EQ(plant.num_joints(), 5);
 
   // There should be a model instance with the name "robot1".
-  EXPECT_TRUE(plant.HasModelInstanceNamed("robot1"));
+  ASSERT_TRUE(plant.HasModelInstanceNamed("robot1"));
   ModelInstanceIndex robot1_model = plant.GetModelInstanceByName("robot1");
   // There should be a body with the name "base_link".
   EXPECT_TRUE(plant.HasBodyNamed("base_link", robot1_model));
@@ -587,7 +587,7 @@ GTEST_TEST(SdfParser, IncludeTags) {
   EXPECT_TRUE(plant.HasJointNamed("slider", robot1_model));
 
   // There should be a model instance with the name "robot2".
-  EXPECT_TRUE(plant.HasModelInstanceNamed("robot2"));
+  ASSERT_TRUE(plant.HasModelInstanceNamed("robot2"));
   ModelInstanceIndex robot2_model = plant.GetModelInstanceByName("robot2");
 
   // There should be a body with the name "base_link".
@@ -599,20 +599,28 @@ GTEST_TEST(SdfParser, IncludeTags) {
 
   // There should be a model instance with the name "weld_robots".
   EXPECT_TRUE(plant.HasModelInstanceNamed("weld_models"));
-  ModelInstanceIndex weld_model = plant.GetModelInstanceByName("weld_models");
 
+  ASSERT_TRUE(plant.HasModelInstanceNamed("weld_models::robot1"));
+  ModelInstanceIndex weld_model_robot1_model =
+      plant.GetModelInstanceByName("weld_models::robot1");
+
+  ASSERT_TRUE(plant.HasModelInstanceNamed("weld_models::robot2"));
+  ModelInstanceIndex weld_model_robot2_model =
+      plant.GetModelInstanceByName("weld_models::robot2");
+  //
   // There should be all the bodies and joints contained in "simple_robot1"
-  // prefixed with the model's name of "robot1".
-  EXPECT_TRUE(plant.HasBodyNamed("robot1::base_link", weld_model));
-  EXPECT_TRUE(plant.HasBodyNamed("robot1::moving_link", weld_model));
-  EXPECT_TRUE(plant.HasJointNamed("robot1::slider", weld_model));
+  // which is inside "weld_models"
+  EXPECT_TRUE(plant.HasBodyNamed("base_link", weld_model_robot1_model));
+  EXPECT_TRUE(plant.HasBodyNamed("moving_link", weld_model_robot1_model));
+  EXPECT_TRUE(plant.HasJointNamed("slider", weld_model_robot1_model));
   // There should be all the bodies and joints contained in "simple_robot2"
-  // prefixed with the model's name of "robot2".
-  EXPECT_TRUE(plant.HasBodyNamed("robot2::base_link", weld_model));
-  EXPECT_TRUE(plant.HasBodyNamed("robot2::moving_link", weld_model));
-  EXPECT_TRUE(plant.HasJointNamed("robot2::slider", weld_model));
-  // There should be a joint named "weld_robots"
-  EXPECT_TRUE(plant.HasJointNamed("weld_robots", weld_model));
+  // which is inside "weld_models"
+  EXPECT_TRUE(plant.HasBodyNamed("base_link", weld_model_robot2_model));
+  EXPECT_TRUE(plant.HasBodyNamed("moving_link", weld_model_robot2_model));
+  EXPECT_TRUE(plant.HasJointNamed("slider", weld_model_robot2_model));
+  // There should be a joint named "weld_robots". By convention, the joint
+  // will have the same model instance as the child frame.
+  EXPECT_TRUE(plant.HasJointNamed("weld_robots", weld_model_robot2_model));
 }
 
 GTEST_TEST(SdfParser, TestOptionalSceneGraph) {
