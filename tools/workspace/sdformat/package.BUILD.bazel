@@ -96,6 +96,7 @@ SDFORMAT_MOST_PUBLIC_HDRS = [
     "include/sdf/Error.hh",
     "include/sdf/Exception.hh",
     "include/sdf/Filesystem.hh",
+    "include/sdf/ForceTorque.hh",
     "include/sdf/Frame.hh",
     "include/sdf/Geometry.hh",
     "include/sdf/Gui.hh",
@@ -186,6 +187,7 @@ cc_library(
         "src/Exception.cc",
         "src/ExceptionPrivate.hh",
         "src/Filesystem.cc",
+        "src/ForceTorque.cc",
         "src/Frame.cc",
         "src/FrameSemantics.cc",
         "src/FrameSemantics.hh",
@@ -212,7 +214,7 @@ cc_library(
         "src/SDFExtension.hh",
         "src/SDFImplPrivate.hh",
         "src/Scene.cc",
-        # "src/ScopedGraph.hh",
+        "src/ScopedGraph.hh",
         "src/SemanticPose.cc",
         "src/Sensor.cc",
         "src/Sphere.cc",
@@ -242,7 +244,7 @@ cc_library(
     deps = [
         ":urdfdom",
         "@ignition_math",
-        "@tinyxml",
+        "@tinyxml2",
     ],
 )
 
