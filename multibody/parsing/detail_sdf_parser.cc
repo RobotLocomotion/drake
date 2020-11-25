@@ -67,6 +67,29 @@ std::string JoinName(const std::string& scope_name,
   return scope_name + kSdfScopeDelimiter + local_name;
 }
 
+// The relative_name of an object in this function is the name of the object in
+// the scope of the model associated with the given model_instance. The relative
+// name can contain the scope delimiter to reference objects nested in child
+// models.
+// Given a relative_name to an object, this function returns the model
+// instance that is an immediate parent of the object and the local name of the
+// object. The local name of the object does not have any scoping delimiters.
+std::pair<ModelInstanceIndex, std::string> GetParentModelInstanceAndLocalName(
+    const std::string& relative_name, ModelInstanceIndex model_instance,
+    const MultibodyPlant<double>& plant) {
+  auto [parent_name, local_name] = SplitName(relative_name);
+  ModelInstanceIndex parent_model_instance = model_instance;
+
+  if (!parent_name.empty()) {
+    const std::string parent_model_absolute_name =
+      JoinName(plant.GetModelInstanceName(model_instance), parent_name);
+
+    parent_model_instance =
+      plant.GetModelInstanceByName(parent_model_absolute_name);
+  }
+
+  return {parent_model_instance, local_name};
+}
 // Given an ignition::math::Inertial object, extract a RotationalInertia object
 // for the rotational inertia of body B, about its center of mass Bcm and,
 // expressed in the inertial frame Bi (as specified in <inertial> in the SDF
@@ -189,16 +212,8 @@ const Body<double>& GetBodyByLinkSpecificationName(
   if (link_name.empty() || link_name == "world") {
     return plant.world_body();
   } else {
-    auto [parent_name, local_name] = SplitName(link_name);
-    ModelInstanceIndex parent_model_instance = model_instance;
-
-    if (!parent_name.empty()) {
-      const std::string parent_model_absolute_name =
-        JoinName(plant.GetModelInstanceName(model_instance), parent_name);
-
-      parent_model_instance =
-          plant.GetModelInstanceByName(parent_model_absolute_name);
-    }
+    const auto [parent_model_instance, local_name] =
+        GetParentModelInstanceAndLocalName(link_name, model_instance, plant);
 
     return plant.GetBodyByName(local_name, parent_model_instance);
   }
@@ -789,17 +804,9 @@ ModelInstanceIndex AddModelFromSpecification(
       model.CanonicalLinkAndRelativeName();
 
   DRAKE_DEMAND(canonical_link != nullptr);
-  ModelInstanceIndex parent_model_instance = model_instance;
-  auto [parent_name, local_name] = SplitName(canonical_link_name);
-  if (!parent_name.empty()) {
-    // Note that sdf::Model::Name() is the local name of the model, so we need
-    // to use model_name here.
-    const std::string parent_model_absolute_name =
-        JoinName(model_name, parent_name);
-
-    parent_model_instance =
-      plant->GetModelInstanceByName(parent_model_absolute_name);
-  }
+  const auto [parent_model_instance, local_name] =
+      GetParentModelInstanceAndLocalName(canonical_link_name, model_instance,
+                                         *plant);
   const Frame<double>& canonical_link_frame =
       plant->GetFrameByName(local_name, parent_model_instance);
   const RigidTransformd X_MLc =
