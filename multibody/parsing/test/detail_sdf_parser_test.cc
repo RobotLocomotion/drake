@@ -1432,6 +1432,43 @@ GTEST_TEST(SdfParser, ModelPlacementFrame) {
   EXPECT_TRUE(CompareMatrices(
       X_WH_expected.GetAsMatrix4(), X_WH.GetAsMatrix4(), kEps));
 }
+
+// Verify that poses can be given relative to deeply nested frames.
+GTEST_TEST(SdfParser, PoseRelativeToMultiLevelNestedFrame) {
+  const std::string model_string = R"""(
+<model name='a'>
+  <pose>0.1 0 0  0 0 0</pose>
+  <model name='b'>
+    <pose>0 0.2 0.0  0 0 0</pose>
+    <model name='c'>
+      <pose>0 0.0 0.3  0 0 0</pose>
+      <model name='d'>
+        <pose>0 0.0 0.0  0.0 0 0.6</pose>
+        <link name='e'>
+          <pose>0 0.0 0.0  0 0.5 0</pose>
+        </link>
+      </model>
+    </model>
+  </model>
+  <link name='f'>
+    <pose relative_to="b::c::d::e">0 0 0  0.4 0 0.0</pose>
+  </link>
+</model>)""";
+  PlantAndSceneGraph pair;
+  DRAKE_ASSERT_NO_THROW(pair = ParseTestString(model_string, "1.8"));
+  ASSERT_NE(nullptr, pair.plant);
+  pair.plant->Finalize();
+  EXPECT_GT(pair.plant->num_positions(), 0);
+  auto context = pair.plant->CreateDefaultContext();
+
+  const RigidTransformd X_WF_expected(RollPitchYawd(0.4, 0.5, 0.6),
+                                      Vector3d(0.1, 0.2, 0.3));
+
+  const RigidTransformd X_WF =
+      pair.plant->GetFrameByName("f").CalcPoseInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(
+      X_WF_expected.GetAsMatrix4(), X_WF.GetAsMatrix4(), kEps));
+}
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
