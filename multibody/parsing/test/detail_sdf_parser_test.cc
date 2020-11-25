@@ -1469,6 +1469,53 @@ GTEST_TEST(SdfParser, PoseRelativeToMultiLevelNestedFrame) {
   EXPECT_TRUE(CompareMatrices(
       X_WF_expected.GetAsMatrix4(), X_WF.GetAsMatrix4(), kEps));
 }
+
+// Verify that joint axis can be expressed in deeply nested frames.
+GTEST_TEST(SdfParser, AxisXyzExperssedInMultiLevelNestedFrame) {
+  const std::string model_string = fmt::format(R"""(
+<model name='a'>
+  <pose>0.1 0 0  0 0 0</pose>
+  <model name='b'>
+    <pose>0 0.2 0.0  0 0 0</pose>
+    <model name='c'>
+      <pose>0 0.0 0.3  0 0 0</pose>
+      <model name='d'>
+        <pose>0 0.0 0.0  0.0 0 {}</pose>
+        <link name='e'>
+          <pose>0 0.0 0.0  0 {} 0</pose>
+        </link>
+      </model>
+    </model>
+  </model>
+  <link name='f'/>
+  <link name='g'/>
+  <joint name="j" type="revolute">
+    <parent>f</parent>
+    <child>g</child>
+    <axis>
+      <xyz expressed_in="b::c::d::e">1 0 0</xyz>
+    </axis>
+  </joint>
+</model>)""", M_PI_2, M_PI_2);
+  PlantAndSceneGraph pair;
+  DRAKE_ASSERT_NO_THROW(pair = ParseTestString(model_string, "1.8"));
+  ASSERT_NE(nullptr, pair.plant);
+  pair.plant->Finalize();
+  EXPECT_GT(pair.plant->num_positions(), 0);
+  auto context = pair.plant->CreateDefaultContext();
+
+  const RollPitchYawd R_WE(0.0, M_PI_2, M_PI_2);
+
+  const Vector3d xyz_E(1, 0, 0);
+
+  const Vector3d xyz_W_expected = R_WE.ToRotationMatrix() * xyz_E;
+
+  DRAKE_EXPECT_NO_THROW(
+      pair.plant->GetJointByName<RevoluteJoint>("j"));
+  const RevoluteJoint<double>& joint_j =
+      pair.plant->GetJointByName<RevoluteJoint>("j");
+  EXPECT_TRUE(CompareMatrices(xyz_W_expected, joint_j.revolute_axis(), kEps));
+}
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
