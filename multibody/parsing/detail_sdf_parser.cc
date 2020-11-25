@@ -51,7 +51,7 @@ const char kSdfScopeDelimiter[] = "::";
 // parent model name and the given name as the local name.
 std::pair<std::string, std::string> SplitName(
     const std::string& absolute_name) {
-  auto pos = absolute_name.rfind(kSdfScopeDelimiter);
+  const auto pos = absolute_name.rfind(kSdfScopeDelimiter);
   if (pos != std::string::npos) {
     const std::string first = absolute_name.substr(0, pos);
     const std::string second =
@@ -642,8 +642,11 @@ const Frame<double>& AddFrameFromSpecification(
   if (frame_spec.AttachedTo().empty()) {
     parent_frame = &default_frame;
   } else {
+    const auto [parent_model_instance, local_name] =
+        GetParentModelInstanceAndLocalName(frame_spec.AttachedTo(),
+                                           model_instance, *plant);
     parent_frame = &plant->GetFrameByName(
-        frame_spec.AttachedTo(), model_instance);
+        local_name, parent_model_instance);
   }
   const Frame<double>& frame =
       plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(

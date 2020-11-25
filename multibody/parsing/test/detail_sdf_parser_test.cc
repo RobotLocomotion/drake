@@ -1516,6 +1516,49 @@ GTEST_TEST(SdfParser, AxisXyzExperssedInMultiLevelNestedFrame) {
       pair.plant->GetJointByName<RevoluteJoint>("j");
   EXPECT_TRUE(CompareMatrices(xyz_W_expected, joint_j.revolute_axis(), kEps));
 }
+
+// Verify frames can be attached to nested frames
+GTEST_TEST(SdfParser, FrameAttachedToMultiLevelNestedFrame) {
+  const std::string model_string = R"""(
+<model name='a'>
+  <pose>0.1 0 0  0 0 0</pose>
+  <model name='b'>
+    <pose>0 0.2 0.0  0 0 0</pose>
+    <model name='c'>
+      <pose>0 0.0 0.3  0 0 0</pose>
+      <model name='d'>
+        <pose>0 0.0 0.0  0.0 0 0.6</pose>
+        <link name='e'>
+          <pose>0 0.0 0.0  0 0.5 0</pose>
+        </link>
+      </model>
+    </model>
+  </model>
+  <frame name='f' attached_to='b::c::d::e'>
+    <pose>0 0 0  0.4 0 0.0</pose>
+  </frame>
+</model>)""";
+  PlantAndSceneGraph pair;
+  DRAKE_ASSERT_NO_THROW(pair = ParseTestString(model_string, "1.8"));
+  ASSERT_NE(nullptr, pair.plant);
+  pair.plant->Finalize();
+  EXPECT_GT(pair.plant->num_positions(), 0);
+  auto context = pair.plant->CreateDefaultContext();
+
+  const RigidTransformd X_WF_expected(RollPitchYawd(0.4, 0.5, 0.6),
+                                      Vector3d(0.1, 0.2, 0.3));
+
+  const auto &frame_F = pair.plant->GetFrameByName("f");
+  const RigidTransformd X_WF = frame_F.CalcPoseInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(
+      X_WF_expected.GetAsMatrix4(), X_WF.GetAsMatrix4(), kEps));
+
+  // Also check that the frame is attached to the right body
+  ModelInstanceIndex model_d_instance =
+      pair.plant->GetModelInstanceByName("a::b::c::d");
+  EXPECT_EQ(frame_F.body().node_index(),
+            pair.plant->GetBodyByName("e", model_d_instance).node_index());
+}
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
