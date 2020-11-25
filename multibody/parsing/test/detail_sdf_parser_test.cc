@@ -569,7 +569,7 @@ GTEST_TEST(SdfParser, IncludeTags) {
   AddModelsFromSdfFile(full_name, package_map, &plant);
   plant.Finalize();
 
-  // We should have loaded 3 more models.
+  // We should have loaded 5 more models.
   EXPECT_EQ(plant.num_model_instances(), 7);
   // The models should have added 8 more bodies.
   EXPECT_EQ(plant.num_bodies(), 9);
@@ -1204,6 +1204,140 @@ GTEST_TEST(SdfParser, ReflectedInertiaParametersParsing) {
 
     EXPECT_EQ(actuator.default_rotor_inertia(), 0.0);
     EXPECT_EQ(actuator.default_gear_ratio(), 300.0);
+  }
+}
+
+// Verifies that the SDF loader can add directly nested models to a multibody
+// plant
+GTEST_TEST(SdfParser, LoadDirectlyNestedModels) {
+  {
+    // Case 1: Load nested models where the top level model is contained by a
+    // world.
+    const std::string full_name = FindResourceOrThrow(
+        "drake/multibody/parsing/test/sdf_parser_test/"
+        "world_with_directly_nested_models.sdf");
+    MultibodyPlant<double> plant(0.0);
+
+    // We start with the world and default model instances.
+    ASSERT_EQ(plant.num_model_instances(), 2);
+    ASSERT_EQ(plant.num_bodies(), 1);
+    ASSERT_EQ(plant.num_joints(), 0);
+
+    PackageMap package_map;
+    package_map.PopulateUpstreamToDrake(full_name);
+    DRAKE_ASSERT_NO_THROW(AddModelsFromSdfFile(full_name, package_map, &plant));
+    plant.Finalize();
+
+    // We should have loaded 3 more models.
+    EXPECT_EQ(plant.num_model_instances(), 5);
+    // The models should have added 4 more bodies.
+    EXPECT_EQ(plant.num_bodies(), 5);
+    // The models should have added 3 more joints.
+    EXPECT_EQ(plant.num_joints(), 3);
+
+    // There should be a model instance with the name "parent_model".
+    ASSERT_TRUE(plant.HasModelInstanceNamed("parent_model"));
+
+    // There should be a model instance with the name "parent_model::robot1".
+    // This is the model "robot1" nested inside "parent_model"
+    ASSERT_TRUE(plant.HasModelInstanceNamed("parent_model::robot1"));
+    ModelInstanceIndex robot1_model =
+        plant.GetModelInstanceByName("parent_model::robot1");
+
+    // There should be a body with the name "base_link".
+    EXPECT_TRUE(plant.HasBodyNamed("base_link", robot1_model));
+    // There should be another body with the name "moving_link".
+    EXPECT_TRUE(plant.HasBodyNamed("moving_link", robot1_model));
+    // There should be joint with the name "slider".
+    EXPECT_TRUE(plant.HasJointNamed("slider", robot1_model));
+
+    // There should be a model instance with the name "parent_model::robot2".
+    // This is the model "robot2" nested inside "parent_model"
+    ASSERT_TRUE(plant.HasModelInstanceNamed("parent_model::robot2"));
+    ModelInstanceIndex robot2_model =
+        plant.GetModelInstanceByName("parent_model::robot2");
+
+    // There should be a body with the name "base_link".
+    EXPECT_TRUE(plant.HasBodyNamed("base_link", robot2_model));
+    // There should be another body with the name "moving_link".
+    EXPECT_TRUE(plant.HasBodyNamed("moving_link", robot2_model));
+    // There should be joint with the name "slider".
+    EXPECT_TRUE(plant.HasJointNamed("slider", robot2_model));
+
+    // There should be a joint named "weld_robots". By convention, the joint
+    // will have the same model instance as the child frame.
+    EXPECT_TRUE(plant.HasJointNamed("weld_robots", robot2_model));
+  }
+  {
+    // Case 2: Load nested models where the top level model is contained by a
+    // model.
+    const std::string full_name = FindResourceOrThrow(
+        "drake/multibody/parsing/test/sdf_parser_test/"
+        "model_with_directly_nested_models.sdf");
+    MultibodyPlant<double> plant(0.0);
+
+    // We start with the world and default model instances.
+    ASSERT_EQ(plant.num_model_instances(), 2);
+    ASSERT_EQ(plant.num_bodies(), 1);
+    ASSERT_EQ(plant.num_joints(), 0);
+
+    PackageMap package_map;
+    package_map.PopulateUpstreamToDrake(full_name);
+    DRAKE_ASSERT_NO_THROW(AddModelsFromSdfFile(full_name, package_map, &plant));
+    plant.Finalize();
+
+    // We should have loaded 4 more models.
+    EXPECT_EQ(plant.num_model_instances(), 6);
+    // The models should have added 4 more bodies.
+    EXPECT_EQ(plant.num_bodies(), 5);
+    // The models should have added 3 more joints.
+    EXPECT_EQ(plant.num_joints(), 3);
+
+    // There should be a model instance with the name "grand_parent_model" (top
+    // level model).
+    ASSERT_TRUE(plant.HasModelInstanceNamed("grand_parent_model"));
+
+    // There should be a model instance with the name
+    // "grand_parent_model::parent_model". This is the model "parent_model"
+    // nested inside "grand_parent_model"
+    ASSERT_TRUE(
+        plant.HasModelInstanceNamed("grand_parent_model::parent_model"));
+
+    // There should be a model instance with the name
+    // "grand_parent_model::parent_model::robot1". This is the model "robot1"
+    // nested inside "parent_model" which itself is nested inside
+    // grand_parent_model
+    ASSERT_TRUE(plant.HasModelInstanceNamed(
+        "grand_parent_model::parent_model::robot1"));
+    ModelInstanceIndex robot1_model = plant.GetModelInstanceByName(
+        "grand_parent_model::parent_model::robot1");
+
+    // There should be a body with the name "base_link".
+    EXPECT_TRUE(plant.HasBodyNamed("base_link", robot1_model));
+    // There should be another body with the name "moving_link".
+    EXPECT_TRUE(plant.HasBodyNamed("moving_link", robot1_model));
+    // There should be joint with the name "slider".
+    EXPECT_TRUE(plant.HasJointNamed("slider", robot1_model));
+
+    // There should be a model instance with the name
+    // "grand_parent_model::parent_model::robot2". This is the model "robot2"
+    // nested inside "parent_model" which itself is nested inside
+    // grand_parent_model
+    ASSERT_TRUE(plant.HasModelInstanceNamed(
+        "grand_parent_model::parent_model::robot2"));
+    ModelInstanceIndex robot2_model = plant.GetModelInstanceByName(
+        "grand_parent_model::parent_model::robot2");
+
+    // There should be a body with the name "base_link".
+    EXPECT_TRUE(plant.HasBodyNamed("base_link", robot2_model));
+    // There should be another body with the name "moving_link".
+    EXPECT_TRUE(plant.HasBodyNamed("moving_link", robot2_model));
+    // There should be joint with the name "slider".
+    EXPECT_TRUE(plant.HasJointNamed("slider", robot2_model));
+
+    // There should be a joint named "weld_robots". By convention, the joint
+    // will have the same model instance as the child frame.
+    EXPECT_TRUE(plant.HasJointNamed("weld_robots", robot2_model));
   }
 }
 

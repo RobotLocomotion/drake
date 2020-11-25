@@ -61,10 +61,12 @@ std::pair<std::string, std::string> SplitName(
   return {"", absolute_name};
 }
 
-std::string JoinName(const std::string& absolute_name,
+// Join an scope name prefix with a local name using the scope delimeter
+std::string JoinName(const std::string& scope_name,
                      const std::string& local_name) {
-  return absolute_name + kSdfScopeDelimiter + local_name;
+  return scope_name + kSdfScopeDelimiter + local_name;
 }
+
 // Given an ignition::math::Inertial object, extract a RotationalInertia object
 // for the rotational inertia of body B, about its center of mass Bcm and,
 // expressed in the inertial frame Bi (as specified in <inertial> in the SDF
@@ -777,8 +779,10 @@ ModelInstanceIndex AddModelFromSpecification(
   ModelInstanceIndex parent_model_instance = model_instance;
   auto [parent_name, local_name] = SplitName(canonical_link_name);
   if (!parent_name.empty()) {
+    // Note that sdf::Model::Name() is the local name of the model, so we need
+    // to use model_name here.
     const std::string parent_model_absolute_name =
-        JoinName(model.Name(), parent_name);
+        JoinName(model_name, parent_name);
 
     parent_model_instance =
       plant->GetModelInstanceByName(parent_model_absolute_name);
