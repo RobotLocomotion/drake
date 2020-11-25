@@ -259,10 +259,11 @@ struct PlantAndSceneGraph {
   std::unique_ptr<SceneGraph<double>> scene_graph;
 };
 
-PlantAndSceneGraph ParseTestString(const std::string& inner) {
+PlantAndSceneGraph ParseTestString(const std::string& inner,
+                                   const std::string& sdf_version = "1.6") {
   const std::string filename = temp_directory() + "/test_string.sdf";
   std::ofstream file(filename);
-  file << "<sdf version='1.6'>" << inner << "\n</sdf>\n";
+  file << "<sdf version='" << sdf_version << "'>" << inner << "\n</sdf>\n";
   file.close();
   PlantAndSceneGraph pair;
   pair.plant = std::make_unique<MultibodyPlant<double>>(0.0);
@@ -955,11 +956,6 @@ GTEST_TEST(SdfParser, TestUnsupportedFrames) {
 
   FailWithUnsupportedRelativeTo(R"(
 <model name='bad'>
-  <pose relative_to='invalid_usage'/>
-  <link name='dont_crash_plz'/>  <!-- Need at least one frame -->
-</model>)");
-  FailWithUnsupportedRelativeTo(R"(
-<model name='bad'>
   <frame name='my_frame'/>
   <link name='a'>
     <inertial><pose relative_to='my_frame'/></inertial>
@@ -1341,6 +1337,101 @@ GTEST_TEST(SdfParser, LoadDirectlyNestedModels) {
   }
 }
 
+GTEST_TEST(SdfParser, ModelPlacementFrame) {
+  const std::string model_string = R"""(
+<model name='T'> <!-- Table -->
+  <pose>0 10 0  0 0 0</pose>
+  <link name='S'> <!-- table top -->
+    <pose>0 0 1  0 0 0</pose>
+  </link>
+
+  <model name='M' placement_frame='B'> <!-- Mug -->
+    <pose relative_to='S'/>
+    <link name='H'> <!-- Handle -->
+      <pose>0.1 0 0  0 0 0</pose>
+    </link>
+    <link name='B'> <!-- Base -->
+      <pose>0 0 -0.1  0 0 0</pose>
+    </link>
+  </model>
+
+</model>)""";
+  PlantAndSceneGraph pair;
+  DRAKE_ASSERT_NO_THROW(pair = ParseTestString(model_string, "1.8"));
+  ASSERT_NE(nullptr, pair.plant);
+  pair.plant->Finalize();
+  EXPECT_GT(pair.plant->num_positions(), 0);
+  auto context = pair.plant->CreateDefaultContext();
+
+  ASSERT_TRUE(pair.plant->HasModelInstanceNamed("T::M"));
+  ModelInstanceIndex model_m = pair.plant->GetModelInstanceByName("T::M");
+
+  ASSERT_TRUE(pair.plant->HasFrameNamed("M"));
+  const Frame<double>& frame_M = pair.plant->GetFrameByName("M");
+  ASSERT_TRUE(pair.plant->HasFrameNamed("__model__", model_m));
+  // frame M is equivalent to M::__model__
+  EXPECT_TRUE(CompareMatrices(
+      pair.plant->GetFrameByName("__model__", model_m)
+          .CalcPoseInWorld(*context)
+          .GetAsMatrix4(),
+      pair.plant->GetFrameByName("M").CalcPoseInWorld(*context).GetAsMatrix4(),
+      kEps));
+
+  ASSERT_TRUE(pair.plant->HasFrameNamed("S"));
+  const Frame<double>& frame_S = pair.plant->GetFrameByName("S");
+
+  ASSERT_TRUE(pair.plant->HasFrameNamed("B", model_m));
+  const Frame<double>& frame_B = pair.plant->GetFrameByName("B", model_m);
+
+  ASSERT_TRUE(pair.plant->HasFrameNamed("H", model_m));
+  const Frame<double>& frame_H = pair.plant->GetFrameByName("H", model_m);
+
+  // X_SM = X_SB * X_MB^-1.
+  const RigidTransformd X_SM_expected(RollPitchYawd(0.0, 0.0, 0.0),
+                                      Vector3d(0.0, 0.0, 0.1));
+
+  const RigidTransformd X_SB_expected = RigidTransformd::Identity();
+  // X_SH = X_SB * X_HB^-1.
+  //      = X_SB * (X_MH^-1 * X_MB)^-1.
+  const RigidTransformd X_SH_expected(RollPitchYawd(0.0, 0.0, 0.0),
+                                      Vector3d(0.1, 0.0, 0.1));
+
+  const RigidTransformd X_SM = frame_M.CalcPose(*context, frame_S);
+  const RigidTransformd X_SH = frame_H.CalcPose(*context, frame_S);
+  const RigidTransformd X_SB = frame_B.CalcPose(*context, frame_S);
+
+  EXPECT_TRUE(CompareMatrices(
+      X_SM_expected.GetAsMatrix4(), X_SM.GetAsMatrix4(), kEps));
+  EXPECT_TRUE(CompareMatrices(
+      X_SB_expected.GetAsMatrix4(), X_SB.GetAsMatrix4(), kEps));
+  EXPECT_TRUE(CompareMatrices(
+      X_SH_expected.GetAsMatrix4(), X_SH.GetAsMatrix4(), kEps));
+
+  // X_WM = X_WT * X_TM
+  // X_TM = X_TS * X_MS^-1
+  // X_MS = X_MB * X_SB^-1
+  // The model frame M is 0.1m in the +z axis from frame B, but we know from the
+  // use of placement_frame that frame B and frame S are coincident. So X_WM is
+  // 0.1m in the +z axis from frame S.
+  const RigidTransformd X_WM_expected(RollPitchYawd(0.0, 0.0, 0.0),
+                                      Vector3d(0.0, 10.0, 1.1));
+
+  const RigidTransformd X_WB_expected(RollPitchYawd(0.0, 0.0, 0.0),
+                                      Vector3d(0.0, 10.0, 1.0));
+
+  const RigidTransformd X_WH_expected(RollPitchYawd(0.0, 0.0, 0.0),
+                                      Vector3d(0.1, 10.0, 1.1));
+
+  const RigidTransformd X_WM = frame_M.CalcPoseInWorld(*context);
+  const RigidTransformd X_WH = frame_H.CalcPoseInWorld(*context);
+  const RigidTransformd X_WB = frame_B.CalcPoseInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(
+      X_WM_expected.GetAsMatrix4(), X_WM.GetAsMatrix4(), kEps));
+  EXPECT_TRUE(CompareMatrices(
+      X_WB_expected.GetAsMatrix4(), X_WB.GetAsMatrix4(), kEps));
+  EXPECT_TRUE(CompareMatrices(
+      X_WH_expected.GetAsMatrix4(), X_WH.GetAsMatrix4(), kEps));
+}
 }  // namespace
 }  // namespace internal
 }  // namespace multibody

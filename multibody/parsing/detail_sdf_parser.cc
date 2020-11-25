@@ -743,6 +743,7 @@ bool AreWelded(
 ModelInstanceIndex AddModelFromSpecification(
     const sdf::Model& model,
     const std::string& model_name,
+    const RigidTransformd& X_WPm,
     MultibodyPlant<double>* plant,
     const PackageMap& package_map,
     const std::string& root_dir) {
@@ -752,8 +753,15 @@ ModelInstanceIndex AddModelFromSpecification(
   // TODO(eric.cousineau): Ensure this generalizes to cases when the parent
   // frame is not the world. At present, we assume the parent frame is the
   // world.
-  ThrowIfPoseFrameSpecified(model.Element());
-  const RigidTransformd X_WM = ToRigidTransform(model.RawPose());
+  // if (model.Element()->GetParent()->GetName() == "world") {
+  //   ThrowIfPoseFrameSpecified(model.Element());
+  // }
+  // "P" is the parent frame. If the model is in a child of //world or //sdf,
+  // this world be the world frame. Otherwise, this would be the parent model
+  // frame.
+  const RigidTransformd X_PmM = ResolveRigidTransform(model.SemanticPose());
+  const RigidTransformd X_WM = X_WPm * X_PmM;
+
 
   // Add nested models at root-level of <model>.
   // Do this before the resolving canonical link because the link might be in a
@@ -762,9 +770,14 @@ ModelInstanceIndex AddModelFromSpecification(
   for (uint64_t model_index = 0; model_index < model.ModelCount();
        ++model_index) {
     const sdf::Model& nested_model = *model.ModelByIndex(model_index);
-    AddModelFromSpecification(
-        nested_model, JoinName(model_name, nested_model.Name()), plant,
+    const ModelInstanceIndex nested_model_instance = AddModelFromSpecification(
+        nested_model, JoinName(model_name, nested_model.Name()), X_WM, plant,
         package_map, root_dir);
+
+    plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
+        nested_model.Name(),
+        plant->GetFrameByName("__model__", nested_model_instance),
+        RigidTransformd::Identity(), model_instance));
   }
 
   drake::log()->trace("sdf_parser: Add links");
@@ -895,7 +908,7 @@ ModelInstanceIndex AddModelFromSdf(
       model_name_in.empty() ? model.Name() : model_name_in;
 
   return AddModelFromSpecification(
-      model, model_name, plant, package_map, root_dir);
+      model, model_name, {}, plant, package_map, root_dir);
 }
 
 std::vector<ModelInstanceIndex> AddModelsFromSdf(
@@ -941,7 +954,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
       // Get the model.
       const sdf::Model& model = *root.ModelByIndex(i);
       model_instances.push_back(AddModelFromSpecification(
-            model, model.Name(), plant, package_map, root_dir));
+            model, model.Name(), {}, plant, package_map, root_dir));
     }
   } else {
     // Load the world and all the models in the world.
@@ -962,7 +975,14 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
       // Get the model.
       const sdf::Model& model = *world.ModelByIndex(model_index);
       model_instances.push_back(AddModelFromSpecification(
-            model, model.Name(), plant, package_map, root_dir));
+            model, model.Name(), {}, plant, package_map, root_dir));
+
+      // const ModelInstanceIndex model_instance = AddModelFromSpecification(
+      //     model, model.Name(), plant, package_map, root_dir);
+      // model_instances.push_back(model_instance);
+      // plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
+      //     model.Name(), plant->GetFrameByName("__model__", model_instance),
+      //     RigidTransformd::Identity()));
     }
   }
 
