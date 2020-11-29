@@ -218,6 +218,14 @@ class TestPlant(unittest.TestCase):
             self.assertEqual(body1_friction.static_friction(), 1.1)
             self.assertEqual(body1_friction.dynamic_friction(), 0.8)
 
+        # Confirm that passing the diagram context into the plant (a common
+        # user error) throws a RuntimeError instead of crashing.
+        plant.Finalize()
+        diagram = builder.Build()
+        context = diagram.CreateDefaultContext()
+        with self.assertRaises(RuntimeError):
+            plant.EvalBodyPoseInWorld(context, body)
+
     @numpy_compare.check_all_types
     def test_multibody_plant_api_via_parsing(self, T):
         MultibodyPlant = MultibodyPlant_[T]
