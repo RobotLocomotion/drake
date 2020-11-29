@@ -44,11 +44,20 @@ else:
     from pygame.locals import *
 
 
-def initialize_joystick():
+def initialize_joystick(joystick_id):
+    assert isinstance(joystick_id, (int, type(None)))
     pygame.init()
     try:
         pygame.joystick.init()
-        joystick = pygame.joystick.Joystick(0)
+        if joystick_id is None:
+            count = pygame.joystick.get_count()
+            if count != 1:
+                raise RuntimeError(
+                    f"joystick_id=None, but there are {count} joysticks "
+                    f"plugged in. Please specify --joystick_id, or ensure "
+                    f"that exactly 1 joystick is plugged in")
+            joystick_id = 0
+        joystick = pygame.joystick.Joystick(joystick_id)
         joystick.init()
         return joystick
     except pygame.error as e:
@@ -103,6 +112,8 @@ class TeleopDualShock4Manager:
         self._joystick = joystick
         self._axis_data = list()
         self._button_data = list()
+        self._name = joystick.get_name()
+        print(f"Using Joystick: {self._name}")
 
         for i in range(self._joystick.get_numbuttons()):
             self._button_data.append(False)
@@ -120,10 +131,18 @@ class TeleopDualShock4Manager:
                 self._button_data[event.button] = False
 
         events = dict()
-        events[DS4Axis.LEFTJOY_UP_DOWN] = self._axis_data[0]
-        events[DS4Axis.LEFTJOY_LEFT_RIGHT] = self._axis_data[1]
-        events[DS4Axis.RIGHTJOY_LEFT_RIGHT] = self._axis_data[3]
-        events[DS4Axis.RIGHTJOY_UP_DOWN] = self._axis_data[4]
+        # For example mappings, see:
+        # https://www.pygame.org/docs/ref/joystick.html#controller-mappings
+        if self._name == "Logitech Logitech Dual Action":
+            events[DS4Axis.LEFTJOY_LEFT_RIGHT] = self._axis_data[0]
+            events[DS4Axis.LEFTJOY_UP_DOWN] = self._axis_data[1]
+            events[DS4Axis.RIGHTJOY_LEFT_RIGHT] = self._axis_data[2]
+            events[DS4Axis.RIGHTJOY_UP_DOWN] = self._axis_data[3]
+        else:
+            events[DS4Axis.LEFTJOY_UP_DOWN] = self._axis_data[0]
+            events[DS4Axis.LEFTJOY_LEFT_RIGHT] = self._axis_data[1]
+            events[DS4Axis.RIGHTJOY_LEFT_RIGHT] = self._axis_data[3]
+            events[DS4Axis.RIGHTJOY_UP_DOWN] = self._axis_data[4]
         events[DS4Buttons.X_BUTTON] = self._button_data[0]
         events[DS4Buttons.O_BUTTON] = self._button_data[1]
         events[DS4Buttons.SQUARE_BUTTON] = self._button_data[3]
@@ -260,6 +279,10 @@ def main():
         help="Use the ManipulationStationHardwareInterface instead of an "
              "in-process simulation.")
     parser.add_argument(
+        "--joystick_id", type=int, default=None,
+        help="Joystick ID to use (0..N-1). If not specified, then only one "
+             "joystick must be plugged in, and that joystick will be used.")
+    parser.add_argument(
         "--test", action='store_true',
         help="Disable opening the gui window for testing.")
     parser.add_argument(
@@ -346,7 +369,8 @@ def main():
     builder.Connect(differential_ik.GetOutputPort("joint_position_desired"),
                     station.GetInputPort("iiwa_position"))
 
-    teleop = builder.AddSystem(DualShock4Teleop(initialize_joystick()))
+    joystick = initialize_joystick(args.joystick_id)
+    teleop = builder.AddSystem(DualShock4Teleop(joystick))
     filter_ = builder.AddSystem(
         FirstOrderLowPassFilter(time_constant=args.time_step, size=6))
 
