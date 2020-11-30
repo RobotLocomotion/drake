@@ -61,6 +61,7 @@ class FreeRotatingBodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// Computes the spatial velocity `V_WB` of the body in the world frame.
   /// @note The returned spatial velocity's translational part is v_WBo_W,
   /// the velocity of Bo (body B's origin) in world W, expressed in W.
+  /// In general, Bo differs from Bcm (body B's center of mass).
   SpatialVelocity<T> CalcSpatialVelocityInWorldFrame(
       const systems::Context<T>& context) const;
 

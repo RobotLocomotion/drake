@@ -1531,6 +1531,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   // with this node as measured and expressed in the world frame W.
   // @note The returned spatial velocity's translational part is v_WBo_W,
   // the velocity of Bo (body B's origin) in world W, expressed in W.
+  // In general, Bo differs from Bcm (body B's center of mass).
   const SpatialVelocity<T>& get_V_WB(
       const VelocityKinematicsCache<T>& vc) const {
     return vc.get_V_WB(topology_.index);
@@ -1539,6 +1540,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   /// Mutable version of get_V_WB().
   /// @note The returned spatial velocity's translational part is v_WBo_W,
   /// the velocity of Bo (body B's origin) in world W, expressed in W.
+  /// In general, Bo differs from Bcm (body B's center of mass)..
   SpatialVelocity<T>& get_mutable_V_WB(VelocityKinematicsCache<T>* vc) const {
     return vc->get_mutable_V_WB(topology_.index);
   }

@@ -301,6 +301,7 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
   /// as a function of the state of the model stored in `context`.
   /// @note The returned spatial velocity's translational part is v_WBo_W,
   /// the velocity of Bo (body B's origin) in world W, expressed in W.
+  /// In general, Bo differs from Bcm (body B's center of mass).
   const SpatialVelocity<T>& EvalSpatialVelocityInWorld(
       const systems::Context<T>& context) const {
     return this->get_parent_tree().EvalBodySpatialVelocityInWorld(

@@ -254,6 +254,7 @@ class RigidBody : public Body<T> {
   /// @retval V_WB_W rigid body B's spatial velocity in world W, expressed in W.
   /// @note The returned spatial velocity's translational part is v_WBo_W,
   /// the velocity of Bo (body B's origin) in world W, expressed in W.
+  /// In general, Bo differs from Bcm (body B's center of mass).
   // TODO(amcastro-tri) When cache entries are in the context, replace this
   // method by Body<T>::get_spatial_velocity_in_world(const Context<T>&).
   //----------------------------------------------------------------------------

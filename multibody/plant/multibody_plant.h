@@ -2240,6 +2240,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   The spatial velocity of body frame B in the world frame W.
   /// @note The returned spatial velocity's translational part is v_WBo_W,
   /// the velocity of Bo (body B's origin) in world W, expressed in W.
+  /// In general, Bo differs from Bcm (body B's center of mass).
   /// @throws std::logic_error if Finalize() was not called on `this` model or
   ///   if `body_B` does not belong to this model.
   const SpatialVelocity<T>& EvalBodySpatialVelocityInWorld(
