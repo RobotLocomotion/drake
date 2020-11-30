@@ -75,7 +75,7 @@ say Install tools for CPU speed control.
 sudo apt install linux-tools-$(uname -r)
 
 say Build code.
-bazel build "$TARGET"
+bazel build --copt -mavx2 --copt -mfma --copt -mtune=haswell --copt -g "$TARGET"
 
 say Wait for lingering activity to subside.
 sync
@@ -89,7 +89,7 @@ set_cpu_governor performance
 set_no_turbo 1
 
 say Run the experiment.
-bazel run "$TARGET" -- "$@"
+bazel run --copt -mavx2 --copt -mfma --copt -mtune=haswell --copt -g "$TARGET" -- "$@"
 
 say Save data.
 "$HERE"/copy_results_to "$DESTINATION"
