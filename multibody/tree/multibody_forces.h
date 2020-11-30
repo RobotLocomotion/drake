@@ -35,7 +35,11 @@ class MultibodyForces {
   explicit MultibodyForces(const internal::MultibodyTree<T>& model);
 
   /// Number of bodies and number of generalized velocities overload. This
-  /// constructor is useful for constructing the MultibodyForces structure
+  /// constructor is us
+  ///
+  ///
+  ///
+  /// --eful for constructing the MultibodyForces structure
   /// before a MultibodyPlant has been consructed.
   MultibodyForces(int nb, int nv);
 

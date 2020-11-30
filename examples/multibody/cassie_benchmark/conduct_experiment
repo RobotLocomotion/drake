@@ -13,4 +13,8 @@ shift
 cd "$HERE"/../../..
 
 ./tools/performance/benchmark_tool conduct_experiment \
+   -b=--copt=-mavx2 \
+   -b=--copt=-mfma \
+   -b=--copt=-mtune=haswell \
+   -b=--copt=-g \
     $TARGET "$OUTPUT_DIR" -- "$@"
