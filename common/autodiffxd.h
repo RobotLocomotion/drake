@@ -23,6 +23,7 @@
 #include <vector>
 
 #include <Eigen/Dense>
+#include <immintrin.h>
 
 #include "drake/common/never_destroyed.h"
 
@@ -40,16 +41,18 @@ class Pool {
  public:
   Pool(int dim, int preload) : dim_(dim), max_size_(preload) {
     for (int i=0; i < preload; ++i) {
-      pool_.push_back(new double[dim_]);
+      pool_.push_back(new_aligned(dim_));
       pool_.back()[0] = kMagic;
     }
   }
 
-  ~Pool() {
+  ~Pool() { FreePoolMemory(); }
+
+  void FreePoolMemory() {
     while (!pool_.empty()) {
       double* p = pool_.back();
       DRAKE_ASSERT(p[0] == kMagic);
-      delete[] p;
+      delete_aligned(p);
       pool_.pop_back();
     }
   }
@@ -61,7 +64,7 @@ class Pool {
     if (size == 0) return nullptr;
     double* p;
     if (pool_.empty()) {
-      p = new double[dim_];
+      p = new_aligned(dim_);
       p[0] = kMagic;
     } else {
       p = pool_.back();
@@ -87,6 +90,12 @@ class Pool {
   int max_size() const { return max_size_; }
 
  private:
+  static double* new_aligned(int sz) {
+    return new(std::align_val_t(32)) double[sz];
+  }
+  static void delete_aligned(double* p) {
+    operator delete[](p, std::align_val_t(32));
+  }
   bool PoolContains(double* p) const {
     return std::find(pool_.begin(), pool_.end(), p) != pool_.end();
   }
@@ -104,7 +113,7 @@ class PoolVectorXd {
  public:
   PoolVectorXd() {}
 
-  explicit PoolVectorXd(int size) : data_(my_new(size)), size_(size) {
+  explicit PoolVectorXd(size_t size) : data_(my_new(size)), size_(size) {
     setZero();
   }
 
@@ -117,10 +126,10 @@ class PoolVectorXd {
       : PoolVectorXd(source.data(), source.size()) {
   }
 
-  // Copy constructor from raw data.
-  PoolVectorXd(const double* data, int64_t dsize) :
-    data_(my_new(dsize)), size_(dsize) {
-    std::copy(data, data + dsize, data_);
+  // Copy constructor from unaligned raw data.
+  PoolVectorXd(const double* inu, ptrdiff_t inu_size) :
+    data_(my_new(inu_size)), size_(inu_size) {
+    SetFromData(inu, inu_size);
   }
 
   // Copy constructor from VectorXd.
@@ -132,21 +141,125 @@ class PoolVectorXd {
     return SetFromData(source.data(), source.size());
   }
 
-  // Copy assignment from raw data.
-  PoolVectorXd& SetFromData(const double* data, int64_t dsize) {
-    DRAKE_DEMAND(data == nullptr || data != data_ || dsize == size_);
-    resize(dsize);  // Does nothing if already the right size.
-    std::copy(data, data + dsize, data_);
+  // Copy assignment from unaligned raw data.
+  PoolVectorXd& SetFromData4(const double* inu, ptrdiff_t inu_size) {
+    DRAKE_ASSERT(inu == nullptr || inu != data_ || inu_size == size_);
+    resize(inu_size);  // Does nothing if already the right size.
+    double* data = data_;
+    while (data != this_end4()) {
+      const __m256d in = _mm256_loadu_pd(inu);  // Next 4 input values.
+      _mm256_store_pd(data, in);  // Aligned.
+      data += 4; inu += 4;
+    }
+    while (data != this_end()) {
+      *data++ = *inu++;
+    }
     return *this;
   }
 
-  // Assignment from scaled raw data.
-  PoolVectorXd& SetFromDataScaled(const double* data, int64_t dsize,
+  // Copy assignment from unaligned raw data.
+  /*__attribute__((always_inline))*/ PoolVectorXd&
+  SetFromData(const double* inu, ptrdiff_t inu_size) {
+    DRAKE_ASSERT(inu == nullptr || inu != data_ || inu_size == size_);
+    resize(inu_size);  // Does nothing if already the right size.
+    double* out = data_;
+    const double* end32 = this_end32();
+    while (out != end32) {
+      __m256d* d = reinterpret_cast<__m256d*>(out);
+
+      *(d + 0) = _mm256_loadu_pd(inu + 0);  // Next 4 input values.
+      *(d + 1) = _mm256_loadu_pd(inu + 4);
+      *(d + 2) = _mm256_loadu_pd(inu + 8);
+      *(d + 3) = _mm256_loadu_pd(inu + 12);
+      *(d + 4) = _mm256_loadu_pd(inu + 16);
+      *(d + 5) = _mm256_loadu_pd(inu + 20);
+      *(d + 6) = _mm256_loadu_pd(inu + 24);
+      *(d + 7) = _mm256_loadu_pd(inu + 28);
+
+      out += 32; inu += 32;
+    }
+
+    // Handle the next (inu_size % 32) / 8 entries (max 3 iterations).
+    const double* end8 = this_end8();
+    while (out != end8) {
+      __m256d* d = reinterpret_cast<__m256d*>(out);
+      *(d + 0) = _mm256_loadu_pd(inu + 0);
+      *(d + 1) = _mm256_loadu_pd(inu + 4);
+      out += 8; inu += 8;
+    }
+
+    // Finish off the last inu_size % 8 entries (max 7 iterations).
+    const double* end = this_end();
+    while (out != end) {
+      *out++ = *inu++;
+    }
+
+    return *this;
+  }
+
+  // Copy assignment from unaligned raw data.
+  __attribute__((always_inline)) PoolVectorXd&
+  SetFromData16(const double* inu, ptrdiff_t inu_size) {
+    DRAKE_ASSERT(inu == nullptr || inu != data_ || inu_size == size_);
+    resize(inu_size);  // Does nothing if already the right size.
+    double* out = data_;
+    const double* end16 = this_end16();
+    while (out != end16) {
+      __m256d* d = reinterpret_cast<__m256d*>(out);
+
+      *(d + 0) = _mm256_loadu_pd(inu + 0);  // Next 4 input values.
+      *(d + 1) = _mm256_loadu_pd(inu + 4);
+      *(d + 2) = _mm256_loadu_pd(inu + 8);
+      *(d + 3) = _mm256_loadu_pd(inu + 12);
+
+      out += 16; inu += 16;
+    }
+
+    // Finish off the last inu_size % 16 entries (max 15 iterations).
+    const double* end = this_end();
+    while (out != end) {
+      *out++ = *inu++;
+    }
+
+    return *this;
+  }
+
+  // Copy assignment from unaligned raw data.
+  PoolVectorXd& SetFromDataUsingCopy(const double* inu, ptrdiff_t inu_size) {
+    DRAKE_ASSERT(inu == nullptr || inu != data_ || inu_size == size_);
+    resize(inu_size);  // Does nothing if already the right size.
+    std::copy(inu, inu + inu_size, data_);
+    return *this;
+  }
+
+  // Assignment from scaled unaligned raw data.
+  // *this = scale * inu
+  PoolVectorXd& SetFromDataScaled(const double* inu, ptrdiff_t inu_size,
                                   double scale) {
-    DRAKE_DEMAND(data == nullptr || data != data_);
-    resize(dsize);  // Does nothing if already the right size.
-    for (int64_t i = 0; i < dsize; ++i) {
-      data_[i] = scale * data[i];
+    DRAKE_ASSERT(inu == nullptr || inu != data_);
+    resize(inu_size);  // Does nothing if already the right size.
+    const __m256d scale4 = _mm256_broadcast_sd(&scale);
+    double* data = data_;  // Aligned.
+    const double* end16 = this_end16();
+    while (data != end16) {
+      __m256d* d = reinterpret_cast<__m256d*>(data);
+
+      __m256d in = _mm256_loadu_pd(inu);  // Next 4 input values.
+      *d = _mm256_mul_pd(scale4, in);
+
+      in = _mm256_loadu_pd(inu + 4);
+      *(d + 1) = _mm256_mul_pd(scale4, in);
+
+      in = _mm256_loadu_pd(inu + 8);
+      *(d + 2)  = _mm256_mul_pd(scale4, in);
+
+      in = _mm256_loadu_pd(inu + 12);
+      *(d + 3)  = _mm256_mul_pd(scale4, in);
+
+      data += 16; inu += 16;
+    }
+    while (data != this_end()) {
+      *data++ = scale * *inu++;
     }
     return *this;
   }
@@ -186,31 +299,31 @@ class PoolVectorXd {
     return SetFromDataScaled(source.data(), source.size(), scale);
   }
 
-  int64_t size() const { return size_; }
+  ptrdiff_t size() const { return size_; }
   double* data() { return data_; }
   const double* data() const { return data_; }
 
-  double& coeffRef(int64_t i) {
-    DRAKE_ASSERT(0 <= i && i < size());
+  double& coeffRef(ptrdiff_t i) {
+    DRAKE_ASSERT(i < size());
     return data_[i];
   }
 
-  const double& coeff(int64_t i) const {
-    DRAKE_ASSERT(0 <= i && i < size());
+  const double& coeff(ptrdiff_t i) const {
+    DRAKE_ASSERT(i < size());
     return data_[i];
   }
 
-  const double& operator[](int64_t i) const { return coeff(i); }
-  const double& operator()(int64_t i) const { return coeff(i); }
+  const double& operator[](ptrdiff_t i) const { return coeff(i); }
+  const double& operator()(ptrdiff_t i) const { return coeff(i); }
 
-  double& operator[](int64_t i) { return coeffRef(i); }
-  double& operator()(int64_t i) { return coeffRef(i); }
+  double& operator[](ptrdiff_t i) { return coeffRef(i); }
+  double& operator()(ptrdiff_t i) { return coeffRef(i); }
 
   void setZero() {
     memset(data_, 0, size() * sizeof(double));
   }
 
-  void resize(int64_t dsize) {
+  void resize(ptrdiff_t dsize) {
     if (size_ != dsize) {
       my_delete(data_);
       data_ = my_new(dsize);
@@ -218,16 +331,47 @@ class PoolVectorXd {
     }
   }
 
-  void resize(int64_t dsize, int ncols) {
+  void resize(ptrdiff_t dsize, int ncols) {
     DRAKE_DEMAND(ncols == 1);
     resize(dsize);
   }
 
-  PoolVectorXd& operator*=(const double& d) {
-    for (int64_t i = 0; i < size_; ++i)
-      data_[i] *= d;
+  PoolVectorXd& ScaleInPlace4(const double& scale) {
+    const __m256d scale4 = _mm256_broadcast_sd(&scale);
+
+    double* data = data_;  // Aligned data.
+    while (data != this_end4()) {
+      const __m256d in = _mm256_load_pd(data);  // Next 4 values.
+      const __m256d result = _mm256_mul_pd(scale4, in);
+      _mm256_store_pd(data, result);
+      data += 4;
+    }
+    while (data != this_end()) {
+      *data++ *= scale;
+    }
     return *this;
   }
+
+  PoolVectorXd& ScaleInPlace(const double& scale) {
+    const __m256d scale4 = _mm256_broadcast_sd(&scale);
+
+    double* data = data_;  // Aligned data.
+    const double* end16 = this_end16();
+    while (data != end16) {
+      __m256d* d = reinterpret_cast<__m256d*>(data);
+      *d = _mm256_mul_pd(scale4, *d);
+      *(d + 1) = _mm256_mul_pd(scale4, *(d + 1));
+      *(d + 2) = _mm256_mul_pd(scale4, *(d + 2));
+      *(d + 3) = _mm256_mul_pd(scale4, *(d + 3));
+      data += 16;
+    }
+    while (data != this_end()) {
+      *data++ *= scale;
+    }
+    return *this;
+  }
+
+  PoolVectorXd& operator*=(const double& scale) { return ScaleInPlace(scale); }
 
   inline friend PoolVectorXd operator*(PoolVectorXd pvx, double d) {
     return pvx *= d;
@@ -239,17 +383,52 @@ class PoolVectorXd {
 
   PoolVectorXd& operator/=(const double& d) {
     const double ood = 1. / d;
-    for (int64_t i = 0; i < size_; ++i)
-      data_[i] *= ood;
+    return *this *= ood;
+  }
+
+  PoolVectorXd& PlusEqDataScaled4(const double* in, ptrdiff_t in_size,
+                                 double scale) {
+    DRAKE_ASSERT(in_size == size());
+    const __m256d scale4 = _mm256_broadcast_sd(&scale);
+    double* data = data_;  // Aligned data.
+    while (data != this_end4()) {
+      const __m256d inn = _mm256_loadu_pd(in);  // May be unaligned.
+      __m256d outt = _mm256_load_pd(data);  // Aligned.
+      outt = _mm256_fmadd_pd(scale4, inn, outt);  // outt = s*in + outt
+      _mm256_store_pd(data, outt);  // *data = outt
+      data += 4; in += 4;
+    }
+    while (data != this_end()) {
+      *data++ += scale * *in++;
+    }
     return *this;
   }
 
-  PoolVectorXd& PlusEqDataScaled(const double* data, int64_t dsize,
+  PoolVectorXd& PlusEqDataScaled(const double* in, ptrdiff_t in_size,
                                  double scale) {
-    DRAKE_DEMAND(dsize == size());
-    // TODO(sherm1) Optimize.
-    for (int64_t i = 0; i < dsize; ++i) {
-      data_[i] += scale * data[i];
+    DRAKE_ASSERT(in_size == size());
+    const __m256d scale4 = _mm256_broadcast_sd(&scale);
+    double* data = data_;  // Aligned data.
+    const double* end16 = this_end16();
+    while (data != end16) {
+      __m256d* d = reinterpret_cast<__m256d*>(data);
+
+      __m256d inn = _mm256_loadu_pd(in);  // May be unaligned.
+      *d = _mm256_fmadd_pd(scale4, inn, *d);  // d = s*in + d
+
+      inn = _mm256_loadu_pd(in + 4);
+      *(d + 1) = _mm256_fmadd_pd(scale4, inn, *(d + 1));
+
+      inn = _mm256_loadu_pd(in + 8);
+      *(d + 2) = _mm256_fmadd_pd(scale4, inn, *(d + 2));
+
+      inn = _mm256_loadu_pd(in + 12);
+      *(d + 3) = _mm256_fmadd_pd(scale4, inn, *(d + 3));
+
+      data += 16; in += 16;
+    }
+    while (data != this_end()) {
+      *data++ += scale * *in++;
     }
     return *this;
   }
@@ -268,10 +447,44 @@ class PoolVectorXd {
     return PlusEqDataScaled(rhs.data(), rhs.size(), scale);
   }
 
-  PoolVectorXd& PlusEqData(const double* data, int64_t dsize) {
-    DRAKE_DEMAND(dsize == size());
-    for (int64_t i=0; i < dsize; ++i) {
-      data_[i] += data[i];
+  PoolVectorXd& PlusEqData4(const double* in, ptrdiff_t in_size) {
+    DRAKE_ASSERT(in_size == size());
+    double* data = data_;  // Aligned data.
+    while (data != this_end4()) {
+      const __m256d inn = _mm256_loadu_pd(in);  // May be unaligned.
+      __m256d outt = _mm256_load_pd(data);  // Aligned.
+      outt = _mm256_add_pd(outt, inn);  // outt = outt + inn
+      _mm256_store_pd(data, outt);  // *data = outt
+      data += 4; in += 4;
+    }
+    while (data != this_end()) {
+      *data++ += *in++;
+    }
+    return *this;
+  }
+
+  PoolVectorXd& PlusEqData(const double* in, ptrdiff_t in_size) {
+    DRAKE_ASSERT(in_size == size());
+    double* data = data_;  // Aligned data.
+    while (data != this_end16()) {
+      __m256d* d = reinterpret_cast<__m256d*>(data);
+
+      __m256d inn = _mm256_loadu_pd(in);  // May be unaligned.
+      *d = _mm256_add_pd(*d, inn);  // d = d + inn
+
+      inn = _mm256_loadu_pd(in + 4);
+      *(d + 1) = _mm256_add_pd(*(d + 1), inn);
+
+      inn = _mm256_loadu_pd(in + 8);
+      *(d + 2) = _mm256_add_pd(*(d + 2), inn);
+
+      inn = _mm256_loadu_pd(in + 12);
+      *(d + 3) = _mm256_add_pd(*(d + 3), inn);
+
+      data += 16; in += 16;
+    }
+    while (data != this_end()) {
+      *data++ += *in++;
     }
     return *this;
   }
@@ -294,10 +507,44 @@ class PoolVectorXd {
     return *this;
   }
 
-  PoolVectorXd& MinusEqData(const double* data, int64_t dsize) {
-    DRAKE_DEMAND(dsize == size());
-    for (int64_t i=0; i < dsize; ++i) {
-      data_[i] -= data[i];
+  PoolVectorXd& MinusEqData4(const double* in, ptrdiff_t in_size) {
+    DRAKE_ASSERT(in_size == size());
+    double* data = data_;  // Aligned data.
+    while (data != this_end4()) {
+      const __m256d inn = _mm256_loadu_pd(in);  // May be unaligned.
+      __m256d outt = _mm256_load_pd(data);  // Aligned.
+      outt = _mm256_sub_pd(outt, inn);  // outt = outt - inn
+      _mm256_store_pd(data, outt);  // *data = outt
+      data += 4; in += 4;
+    }
+    while (data != this_end()) {
+      *data++ -= *in++;
+    }
+    return *this;
+  }
+
+  PoolVectorXd& MinusEqData(const double* in, ptrdiff_t in_size) {
+    DRAKE_ASSERT(in_size == size());
+    double* data = data_;  // Aligned data.
+    while (data != this_end16()) {
+      __m256d* d = reinterpret_cast<__m256d*>(data);
+
+      __m256d inn = _mm256_loadu_pd(in);  // May be unaligned.
+      *d = _mm256_sub_pd(*d, inn);  // d = d + inn
+
+      inn = _mm256_loadu_pd(in + 4);
+      *(d + 1) = _mm256_sub_pd(*(d + 1), inn);
+
+      inn = _mm256_loadu_pd(in + 8);
+      *(d + 2) = _mm256_sub_pd(*(d + 2), inn);
+
+      inn = _mm256_loadu_pd(in + 12);
+      *(d + 3) = _mm256_sub_pd(*(d + 3), inn);
+
+      data += 16; in += 16;
+    }
+    while (data != this_end()) {
+      *data++ += *in++;
     }
     return *this;
   }
@@ -352,17 +599,17 @@ class PoolVectorXd {
     return pool().max_size();
   }
 
-  static Pool& pool() {
+  static Pool& static_pool() {
     static drake::never_destroyed<Pool> the_pool(128, 10);
     return the_pool.access();
   }
 
  private:
-  static double* my_new(int64_t sz) {
+  static double* my_new(size_t sz) {
 #ifdef DRAKE_AUTODIFF_USE_POOL
     return pool().alloc(sz);
 #else
-    return new double[sz];
+    return new(std::align_val_t(32)) double[sz];
 #endif
   }
 
@@ -370,14 +617,24 @@ class PoolVectorXd {
 #ifdef DRAKE_AUTODIFF_USE_POOL
     pool().free(data);
 #else
-    delete[] data;
+    operator delete[](data, std::align_val_t(32));
 #endif
   }
+
+  static Pool& pool() { return pool_; }
+
+  const double* this_end() const { return data_ + size_; }
+  const double* this_end4()  const { return data_ + (size_ & ~0b11); }
+  const double* this_end8()  const { return data_ + (size_ & ~0b111); }
+  const double* this_end16() const { return data_ + (size_ & ~0b1111); }
+  const double* this_end32() const { return data_ + (size_ & ~0b11111); }
 
   // This layout has to match Eigen's VectorXd in memory. (Enforced at compile
   // time via a static_assert above.)
   double* data_{};
-  int64_t size_{0};
+  ptrdiff_t size_{0};
+
+  static Pool& pool_;
 };
 
 }  // namespace internal

@@ -49,7 +49,7 @@ def say(*args):
     print(f"\n=== {' '.join(args)} ===\n")
 
 
-def run(*args, echo=False):
+def run(*args, echo=True):
     """Run a subprocess, checking for failure. Optionally echo the command."""
     if echo:
         print('Running: ', ' '.join([shlex.quote(x) for x in args]))
@@ -132,7 +132,7 @@ def conduct_experiment(args):
     sudo('apt', 'install', f'linux-tools-{kernel_name}', 'linux-tools-common')
 
     say("Build code.")
-    run('bazel', 'build', args.target)
+    run('bazel', 'build', *args.extra_build_args, args.target)
 
     sleep_seconds = 10
     say(f"Wait {sleep_seconds} seconds for lingering activity to subside.")
@@ -140,7 +140,8 @@ def conduct_experiment(args):
 
     with CpuSpeedSettings().scope(governor="performance", no_turbo="1"):
         say("Run the experiment.")
-        run('bazel', 'run', args.target, '--', *args.extra_args)
+        run('bazel', 'run',
+            *args.extra_build_args, args.target, '--', *args.extra_args)
 
     say(f"Save data to {args.output_dir}/.")
     copy_results(args)
@@ -180,6 +181,9 @@ def main():
         description='run controlled experiment for TARGET,'
         ' copying benchmark data to OUTPUT-DIR')
     add_common_args(parser_conduct_experiment)
+    parser_conduct_experiment.add_argument('-b',
+       '--extra-build-args', action='append',
+        help='extra arguments passed to bazel build and run')
     parser_conduct_experiment.add_argument(
         'extra_args', nargs='*',
         help='extra arguments passed to the underlying executable')
