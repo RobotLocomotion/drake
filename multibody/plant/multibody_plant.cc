@@ -574,6 +574,7 @@ void MultibodyPlant<T>::SetFreeBodyPoseInWorldFrame(
     systems::Context<T>* context,
     const Body<T>& body, const math::RigidTransform<T>& X_WB) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  this->ValidateContext(context);
   internal_tree().SetFreeBodyPoseOrThrow(body, X_WB, context);
 }
 
@@ -583,6 +584,7 @@ void MultibodyPlant<T>::SetFreeBodyPoseInAnchoredFrame(
     const Frame<T>& frame_F, const Body<T>& body,
     const math::RigidTransform<T>& X_FB) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  this->ValidateContext(context);
 
   if (!internal_tree().get_topology().IsBodyAnchored(frame_F.body().index())) {
     throw std::logic_error(
@@ -603,6 +605,7 @@ void MultibodyPlant<T>::CalcSpatialAccelerationsFromVdot(
     const systems::Context<T>& context,
     const VectorX<T>& known_vdot,
     std::vector<SpatialAcceleration<T>>* A_WB_array) const {
+  this->ValidateContext(context);
   DRAKE_THROW_UNLESS(A_WB_array != nullptr);
   DRAKE_THROW_UNLESS(static_cast<int>(A_WB_array->size()) == num_bodies());
   internal_tree().CalcSpatialAccelerationsFromVdot(
@@ -626,6 +629,7 @@ template<typename T>
 void MultibodyPlant<T>::CalcForceElementsContribution(
       const systems::Context<T>& context,
       MultibodyForces<T>* forces) const {
+  this->ValidateContext(context);
   DRAKE_THROW_UNLESS(forces != nullptr);
   DRAKE_THROW_UNLESS(forces->CheckHasRightSizeForModel(internal_tree()));
   internal_tree().CalcForceElementsContribution(
@@ -900,6 +904,7 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
     const std::vector<internal::DiscreteContactPair<T>>& contact_pairs,
     MatrixX<T>* Jn_ptr, MatrixX<T>* Jt_ptr,
     std::vector<RotationMatrix<T>>* R_WC_set) const {
+  this->ValidateContext(context);
   DRAKE_DEMAND(Jn_ptr != nullptr);
   DRAKE_DEMAND(Jt_ptr != nullptr);
 
@@ -1099,6 +1104,7 @@ template <typename T>
 std::vector<PenetrationAsPointPair<T>>
 MultibodyPlant<T>::CalcPointPairPenetrations(
     const systems::Context<T>& context) const {
+  this->ValidateContext(context);
   if (num_collision_geometries() > 0) {
     const auto& query_object = EvalGeometryQueryInput(context);
     return query_object.ComputePointPairPenetration();
@@ -1130,6 +1136,7 @@ std::vector<CoulombFriction<double>>
 MultibodyPlant<T>::CalcCombinedFrictionCoefficients(
     const drake::systems::Context<T>& context,
     const std::vector<internal::DiscreteContactPair<T>>& contact_pairs) const {
+  this->ValidateContext(context);
   std::vector<CoulombFriction<double>> combined_frictions;
   combined_frictions.reserve(contact_pairs.size());
 
@@ -1159,6 +1166,7 @@ template<typename T>
 void MultibodyPlant<T>::CopyContactResultsOutput(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
+  this->ValidateContext(context);
   DRAKE_DEMAND(contact_results != nullptr);
   *contact_results = EvalContactResults(context);
 }
@@ -1167,6 +1175,7 @@ template <typename T>
 void MultibodyPlant<T>::CalcContactResultsContinuous(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
+  this->ValidateContext(context);
   DRAKE_DEMAND(contact_results != nullptr);
   contact_results->Clear();
   if (num_collision_geometries() == 0) return;
@@ -1210,6 +1219,7 @@ template <typename T>
 void MultibodyPlant<T>::CalcContactResultsContinuousHydroelastic(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
+  this->ValidateContext(context);
   const internal::HydroelasticContactInfoAndBodySpatialForces<T>&
       contact_info_and_spatial_body_forces =
           EvalHydroelasticContactForces(context);
@@ -1240,6 +1250,7 @@ template <typename T>
 void MultibodyPlant<T>::CalcContactResultsContinuousPointPair(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
+  this->ValidateContext(context);
 
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
       EvalPointPairPenetrations(context);
@@ -1353,6 +1364,7 @@ template <typename T>
 void MultibodyPlant<T>::CalcContactResultsDiscrete(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
+  this->ValidateContext(context);
   DRAKE_DEMAND(contact_results != nullptr);
   if (num_collision_geometries() == 0) return;
 
@@ -1408,6 +1420,7 @@ template <typename T>
 void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
     const systems::Context<T>& context,
     std::vector<SpatialForce<T>>* F_BBo_W_array) const {
+  this->ValidateContext(context);
   DRAKE_DEMAND(F_BBo_W_array != nullptr);
   DRAKE_DEMAND(static_cast<int>(F_BBo_W_array->size()) == num_bodies());
   if (num_collision_geometries() == 0) return;
@@ -1476,6 +1489,7 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
     const Context<T>& context,
     internal::HydroelasticContactInfoAndBodySpatialForces<T>*
         contact_info_and_body_forces) const {
+  this->ValidateContext(context);
   DRAKE_DEMAND(contact_info_and_body_forces != nullptr);
 
   std::vector<SpatialForce<T>>& F_BBo_W_array =
@@ -1579,6 +1593,7 @@ template <typename T>
 void MultibodyPlant<T>::AddInForcesFromInputPorts(
     const drake::systems::Context<T>& context,
     MultibodyForces<T>* forces) const {
+  this->ValidateContext(context);
   AddAppliedExternalGeneralizedForces(context, forces);
   AddAppliedExternalSpatialForces(context, forces);
   AddJointActuationForces(context, forces);
@@ -1587,6 +1602,7 @@ void MultibodyPlant<T>::AddInForcesFromInputPorts(
 template<typename T>
 void MultibodyPlant<T>::AddAppliedExternalGeneralizedForces(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  this->ValidateContext(context);
   // If there are applied generalized forces, add them in.
   const InputPort<T>& applied_generalized_force_input =
       this->get_input_port(applied_generalized_force_input_port_);
@@ -1601,6 +1617,7 @@ void MultibodyPlant<T>::AddAppliedExternalSpatialForces(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
   // Get the mutable applied external spatial forces vector
   // (a.k.a., body force vector).
+  this->ValidateContext(context);
   std::vector<SpatialForce<T>>& F_BBo_W_array = forces->mutable_body_forces();
 
   // Evaluate the input port; if it's not connected, return now.
@@ -1631,6 +1648,7 @@ void MultibodyPlant<T>::AddAppliedExternalSpatialForces(
 template<typename T>
 void MultibodyPlant<T>::AddJointActuationForces(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  this->ValidateContext(context);
   DRAKE_DEMAND(forces != nullptr);
   if (num_actuators() > 0) {
     const VectorX<T> u = AssembleActuationInput(context);
@@ -1651,6 +1669,7 @@ void MultibodyPlant<T>::AddJointActuationForces(
 template<typename T>
 void MultibodyPlant<T>::AddJointLimitsPenaltyForces(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  this->ValidateContext(context);
   DRAKE_THROW_UNLESS(is_discrete());
   DRAKE_DEMAND(forces != nullptr);
 
@@ -1698,6 +1717,7 @@ void MultibodyPlant<T>::AddJointLimitsPenaltyForces(
 template<typename T>
 VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
     const systems::Context<T>& context) const {
+  this->ValidateContext(context);
   // Assemble the vector from the model instance input ports.
   VectorX<T> actuation_input(num_actuated_dofs());
   int u_offset = 0;
@@ -1782,6 +1802,7 @@ template <typename T>
 void MultibodyPlant<T>::CalcContactSurfaces(
     const drake::systems::Context<T>& context,
     std::vector<ContactSurface<T>>* contact_surfaces) const {
+  this->ValidateContext(context);
   DRAKE_DEMAND(contact_surfaces);
 
   const auto& query_object = EvalGeometryQueryInput(context);
@@ -1801,6 +1822,7 @@ template <typename T>
 void MultibodyPlant<T>::CalcHydroelasticWithFallback(
     const drake::systems::Context<T>& context,
     internal::HydroelasticFallbackCacheData<T>* data) const {
+  this->ValidateContext(context);
   DRAKE_DEMAND(data != nullptr);
 
   if (num_collision_geometries() > 0) {
@@ -1828,6 +1850,8 @@ template <typename T>
 std::vector<internal::DiscreteContactPair<T>>
 MultibodyPlant<T>::CalcDiscreteContactPairs(
     const systems::Context<T>& context) const {
+  this->ValidateContext(context);
+
   if (num_collision_geometries() == 0) return {};
 
   // Only numeric values are supported. We detect that T is a Drake numeric type
@@ -1898,6 +1922,7 @@ void MultibodyPlant<T>::CalcTamsiResults(
     const drake::systems::Context<T>& context0,
     contact_solvers::internal::ContactSolverResults<T>* results) const {
   // Assert this method was called on a context storing discrete state.
+  this->ValidateContext(context0);
   DRAKE_ASSERT(context0.num_discrete_state_groups() == 1);
   DRAKE_ASSERT(context0.num_continuous_states() == 0);
 
@@ -2140,6 +2165,7 @@ void MultibodyPlant<T>::CallContactSolver(
 template <typename T>
 void MultibodyPlant<T>::CalcGeneralizedContactForcesContinuous(
     const Context<T>& context, VectorX<T>* tau_contact) const {
+  this->ValidateContext(context);
   DRAKE_DEMAND(tau_contact);
   DRAKE_DEMAND(tau_contact->size() == num_velocities());
   DRAKE_DEMAND(!is_discrete());
@@ -2180,6 +2206,7 @@ template <typename T>
 void MultibodyPlant<T>::CalcSpatialContactForcesContinuous(
       const drake::systems::Context<T>& context,
       std::vector<SpatialForce<T>>* F_BBo_W_array) const {
+  this->ValidateContext(context);
   DRAKE_DEMAND(F_BBo_W_array);
   DRAKE_DEMAND(static_cast<int>(F_BBo_W_array->size()) == num_bodies());
   DRAKE_DEMAND(!is_discrete());
@@ -2229,6 +2256,7 @@ void MultibodyPlant<T>::CalcNonContactForces(
     const drake::systems::Context<T>& context,
     bool discrete,
     MultibodyForces<T>* forces) const {
+  this->ValidateContext(context);
   DRAKE_DEMAND(forces != nullptr);
   DRAKE_DEMAND(forces->CheckHasRightSizeForModel(*this));
 
@@ -2245,6 +2273,8 @@ void MultibodyPlant<T>::CalcNonContactForces(
 template <typename T>
 void MultibodyPlant<T>::AddInForcesContinuous(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  this->ValidateContext(context);
+
   // Forces from MultibodyTree elements are handled in MultibodyTreeSystem;
   // we need only handle MultibodyPlant-specific forces here.
   AddInForcesFromInputPorts(context, forces);
@@ -2262,6 +2292,7 @@ template <typename T>
 void MultibodyPlant<T>::DoCalcForwardDynamicsDiscrete(
     const drake::systems::Context<T>& context0,
     AccelerationKinematicsCache<T>* ac) const {
+  this->ValidateContext(context0);
   DRAKE_DEMAND(ac != nullptr);
   DRAKE_DEMAND(is_discrete());
 
@@ -2289,6 +2320,8 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
     const drake::systems::Context<T>& context0,
     const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>&,
     drake::systems::DiscreteValues<T>* updates) const {
+  this->ValidateContext(context0);
+
   // Get the system state as raw Eigen vectors
   // (solution at the previous time step).
   auto x0 = context0.get_discrete_state(0).get_value();
@@ -2735,6 +2768,7 @@ template <typename T>
 void MultibodyPlant<T>::CopyMultibodyStateOut(
     const Context<T>& context, BasicVector<T>* state_vector) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  this->ValidateContext(context);
   state_vector->SetFromVector(GetPositionsAndVelocities(context));
 }
 
@@ -2743,6 +2777,7 @@ void MultibodyPlant<T>::CopyMultibodyStateOut(
     ModelInstanceIndex model_instance,
     const Context<T>& context, BasicVector<T>* state_vector) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  this->ValidateContext(context);
   state_vector->SetFromVector(
       GetPositionsAndVelocities(context, model_instance));
 }
@@ -2883,6 +2918,7 @@ void MultibodyPlant<T>::CalcBodyPosesOutput(
     const Context<T>& context,
     std::vector<math::RigidTransform<T>>* X_WB_all) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  this->ValidateContext(context);
   X_WB_all->resize(num_bodies());
   for (BodyIndex body_index(0); body_index < this->num_bodies(); ++body_index) {
     const Body<T>& body = get_body(body_index);
@@ -2895,6 +2931,7 @@ void MultibodyPlant<T>::CalcBodySpatialVelocitiesOutput(
     const Context<T>& context,
     std::vector<SpatialVelocity<T>>* V_WB_all) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  this->ValidateContext(context);
   V_WB_all->resize(num_bodies());
   for (BodyIndex body_index(0); body_index < this->num_bodies(); ++body_index) {
     const Body<T>& body = get_body(body_index);
@@ -2907,6 +2944,7 @@ void MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput(
     const Context<T>& context,
     std::vector<SpatialAcceleration<T>>* A_WB_all) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  this->ValidateContext(context);
   A_WB_all->resize(num_bodies());
   const AccelerationKinematicsCache<T>& ac = this->EvalForwardDynamics(context);
   for (BodyIndex body_index(0); body_index < this->num_bodies(); ++body_index) {
@@ -2921,7 +2959,9 @@ MultibodyPlant<T>::EvalBodySpatialAccelerationInWorld(
     const Context<T>& context,
     const Body<T>& body_B) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  this->ValidateContext(context);
   DRAKE_DEMAND(this == &body_B.GetParentPlant());
+  this->ValidateContext(context);
   const AccelerationKinematicsCache<T>& ac = this->EvalForwardDynamics(context);
   return ac.get_A_WB(body_B.node_index());
 }
@@ -2930,6 +2970,7 @@ template <typename T>
 void MultibodyPlant<T>::CalcFramePoseOutput(
     const Context<T>& context, FramePoseVector<T>* poses) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  this->ValidateContext(context);
   const internal::PositionKinematicsCache<T>& pc =
       EvalPositionKinematics(context);
 
@@ -2955,6 +2996,7 @@ template <typename T>
 void MultibodyPlant<T>::CalcReactionForces(
     const systems::Context<T>& context,
     std::vector<SpatialForce<T>>* F_CJc_Jc_array) const {
+  this->ValidateContext(context);
   DRAKE_DEMAND(F_CJc_Jc_array != nullptr);
   DRAKE_DEMAND(static_cast<int>(F_CJc_Jc_array->size()) == num_joints());
 
