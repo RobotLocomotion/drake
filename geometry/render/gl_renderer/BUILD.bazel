@@ -162,6 +162,7 @@ drake_cc_library_gl_ubuntu_only(
     srcs = ["shader_program.cc"],
     hdrs = ["shader_program.h"],
     deps = [
+        ":opengl_geometry",
         ":shader_program_data",
         "//common:essential",
         "//geometry:geometry_roles",
@@ -197,6 +198,7 @@ drake_cc_library_gl_ubuntu_only(
     hdrs = ["texture_library.h"],
     deps = [
         "//common:essential",
+        "//common:filesystem",
         "//geometry/render/gl_renderer:opengl_context",
         "@vtk//:vtkIOImage",
     ],

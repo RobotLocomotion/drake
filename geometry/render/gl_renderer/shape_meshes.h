@@ -12,6 +12,11 @@ namespace geometry {
 namespace render {
 namespace internal {
 
+/*
+Texutre Coordinates:
+
+*/
+
 /* The data representing a mesh. The triangle mesh is defined by `indices`. Row
  t represents a triangle by the triplet of vertex indices: tᵥ₀, tᵥ₁, tᵥ₂. The
  indices map into the rows of `positions`, `normals`, and `uvs`. I.e., for
@@ -27,6 +32,10 @@ struct MeshData {
   Eigen::Matrix<GLfloat, Eigen::Dynamic, 3, Eigen::RowMajor> normals;
   Eigen::Matrix<GLfloat, Eigen::Dynamic, 2, Eigen::RowMajor> uvs;
   Eigen::Matrix<GLuint, Eigen::Dynamic, 3, Eigen::RowMajor> indices;
+
+  /** If we have meaningful texture coordinates. Otherwise, `uvs` will contain
+  all zeros.  */
+  bool has_tex_coord{true};
 };
 
 /* Loads a mesh's vertices and indices (faces) from an OBJ description given
@@ -36,9 +45,8 @@ struct MeshData {
  was not designed with those quantities in mind.
 
  @throws std::runtime_error if a) there are no normals, b) faces fail to
-                               reference normals, c) there are no texture
-                               coordinates, or d) faces fail to reference the
-                               texture coordinates.  */
+                               reference normals, or c) faces fail to reference
+                               the texture coordinates if they are present.  */
 MeshData LoadMeshFromObj(std::istream* input_stream,
                          const std::string& filename = "from_string");
 
