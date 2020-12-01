@@ -6,7 +6,6 @@ load("@drake//tools/workspace/bazel_skylib:repository.bzl", "bazel_skylib_reposi
 load("@drake//tools/workspace/blas:repository.bzl", "blas_repository")
 load("@drake//tools/workspace/boost:repository.bzl", "boost_repository")
 load("@drake//tools/workspace/buildifier:repository.bzl", "buildifier_repository")  # noqa
-load("@drake//tools/workspace/bullet:repository.bzl", "bullet_repository")
 load("@drake//tools/workspace/cc:repository.bzl", "cc_repository")
 load("@drake//tools/workspace/ccd:repository.bzl", "ccd_repository")
 load("@drake//tools/workspace/cds:repository.bzl", "cds_repository")
@@ -21,7 +20,6 @@ load("@drake//tools/workspace/eigen:repository.bzl", "eigen_repository")
 load("@drake//tools/workspace/expat:repository.bzl", "expat_repository")
 load("@drake//tools/workspace/fcl:repository.bzl", "fcl_repository")
 load("@drake//tools/workspace/fmt:repository.bzl", "fmt_repository")
-load("@drake//tools/workspace/freetype2:repository.bzl", "freetype2_repository")  # noqa
 load("@drake//tools/workspace/gflags:repository.bzl", "gflags_repository")
 load("@drake//tools/workspace/gfortran:repository.bzl", "gfortran_repository")
 load("@drake//tools/workspace/ghc_filesystem:repository.bzl", "ghc_filesystem_repository")  # noqa
@@ -104,8 +102,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         boost_repository(name = "boost")
     if "buildifier" not in excludes:
         buildifier_repository(name = "buildifier", mirrors = mirrors)
-    if "bullet" not in excludes:
-        bullet_repository(name = "bullet", mirrors = mirrors)
     if "cc" not in excludes:
         cc_repository(name = "cc")
     if "ccd" not in excludes:
@@ -136,8 +132,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         fcl_repository(name = "fcl", mirrors = mirrors)
     if "fmt" not in excludes:
         fmt_repository(name = "fmt", mirrors = mirrors)
-    if "freetype2" not in excludes:
-        freetype2_repository(name = "freetype2")
     if "gflags" not in excludes:
         gflags_repository(name = "gflags")
     if "gfortran" not in excludes:

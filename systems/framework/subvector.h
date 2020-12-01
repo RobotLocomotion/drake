@@ -42,14 +42,6 @@ class Subvector final : public VectorBase<T> {
     }
   }
 
-  /// Constructs an empty subvector.
-  /// @param vector The vector to slice.  Must not be nullptr. Must remain
-  ///               valid for the lifetime of this object.
-  DRAKE_DEPRECATED("2020-12-01",
-      "The slice specification now must always be provided, even if zero.")
-  explicit Subvector(VectorBase<T>* vector)
-      : Subvector(vector, 0, 0) {}
-
   int size() const final { return num_elements_; }
 
  private:

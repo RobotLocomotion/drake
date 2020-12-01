@@ -197,10 +197,9 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
 
   DRAKE_DEMAND(!std::isnan(last_known_simtime_));
   if (last_known_simtime_ != context_->get_time()) {
-    static const logging::Warn log_once(
+    throw std::logic_error(
         "Simulation time has changed since last Initialize() or AdvanceTo()."
-        " Resetting simulation time requires a call to Initialize()."
-        " This warning will become a hard error on or after 2020-12-01.");
+        " Resetting simulation time requires a call to Initialize().");
   }
 
   DRAKE_THROW_UNLESS(boundary_time >= context_->get_time());
