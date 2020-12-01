@@ -1,0 +1,255 @@
+From f3679332877e5c7189e0b62bd87df163c7f1cf94 Mon Sep 17 00:00:00 2001
+From: Jamie Snape <jamie.snape@kitware.com>
+Date: Wed, 15 Apr 2020 12:00:00 -0400
+Subject: [PATCH] Add support for Python 3.8.x
+
+---
+ Utilities/PythonInterpreter/vtkPythonStdStreamCaptureHelper.h |  4 ++--
+ Wrapping/PythonCore/PyVTKMethodDescriptor.cxx                 |  6 +++---
+ Wrapping/PythonCore/PyVTKNamespace.cxx                        |  6 +++---
+ Wrapping/PythonCore/PyVTKReference.cxx                        | 26 +++++++++++++-------------
+ Wrapping/PythonCore/PyVTKTemplate.cxx                         |  6 +++---
+ Wrapping/Tools/vtkWrapPythonClass.c                           |  4 ++--
+ Wrapping/Tools/vtkWrapPythonEnum.c                            |  4 ++--
+ Wrapping/Tools/vtkWrapPythonType.c                            |  4 ++--
+ 8 files changed, 30 insertions(+), 30 deletions(-)
+
+diff --git a/Utilities/PythonInterpreter/vtkPythonStdStreamCaptureHelper.h b/Utilities/PythonInterpreter/vtkPythonStdStreamCaptureHelper.h
+index b1c12c83de..1b68978784 100644
+--- a/Utilities/PythonInterpreter/vtkPythonStdStreamCaptureHelper.h
++++ b/Utilities/PythonInterpreter/vtkPythonStdStreamCaptureHelper.h
+@@ -93,10 +93,10 @@ static PyTypeObject vtkPythonStdStreamCaptureHelperType = {
+   sizeof(vtkPythonStdStreamCaptureHelper),  // tp_basicsize
+   0,                                        // tp_itemsize
+   0,                                        // tp_dealloc
+-  0,                                        // tp_print
++  0,                                        // tp_vectorcall_offset
+   0,                                        // tp_getattr
+   0,                                        // tp_setattr
+-  0,                                        // tp_compare
++  0,                                        // tp_as_async
+   0,                                        // tp_repr
+   0,                                        // tp_as_number
+   0,                                        // tp_as_sequence
+diff --git a/Wrapping/PythonCore/PyVTKMethodDescriptor.cxx b/Wrapping/PythonCore/PyVTKMethodDescriptor.cxx
+index 2b0d443537..73899a5d20 100644
+--- a/Wrapping/PythonCore/PyVTKMethodDescriptor.cxx
++++ b/Wrapping/PythonCore/PyVTKMethodDescriptor.cxx
+@@ -186,17 +186,17 @@ PyTypeObject PyVTKMethodDescriptor_Type = {
+   sizeof(PyMethodDescrObject),           // tp_basicsize
+   0,                                     // tp_itemsize
+   PyVTKMethodDescriptor_Delete,          // tp_dealloc
+-  nullptr,                               // tp_print
++  0,                                     // tp_vectorcall_offset
+   nullptr,                               // tp_getattr
+   nullptr,                               // tp_setattr
+-  nullptr,                               // tp_compare
++  nullptr,                               // tp_as_async
+   PyVTKMethodDescriptor_Repr,            // tp_repr
+   nullptr,                               // tp_as_number
+   nullptr,                               // tp_as_sequence
+   nullptr,                               // tp_as_mapping
+   nullptr,                               // tp_hash
+   PyVTKMethodDescriptor_Call,            // tp_call
+-  nullptr,                               // tp_string
++  nullptr,                               // tp_str
+   PyObject_GenericGetAttr,               // tp_getattro
+   nullptr,                               // tp_setattro
+   nullptr,                               // tp_as_buffer
+diff --git a/Wrapping/PythonCore/PyVTKNamespace.cxx b/Wrapping/PythonCore/PyVTKNamespace.cxx
+index 71ee2a3516..f9f26e0670 100644
+--- a/Wrapping/PythonCore/PyVTKNamespace.cxx
++++ b/Wrapping/PythonCore/PyVTKNamespace.cxx
+@@ -49,17 +49,17 @@ PyTypeObject PyVTKNamespace_Type = {
+   0,                                     // tp_basicsize
+   0,                                     // tp_itemsize
+   PyVTKNamespace_Delete,                 // tp_dealloc
+-  nullptr,                               // tp_print
++  0,                                     // tp_vectorcall_offset
+   nullptr,                               // tp_getattr
+   nullptr,                               // tp_setattr
+-  nullptr,                               // tp_compare
++  nullptr,                               // tp_as_async
+   nullptr,                               // tp_repr
+   nullptr,                               // tp_as_number
+   nullptr,                               // tp_as_sequence
+   nullptr,                               // tp_as_mapping
+   nullptr,                               // tp_hash
+   nullptr,                               // tp_call
+-  nullptr,                               // tp_string
++  nullptr,                               // tp_str
+   nullptr,                               // tp_getattro
+   nullptr,                               // tp_setattro
+   nullptr,                               // tp_as_buffer
+diff --git a/Wrapping/PythonCore/PyVTKReference.cxx b/Wrapping/PythonCore/PyVTKReference.cxx
+index 943ac71080..cac9b3ea28 100644
+--- a/Wrapping/PythonCore/PyVTKReference.cxx
++++ b/Wrapping/PythonCore/PyVTKReference.cxx
+@@ -1010,10 +1010,10 @@ PyTypeObject PyVTKReference_Type = {
+   sizeof(PyVTKReference),                // tp_basicsize
+   0,                                     // tp_itemsize
+   PyVTKReference_Delete,                 // tp_dealloc
+-  nullptr,                               // tp_print
++  0,                                     // tp_vectorcall_offset
+   nullptr,                               // tp_getattr
+   nullptr,                               // tp_setattr
+-  nullptr,                               // tp_compare
++  nullptr,                               // tp_as_async
+   PyVTKReference_Repr,                   // tp_repr
+   nullptr,                               // tp_as_number
+   nullptr,                               // tp_as_sequence
+@@ -1024,7 +1024,7 @@ PyTypeObject PyVTKReference_Type = {
+   nullptr,                               // tp_hash
+ #endif
+   nullptr,                               // tp_call
+-  PyVTKReference_Str,                    // tp_string
++  PyVTKReference_Str,                    // tp_str
+   PyVTKReference_GetAttr,                // tp_getattro
+   nullptr,                               // tp_setattro
+   nullptr,                               // tp_as_buffer
+@@ -1067,10 +1067,10 @@ PyTypeObject PyVTKNumberReference_Type = {
+   sizeof(PyVTKReference),                // tp_basicsize
+   0,                                     // tp_itemsize
+   PyVTKReference_Delete,                 // tp_dealloc
+-  nullptr,                               // tp_print
++  0,                                     // tp_vectorcall_offset
+   nullptr,                               // tp_getattr
+   nullptr,                               // tp_setattr
+-  nullptr,                               // tp_compare
++  nullptr,                               // tp_as_async
+   PyVTKReference_Repr,                   // tp_repr
+   &PyVTKReference_AsNumber,              // tp_as_number
+   nullptr,                               // tp_as_sequence
+@@ -1081,7 +1081,7 @@ PyTypeObject PyVTKNumberReference_Type = {
+   nullptr,                               // tp_hash
+ #endif
+   nullptr,                               // tp_call
+-  PyVTKReference_Str,                    // tp_string
++  PyVTKReference_Str,                    // tp_str
+   PyVTKReference_GetAttr,                // tp_getattro
+   nullptr,                               // tp_setattro
+   nullptr,                               // tp_as_buffer
+@@ -1124,12 +1124,12 @@ PyTypeObject PyVTKStringReference_Type = {
+   sizeof(PyVTKReference),                // tp_basicsize
+   0,                                     // tp_itemsize
+   PyVTKReference_Delete,                 // tp_dealloc
+-  nullptr,                               // tp_print
++  0,                                     // tp_vectorcall_offset
+   nullptr,                               // tp_getattr
+   nullptr,                               // tp_setattr
+-  nullptr,                               // tp_compare
++  nullptr,                               // tp_as_async
+   PyVTKReference_Repr,                   // tp_repr
+-  &PyVTKStringReference_AsNumber,          // tp_as_number
++  &PyVTKStringReference_AsNumber,        // tp_as_number
+   &PyVTKReference_AsSequence,            // tp_as_sequence
+   &PyVTKReference_AsMapping,             // tp_as_mapping
+ #if PY_VERSION_HEX >= 0x02060000
+@@ -1138,7 +1138,7 @@ PyTypeObject PyVTKStringReference_Type = {
+   nullptr,                               // tp_hash
+ #endif
+   nullptr,                               // tp_call
+-  PyVTKReference_Str,                    // tp_string
++  PyVTKReference_Str,                    // tp_str
+   PyVTKReference_GetAttr,                // tp_getattro
+   nullptr,                               // tp_setattro
+   &PyVTKReference_AsBuffer,              // tp_as_buffer
+@@ -1181,10 +1181,10 @@ PyTypeObject PyVTKTupleReference_Type = {
+   sizeof(PyVTKReference),                // tp_basicsize
+   0,                                     // tp_itemsize
+   PyVTKReference_Delete,                 // tp_dealloc
+-  nullptr,                               // tp_print
++  0,                                     // tp_vectorcall_offset
+   nullptr,                               // tp_getattr
+   nullptr,                               // tp_setattr
+-  nullptr,                               // tp_compare
++  nullptr,                               // tp_as_async
+   PyVTKReference_Repr,                   // tp_repr
+   nullptr,                               // tp_as_number
+   &PyVTKReference_AsSequence,            // tp_as_sequence
+@@ -1195,7 +1195,7 @@ PyTypeObject PyVTKTupleReference_Type = {
+   nullptr,                               // tp_hash
+ #endif
+   nullptr,                               // tp_call
+-  PyVTKReference_Str,                    // tp_string
++  PyVTKReference_Str,                    // tp_str
+   PyVTKReference_GetAttr,                // tp_getattro
+   nullptr,                               // tp_setattro
+   nullptr,                               // tp_as_buffer
+diff --git a/Wrapping/PythonCore/PyVTKTemplate.cxx b/Wrapping/PythonCore/PyVTKTemplate.cxx
+index be200985b3..8ffe0c0a6d 100644
+--- a/Wrapping/PythonCore/PyVTKTemplate.cxx
++++ b/Wrapping/PythonCore/PyVTKTemplate.cxx
+@@ -268,17 +268,17 @@ PyTypeObject PyVTKTemplate_Type = {
+   0,                                     // tp_basicsize
+   0,                                     // tp_itemsize
+   nullptr,                               // tp_dealloc
+-  nullptr,                               // tp_print
++  0,                                     // tp_vectorcall_offset
+   nullptr,                               // tp_getattr
+   nullptr,                               // tp_setattr
+-  nullptr,                               // tp_compare
++  nullptr,                               // tp_as_async
+   PyVTKTemplate_Repr,                    // tp_repr
+   nullptr,                               // tp_as_number
+   nullptr,                               // tp_as_sequence
+   &PyVTKTemplate_AsMapping,              // tp_as_mapping
+   nullptr,                               // tp_hash
+   PyVTKTemplate_Call,                    // tp_call
+-  nullptr,                               // tp_string
++  nullptr,                               // tp_str
+   PyObject_GenericGetAttr,               // tp_getattro
+   nullptr,                               // tp_setattro
+   nullptr,                               // tp_as_buffer
+diff --git a/Wrapping/Tools/vtkWrapPythonClass.c b/Wrapping/Tools/vtkWrapPythonClass.c
+index b1e45f8e80..b1e053f4ae 100644
+--- a/Wrapping/Tools/vtkWrapPythonClass.c
++++ b/Wrapping/Tools/vtkWrapPythonClass.c
+@@ -521,10 +521,10 @@ void vtkWrapPython_GenerateObjectType(
+     "  sizeof(PyVTKObject), // tp_basicsize\n"
+     "  0, // tp_itemsize\n"
+     "  PyVTKObject_Delete, // tp_dealloc\n"
+-    "  nullptr, // tp_print\n"
++    "  0, // tp_vectorcall_offset\n"
+     "  nullptr, // tp_getattr\n"
+     "  nullptr, // tp_setattr\n"
+-    "  nullptr, // tp_compare\n"
++    "  nullptr, // tp_as_async\n"
+     "  PyVTKObject_Repr, // tp_repr\n",
+     classname, module, classname);
+ 
+diff --git a/Wrapping/Tools/vtkWrapPythonEnum.c b/Wrapping/Tools/vtkWrapPythonEnum.c
+index b933702242..4a8f5dd9dd 100644
+--- a/Wrapping/Tools/vtkWrapPythonEnum.c
++++ b/Wrapping/Tools/vtkWrapPythonEnum.c
+@@ -145,10 +145,10 @@ void vtkWrapPython_GenerateEnumType(
+     "  sizeof(PyIntObject), // tp_basicsize\n"
+     "  0, // tp_itemsize\n"
+     "  nullptr, // tp_dealloc\n"
+-    "  nullptr, // tp_print\n"
++    "  0, // tp_vectorcall_offset\n"
+     "  nullptr, // tp_getattr\n"
+     "  nullptr, // tp_setattr\n"
+-    "  nullptr, // tp_compare\n"
++    "  nullptr, // tp_as_async\n"
+     "  nullptr, // tp_repr\n",
+     enumname, module, tpname);
+ 
+diff --git a/Wrapping/Tools/vtkWrapPythonType.c b/Wrapping/Tools/vtkWrapPythonType.c
+index 744cb1b9d3..3a8da32c6d 100644
+--- a/Wrapping/Tools/vtkWrapPythonType.c
++++ b/Wrapping/Tools/vtkWrapPythonType.c
+@@ -709,10 +709,10 @@ void vtkWrapPython_GenerateSpecialType(
+     "  sizeof(PyVTKSpecialObject), // tp_basicsize\n"
+     "  0, // tp_itemsize\n"
+     "  Py%s_Delete, // tp_dealloc\n"
+-    "  nullptr, // tp_print\n"
++    "  0, // tp_vectorcall_offset\n"
+     "  nullptr, // tp_getattr\n"
+     "  nullptr, // tp_setattr\n"
+-    "  nullptr, // tp_compare\n"
++    "  nullptr, // tp_as_async\n"
+     "  PyVTKSpecialObject_Repr, // tp_repr\n",
+     classname, module, classname, classname);
+ 
+
