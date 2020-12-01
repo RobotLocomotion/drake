@@ -197,6 +197,8 @@ class DefaultTextureColorShader final : public internal::ShaderProgram {
 
     if (!texture_id.has_value()) return std::nullopt;
 
+    // TODO(eric.cousineau): Fail fast if no texture coordinates are specified.
+
     const auto& scale = properties.GetPropertyOrDefault(
         "phong", "diffuse_scale", Vector2d(1, 1));
     return ShaderProgramData{shader_id(), AbstractValue::Make(
@@ -237,6 +239,8 @@ class DefaultTextureColorShader final : public internal::ShaderProgram {
   //     across the triangle.
   static constexpr char kVertexShader[] = R"""(
 #version 330
+// The locations correspond to the identifier passed to
+// glVertexArrayVertexBuffer;
 layout(location = 0) in vec3 p_MV;
 layout(location = 1) in vec3 n_M;
 layout(location = 2) in vec2 tex_coord_in;
@@ -985,43 +989,53 @@ OpenGlGeometry RenderEngineGl::CreateGlGeometry(const MeshData& mesh_data) {
   glCreateBuffers(1, &geometry.vertex_buffer);
 
   // We're representing the vertex data as a concatenation of positions,
-  // normals, and texture coordinates (i.e., (VVVNNNUUU)). There should be an
+  // normals, and texture coordinates (i.e., (VVVNNNUU)). There should be an
   // equal number of vertices, normals, and texture coordinates.
   DRAKE_DEMAND(mesh_data.positions.rows() == mesh_data.normals.rows());
   DRAKE_DEMAND(mesh_data.positions.rows() == mesh_data.uvs.rows());
   const int v_count = mesh_data.positions.rows();
   vector<GLfloat> vertex_data;
+  const int position_nfloat = 3;
+  const int normal_nfloat = 3;
+  const int uv_nfloat = 2;
   // 3 floats each for position and normal, 2 for texture coordinates.
-  vertex_data.reserve(v_count * (3 + 3 + 2));
+  vertex_data.reserve(v_count * (position_nfloat + normal_nfloat + uv_nfloat));
   vertex_data.insert(vertex_data.end(), mesh_data.positions.data(),
-                     mesh_data.positions.data() + v_count * 3);
+                     mesh_data.positions.data() + v_count * position_nfloat);
   vertex_data.insert(vertex_data.end(), mesh_data.normals.data(),
-                     mesh_data.normals.data() + v_count * 3);
+                     mesh_data.normals.data() + v_count * normal_nfloat);
   vertex_data.insert(vertex_data.end(), mesh_data.uvs.data(),
-                     mesh_data.uvs.data() + v_count * 2);
+                     mesh_data.uvs.data() + v_count * uv_nfloat);
   glNamedBufferStorage(geometry.vertex_buffer,
                        vertex_data.size() * sizeof(GLfloat),
                        vertex_data.data(), 0);
   const int position_attrib = 0;
+  const int position_vbo_offset = 0;
+  const int position_size = v_count * position_nfloat * sizeof(GLfloat);
   glVertexArrayVertexBuffer(geometry.vertex_array, position_attrib,
-                            geometry.vertex_buffer, 0, 3 * sizeof(GLfloat));
-  glVertexArrayAttribFormat(geometry.vertex_array, position_attrib, 3, GL_FLOAT,
-                            GL_FALSE, 0);
+                            geometry.vertex_buffer, position_vbo_offset,
+                            position_nfloat * sizeof(GLfloat));
+  glVertexArrayAttribFormat(geometry.vertex_array, position_attrib,
+                            position_nfloat, GL_FLOAT, GL_FALSE, 0);
   glEnableVertexArrayAttrib(geometry.vertex_array, position_attrib);
 
   const int normal_attrib = 1;
+  const int normal_vbo_offset = position_vbo_offset + position_size;
+  const int normal_size = v_count * normal_nfloat * sizeof(GLfloat);
   glVertexArrayVertexBuffer(
       geometry.vertex_array, normal_attrib, geometry.vertex_buffer,
-      mesh_data.positions.size() * sizeof(GLfloat), 3 * sizeof(GLfloat));
-  glVertexArrayAttribFormat(geometry.vertex_array, normal_attrib, 3, GL_FLOAT,
-                            GL_FALSE, 0);
+      normal_vbo_offset, normal_nfloat * sizeof(GLfloat));
+  glVertexArrayAttribFormat(geometry.vertex_array, normal_attrib,
+                            normal_nfloat, GL_FLOAT, GL_FALSE, 0);
   glEnableVertexArrayAttrib(geometry.vertex_array, normal_attrib);
 
   const int uv_attrib = 2;
+  const int uv_vbo_offset = normal_vbo_offset + normal_size;
   glVertexArrayVertexBuffer(
       geometry.vertex_array, uv_attrib, geometry.vertex_buffer,
-      2 * mesh_data.positions.size() * sizeof(GLfloat), 2 * sizeof(GLfloat));
-  glVertexArrayAttribFormat(geometry.vertex_array, uv_attrib, 2, GL_FLOAT,
+      uv_vbo_offset, uv_nfloat * sizeof(GLfloat));
+  glVertexArrayAttribFormat(geometry.vertex_array, uv_attrib,
+                            uv_nfloat, GL_FLOAT,
                             GL_FALSE, 0);
   glEnableVertexArrayAttrib(geometry.vertex_array, uv_attrib);
 
