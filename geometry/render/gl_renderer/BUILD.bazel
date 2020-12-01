@@ -197,6 +197,7 @@ drake_cc_library_gl_ubuntu_only(
     hdrs = ["texture_library.h"],
     deps = [
         "//common:essential",
+        "//common:filesystem",
         "//geometry/render/gl_renderer:opengl_context",
         "@vtk//:vtkIOImage",
     ],
