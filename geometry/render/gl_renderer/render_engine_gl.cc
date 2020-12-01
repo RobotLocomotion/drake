@@ -7,6 +7,7 @@
 #include <fmt/format.h>
 
 #include "drake/common/filesystem.h"
+#include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
 
 namespace drake {
@@ -42,6 +43,9 @@ using systems::sensors::ImageRgba8U;
 using systems::sensors::InvalidDepth;
 
 namespace {
+
+constexpr char kInternalGroup[] = "render_engine_gl_internal";
+constexpr char kHasTexCoordProperty[] = "has_tex_coord";
 
 // Data to pass through the reification process.
 struct RegistrationData {
@@ -196,6 +200,17 @@ class DefaultTextureColorShader final : public internal::ShaderProgram {
     std::optional<GLuint> texture_id = library_->GetTextureId(file_name);
 
     if (!texture_id.has_value()) return std::nullopt;
+
+    const bool has_tex_coord = properties.GetPropertyOrDefault(
+        kInternalGroup, kHasTexCoordProperty, MeshData::kHasTexCoordDefault);
+
+    if (!has_tex_coord) {
+      // TODO(eric.cousineau): How to carry mesh name along?
+      throw std::runtime_error(fmt::format(
+          "A mesh with no texture coordinates has erroneously defined the "
+          "property ('phong', 'diffuse_map') as {}. To use a diffuse texture "
+          "map, the mesh must have texture coordinates.", file_name));
+    }
 
     const auto& scale = properties.GetPropertyOrDefault(
         "phong", "diffuse_scale", Vector2d(1, 1));
@@ -544,10 +559,11 @@ void RenderEngineGl::ImplementMesh(const internal::OpenGlGeometry& geometry,
                                    const Vector3<double>& scale,
                                    const std::string& file_name) {
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-  if (data.properties.HasProperty("phong", "diffuse_map")) {
-    ImplementGeometry(geometry, user_data, scale);
-    return;
-  }
+  PerceptionProperties temp_props(data.properties);
+
+  temp_props.AddProperty(
+      kInternalGroup, kHasTexCoordProperty, geometry.has_tex_coord);
+
   // In order to maintain compatibility with RenderEngineVtk, we need to provide
   // functionality in which a mesh of the name foo.obj can be matched to a
   // potential png called foo.png. We rely on the fact that passing in a diffuse
@@ -556,10 +572,12 @@ void RenderEngineGl::ImplementMesh(const internal::OpenGlGeometry& geometry,
   // property to appropriately named image and let it percolate through. We
   // can't and don't want to change the underlying properties because they are
   // visible to the user.
-  PerceptionProperties temp_props(data.properties);
-  filesystem::path file_path(file_name);
-  const string png_name = file_path.replace_extension(".png").string();
-  temp_props.AddProperty("phong", "diffuse_map", png_name);
+  if (!temp_props.HasProperty("phong", "diffuse_map")) {
+    filesystem::path file_path(file_name);
+    const string png_name = file_path.replace_extension(".png").string();
+    temp_props.AddProperty("phong", "diffuse_map", png_name);
+  }
+
   RegistrationData temp_data{data.id, data.X_WG, temp_props};
   ImplementGeometry(geometry, &temp_data, scale);
 }
@@ -985,45 +1003,58 @@ OpenGlGeometry RenderEngineGl::CreateGlGeometry(const MeshData& mesh_data) {
   glCreateBuffers(1, &geometry.vertex_buffer);
 
   // We're representing the vertex data as a concatenation of positions,
-  // normals, and texture coordinates (i.e., (VVVNNNUUU)). There should be an
+  // normals, and texture coordinates (i.e., (VVVNNNUU)). There should be an
   // equal number of vertices, normals, and texture coordinates.
   DRAKE_DEMAND(mesh_data.positions.rows() == mesh_data.normals.rows());
   DRAKE_DEMAND(mesh_data.positions.rows() == mesh_data.uvs.rows());
   const int v_count = mesh_data.positions.rows();
   vector<GLfloat> vertex_data;
   // 3 floats each for position and normal, 2 for texture coordinates.
-  vertex_data.reserve(v_count * (3 + 3 + 2));
+  const int kFloatsPerPosition = 3;
+  const int kFloatsPerNormal = 3;
+  const int kFloatsPerUv = 2;
+  vertex_data.reserve(
+      v_count * (kFloatsPerPosition + kFloatsPerNormal + kFloatsPerUv));
   vertex_data.insert(vertex_data.end(), mesh_data.positions.data(),
-                     mesh_data.positions.data() + v_count * 3);
+                     mesh_data.positions.data() + v_count * kFloatsPerPosition);
   vertex_data.insert(vertex_data.end(), mesh_data.normals.data(),
-                     mesh_data.normals.data() + v_count * 3);
+                     mesh_data.normals.data() + v_count * kFloatsPerNormal);
   vertex_data.insert(vertex_data.end(), mesh_data.uvs.data(),
-                     mesh_data.uvs.data() + v_count * 2);
+                     mesh_data.uvs.data() + v_count * kFloatsPerUv);
   glNamedBufferStorage(geometry.vertex_buffer,
                        vertex_data.size() * sizeof(GLfloat),
                        vertex_data.data(), 0);
+
+  std::size_t vbo_offset = 0;
+
   const int position_attrib = 0;
   glVertexArrayVertexBuffer(geometry.vertex_array, position_attrib,
-                            geometry.vertex_buffer, 0, 3 * sizeof(GLfloat));
-  glVertexArrayAttribFormat(geometry.vertex_array, position_attrib, 3, GL_FLOAT,
-                            GL_FALSE, 0);
+                            geometry.vertex_buffer, vbo_offset,
+                            kFloatsPerPosition * sizeof(GLfloat));
+  glVertexArrayAttribFormat(geometry.vertex_array, position_attrib,
+                            kFloatsPerPosition, GL_FLOAT, GL_FALSE, 0);
   glEnableVertexArrayAttrib(geometry.vertex_array, position_attrib);
+  vbo_offset += v_count * kFloatsPerPosition * sizeof(GLfloat);
 
   const int normal_attrib = 1;
   glVertexArrayVertexBuffer(
       geometry.vertex_array, normal_attrib, geometry.vertex_buffer,
-      mesh_data.positions.size() * sizeof(GLfloat), 3 * sizeof(GLfloat));
-  glVertexArrayAttribFormat(geometry.vertex_array, normal_attrib, 3, GL_FLOAT,
-                            GL_FALSE, 0);
+      vbo_offset, kFloatsPerNormal * sizeof(GLfloat));
+  glVertexArrayAttribFormat(geometry.vertex_array, normal_attrib,
+                            kFloatsPerNormal, GL_FLOAT, GL_FALSE, 0);
   glEnableVertexArrayAttrib(geometry.vertex_array, normal_attrib);
+  vbo_offset += v_count * kFloatsPerNormal * sizeof(GLfloat);
 
   const int uv_attrib = 2;
   glVertexArrayVertexBuffer(
       geometry.vertex_array, uv_attrib, geometry.vertex_buffer,
-      2 * mesh_data.positions.size() * sizeof(GLfloat), 2 * sizeof(GLfloat));
-  glVertexArrayAttribFormat(geometry.vertex_array, uv_attrib, 2, GL_FLOAT,
+      vbo_offset, kFloatsPerUv * sizeof(GLfloat));
+  glVertexArrayAttribFormat(geometry.vertex_array, uv_attrib,
+                            kFloatsPerUv, GL_FLOAT,
                             GL_FALSE, 0);
   glEnableVertexArrayAttrib(geometry.vertex_array, uv_attrib);
+  vbo_offset += v_count * kFloatsPerUv * sizeof(GLfloat);
+  DRAKE_DEMAND(vbo_offset == vertex_data.size() * sizeof(GLfloat));
 
   // Create the index buffer object (IBO).
   glCreateBuffers(1, &geometry.index_buffer);
@@ -1034,6 +1065,8 @@ OpenGlGeometry RenderEngineGl::CreateGlGeometry(const MeshData& mesh_data) {
   glVertexArrayElementBuffer(geometry.vertex_array, geometry.index_buffer);
 
   geometry.index_buffer_size = mesh_data.indices.size();
+
+  geometry.has_tex_coord = mesh_data.has_tex_coord;
 
   // Note: We won't need to call the corresponding glDeleteVertexArrays or
   // glDeleteBuffers. The meshes we store are "canonical" meshes. Even if a
