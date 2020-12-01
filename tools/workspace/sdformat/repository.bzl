@@ -7,12 +7,9 @@ def sdformat_repository(
         mirrors = None):
     github_archive(
         name = name,
-        # repository = "azeey/sdformat",
-        # commit = "732be0f20f00cfb1f5200f691c33abee3eee7a02",
-        # sha256 = "4d537b3cbebdefcea57039aea487ae8603058e581efac0402a5a69757194738c",  # noqa
-        repository = "osrf/sdformat",
-        commit = "sdformat10_10.0.0",
-        sha256 = "3555ce443a736e9bd24577d894978e0236212bfd2b356022fd53b143b30152bf",  # noqa
+        repository = "azeey/sdformat",
+        commit = "a7f9108fd36d8a20e56bcc12be7bdc46e4fd3ca9",
+        sha256 = "b2f9926f6f4f54e813d438f12ef0ebc50ef60df984ef9bf7b04724053f62ea1a",  # noqa
         build_file = "@drake//tools/workspace/sdformat:package.BUILD.bazel",
         mirrors = mirrors,
     )
