@@ -76,7 +76,7 @@ class FemElement {
   /** Calculates the element tangent matrix of this element evaluated at the
    input state. The ij-th entry of the element tangent matrix is the derivative
    of the i-th entry of the residual (calculated by CalcResidual()) with respect
-   to the j-th generalized position.
+   to the j-th generalized unknown variable.
    @param[in] state The FEM state at which to evaluate the residual.
    @returns the tangent matrix of size `num_dofs()`-by-`num_dofs()`.
    The matrix is organized into `num_nodes()`-by-`num_nodes()` of

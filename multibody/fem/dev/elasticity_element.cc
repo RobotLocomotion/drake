@@ -106,10 +106,10 @@ T ElasticityElement<T, IsoparametricElementType,
  calculated in [Bonet, 2016] equation (9.50b) without the external force
  component.
  Without the external force component, (9,50b) reads Kₐᵦ = Kₐᵦ,c + Kₐᵦ,σ.
- Kₐᵦ,c is given by ∫dSₐ/dxₖ cᵢⱼₖₗ dSᵦ/dxₗ dx (9.35), and
- Kₐᵦ,σ is given by ∫dSₐ/dxₖ σₖₗ dSᵦ/dxₗ dx (9.44c). Notice that we used S to
+ Kₐᵦ,c is given by ∫dSᵃ/dxₖ cᵢₖⱼₗ dSᵇ/dxₗ dx (9.35), and
+ Kₐᵦ,σ is given by ∫dSᵃ/dxₖ σₖₗ dSᵇ/dxₗ dx (9.44c). Notice that we used S to
  denote shape functions whereas [Bonet, 2016] uses N.
- The stiffness we calculate here is given by ∫ dF/dxᵦ : dP/dF : dF/dxₐ dX.
+ The stiffness we calculate here is given by ∫ dF/dxᵇ : dP/dF : dF/dxᵃ dX.
  The calculation uses a different stress-strain pair, but is analytically equal
  to Kₐᵦ,c + Kₐᵦ,σ.
 
@@ -133,12 +133,12 @@ void ElasticityElement<T, IsoparametricElementType, QuadratureType>::
   DRAKE_ASSERT(K->cols() == 3 * num_nodes());
   K->setZero();
   // clang-format off
-  /* Let e be the elastic energy density, then the ab-th block of the stiffness
+  /* Let e be the elastic energy, then the ab-th block of the stiffness
    matrix K is given by:
-   Kₐᵦ,ᵢⱼ = d²e/dxₐᵢdxᵦⱼ = ∫dF/dxᵦⱼ:d²ψ/dF²:dF/dxₐᵢ + dψ/dF:d²F/dxₐᵢdxᵦⱼ dX.
-   The second term vanishes because Fₖₗ = xₐₖdSₐ/dXₗ is linear in x.
+   Kᵃᵇᵢⱼ = d²e/dxᵃᵢdxᵇⱼ = ∫dF/dxᵇⱼ:d²ψ/dF²:dF/dxᵃᵢ + dψ/dF:d²F/dxᵃᵢdxᵇⱼ dX.
+   The second term vanishes because Fₖₗ = xᵃₖdSᵃ/dXₗ is linear in x.
    We calculate the first term:
-   dF/dxᵦⱼ : d²ψ/dF² : dF/dxₐᵢ = dFₘₙ/dxₐᵢ dPₘₙ/dFₖₗ dFₖₗ/dxᵦⱼ.  */
+   dF/dxᵇⱼ : d²ψ/dF² : dF/dxᵃᵢ = dFₘₙ/dxᵃᵢ dPₘₙ/dFₖₗ dFₖₗ/dxᵇⱼ.  */
   // clang-format on
   // TODO(xuchenhan-tri): Use the corresponding Eval method when caching is
   // ready.
@@ -147,13 +147,13 @@ void ElasticityElement<T, IsoparametricElementType, QuadratureType>::
   // The ab-th 3-by-3 block of K.
   Matrix3<T> K_ab;
   for (int q = 0; q < num_quadrature_points(); ++q) {
-    /* Notice that Fₖₗ = xₐₖdSₐ/dXₗ, so dFₖₗ/dxᵦⱼ = δₐᵦδₖⱼdSₐ/dXₗ, and thus
-     Kₐᵦ,ᵢⱼ = dFₘₙ/dxₐᵢ dPₘₙ/dFₖₗ dFₖₗ/dxᵦⱼ =  dSₐ/dXₙ dPᵢₙ/dFⱼₗ dSᵦ/dXₗ. */
+    /* Notice that Fₖₗ = xᵃₖdSᵃ/dXₗ, so dFₖₗ/dxᵇⱼ = δᵃᵇδₖⱼdSᵃ/dXₗ, and thus
+     Kᵃᵇᵢⱼ = dFₘₙ/dxᵃᵢ dPₘₙ/dFₖₗ dFₖₗ/dxᵇⱼ =  dSᵃ/dXₙ dPᵢₙ/dFⱼₗ dSᵇ/dXₗ. */
     for (int a = 0; a < num_nodes(); ++a) {
       for (int b = 0; b < num_nodes(); ++b) {
-        TensorContraction(dPdF[q], dSdX_transpose_[q].col(a),
-                          dSdX_transpose_[q].col(b) * reference_volume_[q],
-                          &K_ab);
+        DoDoubleTensorContraction(
+            dPdF[q], dSdX_transpose_[q].col(a),
+            dSdX_transpose_[q].col(b) * reference_volume_[q], &K_ab);
         AccumulateMatrixBlock(K_ab, a, b, K);
       }
     }
@@ -194,10 +194,10 @@ void ElasticityElement<T, IsoparametricElementType, QuadratureType>::
   CalcFirstPiolaStress(state, &P);
   for (int q = 0; q < num_quadrature_points(); ++q) {
     /* Negative force is the gradient of energy.
-     -f = ∫dΨ/dx = ∫dΨ/dF : dF/dx dX.
-     Notice that Fᵢⱼ = xₐᵢdSₐ/dXⱼ, so dFᵢⱼ/dxᵦₖ = δₐᵦδᵢₖdSₐ/dXⱼ,
+     -f = ∫dΨ/dx dX = ∫dΨ/dF : dF/dx dX.
+     Notice that Fᵢⱼ = xᵃᵢdSᵃ/dXⱼ, so dFᵢⱼ/dxᵇₖ = δᵃᵇδᵢₖdSᵃ/dXⱼ,
      and dΨ/dFᵢⱼ = Pᵢⱼ, so the integrand becomes
-     PᵢⱼδₐᵦδᵢₖdSₐ/dXⱼ = PₖⱼdSᵦ/dXⱼ = P * dSdX.transpose() */
+     PᵢⱼδᵃᵇδᵢₖdSᵃ/dXⱼ = PₖⱼdSᵇ/dXⱼ = P * dSdX.transpose() */
     neg_force_matrix += reference_volume_[q] * P[q] * dSdX_transpose_[q];
   }
 }

@@ -82,6 +82,8 @@ void FemModel<T>::CalcTangentMatrix(
       for (int i = 0; i < solution_dim; ++i) {
         for (int b = 0; b < element_num_nodes; ++b) {
           for (int j = 0; j < solution_dim; ++j) {
+            // TODO(xuchenhan-tri): Compare the performance between coeffRef()
+            // and setFromTriplets() for filling out the sparse matrix.
             tangent_matrix->coeffRef(
                 element_node_indices[a] * solution_dim + i,
                 element_node_indices[b] * solution_dim + j) +=

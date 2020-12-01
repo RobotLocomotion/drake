@@ -167,7 +167,7 @@ class ElasticityElement : public ElasticityElementBase<T> {
                 |           |           |           |
                 -------------------------------------
   Namely the ik-th entry in the jl-th block corresponds to the value Aᵢⱼₖₗ. */
-  static void TensorContraction(
+  static void DoDoubleTensorContraction(
       const Eigen::Ref<const Eigen::Matrix<T, 9, 9>>& A,
       const Eigen::Ref<const Vector3<T>>& u,
       const Eigen::Ref<const Vector3<T>>& v, EigenPtr<Matrix3<T>> B) {
