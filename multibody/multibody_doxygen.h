@@ -273,9 +273,9 @@ quantities can be created by differentiation of an existing quantity (see
 
 Most quantities have a
 _reference_ and _target_, either of which may be a frame, basis, or point, that
-specify how the quantity is to be defined. In computation, vector quantities
-are _expressed_ in a particular basis to provide numerical values for the
-vector elements. For example, the velocity of a point P moving in a reference
+specify how the quantity is defined. In computation, vector quantities are
+_expressed_ in a particular basis (or frame) that associates direction with each
+vector element. For example, the velocity of a point P moving in a reference
 frame F is a vector quantity with _target_ point P and _reference_ frame F.  In
 typeset this symbol is written as @f$^Fv^P@f$. Here v is the quantity type, the
 left superscript F is the reference, and the right superscript P is the target.
@@ -315,10 +315,12 @@ Transform/pose       |  X   |@f$^BX^C@f$               |`X_BC`      |Frame C's *
 General Transform    |  T   |@f$^BT^C@f$               |`T_BC`      |The relationship between two spaces -- it may be affine, projective, isometric, etc. Every X_AB can be written as T_AB, but not every T_AB can be written as X_AB.
 Angular velocity     |  w   |@f$^B\omega^C@f$          |`w_BC`      |Frame C's angular velocity in frame B †
 Velocity             |  v   |@f$^Bv^Q@f$               |`v_BQ`      |%Point Q's translational velocity in frame B
-Spatial velocity     |  V   |@f$^BV^{C}@f$             |`V_BC`      |Frame C's spatial velocity in frame B
+Spatial velocity     |  V   |@f$^BV^{C}@f$             |`V_BC`      |Frame C's spatial velocity in frame B (for point Co)
+Spatial velocity     |  V   |@f$^BV^{Ccm}@f$           |`V_BCcm`    |Body C's spatial velocity in frame B (for point CCm)
 Angular acceleration |alpha |@f$^B\alpha^C@f$          |`alpha_BC`  |Frame C's angular acceleration in frame B
 Acceleration         |  a   |@f$^Ba^Q@f$               |`a_BQ`      |%Point Q's translational acceleration in B
-Spatial acceleration |  A   |@f$^BA^{C}@f$             |`A_BC`      |Frame C's spatial acceleration in frame B
+Spatial acceleration |  A   |@f$^BA^{C}@f$             |`A_BC`      |Frame C's spatial acceleration in frame B (for point Co)
+Spatial acceleration |  A   |@f$^BA^{C}@f$             |`A_BCp`     |Frame C's spatial acceleration in frame B (for point Cp)
 Torque               |  t   |@f$t^{B}@f$               |`t_B`       |Torque on a body (or frame) B
 Force                |  f   |@f$f^{P}@f$               |`f_P`       |Force on a point P
 Spatial force        |  F   |@f$F^{P}@f$               |`F_P`       |Spatial force (torque/force) ††
