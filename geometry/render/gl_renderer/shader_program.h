@@ -7,6 +7,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/render/gl_renderer/opengl_geometry.h"
 #include "drake/geometry/render/gl_renderer/opengl_includes.h"
 #include "drake/geometry/render/gl_renderer/shader_program_data.h"
 #include "drake/geometry/render/render_camera.h"
@@ -104,8 +105,9 @@ class ShaderProgram {
    @returns The validated and packaged shader program properties, `nullopt` if
             `this` shader program cannot be applied for the given properties. */
   std::optional<ShaderProgramData> CreateProgramData(
-      const PerceptionProperties& properties) const {
-    return DoCreateProgramData(properties);
+      const PerceptionProperties& properties,
+      const OpenGlGeometry& geometry) const {
+    return DoCreateProgramData(properties, geometry);
   }
 
   /* Allows derived shaders to extract data from the given instance to populate
@@ -169,7 +171,8 @@ class ShaderProgram {
    Not supported is communicated with a nullopt. Support is given by a defined
    ShaderProgramData (even if it's data *value* is nullptr).  */
   virtual std::optional<ShaderProgramData> DoCreateProgramData(
-      const PerceptionProperties& /* properties */) const {
+      const PerceptionProperties& /* properties */,
+      const OpenGlGeometry& /* geometry */) const {
     return std::nullopt;
   }
 

@@ -74,7 +74,8 @@ class DefaultRgbaColorShader final : public ShaderProgram {
   }
 
   std::optional<ShaderProgramData> DoCreateProgramData(
-      const PerceptionProperties& properties) const final {
+      const PerceptionProperties& properties,
+      const OpenGlGeometry&) const final {
     const Rgba rgba =
         properties.GetPropertyOrDefault("phong", "diffuse", default_diffuse_);
     Vector4<float> v4{
@@ -188,7 +189,9 @@ class DefaultTextureColorShader final : public internal::ShaderProgram {
   };
 
   std::optional<ShaderProgramData>
-  DoCreateProgramData(const PerceptionProperties& properties) const final {
+  DoCreateProgramData(
+      const PerceptionProperties& properties,
+      const OpenGlGeometry& geometry) const final {
     if (!properties.HasProperty("phong", "diffuse_map")) return std::nullopt;
 
     const string& file_name =
@@ -196,6 +199,14 @@ class DefaultTextureColorShader final : public internal::ShaderProgram {
     std::optional<GLuint> texture_id = library_->GetTextureId(file_name);
 
     if (!texture_id.has_value()) return std::nullopt;
+
+    if (!geometry.has_tex_coord) {
+      // TODO(eric.cousineau): How to carry mesh name along?
+      // For now, just assume texture will provide sufficient info.
+      throw std::runtime_error(fmt::format(
+          "Mesh has texture ('phone', 'diffuse_map') specified, but no "
+          "texture coordiantes: {}", file_name));
+    }
 
     const auto& scale = properties.GetPropertyOrDefault(
         "phong", "diffuse_scale", Vector2d(1, 1));
@@ -237,6 +248,8 @@ class DefaultTextureColorShader final : public internal::ShaderProgram {
   //     across the triangle.
   static constexpr char kVertexShader[] = R"""(
 #version 330
+// The locations correspond to the identifier passed to
+// glVertexArrayVertexBuffer;
 layout(location = 0) in vec3 p_MV;
 layout(location = 1) in vec3 n_M;
 layout(location = 2) in vec2 tex_coord_in;
@@ -307,7 +320,8 @@ class DefaultDepthShader final : public ShaderProgram {
   }
 
   std::optional<ShaderProgramData> DoCreateProgramData(
-      const PerceptionProperties&) const final {
+      const PerceptionProperties&,
+      const OpenGlGeometry&) const final {
     // The depth shader supports all geometries, but requires no data.
     return ShaderProgramData{shader_id(), nullptr};
   }
@@ -400,7 +414,8 @@ class DefaultLabelShader final : public ShaderProgram {
   }
 
   std::optional<ShaderProgramData> DoCreateProgramData(
-      const PerceptionProperties& properties) const final {
+      const PerceptionProperties& properties,
+      const OpenGlGeometry&) const final {
     return ShaderProgramData{shader_id(),
                              AbstractValue::Make(label_encoder_(properties))};
   }
@@ -776,11 +791,11 @@ void RenderEngineGl::ImplementGeometry(const OpenGlGeometry& geometry,
                                        void* user_data, const Vector3d& scale) {
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
   std::optional<ShaderProgramData> color_data =
-      GetShaderProgram(data.properties, RenderType::kColor);
+      GetShaderProgram(data.properties, geometry, RenderType::kColor);
   std::optional<ShaderProgramData> depth_data =
-      GetShaderProgram(data.properties, RenderType::kDepth);
+      GetShaderProgram(data.properties, geometry, RenderType::kDepth);
   std::optional<ShaderProgramData> label_data =
-      GetShaderProgram(data.properties, RenderType::kLabel);
+      GetShaderProgram(data.properties, geometry, RenderType::kLabel);
   DRAKE_DEMAND(color_data.has_value() && depth_data.has_value() &&
                label_data.has_value());
 
@@ -985,43 +1000,53 @@ OpenGlGeometry RenderEngineGl::CreateGlGeometry(const MeshData& mesh_data) {
   glCreateBuffers(1, &geometry.vertex_buffer);
 
   // We're representing the vertex data as a concatenation of positions,
-  // normals, and texture coordinates (i.e., (VVVNNNUUU)). There should be an
+  // normals, and texture coordinates (i.e., (VVVNNNUU)). There should be an
   // equal number of vertices, normals, and texture coordinates.
   DRAKE_DEMAND(mesh_data.positions.rows() == mesh_data.normals.rows());
   DRAKE_DEMAND(mesh_data.positions.rows() == mesh_data.uvs.rows());
   const int v_count = mesh_data.positions.rows();
   vector<GLfloat> vertex_data;
+  const int position_nfloat = 3;
+  const int normal_nfloat = 3;
+  const int uv_nfloat = 2;
   // 3 floats each for position and normal, 2 for texture coordinates.
-  vertex_data.reserve(v_count * (3 + 3 + 2));
+  vertex_data.reserve(v_count * (position_nfloat + normal_nfloat + uv_nfloat));
   vertex_data.insert(vertex_data.end(), mesh_data.positions.data(),
-                     mesh_data.positions.data() + v_count * 3);
+                     mesh_data.positions.data() + v_count * position_nfloat);
   vertex_data.insert(vertex_data.end(), mesh_data.normals.data(),
-                     mesh_data.normals.data() + v_count * 3);
+                     mesh_data.normals.data() + v_count * normal_nfloat);
   vertex_data.insert(vertex_data.end(), mesh_data.uvs.data(),
-                     mesh_data.uvs.data() + v_count * 2);
+                     mesh_data.uvs.data() + v_count * uv_nfloat);
   glNamedBufferStorage(geometry.vertex_buffer,
                        vertex_data.size() * sizeof(GLfloat),
                        vertex_data.data(), 0);
   const int position_attrib = 0;
+  const int position_vbo_offset = 0;
+  const int position_size = v_count * position_nfloat * sizeof(GLfloat);
   glVertexArrayVertexBuffer(geometry.vertex_array, position_attrib,
-                            geometry.vertex_buffer, 0, 3 * sizeof(GLfloat));
-  glVertexArrayAttribFormat(geometry.vertex_array, position_attrib, 3, GL_FLOAT,
-                            GL_FALSE, 0);
+                            geometry.vertex_buffer, position_vbo_offset,
+                            position_nfloat * sizeof(GLfloat));
+  glVertexArrayAttribFormat(geometry.vertex_array, position_attrib,
+                            position_nfloat, GL_FLOAT, GL_FALSE, 0);
   glEnableVertexArrayAttrib(geometry.vertex_array, position_attrib);
 
   const int normal_attrib = 1;
+  const int normal_vbo_offset = position_vbo_offset + position_size;
+  const int normal_size = v_count * normal_nfloat * sizeof(GLfloat);
   glVertexArrayVertexBuffer(
       geometry.vertex_array, normal_attrib, geometry.vertex_buffer,
-      mesh_data.positions.size() * sizeof(GLfloat), 3 * sizeof(GLfloat));
-  glVertexArrayAttribFormat(geometry.vertex_array, normal_attrib, 3, GL_FLOAT,
-                            GL_FALSE, 0);
+      normal_vbo_offset, normal_nfloat * sizeof(GLfloat));
+  glVertexArrayAttribFormat(geometry.vertex_array, normal_attrib,
+                            normal_nfloat, GL_FLOAT, GL_FALSE, 0);
   glEnableVertexArrayAttrib(geometry.vertex_array, normal_attrib);
 
   const int uv_attrib = 2;
+  const int uv_vbo_offset = normal_vbo_offset + normal_size;
   glVertexArrayVertexBuffer(
       geometry.vertex_array, uv_attrib, geometry.vertex_buffer,
-      2 * mesh_data.positions.size() * sizeof(GLfloat), 2 * sizeof(GLfloat));
-  glVertexArrayAttribFormat(geometry.vertex_array, uv_attrib, 2, GL_FLOAT,
+      uv_vbo_offset, uv_nfloat * sizeof(GLfloat));
+  glVertexArrayAttribFormat(geometry.vertex_array, uv_attrib,
+                            uv_nfloat, GL_FLOAT,
                             GL_FALSE, 0);
   glEnableVertexArrayAttrib(geometry.vertex_array, uv_attrib);
 
@@ -1034,6 +1059,8 @@ OpenGlGeometry RenderEngineGl::CreateGlGeometry(const MeshData& mesh_data) {
   glVertexArrayElementBuffer(geometry.vertex_array, geometry.index_buffer);
 
   geometry.index_buffer_size = mesh_data.indices.size();
+
+  geometry.has_tex_coord = mesh_data.has_tex_coord;
 
   // Note: We won't need to call the corresponding glDeleteVertexArrays or
   // glDeleteBuffers. The meshes we store are "canonical" meshes. Even if a
@@ -1075,12 +1102,14 @@ ShaderId RenderEngineGl::AddShader(std::unique_ptr<ShaderProgram> program,
 }
 
 ShaderProgramData RenderEngineGl::GetShaderProgram(
-    const PerceptionProperties& properties, RenderType render_type) const {
+    const PerceptionProperties& properties,
+    const OpenGlGeometry& geometry,
+    RenderType render_type) const {
   std::optional<ShaderProgramData> data{std::nullopt};
   for (const auto& id_shader_pair : shader_programs_[render_type]) {
     const ShaderProgram& program = *(id_shader_pair.second);
     std::optional<ShaderProgramData> candidate_data =
-        program.CreateProgramData(properties);
+        program.CreateProgramData(properties, geometry);
     if (candidate_data.has_value()) {
       if (data.has_value()) {
         if (candidate_data->shader_id() < data->shader_id()) continue;

@@ -186,6 +186,7 @@ class RenderEngineGl final : public RenderEngine {
   // more preferred than the earlier shader.
   internal::ShaderProgramData GetShaderProgram(
       const PerceptionProperties& properties,
+      const internal::OpenGlGeometry& geometry,
       internal::RenderType render_type) const;
 
   // The cached value transformation between camera and world frames.
