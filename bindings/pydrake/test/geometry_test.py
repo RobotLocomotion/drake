@@ -719,11 +719,14 @@ class TestGeometry(unittest.TestCase):
 
         # Confirm rendering API returns images of appropriate type.
         camera_core = mut.render.RenderCameraCore(
-            renderer_name, CameraInfo(width=10, height=10, fov_y=pi/6),
-            mut.render.ClippingRange(0.1, 10.0), RigidTransform())
-        color_camera = mut.render.ColorRenderCamera(camera_core, False)
+            renderer_name=renderer_name,
+            intrinsics=CameraInfo(width=10, height=10, fov_y=pi/6),
+            clipping=mut.render.ClippingRange(0.1, 10.0),
+            X_BS=RigidTransform())
+        color_camera = mut.render.ColorRenderCamera(
+            core=camera_core, show_window=False)
         depth_camera = mut.render.DepthRenderCamera(
-            camera_core, mut.render.DepthRange(0.1, 5.0))
+            core=camera_core, depth_range=mut.render.DepthRange(0.1, 5.0))
         image = query_object.RenderColorImage(
                 camera=color_camera, parent_frame=SceneGraph.world_frame_id(),
                 X_PC=RigidTransform())

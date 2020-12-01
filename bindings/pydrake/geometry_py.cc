@@ -183,8 +183,9 @@ void def_geometry_render(py::module m) {
     using Class = ClippingRange;
     const auto& cls_doc = doc.ClippingRange;
     py::class_<Class>(m, "ClippingRange", cls_doc.doc)
-        .def(py::init<Class const&>(), cls_doc.ctor.doc)
-        .def(py::init<double, double>(), cls_doc.ctor.doc, cls_doc.far.doc)
+        .def(py::init<Class const&>(), py::arg("other"), "Copy constructor")
+        .def(py::init<double, double>(), py::arg("near"), py::arg("far"),
+            cls_doc.ctor.doc)
         .def("far", static_cast<double (Class::*)() const>(&Class::far),
             cls_doc.far.doc)
         .def("near", static_cast<double (Class::*)() const>(&Class::near),
@@ -195,55 +196,78 @@ void def_geometry_render(py::module m) {
     const auto& cls_doc = doc.ColorRenderCamera;
     py::class_<Class> cls(m, "ColorRenderCamera", cls_doc.doc);
     cls  // BR
-        .def(py::init<Class const&>())
-        .def(py::init<RenderCameraCore, bool>(), cls_doc.ctor.doc_2args)
-        .def("core", static_cast<RenderCameraCore const& (Class::*)() const>(
-                         &Class::core))
+        .def(py::init<Class const&>(), py::arg("other"), "Copy constructor")
+        .def(py::init<RenderCameraCore, bool>(), py::arg("core"),
+            py::arg("show_window") = false, cls_doc.ctor.doc_2args)
+        .def("core",
+            static_cast<RenderCameraCore const& (Class::*)() const>(
+                &Class::core),
+            cls_doc.core.doc)
         .def("show_window",
-            static_cast<bool (Class::*)() const>(&Class::show_window));
+            static_cast<bool (Class::*)() const>(&Class::show_window),
+            cls_doc.show_window.doc);
     DefCopyAndDeepCopy(&cls);
   }
   {
     using Class = DepthRange;
+    const auto& cls_doc = doc.DepthRange;
     py::class_<Class> cls(m, "DepthRange");
     cls  // BR
-        .def(py::init<Class const&>())
-        .def(py::init<double, double>())
+        .def(py::init<Class const&>(), py::arg("other"), "Copy constructor")
+        .def(py::init<double, double>(), py::arg("min_in"), py::arg("min_out"),
+            cls_doc.ctor.doc)
         .def("max_depth",
-            static_cast<double (Class::*)() const>(&Class::max_depth))
+            static_cast<double (Class::*)() const>(&Class::max_depth),
+            cls_doc.max_depth.doc)
         .def("min_depth",
-            static_cast<double (Class::*)() const>(&Class::min_depth));
+            static_cast<double (Class::*)() const>(&Class::min_depth),
+            cls_doc.min_depth.doc);
     DefCopyAndDeepCopy(&cls);
   }
   {
     using Class = DepthRenderCamera;
+    const auto& cls_doc = doc.DepthRenderCamera;
     py::class_<Class> cls(m, "DepthRenderCamera");
     cls  // BR
-        .def(py::init<Class const&>())
-        .def(py::init<RenderCameraCore, DepthRange>())
-        .def("core", static_cast<RenderCameraCore const& (Class::*)() const>(
-                         &Class::core))
-        .def("depth_range", static_cast<DepthRange const& (Class::*)() const>(
-                                &Class::depth_range));
+        .def(py::init<Class const&>(), py::arg("other"), "Copy constructor")
+        .def(py::init<RenderCameraCore, DepthRange>(), py::arg("core"),
+            py::arg("depth_range"), cls_doc.ctor.doc_2args_core_depth_range)
+        .def("core",
+            static_cast<RenderCameraCore const& (Class::*)() const>(
+                &Class::core),
+            cls_doc.core.doc)
+        .def("depth_range",
+            static_cast<DepthRange const& (Class::*)() const>(
+                &Class::depth_range),
+            cls_doc.depth_range.doc);
     DefCopyAndDeepCopy(&cls);
   }
   {
     using Class = RenderCameraCore;
+    const auto& cls_doc = doc.RenderCameraCore;
     py::class_<Class> cls(m, "RenderCameraCore");
     cls  // BR
-        .def(py::init<Class const&>())
-        .def(py::init<::std::string, CameraInfo, ClippingRange,
-            RigidTransformd>())
-        .def("clipping", static_cast<ClippingRange const& (Class::*)() const>(
-                             &Class::clipping))
-        .def("intrinsics", static_cast<CameraInfo const& (Class::*)() const>(
-                               &Class::intrinsics))
+        .def(py::init<Class const&>(), py::arg("other"), "Copy constructor")
+        .def(
+            py::init<std::string, CameraInfo, ClippingRange, RigidTransformd>(),
+            py::arg("renderer_name"), py::arg("intrinsics"),
+            py::arg("clipping"), py::arg("X_BS"), cls_doc.ctor.doc_4args)
+        .def("clipping",
+            static_cast<ClippingRange const& (Class::*)() const>(
+                &Class::clipping),
+            cls_doc.clipping.doc)
+        .def("intrinsics",
+            static_cast<CameraInfo const& (Class::*)() const>(
+                &Class::intrinsics),
+            cls_doc.intrinsics.doc)
         .def("renderer_name",
             static_cast<::std::string const& (Class::*)() const>(
-                &Class::renderer_name))
+                &Class::renderer_name),
+            cls_doc.renderer_name.doc)
         .def("sensor_pose_in_camera_body",
             static_cast<RigidTransformd const& (Class::*)() const>(
-                &Class::sensor_pose_in_camera_body));
+                &Class::sensor_pose_in_camera_body),
+            cls_doc.sensor_pose_in_camera_body.doc);
     DefCopyAndDeepCopy(&cls);
   }
 
