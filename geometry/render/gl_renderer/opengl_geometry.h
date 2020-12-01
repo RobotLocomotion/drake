@@ -42,11 +42,13 @@ struct OpenGlGeometry {
    @param index_buffer_size_in  The number of indices in the index buffer.
    @pre `index_buffer_size_in >= 0`.  */
   OpenGlGeometry(GLuint vertex_array_in, GLuint vertex_buffer_in,
-                 GLuint index_buffer_in, int index_buffer_size_in)
+                 GLuint index_buffer_in, int index_buffer_size_in,
+                 bool has_tex_coord_in)
       : vertex_array{vertex_array_in},
         vertex_buffer{vertex_buffer_in},
         index_buffer{index_buffer_in},
-        index_buffer_size{index_buffer_size_in} {
+        index_buffer_size{index_buffer_size_in},
+        has_tex_coord{has_tex_coord_in} {
     if (index_buffer_size < 0) {
       throw std::logic_error("Index buffer size must be non-negative");
     }
@@ -72,6 +74,9 @@ struct OpenGlGeometry {
   GLuint vertex_buffer{kInvalid};
   GLuint index_buffer{kInvalid};
   int index_buffer_size{0};
+  /* True indicates that this has texture coordinates to support texture
+   maps. See MeshData::has_tex_coord for detail.  */
+  bool has_tex_coord{};
 
   /* The value of an object (array, buffer) that should be considered invalid.
    */
