@@ -81,6 +81,7 @@ class ElasticityElement : public ElasticityElementBase<T> {
   /** Returns the elastic potential energy stored in this element in unit J. */
   T CalcElasticEnergy(const FemState<T>& state) const final;
 
+  // TODO(xuchenhan-tri): Use fixed size matrix instead of MatrixX.
   /** Calculates the stiffness matrix of this element given the state.
    Implements ElasticityElementBase::CalcStiffnessMatrix(). */
   void CalcStiffnessMatrix(const FemState<T>& state,
@@ -92,32 +93,30 @@ class ElasticityElement : public ElasticityElementBase<T> {
 
   friend class ElasticityElementTest;
 
-  // TODO(xuchenhan-tri): Modify the documentation when inertia terms are added.
-  /** Calculates the element residual of this element evaluated at the input
-   state. For %ElasticityElement, the residual will be the negative total force
-   acting on the nodes.
+  // TODO(xuchenhan-tri): Add the missing inertia and damping terms.
+  /* Implements the NVI `FemElement::CalcResidual()`. For %ElasticityElement,
+   the element residual will be the momentum change minus the impulse received
+   over the timestep.
    @param[in] state The FEM state at which to evaluate the residual.
-   @returns a vector of residual of size `3 * num_nodes()`. The vector is
+   @param[out] residual a vector of residual of size `num_dofs()`. The vector is
    ordered such that `3*i`-th to `3*i+2`-th entries of the vector stores the
    residual corresponding to the i-th node in this element. */
   void DoCalcResidual(const FemState<T>& state,
                       EigenPtr<VectorX<T>> residual) const final;
 
-  // TODO(xuchenhan-tri): Modify the documentation when inertia and damping
-  // terms are added.
-  /** Calculates the element tangent matrix of this element evaluated at the
-   input state. For %ElasticityElement, the element tangent matrix will be the
-   derivatives of the negative total force with respect to the node positions.
+  // TODO(xuchenhan-tri): Add the missing inertia and damping terms.
+  /* Implements the NVI `FemElement::CalcTangentMatrix()`. For
+   %ElasticityElement, the element tangent matrix will be the mass matrix minus
+   the derivatives of the total force with respect to the node positions.
    @param[in] state The FEM state at which to evaluate the residual.
-   @returns the tangent matrix of size 3*`num_nodes()`-by-3*`num_nodes()`. The
-   matrix is organized into `num_nodes()`-by-`num_nodes()` of 3-by-3 blocks. The
-   ij-th block corresponds to the derivative of the negative total force on node
-   i with respect to the position of the node j. */
+   @param[out] tangent_matrix the tangent matrix of size
+   `num_dofs()`-by-`num_dofs()`. The matrix is organized into
+   `num_nodes()`-by-`num_nodes()` of 3-by-3 blocks. */
   void DoCalcTangentMatrix(const FemState<T>& state,
                            EigenPtr<MatrixX<T>> tangent_matrix) const final;
 
   /* Calculates the elastic forces on the nodes in this element. Returns a
-   vector of elastic forces of size 3*num_nodes(). */
+   vector of elastic forces of size num_dofs(). */
   void CalcNegativeElasticForce(const FemState<T>& state,
                                 EigenPtr<VectorX<T>> force) const;
 
@@ -168,27 +167,28 @@ class ElasticityElement : public ElasticityElementBase<T> {
                 |           |           |           |
                 -------------------------------------
   Namely the ik-th entry in the jl-th block corresponds to the value Aᵢⱼₖₗ. */
-  void TensorContraction(
+  static void TensorContraction(
       const Eigen::Ref<const Eigen::Matrix<T, 9, 9>>& A,
       const Eigen::Ref<const Vector3<T>>& u,
-      const Eigen::Ref<const Vector3<T>>& v, EigenPtr<Matrix3<T>> B) const {
+      const Eigen::Ref<const Vector3<T>>& v, EigenPtr<Matrix3<T>> B) {
     B->setZero();
     for (int l = 0; l < 3; ++l) {
-        for (int j = 0; j < 3; ++j) {
-            *B += A.template block<3, 3>(3 * j, 3 * l) * u(j) * v(l);
+      for (int j = 0; j < 3; ++j) {
+        *B += A.template block<3, 3>(3 * j, 3 * l) * u(j) * v(l);
       }
     }
   }
 
   /* Helper function that adds a 3x3 matrix into the 3x3 block in a bigger
-   matrix `matrix` with starting row index 3*m and starting column index 3*n.
-   Note that this function does not check the index it tries to write in
-   `matrix` is valid. */
-  void AccumulateMatrixBlock(const Eigen::Ref<const Matrix3<T>>& block, int m,
-                             int n, EigenPtr<MatrixX<T>> matrix) const {
+   matrix `matrix` with starting row index 3*node_a and starting column index
+   3*node_b. Note that this function assumes the pointer `matrix` is not null
+   and does not check the index it tries to write in `matrix` is valid and. */
+  static void AccumulateMatrixBlock(const Eigen::Ref<const Matrix3<T>>& block,
+                                    int node_a, int node_b,
+                                    EigenPtr<MatrixX<T>> matrix) {
     for (int j = 0; j < 3; ++j) {
-        for (int i = 0; i < 3; ++i) {
-            (*matrix)(3 * m + i, 3 * n + j) += block(i, j);
+      for (int i = 0; i < 3; ++i) {
+        (*matrix)(3 * node_a + i, 3 * node_b + j) += block(i, j);
       }
     }
   }

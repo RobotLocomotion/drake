@@ -71,11 +71,8 @@ void FemModel<T>::CalcTangentMatrix(
   const int solution_dim = solution_dimension();
   for (int e = 0; e < num_elements(); ++e) {
     const int element_num_nodes = elements_[e]->num_nodes();
-    const int element_dof = element_num_nodes * solution_dim;
-    if (element_tangent_matrix.rows() != element_dof ||
-        element_tangent_matrix.cols() != element_dof) {
-      element_tangent_matrix.resize(element_dof, element_dof);
-    }
+    const int element_dof = elements_[e]->num_dofs();
+    element_tangent_matrix.resize(element_dof, element_dof);
     elements_[e]->CalcTangentMatrix(state, &element_tangent_matrix);
     // TODO(xuchenhan-tri): This may become a repeating pattern. Consider
     // extracting it out into a method.

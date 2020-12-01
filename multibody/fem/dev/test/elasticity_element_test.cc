@@ -108,8 +108,8 @@ TEST_F(ElasticityElementTest, StiffnessMatrixIsNegativeElasticForceDerivative) {
   MatrixX<AutoDiffXd> stiffness_matrix(kDof, kDof);
   elasticity_element_->CalcStiffnessMatrix(*state_, &stiffness_matrix);
   for (int i = 0; i < kDof; ++i) {
-    EXPECT_TRUE(CompareMatrices(neg_force(i).derivatives(),
-                                stiffness_matrix.col(i),
+    EXPECT_TRUE(CompareMatrices(neg_force(i).derivatives().transpose(),
+                                stiffness_matrix.row(i),
                                 std::numeric_limits<double>::epsilon()));
   }
   // TODO(xuchenhan-tri) Modify this to account for damping force derivatives

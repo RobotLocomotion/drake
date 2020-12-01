@@ -73,8 +73,7 @@ class FemModel {
   int num_nodes() const { return num_nodes_; }
 
   /** Calculates the residual at the given FemState. Suppose the linear or
-   nonlinear system generated from the FEM discretization is
-        G(u₁, u₂, ..., uₙ) = 0,
+   nonlinear system generated from the FEM discretization is G(u) = 0,
    then the output `residual` is equal to the function G evaluated at the
    input `state`.
    @param[in] state The FemState at which to evaluate the residual.
@@ -83,14 +82,16 @@ class FemModel {
   void CalcResidual(const FemState<T>& state,
                     EigenPtr<VectorX<T>> residual) const;
 
-  /** Calculates the tangent matrix at the given FemState.
+  /** Calculates the tangent matrix at the given FemState. The ij-th entry of
+   the tangent matrix is the derivative of the i-th entry of the residual
+   (calculated by CalcResidual()) with respect to the j-th generalized position.
    @param[in] state The FemState to evaluate the residual at.
    @param[out] tangent_matrix The output tangent_matrix. Suppose the linear or
-   nonlinear system generated from the FEM discretization is G(u₁, u₂, ..., uₙ)
-   = 0, then `tangent_matrix` is equal to ∇G evaluated at the input `state`.
+   nonlinear system generated from the FEM discretization is G(u) = 0,
+   then `tangent_matrix` is equal to ∇G evaluated at the input `state`.
    @pre `tangent_matrix` must not be the null pointer.
    @pre The size of matrix pointed to by `tangent_matrix` must be
-   `num_dofs()*num_dofs()`. */
+   `num_dofs()`*`num_dofs()`. */
   void CalcTangentMatrix(const FemState<T>& state,
                          Eigen::SparseMatrix<T>* tangent_matrix) const;
 

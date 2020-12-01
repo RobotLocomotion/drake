@@ -45,6 +45,10 @@ class FemElement {
   // residual, stiffness/tangent matrix, etc at compile time. See issue #14302.
   virtual int solution_dimension() const = 0;
 
+  /** The number of degrees of freedom in the element. It is equal to
+   `solution_dimension()` * `num_nodes()`. */
+  int num_dofs() const { return solution_dimension() * num_nodes(); }
+
   /** Number of quadrature points at which element-wise quantities are
    evaluated. */
   virtual int num_quadrature_points() const = 0;
@@ -60,26 +64,25 @@ class FemElement {
    `state`. This method updates the element cache entry corresponding to `this`
    element in the input `state` if they are out of date.
    @param[in] state The FemState at which to evaluate the residual.
-   @param[out] residual The residual vector of size `solution_dimension() *
-   num_nodes()`. The vector is ordered such that `i*solution_dimension()`-th to
+   @param[out] residual The residual vector of size `num_dofs()`. The vector is
+   ordered such that `i*solution_dimension()`-th to
    `(i+1)*solution_dimension()-1`-th entries of the vector stores the residual
    corresponding to the i-th node in this element.
    @pre `residual` must not be the nullptr, and the vector it points to must
-   have size `num_nodes() * solution_dimension()` */
+   have size `num_nodes() * solution_dimension()`. */
   void CalcResidual(const FemState<T>& state,
                     EigenPtr<VectorX<T>> residual) const;
 
   /** Calculates the element tangent matrix of this element evaluated at the
-   input state.
+   input state. The ij-th entry of the element tangent matrix is the derivative
+   of the i-th entry of the residual (calculated by CalcResidual()) with respect
+   to the j-th generalized position.
    @param[in] state The FEM state at which to evaluate the residual.
-   @returns the tangent matrix of size
-   `solution_dimension()*num_nodes()`-by-`solution_dimension()*num_nodes()`.
+   @returns the tangent matrix of size `num_dofs()`-by-`num_dofs()`.
    The matrix is organized into `num_nodes()`-by-`num_nodes()` of
    `solution_dimension()`-by-`solution_dimension()` blocks.
    @pre `tangent_matrix` must not be the nullptr, and the matrix it
-   points to must have size
-   `solution_dimension()*num_nodes()`-by-`solution_dimension()*num_nodes()`.
-   */
+   points to must have size `num_dofs()`-by-`num_dofs()`. */
   void CalcTangentMatrix(const FemState<T>& state,
                          EigenPtr<MatrixX<T>> tangent_matrix) const;
 
@@ -94,25 +97,11 @@ class FemElement {
   FemElement(ElementIndex element_index,
              const std::vector<NodeIndex>& node_indices);
 
-  /** Derived classes must implement this method to calculate the element
-   residual of this element evaluated at the input state.
-   @param[in] state The FemState at which to evaluate the residual.
-   @param[out] a vector of residual of size `solution_dimension()*num_nodes()`.
-   The vector is ordered such that `i*solution_dimension()`-th to
-   `(i+1)*solution_dimension()-1`-th entries of the vector stores the residual
-   corresponding to the i-th node in this element.
-   @pre residual must not be the nullptr, and the vector it points to must have
-   size `num_nodes() * solution_dimension()`. */
+  /** Implements the NVI CalcResidual(). */
   virtual void DoCalcResidual(const FemState<T>& s,
                               EigenPtr<VectorX<T>> residual) const = 0;
 
-  /** Derived classes must implement this method to calculate the element
-     tangent matrix of this element evaluated at the input state.
-     @param[in] state The FEM state at which to evaluate the residual.
-     @returns the tangent matrix of size
-     `solution_dimension()*num_nodes()`-by-`solution_dimension()*num_nodes()`.
-     The matrix is organized into `num_nodes()`-by-`num_nodes()` of
-     `solution_dimension()`-by-`solution_dimension()` blocks. */
+  /** Implements the NVI CalcTangentMatrix(). */
   virtual void DoCalcTangentMatrix(
       const FemState<T>& state, EigenPtr<MatrixX<T>> tangent_matrix) const = 0;
 
