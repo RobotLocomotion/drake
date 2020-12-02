@@ -24,13 +24,6 @@ PortBase::PortBase(
   DRAKE_DEMAND(kind_string != nullptr);
   DRAKE_DEMAND(owning_system != nullptr);
   DRAKE_DEMAND(!name_.empty());
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  if (size_ == kAutoSize) {
-    throw std::domain_error(
-        "Auto-size ports are deprecated and unimplemented.");
-  }
-#pragma GCC diagnostic pop
 }
 
 PortBase::~PortBase() = default;
