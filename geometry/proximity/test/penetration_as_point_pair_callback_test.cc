@@ -251,7 +251,7 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
                           point_pairs_double[0].p_WCa));
       EXPECT_TRUE(
           CompareMatrices(math::autoDiffToValueMatrix(first_result.p_WCb),
-                          point_pairs_double[0].p_WCb));
+                          point_pairs_double[0].p_WCb, kEps));
       EXPECT_TRUE(
           CompareMatrices(math::autoDiffToValueMatrix(first_result.nhat_BA_W),
                           point_pairs_double[0].nhat_BA_W));
