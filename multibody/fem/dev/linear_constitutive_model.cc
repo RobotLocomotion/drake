@@ -1,5 +1,7 @@
 #include "drake/multibody/fem/dev/linear_constitutive_model.h"
 
+#include "drake/common/unused.h"
+
 namespace drake {
 namespace multibody {
 namespace fem {
@@ -67,11 +69,10 @@ void LinearConstitutiveModel<T>::DoCalcFirstPiolaStress(
 
 template <typename T>
 void LinearConstitutiveModel<T>::DoCalcFirstPiolaStressDerivative(
-        const DeformationGradientCacheEntry<T>& cache_entry,
-        std::vector<Eigen::Matrix<T, 9, 9>>* dPdF) const {
-    for (int q = 0; q < cache_entry.num_quadrature_points(); ++q) {
-        (*dPdF)[q] = dPdF_;
-    }
+    const DeformationGradientCacheEntry<T>& cache_entry,
+    std::vector<Eigen::Matrix<T, 9, 9>>* dPdF) const {
+  unused(cache_entry);
+  std::fill(dPdF->begin(), dPdF->end(), dPdF_);
 }
 
 template <typename T>

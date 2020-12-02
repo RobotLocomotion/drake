@@ -20,8 +20,8 @@ std::vector<Matrix3<AutoDiffXd>> MakeDeformationGradients() {
   F << 0.18, 0.63, 0.54, 0.13, 0.92, 0.17, 0.03, 0.86, 0.85;
   const std::vector<Matrix3<double>> Fs(kNumQuads, F);
   std::vector<Matrix3<AutoDiffXd>> Fs_autodiff(kNumQuads);
-  const Eigen::Matrix<double, 9, Eigen::Dynamic> gradient =
-      MatrixX<double>::Identity(9, 9);
+  const Eigen::Matrix<double, 9, Eigen::Dynamic> gradient(
+      Eigen::Matrix<double, 9, 9>::Identity());
   for (int i = 0; i < kNumQuads; ++i) {
     const auto F_autodiff_flat = math::initializeAutoDiffGivenGradientMatrix(
         Eigen::Map<const Eigen::Matrix<double, 9, 1>>(Fs[i].data(), 9),

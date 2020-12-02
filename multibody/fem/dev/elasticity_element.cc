@@ -110,8 +110,11 @@ T ElasticityElement<T, IsoparametricElementType,
  Kₐᵦ,σ is given by ∫dSᵃ/dxₖ σₖₗ dSᵇ/dxₗ dx (9.44c). Notice that we used S to
  denote shape functions whereas [Bonet, 2016] uses N.
  The stiffness we calculate here is given by ∫ dF/dxᵇ : dP/dF : dF/dxᵃ dX.
- The calculation uses a different stress-strain pair, but is analytically equal
- to Kₐᵦ,c + Kₐᵦ,σ.
+ The calculation uses a different conjugate pair pair, but is analytically equal
+ to Kₐᵦ,c + Kₐᵦ,σ. See multibody/fem/dev/doc/stiffness_matrix.pdf for the
+ derivation that shows the equivalence.
+ // TODO(xuchenhan-tri): Update the directory above when this file moves out of
+ dev/.
 
  Reference: [Bonet, 2016] Bonet, Javier, Antonio J.Gil, and
  Richard D. Wood. Nonlinear solid mechanics for finite element analysis:

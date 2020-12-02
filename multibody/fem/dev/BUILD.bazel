@@ -189,6 +189,7 @@ drake_cc_library(
         ":linear_constitutive_model_cache_entry",
         "//common:default_scalars",
         "//common:essential",
+        "//common:unused",
     ],
 )
 
