@@ -276,7 +276,10 @@ PYBIND11_MODULE(sensors, m) {
     py::class_<Class> cls(m, "CameraInfo", cls_doc.doc);
     cls  // BR
         .def(py::init<int, int, double>(), py::arg("width"), py::arg("height"),
-            py::arg("fov_y"), cls_doc.ctor.doc_3args)
+            py::arg("fov_y"), cls_doc.ctor.doc_3args_width_height_fov_y)
+        .def(py::init<int, int, const Matrix3d&>(), py::arg("width"),
+            py::arg("height"), py::arg("intrinsic_matrix"),
+            cls_doc.ctor.doc_3args_width_height_intrinsic_matrix)
         .def(py::init<int, int, double, double, double, double>(),
             py::arg("width"), py::arg("height"), py::arg("focal_x"),
             py::arg("focal_y"), py::arg("center_x"), py::arg("center_y"),
