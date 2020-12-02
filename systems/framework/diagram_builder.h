@@ -21,8 +21,9 @@ namespace systems {
 /// use: after calling Build or BuildInto, DiagramBuilder gives up ownership
 /// of the constituent systems, and should therefore be discarded.
 ///
-/// A system must be added to the DiagramBuilder with AddSystem before it can
-/// be wired up in any way. Every system must have a unique, non-empty name.
+/// A system must be added to the DiagramBuilder with AddSystem or
+/// AddNamedSystem before it can be wired up in any way. Every system must have
+/// a unique, non-empty name.
 template <typename T>
 class DiagramBuilder {
  public:
@@ -31,9 +32,6 @@ class DiagramBuilder {
 
   DiagramBuilder();
   virtual ~DiagramBuilder();
-
-  // TODO(sherm1) The AddSystem methods (or some variant) should take the system
-  // name as their first parameter. See discussion in issue #5895.
 
   /// Takes ownership of @p system and adds it to the builder. Returns a bare
   /// pointer to the System, which will remain valid for the lifetime of the
@@ -116,6 +114,85 @@ class DiagramBuilder {
   template<template<typename Scalar> class S, typename... Args>
   S<T>* AddSystem(Args&&... args) {
     return AddSystem(std::make_unique<S<T>>(std::forward<Args>(args)...));
+  }
+
+  /// Takes ownership of @p system, applies @p name to it, and adds it to the
+  /// builder. Returns a bare pointer to the System, which will remain valid
+  /// for the lifetime of the Diagram built by this builder.
+  ///
+  /// @code
+  ///   DiagramBuilder<T> builder;
+  ///   auto bar = builder.AddNamedSystem("bar", std::make_unique<Bar<T>>());
+  /// @endcode
+  ///
+  /// @tparam S The type of system to add.
+  /// @post The system's name is @p name.
+  template<class S>
+  S* AddNamedSystem(const std::string& name, std::unique_ptr<S> system) {
+    system->set_name(name);
+    return AddSystem(std::move(system));
+  }
+
+  /// Constructs a new system with the given @p args, applies @p name to it,
+  /// and adds it to the builder, which retains ownership. Returns a bare
+  /// pointer to the System, which will remain valid for the lifetime of the
+  /// Diagram built by this builder.
+  ///
+  /// @code
+  ///   DiagramBuilder<double> builder;
+  ///   auto bar = builder.AddNamedSystem<Bar<double>>("bar", 3.14);
+  /// @endcode
+  ///
+  /// Note that for dependent names you must use the template keyword:
+  ///
+  /// @code
+  ///   DiagramBuilder<T> builder;
+  ///   auto bar = builder.template AddNamedSystem<Bar<T>>("bar", 3.14);
+  /// @endcode
+  ///
+  /// You may prefer the `unique_ptr` variant instead.
+  ///
+  /// @tparam S The type of System to construct. Must subclass System<T>.
+  /// @post The newly constructed system's name is @p name.
+  ///
+  /// @exclude_from_pydrake_mkdoc{Not bound in pydrake -- emplacement while
+  /// specifying <T> doesn't make sense for that language.}
+  template<class S, typename... Args>
+  S* AddNamedSystem(const std::string& name, Args&&... args) {
+    return AddNamedSystem(
+        name, std::make_unique<S>(std::forward<Args>(args)...));
+  }
+
+  /// Constructs a new system with the given @p args, applies @p name to it,
+  /// and adds it to the builder, which retains ownership. Returns a bare
+  /// pointer to the System, which will remain valid for the lifetime of the
+  /// Diagram built by this builder.
+  ///
+  /// @code
+  ///   DiagramBuilder<double> builder;
+  ///   // Bar must be a template.
+  ///   auto bar = builder.AddNamedSystem<Bar>("bar", 3.14);
+  /// @endcode
+  ///
+  /// Note that for dependent names you must use the template keyword:
+  ///
+  /// @code
+  ///   DiagramBuilder<T> builder;
+  ///   auto bar = builder.template AddNamedSystem<Bar>("bar", 3.14);
+  /// @endcode
+  ///
+  /// You may prefer the `unique_ptr` variant instead.
+  ///
+  /// @tparam S A template for the type of System to construct. The template
+  /// will be specialized on the scalar type T of this builder.
+  /// @post The newly constructed system's name is @p name.
+  ///
+  /// @exclude_from_pydrake_mkdoc{Not bound in pydrake -- emplacement while
+  /// specifying <T> doesn't make sense for that language.}
+  template<template<typename Scalar> class S, typename... Args>
+  S<T>* AddNamedSystem(const std::string& name, Args&&... args) {
+    return AddNamedSystem(
+        name, std::make_unique<S<T>>(std::forward<Args>(args)...));
   }
 
   /// Returns whether any Systems have been added yet.
