@@ -1970,6 +1970,10 @@ class TestPlant(unittest.TestCase):
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
         plant_f, scene_graph_f = AddMultibodyPlantSceneGraph(builder_f, 0.0)
         parser = Parser(plant=plant_f, scene_graph=scene_graph_f)
+        # The validity of this test depends on the colliding geometries to be
+        # supported across all nonsymbolic scalar types (double, autodiffxd).
+        # If two_bodies.sdf were to change to unsupported geometries, this
+        # test would break.
         parser.AddModelFromFile(
             FindResourceOrThrow(
                 "drake/bindings/pydrake/multibody/test/two_bodies.sdf"))
@@ -1988,18 +1992,8 @@ class TestPlant(unittest.TestCase):
         sg_context = diagram.GetMutableSubsystemContext(scene_graph, context)
         query_object = scene_graph.get_query_output_port().Eval(sg_context)
         # Implicitly require that this should be size 1.
-        # TODO(hongkai.dai): currently if there are bodies in contact, then we
-        # only support ComputePointPairPenetration() for T=float. After we
-        # resolve issue #11455 we should support AutoDiffXd for some primitive
-        # geometries as well.
-        if T == float:
-            point_pair, = query_object.ComputePointPairPenetration()
-            self.assertIsInstance(point_pair, PenetrationAsPointPair_[float])
-        else:
-            with self.assertRaisesRegex(
-                RuntimeError,
-                    ".*Some of the bodies in the model are in contact."):
-                query_object.ComputePointPairPenetration()
+        point_pair, = query_object.ComputePointPairPenetration()
+        self.assertIsInstance(point_pair, PenetrationAsPointPair_[T])
         signed_distance_pair, = query_object.\
             ComputeSignedDistancePairwiseClosestPoints()
         self.assertIsInstance(signed_distance_pair, SignedDistancePair_[T])
@@ -2035,17 +2029,11 @@ class TestPlant(unittest.TestCase):
                              frame_id)
             return body
 
-        # TODO(hongkai.dai): currently if there are bodies in contact, then we
-        # only support ComputePointPairPenetration() for T=float. Hence
-        # point_pair is only defined when T=float. After we
-        # resolve issue #11455 we should support AutoDiffXd for primitive
-        # geometries as well.
-        if isinstance(T, float):
-            bodies = {get_body_from_frame_id(inspector.GetFrameId(id_))
-                      for id_ in [point_pair.id_A, point_pair.id_B]}
-            self.assertSetEqual(
-                bodies,
-                {plant.GetBodyByName("body1"), plant.GetBodyByName("body2")})
+        bodies = {get_body_from_frame_id(inspector.GetFrameId(id_))
+                  for id_ in [point_pair.id_A, point_pair.id_B]}
+        self.assertSetEqual(
+            bodies,
+            {plant.GetBodyByName("body1"), plant.GetBodyByName("body2")})
 
         id_, = plant.GetCollisionGeometriesForBody(
             body=plant.GetBodyByName("body1"))

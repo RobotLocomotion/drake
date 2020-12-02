@@ -385,7 +385,7 @@ class GeometryState {
 
   /** Implementation of QueryObject::ComputePointPairPenetration().  */
   std::vector<PenetrationAsPointPair<T>> ComputePointPairPenetration() const {
-    return geometry_engine_->ComputePointPairPenetration();
+    return geometry_engine_->ComputePointPairPenetration(X_WGs_);
   }
 
   /** Implementation of QueryObject::ComputeContactSurfaces().  */
