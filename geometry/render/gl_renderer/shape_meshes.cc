@@ -113,7 +113,7 @@ MeshData LoadMeshFromObj(std::istream* input_stream,
         filename));
   }
 
-  bool has_tex_coord{attrib.texcoords.size() > 0};
+  const bool has_tex_coord{attrib.texcoords.size() > 0};
 
   for (const auto& shape : shapes) {
     /* Each face is a sequence of indices. All of the face indices are

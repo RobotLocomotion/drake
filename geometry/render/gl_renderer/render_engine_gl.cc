@@ -201,9 +201,8 @@ class DefaultTextureColorShader final : public internal::ShaderProgram {
 
     if (!texture_id.has_value()) return std::nullopt;
 
-    const bool has_tex_coord = properties.GetPropertyOrDefault(
-        kInternalGroup, kHasTexCoordProperty, MeshData::kHasTexCoordDefault);
-
+    const bool has_tex_coord =
+        properties.GetProperty<bool>(kInternalGroup, kHasTexCoordProperty);
     if (!has_tex_coord) {
       // TODO(eric.cousineau): How to carry mesh name along?
       throw std::runtime_error(fmt::format(
@@ -499,28 +498,28 @@ void RenderEngineGl::UpdateViewpoint(const RigidTransformd& X_WR) {
 }
 
 void RenderEngineGl::ImplementGeometry(const Sphere& sphere, void* user_data) {
-  OpenGlGeometry geometry = GetSphere();
+  const OpenGlGeometry geometry = GetSphere();
   const double r = sphere.radius();
-  ImplementGeometry(geometry, user_data, Vector3d(r, r, r));
+  ImplementOpenGlGeometry(geometry, user_data, Vector3d(r, r, r));
 }
 
 void RenderEngineGl::ImplementGeometry(const Cylinder& cylinder,
                                        void* user_data) {
-  OpenGlGeometry geometry = GetCylinder();
+  const OpenGlGeometry geometry = GetCylinder();
   const double r = cylinder.radius();
   const double l = cylinder.length();
-  ImplementGeometry(geometry, user_data, Vector3d(r, r, l));
+  ImplementOpenGlGeometry(geometry, user_data, Vector3d(r, r, l));
 }
 
 void RenderEngineGl::ImplementGeometry(const HalfSpace&, void* user_data) {
-  OpenGlGeometry geometry = GetHalfSpace();
-  ImplementGeometry(geometry, user_data, Vector3d(1, 1, 1));
+  const OpenGlGeometry geometry = GetHalfSpace();
+  ImplementOpenGlGeometry(geometry, user_data, Vector3d(1, 1, 1));
 }
 
 void RenderEngineGl::ImplementGeometry(const Box& box, void* user_data) {
-  OpenGlGeometry geometry = GetBox();
-  ImplementGeometry(geometry, user_data,
-                    Vector3d(box.width(), box.depth(), box.height()));
+  const OpenGlGeometry geometry = GetBox();
+  ImplementOpenGlGeometry(
+      geometry, user_data, Vector3d(box.width(), box.depth(), box.height()));
 }
 
 void RenderEngineGl::ImplementGeometry(const Capsule& capsule,
@@ -529,27 +528,28 @@ void RenderEngineGl::ImplementGeometry(const Capsule& capsule,
   MeshData mesh_data =
       internal::MakeCapsule(resolution, capsule.radius(), capsule.length());
 
-  OpenGlGeometry geometry = CreateGlGeometry(mesh_data);
+  const OpenGlGeometry geometry = CreateGlGeometry(mesh_data);
   capsules_.push_back(geometry);
 
-  ImplementGeometry(geometry, user_data, Vector3d::Ones());
+  ImplementOpenGlGeometry(geometry, user_data, Vector3d::Ones());
 }
 
 void RenderEngineGl::ImplementGeometry(const Ellipsoid& ellipsoid,
                                        void* user_data) {
-  OpenGlGeometry geometry = GetSphere();
-  ImplementGeometry(geometry, user_data,
-                    Vector3d(ellipsoid.a(), ellipsoid.b(), ellipsoid.c()));
+  const OpenGlGeometry geometry = GetSphere();
+  ImplementOpenGlGeometry(
+      geometry, user_data,
+      Vector3d(ellipsoid.a(), ellipsoid.b(), ellipsoid.c()));
 }
 
 void RenderEngineGl::ImplementGeometry(const Mesh& mesh, void* user_data) {
-  OpenGlGeometry geometry = GetMesh(mesh.filename());
+  const OpenGlGeometry geometry = GetMesh(mesh.filename());
   ImplementMesh(geometry, user_data, Vector3d(1, 1, 1) * mesh.scale(),
                 mesh.filename());
 }
 
 void RenderEngineGl::ImplementGeometry(const Convex& convex, void* user_data) {
-  OpenGlGeometry geometry = GetMesh(convex.filename());
+  const OpenGlGeometry geometry = GetMesh(convex.filename());
   ImplementMesh(geometry, user_data, Vector3d(1, 1, 1) * convex.scale(),
                 convex.filename());
 }
@@ -559,10 +559,6 @@ void RenderEngineGl::ImplementMesh(const internal::OpenGlGeometry& geometry,
                                    const Vector3<double>& scale,
                                    const std::string& file_name) {
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-  PerceptionProperties temp_props(data.properties);
-
-  temp_props.AddProperty(
-      kInternalGroup, kHasTexCoordProperty, geometry.has_tex_coord);
 
   // In order to maintain compatibility with RenderEngineVtk, we need to provide
   // functionality in which a mesh of the name foo.obj can be matched to a
@@ -572,14 +568,13 @@ void RenderEngineGl::ImplementMesh(const internal::OpenGlGeometry& geometry,
   // property to appropriately named image and let it percolate through. We
   // can't and don't want to change the underlying properties because they are
   // visible to the user.
-  if (!temp_props.HasProperty("phong", "diffuse_map")) {
+  std::optional<std::string> diffuse_map;
+  if (!data.properties.HasProperty("phong", "diffuse_map")) {
     filesystem::path file_path(file_name);
-    const string png_name = file_path.replace_extension(".png").string();
-    temp_props.AddProperty("phong", "diffuse_map", png_name);
+    diffuse_map = file_path.replace_extension(".png").string();
   }
 
-  RegistrationData temp_data{data.id, data.X_WG, temp_props};
-  ImplementGeometry(geometry, &temp_data, scale);
+  ImplementOpenGlGeometry(geometry, user_data, scale, diffuse_map);
 }
 
 bool RenderEngineGl::DoRegisterVisual(GeometryId id, const Shape& shape,
@@ -790,15 +785,25 @@ void RenderEngineGl::DoRenderLabelImage(const ColorRenderCamera& camera,
   GetLabelImage(label_image_out, render_target);
 }
 
-void RenderEngineGl::ImplementGeometry(const OpenGlGeometry& geometry,
-                                       void* user_data, const Vector3d& scale) {
+void RenderEngineGl::ImplementOpenGlGeometry(
+    const OpenGlGeometry& geometry,
+    void* user_data, const Vector3d& scale,
+    const std::optional<std::string>& diffuse_map) {
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
+
+  PerceptionProperties temp_props(data.properties);
+  temp_props.AddProperty(
+      kInternalGroup, kHasTexCoordProperty, geometry.has_tex_coord);
+  if (diffuse_map) {
+    temp_props.AddProperty("phong", "diffuse_map", *diffuse_map);
+  }
+
   std::optional<ShaderProgramData> color_data =
-      GetShaderProgram(data.properties, RenderType::kColor);
+      GetShaderProgram(temp_props, RenderType::kColor);
   std::optional<ShaderProgramData> depth_data =
-      GetShaderProgram(data.properties, RenderType::kDepth);
+      GetShaderProgram(temp_props, RenderType::kDepth);
   std::optional<ShaderProgramData> label_data =
-      GetShaderProgram(data.properties, RenderType::kLabel);
+      GetShaderProgram(temp_props, RenderType::kLabel);
   DRAKE_DEMAND(color_data.has_value() && depth_data.has_value() &&
                label_data.has_value());
 

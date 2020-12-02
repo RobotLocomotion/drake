@@ -3,6 +3,7 @@
 #include <array>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -115,8 +116,10 @@ class RenderEngineGl final : public RenderEngine {
                 internal::RenderType render_type) const;
 
   // Performs the common setup for all shape types.
-  void ImplementGeometry(const internal::OpenGlGeometry& geometry,
-                         void* user_data, const Vector3<double>& scale);
+  void ImplementOpenGlGeometry(
+      const internal::OpenGlGeometry& geometry,
+      void* user_data, const Vector3<double>& scale,
+      const std::optional<std::string>& diffuse_map = {});
 
   // Provides triangle mesh definitions of the various canonical geometries
   // supported by this renderer: sphere, cylinder, half space, box, and mesh.

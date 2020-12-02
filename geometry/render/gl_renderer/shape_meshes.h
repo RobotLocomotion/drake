@@ -28,15 +28,12 @@ struct MeshData {
   Eigen::Matrix<GLfloat, Eigen::Dynamic, 2, Eigen::RowMajor> uvs;
   Eigen::Matrix<GLuint, Eigen::Dynamic, 3, Eigen::RowMajor> indices;
 
-  /** See docs for `has_tex_coord` below.  */
-  static constexpr bool kHasTexCoordDefault{true};
-
   /** This flag indicates that this mesh has texture coordinates to support
    maps.
    If True, the values of `uvs` will be nontrivial.
    If False, the values of `uvs` will be all zeros, but will still have the
    correct size.  */
-  bool has_tex_coord{kHasTexCoordDefault};
+  bool has_tex_coord{true};
 };
 
 /* Loads a mesh's vertices and indices (faces) from an OBJ description given
