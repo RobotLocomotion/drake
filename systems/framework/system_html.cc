@@ -163,14 +163,15 @@ class LinkWriter : public SystemVisitor<double> {
     // Add edges from the input port nodes to the subsystems that
     // actually service that port.
     for (InputPortIndex i(0); i < diagram.num_input_ports(); ++i) {
-      const Diagram<double>::InputPortLocator& dest =
-          diagram.get_input_port_locator(i);
-      const System<double>* dest_sys = dest.first;
-      *html_ << "{ ";
-      *html_ << "from: \"" << diagram.get_name() << "_u" << i << "\", ";
-      ToPortTokenWriter output_writer(dest.second, html_);
-      dest_sys->Accept(&output_writer);
-      *html_ << "},\n";
+      const auto& dests = diagram.GetInputPortLocators(i);
+      for (const auto& dest : dests) {
+        const System<double>* dest_sys = dest.first;
+        *html_ << "{ ";
+        *html_ << "from: \"" << diagram.get_name() << "_u" << i << "\", ";
+        ToPortTokenWriter output_writer(dest.second, html_);
+        dest_sys->Accept(&output_writer);
+        *html_ << "},\n";
+      }
     }
 
     // Add edges to the output ports.

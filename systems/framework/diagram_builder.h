@@ -160,14 +160,33 @@ class DiagramBuilder {
   /// @p src has no output ports, or @p src has more than one output port).
   void Cascade(const System<T>& src, const System<T>& dest);
 
-  /// Declares that the given @p input port of a constituent system is an input
-  /// to the entire Diagram.  @p name is an optional name for the input port;
-  /// if it is unspecified, then a default name will be provided.
+  /// Declares that the given @p input port of a constituent system is
+  /// connected to a new input to the entire Diagram.  @p name is an optional
+  /// name for the new input port; if it is unspecified, then a default name
+  /// will be provided.
   /// @pre If supplied at all, @p name must not be empty.
+  /// @pre A port indicated by the resolution of @p name must not exist.
+  /// @post @p input is connected to the new exported input port.
   /// @return The index of the exported input port of the entire diagram.
   InputPortIndex ExportInput(
       const InputPort<T>& input,
       std::variant<std::string, UseDefaultName> name = kUseDefaultName);
+
+  /// Connects an input to the entire Diagram, indicated by @p
+  /// diagram_port_name, to the given @p input port of a constituent system.
+  /// @pre The Diagram input indicated by @p diagram_port_name must have been
+  /// previously built via ExportInput().
+  /// @post @p input is connected to the indicated Diagram input port.
+  void ConnectInput(
+      const std::string& diagram_port_name, const InputPort<T>& input);
+
+  /// Connects an input to the entire Diagram, indicated by @p
+  /// diagram_port_index, to the given @p input port of a constituent system.
+  /// @pre The Diagram input indicated by @p diagram_port_index must have been
+  /// previously built via ExportInput().
+  /// @post @p input is connected to the indicated Diagram input port.
+  void ConnectInput(
+      InputPortIndex diagram_port_index, const InputPort<T>& input);
 
   /// Declares that the given @p output port of a constituent system is an
   /// output of the entire diagram.  @p name is an optional name for the output
@@ -195,6 +214,18 @@ class DiagramBuilder {
   using InputPortLocator = typename Diagram<T>::InputPortLocator;
   using OutputPortLocator = typename Diagram<T>::OutputPortLocator;
 
+  // Declares a new input to the entire Diagram, using @p model_input to
+  // supply the data type. @p name is an optional name for the input port; if
+  // it is unspecified, then a default name will be provided.
+  // @pre @p model_input must be a port of a system within the diagram.
+  // @pre If supplied at all, @p name must not be empty.
+  // @pre A port indicated by the resolution of @p name must not exist.
+  // @post @p model_input is *not* connected to the new exported input port.
+  // @return The index of the exported input port of the entire diagram.
+  InputPortIndex DeclareInput(
+      const InputPort<T>& model_input,
+      std::variant<std::string, UseDefaultName> name = kUseDefaultName);
+
   // Throws if the given input port (belonging to a child subsystem) has
   // already been connected to an output port, or exported to be an input
   // port of the whole diagram.
@@ -218,8 +249,20 @@ class DiagramBuilder {
   std::vector<OutputPortLocator> output_port_ids_;
   std::vector<std::string> output_port_names_;
 
-  // For fast membership queries: has this input port already been declared?
+  // For fast membership queries: has this input port already been wired?
   std::set<InputPortLocator> diagram_input_set_;
+
+  // A vector of data about exported input ports.
+  struct ExportedInputData {
+    // Which port to use for data type comparisons at connection time.
+    InputPortLocator model_input;
+    // The name of the port.
+    std::string name;
+  };
+  std::vector<ExportedInputData> diagram_input_data_;
+
+  // The InputPort fan-out API requires name lookup in some cases.
+  std::map<std::string, InputPortIndex> diagram_input_indices_;
 
   // A map from the input ports of constituent systems, to the output ports of
   // the systems from which they get their values.

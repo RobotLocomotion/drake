@@ -252,6 +252,38 @@ GTEST_TEST(DiagramBuilderTest, ConnectVectorToAbstractThrow) {
       "input port u of System vector_system");
 }
 
+GTEST_TEST(DiagramBuilderTest, ExportInputVectorToAbstractThrow) {
+  DiagramBuilder<double> builder;
+  auto vector_system = builder.AddSystem<PassThrough<double>>(1 /* size */);
+  vector_system->set_name("vector_system");
+  auto abstract_system = builder.AddSystem<PassThrough<double>>(Value<int>{});
+  abstract_system->set_name("abstract_system");
+  auto port_index = builder.ExportInput(vector_system->get_input_port());
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      builder.ConnectInput(port_index, abstract_system->get_input_port()),
+      std::logic_error,
+      "DiagramBuilder::ConnectInput: "
+      "Cannot mix vector-valued and abstract-valued ports while connecting "
+      "input port u of System abstract_system to "
+      "input port vector_system_u of Diagram");
+}
+
+GTEST_TEST(DiagramBuilderTest, ExportInputAbstractToVectorThrow) {
+  DiagramBuilder<double> builder;
+  auto vector_system = builder.AddSystem<PassThrough<double>>(1 /* size */);
+  vector_system->set_name("vector_system");
+  auto abstract_system = builder.AddSystem<PassThrough<double>>(Value<int>{});
+  abstract_system->set_name("abstract_system");
+  auto port_index = builder.ExportInput(abstract_system->get_input_port());
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      builder.ConnectInput(port_index, vector_system->get_input_port()),
+      std::logic_error,
+      "DiagramBuilder::ConnectInput: "
+      "Cannot mix vector-valued and abstract-valued ports while connecting "
+      "input port u of System vector_system to "
+      "input port abstract_system_u of Diagram");
+}
+
 GTEST_TEST(DiagramBuilderTest, ConnectVectorSizeMismatchThrow) {
   DiagramBuilder<double> builder;
   auto size1_system = builder.AddSystem<PassThrough<double>>(1 /* size */);
@@ -278,6 +310,22 @@ GTEST_TEST(DiagramBuilderTest, ConnectVectorSizeMismatchThrow) {
       "input port u of System size1_system \\(size 1\\)");
 }
 
+GTEST_TEST(DiagramBuilderTest, ExportInputVectorSizeMismatchThrow) {
+  DiagramBuilder<double> builder;
+  auto size1_system = builder.AddSystem<PassThrough<double>>(1 /* size */);
+  size1_system->set_name("size1_system");
+  auto size2_system = builder.AddSystem<PassThrough<double>>(2 /* size */);
+  size2_system->set_name("size2_system");
+  auto port_index = builder.ExportInput(size1_system->get_input_port());
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      builder.ConnectInput(port_index, size2_system->get_input_port()),
+      std::logic_error,
+      "DiagramBuilder::ConnectInput: "
+      "Mismatched vector sizes while connecting "
+      "input port u of System size2_system \\(size 2\\) to "
+      "input port size1_system_u of Diagram \\(size 1\\)");
+}
+
 GTEST_TEST(DiagramBuilderTest, ConnectAbstractTypeMismatchThrow) {
   DiagramBuilder<double> builder;
   auto int_system = builder.AddSystem<PassThrough<double>>(Value<int>{});
@@ -302,6 +350,22 @@ GTEST_TEST(DiagramBuilderTest, ConnectAbstractTypeMismatchThrow) {
       "Mismatched value types while connecting "
       "output port y of System char_system \\(type char\\) to "
       "input port u of System int_system \\(type int\\)");
+}
+
+GTEST_TEST(DiagramBuilderTest, ExportInputAbstractTypeMismatchThrow) {
+  DiagramBuilder<double> builder;
+  auto int_system = builder.AddSystem<PassThrough<double>>(Value<int>{});
+  int_system->set_name("int_system");
+  auto char_system = builder.AddSystem<PassThrough<double>>(Value<char>{});
+  char_system->set_name("char_system");
+  auto port_index = builder.ExportInput(int_system->get_input_port());
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      builder.ConnectInput(port_index, char_system->get_input_port()),
+      std::logic_error,
+      "DiagramBuilder::ConnectInput: "
+      "Mismatched value types while connecting "
+      "input port u of System char_system \\(type char\\) to "
+      "input port int_system_u of Diagram \\(type int\\)");
 }
 
 // Test that port connections can be polymorphic, especially for types that are
@@ -449,10 +513,39 @@ GTEST_TEST(DiagramBuilderTest, DuplicateInputPortNamesThrow) {
   auto sink2 = builder.AddSystem<Sink<double>>();
 
   builder.ExportInput(sink1->get_input_port(0), "sink");
-  builder.ExportInput(sink2->get_input_port(0), "sink");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      builder.ExportInput(sink2->get_input_port(0), "sink"),
+      std::logic_error, ".*already has an input port named.*");
+}
 
-  DRAKE_EXPECT_THROWS_MESSAGE(builder.Build(), std::logic_error,
-                              ".*already has an input port named.*");
+GTEST_TEST(DiagramBuilderTest, InputPortNamesFanout) {
+  DiagramBuilder<double> builder;
+
+  auto sink1 = builder.AddSystem<Sink<double>>();
+  auto sink2 = builder.AddSystem<Sink<double>>();
+  auto sink3 = builder.AddSystem<Sink<double>>();
+  auto sink4 = builder.AddSystem<Sink<double>>();
+
+  std::vector<InputPortIndex> indices;
+  // Name these ports just to make comparing easier later.
+  indices.push_back(builder.ExportInput(sink1->get_input_port(0), "in1"));
+  indices.push_back(builder.ExportInput(sink2->get_input_port(0), "in2"));
+  // Fan-out connect by index.
+  builder.ConnectInput(indices[0], sink3->get_input_port(0));
+  // Fan-out connect by name.
+  builder.ConnectInput("in1", sink4->get_input_port(0));
+  EXPECT_EQ(indices[0], 0);
+  EXPECT_EQ(indices[1], 1);
+
+  auto diagram = builder.Build();
+  EXPECT_EQ(diagram->num_input_ports(), 2);
+  EXPECT_EQ(diagram->get_input_port(0).get_name(), "in1");
+  EXPECT_EQ(diagram->get_input_port(1).get_name(), "in2");
+
+  auto sink_fanout = diagram->GetInputPortLocators(InputPortIndex(0));
+  EXPECT_EQ(sink_fanout.size(), 3);
+  auto sinkhole_fanout = diagram->GetInputPortLocators(InputPortIndex(1));
+  EXPECT_EQ(sinkhole_fanout.size(), 1);
 }
 
 GTEST_TEST(DiagramBuilderTest, DuplicateOutputPortNamesThrow) {
