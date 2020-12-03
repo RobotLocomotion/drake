@@ -891,3 +891,10 @@ class TestGeneral(unittest.TestCase):
         self.assertRegex(graph, "_u1 -> .*:u3")
         self.assertRegex(graph, "_u0 -> .*:u4")
         self.assertRegex(graph, "_u1 -> .*:u5")
+
+    def test_add_named_system(self):
+        builder = DiagramBuilder()
+        adder1 = builder.AddNamedSystem("adder1", Adder(2, 3))
+        self.assertEqual(adder1.get_name(), "adder1")
+        adder2 = builder.AddNamedSystem(name="adder2", system=Adder(5, 8))
+        self.assertEqual(adder2.get_name(), "adder2")
