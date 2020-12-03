@@ -179,43 +179,40 @@ Next topic: @ref multibody_frames_and_bodies
 /** @defgroup multibody_frames_and_bodies Frames and Bodies
 @ingroup multibody_notation
 
-The _frame_ and _body_ are fundamental to multibodly mechanics.
+The _frame_ and _body_ are fundamental to multibody mechanics.
 Unless specified otherwise, each _frame_ (also called a _coordinate frame_)
 contains a right-handed orthogonal unitary _basis_ and an _origin_ point and its
-name is usually one capital letter (e.g., A, B, C).  Shown below is a frame F:
+name is usually one capital letter (e.g., A, B, or C). Shown below is a frame F.
+Frame F's _origin_ point `Fo` locates the frame and its _basis_ (unit vectors
+`Fx`, `Fy`, `Fz`) orients the frame.
 <pre>
      Fz
      ^    Fy
-     |   /
-     |  /             Frame F with origin Fo and
+     |   /            Frame F with origin point Fo
+     |  /             and right-handed orthogonal
      | /              unit vectors Fx, Fy, Fz.
      o ------> Fx
      Fo
 </pre>
-Frame F's _origin_ point is @f$F_o@f$ (`Fo` in code) and its right-handed
-orthogonal _basis_ has unit vectors @f$F_x, F_y, F_z@f$ (`Fx`, `Fy`, `Fz` in
-code) with @f$F_z = F_x \times F_y@f$.  The _basis_ orients the frame and
-_origin_ point `Fo` locates the frame.
-
-Newton's laws of motion are valid in a non-rotating, non-accelerating "_inertial
-frame_", herein called the _World_ frame W (also called a _Ground_ frame G or
+Newton's laws of motion are valid in a non-rotating, non-accelerating "inertial
+frame", herein called the _World_ frame W (also called _Ground_ frame G or
 _Newtonian Frame_ N).  Any frame with fixed pose in W is also an inertial frame.
 Drake supports _Model_ frames (inertial frames fixed in W) so a simulation can
 be built from multiple independent models, each defined with respect to its own
 Model frame. This corresponds to the `<model>` tag in an `.sdf` file.
 
 In unambiguous situations, abbreviated notation uses the _frame_ name to also
-designate the frame's _point_ or the frame's _basis_.  For example, if `A` and
+designate the frame's _origin_ or the frame's _basis_.  For example, if `A` and
 `B` are frames, `p_AB` denotes the position vector from point `Ao` (A's origin)
 to point `Bo` (B's origin), expressed in frame A (i.e., expressed in terms of
 basis vectors `Ax,Ay,Az`). Similarly, `w_AB` denotes frame B's angular velocity
 in frame A, expressed in frame A and `V_AB` denotes frame B's spatial velocity
-(for point Bo) measured in frame A, expressed in frame A.
+in frame A, expressed in frame A.
 See @ref multibody_quantities for more information about notation.
 
 Each _body_ contains a _body frame_  and we use the same symbol `B` for both a
-_body_ `B` and its _body frame_. Body B's "location" is defined via `Bo` (the
-origin of the _body frame) and body B's "pose" is defined via the pose of B's
+_body_ `B` and its _body frame_. Body B's location is defined via `Bo` (the
+origin of the _body frame_) and body B's pose is defined via the pose of B's
 _body frame_.  Body properties (e.g., inertia and geometry) are measured with
 respect to the _body frame_. Body B's center of mass is a point of B and is
 denoted @f$B_{cm}@f$ (`Bcm`); its location is specified by a position vector
@@ -226,35 +223,34 @@ body, its position is located from the _body frame_.
 For a flexible body, deformations are measured with respect to the body frame.
 
 When a user initially specifies a body, such as in a `<link>` tag of an `.sdf`
-or `.urdf` file, there is a link frame L that may be distinct from the body
-frame B that is used by Drake internally for computation. However, frames L and
-B are always related by a constant transform that does not change during a
-simulation. User-supplied information such as mass properties, visual geometry,
-and collision geometry are given with respect to frame L; Drake transforms those
-internally so that they are maintained with respect to _body frame_ B instead.
+or `.urdf` file, there is a link frame L that may differ from Drake's body frame
+B.  Since frames L and B are always related by a <b>constant</b> transform,
+parameters (mass properties, visual geometry, collision geometry, etc.) given
+with respect to frame L are transformed and stored internally with respect to
+_body frame_ B.
 
 <h3>Notation for offset frame</h3>
-Sometimes we need a frame that is rigidly attached to a frame F, with all its
-unit vectors rigidly aligned to F's unit vectors, but with its origin shifted
-from Fo to some other point R. We call that an _offset frame_ and denote this
-offset frame in typeset notation as @f$ F_R @f$. Since code lacks subscripts,
-we lowercase the point name to make it look more like a subscript as `Fr`.
-Recall that we permit frame names and body names to also serve as points
-(by using their origins).  Suppose you would like a frame that is regarded as
-rigidly attached to frame F but whose origin is coincident with some body B.
-In this case, we create an offset frame `Fb` whose unit vectors are rigidly
-aligned with F's unit vectors but whose origin is Bo (B's origin).
+Sometimes we need a frame that is rigidly attached to a frame F with its _basis_
+rigidly aligned to F's _basis_ but with its origin shifted from Fo to a point R.
+We call that an _offset frame_ and denote this offset frame in typeset notation
+as @f$ F_R @f$. Since code lacks subscripts, we lowercase the point name to
+make it look more like a subscript as `Fr`.  Recall that we permit frame names
+and body names to also serve as points (by using their origins).  Suppose you
+would like a frame that is regarded as rigidly attached to frame F but whose
+origin is coincident with some body B. In this case, create an offset frame `Fb`
+whose basis rigidly aligns with F's basis but whose origin is coincident with
+Bo (B's origin).
 
-Notation example: V_WB (@f$ ^WV^B @f$) denotes the spatial velocity of a frame B
-in World W. V_WBp (@f$ ^WV^Bp @f$) denotes the spatial velocity of a frame whose
-orientation is the same as B but whose origin is offset from Bo to be coincident
-with a point P.  V_WBcm (@f$ ^WV^Bcm @f$) denotes the spatial velocity of a
-frame whose orientation is the same as B but whose origin is located at Bcm
-(B's center of mass).
+Notation example: V_WB (@f$ ^WV^B@f$) denotes the spatial velocity of a frame B
+in World W. V_WBp (@f$ ^WV^{Bp}@f$) denotes the spatial velocity of a frame
+whose orientation is the same as B but whose origin is offset from Bo to be
+coincident with a point P.  V_WBcm (@f$ ^WV^{Bcm}@f$) denotes the spatial
+velocity of a frame whose orientation is the same as B but whose origin is
+located at Bcm (B's center of mass).
 
 If this notation is not sufficient for your purposes, please name the offset
-frame and use comments to precisely describe the orientation of its basis and
-the location of its origin (comments are helpful even with standard notation).
+frame and use comments to precisely describe the orientation of its _basis_ and
+the location of its _origin_.
 
 Next topic: @ref multibody_quantities
 */
