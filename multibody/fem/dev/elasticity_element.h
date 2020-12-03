@@ -93,10 +93,8 @@ class ElasticityElement : public ElasticityElementBase<T> {
 
   friend class ElasticityElementTest;
 
-  // TODO(xuchenhan-tri): Add the missing inertia and damping terms.
-  /* Implements the NVI `FemElement::CalcResidual()`. For %ElasticityElement,
-   the element residual will be the momentum change minus the impulse received
-   over the timestep.
+  // TODO(xuchenhan-tri): Add the missing damping terms.
+  /* Implements the NVI `FemElement::CalcResidual()`.
    @param[in] state The FEM state at which to evaluate the residual.
    @param[out] residual a vector of residual of size `num_dofs()`. The vector is
    ordered such that `3*i`-th to `3*i+2`-th entries of the vector stores the
@@ -104,11 +102,8 @@ class ElasticityElement : public ElasticityElementBase<T> {
   void DoCalcResidual(const FemState<T>& state,
                       EigenPtr<VectorX<T>> residual) const final;
 
-  // TODO(xuchenhan-tri): Add the missing inertia and damping terms.
-  /* Implements the NVI `FemElement::CalcTangentMatrix()`. For
-   %ElasticityElement, the element tangent matrix will be the mass matrix minus
-   the derivatives of the total force with respect to the node positions.
-   @param[in] state The FEM state at which to evaluate the residual.
+  // TODO(xuchenhan-tri): Add the missing damping terms.
+  /* Implements the NVI `FemElement::CalcTangentMatrix()`.
    @param[out] tangent_matrix the tangent matrix of size
    `num_dofs()`-by-`num_dofs()`. The matrix is organized into
    `num_nodes()`-by-`num_nodes()` of 3-by-3 blocks. */
