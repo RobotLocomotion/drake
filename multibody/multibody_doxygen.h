@@ -179,16 +179,16 @@ Next topic: @ref multibody_frames_and_bodies
 /** @defgroup multibody_frames_and_bodies Frames and Bodies
 @ingroup multibody_notation
 
-The _coordinate frame_, or just _frame_, is fundamental to multibody mechanics.
-Unless specified otherwise, all frames contain a right-handed orthogonal _basis_
-with unit-vector axes x, y, z and an _origin_ point.  We use capital letters to
-denote frames, such as A and B.  Shown below is a typical frame F:
+The _frame_ and _body_ are fundamental to multibodly mechanics.
+Unless specified otherwise, each _frame_ (also called a _coordinate frame_)
+contains a right-handed orthogonal unitary _basis_ and an _origin_ point and its
+name is usually one capital letter (e.g., A, B, C).  Shown below is a frame F:
 <pre>
      Fz
      ^    Fy
      |   /
-     |  /             Frame F
-     | /
+     |  /             Frame F with origin Fo and
+     | /              unit vectors Fx, Fy, Fz.
      o ------> Fx
      Fo
 </pre>
@@ -204,7 +204,7 @@ Drake supports _Model_ frames (inertial frames fixed in W) so a simulation can
 be built from multiple independent models, each defined with respect to its own
 Model frame. This corresponds to the `<model>` tag in an `.sdf` file.
 
-In unambiguous situations, notation may be shortened by using a _frame_ to also
+In unambiguous situations, abbreviated notation uses the _frame_ name to also
 designate the frame's _point_ or the frame's _basis_.  For example, if `A` and
 `B` are frames, `p_AB` denotes the position vector from point `Ao` (A's origin)
 to point `Bo` (B's origin), expressed in frame A (i.e., expressed in terms of
@@ -214,12 +214,15 @@ in frame A, expressed in frame A and `V_AB` denotes frame B's spatial velocity
 See @ref multibody_quantities for more information about notation.
 
 Each _body_ contains a _body frame_  and we use the same symbol `B` for both a
-_body_ `B` and its _body frame_. Hence, body B's "location" is defined via `Bo`
-(the origin of the _body frame_) and body B's "pose" is defined via the pose
-of B's _body frame_.  Body properties (e.g., inertia and geometry) are measured
-with respect to the _body frame_. Body B's center of mass is a point of B and is
+_body_ `B` and its _body frame_. Body B's "location" is defined via `Bo` (the
+origin of the _body frame) and body B's "pose" is defined via the pose of B's
+_body frame_.  Body properties (e.g., inertia and geometry) are measured with
+respect to the _body frame_. Body B's center of mass is a point of B and is
 denoted @f$B_{cm}@f$ (`Bcm`); its location is specified by a position vector
-from Bo to Bcm. Frames fixed to a rigid body are located from the _body frame_.
+from Bo to Bcm.  Bcm is not necessarily coincident with Bo and body B's
+translational and spatial properties (e.g., position, velocity, acceleration)
+are measured using Bo (not Bcm).  If an additional frame is fixed to a rigid
+body, its position is located from the _body frame_.
 For a flexible body, deformations are measured with respect to the body frame.
 
 When a user initially specifies a body, such as in a `<link>` tag of an `.sdf`
@@ -232,26 +235,26 @@ internally so that they are maintained with respect to _body frame_ B instead.
 
 <h3>Notation for offset frame</h3>
 Sometimes we need a frame that is rigidly attached to a frame F, with all its
-unit vectors aligned to F's unit vectors, but with its origin shifted from Fo
-to some other point R. We call that an _offset frame_. In our mathematical
-notation we would write that @f$ F_R @f$. In code we don't have subscripts so we
-lowercase the point name to make it look like one: `Fr` is the closest we can
-come. Recall that we also permit frame names and body names to serve as points
-(by using their origins), so if we have a frame E or body B we can create `Fe`
-(rigidly aligned with F but with origin at Eo) or `Fb` (rigidly aligned with F
-but with origin at Bo). Here is an example to clarify notation:
+unit vectors rigidly aligned to F's unit vectors, but with its origin shifted
+from Fo to some other point R. We call that an _offset frame_ and denote this
+offset frame in typeset notation as @f$ F_R @f$. Since code lacks subscripts,
+we lowercase the point name to make it look more like a subscript as `Fr`.
+Recall that we permit frame names and body names to also serve as points
+(by using their origins).  Suppose you would like a frame that is regarded as
+rigidly attached to frame F but whose origin is coincident with some body B.
+In this case, we create an offset frame `Fb` whose unit vectors are rigidly
+aligned with F's unit vectors but whose origin is Bo (B's origin).
 
 Notation example: V_WB (@f$ ^WV^B @f$) denotes the spatial velocity of a frame B
 in World W. V_WBp (@f$ ^WV^Bp @f$) denotes the spatial velocity of a frame whose
-orientation is the same as B but whose origin is offset from Bo, e.g., to be
-coincident with a point P. V_WBcm (@f$ ^WV^Bcm @f$) denotes the spatial velocity
-of a frame whose orientation is the same as B but whose origin is located at
-Bcm (B's center of mass).
+orientation is the same as B but whose origin is offset from Bo to be coincident
+with a point P.  V_WBcm (@f$ ^WV^Bcm @f$) denotes the spatial velocity of a
+frame whose orientation is the same as B but whose origin is located at Bcm
+(B's center of mass).
 
-If this notation is insufficient for your purposes, we encourage you to name
-and the offset frame and describe the location of its origin. Use comments to
-provide a precise meaning of a frame (which is a good idea even if you use
-standard notation).
+If this notation is not sufficient for your purposes, please name the offset
+frame and use comments to precisely describe the orientation of its basis and
+the location of its origin (comments are helpful even with standard notation).
 
 Next topic: @ref multibody_quantities
 */
@@ -266,8 +269,8 @@ quantities can be created by differentiation of an existing quantity (see
 
 Most quantities have a
 _reference_ and _target_, either of which may be a frame, basis, or point, that
-specify how the quantity is defined. In computation, vector quantities are
-_expressed_ in a particular basis (or frame) that associates direction with each
+specify how the quantity is defined. In computation, vectors are _expressed_ in
+a specified basis (or frame) that associates a direction with each
 vector element. For example, the velocity of a point P moving in a reference
 frame F is a vector quantity with _target_ point P and _reference_ frame F.  In
 typeset this symbol is written as @f$^Fv^P@f$. Here v is the quantity type, the
@@ -338,7 +341,9 @@ expressed in frame E, typeset as @f$[I^{B/Bo}]_E@f$.
 which appears after the quantity.
 <br>Example: `V_BC_E` is frame C's spatial velocity in frame B, expressed in
 frame E and contains both `w_BC_E` (described above †ᵃ) and v_BC_E (point Co's
-translational velocity in frame B, expressed in frame E).  See
+translational velocity in frame B, expressed in frame E).  Reminder, the
+translational and spatial velocity of a rigid body D refer to Do (the origin
+of D's _body frame_), not Dcm (D's center of mass).  See
 @ref multibody_frames_and_bodies for more information about frames and bodies.
 
 †ᶜ It is often useful to <b>replace</b> a set of forces by an equivalent set
