@@ -341,9 +341,9 @@ expressed in frame E, typeset as @f$[I^{B/Bo}]_E@f$.
 which appears after the quantity.
 <br>Example: `V_BC_E` is frame C's spatial velocity in frame B, expressed in
 frame E and contains both `w_BC_E` (described above †ᵃ) and v_BC_E (point Co's
-translational velocity in frame B, expressed in frame E).  Reminder, the
-translational and spatial velocity of a rigid body D refer to Do (the origin
-of D's _body frame_), not Dcm (D's center of mass).  See
+translational velocity in frame B, expressed in frame E).  Reminder, a rigid
+body D's translational and spatial velocity are for point Do (the origin of
+D's _body frame_), not for Dcm (D's center of mass).  See
 @ref multibody_frames_and_bodies for more information about frames and bodies.
 
 †ᶜ It is often useful to <b>replace</b> a set of forces by an equivalent set
