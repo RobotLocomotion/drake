@@ -201,6 +201,8 @@ class TestSensors(unittest.TestCase):
         infos = [
             mut.CameraInfo(width=width, height=height, fov_y=fov_y),
             mut.CameraInfo(
+                width=width, height=height, intrinsic_matrix=intrinsic_matrix),
+            mut.CameraInfo(
                 width=width, height=height, focal_x=focal_x, focal_y=focal_y,
                 center_x=center_x, center_y=center_y),
         ]
