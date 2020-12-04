@@ -306,7 +306,6 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
         context, *this);
   }
 
-
   /// Returns A_WB_W, `this` body B's spatial acceleration in the world frame W,
   /// expressed in world frame W (for point Bo, the body's origin).
   /// @param[in] context Contains the state of the model.

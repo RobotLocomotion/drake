@@ -2248,7 +2248,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] context The context storing the state of the model.
   /// @param[in] body_B  The body for which spatial acceleration is requested.
   /// @retval A_WB_W Body B's spatial acceleration in the world frame W,
-  ///        expressed in world frame W (for point Bo, the body's origin).
+  ///   expressed in the world frame W (for point Bo, the body's origin).
   /// @throws std::logic_error if Finalize() was not called on `this` model or
   ///   if `body_B` does not belong to this model.
   /// @note When cached values are out of sync with the state stored in context,
