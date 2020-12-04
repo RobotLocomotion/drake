@@ -577,6 +577,36 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddLinearEqualityConstraint(
             2 * x[:2] + np.array([0, 1]), np.array([3, 2]))
 
+    def test_constraint_set_bounds(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, "x")
+
+        def constraint(x):
+            return x[1] ** 2
+        binding = prog.AddConstraint(constraint, [0], [1], vars=x)
+        np.testing.assert_array_equal(
+            binding.evaluator().lower_bound(), np.array([0.]))
+        np.testing.assert_array_equal(
+            binding.evaluator().upper_bound(), np.array([1.]))
+        # Test UpdateLowerBound()
+        binding.evaluator().UpdateLowerBound(new_lb=[-1.])
+        np.testing.assert_array_equal(
+            binding.evaluator().lower_bound(), np.array([-1.]))
+        np.testing.assert_array_equal(
+            binding.evaluator().upper_bound(), np.array([1.]))
+        # Test UpdateLowerBound()
+        binding.evaluator().UpdateUpperBound(new_ub=[2.])
+        np.testing.assert_array_equal(
+            binding.evaluator().lower_bound(), np.array([-1.]))
+        np.testing.assert_array_equal(
+            binding.evaluator().upper_bound(), np.array([2.]))
+        # Test set_bounds()
+        binding.evaluator().set_bounds(lower_bound=[-3.], upper_bound=[4.])
+        np.testing.assert_array_equal(
+            binding.evaluator().lower_bound(), np.array([-3.]))
+        np.testing.assert_array_equal(
+            binding.evaluator().upper_bound(), np.array([4.]))
+
     def test_constraint_gradient_sparsity(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, "x")
