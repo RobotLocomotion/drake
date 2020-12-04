@@ -2245,14 +2245,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Evaluates A_WB_W, the spatial acceleration of a body B in the world
   /// world frame W, expressed in the world frame W.
-  /// @param[in] context
-  ///   The context storing the state of the model.
-  /// @param[in] body_B
-  ///   The body B for which the spatial acceleration is requested.
-  /// @returns A_WB_W
-  ///   The spatial acceleration of body B in the world frame W, expressed in W.
-  /// @note The returned spatial acceleration's translational part is a_WBo_W,
-  /// the acceleration of Bo (body B's origin) in world W, expressed in W.
+  /// @param[in] context The context storing the state of the model.
+  /// @param[in] body_B  The body for which spatial acceleration is requested.
+  /// @retval A_WB_W Body B's spatial acceleration in the world frame W,
+  ///        expressed in world frame W (for point Bo, the body's origin).
   /// @throws std::logic_error if Finalize() was not called on `this` model or
   ///   if `body_B` does not belong to this model.
   /// @note When cached values are out of sync with the state stored in context,
@@ -4097,10 +4093,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context,
       std::vector<SpatialVelocity<T>>* V_WB_all) const;
 
-  // Evaluates the spatial acceleration A_WB of each body in the model and
+  // For each body B in the model, evaluates A_WB_W, B's spatial acceleration
+  // in the world frame W, expressed in W (for point Bo, the body's origin) and
   // copies it into A_WB_all, indexed by BodyIndex.
-  // @note The spatial acceleration's translational part is a_WBo_W,
-  // the acceleration of Bo (body B's origin) in world W, expressed in W.
   void CalcBodySpatialAccelerationsOutput(
       const systems::Context<T>& context,
       std::vector<SpatialAcceleration<T>>* A_WB_all) const;

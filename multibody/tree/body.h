@@ -306,13 +306,13 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
         context, *this);
   }
 
-  /// Returns A_WB_W, the spatial acceleration of `this` body B in the world
-  /// frame W expressed in frame W as a function of the state stored in context.
+
+  /// Returns A_WB_W, `this` body B's spatial acceleration in the world frame W,
+  /// expressed in world frame W (for point Bo, the body's origin).
+  /// @param[in] context Contains the state of the model.
   /// @note When cached values are out of sync with the state stored in context,
   /// this method performs an expensive forward dynamics computation, whereas
   /// once evaluated, successive calls to this method are inexpensive.
-  /// @note The returned spatial acceleration's translational part is a_WBo_W,
-  /// the acceleration of Bo (body B's origin) in world W, expressed in W.
   const SpatialAcceleration<T>& EvalSpatialAccelerationInWorld(
       const systems::Context<T>& context) const {
     const MultibodyPlant<T>& parent_plant = this->GetParentPlant();

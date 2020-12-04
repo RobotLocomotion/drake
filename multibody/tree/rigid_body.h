@@ -283,12 +283,9 @@ class RigidBody : public Body<T> {
   /// with context.  These method APIs will be deprecated when caching arrives.
   ///@{
 
-  /// (Advanced) Extract this body spatial acceleration in world, expressed in
-  /// world.
+  /// (Advanced) Returns A_WB_W, `this` rigid body B's spatial acceleration in
+  /// the world frame W, expressed in W (for point Bo, the body's origin).
   /// @param[in] ac acceleration kinematics cache.
-  /// @retval A_WB_W body B's spatial acceleration in world W, expressed in W.
-  /// @note The returned spatial acceleration's translational part is a_WBo_W,
-  /// the acceleration of Bo (body B's origin) in world W, expressed in W.
   // TODO(amcastro-tri) When cache entries are in the context, replace this
   // method by Body<T>::get_spatial_acceleration_in_world(const Context<T>&).
   //----------------------------------------------------------------------------

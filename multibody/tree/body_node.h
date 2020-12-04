@@ -1577,10 +1577,9 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   // =========================================================================
   // AccelerationKinematicsCache Accessors and Mutators.
 
-  // Returns a const reference to the spatial acceleration of the body B
-  // associated with this node as measured and expressed in the world frame W.
-  // @note The returned spatial acceleration's translational part is a_WBo_W,
-  // the acceleration of Bo (body B's origin) in world W, expressed in W.
+  // For the body B associated with `this` node, returns A_WB_W, body B's
+  // spatial acceleration in the world frame W, expressed in world frame W (for
+  // point Bo, the body's origin).
   const SpatialAcceleration<T>& get_A_WB(
       const AccelerationKinematicsCache<T>& ac) const {
     return ac.get_A_WB(topology_.index);
