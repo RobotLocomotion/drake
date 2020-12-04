@@ -181,16 +181,15 @@ Next topic: @ref multibody_frames_and_bodies
 
 The _frame_ and _body_ are fundamental to multibody mechanics.
 Unless specified otherwise, each _frame_ (also called a _coordinate frame_)
-contains a right-handed orthogonal unitary _basis_ and an _origin_ point and its
+contains a right-handed orthogonal unitary _basis_ and an _origin_ point.  Its
 name is usually one capital letter (e.g., A, B, or C). Shown below is a frame F.
-Frame F's _origin_ point `Fo` locates the frame and its _basis_ (unit vectors
-`Fx`, `Fy`, `Fz`) orients the frame.
+Frame F's _origin_ point Fo locates the frame and its _basis_ orients the frame.
 <pre>
      Fz
-     ^    Fy
-     |   /            Frame F with origin point Fo
-     |  /             and right-handed orthogonal
-     | /              unit vectors Fx, Fy, Fz.
+     ^    Fy          Frame F has origin point Fo and a
+     |   /            right-handed orthogonal basis having
+     |  /             unit vectors Fx, Fy, Fz.  The basis
+     | /              is right-handed because Fz = Fx x Fy.
      o ------> Fx
      Fo
 </pre>
@@ -205,8 +204,8 @@ In unambiguous situations, abbreviated notation uses the _frame_ name to also
 designate the frame's _origin_ or the frame's _basis_.  For example, if `A` and
 `B` are frames, `p_AB` denotes the position vector from point `Ao` (A's origin)
 to point `Bo` (B's origin), expressed in frame A (i.e., expressed in terms of
-basis vectors `Ax,Ay,Az`). Similarly, `w_AB` denotes frame B's angular velocity
-in frame A, expressed in frame A and `V_AB` denotes frame B's spatial velocity
+unit vectors `Ax, Ay, Az`). Similarly, `w_AB` denotes frame B's angular velocity
+in frame A, expressed in frame A.  `V_AB` denotes frame B's spatial velocity
 in frame A, expressed in frame A.
 See @ref multibody_quantities for more information about notation.
 
@@ -214,8 +213,8 @@ Each _body_ contains a _body frame_  and we use the same symbol `B` for both a
 _body_ `B` and its _body frame_. Body B's location is defined via `Bo` (the
 origin of the _body frame_) and body B's pose is defined via the pose of B's
 _body frame_.  Body properties (e.g., inertia and geometry) are measured with
-respect to the _body frame_. Body B's center of mass is a point of B and is
-denoted @f$B_{cm}@f$ (`Bcm`); its location is specified by a position vector
+respect to the _body frame_. Body B's center of mass is denoted `Bcm`
+(in typeset as @f$B_{cm}@f$) and its location is specified by a position vector
 from Bo to Bcm.  Bcm is not necessarily coincident with Bo and body B's
 translational and spatial properties (e.g., position, velocity, acceleration)
 are measured using Bo (not Bcm).  If an additional frame is fixed to a rigid
@@ -241,10 +240,10 @@ origin is coincident with some body B. In this case, create an offset frame `Fb`
 whose basis rigidly aligns with F's basis but whose origin is coincident with
 Bo (B's origin).
 
-Notation example: V_WB (@f$ ^WV^B@f$) denotes the spatial velocity of a frame B
-in World W. V_WBp (@f$ ^WV^{Bp}@f$) denotes the spatial velocity of a frame
+Notation example: V_WB @f$(^WV^B)@f$ denotes the spatial velocity of a frame B
+in World W. V_WBp @f$(^WV^{Bp)}@f$ denotes the spatial velocity of a frame
 whose orientation is the same as B but whose origin is offset from Bo to be
-coincident with a point P.  V_WBcm (@f$ ^WV^{Bcm}@f$) denotes the spatial
+coincident with a point P.  V_WBcm @f$(^WV^{Bcm})@f$ denotes the spatial
 velocity of a frame whose orientation is the same as B but whose origin is
 located at Bcm (B's center of mass).
 
@@ -299,33 +298,33 @@ source file. However, each row must be specified on a single line of text. You
 can violate the 80-character style guide limit if you have to, but be
 reasonable! Alternately, use a footnote to avoid running over. -->
 
-Quantity             |Symbol|     Typeset              | Monogram   | Meaning †
+Quantity             |Symbol|     Typeset              | Monogram   | Meaningᵃ
 ---------------------|:----:|:------------------------:|:----------:|----------------------------
 Rotation matrix      |  R   |@f$^BR^C@f$               |`R_BC`      |Frame C's orientation in frame B
 Position vector      |  p   |@f$^Pp^Q@f$               |`p_PQ`      |Position from point P to point Q
 Transform/pose       |  X   |@f$^BX^C@f$               |`X_BC`      |Frame C's *rigid* transform (pose) in frame B
 General Transform    |  T   |@f$^BT^C@f$               |`T_BC`      |The relationship between two spaces -- it may be affine, projective, isometric, etc. Every X_AB can be written as T_AB, but not every T_AB can be written as X_AB.
-Angular velocity     |  w   |@f$^B\omega^C@f$          |`w_BC`      |Frame C's angular velocity in frame B †ᵃ
+Angular velocity     |  w   |@f$^B\omega^C@f$          |`w_BC`      |Frame C's angular velocity in frame Bᵃ
 Velocity             |  v   |@f$^Bv^Q@f$               |`v_BQ`      |%Point Q's translational velocity in frame B
-Spatial velocity     |  V   |@f$^BV^{C}@f$             |`V_BC`      |Frame C's spatial velocity in frame B (for point Co) †ᵇ
-Spatial velocity     |  V   |@f$^BV^{Cp}@f$            |`V_BCp`     |Frame C's spatial velocity in frame B (for point Cp) †ᵇ
+Spatial velocity     |  V   |@f$^BV^{C}@f$             |`V_BC`      |Frame C's spatial velocity in frame B (for point Co)ᵇ
+Spatial velocity     |  V   |@f$^BV^{Cp}@f$            |`V_BCp`     |Frame C's spatial velocity in frame B (for point Cp)ᵇ
 Angular acceleration |alpha |@f$^B\alpha^C@f$          |`alpha_BC`  |Frame C's angular acceleration in frame B
 Acceleration         |  a   |@f$^Ba^Q@f$               |`a_BQ`      |%Point Q's translational acceleration in B
-Spatial acceleration |  A   |@f$^BA^{C}@f$             |`A_BC`      |Frame C's spatial acceleration in frame B (for point Co) †ᵇ
-Spatial acceleration |  A   |@f$^BA^{Cp}@f$            |`A_BCp`     |Frame C's spatial acceleration in frame B (for point Cp) †ᵇ
+Spatial acceleration |  A   |@f$^BA^{C}@f$             |`A_BC`      |Frame C's spatial acceleration in frame B (for point Co)ᵇ
+Spatial acceleration |  A   |@f$^BA^{Cp}@f$            |`A_BCp`     |Frame C's spatial acceleration in frame B (for point Cp)ᵇ
 Torque               |  t   |@f$t^{B}@f$               |`t_B`       |Torque on a body (or frame) B
 Force                |  f   |@f$f^{P}@f$               |`f_P`       |Force on a point P
-Spatial force        |  F   |@f$F^{P}@f$               |`F_P`       |Spatial force (torque/force) †ᶜ
+Spatial force        |  F   |@f$F^{P}@f$               |`F_P`       |Spatial force (torque/force)ᶜ
 Inertia matrix       |  I   |@f$I^{B/Bo}@f$            |`I_BBo`     |Body B's inertia matrix about Bo
-Spatial inertia      |  M   |@f$M^{B/Bo}@f$            |`M_BBo`     |Body B's spatial inertia about Bo †ᵃ
+Spatial inertia      |  M   |@f$M^{B/Bo}@f$            |`M_BBo`     |Body B's spatial inertia about Boᵃ
 Spatial momentum     |  L   |@f$^AL^{S/P}@f$           |`L_ASP`     |System S's spatial momentum about point P in frame A
 Spatial momentum     |  L   |@f$^AL^{S/Scm}@f$         |`L_AScm`    |System S's spatial momentum about point Scm in frame A
-Jacobian wrt q †ᵈ    | Jq   |@f$[J_{q}^{{}^Pp^Q}]_E@f$ |`Jq_p_PQ_E` |Q's position Jacobian from P <b>in</b> E wrt q
+Jacobian wrt qᵈ      | Jq   |@f$[J_{q}^{{}^Pp^Q}]_E@f$ |`Jq_p_PQ_E` |Q's position Jacobian from P <b>in</b> E wrt q
 Jacobian wrt q̇       | Jqdot|@f$J_{q̇}^{{}^Bv^Q}@f$     |`Jqdot_v_BQ`|Q's translational velocity Jacobian in B wrt q̇
 Jacobian wrt v       | Jv   |@f$J_{v}^{{}^Bv^Q}@f$     |`Jv_v_BQ`   |Q's translational velocity Jacobian in B wrt v
 Jacobian wrt v       | Jv   |@f$J_{v}^{{}^B\omega^C}@f$|`Jv_w_BC`   |C's angular velocity Jacobian in B wrt v
 
-†ᵃ In code, a vector has an expressed-in-frame which appears after the quantity.
+ᵃ In code, a vector has an expressed-in-frame which appears after the quantity.
 <br>Example: `w_BC_E` is C's angular velocity in B, expressed in frame E, typeset
 as @f$[^B\omega^C]_E @f$.
 <br>Similarly, an inertia matrix or spatial inertia has an expressed-in-frame.
@@ -333,22 +332,22 @@ as @f$[^B\omega^C]_E @f$.
 expressed in frame E, typeset as @f$[I^{B/Bo}]_E@f$.
 <br>For more information, see @ref multibody_spatial_inertia
 
-†ᵇ In code, spatial velocity (or spatial acceleration) has an expressed-in-frame
+ᵇ In code, spatial velocity (or spatial acceleration) has an expressed-in-frame
 which appears after the quantity.
 <br>Example: `V_BC_E` is frame C's spatial velocity in frame B, expressed in
-frame E and contains both `w_BC_E` (described above †ᵃ) and v_BC_E (point Co's
+frame E and contains both `w_BC_E` (described aboveᵃ) and v_BC_E (point Co's
 translational velocity in frame B, expressed in frame E).  Reminder, a rigid
 body D's translational and spatial velocity are for point Do (the origin of
 D's _body frame_), not for Dcm (D's center of mass).  See
 @ref multibody_frames_and_bodies for more information about frames and bodies.
 
-†ᶜ It is often useful to <b>replace</b> a set of forces by an equivalent set
+ᶜ It is often useful to <b>replace</b> a set of forces by an equivalent set
 with a force @f$f^{P}@f$ (equal to the set's resultant) placed at an arbitrary
 point P, together with a torque @f$t@f$ equal to the moment of the set about
 P.  A spatial force Fᴾ containing @f$t@f$ and @f$f^P@f$ can represent this
 replacement.
 
-†ᵈ The Jacobian contains partial derivatives wrt (with respect to) scalars
+ᵈ The Jacobian contains partial derivatives wrt (with respect to) scalars
 e.g., wrt q (generalized positions), or q̇, or v (generalized velocities).
 The example below shows the simplicity of Jacobian monogram:
 first is the Jacobian symbol (Jv), next is the kinematic quantity (v_BQ),
