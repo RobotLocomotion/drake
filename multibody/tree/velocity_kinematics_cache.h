@@ -63,25 +63,18 @@ class VelocityKinematicsCache {
     }
   }
 
-  /// Returns a constant reference to the spatial velocity `V_WB` of the body B
-  /// (associated with node `body_node_index`) as measured and expressed in the
-  /// world frame W.
+  /// Returns V_WB, body B's spatial velocity in the world frame W,
+  /// expressed in world frame W (for point Bo, the body frame's origin).
   /// @param[in] body_node_index The unique index for the computational
   ///                            BodyNode object associated with body B.
-  /// @returns `V_WB` the spatial velocity of the body frame B measured and
-  ///                 expressed in the world frame W.
-  /// @note The returned spatial velocity's translational part is v_WBo_W,
-  /// the velocity of Bo (body B's origin) in world W, expressed in W.
-  /// In general, Bo differs from Bcm (body B's center of mass).
   const SpatialVelocity<T>& get_V_WB(BodyNodeIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return V_WB_pool_[body_node_index];
   }
 
   /// Mutable version of get_V_WB().
-  /// @note The returned spatial velocity's translational part is v_WBo_W,
-  /// the velocity of Bo (body B's origin) in world W, expressed in W.
-  /// In general, Bo differs from Bcm (body B's center of mass).
+  /// @retval V_WB, body B's spatial velocity in the world frame W,
+  /// expressed in world frame W (for point Bo, the body frame's origin).
   SpatialVelocity<T>& get_mutable_V_WB(BodyNodeIndex body_node_index) {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return V_WB_pool_[body_node_index];
