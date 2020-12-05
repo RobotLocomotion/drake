@@ -67,8 +67,8 @@ class AxiallySymmetricFreeBodyPlant final : public MultibodyPlant<T> {
   math::RigidTransform<T> CalcPoseInWorldFrame(
       const systems::Context<T>& context) const;
 
-  /// Computes V_WB_W, `this` free-body B's spatial velocity in the world frame
-  /// W, expressed in world frame W (for point Bo, the body frame's origin).
+  /// Calculates V_WB, `this` free-body B's spatial velocity in the world
+  /// frame W, expressed in W (for point Bo, the body frame's origin).
   /// @param[in] context Contains the state of the model.
   SpatialVelocity<T> CalcSpatialVelocityInWorldFrame(
       const systems::Context<T>& context) const;

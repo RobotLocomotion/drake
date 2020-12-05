@@ -283,7 +283,7 @@ class RigidBody : public Body<T> {
   /// with context.  These method APIs will be deprecated when caching arrives.
   ///@{
 
-  /// (Advanced) Returns A_WB_W, `this` rigid body B's spatial acceleration in
+  /// (Advanced) Returns A_WB, `this` rigid body B's spatial acceleration in
   /// the world frame W, expressed in W (for point Bo, the body's origin).
   /// @param[in] ac acceleration kinematics cache.
   // TODO(amcastro-tri) When cache entries are in the context, replace this

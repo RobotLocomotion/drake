@@ -1535,8 +1535,6 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   }
 
   // Mutable version of get_V_WB().
-  // @retval V_WB, body B's spatial velocity in the world frame W,
-  // expressed in world frame W (for point Bo, the body frame's origin).
   SpatialVelocity<T>& get_mutable_V_WB(VelocityKinematicsCache<T>* vc) const {
     return vc->get_mutable_V_WB(topology_.index);
   }
@@ -1577,8 +1575,8 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   // =========================================================================
   // AccelerationKinematicsCache Accessors and Mutators.
 
-  // For the body B associated with `this` node, returns A_WB_W, body B's
-  // spatial acceleration in the world frame W, expressed in world frame W
+  // For the body B associated with `this` node, returns A_WB, body B's
+  // spatial acceleration in the world frame W, expressed in W
   // (for point Bo, the body's origin).
   const SpatialAcceleration<T>& get_A_WB(
       const AccelerationKinematicsCache<T>& ac) const {

@@ -46,9 +46,9 @@ class AccelerationKinematicsCache {
     vdot_.setZero();
   }
 
-  /// For the body B associated with node @p body_node_index, returns A_WB_W,
-  /// body B's spatial acceleration in the world frame W, expressed in the
-  /// world frame W (for point Bo, the body's origin).
+  /// For the body B associated with node @p body_node_index, returns A_WB,
+  /// body B's spatial acceleration in the world frame W, expressed in W
+  /// (for point Bo, the body's origin).
   /// This method aborts in Debug builds if `body_node_index` does not
   /// correspond to a valid BodyNode in the MultibodyTree.
   /// @param[in] body_node_index The unique index for the computational

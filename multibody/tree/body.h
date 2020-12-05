@@ -298,7 +298,7 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
   }
 
   /// Evaluates V_WB, `this` body B's spatial velocity in the world frame W,
-  /// expressed in world frame W (for point Bo, the body frame's origin).
+  /// expressed in W (for point Bo, the body frame's origin).
   /// @param[in] context Contains the state of the model.
   const SpatialVelocity<T>& EvalSpatialVelocityInWorld(
       const systems::Context<T>& context) const {
@@ -306,8 +306,8 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
         context, *this);
   }
 
-  /// Returns A_WB_W, `this` body B's spatial acceleration in the world frame W,
-  /// expressed in world frame W (for point Bo, the body's origin).
+  /// Returns A_WB, `this` body B's spatial acceleration in the world frame W,
+  /// expressed in W (for point Bo, the body's origin).
   /// @param[in] context Contains the state of the model.
   /// @note When cached values are out of sync with the state stored in context,
   /// this method performs an expensive forward dynamics computation, whereas
