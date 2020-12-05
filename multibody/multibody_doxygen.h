@@ -183,7 +183,7 @@ The _frame_ and _body_ are fundamental to multibody mechanics.
 Unless specified otherwise, each _frame_ (also called a _coordinate frame_)
 contains a right-handed orthogonal unitary _basis_ and an _origin_ point.  Its
 name is usually one capital letter (e.g., A, B, or C). Shown below is a frame F.
-Frame F's _origin_ point Fo locates the frame and its _basis_ orients the frame.
+Frame F's origin point Fo locates the frame and its basis orients the frame.
 <pre>
      Fz
      ^    Fy          Frame F has origin point Fo and a
@@ -205,20 +205,22 @@ designate the frame's _origin_ or the frame's _basis_.  For example, if `A` and
 `B` are frames, `p_AB` denotes the position vector from point `Ao` (A's origin)
 to point `Bo` (B's origin), expressed in frame A (i.e., expressed in terms of
 unit vectors `Ax, Ay, Az`). Similarly, `w_AB` denotes frame B's angular velocity
-in frame A, expressed in frame A.  `V_AB` denotes frame B's spatial velocity
-in frame A, expressed in frame A.
+in frame A, expressed in frame A.  `v_AB` denotes the translational velocity of
+point Bo (B's origin) in frame A, expressed in frame A.  `V_AB` denotes frame
+B's spatial velocity in frame A, expressed in frame A and is defined as the
+combination of `w_AB` and `v_AB`.
 See @ref multibody_quantities for more information about notation.
 
 Each _body_ contains a _body frame_  and we use the same symbol `B` for both a
-_body_ `B` and its _body frame_. Body B's location is defined via `Bo` (the
-origin of the _body frame_) and body B's pose is defined via the pose of B's
-_body frame_.  Body properties (e.g., inertia and geometry) are measured with
-respect to the _body frame_. Body B's center of mass is denoted `Bcm`
+body `B` and its body frame. Body B's location is defined via `Bo` (the
+origin of the body frame) and body B's pose is defined via the pose of B's
+body frame.  Body properties (e.g., inertia and geometry) are measured with
+respect to the body frame.  Body B's center of mass is denoted `Bcm`
 (in typeset as @f$B_{cm}@f$) and its location is specified by a position vector
 from Bo to Bcm.  Bcm is not necessarily coincident with Bo and body B's
 translational and spatial properties (e.g., position, velocity, acceleration)
 are measured using Bo (not Bcm).  If an additional frame is fixed to a rigid
-body, its position is located from the _body frame_.
+body, its position is located from the body frame.
 For a flexible body, deformations are measured with respect to the body frame.
 
 When a user initially specifies a body, such as in a `<link>` tag of an `.sdf`
@@ -226,11 +228,11 @@ or `.urdf` file, there is a link frame L that may differ from Drake's body frame
 B.  Since frames L and B are always related by a <b>constant</b> transform,
 parameters (mass properties, visual geometry, collision geometry, etc.) given
 with respect to frame L are transformed and stored internally with respect to
-_body frame_ B.
+B's body frame.
 
 <h3>Notation for offset frame</h3>
-Sometimes we need a frame that is rigidly attached to a frame F with its _basis_
-rigidly aligned to F's _basis_ but with its origin shifted from Fo to a point R.
+Sometimes we need a frame that is rigidly attached to a frame F with its basis
+rigidly aligned to F's basis but with its origin shifted from Fo to a point R.
 We call that an _offset frame_ and denote this offset frame in typeset notation
 as @f$ F_R @f$. Since code lacks subscripts, we lowercase the point name to
 make it look more like a subscript as `Fr`.  Recall that we permit frame names
@@ -248,8 +250,8 @@ velocity of a frame whose orientation is the same as B but whose origin is
 located at Bcm (B's center of mass).
 
 If this notation is not sufficient for your purposes, please name the offset
-frame and use comments to precisely describe the orientation of its _basis_ and
-the location of its _origin_.
+frame and use comments to precisely describe the orientation of its basis and
+the location of its origin.
 
 Next topic: @ref multibody_quantities
 */
@@ -301,7 +303,7 @@ reasonable! Alternately, use a footnote to avoid running over. -->
 Quantity             |Symbol|     Typeset              | Monogram   | Meaningᵃ
 ---------------------|:----:|:------------------------:|:----------:|----------------------------
 Rotation matrix      |  R   |@f$^BR^C@f$               |`R_BC`      |Frame C's orientation in frame B
-Position vector      |  p   |@f$^Pp^Q@f$               |`p_PQ`      |Position from point P to point Q
+Position vector      |  p   |@f$^Pp^Q@f$               |`p_PQ`      |Position vector from point P to point Q
 Transform/pose       |  X   |@f$^BX^C@f$               |`X_BC`      |Frame C's *rigid* transform (pose) in frame B
 General Transform    |  T   |@f$^BT^C@f$               |`T_BC`      |The relationship between two spaces -- it may be affine, projective, isometric, etc. Every X_AB can be written as T_AB, but not every T_AB can be written as X_AB.
 Angular velocity     |  w   |@f$^B\omega^C@f$          |`w_BC`      |Frame C's angular velocity in frame Bᵃ
@@ -338,8 +340,8 @@ which appears after the quantity.
 frame E and contains both `w_BC_E` (described aboveᵃ) and v_BC_E (point Co's
 translational velocity in frame B, expressed in frame E).  Reminder, a rigid
 body D's translational and spatial velocity are for point Do (the origin of
-D's _body frame_), not for Dcm (D's center of mass).  See
-@ref multibody_frames_and_bodies for more information about frames and bodies.
+D's body frame), not for Dcm (D's center of mass).
+See @ref multibody_frames_and_bodies for more information.
 
 ᶜ It is often useful to <b>replace</b> a set of forces by an equivalent set
 with a force @f$f^{P}@f$ (equal to the set's resultant) placed at an arbitrary
@@ -360,7 +362,7 @@ extra frame (e.g., `JBq` is partial differentiation in frame B wrt q).
 Frequently, the partial-differentiation-in-frame B is identical to the
 expressed-in-frame E and a shorthand notation can be used.
 <br>Example: `Jq_p_PQ_E` is `Jq` (Jacobian <b>in</b> frame E wrt q),
-for `p_PQ` (position from point P to point Q),
+for `p_PQ` (position vector from point P to point Q),
 expressed <b>in</b> frame E.
 <br> <b>Special relationship between position and velocity Jacobians:</b>
 When a point Q's position vector originates at a point Bo <b>fixed</b> in frame
