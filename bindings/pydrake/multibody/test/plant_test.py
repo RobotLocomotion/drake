@@ -320,12 +320,8 @@ class TestPlant(unittest.TestCase):
         self.assertTrue(plant.HasModelInstanceNamed(name="acrobot"))
         self.assertEqual(
             model_instance, plant.GetModelInstanceByName(name="acrobot"))
-        if T == float:
-            # TODO(#14346): Re-enable for other scalar types once this is
-            # supported.
-            self.assertEqual(
-                plant.GetBodiesWeldedTo(plant.world_body()),
-                [plant.world_body()])
+        self.assertEqual(
+            plant.GetBodiesWeldedTo(plant.world_body()), [plant.world_body()])
         self.assertIsInstance(
             plant.get_actuation_input_port(), InputPort)
         self.assertIsInstance(
