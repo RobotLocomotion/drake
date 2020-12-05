@@ -2243,8 +2243,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().EvalBodySpatialVelocityInWorld(context, body_B);
   }
 
-  /// Evaluates A_WB, the spatial acceleration of a body B in the world
-  /// world frame W, expressed in the world frame W.
+  /// Evaluates A_WB, body B's spatial acceleration in the world frame W,
+  /// expressed in W (for point Bo, the body frame's origin).
   /// @param[in] context The context storing the state of the model.
   /// @param[in] body_B  The body for which spatial acceleration is requested.
   /// @retval A_WB_W Body B's spatial acceleration in the world frame W,
