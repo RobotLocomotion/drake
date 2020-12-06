@@ -48,6 +48,7 @@ VectorX<T> GetSchunkWsgOpenPosition() {
 
 /// Extract the distance between the fingers (and its time derivative) out
 /// of the plant model which pretends the two fingers are independent.
+/// @ingroup manipulation_systems
 template <typename T>
 std::unique_ptr<systems::MatrixGain<T>>
 MakeMultibodyStateToWsgStateSystem() {
@@ -59,6 +60,9 @@ MakeMultibodyStateToWsgStateSystem() {
   return std::make_unique<systems::MatrixGain<T>>(D);
 }
 
+/// Extract the gripper measured force from the generalized forces on the two
+/// fingers.
+/// @ingroup manipulation_systems
 template <typename T>
 class MultibodyForceToWsgForceSystem : public systems::VectorSystem<T> {
  public:
@@ -84,8 +88,8 @@ class MultibodyForceToWsgForceSystem : public systems::VectorSystem<T> {
   }
 };
 
-/// Extract the gripper measured force from the generalized forces on the two
-/// fingers.
+/// Helper method to create a MultibodyForceToWsgForceSystem.
+/// @ingroup manipulation_systems
 template <typename T>
 std::unique_ptr<systems::VectorSystem<T>>
 MakeMultibodyForceToWsgForceSystem() {
