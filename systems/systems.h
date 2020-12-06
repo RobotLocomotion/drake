@@ -79,8 +79,8 @@
 
 /// @addtogroup manipulation_systems
 /// @{
-/// @brief Systems implementations that specifically support dexterous
-/// manipulation capabilities in robotics.
+/// @brief Systems implementations and related functions that specifically 
+/// support dexterous manipulation capabilities in robotics.
 /// @}
 
 /// @addtogroup message_passing
