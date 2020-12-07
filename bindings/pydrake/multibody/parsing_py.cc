@@ -33,6 +33,8 @@ PYBIND11_MODULE(parsing, m) {
             py::arg("package_path"), cls_doc.Add.doc)
         .def("Contains", &Class::Contains, py::arg("package_name"),
             cls_doc.Contains.doc)
+        .def("Remove", &Class::Remove, py::arg("package_name"),
+            cls_doc.Remove.doc)
         .def("size", &Class::size, cls_doc.size.doc)
         .def("GetPath", &Class::GetPath, py::arg("package_name"),
             cls_doc.GetPath.doc)
