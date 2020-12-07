@@ -1,0 +1,14 @@
+# -*- python -*-
+
+licenses(["notice"])  # BSD-3-Clause
+
+cc_library(
+    name = "double_conversion",
+    hdrs = glob(["include/double-conversion/*.h"]),
+    includes = ["include"],
+    linkopts = [
+        "-L/usr/lib/x86_64-linux-gnu",
+        "-ldouble-conversion",
+    ],
+    visibility = ["//visibility:public"],
+)

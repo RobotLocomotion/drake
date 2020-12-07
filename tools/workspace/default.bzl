@@ -13,6 +13,7 @@ load("@drake//tools/workspace/clang_cindex_python3:repository.bzl", "clang_cinde
 load("@drake//tools/workspace/com_jidesoft_jide_oss:repository.bzl", "com_jidesoft_jide_oss_repository")  # noqa
 load("@drake//tools/workspace/commons_io:repository.bzl", "commons_io_repository")  # noqa
 load("@drake//tools/workspace/csdp:repository.bzl", "csdp_repository")
+load("@drake//tools/workspace/double_conversion:repository.bzl", "double_conversion_repository")  # noqa
 load("@drake//tools/workspace/doxygen:repository.bzl", "doxygen_repository")
 load("@drake//tools/workspace/drake_visualizer:repository.bzl", "drake_visualizer_repository")  # noqa
 load("@drake//tools/workspace/dreal:repository.bzl", "dreal_repository")
@@ -43,6 +44,7 @@ load("@drake//tools/workspace/libblas:repository.bzl", "libblas_repository")
 load("@drake//tools/workspace/libjpeg:repository.bzl", "libjpeg_repository")
 load("@drake//tools/workspace/liblapack:repository.bzl", "liblapack_repository")  # noqa
 load("@drake//tools/workspace/liblz4:repository.bzl", "liblz4_repository")
+load("@drake//tools/workspace/liblzma:repository.bzl", "liblzma_repository")
 load("@drake//tools/workspace/libpng:repository.bzl", "libpng_repository")
 load("@drake//tools/workspace/libtiff:repository.bzl", "libtiff_repository")
 load("@drake//tools/workspace/meshcat:repository.bzl", "meshcat_repository")
@@ -116,6 +118,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         commons_io_repository(name = "commons_io", mirrors = mirrors)
     if "csdp" not in excludes:
         csdp_repository(name = "csdp", mirrors = mirrors)
+    if "double_conversion" not in excludes:
+        double_conversion_repository(name = "double_conversion")
     if "doxygen" not in excludes:
         doxygen_repository(name = "doxygen", mirrors = mirrors)
     if "drake_detected_os" not in excludes:
@@ -178,6 +182,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         liblapack_repository(name = "liblapack")
     if "liblz4" not in excludes:
         liblz4_repository(name = "liblz4")
+    if "liblzma" not in excludes:
+        liblzma_repository(name = "liblzma")
     if "libpng" not in excludes:
         libpng_repository(name = "libpng")
     if "libtiff" not in excludes:
