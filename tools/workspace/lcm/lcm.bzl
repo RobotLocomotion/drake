@@ -18,7 +18,9 @@ def _lcm_aggregate_hdr(
         aggregate_hdr,
         hdrs,
         suffix,
-        strip_prefix):
+        strip_prefix,
+        deprecation,
+        tags):
     """Create a header file aggregating all the given header files, and
     return the aggregate header file name (or an empty list if no file
     is generated).
@@ -35,6 +37,8 @@ def _lcm_aggregate_hdr(
             hdrs = hdrs,
             out = aggregate_hdr,
             strip_prefix = strip_prefix,
+            deprecation = deprecation,
+            tags = tags,
         )
 
         return [aggregate_hdr]
@@ -138,6 +142,7 @@ def lcm_cc_library(
         lcm_srcs = [],
         lcm_package = None,
         lcm_structs = [],
+        deprecation = None,
         aggregate_hdr = None,
         aggregate_hdr_strip_prefix = ["**/include/"],
         **kwargs):
@@ -169,6 +174,10 @@ def lcm_cc_library(
     if not lcm_package:
         fail("lcm_package is required")
 
+    helper_tags = []
+    if "manual" in kwargs.get("tags", []):
+        helper_tags.append("manual")
+
     outs = _lcm_outs(lcm_srcs, lcm_package, lcm_structs, ".hpp")
     _lcm_library_gen(
         name = name + "_lcm_library_gen",
@@ -176,6 +185,8 @@ def lcm_cc_library(
         lcm_srcs = lcm_srcs,
         lcm_package = lcm_package,
         outs = outs,
+        deprecation = deprecation,
+        tags = helper_tags,
     )
 
     if aggregate_hdr:
@@ -186,6 +197,8 @@ def lcm_cc_library(
             outs,
             "hpp",
             aggregate_hdr_strip_prefix,
+            deprecation,
+            helper_tags,
         )
 
     deps = kwargs.pop("deps", [])
@@ -201,6 +214,7 @@ def lcm_cc_library(
         hdrs = outs,
         deps = deps,
         includes = includes,
+        deprecation = deprecation,
         **kwargs
     )
 
