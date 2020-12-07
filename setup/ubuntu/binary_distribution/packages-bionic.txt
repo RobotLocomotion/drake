@@ -36,7 +36,6 @@ libqt5printsupport5
 libqt5widgets5
 libquadmath0
 libsqlite3-0
-libtbb2
 libtheora0
 libtiff5
 libtinyxml2-dev
