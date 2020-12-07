@@ -50,6 +50,9 @@ drake_cc_library(
     hdrs = [
         "package_map.h",
     ],
+    data = [
+        "//:package.xml",
+    ],
     visibility = [
         "//visibility:public",
     ],

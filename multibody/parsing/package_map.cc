@@ -12,6 +12,7 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/filesystem.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
 
 namespace drake {
@@ -23,13 +24,8 @@ using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
 PackageMap::PackageMap() {
-  const std::optional<string> maybe_drake_path = MaybeGetDrakePath();
-  if (!maybe_drake_path) {
-    drake::log()->warn("Could not determine Drake's path.");
-  } else {
-    Add("drake", *maybe_drake_path);
-    // drake::log()->warn("Found Drake's path: {}", *maybe_drake_path);
-  }
+  std::string drake_pkg = FindResourceOrThrow("drake/package.xml");
+  AddPackageXml(drake_pkg);
 }
 
 void PackageMap::Add(const string& package_name, const string& package_path) {

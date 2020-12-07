@@ -10,9 +10,6 @@
 using std::map;
 using std::string;
 
-// FIXME(imcmahon): add constant for expected minumum package path
-// and then use it to check for the correct PackgeMap size
-
 namespace drake {
 namespace multibody {
 namespace {
@@ -30,7 +27,7 @@ string GetTestDataRoot() {
 
 void VerifyMatch(const PackageMap& package_map,
     const map<string, string>& expected_packages) {
-  EXPECT_EQ(package_map.size()-1, static_cast<int>(expected_packages.size()));
+  EXPECT_EQ(package_map.size(), static_cast<int>(expected_packages.size()));
   for (const auto& path_entry : expected_packages) {
     const std::string& package_name = path_entry.first;
     const std::string& package_path = path_entry.second;
@@ -72,6 +69,8 @@ GTEST_TEST(PackageMapTest, TestManualPopulation) {
   };
 
   PackageMap package_map;
+  package_map.Remove("drake");
+
   for (const auto& it : expected_packages) {
     package_map.Add(it.first, it.second);
   }
@@ -98,6 +97,7 @@ GTEST_TEST(PackageMapTest, TestPopulateFromXml) {
   const string xml_dirname =
       filesystem::path(xml_filename).parent_path().string();
   PackageMap package_map;
+  package_map.Remove("drake");
   package_map.AddPackageXml(xml_filename);
 
   map<string, string> expected_packages = {
@@ -110,6 +110,7 @@ GTEST_TEST(PackageMapTest, TestPopulateFromXml) {
 GTEST_TEST(PackageMapTest, TestPopulateMapFromFolder) {
   const string root_path = GetTestDataRoot();
   PackageMap package_map;
+  package_map.Remove("drake");
   package_map.PopulateFromFolder(root_path);
   VerifyMatchWithTestDataRoot(package_map);
 }
@@ -119,6 +120,7 @@ GTEST_TEST(PackageMapTest, TestPopulateMapFromFolder) {
 GTEST_TEST(PackageMapTest, TestPopulateMapFromFolderExtraTrailingSlashes) {
   const string root_path = GetTestDataRoot();
   PackageMap package_map;
+  package_map.Remove("drake");
   package_map.PopulateFromFolder(root_path + "///////");
   VerifyMatchWithTestDataRoot(package_map);
 }
@@ -132,6 +134,7 @@ GTEST_TEST(PackageMapTest, TestPopulateUpstreamToDrake) {
       "sdf/test_model.sdf");
 
   PackageMap package_map;
+  package_map.Remove("drake");
   package_map.PopulateUpstreamToDrake(sdf_file_name);
 
   map<string, string> expected_packages = {
@@ -149,15 +152,16 @@ GTEST_TEST(PackageMapTest, TestPopulateUpstreamToDrake) {
 // Tests that PackageMap can be populated from an env var.
 GTEST_TEST(PackageMapTest, TestPopulateFromEnvironment) {
   PackageMap package_map;
+  package_map.Remove("drake");
 
-  // Test a null environment with only the Drake package.
+  // Test a null environment.
   package_map.PopulateFromEnvironment("FOOBAR");
-  EXPECT_EQ(package_map.size(), 1);
+  EXPECT_EQ(package_map.size(), 0);
 
-  // Test an empty environment with only the Drake package.
+  // Test an empty environment.
   ::setenv("FOOBAR", "", 1);
   package_map.PopulateFromEnvironment("FOOBAR");
-  EXPECT_EQ(package_map.size(), 1);
+  EXPECT_EQ(package_map.size(), 0);
 
   // Test three environment entries, concatenated:
   // - one bad path
@@ -179,6 +183,7 @@ GTEST_TEST(PackageMapTest, TestStreamingToString) {
   };
 
   PackageMap package_map;
+  package_map.Remove("drake");
   for (const auto& it : expected_packages) {
     package_map.Add(it.first, it.second);
   }
@@ -197,7 +202,7 @@ GTEST_TEST(PackageMapTest, TestStreamingToString) {
 
   // Verifies that there are three lines in the resulting string.
   EXPECT_EQ(std::count(resulting_string.begin(), resulting_string.end(), '\n'),
-            4);
+            3);
 }
 
 }  // namespace
