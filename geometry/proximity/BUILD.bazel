@@ -450,8 +450,9 @@ drake_cc_library(
     ],
     deps = [
         ":collision_filter_legacy",
-        ":proximity_utilities",
+        ":distance_to_point_callback",
         "//geometry/query_results:penetration_as_point_pair",
+        "//geometry/query_results:signed_distance_to_point",
         "@fcl",
     ],
 )
@@ -810,6 +811,9 @@ drake_cc_googletest(
     deps = [
         ":penetration_as_point_pair_callback",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//math:autodiff",
+        "//math:gradient",
     ],
 )
 

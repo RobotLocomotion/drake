@@ -272,7 +272,7 @@ TEST_F(MultibodyPlantReflectedInertiaTests, CalcKineticEnergyAndMomentum) {
   const SpatialMomentum<double> L_W =
       plant_.CalcSpatialMomentumInWorldAboutPoint(*context_, p_WoWo_W);
   const SpatialMomentum<double> L_W_ri =
-      plant_ri_.CalcSpatialMomentumInWorldAboutPoint(*context_, p_WoWo_W);
+      plant_ri_.CalcSpatialMomentumInWorldAboutPoint(*context_ri_, p_WoWo_W);
   EXPECT_TRUE(
       CompareMatrices(L_W.get_coeffs(), L_W_ri.get_coeffs(), kTolerance));
 }

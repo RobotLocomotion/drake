@@ -27,6 +27,12 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
+_DEPRECATION_2021_04 = " ".join([
+    "DRAKE DEPRECATED: This LCM message is unused within Drake and therefore",
+    "is being removed. The deprecated code will be removed from Drake on or",
+    "after 2021-04-01.",
+])
+
 drake_lcm_cc_library(
     name = "acrobot",
     lcm_package = "drake",
@@ -39,21 +45,27 @@ drake_lcm_cc_library(
 
 drake_lcm_cc_library(
     name = "body_acceleration",
+    deprecation = _DEPRECATION_2021_04,
     lcm_package = "drake",
     lcm_srcs = ["lcmt_body_acceleration.lcm"],
+    tags = ["manual"],
 )
 
 drake_lcm_cc_library(
     name = "body_motion_data",
+    deprecation = _DEPRECATION_2021_04,
     lcm_package = "drake",
     lcm_srcs = ["lcmt_body_motion_data.lcm"],
+    tags = ["manual"],
     deps = [":piecewise_polynomial"],
 )
 
 drake_lcm_cc_library(
     name = "body_wrench_data",
+    deprecation = _DEPRECATION_2021_04,
     lcm_package = "drake",
     lcm_srcs = ["lcmt_body_wrench_data.lcm"],
+    tags = ["manual"],
 )
 
 drake_lcm_cc_library(
@@ -67,8 +79,10 @@ drake_lcm_cc_library(
 
 drake_lcm_cc_library(
     name = "constrained_values",
+    deprecation = _DEPRECATION_2021_04,
     lcm_package = "drake",
     lcm_srcs = ["lcmt_constrained_values.lcm"],
+    tags = ["manual"],
 )
 
 drake_lcm_cc_library(
@@ -83,28 +97,36 @@ drake_lcm_cc_library(
 
 drake_lcm_cc_library(
     name = "contact_information",
+    deprecation = _DEPRECATION_2021_04,
     lcm_package = "drake",
     lcm_srcs = ["lcmt_contact_information.lcm"],
+    tags = ["manual"],
 )
 
 drake_lcm_cc_library(
     name = "desired_body_motion",
+    deprecation = _DEPRECATION_2021_04,
     lcm_package = "drake",
     lcm_srcs = ["lcmt_desired_body_motion.lcm"],
+    tags = ["manual"],
     deps = [":constrained_values"],
 )
 
 drake_lcm_cc_library(
     name = "desired_centroidal_momentum_dot",
+    deprecation = _DEPRECATION_2021_04,
     lcm_package = "drake",
     lcm_srcs = ["lcmt_desired_centroidal_momentum_dot.lcm"],
+    tags = ["manual"],
     deps = [":constrained_values"],
 )
 
 drake_lcm_cc_library(
     name = "desired_dof_motions",
+    deprecation = _DEPRECATION_2021_04,
     lcm_package = "drake",
     lcm_srcs = ["lcmt_desired_dof_motions.lcm"],
+    tags = ["manual"],
     deps = [":constrained_values"],
 )
 
@@ -132,27 +154,35 @@ drake_lcm_cc_library(
 
 drake_lcm_cc_library(
     name = "inverse_dynamics_debug_info",
+    deprecation = _DEPRECATION_2021_04,
     lcm_package = "drake",
     lcm_srcs = ["lcmt_inverse_dynamics_debug_info.lcm"],
+    tags = ["manual"],
 )
 
 drake_lcm_cc_library(
     name = "joint_pd_override",
+    deprecation = _DEPRECATION_2021_04,
     lcm_package = "drake",
     lcm_srcs = ["lcmt_joint_pd_override.lcm"],
+    tags = ["manual"],
 )
 
 drake_lcm_cc_library(
     name = "manipulator_plan_move_end_effector",
+    deprecation = _DEPRECATION_2021_04,
     lcm_package = "drake",
     lcm_srcs = ["lcmt_manipulator_plan_move_end_effector.lcm"],
+    tags = ["manual"],
     deps = ["@lcmtypes_bot2_core"],
 )
 
 drake_lcm_cc_library(
     name = "piecewise_polynomial",
+    deprecation = _DEPRECATION_2021_04,
     lcm_package = "drake",
     lcm_srcs = ["lcmt_piecewise_polynomial.lcm"],
+    tags = ["manual"],
     deps = [":polynomial_matrix"],
 )
 
@@ -164,27 +194,35 @@ drake_lcm_cc_library(
 
 drake_lcm_cc_library(
     name = "polynomial",
+    deprecation = _DEPRECATION_2021_04,
     lcm_package = "drake",
     lcm_srcs = ["lcmt_polynomial.lcm"],
+    tags = ["manual"],
 )
 
 drake_lcm_cc_library(
     name = "plan_eval_debug_info",
+    deprecation = _DEPRECATION_2021_04,
     lcm_package = "drake",
     lcm_srcs = ["lcmt_plan_eval_debug_info.lcm"],
+    tags = ["manual"],
 )
 
 drake_lcm_cc_library(
     name = "polynomial_matrix",
+    deprecation = _DEPRECATION_2021_04,
     lcm_package = "drake",
     lcm_srcs = ["lcmt_polynomial_matrix.lcm"],
+    tags = ["manual"],
     deps = [":polynomial"],
 )
 
 drake_lcm_cc_library(
     name = "qp_controller_input",
+    deprecation = _DEPRECATION_2021_04,
     lcm_package = "drake",
     lcm_srcs = ["lcmt_qp_controller_input.lcm"],
+    tags = ["manual"],
     deps = [
         ":body_motion_data",
         ":body_wrench_data",
@@ -197,8 +235,10 @@ drake_lcm_cc_library(
 
 drake_lcm_cc_library(
     name = "qp_input",
+    deprecation = _DEPRECATION_2021_04,
     lcm_package = "drake",
     lcm_srcs = ["lcmt_qp_input.lcm"],
+    tags = ["manual"],
     deps = [
         ":contact_information",
         ":desired_body_motion",
@@ -230,8 +270,10 @@ drake_lcm_cc_library(
 
 drake_lcm_cc_library(
     name = "resolved_contact",
+    deprecation = _DEPRECATION_2021_04,
     lcm_package = "drake",
     lcm_srcs = ["lcmt_resolved_contact.lcm"],
+    tags = ["manual"],
 )
 
 drake_lcm_cc_library(
@@ -251,26 +293,34 @@ drake_lcm_cc_library(
 
 drake_lcm_cc_library(
     name = "support_data",
+    deprecation = _DEPRECATION_2021_04,
     lcm_package = "drake",
     lcm_srcs = ["lcmt_support_data.lcm"],
+    tags = ["manual"],
 )
 
 drake_lcm_cc_library(
     name = "whole_body_data",
+    deprecation = _DEPRECATION_2021_04,
     lcm_package = "drake",
     lcm_srcs = ["lcmt_whole_body_data.lcm"],
+    tags = ["manual"],
 )
 
 drake_lcm_cc_library(
     name = "zmp_data",
+    deprecation = _DEPRECATION_2021_04,
     lcm_package = "drake",
     lcm_srcs = ["lcmt_zmp_data.lcm"],
+    tags = ["manual"],
 )
 
 drake_lcm_cc_library(
     name = "zmp_com_observer_state",
+    deprecation = _DEPRECATION_2021_04,
     lcm_package = "drake",
     lcm_srcs = ["lcmt_zmp_com_observer_state.lcm"],
+    tags = ["manual"],
 )
 
 drake_lcm_cc_library(
@@ -339,13 +389,13 @@ drake_lcm_cc_library(
 
 drake_lcm_cc_library(
     name = "viewer2_comms",
+    deprecation = _DEPRECATION_2021_04,
     lcm_package = "drake",
     lcm_srcs = [
         "lcmt_viewer2_comms.lcm",
     ],
+    tags = ["manual"],
 )
-
-# TODO(jwnimmer-tri) Many more C++ messages are missing ...
 
 drake_lcm_py_library(
     name = "lcmtypes_drake_py",
@@ -369,6 +419,7 @@ drake_lcm_java_library(
 # This should list every LCM type that is known to Drake.
 LCMTYPES_CC = [
     ":acrobot",
+    ":allegro",
     ":body_acceleration",
     ":body_motion_data",
     ":body_wrench_data",

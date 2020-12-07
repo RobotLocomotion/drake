@@ -385,7 +385,7 @@ class GeometryState {
 
   /** Implementation of QueryObject::ComputePointPairPenetration().  */
   std::vector<PenetrationAsPointPair<T>> ComputePointPairPenetration() const {
-    return geometry_engine_->ComputePointPairPenetration();
+    return geometry_engine_->ComputePointPairPenetration(X_WGs_);
   }
 
   /** Implementation of QueryObject::ComputeContactSurfaces().  */
@@ -498,6 +498,8 @@ class GeometryState {
   /** Implementation of SceneGraph::RegisteredRendererNames().  */
   std::vector<std::string> RegisteredRendererNames() const;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   /** Implementation of QueryObject::RenderColorImage().
    @pre All poses have already been updated.  */
   DRAKE_DEPRECATED("2021-03-01",
@@ -526,6 +528,8 @@ class GeometryState {
                         FrameId parent_frame, const math::RigidTransformd& X_PC,
                         bool show_window,
                         systems::sensors::ImageLabel16I* label_image_out) const;
+
+#pragma GCC diagnostic pop
 
   /** Implementation of QueryObject::RenderColorImage().
    @pre All poses have already been updated.  */

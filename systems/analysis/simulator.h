@@ -270,9 +270,8 @@ class Simulator {
   ///
   /// @note In particular, if you changed the time you must call Initialize().
   /// The time-triggered events must be recalculated in case one is due at the
-  /// new starting time. Currently, the AdvanceTo() call will print a warning
-  /// for the first violation; after 2020-12-01 the warning will become a hard
-  /// error.
+  /// new starting time. The AdvanceTo() call will throw an exception if the
+  /// Initialize() call is missing.
   ///
   /// @note The only way to suppress initialization events is by calling
   /// Initialize() explicitly. The most common scenario for this is when

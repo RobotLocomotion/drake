@@ -198,287 +198,56 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
   }
 }
 
-// Meshes are treated specially in proximity engine. Historically, they haven't
-// been supported at all. There is one special case in which they are supported:
-// as rigid objects in hydroelastic contact. This test framework facilitates
-// confirmation of the support for Mesh shapes.
-class ProximityEngineMeshes : public ::testing::Test {
- protected:
-  // Adds a single shape to the given engine with the indicated anchored/dynamic
-  // configuration and compliant type.
-  std::pair<GeometryId, RigidTransformd> AddShape(
-      ProximityEngine<double>* engine, const Shape& shape, bool is_anchored,
-      bool is_soft, const Vector3d& p_S1S2_W) {
-    RigidTransformd X_WS = RigidTransformd(p_S1S2_W);
-    const GeometryId id_S = GeometryId::get_new_id();
-    // We'll mindlessly provide edge_length; even if the shape doesn't require
-    // it.
-    const double edge_length = 0.5;
-    ProximityProperties properties;
-    if (is_soft) {
-      // If soft, we need an elastic modulus.
-      AddContactMaterial(1e8, {}, {}, &properties);
-      AddSoftHydroelasticProperties(edge_length, &properties);
-    } else {
-      AddRigidHydroelasticProperties(edge_length, &properties);
-    }
-    if (is_anchored) {
-      engine->AddAnchoredGeometry(shape, X_WS, id_S, properties);
-    } else {
-      engine->AddDynamicGeometry(shape, X_WS, id_S, properties);
-    }
-    return std::make_pair(id_S, X_WS);
+// Adds a single shape to the given engine with the indicated anchored/dynamic
+// configuration and compliant type.
+std::pair<GeometryId, RigidTransformd> AddShape(ProximityEngine<double>* engine,
+                                                const Shape& shape,
+                                                bool is_anchored, bool is_soft,
+                                                const Vector3d& p_S1S2_W) {
+  RigidTransformd X_WS = RigidTransformd(p_S1S2_W);
+  const GeometryId id_S = GeometryId::get_new_id();
+  // We'll mindlessly provide edge_length; even if the shape doesn't require
+  // it.
+  const double edge_length = 0.5;
+  ProximityProperties properties;
+  if (is_soft) {
+    // If soft, we need an elastic modulus.
+    AddContactMaterial(1e8, {}, {}, &properties);
+    AddSoftHydroelasticProperties(edge_length, &properties);
+  } else {
+    AddRigidHydroelasticProperties(edge_length, &properties);
   }
-
-  // Populates the world with two shapes. The second shape is translated such
-  // the amount p_S1S2_W and the returned transforms reflect that relationship.
-  // Each shape can be anchored or dynamic and rigid or soft. Stores the
-  // geometry ids of the first and second shapes.
-  unordered_map<GeometryId, RigidTransformd> PopulateEngine(
-      ProximityEngine<double>* engine, const Shape& shape1, bool anchored1,
-      bool soft1, const Shape& shape2, bool anchored2, bool soft2,
-      const Vector3d& p_S1S2_W = Vector3d(0, 0, 0)) {
-    unordered_map<GeometryId, RigidTransformd> X_WGs;
-    RigidTransformd X_WG;
-    std::tie(id1_, X_WG) =
-        AddShape(engine, shape1, anchored1, soft1, Vector3d::Zero());
-    X_WGs.insert({id1_, X_WG});
-    std::tie(id2_, X_WG) = AddShape(engine, shape2, anchored2, soft2, p_S1S2_W);
-    X_WGs.insert({id2_, X_WG});
-    engine->UpdateWorldPoses(X_WGs);
-    return X_WGs;
+  if (is_anchored) {
+    engine->AddAnchoredGeometry(shape, X_WS, id_S, properties);
+  } else {
+    engine->AddDynamicGeometry(shape, X_WS, id_S, properties);
   }
+  return std::make_pair(id_S, X_WS);
+}
 
-  GeometryId id1_;
-  GeometryId id2_;
-};
+unordered_map<GeometryId, RigidTransformd> PopulateEngine(
+    ProximityEngine<double>* engine, const Shape& shape1, bool anchored1,
+    bool soft1, const Shape& shape2, bool anchored2, bool soft2,
+    const Vector3d& p_S1S2_W = Vector3d(0, 0, 0)) {
+  unordered_map<GeometryId, RigidTransformd> X_WGs;
+  RigidTransformd X_WG;
+  GeometryId id1, id2;
+  std::tie(id1, X_WG) =
+      AddShape(engine, shape1, anchored1, soft1, Vector3d::Zero());
+  X_WGs.insert({id1, X_WG});
+  std::tie(id2, X_WG) = AddShape(engine, shape2, anchored2, soft2, p_S1S2_W);
+  X_WGs.insert({id2, X_WG});
+  engine->UpdateWorldPoses(X_WGs);
+  return X_WGs;
+}
 
-// Confirms that Mesh is supported in ComputeContactSurfaces() but not other
-// queries. We set up an anchored soft sphere S and a dynamic rigid mesh M, so
-// that they contact. Then, we verify that ComputeContactSurfaces() gives one
-// contact surface between S and M, but other queries give no result from M.
-TEST_F(ProximityEngineMeshes, MeshComputeContactSurfacesOnly) {
+GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
   const bool anchored{true};
   const bool soft{true};
   const Sphere sphere{0.2};
   const Mesh mesh{
       drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj"),
       1.0 /* scale */};
-
-  ProximityEngine<double> engine;
-  const auto X_WGs = PopulateEngine(&engine, sphere, anchored, soft,
-                                    mesh, !anchored, !soft);
-
-  const auto contact_surfaces = engine.ComputeContactSurfaces(X_WGs);
-  EXPECT_EQ(1, contact_surfaces.size());
-
-  const double max_distance = std::numeric_limits<double>::infinity();
-  const auto signed_distance_pairs =
-      engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs,
-                                                        max_distance);
-  EXPECT_EQ(0, signed_distance_pairs.size());
-
-  const auto signed_distances_to_point =
-      engine.ComputeSignedDistanceToPoint(Vector3d::Zero(),  // p_WQ
-                                          X_WGs, max_distance);
-  ASSERT_EQ(1, signed_distances_to_point.size());
-  EXPECT_EQ(id1_, signed_distances_to_point[0].id_G);
-
-  const auto point_pairs = engine.ComputePointPairPenetration();
-  EXPECT_EQ(0, point_pairs.size());
-
-  const auto collision_candidates = engine.FindCollisionCandidates();
-  EXPECT_EQ(0, collision_candidates.size());
-
-  EXPECT_FALSE(engine.HasCollisions());
-}
-
-// There are two axes of geometry classification that control the result of
-// ComputeContactSurfaces: anchored/dynamic and mesh/primitive. For a geometry
-// pair, these classifications can combine in different ways. Each combination
-// depends on a *different* code path. Each code path must be tested:
-//
-//   1. dynamic primitive vs anchored primitive
-//   2. dynamic primitive vs dynamic primitive
-//   3. dynamic primitive vs anchored mesh
-//   4. dynamic primitive vs dynamic mesh
-//   5. dynamic mesh vs anchored primitive
-//   6. dynamic mesh vs anchored mesh (must throw)
-//   7. dynamic mesh vs dynamic mesh (must throw)
-//
-// 1. anchored * vs anchored * is never possible.
-// 2. * mesh vs * mesh (lines 6 & 7) must throw because we require contact
-//    between different compliance types, but we only support rigid meshes. This
-//    will change when we support soft compliance for arbitrary meshes.
-//
-// In principle, there is a *third* axis: compliance. However, only one value
-// along that axis *can* produce a ContactSurface: the two geometries must have
-// different compliance. We include that third axis in this struct so we can
-// also confirm the non-producing behaviors of having matching compliance.
-// This struct defines a geometry pair for testing encapsulating all *three*
-// dimensions: compliance (soft/rigid), anchored/dynamic, and mesh/primitive.
-struct ContactSurfacePair {
-  bool is_soft1{};
-  bool is_anchored1{};
-  const Shape* shape1{};
-  bool is_soft2{};
-  bool is_anchored2{};
-  const Shape* shape2{};
-  Vector3d p_S1S2_W;
-};
-
-std::ostream& operator<<(std::ostream& out, const ContactSurfacePair& pair) {
-  out << (pair.is_soft1 ? "soft" : "rigid") << ", "
-      << (pair.is_anchored1 ? "anchored" : "dynamic") << " "
-      << ShapeName(*pair.shape1).name() << " vs "
-      << (pair.is_soft2 ? "soft" : "rigid") << ", "
-      << (pair.is_anchored2 ? "anchored" : "dynamic") << " "
-      << ShapeName(*pair.shape2).name();
-  return out;
-}
-
-// Tests the ComputeContactSurfaces. The ProximityEngine largely relies on
-// hydroelastic::Callback functionality to do its work and that is tested
-// elsewhere. ProximityEngine::ComputeContactSurfaces has several unique
-// responsibilities:
-//   - Confirm that collision results are returned at all (implicitly tested
-//     for the "valid pairs").
-//   - Confirm that meshes can participate. Specifically:
-//     - rigid mesh-soft anything in contact produces a result. This includes
-//       any combination of anchored/dynamic except for (anchored, anchored).
-//     - soft *mesh*-anything throws (soft meshes are not supported at all).
-//   - Enforce that the results are well-ordered. This aspect is confirmed in
-//     the ComputeContactSurfacesResultOrdering test below.
-TEST_F(ProximityEngineMeshes, ComputeContactSurfaces) {
-  const bool anchored{true};
-  const bool soft{true};
-  const double radius = 0.2;
-  const Sphere sphere{radius};
-  const Mesh mesh{
-      drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj"),
-      1.0 /* scale */};
-
-  // The set of geometry pairs that should produce a single contact. For
-  // sphere-sphere contact, we want to make sure they aren't exactly on top of
-  // each other.
-  const Vector3d p_S0S1(1.5 * radius, 0, 0);
-  const Vector3d zero(0, 0, 0);
-
-  const std::vector<ContactSurfacePair> valid_pairs{
-      {// Dynamic primitive vs dynamic primitive.
-       {soft, !anchored, &sphere, !soft, !anchored, &sphere, p_S0S1},
-       // Dynamic primitive vs anchored primitive.
-       {soft, !anchored, &sphere, !soft, anchored, &sphere, p_S0S1},
-       // Dynamic primitive vs anchored mesh.
-       {soft, !anchored, &sphere, !soft, anchored, &mesh, zero},
-       // Dynamic primitive vs dynamic mesh.
-       {soft, !anchored, &sphere, !soft, !anchored, &mesh, zero},
-       // Anchored primitive vs dynamic mesh.
-       {soft, anchored, &sphere, !soft, !anchored, &mesh, zero}}};
-
-  for (const auto& contact_pair : valid_pairs) {
-    ProximityEngine<double> engine;
-    const auto X_WGs =
-        PopulateEngine(&engine, *contact_pair.shape1, contact_pair.is_anchored1,
-                       contact_pair.is_soft1, *contact_pair.shape2,
-                       contact_pair.is_anchored2, contact_pair.is_soft2,
-                       contact_pair.p_S1S2_W);
-
-    const auto surfaces = engine.ComputeContactSurfaces(X_WGs);
-    EXPECT_EQ(surfaces.size(), 1) << contact_pair;
-  }
-
-  // Note: it is not an error to declare a soft mesh; it will simply be ignored.
-  // However, when evaluating contact with that mesh, it will be classified as
-  // undefined and that will cause an exception to be thrown.
-  const std::vector<ContactSurfacePair> bad_pairs{
-      {// Dynamic primitive vs dynamic primitive - same compliance.
-       {soft, !anchored, &sphere, soft, !anchored, &sphere, p_S0S1},
-       {!soft, !anchored, &sphere, !soft, !anchored, &sphere, p_S0S1},
-       // Dynamic primitive vs anchored primitive - same compliance.
-       {soft, !anchored, &sphere, soft, anchored, &sphere, p_S0S1},
-       {!soft, !anchored, &sphere, !soft, anchored, &sphere, p_S0S1},
-       // Dynamic primitive vs anchored mesh - same compliance.
-       {!soft, !anchored, &sphere, !soft, anchored, &mesh, zero},
-       {soft, !anchored, &sphere, soft, anchored, &mesh, zero},
-       // Dynamic primitive vs dynamic mesh - same compliance.
-       {!soft, !anchored, &sphere, !soft, !anchored, &mesh, zero},
-       {soft, !anchored, &sphere, soft, !anchored, &mesh, zero},
-       // Dynamic mesh vs dynamic mesh - same and different compliance.
-       {soft, !anchored, &mesh, !soft, !anchored, &mesh, zero},
-       {soft, !anchored, &mesh, soft, !anchored, &mesh, zero},
-       {!soft, !anchored, &mesh, !soft, !anchored, &mesh, zero},
-       // Anchored primitive vs dynamic mesh - same compliance.
-       {!soft, anchored, &sphere, !soft, !anchored, &mesh, zero},
-       {soft, anchored, &sphere, soft, !anchored, &mesh, zero},
-       // Anchored mesh vs dynamic mesh - same and different compliance.
-       {soft, !anchored, &mesh, !soft, anchored, &mesh, zero},
-       {soft, !anchored, &mesh, soft, anchored, &mesh, zero},
-       {!soft, !anchored, &mesh, !soft, anchored, &mesh, zero}}};
-
-  for (const auto& contact_pair : bad_pairs) {
-    ProximityEngine<double> engine;
-    const auto X_WGs =
-        PopulateEngine(&engine, *contact_pair.shape1, contact_pair.is_anchored1,
-                       contact_pair.is_soft1, *contact_pair.shape2,
-                       contact_pair.is_anchored2, contact_pair.is_soft2,
-                       contact_pair.p_S1S2_W);
-    EXPECT_THROW(engine.ComputeContactSurfaces(X_WGs), std::logic_error)
-        << contact_pair;
-  }
-}
-
-// Tests the ComputeContactSurfacesWithFallback. The ProximityEngine largely
-// relies on the hydroelastic::Callback* functionality to do its work and those
-// are tested elsewhere. This function has several unique responsibilities:
-//   - Confirm that the collision results are placed into the provided in/out
-//     parameters.
-//   - Confirm that meshes can participate. Specifically:
-//     - anchored - anchored: should be a no-op; no throw, no collision
-//       regardless of compatible or incompatible compliance type, or if only
-//       one is a mesh, or both (or, in fact, neither).
-//     - For all permutations involving a dynamic geometry:
-//       (dynamic shape - dynamic mesh), (dynamic shape - anchored mesh), and
-//       (anchored shape - dynamic mesh):
-//       - If it satisfies the strict hydroelastic functions's conditions
-//         (e.g., rigid-soft), it produces a single contact surface.
-//       - If it _doesn't_ satisfy the strict hydroelastic functions'
-//         conditions (e.g., same compliance types), it throws.
-//   - Enforce that the results are well-ordered. This aspect is confirmed in
-//     the ComputeContactSurfacesWithFallbackResultOrdering test below.
-//   - Confirm that for T=AutoDiffXd that if there is contact (hydroelastic
-//     or point pair), that it throws.
-// TODO(SeanCurtis-TRI): Update this test when soft meshes are supported.
-TEST_F(ProximityEngineMeshes, ComputeContactSurfaceWithFallback) {
-  const bool anchored{true};
-  const bool soft{true};
-  const Sphere sphere{0.2};
-  const Mesh mesh{
-      drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj"),
-      1.0 /* scale */};
-
-  // For a (mesh, shape) pair, this enumerates all anchor/dynamic configurations
-  // with at least one dynamic mesh (false = anchored, true = dynamic).
-  // The anchored-anchored test is covered below.
-  const std::vector<std::pair<bool, bool>> anchor_configurations{
-      {false, false}, {false, true}, {true, false}};
-
-  // Case: all dynamic-anchored permutations that would pass strict hydroelastic
-  // conditions (i.e., different compliance) should lead to a single contact
-  // surface.
-  {
-    for (const auto& [mesh_anchored, shape_anchored] : anchor_configurations) {
-      ProximityEngine<double> engine;
-      const auto X_WGs = PopulateEngine(&engine, sphere, shape_anchored, soft,
-                                        mesh, mesh_anchored, !soft);
-
-      std::vector<ContactSurface<double>> surfaces;
-      std::vector<PenetrationAsPointPair<double>> point_pairs;
-      engine.ComputeContactSurfacesWithFallback(X_WGs, &surfaces, &point_pairs);
-      EXPECT_EQ(surfaces.size(), 1);
-      EXPECT_EQ(point_pairs.size(), 0);
-    }
-  }
 
   // Case: Soft sphere and rigid mesh with AutoDiffXd -- contact would be a
   // contact surface; throws for now.
@@ -499,13 +268,12 @@ TEST_F(ProximityEngineMeshes, ComputeContactSurfaceWithFallback) {
         engine_ad->ComputeContactSurfacesWithFallback(X_WGs_ad, &surfaces,
                                                       &point_pairs),
         std::exception,
-        "Requested AutoDiff-valued contact surface between two geometries "
-        "with hydroelastic representation but for scalar type .+; not "
-        "currently supported.");
+        "Penetration queries between shapes 'Sphere' and 'Convex' are not "
+        "supported for scalar type drake::AutoDiffXd");
   }
 
-  // Case: Rigid sphere and mesh with AutoDiffXd -- contact would be  a point
-  // pair; throws for now.
+  // Case: Rigid sphere and mesh with AutoDiffXd -- contact would be a point
+  // pair.
   {
     ProximityEngine<double> engine_d;
     const auto X_WGs_d =
@@ -518,73 +286,113 @@ TEST_F(ProximityEngineMeshes, ComputeContactSurfaceWithFallback) {
 
     std::vector<ContactSurface<AutoDiffXd>> surfaces;
     std::vector<PenetrationAsPointPair<AutoDiffXd>> point_pairs;
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        engine_ad->ComputeContactSurfacesWithFallback(X_WGs_ad, &surfaces,
-                                                      &point_pairs),
-        std::exception,
-        "ComputeContactSurfacesWithFallback.. model has bodies in contact that "
-        "could not be resolved with hydroelastic contact. The fallback contact "
-        "model .penetration as point pair. only supports T = double.");
-  }
-
-  // TODO(SeanCurtis-TRI) The reasoning here is flawed. I could comment out
-  //  various lines in ProximityEngine::ComputeContactSurfacesWithFallback() and
-  //  this test will pass. There are various calls to collide() and FclCollide()
-  //  in that function. This test should have one variant for each of those
-  //  calls to guarantee that each one contributes contact. Reformulate this
-  //  test to match how ComputeContactSurface is tested.
-
-  // Case: all dynamic-anchored permutations which don't satisfy hydroelastic
-  // conditions should throw: this includes (rigid, rigid), (soft, soft),
-  // (rigid, undefined), (soft, undefined) with at least one geometry in each
-  // pair a mesh. It should terminate on the strict hydroelastic criteria and
-  // report that function's exception. We test only (rigid, rigid) for
-  // (shape, mesh) and (mesh, mesh) geometries as a representative of those
-  // other failure conditions with the following justifications:
-  //    1. ProximityEngine (PE) doesn't generate those errors. Those errors
-  //       arise because PE explicitly calls the hydroelastics callback on
-  //       meshes. We make sure that an exception is thrown for *one* of those
-  //       cases and rely on tests on the callback to handle all cases
-  //       correctly. This tests merely provides evidence that the right
-  //       callback is invoked.
-  //    2. It is impossible to create a soft mesh, so that's a theoretical
-  //       combination that isn't possible in practice. We could only get a
-  //       rigid mesh and an undefined mesh.
-  {
-    for (const auto& [mesh_anchored, shape_anchored] : anchor_configurations) {
-      ProximityEngine<double> engine;
-      const auto X_WGs = PopulateEngine(&engine, sphere, shape_anchored, !soft,
-                                        mesh, mesh_anchored, !soft);
-
-      std::vector<ContactSurface<double>> surfaces;
-      std::vector<PenetrationAsPointPair<double>> point_pairs;
-      DRAKE_EXPECT_THROWS_MESSAGE(
-          engine.ComputeContactSurfacesWithFallback(X_WGs, &surfaces,
-                                                    &point_pairs),
-          std::logic_error, "Requested contact between two rigid objects .+");
-    }
-  }
-
-  // Case: If both are anchored (whether it's mesh-mesh or shape-mesh or
-  // whether their compliance types match or differ), no throw and no results.
-  {
-    for (const auto* first_shape : std::vector<const Shape*>{&sphere, &mesh}) {
-      for (const bool different : {true, false}) {
-        ProximityEngine<double> engine;
-        // Note: attempting to register a _soft_ mesh will not succeed. It will
-        // be left without a hydroelastic representation. But that's ok if
-        // they are both anchored; because in this context, the two anchored
-        // objects will never be considered.
-        const auto X_WGs = PopulateEngine(&engine, *first_shape, anchored, soft,
-                                          mesh, anchored, soft ^ different);
-
-        std::vector<ContactSurface<double>> surfaces;
-        std::vector<PenetrationAsPointPair<double>> point_pairs;
-        engine.ComputeContactSurfacesWithFallback(X_WGs, &surfaces,
+    engine_ad->ComputeContactSurfacesWithFallback(X_WGs_ad, &surfaces,
                                                   &point_pairs);
-        EXPECT_EQ(surfaces.size(), 0);
-        EXPECT_EQ(point_pairs.size(), 0);
-      }
+    EXPECT_EQ(surfaces.size(), 0u);
+    EXPECT_EQ(point_pairs.size(), 1u);
+  }
+}
+
+// Meshes are treated specially in proximity engine. Proximity queries on
+// non-convex meshes are not yet supported. A Mesh specification is treated
+// implicitly as the convex hull of the mesh. This is implemented by
+// instantiating an "invalid" fcl::Convex (see
+// ProximityEngine::Impl::ImplementGeometry(Mesh) for details). For test
+// purposes, we'll confirm that the associated fcl object *is* a Convex
+// shape. Furthermore, we'll use a regression test to confirm the expected
+// behavior, to wit:
+//
+//   - A concave mesh queries penetration and distance like its convex hull.
+//   - A concave mesh queries hydroelastic based on the actual mesh.
+GTEST_TEST(ProximityEngineTests, MeshSupportAsConvex) {
+  /* This mesh looks like this:
+                         +z
+           -2     -1     ┆     +1    +2
+    +0.5 ┈┈┈┏━━━━━━┓┉┉┉┉┉┼┉┉┉┉┉┏━━━━━━┓
+            ┃░░░░░░┃▒▒▒▒▒┆▒▒▒▒▒┃░░░░░░┃
+     ┄┄┄┄┄┄┄╂┄┄┄┄┄┄╂┄┄┄┄┄┼┄┄┄┄┄╂┄┄┄┄┄┄╂┄┄┄┄┄┄ +x
+            ┃░░░░░░┃▒▒▒▒▒┆▒▒▒▒▒┃░░░░░░┃
+     -0.5 ┈┈┃░░░░░░┗━━━━━P━━━━━┛░░░░░░┃    ━━ - Surface of concave geometry.
+            ┃░░░░░░░░░░░░┆░░░░░░░░░░░░┃    ░░ - Interior of concave geometry.
+            ┃░░░░░░░░░░░░┆░░░░░░░░░░░░┃    ▒▒ - Inside convex hull, outside
+            ┃░░░░░░░░░░░░┆░░░░░░░░░░░░┃         concave geometry.
+      -2 ┈┈┈┗━━━━━━━━━━━━┿━━━━━━━━━━━━┛
+                         ┆
+
+    - We'll place a sphere at the origin with radius R.
+    - The nearest point to the sphere on the *concave* geometry is shown as
+      point P. Its distance is 0.5 - R.
+    - The signed distance to the *convex region* will be -(0.5 + R).
+    - If R < 0.5, there is *no* hydroelastic contact surface.
+    - if R > 0.5, there will be one.
+  */
+  /* Because we're using the general convexity algorithm for distance and
+   penetration, we'll lose a great deal of precision in the answer. Empirically,
+   for this test case, even sqrt(eps) was insufficient. This value appears to
+   be sufficient. In some cases, an eps as small as 2e-7 was sufficient. But
+   for the most inaccurate test (slightly seaprated with large sphere), the
+   error was as larage as 2e-5. */
+  constexpr double kEps = 2e-5;
+
+  for (double radius : {0.25, 0.75}) {
+    ProximityEngine<double> engine;
+    // The actual non-convex mesh. Used in all queries.
+    const Mesh mesh{
+        drake::FindResourceOrThrow("drake/geometry/test/extruded_u.obj"),
+        1.0 /* scale */};
+    const auto& [mesh_id, X_WM] =
+        AddShape(&engine, mesh, true /* is_anchored */, false /* is_soft */,
+                 Vector3d::Zero());
+    const auto& [sphere_id, X_MS] =
+        AddShape(&engine, Sphere(radius), false /* is_anchored */,
+                 true /* is soft */, Vector3d::Zero());
+    unordered_map<GeometryId, RigidTransformd> X_WGs{{mesh_id, X_WM},
+                                                     {sphere_id, X_WM * X_MS}};
+    engine.UpdateWorldPoses(X_WGs);
+
+    // Existence of a contact surface depends on the radius of the sphere.
+    const auto contact_surfaces = engine.ComputeContactSurfaces(X_WGs);
+    EXPECT_EQ(contact_surfaces.size(), radius > 0.5 ? 1 : 0);
+
+    {
+      // Perform the queries with the sphere at the origin; it lies inside the
+      // convex hull giving negative signed distance and non-zero penetration
+      // depth.
+      const auto signed_distance_pairs =
+          engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf);
+      ASSERT_EQ(signed_distance_pairs.size(), 1);
+      EXPECT_NEAR(signed_distance_pairs[0].distance, -(0.5 + radius), kEps);
+
+      const auto point_pairs = engine.ComputePointPairPenetration(X_WGs);
+      ASSERT_EQ(1, point_pairs.size());
+      EXPECT_NEAR(point_pairs[0].depth, 0.5 + radius, kEps);
+
+      const auto candidates = engine.FindCollisionCandidates();
+      ASSERT_EQ(1, candidates.size());
+
+      EXPECT_TRUE(engine.HasCollisions());
+    }
+
+    {
+      // Move the sphere slightly outside the convex hull. We should get
+      // slightly positive signed distance and no penetration.
+      constexpr double kDistance = 1e-3;
+      X_WGs[sphere_id] =
+          RigidTransformd(Vector3d(0, 0, 0.5 + radius + kDistance));
+      engine.UpdateWorldPoses(X_WGs);
+
+      const auto signed_distance_pairs =
+          engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf);
+      ASSERT_EQ(signed_distance_pairs.size(), 1);
+      EXPECT_NEAR(signed_distance_pairs[0].distance, kDistance, kEps);
+
+      const auto point_pairs = engine.ComputePointPairPenetration(X_WGs);
+      ASSERT_EQ(0, point_pairs.size());
+
+      const auto candidates = engine.FindCollisionCandidates();
+      ASSERT_EQ(0, candidates.size());
+
+      EXPECT_FALSE(engine.HasCollisions());
     }
   }
 }
@@ -778,7 +586,7 @@ GTEST_TEST(ProximityEngineTests, ExceptionTwoObjectsInObjFileForConvex) {
       1.0};
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.AddDynamicGeometry(convex, {}, GeometryId::get_new_id()),
-      std::runtime_error, ".*one and only one object.*");
+      std::runtime_error, ".*only OBJs with a single object.*");
 }
 
 // Tests for copy/move semantics.  ---------------------------------------------
@@ -1899,7 +1707,7 @@ INSTANTIATE_TEST_SUITE_P(
 GTEST_TEST(ProximityEngineTests, PenetrationOnEmptyScene) {
   ProximityEngine<double> engine;
 
-  auto results = engine.ComputePointPairPenetration();
+  auto results = engine.ComputePointPairPenetration({});
   EXPECT_EQ(results.size(), 0);
 }
 
@@ -1911,7 +1719,7 @@ GTEST_TEST(ProximityEngineTests, PenetrationSingleAnchored) {
   RigidTransformd pose = RigidTransformd::Identity();
   const GeometryId id = GeometryId::get_new_id();
   engine.AddAnchoredGeometry(sphere, pose, id);
-  auto results = engine.ComputePointPairPenetration();
+  auto results = engine.ComputePointPairPenetration({{id, pose}});
   EXPECT_EQ(results.size(), 0);
 }
 
@@ -1922,11 +1730,16 @@ GTEST_TEST(ProximityEngineTests, PenetrationMultipleAnchored) {
 
   const double radius = 0.5;
   Sphere sphere{radius};
+  const GeometryId id1 = GeometryId::get_new_id();
+  std::unordered_map<GeometryId, RigidTransformd> X_WGs;
+  X_WGs.emplace(id1, RigidTransformd::Identity());
+  const GeometryId id2 = GeometryId::get_new_id();
   RigidTransformd pose = RigidTransformd::Identity();
   engine.AddAnchoredGeometry(sphere, pose, GeometryId::get_new_id());
   pose.set_translation({1.8 * radius, 0, 0});
+  X_WGs.emplace(id2, pose);
   engine.AddAnchoredGeometry(sphere, pose, GeometryId::get_new_id());
-  auto results = engine.ComputePointPairPenetration();
+  auto results = engine.ComputePointPairPenetration(X_WGs);
   EXPECT_EQ(results.size(), 0);
 }
 
@@ -1994,11 +1807,11 @@ GTEST_TEST(ProximityEngineTests, PenetrationAsPointPairResultOrdering) {
     engine.AddDynamicGeometry(sphere, {}, pair.first);
   }
   engine.UpdateWorldPoses(poses);
-  const auto results1 = engine.ComputePointPairPenetration();
+  const auto results1 = engine.ComputePointPairPenetration(poses);
   ASSERT_EQ(results1.size(), poses.size());
 
   engine.UpdateWorldPoses(poses);
-  const auto results2 = engine.ComputePointPairPenetration();
+  const auto results2 = engine.ComputePointPairPenetration(poses);
   ASSERT_EQ(results1.size(), poses.size());
 
   for (size_t i = 0; i < poses.size(); ++i) {
@@ -2216,7 +2029,7 @@ class SimplePenetrationTest : public ::testing::Test {
   void ExpectPenetration(GeometryId origin_sphere, GeometryId colliding_sphere,
                          ProximityEngine<T>* engine) {
     std::vector<PenetrationAsPointPair<T>> penetration_results =
-        engine->ComputePointPairPenetration();
+        engine->ComputePointPairPenetration(GetTypedPoses<T>());
     ASSERT_EQ(penetration_results.size(), 1);
     const PenetrationAsPointPair<T>& penetration = penetration_results[0];
 
@@ -2290,7 +2103,7 @@ class SimplePenetrationTest : public ::testing::Test {
                                 GeometryId colliding_sphere,
                                 ProximityEngine<T>* engine) {
     std::vector<PenetrationAsPointPair<T>> penetration_results =
-        engine->ComputePointPairPenetration();
+        engine->ComputePointPairPenetration(GetTypedPoses<T>());
     EXPECT_EQ(penetration_results.size(), 0);
 
     std::vector<SignedDistancePair<T>> distance_results =
@@ -2305,7 +2118,7 @@ class SimplePenetrationTest : public ::testing::Test {
                            GeometryId colliding_sphere,
                            ProximityEngine<T>* engine) {
     std::vector<PenetrationAsPointPair<double>> penetration_results =
-        engine->ComputePointPairPenetration();
+        engine->ComputePointPairPenetration(GetTypedPoses<T>());
     EXPECT_EQ(penetration_results.size(), 0);
 
     std::vector<SignedDistancePair<double>> distance_results =
@@ -2374,9 +2187,7 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndAnchored) {
   // Test AutoDiffXd converted engine.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
       engine_.ToAutoDiffXd();
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ad_engine->ComputePointPairPenetration(), std::runtime_error,
-      ".* Some of the bodies in the model are in contact.*");
+  ExpectPenetration(anchored_id, dynamic_id, ad_engine.get());
 }
 
 // Performs the same collision test between two dynamic spheres which belong to
@@ -2407,9 +2218,7 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndDynamicSingleSource) {
   // Test AutoDiffXd converted engine.
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
       engine_.ToAutoDiffXd();
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ad_engine->ComputePointPairPenetration(), std::runtime_error,
-      ".*Some of the bodies in the model are in contact.*");
+  ExpectPenetration(origin_id, collide_id, ad_engine.get());
 }
 
 // Tests if collisions exist between dynamic and anchored sphere. One case
@@ -3832,7 +3641,7 @@ GTEST_TEST(ProximityEngineCollisionTest, SpherePunchThroughBox) {
     poses[sphere_id].set_translation(test.sphere_pose);
     engine.UpdateWorldPoses(poses);
     std::vector<PenetrationAsPointPair<double>> results =
-        engine.ComputePointPairPenetration();
+        engine.ComputePointPairPenetration(poses);
 
     ASSERT_EQ(static_cast<int>(results.size()), test.contact_count)
         << "Failed for the " << test.description << " case";
@@ -4020,7 +3829,7 @@ class BoxPenetrationTest : public ::testing::Test {
         {tangent_id, shape_pose(shape_type)}, {box_id, X_WB}};
     engine_.UpdateWorldPoses(poses);
     std::vector<PenetrationAsPointPair<double>> results =
-        engine_.ComputePointPairPenetration();
+        engine_.ComputePointPairPenetration(poses);
 
     ASSERT_EQ(results.size(), 1u) << "Against tangent "
                                   << shape_name(shape_type);
@@ -4307,7 +4116,7 @@ GTEST_TEST(ProximityEngineTests, Issue10577Regression_Osculation) {
                                                         {id_B, X_WB}};
   engine.UpdateWorldPoses(X_WG);
   std::vector<GeometryId> geometry_map{id_A, id_B};
-  auto pairs = engine.ComputePointPairPenetration();
+  auto pairs = engine.ComputePointPairPenetration(X_WG);
   EXPECT_EQ(pairs.size(), 0);
 }
 
@@ -4327,16 +4136,18 @@ GTEST_TEST(ProximityEngineTests, AnchoredBroadPhaseInitialization) {
   engine.AddAnchoredGeometry(Sphere(0.5), X_WA, id_A);
 
   RigidTransformd X_WD{Translation3d{-3, 0.75, 0}};
-  // NOTE: We only update the dynamic geometries, so we simply provide a map
-  // containing the ids of the dynamic geometries with their pose as a cheat.
-  engine.UpdateWorldPoses({{id_D, X_WD}});
-  auto pairs = engine.ComputePointPairPenetration();
+
+  std::unordered_map<GeometryId, math::RigidTransform<double>> X_WGs{
+      {id_A, X_WA}, {id_D, X_WD}};
+  engine.UpdateWorldPoses(X_WGs);
+  auto pairs = engine.ComputePointPairPenetration(X_WGs);
+
   EXPECT_EQ(pairs.size(), 1);
 
   // Confirm that it survives copying.
   ProximityEngine<double> engine_copy(engine);
   engine_copy.UpdateWorldPoses({{id_D, X_WD}});
-  auto pairs_copy = engine_copy.ComputePointPairPenetration();
+  auto pairs_copy = engine_copy.ComputePointPairPenetration(X_WGs);
   EXPECT_EQ(pairs_copy.size(), 1);
 }
 

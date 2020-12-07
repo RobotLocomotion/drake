@@ -15,6 +15,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/text_logging.h"
 
 namespace drake {
 namespace geometry {
@@ -38,6 +39,8 @@ MeshData LoadMeshFromObj(std::istream* input_stream,
   /* This renderer assumes everything is triangles -- we rely on tinyobj to
    triangulate for us. */
   const bool do_tinyobj_triangulation = true;
+
+  drake::log()->trace("LoadMeshFromObj('{}')", filename);
 
   /* Tinyobj doesn't infer the search directory from the directory containing
    the obj file. We have to provide that directory; of course, this assumes
@@ -110,14 +113,7 @@ MeshData LoadMeshFromObj(std::istream* input_stream,
         filename));
   }
 
-  // TODO(SeanCurtis-TRI) Loosen this restriction; allow missing texture
-  //  coordinates as long as no texture is applied.
-  if (attrib.texcoords.size() == 0) {
-    throw std::runtime_error(fmt::format(
-        "OBJ has no texture coordinates; RenderEngineGl requires OBJs with "
-        "texture coordinates: {}",
-        filename));
-  }
+  bool has_tex_coord{attrib.texcoords.size() > 0};
 
   for (const auto& shape : shapes) {
     /* Each face is a sequence of indices. All of the face indices are
@@ -142,9 +138,13 @@ MeshData LoadMeshFromObj(std::istream* input_stream,
           throw std::runtime_error(
               fmt::format("Not all faces reference normals: {}", filename));
         }
-        if (uv_index < 0) {
-          throw std::runtime_error(fmt::format(
-              "Not all faces reference texture coordinates: {}", filename));
+        if (has_tex_coord) {
+          if (uv_index < 0) {
+            throw std::runtime_error(fmt::format(
+                "Not all faces reference texture coordinates: {}", filename));
+          }
+        } else {
+          DRAKE_DEMAND(uv_index < 0);
         }
         const auto obj_indices =
             make_tuple(position_index, norm_index, uv_index);
@@ -160,8 +160,12 @@ MeshData LoadMeshFromObj(std::istream* input_stream,
           normals.emplace_back(attrib.normals[3 * norm_index],
                                attrib.normals[3 * norm_index + 1],
                                attrib.normals[3 * norm_index + 2]);
-          uvs.emplace_back(attrib.texcoords[2 * uv_index],
-                           attrib.texcoords[2 * uv_index + 1]);
+          if (has_tex_coord) {
+            uvs.emplace_back(attrib.texcoords[2 * uv_index],
+                             attrib.texcoords[2 * uv_index + 1]);
+          } else {
+            uvs.emplace_back(0.0, 0.0);
+          }
         }
         face_vertices[i] = obj_vertex_to_new_vertex[obj_indices];
         ++v_index;
@@ -186,6 +190,7 @@ MeshData LoadMeshFromObj(std::istream* input_stream,
   for (int n = 0; n < mesh_data.normals.rows(); ++n) {
     mesh_data.normals.row(n) = normals[n].cast<GLfloat>();
   }
+  mesh_data.has_tex_coord = has_tex_coord;
   mesh_data.uvs.resize(uvs.size(), 2);
   for (int uv = 0; uv < mesh_data.uvs.rows(); ++uv) {
     mesh_data.uvs.row(uv) = uvs[uv].cast<GLfloat>();

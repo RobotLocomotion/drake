@@ -10,6 +10,7 @@
 #include <vtkPNGReader.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/filesystem.h"
 
 namespace drake {
 namespace geometry {
@@ -36,6 +37,12 @@ std::optional<GLuint> TextureLibrary::GetTextureId(
                  [](unsigned char c) { return std::tolower(c); });
   // TODO(SeanCurtis-TRI) Support other image types.
   if (ext != ".png") return std::nullopt;
+
+  // Exit quickly if the file doesn't exist or is a directory.
+  // Otherwise, vtkPNGReader spams stdout.
+  if (!filesystem::exists(file_name) || filesystem::is_directory(file_name)) {
+    return std::nullopt;
+  }
 
   vtkNew<vtkPNGReader> png_reader;
   png_reader->SetFileName(file_name.c_str());

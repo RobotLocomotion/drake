@@ -27,6 +27,16 @@ struct MeshData {
   Eigen::Matrix<GLfloat, Eigen::Dynamic, 3, Eigen::RowMajor> normals;
   Eigen::Matrix<GLfloat, Eigen::Dynamic, 2, Eigen::RowMajor> uvs;
   Eigen::Matrix<GLuint, Eigen::Dynamic, 3, Eigen::RowMajor> indices;
+
+  /** See docs for `has_tex_coord` below.  */
+  static constexpr bool kHasTexCoordDefault{true};
+
+  /** This flag indicates that this mesh has texture coordinates to support
+   maps.
+   If True, the values of `uvs` will be nontrivial.
+   If False, the values of `uvs` will be all zeros, but will still have the
+   correct size.  */
+  bool has_tex_coord{kHasTexCoordDefault};
 };
 
 /* Loads a mesh's vertices and indices (faces) from an OBJ description given
@@ -35,10 +45,12 @@ struct MeshData {
  SurfaceMesh. Rendering requires normals and texture coordinates; SurfaceMesh
  was not designed with those quantities in mind.
 
+ If no texture coordinates are specified by the file, it will be indicated in
+ the returned MeshData. See MeshData::has_tex_coord for more detail.
+
  @throws std::runtime_error if a) there are no normals, b) faces fail to
-                               reference normals, c) there are no texture
-                               coordinates, or d) faces fail to reference the
-                               texture coordinates.  */
+                               reference normals, or c) faces fail to reference
+                               the texture coordinates if they are present.  */
 MeshData LoadMeshFromObj(std::istream* input_stream,
                          const std::string& filename = "from_string");
 

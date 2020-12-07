@@ -1677,6 +1677,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// correspond to the context for a multibody model.
   Eigen::VectorBlock<const VectorX<T>> GetPositionsAndVelocities(
       const systems::Context<T>& context) const {
+    this->ValidateContext(context);
     return internal_tree().GetPositionsAndVelocities(context);
   }
 
@@ -1690,6 +1691,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   VectorX<T> GetPositionsAndVelocities(
       const systems::Context<T>& context,
       ModelInstanceIndex model_instance) const {
+    this->ValidateContext(context);
     return internal_tree().GetPositionsAndVelocities(context, model_instance);
   }
 
@@ -1703,6 +1705,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// correspond to the context for a multibody model.
   Eigen::VectorBlock<VectorX<T>> GetMutablePositionsAndVelocities(
       systems::Context<T>* context) const {
+    this->ValidateContext(context);
     return internal_tree().GetMutablePositionsAndVelocities(context);
   }
 
@@ -1713,6 +1716,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// `q_v` is not equal to `num_positions() + num_velocities()`.
   void SetPositionsAndVelocities(
       systems::Context<T>* context, const VectorX<T>& q_v) const {
+    this->ValidateContext(context);
     DRAKE_THROW_UNLESS(q_v.size() == (num_positions() + num_velocities()));
     internal_tree().GetMutablePositionsAndVelocities(context) = q_v;
   }
@@ -1726,6 +1730,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void SetPositionsAndVelocities(
       systems::Context<T>* context, ModelInstanceIndex model_instance,
       const VectorX<T>& q_v) const {
+    this->ValidateContext(context);
     DRAKE_THROW_UNLESS(
         q_v.size() ==
         (num_positions(model_instance) + num_velocities(model_instance)));
@@ -1743,6 +1748,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     // Note: the nestedExpression() is necessary to treat the VectorBlock<T>
     // returned from GetPositionsAndVelocities() as a VectorX<T> so that we can
     // call head() on it.
+    this->ValidateContext(context);
     return GetPositionsAndVelocities(context).nestedExpression().head(
         num_positions());
   }
@@ -1756,6 +1762,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   VectorX<T> GetPositions(
       const systems::Context<T>& context,
       ModelInstanceIndex model_instance) const {
+    this->ValidateContext(context);
     return internal_tree().GetPositionsFromArray(
         model_instance, GetPositions(context));
   }
@@ -1774,6 +1781,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     // Note: the nestedExpression() is necessary to treat the VectorBlock<T>
     // returned from GetMutablePositionsAndVelocities() as a VectorX<T> so that
     // we can call head() on it.
+    this->ValidateContext(context);
     return internal_tree().GetMutablePositionsAndVelocities(context)
         .nestedExpression().head(num_positions());
   }
@@ -1790,6 +1798,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @pre `state` comes from this MultibodyPlant.
   Eigen::VectorBlock<VectorX<T>> GetMutablePositions(
       const systems::Context<T>& context, systems::State<T>* state) const {
+    this->ValidateContext(context);
     DRAKE_ASSERT_VOID(CheckValidState(state));
     // Note: the nestedExpression() is necessary to treat the VectorBlock<T>
     // returned from GetMutablePositionsAndVelocities() as a VectorX<T> so that
@@ -1805,6 +1814,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// not correspond to the context for a multibody model, or if the length of
   /// `q` is not equal to `num_positions()`.
   void SetPositions(systems::Context<T>* context, const VectorX<T>& q) const {
+    this->ValidateContext(context);
     DRAKE_THROW_UNLESS(q.size() == num_positions());
     GetMutablePositions(context) = q;
   }
@@ -1817,6 +1827,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void SetPositions(
       systems::Context<T>* context,
       ModelInstanceIndex model_instance, const VectorX<T>& q_instance) const {
+    this->ValidateContext(context);
     DRAKE_THROW_UNLESS(q_instance.size() == num_positions(model_instance));
     Eigen::VectorBlock<VectorX<T>> q = GetMutablePositions(context);
     internal_tree().SetPositionsInArray(model_instance, q_instance, &q);
@@ -1831,6 +1842,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void SetPositions(const systems::Context<T>& context,
                     systems::State<T>* state, ModelInstanceIndex model_instance,
                     const VectorX<T>& q_instance) const {
+    this->ValidateContext(context);
     DRAKE_THROW_UNLESS(q_instance.size() == num_positions(model_instance));
     CheckValidState(state);
     Eigen::VectorBlock<VectorX<T>> q = GetMutablePositions(context, state);
@@ -1845,6 +1857,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     // Note: the nestedExpression() is necessary to treat the VectorBlock<T>
     // returned from GetPositionsAndVelocities() as a VectorX<T> so that we can
     // call tail() on it.
+    this->ValidateContext(context);
     return GetPositionsAndVelocities(context).nestedExpression().tail(
         num_velocities());
   }
@@ -1858,6 +1871,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   VectorX<T> GetVelocities(
       const systems::Context<T>& context,
       ModelInstanceIndex model_instance) const {
+    this->ValidateContext(context);
     return internal_tree().GetVelocitiesFromArray(
         model_instance, GetVelocities(context));
   }
@@ -1874,6 +1888,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @pre `state` comes from this MultibodyPlant.
   Eigen::VectorBlock<VectorX<T>> GetMutableVelocities(
       const systems::Context<T>& context, systems::State<T>* state) const {
+    this->ValidateContext(context);
     DRAKE_ASSERT_VOID(CheckValidState(state));
     // Note: the nestedExpression() is necessary to treat the VectorBlock<T>
     // returned from GetMutablePositionsAndVelocities() as a VectorX<T> so that
@@ -1887,6 +1902,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// See GetMutableVelocities() method above.
   Eigen::VectorBlock<VectorX<T>> GetMutableVelocities(
       systems::Context<T>* context) const {
+    this->ValidateContext(context);
     return GetMutableVelocities(*context, &context->get_mutable_state());
   }
 
@@ -1895,6 +1911,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// not correspond to the context for a multibody model, or if the length of
   /// `v` is not equal to `num_velocities()`.
   void SetVelocities(systems::Context<T>* context, const VectorX<T>& v) const {
+    this->ValidateContext(context);
     DRAKE_THROW_UNLESS(v.size() == num_velocities());
     GetMutableVelocities(context) = v;
   }
@@ -1909,6 +1926,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void SetVelocities(
       const systems::Context<T>& context, systems::State<T>* state,
       ModelInstanceIndex model_instance, const VectorX<T>& v_instance) const {
+    this->ValidateContext(context);
     DRAKE_THROW_UNLESS(v_instance.size() == num_velocities(model_instance));
     CheckValidState(state);
     Eigen::VectorBlock<VectorX<T>> v = GetMutableVelocities(context, state);
@@ -1924,6 +1942,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void SetVelocities(
       systems::Context<T>* context,
       ModelInstanceIndex model_instance, const VectorX<T>& v_instance) const {
+    this->ValidateContext(context);
     DRAKE_THROW_UNLESS(v_instance.size() == num_velocities(model_instance));
     Eigen::VectorBlock<VectorX<T>> v = GetMutableVelocities(context);
     internal_tree().SetVelocitiesInArray(model_instance, v_instance, &v);
@@ -1937,6 +1956,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    this->ValidateContext(context);
     CheckValidState(state);
     internal_tree().SetDefaultState(context, state);
     for (const BodyIndex& index : GetFloatingBaseBodies()) {
@@ -1956,6 +1976,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                       systems::State<T>* state,
                       RandomGenerator* generator) const override {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    this->ValidateContext(context);
     CheckValidState(state);
     internal_tree().SetRandomState(context, state, generator);
   }
@@ -2069,6 +2090,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if called pre-finalize.
   math::RigidTransform<T> GetFreeBodyPose(const systems::Context<T>& context,
                                           const Body<T>& body) const {
+    this->ValidateContext(context);
     return internal_tree().GetFreeBodyPoseOrThrow(context, body);
   }
 
@@ -2081,6 +2103,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if called pre-finalize.
   void SetFreeBodyPose(systems::Context<T>* context, const Body<T>& body,
                        const math::RigidTransform<T>& X_WB) const {
+    this->ValidateContext(context);
     internal_tree().SetFreeBodyPoseOrThrow(body, X_WB, context);
   }
 
@@ -2095,6 +2118,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void SetFreeBodyPose(
       const systems::Context<T>& context, systems::State<T>* state,
       const Body<T>& body, const math::RigidTransform<T>& X_WB) const {
+    this->ValidateContext(context);
     CheckValidState(state);
     internal_tree().SetFreeBodyPoseOrThrow(body, X_WB, context, state);
   }
@@ -2129,6 +2153,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void SetFreeBodySpatialVelocity(
       systems::Context<T>* context, const Body<T>& body,
       const SpatialVelocity<T>& V_WB) const {
+    this->ValidateContext(context);
     internal_tree().SetFreeBodySpatialVelocityOrThrow(body, V_WB, context);
   }
 
@@ -2143,6 +2168,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void SetFreeBodySpatialVelocity(
       const systems::Context<T>& context, systems::State<T>* state,
       const Body<T>& body, const SpatialVelocity<T>& V_WB) const {
+    this->ValidateContext(context);
     CheckValidState(state);
     internal_tree().SetFreeBodySpatialVelocityOrThrow(
         body, V_WB, context, state);
@@ -2228,6 +2254,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const math::RigidTransform<T>& EvalBodyPoseInWorld(
       const systems::Context<T>& context,
       const Body<T>& body_B) const {
+    this->ValidateContext(context);
     return internal_tree().EvalBodyPoseInWorld(context, body_B);
   }
 
@@ -2240,6 +2267,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const SpatialVelocity<T>& EvalBodySpatialVelocityInWorld(
       const systems::Context<T>& context,
       const Body<T>& body_B) const {
+    this->ValidateContext(context);
     return internal_tree().EvalBodySpatialVelocityInWorld(context, body_B);
   }
 
@@ -2270,6 +2298,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const std::vector<geometry::PenetrationAsPointPair<T>>&
   EvalPointPairPenetrations(const systems::Context<T>& context) const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    this->ValidateContext(context);
     switch (contact_model_) {
       case ContactModel::kPointContactOnly:
         return this->get_cache_entry(cache_indexes_.point_pairs)
@@ -2303,6 +2332,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context,
       const Frame<T>& frame_F,
       const Frame<T>& frame_G) const {
+    this->ValidateContext(context);
     return internal_tree().CalcRelativeTransform(context, frame_F, frame_G);
   }
 
@@ -2320,6 +2350,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context,
       const Frame<T>& frame_F,
       const Frame<T>& frame_G) const {
+    this->ValidateContext(context);
     return internal_tree().CalcRelativeRotationMatrix(context,
                                                       frame_F, frame_G);
   }
@@ -2359,6 +2390,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Eigen::Ref<const MatrixX<T>>& p_BQi,
       const Frame<T>& frame_A,
       EigenPtr<MatrixX<T>> p_AQi) const {
+    this->ValidateContext(context);
     DRAKE_DEMAND(p_AQi != nullptr);
     return internal_tree().CalcPointsPositions(
         context, frame_B, p_BQi, frame_A, p_AQi);
@@ -2380,6 +2412,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `composite_mass <= 0`.
   Vector3<T> CalcCenterOfMassPosition(
       const systems::Context<T>& context) const {
+    this->ValidateContext(context);
     return internal_tree().CalcCenterOfMassPosition(context);
   }
 
@@ -2405,6 +2438,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   Vector3<T> CalcCenterOfMassPosition(
       const systems::Context<T>& context,
       const std::vector<ModelInstanceIndex>& model_instances) const {
+    this->ValidateContext(context);
     return internal_tree().CalcCenterOfMassPosition(context, model_instances);
   }
 
@@ -2426,6 +2460,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   SpatialMomentum<T> CalcSpatialMomentumInWorldAboutPoint(
       const systems::Context<T>& context,
       const Vector3<T>& p_WoP_W) const {
+    this->ValidateContext(context);
     return internal_tree().CalcSpatialMomentumInWorldAboutPoint(context,
                                                                 p_WoP_W);
   }
@@ -2460,6 +2495,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context,
       const std::vector<ModelInstanceIndex>& model_instances,
       const Vector3<T>& p_WoP_W) const {
+    this->ValidateContext(context);
     return internal_tree().CalcSpatialMomentumInWorldAboutPoint(context,
         model_instances, p_WoP_W);
   }
@@ -2527,6 +2563,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context,
       const VectorX<T>& known_vdot,
       const MultibodyForces<T>& external_forces) const {
+    this->ValidateContext(context);
     return internal_tree().CalcInverseDynamics(
         context, known_vdot, external_forces);
   }
@@ -2574,6 +2611,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   therefore to a decrease of the gravitational potential energy.
   VectorX<T> CalcGravityGeneralizedForces(
       const systems::Context<T>& context) const {
+    this->ValidateContext(context);
     return internal_tree().CalcGravityGeneralizedForces(context);
   }
 
@@ -2603,6 +2641,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v,
       EigenPtr<VectorX<T>> qdot) const {
+    this->ValidateContext(context);
     DRAKE_DEMAND(qdot != nullptr);
     return internal_tree().MapVelocityToQDot(context, v, qdot);
   }
@@ -2636,6 +2675,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& qdot,
       EigenPtr<VectorX<T>> v) const {
+    this->ValidateContext(context);
     DRAKE_DEMAND(v != nullptr);
     internal_tree().MapQDotToVelocity(context, qdot, v);
   }
@@ -2688,6 +2728,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// mass matrix whenever possible.
   void CalcMassMatrixViaInverseDynamics(
       const systems::Context<T>& context, EigenPtr<MatrixX<T>> M) const {
+    this->ValidateContext(context);
     DRAKE_DEMAND(M != nullptr);
     internal_tree().CalcMassMatrixViaInverseDynamics(context, M);
   }
@@ -2709,6 +2750,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// mass matrix whenever possible.
   void CalcMassMatrix(const systems::Context<T>& context,
                       EigenPtr<MatrixX<T>> M) const {
+    this->ValidateContext(context);
     DRAKE_DEMAND(M != nullptr);
     internal_tree().CalcMassMatrix(context, M);
   }
@@ -2735,6 +2777,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   proper size.
   void CalcBiasTerm(
       const systems::Context<T>& context, EigenPtr<VectorX<T>> Cv) const {
+    this->ValidateContext(context);
     DRAKE_DEMAND(Cv != nullptr);
     internal_tree().CalcBiasTerm(context, Cv);
   }
@@ -2783,6 +2826,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Frame<T>& frame_A,
       const Frame<T>& frame_E) const {
     // TODO(Mitiguy) Allow with_respect_to to be JacobianWrtVariable::kQDot.
+    this->ValidateContext(context);
     return internal_tree().CalcBiasTranslationalAcceleration(
         context, with_respect_to, frame_B, p_BoBi_B, frame_A, frame_E);
   }
@@ -2827,6 +2871,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Frame<T>& frame_A,
       const Frame<T>& frame_E) const {
     // TODO(Mitiguy) Allow with_respect_to to be JacobianWrtVariable::kQDot.
+    this->ValidateContext(context);
     return internal_tree().CalcBiasSpatialAcceleration(
         context, with_respect_to, frame_B, p_BoBp_B, frame_A, frame_E);
   }
@@ -2878,6 +2923,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                    const Frame<T>& frame_A,
                                    const Frame<T>& frame_E,
                                    EigenPtr<MatrixX<T>> Js_V_ABp_E) const {
+    this->ValidateContext(context);
     DRAKE_DEMAND(Js_V_ABp_E != nullptr);
     internal_tree().CalcJacobianSpatialVelocity(context, with_respect_to,
                                                 frame_B, p_BoBp_B, frame_A,
@@ -2915,6 +2961,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                    const Frame<T>& frame_A,
                                    const Frame<T>& frame_E,
                                    EigenPtr<Matrix3X<T>> Js_w_AB_E) const {
+    this->ValidateContext(context);
     DRAKE_DEMAND(Js_w_AB_E != nullptr);
     return internal_tree().CalcJacobianAngularVelocity(
         context, with_respect_to, frame_B, frame_A, frame_E, Js_w_AB_E);
@@ -2965,6 +3012,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       EigenPtr<MatrixX<T>> Js_v_ABi_E) const {
     // TODO(amcastro-tri): provide the Jacobian-times-vector operation.  For
     // some applications it is all we need and it is more efficient to compute.
+    this->ValidateContext(context);
     DRAKE_DEMAND(Js_v_ABi_E != nullptr);
     internal_tree().CalcJacobianTranslationalVelocity(
         context, with_respect_to, frame_B, frame_B, p_BoBi_B, frame_A, frame_E,
@@ -3000,6 +3048,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       EigenPtr<Matrix3X<T>> Js_v_ACcm_E) const {
     // TODO(yangwill): Add an optional parameter to calculate this for a
     // subset of bodies instead of the full system
+    this->ValidateContext(context);
     DRAKE_DEMAND(Js_v_ACcm_E != nullptr);
     internal_tree().CalcJacobianCenterOfMassTranslationalVelocity(
         context, with_respect_to, frame_A, frame_E, Js_v_ACcm_E);
@@ -3032,6 +3081,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Frame<T>& frame_A, const Frame<T>& frame_E) const {
     // TODO(yangwill): Add an optional parameter to calculate this for a
     // subset of bodies instead of the full system
+    this->ValidateContext(context);
     return internal_tree().CalcBiasCenterOfMassTranslationalAcceleration(
         context, with_respect_to, frame_A, frame_E);
   }
@@ -3756,6 +3806,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // geometry_query_input_port is not connected, but is expected to be.
   const geometry::QueryObject<T>& EvalGeometryQueryInput(
       const systems::Context<T>& context) const {
+    this->ValidateContext(context);
     if (!get_geometry_query_input_port().HasValue(context)) {
       throw std::logic_error(
           "The geometry query input port (see "
@@ -3947,6 +3998,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Eval version of the method CalcContactSurfaces().
   const std::vector<geometry::ContactSurface<T>>& EvalContactSurfaces(
       const systems::Context<T>& context) const {
+    this->ValidateContext(context);
     switch (contact_model_) {
       case ContactModel::kHydroelasticWithFallback: {
         const auto& data =
@@ -4263,6 +4315,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const internal::ContactJacobians<T>& EvalContactJacobians(
       const systems::Context<T>& context) const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    this->ValidateContext(context);
     return this->get_cache_entry(cache_indexes_.contact_jacobians)
         .template Eval<internal::ContactJacobians<T>>(context);
   }

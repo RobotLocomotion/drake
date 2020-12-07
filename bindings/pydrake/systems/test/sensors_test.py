@@ -201,6 +201,8 @@ class TestSensors(unittest.TestCase):
         infos = [
             mut.CameraInfo(width=width, height=height, fov_y=fov_y),
             mut.CameraInfo(
+                width=width, height=height, intrinsic_matrix=intrinsic_matrix),
+            mut.CameraInfo(
                 width=width, height=height, focal_x=focal_x, focal_y=focal_y,
                 center_x=center_x, center_y=center_y),
         ]
@@ -273,7 +275,7 @@ class TestSensors(unittest.TestCase):
 
         def construct_deprecated(parent_id, X_PB):
             # One deprecation warning for CameraPoses and one for RgbdSensor.
-            with catch_drake_warnings(expected_count=2):
+            with catch_drake_warnings(expected_count=4):
                 color_properties = CameraProperties(
                     width=width, height=height, fov_y=np.pi/6,
                     renderer_name="renderer")
@@ -303,7 +305,7 @@ class TestSensors(unittest.TestCase):
                                   depth_camera=depth_camera)
 
         def construct_single_deprecated(parent_id, X_PB):
-            with catch_drake_warnings(expected_count=2):
+            with catch_drake_warnings(expected_count=3):
                 depth_properties = DepthCameraProperties(
                         width=width, height=height, fov_y=np.pi/6,
                         renderer_name="renderer", z_near=0.1, z_far=5.5)

@@ -11,6 +11,7 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
+#include "drake/common/symbolic_decompose.h"
 
 #pragma GCC diagnostic push
 // Apple LLVM version 10.0.1 (clang-1001.0.46.3) and Clang version 7.0.0 add
@@ -467,6 +468,9 @@ PYBIND11_MODULE(symbolic, m) {
       py::arg("m"), py::arg("env") = Environment::map{},
       py::arg("generator") = nullptr, doc.Evaluate.doc_expression);
 
+  m.def("GetVariableVector", &symbolic::GetVariableVector,
+      py::arg("expressions"), doc.GetVariableVector.doc);
+
   m.def(
       "Substitute",
       [](const MatrixX<Expression>& M, const Substitution& subst) {
@@ -751,9 +755,75 @@ PYBIND11_MODULE(symbolic, m) {
       drake::symbolic::Polynomial>();
 
   ExecuteExtraPythonCode(m);
+
+  // Bind the free functions in symbolic_decompose.h
+  m  // BR
+      .def(
+          "DecomposeLinearExpressions",
+          [](const Eigen::Ref<const VectorX<symbolic::Expression>>& expressions,
+              const Eigen::Ref<const VectorX<Variable>>& vars) {
+            Eigen::MatrixXd M(expressions.rows(), vars.rows());
+            symbolic::DecomposeLinearExpressions(expressions, vars, &M);
+            return M;
+          },
+          py::arg("expressions"), py::arg("vars"),
+          doc.DecomposeLinearExpressions.doc)
+      .def(
+          "DecomposeAffineExpressions",
+          [](const Eigen::Ref<const VectorX<symbolic::Expression>>& expressions,
+              const Eigen::Ref<const VectorX<symbolic::Variable>>& vars) {
+            Eigen::MatrixXd M(expressions.rows(), vars.rows());
+            Eigen::VectorXd v(expressions.rows());
+            symbolic::DecomposeAffineExpressions(expressions, vars, &M, &v);
+            return std::make_pair(M, v);
+          },
+          py::arg("expressions"), py::arg("vars"),
+          doc.DecomposeAffineExpressions.doc)
+      .def("ExtractVariablesFromExpression",
+          &symbolic::ExtractVariablesFromExpression, py::arg("e"),
+          doc.ExtractVariablesFromExpression.doc)
+      .def(
+          "DecomposeQuadraticPolynomial",
+          [](const symbolic::Polynomial& poly,
+              const std::unordered_map<symbolic::Variable::Id, int>&
+                  map_var_to_index) {
+            const int num_vars = map_var_to_index.size();
+            Eigen::MatrixXd Q(num_vars, num_vars);
+            Eigen::VectorXd b(num_vars);
+            double c;
+            symbolic::DecomposeQuadraticPolynomial(
+                poly, map_var_to_index, &Q, &b, &c);
+            return std::make_tuple(Q, b, c);
+          },
+          py::arg("poly"), py::arg("map_var_to_index"),
+          doc.DecomposeQuadraticPolynomial.doc)
+      .def(
+          "DecomposeAffineExpressions",
+          [](const Eigen::Ref<const VectorX<symbolic::Expression>>& v) {
+            Eigen::MatrixXd A;
+            Eigen::VectorXd b;
+            VectorX<Variable> vars;
+            symbolic::DecomposeAffineExpressions(v, &A, &b, &vars);
+            return std::make_tuple(A, b, vars);
+          },
+          // TODO(#14385): Use 'doc.DecomoseAffineExpressions.doc_output_vars`
+          // once we figure out why it isn't included in the output.
+          py::arg("v"), doc.DecomposeAffineExpressions.doc)
+      .def(
+          "DecomposeAffineExpression",
+          [](const symbolic::Expression& e,
+              const std::unordered_map<symbolic::Variable::Id, int>&
+                  map_var_to_index) {
+            Eigen::RowVectorXd coeffs(map_var_to_index.size());
+            double constant_term;
+            symbolic::DecomposeAffineExpression(
+                e, map_var_to_index, coeffs, &constant_term);
+            return std::make_pair(coeffs, constant_term);
+          },
+          py::arg("e"), py::arg("map_var_to_index"),
+          doc.DecomposeAffineExpression.doc);
   // NOLINTNEXTLINE(readability/fn_size)
 }
-
 }  // namespace pydrake
 }  // namespace drake
 

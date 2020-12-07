@@ -205,9 +205,9 @@ class TestManipulationStation(unittest.TestCase):
         station = ManipulationStation(time_step=0.001)
         station.SetupManipulationClassStation()
         plant = station.get_multibody_plant()
-        properties = DepthCameraProperties(10, 10, np.pi / 4, "renderer",
-                                           0.01, 5.0)
-        with catch_drake_warnings(expected_count=1):
+        with catch_drake_warnings(expected_count=2):
+            properties = DepthCameraProperties(10, 10, np.pi / 4, "renderer",
+                                               0.01, 5.0)
             station.RegisterRgbdSensor("deprecated", plant.world_frame(), X_PC,
                                        properties)
         station.Finalize()

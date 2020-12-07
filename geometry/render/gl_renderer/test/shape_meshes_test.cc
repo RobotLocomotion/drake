@@ -59,15 +59,6 @@ f 1 2 3
                                 "Not all faces reference normals.+");
   }
   {
-    // Case: The obj has no uvs. Note: the face specification is otherwise
-    // invalid in that it references vertex positions that don't exist.
-    std::stringstream in_stream("v 1 2 3\nvn 0 0 1\nf 1 2 3\n");
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        LoadMeshFromObj(&in_stream), std::runtime_error,
-        "OBJ has no texture coordinates; RenderEngineGl requires OBJs with "
-        "texture coordinates.+");
-  }
-  {
     // Case: not all faces reference uvs. Note: the face specification is
     // otherwise invalid in that it references vertex positions that don't
     // exist.
@@ -81,6 +72,18 @@ f 1//0 2//0 3//0
         LoadMeshFromObj(&in_stream), std::runtime_error,
         "Not all faces reference texture coordinates.+");
   }
+}
+
+GTEST_TEST(LoadMeshFromObjTest, NoMeshUvs) {
+  // Update: This OBJ has no UVs, but we have now updated this to accept it.
+  std::stringstream in_stream(R"""(
+v 0.1 0.2 0.3
+v 0.4 0.5 0.6
+v -0.1 -0.2 -0.3
+vn 0 0 1
+f 1//1 2//1 3//1
+)""");
+  EXPECT_NO_THROW(LoadMeshFromObj(&in_stream));
 }
 
 // Simply confirms that the filename variant of LoadMeshFromObj successfully

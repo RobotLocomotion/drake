@@ -182,9 +182,12 @@ class QueryObject {
             point pairs. The ordering of the results is guaranteed to be
             consistent -- for fixed geometry poses, the results will remain
             the same.
-   @warning This silently ignores Mesh geometries (but Convex mesh geometries
-            are included).
-   @throws if T = AutoDiffXd and object actually collides. */
+   @warning For Mesh shapes, their convex hulls are used in this query. It is
+            *not* computationally efficient or particularly accurate.
+   @throws if T = AutoDiffXd and an unsupported pair of geometries are in
+   collision. Currently for T = AutoDiffXd, we support the collision between a
+   sphere with another simple geometry including box, cylinder, capsule and
+   halfspace.*/
   std::vector<PenetrationAsPointPair<T>> ComputePointPairPenetration() const;
 
   /**
@@ -207,9 +210,9 @@ class QueryObject {
        | Box       |  yes  |  yes  |
        | Capsule   |  no   |  no   |
        | Ellipsoid |  yes  |  yes  |
-       | HalfSpace |  no   |  no   |
+       | HalfSpace |  yes  |  yes  |
        | Mesh      |  no   |  yes  |
-       | Convex    |  no   |  no   |
+       | Convex    |  no   |  yes  |
 
      - One geometry must be soft, and the other must be rigid. There is no
        support for soft-soft collision or rigid-rigid collision. If such
@@ -225,8 +228,8 @@ class QueryObject {
    <h3>Scalar support</h3>
 
    This method provides support only for double. Attempting to invoke this
-   method with T = AutoDiffXd will throw an exception if there are *any*
-   geometry pairs that couldn't be culled.
+   method with T = AutoDiffXd will throw an exception if there are unsupported
+   geometry pairs (like box-to-box) that couldn't be culled.
 
    @returns A vector populated with all detected intersections characterized as
             contact surfaces. The ordering of the results is guaranteed to be
@@ -257,12 +260,27 @@ class QueryObject {
    The ordering of the _added_ results is guaranteed to be consistent -- for
    fixed geometry poses, the results will remain the same.
 
+   @warning Invoking this with T = AutoDiffXd may throw an exception. The logic
+   controlling when this throws is subtle; it is dependent on the behavior when
+   T = double. For T = double, contact between a colliding pair of geometries
+   (g1, g2) will be reported as either ContactSurface or PenetrationAsPointPair
+   (depending on the geometry properties). The guiding principle is that a
+   contact should always be characterized with the same collision type
+   (regardless of scalar type). If that collision type is not supported for a
+   particular scalar, this query throws.
+   - If (g1, g2) produces a ContactSurface for T = double, T = AutoDiffXd will
+     definitely throw.
+   - If (g1, g2) produces a PenetrationAsPointPair for T = double,
+     T = AutoDiffXd will throw under the same conditions as documented in
+     ComputePointPairPenetration().
+
    @param[out] surfaces     The vector that contact surfaces will be added to.
                             The vector will _not_ be cleared.
    @param[out] point_pairs  The vector that fall back point pair data will be
                             added to. The vector will _not_ be cleared.
    @pre Neither `surfaces` nor `point_pairs` is nullptr.
-   @throws if T = AutoDiffXd and object actually collides. */
+   @throws if T = AutoDiffXd and unsupported object (like box-to-box) actually
+   collides. */
   void ComputeContactSurfacesWithFallback(
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<T>>* point_pairs) const;
@@ -275,15 +293,13 @@ class QueryObject {
 
    @returns A vector populated with collision pair candidates (the order will
             remain constant for a fixed population but can change as geometry
-            ids are added/removed).
-   @warning This silently ignores Mesh geometries (but Convex mesh geometries
-            are included). */
+            ids are added/removed).  */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const;
 
   /** Reports true if there are _any_ collisions between unfiltered pairs in the
    world.
-   @warning This silently ignores Mesh geometries (but Convex mesh geometries
-            are included). */
+   @warning For Mesh shapes, their convex hulls are used in this query. It is
+            *not* computationally efficient or particularly accurate.  */
   bool HasCollisions() const;
 
   //@}
@@ -369,7 +385,9 @@ class QueryObject {
 
    @returns The signed distance (and supporting data) for all unfiltered
             geometry pairs whose distance is less than or equal to
-            `max_distance`.  */
+            `max_distance`.
+   @warning For Mesh shapes, their convex hulls are used in this query. It is
+            *not* computationally efficient or particularly accurate.  */
   std::vector<SignedDistancePair<T>> ComputeSignedDistancePairwiseClosestPoints(
       const double max_distance =
           std::numeric_limits<double>::infinity()) const;
@@ -380,7 +398,9 @@ class QueryObject {
    as ComputeSignedDistancePairwiseClosestPoints().
 
    @throws std::exception if either geometry id is invalid, or if the pair
-                          (A, B) has been marked as filtered.  */
+                          (A, B) has been marked as filtered.
+   @warning For Mesh shapes, their convex hulls are used in this query. It is
+            *not* computationally efficient or particularly accurate.  */
   SignedDistancePair<T> ComputeSignedDistancePairClosestPoints(
       GeometryId geometry_id_A, GeometryId geometry_id_B) const;
 
@@ -484,6 +504,8 @@ class QueryObject {
    */
   //@{
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   /** Renders an RGB image for the given `camera` posed with respect to the
    indicated parent frame P.
 
@@ -500,6 +522,7 @@ class QueryObject {
                         const math::RigidTransformd& X_PC,
                         bool show_window,
                         systems::sensors::ImageRgba8U* color_image_out) const;
+#pragma GCC diagnostic pop
 
   /** Renders an RGB image for the given `camera` posed with respect to the
    indicated parent frame P.
@@ -512,6 +535,8 @@ class QueryObject {
                         FrameId parent_frame, const math::RigidTransformd& X_PC,
                         systems::sensors::ImageRgba8U* color_image_out) const;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   /** Renders a depth image for the given `camera` posed with respect to the
    indicated parent frame P.
 
@@ -530,6 +555,7 @@ class QueryObject {
                         FrameId parent_frame,
                         const math::RigidTransformd& X_PC,
                         systems::sensors::ImageDepth32F* depth_image_out) const;
+#pragma GCC diagnostic pop
 
   /** Renders a depth image for the given `camera` posed with respect to the
    indicated parent frame P.
@@ -546,6 +572,8 @@ class QueryObject {
                         FrameId parent_frame, const math::RigidTransformd& X_PC,
                         systems::sensors::ImageDepth32F* depth_image_out) const;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   /** Renders a label image for the given `camera` posed with respect to the
    indicated parent frame P.
 
@@ -562,6 +590,7 @@ class QueryObject {
                         const math::RigidTransformd& X_PC,
                         bool show_window,
                         systems::sensors::ImageLabel16I* label_image_out) const;
+#pragma GCC diagnostic pop
 
   /** Renders a label image for the given `camera` posed with respect to the
    indicated parent frame P.

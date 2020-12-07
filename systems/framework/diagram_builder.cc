@@ -99,11 +99,17 @@ template <typename T>
 InputPortIndex DiagramBuilder<T>::ExportInput(
     const InputPort<T>& input,
     std::variant<std::string, UseDefaultName> name) {
+  const InputPortIndex diagram_port_index = DeclareInput(input, name);
+  ConnectInput(diagram_port_index, input);
+  return diagram_port_index;
+}
+
+template <typename T>
+InputPortIndex DiagramBuilder<T>::DeclareInput(
+    const InputPort<T>& input,
+    std::variant<std::string, UseDefaultName> name) {
   InputPortLocator id{&input.get_system(), input.get_index()};
-  ThrowIfInputAlreadyWired(id);
   ThrowIfSystemNotRegistered(&input.get_system());
-  InputPortIndex return_id(input_port_ids_.size());
-  input_port_ids_.push_back(id);
 
   // The requirement that subsystem names are unique guarantees uniqueness
   // of the port names.
@@ -112,10 +118,77 @@ InputPortIndex DiagramBuilder<T>::ExportInput(
           ? input.get_system().get_name() + "_" + input.get_name()
           : std::get<std::string>(std::move(name));
   DRAKE_DEMAND(!port_name.empty());
-  input_port_names_.emplace_back(std::move(port_name));
 
-  diagram_input_set_.insert(id);
+  // Reject duplicate declarations.
+  if (diagram_input_indices_.count(port_name) != 0) {
+    throw std::logic_error(
+        fmt::format("Diagram already has an input port named {}", port_name));
+  }
+
+  // Save bookkeeping data.
+  const auto return_id = InputPortIndex(diagram_input_data_.size());
+  diagram_input_indices_[port_name] = return_id;
+  diagram_input_data_.push_back({id, port_name});
   return return_id;
+}
+
+template <typename T>
+void DiagramBuilder<T>::ConnectInput(
+    const std::string& diagram_port_name, const InputPort<T>& input) {
+  DRAKE_THROW_UNLESS(diagram_input_indices_.count(diagram_port_name));
+  ConnectInput(diagram_input_indices_[diagram_port_name], input);
+}
+
+template <typename T>
+void DiagramBuilder<T>::ConnectInput(
+    InputPortIndex diagram_port_index, const InputPort<T>& input) {
+  InputPortLocator id{&input.get_system(), input.get_index()};
+  ThrowIfInputAlreadyWired(id);
+  ThrowIfSystemNotRegistered(&input.get_system());
+  DRAKE_THROW_UNLESS(
+      diagram_port_index < InputPortIndex(diagram_input_data_.size()));
+
+  // Check that port types match.
+  const ExportedInputData& data = diagram_input_data_[diagram_port_index];
+  const InputPortLocator& model_id = data.model_input;
+  const std::string& port_name = data.name;
+  const InputPort<T>& model = model_id.first->get_input_port(model_id.second);
+  if (model.get_data_type() != input.get_data_type()) {
+    throw std::logic_error(fmt::format(
+        "DiagramBuilder::ConnectInput: Cannot mix vector-valued and abstract-"
+        "valued ports while connecting input port {} of System {} to "
+        "input port {} of Diagram",
+        input.get_name(), input.get_system().get_name(), port_name));
+  }
+  if ((model.get_data_type() != kAbstractValued) &&
+      (model.size() != input.size())) {
+    throw std::logic_error(fmt::format(
+        "DiagramBuilder::ConnectInput: Mismatched vector sizes while "
+        "connecting input port {} of System {} (size {}) to "
+        "input port {} of Diagram (size {})",
+        input.get_name(), input.get_system().get_name(), input.size(),
+        port_name, model.size()));
+  }
+  if (model.get_data_type() == kAbstractValued) {
+    auto model_model = model.get_system().AllocateInputAbstract(model);
+    auto model_input = input.get_system().AllocateInputAbstract(input);
+    const std::type_info& model_type = model_model->static_type_info();
+    const std::type_info& input_type = model_input->static_type_info();
+    if (model_type != input_type) {
+      throw std::logic_error(fmt::format(
+           "DiagramBuilder::ConnectInput: Mismatched value types while "
+           "connecting input port {} of System {} (type {}) to "
+           "input port {} of Diagram (type {})",
+           input.get_name(), input.get_system().get_name(),
+           NiceTypeName::Get(input_type),
+           port_name, NiceTypeName::Get(model_type)));
+    }
+  }
+
+  // Write down connection information.
+  input_port_ids_.push_back(id);
+  input_port_names_.push_back(port_name);
+  diagram_input_set_.insert(id);
 }
 
 template <typename T>
