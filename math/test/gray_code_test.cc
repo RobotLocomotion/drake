@@ -7,8 +7,15 @@
 namespace drake {
 namespace math {
 namespace {
+
+GTEST_TEST(TestGrayCode, TestDegenerateCase) {
+  auto zero_code = CalculateReflectedGrayCodes(0);
+  EXPECT_EQ(zero_code.cols(), 0);
+  EXPECT_EQ(zero_code.rows(), 0);
+}
+
 GTEST_TEST(TestGrayCode, TestCalculateGrayCodes) {
-  for (int i = 0; i < 4; i++) {
+  for (int i = 1; i < 4; i++) {
     auto test_code = CalculateReflectedGrayCodes(i);
     // Asking for codes for 0 bits should generate 0 for 0 bits.
     // Asking for codes for i bits should generate 2^(i) codes for i bits.
