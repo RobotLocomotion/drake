@@ -7,6 +7,13 @@
 namespace drake {
 namespace math {
 namespace {
+
+GTEST_TEST(TestGrayCode, TestDegenerateCase) {
+  auto zero_code = CalculateReflectedGrayCodes(0);
+  EXPECT_EQ(zero_code.cols(), 0);
+  EXPECT_EQ(zero_code.rows(), 0);
+}
+
 GTEST_TEST(TestGrayCode, TestCalculateGrayCodes) {
   for (int i = 0; i < 4; i++) {
     auto test_code = CalculateReflectedGrayCodes(i);
