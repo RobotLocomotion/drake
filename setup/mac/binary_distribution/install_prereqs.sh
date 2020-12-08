@@ -18,8 +18,9 @@ if ! command -v /usr/local/bin/brew &>/dev/null; then
   /usr/bin/ruby -e "$(/usr/bin/curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 fi
 
-# TODO(jamiesnape): Remove lines uninstalling vtk@8.2, ospray@1.8, and
-# embree@3.5 on or after 2021-02-01.
+# TODO(jamiesnape): Remove lines tapping robotlocomotion/director and
+# uninstalling vtk@8.2, ospray@1.8, and embree@3.5 on or after 2021-02-01.
+/usr/local/bin/brew tap robotlocomotion/director
 /usr/local/bin/brew uninstall --force $(cat <<EOF
 robotlocomotion/director/vtk@8.2
 robotlocomotion/director/ospray@1.8
