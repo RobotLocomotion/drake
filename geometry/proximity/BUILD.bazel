@@ -271,8 +271,11 @@ drake_cc_library(
 
 drake_cc_library(
     name = "make_cylinder_mesh",
+    srcs = ["make_cylinder_mesh.cc"],
     hdrs = ["make_cylinder_mesh.h"],
     deps = [
+        ":meshing_utilities",
+        ":proximity_utilities",
         ":surface_mesh",
         ":volume_mesh",
         ":volume_to_surface_mesh",
