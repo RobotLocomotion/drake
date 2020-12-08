@@ -38,6 +38,7 @@ drake_cc_package_library(
         ":mesh_intersection",
         ":mesh_plane_intersection",
         ":mesh_to_vtk",
+        ":meshing_utilities",
         ":obb",
         ":obj_to_surface_mesh",
         ":penetration_as_point_pair_callback",
@@ -413,6 +414,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "meshing_utilities",
+    srcs = ["meshing_utilities.cc"],
+    hdrs = ["meshing_utilities.h"],
+    deps = [
+        ":volume_mesh",
+    ],
+)
+
+drake_cc_library(
     name = "obb",
     srcs = ["obb.cc"],
     hdrs = ["obb.h"],
@@ -777,6 +787,13 @@ drake_cc_googletest(
         "//common:temp_directory",
         "//geometry:shape_specification",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "meshing_utilities_test",
+    deps = [
+        ":meshing_utilities",
     ],
 )
 
