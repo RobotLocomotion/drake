@@ -8,6 +8,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/type_safe_index.h"
 #include "drake/math/rigid_transform.h"
@@ -129,13 +130,12 @@ class SurfaceMesh {
 
   using ScalarType = T;
 
-  // TODO(DamrongGuoy): Remove kDim and replace its usage like (kDim + 1) by
-  //  kVertexPerElement in mesh_to_vtk, mesh_field_linear, and
-  //  bounding_volume_hierarchy. Issue #12756.
-
   /**
    A surface mesh has the intrinsic dimension 2.  It is embedded in 3-d space.
    */
+  DRAKE_DEPRECATED("2022-04-01",
+  "kDim is being replaced with kVertexPerElement-1,"
+  " and kDim+1 is being replaced with kVertexPerElement.")
   static constexpr int kDim = 2;
 
   /**
@@ -165,7 +165,7 @@ class SurfaceMesh {
 
    The barycentric coordinates for a point Q are notated a b_Q.
    */
-  using Barycentric = Vector<T, kDim + 1>;
+  using Barycentric = Vector<T, kVertexPerElement>;
 
   /** Type of Cartesian coordinates. Mesh consumers can use it in conversion
    from Cartesian coordinates to barycentric coordinates.
