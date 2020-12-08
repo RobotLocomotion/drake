@@ -137,7 +137,7 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
              const typename MeshType::Barycentric& b) const final {
     const auto& element = this->mesh().element(e);
     T value = b[0] * values_[element.vertex(0)];
-    for (int i = 1; i < MeshType::kDim + 1; ++i) {
+    for (int i = 1; i < MeshType::kVertexPerElement; ++i) {
       value += b[i] * values_[element.vertex(i)];
     }
     return value;

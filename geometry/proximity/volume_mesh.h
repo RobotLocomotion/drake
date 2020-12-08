@@ -10,6 +10,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/type_safe_index.h"
 
@@ -129,10 +130,11 @@ class VolumeMesh {
 
   using ScalarType = T;
 
-  // TODO(DamrongGuoy): Remove kDim and replace its usage like (kDim + 1) by
-  //  kVertexPerElement in mesh_to_vtk, mesh_field_linear, and
-  //  bounding_volume_hierarchy. Issue #12756.
-
+  DRAKE_DEPRECATED(
+      "2021-04-01",
+      "kDim has been deemed redundant, and its usage is being dropped in "
+      "favor of using kVertexPerElement. The relationship between kDim and "
+      "kVertexPerElement is: kVertexPerElement = kDim + 1.")
   static constexpr int kDim = 3;
 
   /**
@@ -156,7 +158,7 @@ class VolumeMesh {
    could calculate one of the bᵢ from the others; however, there is no
    standard way to omit one of the coordinates.
   */
-  using Barycentric = Vector<T, kDim + 1>;
+  using Barycentric = Vector<T, kVertexPerElement>;
 
   /** Type of Cartesian coordinates. Mesh consumers can use it in conversion
    from Cartesian coordinates to barycentric coordinates.
