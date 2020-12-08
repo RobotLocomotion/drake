@@ -111,7 +111,7 @@ class QueryObject {
   const math::RigidTransform<T>& GetPoseInWorld(FrameId frame_id) const;
 
   /** Deprecated variant of GetPoseInWorld(FrameId).  */
-  DRAKE_DEPRECATED("2021-03-01", "Please use GetPoseInWorld(FrameId) instead.")
+  DRAKE_DEPRECATED("2021-04-01", "Please use GetPoseInWorld(FrameId) instead.")
   const math::RigidTransform<T>& X_WF(FrameId id) const;
 
   /** Reports the position of the frame indicated by `frame_id` relative to its
@@ -124,7 +124,7 @@ class QueryObject {
   const math::RigidTransform<T>& GetPoseInParent(FrameId frame_id) const;
 
   /** Deprecated variant of GetPoseInParent().  */
-  DRAKE_DEPRECATED("2021-03-01", "Please use GetPoseInParent(FrameId) instead.")
+  DRAKE_DEPRECATED("2021-04-01", "Please use GetPoseInParent(FrameId) instead.")
   const math::RigidTransform<T>& X_PF(FrameId id) const;
 
   /** Reports the position of the geometry indicated by `geometry_id` relative
@@ -133,7 +133,7 @@ class QueryObject {
   const math::RigidTransform<T>& GetPoseInWorld(GeometryId geometry_id) const;
 
   /** Deprecated variant of GetPoseInWorld(GeometryId).  */
-  DRAKE_DEPRECATED("2021-03-01",
+  DRAKE_DEPRECATED("2021-04-01",
                    "Please use GetPoseInWorld(GeometryId) instead.")
   const math::RigidTransform<T>& X_WG(GeometryId id) const;
 
@@ -514,7 +514,7 @@ class QueryObject {
    @param X_PC                  The pose of the camera body in the parent frame.
    @param show_window           If true, the render window will be displayed.
    @param[out] color_image_out  The rendered color image. */
-  DRAKE_DEPRECATED("2021-03-01",
+  DRAKE_DEPRECATED("2021-04-01",
                    "CameraProperties are being deprecated. Please use the "
                    "ColorRenderCamera variant.")
   void RenderColorImage(const render::CameraProperties& camera,
@@ -548,7 +548,7 @@ class QueryObject {
    @param parent_frame          The id for the camera's parent frame.
    @param X_PC                  The pose of the camera body in the parent frame.
    @param[out] depth_image_out  The rendered depth image. */
-  DRAKE_DEPRECATED("2021-03-01",
+  DRAKE_DEPRECATED("2021-04-01",
                    "CameraProperties are being deprecated. Please use the "
                    "DepthRenderCamera variant.")
   void RenderDepthImage(const render::DepthCameraProperties& camera,
@@ -582,7 +582,7 @@ class QueryObject {
    @param X_PC                  The pose of the camera body in the parent frame.
    @param show_window           If true, the render window will be displayed.
    @param[out] label_image_out  The rendered label image. */
-  DRAKE_DEPRECATED("2021-03-01",
+  DRAKE_DEPRECATED("2021-04-01",
                    "CameraProperties are being deprecated. Please use the "
                    "ColorRenderCamera variant.")
   void RenderLabelImage(const render::CameraProperties& camera,
