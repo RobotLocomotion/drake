@@ -58,9 +58,10 @@ class FreeRotatingBodyPlant final : public internal::MultibodyTreeSystem<T> {
   math::RigidTransform<T> CalcPoseInWorldFrame(
       const systems::Context<T>& context) const;
 
-  /// Calculates V_WB, body B's spatial velocity in the world frame W,
-  /// expressed in W (for point Bo, the body frame's origin).
+  /// Calculates V_WB, body B's spatial velocity in the world frame W.
   /// @param[in] context Contains the state of the model.
+  /// @retval V_WB_W, body B's spatial velocity in the world frame W,
+  /// expressed in W (for point Bo, the body frame's origin).
   SpatialVelocity<T> CalcSpatialVelocityInWorldFrame(
       const systems::Context<T>& context) const;
 

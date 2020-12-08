@@ -2258,10 +2258,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().EvalBodyPoseInWorld(context, body_B);
   }
 
-  /// Evaluates V_WB, body B's spatial velocity in the world frame W,
-  /// expressed in W (for point Bo, the body frame's origin).
+  /// Evaluates V_WB, body B's spatial velocity in the world frame W.
   /// @param[in] context The context storing the state of the model.
   /// @param[in] body_B  The body B for which the spatial velocity is requested.
+  /// @retval V_WB_W Body B's spatial velocity in the world frame W,
+  ///   expressed in W (for point Bo, the body's origin).
   /// @throws std::logic_error if Finalize() was not called on `this` model or
   ///   if `body_B` does not belong to this model.
   const SpatialVelocity<T>& EvalBodySpatialVelocityInWorld(
@@ -2271,8 +2272,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().EvalBodySpatialVelocityInWorld(context, body_B);
   }
 
-  /// Evaluates A_WB, body B's spatial acceleration in the world frame W,
-  /// expressed in W (for point Bo, the body frame's origin).
+  /// Evaluates A_WB, body B's spatial acceleration in the world frame W.
   /// @param[in] context The context storing the state of the model.
   /// @param[in] body_B  The body for which spatial acceleration is requested.
   /// @retval A_WB_W Body B's spatial acceleration in the world frame W,
