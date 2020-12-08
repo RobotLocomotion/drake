@@ -33,6 +33,8 @@ load("@drake//tools/workspace:os.bzl", "determine_os")
 
 VTK_MAJOR_MINOR_VERSION = "8.2"
 
+VTK_MAJOR_MINOR_PATCH_VERSION = "{}.0".format(VTK_MAJOR_MINOR_VERSION)
+
 def _vtk_cc_library(
         os_name,
         name,
@@ -65,7 +67,7 @@ def _vtk_cc_library(
     if os_name == "mac os x":
         if not header_only:
             lib_dir = "/usr/local/opt/vtk@{}/lib".format(
-                VTK_MAJOR_MINOR_VERSION,
+                VTK_MAJOR_MINOR_PATCH_VERSION,
             )
             linkopts = linkopts + [
                 "-L{}".format(lib_dir),
@@ -96,15 +98,15 @@ def _impl(repository_ctx):
 
     if os_result.is_macos:
         repository_ctx.symlink("/usr/local/opt/vtk@{}/include".format(
-            VTK_MAJOR_MINOR_VERSION,
+            VTK_MAJOR_MINOR_PATCH_VERSION,
         ), "include")
     elif os_result.is_ubuntu:
         if os_result.ubuntu_release == "18.04":
-            archive = "vtk-8.2.0-embree-3.5.2-ospray-1.8.5-python-3.6.9-qt-5.9.5-bionic-x86_64-1.tar.gz"  # noqa
-            sha256 = "f32b7b8c0894c31b8665bb28cdf9682683315a13b7779effdfb765a812453a67"  # noqa
+            archive = "vtk-8.2.0-python-3.6.9-qt-5.9.5-bionic-x86_64.tar.gz"  # noqa
+            sha256 = "3a4f477b5876777adc016da2147ea42568b7255f889e342d52aca7f441c98e0c"  # noqa
         elif os_result.ubuntu_release == "20.04":
-            archive = "vtk-8.2.0-embree-3.5.2-ospray-1.8.5-python-3.8.2-qt-5.12.8-focal-x86_64-1.tar.gz"  # noqa
-            sha256 = "495a97a208eddb4ebfa4214041400d6d7c842ae9dd3b3157208dd859759654e4"  # noqa
+            archive = "vtk-8.2.0-python-3.8.5-qt-5.12.8-focal-x86_64.tar.gz"  # noqa
+            sha256 = "1ad84551ba119c02b802183a3d3a3aa7e54e55d217d5b7f84a97adfa7c53616f"  # noqa
         else:
             fail("Operating system is NOT supported", attr = os_result)
 
@@ -339,27 +341,6 @@ licenses([
         deps = [":vtksys"],
     )
 
-    # TODO(jamiesnape): Use system library instead.
-    file_content += _vtk_cc_library(
-        repository_ctx.os.name,
-        "vtkdoubleconversion",
-    )
-
-    file_content += _vtk_cc_library(
-        repository_ctx.os.name,
-        "vtkFiltersAMR",
-        deps = [
-            ":vtkCommonCore",
-            ":vtkCommonDataModel",
-            ":vtkCommonExecutionModel",
-            ":vtkCommonMath",
-            ":vtkCommonSystem",
-            ":vtkFiltersCore",
-            ":vtkIOXML",
-            ":vtkParallelCore",
-        ],
-    )
-
     file_content += _vtk_cc_library(
         repository_ctx.os.name,
         "vtkFiltersCore",
@@ -444,10 +425,10 @@ licenses([
             ":vtkCommonDataModel",
             ":vtkCommonExecutionModel",
             ":vtkCommonMisc",
-            ":vtkdoubleconversion",
-            ":vtklzma",
             ":vtksys",
+            "@double_conversion",
             "@liblz4",
+            "@liblzma",
             "@zlib",
         ],
     )
@@ -600,21 +581,6 @@ licenses([
         ],
     )
 
-    # TODO(jamiesnape): Use system library instead.
-    file_content += _vtk_cc_library(repository_ctx.os.name, "vtklzma")
-
-    file_content += _vtk_cc_library(
-        repository_ctx.os.name,
-        "vtkParallelCore",
-        deps = [
-            ":vtkCommonCore",
-            ":vtkCommonDataModel",
-            ":vtkCommonSystem",
-            ":vtkIOLegacy",
-            ":vtksys",
-        ],
-    )
-
     file_content += _vtk_cc_library(
         repository_ctx.os.name,
         "vtkRenderingCore",
@@ -683,80 +649,6 @@ licenses([
             ":vtkCommonSystem",
             ":vtkCommonTransforms",
             ":vtkRenderingCore",
-            ":vtksys",
-            "@glew",
-            "@opengl",
-        ],
-    )
-
-    file_content += _vtk_cc_library(
-        repository_ctx.os.name,
-        "vtkRenderingSceneGraph",
-        visibility = ["//visibility:public"],
-        hdrs = [
-            "vtkLightNode.h",
-            "vtkRendererNode.h",
-            "vtkRenderingSceneGraphModule.h",
-            "vtkViewNode.h",
-        ],
-        deps = [
-            ":vtkCommonCore",
-            ":vtkCommonDataModel",
-            ":vtkCommonMath",
-            ":vtkRenderingCore",
-        ],
-    )
-
-    file_content += _vtk_cc_library(
-        repository_ctx.os.name,
-        "vtkRenderingVolume",
-        deps = [
-            ":vtkCommonCore",
-            ":vtkCommonDataModel",
-            ":vtkCommonMath",
-            ":vtkCommonMisc",
-            ":vtkCommonSystem",
-            ":vtkCommonTransforms",
-            ":vtkImagingCore",
-            ":vtkIOXML",
-            ":vtkRenderingCore",
-        ],
-    )
-
-    file_content += _vtk_cc_library(
-        repository_ctx.os.name,
-        "vtkRenderingVolumeAMR",
-        deps = [
-            ":vtkCommonCore",
-            ":vtkCommonDataModel",
-            ":vtkCommonExecutionModel",
-            ":vtkCommonMath",
-            ":vtkCommonSystem",
-            ":vtkFiltersAMR",
-            ":vtkImagingCore",
-            ":vtkRenderingCore",
-            ":vtkRenderingVolume",
-            ":vtkRenderingVolumeOpenGL2",
-        ],
-    )
-
-    file_content += _vtk_cc_library(
-        repository_ctx.os.name,
-        "vtkRenderingVolumeOpenGL2",
-        deps = [
-            ":vtkCommonCore",
-            ":vtkCommonDataModel",
-            ":vtkCommonMath",
-            ":vtkCommonSystem",
-            ":vtkCommonTransforms",
-            ":vtkFiltersCore",
-            ":vtkFiltersGeneral",
-            ":vtkFiltersSources",
-            ":vtkImagingCore",
-            ":vtkImagingMath",
-            ":vtkRenderingCore",
-            ":vtkRenderingOpenGL2",
-            ":vtkRenderingVolume",
             ":vtksys",
             "@glew",
             "@opengl",
