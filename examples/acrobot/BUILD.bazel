@@ -284,6 +284,21 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_binary(
+    name = "benchmark_autodiff",
+    srcs = ["benchmark_autodiff.cc"],
+    deps = [
+        ":acrobot_plant",
+        "//common:essential",
+        "//common:find_resource",
+        "//math:autodiff",
+        "//math:gradient",
+        "//multibody/benchmarks/acrobot:make_acrobot_plant",
+        "//multibody/parsing",
+        "@googlebenchmark//:benchmark",
+    ],
+)
+
 install_data()
 
 add_lint_tests()
