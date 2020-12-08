@@ -52,7 +52,7 @@ class AccelerationKinematicsCache {
   /// correspond to a valid BodyNode in the MultibodyTree.
   /// @param[in] body_node_index The unique index for the computational
   ///                            BodyNode object associated with body B.
-  /// @retval A_WB_W, body B's spatial acceleration in the world frame W,
+  /// @retval A_WB_W body B's spatial acceleration in the world frame W,
   /// expressed in W (for point Bo, the body's origin).
   const SpatialAcceleration<T>& get_A_WB(BodyNodeIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < get_num_nodes());

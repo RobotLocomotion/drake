@@ -69,7 +69,7 @@ class AxiallySymmetricFreeBodyPlant final : public MultibodyPlant<T> {
 
   /// Calculates V_WB, `this` body B's spatial velocity in the world frame W.
   /// @param[in] context Contains the state of the model.
-  /// @retval V_WB_W, `this` free-body B's spatial velocity in the world
+  /// @retval V_WB_W `this` free-body B's spatial velocity in the world
   /// frame W, expressed in W (for point Bo, the body frame's origin).
   /// @param[in] context Contains the state of the model.
   SpatialVelocity<T> CalcSpatialVelocityInWorldFrame(

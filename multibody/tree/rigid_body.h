@@ -251,7 +251,7 @@ class RigidBody : public Body<T> {
   /// (Advanced) Returns V_WB, `this` rigid body B's spatial velocity in
   /// the world frame W.
   /// @param[in] vc velocity kinematics cache.
-  /// @retval V_WB_W, `this` rigid body B's spatial velocity in the world
+  /// @retval V_WB_W `this` rigid body B's spatial velocity in the world
   /// frame W, expressed in W (for point Bo, the body frame's origin).
   // TODO(amcastro-tri) When cache entries are in the context, replace this
   //  method by Body<T>::get_spatial_velocity_in_world(const Context<T>&).
@@ -288,7 +288,7 @@ class RigidBody : public Body<T> {
   /// (Advanced) Returns A_WB, `this` rigid body B's spatial acceleration in
   /// the world frame W.
   /// @param[in] ac acceleration kinematics cache.
-  /// @retval A_WB_W, `this` rigid body B's spatial acceleration in the world
+  /// @retval A_WB_W `this` rigid body B's spatial acceleration in the world
   /// frame W, expressed in W (for point Bo, the body frame's origin).
   // TODO(amcastro-tri) When cache entries are in the context, replace this
   // method by Body<T>::get_spatial_acceleration_in_world(const Context<T>&).

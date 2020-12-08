@@ -66,7 +66,7 @@ class VelocityKinematicsCache {
   /// Returns V_WB, body B's spatial velocity in the world frame W.
   /// @param[in] body_node_index The unique index for the computational
   ///                            BodyNode object associated with body B.
-  /// @retval V_WB_W, body B's spatial velocity in the world frame W,
+  /// @retval V_WB_W body B's spatial velocity in the world frame W,
   /// expressed in W (for point Bo, the body frame's origin).
   const SpatialVelocity<T>& get_V_WB(BodyNodeIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
