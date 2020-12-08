@@ -248,12 +248,13 @@ class RigidBody : public Body<T> {
   /// context.  These method's APIs will be deprecated when caching arrives.
   ///@{
 
-  /// (Advanced) Extract this body spatial velocity in world, expressed in
-  /// world.
+  /// (Advanced) Returns V_WB, `this` rigid body B's spatial velocity in
+  /// the world frame W.
   /// @param[in] vc velocity kinematics cache.
-  /// @retval V_WB_W rigid body B's spatial velocity in world W, expressed in W.
+  /// @retval V_WB_W `this` rigid body B's spatial velocity in the world
+  /// frame W, expressed in W (for point Bo, the body frame's origin).
   // TODO(amcastro-tri) When cache entries are in the context, replace this
-  // method by Body<T>::get_spatial_velocity_in_world(const Context<T>&).
+  //  method by Body<T>::get_spatial_velocity_in_world(const Context<T>&).
   //----------------------------------------------------------------------------
   const SpatialVelocity<T>& get_spatial_velocity_in_world(
       const internal::VelocityKinematicsCache<T>& vc) const {
@@ -284,10 +285,11 @@ class RigidBody : public Body<T> {
   /// with context.  These method APIs will be deprecated when caching arrives.
   ///@{
 
-  /// (Advanced) Extract this body spatial acceleration in world, expressed in
-  /// world.
+  /// (Advanced) Returns A_WB, `this` rigid body B's spatial acceleration in
+  /// the world frame W.
   /// @param[in] ac acceleration kinematics cache.
-  /// @retval A_WB_W body B's spatial acceleration in world W, expressed in W.
+  /// @retval A_WB_W `this` rigid body B's spatial acceleration in the world
+  /// frame W, expressed in W (for point Bo, the body frame's origin).
   // TODO(amcastro-tri) When cache entries are in the context, replace this
   // method by Body<T>::get_spatial_acceleration_in_world(const Context<T>&).
   //----------------------------------------------------------------------------
