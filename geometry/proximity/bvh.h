@@ -337,7 +337,7 @@ class Bvh {
   // (see Obb::Equal()).
   static bool EqualTrees(const BvNode<MeshType>& a, const BvNode<MeshType>& b);
 
-  static constexpr int kElementVertexCount = MeshType::kDim + 1;
+  static constexpr int kElementVertexCount = MeshType::kVertexPerElement;
 
   std::unique_ptr<BvNode<MeshType>> root_node_;
 };
