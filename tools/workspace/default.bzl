@@ -11,6 +11,7 @@ load("@drake//tools/workspace/ccd:repository.bzl", "ccd_repository")
 load("@drake//tools/workspace/cds:repository.bzl", "cds_repository")
 load("@drake//tools/workspace/clang_cindex_python3:repository.bzl", "clang_cindex_python3_repository")  # noqa
 load("@drake//tools/workspace/com_jidesoft_jide_oss:repository.bzl", "com_jidesoft_jide_oss_repository")  # noqa
+load("@drake//tools/workspace/common_robotics_utilities:repository.bzl", "common_robotics_utilities_repository")  # noqa
 load("@drake//tools/workspace/commons_io:repository.bzl", "commons_io_repository")  # noqa
 load("@drake//tools/workspace/csdp:repository.bzl", "csdp_repository")
 load("@drake//tools/workspace/double_conversion:repository.bzl", "double_conversion_repository")  # noqa
@@ -81,6 +82,7 @@ load("@drake//tools/workspace/tinyobjloader:repository.bzl", "tinyobjloader_repo
 load("@drake//tools/workspace/tinyxml2:repository.bzl", "tinyxml2_repository")
 load("@drake//tools/workspace/tinyxml:repository.bzl", "tinyxml_repository")
 load("@drake//tools/workspace/uritemplate_py:repository.bzl", "uritemplate_py_repository")  # noqa
+load("@drake//tools/workspace/voxelized_geometry_tools:repository.bzl", "voxelized_geometry_tools_repository")  # noqa
 load("@drake//tools/workspace/vtk:repository.bzl", "vtk_repository")
 load("@drake//tools/workspace/x11:repository.bzl", "x11_repository")
 load("@drake//tools/workspace/yaml_cpp:repository.bzl", "yaml_cpp_repository")
@@ -114,6 +116,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         clang_cindex_python3_repository(name = "clang_cindex_python3", mirrors = mirrors)  # noqa
     if "com_jidesoft_jide_oss" not in excludes:
         com_jidesoft_jide_oss_repository(name = "com_jidesoft_jide_oss", mirrors = mirrors)  # noqa
+    if "common_robotics_utilities" not in excludes:
+        common_robotics_utilities_repository(name = "common_robotics_utilities", mirrors = mirrors)  # noqa
     if "commons_io" not in excludes:
         commons_io_repository(name = "commons_io", mirrors = mirrors)
     if "csdp" not in excludes:
@@ -256,6 +260,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         tinyxml_repository(name = "tinyxml")
     if "uritemplate_py" not in excludes:
         uritemplate_py_repository(name = "uritemplate_py", mirrors = mirrors)
+    if "voxelized_geometry_tools" not in excludes:
+        voxelized_geometry_tools_repository(name = "voxelized_geometry_tools", mirrors = mirrors)  # noqa
     if "vtk" not in excludes:
         vtk_repository(name = "vtk", mirrors = mirrors)
     if "x11" not in excludes:

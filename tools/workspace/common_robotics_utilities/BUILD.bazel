@@ -1,0 +1,26 @@
+# -*- mode: python -*-
+# vi: set ft=python :
+
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+add_lint_tests()
+
+alias(
+    name = "planning_test",
+    actual = "@common_robotics_utilities//:planning_test",
+)
+
+alias(
+    name = "task_planning_test",
+    actual = "@common_robotics_utilities//:task_planning_test",
+)
+
+alias(
+    name = "task_planning_test_no_equals",
+    actual = "@common_robotics_utilities//:task_planning_test_no_equals",
+)
+
+alias(
+    name = "voxel_grid_test",
+    actual = "@common_robotics_utilities//:voxel_grid_test",
+)
