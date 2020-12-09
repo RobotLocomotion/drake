@@ -153,30 +153,26 @@ class RigidBody : public Body<T> {
         spatial_inertia_parameter);
   }
 
-  /// Calculates the translational velocity of Bcm (`this` body's
-  /// center of mass) measured in a frame A, expressed in a frame E.
+  /// Calculates Bcm's translational velocity in the world frame W.
   /// @param[in] context The context contains the state of the model.
-  /// @param[in] frame_A The measured-in frame for Bcm's translational velocity.
-  /// @param[in] frame_E The expressed-in frame for the returned result.
-  /// @retval v_ABcm_E Bcm's translational velocity in frame A, measured in E.
-  Vector3<T> CalcCenterOfMassTranslationalVelocity(
-      const systems::Context<T>& context,
-      const Frame<T>& frame_A,
-      const Frame<T>& frame_E) const override {
+  /// @retval v_ABcm_E The translational velocity of Bcm (`this` rigid body's
+  /// center of mass) in the world frame W, expressed in W.
+  Vector3<T> CalcCenterOfMassTranslationalVelocityInWorld(
+      const systems::Context<T>& context) const override {
     const Body<T>& body_B = *this;
     const Frame<T>& frame_B = body_B.body_frame();
 
-    // Calculate V_ABo_E, frame B's spatial velocity in frame A, expressed in E.
-    const SpatialVelocity<T> V_ABo_E =
-        frame_B.CalcSpatialVelocity(context, frame_A, frame_E);
+    // Form frame_B's spatial velocity in the world frame W, expressed in W.
+    const SpatialVelocity<T>& V_WBo_W =
+        body_B.EvalSpatialVelocityInWorld(context);
 
     // Form v_ABcm_E, Bcm's translational velocity in frame A, expressed in E.
-    const Vector3<T> p_BoBcm_B = body_B.CalcCenterOfMassInBodyFrame(context);
-    const math::RotationMatrix<T> R_EB =
-        frame_E.CalcRotationMatrix(context, frame_B);
-    const Vector3<T> p_BoBcm_E = R_EB * p_BoBcm_B;
-    const Vector3<T> v_ABcm_E = V_ABo_E.Shift(p_BoBcm_E).translational();
-    return v_ABcm_E;
+    const Vector3<T> p_BoBcm_B = CalcCenterOfMassInBodyFrame(context);
+    const math::RotationMatrix<T> R_WB =
+        frame_B.CalcRotationMatrixInWorld(context);
+    const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
+    const Vector3<T> v_WBcm_W = V_WBo_W.Shift(p_BoBcm_W).translational();
+    return v_WBcm_W;
   }
 
   // TODO(joemasterjohn): Speed this up when we can store a reference to a

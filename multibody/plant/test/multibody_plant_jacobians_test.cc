@@ -491,46 +491,21 @@ TEST_F(TwoDOFPlanarPendulumTest,
       Vector3d::UnitX();
   EXPECT_TRUE(CompareMatrices(abias_WScm_W, abias_WScm_W_expected, kTolerance));
 
-  // Test method Body::CalcCenterOfMassTranslationalVelocity().
+  // Test method Body::CalcCenterOfMassTranslationalVelocityInWorld().
   const RigidBody<double>& body_A = rigid_bodyA();
   const RigidBody<double>& body_B = rigid_bodyB();
-  const Frame<double>& frame_A = body_A.body_frame();
-  const Frame<double>& frame_B = body_B.body_frame();
 
-  // Verify Body::CalcCenterOfMassTranslationalVelocity() for obvious results.
-  const Vector3d v_AAcm_A_expected = Vector3d::Zero();
-  const Vector3d v_BBcm_B_expected = Vector3d::Zero();
-  const Vector3d v_AAcm_A = body_A.CalcCenterOfMassTranslationalVelocity(
-      *context_, frame_A, frame_A);
-  const Vector3d v_BBcm_B = body_B.CalcCenterOfMassTranslationalVelocity(
-      *context_, frame_B, frame_B);
-  EXPECT_TRUE(CompareMatrices(v_AAcm_A, v_AAcm_A_expected, kTolerance));
-  EXPECT_TRUE(CompareMatrices(v_BBcm_B, v_BBcm_B_expected, kTolerance));
-
-  // Verify Body::CalcCenterOfMassTranslationalVelocity() with by-hand results
-  // for translational velocities measured in either frame_A or frame_B.
-  // Acm's translational velocity: v_BAcm_W = 0.5 L wBz_ 𝐖𝐲.
-  // Bcm's translational velocity: v_ABcm_W = 0.5 L wBz_ 𝐖𝐲.
-  const Vector3d v_BAcm_W_expected(0, 0.5 * link_length_ * wBz_, 0);
-  const Vector3d v_ABcm_W_expected(0, 0.5 * link_length_ * wBz_, 0);
-  const Vector3d v_BAcm_W = body_A.CalcCenterOfMassTranslationalVelocity(
-      *context_, frame_B, frame_W);
-  const Vector3d v_ABcm_W = body_B.CalcCenterOfMassTranslationalVelocity(
-      *context_, frame_A, frame_W);
-  EXPECT_TRUE(CompareMatrices(v_BAcm_W, v_BAcm_W_expected, kTolerance));
-  EXPECT_TRUE(CompareMatrices(v_ABcm_W, v_ABcm_W_expected, kTolerance));
-
-  // Verify Body::CalcCenterOfMassTranslationalVelocity() with by-hand results
-  // for translational velocities measured in the world frame W:
+  // Verify Body::CalcCenterOfMassTranslationalVelocityInWorld() with by-hand
+  // results for translational velocities measured in the world frame W:
   // Acm's translational velocity: v_WAcm_W = 0.5 L wAz_ 𝐖𝐲.
   // Bcm's translational velocity: v_WBcm_W = (0.5 L wBz_ + 1.5 L wAz_) 𝐖𝐲.
   const Vector3d v_WAcm_W_expected(0, 0.5 * link_length_ * wAz_, 0);
   const Vector3d v_WBcm_W_expected(0, 0.5 * link_length_ * wBz_ +
                                       1.5 * link_length_ * wAz_, 0);
-  const Vector3d v_WAcm_W = body_A.CalcCenterOfMassTranslationalVelocity(
-      *context_, frame_W, frame_W);
-  const Vector3d v_WBcm_W = body_B.CalcCenterOfMassTranslationalVelocity(
-      *context_, frame_W, frame_W);
+  const Vector3d v_WAcm_W = body_A.CalcCenterOfMassTranslationalVelocityInWorld(
+      *context_);
+  const Vector3d v_WBcm_W = body_B.CalcCenterOfMassTranslationalVelocityInWorld(
+      *context_);
   EXPECT_TRUE(CompareMatrices(v_WAcm_W, v_WAcm_W_expected, kTolerance));
   EXPECT_TRUE(CompareMatrices(v_WBcm_W, v_WBcm_W_expected, kTolerance));
 

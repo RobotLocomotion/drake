@@ -279,16 +279,12 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
   virtual const Vector3<T> CalcCenterOfMassInBodyFrame(
       const systems::Context<T>& context) const = 0;
 
-  /// (Advanced) Calculates the translational velocity of Bcm (`this` body's
-  /// center of mass) measured in a frame A, expressed in a frame E.
+  /// Calculates v_WBcm, Bcm's translational velocity in the world frame W.
   /// @param[in] context The context contains the state of the model.
-  /// @param[in] frame_A The measured-in frame for Bcm's translational velocity.
-  /// @param[in] frame_E The expressed-in frame for the returned result.
-  /// @retval v_ABcm_E Bcm's translational velocity in frame A, measured in E.
-  virtual Vector3<T> CalcCenterOfMassTranslationalVelocity(
-      const systems::Context<T>& context,
-      const Frame<T>& frame_A,
-      const Frame<T>& frame_E) const = 0;
+  /// @retval v_WBcm_W Bcm's (`this` body's center of mass) translational
+  /// velocity in the world frame W, expressed in W.
+  virtual Vector3<T> CalcCenterOfMassTranslationalVelocityInWorld(
+      const systems::Context<T>& context) const = 0;
 
   /// (Advanced) Computes the SpatialInertia `I_BBo_B` of `this` body about its
   /// frame origin `Bo` (not necessarily its center of mass) and expressed in

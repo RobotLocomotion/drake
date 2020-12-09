@@ -1350,13 +1350,12 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
   T composite_mass = 0;                       // mₛ = ∑ mᵢ (mass of the system).
   Vector3<T> sum_mi_vi = Vector3<T>::Zero();  // sum_mi_vi = ∑ (mᵢ vᵢ).
 
-  const Frame<T>& frame_W = world_frame();
   for (BodyIndex body_index : body_indexes) {
     if (body_index == 0) continue;
 
     const Body<T>& body_B = get_body(body_index);
-    const Vector3<T> v_ABcm_E = body_B.CalcCenterOfMassTranslationalVelocity(
-        context, frame_W, frame_W);
+    const Vector3<T> v_ABcm_E =
+        body_B.CalcCenterOfMassTranslationalVelocityInWorld(context);
 
     // Form (mᵢ vᵢ) and add to sum, i.e., sum_mi_vi = ∑ (mᵢ vᵢ).
     const T& body_mass = body_B.get_mass(context);

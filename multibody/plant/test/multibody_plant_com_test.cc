@@ -113,15 +113,12 @@ class MultibodyPlantCenterOfMassTest : public ::testing::Test {
 
     // By hand, calculate the expected results for that same quantity.
     // Form the sphere's center of mass translational velocity in world frame.
-    const Frame<double>& frame_W = plant_.world_frame();
     const double mass_sphere = sphere.get_mass(*context_);
     const double mass_triangle = triangle.get_mass(*context_);
-    const Vector3<double> mv_sphere =
-        mass_sphere * sphere.CalcCenterOfMassTranslationalVelocity(
-                          *context_, frame_W, frame_W);
-    const Vector3<double> mv_triangle =
-        mass_triangle * triangle.CalcCenterOfMassTranslationalVelocity(
-                            *context_, frame_W, frame_W);
+    const Vector3<double> mv_sphere = mass_sphere *
+        sphere.CalcCenterOfMassTranslationalVelocityInWorld(*context_);
+    const Vector3<double> mv_triangle =  mass_triangle *
+        triangle.CalcCenterOfMassTranslationalVelocityInWorld(*context_);
     const Vector3<double> v_WScm_W_expected = (mv_sphere + mv_triangle) /
         (mass_sphere + mass_triangle);
 
