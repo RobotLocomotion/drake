@@ -980,6 +980,16 @@ TEST_F(AcrobotPlantTests, SetRandomState) {
       random_context->get_mutable_continuous_state_vector().CopyToVector()));
 }
 
+// A basic sanity check for context cloning.
+TEST_F(AcrobotPlantTests, ContextClone) {
+  shoulder_->set_default_angle(0.05);
+  auto old_context = plant_->CreateDefaultContext();
+  auto new_context = old_context->Clone();
+  shoulder_->set_angle(old_context.get(), 0.01);
+  EXPECT_EQ(shoulder_->get_angle(*old_context), 0.01);
+  EXPECT_EQ(shoulder_->get_angle(*new_context), 0.05);
+}
+
 GTEST_TEST(MultibodyPlantTest, Graphviz) {
   MultibodyPlant<double> plant(0.0);
   const std::string acrobot_path =
