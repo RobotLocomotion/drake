@@ -16,15 +16,23 @@ CXX_FLAGS = [
     "-Werror=unused-result",
 ]
 
-# The CLANG_FLAGS will be enabled for all C++ rules in the project when
+# The COMMON_CLANG_FLAGS will be enabled for all C++ rules in the project when
 # building with clang (excluding the Apple LLVM compiler see APPLECLANG_FLAGS
 # below).
-CLANG_FLAGS = CXX_FLAGS + [
+COMMON_CLANG_FLAGS = CXX_FLAGS + [
     "-Werror=absolute-value",
     "-Werror=inconsistent-missing-override",
     "-Werror=non-virtual-dtor",
     "-Werror=return-stack-address",
     "-Werror=sign-compare",
+]
+
+# Flags for non-Apple clang.
+CLANG_FLAGS = COMMON_CLANG_FLAGS + [
+    "-DEIGEN_DONT_PARALLELIZE",
+    "-fopenmp=libomp",
+    "-fopenmp=libiomp5",
+    "-fopenmp",
 ]
 
 # The CLANG_VERSION_SPECIFIC_FLAGS will be enabled for all C++ rules in the
@@ -41,7 +49,7 @@ CLANG_VERSION_SPECIFIC_FLAGS = {
 
 # The APPLECLANG_FLAGS will be enabled for all C++ rules in the project when
 # building with the Apple LLVM compiler.
-APPLECLANG_FLAGS = CLANG_FLAGS
+APPLECLANG_FLAGS = COMMON_CLANG_FLAGS
 
 # The APPLECLANG_VERSION_SPECIFIC_FLAGS will be enabled for all C++ rules in
 # the project when building with an Apple LLVM compiler of the specified major
@@ -60,6 +68,8 @@ GCC_FLAGS = CXX_FLAGS + [
     "-Werror=unused-but-set-parameter",
     # TODO(jwnimmer-tri) Fix these warnings and remove this suppression.
     "-Wno-missing-field-initializers",
+    "-DEIGEN_DONT_PARALLELIZE",
+    "-fopenmp",
 ]
 
 # The GCC_CC_TEST_FLAGS will be enabled for all cc_test rules in the project
