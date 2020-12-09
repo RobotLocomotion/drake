@@ -11,7 +11,21 @@ namespace multibody {
 namespace fem {
 namespace {
 const ElementIndex kDummyElementIndex(0);
-constexpr int kNumQuads = 2;
+constexpr int kNumQuads = 1;
+
+// Creates a vector of arbitrary deformation gradients.
+std::vector<Matrix3<AutoDiffXd>> MakeDeformationGradients() {
+  // Create random AutoDiffXd deformation.
+  Matrix3<double> F;
+  F << 0.18, 0.63, 0.54, 0.13, 0.92, 0.17, 0.03, 0.86, 0.85;
+  const std::vector<Matrix3<double>> Fs(kNumQuads, F);
+  std::vector<Matrix3<AutoDiffXd>> Fs_autodiff(kNumQuads);
+  for (int i = 0; i < kNumQuads; ++i) {
+    Matrix3<AutoDiffXd> F_autodiff;
+    math::initializeAutoDiff(Fs[i], Fs_autodiff[i]);
+  }
+  return Fs_autodiff;
+}
 
 GTEST_TEST(LinearConstitutiveModelTest, Parameters) {
   const LinearConstitutiveModel<double> model(100.0, 0.25);
@@ -69,26 +83,15 @@ GTEST_TEST(LinearConstitutiveModelTest, UndeformedState) {
   EXPECT_EQ(model.CalcFirstPiolaStress(cache_entry), analytic_stress);
 }
 
+// TODO(xuchenhan-tri): This test applies to all ConstitutiveModels. Consider
+// moving it to ConstitutiveModelTest.
 GTEST_TEST(LinearConstitutiveModelTest, PIsDerivativeOfPsi) {
-  const LinearConstitutiveModel<AutoDiffXd> model_autodiff(100.0, 0.25);
+  const LinearConstitutiveModel<AutoDiffXd> model_autodiff(100.0, 0.3);
   LinearConstitutiveModelCacheEntry<AutoDiffXd> cache_entry_autodiff(
       kDummyElementIndex, kNumQuads);
-  // Create random AutoDiffXd deformation.
-  Matrix3<double> F;
-  F << 0.18, 0.63, 0.54, 0.13, 0.92, 0.17, 0.03, 0.86, 0.85;
-  const std::vector<Matrix3<double>> Fs(kNumQuads, F);
-  std::vector<Matrix3<AutoDiffXd>> Fs_autodiff(kNumQuads);
-  const Eigen::Matrix<double, 9, Eigen::Dynamic> gradient =
-      MatrixX<double>::Identity(9, 9);
-  for (int i = 0; i < kNumQuads; ++i) {
-    const auto F_autodiff_flat = math::initializeAutoDiffGivenGradientMatrix(
-        Eigen::Map<const Eigen::Matrix<double, 9, 1>>(Fs[i].data(), 9),
-        gradient);
-    Fs_autodiff[i] =
-        Eigen::Map<const Matrix3<AutoDiffXd>>(F_autodiff_flat.data(), 3, 3);
-  }
+  std::vector<Matrix3<AutoDiffXd>> Fs = MakeDeformationGradients();
   // P should be derivative of Psi.
-  cache_entry_autodiff.UpdateCacheEntry(Fs_autodiff);
+  cache_entry_autodiff.UpdateCacheEntry(Fs);
   const auto energy =
       model_autodiff.CalcElasticEnergyDensity(cache_entry_autodiff);
   const auto P = model_autodiff.CalcFirstPiolaStress(cache_entry_autodiff);
@@ -96,6 +99,35 @@ GTEST_TEST(LinearConstitutiveModelTest, PIsDerivativeOfPsi) {
     EXPECT_TRUE(CompareMatrices(
         Eigen::Map<const Matrix3<double>>(energy[i].derivatives().data(), 3, 3),
         P[i]));
+  }
+}
+
+// TODO(xuchenhan-tri): This test applies to all ConstitutiveModels. Consider
+// moving it to ConstitutiveModelTest.
+GTEST_TEST(LinearConstitutiveModelTest, dPdFIsDerivativeOfP) {
+  const LinearConstitutiveModel<AutoDiffXd> model_autodiff(100.0, 0.3);
+  LinearConstitutiveModelCacheEntry<AutoDiffXd> cache_autodiff(
+      kDummyElementIndex, kNumQuads);
+  std::vector<Matrix3<AutoDiffXd>> Fs = MakeDeformationGradients();
+  cache_autodiff.UpdateCacheEntry(Fs);
+  const std::vector<Matrix3<AutoDiffXd>> P =
+      model_autodiff.CalcFirstPiolaStress(cache_autodiff);
+  const std::vector<Eigen::Matrix<AutoDiffXd, 9, 9>> dPdF =
+      model_autodiff.CalcFirstPiolaStressDerivative(cache_autodiff);
+  for (int q = 0; q < kNumQuads; ++q) {
+    for (int i = 0; i < kSpaceDimension; ++i) {
+      for (int j = 0; j < kSpaceDimension; ++j) {
+        Matrix3<double> dPijdF;
+        for (int k = 0; k < kSpaceDimension; ++k) {
+          for (int l = 0; l < kSpaceDimension; ++l) {
+            dPijdF(k, l) = dPdF[q](3 * j + i, 3 * l + k).value();
+          }
+        }
+        EXPECT_TRUE(CompareMatrices(Eigen::Map<const Matrix3<double>>(
+                                        P[q](i, j).derivatives().data(), 3, 3),
+                                    dPijdF));
+      }
+    }
   }
 }
 }  // namespace

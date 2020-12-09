@@ -1,5 +1,7 @@
 #include "drake/multibody/fem/dev/linear_constitutive_model.h"
 
+#include "drake/common/unused.h"
+
 namespace drake {
 namespace multibody {
 namespace fem {
@@ -9,6 +11,32 @@ LinearConstitutiveModel<T>::LinearConstitutiveModel(const T& youngs_modulus,
     : E_(youngs_modulus), nu_(poisson_ratio) {
   VerifyParameterValidity(E_, nu_);
   SetLameParameters(E_, nu_);
+  /* Recall that
+        Pᵢⱼ = 2μ * εᵢⱼ + λ * εₐₐ * δᵢⱼ,
+    So,
+        ∂Pᵢⱼ/∂Fₖₗ = 2μ * ∂εᵢⱼ/∂Fₖₗ + λ * ∂εₐₐ/∂Fₖₗ * δᵢⱼ,
+    Since
+        ∂εᵢⱼ/∂Fₖₗ = 0.5 * δᵢₖ δⱼₗ  + 0.5 * δᵢₗ δₖⱼ.
+    Plugging in, we get:
+        ∂Pᵢⱼ/∂Fₖₗ = μ * (δᵢₖδⱼₗ + δᵢₗ δⱼₖ) +  λ * δₖₗ * δᵢⱼ.
+    Keep in mind that the indices are laid out such that the ik-th entry in the
+    jl-th block corresponds to the value dPᵢⱼ/dFₖₗ.  */
+  // First term.
+  dPdF_ = mu_ * Eigen::Matrix<T, 9, 9>::Identity();
+  for (int k = 0; k < 3; ++k) {
+    // Second term.
+    for (int l = 0; l < 3; ++l) {
+      const int i = l;
+      const int j = k;
+      dPdF_(3 * j + i, 3 * l + k) += mu_;
+    }
+    // Third term.
+    for (int i = 0; i < 3; ++i) {
+      const int l = k;
+      const int j = i;
+      dPdF_(3 * j + i, 3 * l + k) += lambda_;
+    }
+  }
 }
 
 template <typename T>
@@ -37,6 +65,14 @@ void LinearConstitutiveModel<T>::DoCalcFirstPiolaStress(
     (*P)[i] =
         2.0 * mu_ * strain + lambda_ * trace_strain * Matrix3<T>::Identity();
   }
+}
+
+template <typename T>
+void LinearConstitutiveModel<T>::DoCalcFirstPiolaStressDerivative(
+    const DeformationGradientCacheEntry<T>& cache_entry,
+    std::vector<Eigen::Matrix<T, 9, 9>>* dPdF) const {
+  unused(cache_entry);
+  std::fill(dPdF->begin(), dPdF->end(), dPdF_);
 }
 
 template <typename T>

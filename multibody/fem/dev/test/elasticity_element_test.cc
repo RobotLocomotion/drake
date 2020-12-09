@@ -19,6 +19,7 @@ constexpr int kQuadratureOrder = 1;
 constexpr int kNumQuads = 1;
 constexpr int kNumVertices = 4;
 constexpr int kDof = kSpatialDim * kNumVertices;
+constexpr double kDummyDensity = 1.23;
 const ElementIndex kDummyElementIndex(0);
 
 class ElasticityElementTest : public ::testing::Test {
@@ -37,10 +38,9 @@ class ElasticityElementTest : public ::testing::Test {
     linear_elasticity_ =
         std::make_unique<LinearConstitutiveModel<AutoDiffXd>>(1, 0.25);
     MatrixX<AutoDiffXd> reference_positions = get_reference_positions();
-    const AutoDiffXd DummyDensity(1.23);
     elasticity_element_ = std::make_unique<
         ElasticityElement<AutoDiffXd, ShapeType, QuadratureType>>(
-        kDummyElementIndex, node_indices, DummyDensity,
+        kDummyElementIndex, node_indices, AutoDiffXd(kDummyDensity),
         std::move(linear_elasticity_), reference_positions);
   }
 
@@ -100,8 +100,25 @@ TEST_F(ElasticityElementTest, ElasticForceIsNegativeEnergyDerivative) {
   elasticity_element_->CalcResidual(*state_, &residual);
   EXPECT_TRUE(CompareMatrices(residual, neg_force));
 }
-// TODO(xuchenhan-tri): Add TEST_F as needed for damping and inertia terms
-// separately.
+
+// TODO(xuchenhan-tri): Add TEST_F as needed for inertia and damping terms.
+
+TEST_F(ElasticityElementTest, StiffnessMatrixIsNegativeElasticForceDerivative) {
+  VectorX<AutoDiffXd> neg_force = CalcNegativeElasticForce();
+  MatrixX<AutoDiffXd> stiffness_matrix(kDof, kDof);
+  elasticity_element_->CalcStiffnessMatrix(*state_, &stiffness_matrix);
+  for (int i = 0; i < kDof; ++i) {
+    EXPECT_TRUE(CompareMatrices(neg_force(i).derivatives().transpose(),
+                                stiffness_matrix.row(i),
+                                std::numeric_limits<double>::epsilon()));
+  }
+  // TODO(xuchenhan-tri) Modify this to account for damping force derivatives
+  // and inertia terms.
+  MatrixX<AutoDiffXd> tangent_matrix(kDof, kDof);
+  elasticity_element_->CalcTangentMatrix(*state_, &tangent_matrix);
+  EXPECT_TRUE(CompareMatrices(tangent_matrix, stiffness_matrix));
+}
+
 }  // namespace
 }  // namespace fem
 }  // namespace multibody
