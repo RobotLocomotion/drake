@@ -1,3 +1,6 @@
+# This file is only used in cases when we need to rebuild spdlog from source.
+# See repository.bzl for the logic to select when that occurs.
+
 from drake.tools.install.cpsutils import read_defs, read_requires
 
 def_re = "#define\s+(\S+)\s+(\S+)"
