@@ -21,6 +21,10 @@ Dynamical Systems
 ~~~~~~~~~~~~~~~~~
 
 .. <relnotes for systems go here>
+[systems,tools] * TBD systems: Move spring_mass_system to a test utility (`#14284`_)  # This allows us to remove the awkward and misleading drake/system/plants directory. This is a breaking change for anyone who was using this plant via the precompiled binaries.
+* TBD systems/traj opt: Return multiple shooting constraints for AddConstraintToAllKnotPoints and AddEqualTimeIntervalsConstraints (`#14340`_)  # * Return multiple shooting constraints for AddConstraintToAllKnotPoints and AddEqualTimeIntervalsConstraints
+* TBD diagram builder: introduce AddNamedSystem sugar (`#14404`_)  # Closes #5895. This patch provides an potentially more fluent alternative to the common AddSystem/set_name idiom.
+* TBD camera_info: Permit constructing from intrinsic matrix (`#14402`_)
 
 New features
 
@@ -34,6 +38,11 @@ Mathematical Program
 ~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for solvers go here>
+* TBD Aggregate BoundingBoxConstraint (`#14248`_)
+* TBD Throw an error when getting dual solution for a QCP in gurobi (`#14285`_)
+* TBD solvers: MosekSolver result gets dual solution for bounding box constraints (`#14303`_)
+* TBD Only retrieve Mosek dual solution when there is no integer variables (`#14338`_)
+* TBD retrieve linear constraint dual from Mosek result (`#14348`_)
 
 New features
 
@@ -47,6 +56,44 @@ Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for geometry,multibody go here>
+[geometry,systems] * TBD [geometry] Deprecate geometry data as State in SceneGraph (`#14245`_)  # This changes the default behavior in SceneGraph; a default-constructed SceneGraph stores its geometry data as a Parameter (previously it was State). Having geometry data as state meant that every diagram with a populated SceneGraph had abstract state -- it couldn't be a strictly continuous system. This interferes with desirable analytical techniques. Furthermore, it's only benefit (editing geometry via event) proved to be basically worthless and largely impossible. This leaves a stop-gap constructor in place (marked as deprecated) to explicitly request the data to be stored as State. We also patch two sets of unit tests that assumed geometry data was stored as State (now Parameter).
+* TBD geometry: Fix QueryObject doc typo (`#14253`_)
+* TBD [render] Add base-line color images to RenderEngineGl (no textured objects) (`#14226`_)  # * Add base-line color images (no textured objects) This adds basic color rendering to RenderEngineGl. It provides for phong-illuminated, Rgba-colored objects. (Textured objects will follow.) - RenderEngineGl - Introduces the color shader program, updates the RenderColorImage to use it. - Reformulate vertex buffer objects to account for normals. - Tests pick up color rendering infrastructure from RenderEngineVtk tests. - OpenGlGeometry constructor includes shader data for color shader. - Add RenderEngineGlParameters - contains: default label, default diffuse color, and clear color - integrated into RenderEngineGl, RenderEngineGlFactory, and tests. - Extend RenderType with kColor (gl_common.h) - Clean up - update comments in buffer_dim.h
+* TBD gl_renderer: Fix stub factory for macOS build (`#14256`_)
+* TBD Add ConstitutiveModel and DeformationGradientCache (`#14236`_)  # * Add ConstitutiveModel and its corresponding cache. The ConstitutiveModel class takes in a DeformationGradientCache and calculates energy and stress using the material's constitutive relationship. ConstitutiveModel is the "const method" and DeformationGradientCache is the "data". This concept is illustrated with the concrete instance pair LinearElasticityModel and LinearElasticityModelCache.
+* TBD add (almost all) missing py scenegraph inspector bindings (`#14259`_)
+[geometry,systems] * TBD Clean up and deprecation of SceneGraphInspector/QueryObject bindings (`#14280`_)  # As per issue 14258, we want all public APIs that take Identifiers as parameters to have names representing their id type (source_id and not simply id). This handles what is termed "Category 3" APIs in that issue. This includes deprecations of some APIs that have been renamed and some deprecations on only the bindings.
+[geometry,multibody] * TBD Add color images with textured objects (`#14260`_)  # This introduces a shader to render textured objects (diffuse only). - New class: TextureLibrary - depends on the OpenGl context and owns all of the textures created in the OpenGl context. - RenderEngineGl - acquires an instance of TextureLibrary - Defines a new ShaderProgram -- diffuse textured. - Implements the VTK "default texture" logic (i.e., for an mesh.obj, look for mesh.png and apply it as texture -- unless one has already been defined.) - Adds texture vertices to the vertex array buffer. - Expand tests to include textures on various objects (not all, not yet). Further pushes the tests to conform to those for RenderEngineGl in anticipation of test refactoring.
+* TBD [geometry] Use the new box mesh in hydroelastic contact model (`#14251`_)  # Visually verify the contact patches by a profiling example.
+* TBD Allow force publish calls on DrakeVisualizer (`#14304`_)  # This enables calls to DrakeVisualizer::Publish(context) to broadcast the draw message (with a load message as necessary). This enables the workflow where users can publish arbitrary configurations as defined in contexts (independent of the simulator).
+* TBD Adds PackageMap Remove method (`#14301`_)
+* TBD Add FemElement and FemState (`#14263`_)  # FemState stores the node-wise states in a FEM simulation as well as ElementCache that contains state-dependent quantities that are associated with the FEM elements. FemElement consumes FemState and performs the element routine in a FEM solver. Currently, the only element routine we support is calculating the residual. Concrete instance of ElementCache (ElasticityElementCache) and concrete instance of FemElement (FemElasticity) are added to illustrate how these two classes work together.
+* TBD Disable tests that are failing valgrind in CI (`#14311`_)
+* TBD Remove usage of unintialized values (`#14313`_)  # Remove usage of uninitialized values in FemState and LinearElasticityModelCacheTest. - Initialize states in FemState's constructor. - Initialize strains in DeformationGradient's constructor. Fixes issue #14312.
+* TBD [rendering] Give RenderEngineGl access to full camera intrinsics (`#14289`_)  # * Give RenderEngineGl access to full camera intrinsics - Refactor the mapping from RenderCamera --> OpenGl Projection matrix previously defined in RenderEngineVtk into RenderCameraCore. - Add convenience constructors for *RenderCamera instances from CameraProperties instances. - Add RenderCamera-based rendering to RenderEngineGl - Implement DoRender*Image(*RenderCamera) API from RenderEngine - Express Render*Image(*CameraProperties) in terms of the DoRender*Image API. This is about 95% cut-and-paste and 5% changing CameraProperties declarations to RenderCamera declarations. - tweak ShaderProgram - Copy-and-paste render_engine_vtk_test.cc code for testing intrinsics into render_engine_gl_test.cc.
+* TBD Rename FemElasticity to ElasticityElement (`#14307`_)
+* TBD [pydrake] Update RenderEngine python trampoline - omit soon-to-be-removed API (`#14300`_)  # * Update RenderEngine python trampoline - omit soon-to-be-removed API The RenderEngine API has a Render*Image(CameraProperties) API. The CameraProperties classes are being supplanted by the RenderCamera API (which gives support for a fully specified pinhole camera intrinsic model). Rather than bind these soon-to-be-deprecated methods, we'll omit them to ease the pain of deprecation. We're assuming that since these binding have only existed for about two weeks (as of this commit), a hard removal won't cause too many problems.
+* TBD Add parsing for reflected inertia parameters (`#14323`_)
+* TBD py mbp: Bind MultibodyPlant.GetBodiesWeldedTo (`#14345`_)  # * py mbp: Bind GetBodiesWeldedto Add py_keep_alive_iterable
+* TBD Propagate joint default positions through scalar conversion (`#14347`_)
+* TBD Resolve issue #13646, throw an exception in relevant center of mass methods if composite_mass <= 0 -- with various tests and checks  (#14316) (`#14316`_)
+* TBD [render] Fully account for full camera intrinsics in RenderEngine ecosystem (`#14357`_)  # * Fully account for full camera intrinsics in RenderEngine ecosystem This revisits the implementation of RenderEngine in preparation for deprecating the old CameraProperties and DepthCameraProperties in favor of the new ColorRenderCamera and DepthRenderCamera. - We implement the CameraProperties RenderEngine API by delegating to the RenderCamera API (it was previously purely abstract). - This introduces circular delegation in the default behavior and we add a *temporary* mechanism for catching the defective case where the circle gets entered. - A collection of tests have been added to validate all transitional delegation logic. - RenderEngineGl, RenderEngineVtk, DummyRenderEngine remove their CameraProperties-related APIs in favor of inheriting RenderEngine's. - Tests that compare equivalency between images created by the two APIs on the derived classes are no longer necessary. - Bind QueryObject::Render*Image(*RenderCamera) API - the python version of DummyRenderEngine (in geometry_test.py) is updated to match the C++ version.
+* TBD Add FemModel and the concrete ElasticityModel (`#14317`_)  # FemModel helps calculate quantities used in solving the FEM discretized system of equations, owns FemElements and builds FemState.
+[geometry,multibody] * TBD Remove MBP's awareness of SG<AutoDiff> support (`#14324`_)  # coauthor: sean.curtis@tri.global Now the penetration and contact surface distance queries are aware of autodiffxd types.
+* TBD Cache/CacheEntry rename (`#14364`_)  # * Rename DeformationGradientCache to DeformationGradientCacheEntry and rename ElementCache to ElementCacheEntry.
+* TBD Rename LinearElasticityModel to LinearConstitutiveModel (`#14365`_)
+[geometry,systems,tutorials] * TBD [render] Deprecate RgbdSensor's CameraProperties API (`#14358`_)  # * Deprecate RgbdSensor API - RgbdSensor - deprecate CameraPoses - deprecate the constructors on CameraProps and CameraPoses - Add single-camera constructor (infer color from depth). - bindings - deprecate CameraPoses binding - deprecated RgbdSensor constructors that use CameraPoses. - Add bindings for RenderCamera constructors. - Conversion constructors on RenderCameras now take additional sensor pose. - Add DeprecatedParamInit to facilitate deprecation of constructors that have otherwise been declared with ParamInit.
+* TBD [proximity] Implement Mesh for proximity via its convex hull (`#14351`_)  # * Implement Mesh for proximity via its convex hull. ** This is a breaking change. Anyone with a mesh registered with a proximity role will start observing proximity query results where there were none before.  ** This provides an initial implementation of the Mesh shape for proximity queries. It does so by using a very simple and very slow representation of the mesh's convex hull. 1. Refactor the OBJ --> fcl::Convex code to support Mesh. This basically *moved* the functions so they'd be available more generally. 2. Remove the all artifacts of special mesh treatment: - MeshIdentifier reifier. - special dynamic_mesh_tree_, anchored_mesh_tree_, and X_MeshBs_ (no longer necessary because the meshes don't have to be segregated). 3. Reimplement ImplementGeometry(Mesh) to make use of fcl::Convex. 4. Update unit tests accordingly. 5. Update documentation.
+* TBD multibody: add ValidateContext() to methods that take a context (`#14389`_)  # We have a very common recurring hazard in student workflows -- they pass a diagram context into a multibodyplant method (via pydrake) and the python kernel crashes.  This PR aims to address it. (I caught one recent failure in a test on master, too).
+* TBD render_engine_gl: Make tex_coord be effectively optional (`#14396`_)  # `RenderEngineGl` currently requires all parsed meshes to define texture coordinates -- even if the mesh is only being colored with an `Rgba` value. This PR represents an intermediate step to support meshes that haven't needed (and, in practice, will never need) texture coordinates. This also asserts that any mesh which has a texture specified (explicitly in its file / material, implicitly via Drake's name hack, or explicit via PerceptionProperties) *must* have texture coordinates.
+* TBD make penetration query work for some simple geometries with AutoDiffScalars (`#14378`_)
+* TBD Fix a failure on Mac on penetration test (`#14406`_)
+* TBD Enhance documentation for bodies & frames and monogram notation for spatial velocity/acceleration (`#14397`_)
+* TBD fixes missing multibody graph accounting (`#14411`_)
+* TBD Document that body spatial velocity/acceleration methods are for point Bo (not point Bcm) (`#14382`_)
+* TBD [geometry] Deprecate kDim in SurfaceMesh and VolumeMesh (`#14420`_)  # Use kVertexPerElement for kDim+1 instead. Fix #12756.
+* TBD plant: Add unit test for context cloning (`#14433`_)
+* TBD Add stiffness and tangent matrix calculation for FEM (`#14374`_)
 
 New features
 
@@ -60,18 +107,60 @@ Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for examples,tutorials go here>
+[examples,geometry] * TBD [geometry] Add new geometry::DrakeVisualizer system (`#14247`_)  # A new leaf system that supplants the old geometry::ConnectDrakeVisualizer functionality. The introduction of this System improves Drake in several ways. 1. It provides a visualizer example that make use of the QueryObject and SceneGraphInspector public API (the old version exercised internal code). 2. It has the ability to update the visualization based on changes to the geometry. 3. It is a single system (rather than an entire diagram). 4. It frees SceneGraph to remove the horrible PoseBundle output port that is currently used to visualize to drake_visualizer. This - Includes the C++ and python versions of the new System. - Updates examples/scene_graph to use DrakeVisualizer. - Adds upgraded unit tests over those for the old interface. - It also tweaks GeometryVersion to allow for default construction of versions so that objects can default construct a GeometryVersion member. To more fully support the visualization, the API for SceneGraphInspector has been extended with some helpful methods.
+[examples,manipulation] * TBD Remove deprecated code 2020-11 (`#14267`_)
+* TBD Minor fixes for flake8's F821 (undefined name) error (`#14293`_)  # Command-line: ``` $ flake8 --select=F821 **/*.py \ | grep -v _extra.py | grep -v drake_visualizer | grep -v schunk_buttons.py ```
+[examples,geometry,manipulation,multibody,tutorials] * TBD [geometry] Deprecate geometry_visualization (and old ConnectDrakeVisualizer) (`#14282`_)  # * Extend DrakeVisualizer with static API This adds a number of new static methods to DrakeVisualizer to facilitate work flows: 1. Static AddToBuilder to facilitate adding and connecting to a diagram. 2. Expose core publshing functionality to allow evaluation without events.  (Ad hoc broadcasting.) 3. The new AddToBuilder API is used in examples/scene_graph to show case the new feature. This is a pre-cursor to deprecating geometry_visualization.{h|cc} showing the alternative is just as compact as the old. (Deprecation will follow.) - Deprecates the three public functions in geometry_visualization.h. - Note: the unit test doesn't change because it isn't actually testing the public API. - Python bindings (and unit tests) appropriately deprecated. - Change all call sites to use the preferred mechanism. - Manipulation station has changed; it exports its constituent SceneGraph's query_object port. In the future, we'll deprecate the pose_bundle port.
+* TBD cassie_bench: Update malloc tracking (`#14296`_)  # This patch better models collection of malloc stats from multiple invocations of each benchmark body. The google bench framework typically invokes the benchmark case code multiple times even in normal operation, and uses the same storage to capture user-defined metrics. The prior arrangement of the tracker allowed later invocations' data to overwrite earlier. This version collects data across all invocations. The change doesn't matter much now, but it will make it easier to follow the evolution of malloc counts across invocations with storage pool optimizations. The effect of this patch on results is negligible, since the changes are outside of the magic state loop.
+[examples,manipulation,tutorials] * TBD meshcat: upgrade interface to use QueryObject (`#14292`_)  # The deprecation strategy is thoroughly tested. I've added a new input port, but left the old one there.  I branch in the load and draw method based on which is connected.  I've also made the scene_graph argument in the constructor optional. In the tests, I have copied all of the old tests with a "_deprecated_api"; the new versions are only a few characters different, but this should make the removal at deprecation time better, I hope. Also updates internal uses of meshcat to use the new API.
+[examples,multibody] * TBD Implements the effect of reflected inertia (`#14167`_)
+* TBD Change to use SetInitialGuess in the nlp tutorial (`#14331`_)  # The original tutorial ses SetDecisionVariableValueInVector, which is too terse.
+* TBD Allegro with reflected inertia (`#14204`_)  # * Update Allegro hand simulation to include the effect of rotor reflected inertia
+[examples,geometry] * TBD [render] Deprecate RenderEngine::Render*Image(CameraProperties) API (`#14359`_)  # - RenderEngine - Deprecate the api. - Modify documentation on DoRender*Image API to reflect deprecation implications. - Guard tests from deprecation warnings. - QueryObject - Deprecate corresponding API - Add documentation for the new API. - deprecate bindings - GeometryState - Deprecate corresponding API (functionally internal, but not technically internal, so I'm simply deprecating it and allowing it to evaporate with all the rest of in the spring). - Clean up numerous call sites to upgrade from CameraProperties to RenderCamera - benchmarks, examples, documentation, and tests.
+[examples,lcmtypes,manipulation] * TBD Replace robotlocomotion.robot_plan_t with drake.lcmt_robot_plan (`#14377`_)  # This is a breaking change. EncodeKeyFrames, MoveIkDemoBase, and RobotPlanInterpolator and their associated demos (move_iiwa_ee, move_jaco_rr, kuka_plan_runner, etc.), now operate on lcmt_robot_plan messages, not robot_plan_t messages. EncodeKeyFrames no longer takes an "info" argument -- the message no longer contains the unused snopt integer. This begins to remove Drake's dependency on bot_core.
+* TBD [render] Deprecate ManipulationStation CameraProperties API (`#14375`_)  # * Deprecate ManipulationStation CameraProperties API - Deprecate the old RegisterRgbdSensor (update tests) - Add RegisterRgbdSensor that is compatible with RenderCamera. - add tests. - Refactor the default D415 camera (and actually *include* the full, documented intrinsics, differentiating between color and depth). - Update bindings - use the Class, cls_doc style to make it more compact - bind new methods, deprecate old. - update tests
+[examples,geometry,systems] * TBD [render] Deprecate CameraProperties and DepthCameraProperties (`#14376`_)  # * Deprecate CameraProperties and DepthCameraProperties This deprecates the old camera properties classes themselves. As part of that endeavor: - bindings deprecate the constructors. - A slew of deprecation warning suppressions everywhere. - In some cases, test cases were moved around to facilitate deprecation suppression en masse (see render_camera_test.cc) - Updated python tests to expect deprecation warnings.
+* TBD dualshock: Update example to use Logitech controller (`#14388`_)  # Confirmed using demo program from: https://www.pygame.org/docs/ref/joystick.html#controller-mappings
+[examples,manipulation,systems] * TBD diagram/builder: Implement fan-out of diagram inputs (`#14361`_)  # Closes #3555. Expands diagram and builder to support implicit fan-out of diagram input ports, replacing the old work-around of using a pass-through system. Summary of changes: * Add new ConnectInput() APIs to enable input fan-out connections * requires more bookkeeping in diagram and builder * Deprecate diagram.get_input_port_locator() API * replaced with fan-out-aware GetInputPortLocators() * port clients of deprecated API; all within systems/framework * Add necessary test coverage * Port various diagrams to use fan-out instead of pass-throughs * Add python bindings for ConnectInput(), with tests
+* TBD Add a tutorial on quadratic program (`#14403`_)
+[examples,geometry,solvers,systems] * TBD Push unreleased deprecations back to 2021-04-01 (`#14430`_)  # Because we did not tag a release during November, we should not count that month toward the deprecation sunset.
 * TBD
 
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for common,math,lcm,lcmtypes,manipulation,perception go here>
+[math,solvers] * TBD MosekSolver supports quadratic cost with nonlinear conic constraints (`#14237`_)  # Convert the quadratic cost to a linear cost with rotated Lorentz cone constraint.
+* TBD Use package instead of relative path for allegro model files (`#14252`_)
+[common,multibody,tools] * TBD workspace: Upgrade fmt to latest release 7.1.0 (`#14272`_)
+* TBD perception: Split unit test cases (`#14283`_)  # This avoids an obscure kcov bug when using GCC and Ubuntu 20.04.
+[lcmtypes,systems] * TBD systems/lcm: Add LcmScopeSystem (`#14308`_)
+* TBD Add python binding for MakeMatrixVariable and MakeVectorVariable (`#14342`_)
+* TBD yaml: Correctly emit variants with templated inner types (`#14327`_)  # We need to discard the template arguments; they are not valid tag syntax. Also add a stochastic acceptance test that would have caught this issue.
+* TBD yaml: Fix parsing bugs with zero-sized matrices (`#14360`_)
+[common,multibody] * TBD Allow tests to pass with both fmt < 7.1 and fmt >= 7.1 (`#14379`_)  # The default string formatting of integer-valued floating-point values changed as of fmt 7.1.0.  In anticipation of Drake releases (or at least some Drake users) building against older revisions of fmt, we adjust the magic string literals in tests to allow for either spelling.
+[common,solvers] * TBD Move code from symbolic_extraction to symbolic_decompose (`#14353`_)  # Also add the python bindings.
+[math,systems,tools] * TBD Remove deprecated code 2020-12 (`#14398`_)  # Deprecated as of: * bullet, freetype2 externals (#13986) * drake::systems::kAutoSize (#13981) * drake::systems::Subvector empty constructor (#13907) * drake::math::Slerp (#13810) * drake::systems::Simulator: time jumps warning (#13851)
+[lcmtypes,tools] * TBD lcmtypes: Deprecate unused messages (`#14372`_)
+* TBD Separate out the unit test for the degenerate case (`#14425`_)  # * This is a trivial disturbance to the test to correct a spurious kcov error; see https://github.com/SimonKagstrom/kcov/issues/339 * Closes #14424
 * TBD
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
 
 .. <relnotes for bindings go here>
+* TBD add minimum pybind to query hydroelastic_contact_info from ContactResults (`#14244`_)  # .
+* TBD pydrake.multibody: add binding for CalcCenterOfMassPosition taking model instances (`#14249`_)
+* TBD pydrake.multibody: add missing bindings for joint accessors (`#14257`_)  # * pydrake.multibody: add bindings for joint accessors
+* TBD [pybind] Correct bindings for DrakeVisualizer.AddToBuilder (`#14314`_)  # * Correct bindings for DrakeVisualizer.AddToBuilder Previously, we had the return value keeping the provided lcm alive. If the return value isn't *captured* (e.g. vis = DrakeVis.AddToBuilder(....)) then that keep alive won't work and the lcm can be subsequently destroyed. This has been observed in the wild.
+* TBD remove period which causes an error outside of drake (`#14320`_)
+* TBD pydrake: Bind some missing multibody tree-related items (`#14207`_)
+* TBD pydrake: Fix type bug in BasicVector::set_value for non-float types (`#14343`_)  # Resolves #14341
+* TBD py examples: Ensure manipulation_station_py.cc imports dep modules (`#14370`_)
+* TBD py systems: Add keep_alive cycle to DiagramBuilder.AddSystem (`#14356`_)  # This is a workaround to ensure we propagate keep_alive relationships Resolves #14355
+* TBD py deprecation: Correct minor error in test (`#14371`_)
+* TBD py geometry: Fix bindings for RenderCamera classes (`#14394`_)  # Add arguments and docs
+* TBD Add UpdateBound for PYFunctionConstraint (`#14410`_)
 
 New features
 
@@ -89,6 +178,37 @@ Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for attic,cmake,doc,setup,third_party,tools go here>
+[doc,tools] * TBD doc: Add release notes v0.24.0 (`#14208`_)
+* TBD bindings: Remove cpp_const (`#14270`_)  # This appears to be dead code.  By dropping it, we can also drop an awkward dependency.
+* TBD workspace: Upgrade fcl to latest commit (`#14271`_)
+* TBD workspace: Upgrade intel_realsense_ros to latest release 2.2.18 (`#14274`_)
+* TBD workspace: Upgrade rules_python to latest release 0.1.0 (`#14278`_)
+* TBD workspace: Upgrade rules_pkg to latest release 0.3.0 (`#14277`_)
+* TBD workspace: Upgrade ghc_filesystem to latest release 1.3.6 (`#14273`_)
+* TBD workspace: Upgrade lcm to latest commit (`#14275`_)
+* TBD workspace: Upgrade ros_xacro to latest release 1.13.9 (`#14276`_)
+[setup,tools] * TBD Switch to ipopt@3.11 formula on macOS (`#14288`_)
+[doc,setup] * TBD Make installing documentation prereqs optional (`#14168`_)
+[doc,tools] * TBD kcov: Implement parallel testing schedule (`#14294`_)  # Relevant to: #10617 * Update the kcov* bazel configs to run tests in parallel. * Expand test timeouts for slowdowns from parallel schedule. * Add kcov_tool to merge and clean up kcov data. * Update documentation and mentions of bazel-kcov.
+[doc,geometry,systems,tools] * TBD [render] Remove RenderEngineOspray entirely (`#14339`_)  # * Remove RenderEngineOspray entirely Other than killing the class, its factory, bindings, and their tests, this also touches a fair amount of other sites in the code: 1. Documentation of various sorts have references to the render engine removed. 2. Build infrastructure removes explicit dependencies on OSPRay (and Embree). 3. Removed OSPRay-specific functionality from docker configuration.
+[doc,tools] * TBD Remove support for macOS Mojave 10.14 (`#14352`_)
+[doc,setup] * TBD Remove `--with-doc-only` option from macOS setup scripts (`#14350`_)  # Update the Documentation Generation Instructions to indicate that documentation generation and preview is supported on Ubuntu only.
+* TBD workspace: warn instead of error for macOS Big Sur (`#14391`_)
+* TBD setup: explicitly add six for cpplint (`#14390`_)
+* TBD setup: add double-conversion, sqlite3, and lzma for vtk (`#14392`_)  # libtbb2 needs to be removed, but that would require the rebuild of vtk to be in this commit
+* TBD workspace: add patches and update vtk dockerfile (`#14393`_)  # Also remove vestigial embree build script. Patches should have been commited when focal support was added, but they all date back to various revisions of the vtk homebrew formulae, so are not new.
+* TBD workspace: Upgrade intel_realsense_ros to latest release 2.2.20 (`#14416`_)
+* TBD workspace: Upgrade ignition_math to latest release 6.7.0 (`#14415`_)
+* TBD workspace: Upgrade fmt to latest release 7.1.3 (`#14413`_)
+* TBD workspace: Upgrade meshcat_python to latest commit (`#14417`_)
+* TBD setup: use formulae dependent on python 3.8 on macOS (`#14395`_)
+* TBD workspace: rebuild vtk and add linked dependences (`#14395`_)
+* TBD setup: remove libtbb2 (`#14395`_)
+* TBD workspace: rebuild drake-visualizer for macOS (`#14395`_)
+* TBD workspace: Upgrade ghc_filesystem to latest release 1.3.8 (`#14414`_)
+* TBD setup: do not error when robotlocomotion/director is not tapped (`#14428`_)
+* TBD workspace: Upgrade lcm to latest commit (`#14418`_)
+* TBD setup: Add libspdlog-dev on Ubuntu 20.04 Focal (`#14429`_)  # Adding in anticipation of compiling against the host library, instead of our own separate copy.
 * TBD
 
 Newly-deprecated APIs
@@ -116,8 +236,125 @@ Drake binary releases incorporate a pre-compiled version of `SNOPT
 Philip E. Gill and Elizabeth Wong for their kind support.
 
 .. <begin issue links>
+.. _#14167: https://github.com/RobotLocomotion/drake/pull/14167
+.. _#14168: https://github.com/RobotLocomotion/drake/pull/14168
+.. _#14204: https://github.com/RobotLocomotion/drake/pull/14204
+.. _#14207: https://github.com/RobotLocomotion/drake/pull/14207
+.. _#14208: https://github.com/RobotLocomotion/drake/pull/14208
+.. _#14226: https://github.com/RobotLocomotion/drake/pull/14226
+.. _#14236: https://github.com/RobotLocomotion/drake/pull/14236
+.. _#14237: https://github.com/RobotLocomotion/drake/pull/14237
+.. _#14244: https://github.com/RobotLocomotion/drake/pull/14244
+.. _#14245: https://github.com/RobotLocomotion/drake/pull/14245
+.. _#14247: https://github.com/RobotLocomotion/drake/pull/14247
+.. _#14248: https://github.com/RobotLocomotion/drake/pull/14248
+.. _#14249: https://github.com/RobotLocomotion/drake/pull/14249
+.. _#14251: https://github.com/RobotLocomotion/drake/pull/14251
+.. _#14252: https://github.com/RobotLocomotion/drake/pull/14252
+.. _#14253: https://github.com/RobotLocomotion/drake/pull/14253
+.. _#14256: https://github.com/RobotLocomotion/drake/pull/14256
+.. _#14257: https://github.com/RobotLocomotion/drake/pull/14257
+.. _#14259: https://github.com/RobotLocomotion/drake/pull/14259
+.. _#14260: https://github.com/RobotLocomotion/drake/pull/14260
+.. _#14263: https://github.com/RobotLocomotion/drake/pull/14263
+.. _#14267: https://github.com/RobotLocomotion/drake/pull/14267
+.. _#14270: https://github.com/RobotLocomotion/drake/pull/14270
+.. _#14271: https://github.com/RobotLocomotion/drake/pull/14271
+.. _#14272: https://github.com/RobotLocomotion/drake/pull/14272
+.. _#14273: https://github.com/RobotLocomotion/drake/pull/14273
+.. _#14274: https://github.com/RobotLocomotion/drake/pull/14274
+.. _#14275: https://github.com/RobotLocomotion/drake/pull/14275
+.. _#14276: https://github.com/RobotLocomotion/drake/pull/14276
+.. _#14277: https://github.com/RobotLocomotion/drake/pull/14277
+.. _#14278: https://github.com/RobotLocomotion/drake/pull/14278
+.. _#14280: https://github.com/RobotLocomotion/drake/pull/14280
+.. _#14282: https://github.com/RobotLocomotion/drake/pull/14282
+.. _#14283: https://github.com/RobotLocomotion/drake/pull/14283
+.. _#14284: https://github.com/RobotLocomotion/drake/pull/14284
+.. _#14285: https://github.com/RobotLocomotion/drake/pull/14285
+.. _#14288: https://github.com/RobotLocomotion/drake/pull/14288
+.. _#14289: https://github.com/RobotLocomotion/drake/pull/14289
+.. _#14292: https://github.com/RobotLocomotion/drake/pull/14292
+.. _#14293: https://github.com/RobotLocomotion/drake/pull/14293
+.. _#14294: https://github.com/RobotLocomotion/drake/pull/14294
+.. _#14296: https://github.com/RobotLocomotion/drake/pull/14296
+.. _#14300: https://github.com/RobotLocomotion/drake/pull/14300
+.. _#14301: https://github.com/RobotLocomotion/drake/pull/14301
+.. _#14303: https://github.com/RobotLocomotion/drake/pull/14303
+.. _#14304: https://github.com/RobotLocomotion/drake/pull/14304
+.. _#14307: https://github.com/RobotLocomotion/drake/pull/14307
+.. _#14308: https://github.com/RobotLocomotion/drake/pull/14308
+.. _#14311: https://github.com/RobotLocomotion/drake/pull/14311
+.. _#14313: https://github.com/RobotLocomotion/drake/pull/14313
+.. _#14314: https://github.com/RobotLocomotion/drake/pull/14314
+.. _#14316: https://github.com/RobotLocomotion/drake/pull/14316
+.. _#14317: https://github.com/RobotLocomotion/drake/pull/14317
+.. _#14320: https://github.com/RobotLocomotion/drake/pull/14320
+.. _#14323: https://github.com/RobotLocomotion/drake/pull/14323
+.. _#14324: https://github.com/RobotLocomotion/drake/pull/14324
+.. _#14327: https://github.com/RobotLocomotion/drake/pull/14327
+.. _#14331: https://github.com/RobotLocomotion/drake/pull/14331
+.. _#14338: https://github.com/RobotLocomotion/drake/pull/14338
+.. _#14339: https://github.com/RobotLocomotion/drake/pull/14339
+.. _#14340: https://github.com/RobotLocomotion/drake/pull/14340
+.. _#14342: https://github.com/RobotLocomotion/drake/pull/14342
+.. _#14343: https://github.com/RobotLocomotion/drake/pull/14343
+.. _#14345: https://github.com/RobotLocomotion/drake/pull/14345
+.. _#14347: https://github.com/RobotLocomotion/drake/pull/14347
+.. _#14348: https://github.com/RobotLocomotion/drake/pull/14348
+.. _#14350: https://github.com/RobotLocomotion/drake/pull/14350
+.. _#14351: https://github.com/RobotLocomotion/drake/pull/14351
+.. _#14352: https://github.com/RobotLocomotion/drake/pull/14352
+.. _#14353: https://github.com/RobotLocomotion/drake/pull/14353
+.. _#14356: https://github.com/RobotLocomotion/drake/pull/14356
+.. _#14357: https://github.com/RobotLocomotion/drake/pull/14357
+.. _#14358: https://github.com/RobotLocomotion/drake/pull/14358
+.. _#14359: https://github.com/RobotLocomotion/drake/pull/14359
+.. _#14360: https://github.com/RobotLocomotion/drake/pull/14360
+.. _#14361: https://github.com/RobotLocomotion/drake/pull/14361
+.. _#14364: https://github.com/RobotLocomotion/drake/pull/14364
+.. _#14365: https://github.com/RobotLocomotion/drake/pull/14365
+.. _#14370: https://github.com/RobotLocomotion/drake/pull/14370
+.. _#14371: https://github.com/RobotLocomotion/drake/pull/14371
+.. _#14372: https://github.com/RobotLocomotion/drake/pull/14372
+.. _#14374: https://github.com/RobotLocomotion/drake/pull/14374
+.. _#14375: https://github.com/RobotLocomotion/drake/pull/14375
+.. _#14376: https://github.com/RobotLocomotion/drake/pull/14376
+.. _#14377: https://github.com/RobotLocomotion/drake/pull/14377
+.. _#14378: https://github.com/RobotLocomotion/drake/pull/14378
+.. _#14379: https://github.com/RobotLocomotion/drake/pull/14379
+.. _#14382: https://github.com/RobotLocomotion/drake/pull/14382
+.. _#14388: https://github.com/RobotLocomotion/drake/pull/14388
+.. _#14389: https://github.com/RobotLocomotion/drake/pull/14389
+.. _#14390: https://github.com/RobotLocomotion/drake/pull/14390
+.. _#14391: https://github.com/RobotLocomotion/drake/pull/14391
+.. _#14392: https://github.com/RobotLocomotion/drake/pull/14392
+.. _#14393: https://github.com/RobotLocomotion/drake/pull/14393
+.. _#14394: https://github.com/RobotLocomotion/drake/pull/14394
+.. _#14395: https://github.com/RobotLocomotion/drake/pull/14395
+.. _#14396: https://github.com/RobotLocomotion/drake/pull/14396
+.. _#14397: https://github.com/RobotLocomotion/drake/pull/14397
+.. _#14398: https://github.com/RobotLocomotion/drake/pull/14398
+.. _#14402: https://github.com/RobotLocomotion/drake/pull/14402
+.. _#14403: https://github.com/RobotLocomotion/drake/pull/14403
+.. _#14404: https://github.com/RobotLocomotion/drake/pull/14404
+.. _#14406: https://github.com/RobotLocomotion/drake/pull/14406
+.. _#14410: https://github.com/RobotLocomotion/drake/pull/14410
+.. _#14411: https://github.com/RobotLocomotion/drake/pull/14411
+.. _#14413: https://github.com/RobotLocomotion/drake/pull/14413
+.. _#14414: https://github.com/RobotLocomotion/drake/pull/14414
+.. _#14415: https://github.com/RobotLocomotion/drake/pull/14415
+.. _#14416: https://github.com/RobotLocomotion/drake/pull/14416
+.. _#14417: https://github.com/RobotLocomotion/drake/pull/14417
+.. _#14418: https://github.com/RobotLocomotion/drake/pull/14418
+.. _#14420: https://github.com/RobotLocomotion/drake/pull/14420
+.. _#14425: https://github.com/RobotLocomotion/drake/pull/14425
+.. _#14428: https://github.com/RobotLocomotion/drake/pull/14428
+.. _#14429: https://github.com/RobotLocomotion/drake/pull/14429
+.. _#14430: https://github.com/RobotLocomotion/drake/pull/14430
+.. _#14433: https://github.com/RobotLocomotion/drake/pull/14433
 .. <end issue links>
 
 ..
   Current oldest_commit b0b75133ad6de545f6634e5380878c4b706e15dc (exclusive).
-  Current newest_commit b0b75133ad6de545f6634e5380878c4b706e15dc (inclusive).
+  Current newest_commit 5b5d6aa8efbd57cbf1fc7b1fdd95d78210290668 (inclusive).
