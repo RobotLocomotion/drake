@@ -5,6 +5,11 @@ build --action_env=CCACHE_DISABLE=1
 build --cxxopt=-std=c++17
 build --host_cxxopt=-std=c++17
 
+# Enable OpenMP support
+build --copt=-DEIGEN_DONT_PARALLELIZE
+build --copt=-fopenmp
+build --linkopt=-fopenmp
+
 # When compiling with Drake as the main WORKSPACE (i.e., if and only if this
 # rcfile is loaded), we enable -Werror by default for Drake's *own* targets,
 # but not for our externals.
