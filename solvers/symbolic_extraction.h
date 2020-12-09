@@ -39,7 +39,7 @@ void AppendToVector(const typename Derived::Scalar& s,
 /*
  * Adds context to symbolic expression-related errors.
  */
-class DRAKE_DEPRECATED("2021-03-01",
+class DRAKE_DEPRECATED("2021-04-01",
                        "Use SymbolicError in common/symbolic_decompose.h")
     SymbolicError : public std::runtime_error {
  public:
@@ -65,7 +65,7 @@ class DRAKE_DEPRECATED("2021-03-01",
  * `vars`, and map_var_to_index[vars(i).get_id()] = i. This invariance holds
  * for map_var_to_index both as the input and as the output.
  */
-DRAKE_DEPRECATED("2021-03-01",
+DRAKE_DEPRECATED("2021-04-01",
                  "Use ExtractAndAppendVariablesFromExpression() in "
                  "common/symbolic_decompose.h")
 void ExtractAndAppendVariablesFromExpression(
@@ -79,7 +79,7 @@ void ExtractAndAppendVariablesFromExpression(
  * from the variable ID to the index in pair.first, such that
  * pair.second[pair.first(i).get_id()] = i
  */
-DRAKE_DEPRECATED("2021-03-01",
+DRAKE_DEPRECATED("2021-04-01",
                  "Use ExtractAndVariablesFromExpression() in "
                  "common/symbolic_decompose.h")
 std::pair<VectorXDecisionVariable,
@@ -99,7 +99,7 @@ ExtractVariablesFromExpression(const symbolic::Expression& e);
  * `b` should be `num_variables * 1`.
  * @param c[out] The constant term of the quadratic expression.
  */
-DRAKE_DEPRECATED("2021-03-01",
+DRAKE_DEPRECATED("2021-04-01",
                  "Use DecomposeQuadraticPolynomial() in "
                  "common/symbolic_decompose.h")
 void DecomposeQuadraticPolynomial(
@@ -115,7 +115,7 @@ void DecomposeQuadraticPolynomial(
  * @param[out] b The vector containing all the constant terms.
  * @param[out] vars All variables.
  */
-DRAKE_DEPRECATED("2021-03-01",
+DRAKE_DEPRECATED("2021-04-01",
                  "Use DecomposeAffineExpressions() in "
                  "common/symbolic_decompose.h")
 void DecomposeLinearExpression(
@@ -148,7 +148,7 @@ void DecomposeLinearExpression(
  * has 1 variable, 2 * x(0) + 3 * x(1) - 2 * x(0) has 1 variable.
  */
 template <typename Derived>
-DRAKE_DEPRECATED("2021-03-01",
+DRAKE_DEPRECATED("2021-04-01",
                  "Use DecomposeAffineExpression() in "
                  "common/symbolic_decompose.h")
 typename std::enable_if<std::is_same<typename Derived::Scalar, double>::value,

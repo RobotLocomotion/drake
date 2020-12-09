@@ -423,7 +423,7 @@ class MeshcatVisualizer(LeafSystem):
                 "builder.Connect("
                 "scene_graph.get_query_output_port(), "
                 "visualizer.get_geometry_query_input_port())\n"
-                "instead.", date="2021-03-01")
+                "instead.", date="2021-04-01")
             self._warned_pose_bundle_input_port_connected = True
 
         vis = self.vis[self.prefix]
@@ -559,7 +559,7 @@ class MeshcatContactVisualizer(LeafSystem):
             _warn_deprecated(
                 "The pose_bundle input port of MeshcatContactVisualizer is"
                 "deprecated; use the geometry_query inport port instead.",
-                date="2021-03-01")
+                date="2021-04-01")
             self._warned_pose_bundle_input_port_connected = True
 
         contact_results = self.EvalAbstractInput(context, 1).get_value()
