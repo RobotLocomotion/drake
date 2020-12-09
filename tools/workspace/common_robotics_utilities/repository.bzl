@@ -12,8 +12,8 @@ def common_robotics_utilities_repository(
     github_archive(
         name = name,
         repository = "ToyotaResearchInstitute/common_robotics_utilities",
-        commit = "c26a80f3bdb9f64c3fab91d5f32c7e3143c052d5",
-        sha256 = "0bff43cf91e9e80bdc0e5e6495029105689e197667ab468e965535436cf06035",  # noqa
+        commit = "a2f167220ac5b0cc7b7bb7b1383d1f8c77ca22b1",
+        sha256 = "67d6a6bf3ea18d29cf619e5a28b0e536a263b420c6dd5561c3d31974f170a9fa",  # noqa
         build_file = "//tools/workspace/common_robotics_utilities:package.BUILD.bazel",  # noqa
         mirrors = mirrors,
     )
