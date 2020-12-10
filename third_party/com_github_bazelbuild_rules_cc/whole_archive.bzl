@@ -31,9 +31,12 @@ def _find_cc_toolchain(ctx):
     # We didn't find anything.
     fail("In order to use find_cc_toolchain, your rule has to depend on C++ toolchain. See find_cc_toolchain.bzl docs for details.")  # noqa
 
+# This function is used for Bazel < 4.0.
 # This function is forked and modified from bazelbuild/rules_cc as of:
 # https://github.com/bazelbuild/rules_cc/blob/262ebec3c2296296526740db4aefce68c80de7fa/examples/my_c_archive/my_c_archive.bzl
-def _cc_whole_archive_library_impl(ctx):
+# TODO(jwnimmer-tri) Remove this function when we drop support for Bazel 3.x,
+# perhaps around 2021-06-01.
+def _cc_whole_archive_library_impl_bazel_lt4(ctx):
     # Find the C++ toolchain.
     cc_toolchain = _find_cc_toolchain(ctx)
     feature_configuration = cc_common.configure_features(
@@ -82,6 +85,73 @@ def _cc_whole_archive_library_impl(ctx):
             linking_context = linking_context,
         ),
     ]
+
+# This function is used for Bazel >= 4.0.
+# This function is forked and modified from bazelbuild/rules_cc as of:
+# https://github.com/bazelbuild/rules_cc/blob/262ebec3c2296296526740db4aefce68c80de7fa/examples/my_c_archive/my_c_archive.bzl
+def _cc_whole_archive_library_impl_bazel_ge4(ctx):
+    # Find the C++ toolchain.
+    cc_toolchain = _find_cc_toolchain(ctx)
+    feature_configuration = cc_common.configure_features(
+        ctx = ctx,
+        cc_toolchain = cc_toolchain,
+        requested_features = ctx.features,
+        unsupported_features = ctx.disabled_features,
+    )
+
+    # Iterate over the transitive list of libraries we want to link, adding
+    # `alwayslink = True` to each one.
+    deps_cc_infos = cc_common.merge_cc_infos(
+        cc_infos = [dep[CcInfo] for dep in ctx.attr.deps],
+    )
+    old_linker_inputs = deps_cc_infos.linking_context.linker_inputs.to_list()  # noqa
+    new_linker_inputs = []
+    for old_linker_input in old_linker_inputs:
+        old_libraries = old_linker_input.libraries
+        new_libraries = []
+        for old_library in old_libraries:
+            new_library = cc_common.create_library_to_link(
+                actions = ctx.actions,
+                feature_configuration = feature_configuration,
+                cc_toolchain = cc_toolchain,
+                static_library = old_library.static_library,
+                pic_static_library = old_library.pic_static_library,
+                dynamic_library = old_library.resolved_symlink_dynamic_library,  # noqa
+                interface_library = old_library.resolved_symlink_interface_library,  # noqa
+                # This is where the magic happens!
+                alwayslink = True,
+            )
+            new_libraries.append(new_library)
+        new_linker_input = cc_common.create_linker_input(
+            owner = ctx.label,
+            libraries = depset(direct = new_libraries),
+            additional_inputs = depset(direct = old_linker_input.additional_inputs),  # noqa
+            user_link_flags = depset(direct = old_linker_input.user_link_flags),  # noqa
+        )
+        new_linker_inputs.append(new_linker_input)
+
+    # Return the CcInfo to pass along to code that wants to link us.
+    linking_context = cc_common.create_linking_context(
+        linker_inputs = depset(direct = new_linker_inputs),
+    )
+    return [
+        DefaultInfo(
+            runfiles = ctx.runfiles(
+                collect_data = True,
+                collect_default = True,
+            ),
+        ),
+        CcInfo(
+            compilation_context = deps_cc_infos.compilation_context,
+            linking_context = linking_context,
+        ),
+    ]
+
+def _cc_whole_archive_library_impl(ctx):
+    if "libraries_to_link" in dir(ctx.attr.deps[0][CcInfo].linking_context):
+        return _cc_whole_archive_library_impl_bazel_lt4(ctx)
+    else:
+        return _cc_whole_archive_library_impl_bazel_ge4(ctx)
 
 # Forked and modified from bazelbuild/rules_cc as of:
 # https://github.com/bazelbuild/rules_cc/blob/262ebec3c2296296526740db4aefce68c80de7fa/examples/my_c_archive/my_c_archive.bzl
