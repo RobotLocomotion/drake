@@ -17,8 +17,7 @@ CXX_FLAGS = [
 ]
 
 # The COMMON_CLANG_FLAGS will be enabled for all C++ rules in the project when
-# building with clang (excluding the Apple LLVM compiler see APPLECLANG_FLAGS
-# below).
+# building with clang variants (see "CLANG_FLAGS" and "APPLECLANG_FLAGS").
 COMMON_CLANG_FLAGS = CXX_FLAGS + [
     "-Werror=absolute-value",
     "-Werror=inconsistent-missing-override",
@@ -27,7 +26,10 @@ COMMON_CLANG_FLAGS = CXX_FLAGS + [
     "-Werror=sign-compare",
 ]
 
-# Flags for non-Apple clang.
+# Flags for non-Apple clang to enable OpenMP. These are the same flags enabled
+# in CMake's FindOpenMP.cmake for non-Apple clang.
+# Automatic parallelization in Eigen using OpenMP is disabled to avoid
+# conflicting with other OpenMP directives.
 CLANG_FLAGS = COMMON_CLANG_FLAGS + [
     "-DEIGEN_DONT_PARALLELIZE",
     "-fopenmp=libomp",
@@ -49,6 +51,9 @@ CLANG_VERSION_SPECIFIC_FLAGS = {
 
 # The APPLECLANG_FLAGS will be enabled for all C++ rules in the project when
 # building with the Apple LLVM compiler.
+# OpenMP is not enabled in clang shipped by Apple, compiler support may be
+# enabled by providing "-Xclang -fopenmp", but a matching OpenMP library must
+# be provided separately.
 APPLECLANG_FLAGS = COMMON_CLANG_FLAGS
 
 # The APPLECLANG_VERSION_SPECIFIC_FLAGS will be enabled for all C++ rules in
@@ -60,6 +65,8 @@ APPLECLANG_VERSION_SPECIFIC_FLAGS = {
 
 # The GCC_FLAGS will be enabled for all C++ rules in the project when
 # building with gcc.
+# Automatic parallelization in Eigen using OpenMP is disabled to avoid
+# conflicting with other OpenMP directives.
 GCC_FLAGS = CXX_FLAGS + [
     "-Werror=extra",
     "-Werror=logical-op",

@@ -21,6 +21,11 @@ alias(
 )
 
 alias(
+    name = "utility_test",
+    actual = "@common_robotics_utilities//:utility_test",
+)
+
+alias(
     name = "voxel_grid_test",
     actual = "@common_robotics_utilities//:voxel_grid_test",
 )
