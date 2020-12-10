@@ -43,7 +43,7 @@ Prior to release
    a. On the first run, use ``--action=create`` to bootstrap the file.
 
       i. The output is draft release notes in ``doc/release_notes/v0.N.0.rst``.
-      ii. Be sure to cite the new file from the list in ``doc/release_notes.rst``.
+      ii. Be sure to add the new file to the list in ``doc/release_notes.rst``.
 
    b. On the subsequent runs, use ``--action=update`` to refresh the file.
 
