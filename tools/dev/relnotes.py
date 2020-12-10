@@ -2,17 +2,21 @@
 This is intended for use by Drake maintainers (only).
 This program is only supported on Ubuntu Bionic 18.04.
 
-The usage of this tools is outlined in the "201912 Drake release playbook"
-document on Google Drive.
+The usage of this tool is outlined in the Drake release playbook
+document:
+
+  https://drake.mit.edu/release_playbook.html
 
 The tool reads the commit history of github.com/RobotLocomotion/drake using
 the GitHub APIs -- the status of your current git clone is ignored.
 
-To query GitHub APIs, you'll need to authenticate yourself first,
-via a GitHub API token:
+Use bazel to build the executable relnotes tool:
 
-  bazel build //tools/dev:relnotes
-  bazel-bin/tools/dev/relnotes
+  bazel build //tools/dev:relnotes   # build
+  bazel-bin/tools/dev/relnotes       # run
+
+To query GitHub APIs, you'll need to authenticate yourself first,
+via a GitHub API token.
 
 To create the required ~/.config/readonly_github_api_token.txt file, open a
 browser to https://github.com/settings/tokens and create a new token (it does
