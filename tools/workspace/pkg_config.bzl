@@ -112,10 +112,10 @@ def setup_pkg_config_repository(repository_ctx):
                         linkopts[i] = linkopt
                         break
 
-        # Add `-Wl,-rpath <path>` for `-L<path>`.
+        # Add `-Wl,-rpath,<path>` for `-L<path>`.
         # See https://github.com/RobotLocomotion/drake/issues/7387#issuecomment-359952616  # noqa
         if linkopt.startswith("-L"):
-            linkopts.insert(i, "-Wl,-rpath " + linkopt[2:])
+            linkopts.insert(i, "-Wl,-rpath," + linkopt[2:])
             continue
 
         # Switches stay put.
