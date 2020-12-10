@@ -40,11 +40,15 @@ Prior to release
    for using ``relnotes`` are found atop its source code.)
 
    a. On the first run, use ``--action=create`` to bootstrap the file.
-      Be sure to cite the new file from the list in ``doc/release_notes.rst``.
+
+      i. The output is draft release notes in ``doc/release_notes/v0.N.0.rst``.
+      ii. Be sure to cite the new file from the list in ``doc/release_notes.rst``.
+
    b. On the subsequent runs, use ``--action=update`` to refresh the file.
 
 6. For release notes, on an ongoing basis, clean up and relocate the commit
-   notes to properly organized and wordsmithed bullet points.
+   notes to properly organized and wordsmithed bullet points. See `Polishing
+   the release notes`_.
 7. From time to time, merge ``upstream/master`` into your
    ``origin/release_notes-v0.N.0`` branch (so that it doesn't go stale).
    Never rebase or force-push to the branch.  We expect that several people
@@ -98,7 +102,7 @@ the main body of the document:
 Cutting the release
 -------------------
 
-6. Find a plausible build to use
+9. Find a plausible build to use
 
    a. Make sure https://drake-jenkins.csail.mit.edu/view/Production/ is clean
    b. Make sure https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/
@@ -124,10 +128,10 @@ Cutting the release
          names.  One is ``YYYYMMDD`` and one is ``latest``.  We will use the
          ``YYYYMMDD`` one.
 
-7. Update the release notes to have the ``YYYYMMDD`` we choose, and to make
-   sure that the nightly build git sha from the prior step matches the
-   ``newest_commit`` whose changes are enumerated in the notes.
-8. Prepare the binaries
+10. Update the release notes to have the ``YYYYMMDD`` we choose, and to make
+    sure that the nightly build git sha from the prior step matches the
+    ``newest_commit`` whose changes are enumerated in the notes.
+11. Prepare the binaries
 
    a. Make a local folder, maybe ``$HOME/tmp/v0.N.0``
    b. Fetch all the things (
@@ -152,13 +156,13 @@ Cutting the release
       iv. ``sha256sum drake-YYYYMMDD-mac.tar.gz >  drake-YYYYMMDD-mac.tar.gz.sha256``
       v. ``sha256sum -c *.sha256``
 
-9. Merge the release notes PR
+12. Merge the release notes PR
 
    a. After merge, go to https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-bionic-gcc-bazel-nightly-documentation/ and push "Build now".
 
       i. If you don't have "Build now" click "Log in" first in upper right.
 
-10. Open https://github.com/RobotLocomotion/drake/releases and choose "Draft a
+13. Open https://github.com/RobotLocomotion/drake/releases and choose "Draft a
     new release".  Note that this page does has neither history nor undo.  Be
     slow and careful!
 
@@ -176,7 +180,7 @@ Cutting the release
        tarballs, and their 6 checksums)
     f. Choose "Save draft" and take a deep breath.
 
-11. Once the documentation build finishes, release!
+14. Once the documentation build finishes, release!
 
     a. Check that the link to drake.mit.edu docs from the GitHub release draft
        page actually works.
