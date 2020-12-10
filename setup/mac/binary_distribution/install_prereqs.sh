@@ -19,9 +19,11 @@ if ! command -v /usr/local/bin/brew &>/dev/null; then
 fi
 
 # TODO(jamiesnape): Remove lines tapping robotlocomotion/director and
-# uninstalling vtk@8.2, ospray@1.8, and embree@3.5 on or after 2021-02-01.
+# uninstalling ipopt@3.11, vtk@8.2, ospray@1.8, and embree@3.5 on or after
+# 2021-03-01.
 /usr/local/bin/brew tap robotlocomotion/director
 /usr/local/bin/brew uninstall --force $(cat <<EOF
+robotlocomotion/director/ipopt@3.11
 robotlocomotion/director/vtk@8.2
 robotlocomotion/director/ospray@1.8
 robotlocomotion/director/embree@3.5
