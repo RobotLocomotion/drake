@@ -7,7 +7,8 @@ Drake v0.25.0
 Announcements
 -------------
 
-* TBD
+* Drake no longer supports for macOS Mojave 10.14 (`#14352`_); it only
+  supports Catalina 10.15.  Work is underway to support Big Sur 11.
 
 Breaking changes since v0.24.0
 ------------------------------
@@ -24,6 +25,7 @@ Breaking changes since v0.24.0
   operate on lcmt_robot_plan messages, not robot_plan_t
   messages. EncodeKeyFrames no longer takes an "info" argument -- the message
   no longer contains the unused snopt integer.
+* Remove pydrake.common.cpp_const and pydrake.third_party (`#14270`_).
 
 
 
@@ -71,6 +73,7 @@ Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for geometry,multibody go here>
+* TBD [render] Remove RenderEngineOspray entirely (`#14339`_)  # * Remove RenderEngineOspray entirely Other than killing the class, its factory, bindings, and their tests, this also touches a fair amount of other sites in the code: 1. Documentation of various sorts have references to the render engine removed. 2. Build infrastructure removes explicit dependencies on OSPRay (and Embree). 3. Removed OSPRay-specific functionality from docker configuration.
 
 New features
 
@@ -166,39 +169,36 @@ Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for attic,cmake,doc,setup,third_party,tools go here>
-[common,multibody,tools] * TBD workspace: Upgrade fmt to latest release 7.1.0 (`#14272`_)
-[doc,tools] * TBD doc: Add release notes v0.24.0 (`#14208`_)
-* TBD bindings: Remove cpp_const (`#14270`_)  # This appears to be dead code.  By dropping it, we can also drop an awkward dependency.
-* TBD workspace: Upgrade fcl to latest commit (`#14271`_)
-* TBD workspace: Upgrade intel_realsense_ros to latest release 2.2.18 (`#14274`_)
-* TBD workspace: Upgrade rules_python to latest release 0.1.0 (`#14278`_)
-* TBD workspace: Upgrade rules_pkg to latest release 0.3.0 (`#14277`_)
-* TBD workspace: Upgrade ghc_filesystem to latest release 1.3.6 (`#14273`_)
-* TBD workspace: Upgrade lcm to latest commit (`#14275`_)
-* TBD workspace: Upgrade ros_xacro to latest release 1.13.9 (`#14276`_)
-[setup,tools] * TBD Switch to ipopt@3.11 formula on macOS (`#14288`_)
-[doc,setup] * TBD Make installing documentation prereqs optional (`#14168`_)
-[doc,tools] * TBD kcov: Implement parallel testing schedule (`#14294`_)  # Relevant to: #10617 * Update the kcov* bazel configs to run tests in parallel. * Expand test timeouts for slowdowns from parallel schedule. * Add kcov_tool to merge and clean up kcov data. * Update documentation and mentions of bazel-kcov.
-[doc,geometry,systems,tools] * TBD [render] Remove RenderEngineOspray entirely (`#14339`_)  # * Remove RenderEngineOspray entirely Other than killing the class, its factory, bindings, and their tests, this also touches a fair amount of other sites in the code: 1. Documentation of various sorts have references to the render engine removed. 2. Build infrastructure removes explicit dependencies on OSPRay (and Embree). 3. Removed OSPRay-specific functionality from docker configuration.
-[doc,tools] * TBD Remove support for macOS Mojave 10.14 (`#14352`_)
-[doc,setup] * TBD Remove `--with-doc-only` option from macOS setup scripts (`#14350`_)  # Update the Documentation Generation Instructions to indicate that documentation generation and preview is supported on Ubuntu only.
-* TBD workspace: warn instead of error for macOS Big Sur (`#14391`_)
-* TBD setup: explicitly add six for cpplint (`#14390`_)
-* TBD setup: add double-conversion, sqlite3, and lzma for vtk (`#14392`_)  # libtbb2 needs to be removed, but that would require the rebuild of vtk to be in this commit
-* TBD workspace: add patches and update vtk dockerfile (`#14393`_)  # Also remove vestigial embree build script. Patches should have been commited when focal support was added, but they all date back to various revisions of the vtk homebrew formulae, so are not new.
-* TBD workspace: Upgrade intel_realsense_ros to latest release 2.2.20 (`#14416`_)
-* TBD workspace: Upgrade ignition_math to latest release 6.7.0 (`#14415`_)
-* TBD workspace: Upgrade fmt to latest release 7.1.3 (`#14413`_)
-* TBD workspace: Upgrade meshcat_python to latest commit (`#14417`_)
-* TBD setup: use formulae dependent on python 3.8 on macOS (`#14395`_)
-* TBD workspace: rebuild vtk and add linked dependences (`#14395`_)
-* TBD setup: remove libtbb2 (`#14395`_)
-* TBD workspace: rebuild drake-visualizer for macOS (`#14395`_)
-* TBD workspace: Upgrade ghc_filesystem to latest release 1.3.8 (`#14414`_)
-* TBD setup: do not error when robotlocomotion/director is not tapped (`#14428`_)
-* TBD workspace: Upgrade lcm to latest commit (`#14418`_)
-* TBD setup: Add libspdlog-dev on Ubuntu 20.04 Focal (`#14429`_)  # Adding in anticipation of compiling against the host library, instead of our own separate copy.
-* TBD
+
+* Add dependency on double-conversion (`#14392`_)
+* Add dependency on lzma (`#14392`_)
+* Add dependency on six (`#14390`_)
+* Add dependency on sqlite3 (`#14392`_)
+* Upgrade fcl to latest commit (`#14271`_)
+* Upgrade fmt to latest release 7.1.3 (`#14272`_, `#14413`_)
+* Upgrade ghc_filesystem to latest release 1.3.8 (`#14273`_, `#14414`_)
+* Upgrade ignition_math to latest release 6.7.0 (`#14415`_)
+* Upgrade intel_realsense_ros to latest release 2.2.20 (`#14274`_, `#14416`_)
+* Upgrade lcm to latest commit (`#14275`_, `#14418`_)
+* Upgrade meshcat_python to latest commit (`#14417`_)
+* Upgrade ros_xacro to latest release 1.13.9 (`#14276`_)
+* Upgrade rules_pkg to latest release 0.3.0 (`#14277`_)
+* Upgrade rules_python to latest release 0.1.0 (`#14278`_)
+* Upgrade to rebuilt VTK binaries (`#14393`_, `#14395`_)
+* Neither compile docs nor install documentation prereqs by default (`#14168`_)
+* Add kcov_merge tool to consolidate results; for performance, coverage runs no longer consolidate by default (`#14294`_)
+* Changes specific to Ubuntu:
+
+  * Add libspdlog-dev for Ubuntu 20.04 Focal only (`#14429`_)
+  * Remove dependency on libtbb2 (`#14395`_, `#14339`_)
+
+* Changes specific to macOS:
+
+  * Rebuild drake-visualizer (`#14395`_)
+  * Fix compatibility vs Homebrew python3.8 (`#14395`_, `#14428`_)
+  * Remove support for Mojave 10.14 (`#14352`_)
+  * Remove support for building documentation (`#14350`_)
+  * Pin to older ipopt 3.11 formula (`#14288`_)
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
