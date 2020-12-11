@@ -185,6 +185,10 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
       "CalcCenterOfMassTranslationalVelocityInWorld\\(\\): body_indexes is "
       "empty. You must provide at least one selected one body.");
 
+  // TODO(mitiguy) Test that a list of valid model instances that contain zero
+  //  bodies throws an exception and test that a list of model instances that
+  //  contain only zero mass bodies throws an exception.
+
   // Try one instance in model_instances.
   model_instances.push_back(triangle_instance_);
   p_WCcm = plant_.CalcCenterOfMassPosition(*context_, model_instances);

@@ -1312,14 +1312,12 @@ template <typename T>
 Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
     const systems::Context<T>& context,
     const std::vector<ModelInstanceIndex>& model_instances) const {
-  if (num_model_instances() <= 1) {
-    throw std::runtime_error(
-        "CalcCenterOfMassTranslationalVelocityInWorld(): this MultibodyPlant "
-        "only contains the world_body() so its center of mass is undefined.");
-  }
-
+  // Reminder: MultibodyTree always declares 2 model instances "world" and
+  // "default" so num_model_instances() should always be >= 2.
   std::vector<BodyIndex> body_indexes;
   for (auto model_instance : model_instances) {
+    DRAKE_THROW_UNLESS(model_instance.is_valid());
+    DRAKE_THROW_UNLESS(model_instance < num_model_instances());
     const std::vector<BodyIndex> body_index_in_instance =
         GetBodyIndices(model_instance);
     for (BodyIndex body_index : body_index_in_instance)
