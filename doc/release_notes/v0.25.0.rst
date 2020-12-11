@@ -26,10 +26,7 @@ Breaking changes since v0.24.0
   messages. EncodeKeyFrames no longer takes an "info" argument -- the message
   no longer contains the unused snopt integer.
 * Remove pydrake.common.cpp_const and pydrake.third_party (`#14270`_).
-
-
-
-
+* [render] Remove RenderEngineOspray entirely (`#14339`_)
 
 Changes since v0.24.0
 ---------------------
@@ -38,8 +35,6 @@ Dynamical Systems
 ~~~~~~~~~~~~~~~~~
 
 .. <relnotes for systems go here>
-
-
 
 New features
 
@@ -73,7 +68,6 @@ Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for geometry,multibody go here>
-* TBD [render] Remove RenderEngineOspray entirely (`#14339`_)  # * Remove RenderEngineOspray entirely Other than killing the class, its factory, bindings, and their tests, this also touches a fair amount of other sites in the code: 1. Documentation of various sorts have references to the render engine removed. 2. Build infrastructure removes explicit dependencies on OSPRay (and Embree). 3. Removed OSPRay-specific functionality from docker configuration.
 
 New features
 
@@ -95,7 +89,7 @@ New features
 * render_engine_gl: Make tex_coord be effectively optional (`#14396`_)
 * make penetration query work for some simple geometries with AutoDiffScalars (`#14378`_)
 * Enhance documentation for bodies & frames and monogram notation for spatial velocity/acceleration (`#14397`_)
-* TBD Add stiffness and tangent matrix calculation for FEM (`#14374`_)
+* Add stiffness and tangent matrix calculation for FEM (`#14374`_)
 * Implements the effect of reflected inertia (`#14167`_)
 * [geometry] Add new geometry::DrakeVisualizer system (`#14247`_)
 
@@ -133,36 +127,78 @@ Miscellaneous features and fixes
 * systems/lcm: Add LcmScopeSystem (`#14308`_)
 * yaml: Correctly emit variants with templated inner types (`#14327`_)
 * yaml: Fix parsing bugs with zero-sized matrices (`#14360`_)
-* TBD Move code from symbolic_extraction to symbolic_decompose (`#14353`_)  # Also add the python bindings.
+* Expose new methods at symbolic_decompose (`#14353`_)
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
 
 .. <relnotes for bindings go here>
-* TBD Move code from symbolic_extraction to symbolic_decompose (`#14353`_)  # Also add the python bindings.
-* TBD Add python binding for MakeMatrixVariable and MakeVectorVariable (`#14342`_)
-* TBD add minimum pybind to query hydroelastic_contact_info from ContactResults (`#14244`_)  # .
-* TBD pydrake.multibody: add binding for CalcCenterOfMassPosition taking model instances (`#14249`_)
-* TBD pydrake.multibody: add missing bindings for joint accessors (`#14257`_)  # * pydrake.multibody: add bindings for joint accessors
-* TBD [pybind] Correct bindings for DrakeVisualizer.AddToBuilder (`#14314`_)  # * Correct bindings for DrakeVisualizer.AddToBuilder Previously, we had the return value keeping the provided lcm alive. If the return value isn't *captured* (e.g. vis = DrakeVis.AddToBuilder(....)) then that keep alive won't work and the lcm can be subsequently destroyed. This has been observed in the wild.
-* TBD remove period which causes an error outside of drake (`#14320`_)
-* TBD pydrake: Bind some missing multibody tree-related items (`#14207`_)
-* TBD pydrake: Fix type bug in BasicVector::set_value for non-float types (`#14343`_)  # Resolves #14341
-* TBD py examples: Ensure manipulation_station_py.cc imports dep modules (`#14370`_)
-* TBD py systems: Add keep_alive cycle to DiagramBuilder.AddSystem (`#14356`_)  # This is a workaround to ensure we propagate keep_alive relationships Resolves #14355
-* TBD py geometry: Fix bindings for RenderCamera classes (`#14394`_)  # Add arguments and docs
-* TBD Add UpdateBound for PYFunctionConstraint (`#14410`_)
 
 New features
 
+*.multibody: add binding for CalcCenterOfMassPosition taking model instances (`#14249`_)
 * TBD
 
 Fixes
 
+* Correct bindings for DrakeVisualizer.AddToBuilder (`#14314`_)
+* meshcat visualizer: remove period which causes an error outside of drake (`#14320`_)
+* pydrake: Fix type bug in BasicVector::set_value for non-float types (`#14343`_)
+* py examples: Ensure manipulation_station_py.cc imports dep modules (`#14370`_)
+* py systems: Add keep_alive cycle to DiagramBuilder.AddSystem (`#14356`_)
+* py geometry: Fix bindings for RenderCamera classes (`#14394`_)
 * TBD
 
 Newly bound
 
+* pydrake.geometry.ContactSurface (`#14244`_)
+* pydrake.geometry.SurfaceMesh.centroid (`#14244`_)
+* pydrake.multibody.plant.ContactResults.hydroelastic_contact_info (`#14244`_)
+* pydrake.multibody.plant.ContactResults.num_hydroelastic_contacts (`#14244`_)
+* pydrake.multibody.plant.HydroelasticContactInfo (`#14244`_)
+* pydrake.multibody.plant.MultibodyPlant.get_mutable_joint (`#14257`_)
+* pydrake.multibody.plant.MultibodyPlant.GetJointIndices (`#14257`_)
+* pydrake.multibody.tree.Body.CalcCenterOfMassInBodyFrame (`#14207`_)
+* pydrake.multibody.tree.Body.CalcSpatialInertiaInBodyFrame (`#14207`_)
+* pydrake.multibody.tree.Body.EvalPoseInWorld (`#14207`_)
+* pydrake.multibody.tree.Body.EvalSpatialAccelerationInWorld (`#14207`_)
+* pydrake.multibody.tree.Body.EvalSpatialVelocityInWorld (`#14207`_)
+* pydrake.multibody.tree.Body.get_default_mass (`#14207`_)
+* pydrake.multibody.tree.Body.get_mass (`#14207`_)
+* pydrake.multibody.tree.Body.get_num_flexible_positions (`#14207`_)
+* pydrake.multibody.tree.Body.get_num_flexible_velocities (`#14207`_)
+* pydrake.multibody.tree.Body.has_quaternion_dofs (`#14207`_)
+* pydrake.multibody.tree.Frame.CalcOffsetPoseInBody (`#14207`_)
+* pydrake.multibody.tree.Frame.CalcOffsetRotationMatrixInBody (`#14207`_)
+* pydrake.multibody.tree.Frame.CalcPose (`#14207`_)
+* pydrake.multibody.tree.Frame.CalcPoseInWorld (`#14207`_)
+* pydrake.multibody.tree.Frame.CalcRotationMatrix (`#14207`_)
+* pydrake.multibody.tree.Frame.CalcRotationMatrixInBodyFrame (`#14207`_)
+* pydrake.multibody.tree.Frame.CalcRotationMatrixInWorld (`#14207`_)
+* pydrake.multibody.tree.Frame.CalcSpatialAccelerationInWorld (`#14207`_)
+* pydrake.multibody.tree.Frame.CalcSpatialVelocity (`#14207`_)
+* pydrake.multibody.tree.Frame.CalcSpatialVelocityInWorld (`#14207`_)
+* pydrake.multibody.tree.Frame.GetFixedOffsetPoseInBody (`#14207`_)
+* pydrake.multibody.tree.Frame.GetFixedPoseInBodyFrame (`#14207`_)
+* pydrake.multibody.tree.Frame.GetFixedRotationMatrixInBody (`#14207`_)
+* pydrake.multibody.tree.Frame.GetFixedRotationMatrixInBodyFrame (`#14207`_)
+* pydrake.multibody.tree.Frame.is_world_frame (`#14207`_)
+* pydrake.solvers.mathematicalprogram.PyFunctionConstraint (`#14410`_)
+* pydrake.symbolic.DecomposeAffineExpression (`#14353`_)
+* pydrake.symbolic.DecomposeAffineExpressions (`#14353`_)
+* pydrake.symbolic.DecomposeLinearExpressions (`#14353`_)
+* pydrake.symbolic.DecomposeQuadraticPolynomial (`#14353`_)
+* pydrake.symbolic.ExtractVariablesFromExpression (`#14353`_)
+* pydrake.symbolic.GetVariableVector (`#14353`_)
+* pydrake.symbolic.MakeMatrixBinaryVariable (`#14342`_)
+* pydrake.symbolic.MakeMatrixBooleanVariable (`#14342`_)
+* pydrake.symbolic.MakeMatrixContinuousVariable (`#14342`_)
+* pydrake.symbolic.MakeMatrixVariable (`#14342`_)
+* pydrake.symbolic.MakeVectorBinaryVariable (`#14342`_)
+* pydrake.symbolic.MakeVectorBooleanVariable (`#14342`_)
+* pydrake.symbolic.MakeVectorContinuousVariable (`#14342`_)
+* pydrake.symbolic.MakeVectorVariable (`#14342`_)
+* pydrake.symbolic.Variable.get_name (`#14342`_)
 * TBD
 
 Build system and dependencies
