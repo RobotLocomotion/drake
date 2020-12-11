@@ -1,0 +1,41 @@
+#- * - python - * -
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+
+package(
+    default_visibility = ["//visibility:private"],
+)
+
+drake_cc_library(
+    name = "quadrature",
+    hdrs = [
+        "quadrature.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "simplex_gaussian_quadrature",
+    hdrs = [
+        "simplex_gaussian_quadrature.h",
+    ],
+    deps = [
+        ":quadrature",
+    ],
+)
+
+drake_cc_googletest(
+    name = "simplex_gaussian_quadrature_test",
+    deps = [
+        ":simplex_gaussian_quadrature",
+    ],
+)
+
+add_lint_tests()
