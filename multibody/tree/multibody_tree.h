@@ -745,6 +745,13 @@ class MultibodyTree {
     return it->second;
   }
 
+  // Implements MultibodyPlant::HasUniqueFreeBaseBody.
+  bool HasUniqueFreeBaseBodyImpl(ModelInstanceIndex model_instance) const;
+
+  // Implements MultibodyPlant::GetUniqueFreeBaseBodyOrThrow.
+  const Body<T>& GetUniqueFreeBaseBodyOrThrowImpl(
+      ModelInstanceIndex model_instance) const;
+
   // @name Querying for multibody elements by name
   // These methods allow a user to query whether a given multibody element is
   // part of `this` model. These queries can be performed at any time during
@@ -2982,6 +2989,14 @@ class MultibodyTree {
     }
     return range.first->second;
   }
+
+  // If there exists a unique base body (a body whose parent is the world body)
+  // in the model given by `model_instance`, return the index of that body.
+  // Otherwise return std::nullopt. In particular, if the given `model_instance`
+  // is the world model instance, return `std::nullopt`.
+  // @throws std::exception if `model_instance` is not valid.
+  std::optional<BodyIndex> MaybeGetUniqueBaseBodyIndex(
+      ModelInstanceIndex model_instance) const;
 
   // TODO(amcastro-tri): In future PR's adding MBT computational methods, write
   // a method that verifies the state of the topology with a signature similar
