@@ -2238,6 +2238,29 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       systems::Context<T>* context,
       const Frame<T>& frame_F, const Body<T>& body,
       const math::RigidTransform<T>& X_FB) const;
+
+  /// If there exists a unique base body that belongs to the model given by
+  /// `model_instance` and that unique base body is free
+  /// (see HasUniqueBaseBody()), return that free body. Throw an exception
+  /// otherwise.
+  /// @throws std::exception if called pre-finalize.
+  /// @throws std::exception if `model_instance` is not valid.
+  /// @throws std::exception if HasUniqueFreeBaseBody(model_instance) == false.
+  const Body<T>& GetUniqueFreeBaseBodyOrThrow(
+      ModelInstanceIndex model_instance) const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    return internal_tree().GetUniqueFreeBaseBodyOrThrowImpl(model_instance);
+  }
+
+  /// Return true if there exists a unique base body in the model given by
+  /// `model_instance` and that unique base body is free.
+  /// @throws std::exception if called pre-finalize.
+  /// @throws std::exception if `model_instance` is not valid.
+  bool HasUniqueFreeBaseBody(ModelInstanceIndex model_instance) const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    return internal_tree().HasUniqueFreeBaseBodyImpl(model_instance);
+  }
+
   /// @} <!-- Working with free bodies -->
 
   /// @anchor mbp_kinematic_and_dynamic_computations
