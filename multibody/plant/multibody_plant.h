@@ -2105,6 +2105,21 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().GetFreeBodyPoseOrThrow(context, body);
   }
 
+  /// Sets `context` to store the pose `X_WB` of the unique base body B of the
+  /// model given by `model_instance` in the world frame W.
+  /// @note In general setting the pose and/or velocity of a body in the model
+  /// would involve a complex inverse kinematics problem. This method allows us
+  /// to simplify this process when we know the body is free in space.
+  /// @throws std::exception if the model indexed by `model_instance` does not
+  /// a have a unique base body that is free.
+  /// @throws std::exception if called pre-finalize.
+  void SetFreeBodyPose(systems::Context<T>* context,
+                       ModelInstanceIndex model_instance,
+                       const math::RigidTransform<T>& X_WB) const {
+    this->ValidateContext(context);
+    internal_tree().SetFreeBodyPoseOrThrow(model_instance, X_WB, context);
+  }
+
   /// Sets `context` to store the pose `X_WB` of a given `body` B in the world
   /// frame W.
   /// @note In general setting the pose and/or velocity of a body in the model
@@ -2240,6 +2255,18 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       systems::Context<T>* context,
       const Frame<T>& frame_F, const Body<T>& body,
       const math::RigidTransform<T>& X_FB) const;
+
+  /// Return the unique base body index of the model specified by
+  /// `model_instance`.
+  /// @throws std::logic_error if called pre-finalize.
+  /// @throws std::exception if `model_instance` is not valid.
+  /// @throws std::runtime_error if the model given by `model_instance` does not
+  /// have a unique free baes body.
+  BodyIndex GetUniqueBaseBody(ModelInstanceIndex model_instance) const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    return internal_tree().GetUniqueBaseBody(model_instance);
+  }
+
   /// @} <!-- Working with free bodies -->
 
   /// @anchor mbp_kinematic_and_dynamic_computations

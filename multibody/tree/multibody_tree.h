@@ -745,6 +745,9 @@ class MultibodyTree {
     return it->second;
   }
 
+  /// See MultibodyPlant method.
+  BodyIndex GetUniqueBaseBody(ModelInstanceIndex model_instance) const;
+
   /// @name Querying for multibody elements by name
   /// These methods allow a user to query whether a given multibody element is
   /// part of `this` model. These queries can be performed at any time during
@@ -1213,6 +1216,11 @@ class MultibodyTree {
   /// See MultibodyPlant::GetFreeBodyPose.
   math::RigidTransform<T> GetFreeBodyPoseOrThrow(
       const systems::Context<T>& context, const Body<T>& body) const;
+
+  /// See MultibodyPlant::SetFreeBodyPose.
+  void SetFreeBodyPoseOrThrow(ModelInstanceIndex model_instance,
+                              const math::RigidTransform<T>& X_WB,
+                              systems::Context<T>* context) const;
 
   /// See MultibodyPlant::SetFreeBodyPose.
   void SetFreeBodyPoseOrThrow(

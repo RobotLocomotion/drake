@@ -340,10 +340,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("GetFreeBodyPose", &Class::GetFreeBodyPose, py::arg("context"),
             py::arg("body"), cls_doc.GetFreeBodyPose.doc)
         .def("SetFreeBodyPose",
+            overload_cast_explicit<void, Context<T>*, ModelInstanceIndex,
+                const RigidTransform<T>&>(&Class::SetFreeBodyPose),
+            py::arg("context"), py::arg("model_instance"), py::arg("X_WB"),
+            cls_doc.SetFreeBodyPose.doc_3args_context_model_instance_X_WB)
+        .def("SetFreeBodyPose",
             overload_cast_explicit<void, Context<T>*, const Body<T>&,
                 const RigidTransform<T>&>(&Class::SetFreeBodyPose),
             py::arg("context"), py::arg("body"), py::arg("X_WB"),
-            cls_doc.SetFreeBodyPose.doc_3args)
+            cls_doc.SetFreeBodyPose.doc_3args_context_body_X_WB)
         .def(
             "SetFreeBodyPose",
             [](const Class* self, Context<T>* context, const Body<T>& body,

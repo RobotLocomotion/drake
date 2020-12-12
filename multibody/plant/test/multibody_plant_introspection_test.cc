@@ -71,6 +71,9 @@ GTEST_TEST(MultibodyPlantIntrospection, FloatingBodies) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.GetFloatingBaseBodies(), std::logic_error,
       "Pre-finalize calls to 'GetFloatingBaseBodies\\(\\)' are not allowed.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.GetUniqueBaseBody(robot_table_model), std::logic_error,
+      "Pre-finalize calls to 'GetUniqueBaseBody\\(\\)' are not allowed.*");
 
   plant.Finalize();
 
@@ -83,11 +86,22 @@ GTEST_TEST(MultibodyPlantIntrospection, FloatingBodies) {
   ASSERT_TRUE(pelvis2.is_floating());
   ASSERT_TRUE(pelvis2.has_quaternion_dofs());
 
+  // Assert that the floating base of the Atlas robot are the pelvises.
+  EXPECT_EQ(plant.GetUniqueBaseBody(atlas_model1), pelvis1.index());
+  EXPECT_EQ(plant.GetUniqueBaseBody(atlas_model2), pelvis2.index());
+
+  // The float mug is its own unique floating base.
+  EXPECT_EQ(plant.GetUniqueBaseBody(mug_model), mug.index());
+
   // The "world" is not considered as a free body.
   EXPECT_FALSE(plant.world_body().is_floating());
 
   // The table has been anchored to the world.
   EXPECT_FALSE(plant.GetBodyByName("link", robot_table_model).is_floating());
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.GetUniqueBaseBody(robot_table_model), std::runtime_error,
+      "Model " + plant.GetModelInstanceName(robot_table_model) +
+          " does not have any floating base body.");
 
   // Retrieve floating bodies.
   std::unordered_set<BodyIndex> expected_floating_bodies(
