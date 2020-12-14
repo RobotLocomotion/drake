@@ -785,8 +785,7 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
   // sdformat maps the diffuse values into a `Color` using the following rules:
   //   1. Truncate to no more than four values (more than 4 values are simply
   //      ignored).
-  //   2. If fewer than four, use 1 for a default alpha value and zero for
-  //      default r, g, b values.
+  //   2. If fewer than four, use 1 for a default alpha and r, g, b values.
 
   // Case: Too many channel values -- truncate.
   {
@@ -808,7 +807,7 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
     EXPECT_TRUE(expect_phong(material, true, expected_diffuse, {}, {}, {}, {}));
   }
 
-  // Case: Too few channel values -- fill in with 0 for b and 1 for alpha.
+  // Case: Too few channel values -- fill in with 1 for b and alpha.
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         "<visual name='some_link_visual'>"
