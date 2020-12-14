@@ -457,31 +457,125 @@ GTEST_TEST(SdfParser, FloatingBodyPose) {
 
 GTEST_TEST(SdfParser, StaticModelSupported) {
   // Test that static models are partially supported.
-  PlantAndSceneGraph pair = ParseTestString(R"""(
-<model name='good'>
-  <static>true</static>
-  <link name='a'>
-    <pose>1 2 3  0.1 0.2 0.3</pose>
-  </link>
-  <link name='b'>
-    <pose>4 5 6  0.4 0.5 0.6</pose>
-  </link>
-</model>)""");
-  pair.plant->Finalize();
-  EXPECT_EQ(pair.plant->num_positions(), 0);
-  auto context = pair.plant->CreateDefaultContext();
-  const RigidTransformd X_WA_expected(
-      RollPitchYawd(0.1, 0.2, 0.3), Vector3d(1, 2, 3));
-  const RigidTransformd X_WA =
+  {
+    PlantAndSceneGraph pair = ParseTestString(R"""(
+  <model name='good'>
+    <static>true</static>
+    <link name='a'>
+      <pose>1 2 3  0.1 0.2 0.3</pose>
+    </link>
+    <link name='b'>
+      <pose>4 5 6  0.4 0.5 0.6</pose>
+    </link>
+  </model>)""");
+    pair.plant->Finalize();
+    EXPECT_EQ(pair.plant->num_positions(), 0);
+    auto context = pair.plant->CreateDefaultContext();
+    const RigidTransformd X_WA_expected(
+        RollPitchYawd(0.1, 0.2, 0.3), Vector3d(1, 2, 3));
+    const RigidTransformd X_WA =
       pair.plant->GetFrameByName("a").CalcPoseInWorld(*context);
-  EXPECT_TRUE(CompareMatrices(
-      X_WA_expected.GetAsMatrix4(), X_WA.GetAsMatrix4(), kEps));
-  const RigidTransformd X_WB_expected(
-      RollPitchYawd(0.4, 0.5, 0.6), Vector3d(4, 5, 6));
-  const RigidTransformd X_WB =
+    EXPECT_TRUE(CompareMatrices(
+          X_WA_expected.GetAsMatrix4(), X_WA.GetAsMatrix4(), kEps));
+    const RigidTransformd X_WB_expected(
+        RollPitchYawd(0.4, 0.5, 0.6), Vector3d(4, 5, 6));
+    const RigidTransformd X_WB =
       pair.plant->GetFrameByName("b").CalcPoseInWorld(*context);
-  EXPECT_TRUE(CompareMatrices(
-      X_WB_expected.GetAsMatrix4(), X_WB.GetAsMatrix4(), kEps));
+    EXPECT_TRUE(CompareMatrices(
+          X_WB_expected.GetAsMatrix4(), X_WB.GetAsMatrix4(), kEps));
+  }
+
+  {
+    // Verify that static models don't need to have a canonical link. The model
+    // frame should be attached to the world frame.
+    PlantAndSceneGraph pair;
+    DRAKE_ASSERT_NO_THROW(pair = ParseTestString(R"""(
+  <model name='a'>
+    <pose>1 2 3  0.1 0.2 0.3</pose>
+    <static>true</static>
+  </model>)""", "1.8"));
+    pair.plant->Finalize();
+    auto context = pair.plant->CreateDefaultContext();
+    const RigidTransformd X_WA_expected(
+        RollPitchYawd(0.1, 0.2, 0.3), Vector3d(1, 2, 3));
+
+    const auto &frame_A = pair.plant->GetFrameByName("a");
+    const RigidTransformd X_WA = frame_A.CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(
+          X_WA_expected.GetAsMatrix4(), X_WA.GetAsMatrix4(), kEps));
+    EXPECT_EQ(frame_A.body().node_index(),
+              pair.plant->world_body().node_index());
+  }
+
+  {
+    // Verify that models that contain static models don't need a link
+    PlantAndSceneGraph pair;
+    DRAKE_EXPECT_NO_THROW(pair = ParseTestString(R"""(
+  <model name='a'>
+    <pose>1 2 3  0.0 0.0 0.3</pose>
+    <model name='b'>
+      <pose>0 0 0  0.1 0.2 0.0</pose>
+      <static>true</static>
+    </model>
+  </model>)""", "1.8"));
+    pair.plant->Finalize();
+    auto context = pair.plant->CreateDefaultContext();
+    const RigidTransformd X_WA_expected(
+        RollPitchYawd(0.0, 0.0, 0.3), Vector3d(1, 2, 3));
+
+    const auto &frame_A = pair.plant->GetFrameByName("a");
+    const RigidTransformd X_WA = frame_A.CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(
+          X_WA_expected.GetAsMatrix4(), X_WA.GetAsMatrix4(), kEps));
+    EXPECT_EQ(frame_A.body().node_index(),
+              pair.plant->world_body().node_index());
+
+    const RigidTransformd X_WB_expected(
+        RollPitchYawd(0.1, 0.2, 0.3), Vector3d(1, 2, 3));
+
+    const auto &frame_B = pair.plant->GetFrameByName("b");
+    const RigidTransformd X_WB = frame_B.CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(
+          X_WB_expected.GetAsMatrix4(), X_WB.GetAsMatrix4(), kEps));
+    EXPECT_EQ(frame_B.body().node_index(),
+              pair.plant->world_body().node_index());
+  }
+}
+
+GTEST_TEST(SdfParser, StaticFrameOnlyModelsSupported) {
+  // Verify that static models can contain just frames
+  PlantAndSceneGraph pair;
+  DRAKE_EXPECT_NO_THROW(pair = ParseTestString(R"""(
+  <model name='a'>
+    <static>true</static>
+    <pose>1 0 0  0 0 0</pose>
+    <frame name='b'>
+      <pose>0 2 0 0 0 0</pose>
+    </frame>
+    <frame name='c' attached_to='b'>
+      <pose>0 0 3 0 0 0</pose>
+    </frame>
+    <frame name='d'>
+      <pose relative_to='c'>0 0 0 0 0 0.3</pose>
+    </frame>
+  </model>)""", "1.8"));
+  pair.plant->Finalize();
+  auto context = pair.plant->CreateDefaultContext();
+
+  auto test_frame = [&](const std::string& frame_name,
+                       const RigidTransformd& X_WF_expected) {
+    const auto& frame = pair.plant->GetFrameByName(frame_name);
+    const RigidTransformd X_WF = frame.CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(X_WF_expected.GetAsMatrix4(),
+                                X_WF.GetAsMatrix4(), kEps));
+    EXPECT_EQ(frame.body().node_index(),
+              pair.plant->world_body().node_index());
+  };
+
+  test_frame("a", {RollPitchYawd(0.0, 0.0, 0.0), Vector3d(1, 0, 0)});
+  test_frame("b", {RollPitchYawd(0.0, 0.0, 0.0), Vector3d(1, 2, 0)});
+  test_frame("c", {RollPitchYawd(0.0, 0.0, 0.0), Vector3d(1, 2, 3)});
+  test_frame("d", {RollPitchYawd(0.0, 0.0, 0.3), Vector3d(1, 2, 3)});
 }
 
 GTEST_TEST(SdfParser, StaticModelWithJoints) {
