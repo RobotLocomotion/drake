@@ -8,7 +8,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fem {
+namespace fixed_fem {
 // TODO(xuchenhan-tri): Consider allowing AutoDiffScalar if it simplifies the
 // syntax in the AutoDiff case.
 /** A base class for quadratures that facilitates numerical integrations in FEM.
@@ -24,8 +24,6 @@ class Quadrature {
                 "Only 1, 2 and 3 dimensional shapes are supported.");
   static_assert(1 <= NumLocations,
                 "There has to be at least one quadrature point.");
-
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Quadrature);
 
   using VectorD = Eigen::Matrix<double, NaturalDimension, 1>;
   using LocationsType = std::array<VectorD, NumLocations>;
@@ -56,6 +54,8 @@ class Quadrature {
   }
 
  protected:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Quadrature);
+
   /** Construct a Quadrature object given the quadrature locations and the
    weights of the quadrature points. */
   explicit Quadrature(
@@ -67,6 +67,6 @@ class Quadrature {
   LocationsType points_;
   WeightsType weights_;
 };
-}  // namespace fem
+}  // namespace fixed_fem
 }  // namespace multibody
 }  // namespace drake
