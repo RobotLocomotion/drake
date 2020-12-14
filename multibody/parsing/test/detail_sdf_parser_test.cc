@@ -1611,7 +1611,7 @@ GTEST_TEST(SdfParser, AxisXyzExperssedInMultiLevelNestedFrame) {
   EXPECT_TRUE(CompareMatrices(xyz_W_expected, joint_j.revolute_axis(), kEps));
 }
 
-// Verify frames can be attached to nested frames
+// Verify frames can be attached to nested links or models
 GTEST_TEST(SdfParser, FrameAttachedToMultiLevelNestedFrame) {
   const std::string model_string = R"""(
 <model name='a'>
@@ -1631,6 +1631,9 @@ GTEST_TEST(SdfParser, FrameAttachedToMultiLevelNestedFrame) {
   <frame name='f' attached_to='b::c::d::e'>
     <pose>0 0 0  0.4 0 0.0</pose>
   </frame>
+  <frame name='g' attached_to='b::c::d'>
+    <pose>0 0 0  0.4 0.5 0.0</pose>
+  </frame>
 </model>)""";
   PlantAndSceneGraph pair;
   DRAKE_ASSERT_NO_THROW(pair = ParseTestString(model_string, "1.8"));
@@ -1641,6 +1644,82 @@ GTEST_TEST(SdfParser, FrameAttachedToMultiLevelNestedFrame) {
 
   const RigidTransformd X_WF_expected(RollPitchYawd(0.4, 0.5, 0.6),
                                       Vector3d(0.1, 0.2, 0.3));
+  const RigidTransformd X_WG_expected(RollPitchYawd(0.4, 0.5, 0.6),
+                                      Vector3d(0.1, 0.2, 0.3));
+
+  const auto &frame_F = pair.plant->GetFrameByName("f");
+  const RigidTransformd X_WF = frame_F.CalcPoseInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(
+      X_WF_expected.GetAsMatrix4(), X_WF.GetAsMatrix4(), kEps));
+
+  const auto &frame_G = pair.plant->GetFrameByName("g");
+  const RigidTransformd X_WG = frame_G.CalcPoseInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(
+      X_WG_expected.GetAsMatrix4(), X_WG.GetAsMatrix4(), kEps));
+
+  // Also check that the frame is attached to the right body
+  ModelInstanceIndex model_d_instance =
+      pair.plant->GetModelInstanceByName("a::b::c::d");
+  EXPECT_EQ(frame_F.body().node_index(),
+            pair.plant->GetBodyByName("e", model_d_instance).node_index());
+
+  EXPECT_EQ(frame_G.body().node_index(),
+            pair.plant->GetBodyByName("e", model_d_instance).node_index());
+}
+
+// Verify frames and links can have the same local name without violating name
+// uniqueness requirements
+GTEST_TEST(SdfParser, RepeatedLinkName) {
+  const std::string model_string = R"""(
+<world name='a'>
+  <model name='b1'>
+    <link name='c'/>
+    <frame name='d'/>
+  </model>
+  <model name='b2'>
+    <link name='c'/>
+    <frame name='d'/>
+  </model>
+</world>)""";
+  PlantAndSceneGraph pair;
+  DRAKE_ASSERT_NO_THROW(pair = ParseTestString(model_string, "1.8"));
+}
+
+// Verify frames can be attached to models in a SDFormat world
+GTEST_TEST(SdfParser, FrameAttachedToModelFrameInWorld) {
+  const std::string model_string = R"""(
+<world name='a'>
+  <model name='b'>
+    <pose>0.1 0.2 0.0  0 0 0</pose>
+    <model name='c'>
+      <pose>0 0.0 0.3  0 0 0</pose>
+      <link name='d'/>
+    </model>
+  </model>
+  <frame name='e' attached_to='b'>
+    <pose>0 0 0.3  0.0 0.0 0.0</pose>
+  </frame>
+  <frame name='f' attached_to='b::c'>
+    <pose>0 0 0  0.0 0.0 0.6</pose>
+  </frame>
+</world>)""";
+  PlantAndSceneGraph pair;
+  DRAKE_ASSERT_NO_THROW(pair = ParseTestString(model_string, "1.8"));
+
+  ASSERT_NE(nullptr, pair.plant);
+  pair.plant->Finalize();
+  EXPECT_GT(pair.plant->num_positions(), 0);
+  auto context = pair.plant->CreateDefaultContext();
+
+  const RigidTransformd X_WE_expected(RollPitchYawd(0.0, 0.0, 0.0),
+                                      Vector3d(0.1, 0.2, 0.3));
+  const RigidTransformd X_WF_expected(RollPitchYawd(0.0, 0.0, 0.6),
+                                      Vector3d(0.1, 0.2, 0.3));
+
+  const auto &frame_E = pair.plant->GetFrameByName("e");
+  const RigidTransformd X_WE = frame_E.CalcPoseInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(
+      X_WE_expected.GetAsMatrix4(), X_WE.GetAsMatrix4(), kEps));
 
   const auto &frame_F = pair.plant->GetFrameByName("f");
   const RigidTransformd X_WF = frame_F.CalcPoseInWorld(*context);
@@ -1648,10 +1727,11 @@ GTEST_TEST(SdfParser, FrameAttachedToMultiLevelNestedFrame) {
       X_WF_expected.GetAsMatrix4(), X_WF.GetAsMatrix4(), kEps));
 
   // Also check that the frame is attached to the right body
-  ModelInstanceIndex model_d_instance =
-      pair.plant->GetModelInstanceByName("a::b::c::d");
+  EXPECT_EQ(frame_E.body().node_index(),
+            pair.plant->GetBodyByName("d").node_index());
+
   EXPECT_EQ(frame_F.body().node_index(),
-            pair.plant->GetBodyByName("e", model_d_instance).node_index());
+            pair.plant->GetBodyByName("d").node_index());
 }
 }  // namespace
 }  // namespace internal
