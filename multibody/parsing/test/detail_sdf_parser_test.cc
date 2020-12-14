@@ -702,7 +702,7 @@ GTEST_TEST(SdfParser, IncludeTags) {
   ASSERT_TRUE(plant.HasModelInstanceNamed("weld_models::robot2"));
   ModelInstanceIndex weld_model_robot2_model =
       plant.GetModelInstanceByName("weld_models::robot2");
-  //
+
   // There should be all the bodies and joints contained in "simple_robot1"
   // which is inside "weld_models"
   EXPECT_TRUE(plant.HasBodyNamed("base_link", weld_model_robot1_model));
@@ -1732,6 +1732,33 @@ GTEST_TEST(SdfParser, FrameAttachedToModelFrameInWorld) {
 
   EXPECT_EQ(frame_F.body().node_index(),
             pair.plant->GetBodyByName("d").node_index());
+}
+
+GTEST_TEST(SdfParser, SupportNonDefaultCanonicalLink) {
+  // Verify that non-default canonical links are handled properly. Here we have
+  // three different types of references used for the canonical link:
+  // * c::e - Nested link
+  // * f - Link that is not the first link in the model
+  const std::string model_string = R"""(
+  <model name='a' canonical_link='c::e'>
+    <link name='b'/>
+    <model name='c' canonical_link='f'>
+      <link name='d'/>
+      <link name='e'/>
+      <link name='f'/>
+    </model>
+  </model>)""";
+  PlantAndSceneGraph pair;
+  DRAKE_ASSERT_NO_THROW(pair = ParseTestString(model_string, "1.8"));
+
+  ASSERT_NE(nullptr, pair.plant);
+  pair.plant->Finalize();
+
+  EXPECT_EQ(pair.plant->GetFrameByName("a").body().node_index(),
+            pair.plant->GetBodyByName("e").node_index());
+
+  EXPECT_EQ(pair.plant->GetFrameByName("c").body().node_index(),
+            pair.plant->GetBodyByName("f").node_index());
 }
 }  // namespace
 }  // namespace internal
