@@ -62,7 +62,8 @@ Fixes
 
 * Throw an error when getting dual solution for a QCP in gurobi (`#14285`_)
 * Only retrieve Mosek dual solution when there is no integer variables (`#14338`_)
-* retrieve linear constraint dual from Mosek result (`#14348`_)
+* Retrieve linear constraint dual from Mosek result (`#14348`_)
+* Ensure IPOPT uses MUMPS as its linear solver (`#14446`_)
 
 Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
@@ -209,16 +210,12 @@ Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for attic,cmake,doc,setup,third_party,tools go here>
-* TBD tools: Use incompatible_restrict_string_escapes for now (`#14441`_)  # As of bazel 4.0, we get a hard error without this nerf. Once we've fixed our code to comply, we should remove the nerf.
-* TBD workspace: Upgrade dreal to latest release 4.20.12.1 (`#14443`_)
-* TBD workspace: Avoid using whitespace in pkg-config rpaths (`#14439`_)  # As of bazel 4.0, the user_link_flags changes from a list to a depset. Therefore, when we used -Wl,-rpath /foo/bar as our spelling, the first instance survived but a second instance would skips the -Wl,-rpath part but keep the /quux/bar part, leaving a stray directory on the link line By consolidating each rpath addition as a single list element even after whitespace tokenization, it will remain intact. This was biting us when fetching ipopt.pc, which has several junk compiler paths thrown into it on Ubuntu 18.04.
-[third_party,tools] * TBD rules_cc: Adapt whole_archive for bazel 4.0 (`#14442`_)  # Several cc_info data structures got reorganized.  This function supports bazel 3.x and 4.0 now, but no longer support 2.x. Drake's new minimum bazel version is 3.0.
-[setup,solvers,tools] * TBD solvers: ensure IPOPT uses MUMPS as its linear solver (`#14446`_)
 
 * Add dependency on double-conversion (`#14392`_)
 * Add dependency on lzma (`#14392`_)
 * Add dependency on six (`#14390`_)
 * Add dependency on sqlite3 (`#14392`_)
+* Upgrade dreal to latest release 4.20.12.1 (`#14443`_)
 * Upgrade fcl to latest commit (`#14271`_)
 * Upgrade fmt to latest release 7.1.3 (`#14272`_, `#14413`_)
 * Upgrade ghc_filesystem to latest release 1.3.8 (`#14273`_, `#14414`_)
@@ -232,6 +229,7 @@ Build system and dependencies
 * Upgrade to rebuilt VTK binaries (`#14393`_, `#14395`_)
 * Neither compile docs nor install documentation prereqs by default (`#14168`_)
 * Add kcov_merge tool to consolidate results; for performance, coverage runs no longer consolidate by default (`#14294`_)
+* Fix to be compatible with Bazel 4.0 release candidate (`#14439`_, `#14441`_, `#14442`_)
 * Changes specific to Ubuntu:
 
   * Add libspdlog-dev for Ubuntu 20.04 Focal only (`#14429`_)
