@@ -87,11 +87,11 @@ GTEST_TEST(MultibodyPlantIntrospection, FloatingBodies) {
   ASSERT_TRUE(pelvis2.has_quaternion_dofs());
 
   // Assert that the floating base of the Atlas robot are the pelvises.
-  EXPECT_EQ(plant.GetUniqueBaseBody(atlas_model1), pelvis1.index());
-  EXPECT_EQ(plant.GetUniqueBaseBody(atlas_model2), pelvis2.index());
+  EXPECT_EQ(plant.GetUniqueBaseBody(atlas_model1).index(), pelvis1.index());
+  EXPECT_EQ(plant.GetUniqueBaseBody(atlas_model2).index(), pelvis2.index());
 
   // The float mug is its own unique floating base.
-  EXPECT_EQ(plant.GetUniqueBaseBody(mug_model), mug.index());
+  EXPECT_EQ(plant.GetUniqueBaseBody(mug_model).index(), mug.index());
 
   // The "world" is not considered as a free body.
   EXPECT_FALSE(plant.world_body().is_floating());

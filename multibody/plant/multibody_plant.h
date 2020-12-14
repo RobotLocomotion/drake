@@ -2116,6 +2116,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void SetFreeBodyPose(systems::Context<T>* context,
                        ModelInstanceIndex model_instance,
                        const math::RigidTransform<T>& X_WB) const {
+    DRAKE_DEMAND(context != nullptr);
     this->ValidateContext(context);
     internal_tree().SetFreeBodyPoseOrThrow(model_instance, X_WB, context);
   }
@@ -2256,13 +2257,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Frame<T>& frame_F, const Body<T>& body,
       const math::RigidTransform<T>& X_FB) const;
 
-  /// Return the unique base body index of the model specified by
+  /// Return the unique base body of the model specified by
   /// `model_instance`.
   /// @throws std::logic_error if called pre-finalize.
   /// @throws std::exception if `model_instance` is not valid.
   /// @throws std::runtime_error if the model given by `model_instance` does not
-  /// have a unique free baes body.
-  BodyIndex GetUniqueBaseBody(ModelInstanceIndex model_instance) const {
+  /// have a unique free base body.
+  const Body<T>& GetUniqueBaseBody(ModelInstanceIndex model_instance) const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     return internal_tree().GetUniqueBaseBody(model_instance);
   }

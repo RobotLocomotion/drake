@@ -84,11 +84,11 @@ MultibodyTree<T>::MultibodyTree() {
 }
 
 template <typename T>
-BodyIndex MultibodyTree<T>::GetUniqueBaseBody(
+const Body<T>& MultibodyTree<T>::GetUniqueBaseBody(
     ModelInstanceIndex model_instance) const {
   DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
   std::vector<BodyIndex> base_body_indexes;
-  for (auto& body : owned_bodies_) {
+  for (const auto& body : owned_bodies_) {
     if (body->model_instance() == model_instance && body->is_floating()) {
       if (!base_body_indexes.empty()) {
         throw std::runtime_error("Model " +
@@ -103,7 +103,7 @@ BodyIndex MultibodyTree<T>::GetUniqueBaseBody(
                              instance_index_to_name_.at(model_instance) +
                              " does not have any floating base body.");
   }
-  return base_body_indexes[0];
+  return *owned_bodies_[base_body_indexes[0]];
 }
 
 template <typename T>
@@ -428,8 +428,8 @@ void MultibodyTree<T>::SetFreeBodyPoseOrThrow(
     ModelInstanceIndex model_instance, const RigidTransform<T>& X_WB,
     systems::Context<T>* context) const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
-  BodyIndex free_body_index = GetUniqueBaseBody(model_instance);
-  SetFreeBodyPoseOrThrow(*owned_bodies_[free_body_index], X_WB, context);
+  const Body<T>& free_body = GetUniqueBaseBody(model_instance);
+  SetFreeBodyPoseOrThrow(free_body, X_WB, context);
 }
 
 template <typename T>

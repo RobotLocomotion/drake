@@ -746,7 +746,7 @@ class MultibodyTree {
   }
 
   /// See MultibodyPlant method.
-  BodyIndex GetUniqueBaseBody(ModelInstanceIndex model_instance) const;
+  const Body<T>& GetUniqueBaseBody(ModelInstanceIndex model_instance) const;
 
   /// @name Querying for multibody elements by name
   /// These methods allow a user to query whether a given multibody element is
