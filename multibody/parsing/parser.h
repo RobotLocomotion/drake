@@ -54,6 +54,8 @@ class Parser final {
   /// more than one `<model>` element. However, this function might create
   /// additional model instances corresponding to nested models found in the
   /// top level model.
+  /// See http://sdformat.org/tutorials?tut=composition&ver=1.7 for details on
+  /// nesting in SDFormat.
   ///
   /// @param file_name The name of the SDF or URDF file to be parsed.  The file
   ///   type will be inferred from the extension.
@@ -71,6 +73,8 @@ class Parser final {
   /// with more than one `<model>` element. However, this function might create
   /// additional model instances corresponding to nested models found in the
   /// top level model.
+  /// See http://sdformat.org/tutorials?tut=composition&ver=1.7 for details on
+  /// nesting in SDFormat.
   ///
   /// @param file_contents The XML data to be parsed.
   /// @param file_type The data format; must be either "sdf" or "urdf".
