@@ -68,6 +68,7 @@ Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for geometry,multibody go here>
+* TBD Refactor quadrature to remove heap allocations (`#14448`_)  # Refactor the FEM quadrature implementation in Drake. Add additional template parameter so that the size of the quadrature points and the weights are available at compile time. The unit tests are the same as in the previous implementation except for syntactic changes.
 
 New features
 
@@ -112,6 +113,7 @@ Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for examples,tutorials go here>
+* TBD examples/acrobot: Add an autodiff benchmark (`#14432`_)  # Relevant to: #8482 This patch rewrites Hongkai's original program (from an old branch) to use google benchmark, removes some obsolete measurements (RigidBodyTree, AutoDiffUpTo73d), and adds some new ones (MBP vanilla CalcMassMatrix()). This benchmark set is nice because is captures the small-problem (only four derivatives!) end of the autodiff problem space. A possible plan would be to wrap this program with controlled-experiment scripts, similar to those in examples/multibody/cassie_benchmark, and use it to help drive further autodiff optimization work.
 * Minor fixes for flake8's F821 (undefined name) error (`#14293`_)
 * meshcat: upgrade interface to use QueryObject (`#14292`_)
 * Change to use SetInitialGuess in the nlp tutorial (`#14331`_)
@@ -123,6 +125,7 @@ Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for common,math,lcm,lcmtypes,manipulation,perception go here>
+* TBD lcmtypes: Don't install stray __init__.py into site-packages (`#14444`_)
 * Use package instead of relative path for allegro model files (`#14252`_)
 * systems/lcm: Add LcmScopeSystem (`#14308`_)
 * yaml: Correctly emit variants with templated inner types (`#14327`_)
@@ -133,6 +136,7 @@ pydrake bindings
 ~~~~~~~~~~~~~~~~
 
 .. <relnotes for bindings go here>
+* TBD Add python binding for OutputPort::get_name (`#14438`_)
 
 New features
 
@@ -205,6 +209,11 @@ Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for attic,cmake,doc,setup,third_party,tools go here>
+* TBD tools: Use incompatible_restrict_string_escapes for now (`#14441`_)  # As of bazel 4.0, we get a hard error without this nerf. Once we've fixed our code to comply, we should remove the nerf.
+* TBD workspace: Upgrade dreal to latest release 4.20.12.1 (`#14443`_)
+* TBD workspace: Avoid using whitespace in pkg-config rpaths (`#14439`_)  # As of bazel 4.0, the user_link_flags changes from a list to a depset. Therefore, when we used -Wl,-rpath /foo/bar as our spelling, the first instance survived but a second instance would skips the -Wl,-rpath part but keep the /quux/bar part, leaving a stray directory on the link line By consolidating each rpath addition as a single list element even after whitespace tokenization, it will remain intact. This was biting us when fetching ipopt.pc, which has several junk compiler paths thrown into it on Ubuntu 18.04.
+[third_party,tools] * TBD rules_cc: Adapt whole_archive for bazel 4.0 (`#14442`_)  # Several cc_info data structures got reorganized.  This function supports bazel 3.x and 4.0 now, but no longer support 2.x. Drake's new minimum bazel version is 3.0.
+[setup,solvers,tools] * TBD solvers: ensure IPOPT uses MUMPS as its linear solver (`#14446`_)
 
 * Add dependency on double-conversion (`#14392`_)
 * Add dependency on lzma (`#14392`_)
@@ -253,11 +262,11 @@ Newly-deprecated APIs
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* drake::pydrake::py_reference (`14267`_)
-* drake::pydrake::py_reference_internal (`14267`_)
-* examples/irb140/urdf (`14267`_)
-* examples/kuka_iiwa_arm/models/objects/big_robot_toy.urdf (`14267`_)
-* manipulation/models/wsg_50_description URDF and meshes (`14267`_)
+* drake::pydrake::py_reference (`#14267`_)
+* drake::pydrake::py_reference_internal (`#14267`_)
+* examples/irb140/urdf (`#14267`_)
+* examples/kuka_iiwa_arm/models/objects/big_robot_toy.urdf (`#14267`_)
+* manipulation/models/wsg_50_description URDF and meshes (`#14267`_)
 * bullet, freetype2 externals (`#14398`_)
 * drake::systems::kAutoSize (`#14398`_)
 * drake::systems::Subvector empty constructor (`#14398`_)
@@ -283,7 +292,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#14168: https://github.com/RobotLocomotion/drake/pull/14168
 .. _#14204: https://github.com/RobotLocomotion/drake/pull/14204
 .. _#14207: https://github.com/RobotLocomotion/drake/pull/14207
-.. _#14208: https://github.com/RobotLocomotion/drake/pull/14208
 .. _#14226: https://github.com/RobotLocomotion/drake/pull/14226
 .. _#14236: https://github.com/RobotLocomotion/drake/pull/14236
 .. _#14237: https://github.com/RobotLocomotion/drake/pull/14237
@@ -312,7 +320,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#14278: https://github.com/RobotLocomotion/drake/pull/14278
 .. _#14280: https://github.com/RobotLocomotion/drake/pull/14280
 .. _#14282: https://github.com/RobotLocomotion/drake/pull/14282
-.. _#14283: https://github.com/RobotLocomotion/drake/pull/14283
 .. _#14284: https://github.com/RobotLocomotion/drake/pull/14284
 .. _#14285: https://github.com/RobotLocomotion/drake/pull/14285
 .. _#14288: https://github.com/RobotLocomotion/drake/pull/14288
@@ -320,14 +327,11 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#14292: https://github.com/RobotLocomotion/drake/pull/14292
 .. _#14293: https://github.com/RobotLocomotion/drake/pull/14293
 .. _#14294: https://github.com/RobotLocomotion/drake/pull/14294
-.. _#14296: https://github.com/RobotLocomotion/drake/pull/14296
 .. _#14300: https://github.com/RobotLocomotion/drake/pull/14300
 .. _#14301: https://github.com/RobotLocomotion/drake/pull/14301
-.. _#14303: https://github.com/RobotLocomotion/drake/pull/14303
 .. _#14304: https://github.com/RobotLocomotion/drake/pull/14304
 .. _#14307: https://github.com/RobotLocomotion/drake/pull/14307
 .. _#14308: https://github.com/RobotLocomotion/drake/pull/14308
-.. _#14311: https://github.com/RobotLocomotion/drake/pull/14311
 .. _#14313: https://github.com/RobotLocomotion/drake/pull/14313
 .. _#14314: https://github.com/RobotLocomotion/drake/pull/14314
 .. _#14316: https://github.com/RobotLocomotion/drake/pull/14316
@@ -358,19 +362,16 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#14364: https://github.com/RobotLocomotion/drake/pull/14364
 .. _#14365: https://github.com/RobotLocomotion/drake/pull/14365
 .. _#14370: https://github.com/RobotLocomotion/drake/pull/14370
-.. _#14371: https://github.com/RobotLocomotion/drake/pull/14371
 .. _#14372: https://github.com/RobotLocomotion/drake/pull/14372
 .. _#14374: https://github.com/RobotLocomotion/drake/pull/14374
 .. _#14375: https://github.com/RobotLocomotion/drake/pull/14375
 .. _#14376: https://github.com/RobotLocomotion/drake/pull/14376
 .. _#14377: https://github.com/RobotLocomotion/drake/pull/14377
 .. _#14378: https://github.com/RobotLocomotion/drake/pull/14378
-.. _#14379: https://github.com/RobotLocomotion/drake/pull/14379
 .. _#14382: https://github.com/RobotLocomotion/drake/pull/14382
 .. _#14388: https://github.com/RobotLocomotion/drake/pull/14388
 .. _#14389: https://github.com/RobotLocomotion/drake/pull/14389
 .. _#14390: https://github.com/RobotLocomotion/drake/pull/14390
-.. _#14391: https://github.com/RobotLocomotion/drake/pull/14391
 .. _#14392: https://github.com/RobotLocomotion/drake/pull/14392
 .. _#14393: https://github.com/RobotLocomotion/drake/pull/14393
 .. _#14394: https://github.com/RobotLocomotion/drake/pull/14394
@@ -381,7 +382,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#14402: https://github.com/RobotLocomotion/drake/pull/14402
 .. _#14403: https://github.com/RobotLocomotion/drake/pull/14403
 .. _#14404: https://github.com/RobotLocomotion/drake/pull/14404
-.. _#14406: https://github.com/RobotLocomotion/drake/pull/14406
 .. _#14410: https://github.com/RobotLocomotion/drake/pull/14410
 .. _#14411: https://github.com/RobotLocomotion/drake/pull/14411
 .. _#14413: https://github.com/RobotLocomotion/drake/pull/14413
@@ -391,13 +391,19 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#14417: https://github.com/RobotLocomotion/drake/pull/14417
 .. _#14418: https://github.com/RobotLocomotion/drake/pull/14418
 .. _#14420: https://github.com/RobotLocomotion/drake/pull/14420
-.. _#14425: https://github.com/RobotLocomotion/drake/pull/14425
 .. _#14428: https://github.com/RobotLocomotion/drake/pull/14428
 .. _#14429: https://github.com/RobotLocomotion/drake/pull/14429
-.. _#14430: https://github.com/RobotLocomotion/drake/pull/14430
-.. _#14433: https://github.com/RobotLocomotion/drake/pull/14433
+.. _#14432: https://github.com/RobotLocomotion/drake/pull/14432
+.. _#14438: https://github.com/RobotLocomotion/drake/pull/14438
+.. _#14439: https://github.com/RobotLocomotion/drake/pull/14439
+.. _#14441: https://github.com/RobotLocomotion/drake/pull/14441
+.. _#14442: https://github.com/RobotLocomotion/drake/pull/14442
+.. _#14443: https://github.com/RobotLocomotion/drake/pull/14443
+.. _#14444: https://github.com/RobotLocomotion/drake/pull/14444
+.. _#14446: https://github.com/RobotLocomotion/drake/pull/14446
+.. _#14448: https://github.com/RobotLocomotion/drake/pull/14448
 .. <end issue links>
 
 ..
   Current oldest_commit b0b75133ad6de545f6634e5380878c4b706e15dc (exclusive).
-  Current newest_commit 5b5d6aa8efbd57cbf1fc7b1fdd95d78210290668 (inclusive).
+  Current newest_commit b918e04828a3c09f87edb283a70ae76bcc1e6431 (inclusive).
