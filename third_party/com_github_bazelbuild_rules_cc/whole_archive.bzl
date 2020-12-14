@@ -31,7 +31,7 @@ def _find_cc_toolchain(ctx):
     # We didn't find anything.
     fail("In order to use find_cc_toolchain, your rule has to depend on C++ toolchain. See find_cc_toolchain.bzl docs for details.")  # noqa
 
-# This function is forked and modified from bazelbuild/rules_cc as of:
+# This function was inspired by bazelbuild/rules_cc as of:
 # https://github.com/bazelbuild/rules_cc/blob/262ebec3c2296296526740db4aefce68c80de7fa/examples/my_c_archive/my_c_archive.bzl
 def _cc_whole_archive_library_impl(ctx):
     # Find the C++ toolchain.
@@ -48,27 +48,35 @@ def _cc_whole_archive_library_impl(ctx):
     deps_cc_infos = cc_common.merge_cc_infos(
         cc_infos = [dep[CcInfo] for dep in ctx.attr.deps],
     )
-    old_libraries_to_link = deps_cc_infos.linking_context.libraries_to_link.to_list()  # noqa
-    new_libraries_to_link = []
-    for old_library_to_link in old_libraries_to_link:
-        new_library_to_link = cc_common.create_library_to_link(
-            actions = ctx.actions,
-            feature_configuration = feature_configuration,
-            cc_toolchain = cc_toolchain,
-            static_library = old_library_to_link.static_library,
-            pic_static_library = old_library_to_link.pic_static_library,
-            dynamic_library = old_library_to_link.resolved_symlink_dynamic_library,  # noqa
-            interface_library = old_library_to_link.resolved_symlink_interface_library,  # noqa
-            # This is where the magic happens!
-            alwayslink = True,
+    old_linker_inputs = deps_cc_infos.linking_context.linker_inputs.to_list()  # noqa
+    new_linker_inputs = []
+    for old_linker_input in old_linker_inputs:
+        old_libraries = old_linker_input.libraries
+        new_libraries = []
+        for old_library in old_libraries:
+            new_library = cc_common.create_library_to_link(
+                actions = ctx.actions,
+                feature_configuration = feature_configuration,
+                cc_toolchain = cc_toolchain,
+                static_library = old_library.static_library,
+                pic_static_library = old_library.pic_static_library,
+                dynamic_library = old_library.resolved_symlink_dynamic_library,  # noqa
+                interface_library = old_library.resolved_symlink_interface_library,  # noqa
+                # This is where the magic happens!
+                alwayslink = True,
+            )
+            new_libraries.append(new_library)
+        new_linker_input = cc_common.create_linker_input(
+            owner = ctx.label,
+            libraries = depset(direct = new_libraries),
+            additional_inputs = depset(direct = old_linker_input.additional_inputs),  # noqa
+            user_link_flags = depset(direct = old_linker_input.user_link_flags),  # noqa
         )
-        new_libraries_to_link.append(new_library_to_link)
+        new_linker_inputs.append(new_linker_input)
 
     # Return the CcInfo to pass along to code that wants to link us.
     linking_context = cc_common.create_linking_context(
-        libraries_to_link = new_libraries_to_link,
-        user_link_flags = deps_cc_infos.linking_context.user_link_flags,
-        additional_inputs = deps_cc_infos.linking_context.additional_inputs.to_list(),  # noqa
+        linker_inputs = depset(direct = new_linker_inputs),
     )
     return [
         DefaultInfo(

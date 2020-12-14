@@ -17,6 +17,7 @@ load(
 )
 load(
     "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_library",
     "drake_py_test",
 )
 load(
@@ -397,14 +398,23 @@ drake_lcm_cc_library(
     tags = ["manual"],
 )
 
+# Generate the *.py sources, but keep __init__.py separate, so that it doesn't
+# get installed.  The install will use this (private) library.  Users should
+# depend on ":lcmtypes_drake_py", immediately below.
 drake_lcm_py_library(
-    name = "lcmtypes_drake_py",
-    add_current_package_to_imports = False,  # Use //:module_py instead.
-    extra_srcs = ["__init__.py"],
+    name = "_generated_lcmtypes_drake_py",
+    # We'll rely on the //:module_py path munging instead.
+    add_current_package_to_imports = False,
     lcm_package = "drake",
     lcm_srcs = glob(["*.lcm"]),
+    visibility = ["//visibility:private"],
+)
+
+drake_py_library(
+    name = "lcmtypes_drake_py",
+    srcs = ["__init__.py"],
     deps = [
-        "//:module_py",
+        ":_generated_lcmtypes_drake_py",
         "@lcmtypes_bot2_core//:lcmtypes_bot2_core_py",
     ],
 )
@@ -503,10 +513,10 @@ install(
     name = "install",
     install_tests = [":test/drake-lcm-spy_install_test.py"],
     targets = [
+        ":_generated_lcmtypes_drake_py",
         ":drake-lcm-spy",
         ":drake-lcm-spy-launcher",
         ":lcmtypes_drake_java",
-        ":lcmtypes_drake_py",
     ],
     rename = {
         "share/java/liblcmtypes_drake_java.jar": "lcmtypes_drake.jar",

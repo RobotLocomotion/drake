@@ -6,6 +6,9 @@ import %workspace%/tools/lint/bazel.rc
 # Disable native Python rules in Bazel versions before 4.0.
 build --incompatible_load_python_rules_from_bzl=yes
 
+# TODO(#14440) Remove this flag once our string escapes get fixed.
+build --incompatible_restrict_string_escapes=false
+
 # Default to an optimized build.
 build -c opt
 

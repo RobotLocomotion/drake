@@ -541,6 +541,7 @@ void DefineFrameworkPySemantics(py::module m) {
             doc.PortBase.get_data_type.doc)
         .def("get_index", &OutputPort<T>::get_index,
             doc.OutputPortBase.get_index.doc)
+        .def("get_name", &OutputPort<T>::get_name, doc.PortBase.get_name.doc)
         .def(
             "Eval",
             [](const OutputPort<T>* self, const Context<T>& context) {
