@@ -81,11 +81,17 @@ std::pair<ModelInstanceIndex, std::string> GetParentModelInstanceAndLocalName(
   ModelInstanceIndex parent_model_instance = model_instance;
 
   if (!parent_name.empty()) {
-    const std::string parent_model_absolute_name =
-      JoinName(plant.GetModelInstanceName(model_instance), parent_name);
+    // If the parent is in the world_model_instance, the name can be looked up
+    // from the plant without creating an absolute name.
+    if (world_model_instance() == model_instance) {
+      parent_model_instance = plant.GetModelInstanceByName(parent_name);
+    } else {
+      const std::string parent_model_absolute_name =
+        JoinName(plant.GetModelInstanceName(model_instance), parent_name);
 
-    parent_model_instance =
-      plant.GetModelInstanceByName(parent_model_absolute_name);
+      parent_model_instance =
+        plant.GetModelInstanceByName(parent_model_absolute_name);
+    }
   }
 
   return {parent_model_instance, local_name};
@@ -635,8 +641,6 @@ const Frame<double>& AddFrameFromSpecification(
     const sdf::Frame& frame_spec, ModelInstanceIndex model_instance,
     const Frame<double>& default_frame, MultibodyPlant<double>* plant) {
   const Frame<double>* parent_frame{};
-  // TODO(eric.cousineau): Without supplying AttachedTo(), this ResolvePose
-  // call fails. Debug why.
   const RigidTransformd X_PF = ResolveRigidTransform(
       frame_spec.SemanticPose(), frame_spec.AttachedTo());
   if (frame_spec.AttachedTo().empty()) {
@@ -764,22 +768,16 @@ ModelInstanceIndex AddModelFromSpecification(
     const RigidTransformd& X_WPm,
     MultibodyPlant<double>* plant,
     const PackageMap& package_map,
-    const std::string& root_dir) {
+    const std::string& root_dir,
+    bool is_nested = false) {
   const ModelInstanceIndex model_instance =
     plant->AddModelInstance(model_name);
 
-  // TODO(eric.cousineau): Ensure this generalizes to cases when the parent
-  // frame is not the world. At present, we assume the parent frame is the
-  // world.
-  // if (model.Element()->GetParent()->GetName() == "world") {
-  //   ThrowIfPoseFrameSpecified(model.Element());
-  // }
   // "P" is the parent frame. If the model is in a child of //world or //sdf,
   // this world be the world frame. Otherwise, this would be the parent model
   // frame.
   const RigidTransformd X_PmM = ResolveRigidTransform(model.SemanticPose());
   const RigidTransformd X_WM = X_WPm * X_PmM;
-
 
   // Add nested models at root-level of <model>.
   // Do this before the resolving canonical link because the link might be in a
@@ -790,7 +788,7 @@ ModelInstanceIndex AddModelFromSpecification(
     const sdf::Model& nested_model = *model.ModelByIndex(model_index);
     const ModelInstanceIndex nested_model_instance = AddModelFromSpecification(
         nested_model, JoinName(model_name, nested_model.Name()), X_WM, plant,
-        package_map, root_dir);
+        package_map, root_dir, true);
 
     plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
         nested_model.Name(),
@@ -802,27 +800,38 @@ ModelInstanceIndex AddModelFromSpecification(
   std::vector<LinkInfo> added_link_infos = AddLinksFromSpecification(
       model_instance, model, X_WM, plant, package_map, root_dir);
 
-  drake::log()->trace("sdf_parser: Resolve canonical link");
-  const auto [canonical_link, canonical_link_name] =
-      model.CanonicalLinkAndRelativeName();
-
-  DRAKE_DEMAND(canonical_link != nullptr);
-  const auto [parent_model_instance, local_name] =
-      GetParentModelInstanceAndLocalName(canonical_link_name, model_instance,
-                                         *plant);
-  const Frame<double>& canonical_link_frame =
-      plant->GetFrameByName(local_name, parent_model_instance);
-  const RigidTransformd X_MLc =
-      ResolveRigidTransform(canonical_link->SemanticPose());
-
   // Add the SDF "model frame" given the model name so that way any frames added
   // to the plant are associated with this current model instance.
   // N.B. This follows SDFormat's convention.
   const std::string sdf_model_frame_name = "__model__";
-  const Frame<double>& model_frame =
-      plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
-          sdf_model_frame_name, canonical_link_frame, X_MLc.inverse(),
-          model_instance));
+
+  drake::log()->trace("sdf_parser: Resolve canonical link");
+  const Frame<double>& model_frame = [&]() -> const Frame<double>& {
+    const auto [canonical_link, canonical_link_name] =
+        model.CanonicalLinkAndRelativeName();
+
+    if (canonical_link != nullptr) {
+      const auto [parent_model_instance, local_name] =
+          GetParentModelInstanceAndLocalName(canonical_link_name,
+                                             model_instance, *plant);
+      const Frame<double>& canonical_link_frame =
+          plant->GetFrameByName(local_name, parent_model_instance);
+      const RigidTransformd X_LcM = ResolveRigidTransform(
+          model.SemanticPose(), JoinName(model.Name(), canonical_link_name));
+
+      return plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
+          sdf_model_frame_name, canonical_link_frame, X_LcM, model_instance));
+    } else {
+      return plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
+          sdf_model_frame_name, plant->world_frame(), X_WM, model_instance));
+    }
+  }();
+
+  if (!is_nested) {
+    plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
+        model.Name(), model_frame, RigidTransformd::Identity(),
+        world_model_instance()));
+  }
 
   drake::log()->trace("sdf_parser: Add joints");
   // Add all the joints
@@ -972,27 +981,19 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
 
     // TODO(eric.cousineau): Either support or explicitly prevent adding joints
     // via `//world/joint`, per this Bitbucket comment: https://bit.ly/2udQxhp
-
-    for (uint64_t frame_index = 0; frame_index < world.FrameCount();
-        ++frame_index) {
-      const sdf::Frame& frame = *world.FrameByIndex(frame_index);
-      AddFrameFromSpecification(
-          frame, world_model_instance(), plant->world_frame(), plant);
-    }
-
     for (uint64_t model_index = 0; model_index < world.ModelCount();
         ++model_index) {
       // Get the model.
       const sdf::Model& model = *world.ModelByIndex(model_index);
       model_instances.push_back(AddModelFromSpecification(
             model, model.Name(), {}, plant, package_map, root_dir));
+    }
 
-      // const ModelInstanceIndex model_instance = AddModelFromSpecification(
-      //     model, model.Name(), plant, package_map, root_dir);
-      // model_instances.push_back(model_instance);
-      // plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
-      //     model.Name(), plant->GetFrameByName("__model__", model_instance),
-      //     RigidTransformd::Identity()));
+    for (uint64_t frame_index = 0; frame_index < world.FrameCount();
+        ++frame_index) {
+      const sdf::Frame& frame = *world.FrameByIndex(frame_index);
+      AddFrameFromSpecification(
+          frame, world_model_instance(), plant->world_frame(), plant);
     }
   }
 
