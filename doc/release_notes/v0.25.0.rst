@@ -57,6 +57,7 @@ New features
 
 * Aggregate BoundingBoxConstraint (`#14248`_)
 * MosekSolver supports quadratic cost with nonlinear conic constraints (`#14237`_)
+* Expose new methods at symbolic_decompose (`#14353`_)
 
 Fixes
 
@@ -114,13 +115,12 @@ Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for examples,tutorials go here>
-* TBD examples/acrobot: Add an autodiff benchmark (`#14432`_)  # Relevant to: #8482 This patch rewrites Hongkai's original program (from an old branch) to use google benchmark, removes some obsolete measurements (RigidBodyTree, AutoDiffUpTo73d), and adds some new ones (MBP vanilla CalcMassMatrix()). This benchmark set is nice because is captures the small-problem (only four derivatives!) end of the autodiff problem space. A possible plan would be to wrap this program with controlled-experiment scripts, similar to those in examples/multibody/cassie_benchmark, and use it to help drive further autodiff optimization work.
 * Minor fixes for flake8's F821 (undefined name) error (`#14293`_)
-* meshcat: upgrade interface to use QueryObject (`#14292`_)
 * Change to use SetInitialGuess in the nlp tutorial (`#14331`_)
 * Allegro with reflected inertia (`#14204`_)
 * dualshock: Update example to use Logitech controller (`#14388`_)
 * Add a tutorial on quadratic program (`#14403`_)
+* examples/acrobot: Add an autodiff benchmark (`#14432`_)
 
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -128,10 +128,10 @@ Miscellaneous features and fixes
 .. <relnotes for common,math,lcm,lcmtypes,manipulation,perception go here>
 * TBD lcmtypes: Don't install stray __init__.py into site-packages (`#14444`_)
 * Use package instead of relative path for allegro model files (`#14252`_)
+* meshcat: upgrade interface to use QueryObject (`#14292`_)
 * systems/lcm: Add LcmScopeSystem (`#14308`_)
 * yaml: Correctly emit variants with templated inner types (`#14327`_)
 * yaml: Fix parsing bugs with zero-sized matrices (`#14360`_)
-* Expose new methods at symbolic_decompose (`#14353`_)
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
