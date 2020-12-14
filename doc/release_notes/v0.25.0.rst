@@ -141,7 +141,6 @@ pydrake bindings
 
 New features
 
-*.multibody: add binding for CalcCenterOfMassPosition taking model instances (`#14249`_)
 * TBD
 
 Fixes
@@ -151,13 +150,14 @@ Fixes
 * pydrake: Fix type bug in BasicVector::set_value for non-float types (`#14343`_)
 * py examples: Ensure manipulation_station_py.cc imports dep modules (`#14370`_)
 * py systems: Add keep_alive cycle to DiagramBuilder.AddSystem (`#14356`_)
-* py geometry: Fix bindings for RenderCamera classes (`#14394`_)
+a* py geometry: Fix bindings for RenderCamera classes (`#14394`_)
 * TBD
 
 Newly bound
 
 * pydrake.geometry.ContactSurface (`#14244`_)
 * pydrake.geometry.SurfaceMesh.centroid (`#14244`_)
+* pydrake.multibody.plant.CalcCenterOfMassPosition (`#14249`_)
 * pydrake.multibody.plant.ContactResults.hydroelastic_contact_info (`#14244`_)
 * pydrake.multibody.plant.ContactResults.num_hydroelastic_contacts (`#14244`_)
 * pydrake.multibody.plant.HydroelasticContactInfo (`#14244`_)
@@ -260,16 +260,24 @@ Newly-deprecated APIs
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Build system
+
+* bullet, freetype2 externals (`#14398`_)
+
+C++ items
+
+* drake::math::Slerp (`#14398`_)
 * drake::pydrake::py_reference (`#14267`_)
 * drake::pydrake::py_reference_internal (`#14267`_)
+* drake::systems::kAutoSize (`#14398`_)
+* drake::systems::Simulator: time jumps warning (`#14398`_)
+* drake::systems::Subvector empty constructor (`#14398`_)
+
+Models
+
 * examples/irb140/urdf (`#14267`_)
 * examples/kuka_iiwa_arm/models/objects/big_robot_toy.urdf (`#14267`_)
 * manipulation/models/wsg_50_description URDF and meshes (`#14267`_)
-* bullet, freetype2 externals (`#14398`_)
-* drake::systems::kAutoSize (`#14398`_)
-* drake::systems::Subvector empty constructor (`#14398`_)
-* drake::math::Slerp (`#14398`_)
-* drake::systems::Simulator: time jumps warning (`#14398`_)
 
 Notes
 -----
