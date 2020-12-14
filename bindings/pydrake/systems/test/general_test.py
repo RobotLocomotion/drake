@@ -862,3 +862,39 @@ class TestGeneral(unittest.TestCase):
         system.set_name("zoh")
         html = GenerateHtml(system, initial_depth=2)
         self.assertRegex(html, r'key: "zoh"')
+
+    def test_diagram_fan_out(self):
+        builder = DiagramBuilder()
+        adder = builder.AddSystem(Adder(6, 1))
+        adder.set_name("adder")
+        builder.ExportOutput(adder.get_output_port())
+        in0_index = builder.ExportInput(adder.get_input_port(0), "in0")
+        in1_index = builder.ExportInput(adder.get_input_port(1), "in1")
+
+        # Exercise ConnectInput overload bindings, with and without argument
+        # names.
+        builder.ConnectInput(in0_index, adder.get_input_port(2))
+        builder.ConnectInput("in1", adder.get_input_port(3))
+        builder.ConnectInput(diagram_port_name="in0",
+                             input=adder.get_input_port(4))
+        builder.ConnectInput(diagram_port_index=in1_index,
+                             input=adder.get_input_port(5))
+
+        diagram = builder.Build()
+        diagram.set_name("fan_out_diagram")
+        graph = diagram.GetGraphvizString()
+
+        # Check the desired input topology is in the graph.
+        self.assertRegex(graph, "_u0 -> .*:u0")
+        self.assertRegex(graph, "_u1 -> .*:u1")
+        self.assertRegex(graph, "_u0 -> .*:u2")
+        self.assertRegex(graph, "_u1 -> .*:u3")
+        self.assertRegex(graph, "_u0 -> .*:u4")
+        self.assertRegex(graph, "_u1 -> .*:u5")
+
+    def test_add_named_system(self):
+        builder = DiagramBuilder()
+        adder1 = builder.AddNamedSystem("adder1", Adder(2, 3))
+        self.assertEqual(adder1.get_name(), "adder1")
+        adder2 = builder.AddNamedSystem(name="adder2", system=Adder(5, 8))
+        self.assertEqual(adder2.get_name(), "adder2")

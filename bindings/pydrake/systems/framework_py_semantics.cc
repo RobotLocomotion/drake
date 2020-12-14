@@ -464,6 +464,20 @@ void DefineFrameworkPySemantics(py::module m) {
             py::keep_alive<1, 0>(),
             // Keep alive, ownership: `system` keeps `self` alive.
             py::keep_alive<2, 1>(), doc.DiagramBuilder.AddSystem.doc)
+        .def(
+            "AddNamedSystem",
+            [](DiagramBuilder<T>* self, std::string& name,
+                unique_ptr<System<T>> system) {
+              return self->AddNamedSystem(name, std::move(system));
+            },
+            py::arg("name"), py::arg("system"),
+            // TODO(eric.cousineau): These two keep_alive's purposely form a
+            // reference cycle as a workaround for #14355. We should find a
+            // better way?
+            // Keep alive, reference: `self` keeps `return` alive.
+            py::keep_alive<1, 0>(),
+            // Keep alive, ownership: `system` keeps `self` alive.
+            py::keep_alive<3, 1>(), doc.DiagramBuilder.AddNamedSystem.doc)
         .def("empty", &DiagramBuilder<T>::empty, doc.DiagramBuilder.empty.doc)
         .def(
             "GetSystems",
@@ -500,6 +514,16 @@ void DefineFrameworkPySemantics(py::module m) {
         .def("ExportInput", &DiagramBuilder<T>::ExportInput, py::arg("input"),
             py::arg("name") = kUseDefaultName, py_rvp::reference_internal,
             doc.DiagramBuilder.ExportInput.doc)
+        .def("ConnectInput",
+            py::overload_cast<const std::string&, const InputPort<T>&>(
+                &DiagramBuilder<T>::ConnectInput),
+            py::arg("diagram_port_name"), py::arg("input"),
+            doc.DiagramBuilder.ConnectInput.doc_2args_diagram_port_name_input)
+        .def("ConnectInput",
+            py::overload_cast<InputPortIndex, const InputPort<T>&>(
+                &DiagramBuilder<T>::ConnectInput),
+            py::arg("diagram_port_index"), py::arg("input"),
+            doc.DiagramBuilder.ConnectInput.doc_2args_diagram_port_index_input)
         .def("ExportOutput", &DiagramBuilder<T>::ExportOutput,
             py::arg("output"), py::arg("name") = kUseDefaultName,
             py_rvp::reference_internal, doc.DiagramBuilder.ExportOutput.doc)

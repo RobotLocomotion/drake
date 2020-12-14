@@ -26,15 +26,6 @@ TEST_F(SubvectorTest, NullptrVector) {
   EXPECT_THROW(Subvector<double> subvec(nullptr, 0, 0), std::exception);
 }
 
-TEST_F(SubvectorTest, EmptySubvectorDeprecated) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  Subvector<double> subvec(vector_.get());
-#pragma GCC diagnostic pop
-  EXPECT_EQ(0, subvec.size());
-  EXPECT_THROW(subvec.GetAtIndex(0), std::exception);
-}
-
 TEST_F(SubvectorTest, OutOfBoundsSubvector) {
   EXPECT_THROW(Subvector<double>(vector_.get(), 1, 4), std::exception);
 }

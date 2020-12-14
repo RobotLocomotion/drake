@@ -159,10 +159,10 @@ class InverseDynamicsController : public Diagram<T>,
   const multibody::MultibodyPlant<T>* multibody_plant_for_control_{nullptr};
   PidController<T>* pid_{nullptr};
   const bool has_reference_acceleration_{false};
-  int input_port_index_estimated_state_{-1};
-  int input_port_index_desired_state_{-1};
-  int input_port_index_desired_acceleration_{-1};
-  int output_port_index_control_{-1};
+  InputPortIndex input_port_index_estimated_state_;
+  InputPortIndex input_port_index_desired_state_;
+  InputPortIndex input_port_index_desired_acceleration_;
+  OutputPortIndex output_port_index_control_;
 };
 
 }  // namespace controllers

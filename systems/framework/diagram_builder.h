@@ -21,8 +21,9 @@ namespace systems {
 /// use: after calling Build or BuildInto, DiagramBuilder gives up ownership
 /// of the constituent systems, and should therefore be discarded.
 ///
-/// A system must be added to the DiagramBuilder with AddSystem before it can
-/// be wired up in any way. Every system must have a unique, non-empty name.
+/// A system must be added to the DiagramBuilder with AddSystem or
+/// AddNamedSystem before it can be wired up in any way. Every system must have
+/// a unique, non-empty name.
 template <typename T>
 class DiagramBuilder {
  public:
@@ -31,9 +32,6 @@ class DiagramBuilder {
 
   DiagramBuilder();
   virtual ~DiagramBuilder();
-
-  // TODO(sherm1) The AddSystem methods (or some variant) should take the system
-  // name as their first parameter. See discussion in issue #5895.
 
   /// Takes ownership of @p system and adds it to the builder. Returns a bare
   /// pointer to the System, which will remain valid for the lifetime of the
@@ -118,6 +116,85 @@ class DiagramBuilder {
     return AddSystem(std::make_unique<S<T>>(std::forward<Args>(args)...));
   }
 
+  /// Takes ownership of @p system, applies @p name to it, and adds it to the
+  /// builder. Returns a bare pointer to the System, which will remain valid
+  /// for the lifetime of the Diagram built by this builder.
+  ///
+  /// @code
+  ///   DiagramBuilder<T> builder;
+  ///   auto bar = builder.AddNamedSystem("bar", std::make_unique<Bar<T>>());
+  /// @endcode
+  ///
+  /// @tparam S The type of system to add.
+  /// @post The system's name is @p name.
+  template<class S>
+  S* AddNamedSystem(const std::string& name, std::unique_ptr<S> system) {
+    system->set_name(name);
+    return AddSystem(std::move(system));
+  }
+
+  /// Constructs a new system with the given @p args, applies @p name to it,
+  /// and adds it to the builder, which retains ownership. Returns a bare
+  /// pointer to the System, which will remain valid for the lifetime of the
+  /// Diagram built by this builder.
+  ///
+  /// @code
+  ///   DiagramBuilder<double> builder;
+  ///   auto bar = builder.AddNamedSystem<Bar<double>>("bar", 3.14);
+  /// @endcode
+  ///
+  /// Note that for dependent names you must use the template keyword:
+  ///
+  /// @code
+  ///   DiagramBuilder<T> builder;
+  ///   auto bar = builder.template AddNamedSystem<Bar<T>>("bar", 3.14);
+  /// @endcode
+  ///
+  /// You may prefer the `unique_ptr` variant instead.
+  ///
+  /// @tparam S The type of System to construct. Must subclass System<T>.
+  /// @post The newly constructed system's name is @p name.
+  ///
+  /// @exclude_from_pydrake_mkdoc{Not bound in pydrake -- emplacement while
+  /// specifying <T> doesn't make sense for that language.}
+  template<class S, typename... Args>
+  S* AddNamedSystem(const std::string& name, Args&&... args) {
+    return AddNamedSystem(
+        name, std::make_unique<S>(std::forward<Args>(args)...));
+  }
+
+  /// Constructs a new system with the given @p args, applies @p name to it,
+  /// and adds it to the builder, which retains ownership. Returns a bare
+  /// pointer to the System, which will remain valid for the lifetime of the
+  /// Diagram built by this builder.
+  ///
+  /// @code
+  ///   DiagramBuilder<double> builder;
+  ///   // Bar must be a template.
+  ///   auto bar = builder.AddNamedSystem<Bar>("bar", 3.14);
+  /// @endcode
+  ///
+  /// Note that for dependent names you must use the template keyword:
+  ///
+  /// @code
+  ///   DiagramBuilder<T> builder;
+  ///   auto bar = builder.template AddNamedSystem<Bar>("bar", 3.14);
+  /// @endcode
+  ///
+  /// You may prefer the `unique_ptr` variant instead.
+  ///
+  /// @tparam S A template for the type of System to construct. The template
+  /// will be specialized on the scalar type T of this builder.
+  /// @post The newly constructed system's name is @p name.
+  ///
+  /// @exclude_from_pydrake_mkdoc{Not bound in pydrake -- emplacement while
+  /// specifying <T> doesn't make sense for that language.}
+  template<template<typename Scalar> class S, typename... Args>
+  S<T>* AddNamedSystem(const std::string& name, Args&&... args) {
+    return AddNamedSystem(
+        name, std::make_unique<S<T>>(std::forward<Args>(args)...));
+  }
+
   /// Returns whether any Systems have been added yet.
   bool empty() const { return registered_systems_.empty(); }
 
@@ -160,14 +237,33 @@ class DiagramBuilder {
   /// @p src has no output ports, or @p src has more than one output port).
   void Cascade(const System<T>& src, const System<T>& dest);
 
-  /// Declares that the given @p input port of a constituent system is an input
-  /// to the entire Diagram.  @p name is an optional name for the input port;
-  /// if it is unspecified, then a default name will be provided.
+  /// Declares that the given @p input port of a constituent system is
+  /// connected to a new input to the entire Diagram.  @p name is an optional
+  /// name for the new input port; if it is unspecified, then a default name
+  /// will be provided.
   /// @pre If supplied at all, @p name must not be empty.
+  /// @pre A port indicated by the resolution of @p name must not exist.
+  /// @post @p input is connected to the new exported input port.
   /// @return The index of the exported input port of the entire diagram.
   InputPortIndex ExportInput(
       const InputPort<T>& input,
       std::variant<std::string, UseDefaultName> name = kUseDefaultName);
+
+  /// Connects an input to the entire Diagram, indicated by @p
+  /// diagram_port_name, to the given @p input port of a constituent system.
+  /// @pre The Diagram input indicated by @p diagram_port_name must have been
+  /// previously built via ExportInput().
+  /// @post @p input is connected to the indicated Diagram input port.
+  void ConnectInput(
+      const std::string& diagram_port_name, const InputPort<T>& input);
+
+  /// Connects an input to the entire Diagram, indicated by @p
+  /// diagram_port_index, to the given @p input port of a constituent system.
+  /// @pre The Diagram input indicated by @p diagram_port_index must have been
+  /// previously built via ExportInput().
+  /// @post @p input is connected to the indicated Diagram input port.
+  void ConnectInput(
+      InputPortIndex diagram_port_index, const InputPort<T>& input);
 
   /// Declares that the given @p output port of a constituent system is an
   /// output of the entire diagram.  @p name is an optional name for the output
@@ -195,6 +291,18 @@ class DiagramBuilder {
   using InputPortLocator = typename Diagram<T>::InputPortLocator;
   using OutputPortLocator = typename Diagram<T>::OutputPortLocator;
 
+  // Declares a new input to the entire Diagram, using @p model_input to
+  // supply the data type. @p name is an optional name for the input port; if
+  // it is unspecified, then a default name will be provided.
+  // @pre @p model_input must be a port of a system within the diagram.
+  // @pre If supplied at all, @p name must not be empty.
+  // @pre A port indicated by the resolution of @p name must not exist.
+  // @post @p model_input is *not* connected to the new exported input port.
+  // @return The index of the exported input port of the entire diagram.
+  InputPortIndex DeclareInput(
+      const InputPort<T>& model_input,
+      std::variant<std::string, UseDefaultName> name = kUseDefaultName);
+
   // Throws if the given input port (belonging to a child subsystem) has
   // already been connected to an output port, or exported to be an input
   // port of the whole diagram.
@@ -218,8 +326,20 @@ class DiagramBuilder {
   std::vector<OutputPortLocator> output_port_ids_;
   std::vector<std::string> output_port_names_;
 
-  // For fast membership queries: has this input port already been declared?
+  // For fast membership queries: has this input port already been wired?
   std::set<InputPortLocator> diagram_input_set_;
+
+  // A vector of data about exported input ports.
+  struct ExportedInputData {
+    // Which port to use for data type comparisons at connection time.
+    InputPortLocator model_input;
+    // The name of the port.
+    std::string name;
+  };
+  std::vector<ExportedInputData> diagram_input_data_;
+
+  // The InputPort fan-out API requires name lookup in some cases.
+  std::map<std::string, InputPortIndex> diagram_input_indices_;
 
   // A map from the input ports of constituent systems, to the output ports of
   // the systems from which they get their values.
