@@ -218,7 +218,8 @@ class ContextBase : public internal::ContextMessageInterface {
   FixedInputPortValue& FixInputPort(
       int index, std::unique_ptr<AbstractValue> value);
 
-  /** Same as above method but the value is passed by const reference instead
+  /** (Advanced)
+  Same as above method but the value is passed by const reference instead
   of by unique_ptr. The port will contain a copy of the `value` (not retain a
   pointer to the `value`).
 
@@ -230,8 +231,6 @@ class ContextBase : public internal::ContextMessageInterface {
   @exclude_from_pydrake_mkdoc{The prior overload's docstring is better, and we
   only need one of the two -- overloading on ownership doesn't make sense for
   pydrake.} */
-  DRAKE_DEPRECATED("2021-01-01",
-      "Use input_port.FixValue() instead of context.FixInputPort().")
   FixedInputPortValue& FixInputPort(int index, const AbstractValue& value) {
     return FixInputPort(index, value.Clone());
   }
