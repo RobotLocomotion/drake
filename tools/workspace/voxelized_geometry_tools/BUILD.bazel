@@ -4,3 +4,8 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 add_lint_tests()
+
+alias(
+    name = "pointcloud_voxelization_test",
+    actual = "@voxelized_geometry_tools//:pointcloud_voxelization_test",
+)

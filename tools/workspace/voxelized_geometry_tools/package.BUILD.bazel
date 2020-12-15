@@ -83,3 +83,17 @@ cc_library(
         "@zlib",
     ],
 )
+
+cc_test(
+    name = "pointcloud_voxelization_test",
+    srcs = ["test/pointcloud_voxelization_test.cpp"],
+    includes = ["include"],
+    deps = [
+        ":voxelized_geometry_tools",
+        ":cuda_voxelization_helpers",
+        ":opencl_voxelization_helpers",
+        ":pointcloud_voxelization",
+        "@common_robotics_utilities",
+        "@gtest//:without_main",
+    ],
+)
