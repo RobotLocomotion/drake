@@ -3,29 +3,29 @@
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-add_lint_tests()
-
-alias(
+sh_test(
     name = "planning_test",
-    actual = "@common_robotics_utilities//:planning_test",
+    srcs = ["@common_robotics_utilities//:planning_test"],
 )
 
-alias(
+sh_test(
     name = "task_planning_test",
-    actual = "@common_robotics_utilities//:task_planning_test",
+    srcs = ["@common_robotics_utilities//:task_planning_test"],
 )
 
-alias(
+sh_test(
     name = "task_planning_test_no_equals",
-    actual = "@common_robotics_utilities//:task_planning_test_no_equals",
+    srcs = ["@common_robotics_utilities//:task_planning_test_no_equals"],
 )
 
-alias(
+sh_test(
     name = "utility_test",
-    actual = "@common_robotics_utilities//:utility_test",
+    srcs = ["@common_robotics_utilities//:utility_test"],
 )
 
-alias(
+sh_test(
     name = "voxel_grid_test",
-    actual = "@common_robotics_utilities//:voxel_grid_test",
+    srcs = ["@common_robotics_utilities//:voxel_grid_test"],
 )
+
+add_lint_tests()

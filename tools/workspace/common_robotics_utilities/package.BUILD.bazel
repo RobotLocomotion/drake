@@ -4,27 +4,12 @@
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
-    name = "common_robotics_utilities_base",
-    srcs = [
-        "src/common_robotics_utilities/serialization.cpp",
-    ],
-    hdrs = [
-        "include/common_robotics_utilities/print.hpp",
-        "include/common_robotics_utilities/serialization.hpp",
-        "include/common_robotics_utilities/utility.hpp",
-    ],
-    includes = ["include"],
-    deps = [
-        "@eigen",
-    ],
-)
-
-cc_library(
     name = "common_robotics_utilities",
     srcs = [
         "src/common_robotics_utilities/base64_helpers.cpp",
         "src/common_robotics_utilities/conversions.cpp",
         "src/common_robotics_utilities/math.cpp",
+        "src/common_robotics_utilities/serialization.cpp",
         "src/common_robotics_utilities/time_optimal_trajectory_parametrization.cpp",  # noqa
         "src/common_robotics_utilities/zlib_helpers.cpp",
     ],
@@ -38,7 +23,9 @@ cc_library(
         "include/common_robotics_utilities/maybe.hpp",
         "include/common_robotics_utilities/openmp_helpers.hpp",
         "include/common_robotics_utilities/path_processing.hpp",
+        "include/common_robotics_utilities/print.hpp",
         "include/common_robotics_utilities/random_rotation_generator.hpp",
+        "include/common_robotics_utilities/serialization.hpp",
         "include/common_robotics_utilities/simple_astar_search.hpp",
         "include/common_robotics_utilities/simple_dtw.hpp",
         "include/common_robotics_utilities/simple_graph.hpp",
@@ -53,12 +40,12 @@ cc_library(
         "include/common_robotics_utilities/simple_rrt_planner.hpp",
         "include/common_robotics_utilities/simple_task_planner.hpp",
         "include/common_robotics_utilities/time_optimal_trajectory_parametrization.hpp",  # noqa
+        "include/common_robotics_utilities/utility.hpp",
         "include/common_robotics_utilities/voxel_grid.hpp",
         "include/common_robotics_utilities/zlib_helpers.hpp",
     ],
     includes = ["include"],
     deps = [
-        ":common_robotics_utilities_base",
         "@eigen",
         "@zlib",
     ],
@@ -67,18 +54,16 @@ cc_library(
 cc_test(
     name = "planning_test",
     srcs = ["test/planning_test.cpp"],
-    includes = ["include"],
     deps = [
         ":common_robotics_utilities",
         "@eigen",
-        "@gtest//:main",
+        "@gtest//:without_main",
     ],
 )
 
 cc_test(
     name = "task_planning_test",
     srcs = ["test/task_planning_test.cpp"],
-    includes = ["include"],
     deps = [
         ":common_robotics_utilities",
         "@gtest//:without_main",
@@ -88,7 +73,6 @@ cc_test(
 cc_test(
     name = "task_planning_test_no_equals",
     srcs = ["test/task_planning_test.cpp"],
-    includes = ["include"],
     defines = ["NO_OPERATOR_EQUALS"],
     deps = [
         ":common_robotics_utilities",
@@ -99,7 +83,6 @@ cc_test(
 cc_test(
     name = "utility_test",
     srcs = ["test/utility_test.cpp"],
-    includes = ["include"],
     deps = [
         ":common_robotics_utilities",
         "@eigen",
@@ -110,7 +93,6 @@ cc_test(
 cc_test(
     name = "voxel_grid_test",
     srcs = ["test/voxel_grid_test.cpp"],
-    includes = ["include"],
     deps = [
         ":common_robotics_utilities",
         "@eigen",

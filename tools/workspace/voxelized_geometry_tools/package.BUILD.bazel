@@ -87,7 +87,6 @@ cc_library(
 cc_test(
     name = "pointcloud_voxelization_test",
     srcs = ["test/pointcloud_voxelization_test.cpp"],
-    includes = ["include"],
     deps = [
         ":voxelized_geometry_tools",
         ":cuda_voxelization_helpers",
