@@ -1,0 +1,26 @@
+# -*- python -*-
+
+# This file is only used in cases when use the fmt bundled with spdlog.
+# See repository.bzl for the logic to select when that occurs.
+
+load("@drake//tools/install:install.bzl", "install")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "fmt",
+    hdrs = glob([
+        "fmt/*.h",
+    ], exclude = [
+        # The POSIX bindings are not header-only.
+        "fmt/posix.h",
+    ]),
+    defines = [
+        "FMT_HEADER_ONLY",
+    ],
+    includes = ["."],
+)
+
+install(name = "install")
