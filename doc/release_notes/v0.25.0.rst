@@ -128,7 +128,7 @@ Fixes
 * Fix type bug in BasicVector::set_value for non-float types (`#14343`_)
 * Ensure manipulation_station_py.cc imports dep modules (`#14370`_)
 * Add keep_alive cycle to DiagramBuilder.AddSystem (`#14356`_)
-* py geometry: Fix bindings for RenderCamera classes (`#14394`_)
+* Fix bindings for RenderCamera classes (`#14394`_)
 * Fix some argument names in SceneGraphInspector bindings (`#14259`_)
 * RenderEngine: disallow some APIs with deprecated CameraProperties instances  (`#14300`_)
 
