@@ -6,7 +6,8 @@ Announcements
 -------------
 
 * Drake no longer supports macOS Mojave 10.14 (`#14352`_); it only supports
-  Catalina 10.15.  Work is underway to support Big Sur 11.
+  Catalina 10.15.  Work is underway to support Big Sur 11. Note that macOS
+  releases only support Python 3.8, not Python 3.9.
 
 Breaking changes since v0.24.0
 ------------------------------
@@ -43,7 +44,7 @@ New features
 
 Fixes
 
-* None
+* Un-deprecate FixInputPort taking an const ref (`#14454`_)
 
 Mathematical Program
 ~~~~~~~~~~~~~~~~~~~~
@@ -229,7 +230,7 @@ Build system and dependencies
 * Changes specific to macOS:
 
   * Rebuild drake-visualizer (`#14395`_)
-  * Fix compatibility vs Homebrew python3.8 (`#14395`_, `#14428`_)
+  * Fix compatibility vs Homebrew python 3.8 (`#14395`_, `#14428`_)
   * Remove support for Mojave 10.14 (`#14352`_)
   * Remove support for building documentation (`#14350`_)
 
@@ -325,7 +326,7 @@ Notes
 
 This release provides `pre-compiled binaries
 <https://github.com/RobotLocomotion/drake/releases/tag/v0.25.0>`__ named
-``drake-20201214-{bionic|focal|mac}.tar.gz``. See :ref:`Nightly Releases
+``drake-20201215-{bionic|focal|mac}.tar.gz``. See :ref:`Nightly Releases
 <nightly-releases>` for instructions on how to use them.
 
 Drake binary releases incorporate a pre-compiled version of `SNOPT
@@ -439,8 +440,9 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#14443: https://github.com/RobotLocomotion/drake/pull/14443
 .. _#14444: https://github.com/RobotLocomotion/drake/pull/14444
 .. _#14446: https://github.com/RobotLocomotion/drake/pull/14446
+.. _#14454: https://github.com/RobotLocomotion/drake/pull/14454
 .. <end issue links>
 
 ..
   Current oldest_commit b0b75133ad6de545f6634e5380878c4b706e15dc (exclusive).
-  Current newest_commit b918e04828a3c09f87edb283a70ae76bcc1e6431 (inclusive).
+  Current newest_commit 2862d87c99ee0fa35b331ccc25f26ec3a85ceabf (inclusive).
