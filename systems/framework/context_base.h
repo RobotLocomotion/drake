@@ -230,8 +230,6 @@ class ContextBase : public internal::ContextMessageInterface {
   @exclude_from_pydrake_mkdoc{The prior overload's docstring is better, and we
   only need one of the two -- overloading on ownership doesn't make sense for
   pydrake.} */
-  DRAKE_DEPRECATED("2021-01-01",
-      "Use input_port.FixValue() instead of context.FixInputPort().")
   FixedInputPortValue& FixInputPort(int index, const AbstractValue& value) {
     return FixInputPort(index, value.Clone());
   }
