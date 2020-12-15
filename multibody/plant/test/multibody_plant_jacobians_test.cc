@@ -491,14 +491,14 @@ TEST_F(TwoDOFPlanarPendulumTest,
       Vector3d::UnitX();
   EXPECT_TRUE(CompareMatrices(abias_WScm_W, abias_WScm_W_expected, kTolerance));
 
-  // Test method Body::CalcCenterOfMassTranslationalVelocityInWorld().
+  // Shortcuts to rigid bodies.
   const RigidBody<double>& body_A = rigid_bodyA();
   const RigidBody<double>& body_B = rigid_bodyB();
 
   // Verify Body::CalcCenterOfMassTranslationalVelocityInWorld() with by-hand
   // results for translational velocities measured in the world frame W:
-  // Acm's translational velocity: v_WAcm_W = 0.5 L wAz_ 𝐖𝐲.
-  // Bcm's translational velocity: v_WBcm_W = (0.5 L wBz_ + 1.5 L wAz_) 𝐖𝐲.
+  // Acm's translational velocity: v_WAcm_W = 0.5 L wAz_ Wy.
+  // Bcm's translational velocity: v_WBcm_W = (0.5 L wBz_ + 1.5 L wAz_) Wy.
   const Vector3d v_WAcm_W_expected(0, 0.5 * link_length_ * wAz_, 0);
   const Vector3d v_WBcm_W_expected(0, 0.5 * link_length_ * wBz_ +
                                       1.5 * link_length_ * wAz_, 0);

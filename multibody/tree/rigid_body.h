@@ -155,7 +155,7 @@ class RigidBody : public Body<T> {
 
   /// Calculates Bcm's translational velocity in the world frame W.
   /// @param[in] context The context contains the state of the model.
-  /// @retval v_ABcm_E The translational velocity of Bcm (`this` rigid body's
+  /// @retval v_ABcm_W The translational velocity of Bcm (`this` rigid body's
   /// center of mass) in the world frame W, expressed in W.
   Vector3<T> CalcCenterOfMassTranslationalVelocityInWorld(
       const systems::Context<T>& context) const override {
@@ -166,7 +166,7 @@ class RigidBody : public Body<T> {
     const SpatialVelocity<T>& V_WBo_W =
         body_B.EvalSpatialVelocityInWorld(context);
 
-    // Form v_ABcm_E, Bcm's translational velocity in frame A, expressed in E.
+    // Form v_WBcm_W, Bcm's translational velocity in frame W, expressed in W.
     const Vector3<T> p_BoBcm_B = CalcCenterOfMassInBodyFrame(context);
     const math::RotationMatrix<T> R_WB =
         frame_B.CalcRotationMatrixInWorld(context);
