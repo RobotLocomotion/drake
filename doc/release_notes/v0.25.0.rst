@@ -11,20 +11,19 @@ Announcements
 Breaking changes since v0.24.0
 ------------------------------
 
-* Remove RenderEngineOspray entirely (`#14339`_)
-* Replace robotlocomotion.robot_plan_t with drake.lcmt_robot_plan (`#14377`_)
-  EncodeKeyFrames, MoveIkDemoBase, and RobotPlanInterpolator and their
-  associated demos (move_iiwa_ee, move_jaco_rr, kuka_plan_runner, etc.), now
-  operate on lcmt_robot_plan messages, not robot_plan_t
-  messages. EncodeKeyFrames no longer takes an "info" argument -- the message
-  no longer contains the unused snopt integer.
-* Implement Mesh for proximity via its convex hull (`#14351`_)
-  Anyone with a mesh registered with a proximity role will start observing
-  proximity query results where there were none before.
+* Implement Mesh for proximity via its convex hull.  Anyone with a mesh
+  registered with a proximity role will start observing proximity query
+  results where there were none before (`#14351`_).
+* Remove RenderEngineOspray (`#14339`_).
 * Remove pydrake.common.cpp_const and pydrake.third_party (`#14270`_).
-* systems: Move spring_mass_system to a test utility (`#14284`_) This is a
-  breaking change for anyone who was using this plant via the precompiled
-  binaries.
+* Remove spring_mass_system from the libdrake shared library (`#14284`_).
+* Replace robotlocomotion.robot_plan_t with drake.lcmt_robot_plan (`#14377`_).
+
+  * EncodeKeyFrames, MoveIkDemoBase, and RobotPlanInterpolator and their
+    associated demos (move_iiwa_ee, move_jaco_rr, kuka_plan_runner, etc.),
+    now operate on lcmt_robot_plan messages, not robot_plan_t messages.
+  * EncodeKeyFrames no longer takes an "info" argument -- the message
+    no longer contains the unused snopt integer.
 
 Changes since v0.24.0
 ---------------------
@@ -62,7 +61,7 @@ Fixes
 * Throw an error when getting dual solution for a QCP in Gurobi (`#14285`_)
 * Only retrieve Mosek dual solution when there are no integer variables (`#14338`_)
 * Retrieve linear constraint dual from Mosek result (`#14348`_)
-* Ensure IPOPT uses MUMPS as its linear solver (`#14446`_)
+* Ensure IPOPT uses MUMPS as its linear solver (`#14446`_, `#14288`_)
 
 Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
@@ -233,7 +232,6 @@ Build system and dependencies
   * Fix compatibility vs Homebrew python3.8 (`#14395`_, `#14428`_)
   * Remove support for Mojave 10.14 (`#14352`_)
   * Remove support for building documentation (`#14350`_)
-  * Pin to older ipopt 3.11 formula (`#14288`_)
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
