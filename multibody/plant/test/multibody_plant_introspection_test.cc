@@ -72,8 +72,9 @@ GTEST_TEST(MultibodyPlantIntrospection, FloatingBodies) {
       plant.GetFloatingBaseBodies(), std::logic_error,
       "Pre-finalize calls to 'GetFloatingBaseBodies\\(\\)' are not allowed.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.GetUniqueBaseBody(robot_table_model), std::logic_error,
-      "Pre-finalize calls to 'GetUniqueBaseBody\\(\\)' are not allowed.*");
+      plant.GetUniqueBaseBodyOrThrow(robot_table_model), std::logic_error,
+      "Pre-finalize calls to 'GetUniqueBaseBodyOrThrow\\(\\)' are not "
+      "allowed.*");
 
   plant.Finalize();
 
@@ -87,21 +88,27 @@ GTEST_TEST(MultibodyPlantIntrospection, FloatingBodies) {
   ASSERT_TRUE(pelvis2.has_quaternion_dofs());
 
   // Assert that the floating base of the Atlas robot are the pelvises.
-  EXPECT_EQ(plant.GetUniqueBaseBody(atlas_model1).index(), pelvis1.index());
-  EXPECT_EQ(plant.GetUniqueBaseBody(atlas_model2).index(), pelvis2.index());
+  EXPECT_TRUE(plant.HasUniqueBaseBody(atlas_model1));
+  EXPECT_TRUE(plant.HasUniqueBaseBody(atlas_model2));
+  EXPECT_EQ(plant.GetUniqueBaseBodyOrThrow(atlas_model1).index(),
+            pelvis1.index());
+  EXPECT_EQ(plant.GetUniqueBaseBodyOrThrow(atlas_model2).index(),
+            pelvis2.index());
 
   // The float mug is its own unique floating base.
-  EXPECT_EQ(plant.GetUniqueBaseBody(mug_model).index(), mug.index());
+  EXPECT_TRUE(plant.HasUniqueBaseBody(mug_model));
+  EXPECT_EQ(plant.GetUniqueBaseBodyOrThrow(mug_model).index(), mug.index());
 
   // The "world" is not considered as a free body.
   EXPECT_FALSE(plant.world_body().is_floating());
 
   // The table has been anchored to the world.
   EXPECT_FALSE(plant.GetBodyByName("link", robot_table_model).is_floating());
+  EXPECT_FALSE(plant.HasUniqueBaseBody(robot_table_model));
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.GetUniqueBaseBody(robot_table_model), std::runtime_error,
+      plant.GetUniqueBaseBodyOrThrow(robot_table_model), std::exception,
       "Model " + plant.GetModelInstanceName(robot_table_model) +
-          " does not have any floating base body.");
+          " does not have a unique floating base body.");
 
   // Retrieve floating bodies.
   std::unordered_set<BodyIndex> expected_floating_bodies(

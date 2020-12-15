@@ -745,8 +745,12 @@ class MultibodyTree {
     return it->second;
   }
 
-  /// See MultibodyPlant method.
-  const Body<T>& GetUniqueBaseBody(ModelInstanceIndex model_instance) const;
+  // Implements MultibodyPlant::HasUniqueBaseBody.
+  bool HasUniqueBaseBodyImpl(ModelInstanceIndex model_instance) const;
+
+  // Implements MultibodyPlant::GetUniqueBaseBodyOrThrow.
+  const Body<T>& GetUniqueBaseBodyOrThrowImpl(
+      ModelInstanceIndex model_instance) const;
 
   /// @name Querying for multibody elements by name
   /// These methods allow a user to query whether a given multibody element is
@@ -1216,11 +1220,6 @@ class MultibodyTree {
   /// See MultibodyPlant::GetFreeBodyPose.
   math::RigidTransform<T> GetFreeBodyPoseOrThrow(
       const systems::Context<T>& context, const Body<T>& body) const;
-
-  /// See MultibodyPlant::SetFreeBodyPose.
-  void SetFreeBodyPoseOrThrow(ModelInstanceIndex model_instance,
-                              const math::RigidTransform<T>& X_WB,
-                              systems::Context<T>* context) const;
 
   /// See MultibodyPlant::SetFreeBodyPose.
   void SetFreeBodyPoseOrThrow(
@@ -2965,6 +2964,12 @@ class MultibodyTree {
     }
     return range.first->second;
   }
+
+  // If there exists a unique free body in the model given by `model_instance`,
+  // return the index of that body. Otherwise return std::nullopt.
+  // @throws std::exception if `model_instance` is not valid.
+  std::optional<BodyIndex> MaybeGetUniqueBaseBodyIndex(
+      ModelInstanceIndex model_instance) const;
 
   // TODO(amcastro-tri): In future PR's adding MBT computational methods, write
   // a method that verifies the state of the topology with a signature similar
