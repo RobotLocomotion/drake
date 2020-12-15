@@ -465,9 +465,9 @@ TEST_F(TwoDOFPlanarPendulumTest,
 
   Eigen::MatrixXd Js_v_WScm_W_expected(3, plant_->num_velocities());
   // Denoting Scm as the center of mass of the system formed by links A and B,
-  // Scm's velocity in world W is expected to be (L wAz_ + 0.25 L wBz_) 𝐖𝐲,
+  // Scm's velocity in world W is expected to be (L wAz_ + 0.25 L wBz_) Wy,
   // hence Scm's translational Jacobian with respect to {wAz_ , wBz_} is
-  // { L 𝐖𝐲, 0.25 L 𝐖𝐲 } = { [0, L, 0] [0, 0.25 L, 0] }
+  // { L Wy, 0.25 L Wy } = { [0, L, 0] [0, 0.25 L, 0] }
   Js_v_WScm_W_expected << 0.0, 0.0,
                           link_length_, 0.25 * link_length_,
                           0.0, 0.0;

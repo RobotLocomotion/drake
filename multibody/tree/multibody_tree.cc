@@ -1284,8 +1284,8 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPosition(
   }
 
   if (composite_mass <= 0) {
-    throw std::runtime_error(
-        "CalcCenterOfMassPosition(): the "
+    throw std::logic_error(
+        "CalcCenterOfMassPosition(): The "
         "system's total mass must be greater than zero.");
   }
 
@@ -1360,9 +1360,9 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorldHelper(
   }
 
   if (composite_mass <= 0) {
-    throw std::logic_error(
-        "CalcCenterOfMassTranslationalVelocityInWorld(): the "
-        "system's total mass must be greater than zero.");
+    std::string message = fmt::format("{}(): The system's "
+        "total mass must be greater than zero.", function_name);
+    throw std::logic_error(message);
   }
   return sum_mi_vi / composite_mass;
 }
@@ -2146,8 +2146,8 @@ void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
   }
 
   if (composite_mass <= 0) {
-    throw std::runtime_error(
-        "CalcJacobianCenterOfMassTranslationalVelocity(): the "
+    throw std::logic_error(
+        "CalcJacobianCenterOfMassTranslationalVelocity(): The "
         "system's total mass must be greater than zero.");
   }
 
@@ -2181,8 +2181,8 @@ MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
   }
 
   if (composite_mass <= 0) {
-    throw std::runtime_error(
-        "CalcBiasCenterOfMassTranslationalAcceleration(): the "
+    throw std::logic_error(
+        "CalcBiasCenterOfMassTranslationalAcceleration(): The "
         "system's total mass must be greater than zero.");
   }
   asBias_ACcm_E /= composite_mass;

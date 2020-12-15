@@ -186,8 +186,7 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
       "bodies specified. You must provide at least one selected body.");
 
   // TODO(mitiguy) Test that a list of valid model instances that contain zero
-  //  bodies throws an exception and test that a list of model instances that
-  //  contain only zero mass bodies throws an exception.
+  //  bodies throws an exception.
 
   // Try one instance in model_instances.
   model_instances.push_back(triangle_instance_);
@@ -209,40 +208,45 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
                                     Eigen::Vector3d(-70.2, 9.8, 843.1));
   CheckCmPosition(X_WS2, X_WT2);
 
-  // Ensure CalcCenterOfMassPosition() throws an exception if total mass ≤ 0.
+  // Ensure center of mass methods throw an exception if total mass ≤ 0.
   set_mass_sphere(0.0);
   set_mass_triangle(0.0);
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_.CalcCenterOfMassPosition(*context_, model_instances),
       std::exception,
-      "CalcCenterOfMassPosition\\(\\): the "
+      "CalcCenterOfMassPosition\\(\\): The "
       "system's total mass must be greater than zero.");
 
-  // Ensure CalcJacobianCenterOfMassTranslationalVelocity() throws an exception
-  // if total mass <= 0.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_.CalcCenterOfMassTranslationalVelocity(*context_, model_instances),
+      std::exception,
+      "CalcCenterOfMassTranslationalVelocity\\(\\): The "
+      "system's total mass must be greater than zero.");
+
   Eigen::MatrixXd Js_v_WCcm_W(3, plant_.num_velocities());
   const Frame<double>& frame_W = plant_.world_frame();
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_.CalcJacobianCenterOfMassTranslationalVelocity(
       *context_, JacobianWrtVariable::kV, frame_W, frame_W, &Js_v_WCcm_W),
       std::exception,
-      "CalcJacobianCenterOfMassTranslationalVelocity\\(\\): the "
+      "CalcJacobianCenterOfMassTranslationalVelocity\\(\\): The "
       "system's total mass must be greater than zero.");
 
-  // Ensure CalcBiasCenterOfMassTranslationalAcceleration() throws an exception
-  // if total mass <= 0.
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_.CalcBiasCenterOfMassTranslationalAcceleration(
       *context_, JacobianWrtVariable::kV, frame_W, frame_W),
       std::exception,
-      "CalcBiasCenterOfMassTranslationalAcceleration\\(\\): the "
+      "CalcBiasCenterOfMassTranslationalAcceleration\\(\\): The "
       "system's total mass must be greater than zero.");
 
   // Ensure an exception is thrown if there is an invalid ModelInstanceIndex.
   ModelInstanceIndex error_index(10);
   model_instances.push_back(error_index);
   EXPECT_THROW(plant_.CalcCenterOfMassPosition(*context_, model_instances),
-               std::runtime_error);
+               std::exception);
+  EXPECT_THROW(
+      plant_.CalcCenterOfMassTranslationalVelocity(*context_, model_instances),
+      std::exception);
 }
 
 }  // namespace
