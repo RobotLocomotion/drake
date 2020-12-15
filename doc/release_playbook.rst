@@ -186,4 +186,6 @@ Cutting the release
     a. Check that the link to drake.mit.edu docs from the GitHub release draft
        page actually works.
     b. Click "Publish release"
-    c. Party on, Wayne.
+    c. Notify @jamiesnape to manually tag docker images and upload the releases
+       to S3.
+    d. Party on, Wayne.
