@@ -652,9 +652,10 @@ Note: The above is for the C++ documentation. For Python, use
             &LeafSystemPublic::DoCalcDiscreteVariableUpdates,
             doc.LeafSystem.DoCalcDiscreteVariableUpdates.doc)
         // Abstract state.
-        .def("DeclareAbstractState", &LeafSystemPublic::DeclareAbstractState,
-            // Keep alive, ownership: `AbstractValue` keeps `self` alive.
-            py::keep_alive<2, 1>(), doc.LeafSystem.DeclareAbstractState.doc);
+        .def("DeclareAbstractState",
+            py::overload_cast<const AbstractValue&>(
+                &LeafSystemPublic::DeclareAbstractState),
+            doc.LeafSystem.DeclareAbstractState.doc);
 
     DefineTemplateClassWithDefault<Diagram<T>, PyDiagram, System<T>>(
         m, "Diagram", GetPyParam<T>(), doc.Diagram.doc)

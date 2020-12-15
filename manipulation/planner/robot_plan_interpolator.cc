@@ -90,11 +90,10 @@ RobotPlanInterpolator::RobotPlanInterpolator(
           .get_index();
 
   // This corresponds to the actual plan.
-  plan_index_ = this->DeclareAbstractState(
-      std::make_unique<Value<PlanData>>());
+  plan_index_ = this->DeclareAbstractState(Value<PlanData>());
+
   // Flag indicating whether RobotPlanInterpolator::Initialize has been called.
-  init_flag_index_ = this->DeclareAbstractState(
-      std::make_unique<Value<bool>>(false));
+  init_flag_index_ = this->DeclareAbstractState(Value<bool>(false));
 
   this->DeclarePeriodicUnrestrictedUpdate(update_interval, 0);
 }

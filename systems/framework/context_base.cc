@@ -38,10 +38,10 @@ std::string ContextBase::GetSystemPathname() const {
 }
 
 FixedInputPortValue& ContextBase::FixInputPort(
-    int index, std::unique_ptr<AbstractValue> value) {
+    int index, const AbstractValue& value) {
   std::unique_ptr<FixedInputPortValue> fixed =
       internal::ContextBaseFixedInputAttorney::CreateFixedInputPortValue(
-          std::move(value));
+          value.Clone());
   FixedInputPortValue& fixed_ref = *fixed;
   SetFixedInputPortValue(InputPortIndex(index), std::move(fixed));
   return fixed_ref;

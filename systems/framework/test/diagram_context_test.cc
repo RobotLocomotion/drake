@@ -39,7 +39,7 @@ class SystemWithDiscreteState : public LeafSystem<double> {
 class SystemWithAbstractState : public LeafSystem<double> {
  public:
   SystemWithAbstractState() {
-    DeclareAbstractState(AbstractValue::Make<int>(42));
+    DeclareAbstractState(Value<int>(42));
   }
   ~SystemWithAbstractState() override {}
 };
@@ -150,9 +150,9 @@ class DiagramContextTest : public ::testing::Test {
   }
 
   void AttachInputPorts() {
-    context_->FixInputPort(0, std::make_unique<Value<BasicVector<double>>>(
+    context_->FixInputPort(0, Value<BasicVector<double>>(
                                   Vector1<double>(128.0)));
-    context_->FixInputPort(1, std::make_unique<Value<BasicVector<double>>>(
+    context_->FixInputPort(1, Value<BasicVector<double>>(
                                   Vector1<double>(256.0)));
   }
 

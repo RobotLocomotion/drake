@@ -17,8 +17,8 @@ RimlessWheel<T>::RimlessWheel()
   // Abstract state for indicating that we are in "double support" mode (e.g.
   // two feet/spokes are touching the ground, and angular velocity is
   // approximately zero).
-  bool double_support = false;
-  this->DeclareAbstractState(AbstractValue::Make(double_support));
+  const bool double_support = false;
+  this->DeclareAbstractState(Value<bool>(double_support));
 
   // The minimal state of the system.
   this->DeclareVectorOutputPort(RimlessWheelContinuousState<T>(),

@@ -40,7 +40,7 @@ class DummySystem : public LeafSystem<T> {
         DummySystemConstraintCalc<T>, {Eigen::Vector2d(2, 0), std::nullopt},
         "dummy_system_constraint");
     if (with_abstract_state_) {
-      this->DeclareAbstractState(AbstractValue::Make<int>(5));
+      this->DeclareAbstractState(Value<int>(5));
     }
     if (with_abstract_parameter_) {
       this->DeclareAbstractParameter(Value<std::string>("parameter"));

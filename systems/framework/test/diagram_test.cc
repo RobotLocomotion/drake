@@ -369,11 +369,11 @@ class KitchenSinkStateAndParameters final : public LeafSystem<T> {
     for (int i = 0; i < 2; ++i)  // Make two "groups" of discrete variables.
       this->DeclareDiscreteState(4 + i);
     for (int i = 0; i < 10; ++i)  // Ten abstract state variables.
-      this->DeclareAbstractState(AbstractValue::Make<int>(3 + i));
+      this->DeclareAbstractState(Value<int>(3 + i));
     for (int i = 0; i < 3; ++i)  // Three "groups" of numeric parameters.
       this->DeclareNumericParameter(BasicVector<T>(1 + i));
     for (int i = 0; i < 7; ++i)  // Seven abstract parameters.
-      this->DeclareAbstractParameter(*AbstractValue::Make<int>(29 + i));
+      this->DeclareAbstractParameter(Value<int>(29 + i));
   }
 
   // Scalar-converting copy constructor. See @ref system_scalar_conversion.
@@ -2293,7 +2293,7 @@ class SystemWithAbstractState : public LeafSystem<double> {
  public:
   SystemWithAbstractState(int id, double update_period) : id_(id) {
     DeclarePeriodicUnrestrictedUpdate(update_period, 0);
-    DeclareAbstractState(AbstractValue::Make<double>(id_));
+    DeclareAbstractState(Value<double>(id_));
 
     // Verify that no periodic discrete updates are registered.
     EXPECT_FALSE(this->GetUniquePeriodicDiscreteUpdateAttribute());
@@ -3009,7 +3009,7 @@ class PerStepActionTestSystem : public LeafSystem<double> {
  public:
   PerStepActionTestSystem() {
     DeclareDiscreteState(1);
-    DeclareAbstractState(AbstractValue::Make<std::string>(""));
+    DeclareAbstractState(Value<std::string>(""));
   }
 
   using LeafSystem<double>::DeclarePerStepEvent;

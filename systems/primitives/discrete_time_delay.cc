@@ -42,11 +42,11 @@ DiscreteTimeDelay<T>::DiscreteTimeDelay(
         },
         {this->xa_ticket()});
     for (int ii = 0; ii < delay_buffer_size_; ++ii) {
-      this->DeclareAbstractState(abstract_model_value_->Clone());
+      this->DeclareAbstractState(*abstract_model_value_);
     }
     // This state keeps track of the index of the oldest value in the buffer.
     // It is at abstract state index `delay_buffer_size_`.
-    this->DeclareAbstractState(AbstractValue::Make<int>(0));
+    this->DeclareAbstractState(Value<int>(0));
     this->DeclarePeriodicUnrestrictedUpdateEvent(
         update_sec_, 0., &DiscreteTimeDelay::SaveInputAbstractValueToBuffer);
   }

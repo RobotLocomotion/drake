@@ -67,7 +67,7 @@ OptitrackPoseExtractor::OptitrackPoseExtractor(
               .get_index()},
       X_WO_(X_WO) {
   DeclareAbstractState(
-      AbstractValue::Make<Isometry3<double>>(
+      Value<Isometry3<double>>(
           Isometry3<double>::Identity()));
   this->DeclareAbstractInputPort(
       systems::kUseDefaultName,

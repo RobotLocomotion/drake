@@ -163,7 +163,7 @@ TEST_F(VectorSystemTest, TopologyFailFast) {
     // code and tests to support it.
     TestVectorSystem dut;
     DRAKE_EXPECT_NO_THROW(dut.CreateDefaultContext());
-    dut.DeclareAbstractState(std::make_unique<Value<double>>(1.0));
+    dut.DeclareAbstractState(Value<double>(1.0));
     EXPECT_THROW(dut.CreateDefaultContext(), std::exception);
   }
 
