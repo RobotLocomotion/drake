@@ -84,7 +84,7 @@ Fixes
 * Clean up and deprecation of SceneGraphInspector/QueryObject bindings (`#14280`_)
 * Propagate joint default positions through scalar conversion (`#14347`_)
 * Throw an exception in relevant center of mass methods if composite_mass <= 0 (`#14316`_)
-* Remove MultiBodyPlant's awareness of SceneGraphG<AutoDiff> support (`#14324`_)
+* Remove MultibodyPlant's awareness of SceneGraph<AutoDiff> support (`#14324`_)
 * Add ValidateContext() to methods that take a context (`#14389`_)
 * Fix missing multibody graph accounting (`#14411`_)
 * Document that body spatial velocity/acceleration methods are for point Bo (not point Bcm) (`#14382`_)
