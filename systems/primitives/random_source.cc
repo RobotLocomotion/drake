@@ -77,7 +77,7 @@ RandomSource::RandomSource(
     double sampling_interval_sec)
     : distribution_(distribution), instance_seed_(get_next_seed()) {
   this->DeclareDiscreteState(num_outputs);
-  this->DeclareAbstractState(Value<SampleGenerator>().Clone());
+  this->DeclareAbstractState(Value<SampleGenerator>());
   this->DeclarePeriodicUnrestrictedUpdateEvent(
       sampling_interval_sec, 0., &RandomSource::UpdateSamples);
   this->DeclareVectorOutputPort(

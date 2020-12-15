@@ -145,7 +145,7 @@ class InputPort final : public InputPortBase {
         is_vector_port
             ? internal::ValueToVectorValue<T>::ToAbstract(__func__, value)
             : internal::ValueToAbstractValue::ToAbstract(__func__, value);
-    return context->FixInputPort(get_index(), std::move(abstract_value));
+    return context->FixInputPort(get_index(), *abstract_value);
   }
 
   /** Returns true iff this port is connected or has had a fixed value provided

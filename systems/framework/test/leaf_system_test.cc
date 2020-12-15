@@ -126,9 +126,8 @@ class TestSystem : public LeafSystem<T> {
     this->DeclareAbstractParameter(Value<std::string>("parameter value"));
 
     this->DeclareDiscreteState(3);
-    this->DeclareAbstractState(AbstractValue::Make<int>(5));
-    this->DeclareAbstractState(
-        AbstractValue::Make<std::string>("second abstract state"));
+    this->DeclareAbstractState(Value<int>(5));
+    this->DeclareAbstractState(Value<std::string>("second abstract state"));
   }
   ~TestSystem() override {}
 
@@ -1099,10 +1098,10 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
   dut.reset();
 
   // The first port should only accept a 1d vector.
-  context->FixInputPort(0, std::make_unique<Value<BasicVector<double>>>(
+  context->FixInputPort(0, Value<BasicVector<double>>(
                                VectorXd::Constant(1, 0.0)));
   DRAKE_EXPECT_THROWS_MESSAGE(
-      context->FixInputPort(0, std::make_unique<Value<BasicVector<double>>>(
+      context->FixInputPort(0, Value<BasicVector<double>>(
                                    VectorXd::Constant(2, 0.0))),
       std::exception,
       "System::FixInputPortTypeCheck\\(\\): expected value of type "
@@ -1111,7 +1110,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
       "drake::systems::BasicVector<double> with size=2. "
       "\\(System ::dut\\)");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      context->FixInputPort(0, std::make_unique<Value<std::string>>()),
+      context->FixInputPort(0, Value<std::string>()),
       std::exception,
       "System::FixInputPortTypeCheck\\(\\): expected value of type "
       "drake::Value<drake::systems::BasicVector<double>> "
@@ -1120,9 +1119,9 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
       "\\(System ::dut\\)");
 
   // The second port should only accept ints.
-  context->FixInputPort(2, std::make_unique<Value<int>>(11));
+  context->FixInputPort(2, Value<int>(11));
   DRAKE_EXPECT_THROWS_MESSAGE(
-      context->FixInputPort(2, std::make_unique<Value<std::string>>()),
+      context->FixInputPort(2, Value<std::string>()),
       std::exception,
       "System::FixInputPortTypeCheck\\(\\): expected value of type "
       "int "
@@ -1351,8 +1350,8 @@ GTEST_TEST(ModelLeafSystemTest, ModelAbstractState) {
   class DeclaredModelAbstractStateSystem : public LeafSystem<double> {
    public:
     DeclaredModelAbstractStateSystem() {
-      DeclareAbstractState(AbstractValue::Make<int>(1));
-      DeclareAbstractState(AbstractValue::Make<std::string>("wow"));
+      DeclareAbstractState(Value<int>(1));
+      DeclareAbstractState(Value<std::string>("wow"));
     }
   };
 
