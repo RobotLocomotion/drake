@@ -1,6 +1,10 @@
-"""Tool to help draft doc/release_notes/*.rst entries.
-This is intended for use by Drake maintainers (only).
-This program is only supported on Ubuntu Bionic 18.04.
+"""Tool to help populate doc/release_notes/*.rst entries by automatically
+adding commit messages' content into a structured document template.
+
+This program is intended only for use by Drake maintainers who are preparing
+Drake's release notes documentation.
+
+This program is supported only on Ubuntu Bionic 18.04.
 
 The usage of this tool is outlined in the Drake release playbook
 document:
@@ -12,8 +16,8 @@ the GitHub APIs -- the status of your current git clone is ignored.
 
 Use bazel to build the executable relnotes tool:
 
-  bazel build //tools/dev:relnotes   # build
-  bazel-bin/tools/dev/relnotes       # run
+  bazel build //tools/release_engineering:relnotes   # build
+  bazel-bin/tools/release_engineering/relnotes       # run
 
 To query GitHub APIs, you'll need to authenticate yourself first,
 via a GitHub API token.
@@ -22,6 +26,9 @@ To create the required ~/.config/readonly_github_api_token.txt file, open a
 browser to https://github.com/settings/tokens and create a new token (it does
 not need any extra permissions; the default "no checkboxes are set" is good),
 and save the plaintext hexadecimal token to that file.
+
+TODO(jwnimmer-tri) Add specific example command lines to cargo cult from,
+either here or in release_playbook.rst.
 """
 
 import argparse
@@ -129,7 +136,7 @@ def _update(args, rst_filename, gh, drake):
             (prior_newest_commit,) = match.groups()
             prior_newest_commit_line = i
     if not prior_newest_commit_line:
-        raise RuntimeError("Coult not find newest_commit inclusive")
+        raise RuntimeError("Could not find newest_commit inclusive")
     logging.debug(f"Prior newest_commit {prior_newest_commit}")
 
     # Find new commits from newest to oldest.
