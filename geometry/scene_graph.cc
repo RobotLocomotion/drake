@@ -93,8 +93,8 @@ SceneGraph<T>::SceneGraph(bool data_as_state, int)
       data_as_state_(data_as_state) {
   model_inspector_.set(&model_);
   if (data_as_state_) {
-    geometry_state_index_ = this->DeclareAbstractState(
-        make_unique<GeometryStateValue<T>>());
+    geometry_state_index_ =
+        this->DeclareAbstractState(GeometryStateValue<T>());
   } else {
     geometry_state_index_ =
         this->DeclareAbstractParameter(GeometryStateValue<T>());
