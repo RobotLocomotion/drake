@@ -18,8 +18,8 @@ CompassGait<T>::CompassGait()
 
   // Abstract state for indicating that the left foot is the stance foot.  This
   // is only used for the visualization output.
-  bool left_stance = true;
-  this->DeclareAbstractState(AbstractValue::Make(left_stance));
+  const bool left_stance = true;
+  this->DeclareAbstractState(Value<bool>(left_stance));
 
   // Hip torque input.
   this->DeclareVectorInputPort("hip_torque", systems::BasicVector<T>(1));
