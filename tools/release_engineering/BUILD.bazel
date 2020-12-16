@@ -1,0 +1,16 @@
+# -*- python -*-
+
+load("//tools/skylark:py.bzl", "py_binary")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:private"])
+
+py_binary(
+    name = "relnotes",
+    srcs = ["relnotes.py"],
+    deps = [
+        "@github3_py",
+    ],
+)
+
+add_lint_tests()

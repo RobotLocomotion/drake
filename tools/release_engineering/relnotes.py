@@ -12,8 +12,8 @@ the GitHub APIs -- the status of your current git clone is ignored.
 
 Use bazel to build the executable relnotes tool:
 
-  bazel build //tools/dev:relnotes   # build
-  bazel-bin/tools/dev/relnotes       # run
+  bazel build //tools/release_engineering:relnotes   # build
+  bazel-bin/tools/release_engineering/relnotes       # run
 
 To query GitHub APIs, you'll need to authenticate yourself first,
 via a GitHub API token.
