@@ -236,6 +236,37 @@ class TestMeshcat(unittest.TestCase):
         simulator.set_publish_every_time_step(False)
         simulator.AdvanceTo(.1)
 
+    def test_kuka_proximity_geometry(self):
+        """Kuka IIWA with mesh geometry, drawn in proximity-geom mode."""
+        file_name = FindResourceOrThrow(
+            "drake/manipulation/models/iiwa_description/sdf/"
+            "iiwa14_no_collision.sdf")
+        builder = DiagramBuilder()
+        kuka, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        Parser(plant=kuka).AddModelFromFile(file_name)
+        kuka.Finalize()
+
+        visualizer = builder.AddSystem(MeshcatVisualizer(
+            zmq_url="default",
+            open_browser=True,
+            geometry_role_type="proximity"))
+        builder.Connect(scene_graph.get_query_output_port(),
+                        visualizer.get_geometry_query_input_port())
+
+        diagram = builder.Build()
+
+        diagram_context = diagram.CreateDefaultContext()
+        kuka_context = diagram.GetMutableSubsystemContext(
+            kuka, diagram_context)
+
+        kuka_actuation_port = kuka.get_actuation_input_port()
+        kuka_actuation_port.FixValue(kuka_context,
+                                     np.zeros(kuka_actuation_port.size()))
+
+        simulator = Simulator(diagram, diagram_context)
+        simulator.set_publish_every_time_step(False)
+        simulator.AdvanceTo(.1)
+
     def test_procedural_geometry_deprecated_api(self):
         """
         This test ensures we can draw procedurally added primitive
