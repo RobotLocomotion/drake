@@ -29,15 +29,9 @@ sh_test(
     name = "record_results",
     size = "small",
     srcs = ["record_results.sh"],
-    # Debug-configured test runs are nice for coverage, but not very useful
-    # otherwise. Don't waste too much time on them.
-    args = select({
-        "//tools/cc_toolchain:debug": ["--benchmark_repetitions=1"],
-        "//conditions:default": [],
-    }),
     data = [
         ":cassie_bench",
-        "//tools/workspace/cc:identify_compiler",
+        "//tools/performance:record_results",
     ],
     tags = ["no_valgrind_tools"],
 )
