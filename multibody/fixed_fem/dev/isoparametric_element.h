@@ -186,8 +186,10 @@ class IsoparametricElement {
       const ArrayType<JacobianMatrix>& jacobian) const {
     ArrayType<PseudoinverseJacobianMatrix> dxidx;
     for (int q = 0; q < num_sample_locations(); ++q) {
+      /* Thin unitaries are enough but Eigen does not allow them for fixed size
+       matrix. */
       Eigen::JacobiSVD<JacobianMatrix> svd(
-          jacobian[q], Eigen::ComputeThinU | Eigen::ComputeThinV);
+          jacobian[q], Eigen::ComputeFullU | Eigen::ComputeFullV);
       if (svd.rank() != natural_dimension()) {
         throw std::runtime_error(
             "The element is degenerate and does not have a valid Jacobian"
