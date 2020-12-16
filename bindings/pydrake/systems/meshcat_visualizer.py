@@ -16,7 +16,7 @@ from pydrake.common.deprecation import _warn_deprecated
 from pydrake.common.eigen_geometry import Quaternion, Isometry3
 from pydrake.common.value import AbstractValue
 from pydrake.geometry import (
-    Box, Cylinder, Mesh, Sphere,
+    Box, Convex, Cylinder, Mesh, Sphere,
     FrameId, QueryObject, Role, SceneGraph
 )
 from pydrake.lcm import DrakeLcm, Subscriber
@@ -141,6 +141,7 @@ class MeshcatVisualizer(LeafSystem):
                  axis_length=0.15,
                  axis_radius=0.006,
                  delete_prefix_on_load=True,
+                 geometry_role_type="illustration",
                  **kwargs):
         """
         Args:
@@ -179,6 +180,8 @@ class MeshcatVisualizer(LeafSystem):
                 downloading meshes over the websockets link, but will cause
                 geometry from previous simulations to remain in the scene.  You
                 may call ``delete_prefix()`` manually to clear the scene.
+            geometry_role_type: Renders geometry of the given role type.
+                Options are "illustration" or "proximity."
 
         Additional kwargs will be passed to the meshcat.Visualizer constructor.
         Note:
@@ -191,6 +194,12 @@ class MeshcatVisualizer(LeafSystem):
         self.DeclarePeriodicPublish(draw_period, 0.0)
         self.draw_period = draw_period
         self._delete_prefix_on_load = delete_prefix_on_load
+        if geometry_role_type == "illustration":
+            self.role_type = Role.kIllustration
+        elif geometry_role_type == "proximity":
+            self.role_type = Role.kProximity
+        else:
+            raise ValueError("Bad role type", geometry_role_type)
 
         # Recording.
         self._is_recording = False
@@ -329,7 +338,7 @@ class MeshcatVisualizer(LeafSystem):
         vis = self.vis[self.prefix]
         for frame_id in inspector.all_frame_ids():
             count = inspector.NumGeometriesForFrameWithRole(
-                frame_id, Role.kIllustration)
+                frame_id, self.role_type)
             if count == 0:
                 continue
             if frame_id == inspector.world_frame_id():
@@ -342,17 +351,22 @@ class MeshcatVisualizer(LeafSystem):
                         + inspector.GetName(frame_id).replace("::", "/"))
 
             frame_vis = vis[name]
-            for g_id in inspector.GetGeometries(frame_id, Role.kIllustration):
+            for g_id in inspector.GetGeometries(frame_id, self.role_type):
                 color = 0xe5e5e5  # default color
                 alpha = 1.0
-                props = inspector.GetIllustrationProperties(g_id)
-                if props and props.HasProperty("phong", "diffuse"):
-                    rgba = props.GetProperty("phong", "diffuse")
-                    # Convert Rgba from [0-1] to hex 0xRRGGBB.
-                    color = int(255*rgba.r())*256**2
-                    color += int(255*rgba.g())*256
-                    color += int(255*rgba.b())
-                    alpha = rgba.a()
+                if self.role_type == Role.kIllustration:
+                    props = inspector.GetIllustrationProperties(g_id)
+                    if props and props.HasProperty("phong", "diffuse"):
+                        rgba = props.GetProperty("phong", "diffuse")
+                        # Convert Rgba from [0-1] to hex 0xRRGGBB.
+                        color = int(255*rgba.r())*256**2
+                        color += int(255*rgba.g())*256
+                        color += int(255*rgba.b())
+                        alpha = rgba.a()
+                elif self.role_type == Role.kProximity:
+                    # Pick a random color to make collision geometry
+                    # visually distinguishable.
+                    color = np.random.randint(2**(24))
 
                 material = g.MeshLambertMaterial(
                     color=color, transparent=alpha != 1., opacity=alpha)
@@ -371,7 +385,7 @@ class MeshcatVisualizer(LeafSystem):
 
                     R_GC = RotationMatrix.MakeXRotation(np.pi/2.0).matrix()
                     X_FG[0:3, 0:3] = X_FG[0:3, 0:3].dot(R_GC)
-                elif isinstance(shape, Mesh):
+                elif isinstance(shape, Mesh) or isinstance(shape, Convex):
                     geom = g.ObjMeshGeometry.from_file(
                         shape.filename()[0:-3] + "obj")
                     # Attempt to find a texture for the object by looking for
