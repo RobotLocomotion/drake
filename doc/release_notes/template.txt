@@ -1,4 +1,4 @@
-.. This document is the template used by tools/dev/relnotes.
+.. This document is the template used by tools/release_engineering/relnotes.
 
 *************
 Drake {version}
