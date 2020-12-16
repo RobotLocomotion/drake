@@ -1295,6 +1295,14 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPosition(
 template <typename T>
 Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorld(
     const systems::Context<T>& context) const {
+  // Each multibody tree contains the world body.
+  // Ensure this multibody tree contains at least one non-world body.
+  if (num_bodies() <= 1) {
+    std::string message = fmt::format("{}(): This MultibodyPlant only contains "
+        "the world_body() so its center of mass is undefined.", __func__);
+    throw std::logic_error(message);
+  }
+
   std::vector<ModelInstanceIndex> model_instances;
   for (ModelInstanceIndex model_instance_index(1);
        model_instance_index < num_model_instances(); ++model_instance_index)
@@ -1329,16 +1337,12 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorldHelper(
     const systems::Context<T>& context,
     const std::vector<BodyIndex>& body_indexes,
     const char* function_name) const {
-  if (num_bodies() <= 1) {
-    std::string message = fmt::format("{}(): This MultibodyPlant only contains"
-        " the world_body() so its center of mass is undefined.", function_name);
-    throw std::logic_error(message);
-  }
   if (body_indexes.empty()) {
     std::string message = fmt::format("{}(): There were no bodies specified. "
         "You must provide at least one selected body.", function_name);
     throw std::logic_error(message);
   }
+
   // For a system S with center of mass Scm, Scm's translational velocity in
   // frame A is calculated as v_AScm = ∑ (mᵢ vᵢ)  / mₛ, where mₛ = ∑ mᵢ,
   // mᵢ is the mass of the  iᵗʰ body, and vᵢ is the velocity of Bcm in frame A
@@ -1346,6 +1350,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorldHelper(
   T composite_mass = 0;                       // mₛ = ∑ mᵢ (mass of the system).
   Vector3<T> sum_mi_vi = Vector3<T>::Zero();  // sum_mi_vi = ∑ (mᵢ vᵢ).
 
+  int number_of_non_world_bodies_processed = 0;
   for (BodyIndex body_index : body_indexes) {
     if (body_index == 0) continue;
 
@@ -1357,6 +1362,14 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassTranslationalVelocityInWorldHelper(
     const T& body_mass = body_B.get_mass(context);
     sum_mi_vi += body_mass * v_ABcm_E;
     composite_mass += body_mass;
+    ++number_of_non_world_bodies_processed;
+  }
+
+  // Throw an exception if body_indexes only contains one (or more) world_body.
+  if (number_of_non_world_bodies_processed == 0) {
+    std::string message = fmt::format("{}(): This system only contains "
+        "the world_body() so its center of mass is undefined.", function_name);
+    throw std::logic_error(message);
   }
 
   if (composite_mass <= 0) {

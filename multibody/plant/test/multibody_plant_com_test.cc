@@ -185,8 +185,26 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
       "CalcCenterOfMassTranslationalVelocityInWorld\\(\\): There were no "
       "bodies specified. You must provide at least one selected body.");
 
-  // TODO(mitiguy) Test that a list of valid model instances that contain zero
-  //  bodies throws an exception.
+  // Ensure an exception is thrown when a model instance has one world body.
+  const ModelInstanceIndex world_model_instance =
+      multibody::world_model_instance();
+  std::vector<ModelInstanceIndex> world_model_instance_array;
+  world_model_instance_array.push_back(world_model_instance);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_.CalcCenterOfMassTranslationalVelocityInWorld(*context_,
+          world_model_instance_array),
+      std::exception,
+      "CalcCenterOfMassTranslationalVelocityInWorld\\(\\): This system only "
+      "contains the world_body\\(\\) so its center of mass is undefined.");
+
+  // Ensure an exception is thrown when a model instance has two world bodies.
+  world_model_instance_array.push_back(world_model_instance);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_.CalcCenterOfMassTranslationalVelocityInWorld(*context_,
+          world_model_instance_array),
+      std::exception,
+      "CalcCenterOfMassTranslationalVelocityInWorld\\(\\): This system only "
+      "contains the world_body\\(\\) so its center of mass is undefined.");
 
   // Try one instance in model_instances.
   model_instances.push_back(triangle_instance_);
@@ -218,9 +236,10 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
       "system's total mass must be greater than zero.");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant_.CalcCenterOfMassTranslationalVelocity(*context_, model_instances),
+      plant_.CalcCenterOfMassTranslationalVelocityInWorld(*context_,
+                                                          model_instances),
       std::exception,
-      "CalcCenterOfMassTranslationalVelocity\\(\\): The "
+      "CalcCenterOfMassTranslationalVelocityInWorld\\(\\): The "
       "system's total mass must be greater than zero.");
 
   Eigen::MatrixXd Js_v_WCcm_W(3, plant_.num_velocities());
@@ -244,9 +263,9 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
   model_instances.push_back(error_index);
   EXPECT_THROW(plant_.CalcCenterOfMassPosition(*context_, model_instances),
                std::exception);
-  EXPECT_THROW(
-      plant_.CalcCenterOfMassTranslationalVelocity(*context_, model_instances),
-      std::exception);
+  EXPECT_THROW(plant_.CalcCenterOfMassTranslationalVelocityInWorld(
+                   *context_, model_instances),
+               std::exception);
 }
 
 }  // namespace
