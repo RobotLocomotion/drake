@@ -8,12 +8,12 @@
 
 namespace drake {
 namespace multibody {
-namespace fem {
+namespace fixed_fem {
 /** The number of nodes of 1D simplices (segments) is 2. The number of nodes of
  2D simplices (triangles) is 3. The number of nodes of 3D simplices
  (tetrahedron) is 4. */
 template <int NaturalDimension>
-constexpr int LinearSimplexElementNumNodes() {
+constexpr int num_linear_simplex_element_nodes() {
   return NaturalDimension + 1;
 }
 
@@ -26,7 +26,7 @@ struct LinearSimplexElementTraits {
   static constexpr int kSpatialDimension = SpatialDimension;
   static constexpr int kNumSampleLocations = NumSampleLocations;
   static constexpr int kNumNodes =
-      LinearSimplexElementNumNodes<NaturalDimension>();
+      num_linear_simplex_element_nodes<NaturalDimension>();
 };
 
 /** A concrete IsoparametricElement for linear simplex elements
@@ -37,7 +37,7 @@ struct LinearSimplexElementTraits {
  @tparam NaturalDimension The dimension of the parent domain.
  @tparam SpatialDimension The dimension of the spatial domain.
  @tparam NumSampleLocations The number of locations to evaluate interpolations
- and other calculates are performed. */
+ and other calculations are performed. */
 template <typename T, int NaturalDimension, int SpatialDimension,
           int NumSampleLocations>
 class LinearSimplexElement
@@ -74,23 +74,23 @@ class LinearSimplexElement
    shape functions as well as their gradients. */
   explicit LinearSimplexElement(LocationsType locations)
       : Base(std::move(locations)),
-        S_(CalcShapeFunctionsHelper()),
-        dSdxi_(CalcGradientInParentCoordinatesHelper()) {}
+        S_(GetShapeFunctionsHelper()),
+        dSdxi_(GetGradientInParentCoordinatesHelper()) {}
 
-  /** Implements Base::CalcShapeFunctions(). */
-  const ArrayType<Vector<T, num_nodes()>>& CalcShapeFunctions() const {
+  /** Implements Base::GetShapeFunctions(). */
+  const ArrayType<Vector<T, num_nodes()>>& GetShapeFunctions() const {
     return S_;
   }
 
-  /** Implements Base::CalcGradientInParentCoordinates(). */
+  /** Implements Base::GetGradientInParentCoordinates(). */
   const ArrayType<Eigen::Matrix<T, num_nodes(), natural_dimension()>>&
-  CalcGradientInParentCoordinates() const {
+  GetGradientInParentCoordinates() const {
     return dSdxi_;
   }
 
  private:
   /* Precomputes the shape functions. */
-  ArrayType<Vector<T, num_nodes()>> CalcShapeFunctionsHelper() const {
+  ArrayType<Vector<T, num_nodes()>> GetShapeFunctionsHelper() const {
     ArrayType<Vector<T, num_nodes()>> S;
     const LocationsType& locations = this->locations();
     for (int q = 0; q < this->num_sample_locations(); ++q) {
@@ -109,7 +109,7 @@ class LinearSimplexElement
 
   /* Precomputes the shape function gradients in parent coordinates. */
   static const ArrayType<Eigen::Matrix<T, num_nodes(), natural_dimension()>>
-  CalcGradientInParentCoordinatesHelper() {
+  GetGradientInParentCoordinatesHelper() {
     Eigen::Matrix<T, num_nodes(), natural_dimension()> dSdxi_q;
     dSdxi_q.template topRows<1>() =
         -1.0 * Vector<T, natural_dimension()>::Ones();
@@ -126,6 +126,6 @@ class LinearSimplexElement
    */
   ArrayType<Eigen::Matrix<T, num_nodes(), natural_dimension()>> dSdxi_;
 };
-}  // namespace fem
+}  // namespace fixed_fem
 }  // namespace multibody
 }  // namespace drake

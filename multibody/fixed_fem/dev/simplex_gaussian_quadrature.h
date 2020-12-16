@@ -7,12 +7,12 @@
 
 namespace drake {
 namespace multibody {
-namespace fem {
+namespace fixed_fem {
 /** Calculates the number of quadrature points used for simplices given the
  natural dimension and the order of the quadrature rule as template
  parameters. */
 template <int NaturalDim, int Order>
-constexpr int SimplexQuadratureNumLocations() {
+constexpr int num_simplex_quadrature_locations() {
   static_assert(
       1 <= Order && Order <= 3,
       "Only linear, quadratic and cubic quadrature rules are supported.");
@@ -42,10 +42,10 @@ constexpr int SimplexQuadratureNumLocations() {
 template <int NaturalDimension, int Order>
 class SimplexGaussianQuadrature
     : public Quadrature<NaturalDimension,
-          SimplexQuadratureNumLocations<NaturalDimension, Order>()> {
+          num_simplex_quadrature_locations<NaturalDimension, Order>()> {
  public:
   using Base = Quadrature<NaturalDimension,
-      SimplexQuadratureNumLocations<NaturalDimension, Order>()>;
+      num_simplex_quadrature_locations<NaturalDimension, Order>()>;
   using VectorD = typename Base::VectorD;
   using LocationsType = typename Base::LocationsType;
   using WeightsType = typename Base::WeightsType;
@@ -156,6 +156,6 @@ class SimplexGaussianQuadrature
     }
   }
 };
-}  // namespace fem
+}  // namespace fixed_fem
 }  // namespace multibody
 }  // namespace drake

@@ -6,7 +6,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fem {
+namespace fixed_fem {
 namespace {
 
 constexpr int kNumQuads = 2;
@@ -23,7 +23,7 @@ class LinearSimplexElementTest : public ::testing::Test {
 };
 
 TEST_F(LinearSimplexElementTest, ShapeFunction2D) {
-  const auto& S = tri_.CalcShapeFunctions();
+  const auto& S = tri_.GetShapeFunctions();
   EXPECT_EQ(S.size(), kNumQuads);
   // There are three vertices in a triangle.
   EXPECT_EQ(S[0].size(), 3);
@@ -41,7 +41,7 @@ TEST_F(LinearSimplexElementTest, ShapeFunction2D) {
 }
 
 TEST_F(LinearSimplexElementTest, ShapeFunction3D) {
-  const auto& S = tet_.CalcShapeFunctions();
+  const auto& S = tet_.GetShapeFunctions();
   EXPECT_EQ(S.size(), kNumQuads);
   // There are four vertices in a tetrahedron.
   for (int q = 0; q < kNumQuads; ++q) {
@@ -61,7 +61,7 @@ TEST_F(LinearSimplexElementTest, ShapeFunction3D) {
 }
 
 TEST_F(LinearSimplexElementTest, ShapeFunctionDerivative2D) {
-  const auto& dSdxi = tri_.CalcGradientInParentCoordinates();
+  const auto& dSdxi = tri_.GetGradientInParentCoordinates();
   EXPECT_EQ(dSdxi.size(), kNumQuads);
   // The shape function for the 3 nodes of the triangle are 1-x-y, x and y. So
   // the derivatives with respect to x is [-1, 1, 0], and
@@ -79,7 +79,7 @@ TEST_F(LinearSimplexElementTest, ShapeFunctionDerivative2D) {
 }
 
 TEST_F(LinearSimplexElementTest, ShapeFunctionDerivative3D) {
-  const auto& dSdxi = tet_.CalcGradientInParentCoordinates();
+  const auto& dSdxi = tet_.GetGradientInParentCoordinates();
   EXPECT_EQ(dSdxi.size(), kNumQuads);
   // The shape function for the 3 nodes of the triangle are 1-x-y-z, x, y and z.
   // So the derivatives with respect to x is [-1, 1, 0, 0],
@@ -100,6 +100,6 @@ TEST_F(LinearSimplexElementTest, ShapeFunctionDerivative3D) {
 }
 
 }  // namespace
-}  // namespace fem
+}  // namespace fixed_fem
 }  // namespace multibody
 }  // namespace drake

@@ -10,7 +10,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fem {
+namespace fixed_fem {
 namespace {
 
 constexpr int kNumSamplesTri = 4;
@@ -163,14 +163,14 @@ TEST_F(IsoparametricElementTest, JacobianInverse2DTriangle) {
         0.52, 0.34, 0.34;
   // clang-format on
   const auto dxdxi = tri_2d_.CalcJacobian(xa);
-  const auto dxidx = tri_2d_.CalcJacobianInverse(xa);
+  const auto dxidx = tri_2d_.CalcJacobianPseudoinverse(xa);
   EXPECT_EQ(dxidx.size(), kNumSamplesTri);
   for (int i = 0; i < kNumSamplesTri; ++i) {
     EXPECT_TRUE(CompareMatrices(dxdxi[i] * dxidx[i],
                                 MatrixX<double>::Identity(2, 2),
                                 4.0 * std::numeric_limits<double>::epsilon()));
     EXPECT_TRUE(
-        CompareMatrices(dxidx[i], tri_2d_.CalcJacobianInverse(dxdxi)[i]));
+        CompareMatrices(dxidx[i], tri_2d_.CalcJacobianPseudoinverse(dxdxi)[i]));
   }
 }
 
@@ -184,18 +184,20 @@ TEST_F(IsoparametricElementTest, JacobianInverse3DTriangle) {
         0.58, 0.43, 0.19;
   // clang-format on
   const auto dxdxi = tri_3d_.CalcJacobian(xa);
-  const auto dxidx = tri_3d_.CalcJacobianInverse(xa);
+  const auto dxidx = tri_3d_.CalcJacobianPseudoinverse(xa);
   EXPECT_EQ(dxidx.size(), kNumSamplesTri);
   // The normal of the triangle should live in the null space of dξ/dx.
-  auto n = (xa.col(1) - xa.col(0))
-               .cross(xa.col(2) - xa.col(0))
-               .normalized();
+  auto n = (xa.col(1) - xa.col(0)).cross(xa.col(2) - xa.col(0)).normalized();
   for (int i = 0; i < kNumSamplesTri; ++i) {
     /* The Jacobian dx/dξ is of dimension 3 x 2 and full rank. The
      Jacobian inverse dξ/dx should be its left inverse. */
     EXPECT_TRUE(CompareMatrices(dxidx[i] * dxdxi[i],
                                 MatrixX<double>::Identity(2, 2),
-                                4.0 * std::numeric_limits<double>::epsilon()));
+                                std::numeric_limits<double>::epsilon()));
+    // dx/dξ * dξ/dx should be symmetric.
+    auto A = dxdxi[i] * dxidx[i];
+    EXPECT_TRUE(CompareMatrices(A, A.transpose(),
+                                std::numeric_limits<double>::epsilon()));
     EXPECT_TRUE(CompareMatrices(VectorX<double>::Zero(2), dxidx[i] * n,
                                 std::numeric_limits<double>::epsilon()));
   }
@@ -211,13 +213,24 @@ TEST_F(IsoparametricElementTest, JacobianInverseTetrahedon) {
         0.58, 0.43, 0.19, -1.34;
   // clang-format on
   const auto dxdxi = tet_.CalcJacobian(xa);
-  const auto dxidx = tet_.CalcJacobianInverse(xa);
+  const auto dxidx = tet_.CalcJacobianPseudoinverse(xa);
   EXPECT_EQ(dxidx.size(), kNumSamplesTet);
   for (int i = 0; i < kNumSamplesTet; ++i) {
     EXPECT_TRUE(CompareMatrices(dxidx[i] * dxdxi[i],
                                 MatrixX<double>::Identity(3, 3),
                                 16.0 * std::numeric_limits<double>::epsilon()));
   }
+}
+
+TEST_F(IsoparametricElementTest, DegenerateElementPseudoinverseJacobian) {
+  /* Initialize a triangle in 3D that is degenerate. */
+  Matrix3<double> xa;
+  // clang-format off
+    xa << 1, 0, 0.5,
+          0, 1, 0.5,
+          0, 0, 0;
+  // clang-format on
+  EXPECT_THROW(tri_3d_.CalcJacobianPseudoinverse(xa), std::exception);
 }
 
 TEST_F(IsoparametricElementTest, InterpolateScalar2D) {
@@ -241,7 +254,7 @@ TEST_F(IsoparametricElementTest, InterpolateScalar3D) {
   // Linear simplex element should interpolate linear functions perfectly.
   for (int i = 0; i < kNumSamplesTet; ++i) {
     EXPECT_EQ(LinearScalarFunction3D(tet_.locations()[i]),
-                     tet_.InterpolateNodalValues<1>(u.transpose())[i](0));
+              tet_.InterpolateNodalValues<1>(u.transpose())[i](0));
   }
 }
 
@@ -274,6 +287,6 @@ TEST_F(IsoparametricElementTest, InterpolateVector3D) {
   }
 }
 }  // namespace
-}  // namespace fem
+}  // namespace fixed_fem
 }  // namespace multibody
 }  // namespace drake

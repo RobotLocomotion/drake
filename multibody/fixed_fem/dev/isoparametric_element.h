@@ -6,12 +6,12 @@
 
 namespace drake {
 namespace multibody {
-namespace fem {
+namespace fixed_fem {
 /** IsoparametricElement is a class that evaluates shape functions
  and their derivatives at prescribed locations. The shape function
  `S` located at a vertex `a` maps the parent domain to a scalar. The reference
  position `X` as well as `u(X)`, an arbitrary function on the reference domain,
- can be interpolated from to nodal values `Xₐ` and `uₐ` to any location in the
+ can be interpolated from nodal values `Xₐ` and `uₐ` to any location in the
  parent domain using the shape function, i.e.:
 
  <pre>
@@ -20,7 +20,7 @@ namespace fem {
  </pre>
 
  where ξ ∈ ℝᵈ is in the parent domain and d is its dimension (and we call it the
- natural dimension) , which may be different from the dimension of X, which we
+ natural dimension), which may be different from the dimension of X, which we
  call the spatial dimension (e.g. 2D membrane or shell element in 3D dynamics
  simulation has natural dimension 2 and spatial dimension 3). The constructor
  for this class takes in an array of locations at which we may evaluate and/or
@@ -32,11 +32,13 @@ namespace fem {
  functions are usually evaluated in computationally intensive inner loops of the
  simulation, the overhead caused by virtual methods may be significant.
  Therefore, this class uses CRTP to achieve compile-time polymorphism
- and avoids the overhead of virtual methods. Concrete isoparametric elements
- must inherit from this base class and implement the interface this class
- provides. The derived isoparametric element must also be accompanied by a
- corresponding traits class that declares the compile time quantities and type
- declarations that this base class requires.
+ and avoids the overhead of virtual methods, and permits inlining instead.
+ Concrete isoparametric elements must inherit from this base class and implement
+ the interface this class provides. The derived isoparametric element must also
+ be accompanied by a corresponding traits class that declares the compile time
+ quantities and type declarations that this base class requires. One cannot
+ combine the derived class and the traits class because the derived class is
+ incomplete at the time when the traits is needed.
  @tparam DerivedElement The concrete isoparametric element that inherits
  from %IsoparametricElement through CRTP.
  @tparam DerivedTraits The traits class associated with the DerivedElement. */
@@ -77,9 +79,8 @@ class IsoparametricElement {
   using JacobianMatrix =
       Eigen::Matrix<T, spatial_dimension(), natural_dimension()>;
 
-  /** Fixed size matrix type to store the inverse Jacobian with respect to
-   natural coordinates ξ. */
-  using InverseJacobianMatrix =
+  /** Fixed size matrix type to store the pseudoinverse Jacobian matrix. */
+  using PseudoinverseJacobianMatrix =
       Eigen::Matrix<T, natural_dimension(), spatial_dimension()>;
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IsoparametricElement);
@@ -94,29 +95,31 @@ class IsoparametricElement {
    construction. */
   const LocationsType& locations() const { return locations_; }
 
-  /** Computes the shape function array
-      S(ξ) = [S₀(ξ); S₁(ξ); ... Sₐ(ξ); ...; Sₙ₋₁(ξ)]
+  /** Obtains the shape function array
+     <pre>
+          S(ξ) = [S₀(ξ); S₁(ξ); ... Sₐ(ξ); ...; Sₙ₋₁(ξ)]
+     </pre>
    at each location in the parent domain provided at construction.
-   @returns an array of size equal to 'num_sample_locations()`. The q-th entry
+   @returns an array of size equal to `num_sample_locations()`. The q-th entry
    contains the vector S(ξ), of size num_nodes(), evaluated at the
    q-th sample location in the parent domain provided at construction.
    The a-th component of S(ξ) corresponds to the shape function Sₐ(ξ) for node
    a. */
-  const ArrayType<Vector<T, num_nodes()>>& CalcShapeFunctions() const {
+  const ArrayType<Vector<T, num_nodes()>>& GetShapeFunctions() const {
     const DerivedElement& derived = static_cast<const DerivedElement&>(*this);
-    return derived.CalcShapeFunctions();
+    return derived.GetShapeFunctions();
   }
 
-  /** Computes the gradient of the shape functions in parent coordinates, dS/dξ,
+  /** Obtains the gradient of the shape functions in parent coordinates, dS/dξ,
    evaluated at each location in the parent domain provided at construction.
    @returns an array of size `num_sample_locations()`. The q-th entry contains
    the matrix dS/dξ, of size `num_nodes()`-by-`natural_dimension()`, evaluated
    at the q-th sample location in the parent domain provided at construction.
    The a-th row of the matrix gives the derivatives dSₐ/dξ for node a. */
   const ArrayType<Eigen::Matrix<T, num_nodes(), natural_dimension()>>&
-  CalcGradientInParentCoordinates() const {
+  GetGradientInParentCoordinates() const {
     const DerivedElement& derived = static_cast<const DerivedElement&>(*this);
-    return derived.CalcGradientInParentCoordinates();
+    return derived.GetGradientInParentCoordinates();
   }
 
   // TODO(xuchenhan-tri): Implement CalcGradientInSpatialCoordinates().
@@ -133,26 +136,27 @@ class IsoparametricElement {
           const Eigen::Matrix<T, spatial_dimension(), num_nodes()>>& xa) const {
     ArrayType<JacobianMatrix> dxdxi;
     const ArrayType<Eigen::Matrix<T, num_nodes(), natural_dimension()>>& dSdxi =
-        CalcGradientInParentCoordinates();
+        GetGradientInParentCoordinates();
     for (int q = 0; q < num_sample_locations(); ++q) {
       dxdxi[q] = xa * dSdxi[q];
     }
     return dxdxi;
   }
 
-  /** Computes dξ/dx, the inverse Jacobian matrix, at each sample location in
-   the parent domain provided at construction.
+  /** Computes dξ/dx, the pseudoinverse Jacobian matrix, at each sample location
+   in the parent domain provided at construction.
    @param xa Spatial coordinates for each element node stored column-wise.
    @returns an array of size `num_sample_locations()`. The q-th entry contains
-   the inverse Jacobian dξ/dx, of size
+   the pseudoinverse Jacobian dξ/dx, of size
    `natural_dimension()`-by-`spatial_dimension()`, evaluated at the q-th sample
    location in the parent domain provided at construction.
+   @pre the element with node positions `xa` must not be degenerate.
    @see CalcJacobian().  */
-  ArrayType<InverseJacobianMatrix> CalcJacobianInverse(
+  ArrayType<PseudoinverseJacobianMatrix> CalcJacobianPseudoinverse(
       const Eigen::Ref<
           const Eigen::Matrix<T, spatial_dimension(), num_nodes()>>& xa) const {
     ArrayType<JacobianMatrix> dxdxi = CalcJacobian(xa);
-    return CalcJacobianInverse(dxdxi);
+    return CalcJacobianPseudoinverse(dxdxi);
   }
 
   /** Preferred signature for computing dξ/dx when the Jacobian matrices are
@@ -161,26 +165,38 @@ class IsoparametricElement {
    contains the Jacobian matrix dx/dξ, of size
    `spatial_dimension()`-by-`natural_dimension()`, evaluated at the q-th sample
    location in the parent domain provided at construction.
+   @pre Each entry in `jacobian` must be full rank.
    @see CalcJacobian(). */
-  /* Suppose the Jacobian matrix J is m-by-n where m >= n. We are looking for
-   a n-by-m matrix A such that A*J = I. To do that, QR decompose J into
-   J = QR and define B = AQ which leads to BQᵀQR = BR = I. Here R and B are the
-   Jacobian and the inverse Jacobian in the Q bases, and thus the m-n right-most
-   columns of B should be zero. Restricting B and R to their nonzero top-left
-   n-by-n corner, we get B̂R̂ = R̂B̂ = I. To solve for B̂, we solve the equivalent
-   system RB̂ = Î, where Î is the m-by-n identity matrix, which is further
-   equivalent to JB̂ = Q̂ after multiplying by Q on the left, where Q̂ is the
-   left-most n columns of Q. We then reconstruct B from B̂ and find A = BQᵀ. */
-  ArrayType<InverseJacobianMatrix> CalcJacobianInverse(
+  /* Suppose the Jacobian matrix J = dx/dξ is m×n where m >= n. We are looking
+   for a n×m matrix A = dξ/dx. By the chain rule, AJ = I. In fact A is the
+   pseudoinverse of J. To see that, observe that AJA = A, JAJ = J, (AJ)ᵀ = AJ.
+   The only nontrivial fact is that (JA)ᵀ = JA. To see that, QR decompose J so
+   that J = QR where Q is orthogonal and R is upper triangular, and define B =
+   AQ. Here R and B are the dx/dξ and dξ/dx in the Q bases, and thus the m-n
+   right-most columns of B are zero. Restricting B and R to their top-left n×n
+   corners (call them B̂ and R̂̂), we get R̂B̂ = B̂ᵀR̂̂ᵀ = Iₙₓₙ. Padding zeros in the
+   correct places, we see that BᵀRᵀ = RB. Therefore, QBᵀRᵀQᵀ = QRBQᵀ which
+   implies AᵀJᵀ = JA. */
+  // TODO(xuchenhan-tri): The rank revealing Eigen::JacobiSVD is used instead of
+  //  Eigen::HouseholderQR to guard against rank-deficiency. This is fine for
+  //  now as this function is only invoked in precomputes at the moment.
+  //  Consider the more performant alternative when we need this in an inner
+  //  loop.
+  ArrayType<PseudoinverseJacobianMatrix> CalcJacobianPseudoinverse(
       const ArrayType<JacobianMatrix>& jacobian) const {
-    ArrayType<InverseJacobianMatrix> dxidx;
+    ArrayType<PseudoinverseJacobianMatrix> dxidx;
     for (int q = 0; q < num_sample_locations(); ++q) {
-      Eigen::HouseholderQR<JacobianMatrix> qr(jacobian[q]);
-      auto rhs = qr.householderQ() * JacobianMatrix::Identity();
-      auto B_hat = qr.solve(rhs);
-      InverseJacobianMatrix B(InverseJacobianMatrix::Zero());
-      B.topLeftCorner(natural_dimension(), natural_dimension()) = B_hat;
-      dxidx[q] = B * qr.householderQ().transpose();
+      Eigen::JacobiSVD<JacobianMatrix> svd(
+          jacobian[q], Eigen::ComputeThinU | Eigen::ComputeThinV);
+      if (svd.rank() != natural_dimension()) {
+        throw std::runtime_error(
+            "The element is degenerate and does not have a valid Jacobian"
+            "pseudoinverse (the pseudoinverse is not the left inverse).");
+      }
+      /* Use SVD to solve for the least square system which gives the
+       pseudoinverse. */
+      dxidx[q] = svd.solve(Eigen::Matrix<T, spatial_dimension(),
+                                         spatial_dimension()>::Identity());
     }
     return dxidx;
   }
@@ -194,7 +210,7 @@ class IsoparametricElement {
   template <int dim>
   ArrayType<Vector<T, dim>> InterpolateNodalValues(
       const Eigen::Ref<const Eigen::Matrix<T, dim, num_nodes()>>& ua) const {
-    const ArrayType<Vector<T, num_nodes()>>& S = CalcShapeFunctions();
+    const ArrayType<Vector<T, num_nodes()>>& S = GetShapeFunctions();
     ArrayType<Vector<T, dim>> interpolated_value;
     for (int q = 0; q < num_sample_locations(); ++q) {
       interpolated_value[q] = ua * S[q];
@@ -206,6 +222,6 @@ class IsoparametricElement {
   /* The locations at which to evaluate various quantities of this element. */
   LocationsType locations_;
 };
-}  // namespace fem
+}  // namespace fixed_fem
 }  // namespace multibody
 }  // namespace drake
