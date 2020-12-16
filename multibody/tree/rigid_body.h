@@ -153,6 +153,28 @@ class RigidBody : public Body<T> {
         spatial_inertia_parameter);
   }
 
+  /// Calculates Bcm's translational velocity in the world frame W.
+  /// @param[in] context The context contains the state of the model.
+  /// @retval v_WBcm_W The translational velocity of Bcm (`this` rigid body's
+  /// center of mass) in the world frame W, expressed in W.
+  Vector3<T> CalcCenterOfMassTranslationalVelocityInWorld(
+      const systems::Context<T>& context) const override {
+    const Body<T>& body_B = *this;
+    const Frame<T>& frame_B = body_B.body_frame();
+
+    // Form frame_B's spatial velocity in the world frame W, expressed in W.
+    const SpatialVelocity<T>& V_WBo_W =
+        body_B.EvalSpatialVelocityInWorld(context);
+
+    // Form v_WBcm_W, Bcm's translational velocity in frame W, expressed in W.
+    const Vector3<T> p_BoBcm_B = CalcCenterOfMassInBodyFrame(context);
+    const math::RotationMatrix<T> R_WB =
+        frame_B.CalcRotationMatrixInWorld(context);
+    const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
+    const Vector3<T> v_WBcm_W = V_WBo_W.Shift(p_BoBcm_W).translational();
+    return v_WBcm_W;
+  }
+
   // TODO(joemasterjohn): Speed this up when we can store a reference to a
   // SpatialInertia<T> as an abstract parameter.
 

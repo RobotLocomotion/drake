@@ -21,10 +21,17 @@ GTEST_TEST(EmptyMultibodyPlantCenterOfMassTest, GetCenterOfMassPosition) {
   plant.Finalize();
   auto context_ = plant.CreateDefaultContext();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.CalcCenterOfMassPosition(*context_), std::runtime_error,
-      "CalcCenterOfMassPosition\\(\\): this MultibodyPlant contains only "
+      plant.CalcCenterOfMassPosition(*context_),
+      std::exception,
+      "CalcCenterOfMassPosition\\(\\): This MultibodyPlant contains only the "
       "world_body\\(\\) so its center of mass is undefined.");
-}
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.CalcCenterOfMassTranslationalVelocityInWorld(*context_),
+      std::exception,
+      "CalcCenterOfMassTranslationalVelocityInWorld\\(\\): This MultibodyPlant "
+      "only contains the world_body\\(\\) so its center of mass is undefined.");
+  }
 
 class MultibodyPlantCenterOfMassTest : public ::testing::Test {
  public:
@@ -56,8 +63,8 @@ class MultibodyPlantCenterOfMassTest : public ::testing::Test {
     context_ = plant_.CreateDefaultContext();
   }
 
-  void CheckCom(const math::RigidTransform<double>& X_WS,
-                const math::RigidTransform<double>& X_WT) {
+  void CheckCmPosition(const math::RigidTransform<double>& X_WS,
+                       const math::RigidTransform<double>& X_WT) {
     plant_.SetFreeBodyPose(context_.get(), GetSphereBody(), X_WS);
     plant_.SetFreeBodyPose(context_.get(), GetTriangleBody(), X_WT);
 
@@ -70,7 +77,9 @@ class MultibodyPlantCenterOfMassTest : public ::testing::Test {
          (p_WTo_W + R_WT * p_TTcm_T_) * mass_T_) /
         (mass_S_ + mass_T_);
     Eigen::Vector3d p_WCcm = plant_.CalcCenterOfMassPosition(*context_);
-    EXPECT_TRUE(CompareMatrices(p_WCcm, p_WCcm_expected, 1e-15));
+    // Allow for 3 bits (2^3 = 8) of error.
+    const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
+    EXPECT_TRUE(CompareMatrices(p_WCcm, p_WCcm_expected, kTolerance));
   }
 
   const RigidBody<double>& GetSphereBody() {
@@ -91,6 +100,32 @@ class MultibodyPlantCenterOfMassTest : public ::testing::Test {
     mass_S_ = m;
     systems::Context<double>* context_ptr = context_.get();
     GetSphereBody().SetMass(context_ptr, m);
+  }
+
+    void CheckCmTranslationalVelocity(const SpatialVelocity<double>& V_WS_W,
+                                      const SpatialVelocity<double>& V_WT_W) {
+    const Body<double>& sphere = plant_.GetBodyByName("Sphere1");
+    const Body<double>& triangle = plant_.GetBodyByName("Triangle1");
+    plant_.SetFreeBodySpatialVelocity(context_.get(), sphere, V_WS_W);
+    plant_.SetFreeBodySpatialVelocity(context_.get(), triangle, V_WT_W);
+
+    // Denoting Scm as the center of mass of the system formed by Sphere1 and
+    // Triangle1, form Scm's translational velocity in frame W, expressed in W.
+    const Vector3<double> v_WScm_W =
+        plant_.CalcCenterOfMassTranslationalVelocityInWorld(*context_);
+
+    // By hand, calculate the expected result for that same quantity (v_WScm_W).
+    const double mass_sphere = sphere.get_mass(*context_);
+    const double mass_triangle = triangle.get_mass(*context_);
+    const Vector3<double> mv_sphere = mass_sphere *
+        sphere.CalcCenterOfMassTranslationalVelocityInWorld(*context_);
+    const Vector3<double> mv_triangle =  mass_triangle *
+        triangle.CalcCenterOfMassTranslationalVelocityInWorld(*context_);
+    const Vector3<double> v_WScm_W_expected = (mv_sphere + mv_triangle) /
+        (mass_sphere + mass_triangle);
+
+    const double kTolerance = 16 * std::numeric_limits<double>::epsilon();
+    EXPECT_TRUE(CompareMatrices(v_WScm_W, v_WScm_W_expected, kTolerance));
   }
 
  protected:
@@ -121,17 +156,57 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
   const Eigen::Vector3d p_WTo_W(-5.2, 10.4, -6.8);
   const math::RigidTransformd X_WS1(p_WSo_W);  // Rotation matrix is identity.
   const math::RigidTransformd X_WT1(p_WTo_W);  // Rotation matrix is identity.
-  CheckCom(X_WS1, X_WT1);
+  CheckCmPosition(X_WS1, X_WT1);
 
-  // Ensure exception is thrown if model_instances is empty.
+  // Verify center of mass translational velocity when there is no motion.
+  SpatialVelocity<double> V1 = SpatialVelocity<double>::Zero();
+  SpatialVelocity<double> V2 = SpatialVelocity<double>::Zero();
+  CheckCmTranslationalVelocity(V1, V2);
+
+  // Verify center of mass translational velocity for arbitrary motion.
+  V1 = SpatialVelocity<double>(Vector3<double>(1, 2, 3),
+                               Vector3<double>(4, 5, 6));
+  V2 = SpatialVelocity<double>(Vector3<double>(3, 5, 7),
+                               Vector3<double>(5, 3, 1));
+  CheckCmTranslationalVelocity(V1, V2);
+
+  // Ensure center of mass methods throw an exception for empty model_instances.
   std::vector<ModelInstanceIndex> model_instances;
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_.CalcCenterOfMassPosition(*context_, model_instances),
-      std::runtime_error,
-      "CalcCenterOfMassPosition\\(\\): you must provide at least one selected "
-      "body.");
+      std::exception,
+      "CalcCenterOfMassPosition\\(\\): There were no bodies specified. "
+      "You must provide at least one selected body.");
 
-  // Verify CalcCenterOfMassPosition() works for 1 instance in model_instances.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_.CalcCenterOfMassTranslationalVelocityInWorld(*context_,
+                                                          model_instances),
+      std::exception,
+      "CalcCenterOfMassTranslationalVelocityInWorld\\(\\): There were no "
+      "bodies specified. You must provide at least one selected body.");
+
+  // Ensure an exception is thrown when a model instance has one world body.
+  const ModelInstanceIndex world_model_instance =
+      multibody::world_model_instance();
+  std::vector<ModelInstanceIndex> world_model_instance_array;
+  world_model_instance_array.push_back(world_model_instance);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_.CalcCenterOfMassTranslationalVelocityInWorld(*context_,
+          world_model_instance_array),
+      std::exception,
+      "CalcCenterOfMassTranslationalVelocityInWorld\\(\\): This system only "
+      "contains the world_body\\(\\) so its center of mass is undefined.");
+
+  // Ensure an exception is thrown when a model instance has two world bodies.
+  world_model_instance_array.push_back(world_model_instance);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_.CalcCenterOfMassTranslationalVelocityInWorld(*context_,
+          world_model_instance_array),
+      std::exception,
+      "CalcCenterOfMassTranslationalVelocityInWorld\\(\\): This system only "
+      "contains the world_body\\(\\) so its center of mass is undefined.");
+
+  // Try one instance in model_instances.
   model_instances.push_back(triangle_instance_);
   p_WCcm = plant_.CalcCenterOfMassPosition(*context_, model_instances);
   EXPECT_TRUE(CompareMatrices(p_WCcm, p_WTo_W + p_TTcm_T_, kTolerance));
@@ -141,7 +216,7 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
   result = ((p_WSo_W + p_SScm_S_) * mass_S_ + (p_WTo_W + p_TTcm_T_) * mass_T_) /
            (mass_S_ + mass_T_);
   p_WCcm = plant_.CalcCenterOfMassPosition(*context_, model_instances);
-  EXPECT_TRUE(CompareMatrices(p_WCcm, result, 1e-15));
+  EXPECT_TRUE(CompareMatrices(p_WCcm, result, kTolerance));
 
   // Verify CalcCenterOfMassPosition() works for 2 instances in model_instances,
   // where the 2 objects have arbitrary orientation and position.
@@ -149,42 +224,48 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
                                     Eigen::Vector3d(5.2, -3.1, 10.9));
   const math::RigidTransformd X_WT2(math::RollPitchYawd(-2.3, -3.5, 1.2),
                                     Eigen::Vector3d(-70.2, 9.8, 843.1));
-  CheckCom(X_WS2, X_WT2);
+  CheckCmPosition(X_WS2, X_WT2);
 
-  // Ensure CalcCenterOfMassPosition() throws an exception if total mass <= 0.
+  // Ensure center of mass methods throw an exception if total mass ≤ 0.
   set_mass_sphere(0.0);
   set_mass_triangle(0.0);
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_.CalcCenterOfMassPosition(*context_, model_instances),
-      std::runtime_error,
-      "CalcCenterOfMassPosition\\(\\): the "
+      std::exception,
+      "CalcCenterOfMassPosition\\(\\): The "
       "system's total mass must be greater than zero.");
 
-  // Ensure CalcJacobianCenterOfMassTranslationalVelocity() throws an exception
-  // if total mass <= 0.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_.CalcCenterOfMassTranslationalVelocityInWorld(*context_,
+                                                          model_instances),
+      std::exception,
+      "CalcCenterOfMassTranslationalVelocityInWorld\\(\\): The "
+      "system's total mass must be greater than zero.");
+
   Eigen::MatrixXd Js_v_WCcm_W(3, plant_.num_velocities());
   const Frame<double>& frame_W = plant_.world_frame();
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_.CalcJacobianCenterOfMassTranslationalVelocity(
       *context_, JacobianWrtVariable::kV, frame_W, frame_W, &Js_v_WCcm_W),
-      std::runtime_error,
-      "CalcJacobianCenterOfMassTranslationalVelocity\\(\\): the "
+      std::exception,
+      "CalcJacobianCenterOfMassTranslationalVelocity\\(\\): The "
       "system's total mass must be greater than zero.");
 
-  // Ensure CalcBiasCenterOfMassTranslationalAcceleration() throws an exception
-  // if total mass <= 0.
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_.CalcBiasCenterOfMassTranslationalAcceleration(
       *context_, JacobianWrtVariable::kV, frame_W, frame_W),
-      std::runtime_error,
-      "CalcBiasCenterOfMassTranslationalAcceleration\\(\\): the "
+      std::exception,
+      "CalcBiasCenterOfMassTranslationalAcceleration\\(\\): The "
       "system's total mass must be greater than zero.");
 
   // Ensure an exception is thrown if there is an invalid ModelInstanceIndex.
   ModelInstanceIndex error_index(10);
   model_instances.push_back(error_index);
   EXPECT_THROW(plant_.CalcCenterOfMassPosition(*context_, model_instances),
-               std::runtime_error);
+               std::exception);
+  EXPECT_THROW(plant_.CalcCenterOfMassTranslationalVelocityInWorld(
+                   *context_, model_instances),
+               std::exception);
 }
 
 }  // namespace
