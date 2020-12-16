@@ -11,6 +11,64 @@ package(
 )
 
 drake_cc_library(
+    name = "constitutive_model",
+    hdrs = [
+        "constitutive_model.h",
+    ],
+    deps = [
+        ":deformation_gradient_cache_entry",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "deformation_gradient_cache_entry",
+    hdrs = [
+        "deformation_gradient_cache_entry.h",
+    ],
+    deps = [
+        ":fem_indexes",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_indexes",
+    hdrs = [
+        "fem_indexes.h",
+    ],
+    deps = [
+        "//common:essential",
+        "//common:type_safe_index",
+    ],
+)
+
+drake_cc_library(
+    name = "linear_constitutive_model",
+    hdrs = [
+        "linear_constitutive_model.h",
+    ],
+    deps = [
+        ":constitutive_model",
+        ":linear_constitutive_model_cache_entry",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "linear_constitutive_model_cache_entry",
+    hdrs = [
+        "linear_constitutive_model_cache_entry.h",
+    ],
+    deps = [
+        ":deformation_gradient_cache_entry",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "quadrature",
     hdrs = [
         "quadrature.h",
@@ -28,6 +86,24 @@ drake_cc_library(
     ],
     deps = [
         ":quadrature",
+    ],
+)
+
+drake_cc_googletest(
+    name = "linear_constitutive_model_test",
+    deps = [
+        ":linear_constitutive_model",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "linear_constitutive_model_cache_entry_test",
+    deps = [
+        ":linear_constitutive_model_cache_entry",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
