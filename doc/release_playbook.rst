@@ -36,9 +36,9 @@ Prior to release
    Make sure that "Allow edits from maintainers" on the GitHub PR page is
    enabled (the checkbox is checked).
 5. For release notes, on an ongoing basis, add recent commit messages to the
-   release notes draft using the ``tools/dev/relnotes`` tooling.  (Instructions
-   for using ``relnotes`` are found atop its `source code
-   <https://github.com/RobotLocomotion/drake/blob/master/tools/dev/relnotes.py>`_.)
+   release notes draft using the ``tools/release_engineering/relnotes`` tooling.
+   (Instructions for using ``relnotes`` are found atop its `source code
+   <https://github.com/RobotLocomotion/drake/blob/master/tools/release_engineering/relnotes.py>`_.)
 
    a. On the first run, use ``--action=create`` to bootstrap the file.
 
