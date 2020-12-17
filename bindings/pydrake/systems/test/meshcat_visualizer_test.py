@@ -27,6 +27,7 @@ from pydrake.geometry import (
     Box,
     GeometryInstance,
     IllustrationProperties,
+    Role,
     SceneGraph
 )
 from pydrake.multibody.plant import (
@@ -250,7 +251,7 @@ class TestMeshcat(unittest.TestCase):
         visualizer = builder.AddSystem(MeshcatVisualizer(
             zmq_url=ZMQ_URL,
             open_browser=False,
-            geometry_role_type="proximity"))
+            role=Role.kProximity))
         builder.Connect(scene_graph.get_query_output_port(),
                         visualizer.get_geometry_query_input_port())
 
