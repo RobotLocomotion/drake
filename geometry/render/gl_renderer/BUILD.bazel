@@ -4,15 +4,14 @@ load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
-    "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 load(
-    "defs.bzl",
-    "drake_cc_googletest_gl_ubuntu_only",
-    "drake_cc_library_gl_ubuntu_only",
-    "drake_cc_package_library_gl_per_os",
+    "//tools/skylark:drake_cc_per_os.bzl",
+    "drake_cc_googletest_ubuntu_only",
+    "drake_cc_library_ubuntu_only",
+    "drake_cc_package_library_per_os",
 )
 
 # This gl_renderer package is only implemented on Ubuntu.  For macOS, only the
@@ -29,7 +28,7 @@ load(
 
 package(default_visibility = ["//visibility:private"])
 
-drake_cc_package_library_gl_per_os(
+drake_cc_package_library_per_os(
     name = "gl_renderer",
     macos_deps = [
         ":render_engine_gl_factory",
@@ -50,14 +49,14 @@ drake_cc_package_library_gl_per_os(
     visibility = ["//visibility:public"],
 )
 
-drake_cc_library_gl_ubuntu_only(
+drake_cc_library_ubuntu_only(
     name = "gl_common",
     hdrs = [
         "gl_common.h",
     ],
 )
 
-drake_cc_library_gl_ubuntu_only(
+drake_cc_library_ubuntu_only(
     name = "opengl_context",
     srcs = ["opengl_context.cc"],
     hdrs = [
@@ -73,7 +72,7 @@ drake_cc_library_gl_ubuntu_only(
     ],
 )
 
-drake_cc_library_gl_ubuntu_only(
+drake_cc_library_ubuntu_only(
     name = "opengl_geometry",
     hdrs = ["opengl_geometry.h"],
     deps = [
@@ -85,7 +84,7 @@ drake_cc_library_gl_ubuntu_only(
     ],
 )
 
-drake_cc_library_gl_ubuntu_only(
+drake_cc_library_ubuntu_only(
     name = "render_engine_gl",
     srcs = [
         "render_engine_gl.cc",
@@ -157,7 +156,7 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library_gl_ubuntu_only(
+drake_cc_library_ubuntu_only(
     name = "shader_program",
     srcs = ["shader_program.cc"],
     hdrs = ["shader_program.h"],
@@ -170,7 +169,7 @@ drake_cc_library_gl_ubuntu_only(
     ],
 )
 
-drake_cc_library_gl_ubuntu_only(
+drake_cc_library_ubuntu_only(
     name = "shader_program_data",
     hdrs = ["shader_program_data.h"],
     deps = [
@@ -180,7 +179,7 @@ drake_cc_library_gl_ubuntu_only(
     ],
 )
 
-drake_cc_library_gl_ubuntu_only(
+drake_cc_library_ubuntu_only(
     name = "shape_meshes",
     srcs = ["shape_meshes.cc"],
     hdrs = ["shape_meshes.h"],
@@ -191,7 +190,7 @@ drake_cc_library_gl_ubuntu_only(
     ],
 )
 
-drake_cc_library_gl_ubuntu_only(
+drake_cc_library_ubuntu_only(
     name = "texture_library",
     srcs = ["texture_library.cc"],
     hdrs = ["texture_library.h"],
@@ -203,14 +202,14 @@ drake_cc_library_gl_ubuntu_only(
     ],
 )
 
-drake_cc_googletest_gl_ubuntu_only(
+drake_cc_googletest_ubuntu_only(
     name = "buffer_dim_test",
     deps = [
         ":render_engine_gl",
     ],
 )
 
-drake_cc_googletest_gl_ubuntu_only(
+drake_cc_googletest_ubuntu_only(
     name = "opengl_context_test",
     tags = [
         # GLX functions show up with bad reads, bad writes, possibly lost, and
@@ -224,7 +223,7 @@ drake_cc_googletest_gl_ubuntu_only(
     ],
 )
 
-drake_cc_googletest_gl_ubuntu_only(
+drake_cc_googletest_ubuntu_only(
     name = "opengl_geometry_test",
     deps = [
         ":opengl_geometry",
@@ -233,12 +232,8 @@ drake_cc_googletest_gl_ubuntu_only(
     ],
 )
 
-drake_cc_googletest_gl_ubuntu_only(
+drake_cc_googletest_ubuntu_only(
     name = "render_engine_gl_test",
-    args = select({
-        "//tools/cc_toolchain:apple": ["--gtest_filter=-*"],
-        "//conditions:default": [],
-    }),
     data = [
         "//geometry/render:test_models",
         "//systems/sensors:test_models",
@@ -266,7 +261,7 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest_gl_ubuntu_only(
+drake_cc_googletest_ubuntu_only(
     name = "shape_meshes_test",
     data = [
         "//systems/sensors:test_models",
@@ -280,7 +275,7 @@ drake_cc_googletest_gl_ubuntu_only(
     ],
 )
 
-drake_cc_googletest_gl_ubuntu_only(
+drake_cc_googletest_ubuntu_only(
     name = "shader_program_test",
     tags = vtk_test_tags(),
     deps = [
