@@ -1,12 +1,19 @@
 # -*- python -*-
 
-load("@drake_detected_os//:os.bzl", "DISTRIBUTION")
-load("//tools/skylark:drake_py.bzl", "drake_py_binary", "drake_py_unittest")
+load(
+    "//tools/skylark:drake_py_per_os.bzl",
+    "drake_py_binary_ubuntu_only",
+    "drake_py_unittest_ubuntu_only",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:private"])
 
-drake_py_binary(
+# This program is used by a small subset of Drake maintainers, all of whom
+# operate solely on Ubuntu, and furthermore relies on mostly manual testing.
+# Since we never develop, use, or test this on macOS, we reflect that in the
+# build system by omitting the target entirely on macOS.
+drake_py_binary_ubuntu_only(
     name = "relnotes",
     srcs = ["relnotes.py"],
     deps = [
@@ -14,19 +21,14 @@ drake_py_binary(
     ],
 )
 
-drake_py_unittest(
+drake_py_unittest_ubuntu_only(
     name = "relnotes_test",
     data = [
         ":relnotes",
     ],
-    tags = [
-        # TODO(jwnimmer-tri) Re-enable this test once its dependencies are
-        # available in unprovisioned builds.
-        "manual",
-    ],
     deps = [
         "@bazel_tools//tools/python/runfiles",
     ],
-) if DISTRIBUTION != "macos" else None
+)
 
 add_lint_tests()
