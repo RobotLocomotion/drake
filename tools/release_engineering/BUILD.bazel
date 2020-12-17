@@ -19,6 +19,11 @@ drake_py_unittest(
     data = [
         ":relnotes",
     ],
+    tags = [
+        # TODO(jwnimmer-tri) Re-enable this test once its dependencies are
+        # available in unprovisioned builds.
+        "manual",
+    ],
     deps = [
         "@bazel_tools//tools/python/runfiles",
     ],
