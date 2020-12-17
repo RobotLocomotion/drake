@@ -6,7 +6,7 @@
 
 namespace drake {
 namespace multibody {
-namespace fem {
+namespace fixed_fem {
 namespace {
 using Eigen::Vector2d;
 using Eigen::Vector3d;
@@ -332,6 +332,6 @@ TEST_F(SimplexGaussianQuadratureTest, Cubic3D) {
               numerical_integral, std::numeric_limits<double>::epsilon());
 }
 }  // namespace
-}  // namespace fem
+}  // namespace fixed_fem
 }  // namespace multibody
 }  // namespace drake
