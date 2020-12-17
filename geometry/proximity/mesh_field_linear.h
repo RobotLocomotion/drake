@@ -95,10 +95,6 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MeshFieldLinear)
 
-  // TODO(DamrongGuoy): Update documentation per issue#13257 "Improve
-  //  documentation of MeshFieldLinear about the choice of calculating
-  //  gradient."
-
   /** Constructs a MeshFieldLinear.
    @param name    The name of the field variable.
    @param values  The field value at each vertex of the mesh.
@@ -111,6 +107,39 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
                   slower. On the other hand, calculating gradient requires
                   certain quality from mesh elements. If the mesh quality is
                   very poor, calculating gradient may throw.
+
+   You can use the parameter `calculate_gradient` to trade time and space
+   of this constructor for speed of EvaluateCartesian().
+   For `calculate_gradient` = true (by default), this constructor will take
+   longer time to compute and will store one field-gradient vector for each
+   element in the mesh, but the interpolation by EvaluateCartesian() will be
+   faster because we will use a dot product with the Cartesian coordinates
+   directly, instead of solving a linear system to convert Cartesian
+   coordinates to barycentric coordinates first. For `calculate_gradient` =
+   false, this constructor will be faster and use less memory, but
+   EvaluateCartesian() will be slower.
+
+   When `calculate_gradient` = true, EvaluateGradient() on a mesh element
+   will be available. Otherwise, EvaluateGradient() will `throw`.
+
+   The following features are independent of the choice of `calculate_gradient`.
+
+   - Evaluating the field at a vertex.
+   - Evaluating the field at a user-given barycentric coordinate.
+
+   @note When `calculate_gradient` = true, a poor quality element can cause
+   `throw` due to numerical errors in calculating field gradients. A poor
+   quality element is defined as having an extremely large aspect ratio
+   R=E/h, where E is the longest edge length and h is the shortest height.
+   A height of a triangular element is the distance between a vertex and its
+   opposite edge. A height of a tetrahedral element is the distance between a
+   vertex and its opposite triangular face. For example, an extremely skinny
+   triangle has poor quality, and a tetrahedron with four vertices almost
+   co-planar also has poor quality. The exact threshold of the acceptable aspect
+   ratio depends on many factors including the underlying scalar type and the
+   exact shape and size of the element; however, a rough conservative
+   estimation is 1e12.
+
    @pre   The `mesh` is non-null, and the number of entries in `values` is the
           same as the number of vertices of the mesh.
    */
