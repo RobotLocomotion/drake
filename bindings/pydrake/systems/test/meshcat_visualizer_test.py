@@ -236,19 +236,20 @@ class TestMeshcat(unittest.TestCase):
         simulator.set_publish_every_time_step(False)
         simulator.AdvanceTo(.1)
 
-    def test_kuka_proximity_geometry(self):
-        """Kuka IIWA with mesh geometry, drawn in proximity-geom mode."""
+    def test_allegro_proximity_geometry(self):
+        """Allegro hand with visual and collision geometry, drawn in
+           proximity-geom mode."""
         file_name = FindResourceOrThrow(
-            "drake/manipulation/models/iiwa_description/sdf/"
-            "iiwa14_no_collision.sdf")
+            "drake/manipulation/models/allegro_hand_description/sdf/"
+            "allegro_hand_description_left.sdf")
         builder = DiagramBuilder()
-        kuka, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
-        Parser(plant=kuka).AddModelFromFile(file_name)
-        kuka.Finalize()
+        hand, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        Parser(plant=hand).AddModelFromFile(file_name)
+        hand.Finalize()
 
         visualizer = builder.AddSystem(MeshcatVisualizer(
-            zmq_url="default",
-            open_browser=True,
+            zmq_url=ZMQ_URL,
+            open_browser=False,
             geometry_role_type="proximity"))
         builder.Connect(scene_graph.get_query_output_port(),
                         visualizer.get_geometry_query_input_port())
@@ -256,12 +257,12 @@ class TestMeshcat(unittest.TestCase):
         diagram = builder.Build()
 
         diagram_context = diagram.CreateDefaultContext()
-        kuka_context = diagram.GetMutableSubsystemContext(
-            kuka, diagram_context)
+        hand_context = diagram.GetMutableSubsystemContext(
+            hand, diagram_context)
 
-        kuka_actuation_port = kuka.get_actuation_input_port()
-        kuka_actuation_port.FixValue(kuka_context,
-                                     np.zeros(kuka_actuation_port.size()))
+        hand_actuation_port = hand.get_actuation_input_port()
+        hand_actuation_port.FixValue(hand_context,
+                                     np.zeros(hand_actuation_port.size()))
 
         simulator = Simulator(diagram, diagram_context)
         simulator.set_publish_every_time_step(False)
