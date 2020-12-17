@@ -1,3 +1,9 @@
+# -*- python -*-
+
+# This is a separate file from drake_cc.bzl because the dependency on
+# @drake_detected_os is somewhat brittle and might present challenges
+# for users exploring novel platforms.
+
 load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
@@ -9,29 +15,44 @@ load(
     "DISTRIBUTION",
 )
 
-def drake_cc_googletest_gl_ubuntu_only(**kwargs):
+def drake_cc_googletest_ubuntu_only(
+        name,
+        visibility = ["//visibility:private"],
+        **kwargs):
     """Declares a drake_cc_googletest iff we are building on Ubuntu.
     Otherwise, does nothing.
-    """
-    if DISTRIBUTION == "ubuntu":
-        drake_cc_googletest(**kwargs)
 
-def drake_cc_library_gl_ubuntu_only(name, hdrs = [], **kwargs):
-    """Declares a drake_cc_library iff we are building on Ubuntu.
-    Otherwise, does nothing.
+    Because this test is not cross-platform, the visibility defaults to
+    private.
     """
     if DISTRIBUTION == "ubuntu":
-        # Because this library is not cross-platform, we must use default
-        # visibility (i.e., private) and not install its private headers.
-        drake_cc_library(
+        drake_cc_googletest(
             name = name,
-            hdrs = hdrs,
-            install_hdrs_exclude = hdrs,
-            visibility = None,
+            visibility = visibility,
             **kwargs
         )
 
-def drake_cc_package_library_gl_per_os(
+def drake_cc_library_ubuntu_only(
+        name,
+        hdrs = [],
+        visibility = ["//visibility:private"],
+        **kwargs):
+    """Declares a drake_cc_library iff we are building on Ubuntu.
+    Otherwise, does nothing.
+
+    Because this library is not cross-platform, the visibility defaults to
+    private and the headers are excluded from the installation.
+    """
+    if DISTRIBUTION == "ubuntu":
+        drake_cc_library(
+            name = name,
+            hdrs = hdrs,
+            visibility = visibility,
+            install_hdrs_exclude = hdrs,
+            **kwargs
+        )
+
+def drake_cc_package_library_per_os(
         macos_deps = [],
         ubuntu_deps = [],
         **kwargs):
