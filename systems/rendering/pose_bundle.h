@@ -10,6 +10,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/systems/rendering/frame_velocity.h"
 
 namespace drake {
@@ -38,8 +39,8 @@ class PoseBundle {
   ~PoseBundle();
 
   int get_num_poses() const;
-  const Isometry3<T>& get_pose(int index) const;
-  void set_pose(int index, const Isometry3<T>& pose);
+  const math::RigidTransform<T>& get_transform(int index) const;
+  void set_transform(int index, const math::RigidTransform<T>& pose);
 
   const FrameVelocity<T>& get_velocity(int index) const;
   void set_velocity(int index, const FrameVelocity<T>& velocity);
@@ -51,7 +52,7 @@ class PoseBundle {
   void set_model_instance_id(int index, int id);
 
  private:
-  std::vector<Isometry3<T>> poses_;
+  std::vector<math::RigidTransform<T>> poses_;
   std::vector<FrameVelocity<T>> velocities_;
   std::vector<std::string> names_;
   std::vector<int> ids_;

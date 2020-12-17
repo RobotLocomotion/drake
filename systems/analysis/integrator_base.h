@@ -114,6 +114,9 @@ namespace systems {
  (t₀, x₀). Thus, integrators advance the continuous state of a dynamical
  system forward in time.
 
+ Drake's subclasses of IntegratorBase<T> should follow the naming pattern
+ `FooIntegrator<T>` by convention.
+
  @tparam_default_scalar
  @ingroup integrators
  */
@@ -177,8 +180,9 @@ class IntegratorBase {
    The precise meaning of *accuracy* is a complicated discussion, but it
    translates roughly to the number of significant digits you want in the
    results. By convention it is supplied as `10^-digits`, meaning that an
-   accuracy of 1e-3 provides about three significant digits. For continued
-   discussion of accuracy, see [Sherman 2011].
+   accuracy of 1e-3 provides about three significant digits. For more
+   discussion of accuracy, see @ref accuracy_and_tolerance and ref.
+   [[1]](https://dx.doi.org/10.1016/j.piutam.2011.04.023).
 
    Integrators vary in the range of accuracy (loosest to tightest) that they
    can support, and each integrator will choose a default accuracy to be used
@@ -194,9 +198,8 @@ class IntegratorBase {
    certainly implies greater error in the ODE solution and might impact the
    stability of the solution negatively as well.
 
-   - [Sherman, 2011]  M. Sherman, et al. Procedia IUTAM 2:241-261 (2011),
-                      Section 3.3.
-                      http://dx.doi.org/10.1016/j.piutam.2011.04.023
+   - [1] M. Sherman, A. Seth, S. Delp. Procedia IUTAM 2:241-261 (2011),
+     Section 3.3. https://dx.doi.org/10.1016/j.piutam.2011.04.023
 
    @{
    */
@@ -335,7 +338,8 @@ class IntegratorBase {
   // @}
 
   /**
-   @name Methods for weighting state variable errors (in the context of error control)
+   @name Methods for weighting state variable errors \
+         (in the context of error control)
    @anchor weighting-state-errors
    @{
    This group of methods describes how errors for state variables with
@@ -720,52 +724,51 @@ class IntegratorBase {
    Variable step integrators reduce their step sizes as needed to achieve
    requirements such as specified accuracy or step convergence. However, it is
    not possible to take an arbitrarily small step. Normally integrators choose
-   an appropriate minimum step and throw an exception if the requirements
-   can't be achieved without going below that. Methods in this section allow
-   you to influence two aspects of this procedure:
+   an appropriate minimum step and throw an exception if the requirements can't
+   be achieved without going below that. Methods in this section allow you to
+   influence two aspects of this procedure:
 
    - you can increase the minimum step size, and
-   - you can control whether an exception is thrown if a smaller step would
-     have been needed to achieve the aforementioned integrator requirements.
+   - you can control whether an exception is thrown if a smaller step would have
+     been needed to achieve the aforementioned integrator requirements.
 
-   By default, integrators allow a very small minimum step which can
-   result in long run times. Setting a larger minimum can be helpful as a
-   diagnostic to figure out what aspect of your simulation is requiring small
-   steps. You can set the minimum to what should be a "reasonable" minimum
-   based on what you know about the physical system. You will then get an
-   std::runtime_error exception thrown at any point in time where your model
-   behaves unexpectedly (due to, e.g., a discontinuity in the derivative
-   evaluation function).
+   By default, integrators allow a very small minimum step which can result in
+   long run times. Setting a larger minimum can be helpful as a diagnostic to
+   figure out what aspect of your simulation is requiring small steps. You can
+   set the minimum to what should be a "reasonable" minimum based on what you
+   know about the physical system. You will then get an std::runtime_error
+   exception thrown at any point in time where your model behaves unexpectedly
+   (due to, e.g., a discontinuity in the derivative evaluation function).
 
    If you disable the exception (via
    `set_throw_on_minimum_step_size_violation(false)`), the integrator will
-   simply proceed with a step of the minimum size: accuracy is guaranteed
-   only when the minimum step size is not violated. Beware that there can be
-   no guarantee about the magnitude of any errors introduced by violating the
-   accuracy "requirements" in this manner, so disabling the exception should
-   be done warily.
+   simply proceed with a step of the minimum size: accuracy is guaranteed only
+   when the minimum step size is not violated. Beware that there can be no
+   guarantee about the magnitude of any errors introduced by violating the
+   accuracy "requirements" in this manner, so disabling the exception should be
+   done warily.
 
    #### Details
-   Because time is maintained to finite precision, the integrator uses a
-   scalar `h_floor` to constrain time step h ≥ `h_floor` such that
-   `current_time + h > current_time` will be strictly satisfied.
-   The integrator will never automatically decrease its step below `h_floor`.
-   We calculate `h_floor=max(ε, ε⋅t)`, where t is the current time and ε is a
-   small multiple of machine precision, typically a number like 1e-14. Note
-   that `h_floor` necessarily grows with time; if that is a concern you should
-   limit how long your simulations are allowed to run without resetting time.
+   Because time is maintained to finite precision, the integrator uses a scalar
+   `h_floor` to constrain time step h ≥ `h_floor` such that `current_time + h >
+   current_time` will be strictly satisfied. The integrator will never
+   automatically decrease its step below `h_floor`. We calculate `h_floor=max(ε,
+   ε⋅abs(t))`, where t is the current time and ε is a small multiple of machine
+   precision, typically a number like 1e-14. Note that `h_floor` necessarily
+   grows with time; if that is a concern you should limit how long your
+   simulations are allowed to run without resetting time.
 
-   You may request a larger minimum step size `h_min`. Then at every time t,
-   the integrator determines a "working" minimum `h_work=max(h_min, h_floor)`.
-   If the step size selection algorithm determines that a step smaller than
-   `h_work` is needed to meet accuracy or other needs, then a
-   std::runtime_error exception will be thrown and the simulation halted. On
-   the other hand, if you have suppressed the exception (again, via
-   `set_throw_on_minimum_step_size_violation(false)`), the integration
-   will continue, taking a step of size `h_work`.
+   You may request a larger minimum step size `h_min`. Then at every time t, the
+   integrator determines a "working" minimum `h_work=max(h_min, h_floor)`. If
+   the step size selection algorithm determines that a step smaller than
+   `h_work` is needed to meet accuracy or other needs, then a std::runtime_error
+   exception will be thrown and the simulation halted. On the other hand, if you
+   have suppressed the exception (again, via
+   `set_throw_on_minimum_step_size_violation(false)`), the integration will
+   continue, taking a step of size `h_work`.
 
-   Under some circumstances the integrator may legitimately take a step of
-   size `h` smaller than your specified `h_min`, although never smaller than
+   Under some circumstances the integrator may legitimately take a step of size
+   `h` smaller than your specified `h_min`, although never smaller than
    `h_floor`. For example, occasionally the integrator may reach an event or
    time limit that occurs a very short time after the end of a previous step,
    necessitating that a tiny "sliver" of a step be taken to complete the
@@ -773,8 +776,8 @@ class IntegratorBase {
    convergence goals are achieved. Larger steps can resume immediately
    afterwards. Another circumstance is when one of the integrator's stepping
    methods is called directly requesting a very small step, for example
-   `IntegrateWithMultipleStepsToTime(h)`. No exception will be thrown in
-   either of these cases.
+   `IntegrateWithMultipleStepsToTime(h)`. No exception will be thrown in either
+   of these cases.
    */
 
   //@{
@@ -832,12 +835,11 @@ class IntegratorBase {
    */
   T get_working_minimum_step_size() const {
     using std::max;
+    using std::abs;
     // Tolerance is just a number close to machine epsilon.
     const double tol = 1e-14;
 
-    // Formula below requires time to be non-negative.
-    DRAKE_DEMAND(get_context().get_time() >= 0);
-    const T smart_minimum = max(tol, get_context().get_time() * tol);
+    const T smart_minimum = max(tol, abs(get_context().get_time()) * tol);
     return max(smart_minimum, req_min_step_size_);
   }
   // @}
@@ -1351,50 +1353,6 @@ class IntegratorBase {
   void set_accuracy_in_use(double accuracy) { accuracy_in_use_ = accuracy; }
 
   /**
-   Generic code for validating (and resetting, if need be) the integrator
-   working accuracy for error controlled integrators. This method is
-   intended to be called from an integrator's DoInitialize() method.
-   @param default_accuracy a reasonable default accuracy setting for this
-          integrator.
-   @param loosest_accuracy the loosest accuracy that this integrator should
-          support.
-   @param max_step_fraction a fraction of the maximum step size to use when
-          setting the integrator accuracy and the user has not specified
-          accuracy directly.
-   @throws std::logic_error if neither the initial step size target nor
-           the maximum step size has been set.
-   */
-  void InitializeAccuracy(double default_accuracy, double loosest_accuracy,
-                          double max_step_fraction) {
-    using std::isnan;
-
-    // Set an artificial step size target, if not set already.
-    if (isnan(this->get_initial_step_size_target())) {
-      // Verify that maximum step size has been set.
-      if (isnan(this->get_maximum_step_size()))
-        throw std::logic_error("Neither initial step size target nor maximum "
-                                   "step size has been set!");
-
-      this->request_initial_step_size_target(
-          this->get_maximum_step_size() * max_step_fraction);
-    }
-
-    // Sets the working accuracy to a good value.
-    double working_accuracy = this->get_target_accuracy();
-
-    // If the user asks for accuracy that is looser than the loosest this
-    // integrator can provide, use the integrator's loosest accuracy setting
-    // instead.
-    if (isnan(working_accuracy)) {
-      working_accuracy = default_accuracy;
-    } else {
-      if (working_accuracy > loosest_accuracy)
-        working_accuracy = loosest_accuracy;
-    }
-    this->set_accuracy_in_use(working_accuracy);
-  }
-
-  /**
    Default code for advancing the continuous state of the system by a single
    step of @p h_max (or smaller, depending on error control). This particular
    function is designed to be called directly by an error estimating
@@ -1504,24 +1462,23 @@ class IntegratorBase {
    */
   virtual bool DoStep(const T& h) = 0;
 
-  // TODO(hidmic): Make pure virtual and override on each subclass, as
-  // the 'optimal' dense output scheme is only known by the specific
-  // integration scheme being implemented.
+  // TODO(russt): Allow subclasses to override the interpolation scheme used, as
+  // the 'optimal' dense output scheme is only known by the specific integration
+  // scheme being implemented.
   /**
-   Derived classes may implement this method to (1) integrate the continuous
-   portion of this system forward by a single step of size @p h, (2) set the
-   error estimate (via get_mutable_error_estimate()) and (3) update their own
-   dense output implementation (via get_mutable_dense_output()).  This
-   method is called during the integration process (via
-   StepOnceErrorControlledAtMost(), IntegrateNoFurtherThanTime(), and
-   IntegrateWithSingleFixedStepToTime()).
+   Calls DoStep(h) while recording the resulting step in the dense output.  If
+   the current dense output is already non-empty, then the time in the current
+   context must match either the final segment time of the dense output, or the
+   penultimate segment time (to support the case where the same integration step
+   is attempted multiple times, which occurs e.g. in witness function
+   isolation).
    @param h The integration step to take.
-   @returns `true` if successful, `false` if either the integrator was
-             unable to take a single step of size @p h or to advance
-             its dense output an equal step.
+   @returns `true` if successful, `false` if either the integrator was unable to
+           take a single step of size @p h or to advance its dense output an
+           equal step.
    @sa DoStep()
    */
-  virtual bool DoDenseStep(const T& h) {
+  bool DoDenseStep(const T& h) {
     const ContinuousState<T>& state = context_->get_continuous_state();
 
     // Note: It is tempting to avoid this initial call to EvalTimeDerivatives,
@@ -1536,6 +1493,19 @@ class IntegratorBase {
 
     // Performs the integration step.
     if (!DoStep(h)) return false;
+
+    // Allow this update to *replace* the final segment if the start_time of
+    // this step is earlier than the current end_time of the dense output and
+    // matches the start_time of the the final segment of the dense output.
+    // This happens, for instance, when the Simulator is doing WitnessFunction
+    // isolation; it routinely back up the integration and try the same step
+    // multiple times.  Note: we intentionally check for equality between
+    // double values here.
+    if (dense_output_->get_segment_times().size() > 1 &&
+        start_time < dense_output_->end_time() &&
+        start_time == dense_output_->get_segment_times().end()[-2]) {
+      dense_output_->RemoveFinalSegment();
+    }
 
     const ContinuousState<T>& derivatives = EvalTimeDerivatives(*context_);
     dense_output_->ConcatenateInTime(

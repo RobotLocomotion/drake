@@ -1,11 +1,12 @@
 # -*- python -*-
 
-load("@cc//:compiler.bzl", "COMPILER_ID")
+load("@cc//:compiler.bzl", "COMPILER_ID", "COMPILER_VERSION_MAJOR")
 
 # The CXX_FLAGS will be enabled for all C++ rules in the project
 # building with any compiler.
 CXX_FLAGS = [
     "-Werror=all",
+    "-Werror=cpp",
     "-Werror=deprecated",
     "-Werror=deprecated-declarations",
     "-Werror=ignored-qualifiers",
@@ -16,7 +17,8 @@ CXX_FLAGS = [
 ]
 
 # The CLANG_FLAGS will be enabled for all C++ rules in the project when
-# building with clang (including the Apple LLVM compiler).
+# building with clang (excluding the Apple LLVM compiler see APPLECLANG_FLAGS
+# below).
 CLANG_FLAGS = CXX_FLAGS + [
     "-Werror=absolute-value",
     "-Werror=inconsistent-missing-override",
@@ -24,6 +26,29 @@ CLANG_FLAGS = CXX_FLAGS + [
     "-Werror=return-stack-address",
     "-Werror=sign-compare",
 ]
+
+# The CLANG_VERSION_SPECIFIC_FLAGS will be enabled for all C++ rules in the
+# project when building with a Clang compiler of the specified major
+# version (excluding the Apple LLVM compiler, see
+# APPLECLANG_VERSION_SPECIFIC_FLAGS below).
+CLANG_VERSION_SPECIFIC_FLAGS = {
+    10: [
+        # TODO(jamiesnape): Fix these warnings and remove this suppression when
+        # Clang 10 is a supported compiler on Ubuntu.
+        "-Wno-range-loop-analysis",
+    ],
+}
+
+# The APPLECLANG_FLAGS will be enabled for all C++ rules in the project when
+# building with the Apple LLVM compiler.
+APPLECLANG_FLAGS = CLANG_FLAGS
+
+# The APPLECLANG_VERSION_SPECIFIC_FLAGS will be enabled for all C++ rules in
+# the project when building with an Apple LLVM compiler of the specified major
+# version.
+APPLECLANG_VERSION_SPECIFIC_FLAGS = {
+    12: CLANG_VERSION_SPECIFIC_FLAGS[10],
+}
 
 # The GCC_FLAGS will be enabled for all C++ rules in the project when
 # building with gcc.
@@ -50,8 +75,14 @@ def _platform_copts(rule_copts, rule_gcc_copts, rule_clang_copts, cc_test = 0):
     When cc_test=1, the GCC_CC_TEST_FLAGS will be added.  It should only be set
     to 1 from cc_test rules or rules that are boil down to cc_test rules.
     """
-    if COMPILER_ID.endswith("Clang"):
+    if COMPILER_ID == "AppleClang":
+        result = APPLECLANG_FLAGS + rule_copts + rule_clang_copts
+        if COMPILER_VERSION_MAJOR in APPLECLANG_VERSION_SPECIFIC_FLAGS:
+            result += APPLECLANG_VERSION_SPECIFIC_FLAGS[COMPILER_VERSION_MAJOR]
+    elif COMPILER_ID == "Clang":
         result = CLANG_FLAGS + rule_copts + rule_clang_copts
+        if COMPILER_VERSION_MAJOR in CLANG_VERSION_SPECIFIC_FLAGS:
+            result += CLANG_VERSION_SPECIFIC_FLAGS[COMPILER_VERSION_MAJOR]
     elif COMPILER_ID == "GNU":
         extra_gcc_flags = GCC_CC_TEST_FLAGS if cc_test else []
         result = GCC_FLAGS + extra_gcc_flags + rule_copts + rule_gcc_copts
@@ -290,10 +321,10 @@ def _raw_drake_cc_library(
         declare_installed_headers = 0,
         install_hdrs_exclude = [],
         **kwargs):
-    """Creates a rule to declare a C++ library.  Uses Drake's include_prefix and
-    checks the deps blacklist.  If declare_installed_headers is true, also adds
-    a drake_installed_headers() target.  (This should be set if and only if the
-    caller is drake_cc_library.)
+    """Creates a rule to declare a C++ library.  Uses Drake's include_prefix
+    and checks the deps blacklist.  If declare_installed_headers is true, also
+    adds a drake_installed_headers() target.  (This should be set if and only
+    if the caller is drake_cc_library.)
     """
     _check_library_deps_blacklist(name, deps)
     _, private_hdrs = _prune_private_hdrs(srcs)
@@ -418,7 +449,7 @@ def drake_cc_package_library(
         name,
         deps = [],
         testonly = 0,
-        visibility = ["//visibility:public"]):
+        visibility = None):
     """Creates a rule to declare a C++ "package" library -- a library whose
     name matches the current Bazel package name (i.e., directory name) and
     whose dependencies are (usually) all of the other drake_cc_library targets
@@ -436,9 +467,18 @@ def drake_cc_package_library(
     The name must be the same as the final element of the current package.
     This rule does not accept srcs, hdrs, etc. -- only deps.
     The testonly argument has the same meaning as the native cc_library.
-    By default, this target has public visibility, but that may be overridden.
+
+    The visibility must be explicitly provided, not relying on the BUILD file
+    default.  Setting to "//visibility:public" is strongly recommended.
     """
     _check_package_library_name(name)
+    if not visibility:
+        fail(("//{}:{} must provide a visibility setting; " +
+              "add this line to the BUILD.bazel file:\n" +
+              "        visibility = \"//visibility:public\",").format(
+            native.package_name(),
+            name,
+        ))
     drake_cc_library(
         name = name,
         testonly = testonly,

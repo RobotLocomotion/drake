@@ -8,8 +8,8 @@ class TestOsqpSolver(unittest.TestCase):
     def test_osqp_solver(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, "x")
-        prog.AddLinearConstraint(x[0] >= 1)
-        prog.AddLinearConstraint(x[1] >= 1)
+        constraint1 = prog.AddLinearConstraint(x[0] >= 1)
+        constraint2 = prog.AddLinearConstraint(x[1] >= 1)
         prog.AddQuadraticCost(np.eye(2), np.zeros(2), x)
         solver = OsqpSolver()
         self.assertTrue(solver.available())
@@ -22,6 +22,8 @@ class TestOsqpSolver(unittest.TestCase):
         self.assertEqual(result.get_solver_details().primal_res, 0.)
         np.testing.assert_allclose(
             result.get_solver_details().y, np.array([-1., -1.]))
+        np.testing.assert_allclose(result.GetDualSolution(constraint1), [1.])
+        np.testing.assert_allclose(result.GetDualSolution(constraint2), [1.])
 
     def unavailable(self):
         """Per the BUILD file, this test is only run when OSQP is disabled."""

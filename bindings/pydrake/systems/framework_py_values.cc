@@ -3,19 +3,14 @@
 #include <sstream>
 
 #include "pybind11/eigen.h"
-#include "pybind11/eval.h"
 #include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/math/rigid_transform.h"
-#include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/supervector.h"
@@ -24,32 +19,6 @@ using std::string;
 
 namespace drake {
 namespace pydrake {
-
-namespace {
-
-// Add instantiations of primitive types on an as-needed basis; Please be
-// conservative.
-void AddPrimitiveValueInstantiations(py::module m) {
-  AddValueInstantiation<string>(m);
-  AddValueInstantiation<bool>(m);
-}
-
-// Same as above, but for templated types.
-template <typename T>
-void AddPrimitiveValueTemplateInstantiations(py::module m) {
-  // Imports for the relevant types.
-  py::module::import("pydrake.common.eigen_geometry");
-  py::module::import("pydrake.math");
-  // TODO(eric): When `Value[]` moves to `pydrake.common`, move these to their
-  // respective modules.
-  AddValueInstantiation<math::RigidTransform<T>>(m);
-  AddValueInstantiation<math::RotationMatrix<T>>(m);
-  // TODO(eric): Consider deprecating / removing `Isometry3` pending resolution
-  // of #9865.
-  AddValueInstantiation<Isometry3<T>>(m);
-}
-
-}  // namespace
 
 void DefineFrameworkPyValues(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -63,18 +32,44 @@ void DefineFrameworkPyValues(py::module m) {
     DefineTemplateClassWithDefault<VectorBase<T>>(
         m, "VectorBase", GetPyParam<T>(), doc.VectorBase.doc)
         .def("__str__",
-            [](const VectorBase<T>& vec) {
-              std::ostringstream oss;
-              oss << vec;
-              return oss.str();
+            [](const VectorBase<T>& self) {
+              // Print out list directly.
+              return py::str(py::cast(self.CopyToVector()).attr("tolist")());
             })
+        .def("__repr__",
+            [](const VectorBase<T>& self) {
+              py::handle cls = py::cast(&self, py_rvp::reference).get_type();
+              return py::str("{}({})").format(cls.attr("__name__"),
+                  py::cast(self.CopyToVector()).attr("tolist")());
+            })
+        .def("__getitem__",
+            overload_cast_explicit<const T&, int>(&VectorBase<T>::operator[]),
+            py_rvp::reference_internal, doc.VectorBase.operator_array.doc)
+        .def(
+            "__setitem__",
+            [](VectorBase<T>& self, int index, T& value) {
+              self[index] = value;
+            },
+            doc.VectorBase.operator_array.doc)
+        .def("size", &VectorBase<T>::size, doc.VectorBase.size.doc)
+        .def("GetAtIndex",
+            overload_cast_explicit<T&, int>(&VectorBase<T>::GetAtIndex),
+            py::arg("index"), py_rvp::reference_internal,
+            doc.VectorBase.GetAtIndex.doc)
+        .def("SetAtIndex", &VectorBase<T>::SetAtIndex, py::arg("index"),
+            py::arg("value"), doc.VectorBase.SetAtIndex.doc)
+        .def("SetFrom", &VectorBase<T>::SetFrom, py::arg("value"),
+            doc.VectorBase.SetFrom.doc)
+        .def("SetFromVector", &VectorBase<T>::SetFromVector, py::arg("value"),
+            doc.VectorBase.SetFromVector.doc)
+        .def("SetZero", &VectorBase<T>::SetZero, doc.VectorBase.SetZero.doc)
         .def("CopyToVector", &VectorBase<T>::CopyToVector,
             doc.VectorBase.CopyToVector.doc)
-        .def("SetAtIndex", &VectorBase<T>::SetAtIndex,
-            doc.VectorBase.SetAtIndex.doc)
-        .def("SetFromVector", &VectorBase<T>::SetFromVector,
-            doc.VectorBase.SetFromVector.doc)
-        .def("size", &VectorBase<T>::size, doc.VectorBase.size.doc);
+        .def("PlusEqScaled",
+            overload_cast_explicit<VectorBase<T>&, const T&,
+                const VectorBase<T>&>(&VectorBase<T>::PlusEqScaled),
+            py::arg("scale"), py::arg("rhs"), py_rvp::reference_internal,
+            doc.VectorBase.PlusEqScaled.doc_2args);
 
     // TODO(eric.cousineau): Make a helper function for the Eigen::Ref<>
     // patterns.
@@ -90,28 +85,31 @@ void DefineFrameworkPyValues(py::module m) {
             doc.BasicVector.ctor.doc_1args_vec)
         .def(py::init<int>(), py::arg("size"),
             doc.BasicVector.ctor.doc_1args_size)
-        .def("get_value",
+        .def(
+            "set_value",
+            [](BasicVector<T>* self,
+                const Eigen::Ref<const VectorX<T>>& value) {
+              self->set_value(value);
+            },
+            doc.BasicVector.set_value.doc)
+        .def(
+            "get_value",
             [](const BasicVector<T>* self) -> Eigen::Ref<const VectorX<T>> {
               return self->get_value();
             },
-            py_reference_internal, doc.BasicVector.get_value.doc)
+            py_rvp::reference_internal, doc.BasicVector.get_value.doc)
         // TODO(eric.cousineau): Remove this once `get_value` is changed, or
         // reference semantics are changed for custom dtypes.
         .def("_get_value_copy",
             [](const BasicVector<T>* self) -> VectorX<T> {
               return self->get_value();
             })
-        .def("get_mutable_value",
+        .def(
+            "get_mutable_value",
             [](BasicVector<T>* self) -> Eigen::Ref<VectorX<T>> {
               return self->get_mutable_value();
             },
-            py_reference_internal, doc.BasicVector.get_mutable_value.doc)
-        .def("GetAtIndex",
-            [](BasicVector<T>* self, int index) -> T& {
-              return self->GetAtIndex(index);
-            },
-            py_reference_internal, doc.VectorBase.GetAtIndex.doc)
-        .def("SetZero", &BasicVector<T>::SetZero, doc.BasicVector.SetZero.doc);
+            py_rvp::reference_internal, doc.BasicVector.get_mutable_value.doc);
 
     DefineTemplateClassWithDefault<Supervector<T>, VectorBase<T>>(
         m, "Supervector", GetPyParam<T>(), doc.Supervector.doc);
@@ -121,94 +119,27 @@ void DefineFrameworkPyValues(py::module m) {
   };
   type_visit(bind_common_scalar_types, CommonScalarPack{});
 
-  // `AddValueInstantiation` will define methods specific to `T` for
-  // `Value<T>`. Since Python is nominally dynamic, these methods are
-  // effectively "virtual".
-  auto abstract_stub = [](const std::string& method) {
-    return [method](const AbstractValue* self, py::args, py::kwargs) {
-      string type_name = NiceTypeName::Get(*self);
-      throw std::runtime_error(
-          "This derived class of `AbstractValue`, `" + type_name + "`, " +
-          "is not exposed to pybind11, so `" + method + "` cannot be " +
-          "called. See `AddValueInstantiation` for how to bind it.");
-    };
-  };
-
-  // TODO(jwnimmer-tri) Move Value<> bindings into pydrake.common module.
-  py::class_<AbstractValue> abstract_value(m, "AbstractValue");
-  DefClone(&abstract_value);
-  abstract_value
-      .def("SetFrom", &AbstractValue::SetFrom,
-          pydrake_doc.drake.AbstractValue.SetFrom.doc)
-      .def("get_value", abstract_stub("get_value"),
-          pydrake_doc.drake.AbstractValue.get_value.doc)
-      .def("get_mutable_value", abstract_stub("get_mutable_value"),
-          pydrake_doc.drake.AbstractValue.get_mutable_value.doc)
-      .def("set_value", abstract_stub("set_value"),
-          pydrake_doc.drake.AbstractValue.set_value.doc);
-
-  // Add value instantiations for nominal data types. Types that require more
-  // pizazz are listed below.
-  AddPrimitiveValueInstantiations(m);
-  // TODO(eric.cousineau): Move inside loop once bindings support other
-  // scalars.
-  AddPrimitiveValueTemplateInstantiations<double>(m);
-
   // Add `Value<>` instantiations for basic vectors templated on common scalar
   // types.
   auto bind_abstract_basic_vectors = [m](auto dummy) {
     using T = decltype(dummy);
     auto cls = AddValueInstantiation<BasicVector<T>>(m);
     cls  // BR
-        .def("set_value",
+        .def(
+            "set_value",
             [](Value<BasicVector<T>>* self, const T& value) {
               self->set_value(BasicVector<T>{value});
             },
             py::arg("value"))
-        .def("set_value",
+        .def(
+            "set_value",
             [](Value<BasicVector<T>>* self,
-                const Eigen::Ref<const Eigen::VectorXd>& value) {
+                const Eigen::Ref<const VectorX<T>>& value) {
               self->set_value(BasicVector<T>(value));
             },
             py::arg("value"));
   };
   type_visit(bind_abstract_basic_vectors, CommonScalarPack{});
-
-  // Add `Value[object]` instantiation.
-  // N.B. If any code explicitly uses `Value<py::object>` for whatever reason,
-  // then this should turn into a specialization of `Value<>`, rather than an
-  // extension.
-  class PyObjectValue : public drake::Value<py::object> {
-   public:
-    using Base = Value<py::object>;
-    using Base::Base;
-    // Override `Value<py::object>::Clone()` to perform a deep copy on the
-    // object.
-    std::unique_ptr<AbstractValue> Clone() const override {
-      py::object py_copy = py::module::import("copy").attr("deepcopy");
-      return std::make_unique<PyObjectValue>(py_copy(get_value()));
-    }
-  };
-  AddValueInstantiation<py::object, PyObjectValue>(m);
-
-  py::object py_type_func = py::eval("type");
-  py::object py_object_type = py::eval("object");
-  // `Value` was defined by the first call to `AddValueInstantiation`.
-  py::object py_value_template = m.attr("Value");
-  abstract_value.def_static("Make",
-      [py_type_func, py_value_template, py_object_type](py::object value) {
-        // Try to infer type from the object. If that does not work, just return
-        // `Value[object]`.
-        py::object py_type = py_type_func(value);
-        py::tuple py_result =
-            py_value_template.attr("get_instantiation")(py_type, false);
-        py::object py_value_class = py_result[0];
-        if (py_value_class.is_none()) {
-          py_value_class = py_value_template[py_object_type];
-        }
-        return py_value_class(value);
-      },
-      pydrake_doc.drake.AbstractValue.Make.doc);
 }
 
 }  // namespace pydrake

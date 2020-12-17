@@ -7,7 +7,6 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_throw.h"
-#include "drake/common/pointer_cast.h"
 #include "drake/common/value.h"
 #include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/parameters.h"
@@ -15,17 +14,6 @@
 
 namespace drake {
 namespace systems {
-
-// TODO(sherm1) Add step information.
-/// Contains information about the independent variable including time and
-/// step number.
-template <typename T>
-struct StepInfo {
-  // TODO(sherm1): Consider whether this is sufficiently robust.
-  /// The time, in seconds. For typical T implementations based on
-  /// doubles, time resolution will gradually degrade as time increases.
-  T time_sec{0.0};
-};
 
 /// %Context is an abstract class template that represents all the typed values
 /// that are used in a System's computations: time, numeric-valued input ports,
@@ -71,7 +59,7 @@ class Context : public ContextBase {
 
   /// Returns the current time in seconds.
   /// @see SetTime()
-  const T& get_time() const { return get_step_info().time_sec; }
+  const T& get_time() const { return time_; }
 
   /// Returns a const reference to the whole State.
   const State<T>& get_state() const {
@@ -256,6 +244,8 @@ class Context : public ContextBase {
   /// have changed. These methods _do not_ initiate such recomputation
   /// themselves.
   ///
+  /// @sa @ref cache_design_notes
+  ///
   /// <h3>Invalidation and "out of date" notification</h3>
   /// Each method in this group provides the ability to change a particular
   /// subset of the available quantities listed above. This triggers "out of
@@ -341,11 +331,7 @@ class Context : public ContextBase {
   /// Time must have the same value in every subcontext within the same Diagram
   /// context tree so may only be modified at the root context of the tree.
   /// @throws std::logic_error if this is not the root context.
-  void SetTime(const T& time_sec) {
-    ThrowIfNotRootContext(__func__, "Time");
-    const int64_t change_event = this->start_new_change_event();
-    PropagateTimeChange(this, time_sec, change_event);
-  }
+  void SetTime(const T& time_sec);
 
   // TODO(sherm1) Add more-specific state "set" methods for smaller
   // state groupings (issue #9205).
@@ -415,17 +401,43 @@ class Context : public ContextBase {
     get_mutable_abstract_state<ValueType>(index) = value;
   }
 
-  // TODO(sherm1) Should treat fixed input port values same as parameters.
-  // TODO(sherm1) Change the name of this method to be more inclusive since it
-  //              also copies accuracy (now) and fixed input port values
-  //              (pending above TODO).
-  /// Sets this context's time, accuracy, state, and parameters from the
-  /// `double` values in @p source, regardless of this context's scalar type.
-  /// Sends out of date notifications for all dependent computations in this
+  // TODO(xuchenhan-tri) Should treat fixed input port values the same as
+  // parameters.
+  // TODO(xuchenhan-tri) Change the name of this method to be more inclusive
+  // since it also set fixed input port values (pending above TODO).
+  /// Copies all state and parameters in @p source, where numerical values are
+  /// of type `U`, to `this` context. Time and accuracy are unchanged in `this`
+  /// context, which means that this method can be called on a subcontext.
+  /// Sends out of date notifications for all dependent computations in `this`
   /// context.
-  /// @throws std::logic_error if this is not the root context.
   /// @note Currently does not copy fixed input port values from `source`.
   /// See System::FixInputPortsFrom() if you want to copy those.
+  /// @see SetTimeStateAndParametersFrom() if you want to copy time and accuracy
+  /// along with state and parameters to a root context.
+  template <typename U>
+  void SetStateAndParametersFrom(const Context<U>& source) {
+    // A single change event for all these changes is faster than doing
+    // each separately.
+    const int64_t change_event = this->start_new_change_event();
+
+    SetStateAndParametersFromHelper(source, change_event);
+  }
+
+  // TODO(xuchenhan-tri) Should treat fixed input port values the same as
+  // parameters.
+  // TODO(xuchenhan-tri) Change the name of this method to be more inclusive
+  // since it also copies accuracy (now) and fixed input port values
+  // (pending above TODO).
+  /// Copies time, accuracy, all state and all parameters in @p source, where
+  /// numerical values are of type `U`, to `this` context. This method can only
+  /// be called on root contexts because time and accuracy are copied.
+  /// Sends out of date notifications for all dependent computations in this
+  /// context.
+  /// @throws std::exception if this is not the root context.
+  /// @note Currently does not copy fixed input port values from `source`.
+  /// See System::FixInputPortsFrom() if you want to copy those.
+  /// @see SetStateAndParametersFrom() if you want to copy state and parameters
+  /// to a non-root context.
   template <typename U>
   void SetTimeStateAndParametersFrom(const Context<U>& source) {
     ThrowIfNotRootContext(__func__, "Time");
@@ -435,17 +447,12 @@ class Context : public ContextBase {
 
     // These two both set the value and perform notifications.
     const scalar_conversion::ValueConverter<T, U> converter;
-    PropagateTimeChange(this, converter(source.get_time()), change_event);
+    PropagateTimeChange(this, converter(source.get_time()), {}, change_event);
     PropagateAccuracyChange(this, source.get_accuracy(), change_event);
 
-    // Notification is separate from the actual value change for bulk changes.
-    PropagateBulkChange(change_event, &Context<T>::NoteAllStateChanged);
-    do_access_mutable_state().SetFrom(source.get_state());
-
-    PropagateBulkChange(change_event, &Context<T>::NoteAllParametersChanged);
-    parameters_->SetFrom(source.get_parameters());
-
-    // TODO(sherm1) Fixed input copying goes here.
+    // Set state and parameters (and fixed input port values pending TODO) from
+    // the source.
+    SetStateAndParametersFromHelper(source, change_event);
   }
 
   // Allow access to the base class method (takes an AbstractValue).
@@ -463,10 +470,9 @@ class Context : public ContextBase {
   /// input port that has previously been passed into a call to
   /// DiagramBuilder::Connect(), causes FixedInputPortValue to override any
   /// other value present on that port.
-  FixedInputPortValue& FixInputPort(int index, const BasicVector<T>& vec) {
-    return ContextBase::FixInputPort(
-        index, std::make_unique<Value<BasicVector<T>>>(vec.Clone()));
-  }
+  DRAKE_DEPRECATED("2021-01-01",
+      "Use input_port.FixValue() instead of context.FixInputPort().")
+  FixedInputPortValue& FixInputPort(int index, const BasicVector<T>& vec);
 
   /// Same as above method but starts with an Eigen vector whose contents are
   /// used to initialize a BasicVector in the FixedInputPortValue.
@@ -474,10 +480,10 @@ class Context : public ContextBase {
   /// input port that has previously been passed into a call to
   /// DiagramBuilder::Connect(), causes FixedInputPortValue to override any
   /// other value present on that port.
+  DRAKE_DEPRECATED("2021-01-01",
+      "Use input_port.FixValue() instead of context.FixInputPort().")
   FixedInputPortValue& FixInputPort(
-      int index, const Eigen::Ref<const VectorX<T>>& data) {
-    return FixInputPort(index, BasicVector<T>(data));
-  }
+      int index, const Eigen::Ref<const VectorX<T>>& data);
 
   /// Same as the above method that takes a `const BasicVector<T>&`, but here
   /// the vector is passed by unique_ptr instead of by const reference.  The
@@ -493,11 +499,10 @@ class Context : public ContextBase {
   /// the other overloads instead.
   ///
   /// @exclude_from_pydrake_mkdoc{Will be deprecated; not bound in pydrake.}
+  DRAKE_DEPRECATED("2021-01-01",
+      "Use input_port.FixValue() instead of context.FixInputPort().")
   FixedInputPortValue& FixInputPort(
-      int index, std::unique_ptr<BasicVector<T>> vec) {
-    DRAKE_THROW_UNLESS(vec.get() != nullptr);
-    return FixInputPort(index, *vec);
-  }
+      int index, std::unique_ptr<BasicVector<T>> vec);
 
   // TODO(sherm1) Consider whether to avoid invalidation if the new value is
   // the same as the old one.
@@ -539,11 +544,7 @@ class Context : public ContextBase {
   ///   out of date when the accuracy setting changes.
   ///
   /// @throws std::logic_error if this is not the root context.
-  void SetAccuracy(const std::optional<double>& accuracy) {
-    ThrowIfNotRootContext(__func__, "Accuracy");
-    const int64_t change_event = this->start_new_change_event();
-    PropagateAccuracyChange(this, accuracy, change_event);
-  }
+  void SetAccuracy(const std::optional<double>& accuracy);
 
   //@}
 
@@ -566,21 +567,12 @@ class Context : public ContextBase {
   /// to be made for all such computations. If you don't mean to change the
   /// whole state, use more focused methods to modify only a portion of the
   /// state. See class documentation for more information.
-  State<T>& get_mutable_state() {
-    const int64_t change_event = this->start_new_change_event();
-    PropagateBulkChange(change_event, &Context<T>::NoteAllStateChanged);
-    return do_access_mutable_state();
-  }
+  State<T>& get_mutable_state();
 
   /// Returns a mutable reference to the continuous component of the state,
   /// which may be of size zero. Sends out of date notifications for all
   /// continuous-state-dependent computations.
-  ContinuousState<T>& get_mutable_continuous_state() {
-    const int64_t change_event = this->start_new_change_event();
-    PropagateBulkChange(change_event,
-                        &Context<T>::NoteAllContinuousStateChanged);
-    return do_access_mutable_state().get_mutable_continuous_state();
-  }
+  ContinuousState<T>& get_mutable_continuous_state();
 
   /// Returns a mutable reference to the continuous state vector, devoid
   /// of second-order structure. The vector may be of size zero. Sends out of
@@ -592,12 +584,7 @@ class Context : public ContextBase {
   /// Returns a mutable reference to the discrete component of the state,
   /// which may be of size zero. Sends out of date notifications for all
   /// discrete-state-dependent computations.
-  DiscreteValues<T>& get_mutable_discrete_state() {
-    const int64_t change_event = this->start_new_change_event();
-    PropagateBulkChange(change_event,
-                        &Context<T>::NoteAllDiscreteStateChanged);
-    return do_access_mutable_state().get_mutable_discrete_state();
-  }
+  DiscreteValues<T>& get_mutable_discrete_state();
 
   /// Returns a mutable reference to the _only_ discrete state vector.
   /// Sends out of date notifications for all discrete-state-dependent
@@ -622,12 +609,7 @@ class Context : public ContextBase {
   /// Returns a mutable reference to the abstract component of the state,
   /// which may be of size zero. Sends out of date notifications for all
   /// abstract-state-dependent computations.
-  AbstractValues& get_mutable_abstract_state() {
-    const int64_t change_event = this->start_new_change_event();
-    PropagateBulkChange(change_event,
-                        &Context<T>::NoteAllAbstractStateChanged);
-    return do_access_mutable_state().get_mutable_abstract_state();
-  }
+  AbstractValues& get_mutable_abstract_state();
 
   // TODO(sherm1) Invalidate only dependents of this one abstract variable.
   /// Returns a mutable reference to element @p index of the abstract state.
@@ -647,11 +629,7 @@ class Context : public ContextBase {
   /// mean to change all the parameters, use the indexed methods to modify only
   /// some of the parameters so that fewer computations are invalidated and
   /// fewer notifications need be sent.
-  Parameters<T>& get_mutable_parameters() {
-    const int64_t change_event = this->start_new_change_event();
-    PropagateBulkChange(change_event, &Context<T>::NoteAllParametersChanged);
-    return *parameters_;
-  }
+  Parameters<T>& get_mutable_parameters();
 
   // TODO(sherm1) Invalidate only dependents of this one parameter.
   /// Returns a mutable reference to element @p index of the vector-valued
@@ -659,12 +637,7 @@ class Context : public ContextBase {
   /// dependent on this parameter.
   /// @pre @p index must identify an existing numeric parameter.
   /// @note Currently notifies dependents of _all_ numeric parameters.
-  BasicVector<T>& get_mutable_numeric_parameter(int index) {
-    const int64_t change_event = this->start_new_change_event();
-    PropagateBulkChange(change_event,
-                        &Context<T>::NoteAllNumericParametersChanged);
-    return parameters_->get_mutable_numeric_parameter(index);
-  }
+  BasicVector<T>& get_mutable_numeric_parameter(int index);
 
   // TODO(sherm1) Invalidate only dependents of this one parameter.
   /// Returns a mutable reference to element @p index of the abstract-valued
@@ -672,12 +645,7 @@ class Context : public ContextBase {
   /// on this parameter.
   /// @pre @p index must identify an existing abstract parameter.
   /// @note Currently notifies dependents of _all_ abstract parameters.
-  AbstractValue& get_mutable_abstract_parameter(int index) {
-    const int64_t change_event = this->start_new_change_event();
-    PropagateBulkChange(change_event,
-                        &Context<T>::NoteAllAbstractParametersChanged);
-    return parameters_->get_mutable_abstract_parameter(index);
-  }
+  AbstractValue& get_mutable_abstract_parameter(int index);
   //@}
 
   /// @anchor advanced_context_value_change_methods
@@ -709,15 +677,7 @@ class Context : public ContextBase {
   /// @throws std::logic_error if this is not the root context.
   /// @see GetMutableVZVectors()
   /// @see SetTimeAndGetMutableContinuousStateVector()
-  VectorBase<T>& SetTimeAndGetMutableQVector(const T& time_sec) {
-    ThrowIfNotRootContext(__func__, "Time");
-    const int64_t change_event = this->start_new_change_event();
-    PropagateTimeChange(this, time_sec, change_event);
-    PropagateBulkChange(change_event, &Context<T>::NoteAllQChanged);
-    return do_access_mutable_state()  // No invalidation here.
-        .get_mutable_continuous_state()
-        .get_mutable_generalized_position();
-  }
+  VectorBase<T>& SetTimeAndGetMutableQVector(const T& time_sec);
 
   /// (Advanced) Returns mutable references to the first-order continuous
   /// state partitions v and z from xc. Performs a single notification sweep
@@ -725,14 +685,7 @@ class Context : public ContextBase {
   /// v and z. Does _not_ invalidate computations that depend on time or
   /// pose q, unless those also depend on v or z.
   /// @see SetTimeAndGetMutableQVector()
-  std::pair<VectorBase<T>*, VectorBase<T>*> GetMutableVZVectors() {
-    const int64_t change_event = this->start_new_change_event();
-    PropagateBulkChange(change_event, &Context<T>::NoteAllVZChanged);
-    ContinuousState<T>& xc =  // No invalidation here.
-        do_access_mutable_state().get_mutable_continuous_state();
-    return {&xc.get_mutable_generalized_velocity(),
-            &xc.get_mutable_misc_continuous_state()};
-  }
+  std::pair<VectorBase<T>*, VectorBase<T>*> GetMutableVZVectors();
 
   /// (Advanced) Sets time and registers an intention to modify the continuous
   /// state xc. Intended use is for integrators that are already holding a
@@ -767,57 +720,61 @@ class Context : public ContextBase {
   /// @throws std::logic_error if this is not the root context.
   // This is just an intentional shadowing of the base class method to return
   // a more convenient type.
-  std::unique_ptr<Context<T>> Clone() const {
-    return dynamic_pointer_cast_or_throw<Context<T>>(ContextBase::Clone());
-  }
+  std::unique_ptr<Context<T>> Clone() const;
 
   /// Returns a deep copy of this Context's State.
-  std::unique_ptr<State<T>> CloneState() const {
-    auto result = DoCloneState();
-    result->get_mutable_continuous_state().set_system_id(this->get_system_id());
-    return result;
-  }
+  std::unique_ptr<State<T>> CloneState() const;
 
   /// Returns a partial textual description of the Context, intended to be
   /// human-readable.  It is not guaranteed to be unambiguous nor complete.
-  std::string to_string() const {
-    return do_to_string();
-  }
+  std::string to_string() const;
   //@}
 
+#ifndef DRAKE_DOXYGEN_CXX
+  // See Drake issue #13296 for why these two methods are needed.
+
+  // (Advanced) Sets the Context time to `time` but notes that this is not the
+  // true current time but some small perturbation away from it. The true
+  // current time is recorded and propagated. This is used by
+  // Simulator::Initialize() to ensure that initialize-time periodic and
+  // scheduled events are not missed due to "right now" events.
+  void PerturbTime(const T& time, const T& true_time);
+
+  // TODO(sherm1) Consider whether get_true_time() ought to be visible (though
+  // certainly marked (Advanced)). It may be needed for some obscure overloads
+  // of DoCalcNextUpdateTime().
+
+  // (Advanced) If time was set with PerturbTime(), returns the true time. If '
+  // this is empty then the true time is just get_time(). This is used for
+  // processing of CalcNextUpdateTime() to ensure that overloads which want
+  // events to occur "right now" work properly during initialization.
+  const std::optional<T>& get_true_time() const { return true_time_; }
+#endif
+
  protected:
-  Context() = default;
+  Context();
 
   /// Copy constructor takes care of base class and `Context<T>` data members.
   /// Derived classes must implement copy constructors that delegate to this
   /// one for use in their DoCloneWithoutPointers() implementations.
   // Default implementation invokes the base class copy constructor and then
   // the local member copy constructors.
-  Context(const Context<T>&) = default;
+  Context(const Context<T>&);
 
   // Structuring these methods as statics permits a DiagramContext to invoke
   // the protected functionality on its children.
 
   /// (Internal use only) Sets a new time and notifies time-dependent
   /// quantities that they are now invalid, as part of a given change event.
-  static void PropagateTimeChange(Context<T>* context, const T& time_sec,
-                                  int64_t change_event) {
-    DRAKE_ASSERT(context != nullptr);
-    context->NoteTimeChanged(change_event);
-    context->step_info_.time_sec = time_sec;
-    context->DoPropagateTimeChange(time_sec, change_event);
-  }
+  static void PropagateTimeChange(Context<T>* context, const T& time,
+                                  const std::optional<T>& true_time,
+                                  int64_t change_event);
 
   /// (Internal use only) Sets a new accuracy and notifies accuracy-dependent
   /// quantities that they are now invalid, as part of a given change event.
   static void PropagateAccuracyChange(Context<T>* context,
                                       const std::optional<double>& accuracy,
-                                      int64_t change_event) {
-    DRAKE_ASSERT(context != nullptr);
-    context->NoteAccuracyChanged(change_event);
-    context->accuracy_ = accuracy;
-    context->DoPropagateAccuracyChange(accuracy, change_event);
-  }
+                                      int64_t change_event);
 
   /// (Internal use only) Returns a reference to mutable parameters _without_
   /// invalidation notifications. Use get_mutable_parameters() instead for
@@ -840,10 +797,7 @@ class Context : public ContextBase {
   // This is just an intentional shadowing of the base class method to return a
   // more convenient type.
   static std::unique_ptr<Context<T>> CloneWithoutPointers(
-      const Context<T>& source) {
-    return dynamic_pointer_cast_or_throw<Context<T>>(
-        ContextBase::CloneWithoutPointers(source));
-  }
+      const Context<T>& source);
 
   /// Returns a const reference to its concrete State object.
   virtual const State<T>& do_access_state() const = 0;
@@ -865,8 +819,9 @@ class Context : public ContextBase {
   /// Invokes PropagateTimeChange() on all subcontexts of this Context. The
   /// default implementation does nothing, which is suitable for leaf contexts.
   /// Diagram contexts must override.
-  virtual void DoPropagateTimeChange(const T& time_sec, int64_t change_event) {
-    unused(time_sec, change_event);
+  virtual void DoPropagateTimeChange(const T& time_sec,
+      const std::optional<T>& true_time, int64_t change_event) {
+    unused(time_sec, true_time, change_event);
   }
 
   /// Invokes PropagateAccuracyChange() on all subcontexts of this Context. The
@@ -877,60 +832,55 @@ class Context : public ContextBase {
     unused(accuracy, change_event);
   }
 
-  /// Returns a const reference to current time and step information.
-  const StepInfo<T>& get_step_info() const { return step_info_; }
-
   /// (Internal use only) Sets the continuous state to @p xc, deleting whatever
   /// was there before.
   /// @warning Does _not_ invalidate state-dependent computations.
-  void init_continuous_state(std::unique_ptr<ContinuousState<T>> xc) {
-    do_access_mutable_state().set_continuous_state(std::move(xc));
-  }
+  void init_continuous_state(std::unique_ptr<ContinuousState<T>> xc);
 
   /// (Internal use only) Sets the discrete state to @p xd, deleting whatever
   /// was there before.
   /// @warning Does _not_ invalidate state-dependent computations.
-  void init_discrete_state(std::unique_ptr<DiscreteValues<T>> xd) {
-    do_access_mutable_state().set_discrete_state(std::move(xd));
-  }
+  void init_discrete_state(std::unique_ptr<DiscreteValues<T>> xd);
 
   /// (Internal use only) Sets the abstract state to @p xa, deleting whatever
   /// was there before.
   /// @warning Does _not_ invalidate state-dependent computations.
-  void init_abstract_state(std::unique_ptr<AbstractValues> xa) {
-    do_access_mutable_state().set_abstract_state(std::move(xa));
-  }
+  void init_abstract_state(std::unique_ptr<AbstractValues> xa);
 
   /// (Internal use only) Sets the parameters to @p params, deleting whatever
   /// was there before. You must supply a Parameters object; null is not
   /// acceptable.
   /// @warning Does _not_ invalidate parameter-dependent computations.
-  void init_parameters(std::unique_ptr<Parameters<T>> params) {
-    DRAKE_DEMAND(params != nullptr);
-    parameters_ = std::move(params);
-  }
+  void init_parameters(std::unique_ptr<Parameters<T>> params);
 
  private:
   // Call with arguments like (__func__, "Time"), capitalized as shown.
   void ThrowIfNotRootContext(const char* func_name,
-                             const char* quantity) const {
-    if (!is_root_context()) {
-      throw std::logic_error(
-          fmt::format("{}(): {} change allowed only in the root Context.",
-                      func_name, quantity));
-    }
+                             const char* quantity) const;
+
+  // TODO(xuchenhan-tri) Should treat fixed input port values the same as
+  // parameters.
+  // TODO(xuchenhan-tri) Change the name of this method to be more inclusive
+  // since it also fixed input port values (pending above TODO).
+  // This helper allow us to reuse this code in several APIs with a single
+  // change_event.
+  template <typename U>
+  void SetStateAndParametersFromHelper(const Context<U>& source,
+                                       int64_t change_event) {
+    // Notification is separate from the actual value change for bulk changes.
+    PropagateBulkChange(change_event, &Context<T>::NoteAllStateChanged);
+    do_access_mutable_state().SetFrom(source.get_state());
+
+    PropagateBulkChange(change_event, &Context<T>::NoteAllParametersChanged);
+    parameters_->SetFrom(source.get_parameters());
+
+    // TODO(xuchenhan-tri) Fixed input copying goes here.
   }
 
   // These helpers allow us to reuse this code in several APIs while the
   // error message contains the actual API name.
   void SetTimeAndNoteContinuousStateChangeHelper(const char* func_name,
-      const T& time_sec) {
-    ThrowIfNotRootContext(func_name, "Time");
-    const int64_t change_event = this->start_new_change_event();
-    PropagateTimeChange(this, time_sec, change_event);
-    PropagateBulkChange(change_event,
-                        &Context<T>::NoteAllContinuousStateChanged);
-  }
+      const T& time_sec);
 
   ContinuousState<T>& SetTimeAndGetMutableContinuousStateHelper(
       const char* func_name, const T& time_sec) {
@@ -938,8 +888,15 @@ class Context : public ContextBase {
     return do_access_mutable_state().get_mutable_continuous_state();
   }
 
-  // Current time and step information.
-  StepInfo<T> step_info_;
+  // Current time in seconds. Must be the same for a Diagram root context and
+  // all its subcontexts so we only allow setting this in the root.
+  T time_{0.};
+
+  // For ugly reasons, it is sometimes necessary to set time_ to a slight
+  // difference from the actual time. That is done using the internal
+  // PerturbTime() method which records the actual time here, where it
+  // can be retrieved during CalcNextUpdateTime() processing.
+  std::optional<T> true_time_;
 
   // Accuracy setting.
   std::optional<double> accuracy_;
@@ -957,9 +914,6 @@ std::ostream& operator<<(std::ostream& os, const Context<T>& context) {
 
 }  // namespace systems
 }  // namespace drake
-
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    struct ::drake::systems::StepInfo)
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::Context)

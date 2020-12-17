@@ -48,7 +48,7 @@ bool is_integer(const double v) {
     return false;
   }
 
-  double intpart;  // dummy variable
+  double intpart{};  // dummy variable
   return modf(v, &intpart) == 0.0;
 }
 
@@ -139,6 +139,35 @@ Expression ExpandMultiplication(const Expression& e1, const Expression& e2) {
     }
     return fac.GetExpression();
   }
+  if (is_division(e1)) {
+    const Expression& e1_1{get_first_argument(e1)};
+    const Expression& e1_2{get_second_argument(e1)};
+    if (is_division(e2)) {
+      //    ((e1_1 / e1_2) * (e2_1 / e2_2)).Expand()
+      // => (e1_1 * e2_1).Expand() / (e1_2 * e2_2).Expand().
+      //
+      // Note that e1_1, e1_2, e2_1, and e_2 are already expanded by the
+      // precondition.
+      const Expression& e2_1{get_first_argument(e2)};
+      const Expression& e2_2{get_second_argument(e2)};
+      return ExpandMultiplication(e1_1, e2_1) /
+             ExpandMultiplication(e1_2, e2_2);
+    }
+    //    ((e1_1 / e1_2) * e2).Expand()
+    // => (e1_1 * e2).Expand() / e2.
+    //
+    // Note that e1_1, e1_2, and e_2 are already expanded by the precondition.
+    return ExpandMultiplication(e1_1, e2) / e1_2;
+  }
+  if (is_division(e2)) {
+    //    (e1 * (e2_1 / e2_2)).Expand()
+    // => (e1 * e2_1).Expand() / e2_2.
+    //
+    // Note that e1, e2_1, and e2_2 are already expanded by the precondition.
+    const Expression& e2_1{get_first_argument(e2)};
+    const Expression& e2_2{get_second_argument(e2)};
+    return ExpandMultiplication(e1, e2_1) / e2_2;
+  }
   return e1 * e2;
 }
 
@@ -200,11 +229,10 @@ ExpressionCell::ExpressionCell(const ExpressionKind k, const bool is_poly,
                                const bool is_expanded)
     : kind_{k}, is_polynomial_{is_poly}, is_expanded_{is_expanded} {}
 
-UnaryExpressionCell::UnaryExpressionCell(const ExpressionKind k,
-                                         const Expression& e,
+UnaryExpressionCell::UnaryExpressionCell(const ExpressionKind k, Expression e,
                                          const bool is_poly,
                                          const bool is_expanded)
-    : ExpressionCell{k, is_poly, is_expanded}, e_{e} {}
+    : ExpressionCell{k, is_poly, is_expanded}, e_{std::move(e)} {}
 
 void UnaryExpressionCell::HashAppendDetail(DelegatingHasher* hasher) const {
   DRAKE_ASSERT(hasher);
@@ -236,11 +264,12 @@ double UnaryExpressionCell::Evaluate(const Environment& env) const {
 }
 
 BinaryExpressionCell::BinaryExpressionCell(const ExpressionKind k,
-                                           const Expression& e1,
-                                           const Expression& e2,
+                                           Expression e1, Expression e2,
                                            const bool is_poly,
                                            const bool is_expanded)
-    : ExpressionCell{k, is_poly, is_expanded}, e1_{e1}, e2_{e2} {}
+    : ExpressionCell{k, is_poly, is_expanded},
+      e1_{std::move(e1)},
+      e2_{std::move(e2)} {}
 
 void BinaryExpressionCell::HashAppendDetail(DelegatingHasher* hasher) const {
   DRAKE_ASSERT(hasher);
@@ -282,8 +311,8 @@ double BinaryExpressionCell::Evaluate(const Environment& env) const {
   return DoEvaluate(v1, v2);
 }
 
-ExpressionVar::ExpressionVar(const Variable& v)
-    : ExpressionCell{ExpressionKind::Var, true, true}, var_{v} {
+ExpressionVar::ExpressionVar(Variable v)
+    : ExpressionCell{ExpressionKind::Var, true, true}, var_{std::move(v)} {
   // Dummy symbolic variable (ID = 0) should not be used in constructing
   // symbolic expressions.
   DRAKE_DEMAND(!var_.is_dummy());
@@ -546,7 +575,7 @@ ostream& ExpressionAdd::Display(ostream& os) const {
     os << constant_;
     print_plus = true;
   }
-  for (auto& p : expr_to_coeff_map_) {
+  for (const auto& p : expr_to_coeff_map_) {
     DisplayTerm(os, print_plus, p.second, p.first);
     print_plus = true;
   }
@@ -633,7 +662,7 @@ Expression ExpressionAddFactory::GetExpression() const {
   if (expr_to_coeff_map_.empty()) {
     return Expression{constant_};
   }
-  if (constant_ == 0.0 && expr_to_coeff_map_.size() == 1u) {
+  if (constant_ == 0.0 && expr_to_coeff_map_.size() == 1U) {
     // 0.0 + c1 * t1 -> c1 * t1
     const auto it(expr_to_coeff_map_.cbegin());
     return it->first * it->second;
@@ -844,7 +873,7 @@ ostream& ExpressionMul::Display(ostream& os) const {
     os << constant_;
     print_mul = true;
   }
-  for (auto& p : base_to_exponent_map_) {
+  for (const auto& p : base_to_exponent_map_) {
     DisplayTerm(os, print_mul, p.first, p.second);
     print_mul = true;
   }
@@ -927,7 +956,7 @@ Expression ExpressionMulFactory::GetExpression() const {
   if (base_to_exponent_map_.empty()) {
     return Expression{constant_};
   }
-  if (constant_ == 1.0 && base_to_exponent_map_.size() == 1u) {
+  if (constant_ == 1.0 && base_to_exponent_map_.size() == 1U) {
     // 1.0 * c1^t1 -> c1^t1
     const auto it(base_to_exponent_map_.cbegin());
     return pow(it->first, it->second);
@@ -1014,12 +1043,13 @@ namespace {
 // but it's desirable to simplify the expression into `2xy / z`.
 class DivExpandVisitor {
  public:
-  Expression Simplify(const Expression& e, const double n) const {
+  [[nodiscard]] Expression Simplify(const Expression& e, const double n) const {
     return VisitExpression<Expression>(this, e, n);
   }
 
  private:
-  Expression VisitAddition(const Expression& e, const double n) const {
+  [[nodiscard]] Expression VisitAddition(const Expression& e,
+                                         const double n) const {
     // e =  (c₀ + ∑ᵢ (cᵢ * eᵢ)) / n
     //   => c₀/n + ∑ᵢ (cᵢ / n * eᵢ)
     const double constant{get_constant_in_addition(e)};
@@ -1030,14 +1060,16 @@ class DivExpandVisitor {
     }
     return factory.GetExpression();
   }
-  Expression VisitMultiplication(const Expression& e, const double n) const {
+  [[nodiscard]] Expression VisitMultiplication(const Expression& e,
+                                               const double n) const {
     // e =  (c₀ * ∏ᵢ (bᵢ * eᵢ)) / n
     //   => c₀ / n * ∏ᵢ (bᵢ * eᵢ)
     return ExpressionMulFactory{get_constant_in_multiplication(e) / n,
                                 get_base_to_exponent_map_in_multiplication(e)}
         .GetExpression();
   }
-  Expression VisitDivision(const Expression& e, const double n) const {
+  [[nodiscard]] Expression VisitDivision(const Expression& e,
+                                         const double n) const {
     const Expression& e1{get_first_argument(e)};
     const Expression& e2{get_second_argument(e)};
     if (is_constant(e2)) {
@@ -1051,74 +1083,87 @@ class DivExpandVisitor {
       return Simplify(e1, n) / e2;
     }
   }
-  Expression VisitVariable(const Expression& e, const double n) const {
+  [[nodiscard]] Expression VisitVariable(const Expression& e,
+                                         const double n) const {
     return (1.0 / n) * e;
   }
-  Expression VisitConstant(const Expression& e, const double n) const {
+  [[nodiscard]] Expression VisitConstant(const Expression& e,
+                                         const double n) const {
     return (1.0 / n) * e;
   }
-  Expression VisitLog(const Expression& e, const double n) const {
+  [[nodiscard]] Expression VisitLog(const Expression& e, const double n) const {
     return (1.0 / n) * e;
   }
-  Expression VisitPow(const Expression& e, const double n) const {
+  [[nodiscard]] Expression VisitPow(const Expression& e, const double n) const {
     return (1.0 / n) * e;
   }
-  Expression VisitAbs(const Expression& e, const double n) const {
+  [[nodiscard]] Expression VisitAbs(const Expression& e, const double n) const {
     return (1.0 / n) * e;
   }
-  Expression VisitExp(const Expression& e, const double n) const {
+  [[nodiscard]] Expression VisitExp(const Expression& e, const double n) const {
     return (1.0 / n) * e;
   }
-  Expression VisitSqrt(const Expression& e, const double n) const {
+  [[nodiscard]] Expression VisitSqrt(const Expression& e,
+                                     const double n) const {
     return (1.0 / n) * e;
   }
-  Expression VisitSin(const Expression& e, const double n) const {
+  [[nodiscard]] Expression VisitSin(const Expression& e, const double n) const {
     return (1.0 / n) * e;
   }
-  Expression VisitCos(const Expression& e, const double n) const {
+  [[nodiscard]] Expression VisitCos(const Expression& e, const double n) const {
     return (1.0 / n) * e;
   }
-  Expression VisitTan(const Expression& e, const double n) const {
+  [[nodiscard]] Expression VisitTan(const Expression& e, const double n) const {
     return (1.0 / n) * e;
   }
-  Expression VisitAsin(const Expression& e, const double n) const {
+  [[nodiscard]] Expression VisitAsin(const Expression& e,
+                                     const double n) const {
     return (1.0 / n) * e;
   }
-  Expression VisitAcos(const Expression& e, const double n) const {
+  [[nodiscard]] Expression VisitAcos(const Expression& e,
+                                     const double n) const {
     return (1.0 / n) * e;
   }
-  Expression VisitAtan(const Expression& e, const double n) const {
+  [[nodiscard]] Expression VisitAtan(const Expression& e,
+                                     const double n) const {
     return (1.0 / n) * e;
   }
-  Expression VisitAtan2(const Expression& e, const double n) const {
+  [[nodiscard]] Expression VisitAtan2(const Expression& e,
+                                      const double n) const {
     return (1.0 / n) * e;
   }
-  Expression VisitSinh(const Expression& e, const double n) const {
+  [[nodiscard]] Expression VisitSinh(const Expression& e,
+                                     const double n) const {
     return (1.0 / n) * e;
   }
-  Expression VisitCosh(const Expression& e, const double n) const {
+  [[nodiscard]] Expression VisitCosh(const Expression& e,
+                                     const double n) const {
     return (1.0 / n) * e;
   }
-  Expression VisitTanh(const Expression& e, const double n) const {
+  [[nodiscard]] Expression VisitTanh(const Expression& e,
+                                     const double n) const {
     return (1.0 / n) * e;
   }
-  Expression VisitMin(const Expression& e, const double n) const {
+  [[nodiscard]] Expression VisitMin(const Expression& e, const double n) const {
     return (1.0 / n) * e;
   }
-  Expression VisitMax(const Expression& e, const double n) const {
+  [[nodiscard]] Expression VisitMax(const Expression& e, const double n) const {
     return (1.0 / n) * e;
   }
-  Expression VisitCeil(const Expression& e, const double n) const {
+  [[nodiscard]] Expression VisitCeil(const Expression& e,
+                                     const double n) const {
     return (1.0 / n) * e;
   }
-  Expression VisitFloor(const Expression& e, const double n) const {
+  [[nodiscard]] Expression VisitFloor(const Expression& e,
+                                      const double n) const {
     return (1.0 / n) * e;
   }
-  Expression VisitIfThenElse(const Expression& e, const double n) const {
+  [[nodiscard]] Expression VisitIfThenElse(const Expression& e,
+                                           const double n) const {
     return (1.0 / n) * e;
   }
-  Expression VisitUninterpretedFunction(const Expression& e,
-                                        const double n) const {
+  [[nodiscard]] Expression VisitUninterpretedFunction(const Expression& e,
+                                                      const double n) const {
     return (1.0 / n) * e;
   }
 
@@ -1743,13 +1788,12 @@ double ExpressionFloor::DoEvaluate(const double v) const {
 
 // ExpressionIfThenElse
 // --------------------
-ExpressionIfThenElse::ExpressionIfThenElse(const Formula& f_cond,
-                                           const Expression& e_then,
-                                           const Expression& e_else)
+ExpressionIfThenElse::ExpressionIfThenElse(Formula f_cond, Expression e_then,
+                                           Expression e_else)
     : ExpressionCell{ExpressionKind::IfThenElse, false, false},
-      f_cond_{f_cond},
-      e_then_{e_then},
-      e_else_{e_else} {}
+      f_cond_{std::move(f_cond)},
+      e_then_{std::move(e_then)},
+      e_else_{std::move(e_else)} {}
 
 void ExpressionIfThenElse::HashAppendDetail(DelegatingHasher* hasher) const {
   using drake::hash_append;

@@ -2,6 +2,7 @@
 
 #include <limits>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
@@ -425,19 +426,6 @@ class RigidTransform {
     return RigidTransform<T>(R_BA, R_BA * (-p_AoBo_A_));
   }
 
-#ifndef DRAKE_DOXYGEN_CXX
-  // DO NOT USE. These methods will soon be deprecated as #9865 is resolved.
-  // They are only provided to support backwards compatibility with Isometry3
-  // as we migrate Drake's codebase to use RigidTransform. New uses of
-  // Isometry3 are discouraged. These methods will remain intact (though
-  // possibly marked as deprecated) until at least 2020-07-01. N.B. Keep the
-  // deprecation date here in sync with the deprecation comment inside
-  // drake/bindings/pydrake/math_py.cc.
-  operator Isometry3<T>() const { return GetAsIsometry3(); }
-  const Matrix3<T>& linear() const { return R_AB_.matrix(); }
-  Matrix4<T> matrix() const { return GetAsMatrix4(); }
-#endif
-
   /// In-place multiply of `this` %RigidTransform `X_AB` by `other`
   /// %RigidTransform `X_BC`.
   /// @param[in] other %RigidTransform that post-multiplies `this`.
@@ -620,3 +608,6 @@ using RigidTransformd = RigidTransform<double>;
 
 }  // namespace math
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::math::RigidTransform)

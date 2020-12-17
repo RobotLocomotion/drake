@@ -2,6 +2,8 @@
 
 #include <memory>
 
+#include "drake/math/autodiff_gradient.h"
+
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using std::make_shared;
@@ -71,7 +73,21 @@ void QuadraticCost::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
 
 void QuadraticCost::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
                            AutoDiffVecXd* y) const {
-  DoEvalGeneric(x, y);
+  // Specialized evaluation of cost and gradient
+  const MatrixXd dx = math::autoDiffToGradientMatrix(x);
+  const Eigen::VectorXd x_val = drake::math::autoDiffToValueMatrix(x);
+  const Eigen::RowVectorXd xT_times_Q = x_val.transpose() * Q_;
+  const Vector1d result(.5 * xT_times_Q.dot(x_val) + b_.dot(x_val) + c_);
+  const Eigen::RowVectorXd dy = xT_times_Q + b_.transpose();
+
+  // If dx is the identity matrix (very common here), then skip the chain rule
+  // multiplication dy * dx
+  if (dx.rows() == x.size() && dx.cols() == x.size() &&
+      dx == MatrixXd::Identity(x.size(), x.size())) {
+    *y = math::initializeAutoDiffGivenGradientMatrix(result, dy);
+  } else {
+    *y = math::initializeAutoDiffGivenGradientMatrix(result, dy * dx);
+  }
 }
 
 void QuadraticCost::DoEval(

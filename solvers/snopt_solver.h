@@ -18,7 +18,7 @@ struct SnoptSolverDetails {
   /**
    * The exit condition of the solver. Please refer to section "EXIT conditions"
    * in "User's Guide for SNOPT Version 7: Software for Large-Scale Nonlinear
-   * Programming" by Philip E. Gill to interprete the exit condition.
+   * Programming" by Philip E. Gill to interpret the exit condition.
    */
   int info{};
 
@@ -52,6 +52,7 @@ class SnoptSolver final : public SolverBase  {
   //@{
   static SolverId id();
   static bool is_available();
+  static bool is_enabled();
   static bool ProgramAttributesSatisfied(const MathematicalProgram&);
   //@}
 

@@ -7,6 +7,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/text_logging.h"
 #include "drake/geometry/render/camera_properties.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/rigid_transform.h"
@@ -24,62 +25,96 @@ namespace sensors {
 using Eigen::Translation3d;
 using geometry::FrameId;
 using geometry::QueryObject;
-using geometry::render::CameraProperties;
-using geometry::render::DepthCameraProperties;
 using geometry::SceneGraph;
+using geometry::render::CameraProperties;
+using geometry::render::ColorRenderCamera;
+using geometry::render::DepthCameraProperties;
+using geometry::render::DepthRange;
+using geometry::render::DepthRenderCamera;
 using math::RigidTransformd;
+using std::make_pair;
 using std::move;
+using std::pair;
 
-RgbdSensor::RgbdSensor(FrameId parent_id,
-                       const RigidTransformd& X_PB,
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+RgbdSensor::RgbdSensor(FrameId parent_id, const RigidTransformd& X_PB,
                        const CameraProperties& color_properties,
                        const DepthCameraProperties& depth_properties,
-                       const CameraPoses& camera_poses,
-                       bool show_window)
+                       const CameraPoses& camera_poses, bool show_window)
+    : RgbdSensor(
+          parent_id, X_PB,
+          ColorRenderCamera(color_properties, show_window, camera_poses.X_BC),
+          DepthRenderCamera(depth_properties, camera_poses.X_BD)) {
+  static const logging::Warn log_once(
+      "RgbdSensor constructors that take 'CameraProperties' have been "
+      "deprecated. Please use the RenderCamera variants instead.");
+}
+
+RgbdSensor::RgbdSensor(geometry::FrameId parent_id, const RigidTransformd& X_PB,
+                       const DepthCameraProperties& properties,
+                       const CameraPoses& camera_poses, bool show_window)
+    : RgbdSensor(parent_id, X_PB,
+                 ColorRenderCamera(properties, show_window, camera_poses.X_BC),
+                 DepthRenderCamera(properties, camera_poses.X_BD)) {
+  static const logging::Warn log_once(
+      "RgbdSensor constructors that take 'CameraProperties' have been "
+      "deprecated. Please use the RenderCamera variants instead.");
+}
+#pragma GCC diagnostic pop
+
+RgbdSensor::RgbdSensor(FrameId parent_id, const RigidTransformd& X_PB,
+                       const DepthRenderCamera& depth_camera,
+                       bool show_color_window)
+    : RgbdSensor(parent_id, X_PB,
+                 ColorRenderCamera(depth_camera.core(), show_color_window),
+                 depth_camera) {}
+
+RgbdSensor::RgbdSensor(FrameId parent_id, const RigidTransformd& X_PB,
+                       ColorRenderCamera color_camera,
+                       DepthRenderCamera depth_camera)
     : parent_frame_id_(parent_id),
-      show_window_(show_window),
-      color_camera_info_(color_properties.width, color_properties.height,
-                         color_properties.fov_y),
-      depth_camera_info_(depth_properties.width, depth_properties.height,
-                         depth_properties.fov_y),
-      color_properties_(color_properties),
-      depth_properties_(depth_properties),
-      X_PB_(X_PB),
-      X_BC_(camera_poses.X_BC),
-      X_BD_(camera_poses.X_BD) {
+      color_camera_(move(color_camera)),
+      depth_camera_(move(depth_camera)),
+      X_PB_(X_PB) {
+  const CameraInfo& color_intrinsics = color_camera_.core().intrinsics();
+  const CameraInfo& depth_intrinsics = depth_camera_.core().intrinsics();
+
   query_object_input_port_ = &this->DeclareAbstractInputPort(
       "geometry_query", Value<geometry::QueryObject<double>>{});
 
-  ImageRgba8U color_image(color_camera_info_.width(),
-                          color_camera_info_.height());
+  ImageRgba8U color_image(color_intrinsics.width(), color_intrinsics.height());
   color_image_port_ = &this->DeclareAbstractOutputPort(
       "color_image", color_image, &RgbdSensor::CalcColorImage);
 
-  ImageDepth32F depth32(depth_camera_info_.width(),
-                        depth_camera_info_.height());
+  ImageDepth32F depth32(depth_intrinsics.width(), depth_intrinsics.height());
   depth_image_32F_port_ = &this->DeclareAbstractOutputPort(
       "depth_image_32f", depth32, &RgbdSensor::CalcDepthImage32F);
 
-  ImageDepth16U depth16(depth_camera_info_.width(),
-                        depth_camera_info_.height());
+  ImageDepth16U depth16(depth_intrinsics.width(), depth_intrinsics.height());
   depth_image_16U_port_ = &this->DeclareAbstractOutputPort(
       "depth_image_16u", depth16, &RgbdSensor::CalcDepthImage16U);
 
-  ImageLabel16I label_image(color_camera_info_.width(),
-                            color_camera_info_.height());
+  ImageLabel16I label_image(color_intrinsics.width(),
+                            color_intrinsics.height());
   label_image_port_ = &this->DeclareAbstractOutputPort(
       "label_image", label_image, &RgbdSensor::CalcLabelImage);
 
   X_WB_pose_port_ = &this->DeclareVectorOutputPort(
       "X_WB", rendering::PoseVector<double>(), &RgbdSensor::CalcX_WB);
 
-  const float kMaxValidDepth16UInMM =
+  // The depth_16U represents depth in *millimeters*. With 16 bits there is
+  // an absolute limit on the farthest distance it can register. This tests to
+  // see if the user has specified a maximum depth value that exceeds that
+  // value.
+  const float kMaxValidDepth16UInM =
       (std::numeric_limits<uint16_t>::max() - 1) / 1000.;
-  if (depth_properties.z_far > kMaxValidDepth16UInMM) {
+  const double max_depth = depth_camera_.depth_range().max_depth();
+  if (max_depth > kMaxValidDepth16UInM) {
     drake::log()->warn(
-        "Specified max depth is {} > max valid depth for 16 bits {}. "
+        "Specified max depth is {} m > max valid depth for 16 bits {} m. "
         "depth_image_16u might not be able to capture the full depth range.",
-        depth_properties.z_far, kMaxValidDepth16UInMM);
+        max_depth, kMaxValidDepth16UInM);
   }
 }
 
@@ -110,15 +145,17 @@ const OutputPort<double>& RgbdSensor::X_WB_output_port() const {
 void RgbdSensor::CalcColorImage(const Context<double>& context,
                                 ImageRgba8U* color_image) const {
   const QueryObject<double>& query_object = get_query_object(context);
-  query_object.RenderColorImage(color_properties_, parent_frame_id_,
-                                X_PB_ * X_BC_, show_window_, color_image);
+  query_object.RenderColorImage(
+      color_camera_, parent_frame_id_,
+      X_PB_ * color_camera_.core().sensor_pose_in_camera_body(), color_image);
 }
 
 void RgbdSensor::CalcDepthImage32F(const Context<double>& context,
                                    ImageDepth32F* depth_image) const {
   const QueryObject<double>& query_object = get_query_object(context);
-  query_object.RenderDepthImage(depth_properties_, parent_frame_id_,
-                                X_PB_ * X_BD_, depth_image);
+  query_object.RenderDepthImage(
+      depth_camera_, parent_frame_id_,
+      X_PB_ * depth_camera_.core().sensor_pose_in_camera_body(), depth_image);
 }
 
 void RgbdSensor::CalcDepthImage16U(const Context<double>& context,
@@ -131,20 +168,20 @@ void RgbdSensor::CalcDepthImage16U(const Context<double>& context,
 void RgbdSensor::CalcLabelImage(const Context<double>& context,
                                 ImageLabel16I* label_image) const {
   const QueryObject<double>& query_object = get_query_object(context);
-  query_object.RenderLabelImage(color_properties_, parent_frame_id_,
-                                X_PB_ * X_BC_, show_window_, label_image);
+  query_object.RenderLabelImage(
+      color_camera_, parent_frame_id_,
+      X_PB_ * color_camera_.core().sensor_pose_in_camera_body(), label_image);
 }
 
-void RgbdSensor::CalcX_WB(
-    const Context<double>& context,
-    rendering::PoseVector<double>* pose_vector) const {
+void RgbdSensor::CalcX_WB(const Context<double>& context,
+                          rendering::PoseVector<double>* pose_vector) const {
   // Calculates X_WB.
   RigidTransformd X_WB;
   if (parent_frame_id_ == SceneGraph<double>::world_frame_id()) {
     X_WB = X_PB_;
   } else {
     const QueryObject<double>& query_object = get_query_object(context);
-    X_WB = query_object.X_WF(parent_frame_id_) * X_PB_;
+    X_WB = query_object.GetPoseInWorld(parent_frame_id_) * X_PB_;
   }
 
   Translation3d trans{X_WB.translation()};
@@ -172,8 +209,7 @@ void RgbdSensor::ConvertDepth32FTo16U(const ImageDepth32F& d32,
 // friend to GeometryState.
 const geometry::QueryObject<double>& RgbdSensor::get_query_object(
     const Context<double>& context) const {
-  return query_object_input_port().
-      Eval<geometry::QueryObject<double>>(context);
+  return query_object_input_port().Eval<geometry::QueryObject<double>>(context);
 }
 
 RgbdSensorDiscrete::RgbdSensorDiscrete(std::unique_ptr<RgbdSensor> camera,
@@ -183,7 +219,7 @@ RgbdSensorDiscrete::RgbdSensorDiscrete(std::unique_ptr<RgbdSensor> camera,
   const auto& depth_camera_info = camera->depth_camera_info();
 
   DiagramBuilder<double> builder;
-  builder.AddSystem(std::move(camera));
+  builder.AddSystem(move(camera));
   query_object_port_ =
       builder.ExportInput(camera_->query_object_input_port(), "geometry_query");
 
@@ -230,8 +266,7 @@ RgbdSensorDiscrete::RgbdSensorDiscrete(std::unique_ptr<RgbdSensor> camera,
   }
 
   // No need to place a ZOH on pose output.
-  X_WB_output_port_ =
-      builder.ExportOutput(camera_->X_WB_output_port(), "X_WB");
+  X_WB_output_port_ = builder.ExportOutput(camera_->X_WB_output_port(), "X_WB");
 
   builder.BuildInto(this);
 }

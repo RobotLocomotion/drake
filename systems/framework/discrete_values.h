@@ -4,6 +4,8 @@
 #include <utility>
 #include <vector>
 
+#include <fmt/format.h>
+
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
@@ -45,6 +47,7 @@ class DiscreteValues {
   /// Constructs a %DiscreteValues that does not own the underlying @p data.
   /// The referenced data must outlive this DiscreteValues. Every entry must be
   /// non-null.
+  /// @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
   explicit DiscreteValues(const std::vector<BasicVector<T>*>& data)
       : data_(data) {
     for (BasicVector<T>* basic_vector_ptr : data_) {
@@ -93,39 +96,36 @@ class DiscreteValues {
 
   //----------------------------------------------------------------------------
   /// @name Convenience accessors for %DiscreteValues with just one group.
-  /// These will fail (at least in Debug builds) if there is more than one
-  /// group in this %DiscreteValues object.
+  /// These will throw if there is not exactly one group in this %DiscreteValues
+  /// object.
   //@{
 
   /// Returns the number of elements in the only %DiscreteValues group.
   int size() const {
-    DRAKE_ASSERT(num_groups() == 1);
-    return data_[0]->size();
+    return get_vector().size();
   }
 
   /// Returns a mutable reference to an element in the _only_ group.
   T& operator[](std::size_t idx) {
-    DRAKE_ASSERT(num_groups() == 1);
-    return (*data_[0])[idx];
+    return get_mutable_vector()[idx];
   }
 
   /// Returns a const reference to an element in the _only_ group.
   const T& operator[](std::size_t idx) const {
-    DRAKE_ASSERT(num_groups() == 1);
-    return (*data_[0])[idx];
+    return get_vector()[idx];
   }
 
   /// Returns a const reference to the BasicVector containing the values for
   /// the _only_ group.
   const BasicVector<T>& get_vector() const {
-    DRAKE_ASSERT(num_groups() == 1);
+    ThrowUnlessExactlyOneGroup();
     return get_vector(0);
   }
 
   /// Returns a mutable reference to the BasicVector containing the values for
   /// the _only_ group.
   BasicVector<T>& get_mutable_vector() {
-    DRAKE_ASSERT(num_groups() == 1);
+    ThrowUnlessExactlyOneGroup();
     return get_mutable_vector(0);
   }
   //@}
@@ -133,27 +133,24 @@ class DiscreteValues {
   /// Returns a const reference to the vector holding data for the indicated
   /// group.
   const BasicVector<T>& get_vector(int index) const {
-    DRAKE_ASSERT(index >= 0 && index < num_groups());
-    DRAKE_ASSERT(data_[index] != nullptr);
+    DRAKE_THROW_UNLESS(index >= 0 && index < num_groups());
     return *data_[index];
   }
 
   /// Returns a mutable reference to the vector holding data for the indicated
   /// group.
   BasicVector<T>& get_mutable_vector(int index) {
-    DRAKE_ASSERT(index >= 0 && index < num_groups());
-    DRAKE_ASSERT(data_[index] != nullptr);
+    DRAKE_THROW_UNLESS(index >= 0 && index < num_groups());
     return *data_[index];
   }
 
   /// Resets the values in this DiscreteValues from the values in @p other,
-  /// possibly writing through to unowned data. Asserts if the dimensions don't
+  /// possibly writing through to unowned data. Throws if the dimensions don't
   /// match.
   template <typename U>
   void SetFrom(const DiscreteValues<U>& other) {
     DRAKE_THROW_UNLESS(num_groups() == other.num_groups());
     for (int i = 0; i < num_groups(); i++) {
-      DRAKE_THROW_UNLESS(data_[i] != nullptr);
       data_[i]->set_value(
           other.get_vector(i).get_value().unaryExpr(
               scalar_conversion::ValueConverter<T, U>{}));
@@ -171,6 +168,17 @@ class DiscreteValues {
   }
 
  private:
+  // Throw unless this object is compatible with convenience methods; i.e., it
+  // has exactly one group.
+  void ThrowUnlessExactlyOneGroup() const {
+    static constexpr char message[] =
+        "Cannot use DiscreteValues convenience methods unless there is"
+        " exactly one group. num_groups() = {}";
+    if (num_groups() != 1) {
+      throw std::logic_error(fmt::format(message, num_groups()));
+    }
+  }
+
   // DiagramDiscreteValues must override this to maintain the necessary
   // internal substructure, and to perform a deep copy so that the result
   // owns all its own data. The default implementation here requires that this
@@ -184,12 +192,12 @@ class DiscreteValues {
     return std::make_unique<DiscreteValues<T>>(std::move(cloned_data));
   }
 
-  // Pointers to the data comprising the values. If the data is owned, these
-  // pointers are equal to the pointers in owned_data_.
+  // Pointers to the data comprising the values. If the data is owned,
+  // corresponding pointers are stored in owned_data_.
   std::vector<BasicVector<T>*> data_;
   // Owned pointers to the data comprising the values. The only purpose of these
   // pointers is to maintain ownership in leaf DiscreteValues. They may be
-  // populated at construction time, and are never accessed thereafter.
+  // populated at construction/append time, and are never accessed thereafter.
   std::vector<std::unique_ptr<BasicVector<T>>> owned_data_;
 };
 

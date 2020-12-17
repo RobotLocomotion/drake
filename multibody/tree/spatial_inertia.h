@@ -138,17 +138,24 @@ class SpatialInertia {
   /// This constructor checks for the physical validity of the resulting
   /// %SpatialInertia with IsPhysicallyValid() and throws a std::runtime_error
   /// exception in the event the provided input parameters lead to
-  /// non-physically viable spatial inertia.
+  /// non-physically viable spatial inertia. Since this check has non-negligable
+  /// runtime costs, it can be disabled by setting the optional argument
+  /// `skip_validity_check` to `true`.
   ///
   /// @param[in] mass The mass of the body or composite body S.
   /// @param[in] p_PScm_E The position vector from point P to the center of mass
   ///                     of body or composite body S expressed in frame E.
   /// @param[in] G_SP_E UnitInertia of the body or composite body S computed
   ///                   about origin point P and expressed in frame E.
+  /// @param[in] skip_validity_check If true, skips the validity check described
+  ///                                above. Defaults to false.
   SpatialInertia(
-      const T& mass, const Vector3<T>& p_PScm_E, const UnitInertia<T>& G_SP_E) :
+      const T& mass, const Vector3<T>& p_PScm_E, const UnitInertia<T>& G_SP_E,
+      const bool skip_validity_check = false) :
       mass_(mass), p_PScm_E_(p_PScm_E), G_SP_E_(G_SP_E) {
-    CheckInvariants();
+    if (!skip_validity_check) {
+      CheckInvariants();
+    }
   }
 
   /// Returns a new %SpatialInertia object templated on `Scalar` initialized
@@ -168,7 +175,8 @@ class SpatialInertia {
     return SpatialInertia<Scalar>(
         get_mass(),
         get_com().template cast<Scalar>(),
-        get_unit_inertia().template cast<Scalar>());
+        get_unit_inertia().template cast<Scalar>(),
+        true);  // Skip validity check since this inertia is already valid.
   }
 
   /// Get a constant reference to the mass of this spatial inertia.
@@ -439,8 +447,9 @@ class SpatialInertia {
   /// stores the spatial vector in F⁶ result of multiplying `this` spatial
   /// inertia with the j-th column of `Mmatrix`.
   template <typename Derived>
-  Eigen::Matrix<T, 6, Derived::ColsAtCompileTime> operator*(
-      const Eigen::MatrixBase<Derived>& Mmatrix) const {
+  Eigen::Matrix<T, 6, Derived::ColsAtCompileTime, 0, 6,
+                Derived::MaxColsAtCompileTime>
+  operator*(const Eigen::MatrixBase<Derived>& Mmatrix) const {
     static_assert(is_eigen_scalar_same<Derived, T>::value,
                   "Derived must be templated on the same scalar type as this "
                   "spatial inertia.");
@@ -452,7 +461,9 @@ class SpatialInertia {
     const Vector3<T>& mp_BoBcm_E = CalcComMoment();  // = m * p_BoBcm
     const Matrix3<T> I_SP_E = CalcRotationalInertia().CopyToFullMatrix3();
 
-    Eigen::Matrix<T, 6, Derived::ColsAtCompileTime> F_Bo_E(6, Mmatrix.cols());
+    Eigen::Matrix<T, 6, Derived::ColsAtCompileTime, 0, 6,
+                  Derived::MaxColsAtCompileTime>
+        F_Bo_E(6, Mmatrix.cols());
 
     // Rotational component.
     F_Bo_E.template topRows<3>() =
@@ -506,7 +517,7 @@ class SpatialInertia {
 /// Insertion operator to write SpatialInertia objects into a `std::ostream`.
 /// Especially useful for debugging.
 /// @relates SpatialInertia
-template <typename T> inline
+template <typename T>
 std::ostream& operator<<(std::ostream& o,
                          const SpatialInertia<T>& M) {
   return o << std::endl

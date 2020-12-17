@@ -29,7 +29,7 @@ MpcData::MpcData(const std::vector<Eigen::MatrixXd>* Q,
   if (Q == nullptr || R == nullptr || S == nullptr || q == nullptr ||
       r == nullptr || A == nullptr || B == nullptr || c == nullptr ||
       E == nullptr || L == nullptr || d == nullptr || x0 == nullptr) {
-    throw std::runtime_error("A null poiner was passed to MpcData::MpcData.");
+    throw std::runtime_error("A null pointer was passed to MpcData::MpcData.");
   }
 
   Q_ = Q;

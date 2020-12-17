@@ -59,54 +59,117 @@ ProximityProperties soft_properties() {
 using ScalarTypes = ::testing::Types<double>;
 
 // Confirmation of the short-term behavior that invoking the callback on
-// potentially colliding geometry using AutoDiffXd-valued transforms will throw.
-// Configure a scenario that would otherwise pass with double-valued poses.
+// potentially colliding geometry using AutoDiffXd-valued transformsi
+// 1. If the colliding geometries are supported (soft-sphere to soft-sphere),
+// then we produce PenetrationAsPointPair<AutoDiffXd>.
+// 2. If the colliding geometries are not currently supported (soft-sphere to
+// rigid box), then we throw an error.
+// 3. If the colliding geometries do not currently support support AutoDiffXd,
+// but support double (rigid-box to rigid-box), then we throw an error message
+// that reflect it's a lack of support for contact as point pair.
+// When the two geometries are not in collision, but could collide (i.e., the
+// collision filter doesn't rule out the collision), then the callback assumes
+// the worst. If the two geometries are not supported with the AutoDiffXd in the
+// contact surface callback, then we always throw the error.
 GTEST_TEST(HydroelasticCallbackAutodiff, AutoDiffBlanketFailure) {
-  // Note: this code should duplicate the valid double-valued configuration in
-  // the ValidPairProducesResult test. Its only point of failure should be that
-  // it is AutoDiffXd valued.
+  // We have two soft spheres (S1, S2) and two rigid boxes (B1, B2) in the
+  // scene. There are contact between the pairs(S1, S2), (B1, B2) and (S1, B1).
   const double radius = 0.25;
   const double cube_size = 0.4;
-  GeometryId id_A = GeometryId::get_new_id();
-  GeometryId id_B = GeometryId::get_new_id();
-  EncodedData data_A(id_A, true);
-  EncodedData data_B(id_B, true);
+  GeometryId id_S1 = GeometryId::get_new_id();
+  GeometryId id_S2 = GeometryId::get_new_id();
+  GeometryId id_B1 = GeometryId::get_new_id();
+  GeometryId id_B2 = GeometryId::get_new_id();
+  EncodedData data_S1(id_S1, true);
+  EncodedData data_S2(id_S2, true);
+  EncodedData data_B1(id_B1, true);
+  EncodedData data_B2(id_B2, true);
   CollisionFilterLegacy collision_filter;
-  collision_filter.AddGeometry(data_A.encoding());
-  collision_filter.AddGeometry(data_B.encoding());
+  collision_filter.AddGeometry(data_S1.encoding());
+  collision_filter.AddGeometry(data_S2.encoding());
+  collision_filter.AddGeometry(data_B1.encoding());
+  collision_filter.AddGeometry(data_B2.encoding());
   unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs{
-      {id_A, RigidTransform<AutoDiffXd>::Identity()},
-      {id_B, RigidTransform<AutoDiffXd>(
-                 Vector3<AutoDiffXd>{0, 0, 0.9 * (radius + cube_size / 2)})}};
+      {id_S1, RigidTransform<AutoDiffXd>::Identity()},
+      {id_S2,
+       RigidTransform<AutoDiffXd>(Vector3<AutoDiffXd>(0, 0, -1.5 * radius))},
+      {id_B1, RigidTransform<AutoDiffXd>(
+                  Vector3<AutoDiffXd>{0, 0, 0.9 * (radius + cube_size / 2)})},
+      {id_B2, RigidTransform<AutoDiffXd>(
+                  Vector3<AutoDiffXd>(0, 0, 0.9 * radius + cube_size * 1.2))}};
 
-  CollisionObjectd object_A(make_shared<Sphered>(radius));
-  data_A.write_to(&object_A);
-  CollisionObjectd object_B(make_shared<Boxd>(cube_size, cube_size, cube_size));
-  data_B.write_to(&object_B);
+  CollisionObjectd object_S1(make_shared<Sphered>(radius));
+  data_S1.write_to(&object_S1);
+  CollisionObjectd object_S2(make_shared<Sphered>(radius));
+  data_S2.write_to(&object_S2);
+  CollisionObjectd object_B1(
+      make_shared<Boxd>(cube_size, cube_size, cube_size));
+  data_B1.write_to(&object_B1);
+  CollisionObjectd object_B2(
+      make_shared<Boxd>(cube_size, cube_size, cube_size));
+  data_B2.write_to(&object_B2);
 
   hydroelastic::Geometries hydroelastic_geometries;
-  hydroelastic_geometries.MaybeAddGeometry(Sphere(radius), id_A,
+  hydroelastic_geometries.MaybeAddGeometry(Sphere(radius), id_S1,
+                                           soft_properties());
+  hydroelastic_geometries.MaybeAddGeometry(Sphere(radius), id_S2,
                                            soft_properties());
   hydroelastic_geometries.MaybeAddGeometry(Box(cube_size, cube_size, cube_size),
-                                           id_B, rigid_properties());
+                                           id_B1, rigid_properties());
+  hydroelastic_geometries.MaybeAddGeometry(Box(cube_size, cube_size, cube_size),
+                                           id_B2, rigid_properties());
 
   vector<ContactSurface<AutoDiffXd>> surfaces;
   CallbackData<AutoDiffXd> data(&collision_filter, &X_WGs,
                                 &hydroelastic_geometries, &surfaces);
+  // S1 and B1 are in contact, but we don't support AutoDiffXd yet.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      Callback<AutoDiffXd>(&object_A, &object_B, &data), std::logic_error,
-      "AutoDiff-valued ContactSurface calculation between meshes is not"
-      "currently supported");
+      Callback<AutoDiffXd>(&object_S1, &object_B1, &data), std::logic_error,
+      "Requested AutoDiff-valued contact surface between two geometries with "
+      "hydroelastic representation but for scalar type.*");
 
-  vector<PenetrationAsPointPair<double>> point_pairs;
+  vector<PenetrationAsPointPair<AutoDiffXd>> point_pairs;
   CallbackWithFallbackData<AutoDiffXd> fallback_data{
       {&collision_filter, &X_WGs, &hydroelastic_geometries, &surfaces},
       &point_pairs};
   DRAKE_EXPECT_THROWS_MESSAGE(
-      CallbackWithFallback<AutoDiffXd>(&object_A, &object_B, &fallback_data),
+      CallbackWithFallback<AutoDiffXd>(&object_S1, &object_B1, &fallback_data),
       std::logic_error,
-      "AutoDiff-valued ContactSurface calculation between meshes is not"
-      "currently supported");
+      "Requested AutoDiff-valued contact surface between two geometries with "
+      "hydroelastic representation but for scalar type.*");
+
+  // S1 and S2 are in contact, and we support AutoDiffXd with fall-back.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      Callback<AutoDiffXd>(&object_S1, &object_S2, &data), std::logic_error,
+      "Requested contact between two soft objects .* only rigid-soft pairs "
+      "are currently supported");
+  point_pairs.clear();
+  CallbackWithFallback<AutoDiffXd>(&object_S1, &object_S2, &fallback_data);
+  EXPECT_EQ(point_pairs.size(), 1u);
+
+  // B1 and B2 are in contact, we don't support AutoDiffXd for box-to-box.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      Callback<AutoDiffXd>(&object_B1, &object_B2, &data), std::logic_error,
+      "Requested contact between two rigid objects .* only rigid-soft pairs "
+      "are currently supported");
+  point_pairs.clear();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      CallbackWithFallback<AutoDiffXd>(&object_B1, &object_B2, &fallback_data),
+      std::logic_error,
+      "Penetration queries between shapes .* are not supported for scalar type "
+      ".*");
+
+  // S1 and B2 are not in contact, but the collision filter doesn't rule out the
+  // collision between S1 and B2..
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      Callback<AutoDiffXd>(&object_S1, &object_B2, &data), std::logic_error,
+      "Requested AutoDiff-valued contact surface between two geometries with "
+      "hydroelastic representation but for scalar type.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      CallbackWithFallback<AutoDiffXd>(&object_S1, &object_B2, &fallback_data),
+      std::logic_error,
+      "Requested AutoDiff-valued contact surface between two geometries with "
+      "hydroelastic representation but for scalar type.*");
 }
 
 // Specification of the shape types to use with TestScene.

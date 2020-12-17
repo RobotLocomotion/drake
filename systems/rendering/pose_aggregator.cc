@@ -75,7 +75,7 @@ void PoseAggregator<T>::CalcPoseBundle(const Context<T>& context,
         const auto& value = port.template Eval<PoseVector<T>>(context);
         DRAKE_ASSERT(pose_index < bundle.get_num_poses());
         bundle.set_name(pose_index, record.name);
-        bundle.set_pose(pose_index, value.get_isometry());
+        bundle.set_transform(pose_index, value.get_transform());
         bundle.set_model_instance_id(pose_index, record.model_instance_id);
         pose_index++;
         continue;
@@ -108,7 +108,7 @@ void PoseAggregator<T>::CalcPoseBundle(const Context<T>& context,
         const std::string& bundle_name = record.name;
         for (int j = 0; j < num_poses; ++j) {
           DRAKE_ASSERT(pose_index < bundle.get_num_poses());
-          bundle.set_pose(pose_index, value.get_pose(j));
+          bundle.set_transform(pose_index, value.get_transform(j));
           bundle.set_velocity(pose_index, value.get_velocity(j));
           bundle.set_name(pose_index, bundle_name + "::" + value.get_name(j));
           bundle.set_model_instance_id(pose_index,

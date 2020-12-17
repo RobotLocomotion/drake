@@ -10,6 +10,8 @@
 #include "drake/common/unused.h"
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/tree/body.h"
+#include "drake/multibody/tree/multibody_tree_system.h"
+#include "drake/multibody/tree/parameter_conversion.h"
 #include "drake/multibody/tree/position_kinematics_cache.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/multibody/tree/velocity_kinematics_cache.h"
@@ -131,18 +133,99 @@ class RigidBody : public Body<T> {
     return default_spatial_inertia_;
   }
 
-  T get_mass(const systems::Context<T>&) const final {
-    return default_spatial_inertia_.get_mass();
+  /// Gets the mass stored in @p context
+  /// @throw std::logic_error if `this` RigidBody is not owned by a
+  /// MultibodyPlant
+  const T& get_mass(const systems::Context<T>& context) const final {
+    const systems::BasicVector<T>& spatial_inertia_parameter =
+        context.get_numeric_parameter(spatial_inertia_parameter_index_);
+    return internal::parameter_conversion::GetMass(spatial_inertia_parameter);
   }
 
+  /// Gets the center of mass stored in @p context
+  /// @throw std::logic_error if `this` RigidBody is not owned by a
+  /// MultibodyPlant
   const Vector3<T> CalcCenterOfMassInBodyFrame(
-      const systems::Context<T>&) const final {
-    return default_com().template cast<T>();
+      const systems::Context<T>& context) const final {
+    const systems::BasicVector<T>& spatial_inertia_parameter =
+        context.get_numeric_parameter(spatial_inertia_parameter_index_);
+    return internal::parameter_conversion::GetCenterOfMass(
+        spatial_inertia_parameter);
   }
 
+  /// Calculates Bcm's translational velocity in the world frame W.
+  /// @param[in] context The context contains the state of the model.
+  /// @retval v_WBcm_W The translational velocity of Bcm (`this` rigid body's
+  /// center of mass) in the world frame W, expressed in W.
+  Vector3<T> CalcCenterOfMassTranslationalVelocityInWorld(
+      const systems::Context<T>& context) const override {
+    const Body<T>& body_B = *this;
+    const Frame<T>& frame_B = body_B.body_frame();
+
+    // Form frame_B's spatial velocity in the world frame W, expressed in W.
+    const SpatialVelocity<T>& V_WBo_W =
+        body_B.EvalSpatialVelocityInWorld(context);
+
+    // Form v_WBcm_W, Bcm's translational velocity in frame W, expressed in W.
+    const Vector3<T> p_BoBcm_B = CalcCenterOfMassInBodyFrame(context);
+    const math::RotationMatrix<T> R_WB =
+        frame_B.CalcRotationMatrixInWorld(context);
+    const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
+    const Vector3<T> v_WBcm_W = V_WBo_W.Shift(p_BoBcm_W).translational();
+    return v_WBcm_W;
+  }
+
+  // TODO(joemasterjohn): Speed this up when we can store a reference to a
+  // SpatialInertia<T> as an abstract parameter.
+
+  /// Gets the spatial inertia stored in @p context
+  /// @throw std::logic_error if `this` RigidBody is not owned by a
+  /// MultibodyPlant.
   SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
-      const systems::Context<T>&) const override {
-    return default_spatial_inertia_.cast<T>();
+      const systems::Context<T>& context) const override {
+    const systems::BasicVector<T>& spatial_inertia_parameter =
+        context.get_numeric_parameter(spatial_inertia_parameter_index_);
+    return internal::parameter_conversion::ToSpatialInertia(
+        spatial_inertia_parameter);
+  }
+
+  /// Sets the mass stored in @p context to @p mass
+  /// @throw std::logic_error if `this` RigidBody is not owned by a
+  /// MultibodyPlant
+  void SetMass(systems::Context<T>* context, const T& mass) const {
+    systems::BasicVector<T>& spatial_inertia_parameter =
+        context->get_mutable_numeric_parameter(
+            spatial_inertia_parameter_index_);
+    spatial_inertia_parameter.SetAtIndex(
+        internal::parameter_conversion::SpatialInertiaIndex::k_mass, mass);
+  }
+
+  /// Sets the center of mass stored in @p context to @p center_of_mass
+  /// @throw std::logic_error if `this` RigidBody is not owned by a
+  /// MultibodyPlant
+  void SetCenterOfMassInBodyFrame(systems::Context<T>* context,
+                                  const Vector3<T>& com) const {
+    systems::BasicVector<T>& spatial_inertia_parameter =
+        context->get_mutable_numeric_parameter(
+            spatial_inertia_parameter_index_);
+    spatial_inertia_parameter.SetAtIndex(
+        internal::parameter_conversion::SpatialInertiaIndex::k_com_x, com(0));
+    spatial_inertia_parameter.SetAtIndex(
+        internal::parameter_conversion::SpatialInertiaIndex::k_com_y, com(1));
+    spatial_inertia_parameter.SetAtIndex(
+        internal::parameter_conversion::SpatialInertiaIndex::k_com_z, com(2));
+  }
+
+  /// Sets the spatial inertia stored in @p context to @p M_Bo_B
+  /// @throw std::logic_error if `this` RigidBody is not owned by a
+  /// MultibodyPlant
+  void SetSpatialInertiaInBodyFrame(systems::Context<T>* context,
+                                    const SpatialInertia<T>& M_Bo_B) const {
+    systems::BasicVector<T>& spatial_inertia_parameter =
+        context->get_mutable_numeric_parameter(
+            spatial_inertia_parameter_index_);
+    spatial_inertia_parameter.SetFrom(
+        internal::parameter_conversion::ToBasicVector(M_Bo_B));
   }
 
   /// @name Methods to access position kinematics quantities.
@@ -187,12 +270,13 @@ class RigidBody : public Body<T> {
   /// context.  These method's APIs will be deprecated when caching arrives.
   ///@{
 
-  /// (Advanced) Extract this body spatial velocity in world, expressed in
-  /// world.
+  /// (Advanced) Returns V_WB, `this` rigid body B's spatial velocity in
+  /// the world frame W.
   /// @param[in] vc velocity kinematics cache.
-  /// @retval V_WB_W rigid body B's spatial velocity in world W, expressed in W.
+  /// @retval V_WB_W `this` rigid body B's spatial velocity in the world
+  /// frame W, expressed in W (for point Bo, the body frame's origin).
   // TODO(amcastro-tri) When cache entries are in the context, replace this
-  // method by Body<T>::get_spatial_velocity_in_world(const Context<T>&).
+  //  method by Body<T>::get_spatial_velocity_in_world(const Context<T>&).
   //----------------------------------------------------------------------------
   const SpatialVelocity<T>& get_spatial_velocity_in_world(
       const internal::VelocityKinematicsCache<T>& vc) const {
@@ -223,10 +307,11 @@ class RigidBody : public Body<T> {
   /// with context.  These method APIs will be deprecated when caching arrives.
   ///@{
 
-  /// (Advanced) Extract this body spatial acceleration in world, expressed in
-  /// world.
+  /// (Advanced) Returns A_WB, `this` rigid body B's spatial acceleration in
+  /// the world frame W.
   /// @param[in] ac acceleration kinematics cache.
-  /// @retval A_WB_W body B's spatial acceleration in world W, expressed in W.
+  /// @retval A_WB_W `this` rigid body B's spatial acceleration in the world
+  /// frame W, expressed in W (for point Bo, the body frame's origin).
   // TODO(amcastro-tri) When cache entries are in the context, replace this
   // method by Body<T>::get_spatial_acceleration_in_world(const Context<T>&).
   //----------------------------------------------------------------------------
@@ -271,6 +356,18 @@ class RigidBody : public Body<T> {
     return TemplatedDoCloneToScalar(tree_clone);
   }
 
+  // Implementation for MultibodyElement::DoDeclareParameters().
+  // RigidBody declares a single parameter for its SpatialInertia.
+  void DoDeclareParameters(
+      internal::MultibodyTreeSystem<T>* tree_system) override {
+    // Declare parent classes' parameters
+    Body<T>::DoDeclareParameters(tree_system);
+
+    spatial_inertia_parameter_index_ = this->DeclareNumericParameter(
+        tree_system, internal::parameter_conversion::ToBasicVector<T>(
+                         default_spatial_inertia_.template cast<T>()));
+  }
+
  private:
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
@@ -283,6 +380,10 @@ class RigidBody : public Body<T> {
 
   // Spatial inertia about the body frame origin Bo, expressed in B.
   SpatialInertia<double> default_spatial_inertia_;
+
+  // System parameter index for `this` bodies SpatialInertia stored in a
+  // context.
+  systems::NumericParameterIndex spatial_inertia_parameter_index_;
 };
 
 }  // namespace multibody

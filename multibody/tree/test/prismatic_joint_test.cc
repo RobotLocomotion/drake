@@ -168,6 +168,8 @@ TEST_F(PrismaticJointTest, Clone) {
   EXPECT_EQ(joint1_clone.acceleration_upper_limits(),
             joint1_->acceleration_upper_limits());
   EXPECT_EQ(joint1_clone.damping(), joint1_->damping());
+  EXPECT_EQ(joint1_clone.get_default_translation(),
+            joint1_->get_default_translation());
 }
 
 TEST_F(PrismaticJointTest, RandomTranslationTest) {
@@ -184,6 +186,31 @@ TEST_F(PrismaticJointTest, RandomTranslationTest) {
   tree().SetRandomState(*context_, &context_->get_mutable_state(), &generator);
   EXPECT_LE(1.0, joint1_->get_translation(*context_));
   EXPECT_GE(kPositionUpperLimit, joint1_->get_translation(*context_));
+}
+
+TEST_F(PrismaticJointTest, DefaultTranslation) {
+  const double default_translation = 0.0;
+
+  const double new_default_translation =
+      0.5 * kPositionLowerLimit + 0.5 * kPositionUpperLimit;
+
+  const double out_of_bounds_low_translation = kPositionLowerLimit - 1;
+  const double out_of_bounds_high_translation = kPositionUpperLimit + 1;
+
+  // Constructor should set the default tranlation to 0.0
+  EXPECT_EQ(joint1_->get_default_translation(), default_translation);
+
+  // Setting a new default translation should propagate so that
+  // `get_default_translation()` remains correct.
+  mutable_joint1_->set_default_translation(new_default_translation);
+  EXPECT_EQ(joint1_->get_default_translation(), new_default_translation);
+
+  // Setting the default angle out of the bounds of the position limits
+  // should NOT throw an exception
+  EXPECT_NO_THROW(
+      mutable_joint1_->set_default_translation(out_of_bounds_low_translation));
+  EXPECT_NO_THROW(
+      mutable_joint1_->set_default_translation(out_of_bounds_high_translation));
 }
 
 }  // namespace

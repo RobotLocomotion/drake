@@ -30,6 +30,7 @@
 #include "drake/systems/framework/system_constraint.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/system_scalar_converter.h"
+#include "drake/systems/framework/system_visitor.h"
 #include "drake/systems/framework/witness_function.h"
 
 namespace drake {
@@ -72,6 +73,9 @@ class System : public SystemBase {
 
   ~System() override;
 
+  /// Implements a visitor pattern.  @see SystemVisitor<T>.
+  virtual void Accept(SystemVisitor<T>* v) const;
+
   //----------------------------------------------------------------------------
   /** @name           Resource allocation and initialization
   These methods are used to allocate and initialize Context resources. */
@@ -111,7 +115,16 @@ class System : public SystemBase {
   virtual std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const
       = 0;
 
-  /** Returns a DiscreteState of the same dimensions as the discrete_state
+  /** Returns an Eigen VectorX suitable for use as the output argument to
+  the CalcImplicitTimeDerivativesResidual() method. The returned VectorX
+  will have size implicit_time_derivatives_residual_size() with the
+  elements uninitialized. This is just a convenience method -- you are free
+  to use any properly-sized mutable Eigen object as the residual vector. */
+  VectorX<T> AllocateImplicitTimeDerivativesResidual() const {
+    return VectorX<T>(implicit_time_derivatives_residual_size());
+  }
+
+  /** Returns a DiscreteValues of the same dimensions as the discrete_state
   allocated in CreateDefaultContext. The simulator will provide this state
   as the output argument to Update. */
   virtual std::unique_ptr<DiscreteValues<T>> AllocateDiscreteVariables() const
@@ -243,22 +256,21 @@ class System : public SystemBase {
   //@{
 
   /** Returns a reference to the cached value of the continuous state variable
-  time derivatives, evaluating first if necessary using
-  CalcTimeDerivatives().
+  time derivatives, evaluating first if necessary using CalcTimeDerivatives().
 
-  This method returns the time derivatives `xcdot` of the continuous state
-  `xc`. The referenced return object will correspond elementwise with the
+  This method returns the time derivatives ẋ꜀ of the continuous state
+  x꜀. The referenced return object will correspond elementwise with the
   continuous state in the given Context. Thus, if the state in the Context
-  has second-order structure `xc=[q v z]`, that same structure applies to
-  the derivatives so we will have `xcdot=[qdot vdot zdot]`.
+  has second-order structure `x꜀ = [q v z]`, that same structure applies to
+  the derivatives so we will have `ẋ꜀ = [q̇ ̇v̇ ż]`.
 
   @param context The Context whose time, input port, parameter, state, and
   accuracy values may be used to evaluate the derivatives.
 
-  @retval xcdot The time derivatives of `xc` returned as a reference to an
-                object of the same type and size as this %Context's
-                continuous state.
-  @see CalcTimeDerivatives(), get_time_derivatives_cache_entry() */
+  @retval xcdot Time derivatives ẋ꜀ of x꜀ returned as a reference to an object
+                of the same type and size as `context`'s continuous state.
+  @see CalcTimeDerivatives(), CalcImplicitTimeDerivativesResidual(),
+       get_time_derivatives_cache_entry() */
   const ContinuousState<T>& EvalTimeDerivatives(
       const Context<T>& context) const {
     const CacheEntry& entry = get_time_derivatives_cache_entry();
@@ -453,17 +465,87 @@ class System : public SystemBase {
   depend on both Context and additional input arguments. */
   //@{
 
-  /** Calculates the time derivatives `xcdot` of the continuous state `xc` into
+  /** Calculates the time derivatives ẋ꜀ of the continuous state x꜀ into
   a given output argument. Prefer EvalTimeDerivatives() instead to avoid
   unnecessary recomputation.
-  @see EvalTimeDerivatives() for more information.
 
-  @param context The Context whose contents will be used to evaluate the
-                 derivatives.
-  @param derivatives The time derivatives `xcdot`. Must be the same size as
-                     the continuous state vector in `context`. */
+  This method solves the %System equations in explicit form:
+
+      ẋ꜀ = fₑ(𝓒)
+
+  where `𝓒 = {a, p, t, x, u}` is the current value of the given Context from
+  which accuracy a, parameters p, time t, state x (`={x꜀ xd xₐ}`) and
+  input values u are obtained.
+
+  @param[in] context The source for time, state, inputs, etc. defining the
+      point at which the derivatives should be calculated.
+  @param[out] derivatives The time derivatives ẋ꜀. Must be the same size as
+      the continuous state vector in `context`.
+
+  @see EvalTimeDerivatives() for more information.
+  @see CalcImplicitTimeDerivativesResidual() for the implicit form of these
+       equations.*/
   void CalcTimeDerivatives(const Context<T>& context,
                            ContinuousState<T>* derivatives) const;
+
+  /** Evaluates the implicit form of the %System equations and returns the
+  residual.
+
+  The explicit and implicit forms of the %System equations are
+
+      (1) ẋ꜀ = fₑ(𝓒)            explicit
+      (2) 0 = fᵢ(𝓒; ẋ꜀)         implicit
+
+  where `𝓒 = {a, p, t, x, u}` is the current value of the given Context from
+  which accuracy a, parameters p, time t, state x (`={x꜀ xd xₐ}`) and input
+  values u are obtained. Substituting (1) into (2) shows that the following
+  condition must always hold:
+
+      (3) fᵢ(𝓒; fₑ(𝓒)) = 0      always true
+
+  When `fᵢ(𝓒; ẋ꜀ₚ)` is evaluated with a proposed time derivative ẋ꜀ₚ that
+  differs from ẋ꜀ the result will be non-zero; we call that the _residual_ of
+  the implicit equation. Given a Context and proposed time derivative ẋ꜀ₚ, this
+  method returns the residual r such that
+
+      (4) r = fᵢ(𝓒; ẋ꜀ₚ).
+
+  The returned r will typically be the same length as x꜀ although that is not
+  required. And even if r and x꜀ are the same size, there will not necessarily
+  be any elementwise correspondence between them. (That is, you should not
+  assume that r[i] is the "residual" of ẋ꜀ₚ[i].) For a Diagram, r is the
+  concatenation of residuals from each of the subsystems, in order of subsystem
+  index within the Diagram.
+
+  A default implementation fᵢ⁽ᵈᵉᶠ⁾ for the implicit form is always provided and
+  makes use of the explicit form as follows:
+
+      (5) fᵢ⁽ᵈᵉᶠ⁾(𝓒; ẋ꜀ₚ) ≜ ẋ꜀ₚ − fₑ(𝓒)
+
+  which satisfies condition (3) by construction. (Note that the default
+  implementation requires the residual to have the same size as x꜀.) Substantial
+  efficiency gains can often be obtained by replacing the default function with
+  a customized implementation. Override DoCalcImplicitTimeDerivativesResidual()
+  to replace the default implementation with a better one.
+
+  @param[in] context The source for time, state, inputs, etc. to be used
+      in calculating the residual.
+  @param[in] proposed_derivatives The proposed value ẋ꜀ₚ for the time
+      derivatives of x꜀.
+  @param[out] residual The result r of evaluating the implicit function.
+      Can be any mutable Eigen vector object of size
+      implicit_time_derivatives_residual_size().
+
+  @pre `proposed_derivatives` is compatible with this System.
+  @pre `residual` is of size implicit_time_derivatives_residual_size().
+
+  @see SystemBase::implicit_time_derivatives_residual_size()
+  @see LeafSystem::DeclareImplicitTimeDerivativesResidualSize()
+  @see DoCalcImplicitTimeDerivativesResidual()
+  @see CalcTimeDerivatives() */
+  void CalcImplicitTimeDerivativesResidual(
+      const Context<T>& context, const ContinuousState<T>& proposed_derivatives,
+      EigenPtr<VectorX<T>> residual) const;
 
   /** This method is the public entry point for dispatching all discrete
   variable update event handlers. Using all the discrete update handlers in
@@ -782,7 +864,7 @@ class System : public SystemBase {
   virtual const State<T>* DoGetTargetSystemState(const System<T>& target_system,
                                                  const State<T>* state) const;
 
-  // Returns @p xc if @p target_system equals `this`, nullptr otherwise.
+  // Returns x꜀ if @p target_system equals `this`, nullptr otherwise.
   // Should not be directly called.
   virtual const ContinuousState<T>* DoGetTargetSystemContinuousState(
       const System<T>& target_system,
@@ -847,6 +929,17 @@ class System : public SystemBase {
         this->GetInputPortBaseOrThrow(__func__, port_index));
   }
 
+  /** Convenience method for the case of exactly one input port. */
+  const InputPort<T>& get_input_port() const {
+    static constexpr char message[] =
+        "Cannot use the get_input_port() convenience method unless there is"
+        " exactly one input port. num_input_ports() = {}";
+    if (num_input_ports() != 1) {
+      throw std::logic_error(fmt::format(message, num_input_ports()));
+    }
+    return get_input_port(0);
+  }
+
   /** Returns the typed input port specified by the InputPortSelection or by
   the InputPortIndex.  Returns nullptr if no port is selected.  This is
   provided as a convenience method since many algorithms provide the same
@@ -860,11 +953,26 @@ class System : public SystemBase {
   @throws std::logic_error if port_name is not found. */
   const InputPort<T>& GetInputPort(const std::string& port_name) const;
 
+  /** Returns true iff the system has an InputPort of the given @p
+   port_name. */
+  bool HasInputPort(const std::string& port_name) const;
+
   // TODO(sherm1) Make this an OutputPortIndex.
   /** Returns the typed output port at index @p port_index. */
   const OutputPort<T>& get_output_port(int port_index) const {
     return dynamic_cast<const OutputPort<T>&>(
         this->GetOutputPortBaseOrThrow(__func__, port_index));
+  }
+
+  /** Convenience method for the case of exactly one output port. */
+  const OutputPort<T>& get_output_port() const {
+    static constexpr char message[] =
+        "Cannot use the get_output_port() convenience method unless there is"
+        " exactly one output port. num_output_ports() = {}";
+    if (num_output_ports() != 1) {
+      throw std::logic_error(fmt::format(message, num_output_ports()));
+    }
+    return get_output_port(0);
   }
 
   /** Returns the typed output port specified by the OutputPortSelection or by
@@ -879,6 +987,11 @@ class System : public SystemBase {
   get_output_port() when performance is a concern.
   @throws std::logic_error if port_name is not found. */
   const OutputPort<T>& GetOutputPort(const std::string& port_name) const;
+
+  /** Returns true iff the system has an OutputPort of the given @p
+   port_name. */
+  bool HasOutputPort(const std::string& port_name) const;
+
 
   /** Returns the number of constraints specified for the system. */
   int num_constraints() const;
@@ -900,39 +1013,7 @@ class System : public SystemBase {
   system. */
   void CheckValidOutput(const SystemOutput<T>* output) const;
 
-  template <typename T1 = T>
-  DRAKE_DEPRECATED(
-      "2020-05-01",
-      "This method's functionality has been replaced by ValidateContext().")
-  void CheckValidContextT(const Context<T1>& context) const {
-    // Checks that the number of input ports in the context is consistent with
-    // the number of ports declared by the System.
-    DRAKE_THROW_UNLESS(context.num_input_ports() ==
-                       this->num_input_ports());
-
-    DRAKE_THROW_UNLESS(context.num_output_ports() ==
-                       this->num_output_ports());
-
-    // Checks that the size of the fixed vector input ports in the context
-    // matches the declarations made by the system.
-    for (InputPortIndex i(0); i < this->num_input_ports(); ++i) {
-      const FixedInputPortValue* port_value =
-          context.MaybeGetFixedInputPortValue(i);
-
-      // If the port isn't fixed, we don't have anything else to check.
-      if (port_value == nullptr) continue;
-      const auto& input_port = get_input_port_base(i);
-      // In the vector-valued case, check the size.
-      if (input_port.get_data_type() == kVectorValued) {
-        const BasicVector<T1>& input_vector =
-            port_value->template get_vector_value<T1>();
-        DRAKE_THROW_UNLESS(input_vector.size() == input_port.size());
-      }
-      // In the abstract-valued case, there is nothing else to check.
-    }
-  }
-
-  /** Returns a copy of the continuous state vector `xc` into an Eigen
+  /** Returns a copy of the continuous state vector x꜀ into an Eigen
   vector. */
   VectorX<T> CopyContinuousStateVector(const Context<T>& context) const;
   //@}
@@ -945,7 +1026,10 @@ class System : public SystemBase {
   use the Graphviz tool, ``dot``. http://www.graphviz.org/
 
   @param max_depth Sets a limit to the depth of nested diagrams to
-  visualize.  Set to zero to render a diagram as a single system block. */
+  visualize.  Set to zero to render a diagram as a single system block.
+
+  @see GenerateHtml
+  */
   std::string GetGraphvizString(
       int max_depth = std::numeric_limits<int>::max()) const;
 
@@ -978,7 +1062,7 @@ class System : public SystemBase {
   //----------------------------------------------------------------------------
   /** @name                Automatic differentiation
   From a %System templatized by `double`, you can obtain an identical system
-  templatized by an automatic differentation scalar providing
+  templatized by an automatic differentiation scalar providing
   machine-precision computation of partial derivatives of any numerical
   result of the %System with respect to any of the numerical values that
   can be contained in a Context (time, inputs, parameters, and state). */
@@ -1311,11 +1395,11 @@ class System : public SystemBase {
   sections of your concrete class. */
   //@{
 
-  /** Override this if you have any continuous state variables `xc` in your
+  /** Override this if you have any continuous state variables x꜀ in your
   concrete %System to calculate their time derivatives. The `derivatives`
   vector will correspond elementwise with the state vector
   `Context.state.continuous_state.get_state()`. Thus, if the state in the
-  Context has second-order structure `xc=[q,v,z]`, that same structure
+  Context has second-order structure `x꜀=[q v z]`, that same structure
   applies to the derivatives.
 
   This method is called only from the public non-virtual
@@ -1329,6 +1413,23 @@ class System : public SystemBase {
   size zero and aborts otherwise. */
   virtual void DoCalcTimeDerivatives(const Context<T>& context,
                                      ContinuousState<T>* derivatives) const;
+
+  /** Override this if you have an efficient way to evaluate the implicit
+  time derivatives residual for this System. Otherwise the default
+  implementation is
+  `residual = proposed_derivatives − EvalTimeDerivatives(context)`. Note that
+  you cannot use the default implementation if you have changed the declared
+  residual size.
+
+  @note The public method has already verified that `proposed_derivatives`
+  is compatible with this System and that `residual` is non-null and of the
+  the declared size (as reported by
+  SystemBase::implicit_time_derivatives_residual_size()). You do not have to
+  check those two conditions in your implementation, but if you have additional
+  restrictions you should validate that they are also met. */
+  virtual void DoCalcImplicitTimeDerivativesResidual(
+      const Context<T>& context, const ContinuousState<T>& proposed_derivatives,
+      EigenPtr<VectorX<T>> residual) const;
 
   /** Computes the next time at which this System must perform a discrete
   action.
@@ -1573,11 +1674,6 @@ class System : public SystemBase {
   // specified by @p input_port.  This is final in LeafSystem and Diagram.
   virtual std::unique_ptr<AbstractValue> DoAllocateInput(
       const InputPort<T>& input_port) const = 0;
-
-  // TODO(jwnimmer-tri) Remove this function when CheckValidContext() has been
-  // removed.
-  // SystemBase override checks a Context of same type T.
-  void DoCheckValidContext(const ContextBase& context_base) const final;
 
   std::function<void(const AbstractValue&)> MakeFixInputPortTypeChecker(
       InputPortIndex port_index) const final;

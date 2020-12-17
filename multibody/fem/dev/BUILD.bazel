@@ -1,0 +1,312 @@
+#- * - python - * -
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(
+    default_visibility = ["//visibility:private"],
+)
+
+drake_cc_library(
+    name = "constitutive_model",
+    hdrs = [
+        "constitutive_model.h",
+    ],
+    deps = [
+        ":deformation_gradient_cache_entry",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "deformation_gradient_cache_entry",
+    hdrs = [
+        "deformation_gradient_cache_entry.h",
+    ],
+    deps = [
+        ":fem_indexes",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "elasticity_element",
+    srcs = [
+        "elasticity_element.cc",
+    ],
+    hdrs = [
+        "elasticity_element.h",
+    ],
+    deps = [
+        ":constitutive_model",
+        ":elasticity_element_base",
+        ":elasticity_element_cache_entry",
+        ":linear_simplex_element",
+        ":quadrature",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "elasticity_element_base",
+    hdrs = [
+        "elasticity_element_base.h",
+    ],
+    deps = [
+        ":fem_element",
+        ":fem_state",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "elasticity_element_cache_entry",
+    hdrs = [
+        "elasticity_element_cache_entry.h",
+    ],
+    deps = [
+        ":deformation_gradient_cache_entry",
+        ":element_cache_entry",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "elasticity_model",
+    srcs = [
+        "elasticity_model.cc",
+    ],
+    hdrs = [
+        "elasticity_model.h",
+    ],
+    deps = [
+        ":constitutive_model",
+        ":elasticity_element",
+        ":elasticity_element_base",
+        ":fem_model",
+        ":linear_simplex_element",
+        ":quadrature",
+        "//common:essential",
+        "//geometry/proximity:volume_mesh",
+    ],
+)
+
+drake_cc_library(
+    name = "element_cache_entry",
+    hdrs = [
+        "element_cache_entry.h",
+    ],
+    deps = [
+        ":fem_indexes",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_element",
+    srcs = [
+        "fem_element.cc",
+    ],
+    hdrs = [
+        "fem_element.h",
+    ],
+    deps = [
+        ":fem_state",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_indexes",
+    hdrs = [
+        "fem_indexes.h",
+    ],
+    deps = [
+        "//common:essential",
+        "//common:type_safe_index",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_model",
+    srcs = [
+        "fem_model.cc",
+    ],
+    hdrs = [
+        "fem_model.h",
+    ],
+    deps = [
+        ":fem_element",
+        ":fem_state",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_state",
+    hdrs = [
+        "fem_state.h",
+    ],
+    deps = [
+        ":element_cache_entry",
+        "//common:copyable_unique_ptr",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "isoparametric_element",
+    srcs = [
+        "isoparametric_element.cc",
+    ],
+    hdrs = [
+        "isoparametric_element.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "linear_constitutive_model",
+    srcs = [
+        "linear_constitutive_model.cc",
+    ],
+    hdrs = [
+        "linear_constitutive_model.h",
+    ],
+    deps = [
+        ":constitutive_model",
+        ":linear_constitutive_model_cache_entry",
+        "//common:default_scalars",
+        "//common:essential",
+        "//common:unused",
+    ],
+)
+
+drake_cc_library(
+    name = "linear_constitutive_model_cache_entry",
+    srcs = [
+        "linear_constitutive_model_cache_entry.cc",
+    ],
+    hdrs = [
+        "linear_constitutive_model_cache_entry.h",
+    ],
+    deps = [
+        ":deformation_gradient_cache_entry",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "linear_simplex_element",
+    srcs = [
+        "linear_simplex_element.cc",
+    ],
+    hdrs = [
+        "linear_simplex_element.h",
+    ],
+    deps = [
+        ":isoparametric_element",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "quadrature",
+    hdrs = [
+        "quadrature.h",
+    ],
+    deps = [
+        "//common:essential",
+        "//common:nice_type_name",
+    ],
+)
+
+drake_cc_googletest(
+    name = "elasticity_model_test",
+    deps = [
+        ":elasticity_model",
+        ":linear_constitutive_model",
+        ":linear_simplex_element",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry/proximity:make_box_mesh",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "elasticity_element_test",
+    deps = [
+        ":elasticity_element",
+        ":fem_state",
+        ":linear_constitutive_model",
+        ":linear_simplex_element",
+        ":quadrature",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "fem_state_test",
+    deps = [
+        ":element_cache_entry",
+        ":fem_state",
+    ],
+)
+
+drake_cc_googletest(
+    name = "linear_constitutive_model_test",
+    deps = [
+        ":linear_constitutive_model",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "linear_constitutive_model_cache_entry_test",
+    deps = [
+        ":linear_constitutive_model_cache_entry",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "isoparametric_element_test",
+    deps = [
+        ":isoparametric_element",
+        ":linear_simplex_element",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "linear_simplex_element_test",
+    deps = [
+        ":linear_simplex_element",
+    ],
+)
+
+drake_cc_googletest(
+    name = "simplex_gaussian_quadrature_test",
+    deps = [
+        ":quadrature",
+    ],
+)
+
+add_lint_tests()

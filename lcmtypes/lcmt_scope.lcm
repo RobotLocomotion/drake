@@ -1,0 +1,11 @@
+package drake;
+
+// The message type for LcmScopeSystem.
+struct lcmt_scope {
+  // The timestamp in microseconds.
+  int64_t utime;
+
+  // The scoped value.
+  int32_t size;
+  double value[size];
+}

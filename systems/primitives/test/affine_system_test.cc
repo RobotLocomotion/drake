@@ -25,7 +25,7 @@ class AffineSystemTest : public AffineLinearSystemTest {
     dut_->configure_random_state(Sigma_x0_);
     dut_->set_name("test_affine_system");
     context_ = dut_->CreateDefaultContext();
-    input_vector_ = make_unique<BasicVector<double>>(2 /* size */);
+    input_port_ = &dut_->get_input_port();
     state_ = &context_->get_mutable_continuous_state();
     derivatives_ = dut_->AllocateTimeDerivatives();
     updates_ = dut_->AllocateDiscreteVariables();
@@ -325,6 +325,19 @@ GTEST_TEST(SimpleTimeVaryingAffineSystemTest, EvalTest) {
                               sys.get_output_port().Eval(*context)));
 }
 
+GTEST_TEST(SimpleTimeVaryingAffineSystemTest,
+           ContinuousDiscreteVariableUpdatesTest) {
+  // Verify that we can call `DiscreteVariablesUpdate()` on a continuous-time
+  // system without dying.
+  SimpleTimeVaryingAffineSystem sys(0.0);  // A continuous-time system.
+
+  auto context = sys.CreateDefaultContext();
+  sys.get_input_port().FixValue(context.get(), 42.0);
+
+  auto updates = sys.AllocateDiscreteVariables();
+  EXPECT_NO_THROW(sys.CalcDiscreteVariableUpdates(*context, updates.get()));
+}
+
 GTEST_TEST(SimpleTimeVaryingAffineSystemTest, DiscreteEvalTest) {
   SimpleTimeVaryingAffineSystem sys(1.0);  // A discrete-time system.
   const double t = 2.5;
@@ -342,6 +355,18 @@ GTEST_TEST(SimpleTimeVaryingAffineSystemTest, DiscreteEvalTest) {
 
   EXPECT_TRUE(CompareMatrices(x + sys.y0(t) + 42.0 * sys.D(t),
                               sys.get_output_port().Eval(*context)));
+}
+
+GTEST_TEST(SimpleTimeVaryingAffineSystemTest, DiscreteCalcTimeDerivativesTest) {
+  // Verify that we can call `CalcTimeDerivatives()` on a discrete-time system
+  // without dying.
+  SimpleTimeVaryingAffineSystem sys(1.0);  // A discrete-time system.
+
+  auto context = sys.CreateDefaultContext();
+  sys.get_input_port().FixValue(context.get(), 42.0);
+
+  auto derivs = sys.AllocateTimeDerivatives();
+  EXPECT_NO_THROW(sys.CalcTimeDerivatives(*context, derivs.get()));
 }
 
 // Checks that a time-varying affine system will fail if the matrices do not

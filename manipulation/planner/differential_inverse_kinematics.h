@@ -13,7 +13,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/rigid_transform.h"
-#include "drake/multibody/math/spatial_velocity.h"
+#include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/mathematical_program.h"
 
@@ -230,6 +230,7 @@ class DifferentialInverseKinematicsParameters {
  * Computes a generalized velocity v_next, via the following
  * MathematicalProgram:
  *
+ * ```
  *   min_{v_next,alpha}   100 * | alpha - |V| |^2
  *                        // iff J.rows() < J.cols(), then
  *                          + | q_current + v_next*dt - q_nominal |^2
@@ -253,6 +254,7 @@ class DifferentialInverseKinematicsParameters {
  *   can have any size, with each element representing a constraint on the
  *   solution (6 constraints specifying an end-effector pose is typical, but
  *   not required).
+ * ```
  *
  * Intuitively, this finds a v_next such that J*v_next is in the same direction
  * as V, and the difference between |V| and |J * v_next| is minimized while all

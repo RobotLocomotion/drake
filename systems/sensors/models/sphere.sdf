@@ -1,14 +1,11 @@
-<?xml version="1.0" ?>
-<sdf version="1.4">
+<?xml version="1.0"?>
+<sdf version="1.7">
   <model name="sphere">
-    <pose>0 0 0 0 0 0</pose>
     <link name="sphere">
-      <pose>0 0 0 0 0 0</pose>
       <inertial>
         <mass>1.</mass>
       </inertial>
       <visual name="sphere">
-        <pose>0 0 0 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>0.1</radius>

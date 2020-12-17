@@ -2,6 +2,15 @@
 
 namespace drake {
 namespace lcm {
+namespace internal {
+
+void OnHandleSubscriptionsError(
+    DrakeLcmInterface* lcm,
+    const std::string& error_message) {
+  lcm->OnHandleSubscriptionsError(error_message);
+}
+
+}  // namespace internal
 
 DrakeLcmInterface::DrakeLcmInterface() = default;
 DrakeLcmInterface::~DrakeLcmInterface() = default;

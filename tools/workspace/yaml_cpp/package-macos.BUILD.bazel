@@ -1,0 +1,15 @@
+# -*- python -*-
+
+licenses(["notice"])  # X11
+
+cc_library(
+    name = "yaml_cpp",
+    hdrs = glob(["include/yaml-cpp/**/*.h"]),
+    includes = ["include"],
+    linkopts = [
+        "-L/usr/local/opt/yaml-cpp/lib",
+        "-Wl,-rpath,/usr/local/opt/yaml-cpp/lib",
+        "-lyaml-cpp",
+    ],
+    visibility = ["//visibility:public"],
+)

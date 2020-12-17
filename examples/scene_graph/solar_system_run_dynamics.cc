@@ -1,7 +1,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/examples/scene_graph/solar_system.h"
-#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
@@ -31,7 +31,8 @@ int do_main() {
   builder.Connect(solar_system->get_geometry_pose_output_port(),
                   scene_graph->get_source_pose_port(solar_system->source_id()));
 
-  geometry::ConnectDrakeVisualizer(&builder, *scene_graph);
+  geometry::DrakeVisualizer::AddToBuilder(&builder, *scene_graph);
+
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);

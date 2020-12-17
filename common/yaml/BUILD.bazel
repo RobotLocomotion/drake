@@ -13,6 +13,7 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
     name = "yaml",
+    visibility = ["//visibility:public"],
     deps = [
         ":yaml_read_archive",
         ":yaml_write_archive",
@@ -38,11 +39,23 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:name_value",
+        "//common:nice_type_name",
+        "//third_party/com_github_jbeder_yaml_cpp:emitfromevents",
         "@yaml_cpp",
     ],
 )
 
 # === test/ ===
+
+drake_cc_library(
+    name = "example_structs",
+    testonly = True,
+    hdrs = ["test/example_structs.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//common:name_value",
+    ],
+)
 
 drake_cc_googletest(
     name = "yaml_performance_test",
@@ -58,17 +71,29 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "yaml_read_archive_test",
     deps = [
+        ":example_structs",
         ":yaml_read_archive",
         "//common:name_value",
-        "//common/test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
 drake_cc_googletest(
     name = "yaml_write_archive_test",
     deps = [
+        ":example_structs",
         ":yaml_write_archive",
         "//common:name_value",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "yaml_write_archive_defaults_test",
+    deps = [
+        ":example_structs",
+        ":yaml_write_archive",
     ],
 )
 

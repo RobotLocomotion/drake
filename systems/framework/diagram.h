@@ -17,6 +17,7 @@
 #include "drake/systems/framework/event.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/system.h"
+#include "drake/systems/framework/system_visitor.h"
 
 namespace drake {
 namespace systems {
@@ -84,6 +85,28 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   /// Returns the list of contained Systems.
   std::vector<const systems::System<T>*> GetSystems() const;
 
+  /// Implements a visitor pattern.  @see SystemVisitor<T>.
+  void Accept(SystemVisitor<T>* v) const final;
+
+  /// Returns a reference to the map of connections between Systems.
+  const std::map<InputPortLocator, OutputPortLocator>& connection_map() const;
+
+  /// Returns the collection of "locators" for the subsystem input ports that
+  /// were exported or connected to the @p port_index input port for the
+  /// Diagram.
+  std::vector<InputPortLocator> GetInputPortLocators(
+      InputPortIndex port_index) const;
+
+  /// Returns an arbitrary "locator" for one of the subsystem input ports that
+  /// were exported to the @p port_index input port for the Diagram.
+  DRAKE_DEPRECATED("2021-04-01", "Use GetInputPortLocators() instead.")
+  InputPortLocator get_input_port_locator(InputPortIndex port_index) const;
+
+  /// Returns the "locator" for the subsystem output port that was exported as
+  /// the @p port_index output port for the Diagram.
+  const OutputPortLocator& get_output_port_locator(
+      OutputPortIndex port_index) const;
+
   std::multimap<int, int> GetDirectFeedthroughs() const final;
 
   /// Allocates a DiagramEventCollection for this Diagram.
@@ -121,7 +144,11 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   std::unique_ptr<DiscreteValues<T>> AllocateDiscreteVariables() const final;
 
   void DoCalcTimeDerivatives(const Context<T>& context,
-                             ContinuousState<T>* derivatives) const override;
+                             ContinuousState<T>* derivatives) const final;
+
+  void DoCalcImplicitTimeDerivativesResidual(
+      const Context<T>& context, const ContinuousState<T>& proposed_derivatives,
+      EigenPtr<VectorX<T>> residual) const final;
 
   /// Retrieves a reference to the subsystem with name @p name returned by
   /// get_name().
@@ -228,7 +255,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   explicit Diagram(SystemScalarConverter converter);
 
   /// For the subsystem associated with @p witness_func, gets its subcontext
-  /// from @p context, passes the subcontext to @p witness_func' Evaulate
+  /// from @p context, passes the subcontext to @p witness_func' Evaluate
   /// method and returns the result. Aborts if the subsystem is not part of
   /// this Diagram.
   T DoCalcWitnessValue(const Context<T>& context,
@@ -450,11 +477,17 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   // Validates the given @p blueprint and sets up the Diagram accordingly.
   void Initialize(std::unique_ptr<Blueprint> blueprint);
 
-  // Exposes the given port as an input of the Diagram.
-  void ExportInput(const InputPortLocator& port, std::string name);
+  // Connects the given port to an input of the Diagram indicated by @p name.
+  // If the named Diagram input does not exist, it is declared.
+  void ExportOrConnectInput(const InputPortLocator& port, std::string name);
 
   // Exposes the given subsystem output port as an output of the Diagram.
   void ExportOutput(const OutputPortLocator& port, std::string name);
+
+  // Returns an arbitrary "locator" for one of the subsystem input ports that
+  // were exported to the @p port_index input port for the Diagram.
+  InputPortLocator GetArbitraryInputPortLocator(
+      InputPortIndex port_index) const;
 
   // Returns a reference to the value in the given context, of the specified
   // output port of one of this Diagram's immediate subsystems, recalculating
@@ -495,10 +528,11 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   // Map to quickly satisfy "What is the subsystem index of the child system?"
   std::map<const System<T>*, SubsystemIndex> system_index_map_;
 
-  // The ordered inputs and outputs of this Diagram. Index by InputPortIndex
-  // and OutputPortIndex.
-  std::vector<InputPortLocator> input_port_ids_;
+  // The ordered outputs of this Diagram. Index by OutputPortIndex.
   std::vector<OutputPortLocator> output_port_ids_;
+
+  // The map of subsystem inputs to inputs of this Diagram.
+  std::map<InputPortLocator, InputPortIndex> input_port_map_;
 
   // For all T, Diagram<T> considers DiagramBuilder<T> a friend, so that the
   // builder can set the internal state correctly.

@@ -24,13 +24,16 @@ selected). Just remember that their state dynamics *will* still be evaluated
 when the diagram's dynamics are evaluated (e.g. during simulation), and their
 output ports could be evaluated via other connections.
 
-@system{PortSwitch,
- @input_port{port_selector}
- @input_port{value0 (with assigned port name)}
- @inputport{...}
- @inputport{valueN (with assigned port name)},
- @output_port{value}
-}
+@system
+name: PortSwitch
+input_ports:
+- port_selector
+- value0 (with assigned port name)
+- ...
+- valueN (with assigned port name)
+output_ports:
+- value
+@endsystem
 
 @tparam_default_scalar
 */
@@ -74,10 +77,6 @@ class PortSwitch final : public LeafSystem<T> {
 
   const InputPort<T>& get_port_selector_input_port() const {
     return this->get_input_port(0);
-  }
-
-  const OutputPort<T>& get_output_port() const {
-    return System<T>::get_output_port(0);
   }
 
   /** Declares a new input port to the switch with port name `name`.  The

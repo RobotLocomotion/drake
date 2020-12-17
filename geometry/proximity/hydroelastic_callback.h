@@ -27,7 +27,7 @@ namespace geometry {
 namespace internal {
 namespace hydroelastic {
 
-/** Supporting data for the shape-to-shape hydroelastic contact callback (see
+/* Supporting data for the shape-to-shape hydroelastic contact callback (see
  Callback below). It includes:
 
     - A collision filter instance.
@@ -41,7 +41,7 @@ namespace hydroelastic {
  @tparam T The computation scalar.  */
 template <typename T>
 struct CallbackData {
-  /** Constructs the fully-specified callback data. The values are as described
+  /* Constructs the fully-specified callback data. The values are as described
    in the class documentation. The parameters are all aliased in the data and
    must remain valid at least as long as the CallbackData instance.
 
@@ -65,16 +65,16 @@ struct CallbackData {
     DRAKE_DEMAND(surfaces_in);
   }
 
-  /** The collision filter system.  */
+  /* The collision filter system.  */
   const CollisionFilterLegacy& collision_filter;
 
-  /** The T-valued poses of all geometries.  */
+  /* The T-valued poses of all geometries.  */
   const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs;
 
-  /** The hydroelastic geometric representations.  */
+  /* The hydroelastic geometric representations.  */
   const Geometries& geometries;
 
-  /** The results of the distance query.  */
+  /* The results of the distance query.  */
   std::vector<ContactSurface<T>>& surfaces;
 };
 
@@ -84,10 +84,11 @@ enum class CalcContactSurfaceResult {
   kUnsupported,         //< Contact surface can't be computed for the geometry
                         //< pair.
   kHalfSpaceHalfSpace,  //< Contact between two half spaces; not allowed.
-  kSameCompliance       //< The two geometries have the same compliance type.
+  kSameCompliance,      //< The two geometries have the same compliance type.
+  kUnsupportedScalar,   //< The computation scalar type is unsupported.
 };
 
-/** Computes ContactSurface using the algorithm appropriate to the Shape types
+/* Computes ContactSurface using the algorithm appropriate to the Shape types
  represented by the given `soft` and `rigid` geometries.
  @pre The geometries are not *both* half spaces.  */
 template <typename T>
@@ -100,7 +101,7 @@ std::unique_ptr<ContactSurface<T>> DispatchRigidSoftCalculation(
       DRAKE_DEMAND(!rigid.is_half_space());
       // Soft half space with rigid mesh.
       const SurfaceMesh<double>& mesh_R = rigid.mesh();
-      const BoundingVolumeHierarchy<SurfaceMesh<double>>& bvh_R = rigid.bvh();
+      const Bvh<SurfaceMesh<double>>& bvh_R = rigid.bvh();
 
       return ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
           id_S, X_WS, soft.pressure_scale(), id_R, mesh_R, bvh_R, X_WR);
@@ -110,23 +111,23 @@ std::unique_ptr<ContactSurface<T>> DispatchRigidSoftCalculation(
       const auto& field_S =
           dynamic_cast<const VolumeMeshFieldLinear<double, double>&>(
               soft.pressure_field());
-      const BoundingVolumeHierarchy<VolumeMesh<double>>& bvh_S = soft.bvh();
+      const Bvh<VolumeMesh<double>>& bvh_S = soft.bvh();
       return ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
           id_S, field_S, bvh_S, X_WS, id_R, X_WR);
     }
   } else {
     // soft cannot be a half space; so this must be mesh-mesh.
     const VolumeMeshField<double, double>& field_S = soft.pressure_field();
-    const BoundingVolumeHierarchy<VolumeMesh<double>>& bvh_S = soft.bvh();
+    const Bvh<VolumeMesh<double>>& bvh_S = soft.bvh();
     const SurfaceMesh<double>& mesh_R = rigid.mesh();
-    const BoundingVolumeHierarchy<SurfaceMesh<double>>& bvh_R = rigid.bvh();
+    const Bvh<SurfaceMesh<double>>& bvh_R = rigid.bvh();
 
     return ComputeContactSurfaceFromSoftVolumeRigidSurface(
         id_S, field_S, bvh_S, X_WS, id_R, mesh_R, bvh_R, X_WR);
   }
 }
 
-/** Calculates the contact surface (if it exists) between two potentially
+/* Calculates the contact surface (if it exists) between two potentially
  colliding geometries.
 
  @param object_A_ptr         Pointer to the first object in the pair (the order
@@ -158,6 +159,12 @@ CalcContactSurfaceResult MaybeCalcContactSurface(
     return CalcContactSurfaceResult::kSameCompliance;
   }
 
+  // If we have *generally* bad configured hydroelastics, we want that to be
+  // reported over a "bad" scalar type.
+  if constexpr (!std::is_same<T, double>::value) {
+    return CalcContactSurfaceResult::kUnsupportedScalar;
+  }
+
   bool A_is_rigid = type_A == HydroelasticType::kRigid;
   const GeometryId id_S = A_is_rigid ? encoding_b.id() : encoding_a.id();
   const GeometryId id_R = A_is_rigid ? encoding_a.id() : encoding_b.id();
@@ -183,7 +190,7 @@ CalcContactSurfaceResult MaybeCalcContactSurface(
   return CalcContactSurfaceResult::kCalculated;
 }
 
-/** Assess contact between two objects -- if it can't be determined with
+/* Assess contact between two objects -- if it can't be determined with
  hydroelastic contact, it throws an exception. All parameters are as documented
  in MaybeCalcContactSurface().
  @returns `false`; the broad phase should _not_ terminate its process.
@@ -222,6 +229,10 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
             type_A, GetGeometryName(*object_A_ptr), encoding_a.id(), type_B,
             GetGeometryName(*object_B_ptr), encoding_b.id()));
       case CalcContactSurfaceResult::kSameCompliance:
+        // TODO(SeanCurtis-TRI): When we introduce soft-soft compliance, make
+        //  sure we always dispatch the two soft objects in a fixed order based
+        //  on their corresponding geometry ids. See penetration_as_point_pair
+        //  Callback for an example.
         throw std::logic_error(fmt::format(
             "Requested contact between two {} objects ({} with id "
             "{}, {} with id {}); only rigid-soft pairs are currently supported",
@@ -231,8 +242,15 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
         throw std::logic_error(fmt::format(
             "Requested contact between two half spaces with ids {} and {}; "
             "that is not allowed", encoding_a.id(), encoding_b.id()));
-      default:
-        DRAKE_UNREACHABLE();
+      case CalcContactSurfaceResult::kUnsupportedScalar:
+        throw std::logic_error(fmt::format(
+            "Requested AutoDiff-valued contact surface between two geometries "
+            "with hydroelastic representation but for scalar type {}; not "
+            "currently supported.",
+            NiceTypeName::Get<T>()));
+      case CalcContactSurfaceResult::kCalculated:
+        // Already handled above.
+        break;
     }
   }
 
@@ -240,7 +258,7 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
   return false;
 }
 
-/** Supporting data for the shape-to-shape hydroelastic contact callback with
+/* Supporting data for the shape-to-shape hydroelastic contact callback with
  fallback (see CallbackWithFallback below). It includes:
 
     - CallbackData for strict hydroelastic contact (see above).
@@ -251,10 +269,10 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
 template <typename T>
 struct CallbackWithFallbackData {
   CallbackData<T> data;
-  std::vector<PenetrationAsPointPair<double>>* point_pairs;
+  std::vector<PenetrationAsPointPair<T>>* point_pairs;
 };
 
-/** Assess contact between two objects -- if it can't be determined with
+/* Assess contact between two objects -- if it can't be determined with
  hydroelastic contact, it assess the contact using point-contact. All parameters
  are as documented in MaybeCalcContactSurface(). However, both ContactSurface
  and PenetrationAsPointPair instances are written to the `callback_data`.
@@ -280,14 +298,19 @@ bool CallbackWithFallback(fcl::CollisionObjectd* object_A_ptr,
 
     // Surface calculated; we're done.
     if (result == CalcContactSurfaceResult::kCalculated) return false;
+    if (result == CalcContactSurfaceResult::kUnsupportedScalar) {
+      throw std::logic_error(fmt::format(
+          "Requested AutoDiff-valued contact surface between two geometries "
+          "with hydroelastic representation but for scalar type {}; not "
+          "currently supported.",
+          NiceTypeName::Get<T>()));
+    }
 
     // Fall back to point pair.
-    // TODO(SeanCurtis-TRI): This is a problem; point pair is only double.
-    //   fallback can only be double.
-    penetration_as_point_pair::CallbackData point_data{
-        &data.data.collision_filter, data.point_pairs};
-    penetration_as_point_pair::Callback(object_A_ptr, object_B_ptr,
-                                        &point_data);
+    penetration_as_point_pair::CallbackData<T> point_data{
+        &data.data.collision_filter, &(data.data.X_WGs), data.point_pairs};
+    penetration_as_point_pair::Callback<T>(object_A_ptr, object_B_ptr,
+                                           &point_data);
   }
   // Tell the broadphase to keep searching.
   return false;

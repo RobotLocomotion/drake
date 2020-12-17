@@ -12,6 +12,7 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
     name = "query_results",
+    visibility = ["//visibility:public"],
     deps = [
         ":contact_surface",
         ":penetration_as_point_pair",

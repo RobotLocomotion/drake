@@ -1,14 +1,13 @@
-<?xml version='1.0'?>
-<sdf version='1.6'>
-  <model name='transcendesk'>
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="transcendesk">
     <!--
     To adjust the height of the table, see note below. Also recompute inertia.
     -->
-    <link name='table_base'>
-      <pose frame=''>-0.243716 -0.625087 0 0 -0 0</pose>
+    <link name="table_base">
+      <pose>-0.243716 -0.625087 0 0 0 0</pose>
       <inertial>
         <mass>30</mass>
-        <pose frame=''>0 0 0 0 -0 0</pose>
         <!--
         The spatial inertia values given below were derived based on the
         equation for a cuboid:
@@ -35,8 +34,8 @@
       <self_collide>0</self_collide>
       <kinematic>0</kinematic>
       <gravity>1</gravity>
-      <visual name='right_crossbar'>
-        <pose frame=''>0.65 0 0.01 0 -0 0</pose>
+      <visual name="right_crossbar">
+        <pose>0.65 0 0.01 0 0 0</pose>
         <geometry>
           <box>
             <size>0.065 0.61 0.03</size>
@@ -51,15 +50,15 @@
           <diffuse>0.7 0.7 0.7 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
-          <shader type='vertex'>
+          <shader type="vertex">
             <normal_map>__default__</normal_map>
           </shader>
         </material>
         <cast_shadows>1</cast_shadows>
         <transparency>0</transparency>
       </visual>
-      <visual name='left_crossbar'>
-        <pose frame=''>-0.65 0 0.01 0 -0 0</pose>
+      <visual name="left_crossbar">
+        <pose>-0.65 0 0.01 0 0 0</pose>
         <geometry>
           <box>
             <size>0.065 0.61 0.03</size>
@@ -74,15 +73,15 @@
           <diffuse>0.7 0.7 0.7 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
-          <shader type='vertex'>
+          <shader type="vertex">
             <normal_map>__default__</normal_map>
           </shader>
         </material>
         <cast_shadows>1</cast_shadows>
         <transparency>0</transparency>
       </visual>
-      <visual name='bottom_right_leg'>
-        <pose frame=''>0.65 0.2 0.31 0 -0 0</pose>
+      <visual name="bottom_right_leg">
+        <pose>0.65 0.2 0.31 0 0 0</pose>
         <geometry>
           <box>
             <size>0.05 0.076 0.58</size>
@@ -97,15 +96,15 @@
           <diffuse>0.7 0.7 0.7 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
-          <shader type='vertex'>
+          <shader type="vertex">
             <normal_map>__default__</normal_map>
           </shader>
         </material>
         <cast_shadows>1</cast_shadows>
         <transparency>0</transparency>
       </visual>
-      <visual name='leg_brace'>
-        <pose frame=''>0 0.229 0.42 0 -0 0</pose>
+      <visual name="leg_brace">
+        <pose>0 0.229 0.42 0 0 0</pose>
         <geometry>
           <box>
             <size>1.25 0.02 0.25</size>
@@ -120,15 +119,15 @@
           <diffuse>0.7 0.7 0.7 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
-          <shader type='vertex'>
+          <shader type="vertex">
             <normal_map>__default__</normal_map>
           </shader>
         </material>
         <cast_shadows>1</cast_shadows>
         <transparency>0</transparency>
       </visual>
-      <visual name='bottom_left_leg'>
-        <pose frame=''>-0.65 0.2 0.31 0 -0 0</pose>
+      <visual name="bottom_left_leg">
+        <pose>-0.65 0.2 0.31 0 0 0</pose>
         <geometry>
           <box>
             <size>0.05 0.076 0.58</size>
@@ -143,17 +142,17 @@
           <diffuse>0.7 0.7 0.7 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
-          <shader type='vertex'>
+          <shader type="vertex">
             <normal_map>__default__</normal_map>
           </shader>
         </material>
         <cast_shadows>1</cast_shadows>
         <transparency>0</transparency>
       </visual>
-      <collision name='bottom_left_leg'>
+      <collision name="bottom_left_leg">
         <laser_retro>0</laser_retro>
         <max_contacts>10</max_contacts>
-        <pose frame=''>-0.65 0.2 0.31 0 -0 0</pose>
+        <pose>-0.65 0.2 0.31 0 0 0</pose>
         <geometry>
           <box>
             <size>0.05 0.076 0.58</size>
@@ -205,10 +204,10 @@
           </contact>
         </surface>
       </collision>
-      <collision name='left_crossbar'>
+      <collision name="left_crossbar">
         <laser_retro>0</laser_retro>
         <max_contacts>10</max_contacts>
-        <pose frame=''>-0.65 0 0.01 0 -0 0</pose>
+        <pose>-0.65 0 0.01 0 0 0</pose>
         <geometry>
           <box>
             <size>0.065 0.61 0.03</size>
@@ -260,10 +259,10 @@
           </contact>
         </surface>
       </collision>
-      <collision name='right_crossbar'>
+      <collision name="right_crossbar">
         <laser_retro>0</laser_retro>
         <max_contacts>10</max_contacts>
-        <pose frame=''>0.65 0 0.01 0 -0 0</pose>
+        <pose>0.65 0 0.01 0 0 0</pose>
         <geometry>
           <box>
             <size>0.065 0.61 0.03</size>
@@ -315,10 +314,10 @@
           </contact>
         </surface>
       </collision>
-      <collision name='bottom_right_leg'>
+      <collision name="bottom_right_leg">
         <laser_retro>0</laser_retro>
         <max_contacts>10</max_contacts>
-        <pose frame=''>0.65 0.2 0.31 0 -0 0</pose>
+        <pose>0.65 0.2 0.31 0 0 0</pose>
         <geometry>
           <box>
             <size>0.05 0.076 0.58</size>
@@ -370,10 +369,10 @@
           </contact>
         </surface>
       </collision>
-      <collision name='leg_brace'>
+      <collision name="leg_brace">
         <laser_retro>0</laser_retro>
         <max_contacts>10</max_contacts>
-        <pose frame=''>0 0.229 0.42 0 -0 0</pose>
+        <pose>0 0.229 0.42 0 0 0</pose>
         <geometry>
           <box>
             <size>1.25 0.02 0.25</size>
@@ -426,15 +425,14 @@
         </surface>
       </collision>
     </link>
-    <link name='table_upper'>
+    <link name="table_upper">
       <!--
       To adjust the height of the table, adjust the value of the third 
       parameter in the pose frame, z. Also adjust inertia.
       -->
-      <pose frame=''>-0.243716 -0.625087 0.48 0 -0 0</pose>
+      <pose>-0.243716 -0.625087 0.48 0 0 0</pose>
       <inertial>
         <mass>53.5</mass>
-        <pose frame=''>0 0 0 0 -0 0</pose>
         <inertia>
           <ixx>5.17741</ixx>
           <ixy>0</ixy>
@@ -446,8 +444,8 @@
       </inertial>
       <self_collide>0</self_collide>
       <kinematic>0</kinematic>
-      <visual name='upper_right_leg'>
-        <pose frame=''>0.65 0.2 0.375 0 -0 0</pose>
+      <visual name="upper_right_leg">
+        <pose>0.65 0.2 0.375 0 0 0</pose>
         <geometry>
           <box>
             <size>0.03 0.05 0.53</size>
@@ -462,15 +460,15 @@
           <diffuse>0.7 0.7 0.7 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
-          <shader type='vertex'>
+          <shader type="vertex">
             <normal_map>__default__</normal_map>
           </shader>
         </material>
         <cast_shadows>1</cast_shadows>
         <transparency>0</transparency>
       </visual>
-      <visual name='upper_left_leg'>
-        <pose frame=''>-0.65 0.2 0.375 0 -0 0</pose>
+      <visual name="upper_left_leg">
+        <pose>-0.65 0.2 0.375 0 0 0</pose>
         <geometry>
           <box>
             <size>0.03 0.05 0.53</size>
@@ -485,15 +483,15 @@
           <diffuse>0.7 0.7 0.7 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
-          <shader type='vertex'>
+          <shader type="vertex">
             <normal_map>__default__</normal_map>
           </shader>
         </material>
         <cast_shadows>1</cast_shadows>
         <transparency>0</transparency>
       </visual>
-      <visual name='tabletop'>
-        <pose frame=''>0 0 0.65 0 -0 0</pose>
+      <visual name="tabletop">
+        <pose>0 0 0.65 0 0 0</pose>
         <geometry>
           <box>
             <size>1.4 0.6 0.03</size>
@@ -508,17 +506,17 @@
           <diffuse>0.3 0.3 0.3 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
-          <shader type='vertex'>
+          <shader type="vertex">
             <normal_map>__default__</normal_map>
           </shader>
         </material>
         <cast_shadows>1</cast_shadows>
         <transparency>0</transparency>
       </visual>
-      <collision name='tabletop'>
+      <collision name="tabletop">
         <laser_retro>0</laser_retro>
         <max_contacts>10</max_contacts>
-        <pose frame=''>0 0 0.65 0 -0 0</pose>
+        <pose>0 0 0.65 0 0 0</pose>
         <geometry>
           <box>
             <size>1.4 0.6 0.03</size>
@@ -575,13 +573,11 @@
     TODO(Lucy.tri): This joint could be used to simulate the way the table's
     height can be adjusted. The limits need to be tuned and other params set.
     -->
-    <joint name='table_height' type='prismatic'>
+    <joint name="table_height" type="prismatic">
       <parent>table_upper</parent>
       <child>table_base</child>
-      <pose frame=''>0 0 0 0 -0 0</pose>
       <axis>
         <xyz>0 0 1</xyz>
-        <use_parent_model_frame>0</use_parent_model_frame>
         <limit>
           <lower>-0.3</lower>
           <upper>0</upper>

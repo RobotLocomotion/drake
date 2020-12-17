@@ -219,7 +219,7 @@ TYPED_TEST_SUITE(DepthImageToPointCloudTest, AllConfigs);
 
 // Verifies computed point cloud when pixel values are valid.
 TYPED_TEST(DepthImageToPointCloudTest, Basic) {
-  using Pixel = typename TestFixture::Pixel;
+  using TestFixturePixel = typename TestFixture::Pixel;
 
   static constexpr int kImageWidth = 60;
   static constexpr int kImageHeight = 40;
@@ -230,9 +230,10 @@ TYPED_TEST(DepthImageToPointCloudTest, Basic) {
                           kImageWidth * 0.5, kImageHeight * 0.5);
 
   // A constant-value depth image.
-  constexpr Pixel kDepthValue = 1;
-  const auto& depth_image =
-      MatrixX<Pixel>::Constant(kImageWidth, kImageHeight, kDepthValue).eval();
+  constexpr TestFixturePixel kDepthValue = 1;
+  const auto& depth_image = MatrixX<TestFixturePixel>::Constant(
+                                kImageWidth, kImageHeight, kDepthValue)
+                                .eval();
 
   // A constant-value RGB image.
   constexpr uint8_t kRedValue = 0;
@@ -303,23 +304,25 @@ TYPED_TEST(DepthImageToPointCloudTest, Basic) {
 
 // Verifies computed point cloud when pixel value is NaN.
 TYPED_TEST(DepthImageToPointCloudTest, NanValue) {
-  using Pixel = typename TestFixture::Pixel;
+  using TestFixturePixel = typename TestFixture::Pixel;
 
   // This test only applies for 32F images; there is no NaN for 16U images.
-  constexpr bool is_meaningful_nan = !std::is_same<Pixel, uint16_t>::value;
+  constexpr bool is_meaningful_nan =
+      !std::is_same<TestFixturePixel, uint16_t>::value;
   if (!is_meaningful_nan) {
     return;
   }
   // Use the ?: operator to avoid a -Woverflow warning.  (The exception case is
   // never reached, but mitigates the warning.)
-  const Pixel single_pixel =
+  const TestFixturePixel single_pixel =
       is_meaningful_nan ? kFloatNaN : throw std::runtime_error("");
 
   // Test all combinations of {without pose, with pose} x
   // {without scale, with scale}.
   const auto& camera = this->single_pixel_camera_;
   const auto& pose = this->random_transform_;
-  const auto& depth_image = Vector1<Pixel>::Constant(single_pixel).eval();
+  const auto& depth_image =
+      Vector1<TestFixturePixel>::Constant(single_pixel).eval();
 
   // A single-pixel RGB image.
   const uint8_t kRedValue = 234;
@@ -354,14 +357,14 @@ TYPED_TEST(DepthImageToPointCloudTest, NanValue) {
 
 // Verifies computed point cloud when pixel value is kTooClose or kTooFar.
 TYPED_TEST(DepthImageToPointCloudTest, TooNearFar) {
-  using Pixel = typename TestFixture::Pixel;
+  using TestFixturePixel = typename TestFixture::Pixel;
   using Traits = typename TestFixture::ConfiguredImageTraits;
   const auto& camera = this->single_pixel_camera_;
   const auto& pose = this->random_transform_;
   const auto& depth_image_near =
-      Vector1<Pixel>::Constant(Traits::kTooClose).eval();
+      Vector1<TestFixturePixel>::Constant(Traits::kTooClose).eval();
   const auto& depth_image_far =
-      Vector1<Pixel>::Constant(Traits::kTooFar).eval();
+      Vector1<TestFixturePixel>::Constant(Traits::kTooFar).eval();
 
   // A single-pixel RGB image.
   const uint8_t kRedValue = 200;
@@ -417,9 +420,9 @@ TYPED_TEST(DepthImageToPointCloudTest, TooNearFar) {
 
 // Verifies the System method CalcOutput resets invalid storage.
 TYPED_TEST(DepthImageToPointCloudTest, ResetStorage) {
-  using Pixel = typename TestFixture::Pixel;
+  using TestFixturePixel = typename TestFixture::Pixel;
   const auto& camera = this->single_pixel_camera_;
-  const auto& depth_image = Vector1<Pixel>::Constant(1).eval();
+  const auto& depth_image = Vector1<TestFixturePixel>::Constant(1).eval();
   std::unique_ptr<AbstractValue> abstract_value;
   const PointCloud* cloud{};
 

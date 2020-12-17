@@ -1,8 +1,7 @@
-<?xml version='1.0'?>
-<sdf version='1.6'>
-  <model name='thin_cylinder'>
-    <link name='base_link'>
-      <pose>0 0 0 0 0 0</pose>
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="thin_cylinder">
+    <link name="base_link">
       <inertial>
         <pose>0 0 0.00915 0 0 0</pose>
         <mass>0.375</mass>
@@ -15,7 +14,7 @@
           <izz>0.00171</izz>
         </inertia>
       </inertial>
-      <visual name='visual_cylinder'>
+      <visual name="visual_cylinder">
         <pose>0 0 0.018 0 0 0</pose>
         <geometry>
           <cylinder>
@@ -27,7 +26,7 @@
           <diffuse>0.0 0 1.0 1.0</diffuse>
         </material>
       </visual>
-      <visual name='visual_cylinder_base'>
+      <visual name="visual_cylinder_base">
         <pose>0 0 0.001 0 0 0</pose>
         <geometry>
           <cylinder>
@@ -39,8 +38,7 @@
           <diffuse>0.0 0 1.0 1.0</diffuse>
         </material>
       </visual>
-
-      <collision name='collision_cylinder'>
+      <collision name="collision_cylinder">
         <pose>0 0 0.018 0 0 0</pose>
         <geometry>
           <cylinder>
@@ -57,7 +55,7 @@
           </friction>
         </surface>
       </collision>
-      <collision name='collision_cylinder_base'>
+      <collision name="collision_cylinder_base">
         <pose>0 0 0.001 0 0 0</pose>
         <geometry>
           <cylinder>
@@ -74,7 +72,7 @@
           </friction>
         </surface>
       </collision>
-      <collision name='collision_base_sphere_0'>
+      <collision name="collision_base_sphere_0">
         <pose> 0.066  0.000 0.005 0 0 0</pose>
         <geometry>
           <sphere>
@@ -82,7 +80,7 @@
           </sphere>
         </geometry>
       </collision>
-      <collision name='collision_base_sphere_1'>
+      <collision name="collision_base_sphere_1">
         <pose> 0.047  0.047 0.005 0 0 0</pose>
         <geometry>
           <sphere>
@@ -90,7 +88,7 @@
           </sphere>
         </geometry>
       </collision>
-      <collision name='collision_base_sphere_2'>
+      <collision name="collision_base_sphere_2">
         <pose> 0.000  0.066 0.005 0 0 0</pose>
         <geometry>
           <sphere>
@@ -98,7 +96,7 @@
           </sphere>
         </geometry>
       </collision>
-      <collision name='collision_base_sphere_3'>
+      <collision name="collision_base_sphere_3">
         <pose>-0.047  0.047 0.005 0 0 0</pose>
         <geometry>
           <sphere>
@@ -106,7 +104,7 @@
           </sphere>
         </geometry>
       </collision>
-      <collision name='collision_base_sphere_4'>
+      <collision name="collision_base_sphere_4">
         <pose>-0.066  0.000 0.005 0 0 0</pose>
         <geometry>
           <sphere>
@@ -114,7 +112,7 @@
           </sphere>
         </geometry>
       </collision>
-      <collision name='collision_base_sphere_5'>
+      <collision name="collision_base_sphere_5">
         <pose>-0.047 -0.047 0.005 0 0 0</pose>
         <geometry>
           <sphere>
@@ -122,7 +120,7 @@
           </sphere>
         </geometry>
       </collision>
-      <collision name='collision_base_sphere_6'>
+      <collision name="collision_base_sphere_6">
         <pose> 0.000 -0.066 0.005 0 0 0</pose>
         <geometry>
           <sphere>
@@ -130,7 +128,7 @@
           </sphere>
         </geometry>
       </collision>
-      <collision name='collision_base_sphere_7'>
+      <collision name="collision_base_sphere_7">
         <pose> 0.047 -0.047 0.005 0 0 0</pose>
         <geometry>
           <sphere>

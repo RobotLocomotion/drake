@@ -10,10 +10,15 @@ namespace systems {
 
 /// An adder for arbitrarily many inputs of equal size.
 ///
-/// @system{Adder,
-///    @input_port{input(0)} @input_port{...} @input_port{input(N-1)},
-///    @output_port{sum}
-/// }
+/// @system
+/// name: Adder
+/// input_ports:
+/// - input(0)
+/// - ...
+/// - input(N-1)
+/// output_ports:
+/// - sum
+/// @endsystem
 ///
 /// @tparam_default_scalar
 /// @ingroup primitive_systems
@@ -30,11 +35,6 @@ class Adder final : public LeafSystem<T> {
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit Adder(const Adder<U>&);
-
-  /// Returns the output port on which the sum is presented.
-  const OutputPort<T>& get_output_port() const {
-    return LeafSystem<T>::get_output_port(0);
-  }
 
  private:
   // Sums the input ports into a value suitable for the output port. If the

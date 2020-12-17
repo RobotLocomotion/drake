@@ -6,6 +6,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/rigid_body.h"
@@ -668,6 +669,36 @@ TEST_F(LinearBushingRollPitchYawTester, VariousPosesAndMotion) {
   CompareToMotionGenesisResult(rpy,      p_AoCo_A, w_AC_A, v_ACo_A);
 }
 
+// Test that an exception is thrown near gimbal lock singularity.
+TEST_F(LinearBushingRollPitchYawTester, TestGimbalLock) {
+  const math::RollPitchYaw<double> rpy_gimbal_lock(0, M_PI/2, 0);
+  const Vector3<double> p_zero(0, 0, 0);
+  const Vector3<double> w_zero(0, 0, 0);
+  const Vector3<double> v_zero(0, 0, 0);
+
+  // Use the mobilizer to set frame C's pose and motion in frame A.
+  const RotationMatrixd R_AC(rpy_gimbal_lock);
+  systems::Context<double>& context = *(context_.get());
+  mobilizer_->SetFromRotationMatrix(&context, R_AC);
+  mobilizer_->set_position(&context, p_zero);
+  mobilizer_->set_angular_velocity(&context, w_zero);
+  mobilizer_->set_translational_velocity(&context, v_zero);
+
+  const char* expected_message =
+      "LinearBushingRollPitchYaw::CalcBushingRollPitchYawAngleRates()"
+      ".*gimbal-lock.*";
+
+  // Check that CalcBushingSpatialForceOnFrameA() throws near gimbal lock.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      bushing_->CalcBushingSpatialForceOnFrameA(context),
+      std::runtime_error, expected_message);
+
+  // Check that CalcBushingSpatialForceOnFrameC() throws near gimbal lock.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      bushing_->CalcBushingSpatialForceOnFrameC(context),
+      std::runtime_error, expected_message);
+}
+
 // Verify algorithm that calculates rotation matrix R_AB.
 TEST_F(LinearBushingRollPitchYawTester, HalfAngleAxisAlgorithm) {
   // This test uses a generic unit vector for the "axis" part of AngleAxis.
@@ -675,6 +706,83 @@ TEST_F(LinearBushingRollPitchYawTester, HalfAngleAxisAlgorithm) {
   for (double angle = 0; angle <= 0.99 * M_PI;  angle += M_PI / 32) {;
     BushingTester::VerifyHalfAngleAxisAlgorithm(angle, unit_vector);
   }
+}
+
+GTEST_TEST(LinearBushingRollPitchYawTest, BushingParameters) {
+  // Add a plant with a few rigid bodies.
+  MultibodyPlant<double> plant(0.0);
+
+  const double sphere_radius = 1.0;
+  const double sphere_mass = 2.5;
+  const Vector3<double> sphere_com(0, 0, 0);
+  const UnitInertia<double> sphere_unit_inertia =
+      UnitInertia<double>::SolidSphere(sphere_radius);
+
+  const RigidBody<double>& sphere1 = plant.AddRigidBody(
+      "sphere1",
+      SpatialInertia<double>(sphere_mass, sphere_com, sphere_unit_inertia));
+
+  const RigidBody<double>& sphere2 = plant.AddRigidBody(
+      "sphere2",
+      SpatialInertia<double>(sphere_mass, sphere_com, sphere_unit_inertia));
+
+  const Vector3<double> torque_stiffness(100, 100, 100);
+  const Vector3<double> torque_damping(5, 5, 5);
+  const Vector3<double> force_stiffness(100, 100, 100);
+  const Vector3<double> force_damping(5, 5, 5);
+
+  const LinearBushingRollPitchYaw<double>& bushing =
+      plant.AddForceElement<LinearBushingRollPitchYaw>(
+          sphere1.body_frame(), sphere2.body_frame(), torque_stiffness,
+          torque_damping, force_stiffness, force_damping);
+
+  plant.Finalize();
+
+  // Create a default context.
+  auto context = plant.CreateDefaultContext();
+
+  // Verify default parameters exist and are correct.
+  const Vector3<double> default_torque_stiffness =
+      bushing.GetTorqueStiffnessConstants(*context);
+  const Vector3<double> default_torque_damping =
+      bushing.GetTorqueDampingConstants(*context);
+  const Vector3<double> default_force_stiffness =
+      bushing.GetForceStiffnessConstants(*context);
+  const Vector3<double> default_force_damping =
+      bushing.GetForceDampingConstants(*context);
+
+  EXPECT_TRUE(CompareMatrices(torque_stiffness, default_torque_stiffness));
+  EXPECT_TRUE(CompareMatrices(torque_damping, default_torque_damping));
+  EXPECT_TRUE(CompareMatrices(force_stiffness, default_force_stiffness));
+  EXPECT_TRUE(CompareMatrices(force_damping, default_force_damping));
+
+  // Change parameters.
+  const Vector3<double> new_torque_stiffness(50, 50, 50);
+  const Vector3<double> new_torque_damping(2, 2, 2);
+  const Vector3<double> new_force_stiffness(50, 50, 50);
+  const Vector3<double> new_force_damping(2, 2, 2);
+
+  bushing.SetTorqueStiffnessConstants(context.get(), new_torque_stiffness);
+  bushing.SetTorqueDampingConstants(context.get(), new_torque_damping);
+  bushing.SetForceStiffnessConstants(context.get(), new_force_stiffness);
+  bushing.SetForceDampingConstants(context.get(), new_force_damping);
+
+  // Verify parameter changes propogate.
+  const Vector3<double> new_default_torque_stiffness =
+      bushing.GetTorqueStiffnessConstants(*context);
+  const Vector3<double> new_default_torque_damping =
+      bushing.GetTorqueDampingConstants(*context);
+  const Vector3<double> new_default_force_stiffness =
+      bushing.GetForceStiffnessConstants(*context);
+  const Vector3<double> new_default_force_damping =
+      bushing.GetForceDampingConstants(*context);
+
+  EXPECT_TRUE(
+      CompareMatrices(new_torque_stiffness, new_default_torque_stiffness));
+  EXPECT_TRUE(CompareMatrices(new_torque_damping, new_default_torque_damping));
+  EXPECT_TRUE(
+      CompareMatrices(new_force_stiffness, new_default_force_stiffness));
+  EXPECT_TRUE(CompareMatrices(new_force_damping, new_default_force_damping));
 }
 
 }  // namespace

@@ -70,6 +70,15 @@ cc_library(
     hdrs = glob(["include/**"]),
     includes = ["include"],
     visibility = ["//visibility:public"],
+    deprecation = "DRAKE DEPRECATED: The @numpy repository is being removed from Drake on or after 2021-01-01. Downstream projects should add it to their own WORKSPACE if needed.", # noqa
+)
+
+# This is only intended for use by the regression test in
+# @drake//tools/workspace/numpy, and will be removed on or after 2021-01-01.
+cc_library(
+    name = "numpy_for_stub_test",
+    visibility = ["//visibility:public"],
+    deps = [":numpy"],
 )
     """
 

@@ -10,6 +10,7 @@
 #include "drake/solvers/test/quadratic_program_examples.h"
 #include "drake/solvers/test/second_order_cone_program_examples.h"
 #include "drake/solvers/test/semidefinite_program_examples.h"
+#include "drake/solvers/test/sos_examples.h"
 
 namespace drake {
 namespace solvers {
@@ -344,6 +345,51 @@ GTEST_TEST(TestScs, SetOptions) {
     solver.Solve(prog, {}, solver_options, &result);
     EXPECT_NE(result.get_solver_details<ScsSolver>().scs_status,
               solved_status);
+  }
+}
+
+GTEST_TEST(TestScs, UnivariateQuarticSos) {
+  UnivariateQuarticSos dut;
+  ScsSolver solver;
+  if (solver.available()) {
+    const auto result = solver.Solve(dut.prog());
+    dut.CheckResult(result, 1E-6);
+  }
+}
+
+GTEST_TEST(TestScs, BivariateQuarticSos) {
+  BivariateQuarticSos dut;
+  ScsSolver solver;
+  if (solver.available()) {
+    const auto result = solver.Solve(dut.prog());
+    dut.CheckResult(result, 1E-6);
+  }
+}
+
+GTEST_TEST(TestScs, SimpleSos1) {
+  SimpleSos1 dut;
+  ScsSolver solver;
+  if (solver.available()) {
+    const auto result = solver.Solve(dut.prog());
+    dut.CheckResult(result, 1E-6);
+  }
+}
+
+GTEST_TEST(TestScs, MotzkinPolynomial) {
+  MotzkinPolynomial dut;
+  ScsSolver solver;
+  if (solver.is_available()) {
+    const auto result = solver.Solve(dut.prog());
+    dut.CheckResult(result, 1E-6);
+  }
+}
+
+GTEST_TEST(TestScs, UnivariateNonnegative1) {
+  UnivariateNonnegative1 dut;
+  ScsSolver solver;
+  if (solver.is_available()) {
+    const auto result = solver.Solve(dut.prog());
+    dut.CheckResult(result, 1E-6);
   }
 }
 }  // namespace test

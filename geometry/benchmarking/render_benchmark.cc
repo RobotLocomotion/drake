@@ -1,11 +1,10 @@
 #include <unistd.h>
 
+#include "fmt/format.h"
 #include <benchmark/benchmark.h>
 #include <gflags/gflags.h>
-#include "fmt/format.h"
 
 #include "drake/common/filesystem.h"
-#include "drake/geometry/render/render_engine_ospray_factory.h"
 #include "drake/geometry/render/render_engine_vtk_factory.h"
 #include "drake/systems/sensors/image_writer.h"
 
@@ -13,7 +12,7 @@ namespace drake {
 namespace geometry {
 namespace render {
 
-/** @defgroup render_engine_benchmarks Render Engine Benchmarks
+/* @defgroup render_engine_benchmarks Render Engine Benchmarks
  @ingroup render_benchmarks
 
  The benchmark consists of a scene with a ground box, one or more spheres
@@ -51,47 +50,31 @@ CPU Caches:
   L2 Unified 256K (x6)
   L3 Unified 12288K (x1)
 Load Average: 9.75, 4.65, 3.26
-***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
-------------------------------------------------------------------------------------------------------
-Benchmark                                                            Time             CPU   Iterations
-------------------------------------------------------------------------------------------------------
-RenderEngineBenchmark/VtkColor/1/1/640/480                        1.11 ms         1.08 ms          514
-RenderEngineBenchmark/VtkColor/4/1/640/480                        1.05 ms         1.05 ms          684
-RenderEngineBenchmark/VtkColor/8/1/640/480                        1.10 ms         1.09 ms          610
-RenderEngineBenchmark/VtkColor/1/10/640/480                       10.5 ms         10.1 ms           67
-RenderEngineBenchmark/VtkColor/1/1/320/240                       0.391 ms        0.390 ms         1567
-RenderEngineBenchmark/VtkColor/1/1/1280/960                       3.13 ms         3.13 ms          223
-RenderEngineBenchmark/VtkColor/1/1/2560/1920                      12.2 ms         12.2 ms           49
-RenderEngineBenchmark/VtkDepth/1/1/640/480                        1.35 ms         1.35 ms          484
-RenderEngineBenchmark/VtkDepth/1/10/640/480                       13.0 ms         13.0 ms           50
-RenderEngineBenchmark/VtkLabel/1/1/640/480                        1.45 ms         1.45 ms          464
-RenderEngineBenchmark/VtkLabel/1/10/640/480                       26.1 ms         25.3 ms           37
-RenderEngineBenchmark/OsprayRayColor/1/1/640/480                  23.4 ms         22.7 ms           33
-RenderEngineBenchmark/OsprayRayColor/4/1/640/480                  28.8 ms         27.4 ms           23
-RenderEngineBenchmark/OsprayRayColor/8/1/640/480                  34.4 ms         32.9 ms           17
-RenderEngineBenchmark/OsprayRayColor/1/10/640/480                  193 ms          174 ms            3
-RenderEngineBenchmark/OsprayRayColor/1/1/320/240                  5.16 ms         5.09 ms          120
-RenderEngineBenchmark/OsprayRayColor/1/1/1280/960                 67.9 ms         65.2 ms           11
-RenderEngineBenchmark/OsprayRayColor/1/1/2560/1920                 283 ms          267 ms            2
-RenderEngineBenchmark/OsprayRayColorShadowsOff/1/1/640/480        15.7 ms         15.7 ms           43
-RenderEngineBenchmark/OsprayRayColorShadowsOff/4/1/640/480        20.0 ms         19.6 ms           30
-RenderEngineBenchmark/OsprayRayColorShadowsOff/8/1/640/480        25.2 ms         25.2 ms           28
-RenderEngineBenchmark/OsprayRayColorShadowsOff/1/10/640/480        162 ms          159 ms            4
-RenderEngineBenchmark/OsprayPathColor/1/1/640/480                 36.2 ms         35.3 ms           20
-RenderEngineBenchmark/OsprayPathColor/1/10/640/480                 351 ms          345 ms            2
+------------------------------------------------------------------------------------------------------  // NOLINT(*)
+Benchmark                                                            Time             CPU   Iterations  // NOLINT(*)
+------------------------------------------------------------------------------------------------------  // NOLINT(*)
+RenderEngineBenchmark/VtkColor/1/1/640/480                        1.11 ms         1.08 ms          514  // NOLINT(*)
+RenderEngineBenchmark/VtkColor/4/1/640/480                        1.05 ms         1.05 ms          684  // NOLINT(*)
+RenderEngineBenchmark/VtkColor/8/1/640/480                        1.10 ms         1.09 ms          610  // NOLINT(*)
+RenderEngineBenchmark/VtkColor/1/10/640/480                       10.5 ms         10.1 ms           67  // NOLINT(*)
+RenderEngineBenchmark/VtkColor/1/1/320/240                       0.391 ms        0.390 ms         1567  // NOLINT(*)
+RenderEngineBenchmark/VtkColor/1/1/1280/960                       3.13 ms         3.13 ms          223  // NOLINT(*)
+RenderEngineBenchmark/VtkColor/1/1/2560/1920                      12.2 ms         12.2 ms           49  // NOLINT(*)
+RenderEngineBenchmark/VtkDepth/1/1/640/480                        1.35 ms         1.35 ms          484  // NOLINT(*)
+RenderEngineBenchmark/VtkDepth/1/10/640/480                       13.0 ms         13.0 ms           50  // NOLINT(*)
+RenderEngineBenchmark/VtkLabel/1/1/640/480                        1.45 ms         1.45 ms          464  // NOLINT(*)
+RenderEngineBenchmark/VtkLabel/1/10/640/480                       26.1 ms         25.3 ms           37  // NOLINT(*)
  ```
 
  Additional configuration is possible via the following flags:
  - __save_image_path__: Enables saving the rendered images in the given
    location. Defaults to no saving.
  - __show_window__: Whether to display the rendered images. Defaults to false.
- - __samples_per_pixel__: The number of illumination samples per pixel when path
-   tracing with RenderEngineOspray. Higher numbers introduce higher quality at
-   increased cost. Defaults to 1.
 
  For example:
  ```
- bazel run //geometry/benchmarking:render_benchmark -- --save_image_path="/tmp" --show_window=true --samples_per_pixel=100
+ bazel run //geometry/benchmarking:render_benchmark -- \
+    --save_image_path="/tmp" --show_window=true --samples_per_pixel=100
  ```
 
  <h4>Interpreting the benchmark</h4>
@@ -107,14 +90,6 @@ RenderEngineBenchmark/OsprayPathColor/1/10/640/480                 351 ms       
      - __VtkColor__: Renders the color image from RenderEngineVtk.
      - __VtkDepth__: Renders the depth image from RenderEngineVtk.
      - __VtkLabel__: Renders the label image from RenderEngineVtk.
-     - __OsprayRayColor__: Renders the color image from RenderEngineOspray with
-       ray-traced shadows.
-     - __OsprayRayColorShadowsOff__: Renders the color image from
-       RenderEngineOspray without any shadows -- most closely approximates the
-       RenderEngineVtk color image.
-     - __OsprayPathColor__: Renders the color image from RenderEngineOspray with
-       path-traced global illumination (with only a single sample per pixel by
-       default, unless configured using --samples_per_pixel).
    - __camera_count__: Simply the number of independent cameras being rendered.
      The cameras are all co-located (same position, same view direction) so
      they each render the same image.
@@ -137,8 +112,6 @@ RenderEngineBenchmark/OsprayPathColor/1/10/640/480                 351 ms       
        for label.
      - RenderEngineVtk also increased a factor of 10X when path-tracing the
        scene when we increased the number of cameras by a factor of 10X.
-   - The number of objects in the scene has an apparently negligible impact on
-     RenderEngineVtk, but a noticeable impact on RenderEngineOspray.
  */
 
 // Friend class for accessing RenderEngine's protected/private functionality.
@@ -169,8 +142,6 @@ using systems::sensors::SaveToTiff;
 DEFINE_string(save_image_path, "",
               "Enables saving rendered images in the given location");
 DEFINE_bool(show_window, false, "Whether to display the rendered images");
-DEFINE_int32(samples_per_pixel, 1,
-             "Number of illumination samples per pixel when path tracing");
 
 // Default sphere array sizes.
 const int kCols = 4;
@@ -190,9 +161,9 @@ class RenderEngineBenchmark : public benchmark::Fixture {
   }
 
   using benchmark::Fixture::SetUp;
-  void SetUp(const ::benchmark::State&) { cameras_.clear(); }
+  void SetUp(const ::benchmark::State&) { depth_cameras_.clear(); }
 
-  /** Set up the scene using the VTK render engine.
+  /* Set up the scene using the VTK render engine.
    @param sphere_count Number of spheres to include in the render.
    @param camera_count Number of cameras to include in the render.
    @param width Width of the render image.
@@ -205,25 +176,7 @@ class RenderEngineBenchmark : public benchmark::Fixture {
     SetupScene(sphere_count, camera_count, width, height);
   }
 
-  /** Set up the scene using the Ospray render engine.
-   @param sphere_count Number of spheres to include in the render.
-   @param camera_count Number of cameras to include in the render.
-   @param width Width of the render image.
-   @param height Height of the render image.
-   @param mode The OsprayMode, i.e. ray tracing or path tracing.
-   @param use_shadows Whether to render shadows when in ray tracing mode
-                      (`OsprayMode::kRayTracer`). Ignored in path tracing mode.
-   */
-  void SetupOsprayRender(const int sphere_count, const int camera_count,
-                         const int width, const int height, OsprayMode mode,
-                         bool use_shadows) {
-    RenderEngineOsprayParams params{
-        mode, {}, bg_rgb_, FLAGS_samples_per_pixel, use_shadows};
-    renderer_ = MakeRenderEngineOspray(params);
-    SetupScene(sphere_count, camera_count, width, height);
-  }
-
-  /** Parse arguments from the benchmark state.
+  /* Parse arguments from the benchmark state.
    @return A tuple representing the sphere count, camera count, width, and
            height.  */
   static std::tuple<int, int, int, int> ReadState(
@@ -232,7 +185,7 @@ class RenderEngineBenchmark : public benchmark::Fixture {
                            state.range(3));
   }
 
-  /** Helper function for generating the image path name based on the benchmark
+  /* Helper function for generating the image path name based on the benchmark
    arguments and file format. The benchmark state is assumed to have 4 arguments
    representing the sphere count, camera count, width, and height.  */
   static std::string image_path_name(const std::string& test_name,
@@ -290,8 +243,11 @@ class RenderEngineBenchmark : public benchmark::Fixture {
 
     // Add the cameras.
     for (int i = 0; i < camera_count; ++i) {
-      cameras_.emplace_back(width, height, kFovY, "unused" + std::to_string(i),
-                            kZNear, kZFar);
+      depth_cameras_.emplace_back(RenderCameraCore{"unused" + std::to_string(i),
+                                                   {width, height, kFovY},
+                                                   {0.01, 100.0},
+                                                   {}},
+                                  DepthRange{kZNear, kZFar});
     }
 
     // Offset the light from its default position shared with the camera, i.e.
@@ -314,7 +270,7 @@ class RenderEngineBenchmark : public benchmark::Fixture {
   static std::set<std::string> saved_image_paths;
 
   std::unique_ptr<RenderEngine> renderer_;
-  std::vector<DepthCameraProperties> cameras_;
+  std::vector<DepthRenderCamera> depth_cameras_;
   PerceptionProperties material_;
   ImageRgba8U color_image_;
   ImageDepth32F depth_image_;
@@ -332,8 +288,9 @@ BENCHMARK_DEFINE_F(RenderEngineBenchmark, VtkColor)
   SetupVtkRender(sphere_count, camera_count, width, height);
   for (auto _ : state) {
     for (int i = 0; i < camera_count; ++i) {
-      renderer_->RenderColorImage(cameras_[i], FLAGS_show_window,
-                                  &color_image_);
+      const ColorRenderCamera color_cam(depth_cameras_[i].core(),
+                                        FLAGS_show_window);
+      renderer_->RenderColorImage(color_cam, &color_image_);
     }
   }
   if (!FLAGS_save_image_path.empty()) {
@@ -359,7 +316,7 @@ BENCHMARK_DEFINE_F(RenderEngineBenchmark, VtkDepth)
   SetupVtkRender(sphere_count, camera_count, width, height);
   for (auto _ : state) {
     for (int i = 0; i < camera_count; ++i) {
-      renderer_->RenderDepthImage(cameras_[i], &depth_image_);
+      renderer_->RenderDepthImage(depth_cameras_[i], &depth_image_);
     }
   }
   if (!FLAGS_save_image_path.empty()) {
@@ -380,8 +337,9 @@ BENCHMARK_DEFINE_F(RenderEngineBenchmark, VtkLabel)
   SetupVtkRender(sphere_count, camera_count, width, height);
   for (auto _ : state) {
     for (int i = 0; i < camera_count; ++i) {
-      renderer_->RenderLabelImage(cameras_[i], FLAGS_show_window,
-                                  &label_image_);
+      const ColorRenderCamera color_cam(depth_cameras_[i].core(),
+                                        FLAGS_show_window);
+      renderer_->RenderLabelImage(color_cam, &label_image_);
     }
   }
   if (!FLAGS_save_image_path.empty()) {
@@ -391,90 +349,6 @@ BENCHMARK_DEFINE_F(RenderEngineBenchmark, VtkLabel)
   }
 }
 BENCHMARK_REGISTER_F(RenderEngineBenchmark, VtkLabel)
-    ->Unit(benchmark::kMillisecond)
-    ->Args({1, 1, 640, 480})    // 1 sphere, 1 camera, 640 width, 480 height.
-    ->Args({1, 10, 640, 480});  // 1 sphere, 10 cameras, 640 width, 480 height.
-
-BENCHMARK_DEFINE_F(RenderEngineBenchmark, OsprayRayColor)
-// NOLINTNEXTLINE(runtime/references)
-(benchmark::State& state) {
-  auto [sphere_count, camera_count, width, height] = ReadState(state);
-  SetupOsprayRender(sphere_count, camera_count, width, height,
-                    OsprayMode::kRayTracer, true);
-  for (auto _ : state) {
-    for (int i = 0; i < camera_count; ++i) {
-      renderer_->RenderColorImage(cameras_[i], FLAGS_show_window,
-                                  &color_image_);
-    }
-  }
-  if (!FLAGS_save_image_path.empty()) {
-    const std::string path_name =
-        image_path_name("OsprayRayColor", state, "png");
-    SaveToPng(color_image_, path_name);
-    saved_image_paths.insert(path_name);
-  }
-}
-BENCHMARK_REGISTER_F(RenderEngineBenchmark, OsprayRayColor)
-    ->Unit(benchmark::kMillisecond)
-    ->Args({1, 1, 640, 480})     // 1 sphere, 1 camera, 640 width, 480 height.
-    ->Args({4, 1, 640, 480})     // 4 spheres, 1 camera, 640 width, 480 height.
-    ->Args({8, 1, 640, 480})     // 8 spheres, 1 camera, 640 width, 480 height.
-    ->Args({1, 10, 640, 480})    // 1 sphere, 10 cameras, 640 width, 480 height.
-    ->Args({1, 1, 320, 240})     // 1 sphere, 1 camera, 320 width, 240 height.
-    ->Args({1, 1, 1280, 960})    // 1 sphere, 1 camera, 1280 width, 960 height.
-    ->Args({1, 1, 2560, 1920});  // 1 sphere, 1 camera, 2560 width, 1920 height.
-
-BENCHMARK_DEFINE_F(RenderEngineBenchmark, OsprayRayColorShadowsOff)
-// NOLINTNEXTLINE(runtime/references)
-(benchmark::State& state) {
-  auto [sphere_count, camera_count, width, height] = ReadState(state);
-  SetupOsprayRender(sphere_count, camera_count, width, height,
-                    OsprayMode::kRayTracer, false);
-  for (auto _ : state) {
-    for (int i = 0; i < camera_count; ++i) {
-      renderer_->RenderColorImage(cameras_[i], FLAGS_show_window,
-                                  &color_image_);
-    }
-  }
-  if (!FLAGS_save_image_path.empty()) {
-    const std::string path_name =
-        image_path_name("OsprayRayColorShadowsOff", state, "png");
-    SaveToPng(color_image_, path_name);
-    saved_image_paths.insert(path_name);
-  }
-}
-BENCHMARK_REGISTER_F(RenderEngineBenchmark, OsprayRayColorShadowsOff)
-    ->Unit(benchmark::kMillisecond)
-    ->Args({1, 1, 640, 480})    // 1 sphere, 1 camera, 640 width, 480 height.
-    ->Args({4, 1, 640, 480})    // 4 spheres, 1 camera, 640 width, 480 height.
-    ->Args({8, 1, 640, 480})    // 8 spheres, 1 camera, 640 width, 480 height.
-    ->Args({1, 10, 640, 480});  // 1 sphere, 10 cameras, 640 width, 480 height.
-
-BENCHMARK_DEFINE_F(RenderEngineBenchmark, OsprayPathColor)
-// NOLINTNEXTLINE(runtime/references)
-(benchmark::State& state) {
-  auto [sphere_count, camera_count, width, height] = ReadState(state);
-  SetupOsprayRender(sphere_count, camera_count, width, height,
-                    OsprayMode::kPathTracer, true);
-  for (auto _ : state) {
-    // NOTE: The ospray renderer has a quirk; if no poses update, subsequent
-    // render passes seem to accumulate into the same frame buffer, artificially
-    // improving the image quality, like increasing the number of per-pixel
-    // samples.
-    renderer_->UpdatePoses(poses_);
-    for (int i = 0; i < camera_count; ++i) {
-      renderer_->RenderColorImage(cameras_[i], FLAGS_show_window,
-                                  &color_image_);
-    }
-  }
-  if (!FLAGS_save_image_path.empty()) {
-    const std::string path_name =
-        image_path_name("OsprayPathColor", state, "png");
-    SaveToPng(color_image_, path_name);
-    saved_image_paths.insert(path_name);
-  }
-}
-BENCHMARK_REGISTER_F(RenderEngineBenchmark, OsprayPathColor)
     ->Unit(benchmark::kMillisecond)
     ->Args({1, 1, 640, 480})    // 1 sphere, 1 camera, 640 width, 480 height.
     ->Args({1, 10, 640, 480});  // 1 sphere, 10 cameras, 640 width, 480 height.

@@ -101,10 +101,10 @@ TEST_F(ContinuousStateTest, ArrayOperator) {
 
 TEST_F(ContinuousStateTest, OutOfBoundsAccess) {
   EXPECT_THROW(continuous_state_->get_generalized_position().GetAtIndex(2),
-               std::runtime_error);
+               std::exception);
   EXPECT_THROW(
       continuous_state_->get_mutable_generalized_velocity().SetAtIndex(1, 42),
-      std::runtime_error);
+      std::exception);
 }
 
 // Tests that std::out_of_range is thrown if the component dimensions do not
@@ -239,7 +239,10 @@ TEST_F(ContinuousStateTest, Clone) {
 TEST_F(ContinuousStateTest, StringStream) {
   std::stringstream s;
   s << "hello " << continuous_state_->get_vector() << " world";
-  EXPECT_EQ(s.str(), "hello [1, 2, 3, 4] world");
+  std::stringstream s_expected;
+  VectorXd eigen_vector = continuous_state_->CopyToVector();
+  s_expected << "hello " << eigen_vector.transpose() << " world";
+  EXPECT_EQ(s.str(), s_expected.str());
 }
 
 // Tests for DiagramContinousState.

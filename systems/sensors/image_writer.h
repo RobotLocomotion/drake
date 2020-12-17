@@ -44,6 +44,12 @@ void SaveToTiff(const ImageDepth32F& image, const std::string& file_path);
 /** Writes the label (16-bit) image data to disk.  */
 void SaveToPng(const ImageLabel16I& image, const std::string& file_path);
 
+/** Writes the depth (16-bit) image data to disk.  */
+void SaveToPng(const ImageDepth16U& image, const std::string& file_path);
+
+/** Writes the grey scale (8-bit) image data to disk.  */
+void SaveToPng(const ImageGrey8U& image, const std::string& file_path);
+
 //@}
 
 /** A system for periodically writing images to the file system. The system does
@@ -60,18 +66,22 @@ void SaveToPng(const ImageLabel16I& image, const std::string& file_path);
  By design, this system is intended to work with RgbdCamera, but can connect to
  any output port that provides images.
 
- @system{ImageWriter,
-    @input_port{declared_image1}
-    @input_port{declared_image2}
-    @input_port{...}
-    @input_port{declared_imageN},
- }
+ @system
+ name: ImageWriter
+ input_ports:
+ - declared_image1
+ - declared_image2
+ - ...
+ - declared_imageN
+ @endsystem
 
  %ImageWriter supports three specific types of images:
 
    - ImageRgba8U - typically a color image written to disk as .png images.
    - ImageDepth32F - typically a depth image, written to disk as .tiff images.
    - ImageLabel16I - typically a label image, written to disk as .png images.
+   - ImageDepth16U - typically a depth image, written to disk as .png images.
+   - ImageGrey8U - typically a grey scale image, written to disk as .png images.
 
  Input ports are added to an %ImageWriter via DeclareImageInputPort(). See
  that function's documentation for elaboration on how to configure image output.
@@ -177,7 +187,8 @@ class ImageWriter : public LeafSystem<double> {
                             images will be written in calls to Publish().
    @tparam kPixelType       The representation of the per-pixel data (see
                             PixelType). Must be one of {PixelType::kRgba8U,
-                            PixelType::kDepth32F, or PixelType::kLabel16I}.
+                            PixelType::kDepth32F, PixelType::kLabel16I,
+                            PixelType::kDepth16U, or PixelType::kGrey8U}.
    @throws std::logic_error if (1) the directory encoded in the
                             `file_name_format` is not "valid" (see
                             documentation above for definition),

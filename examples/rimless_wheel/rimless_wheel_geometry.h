@@ -11,10 +11,13 @@ namespace rimless_wheel {
 
 /// Expresses a RimlessWheel's geometry to a SceneGraph.
 ///
-/// @system{RimlessWheelGeometry,
-///    @input_port{floating_base_state},
-///    @output_port{geometry_pose}
-/// }
+/// @system
+/// name: RimlessWheelGeometry
+/// input_ports:
+/// - floating_base_state
+/// output_ports:
+/// - geometry_pose
+/// @endsystem
 ///
 /// This class has no public constructor; instead use the AddToBuilder() static
 /// method to create and add it to a DiagramBuilder directly.

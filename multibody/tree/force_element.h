@@ -6,7 +6,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/multibody/math/spatial_force.h"
+#include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/tree/multibody_element.h"
 #include "drake/multibody/tree/multibody_forces.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
@@ -47,7 +47,7 @@ class ForceElement : public
 
   /// (Advanced) Computes the force contribution for `this` force element and
   /// **adds** it to the output arrays of forces. Depending on their model,
-  /// different force elements may write into the array of sptial forces
+  /// different force elements may write into the array of spatial forces
   /// `F_B_W` or the array of generalized forces `tau`.
   ///
   /// @param[in] context
@@ -95,7 +95,7 @@ class ForceElement : public
   /// for CalcPotentialEnergy() for a detailed description of the input
   /// arguments of the methods in this group.
   ///
-  // TODO(amcastro-tri): make this methods DoCalcXXX() when caching gets in and
+  // TODO(amcastro-tri): make this methods DoCalcFoo() when caching gets in and
   // make the public API's to only take a Context.
   //@{
 

@@ -1,10 +1,10 @@
-<sdf version='1.6'>
-  <model name='CartPole'>
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="CartPole">
     <!-- This sdf file produces a model with the default parameters as
          documented in cart_pole_params_named_vector.yaml.
          They MUST be kept in sync. -->
-    <link name='Cart'>
-      <pose>0 0 0 0 0 0</pose>
+    <link name="Cart">
       <inertial>
         <mass>10.0</mass>
         <!-- For this model case, with the cart not having any rotational
@@ -13,13 +13,15 @@
              (or near to zero since sdformat does not allow exact zeroes
              for inertia values). -->
         <inertia>
-          <ixx>1.0e-20</ixx><iyy>1.0e-20</iyy><izz>1.0e-20</izz>
-          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+          <ixx>1.0e-20</ixx>
+          <iyy>1.0e-20</iyy>
+          <izz>1.0e-20</izz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
         </inertia>
       </inertial>
-
-      <visual name='cart_visual'>
-        <pose>0 0 0 0 0 0</pose>
+      <visual name="cart_visual">
         <geometry>
           <box>
             <size>0.24 0.12 0.12</size>
@@ -27,8 +29,7 @@
         </geometry>
       </visual>
     </link>
-
-    <link name='Pole'>
+    <link name="Pole">
       <!-- The pole is modeled as a point mass at the end of a pole. -->
       <!-- The length of the pole is 0.5 meters. -->
       <pose>0 0 -0.5 0 0 0</pose>
@@ -38,20 +39,22 @@
              We must specify small values since otherwise sdformat throws an
              exception. -->
         <inertia>
-          <ixx>1.0e-20</ixx><iyy>1.0e-20</iyy><izz>1.0e-20</izz>
-          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+          <ixx>1.0e-20</ixx>
+          <iyy>1.0e-20</iyy>
+          <izz>1.0e-20</izz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
         </inertia>
       </inertial>
-
-      <visual name='pole_point_mass'>
-        <pose>0 0 0 0 0 0</pose>
+      <visual name="pole_point_mass">
         <geometry>
           <sphere>
             <radius>0.05</radius>
           </sphere>
         </geometry>
       </visual>
-      <visual name='pole_rod'>
+      <visual name="pole_rod">
         <pose>0 0 0.25 0 0 0</pose>
         <geometry>
           <cylinder>
@@ -61,17 +64,14 @@
         </geometry>
       </visual>
     </link>
-
-    <joint name='CartSlider' type='prismatic'>
+    <joint name="CartSlider" type="prismatic">
       <parent>world</parent>
       <child>Cart</child>
       <axis>
         <xyz>1.0 0.0 0.0</xyz>
       </axis>
-
     </joint>
-
-    <joint name='PolePin' type='revolute'>
+    <joint name="PolePin" type="revolute">
       <!-- Pose of the joint frame in the pole's frame (located at the point
            mass) -->
       <pose>0 0 0.5 0 0 0</pose>

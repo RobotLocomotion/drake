@@ -2435,7 +2435,7 @@ GTEST_TEST(TestMathematicalProgram, TestL2NormCost) {
 symbolic::Monomial transform(const symbolic::Monomial& monomial,
                              const map<Variable::Id, Variable>& var_id_to_var) {
   // var_id_to_var should be chain-free.
-  for (const pair<Variable::Id, Variable>& p : var_id_to_var) {
+  for (const pair<const Variable::Id, Variable>& p : var_id_to_var) {
     const Variable& var{p.second};
     DRAKE_DEMAND(var_id_to_var.find(var.get_id()) == var_id_to_var.end());
   }
@@ -2470,7 +2470,7 @@ symbolic::Polynomial transform(
     const symbolic::Polynomial& poly,
     const map<Variable::Id, Variable>& var_id_to_var) {
   symbolic::Polynomial::MapType new_map;
-  for (const pair<symbolic::Monomial, symbolic::Expression>& p :
+  for (const pair<const symbolic::Monomial, symbolic::Expression>& p :
        poly.monomial_to_coefficient_map()) {
     new_map.emplace(transform(p.first, var_id_to_var), p.second);
   }
@@ -2900,6 +2900,47 @@ GTEST_TEST(TestMathematicalProgram, NewNonnegativePolynomial) {
   CheckNewNonnegativePolynomial(
       MathematicalProgram::NonnegativePolynomial::kSdsos);
   CheckNewNonnegativePolynomial(
+      MathematicalProgram::NonnegativePolynomial::kDsos);
+}
+
+void CheckNewEvenDegreeNonnegativePolynomial(
+    MathematicalProgram::NonnegativePolynomial type) {
+  // Check if the newly created nonnegative polynomial can be computed as m_e' *
+  // Q_ee * m_e + m_o' * Q_oo * m_o * m.
+  MathematicalProgram prog;
+  auto t = prog.NewIndeterminates<2>();
+  const symbolic::Variables t_vars(t);
+  const int degree{4};
+  const auto m_e = symbolic::EvenDegreeMonomialBasis(t_vars, degree / 2);
+  const auto m_o = symbolic::OddDegreeMonomialBasis(t_vars, degree / 2);
+  symbolic::Polynomial p;
+  MatrixXDecisionVariable Q_oo, Q_ee;
+  std::tie(p, Q_oo, Q_ee) =
+      prog.NewEvenDegreeNonnegativePolynomial(t_vars, degree, type);
+  symbolic::Polynomial p_expected{};
+  for (int i = 0; i < Q_ee.rows(); ++i) {
+    for (int j = 0; j < Q_ee.cols(); ++j) {
+      p_expected += m_e(i) * Q_ee(i, j) * m_e(j);
+    }
+  }
+  for (int i = 0; i < Q_oo.rows(); ++i) {
+    for (int j = 0; j < Q_oo.cols(); ++j) {
+      p_expected += m_o(i) * Q_oo(i, j) * m_o(j);
+    }
+  }
+  EXPECT_PRED2(PolyEqual, p, p_expected);
+  EXPECT_EQ(p.TotalDegree(), degree);
+  if (type == MathematicalProgram::NonnegativePolynomial::kSos) {
+    EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 2);
+  }
+}
+
+GTEST_TEST(TestMathematicalProgram, NewEvenDegreeNonnegativePolynomial) {
+  CheckNewEvenDegreeNonnegativePolynomial(
+      MathematicalProgram::NonnegativePolynomial::kSos);
+  CheckNewEvenDegreeNonnegativePolynomial(
+      MathematicalProgram::NonnegativePolynomial::kSdsos);
+  CheckNewEvenDegreeNonnegativePolynomial(
       MathematicalProgram::NonnegativePolynomial::kDsos);
 }
 

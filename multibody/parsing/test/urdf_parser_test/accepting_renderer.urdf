@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<robot name="non_conflicting_materials_1">
+  <material name="brown">
+    <color rgba="0.93333333333 0.79607843137 0.67843137254 1"/>
+  </material>
+  <material name="red">
+    <color rgba="0.93333333333 0.2 0.2 1"/>
+  </material>
+  <link name="base_link">
+    <visual name="all_renderers">
+      <geometry>
+        <capsule length="0.5" radius="0.2"/>
+      </geometry>
+      <!-- No <drake:accepting_renderer/> tag -->
+    </visual>
+    <visual name="single_renderer">
+      <geometry>
+        <sphere radius="0.25"/>
+      </geometry>
+      <material name="textured">
+        <texture filename="empty.png"/>
+      </material>
+      <drake:accepting_renderer name="renderer1"/>
+    </visual>
+    <visual name="multi_renderer">
+      <geometry>
+        <sphere radius="0.25"/>
+      </geometry>
+      <material name="textured">
+        <texture filename="empty.png"/>
+      </material>
+      <drake:accepting_renderer name="renderer1"/>
+      <drake:accepting_renderer name="renderer2"/>
+    </visual>
+  </link>
+</robot>

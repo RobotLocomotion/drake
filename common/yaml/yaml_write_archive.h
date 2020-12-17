@@ -5,18 +5,19 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <variant>
 #include <vector>
 
+#include "yaml-cpp/yaml.h"
 #include <Eigen/Core>
 #include <fmt/format.h>
-#include "yaml-cpp/emitfromevents.h"
-#include "yaml-cpp/yaml.h"
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/name_value.h"
+#include "drake/common/nice_type_name.h"
 
 namespace drake {
 namespace yaml {
@@ -93,20 +94,28 @@ class YamlWriteArchive final {
   }
 
   /// Returns the YAML string for whatever Serializable was most recently
-  /// passed into Accept.  The returned document will be a single Map node
-  /// named using `root_name` with the Serializable's visited fields as
-  /// key-value entries within it.
-  std::string EmitString(const std::string& root_name = "root") const {
-    std::string result;
-    if (root_.IsNull()) {
-      result = root_name + ":\n";
-    } else {
-      YAML::Node document;
-      document[root_name] = root_;
-      result = YamlDumpWithSortedMaps(document) + "\n";
-    }
-    return result;
-  }
+  /// passed into Accept.
+  ///
+  /// If the `root_name` is empty, the returned document will be the
+  /// Serializable's visited content (which itself is already a Map node)
+  /// directly. If the visited serializable content is null (in cases
+  /// `Accpet()` has not been called or the entries are erased after calling
+  /// `EraseMatchingMaps()`), then an empty map `{}` will be emitted.
+  ///
+  /// If the `root_name` is not empty, the returned document will be a
+  /// single Map node named using `root_name` with the Serializable's visited
+  /// content as key-value entries within it. The visited content could be
+  /// null and the nullness is defined as above.
+  std::string EmitString(const std::string& root_name = "root") const;
+
+  /// (Advanced.)  Remove from this archive any map entries that are identical
+  /// to an entry in `other`, iff they reside at the same location within the
+  /// node tree hierarchy, and iff their parent nodes (and grandparent, etc.,
+  /// all the way up to the root) are also all maps.  This enables emitting a
+  /// minimal YAML representation when the output will be later loaded using
+  /// YamlReadArchive's option to retain_map_defaults; the "all parents are
+  /// maps" condition is the complement to what retain_map_defaults admits.
+  void EraseMatchingMaps(const YamlWriteArchive& other);
 
   /// (Advanced.)  Copies the value pointed to by `nvp.value()` into the YAML
   /// object.  Most users should should call Accept, not Visit.
@@ -118,11 +127,10 @@ class YamlWriteArchive final {
   }
 
  private:
-  static constexpr const char* const kKeyOrderName = "__key_order";
+  static const char* const kKeyOrderName;
 
-  // Helpers for EmitString.
+  // Helper for EmitString.
   static std::string YamlDumpWithSortedMaps(const YAML::Node&);
-  static void RecursiveEmit(const YAML::Node&, YAML::EmitFromEvents*);
 
   // N.B. In the private details below, we use "NVP" to abbreviate the
   // "NameValuePair" template concept.
@@ -231,14 +239,25 @@ class YamlWriteArchive final {
     using T = typename NVP::value_type;
     const T& value = *nvp.value();
     sub_archive.Accept(value);
-    root_[nvp.name()] = std::move(sub_archive.root_);
+    YAML::Node node = std::move(sub_archive.root_);
+    if (node.IsNull()) {
+      node = YAML::Node(YAML::NodeType::Map);
+    }
+    root_[nvp.name()] = std::move(node);
   }
 
   template <typename NVP>
   void VisitScalar(const NVP& nvp) {
     using T = typename NVP::value_type;
     const T& value = *nvp.value();
-    root_[nvp.name()] = fmt::format("{}", value);
+    if constexpr (std::is_floating_point_v<T>) {
+      // Different versions of fmt disagree on whether to omit the trailing
+      // ".0" when formatting integer-valued floating-point numbers.  Force
+      // the ".0" in all cases by using the "#" option.
+      root_[nvp.name()] = fmt::format("{:#}", value);
+    } else {
+      root_[nvp.name()] = fmt::format("{}", value);
+    }
   }
 
   template <typename NVP>
@@ -261,26 +280,48 @@ class YamlWriteArchive final {
     // the visit_order a second time, duplicating work performed by the Visit()
     // for the *wrapped* value.  We'll undo that duplication now.
     this->visit_order_.pop_back();
-}
+  }
 
   template <typename NVP>
   void VisitVariant(const NVP& nvp) {
+    // Visit the unpacked variant as if it weren't wrapped in variant<>,
+    // setting a YAML type tag iff required.
+    const char* const name = nvp.name();
     auto& variant = *nvp.value();
-    if (variant.index() != 0) {
-      throw std::runtime_error(fmt::format(
-          "Cannot YamlWriteArchive the variant field {} "
-          "with a non-zero type index {}",
-          nvp.name(), variant.index()));
-    }
+    const size_t index = variant.index();
+    std::visit([this, name, index](auto&& unwrapped) {
+      this->Visit(drake::MakeNameValue(name, &unwrapped));
+      if (index != 0) {
+        using T = decltype(unwrapped);
+        root_[name].SetTag(YamlWriteArchive::GetVariantTag<T>());
+      }
+    }, variant);
 
-    // Visit the unpacked variant as if it weren't wrapped in variant<>.
-    auto& unboxed = std::get<0>(variant);
-    this->Visit(drake::MakeNameValue(nvp.name(), &unboxed));
-
-    // The above call to Visit() for the *unwrapped* value pushed our name onto
-    // the visit_order a second time, duplicating work performed by the Visit()
-    // for the *wrapped* value.  We'll undo that duplication now.
+    // The above call to this->Visit() for the *unwrapped* value pushed our
+    // name onto the visit_order a second time, duplicating work performed by
+    // the Visit() for the *wrapped* value.  We'll undo that duplication now.
     this->visit_order_.pop_back();
+  }
+
+  template <typename T>
+  static std::string GetVariantTag() {
+    const std::string full_name = NiceTypeName::Get<T>();
+    if ((full_name == "std::string")
+        || (full_name == "double")
+        || (full_name == "int")) {
+      // TODO(jwnimmer-tri) Add support for well-known YAML primitive types
+      // within variants (when placed other than at the 0'th index).
+      throw std::runtime_error(fmt::format(
+          "Cannot YamlWriteArchive the variant type {} with a non-zero index",
+          full_name));
+    }
+    std::string short_name = NiceTypeName::RemoveNamespaces(full_name);
+    auto angle = short_name.find('<');
+    if (angle != std::string::npos) {
+      // Remove template arguments.
+      short_name.resize(angle);
+    }
+    return short_name;
   }
 
   template <typename T>

@@ -2,7 +2,7 @@
 #include "drake/common/find_runfiles.h"
 /* clang-format on */
 
-// This is a stubbed-out implemention of find_runfiles.h.  Its purpose is for
+// This is a stubbed-out implementation of find_runfiles.h.  Its purpose is for
 // downstream users who choose not to run Drake's CMakeLists.txt nor BUILD
 // files, but instead are writing their own build system for a subset of Drake.
 //

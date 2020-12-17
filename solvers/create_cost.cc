@@ -6,8 +6,8 @@
 #include <vector>
 
 #include "drake/common/polynomial.h"
+#include "drake/common/symbolic_decompose.h"
 #include "drake/common/unused.h"
-#include "drake/solvers/symbolic_extraction.h"
 
 namespace drake {
 namespace solvers {
@@ -26,11 +26,6 @@ using symbolic::Expression;
 using symbolic::Formula;
 using symbolic::Variable;
 
-using internal::DecomposeLinearExpression;
-using internal::DecomposeQuadraticPolynomial;
-using internal::ExtractAndAppendVariablesFromExpression;
-using internal::ExtractVariablesFromExpression;
-using internal::SymbolicError;
 
 namespace {
 
@@ -42,7 +37,8 @@ Binding<QuadraticCost> DoParseQuadraticCost(
   Eigen::MatrixXd Q(vars_vec.size(), vars_vec.size());
   Eigen::VectorXd b(vars_vec.size());
   double constant_term;
-  DecomposeQuadraticPolynomial(poly, map_var_to_index, &Q, &b, &constant_term);
+  symbolic::DecomposeQuadraticPolynomial(poly, map_var_to_index, &Q, &b,
+                                         &constant_term);
   return CreateBinding(make_shared<QuadraticCost>(Q, b, constant_term),
                        vars_vec);
 }
@@ -53,7 +49,7 @@ Binding<LinearCost> DoParseLinearCost(
     const unordered_map<Variable::Id, int>& map_var_to_index) {
   Eigen::RowVectorXd c(vars_vec.size());
   double constant_term{};
-  DecomposeLinearExpression(e, map_var_to_index, c, &constant_term);
+  symbolic::DecomposeAffineExpression(e, map_var_to_index, c, &constant_term);
   return CreateBinding(make_shared<LinearCost>(c.transpose(), constant_term),
                        vars_vec);
 }
@@ -61,13 +57,13 @@ Binding<LinearCost> DoParseLinearCost(
 }  // anonymous namespace
 
 Binding<LinearCost> ParseLinearCost(const Expression& e) {
-  auto p = ExtractVariablesFromExpression(e);
+  auto p = symbolic::ExtractVariablesFromExpression(e);
   return DoParseLinearCost(e, p.first, p.second);
 }
 
 Binding<QuadraticCost> ParseQuadraticCost(const Expression& e) {
   // First build an Eigen vector, that contains all the bound variables.
-  auto p = ExtractVariablesFromExpression(e);
+  auto p = symbolic::ExtractVariablesFromExpression(e);
   const auto& vars_vec = p.first;
   const auto& map_var_to_index = p.second;
 
@@ -108,7 +104,7 @@ Binding<Cost> ParseCost(const symbolic::Expression& e) {
   }
   const symbolic::Polynomial poly{e};
   const int total_degree{poly.TotalDegree()};
-  auto e_extracted = ExtractVariablesFromExpression(e);
+  auto e_extracted = symbolic::ExtractVariablesFromExpression(e);
   const VectorXDecisionVariable& vars_vec = e_extracted.first;
   const auto& map_var_to_index = e_extracted.second;
 

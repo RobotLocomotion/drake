@@ -270,13 +270,20 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
   double get_default_mass() const { return default_mass_; }
 
   /// (Advanced) Returns the mass of this body stored in `context`.
-  virtual T get_mass(
-      const systems::Context<T> &context)const = 0;
+  virtual const T& get_mass(
+      const systems::Context<T> &context) const = 0;
 
   /// (Advanced) Computes the center of mass `p_BoBcm_B` (or `p_Bcm` for short)
   /// of this body measured from this body's frame origin `Bo` and expressed in
   /// the body frame B.
   virtual const Vector3<T> CalcCenterOfMassInBodyFrame(
+      const systems::Context<T>& context) const = 0;
+
+  /// Calculates v_WBcm, Bcm's translational velocity in the world frame W.
+  /// @param[in] context The context contains the state of the model.
+  /// @retval v_WBcm_W Bcm's (`this` body's center of mass) translational
+  /// velocity in the world frame W, expressed in W.
+  virtual Vector3<T> CalcCenterOfMassTranslationalVelocityInWorld(
       const systems::Context<T>& context) const = 0;
 
   /// (Advanced) Computes the SpatialInertia `I_BBo_B` of `this` body about its
@@ -297,12 +304,27 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
     return this->get_parent_tree().EvalBodyPoseInWorld(context, *this);
   }
 
-  /// Returns the spatial velocity `V_WB` of this body B in the world frame W
-  /// as a function of the state of the model stored in `context`.
+  /// Evaluates V_WB, `this` body B's spatial velocity in the world frame W.
+  /// @param[in] context Contains the state of the model.
+  /// @retval V_WB_W `this` body B's spatial velocity in the world frame W,
+  /// expressed in W (for point Bo, the body frame's origin).
   const SpatialVelocity<T>& EvalSpatialVelocityInWorld(
       const systems::Context<T>& context) const {
     return this->get_parent_tree().EvalBodySpatialVelocityInWorld(
         context, *this);
+  }
+
+  /// Evaluates A_WB, `this` body B's spatial acceleration in the world frame W.
+  /// @param[in] context Contains the state of the model.
+  /// @retval A_WB_W `this` body B's spatial acceleration in the world frame W,
+  /// expressed in W (for point Bo, the body's origin).
+  /// @note When cached values are out of sync with the state stored in context,
+  /// this method performs an expensive forward dynamics computation, whereas
+  /// once evaluated, successive calls to this method are inexpensive.
+  const SpatialAcceleration<T>& EvalSpatialAccelerationInWorld(
+      const systems::Context<T>& context) const {
+    const MultibodyPlant<T>& parent_plant = this->GetParentPlant();
+    return parent_plant.EvalBodySpatialAccelerationInWorld(context, *this);
   }
 
   /// Gets the sptatial force on `this` body B from `forces` as F_BBo_W:

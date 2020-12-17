@@ -22,7 +22,7 @@ void WriteVtkHeader(std::ofstream& out, const std::string& title) {
   out << std::endl;
 }
 
-/**
+/*
  @tparam Mesh  VolumeMesh<double> or SurfaceMesh<double>
  */
 template <typename Mesh>
@@ -42,7 +42,7 @@ void WriteVtkUnstructuredGrid(std::ofstream& out, const Mesh& mesh) {
   const int num_elements = mesh.num_elements();
   // For a triangular mesh, we use 4 integers per triangle.
   // For a tetrahedral mesh, we use 5 integers per tetrahedron.
-  const int num_vertices_per_element = Mesh::kDim + 1;
+  const int num_vertices_per_element = Mesh::kVertexPerElement;
   const int num_integers = num_elements * (num_vertices_per_element + 1);
   out << "CELLS " << num_elements << " " << num_integers << std::endl;
   for (typename Mesh::ElementIndex i(0); i < num_elements; ++i) {
@@ -57,8 +57,9 @@ void WriteVtkUnstructuredGrid(std::ofstream& out, const Mesh& mesh) {
 
   const int kVtkCellTypeTriangle = 5;
   const int kVtkCellTypeTetrahedron = 10;
-  const int cell_type =
-      (Mesh::kDim == 2) ? kVtkCellTypeTriangle : kVtkCellTypeTetrahedron;
+  const int cell_type = (Mesh::kVertexPerElement == 3)
+                            ? kVtkCellTypeTriangle
+                            : kVtkCellTypeTetrahedron;
   out << "CELL_TYPES " << num_elements << std::endl;
   for (int i = 0; i < num_elements; ++i) {
     out << fmt::format("{}\n", cell_type);
@@ -66,7 +67,7 @@ void WriteVtkUnstructuredGrid(std::ofstream& out, const Mesh& mesh) {
   out << std::endl;
 }
 
-/**
+/*
  @tparam Mesh  VolumeMesh<double> or SurfaceMesh<double>
  */
 template<typename Mesh>
@@ -82,7 +83,7 @@ void WriteMeshToVtk(const std::string& file_name,
   file.close();
 }
 
-/**
+/*
  @tparam Field VolumeMeshFieldLinear<double, double> or
                SurfaceMeshFieldLinear<double, double>
  */
@@ -102,7 +103,7 @@ void WriteVtkScalarField(
   out << std::endl;
 }
 
-/**
+/*
  @tparam Field VolumeMeshFieldLinear<double, double> or
                SurfaceMeshFieldLinear<double, double>
  */

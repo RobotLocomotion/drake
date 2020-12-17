@@ -9,6 +9,22 @@
 
 namespace drake {
 namespace yaml {
+
+YamlReadArchive::YamlReadArchive(const YAML::Node& root)
+    : YamlReadArchive(root, Options{}) {}
+
+YamlReadArchive::YamlReadArchive(const YAML::Node& root, const Options& options)
+    : owned_root_(root),
+      root_(&owned_root_),
+      mapish_item_key_(nullptr),
+      mapish_item_value_(nullptr),
+      options_(options),
+      parent_(nullptr) {
+  // Reprocess the owned_root for merge keys only after all member fields are
+  // initialized; otherwise, the method might access invalid member data.
+  RewriteMergeKeys(const_cast<YAML::Node*>(&owned_root_));
+}
+
 namespace {
 
 // The source and destination are both of type Map.  Copy the key-value pairs
@@ -44,7 +60,7 @@ void YamlReadArchive::RewriteMergeKeys(YAML::Node* node) const {
       // Merge each Map in `merge_key` Sequence-of-Maps into the `node` Map.
       for (const YAML::Node& merge_key_item : merge_key) {
         if (merge_key_item.Type() != YAML::NodeType::Map) {
-          ReportMissingYaml(
+          ReportError(
               "has invalid merge key type (Sequence-of-non-Map) within");
         }
         CopyMergeKeys(merge_key_item, node);
@@ -52,11 +68,11 @@ void YamlReadArchive::RewriteMergeKeys(YAML::Node* node) const {
       return;
     }
     case YAML::NodeType::Scalar: {
-      ReportMissingYaml("has invalid merge key type (Scalar) within");
+      ReportError("has invalid merge key type (Scalar) within");
       return;
     }
     case YAML::NodeType::Null: {
-      ReportMissingYaml("has invalid merge key type (Null) within");
+      ReportError("has invalid merge key type (Null) within");
       return;
     }
     case YAML::NodeType::Undefined: {
@@ -82,7 +98,7 @@ YAML::Node YamlReadArchive::MaybeGetSubNode(const char* name) const {
     if (std::strcmp(mapish_item_key_, name) == 0) {
       return *mapish_item_value_;
     }
-    return {};
+    return YAML::Node(YAML::NodeType::Undefined);
   }
   DRAKE_DEMAND(root_ != nullptr);
   return (*root_)[name];
@@ -92,14 +108,17 @@ YAML::Node YamlReadArchive::GetSubNode(
     const char* name, YAML::NodeType::value expected_type) const {
   YAML::Node result = MaybeGetSubNode(name);
   if (!result) {
-    ReportMissingYaml("is missing");
-    return {};
+    if (!options_.allow_cpp_with_no_yaml) {
+      ReportError("is missing");
+    }
+    return result;
   }
   const auto& actual_type = result.Type();
   if (actual_type != expected_type) {
-    ReportMissingYaml(fmt::format(
+    ReportError(fmt::format(
         "has non-{} ({})", to_string(expected_type), to_string(actual_type)));
-    return {};
+    result = YAML::Node(YAML::NodeType::Undefined);
+    return result;
   }
   if (expected_type == YAML::NodeType::Map) {
     RewriteMergeKeys(&result);
@@ -107,7 +126,22 @@ YAML::Node YamlReadArchive::GetSubNode(
   return result;
 }
 
-void YamlReadArchive::ReportMissingYaml(const std::string& note) const {
+void YamlReadArchive::CheckAllAccepted() const {
+  DRAKE_DEMAND(mapish_item_key_ == nullptr);
+  DRAKE_DEMAND(root_->Type() == YAML::NodeType::Map);
+  if (options_.allow_yaml_with_no_cpp) {
+    return;
+  }
+  for (const auto& map_pair : *root_) {
+    const std::string& name = map_pair.first.as<std::string>();
+    if (visited_names_.count(name) == 0) {
+      ReportError(fmt::format(
+          "key {} did not match any visited value", name));
+    }
+  }
+}
+
+void YamlReadArchive::ReportError(const std::string& note) const {
   std::ostringstream e;  // A buffer for the error message text.
   this->PrintNodeSummary(e);
   fmt::print(e, " {} entry for ", note);
@@ -187,6 +221,15 @@ const char* YamlReadArchive::to_string(YAML::NodeType::value x) {
     case YAML::NodeType::Map: return "Map";
   }
   return "UNKNOWN";
+}
+
+std::ostream& operator<<(std::ostream& os, const YamlReadArchive::Options& x) {
+  return os << "{.allow_yaml_with_no_cpp = "
+            << x.allow_yaml_with_no_cpp
+            << ", .allow_cpp_with_no_yaml = "
+            << x.allow_cpp_with_no_yaml
+            << ", .retain_map_defaults = "
+            << x.retain_map_defaults << "}";
 }
 
 }  // namespace yaml

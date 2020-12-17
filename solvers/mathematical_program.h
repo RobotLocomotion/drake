@@ -11,6 +11,7 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
@@ -411,6 +412,34 @@ class MathematicalProgram {
       const std::string& coeff_name = "a");
 
   /**
+   * Returns a free polynomial that only contains even degree monomials. A
+   * monomial is even degree if its total degree (sum of all variables' degree)
+   * is even. For example, xy is an even degree monomial (degree 2) while x²y is
+   * not (degree 3).
+   * @param indeterminates The monomial basis is over these indeterminates.
+   * @param degree The highest degree of the polynomial.
+   * @param coeff_name The coefficients of the polynomial are decision variables
+   * with this name as a base. The variable name would be "a1", "a2", etc.
+   */
+  symbolic::Polynomial NewEvenDegreeFreePolynomial(
+      const symbolic::Variables& indeterminates, int degree,
+      const std::string& coeff_name = "a");
+
+  /**
+   * Returns a free polynomial that only contains odd degree monomials. A
+   * monomial is odd degree if its total degree (sum of all variables' degree)
+   * is even. For example, xy is not an odd degree monomial (degree 2) while x²y
+   * is (degree 3).
+   * @param indeterminates The monomial basis is over these indeterminates.
+   * @param degree The highest degree of the polynomial.
+   * @param coeff_name The coefficients of the polynomial are decision variables
+   * with this name as a base. The variable name would be "a1", "a2", etc.
+   */
+  symbolic::Polynomial NewOddDegreeFreePolynomial(
+      const symbolic::Variables& indeterminates, int degree,
+      const std::string& coeff_name = "a");
+
+  /**
    * Types of non-negative polynomial that can be found through conic
    * optimization. We currently support SOS, SDSOS and DSOS. For more
    * information about these polynomial types, please refer to
@@ -494,6 +523,79 @@ class MathematicalProgram {
    */
   std::pair<symbolic::Polynomial, MatrixXDecisionVariable> NewSosPolynomial(
       const symbolic::Variables& indeterminates, int degree);
+
+  /**
+   * @anchor even_degree_nonnegative_polynomial
+   * @name    Creating even-degree nonnegative polynomials
+   * Creates a nonnegative polynomial p = m(x)ᵀQm(x) of a given degree, and p
+   * only contains even-degree monomials. If we partition the monomials m(x) to
+   * odd degree monomials m_o(x) and even degree monomials m_e(x), then we
+   * can write p(x) as
+   * <pre>
+   * ⌈m_o(x)⌉ᵀ * ⌈Q_oo Q_oeᵀ⌉ * ⌈m_o(x)⌉
+   * ⌊m_e(x)⌋    ⌊Q_oe Q_ee ⌋   ⌊m_e(x)⌋
+   * </pre>
+   * Since p(x) doesn't contain any odd degree monomials, and p(x) contains
+   * terms m_e(x)ᵀ*Q_oe * m_o(x) which has odd degree, we know that the
+   * off-diagonal block Q_oe has to be zero. So the constraint that Q is psd
+   * can be simplified as Q_oo and Q_ee has to be psd. Since both Q_oo and
+   * Q_ee have smaller size than Q, these PSD constraints are easier to solve
+   * than requiring Q to be PSD.
+   * One use case for even-degree polynomial, is for polynomials that are even
+   * functions, namely p(x) = p(-x).
+   * @param indeterminates The set of indeterminates x
+   * @param degree The total degree of the polynomial p. @pre This must be an
+   * even number.
+   * @return (p(x), Q_oo, Q_ee). p(x) is the newly added non-negative
+   * polynomial. p(x) = m_o(x)ᵀ*Q_oo*m_o(x) + m_e(x)ᵀ*Q_ee*m_e(x) where m_o(x)
+   * and m_e(x) contain all the even/odd monomials of x respectively.
+   * The returned non-negative polynomial can be of different types, including
+   * Sum-of-squares (SOS), diagonally-dominant-sum-of-squares (dsos), and
+   * scaled-diagonally-dominant-sum-of-squares (sdsos).
+   */
+
+  //@{
+  /**
+   * See @ref even_degree_nonnegative_polynomial for more details.
+   * Variant that produces different non-negative polynomials depending on @p
+   * type.
+   * @param type The returned polynomial p(x) can be either SOS, SDSOS or DSOS,
+   * depending on @p type.
+   */
+  std::tuple<symbolic::Polynomial, MatrixXDecisionVariable,
+             MatrixXDecisionVariable>
+  NewEvenDegreeNonnegativePolynomial(const symbolic::Variables& indeterminates,
+                                     int degree, NonnegativePolynomial type);
+
+  /**
+   * See @ref even_degree_nonnegative_polynomial for more details.
+   * Variant that produces a SOS polynomial.
+   */
+  std::tuple<symbolic::Polynomial, MatrixXDecisionVariable,
+             MatrixXDecisionVariable>
+  NewEvenDegreeSosPolynomial(const symbolic::Variables& indeterminates,
+                             int degree);
+
+  /**
+   * see @ref even_degree_nonnegative_polynomial for details.
+   * Variant that produces an SDSOS polynomial.
+   */
+  std::tuple<symbolic::Polynomial, MatrixXDecisionVariable,
+             MatrixXDecisionVariable>
+  NewEvenDegreeSdsosPolynomial(const symbolic::Variables& indeterminates,
+                               int degree);
+
+  /**
+   * see @ref even_degree_nonnegative_polynomial for details.
+   * Variant that produces a DSOS polynomial.
+   * Same as NewEvenDegreeSosPolynomial, except the returned polynomial is
+   * diagonally dominant sum of squares (dsos).
+   */
+  std::tuple<symbolic::Polynomial, MatrixXDecisionVariable,
+             MatrixXDecisionVariable>
+  NewEvenDegreeDsosPolynomial(const symbolic::Variables& indeterminates,
+                              int degree);
+  //@}
 
   /**
    * Creates a symbolic polynomial from the given expression `e`. It uses this
@@ -1417,8 +1519,6 @@ class MathematicalProgram {
    * @param b A vector of doubles.
    * @return The newly added linear equality constraint, together with the
    * bound variables.
-   *
-   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   template <typename DerivedV, typename DerivedB>
   typename std::enable_if<
@@ -1711,6 +1811,15 @@ class MathematicalProgram {
    * \f]
    * @return The newly constructed Lorentz cone constraint with the bounded
    * variables.
+   * For example, to add the Lorentz cone constraint
+   *
+   *     x+1 >= sqrt(y² + 2y + x² + 5),
+   *          = sqrt((y+1)²+x²+2²)
+   * The user could call
+   * @code{cc}
+   * Vector4<symbolic::Expression> v(x+1, y+1, x, 2.);
+   * prog.AddLorentzConeConstraint(v);
+   * @endcode
    */
   Binding<LorentzConeConstraint> AddLorentzConeConstraint(
       const Eigen::Ref<const VectorX<symbolic::Expression>>& v);
@@ -1743,8 +1852,13 @@ class MathematicalProgram {
    *  y = R * x + d
    * </pre>
    * while (R, d) satisfies y'*y = x'*Q*x + b'*x + a
+   * For example, to add the Lorentz cone constraint
    *
-   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
+   *     x+1 >= sqrt(y² + 2y + x² + 4),
+   * the user could call
+   * @code{cc}
+   * prog.AddLorentzConeConstraint(x+1, pow(y, 2) + 2 * y + pow(x, 2) + 4);
+   * @endcode
    */
   Binding<LorentzConeConstraint> AddLorentzConeConstraint(
       const symbolic::Expression& linear_expression,
@@ -1794,7 +1908,18 @@ class MathematicalProgram {
    * @param vars The Eigen vector of @f$ m @f$ decision variables.
    * @return The newly added Lorentz cone constraint.
    *
-   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
+   * For example, to add the Lorentz cone constraint
+   *
+   *     x+1 >= sqrt(y² + 2y + x² + 5) = sqrt((y+1)² + x² + 2²),
+   * the user could call
+   * @code{cc}
+   * Eigen::Matrix<double, 4, 2> A;
+   * Eigen::Vector4d b;
+   * A << 1, 0, 0, 1, 1, 0, 0, 0;
+   * b << 1, 1, 0, 2;
+   * // A * [x;y] + b = [x+1; y+1; x; 2]
+   * prog.AddLorentzConeConstraint(A, b, Vector2<symbolic::Variable>(x, y));
+   * @endcode
    */
   Binding<LorentzConeConstraint> AddLorentzConeConstraint(
       const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -1883,6 +2008,17 @@ class MathematicalProgram {
    *    positive semidefinite matrix, and the quadratic expression needs
    *    to be non-negative for any x.
    * @throws std::runtime_error if the preconditions are not satisfied.
+   *
+   * For example, to add the rotated Lorentz cone constraint
+   *
+   *     (x+1)(x+y) >= x²+z²+2z+5
+   *     x+1 >= 0
+   *     x+y >= 0
+   * The user could call
+   * @code{cc}
+   * prog.AddRotatedLorentzConeConstraint(x+1, x+y, pow(x, 2) + pow(z, 2) +
+   * 2*z+5);
+   * @endcode
    */
   Binding<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
       const symbolic::Expression& linear_expression1,
@@ -1901,6 +2037,18 @@ class MathematicalProgram {
    * decision variables.
    * @retval binding The newly added rotated Lorentz cone constraint, together
    * with the bound variables.
+   *
+   * For example, to add the rotated Lorentz cone constraint
+   *
+   *     (x+1)(x+y) >= x²+z²+2z+5 = x² + (z+1)² + 2²
+   *     x+1 >= 0
+   *     x+y >= 0
+   * The user could call
+   * @code{cc}
+   * Eigen::Matrix<symbolic::Expression, 5, 1> v;
+   * v << x+1, x+y, x, z+1, 2;
+   * prog.AddRotatedLorentzConeConstraint(v);
+   * @endcode
    */
   Binding<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
       const Eigen::Ref<const VectorX<symbolic::Expression>>& v);
@@ -2088,6 +2236,20 @@ class MathematicalProgram {
    *      }
    * @return The newly added positive semidefinite constraint, with the bound
    * variable M that are also newly added.
+   *
+   * For example, to add a constraint that
+   *
+   *     ⌈x + 1  2x + 3 x+y⌉
+   *     |2x+ 3       2   0| is positive semidefinite
+   *     ⌊x + y       0   x⌋
+   * The user could call
+   * @code{cc}
+   * Matrix3<symbolic::Expression> e
+   * e << x+1, 2*x+3, x+y,
+   *      2*x+3,   2,   0,
+   *      x+y,     0,   x;
+   * prog.AddPositiveSemidefiniteConstraint(e);
+   * @endcode
    */
   template <typename Derived>
   typename std::enable_if<
@@ -3071,7 +3233,7 @@ class MathematicalProgram {
   Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const std::set<symbolic::Formula>& formulas);
 
-  /**
+  /*
    * Adds new variables to MathematicalProgram.
    */
   template <int Rows, int Cols>
@@ -3085,7 +3247,7 @@ class MathematicalProgram {
     return decision_variable_matrix;
   }
 
-  /**
+  /*
    * Adds symmetric matrix variables to optimization program. Only the lower
    * triangular part of the matrix is used as decision variables.
    * @param names The names of the stacked columns of the lower triangular part
@@ -3099,6 +3261,15 @@ class MathematicalProgram {
     NewVariables_impl(type, names, true, decision_variable_matrix);
     return decision_variable_matrix;
   }
+
+  /*
+   * Create a new free polynomial, and add its coefficients as decision
+   * variables.
+   */
+  symbolic::Polynomial NewFreePolynomialImpl(
+      const symbolic::Variables& indeterminates, int degree,
+      const std::string& coeff_name,
+      symbolic::internal::DegreeType degree_type);
 
   std::unordered_map<int, double> var_scaling_map_{};
 };

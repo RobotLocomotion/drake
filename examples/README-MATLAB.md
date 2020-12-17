@@ -15,22 +15,20 @@ framework:
 
  - Airplane2D
  - CartPole
- - CompassGait
  - DubinsCar
  - FurutaPendulum
  - Glider
  - HolonomicDrive
  - Hubo
+ - IRB140
  - KneedCompassGait
  - Manipulator2D
  - PlanarMonopodHopper
  - PlanarNLink
  - Quadrotor2D
- - RimlessWheel
  - SimpleDoublePendulum
  - SimplePulleys
  - SpringLoadedInvertedPendulum
- - Strandbeest
  - TwoWheeledInvertedPendulum
  - UnderwaterAcrobot
  - Wingeron

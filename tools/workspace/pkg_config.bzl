@@ -112,10 +112,10 @@ def setup_pkg_config_repository(repository_ctx):
                         linkopts[i] = linkopt
                         break
 
-        # Add `-Wl,-rpath <path>` for `-L<path>`.
+        # Add `-Wl,-rpath,<path>` for `-L<path>`.
         # See https://github.com/RobotLocomotion/drake/issues/7387#issuecomment-359952616  # noqa
         if linkopt.startswith("-L"):
-            linkopts.insert(i, "-Wl,-rpath " + linkopt[2:])
+            linkopts.insert(i, "-Wl,-rpath," + linkopt[2:])
             continue
 
         # Switches stay put.
@@ -144,10 +144,24 @@ def setup_pkg_config_repository(repository_ctx):
     defines = []
     unknown_cflags = []
 
+    # Blacklist various system include paths on macOS.
+    blacklisted_includes = [
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include",  # noqa
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk/usr/include",  # noqa
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.0.sdk/usr/include",  # noqa
+        "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include",  # noqa
+        "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include",
+        "/Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk/usr/include",
+        "/Library/Developer/CommandLineTools/SDKs/MacOSX11.0.sdk/usr/include",
+        "/Library/Developer/CommandLineTools/usr/include",
+    ]
+
     # We process in reserve order to keep our loop index unchanged by a pop.
     for cflag in cflags:
         if cflag.startswith("-I"):
             value = cflag[2:]
+            if value in blacklisted_includes:
+                continue
             if value not in absolute_includes:
                 absolute_includes.append(value)
         elif cflag.startswith("-D"):

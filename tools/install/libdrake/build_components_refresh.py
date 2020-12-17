@@ -84,8 +84,8 @@ kind("cc_library", visible("//tools/install/libdrake:libdrake.so", "//..."))
     commented_indirects = ["# {} (indirectly)".format(x) for x in indirects]
     # Sort the result for consistency.
     return (
-        sorted(package_libs + misc_libs, key=_label_sort_key) +
-        sorted(commented_indirects, key=_label_sort_key))
+        sorted(package_libs + misc_libs, key=_label_sort_key)
+        + sorted(commented_indirects, key=_label_sort_key))
 
 
 def main():

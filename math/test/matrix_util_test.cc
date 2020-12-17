@@ -76,6 +76,8 @@ GTEST_TEST(TestMatrixUtil, IsPositiveDefiniteTest) {
   // However A is not symmetric, thus not PSD
   A << 3, 2, 1, 2, 3, 1, 1, 2, 3;
   EXPECT_FALSE(IsPositiveDefinite(A, 1e-8));
+  // But if the tolerance for symmetry testing is absurd, then it passes:
+  EXPECT_TRUE(IsPositiveDefinite(A, 1e-8, 5.));
 
   // Generate a PSD matrix.
   EXPECT_FALSE(IsPositiveDefinite(

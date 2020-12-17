@@ -26,30 +26,6 @@ namespace drake {
 namespace solvers {
 namespace internal {
 /**
- * For the following problem
- *
- *     max tr(C * X) + dᵀs
- *     s.t tr(Aᵢ*X) + bᵢᵀs = aᵢ
- *         X ≽ 0
- *         s is free,
- *
- * remove the free variable s by considering the nullspace of Bᵀ.
- *
- *     max tr((C-∑ᵢ ŷᵢAᵢ)*X̂) + aᵀŷ
- *     s.t tr(FᵢX̂) = (Nᵀa)(i)
- *         X̂ ≽ 0,
- * where Fᵢ  = ∑ⱼ NⱼᵢAⱼ, N is the null space of Bᵀ. Bᵀ * ŷ = d.
- * For more information, refer to CsdpSolver::RemoveFreeVariableMethod for the
- * derivation.
- */
-void RemoveFreeVariableByNullspaceApproach(
-    const SdpaFreeFormat& sdpa_free_format, Eigen::SparseMatrix<double>* C_hat,
-    std::vector<Eigen::SparseMatrix<double>>* A_hat, Eigen::VectorXd* rhs_hat,
-    Eigen::VectorXd* y_hat,
-    Eigen::SparseQR<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>*
-        QR_B);
-
-/**
  * For a problem
  * max tr(C * X)
  * s.t tr(Ai * X) = rhs_i

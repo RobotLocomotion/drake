@@ -18,7 +18,13 @@ namespace systems {
 /// vector of zeros for vector-valued or a given value for abstract-valued
 /// until the delay time has passed.
 ///
-/// @system{DiscreteTimeDelay, @input_port{u}, @output_port{delayed_u}}
+/// @system
+/// name: DiscreteTimeDelay
+/// input_ports:
+/// - u
+/// output_ports:
+/// - delayed_u
+/// @endsystem
 ///
 /// Let t,z ∈ ℕ be the number of delay time steps and the input vector size.
 /// For abstract-valued %DiscreteTimeDelay, z is 1.
@@ -67,16 +73,6 @@ class DiscreteTimeDelay final : public LeafSystem<T> {
   explicit DiscreteTimeDelay(const DiscreteTimeDelay<U>& other);
 
   ~DiscreteTimeDelay() final = default;
-
-  /// Returns the sole input port.
-  const InputPort<T>& get_input_port() const {
-    return LeafSystem<T>::get_input_port(0);
-  }
-
-  /// Returns the sole output port.
-  const OutputPort<T>& get_output_port() const {
-    return LeafSystem<T>::get_output_port(0);
-  }
 
   /// (Advanced) Manually samples the input port and updates the state of the
   /// block, sliding the delay buffer forward and placing the sampled input at

@@ -3,7 +3,6 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -35,54 +34,64 @@ PYBIND11_MODULE(trajectory_optimization, m) {
       // TODO(eric.cousineau): The original bindings returned references
       // instead of copies using VectorXBlock. Restore this once dtype=custom
       // is resolved.
-      .def("state",
+      .def(
+          "state",
           [](const MultipleShooting& self) -> VectorXDecisionVariable {
             return self.state();
           },
           doc.MultipleShooting.state.doc_0args)
-      .def("state",
+      .def(
+          "state",
           [](const MultipleShooting& self, int index)
               -> VectorXDecisionVariable { return self.state(index); },
           py::arg("index"), doc.MultipleShooting.state.doc_1args)
-      .def("initial_state",
+      .def(
+          "initial_state",
           [](const MultipleShooting& self) -> VectorXDecisionVariable {
             return self.initial_state();
           },
           doc.MultipleShooting.initial_state.doc)
-      .def("final_state",
+      .def(
+          "final_state",
           [](const MultipleShooting& self) -> VectorXDecisionVariable {
             return self.final_state();
           },
           doc.MultipleShooting.final_state.doc)
-      .def("input",
+      .def(
+          "input",
           [](const MultipleShooting& self) -> VectorXDecisionVariable {
             return self.input();
           },
           doc.MultipleShooting.input.doc_0args)
-      .def("input",
+      .def(
+          "input",
           [](const MultipleShooting& self, int index)
               -> VectorXDecisionVariable { return self.input(index); },
           py::arg("index"), doc.MultipleShooting.input.doc_1args)
-      .def("NewSequentialVariable",
+      .def(
+          "NewSequentialVariable",
           [](MultipleShooting& self, int rows,
               const std::string& name) -> VectorXDecisionVariable {
             return self.NewSequentialVariable(rows, name);
           },
           py::arg("rows"), py::arg("name"),
           doc.MultipleShooting.NewSequentialVariable.doc)
-      .def("GetSequentialVariableAtIndex",
+      .def(
+          "GetSequentialVariableAtIndex",
           [](const MultipleShooting& self, const std::string& name,
               int index) -> VectorXDecisionVariable {
             return self.GetSequentialVariableAtIndex(name, index);
           },
           py::arg("name"), py::arg("index"),
           doc.MultipleShooting.GetSequentialVariableAtIndex.doc)
-      .def("AddRunningCost",
+      .def(
+          "AddRunningCost",
           [](MultipleShooting& prog, const symbolic::Expression& g) {
             prog.AddRunningCost(g);
           },
           py::arg("g"), doc.MultipleShooting.AddRunningCost.doc_1args_g)
-      .def("AddRunningCost",
+      .def(
+          "AddRunningCost",
           [](MultipleShooting& prog,
               const Eigen::Ref<const MatrixX<symbolic::Expression>>& g) {
             prog.AddRunningCost(g);

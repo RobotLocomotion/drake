@@ -1,8 +1,9 @@
-<sdf version='1.6'>
-  <model name='robot1'>
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="robot1">
     <link name="need_at_least_one_link"/>
   </model>
-  <model name='robot2'>
+  <model name="robot2">
     <link name="need_at_least_one_link"/>
   </model>
 </sdf>

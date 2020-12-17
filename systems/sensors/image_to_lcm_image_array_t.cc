@@ -4,9 +4,9 @@
 #include <string>
 #include <vector>
 
-#include <zlib.h>
 #include "robotlocomotion/image_array_t.hpp"
 #include "robotlocomotion/image_t.hpp"
+#include <zlib.h>
 
 #include "drake/systems/sensors/lcm_image_traits.h"
 

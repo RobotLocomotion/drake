@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
+#include "drake/systems/analysis/test_utilities/spring_mass_system.h"
 
 using Eigen::VectorXd;
 
@@ -22,6 +22,11 @@ class DummyImplicitIntegrator final : public ImplicitIntegrator<double> {
   int get_error_estimate_order() const override { return 0; }
 
   using ImplicitIntegrator<double>::IsUpdateZero;
+
+  // Returns whether DoResetCachedMatrices() has been called.
+  bool get_has_reset_cached_matrices() {
+    return has_reset_cached_matrices_;
+  }
 
  private:
   // There is no stepping so no stats should accumulate.
@@ -44,12 +49,18 @@ class DummyImplicitIntegrator final : public ImplicitIntegrator<double> {
     return 0;
   }
 
+  void DoResetCachedJacobianRelatedMatrices() final {
+    has_reset_cached_matrices_ = true;
+  }
+
   bool DoImplicitIntegratorStep(const double& h) override {
     throw std::logic_error("Dummy integrator not meant to be stepped.");
   }
+
+  bool has_reset_cached_matrices_{false};
 };
 
-GTEST_TEST(ImplicitIntegratortest, IsUpdateZero) {
+GTEST_TEST(ImplicitIntegratorTest, IsUpdateZero) {
   const double mass = 1.0;
   const double spring_k = 1.0;
   SpringMassSystem<double> dummy_system(spring_k, mass, false /* unforced */);
@@ -93,6 +104,37 @@ GTEST_TEST(ImplicitIntegratortest, IsUpdateZero) {
   EXPECT_FALSE(dummy_integrator.IsUpdateZero(xc, dxc, 0.0));
 }
 
+// This test verifies that if we change the Jacobian computation scheme from
+// the default scheme (kForwardDifference), then ImplicitIntegrator calls
+// DoResetCachedMatrices() to reset any cached matrices.
+GTEST_TEST(ImplicitIntegratorTest, SetComputationSchemeResetsCachedMatrices) {
+  const double mass = 1.0;
+  const double spring_k = 1.0;
+  SpringMassSystem<double> dummy_system(spring_k, mass, false /* unforced */);
+  std::unique_ptr<Context<double>> context =
+      dummy_system.CreateDefaultContext();
+  DummyImplicitIntegrator dummy_integrator(dummy_system, context.get());
+
+  // The default scheme should be kForwardDifference.
+  EXPECT_EQ(dummy_integrator.get_jacobian_computation_scheme(),
+            ImplicitIntegrator<double>
+            ::JacobianComputationScheme::kForwardDifference);
+
+  // Verify that DoResetCachedMatrices() has not been called yet.
+  EXPECT_FALSE(dummy_integrator.get_has_reset_cached_matrices());
+
+  // Set the scheme to something other than kForwardDifference.
+  dummy_integrator.set_jacobian_computation_scheme(
+      ImplicitIntegrator<double>::JacobianComputationScheme::kAutomatic);
+
+  // Verify that DoResetCachedMatrices() has been called.
+  EXPECT_TRUE(dummy_integrator.get_has_reset_cached_matrices());
+
+  // Verify that the scheme has been properly changed.
+  EXPECT_EQ(dummy_integrator.get_jacobian_computation_scheme(),
+            ImplicitIntegrator<double>
+            ::JacobianComputationScheme::kAutomatic);
+}
 }  // namespace
 }  // namespace systems
 }  // namespace drake

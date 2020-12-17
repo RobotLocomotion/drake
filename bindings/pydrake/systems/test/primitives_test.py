@@ -6,10 +6,10 @@ from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import RandomDistribution, RandomGenerator
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.common.value import AbstractValue
 from pydrake.symbolic import Expression, Variable
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (
-    AbstractValue,
     BasicVector,
     DiagramBuilder,
     VectorBase,
@@ -47,6 +47,7 @@ from pydrake.systems.primitives import (
     StateInterpolatorWithDiscreteDerivative,
     StateInterpolatorWithDiscreteDerivative_,
     SymbolicVectorSystem, SymbolicVectorSystem_,
+    TrajectoryAffineSystem, TrajectoryAffineSystem_,
     TrajectorySource,
     WrapToSystem, WrapToSystem_,
     ZeroOrderHold, ZeroOrderHold_,
@@ -91,6 +92,8 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(Sine_)
         self._check_instantiations(StateInterpolatorWithDiscreteDerivative_)
         self._check_instantiations(SymbolicVectorSystem_)
+        self._check_instantiations(TrajectoryAffineSystem_,
+                                   supports_symbolic=False)
         self._check_instantiations(WrapToSystem_)
         self._check_instantiations(ZeroOrderHold_)
 
@@ -223,6 +226,42 @@ class TestGeneral(unittest.TestCase):
         system = MatrixGain(D=A)
         self.assertTrue((system.D() == A).all())
 
+        system = TrajectoryAffineSystem(
+            PiecewisePolynomial(A),
+            PiecewisePolynomial(B),
+            PiecewisePolynomial(f0),
+            PiecewisePolynomial(C),
+            PiecewisePolynomial(D),
+            PiecewisePolynomial(y0),
+            .1)
+        self.assertEqual(system.get_input_port(0), system.get_input_port())
+        self.assertEqual(system.get_output_port(0), system.get_output_port())
+        context = system.CreateDefaultContext()
+        self.assertEqual(system.get_input_port(0).size(), 1)
+        self.assertEqual(context.get_discrete_state_vector().size(), 2)
+        self.assertEqual(system.get_output_port(0).size(), 1)
+        for t in np.linspace(0., 1., 5):
+            self.assertTrue((system.A(t) == A).all())
+            self.assertTrue((system.B(t) == B).all())
+            self.assertTrue((system.f0(t) == f0).all())
+            self.assertTrue((system.C(t) == C).all())
+            self.assertEqual(system.D(t), D)
+            self.assertEqual(system.y0(t), y0)
+        self.assertEqual(system.time_period(), .1)
+        x0 = np.array([1, 2])
+        system.configure_default_state(x0=x0)
+        system.SetDefaultContext(context)
+        np.testing.assert_equal(
+            context.get_discrete_state_vector().CopyToVector(), x0)
+        generator = RandomGenerator()
+        system.SetRandomContext(context, generator)
+        np.testing.assert_equal(
+            context.get_discrete_state_vector().CopyToVector(), x0)
+        system.configure_random_state(covariance=np.eye(2))
+        system.SetRandomContext(context, generator)
+        self.assertNotEqual(
+            context.get_discrete_state_vector().CopyToVector()[1], x0[1])
+
     def test_linear_system_zero_size(self):
         # Explicitly test #12633.
         num_x = 0
@@ -236,7 +275,7 @@ class TestGeneral(unittest.TestCase):
 
     def test_vector_pass_through(self):
         model_value = BasicVector([1., 2, 3])
-        system = PassThrough(model_value.size())
+        system = PassThrough(vector_size=model_value.size())
         context = system.CreateDefaultContext()
         system.get_input_port(0).FixValue(context, model_value)
         output = system.AllocateOutput()
@@ -246,9 +285,16 @@ class TestGeneral(unittest.TestCase):
         output_value = output.get_vector_data(0)
         compare_value(self, output_value, model_value)
 
+    def test_default_vector_pass_through(self):
+        model_value = [1., 2, 3]
+        system = PassThrough(value=model_value)
+        context = system.CreateDefaultContext()
+        np.testing.assert_array_equal(
+            model_value, system.get_output_port().Eval(context))
+
     def test_abstract_pass_through(self):
         model_value = AbstractValue.Make("Hello world")
-        system = PassThrough(model_value)
+        system = PassThrough(abstract_model_value=model_value)
         context = system.CreateDefaultContext()
         system.get_input_port(0).FixValue(context, model_value)
         output = system.AllocateOutput()
@@ -526,25 +572,41 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(discrete_derivative.get_input_port(0).size(), 5)
         self.assertEqual(discrete_derivative.get_output_port(0).size(), 5)
         self.assertEqual(discrete_derivative.time_step(), 0.5)
+        self.assertFalse(discrete_derivative.suppress_initial_transient())
+
+        discrete_derivative = DiscreteDerivative(
+            num_inputs=5, time_step=0.5, suppress_initial_transient=True)
+        self.assertTrue(discrete_derivative.suppress_initial_transient())
 
     def test_state_interpolator_with_discrete_derivative(self):
         state_interpolator = StateInterpolatorWithDiscreteDerivative(
             num_positions=5, time_step=0.4)
         self.assertEqual(state_interpolator.get_input_port(0).size(), 5)
         self.assertEqual(state_interpolator.get_output_port(0).size(), 10)
+        self.assertFalse(state_interpolator.suppress_initial_transient())
 
         # test set_initial_position using context
         context = state_interpolator.CreateDefaultContext()
         state_interpolator.set_initial_position(
             context=context, position=5*[1.1])
         np.testing.assert_array_equal(
-            context.get_discrete_state_vector().CopyToVector(),
-            np.array(10*[1.1]))
+            context.get_discrete_state(0).CopyToVector(),
+            np.array(5*[1.1]))
+        np.testing.assert_array_equal(
+            context.get_discrete_state(1).CopyToVector(),
+            np.array(5*[1.1]))
 
         # test set_initial_position using state
         context = state_interpolator.CreateDefaultContext()
         state_interpolator.set_initial_position(
             state=context.get_state(), position=5*[1.3])
         np.testing.assert_array_equal(
-            context.get_discrete_state_vector().CopyToVector(),
-            np.array(10*[1.3]))
+            context.get_discrete_state(0).CopyToVector(),
+            np.array(5*[1.3]))
+        np.testing.assert_array_equal(
+            context.get_discrete_state(1).CopyToVector(),
+            np.array(5*[1.3]))
+
+        state_interpolator = StateInterpolatorWithDiscreteDerivative(
+            num_positions=5, time_step=0.4, suppress_initial_transient=True)
+        self.assertTrue(state_interpolator.suppress_initial_transient())

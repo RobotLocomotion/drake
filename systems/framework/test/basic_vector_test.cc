@@ -10,6 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
 
 namespace drake {
@@ -37,6 +38,20 @@ GTEST_TEST(BasicVectorTest, InitializerList) {
   const BasicVector<AutoDiffXd> autodiff{22.0};
   ASSERT_EQ(1, autodiff.size());
   EXPECT_EQ(22.0, autodiff[0].value());
+}
+
+GTEST_TEST(BasicVectorTest, Access) {
+  const BasicVector<double> pair{1.0, 2.0};
+  EXPECT_EQ(1.0, pair.GetAtIndex(0));
+  EXPECT_EQ(2.0, pair.GetAtIndex(1));
+}
+
+GTEST_TEST(BasicVectorTest, OutOfRange) {
+  BasicVector<double> pair{1.0, 2.0};
+  EXPECT_THROW(pair.GetAtIndex(-1), std::exception);
+  EXPECT_THROW(pair.GetAtIndex(10), std::exception);
+  EXPECT_THROW(pair.SetAtIndex(-1, 0.0), std::exception);
+  EXPECT_THROW(pair.SetAtIndex(10, 0.0), std::exception);
 }
 
 // Tests SetZero functionality.
@@ -114,18 +129,39 @@ GTEST_TEST(BasicVectorTest, ArrayOperator) {
   Eigen::Vector2d expected;
   expected << 76, 42;
   EXPECT_EQ(expected, vec.get_value());
-  EXPECT_EQ(76, vec[0]);
-  EXPECT_EQ(42, vec[1]);
+
+  const auto& const_vec = vec;
+  EXPECT_EQ(76, const_vec[0]);
+  EXPECT_EQ(42, const_vec[1]);
 }
 
 // Tests that the BasicVector can be set from another vector.
 GTEST_TEST(BasicVectorTest, SetWholeVector) {
   BasicVector<double> vec(2);
   vec.get_mutable_value() << 1, 2;
+
   Eigen::Vector2d next_value;
   next_value << 3, 4;
   vec.set_value(next_value);
   EXPECT_EQ(next_value, vec.get_value());
+
+  Eigen::Vector2d another_value;
+  another_value << 5, 6;
+  vec.SetFromVector(another_value);
+  EXPECT_EQ(another_value, vec.get_value());
+
+  EXPECT_THROW(vec.SetFromVector(Eigen::Vector3d::Zero()), std::exception);
+}
+
+// Tests that the BasicVector can be set from another vector base.
+GTEST_TEST(BasicVectorTest, SetFrom) {
+  BasicVector<double> vec(2);
+  vec.get_mutable_value() << 1, 2;
+  BasicVector<double> next_vec(2);
+  next_vec.get_mutable_value() << 3, 4;
+  vec.SetFrom(next_vec);
+  EXPECT_EQ(next_vec.get_value(), vec.get_value());
+  EXPECT_THROW(vec.SetFrom(BasicVector<double>(3)), std::exception);
 }
 
 // Tests that when BasicVector is cloned, its data is preserved.
@@ -146,7 +182,7 @@ GTEST_TEST(BasicVectorTest, ReinitializeInvalid) {
   BasicVector<double> vec(2);
   Eigen::Vector3d next_value;
   next_value << 3, 4, 5;
-  EXPECT_THROW(vec.set_value(next_value), std::out_of_range);
+  EXPECT_THROW(vec.set_value(next_value), std::exception);
 }
 
 // Tests all += * operations for BasicVector.
@@ -189,21 +225,34 @@ GTEST_TEST(BasicVectorTest, PlusEqScaled) {
   EXPECT_EQ(ans5, ogvec.get_value());
 }
 
+template <typename T>
+class TypedBasicVectorTest : public ::testing::Test {};
+
+using DefaultScalars =
+    ::testing::Types<double, AutoDiffXd, symbolic::Expression>;
+TYPED_TEST_SUITE(TypedBasicVectorTest, DefaultScalars);
+
 // Tests ability to stream a BasicVector into a string.
-GTEST_TEST(BasicVectorTest, StringStream) {
-  BasicVector<double> vec(3);
+TYPED_TEST(TypedBasicVectorTest, StringStream) {
+  using T = TypeParam;
+  BasicVector<T> vec(3);
   vec.get_mutable_value() << 1.0, 2.2, 3.3;
   std::stringstream s;
   s << "hello " << vec << " world";
-  EXPECT_EQ(s.str(), "hello [1, 2.2, 3.3] world");
+  std::stringstream s_expected;
+  s_expected << "hello " << vec.get_value().transpose() << " world";
+  EXPECT_EQ(s.str(), s_expected.str());
 }
 
 // Tests ability to stream a BasicVector of size zero into a string.
-GTEST_TEST(BasicVectorTest, ZeroLengthStringStream) {
-  BasicVector<double> vec(0);
+TYPED_TEST(TypedBasicVectorTest, ZeroLengthStringStream) {
+  using T = TypeParam;
+  BasicVector<T> vec(0);
   std::stringstream s;
-  s << "foo " << vec << " bar";
-  EXPECT_EQ(s.str(), "foo [] bar");
+  s << "foo [" << vec << "] bar";
+  std::stringstream s_expected;
+  s_expected << "foo [" << vec.get_value().transpose() << "] bar";
+  EXPECT_EQ(s.str(), s_expected.str());
 }
 
 // Tests the default set of bounds (empty).
@@ -236,6 +285,22 @@ GTEST_TEST(BasicVectorTest, ValuesAccess) {
   const auto& const_dut = dut;
   EXPECT_EQ(&dut.values(), &const_dut.values());
   EXPECT_EQ(const_dut.values()[0], 33.0);
+}
+
+// Tests for reasonable exception message text; because the formatting is
+// reused from VectorBase, this effectively tests the formatting for all
+// subclasses of VectorBase.
+GTEST_TEST(BasicVectorTest, ExceptionMessages) {
+  BasicVector<double> pair{1.0, 2.0};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      pair.GetAtIndex(-1), std::exception,
+      "Index -1 is not within \\[0, 2\\) while accessing .*BasicVector.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      pair.GetAtIndex(10), std::exception,
+      "Index 10 is not within \\[0, 2\\) while accessing .*BasicVector.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      pair.SetFromVector(Eigen::Vector3d::Zero()), std::exception,
+      "Operand vector size 3 does not match this .*BasicVector.* size 2");
 }
 
 }  // namespace

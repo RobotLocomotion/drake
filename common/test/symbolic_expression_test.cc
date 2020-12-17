@@ -542,61 +542,6 @@ TEST_F(SymbolicExpressionTest, IsPolynomial) {
   EXPECT_FALSE(sqrt(pow(x_, 2)).is_polynomial());
 }
 
-// TODO(soonho-tri): Remove the following tests on or after 2020-07-01 when we
-// remove Expression::ToPolynomial.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-TEST_F(SymbolicExpressionTest, ToPolynomial1) {
-  Environment env{{var_x_, 1.0}, {var_y_, 2.0}, {var_z_, 3.0}};
-  const map<Polynomiald::VarType, double> eval_point{
-      {var_x_.get_id(), env[var_x_]},
-      {var_y_.get_id(), env[var_y_]},
-      {var_z_.get_id(), env[var_z_]}};
-
-  const Expression e0{42.0};
-  const Expression e1{pow(x_, 2)};
-  const Expression e2{3 + x_ + y_ + z_};
-  const Expression e3{1 + pow(x_, 2) + pow(y_, 2)};
-  const Expression e4{pow(x_, 2) * pow(y_, 2)};
-  const Expression e5{pow(x_ + y_ + z_, 3)};
-  const Expression e6{pow(x_ + y_ + z_, 3) / 10};
-  const Expression e7{-pow(y_, 3)};
-  const Expression e8{pow(pow(x_, 3), 1.0 / 3)};
-
-  EXPECT_NEAR(e0.Evaluate(env),
-              e0.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
-  EXPECT_NEAR(e1.Evaluate(env),
-              e1.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
-  EXPECT_NEAR(e2.Evaluate(env),
-              e2.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
-  EXPECT_NEAR(e3.Evaluate(env),
-              e3.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
-  EXPECT_NEAR(e4.Evaluate(env),
-              e4.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
-  EXPECT_NEAR(e5.Evaluate(env),
-              e5.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
-  EXPECT_NEAR(e6.Evaluate(env),
-              e6.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
-  EXPECT_NEAR(e7.Evaluate(env),
-              e7.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
-  EXPECT_NEAR(e8.Evaluate(env),
-              e8.ToPolynomial().EvaluateMultivariate(eval_point), 1e-8);
-}
-
-TEST_F(SymbolicExpressionTest, ToPolynomial2) {
-  const vector<Expression> test_vec{
-      e_log_,   e_abs_,  e_exp_,   e_sqrt_, e_sin_,
-      e_cos_,   e_tan_,  e_asin_,  e_acos_, e_atan_,
-      e_atan2_, e_sinh_, e_cosh_,  e_tanh_, e_min_,
-      e_max_,   e_ceil_, e_floor_, e_ite_,  Expression::NaN(),
-      e_uf_};
-  for (const Expression& e : test_vec) {
-    EXPECT_FALSE(e.is_polynomial());
-    EXPECT_THROW(e.ToPolynomial(), runtime_error);
-  }
-}
-#pragma GCC diagnostic pop
-
 TEST_F(SymbolicExpressionTest, LessKind) {
   CheckOrdering({e_constant_, e_var_,  e_add_,  e_neg_,  e_mul_,  e_div_,
                  e_log_,      e_abs_,  e_exp_,  e_sqrt_, e_pow_,  e_sin_,
@@ -1827,14 +1772,14 @@ TEST_F(SymbolicExpressionTest,
   EXPECT_PRED2(ExprEqual, arguments[1], the_arguments[1]);
 }
 
-TEST_F(SymbolicExpressionTest, UninterpretedFunction_Evaluate) {
+TEST_F(SymbolicExpressionTest, UninterpretedFunctionEvaluate) {
   const Expression uf1{uninterpreted_function("uf1", {})};
   const Expression uf2{uninterpreted_function("uf2", {var_x_, var_y_})};
   EXPECT_THROW(uf1.Evaluate(), std::runtime_error);
   EXPECT_THROW(uf2.Evaluate(), std::runtime_error);
 }
 
-TEST_F(SymbolicExpressionTest, UninterpretedFunction_Equal) {
+TEST_F(SymbolicExpressionTest, UninterpretedFunctionEqual) {
   const Expression uf1{uninterpreted_function("name1", {x_, y_ + z_})};
   const Expression uf2{uninterpreted_function("name1", {x_, y_ + z_})};
   EXPECT_TRUE(uf1.EqualTo(uf2));

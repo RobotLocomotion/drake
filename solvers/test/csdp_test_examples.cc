@@ -6,14 +6,25 @@
 namespace drake {
 namespace solvers {
 const double kInf = std::numeric_limits<double>::infinity();
-SDPwithOverlappingVariables::SDPwithOverlappingVariables()
+SDPwithOverlappingVariables1::SDPwithOverlappingVariables1()
     : prog_{new MathematicalProgram()}, x_{prog_->NewContinuousVariables<3>()} {
   prog_->AddLinearCost(2 * x_(0) + x_(2));
   prog_->AddBoundingBoxConstraint(1, 1, x_(1));
+  prog_->AddBoundingBoxConstraint(0.5, kInf, x_(0));
+  prog_->AddBoundingBoxConstraint(-kInf, 2, x_(2));
   prog_->AddPositiveSemidefiniteConstraint(
       (Matrix2<symbolic::Variable>() << x_(0), x_(1), x_(1), x_(0)).finished());
   prog_->AddPositiveSemidefiniteConstraint(
       (Matrix2<symbolic::Variable>() << x_(0), x_(2), x_(2), x_(0)).finished());
+}
+
+SDPwithOverlappingVariables2::SDPwithOverlappingVariables2()
+    : prog_{new MathematicalProgram()}, x_{prog_->NewContinuousVariables<2>()} {
+  prog_->AddLinearCost(2 * x_(0) + x_(1));
+  prog_->AddBoundingBoxConstraint(Eigen::Vector2d(2, 1),
+                                  Eigen::Vector2d(3, kInf), x_);
+  prog_->AddPositiveSemidefiniteConstraint(
+      (Matrix2<symbolic::Variable>() << x_(0), x_(1), x_(1), x_(0)).finished());
 }
 
 CsdpDocExample::CsdpDocExample()

@@ -25,7 +25,7 @@ namespace geometry {
 namespace internal {
 namespace shape_distance {
 
-/** Supporting data for the shape-to-shape signed distance callback (see
+/* Supporting data for the shape-to-shape signed distance callback (see
  Callback below). It includes:
 
     - A collision filter instance.
@@ -37,7 +37,7 @@ namespace shape_distance {
  @tparam T The computation scalar.  */
 template <typename T>
 struct CallbackData {
-  /** Constructs the mostly-specified callback data. The fcl distance request is
+  /* Constructs the mostly-specified callback data. The fcl distance request is
    left in its default constructed state for subsequent configuration. The
    values are as described in the class documentation. The parameters are almost
    all aliased in the data and require the aliased parameters to remain valid at
@@ -62,23 +62,23 @@ struct CallbackData {
     DRAKE_DEMAND(nearest_pairs_in);
   }
 
-  /** The collision filter system.  */
+  /* The collision filter system.  */
   const CollisionFilterLegacy& collision_filter;
 
-  /** The T-valued poses of all geometries.  */
+  /* The T-valued poses of all geometries.  */
   const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs;
 
-  /** The maximum distance at which a pair's distance will be reported.  */
+  /* The maximum distance at which a pair's distance will be reported.  */
   const double max_distance;
 
-  /** The distance query parameters.  */
+  /* The distance query parameters.  */
   fcl::DistanceRequestd request;
 
-  /** The results of the distance query.  */
+  /* The results of the distance query.  */
   std::vector<SignedDistancePair<T>>& nearest_pairs{};
 };
 
-/** A functor to support ComputeNarrowPhaseDistance(). It computes the signed
+/* A functor to support ComputeNarrowPhaseDistance(). It computes the signed
  distance between a supported pair of geometries. Each overload to the call
  operator reports the signed distance (encoded in SignedDistancePair<T>)
  between the two given geometry arguments using the functor's stored poses.
@@ -87,7 +87,7 @@ struct CallbackData {
 template <typename T>
 class DistancePairGeometry {
  public:
-  /** Constructs the functor caching all parameters that do _not_ depend on
+  /* Constructs the functor caching all parameters that do _not_ depend on
    the shape type.
 
    @param id_A         Identifier of the first geometry passed to operator().
@@ -103,7 +103,7 @@ class DistancePairGeometry {
     DRAKE_ASSERT(result);
   }
 
-  /** @name  Overloads in support of sphere-shape computation
+  /* @name  Overloads in support of sphere-shape computation
 
    Given a sphere A centered at Ao with radius r and another geometry B,
    we want to compute
@@ -180,7 +180,7 @@ class DistancePairGeometry {
   SignedDistancePair<T>* result_;
 };
 
-/** @name  Definition of fallback for missing primitive-primitive tests
+/* @name  Definition of fallback for missing primitive-primitive tests
 
  Generally, we favor hand-crafted functions for determining the signed distance
  between two shapes. However, just because we have no such function for a
@@ -198,7 +198,7 @@ class DistancePairGeometry {
  for a scalar type unless one is explicitly provided.  */
 //@{
 
-/** For all non-whitelisted scalar types T, throws an exception declaring the
+/* For all non-whitelisted scalar types T, throws an exception declaring the
  unsupported combination of geometry types and scalar type.  */
 template <typename T>
 void CalcDistanceFallback(const fcl::CollisionObjectd& a,
@@ -213,7 +213,7 @@ void CalcDistanceFallback(const fcl::CollisionObjectd& a,
       GetGeometryName(a), GetGeometryName(b), NiceTypeName::Get<T>()));
 }
 
-/** For the double scalar, computes the signed distance between the two objects.
+/* For the double scalar, computes the signed distance between the two objects.
  */
 template <>
 void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
@@ -256,7 +256,7 @@ void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
 
 //@}
 
-/** Dispatches the narrowphase shape-shape query for the object pair (`a`, `b`)
+/* Dispatches the narrowphase shape-shape query for the object pair (`a`, `b`)
  to the appropriate primitive-primitive function (optionally defaulting to the
  type- and shape-dependent fallback function).
 
@@ -297,8 +297,8 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
   const fcl::CollisionObjectd& o = a_is_sphere ? b : a;
   const fcl::CollisionGeometryd* s_geometry = s.collisionGeometry().get();
   const fcl::CollisionGeometryd* o_geometry = o.collisionGeometry().get();
-  const math::RigidTransform<T> X_WS(a_is_sphere ? X_WA : X_WB);
-  const math::RigidTransform<T> X_WO(a_is_sphere ? X_WB : X_WA);
+  const math::RigidTransform<T>& X_WS(a_is_sphere ? X_WA : X_WB);
+  const math::RigidTransform<T>& X_WO(a_is_sphere ? X_WB : X_WA);
   const auto id_S = EncodedData(s).id();
   const auto id_O = EncodedData(o).id();
   DistancePairGeometry<T> distance_pair(id_S, id_O, X_WS, X_WO, result);
@@ -346,7 +346,7 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
 
 // TODO(SeanCurtis-TRI): Replace this clunky mechanism with a new mechanism
 // which does this implicitly via ADL and templates.
-/** @name   Mechanism for reporting on which scalars and for which shape-pairs
+/* @name   Mechanism for reporting on which scalars and for which shape-pairs
             shape-to-shape queries can be made.
 
  By default, nothing is supported. For each supported scalar type, a class
@@ -362,7 +362,7 @@ struct ScalarSupport {
   }
 };
 
-/** Primitive support for double-valued query.  */
+/* Primitive support for double-valued query.  */
 template <>
 struct ScalarSupport<double> {
   static bool is_supported(fcl::NODE_TYPE node1, fcl::NODE_TYPE node2) {
@@ -383,11 +383,11 @@ struct ScalarSupport<double> {
   }
 };
 
-/** Primitive support for AutoDiff-valued query.  */
+/* Primitive support for AutoDiff-valued query.  */
 template <typename DerType>
 struct ScalarSupport<Eigen::AutoDiffScalar<DerType>> {
   static bool is_supported(fcl::NODE_TYPE node1, fcl::NODE_TYPE node2) {
-    // Explicitly whitelist the  following pair types (with ordering
+    // Explicitly permit the following pair types (with ordering
     // permutations):
     //  (sphere, sphere)
     //  (sphere, box)
@@ -402,7 +402,7 @@ struct ScalarSupport<Eigen::AutoDiffScalar<DerType>> {
 
 //@}
 
-/** The callback function for computing signed distance between two arbitrary
+/* The callback function for computing signed distance between two arbitrary
  shapes.
 
  This callback is used in the context where we're going to report the distance

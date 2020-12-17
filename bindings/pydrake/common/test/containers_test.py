@@ -5,7 +5,7 @@ import unittest
 import numpy as np
 
 
-class Comparison(object):
+class Comparison:
     def __init__(self, lhs, rhs):
         self.lhs = lhs
         self.rhs = rhs
@@ -16,7 +16,7 @@ class Comparison(object):
     __nonzero__ = __bool__
 
 
-class Item(object):
+class Item:
     equal_to_called = False
 
     def __init__(self, value):

@@ -23,11 +23,14 @@ namespace kuka_iiwa {
 ///
 /// This system has one abstract-valued output port of type lcmt_iiwa_command.
 ///
-/// @system {
-///   @input_port{position}
-///   @input_port{torque (optional)}
-///   @output_port{lcmt_iiwa_command}
-/// }
+/// @system
+/// name: IiwaCommandSender
+/// input_ports:
+/// - position
+/// - torque (optional)
+/// output_ports:
+/// - lcmt_iiwa_command
+/// @endsystem
 ///
 /// @see `lcmt_iiwa_command.lcm` for additional documentation.
 class IiwaCommandSender : public systems::LeafSystem<double> {
@@ -40,7 +43,6 @@ class IiwaCommandSender : public systems::LeafSystem<double> {
   //@{
   const systems::InputPort<double>& get_position_input_port() const;
   const systems::InputPort<double>& get_torque_input_port() const;
-  const systems::OutputPort<double>& get_output_port() const;
   //@}
 
  private:

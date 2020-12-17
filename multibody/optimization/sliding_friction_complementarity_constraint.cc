@@ -175,17 +175,27 @@ void SlidingFrictionComplementarityNonlinearConstraint::DoEval(
         signed_distance_pair.id_B ==
             contact_wrench_evaluator_->geometry_id_pair().second()) {
       found_geometry_pair = true;
+
+      const geometry::SceneGraphInspector<AutoDiffXd>& inspector =
+          query_object.inspector();
+
       // Compute the friction.
+      const geometry::ProximityProperties& geometryA_props =
+          *inspector.GetProximityProperties(signed_distance_pair.id_A);
+      const geometry::ProximityProperties& geometryB_props =
+          *inspector.GetProximityProperties(signed_distance_pair.id_B);
+
       const CoulombFriction<double>& geometryA_friction =
-          plant.default_coulomb_friction(signed_distance_pair.id_A);
+          geometryA_props.GetProperty<CoulombFriction<double>>(
+              "material", "coulomb_friction");
       const CoulombFriction<double>& geometryB_friction =
-          plant.default_coulomb_friction(signed_distance_pair.id_B);
+          geometryB_props.GetProperty<CoulombFriction<double>>(
+              "material", "coulomb_friction");
+
       CoulombFriction<double> combined_friction =
           CalcContactFrictionFromSurfaceProperties(geometryA_friction,
                                                    geometryB_friction);
 
-      const geometry::SceneGraphInspector<AutoDiffXd>& inspector =
-          query_object.inspector();
       const geometry::FrameId frame_A_id =
           inspector.GetFrameId(signed_distance_pair.id_A);
       const geometry::FrameId frame_B_id =

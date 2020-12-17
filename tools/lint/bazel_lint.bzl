@@ -8,9 +8,13 @@ load("@drake//tools/skylark:drake_py.bzl", "py_test_isolated")
 # if no files given.
 def _bazel_lint(name, files, ignore):
     if files:
-        if ignore:
-            ignore = ["--ignore=" + ",".join(["E%s" % e for e in ignore])]
+        ignores = ["E%s" % e for e in (ignore or [])]
 
+        # W504 relates to linebreaks around binary operators; buildifier
+        # disagrees with what pycodestyle wants to do.
+        ignores.append("W504")
+
+        ignores_as_arg = ["--ignore=" + ",".join(ignores)]
         locations = ["$(locations %s)" % f for f in files]
 
         py_test_isolated(
@@ -18,7 +22,7 @@ def _bazel_lint(name, files, ignore):
             size = "small",
             srcs = ["@drake//tools/lint:bzlcodestyle"],
             data = files,
-            args = ignore + locations,
+            args = ignores_as_arg + locations,
             main = "@drake//tools/lint:bzlcodestyle.py",
             tags = ["bzlcodestyle", "lint"],
         )

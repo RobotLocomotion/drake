@@ -14,9 +14,11 @@ package(
 
 drake_cc_package_library(
     name = "planner",
+    visibility = ["//visibility:public"],
     deps = [
         ":constraint_relaxing_ik",
         ":differential_inverse_kinematics",
+        ":differential_inverse_kinematics_integrator",
         ":robot_plan_interpolator",
     ],
 )
@@ -46,15 +48,24 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "differential_inverse_kinematics_integrator",
+    srcs = ["differential_inverse_kinematics_integrator.cc"],
+    hdrs = ["differential_inverse_kinematics_integrator.h"],
+    deps = [
+        ":differential_inverse_kinematics",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
     name = "robot_plan_interpolator",
     srcs = ["robot_plan_interpolator.cc"],
     hdrs = ["robot_plan_interpolator.h"],
     deps = [
         "//common/trajectories:piecewise_polynomial",
+        "//lcmtypes:robot_plan",
         "//multibody/parsing",
         "//systems/framework:leaf_system",
-        "@lcmtypes_bot2_core",
-        "@lcmtypes_robotlocomotion",
     ],
 )
 
@@ -87,6 +98,19 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "differential_inverse_kinematics_integrator_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":differential_inverse_kinematics_integrator",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//manipulation/kuka_iiwa:iiwa_constants",
+        "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
     name = "robot_plan_interpolator_test",
     data = [
         "//examples/kuka_iiwa_arm:models",
@@ -96,7 +120,6 @@ drake_cc_googletest(
         ":robot_plan_interpolator",
         "//common:find_resource",
         "//systems/framework",
-        "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
     ],
 )

@@ -93,6 +93,34 @@ UrdfMaterial ParseMaterial(const tinyxml2::XMLElement* node, bool name_required,
 
 /** Parses a "visual" element in @p node.
 
+ <!-- TODO(SeanCurtis-TRI): Ultimately, a module for what we parse should be
+  written outside of this _internal_ namespace. This should go there and
+  merely reference it.  -->
+
+ <h2>Targeting Renderers</h2>
+
+ In addition to the standard SDF <visual> hierarchy, Drake offers an additional
+ tag `<drake:accepting_renderer>`:
+
+ ```
+    <visual>
+      <geometry ... />
+      <drake:accepting_renderer name="renderer_name" />
+      ...
+    </visual>
+ ```
+
+ The new tag serves as a list of renderers for which this visual is targeted.
+
+  - The _value_ of the tag is the name of the renderer.
+  - If the _value_ is empty, that is a parsing error.
+  - If no instance of `<drake:accepting_renderer>` every renderer will be given
+    the chance to reify this visual geometry.
+  - Multiple instances of this tag are allowed. Each instance adds a renderer to
+    the list of targeted renderers.
+
+ This feature is one way to provide multiple visual representations of a body.
+
  @param[in] parent_element_name The name of the parent link element, used
  to construct default geometry names and for error reporting.
  @param[in,out] materials The MaterialMap is used to look up materials
@@ -131,7 +159,7 @@ geometry::GeometryInstance ParseVisual(
  of these properties.
  | Tag                              | Group        | Property                  | Notes                                                                                                                            |
  | :------------------------------: | :----------: | :-----------------------: | :------------------------------------------------------------------------------------------------------------------------------: |
- | drake:mesh_resolution_hint       | hydroelastic | resolution_hint           | Required for shapes that require tesselation to support hydroelastic contact.                                                    |
+ | drake:mesh_resolution_hint       | hydroelastic | resolution_hint           | Required for shapes that require tessellation to support hydroelastic contact.                                                    |
  | drake:elastic_modulus            | material     | elastic_modulus           | Finite positive value. Required for soft hydroelastic representations.                                                           |
  | drake:hunt_crossley_dissipation  | material     | hunt_crossley_dissipation |                                                                                                                                  |
  | drake:mu_dynamic                 | material     | coulomb_friction          | See note below on friction.                                                                                                      |

@@ -99,11 +99,6 @@ this will be susceptible to Ubuntu vs macOS differences, so please opt-in to
 the macOS build(s) in Jenkins before merging, using the instructions at
 https://drake.mit.edu/jenkins.html#running-an-on-demand-build.
 
-## Updating bitbucket_archive software versions
-
-The `bitbucket_archive` instructions are isomorphic to the `github_archive`
-instructions; please see above for detailed steps.
-
 ## Updating pypi_archive software versions
 
 To lock in a new version, change the `version` argument of the `pypi_archive`
@@ -167,9 +162,11 @@ See `glib` for an example.
 
 Update the package setup lists to mention the new package:
 
-- `setup/ubuntu/binary_distribution/packages-bionic.txt` with the `libfoo0`
+- `setup/ubuntu/binary_distribution/packages-bionic.txt` and
+  `setup/ubuntu/binary_distribution/packages-focal.txt` with the `libfoo0`
   runtime library;
-- `setup/ubuntu/source_distribution/packages-bionic.txt` with the `libfoo-dev`
+- `setup/ubuntu/source_distribution/packages-bionic.txt` and
+  `setup/ubuntu/source_distribution/packages-focal.txt` with the `libfoo-dev`
   library;
 - `setup/mac/binary_distribution/Brewfile` if used in Drake's installed copy;
 - `setup/mac/source_distribution/Brewfile` if only used during development (not

@@ -64,7 +64,7 @@ class NiceTypeName {
   differ. */
   template <typename T>
   static std::string Get(const T& thing) {
-    return Get(typeid(thing));
+    return GetWithPossibleOverride(&thing, typeid(thing));
   }
 
   /** Returns the nicely demangled and canonicalized type name of `info`. This
@@ -101,6 +101,9 @@ class NiceTypeName {
  private:
   // No instances of this class should be created.
   NiceTypeName() = delete;
+
+  static std::string GetWithPossibleOverride(
+      const void* ptr, const std::type_info& info);
 };
 
 }  // namespace drake

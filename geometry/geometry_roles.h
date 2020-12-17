@@ -162,7 +162,6 @@ class ProximityProperties final : public GeometryProperties {
 
  Examples of functionality that depends on the perception role:
    - render::RenderEngineVtk
-   - render::RenderEngineOspray
  */
 class PerceptionProperties final : public GeometryProperties{
  public:
@@ -174,7 +173,9 @@ class PerceptionProperties final : public GeometryProperties{
 /** The set of properties for geometry used in an "illustration" role.
 
  Examples of functionality that depends on the illustration role:
-   - @ref geometry_visualization_role_dependency "drake::geometry::ConnectDrakeVisualizer()"
+   - @ref drake_visualizer_role_consumer "drake::geometry::DrakeVisualizer"
+   - @ref geometry_visualization_role_dependency
+     "drake::geometry::ConnectDrakeVisualizer()"
  */
 class IllustrationProperties final : public GeometryProperties {
  public:

@@ -12,7 +12,9 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
     name = "geometry",
+    visibility = ["//visibility:public"],
     deps = [
+        ":drake_visualizer",
         ":frame_kinematics",
         ":geometry_frame",
         ":geometry_ids",
@@ -22,12 +24,13 @@ drake_cc_package_library(
         ":geometry_roles",
         ":geometry_set",
         ":geometry_state",
+        ":geometry_version",
         ":geometry_visualization",
-        ":identifier",
         ":internal_frame",
         ":internal_geometry",
         ":proximity_engine",
         ":proximity_properties",
+        ":rgba",
         ":scene_graph",
         ":scene_graph_inspector",
         ":shape_specification",
@@ -59,6 +62,22 @@ drake_cc_library(
         "@fcl",
         "@fmt",
         "@tinyobjloader",
+    ],
+)
+
+drake_cc_library(
+    name = "drake_visualizer",
+    srcs = ["drake_visualizer.cc"],
+    hdrs = ["drake_visualizer.h"],
+    deps = [
+        ":geometry_roles",
+        ":geometry_version",
+        ":scene_graph",
+        "//common:essential",
+        "//lcm:drake_lcm",
+        "//lcmtypes:viewer",
+        "//systems/framework:context",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -122,9 +141,21 @@ drake_cc_library(
     srcs = ["geometry_properties.cc"],
     hdrs = ["geometry_properties.h"],
     deps = [
+        ":rgba",
         "//common:essential",
         "//common:value",
         "@fmt",
+    ],
+)
+
+drake_cc_library(
+    name = "geometry_version",
+    srcs = ["geometry_version.cc"],
+    hdrs = ["geometry_version.h"],
+    deps = [
+        ":geometry_roles",
+        "//common:essential",
+        "//common:identifier",
     ],
 )
 
@@ -155,6 +186,7 @@ drake_cc_library(
         ":geometry_index",
         ":geometry_instance",
         ":geometry_set",
+        ":geometry_version",
         ":internal_frame",
         ":internal_geometry",
         ":proximity_engine",
@@ -198,6 +230,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "scene_graph_inspector",
+    srcs = ["scene_graph_inspector.cc"],
     hdrs = ["scene_graph_inspector.h"],
     deps = [":geometry_state"],
 )
@@ -246,24 +279,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "identifier",
-    srcs = ["identifier.cc"],
-    hdrs = ["identifier.h"],
-    copts = [
-        "-Wno-cpp",
-        "-Wno-deprecated-declarations",
-    ],
-    deprecation = "The @drake//geometry:identifier library is deprecated and will be removed on 2020-05-01.  Use @drake//common:identifier instead.",  # noqa
-    tags = [
-        # Avoid 'build //...' yelling at us.
-        "manual",
-    ],
-    deps = [
-        "//common:identifier",
-    ],
-)
-
-drake_cc_library(
     name = "shape_specification",
     srcs = ["shape_specification.cc"],
     hdrs = ["shape_specification.h"],
@@ -293,16 +308,35 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "rgba",
+    srcs = ["rgba.cc"],
+    hdrs = ["rgba.h"],
+    deps = [
+        "//common",
+    ],
+)
+
 # -----------------------------------------------------
 
 filegroup(
     name = "test_obj_files",
     testonly = 1,
     srcs = [
+        "test/extruded_u.obj",
         "test/forbidden_two_cubes.obj",
         "test/non_convex_mesh.obj",
         "test/quad_cube.mtl",
         "test/quad_cube.obj",
+    ],
+)
+
+drake_cc_googletest(
+    name = "drake_visualizer_test",
+    deps = [
+        ":drake_visualizer",
+        "//lcm:mock",
+        "//systems/analysis:simulator",
     ],
 )
 
@@ -355,6 +389,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "geometry_version_test",
+    deps = [
+        ":geometry_version",
+    ],
+)
+
+drake_cc_googletest(
     name = "geometry_set_test",
     deps = [
         ":geometry_ids",
@@ -394,7 +435,6 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "scene_graph_test",
     deps = [
-        ":geometry_visualization",
         ":scene_graph",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
@@ -447,6 +487,14 @@ drake_cc_googletest(
     name = "utilities_test",
     deps = [
         "utilities",
+        "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rgba_test",
+    deps = [
+        ":rgba",
         "//common/test_utilities",
     ],
 )

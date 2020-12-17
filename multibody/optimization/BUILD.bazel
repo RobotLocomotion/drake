@@ -12,6 +12,7 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
     name = "optimization",
+    visibility = ["//visibility:public"],
     deps = [
         ":contact_wrench",
         ":contact_wrench_evaluator",
@@ -126,6 +127,7 @@ drake_cc_library(
         ":contact_wrench_evaluator",
         ":static_equilibrium_constraint",
         ":static_friction_cone_complementarity_constraint",
+        "//solvers:mathematical_program_result",
     ],
 )
 
@@ -136,7 +138,7 @@ drake_cc_library(
     hdrs = ["test/optimization_with_contact_utilities.h"],
     visibility = ["//visibility:private"],
     deps = [
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//geometry:scene_graph",
         "//multibody/plant",
         "//systems/analysis:simulator",

@@ -421,6 +421,104 @@ UnboundedLinearProgramTest1::UnboundedLinearProgramTest1()
   prog_->AddLinearConstraint(x(0) + 2 * x(1) - 2 * x(2) + 4 * x(3), 1, 3);
   prog_->AddBoundingBoxConstraint(0, 1, VectorDecisionVariable<2>(x(0), x(2)));
 }
+
+void TestLPDualSolution1(const SolverInterface& solver, double tol) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  Eigen::Matrix<double, 5, 2> A;
+  // clang-format off
+  A << 1, 2,
+       3, 4,
+       2, 1,
+       1, 5,
+       3, 2;
+  // clang-format on
+  const double kInf = std::numeric_limits<double>::infinity();
+  Eigen::Matrix<double, 5, 1> lb, ub;
+  lb << -kInf, -2, -3, -kInf, 4;
+  ub << 3, kInf, 4, kInf, 5;
+  auto constraint = prog.AddLinearConstraint(A, lb, ub, x);
+  auto cost = prog.AddLinearCost(2 * x[0] + 3 * x[1]);
+  if (solver.available()) {
+    MathematicalProgramResult result1;
+    solver.Solve(prog, {}, {}, &result1);
+    EXPECT_TRUE(result1.is_success());
+    Eigen::Matrix<double, 5, 1> dual_solution_expected;
+    // This dual solution is computed by first finding the active constraint at
+    // the optimal solution, denoted as Aeq * x = beq, then the dual solution
+    // equals to cᵀAeq⁻¹.
+    dual_solution_expected << 0, 0.8, -0.2, 0, 0;
+    EXPECT_TRUE(CompareMatrices(result1.GetDualSolution(constraint),
+                                dual_solution_expected, tol));
+
+    cost.evaluator()->UpdateCoefficients(Eigen::Vector2d(-3, -4));
+    MathematicalProgramResult result2;
+    solver.Solve(prog, {}, {}, &result2);
+    EXPECT_TRUE(result2.is_success());
+    Eigen::Matrix2d Aeq;
+    Aeq.row(0) = A.row(0);
+    Aeq.row(1) = A.row(4);
+    dual_solution_expected << -1.5, 0, 0, 0, -0.5;
+    EXPECT_TRUE(CompareMatrices(result2.GetDualSolution(constraint),
+                                dual_solution_expected, tol));
+  }
+}
+
+void TestLPDualSolution2(const SolverInterface& solver, double tol) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto constraint = prog.AddBoundingBoxConstraint(Eigen::Vector2d(-1, 2),
+                                                  Eigen::Vector2d(3, 5), x);
+  prog.AddLinearCost(x[0] - x[1]);
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    solver.Solve(prog, {}, {}, &result);
+    EXPECT_TRUE(result.is_success());
+    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint),
+                                Eigen::Vector2d(1, -1), tol));
+  }
+}
+
+void TestLPDualSolution2Scaled(const SolverInterface& solver, double tol) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto constraint = prog.AddBoundingBoxConstraint(Eigen::Vector2d(-1, 2),
+                                                  Eigen::Vector2d(3, 5), x);
+  prog.AddLinearCost(x[0] - x[1]);
+  prog.SetVariableScaling(x[0], 10);
+  prog.SetVariableScaling(x[1], 0.1);
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    solver.Solve(prog, {}, {}, &result);
+    EXPECT_TRUE(result.is_success());
+    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint),
+                                Eigen::Vector2d(1, -1), tol));
+  }
+}
+
+void TestLPDualSolution3(const SolverInterface& solver, double tol) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto constraint1 = prog.AddBoundingBoxConstraint(-2, 1, x);
+  auto constraint2 = prog.AddBoundingBoxConstraint(-1, 2, x[1]);
+  auto constraint3 = prog.AddBoundingBoxConstraint(-1, 3, x[0]);
+  prog.AddLinearCost(-x[0] + x[1]);
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    solver.Solve(prog, {}, {}, &result);
+    EXPECT_TRUE(result.is_success());
+    // The optimal solution is (1, -1).
+    // constraint1 has an upper bound x(0) <= 1 being active.
+    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint1),
+                                Eigen::Vector2d(-1, 0), tol));
+    // constraint2 has a lower bound x(1) >= -1 being active.
+    EXPECT_TRUE(
+        CompareMatrices(result.GetDualSolution(constraint2), Vector1d(1), tol));
+    // constraint 3 is not active.
+    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint3),
+                                Vector1d::Zero(), tol));
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

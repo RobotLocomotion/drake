@@ -38,8 +38,11 @@ using TriggerTypeSet = std::unordered_set<TriggerType, DefaultHash>;
  * interface in your program, you can let %LcmPublisherSystem allocate and
  * maintain a drake::lcm::DrakeLcm object internally.
  *
- * @system{ LcmPublisherSystem,
- *  @input_port{lcm_message}, }
+ * @system
+ * name: LcmPublisherSystem
+ * input_ports:
+ * - lcm_message
+ * @endsystem
  *
  * @ingroup message_passing
  */
@@ -104,8 +107,8 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * kPeriodic.
    *
    * @pre publish_period is non-negative.
-   * @pre trigger_types contains a subset of {kForced, kPeriodic, kPerStep}.
-   * @pre publish_period > 0 if and only if trigger_types contains kPeriodic.
+   * @pre publish_triggers contains a subset of {kForced, kPeriodic, kPerStep}.
+   * @pre publish_period > 0 if and only if publish_triggers contains kPeriodic.
    */
   template <typename LcmMessage>
   static std::unique_ptr<LcmPublisherSystem> Make(
@@ -169,8 +172,8 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * kPerStep.
    *
    * @pre publish_period is non-negative.
-   * @pre publish_period > 0 iff trigger_types contains kPeriodic.
-   * @pre trigger_types contains a subset of {kForced, kPeriodic, kPerStep}.
+   * @pre publish_period > 0 iff publish_triggers contains kPeriodic.
+   * @pre publish_triggers contains a subset of {kForced, kPeriodic, kPerStep}.
    */
   LcmPublisherSystem(const std::string& channel,
       std::unique_ptr<SerializerInterface> serializer,
@@ -221,18 +224,9 @@ class LcmPublisherSystem : public LeafSystem<double> {
   }
 
   /**
-   * Returns the sole input port.
+   * Returns the publish_period provided at construction time.
    */
-  const InputPort<double>& get_input_port() const {
-    DRAKE_THROW_UNLESS(this->num_input_ports() == 1);
-    return LeafSystem<double>::get_input_port(0);
-  }
-
-  // Don't use the indexed overload; use the no-arg overload.
-  void get_input_port(int index) = delete;
-
-  // This system has no output ports.
-  void get_output_port(int) = delete;
+  double get_publish_period() const;
 
  private:
   EventStatus PublishInputAsLcmMessage(const Context<double>& context) const;
@@ -256,8 +250,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
   // object or the owned_lcm_ object above.
   drake::lcm::DrakeLcmInterface* const lcm_;
 
-  // TODO(edrumwri) Remove this when set_publish_period() is removed.
-  bool disable_internal_per_step_publish_events_{false};
+  const double publish_period_;
 };
 
 }  // namespace lcm

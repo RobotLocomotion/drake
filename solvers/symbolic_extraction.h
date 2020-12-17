@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <utility>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
 #include "drake/math/matrix_util.h"
@@ -38,7 +39,9 @@ void AppendToVector(const typename Derived::Scalar& s,
 /*
  * Adds context to symbolic expression-related errors.
  */
-class SymbolicError : public std::runtime_error {
+class DRAKE_DEPRECATED("2021-04-01",
+                       "Use SymbolicError in common/symbolic_decompose.h")
+    SymbolicError : public std::runtime_error {
  public:
   SymbolicError(const symbolic::Expression& e, const std::string& msg);
   SymbolicError(const symbolic::Expression& e, double lb, double ub,
@@ -62,6 +65,9 @@ class SymbolicError : public std::runtime_error {
  * `vars`, and map_var_to_index[vars(i).get_id()] = i. This invariance holds
  * for map_var_to_index both as the input and as the output.
  */
+DRAKE_DEPRECATED("2021-04-01",
+                 "Use ExtractAndAppendVariablesFromExpression() in "
+                 "common/symbolic_decompose.h")
 void ExtractAndAppendVariablesFromExpression(
     const symbolic::Expression& e, VectorXDecisionVariable* vars,
     std::unordered_map<symbolic::Variable::Id, int>* map_var_to_index);
@@ -73,6 +79,9 @@ void ExtractAndAppendVariablesFromExpression(
  * from the variable ID to the index in pair.first, such that
  * pair.second[pair.first(i).get_id()] = i
  */
+DRAKE_DEPRECATED("2021-04-01",
+                 "Use ExtractAndVariablesFromExpression() in "
+                 "common/symbolic_decompose.h")
 std::pair<VectorXDecisionVariable,
           std::unordered_map<symbolic::Variable::Id, int>>
 ExtractVariablesFromExpression(const symbolic::Expression& e);
@@ -90,6 +99,9 @@ ExtractVariablesFromExpression(const symbolic::Expression& e);
  * `b` should be `num_variables * 1`.
  * @param c[out] The constant term of the quadratic expression.
  */
+DRAKE_DEPRECATED("2021-04-01",
+                 "Use DecomposeQuadraticPolynomial() in "
+                 "common/symbolic_decompose.h")
 void DecomposeQuadraticPolynomial(
     const symbolic::Polynomial& poly,
     const std::unordered_map<symbolic::Variable::Id, int>& map_var_to_index,
@@ -103,6 +115,9 @@ void DecomposeQuadraticPolynomial(
  * @param[out] b The vector containing all the constant terms.
  * @param[out] vars All variables.
  */
+DRAKE_DEPRECATED("2021-04-01",
+                 "Use DecomposeAffineExpressions() in "
+                 "common/symbolic_decompose.h")
 void DecomposeLinearExpression(
     const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
     Eigen::MatrixXd* A, Eigen::VectorXd* b, VectorXDecisionVariable* vars);
@@ -133,12 +148,15 @@ void DecomposeLinearExpression(
  * has 1 variable, 2 * x(0) + 3 * x(1) - 2 * x(0) has 1 variable.
  */
 template <typename Derived>
+DRAKE_DEPRECATED("2021-04-01",
+                 "Use DecomposeAffineExpression() in "
+                 "common/symbolic_decompose.h")
 typename std::enable_if<std::is_same<typename Derived::Scalar, double>::value,
                         int>::type
-DecomposeLinearExpression(
-    const symbolic::Expression& e,
-    const std::unordered_map<symbolic::Variable::Id, int>& map_var_to_index,
-    const Eigen::MatrixBase<Derived>& coeffs, double* constant_term) {
+    DecomposeLinearExpression(
+        const symbolic::Expression& e,
+        const std::unordered_map<symbolic::Variable::Id, int>& map_var_to_index,
+        const Eigen::MatrixBase<Derived>& coeffs, double* constant_term) {
   DRAKE_DEMAND(coeffs.rows() == 1);
   DRAKE_DEMAND(coeffs.cols() == static_cast<int>(map_var_to_index.size()));
   if (!e.is_polynomial()) {

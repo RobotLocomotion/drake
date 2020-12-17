@@ -804,7 +804,7 @@ TEST_F(SymbolicFormulaTest, Forall2) {
   EXPECT_THROW(f1.Evaluate(), runtime_error);
 }
 
-TEST_F(SymbolicFormulaTest, PSD_Exception) {
+TEST_F(SymbolicFormulaTest, PsdException) {
   auto non_square = Eigen::Matrix<Expression, 2, 3>::Zero().eval();
   EXPECT_THROW(positive_semidefinite(non_square), runtime_error);
 
@@ -829,7 +829,7 @@ TEST_F(SymbolicFormulaTest, PSD_Exception) {
   EXPECT_THROW(positive_semidefinite(m, Eigen::Symmetric), runtime_error);
 }
 
-TEST_F(SymbolicFormulaTest, PSD_GetFreeVariables) {
+TEST_F(SymbolicFormulaTest, PsdGetFreeVariables) {
   const Variables vars1{f_psd_static_2x2_.GetFreeVariables()};
   EXPECT_EQ(vars1.size(), 2);
   EXPECT_TRUE(vars1.include(var_x_));
@@ -847,7 +847,7 @@ TEST_F(SymbolicFormulaTest, PSD_GetFreeVariables) {
   EXPECT_TRUE(vars3.include(var_z_));
 }
 
-TEST_F(SymbolicFormulaTest, PSD_EqualTo) {
+TEST_F(SymbolicFormulaTest, PsdEqualTo) {
   EXPECT_TRUE(f_psd_static_2x2_.EqualTo(f_psd_static_2x2_));
   EXPECT_FALSE(f_psd_static_2x2_.EqualTo(f_psd_dynamic_2x2_));
   EXPECT_FALSE(f_psd_static_2x2_.EqualTo(f_psd_static_3x3_));
@@ -862,7 +862,7 @@ TEST_F(SymbolicFormulaTest, PSD_EqualTo) {
   EXPECT_TRUE(f_psd_static_3x3_.EqualTo(f_psd_static_3x3_));
 }
 
-TEST_F(SymbolicFormulaTest, PSD_Evaluate) {
+TEST_F(SymbolicFormulaTest, PsdEvaluate) {
   EXPECT_THROW(f_psd_static_2x2_.Evaluate(), runtime_error);
   EXPECT_THROW(f_psd_dynamic_2x2_.Evaluate(), runtime_error);
   EXPECT_THROW(f_psd_static_3x3_.Evaluate(), runtime_error);
@@ -1107,7 +1107,7 @@ TEST_F(SymbolicFormulaTest, GetMatrixInPSD1) {
   EXPECT_FALSE(m3.IsRowMajor);  // m3 is column-major.
 }
 
-TEST_F(SymbolicFormulaTest, GetMatrixInPSD_NonSymmetric_Static) {
+TEST_F(SymbolicFormulaTest, GetMatrixInPsdNonSymmetricStatic) {
   MatrixX<Expression> m(3, 3);
   // clang-format off
   m << 1.0, 2.0, 3.0,
@@ -1150,7 +1150,7 @@ TEST_F(SymbolicFormulaTest, GetMatrixInPSD_NonSymmetric_Static) {
       sym_from_upper));
 }
 
-TEST_F(SymbolicFormulaTest, GetMatrixInPSD_NonSymmetric_Dynamic) {
+TEST_F(SymbolicFormulaTest, GetMatrixInPsdNonSymmetricDynamic) {
   Eigen::Matrix<Expression, 3, 3> m;
   // clang-format off
   m << 1.0, 2.0, 3.0,

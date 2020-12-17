@@ -1,38 +1,36 @@
-<?xml version="1.0" ?>
-<sdf version="1.4">
+<?xml version="1.0"?>
+<sdf version="1.7">
   <model name="box">
     <pose>0 0 0.5 0 0 0</pose>
     <link name="box">
-      <pose>0 0 0 0 0 0</pose>
-        <inertial>
-          <mass>1.</mass>
-          <inertia>
-            <ixx>8.41666666</ixx>
-            <ixy>0</ixy>
-            <ixz>0</ixz>
-            <iyy>8.41666666</iyy>
-            <iyz>0</iyz>
-            <izz>16.6666666</izz>
-          </inertia>
-        </inertial>
-        <visual name="box">
-          <pose>0 0 0 0 0 0</pose>
-          <geometry>
-            <box>
-              <size>10. 10. 1.</size>
-            </box>
-          </geometry>
-          <material>
-            <diffuse>1.0 1.0 1.0 1.0</diffuse>
-          </material>
-        </visual>
-        <collision name="box">
-          <geometry>
-            <box>
-              <size>10. 10. 1.</size>
-            </box>
-          </geometry>
-        </collision>
+      <inertial>
+        <mass>1.</mass>
+        <inertia>
+          <ixx>8.41666666</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>8.41666666</iyy>
+          <iyz>0</iyz>
+          <izz>16.6666666</izz>
+        </inertia>
+      </inertial>
+      <visual name="box">
+        <geometry>
+          <box>
+            <size>10. 10. 1.</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>1.0 1.0 1.0 1.0</diffuse>
+        </material>
+      </visual>
+      <collision name="box">
+        <geometry>
+          <box>
+            <size>10. 10. 1.</size>
+          </box>
+        </geometry>
+      </collision>
     </link>
     <static>1</static>
   </model>

@@ -44,7 +44,11 @@ namespace systems {
 /// @see Simulator::set_publish_every_time_step()
 /// @see Simulator::set_publish_at_initialization()
 ///
-/// @system{ SignalLogger, @input_port{data}, }
+/// @system
+/// name: SignalLogger
+/// input_ports:
+/// - data
+/// @endsystem
 ///
 /// @tparam_default_scalar
 /// @ingroup primitive_systems
@@ -103,10 +107,6 @@ class SignalLogger final : public LeafSystem<T> {
 
   /// Clears the logged data.
   void reset() { log_.reset(); }
-
-  /// Returns the only input port. The port's name is "data" so you can also
-  /// access this with GetInputPort("data").
-  const InputPort<T>& get_input_port() const;
 
  private:
   template <typename> friend class SignalLogger;

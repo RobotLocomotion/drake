@@ -3,7 +3,7 @@
 #include <utility>
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/math/spatial_force.h"
+#include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 
 namespace drake {
@@ -14,12 +14,7 @@ namespace multibody {
  */
 struct ContactWrench {
   /**
-   * @param bodyA_index_in The index of Body A.
-   * @param bodyB_index_in The index of Body B.
-   * @param p_WCb_W_in The position of the point Cb (where the wrench is
-   * applied) expressed in the world frame W.
-   * @param F_Cb_W_in The wrench (spatial force) applied at point Cb from Body A
-   * to Body B, measured in the world frame.
+   * Refer to the documentation for each attribute.
    */
   ContactWrench(BodyIndex bodyA_index_in, BodyIndex bodyB_index_in,
                 Eigen::Vector3d p_WCb_W_in, SpatialForce<double> F_Cb_W_in)
@@ -27,9 +22,18 @@ struct ContactWrench {
         bodyB_index(bodyB_index_in),
         p_WCb_W(std::move(p_WCb_W_in)),
         F_Cb_W(std::move(F_Cb_W_in)) {}
+
+  /** The index of Body A.*/
   BodyIndex bodyA_index;
+  /** The index of Body B.*/
   BodyIndex bodyB_index;
+  /** The position of the point Cb (where the wrench is applied) expressed in
+   * the world frame W.
+   */
   Eigen::Vector3d p_WCb_W;
+  /** F_Cb_W_in The wrench (spatial force) applied at point Cb from Body A
+   * to Body B, measured in the world frame.
+   */
   SpatialForce<double> F_Cb_W;
 };
 }  // namespace multibody

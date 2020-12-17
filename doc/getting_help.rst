@@ -30,7 +30,9 @@ please `post a question on StackOverflow
 If you are actively developing with Drake and may need more active discussions
 than what StackOverflow and GitHub may offer, consider asking for access to the
 Drake Developers Slack Channel. To do so, please email Russ Tedrake for access.
-Please note that this access may not always be readily granted.
+Please note that this access may not always be readily granted. (Note: If you
+are a Drake developer wanting to invite someone, it will be faster to grant
+them access if you invite them directly via Slack.)
 
 If you wish to contribute a patch, please see how to :ref:`submit a pull request
 <pull_request>`.
@@ -39,18 +41,18 @@ Helpful Information
 -------------------
 
 When reporting an issue, please consider providing the following information
-(*examples in italics*):
+(*examples in italics*, ``helper command in monospace``):
 
 *   Operating system (*Ubuntu 18.04, macOS Catalina*)
 *   Language (C++, :ref:`Python <python-bindings>`)
 
-    -   C++ compiler (*GCC 7.5.0, Clang 6.0.0*)
+    -   C++ compiler (*GCC 7.5.0, GCC 9.3.0, Clang 6.0.0*)
     -   Python version (*Python 3.6.7*)
     -   Python distribution (*apt, homebrew*)
 
 *   If building from source:
 
-    -   Build system (Bazel, CMake*)
+    -   Build system (Bazel, CMake)
 
         +  Bazel version (``which bazel; bazel version``)
         +  Bazel C++ compiler (``bazel run @drake//common:print_host_settings``)

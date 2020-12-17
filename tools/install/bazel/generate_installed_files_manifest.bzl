@@ -11,6 +11,7 @@ def _impl(ctx):
         "setup/Brewfile",
         "setup/install_prereqs",
         "setup/packages-bionic.txt",
+        "setup/packages-focal.txt",
         "setup/requirements.txt",
     ]
     drake_runfiles = []

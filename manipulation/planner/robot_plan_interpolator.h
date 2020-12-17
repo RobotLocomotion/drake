@@ -22,17 +22,20 @@ enum class InterpolatorType {
 };
 
 /// This class implements a source of joint positions for a robot.
-/// It has one input port for robot_plan_t messages containing a
+/// It has one input port for lcmt_robot_plan messages containing a
 /// plan to follow.
 ///
 /// The system has two output ports, one with the current desired
 /// state (q,v) of the robot and another for the accelerations.
 ///
-/// @system{ RobotPlanInterpolator,
-///   @input_port{plan},
-///   @output_port{state}
-///   @output_port{acceleration}
-/// }
+/// @system
+/// name: RobotPlanInterpolator
+/// input_ports:
+/// - plan
+/// output_ports:
+/// - state
+/// - acceleration
+/// @endsystem
 ///
 /// If a plan is received with no knot points, the system will create
 /// a plan which commands the robot to hold at the measured position.

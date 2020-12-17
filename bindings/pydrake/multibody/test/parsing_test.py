@@ -3,6 +3,12 @@
 from pydrake.multibody.parsing import (
     Parser,
     PackageMap,
+    LoadModelDirectives,
+    ProcessModelDirectives,
+    ModelInstanceInfo,
+    AddFrame,
+    GetScopedFrameByName,
+    GetScopedFrameName,
 )
 
 import os
@@ -25,23 +31,26 @@ class TestParsing(unittest.TestCase):
         model = FindResourceOrThrow(
             "drake/examples/atlas/urdf/atlas_minimal_contact.urdf")
 
-        # Simple coverage test for Add, Contains, size, GetPath.
-        dut.Add("root", tmpdir)
+        # Simple coverage test for Add, Contains, size, GetPath, AddPackageXml.
+        dut.Add(package_name="root", package_path=tmpdir)
         self.assertEqual(dut.size(), 1)
-        self.assertTrue(dut.Contains("root"))
-        self.assertEqual(dut.GetPath("root"), tmpdir)
+        self.assertTrue(dut.Contains(package_name="root"))
+        self.assertEqual(dut.GetPath(package_name="root"), tmpdir)
+        dut.AddPackageXml(filename=FindResourceOrThrow(
+            "drake/multibody/parsing/test/box_package/package.xml"))
 
         # Simple coverage test for Drake paths.
-        dut.PopulateUpstreamToDrake(model)
+        dut.PopulateUpstreamToDrake(model_file=model)
         self.assertGreater(dut.size(), 1)
 
         # Simple coverage test for folder and environment.
-        dut.PopulateFromEnvironment('TEST_TMPDIR')
-        dut.PopulateFromFolder(tmpdir)
+        dut.PopulateFromEnvironment(environment_variable='TEST_TMPDIR')
+        dut.PopulateFromFolder(path=tmpdir)
 
-    def test_parser(self):
-        # Calls every combination of arguments for the Parser methods and
-        # inspects their return type.
+    def test_parser_file(self):
+        """Calls every combination of arguments for the Parser methods which
+        use a file_name (not contents) and inspects their return type.
+        """
         sdf_file = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         urdf_file = FindResourceOrThrow(
@@ -69,3 +78,46 @@ class TestParsing(unittest.TestCase):
                 assert result_dim is list
                 self.assertIsInstance(result, list)
                 self.assertIsInstance(result[0], ModelInstanceIndex)
+
+    def test_parser_string(self):
+        """Checks parsing from a string (not file_name)."""
+        sdf_file = FindResourceOrThrow(
+            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
+        with open(sdf_file, "r") as f:
+            sdf_contents = f.read()
+        plant = MultibodyPlant(time_step=0.01)
+        parser = Parser(plant=plant)
+        result = parser.AddModelFromString(
+            file_contents=sdf_contents, file_type="sdf")
+        self.assertIsInstance(result, ModelInstanceIndex)
+
+    def test_model_directives(self):
+        model_dir = os.path.dirname(FindResourceOrThrow(
+            "drake/multibody/parsing/test/"
+            "process_model_directives_test/package.xml"))
+        plant = MultibodyPlant(time_step=0.01)
+        parser = Parser(plant=plant)
+        parser.package_map().PopulateFromFolder(model_dir)
+        directives_file = model_dir + "/add_scoped_top.yaml"
+        directives = LoadModelDirectives(directives_file)
+        added_models = ProcessModelDirectives(
+            directives=directives, plant=plant, parser=parser)
+        # Check for an instance.
+        model_names = [model.model_name for model in added_models]
+        self.assertIn("extra_model", model_names)
+        plant.GetModelInstanceByName("extra_model")
+        # Test that other bound symbols exist.
+        ModelInstanceInfo.model_name
+        ModelInstanceInfo.model_path
+        ModelInstanceInfo.parent_frame_name
+        ModelInstanceInfo.child_frame_name
+        ModelInstanceInfo.X_PC
+        ModelInstanceInfo.model_instance
+        AddFrame.name
+        AddFrame.X_PF
+        frame = GetScopedFrameByName(plant, "world")
+        self.assertIsNotNone(GetScopedFrameName(plant, frame))
+
+    def test_model_directives_doc(self):
+        """Check that the warning note in the docstring was added."""
+        self.assertIn("Note:\n", ProcessModelDirectives.__doc__)

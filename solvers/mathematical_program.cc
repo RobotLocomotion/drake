@@ -18,9 +18,10 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
+#include "drake/common/symbolic_decompose.h"
+#include "drake/common/symbolic_monomial_util.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/sos_basis_generator.h"
-#include "drake/solvers/symbolic_extraction.h"
 
 namespace drake {
 namespace solvers {
@@ -49,8 +50,6 @@ using symbolic::Variable;
 using symbolic::Variables;
 
 using internal::CreateBinding;
-using internal::DecomposeLinearExpression;
-using internal::SymbolicError;
 
 MathematicalProgram::MathematicalProgram()
     : x_initial_guess_(0),
@@ -147,18 +146,40 @@ void MathematicalProgram::AddDecisionVariables(
   AppendNanToEnd(decision_variables.rows(), &x_initial_guess_);
 }
 
-symbolic::Polynomial MathematicalProgram::NewFreePolynomial(
-    const Variables& indeterminates, const int degree,
-    const string& coeff_name) {
-  const drake::VectorX<symbolic::Monomial> m{
-      MonomialBasis(indeterminates, degree)};
+symbolic::Polynomial MathematicalProgram::NewFreePolynomialImpl(
+    const Variables& indeterminates, const int degree, const string& coeff_name,
+    symbolic::internal::DegreeType degree_type) {
+  const drake::VectorX<symbolic::Monomial> m =
+      symbolic::internal::ComputeMonomialBasis<Eigen::Dynamic>(
+          indeterminates, degree, degree_type);
   const VectorXDecisionVariable coeffs{
-      NewContinuousVariables(m.size(), coeff_name)};
+      this->NewContinuousVariables(m.size(), coeff_name)};
   symbolic::Polynomial p;
   for (int i = 0; i < m.size(); ++i) {
     p.AddProduct(coeffs(i), m(i));  // p += coeffs(i) * m(i);
   }
   return p;
+}
+
+symbolic::Polynomial MathematicalProgram::NewFreePolynomial(
+    const Variables& indeterminates, const int degree,
+    const string& coeff_name) {
+  return NewFreePolynomialImpl(indeterminates, degree, coeff_name,
+                               symbolic::internal::DegreeType::kAny);
+}
+
+symbolic::Polynomial MathematicalProgram::NewEvenDegreeFreePolynomial(
+    const symbolic::Variables& indeterminates, int degree,
+    const std::string& coeff_name) {
+  return NewFreePolynomialImpl(indeterminates, degree, coeff_name,
+                               symbolic::internal::DegreeType::kEven);
+}
+
+symbolic::Polynomial MathematicalProgram::NewOddDegreeFreePolynomial(
+    const symbolic::Variables& indeterminates, int degree,
+    const std::string& coeff_name) {
+  return NewFreePolynomialImpl(indeterminates, degree, coeff_name,
+                               symbolic::internal::DegreeType::kOdd);
 }
 
 // This is the utility function for creating new nonnegative polynomials
@@ -176,24 +197,34 @@ MathematicalProgram::NewNonnegativePolynomial(
   return std::make_pair(p, Q);
 }
 
-symbolic::Polynomial MathematicalProgram::NewNonnegativePolynomial(
-    const Eigen::Ref<const MatrixX<symbolic::Variable>>& grammian,
+namespace {
+symbolic::Polynomial ComputePolynomialFromMonomialBasisAndGramMatrix(
     const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
-    NonnegativePolynomial type) {
-  DRAKE_ASSERT(grammian.rows() == grammian.cols());
-  DRAKE_ASSERT(grammian.rows() == monomial_basis.rows());
+    const Eigen::Ref<const MatrixX<symbolic::Variable>>& gram) {
   // TODO(hongkai.dai & soonho.kong): ideally we should compute p in one line as
   // monomial_basis.dot(grammian * monomial_basis). But as explained in #10200,
   // this one line version is too slow, so we use this double for loop to
   // compute the matrix product by hand. I will revert to the one line version
   // when it is fast.
   symbolic::Polynomial p{};
-  for (int i = 0; i < grammian.rows(); ++i) {
-    p.AddProduct(grammian(i, i), pow(monomial_basis(i), 2));
-    for (int j = i + 1; j < grammian.cols(); ++j) {
-      p.AddProduct(2 * grammian(i, j), monomial_basis(i) * monomial_basis(j));
+  for (int i = 0; i < gram.rows(); ++i) {
+    p.AddProduct(gram(i, i), pow(monomial_basis(i), 2));
+    for (int j = i + 1; j < gram.cols(); ++j) {
+      p.AddProduct(2 * gram(i, j), monomial_basis(i) * monomial_basis(j));
     }
   }
+  return p;
+}
+}  // namespace
+
+symbolic::Polynomial MathematicalProgram::NewNonnegativePolynomial(
+    const Eigen::Ref<const MatrixX<symbolic::Variable>>& grammian,
+    const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
+    NonnegativePolynomial type) {
+  DRAKE_ASSERT(grammian.rows() == grammian.cols());
+  DRAKE_ASSERT(grammian.rows() == monomial_basis.rows());
+  const symbolic::Polynomial p =
+      ComputePolynomialFromMonomialBasisAndGramMatrix(monomial_basis, grammian);
   switch (type) {
     case MathematicalProgram::NonnegativePolynomial::kSos: {
       AddPositiveSemidefiniteConstraint(grammian);
@@ -234,6 +265,50 @@ MathematicalProgram::NewSosPolynomial(const Variables& indeterminates,
                                       const int degree) {
   return NewNonnegativePolynomial(
       indeterminates, degree, MathematicalProgram::NonnegativePolynomial::kSos);
+}
+
+std::tuple<symbolic::Polynomial, MatrixXDecisionVariable,
+           MatrixXDecisionVariable>
+MathematicalProgram::NewEvenDegreeNonnegativePolynomial(
+    const symbolic::Variables& indeterminates, int degree,
+    MathematicalProgram::NonnegativePolynomial type) {
+  DRAKE_DEMAND(degree % 2 == 0);
+  const VectorX<symbolic::Monomial> m_e =
+      EvenDegreeMonomialBasis(indeterminates, degree / 2);
+  const VectorX<symbolic::Monomial> m_o =
+      OddDegreeMonomialBasis(indeterminates, degree / 2);
+  symbolic::Polynomial p1, p2;
+  MatrixXDecisionVariable Q_ee, Q_oo;
+  std::tie(p1, Q_ee) = NewNonnegativePolynomial(m_e, type);
+  std::tie(p2, Q_oo) = NewNonnegativePolynomial(m_o, type);
+  const symbolic::Polynomial p = p1 + p2;
+  return std::make_tuple(p, Q_oo, Q_ee);
+}
+
+std::tuple<symbolic::Polynomial, MatrixXDecisionVariable,
+           MatrixXDecisionVariable>
+MathematicalProgram::NewEvenDegreeSosPolynomial(
+    const symbolic::Variables& indeterminates, int degree) {
+  return NewEvenDegreeNonnegativePolynomial(
+      indeterminates, degree, MathematicalProgram::NonnegativePolynomial::kSos);
+}
+
+std::tuple<symbolic::Polynomial, MatrixXDecisionVariable,
+           MatrixXDecisionVariable>
+MathematicalProgram::NewEvenDegreeSdsosPolynomial(
+    const symbolic::Variables& indeterminates, int degree) {
+  return NewEvenDegreeNonnegativePolynomial(
+      indeterminates, degree,
+      MathematicalProgram::NonnegativePolynomial::kSdsos);
+}
+
+std::tuple<symbolic::Polynomial, MatrixXDecisionVariable,
+           MatrixXDecisionVariable>
+MathematicalProgram::NewEvenDegreeDsosPolynomial(
+    const symbolic::Variables& indeterminates, int degree) {
+  return NewEvenDegreeNonnegativePolynomial(
+      indeterminates, degree,
+      MathematicalProgram::NonnegativePolynomial::kDsos);
 }
 
 symbolic::Polynomial MathematicalProgram::MakePolynomial(
@@ -1065,7 +1140,7 @@ MathematicalProgram::AddExponentialConeConstraint(
   Eigen::MatrixXd A{};
   Eigen::VectorXd b(3);
   VectorXDecisionVariable vars{};
-  internal::DecomposeLinearExpression(z, &A, &b, &vars);
+  symbolic::DecomposeAffineExpressions(z, &A, &b, &vars);
   return AddExponentialConeConstraint(A.sparseView(), Eigen::Vector3d(b), vars);
 }
 

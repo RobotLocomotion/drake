@@ -33,5 +33,13 @@ class ExampleCppClass {
   void overload(int) {}
 };
 
+/// Serves as an example for binding (and deprecating) a simple struct. This
+/// allows the struct to be constructed with ParamInit and deprecated using
+/// the corresponding DeprecatedParamInit.
+struct ExampleCppStruct {
+  int i{};
+  int j{};
+};
+
 }  // namespace example_class
 }  // namespace drake

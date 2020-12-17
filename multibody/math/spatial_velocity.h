@@ -1,20 +1,22 @@
 #pragma once
 
+#ifndef DRAKE_SPATIAL_ALGEBRA_HEADER
+// NOLINTNEXTLINE(whitespace/line_length)
+#warning DRAKE_DEPRECATED: Do not directly include this file. Include "drake/multibody/math/spatial_algebra.h". This warning will be promoted to an error on 2021-01-01.
+#endif
+
 #include <limits>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/math/spatial_force.h"
+#include "drake/multibody/math/spatial_momentum.h"
 #include "drake/multibody/math/spatial_vector.h"
 
 namespace drake {
 namespace multibody {
-
-// Forward declaration to define dot product with a spatial force.
-template <typename T> class SpatialForce;
-
-// Forward declaration to define dot product with a spatial momentum.
-template <typename T> class SpatialMomentum;
 
 /// This class is used to represent a _spatial velocity_ (also called a
 /// _twist_) that combines rotational (angular) and translational
@@ -212,7 +214,10 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   /// @warning The result of this method cannot be interpreted as power unless
   ///          `this` spatial velocity is measured in an inertial frame I,
   ///          which cannot be enforced by this class.
-  T dot(const SpatialForce<T>& F_Q_E) const;
+  inline T dot(const SpatialForce<T>& F_Q_E) const;
+  // The dot() method is implemented at the end of this file, so that all of
+  // the dot methods are co-located for easy understanding. We need the inline
+  // keyword to ensure the method is still inlined even with `extern template`.
 
   /// Given `this` spatial velocity `V_NBp_E` of rigid body B frame shifted to
   /// point P, measured in an inertial (or Newtonian) frame N and, expressed in
@@ -230,7 +235,10 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   /// mass. The above is true due to how spatial momentum and velocity shift
   /// when changing point P, see SpatialMomentum::Shift() and
   /// SpatialVelocity::Shift().
-  T dot(const SpatialMomentum<T>& L_NBp_E) const;
+  inline T dot(const SpatialMomentum<T>& L_NBp_E) const;
+  // The dot() method is implemented at the end of this file, so that all of
+  // the dot methods are co-located for easy understanding. We need the inline
+  // keyword to ensure the method is still inlined even with `extern template`.
 };
 
 /// Performs the addition of two spatial velocities. This operator
@@ -304,5 +312,32 @@ inline SpatialVelocity<T> operator-(
   return SpatialVelocity<T>(V_MB_E) -= V_MAb_E;
 }
 
+template <typename T>
+T SpatialVelocity<T>::dot(const SpatialForce<T>& F_Q_E) const {
+  return this->get_coeffs().dot(F_Q_E.get_coeffs());
+}
+
+// This was declared in spatial_force.h, but must be implemented here in
+// order to break the dependency cycle.
+template <typename T>
+T SpatialForce<T>::dot(const SpatialVelocity<T>& V_IBp_E) const {
+  return V_IBp_E.dot(*this);  // dot-product is commutative.
+}
+
+// This was declared in spatial_momentum.h, but must be implemented here in
+// order to break the dependency cycle.
+template <typename T>
+T SpatialMomentum<T>::dot(const SpatialVelocity<T>& V_NBp_E) const {
+  return this->get_coeffs().dot(V_NBp_E.get_coeffs());
+}
+
+template <typename T>
+T SpatialVelocity<T>::dot(const SpatialMomentum<T>& L_NBp_E) const {
+  return L_NBp_E.dot(*this);  // dot-product is commutative.
+}
+
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::SpatialVelocity)

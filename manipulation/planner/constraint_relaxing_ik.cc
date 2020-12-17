@@ -36,16 +36,6 @@ ConstraintRelaxingIk::ConstraintRelaxingIk(
   SetEndEffector(end_effector_link_name);
 }
 
-ConstraintRelaxingIk::ConstraintRelaxingIk(
-    const std::string&,
-    const std::string&,
-    const Isometry3<double>&)
-    : rand_generator_(kDefaultRandomSeed),
-      plant_(0) {
-  throw std::runtime_error(
-      "Use the two-argument constructor or ConstraintRelaxingIkRbt");
-}
-
 bool ConstraintRelaxingIk::PlanSequentialTrajectory(
     const std::vector<IkCartesianWaypoint>& waypoints,
     const VectorX<double>& q_current,

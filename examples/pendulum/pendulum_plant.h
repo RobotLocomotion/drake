@@ -12,10 +12,13 @@ namespace pendulum {
 /// A model of a simple pendulum
 /// @f[ ml^2 \ddot\theta + b\dot\theta + mgl\sin\theta = \tau @f]
 ///
-/// @system{PendulumPlant,
-///    @input_port{tau},
-///    @output_port{state}
-/// }
+/// @system
+/// name: PendulumPlant
+/// input_ports:
+/// - tau
+/// output_ports:
+/// - state
+/// @endsystem
 ///
 /// @tparam_default_scalar
 template <typename T>
@@ -31,9 +34,6 @@ class PendulumPlant final : public systems::LeafSystem<T> {
   explicit PendulumPlant(const PendulumPlant<U>&);
 
   ~PendulumPlant() final;
-
-  /// Returns the input port to the externally applied force.
-  const systems::InputPort<T>& get_input_port() const;
 
   /// Returns the port to output state.
   const systems::OutputPort<T>& get_state_output_port() const;

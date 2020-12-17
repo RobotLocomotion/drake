@@ -102,6 +102,12 @@ class LeafOutputPort final : public OutputPort<T> {
     return {std::nullopt, cache_entry().ticket()};
   };
 
+  // Check that an AbstractValue provided to Calc() is suitable for this port
+  // by comparing it with the port's cache entry value type.
+  void ThrowIfInvalidPortValueType(
+      const Context<T>& context,
+      const AbstractValue& proposed_value) const final;
+
   CacheEntry* const cache_entry_;
 };
 

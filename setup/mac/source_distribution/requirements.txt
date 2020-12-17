@@ -1,7 +1,0 @@
-boto3
-jupyter
-pandas
-pygame
-# Excluded due to https://github.com/sphinx-doc/sphinx/issues/6225
-Sphinx != 2.0.0
-sphinx_rtd_theme

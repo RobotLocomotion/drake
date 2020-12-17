@@ -13,6 +13,7 @@
 #include "drake/geometry/proximity/make_sphere_field.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
+#include "drake/geometry/proximity/tessellation_strategy.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 
 namespace drake {
@@ -23,28 +24,14 @@ namespace hydroelastic {
 using std::make_unique;
 using std::move;
 
-SoftGeometry& SoftGeometry::operator=(const SoftGeometry& g) {
-  if (this == &g) return *this;
+SoftMesh& SoftMesh::operator=(const SoftMesh& s) {
+  if (this == &s) return *this;
 
-  if (g.is_half_space()) {
-    geometry_ = SoftHalfSpace{g.pressure_scale()};
-  } else {
-    auto mesh = make_unique<VolumeMesh<double>>(g.mesh());
-    // We can't simply copy the mesh field; the copy must contain a pointer to
-    // the new mesh. So, we use CloneAndSetMesh() instead.
-    auto pressure = g.pressure_field().CloneAndSetMesh(mesh.get());
-    geometry_ = SoftMesh{move(mesh), move(pressure)};
-  }
-  return *this;
-}
-
-RigidGeometry& RigidGeometry::operator=(const RigidGeometry& g) {
-  if (this == &g) return *this;
-
-  geometry_ = std::nullopt;
-  if (!g.is_half_space()) {
-    geometry_ = RigidMesh(make_unique<SurfaceMesh<double>>(g.mesh()));
-  }
+  mesh_ = make_unique<VolumeMesh<double>>(s.mesh());
+  // We can't simply copy the mesh field; the copy must contain a pointer to
+  // the new mesh. So, we use CloneAndSetMesh() instead.
+  pressure_ = s.pressure().CloneAndSetMesh(mesh_.get());
+  bvh_ = make_unique<Bvh<VolumeMesh<double>>>(s.bvh());
 
   return *this;
 }
@@ -138,7 +125,7 @@ void Geometries::AddGeometry(GeometryId id, RigidGeometry geometry) {
 // instantiated with shape (e.g., "Sphere", "Box", etc.) and compliance (i.e.,
 // "rigid" or "soft") strings (to help give intelligible error messages) and
 // then attempts to extract a typed value from a set of proximity properties --
-// spewing meaningful error messages based on absence, type mis-match, and
+// spewing meaningful error messages based on absence, type mismatch, and
 // invalid values.
 template <typename ValueType>
 class Validator {
@@ -213,11 +200,13 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 }
 
 std::optional<RigidGeometry> MakeRigidRepresentation(
-    const Box& box, const ProximityProperties& props) {
+    const Box& box, const ProximityProperties&) {
   PositiveDouble validator("Box", "rigid");
-  const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
+  // Use the coarsest mesh for the box. The safety factor 1.1 guarantees the
+  // resolution-hint argument is larger than the box size, so the mesh
+  // will have only 8 vertices and 12 triangles.
   auto mesh = make_unique<SurfaceMesh<double>>(
-      MakeBoxSurfaceMesh<double>(box, edge_length));
+      MakeBoxSurfaceMesh<double>(box, 1.1 * box.size().maxCoeff()));
 
   return RigidGeometry(RigidMesh(move(mesh)));
 }
@@ -251,13 +240,26 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
   return RigidGeometry(RigidMesh(move(mesh)));
 }
 
+std::optional<RigidGeometry> MakeRigidRepresentation(
+    const Convex& convex_spec, const ProximityProperties&) {
+  // Convex does not use any properties.
+  auto mesh = make_unique<SurfaceMesh<double>>(
+      ReadObjToSurfaceMesh(convex_spec.filename(), convex_spec.scale()));
+
+  return RigidGeometry(RigidMesh(move(mesh)));
+}
+
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Sphere& sphere, const ProximityProperties& props) {
   PositiveDouble validator("Sphere", "soft");
   // First, create the mesh.
   const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
+  // If nothing is said, let's go for the *cheap* tessellation strategy.
+  const TessellationStrategy strategy =
+      props.GetPropertyOrDefault(kHydroGroup, "tessellation_strategy",
+                                 TessellationStrategy::kSingleInteriorVertex);
   auto mesh = make_unique<VolumeMesh<double>>(
-      MakeSphereVolumeMesh<double>(sphere, edge_length));
+      MakeSphereVolumeMesh<double>(sphere, edge_length, strategy));
 
   const double elastic_modulus =
       validator.Extract(props, kMaterialGroup, kElastic);
@@ -272,9 +274,8 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
     const Box& box, const ProximityProperties& props) {
   PositiveDouble validator("Box", "soft");
   // First, create the mesh.
-  const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
-  auto mesh = make_unique<VolumeMesh<double>>(
-      MakeBoxVolumeMesh<double>(box, edge_length));
+  auto mesh =
+      make_unique<VolumeMesh<double>>(MakeBoxVolumeMeshWithMa<double>(box));
 
   const double elastic_modulus =
       validator.Extract(props, kMaterialGroup, kElastic);
@@ -307,8 +308,12 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   PositiveDouble validator("Ellipsoid", "soft");
   // First, create the mesh.
   const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
+  // If nothing is said, let's go for the *cheap* tessellation strategy.
+  const TessellationStrategy strategy =
+      props.GetPropertyOrDefault(kHydroGroup, "tessellation_strategy",
+                                 TessellationStrategy::kSingleInteriorVertex);
   auto mesh = make_unique<VolumeMesh<double>>(
-      MakeEllipsoidVolumeMesh<double>(ellipsoid, edge_length));
+      MakeEllipsoidVolumeMesh<double>(ellipsoid, edge_length, strategy));
 
   const double elastic_modulus =
       validator.Extract(props, kMaterialGroup, kElastic);

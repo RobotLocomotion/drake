@@ -31,10 +31,9 @@ import re
 import sys
 
 _TEMPLATE = """<?xml version='1.0'?>
-<sdf version='1.6'>
+<sdf version='1.7'>
   <model name='{name}'>
     <link name='{name}'>
-      <pose>0 0 0 0 0 0</pose>
       <inertial>
         <pose>{inertial_pose}</pose>
         <mass>{mass}</mass>
@@ -48,7 +47,6 @@ _TEMPLATE = """<?xml version='1.0'?>
         </inertia>
       </inertial>
       <visual name='visual'>
-        <pose>0 0 0 0 0 0</pose>
         <geometry>
           <mesh>
             <uri>{mesh_uri}</uri>
@@ -103,10 +101,10 @@ def convert(log_text, scale, mass_kg):
     # LOG: 2     | -72.085564  -0.000000  1909.948364 |
     elements = _search(
         log_text,
-        "LOG. 2 +Inertia Tensor is .\n"
-        "LOG. 2 +\| +([-.0-9]+) +([-.0-9]+) +([-.0-9]+) +\|\n"
-        "LOG. 2 +\| +([-.0-9]+) +([-.0-9]+) +([-.0-9]+) +\|\n"
-        "LOG. 2 +\| +([-.0-9]+) +([-.0-9]+) +([-.0-9]+) +\|\n"
+        r"LOG. 2 +Inertia Tensor is .\n"
+        r"LOG. 2 +\| +([-.0-9]+) +([-.0-9]+) +([-.0-9]+) +\|\n"
+        r"LOG. 2 +\| +([-.0-9]+) +([-.0-9]+) +([-.0-9]+) +\|\n"
+        r"LOG. 2 +\| +([-.0-9]+) +([-.0-9]+) +([-.0-9]+) +\|\n"
     )
     inertia_scale = (scale ** 5) * mass_kg / volume_m3
     ixx = _rescale(elements[0], inertia_scale)

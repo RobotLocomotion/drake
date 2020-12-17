@@ -22,11 +22,14 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
     name = "sensors",
+    visibility = ["//visibility:public"],
     deps = [
+        ":accelerometer",
         ":beam_model",
         ":beam_model_params",
         ":camera_info",
         ":color_palette",
+        ":gyroscope",
         ":image",
         ":image_to_lcm_image_array_t",
         ":image_writer",
@@ -36,6 +39,22 @@ drake_cc_package_library(
         ":rgbd_sensor",
         ":rotary_encoders",
         ":vtk_util",
+    ],
+)
+
+drake_cc_library(
+    name = "accelerometer",
+    srcs = ["accelerometer.cc"],
+    hdrs = [
+        "accelerometer.h",
+        "accelerometer_sensor.h",
+    ],
+    deps = [
+        "//math:geometric_transform",
+        "//multibody/math",
+        "//multibody/plant",
+        "//multibody/tree:multibody_tree_indexes",
+        "//systems/framework",
     ],
 )
 
@@ -64,6 +83,22 @@ drake_cc_library(
         "camera_info.h",
     ],
     deps = [
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "gyroscope",
+    srcs = ["gyroscope.cc"],
+    hdrs = [
+        "gyroscope.h",
+        "gyroscope_sensor.h",
+    ],
+    deps = [
+        "//math:geometric_transform",
+        "//multibody/math",
+        "//multibody/plant",
+        "//multibody/tree:multibody_tree_indexes",
         "//systems/framework",
     ],
 )
@@ -232,11 +267,24 @@ drake_cc_library(
 # === test/ ===
 
 drake_cc_googletest(
+    name = "accelerometer_test",
+    data = ["//examples/pendulum:prod_models"],
+    deps = [
+        ":accelerometer",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
     name = "beam_model_test",
     deps = [
         ":beam_model",
         "//common/proto:call_python",
         "//systems/analysis:simulator",
+        "//systems/framework/test_utilities",
         "//systems/primitives:constant_vector_source",
         "//systems/primitives:random_source",
         "//systems/primitives:signal_logger",
@@ -248,6 +296,18 @@ drake_cc_googletest(
     deps = [
         ":camera_info",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "gyroscope_test",
+    data = ["//examples/pendulum:prod_models"],
+    deps = [
+        ":gyroscope",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/framework/test_utilities",
     ],
 )
 
@@ -265,7 +325,6 @@ filegroup(
         "test/models/background.jpg",
         "test/models/box.sdf",
         "test/models/box_with_mesh.sdf",
-        "test/models/meshes/box.json",
         "test/models/meshes/box.obj",
         "test/models/meshes/box.obj.mtl",
         "test/models/meshes/box.png",

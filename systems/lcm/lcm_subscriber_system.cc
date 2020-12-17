@@ -51,9 +51,9 @@ LcmSubscriberSystem::LcmSubscriberSystem(
 
   // Declare our two states (message_value, message_count).
   static_assert(kStateIndexMessage == 0, "");
-  this->DeclareAbstractState(AllocateSerializerOutputValue());
+  this->DeclareAbstractState(*AllocateSerializerOutputValue());
   static_assert(kStateIndexMessageCount == 1, "");
-  this->DeclareAbstractState(AbstractValue::Make<int>(0));
+  this->DeclareAbstractState(Value<int>(0));
 
   // Declare an unrestricted forced update handler that is invoked when a
   // "forced" trigger occurs. This gives the user flexibility to force update

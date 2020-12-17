@@ -31,7 +31,7 @@ def assert_pickle(test, obj, value_to_compare=lambda x: x.__dict__, T=None):
         value_to_compare: (optional) Value to extract from the object to
             compare. By default, compares dictionaries.
         T: (optional) When pickling template instantiations on scalar types,
-            pass the scalar type T. This is used becaues `Expression` is
+            pass the scalar type T. This is used because `Expression` is
             currently not a serializable type.
     """
     metaclass = type(type(obj))

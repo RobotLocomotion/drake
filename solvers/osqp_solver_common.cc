@@ -12,7 +12,8 @@ namespace drake {
 namespace solvers {
 
 OsqpSolver::OsqpSolver()
-    : SolverBase(&id, &is_available, &ProgramAttributesSatisfied) {}
+    : SolverBase(&id, &is_available, &is_enabled,
+                 &ProgramAttributesSatisfied) {}
 
 OsqpSolver::~OsqpSolver() = default;
 
@@ -20,6 +21,8 @@ SolverId OsqpSolver::id() {
   static const never_destroyed<SolverId> singleton{"OSQP"};
   return singleton.access();
 }
+
+bool OsqpSolver::is_enabled() { return true; }
 
 bool OsqpSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
   static const never_destroyed<ProgramAttributes> solver_capabilities(

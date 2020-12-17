@@ -35,13 +35,9 @@ PYBIND11_MODULE(pendulum, m) {
   py::class_<PendulumPlant<T>, LeafSystem<T>>(
       m, "PendulumPlant", doc.PendulumPlant.doc)
       .def(py::init<>(), doc.PendulumPlant.ctor.doc)
-      .def("get_input_port", &System<T>::get_input_port, py_reference_internal,
-          py::arg("port_index"),
-          pydrake_doc.drake.systems.System.get_input_port.doc)
-      .def("get_input_port", &PendulumPlant<T>::get_input_port,
-          py_reference_internal, doc.PendulumPlant.get_input_port.doc)
       .def("get_state_output_port", &PendulumPlant<T>::get_state_output_port,
-          py_reference_internal, doc.PendulumPlant.get_state_output_port.doc)
+          py_rvp::reference_internal,
+          doc.PendulumPlant.get_state_output_port.doc)
       .def_static("get_state",
           py::overload_cast<const Context<T>&>(&PendulumPlant<T>::get_state),
           py::arg("context"),
@@ -53,10 +49,10 @@ PYBIND11_MODULE(pendulum, m) {
           // Keey alive, ownership: `return` keeps `context` alive
           py::keep_alive<0, 1>(), doc.PendulumPlant.get_mutable_state.doc)
       .def("get_parameters", &PendulumPlant<T>::get_parameters,
-          py_reference_internal, py::arg("context"),
+          py_rvp::reference_internal, py::arg("context"),
           doc.PendulumPlant.get_parameters.doc)
       .def("get_mutable_parameters", &PendulumPlant<T>::get_mutable_parameters,
-          py_reference_internal, py::arg("context"),
+          py_rvp::reference_internal, py::arg("context"),
           doc.PendulumPlant.get_mutable_parameters.doc);
 
   // TODO(russt): Remove custom bindings once #8096 is resolved.
@@ -117,8 +113,8 @@ PYBIND11_MODULE(pendulum, m) {
           py::arg("scene_graph"),
           // Keep alive, ownership: `return` keeps `builder` alive.
           py::keep_alive<0, 1>(),
-          // See #11531 for why `py_reference` is needed.
-          py_reference, doc.PendulumGeometry.AddToBuilder.doc);
+          // See #11531 for why `py_rvp::reference` is needed.
+          py_rvp::reference, doc.PendulumGeometry.AddToBuilder.doc);
 }
 
 }  // namespace pydrake

@@ -1,8 +1,7 @@
 #pragma once
 
 #ifndef DRAKE_COMMON_SYMBOLIC_HEADER
-// TODO(soonho-tri): Change to #error, when #6613 merged.
-#warning Do not directly include this file. Include "drake/common/symbolic.h".
+#error Do not directly include this file. Include "drake/common/symbolic.h".
 #endif
 
 #include <cstddef>
@@ -100,11 +99,14 @@ namespace internal {
  * bin. Used as a helper function to implement MonomialBasis.
  *
  * @tparam MonomialOrder provides a monomial ordering.
+ * TODO(hongkai.dai): Remove this method and use
+ * AddPolynomialBasisElementsOfDegreeN in symbolic_polynomial_basis.h instead
+ * when we deprecate Monomial class.
  */
 template <typename MonomialOrder>
 void AddMonomialsOfDegreeN(const Variables& vars, int degree, const Monomial& b,
                            std::set<Monomial, MonomialOrder>* const bin) {
-  DRAKE_ASSERT(vars.size() > 0);
+  DRAKE_ASSERT(!vars.empty());
   if (degree == 0) {
     bin->insert(b);
     return;
@@ -117,22 +119,50 @@ void AddMonomialsOfDegreeN(const Variables& vars, int degree, const Monomial& b,
   for (int i{degree - 1}; i >= 0; --i) {
     AddMonomialsOfDegreeN(vars - var, degree - i, b * Monomial{var, i}, bin);
   }
-  return;
 }
+
+enum class DegreeType {
+  kEven,  ///< Even degree
+  kOdd,   ///< Odd degree
+  kAny,   ///< Any degree
+};
 
 /** Returns all monomials up to a given degree under the graded reverse
  * lexicographic order. This is called by MonomialBasis functions defined below.
  *
  * @tparam rows Number of rows or Dynamic
+ * @param degree_type If degree_type is kAny, then the monomials' degrees are no
+ * larger than @p degree. If degree_type is kEven, then the monomial's degrees
+ * are even numbers no larger than @p degree. If degree_type is kOdd, then the
+ * monomial degrees are odd numbers no larger than @p degree.
  */
 template <int rows>
-Eigen::Matrix<Monomial, rows, 1> ComputeMonomialBasis(const Variables& vars,
-                                                      int degree) {
-  DRAKE_DEMAND(vars.size() > 0);
+Eigen::Matrix<Monomial, rows, 1> ComputeMonomialBasis(
+    const Variables& vars, int degree,
+    DegreeType degree_type = DegreeType::kAny) {
+  DRAKE_DEMAND(!vars.empty());
   DRAKE_DEMAND(degree >= 0);
   // 1. Collect monomials.
   std::set<Monomial, GradedReverseLexOrder<std::less<Variable>>> monomials;
-  for (int i{degree}; i >= 0; --i) {
+  int start_degree = 0;
+  int degree_stride = 1;
+  switch (degree_type) {
+    case DegreeType::kAny: {
+      start_degree = 0;
+      degree_stride = 1;
+      break;
+    }
+    case DegreeType::kEven: {
+      start_degree = 0;
+      degree_stride = 2;
+      break;
+    }
+    case DegreeType::kOdd: {
+      start_degree = 1;
+      degree_stride = 2;
+    }
+  }
+  for (int i = start_degree; i <= degree; i += degree_stride) {
     AddMonomialsOfDegreeN(vars, i, Monomial{}, &monomials);
   }
   // 2. Prepare the return value, basis.
@@ -185,6 +215,35 @@ Eigen::Matrix<Monomial, NChooseK(n + degree, degree), 1> MonomialBasis(
   return internal::ComputeMonomialBasis<NChooseK(n + degree, degree)>(vars,
                                                                       degree);
 }
+
+/** Returns all even degree monomials up to a given degree under the graded
+ * reverse lexicographic order. A monomial has an even degree if its total
+ * degree is even. So xy is an even degree monomial (degree 2) while x²y is not
+ * (degree 3). Note that graded reverse lexicographic order uses the total order
+ * among Variable which is based on a variable's unique ID. For example, for a
+ * given variable ordering x > y > z, `EvenDegreeMonomialBasis({x, y, z}, 2)`
+ * returns a column vector `[x², xy, y², xz, yz, z², 1]`.
+ *
+ * @pre @p vars is a non-empty set.
+ * @pre @p degree is a non-negative integer.
+ */
+Eigen::Matrix<Monomial, Eigen::Dynamic, 1> EvenDegreeMonomialBasis(
+    const Variables& vars, int degree);
+
+/** Returns all odd degree monomials up to a given degree under the graded
+ * reverse lexicographic order. A monomial has an odd degree if its total
+ * degree is odd. So x²y is an odd degree monomial (degree 3) while xy is not
+ * (degree 2). Note that graded reverse lexicographic order uses the total order
+ * among Variable which is based on a variable's unique ID. For example, for a
+ * given variable ordering x > y > z, `OddDegreeMonomialBasis({x, y, z}, 3)`
+ * returns a column vector `[x³, x²y, xy², y³, x²z, xyz, y²z, xz², yz², z³, x,
+ * y, z]`
+ *
+ * @pre @p vars is a non-empty set.
+ * @pre @p degree is a non-negative integer.
+ */
+Eigen::Matrix<Monomial, Eigen::Dynamic, 1> OddDegreeMonomialBasis(
+    const Variables& vars, int degree);
 
 }  // namespace symbolic
 }  // namespace drake

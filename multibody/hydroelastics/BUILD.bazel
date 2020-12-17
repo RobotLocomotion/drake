@@ -12,27 +12,12 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
     name = "hydroelastics",
+    visibility = ["//visibility:public"],
     deps = [
-        ":contact_surface_from_level_set",
         ":hydroelastic_engine",
         ":hydroelastic_field",
         ":hydroelastic_field_sphere",
         ":level_set_field",
-    ],
-)
-
-drake_cc_library(
-    name = "contact_surface_from_level_set",
-    hdrs = [
-        "contact_surface_from_level_set.h",
-    ],
-    deps = [
-        ":level_set_field",
-        "//common:autodiff",
-        "//common:essential",
-        "//geometry/proximity:volume_mesh",
-        "//geometry/query_results:contact_surface",
-        "//math:geometric_transform",
     ],
 )
 
@@ -77,17 +62,6 @@ drake_cc_library(
     name = "level_set_field",
     hdrs = ["level_set_field.h"],
     deps = ["//common:essential"],
-)
-
-drake_cc_googletest(
-    name = "contact_surface_from_level_set_test",
-    deps = [
-        ":contact_surface_from_level_set",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
-        "//geometry/proximity:make_sphere_mesh",
-        "//math",
-    ],
 )
 
 drake_cc_googletest(

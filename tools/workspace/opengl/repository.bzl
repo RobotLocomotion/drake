@@ -1,34 +1,38 @@
-# -*- mode: python -*-
+# -*- python -*-
 
-load(
-    "@drake//tools/workspace:os.bzl",
-    "determine_os",
-)
-load(
-    "@drake//tools/workspace:pkg_config.bzl",
-    "setup_pkg_config_repository",
-)
+load("@drake//tools/workspace:os.bzl", "determine_os")
 
-def _impl(repo_ctx):
-    # Only available on Ubuntu. On macOS, no targets should depend on @opengl.
-    os_result = determine_os(repo_ctx)
+def _impl(repository_ctx):
+    os_result = determine_os(repository_ctx)
+
     if os_result.error != None:
         fail(os_result.error)
-    if os_result.is_ubuntu:
-        error = setup_pkg_config_repository(repo_ctx).error
-        if error != None:
-            fail(error)
-    else:
-        repo_ctx.symlink(
+
+    if os_result.is_macos:
+        repository_ctx.symlink(
             Label("@drake//tools/workspace/opengl:package-macos.BUILD.bazel"),
             "BUILD.bazel",
         )
+    elif os_result.is_ubuntu:
+        hdrs = [
+            "GL/gl.h",
+            "GL/glcorearb.h",
+            "GL/glext.h",
+            "KHR/khrplatform.h",
+        ]
+        for hdr in hdrs:
+            repository_ctx.symlink(
+                "/usr/include/{}".format(hdr),
+                "include/{}".format(hdr),
+            )
+        repository_ctx.symlink(
+            Label("@drake//tools/workspace/opengl:package-ubuntu.BUILD.bazel"),
+            "BUILD.bazel",
+        )
+    else:
+        fail("Operating system is NOT supported", attr = os_result)
 
 opengl_repository = repository_rule(
-    attrs = {
-        "modname": attr.string(default = "gl"),
-        "licenses": attr.string_list(default = ["notice"]),  # SGI-B-2.0.
-    },
     local = True,
     configure = True,
     implementation = _impl,

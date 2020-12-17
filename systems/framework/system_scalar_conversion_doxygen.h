@@ -1,3 +1,6 @@
+/** @file
+ Doxygen-only documentation for @ref system_scalar_conversion.  */
+
 //------------------------------------------------------------------------------
 /** @defgroup system_scalar_conversion System Scalar Conversion
     @ingroup technical_notes
@@ -23,7 +26,7 @@ code sample compiles and runs successfully.
   //   tau = 0, theta = 0.1, thetadot = 0.2.
   auto plant = std::make_unique<PendulumPlant<double>>();
   auto context = plant->CreateDefaultContext();
-  context->FixInputPort(0, {0.0});  // tau
+  plant->get_input_port(0).FixValue(context.get(), 0.0);  // tau
   auto* state = dynamic_cast<PendulumState<double>*>(
       context->get_mutable_continuous_state_vector());
   state->set_theta(0.1);

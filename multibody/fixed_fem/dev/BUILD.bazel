@@ -1,0 +1,79 @@
+#- * - python - * -
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+
+package(
+    default_visibility = ["//visibility:private"],
+)
+
+drake_cc_library(
+    name = "isoparametric_element",
+    hdrs = [
+        "isoparametric_element.h",
+    ],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "linear_simplex_element",
+    hdrs = [
+        "linear_simplex_element.h",
+    ],
+    deps = [
+        ":isoparametric_element",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "quadrature",
+    hdrs = [
+        "quadrature.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "simplex_gaussian_quadrature",
+    hdrs = [
+        "simplex_gaussian_quadrature.h",
+    ],
+    deps = [
+        ":quadrature",
+    ],
+)
+
+drake_cc_googletest(
+    name = "isoparametric_element_test",
+    deps = [
+        ":isoparametric_element",
+        ":linear_simplex_element",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "linear_simplex_element_test",
+    deps = [
+        ":linear_simplex_element",
+    ],
+)
+
+drake_cc_googletest(
+    name = "simplex_gaussian_quadrature_test",
+    deps = [
+        ":simplex_gaussian_quadrature",
+    ],
+)
+
+add_lint_tests()

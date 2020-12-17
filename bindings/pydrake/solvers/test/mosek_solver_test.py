@@ -20,6 +20,9 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(result.is_success())
         x_expected = np.array([1, 1])
         self.assertTrue(np.allclose(result.GetSolution(x), x_expected))
+        self.assertEqual(result.get_solver_details().solution_status, 1)
+        self.assertEqual(result.get_solver_details().rescode, 0)
+        self.assertGreater(result.get_solver_details().optimizer_time, 0.)
 
     def test_mosek_license(self):
         # Nominal use case.

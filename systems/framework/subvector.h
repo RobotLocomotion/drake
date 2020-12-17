@@ -1,12 +1,12 @@
 #pragma once
 
-#include <cstdint>
 #include <stdexcept>
 
-#include <Eigen/Dense>
+#include <fmt/format.h>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/systems/framework/vector_base.h"
 
@@ -18,7 +18,7 @@ namespace systems {
 ///
 /// @tparam_default_scalar
 template <typename T>
-class Subvector : public VectorBase<T> {
+class Subvector final : public VectorBase<T> {
  public:
   // Subvector objects are neither copyable nor moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Subvector)
@@ -34,30 +34,37 @@ class Subvector : public VectorBase<T> {
     if (vector_ == nullptr) {
       throw std::logic_error("Cannot create Subvector of a nullptr vector.");
     }
-    if (first_element_ + num_elements_ > vector_->size()) {
-      throw std::out_of_range("Subvector out of bounds.");
+    if ((first_element < 0) || (num_elements < 0) ||
+        (first_element + num_elements > vector->size())) {
+      throw std::logic_error(fmt::format(
+          "Subvector range [{}, {}) falls outside the valid range [{}, {}).",
+          first_element, first_element + num_elements, 0, vector->size()));
     }
   }
 
-  /// Constructs an empty subvector.
-  /// @param vector The vector to slice.  Must not be nullptr. Must remain
-  ///               valid for the lifetime of this object.
-  explicit Subvector(VectorBase<T>* vector) : Subvector(vector, 0, 0) {}
-
-  int size() const override { return num_elements_; }
-
- protected:
-  const T& DoGetAtIndex(int index) const override {
-    DRAKE_THROW_UNLESS(index < size());
-    return (*vector_)[first_element_ + index];
-  }
-
-  T& DoGetAtIndex(int index) override {
-    DRAKE_THROW_UNLESS(index < size());
-    return (*vector_)[first_element_ + index];
-  }
+  int size() const final { return num_elements_; }
 
  private:
+  const T& DoGetAtIndexUnchecked(int index) const final {
+    DRAKE_ASSERT(index < size());
+    return (*vector_)[first_element_ + index];
+  }
+
+  T& DoGetAtIndexUnchecked(int index) final {
+    DRAKE_ASSERT(index < size());
+    return (*vector_)[first_element_ + index];
+  }
+
+  const T& DoGetAtIndexChecked(int index) const final {
+    if (index >= size()) { this->ThrowOutOfRange(index); }
+    return (*vector_)[first_element_ + index];
+  }
+
+  T& DoGetAtIndexChecked(int index) final {
+    if (index >= size()) { this->ThrowOutOfRange(index); }
+    return (*vector_)[first_element_ + index];
+  }
+
   VectorBase<T>* vector_{nullptr};
   int first_element_{0};
   int num_elements_{0};

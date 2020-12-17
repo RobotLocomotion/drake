@@ -76,7 +76,13 @@ RunfilesSingleton Create() {
   if (result.runfiles) {
     for (const auto& key_value : result.runfiles->EnvVars()) {
       if (key_value.first == "RUNFILES_DIR") {
-        result.runfiles_dir = key_value.second;
+        // N.B. We must normalize the path; otherwise the path may include
+        // `parent/./path` if the binary was run using `./bazel-bin/target` vs
+        // `bazel-bin/target`.
+        // TODO(eric.cousineau): Show this in Drake itself. This behavior was
+        // encountered in Anzu issue 5653, in a Python binary.
+        result.runfiles_dir =
+            filesystem::path(key_value.second).lexically_normal().string();
         break;
       }
     }

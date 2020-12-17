@@ -1,5 +1,5 @@
-<?xml version='1.0'?>
-<sdf version='1.6'>
+<?xml version="1.0"?>
+<sdf version="1.7">
   <!-- Note: This is the accompaning SDF file for the unit test box_test.cc
        and therefore these two files must be kept in sync.
 
@@ -12,10 +12,10 @@
        the box and the world so that we can attach two prismatic joints for
        these two DOFs. The ghost body has negligible mass.
   -->
-  <model name='box_with_pusher'>
+  <model name="box_with_pusher">
     <!-- A link to model the ground. Inertia values are not particularly
          important since the ground does not move. -->
-    <link name='ground'>
+    <link name="ground">
       <inertial>
         <mass>1.0</mass>
         <inertia>
@@ -27,21 +27,19 @@
           <izz>1.0</izz>
         </inertia>
       </inertial>
-      <visual name='visual'>
+      <visual name="visual">
         <geometry>
           <plane>
             <normal>0.0 0.0 1.0</normal>
           </plane>
         </geometry>
       </visual>
-
-      <collision name='collision'>
+      <collision name="collision">
         <geometry>
           <plane>
             <normal>0.0 0.0 1.0</normal>
           </plane>
         </geometry>
-
         <surface>
           <friction>
             <ode>
@@ -54,15 +52,13 @@
         </surface>
       </collision>
     </link>
-
-    <joint name='weld_ground' type='fixed'>
+    <joint name="weld_ground" type="fixed">
       <parent>world</parent>
       <child>ground</child>
     </joint>
-
     <!-- Ghost body of negligible mass. -->
-    <link name='ghost_body'>
-      <pose frame=''>0 0 0.5 0 0 0</pose>
+    <link name="ghost_body">
+      <pose>0 0 0.5 0 0 0</pose>
       <inertial>
         <mass>1.0e-6</mass>
         <inertia>
@@ -75,14 +71,12 @@
         </inertia>
       </inertial>
     </link>
-
     <!-- The x slider will have an actuator with a corresponding input port
          in our MultibodyPlant model so that we can apply an external force.
     -->
-    <joint name='x_slider' type='prismatic'>
+    <joint name="x_slider" type="prismatic">
       <parent>world</parent>
       <child>ghost_body</child>
-      <pose>0 0 0 0 0 0</pose>
       <axis>
         <xyz>1 0 0</xyz>
         <!-- Drake attaches an actuator to all joints with a non-zero effort
@@ -92,13 +86,11 @@
         </limit>
       </axis>
     </joint>
-
     <!-- The z slider allows the box to freely move up and down. Thus, the
          box would free fall if it wasn't for the contact with the ground. -->
-    <joint name='z_slider' type='prismatic'>
+    <joint name="z_slider" type="prismatic">
       <parent>ghost_body</parent>
       <child>box</child>
-      <pose>0 0 0 0 0 0</pose>
       <axis>
         <xyz>0 0 1</xyz>
         <!-- Drake attaches an actuator to all joints with a non-zero effort
@@ -109,9 +101,8 @@
         </limit>
       </axis>
     </joint>
-
     <!-- The model for a solid box of uniform density. -->
-    <link name='box'>
+    <link name="box">
       <pose>0 0 0.5 0 0 0</pose>
       <inertial>
         <mass>1.0</mass>
@@ -124,21 +115,19 @@
           <izz>0.166666666666667</izz>
         </inertia>
       </inertial>
-      <visual name='visual'>
+      <visual name="visual">
         <geometry>
           <box>
             <size>1.0 1.0 1.0</size>
           </box>
         </geometry>
       </visual>
-
-      <collision name='collision'>
+      <collision name="collision">
         <geometry>
           <box>
             <size>1.0 1.0 1.0</size>
           </box>
         </geometry>
-
         <surface>
           <friction>
             <ode>
@@ -151,6 +140,5 @@
         </surface>
       </collision>
     </link>
-
   </model>
 </sdf>

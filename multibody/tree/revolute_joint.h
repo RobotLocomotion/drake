@@ -31,7 +31,7 @@ class RevoluteJoint final : public Joint<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RevoluteJoint)
 
-  template<typename Scalar>
+  template <typename Scalar>
   using Context = systems::Context<Scalar>;
 
   static const char kTypeName[];
@@ -191,10 +191,6 @@ class RevoluteJoint final : public Joint<T> {
     return *this;
   }
 
-  void set_default_angle(double angle) {
-    get_mutable_mobilizer()->set_default_position(Vector1d{angle});
-  }
-
   void set_random_angle_distribution(const symbolic::Expression& angle) {
     get_mutable_mobilizer()->set_random_position_distribution(
         Vector1<symbolic::Expression>{angle});
@@ -226,6 +222,18 @@ class RevoluteJoint final : public Joint<T> {
   }
 
   /// @}
+
+  /// Gets the default rotation angle. Wrapper for the more general
+  /// `Joint::default_positions()`.
+  /// @returns The default angle of `this` stored in `default_positions_`
+  double get_default_angle() const { return this->default_positions()[0]; }
+
+  /// Sets the `default_positions` of this joint (in this case a single angle).
+  /// @param[in] angle
+  ///   The desired default angle of the joint
+  void set_default_angle(double angle) {
+    this->set_default_positions(Vector1d{angle});
+  }
 
   /// Adds into `forces` a given `torque` for `this` joint that is to be applied
   /// about the joint's axis. The torque is defined to be positive according to
@@ -295,6 +303,13 @@ class RevoluteJoint final : public Joint<T> {
 
   int do_get_num_positions() const override {
     return 1;
+  }
+
+  void do_set_default_positions(
+      const VectorX<double>& default_positions) override {
+    if (this->has_implementation()) {
+      get_mutable_mobilizer()->set_default_position(default_positions);
+    }
   }
 
   const T& DoGetOnePosition(const systems::Context<T>& context) const override {

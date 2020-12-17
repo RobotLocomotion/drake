@@ -7,7 +7,11 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace geometry {
@@ -18,9 +22,28 @@ namespace {
 using Eigen::Vector3d;
 using fcl::CollisionObjectd;
 using fcl::Sphered;
+using math::RigidTransform;
 using math::RigidTransformd;
+using math::RotationMatrix;
+using math::RotationMatrixd;
 using std::make_shared;
 using std::vector;
+
+const double kEps = std::numeric_limits<double>::epsilon();
+
+template <typename Derived>
+Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
+ExtractMatrixValue(const Derived& v) {
+  if constexpr (std::is_same<typename Derived::Scalar, double>::value) {
+    return v;
+    // NOLINTNEXTLINE
+  } else if constexpr (std::is_same<typename Derived::Scalar,
+                                    AutoDiffXd>::value) {
+    return math::autoDiffToValueMatrix(v);
+  } else {
+    static_assert("Unsupported type T");
+  }
+}
 
 // These tests represent the main tests of the actual callback. The callback
 // has limited responsibility:
@@ -45,29 +68,299 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
       : ::testing::Test(),
         sphere_A_(make_shared<Sphered>(kRadius)),
         sphere_B_(make_shared<Sphered>(kRadius)),
+        box_(make_shared<fcl::Boxd>(box_size_[0], box_size_[1], box_size_[2])),
+        cylinder_(
+            make_shared<fcl::Cylinderd>(cylinder_size_[0], cylinder_size_[1])),
+        halfspace_(
+            make_shared<fcl::Halfspaced>(halfspace_normal_, halfspace_offset_)),
+        capsule_(
+            make_shared<fcl::Capsuled>(capsule_size_[0], capsule_size_[1])),
         id_A_(GeometryId::get_new_id()),
         id_B_(GeometryId::get_new_id()),
-        callback_data_(&collision_filter_, &point_pairs_) {}
+        id_box_(GeometryId::get_new_id()),
+        id_cylinder_(GeometryId::get_new_id()),
+        id_halfspace_(GeometryId::get_new_id()),
+        id_capsule_(GeometryId::get_new_id()) {}
 
  protected:
   void SetUp() override {
-    const EncodedData data_A(id_A_, true);
-    data_A.write_to(&sphere_A_);
-    collision_filter_.AddGeometry(data_A.encoding());
+    auto encode_data = [this](GeometryId id, CollisionObjectd* shape) {
+      const EncodedData data(id, true);
+      data.write_to(shape);
+      this->collision_filter_.AddGeometry(data.encoding());
+    };
+    encode_data(id_A_, &sphere_A_);
+    encode_data(id_B_, &sphere_B_);
+    encode_data(id_box_, &box_);
+    encode_data(id_cylinder_, &cylinder_);
+    encode_data(id_halfspace_, &halfspace_);
+    encode_data(id_capsule_, &capsule_);
+  }
 
-    const EncodedData data_B(id_B_, true);
-    data_B.write_to(&sphere_B_);
-    collision_filter_.AddGeometry(data_B.encoding());
+  template <typename T>
+  void TestNoCollision() {
+    // Move sphere B away from A.
+    const RigidTransform<T> X_WA = RigidTransform<T>::Identity();
+    const Vector3<T> p_WB = Vector3d(kRadius * 3, 0, 0);
+    const RigidTransform<T> X_WB = RigidTransform<T>(p_WB);
+
+    const std::unordered_map<GeometryId, RigidTransform<T>> X_WGs{
+        {{id_A_, X_WA}, {id_B_, X_WB}}};
+    vector<PenetrationAsPointPair<T>> point_pairs;
+    CallbackData<T> callback_data(&collision_filter_, &X_WGs, &point_pairs);
+    EXPECT_FALSE(Callback<T>(&sphere_A_, &sphere_B_, &callback_data));
+    EXPECT_EQ(point_pairs.size(), 0u);
+
+    EXPECT_FALSE(Callback<T>(&sphere_B_, &sphere_A_, &callback_data));
+    EXPECT_EQ(point_pairs.size(), 0u);
+  }
+
+  // Confirms that a pair of geometries _in_ collision but not filtered produce
+  // expected results. And that the result is expected, regardless of the order
+  // of the objects as parameters.
+  // And confirms that if the pair is filtered, no collision is reported.
+  template <typename T>
+  void TestCollisionFilterRespected() {
+    // Move sphere B away from origin in an arbitrary direction with an
+    // arbitrary rotation, such that it penetrates A to a depth of 0.1 units. We
+    // want to make sure the two spheres have a non-trivial transform between
+    // their frames and show that regardless of their ordering in the callback,
+    // the result is bit identical.
+    const double target_depth = 0.1;
+    const double center_distance = kRadius * 2 - target_depth;
+    Vector3<T> p_WBo;
+    if constexpr (std::is_same<T, AutoDiffXd>::value) {
+      p_WBo = math::initializeAutoDiff(
+          (Vector3d{1, -2, 3}.normalized() * center_distance));
+    } else {
+      p_WBo = (Vector3d{1, -2, 3}.normalized() * center_distance);
+    }
+    const RigidTransform<T> X_WB =
+        RigidTransform<T>{RotationMatrix<T>::MakeYRotation(M_PI / 3) *
+                              RotationMatrix<T>::MakeZRotation(-M_PI / 7),
+                          p_WBo};
+    const RigidTransform<T> X_WA = RigidTransform<T>::Identity();
+    const std::unordered_map<GeometryId, RigidTransform<T>> X_WGs{
+        {{id_A_, X_WA}, {id_B_, X_WB}}};
+
+    // Two executions with the order of the objects reversed -- should produce
+    // identical results.
+    vector<PenetrationAsPointPair<T>> point_pairs;
+    CallbackData<T> callback_data(&collision_filter_, &X_WGs, &point_pairs);
+    EXPECT_FALSE(Callback<T>(&sphere_A_, &sphere_B_, &callback_data));
+    ASSERT_EQ(point_pairs.size(), 1u);
+    const PenetrationAsPointPair<T> first_result = point_pairs[0];
+    point_pairs.clear();
+    const Eigen::Vector3d p_WCa = ExtractMatrixValue(first_result.p_WCa);
+    const Eigen::Vector3d p_WCb = ExtractMatrixValue(first_result.p_WCb);
+    const Eigen::Vector3d nhat_BA_W =
+        ExtractMatrixValue(first_result.nhat_BA_W);
+    const double depth = ExtractDoubleOrThrow(first_result.depth);
+    EXPECT_NEAR((p_WCa - p_WCb).norm(), depth, kEps);
+    EXPECT_TRUE(CompareMatrices(p_WCb - p_WCa, depth * nhat_BA_W, kEps));
+
+    EXPECT_FALSE(Callback<T>(&sphere_B_, &sphere_A_, &callback_data));
+    ASSERT_EQ(point_pairs.size(), 1u);
+    const PenetrationAsPointPair<T> second_result = point_pairs[0];
+    point_pairs.clear();
+
+    ASSERT_EQ(first_result.id_A, second_result.id_A);
+    ASSERT_EQ(first_result.id_B, second_result.id_B);
+    ASSERT_NEAR(ExtractDoubleOrThrow(first_result.depth), target_depth, kEps);
+    EXPECT_EQ(ExtractDoubleOrThrow(second_result.depth),
+              ExtractDoubleOrThrow(first_result.depth));
+    ASSERT_TRUE(CompareMatrices(ExtractMatrixValue(first_result.nhat_BA_W),
+                                ExtractMatrixValue(second_result.nhat_BA_W)));
+    ASSERT_TRUE(CompareMatrices(ExtractMatrixValue(first_result.p_WCa),
+                                ExtractMatrixValue(second_result.p_WCa)));
+    ASSERT_TRUE(CompareMatrices(ExtractMatrixValue(first_result.p_WCb),
+                                ExtractMatrixValue(second_result.p_WCb)));
+
+    // Now filter the geometries.
+    const int common_clique = 1;
+    collision_filter_.AddToCollisionClique(EncodedData(id_A_, true).encoding(),
+                                           common_clique);
+    collision_filter_.AddToCollisionClique(EncodedData(id_B_, true).encoding(),
+                                           common_clique);
+
+    EXPECT_FALSE(Callback<T>(&sphere_A_, &sphere_B_, &callback_data));
+    EXPECT_EQ(point_pairs.size(), 0u);
+
+    EXPECT_FALSE(Callback<T>(&sphere_B_, &sphere_A_, &callback_data));
+    EXPECT_EQ(point_pairs.size(), 0u);
+  }
+
+  template <typename T>
+  void TestSphereShape(double target_depth, const RigidTransform<T>& X_WB,
+                       fcl::CollisionObjectd shape, GeometryId shape_id) {
+    // We compute the collision between the shape and the sphere located at the
+    // world origin. This shape should in contact with the sphere. If this test
+    // is instantiated with T=AutoDiffXd, then this test expect the
+    // sphere-to-shape collision is supported for AutoDiffXd. We test that the
+    // order of the geometries doesn't matter, namely sphere-to-shape and
+    // shape-to-sphere should give the same result.
+    const RigidTransform<T> X_WA = RigidTransform<T>::Identity();
+    const std::unordered_map<GeometryId, RigidTransform<T>> X_WGs{
+        {{id_A_, X_WA}, {shape_id, X_WB}}};
+
+    vector<PenetrationAsPointPair<T>> point_pairs;
+    CallbackData<T> callback_data(&collision_filter_, &X_WGs, &point_pairs);
+    EXPECT_FALSE(Callback<T>(&sphere_A_, &shape, &callback_data));
+    ASSERT_EQ(point_pairs.size(), 1u);
+    const PenetrationAsPointPair<T> first_result = point_pairs[0];
+    EXPECT_NEAR(ExtractDoubleOrThrow(first_result.depth), target_depth, kEps);
+    EXPECT_NEAR(ExtractDoubleOrThrow((first_result.p_WCb - first_result.p_WCa)
+                                         .dot(first_result.nhat_BA_W)),
+                target_depth, kEps);
+    point_pairs.clear();
+
+    // Now reverse the order of the geometries.
+    EXPECT_FALSE(Callback<T>(&shape, &sphere_A_, &callback_data));
+    ASSERT_EQ(point_pairs.size(), 1u);
+    const PenetrationAsPointPair<T> second_result = point_pairs[0];
+    EXPECT_EQ(ExtractDoubleOrThrow(second_result.depth),
+              ExtractDoubleOrThrow(first_result.depth));
+    EXPECT_TRUE(CompareMatrices(ExtractMatrixValue(first_result.p_WCa),
+                                ExtractMatrixValue(second_result.p_WCa)));
+    EXPECT_TRUE(CompareMatrices(ExtractMatrixValue(first_result.p_WCb),
+                                ExtractMatrixValue(second_result.p_WCb)));
+    EXPECT_TRUE(CompareMatrices(ExtractMatrixValue(first_result.nhat_BA_W),
+                                ExtractMatrixValue(second_result.nhat_BA_W)));
+
+    if constexpr (std::is_same<T, AutoDiffXd>::value) {
+      // Make sure that callback with T=AutoDiffXd and T=double produces the
+      // same result.
+      const RigidTransform<double> X_WA_double =
+          RigidTransform<double>::Identity();
+      const RigidTransform<double> X_WB_double(
+          RotationMatrix<double>(
+              math::autoDiffToValueMatrix(X_WB.rotation().matrix())),
+          math::autoDiffToValueMatrix(X_WB.translation()));
+      const std::unordered_map<GeometryId, RigidTransform<double>> X_WGs_double{
+          {{id_A_, X_WA_double}, {shape_id, X_WB_double}}};
+
+      vector<PenetrationAsPointPair<double>> point_pairs_double;
+      CallbackData<double> callback_data_double(
+          &collision_filter_, &X_WGs_double, &point_pairs_double);
+      EXPECT_FALSE(Callback<double>(&sphere_A_, &shape, &callback_data_double));
+      ASSERT_EQ(point_pairs_double.size(), 1u);
+      EXPECT_EQ(ExtractDoubleOrThrow(first_result.depth),
+                point_pairs_double[0].depth);
+      EXPECT_TRUE(
+          CompareMatrices(math::autoDiffToValueMatrix(first_result.p_WCa),
+                          point_pairs_double[0].p_WCa));
+      EXPECT_TRUE(
+          CompareMatrices(math::autoDiffToValueMatrix(first_result.p_WCb),
+                          point_pairs_double[0].p_WCb, kEps));
+      EXPECT_TRUE(
+          CompareMatrices(math::autoDiffToValueMatrix(first_result.nhat_BA_W),
+                          point_pairs_double[0].nhat_BA_W));
+    }
+  }
+
+  template <typename T>
+  RigidTransform<T> CalcBoxPoseInSphereBox(double target_depth) {
+    DRAKE_DEMAND(target_depth > 0 && target_depth < kRadius);
+    const double center_distance = kRadius + box_size_[0] / 2 - target_depth;
+    Vector3<T> p_WBo;
+    const RotationMatrix<T> R_WB = RotationMatrix<T>::MakeZRotation(0.2);
+    if constexpr (std::is_same<T, AutoDiffXd>::value) {
+      p_WBo =
+          R_WB * math::initializeAutoDiff(Vector3d::UnitX() * center_distance);
+    } else {
+      p_WBo = R_WB * Vector3d::UnitX() * center_distance;
+    }
+    const RigidTransform<T> X_WB = RigidTransform<T>{R_WB, p_WBo};
+    return X_WB;
+  }
+
+  template <typename T>
+  RigidTransform<T> CalcCylinderPoseInSphereCylinder(double target_depth) {
+    DRAKE_DEMAND(target_depth > 0 && target_depth < cylinder_size_[0] &&
+                 target_depth < kRadius);
+    const double center_distance = kRadius + cylinder_size_[0] - target_depth;
+    Vector3<T> p_WBo;
+    const RotationMatrix<T> R_WB = RotationMatrix<T>::MakeZRotation(0.2);
+    if constexpr (std::is_same<T, AutoDiffXd>::value) {
+      p_WBo =
+          R_WB * math::initializeAutoDiff(Vector3d::UnitX() * center_distance);
+    } else {
+      p_WBo = R_WB * Vector3d::UnitX() * center_distance;
+    }
+    const RigidTransform<T> X_WB = RigidTransform<T>{R_WB, p_WBo};
+    return X_WB;
+  }
+
+  template <typename T>
+  std::pair<RigidTransform<T>, double> CalcHalfspacePoseInSphereHalfspace() {
+    const RotationMatrix<T> R_WB = RotationMatrix<T>::MakeZRotation(0.1) *
+                                   RotationMatrix<T>::MakeXRotation(0.5);
+    Vector3<T> p_WBo;
+    if constexpr (std::is_same<T, AutoDiffXd>::value) {
+      p_WBo = math::initializeAutoDiff(Eigen::Vector3d(0.5, -0.2, 0.9));
+    } else {
+      p_WBo = Eigen::Vector3d(0.5, -0.2, 0.9);
+    }
+    const double target_depth =
+        halfspace_offset_ +
+        halfspace_normal_.dot(ExtractMatrixValue(R_WB.inverse() * p_WBo)) +
+        kRadius;
+    const RigidTransform<T> X_WB = RigidTransform<T>{R_WB, p_WBo};
+    return std::make_pair(X_WB, target_depth);
+  }
+
+  template <typename T>
+  RigidTransform<T> CalcCapsulePoseInSphereCapsule(double target_depth) {
+    DRAKE_DEMAND(target_depth > 0 && target_depth < kRadius &&
+                 target_depth < capsule_size_[0]);
+    const double center_distance = kRadius + capsule_size_[0] - target_depth;
+    Vector3<T> p_WBo;
+    const RotationMatrix<T> R_WB = RotationMatrix<T>::MakeZRotation(0.2);
+    if constexpr (std::is_same<T, AutoDiffXd>::value) {
+      p_WBo =
+          R_WB * math::initializeAutoDiff(Vector3d::UnitX() * center_distance);
+    } else {
+      p_WBo = R_WB * Vector3d::UnitX() * center_distance;
+    }
+    const RigidTransform<T> X_WB = RigidTransform<T>{R_WB, p_WBo};
+    return X_WB;
+  }
+
+  void UnsupportedGeometryAutoDiffXd(fcl::CollisionObjectd shape1,
+                                     fcl::CollisionObjectd shape2,
+                                     GeometryId id1, GeometryId id2) {
+    const std::unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs{
+        {{id1, RigidTransform<AutoDiffXd>::Identity()},
+         {id2, RigidTransform<AutoDiffXd>::Identity()}}};
+    vector<PenetrationAsPointPair<AutoDiffXd>> point_pairs;
+    CallbackData<AutoDiffXd> callback_data(&collision_filter_, &X_WGs,
+                                           &point_pairs);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        Callback<AutoDiffXd>(&shape1, &shape2, &callback_data),
+        std::logic_error,
+        "Penetration queries between shapes .* and .* are not supported for "
+        "scalar type .*");
   }
 
   static const double kRadius;
+  const std::array<double, 3> box_size_{0.1, 0.2, 0.3};
+  const std::array<double, 2> cylinder_size_{1.2, 2.1};
+  const Eigen::Vector3d halfspace_normal_{0, 0, 1};
+  const double halfspace_offset_{0.};
+  const std::array<double, 2> capsule_size_{1.3, 2.3};
   CollisionObjectd sphere_A_;
   CollisionObjectd sphere_B_;
+  CollisionObjectd box_;
+  CollisionObjectd cylinder_;
+  CollisionObjectd halfspace_;
+  CollisionObjectd capsule_;
   GeometryId id_A_;
   GeometryId id_B_;
+  GeometryId id_box_;
+  GeometryId id_cylinder_;
+  GeometryId id_halfspace_;
+  GeometryId id_capsule_;
   CollisionFilterLegacy collision_filter_;
-  vector<PenetrationAsPointPair<double>> point_pairs_;
-  CallbackData callback_data_;
 };
 
 // TODO(SeanCurtis-TRI): Make this static constexpr when our gcc version doesn't
@@ -76,64 +369,138 @@ const double PenetrationAsPointPairCallbackTest::kRadius = 0.5;
 
 // Confirms that a pair of geometries that are demonstrably not in collision and
 // are not filtered produce no results.
-TEST_F(PenetrationAsPointPairCallbackTest, NonCollision) {
-  // Move sphere B away from A.
-  sphere_B_.setTransform(
-      RigidTransformd{Vector3d{kRadius * 3, 0, 0}}.GetAsIsometry3());
-
-  EXPECT_FALSE(Callback(&sphere_A_, &sphere_B_, &callback_data_));
-  EXPECT_EQ(point_pairs_.size(), 0u);
-
-  EXPECT_FALSE(Callback(&sphere_B_, &sphere_A_, &callback_data_));
-  EXPECT_EQ(point_pairs_.size(), 0u);
+TEST_F(PenetrationAsPointPairCallbackTest, NonCollisionDouble) {
+  TestNoCollision<double>();
 }
 
-// Confirms that a pair of geometries _in_ collision but not filtered produce
-// expected results. And that the result is expected, regardless of the order
-// of the objects as parameters.
-// And confirms that if the pair is filtered, no collision is reported.
-TEST_F(PenetrationAsPointPairCallbackTest, CollisionFilterRespected) {
-  // Move sphere B away from origin such that it penetrations A 0.1 units.
+TEST_F(PenetrationAsPointPairCallbackTest, NonCollisionAutoDiffXd) {
+  TestNoCollision<AutoDiffXd>();
+}
+
+TEST_F(PenetrationAsPointPairCallbackTest, CollisionFilterRespectedDouble) {
+  TestCollisionFilterRespected<double>();
+}
+
+TEST_F(PenetrationAsPointPairCallbackTest, CollisionFilterRespectedAutoDiffXd) {
+  TestCollisionFilterRespected<AutoDiffXd>();
+}
+
+TEST_F(PenetrationAsPointPairCallbackTest, TestGradient) {
+  // We can compute the gradient of the penetration result w.r.t the position of
+  // the sphere by hand, and then compare that gradient against autodiff result.
   const double target_depth = 0.1;
-  sphere_B_.setTransform(
-      RigidTransformd{Vector3d{kRadius * 2 - target_depth, 0, 0}}
-          .GetAsIsometry3());
-
-  // Two executions with the order of the objects reversed -- should produce
-  // identical results.
-  EXPECT_FALSE(Callback(&sphere_A_, &sphere_B_, &callback_data_));
-  ASSERT_EQ(point_pairs_.size(), 1u);
-  const PenetrationAsPointPair<double> first_result = point_pairs_[0];
-  point_pairs_.clear();
-
-  EXPECT_FALSE(Callback(&sphere_B_, &sphere_A_, &callback_data_));
-  ASSERT_EQ(point_pairs_.size(), 1u);
-  const PenetrationAsPointPair<double> second_result = point_pairs_[0];
-  point_pairs_.clear();
-
-  const double kEps = std::numeric_limits<double>::epsilon();
-  ASSERT_EQ(first_result.id_A, second_result.id_A);
-  ASSERT_EQ(first_result.id_B, second_result.id_B);
-  ASSERT_NEAR(first_result.depth, target_depth, kEps);
-  ASSERT_NEAR(second_result.depth, target_depth, kEps);
-  ASSERT_TRUE(CompareMatrices(first_result.nhat_BA_W, second_result.nhat_BA_W));
-  ASSERT_TRUE(CompareMatrices(first_result.p_WCa, second_result.p_WCa));
-  ASSERT_TRUE(CompareMatrices(first_result.p_WCb, second_result.p_WCb));
-
-  // Now filter the geometries.
-  const int common_clique = 1;
-  collision_filter_.AddToCollisionClique(EncodedData(id_A_, true).encoding(),
-                                         common_clique);
-  collision_filter_.AddToCollisionClique(EncodedData(id_B_, true).encoding(),
-                                         common_clique);
-
-  EXPECT_FALSE(Callback(&sphere_A_, &sphere_B_, &callback_data_));
-  EXPECT_EQ(point_pairs_.size(), 0u);
-
-  EXPECT_FALSE(Callback(&sphere_B_, &sphere_A_, &callback_data_));
-  EXPECT_EQ(point_pairs_.size(), 0u);
+  const double center_distance = kRadius * 2 - target_depth;
+  const Eigen::Vector3d p_WBo_val =
+      Vector3d{1, -2, 3}.normalized() * center_distance;
+  const Vector3<AutoDiffXd> p_WBo = math::initializeAutoDiff(p_WBo_val);
+  std::unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs;
+  const RigidTransform<AutoDiffXd> X_WB = RigidTransform<AutoDiffXd>{
+      RotationMatrix<AutoDiffXd>::MakeYRotation(M_PI / 3) *
+          RotationMatrix<AutoDiffXd>::MakeZRotation(-M_PI / 7),
+      p_WBo};
+  const RigidTransform<AutoDiffXd> X_WA =
+      RigidTransform<AutoDiffXd>::Identity();
+  X_WGs.emplace(id_A_, X_WA);
+  X_WGs.emplace(id_B_, X_WB);
+  vector<PenetrationAsPointPair<AutoDiffXd>> point_pairs;
+  CallbackData<AutoDiffXd> callback_data(&collision_filter_, &X_WGs,
+                                         &point_pairs);
+  EXPECT_FALSE(Callback<AutoDiffXd>(&sphere_A_, &sphere_B_, &callback_data));
+  ASSERT_EQ(point_pairs.size(), 1u);
+  const Eigen::Vector3d ddepth_dp_WBo = -p_WBo_val / p_WBo_val.norm();
+  const PenetrationAsPointPair<AutoDiffXd> result = point_pairs[0];
+  EXPECT_TRUE(CompareMatrices(result.depth.derivatives(), ddepth_dp_WBo, kEps));
+  // ∂ (x/|x|) /∂ x where x = p_WBo
+  const Eigen::Matrix3d dp_WBo_normalized_dp_WBo =
+      (p_WBo_val.squaredNorm() * Eigen::Matrix3d::Identity() -
+       p_WBo_val * p_WBo_val.transpose()) /
+      std::pow(p_WBo_val.norm(), 3);
+  // nhat_BA_W = -p_WBo / |p_WBo|, hence ∂nhat_BA_W /∂p_WBo = -∂(p_WBo/|p_WBo|)
+  // / ∂p_WBo
+  EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(result.nhat_BA_W),
+                              -dp_WBo_normalized_dp_WBo, kEps));
+  // p_WCa = radius * p_WBo / |p_WBo|.
+  const Eigen::Matrix3d dp_WCa_dp_WBo = dp_WBo_normalized_dp_WBo * kRadius;
+  EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(result.p_WCa),
+                              dp_WCa_dp_WBo, kEps));
+  // p_WCb = p_WBo - radius * p_WBo / |p_WBo|.
+  const Eigen::Matrix3d dp_WCb_dp_WBo =
+      Eigen::Matrix3d::Identity() - dp_WBo_normalized_dp_WBo * kRadius;
+  EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(result.p_WCb),
+                              dp_WCb_dp_WBo, kEps));
 }
 
+TEST_F(PenetrationAsPointPairCallbackTest, SphereBoxDouble) {
+  const double target_depth = 0.1;
+  const RigidTransform<double> X_WB =
+      CalcBoxPoseInSphereBox<double>(target_depth);
+  TestSphereShape(target_depth, X_WB, box_, id_box_);
+}
+
+TEST_F(PenetrationAsPointPairCallbackTest, SphereBoxAutoDiffXd) {
+  const double target_depth = 0.1;
+  const RigidTransform<AutoDiffXd> X_WB =
+      CalcBoxPoseInSphereBox<AutoDiffXd>(target_depth);
+  TestSphereShape(target_depth, X_WB, box_, id_box_);
+}
+
+TEST_F(PenetrationAsPointPairCallbackTest, SphereCylinderDouble) {
+  const double target_depth = 0.1;
+  const RigidTransform<double> X_WB =
+      CalcCylinderPoseInSphereCylinder<double>(target_depth);
+  TestSphereShape(target_depth, X_WB, cylinder_, id_cylinder_);
+}
+
+TEST_F(PenetrationAsPointPairCallbackTest, SphereCylinderAutoDiffXd) {
+  const double target_depth = 0.1;
+  const RigidTransform<AutoDiffXd> X_WB =
+      CalcCylinderPoseInSphereCylinder<AutoDiffXd>(target_depth);
+  TestSphereShape(target_depth, X_WB, cylinder_, id_cylinder_);
+}
+
+TEST_F(PenetrationAsPointPairCallbackTest, SphereHalfspaceDouble) {
+  auto [X_WB, target_depth] = CalcHalfspacePoseInSphereHalfspace<double>();
+  TestSphereShape(target_depth, X_WB, halfspace_, id_halfspace_);
+}
+
+TEST_F(PenetrationAsPointPairCallbackTest, SphereHalfspaceAutoDiffXd) {
+  auto [X_WB, target_depth] = CalcHalfspacePoseInSphereHalfspace<AutoDiffXd>();
+  TestSphereShape(target_depth, X_WB, halfspace_, id_halfspace_);
+}
+
+TEST_F(PenetrationAsPointPairCallbackTest, SphereCapsuleDouble) {
+  const double target_depth = 0.1;
+  const RigidTransform<double> X_WB =
+      CalcCapsulePoseInSphereCapsule<double>(target_depth);
+  TestSphereShape(target_depth, X_WB, capsule_, id_capsule_);
+}
+
+TEST_F(PenetrationAsPointPairCallbackTest, SphereCapsuleAutoDiffXd) {
+  const double target_depth = 0.1;
+  const RigidTransform<AutoDiffXd> X_WB =
+      CalcCapsulePoseInSphereCapsule<AutoDiffXd>(target_depth);
+  TestSphereShape(target_depth, X_WB, capsule_, id_capsule_);
+}
+
+TEST_F(PenetrationAsPointPairCallbackTest, UnsupportedAutoDiffXd) {
+  // We don't support penetration query between overlapping box-cylinder with
+  // AutoDiffXd yet.
+  std::vector<std::pair<fcl::CollisionObjectd, GeometryId>>
+      unsupported_geometries;
+  unsupported_geometries.emplace_back(box_, id_box_);
+  unsupported_geometries.emplace_back(cylinder_, id_cylinder_);
+  unsupported_geometries.emplace_back(halfspace_, id_halfspace_);
+  unsupported_geometries.emplace_back(capsule_, id_capsule_);
+  for (int i = 0; i < static_cast<int>(unsupported_geometries.size()); ++i) {
+    for (int j = 0; j < static_cast<int>(unsupported_geometries.size()); ++j) {
+      if (i != j) {
+        UnsupportedGeometryAutoDiffXd(
+            unsupported_geometries[i].first, unsupported_geometries[j].first,
+            unsupported_geometries[i].second, unsupported_geometries[j].second);
+      }
+    }
+  }
+}
 }  // namespace
 }  // namespace penetration_as_point_pair
 }  // namespace internal

@@ -30,7 +30,7 @@ class PrismaticJoint final : public Joint<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PrismaticJoint)
 
-  template<typename Scalar>
+  template <typename Scalar>
   using Context = systems::Context<Scalar>;
 
   static const char kTypeName[];
@@ -187,8 +187,19 @@ class PrismaticJoint final : public Joint<T> {
 
   /// @}
 
+  /// Gets the default translation. Wrapper for the more general
+  /// `Joint::default_positions()`.
+  /// @returns The default translation of `this` stored in `default_positions_`.
+  double get_default_translation() const {
+    return this->default_positions()[0];
+  }
+
+  /// Sets the `default_positions` of this joint (in this case a single
+  /// translation)
+  /// @param[in] translation
+  ///   The desired default translation of the joint
   void set_default_translation(double translation) {
-    get_mutable_mobilizer()->set_default_position(Vector1d{translation});
+    this->set_default_positions(Vector1d{translation});
   }
 
   void set_random_translation_distribution(
@@ -249,16 +260,19 @@ class PrismaticJoint final : public Joint<T> {
     return get_mobilizer()->velocity_start_in_v();
   }
 
-  int do_get_num_velocities() const override {
-    return 1;
-  }
+  int do_get_num_velocities() const override { return 1; }
 
   int do_get_position_start() const override {
     return get_mobilizer()->position_start_in_q();
   }
 
-  int do_get_num_positions() const override {
-    return 1;
+  int do_get_num_positions() const override { return 1; }
+
+  void do_set_default_positions(
+      const VectorX<double>& default_positions) override {
+    if (this->has_implementation()) {
+      get_mutable_mobilizer()->set_default_position(default_positions);
+    }
   }
 
   const T& DoGetOnePosition(const systems::Context<T>& context) const override {
@@ -273,10 +287,12 @@ class PrismaticJoint final : public Joint<T> {
   std::unique_ptr<typename Joint<T>::BluePrint>
   MakeImplementationBlueprint() const final {
     auto blue_print = std::make_unique<typename Joint<T>::BluePrint>();
-    blue_print->mobilizers_.push_back(
+    auto prismatic_mobilizer =
         std::make_unique<internal::PrismaticMobilizer<T>>(
-            this->frame_on_parent(), this->frame_on_child(), axis_));
-    return std::move(blue_print);
+            this->frame_on_parent(), this->frame_on_child(), axis_);
+    prismatic_mobilizer->set_default_position(this->default_positions());
+    blue_print->mobilizers_.push_back(std::move(prismatic_mobilizer));
+    return blue_print;
   }
 
   std::unique_ptr<Joint<double>> DoCloneToScalar(
@@ -292,9 +308,6 @@ class PrismaticJoint final : public Joint<T> {
   // PrismaticJoint<T> so that CloneToScalar<ToAnyOtherScalar>() can access
   // private members of PrismaticJoint<T>.
   template <typename> friend class PrismaticJoint;
-
-  // Friend class to facilitate testing.
-  friend class JointTester;
 
   // Returns the mobilizer implementing this joint.
   // The internal implementation of this joint could change in a future version.

@@ -73,7 +73,7 @@ drake_cc_library(
     deps = [
         "//common:find_resource",
         "//examples/planar_gripper:planar_gripper_common",
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//multibody/parsing",
         "//multibody/plant",
         "//systems/analysis:simulator",
@@ -118,7 +118,7 @@ drake_cc_binary(
         ":planar_gripper_common",
         ":planar_gripper_lcm",
         "//common:find_resource",
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//multibody/parsing",
         "//multibody/plant",
         "//multibody/plant:contact_results_to_lcm",

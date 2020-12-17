@@ -61,10 +61,10 @@ void ComputeRelativeMotion(test::FreeSpheresAndBoxes<T>* spheres,
 }
 
 GTEST_TEST(SlidingFrictionComplementarityNonlinearConstraintTest, Constructor) {
-  const test::SphereSpecification sphere1_spec(
-      0.1, 1e3, CoulombFriction<double>(1.1, 0.9));
-  const test::SphereSpecification sphere2_spec(
-      0.2, 1.2e3, CoulombFriction<double>(1.2, 0.8));
+  const CoulombFriction<double> sphere1_friction(1.1, 0.9);
+  const test::SphereSpecification sphere1_spec(0.1, 1e3, sphere1_friction);
+  const CoulombFriction<double> sphere2_friction(1.2, 0.8);
+  const test::SphereSpecification sphere2_spec(0.2, 1.2e3, sphere2_friction);
   const CoulombFriction<double> ground_friction(0.6, 0.5);
   test::FreeSpheresAndBoxes<AutoDiffXd> spheres(
       {sphere1_spec, sphere2_spec}, {} /* no box. */, ground_friction);
@@ -149,9 +149,8 @@ GTEST_TEST(SlidingFrictionComplementarityNonlinearConstraintTest, Constructor) {
 
   // Evaluate constraint (3)
   const CoulombFriction<double> combined_friction =
-      CalcContactFrictionFromSurfaceProperties(
-          plant.default_coulomb_friction(spheres.sphere_geometry_ids()[0]),
-          plant.default_coulomb_friction(spheres.sphere_geometry_ids()[1]));
+      CalcContactFrictionFromSurfaceProperties(sphere1_friction,
+                                               sphere2_friction);
   CompareAutoDiff(y_autodiff(6), f_sliding.dot(n_SaSb_W), tol);
 
   const Vector3<AutoDiffXd> f_sliding_tangential =
@@ -194,10 +193,10 @@ GTEST_TEST(SlidingFrictionComplementarityNonlinearConstraintTest, Constructor) {
 
 namespace {
 GTEST_TEST(SlidingFrictionComplementarityConstraintTest, AddConstraint) {
-  const test::SphereSpecification sphere1_spec(
-      0.1, 1e3, CoulombFriction<double>(1.1, 0.9));
-  const test::SphereSpecification sphere2_spec(
-      0.2, 1.2e3, CoulombFriction<double>(1.2, 0.8));
+  const CoulombFriction<double> sphere1_friction(1.1, 0.9);
+  const test::SphereSpecification sphere1_spec(0.1, 1e3, sphere1_friction);
+  const CoulombFriction<double> sphere2_friction(1.2, 0.8);
+  const test::SphereSpecification sphere2_spec(0.2, 1.2e3, sphere2_friction);
   const CoulombFriction<double> ground_friction(0.6, 0.5);
   test::FreeSpheresAndBoxes<AutoDiffXd> spheres(
       {sphere1_spec, sphere2_spec}, {} /* no box. */, ground_friction);
@@ -245,9 +244,8 @@ GTEST_TEST(SlidingFrictionComplementarityConstraintTest, AddConstraint) {
   double c_val1 = 0.1;
   Eigen::Vector3d f_sliding_tangential = -c_val1 * v_tangential_SaCb_W;
   const CoulombFriction<double> combined_friction =
-      CalcContactFrictionFromSurfaceProperties(
-          plant.default_coulomb_friction(spheres.sphere_geometry_ids()[0]),
-          plant.default_coulomb_friction(spheres.sphere_geometry_ids()[1]));
+      CalcContactFrictionFromSurfaceProperties(sphere1_friction,
+                                               sphere2_friction);
   Eigen::Vector3d f_sliding_normal = nhat_SaSb_W * f_sliding_tangential.norm() /
                                      combined_friction.dynamic_friction();
   Eigen::Vector3d f_sliding = f_sliding_normal + f_sliding_tangential;

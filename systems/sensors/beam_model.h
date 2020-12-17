@@ -82,5 +82,12 @@ class BeamModel final : public LeafSystem<T> {
 };
 
 }  // namespace sensors
+
+// Explicitly disable symbolic::Expression (for now).
+namespace scalar_conversion {
+template <>
+struct Traits<sensors::BeamModel> : public NonSymbolicTraits {};
+}  // namespace scalar_conversion
+
 }  // namespace systems
 }  // namespace drake

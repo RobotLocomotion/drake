@@ -200,7 +200,7 @@ int main() {
   return 1;
 #endif
 
-  printf("%s %i %i", compiler_id, compiler_version_major,
+  printf("%s %i %i\n", compiler_id, compiler_version_major,
       compiler_version_minor);
   return 0;
 }

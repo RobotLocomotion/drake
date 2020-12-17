@@ -25,8 +25,8 @@ To use Drake with CLion, your Drake checkout **must** be named ``drake``.
 Installing CLion
 ----------------
 
-1. Go to https://www.jetbrains.com/clion/download/. Download the latest version
-   of CLion.
+1. Go to https://www.jetbrains.com/clion/download/. Look for "Other versions"
+   and download the appropriate version of CLion (see below).
 2. Install CLion. Exact steps depend on your platform, but it's
    straightforward. Just using defaults for everything is fine. You now have a
    30-day trial version of CLion. Either try it out as is, or get a free
@@ -34,10 +34,10 @@ Installing CLion
 
 The most recent versions that we have tested for compatibility are:
   - Ubuntu 18.04
-  - Bazel 1.1.0 (October 21, 2019)
-  - CLion 2019.2.4 (October 9, 2019) with:
+  - Bazel 3.0.0 (6 April 2020)
+  - CLion 2019.3.6 (5 May 2020) with:
 
-    - Bazel plugin 2019.10.14.0.0 (October 25, 2019).
+    - Bazel plugin 2020.06.01.1.0 (15 June 2020).
 
 Many versions of the above (Bazel / CLion / Bazel plugin) are *not* compatible
 with each other.  We strongly suggest using only the versions shown above, when
@@ -175,7 +175,7 @@ CLion such that the modification may not be immediately apparent. When in doubt,
 select away from the target file and back; this will cause the file to refresh
 and you can confirm that the file has been modified as expected.
 
-First, make sure you have installed ``clang-format-6.0``
+First, make sure you have installed ``clang-format-9``
 (see :doc:`code_style_tools`).
 
 Clang format selected file
@@ -186,7 +186,7 @@ following values for the fields:
 
   :Name: ``Clang Format Full File``
   :Description: ``Apply clang-format to the active file``
-  :Program: ``clang-format-6.0``
+  :Program: ``clang-format-9``
   :Arguments: ``-i $FileName$``
   :Working directory: ``$FileDir$``
   :Advanced Options: Uncheck ``Open console for tool output``
@@ -201,7 +201,7 @@ following values for the fields:
 
   :Name: ``Clang Format Selected Lines``
   :Description: ``Apply clang-format to the selected lines``
-  :Program: ``clang-format-6.0``
+  :Program: ``clang-format-9``
   :Arguments: ``-lines $SelectionStartLine$:$SelectionEndLine$ -i $FileName$``
   :Working directory: ``$FileDir$``
   :Advanced Options: Uncheck ``Open console for tool output``
@@ -335,3 +335,48 @@ Change the following fields in the instructions given above:
 Building the drake addenda lint tool:
 
 ``bazel build //tools/lint:drakelint``
+
+Debugging an arbitrary program in Drake with CLion
+==================================================
+
+Apparently CLion (or perhaps the Bazel plugin) has a certain amount of
+auto-configuration of run/debug targets. It appears to hinge on the presence of
+the gtest.h header in source files. This is convenient, but only further
+mystifies the process of debugging a non-gtest program. This section explains
+how to configure debugging support for arbitrary programs in a Drake/CLion
+project.
+
+This section assumes all of the Drake-recommended installation and
+configuration is done.
+
+Get the bazel target string
+---------------------------
+
+Find the source file of the program in the file tree view. Right-click on the
+file, and select "Copy BUILD Target String". This will put the Bazel target
+name into the clipboard.
+
+Start a run configuration
+-------------------------
+
+From the top menu, select "Run/Edit Configurations...". Select the "+" at the
+upper left of the dialog to add a new configuration. From the list, select
+"Bazel Command".
+
+Fill in the configuration
+-------------------------
+
+Now it's time to fill in the new blank configuration. Give it a name, then
+select the "+" at the right side to add the target expression. Once the edit
+box appears, paste the contents of the clipboard there. Hit "Enter" or "Tab" to
+confirm the setting; a port number value should appear in the "Port number"
+field below. In "Bazel command", select either "run" (for an arbitrary
+program), or "test" (for a Bazel test target). Everything else can be left at
+default values. Click OK to finish.
+
+Launch the debugger
+-------------------
+
+At this point, the top menu "Run" should have entries to run or debug the new
+configuration. Select the debug entry there, or use the controls at the upper
+right to launch the debugger.

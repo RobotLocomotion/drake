@@ -152,7 +152,7 @@ void SolveProgramWithNoFreeVariables(
 void SolveProgramThroughNullspaceApproach(
     const MathematicalProgram& prog, const SdpaFreeFormat& sdpa_free_format,
     MathematicalProgramResult* result) {
-  drake::log()->warn(
+  static const logging::Warn log_once(
       "The problem has free variables, and CSDP removes the free "
       "variables by computing the null space of linear constraint in the "
       "dual space. This step can be time consuming. Consider providing a lower "
@@ -161,8 +161,8 @@ void SolveProgramThroughNullspaceApproach(
   std::vector<Eigen::SparseMatrix<double>> A_hat;
   Eigen::VectorXd rhs_hat, y_hat;
   Eigen::SparseQR<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>> QR_B;
-  RemoveFreeVariableByNullspaceApproach(sdpa_free_format, &C_hat, &A_hat,
-                                        &rhs_hat, &y_hat, &QR_B);
+  sdpa_free_format.RemoveFreeVariableByNullspaceApproach(
+      &C_hat, &A_hat, &rhs_hat, &y_hat, &QR_B);
 
   // Now try to call CSDP to solve this problem.
   csdp::blockmatrix C_csdp;
@@ -233,58 +233,19 @@ void SolveProgramThroughNullspaceApproach(
 void SolveProgramThroughTwoSlackVariablesApproach(
     const MathematicalProgram& prog, const SdpaFreeFormat& sdpa_free_format,
     MathematicalProgramResult* result) {
-  drake::log()->warn(
+  static const logging::Warn log_once(
       "The problem has free variables, and CSDP removes the free "
       "variables by introducing the slack variable y_plus >=0 , y_minus >= "
       "0, and constraint y_plus - y_minus = free_variable. This can "
       "introduce numerical problems to the solver. Consider providing a lower "
       "and/or upper bound for each decision variable.");
-  std::vector<internal::BlockInX> X_hat_blocks = sdpa_free_format.X_blocks();
-  X_hat_blocks.emplace_back(internal::BlockType::kDiagonal,
-                            2 * sdpa_free_format.num_free_variables());
+  std::vector<internal::BlockInX> X_hat_blocks;
+  std::vector<Eigen::SparseMatrix<double>> A_hat;
+  Eigen::SparseMatrix<double> C_hat;
+  sdpa_free_format.RemoveFreeVariableByTwoSlackVariablesApproach(
+      &X_hat_blocks, &A_hat, &C_hat);
   const int num_X_hat_rows =
       sdpa_free_format.num_X_rows() + 2 * sdpa_free_format.num_free_variables();
-  std::vector<std::vector<Eigen::Triplet<double>>> A_hat_triplets =
-      sdpa_free_format.A_triplets();
-  for (int j = 0; j < sdpa_free_format.num_free_variables(); ++j) {
-    for (Eigen::SparseMatrix<double>::InnerIterator it(sdpa_free_format.B(), j);
-         it; ++it) {
-      const int i = it.row();
-      // Add the entry in Âᵢ that multiplies with sⱼ.
-      A_hat_triplets[i].emplace_back(sdpa_free_format.num_X_rows() + j,
-                                     sdpa_free_format.num_X_rows() + j,
-                                     it.value());
-      A_hat_triplets[i].emplace_back(
-          sdpa_free_format.num_X_rows() +
-              sdpa_free_format.num_free_variables() + j,
-          sdpa_free_format.num_X_rows() +
-              sdpa_free_format.num_free_variables() + j,
-          -it.value());
-    }
-  }
-  std::vector<Eigen::SparseMatrix<double>> A_hat;
-  A_hat.reserve(sdpa_free_format.A().size());
-  for (int i = 0; i < static_cast<int>(sdpa_free_format.A().size()); ++i) {
-    A_hat.emplace_back(num_X_hat_rows, num_X_hat_rows);
-    A_hat.back().setFromTriplets(A_hat_triplets[i].begin(),
-                                 A_hat_triplets[i].end());
-  }
-  // Add the entry in Ĉ that multiplies with sᵢ
-  std::vector<Eigen::Triplet<double>> C_hat_triplets =
-      sdpa_free_format.C_triplets();
-  for (Eigen::SparseMatrix<double>::InnerIterator it(sdpa_free_format.d(), 0);
-       it; ++it) {
-    const int i = it.row();
-    C_hat_triplets.emplace_back(sdpa_free_format.num_X_rows() + i,
-                                sdpa_free_format.num_X_rows() + i, it.value());
-    C_hat_triplets.emplace_back(sdpa_free_format.num_X_rows() +
-                                    sdpa_free_format.num_free_variables() + i,
-                                sdpa_free_format.num_X_rows() +
-                                    sdpa_free_format.num_free_variables() + i,
-                                -it.value());
-  }
-  Eigen::SparseMatrix<double> C_hat(num_X_hat_rows, num_X_hat_rows);
-  C_hat.setFromTriplets(C_hat_triplets.begin(), C_hat_triplets.end());
 
   // Now try to call CSDP to solve this problem.
   csdp::blockmatrix C_csdp;
@@ -343,6 +304,92 @@ void SolveProgramThroughTwoSlackVariablesApproach(
   csdp::free_prob(num_X_hat_rows, sdpa_free_format.g().rows(), C_csdp, rhs_csdp,
                   constraints_csdp, X_csdp, y, Z);
 }
+
+/*
+ * For the problem
+ * max tr(C * X) + dᵀs
+ * s.t tr(Aᵢ*X) + bᵢᵀs = aᵢ
+ *     X ≽ 0
+ *     s is free.
+ * Remove the free variable s by introducing a slack variable t with the
+ * Lorentz cone constraint t ≥ sqrt(sᵀs). We get a new program without free
+ * variables.
+ * max tr(Ĉ * X̂)
+ * s.t tr(Âᵢ*X̂) = aᵢ
+ *     X̂ ≽ 0
+ * Refer to RemoveFreeVariableByLorentzConeSlackApproach in sdpa_free_format.h
+ * for more details.
+ */
+void SolveProgramThroughLorentzConeSlackApproach(
+    const MathematicalProgram& prog, const SdpaFreeFormat& sdpa_free_format,
+    MathematicalProgramResult* result) {
+  static const logging::Warn log_once(
+      "The problem has free variables, and CSDP removes the free "
+      "variables by introducing a slack variable t with the Lorentz cone "
+      "constraint t>= sqrt(s'*s) This can introduce numerical problems to the "
+      "solver. Consider providing a lower "
+      "and/or upper bound for each decision variable.");
+  std::vector<internal::BlockInX> X_hat_blocks;
+  std::vector<Eigen::SparseMatrix<double>> A_hat;
+  Eigen::VectorXd rhs_hat;
+  Eigen::SparseMatrix<double> C_hat;
+  sdpa_free_format.RemoveFreeVariableByLorentzConeSlackApproach(
+      &X_hat_blocks, &A_hat, &rhs_hat, &C_hat);
+  const int num_X_hat_rows =
+      sdpa_free_format.num_X_rows() + sdpa_free_format.num_free_variables() + 1;
+
+  // Now try to call CSDP to solve this problem.
+  csdp::blockmatrix C_csdp;
+  double* rhs_csdp{nullptr};
+  csdp::constraintmatrix* constraints_csdp{nullptr};
+  ConvertSparseMatrixFormatToCsdpProblemData(X_hat_blocks, C_hat, A_hat,
+                                             rhs_hat, &C_csdp, &rhs_csdp,
+                                             &constraints_csdp);
+  struct csdp::blockmatrix X_csdp, Z;
+  double* y{nullptr};
+  csdp::initsoln(num_X_hat_rows, rhs_hat.rows(), C_csdp, rhs_csdp,
+                 constraints_csdp, &X_csdp, &y, &Z);
+  double pobj{0};
+  double dobj{0};
+  const int ret = csdp::easy_sdp(num_X_hat_rows, rhs_hat.rows(), C_csdp,
+                                 rhs_csdp, constraints_csdp,
+                                 -sdpa_free_format.constant_min_cost_term(),
+                                 &X_csdp, &y, &Z, &pobj, &dobj);
+  Eigen::SparseMatrix<double> X_hat(num_X_hat_rows, num_X_hat_rows);
+  ConvertCsdpBlockMatrixtoEigen(X_csdp, &X_hat);
+  // Now retrieve the value for the free variable s from Y.
+  Eigen::VectorXd s_val =
+      Eigen::VectorXd::Zero(sdpa_free_format.num_free_variables());
+  for (int i = 0; i < sdpa_free_format.num_free_variables(); ++i) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(
+             X_hat, sdpa_free_format.num_X_rows() + i + 1);
+         it; ++it) {
+      s_val(i) = it.value();
+      // There are two non-zero entries in this column, Y(0, i+1) = s(i) and
+      // Y(i+1, i+1) = t(i). We only care about the first non-zero entry Y(0,
+      // i+1), so break here.
+      break;
+    }
+  }
+
+  CsdpSolverDetails& solver_details =
+      result->SetSolverDetailsType<CsdpSolverDetails>();
+  SetCsdpSolverDetails(ret, pobj, dobj, rhs_hat.rows(), y, Z, &solver_details);
+  // Retrieve the information back to result.
+  // Since CSDP solves a maximization problem max -cost, where "cost" is the
+  // minimization cost in MathematicalProgram, we need to negate the cost.
+  result->set_solution_result(ConvertCsdpReturnToSolutionResult(ret));
+  result->set_optimal_cost(
+      ret == 1 /* primal infeasible */ ? MathematicalProgram::
+                                             kGlobalInfeasibleCost
+                                       : -pobj);
+  Eigen::VectorXd prog_sol(prog.num_vars());
+  SetProgramSolution(sdpa_free_format, X_csdp, s_val, &prog_sol);
+  result->set_x_val(prog_sol);
+
+  csdp::free_prob(num_X_hat_rows, rhs_hat.rows(), C_csdp, rhs_csdp,
+                  constraints_csdp, X_csdp, y, Z);
+}
 }  // namespace
 
 void CsdpSolver::DoSolve(const MathematicalProgram& prog,
@@ -360,13 +407,17 @@ void CsdpSolver::DoSolve(const MathematicalProgram& prog,
   } else {
     switch (method_) {
       case RemoveFreeVariableMethod::kNullspace: {
-        SolveProgramThroughNullspaceApproach(prog, sdpa_free_format,
-                                                       result);
+        SolveProgramThroughNullspaceApproach(prog, sdpa_free_format, result);
         break;
       }
       case RemoveFreeVariableMethod::kTwoSlackVariables: {
-         SolveProgramThroughTwoSlackVariablesApproach(
-            prog, sdpa_free_format, result);
+        SolveProgramThroughTwoSlackVariablesApproach(prog, sdpa_free_format,
+                                                     result);
+        break;
+      }
+      case RemoveFreeVariableMethod::kLorentzConeSlack: {
+        SolveProgramThroughLorentzConeSlackApproach(prog, sdpa_free_format,
+                                                    result);
         break;
       }
     }

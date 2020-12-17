@@ -37,7 +37,7 @@ void MinimizeKLDivergence(const SolverInterface& solver, double tol) {
   const Eigen::Vector4d p(0.1, 0.2, 0.3, 0.4);
 
   MathematicalProgram prog;
-  // q is the other probabilty distribution
+  // q is the other probability distribution
   const auto q = prog.NewContinuousVariables<4>();
   // A valid probability should sum up to 1.
   prog.AddLinearEqualityConstraint(Eigen::RowVector4d::Ones(), 1, q);

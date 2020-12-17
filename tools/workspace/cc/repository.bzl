@@ -127,16 +127,16 @@ def _impl(repository_ctx):
             ))
 
     elif compiler_id == "Clang":
-        if compiler_version_major < 6:
-            fail("Clang compiler version {}.{} is less than 6.0.".format(
+        if compiler_version_major < 9:
+            fail("Clang compiler version {}.{} is less than 9.0".format(
                 compiler_version_major,
                 compiler_version_minor,
             ))
 
     elif compiler_id == "GNU":
         if compiler_version_major < 7 or (compiler_version_major == 7 and
-                                          compiler_version_minor < 4):
-            fail("GNU compiler version {}.{} is less than 7.4.".format(
+                                          compiler_version_minor < 5):
+            fail("GNU compiler version {}.{} is less than 7.5.".format(
                 compiler_version_major,
                 compiler_version_minor,
             ))
@@ -147,7 +147,10 @@ def _impl(repository_ctx):
 
 COMPILER_ID = "{}"
 
-""".format(compiler_id)
+COMPILER_VERSION_MAJOR = {}
+COMPILER_VERSION_MINOR = {}
+
+""".format(compiler_id, compiler_version_major, compiler_version_minor)
 
     repository_ctx.file(
         "compiler.bzl",

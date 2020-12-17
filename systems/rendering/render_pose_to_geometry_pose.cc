@@ -23,13 +23,12 @@ RenderPoseToGeometryPose<T>::RenderPoseToGeometryPose(
   using Output = geometry::FramePoseVector<T>;
   this->DeclareVectorInputPort(Input{});
   this->DeclareAbstractOutputPort(
-      []() {
-        return Value<Output>{}.Clone();
-      },
+      []() { return Value<Output>{}.Clone(); },
       [this, frame_id](const Context<T>& context, AbstractValue* calculated) {
-        const Input& input = get_input_port().template Eval<Input>(context);
+        const Input& input =
+            this->get_input_port().template Eval<Input>(context);
         calculated->get_mutable_value<Output>() =
-            {{frame_id, RigidTransform<T>(input.get_isometry())}};
+            {{frame_id, input.get_transform()}};
       });
 }
 

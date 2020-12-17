@@ -19,15 +19,12 @@ from pydrake.examples import (
 from pydrake.examples.multibody import cart_pole_passive_simulation
 # TODO(eric.cousineau): Indicate these as deprecated.
 from pydrake.common import (
-    cpp_const,
     cpp_param,
     cpp_template,
 )
 from drake.doc.sphinx_base import gen_main
 
-EXCLUDE = [
-    "pydrake.third_party",
-]
+EXCLUDE = []
 
 
 def get_submodules(name):

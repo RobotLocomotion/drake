@@ -78,7 +78,10 @@ class AcrobotParameters {
       Ic2_(Ic2),
       b1_(b1),
       b2_(b2),
-      g_(g) {}
+      g_(g) {
+        DRAKE_DEMAND(m1_ > 0);
+        DRAKE_DEMAND(m2_ > 0);
+      }
 
   // getters for robot parameters
   double m1() const { return m1_; }
@@ -89,6 +92,8 @@ class AcrobotParameters {
   double lc2() const { return lc2_; }
   double Ic1() const { return Ic1_; }
   double Ic2() const { return Ic2_; }
+  double Gc1() const { return Ic1_ / m1_; }
+  double Gc2() const { return Ic2_ / m2_; }
   double b1() const { return b1_; }
   double b2() const { return b2_; }
   double g() const { return g_; }

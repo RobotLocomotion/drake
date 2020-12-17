@@ -11,7 +11,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/multibody/math/spatial_acceleration.h"
+#include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/tree/multibody_tree.h"
 #include "drake/systems/controllers/test_utilities/compute_torque.h"
@@ -136,7 +136,7 @@ class InverseDynamicsTest : public ::testing::Test {
 // value computed by the InverseDynamics in pure gravity compensation mode
 // for a given joint configuration of the KUKA IIWA Arm are identical.
 TEST_F(InverseDynamicsTest, GravityCompensationTest) {
-  auto mbp = std::make_unique<MultibodyPlant<double>>();
+  auto mbp = std::make_unique<MultibodyPlant<double>>(0.0);
   const std::string full_name = drake::FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
   multibody::Parser(mbp.get()).AddModelFromFile(full_name);
@@ -158,7 +158,7 @@ TEST_F(InverseDynamicsTest, GravityCompensationTest) {
   EXPECT_FALSE(GravityModeled(robot_position));
 
   // Re-initialize the model so we can add gravity.
-  mbp = std::make_unique<MultibodyPlant<double>>();
+  mbp = std::make_unique<MultibodyPlant<double>>(0.0);
   multibody::Parser(mbp.get()).AddModelFromFile(full_name);
   mbp->WeldFrames(mbp->world_frame(),
                   mbp->GetFrameByName("iiwa_link_0"));
@@ -179,7 +179,7 @@ TEST_F(InverseDynamicsTest, GravityCompensationTest) {
 // Tests that inverse dynamics returns the expected torque for a given state and
 // desired acceleration for the iiwa arm.
 TEST_F(InverseDynamicsTest, InverseDynamicsTest) {
-  auto mbp = std::make_unique<MultibodyPlant<double>>();
+  auto mbp = std::make_unique<MultibodyPlant<double>>(0.0);
   const std::string full_name = drake::FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
   multibody::Parser(mbp.get()).AddModelFromFile(full_name);

@@ -98,19 +98,19 @@ class UnitInertia : public RotationalInertia<T> {
 
   /// Re-express a unit inertia in a different frame, performing the operation
   /// in place and modifying the original object. @see ReExpress() for details.
-  UnitInertia<T>& ReExpressInPlace(const math::RotationMatrix<T>& R_FE) {
-    RotationalInertia<T>::ReExpressInPlace(R_FE);
+  UnitInertia<T>& ReExpressInPlace(const math::RotationMatrix<T>& R_AE) {
+    RotationalInertia<T>::ReExpressInPlace(R_AE);
     return *this;
   }
 
   /// Given `this` unit inertia `G_BP_E` of a body B about a point P and
   /// expressed in frame E, this method computes the same unit inertia
-  /// re-expressed in another frame F as `G_BP_F = R_FE * G_BP_E * (R_FE)ᵀ`.
-  /// @param[in] R_FE RotationMatrix relating frames F and E.
-  /// @retval G_BP_F The same unit inertia for body B about point P but now
-  ///                re-expressed in frame F.
-  UnitInertia<T> ReExpress(const math::RotationMatrix<T>& R_FE) const {
-    return UnitInertia<T>(RotationalInertia<T>::ReExpress(R_FE));
+  /// re-expressed in another frame A as `G_BP_A = R_AE * G_BP_E * (R_AE)ᵀ`.
+  /// @param[in] R_AE RotationMatrix relating frames A and E.
+  /// @retval G_BP_A The same unit inertia for body B about point P but now
+  ///                re-expressed in frame A.
+  UnitInertia<T> ReExpress(const math::RotationMatrix<T>& R_AE) const {
+    return UnitInertia<T>(RotationalInertia<T>::ReExpress(R_AE));
   }
 
   /// For a central unit inertia `G_Bcm_E` computed about a body's center of

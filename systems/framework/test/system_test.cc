@@ -368,6 +368,30 @@ TEST_F(SystemTest, PortReferencesAreStable) {
   EXPECT_EQ(kAbstractValued, first_output.get_data_type());
 }
 
+// Tests the convenience methods for the case when we have exactly one input or
+// output port.
+TEST_F(SystemTest, ExactlyOnePortConvenience) {
+  DRAKE_EXPECT_THROWS_MESSAGE(system_.get_input_port(), std::logic_error,
+                              ".*num_input_ports\\(\\) = 0");
+
+  system_.DeclareInputPort("one", kVectorValued, 2);
+  EXPECT_EQ(&system_.get_input_port(), &system_.get_input_port(0));
+
+  system_.DeclareInputPort("two", kVectorValued, 2);
+  DRAKE_EXPECT_THROWS_MESSAGE(system_.get_input_port(), std::logic_error,
+                              ".*num_input_ports\\(\\) = 2");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(system_.get_output_port(), std::logic_error,
+                              ".*num_output_ports\\(\\) = 0");
+
+  system_.AddAbstractOutputPort();
+  EXPECT_EQ(&system_.get_output_port(), &system_.get_output_port(0));
+
+  system_.AddAbstractOutputPort();
+  DRAKE_EXPECT_THROWS_MESSAGE(system_.get_output_port(), std::logic_error,
+                              ".*num_output_ports\\(\\) = 2");
+}
+
 TEST_F(SystemTest, PortNameTest) {
   const auto& unnamed_input = system_.DeclareInputPort(kVectorValued, 2);
   const auto& named_input =
@@ -388,11 +412,15 @@ TEST_F(SystemTest, PortNameTest) {
   EXPECT_EQ(&system_.GetInputPort("u0"), &unnamed_input);
   EXPECT_EQ(&system_.GetInputPort("my_input"), &named_input);
   EXPECT_EQ(&system_.GetInputPort("abstract"), &named_abstract_input);
+  EXPECT_EQ(system_.HasInputPort("u0"), true);
+  EXPECT_EQ(system_.HasInputPort("fake_name"), false);
 
   // Test output port names.
   const auto& output_port = system_.AddAbstractOutputPort();
   EXPECT_EQ(output_port.get_name(), "y0");
   EXPECT_EQ(&system_.GetOutputPort("y0"), &output_port);
+  EXPECT_EQ(system_.HasOutputPort("y0"), true);
+  EXPECT_EQ(system_.HasOutputPort("fake_name"), false);
 
   // Requesting a non-existing port name should throw.
   DRAKE_EXPECT_THROWS_MESSAGE(

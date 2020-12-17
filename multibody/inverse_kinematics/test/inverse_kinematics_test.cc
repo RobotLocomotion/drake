@@ -28,18 +28,7 @@ class TwoFreeBodiesTest : public ::testing::Test {
         // TODO(hongkai.dai) call GetFrameByName()
         body1_frame_(two_bodies_plant_->GetFrameByName("body1")),
         body2_frame_(two_bodies_plant_->GetFrameByName("body2")),
-        ik_(*two_bodies_plant_) {
-    // TODO(hongkai.dai): The unit quaternion constraint should be added by
-    // InverseKinematics automatically.
-    ik_.get_mutable_prog()->AddConstraint(
-        solvers::internal::ParseQuadraticConstraint(
-            ik_.q().head<4>().cast<symbolic::Expression>().squaredNorm(), 1,
-            1));
-    ik_.get_mutable_prog()->AddConstraint(
-        solvers::internal::ParseQuadraticConstraint(
-            ik_.q().segment<4>(7).cast<symbolic::Expression>().squaredNorm(), 1,
-            1));
-  }
+        ik_(*two_bodies_plant_) {}
 
   ~TwoFreeBodiesTest() override {}
 

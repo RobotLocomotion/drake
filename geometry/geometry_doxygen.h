@@ -1,3 +1,6 @@
+/** @file
+ Doxygen-only documentation for @ref geometry.  */
+
 // Define groups here so we can control the ordering.
 namespace drake {
 namespace geometry {

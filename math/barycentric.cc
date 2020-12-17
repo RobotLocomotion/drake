@@ -34,6 +34,7 @@ template <typename T>
 void BarycentricMesh<T>::get_mesh_point(int index,
                                         EigenPtr<Eigen::VectorXd> point) const {
   DRAKE_DEMAND(index >= 0);
+  DRAKE_DEMAND(point != nullptr);
   point->resize(get_input_size());
   // Iterate through the input dimensions, assigning the value and reducing
   // the index to be relevant only to the remaining dimensions.
@@ -72,6 +73,7 @@ void BarycentricMesh<T>::EvalBarycentricWeights(
     EigenPtr<Eigen::VectorXi> mesh_indices,
     EigenPtr<VectorX<T>> weights) const {
   DRAKE_DEMAND(input.size() == static_cast<int>(input_grid_.size()));
+  DRAKE_DEMAND(mesh_indices != nullptr && weights != nullptr);
 
   // std::pair of fractional position [0,1] and dimension index (position first,
   // so that std::pair's default operator< works for us).

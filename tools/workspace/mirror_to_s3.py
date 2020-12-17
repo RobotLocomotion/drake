@@ -35,7 +35,7 @@ CHUNK_SIZE = 65536
 
 def main(argv):
     transformed_metadata = []
-    for value in read_repository_metadata().values():
+    for key, value in read_repository_metadata().items():
         if 'downloads' in value:
             downloads = value['downloads']
         else:
@@ -48,53 +48,69 @@ def main(argv):
                 elif not url.startswith(CLOUDFRONT_URL):
                     if 'url' in transformed_value:
                         raise Exception(
-                           'Multiple non-mirror urls. Verify BUCKET_URL and '
-                           'CLOUDFRONT_URL are correct and check for other '
-                           'duplicate entries.')
+                            f'Multiple non-mirror urls for @{key}. Verify '
+                            f'BUCKET_URL {BUCKET_URL} and CLOUDFRONT_URL '
+                            f'{CLOUDFRONT_URL} are correct and check for '
+                            f'duplicate url values.')
                     transformed_value['url'] = url
+            if 'object_key' not in transformed_value:
+                raise Exception(
+                    f'Could NOT determine S3 object key for @{key}. Verify '
+                    f'BUCKET_URL {BUCKET_URL} is correct and check for '
+                    f'missing url value with prefix {BUCKET_URL}.')
+            if 'url' not in transformed_value:
+                raise Exception(
+                    f'Missing non-mirror url for @{key}. Verify BUCKET_URL '
+                    f'{BUCKET_URL} is correct and check for missing url value '
+                    f'with prefix {BUCKET_URL}.')
             transformed_metadata.append(transformed_value)
     s3_resource = boto3.resource('s3')
     for value in transformed_metadata:
+        object_key = value['object_key']
+        sha256 = value['sha256']
+        url = value['url']
         if '--no-download' in argv:
-            print('Not querying S3 object key {} '
-                  'because --no-download was specified'.format(
-                      value['object_key']))
+            print(f'NOT querying S3 object key {object_key} because '
+                  f'--no-download was specified')
             continue
-        s3_object = s3_resource.Object(BUCKET_NAME, value['object_key'])
+        s3_object = s3_resource.Object(BUCKET_NAME, object_key)
         try:
             s3_object.load()
-            print('S3 object key {} already exists'.format(
-                value['object_key']))
+            print(f'S3 object key {object_key} already exists')
         except botocore.exceptions.ClientError as exception:
             # https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectHEAD.html#rest-object-head-permissions
             if exception.response['Error']['Code'] in ['403', '404']:
-                print('S3 object key {} does NOT exist'.format(
-                    value['object_key']))
+                print(f'S3 object key {object_key} does NOT exist')
                 with tempfile.TemporaryDirectory() as directory:
-                    filename = os.path.join(
-                        directory, os.path.basename(value['object_key']))
-                    print('Downloading from URL {}...'.format(value['url']))
-                    with requests.get(value['url'], stream=True) as response:
+                    filename = os.path.join(directory,
+                                            os.path.basename(object_key))
+                    print(f'Downloading from URL {url}...')
+                    with requests.get(url, stream=True) as response:
                         with open(filename, 'wb') as file_object:
                             for chunk in response.iter_content(
                                     chunk_size=CHUNK_SIZE):
                                 file_object.write(chunk)
-                    print('Computing and verifying SHA-256 checksum...')
+                    print(f'Computing and verifying SHA-256 checksum of '
+                          f'file {filename}...')
                     hash_object = hashlib.sha256()
                     with open(filename, 'rb') as file_object:
                         buffer = file_object.read(CHUNK_SIZE)
                         while buffer:
                             hash_object.update(buffer)
                             buffer = file_object.read(CHUNK_SIZE)
-                    if hash_object.hexdigest() != value['sha256']:
-                        raise Exception('Checksum mismatch')
+                    hexdigest = hash_object.hexdigest()
+                    if hexdigest != sha256:
+                        raise Exception(
+                            f'Expected SHA-256 checksum of file {filename} to '
+                            f'be {sha256}, but actual checksum was computed '
+                            f'to be {hexdigest}')
                     if '--no-upload' in argv:
-                        print('Not uploading to S3 object key '
-                              '{} because --no-upload was specified...'.format(
-                                  value['object_key']))
+                        print(f'NOT uploading file {filename} to S3 object '
+                              f'key {object_key} because --no-upload was '
+                              f'specified')
                     else:
-                        print('Uploading to S3 object key {}...'.format(
-                            value['object_key']))
+                        print(f'Uploading file {filename} to S3 object key '
+                              f'{object_key}...')
                         s3_object.upload_file(filename)
             else:
                 raise

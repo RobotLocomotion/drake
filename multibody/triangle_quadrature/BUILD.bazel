@@ -15,6 +15,7 @@ package(
 
 drake_cc_package_library(
     name = "triangle_quadrature",
+    visibility = ["//visibility:public"],
     deps = [
         ":triangle_quadrature_routine",
         ":triangle_quadrature_rules",
@@ -40,7 +41,7 @@ drake_cc_library(
     deps = [
         ":triangle_quadrature_rules",
         "//common:essential",
-        "//multibody/math:spatial_force",
+        "//multibody/math:spatial_algebra",
     ],
 )
 

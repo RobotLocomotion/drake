@@ -150,7 +150,7 @@ void gradientMatrixToAutoDiff(
  * AutoDiffScalar types (to avoid the calling function having to handle the
  * two cases differently).
  *
- * @param precision is passed to Eigen's isZero(precision) to evaluate whether 
+ * @param precision is passed to Eigen's isZero(precision) to evaluate whether
  * the gradients are zero.
  * @throws std::runtime_error if the gradients were not empty nor zero.
  *

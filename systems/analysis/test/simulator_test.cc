@@ -21,10 +21,10 @@
 #include "drake/systems/analysis/test_utilities/controlled_spring_mass_system.h"
 #include "drake/systems/analysis/test_utilities/logistic_system.h"
 #include "drake/systems/analysis/test_utilities/my_spring_mass_system.h"
+#include "drake/systems/analysis/test_utilities/spring_mass_system.h"
 #include "drake/systems/analysis/test_utilities/stateless_system.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/event.h"
-#include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/integrator.h"
 #include "drake/systems/primitives/signal_logger.h"
@@ -423,6 +423,7 @@ GTEST_TEST(SimulatorTest, FixedStepIncreasingIsolationAccuracy) {
   while (accuracy > 1e-8) {
     // (Re)set the time and initial state.
     context.SetTime(0);
+    simulator.Initialize();
 
     // Simulate to h.
     simulator.AdvanceTo(h);
@@ -2123,6 +2124,11 @@ GTEST_TEST(SimulatorTest, Initialization) {
     bool get_pub_init() const { return pub_init_; }
     bool get_dis_update_init() const { return dis_update_init_; }
     bool get_unres_update_init() const { return unres_update_init_; }
+    void reset() const {
+      pub_init_ = false;
+      dis_update_init_ = false;
+      unres_update_init_ = false;
+    }
 
    private:
     void InitPublish(const Context<double>& context,
@@ -2142,8 +2148,6 @@ GTEST_TEST(SimulatorTest, Initialization) {
           TriggerType::kInitialization) {
         EXPECT_EQ(context.get_time(), 0);
         dis_update_init_ = true;
-      } else {
-        EXPECT_TRUE(dis_update_init_);
       }
     }
 
@@ -2156,8 +2160,6 @@ GTEST_TEST(SimulatorTest, Initialization) {
           TriggerType::kInitialization) {
         EXPECT_EQ(context.get_time(), 0);
         unres_update_init_ = true;
-      } else {
-        EXPECT_TRUE(unres_update_init_);
       }
     }
 
@@ -2173,6 +2175,15 @@ GTEST_TEST(SimulatorTest, Initialization) {
   EXPECT_TRUE(sys.get_pub_init());
   EXPECT_TRUE(sys.get_dis_update_init());
   EXPECT_TRUE(sys.get_unres_update_init());
+
+  sys.reset();
+  simulator.get_mutable_context().SetTime(0);
+  simulator.Initialize({.suppress_initialization_events = true});
+  simulator.AdvanceTo(1);
+
+  EXPECT_FALSE(sys.get_pub_init());
+  EXPECT_FALSE(sys.get_dis_update_init());
+  EXPECT_FALSE(sys.get_unres_update_init());
 }
 
 GTEST_TEST(SimulatorTest, OwnedSystemTest) {
@@ -2319,6 +2330,138 @@ GTEST_TEST(SimulatorTest, MonitorFunctionAndStatusReturn) {
       ".*Simulator stopped at time 6.*because.*"
       "SpringMassSystem.*my_spring_mass.*"
       "failed with message.*Something terrible happened.*");
+}
+
+// Simulator::Initialize() called at time t temporarily moves time back to
+// t̅ = t-δ prior to calling CalcNextUpdateTime() so that timed events scheduled
+// for time t will trigger. (t̅ is the next floating point value below t.)
+// This causes trouble for DoCalcNextUpdateTime() overloads that want an
+// event "right now", since those return contact.get_time(), which in this
+// case will be t̅ when it should have been t. When a Diagram runs through
+// all its subsystems looking for the "next" update time, it keeps only the
+// ones that occur at the earliest of all times reported, and forgets any
+// later ones (since obviously those are not "next"). Without special handling,
+// the "right now" events at t̅ would prevent other time t events from being
+// seen. (This was not done originally, see Drake issue #13296.)
+//
+// The case here creates a two-subsystem Diagram in which one of the subsystems
+// specifies a "right now" update time while the other has an event that occurs
+// at a specified time t. We'll verify that they play well together under
+// various circumstances that can occur during Simulator::Initialize().
+GTEST_TEST(SimulatorTest, MissedPublishEventIssue13296) {
+  // This models systems like LcmSubscriberSystem that want to generate
+  // an event as soon as possible after an external message arrives. Here we
+  // just set a flag to indicate that a "message" is waiting and generate an
+  // event whenever that flag is set.
+  class RightNowEventSystem : public LeafSystem<double> {
+   public:
+    int publish_count() const { return publish_counter_; }
+    void reset_count() { publish_counter_ = 0; }
+    void set_message_is_waiting(bool message_is_waiting) {
+      message_is_waiting_ = message_is_waiting;
+    }
+
+   private:
+    void DoCalcNextUpdateTime(const Context<double>& context,
+                              CompositeEventCollection<double>* event_info,
+                              double* next_update_time) const final {
+      const double inf = std::numeric_limits<double>::infinity();
+      *next_update_time = message_is_waiting_ ? context.get_time() : inf;
+      PublishEvent<double> event(
+          TriggerType::kTimed,
+          [this](const Context<double>& handler_context,
+                 const PublishEvent<double>& publish_event) {
+            this->MyPublishHandler(handler_context, publish_event);
+          });
+      event.AddToComposite(event_info);
+    }
+
+    void MyPublishHandler(const Context<double>& context,
+                          const PublishEvent<double>& publish_event) const {
+      ++publish_counter_;
+    }
+
+    bool message_is_waiting_{false};
+    mutable int publish_counter_{0};
+  };
+
+  // Just an ordinary system that has a periodic event with period 0.25. It
+  // should play nicely with simultaneous events from the
+  // RightNowEventSystem above.
+  class PeriodicEventSystem : public LeafSystem<double> {
+   public:
+    PeriodicEventSystem() {
+      this->DeclarePeriodicPublishEvent(0.25, 0.,
+                                        &PeriodicEventSystem::MakeItCount);
+    }
+
+    int publish_count() const { return publish_counter_; }
+    void reset_count() { publish_counter_ = 0; }
+
+   private:
+    EventStatus MakeItCount(const Context<double>&) const {
+      ++publish_counter_;
+      return EventStatus::Succeeded();
+    }
+    mutable int publish_counter_{0};
+  };
+
+  DiagramBuilder<double> builder;
+  auto right_now_system = builder.AddSystem<RightNowEventSystem>();
+  auto periodic_system = builder.AddSystem<PeriodicEventSystem>();
+  Simulator<double> simulator(builder.Build());
+
+  // Verify that CalcNextUpdateTime() returns "true time" rather than
+  // current time when time is perturbed but we return "right now".
+  // Note that the times are chosen to trigger only the "right now" event.
+  const double true_time = .125;
+  right_now_system->set_message_is_waiting(true);  // Activate event.
+  simulator.get_mutable_context().SetTime(true_time);
+  auto events = simulator.get_system().AllocateCompositeEventCollection();
+  double next_update_time = simulator.get_system().CalcNextUpdateTime
+      (simulator.get_context(), events.get());
+  EXPECT_EQ(simulator.get_context().get_time(), true_time);
+  EXPECT_EQ(next_update_time, true_time);  // Normal behavior.
+
+  // Tweak the time. (Simulator::Initialize() does this more carefully.)
+  const double perturbed_time = true_time - 1e-14;
+  ASSERT_NE(perturbed_time, true_time);  // Watch for precision loss.
+  simulator.get_mutable_context().PerturbTime(perturbed_time, true_time);
+  next_update_time = simulator.get_system().CalcNextUpdateTime
+      (simulator.get_context(), events.get());
+  EXPECT_EQ(simulator.get_context().get_time(), perturbed_time);
+  EXPECT_EQ(next_update_time, true_time);  // Return true time, not current.
+
+  // With no "message" waiting, the "right now" event won't trigger. At
+  // the offset time 0, we should get just the periodic event. This has always
+  // worked properly.
+  right_now_system->set_message_is_waiting(false);  // Deactivate event.
+  simulator.get_mutable_context().SetTime(0.);
+  simulator.Initialize();
+  EXPECT_EQ(right_now_system->publish_count(), 0);
+  EXPECT_EQ(periodic_system->publish_count(), 1);
+  periodic_system->reset_count();
+
+  // With a message waiting, the "right now" event should trigger,
+  // but the periodic event won't issue until its offset time (0) is reached.
+  // Although this wasn't reported in #13296, it did not work correctly before
+  // the fix in PR #13438.
+  right_now_system->set_message_is_waiting(true);
+  simulator.get_mutable_context().SetTime(-1.);
+  simulator.Initialize();
+  EXPECT_EQ(right_now_system->publish_count(), 1);
+  EXPECT_EQ(periodic_system->publish_count(), 0);
+  right_now_system->reset_count();
+
+  // With a message present and t=0 both should trigger. This is the case
+  // that failed in #13296: the "right now" event would come back at the
+  // perturbed time (slightly before zero), hiding the periodic event, and
+  // its handler would not get called either since that isn't the current time.
+  right_now_system->set_message_is_waiting(true);
+  simulator.get_mutable_context().SetTime(0.);
+  simulator.Initialize();
+  EXPECT_EQ(right_now_system->publish_count(), 1);
+  EXPECT_EQ(periodic_system->publish_count(), 1);
 }
 
 }  // namespace

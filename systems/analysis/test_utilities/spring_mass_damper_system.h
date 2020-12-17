@@ -3,7 +3,7 @@
 #include <limits>
 #include <utility>
 
-#include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
+#include "drake/systems/analysis/test_utilities/spring_mass_system.h"
 
 // WARNING WARNING WARNING
 // This test is currently used only as a stiff system test for implicit
@@ -131,6 +131,9 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
 
     // Second element of the derivative is spring acceleration.
     (*derivatives)[1] = force / this->get_mass();
+
+    // Third element of the derivative is the energy added into the spring.
+    (*derivatives)[2] = this->CalcConservativePower(context);
   }
 
  private:

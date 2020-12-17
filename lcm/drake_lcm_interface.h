@@ -11,12 +11,21 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
+#include "drake/lcm/lcm_messages.h"
 
 namespace drake {
 namespace lcm {
 
 // Declared later in this file.
+class DrakeLcmInterface;
 class DrakeSubscriptionInterface;
+
+namespace internal {
+// Used by the drake::lcm::Subscribe() free function to report errors.
+void OnHandleSubscriptionsError(
+    DrakeLcmInterface* lcm,
+    const std::string& error_message);
+}  // namespace internal
 
 /**
  * A pure virtual interface that enables LCM to be mocked.
@@ -39,6 +48,9 @@ class DrakeLcmInterface {
    * - `message_buffer` A pointer to the byte vector that is the serial
    *   representation of the LCM message.
    * - `message_size` The size of `message_buffer`.
+   *
+   * A callback should never throw an exception, because it is indirectly
+   * called from C functions.
    */
   using HandlerFunction = std::function<void(const void*, int)>;
 
@@ -69,6 +81,9 @@ class DrakeLcmInterface {
    * Subscribes to an LCM channel without automatic message decoding. The
    * handler will be invoked when a message arrives on channel @p channel.
    *
+   * The handler should never throw an exception, because it is indirectly
+   * called from C functions.
+   *
    * NOTE: Unlike upstream LCM, DrakeLcm does not support regexes for the
    * `channel` argument.
    *
@@ -94,6 +109,13 @@ class DrakeLcmInterface {
 
  protected:
   DrakeLcmInterface();
+
+ private:
+  // Allow our internal function to call the virtual function.
+  friend void internal::OnHandleSubscriptionsError(
+      DrakeLcmInterface* /* lcm */, const std::string& /* error_message */);
+  // A virtual function to be called during HandleSubscriptions processing.
+  virtual void OnHandleSubscriptionsError(const std::string& error_message) = 0;
 };
 
 /**
@@ -160,12 +182,8 @@ template <typename Message>
 void Publish(DrakeLcmInterface* lcm, const std::string& channel,
              const Message& message, std::optional<double> time_sec = {}) {
   DRAKE_THROW_UNLESS(lcm != nullptr);
-  const int num_bytes = message.getEncodedSize();
-  DRAKE_THROW_UNLESS(num_bytes >= 0);
-  const size_t size_bytes = static_cast<size_t>(num_bytes);
-  std::vector<uint8_t> bytes(size_bytes);
-  message.encode(bytes.data(), 0, num_bytes);
-  lcm->Publish(channel, bytes.data(), num_bytes, time_sec);
+  const std::vector<uint8_t> bytes = EncodeLcmMessage(message);
+  lcm->Publish(channel, bytes.data(), bytes.size(), time_sec);
 }
 
 /**
@@ -207,7 +225,10 @@ std::shared_ptr<DrakeSubscriptionInterface> Subscribe(
     } else if (on_error) {
       on_error();
     } else {
-      throw std::runtime_error("Error decoding message on " + channel);
+      // Register the error on the DrakeLcmInterface that owns us.  It will
+      // throw once it's safe to do so (once C code is no longer on the stack).
+      internal::OnHandleSubscriptionsError(
+          lcm, "Error decoding message on " + channel);
     }
   });
   return result;

@@ -16,8 +16,8 @@ Simulator<T>::Simulator(const System<T>& system,
 
 template <typename T>
 Simulator<T>::Simulator(std::unique_ptr<const System<T>> owned_system,
-                        std::unique_ptr<Context<T>> context) :
-    Simulator(nullptr, std::move(owned_system), std::move(context)) {}
+                        std::unique_ptr<Context<T>> context)
+    : Simulator(nullptr, std::move(owned_system), std::move(context)) {}
 
 template <typename T>
 Simulator<T>::Simulator(const System<T>* system,
@@ -26,22 +26,20 @@ Simulator<T>::Simulator(const System<T>* system,
     : owned_system_(std::move(owned_system)),
       system_(owned_system_ ? *owned_system_ : *system),
       context_(std::move(context)) {
-  // Setup defaults that should be generally reasonable.
-  const double max_step_size = 0.1;
-  const double initial_step_size = 1e-4;
-  const double default_accuracy = 1e-4;
+  // TODO(dale.mcconachie) move this default to SimulatorConfig
+  constexpr double kDefaultInitialStepSizeTarget = 1e-4;
 
   // Create a context if necessary.
   if (!context_) context_ = system_.CreateDefaultContext();
 
   // Create a default integrator and initialize it.
-  // N.B. Keep this in sync with systems::internal::kDefaultIntegratorName at
-  // the top of this file.
+  DRAKE_DEMAND(SimulatorConfig{}.integration_scheme == "runge_kutta3");
   integrator_ = std::unique_ptr<IntegratorBase<T>>(
       new RungeKutta3Integrator<T>(system_, context_.get()));
-  integrator_->request_initial_step_size_target(initial_step_size);
-  integrator_->set_maximum_step_size(max_step_size);
-  integrator_->set_target_accuracy(default_accuracy);
+  integrator_->request_initial_step_size_target(
+      kDefaultInitialStepSizeTarget);
+  integrator_->set_maximum_step_size(SimulatorConfig{}.max_step_size);
+  integrator_->set_target_accuracy(SimulatorConfig{}.accuracy);
   integrator_->Initialize();
 
   // Allocate the necessary temporaries for storing state in update calls
@@ -58,7 +56,7 @@ Simulator<T>::Simulator(const System<T>* system,
 }
 
 template <typename T>
-SimulatorStatus Simulator<T>::Initialize() {
+SimulatorStatus Simulator<T>::Initialize(const InitializeParams& params) {
   // TODO(sherm1) Modify Context to satisfy constraints.
   // TODO(sherm1) Invoke System's initial conditions computation.
   if (!context_)
@@ -79,7 +77,9 @@ SimulatorStatus Simulator<T>::Initialize() {
 
   // Process all the initialization events.
   auto init_events = system_.AllocateCompositeEventCollection();
-  system_.GetInitializationEvents(*context_, init_events.get());
+  if (!params.suppress_initialization_events) {
+    system_.GetInitializationEvents(*context_, init_events.get());
+  }
 
   // Do unrestricted updates first.
   HandleUnrestrictedUpdate(init_events->get_unrestricted_update_events());
@@ -97,19 +97,19 @@ SimulatorStatus Simulator<T>::Initialize() {
 
   // Ensure that CalcNextUpdateTime() can return the current time by perturbing
   // current time as slightly toward negative infinity as we can allow.
-  const T slightly_before_current_time = internal::GetPreviousNormalizedValue(
-      current_time);
-  context_->SetTime(slightly_before_current_time);
+  const T slightly_before_current_time =
+      internal::GetPreviousNormalizedValue(current_time);
+  context_->PerturbTime(slightly_before_current_time, current_time);
 
   // Get the next timed event.
-  next_timed_event_time_ =
+  const T next_timed_event_time =
       system_.CalcNextUpdateTime(*context_, timed_events_.get());
 
   // Reset the context time.
   context_->SetTime(current_time);
 
   // Indicate a timed event is to be handled, if appropriate.
-  if (next_timed_event_time_ == current_time) {
+  if (next_timed_event_time == current_time) {
     time_or_witness_triggered_ = kTimeTriggered;
   } else {
     time_or_witness_triggered_ = kNothingTriggered;
@@ -139,6 +139,7 @@ SimulatorStatus Simulator<T>::Initialize() {
 
   // Initialize runtime variables.
   initialization_done_ = true;
+  last_known_simtime_ = ExtractDoubleOrThrow(context_->get_time());
 
   return status;
 }
@@ -194,6 +195,13 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
       return initialize_status;
   }
 
+  DRAKE_DEMAND(!std::isnan(last_known_simtime_));
+  if (last_known_simtime_ != context_->get_time()) {
+    throw std::logic_error(
+        "Simulation time has changed since last Initialize() or AdvanceTo()."
+        " Resetting simulation time requires a call to Initialize().");
+  }
+
   DRAKE_THROW_UNLESS(boundary_time >= context_->get_time());
 
   // Assume success.
@@ -233,9 +241,9 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
     HandleDiscreteUpdate(merged_events->get_discrete_update_events());
 
     // How far can we go before we have to handle timed events?
-    next_timed_event_time_ =
+    const T next_timed_event_time =
         system_.CalcNextUpdateTime(*context_, timed_events_.get());
-    DRAKE_DEMAND(next_timed_event_time_ >= step_start_time);
+    DRAKE_DEMAND(next_timed_event_time >= step_start_time);
 
     // Determine whether the set of events requested by the System at
     // next_timed_event_time includes an Update action, a Publish action, or
@@ -244,17 +252,17 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
     T next_publish_time = std::numeric_limits<double>::infinity();
     if (timed_events_->HasDiscreteUpdateEvents() ||
         timed_events_->HasUnrestrictedUpdateEvents()) {
-      next_update_time = next_timed_event_time_;
+      next_update_time = next_timed_event_time;
     }
     if (timed_events_->HasPublishEvents()) {
-      next_publish_time = next_timed_event_time_;
+      next_publish_time = next_timed_event_time;
     }
 
     // Integrate the continuous state forward in time.
     time_or_witness_triggered_ = IntegrateContinuousState(
         next_publish_time,
         next_update_time,
-        next_timed_event_time_,
+        next_timed_event_time,
         boundary_time,
         witnessed_events_.get());
 
@@ -297,6 +305,9 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
 
   // TODO(edrumwri): Add test coverage to complete #8490.
   redetermine_active_witnesses_ = true;
+
+  // Record the time to detect unexpected jumps.
+  last_known_simtime_ = ExtractDoubleOrThrow(context_->get_time());
 
   return status;
 }

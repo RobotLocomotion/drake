@@ -1,10 +1,9 @@
-<sdf version='1.6'>
-  <model name='robot1'>
-    <link name='base_link'>
-    </link>
-    <link name='moving_link'>
-    </link>
-    <joint name='slider' type='prismatic'>
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="robot1">
+    <link name="base_link"/>
+    <link name="moving_link"/>
+    <joint name="slider" type="prismatic">
       <parent>base_link</parent>
       <child>moving_link</child>
       <axis>

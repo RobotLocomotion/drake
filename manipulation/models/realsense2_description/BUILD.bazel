@@ -1,0 +1,46 @@
+# -*- python -*-
+
+load("@drake//tools/lint:lint.bzl", "add_lint_tests")
+load("@drake//tools/install:install_data.bzl", "install_data")
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+)
+load("@drake//tools/workspace:forward_files.bzl", "forward_files")
+load(
+    "@drake//tools/workspace/intel_realsense_ros:files.bzl",
+    "realsense2_description_files",
+)
+
+# This package is public so that other packages can refer to
+# individual files in models from their bazel rules.
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+_REALSENSE2_DESCRIPTION_FILES = forward_files(
+    srcs = ["@intel_realsense_ros//:" +
+            x for x in realsense2_description_files()],
+    dest_prefix = "",
+    strip_prefix = "@intel_realsense_ros//:realsense2_description/",
+    visibility = ["//visibility:private"],
+)
+
+install_data(
+    extra_prod_models = _REALSENSE2_DESCRIPTION_FILES,
+)
+
+drake_cc_googletest(
+    name = "realsense_parse_test",
+    data = [":models"],
+    deps = [
+        "//common:find_resource",
+        "//geometry:drake_visualizer",
+        "//geometry:scene_graph",
+        "//multibody/parsing",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram_builder",
+    ],
+)
+
+add_lint_tests()

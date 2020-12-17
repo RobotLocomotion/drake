@@ -9,6 +9,8 @@ namespace drake {
 namespace systems {
 namespace rendering {
 
+using math::RigidTransform;
+
 template <typename T>
 PoseBundle<T>::PoseBundle(int num_poses)
     : poses_(num_poses),
@@ -25,13 +27,13 @@ int PoseBundle<T>::get_num_poses() const {
 }
 
 template <typename T>
-const Isometry3<T>& PoseBundle<T>::get_pose(int index) const {
+const RigidTransform<T>& PoseBundle<T>::get_transform(int index) const {
   DRAKE_DEMAND(index >= 0 && index < get_num_poses());
   return poses_[index];
 }
 
 template <typename T>
-void PoseBundle<T>::set_pose(int index, const Isometry3<T>& pose) {
+void PoseBundle<T>::set_transform(int index, const RigidTransform<T>& pose) {
   DRAKE_DEMAND(index >= 0 && index < get_num_poses());
   poses_[index] = pose;
 }

@@ -14,6 +14,7 @@ package(
 
 drake_cc_package_library(
     name = "tree",
+    visibility = ["//visibility:public"],
     deps = [
         ":articulated_body_inertia",
         ":multibody_element",
@@ -69,8 +70,7 @@ drake_cc_library(
         ":articulated_body_inertia",
         ":multibody_tree_topology",
         "//common:autodiff",
-        "//multibody/math:spatial_acceleration",
-        "//multibody/math:spatial_velocity",
+        "//multibody/math:spatial_algebra",
         "//systems/framework:leaf_context",
     ],
 )
@@ -89,6 +89,7 @@ drake_cc_library(
 drake_cc_library(
     name = "multibody_tree_core",
     srcs = [
+        "ball_rpy_joint.cc",
         "body.cc",
         "body_node_impl.cc",
         "door_hinge.cc",
@@ -101,6 +102,8 @@ drake_cc_library(
         "multibody_forces.cc",
         "multibody_tree.cc",
         "multibody_tree_system.cc",
+        "planar_joint.cc",
+        "planar_mobilizer.cc",
         "prismatic_joint.cc",
         "prismatic_mobilizer.cc",
         "quaternion_floating_mobilizer.cc",
@@ -110,10 +113,13 @@ drake_cc_library(
         "rigid_body.cc",
         "space_xyz_mobilizer.cc",
         "uniform_gravity_field_element.cc",
+        "universal_joint.cc",
+        "universal_mobilizer.cc",
         "weld_joint.cc",
         "weld_mobilizer.cc",
     ],
     hdrs = [
+        "ball_rpy_joint.h",
         "body.h",
         "body_node.h",
         "body_node_impl.h",
@@ -134,6 +140,9 @@ drake_cc_library(
         "multibody_tree.h",
         "multibody_tree-inl.h",
         "multibody_tree_system.h",
+        "parameter_conversion.h",
+        "planar_joint.h",
+        "planar_mobilizer.h",
         "prismatic_joint.h",
         "prismatic_mobilizer.h",
         "quaternion_floating_mobilizer.h",
@@ -143,6 +152,8 @@ drake_cc_library(
         "rigid_body.h",
         "space_xyz_mobilizer.h",
         "uniform_gravity_field_element.h",
+        "universal_joint.h",
+        "universal_mobilizer.h",
         "weld_joint.h",
         "weld_mobilizer.h",
     ],
@@ -333,6 +344,7 @@ drake_cc_googletest(
     name = "spatial_inertia_test",
     deps = [
         ":spatial_inertia",
+        "//common/test_utilities:expect_no_throw",
         "//math:geometric_transform",
         "//math:gradient",
     ],
@@ -353,6 +365,15 @@ drake_cc_library(
     hdrs = ["test/mobilizer_tester.h"],
     deps = [
         ":tree",
+    ],
+)
+
+drake_cc_googletest(
+    name = "planar_mobilizer_test",
+    deps = [
+        ":mobilizer_tester",
+        ":tree",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -386,6 +407,15 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "space_xyz_mobilizer_test",
+    deps = [
+        ":mobilizer_tester",
+        ":tree",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "universal_mobilizer_test",
     deps = [
         ":mobilizer_tester",
         ":tree",
@@ -434,6 +464,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
+        "//multibody/plant",
         "//systems/framework",
     ],
 )
@@ -476,9 +507,32 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "ball_rpy_joint_test",
+    deps = [
+        ":tree",
+    ],
+)
+
+drake_cc_googletest(
+    name = "planar_joint_test",
+    deps = [
+        ":tree",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
     name = "prismatic_joint_test",
     deps = [
         ":tree",
+    ],
+)
+
+drake_cc_googletest(
+    name = "universal_joint_test",
+    deps = [
+        ":tree",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

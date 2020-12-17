@@ -66,7 +66,7 @@ template <class T>
 void ModelInstance<T>::SetPositionsInArray(
     const Eigen::Ref<const VectorX<T>>& model_q,
     EigenPtr<VectorX<T>> q_array) const {
-  DRAKE_DEMAND(q_array);
+  DRAKE_DEMAND(q_array != nullptr);
   if (q_array->size() != this->get_parent_tree().num_positions() ||
       model_q.size() != num_positions()) {
     throw std::logic_error("Passed in array(s) is not properly sized.");
@@ -102,6 +102,7 @@ template <class T>
 void ModelInstance<T>::SetVelocitiesInArray(
     const Eigen::Ref<const VectorX<T>>& model_v,
     EigenPtr<VectorX<T>> v_array) const {
+  DRAKE_DEMAND(v_array != nullptr);
   DRAKE_DEMAND(v_array->size() == this->get_parent_tree().num_velocities());
   DRAKE_DEMAND(model_v.size() == num_velocities());
   int velocity_offset = 0;

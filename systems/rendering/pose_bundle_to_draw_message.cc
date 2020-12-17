@@ -1,6 +1,8 @@
 #include "drake/systems/rendering/pose_bundle_to_draw_message.h"
 
 #include "drake/lcmt_viewer_draw.hpp"
+#include "drake/math/rigid_transform.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/systems/rendering/pose_bundle.h"
 
 namespace drake {
@@ -37,13 +39,14 @@ void PoseBundleToDrawMessage::CalcViewerDrawMessage(
 
     message.link_name[i] = poses.get_name(i);
 
-    Eigen::Translation<double, 3> t(poses.get_pose(i).translation());
+    Eigen::Translation<double, 3> t(poses.get_transform(i).translation());
     message.position[i].resize(3);
     message.position[i][0] = t.x();
     message.position[i][1] = t.y();
     message.position[i][2] = t.z();
 
-    Eigen::Quaternion<double> q(poses.get_pose(i).linear());
+    Eigen::Quaternion<double> q(
+        poses.get_transform(i).rotation().ToQuaternion());
     message.quaternion[i].resize(4);
     message.quaternion[i][0] = q.w();
     message.quaternion[i][1] = q.x();

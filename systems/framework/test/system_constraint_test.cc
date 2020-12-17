@@ -286,7 +286,7 @@ TEST_F(ExternalSystemConstraintTest, NonSymbolic) {
   // Check that the generic lambda turned into a correct functor by calling it
   // and checking the result, for double.
   auto context_double = system_.CreateDefaultContext();
-  context_double->FixInputPort(0, VectorXd::Zero(1));
+  system_.get_input_port().FixValue(context_double.get(), VectorXd::Zero(1));
   context_double->get_mutable_continuous_state().SetFromVector(
       (VectorXd(2) << 0.0, 22.0).finished());
   VectorXd value_double;
@@ -298,7 +298,8 @@ TEST_F(ExternalSystemConstraintTest, NonSymbolic) {
   using T = AutoDiffXd;
   auto system_autodiff = system_.ToAutoDiffXd();
   auto context_autodiff = system_autodiff->CreateDefaultContext();
-  context_autodiff->FixInputPort(0, VectorX<T>::Zero(1));
+  system_autodiff->get_input_port().FixValue(context_autodiff.get(),
+                                             VectorX<T>::Zero(1));
   context_autodiff->get_mutable_continuous_state().SetFromVector(
       (VectorX<T>(2) << T{0.0}, T{22.0}).finished());
   VectorX<T> value_autodiff;

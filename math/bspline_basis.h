@@ -6,6 +6,8 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_throw.h"
+#include "drake/common/name_value.h"
 #include "drake/math/knot_vector_type.h"
 
 namespace drake {
@@ -33,6 +35,8 @@ class BsplineBasis final {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BsplineBasis);
 
+  BsplineBasis() : BsplineBasis<T>(0, {}) {}
+
   /** Constructs a B-spline basis with the specified `order` and `knots`.
   @pre `knots` is sorted in non-descending order.
   @throws std::invalid_argument if knots.size() < 2 * order. */
@@ -48,6 +52,27 @@ class BsplineBasis final {
                const T& initial_parameter_value = 0,
                const T& final_parameter_value = 1);
 
+#ifdef DRAKE_DOXYGEN_CXX
+  /** Conversion constructor. Constructs an instance of BsplineBasis<T> from a
+  double-valued basis. */
+  explicit BsplineBasis(const BsplineBasis<double>& other);
+#else
+  template <typename U = T>
+  explicit BsplineBasis(const BsplineBasis<double>& other,
+               /* Prevents ambiguous declarations between default copy
+               constructor on double and conversion constructor on T = double.
+               The conversion constructor for T = double will fail to be
+               instantiated because the second, "hidden" parameter will fail to
+               be defined for U = double. */
+               typename std::enable_if_t<!std::is_same_v<U, double>>* = {})
+      : order_(other.order()) {
+    knots_.reserve(other.knots().size());
+    for (const auto& knot : other.knots()) {
+      knots_.push_back(T(knot));
+    }
+  }
+#endif
+
   /** The order of this B-spline basis (k in the class description). */
   int order() const { return order_; }
 
@@ -57,7 +82,7 @@ class BsplineBasis final {
 
   /** The number of basis functions in this B-spline basis (n + 1 in the class
   description). */
-  int num_basis_functions() const { return num_basis_functions_; }
+  int num_basis_functions() const { return knots_.size() - order_; }
 
   /** The knot vector of this B-spline basis (the vector (t₀, t₁, ..., tₘ)' in
   the class description). */
@@ -127,7 +152,7 @@ class BsplineBasis final {
 
     // Define short names to match notation in [1].
     const std::vector<T>& t = knots();
-    const T t_bar = parameter_value;
+    const T& t_bar = parameter_value;
     const int k = order();
 
     /* Find the index, 𝑙, of the greatest knot that is less than or equal to
@@ -158,13 +183,30 @@ class BsplineBasis final {
   `parameter_value`. */
   T EvaluateBasisFunctionI(int i, const T& parameter_value) const;
 
-  bool operator==(const BsplineBasis& other) const;
+  boolean<T> operator==(const BsplineBasis& other) const;
 
-  bool operator!=(const BsplineBasis& other) const;
+  boolean<T> operator!=(const BsplineBasis& other) const;
+
+  /** Passes this object to an Archive; see @ref serialize_tips for background.
+  This method is only available when T = double. */
+  template <typename Archive>
+#ifdef DRAKE_DOXYGEN_CXX
+  void
+#else
+  // Restrict this method to T = double only; we must mix "Archive" into the
+  // conditional type for SFINAE to work, so we just check it against void.
+  std::enable_if_t<std::is_same_v<T, double> && !std::is_void<Archive>::value>
+#endif
+  Serialize(Archive* a) {
+    a->Visit(MakeNameValue("order", &order_));
+    a->Visit(MakeNameValue("knots", &knots_));
+    DRAKE_THROW_UNLESS(CheckInvariants());
+  }
 
  private:
+  bool CheckInvariants() const;
+
   int order_{};
-  int num_basis_functions_{};
   std::vector<T> knots_;
 };
 }  // namespace math

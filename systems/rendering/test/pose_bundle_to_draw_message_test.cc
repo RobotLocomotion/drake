@@ -12,17 +12,17 @@ namespace {
 
 GTEST_TEST(PoseBundleToDrawMessageTest, Conversion) {
   PoseBundle<double> bundle(2);
-  Eigen::Isometry3d foo_pose = Eigen::Isometry3d::Identity();
-  foo_pose.translation()[0] = 123;
+  math::RigidTransformd foo_pose{Eigen::Vector3d{123, 0, 0}};
   bundle.set_name(0, "foo");
-  bundle.set_pose(0, foo_pose);
+  bundle.set_transform(0, foo_pose);
   bundle.set_model_instance_id(0, 42);
 
-  Eigen::Isometry3d bar_pose = Eigen::Isometry3d::Identity();
   const double roll = -M_PI_2;
-  bar_pose *= Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX());
+  math::RigidTransformd bar_pose{
+      Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX()),
+      Eigen::Vector3d{0, 0, 0}};
   bundle.set_name(1, "bar");
-  bundle.set_pose(1, bar_pose);
+  bundle.set_transform(1, bar_pose);
   bundle.set_model_instance_id(1, 43);
 
   PoseBundleToDrawMessage converter;

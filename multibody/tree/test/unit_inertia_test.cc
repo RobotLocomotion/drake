@@ -614,7 +614,7 @@ GTEST_TEST(UnitInertia, NearZeroInertia) {
 // actual point's position) might lead to "catastrophic cancellation" that
 // triggers false negatives in CouldBePhysicallyValid(). We verify that we can
 // handle this case without generating spurious false negatives due to the loss
-// of significance occuring with floating point precision.
+// of significance occurring with floating point precision.
 GTEST_TEST(UnitInertia, CatastrophicCancellationForPointInertias) {
   // We use a value eps smaller than machine precision in order to trigger a
   // "catastrophic cancellation", see notes below.

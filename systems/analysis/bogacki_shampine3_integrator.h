@@ -23,7 +23,7 @@ namespace systems {
  -----------------------------------------------------------------------------
         2/9         1/3      4/9     0
         7/24        1/4      1/3     1/8
-</pre>
+ </pre>
  where the second to last row is the 3rd-order (propagated) solution and
  the last row gives a 2nd-order accurate solution used for error control.
 

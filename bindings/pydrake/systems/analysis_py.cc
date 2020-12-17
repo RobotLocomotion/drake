@@ -2,7 +2,6 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -12,6 +11,8 @@
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/analysis/simulator_config_functions.h"
+#include "drake/systems/analysis/simulator_print_stats.h"
 
 using std::unique_ptr;
 
@@ -26,8 +27,45 @@ PYBIND11_MODULE(analysis, m) {
 
   py::module::import("pydrake.systems.framework");
 
-  py::class_<SimulatorStatus>(
-      m, "SimulatorStatus", pydrake_doc.drake.systems.SimulatorStatus.doc);
+  {
+    constexpr auto& doc = pydrake_doc.drake.systems;
+    using Class = SimulatorStatus;
+    constexpr auto& cls_doc = doc.SimulatorStatus;
+    py::class_<Class> cls(m, "SimulatorStatus", cls_doc.doc);
+
+    using Enum = Class::ReturnReason;
+    constexpr auto& enum_doc = cls_doc.ReturnReason;
+    py::enum_<Class::ReturnReason>(cls, "ReturnReason", enum_doc.doc)
+        .value("kReachedBoundaryTime", Enum::kReachedBoundaryTime,
+            enum_doc.kReachedBoundaryTime.doc)
+        .value("kReachedTerminationCondition",
+            Enum::kReachedTerminationCondition,
+            enum_doc.kReachedTerminationCondition.doc)
+        .value("kEventHandlerFailed", Enum::kEventHandlerFailed,
+            enum_doc.kEventHandlerFailed.doc);
+
+    cls  // BR
+         // TODO(eric.cousineau): Bind setter methods.
+        .def("FormatMessage", &Class::FormatMessage, cls_doc.FormatMessage.doc)
+        .def("succeeded", &Class::succeeded, cls_doc.succeeded.doc)
+        .def("boundary_time", &Class::boundary_time, cls_doc.boundary_time.doc)
+        .def("return_time", &Class::return_time, cls_doc.return_time.doc)
+        .def("reason", &Class::reason, cls_doc.reason.doc)
+        .def("system", &Class::system, py_rvp::reference, cls_doc.system.doc)
+        .def("message", &Class::message, cls_doc.message.doc)
+        .def("IsIdenticalStatus", &Class::IsIdenticalStatus, py::arg("other"),
+            cls_doc.IsIdenticalStatus.doc);
+  }
+
+  {
+    constexpr auto& cls_doc = pydrake_doc.drake.systems.InitializeParams;
+    using Class = InitializeParams;
+    py::class_<Class>(m, "InitializeParams", cls_doc.doc)
+        .def(ParamInit<Class>())
+        .def_readwrite("suppress_initialization_events",
+            &Class::suppress_initialization_events,
+            cls_doc.suppress_initialization_events.doc);
+  }
 
   auto bind_scalar_types = [m](auto dummy) {
     constexpr auto& doc = pydrake_doc.drake.systems;
@@ -57,7 +95,13 @@ PYBIND11_MODULE(analysis, m) {
             doc.IntegratorBase.set_throw_on_minimum_step_size_violation.doc)
         .def("get_throw_on_minimum_step_size_violation",
             &IntegratorBase<T>::get_throw_on_minimum_step_size_violation,
-            doc.IntegratorBase.get_throw_on_minimum_step_size_violation.doc);
+            doc.IntegratorBase.get_throw_on_minimum_step_size_violation.doc)
+        .def("StartDenseIntegration", &IntegratorBase<T>::StartDenseIntegration,
+            doc.IntegratorBase.StartDenseIntegration.doc)
+        .def("get_dense_output", &IntegratorBase<T>::get_dense_output,
+            py_rvp::reference_internal, doc.IntegratorBase.get_dense_output.doc)
+        .def("StopDenseIntegration", &IntegratorBase<T>::StopDenseIntegration,
+            doc.IntegratorBase.StopDenseIntegration.doc);
 
     DefineTemplateClassWithDefault<RungeKutta2Integrator<T>, IntegratorBase<T>>(
         m, "RungeKutta2Integrator", GetPyParam<T>(),
@@ -96,41 +140,34 @@ PYBIND11_MODULE(analysis, m) {
             // Keep alive, ownership: `context` keeps `self` alive.
             py::keep_alive<3, 1>(), doc.Simulator.ctor.doc)
         .def("Initialize", &Simulator<T>::Initialize,
-            doc.Simulator.Initialize.doc)
+            doc.Simulator.Initialize.doc,
+            py::arg("params") = InitializeParams{})
         .def("AdvanceTo", &Simulator<T>::AdvanceTo, py::arg("boundary_time"),
             doc.Simulator.AdvanceTo.doc)
         .def("AdvancePendingEvents", &Simulator<T>::AdvancePendingEvents,
             doc.Simulator.AdvancePendingEvents.doc)
-        .def("get_context", &Simulator<T>::get_context, py_reference_internal,
-            doc.Simulator.get_context.doc)
+        .def("set_monitor", WrapCallbacks(&Simulator<T>::set_monitor),
+            py::arg("monitor"), doc.Simulator.set_monitor.doc)
+        .def("clear_monitor", &Simulator<T>::clear_monitor,
+            doc.Simulator.clear_monitor.doc)
+        .def("get_monitor", &Simulator<T>::get_monitor,
+            doc.Simulator.get_monitor.doc)
+        .def("get_context", &Simulator<T>::get_context,
+            py_rvp::reference_internal, doc.Simulator.get_context.doc)
         .def("get_integrator", &Simulator<T>::get_integrator,
-            py_reference_internal, doc.Simulator.get_integrator.doc)
+            py_rvp::reference_internal, doc.Simulator.get_integrator.doc)
         .def("get_mutable_integrator", &Simulator<T>::get_mutable_integrator,
-            py_reference_internal, doc.Simulator.get_mutable_integrator.doc)
+            py_rvp::reference_internal,
+            doc.Simulator.get_mutable_integrator.doc)
         .def("get_mutable_context", &Simulator<T>::get_mutable_context,
-            py_reference_internal, doc.Simulator.get_mutable_context.doc)
+            py_rvp::reference_internal, doc.Simulator.get_mutable_context.doc)
         .def("has_context", &Simulator<T>::has_context,
             doc.Simulator.has_context.doc)
         .def("reset_context", &Simulator<T>::reset_context, py::arg("context"),
             // Keep alive, ownership: `context` keeps `self` alive.
-            py::keep_alive<2, 1>(), doc.Simulator.reset_context.doc);
-    // TODO(eric.cousineau): Bind `release_context` once some form of the
-    // PR RobotLocomotion/pybind11#33 lands. Presently, it fails.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls  // BR
-        .def("reset_integrator",
-            WrapDeprecated(doc.Simulator.reset_integrator.doc_deprecated_1args,
-                [](Simulator<T>* self,
-                    std::unique_ptr<IntegratorBase<T>> integrator) {
-                  return self->reset_integrator(std::move(integrator));
-                }),
-            py::arg("integrator"),
-            // Keep alive, ownership: `integrator` keeps `self` alive.
-            py::keep_alive<2, 1>(),
-            doc.Simulator.reset_integrator.doc_deprecated_1args);
-#pragma GCC diagnostic pop
-    cls  // BR
+            py::keep_alive<2, 1>(), doc.Simulator.reset_context.doc)
+        // TODO(eric.cousineau): Bind `release_context` once some form of the
+        // PR RobotLocomotion/pybind11#33 lands. Presently, it fails.
         .def("set_publish_every_time_step",
             &Simulator<T>::set_publish_every_time_step,
             doc.Simulator.set_publish_every_time_step.doc)
@@ -142,9 +179,35 @@ PYBIND11_MODULE(analysis, m) {
             doc.Simulator.get_target_realtime_rate.doc)
         .def("get_actual_realtime_rate",
             &Simulator<T>::get_actual_realtime_rate,
-            doc.Simulator.get_actual_realtime_rate.doc);
+            doc.Simulator.get_actual_realtime_rate.doc)
+        .def("ResetStatistics", &Simulator<T>::ResetStatistics,
+            doc.Simulator.ResetStatistics.doc)
+        .def("get_system", &Simulator<T>::get_system, py_rvp::reference,
+            doc.Simulator.get_system.doc);
   };
   type_visit(bind_nonsymbolic_scalar_types, NonSymbolicScalarPack{});
+
+  // Simulator Flags
+  m  // BR
+      .def(
+          "ResetIntegratorFromFlags",
+          [](Simulator<double>* simulator, const std::string& scheme,
+              const double& max_step_size) {
+            IntegratorBase<double>& result =
+                ResetIntegratorFromFlags(simulator, scheme, max_step_size);
+            return &result;
+          },
+          py::arg("simulator"), py::arg("scheme"), py::arg("max_step_size"),
+          py_rvp::reference,
+          // Keep alive, reference: `return` keeps `simulator` alive.
+          py::keep_alive<0, 1>(),
+          pydrake_doc.drake.systems.ResetIntegratorFromFlags.doc)
+      .def("GetIntegrationSchemes", &GetIntegrationSchemes,
+          pydrake_doc.drake.systems.GetIntegrationSchemes.doc);
+  // Print Simulator Statistics
+  m  // BR
+      .def("PrintSimulatorStatistics", &PrintSimulatorStatistics,
+          pydrake_doc.drake.systems.PrintSimulatorStatistics.doc);
 
   // Monte Carlo Testing
   {

@@ -13,6 +13,7 @@
 #include "drake/multibody/inverse_kinematics/orientation_constraint.h"
 #include "drake/multibody/inverse_kinematics/point_to_point_distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/position_constraint.h"
+#include "drake/multibody/inverse_kinematics/unit_quaternion_constraint.h"
 
 namespace drake {
 namespace pydrake {
@@ -82,13 +83,13 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::arg("distance_lower"), py::arg("distance_upper"),
             cls_doc.AddPointToPointDistanceConstraint.doc)
         .def("q", &Class::q, cls_doc.q.doc)
-        .def("prog", &Class::prog, py_reference_internal, cls_doc.prog.doc)
+        .def("prog", &Class::prog, py_rvp::reference_internal, cls_doc.prog.doc)
         .def("get_mutable_prog", &Class::get_mutable_prog,
-            py_reference_internal, cls_doc.get_mutable_prog.doc)
-        .def("context", &Class::context, py_reference_internal,
+            py_rvp::reference_internal, cls_doc.get_mutable_prog.doc)
+        .def("context", &Class::context, py_rvp::reference_internal,
             cls_doc.context.doc)
         .def("get_mutable_context", &Class::get_mutable_context,
-            py_reference_internal, cls_doc.get_mutable_context.doc);
+            py_rvp::reference_internal, cls_doc.get_mutable_context.doc);
   }
   {
     using Class = AngleBetweenVectorsConstraint;
@@ -374,6 +375,23 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
             py::keep_alive<1, 8>(), ctor_doc_ad);
+  }
+  {
+    using Class = UnitQuaternionConstraint;
+    constexpr auto& cls_doc = doc.UnitQuaternionConstraint;
+    using Ptr = std::shared_ptr<Class>;
+    py::class_<Class, Constraint, Ptr>(
+        m, "UnitQuaternionConstraint", cls_doc.doc)
+        .def(py::init([]() { return std::make_unique<Class>(); }),
+            cls_doc.ctor.doc);
+    m.def("AddUnitQuaternionConstraintOnPlant",
+        &AddUnitQuaternionConstraintOnPlant<double>, py::arg("plant"),
+        py::arg("q_vars"), py::arg("prog"),
+        doc.AddUnitQuaternionConstraintOnPlant.doc);
+    m.def("AddUnitQuaternionConstraintOnPlant",
+        &AddUnitQuaternionConstraintOnPlant<AutoDiffXd>, py::arg("plant"),
+        py::arg("q_vars"), py::arg("prog"),
+        doc.AddUnitQuaternionConstraintOnPlant.doc);
   }
 }
 

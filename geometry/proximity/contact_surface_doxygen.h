@@ -1,3 +1,6 @@
+/** @file
+ Doxygen-only documentation for @ref module_contact_surface.  */
+
 namespace drake {
 namespace geometry {
 namespace proximity {

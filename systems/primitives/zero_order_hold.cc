@@ -43,7 +43,7 @@ ZeroOrderHold<T>::ZeroOrderHold(
         },
         {this->xa_ticket()});
 
-    this->DeclareAbstractState(abstract_model_value_->Clone());
+    this->DeclareAbstractState(*abstract_model_value_);
     this->DeclarePeriodicUnrestrictedUpdateEvent(period_sec_, 0.,
         &ZeroOrderHold::LatchInputAbstractValueToState);
   }
@@ -71,7 +71,7 @@ void ZeroOrderHold<T>::LatchInputVectorToState(
     const Context<T>& context,
     DiscreteValues<T>* discrete_state) const {
   DRAKE_ASSERT(!is_abstract());
-  const auto& input = get_input_port().Eval(context);
+  const auto& input = this->get_input_port().Eval(context);
   BasicVector<T>& state_value = discrete_state->get_mutable_vector(0);
   state_value.SetFromVector(input);
 }
@@ -89,7 +89,8 @@ void ZeroOrderHold<T>::LatchInputAbstractValueToState(
     const Context<T>& context,
     State<T>* state) const {
   DRAKE_ASSERT(is_abstract());
-  const auto& input = get_input_port().template Eval<AbstractValue>(context);
+  const auto& input =
+      this->get_input_port().template Eval<AbstractValue>(context);
   AbstractValue& state_value =
       state->get_mutable_abstract_state().get_mutable_value(0);
   state_value.SetFrom(input);

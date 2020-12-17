@@ -961,7 +961,7 @@ TEST_F(RotationMatrixConversionTests, RotationMatrixToQuaternionVariable) {
 
   // Evaluate the Quaterionion<Expression> for each Ri.
   for (const Eigen::Quaterniond& qi : quaternion_test_cases_) {
-    // Prepare the variable substitions.
+    // Prepare the variable substitutions.
     const Matrix3d mi = qi.toRotationMatrix();
     Environment env;
     for (int row = 0; row < 3; ++row) {

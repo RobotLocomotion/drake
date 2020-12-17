@@ -237,12 +237,14 @@ TEST_F(SymbolicExpansionTest, NaN) {
   // and throws an exception.
   EXPECT_FALSE(Expression::NaN().is_expanded());
   // NaN should be detected during expansion and throw runtime_error.
-  EXPECT_THROW(Expression::NaN().Expand(), runtime_error);
+  Expression dummy;
+  EXPECT_THROW(dummy = Expression::NaN().Expand(), runtime_error);
 }
 
 TEST_F(SymbolicExpansionTest, IfThenElse) {
   const Expression e{if_then_else(x_ > y_, pow(x_ + y_, 2), pow(x_ - y_, 2))};
-  EXPECT_THROW(e.Expand(), runtime_error);
+  Expression dummy;
+  EXPECT_THROW(dummy = e.Expand(), runtime_error);
   // An if-then-else expression is considered as not expanded so that
   // ExpressionIfThenElse::Expand() is called and throws an exception.
   EXPECT_FALSE(e.is_expanded());
@@ -318,6 +320,24 @@ TEST_F(SymbolicExpansionTest, RepeatedExpandShouldBeNoop) {
     const Expression e_expanded_expanded = e_expanded.Expand();
     EXPECT_PRED2(ExprEqual, e_expanded, e_expanded_expanded);
   }
+}
+
+TEST_F(SymbolicExpansionTest, ExpandMultiplicationsWithDivisions) {
+  const Expression e1{((x_ + 1) / y_) * (x_ + 3)};
+  const Expression e2{(x_ + 3) * ((x_ + 1) / z_)};
+  const Expression e3{((x_ + 1) / (y_ + 6)) * ((x_ + 3) / (z_ + 7))};
+  const Expression e4{(x_ + y_ / ((z_ + x_) * (y_ + x_))) * (x_ - y_ / z_) *
+                      (x_ * y_ / z_)};
+
+  EXPECT_TRUE(CheckExpandIsFixpoint(e1));
+  EXPECT_TRUE(CheckExpandIsFixpoint(e2));
+  EXPECT_TRUE(CheckExpandIsFixpoint(e3));
+  EXPECT_TRUE(CheckExpandIsFixpoint(e4));
+
+  EXPECT_TRUE(CheckExpandPreserveEvaluation(e1, 1e-8));
+  EXPECT_TRUE(CheckExpandPreserveEvaluation(e2, 1e-8));
+  EXPECT_TRUE(CheckExpandPreserveEvaluation(e3, 1e-8));
+  EXPECT_TRUE(CheckExpandPreserveEvaluation(e4, 1e-8));
 }
 
 }  // namespace

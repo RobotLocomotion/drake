@@ -42,11 +42,11 @@ DiscreteTimeDelay<T>::DiscreteTimeDelay(
         },
         {this->xa_ticket()});
     for (int ii = 0; ii < delay_buffer_size_; ++ii) {
-      this->DeclareAbstractState(abstract_model_value_->Clone());
+      this->DeclareAbstractState(*abstract_model_value_);
     }
     // This state keeps track of the index of the oldest value in the buffer.
     // It is at abstract state index `delay_buffer_size_`.
-    this->DeclareAbstractState(AbstractValue::Make<int>(0));
+    this->DeclareAbstractState(Value<int>(0));
     this->DeclarePeriodicUnrestrictedUpdateEvent(
         update_sec_, 0., &DiscreteTimeDelay::SaveInputAbstractValueToBuffer);
   }
@@ -77,7 +77,7 @@ void DiscreteTimeDelay<T>::SaveInputVectorToBuffer(
   // value and adding the value on the input port to the end of the buffer.
   // TODO(mpetersen94): consider revising to avoid possibly expensive buffer
   // copy operation.
-  const auto& input = get_input_port().Eval(context);
+  const auto& input = this->get_input_port().Eval(context);
   Eigen::VectorBlock<VectorX<T>> updated_state_value =
       discrete_state->get_mutable_vector(0).get_mutable_value();
   Eigen::VectorBlock<const VectorX<T>> old_state_value =
@@ -102,7 +102,8 @@ template <typename T>
 void DiscreteTimeDelay<T>::SaveInputAbstractValueToBuffer(
     const Context<T>& context, State<T>* state) const {
   DRAKE_ASSERT(is_abstract());
-  const auto& input = get_input_port().template Eval<AbstractValue>(context);
+  const auto& input =
+      this->get_input_port().template Eval<AbstractValue>(context);
   int& oldest_index =
       state->template get_mutable_abstract_state<int>(delay_buffer_size_);
   AbstractValue& state_value =

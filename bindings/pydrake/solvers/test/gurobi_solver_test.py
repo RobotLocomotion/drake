@@ -18,6 +18,22 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(result.is_success())
         x_expected = np.array([1, 1])
         self.assertTrue(np.allclose(result.GetSolution(x), x_expected))
+        self.assertGreater(result.get_solver_details().optimizer_time, 0.)
+        self.assertEqual(result.get_solver_details().error_code, 0)
+        self.assertEqual(result.get_solver_details().optimization_status, 2)
+        self.assertTrue(np.isnan(result.get_solver_details().objective_bound))
+
+    def test_gurobi_socp_dual(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, "x")
+        constraint = prog.AddLorentzConeConstraint([2., 2*x[0], 3 * x[1] + 1])
+        prog.AddLinearCost(x[1])
+        solver = GurobiSolver()
+        options = mp.SolverOptions()
+        options.SetOption(solver.solver_id(), "QCPDual", 1)
+        result = solver.Solve(prog, None, options)
+        np.testing.assert_allclose(
+            result.GetDualSolution(constraint), np.array([-1./12]), atol=1e-7)
 
     def test_gurobi_license(self):
         # Nominal use case.

@@ -1,0 +1,143 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+drake_cc_package_library(
+    name = "contact_solvers",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":contact_solver",
+        ":contact_solver_results",
+        ":contact_solver_utils",
+        ":linear_operator",
+        ":point_contact_data",
+        ":sparse_linear_operator",
+        ":system_dynamics_data",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_solver_results",
+    srcs = ["contact_solver_results.cc"],
+    hdrs = ["contact_solver_results.h"],
+    deps = ["//common:default_scalars"],
+)
+
+drake_cc_library(
+    name = "multibody_sim_driver",
+    testonly = 1,
+    srcs = ["test/multibody_sim_driver.cc"],
+    hdrs = ["test/multibody_sim_driver.h"],
+    deps = [
+        "//common:find_resource",
+        "//geometry:drake_visualizer",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//systems/framework:diagram_builder",
+        "//systems/lcm",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_solver",
+    srcs = ["contact_solver.cc"],
+    hdrs = ["contact_solver.h"],
+    deps = [
+        ":contact_solver_results",
+        ":contact_solver_utils",
+        ":point_contact_data",
+        ":system_dynamics_data",
+        "//common:default_scalars",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_solver_utils",
+    srcs = [],
+    hdrs = ["contact_solver_utils.h"],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "linear_operator",
+    srcs = ["linear_operator.cc"],
+    hdrs = ["linear_operator.h"],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "point_contact_data",
+    srcs = ["point_contact_data.cc"],
+    hdrs = ["point_contact_data.h"],
+    deps = [
+        ":linear_operator",
+        "//common:default_scalars",
+    ],
+)
+
+drake_cc_library(
+    name = "sparse_linear_operator",
+    srcs = ["sparse_linear_operator.cc"],
+    hdrs = ["sparse_linear_operator.h"],
+    deps = [
+        ":linear_operator",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "system_dynamics_data",
+    srcs = ["system_dynamics_data.cc"],
+    hdrs = ["system_dynamics_data.h"],
+    deps = [
+        ":linear_operator",
+        "//common:default_scalars",
+    ],
+)
+
+drake_cc_googletest(
+    name = "contact_solver_test",
+    data = ["test/particle_with_infinite_inertia.sdf"],
+    deps = [
+        ":contact_solver",
+        ":contact_solver_utils",
+        ":multibody_sim_driver",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "linear_operator_test",
+    deps = [
+        ":linear_operator",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sparse_linear_operator_test",
+    deps = [
+        ":sparse_linear_operator",
+    ],
+)
+
+add_lint_tests()

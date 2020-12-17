@@ -44,8 +44,16 @@ incorporates `PEP 257 -- Docstring Conventions
 <https://www.python.org/dev/peps/pep-0257/>`_, Drake follows its
 recommendations as well.
 
+Drake also follows the
+`RobotLocomotion fork <https://drake.mit.edu/styleguide/pyguide.html>`_
+of the Google Python Style Guide. Please refer to that page for the sections
+that are adhered to, and the relevant exceptions.
+
 See :ref:`tools for complying with coding style <code-style-tools>` for details
 about the automated style checks.
+
+.. TODO(eric.cousineau): Move these clarifications and exceptions to styleguide
+   repo.
 
 .. _code-style-guide-python-clarifications:
 
@@ -88,7 +96,7 @@ Additional Rules
 
   Rationale: ``/usr/bin/env`` enables a ``PATH`` search for the Python 3
   executable. This is also recommended by
-  `PEP 394 <https://www.python.org/dev/peps/pep-0394/>`_`.
+  `PEP 394 <https://www.python.org/dev/peps/pep-0394/>`_.
 
 .. [#bazel_py_script] Generally, this means scripts that run via ``bazel run``,
    ``bazel test``, or ``./bazel-bin/...``.

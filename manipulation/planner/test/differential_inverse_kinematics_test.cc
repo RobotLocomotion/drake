@@ -32,7 +32,7 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
  protected:
   void SetUp() {
     // Load the IIWA SDF, welding link_0 to the world.
-    plant_ = std::make_unique<MultibodyPlant<double>>();
+    plant_ = std::make_unique<MultibodyPlant<double>>(0.0);
     multibody::Parser parser(plant_.get());
     const std::string filename = FindResourceOrThrow(
         "drake/manipulation/models/"
@@ -239,8 +239,8 @@ TEST_F(DifferentialInverseKinematicsTest, SimpleTracker) {
     plant_->SetPositions(context_, q + v * dt);
   }
   X_WE = frame_E_->CalcPoseInWorld(*context_);
-  EXPECT_TRUE(CompareMatrices(X_WE.matrix(), X_WE_desired.matrix(), 1e-5,
-                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(X_WE.GetAsMatrix4(), X_WE_desired.GetAsMatrix4(),
+                              1e-5, MatrixCompareType::absolute));
 }
 
 // Test various throw conditions.

@@ -3,14 +3,19 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <string>
 #include <typeinfo>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
+#include <fmt/format.h>
+
 #include "drake/common/symbolic.h"
 #include "drake/common/value.h"
 #include "drake/solvers/binding.h"
+#include "drake/solvers/constraint.h"
+#include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solution_result.h"
 #include "drake/solvers/solver_id.h"
 
@@ -111,6 +116,16 @@ class MathematicalProgramResult final {
   /** Sets the decision variable values. */
   void set_x_val(const Eigen::VectorXd& x_val);
 
+  /** Sets the dual solution associated with a given constraint. */
+  template <typename C>
+  void set_dual_solution(
+      const Binding<C>& constraint,
+      const Eigen::Ref<const Eigen::VectorXd>& dual_solution) {
+    const Binding<Constraint> constraint_cast =
+        internal::BindingDynamicCast<Constraint>(constraint);
+    dual_solutions_.emplace(constraint_cast, dual_solution);
+  }
+
   /** Gets the optimal cost. */
   double get_optimal_cost() const { return optimal_cost_; }
 
@@ -193,6 +208,16 @@ class MathematicalProgramResult final {
   symbolic::Expression GetSolution(const symbolic::Expression& e) const;
 
   /**
+   * Substitutes the value of all decision variables into the coefficients of
+   * the symbolic polynomial.
+   * @param p A symbolic polynomial. Its indeterminates can't intersect with the
+   * set of decision variables of the MathematicalProgram from which this result
+   * is obtained.
+   * @return the symbolic::Polynomial as the result of the substitution.
+   */
+  symbolic::Polynomial GetSolution(const symbolic::Polynomial& p) const;
+
+  /**
    * Substitutes the value of all decision variables into the
    * Matrix<Expression>.
    * @tparam Derived An Eigen matrix containing Expression.
@@ -216,6 +241,94 @@ class MathematicalProgramResult final {
       }
     }
     return value;
+  }
+
+  // TODO(hongkai.dai): add the interpretation for other type of constraints
+  // when we implement them.
+  /**
+   * Gets the dual solution associated with a constraint.
+   *
+   * We interpret the dual variable value as the "shadow price" of the original
+   * problem. Namely if we change the constraint bound by one unit (each unit is
+   * infinitesimally small), the change of the optimal cost is the value of the
+   * dual solution times the unit. Mathematically dual_solution = ∂optimal_cost
+   * / ∂bound.
+   *
+   * For a linear equality constraint Ax = b where b ∈ ℝⁿ, the vector of dual
+   * variables has n rows, and dual_solution(i) is the value of the dual
+   * variable for the constraint A(i,:)*x = b(i).
+   *
+   * For a linear inequality constraint lower <= A*x <= upper where lower and
+   * upper ∈ ℝⁿ, dual_solution also has n rows. dual_solution(i) is the value of
+   * the dual variable for constraint lower(i) <= A(i,:)*x <= upper(i). If
+   * neither side of the constraint is active, then dual_solution(i) is 0. If
+   * the left hand-side lower(i) <= A(i, :)*x is active (meaning lower(i) = A(i,
+   * :)*x at the solution), then dual_solution(i) is non-negative (because the
+   * objective is to minimize a cost, increasing the lower bound means the
+   * constraint set is tighter, hence the optimal solution cannot decrease. Thus
+   * the shadow price is non-negative). If the right hand-side A(i,
+   * :)*x<=upper(i) is active (meaning A(i,:)*x=upper(i) at the solution), then
+   * dual_solution(i) is non-positive.
+   *
+   * For a bounding box constraint lower <= x <= upper, the interpretation of
+   * the dual solution is the same as the linear inequality constraint.
+   *
+   * For a Lorentz cone or rotated Lorentz cone constraint that Ax + b is in the
+   * cone, depending on the solver, the dual solution has different meanings:
+   * 1. If the solver is Gurobi, then the user can only obtain the dual solution
+   *    by explicitly setting the options for computing dual solution.
+   *    @code
+   *    auto constraint = prog.AddLorentzConeConstraint(...);
+   *    GurobiSolver solver;
+   *    // Explicitly tell the solver to compute the dual solution for Lorentz
+   *    // cone or rotated Lorentz cone constraint, check
+   *    // https://www.gurobi.com/documentation/9.0/refman/qcpdual.html for
+   *    // more information.
+   *    SolverOptions options;
+   *    options.SetOption(GurobiSolver::id(), "QCPDual", 1);
+   *    MathematicalProgramResult result = solver.Solve(prog, {}, options);
+   *    Eigen::VectorXd dual_solution = result.GetDualSolution(constraint);
+   *    @endcode
+   *    The dual solution has size 1, dual_solution(0) is the shadow price for
+   *    the constraint z₁² + ... +zₙ² ≤ z₀² for Lorentz cone constraint, and
+   *    the shadow price for the constraint z₂² + ... +zₙ² ≤ z₀z₁ for rotated
+   *    Lorentz cone constraint, where z is the slack variable representing z =
+   *    A*x+b and z in the Lorentz cone/rotated Lorentz cone.
+   * 2. For nonlinear solvers like IPOPT, the dual solution for Lorentz cone
+   *    constraint (with EvalType::kConvex) is the shadow price for
+   *    z₀ - sqrt(z₁² + ... +zₙ²) ≥ 0, where z = Ax+b.
+   */
+  template <typename C>
+  Eigen::VectorXd GetDualSolution(const Binding<C>& constraint) const {
+    const Binding<Constraint> constraint_cast =
+        internal::BindingDynamicCast<Constraint>(constraint);
+    auto it = dual_solutions_.find(constraint_cast);
+    if (it == dual_solutions_.end()) {
+      // Throws a more meaningful error message when the user wants to retrieve
+      // a dual solution from a Gurobi result for a program containing second
+      // order cone constraints, but forgot to explicitly turn on the flag to
+      // compute Gurobi QCP dual.
+      if (solver_id_.name() == "Gurobi") {
+        throw std::invalid_argument(fmt::format(
+            "You used {} to solve this optimization problem. If the problem is "
+            "solved to optimality and doesn't contain binary/integer "
+            "variables, but you failed to get the dual solution, "
+            "check that you have explicitly told Gurobi solver to "
+            "compute the dual solution for the second order cone constraints "
+            "by setting the solver options. One example is as follows: "
+            "SolverOptions options; "
+            "options.SetOption(GurobiSolver::id(), \"QCPDual\", 1); "
+            "auto result=Solve(prog, std::nullopt, options);",
+            solver_id_.name()));
+      }
+      throw std::invalid_argument(fmt::format(
+          "Either this constraint does not belong to the "
+          "mathematical program for which the result is obtained, or "
+          "{} does not currently support getting dual solution yet.",
+          solver_id_.name()));
+    } else {
+      return it->second;
+    }
   }
 
   /**
@@ -309,6 +422,55 @@ class MathematicalProgramResult final {
                              const Eigen::VectorXd& suboptimal_x);
   //@}
 
+  /** @anchor get_infeasible_constraints
+   * @name Get infeasible constraints
+   * Some solvers (e.g. SNOPT) provide a "best-effort solution" even when they
+   * determine that a problem is infeasible.  This method will return the
+   * descriptions corresponding to the constraints for which `CheckSatisfied`
+   * evaluates to false given the reported solution.  This can be very useful
+   * for debugging. Note that this feature is available only when the
+   * optimization problem is solved through certain solvers (like SNOPT, IPOPT)
+   * which provide a "best-effort solution". Some solvers (like Gurobi) don't
+   * return the "best-effort solution" when the problem is infeasible, and this
+   * feature is hence unavailable.
+   */
+  //@{
+
+  /**
+   * See @ref get_infeasible_constraints for more information.
+   * @param prog The MathematicalProgram that was solved to obtain `this`
+   * MathematicalProgramResult.
+   * @param tolerance A positive tolerance to check the constraint violation.
+   * If no tolerance is provided, this method will attempt to obtain the
+   * constraint tolerance from the solver, or insert a conservative default
+   * tolerance.
+   *
+   * Note: Currently most constraints have the empty string as the
+   * description, so the NiceTypeName of the Constraint is used instead.  Use
+   * e.g.
+   * `prog.AddConstraint(x == 1).evaluator().set_description(str)`
+   * to make this method more specific/useful. */
+  std::vector<std::string> GetInfeasibleConstraintNames(
+      const MathematicalProgram& prog,
+      std::optional<double> tolerance = std::nullopt) const;
+
+  /**
+   * See @ref get_infeasible_constraints for more information.
+   * @param prog The MathematicalProgram that was solved to obtain `this`
+   * MathematicalProgramResult.
+   * @param tolerance A positive tolerance to check the constraint violation.
+   * If no tolerance is provided, this method will attempt to obtain the
+   * constraint tolerance from the solver, or insert a conservative default
+   * tolerance.
+   * @return infeasible_bindings A vector of all infeasible bindings
+   * (constraints together with the associated variables) at the best-effort
+   * solution.
+   */
+  std::vector<Binding<Constraint>> GetInfeasibleConstraints(
+      const MathematicalProgram& prog,
+      std::optional<double> tolerance = std::nullopt) const;
+  // @}
+
  private:
   std::optional<std::unordered_map<symbolic::Variable::Id, int>>
       decision_variable_index_{};
@@ -323,6 +485,8 @@ class MathematicalProgramResult final {
   // suboptimal solution suboptimal_x_val_[i].
   std::vector<Eigen::VectorXd> suboptimal_x_val_{};
   std::vector<double> suboptimal_objectives_{};
+  // Stores the dual variable solutions for each constraint.
+  std::unordered_map<Binding<Constraint>, Eigen::VectorXd> dual_solutions_{};
 };
 
 }  // namespace solvers

@@ -52,7 +52,7 @@ class LcmInterfaceSystem final
    * class and must remain valid for the lifetime of this object.  Users MUST
    * NOT start the receive thread on this object.
    */
-  explicit LcmInterfaceSystem(drake::lcm::DrakeLcmInterface*);
+  explicit LcmInterfaceSystem(drake::lcm::DrakeLcmInterface* lcm);
 
   ~LcmInterfaceSystem() final;
 
@@ -65,6 +65,8 @@ class LcmInterfaceSystem final
 
  private:
   explicit LcmInterfaceSystem(std::unique_ptr<drake::lcm::DrakeLcmInterface>);
+
+  void OnHandleSubscriptionsError(const std::string&) final;
 
   void DoCalcNextUpdateTime(
       const Context<double>&,

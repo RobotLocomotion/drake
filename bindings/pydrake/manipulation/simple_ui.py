@@ -21,9 +21,10 @@ class JointSliders(VectorSystem):
     floating-base "mobilizers") are held constant at the default value
     obtained from robot.CreateDefaultContext().
 
-    @system{ JointSliders,
-             , # no input ports
-             @output_port{positions} }
+    System YAML
+        name: JointSliders
+        output_ports:
+        - positions
     """
 
     def __init__(self, robot, lower_limit=-10., upper_limit=10.,
@@ -110,8 +111,11 @@ class JointSliders(VectorSystem):
     def set_position(self, q):
         """
         Set all robot positions (corresponding to joint positions and
-        potentially positions not associated with any joint) to the
-        values in q.
+        potentially positions not associated with any joint) to the values in
+        q.  Note that most models have a floating-base mobilizer by default
+        (unless the MultibodyPlant explicitly welds the base to the world), and
+        so have 7 positions corresponding to the quaternion representation of
+        that floating-base position, but not to any joint.
 
         Args:
             q: a vector whose length is robot.num_positions().
@@ -122,13 +126,16 @@ class JointSliders(VectorSystem):
 
     def set_joint_position(self, q):
         """
-        Set the slider positions to the values in q.
+        Set the slider positions to the values in q.  A list of positions which
+        must be the same length as the number of positions ASSOCIATED WITH
+        JOINTS in the MultibodyPlant.  This does not include, e.g.,
+        floating-base coordinates, which will be assigned a default value.
 
         Args:
             q: a vector whose length is the same as the number of joint
             positions (also the number of sliders) for the robot.
         """
-        assert(len(q) == len(self._default_position))
+        assert(len(q) == len(self._slider))
         for i in range(len(self._slider)):
             self._slider[i].set(q[i])
 
@@ -147,10 +154,11 @@ class SchunkWsgButtons(LeafSystem):
     Adds buttons to open/close the Schunk WSG gripper to an existing Tkinter
     window.
 
-    @system{ SchunkWsgButtons,
-             , # no input ports
-             @output_port{position}
-             @output_port{max_force} }
+    System YAML
+        name: SchunkWsgButtons
+        output_ports:
+        - position
+        - max_force
     """
 
     def __init__(self, window=None, open_position=0.107,
@@ -175,7 +183,7 @@ class SchunkWsgButtons(LeafSystem):
 
         if window is None:
             self.window = tk.Tk()
-            self.window.title(title)
+            self.window.title("Schunk WSG Buttons")
         else:
             self.window = window
 
