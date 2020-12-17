@@ -1,3 +1,7 @@
 jupyter
+jwcrypto
 pandas
+python-dateutil
+requests
 six
+uritemplate
