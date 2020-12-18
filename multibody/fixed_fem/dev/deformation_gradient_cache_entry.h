@@ -1,56 +1,46 @@
 #pragma once
 
-#include <memory>
-#include <vector>
+#include <array>
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/fem/dev/fem_indexes.h"
+#include "drake/multibody/fixed_fem/dev/fem_indexes.h"
 
 namespace drake {
 namespace multibody {
-namespace fem {
-/** %DeformationGradientCacheEntry stores per element cached quantities that
- work in tandem with ConstitutiveModel. It is an abstract interface that actual
- concrete constitutive models must inherit from to store the set of specific
- quantities that need to be cached for the specific model. There should be a
- one-to-one correspondence between the constitutive model `Foo` that inherits
- from ConstitutiveModel and its cached quantities `FooCacheEntry` that inherits
- from %DeformationGradientCacheEntry. These cached quantities depend solely on
- deformation gradients, and they facilitate calculations such as energy density,
- stress and stress derivative in the constitutive model. ConstitutiveModel takes
- the corresponding cache entry as an argument when performing various
- calculations.
- @tparam_nonsymbolic_scalar T. */
-template <typename T>
-class DeformationGradientCacheEntry {
+namespace fixed_fem {
+template <class>
+class DeformationGradientCacheEntry;
+/** %DeformationGradientCacheEntry stores per element cached quantities
+ that work in tandem with ConstitutiveModel. It is a static
+ interface that concrete constitutive model cache entries must inherit from to
+ store the set of specific quantities that need to be cached for the specific
+ model. There should be a one-to-one correspondence between the constitutive
+ model `Foo` that inherits from ConstitutiveModel and its cached quantities
+ `FooCacheEntry` that inherits from %DeformationGradientCacheEntry. These cached
+ quantities depend solely on deformation gradients, and they facilitate
+ calculations such as energy density, stress and stress derivative in the
+ constitutive model. ConstitutiveModel takes the corresponding cache entry as an
+ argument when performing various calculations. Similar to ConstitutiveModel,
+ this class also utilizes CRTP to eliminate the need for virtual methods and
+ facilitate inlining.
+ @tparam_nonsymbolic_scalar T.
+ @tparam NumLocations Number of locations at which the cached quantities
+ are evaluated. */
+template <template <typename, int> class DerivedDeformationGradientCacheEntry,
+          typename T, int NumLocations>
+class DeformationGradientCacheEntry<
+    DerivedDeformationGradientCacheEntry<T, NumLocations>> {
  public:
-  /** @name     Does not allow copy, move, or assignment. */
-  /** @{ */
-  /* Copy constructor is made "protected" to facilitate Clone() and therefore it
-   is not publicly available. */
-  DeformationGradientCacheEntry(DeformationGradientCacheEntry&&) = delete;
-  DeformationGradientCacheEntry& operator=(DeformationGradientCacheEntry&&) =
-      delete;
-  DeformationGradientCacheEntry& operator=(
-      const DeformationGradientCacheEntry&) = delete;
-  /** @} */
+  using Derived = DerivedDeformationGradientCacheEntry<T, NumLocations>;
 
-  /** Creates an identical copy of the concrete DeformationGradientCacheEntry
-   object. */
-  std::unique_ptr<DeformationGradientCacheEntry<T>> Clone() const {
-    return DoClone();
-  }
-
-  virtual ~DeformationGradientCacheEntry() = default;
+  ~DeformationGradientCacheEntry() = default;
 
   /** Updates the cache entry with the given deformation gradients.
    @param F The up-to-date deformation gradients evaluated at the quadrature
-   locations for the associated element.
-   @pre The size of `F` must be the same as `num_quadrature_points()`. */
-  void UpdateCacheEntry(const std::vector<Matrix3<T>>& F) {
-    DRAKE_ASSERT(static_cast<int>(F.size()) == num_quadrature_points_);
+   locations for the associated element. */
+  void UpdateCacheEntry(const std::array<Matrix3<T>, NumLocations>& F) {
     deformation_gradient_ = F;
-    DoUpdateCacheEntry(F);
+    static_cast<Derived*>(this)->DoUpdateCacheEntry(F);
   }
 
   /** The index of the FemElement associated with this
@@ -59,52 +49,34 @@ class DeformationGradientCacheEntry {
 
   /** The number of quadrature locations at which the cache entry needs to be
    evaluated. */
-  int num_quadrature_points() const { return num_quadrature_points_; }
+  static constexpr int num_quadrature_points() { return NumLocations; }
 
-  const std::vector<Matrix3<T>>& deformation_gradient() const {
+  const std::array<Matrix3<T>, NumLocations>& deformation_gradient() const {
     return deformation_gradient_;
   }
 
  protected:
-  /* Constructs a DeformationGradientCacheEntry with the given element index and
-   number of quadrature locations. Users should not directly construct
-   DeformationGradientCacheEntry. They should construct the specific
-   constitutive model cache entry (e.g. LinearConstitutiveModelCacheEntry) that
-   invokes the base constructor.
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeformationGradientCacheEntry);
+
+  /** Constructs a $DeformationGradientCacheEntry with the given element
+   index and. Users should not directly construct
+   %DeformationGradientCacheEntry. They should construct the specific
+   constitutive model cache entry (e.g.
+   LinearConstitutiveModelCacheEntry) that invokes the base
+   constructor.
    @param element_index The index of the FemElement associated with this
-   DeformationGradientCacheEntry.
-   @param num_quadrature_points The number of quadrature locations at which
-   cached quantities need to be evaluated.
-   @pre `num_quadrature_points` must be positive. */
-  DeformationGradientCacheEntry(ElementIndex element_index,
-                                int num_quadrature_points)
-      : element_index_(element_index),
-        num_quadrature_points_(num_quadrature_points),
-        deformation_gradient_(num_quadrature_points, Matrix3<T>::Identity()) {
+   %DeformationGradientCacheEntry. */
+  explicit DeformationGradientCacheEntry(ElementIndex element_index)
+      : element_index_(element_index) {
     DRAKE_ASSERT(element_index.is_valid());
-    DRAKE_ASSERT(num_quadrature_points > 0);
+    std::fill(deformation_gradient_.begin(), deformation_gradient_.end(),
+              Matrix3<T>::Identity());
   }
-
-  /** Copy constructor for the base DeformationGradientCacheEntry class to
-   facilitate `DoClone()` in derived classes. */
-  DeformationGradientCacheEntry(const DeformationGradientCacheEntry&) = default;
-
-  /** Creates an identical copy of the concrete DeformationGradientCacheEntry
-   object. Derived classes must implement this so that it performs the complete
-   deep copy of the object, including all base class members. */
-  virtual std::unique_ptr<DeformationGradientCacheEntry<T>> DoClone() const = 0;
-
-  /** Updates the cached quantities with the given deformation gradients.
-   @param F The up-to-date deformation gradients evaluated at the quadrature
-   locations for the associated element.
-   @pre The size of `F` must be the same as `num_quadrature_points()`. */
-  virtual void DoUpdateCacheEntry(const std::vector<Matrix3<T>>& F) = 0;
 
  private:
   ElementIndex element_index_;
-  int num_quadrature_points_{-1};
-  std::vector<Matrix3<T>> deformation_gradient_;
+  std::array<Matrix3<T>, NumLocations> deformation_gradient_;
 };
-}  // namespace fem
+}  // namespace fixed_fem
 }  // namespace multibody
 }  // namespace drake
