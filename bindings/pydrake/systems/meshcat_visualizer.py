@@ -181,8 +181,8 @@ class MeshcatVisualizer(LeafSystem):
                 geometry from previous simulations to remain in the scene.  You
                 may call ``delete_prefix()`` manually to clear the scene.
             role: Renders geometry of the specified pydrake.geometry.Role
-            type -- defaults to Role.kIllustration to draw visual geometry,
-            and also supports Role.kProximity to draw collision geometry.
+                type -- defaults to Role.kIllustration to draw visual geometry,
+                and also supports Role.kProximity to draw collision geometry.
 
         Additional kwargs will be passed to the meshcat.Visualizer constructor.
         Note:
