@@ -15,7 +15,7 @@ namespace multibody {
 
 namespace internal {
 
-/**
+/*
  A class for computing the spatial forces and related reporting data (like
  pressure, traction, and slip) on rigid bodies under the hydroelastic contact
  model, as described in:
@@ -28,9 +28,9 @@ namespace internal {
 template <typename T>
 class HydroelasticTractionCalculator {
  public:
-  /// Set of common quantities used through hydroelastic traction calculations.
-  /// Documentation for parameter names (minus the `_in`
-  /// suffixes) can be found in the corresponding member documentation.
+  // Set of common quantities used through hydroelastic traction calculations.
+  // Documentation for parameter names (minus the `_in`
+  // suffixes) can be found in the corresponding member documentation.
   struct Data {
     Data(
         const math::RigidTransform<T>& X_WA_in,
@@ -44,32 +44,32 @@ class HydroelasticTractionCalculator {
       DRAKE_DEMAND(surface_in);
     }
 
-    /// The pose of Body A (the body that Geometry `surface.M_id()` in the
-    /// contact surface is affixed to) in the world frame.
+    // The pose of Body A (the body that Geometry `surface.M_id()` in the
+    // contact surface is affixed to) in the world frame.
     const math::RigidTransform<T> X_WA;
 
-    /// The pose of Body B (the body that Geometry `surface.N_id()` in the
-    /// contact surface is affixed to) in the world frame.
+    // The pose of Body B (the body that Geometry `surface.N_id()` in the
+    // contact surface is affixed to) in the world frame.
     const math::RigidTransform<T> X_WB;
 
-    /// The spatial velocity of Body A (the body that Geometry
-    /// `surface.M_id()` in the contact surface is affixed to) at the origin of
-    /// A's frame, measured and expressed in the world frame.
+    // The spatial velocity of Body A (the body that Geometry
+    // `surface.M_id()` in the contact surface is affixed to) at the origin of
+    // A's frame, measured and expressed in the world frame.
     const SpatialVelocity<T> V_WA;
 
-    /// The spatial velocity of Body B (the body that Geometry
-    /// `surface.N_id()` in the contact surface is affixed to) at the origin of
-    /// B's frame, measured and expressed in the world frame.
+    // The spatial velocity of Body B (the body that Geometry
+    // `surface.N_id()` in the contact surface is affixed to) at the origin of
+    // B's frame, measured and expressed in the world frame.
     const SpatialVelocity<T> V_WB;
 
-    /// A reference to the ContactSurface that must be maintained for the life
-    /// of this object.
+    // A reference to the ContactSurface that must be maintained for the life
+    // of this object.
     const geometry::ContactSurface<T>& surface;
 
-    /// The traction computation needs a point C near the contact surface at
-    /// which to accumulate forces in a numerically robust way. Our calculations
-    /// define C to be the centroid of the contact surface, and measure and
-    /// express this point in the world frame.
+    // The traction computation needs a point C near the contact surface at
+    // which to accumulate forces in a numerically robust way. Our calculations
+    // define C to be the centroid of the contact surface, and measure and
+    // express this point in the world frame.
     const Vector3<T> p_WC;
   };
 

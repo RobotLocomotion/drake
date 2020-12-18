@@ -14,18 +14,18 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
-/// A LinearOperator that wraps an existing Eigen::SparseMatrix.
-///
-/// @tparam_nonsymbolic_scalar
+// A LinearOperator that wraps an existing Eigen::SparseMatrix.
+//
+// @tparam_nonsymbolic_scalar
 template <typename T>
 class SparseLinearOperator final : public LinearOperator<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SparseLinearOperator)
 
-  /// Constructs an operator with given `name` implementing the LinearOperator
-  /// interface for matrix `A`.
-  /// This class keeps a reference to input matrix `A` and therefore it is
-  /// required that it outlives this object.
+  // Constructs an operator with given `name` implementing the LinearOperator
+  // interface for matrix `A`.
+  // This class keeps a reference to input matrix `A` and therefore it is
+  // required that it outlives this object.
   SparseLinearOperator(const std::string& name, const Eigen::SparseMatrix<T>* A)
       : LinearOperator<T>(name), A_(A) {
     DRAKE_DEMAND(A != nullptr);

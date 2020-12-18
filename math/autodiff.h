@@ -214,8 +214,7 @@ void resizeDerivativesToMatchScalar(Eigen::MatrixBase<Derived>& mat,
 }
 
 namespace internal {
-/** \brief Helper for totalSizeAtCompileTime function (recursive)
- */
+/* Helper for totalSizeAtCompileTime function (recursive) */
 template <typename Head, typename... Tail>
 struct TotalSizeAtCompileTime {
   static constexpr int eval() {
@@ -227,14 +226,13 @@ struct TotalSizeAtCompileTime {
   }
 };
 
-/** \brief Helper for totalSizeAtCompileTime function (base case)
- */
+/* Helper for totalSizeAtCompileTime function (base case) */
 template <typename Head>
 struct TotalSizeAtCompileTime<Head> {
   static constexpr int eval() { return Head::SizeAtCompileTime; }
 };
 
-/** \brief Determine the total size at compile time of a number of arguments
+/* Determine the total size at compile time of a number of arguments
  * based on their SizeAtCompileTime static members
  */
 template <typename... Args>
@@ -242,12 +240,12 @@ constexpr int totalSizeAtCompileTime() {
   return TotalSizeAtCompileTime<Args...>::eval();
 }
 
-/** \brief Determine the total size at runtime of a number of arguments using
+/* Determine the total size at runtime of a number of arguments using
  * their size() methods (base case).
  */
 constexpr Eigen::DenseIndex totalSizeAtRunTime() { return 0; }
 
-/** \brief Determine the total size at runtime of a number of arguments using
+/* Determine the total size at runtime of a number of arguments using
  * their size() methods (recursive)
  */
 template <typename Head, typename... Tail>
@@ -256,8 +254,7 @@ Eigen::DenseIndex totalSizeAtRunTime(const Eigen::MatrixBase<Head>& head,
   return head.size() + totalSizeAtRunTime(tail...);
 }
 
-/** \brief Helper for initializeAutoDiffTuple function (recursive)
- */
+/* Helper for initializeAutoDiffTuple function (recursive) */
 template <size_t Index>
 struct InitializeAutoDiffTupleHelper {
   template <typename... ValueTypes, typename... AutoDiffTypes>
@@ -276,8 +273,7 @@ struct InitializeAutoDiffTupleHelper {
   }
 };
 
-/** \brief Helper for initializeAutoDiffTuple function (base case)
- */
+/* Helper for initializeAutoDiffTuple function (base case) */
 template <>
 struct InitializeAutoDiffTupleHelper<0> {
   template <typename... ValueTypes, typename... AutoDiffTypes>
