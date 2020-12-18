@@ -27,6 +27,7 @@ from pydrake.geometry import (
     Box,
     GeometryInstance,
     IllustrationProperties,
+    Role,
     SceneGraph
 )
 from pydrake.multibody.plant import (
@@ -231,6 +232,38 @@ class TestMeshcat(unittest.TestCase):
         kuka_actuation_port = kuka.get_actuation_input_port()
         kuka_actuation_port.FixValue(kuka_context,
                                      np.zeros(kuka_actuation_port.size()))
+
+        simulator = Simulator(diagram, diagram_context)
+        simulator.set_publish_every_time_step(False)
+        simulator.AdvanceTo(.1)
+
+    def test_allegro_proximity_geometry(self):
+        """Allegro hand with visual and collision geometry, drawn in
+           proximity-geom mode."""
+        file_name = FindResourceOrThrow(
+            "drake/manipulation/models/allegro_hand_description/sdf/"
+            "allegro_hand_description_left.sdf")
+        builder = DiagramBuilder()
+        hand, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        Parser(plant=hand).AddModelFromFile(file_name)
+        hand.Finalize()
+
+        visualizer = builder.AddSystem(MeshcatVisualizer(
+            zmq_url=ZMQ_URL,
+            open_browser=False,
+            role=Role.kProximity))
+        builder.Connect(scene_graph.get_query_output_port(),
+                        visualizer.get_geometry_query_input_port())
+
+        diagram = builder.Build()
+
+        diagram_context = diagram.CreateDefaultContext()
+        hand_context = diagram.GetMutableSubsystemContext(
+            hand, diagram_context)
+
+        hand_actuation_port = hand.get_actuation_input_port()
+        hand_actuation_port.FixValue(hand_context,
+                                     np.zeros(hand_actuation_port.size()))
 
         simulator = Simulator(diagram, diagram_context)
         simulator.set_publish_every_time_step(False)
