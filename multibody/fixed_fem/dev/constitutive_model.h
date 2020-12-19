@@ -34,7 +34,7 @@ class ConstitutiveModel {
       std::is_same_v<typename DerivedTraits::ModelType,
                      DerivedConstitutiveModel>,
       "The DerivedConstitutiveModel and the DerivedTraits must be compatible.");
-  using Scalar = typename DerivedTraits::Scalar;
+  using T = typename DerivedTraits::Scalar;
 
   ~ConstitutiveModel() = default;
 
@@ -56,7 +56,7 @@ class ConstitutiveModel {
   void CalcElasticEnergyDensity(
       const typename DerivedTraits::DeformationGradientCacheEntryType&
           cache_entry,
-      std::array<Scalar, num_locations()>* Psi) const {
+      std::array<T, num_locations()>* Psi) const {
     DRAKE_ASSERT(Psi != nullptr);
     static_cast<const DerivedConstitutiveModel*>(this)
         ->DoCalcElasticEnergyDensity(cache_entry, Psi);
@@ -68,7 +68,7 @@ class ConstitutiveModel {
   void CalcFirstPiolaStress(
       const typename DerivedTraits::DeformationGradientCacheEntryType&
           cache_entry,
-      std::array<Matrix3<Scalar>, num_locations()>* P) const {
+      std::array<Matrix3<T>, num_locations()>* P) const {
     DRAKE_ASSERT(P != nullptr);
     static_cast<const DerivedConstitutiveModel*>(this)->DoCalcFirstPiolaStress(
         cache_entry, P);
@@ -80,7 +80,7 @@ class ConstitutiveModel {
   void CalcFirstPiolaStressDerivative(
       const typename DerivedTraits::DeformationGradientCacheEntryType&
           cache_entry,
-      std::array<Eigen::Matrix<Scalar, 9, 9>, num_locations()>* dPdF) const {
+      std::array<Eigen::Matrix<T, 9, 9>, num_locations()>* dPdF) const {
     DRAKE_ASSERT(dPdF != nullptr);
     static_cast<const DerivedConstitutiveModel*>(this)
         ->DoCalcFirstPiolaStressDerivative(cache_entry, dPdF);

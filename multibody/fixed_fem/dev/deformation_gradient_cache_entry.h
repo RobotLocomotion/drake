@@ -24,21 +24,21 @@ class DeformationGradientCacheEntry;
  this class also utilizes CRTP to eliminate the need for virtual methods and
  facilitate inlining.
  @tparam_nonsymbolic_scalar T.
- @tparam NumLocations Number of locations at which the cached quantities
+ @tparam num_locations Number of locations at which the cached quantities
  are evaluated. */
 template <template <typename, int> class DerivedDeformationGradientCacheEntry,
-          typename T, int NumLocations>
+          typename T, int num_locations>
 class DeformationGradientCacheEntry<
-    DerivedDeformationGradientCacheEntry<T, NumLocations>> {
+    DerivedDeformationGradientCacheEntry<T, num_locations>> {
  public:
-  using Derived = DerivedDeformationGradientCacheEntry<T, NumLocations>;
+  using Derived = DerivedDeformationGradientCacheEntry<T, num_locations>;
 
   ~DeformationGradientCacheEntry() = default;
 
   /** Updates the cache entry with the given deformation gradients.
    @param F The up-to-date deformation gradients evaluated at the quadrature
    locations for the associated element. */
-  void UpdateCacheEntry(const std::array<Matrix3<T>, NumLocations>& F) {
+  void UpdateCacheEntry(const std::array<Matrix3<T>, num_locations>& F) {
     deformation_gradient_ = F;
     static_cast<Derived*>(this)->DoUpdateCacheEntry(F);
   }
@@ -49,9 +49,9 @@ class DeformationGradientCacheEntry<
 
   /** The number of quadrature locations at which the cache entry needs to be
    evaluated. */
-  static constexpr int num_quadrature_points() { return NumLocations; }
+  static constexpr int num_quadrature_points() { return num_locations; }
 
-  const std::array<Matrix3<T>, NumLocations>& deformation_gradient() const {
+  const std::array<Matrix3<T>, num_locations>& deformation_gradient() const {
     return deformation_gradient_;
   }
 
@@ -75,7 +75,7 @@ class DeformationGradientCacheEntry<
 
  private:
   ElementIndex element_index_;
-  std::array<Matrix3<T>, NumLocations> deformation_gradient_;
+  std::array<Matrix3<T>, num_locations> deformation_gradient_;
 };
 }  // namespace fixed_fem
 }  // namespace multibody

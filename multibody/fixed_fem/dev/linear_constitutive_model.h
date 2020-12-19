@@ -11,17 +11,17 @@ namespace drake {
 namespace multibody {
 namespace fixed_fem {
 /* Forward declare the model to be referred to in the traits class. */
-template <typename T, int NumLocations>
+template <typename T, int num_locations>
 class LinearConstitutiveModel;
 
 /** Traits for LinearConstitutiveModel. */
-template <typename T, int NumLocations>
+template <typename T, int num_locations>
 struct LinearConstitutiveModelTraits {
   using Scalar = T;
-  using ModelType = LinearConstitutiveModel<T, NumLocations>;
+  using ModelType = LinearConstitutiveModel<T, num_locations>;
   using DeformationGradientCacheEntryType =
-      LinearConstitutiveModelCacheEntry<T, NumLocations>;
-  static constexpr int kNumLocations = NumLocations;
+      LinearConstitutiveModelCacheEntry<T, num_locations>;
+  static constexpr int kNumLocations = num_locations;
 };
 
 /** Implements the infinitesimal-strain linear elasticity constitutive model as
@@ -30,12 +30,13 @@ struct LinearConstitutiveModelTraits {
 
 [Gonzalez, 2008] Gonzalez, Oscar, and Andrew M. Stuart. A first course in
 continuum mechanics. Cambridge University Press, 2008. */
-template <typename T, int NumLocations>
+template <typename T, int num_locations>
 class LinearConstitutiveModel final
-    : public ConstitutiveModel<LinearConstitutiveModel<T, NumLocations>,
-                               LinearConstitutiveModelTraits<T, NumLocations>> {
+    : public ConstitutiveModel<
+          LinearConstitutiveModel<T, num_locations>,
+          LinearConstitutiveModelTraits<T, num_locations>> {
  public:
-  using Traits = LinearConstitutiveModelTraits<T, NumLocations>;
+  using Traits = LinearConstitutiveModelTraits<T, num_locations>;
   using ModelType = typename Traits::ModelType;
   using DeformationGradientCacheEntryType =
       typename Traits::DeformationGradientCacheEntryType;
@@ -98,9 +99,9 @@ class LinearConstitutiveModel final
   /* Implements the interface ConstitutiveModel::CalcElasticEnergyDensity() in
    the CRTP base class. */
   void DoCalcElasticEnergyDensity(
-      const LinearConstitutiveModelCacheEntry<T, NumLocations>& cache_entry,
-      std::array<T, NumLocations>* Psi) const {
-    for (int i = 0; i < NumLocations; ++i) {
+      const LinearConstitutiveModelCacheEntry<T, num_locations>& cache_entry,
+      std::array<T, num_locations>* Psi) const {
+    for (int i = 0; i < num_locations; ++i) {
       const auto& strain = cache_entry.strain()[i];
       const auto& trace_strain = cache_entry.trace_strain()[i];
       (*Psi)[i] = mu_ * strain.squaredNorm() +
@@ -112,8 +113,8 @@ class LinearConstitutiveModel final
    in the CRTP base class. */
   void DoCalcFirstPiolaStress(
       const DeformationGradientCacheEntryType& cache_entry,
-      std::array<Matrix3<T>, NumLocations>* P) const {
-    for (int i = 0; i < NumLocations; ++i) {
+      std::array<Matrix3<T>, num_locations>* P) const {
+    for (int i = 0; i < num_locations; ++i) {
       const auto& strain = cache_entry.strain()[i];
       const auto& trace_strain = cache_entry.trace_strain()[i];
       (*P)[i] =
@@ -126,7 +127,7 @@ class LinearConstitutiveModel final
   */
   void DoCalcFirstPiolaStressDerivative(
       const DeformationGradientCacheEntryType& cache_entry,
-      std::array<Eigen::Matrix<T, 9, 9>, NumLocations>* dPdF) const {
+      std::array<Eigen::Matrix<T, 9, 9>, num_locations>* dPdF) const {
     unused(cache_entry);
     std::fill(dPdF->begin(), dPdF->end(), dPdF_);
   }

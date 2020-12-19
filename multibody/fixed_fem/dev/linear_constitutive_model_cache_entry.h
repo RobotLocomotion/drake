@@ -14,15 +14,15 @@ namespace fixed_fem {
  DeformationGradientCacheEntry for more about cached quantities for
  constitutive models.
  @tparam_nonsymbolic_scalar T.
- @tparam NumLocations Number of locations at which the cached quantities are
+ @tparam num_locations Number of locations at which the cached quantities are
  evaluated. */
-template <typename T, int NumLocations>
+template <typename T, int num_locations>
 class LinearConstitutiveModelCacheEntry
     : public DeformationGradientCacheEntry<
-          LinearConstitutiveModelCacheEntry<T, NumLocations>> {
+          LinearConstitutiveModelCacheEntry<T, num_locations>> {
  public:
   using Base = DeformationGradientCacheEntry<
-      LinearConstitutiveModelCacheEntry<T, NumLocations>>;
+      LinearConstitutiveModelCacheEntry<T, num_locations>>;
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(
       LinearConstitutiveModelCacheEntry);
@@ -33,10 +33,9 @@ class LinearConstitutiveModelCacheEntry
    element index.
    @param element_index The index of the FemElement associated with this
    DeformationGradientCacheEntry. */
-  explicit LinearConstitutiveModelCacheEntry(
-      ElementIndex element_index)
+  explicit LinearConstitutiveModelCacheEntry(ElementIndex element_index)
       : DeformationGradientCacheEntry<
-            LinearConstitutiveModelCacheEntry<T, NumLocations>>(
+            LinearConstitutiveModelCacheEntry<T, num_locations>>(
             element_index) {
     std::fill(strain_.begin(), strain_.end(), Matrix3<T>::Zero());
     std::fill(trace_strain_.begin(), trace_strain_.end(), 0);
@@ -44,11 +43,13 @@ class LinearConstitutiveModelCacheEntry
 
   /** Returns the infinitesimal strains evaluated at the quadrature locations
    for the associated element. */
-  const std::array<Matrix3<T>, NumLocations>& strain() const { return strain_; }
+  const std::array<Matrix3<T>, num_locations>& strain() const {
+    return strain_;
+  }
 
   /** Returns the traces of the infinitesimal strains evaluated at the
    quadrature locations for the associated element. */
-  const std::array<T, NumLocations>& trace_strain() const {
+  const std::array<T, num_locations>& trace_strain() const {
     return trace_strain_;
   }
 
@@ -58,16 +59,16 @@ class LinearConstitutiveModelCacheEntry
   /* Implements the interface DeformationGradientCacheEntry::UpdateCacheEntry().
    @param F The up-to-date deformation gradients evaluated at the quadrature
    locations for the associated element. */
-  void DoUpdateCacheEntry(const std::array<Matrix3<T>, NumLocations>& F) {
-    for (int i = 0; i < NumLocations; ++i) {
+  void DoUpdateCacheEntry(const std::array<Matrix3<T>, num_locations>& F) {
+    for (int i = 0; i < num_locations; ++i) {
       strain_[i] = 0.5 * (F[i] + F[i].transpose()) - Matrix3<T>::Identity();
       trace_strain_[i] = strain_[i].trace();
     }
   }
   // Infinitesimal strain = 0.5 * (F + Fᵀ) - I.
-  std::array<Matrix3<T>, NumLocations> strain_;
+  std::array<Matrix3<T>, num_locations> strain_;
   // Trace of `strain_`.
-  std::array<T, NumLocations> trace_strain_;
+  std::array<T, num_locations> trace_strain_;
 };
 }  // namespace fixed_fem
 }  // namespace multibody

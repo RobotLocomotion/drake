@@ -22,18 +22,19 @@ std::array<Matrix3<AutoDiffXd>, kNumQuads> MakeDeformationGradients() {
        0.13, 0.92, 0.17,
        0.03, 0.86, 0.85;
   // clang-format on
-  const std::array<Matrix3<double>, kNumQuads> Fs{F};
-  std::array<Matrix3<AutoDiffXd>, kNumQuads> Fs_autodiff;
+  const std::array<Matrix3<double>, kNumQuads> deformation_gradients{F};
+  std::array<Matrix3<AutoDiffXd>, kNumQuads> deformation_gradients_autodiff;
   const Eigen::Matrix<double, 9, Eigen::Dynamic> gradient(
       Eigen::Matrix<double, 9, 9>::Identity());
   for (int i = 0; i < kNumQuads; ++i) {
     const auto F_autodiff_flat = math::initializeAutoDiffGivenGradientMatrix(
-        Eigen::Map<const Eigen::Matrix<double, 9, 1>>(Fs[i].data(), 9),
+        Eigen::Map<const Eigen::Matrix<double, 9, 1>>(
+            deformation_gradients[i].data(), 9),
         gradient);
-    Fs_autodiff[i] =
+    deformation_gradients_autodiff[i] =
         Eigen::Map<const Matrix3<AutoDiffXd>>(F_autodiff_flat.data(), 3, 3);
   }
-  return Fs_autodiff;
+  return deformation_gradients_autodiff;
 }
 
 GTEST_TEST(LinearConstitutiveModelTest, Parameters) {
@@ -99,10 +100,10 @@ GTEST_TEST(LinearConstitutiveModelTest, PIsDerivativeOfPsi) {
   const LinearConstitutiveModel<AutoDiffXd, kNumQuads> model(100.0, 0.3);
   LinearConstitutiveModelCacheEntry<AutoDiffXd, kNumQuads> cache_entry(
       kDummyElementIndex);
-  const std::array<Matrix3<AutoDiffXd>, kNumQuads> Fs =
+  const std::array<Matrix3<AutoDiffXd>, kNumQuads> deformation_gradients =
       MakeDeformationGradients();
   // P should be derivative of Psi.
-  cache_entry.UpdateCacheEntry(Fs);
+  cache_entry.UpdateCacheEntry(deformation_gradients);
   std::array<AutoDiffXd, kNumQuads> energy;
   model.CalcElasticEnergyDensity(cache_entry, &energy);
   std::array<Matrix3<AutoDiffXd>, kNumQuads> P;
@@ -119,9 +120,9 @@ GTEST_TEST(LinearConstitutiveModelTest, dPdFIsDerivativeOfP) {
   const LinearConstitutiveModel<AutoDiffXd, kNumQuads> model(100.0, 0.3);
   LinearConstitutiveModelCacheEntry<AutoDiffXd, kNumQuads> cache_entry(
       kDummyElementIndex);
-  const std::array<Matrix3<AutoDiffXd>, kNumQuads> Fs =
+  const std::array<Matrix3<AutoDiffXd>, kNumQuads> deformation_gradients =
       MakeDeformationGradients();
-  cache_entry.UpdateCacheEntry(Fs);
+  cache_entry.UpdateCacheEntry(deformation_gradients);
   std::array<Matrix3<AutoDiffXd>, kNumQuads> P;
   model.CalcFirstPiolaStress(cache_entry, &P);
   std::array<Eigen::Matrix<AutoDiffXd, 9, 9>, kNumQuads> dPdF;
