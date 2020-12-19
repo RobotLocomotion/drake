@@ -6,7 +6,7 @@
 namespace drake {
 namespace multibody {
 namespace internal {
-/**
+/*
  * @param plant The plant for which the distance is computed.
  * @param context The context containing the generalized position for computing
  * the distance.
@@ -31,7 +31,7 @@ void CalcDistanceDerivatives(const MultibodyPlant<double>& plant,
                              const Eigen::Ref<const AutoDiffVecXd>& q,
                              AutoDiffXd* distance_autodiff);
 
-/**
+/*
  * This is the overloaded version of CalcDistanceDerivatives for plant being
  * MultibodyPlant<AutoDiffXd> instead of MultibodyPlant<double>.
  */
@@ -45,7 +45,7 @@ void CalcDistanceDerivatives(const MultibodyPlant<AutoDiffXd>& plant,
                              const Eigen::Ref<const Eigen::VectorXd>& q,
                              double* distance);
 
-/**
+/*
  * This is the overloaded version of CalcDistanceDerivatives for the input q of
  * double scalar type, it just copies @p distance_in to @p distance_out.
  */
@@ -59,7 +59,7 @@ void CalcDistanceDerivatives(const MultibodyPlant<T>&,
   *distance_out = distance_in;
 }
 
-/**
+/*
  * Check if the plant has registered its geometry with the SceneGraph.
  */
 template <typename T>

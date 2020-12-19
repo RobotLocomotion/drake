@@ -15,27 +15,27 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/// This class is one of the cache entries in the Context. It holds the
-/// kinematics results of computations that depend not only on the generalized
-/// positions and generalized velocities, but also on the time derivatives of
-/// the generalized coordinates.
-/// Acceleration kinematics results include:
-/// - Spatial acceleration `A_WB` for each body B in the model as measured and
-///   expressed in the world frame W.
-/// - Generalized accelerations `vdot` for the entire model.
-///
-/// @tparam_default_scalar
+// This class is one of the cache entries in the Context. It holds the
+// kinematics results of computations that depend not only on the generalized
+// positions and generalized velocities, but also on the time derivatives of
+// the generalized coordinates.
+// Acceleration kinematics results include:
+// - Spatial acceleration `A_WB` for each body B in the model as measured and
+//   expressed in the world frame W.
+// - Generalized accelerations `vdot` for the entire model.
+//
+// @tparam_default_scalar
 template <typename T>
 class AccelerationKinematicsCache {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AccelerationKinematicsCache)
 
-  /// Constructs an acceleration kinematics cache entry for the given
-  /// MultibodyTreeTopology.
-  /// In Release builds specific entries are left uninitialized resulting in a
-  /// zero cost operation. However in Debug builds those entries are set to NaN
-  /// so that operations using this uninitialized cache entry fail fast, easing
-  /// bug detection.
+  // Constructs an acceleration kinematics cache entry for the given
+  // MultibodyTreeTopology.
+  // In Release builds specific entries are left uninitialized resulting in a
+  // zero cost operation. However in Debug builds those entries are set to NaN
+  // so that operations using this uninitialized cache entry fail fast, easing
+  // bug detection.
   explicit AccelerationKinematicsCache(const MultibodyTreeTopology& topology) {
     Allocate(topology);
     DRAKE_ASSERT_VOID(InitializeToNaN());
@@ -46,45 +46,45 @@ class AccelerationKinematicsCache {
     vdot_.setZero();
   }
 
-  /// For the body B associated with node @p body_node_index, returns A_WB,
-  /// body B's spatial acceleration in the world frame W.
-  /// This method aborts in Debug builds if `body_node_index` does not
-  /// correspond to a valid BodyNode in the MultibodyTree.
-  /// @param[in] body_node_index The unique index for the computational
-  ///                            BodyNode object associated with body B.
-  /// @retval A_WB_W body B's spatial acceleration in the world frame W,
-  /// expressed in W (for point Bo, the body's origin).
+  // For the body B associated with node @p body_node_index, returns A_WB,
+  // body B's spatial acceleration in the world frame W.
+  // This method aborts in Debug builds if `body_node_index` does not
+  // correspond to a valid BodyNode in the MultibodyTree.
+  // @param[in] body_node_index The unique index for the computational
+  //                            BodyNode object associated with body B.
+  // @retval A_WB_W body B's spatial acceleration in the world frame W,
+  // expressed in W (for point Bo, the body's origin).
   const SpatialAcceleration<T>& get_A_WB(BodyNodeIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < get_num_nodes());
     return A_WB_pool_[body_node_index];
   }
 
-  /// Mutable version of get_A_WB().
+  // Mutable version of get_A_WB().
   SpatialAcceleration<T>& get_mutable_A_WB(BodyNodeIndex body_node_index) {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < get_num_nodes());
     return A_WB_pool_[body_node_index];
   }
 
-  /// Returns a const reference to the pool of body accelerations.
-  /// The pool is returned as a `std::vector` of SpatialAcceleration objects
-  /// ordered by BodyNodeIndex.
-  /// Most users should not need to call this method.
+  // Returns a const reference to the pool of body accelerations.
+  // The pool is returned as a `std::vector` of SpatialAcceleration objects
+  // ordered by BodyNodeIndex.
+  // Most users should not need to call this method.
   const std::vector<SpatialAcceleration<T>>& get_A_WB_pool() const {
     return A_WB_pool_;
   }
 
-  /// Mutable version of get_A_WB_pool().
+  // Mutable version of get_A_WB_pool().
   std::vector<SpatialAcceleration<T>>& get_mutable_A_WB_pool() {
     return A_WB_pool_;
   }
 
-  /// Returns a constant reference to the generalized accelerations `vdot` for
-  /// the entire model.
+  // Returns a constant reference to the generalized accelerations `vdot` for
+  // the entire model.
   const VectorX<T>& get_vdot() const {
     return vdot_;
   }
 
-  /// Mutable version of get_vdot().
+  // Mutable version of get_vdot().
   VectorX<T>& get_mutable_vdot() {
     return vdot_;
   }
