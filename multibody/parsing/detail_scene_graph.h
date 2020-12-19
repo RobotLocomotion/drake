@@ -174,7 +174,7 @@ math::RigidTransformd MakeGeometryPoseFromSdfCollision(
 geometry::ProximityProperties MakeProximityPropertiesForCollision(
         const sdf::Collision& sdf_collision);
 
-/** Parses friction coefficients from `sdf_collision`.
+/* Parses friction coefficients from `sdf_collision`.
  This method looks for the definitions specific to ODE, as given by the SDF
  specification in `<collision><surface><friction><ode>`. Drake understands
  `<mu>` as the static coefficient of friction and `<mu2>` as the dynamic

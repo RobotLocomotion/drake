@@ -78,14 +78,14 @@ class HydroelasticTractionCalculator {
   explicit HydroelasticTractionCalculator(double vslip_regularizer = 1e-6)
       : vslip_regularizer_(vslip_regularizer) {}
 
-  /**
+  /*
    Gets the regularization parameter used for friction (in m/s). The closer
    that this parameter is to zero, the closer that the regularized friction
    model will approximate Coulomb friction.
    */
   double regularization_scalar() const { return vslip_regularizer_; }
 
-  /**
+  /*
    Applies the hydroelastic model to two geometries defined in `surface`,
    resulting in a spatial force applied at the centroid of the contact surface.
    This method also provides the data output by the quadrature routine.
@@ -108,7 +108,7 @@ class HydroelasticTractionCalculator {
           quadrature_point_data,
       multibody::SpatialForce<T>* F_Ac_W) const;
 
-  /**
+  /*
    Shifts the spatial force applied at the centroid of the contact surface
    to equivalent spatial forces applied at the center of the body frames of
    the two interacting bodies. The body frames, A and B, are those to which
