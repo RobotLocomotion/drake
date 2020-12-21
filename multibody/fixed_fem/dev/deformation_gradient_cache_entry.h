@@ -10,6 +10,8 @@ namespace multibody {
 namespace fixed_fem {
 template <class>
 class DeformationGradientCacheEntry;
+// TODO(xuchenhan-tri) Consider renaming this class and its derived classes to
+//  `FooData` instead of `FooCacheEntry`.
 /** %DeformationGradientCacheEntry stores per element cached quantities
  that work in tandem with ConstitutiveModel. It is a static
  interface that concrete constitutive model cache entries must inherit from to
@@ -43,10 +45,6 @@ class DeformationGradientCacheEntry<
     static_cast<Derived*>(this)->DoUpdateCacheEntry(F);
   }
 
-  /** The index of the FemElement associated with this
-   %DeformationGradientCacheEntry. */
-  ElementIndex element_index() const { return element_index_; }
-
   /** The number of quadrature locations at which the cache entry needs to be
    evaluated. */
   static constexpr int num_quadrature_points() { return num_locations; }
@@ -55,26 +53,24 @@ class DeformationGradientCacheEntry<
     return deformation_gradient_;
   }
 
+  std::array<Matrix3<T>, num_locations>& mutable_deformation_gradient() {
+    return deformation_gradient_;
+  }
+
  protected:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeformationGradientCacheEntry);
 
-  /** Constructs a $DeformationGradientCacheEntry with the given element
-   index and. Users should not directly construct
+  /** Constructs a %DeformationGradientCacheEntry with identity deformation
+   gradients. Users should not directly construct
    %DeformationGradientCacheEntry. They should construct the specific
    constitutive model cache entry (e.g.
-   LinearConstitutiveModelCacheEntry) that invokes the base
-   constructor.
-   @param element_index The index of the FemElement associated with this
-   %DeformationGradientCacheEntry. */
-  explicit DeformationGradientCacheEntry(ElementIndex element_index)
-      : element_index_(element_index) {
-    DRAKE_ASSERT(element_index.is_valid());
+   LinearConstitutiveModelCacheEntry) that invokes the base constructor. */
+  DeformationGradientCacheEntry() {
     std::fill(deformation_gradient_.begin(), deformation_gradient_.end(),
               Matrix3<T>::Identity());
   }
 
  private:
-  ElementIndex element_index_;
   std::array<Matrix3<T>, num_locations> deformation_gradient_;
 };
 }  // namespace fixed_fem

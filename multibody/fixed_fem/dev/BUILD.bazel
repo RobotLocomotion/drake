@@ -33,6 +33,20 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "elasticity_element",
+    hdrs = [
+        "elasticity_element.h",
+    ],
+    deps = [
+        ":constitutive_model",
+        ":fem_element",
+        ":isoparametric_element",
+        ":quadrature",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "element_cache_entry",
     hdrs = [
         "element_cache_entry.h",
@@ -71,6 +85,7 @@ drake_cc_library(
         "fem_state.h",
     ],
     deps = [
+        ":element_cache_entry",
         "//common:essential",
     ],
 )
@@ -141,6 +156,16 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "static_elasticity_element",
+    hdrs = [
+        "static_elasticity_element.h",
+    ],
+    deps = [
+        ":elasticity_element",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_library(
@@ -151,6 +176,19 @@ drake_cc_library(
         ":element_cache_entry",
         ":fem_element",
         ":fem_state",
+    ],
+)
+
+drake_cc_googletest(
+    name = "elasticity_element_test",
+    deps = [
+        ":elasticity_element",
+        ":linear_constitutive_model",
+        ":linear_simplex_element",
+        ":simplex_gaussian_quadrature",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+        "//math:gradient",
     ],
 )
 
@@ -166,6 +204,7 @@ drake_cc_googletest(
     deps = [
         ":dummy_element",
         ":element_cache_entry",
+        ":fem_element",
         ":fem_state",
         "//common/test_utilities:expect_throws_message",
     ],
@@ -210,6 +249,19 @@ drake_cc_googletest(
     name = "simplex_gaussian_quadrature_test",
     deps = [
         ":simplex_gaussian_quadrature",
+    ],
+)
+
+drake_cc_googletest(
+    name = "static_elasticity_element_test",
+    deps = [
+        ":linear_constitutive_model",
+        ":linear_simplex_element",
+        ":simplex_gaussian_quadrature",
+        ":static_elasticity_element",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//math:gradient",
     ],
 )
 
