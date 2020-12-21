@@ -73,7 +73,7 @@ class IsoparametricElement {
 
   /** Type of locations at which to evaluate and/or interpolate numerical
    quantities from nodes. */
-  using LocationsType = ArrayType<Vector<T, natural_dimension()>>;
+  using LocationsType = ArrayType<Vector<double, natural_dimension()>>;
 
   /** Fixed size matrix type to store the Jacobian matrix. */
   using JacobianMatrix =
@@ -224,6 +224,12 @@ class IsoparametricElement {
  private:
   /* The locations at which to evaluate various quantities of this element. */
   LocationsType locations_;
+};
+
+template <class T>
+struct is_isoparametric_element {
+  static constexpr bool value =
+      std::is_base_of<IsoparametricElement<T, typename T::Traits>, T>::value;
 };
 }  // namespace fixed_fem
 }  // namespace multibody

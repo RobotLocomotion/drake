@@ -6,7 +6,6 @@ namespace drake {
 namespace multibody {
 namespace fixed_fem {
 namespace {
-const ElementIndex kElementIndex(3);
 constexpr int kNumQuads = 1;
 
 class LinearConstitutiveModelCacheEntryTest : public ::testing::Test {
@@ -17,7 +16,7 @@ class LinearConstitutiveModelCacheEntryTest : public ::testing::Test {
   }
 
   LinearConstitutiveModelCacheEntry<double, kNumQuads>
-      linear_elasticity_cache_entry_{kElementIndex};
+      linear_elasticity_cache_entry_;
 
   // Make an arbitrary deformation gradient.
   Matrix3<double> MakeDeformationGradient() {
@@ -33,7 +32,6 @@ class LinearConstitutiveModelCacheEntryTest : public ::testing::Test {
 
 TEST_F(LinearConstitutiveModelCacheEntryTest,
        LinearElasticityCacheEntryInitialization) {
-  EXPECT_EQ(linear_elasticity_cache_entry_.element_index(), kElementIndex);
   EXPECT_EQ(linear_elasticity_cache_entry_.deformation_gradient().size(),
             kNumQuads);
   EXPECT_EQ(linear_elasticity_cache_entry_.strain().size(), kNumQuads);

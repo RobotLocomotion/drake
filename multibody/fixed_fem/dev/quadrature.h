@@ -67,6 +67,12 @@ class Quadrature {
   LocationsType points_;
   WeightsType weights_;
 };
+
+template <class T>
+struct is_quadrature {
+  static constexpr bool value = std::is_base_of<
+      Quadrature<T::natural_dimension(), T::num_quadrature_points()>, T>::value;
+};
 }  // namespace fixed_fem
 }  // namespace multibody
 }  // namespace drake

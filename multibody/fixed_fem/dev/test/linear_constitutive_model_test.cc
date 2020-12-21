@@ -79,8 +79,7 @@ GTEST_TEST(LinearConstitutiveModelTest, InvalidPoissonRatioBelowLowerLimit) {
 
 GTEST_TEST(LinearConstitutiveModelTest, UndeformedState) {
   const LinearConstitutiveModel<double, kNumQuads> model(100.0, 0.25);
-  LinearConstitutiveModelCacheEntry<double, kNumQuads> cache_entry(
-      kDummyElementIndex);
+  LinearConstitutiveModelCacheEntry<double, kNumQuads> cache_entry;
   const std::array<Matrix3<double>, kNumQuads> F{Matrix3<double>::Identity()};
   cache_entry.UpdateCacheEntry(F);
   // In undeformed state, the energy density should be zero.
@@ -98,8 +97,7 @@ GTEST_TEST(LinearConstitutiveModelTest, UndeformedState) {
 
 GTEST_TEST(LinearConstitutiveModelTest, PIsDerivativeOfPsi) {
   const LinearConstitutiveModel<AutoDiffXd, kNumQuads> model(100.0, 0.3);
-  LinearConstitutiveModelCacheEntry<AutoDiffXd, kNumQuads> cache_entry(
-      kDummyElementIndex);
+  LinearConstitutiveModelCacheEntry<AutoDiffXd, kNumQuads> cache_entry;
   const std::array<Matrix3<AutoDiffXd>, kNumQuads> deformation_gradients =
       MakeDeformationGradients();
   // P should be derivative of Psi.
@@ -118,8 +116,7 @@ GTEST_TEST(LinearConstitutiveModelTest, PIsDerivativeOfPsi) {
 // moving it to ConstitutiveModelTest.
 GTEST_TEST(LinearConstitutiveModelTest, dPdFIsDerivativeOfP) {
   const LinearConstitutiveModel<AutoDiffXd, kNumQuads> model(100.0, 0.3);
-  LinearConstitutiveModelCacheEntry<AutoDiffXd, kNumQuads> cache_entry(
-      kDummyElementIndex);
+  LinearConstitutiveModelCacheEntry<AutoDiffXd, kNumQuads> cache_entry;
   const std::array<Matrix3<AutoDiffXd>, kNumQuads> deformation_gradients =
       MakeDeformationGradients();
   cache_entry.UpdateCacheEntry(deformation_gradients);
