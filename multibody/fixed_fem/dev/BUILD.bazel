@@ -33,6 +33,28 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "element_cache_entry",
+    hdrs = [
+        "element_cache_entry.h",
+    ],
+    deps = [
+        ":fem_indexes",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_element",
+    hdrs = [
+        "fem_element.h",
+    ],
+    deps = [
+        ":fem_state",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "fem_indexes",
     hdrs = [
         "fem_indexes.h",
@@ -40,6 +62,16 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:type_safe_index",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_state",
+    hdrs = [
+        "fem_state.h",
+    ],
+    deps = [
+        "//common:essential",
     ],
 )
 
@@ -106,6 +138,36 @@ drake_cc_library(
     ],
     deps = [
         ":quadrature",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_library(
+    name = "dummy_element",
+    testonly = 1,
+    hdrs = ["test/dummy_element.h"],
+    deps = [
+        ":element_cache_entry",
+        ":fem_element",
+        ":fem_state",
+    ],
+)
+
+drake_cc_googletest(
+    name = "fem_element_test",
+    deps = [
+        ":dummy_element",
+    ],
+)
+
+drake_cc_googletest(
+    name = "fem_state_test",
+    deps = [
+        ":dummy_element",
+        ":element_cache_entry",
+        ":fem_state",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
