@@ -157,7 +157,6 @@ int Main() {
     return 1;
   }
   const std::string name = scenario_nodes.begin()->first.Scalar();
-  std::cout << "Loading a scenario named '" << name << "'\n";
   std::ofstream out(FLAGS_output);
   if (!out.good()) {
     std::cerr << "Could not write to '" << FLAGS_output << "'.\n";
