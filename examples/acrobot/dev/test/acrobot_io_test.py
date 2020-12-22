@@ -86,3 +86,7 @@ class TestIo(unittest.TestCase):
         self.assertEqual(actual, expected)
         readback = load_output(data=expected)
         self.assertEqual(x_tape.tolist(), values)
+
+
+if __name__ == "__main__":
+    unittest.main()

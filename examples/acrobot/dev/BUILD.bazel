@@ -14,9 +14,59 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
+# This our public python package, i.e., our py_library with everything
+# provided.  (Keep this atop in the BUILD file, not alpha-sorted.)
+# TODO(ggould-tri) Of course this is not public while it's in `dev`.
+drake_py_library(
+    name = "all_py",
+    deps = [
+        ":acrobot_io",
+        ":metrics",
+        ":module_py",
+        ":spong_sim_lib_py",
+    ],
+)
+
+# Our package init.  (Keep this second in the BUILD file, not alpha-sorted.)
+drake_py_library(
+    name = "module_py",
+    srcs = ["__init__.py"],
+)
+
+# Now we have our non-test modules in alphabetical order...
+
 drake_py_library(
     name = "acrobot_io",
     srcs = ["acrobot_io.py"],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+drake_py_library(
+    name = "metrics",
+    srcs = ["metrics.py"],
+)
+
+drake_py_library(
+    # This is the library form of spong_sim.py.
+    name = "spong_sim_lib_py",
+    srcs = ["spong_sim.py"],
+    deps = [
+        ":acrobot_io",
+        "//bindings/pydrake",
+    ],
+)
+
+drake_py_binary(
+    # This is the directly-runnable form of spong_sim.py.
+    name = "spong_sim_main_py",
+    srcs = ["spong_sim.py"],
+    main = "spong_sim.py",
+    deps = [
+        ":acrobot_io",
+        "//bindings/pydrake",
+    ],
 )
 
 drake_cc_binary(
@@ -38,14 +88,46 @@ drake_cc_binary(
 )
 
 # === test/ ===
-drake_py_unittest(
+
+drake_py_test(
     name = "acrobot_io_test",
+    allow_import_unittest = True,  # TODO(#14477)
     data = [
         ":test/example_scenario.yaml",
     ],
     deps = [
         ":acrobot_io",
         "//bindings/pydrake",
+    ],
+)
+
+drake_py_test(
+    name = "metrics_test",
+    allow_import_unittest = True,  # TODO(#14477)
+    deps = [
+        ":metrics",
+    ],
+)
+
+drake_py_test(
+    name = "spong_sim_lib_py_test",
+    allow_import_unittest = True,
+    deps = [
+        ":spong_sim_lib_py",
+    ],
+)
+
+drake_py_test(
+    name = "spong_sim_main_py_test",
+    srcs = ["test/spong_sim_main_test.py"],
+    allow_import_unittest = True,
+    data = [
+        ":spong_sim_main_py",
+        ":test/example_scenario.yaml",
+    ],
+    main = "test/spong_sim_main_test.py",
+    deps = [
+        ":acrobot_io",
     ],
 )
 
@@ -62,7 +144,6 @@ drake_py_test(
     main = "test/spong_sim_main_test.py",
     deps = [
         ":acrobot_io",
-        "//bindings/pydrake",
     ],
 )
 
