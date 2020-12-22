@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from anzu.sim.acrobot.metrics import (
+from drake.examples.acrobot.dev.metrics import (
     deviation_from_upright_equilibrium,
     final_state_cost,
     is_success,
@@ -65,10 +65,6 @@ class TestMetrics(unittest.TestCase):
     def test_success_rate(self):
         self.assertEqual(success_rate(self.nonequilibrium_tapes), 0.)
         self.assertEqual(
-            success_rate(self.nonequilibrium_tapes + self.equilibrium_tapes +
-                         self.equilibrium_tapes), 0.5)
+            success_rate(self.nonequilibrium_tapes + self.equilibrium_tapes
+                         + self.equilibrium_tapes), 0.5)
         self.assertEqual(success_rate(self.equilibrium_tapes), 1.)
-
-
-if __name__ == "__main__":
-    unittest.main()

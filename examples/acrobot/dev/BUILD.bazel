@@ -14,9 +14,40 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
+# Now we have our non-test modules in alphabetical order...
+
 drake_py_library(
     name = "acrobot_io",
     srcs = ["acrobot_io.py"],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+drake_py_library(
+    name = "metrics",
+    srcs = ["metrics.py"],
+)
+
+drake_py_library(
+    # This is the library form of spong_sim.py.
+    name = "spong_sim_lib_py",
+    srcs = ["spong_sim.py"],
+    deps = [
+        ":acrobot_io",
+        "//bindings/pydrake",
+    ],
+)
+
+drake_py_binary(
+    # This is the directly-runnable form of spong_sim.py.
+    name = "spong_sim_main_py",
+    srcs = ["spong_sim.py"],
+    main = "spong_sim.py",
+    deps = [
+        ":acrobot_io",
+        "//bindings/pydrake",
+    ],
 )
 
 drake_cc_binary(
@@ -38,11 +69,41 @@ drake_cc_binary(
 )
 
 # === test/ ===
+
 drake_py_unittest(
     name = "acrobot_io_test",
     data = [
         ":test/example_scenario.yaml",
     ],
+    deps = [
+        ":acrobot_io",
+        "//bindings/pydrake",
+    ],
+)
+
+drake_py_unittest(
+    name = "metrics_test",
+    deps = [
+        ":metrics",
+    ],
+)
+
+drake_py_unittest(
+    name = "spong_sim_lib_py_test",
+    deps = [
+        ":spong_sim_lib_py",
+    ],
+)
+
+drake_py_test(
+    name = "spong_sim_main_py_test",
+    srcs = ["test/spong_sim_main_test.py"],
+    allow_import_unittest = True,
+    data = [
+        ":spong_sim_main_py",
+        ":test/example_scenario.yaml",
+    ],
+    main = "test/spong_sim_main_test.py",
     deps = [
         ":acrobot_io",
         "//bindings/pydrake",
