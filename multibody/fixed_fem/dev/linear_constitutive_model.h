@@ -158,6 +158,11 @@ class LinearConstitutiveModel final
   Eigen::Matrix<T, 9, 9>
       dPdF_;  // The First Piola stress derivative is constant and precomputed.
 };
+
+template <typename T, int num_locations>
+struct is_constitutive_model<LinearConstitutiveModel<T, num_locations>> {
+  static constexpr bool value = true;
+};
 }  // namespace fixed_fem
 }  // namespace multibody
 }  // namespace drake

@@ -41,11 +41,12 @@ constexpr int num_simplex_quadrature_locations() {
  The finite element method: its basis and fundamentals. Elsevier, 2005. */
 template <int NaturalDimension, int Order>
 class SimplexGaussianQuadrature
-    : public Quadrature<NaturalDimension,
-          num_simplex_quadrature_locations<NaturalDimension, Order>()> {
+    : public Quadrature<NaturalDimension, num_simplex_quadrature_locations<
+                                              NaturalDimension, Order>()> {
  public:
-  using Base = Quadrature<NaturalDimension,
-      num_simplex_quadrature_locations<NaturalDimension, Order>()>;
+  using Base =
+      Quadrature<NaturalDimension,
+                 num_simplex_quadrature_locations<NaturalDimension, Order>()>;
   using VectorD = typename Base::VectorD;
   using LocationsType = typename Base::LocationsType;
   using WeightsType = typename Base::WeightsType;
@@ -155,6 +156,11 @@ class SimplexGaussianQuadrature
       DRAKE_UNREACHABLE();
     }
   }
+};
+
+template <int NaturalDimension, int Order>
+struct is_quadrature<SimplexGaussianQuadrature<NaturalDimension, Order>> {
+  static constexpr bool value = true;
 };
 }  // namespace fixed_fem
 }  // namespace multibody

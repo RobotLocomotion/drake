@@ -33,6 +33,55 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "elasticity_element_cache_entry",
+    hdrs = [
+        "elasticity_element_cache_entry.h",
+    ],
+    deps = [
+        ":deformation_gradient_cache_entry",
+        ":element_cache_entry",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "elasticity_element",
+    hdrs = [
+        "elasticity_element.h",
+    ],
+    deps = [
+        ":constitutive_model",
+        ":elasticity_element_cache_entry",
+        ":fem_element",
+        ":isoparametric_element",
+        ":quadrature",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "element_cache_entry",
+    hdrs = [
+        "element_cache_entry.h",
+    ],
+    deps = [
+        ":fem_indexes",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_element",
+    hdrs = [
+        "fem_element.h",
+    ],
+    deps = [
+        ":fem_state",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "fem_indexes",
     hdrs = [
         "fem_indexes.h",
@@ -40,6 +89,16 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:type_safe_index",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_state",
+    hdrs = [
+        "fem_state.h",
+    ],
+    deps = [
+        "//common:essential",
     ],
 )
 
@@ -106,6 +165,29 @@ drake_cc_library(
     ],
     deps = [
         ":quadrature",
+    ],
+)
+
+drake_cc_library(
+    name = "static_elasticity_element",
+    hdrs = [
+        "static_elasticity_element.h",
+    ],
+    deps = [
+        ":elasticity_element",
+    ],
+)
+
+drake_cc_googletest(
+    name = "static_elasticity_element_test",
+    deps = [
+        ":linear_constitutive_model",
+        ":linear_simplex_element",
+        ":simplex_gaussian_quadrature",
+        ":static_elasticity_element",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//math:gradient",
     ],
 )
 

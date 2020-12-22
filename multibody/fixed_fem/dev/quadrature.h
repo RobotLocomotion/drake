@@ -67,6 +67,11 @@ class Quadrature {
   LocationsType points_;
   WeightsType weights_;
 };
+
+template <class>
+struct is_quadrature {
+  static constexpr bool value = false;
+};
 }  // namespace fixed_fem
 }  // namespace multibody
 }  // namespace drake

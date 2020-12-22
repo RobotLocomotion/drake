@@ -128,6 +128,13 @@ class LinearSimplexElement
    */
   ArrayType<Eigen::Matrix<T, num_nodes(), natural_dimension()>> dSdxi_;
 };
+
+template <typename T, int NaturalDimension, int SpatialDimension,
+          int NumSampleLocations>
+struct is_isoparametric_element<LinearSimplexElement<
+    T, NaturalDimension, SpatialDimension, NumSampleLocations>> {
+  static constexpr bool value = true;
+};
 }  // namespace fixed_fem
 }  // namespace multibody
 }  // namespace drake
