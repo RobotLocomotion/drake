@@ -1,0 +1,62 @@
+// - - - - - - - - - - - - - - - - - -
+
+// Contact form
+
+// - - - - - - - - - - - - - - - - - -
+
+.contact {
+  width: 100vw;
+  height: 100vh;
+  background-color: white;
+  position: fixed;
+  top: 10px;
+  left: 0;
+  z-index: 1004;
+	display: flex;
+	overflow-y: scroll;
+
+  opacity: 0;
+  visibility: hidden;
+  transition: all 80ms;
+
+  &.visible {
+    opacity: 1;
+    visibility: visible;
+    top: 0px;
+  }
+
+  .button--close-modal {
+    position: absolute;
+    top: 30px;
+		right: 30px;
+		z-index: 20;
+  }
+
+  .contact__wrap {
+		max-width: 556px;
+		margin-top: 100px;
+		padding-bottom: 80px;
+	}
+	
+
+	@include mq(tabletp) {
+		.wrap {
+			display: flex;
+			justify-content: center;
+		}
+	}
+
+	@include mq(tabletl) {
+		.wrap {
+			align-items: center
+		}
+	}
+}
+
+.contact__header {
+  margin-bottom: 40px;
+
+  .title {
+    margin-bottom: 12px;
+  }
+}

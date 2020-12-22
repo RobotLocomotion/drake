@@ -1,0 +1,58 @@
+site: Robot Locomotion Group (MIT).
+
+url:
+baseurl:
+
+collections:
+  pages:
+    output: true
+    permalink: /:name
+  release-notes:
+    output: true
+    permalink: /release_notes/:name
+  developers:
+    output: false
+  homeblocks:
+    output: false
+
+
+defaults:
+  -
+    scope:
+      path: ""
+    values:
+      layout: "default"
+  -
+    scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "page"
+  -
+    scope:
+      path: ""
+      type: "release-notes"
+    values:
+      layout: "page-release"
+
+exclude: [gen_jekyll, gen_jekyll.py, jekyll_base.py, serve_jekyll, serve_jekyll.py]
+
+markdown: kramdown
+highlighter: rouge
+
+kramdown:
+  input: GFM
+  syntax_highlighter_opts:
+    span:
+      line_numbers: false
+    block:
+      line_numbers: true
+      start_line: 1
+
+sass:
+  style: compressed
+
+plugins_dir:
+  - jekyll-paginate
+
+paginate_path: "/"

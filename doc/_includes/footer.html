@@ -1,0 +1,38 @@
+<footer class="footer">
+	<div class="wrap grid">
+
+		{% if site.data.settings.footer_settings.logo_image %}
+		<a href="{{ site.baseurl }}/" class="footer__logo">
+			<img src="{{ site.data.settings.footer_settings.logo_image | relative_url }}" class="footer__logo__img">
+		</a>
+		{% else %}
+		<a href="{{ site.baseurl }}/" class="footer__title">
+			{{ site.data.settings.basic_settings.site_title }}
+		</a>
+		{% endif %}
+
+		<div class="menu__wrap">
+			<ul class="menu__list">
+				{% for item in site.data.settings.footer_settings.menu_items %}
+				<li class="menu__list__item menu__list__item__link button--text">
+					{% if item.url %}<a href="{{ item.url | relative_url }}" class="menu__list__item__link button--text">{% endif %}{{ item.title }}{% if item.url %}</a>{% endif %}
+				</li>
+				{% endfor %}
+
+				{% if site.data.settings.header_settings.github_link %}
+				<li class="menu__list__item menu__list__item__link button--text github--link">
+					<a href="{{ site.data.settings.header_settings.github_link | relative_url  }}" class="menu__list__item__link button--text">
+						Github <img src="/images/github.svg" />
+					</a>
+				</li>
+				{% endif %}
+			</ul>
+		</div>
+	</div>
+
+		<div class="footer__copyright wrap">
+			<span class="footnote">© {{ 'now' | date: "%Y" }} {{ site.data.settings.basic_settings.site_title }}</span>
+		</div>
+
+
+	</footer>
