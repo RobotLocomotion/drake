@@ -1,0 +1,73 @@
+// - - - - - - - - - - - - - - - - - -
+
+// Structure
+
+// - - - - - - - - - - - - - - - - - -
+
+.page,
+.page__content {
+	width: 100%;
+}
+
+.wrap {
+	position: relative;
+	margin: 0 auto;
+  padding: 0 30px;
+  width: 100%;
+  max-width: 1250px;
+}
+
+.grid {
+	display: grid;
+	grid-column-gap: 30px;
+  grid-row-gap: 30px;
+
+	&__2-col {
+    @extend .grid;
+    grid-template-columns: 1fr;
+
+    @include mq(tabletp) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  &__3-col {
+    @extend .grid;
+    grid-template-columns: 1fr;
+
+    @include mq(tabletp) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  &__1-2-col {
+    @extend .grid;
+    grid-template-columns: minmax(0, 1fr);
+
+    @include mq(tabletp) {
+      grid-template-columns: 300px minmax(0, 1fr);
+    }
+  }
+
+  @include mq(tabletp) {
+    grid-column-gap: 75px;
+    grid-row-gap: 40px;
+  }
+}
+
+.locked {
+  overflow: hidden;
+}
+
+.sticky {
+  position: sticky;
+  top: 50px;
+}
+
+.pad-top {
+  padding-top: 125px;
+
+  @include mq(tabletp) {
+    padding-top: 200px;
+  }
+}

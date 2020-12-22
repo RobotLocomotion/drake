@@ -1,0 +1,28 @@
+// - - - - - - - - - - - - - - - - - -
+
+// Page - Home
+
+// - - - - - - - - - - - - - - - - - -
+
+.page-post {
+    .home-blocks {
+        .post__content {
+            max-width: 100%;
+        }
+    
+        article {
+            min-width: 0;
+
+            .logo-link {
+                display: inline-block;
+                height: 50px;   
+                width: auto;
+                margin: 0 10px 0 0;
+            }
+
+            video {
+                max-width: 100%;
+            }
+        }
+    }
+}

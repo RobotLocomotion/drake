@@ -1,0 +1,12 @@
+<ul class="socials">
+	{% for url in site.data.settings.social_settings %}
+	{% if url[1] != '' %}
+	<li class="socials__item">
+		<a href="{{ url[1] }}" target="_blank" class="socials__item__link"
+			title="{{ url[0] | remove: '_url' | replace: '-', ' ' | capitalize }}">
+			<i class="fab fa-{{ url[0] | replace: 'facebook', 'facebook-f' | remove: '_url' }}" aria-hidden="true"></i>
+		</a>
+	</li>
+	{% endif %}
+	{% endfor %}
+</ul>

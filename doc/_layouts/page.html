@@ -1,0 +1,27 @@
+---
+layout: default
+---
+<div class="page-post">
+
+	<header class="post__header header--single pad-top black-back">
+		
+		<div class="wrap">
+			<h1 class="post__title">{{ page.title }}</h1>
+			<h2 class="post__subtitle subtitle--light">{{ page.subtitle }}</h2>
+		</div>
+
+	</header>
+
+	<section class="post-full">
+
+		<div class="wrap">
+
+			<article class="post__content {% if page.highlight_first %}highlight-first{% endif %}">
+				{{ page.content }}
+			</article>
+
+		</div>
+
+	</section>
+
+</div>
