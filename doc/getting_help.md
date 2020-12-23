@@ -7,7 +7,7 @@ title: Getting Help
 If you need help with Drake, please first review the documentation on this
 website for things such as [installation](/installation.html),
 the [C++ API](https://drake.mit.edu/doxygen_cxx/index.html#://), or
-[Python bindings](/python-bindings.html).
+[Python bindings](/python_bindings.html).
 
 Please also briefly review
 [Drake's open and closed GitHub issues](https://github.com/RobotLocomotion/drake/issues?q=is%3Aissue)

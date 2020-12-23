@@ -1,0 +1,45 @@
+---
+layout: default
+title: Model-Based Design and Verification for Robotics
+description: a C++/Python toolbox supported by the Toyota Research Institute.
+featured_image: /images/social.jpg
+---
+
+<div class="page-home page-post">
+
+  <section class="hero pad-top black-back">
+    <div class="wrap grid">
+      <div class="title">
+        <h1>{{ page.title }}</h1>
+      </div>
+
+      <p class="intro subtitle--light">
+        {{ page.description }}  
+      </p>
+      <a href="/installation.html" class="button--fill">Get Started</a>
+      {% if site.data.settings.hero_settings.background_image %}
+        <div class="hero-image">
+          <img src="{{ site.data.settings.hero_settings.background_image | relative_url }}" class="hero-image__img">
+        </div>
+      {% endif %}
+    </div>
+      
+  </section>
+
+  {% include section__core.html %}
+
+  <section class="home-blocks post-full">
+    <div class="wrap">
+      <div class="post__content grid__2-col">
+        {% for dev in site.homeblocks %}
+          <article id="{{ dev.title }}" class="content-container">
+            {% if dev.display-title != "dont" %}
+              <h2 class="post__sub_title">{{ dev.title }}</h2>
+            {% endif %}
+            {{ dev.content }}
+          </article>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  </div>
