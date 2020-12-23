@@ -11,7 +11,7 @@ header_settings:
 menu_settings:
   menu_items:
     - title: 'Quickstart'
-      url: '/quickstart.html'
+      url: '/installation.html'
     - title: 'Gallery'
       url: '/gallery.html'
     - title: 'API Documentation'
@@ -23,7 +23,7 @@ menu_settings:
     - title: 'Resources'
       subfolderitems:
       - page: 'Getting Help'
-        url: /getting-help.html
+        url: /getting_help.html
       - page: 'Tutorials'
         url: 'https://github.com/RobotLocomotion/drake/tree/master/tutorials'
       - page: 'For Developers'

@@ -87,6 +87,10 @@ drake_py_binary(
     srcs = ["gen_jekyll.py"],
     add_test_rule = 1,
     data = glob([
+        "404.html",
+        "developers.html",
+        "index.html",
+        "release_notes.html",
         "**/*.md",
         "_config.yml",
         "_data/*.yml",

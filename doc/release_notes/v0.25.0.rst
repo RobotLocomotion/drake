@@ -1,8 +1,8 @@
-*************
-Drake v0.25.0
-*************
+---
+title: Drake v0.25.0
+---
 
-Announcements
+#### Announcements
 -------------
 
 * Drake no longer supports macOS Mojave 10.14 (`#14352`_); it only supports
