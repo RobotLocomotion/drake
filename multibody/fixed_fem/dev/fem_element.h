@@ -99,7 +99,7 @@ class FemElement {
    @param[in] state The FEM state at which to evaluate the residual.
    @param[out] a vector of residual of size `num_dofs()`. */
   void CalcResidual(const FemState<DerivedElement>& state,
-                    Vector<T, num_dofs()>* residual) const {
+                    EigenPtr<Vector<T, num_dofs()>> residual) const {
     DRAKE_ASSERT(residual != nullptr);
     residual->setZero();
     static_cast<const DerivedElement*>(this)->DoCalcResidual(state, residual);

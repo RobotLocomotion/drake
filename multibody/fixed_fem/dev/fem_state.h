@@ -53,7 +53,7 @@ class FemState {
            const Eigen::Ref<const VectorX<T>>& qdot)
       : q_(q), qdot_(qdot) {
     DRAKE_DEMAND(ode_order() == 1);
-    DRAKE_DEMAND(q.size() == qdot.size());
+    DRAKE_DEMAND(q_.size() == qdot_.size());
     DRAKE_DEMAND(qddot_.size() == 0);
   }
 
@@ -68,10 +68,10 @@ class FemState {
   FemState(const Eigen::Ref<const VectorX<T>>& q,
            const Eigen::Ref<const VectorX<T>>& qdot,
            const Eigen::Ref<const VectorX<T>>& qddot)
-      : q_(q), qdot_(qdot) {
+      : q_(q), qdot_(qdot), qddot_(qddot) {
     DRAKE_DEMAND(ode_order() == 2);
-    DRAKE_DEMAND(q.size() == qdot.size());
-    DRAKE_DEMAND(q.size() == qddot.size());
+    DRAKE_DEMAND(q_.size() == qdot_.size());
+    DRAKE_DEMAND(q_.size() == qddot_.size());
   }
 
   /** Takes ownership of the input `element_cache` and set it as the element

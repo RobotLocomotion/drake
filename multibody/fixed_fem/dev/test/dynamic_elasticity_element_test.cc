@@ -1,9 +1,8 @@
-#include "drake/multibody/fixed_fem/dev/static_elasticity_element.h"
+#include "drake/multibody/fixed_fem/dev/dynamic_elasticity_element.h"
 
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/fixed_fem/dev/fem_state.h"
 #include "drake/multibody/fixed_fem/dev/linear_constitutive_model.h"
@@ -23,7 +22,7 @@ const ElementIndex kDummyElementIndex(0);
 const std::array<NodeIndex, kNumNodes> dummy_node_indices = {
     {NodeIndex(0), NodeIndex(1), NodeIndex(2), NodeIndex(3)}};
 
-class StaticElasticityElementTest : public ::testing::Test {
+class DynamicElasticityElementTest : public ::testing::Test {
  protected:
   using QuadratureType =
       SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
@@ -33,8 +32,8 @@ class StaticElasticityElementTest : public ::testing::Test {
                            kNumQuads>;
   using ConstitutiveModelType = LinearConstitutiveModel<AutoDiffXd, kNumQuads>;
   using ElementType =
-      StaticElasticityElement<IsoparametricElementType, QuadratureType,
-                              ConstitutiveModelType>;
+      DynamicElasticityElement<IsoparametricElementType, QuadratureType,
+                               ConstitutiveModelType>;
 
   void SetUp() override {
     SetupElement();
@@ -45,9 +44,14 @@ class StaticElasticityElementTest : public ::testing::Test {
     Eigen::Matrix<AutoDiffXd, kSpatialDimension, kNumNodes>
         reference_positions = get_reference_positions();
     ConstitutiveModelType model(1, 0.25);
-    static_elasticity_element_ =
-        std::make_unique<ElementType>(kDummyElementIndex, dummy_node_indices,
-                                      model, reference_positions);
+    AutoDiffXd dummy_density(1.23);
+    DampingModel damping_model;
+    damping_model.mass_damping_ = 0.01;
+    damping_model.stiffness_damping_ = 0.02;
+
+    dynamic_elasticity_element_ = std::make_unique<ElementType>(
+        kDummyElementIndex, dummy_node_indices, model, reference_positions,
+        dummy_density, damping_model);
   }
 
   void SetupState() {
@@ -57,11 +61,13 @@ class StaticElasticityElementTest : public ::testing::Test {
     const Eigen::Matrix<double, kDofs, Eigen::Dynamic> gradient =
         MatrixX<double>::Identity(kDofs, kDofs);
     Vector<AutoDiffXd, kDofs> x_autodiff;
+    Vector<AutoDiffXd, kDofs> v = Vector<AutoDiffXd, kDofs>::Zero();
+    Vector<AutoDiffXd, kDofs> a = Vector<AutoDiffXd, kDofs>::Zero();
     math::initializeAutoDiff(x, x_autodiff);
-    state_ = std::make_unique<FemState<ElementType>>(x_autodiff);
+    state_ = std::make_unique<FemState<ElementType>>(x_autodiff, v, a);
     // Set up the element cache.
     std::vector<typename ElementType::ElementCacheEntryType> cache(
-        1, static_elasticity_element_->MakeElementCacheEntry());
+        1, dynamic_elasticity_element_->MakeElementCacheEntry());
     state_->ResetElementCache(cache);
   }
 
@@ -73,67 +79,40 @@ class StaticElasticityElementTest : public ::testing::Test {
                                                               kNumNodes);
     // clang-format off
     X << -0.10, 0.90, 0.02, 0.10,
-         1.33, 0.23, 0.04, 0.01,
-         0.20, 0.03, 2.31, -0.12;
+            1.33, 0.23, 0.04, 0.01,
+            0.20, 0.03, 2.31, -0.12;
     // clang-format on
     return X;
   }
 
-  std::unique_ptr<ElementType> static_elasticity_element_;
+  std::unique_ptr<ElementType> dynamic_elasticity_element_;
   std::unique_ptr<FemState<ElementType>> state_;
 };
 
-TEST_F(StaticElasticityElementTest, Basic) {
-  EXPECT_EQ(static_elasticity_element_->natural_dimension(), kNaturalDimension);
-  EXPECT_EQ(static_elasticity_element_->solution_dimension(),
+TEST_F(DynamicElasticityElementTest, Basic) {
+  EXPECT_EQ(dynamic_elasticity_element_->natural_dimension(),
+            kNaturalDimension);
+  EXPECT_EQ(dynamic_elasticity_element_->solution_dimension(),
             kSpatialDimension);
-  EXPECT_EQ(static_elasticity_element_->spatial_dimension(), kSpatialDimension);
-  EXPECT_EQ(static_elasticity_element_->num_quadrature_points(), kNumQuads);
-  EXPECT_EQ(static_elasticity_element_->num_nodes(), kNumNodes);
-  EXPECT_EQ(static_elasticity_element_->num_dofs(), kDofs);
-  EXPECT_EQ(static_elasticity_element_->ode_order(), 0);
-  EXPECT_EQ(static_elasticity_element_->node_indices(), dummy_node_indices);
-  EXPECT_EQ(static_elasticity_element_->element_index(), kDummyElementIndex);
+  EXPECT_EQ(dynamic_elasticity_element_->spatial_dimension(),
+            kSpatialDimension);
+  EXPECT_EQ(dynamic_elasticity_element_->num_quadrature_points(), kNumQuads);
+  EXPECT_EQ(dynamic_elasticity_element_->num_nodes(), kNumNodes);
+  EXPECT_EQ(dynamic_elasticity_element_->num_dofs(), kDofs);
+  EXPECT_EQ(dynamic_elasticity_element_->ode_order(), 2);
+  EXPECT_EQ(dynamic_elasticity_element_->node_indices(), dummy_node_indices);
+  EXPECT_EQ(dynamic_elasticity_element_->element_index(), kDummyElementIndex);
 }
 
-TEST_F(StaticElasticityElementTest, ElasticForceIsNegativeEnergyDerivative) {
-  AutoDiffXd energy = static_elasticity_element_->CalcElasticEnergy(*state_);
+TEST_F(DynamicElasticityElementTest, Smoke) {
   Vector<AutoDiffXd, kDofs> residual;
-  static_elasticity_element_->CalcResidual(*state_, &residual);
-
-  EXPECT_TRUE(CompareMatrices(energy.derivatives(), residual,
-                              std::numeric_limits<double>::epsilon()));
-}
-
-TEST_F(StaticElasticityElementTest, StiffnessMatrixIsResidualDerivative) {
-  Vector<AutoDiffXd, kDofs> residual;
-  static_elasticity_element_->CalcResidual(*state_, &residual);
+  dynamic_elasticity_element_->CalcResidual(*state_, &residual);
   Eigen::Matrix<AutoDiffXd, kDofs, kDofs> stiffness_matrix;
-  static_elasticity_element_->CalcStiffnessMatrix(*state_, &stiffness_matrix);
-
-  for (int i = 0; i < kDofs; ++i) {
-    EXPECT_TRUE(CompareMatrices(residual(i).derivatives().transpose(),
-                                stiffness_matrix.row(i),
-                                std::numeric_limits<double>::epsilon()));
-  }
-}
-
-TEST_F(StaticElasticityElementTest, NoDampingMatrix) {
+  dynamic_elasticity_element_->CalcStiffnessMatrix(*state_, &stiffness_matrix);
   Eigen::Matrix<AutoDiffXd, kDofs, kDofs> damping_matrix;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      static_elasticity_element_->CalcDampingMatrix(*state_, &damping_matrix),
-      std::exception,
-      "Static elasticity forms a zero-th order ODE and does not provide a "
-      "damping matrix.");
-}
-
-TEST_F(StaticElasticityElementTest, NoMassMatrix) {
+  dynamic_elasticity_element_->CalcDampingMatrix(*state_, &damping_matrix);
   Eigen::Matrix<AutoDiffXd, kDofs, kDofs> mass_matrix;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      static_elasticity_element_->CalcMassMatrix(*state_, &mass_matrix),
-      std::exception,
-      "Static elasticity forms a zero-th order ODE and does not provide a mass "
-      "matrix.");
+  dynamic_elasticity_element_->CalcMassMatrix(*state_, &mass_matrix);
 }
 }  // namespace
 }  // namespace fixed_fem

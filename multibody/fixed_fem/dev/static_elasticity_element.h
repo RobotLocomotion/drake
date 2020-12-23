@@ -59,11 +59,11 @@ class StaticElasticityElement final
   /** Constructs a new FEM static elasticity element. */
   StaticElasticityElement(
       ElementIndex element_index,
-      const std::array<NodeIndex, num_nodes()>& node_indices, const T& density,
+      const std::array<NodeIndex, num_nodes()>& node_indices,
       const ConstitutiveModel& constitutive_model,
       const Eigen::Ref<const Eigen::Matrix<T, solution_dimension(),
                                            num_nodes()>>& reference_positions)
-      : ElasticityElementType(element_index, node_indices, density,
+      : ElasticityElementType(element_index, node_indices,
                               constitutive_model, reference_positions) {}
 
  private:
@@ -73,9 +73,8 @@ class StaticElasticityElement final
 
   /* Implements FemElement::CalcResidual(). */
   void DoCalcResidual(const FemState<ElementType>& state,
-                      Vector<T, num_dofs()>* residual) const {
+                      EigenPtr<Vector<T, num_dofs()>> residual) const {
     /* residual = -fₑ(x) + fₑₓₜ. */
-    DRAKE_ASSERT(residual != nullptr);
     ElasticityElementType::CalcNegativeElasticForce(state, residual);
     // TODO(xuchenhan-tri): Add external force component.
   }

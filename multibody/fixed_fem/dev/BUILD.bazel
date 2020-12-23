@@ -33,6 +33,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "dynamic_elasticity_element",
+    hdrs = [
+        "dynamic_elasticity_element.h",
+    ],
+    deps = [
+        ":elasticity_element",
+    ],
+)
+
+drake_cc_library(
     name = "elasticity_element_cache_entry",
     hdrs = [
         "elasticity_element_cache_entry.h",
@@ -175,6 +185,18 @@ drake_cc_library(
     ],
     deps = [
         ":elasticity_element",
+    ],
+)
+
+drake_cc_googletest(
+    name = "dynamic_elasticity_element_test",
+    deps = [
+        ":dynamic_elasticity_element",
+        ":linear_constitutive_model",
+        ":linear_simplex_element",
+        ":simplex_gaussian_quadrature",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:gradient",
     ],
 )
 

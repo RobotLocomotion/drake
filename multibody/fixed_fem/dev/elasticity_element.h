@@ -120,12 +120,11 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
    @pre element_index must be valid. */
   ElasticityElement(
       ElementIndex element_index,
-      const std::array<NodeIndex, num_nodes()>& node_indices, const T& density,
+      const std::array<NodeIndex, num_nodes()>& node_indices,
       const ConstitutiveModel& constitutive_model,
       const Eigen::Ref<const Eigen::Matrix<T, solution_dimension(),
                                            num_nodes()>>& reference_positions)
       : Base(element_index, node_indices),
-        density_(density),
         constitutive_model_(constitutive_model),
         reference_positions_(reference_positions) {
     // Record the quadrature point volumes for the new element.
@@ -186,8 +185,9 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
    @pre neg_force != nullptr.
    @warning The data in `neg_force` will NOT be set to zero before writing in
    the new data. The caller is responsible for clearing any stale data. */
-  void CalcNegativeElasticForce(const FemState<DerivedElement>& state,
-                                Vector<T, num_dofs()>* neg_force) const {
+  void CalcNegativeElasticForce(
+      const FemState<DerivedElement>& state,
+      EigenPtr<Vector<T, num_dofs()>> neg_force) const {
     DRAKE_ASSERT(neg_force != nullptr);
     auto neg_force_matrix =
         Eigen::Map<Eigen::Matrix<T, solution_dimension(), num_nodes()>>(
@@ -243,7 +243,7 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
   operation might be (one of) the bottleneck(s). */
   void CalcNegativeElasticForceDerivative(
       const FemState<DerivedElement>& state,
-      EigenPtr<Eigen::Matrix<T, num_nodes(), num_nodes()>> K) const {
+      EigenPtr<Eigen::Matrix<T, num_dofs(), num_dofs()>> K) const {
     DRAKE_ASSERT(K != nullptr);
     // clang-format off
     /* Let e be the elastic energy, then the ab-th block of the stiffness
@@ -274,6 +274,12 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
         }
       }
     }
+  }
+
+  const IsoparametricElement& isoparametric_element() const { return shape_; }
+
+  const std::array<T, num_quadrature_points()>& reference_volume() const {
+    return reference_volume_;
   }
 
  private:
@@ -411,10 +417,6 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
   Quadrature quadrature_;
   /* The isoparametric shape function used for this element. */
   IsoparametricElement shape_{quadrature_.get_points()};
-  // TODO(xuchenhan-tri): Move this into dynamic elasticity.
-  /* The mass density of the element in the reference configuration with
-   unit kg/m³. */
-  T density_;
   /* The constitutive model that describes the stress-strain relationship
    for this element. */
   ConstitutiveModel constitutive_model_;
