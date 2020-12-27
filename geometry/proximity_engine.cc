@@ -158,14 +158,14 @@ namespace {
     if (shapes.size() == 0) {
       throw std::runtime_error(
           fmt::format("The OBJ file contains no objects; only OBJs with a "
-                      "single object are supported: '{}'. Potentially the "
-                      "file is corrupt, or not an OBJ file.",
+                      "single object are supported. Potentially, the "
+                      "file is corrupt, or not an OBJ file. File name: '{}'",
                       filename));
     }
     if (shapes.size() > 1) {
       throw std::runtime_error(
           fmt::format("The OBJ file contains multiple objects; only OBJs"
-                      "with a single object are supported: '{}'",
+                      "with a single object are supported. File name: '{}'",
                       filename));
     }
 

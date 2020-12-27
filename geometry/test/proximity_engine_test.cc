@@ -586,7 +586,7 @@ GTEST_TEST(ProximityEngineTests, ExceptionTwoObjectsInObjFileForConvex) {
       1.0};
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.AddDynamicGeometry(convex, {}, GeometryId::get_new_id()),
-      std::runtime_error, ".*only OBJs with a single object.*");
+      std::runtime_error, ".*Potentially, the file is corrupt,.*");
 }
 
 // Tests for copy/move semantics.  ---------------------------------------------
