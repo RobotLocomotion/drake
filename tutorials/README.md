@@ -15,6 +15,13 @@ For example:
 bazel run //tutorials:mathematical_program
 ```
 
+## Running and Viewing the Notebooks on Google Colab.
+
+We are currently rolling out support for running the notebooks on [Google
+Colab](https://research.google.com/colaboratory/).  For tutorials that have
+already been upgraded, you will see an initial cell that will provision the
+machine on Google Colab (only); this will do nothing on your local machine.
+
 ## Running and Viewing the Notebooks Online
 
 The notebooks in this folder can be run and quickly viewed online using
