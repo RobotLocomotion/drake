@@ -432,7 +432,7 @@ void TestQPonUnitBallExample(const SolverInterface& solver) {
         SolverTypeConverter::IdToType(result.get_solver_id()).value();
     double tol = 1E-4;
     if (solver_type == SolverType::kMosek) {
-      // Regression from MOSEK 8.1 to MOSEK 9.0.
+      // Regression from MOSEK 8.1 to MOSEK 9.2.
       tol = 2E-4;
     }
     EXPECT_TRUE(CompareMatrices(x_value, x_expected, tol,
