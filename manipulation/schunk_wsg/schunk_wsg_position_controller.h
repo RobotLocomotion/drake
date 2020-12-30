@@ -55,6 +55,7 @@ namespace schunk_wsg {
 /// is a scalar surrogate for the force measurement from the driver, f =
 /// abs(f₀-f₁) which, like the gripper itself, only reports a positive force.
 ///
+/// @ingroup manipulation_systems
 class SchunkWsgPdController : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgPdController)
@@ -131,6 +132,7 @@ class SchunkWsgPdController : public systems::LeafSystem<double> {
 /// @endsystem
 ///
 /// @see SchunkWsgPdController
+/// @ingroup manipulation_systems
 class SchunkWsgPositionController : public systems::Diagram<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgPositionController)
