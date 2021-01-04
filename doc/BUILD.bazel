@@ -72,6 +72,61 @@ drake_py_binary(
 )
 
 drake_py_library(
+    name = "jekyll_base",
+    srcs = ["jekyll_base.py"],
+    tags = [
+        # This target requires the appropriate prerequisites script for each
+        # platform to be run with the optional --with-doc-only command line
+        # option.
+        "manual",
+    ],
+)
+
+filegroup(
+    name = "jekyll_data",
+    srcs = [
+        "_config.yml",
+        "_js/drake.js",
+        "_layouts/default.html",
+        "index.md",
+    ],
+)
+
+drake_py_binary(
+    name = "gen_jekyll",
+    srcs = ["gen_jekyll.py"],
+    add_test_rule = 1,
+    data = [":jekyll_data"],
+    tags = [
+        # This target requires the appropriate prerequisites script for each
+        # platform to be run with the optional --with-doc-only command line
+        # option.
+        "manual",
+    ],
+    test_rule_args = [
+        "--out_dir=<test>",
+    ],
+    deps = [
+        ":jekyll_base",
+    ],
+)
+
+drake_py_binary(
+    name = "serve_jekyll",
+    srcs = ["serve_jekyll.py"],
+    data = [":jekyll_data"],
+    tags = [
+        # This target requires the appropriate prerequisites script for each
+        # platform to be run with the optional --with-doc-only command line
+        # option.
+        "manual",
+    ],
+    deps = [
+        ":jekyll_base",
+    ],
+)
+
+drake_py_library(
     name = "system_doxygen",
     srcs = ["system_doxygen.py"],
     visibility = ["//visibility:public"],

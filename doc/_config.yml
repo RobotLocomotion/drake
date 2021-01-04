@@ -1,0 +1,13 @@
+# Jekyll config file
+
+title: drake
+
+exclude:
+  - gen_jekyll
+  - gen_jekyll.py
+  - jekyll_base.py
+  - serve_jekyll
+  - serve_jekyll.py
+
+keep_files:
+  - js
