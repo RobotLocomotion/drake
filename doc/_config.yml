@@ -1,7 +1,7 @@
 site: Robot Locomotion Group (MIT).
 
-url:
-baseurl:
+url: https://drake.mit.edu
+#baseurl: /jekyll/
 
 collections:
   pages:
@@ -35,7 +35,12 @@ defaults:
     values:
       layout: "page-release"
 
-exclude: [gen_jekyll, gen_jekyll.py, jekyll_base.py, serve_jekyll, serve_jekyll.py]
+exclude:
+  - gen_jekyll
+  - gen_jekyll.py
+  - jekyll_base.py
+  - serve_jekyll
+  - serve_jekyll.py
 
 markdown: kramdown
 highlighter: rouge
@@ -53,6 +58,6 @@ sass:
   style: compressed
 
 plugins_dir:
-  - jekyll-paginate
+  - Jekyll-paginate
 
 paginate_path: "/"
