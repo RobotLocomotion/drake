@@ -458,52 +458,6 @@ class Context : public ContextBase {
   // Allow access to the base class method (takes an AbstractValue).
   using ContextBase::FixInputPort;
 
-  /// Connects the input port at @p index to a FixedInputPortValue with
-  /// the given vector @p vec. Aborts if @p index is out of range.
-  /// Returns a reference to the allocated FixedInputPortValue. The
-  /// reference will remain valid until this input port's value source is
-  /// replaced or the %Context is destroyed. You may use that reference to
-  /// modify the input port's value using the appropriate
-  /// FixedInputPortValue method, which will ensure that invalidation
-  /// notifications are delivered.
-  /// @note Calling this method on an already connected input port, i.e., an
-  /// input port that has previously been passed into a call to
-  /// DiagramBuilder::Connect(), causes FixedInputPortValue to override any
-  /// other value present on that port.
-  DRAKE_DEPRECATED("2021-01-01",
-      "Use input_port.FixValue() instead of context.FixInputPort().")
-  FixedInputPortValue& FixInputPort(int index, const BasicVector<T>& vec);
-
-  /// Same as above method but starts with an Eigen vector whose contents are
-  /// used to initialize a BasicVector in the FixedInputPortValue.
-  /// @note Calling this method on an already connected input port, i.e., an
-  /// input port that has previously been passed into a call to
-  /// DiagramBuilder::Connect(), causes FixedInputPortValue to override any
-  /// other value present on that port.
-  DRAKE_DEPRECATED("2021-01-01",
-      "Use input_port.FixValue() instead of context.FixInputPort().")
-  FixedInputPortValue& FixInputPort(
-      int index, const Eigen::Ref<const VectorX<T>>& data);
-
-  /// Same as the above method that takes a `const BasicVector<T>&`, but here
-  /// the vector is passed by unique_ptr instead of by const reference.  The
-  /// caller must not retain any aliases to `vec`; within this method, `vec`
-  /// is cloned and then deleted.
-  /// @note Calling this method on an already connected input port, i.e., an
-  /// input port that has previously been passed into a call to
-  /// DiagramBuilder::Connect(), causes FixedInputPortValue to override any
-  /// other value present on that port.
-  /// @note This overload will become deprecated in the future, because it can
-  /// mislead users to believe that they can retain an alias of `vec` to mutate
-  /// the fixed value during a simulation.  Callers should prefer to use one of
-  /// the other overloads instead.
-  ///
-  /// @exclude_from_pydrake_mkdoc{Will be deprecated; not bound in pydrake.}
-  DRAKE_DEPRECATED("2021-01-01",
-      "Use input_port.FixValue() instead of context.FixInputPort().")
-  FixedInputPortValue& FixInputPort(
-      int index, std::unique_ptr<BasicVector<T>> vec);
-
   // TODO(sherm1) Consider whether to avoid invalidation if the new value is
   // the same as the old one.
   /// Records the user's requested accuracy, which is a unit-less quantity

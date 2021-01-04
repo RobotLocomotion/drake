@@ -37,21 +37,10 @@ drake_cc_package_library(
         ":simulator",
         ":simulator_config",
         ":simulator_config_functions",
-        ":simulator_flags",
         ":simulator_print_stats",
         ":simulator_status",
         ":stepwise_dense_output",
         ":velocity_implicit_euler_integrator",
-    ],
-)
-
-drake_cc_library(
-    name = "simulator_flags",
-    srcs = ["simulator_flags.cc"],
-    hdrs = ["simulator_flags.h"],
-    copts = ["-Wno-cpp"],
-    deps = [
-        ":simulator_config_functions",
     ],
 )
 
