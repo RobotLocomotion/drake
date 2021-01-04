@@ -27,6 +27,7 @@ def gen_main(input_dir, strict, src_func=None):
         src_func: (optional) Callable of form `f(src_dir)` which will introduce
             additional source files to `src_dir`.
     """
+    exit(1)
     sphinx_build = runfiles.Create().Rlocation("sphinx/sphinx-build")
     assert isfile(sphinx_build), "Please execute via 'bazel run'"
     parser = argparse.ArgumentParser()
@@ -116,7 +117,7 @@ def preview_main(gen_script, default_port):
     if isdir(out_dir):
         rmtree(out_dir)
     # Generate.
-    check_call([sys.executable, gen_script, "--out_dir", out_dir])
+    #check_call([sys.executable, gen_script, "--out_dir", out_dir])
     print("Sphinx preview docs are available at:")
     file_url = "file://{}".format(join(out_dir, "index.html"))
     browser_url = file_url
