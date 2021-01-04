@@ -65,6 +65,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "elasticity_model",
+    hdrs = [
+        "elasticity_model.h",
+    ],
+    deps = [
+        ":elasticity_element",
+        ":fem_model",
+    ],
+)
+
+drake_cc_library(
     name = "element_cache_entry",
     hdrs = [
         "element_cache_entry.h",
@@ -94,6 +105,19 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:type_safe_index",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_model",
+    hdrs = [
+        "fem_model.h",
+    ],
+    deps = [
+        ":fem_element",
+        ":fem_indexes",
+        ":fem_state",
+        "//common:essential",
     ],
 )
 
@@ -175,6 +199,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "state_updater",
+    hdrs = [
+        "state_updater.h",
+    ],
+    deps = [
+        ":fem_state",
+    ],
+)
+
+drake_cc_library(
     name = "static_elasticity_element",
     hdrs = [
         "static_elasticity_element.h",
@@ -184,6 +218,26 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "static_elasticity_model",
+    hdrs = [
+        "static_elasticity_model.h",
+    ],
+    deps = [
+        ":elasticity_model",
+        "//geometry/proximity:volume_mesh",
+    ],
+)
+
+drake_cc_library(
+    name = "zeroth_order_state_updater",
+    hdrs = [
+        "zeroth_order_state_updater.h",
+    ],
+    deps = [
+        ":state_updater",
+    ],
+)
 # === test/ ===
 
 drake_cc_library(
@@ -292,6 +346,30 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "static_elasticity_model_test",
+    deps = [
+        ":linear_constitutive_model",
+        ":linear_simplex_element",
+        ":simplex_gaussian_quadrature",
+        ":static_elasticity_element",
+        ":static_elasticity_model",
+        ":zeroth_order_state_updater",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry/proximity:make_box_mesh",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "zeroth_order_state_updater_test",
+    deps = [
+        ":dummy_element",
+        ":zeroth_order_state_updater",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

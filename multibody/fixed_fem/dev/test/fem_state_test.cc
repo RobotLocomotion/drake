@@ -15,7 +15,7 @@ static constexpr int kNumDofs = 3;
 static constexpr int kNumElements = 2;
 const std::vector<ElementIndex> kElementIndices{ElementIndex(0),
                                                 ElementIndex(1)};
-const std::array<NodeIndex, DummyElementTraits::kNumNodes> kNodeIndices = {
+const std::array<NodeIndex, DummyElementTraits<1>::kNumNodes> kNodeIndices = {
     {NodeIndex(0), NodeIndex(1)}};
 
 using Eigen::VectorXd;
@@ -35,8 +35,8 @@ class FemStateTest : public ::testing::Test {
 
   // TODO(xuchenhan-tri): Test the other constructors of FemState.
   /* FemState under test. */
-  FemState<DummyElement> state_{q(), qdot()};
-  std::vector<DummyElement> elements_;
+  FemState<DummyElement<1>> state_{q(), qdot()};
+  std::vector<DummyElement<1>> elements_;
 };
 
 /* Verify setters and getters are working properly. */
@@ -84,13 +84,13 @@ TEST_F(FemStateTest, ConservativeResize) {
 TEST_F(FemStateTest, ElementData) {
   EXPECT_EQ(state_.element_cache_size(), kNumElements);
   for (int i = 0; i < kNumElements; ++i) {
-    EXPECT_EQ(DummyElement::dummy_data().value,
+    EXPECT_EQ(DummyElement<1>::dummy_data().value,
               state_.element_data(elements_[i]).value);
   }
 }
 
 TEST_F(FemStateTest, MakeElementData) {
-  std::vector<DummyElement> invalid_ordered_elements;
+  std::vector<DummyElement<1>> invalid_ordered_elements;
   invalid_ordered_elements.emplace_back(ElementIndex(1), kNodeIndices);
   DRAKE_EXPECT_THROWS_MESSAGE(
       state_.MakeElementData(invalid_ordered_elements), std::exception,
