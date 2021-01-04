@@ -35,6 +35,13 @@ defaults:
     values:
       layout: "page-release"
 
+exclude:
+  - gen_jekyll
+  - gen_jekyll.py
+  - jekyll_base.py
+  - serve_jekyll
+  - serve_jekyll.py
+
 markdown: kramdown
 highlighter: rouge
 
@@ -49,8 +56,3 @@ kramdown:
 
 sass:
   style: compressed
-
-plugins:
-  - jekyll-sitemap
-
-paginate_path: "/"
