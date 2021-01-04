@@ -72,6 +72,67 @@ drake_py_binary(
 )
 
 drake_py_library(
+    name = "jekyll_base",
+    srcs = ["jekyll_base.py"],
+    tags = [
+        # This target requires the appropriate prerequisites script for each
+        # platform to be run with the optional --with-doc-only command line
+        # option.
+        "manual",
+    ],
+)
+
+drake_py_binary(
+    name = "gen_jekyll",
+    srcs = ["gen_jekyll.py"],
+    add_test_rule = 1,
+    data = glob([
+        "**/*.md",
+        "_config.yml",
+        "_data/*.yml",
+        "_includes/**",
+        "_layouts/*.html",
+        "_sass/**",
+        "css/style.scss",
+        "images/**",
+    ]) + [
+        "404.html",
+        "js/drake.js",
+        "//third_party:history_js/history.adapter.jquery.js",
+        "//third_party:history_js/history.js",
+        "//third_party:waypoints/waypoint.js",
+        "//third_party:fluidbox/_fluidbox.scss",
+    ],
+    tags = [
+        # This target requires the appropriate prerequisites script for each
+        # platform to be run with the optional --with-doc-only command line
+        # option.
+        "manual",
+        # Test exceeds timeout when run under Valgrind tools.
+        "no_valgrind_tools",
+    ],
+    test_rule_args = [
+        "--out_dir=<test>",
+    ],
+    deps = [
+        ":jekyll_base",
+    ],
+)
+
+drake_py_binary(
+    name = "serve_jekyll",
+    srcs = ["serve_jekyll.py"],
+    data = [":gen_jekyll"],
+    tags = [
+        # This target requires the appropriate prerequisites script for each
+        # platform to be run with the optional --with-doc-only command line
+        # option.
+        "manual",
+    ],
+    deps = [":jekyll_base"],
+)
+
+drake_py_library(
     name = "system_doxygen",
     srcs = ["system_doxygen.py"],
     visibility = ["//visibility:public"],
