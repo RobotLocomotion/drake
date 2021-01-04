@@ -40,7 +40,7 @@ TEST_F(UnboundedLinearProgramTest0, Test) {
         result.get_solver_details<MosekSolver>();
     EXPECT_EQ(mosek_solver_details.rescode, 0);
     // This problem status is defined in
-    // https://docs.mosek.com/9.0/capi/constants.html#mosek.prosta
+    // https://docs.mosek.com/9.2/capi/constants.html#mosek.prosta
     const int MSK_SOL_STA_DUAL_INFEAS_CER = 6;
     EXPECT_EQ(mosek_solver_details.solution_status,
               MSK_SOL_STA_DUAL_INFEAS_CER);
@@ -241,7 +241,7 @@ GTEST_TEST(MosekTest, SolverOptionsTest) {
   mosek_solver.Solve(prog, {}, solver_options, &result);
   EXPECT_FALSE(result.is_success());
   // This response code is defined in
-  // https://docs.mosek.com/9.0/capi/response-codes.html#mosek.rescode
+  // https://docs.mosek.com/9.2/capi/response-codes.html#mosek.rescode
   const int MSK_RES_ERR_HUGE_C{1375};
   EXPECT_EQ(result.get_solver_details<MosekSolver>().rescode,
             MSK_RES_ERR_HUGE_C);
@@ -263,11 +263,11 @@ GTEST_TEST(MosekSolver, SolverOptionsErrorTest) {
   mosek_solver.Solve(prog, {}, solver_options, &result);
   const auto& solver_details = result.get_solver_details<MosekSolver>();
   // This response code is defined in
-  // https://docs.mosek.com/9.0/capi/response-codes.html#mosek.rescode
+  // https://docs.mosek.com/9.2/capi/response-codes.html#mosek.rescode
   const int MSK_RES_ERR_PARAM_NAME_INT = 1207;
   EXPECT_EQ(solver_details.rescode, MSK_RES_ERR_PARAM_NAME_INT);
   // This problem status is defined in
-  // https://docs.mosek.com/9.0/capi/constants.html#mosek.prosta
+  // https://docs.mosek.com/9.2/capi/constants.html#mosek.prosta
   const int MSK_PRO_STA_UNKNOWN = 0;
   EXPECT_EQ(solver_details.solution_status, MSK_PRO_STA_UNKNOWN);
 
