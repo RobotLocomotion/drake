@@ -1,0 +1,65 @@
+// - - - - - - - - - - - - - - - - - -
+
+// Section - Recent Posts
+
+// - - - - - - - - - - - - - - - - - -
+
+.recent-posts {
+  padding: 64px 0 80px;
+  background-color: #f9f9fa;
+
+  .recent-posts__header {
+    margin-bottom: 40px;
+
+    .action {
+      display: none;
+      justify-self: end;
+      align-self: center;
+    }
+  }
+
+  .recent-posts__list {
+    width: 100%;
+    grid-template-columns: 1fr;
+    grid-gap: 56px;
+    margin-bottom: 48px;
+  }
+
+  .action-bottom {
+    justify-self: center;
+  }
+
+  @include mq(tabletp) {
+    padding: 120px 0 110px;
+
+    .recent-posts__header {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+
+      .action {
+        display: block;
+        justify-self: end;
+        align-self: center;
+      }
+    }
+
+    .recent-posts__list {
+      grid-gap: 30px;
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    .post__image {
+      height: 180px;
+    }
+
+    .action-bottom {
+      display: none;
+    }
+  }
+
+  @include mq(tabletl) {
+    .post__image {
+      height: 250px;
+    }
+  }
+}

@@ -1,0 +1,22 @@
+// - - - - - - - - - - - - - - - - - -
+
+// Page - Blog
+
+// - - - - - - - - - - - - - - - - - -
+
+
+.header--single {
+	padding: 40px 0 48px;
+
+	.header__title {
+		margin-bottom: 16px;
+	}
+
+	.header__subtitle {
+		max-width: 556px;
+	}
+
+	@include mq(tabletp) {
+		padding: 56px 0 120px;
+	}
+}

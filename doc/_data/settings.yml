@@ -1,0 +1,172 @@
+basic_settings:
+  site_title: Drake - Robot Locomotion Group (MIT)
+  favicon_image: /images/favicon.png
+
+header_settings:
+  logo_image: /images/drake-logo-white.svg
+  logo_width: 220
+  logo_mobile_width: 150
+  github_link: https://github.com/RobotLocomotion/drake
+
+menu_settings:
+  menu_items:
+    - title: 'Quickstart'
+      url: '/quickstart.html'
+    - title: 'Gallery'
+      url: '/gallery.html'
+    - title: 'API Documentation'
+      subfolderitems:
+      - page: 'C++'
+        url: https://drake.mit.edu/doxygen_cxx/index.html
+      - page: 'Python'
+        url: https://drake.mit.edu/pydrake/index.html
+    - title: 'Resources'
+      subfolderitems:
+      - page: 'Getting Help'
+        url: /getting-help.html
+      - page: 'Tutorials'
+        url: 'https://github.com/RobotLocomotion/drake/tree/master/tutorials'
+      - page: 'For Developers'
+        url: /developers.html
+      - page: 'Credits'
+        url: /credits.html
+
+footer_settings:
+  logo_image: /images/drake-logo.svg
+  logo_width: 200
+  menu_items:
+    - title: 'C++'
+      url: https://drake.mit.edu/doxygen_cxx/index.html
+    - title: 'Python'
+      url: https://drake.mit.edu/pydrake/index.html
+
+hero_settings:
+  background_image: /images/Drake_Illustration_RGB.png
+
+color_settings:
+  background_color: '#F5F5F5'
+  light_background_color: '#F5F5F5'
+  background_alt_color: '#f4f5f6'
+  text_dark_color: '#202224'
+  text_medium_color: '#6C7A89'
+  text_light_color: '#AEB3BB'
+  accent_color: '#EB0A1E'
+  border_color: '#ECEDEF'
+  error_color: '#D64541'
+  dark_background_color: '#0F0909'
+  grey_background_color: '#272222'
+
+font_settings:
+  font_embed: '<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Work+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">'
+  title_font: "'Work Sans', sans-serif;"
+  body_font: "'Work Sans', sans-serif;"
+  regular_weight: 400
+  bold_weight: 700
+  site_title:
+    small_size: 30
+    medium_size: 40
+    large_size: 45
+    weight: 700
+    letter_spacing: -0.02
+  menu:
+    small_size: 30
+    medium_size: 15
+    large_size: 17
+    weight: 600
+    letter_spacing: 0
+  h1:
+    size: 64
+    size_small: 42
+    weight: 700
+    letter_spacing: -1.5
+    letter_spacing_small: -1.2
+    line_height: 72
+    line_height_small: 48
+  h2:
+    size: 48
+    size_small: 36
+    weight: 700
+    letter_spacing: -1.6
+    letter_spacing_small: -1.04
+    line_height: 56
+    line_height_small: 44
+  h3:
+    size: 40
+    size_small: 30
+    weight: 700
+    letter_spacing: -1.4
+    letter_spacing_small: -0.54
+    line_height: 48
+    line_height_small: 36
+  h4:
+    size: 32
+    size_small: 28
+    weight: 700
+    letter_spacing: -1
+    letter_spacing_small: -0.6
+    line_height: 36
+  h5:
+    small_size: 17
+    medium_size: 20
+    large_size: 20
+    weight: 700
+    letter_spacing: 0
+    line_height: 1.6
+  h6:
+    small_size: 17
+    medium_size: 20
+    large_size: 20
+    weight: 700
+    letter_spacing: 0
+    line_height: 1.6
+  subtitle:
+    size: 22
+    size_small: 20
+    weight_regular: 400
+    weight_heavy: 500
+    letter_spacing: 0.16
+    letter_spacing_small: 0.2
+    line_height: 32
+    line_height_small: 28
+  p:
+    size: 18
+    size_small: 17
+    weight: 400
+    letter_spacing: 0.04
+    letter_spacing_small: 0
+    line_height: 28
+  p_small:
+    size: 16
+    size_small: 15
+    weight: 400
+    letter_spacing: 0
+    line_height: 24
+  label:
+    size: 14
+    small_size: 12
+    weight: 500
+    letter_spacing: 0.8
+    small_letter_spacing: 0.5
+    line_height: 16
+  footnote:
+    size: 13
+    weight: 400
+    letter_spacing: -0.04
+    line_height: 12
+  blockquote:
+    small_size: 22
+    medium_size: 30
+    large_size: 38
+    weight: 500
+    letter_spacing: -0.02
+    line_height: 1.6
+  buttons:
+    weight: 500
+    letter_spacing: 0.4
+
+advanced_settings:
+  ajax_loading: true
+  analytics_code: ""
+  custom_styles: ""
+  header_js: ""
+  footer_js: ""

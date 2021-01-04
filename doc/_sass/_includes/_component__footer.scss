@@ -1,0 +1,114 @@
+// - - - - - - - - - - - - - - - - - -
+
+// Footer
+
+// - - - - - - - - - - - - - - - - - -
+
+.footer {
+	@include transition(all 0.4s ease-in-out 0.8s);
+	padding: 64px 0;
+	background-color: $light-background-color;
+
+	.footer__logo {
+		justify-self: flex-start;
+		width: $footer-logo-width;
+	}
+
+	.footer__title {
+	    font-family: $title-font;
+	    font-size: $sitetitle-small;
+	    font-weight: $sitetitle-weight;
+	    letter-spacing: $sitetitle-spacing;
+	    line-height: 1;
+	    color: $text-dark-color;
+
+	    @include mq(tabletp) {
+	      font-size: $sitetitle-medium;
+	    }
+
+	    @include mq(laptop) {
+	      font-size: $sitetitle-large;
+	    }
+
+	    &:hover {
+	      color: $accent-color;
+	    }
+	}
+	
+	.footer__copyright {
+		padding-top:25px;
+		color: grey;
+
+		@include mq(tabletp) {
+			justify-self: center;
+			align-self: center;
+			text-align: center;
+		}
+
+		p {
+			margin-bottom: 10px;
+		}
+
+		@include mq(laptop) {
+			padding-top:60px;
+		}
+	}
+
+	@include mq(tabletp) {
+		padding: 80px 0;
+
+		.wrap {
+			grid-template-columns: 1fr 1fr;
+		}
+
+		.footer__logo {
+			justify-self: start;
+		}
+		
+		.footer__copyright {
+			justify-self: end;
+		}
+	}
+
+	.menu__list {
+		margin-top: 30px;
+		justify-content: flex-end;
+		align-items: center;
+
+		.menu__list__item {
+			margin-bottom: 15px;
+			font-size: 16px;
+
+			a.menu__list__item__link {
+				font-size: 16px;
+			}
+
+			&.github--link {
+				margin-left: 0;
+
+				a {
+					display: flex;
+					align-items: center;
+				}
+
+				@include mq(tabletp) {
+					margin-left: 30px;
+				}
+
+			  }
+		}
+
+		li {
+			color: black;
+
+			a {
+				color: black
+			}
+
+			img {
+				width: 25px;
+				margin-left: 12px;
+			}
+		}
+	}
+}

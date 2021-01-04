@@ -1,0 +1,115 @@
+// - - - - - - - - - - - - - - - - - -
+
+// Section - About
+
+// - - - - - - - - - - - - - - - - - -
+
+.about {
+  margin-bottom: 100px;
+
+  hr {
+    margin-bottom: 80px;
+  }
+
+  .about__image {
+    width: 100%;
+    margin: 0 0 40px 0;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    img {
+      margin-bottom: 24px;
+    }
+  }
+
+  .title {
+    margin-bottom: 16px;
+  }
+
+  .about__content {
+    max-width: 456px;
+
+    .title {
+      margin-bottom: 16px;
+    }
+
+    .subtitle {
+      margin-bottom: 16px;
+    }
+
+    p {
+      margin-bottom: 16px;
+    }
+
+    .cta {
+      margin: 8px 0 0 -4px;
+    }
+	}
+	
+
+  @include mq(tabletp) {
+    margin-bottom: 160px;
+    
+    hr {
+      margin-bottom: 120px;
+    }
+		
+    .wrap {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .about__image {
+      width: 100%;
+      margin-left: 0;
+		}
+		
+		.about__content {
+			margin-top: 64px;
+
+			.subtitle {
+				margin-bottom: 24px;
+			}
+		}
+  }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - Social Icons
+
+.socials {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.socials__item {
+  margin-left: 24px;
+
+  &:first-child {
+    margin-left: 0;
+  }
+}
+
+.socials__item__link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 100%;
+  background: $text-dark-color;
+  font-size: 16px;
+  color: $background-color;
+
+  &:hover {
+    background: $accent-color;
+    color: $background-color;
+  }
+
+  &:active {
+    transform: scale(0.92);
+  }
+}
