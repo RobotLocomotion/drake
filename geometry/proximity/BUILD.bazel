@@ -14,7 +14,6 @@ drake_cc_package_library(
     name = "proximity",
     visibility = ["//visibility:public"],
     deps = [
-        ":bounding_volume_hierarchy",
         ":bvh",
         ":collision_filter_legacy",
         ":collisions_exist_callback",
@@ -51,12 +50,6 @@ drake_cc_package_library(
         ":volume_mesh",
         ":volume_to_surface_mesh",
     ],
-)
-
-drake_cc_library(
-    name = "bounding_volume_hierarchy",
-    hdrs = ["bounding_volume_hierarchy.h"],
-    deps = [":bvh"],
 )
 
 drake_cc_library(
@@ -562,7 +555,6 @@ drake_cc_library(
 drake_cc_googletest(
     name = "bvh_test",
     deps = [
-        ":bounding_volume_hierarchy",
         ":bvh",
         ":make_ellipsoid_mesh",
         ":make_sphere_mesh",

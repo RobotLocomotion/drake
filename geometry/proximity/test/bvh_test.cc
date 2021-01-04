@@ -3,7 +3,6 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/geometry/proximity/bounding_volume_hierarchy.h"
 #include "drake/geometry/proximity/make_ellipsoid_mesh.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
 #include "drake/geometry/proximity/obb.h"
@@ -70,19 +69,6 @@ class BvhTester {
 };
 
 namespace {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
-// Since we are deprecating BoundingVolumeHierarchy by aliasing it as Bvh,
-// here we test an instantiation of the alias. We should remove this test at
-// the end of deprecation period.
-GTEST_TEST(BoundingVolumeHierarchyTest, TestInstantiation) {
-  const SurfaceMesh<double> mesh =
-      MakeSphereSurfaceMesh<double>(Sphere(1.5), 3);
-  const BoundingVolumeHierarchy<SurfaceMesh<double>> bvh(mesh);
-}
-
-#pragma GCC diagnostic pop  // pop "-Wdeprecated-declarations"
 
 GTEST_TEST(BvNodeTest, TestEqualLeaf) {
   // Bounding volume is not used in EqualLeaf. It is used in EqualTrees.

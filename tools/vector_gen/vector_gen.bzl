@@ -198,13 +198,3 @@ def vector_gen_lcm_sources(
         env = hermetic_python_env(),
         **kwargs
     )
-
-def drake_cc_vector_gen(name, **kwargs):
-    """Deprecated alias for cc_vector_gen."""
-    print("DRAKE DEPRECATED: The drake_cc_vector_gen macro has been renamed to cc_vector_gen; this forwarder for the old name will be removed from Drake on or after 2021-01-01.")  # noqa
-    cc_vector_gen(name = name, **kwargs)
-
-def drake_vector_gen_lcm_sources(name, **kwargs):
-    """Deprecated alias for vector_gen_lcm_sources."""
-    print("DRAKE DEPRECATED: The drake_vector_gen_lcm_sources macro has been renamed to vector_gen_lcm_sources; this forwarder for the old name will be removed from Drake on or after 2021-01-01.")  # noqa
-    vector_gen_lcm_sources(name = name, **kwargs)

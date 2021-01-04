@@ -6,7 +6,6 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
@@ -46,10 +45,6 @@ py::object DoEval(const SomeObject* self, const systems::Context<T>& context) {
   DRAKE_UNREACHABLE();
 }
 }  // namespace
-
-const char* doc_fix_input_port_deprecation =
-    "Use input_port.FixValue() instead of context.FixInputPort(). This will be "
-    "removed from Drake on or after 2021-01-01.";
 
 void DefineFrameworkPySemantics(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -295,41 +290,9 @@ void DefineFrameworkPySemantics(py::module m) {
               abstract_value.attr("set_value")(value);
             },
             py::arg("index"), py::arg("value"),
-            doc.Context.SetAbstractState.doc);
-    // NOTE: SetTimeStateAndParametersFrom is bound below in
-    // bind_context_methods_templated_on_a_secondary_scalar
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    context_cls
-        .def(
-            "FixInputPort",
-            [](Context<T>* self, int index, const BasicVector<T>& vec) {
-              WarnDeprecated(doc_fix_input_port_deprecation);
-              return &self->FixInputPort(index, vec);
-            },
-            py::arg("index"), py::arg("vec"), py_rvp::reference_internal,
-            doc.Context.FixInputPort.doc_deprecated_deprecated_2args_index_vec)
-        .def(
-            "FixInputPort",
-            [](Context<T>* self, int index, unique_ptr<AbstractValue> value) {
-              WarnDeprecated(doc_fix_input_port_deprecation);
-              return &self->FixInputPort(index, std::move(value));
-            },
-            py::arg("index"), py::arg("value"), py_rvp::reference_internal,
-            // Keep alive, ownership: `AbstractValue` keeps `self` alive.
-            py::keep_alive<3, 1>(), doc.ContextBase.FixInputPort.doc)
-        .def(
-            "FixInputPort",
-            [](Context<T>* self, int index,
-                const Eigen::Ref<const VectorX<T>>& data) {
-              WarnDeprecated(doc_fix_input_port_deprecation);
-              return &self->FixInputPort(index, data);
-            },
-            py::arg("index"), py::arg("data"), py_rvp::reference_internal,
-            doc.Context.FixInputPort
-                .doc_deprecated_deprecated_2args_index_data);
-#pragma GCC diagnostic pop
-    context_cls
+            doc.Context.SetAbstractState.doc)
+        // NOTE: SetTimeStateAndParametersFrom is bound below in
+        // bind_context_methods_templated_on_a_secondary_scalar
         .def("SetAccuracy", &Context<T>::SetAccuracy, py::arg("accuracy"),
             doc.Context.SetAccuracy.doc)
         // Bindings for the Context methods in the Doxygen group titled

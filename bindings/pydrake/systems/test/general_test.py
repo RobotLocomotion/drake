@@ -818,24 +818,6 @@ class TestGeneral(unittest.TestCase):
             # type-erased Value objects are incompatible.
             input_port.FixValue(context, AbstractValue.Make("string"))
 
-    def test_context_fix_input_port(self):
-        # WARNING: This is not the recommend workflow; instead, use
-        # `InputPort.FixValue` instead. This is here just for testing /
-        # coverage purposes.
-        dt = 0.1  # Arbitrary.
-        system_vec = ZeroOrderHold(period_sec=dt, vector_size=1)
-        context_vec = system_vec.CreateDefaultContext()
-        with catch_drake_warnings(expected_count=2):
-            context_vec.FixInputPort(index=0, data=[0.])
-            context_vec.FixInputPort(index=0, vec=BasicVector([0.]))
-        # Test abstract.
-        model_value = AbstractValue.Make("Hello")
-        system_abstract = ZeroOrderHold(
-            period_sec=dt, abstract_model_value=model_value.Clone())
-        context_abstract = system_abstract.CreateDefaultContext()
-        with catch_drake_warnings(expected_count=1):
-            context_abstract.FixInputPort(index=0, value=model_value.Clone())
-
     def test_event_status(self):
         system = ZeroOrderHold(period_sec=0.1, vector_size=1)
         # Existence check.
