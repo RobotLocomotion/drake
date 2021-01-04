@@ -1,0 +1,123 @@
+<!doctype html>
+
+<html class="no-js" lang="en">
+
+<head>
+
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+	<!-- Page Info -->
+	<link rel="shortcut icon" href="{{ site.data.settings.basic_settings.favicon_image | relative_url }}">
+	<title>{% if page.url == "/" %}{{ site.data.settings.basic_settings.site_title }} –
+		{{ page.title }}{% else %}{{ page.title }} – {{ site.data.settings.basic_settings.site_title }}{% endif %}</title>
+	<meta name="description" content="{{ page.description | strip_html | xml_escape }}">
+
+	<!-- Twitter Card -->
+	<meta name="twitter:card" content="summary_large_image">
+	<meta name="twitter:title"
+		content="{% if page.url == "/" %}{{ site.data.settings.basic_settings.site_title }} – {{ page.title }}{% else %}{{ page.title }} – {{ site.data.settings.basic_settings.site_title }}{% endif %}">
+	<meta name="twitter:description" content="{{ page.description | strip_html | xml_escape }}">
+	<meta name="twitter:image:src" content="{{ page.featured_image | absolute_url }}">
+
+	<!-- Facebook OpenGraph -->
+	<meta property="og:title"
+		content="{% if page.url == "/" %}{{ site.data.settings.basic_settings.site_title }} – {{ page.title }}{% else %}{{ page.title }} – {{ site.data.settings.basic_settings.site_title }}{% endif %}" />
+	<meta property="og:description" content="{{ page.description | strip_html | xml_escape }}" />
+	<meta property="og:image" content="{{ page.featured_image | absolute_url }}" />
+
+	{% if site.data.settings.font_settings.font_embed %}
+	<!-- Font Embed Code -->
+	{{ site.data.settings.font_settings.font_embed }}
+	{% endif %}
+
+	<!-- Styles -->
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="{{ '/css/style.css' | relative_url }}">
+
+	<!-- Icons -->
+	<script defer src="https://use.fontawesome.com/releases/v5.1.1/js/brands.js"
+		integrity="sha384-0inRy4HkP0hJ038ZyfQ4vLl+F4POKbqnaUB6ewmU4dWP0ki8Q27A0VFiVRIpscvL"
+		crossorigin="anonymous"></script>
+	<script defer src="https://use.fontawesome.com/releases/v5.1.1/js/fontawesome.js"
+		integrity="sha384-NY6PHjYLP2f+gL3uaVfqUZImmw71ArL9+Roi9o+I4+RBqArA2CfW1sJ1wkABFfPe"
+		crossorigin="anonymous"></script>
+
+	{% if site.data.settings.advanced_settings.custom_styles %}
+	<!-- Custom Styles -->
+	<style>
+		{{ site.data.settings.advanced_settings.custom_styles }}
+	</style>
+	{% endif %}
+
+	{% if site.data.settings.advanced_settings.analytics_code %}
+	<!-- Analytics Code -->
+	{{ site.data.settings.advanced_settings.analytics_code }}
+	{% endif %}
+
+	{% if site.data.settings.advanced_settings.header_js %}
+	<!-- Extra Header JS Code -->
+	{{ site.data.settings.advanced_settings.header_js }}
+	{% endif %}
+
+</head>
+
+
+<body class="loading{% if site.data.settings.advanced_settings.ajax_loading == true %} ajax-loading{% endif %}"
+	data-site-url="{{ site.url }}" data-page-url="{{ page.url | replace: 'index.html', '' }}">
+
+	{% include header.html %}
+
+
+	<div class="loader"><svg width="120" height="30" viewBox="0 0 120 30" xmlns="http://www.w3.org/2000/svg">
+			<circle cx="15" cy="15" r="15">
+				<animate attributeName="r" from="15" to="15" begin="0s" dur="0.8s" values="15;9;15" calcMode="linear"
+					repeatCount="indefinite" />
+				<animate attributeName="fill-opacity" from="1" to="1" begin="0s" dur="0.8s" values="1;.5;1" calcMode="linear"
+					repeatCount="indefinite" />
+			</circle>
+			<circle cx="60" cy="15" r="9" fill-opacity="0.3">
+				<animate attributeName="r" from="9" to="9" begin="0s" dur="0.8s" values="9;15;9" calcMode="linear"
+					repeatCount="indefinite" />
+				<animate attributeName="fill-opacity" from="0.5" to="0.5" begin="0s" dur="0.8s" values=".5;1;.5"
+					calcMode="linear" repeatCount="indefinite" />
+			</circle>
+			<circle cx="105" cy="15" r="15">
+				<animate attributeName="r" from="15" to="15" begin="0s" dur="0.8s" values="15;9;15" calcMode="linear"
+					repeatCount="indefinite" />
+				<animate attributeName="fill-opacity" from="1" to="1" begin="0s" dur="0.8s" values="1;.5;1" calcMode="linear"
+					repeatCount="indefinite" />
+			</circle>
+		</svg></div>
+
+	<div class="page-loader"></div>
+
+
+	<div class="page">
+		<div class="page__content"
+			data-page-title="{% if page.url == "/" %}{{ site.data.settings.basic_settings.site_title }} – {{ page.title }}{% else %}{{ page.title }} – {{ site.data.settings.basic_settings.site_title }}{% endif %}">
+			
+			{{ content }}
+
+
+			{% include footer.html %}
+		</div>
+	</div>
+
+
+	
+
+	<!-- Javascript Assets -->
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<script src="{{ '/js/plugins-min.js' | relative_url }}"></script>
+	<script src="{{ '/js/drake-min.js' | relative_url }}"></script>
+
+	{% if site.data.settings.advanced_settings.footer_js %}
+	<!-- Extra Footer JS Code -->
+	{{ site.data.settings.advanced_settings.footer_js }}
+	{% endif %}
+
+
+</body>
+
+</html>

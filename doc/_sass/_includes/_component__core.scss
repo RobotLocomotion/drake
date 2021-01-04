@@ -1,0 +1,46 @@
+.core {
+    padding: 50px 0;
+
+    @include mq(tabletp) {
+        padding: 125px 0;
+    }
+
+    h2 {
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        font-size: 20px;
+        padding-bottom: 8px;
+        color: #B5B5B5;
+    }
+
+    .core-el {
+        text-align: center;
+        color: $accent-color;
+
+        h4 {
+            width: 100%;
+            text-align: center;
+            padding: 50px 25px;
+            margin-bottom: 15px;
+
+            line-height: 1.4em;
+
+            font-size: 22px;
+            font-weight: bold;
+            color: white;
+            background-color: #312C2C;
+        }
+
+        a {
+            color: $accent-color;
+        }
+    }
+
+    br {
+        display: none;
+
+        @include mq(tabletp) {
+            display: block;
+        }
+    }
+}
