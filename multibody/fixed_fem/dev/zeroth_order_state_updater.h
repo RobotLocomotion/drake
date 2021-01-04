@@ -1,0 +1,37 @@
+#pragma once
+
+#include "drake/multibody/fixed_fem/dev/state_updater.h"
+
+namespace drake {
+namespace multibody {
+namespace fixed_fem {
+namespace internal {
+/* Implements the interface StateUpdater with the zeroth-order state updater.
+ Namely, q = z and dq = dz.
+ @tparam State    The type of FemState to be updated by this %StateUpdater. The
+ template parameter State must be an instantiation of FemState.
+ @pre State::ode_order() == 0. */
+template <class State>
+class ZerothOrderStateUpdater final : public StateUpdater<State> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ZerothOrderStateUpdater);
+
+  static_assert(State::ode_order() == 0);
+  using T = State::T;
+
+  ZerothOrderStateUpdater() = default;
+  ~ZerothOrderStateUpdater() = default;
+
+  /** Implements StateUpdater::state_derivatives(). */
+  Vector3<T> state_derivatives() final const { return {1, 0, 0}; }
+
+ private:
+  /* Implements StateUpdater::DoUpdateState(). */
+  void DoUpdateState(const VectorX<T>& dz, State* state) final const {
+    state->set_q(state()->q() + dz);
+  }
+};
+}  // namespace internal
+}  // namespace fixed_fem
+}  // namespace multibody
+}  // namespace drake
