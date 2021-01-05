@@ -211,26 +211,41 @@ TEST_F(SymbolicDifferentiationTest, SymbolicCompoundCases) {
 TEST_F(SymbolicDifferentiationTest, NotDifferentiable) {
   const Expression& x{var_x_};
   const Expression& y{var_y_};
-  // abs, min, max, ceil, floor, if_then_else are not differentiable with
-  // respect to a variable if an argument includes the variable.
   Expression dummy;
-  EXPECT_ANY_THROW(dummy = abs(x).Differentiate(var_x_));
-  EXPECT_ANY_THROW(dummy = ceil(x).Differentiate(var_x_));
-  EXPECT_ANY_THROW(dummy = floor(x).Differentiate(var_x_));
-  EXPECT_ANY_THROW(dummy = min(x, y).Differentiate(var_x_));
-  EXPECT_ANY_THROW(dummy = min(x, y).Differentiate(var_y_));
-  EXPECT_ANY_THROW(dummy = max(x, y).Differentiate(var_x_));
-  EXPECT_ANY_THROW(dummy = max(x, y).Differentiate(var_y_));
-  EXPECT_ANY_THROW(dummy = if_then_else(x > y, x, y).Differentiate(var_x_));
-  EXPECT_ANY_THROW(dummy = if_then_else(x > y, x, y).Differentiate(var_y_));
-  // However, those functions are still differentiable if the variable for
+  Environment env{{var_x_, 0}, {var_y_, 1}};
+
+  // if_then_else is differentiable on relational expressions where the
+  // arms of the relation are unequal.
+  EXPECT_ANY_THROW(if_then_else(x == 0, y + 1, y)
+                  .Differentiate(var_x_).Evaluate(env));
+  EXPECT_NO_THROW(if_then_else(x == 1, y + 1, y)
+                  .Differentiate(var_x_).Evaluate(env));
+
+  // abs, min, max, ceil, and floor are not differentiable with respect to a
+  // variable if an argument includes the variable and if the argument is at
+  // the function's corner/discontinuity.
+  EXPECT_ANY_THROW(abs(x).Differentiate(var_x_).Evaluate(env));
+  EXPECT_NO_THROW(abs(x + 1).Differentiate(var_x_).Evaluate(env));
+
+  EXPECT_ANY_THROW(ceil(x).Differentiate(var_x_).Evaluate(env));
+  EXPECT_NO_THROW(ceil(x + 0.5).Differentiate(var_x_).Evaluate(env));
+
+  EXPECT_ANY_THROW(floor(x).Differentiate(var_x_).Evaluate(env));
+  EXPECT_NO_THROW(floor(x + 0.5).Differentiate(var_x_).Evaluate(env));
+
+  EXPECT_ANY_THROW(dummy = min(x + 1, y).Differentiate(var_y_).Evaluate(env));
+  EXPECT_NO_THROW(dummy = min(x, y).Differentiate(var_x_).Evaluate(env));
+  EXPECT_ANY_THROW(dummy = max(x + 1, y).Differentiate(var_x_).Evaluate(env));
+  EXPECT_NO_THROW(dummy = max(x, y).Differentiate(var_y_).Evaluate(env));
+
+  // Those functions are all differentiable if the variable for
   // differentiation does not occur in the function body.
   EXPECT_EQ(abs(x).Differentiate(var_y_), 0.0);
   EXPECT_EQ(ceil(x).Differentiate(var_y_), 0.0);
   EXPECT_EQ(floor(x).Differentiate(var_y_), 0.0);
   EXPECT_EQ(min(x, y).Differentiate(var_z_), 0.0);
   EXPECT_EQ(max(x, y).Differentiate(var_z_), 0.0);
-  EXPECT_EQ(if_then_else(x > y, x, y).Differentiate(var_z_), 0.0);
+  EXPECT_EQ(if_then_else(x > y - 1, x, y).Differentiate(var_z_), 0.0);
 }
 
 // It tests if the evaluation result of a symbolic differentiation is close to
