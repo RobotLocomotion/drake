@@ -59,7 +59,7 @@ class TestPlantWithMinOutputs : public TestPlant {
   }
 };
 
-// A plant with an input port zero of size 1 and an output port zero of size 6.
+// A plant with an input port one of size 1 and an output port zero of size 6.
 // The plant's output port zero has four elements that should not be fed back
 // to the PID controller. A feedback selector system is used to determine which
 // two elements of the plant's output port zero are fed back to the PID
@@ -101,6 +101,8 @@ class TestPlantWithMoreOutputs : public TestPlant {
 class TestPlantWithMoreOutputPorts : public TestPlant {
  public:
   TestPlantWithMoreOutputPorts() {
+    // Declare some empty plant input port.
+    DeclareVectorInputPort(BasicVector<double>(0));
     DeclareVectorInputPort(BasicVector<double>(1));
     // Declare some non-state output port.
     DeclareVectorOutputPort(
@@ -223,8 +225,10 @@ TEST_F(PidControlledSystemTest, PlantWithMoreOutputs) {
 TEST_F(PidControlledSystemTest, PlantWithMoreOutputPorts) {
   auto plant = std::make_unique<TestPlantWithMoreOutputPorts>();
   const int state_output_port_index = 1;
+  const int plant_input_port_index = 1;
   PidControlledSystem<double> system(std::move(plant), Kp_, Ki_, Kd_,
-                                     state_output_port_index);
+                                     state_output_port_index,
+                                     plant_input_port_index);
 
   EXPECT_EQ(system.num_output_ports(), 2);
   EXPECT_EQ(system.get_output_port(0).size(), 3);
