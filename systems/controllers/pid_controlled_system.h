@@ -20,9 +20,9 @@ namespace controllers {
 ///
 /// The passed in plant must meet the following properties:
 ///
-/// * Input port zero must be all of the control inputs (size U). When the plant
-///   is a dynamics model, this is typically the generalized effort (e.g., force
-///   or torque) command.
+/// * Input port `plant_input_port_index` must be all of the control inputs
+///   (size U). When the plant is a dynamics model, this is typically the
+///   generalized effort (e.g., force or torque) command.
 ///
 /// * The output port passed to the PidControlledSystem constructor must be
 ///   of size 2 * Q, where the first Q elements are the position states of
@@ -69,10 +69,13 @@ class PidControlledSystem : public Diagram<T> {
   /// @param[in] Kd the derivative constant.
   /// @param[in] state_output_port_index identifies the output port on the
   /// plant that contains the (full) state information.
+  /// @param[in] plant_input_port_index identifies the input port on the plant
+  /// that takes in the input (computed as the output of the PID controller).
   ///
-  /// @pydrake_mkdoc_identifier{5args_double_gains}
+  /// @pydrake_mkdoc_identifier{6args_double_gains}
   PidControlledSystem(std::unique_ptr<System<T>> plant, double Kp, double Ki,
-                      double Kd, int state_output_port_index = 0);
+                      double Kd, int state_output_port_index = 0,
+                      int plant_input_port_index = 0);
 
   /// @p plant full state is used for feedback control, and the vectorized gains
   /// are specified by @p Kp, @p Kd and @p Ki.
@@ -83,12 +86,15 @@ class PidControlledSystem : public Diagram<T> {
   /// @param[in] Kd the derivative vector constant.
   /// @param[in] state_output_port_index identifies the output port on the
   /// plant that contains the (full) state information.
+  /// @param[in] plant_input_port_index identifies the input port on the plant
+  /// that takes in the input (computed as the output of the PID controller).
   ///
-  /// @pydrake_mkdoc_identifier{5args_vector_gains}
+  /// @pydrake_mkdoc_identifier{6args_vector_gains}
   PidControlledSystem(std::unique_ptr<System<T>> plant,
                       const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
                       const Eigen::VectorXd& Kd,
-                      int state_output_port_index = 0);
+                      int state_output_port_index = 0,
+                      int plant_output_port_index = 0);
 
   /// A constructor where the gains are scalar values and some of the plant's
   /// output is part of the feedback signal as specified by
@@ -103,11 +109,14 @@ class PidControlledSystem : public Diagram<T> {
   /// @param[in] Kd the derivative constant.
   /// @param[in] state_output_port_index identifies the output port on the
   /// plant that contains the (full) state information.
+  /// @param[in] plant_input_port_index identifies the input port on the plant
+  /// that takes in the input (computed as the output of the PID controller).
   ///
-  /// @pydrake_mkdoc_identifier{6args_double_gains}
+  /// @pydrake_mkdoc_identifier{7args_double_gains}
   PidControlledSystem(std::unique_ptr<System<T>> plant,
                       const MatrixX<double>& feedback_selector, double Kp,
-                      double Ki, double Kd, int state_output_port_index = 0);
+                      double Ki, double Kd, int state_output_port_index = 0,
+                      int plant_input_port_index = 0);
 
   /// A constructor where the gains are vector values and some of the plant's
   /// output is part of the feedback signal as specified by
@@ -122,13 +131,16 @@ class PidControlledSystem : public Diagram<T> {
   /// @param[in] Kd the derivative vector constant.
   /// @param[in] state_output_port_index identifies the output port on the
   /// plant that contains the (full) state information.
+  /// @param[in] plant_input_port_index identifies the input port on the plant
+  /// that takes in the input (computed as the output of the PID controller).
   ///
-  /// @pydrake_mkdoc_identifier{6args_vector_gains}
+  /// @pydrake_mkdoc_identifier{7args_vector_gains}
   PidControlledSystem(std::unique_ptr<System<T>> plant,
                       const MatrixX<double>& feedback_selector,
                       const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
                       const Eigen::VectorXd& Kd,
-                      int state_output_port_index = 0);
+                      int state_output_port_index = 0,
+                      int plant_input_port_index = 0);
 
   ~PidControlledSystem() override;
 
@@ -213,6 +225,7 @@ class PidControlledSystem : public Diagram<T> {
 
   System<T>* plant_{nullptr};
   const int state_output_port_index_;
+  const int plant_input_port_index_;
 };
 
 }  // namespace controllers
