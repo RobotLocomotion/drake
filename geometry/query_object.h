@@ -176,7 +176,14 @@ class QueryObject {
    map to `id_A` and `id_B` in a fixed, repeatable manner.
 
    <h3>Scalar support</h3>
-   This method only provides double-valued penetration results.
+    - For scalar type `double`, we support all Shape-Shape pairs *except* for
+      HalfSpace-HalfSpace. In that case, half spaces are either non-colliding or
+      have an infinite amount of penetration.
+    - For scalar type AutoDiffXd, we only support query pairs Sphere-Box,
+      Sphere-Capsule, Sphere-Cylinder, Sphere-HalfSpace, and Sphere-Sphere.
+    
+   For a Shape-Shape pair in collision that is *not* supported for a given
+   scalar type, an exception is thrown.
 
    @returns A vector populated with all detected penetrations characterized as
             point pairs. The ordering of the results is guaranteed to be
