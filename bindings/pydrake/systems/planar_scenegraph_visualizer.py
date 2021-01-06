@@ -18,7 +18,7 @@ with warnings.catch_warnings():  # noqa
 from drake import lcmt_viewer_load_robot
 from pydrake.common.eigen_geometry import Quaternion
 from pydrake.common.value import AbstractValue
-from pydrake.geometry import DispatchLoadMessage, ReadObjToSurfaceMesh
+from pydrake.geometry import DrakeVisualizer, ReadObjToSurfaceMesh
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.systems.pyplot_visualizer import PyPlotVisualizer
@@ -175,7 +175,7 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                                          lcm_type=lcmt_viewer_load_robot)
         # TODO(SeanCurtis-TRI): Use SceneGraph inspection instead of mocking
         # LCM and inspecting the generated message.
-        DispatchLoadMessage(self._scene_graph, memq_lcm)
+        DrakeVisualizer.DispatchLoadMessage(self._scene_graph, memq_lcm)
         memq_lcm.HandleSubscriptions(0)
         assert memq_lcm_subscriber.count > 0
         load_robot_msg = memq_lcm_subscriber.message
@@ -199,6 +199,13 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                 # MultibodyPlant currently sets alpha=0 to make collision
                 # geometry "invisible".  Ignore those geometries here.
                 if geom.color[3] == 0:
+                    continue
+
+                # Short-circuit if the geometry scale is invalid.
+                # (All uses of float data should be strictly positive:
+                # edge lengths for boxes, radius and length for
+                # spheres and cylinders, and scaling for meshes.)
+                if not all([x > 0 for x in geom.float_data]):
                     continue
 
                 X_BG = RigidTransform(
@@ -267,8 +274,17 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                     if not os.path.exists(filename):
                         raise FileNotFoundError(errno.ENOENT, os.strerror(
                             errno.ENOENT), filename)
-                    mesh = ReadObjToSurfaceMesh(filename)
-                    patch_G = np.vstack([v.r_MV() for v in mesh.vertices()]).T
+                    # Get mesh scaling.
+                    scale = geom.float_data[0]
+                    mesh = ReadObjToSurfaceMesh(filename, scale)
+                    patch_G = np.vstack([v.r_MV() for v in mesh.vertices()])
+                    # Only store the vertices of the (3D) convex hull of the
+                    # mesh, as any interior vertices will still be interior
+                    # vertices after projection, and will therefore be removed
+                    # in _update_body_fill_verts().
+                    hull = spatial.ConvexHull(patch_G)
+                    patch_G = np.vstack(
+                        [patch_G[v, :] for v in hull.vertices]).T
 
                 else:
                     print("UNSUPPORTED GEOMETRY TYPE {} IGNORED".format(
@@ -372,7 +388,7 @@ def ConnectPlanarSceneGraphVisualizer(builder,
     """Creates an instance of PlanarSceneGraphVisualizer, adds it to the
     diagram, and wires the scene_graph pose bundle output port to the input
     port of the visualizer.  Provides an interface comparable to
-    ConnectDrakeVisualizer.
+    DrakeVisualizer.AddToBuilder.
 
     Args:
         builder: The diagram builder used to construct the Diagram.

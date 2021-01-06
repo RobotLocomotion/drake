@@ -1,18 +1,19 @@
 #pragma once
 
-#include <algorithm>
 #include <initializer_list>
-#include <memory>
+#include <ostream>
 #include <stdexcept>
 #include <utility>
 
-#include <Eigen/Dense>
+#include <fmt/format.h>
 
 #include "drake/common/default_scalars.h"
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/nice_type_name.h"
+#include "drake/common/unused.h"
 
 namespace drake {
 namespace systems {
@@ -43,63 +44,73 @@ class VectorBase {
 
   /// Returns the element at the given index in the vector.
   /// @pre 0 <= `index` < size()
-  T& operator[](int index) { return DoGetAtIndex(index); }
+  T& operator[](int index) {
+    DRAKE_ASSERT(index >= 0);
+    return DoGetAtIndexUnchecked(index);
+  }
 
   /// Returns the element at the given index in the vector.
   /// @pre 0 <= `index` < size()
-  const T& operator[](int index) const { return DoGetAtIndex(index); }
-
-  /// Returns the element at the given index in the vector.
-  /// @throws std::runtime_error if the index is >= size() or negative.
-  /// Consider operator[]() instead if bounds-checking is unwanted.
-  const T& GetAtIndex(int index) const {
-    if (index < 0) { throw std::out_of_range("VectorBase index < 0"); }
-    return DoGetAtIndex(index);
+  const T& operator[](int index) const {
+    DRAKE_ASSERT(index >= 0);
+    return DoGetAtIndexUnchecked(index);
   }
 
   /// Returns the element at the given index in the vector.
-  /// @throws std::runtime_error if the index is >= size() or negative.
+  /// @throws std::exception if the index is >= size() or negative.
+  /// Consider operator[]() instead if bounds-checking is unwanted.
+  const T& GetAtIndex(int index) const {
+    if (index < 0) { this->ThrowOutOfRange(index); }
+    return DoGetAtIndexChecked(index);
+  }
+
+  /// Returns the element at the given index in the vector.
+  /// @throws std::exception if the index is >= size() or negative.
   /// Consider operator[]() instead if bounds-checking is unwanted.
   T& GetAtIndex(int index) {
-    if (index < 0) { throw std::out_of_range("VectorBase index < 0"); }
-    return DoGetAtIndex(index);
+    if (index < 0) { this->ThrowOutOfRange(index); }
+    return DoGetAtIndexChecked(index);
   }
 
   /// Replaces the state at the given index with the value.
-  /// @throws std::runtime_error if the index is >= size().
+  /// @throws std::exception if the index is >= size().
   /// Consider operator[]() instead if bounds-checking is unwanted.
   void SetAtIndex(int index, const T& value) {
     GetAtIndex(index) = value;
   }
 
   /// Replaces the entire vector with the contents of @p value.
-  /// @throws std::runtime_error if @p value is not a column vector with size()
+  /// @throws std::exception if @p value is not a column vector with size()
   /// rows.
   ///
   /// Implementations should ensure this operation is O(N) in the size of the
   /// value and allocates no memory.
   virtual void SetFrom(const VectorBase<T>& value) {
-    DRAKE_THROW_UNLESS(value.size() == size());
-    for (int i = 0; i < value.size(); ++i) {
+    const int n = value.size();
+    if (n != size()) { this->ThrowMismatchedSize(n); }
+    for (int i = 0; i < n; ++i) {
       (*this)[i] = value[i];
     }
   }
 
-  /// Replaces the entire vector with the contents of @p value. Throws
-  /// std::runtime_error if @p value is not a column vector with size() rows.
+  /// Replaces the entire vector with the contents of @p value.
+  /// @throws std::exception if @p value is not a column vector with size()
+  /// rows.
   ///
   /// Implementations should ensure this operation is O(N) in the size of the
   /// value and allocates no memory.
   virtual void SetFromVector(const Eigen::Ref<const VectorX<T>>& value) {
-    DRAKE_THROW_UNLESS(value.rows() == size());
-    for (int i = 0; i < value.rows(); ++i) {
+    const int n = value.rows();
+    if (n != size()) { this->ThrowMismatchedSize(n); }
+    for (int i = 0; i < n; ++i) {
       (*this)[i] = value[i];
     }
   }
 
+  /// Sets all elements of this vector to zero.
   virtual void SetZero() {
-    const int sz = size();
-    for (int i = 0; i < sz; ++i) {
+    const int n = size();
+    for (int i = 0; i < n; ++i) {
       (*this)[i] = T(0.0);
     }
   }
@@ -123,56 +134,56 @@ class VectorBase {
   /// @throws std::exception if `vec` is the wrong size.
   virtual void CopyToPreSizedVector(EigenPtr<VectorX<T>> vec) const {
     DRAKE_THROW_UNLESS(vec != nullptr);
-    DRAKE_THROW_UNLESS(vec->rows() == size());
-    for (int i = 0; i < size(); ++i) {
+    const int n = vec->rows();
+    if (n != size()) { this->ThrowMismatchedSize(n); }
+    for (int i = 0; i < n; ++i) {
       (*vec)[i] = (*this)[i];
     }
   }
 
-  /// Adds a scaled version of this vector to Eigen vector @p vec, which
-  /// must be the same size.
+  /// Adds a scaled version of this vector to Eigen vector @p vec.
+  /// @throws std::exception if `vec` is the wrong size.
   ///
-  /// Implementations may override this default implementation with a more
-  /// efficient approach, for instance if this vector is contiguous.
   /// Implementations should ensure this operation remains O(N) in the size of
   /// the value and allocates no memory.
   virtual void ScaleAndAddToVector(const T& scale,
                                    EigenPtr<VectorX<T>> vec) const {
     DRAKE_THROW_UNLESS(vec != nullptr);
-    if (vec->rows() != size()) {
-      throw std::out_of_range("Addends must be the same size.");
-    }
-    for (int i = 0; i < size(); ++i) {
+    const int n = vec->rows();
+    if (n != size()) { this->ThrowMismatchedSize(n); }
+    for (int i = 0; i < n; ++i) {
       (*vec)[i] += scale * (*this)[i];
     }
   }
 
-  /// Add in scaled vector @p rhs to this vector. Both vectors must
-  /// be the same size.
+  /// Add in scaled vector @p rhs to this vector.
+  /// @throws std::exception if @p rhs is a different size than this.
   VectorBase& PlusEqScaled(const T& scale, const VectorBase<T>& rhs) {
     return PlusEqScaled({{scale, rhs}});
   }
 
-  /// Add in multiple scaled vectors to this vector. All vectors
-  /// must be the same size.
+  /// Add in multiple scaled vectors to this vector.
+  /// @throws std::exception if any rhs are a different size than this.
   VectorBase& PlusEqScaled(const std::initializer_list<
                            std::pair<T, const VectorBase<T>&>>& rhs_scale) {
-    for (const auto& operand : rhs_scale) {
-      if (operand.second.size() != size())
-        throw std::out_of_range("Addends must be the same size.");
+    const int n = size();
+    for (const auto& [scale, rhs] : rhs_scale) {
+      unused(scale);
+      const int rhs_n = rhs.size();
+      if (rhs_n != n) { this->ThrowMismatchedSize(rhs_n); }
     }
-
     DoPlusEqScaled(rhs_scale);
-
     return *this;
   }
 
   /// Add in vector @p rhs to this vector.
+  /// @throws std::exception if @p rhs is a different size than this.
   VectorBase& operator+=(const VectorBase<T>& rhs) {
     return PlusEqScaled(T(1), rhs);
   }
 
   /// Subtract in vector @p rhs to this vector.
+  /// @throws std::exception if @p rhs is a different size than this.
   VectorBase& operator-=(const VectorBase<T>& rhs) {
     return PlusEqScaled(T(-1), rhs);
   }
@@ -191,12 +202,22 @@ class VectorBase {
   VectorBase() {}
 
   /// Implementations should ensure this operation is O(1) and allocates no
-  /// memory.  The index has already been checked for negative, but not size.
-  virtual const T& DoGetAtIndex(int index) const = 0;
+  /// memory.  The index need not be validated when in release mode.
+  virtual const T& DoGetAtIndexUnchecked(int index) const = 0;
+
+  /// Implementations should ensure this operation is O(1) and allocates no
+  /// memory.  The index need not be validated when in release mode.
+  virtual T& DoGetAtIndexUnchecked(int index) = 0;
 
   /// Implementations should ensure this operation is O(1) and allocates no
   /// memory.  The index has already been checked for negative, but not size.
-  virtual T& DoGetAtIndex(int index) = 0;
+  /// Implementations must throw an exception when index >= size().
+  virtual const T& DoGetAtIndexChecked(int index) const = 0;
+
+  /// Implementations should ensure this operation is O(1) and allocates no
+  /// memory.  The index has already been checked for negative, but not size.
+  /// Implementations must throw an exception when index >= size().
+  virtual T& DoGetAtIndexChecked(int index) = 0;
 
   /// Adds in multiple scaled vectors to this vector. All vectors
   /// are guaranteed to be the same size.
@@ -211,17 +232,26 @@ class VectorBase {
   /// the value and allocates no memory.
   virtual void DoPlusEqScaled(const std::initializer_list<
                               std::pair<T, const VectorBase<T>&>>& rhs_scale) {
-    const int sz = size();
-    for (const auto& operand : rhs_scale) {
-      DRAKE_THROW_UNLESS(operand.second.size() == sz);
-    }
-    for (int i = 0; i < sz; ++i) {
+    const int n = size();
+    for (int i = 0; i < n; ++i) {
       T value(0);
-      for (const auto& operand : rhs_scale) {
-        value += operand.second[i] * operand.first;
+      for (const auto& [scale, rhs] : rhs_scale) {
+        value += rhs[i] * scale;
       }
       (*this)[i] += value;
     }
+  }
+
+  [[noreturn]] void ThrowOutOfRange(int index) const {
+    throw std::out_of_range(fmt::format(
+        "Index {} is not within [0, {}) while accessing {}.",
+        index, size(), NiceTypeName::Get(*this)));
+  }
+
+  [[noreturn]] void ThrowMismatchedSize(int other_size) const {
+    throw std::out_of_range(fmt::format(
+        "Operand vector size {} does not match this {} size {}",
+        other_size, NiceTypeName::Get(*this), size()));
   }
 };
 

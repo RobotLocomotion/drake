@@ -8,6 +8,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/type_safe_index.h"
 #include "drake/math/rigid_transform.h"
@@ -129,13 +130,14 @@ class SurfaceMesh {
 
   using ScalarType = T;
 
-  // TODO(DamrongGuoy): Remove kDim and replace its usage like (kDim + 1) by
-  //  kVertexPerElement in mesh_to_vtk, mesh_field_linear, and
-  //  bounding_volume_hierarchy. Issue #12756.
-
   /**
    A surface mesh has the intrinsic dimension 2.  It is embedded in 3-d space.
    */
+  DRAKE_DEPRECATED(
+      "2021-04-01",
+      "kDim has been deemed redundant, and its usage is being dropped in "
+      "favor of using kVertexPerElement. The relationship between kDim and "
+      "kVertexPerElement is: kVertexPerElement = kDim + 1.")
   static constexpr int kDim = 2;
 
   /**
@@ -165,7 +167,7 @@ class SurfaceMesh {
 
    The barycentric coordinates for a point Q are notated a b_Q.
    */
-  using Barycentric = Vector<T, kDim + 1>;
+  using Barycentric = Vector<T, kVertexPerElement>;
 
   /** Type of Cartesian coordinates. Mesh consumers can use it in conversion
    from Cartesian coordinates to barycentric coordinates.
@@ -374,10 +376,9 @@ class SurfaceMesh {
   // Optimization: save n, and the inverse of matrix |uᵢ.dot(uⱼ)| for later.
   //
 
-  // TODO(DamrongGuoy): Consider sharing this code with
-  //  bounding_volume_hierarchy.h. Currently we have a problem that
-  //  SurfaceMesh and its vertices are templated on T, but Aabb in
-  //  bounding_volume_hierarchy.h is for double only.
+  // TODO(DamrongGuoy): Consider using an oriented bounding box in obb.h.
+  //  Currently we have a problem that SurfaceMesh and its vertices are
+  //  templated on T, but Obb is for double only.
   /**
    Calculates the axis-aligned bounding box of this surface mesh M.
    @returns the center and the size vector of the box expressed in M's frame.

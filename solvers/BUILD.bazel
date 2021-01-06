@@ -21,6 +21,7 @@ drake_cc_package_library(
     name = "solvers",
     visibility = ["//visibility:public"],
     deps = [
+        ":aggregate_costs_constraints",
         ":bilinear_product_util",
         ":binding",
         ":branch_and_bound",
@@ -145,11 +146,11 @@ drake_cc_library(
     deps = [
         ":decision_variable",
         ":evaluator_base",
-        ":symbolic_extraction",
         "//common:autodiff",
         "//common:essential",
         "//common:polynomial",
         "//common:symbolic",
+        "//common:symbolic_decompose",
         "//math:gradient",
         "//math:matrix_util",
     ],
@@ -174,6 +175,7 @@ drake_cc_library(
         "//common:autodiff",
         "//common:essential",
         "//common:polynomial",
+        "//math:gradient",
         "//math:matrix_util",
     ],
 )
@@ -182,12 +184,16 @@ drake_cc_library(
     name = "symbolic_extraction",
     srcs = ["symbolic_extraction.cc"],
     hdrs = ["symbolic_extraction.h"],
+    copts = [
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":decision_variable",
         "//common:autodiff",
         "//common:essential",
         "//common:polynomial",
         "//common:symbolic",
+        "//common:symbolic_decompose",
         "//math:matrix_util",
     ],
 )
@@ -199,10 +205,10 @@ drake_cc_library(
     deps = [
         ":binding",
         ":constraint",
-        ":symbolic_extraction",
         "//common:essential",
         "//common:polynomial",
         "//common:symbolic",
+        "//common:symbolic_decompose",
         "//math:quadratic_form",
     ],
 )
@@ -214,10 +220,10 @@ drake_cc_library(
     deps = [
         ":binding",
         ":cost",
-        ":symbolic_extraction",
         "//common:essential",
         "//common:polynomial",
         "//common:symbolic",
+        "//common:symbolic_decompose",
         "//common:unused",
     ],
 )
@@ -324,11 +330,11 @@ drake_cc_library(
         ":solver_id",
         ":solver_options",
         ":sos_basis_generator",
-        ":symbolic_extraction",
         "//common:autodiff",
         "//common:essential",
         "//common:polynomial",
         "//common:symbolic",
+        "//common:symbolic_decompose",
     ],
 )
 
@@ -362,6 +368,16 @@ drake_cc_library(
         ":solver_id",
         ":solver_options",
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "aggregate_costs_constraints",
+    srcs = ["aggregate_costs_constraints.cc"],
+    hdrs = ["aggregate_costs_constraints.h"],
+    deps = [
+        ":binding",
+        ":mathematical_program",
     ],
 )
 
@@ -589,6 +605,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "sos_examples",
+    testonly = 1,
+    srcs = ["test/sos_examples.cc"],
+    hdrs = ["test/sos_examples.h"],
+    deps = [
+        ":mathematical_program",
+        ":mathematical_program_result",
+        "//common/test_utilities:symbolic_test_util",
+        "@gtest//:without_main",
+    ],
+)
+
+drake_cc_library(
     name = "exponential_cone_program_examples",
     testonly = 1,
     srcs = ["test/exponential_cone_program_examples.cc"],
@@ -760,10 +789,12 @@ drake_cc_library(
     hdrs = ["mosek_solver.h"],
     deps = select({
         "//tools:with_mosek": [
+            ":aggregate_costs_constraints",
             ":mathematical_program",
             ":mathematical_program_result",
             ":solver_base",
             "//common:scoped_singleton",
+            "//math:quadratic_form",
             "@mosek",
         ],
         "//conditions:default": [
@@ -1081,6 +1112,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "symbolic_extraction_test",
+    copts = [
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":symbolic_extraction",
         "//common/test_utilities:eigen_matrix_compare",
@@ -1146,6 +1180,7 @@ drake_cc_googletest(
         ":linear_program_examples",
         ":second_order_cone_program_examples",
         ":semidefinite_program_examples",
+        ":sos_examples",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
@@ -1317,6 +1352,7 @@ drake_cc_googletest(
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
         ":semidefinite_program_examples",
+        ":sos_examples",
         "//common:filesystem",
         "//common:temp_directory",
     ],
@@ -1497,6 +1533,7 @@ drake_cc_googletest(
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
         ":semidefinite_program_examples",
+        ":sos_examples",
     ],
 )
 
@@ -1527,17 +1564,6 @@ drake_cc_googletest(
         ":mathematical_program",
         ":solver_base",
         "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-# TODO(jwnimmer-tri) Remove this test on 2020-09-01 when the deprecated
-# SolverBase constructor is also removed.
-drake_cc_googletest(
-    name = "solver_base_deprecated_test",
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":mathematical_program",
-        ":solver_base",
     ],
 )
 
@@ -1653,6 +1679,7 @@ drake_cc_googletest(
         ":snopt_solver",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
@@ -1669,6 +1696,15 @@ drake_cc_googletest(
     deps = [
         ":solve",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "aggregate_costs_constraints_test",
+    deps = [
+        ":aggregate_costs_constraints",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 

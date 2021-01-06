@@ -1,4 +1,5 @@
-<sdf version='1.6'>
+<?xml version="1.0"?>
+<sdf version="1.7">
   <world name="SimWorld">
     <include>
       <uri>model://simple_robot1</uri>
@@ -6,15 +7,14 @@
     <include>
       <uri>model://simple_robot2</uri>
     </include>
-    <model name='weld_models'> 
+    <model name="weld_models">
       <include>
         <uri>model://simple_robot1</uri>
       </include>
       <include>
         <uri>model://simple_robot2</uri>
       </include>
-
-      <joint name='weld_robots' type='revolute'>
+      <joint name="weld_robots" type="revolute">
         <parent>robot1::base_link</parent>
         <child>robot2::base_link</child>
         <axis>

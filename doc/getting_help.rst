@@ -30,7 +30,9 @@ please `post a question on StackOverflow
 If you are actively developing with Drake and may need more active discussions
 than what StackOverflow and GitHub may offer, consider asking for access to the
 Drake Developers Slack Channel. To do so, please email Russ Tedrake for access.
-Please note that this access may not always be readily granted.
+Please note that this access may not always be readily granted. (Note: If you
+are a Drake developer wanting to invite someone, it will be faster to grant
+them access if you invite them directly via Slack.)
 
 If you wish to contribute a patch, please see how to :ref:`submit a pull request
 <pull_request>`.

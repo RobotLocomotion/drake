@@ -46,7 +46,6 @@ drake_py_binary(
 )
 
 _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
-    "bullet",
     "ccd",
     "fcl",
     "fmt",

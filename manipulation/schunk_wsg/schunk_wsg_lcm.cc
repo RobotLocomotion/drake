@@ -65,14 +65,15 @@ void SchunkWsgCommandReceiver::CalcForceLimitOutput(
   output->SetAtIndex(0, force_limit);
 }
 
-SchunkWsgCommandSender::SchunkWsgCommandSender()
+SchunkWsgCommandSender::SchunkWsgCommandSender(double default_force_limit)
     : position_input_port_(this->DeclareVectorInputPort(
                                    "position", systems::BasicVector<double>(1))
                                .get_index()),
       force_limit_input_port_(
           this->DeclareVectorInputPort("force_limit",
                                        systems::BasicVector<double>(1))
-              .get_index()) {
+              .get_index()),
+      default_force_limit_(default_force_limit) {
   this->DeclareAbstractOutputPort("lcmt_schunk_wsg_command",
                                   &SchunkWsgCommandSender::CalcCommandOutput);
 }
@@ -84,7 +85,11 @@ void SchunkWsgCommandSender::CalcCommandOutput(
 
   command.utime = context.get_time() * 1e6;
   command.target_position_mm = get_position_input_port().Eval(context)[0] * 1e3;
-  command.force = get_force_limit_input_port().Eval(context)[0];
+  if (get_force_limit_input_port().HasValue(context)) {
+    command.force = get_force_limit_input_port().Eval(context)[0];
+  } else {
+    command.force = default_force_limit_;
+  }
 }
 
 SchunkWsgStatusReceiver::SchunkWsgStatusReceiver()

@@ -48,6 +48,17 @@ drake_pybind_library(
     ],
 )
 
+drake_py_library(
+    name = "jupyter_widgets_py",
+    srcs = ["jupyter_widgets.py"],
+    imports = PACKAGE_INFO.py_imports,
+    deps = [
+        ":module_py",
+        "//bindings/pydrake/common:jupyter_py",
+        "//bindings/pydrake/systems:framework_py",
+    ],
+)
+
 drake_pybind_library(
     name = "math_py",
     cc_deps = [
@@ -63,6 +74,7 @@ drake_pybind_library(
         ":module_py",
         "//bindings/pydrake/common:cpp_template_py",
         "//bindings/pydrake/common:value_py",
+        "//bindings/pydrake:math_py",
     ],
 )
 
@@ -108,7 +120,6 @@ drake_pybind_library(
         "//bindings/pydrake:geometry_py",
         "//bindings/pydrake/common:cpp_template_py",
     ],
-    py_srcs = ["_plant_extra.py"],
 )
 
 drake_pybind_library(
@@ -137,6 +148,22 @@ drake_pybind_library(
     ],
 )
 
+drake_pybind_library(
+    name = "optimization_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:default_scalars_pybind",
+        "//bindings/pydrake/common:value_pybind",
+    ],
+    cc_srcs = ["optimization_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        ":plant_py",
+        "//bindings/pydrake/solvers:mathematicalprogram_py",
+    ],
+)
+
 drake_jupyter_py_binary(
     name = "examples/door_hinge_inspector",
     add_test_rule = 1,
@@ -150,12 +177,14 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":benchmarks_py",
     ":inverse_kinematics_py",
     ":math_py",
+    ":optimization_py",
     ":parsing_py",
     ":plant_py",
     ":tree_py",
 ]
 
 PY_LIBRARIES = [
+    ":jupyter_widgets_py",
     ":module_py",
 ]
 
@@ -186,11 +215,30 @@ filegroup(
     ]),
 )
 
+drake_jupyter_py_binary(
+    name = "examples/jupyter_widgets_examples",
+    add_test_rule = 1,
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":jupyter_widgets_py",
+        ":parsing_py",
+        ":plant_py",
+        "//bindings/pydrake:geometry_py",
+        "//bindings/pydrake/systems:analysis_py",
+        "//bindings/pydrake/systems:framework_py",
+        "//bindings/pydrake/systems:rendering_py",
+    ],
+)
+
 drake_py_unittest(
     name = "parsing_test",
     data = [
         "//examples/atlas:models",
         "//multibody/benchmarks/acrobot:models",
+        "//multibody/parsing:process_model_directives_test_models",
+        "//multibody/parsing:test_models",
     ],
     deps = [
         ":parsing_py",
@@ -213,7 +261,6 @@ drake_py_unittest(
         ":parsing_py",
         ":plant_py",
         ":tree_py",
-        "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
         "//bindings/pydrake/systems:analysis_py",
         "//bindings/pydrake/systems:scalar_conversion_py",
@@ -224,7 +271,7 @@ drake_py_unittest(
     name = "math_test",
     deps = [
         ":math_py",
-        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+        "//bindings/pydrake/common/test_utilities",
     ],
 )
 
@@ -238,6 +285,21 @@ drake_py_unittest(
         ":inverse_kinematics_py",
         ":parsing_py",
         "//bindings/pydrake/common/test_utilities",
+    ],
+)
+
+drake_py_unittest(
+    name = "optimization_test",
+    timeout = "moderate",
+    tags = ["snopt"],
+    deps = [
+        ":benchmarks_py",
+        ":inverse_kinematics_py",
+        ":optimization_py",
+        ":parsing_py",
+        "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/solvers:ipopt_py",
+        "//bindings/pydrake/solvers:snopt_py",
     ],
 )
 

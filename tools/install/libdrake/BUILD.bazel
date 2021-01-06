@@ -55,14 +55,10 @@ cc_binary(
     ],
 )
 
-# Gather all of libdrake.so's dependent headers, excluding headers that are
-# stored in the attic.  (Those will be used only after some path mangling.)
+# Gather all of libdrake.so's dependent headers.
 drake_transitive_installed_hdrs_filegroup(
-    name = "libdrake_headers_no_attic",
+    name = "libdrake_headers",
     never_startswith = [
-        # The attic headers come in via `only_startswith = "attic/"` in a
-        # different rule, below.
-        "attic/",
         # Drake's lcmtypes are installed via the //lcmtypes:install rule,
         # because they part of a different CMake component than Drake main C++
         # library.  They should not be part of libdrake.so's installed headers.
@@ -73,34 +69,20 @@ drake_transitive_installed_hdrs_filegroup(
     deps = LIBDRAKE_COMPONENTS,
 )
 
-# Combine non-attic headers into a library with necessary dependencies, but not
-# object code. (For use with pybind documentation generation.)
+# Combine headers into a library with necessary dependencies, but not object
+# code. (For use with pybind documentation generation.)
 cc_library(
-    name = "drake_headers_no_attic",
-    hdrs = [":libdrake_headers_no_attic"],
+    name = "drake_headers",
+    hdrs = [":libdrake_headers"],
     include_prefix = "drake",
     strip_include_prefix = "/",
     visibility = [
         "//bindings/pydrake:__pkg__",
-        "//bindings/pydrake/attic:__pkg__",
     ],
     deps = [
         ":libdrake_header_only_deps",
         ":libdrake_runtime_so_deps",
     ],
-)
-
-# Combine attic-only headers into a library, *without* necessary dependencies
-# (for use with pybind documentation generation.) We exclude the dependency on
-# `drake_headers_no_attic` for simplicity. See note in `pybind.bzl`.
-# Include headers that are stored in the attic by stripping off the "attic/"
-# component of the pathname.
-cc_library(
-    name = "drake_headers_attic_only",
-    hdrs = [":libdrake_headers_only_attic"],
-    include_prefix = "drake",
-    strip_include_prefix = "/attic",
-    visibility = ["//bindings/pydrake/attic:__pkg__"],
 )
 
 # Install libdrake.so along with all transitive headers in the same workspace
@@ -112,31 +94,13 @@ install(
         "test/snopt_visibility_install_test.py",
     ],
     targets = ["libdrake.so"],
-    hdrs = [":libdrake_headers_no_attic"],
+    hdrs = [":libdrake_headers"],
     hdr_dest = "include/drake",
     allowed_externals = ["//:LICENSE.TXT"],  # Root for our #include paths.
     visibility = ["//:__pkg__"],
     deps = [
-        ":install_attic_headers",
         ":install_cmake_config",
     ],
-)
-
-# Gather the headers that are stored in the attic.
-drake_transitive_installed_hdrs_filegroup(
-    name = "libdrake_headers_only_attic",
-    only_startswith = "attic/",
-    deps = LIBDRAKE_COMPONENTS,
-)
-
-# Install headers that are stored in the attic by stripping off the "attic/"
-# component of the pathname.
-install(
-    name = "install_attic_headers",
-    hdrs = [":libdrake_headers_only_attic"],
-    hdr_dest = "include/drake",
-    hdr_strip_prefix = ["attic"],
-    allowed_externals = ["//:LICENSE.TXT"],
 )
 
 # Depend on a shared library used by dReal iff dReal is enabled.
@@ -206,7 +170,6 @@ cc_library(
         "@vtk//:vtkIOGeometry",
         "@vtk//:vtkIOImage",
         "@vtk//:vtkRenderingCore",
-        "@vtk//:vtkRenderingOSPRay",
         "@vtk//:vtkRenderingOpenGL2",
     ],
 )
@@ -229,7 +192,7 @@ cc_library(
 cc_library(
     name = "drake_shared_library",
     srcs = [":libdrake.so"],
-    hdrs = [":libdrake_headers_no_attic"],
+    hdrs = [":libdrake_headers"],
     # N.B. To pull in transitive `data` dependencies, we must list
     # `libdrake.so` as a data target.
     data = [":libdrake.so"],
@@ -237,8 +200,7 @@ cc_library(
     strip_include_prefix = "/",
     visibility = ["//:__pkg__"],
     deps = [
-        ":drake_headers_attic_only",
-        ":drake_headers_no_attic",
+        ":drake_headers",
     ],
 )
 

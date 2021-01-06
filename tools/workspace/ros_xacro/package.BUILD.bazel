@@ -17,7 +17,7 @@ py_binary(
     name = "xacro",
     main = "src/ros_xacro_main.py",
     srcs = ["src/ros_xacro_main.py"] + glob([
-        "src/xacro/**",
+        "src/xacro/**/*.py",
     ], allow_empty = False),
     imports = ["src"],
     visibility = ["//visibility:public"],

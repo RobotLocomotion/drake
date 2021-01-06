@@ -17,9 +17,21 @@
 #define DRAKE_NO_SANITIZE
 #endif
 
+// Declare this function here so its definition can follow the
+// platform-specific enabling of observations.
+static void EvaluateMinNumAllocations(int observed, int min_num_allocations);
+
 namespace drake {
 namespace test {
 namespace {
+
+// LimitMalloc does not work properly with some configurations. Check this
+// predicate and disarm to avoid erroneous results.
+bool IsSupportedConfiguration() {
+  static const bool is_supported{!std::getenv("LSAN_OPTIONS") &&
+                                 !std::getenv("VALGRIND_OPTS")};
+  return is_supported;
+}
 
 // This variable is used as an early short-circuit for our malloc hooks.  When
 // false, we execute as minimal code footprint as possible.  This keeps dl_init
@@ -43,6 +55,9 @@ class Monitor {
       ObserveAllocation();
     }
   }
+
+  int num_allocations() const { return observed_num_allocations_.load(); }
+  const LimitMallocParams& params() const { return args_; }
 
  private:
   void ObserveAllocation();
@@ -138,6 +153,8 @@ class ActiveMonitor {
 };
 
 void Monitor::ObserveAllocation() {
+  if (!IsSupportedConfiguration()) { return; }
+
   bool failure = false;
 
   // Check the allocation-call limit.
@@ -153,7 +170,9 @@ void Monitor::ObserveAllocation() {
 
   // Report an error (but re-enable malloc before doing so!).
   ActiveMonitor::reset();
-  std::cerr << "abort due to malloc while LimitMalloc is in effect";
+  std::cerr << "abort due to malloc #" << observed
+            << " while max_num_allocations = "
+            << args_.max_num_allocations << " in effect";
   std::cerr << std::endl;
   // TODO(jwnimmer-tri) It would be nice to print a backtrace here.
   std::abort();
@@ -164,6 +183,10 @@ void Monitor::ObserveAllocation() {
 LimitMalloc::LimitMalloc() : LimitMalloc({ .max_num_allocations = 0 }) {}
 
 LimitMalloc::LimitMalloc(LimitMallocParams args) {
+  // Make sure the configuration check is warm before trying it within a malloc
+  // call stack.
+  IsSupportedConfiguration();
+
   // Prepare a monitor with our requested limits.
   auto monitor = std::make_shared<Monitor>(this, std::move(args));
 
@@ -174,12 +197,27 @@ LimitMalloc::LimitMalloc(LimitMallocParams args) {
   }
 }
 
+int LimitMalloc::num_allocations() const {
+  return ActiveMonitor::load()->num_allocations();
+}
+
+const LimitMallocParams& LimitMalloc::params() const {
+  return ActiveMonitor::load()->params();
+}
+
 LimitMalloc::~LimitMalloc() {
+  // Copy out the monitor's data before we delete it.
+  const int observed = num_allocations();
+  const LimitMallocParams args = params();
+
   // De-activate our Monitor.
   auto prior = ActiveMonitor::reset();
+
   if (!(prior && prior->has_owner(this))) {
     std::cerr << "LimitMalloc dtor invariant failure\n";
   }
+
+  ::EvaluateMinNumAllocations(observed, args.min_num_allocations);
 }
 
 }  // namespace test
@@ -208,6 +246,21 @@ void* realloc(void* ptr, size_t size) {
   drake::test::ActiveMonitor::realloc(ptr, size, is_noop);
   return result;
 }
+
+static void EvaluateMinNumAllocations(int observed, int min_num_allocations) {
+  if (!drake::test::IsSupportedConfiguration()) { return; }
+
+  if ((min_num_allocations >= 0) && (observed < min_num_allocations)) {
+    std::cerr << "abort due to scope end with "
+              << observed << " mallocs while min_num_allocations = "
+              << min_num_allocations << " in effect";
+    std::cerr << std::endl;
+    std::abort();
+  }
+}
+#else
+// Evaluating the minimum is a no-op when no counts are observed.
+static void EvaluateMinNumAllocations(int observed, int min_num_allocations) {}
 #endif
 
 #undef DRAKE_NO_SANITIZE

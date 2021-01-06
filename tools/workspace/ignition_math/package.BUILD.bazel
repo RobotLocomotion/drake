@@ -32,7 +32,7 @@ config_setting(
 
 PROJECT_MAJOR = 6
 
-PROJECT_MINOR = 4
+PROJECT_MINOR = 7
 
 PROJECT_PATCH = 0
 
@@ -43,10 +43,10 @@ cmake_configure_file(
     out = "include/ignition/math/config.hh",
     cmakelists = ["CMakeLists.txt"],
     defines = [
+        "IGN_DESIGNATION=math",
         "PROJECT_VERSION_MAJOR=%d" % (PROJECT_MAJOR),
-        "PROJECT_MAJOR_VERSION=%d" % (PROJECT_MAJOR),
-        "PROJECT_MINOR_VERSION=%d" % (PROJECT_MINOR),
-        "PROJECT_PATCH_VERSION=%d" % (PROJECT_PATCH),
+        "PROJECT_VERSION_MINOR=%d" % (PROJECT_MINOR),
+        "PROJECT_VERSION_PATCH=%d" % (PROJECT_PATCH),
         "PROJECT_VERSION=%d.%d" % (PROJECT_MAJOR, PROJECT_MINOR),
         "PROJECT_VERSION_FULL=%d.%d.%d" % (PROJECT_MAJOR, PROJECT_MINOR, PROJECT_PATCH),  # noqa
         "PROJECT_NAME_NO_VERSION=ignition-math",
@@ -83,11 +83,13 @@ public_headers_no_gen = [
     "include/ignition/math/Angle.hh",
     "include/ignition/math/AxisAlignedBox.hh",
     "include/ignition/math/Box.hh",
+    "include/ignition/math/Capsule.hh",
     "include/ignition/math/Color.hh",
     "include/ignition/math/Cylinder.hh",
     "include/ignition/math/DiffDriveOdometry.hh",
     "include/ignition/math/Filter.hh",
     "include/ignition/math/Frustum.hh",
+    "include/ignition/math/GaussMarkovProcess.hh",
     "include/ignition/math/Helpers.hh",
     "include/ignition/math/Inertial.hh",
     "include/ignition/math/Kmeans.hh",
@@ -121,6 +123,7 @@ public_headers_no_gen = [
     "include/ignition/math/Vector3Stats.hh",
     "include/ignition/math/Vector4.hh",
     "include/ignition/math/detail/Box.hh",
+    "include/ignition/math/detail/Capsule.hh",
     "include/ignition/math/detail/Cylinder.hh",
     "include/ignition/math/detail/Sphere.hh",
     "include/ignition/math/graph/Edge.hh",
@@ -174,6 +177,7 @@ cc_binary(
         "src/Color.cc",
         "src/DiffDriveOdometry.cc",
         "src/Frustum.cc",
+        "src/GaussMarkovProcess.cc",
         "src/Helpers.cc",
         "src/Kmeans.cc",
         "src/Material.cc",

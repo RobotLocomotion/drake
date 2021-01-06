@@ -1772,14 +1772,14 @@ TEST_F(SymbolicExpressionTest,
   EXPECT_PRED2(ExprEqual, arguments[1], the_arguments[1]);
 }
 
-TEST_F(SymbolicExpressionTest, UninterpretedFunction_Evaluate) {
+TEST_F(SymbolicExpressionTest, UninterpretedFunctionEvaluate) {
   const Expression uf1{uninterpreted_function("uf1", {})};
   const Expression uf2{uninterpreted_function("uf2", {var_x_, var_y_})};
   EXPECT_THROW(uf1.Evaluate(), std::runtime_error);
   EXPECT_THROW(uf2.Evaluate(), std::runtime_error);
 }
 
-TEST_F(SymbolicExpressionTest, UninterpretedFunction_Equal) {
+TEST_F(SymbolicExpressionTest, UninterpretedFunctionEqual) {
   const Expression uf1{uninterpreted_function("name1", {x_, y_ + z_})};
   const Expression uf2{uninterpreted_function("name1", {x_, y_ + z_})};
   EXPECT_TRUE(uf1.EqualTo(uf2));

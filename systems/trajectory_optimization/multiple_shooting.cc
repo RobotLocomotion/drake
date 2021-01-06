@@ -145,24 +145,28 @@ solvers::VectorXDecisionVariable MultipleShooting::GetSequentialVariableAtIndex(
                                                                     index));
 }
 
-void MultipleShooting::AddTimeIntervalBounds(double lower_bound,
-                                             double upper_bound) {
+solvers::Binding<solvers::BoundingBoxConstraint>
+MultipleShooting::AddTimeIntervalBounds(double lower_bound,
+                                        double upper_bound) {
   DRAKE_THROW_UNLESS(timesteps_are_decision_variables_);
-  AddBoundingBoxConstraint(lower_bound, upper_bound, h_vars_);
+  return AddBoundingBoxConstraint(lower_bound, upper_bound, h_vars_);
 }
 
-void MultipleShooting::AddEqualTimeIntervalsConstraints() {
+std::vector<solvers::Binding<solvers::LinearConstraint>>
+MultipleShooting::AddEqualTimeIntervalsConstraints() {
   DRAKE_THROW_UNLESS(timesteps_are_decision_variables_);
+  std::vector<solvers::Binding<solvers::LinearConstraint>> constraints;
   for (int i = 1; i < N_ - 1; i++) {
-    AddLinearConstraint(h_vars_(i - 1) == h_vars_(i));
+    constraints.push_back(AddLinearConstraint(h_vars_(i - 1) == h_vars_(i)));
   }
+  return constraints;
 }
 
-void MultipleShooting::AddDurationBounds(double lower_bound,
-                                         double upper_bound) {
+solvers::Binding<solvers::LinearConstraint> MultipleShooting::AddDurationBounds(
+    double lower_bound, double upper_bound) {
   DRAKE_THROW_UNLESS(timesteps_are_decision_variables_);
-  AddLinearConstraint(VectorXd::Ones(h_vars_.size()), lower_bound, upper_bound,
-                      h_vars_);
+  return AddLinearConstraint(VectorXd::Ones(h_vars_.size()), lower_bound,
+                             upper_bound, h_vars_);
 }
 
 solvers::Binding<solvers::VisualizationCallback>

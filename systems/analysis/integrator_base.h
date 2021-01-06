@@ -338,7 +338,8 @@ class IntegratorBase {
   // @}
 
   /**
-   @name Methods for weighting state variable errors (in the context of error control)
+   @name Methods for weighting state variable errors \
+         (in the context of error control)
    @anchor weighting-state-errors
    @{
    This group of methods describes how errors for state variables with

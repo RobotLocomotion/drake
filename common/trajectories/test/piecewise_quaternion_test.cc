@@ -6,6 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/math/wrap_to.h"
 
 namespace drake {
@@ -98,6 +99,7 @@ GTEST_TEST(TestPiecewiseQuaternionSlerp,
       GenerateRandomQuaternions<double>(N, &generator);
 
   PiecewiseQuaternionSlerp<double> rot_spline(time, quat);
+  const auto rot_spline_deriv = rot_spline.MakeDerivative(1);
 
   // Check dense interpolated quaternions.
   for (double t = time.front(); t < time.back(); t += 0.01) {
@@ -105,6 +107,33 @@ GTEST_TEST(TestPiecewiseQuaternionSlerp,
   }
 
   EXPECT_TRUE(CheckClosest(rot_spline.get_quaternion_samples()));
+
+  // Test that I can build the equivalent spline incrementally.
+  PiecewiseQuaternionSlerp<double> incremental;
+  for (int i = 0; i < N; i++) {
+    incremental.Append(time[i], quat[i]);
+  }
+  incremental.is_approx(rot_spline, 0.0);
+  for (double t = time.front(); t < time.back(); t += 0.1) {
+    EXPECT_EQ(incremental.EvalDerivative(t), rot_spline.EvalDerivative(t));
+  }
+
+  // And again with the other types.
+  PiecewiseQuaternionSlerp<double> incremental_rotation_matrices,
+      incremental_angle_axes;
+  for (int i = 0; i < N; i++) {
+    incremental_rotation_matrices.Append(time[i],
+                                         math::RotationMatrix<double>(quat[i]));
+    incremental_angle_axes.Append(time[i], AngleAxis<double>(quat[i]));
+  }
+  incremental_rotation_matrices.is_approx(rot_spline, 1e-14);
+  incremental_angle_axes.is_approx(rot_spline, 1e-14);
+  for (double t = time.front(); t < time.back(); t += 0.1) {
+    EXPECT_TRUE(CompareMatrices(incremental_rotation_matrices.EvalDerivative(t),
+              rot_spline.EvalDerivative(t), 1e-12));
+    EXPECT_TRUE(CompareMatrices(incremental_angle_axes.EvalDerivative(t),
+              rot_spline.EvalDerivative(t), 1e-12));
+  }
 }
 
 // Tests when the given quaternions are not "closest" to the previous one.
@@ -192,6 +221,44 @@ GTEST_TEST(TestPiecewiseQuaternionSlerp, TestIsApprox) {
   PiecewiseQuaternionSlerp<double> traj2(time, quat);
   EXPECT_FALSE(traj0.is_approx(traj2, 1e-7));
   EXPECT_TRUE(traj0.is_approx(traj2, 1e-5));
+}
+
+GTEST_TEST(TestPiecewiseQuaternionSlerp, TestDerivatives) {
+  std::vector<double> time = {0, 1.6, 2.32};
+  std::vector<double> ang = {1, 2.4 - 2 * M_PI, 5.3};
+  Vector3<double> axis = Vector3<double>(1, 2, 3).normalized();
+  std::vector<Quaternion<double>> quat(ang.size());
+  for (size_t i = 0; i < ang.size(); ++i) {
+    quat[i] = Quaternion<double>(AngleAxis<double>(ang[i], axis));
+  }
+
+  PiecewiseQuaternionSlerp<double> rot_spline(time, quat);
+
+  const auto zeroth_derivative = rot_spline.MakeDerivative(0);
+  const auto first_derivative = rot_spline.MakeDerivative(1);
+  const auto second_derivative = rot_spline.MakeDerivative(2);
+
+  for (double t = -1.0; t < 4.0; t += 0.234) {
+    // Test zeroth derivative.
+    EXPECT_TRUE(CompareMatrices(
+      rot_spline.value(t), zeroth_derivative->value(t), 1e-14));
+    EXPECT_TRUE(CompareMatrices(
+      rot_spline.value(t), rot_spline.EvalDerivative(t, 0), 1e-14));
+
+    // Test first derivative.
+    EXPECT_TRUE(CompareMatrices(
+      rot_spline.angular_velocity(t), first_derivative->value(t), 1e-14));
+    EXPECT_TRUE(CompareMatrices(
+      rot_spline.angular_velocity(t), rot_spline.EvalDerivative(t, 1),
+      1e-14));
+
+    // Test second derivative.
+    EXPECT_TRUE(CompareMatrices(
+      rot_spline.angular_acceleration(t), second_derivative->value(t), 1e-14));
+    EXPECT_TRUE(CompareMatrices(
+      rot_spline.angular_acceleration(t), rot_spline.EvalDerivative(t, 2),
+      1e-14));
+  }
 }
 
 }  // namespace

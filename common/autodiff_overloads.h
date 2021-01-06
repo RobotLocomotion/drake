@@ -177,7 +177,7 @@ struct dummy_value<Eigen::AutoDiffScalar<DerType>> {
 /// implementation of min/max function for AutoDiffScalar type
 /// (https://bitbucket.org/eigen/eigen/src/10a1de58614569c9250df88bdfc6402024687bc6/unsupported/Eigen/src/AutoDiff/AutoDiffScalar.h?at=default&fileviewer=file-view-default#AutoDiffScalar.h-546).
 template <typename DerType1, typename DerType2>
-inline Eigen::AutoDiffScalar<
+Eigen::AutoDiffScalar<
     typename Eigen::internal::remove_all<DerType1>::type::PlainObject>
 if_then_else(bool f_cond, const Eigen::AutoDiffScalar<DerType1>& x,
              const Eigen::AutoDiffScalar<DerType2>& y) {

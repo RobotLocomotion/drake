@@ -19,8 +19,11 @@ class TestAll(unittest.TestCase):
             warnings.filterwarnings(
                 "ignore", message="Matplotlib is building the font cache",
                 category=UserWarning)
+            warnings.filterwarnings(
+                "ignore", message=".* from 'collections.abc' is deprecated",
+                category=DeprecationWarning)
             import pydrake.all
-            self.assertEqual(len(w), 0, w)
+            self.assertEqual(len(w), 0, [x.message for x in w])
 
     def test_usage_no_all(self):
         from pydrake.common import FindResourceOrThrow
@@ -91,6 +94,10 @@ class TestAll(unittest.TestCase):
             "cos",
             # geometry
             "SceneGraph",
+            # yaml
+            "yaml_load_data",
+            # schema
+            "ToDistributionVector",
             # - render
             "CameraProperties",
             # lcm

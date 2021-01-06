@@ -11,7 +11,7 @@ if [[ "${EUID}" -ne 0 ]]; then
 fi
 
 if command -v conda &>/dev/null; then
-  echo 'WARNING: Anaconda is NOT supported. Please remove the Anaconda bin directory from the PATH.' >&2
+  echo 'WARNING: Anaconda is NOT supported for building and using the Drake Python bindings' >&2
 fi
 
 apt-get update
@@ -24,11 +24,12 @@ if [[ "${codename}" != 'bionic' && "${codename}" != 'focal' ]]; then
   exit 2
 fi
 
-apt-get install --no-install-recommends $(tr '\n' ' ' <<EOF
+apt-get install --no-install-recommends $(cat <<EOF
 build-essential
 cmake
 pkg-config
 EOF
 )
 
-apt-get install --no-install-recommends $(cat "${BASH_SOURCE%/*}/packages-${codename}.txt" | tr '\n' ' ')
+packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}.txt")
+apt-get install --no-install-recommends ${packages}

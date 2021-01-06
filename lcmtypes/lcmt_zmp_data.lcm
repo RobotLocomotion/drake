@@ -1,5 +1,8 @@
 package drake;
 
+// DRAKE DEPRECATED: This message is unused within Drake and therefore will be
+// removed on or after 2021-04-01.
+
 struct lcmt_zmp_data {
   // The timestamp in milliseconds.
   int64_t timestamp;

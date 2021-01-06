@@ -1,0 +1,94 @@
+# -*- mode: python -*-
+# vi: set ft=python :
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "schema",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":rotation",
+        ":stochastic",
+        ":transform",
+    ],
+)
+
+drake_cc_library(
+    name = "rotation",
+    srcs = ["rotation.cc"],
+    hdrs = ["rotation.h"],
+    deps = [
+        ":stochastic",
+        "//common:name_value",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "stochastic",
+    srcs = ["stochastic.cc"],
+    hdrs = ["stochastic.h"],
+    deps = [
+        "//common:essential",
+        "//common:name_value",
+        "//common:random",
+        "//common:symbolic",
+        "//common:unused",
+    ],
+)
+
+drake_cc_library(
+    name = "transform",
+    srcs = ["transform.cc"],
+    hdrs = ["transform.h"],
+    deps = [
+        ":rotation",
+        ":stochastic",
+        "//common:name_value",
+        "//math:geometric_transform",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "rotation_test",
+    deps = [
+        ":rotation",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/yaml:yaml_read_archive",
+        "//common/yaml:yaml_write_archive",
+    ],
+)
+
+drake_cc_googletest(
+    name = "stochastic_test",
+    deps = [
+        ":stochastic",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:symbolic_test_util",
+        "//common/yaml:yaml_read_archive",
+        "//common/yaml:yaml_write_archive",
+    ],
+)
+
+drake_cc_googletest(
+    name = "transform_test",
+    deps = [
+        ":transform",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:symbolic_test_util",
+        "//common/yaml:yaml_read_archive",
+    ],
+)
+
+add_lint_tests()

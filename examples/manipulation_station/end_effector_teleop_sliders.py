@@ -9,8 +9,8 @@ import numpy as np
 
 from pydrake.examples.manipulation_station import (
     ManipulationStation, ManipulationStationHardwareInterface,
-    CreateClutterClearingYcbObjectList)
-from pydrake.geometry import ConnectDrakeVisualizer
+    CreateClutterClearingYcbObjectList, SchunkCollisionModel)
+from pydrake.geometry import DrakeVisualizer
 from pydrake.manipulation.simple_ui import SchunkWsgButtons
 from pydrake.manipulation.planner import (
     DifferentialInverseKinematicsParameters)
@@ -19,7 +19,8 @@ from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (BasicVector, DiagramBuilder,
                                        LeafSystem)
 from pydrake.systems.lcm import LcmPublisherSystem
-from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
+from pydrake.systems.meshcat_visualizer import (
+    ConnectMeshcatVisualizer, MeshcatVisualizer)
 from pydrake.systems.primitives import FirstOrderLowPassFilter, SignalLogger
 from pydrake.systems.sensors import ImageToLcmImageArrayT, PixelType
 from pydrake.systems.planar_scenegraph_visualizer import \
@@ -200,7 +201,10 @@ def main():
         '--setup', type=str, default='manipulation_class',
         help="The manipulation station setup to simulate. ",
         choices=['manipulation_class', 'clutter_clearing', 'planar'])
-
+    parser.add_argument(
+        '--schunk_collision_model', type=str, default='box',
+        help="The Schunk collision model to use for simulation. ",
+        choices=['box', 'box_plus_fingertip_spheres'])
     MeshcatVisualizer.add_argparse_argument(parser)
     args = parser.parse_args()
 
@@ -212,20 +216,28 @@ def main():
     else:
         station = builder.AddSystem(ManipulationStation())
 
+        if args.schunk_collision_model == "box":
+            schunk_model = SchunkCollisionModel.kBox
+        elif args.schunk_collision_model == "box_plus_fingertip_spheres":
+            schunk_model = SchunkCollisionModel.kBoxPlusFingertipSpheres
+
         # Initializes the chosen station type.
         if args.setup == 'manipulation_class':
-            station.SetupManipulationClassStation()
+            station.SetupManipulationClassStation(
+                schunk_model=schunk_model)
             station.AddManipulandFromFile(
                 "drake/examples/manipulation_station/models/"
                 + "061_foam_brick.sdf",
                 RigidTransform(RotationMatrix.Identity(), [0.6, 0, 0]))
         elif args.setup == 'clutter_clearing':
-            station.SetupClutterClearingStation()
+            station.SetupClutterClearingStation(
+                schunk_model=schunk_model)
             ycb_objects = CreateClutterClearingYcbObjectList()
             for model_file, X_WObject in ycb_objects:
                 station.AddManipulandFromFile(model_file, X_WObject)
         elif args.setup == 'planar':
-            station.SetupPlanarIiwaStation()
+            station.SetupPlanarIiwaStation(
+                schunk_model=schunk_model)
             station.AddManipulandFromFile(
                 "drake/examples/manipulation_station/models/"
                 + "061_foam_brick.sdf",
@@ -237,19 +249,20 @@ def main():
         # rendering only works with drake-visualizer. Without this check,
         # running this code in a docker container produces libGL errors.
         if args.meshcat:
-            meshcat = builder.AddSystem(MeshcatVisualizer(
-                station.get_scene_graph(), zmq_url=args.meshcat,
-                open_browser=args.open_browser))
-            builder.Connect(station.GetOutputPort("pose_bundle"),
-                            meshcat.get_input_port(0))
+            meshcat = ConnectMeshcatVisualizer(
+                builder, output_port=station.GetOutputPort("geometry_query"),
+                zmq_url=args.meshcat, open_browser=args.open_browser)
+            if args.setup == 'planar':
+                meshcat.set_planar_viewpoint()
+
         elif args.setup == 'planar':
             pyplot_visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(
                 station.get_scene_graph()))
             builder.Connect(station.GetOutputPort("pose_bundle"),
                             pyplot_visualizer.get_input_port(0))
         else:
-            ConnectDrakeVisualizer(builder, station.get_scene_graph(),
-                                   station.GetOutputPort("pose_bundle"))
+            DrakeVisualizer.AddToBuilder(builder,
+                                         station.GetOutputPort("query_object"))
             image_to_lcm_image_array = builder.AddSystem(
                 ImageToLcmImageArrayT())
             image_to_lcm_image_array.set_name("converter")

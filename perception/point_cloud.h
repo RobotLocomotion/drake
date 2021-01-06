@@ -79,8 +79,8 @@ class PointCloud final {
   /// Represents an invalid or uninitialized value.
   static constexpr T kDefaultValue = std::numeric_limits<T>::quiet_NaN();
   static constexpr C kDefaultColor{};
-  static inline bool IsDefaultValue(T value) { return std::isnan(value); }
-  static inline bool IsInvalidValue(T value) { return !std::isfinite(value); }
+  static bool IsDefaultValue(T value) { return std::isnan(value); }
+  static bool IsInvalidValue(T value) { return !std::isfinite(value); }
 
   /// Constructs a point cloud of a given `new_size`, with the prescribed
   /// `fields`. If `kDescriptors` is one of the fields, then

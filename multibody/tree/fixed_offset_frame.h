@@ -81,22 +81,41 @@ class FixedOffsetFrame final : public Frame<T> {
   math::RigidTransform<T> CalcPoseInBodyFrame(
       const systems::Context<T>& context) const override {
     // X_BF = X_BP * X_PF
-    return parent_frame_.CalcOffsetPoseInBody(context, X_PF_.cast<T>());
+    const systems::BasicVector<T>& X_PF_parameter =
+        context.get_numeric_parameter(X_PF_parameter_index_);
+    return parent_frame_.CalcOffsetPoseInBody(
+        context,
+        math::RigidTransform<T>(Eigen::Map<const Eigen::Matrix<T, 3, 4>>(
+            X_PF_parameter.get_value().data())));
   }
 
   math::RotationMatrix<T> CalcRotationMatrixInBodyFrame(
       const systems::Context<T>& context) const override {
     // R_BF = R_BP * R_PF
-    const math::RotationMatrix<double>& R_PF = X_PF_.rotation();
-    return parent_frame_.CalcOffsetRotationMatrixInBody(context,
-                                                        R_PF.cast<T>());
+    const systems::BasicVector<T>& X_PF_parameter =
+        context.get_numeric_parameter(X_PF_parameter_index_);
+    return parent_frame_.CalcOffsetRotationMatrixInBody(
+        context,
+        math::RotationMatrix<T>(Eigen::Map<const Eigen::Matrix<T, 3, 4>>(
+                                    X_PF_parameter.get_value().data())
+                                    .template block<3, 3>(0, 0)));
   }
 
+  void SetPoseInBodyFrame(systems::Context<T>* context,
+                          const math::RigidTransform<T>& X_PF) const {
+    systems::BasicVector<T>& X_PF_parameter =
+        context->get_mutable_numeric_parameter(X_PF_parameter_index_);
+    X_PF_parameter.set_value(
+        Eigen::Map<const VectorX<T>>(X_PF.GetAsMatrix34().data(), 12, 1));
+  }
+
+  /// @returns The default fixed pose in the body frame.
   math::RigidTransform<T> GetFixedPoseInBodyFrame() const override {
     // X_BF = X_BP * X_PF
     return parent_frame_.GetFixedOffsetPoseInBody(X_PF_.cast<T>());
   }
 
+  /// @returns The default rotation matrix of this fixed pose in the body frame.
   math::RotationMatrix<T> GetFixedRotationMatrixInBodyFrame() const override {
     // R_BF = R_BP * R_PF
     const math::RotationMatrix<double>& R_PF = X_PF_.rotation();
@@ -126,6 +145,18 @@ class FixedOffsetFrame final : public Frame<T> {
   /// @}
 
  private:
+  // Implementation for MultibodyElement::DoDeclareParameters().
+  // FixedOffsetFrame declares a single parameter for its RigidTransform.
+  void DoDeclareParameters(
+      internal::MultibodyTreeSystem<T>* tree_system) final {
+    // Declare parent classes' parameters
+    Frame<T>::DoDeclareParameters(tree_system);
+    X_PF_parameter_index_ = this->DeclareNumericParameter(
+        tree_system,
+        systems::BasicVector<T>(Eigen::Map<const VectorX<T>>(
+            X_PF_.template cast<T>().GetAsMatrix34().data(), 12, 1)));
+  }
+
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
   std::unique_ptr<Frame<ToScalar>> TemplatedDoCloneToScalar(
@@ -137,6 +168,10 @@ class FixedOffsetFrame final : public Frame<T> {
   // Spatial transform giving the fixed pose of this frame F measured in the
   // parent frame P.
   const math::RigidTransform<double> X_PF_;
+
+  // System parameter indices for `this` frame's RigidTransform stored in a
+  // context.
+  systems::NumericParameterIndex X_PF_parameter_index_;
 };
 
 }  // namespace multibody

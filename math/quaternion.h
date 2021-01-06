@@ -17,6 +17,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/math/rotation_matrix.h"
@@ -107,61 +108,6 @@ typename Derived1::Scalar quatDiffAxisInvar(
   auto r = quatDiff(q1, q2);
   return -2.0 + 2 * r(0) * r(0) +
          2 * pow(u(0) * r(1) + u(1) * r(2) + u(2) * r(3), 2);
-}
-
-/**
- * Q = Slerp(q1, q2, f) Spherical linear interpolation between two quaternions
- *   This function uses the implementation given in Algorithm 8 of [1].
- *
- * @param q1   Initial quaternion (w, x, y, z)
- * @param q2   Final quaternion (w, x, y, z)
- * @param interpolation_parameter between 0 and 1 (inclusive)
- * @retval Q   Interpolated quaternion(s). 4-by-1 vector.
- *
- * [1] Kuffner, J.J., "Effective sampling and distance metrics for 3D rigid
- * body path planning," Robotics and Automation, 2004. Proceedings. ICRA '04.
- * 2004 IEEE International Conference on , vol.4, no., pp.3993, 3998 Vol.4,
- * April 26-May 1, 2004
- * doi: 10.1109/ROBOT.2004.1308895
- */
-template <typename Derived1, typename Derived2, typename Scalar>
-Vector4<Scalar> Slerp(const Eigen::MatrixBase<Derived1>& q1,
-                      const Eigen::MatrixBase<Derived2>& q2,
-                      const Scalar& interpolation_parameter) {
-  // TODO(hongkai.dai@tri.global): Switch to Eigen's Quaternion when we fix
-  // the range problem in Eigen
-  using std::acos;
-  using std::sin;
-
-  // Compute the quaternion inner product
-  auto lambda = (q1.transpose() * q2).value();
-  int q2_sign;
-  if (lambda < Scalar(0)) {
-    // The quaternions are pointing in opposite directions, so use the
-    // equivalent alternative representation for q2
-    lambda = -lambda;
-    q2_sign = -1;
-  } else {
-    q2_sign = 1;
-  }
-
-  // Calculate interpolation factors
-  // TODO(tkoolen): do we really want an epsilon so small?
-  Scalar r, s;
-  if (std::abs(1.0 - lambda) < Eigen::NumTraits<Scalar>::epsilon()) {
-    // The quaternions are nearly parallel, so use linear interpolation
-    r = 1.0 - interpolation_parameter;
-    s = interpolation_parameter;
-  } else {
-    Scalar alpha = acos(lambda);
-    Scalar gamma = 1.0 / sin(alpha);
-    r = std::sin((1.0 - interpolation_parameter) * alpha) * gamma;
-    s = std::sin(interpolation_parameter * alpha) * gamma;
-  }
-
-  auto ret = (q1 * r).eval();
-  ret += q2 * (q2_sign * s);
-  return ret;
 }
 
 /**
@@ -402,7 +348,7 @@ bool IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB(
 }
 
 namespace internal {
-/**
+/*
  * Given a unit-length quaternion, convert this quaternion to angle-axis
  * representation. Note that we always choose the angle to be within [0, pi].
  * This function is the same as Eigen::AngleAxis<T>(Eigen::Quaternion<T> z),

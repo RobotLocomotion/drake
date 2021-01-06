@@ -31,8 +31,6 @@ drake_cc_binary(
         "//systems/primitives:demultiplexer",
         "//systems/primitives:multiplexer",
         "@gflags",
-        "@lcmtypes_bot2_core",
-        "@lcmtypes_robotlocomotion",
     ],
 )
 
@@ -47,7 +45,7 @@ drake_cc_binary(
     deps = [
         "//common:add_text_logging_gflags",
         "//common:find_resource",
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//geometry:scene_graph",
         "//manipulation/kinova_jaco",
         "//multibody/parsing",
@@ -71,8 +69,6 @@ drake_cc_binary(
         "//manipulation/util:move_ik_demo_base",
         "//math:geometric_transform",
         "@lcm",
-        "@lcmtypes_bot2_core",
-        "@lcmtypes_robotlocomotion",
     ],
 )
 

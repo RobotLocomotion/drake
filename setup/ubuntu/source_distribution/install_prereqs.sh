@@ -8,15 +8,51 @@
 
 set -euo pipefail
 
+with_doc_only=0
+with_kcov=0
+with_maintainer_only=0
+with_test_only=1
+
+while [ "${1:-}" != "" ]; do
+  case "$1" in
+    # Install prerequisites that are only needed to build documentation,
+    # i.e., those prerequisites that are dependencies of bazel { build, run }
+    # { //doc:gen_sphinx, //bindings/pydrake/doc:gen_sphinx, //doc:doxygen }
+    --with-doc-only)
+      with_doc_only=1
+      ;;
+    # Install the kcov code coverage analysis tool from the
+    # drake-apt.csail.mit.edu apt repository on Ubuntu 18.04 (Bionic). Ignored
+    # on Ubuntu 20.04 (Focal) where kcov is always installed from the Ubuntu
+    # "universe" apt repository.
+    --with-kcov)
+      with_kcov=1
+      ;;
+    # Install prerequisites that are only needed to run select maintainer
+    # scripts. Most developers will not need to install these dependencies.
+    --with-maintainer-only)
+      with_maintainer_only=1
+      ;;
+    # Do NOT install prerequisites that are only needed to build and/or run
+    # unit tests, i.e., those prerequisites that are not dependencies of
+    # bazel { build, run } //:install.
+    --without-test-only)
+      with_test_only=0
+      ;;
+    *)
+      echo 'Invalid command line argument' >&2
+      exit 3
+  esac
+  shift
+done
+
 if [[ "${EUID}" -ne 0 ]]; then
   echo 'ERROR: This script must be run as root' >&2
   exit 1
 fi
 
-apt-get install --no-install-recommends $(tr '\n' ' ' <<EOF
-apt-transport-https
+apt-get install --no-install-recommends $(cat <<EOF
 ca-certificates
-gnupg
 wget
 EOF
 )
@@ -25,18 +61,22 @@ codename=$(lsb_release -sc)
 
 # On Bionic, developers must opt-in to kcov support; it comes in with the
 # non-standard package name kcov-35 via a Drake-specific PPA.
-if [[ "${codename}" == 'bionic' ]] &&
-    [[ "$#" -eq 1 ]] &&
-    [[ "$1" == "--with-kcov" ]]; then
-  wget -O - https://drake-apt.csail.mit.edu/drake.pub.gpg | apt-key add
-  echo "deb [arch=amd64] https://drake-apt.csail.mit.edu/${codename} ${codename} main" > /etc/apt/sources.list.d/drake.list
+if [[ "${codename}" == 'bionic' ]] && [[ "${with_kcov}" -eq 1 ]]; then
+  apt-get install --no-install-recommends gnupg
+  apt-key adv --fetch-keys https://drake-apt.csail.mit.edu/drake.pub.gpg
+  echo "deb [arch=amd64] https://drake-apt.csail.mit.edu/${codename} ${codename} main" \
+    > /etc/apt/sources.list.d/drake.list
   apt-get update
   apt-get install --no-install-recommends kcov-35
 fi
 
 apt-get update
-apt-get install --no-install-recommends $(cat "${BASH_SOURCE%/*}/packages-${codename}.txt" | tr '\n' ' ')
+packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}.txt")
+apt-get install --no-install-recommends ${packages}
 
+# Ensure that we have available a locale that supports UTF-8 for generating a
+# C++ header containing Python API documentation during the build.
+apt-get install --no-install-recommends locales
 locale-gen en_US.UTF-8
 
 if [[ "${codename}" == 'focal' ]]; then
@@ -47,6 +87,23 @@ if [[ "${codename}" == 'focal' ]]; then
   else
     echo "/usr/bin/python is already installed"
   fi
+fi
+
+if [[ "${with_doc_only}" -eq 1 ]]; then
+  packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}-doc-only.txt")
+  apt-get install --no-install-recommends ${packages}
+fi
+
+if [[ "${with_test_only}" -eq 1 ]]; then
+  packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}-test-only.txt")
+  # Suppress Python 3.8 warnings when installing python3-pandas on Focal.
+  PYTHONWARNINGS=ignore::SyntaxWarning \
+    apt-get install --no-install-recommends ${packages}
+fi
+
+if [[ "${with_maintainer_only}" -eq 1 ]]; then
+  packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}-maintainer-only.txt")
+  apt-get install --no-install-recommends ${packages}
 fi
 
 dpkg_install_from_wget() {
@@ -88,7 +145,16 @@ dpkg_install_from_wget() {
   rm "${tmpdeb}"
 }
 
+# Install bazel package dependencies (these may duplicate dependencies of
+# drake).
+apt-get install --no-install-recommends $(cat <<EOF
+g++
+unzip
+zlib1g-dev
+EOF
+)
+
 dpkg_install_from_wget \
-  bazel 3.0.0 \
-  https://releases.bazel.build/3.0.0/release/bazel_3.0.0-linux-x86_64.deb \
-  dfa79c10bbfa39cd778e1813a273fd3236beb495497baa046f26d393c58bdc35
+  bazel 3.7.0 \
+  https://releases.bazel.build/3.7.0/release/bazel_3.7.0-linux-x86_64.deb \
+  2fc8dfb85328112a9d67f614e33026be74c2ac95645ed8e88896366eaa3d8fc3

@@ -8,7 +8,6 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
 #include "drake/math/rigid_transform.h"
@@ -42,11 +41,6 @@ class PoseBundle {
   int get_num_poses() const;
   const math::RigidTransform<T>& get_transform(int index) const;
   void set_transform(int index, const math::RigidTransform<T>& pose);
-
-  DRAKE_DEPRECATED("2020-09-01", "Please use get_transform()")
-  const Isometry3<T> get_pose(int index) const;
-  DRAKE_DEPRECATED("2020-09-01", "Please use set_transform()")
-  void set_pose(int index, const Isometry3<T>& pose);
 
   const FrameVelocity<T>& get_velocity(int index) const;
   void set_velocity(int index, const FrameVelocity<T>& velocity);

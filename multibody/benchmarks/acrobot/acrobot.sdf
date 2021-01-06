@@ -1,9 +1,10 @@
-<sdf version='1.6'>
-  <model name='acrobot'>
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="acrobot">
     <!-- This sdf file produces a model with the default parameters documented
          in AcrobotParameters in make_acrobot_plant.h.
          They MUST be kept in sync. -->
-    <link name='Link1'>
+    <link name="Link1">
       <!-- The origin of the Link1 frame is defined to be coincident with
            the origin of the x-z plane in the world frame. -->
       <pose>0 0.15 0 0 0 0</pose>
@@ -12,14 +13,18 @@
         <mass>1</mass>
         <!-- This inertia is based on a solid cylinder with
              radius=0.001 meters and height=1.0 meters. -->
-	<!-- For this model we could make izz = 0 however, sdformat will throw
-	     an exception. -->
+        <!-- For this model we could make izz = 0 however, sdformat will throw
+             an exception. -->
         <inertia>
-          <ixx>0.083</ixx><iyy>0.083</iyy><izz>5e-7</izz>
-          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+          <ixx>0.083</ixx>
+          <iyy>0.083</iyy>
+          <izz>5e-7</izz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
         </inertia>
       </inertial>
-      <visual name='Link1_visual'>
+      <visual name="Link1_visual">
         <pose>0 0 -0.5 0 0 0</pose>
         <geometry>
           <cylinder>
@@ -32,9 +37,8 @@
         </material>
       </visual>
       <!-- A visual to show the link's pivot point -->
-      <visual name='Link1_pivot_visual'>
+      <visual name="Link1_pivot_visual">
         <!-- Pose of the sphere used for visual in Link1's frame -->
-        <pose>0 0 0 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>0.125</radius>
@@ -45,11 +49,11 @@
         </material>
       </visual>
     </link>
-    <joint name='ShoulderJoint' type='revolute'>
+    <joint name="ShoulderJoint" type="revolute">
       <child>Link1</child>
       <parent>world</parent>
       <axis>
-        <xyz>0 1 0</xyz>
+        <xyz expressed_in="__model__">0 1 0</xyz>
         <limit>
           <!-- Drake parses a zero effort joint as an un-actuated joint. -->
           <effort>0</effort>
@@ -57,10 +61,9 @@
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
-    <link name='Link2'>
+    <link name="Link2">
       <!-- The origin of the Link2 frame is defined to be coincident with
            the origin of the x-z plane in the elbow joint frame. -->
       <pose>0 0.25 -1 0 0 0</pose>
@@ -72,11 +75,15 @@
         <!-- For this model we could make izz = 0 however, sdformat will throw
              an exception. -->
         <inertia>
-          <ixx>0.33</ixx><iyy>0.33</iyy><izz>5e-7</izz>
-          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+          <ixx>0.33</ixx>
+          <iyy>0.33</iyy>
+          <izz>5e-7</izz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
         </inertia>
       </inertial>
-      <visual name='Link2_visual'>
+      <visual name="Link2_visual">
         <pose>0 0 -1 0 0 0</pose>
         <geometry>
           <cylinder>
@@ -89,13 +96,12 @@
         </material>
       </visual>
     </link>
-    <joint name='ElbowJoint' type='revolute'>
+    <joint name="ElbowJoint" type="revolute">
       <parent>Link1</parent>
       <child>Link2</child>
       <!-- Pose X_CJ of the joint frame J in the frame C of the child link -->
-      <pose>0 0 0 0 0 0</pose>
       <axis>
-        <xyz>0 1 0</xyz>
+        <xyz expressed_in="__model__">0 1 0</xyz>
         <limit>
           <!-- No limit provided. sdformat defaults to -1, which we parse as
                an actuated joint. -->
@@ -103,7 +109,6 @@
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
   </model>

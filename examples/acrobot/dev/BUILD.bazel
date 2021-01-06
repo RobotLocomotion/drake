@@ -25,7 +25,7 @@ drake_cc_binary(
     deps = [
         "//common:add_text_logging_gflags",
         "//common:name_value",
-        "//common/schema/dev:stochastic",
+        "//common/schema:stochastic",
         "//common/yaml:yaml_read_archive",
         "//common/yaml:yaml_write_archive",
         "//examples/acrobot:acrobot_plant",

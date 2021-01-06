@@ -39,7 +39,8 @@ class FixedInputPortTest : public ::testing::Test {
  protected:
   void SetUp() override {
     port0_value_ = &context_.FixInputPort(
-        InputPortIndex(0), Value<BasicVector<double>>({5.0, 6.0}));
+        InputPortIndex(0), Value<BasicVector<double>>(
+                               Eigen::Vector2d(5.0, 6.0)));
 
     port1_value_ = &context_.FixInputPort(
         InputPortIndex(1), Value<std::string>("foo"));
@@ -122,8 +123,8 @@ TEST_F(FixedInputPortTest, RepeatedFixInputPortUsesSameTracker) {
   const DependencyTicket old_port1_value_ticket = port1_value_->ticket();
 
   // Replace the value object for output port 1.
-  const FixedInputPortValue& new_port1_value =
-      context_.FixInputPort(InputPortIndex(1), Value<std::string>("bar"));
+  const FixedInputPortValue& new_port1_value = context_.FixInputPort(
+      InputPortIndex(1), Value<std::string>("bar"));
 
   // The new value object should have the same ticket & tracker as the old one.
   EXPECT_EQ(new_port1_value.ticket(), old_port1_value_ticket);

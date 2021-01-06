@@ -1,5 +1,6 @@
-<sdf version='1.7'>
-  <model name='four_bar'>
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="four_bar">
     <!--
     This sdf file produces a model of a planar four bar linkage.
     See the README for more details on the modelling done in this file.
@@ -72,10 +73,9 @@
    fixed axis of the world frame. Please see the README for a detailed
    diagram with configuration angles that satisfy the loop closure equation.
     -->
-    <link name='A'>
+    <link name="A">
       <!-- The frame A measured in the world frame, X_WA is the identity. This 
       link is also called 'Crank' in the diagram in README.md -->
-      <pose>0 0 0 0 0 0</pose>
       <inertial>
         <!-- Acm (A's center of mass) is located at the midpoint of the 4 meter long link. -->
         <pose>2 0 0 0 0 0</pose>
@@ -86,11 +86,13 @@
           <ixx>0.08333333333333334</ixx>
           <iyy>29.46666666666666</iyy>
           <izz>29.416666666666668</izz>
-          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
         </inertia>
       </inertial>
       <!-- A skinny red box along the Ax axis -->
-      <visual name='A_visual'>
+      <visual name="A_visual">
         <pose>2 0 0 0 0 0</pose>
         <geometry>
           <box>
@@ -103,7 +105,7 @@
       </visual>
       <!-- A visual representing the revolute joint between the world and
        link A. -->
-      <visual name='A_pivot_visual'>
+      <visual name="A_pivot_visual">
         <!-- Rotation around Ax by 90° = π/2 radians ≈ 1.57079632679 -->
         <pose>0 0 0 1.57079632679 0 0</pose>
         <geometry>
@@ -117,8 +119,7 @@
         </material>
       </visual>
     </link>
-
-    <link name='B'>
+    <link name="B">
       <!-- The frame B measured in A, X_AB, is a translation along the Ax
       axis, and a small translation along the Ay (revolute) axis for visual
       purposes. This link is also called 'Coupler' in the diagram in README.md -->
@@ -133,14 +134,18 @@
           <ixx>0.08333333333333334</ixx>
           <iyy>29.46666666666666</iyy>
           <izz>29.416666666666668</izz>
-          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
         </inertia>
       </inertial>
       <!-- A skinny blue box along the Bx axis -->
-      <visual name='B_visual'>
+      <visual name="B_visual">
         <pose>2 0 0 0 0 0</pose>
         <geometry>
-          <box><size>4.2 0.1 0.2</size></box>
+          <box>
+            <size>4.2 0.1 0.2</size>
+          </box>
         </geometry>
         <material>
           <diffuse>0 0 1 1</diffuse>
@@ -148,7 +153,7 @@
       </visual>
       <!-- A visual representing the revolute joint between
       link A and link B.  -->
-      <visual name='B_pivot_visual'>
+      <visual name="B_pivot_visual">
         <!-- Rotation around Bx by 90° = π/2 radians ≈ 1.57079632679 -->
         <pose>0 -0.05 0 1.57079632679 0 0</pose>
         <geometry>
@@ -162,7 +167,7 @@
         </material>
       </visual>
       <!-- A visual representing the 'Coupler-Point' P -->
-      <visual name='CouplerPoint'>
+      <visual name="CouplerPoint">
         <!-- Translation down Bx by 2 and down Bz by -2 -->
         <pose relative_to="B">2 0 -2 0 0 0</pose>
         <geometry>
@@ -175,8 +180,7 @@
         </material>
       </visual>
     </link>
-
-    <link name='C'>
+    <link name="C">
       <!-- The frame C measured in W, X_WC, is a translation along the Wx
       axis, and a small translation along the Wy (revolute) axis for visual
       purposes. This link is also called 'Rocker' in the diagram in README.md -->
@@ -191,14 +195,18 @@
           <ixx>0.08333333333333334</ixx>
           <iyy>29.46666666666666</iyy>
           <izz>29.416666666666668</izz>
-          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
         </inertia>
       </inertial>
       <!-- A skinny yellow box along the Bx axis -->
-      <visual name='C_visual'>
+      <visual name="C_visual">
         <pose>2 0 0 0 0 0</pose>
         <geometry>
-          <box><size>4.2 0.1 0.2</size></box>
+          <box>
+            <size>4.2 0.1 0.2</size>
+          </box>
         </geometry>
         <material>
           <diffuse>1 1 0 1</diffuse>
@@ -206,7 +214,7 @@
       </visual>
       <!-- A visual representing the revolute joint between the world
       and link C.  -->
-      <visual name='C_pivot_visual'>
+      <visual name="C_pivot_visual">
         <!-- Rotation around Cx by 90° = π/2 radians ≈ 1.57079632679 -->
         <pose>0 0 0 1.57079632679 0 0</pose>
         <geometry>
@@ -220,8 +228,7 @@
         </material>
       </visual>
     </link>
-
-    <joint name='joint_WA' type='revolute'>
+    <joint name="joint_WA" type="revolute">
       <child>A</child>
       <parent>world</parent>
       <axis>
@@ -231,7 +238,7 @@
           See the README for more details.
         -->
         <initial_position>1.318116071652818</initial_position>
-        <xyz>0 1 0</xyz>
+        <xyz expressed_in="__model__">0 1 0</xyz>
         <limit>
           <!-- No limit provided. sdformat defaults to -1, which we parse as
                an actuated joint. -->
@@ -239,11 +246,9 @@
         <dynamics>
           <damping>0.0</damping>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
-
-    <joint name='joint_AB' type='revolute'>
+    <joint name="joint_AB" type="revolute">
       <child>B</child>
       <parent>A</parent>
       <axis>
@@ -253,7 +258,7 @@
           See the README for more details.
         -->
         <initial_position>1.8234765819369751</initial_position>
-        <xyz>0 1 0</xyz>
+        <xyz expressed_in="__model__">0 1 0</xyz>
         <limit>
           <!-- An effort of 0 is parsed as an unactuated joint. -->
           <effort>0</effort>
@@ -261,11 +266,9 @@
         <dynamics>
           <damping>0.0</damping>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
-
-    <joint name='joint_WC' type='revolute'>
+    <joint name="joint_WC" type="revolute">
       <child>C</child>
       <parent>world</parent>
       <axis>
@@ -275,7 +278,7 @@
           See the README for more details.
         -->
         <initial_position>1.8234765819369751</initial_position>
-        <xyz>0 1 0</xyz>
+        <xyz expressed_in="__model__">0 1 0</xyz>
         <limit>
           <!-- An effort of 0 is parsed as an unactuated joint. -->
           <effort>0</effort>
@@ -283,10 +286,8 @@
         <dynamics>
           <damping>0.0</damping>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
-
     <!-- 
       A frame at the end of the B link, down the Bx axis. The frame is
       rotated so that the z of Bc_bushing is aligned with the By axis. This is
@@ -297,7 +298,6 @@
       <!-- This frame is rotated relative from link B, around Bx, by -90° = -π/2 radians ≈ -1.57079632679 -->
       <pose relative_to="B">4 0 0 -1.57079632679 0 0</pose>
     </frame>
-
     <!-- 
       A frame at the end of the C link, down the Cx axis. The frame is
       rotated so that the z of Cb_bushing is aligned with the Cy axis. This is
@@ -308,6 +308,5 @@
       <!-- This frame is rotated relative from link C, around Cx, by -90° = -π/2 radians ≈ -1.57079632679 -->
       <pose relative_to="C">4 0 0 -1.57079632679 0 0</pose>
     </frame>
-
   </model>
 </sdf>

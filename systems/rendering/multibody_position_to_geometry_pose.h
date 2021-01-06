@@ -73,16 +73,6 @@ class MultibodyPositionToGeometryPose final : public LeafSystem<T> {
   /** Returns true if this system owns its MultibodyPlant. */
   bool owns_plant() const { return owned_plant_ != nullptr; }
 
-  /** Returns the multibody position input port. */
-  const InputPort<T>& get_input_port() const {
-    return LeafSystem<T>::get_input_port(0);
-  }
-
-  /** Returns the geometry::FramePoseVector output port. */
-  const OutputPort<T>& get_output_port() const {
-    return LeafSystem<T>::get_output_port(0);
-  }
-
  private:
   // Configure the input/output ports and prepare for calculation.
   // @pre plant_ must reference a valid MBP.

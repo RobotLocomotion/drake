@@ -1,11 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<sdf version="1.6">
+<?xml version="1.0"?>
+<sdf version="1.7">
   <model name="thin_box">
     <link name="base_link">
-      <pose frame="">0 0 0 0 0 0</pose>
       <inertial>
         <!-- The COM offset from the defined origin (m) -->
-        <pose frame="">7.9737e-03 6.8264e-03 5.1174e-03 0 0 0</pose>
+        <pose>7.9737e-03 6.8264e-03 5.1174e-03 0 0 0</pose>
         <mass>52.78e-3</mass>
         <inertia>
           <ixx>5.20e-06</ixx>
@@ -17,7 +16,7 @@
         </inertia>
       </inertial>
       <collision name="handle_collision">
-        <pose frame="">-0.031 0.007 0.005 0 -0.05 0</pose>
+        <pose>-0.031 0.007 0.005 0 -0.05 0</pose>
         <geometry>
           <box>
             <size>0.115 0.01 0.0025</size>
@@ -33,16 +32,15 @@
         </surface>
       </collision>
       <collision name="base_collision">
-        <pose frame="">0.067 0.007 0.0115 0 -0.45 0</pose>
+        <pose>0.067 0.007 0.0115 0 -0.45 0</pose>
         <geometry>
           <box>
             <size>0.047 0.042 0.0025</size>
           </box>
         </geometry>
       </collision>
-
       <visual name="visual_1">
-        <pose frame="">-0.031 0.007 0.005 0 -0.05 0</pose>
+        <pose>-0.031 0.007 0.005 0 -0.05 0</pose>
         <geometry>
           <box>
             <size>0.115 0.01 0.0025</size>
@@ -53,7 +51,7 @@
         </material>
       </visual>
       <visual name="visual_2">
-        <pose frame="">0.067 0.007 0.0115 0 -0.45 0</pose>
+        <pose>0.067 0.007 0.0115 0 -0.45 0</pose>
         <geometry>
           <box>
             <size>0.047 0.042 0.0025</size>
@@ -63,11 +61,10 @@
           <diffuse>0 1.00 0 1.0</diffuse>
         </material>
       </visual>
-
       <!-- Add spheres to the corners of the collision boxes, to avoid
       bouncing. -->
       <collision name="handle_corner_col_0">
-        <pose frame="">-0.0885 0.002 0.00225 0 0 0</pose>
+        <pose>-0.0885 0.002 0.00225 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>2e-3</radius>
@@ -75,7 +72,7 @@
         </geometry>
       </collision>
       <collision name="handle_corner_col_1">
-        <pose frame="">-0.0885 0.012 0.00225 0 0 0</pose>
+        <pose>-0.0885 0.012 0.00225 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>2e-3</radius>
@@ -83,7 +80,7 @@
         </geometry>
       </collision>
       <collision name="base_corner_col_0">
-        <pose frame="">0.088 0.028 0.022 0 0 0</pose>
+        <pose>0.088 0.028 0.022 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>2e-3</radius>
@@ -91,7 +88,7 @@
         </geometry>
       </collision>
       <collision name="base_corner_col_1">
-        <pose frame="">0.088 -0.0145 0.022 0 0 0</pose>
+        <pose>0.088 -0.0145 0.022 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>2e-3</radius>
@@ -99,7 +96,7 @@
         </geometry>
       </collision>
       <collision name="base_corner_col_2">
-        <pose frame="">0.046 -0.014 0.001 0 0 0</pose>
+        <pose>0.046 -0.014 0.001 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>2e-3</radius>
@@ -107,18 +104,16 @@
         </geometry>
       </collision>
       <collision name="base_corner_col_3">
-        <pose frame="">0.046 0.028 0.001 0 0 0</pose>
+        <pose>0.046 0.028 0.001 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>2e-3</radius>
           </sphere>
         </geometry>
       </collision>
-
-
       <!-- Add collision spheres along the handle-->
       <collision name="handle_sphere_col_0">
-        <pose frame="">-0.080 0.007 0.005 0 0 0</pose>
+        <pose>-0.080 0.007 0.005 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>2e-3</radius>
@@ -126,7 +121,7 @@
         </geometry>
       </collision>
       <collision name="handle_sphere_col_1">
-        <pose frame="">-0.070 0.007 0.005 0 0 0</pose>
+        <pose>-0.070 0.007 0.005 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>2e-3</radius>
@@ -134,7 +129,7 @@
         </geometry>
       </collision>
       <collision name="handle_sphere_col_2">
-        <pose frame="">-0.060 0.007 0.005 0 0 0</pose>
+        <pose>-0.060 0.007 0.005 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>2e-3</radius>
@@ -142,7 +137,7 @@
         </geometry>
       </collision>
       <collision name="handle_sphere_col_3">
-        <pose frame="">-0.050 0.007 0.005 0 0 0</pose>
+        <pose>-0.050 0.007 0.005 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>2e-3</radius>
@@ -150,7 +145,7 @@
         </geometry>
       </collision>
       <collision name="handle_sphere_col_4">
-        <pose frame="">-0.040 0.007 0.005 0 0 0</pose>
+        <pose>-0.040 0.007 0.005 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>2e-3</radius>
@@ -158,7 +153,7 @@
         </geometry>
       </collision>
       <collision name="handle_sphere_col_5">
-        <pose frame="">-0.030 0.007 0.005 0 0 0</pose>
+        <pose>-0.030 0.007 0.005 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>2e-3</radius>
@@ -166,7 +161,7 @@
         </geometry>
       </collision>
       <collision name="handle_sphere_col_6">
-        <pose frame="">-0.020 0.007 0.005 0 0 0</pose>
+        <pose>-0.020 0.007 0.005 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>2e-3</radius>
@@ -174,7 +169,7 @@
         </geometry>
       </collision>
       <collision name="handle_sphere_col_7">
-        <pose frame="">-0.010 0.007 0.005 0 0 0</pose>
+        <pose>-0.010 0.007 0.005 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>2e-3</radius>
@@ -182,7 +177,7 @@
         </geometry>
       </collision>
       <collision name="handle_sphere_col_8">
-        <pose frame="">-0 0.007 0.005 0 0 0</pose>
+        <pose>-0 0.007 0.005 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>2e-3</radius>
@@ -190,7 +185,7 @@
         </geometry>
       </collision>
       <collision name="handle_sphere_col_9">
-        <pose frame="">0.010 0.007 0.005 0 0 0</pose>
+        <pose>0.010 0.007 0.005 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>2e-3</radius>
@@ -198,7 +193,7 @@
         </geometry>
       </collision>
       <collision name="handle_sphere_col_10">
-        <pose frame="">0.020 0.007 0.005 0 0 0</pose>
+        <pose>0.020 0.007 0.005 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>2e-3</radius>

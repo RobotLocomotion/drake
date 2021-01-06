@@ -27,12 +27,6 @@ template <typename T>
 PendulumPlant<T>::~PendulumPlant() = default;
 
 template <typename T>
-const systems::InputPort<T>& PendulumPlant<T>::get_input_port() const {
-  DRAKE_DEMAND(systems::LeafSystem<T>::num_input_ports() == 1);
-  return systems::LeafSystem<T>::get_input_port(0);
-}
-
-template <typename T>
 const systems::OutputPort<T>& PendulumPlant<T>::get_state_output_port() const {
   DRAKE_DEMAND(systems::LeafSystem<T>::num_output_ports() == 1);
   return systems::LeafSystem<T>::get_output_port(0);

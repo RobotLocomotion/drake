@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <memory>
+#include <stdexcept>
 
 #include <gtest/gtest.h>
 #include <sdf/sdf.hh>
@@ -21,9 +22,11 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
+#include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
+#include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/universal_joint.h"
 #include "drake/systems/framework/context.h"
 
@@ -44,6 +47,29 @@ using math::RollPitchYawd;
 using systems::Context;
 
 const double kEps = std::numeric_limits<double>::epsilon();
+
+// TODO(jwnimmer-tri) This unit test has a lot of copy-pasta, including these
+// helper functions as well as all their call sites below.  We should refactor
+// the plant, scene_graph, etc. into a test fixture for brevity.
+ModelInstanceIndex AddModelFromSdfFile(
+    const std::string& file_name,
+    const std::string& model_name,
+    const PackageMap& package_map,
+    MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph = nullptr) {
+  return AddModelFromSdf(
+      { .file_name = &file_name },
+      model_name, package_map, plant, scene_graph);
+}
+std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
+    const std::string& file_name,
+    const PackageMap& package_map,
+    MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph = nullptr) {
+  return AddModelsFromSdf(
+      { .file_name = &file_name },
+      package_map, plant, scene_graph);
+}
 
 // Verifies that the SDF loader can leverage a specified package map.
 GTEST_TEST(MultibodyPlantSdfParserTest, PackageMapSpecified) {
@@ -246,6 +272,158 @@ PlantAndSceneGraph ParseTestString(const std::string& inner) {
   drake::log()->debug("inner: {}", inner);
   AddModelsFromSdfFile(filename, package_map, pair.plant.get());
   return pair;
+}
+
+GTEST_TEST(SdfParser, EntireInertialTagOmitted) {
+  // Test that parsing a link with no inertial tag yields the expected result
+  // (mass = 1, ixx = iyy = izz = 1, ixy = ixz = iyz = 0).
+  // TODO(avalenzu): Re-visit this if the SDF spec changes to allow for more
+  // parsimonious specification of massless links. See #13903 for more details.
+  PlantAndSceneGraph pair = ParseTestString(R"""(
+<model name='entire_inertial_tag_omitted'>
+  <link name='entire_inertial_tag_omitted'/>
+</model>)""");
+  const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
+    &pair.plant->GetBodyByName("entire_inertial_tag_omitted"));
+  EXPECT_EQ(body->get_default_mass(), 1.);
+  EXPECT_TRUE(body->default_rotational_inertia().get_moments().isOnes());
+  EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());
+}
+
+GTEST_TEST(SdfParser, InertiaTagOmitted) {
+  // Test that parsing a link with no inertia tag yields the expected result
+  // (mass as specified, ixx = iyy = izz = 1, ixy = ixz = iyz = 0).
+  // TODO(avalenzu): Re-visit this if the SDF spec changes to allow for more
+  // parsimonious specification of massless links. See #13903 for more details.
+  PlantAndSceneGraph pair = ParseTestString(R"""(
+<model name='inertia_tag_omitted'>
+  <link name='inertia_tag_omitted'>
+    <inertial>
+      <mass>2</mass>
+    </inertial>
+  </link>
+</model>)""");
+  const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
+    &pair.plant->GetBodyByName("inertia_tag_omitted"));
+  EXPECT_EQ(body->get_default_mass(), 2.);
+  EXPECT_TRUE(body->default_rotational_inertia().get_moments().isOnes());
+  EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());
+}
+
+GTEST_TEST(SdfParser, MassTagOmitted) {
+  // Test that parsing a link with no mass tag yields the expected result
+  // (mass = 1, inertia as specified).
+  // TODO(avalenzu): Re-visit this if the SDF spec changes to allow for more
+  // parsimonious specification of massless links. See #13903 for more details.
+  PlantAndSceneGraph pair = ParseTestString(R"""(
+<model name='mass_tag_omitted'>
+  <link name='mass_tag_omitted'>
+    <inertial>
+      <inertia>
+        <ixx>1</ixx>
+        <ixy>0.1</ixy>
+        <ixz>0.1</ixz>
+        <iyy>1</iyy>
+        <iyz>0.1</iyz>
+        <izz>1</izz>
+      </inertia>
+    </inertial>
+  </link>
+</model>)""");
+  const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
+    &pair.plant->GetBodyByName("mass_tag_omitted"));
+  EXPECT_EQ(body->get_default_mass(), 1.);
+  EXPECT_TRUE(body->default_rotational_inertia().get_moments().isOnes());
+  EXPECT_EQ(body->default_rotational_inertia().get_products(),
+            Vector3d::Constant(0.1));
+}
+
+GTEST_TEST(SdfParser, MasslessBody) {
+  // Test that massless bodies can be parsed.
+  PlantAndSceneGraph pair = ParseTestString(R"""(
+<model name='has_massless_link'>
+  <link name='massless_link'>
+    <inertial>
+      <mass>0</mass>
+      <inertia>
+        <ixx>0</ixx>
+        <ixy>0</ixy>
+        <ixz>0</ixz>
+        <iyy>0</iyy>
+        <iyz>0</iyz>
+        <izz>0</izz>
+      </inertia>
+    </inertial>
+  </link>
+</model>)""");
+  const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
+    &pair.plant->GetBodyByName("massless_link"));
+  EXPECT_EQ(body->get_default_mass(), 0.);
+  EXPECT_TRUE(body->default_rotational_inertia().get_moments().isZero());
+  EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());}
+
+GTEST_TEST(SdfParser, PointMass) {
+  // Test that point masses don't get sent through the massless body branch.
+  PlantAndSceneGraph pair = ParseTestString(R"""(
+<model name='point_mass'>
+  <link name='point_mass'>
+    <inertial>
+      <mass>1</mass>
+      <inertia>
+        <ixx>0</ixx>
+        <ixy>0</ixy>
+        <ixz>0</ixz>
+        <iyy>0</iyy>
+        <iyz>0</iyz>
+        <izz>0</izz>
+      </inertia>
+    </inertial>
+  </link>
+</model>)""");
+  const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
+    &pair.plant->GetBodyByName("point_mass"));
+  EXPECT_EQ(body->get_default_mass(), 1.);
+  EXPECT_TRUE(body->default_rotational_inertia().get_moments().isZero());
+  EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());
+}
+
+namespace {
+  void ParseZeroMassNonZeroInertia() {
+    ParseTestString(R"""(
+<model name='bad'>
+  <link name='bad'>
+    <inertial>
+      <mass>0</mass>
+      <inertia>
+        <ixx>1</ixx>
+        <ixy>0</ixy>
+        <ixz>0</ixz>
+        <iyy>1</iyy>
+        <iyz>0</iyz>
+        <izz>1</izz>
+      </inertia>
+    </inertial>
+  </link>
+</model>)""");
+  }
+}  // namespace
+
+GTEST_TEST(SdfParser, ZeroMassNonZeroInertia) {
+  // Test that attempting to parse links with zero mass and non-zero inertia
+  // fails.
+  if (!::drake::kDrakeAssertIsArmed) {
+    EXPECT_THROW(ParseZeroMassNonZeroInertia(), std::runtime_error);
+  }
+}
+
+GTEST_TEST(SdfParserDeathTest, ZeroMassNonZeroInertia) {
+  // Test that attempting to parse links with zero mass and non-zero inertia
+  // fails.
+  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+  if (::drake::kDrakeAssertIsArmed) {
+    EXPECT_DEATH(ParseZeroMassNonZeroInertia(),
+                 ".*condition 'mass > 0' failed");
+  }
 }
 
 GTEST_TEST(SdfParser, FloatingBodyPose) {
@@ -572,6 +750,19 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointParsingTest) {
   EXPECT_TRUE(CompareMatrices(universal_joint.velocity_lower_limits(),
                               neg_inf2));
   EXPECT_TRUE(CompareMatrices(universal_joint.velocity_upper_limits(), inf2));
+
+  // Planar joint
+  DRAKE_EXPECT_NO_THROW(plant.GetJointByName<PlanarJoint>("planar_joint"));
+  const PlanarJoint<double>& planar_joint =
+      plant.GetJointByName<PlanarJoint>("planar_joint");
+  EXPECT_EQ(planar_joint.name(), "planar_joint");
+  EXPECT_EQ(planar_joint.parent_body().name(), "link6");
+  EXPECT_EQ(planar_joint.child_body().name(), "link7");
+  EXPECT_TRUE(CompareMatrices(planar_joint.damping(), Vector3d::Constant(0.1)));
+  EXPECT_TRUE(CompareMatrices(planar_joint.position_lower_limits(), neg_inf3));
+  EXPECT_TRUE(CompareMatrices(planar_joint.position_upper_limits(), inf3));
+  EXPECT_TRUE(CompareMatrices(planar_joint.velocity_lower_limits(), neg_inf3));
+  EXPECT_TRUE(CompareMatrices(planar_joint.velocity_upper_limits(), inf3));
 }
 
 // Verifies that the SDF parser parses the joint actuator limit correctly.
@@ -716,7 +907,7 @@ void FailWithInvalidWorld(const std::string& inner) {
       ParseTestString(inner),
       std::runtime_error,
       R"([\s\S]*(attached_to|relative_to) name\[world\] specified by frame )"
-      R"(with name\[.*\] does not match a link, joint, or )"
+      R"(with name\[.*\] does not match a nested model, link, joint, or )"
       R"(frame name in model with name\[bad\][\s\S]*)");
 }
 
@@ -900,8 +1091,9 @@ GTEST_TEST(SdfParser, BushingParsing) {
         <drake:bushing_force_damping>10 11 12</drake:bushing_force_damping>
       </drake:linear_bushing_rpy>
     </model>)"),
-      std::runtime_error,
-      "Unable to find the <drake:bushing_frameC> tag.");
+                              std::runtime_error,
+                              "<drake:linear_bushing_rpy>: Unable to find the "
+                              "<drake:bushing_frameC> child tag.");
 
   // Test non-existent frame
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -922,12 +1114,12 @@ GTEST_TEST(SdfParser, BushingParsing) {
       </drake:linear_bushing_rpy>
     </model>)"),
       std::runtime_error,
-      "Frame: frameZ specified for <drake:bushing_frameC> does not exist in "
+      "<drake:linear_bushing_rpy>: Frame 'frameZ' specified for "
+      "<drake:bushing_frameC> does not exist in "
       "the model.");
 
   // Test missing constants tag
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ParseTestString(R"(
+  DRAKE_EXPECT_THROWS_MESSAGE(ParseTestString(R"(
     <model name='BushingModel'>
       <link name='A'/>
       <link name='C'/>
@@ -942,8 +1134,69 @@ GTEST_TEST(SdfParser, BushingParsing) {
         <drake:bushing_force_damping>10 11 12</drake:bushing_force_damping>
       </drake:linear_bushing_rpy>
     </model>)"),
-      std::runtime_error,
-      "Unable to find the <drake:bushing_torque_damping> tag.");
+                              std::runtime_error,
+                              "<drake:linear_bushing_rpy>: Unable to find the "
+                              "<drake:bushing_torque_damping> child tag.");
+}
+
+GTEST_TEST(SdfParser, ReflectedInertiaParametersParsing) {
+  // Common SDF string with format options for the two custom tags.
+  const std::string test_string = R"""(
+    <model name='ReflectedInertiaModel'>
+      <link name='A'/>
+      <link name='B'/>
+      <joint name='revolute_AB' type='revolute'>
+        <child>A</child>
+        <parent>B</parent>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <limit>
+            <effort>-1</effort>
+          </limit>
+        </axis>
+        {0}
+        {1}
+      </joint>
+    </model>)""";
+
+  // Test successful parsing of both parameters.
+  {
+    auto [plant, scene_graph] = ParseTestString(fmt::format(test_string,
+        "<drake:rotor_inertia>1.5</drake:rotor_inertia>",
+        "<drake:gear_ratio>300.0</drake:gear_ratio>"));
+
+    const JointActuator<double>& actuator =
+        plant->GetJointActuatorByName("revolute_AB");
+
+    EXPECT_EQ(actuator.default_rotor_inertia(), 1.5);
+    EXPECT_EQ(actuator.default_gear_ratio(), 300.0);
+  }
+
+  // Test successful parsing of rotor_inertia and default value for
+  // gear_ratio.
+  {
+    auto [plant, scene_graph] = ParseTestString(fmt::format(
+        test_string, "<drake:rotor_inertia>1.5</drake:rotor_inertia>", ""));
+
+    const JointActuator<double>& actuator =
+        plant->GetJointActuatorByName("revolute_AB");
+
+    EXPECT_EQ(actuator.default_rotor_inertia(), 1.5);
+    EXPECT_EQ(actuator.default_gear_ratio(), 1.0);
+  }
+
+  // Test successful parsing of gear_ratio and default value for
+  // rotor_inertia.
+  {
+    auto [plant, scene_graph] = ParseTestString(fmt::format(
+        test_string, "", "<drake:gear_ratio>300.0</drake:gear_ratio>"));
+
+    const JointActuator<double>& actuator =
+        plant->GetJointActuatorByName("revolute_AB");
+
+    EXPECT_EQ(actuator.default_rotor_inertia(), 0.0);
+    EXPECT_EQ(actuator.default_gear_ratio(), 300.0);
+  }
 }
 
 }  // namespace

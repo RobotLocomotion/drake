@@ -74,16 +74,6 @@ class DiscreteTimeDelay final : public LeafSystem<T> {
 
   ~DiscreteTimeDelay() final = default;
 
-  /// Returns the sole input port.
-  const InputPort<T>& get_input_port() const {
-    return LeafSystem<T>::get_input_port(0);
-  }
-
-  /// Returns the sole output port.
-  const OutputPort<T>& get_output_port() const {
-    return LeafSystem<T>::get_output_port(0);
-  }
-
   /// (Advanced) Manually samples the input port and updates the state of the
   /// block, sliding the delay buffer forward and placing the sampled input at
   /// the end. This emulates an update event and is mostly useful for testing.

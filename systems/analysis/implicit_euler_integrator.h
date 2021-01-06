@@ -95,7 +95,7 @@ namespace systems {
  * constructing and factorizing matrices and by failing Newton-Raphson
  * iterations will be counted toward the error estimation statistics, because
  * the large step is performed first.
- * 
+ *
  * @note This integrator uses the integrator accuracy setting, even when run
  *       in fixed-step mode, to limit the error in the underlying Newton-Raphson
  *       process. See IntegratorBase::set_target_accuracy() for more info.
@@ -130,10 +130,10 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    * Returns the asymptotic order of the difference between the large and small
    * steps (from which the error estimate is computed), which is 2. That is, the
    * error estimate, `ε* = x̅ⁿ⁺¹ − x̃ⁿ⁺¹` has the property that `‖ε*‖ = O(h²)`,
-   * and it deviates from the true error, `ε`, by `‖ε − ε*‖ = O(h³)`. 
+   * and it deviates from the true error, `ε`, by `‖ε − ε*‖ = O(h³)`.
    *
    * ### Derivation of the asymptotic order
-   * 
+   *
    * This derivation is based on the same derivation for
    * VelocityImplicitEulerIntegrator, and so the equation numbers are from
    * there.

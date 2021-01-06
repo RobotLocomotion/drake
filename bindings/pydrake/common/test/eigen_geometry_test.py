@@ -119,6 +119,16 @@ class TestEigenGeometry(unittest.TestCase):
         numpy_compare.assert_float_equal(
                 q_AB_conj.wxyz(), [0.5, -0.5, -0.5, -0.5])
 
+        numpy_compare.assert_float_equal(
+            q_I.slerp(t=0, other=q_I).wxyz(), [1., 0, 0, 0])
+
+        # - Test shaping (#13885).
+        v = np.array([0., 0., 0.])
+        vs = np.array([[1., 2., 3.], [4., 5., 6.]]).T
+        self.assertEqual((q_AB @ v).shape, (3,))
+        self.assertEqual((q_AB @ v.reshape((3, 1))).shape, (3, 1))
+        self.assertEqual((q_AB @ vs).shape, (3, 2))
+
         # Test `type_caster`s.
         if T == float:
             value = test_util.create_quaternion()
@@ -200,6 +210,12 @@ class TestEigenGeometry(unittest.TestCase):
         numpy_compare.assert_float_equal(
             (X_AB.inverse() @ X_AB).matrix(), X_I_np)
         numpy_compare.assert_float_equal(X_AB @ p_BQ, p_AQ)
+        # - Test shaping (#13885).
+        v = np.array([0., 0., 0.])
+        vs = np.array([[1., 2., 3.], [4., 5., 6.]]).T
+        self.assertEqual((X_AB @ v).shape, (3,))
+        self.assertEqual((X_AB @ v.reshape((3, 1))).shape, (3, 1))
+        self.assertEqual((X_AB @ vs).shape, (3, 2))
 
         assert_pickle(self, X_AB, Isometry3.matrix, T=T)
 
@@ -268,6 +284,8 @@ class TestEigenGeometry(unittest.TestCase):
         numpy_compare.assert_equal(value.angle(), -value_sym.angle())
         numpy_compare.assert_equal(value.axis(), -value_sym.axis())
 
+        # N.B. AngleAxis does not support multiplication with vectors, so we
+        # need not test it here.
         def get_vector(value):
             return np.hstack((value.angle(), value.axis()))
 

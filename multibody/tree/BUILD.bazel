@@ -70,8 +70,7 @@ drake_cc_library(
         ":articulated_body_inertia",
         ":multibody_tree_topology",
         "//common:autodiff",
-        "//multibody/math:spatial_acceleration",
-        "//multibody/math:spatial_velocity",
+        "//multibody/math:spatial_algebra",
         "//systems/framework:leaf_context",
     ],
 )
@@ -103,6 +102,8 @@ drake_cc_library(
         "multibody_forces.cc",
         "multibody_tree.cc",
         "multibody_tree_system.cc",
+        "planar_joint.cc",
+        "planar_mobilizer.cc",
         "prismatic_joint.cc",
         "prismatic_mobilizer.cc",
         "quaternion_floating_mobilizer.cc",
@@ -139,6 +140,9 @@ drake_cc_library(
         "multibody_tree.h",
         "multibody_tree-inl.h",
         "multibody_tree_system.h",
+        "parameter_conversion.h",
+        "planar_joint.h",
+        "planar_mobilizer.h",
         "prismatic_joint.h",
         "prismatic_mobilizer.h",
         "quaternion_floating_mobilizer.h",
@@ -340,6 +344,7 @@ drake_cc_googletest(
     name = "spatial_inertia_test",
     deps = [
         ":spatial_inertia",
+        "//common/test_utilities:expect_no_throw",
         "//math:geometric_transform",
         "//math:gradient",
     ],
@@ -360,6 +365,15 @@ drake_cc_library(
     hdrs = ["test/mobilizer_tester.h"],
     deps = [
         ":tree",
+    ],
+)
+
+drake_cc_googletest(
+    name = "planar_mobilizer_test",
+    deps = [
+        ":mobilizer_tester",
+        ":tree",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -450,6 +464,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
+        "//multibody/plant",
         "//systems/framework",
     ],
 )
@@ -495,6 +510,14 @@ drake_cc_googletest(
     name = "ball_rpy_joint_test",
     deps = [
         ":tree",
+    ],
+)
+
+drake_cc_googletest(
+    name = "planar_joint_test",
+    deps = [
+        ":tree",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

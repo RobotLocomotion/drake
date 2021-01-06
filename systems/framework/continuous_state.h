@@ -1,20 +1,13 @@
 #pragma once
 
 #include <memory>
-#include <stdexcept>
-#include <string>
-#include <unordered_set>
-#include <utility>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
-#include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/scalar_conversion_traits.h"
-#include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/vector_base.h"
 
 namespace drake {
@@ -87,14 +80,7 @@ class ContinuousState {
   /// Constructs a ContinuousState for a system that does not have second-order
   /// structure. The `q` and `v` partitions are empty; all of the state `xc` is
   /// miscellaneous continuous state `z`.
-  explicit ContinuousState(std::unique_ptr<VectorBase<T>> state) {
-    state_ = std::move(state);
-    generalized_position_.reset(new Subvector<T>(state_.get()));
-    generalized_velocity_.reset(new Subvector<T>(state_.get()));
-    misc_continuous_state_.reset(
-        new Subvector<T>(state_.get(), 0, state_->size()));
-    DRAKE_ASSERT_VOID(DemandInvariants());
-  }
+  explicit ContinuousState(std::unique_ptr<VectorBase<T>> state);
 
   /// Constructs a ContinuousState that exposes second-order structure.
   ///
@@ -106,32 +92,12 @@ class ContinuousState {
   /// We require that `num_q ≥ num_v` and that the sum of the partition sizes
   /// adds up to the size of `state`.
   ContinuousState(std::unique_ptr<VectorBase<T>> state, int num_q, int num_v,
-                  int num_z) {
-    state_ = std::move(state);
-    if (state_->size() != num_q + num_v + num_z) {
-      throw std::out_of_range(
-          "Continuous state of size " + std::to_string(state_->size()) +
-          "cannot be partitioned as" + " q " + std::to_string(num_q) + " v " +
-          std::to_string(num_v) + " z " + std::to_string(num_z));
-    }
-    if (num_v > num_q) {
-      throw std::logic_error("Number of velocity variables " +
-                             std::to_string(num_v) +
-                             " must not exceed number of position variables " +
-                             std::to_string(num_q));
-    }
-    generalized_position_.reset(new Subvector<T>(state_.get(), 0, num_q));
-    generalized_velocity_.reset(new Subvector<T>(state_.get(), num_q, num_v));
-    misc_continuous_state_.reset(
-        new Subvector<T>(state_.get(), num_q + num_v, num_z));
-    DRAKE_ASSERT_VOID(DemandInvariants());
-  }
+                  int num_z);
 
   /// Constructs a zero-length ContinuousState.
-  ContinuousState()
-      : ContinuousState(std::make_unique<BasicVector<T>>(0)) {}
+  ContinuousState();
 
-  virtual ~ContinuousState() {}
+  virtual ~ContinuousState();
 
   /// Creates a deep copy of this object with the same substructure but with all
   /// data owned by the copy. That is, if the original was a Diagram continuous
@@ -140,11 +106,7 @@ class ContinuousState {
   /// Context containing the original. The concrete type of the BasicVector
   /// underlying each leaf ContinuousState is preserved. See the class comments
   /// above for more information.
-  std::unique_ptr<ContinuousState<T>> Clone() const {
-    auto result = DoClone();
-    result->set_system_id(this->get_system_id());
-    return result;
-  }
+  std::unique_ptr<ContinuousState<T>> Clone() const;
 
   /// Returns the size of the entire continuous state vector, which is
   /// necessarily `num_q + num_v + num_z`.
@@ -251,13 +213,7 @@ class ContinuousState {
   ContinuousState(std::unique_ptr<VectorBase<T>> state,
                   std::unique_ptr<VectorBase<T>> q,
                   std::unique_ptr<VectorBase<T>> v,
-                  std::unique_ptr<VectorBase<T>> z)
-      : state_(std::move(state)),
-        generalized_position_(std::move(q)),
-        generalized_velocity_(std::move(v)),
-        misc_continuous_state_(std::move(z)) {
-    DRAKE_ASSERT_VOID(DemandInvariants());
-  }
+                  std::unique_ptr<VectorBase<T>> z);
 
   /// DiagramContinuousState must override this to maintain the necessary
   /// internal substructure, and to perform a deep copy so that the result
@@ -267,59 +223,11 @@ class ContinuousState {
   /// then the q, v, z Subvectors are created referencing it.
   /// The implementation should not set_system_id on the result, the caller
   /// will set an id on the state after this method returns.
-  virtual std::unique_ptr<ContinuousState> DoClone() const {
-    auto state = dynamic_cast<const BasicVector<T>*>(state_.get());
-    DRAKE_DEMAND(state != nullptr);
-    return std::make_unique<ContinuousState>(state->Clone(), num_q(), num_v(),
-                                             num_z());
-  }
+  virtual std::unique_ptr<ContinuousState> DoClone() const;
 
  private:
   // Demand that the representation invariants hold.
-  void DemandInvariants() const {
-    // Nothing is nullptr.
-    DRAKE_DEMAND(generalized_position_ != nullptr);
-    DRAKE_DEMAND(generalized_velocity_ != nullptr);
-    DRAKE_DEMAND(misc_continuous_state_ != nullptr);
-
-    // The sizes are consistent.
-    DRAKE_DEMAND(num_q() >= 0);
-    DRAKE_DEMAND(num_v() >= 0);
-    DRAKE_DEMAND(num_z() >= 0);
-    DRAKE_DEMAND(num_v() <= num_q());
-    const int num_total = (num_q() + num_v() + num_z());
-    DRAKE_DEMAND(state_->size() == num_total);
-
-    // The storage addresses of `state_` elements contain no duplicates.
-    std::unordered_set<const T*> state_element_pointers;
-    for (int i = 0; i < num_total; ++i) {
-      const T* element = &(state_->GetAtIndex(i));
-      state_element_pointers.emplace(element);
-    }
-    DRAKE_DEMAND(static_cast<int>(state_element_pointers.size()) == num_total);
-
-    // The storage addresses of (q, v, z) elements contain no duplicates, and
-    // are drawn from the set of storage addresses of `state_` elements.
-    // Therefore, the `state_` vector and (q, v, z) vectors form views into the
-    // same unique underlying data, just with different indexing.
-    std::unordered_set<const T*> qvz_element_pointers;
-    for (int i = 0; i < num_q(); ++i) {
-      const T* element = &(generalized_position_->GetAtIndex(i));
-      qvz_element_pointers.emplace(element);
-      DRAKE_DEMAND(state_element_pointers.count(element) == 1);
-    }
-    for (int i = 0; i < num_v(); ++i) {
-      const T* element = &(generalized_velocity_->GetAtIndex(i));
-      qvz_element_pointers.emplace(element);
-      DRAKE_DEMAND(state_element_pointers.count(element) == 1);
-    }
-    for (int i = 0; i < num_z(); ++i) {
-      const T* element = &(misc_continuous_state_->GetAtIndex(i));
-      qvz_element_pointers.emplace(element);
-      DRAKE_DEMAND(state_element_pointers.count(element) == 1);
-    }
-    DRAKE_DEMAND(static_cast<int>(qvz_element_pointers.size()) == num_total);
-  }
+  void DemandInvariants() const;
 
   // The entire continuous state vector.  May or may not own the underlying
   // data.

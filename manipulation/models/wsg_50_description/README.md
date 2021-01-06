@@ -1,6 +1,3 @@
-**WARNING** All of the *.urdf models and *.obj meshes in this package are
-deprecated and will be removed on 2020-11-01.
-
 Execute the following commands to regenerate the URDF files using `xacro`. Note
 that ROS Jade or newer must be used because the `xacro` scripts make use of more
 expressive conditional statements [1].

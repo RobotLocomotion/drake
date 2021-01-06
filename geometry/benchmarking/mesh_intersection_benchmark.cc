@@ -14,12 +14,11 @@ namespace internal {
 /* @defgroup mesh_intersection_benchmarks Mesh Intersection Benchmarks
  @ingroup proximity_queries
 
- The benchmark compares mesh intersection techniques between soft and rigid
- meshes.
+ The benchmark evaluates mesh intersection between soft and rigid meshes.
 
  It computes the contact surface formed from the intersection of an ellipsoid
- and a sphere both using and not using broad-phase culling (via a bounding
- volume hierarchy). Arguments include:
+ and a sphere using broad-phase culling (via a bounding volume hierarchy).
+ Arguments include:
  - __resolution__: An enumeration in the integer range from 0 to 3 that guides
    the level of mesh refinement, where 0 produces the coarsest meshes and 3
    produces the finest meshes.
@@ -61,63 +60,36 @@ CPU Caches:
   L2 Unified 256K (x28)
   L3 Unified 35840K (x2)
 Load Average: 21.52, 41.04, 26.99
-***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
-----------------------------------------------------------------------------------------------------
-Benchmark                                                          Time             CPU   Iterations   Line Number
-----------------------------------------------------------------------------------------------------
-MeshIntersectionBenchmark/WithoutBVH/0/4/0/min_time:2.000      0.903 ms        0.903 ms         3297   [1]
-MeshIntersectionBenchmark/WithoutBVH/1/4/0/min_time:2.000       5.74 ms         5.74 ms          456   [2]
-MeshIntersectionBenchmark/WithoutBVH/2/4/0/min_time:2.000       19.1 ms         19.1 ms          129   [3]
-MeshIntersectionBenchmark/WithoutBVH/3/4/0/min_time:2.000        530 ms          530 ms            5   [4]
-MeshIntersectionBenchmark/WithoutBVH/2/0/0/min_time:2.000       15.1 ms         15.1 ms          189   [5]
-MeshIntersectionBenchmark/WithoutBVH/2/1/0/min_time:2.000       15.4 ms         15.4 ms          178   [6]
-MeshIntersectionBenchmark/WithoutBVH/2/2/0/min_time:2.000       15.9 ms         15.9 ms          176   [7]
-MeshIntersectionBenchmark/WithoutBVH/2/3/0/min_time:2.000       18.3 ms         18.3 ms          150   [8]
-MeshIntersectionBenchmark/WithoutBVH/2/4/1/min_time:2.000       19.1 ms         19.1 ms          147   [9]
-MeshIntersectionBenchmark/WithoutBVH/2/4/2/min_time:2.000       19.0 ms         19.0 ms          147   [10]
-MeshIntersectionBenchmark/WithoutBVH/2/4/3/min_time:2.000       19.2 ms         19.2 ms          145   [11]
-MeshIntersectionBenchmark/WithoutBVH/2/3/1/min_time:2.000       17.9 ms         17.9 ms          156   [12]
-MeshIntersectionBenchmark/WithoutBVH/2/2/2/min_time:2.000       15.6 ms         15.6 ms          180   [13]
-MeshIntersectionBenchmark/___WithBVH/0/4/0/min_time:2.000      0.629 ms        0.629 ms         4408   [14]
-MeshIntersectionBenchmark/___WithBVH/1/4/0/min_time:2.000       2.15 ms         2.15 ms         1328   [15]
-MeshIntersectionBenchmark/___WithBVH/2/4/0/min_time:2.000       3.14 ms         3.14 ms          893   [16]
-MeshIntersectionBenchmark/___WithBVH/3/4/0/min_time:2.000       14.3 ms         14.3 ms          192   [17]
-MeshIntersectionBenchmark/___WithBVH/2/0/0/min_time:2.000      0.000 ms        0.000 ms     54932081   [18]
-MeshIntersectionBenchmark/___WithBVH/2/1/0/min_time:2.000      0.023 ms        0.023 ms       119450   [19]
-MeshIntersectionBenchmark/___WithBVH/2/2/0/min_time:2.000      0.119 ms        0.119 ms        23142   [20]
-MeshIntersectionBenchmark/___WithBVH/2/3/0/min_time:2.000       1.87 ms         1.87 ms         1486   [21]
-MeshIntersectionBenchmark/___WithBVH/2/4/1/min_time:2.000       2.95 ms         2.95 ms          944   [22]
-MeshIntersectionBenchmark/___WithBVH/2/4/2/min_time:2.000       3.15 ms         3.15 ms          894   [23]
-MeshIntersectionBenchmark/___WithBVH/2/4/3/min_time:2.000       3.21 ms         3.21 ms          871   [24]
-MeshIntersectionBenchmark/___WithBVH/2/3/1/min_time:2.000       1.94 ms         1.94 ms         1448   [25]
-MeshIntersectionBenchmark/___WithBVH/2/2/2/min_time:2.000      0.127 ms        0.127 ms        22007   [26]
+----------------------------------------------------------------------------------------------------                // NOLINT(*)
+Benchmark                                                          Time             CPU   Iterations   Line Number  // NOLINT(*)
+----------------------------------------------------------------------------------------------------                // NOLINT(*)
+MeshIntersectionBenchmark/RigidSoftMesh/0/4/0/min_time:2.000      0.629 ms        0.629 ms         4408   [14]         // NOLINT(*)
+MeshIntersectionBenchmark/RigidSoftMesh/1/4/0/min_time:2.000       2.15 ms         2.15 ms         1328   [15]         // NOLINT(*)
+MeshIntersectionBenchmark/RigidSoftMesh/2/4/0/min_time:2.000       3.14 ms         3.14 ms          893   [16]         // NOLINT(*)
+MeshIntersectionBenchmark/RigidSoftMesh/3/4/0/min_time:2.000       14.3 ms         14.3 ms          192   [17]         // NOLINT(*)
+MeshIntersectionBenchmark/RigidSoftMesh/2/0/0/min_time:2.000      0.000 ms        0.000 ms     54932081   [18]         // NOLINT(*)
+MeshIntersectionBenchmark/RigidSoftMesh/2/1/0/min_time:2.000      0.023 ms        0.023 ms       119450   [19]         // NOLINT(*)
+MeshIntersectionBenchmark/RigidSoftMesh/2/2/0/min_time:2.000      0.119 ms        0.119 ms        23142   [20]         // NOLINT(*)
+MeshIntersectionBenchmark/RigidSoftMesh/2/3/0/min_time:2.000       1.87 ms         1.87 ms         1486   [21]         // NOLINT(*)
+MeshIntersectionBenchmark/RigidSoftMesh/2/4/1/min_time:2.000       2.95 ms         2.95 ms          944   [22]         // NOLINT(*)
+MeshIntersectionBenchmark/RigidSoftMesh/2/4/2/min_time:2.000       3.15 ms         3.15 ms          894   [23]         // NOLINT(*)
+MeshIntersectionBenchmark/RigidSoftMesh/2/4/3/min_time:2.000       3.21 ms         3.21 ms          871   [24]         // NOLINT(*)
+MeshIntersectionBenchmark/RigidSoftMesh/2/3/1/min_time:2.000       1.94 ms         1.94 ms         1448   [25]         // NOLINT(*)
+MeshIntersectionBenchmark/RigidSoftMesh/2/2/2/min_time:2.000      0.127 ms        0.127 ms        22007   [26]         // NOLINT(*)
 Resulting contact surface sizes:
- - WithoutBVH/0/4/0: 93.76 m^2, 448 triangles
- - WithoutBVH/1/4/0: 93.76 m^2, 1592 triangles
- - WithoutBVH/2/4/0: 107.59 m^2, 2848 triangles
- - WithoutBVH/3/4/0: 111.67 m^2, 14336 triangles
- - WithoutBVH/2/0/0: 0.00 m^2, 0 triangles
- - WithoutBVH/2/1/0: 0.00 m^2, 0 triangles
- - WithoutBVH/2/2/0: 1.50 m^2, 58 triangles
- - WithoutBVH/2/3/0: 48.21 m^2, 2226 triangles
- - WithoutBVH/2/4/1: 106.41 m^2, 3804 triangles
- - WithoutBVH/2/4/2: 106.89 m^2, 3848 triangles
- - WithoutBVH/2/4/3: 107.44 m^2, 3808 triangles
- - WithoutBVH/2/3/1: 48.26 m^2, 2190 triangles
- - WithoutBVH/2/2/2: 1.52 m^2, 62 triangles
- - ___WithBVH/0/4/0: 93.76 m^2, 448 triangles
- - ___WithBVH/1/4/0: 93.76 m^2, 1592 triangles
- - ___WithBVH/2/4/0: 107.59 m^2, 2848 triangles
- - ___WithBVH/3/4/0: 111.67 m^2, 14336 triangles
- - ___WithBVH/2/0/0: 0.00 m^2, 0 triangles
- - ___WithBVH/2/1/0: 0.00 m^2, 0 triangles
- - ___WithBVH/2/2/0: 1.50 m^2, 58 triangles
- - ___WithBVH/2/3/0: 48.21 m^2, 2226 triangles
- - ___WithBVH/2/4/1: 106.41 m^2, 3804 triangles
- - ___WithBVH/2/4/2: 106.89 m^2, 3848 triangles
- - ___WithBVH/2/4/3: 107.44 m^2, 3808 triangles
- - ___WithBVH/2/3/1: 48.26 m^2, 2190 triangles
- - ___WithBVH/2/2/2: 1.52 m^2, 62 triangles
+ - RigidSoftMesh/0/4/0: 93.76 m^2, 448 triangles
+ - RigidSoftMesh/1/4/0: 93.76 m^2, 1592 triangles
+ - RigidSoftMesh/2/4/0: 107.59 m^2, 2848 triangles
+ - RigidSoftMesh/3/4/0: 111.67 m^2, 14336 triangles
+ - RigidSoftMesh/2/0/0: 0.00 m^2, 0 triangles
+ - RigidSoftMesh/2/1/0: 0.00 m^2, 0 triangles
+ - RigidSoftMesh/2/2/0: 1.50 m^2, 58 triangles
+ - RigidSoftMesh/2/3/0: 48.21 m^2, 2226 triangles
+ - RigidSoftMesh/2/4/1: 106.41 m^2, 3804 triangles
+ - RigidSoftMesh/2/4/2: 106.89 m^2, 3848 triangles
+ - RigidSoftMesh/2/4/3: 107.44 m^2, 3808 triangles
+ - RigidSoftMesh/2/3/1: 48.26 m^2, 2190 triangles
+ - RigidSoftMesh/2/2/2: 1.52 m^2, 62 triangles
 
  ```
 
@@ -130,9 +102,7 @@ Resulting contact surface sizes:
  MeshIntersectionBenchmark/TestName/resolution/contact_overlap/rotation_factor/min_time
  ```
 
-   - __TestName__: One of
-     - __WithoutBVH__: Computes the intersection without broad-phase culling.
-     - __WithBVH__: Computes the intersection with broad-phase culling.
+   - __TestName__: RigidSoftMesh
    - __resolution__: Affects the resolution of the ellipsoid and sphere
      meshes. Valid values must be one of [0, 1, 2, 3], where 0 produces the
      coarsest meshes and 3 produces the finest meshes. This is converted behind
@@ -164,22 +134,6 @@ Resulting contact surface sizes:
  compute the intersection. The `Iterations` indicates how often the action was
  performed to compute the average value. For more information see the [google
  benchmark documentation](https://github.com/google/benchmark).
-
- Now we can analyze the example output and draw some example inferences (not a
- complete set of valid inferences):
-
-   - The BVH is increasingly effective as mesh resolution increases.
-     - For a resolution parameter of 2, broad-phase culling improves performance
-       by a factor of ~6X (see [3] vs [16]), while at a resolution parameter of
-       3 (a finer mesh), it improves by a factor of ~37X (see [4] vs [17]).
-   - As expected, the BVH is increasingly effective as contact overlap is
-     reduced.
-     - At a contact overlap parameter of 4, i.e. a maximal contact surface,
-       broad-phase culling improves performance by a factor of ~6X (see [3] vs
-       [16]), while at a contact overlap parameter of 2, i.e. a minimal contact
-       surface, it improves performance by a factor of ~133X (see [7] vs [20]).
-   - The offset in axis alignment has an apparently negligible impact on
-     performance.
  */
 
 using Eigen::AngleAxis;
@@ -273,53 +227,23 @@ std::set<std::string> MeshIntersectionBenchmark::contact_surface_result_keys;
 std::vector<std::string>
     MeshIntersectionBenchmark::contact_surface_result_output;
 
-BENCHMARK_DEFINE_F(MeshIntersectionBenchmark, WithoutBVH)
+BENCHMARK_DEFINE_F(MeshIntersectionBenchmark, RigidSoftMesh)
 // NOLINTNEXTLINE(runtime/references)
 (benchmark::State& state) {
   SetupMeshes(state);
+  const auto bvh_S = Bvh<VolumeMesh<double>>(mesh_S_);
+  const auto bvh_R = Bvh<SurfaceMesh<double>>(mesh_R_);
   std::unique_ptr<SurfaceMesh<double>> surface_SR;
   std::unique_ptr<SurfaceMeshFieldLinear<double, double>> e_SR;
+  std::vector<Vector3<double>> grad_eM_Ms;
   for (auto _ : state) {
     SurfaceVolumeIntersector<double>().SampleVolumeFieldOnSurface(
-        field_S_, mesh_R_, X_SR_, &surface_SR, &e_SR);
+        field_S_, bvh_S, mesh_R_, bvh_R, X_SR_, &surface_SR, &e_SR,
+        &grad_eM_Ms);
   }
-  RecordContactSurfaceResult(surface_SR.get(), "WithoutBVH", state);
+  RecordContactSurfaceResult(surface_SR.get(), "RigidSoftMesh", state);
 }
-BENCHMARK_REGISTER_F(MeshIntersectionBenchmark, WithoutBVH)
-    ->Unit(benchmark::kMillisecond)
-    ->MinTime(2)
-    ->Args({0, 4, 0})   // 0 resolution, 4 contact overlap, 0 rotation factor.
-    ->Args({1, 4, 0})   // 1 resolution, 4 contact overlap, 0 rotation factor.
-    ->Args({2, 4, 0})   // 2 resolution, 4 contact overlap, 0 rotation factor.
-    ->Args({3, 4, 0})   // 3 resolution, 4 contact overlap, 0 rotation factor.
-    ->Args({2, 0, 0})   // 2 resolution, 0 contact overlap, 0 rotation factor.
-    ->Args({2, 1, 0})   // 2 resolution, 1 contact overlap, 0 rotation factor.
-    ->Args({2, 2, 0})   // 2 resolution, 2 contact overlap, 0 rotation factor.
-    ->Args({2, 3, 0})   // 2 resolution, 3 contact overlap, 0 rotation factor.
-    ->Args({2, 4, 1})   // 2 resolution, 4 contact overlap, 1 rotation factor.
-    ->Args({2, 4, 2})   // 2 resolution, 4 contact overlap, 2 rotation factor.
-    ->Args({2, 4, 3})   // 2 resolution, 4 contact overlap, 3 rotation factor.
-    ->Args({2, 3, 1})   // 2 resolution, 3 contact overlap, 1 rotation factor.
-    ->Args({2, 2, 2});  // 2 resolution, 2 contact overlap, 2 rotation factor.
-
-// This test name is prefixed with underscores so that the total number of
-// characters matches that of the first test, "WithoutBVH". This causes the
-// final output to line up and makes it much easier to read.
-BENCHMARK_DEFINE_F(MeshIntersectionBenchmark, ___WithBVH)
-// NOLINTNEXTLINE(runtime/references)
-(benchmark::State& state) {
-  SetupMeshes(state);
-  const auto bvh_S = BoundingVolumeHierarchy<VolumeMesh<double>>(mesh_S_);
-  const auto bvh_R = BoundingVolumeHierarchy<SurfaceMesh<double>>(mesh_R_);
-  std::unique_ptr<SurfaceMesh<double>> surface_SR;
-  std::unique_ptr<SurfaceMeshFieldLinear<double, double>> e_SR;
-  for (auto _ : state) {
-    SurfaceVolumeIntersector<double>().SampleVolumeFieldOnSurface(
-        field_S_, bvh_S, mesh_R_, bvh_R, X_SR_, &surface_SR, &e_SR);
-  }
-  RecordContactSurfaceResult(surface_SR.get(), "___WithBVH", state);
-}
-BENCHMARK_REGISTER_F(MeshIntersectionBenchmark, ___WithBVH)
+BENCHMARK_REGISTER_F(MeshIntersectionBenchmark, RigidSoftMesh)
     ->Unit(benchmark::kMillisecond)
     ->MinTime(2)
     ->Args({0, 4, 0})   // 0 resolution, 4 contact overlap, 0 rotation factor.

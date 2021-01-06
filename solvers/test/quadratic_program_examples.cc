@@ -432,7 +432,7 @@ void TestQPonUnitBallExample(const SolverInterface& solver) {
         SolverTypeConverter::IdToType(result.get_solver_id()).value();
     double tol = 1E-4;
     if (solver_type == SolverType::kMosek) {
-      // Regression from MOSEK 8.1 to MOSEK 9.0.
+      // Regression from MOSEK 8.1 to MOSEK 9.2.
       tol = 2E-4;
     }
     EXPECT_TRUE(CompareMatrices(x_value, x_expected, tol,
@@ -460,7 +460,8 @@ void TestQPonUnitBallExample(const SolverInterface& solver) {
   }
 }
 
-void TestQPDualSolution1(const SolverInterface& solver, double tol) {
+void TestQPDualSolution1(const SolverInterface& solver,
+                         const SolverOptions& solver_options, double tol) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>();
   auto constraint1 = prog.AddLinearConstraint(2 * x[0] + 3 * x[1], -2, 3);
@@ -469,8 +470,10 @@ void TestQPDualSolution1(const SolverInterface& solver, double tol) {
   prog.AddQuadraticCost(x[0] * x[0] + 2 * x[1] * x[1] + x[2] * x[2]);
   if (solver.available()) {
     MathematicalProgramResult result;
-    solver.Solve(prog, {}, {}, &result);
+    solver.Solve(prog, {}, solver_options, &result);
     EXPECT_TRUE(result.is_success());
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(x),
+                                Eigen::Vector3d(0, 1. / 11, 8. / 11.), tol));
     // At the optimal solution, the active constraints are
     // x[0] >= 0
     // x[1] + 4 * x[2] == 3
@@ -492,7 +495,7 @@ void TestQPDualSolution1(const SolverInterface& solver, double tol) {
     constraint2.evaluator()->set_bounds(Vector1d(3 + delta),
                                         Vector1d(3 + delta));
     MathematicalProgramResult result_updated;
-    solver.Solve(prog, {}, {}, &result_updated);
+    solver.Solve(prog, {}, solver_options, &result_updated);
     EXPECT_NEAR(
         (result_updated.get_optimal_cost() - result.get_optimal_cost()) / delta,
         dual_solution_expected, tol);
@@ -536,7 +539,8 @@ void TestQPDualSolution2(const SolverInterface& solver) {
   }
 }
 
-void TestQPDualSolution3(const SolverInterface& solver) {
+void TestQPDualSolution3(const SolverInterface& solver, double tol,
+                         double sensitivity_tol) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
   auto constraint = prog.AddBoundingBoxConstraint(-1, 2, x);
@@ -547,7 +551,7 @@ void TestQPDualSolution3(const SolverInterface& solver) {
     solver.Solve(prog, {}, {}, &result);
     EXPECT_TRUE(result.is_success());
     EXPECT_TRUE(
-        CompareMatrices(result.GetSolution(x), Eigen::Vector2d(2, -1), 1e-6));
+        CompareMatrices(result.GetSolution(x), Eigen::Vector2d(2, -1), tol));
     // At the optimal solution, the active constraints are
     // x[0] <= 2
     // x[1] >= -1
@@ -555,7 +559,7 @@ void TestQPDualSolution3(const SolverInterface& solver) {
     // dual solution for x[0] <= 2 is -6
     // dual solution for x[1] >= -1 is 6
     EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint),
-                                Eigen::Vector2d(-6, 6), 1e-6));
+                                Eigen::Vector2d(-6, 6), tol));
     // Now perturb the bounds a bit, the change of the optimal cost should match
     // with the dual solution.
     const double delta = 1e-5;
@@ -564,26 +568,28 @@ void TestQPDualSolution3(const SolverInterface& solver) {
     solver.Solve(prog, {}, {}, &result1);
     EXPECT_NEAR(
         (result1.get_optimal_cost() - result.get_optimal_cost()) / delta, -6,
-        2e-5);
+        sensitivity_tol);
     constraint.evaluator()->UpdateUpperBound(Eigen::Vector2d(2, 2 + delta));
     MathematicalProgramResult result2;
     solver.Solve(prog, {}, {}, &result2);
     // The dual solution for x[1] <= 2 is 0.
-    EXPECT_NEAR(result2.get_optimal_cost(), result.get_optimal_cost(), 2e-5);
+    EXPECT_NEAR(result2.get_optimal_cost(), result.get_optimal_cost(),
+                sensitivity_tol);
 
     constraint.evaluator()->set_bounds(Eigen::Vector2d(-1 + delta, -1),
                                        Eigen::Vector2d(2, 2));
     MathematicalProgramResult result3;
     solver.Solve(prog, {}, {}, &result3);
     // The dual solution for x[0] >= -1 is 0.
-    EXPECT_NEAR(result3.get_optimal_cost(), result.get_optimal_cost(), 2e-5);
+    EXPECT_NEAR(result3.get_optimal_cost(), result.get_optimal_cost(),
+                sensitivity_tol);
 
     constraint.evaluator()->UpdateLowerBound(Eigen::Vector2d(-1, -1 + delta));
     MathematicalProgramResult result4;
     solver.Solve(prog, {}, {}, &result4);
     EXPECT_NEAR(
         (result4.get_optimal_cost() - result.get_optimal_cost()) / delta, 6,
-        2e-5);
+        sensitivity_tol);
 
     // Now add more bounding box constraints (but with looser bounds than the -1
     // <= x <= 2 bound already imposed). The dual solution for these bounds
@@ -595,7 +601,7 @@ void TestQPDualSolution3(const SolverInterface& solver) {
     MathematicalProgramResult result5;
     solver.Solve(prog, {}, {}, &result5);
     EXPECT_TRUE(CompareMatrices(result5.GetDualSolution(constraint),
-                                Eigen::Vector2d(-6, 6), 2e-5));
+                                Eigen::Vector2d(-6, 6), tol));
     EXPECT_TRUE(
         CompareMatrices(result5.GetDualSolution(constraint1), Vector1d(0)));
     EXPECT_TRUE(

@@ -46,7 +46,6 @@ class IiwaStatusReceiver : public systems::LeafSystem<double> {
 
   /// @name Named accessors for this System's input and output ports.
   //@{
-  const systems::InputPort<double>& get_input_port() const;
   const systems::OutputPort<double>& get_position_commanded_output_port() const;
   const systems::OutputPort<double>& get_position_measured_output_port() const;
   const systems::OutputPort<double>& get_velocity_estimated_output_port() const;

@@ -18,6 +18,7 @@ load(
     "drake_py_library",
     "drake_py_unittest",
 )
+load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
@@ -48,12 +49,12 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:eigen_pybind",
         "//bindings/pydrake/common:type_safe_index_pybind",
         "//bindings/pydrake/common:value_pybind",
         "//bindings/pydrake/common:wrap_pybind",
     ],
-    cc_so_name = "_framework",
     cc_srcs = [
         "framework_py.cc",
         "framework_py_semantics.cc",
@@ -70,10 +71,10 @@ drake_pybind_library(
         "//bindings/pydrake:math_py",
         "//bindings/pydrake:symbolic_py",
         "//bindings/pydrake/common:cpp_template_py",
+        "//bindings/pydrake/common:deprecation_py",
         "//bindings/pydrake/common:eigen_geometry_py",
         "//bindings/pydrake/common:value_py",
     ],
-    py_srcs = ["framework.py"],
 )
 
 drake_py_library(
@@ -105,7 +106,6 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:wrap_pybind",
     ],
     cc_srcs = ["analysis_py.cc"],
@@ -139,7 +139,6 @@ drake_pybind_library(
     name = "rendering_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:eigen_geometry_pybind",
         "//bindings/pydrake/common:value_pybind",
     ],
@@ -148,7 +147,6 @@ drake_pybind_library(
     py_deps = [
         ":framework_py",
         ":module_py",
-        "//bindings/pydrake/common:deprecation_py",
         "//bindings/pydrake/common:eigen_geometry_py",
     ],
 )
@@ -158,6 +156,7 @@ drake_pybind_library(
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:eigen_geometry_pybind",
         "//bindings/pydrake/common:eigen_pybind",
         "//bindings/pydrake/common:type_pack",
@@ -261,6 +260,18 @@ drake_py_library(
 )
 
 drake_py_library(
+    name = "jupyter_widgets_py",
+    srcs = ["jupyter_widgets.py"],
+    imports = PACKAGE_INFO.py_imports,
+    deps = [
+        ":framework_py",
+        ":module_py",
+        "//bindings/pydrake:math_py",
+        "//bindings/pydrake/common:jupyter_py",
+    ],
+)
+
+drake_py_library(
     name = "perception_py",
     srcs = ["perception.py"],
     imports = PACKAGE_INFO.py_imports,
@@ -317,6 +328,7 @@ PY_LIBRARIES_WITH_INSTALL = [
 
 PY_LIBRARIES = [
     ":drawing_py",
+    ":jupyter_widgets_py",
     ":meshcat_visualizer_py",
     ":scalar_conversion_py",
     ":module_py",
@@ -372,6 +384,22 @@ drake_py_binary(
         ":primitives_py",
         "//bindings/pydrake:geometry_py",
         "//bindings/pydrake:lcm_py",
+        "//bindings/pydrake/multibody:parsing_py",
+        "//bindings/pydrake/multibody:plant_py",
+    ],
+)
+
+drake_jupyter_py_binary(
+    name = "jupyter_widgets_examples",
+    add_test_rule = 1,
+    data = [
+        "//manipulation/models/ycb:models",
+    ],
+    deps = [
+        ":analysis_py",
+        ":framework_py",
+        ":jupyter_widgets_py",
+        "//bindings/pydrake:geometry_py",
         "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",
     ],
@@ -455,6 +483,7 @@ drake_py_unittest(
         "//examples/kuka_iiwa_arm:models",
         "//examples/multibody/cart_pole:models",
         "//examples/quadrotor:models",
+        "//manipulation/models/allegro_hand_description:models",
         "//manipulation/models/iiwa_description:models",
         "//systems/sensors:test_models",
     ],
@@ -470,6 +499,7 @@ drake_py_unittest(
         ":test_util_py",
         "//bindings/pydrake:geometry_py",
         "//bindings/pydrake:perception_py",
+        "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/multibody",
     ],
 )
@@ -529,7 +559,6 @@ drake_py_unittest(
     data = ["//multibody/benchmarks/acrobot:models"],
     deps = [
         ":rendering_py",
-        "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/multibody:math_py",
         "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",

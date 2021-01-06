@@ -202,6 +202,22 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
     this_x(i) = xvec(prog.FindDecisionVariableIndex(variables(i)));
   }
 
+  if (!grad) {
+    // We don't want the gradient info, so just call the VectorXd version of
+    // Eval.
+    Eigen::VectorXd ty(c.num_constraints());
+
+    c.Eval(this_x, &ty);
+
+    // Store the results.
+    for (int i = 0; i < c.num_constraints(); i++) {
+      result[i] = ty(i);
+    }
+    return 0;
+  }
+
+  // Run the version which calculates gradients.
+
   AutoDiffVecXd ty(c.num_constraints());
   c.Eval(math::initializeAutoDiff(this_x), &ty);
 
@@ -231,9 +247,16 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
   return grad_idx;
 }
 
-// IPOPT uses separate callbacks to get the result and the gradients.
-// Since Drake's eval() functions emit both of these at once, cache
-// the result for IPOPT.
+// IPOPT uses separate callbacks to get the result and the gradients.  When
+// this code was initially written, the gradient values were populated in the
+// cache during the result calculation for constraints (this is still true for
+// costs).  However, it was later discovered that because IPOPT does not
+// always ask for the gradients to be calculated, it's actually faster to
+// calculate the constraint values only and then recalculate later with
+// gradients only if necessary.  This likely makes the cache ineffective for
+// constraints.
+//
+// See #13841 and #13891 for more discussion.
 struct ResultCache {
   ResultCache(size_t x_size, size_t result_size, size_t grad_size) {
     // The choice of infinity as the default value below is arbitrary.
@@ -251,6 +274,7 @@ struct ResultCache {
   // Sugar to copy an IPOPT bare array into `x`.
   void SetX(const Index n, const Number* x_arg) {
     DRAKE_ASSERT(static_cast<Index>(x.size()) == n);
+    grad_valid = false;
     if (n == 0) { return; }
     DRAKE_ASSERT(x_arg != nullptr);
     std::memcpy(x.data(), x_arg, n * sizeof(Number));
@@ -269,6 +293,7 @@ struct ResultCache {
   std::vector<Number> x;
   std::vector<Number> result;
   std::vector<Number> grad;
+  bool grad_valid{false};
 };
 
 // The C++ interface for IPOPT is described here:
@@ -455,7 +480,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
   virtual bool eval_g(Index n, const Number* x, bool new_x, Index m,
                       Number* g) {
     if (new_x || !constraint_cache_->is_x_equal(n, x)) {
-      EvaluateConstraints(n, x);
+      EvaluateConstraints(n, x, false);
     }
 
     ResultCache::Extract(constraint_cache_->result, m, g);
@@ -516,8 +541,9 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     DRAKE_ASSERT(jCol == nullptr);
 
     // We're being asked for the actual values.
-    if (new_x || !constraint_cache_->is_x_equal(n, x)) {
-      EvaluateConstraints(n, x);
+    if (new_x || !constraint_cache_->grad_valid ||
+        !constraint_cache_->is_x_equal(n, x)) {
+      EvaluateConstraints(n, x, true);
     }
 
     ResultCache::Extract(constraint_cache_->grad, nele_jac, values);
@@ -621,17 +647,19 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
           cost_cache_->grad[vj_index] += ty(0).derivatives()(j);
         }
       }
+      cost_cache_->grad_valid = true;
+
       // We do not need to add code for ty(0).derivatives().size() == 0, since
       // cost_cache_->grad would be unchanged if the derivative has zero size.
     }
   }
 
-  void EvaluateConstraints(Index n, const Number* x) {
+  void EvaluateConstraints(Index n, const Number* x, bool eval_gradient) {
     const Eigen::VectorXd xvec = MakeEigenVector(n, x);
 
     constraint_cache_->SetX(n, x);
     Number* result = constraint_cache_->result.data();
-    Number* grad = constraint_cache_->grad.data();
+    Number* grad = eval_gradient ? constraint_cache_->grad.data() : nullptr;
 
     for (const auto& c : problem_->generic_constraints()) {
       grad += EvaluateConstraint(*problem_, xvec, (*c.evaluator()),
@@ -657,6 +685,10 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       grad += EvaluateConstraint(*problem_, xvec, (*c.evaluator()),
                                  c.variables(), result, grad);
       result += c.evaluator()->num_constraints();
+    }
+
+    if (eval_gradient) {
+      constraint_cache_->grad_valid = true;
     }
   }
 
@@ -732,6 +764,14 @@ void SetIpoptOptions(const MathematicalProgram& prog,
   for (const auto& it : ipopt_options_int) {
     app->Options()->SetIntegerValue(it.first, it.second);
   }
+
+  // The default linear solver is MA27, but it is not freely redistributable so
+  // we cannot use it. MUMPS is the only compatible linear solver guaranteed to
+  // be available on both macOS and Ubuntu. In versions of IPOPT prior to 3.13,
+  // it would correctly determine that MUMPS was the only available solver, but
+  // its behavior changed to instead error having unsuccessfully tried to dlopen
+  // a nonexistent hsl library that would contain MA27.
+  app->Options()->SetStringValue("linear_solver", "mumps");
 
   app->Options()->SetStringValue("sb", "yes");  // Turn off the banner.
   for (const auto& it : ipopt_options_str) {

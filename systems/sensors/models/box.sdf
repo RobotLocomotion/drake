@@ -1,22 +1,20 @@
-<?xml version="1.0" ?>
-<sdf version="1.4">
+<?xml version="1.0"?>
+<sdf version="1.7">
   <model name="box">
     <pose>0 0 0.3 0 0 0</pose>
     <link name="box">
-      <pose>0 0 0 0 0 0</pose>
-        <inertial>
-          <mass>5.</mass>
-          <inertia>
-            <ixx>0.00208333333</ixx>
-            <ixy>0</ixy>
-            <ixz>0</ixz>
-            <iyy>0.00208333333</iyy>
-            <iyz>0</iyz>
-            <izz>0.00208333333</izz>
-          </inertia>
-        </inertial>
+      <inertial>
+        <mass>5.</mass>
+        <inertia>
+          <ixx>0.00208333333</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.00208333333</iyy>
+          <iyz>0</iyz>
+          <izz>0.00208333333</izz>
+        </inertia>
+      </inertial>
       <visual name="box">
-        <pose>0 0 0 0 0 0</pose>
         <geometry>
           <box>
             <size>0.05 0.05 0.05</size>

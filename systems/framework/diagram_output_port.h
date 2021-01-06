@@ -112,6 +112,15 @@ class DiagramOutputPort final : public OutputPort<T> {
     return {source_subsystem_index_, source_output_port_->ticket()};
   };
 
+  // Check that an AbstractValue provided to Calc() is suitable for this port
+  // by asking the source port to do it.
+  void ThrowIfInvalidPortValueType(
+      const Context<T>& context,
+      const AbstractValue& proposed_value) const final {
+    OutputPort<T>::ThrowIfInvalidPortValueType(
+        *source_output_port_, get_subcontext(context), proposed_value);
+  }
+
   // Digs out the right subcontext for delegation.
   const Context<T>& get_subcontext(const Context<T>& diagram_context) const {
     const DiagramContext<T>* diagram_context_downcast =

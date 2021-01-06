@@ -5,42 +5,24 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/text_logging.h"
 #include "drake/examples/rod2d/rod2d.h"
-#include "drake/lcm/drake_lcm.h"
-#include "drake/lcmt_viewer_draw.hpp"
-#include "drake/lcmt_viewer_load_robot.hpp"
+#include "drake/examples/rod2d/rod2d_geometry.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/lcm/lcm_publisher_system.h"
-#include "drake/systems/lcm/lcm_subscriber_system.h"
-#include "drake/systems/lcm/serializer.h"
-#include "drake/systems/rendering/pose_aggregator.h"
-#include "drake/systems/rendering/pose_bundle_to_draw_message.h"
-
-// TODO(jwnimmer-tri) Port this demo to use SceneGraph.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#include "drake/systems/rendering/drake_visualizer_client.h"
-#pragma GCC diagnostic pop
 
 using Rod2D = drake::examples::rod2d::Rod2D<double>;
-using drake::lcm::DrakeLcm;
-using drake::systems::BasicVector;
+using drake::examples::rod2d::Rod2dGeometry;
+using drake::geometry::DrakeVisualizer;
+using drake::geometry::SceneGraph;
 using drake::systems::Context;
-using drake::systems::lcm::LcmPublisherSystem;
-using drake::systems::lcm::LcmSubscriberSystem;
-using drake::systems::lcm::Serializer;
 using drake::systems::DiagramBuilder;
-using drake::systems::rendering::MakeGeometryData;
-using drake::systems::rendering::PoseAggregator;
-using drake::systems::rendering::PoseBundleToDrawMessage;
-using drake::systems::Simulator;
 using drake::systems::ImplicitEulerIntegrator;
 using drake::systems::RungeKutta3Integrator;
+using drake::systems::Simulator;
 
 // Simulation parameters.
 DEFINE_string(system_type, "discretized",
@@ -56,25 +38,7 @@ int main(int argc, char* argv[]) {
   // Parse any flags.
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-  // Emit a one-time load message.
-  Serializer<drake::lcmt_viewer_load_robot> load_serializer;
-
-  // TODO(edrumwri): Remove the DRAKE_VIEWER_DRAW, DRAKE_VIEWER_LOAD_ROBOT
-  //                 magic strings as soon as they are a named constant within
-  //                 Drake (or, even better, remove as much of this
-  //                 copy/pasted visualization code when possible).
-  // Build the simulation diagram.
-  DrakeLcm lcm;
   DiagramBuilder<double> builder;
-  PoseAggregator<double>* aggregator =
-      builder.template AddSystem<PoseAggregator>();
-  PoseBundleToDrawMessage* converter =
-      builder.template AddSystem<PoseBundleToDrawMessage>();
-  LcmPublisherSystem* publisher =
-      builder.template AddSystem<LcmPublisherSystem>(
-          "DRAKE_VIEWER_DRAW",
-          std::make_unique<Serializer<drake::lcmt_viewer_draw>>(), &lcm,
-          0.01 /* publish period */);
 
   // Create the rod and add it to the diagram.
   Rod2D* rod;
@@ -90,32 +54,14 @@ int main(int argc, char* argv[]) {
     return -1;
   }
 
-  // Create the rod visualization.
-  DrakeShapes::VisualElement rod_vis(
-      DrakeShapes::Cylinder(FLAGS_rod_radius, rod->get_rod_half_length() * 2),
-      Eigen::Isometry3d::Identity(), Eigen::Vector4d(0.7, 0.7, 0.7, 1));
-
-  // Create the load message.
-  drake::lcmt_viewer_load_robot message{};
-  message.num_links = 1;
-  message.link.resize(1);
-  message.link.back().name = "rod";
-  message.link.back().robot_num = 0;
-  message.link.back().num_geom = 1;
-  message.link.back().geom.resize(1);
-  message.link.back().geom[0] = MakeGeometryData(rod_vis);
-
-  // Send a load message.
-  Publish(&lcm, "DRAKE_VIEWER_LOAD_ROBOT", message);
+  auto& scene_graph = *builder.AddSystem<SceneGraph<double>>();
+  Rod2dGeometry::AddToBuilder(FLAGS_rod_radius, rod->get_rod_half_length() * 2,
+                              &builder, rod->state_output(), &scene_graph);
+  DrakeVisualizer::AddToBuilder(&builder, scene_graph);
 
   // Set the names of the systems.
   rod->set_name("rod");
-  aggregator->set_name("aggregator");
-  converter->set_name("converter");
 
-  builder.Connect(rod->pose_output(), aggregator->AddSingleInput("rod", 0));
-  builder.Connect(*aggregator, *converter);
-  builder.Connect(*converter, *publisher);
   auto diagram = builder.Build();
 
   // Make no external forces act on the rod.

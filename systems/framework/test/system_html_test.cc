@@ -10,6 +10,7 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/primitives/adder.h"
+#include "drake/systems/primitives/discrete_derivative.h"
 #include "drake/systems/primitives/pass_through.h"
 
 namespace drake {
@@ -60,14 +61,14 @@ GTEST_TEST(SystemHtmlTest, NestedDiagram) {
 { key: "subdiagram", name: "subdiagram", group: "diagram", isGroup: true, expanded: false, },
 { key: "subdiagram_inputs", name: "Input Ports", group: "subdiagram", isGroup: true, },
 { key: "subdiagram_u0", name: "adder_u1", group: "subdiagram_inputs", category: "input_port", },
-{ key: "subdiagram_u1", name: "pass_u0", group: "subdiagram_inputs", category: "input_port", },
+{ key: "subdiagram_u1", name: "pass_u", group: "subdiagram_inputs", category: "input_port", },
 { key: "subdiagram_outputs", name: "Output Ports", group: "subdiagram", isGroup: true, },
 { key: "subdiagram_y0", name: "adder_sum", group: "subdiagram_outputs", category: "output_port", },
 { key: "adder", group: "subdiagram", input_ports: [ { name: "u0", id: "u0" }, { name: "u1", id: "u1" }, ],
 output_ports: [ { name: "sum", id: "y0" }, ],
 },
-{ key: "pass", group: "subdiagram", input_ports: [ { name: "u0", id: "u0" }, ],
-output_ports: [ { name: "y0", id: "y0" }, ],
+{ key: "pass", group: "subdiagram", input_ports: [ { name: "u", id: "u0" }, ],
+output_ports: [ { name: "y", id: "y0" }, ],
 },)"));
 
   // Tests LinkWriter.
@@ -77,6 +78,17 @@ output_ports: [ { name: "y0", id: "y0" }, ],
 { from: "subdiagram_u0", to: "adder", toPort: "u1", },
 { from: "subdiagram_u1", to: "pass", toPort: "u0", },
 { from: "adder", fromPort: "y0", to: "subdiagram_y0", },)"));
+}
+
+// Test a diagram that uses exported input fan-out.
+GTEST_TEST(SystemHtmlTest, SystemWithFanout) {
+  StateInterpolatorWithDiscreteDerivative<double> system(3, 0.05);
+  system.set_name("terp");
+  const std::string html = GenerateHtml(system);
+
+  // Proof of life test for fanout.
+  EXPECT_THAT(html, HasSubstr(R"(from: "terp_u0", to: "drake/systems/Multiplexer)"));
+  EXPECT_THAT(html, HasSubstr(R"(from: "terp_u0", to: "drake/systems/DiscreteDerivative)"));
 }
 
 GTEST_TEST(SystemHtmlTest, ManipulationStation) {

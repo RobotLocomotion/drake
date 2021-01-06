@@ -1,3 +1,7 @@
+/// @file
+/// This file contains tests for kinematics methods in the Frame class.
+/// There are similar tests in multibody_plant_kinematics_test.cc which test
+/// kinematics methods in the MultibodyPlant class.
 #include <limits>
 
 #include <gmock/gmock.h>
@@ -5,8 +9,10 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/plant/test/kuka_iiwa_model_tests.h"
 #include "drake/multibody/test_utilities/add_fixed_objects_to_plant.h"
+#include "drake/multibody/test_utilities/spatial_derivative.h"
 #include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/frame.h"
 
@@ -128,6 +134,48 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
   const RotationMatrixd R_HH =
       plant_->CalcRelativeRotationMatrix(*context_, *frame_H_, *frame_H_);
   EXPECT_TRUE(CompareMatrices(R_HH.matrix(), Matrix3<double>::Identity(),
+                              kTolerance, MatrixCompareType::relative));
+}
+
+TEST_F(KukaIiwaModelTests, CalcSpatialAcceleration) {
+  // Numerical tolerance used to verify numerical results.
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+  SetArbitraryConfiguration();
+
+  // Verify a short-cut return from Frame::CalcSpatialAccelerationInWorld()
+  // when dealing with a body_frame (as opposed to a generic frame).
+  // Compare results with the A_WE_W from an associated plant method.
+  const Frame<double>& frame_E = end_effector_link_->body_frame();
+  const SpatialAcceleration<double> A_WE_W =
+      frame_E.CalcSpatialAccelerationInWorld(*context_);
+  const SpatialAcceleration<double> A_WE_W_expected1 =
+     plant_->EvalBodySpatialAccelerationInWorld(*context_, *end_effector_link_);
+  EXPECT_EQ(A_WE_W.get_coeffs(), A_WE_W_expected1.get_coeffs());
+
+  // Also verify A_WE_W against Body::EvalSpatialAccelerationInWorld().
+  const SpatialAcceleration<double> A_WE_W_expected2 =
+      end_effector_link_->EvalSpatialAccelerationInWorld(*context_);
+  EXPECT_EQ(A_WE_W.get_coeffs(),  A_WE_W_expected2.get_coeffs());
+
+  // Also verify A_WE_W from the plant's output port for spatial acceleration.
+  const auto& A_WB_all =
+      plant_->get_body_spatial_accelerations_output_port()
+          .Eval<std::vector<SpatialAcceleration<double>>>(*context_);
+  ASSERT_EQ(A_WB_all.size(), plant_->num_bodies());
+  const SpatialAcceleration<double>& A_WE_W_expected3 =
+      A_WB_all[end_effector_link_->index()];
+  EXPECT_EQ(A_WE_W.get_coeffs(), A_WE_W_expected3.get_coeffs());
+
+  // Verify A_WH_W, frame_H's spatial acceleration in world W, expressed in W.
+  // Do this by differentiating the spatial velocity V_WH_W.
+  const SpatialAcceleration<double> A_WH_W =
+      frame_H_->CalcSpatialAccelerationInWorld(*context_);
+  const Frame<double>& frame_W = plant_->world_frame();
+  const SpatialAcceleration<double> A_WH_W_expected = test_utilities::
+      CalcSpatialAccelerationViaAutomaticDifferentiation(
+          *plant_, *context_, *frame_H_, frame_W, frame_W);
+  EXPECT_TRUE(CompareMatrices(A_WH_W.get_coeffs(),
+                              A_WH_W_expected.get_coeffs(),
                               kTolerance, MatrixCompareType::relative));
 }
 

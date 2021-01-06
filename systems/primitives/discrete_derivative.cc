@@ -6,7 +6,6 @@
 #include "drake/common/default_scalars.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/multiplexer.h"
-#include "drake/systems/primitives/pass_through.h"
 
 namespace drake {
 namespace systems {
@@ -64,7 +63,8 @@ void DiscreteDerivative<T>::DoCalcDiscreteVariableUpdates(
     const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>&,
     drake::systems::DiscreteValues<T>* state) const {
   // x₀[n+1] = u[n].
-  state->get_mutable_vector(0).SetFromVector(get_input_port().Eval(context));
+  state->get_mutable_vector(0).SetFromVector(
+      this->get_input_port().Eval(context));
 
   // x₁[n+1] = x₀[n].
   state->get_mutable_vector(1).SetFrom(context.get_discrete_state(0));
@@ -114,16 +114,14 @@ StateInterpolatorWithDiscreteDerivative<
     int num_positions, double time_step, bool suppress_initial_transient) {
   DiagramBuilder<T> builder;
 
-  auto pass_through = builder.template AddSystem<PassThrough>(num_positions);
   derivative_ = builder.template AddSystem<DiscreteDerivative>(
       num_positions, time_step, suppress_initial_transient);
   auto mux = builder.template AddSystem<Multiplexer>(
       std::vector<int>{num_positions, num_positions});
 
-  builder.ExportInput(pass_through->get_input_port(), "position");
-  builder.Connect(pass_through->get_output_port(),
-                  derivative_->get_input_port());
-  builder.Connect(pass_through->get_output_port(), mux->get_input_port(0));
+  const auto port_index = builder.ExportInput(derivative_->get_input_port(),
+                                              "position");
+  builder.ConnectInput(port_index, mux->get_input_port(0));
   builder.Connect(derivative_->get_output_port(), mux->get_input_port(1));
   builder.ExportOutput(mux->get_output_port(0), "state");
 

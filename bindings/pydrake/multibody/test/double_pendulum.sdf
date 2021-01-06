@@ -1,16 +1,16 @@
-<?xml version='1.0' ?>
+<?xml version="1.0"?>
 <!-- Copyright 2012 Open Source Robotics Foundation -->
 <!-- Licensed under the Apache License, Version 2.0 -->
 <!-- Provided SDF model originally taken from
      https://bitbucket.org/osrf/sdformat/src/deca28cd6cd5/test/integration/model/double_pendulum.sdf
      has undergone modifications -->
-<sdf version='1.6'>
-  <model name='double_pendulum_with_base'>
-    <link name='base'>
+<sdf version="1.7">
+  <model name="double_pendulum_with_base">
+    <link name="base">
       <inertial>
         <mass>100</mass>
       </inertial>
-      <visual name='vis_plate_on_ground'>
+      <visual name="vis_plate_on_ground">
         <pose>0 0 0.01 0 0 0</pose>
         <geometry>
           <cylinder>
@@ -19,7 +19,7 @@
           </cylinder>
         </geometry>
       </visual>
-      <visual name='vis_pole'>
+      <visual name="vis_pole">
         <pose>-0.275 0 1.1 0 0 0</pose>
         <geometry>
           <box>
@@ -27,7 +27,7 @@
           </box>
         </geometry>
       </visual>
-      <collision name='col_plate_on_ground'>
+      <collision name="col_plate_on_ground">
         <pose>0 0 0.01 0 0 0</pose>
         <geometry>
           <cylinder>
@@ -36,7 +36,7 @@
           </cylinder>
         </geometry>
       </collision>
-      <collision name='col_pole'>
+      <collision name="col_pole">
         <pose>-0.275 0 1.1 0 0 0</pose>
         <geometry>
           <box>
@@ -46,14 +46,14 @@
       </collision>
     </link>
     <!-- upper link, length 1, angle -90 degrees -->
-    <link name='upper_link'>
+    <link name="upper_link">
       <pose>0 0 2.1 -1.5708 0 0</pose>
       <self_collide>0</self_collide>
       <inertial>
         <pose>0 0 0.5 0 0 0</pose>
         <mass>30.0</mass>
       </inertial>
-      <visual name='vis_upper_joint'>
+      <visual name="vis_upper_joint">
         <pose>-0.05 0 0 0 1.5708 0</pose>
         <geometry>
           <cylinder>
@@ -62,7 +62,7 @@
           </cylinder>
         </geometry>
       </visual>
-      <visual name='vis_lower_joint'>
+      <visual name="vis_lower_joint">
         <pose>0 0 1.0 0 1.5708 0</pose>
         <geometry>
           <cylinder>
@@ -71,7 +71,7 @@
           </cylinder>
         </geometry>
       </visual>
-      <visual name='vis_cylinder'>
+      <visual name="vis_cylinder">
         <pose>0 0 0.5 0 0 0</pose>
         <geometry>
           <cylinder>
@@ -80,7 +80,7 @@
           </cylinder>
         </geometry>
       </visual>
-      <collision name='col_upper_joint'>
+      <collision name="col_upper_joint">
         <pose>-0.05 0 0 0 1.5708 0</pose>
         <geometry>
           <cylinder>
@@ -89,7 +89,7 @@
           </cylinder>
         </geometry>
       </collision>
-      <collision name='col_lower_joint'>
+      <collision name="col_lower_joint">
         <pose>0 0 1.0 0 1.5708 0</pose>
         <geometry>
           <cylinder>
@@ -98,7 +98,7 @@
           </cylinder>
         </geometry>
       </collision>
-      <collision name='col_cylinder'>
+      <collision name="col_cylinder">
         <pose>0 0 0.5 0 0 0</pose>
         <geometry>
           <cylinder>
@@ -109,14 +109,14 @@
       </collision>
     </link>
     <!-- lower link, length 1, angle ~-120 degrees more -->
-    <link name='lower_link'>
+    <link name="lower_link">
       <pose>0.25 1.0 2.1 -2 0 0</pose>
       <self_collide>0</self_collide>
       <inertial>
         <pose>0 0 0.5 0 0 0</pose>
         <mass>30.0</mass>
       </inertial>
-      <visual name='vis_lower_joint'>
+      <visual name="vis_lower_joint">
         <pose>0 0 0 0 1.5708 0</pose>
         <geometry>
           <cylinder>
@@ -125,7 +125,7 @@
           </cylinder>
         </geometry>
       </visual>
-      <visual name='vis_cylinder'>
+      <visual name="vis_cylinder">
         <pose>0 0 0.5 0 0 0</pose>
         <geometry>
           <cylinder>
@@ -134,7 +134,7 @@
           </cylinder>
         </geometry>
       </visual>
-      <collision name='col_lower_joint'>
+      <collision name="col_lower_joint">
         <pose>0 0 0 0 1.5708 0</pose>
         <geometry>
           <cylinder>
@@ -143,7 +143,7 @@
           </cylinder>
         </geometry>
       </collision>
-      <collision name='col_cylinder'>
+      <collision name="col_cylinder">
         <pose>0 0 0.5 0 0 0</pose>
         <geometry>
           <cylinder>
@@ -154,24 +154,21 @@
       </collision>
     </link>
     <!-- pin joint for upper link, at origin of upper link -->
-    <joint name='upper_joint' type='revolute'>
+    <joint name="upper_joint" type="revolute">
       <parent>base</parent>
       <child>upper_link</child>
       <axis>
-        <xyz>1.0 0 0</xyz>
-        <use_parent_model_frame>true</use_parent_model_frame>
+        <xyz expressed_in="__model__">1 0 0</xyz>
         <limit>
           <effort>0.0</effort>
         </limit>
       </axis>
     </joint>
-    <!-- pin joint for lower link, at origin of child link -->
-    <joint name='lower_joint' type='revolute'>
+    <joint name="lower_joint" type="revolute">
       <parent>upper_link</parent>
       <child>lower_link</child>
       <axis>
-        <xyz>1.0 0 0</xyz>
-        <use_parent_model_frame>true</use_parent_model_frame>
+        <xyz expressed_in="__model__">1 0 0</xyz>
         <limit>
           <effort>0.0</effort>
         </limit>

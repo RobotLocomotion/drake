@@ -223,7 +223,7 @@ lcmt_viewer_load_robot GeometryVisualizationImpl::BuildLoadMessage(
     int geom_index = 0;
     const InternalFrame& world_frame =
         state.frames_.at(InternalFrame::world_frame_id());
-    for (const GeometryId id : world_frame.child_geometries()) {
+    for (const GeometryId& id : world_frame.child_geometries()) {
       const InternalGeometry& geometry = state.geometries_.at(id);
       const GeometryProperties* props = get_properties(geometry, role);
       if (props != nullptr) {
@@ -281,7 +281,7 @@ void DispatchLoadMessage(const SceneGraph<double>& scene_graph,
                          lcm::DrakeLcmInterface* lcm, Role role) {
   lcmt_viewer_load_robot message =
       internal::GeometryVisualizationImpl::BuildLoadMessage(
-          *scene_graph.initial_state_, role);
+          scene_graph.model_, role);
   // Send a load message.
   Publish(lcm, "DRAKE_VIEWER_LOAD_ROBOT", message);
 }
@@ -312,11 +312,15 @@ systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
   // documentation), along with the converter and publisher we just added.
   // Builder will transfer ownership of all of these objects to the Diagram it
   // eventually builds.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   publisher->AddInitializationMessage(
       [&scene_graph, role](const systems::Context<double>&,
                            lcm::DrakeLcmInterface* lcm) {
         DispatchLoadMessage(scene_graph, lcm, role);
       });
+#pragma GCC diagnostic pop
+
 
   // Note that this will fail if scene_graph is not actually in builder.
   builder->Connect(pose_bundle_output_port, converter->get_input_port(0));
@@ -329,9 +333,12 @@ systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const SceneGraph<double>& scene_graph, lcm::DrakeLcmInterface* lcm,
     Role role) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   return ConnectDrakeVisualizer(builder, scene_graph,
                                 scene_graph.get_pose_bundle_output_port(), lcm,
                                 role);
+#pragma GCC diagnostic pop
 }
 
 }  // namespace geometry

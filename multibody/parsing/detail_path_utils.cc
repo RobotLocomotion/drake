@@ -60,7 +60,7 @@ std::optional<string> GetPackagePath(
     return package_map.GetPath(package);
   } else {
     drake::log()->warn("Couldn't find package '{}' in the supplied package"
-                       "path.", package);
+                       "path: {}", package, package_map);
     return std::nullopt;
   }
 }
@@ -94,6 +94,12 @@ string ResolveUri(const string& uri, const PackageMap& package_map,
       return {};
     }
   } else {
+    if (root_dir.empty()) {
+      drake::log()->warn(
+          "URI '{}' is invalid when parsing a string instead of a filename.",
+          uri);
+      return {};
+    }
     // Strictly speaking a URI should not just be a bare filename, but we allow
     // this for backward compatibility and user convenience.
     const string& filename = uri;

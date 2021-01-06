@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<package>
+  <name>jaco_description</name>
+  <version>0.0.1</version>
+  <description>
+      3D model of various Kinova robotic arms.
+      Includes the model and URDF files for working with an arm in Drake (and
+      possibly RViz and/or Gazebo).
+  </description>
+  <maintainer email="ros@kinovarobotics.com">Kinova ROS Support</maintainer>
+  <maintainer email="drake-users@mit.edu">Drake Users</maintainer>
+  <author>Kinova ROS Support</author>
+  <author email="drake-users@mit.edu">Drake Users</author>
+  <license>BSD</license>
+  <url>http://ros.org/wiki/kinova_description</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>urdf</build_depend>
+  <build_depend>xacro</build_depend>
+
+  <run_depend>urdf</run_depend>
+  <run_depend>xacro</run_depend>
+
+</package>

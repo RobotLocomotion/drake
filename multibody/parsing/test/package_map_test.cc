@@ -52,11 +52,14 @@ void VerifyMatchWithTestDataRoot(const PackageMap& package_map) {
         "package_map_test_package_d/"},
     {"box_model", root_path +
         "box_package/"},
+    // TODO(#10531) This should use `package://drake`.
+    {"process_model_directives_test", root_path +
+        "process_model_directives_test/"},
   };
   VerifyMatch(package_map, expected_packages);
 }
 
-// Tests that the PackageMap can be manually populated.
+// Tests that the PackageMap can be manually populated and unpopulated.
 GTEST_TEST(PackageMapTest, TestManualPopulation) {
   filesystem::create_directory("package_foo");
   filesystem::create_directory("package_bar");
@@ -71,6 +74,17 @@ GTEST_TEST(PackageMapTest, TestManualPopulation) {
   }
 
   VerifyMatch(package_map, expected_packages);
+
+  map<string, string> expected_remaining_packages(expected_packages);
+  for (const auto& it : expected_packages) {
+    package_map.Remove(it.first);
+    expected_remaining_packages.erase(it.first);
+    VerifyMatch(package_map, expected_remaining_packages);
+  }
+
+  VerifyMatch(package_map, std::map<string, string>());
+
+  EXPECT_THROW(package_map.Remove("package_baz"), std::runtime_error);
 }
 
 // Tests that PackageMap can be populated by a package.xml.
@@ -122,6 +136,10 @@ GTEST_TEST(PackageMapTest, TestPopulateUpstreamToDrake) {
         root_path + "package_map_test_packages/package_map_test_package_a"}
   };
 
+  VerifyMatch(package_map, expected_packages);
+
+  // Call it again to exercise the "don't add things twice" code.
+  package_map.PopulateUpstreamToDrake(sdf_file_name);
   VerifyMatch(package_map, expected_packages);
 }
 

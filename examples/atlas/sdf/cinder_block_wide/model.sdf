@@ -1,5 +1,5 @@
-<?xml version="1.0" ?>
-<sdf version="1.5">
+<?xml version="1.0"?>
+<sdf version="1.7">
   <model name="cinder_block_wide">
     <link name="link">
       <inertial>
@@ -17,7 +17,6 @@
       </inertial>
       <visual name="visual">
         <geometry>
-          
           <box>
             <size>0.387353556 0.387353556 0.146</size>
           </box>
@@ -28,9 +27,7 @@
           -->
         </geometry>
       </visual>
-
       <collision name="block_collision">
-       <pose>0 0 0 0 0 0</pose>
         <geometry>
           <box>
             <size>0.387353556 0.387353556 0.146</size>
@@ -50,9 +47,7 @@
             </ode>
           </friction>
         </surface>
-       
       </collision>
-      
     </link>
   </model>
 </sdf>

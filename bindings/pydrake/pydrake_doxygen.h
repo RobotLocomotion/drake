@@ -187,9 +187,10 @@ components being built.
 
 ## pybind Module Definitions
 
+- Modules should be defined within the drake::pydrake namespace. Please review
+this namespace for available helper methods / classes.
 - Any Drake pybind module should include `pydrake_pybind.h`.
 - `PYBIND_MODULE` should be used to define modules.
-- Modules should be defined within the namespace `drake::pydrake`.
 - The alias `namespace py = pybind11` is defined as `drake::pydrake::py`. Drake
 modules should not re-define this alias at global scope.
 - If a certain namespace is being bound (e.g. `drake::systems::sensors`), you
@@ -273,11 +274,6 @@ generate and open the docstring header:
 
     bazel build //bindings/pydrake:documentation_pybind.h
     $EDITOR bazel-bin/bindings/pydrake/documentation_pybind.h
-
-Docstrings for attic components can be previewed in the following header:
-
-    bazel build //bindings/pydrake/attic:documentation_pybind.h
-    $EDITOR bazel-bin/bindings/pydrake/attic/documentation_pybind.h
 
 Search the comments for the symbol of interest, e.g.,
 `drake::math::RigidTransform::RigidTransform<T>`, and view the include file and
@@ -369,6 +365,25 @@ Some example comments:
 // Keep alive, ownership (tr.): `return` keeps `self` alive.
 ```
 
+@anchor PydrakeReturnValuePolicy
+## Return Value Policy
+
+For more information about `pybind11` return value policies, see [the pybind11
+documentation](
+https://pybind11.readthedocs.io/en/stable/advanced/functions.html#return-value-policies).
+
+`pydrake` offers the @ref drake::pydrake::py_rvp "py_rvp" alias to help with
+shortened usage of `py::return_value_policy`. The most used (non-default)
+policies in `pydrake` are `reference` and `reference_internal` due to the usage
+of raw pointers / references in the public C++ API (rather than
+`std::shared_ptr<>`).
+
+@note While `py_rvp::reference_internal` effectively implies
+`py_rvp::reference` and `py::keep_alive<0, 1>()`, we choose to only use it when
+`self` is the intended patient (i.e. the bound item is a class method). For
+static / free functions, we instead explicitly spell out `py_rvp::reference`
+and `py::keep_alive<0, 1>()`.
+
 @anchor PydrakeOverloads
 ## Function Overloads
 
@@ -410,7 +425,7 @@ using Class = MultibodyPlant<T>;
         [](Class* self, std::unique_ptr<Joint<T>> joint) -> auto& {
           return self->AddJoint(std::move(joint));
         },
-        py::arg("joint"), py_reference_internal, cls_doc.AddJoint.doc_1args)
+        py::arg("joint"), py_rvp::reference_internal, cls_doc.AddJoint.doc_1args)
 ...
 ```
 
@@ -440,6 +455,32 @@ py::handle abstract_value_cls =
 ...
 ```
 
+### Matrix-multiplication-like Methods
+
+For objects that may be represented by matrices or vectors (e.g.
+RigidTransform, RotationMatrix), the `*` operator (via `__mul__`) should *not*
+be bound because the `*` operator in NumPy implies elemnt-wise multiplication
+for arrays.
+
+For simplicity, we instead bind the explicitly named `.multiply()` method, and
+alias the `__matmul__` operator `@` to this function.
+
+@anchor PydrakeReturnVectorsOrMatrices
+#### Returning Vectors or Matrices
+
+Certain bound methods, like `RigidTransform.multiply()`, will have overloads
+that can multiply and return (a) other `RigidTransform` instances, (b) vectors,
+or (c) matrices (representing a list of vectors).
+
+In the cases of (a) and (c), `pybind11` provides sufficient mechanisms to
+provide an unambiguous output return type. However, for (b), `pybind11` will
+return `ndarray` with shape `(3,)`. This can cause an issue when users pass
+a vector of shape `(3, 1)` as input. Nominally, pybind11 will return a `(3,)`
+array, but the user may expect `(3, 1)` as an output. To accommodate this, you
+should use the drake::pydrake::WrapToMatchInputShape function.
+
+@sa https://github.com/RobotLocomotion/drake/issues/13885
+
 ## Python Subclassing of C++ Classes
 
 In general, minimize the amount in which users may subclass C++ classes in
@@ -447,20 +488,6 @@ Python. When you do wish to do this, ensure that you use a trampoline class
 in `pybind`, and ensure that the trampoline class inherits from the
 `py::wrapper<>` class specific to our fork of `pybind`. This ensures that no
 slicing happens with the subclassed instances.
-
-## Convenience aliases
-
-Some aliases are provided; prefer these to the full spellings.
-
-`namespace py` is a shorthand alias to `pybind11` for consistency.
-
-@see @ref drake::pydrake::py_reference "py_reference",
-@ref drake::pydrake::py_reference_internal "py_reference_internal" for dealing
-with %common ownership issues.
-
-@note Downstream users should avoid `using namespace drake::pydrake`, as
-this may create ambiguous aliases (especially for GCC). Instead, consider
-an alias.
 
 @anchor PydrakeBazelDebug
 # Interactive Debugging with Bazel

@@ -46,15 +46,6 @@ JacoCommandReceiver::JacoCommandReceiver(int num_joints, int num_fingers)
       });
 }
 
-const systems::InputPort<double>& JacoCommandReceiver::get_input_port() const {
-  return LeafSystem<double>::get_input_port(0);
-}
-
-const systems::OutputPort<double>&
-JacoCommandReceiver::get_output_port() const {
-  return LeafSystem<double>::get_output_port(0);
-}
-
 void JacoCommandReceiver::set_initial_position(
     Context<double>* context, const Eigen::Ref<const VectorXd>& q) const {
   DRAKE_THROW_UNLESS(q.size() == num_joints_ + num_fingers_);

@@ -217,7 +217,7 @@ TEST_F(MonomialTest, MonomialWithZeroExponent) {
   EXPECT_EQ(m2.get_powers(), power_expected);
 }
 
-TEST_F(MonomialTest, MonomialBasis_x_0) {
+TEST_F(MonomialTest, MonomialBasisX0) {
   const drake::VectorX<Monomial> basis1{MonomialBasis({var_x_}, 0)};
   const auto basis2 = MonomialBasis<1, 0>({var_x_});
   EXPECT_EQ(decltype(basis2)::RowsAtCompileTime, 1);
@@ -230,7 +230,7 @@ TEST_F(MonomialTest, MonomialBasis_x_0) {
   EXPECT_EQ(basis2, expected);
 }
 
-TEST_F(MonomialTest, MonomialBasis_x_2) {
+TEST_F(MonomialTest, MonomialBasisX2) {
   const drake::VectorX<Monomial> basis1{MonomialBasis({var_x_}, 2)};
   const auto basis2 = MonomialBasis<1, 2>({var_x_});
   EXPECT_EQ(decltype(basis2)::RowsAtCompileTime, 3);
@@ -246,7 +246,7 @@ TEST_F(MonomialTest, MonomialBasis_x_2) {
   EXPECT_EQ(basis2, expected);
 }
 
-TEST_F(MonomialTest, MonomialBasis_x_y_0) {
+TEST_F(MonomialTest, MonomialBasisXY0) {
   const drake::VectorX<Monomial> basis1{MonomialBasis({var_x_, var_y_}, 0)};
   const auto basis2 = MonomialBasis<2, 0>({var_x_, var_y_});
   EXPECT_EQ(decltype(basis2)::RowsAtCompileTime, 1);
@@ -259,7 +259,7 @@ TEST_F(MonomialTest, MonomialBasis_x_y_0) {
   EXPECT_EQ(basis2, expected);
 }
 
-TEST_F(MonomialTest, MonomialBasis_x_y_1) {
+TEST_F(MonomialTest, MonomialBasisXY1) {
   const drake::VectorX<Monomial> basis1{MonomialBasis({var_x_, var_y_}, 1)};
   const auto basis2 = MonomialBasis<2, 1>({var_x_, var_y_});
   EXPECT_EQ(decltype(basis2)::RowsAtCompileTime, 3);
@@ -276,7 +276,7 @@ TEST_F(MonomialTest, MonomialBasis_x_y_1) {
   EXPECT_EQ(basis2, expected);
 }
 
-TEST_F(MonomialTest, MonomialBasis_x_y_2) {
+TEST_F(MonomialTest, MonomialBasisXY2) {
   const drake::VectorX<Monomial> basis1{MonomialBasis({var_x_, var_y_}, 2)};
   const auto basis2 = MonomialBasis<2, 2>({var_x_, var_y_});
   EXPECT_EQ(decltype(basis2)::RowsAtCompileTime, 6);
@@ -296,7 +296,7 @@ TEST_F(MonomialTest, MonomialBasis_x_y_2) {
   EXPECT_EQ(basis2, expected);
 }
 
-TEST_F(MonomialTest, MonomialBasis_x_y_3) {
+TEST_F(MonomialTest, MonomialBasisXY3) {
   const drake::VectorX<Monomial> basis1{MonomialBasis({var_x_, var_y_}, 3)};
   const auto basis2 = MonomialBasis<2, 3>({var_x_, var_y_});
   EXPECT_EQ(decltype(basis2)::RowsAtCompileTime, 10);
@@ -320,7 +320,7 @@ TEST_F(MonomialTest, MonomialBasis_x_y_3) {
   EXPECT_EQ(basis2, expected);
 }
 
-TEST_F(MonomialTest, MonomialBasis_x_y_z_2) {
+TEST_F(MonomialTest, MonomialBasisXYZ2) {
   const drake::VectorX<Monomial> basis1{
       MonomialBasis({var_x_, var_y_, var_z_}, 2)};
   const auto basis2 = MonomialBasis<3, 2>({var_x_, var_y_, var_z_});
@@ -346,7 +346,7 @@ TEST_F(MonomialTest, MonomialBasis_x_y_z_2) {
   EXPECT_EQ(basis2, expected);
 }
 
-TEST_F(MonomialTest, MonomialBasis_x_y_z_3) {
+TEST_F(MonomialTest, MonomialBasisXYZ3) {
   const drake::VectorX<Monomial> basis1{
       MonomialBasis({var_x_, var_y_, var_z_}, 3)};
   const auto basis2 = MonomialBasis<3, 3>({var_x_, var_y_, var_z_});
@@ -383,7 +383,7 @@ TEST_F(MonomialTest, MonomialBasis_x_y_z_3) {
   EXPECT_EQ(basis2, expected);
 }
 
-TEST_F(MonomialTest, MonomialBasis_x_y_z_w_3) {
+TEST_F(MonomialTest, MonomialBasisXYZW3) {
   const drake::VectorX<Monomial> basis1{
       MonomialBasis({var_x_, var_y_, var_z_, var_w_}, 3)};
   const auto basis2 = MonomialBasis<4, 3>({var_x_, var_y_, var_z_, var_w_});
@@ -433,7 +433,7 @@ TEST_F(MonomialTest, MonomialBasis_x_y_z_w_3) {
   EXPECT_EQ(basis2, expected);
 }
 
-TEST_F(MonomialTest, EvenDegreeMonomialBasis_x_2) {
+TEST_F(MonomialTest, EvenDegreeMonomialBasisX2) {
   const drake::VectorX<Monomial> basis1{EvenDegreeMonomialBasis({var_x_}, 2)};
   drake::Vector2<Monomial> expected;
 
@@ -445,7 +445,7 @@ TEST_F(MonomialTest, EvenDegreeMonomialBasis_x_2) {
   EXPECT_EQ(basis1, expected);
 }
 
-TEST_F(MonomialTest, EvenDegreeMonomialBasis_x_y_01) {
+TEST_F(MonomialTest, EvenDegreeMonomialBasisXY01) {
   const drake::VectorX<Monomial> basis1{
       EvenDegreeMonomialBasis({var_x_, var_y_}, 0)};
   const drake::VectorX<Monomial> basis2{
@@ -459,7 +459,7 @@ TEST_F(MonomialTest, EvenDegreeMonomialBasis_x_y_01) {
   EXPECT_EQ(basis2, expected);
 }
 
-TEST_F(MonomialTest, EvenDegreeMonomialBasis_x_y_23) {
+TEST_F(MonomialTest, EvenDegreeMonomialBasisXY23) {
   const drake::VectorX<Monomial> basis1{
       EvenDegreeMonomialBasis({var_x_, var_y_}, 2)};
   const drake::VectorX<Monomial> basis2{
@@ -478,7 +478,7 @@ TEST_F(MonomialTest, EvenDegreeMonomialBasis_x_y_23) {
   EXPECT_EQ(basis2, expected);
 }
 
-TEST_F(MonomialTest, EvenDegreeMonomialBasis_x_y_z_45) {
+TEST_F(MonomialTest, EvenDegreeMonomialBasisXYZ45) {
   const drake::VectorX<Monomial> basis1{
       EvenDegreeMonomialBasis({var_x_, var_y_, var_z_}, 4)};
   const drake::VectorX<Monomial> basis2{
@@ -516,7 +516,7 @@ TEST_F(MonomialTest, EvenDegreeMonomialBasis_x_y_z_45) {
   EXPECT_EQ(basis2, expected);
 }
 
-TEST_F(MonomialTest, OddDegreeMonomialBasis_x_3) {
+TEST_F(MonomialTest, OddDegreeMonomialBasisX3) {
   const drake::VectorX<Monomial> basis1{OddDegreeMonomialBasis({var_x_}, 3)};
   drake::Vector2<Monomial> expected;
 
@@ -528,7 +528,7 @@ TEST_F(MonomialTest, OddDegreeMonomialBasis_x_3) {
   EXPECT_EQ(basis1, expected);
 }
 
-TEST_F(MonomialTest, OddDegreeMonomialBasis_x_y_12) {
+TEST_F(MonomialTest, OddDegreeMonomialBasisXY12) {
   const drake::VectorX<Monomial> basis1{
       OddDegreeMonomialBasis({var_x_, var_y_}, 1)};
   const drake::VectorX<Monomial> basis2{
@@ -543,7 +543,7 @@ TEST_F(MonomialTest, OddDegreeMonomialBasis_x_y_12) {
   EXPECT_EQ(basis2, expected);
 }
 
-TEST_F(MonomialTest, OddDegreeMonomialBasis_x_y_34) {
+TEST_F(MonomialTest, OddDegreeMonomialBasisXY34) {
   const drake::VectorX<Monomial> basis1{
       OddDegreeMonomialBasis({var_x_, var_y_}, 3)};
   const drake::VectorX<Monomial> basis2{
@@ -564,7 +564,7 @@ TEST_F(MonomialTest, OddDegreeMonomialBasis_x_y_34) {
   EXPECT_EQ(basis2, expected);
 }
 
-TEST_F(MonomialTest, OddDegreeMonomialBasis_x_y_z_34) {
+TEST_F(MonomialTest, OddDegreeMonomialBasisXYZ34) {
   const drake::VectorX<Monomial> basis1{
       OddDegreeMonomialBasis({var_x_, var_y_, var_z_}, 3)};
   const drake::VectorX<Monomial> basis2{

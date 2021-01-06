@@ -885,6 +885,7 @@ TEST_F(SliceTetWithPlaneTest, NoDoubleCounting) {
   4. Confirm that the surface mesh field references the surface mesh in the
      resultant ContactSurface.
   5. Mesh normals point out of plane and into soft mesh.
+  6. Report the pressure gradient of the soft mesh on the contact surface.
  These tests are done in a single, non-trivial frame F. The robustness of the
  numerics is covered in the SliceTetWithPlaneTest and this just needs to
  account for data tracking. */
@@ -1136,6 +1137,67 @@ TEST_F(ComputeContactSurfaceTest, NormalsInPlaneDirection) {
   }
 }
 
+/* Tests responsibility 6: the gradient of the mesh's pressure field is supplied
+ in the resulting contact surface. We make sure there's contact across multiple
+ tetrahedra so that we can confirm that unique gradients are reported.  */
+TEST_F(ComputeContactSurfaceTest, GradientConstituentPressure) {
+  ASSERT_LT(mesh_id_, plane_id_);
+
+  const Vector3d& Mx_F = X_FM_.rotation().col(0);
+  // The plane's normal aligns with Mx; slices through both tets.
+  const Vector3d p_FB = X_FM_.translation() + 0.5 * Mx_F;
+  const Plane<double> plane_F{Mx_F, p_FB};
+
+  const Vector3d& grad_eMesh_W_expected0 =
+      X_WF_.rotation() * field_F_->EvaluateGradient(VolumeElementIndex(0));
+  const Vector3d& grad_eMesh_W_expected1 =
+      X_WF_.rotation() * field_F_->EvaluateGradient(VolumeElementIndex(1));
+
+  {
+    // Case: plane slices through both tets. The resulting surface should have
+    // six triangles. The gradient for pressure field on M should be defined, N
+    // is not. The gradient reported on the first three triangles is that of tet
+    // 0, and for the last three should be tet 1.
+    unique_ptr<ContactSurface<double>> contact_surface =
+        ComputeContactSurface<double>(mesh_id_, *field_F_, plane_id_, plane_F,
+                                      both_tets_, X_WF_);
+    ASSERT_NE(contact_surface, nullptr);
+    EXPECT_EQ(contact_surface->mesh_W().num_elements(), 6);
+    EXPECT_EQ(contact_surface->mesh_W().num_vertices(), 6);
+    EXPECT_TRUE(contact_surface->HasGradE_M());
+    EXPECT_FALSE(contact_surface->HasGradE_N());
+    for (SurfaceFaceIndex f(0); f < 3; ++f) {
+      EXPECT_TRUE(CompareMatrices(contact_surface->EvaluateGradE_M_W(f),
+                                  grad_eMesh_W_expected0));
+    }
+    for (SurfaceFaceIndex f(3); f < 6; ++f) {
+      EXPECT_TRUE(CompareMatrices(contact_surface->EvaluateGradE_M_W(f),
+                                  grad_eMesh_W_expected1));
+    }
+  }
+
+  {
+    // Case: Reversing the ids will swap M and N. Otherwise all results should
+    // be the same.
+     unique_ptr<ContactSurface<double>> contact_surface =
+        ComputeContactSurface<double>(plane_id_, *field_F_, mesh_id_, plane_F,
+                                      both_tets_, X_WF_);
+    ASSERT_NE(contact_surface, nullptr);
+    EXPECT_EQ(contact_surface->mesh_W().num_elements(), 6);
+    EXPECT_EQ(contact_surface->mesh_W().num_vertices(), 6);
+    EXPECT_FALSE(contact_surface->HasGradE_M());
+    EXPECT_TRUE(contact_surface->HasGradE_N());
+    for (SurfaceFaceIndex f(0); f < 3; ++f) {
+      EXPECT_TRUE(CompareMatrices(contact_surface->EvaluateGradE_N_W(f),
+                                  grad_eMesh_W_expected0));
+    }
+    for (SurfaceFaceIndex f(3); f < 6; ++f) {
+      EXPECT_TRUE(CompareMatrices(contact_surface->EvaluateGradE_N_W(f),
+                                  grad_eMesh_W_expected1));
+    }
+  }
+}
+
 /* Test of ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(). This function
  has the following unique responsibilities:
 
@@ -1148,7 +1210,7 @@ GTEST_TEST(MeshPlaneIntersectionTest, SoftVolumeRigidHalfSpace) {
   const VolumeMesh<double> mesh_F = TrivialVolumeMesh(RigidTransformd{});
   const VolumeMeshFieldLinear<double, double> field_F{
       "pressure", vector<double>{0.25, 0.5, 0.75, 1, -1}, &mesh_F};
-  const BoundingVolumeHierarchy<VolumeMesh<double>> bvh_F(mesh_F);
+  const Bvh<VolumeMesh<double>> bvh_F(mesh_F);
 
   // We'll pose the plane in the soft mesh's frame S and then transform the
   // whole system.
@@ -1174,6 +1236,8 @@ GTEST_TEST(MeshPlaneIntersectionTest, SoftVolumeRigidHalfSpace) {
     // indicators.
     auto contact_surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
         id_A, field_F, bvh_F, X_WS, id_B, X_WR);
+    EXPECT_TRUE(contact_surface->HasGradE_M());
+    EXPECT_FALSE(contact_surface->HasGradE_N());
     ASSERT_NE(contact_surface, nullptr);
     // We exploit the knowledge that id_M < id_N and id_A < id_B.
     ASSERT_LT(id_A, id_B);
@@ -1234,7 +1298,7 @@ GTEST_TEST(MeshPlaneIntersectionTest, AutoDiffThrows) {
   const VolumeMesh<double> mesh_F = TrivialVolumeMesh(RigidTransformd{});
   const VolumeMeshFieldLinear<double, double> field_F{
       "pressure", vector<double>{0.25, 0.5, 0.75, 1, -1}, &mesh_F};
-  const BoundingVolumeHierarchy<VolumeMesh<double>> bvh_F(mesh_F);
+  const Bvh<VolumeMesh<double>> bvh_F(mesh_F);
 
   const RigidTransform<AutoDiffXd> X_WS;
   const RigidTransform<AutoDiffXd> X_WR;

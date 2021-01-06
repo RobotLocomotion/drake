@@ -349,6 +349,9 @@ def _generate_pybind_documentation_header_impl(ctx):
     target_deps = _collect_cc_header_info(ctx.attr.target_deps)
 
     args = ctx.actions.args()
+
+    # TODO(jamiesnape): Remove this line when #14034 is resolved.
+    args.add("-DDRAKE_COMMON_SYMBOLIC_DETAIL_HEADER")
     args.add_all(
         targets.compile_flags + target_deps.compile_flags,
         uniquify = True,
@@ -425,8 +428,7 @@ def add_pybind_coverage_data(
     added to each package where coverage is desired."""
     native.filegroup(
         name = name,
-        srcs = native.glob(["*_py*.cc"]),
-        data = [
+        srcs = native.glob(["*_py*.cc"], allow_empty = False) + [
             subpackage + ":pybind_coverage_data"
             for subpackage in subpackages
         ],

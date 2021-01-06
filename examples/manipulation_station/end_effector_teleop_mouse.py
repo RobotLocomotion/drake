@@ -6,8 +6,8 @@ import numpy as np
 
 from pydrake.examples.manipulation_station import (
     ManipulationStation, ManipulationStationHardwareInterface,
-    CreateClutterClearingYcbObjectList)
-from pydrake.geometry import ConnectDrakeVisualizer
+    CreateClutterClearingYcbObjectList, SchunkCollisionModel)
+from pydrake.geometry import DrakeVisualizer
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.manipulation.planner import (
     DifferentialInverseKinematicsParameters)
@@ -15,7 +15,8 @@ from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (BasicVector, DiagramBuilder,
                                        LeafSystem)
-from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
+from pydrake.systems.meshcat_visualizer import (
+    ConnectMeshcatVisualizer, MeshcatVisualizer)
 from pydrake.systems.primitives import FirstOrderLowPassFilter
 
 from drake.examples.manipulation_station.differential_ik import DifferentialIK
@@ -272,6 +273,11 @@ def main():
         '--setup', type=str, default='manipulation_class',
         help="The manipulation station setup to simulate. ",
         choices=['manipulation_class', 'clutter_clearing'])
+    parser.add_argument(
+        '--schunk_collision_model', type=str, default='box',
+        help="The Schunk collision model to use for simulation. ",
+        choices=['box', 'box_plus_fingertip_spheres'])
+
     MeshcatVisualizer.add_argparse_argument(parser)
     args = parser.parse_args()
 
@@ -291,27 +297,36 @@ def main():
     else:
         station = builder.AddSystem(ManipulationStation())
 
+        if args.schunk_collision_model == "box":
+            schunk_model = SchunkCollisionModel.kBox
+        elif args.schunk_collision_model == "box_plus_fingertip_spheres":
+            schunk_model = SchunkCollisionModel.kBoxPlusFingertipSpheres
+
         # Initializes the chosen station type.
         if args.setup == 'manipulation_class':
-            station.SetupManipulationClassStation()
+            station.SetupManipulationClassStation(
+                schunk_model=schunk_model)
             station.AddManipulandFromFile(
                 ("drake/examples/manipulation_station/models/"
                  "061_foam_brick.sdf"),
                 RigidTransform(RotationMatrix.Identity(), [0.6, 0, 0]))
         elif args.setup == 'clutter_clearing':
-            station.SetupClutterClearingStation()
+            station.SetupClutterClearingStation(
+                schunk_model=schunk_model)
+
             ycb_objects = CreateClutterClearingYcbObjectList()
             for model_file, X_WObject in ycb_objects:
                 station.AddManipulandFromFile(model_file, X_WObject)
 
         station.Finalize()
-        ConnectDrakeVisualizer(builder, station.get_scene_graph(),
-                               station.GetOutputPort("pose_bundle"))
+        DrakeVisualizer.AddToBuilder(builder,
+                                     station.GetOutputPort("query_object"))
         if args.meshcat:
-            meshcat = builder.AddSystem(MeshcatVisualizer(
-                station.get_scene_graph(), zmq_url=args.meshcat))
-            builder.Connect(station.GetOutputPort("pose_bundle"),
-                            meshcat.get_input_port(0))
+            meshcat = ConnectMeshcatVisualizer(
+                builder, output_port=station.GetOutputPort("geometry_query"),
+                zmq_url=args.meshcat, open_browser=args.open_browser)
+            if args.setup == 'planar':
+                meshcat.set_planar_viewpoint()
 
     robot = station.get_controller_plant()
     params = DifferentialInverseKinematicsParameters(robot.num_positions(),

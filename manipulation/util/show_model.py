@@ -30,7 +30,14 @@ remove the need for `--find_resource`:
 
     ./bazel-bin/manipulation/util/show_model \
         --meshcat default \
-        ${PWD}/manipulation/models/iiwa_description/sdf/iiwa7_no_collision.sdf
+        ${PWD}/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
+
+If the model uses package path (e.g. "package://package_name/model_sdf.obj") to
+refer mesh files, you also have to provide the argument `--package_path`:
+    ./bazel-bin/manipulation/util/show_model \
+        --package_path \
+        manipulation/models/iiwa_description \
+        ./manipulation/models/iiwa_description/iiwa7/iiwa7_no_collision.sdf
 
 Note:
     If `--meshcat` is not specified, no meshcat visualization will take
@@ -47,12 +54,13 @@ import os
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import MakePhongIllustrationProperties
-from pydrake.geometry import ConnectDrakeVisualizer
+from pydrake.geometry import DrakeVisualizer
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
-from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
+from pydrake.systems.meshcat_visualizer import (
+    ConnectMeshcatVisualizer, MeshcatVisualizer)
 from pydrake.systems.planar_scenegraph_visualizer import (
     PlanarSceneGraphVisualizer,
 )
@@ -149,15 +157,12 @@ def parse_visualizers(args_parser, args):
 
     def connect_visualizers(builder, plant, scene_graph):
         # Connect this to drake_visualizer.
-        ConnectDrakeVisualizer(builder=builder, scene_graph=scene_graph)
+        DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph)
 
         # Connect to Meshcat.
         if args.meshcat is not None:
-            meshcat_viz = builder.AddSystem(
-                MeshcatVisualizer(scene_graph, zmq_url=args.meshcat))
-            builder.Connect(
-                scene_graph.get_pose_bundle_output_port(),
-                meshcat_viz.get_input_port(0))
+            meshcat_viz = ConnectMeshcatVisualizer(
+                builder, scene_graph, zmq_url=args.meshcat)
 
         # Connect to PyPlot.
         if args.pyplot:

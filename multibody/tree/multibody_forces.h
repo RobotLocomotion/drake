@@ -5,11 +5,15 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/math/spatial_force.h"
-#include "drake/multibody/tree/multibody_tree_system.h"
+#include "drake/multibody/math/spatial_algebra.h"
 
 namespace drake {
 namespace multibody {
+
+namespace internal {
+template <typename T> class MultibodyTree;
+template <typename T> class MultibodyTreeSystem;
+}  // namespace internal
 
 /// A class to hold a set of forces applied to a MultibodyTree system.
 /// Forces can include generalized forces as well as body spatial forces.
@@ -20,17 +24,12 @@ class MultibodyForces {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MultibodyForces)
 
-  // TODO(amcastro-tri): replace with MultibodyPlant once dependency becomes
-  // logical.
-  template <typename U>
-  using MultibodyPlantSurrogate = internal::MultibodyTreeSystem<U>;
-
   /// Constructs a force object to store a set of forces to be applied to
   /// the multibody model for `plant`. Forces are initialized to zero, meaning
   /// no forces are applied.
   /// `plant` must have been already finalized with
   /// MultibodyPlant::Finalize() or this constructor will abort.
-  explicit MultibodyForces(const MultibodyPlantSurrogate<T>& plant);
+  explicit MultibodyForces(const internal::MultibodyTreeSystem<T>& plant);
 
   /// (Advanced) Tree overload.
   explicit MultibodyForces(const internal::MultibodyTree<T>& model);
@@ -76,7 +75,8 @@ class MultibodyForces {
   /// proper sizes to represent the set of forces for the given `plant`.
   /// @returns true if `this` forces object has the proper sizes for the given
   /// `plant`.
-  bool CheckHasRightSizeForModel(const MultibodyPlantSurrogate<T>& plant) const;
+  bool CheckHasRightSizeForModel(
+      const internal::MultibodyTreeSystem<T>& plant) const;
 
   /// (Advanced) Tree overload.
   bool CheckHasRightSizeForModel(const internal::MultibodyTree<T>& model) const;

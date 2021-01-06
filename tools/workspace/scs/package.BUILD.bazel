@@ -18,10 +18,9 @@ cc_library(
         "src/*.c",
     ]) + [
         "linsys/amatrix.h",
-        "linsys/common.c",
-        "linsys/common.h",
-        "linsys/direct/private.c",
-        "linsys/direct/private.h",
+        "linsys/amatrix.c",
+        "linsys/cpu/direct/private.c",
+        "linsys/cpu/direct/private.h",
     ],
     hdrs = glob([
         "include/*.h",

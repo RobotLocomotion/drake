@@ -2,7 +2,6 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -12,7 +11,7 @@
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/analysis/simulator_flags.h"
+#include "drake/systems/analysis/simulator_config_functions.h"
 #include "drake/systems/analysis/simulator_print_stats.h"
 
 using std::unique_ptr;
@@ -52,10 +51,20 @@ PYBIND11_MODULE(analysis, m) {
         .def("boundary_time", &Class::boundary_time, cls_doc.boundary_time.doc)
         .def("return_time", &Class::return_time, cls_doc.return_time.doc)
         .def("reason", &Class::reason, cls_doc.reason.doc)
-        .def("system", &Class::system, py_reference, cls_doc.system.doc)
+        .def("system", &Class::system, py_rvp::reference, cls_doc.system.doc)
         .def("message", &Class::message, cls_doc.message.doc)
         .def("IsIdenticalStatus", &Class::IsIdenticalStatus, py::arg("other"),
             cls_doc.IsIdenticalStatus.doc);
+  }
+
+  {
+    constexpr auto& cls_doc = pydrake_doc.drake.systems.InitializeParams;
+    using Class = InitializeParams;
+    py::class_<Class>(m, "InitializeParams", cls_doc.doc)
+        .def(ParamInit<Class>())
+        .def_readwrite("suppress_initialization_events",
+            &Class::suppress_initialization_events,
+            cls_doc.suppress_initialization_events.doc);
   }
 
   auto bind_scalar_types = [m](auto dummy) {
@@ -90,7 +99,7 @@ PYBIND11_MODULE(analysis, m) {
         .def("StartDenseIntegration", &IntegratorBase<T>::StartDenseIntegration,
             doc.IntegratorBase.StartDenseIntegration.doc)
         .def("get_dense_output", &IntegratorBase<T>::get_dense_output,
-            py_reference_internal, doc.IntegratorBase.get_dense_output.doc)
+            py_rvp::reference_internal, doc.IntegratorBase.get_dense_output.doc)
         .def("StopDenseIntegration", &IntegratorBase<T>::StopDenseIntegration,
             doc.IntegratorBase.StopDenseIntegration.doc);
 
@@ -131,7 +140,8 @@ PYBIND11_MODULE(analysis, m) {
             // Keep alive, ownership: `context` keeps `self` alive.
             py::keep_alive<3, 1>(), doc.Simulator.ctor.doc)
         .def("Initialize", &Simulator<T>::Initialize,
-            doc.Simulator.Initialize.doc)
+            doc.Simulator.Initialize.doc,
+            py::arg("params") = InitializeParams{})
         .def("AdvanceTo", &Simulator<T>::AdvanceTo, py::arg("boundary_time"),
             doc.Simulator.AdvanceTo.doc)
         .def("AdvancePendingEvents", &Simulator<T>::AdvancePendingEvents,
@@ -142,14 +152,15 @@ PYBIND11_MODULE(analysis, m) {
             doc.Simulator.clear_monitor.doc)
         .def("get_monitor", &Simulator<T>::get_monitor,
             doc.Simulator.get_monitor.doc)
-        .def("get_context", &Simulator<T>::get_context, py_reference_internal,
-            doc.Simulator.get_context.doc)
+        .def("get_context", &Simulator<T>::get_context,
+            py_rvp::reference_internal, doc.Simulator.get_context.doc)
         .def("get_integrator", &Simulator<T>::get_integrator,
-            py_reference_internal, doc.Simulator.get_integrator.doc)
+            py_rvp::reference_internal, doc.Simulator.get_integrator.doc)
         .def("get_mutable_integrator", &Simulator<T>::get_mutable_integrator,
-            py_reference_internal, doc.Simulator.get_mutable_integrator.doc)
+            py_rvp::reference_internal,
+            doc.Simulator.get_mutable_integrator.doc)
         .def("get_mutable_context", &Simulator<T>::get_mutable_context,
-            py_reference_internal, doc.Simulator.get_mutable_context.doc)
+            py_rvp::reference_internal, doc.Simulator.get_mutable_context.doc)
         .def("has_context", &Simulator<T>::has_context,
             doc.Simulator.has_context.doc)
         .def("reset_context", &Simulator<T>::reset_context, py::arg("context"),
@@ -171,25 +182,8 @@ PYBIND11_MODULE(analysis, m) {
             doc.Simulator.get_actual_realtime_rate.doc)
         .def("ResetStatistics", &Simulator<T>::ResetStatistics,
             doc.Simulator.ResetStatistics.doc)
-        .def("get_system", &Simulator<T>::get_system, py_reference,
+        .def("get_system", &Simulator<T>::get_system, py_rvp::reference,
             doc.Simulator.get_system.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    const char* const reset_integrator_doc =
-        "(Deprecated.) pydrake.systems.Simulator.reset_integrator is "
-        "deprecated and will be removed from Drake on or after 2020-08-01. "
-        "Use pydrake.systems.ResetIntegratorFromFlags instead.";
-    cls  // BR
-        .def("reset_integrator",
-            WrapDeprecated(reset_integrator_doc,
-                [](Simulator<T>* self,
-                    std::unique_ptr<IntegratorBase<T>> integrator) {
-                  return self->reset_integrator(std::move(integrator));
-                }),
-            py::arg("integrator"),
-            // Keep alive, ownership: `integrator` keeps `self` alive.
-            py::keep_alive<2, 1>(), reset_integrator_doc);
-#pragma GCC diagnostic pop
   };
   type_visit(bind_nonsymbolic_scalar_types, NonSymbolicScalarPack{});
 
@@ -204,7 +198,7 @@ PYBIND11_MODULE(analysis, m) {
             return &result;
           },
           py::arg("simulator"), py::arg("scheme"), py::arg("max_step_size"),
-          py_reference,
+          py_rvp::reference,
           // Keep alive, reference: `return` keeps `simulator` alive.
           py::keep_alive<0, 1>(),
           pydrake_doc.drake.systems.ResetIntegratorFromFlags.doc)

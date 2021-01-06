@@ -1,6 +1,6 @@
 # Drake Tutorials
 
-This provdies more in-depth documentation on top of the
+This provides more in-depth documentation on top of the
 [Drake Documentation's Tutorials](https://drake.mit.edu/#tutorials) section.
 
 ## Running the Tutorials Locally
@@ -20,16 +20,16 @@ bazel run //tutorials:mathematical_program
 The notebooks in this folder can be run and quickly viewed online using
 [Binder](https://mybinder.org) and [nbviewer](https://nbviewer.jupyter.org/).
 
-To run or quickly view them from the Drake `nightly-release` branch on GitHub:
+To run or quickly view them from the Drake `nightly-release-binder` branch on GitHub:
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release?filepath=tutorials)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release-binder?filepath=tutorials)
 [![nbviewer](https://img.shields.io/badge/view%20on-nbviewer-brightgreen.svg)](https://nbviewer.jupyter.org/github/RobotLocomotion/drake/blob/nightly-release/tutorials/)
 
 Since Binder uses the `robotlocomotion/drake:latest` image on
 [Docker Hub](https://hub.docker.com/r/robotlocomotion/drake) that is published
-once a day from the `nightly-release` branch, it may be missing features used by
-notebooks on `master`. These will be available the next day when the
-`nightly-release` branch is automatically updated.
+once a day from the `nightly-release-binder` branch, it may be missing features
+used by notebooks on `master`. These will be available the next day when the
+`nightly-release-binder` branch is automatically updated.
 
 If you are looking to browse among the notebooks with minimal wait time,
 nbviewer is highly recommended, as you can also launch Binder directly from
@@ -59,6 +59,6 @@ For the pull request that adds the notebook(s), please include a `nbviewer`
 link to the directory on your fork and branch, e.g.,
 `https://nbviewer.jupyter.org/github/{user}/drake/blob/{branch}/tutorials/`
 
-If appropriate, add a Binder link to the notebook (in the `nightly-release`
+If appropriate, add a Binder link to the notebook (in the `nightly-release-binder`
 branch) in the relevant documentation in `/doc`, e.g.,
-`https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release?filepath=tutorials/{notebook}.ipynb`
+`https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release-binder?filepath=tutorials/{notebook}.ipynb`

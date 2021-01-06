@@ -50,7 +50,7 @@ def main():
         help="Torque limit of the pendulum.")
     args = parser.parse_args()
     if args.torque_limit < 0:
-        raise InvalidArgumentError("Please supply a nonnegative torque limit.")
+        raise ValueError("Please supply a nonnegative torque limit.")
 
     # Assemble the Pendulum plant.
     builder = DiagramBuilder()

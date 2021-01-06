@@ -9,10 +9,19 @@ On macOS, Homebrew now symlinks Drake's compatible version of Python 3 (3.8)
 into ``/usr/local/bin/``, so it is on the ``$PATH`` by default.  There is no
 longer any need to add ``/usr/local/opt/python@3.8/bin`` to your ``$PATH``.
 
+.. warning::
+
+  The newly-added feature for JavaScript system diagram visualization
+  (`#13644`_) with function name ``drake::systems::GenerateHtml`` in C++ and
+  ``pydrake.systems.framework.GenerateHtml`` in Python fetches the GoJS graph
+  library in your browser with only an evaluation license.  We recommend
+  avoiding this new feature while we sort out the licensing question
+  (`#13705`_).
+
 Breaking changes since v0.19.0
 ------------------------------
 
-These are no breaking changes that did not undergo a deprecation period.
+There are no breaking changes that did not undergo a deprecation period.
 
 Changes since v0.19.0:
 ----------------------
@@ -256,6 +265,7 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#13686: https://github.com/RobotLocomotion/drake/pull/13686
 .. _#13687: https://github.com/RobotLocomotion/drake/pull/13687
 .. _#13693: https://github.com/RobotLocomotion/drake/pull/13693
+.. _#13705: https://github.com/RobotLocomotion/drake/pull/13705
 
 ..
   Current oldest_commit 43a28f99ac2aa9d152c096b6a878465336d879f6 (inclusive).

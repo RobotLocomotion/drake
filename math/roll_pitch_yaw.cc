@@ -180,7 +180,7 @@ void RollPitchYaw<T>::SetFromQuaternionAndRotationMatrix(
         " formed by the Quaternion passed to this method.  To avoid this"
         " inconsistency, ensure the orientation of R and Quaternion align."
         " ({}:{}).", __func__, tolerance, __FILE__, __LINE__);
-    throw std::logic_error(message);
+    throw std::runtime_error(message);
   }
 
   // This algorithm converts a quaternion and %RotationMatrix to %RollPitchYaw.
@@ -226,7 +226,7 @@ void RollPitchYaw<T>::ThrowPitchAngleViolatesGimbalLockTolerance(
         " orientation singularity, use a quaternion -- not RollPitchYaw."
         " ({}:{}).", function_name, pitch_radians * 180 / M_PI,
                      tolerance_degrees, file_name, line_number);
-    throw std::logic_error(message);
+    throw std::runtime_error(message);
 }
 
 }  // namespace math

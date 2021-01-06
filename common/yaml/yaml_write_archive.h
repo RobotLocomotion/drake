@@ -5,6 +5,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <variant>
@@ -93,20 +94,28 @@ class YamlWriteArchive final {
   }
 
   /// Returns the YAML string for whatever Serializable was most recently
-  /// passed into Accept.  The returned document will be a single Map node
-  /// named using `root_name` with the Serializable's visited fields as
-  /// key-value entries within it.
-  std::string EmitString(const std::string& root_name = "root") const {
-    std::string result;
-    if (root_.IsNull()) {
-      result = root_name + ":\n";
-    } else {
-      YAML::Node document;
-      document[root_name] = root_;
-      result = YamlDumpWithSortedMaps(document) + "\n";
-    }
-    return result;
-  }
+  /// passed into Accept.
+  ///
+  /// If the `root_name` is empty, the returned document will be the
+  /// Serializable's visited content (which itself is already a Map node)
+  /// directly. If the visited serializable content is null (in cases
+  /// `Accpet()` has not been called or the entries are erased after calling
+  /// `EraseMatchingMaps()`), then an empty map `{}` will be emitted.
+  ///
+  /// If the `root_name` is not empty, the returned document will be a
+  /// single Map node named using `root_name` with the Serializable's visited
+  /// content as key-value entries within it. The visited content could be
+  /// null and the nullness is defined as above.
+  std::string EmitString(const std::string& root_name = "root") const;
+
+  /// (Advanced.)  Remove from this archive any map entries that are identical
+  /// to an entry in `other`, iff they reside at the same location within the
+  /// node tree hierarchy, and iff their parent nodes (and grandparent, etc.,
+  /// all the way up to the root) are also all maps.  This enables emitting a
+  /// minimal YAML representation when the output will be later loaded using
+  /// YamlReadArchive's option to retain_map_defaults; the "all parents are
+  /// maps" condition is the complement to what retain_map_defaults admits.
+  void EraseMatchingMaps(const YamlWriteArchive& other);
 
   /// (Advanced.)  Copies the value pointed to by `nvp.value()` into the YAML
   /// object.  Most users should should call Accept, not Visit.
@@ -241,7 +250,14 @@ class YamlWriteArchive final {
   void VisitScalar(const NVP& nvp) {
     using T = typename NVP::value_type;
     const T& value = *nvp.value();
-    root_[nvp.name()] = fmt::format("{}", value);
+    if constexpr (std::is_floating_point_v<T>) {
+      // Different versions of fmt disagree on whether to omit the trailing
+      // ".0" when formatting integer-valued floating-point numbers.  Force
+      // the ".0" in all cases by using the "#" option.
+      root_[nvp.name()] = fmt::format("{:#}", value);
+    } else {
+      root_[nvp.name()] = fmt::format("{}", value);
+    }
   }
 
   template <typename NVP>
@@ -299,7 +315,13 @@ class YamlWriteArchive final {
           "Cannot YamlWriteArchive the variant type {} with a non-zero index",
           full_name));
     }
-    return NiceTypeName::RemoveNamespaces(full_name);
+    std::string short_name = NiceTypeName::RemoveNamespaces(full_name);
+    auto angle = short_name.find('<');
+    if (angle != std::string::npos) {
+      // Remove template arguments.
+      short_name.resize(angle);
+    }
+    return short_name;
   }
 
   template <typename T>

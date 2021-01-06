@@ -34,8 +34,11 @@ drake_cc_package_library(
         ":detail_scene_graph",
         ":detail_sdf_parser",
         ":detail_urdf_parser",
+        ":model_directives",
         ":package_map",
         ":parser",
+        ":process_model_directives",
+        ":scoped_names",
     ],
 )
 
@@ -70,8 +73,10 @@ drake_cc_library(
         "detail_path_utils.h",
         "detail_tinyxml.h",
     ],
-    visibility = [
-        "//attic/multibody/parsers:__pkg__",
+    install_hdrs_exclude = [
+        # This header includes `ignition` directly, which we do not
+        # want to expose externally.
+        "detail_ignition.h",
     ],
     deps = [
         ":package_map",
@@ -170,6 +175,49 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "model_directives",
+    hdrs = [
+        "model_directives.h",
+    ],
+    visibility = [
+        "//visibility:public",
+    ],
+    deps = [
+        "//common:essential",
+        "//common:name_value",
+        "//common/schema:transform",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "process_model_directives",
+    srcs = ["process_model_directives.cc"],
+    hdrs = ["process_model_directives.h"],
+    visibility = [
+        "//visibility:public",
+    ],
+    deps = [
+        ":model_directives",
+        ":parser",
+        ":scoped_names",
+        "//common:filesystem",
+        "//common:find_resource",
+        "//common/yaml:yaml_read_archive",
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
+    name = "scoped_names",
+    srcs = ["scoped_names.cc"],
+    hdrs = ["scoped_names.h"],
+    deps = [
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
     name = "test_loaders",
     testonly = 1,
     srcs = [
@@ -224,6 +272,33 @@ drake_cc_googletest(
         "//common:filesystem",
         "//common:find_resource",
         "//common/test_utilities",
+    ],
+)
+
+filegroup(
+    name = "process_model_directives_test_models",
+    testonly = True,
+    data = glob(["test/process_model_directives_test/**"]),
+    visibility = [
+        "//bindings/pydrake/multibody:__pkg__",
+    ],
+)
+
+drake_cc_googletest(
+    name = "process_model_directives_test",
+    data = [
+        ":process_model_directives_test_models",
+    ],
+    deps = [
+        ":process_model_directives",
+    ],
+)
+
+drake_cc_googletest(
+    name = "model_directives_test",
+    deps = [
+        ":model_directives",
+        "//common/yaml:yaml_read_archive",
     ],
 )
 

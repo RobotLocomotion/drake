@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <limits>
 #include <string>
+#include <tuple>
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
@@ -48,6 +49,135 @@ using std::unordered_map;
 using std::vector;
 
 namespace {
+
+  // TODO(SeanCurtis-TRI) Move this tinyobj->fcl code into its own library that
+  //  can be built and tested separately.
+
+  //
+  // Convert vertices from tinyobj format to FCL format.
+  //
+  // Vertices from tinyobj are in a vector of floating-points like this:
+  //     attrib.vertices = {c0,c1,c2, c3,c4,c5, c6,c7,c8,...}
+  //                     = {x, y, z,  x, y, z,  x, y, z,...}
+  // We will convert to a vector of Vector3d for FCL like this:
+  //     vertices = {{c0,c1,c2}, {c3,c4,c5}, {c6,c7,c8},...}
+  //              = {    v0,         v1,         v2,    ...}
+  //
+  // The size of `attrib.vertices` is three times the number of vertices.
+  //
+  std::vector<Vector3d> TinyObjToFclVertices(const tinyobj::attrib_t& attrib,
+                                             const double scale) {
+    int num_coords = attrib.vertices.size();
+    DRAKE_DEMAND(num_coords % 3 == 0);
+    std::vector<Vector3d> vertices;
+    vertices.reserve(num_coords / 3);
+
+    auto iter = attrib.vertices.begin();
+    while (iter != attrib.vertices.end()) {
+      // We increment `iter` three times for x, y, and z coordinates.
+      double x = *(iter++) * scale;
+      double y = *(iter++) * scale;
+      double z = *(iter++) * scale;
+      vertices.emplace_back(x, y, z);
+    }
+
+    return vertices;
+  }
+
+  //
+  // Returns the `mesh`'s faces re-encoded in a format consistent with what
+  // fcl::Convex expects.
+  //
+  // A tinyobj mesh has an integer array storing the number of vertices of
+  // each polygonal face.
+  //     mesh.num_face_vertices = {n0,n1,n2,...}
+  //         face0 has n0 vertices.
+  //         face1 has n1 vertices.
+  //         face2 has n2 vertices.
+  //         ...
+  // A tinyobj mesh has a vector of vertices that belong to the faces.
+  //     mesh.indices = {v0_0, v0_1,..., v0_n0-1,
+  //                     v1_0, v1_1,..., v1_n1-1,
+  //                     v2_0, v2_1,..., v2_n2-1,
+  //                     ...}
+  //         face0 has vertices v0_0, v0_1,...,v0_n0-1.
+  //         face1 has vertices v1_0, v1_1,...,v1_n1-1.
+  //         face2 has vertices v2_0, v2_1,...,v2_n2-1.
+  //         ...
+  // For fcl::Convex, faces are encoded as an array of integers in this format.
+  //     faces = { n0, v0_0,v0_1,...,v0_n0-1,
+  //               n1, v1_0,v1_1,...,v1_n1-1,
+  //               n2, v2_0,v2_1,...,v2_n2-1,
+  //               ...}
+  // where ni is the number of vertices of facei.
+  //
+  // The actual number of faces returned will be equal to:
+  // mesh.num_face_vertices.size() which *cannot* be easily inferred from the
+  // *size* of the returned vector.
+  std::vector<int> TinyObjToFclFaces(const tinyobj::mesh_t& mesh) {
+    std::vector<int> faces;
+    faces.reserve(mesh.indices.size() + mesh.num_face_vertices.size());
+    auto iter = mesh.indices.begin();
+    for (int num : mesh.num_face_vertices) {
+      faces.push_back(num);
+      std::for_each(iter, iter + num, [&faces](const tinyobj::index_t& index) {
+        faces.push_back(index.vertex_index);
+      });
+      iter += num;
+    }
+
+    return faces;
+  }
+
+  // Reads the OBJ file with the given `filename` into a collection of data
+  // suitable for instantiating an fcl::Convex shape. It includes the vertex
+  // positions, face encodings (see TinyObjToFclFaces), and number of faces.
+  std::tuple<std::shared_ptr<std::vector<Vector3d>>,
+             std::shared_ptr<std::vector<int>>, int>
+  ReadObjForConvex(const std::string& filename, double scale,
+                   bool triangulate) {
+    tinyobj::attrib_t attrib;
+    std::vector<tinyobj::shape_t> shapes;
+    std::vector<tinyobj::material_t> materials;
+    std::string err;
+
+    // Tinyobj doesn't infer the search directory from the directory containing
+    // the obj file. We have to provide that directory; of course, this assumes
+    // that the material library reference is relative to the obj directory.
+    const size_t pos = filename.find_last_of('/');
+    const std::string obj_folder = filename.substr(0, pos + 1);
+    const char* mtl_basedir = obj_folder.c_str();
+
+    bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err,
+                                filename.c_str(), mtl_basedir, triangulate);
+    if (!ret || !err.empty()) {
+      throw std::runtime_error("Error parsing file '" + filename +
+                               "' : " + err);
+    }
+
+    if (shapes.size() != 1) {
+      throw std::runtime_error(
+          fmt::format("The OBJ contains multiple objects; only OBJs with a "
+                      "single object are supported: '{}'",
+                      filename));
+    }
+
+    auto vertices = std::make_shared<std::vector<Vector3d>>(
+        TinyObjToFclVertices(attrib, scale));
+
+    // We will have `faces.size()` larger than the number of faces. For each
+    // face_i, the vector `faces` contains both the number and indices of its
+    // vertices:
+    //     faces = { n0, v0_0,v0_1,...,v0_n0-1,
+    //               n1, v1_0,v1_1,...,v1_n1-1,
+    //               n2, v2_0,v2_1,...,v2_n2-1,
+    //               ...}
+    // where n_i is the number of vertices of face_i.
+    //
+    int num_faces = static_cast<int>(shapes[0].mesh.num_face_vertices.size());
+    auto faces = make_shared<vector<int>>(TinyObjToFclFaces(shapes[0].mesh));
+    return {vertices, faces, num_faces};
+  }
 
 // Returns a copy of the given fcl collision geometry; throws an exception for
 // unsupported collision geometry types. This supplements the *missing* cloning
@@ -157,28 +287,6 @@ struct ReifyData {
   const ProximityProperties& properties;
 };
 
-// Small class for identifying mesh geometries. Unlike other kinds of
-// geometries, meshes are supported only in ComputeContactSurfaces but
-// not other proximity queries.
-class MeshIdentifier final : public ShapeReifier {
- public:
-  bool is_mesh() const { return is_mesh_; }
-
-  // Implementation of ShapeReifier interface.
-  using ShapeReifier::ImplementGeometry;
-  void ImplementGeometry(const Sphere&, void*) final {}
-  void ImplementGeometry(const Cylinder&, void*) final {}
-  void ImplementGeometry(const Ellipsoid&, void*) final {}
-  void ImplementGeometry(const HalfSpace&, void*) final {}
-  void ImplementGeometry(const Box&, void*) final {}
-  void ImplementGeometry(const Capsule&, void*) final {}
-  void ImplementGeometry(const Mesh&, void*) final { is_mesh_ = true; }
-  void ImplementGeometry(const Convex&, void*) final {}
-
- private:
-  bool is_mesh_{false};
-};
-
 // Helper functions to facilitate exercising FCL's broadphase code. FCL has
 // inconsistent usage of `const`. As such, even though the broadphase structures
 // do not change during collision and distance queries, they are nevertheless
@@ -202,6 +310,22 @@ void FclDistance(const fcl::DynamicAABBTreeCollisionManager<double>& tree1,
       callback);
 }
 
+// Compare function to use with ordering PenetrationAsPointPairs.
+template <typename T>
+bool OrderPointPair(const PenetrationAsPointPair<T>& p1,
+                    const PenetrationAsPointPair<T>& p2) {
+  if (p1.id_A != p2.id_A) return p1.id_A < p2.id_A;
+  return p1.id_B < p2.id_B;
+}
+
+// Compare function to use with ordering ContactSurfaces.
+template <typename T>
+bool OrderContactSurface(const ContactSurface<T>& s1,
+                         const ContactSurface<T>& s2) {
+  if (s1.id_M() != s2.id_M()) return s1.id_M() < s2.id_M();
+  return s1.id_N() < s2.id_N();
+}
+
 }  // namespace
 
 // The implementation class for the fcl engine. Each of these functions
@@ -218,11 +342,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     dynamic_objects_.clear();
     anchored_tree_.clear();
     anchored_objects_.clear();
-    dynamic_mesh_tree_.clear();
-    dynamic_mesh_objects_.clear();
-    anchored_mesh_tree_.clear();
-    anchored_mesh_objects_.clear();
-    X_MeshBs_.clear();
 
     // Copy all of the geometry.
     std::unordered_map<const CollisionObjectd*, CollisionObjectd*>
@@ -231,19 +350,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                           &object_map);
     CopyFclObjectsOrThrow(other.dynamic_objects_, &dynamic_objects_,
                           &object_map);
-    CopyFclObjectsOrThrow(other.anchored_mesh_objects_, &anchored_mesh_objects_,
-                          &object_map);
-    CopyFclObjectsOrThrow(other.dynamic_mesh_objects_, &dynamic_mesh_objects_,
-                          &object_map);
-    X_MeshBs_ = other.X_MeshBs_;
 
     // Build new AABB trees from the input AABB trees.
     BuildTreeFromReference(other.dynamic_tree_, object_map, &dynamic_tree_);
     BuildTreeFromReference(other.anchored_tree_, object_map, &anchored_tree_);
-    BuildTreeFromReference(other.dynamic_mesh_tree_, object_map,
-                           &dynamic_mesh_tree_);
-    BuildTreeFromReference(other.anchored_mesh_tree_, object_map,
-                           &anchored_mesh_tree_);
 
     collision_filter_ = other.collision_filter_;
   }
@@ -267,76 +377,26 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                           &object_map);
     CopyFclObjectsOrThrow(dynamic_objects_, &engine->dynamic_objects_,
                           &object_map);
-    CopyFclObjectsOrThrow(anchored_mesh_objects_,
-                          &engine->anchored_mesh_objects_, &object_map);
-    CopyFclObjectsOrThrow(dynamic_mesh_objects_, &engine->dynamic_mesh_objects_,
-                          &object_map);
-    engine->X_MeshBs_ = this->X_MeshBs_;
 
     engine->collision_filter_ = this->collision_filter_;
 
     // Build new AABB trees from the input AABB trees.
     BuildTreeFromReference(dynamic_tree_, object_map, &engine->dynamic_tree_);
     BuildTreeFromReference(anchored_tree_, object_map, &engine->anchored_tree_);
-    BuildTreeFromReference(dynamic_mesh_tree_, object_map,
-                           &engine->dynamic_mesh_tree_);
-    BuildTreeFromReference(anchored_mesh_tree_, object_map,
-                           &engine->anchored_mesh_tree_);
 
     return engine;
   }
 
-  void AddDynamicGeometry(const Shape& shape, GeometryId id,
-                          const ProximityProperties& props) {
-    ReifyData data{nullptr, id, props};
-    shape.Reify(this, &data);
-    EncodedData encoding(id, true /* is dynamic */);
-    encoding.write_to(data.fcl_object.get());
-
-    MeshIdentifier mesh_identifier;
-    shape.Reify(&mesh_identifier);
-    if (!mesh_identifier.is_mesh()) {
-      dynamic_tree_.registerObject(data.fcl_object.get());
-      dynamic_objects_[id] = std::move(data.fcl_object);
-    } else {
-      dynamic_mesh_tree_.registerObject(data.fcl_object.get());
-      dynamic_mesh_objects_[id] = std::move(data.fcl_object);
-    }
-
-    collision_filter_.AddGeometry(encoding.encoding());
+  void AddDynamicGeometry(const Shape& shape, const RigidTransformd& X_WG,
+                          GeometryId id, const ProximityProperties& props) {
+    AddGeometry(shape, X_WG, id, props, true, &dynamic_tree_,
+                &dynamic_objects_);
   }
 
   void AddAnchoredGeometry(const Shape& shape, const RigidTransformd& X_WG,
                            GeometryId id, const ProximityProperties& props) {
-    ReifyData data{nullptr, id, props};
-    shape.Reify(this, &data);
-    MeshIdentifier mesh_identifier;
-    shape.Reify(&mesh_identifier);
-
-    if (!mesh_identifier.is_mesh()) {
-      data.fcl_object->setTransform(X_WG.GetAsIsometry3());
-    } else {
-      // For a Mesh geometry G, its fcl object is its bounding Box B that has
-      // its pose X_GB expressed in G's frame.
-      RigidTransformd& X_GB = X_MeshBs_.at(id);
-      RigidTransformd X_WB = X_WG * X_GB;
-      data.fcl_object->setTransform(X_WB.GetAsIsometry3());
-    }
-    data.fcl_object->computeAABB();
-    EncodedData encoding(id, false /* is dynamic */);
-    encoding.write_to(data.fcl_object.get());
-
-    if (!mesh_identifier.is_mesh()) {
-      anchored_tree_.registerObject(data.fcl_object.get());
-      anchored_tree_.update();
-      anchored_objects_[id] = std::move(data.fcl_object);
-    } else {
-      anchored_mesh_tree_.registerObject(data.fcl_object.get());
-      anchored_mesh_tree_.update();
-      anchored_mesh_objects_[id] = std::move(data.fcl_object);
-    }
-
-    collision_filter_.AddGeometry(encoding.encoding());
+    AddGeometry(shape, X_WG, id, props, false, &anchored_tree_,
+                &anchored_objects_);
   }
 
   void UpdateRepresentationForNewProperties(
@@ -368,35 +428,23 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   void RemoveGeometry(GeometryId id, bool is_dynamic) {
     if (is_dynamic) {
-      if (dynamic_objects_.find(id) != dynamic_objects_.end()) {
-        RemoveGeometry(id, &dynamic_tree_, &dynamic_objects_);
-      } else {
-        RemoveGeometry(id, &dynamic_mesh_tree_, &dynamic_mesh_objects_);
-      }
+      RemoveGeometry(id, &dynamic_tree_, &dynamic_objects_);
     } else {
-      if (anchored_objects_.find(id) != anchored_objects_.end()) {
-        RemoveGeometry(id, &anchored_tree_, &anchored_objects_);
-      } else {
-        RemoveGeometry(id, &anchored_mesh_tree_, &anchored_mesh_objects_);
-      }
+      RemoveGeometry(id, &anchored_tree_, &anchored_objects_);
     }
     hydroelastic_geometries_.RemoveGeometry(id);
   }
 
   int num_geometries() const {
-    return static_cast<int>(dynamic_objects_.size() + anchored_objects_.size() +
-                            dynamic_mesh_objects_.size() +
-                            anchored_mesh_objects_.size());
+    return num_dynamic() + num_anchored();
   }
 
   int num_dynamic() const {
-    return static_cast<int>(dynamic_objects_.size() +
-                            dynamic_mesh_objects_.size());
+    return static_cast<int>(dynamic_objects_.size());
   }
 
   int num_anchored() const {
-    return static_cast<int>(anchored_objects_.size() +
-                            anchored_mesh_objects_.size());
+    return static_cast<int>(anchored_objects_.size());
   }
 
   void set_distance_tolerance(double tol) { distance_tolerance_ = tol; }
@@ -419,18 +467,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       dynamic_objects_[id]->computeAABB();
     }
     dynamic_tree_.update();
-
-    for (const auto& id_object_pair : dynamic_mesh_objects_) {
-      const GeometryId id = id_object_pair.first;
-      const RigidTransform<T>& X_WG = X_WGs.at(id);
-      // For a Mesh G, its fcl object is its bounding Box B that has its pose
-      // X_GB expressed in G's frame.
-      const RigidTransformd& X_GB = X_MeshBs_.at(id);
-      const RigidTransformd X_WB = convert_to_double(X_WG) * X_GB;
-      dynamic_mesh_objects_[id]->setTransform(X_WB.GetAsIsometry3());
-      dynamic_mesh_objects_[id]->computeAABB();
-    }
-    dynamic_mesh_tree_.update();
   }
 
   // Implementation of ShapeReifier interface
@@ -497,157 +533,31 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     ProcessHydroelastic(capsule, user_data);
   }
 
-  // Convert Mesh specification to fcl representation and hydroelastic
-  // representation. The fcl representation of the mesh is a box for
-  // broadphase culling because meshes are not supported in other proximity
-  // queries except ComputeContactSurfaces.
   void ImplementGeometry(const Mesh& mesh, void* user_data) override {
-    static const logging::Warn log_once(
-        "Mesh is only for ComputeContactSurfaces in hydroelastic contact "
-        "model. It is _not_ available in other proximity queries.");
-    SurfaceMesh<double> surface =
-        ReadObjToSurfaceMesh(mesh.filename(), mesh.scale());
-    auto [center, size] = surface.CalcBoundingBox();
-    auto fcl_box = make_shared<fcl::Boxd>(size);
+    // Don't bother triangulating; we're going to throw the faces out.
+    const auto [vertices, face_ptr, num_faces] = ReadObjForConvex(
+        mesh.filename(), mesh.scale(), false /* triangulate */);
+    unused(face_ptr, num_faces);
 
-    TakeShapeOwnership(fcl_box, user_data);
-    // Store the pose X_MB of the bounding box B expressed in mesh's frame M.
-    // Since B is axis-aligned, X_MB is simply a translation to B's center.
-    RigidTransformd X_MB(center);
-    X_MeshBs_[static_cast<ReifyData*>(user_data)->id] = X_MB;
+    // Note: the strategy here is to use an *invalid* fcl::Convex shape for the
+    // mesh. A minimum condition for "invalid" is that the convex specification
+    // contains vertices that are not referenced by a face. Passing zero faces
+    // will accomplish that.
+    auto fcl_convex =
+        make_shared<fcl::Convexd>(vertices, 0, make_shared<std::vector<int>>());
+    TakeShapeOwnership(fcl_convex, user_data);
+    // The actual mesh is used for hydroelastic representation.
     ProcessHydroelastic(mesh, user_data);
   }
 
-  //
-  // Convert vertices from tinyobj format to FCL format.
-  //
-  // Vertices from tinyobj are in a vector of floating-points like this:
-  //     attrib.vertices = {c0,c1,c2, c3,c4,c5, c6,c7,c8,...}
-  //                     = {x, y, z,  x, y, z,  x, y, z,...}
-  // We will convert to a vector of Vector3d for FCL like this:
-  //     vertices = {{c0,c1,c2}, {c3,c4,c5}, {c6,c7,c8},...}
-  //              = {    v0,         v1,         v2,    ...}
-  //
-  // The size of `attrib.vertices` is three times the number of vertices.
-  //
-  std::vector<Vector3d> TinyObjToFclVertices(const tinyobj::attrib_t& attrib,
-                                             const double scale) const {
-    int num_coords = attrib.vertices.size();
-    DRAKE_DEMAND(num_coords % 3 == 0);
-    std::vector<Vector3d> vertices;
-    vertices.reserve(num_coords / 3);
-
-    auto iter = attrib.vertices.begin();
-    while (iter != attrib.vertices.end()) {
-      // We increment `iter` three times for x, y, and z coordinates.
-      double x = *(iter++) * scale;
-      double y = *(iter++) * scale;
-      double z = *(iter++) * scale;
-      vertices.emplace_back(x, y, z);
-    }
-
-    return vertices;
-  }
-
-  //
-  // Convert faces from tinyobj to FCL.
-  //
-  //
-  // A tinyobj mesh has an integer array storing the number of vertices of
-  // each polygonal face.
-  //     mesh.num_face_vertices = {n0,n1,n2,...}
-  //         face0 has n0 vertices.
-  //         face1 has n1 vertices.
-  //         face2 has n2 vertices.
-  //         ...
-  // A tinyobj mesh has a vector of vertices that belong to the faces.
-  //     mesh.indices = {v0_0, v0_1,..., v0_n0-1,
-  //                     v1_0, v1_1,..., v1_n1-1,
-  //                     v2_0, v2_1,..., v2_n2-1,
-  //                     ...}
-  //         face0 has vertices v0_0, v0_1,...,v0_n0-1.
-  //         face1 has vertices v1_0, v1_1,...,v1_n1-1.
-  //         face2 has vertices v2_0, v2_1,...,v2_n2-1.
-  //         ...
-  // For fcl::Convex, the `faces` is as an array of integers in this format.
-  //     faces = { n0, v0_0,v0_1,...,v0_n0-1,
-  //               n1, v1_0,v1_1,...,v1_n1-1,
-  //               n2, v2_0,v2_1,...,v2_n2-1,
-  //               ...}
-  // where n_i is the number of vertices of face_i.
-  //
-  int TinyObjToFclFaces(const tinyobj::mesh_t& mesh,
-                        std::vector<int>* faces) const {
-    auto iter = mesh.indices.begin();
-    for (int num : mesh.num_face_vertices) {
-      faces->push_back(num);
-      std::for_each(iter, iter + num, [faces](const tinyobj::index_t& index) {
-        faces->push_back(index.vertex_index);
-      });
-      iter += num;
-    }
-
-    return mesh.num_face_vertices.size();
-  }
-
   void ImplementGeometry(const Convex& convex, void* user_data) override {
-    // We use tiny_obj_loader to read the .obj file of the convex shape.
-    tinyobj::attrib_t attrib;
-    std::vector<tinyobj::shape_t> shapes;
-    std::vector<tinyobj::material_t> materials;
-    std::string err;
-    // We keep polygonal faces without triangulating them. Some algorithms for
-    // convex geometry perform better with fewer faces.
-    bool do_tinyobj_triangulation = false;
-
-    // Tinyobj doesn't infer the search directory from the directory containing
-    // the obj file. We have to provide that directory; of course, this assumes
-    // that the material library reference is relative to the obj directory.
-    const size_t pos = convex.filename().find_last_of('/');
-    const std::string obj_folder = convex.filename().substr(0, pos + 1);
-    const char* mtl_basedir = obj_folder.c_str();
-
-    bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err,
-        convex.filename().c_str(), mtl_basedir, do_tinyobj_triangulation);
-    if (!ret || !err.empty()) {
-      throw std::runtime_error("Error parsing file '" + convex.filename() +
-          "' : " + err);
-    }
-
-    // TODO(DamrongGuoy) Check that the input is a valid convex polyhedron.
-    // 1. Each face is a planar polygon.
-    // 2. Each face is a convex polygon.
-    // 3. The polyhedron is convex.
-
-    //
-    // Now we convert tinyobj data for fcl::Convex.
-    //
-
-    if (shapes.size() != 1) {
-      throw std::runtime_error("For Convex geometry, the .obj file must have "
-                               "one and only one object defined in it.");
-    }
-
-    auto vertices = std::make_shared<std::vector<Vector3d>>(
-        TinyObjToFclVertices(attrib, convex.scale()));
-
-    const tinyobj::mesh_t& mesh = shapes[0].mesh;
-
-    // We will have `faces.size()` larger than the number of faces. For each
-    // face_i, the vector `faces` contains both the number and indices of its
-    // vertices:
-    //     faces = { n0, v0_0,v0_1,...,v0_n0-1,
-    //               n1, v1_0,v1_1,...,v1_n1-1,
-    //               n2, v2_0,v2_1,...,v2_n2-1,
-    //               ...}
-    // where n_i is the number of vertices of face_i.
-    //
-    auto faces = std::make_shared<std::vector<int>>();
-    int num_faces = TinyObjToFclFaces(mesh, faces.get());
+    // Don't bother triangulating; Convex supports polygons.
+    const auto [vertices, faces, num_faces] = ReadObjForConvex(
+        convex.filename(), convex.scale(), false /* triangulate */);
 
     // Create fcl::Convex.
-    auto fcl_convex = make_shared<fcl::Convexd>(
-        vertices, num_faces, faces);
+    auto fcl_convex = make_shared<fcl::Convexd>(vertices, num_faces, faces);
+
     TakeShapeOwnership(fcl_convex, user_data);
     ProcessHydroelastic(convex, user_data);
 
@@ -745,18 +655,21 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return distances;
   }
 
-  std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
-      const {
-    std::vector<PenetrationAsPointPair<double>> contacts;
-    penetration_as_point_pair::CallbackData data{&collision_filter_, &contacts};
+  std::vector<PenetrationAsPointPair<T>> ComputePointPairPenetration(
+      const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
+    std::vector<PenetrationAsPointPair<T>> contacts;
+    penetration_as_point_pair::CallbackData data{&collision_filter_, &X_WGs,
+                                                 &contacts};
 
     // Perform a query of the dynamic objects against themselves.
-    dynamic_tree_.collide(&data, penetration_as_point_pair::Callback);
+    dynamic_tree_.collide(&data, penetration_as_point_pair::Callback<T>);
 
     // Perform a query of the dynamic objects against the anchored. We don't do
     // anchored against anchored because those pairs are implicitly filtered.
     FclCollide(dynamic_tree_, anchored_tree_, &data,
-               penetration_as_point_pair::Callback);
+               penetration_as_point_pair::Callback<T>);
+
+    std::sort(contacts.begin(), contacts.end(), OrderPointPair<T>);
 
     return contacts;
   }
@@ -773,6 +686,14 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // anchored against anchored because those pairs are implicitly filtered.
     FclCollide(dynamic_tree_, anchored_tree_, &data,
                find_collision_candidates::Callback);
+
+    std::sort(
+        pairs.begin(), pairs.end(),
+        [](const SortedPair<GeometryId>& p1, const SortedPair<GeometryId>& p2) {
+          if (p1.first() != p2.first()) return p1.first() < p2.first();
+          return p1.second() < p2.second();
+        });
+
     return pairs;
   }
 
@@ -802,16 +723,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // Perform a query of the dynamic objects against the anchored. We don't do
     // anchored against anchored because those pairs are implicitly filtered.
     FclCollide(dynamic_tree_, anchored_tree_, &data, hydroelastic::Callback<T>);
-    FclCollide(dynamic_tree_, anchored_mesh_tree_, &data,
-               hydroelastic::Callback<T>);
-    FclCollide(dynamic_tree_, dynamic_mesh_tree_, &data,
-               hydroelastic::Callback<T>);
 
-    dynamic_mesh_tree_.collide(&data, hydroelastic::Callback<T>);
-    FclCollide(dynamic_mesh_tree_, anchored_tree_, &data,
-               hydroelastic::Callback<T>);
-    FclCollide(dynamic_mesh_tree_, anchored_mesh_tree_, &data,
-               hydroelastic::Callback<T>);
+    std::sort(surfaces.begin(), surfaces.end(), OrderContactSurface<T>);
 
     return surfaces;
   }
@@ -819,9 +732,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   void ComputeContactSurfacesWithFallback(
       const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
       std::vector<ContactSurface<T>>* surfaces,
-      std::vector<PenetrationAsPointPair<double>>* point_pairs) const {
+      std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
     DRAKE_DEMAND(surfaces);
     DRAKE_DEMAND(point_pairs);
+
     // All these quantities are aliased in the callback data.
     hydroelastic::CallbackWithFallbackData<T> data{
         hydroelastic::CallbackData<T>{&collision_filter_, &X_WGs,
@@ -835,31 +749,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     FclCollide(dynamic_tree_, anchored_tree_, &data,
                hydroelastic::CallbackWithFallback<T>);
 
-    // TODO(SeanCurtis-TRI): There is a special case where the error message is
-    //  incomprehensible. If someone _attempts_ to register a soft mesh, the
-    //  registration will broadcast a single warning, but no hydroleastic
-    //  representation will be created. If that mesh is ever in contact, the
-    //  error message will be that a _Box_ is missing a hydroelastic
-    //  representation. It really should say *mesh*. Somehow, we have to know
-    //  that the box is really the broadphase place-holder of a mesh. Update
-    //  proximity_engine_test.cc, ComputeContactSurfaceWithFallback when this
-    //  issue is resolved.
+    std::sort(surfaces->begin(), surfaces->end(), OrderContactSurface<T>);
 
-    // dynamic_mesh_tree_ and anchored_mesh_tree_ contain meshes that *can't*
-    // fall back to point-pair (we don't support meshes in point-pair contact).
-    // So, we default to the strict hydroleastic. Each pair generated in the
-    // following broadphase calculations *must* include a mesh. If we can't
-    // compute a contact surface, we must fail.
-    FclCollide(dynamic_tree_, anchored_mesh_tree_, &data.data,
-               hydroelastic::Callback<T>);
-    FclCollide(dynamic_tree_, dynamic_mesh_tree_, &data.data,
-               hydroelastic::Callback<T>);
-
-    dynamic_mesh_tree_.collide(&data, hydroelastic::Callback<T>);
-    FclCollide(dynamic_mesh_tree_, anchored_tree_, &data.data,
-               hydroelastic::Callback<T>);
-    FclCollide(dynamic_mesh_tree_, anchored_mesh_tree_, &data.data,
-               hydroelastic::Callback<T>);
+    std::sort(point_pairs->begin(), point_pairs->end(), OrderPointPair<T>);
   }
 
   // TODO(SeanCurtis-TRI): Update this with the new collision filter method.
@@ -970,8 +862,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   bool IsDeepCopy(const Impl& other) const {
     if (this != &other) {
       // TODO(DamrongGuoy): Consider checking other data members such as
-      //  [dynamic|anchored]_[mesh]_tree_, hydroelastic_geometries_,
-      //  collision_filter_, and X_MeshBs_.
+      //  hydroelastic_geometries_ and collision_filter_.
       auto are_maps_deep_copy =
           [](const unordered_map<GeometryId, unique_ptr<CollisionObjectd>>&
                  this_map,
@@ -1012,14 +903,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                               other.anchored_objects_)) {
         return false;
       }
-      if (!are_maps_deep_copy(this->dynamic_mesh_objects_,
-                              other.dynamic_mesh_objects_)) {
-        return false;
-      }
-      if (!are_maps_deep_copy(this->anchored_mesh_objects_,
-                              other.anchored_mesh_objects_)) {
-        return false;
-      }
       return true;
     }
     return false;
@@ -1029,12 +912,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   const RigidTransformd GetX_WG(GeometryId id, bool is_dynamic) const {
     const unordered_map<GeometryId, unique_ptr<CollisionObjectd>>& objects =
-        is_dynamic ? (dynamic_objects_.find(id) != dynamic_objects_.end())
-                         ? dynamic_objects_
-                         : dynamic_mesh_objects_
-                   : (anchored_objects_.find(id) != anchored_objects_.end())
-                         ? anchored_objects_
-                         : anchored_mesh_objects_;
+        is_dynamic ? dynamic_objects_ : anchored_objects_;
 
     return RigidTransformd(objects.at(id)->getTransform());
   }
@@ -1048,6 +926,26 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   friend class ProximityEngineTester;
   template <typename>
   friend class ProximityEngine;
+
+  void AddGeometry(
+      const Shape& shape, const RigidTransformd& X_WG, GeometryId id,
+      const ProximityProperties& props, bool is_dynamic,
+      fcl::DynamicAABBTreeCollisionManager<double>* tree,
+      unordered_map<GeometryId, unique_ptr<CollisionObjectd>>* objects) {
+    ReifyData data{nullptr, id, props};
+    shape.Reify(this, &data);
+
+    data.fcl_object->setTransform(X_WG.GetAsIsometry3());
+    data.fcl_object->computeAABB();
+    EncodedData encoding(id, is_dynamic);
+    encoding.write_to(data.fcl_object.get());
+
+    tree->registerObject(data.fcl_object.get());
+    tree->update();
+    (*objects)[id] = std::move(data.fcl_object);
+
+    collision_filter_.AddGeometry(encoding.encoding());
+  }
 
   // Removes the geometry with the given id from the given tree.
   void RemoveGeometry(
@@ -1104,36 +1002,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // All of the hydroelastic representations of supported geometries -- this
   // can get quite large based on mesh resolution.
   hydroelastic::Geometries hydroelastic_geometries_;
-
-  // FCL's mesh representation (fcl::BVHModel) uses a triangle soup without
-  // the concept of enclosing volume (there is no inside and outside). We
-  // cannot use FCL's mesh representation for general proximity queries but
-  // want to allow rigid meshes for hydroelastic contact, therefore:
-  //
-  // 1. We represent drake::geometry::Mesh M using its bounding box B in FCL as
-  //    fcl::Boxd in the AABBTree in FCL, in order to get the advantages of
-  //    broadphase culling and to be compatible with the hydroelastic
-  //    callback infrastructure.
-  // 2. The bounding box B has its pose X_MB expressed in the frame M of the
-  //    mesh. This allows the center of the box to be far from the origin of
-  //    the mesh's frame.  We keep all X_MB of all bounding boxes of the
-  //    meshes in X_MeshBs_ below.
-  // 3. Currently Mesh is supported in ComputeContactSurfaces() only, so we
-  //    keep their FCL representations in separated AABBTree structures
-  //    (dynamic_mesh_tree_, dynamic_mesh_objects_, anchored_mesh_tree_,
-  //    anchored_mesh_objects_) and use them only in ComputeContactSurfaces()
-  //    but not in other proximity queries.
-  // TODO(DamrongGuoy): Merge these mesh-specific data into the main
-  //  dynamic_tree_ and anchored_tree when:
-  //  1. We have a direct collision-object representation for Mesh in the
-  //     broadphase culling, and
-  //  2. We have narrowphase support for Mesh in other proximity queries.
-  unordered_map<GeometryId, RigidTransformd> X_MeshBs_;
-  fcl::DynamicAABBTreeCollisionManager<double> dynamic_mesh_tree_;
-  unordered_map<GeometryId, unique_ptr<CollisionObjectd>> dynamic_mesh_objects_;
-  fcl::DynamicAABBTreeCollisionManager<double> anchored_mesh_tree_;
-  unordered_map<GeometryId, unique_ptr<CollisionObjectd>>
-      anchored_mesh_objects_;
 };
 
 template <typename T>
@@ -1178,9 +1046,11 @@ ProximityEngine<T>& ProximityEngine<T>::operator=(
 }
 
 template <typename T>
-void ProximityEngine<T>::AddDynamicGeometry(const Shape& shape, GeometryId id,
+void ProximityEngine<T>::AddDynamicGeometry(const Shape& shape,
+                                            const RigidTransformd& X_WG,
+                                            GeometryId id,
                                             const ProximityProperties& props) {
-  impl_->AddDynamicGeometry(shape, id, props);
+  impl_->AddDynamicGeometry(shape, X_WG, id, props);
 }
 
 template <typename T>
@@ -1272,9 +1142,11 @@ bool ProximityEngine<T>::HasCollisions() const {
 }
 
 template <typename T>
-std::vector<PenetrationAsPointPair<double>>
-ProximityEngine<T>::ComputePointPairPenetration() const {
-  return impl_->ComputePointPairPenetration();
+std::vector<PenetrationAsPointPair<T>>
+ProximityEngine<T>::ComputePointPairPenetration(
+    const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs)
+    const {
+  return impl_->ComputePointPairPenetration(X_WGs);
 }
 
 template <typename T>
@@ -1287,7 +1159,7 @@ template <typename T>
 void ProximityEngine<T>::ComputeContactSurfacesWithFallback(
     const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
     std::vector<ContactSurface<T>>* surfaces,
-    std::vector<PenetrationAsPointPair<double>>* point_pairs) const {
+    std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
   return impl_->ComputeContactSurfacesWithFallback(X_WGs, surfaces,
                                                    point_pairs);
 }

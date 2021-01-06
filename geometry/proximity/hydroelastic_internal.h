@@ -11,7 +11,7 @@
 #include "drake/common/text_logging.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
-#include "drake/geometry/proximity/bounding_volume_hierarchy.h"
+#include "drake/geometry/proximity/bvh.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
 #include "drake/geometry/proximity_properties.h"
@@ -36,8 +36,7 @@ class SoftMesh {
            std::unique_ptr<VolumeMeshField<double, double>> pressure)
       : mesh_(std::move(mesh)),
         pressure_(std::move(pressure)),
-        bvh_(std::make_unique<BoundingVolumeHierarchy<VolumeMesh<double>>>(
-            *mesh_)) {
+        bvh_(std::make_unique<Bvh<VolumeMesh<double>>>(*mesh_)) {
     DRAKE_ASSERT(mesh_.get() == &pressure_->mesh());
   }
 
@@ -54,7 +53,7 @@ class SoftMesh {
     DRAKE_DEMAND(pressure_ != nullptr);
     return *pressure_;
   }
-  const BoundingVolumeHierarchy<VolumeMesh<double>>& bvh() const {
+  const Bvh<VolumeMesh<double>>& bvh() const {
     DRAKE_DEMAND(bvh_ != nullptr);
     return *bvh_;
   }
@@ -62,7 +61,7 @@ class SoftMesh {
  private:
   std::unique_ptr<VolumeMesh<double>> mesh_;
   std::unique_ptr<VolumeMeshField<double, double>> pressure_;
-  std::unique_ptr<BoundingVolumeHierarchy<VolumeMesh<double>>> bvh_;
+  std::unique_ptr<Bvh<VolumeMesh<double>>> bvh_;
 };
 
 /* Defines a soft half space. The half space is defined such that the half
@@ -152,7 +151,7 @@ class SoftGeometry {
 
   /* Returns a reference to the bounding volume hierarchy -- calling this will
    throw if is_half_space() returns `true`.  */
-  const BoundingVolumeHierarchy<VolumeMesh<double>>& bvh() const {
+  const Bvh<VolumeMesh<double>>& bvh() const {
     if (is_half_space()) {
       throw std::runtime_error(
           "SoftGeometry::bvh() cannot be invoked for soft half space");
@@ -185,7 +184,7 @@ class RigidMesh {
 
   explicit RigidMesh(std::unique_ptr<SurfaceMesh<double>> mesh)
       : mesh_(std::move(mesh)),
-        bvh_(std::make_unique<BoundingVolumeHierarchy<SurfaceMesh<double>>>(
+        bvh_(std::make_unique<Bvh<SurfaceMesh<double>>>(
             *mesh_)) {}
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidMesh)
@@ -194,14 +193,14 @@ class RigidMesh {
     DRAKE_DEMAND(mesh_ != nullptr);
     return *mesh_;
   }
-  const BoundingVolumeHierarchy<SurfaceMesh<double>>& bvh() const {
+  const Bvh<SurfaceMesh<double>>& bvh() const {
     DRAKE_DEMAND(bvh_ != nullptr);
     return *bvh_;
   }
 
  private:
   copyable_unique_ptr<SurfaceMesh<double>> mesh_;
-  copyable_unique_ptr<BoundingVolumeHierarchy<SurfaceMesh<double>>> bvh_;
+  copyable_unique_ptr<Bvh<SurfaceMesh<double>>> bvh_;
 };
 
 /* The base representation of rigid geometries. Generally, a rigid geometry
@@ -236,7 +235,7 @@ class RigidGeometry {
 
   /* Returns a reference to the bounding volume hierarchy -- calling this will
    throw unless is_half_space() returns false.  */
-  const BoundingVolumeHierarchy<SurfaceMesh<double>>& bvh() const {
+  const Bvh<SurfaceMesh<double>>& bvh() const {
     if (is_half_space()) {
       throw std::runtime_error(
           "RigidGeometry::bvh() cannot be invoked for rigid half space");
@@ -384,8 +383,7 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Sphere& sphere, const ProximityProperties& props);
 
-/* Rigid box support. Requires the ('hydroelastic', 'resolution_hint')
- property.  */
+/* Rigid box support. It doesn't depend on any of the proximity properties. */
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Box& box, const ProximityProperties& props);
 
@@ -402,6 +400,14 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 /* Rigid mesh support. It doesn't depend on any of the proximity properties. */
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Mesh& mesh, const ProximityProperties& props);
+
+/* Rigid convex support. It doesn't depend on any of the proximity properties.
+ Note: the convexity of the mesh is *not* tested (and does not need to be).
+ The representation of a Convex mesh is the same as a general Mesh, so its
+ representation and functionality is indistinguishable, whether convex or not.
+ */
+std::optional<RigidGeometry> MakeRigidRepresentation(
+    const Convex& convex, const ProximityProperties& props);
 
 /* Rigid half space support.  */
 std::optional<RigidGeometry> MakeRigidRepresentation(
@@ -426,8 +432,7 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
     const Sphere& sphere, const ProximityProperties& props);
 
 /* Creates a soft box (assuming the proximity properties have sufficient
- information). Requires the ('hydroelastic', 'resolution_hint') and
- ('material', 'elastic_modulus') properties.  */
+ information). Requires the ('material', 'elastic_modulus') properties.  */
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Box& box, const ProximityProperties& props);
 

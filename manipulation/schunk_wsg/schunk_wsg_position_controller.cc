@@ -16,11 +16,13 @@ const int kNumJoints = 2;
 SchunkWsgPdController::SchunkWsgPdController(double kp_command,
                                              double kd_command,
                                              double kp_constraint,
-                                             double kd_constraint)
+                                             double kd_constraint,
+                                             double default_force_limit)
     : kp_command_(kp_command),
       kd_command_(kd_command),
       kp_constraint_(kp_constraint),
-      kd_constraint_(kd_constraint) {
+      kd_constraint_(kd_constraint),
+      default_force_limit_(default_force_limit) {
   DRAKE_DEMAND(kp_command >= 0);
   DRAKE_DEMAND(kd_command >= 0);
   DRAKE_DEMAND(kp_constraint >= 0);
@@ -54,7 +56,9 @@ Vector2d SchunkWsgPdController::CalcGeneralizedForce(
     const drake::systems::Context<double>& context) const {
   // Read the input ports.
   const auto& desired_state = get_desired_state_input_port().Eval(context);
-  const double force_limit = get_force_limit_input_port().Eval(context)[0];
+  const double force_limit = get_force_limit_input_port().HasValue(context)
+                                 ? get_force_limit_input_port().Eval(context)[0]
+                                 : default_force_limit_;
   // TODO(russt): Declare a proper input constraint.
   DRAKE_DEMAND(force_limit > 0);
   const auto& state = get_state_input_port().Eval(context);
@@ -88,14 +92,13 @@ void SchunkWsgPdController::CalcGripForceOutput(
   output_vector->SetAtIndex(0, std::abs(force[0] - force[1]));
 }
 
-SchunkWsgPositionController::SchunkWsgPositionController(double time_step,
-                                                         double kp_command,
-                                                         double kd_command,
-                                                         double kp_constraint,
-                                                         double kd_constraint) {
+SchunkWsgPositionController::SchunkWsgPositionController(
+    double time_step, double kp_command, double kd_command,
+    double kp_constraint, double kd_constraint, double default_force_limit) {
   systems::DiagramBuilder<double> builder;
   auto pd_controller = builder.AddSystem<SchunkWsgPdController>(
-      kp_command, kd_command, kp_constraint, kd_constraint);
+      kp_command, kd_command, kp_constraint, kd_constraint,
+      default_force_limit);
   state_interpolator_ =
       builder.AddSystem<systems::StateInterpolatorWithDiscreteDerivative>(
           1, time_step, true /* suppress_initial_transient */);
@@ -114,13 +117,6 @@ SchunkWsgPositionController::SchunkWsgPositionController(double time_step,
       pd_controller->get_grip_force_output_port(), "grip_force");
 
   builder.BuildInto(this);
-}
-
-void SchunkWsgPositionController::set_initial_position(
-    drake::systems::State<double>* state, double desired_position) const {
-  state_interpolator_->set_initial_position(
-      &this->GetMutableSubsystemState(*state_interpolator_, state),
-      Vector1d(desired_position));
 }
 
 }  // namespace schunk_wsg

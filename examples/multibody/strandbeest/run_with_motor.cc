@@ -15,7 +15,7 @@ a way to model kinematic loops. It shows:
 #include <gflags/gflags.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
@@ -140,7 +140,7 @@ int do_main() {
   strandbeest.set_penetration_allowance(FLAGS_penetration_allowance);
   strandbeest.set_stiction_tolerance(FLAGS_stiction_tolerance);
 
-  ConnectDrakeVisualizer(&builder, scene_graph);
+  geometry::DrakeVisualizer::AddToBuilder(&builder, scene_graph);
   ConnectContactResultsToDrakeVisualizer(&builder, strandbeest);
 
   // Create a DesiredVelocityMotor where the proportional term is directly

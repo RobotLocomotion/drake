@@ -337,7 +337,7 @@ std::unique_ptr<ContactSurface<T>>
 ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
     GeometryId id_S, const math::RigidTransform<T>& X_WS, double pressure_scale,
     GeometryId id_R, const SurfaceMesh<double>& mesh_R,
-    const BoundingVolumeHierarchy<SurfaceMesh<double>>& bvh_R,
+    const Bvh<SurfaceMesh<double>>& bvh_R,
     const math::RigidTransform<T>& X_WR) {
   std::vector<SurfaceFaceIndex> tri_indices;
   tri_indices.reserve(mesh_R.num_elements());
@@ -345,9 +345,9 @@ ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
   auto bvh_callback = [&tri_indices, &mesh_R, &R_WS = X_WS.rotation(),
                        &R_WR](SurfaceFaceIndex tri_index) {
     // The gradient of the half space pressure field lies in the _opposite_
-    // direction as its normal. Its normal is Sz. So, grad_p_W = - Sz_W.
-    const Eigen::Vector3d& grad_p_W = -R_WS.col(2);
-    if (IsFaceNormalInNormalDirection(grad_p_W, mesh_R, tri_index, R_WR)) {
+    // direction as its normal. Its normal is Sz. So, unit_grad_p_W = -Sz_W.
+    const Eigen::Vector3d& unit_grad_p_W = -R_WS.col(2);
+    if (IsFaceNormalInNormalDirection(unit_grad_p_W, mesh_R, tri_index, R_WR)) {
       tri_indices.push_back(tri_index);
     }
     return BvttCallbackResult::Continue;
@@ -400,10 +400,18 @@ ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
       "pressure", std::move(vertex_pressures), mesh_W.get(),
       false /* calc_gradient */);
 
+  // TODO(SeanCurtis-TRI) In this case, the gradient across the contact surface
+  //  is a constant. It would be good if we could exploit this and *not* copy
+  //  the same vector value once per triangle.
+  const Eigen::Vector3d& unit_grad_p_W = X_WS.rotation().col(2);
+  auto grad_eS_W = std::make_unique<std::vector<Vector3<T>>>(
+      mesh_W->num_elements(), -pressure_scale * unit_grad_p_W);
+
   // ConstructSurfaceMeshFromMeshHalfspaceIntersection() promises to make the
   // face normals point out of the rigid surface and into the soft half space.
   return std::make_unique<ContactSurface<T>>(id_S, id_R, std::move(mesh_W),
-                                             std::move(field_W));
+                                             std::move(field_W),
+                                             std::move(grad_eS_W), nullptr);
 }
 
 template void ConstructTriangleHalfspaceIntersectionPolygon(
@@ -429,32 +437,31 @@ template void ConstructTriangleHalfspaceIntersectionPolygon(
         edges_to_newly_created_vertices);
 
 template std::unique_ptr<SurfaceMesh<double>>
-    ConstructSurfaceMeshFromMeshHalfspaceIntersection(
-        const SurfaceMesh<double>& input_mesh_F,
-        const PosedHalfSpace<double>& half_space_F,
-        const std::vector<SurfaceFaceIndex>& tri_indices,
-        const math::RigidTransform<double>& X_WF);
+ConstructSurfaceMeshFromMeshHalfspaceIntersection(
+    const SurfaceMesh<double>& input_mesh_F,
+    const PosedHalfSpace<double>& half_space_F,
+    const std::vector<SurfaceFaceIndex>& tri_indices,
+    const math::RigidTransform<double>& X_WF);
 
 template std::unique_ptr<SurfaceMesh<AutoDiffXd>>
-    ConstructSurfaceMeshFromMeshHalfspaceIntersection(
-        const SurfaceMesh<double>& input_mesh_F,
-        const PosedHalfSpace<AutoDiffXd>& half_space_F,
-        const std::vector<SurfaceFaceIndex>& tri_indices,
-        const math::RigidTransform<AutoDiffXd>& X_WF);
+ConstructSurfaceMeshFromMeshHalfspaceIntersection(
+    const SurfaceMesh<double>& input_mesh_F,
+    const PosedHalfSpace<AutoDiffXd>& half_space_F,
+    const std::vector<SurfaceFaceIndex>& tri_indices,
+    const math::RigidTransform<AutoDiffXd>& X_WF);
 
 template std::unique_ptr<ContactSurface<double>>
 ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
     GeometryId id_S, const math::RigidTransform<double>& X_WS,
     double pressure_scale, GeometryId id_R, const SurfaceMesh<double>& field_R,
-    const BoundingVolumeHierarchy<SurfaceMesh<double>>& bvh_R,
+    const Bvh<SurfaceMesh<double>>& bvh_R,
     const math::RigidTransform<double>& X_WR);
 
 template <>
 std::unique_ptr<ContactSurface<AutoDiffXd>>
 ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
     GeometryId, const math::RigidTransform<AutoDiffXd>&, double, GeometryId,
-    const SurfaceMesh<double>&,
-    const BoundingVolumeHierarchy<SurfaceMesh<double>>&,
+    const SurfaceMesh<double>&, const Bvh<SurfaceMesh<double>>&,
     const math::RigidTransform<AutoDiffXd>&) {
   throw std::logic_error(
       "AutoDiff-valued ContactSurface calculations are not currently "

@@ -1,5 +1,6 @@
 #include "drake/solvers/gurobi_solver.h"
 
+#include <limits>
 #include <thread>
 
 #include <gtest/gtest.h>
@@ -15,6 +16,7 @@
 namespace drake {
 namespace solvers {
 namespace test {
+const double kInf = std::numeric_limits<double>::infinity();
 
 TEST_P(LinearProgramTest, TestLP) {
   GurobiSolver solver;
@@ -410,7 +412,7 @@ GTEST_TEST(GurobiTest, SolutionPool) {
 
 GTEST_TEST(GurobiTest, QPDualSolution1) {
   GurobiSolver solver;
-  TestQPDualSolution1(solver, 1e-6);
+  TestQPDualSolution1(solver, {} /* solver_options */, 1e-6);
 }
 
 GTEST_TEST(GurobiTest, QPDualSolution2) {
@@ -438,6 +440,16 @@ GTEST_TEST(GurobiTest, LPDualSolution1) {
   TestLPDualSolution1(solver);
 }
 
+GTEST_TEST(GurobiTest, LPDualSolution2) {
+  GurobiSolver solver;
+  TestLPDualSolution2(solver);
+}
+
+GTEST_TEST(GurobiTest, LPDualSolution3) {
+  GurobiSolver solver;
+  TestLPDualSolution3(solver);
+}
+
 GTEST_TEST(GurobiTest, SOCPDualSolution1) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
@@ -460,6 +472,23 @@ GTEST_TEST(GurobiTest, SOCPDualSolution1) {
     // cost (-sqrt(4 + eps) - 1)/3 w.r.t eps is -1/12.
     EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint1),
                                 Vector1d(-1. / 12), 1e-7));
+
+    // Now add a bounding box constraint to the program. By setting QCPDual to
+    // 0, the program should throw an error.
+    auto bb_con = prog.AddBoundingBoxConstraint(0, kInf, x(1));
+    options.SetOption(solver.id(), "QCPDual", 0);
+    result = solver.Solve(prog, std::nullopt, options);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        result.GetDualSolution(bb_con), std::invalid_argument,
+        "You used Gurobi to solve this optimization problem.*");
+    // Now set QCPDual = 1, we should be able to retrieve the dual solution to
+    // the bounding box constraint.
+    options.SetOption(solver.id(), "QCPDual", 1);
+    result = solver.Solve(prog, std::nullopt, options);
+    // The cost is x(1), hence the shadow price for the constraint x(1) >= 0
+    // should be 1.
+    EXPECT_TRUE(
+        CompareMatrices(result.GetDualSolution(bb_con), Vector1d(1.), 1E-8));
   }
 }
 

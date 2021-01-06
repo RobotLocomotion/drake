@@ -161,9 +161,19 @@ std::unique_ptr<ContactSurface<T>> ComputeContactSurface(
   std::unordered_map<SortedPair<VolumeVertexIndex>, SurfaceVertexIndex>
       cut_edges;
 
+  auto grad_eM_W = std::make_unique<std::vector<Vector3<T>>>();
+  size_t old_face_count = 0;
   for (const auto& tet_index : tet_indices) {
+    const Vector3<T>& grad_eMi_W = X_WM.rotation() *
+                           mesh_field_M.EvaluateGradient(tet_index);
     SliceTetWithPlane(tet_index, mesh_field_M, plane_M, X_WM, &faces,
                       &vertices_W, &surface_e, &cut_edges);
+    // The gradient of every triangle that arises from slicing a tet with a
+    // plane is the *constant* gradient inside that tet.
+    for (size_t i = old_face_count; i < faces.size(); ++i) {
+      grad_eM_W->push_back(grad_eMi_W);
+    }
+    old_face_count = faces.size();
   }
 
   // Construct the contact surface from the components.
@@ -178,16 +188,16 @@ std::unique_ptr<ContactSurface<T>> ComputeContactSurface(
   // SliceTetWithPlane promises to make the surface normals point in the plane
   // normal direction (i.e., out of the plane and into the mesh).
   return std::make_unique<ContactSurface<T>>(
-      mesh_id, plane_id, std::move(mesh_W), std::move(field_W));
+      mesh_id, plane_id, std::move(mesh_W), std::move(field_W),
+      std::move(grad_eM_W), nullptr);
 }
 
 template <typename T>
 std::unique_ptr<ContactSurface<T>>
 ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
     const GeometryId id_S, const VolumeMeshFieldLinear<double, double>& field_S,
-    const BoundingVolumeHierarchy<VolumeMesh<double>>& bvh_S,
-    const math::RigidTransform<T>& X_WS, const GeometryId id_R,
-    const math::RigidTransform<T>& X_WR) {
+    const Bvh<VolumeMesh<double>>& bvh_S, const math::RigidTransform<T>& X_WS,
+    const GeometryId id_R, const math::RigidTransform<T>& X_WR) {
   std::vector<VolumeElementIndex> tet_indices;
   tet_indices.reserve(field_S.mesh().num_elements());
   auto callback = [&tet_indices](VolumeElementIndex tet_index) {
@@ -235,18 +245,18 @@ template std::unique_ptr<ContactSurface<double>> ComputeContactSurface(
 template std::unique_ptr<ContactSurface<double>>
 ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
     const GeometryId id_S, const VolumeMeshFieldLinear<double, double>& field_S,
-    const BoundingVolumeHierarchy<VolumeMesh<double>>& bvh_S,
+    const Bvh<VolumeMesh<double>>& bvh_S,
     const math::RigidTransform<double>& X_WS, const GeometryId id_R,
     const math::RigidTransform<double>& X_WR);
 
 // Create a version with AutoDiffXd so that hydroelastic_callback (and,
 // ultimately, ProximityEngine) can compile.
-template<> std::unique_ptr<ContactSurface<AutoDiffXd>>
+template <>
+std::unique_ptr<ContactSurface<AutoDiffXd>>
 ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
     const GeometryId, const VolumeMeshFieldLinear<double, double>&,
-    const BoundingVolumeHierarchy<VolumeMesh<double>>&,
-    const math::RigidTransform<AutoDiffXd>&, const GeometryId,
-    const math::RigidTransform<AutoDiffXd>&) {
+    const Bvh<VolumeMesh<double>>&, const math::RigidTransform<AutoDiffXd>&,
+    const GeometryId, const math::RigidTransform<AutoDiffXd>&) {
   throw std::logic_error(
       "AutoDiff-valued ContactSurface calculations are not currently "
       "supported");

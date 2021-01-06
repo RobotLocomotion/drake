@@ -5,12 +5,12 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/examples/multibody/rolling_sphere/make_rolling_sphere_plant.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/geometry_instance.h"
-#include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/math/random_rotation.h"
-#include "drake/multibody/math/spatial_velocity.h"
+#include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/simulator_gflags.h"
@@ -156,7 +156,7 @@ int do_main() {
       scene_graph.get_source_pose_port(plant.get_source_id().value()));
 
   if (FLAGS_visualize) {
-    geometry::ConnectDrakeVisualizer(&builder, scene_graph);
+    geometry::DrakeVisualizer::AddToBuilder(&builder, scene_graph);
     ConnectContactResultsToDrakeVisualizer(&builder, plant);
   }
   auto diagram = builder.Build();

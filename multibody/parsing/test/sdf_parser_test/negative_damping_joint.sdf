@@ -1,14 +1,14 @@
-<sdf version='1.6'>
-  <model name='robot_model'>
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="robot_model">
     <!-- This sdf defines a simple model with one link and a revolute joint
          connecting it to the world. The only purpose of this file is to
          test our SDF parser throws an exception when we specify a negative
          damping coefficient. It is an accompanying file to
          multibody_plant_sdf_parser_test.cc and therefore they must be kept
          in sync with. -->
-    <link name='link'>
-    </link>
-    <joint name='joint' type='revolute'>
+    <link name="link"/>
+    <joint name="joint" type="revolute">
       <parent>world</parent>
       <child>link</child>
       <axis>

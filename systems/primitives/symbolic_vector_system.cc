@@ -33,7 +33,7 @@ Expression FirstOrderTaylorExpand(const Expression& f, const Substitution& a) {
 }
 
 // Checks if @p v is in @p variables.
-inline bool Includes(const Ref<const VectorX<Variable>>& variables,
+bool Includes(const Ref<const VectorX<Variable>>& variables,
                      const Variable& v) {
   for (int i = 0; i < variables.size(); ++i) {
     if (variables[i].equal_to(v)) {
@@ -198,7 +198,7 @@ void SymbolicVectorSystem<T>::PopulateFromContext(const Context<T>& context,
   // the Context (and not from input ports whose *unnecessary* evaluation can
   // lead to spurious algebraic loops).
   if (input_vars_.size() > 0 && needs_inputs) {
-    const auto& input = get_input_port().Eval(context);
+    const auto& input = this->get_input_port().Eval(context);
     for (int i = 0; i < input_vars_.size(); i++) {
       env[input_vars_[i]] = input[i];
     }

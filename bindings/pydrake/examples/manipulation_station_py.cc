@@ -2,6 +2,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/examples/manipulation_station/manipulation_station.h"
@@ -23,6 +24,8 @@ PYBIND11_MODULE(manipulation_station, m) {
   m.doc() = "Bindings for the Manipulation Station example.";
   constexpr auto& doc = pydrake_doc.drake.examples.manipulation_station;
 
+  py::module::import("pydrake.geometry");
+  py::module::import("pydrake.multibody.plant");
   py::module::import("pydrake.systems.framework");
 
   // ManipulationStation currently only supports double.
@@ -36,101 +39,122 @@ PYBIND11_MODULE(manipulation_station, m) {
           doc.IiwaCollisionModel.kBoxCollision.doc)
       .export_values();
 
-  py::class_<ManipulationStation<T>, Diagram<T>>(
-      m, "ManipulationStation", doc.ManipulationStation.doc)
-      .def(py::init<double>(), py::arg("time_step") = 0.002,
-          doc.ManipulationStation.ctor.doc)
-      .def("SetupManipulationClassStation",
-          &ManipulationStation<T>::SetupManipulationClassStation,
-          py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
-          doc.ManipulationStation.SetupManipulationClassStation.doc)
-      .def("SetupClutterClearingStation",
-          &ManipulationStation<T>::SetupClutterClearingStation,
-          py::arg("X_WCameraBody") = std::nullopt,
-          py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
-          doc.ManipulationStation.SetupClutterClearingStation.doc)
-      .def("SetupPlanarIiwaStation",
-          &ManipulationStation<T>::SetupPlanarIiwaStation,
-          doc.ManipulationStation.SetupPlanarIiwaStation.doc)
-      .def("AddManipulandFromFile",
-          &ManipulationStation<T>::AddManipulandFromFile, py::arg("model_file"),
-          py::arg("X_WObject"),
-          doc.ManipulationStation.AddManipulandFromFile.doc)
-      .def("RegisterIiwaControllerModel",
-          &ManipulationStation<T>::RegisterIiwaControllerModel,
-          doc.ManipulationStation.RegisterIiwaControllerModel.doc)
-      .def("RegisterRgbdSensor", &ManipulationStation<T>::RegisterRgbdSensor,
-          doc.ManipulationStation.RegisterRgbdSensor.doc)
-      .def("RegisterWsgControllerModel",
-          &ManipulationStation<T>::RegisterWsgControllerModel,
-          doc.ManipulationStation.RegisterWsgControllerModel.doc)
-      .def("Finalize", py::overload_cast<>(&ManipulationStation<T>::Finalize),
-          doc.ManipulationStation.Finalize.doc_0args)
-      .def("num_iiwa_joints", &ManipulationStation<T>::num_iiwa_joints,
-          doc.ManipulationStation.num_iiwa_joints.doc)
-      .def("get_multibody_plant", &ManipulationStation<T>::get_multibody_plant,
-          py_reference_internal,
-          doc.ManipulationStation.get_multibody_plant.doc)
-      .def("get_mutable_multibody_plant",
-          &ManipulationStation<T>::get_mutable_multibody_plant,
-          py_reference_internal,
-          doc.ManipulationStation.get_mutable_multibody_plant.doc)
-      .def("get_scene_graph", &ManipulationStation<T>::get_scene_graph,
-          py_reference_internal, doc.ManipulationStation.get_scene_graph.doc)
-      .def("get_mutable_scene_graph",
-          &ManipulationStation<T>::get_mutable_scene_graph,
-          py_reference_internal,
-          doc.ManipulationStation.get_mutable_scene_graph.doc)
-      .def("get_controller_plant",
-          &ManipulationStation<T>::get_controller_plant, py_reference_internal,
-          doc.ManipulationStation.get_controller_plant.doc)
-      .def("GetIiwaPosition", &ManipulationStation<T>::GetIiwaPosition,
-          doc.ManipulationStation.GetIiwaPosition.doc)
-      .def("SetIiwaPosition",
-          overload_cast_explicit<void, systems::Context<T>*,
-              const Eigen::Ref<const VectorX<T>>&>(
-              &ManipulationStation<T>::SetIiwaPosition),
-          py::arg("station_context"), py::arg("q"),
-          doc.ManipulationStation.SetIiwaPosition.doc_2args)
-      .def("GetIiwaVelocity", &ManipulationStation<T>::GetIiwaVelocity,
-          doc.ManipulationStation.GetIiwaVelocity.doc)
-      .def("SetIiwaVelocity",
-          overload_cast_explicit<void, systems::Context<T>*,
-              const Eigen::Ref<const VectorX<T>>&>(
-              &ManipulationStation<T>::SetIiwaVelocity),
-          py::arg("station_context"), py::arg("v"),
-          doc.ManipulationStation.SetIiwaVelocity.doc_2args)
-      .def("GetWsgPosition", &ManipulationStation<T>::GetWsgPosition,
-          doc.ManipulationStation.GetWsgPosition.doc)
-      .def("SetWsgPosition",
-          overload_cast_explicit<void, systems::Context<T>*, const T&>(
-              &ManipulationStation<T>::SetWsgPosition),
-          py::arg("station_context"), py::arg("q"),
-          doc.ManipulationStation.SetWsgPosition.doc_2args)
-      .def("GetWsgVelocity", &ManipulationStation<T>::GetWsgVelocity,
-          doc.ManipulationStation.GetWsgVelocity.doc)
-      .def("SetWsgVelocity",
-          overload_cast_explicit<void, systems::Context<T>*, const T&>(
-              &ManipulationStation<T>::SetWsgVelocity),
-          py::arg("station_context"), py::arg("v"),
-          doc.ManipulationStation.SetWsgVelocity.doc_2args)
-      .def("GetStaticCameraPosesInWorld",
-          &ManipulationStation<T>::GetStaticCameraPosesInWorld,
-          py_reference_internal,
-          doc.ManipulationStation.GetStaticCameraPosesInWorld.doc)
-      .def("get_camera_names", &ManipulationStation<T>::get_camera_names,
-          doc.ManipulationStation.get_camera_names.doc)
-      .def("SetWsgGains", &ManipulationStation<T>::SetWsgGains,
-          doc.ManipulationStation.SetWsgGains.doc)
-      .def("SetIiwaPositionGains",
-          &ManipulationStation<T>::SetIiwaPositionGains,
-          doc.ManipulationStation.SetIiwaPositionGains.doc)
-      .def("SetIiwaVelocityGains",
-          &ManipulationStation<T>::SetIiwaVelocityGains,
-          doc.ManipulationStation.SetIiwaVelocityGains.doc)
-      .def("SetIiwaIntegralGains",
-          &ManipulationStation<T>::SetIiwaIntegralGains,
-          doc.ManipulationStation.SetIiwaIntegralGains.doc);
+  py::enum_<SchunkCollisionModel>(
+      m, "SchunkCollisionModel", doc.SchunkCollisionModel.doc)
+      .value(
+          "kBox", SchunkCollisionModel::kBox, doc.SchunkCollisionModel.kBox.doc)
+      .value("kBoxPlusFingertipSpheres",
+          SchunkCollisionModel::kBoxPlusFingertipSpheres,
+          doc.SchunkCollisionModel.kBoxPlusFingertipSpheres.doc)
+      .export_values();
+
+  {
+    using Class = ManipulationStation<T>;
+    const auto& cls_doc = doc.ManipulationStation;
+
+    py::class_<Class, Diagram<T>> cls(m, "ManipulationStation", cls_doc.doc);
+    cls  // BR
+        .def(py::init<double>(), py::arg("time_step") = 0.002, cls_doc.ctor.doc)
+        .def("SetupManipulationClassStation",
+            &Class::SetupManipulationClassStation,
+            py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
+            py::arg("schunk_model") = SchunkCollisionModel::kBox,
+            cls_doc.SetupManipulationClassStation.doc)
+        .def("SetupClutterClearingStation", &Class::SetupClutterClearingStation,
+            py::arg("X_WCameraBody") = std::nullopt,
+            py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
+            py::arg("schunk_model") = SchunkCollisionModel::kBox,
+            cls_doc.SetupClutterClearingStation.doc)
+        .def("SetupPlanarIiwaStation", &Class::SetupPlanarIiwaStation,
+            py::arg("schunk_model") = SchunkCollisionModel::kBox,
+            cls_doc.SetupPlanarIiwaStation.doc)
+        .def("AddManipulandFromFile", &Class::AddManipulandFromFile,
+            py::arg("model_file"), py::arg("X_WObject"),
+            cls_doc.AddManipulandFromFile.doc)
+        .def("RegisterIiwaControllerModel", &Class::RegisterIiwaControllerModel,
+            cls_doc.RegisterIiwaControllerModel.doc);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.def("RegisterRgbdSensor",
+        WrapDeprecated(cls_doc.RegisterRgbdSensor.doc_single_properties,
+            py::overload_cast<const std::string&, const multibody::Frame<T>&,
+                const math::RigidTransform<double>&,
+                const geometry::render::DepthCameraProperties&>(
+                &Class::RegisterRgbdSensor)),
+        cls_doc.RegisterRgbdSensor.doc_single_properties);
+#pragma GCC diagnostic pop
+
+    cls  // BR
+        .def("RegisterRgbdSensor",
+            py::overload_cast<const std::string&, const multibody::Frame<T>&,
+                const math::RigidTransform<double>&,
+                const geometry::render::DepthRenderCamera&>(
+                &Class::RegisterRgbdSensor),
+            cls_doc.RegisterRgbdSensor.doc_single_camera)
+        .def("RegisterRgbdSensor",
+            py::overload_cast<const std::string&, const multibody::Frame<T>&,
+                const math::RigidTransform<double>&,
+                const geometry::render::ColorRenderCamera&,
+                const geometry::render::DepthRenderCamera&>(
+                &Class::RegisterRgbdSensor),
+            cls_doc.RegisterRgbdSensor.doc_dual_camera)
+        .def("RegisterWsgControllerModel", &Class::RegisterWsgControllerModel,
+            cls_doc.RegisterWsgControllerModel.doc)
+        .def("Finalize", py::overload_cast<>(&Class::Finalize),
+            cls_doc.Finalize.doc_0args)
+        .def("num_iiwa_joints", &Class::num_iiwa_joints,
+            cls_doc.num_iiwa_joints.doc)
+        .def("get_multibody_plant", &Class::get_multibody_plant,
+            py_rvp::reference_internal, cls_doc.get_multibody_plant.doc)
+        .def("get_mutable_multibody_plant", &Class::get_mutable_multibody_plant,
+            py_rvp::reference_internal, cls_doc.get_mutable_multibody_plant.doc)
+        .def("get_scene_graph", &Class::get_scene_graph,
+            py_rvp::reference_internal, cls_doc.get_scene_graph.doc)
+        .def("get_mutable_scene_graph", &Class::get_mutable_scene_graph,
+            py_rvp::reference_internal, cls_doc.get_mutable_scene_graph.doc)
+        .def("get_controller_plant", &Class::get_controller_plant,
+            py_rvp::reference_internal, cls_doc.get_controller_plant.doc)
+        .def("GetIiwaPosition", &Class::GetIiwaPosition,
+            cls_doc.GetIiwaPosition.doc)
+        .def("SetIiwaPosition",
+            overload_cast_explicit<void, systems::Context<T>*,
+                const Eigen::Ref<const VectorX<T>>&>(&Class::SetIiwaPosition),
+            py::arg("station_context"), py::arg("q"),
+            cls_doc.SetIiwaPosition.doc_2args)
+        .def("GetIiwaVelocity", &Class::GetIiwaVelocity,
+            cls_doc.GetIiwaVelocity.doc)
+        .def("SetIiwaVelocity",
+            overload_cast_explicit<void, systems::Context<T>*,
+                const Eigen::Ref<const VectorX<T>>&>(&Class::SetIiwaVelocity),
+            py::arg("station_context"), py::arg("v"),
+            cls_doc.SetIiwaVelocity.doc_2args)
+        .def("GetWsgPosition", &Class::GetWsgPosition,
+            cls_doc.GetWsgPosition.doc)
+        .def("SetWsgPosition",
+            overload_cast_explicit<void, systems::Context<T>*, const T&>(
+                &Class::SetWsgPosition),
+            py::arg("station_context"), py::arg("q"),
+            cls_doc.SetWsgPosition.doc_2args)
+        .def("GetWsgVelocity", &Class::GetWsgVelocity,
+            cls_doc.GetWsgVelocity.doc)
+        .def("SetWsgVelocity",
+            overload_cast_explicit<void, systems::Context<T>*, const T&>(
+                &Class::SetWsgVelocity),
+            py::arg("station_context"), py::arg("v"),
+            cls_doc.SetWsgVelocity.doc_2args)
+        .def("GetStaticCameraPosesInWorld", &Class::GetStaticCameraPosesInWorld,
+            py_rvp::reference_internal, cls_doc.GetStaticCameraPosesInWorld.doc)
+        .def("get_camera_names", &Class::get_camera_names,
+            cls_doc.get_camera_names.doc)
+        .def("SetWsgGains", &Class::SetWsgGains, cls_doc.SetWsgGains.doc)
+        .def("SetIiwaPositionGains", &Class::SetIiwaPositionGains,
+            cls_doc.SetIiwaPositionGains.doc)
+        .def("SetIiwaVelocityGains", &Class::SetIiwaVelocityGains,
+            cls_doc.SetIiwaVelocityGains.doc)
+        .def("SetIiwaIntegralGains", &Class::SetIiwaIntegralGains,
+            cls_doc.SetIiwaIntegralGains.doc);
+  }
 
   py::class_<ManipulationStationHardwareInterface, Diagram<double>>(m,
       "ManipulationStationHardwareInterface",
@@ -143,11 +167,11 @@ PYBIND11_MODULE(manipulation_station, m) {
           doc.ManipulationStationHardwareInterface.Connect.doc)
       .def("get_controller_plant",
           &ManipulationStationHardwareInterface::get_controller_plant,
-          py_reference_internal,
+          py_rvp::reference_internal,
           doc.ManipulationStationHardwareInterface.get_controller_plant.doc)
       .def("get_camera_names",
           &ManipulationStationHardwareInterface::get_camera_names,
-          py_reference_internal,
+          py_rvp::reference_internal,
           doc.ManipulationStationHardwareInterface.get_camera_names.doc)
       .def("num_iiwa_joints",
           &ManipulationStationHardwareInterface::num_iiwa_joints,

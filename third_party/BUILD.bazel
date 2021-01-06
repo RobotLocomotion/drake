@@ -11,16 +11,6 @@ exports_files(
 )
 
 exports_files(
-    ["com_github_grahamdumpleton_wrapt/" + f for f in [
-        "LICENSE",
-        "__init__.py",
-        "wrappers.py",
-    ]],
-    licenses = ["notice"],  # BSD-2-Clause
-    visibility = ["//bindings/pydrake/third_party:__pkg__"],
-)
-
-exports_files(
     glob(["com_github_pybind_pybind11/**"]),
     licenses = ["notice"],  # BSD-3-Clause
     visibility = [
@@ -31,8 +21,5 @@ exports_files(
 add_lint_tests(
     bazel_lint_extra_srcs = [
         "com_github_bazelbuild_rules_cc/whole_archive.bzl",
-    ],
-    python_lint_extra_srcs = [
-        "com_github_pybind_pybind11/mkdoc.py",
     ],
 )

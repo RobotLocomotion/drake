@@ -1,32 +1,40 @@
 # -*- python -*-
-
 load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
 )
 load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("@drake//tools/workspace:forward_files.bzl", "forward_files")
+load("//tools/workspace/models:files.bzl", "wsg_50_description_mesh_files")
 
 package(
     default_visibility = [":__subpackages__"],
 )
 
+_WSG_50_DESCRIPTION_MESHES = forward_files(
+    srcs = ["@models//:" + x for x in wsg_50_description_mesh_files()],
+    dest_prefix = "",
+    strip_prefix = "@models//:wsg_50_description/",
+    visibility = ["//visibility:private"],
+)
+
+install_data(
+    extra_prod_models = _WSG_50_DESCRIPTION_MESHES + [
+        "LICENSE.TXT",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
-    name = "wsg_50_mesh_collision_test",
-    srcs = ["urdf/test/wsg50_mesh_collision_test.cc"],
+    name = "wsg_50_sdf_test",
+    srcs = ["sdf/test/wsg_50_sdf_test.cc"],
     data = [":models"],
     deps = [
         "//common:find_resource",
         "//multibody/parsing",
         "//multibody/plant",
-    ],
-)
-
-install_data(
-    extra_prod_models = [
-        "LICENSE.TXT",
     ],
 )
 

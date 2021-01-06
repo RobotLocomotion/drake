@@ -26,96 +26,96 @@ namespace multibody {
 
 namespace internal {
 
-/// For internal use only of the MultibodyTree implementation.
-/// This is a base class representing a **node** in the tree structure of a
-/// MultibodyTree. %BodyNode provides implementations for convenience methods to
-/// be used in MultibodyTree recursive algorithms but that however should not
-/// leak into the public API for the Mobilizer class. In this regard, %BodyNode
-/// provides an additional separation layer between implementation internals and
-/// user facing API.
-///
-/// <h4>Tree Structure</h4>
-///
-/// As a tree data structure, a MultibodyTree can be thought of as collection of
-/// %BodyNode objects where each body node has a number of %BodyNode children
-/// and a unique parent %BodyNode object.
-/// Each %BodyNode is associated with a given body B and an inboard mobilizer
-/// that connects this body B to the rest of the tree. The unique parent body of
-/// body B is denoted by P, which in turn has its own %BodyNode associated with
-/// it. Associated with each %BodyNode is an inboard frame F attached on body P
-/// and an outboard frame M attached to body B. The relationship between frames
-/// F and M is dictated by the body B's inboard mobilizer providing the pose
-/// `X_FM` as a function of the generalized coordinates associated with that
-/// mobilizer.
-///
-/// In addition, body B could be a flexible body, in which case the pose of each
-/// frame attached to B would in general be a function of a number of
-/// generalized positions associated with body B. In particular, the pose
-/// `X_BM` of the outboard frame M will be a function of body B's generalized
-/// positions while the pose `X_PF` of the inboard frame F will be a function of
-/// parent body P's generalized positions. A RigidBody has no generalized
-/// positions associated with it (see RigidBody::get_num_flexible_positions()).
-///
-/// In summary, there will a %BodyNode for each Body in the MultibodyTree which
-/// encompasses:
-///
-/// - a body B in a given MultibodyTree,
-/// - the outboard frame M attached to this body B,
-/// - the inboard frame F attached to the unique parent body P of body B,
-/// - the mobilizer connecting the inboard frame F with the outboard frame M.
-///
-/// <h4>Associated State</h4>
-///
-/// In the same way a Mobilizer and a Body have a number of generalized
-/// positions associated with them, a %BodyNode is associated with the
-/// generalized positions of body B and of its inboard mobilizer.
-///
-/// The relationship between frames F and M is dictated by the body B's inboard
-/// mobilizer providing the pose `X_FM(qm_B)` as a function of the generalized
-/// coordinates `qm_B` (where `m` refers to "mobilizer" and `_B` refers to the
-/// fact this is the unique inboard mobilizer of body B.)
-///
-/// In addition, body B could be a flexible body, in which case the pose of each
-/// frame attached to B would in general be a function of the generalized
-/// positions `qb_B` for body B (where `b` refers to "body" and `_B` refers to
-/// body B in particular.) In particular, the pose `X_BM(qb_B)` of the outboard
-/// frame M will be a function of body B's generalized positions `qb_B` while
-/// the pose `X_PF(qb_P)` of the inboard frame F will be a function of parent
-/// body P's generalized positions `qb_P`.
-///
-/// Therefore, the generalized positions associated with a given body node
-/// correspond to the concatenation `qn_B = [qm_B, qb_B]`. Similarly,
-/// mobilizer's generalized velocities `vm_B` and body generalized velocities
-/// `vb_B` are grouped into `vn_B = [vm_B, vb_B]`. [Jain 2010] uses a similar
-/// grouping of generalized coordinates when flexible bodies are considered,
-/// see Chapter 13.
-///
-/// - [Jain 2010]  Jain, A., 2010. Robot and multibody dynamics: analysis and
-///                algorithms. Springer Science & Business Media.
-///
-/// @tparam_default_scalar
+// For internal use only of the MultibodyTree implementation.
+// This is a base class representing a **node** in the tree structure of a
+// MultibodyTree. %BodyNode provides implementations for convenience methods to
+// be used in MultibodyTree recursive algorithms but that however should not
+// leak into the public API for the Mobilizer class. In this regard, %BodyNode
+// provides an additional separation layer between implementation internals and
+// user facing API.
+//
+// <h4>Tree Structure</h4>
+//
+// As a tree data structure, a MultibodyTree can be thought of as collection of
+// %BodyNode objects where each body node has a number of %BodyNode children
+// and a unique parent %BodyNode object.
+// Each %BodyNode is associated with a given body B and an inboard mobilizer
+// that connects this body B to the rest of the tree. The unique parent body of
+// body B is denoted by P, which in turn has its own %BodyNode associated with
+// it. Associated with each %BodyNode is an inboard frame F attached on body P
+// and an outboard frame M attached to body B. The relationship between frames
+// F and M is dictated by the body B's inboard mobilizer providing the pose
+// `X_FM` as a function of the generalized coordinates associated with that
+// mobilizer.
+//
+// In addition, body B could be a flexible body, in which case the pose of each
+// frame attached to B would in general be a function of a number of
+// generalized positions associated with body B. In particular, the pose
+// `X_BM` of the outboard frame M will be a function of body B's generalized
+// positions while the pose `X_PF` of the inboard frame F will be a function of
+// parent body P's generalized positions. A RigidBody has no generalized
+// positions associated with it (see RigidBody::get_num_flexible_positions()).
+//
+// In summary, there will a %BodyNode for each Body in the MultibodyTree which
+// encompasses:
+//
+// - a body B in a given MultibodyTree,
+// - the outboard frame M attached to this body B,
+// - the inboard frame F attached to the unique parent body P of body B,
+// - the mobilizer connecting the inboard frame F with the outboard frame M.
+//
+// <h4>Associated State</h4>
+//
+// In the same way a Mobilizer and a Body have a number of generalized
+// positions associated with them, a %BodyNode is associated with the
+// generalized positions of body B and of its inboard mobilizer.
+//
+// The relationship between frames F and M is dictated by the body B's inboard
+// mobilizer providing the pose `X_FM(qm_B)` as a function of the generalized
+// coordinates `qm_B` (where `m` refers to "mobilizer" and `_B` refers to the
+// fact this is the unique inboard mobilizer of body B.)
+//
+// In addition, body B could be a flexible body, in which case the pose of each
+// frame attached to B would in general be a function of the generalized
+// positions `qb_B` for body B (where `b` refers to "body" and `_B` refers to
+// body B in particular.) In particular, the pose `X_BM(qb_B)` of the outboard
+// frame M will be a function of body B's generalized positions `qb_B` while
+// the pose `X_PF(qb_P)` of the inboard frame F will be a function of parent
+// body P's generalized positions `qb_P`.
+//
+// Therefore, the generalized positions associated with a given body node
+// correspond to the concatenation `qn_B = [qm_B, qb_B]`. Similarly,
+// mobilizer's generalized velocities `vm_B` and body generalized velocities
+// `vb_B` are grouped into `vn_B = [vm_B, vb_B]`. [Jain 2010] uses a similar
+// grouping of generalized coordinates when flexible bodies are considered,
+// see Chapter 13.
+//
+// - [Jain 2010]  Jain, A., 2010. Robot and multibody dynamics: analysis and
+//                algorithms. Springer Science & Business Media.
+//
+// @tparam_default_scalar
 template <typename T>
 class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BodyNode)
 
-  /// A node encompasses a Body in a MultibodyTree and the inboard Mobilizer
-  /// that connects this body to the rest of tree. Given a body and its inboard
-  /// mobilizer in a MultibodyTree this constructor creates the corresponding
-  /// %BodyNode. See this class' documentation for details on how a %BodyNode is
-  /// defined.
-  /// @param[in] parent_node
-  ///   A const pointer to the parent BodyNode object in the tree structure of
-  ///   the owning MultibodyTree. It can be a `nullptr` only when `body` **is**
-  ///   the **world** body, otherwise this constructor will abort.
-  /// @param[in] body
-  ///   The body B associated with `this` node.
-  /// @param[in] mobilizer
-  ///   The mobilizer associated with this `node`. It can be a `nullptr` only
-  ///   when `body` **is** the **world** body, otherwise this method will abort.
-  ///
-  /// @note %BodyNode keeps a reference to the parent body, body and mobilizer
-  /// for this node, which must outlive `this` BodyNode.
+  // A node encompasses a Body in a MultibodyTree and the inboard Mobilizer
+  // that connects this body to the rest of tree. Given a body and its inboard
+  // mobilizer in a MultibodyTree this constructor creates the corresponding
+  // %BodyNode. See this class' documentation for details on how a %BodyNode is
+  // defined.
+  // @param[in] parent_node
+  //   A const pointer to the parent BodyNode object in the tree structure of
+  //   the owning MultibodyTree. It can be a `nullptr` only when `body` **is**
+  //   the **world** body, otherwise this constructor will abort.
+  // @param[in] body
+  //   The body B associated with `this` node.
+  // @param[in] mobilizer
+  //   The mobilizer associated with this `node`. It can be a `nullptr` only
+  //   when `body` **is** the **world** body, otherwise this method will abort.
+  //
+  // @note %BodyNode keeps a reference to the parent body, body and mobilizer
+  // for this node, which must outlive `this` BodyNode.
   BodyNode(const BodyNode<T>* parent_node,
            const Body<T>* body, const Mobilizer<T>* mobilizer)
       : MultibodyElement<BodyNode, T, BodyNodeIndex>(
@@ -128,63 +128,63 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     DRAKE_DEMAND(!(mobilizer == nullptr && body->index() != world_index()));
   }
 
-  /// Method to update the list of child body nodes maintained by this node,
-  /// outboard to this node. Recall a %BodyNode is a tree node within the tree
-  /// structure of MultibodyTree. Therefore each %BodyNode has a unique parent
-  /// %BodyNode, supplied at construction, and a set of child nodes, specified
-  /// via calls to this method.
-  /// Used by MultibodyTree at creation of a BodyNode during the
-  /// MultibodyTree::Finalize() method call.
+  // Method to update the list of child body nodes maintained by this node,
+  // outboard to this node. Recall a %BodyNode is a tree node within the tree
+  // structure of MultibodyTree. Therefore each %BodyNode has a unique parent
+  // %BodyNode, supplied at construction, and a set of child nodes, specified
+  // via calls to this method.
+  // Used by MultibodyTree at creation of a BodyNode during the
+  // MultibodyTree::Finalize() method call.
   void add_child_node(const BodyNode<T>* child) {
     children_.push_back(child);
   }
 
-  /// Returns a constant reference to the body B associated with this node.
+  // Returns a constant reference to the body B associated with this node.
   const Body<T>& body() const {
     DRAKE_ASSERT(body_ != nullptr);
     return *body_;
   }
 
-  /// Returns a constant reference to the unique parent body P of the body B
-  /// associated with this node. This method aborts in Debug builds if called on
-  /// the root node corresponding to the _world_ body.
+  // Returns a constant reference to the unique parent body P of the body B
+  // associated with this node. This method aborts in Debug builds if called on
+  // the root node corresponding to the _world_ body.
   const Body<T>& parent_body() const {
     DRAKE_ASSERT(get_parent_body_index().is_valid());
     return this->get_parent_tree().get_body(get_parent_body_index());
   }
 
-  /// Returns a const pointer to the parent (inboard) body node or nullptr if
-  /// `this` is the world node, which has no inboard parent node.
+  // Returns a const pointer to the parent (inboard) body node or nullptr if
+  // `this` is the world node, which has no inboard parent node.
   const BodyNode<T>* parent_body_node() const {
     return parent_node_;
   }
 
-  /// Returns a constant reference to the mobilizer associated with this node.
-  /// Aborts if called on the root node corresponding to the _world_ body, for
-  /// which there is no mobilizer.
+  // Returns a constant reference to the mobilizer associated with this node.
+  // Aborts if called on the root node corresponding to the _world_ body, for
+  // which there is no mobilizer.
   const Mobilizer<T>& get_mobilizer() const {
     DRAKE_DEMAND(mobilizer_ != nullptr);
     return *mobilizer_;
   }
 
-  /// @name Methods to retrieve BodyNode sizes
+  // @name Methods to retrieve BodyNode sizes
   //@{
 
-  /// Returns the number of generalized positions for the Mobilizer in `this`
-  /// node.
+  // Returns the number of generalized positions for the Mobilizer in `this`
+  // node.
   int get_num_mobilizer_positions() const {
     return topology_.num_mobilizer_positions;
   }
 
-  /// Returns the number of generalized velocities for the Mobilizer in `this`
-  /// node.
+  // Returns the number of generalized velocities for the Mobilizer in `this`
+  // node.
   int get_num_mobilizer_velocities() const {
     return topology_.num_mobilizer_velocities;
   }
 
-  /// Returns the index to the first generalized velocity for this node
-  /// within the vector v of generalized velocities for the full multibody
-  /// system.
+  // Returns the index to the first generalized velocity for this node
+  // within the vector v of generalized velocities for the full multibody
+  // system.
   int velocity_start() const {
     return topology_.mobilizer_velocities_start_in_v;
   }
@@ -192,18 +192,18 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   //@}
 
 
-  /// This method is used by MultibodyTree within a base-to-tip loop to compute
-  /// this node's kinematics that only depend on generalized positions.
-  /// This method aborts in Debug builds when:
-  ///
-  /// - Called on the _root_ node.
-  /// - `pc` is nullptr.
-  ///
-  /// @param[in] context The context with the state of the MultibodyTree model.
-  /// @param[out] pc A pointer to a valid, non nullptr, kinematics cache.
-  /// @pre CalcPositionKinematicsCache_BaseToTip() must have already been called
-  /// for the parent node (and, by recursive precondition, all predecessor nodes
-  /// in the tree.)
+  // This method is used by MultibodyTree within a base-to-tip loop to compute
+  // this node's kinematics that only depend on generalized positions.
+  // This method aborts in Debug builds when:
+  //
+  // - Called on the _root_ node.
+  // - `pc` is nullptr.
+  //
+  // @param[in] context The context with the state of the MultibodyTree model.
+  // @param[out] pc A pointer to a valid, non nullptr, kinematics cache.
+  // @pre CalcPositionKinematicsCache_BaseToTip() must have already been called
+  // for the parent node (and, by recursive precondition, all predecessor nodes
+  // in the tree.)
   void CalcPositionKinematicsCache_BaseToTip(
       const systems::Context<T>& context,
       PositionKinematicsCache<T>* pc) const {
@@ -243,26 +243,26 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     // body B and its parent body P expressed in the world frame W.
   }
 
-  /// This method is used by MultibodyTree within a base-to-tip loop to compute
-  /// this node's kinematics that depend on the generalized velocities.
-  /// This method aborts in Debug builds when:
-  /// - Called on the _root_ node.
-  /// - `vc` is nullptr.
-  /// @param[in] context
-  ///   The context with the state of the MultibodyTree model.
-  /// @param[in] pc
-  ///   An already updated position kinematics cache in sync with `context`.
-  /// @param[in] H_PB_W
-  ///   The `6 x nm` hinge matrix that relates `V_PB_W` (body B's spatial
-  ///   velocity in its parent body P, expressed in world W) to this node's `nm`
-  ///   generalized velocities (or mobilities) `v_B` as `V_PB_W = H_PB_W * v_B`.
-  /// @param[out] vc
-  ///   A pointer to a valid, non nullptr, velocity kinematics cache.
-  /// @pre The position kinematics cache `pc` was already updated to be in sync
-  /// with `context` by MultibodyTree::CalcPositionKinematicsCache().
-  /// @pre CalcVelocityKinematicsCache_BaseToTip() must have already been called
-  /// for the parent node (and, by recursive precondition, all predecessor nodes
-  /// in the tree.)
+  // This method is used by MultibodyTree within a base-to-tip loop to compute
+  // this node's kinematics that depend on the generalized velocities.
+  // This method aborts in Debug builds when:
+  // - Called on the _root_ node.
+  // - `vc` is nullptr.
+  // @param[in] context
+  //   The context with the state of the MultibodyTree model.
+  // @param[in] pc
+  //   An already updated position kinematics cache in sync with `context`.
+  // @param[in] H_PB_W
+  //   The `6 x nm` hinge matrix that relates `V_PB_W` (body B's spatial
+  //   velocity in its parent body P, expressed in world W) to this node's `nm`
+  //   generalized velocities (or mobilities) `v_B` as `V_PB_W = H_PB_W * v_B`.
+  // @param[out] vc
+  //   A pointer to a valid, non nullptr, velocity kinematics cache.
+  // @pre The position kinematics cache `pc` was already updated to be in sync
+  // with `context` by MultibodyTree::CalcPositionKinematicsCache().
+  // @pre CalcVelocityKinematicsCache_BaseToTip() must have already been called
+  // for the parent node (and, by recursive precondition, all predecessor nodes
+  // in the tree.)
   // Unit test coverage for this method is provided, among others, in
   // double_pendulum_test.cc, and by any other unit tests making use of
   // MultibodyTree::CalcVelocityKinematicsCache().
@@ -363,47 +363,47 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     get_mutable_V_WB(vc) = V_WP.ComposeWithMovingFrameVelocity(p_PB_W, V_PB_W);
   }
 
-  /// This method is used by MultibodyTree within a base-to-tip loop to compute
-  /// this node's kinematics that depend on the generalized accelerations, i.e.
-  /// the generalized velocities' time derivatives.
-  /// This method aborts in Debug builds when:
-  /// - Called on the _root_ node.
-  /// - `ac` is nullptr.
-  /// @param[in] context The context with the state of the MultibodyTree model.
-  /// @param[in] pc
-  ///   An already updated position kinematics cache in sync with `context`.
-  /// @param[in] vc
-  ///   An already updated velocity kinematics cache in sync with `context`.
-  ///   If vc is nullptr, velocities are assumed to be zero and velocity
-  ///   dependent terms are not computed.
-  /// @param[in] mbt_vdot
-  ///   The entire vector of generalized accelerations for the full
-  ///   MultibodyTree model. It must have a size equal to the number of
-  ///   generalized velocities in the model. This method assumes the caller,
-  ///   MultibodyTree<T>::CalcAccelerationKinematicsCache(), provides a vector
-  ///   of the right size.
-  /// @param[in,out] A_WB_array_ptr
-  ///   A pointer to a valid, non nullptr, vector of spatial accelerations
-  ///   containing the spatial acceleration `A_WB` for each body. On input, it
-  ///   must contain already pre-computed spatial accelerations for the inboard
-  ///   bodies to this node's body B, see precondition below.
-  ///   It must be of size equal to the number of bodies in the MultibodyTree
-  ///   and ordered by BodyNodeIndex. The calling MultibodyTree method must
-  ///   guarantee these conditions are satisfied. This method will abort if the
-  ///   the pointer is null. There is no mechanism to assert that
-  ///   `A_WB_array_ptr` is ordered by BodyNodeIndex and the correctness of
-  ///   MultibodyTree methods, properly unit tested, should guarantee this
-  ///   condition.
-  ///
-  /// @pre The position kinematics cache `pc` was already updated to be in sync
-  /// with `context` by MultibodyTree::CalcPositionKinematicsCache().
-  /// @pre The velocity kinematics cache `vc` was already updated to be in sync
-  /// with `context` by MultibodyTree::CalcVelocityKinematicsCache().
-  /// @pre CalcAccelerationKinematicsCache_BaseToTip() must have already been
-  /// called for the parent node (and, by recursive precondition, all
-  /// predecessor nodes in the tree). Therefore, on input, the argument array
-  /// `A_WB_array_ptr` must contain already pre-computed spatial accelerations
-  /// for the inboard bodies to this node's body B.
+  // This method is used by MultibodyTree within a base-to-tip loop to compute
+  // this node's kinematics that depend on the generalized accelerations, i.e.
+  // the generalized velocities' time derivatives.
+  // This method aborts in Debug builds when:
+  // - Called on the _root_ node.
+  // - `ac` is nullptr.
+  // @param[in] context The context with the state of the MultibodyTree model.
+  // @param[in] pc
+  //   An already updated position kinematics cache in sync with `context`.
+  // @param[in] vc
+  //   An already updated velocity kinematics cache in sync with `context`.
+  //   If vc is nullptr, velocities are assumed to be zero and velocity
+  //   dependent terms are not computed.
+  // @param[in] mbt_vdot
+  //   The entire vector of generalized accelerations for the full
+  //   MultibodyTree model. It must have a size equal to the number of
+  //   generalized velocities in the model. This method assumes the caller,
+  //   MultibodyTree<T>::CalcAccelerationKinematicsCache(), provides a vector
+  //   of the right size.
+  // @param[in,out] A_WB_array_ptr
+  //   A pointer to a valid, non nullptr, vector of spatial accelerations
+  //   containing the spatial acceleration `A_WB` for each body. On input, it
+  //   must contain already pre-computed spatial accelerations for the inboard
+  //   bodies to this node's body B, see precondition below.
+  //   It must be of size equal to the number of bodies in the MultibodyTree
+  //   and ordered by BodyNodeIndex. The calling MultibodyTree method must
+  //   guarantee these conditions are satisfied. This method will abort if the
+  //   the pointer is null. There is no mechanism to assert that
+  //   `A_WB_array_ptr` is ordered by BodyNodeIndex and the correctness of
+  //   MultibodyTree methods, properly unit tested, should guarantee this
+  //   condition.
+  //
+  // @pre The position kinematics cache `pc` was already updated to be in sync
+  // with `context` by MultibodyTree::CalcPositionKinematicsCache().
+  // @pre The velocity kinematics cache `vc` was already updated to be in sync
+  // with `context` by MultibodyTree::CalcVelocityKinematicsCache().
+  // @pre CalcAccelerationKinematicsCache_BaseToTip() must have already been
+  // called for the parent node (and, by recursive precondition, all
+  // predecessor nodes in the tree). Therefore, on input, the argument array
+  // `A_WB_array_ptr` must contain already pre-computed spatial accelerations
+  // for the inboard bodies to this node's body B.
   // Unit test coverage for this method is provided, among others, in
   // double_pendulum_test.cc, and by any other unit tests making use of
   // MultibodyTree::CalcAccelerationKinematicsCache().
@@ -552,72 +552,72 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     }
   }
 
-  /// Computes the generalized forces `tau` for a single BodyNode.
-  /// This method is used by MultibodyTree within a tip-to-base loop to compute
-  /// the vector of generalized forces `tau` that would correspond with a known
-  /// set of spatial accelerations `A_WB` for each body in the MultibodyTree.
-  ///
-  /// This method aborts in Debug builds when `F_BMo_W_array` is nullptr.
-  ///
-  /// @param[in] context The context with the state of the MultibodyTree model.
-  /// @param[in] pc
-  ///   An already updated position kinematics cache in sync with `context`.
-  /// @param[in] M_B_W_cache
-  ///   An already updated cache storing the spatial inertia M_Bo_W(q) for each
-  ///   body in the model, in sync with `context`.
-  /// @param[in] Fb_Bo_W_cache
-  ///   An already updated cache storing the bias term Fb_Bo_W(q, v) for each
-  ///   body in the model, in sync with `context`.
-  ///   If Fb_Bo_W_cache is nullptr, velocities are assumed to be zero (thus
-  ///   Fb_Bo_W is zero) and velocity dependent terms are not computed.
-  /// @param[in] A_WB_array
-  ///   A vector of known spatial accelerations containing the spatial
-  ///   acceleration `A_WB` for each body in the MultibodyTree model. It must be
-  ///   of size equal to the number of bodies in the MultibodyTree and ordered
-  ///   by BodyNodeIndex. The calling MultibodyTree method must guarantee these
-  ///   conditions are satisfied.
-  /// @param[in] Fapplied_Bo_W
-  ///   Externally applied spatial force on this node's body B at the body's
-  ///   frame origin `Bo`, expressed in the world frame.
-  ///   `Fapplied_Bo_W` **must** not be an entry into `F_BMo_W_array_ptr`, which
-  ///   would result in undefined results.
-  /// @param[in] tau_applied
-  ///   Externally applied generalized force at this node's mobilizer. It can
-  ///   have zero size, implying no generalized forces are applied. Otherwise it
-  ///   must have a size equal to the number of generalized velocities for this
-  ///   node's mobilizer, see get_num_mobilizer_velocities().
-  ///   `tau_applied` **must** not be an entry into `tau_array`, which would
-  ///   result in undefined results.
-  /// @param[out] F_BMo_W_array_ptr
-  ///   A pointer to a valid, non nullptr, vector of spatial forces
-  ///   containing, for each body B, the spatial force `F_BMo_W` corresponding
-  ///   to its inboard mobilizer reaction forces on body B applied at the origin
-  ///   `Mo` of the inboard mobilizer, expressed in the world frame W.
-  ///   It must be of size equal to the number of bodies in the MultibodyTree
-  ///   and ordered by BodyNodeIndex. The calling MultibodyTree method must
-  ///   guarantee these conditions are satisfied. This method will abort if the
-  ///   the pointer is null.
-  ///   To access a mobilizer's reaction force on a given body B, access this
-  ///   array with the index returned by Body::node_index().
-  /// @param[out] tau_array
-  ///   A non-null pointer to the output vector of generalized forces that would
-  ///   result in body B having spatial acceleration `A_WB`. This method will
-  ///   abort if the the pointer is null. The calling MultibodyTree method must
-  ///   guarantee the size of the array is the number of generalized velocities
-  ///   in the model.
-  ///
-  /// @note There is no mechanism to assert that either `A_WB_array` nor
-  ///   `F_BMo_W_array_ptr` are ordered by BodyNodeIndex and the correctness of
-  ///   MultibodyTree methods, properly unit tested, should guarantee this
-  ///   condition.
-  ///
-  /// @pre The position kinematics cache `pc` was already updated to be in sync
-  /// with `context` by MultibodyTree::CalcPositionKinematicsCache().
-  /// @pre The velocity kinematics cache `vc` was already updated to be in sync
-  /// with `context` by MultibodyTree::CalcVelocityKinematicsCache().
-  /// @pre CalcInverseDynamics_TipToBase() must have already been
-  /// called for all the child nodes of `this` node (and, by recursive
-  /// precondition, all successor nodes in the tree.)
+  // Computes the generalized forces `tau` for a single BodyNode.
+  // This method is used by MultibodyTree within a tip-to-base loop to compute
+  // the vector of generalized forces `tau` that would correspond with a known
+  // set of spatial accelerations `A_WB` for each body in the MultibodyTree.
+  //
+  // This method aborts in Debug builds when `F_BMo_W_array` is nullptr.
+  //
+  // @param[in] context The context with the state of the MultibodyTree model.
+  // @param[in] pc
+  //   An already updated position kinematics cache in sync with `context`.
+  // @param[in] M_B_W_cache
+  //   An already updated cache storing the spatial inertia M_Bo_W(q) for each
+  //   body in the model, in sync with `context`.
+  // @param[in] Fb_Bo_W_cache
+  //   An already updated cache storing the bias term Fb_Bo_W(q, v) for each
+  //   body in the model, in sync with `context`.
+  //   If Fb_Bo_W_cache is nullptr, velocities are assumed to be zero (thus
+  //   Fb_Bo_W is zero) and velocity dependent terms are not computed.
+  // @param[in] A_WB_array
+  //   A vector of known spatial accelerations containing the spatial
+  //   acceleration `A_WB` for each body in the MultibodyTree model. It must be
+  //   of size equal to the number of bodies in the MultibodyTree and ordered
+  //   by BodyNodeIndex. The calling MultibodyTree method must guarantee these
+  //   conditions are satisfied.
+  // @param[in] Fapplied_Bo_W
+  //   Externally applied spatial force on this node's body B at the body's
+  //   frame origin `Bo`, expressed in the world frame.
+  //   `Fapplied_Bo_W` **must** not be an entry into `F_BMo_W_array_ptr`, which
+  //   would result in undefined results.
+  // @param[in] tau_applied
+  //   Externally applied generalized force at this node's mobilizer. It can
+  //   have zero size, implying no generalized forces are applied. Otherwise it
+  //   must have a size equal to the number of generalized velocities for this
+  //   node's mobilizer, see get_num_mobilizer_velocities().
+  //   `tau_applied` **must** not be an entry into `tau_array`, which would
+  //   result in undefined results.
+  // @param[out] F_BMo_W_array_ptr
+  //   A pointer to a valid, non nullptr, vector of spatial forces
+  //   containing, for each body B, the spatial force `F_BMo_W` corresponding
+  //   to its inboard mobilizer reaction forces on body B applied at the origin
+  //   `Mo` of the inboard mobilizer, expressed in the world frame W.
+  //   It must be of size equal to the number of bodies in the MultibodyTree
+  //   and ordered by BodyNodeIndex. The calling MultibodyTree method must
+  //   guarantee these conditions are satisfied. This method will abort if the
+  //   the pointer is null.
+  //   To access a mobilizer's reaction force on a given body B, access this
+  //   array with the index returned by Body::node_index().
+  // @param[out] tau_array
+  //   A non-null pointer to the output vector of generalized forces that would
+  //   result in body B having spatial acceleration `A_WB`. This method will
+  //   abort if the the pointer is null. The calling MultibodyTree method must
+  //   guarantee the size of the array is the number of generalized velocities
+  //   in the model.
+  //
+  // @note There is no mechanism to assert that either `A_WB_array` nor
+  //   `F_BMo_W_array_ptr` are ordered by BodyNodeIndex and the correctness of
+  //   MultibodyTree methods, properly unit tested, should guarantee this
+  //   condition.
+  //
+  // @pre The position kinematics cache `pc` was already updated to be in sync
+  // with `context` by MultibodyTree::CalcPositionKinematicsCache().
+  // @pre The velocity kinematics cache `vc` was already updated to be in sync
+  // with `context` by MultibodyTree::CalcVelocityKinematicsCache().
+  // @pre CalcInverseDynamics_TipToBase() must have already been
+  // called for all the child nodes of `this` node (and, by recursive
+  // precondition, all successor nodes in the tree.)
   // Unit test coverage for this method is provided, among others, in
   // double_pendulum_test.cc, and by any other unit tests making use of
   // MultibodyTree::CalcInverseDynamics().
@@ -785,22 +785,22 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     if (tau_applied.size() != 0) tau -= tau_applied;
   }
 
-  /// Returns the topology information for this body node.
+  // Returns the topology information for this body node.
   const BodyNodeTopology& get_topology() const { return topology_; }
 
-  /// Calculates the hinge matrix H_PB_W.
-  /// @param[in] context
-  ///   The context with the state of the MultibodyTree model.
-  /// @param[in] pc
-  ///   An already updated position kinematics cache in sync with `context`.
-  /// @param[out] H_PB_W
-  ///   The `6 x nm` hinge matrix that relates `V_PB_W` (body B's spatial
-  ///   velocity in its parent body P, expressed in world W) to this node's `nm`
-  ///   generalized velocities (or mobilities) `v_B` as `V_PB_W = H_PB_W * v_B`.
-  /// @note `H_PB_W` is only a function of the model's generalized positions q.
-  ///
-  /// @pre The position kinematics cache `pc` was already updated to be in sync
-  /// with `context` by MultibodyTree::CalcPositionKinematicsCache().
+  // Calculates the hinge matrix H_PB_W.
+  // @param[in] context
+  //   The context with the state of the MultibodyTree model.
+  // @param[in] pc
+  //   An already updated position kinematics cache in sync with `context`.
+  // @param[out] H_PB_W
+  //   The `6 x nm` hinge matrix that relates `V_PB_W` (body B's spatial
+  //   velocity in its parent body P, expressed in world W) to this node's `nm`
+  //   generalized velocities (or mobilities) `v_B` as `V_PB_W = H_PB_W * v_B`.
+  // @note `H_PB_W` is only a function of the model's generalized positions q.
+  //
+  // @pre The position kinematics cache `pc` was already updated to be in sync
+  // with `context` by MultibodyTree::CalcPositionKinematicsCache().
   void CalcAcrossNodeJacobianWrtVExpressedInWorld(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
@@ -849,21 +849,21 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     }
   }
 
-  /// Helper method to retrieve a Jacobian matrix with respect to generalized
-  /// velocities v for `this` node from an array storing the columns of a set of
-  /// Jacobian matrices for each node.  This method is used by MultibodyTree
-  /// implementations to retrieve per-node Jacobian matrices from a
-  /// `std::vector` that would usually live in the cache.
-  /// @param[in] H_array
-  ///   This array stores a Jacobian matrix `H` for each node in the tree. Each
-  ///   matrix has size `6 x nm` with `nm` the number of mobilities of the node.
-  ///   `H_array` stores the columns of these matrices and therefore it consists
-  ///   of a `std::vector` of vectors in ℝ⁶ with as many entries as the number
-  ///   of generalized velocities v in the model.
-  ///   `H_array` must be of size MultibodyTree::num_velocities().
-  /// @retval H
-  ///   An Eigen::Map to a matrix of size `6 x nm` corresponding to the Jacobian
-  ///   matrix for this node.
+  // Helper method to retrieve a Jacobian matrix with respect to generalized
+  // velocities v for `this` node from an array storing the columns of a set of
+  // Jacobian matrices for each node.  This method is used by MultibodyTree
+  // implementations to retrieve per-node Jacobian matrices from a
+  // `std::vector` that would usually live in the cache.
+  // @param[in] H_array
+  //   This array stores a Jacobian matrix `H` for each node in the tree. Each
+  //   matrix has size `6 x nm` with `nm` the number of mobilities of the node.
+  //   `H_array` stores the columns of these matrices and therefore it consists
+  //   of a `std::vector` of vectors in ℝ⁶ with as many entries as the number
+  //   of generalized velocities v in the model.
+  //   `H_array` must be of size MultibodyTree::num_velocities().
+  // @retval H
+  //   An Eigen::Map to a matrix of size `6 x nm` corresponding to the Jacobian
+  //   matrix for this node.
   Eigen::Map<const MatrixUpTo6<T>> GetJacobianFromArray(
       const std::vector<Vector6<T>>& H_array) const {
     DRAKE_DEMAND(static_cast<int>(H_array.size()) ==
@@ -877,7 +877,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     return Eigen::Map<const MatrixUpTo6<T>>(H_col0.data(), 6, num_velocities);
   }
 
-  /// Mutable version of GetJacobianFromArray().
+  // Mutable version of GetJacobianFromArray().
   Eigen::Map<MatrixUpTo6<T>> GetMutableJacobianFromArray(
       std::vector<Vector6<T>>* H_array) const {
     DRAKE_DEMAND(static_cast<int>(H_array->size()) ==
@@ -891,29 +891,32 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     return Eigen::Map<MatrixUpTo6<T>>(H_col0.data(), 6, num_velocities);
   }
 
-  /// This method is used by MultibodyTree within a tip-to-base loop to compute
-  /// this node's articulated body inertia quantities that depend only on the
-  /// generalized positions.
-  ///
-  /// @param[in] context
-  ///   The context with the state of the MultibodyTree model.
-  /// @param[in] pc
-  ///   An already updated position kinematics cache in sync with `context`.
-  /// @param[in] H_PB_W
-  ///   The `6 x nm` hinge matrix that relates `V_PB_W` (body B's spatial
-  ///   velocity in its parent body P, expressed in world W) to this node's `nm`
-  ///   generalized velocities (or mobilities) `v_B` as `V_PB_W = H_PB_W * v_B`.
-  /// @param[out] abic
-  ///   A pointer to a valid, non nullptr, articulated body cache.
-  ///
-  /// @pre The position kinematics cache `pc` was already updated to be in sync
-  /// with `context` by MultibodyTree::CalcPositionKinematicsCache().
-  /// @pre CalcArticulatedBodyInertiaCache_TipToBase() must have already been
-  /// called for all the child nodes of `this` node (and, by recursive
-  /// precondition, all successor nodes in the tree.)
-  ///
-  /// @throws std::exception when called on the _root_ node or `abic` is
-  /// nullptr.
+  // This method is used by MultibodyTree within a tip-to-base loop to compute
+  // this node's articulated body inertia quantities that depend only on the
+  // generalized positions.
+  //
+  // @param[in] context
+  //   The context with the state of the MultibodyTree model.
+  // @param[in] pc
+  //   An already updated position kinematics cache in sync with `context`.
+  // @param[in] H_PB_W
+  //   The `6 x nm` hinge matrix that relates `V_PB_W` (body B's spatial
+  //   velocity in its parent body P, expressed in world W) to this node's `nm`
+  //   generalized velocities (or mobilities) `v_B` as `V_PB_W = H_PB_W * v_B`.
+  // @param[in] reflected_inertia
+  //   Vector of scalar reflected inertia values for each degree of freedon.
+  //   Used if this body node is the outboard body of a single-dof mobilizer.
+  // @param[out] abic
+  //   A pointer to a valid, non nullptr, articulated body cache.
+  //
+  // @pre The position kinematics cache `pc` was already updated to be in sync
+  // with `context` by MultibodyTree::CalcPositionKinematicsCache().
+  // @pre CalcArticulatedBodyInertiaCache_TipToBase() must have already been
+  // called for all the child nodes of `this` node (and, by recursive
+  // precondition, all successor nodes in the tree.)
+  //
+  // @throws std::exception when called on the _root_ node or `abic` is
+  // nullptr.
   // TODO(amcastro-tri): Consider specialized BodyNodeImpl implementations that
   // exploit the sparsity pattern of H_PB_W even at compile time. Most common
   // cases are:
@@ -925,9 +928,11 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       const PositionKinematicsCache<T>& pc,
       const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
       const SpatialInertia<T>& M_B_W,
+      const VectorX<T>& reflected_inertia,
       ArticulatedBodyInertiaCache<T>* abic) const {
     DRAKE_THROW_UNLESS(topology_.body != world_index());
     DRAKE_THROW_UNLESS(abic != nullptr);
+    DRAKE_THROW_UNLESS(this->velocity_start() < reflected_inertia.size());
 
     // As a guideline for developers, a summary of the computations performed in
     // this method is provided:
@@ -1041,6 +1046,14 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       MatrixUpTo6<T> D_B(nv, nv);
       D_B.template triangularView<Eigen::Lower>() = U_B_W * H_PB_W;
 
+      // Add the effect of reflected inertia.
+      // See JointActuator::reflected_inertia().
+      // Reminder: reflected_inertia is implemented only for revolute or
+      // prismatic joints (i.e., single degree-of-freedom joints, hence nv = 1).
+      if (nv == 1) {
+        D_B(0, 0) += reflected_inertia(this->velocity_start());
+      }
+
       // Compute the LDLT factorization of D_B as ldlt_D_B.
       // TODO(bobbyluig): Test performance against inverse().
       Eigen::LDLT<MatrixUpTo6<T>>& ldlt_D_B = get_mutable_ldlt_D_B(abic);
@@ -1077,48 +1090,48 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     }
   }
 
-  /// This method is used by MultibodyTree within a tip-to-base loop to compute
-  /// the force bias terms in the articulated body algorithm. Please refer to
-  /// @ref internal_forward_dynamics
-  /// "Articulated Body Algorithm Forward Dynamics" for further mathematical
-  /// background and implementation details.
-  ///
-  /// @param[in] context
-  ///   The context with the state of the MultibodyTree model.
-  /// @param[in] pc
-  ///   An already updated position kinematics cache in sync with `context`.
-  /// @param[in] vc
-  ///   An already updated velocity kinematics cache in sync with `context`.
-  ///   All velocities are assumed to be zero if vc is nullptr.
-  /// @param[in] Fb_Bo_W
-  ///   Force bias for this node's body B, at Bo, expressed in the world frame.
-  /// @param[in] abic
-  ///   An already updated articulated body inertia cache in sync with
-  ///   `context`.
-  /// @param[in] Zb_Bo_W
-  ///   Articulated body bias `Zb_Bo_W = Pplus_PB_W * Ab_WB`.
-  /// @param[in] Fapplied_Bo_W
-  ///   Externally applied spatial force on this node's body B at the body's
-  ///   frame origin `Bo`, expressed in the world frame.
-  /// @param[in] tau_applied
-  ///   Externally applied generalized force at this node's mobilizer. It must
-  ///   have a size equal to the number of generalized velocities for this
-  ///   node's mobilizer, see get_num_mobilizer_velocities().
-  /// @param[in] H_PB_W
-  ///   The hinge mapping matrix that relates to the spatial velocity `V_PB_W`
-  ///   of this node's body B in its parent node body P, expressed in the world
-  ///   frame W, with this node's generalized velocities (or mobilities) `v_B`
-  ///   by `V_PB_W = H_PB_W⋅v_B`.
-  /// @param[out] aba_force_cache
-  ///   A pointer to a valid, non nullptr, force bias cache.
-  ///
-  /// @pre pc, vc, and abic previously computed to be in sync with `context.
-  /// @pre CalcArticulatedBodyForceCache_TipToBase() must have already been
-  /// called for all the child nodes of `this` node (and, by recursive
-  /// precondition, all successor nodes in the tree.)
-  ///
-  /// @throws when called on the _root_ node or `aba_force_cache` is
-  /// nullptr.
+  // This method is used by MultibodyTree within a tip-to-base loop to compute
+  // the force bias terms in the articulated body algorithm. Please refer to
+  // @ref internal_forward_dynamics
+  // "Articulated Body Algorithm Forward Dynamics" for further mathematical
+  // background and implementation details.
+  //
+  // @param[in] context
+  //   The context with the state of the MultibodyTree model.
+  // @param[in] pc
+  //   An already updated position kinematics cache in sync with `context`.
+  // @param[in] vc
+  //   An already updated velocity kinematics cache in sync with `context`.
+  //   All velocities are assumed to be zero if vc is nullptr.
+  // @param[in] Fb_Bo_W
+  //   Force bias for this node's body B, at Bo, expressed in the world frame.
+  // @param[in] abic
+  //   An already updated articulated body inertia cache in sync with
+  //   `context`.
+  // @param[in] Zb_Bo_W
+  //   Articulated body bias `Zb_Bo_W = Pplus_PB_W * Ab_WB`.
+  // @param[in] Fapplied_Bo_W
+  //   Externally applied spatial force on this node's body B at the body's
+  //   frame origin `Bo`, expressed in the world frame.
+  // @param[in] tau_applied
+  //   Externally applied generalized force at this node's mobilizer. It must
+  //   have a size equal to the number of generalized velocities for this
+  //   node's mobilizer, see get_num_mobilizer_velocities().
+  // @param[in] H_PB_W
+  //   The hinge mapping matrix that relates to the spatial velocity `V_PB_W`
+  //   of this node's body B in its parent node body P, expressed in the world
+  //   frame W, with this node's generalized velocities (or mobilities) `v_B`
+  //   by `V_PB_W = H_PB_W⋅v_B`.
+  // @param[out] aba_force_cache
+  //   A pointer to a valid, non nullptr, force bias cache.
+  //
+  // @pre pc, vc, and abic previously computed to be in sync with `context.
+  // @pre CalcArticulatedBodyForceCache_TipToBase() must have already been
+  // called for all the child nodes of `this` node (and, by recursive
+  // precondition, all successor nodes in the tree.)
+  //
+  // @throws when called on the _root_ node or `aba_force_cache` is
+  // nullptr.
   void CalcArticulatedBodyForceCache_TipToBase(
       const systems::Context<T>&,
       const PositionKinematicsCache<T>& pc,
@@ -1178,40 +1191,40 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     }
   }
 
-  /// This method is used by MultibodyTree within a base-to-tip loop to compute
-  /// the generalized accelerations `vdot` and the spatial accelerations `A_WB`.
-  /// Please refer to @ref internal_forward_dynamics
-  /// "Articulated Body Algorithm Forward Dynamics" for further mathematical
-  /// background and implementation details.
-  ///
-  /// @param[in] context
-  ///   The context with the state of the MultibodyTree model.
-  /// @param[in] pc
-  ///   An already updated position kinematics cache in sync with `context`.
-  /// @param[in] abic
-  ///   An already updated articulated body inertia cache in sync with
-  ///   `context`.
-  /// @param[in] aba_force_cache
-  ///   An already updated articulated body algorithm cache in sync with
-  ///   `context`.
-  /// @param[in] H_PB_W
-  ///   The hinge mapping matrix that relates to the spatial velocity `V_PB_W`
-  ///   of this node's body B in its parent node body P, expressed in the world
-  ///   frame W, with this node's generalized velocities (or mobilities) `v_B`
-  ///   by `V_PB_W = H_PB_W⋅v_B`.
-  /// @param[in] Ab_WB
-  ///   The spatial acceleration bias term `Ab_WB` as it appears in the
-  ///   acceleration level motion constraint imposed by body B's mobilizer
-  ///   `A_WB = Aplus_WB + Ab_WB + H_PB_W * vdot_B`.
-  ///   See @ref abi_computing_accelerations for further details.
-  /// @param[out] ac
-  ///   A pointer to a valid, non nullptr, acceleration kinematics cache.
-  ///
-  /// @pre pc, vc, and abic previously computed to be in sync with `context.
-  /// @pre CalcArticulatedBodyAccelerations_BaseToTip() must have already been
-  /// called for the parent node (and, by recursive precondition, all
-  /// predecessor nodes in the tree.)
-  /// @throws when called on the _root_ node of `ac` or `vdot` is nullptr.
+  // This method is used by MultibodyTree within a base-to-tip loop to compute
+  // the generalized accelerations `vdot` and the spatial accelerations `A_WB`.
+  // Please refer to @ref internal_forward_dynamics
+  // "Articulated Body Algorithm Forward Dynamics" for further mathematical
+  // background and implementation details.
+  //
+  // @param[in] context
+  //   The context with the state of the MultibodyTree model.
+  // @param[in] pc
+  //   An already updated position kinematics cache in sync with `context`.
+  // @param[in] abic
+  //   An already updated articulated body inertia cache in sync with
+  //   `context`.
+  // @param[in] aba_force_cache
+  //   An already updated articulated body algorithm cache in sync with
+  //   `context`.
+  // @param[in] H_PB_W
+  //   The hinge mapping matrix that relates to the spatial velocity `V_PB_W`
+  //   of this node's body B in its parent node body P, expressed in the world
+  //   frame W, with this node's generalized velocities (or mobilities) `v_B`
+  //   by `V_PB_W = H_PB_W⋅v_B`.
+  // @param[in] Ab_WB
+  //   The spatial acceleration bias term `Ab_WB` as it appears in the
+  //   acceleration level motion constraint imposed by body B's mobilizer
+  //   `A_WB = Aplus_WB + Ab_WB + H_PB_W * vdot_B`.
+  //   See @ref abi_computing_accelerations for further details.
+  // @param[out] ac
+  //   A pointer to a valid, non nullptr, acceleration kinematics cache.
+  //
+  // @pre pc, vc, and abic previously computed to be in sync with `context.
+  // @pre CalcArticulatedBodyAccelerations_BaseToTip() must have already been
+  // called for the parent node (and, by recursive precondition, all
+  // predecessor nodes in the tree.)
+  // @throws when called on the _root_ node of `ac` or `vdot` is nullptr.
   void CalcArticulatedBodyAccelerations_BaseToTip(
       const systems::Context<T>& /* context */,
       const PositionKinematicsCache<T>& pc,
@@ -1260,32 +1273,32 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     }
   }
 
-  /// This method is used by MultibodyTree within a tip-to-base loop to compute
-  /// the composite body inertia of each body in the system.
-  ///
-  /// @param[in] M_B_W Spatial inertia for the body B associated with this node.
-  /// About B's origin Bo and expressed in the world frame W.
-  /// @param[in] pc Position kinematics cache.
-  /// @param[in] R_B_W_all Vector storing the composite body inertia for all
-  /// bodies in the multibody system. It must contain already up-to-date
-  /// composite body inertias for all the children of `this` node.
-  /// @param[out] R_B_W The composite body inertia for `this` node. It must be
-  /// non-nullptr.
-  /// @pre CalcCompositeBodyInertia_TipToBase() must have already been called
-  /// for the children nodes (and, by recursive precondition, all outboard nodes
-  /// in the tree.)
+  // This method is used by MultibodyTree within a tip-to-base loop to compute
+  // the composite body inertia of each body in the system.
+  //
+  // @param[in] M_B_W Spatial inertia for the body B associated with this node.
+  // About B's origin Bo and expressed in the world frame W.
+  // @param[in] pc Position kinematics cache.
+  // @param[in] Mc_B_W_all Vector storing the composite body inertia for all
+  // bodies in the multibody system. It must contain already up-to-date
+  // composite body inertias for all the children of `this` node.
+  // @param[out] Mc_B_W The composite body inertia for `this` node. It must be
+  // non-nullptr.
+  // @pre CalcCompositeBodyInertia_TipToBase() must have already been called
+  // for the children nodes (and, by recursive precondition, all outboard nodes
+  // in the tree.)
   void CalcCompositeBodyInertia_TipToBase(
       const SpatialInertia<T>& M_B_W,
       const PositionKinematicsCache<T>& pc,
-      const std::vector<SpatialInertia<T>>& R_B_W_all,
-      SpatialInertia<T>* R_B_W) const {
+      const std::vector<SpatialInertia<T>>& Mc_B_W_all,
+      SpatialInertia<T>* Mc_B_W) const {
     DRAKE_THROW_UNLESS(topology_.body != world_index());
-    DRAKE_THROW_UNLESS(R_B_W != nullptr);
+    DRAKE_THROW_UNLESS(Mc_B_W != nullptr);
 
     // Composite body inertia R_B_W for this node B, about its frame's origin
     // Bo, and expressed in the world frame W. Here we adopt the notation used
     // in Jain's book.
-    *R_B_W = M_B_W;
+    *Mc_B_W = M_B_W;
     // Add composite body inertia contributions from all children.
     for (const BodyNode<T>* child : children_) {
       // Shift vector p_CoBo_W.
@@ -1294,30 +1307,30 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
 
       // Composite body inertia for outboard child body C, about Co, expressed
       // in W.
-      const SpatialInertia<T>& R_CCo_W = R_B_W_all[child->index()];
+      const SpatialInertia<T>& Mc_CCo_W = Mc_B_W_all[child->index()];
 
       // Shift to Bo and add it to the composite body inertia of B.
-      *R_B_W += R_CCo_W.Shift(p_CoBo_W);
+      *Mc_B_W += Mc_CCo_W.Shift(p_CoBo_W);
     }
   }
 
-  /// Computes the spatial acceleration bias `Ab_WB(q, v)` for `this` node, a
-  /// function of both configuration q and velocities v. This term appears in
-  /// the acceleration level motion constraint imposed by body B's mobilizer
-  /// `A_WB = Aplus_WB + Ab_WB + H_PB_W * vdot_B`. Refer to
-  /// @ref abi_computing_accelerations for a detailed description and
-  /// derivation.
-  /// @param[in] context The context with the state of the MultibodyTree model.
-  /// @param[in] pc An already updated position kinematics cache in sync with
-  ///   `context`.
-  /// @param[in] vc An already updated velocity kinematics cache in sync with
-  ///   `context`.
-  /// @param[out] Ab_WB The spatial acceleration bias for this node, measured
-  ///   and expressed in the world frame W. Must be non nullptr.
-  ///
-  /// @pre pc and vc previously computed to be in sync with `context.
-  ///
-  /// @throws when `Ab_WB` is nullptr.
+  // Computes the spatial acceleration bias `Ab_WB(q, v)` for `this` node, a
+  // function of both configuration q and velocities v. This term appears in
+  // the acceleration level motion constraint imposed by body B's mobilizer
+  // `A_WB = Aplus_WB + Ab_WB + H_PB_W * vdot_B`. Refer to
+  // @ref abi_computing_accelerations for a detailed description and
+  // derivation.
+  // @param[in] context The context with the state of the MultibodyTree model.
+  // @param[in] pc An already updated position kinematics cache in sync with
+  //   `context`.
+  // @param[in] vc An already updated velocity kinematics cache in sync with
+  //   `context`.
+  // @param[out] Ab_WB The spatial acceleration bias for this node, measured
+  //   and expressed in the world frame W. Must be non nullptr.
+  //
+  // @pre pc and vc previously computed to be in sync with `context.
+  //
+  // @throws when `Ab_WB` is nullptr.
   void CalcSpatialAccelerationBias(const systems::Context<T>& context,
                                    const PositionKinematicsCache<T>& pc,
                                    const VelocityKinematicsCache<T>& vc,
@@ -1403,16 +1416,16 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   }
 
  protected:
-  /// Returns the inboard frame F of this node's mobilizer.
-  /// @throws std::runtime_error if called on the root node corresponding to
-  /// the _world_ body.
+  // Returns the inboard frame F of this node's mobilizer.
+  // @throws std::runtime_error if called on the root node corresponding to
+  // the _world_ body.
   const Frame<T>& inboard_frame() const {
     return get_mobilizer().inboard_frame();
   }
 
-  /// Returns the outboard frame M of this node's mobilizer.
-  /// @throws std::runtime_error if called on the root node corresponding to
-  /// the _world_ body.
+  // Returns the outboard frame M of this node's mobilizer.
+  // @throws std::runtime_error if called on the root node corresponding to
+  // the _world_ body.
   const Frame<T>& outboard_frame() const {
     return get_mobilizer().outboard_frame();
   }
@@ -1514,20 +1527,20 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   // =========================================================================
   // VelocityKinematicsCache Accessors and Mutators.
 
-  // Returns a const reference to the spatial velocity of the body B associated
-  // with this node as measured and expressed in the world frame W.
+  // For the body B associated with this node, return V_WB, B's spatial velocity
+  // in the world frame W, expressed in W (for Bo, the body frame's origin).
   const SpatialVelocity<T>& get_V_WB(
       const VelocityKinematicsCache<T>& vc) const {
     return vc.get_V_WB(topology_.index);
   }
 
-  /// Mutable version of get_V_WB().
+  // Mutable version of get_V_WB().
   SpatialVelocity<T>& get_mutable_V_WB(VelocityKinematicsCache<T>* vc) const {
     return vc->get_mutable_V_WB(topology_.index);
   }
 
-  // Returns the spatial velocity `V_WP` of the body P in the parent node as
-  // measured and expressed in the world frame.
+  // Returns the spatial velocity `V_WP` of the body frame P in the parent node
+  // as measured and expressed in the world frame.
   const SpatialVelocity<T>& get_V_WP(
       const VelocityKinematicsCache<T>& vc) const {
     return vc.get_V_WB(topology_.parent_body_node);
@@ -1562,8 +1575,9 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   // =========================================================================
   // AccelerationKinematicsCache Accessors and Mutators.
 
-  // Returns a const reference to the spatial acceleration of the body B
-  // associated with this node as measured and expressed in the world frame W.
+  // For the body B associated with `this` node, returns A_WB, body B's
+  // spatial acceleration in the world frame W, expressed in W
+  // (for point Bo, the body's origin).
   const SpatialAcceleration<T>& get_A_WB(
       const AccelerationKinematicsCache<T>& ac) const {
     return ac.get_A_WB(topology_.index);

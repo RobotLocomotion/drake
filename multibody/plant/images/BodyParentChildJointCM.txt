@@ -1,0 +1,3 @@
+The graphics file BodyParentChildJointCM.png was created by Canvas X
+(commercial PC/Windows technical illustration program).  Raster graphics (PNG)
+was chosen over vector graphics (SVG) because it better rendered the fonts.

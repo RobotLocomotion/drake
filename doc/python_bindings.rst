@@ -12,9 +12,8 @@ source files inside the ``bindings/pydrake`` folder. These bindings are
 installed as a single package called ``pydrake``.
 
 .. warning::
-   Drake is incompatible with the Python environment supplied by Anaconda.
-   Please uninstall Anaconda or remove the Anaconda ``bin`` directory from the
-   ``PATH`` before building or using the Drake Python bindings.
+   The Python environment supplied by Anaconda is neither tested nor supported
+   for building and using the Drake Python bindings.
 
 .. _python-bindings-binary:
 

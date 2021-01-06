@@ -5,14 +5,19 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/manipulation/planner/differential_inverse_kinematics.h"
+#include "drake/manipulation/planner/differential_inverse_kinematics_integrator.h"
 
 namespace drake {
 namespace pydrake {
 
 PYBIND11_MODULE(planner, m) {
   using drake::manipulation::planner::DifferentialInverseKinematicsStatus;
+  using drake::systems::LeafSystem;
+
   m.doc() = "Tools for manipulation planning.";
   constexpr auto& doc = pydrake_doc.drake.manipulation.planner;
+
+  py::module::import("pydrake.systems.framework");
 
   py::enum_<DifferentialInverseKinematicsStatus>(m,
       "DifferentialInverseKinematicsStatus",
@@ -135,6 +140,33 @@ PYBIND11_MODULE(planner, m) {
       py::arg("frame_E"), py::arg("parameters"),
       doc.DoDifferentialInverseKinematics
           .doc_5args_robot_context_X_WE_desired_frame_E_parameters);
+
+  {
+    using Class =
+        manipulation::planner::DifferentialInverseKinematicsIntegrator;
+    constexpr auto& cls_doc = doc.DifferentialInverseKinematicsIntegrator;
+    py::class_<Class, LeafSystem<double>>(
+        m, "DifferentialInverseKinematicsIntegrator", cls_doc.doc)
+        .def(py::init<const multibody::MultibodyPlant<double>&,
+                 const multibody::Frame<double>&, double,
+                 const manipulation::planner::
+                     DifferentialInverseKinematicsParameters&,
+                 const systems::Context<double>*, bool>(),
+            // Keep alive, reference: `self` keeps `robot` alive.
+            py::keep_alive<1, 2>(), py::arg("robot"), py::arg("frame_E"),
+            py::arg("time_step"), py::arg("parameters"),
+            py::arg("robot_context") = nullptr,
+            py::arg("log_only_when_result_state_changes") = true,
+            cls_doc.ctor.doc)
+        .def("SetPositions", &Class::SetPositions, py::arg("context"),
+            py::arg("positions"), cls_doc.SetPositions.doc)
+        .def("ForwardKinematics", &Class::ForwardKinematics, py::arg("context"),
+            cls_doc.ForwardKinematics.doc)
+        .def("get_parameters", &Class::get_parameters,
+            py_rvp::reference_internal, cls_doc.get_parameters.doc)
+        .def("get_mutable_parameters", &Class::get_mutable_parameters,
+            py_rvp::reference_internal, cls_doc.get_mutable_parameters.doc);
+  }
 }
 
 }  // namespace pydrake

@@ -94,26 +94,12 @@ class YamlReadArchive final {
 
   /// Creates an archive that reads from @p root.  See the %YamlReadArchive
   /// class overview for details.
-  ///
-  /// When the `options` are not provided by the caller, this currently sets
-  /// `allow_yaml_with_no_cpp = true` for backwards compatibility reasons.
-  /// This default will change in a future Drake release to be `false`,
-  /// instead.  Callers that wish to avoid disruption should set the options
-  /// explicitly.
-  explicit YamlReadArchive(const YAML::Node& root, const Options& options = {
-                             .allow_yaml_with_no_cpp = true,
-                             .allow_cpp_with_no_yaml = false,
-                             .retain_map_defaults = false})
-      : owned_root_(root),
-        root_(&owned_root_),
-        mapish_item_key_(nullptr),
-        mapish_item_value_(nullptr),
-        options_(options),
-        parent_(nullptr) {
-    // Reprocess the owned_root for merge keys only after all member fields are
-    // initialized; otherwise, the method might access invalid member data.
-    RewriteMergeKeys(const_cast<YAML::Node*>(&owned_root_));
-  }
+  explicit YamlReadArchive(const YAML::Node& root);
+
+  /// Creates an archive that reads from @p root, with @p options that allow
+  /// for less restrictive parsing.  See the %YamlReadArchive class overview
+  /// for details.
+  YamlReadArchive(const YAML::Node& root, const Options& options);
 
   /// Sets the contents `serializable` based on the YAML file associated with
   /// this archive.  See the %YamlReadArchive class overview for details.
@@ -307,7 +293,17 @@ class YamlReadArchive final {
     // or has an empty value.  In yaml-cpp, presence is denoted by IsDefined(),
     // and empty is denoted by IsNull().
     const auto& sub_node = MaybeGetSubNode(nvp.name());
-    if (!sub_node.IsDefined() || sub_node.IsNull()) {
+
+    if (!sub_node.IsDefined()) {
+      // If the YAML has no data, ensure that the CPP has no data unless the
+      // right flag is set
+      if (!options_.allow_cpp_with_no_yaml) {
+        *nvp.value() = std::nullopt;
+      }
+      return;
+    }
+
+    if (sub_node.IsNull()) {
       *nvp.value() = std::nullopt;
       return;
     }
@@ -426,8 +422,8 @@ class YamlReadArchive final {
     if (!sub_node) { return; }
 
     // Measure the YAML Sequence-of-Sequence dimensions.
-    const size_t rows = sub_node.size();
-    const size_t cols = sub_node[0].size();
+    size_t rows = sub_node.size();
+    size_t cols = (rows == 0) ? 0 : sub_node[0].size();
     for (size_t i = 0; i < rows; ++i) {
       const YAML::Node one_row = sub_node[i];
       const size_t one_row_size = one_row.size();
@@ -441,6 +437,10 @@ class YamlReadArchive final {
         ReportError("has inconsistent cols dimensions");
         return;
       }
+    }
+    // Never return an Nx0 matrix; demote it to 0x0 instead.
+    if (cols == 0) {
+      rows = 0;
     }
 
     // Check the YAML dimensions vs Eigen dimensions, then resize (if dynamic).

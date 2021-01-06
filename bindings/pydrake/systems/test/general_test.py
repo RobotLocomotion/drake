@@ -11,16 +11,19 @@ import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import RandomGenerator
+from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.common.value import AbstractValue, Value
 from pydrake.examples.pendulum import PendulumPlant
 from pydrake.examples.rimless_wheel import RimlessWheel
 from pydrake.symbolic import Expression
 from pydrake.systems.analysis import (
     GetIntegrationSchemes,
+    InitializeParams,
     IntegratorBase, IntegratorBase_,
     PrintSimulatorStatistics,
     ResetIntegratorFromFlags,
-    RungeKutta2Integrator, RungeKutta3Integrator,
+    RungeKutta2Integrator,
     SimulatorStatus, Simulator, Simulator_,
     )
 from pydrake.systems.framework import (
@@ -59,13 +62,10 @@ from pydrake.systems.primitives import (
     ConstantVectorSource, ConstantVectorSource_,
     Integrator,
     LinearSystem,
-    PassThrough,
+    PassThrough, PassThrough_,
     SignalLogger,
     ZeroOrderHold,
     )
-
-with catch_drake_warnings(expected_count=2):
-    from pydrake.systems.framework import AbstractValue, Value
 
 # TODO(eric.cousineau): The scope of this test file and and `custom_test.py`
 # is poor. Move these tests into `framework_test` and `analysis_test`, and
@@ -117,9 +117,12 @@ class TestGeneral(unittest.TestCase):
         self.assertIsNotNone(u1.ticket())
         self.assertIs(u1.get_system(), system)
         y = system.GetOutputPort("sum")
+        self.assertEqual(y.get_name(), "sum")
         self.assertEqual(y.get_index(), 0)
         self.assertIsInstance(y.Allocate(), Value[BasicVector])
         self.assertIs(y.get_system(), system)
+        y.disable_caching_by_default()
+        self.assertEqual(y, system.get_output_port())
         # TODO(eric.cousineau): Consolidate the main API tests for `System`
         # to this test point.
 
@@ -275,6 +278,47 @@ class TestGeneral(unittest.TestCase):
         is_diff_eq, period = system2.IsDifferenceEquationSystem()
         self.assertFalse(is_diff_eq)
 
+    def test_continuous_state_api(self):
+        self.assertEqual(ContinuousState().size(), 0)
+        self.assertEqual(ContinuousState(state=BasicVector(2)).size(), 2)
+        state = ContinuousState(state=BasicVector(np.arange(6)), num_q=3,
+                                num_v=2, num_z=1)
+        state_clone = state.Clone()
+        self.assertTrue(state_clone is not state)
+        self.assertEqual(state.size(), 6)
+        self.assertEqual(state.num_q(), 3)
+        self.assertEqual(state.num_v(), 2)
+        self.assertEqual(state.num_z(), 1)
+        self.assertEqual(state[1], 1.0)
+        state[1] = 11.
+        self.assertEqual(state[1], 11.)
+        self.assertEqual(state.get_vector().size(), 6)
+        self.assertEqual(state.get_mutable_vector().size(), 6)
+        self.assertEqual(state.get_generalized_position().size(), 3)
+        self.assertEqual(state.get_mutable_generalized_position().size(), 3)
+        self.assertEqual(state.get_generalized_velocity().size(), 2)
+        self.assertEqual(state.get_mutable_generalized_velocity().size(), 2)
+        self.assertEqual(state.get_misc_continuous_state().size(), 1)
+        self.assertEqual(state.get_mutable_misc_continuous_state().size(), 1)
+        state.SetFrom(ContinuousState(BasicVector(6), 3, 2, 1))
+        state.SetFromVector(value=3*np.arange(6))
+        self.assertEqual(len(state.CopyToVector()), 6)
+
+    def test_discrete_value_api(self):
+        self.assertEqual(DiscreteValues().num_groups(), 0)
+        discrete_values = DiscreteValues(data=[BasicVector(1), BasicVector(2)])
+        self.assertEqual(discrete_values.num_groups(), 2)
+        discrete_values = DiscreteValues(datum=BasicVector(np.arange(3)))
+        self.assertEqual(discrete_values.size(), 3)
+        discrete_values_clone = discrete_values.Clone()
+        self.assertTrue(discrete_values_clone is not discrete_values)
+        self.assertEqual(len(discrete_values.get_data()), 1)
+        self.assertEqual(discrete_values.get_vector(index=0).size(), 3)
+        self.assertEqual(discrete_values.get_mutable_vector(index=0).size(), 3)
+        discrete_values[1] = 5.
+        self.assertEqual(discrete_values[1], 5.)
+        discrete_values.SetFrom(DiscreteValues(BasicVector(3)))
+
     def test_instantiations(self):
         # Quick check of instantiations for given types.
         # N.B. These checks are ordered according to their binding definitions
@@ -372,6 +416,7 @@ class TestGeneral(unittest.TestCase):
             self.assertTrue(simulator.get_context() is
                             simulator.get_mutable_context())
             check_output(simulator.get_context())
+            simulator.Initialize()
             simulator.AdvanceTo(1)
             simulator.ResetStatistics()
             simulator.AdvanceTo(2)
@@ -392,6 +437,13 @@ class TestGeneral(unittest.TestCase):
             check_output(context)
             simulator.AdvanceTo(1)
             simulator.AdvancePendingEvents()
+
+            # Reuse simulator over the same time interval, without
+            # initialization events.
+            context.SetTime(0.)
+            simulator.Initialize(InitializeParams(
+                suppress_initialization_events=True))
+            simulator.AdvanceTo(1)
 
     def test_copy(self):
         # Copy a context using `deepcopy` or `clone`.
@@ -448,6 +500,9 @@ class TestGeneral(unittest.TestCase):
         integrator = builder.AddSystem(Integrator(size))
         integrator.set_name("integrator")
 
+        self.assertEqual(
+            builder.GetSystems(),
+            [adder0, adder1, integrator])
         self.assertEqual(
             builder.GetMutableSystems(),
             [adder0, adder1, integrator])
@@ -571,29 +626,6 @@ class TestGeneral(unittest.TestCase):
         const_integrator = simulator.get_integrator()
         self.assertTrue(const_integrator is integrator)
 
-        # Test context-less constructors for
-        # integrator types.
-        test_integrator = RungeKutta2Integrator(
-            system=system, max_step_size=0.01)
-        test_integrator = RungeKutta3Integrator(system=system)
-
-        # Test simulator's reset_integrator, and also the full constructors for
-        # all integrator types.
-        rk2 = RungeKutta2Integrator(
-            system=system,
-            max_step_size=0.01,
-            context=simulator.get_mutable_context())
-        with catch_drake_warnings(expected_count=1):
-            # TODO(12873) We need an API for this that isn't deprecated.
-            simulator.reset_integrator(rk2)
-
-        rk3 = RungeKutta3Integrator(
-            system=system,
-            context=simulator.get_mutable_context())
-        with catch_drake_warnings(expected_count=1):
-            # TODO(12873) We need an API for this that isn't deprecated.
-            simulator.reset_integrator(rk3)
-
     def test_simulator_flags(self):
         # TODO(eric.cousineau): Move this to `analysis_test.py`.
         system = ConstantVectorSource([1])
@@ -650,6 +682,7 @@ class TestGeneral(unittest.TestCase):
         self.assertIsInstance(fixed.GetMutableData(), AbstractValue)
         input_port = system.get_input_port(0)
 
+        self.assertTrue(input_port.HasValue(context))
         value = input_port.Eval(context)
         self.assertEqual(type(value), type(model_value.get_value()))
         self.assertEqual(value, model_value.get_value())
@@ -666,6 +699,7 @@ class TestGeneral(unittest.TestCase):
         system.get_input_port(0).FixValue(context, np_value)
         input_port = system.get_input_port(0)
 
+        self.assertTrue(input_port.HasValue(context))
         value = input_port.Eval(context)
         self.assertEqual(type(value), np.ndarray)
         np.testing.assert_equal(value, np_value)
@@ -735,43 +769,44 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(type(value), str)
         self.assertEqual(value, "string")
 
-    def test_vector_input_port_fix(self):
+    @numpy_compare.check_all_types
+    def test_vector_input_port_fix(self, T):
         np_zeros = np.array([0.])
         model_value = AbstractValue.Make(BasicVector(np_zeros))
-        system = PassThrough(len(np_zeros))
+        system = PassThrough_[T](len(np_zeros))
         context = system.CreateDefaultContext()
         input_port = system.get_input_port(0)
 
         # Fix to a scalar.
-        input_port.FixValue(context, 1.)
+        input_port.FixValue(context, T(1.))
         value = input_port.Eval(context)
         self.assertEqual(type(value), np.ndarray)
-        np.testing.assert_equal(value, np.array([1.]))
+        numpy_compare.assert_equal(value, np.array([T(1.)]))
 
         # Fix to an ndarray.
-        input_port.FixValue(context, np.array([2.]))
+        input_port.FixValue(context, np.array([T(2.)]))
         value = input_port.Eval(context)
         self.assertEqual(type(value), np.ndarray)
-        np.testing.assert_equal(value, np.array([2.]))
+        numpy_compare.assert_equal(value, np.array([T(2.)]))
 
         # Fix to a BasicVector.
-        input_port.FixValue(context, BasicVector([3.]))
+        input_port.FixValue(context, BasicVector_[T]([3.]))
         value = input_port.Eval(context)
         self.assertEqual(type(value), np.ndarray)
-        np.testing.assert_equal(value, np.array([3.]))
+        numpy_compare.assert_equal(value, np.array([T(3.)]))
 
         # Fix to a type-erased BasicVector.
-        input_port.FixValue(context, AbstractValue.Make(BasicVector([4.])))
+        input_port.FixValue(context, AbstractValue.Make(BasicVector_[T]([4.])))
         value = input_port.Eval(context)
         self.assertEqual(type(value), np.ndarray)
-        np.testing.assert_equal(value, np.array([4.]))
+        numpy_compare.assert_equal(value, np.array([T(4.)]))
 
         # Fix to wrong-sized vector.
         with self.assertRaises(RuntimeError):
             input_port.FixValue(context, np.array([0., 1.]))
         with self.assertRaises(RuntimeError):
             input_port.FixValue(
-                context, AbstractValue.Make(BasicVector([0., 1.])))
+                context, AbstractValue.Make(BasicVector_[T]([0., 1.])))
 
         # Fix to a non-vector.
         with self.assertRaises(TypeError):
@@ -782,22 +817,6 @@ class TestGeneral(unittest.TestCase):
             # A RuntimeError occurs when the Context detects that the
             # type-erased Value objects are incompatible.
             input_port.FixValue(context, AbstractValue.Make("string"))
-
-    def test_context_fix_input_port(self):
-        # WARNING: This is not the recommend workflow; instead, use
-        # `InputPort.FixValue` instead. This is here just for testing /
-        # coverage purposes.
-        dt = 0.1  # Arbitrary.
-        system_vec = ZeroOrderHold(period_sec=dt, vector_size=1)
-        context_vec = system_vec.CreateDefaultContext()
-        context_vec.FixInputPort(index=0, data=[0.])
-        context_vec.FixInputPort(index=0, vec=BasicVector([0.]))
-        # Test abstract.
-        model_value = AbstractValue.Make("Hello")
-        system_abstract = ZeroOrderHold(
-            period_sec=dt, abstract_model_value=model_value.Clone())
-        context_abstract = system_abstract.CreateDefaultContext()
-        context_abstract.FixInputPort(index=0, value=model_value.Clone())
 
     def test_event_status(self):
         system = ZeroOrderHold(period_sec=0.1, vector_size=1)
@@ -826,3 +845,39 @@ class TestGeneral(unittest.TestCase):
         system.set_name("zoh")
         html = GenerateHtml(system, initial_depth=2)
         self.assertRegex(html, r'key: "zoh"')
+
+    def test_diagram_fan_out(self):
+        builder = DiagramBuilder()
+        adder = builder.AddSystem(Adder(6, 1))
+        adder.set_name("adder")
+        builder.ExportOutput(adder.get_output_port())
+        in0_index = builder.ExportInput(adder.get_input_port(0), "in0")
+        in1_index = builder.ExportInput(adder.get_input_port(1), "in1")
+
+        # Exercise ConnectInput overload bindings, with and without argument
+        # names.
+        builder.ConnectInput(in0_index, adder.get_input_port(2))
+        builder.ConnectInput("in1", adder.get_input_port(3))
+        builder.ConnectInput(diagram_port_name="in0",
+                             input=adder.get_input_port(4))
+        builder.ConnectInput(diagram_port_index=in1_index,
+                             input=adder.get_input_port(5))
+
+        diagram = builder.Build()
+        diagram.set_name("fan_out_diagram")
+        graph = diagram.GetGraphvizString()
+
+        # Check the desired input topology is in the graph.
+        self.assertRegex(graph, "_u0 -> .*:u0")
+        self.assertRegex(graph, "_u1 -> .*:u1")
+        self.assertRegex(graph, "_u0 -> .*:u2")
+        self.assertRegex(graph, "_u1 -> .*:u3")
+        self.assertRegex(graph, "_u0 -> .*:u4")
+        self.assertRegex(graph, "_u1 -> .*:u5")
+
+    def test_add_named_system(self):
+        builder = DiagramBuilder()
+        adder1 = builder.AddNamedSystem("adder1", Adder(2, 3))
+        self.assertEqual(adder1.get_name(), "adder1")
+        adder2 = builder.AddNamedSystem(name="adder2", system=Adder(5, 8))
+        self.assertEqual(adder2.get_name(), "adder2")

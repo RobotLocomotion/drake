@@ -1519,8 +1519,6 @@ class MathematicalProgram {
    * @param b A vector of doubles.
    * @return The newly added linear equality constraint, together with the
    * bound variables.
-   *
-   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   template <typename DerivedV, typename DerivedB>
   typename std::enable_if<
@@ -1813,6 +1811,15 @@ class MathematicalProgram {
    * \f]
    * @return The newly constructed Lorentz cone constraint with the bounded
    * variables.
+   * For example, to add the Lorentz cone constraint
+   *
+   *     x+1 >= sqrt(y² + 2y + x² + 5),
+   *          = sqrt((y+1)²+x²+2²)
+   * The user could call
+   * @code{cc}
+   * Vector4<symbolic::Expression> v(x+1, y+1, x, 2.);
+   * prog.AddLorentzConeConstraint(v);
+   * @endcode
    */
   Binding<LorentzConeConstraint> AddLorentzConeConstraint(
       const Eigen::Ref<const VectorX<symbolic::Expression>>& v);
@@ -1845,8 +1852,13 @@ class MathematicalProgram {
    *  y = R * x + d
    * </pre>
    * while (R, d) satisfies y'*y = x'*Q*x + b'*x + a
+   * For example, to add the Lorentz cone constraint
    *
-   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
+   *     x+1 >= sqrt(y² + 2y + x² + 4),
+   * the user could call
+   * @code{cc}
+   * prog.AddLorentzConeConstraint(x+1, pow(y, 2) + 2 * y + pow(x, 2) + 4);
+   * @endcode
    */
   Binding<LorentzConeConstraint> AddLorentzConeConstraint(
       const symbolic::Expression& linear_expression,
@@ -1896,7 +1908,18 @@ class MathematicalProgram {
    * @param vars The Eigen vector of @f$ m @f$ decision variables.
    * @return The newly added Lorentz cone constraint.
    *
-   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
+   * For example, to add the Lorentz cone constraint
+   *
+   *     x+1 >= sqrt(y² + 2y + x² + 5) = sqrt((y+1)² + x² + 2²),
+   * the user could call
+   * @code{cc}
+   * Eigen::Matrix<double, 4, 2> A;
+   * Eigen::Vector4d b;
+   * A << 1, 0, 0, 1, 1, 0, 0, 0;
+   * b << 1, 1, 0, 2;
+   * // A * [x;y] + b = [x+1; y+1; x; 2]
+   * prog.AddLorentzConeConstraint(A, b, Vector2<symbolic::Variable>(x, y));
+   * @endcode
    */
   Binding<LorentzConeConstraint> AddLorentzConeConstraint(
       const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -1985,6 +2008,17 @@ class MathematicalProgram {
    *    positive semidefinite matrix, and the quadratic expression needs
    *    to be non-negative for any x.
    * @throws std::runtime_error if the preconditions are not satisfied.
+   *
+   * For example, to add the rotated Lorentz cone constraint
+   *
+   *     (x+1)(x+y) >= x²+z²+2z+5
+   *     x+1 >= 0
+   *     x+y >= 0
+   * The user could call
+   * @code{cc}
+   * prog.AddRotatedLorentzConeConstraint(x+1, x+y, pow(x, 2) + pow(z, 2) +
+   * 2*z+5);
+   * @endcode
    */
   Binding<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
       const symbolic::Expression& linear_expression1,
@@ -2003,6 +2037,18 @@ class MathematicalProgram {
    * decision variables.
    * @retval binding The newly added rotated Lorentz cone constraint, together
    * with the bound variables.
+   *
+   * For example, to add the rotated Lorentz cone constraint
+   *
+   *     (x+1)(x+y) >= x²+z²+2z+5 = x² + (z+1)² + 2²
+   *     x+1 >= 0
+   *     x+y >= 0
+   * The user could call
+   * @code{cc}
+   * Eigen::Matrix<symbolic::Expression, 5, 1> v;
+   * v << x+1, x+y, x, z+1, 2;
+   * prog.AddRotatedLorentzConeConstraint(v);
+   * @endcode
    */
   Binding<RotatedLorentzConeConstraint> AddRotatedLorentzConeConstraint(
       const Eigen::Ref<const VectorX<symbolic::Expression>>& v);
@@ -2190,6 +2236,20 @@ class MathematicalProgram {
    *      }
    * @return The newly added positive semidefinite constraint, with the bound
    * variable M that are also newly added.
+   *
+   * For example, to add a constraint that
+   *
+   *     ⌈x + 1  2x + 3 x+y⌉
+   *     |2x+ 3       2   0| is positive semidefinite
+   *     ⌊x + y       0   x⌋
+   * The user could call
+   * @code{cc}
+   * Matrix3<symbolic::Expression> e
+   * e << x+1, 2*x+3, x+y,
+   *      2*x+3,   2,   0,
+   *      x+y,     0,   x;
+   * prog.AddPositiveSemidefiniteConstraint(e);
+   * @endcode
    */
   template <typename Derived>
   typename std::enable_if<

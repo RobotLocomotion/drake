@@ -64,7 +64,7 @@ unique_ptr<sdf::Geometry> MakeSdfGeometryFromString(
     const std::string& geometry_spec) {
   const std::string sdf_str =
       "<?xml version='1.0'?>"
-      "<sdf version='1.6'>"
+      "<sdf version='1.7'>"
       "  <model name='my_model'>"
       "    <link name='link'>"
       "      <visual name='link_visual'>"
@@ -101,7 +101,7 @@ unique_ptr<sdf::Visual> MakeSdfVisualFromString(
     const std::string& visual_spec) {
   const std::string sdf_str =
       "<?xml version='1.0'?>"
-      "<sdf version='1.6'>"
+      "<sdf version='1.7'>"
       "  <model name='my_model'>"
       "    <link name='link'>"
       + visual_spec +
@@ -138,7 +138,7 @@ unique_ptr<sdf::Collision> MakeSdfCollisionFromString(
     const std::string& collision_spec) {
   const std::string sdf_str =
       "<?xml version='1.0'?>"
-          "<sdf version='1.6'>"
+          "<sdf version='1.7'>"
           "  <model name='my_model'>"
           "    <link name='link'>"
           + collision_spec +
@@ -406,7 +406,7 @@ GTEST_TEST(SceneGraphParserDetail, VisualGeometryNameRequirements) {
   auto valid_parse = [](const std::string& visual_str) -> bool {
     const std::string sdf_str = fmt::format(
         "<?xml version='1.0'?>"
-        "<sdf version='1.6'>"
+        "<sdf version='1.7'>"
         "  <model name='my_model'>"
         "    <link name='link'>{}"
         "    </link>"
@@ -852,7 +852,7 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
         MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename),
         std::runtime_error,
         "All values must be within the range \\[0, 1\\]. Values provided: "
-        "\\(r=0.0, g=1.0, b=255.0, a=1.0\\)");
+        "\\(r=0(\\.0)?, g=1(\\.0)?, b=255(\\.0)?, a=1(\\.0)?\\)");
   }
 }
 
@@ -1018,7 +1018,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
   // It contains a `{}` place holder such that child tags of <collision> can be
   // injected to test various expressions of collision properties --
   // substitution via fmt::format.
-  const std::string collision_xml = R"_(
+  const std::string collision_xml = R"""(
 <collision name="some_geo">
   <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
   <geometry>
@@ -1027,7 +1027,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
     </plane>
   </geometry>{}
 </collision>
-)_";
+)""";
 
   auto make_sdf_collision = [&collision_xml](const char* material_string) {
     return MakeSdfCollisionFromString(
@@ -1057,14 +1057,14 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
   // confirm that all of the basic tags get parsed and focus on the logic that
   // is unique to `MakeProximityPropertiesForCollision()`.
   {
-    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"_(
+    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"""(
   <drake:proximity_properties>
     <drake:mesh_resolution_hint>2.5</drake:mesh_resolution_hint>
     <drake:elastic_modulus>3.5</drake:elastic_modulus>
     <drake:hunt_crossley_dissipation>4.5</drake:hunt_crossley_dissipation>
     <drake:mu_dynamic>4.5</drake:mu_dynamic>
     <drake:mu_static>4.75</drake:mu_static>
-  </drake:proximity_properties>)_");
+  </drake:proximity_properties>)""");
     ProximityProperties properties =
         MakeProximityPropertiesForCollision(*sdf_collision);
     assert_single_property(properties, geometry::internal::kHydroGroup,
@@ -1078,10 +1078,10 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
 
   // Case: specifies rigid hydroelastic.
   {
-    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"_(
+    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"""(
   <drake:proximity_properties>
     <drake:rigid_hydroelastic/>
-  </drake:proximity_properties>)_");
+  </drake:proximity_properties>)""");
     ProximityProperties properties =
         MakeProximityPropertiesForCollision(*sdf_collision);
     ASSERT_TRUE(properties.HasProperty(geometry::internal::kHydroGroup,
@@ -1093,10 +1093,10 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
 
   // Case: specifies soft hydroelastic.
   {
-    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"_(
+    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"""(
   <drake:proximity_properties>
     <drake:soft_hydroelastic/>
-  </drake:proximity_properties>)_");
+  </drake:proximity_properties>)""");
     ProximityProperties properties =
         MakeProximityPropertiesForCollision(*sdf_collision);
     ASSERT_TRUE(properties.HasProperty(geometry::internal::kHydroGroup,
@@ -1108,11 +1108,11 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
 
   // Case: specifies both -- should be an error.
   {
-    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"_(
+    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"""(
   <drake:proximity_properties>
     <drake:rigid_hydroelastic/>
     <drake:soft_hydroelastic/>
-  </drake:proximity_properties>)_");
+  </drake:proximity_properties>)""");
     DRAKE_EXPECT_THROWS_MESSAGE(
         MakeProximityPropertiesForCollision(*sdf_collision),
         std::runtime_error,
@@ -1123,7 +1123,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
   // Case: has no drake coefficients, only mu & m2 in ode: contains mu, mu2
   // friction.
   {
-    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"_(
+    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"""(
   <surface>
     <friction>
       <ode>
@@ -1131,7 +1131,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
         <mu2>0.3</mu2>
       </ode>
     </friction>
-  </surface>)_");
+  </surface>)""");
     ProximityProperties properties =
         MakeProximityPropertiesForCollision(*sdf_collision);
     assert_friction(properties, {0.8, 0.3});
@@ -1140,7 +1140,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
   // Case: has both ode (mu, mu2) and drake (dynamic): contains
   // drake::mu_dynamic wins.
   {
-    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"_(
+    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"""(
   <drake:proximity_properties>
     <drake:mu_dynamic>0.3</drake:mu_dynamic>
   </drake:proximity_properties>
@@ -1151,7 +1151,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
         <mu2>1.3</mu2>
       </ode>
     </friction>
-  </surface>)_");
+  </surface>)""");
     ProximityProperties properties =
         MakeProximityPropertiesForCollision(*sdf_collision);
     assert_friction(properties, {0.3, 0.3});

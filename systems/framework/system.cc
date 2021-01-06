@@ -132,10 +132,10 @@ void System<T>::AllocateFixedInputs(Context<T>* context) const {
   for (InputPortIndex i(0); i < num_input_ports(); ++i) {
     const InputPort<T>& port = get_input_port(i);
     if (port.get_data_type() == kVectorValued) {
-      context->FixInputPort(port.get_index(), AllocateInputVector(port));
+      port.FixValue(context, *AllocateInputVector(port));
     } else {
       DRAKE_DEMAND(port.get_data_type() == kAbstractValued);
-      context->FixInputPort(port.get_index(), AllocateInputAbstract(port));
+      port.FixValue(context, *AllocateInputAbstract(port));
     }
   }
 }
@@ -634,6 +634,17 @@ const InputPort<T>& System<T>::GetInputPort(
 }
 
 template <typename T>
+bool System<T>::HasInputPort(
+    const std::string& port_name) const {
+  for (InputPortIndex i{0}; i < num_input_ports(); i++) {
+    if (port_name == get_input_port_base(i).get_name()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+template <typename T>
 const OutputPort<T>* System<T>::get_output_port_selection(
     std::variant<OutputPortSelection, OutputPortIndex> port_index) const {
   if (std::holds_alternative<OutputPortIndex>(port_index)) {
@@ -662,6 +673,17 @@ const OutputPort<T>& System<T>::GetOutputPort(
   throw std::logic_error("System " + GetSystemName() +
                          " does not have an output port named " +
                          port_name);
+}
+
+template <typename T>
+bool System<T>::HasOutputPort(
+    const std::string& port_name) const {
+  for (OutputPortIndex i{0}; i < num_output_ports(); i++) {
+    if (port_name == get_output_port_base(i).get_name()) {
+      return true;
+    }
+  }
+  return false;
 }
 
 template <typename T>
@@ -823,7 +845,7 @@ void System<T>::FixInputPortsFrom(const System<double>& other_system,
         for (int j = 0; j < our_vec->size(); ++j) {
           (*our_vec)[j] = T(other_vec[j]);
         }
-        target_context->FixInputPort(i, *our_vec);
+        input_port.FixValue(target_context, *our_vec);
         continue;
       }
       case kAbstractValued: {
@@ -831,7 +853,7 @@ void System<T>::FixInputPortsFrom(const System<double>& other_system,
         // it to the port.
         const auto& other_value =
             other_port.Eval<AbstractValue>(other_context);
-        target_context->FixInputPort(i, other_value);
+        input_port.FixValue(target_context, other_value);
         continue;
       }
     }

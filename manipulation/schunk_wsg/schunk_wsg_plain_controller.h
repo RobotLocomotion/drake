@@ -148,13 +148,11 @@ class SchunkWsgPlainController
     return systems::Diagram<double>::get_output_port(0);
   }
 
-  const systems::OutputPort<double>& get_output_port(int) const = delete;
-
  private:
-  int desired_grip_state_input_port_{-1};
-  int feed_forward_force_input_port_{-1};
-  int state_input_port_{-1};
-  int max_force_input_port_{-1};
+  systems::InputPortIndex desired_grip_state_input_port_;
+  systems::InputPortIndex feed_forward_force_input_port_;
+  systems::InputPortIndex state_input_port_;
+  systems::InputPortIndex max_force_input_port_;
 };
 
 }  // namespace schunk_wsg

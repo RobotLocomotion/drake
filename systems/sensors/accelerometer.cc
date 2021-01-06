@@ -1,8 +1,6 @@
-/* clang-format off to disable clang-format-includes */
-#include "drake/systems/sensors/accelerometer_sensor.h"
-/* clang-format on */
-#include "drake/multibody/math/spatial_acceleration.h"
-#include "drake/multibody/math/spatial_velocity.h"
+#include "drake/systems/sensors/accelerometer.h"
+
+#include "drake/multibody/math/spatial_algebra.h"
 
 namespace drake {
 namespace systems {

@@ -8,13 +8,14 @@
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
+#include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/math/barycentric.h"
+#include "drake/math/bspline_basis.h"
 #include "drake/math/continuous_algebraic_riccati_equation.h"
 #include "drake/math/continuous_lyapunov_equation.h"
 #include "drake/math/discrete_algebraic_riccati_equation.h"
@@ -22,6 +23,7 @@
 #include "drake/math/matrix_util.h"
 #include "drake/math/orthonormal_basis.h"
 #include "drake/math/quadratic_form.h"
+#include "drake/math/random_rotation.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
@@ -72,7 +74,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("SetFromIsometry3", &Class::SetFromIsometry3, py::arg("pose"),
             cls_doc.SetFromIsometry3.doc)
         .def_static("Identity", &Class::Identity, cls_doc.Identity.doc)
-        .def("rotation", &Class::rotation, py_reference_internal,
+        .def("rotation", &Class::rotation, py_rvp::reference_internal,
             cls_doc.rotation.doc)
         .def("set_rotation",
             py::overload_cast<const RotationMatrix<T>&>(&Class::set_rotation),
@@ -116,40 +118,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
               return *self * p_BoQ_B;
             },
             py::arg("p_BoQ_B"),
-            cls_doc.operator_mul.doc_1args_constEigenMatrixBase);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls  // BR
-        .def(
-            "matrix",
-            [](RigidTransform<T>* self) {
-              WarnDeprecated(
-                  "The RigidTransform::matrix() method was added for "
-                  "compatibility with Eigen::Isometry3, and is now deprecated. "
-                  "Use RigidTransform::GetAsMatrix4() instead.");
-              return self->GetAsMatrix4();
-            },
-            "The RigidTransform::matrix() method was added for "
-            "compatibility with Eigen::Isometry3, and is now deprecated. "
-            "Use RigidTransform::GetAsMatrix4() instead.")
-        .def(
-            "linear",
-            [](RigidTransform<T>* self) {
-              WarnDeprecated(
-                  "The RigidTransform::linear() method was added for "
-                  "compatibility with Eigen::Isometry3, and is now deprecated. "
-                  "Use RigidTransform::rotation().matrix() instead.");
-              return self->rotation().matrix();
-            },
-            "The RigidTransform::linear() method was added for "
-            "compatibility with Eigen::Isometry3, and is now deprecated. "
-            "Use RigidTransform::rotation().matrix() instead.");
-#pragma GCC diagnostic pop
-    cls  // BR
+            cls_doc.operator_mul.doc_1args_constEigenMatrixBase)
         .def(py::pickle([](const Class& self) { return self.GetAsMatrix34(); },
             [](const Eigen::Matrix<T, 3, 4>& matrix) {
               return Class(matrix);
             }));
+    cls.attr("multiply") = WrapToMatchInputShape(cls.attr("multiply"));
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
     DefCast<T>(&cls, cls_doc.cast.doc);
@@ -224,6 +198,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("ToAngleAxis", &Class::ToAngleAxis, cls_doc.ToAngleAxis.doc)
         .def(py::pickle([](const Class& self) { return self.matrix(); },
             [](const Matrix3<T>& matrix) { return Class(matrix); }));
+    cls.attr("multiply") = WrapToMatchInputShape(cls.attr("multiply"));
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
     DefCast<T>(&cls, cls_doc.cast.doc);
@@ -286,25 +261,47 @@ void DoScalarDependentDefinitions(py::module m, T) {
     // N.B. `RollPitchYaw::cast` is not defined in C++.
   }
 
-  auto eigen_geometry_py = py::module::import("pydrake.common.eigen_geometry");
-  // Install constructor to Isometry3 to permit `implicitly_convertible` to
-  // work.
-  // TODO(eric.cousineau): Consider more elegant implicit conversion process.
-  // See pybind/pybind11#1735
-  py::class_<Isometry3<T>>(eigen_geometry_py.attr("Isometry3"))
-      .def(py::init([](const RigidTransform<T>& X) {
-        WarnDeprecated(
-            "Implicit conversion from RigidTransform to Eigen::Isometry3 is "
-            "deprecated. You may convert explicitly by calling "
-            "GetAsIsometry3(), or try to avoid using Eigen::Isometry3 in the "
-            "first place.");
-        return X.GetAsIsometry3();
-      }),
-          "Implicit conversion from RigidTransform to Eigen::Isometry3 is "
-          "deprecated. You may convert explicitly by calling "
-          "GetAsIsometry3(), or try to avoid using Eigen::Isometry3 in the "
-          "first place.");
-  py::implicitly_convertible<RigidTransform<T>, Isometry3<T>>();
+  {
+    using Class = BsplineBasis<T>;
+    constexpr auto& cls_doc = doc.BsplineBasis;
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "BsplineBasis", param, cls_doc.doc);
+    cls  // BR
+        .def(py::init())
+        .def(py::init<int, std::vector<T>>(), py::arg("order"),
+            py::arg("knots"), cls_doc.ctor.doc_2args)
+        .def(py::init<int, int, KnotVectorType, const T&, const T&>(),
+            py::arg("order"), py::arg("num_basis_functions"),
+            py::arg("type") = KnotVectorType::kClampedUniform,
+            py::arg("initial_parameter_value") = 0.0,
+            py::arg("final_parameter_value") = 1.0, cls_doc.ctor.doc_5args)
+        .def(py::init<const Class&>(), py::arg("other"))
+        .def("order", &Class::order, cls_doc.order.doc)
+        .def("degree", &Class::degree, cls_doc.degree.doc)
+        .def("num_basis_functions", &Class::num_basis_functions,
+            cls_doc.num_basis_functions.doc)
+        .def("knots", &Class::knots, cls_doc.knots.doc)
+        .def("initial_parameter_value", &Class::initial_parameter_value,
+            cls_doc.initial_parameter_value.doc)
+        .def("final_parameter_value", &Class::final_parameter_value,
+            cls_doc.final_parameter_value.doc)
+        .def("FindContainingInterval", &Class::FindContainingInterval,
+            py::arg("parameter_value"), cls_doc.FindContainingInterval.doc)
+        .def("ComputeActiveBasisFunctionIndices",
+            overload_cast_explicit<std::vector<int>, const std::array<T, 2>&>(
+                &Class::ComputeActiveBasisFunctionIndices),
+            py::arg("parameter_interval"),
+            cls_doc.ComputeActiveBasisFunctionIndices
+                .doc_1args_parameter_interval)
+        .def("ComputeActiveBasisFunctionIndices",
+            overload_cast_explicit<std::vector<int>, const T&>(
+                &Class::ComputeActiveBasisFunctionIndices),
+            py::arg("parameter_value"),
+            cls_doc.ComputeActiveBasisFunctionIndices.doc_1args_parameter_value)
+        .def("EvaluateBasisFunctionI", &Class::EvaluateBasisFunctionI,
+            py::arg("i"), py::arg("parameter_value"),
+            cls_doc.EvaluateBasisFunctionI.doc);
+  }
 }
 
 void DoScalarIndependentDefinitions(py::module m) {
@@ -358,6 +355,34 @@ void DoScalarIndependentDefinitions(py::module m) {
           doc.BarycentricMesh.Eval.doc_2args)
       .def("MeshValuesFrom", &BarycentricMesh<T>::MeshValuesFrom,
           doc.BarycentricMesh.MeshValuesFrom.doc);
+
+  {
+    using Class = KnotVectorType;
+    constexpr auto& cls_doc = doc.KnotVectorType;
+    py::enum_<Class>(m, "KnotVectorType", py::arithmetic(), cls_doc.doc)
+        .value("kUniform", Class::kUniform, cls_doc.kUniform.doc)
+        .value("kClampedUniform", Class::kClampedUniform,
+            cls_doc.kClampedUniform.doc);
+  }
+
+  // Random Rotations
+  m  // BR
+      .def("UniformlyRandomQuaternion",
+          overload_cast_explicit<Eigen::Quaternion<T>, RandomGenerator*>(
+              &UniformlyRandomQuaternion),
+          py::arg("generator"), doc.UniformlyRandomQuaternion.doc)
+      .def("UniformlyRandomAngleAxis",
+          overload_cast_explicit<Eigen::AngleAxis<T>, RandomGenerator*>(
+              &UniformlyRandomAngleAxis),
+          py::arg("generator"), doc.UniformlyRandomAngleAxis.doc)
+      .def("UniformlyRandomRotationMatrix",
+          overload_cast_explicit<RotationMatrix<T>, RandomGenerator*>(
+              &UniformlyRandomRotationMatrix),
+          py::arg("generator"), doc.UniformlyRandomRotationMatrix.doc)
+      .def("UniformlyRandomRPY",
+          overload_cast_explicit<Vector3<T>, RandomGenerator*>(
+              &UniformlyRandomRPY),
+          py::arg("generator"), doc.UniformlyRandomRPY.doc);
 
   // Matrix Util.
   m  // BR
@@ -446,15 +471,6 @@ void DoScalarIndependentDefinitions(py::module m) {
         return X.inverse();
       });
 
-  // Add testing module.
-  {
-    auto mtest = m.def_submodule("_test");
-    // Implicit conversions.
-    mtest.def("TakeIsometry3", [](const Isometry3<T>&) { return true; });
-    mtest.def(
-        "TakeRigidTransform", [](const RigidTransform<T>&) { return true; });
-  }
-
   // See TODO in corresponding header file - these should be removed soon!
   pydrake::internal::BindAutoDiffMathOverloads(&m);
   pydrake::internal::BindSymbolicMathOverloads(&m);
@@ -465,11 +481,12 @@ PYBIND11_MODULE(math, m) {
   // N.B. Docstring contained in `_math_extra.py`.
 
   py::module::import("pydrake.autodiffutils");
+  py::module::import("pydrake.common.eigen_geometry");
   py::module::import("pydrake.symbolic");
 
+  DoScalarIndependentDefinitions(m);
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
       CommonScalarPack{});
-  DoScalarIndependentDefinitions(m);
 
   ExecuteExtraPythonCode(m);
 }

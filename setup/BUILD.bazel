@@ -8,14 +8,24 @@ package(default_visibility = ["//visibility:public"])
 # Make our package requirements (but not manual scripts) available to
 # downstream projects.
 exports_files([
-    "ubuntu/source_distribution/packages-bionic.txt",
-    "ubuntu/source_distribution/packages-focal.txt",
+    "mac/binary_distribution/Brewfile",
+    "mac/binary_distribution/requirements.txt",
+    "mac/source_distribution/Brewfile",
+    "mac/source_distribution/Brewfile-doc-only",
+    "mac/source_distribution/Brewfile-maintainer-only",
+    "mac/source_distribution/requirements.txt",
+    "mac/source_distribution/requirements-maintainer-only.txt",
+    "mac/source_distribution/requirements-test-only.txt",
     "ubuntu/binary_distribution/packages-bionic.txt",
     "ubuntu/binary_distribution/packages-focal.txt",
-    "mac/source_distribution/requirements.txt",
-    "mac/source_distribution/Brewfile",
-    "mac/binary_distribution/requirements.txt",
-    "mac/binary_distribution/Brewfile",
+    "ubuntu/source_distribution/packages-bionic.txt",
+    "ubuntu/source_distribution/packages-bionic-doc-only.txt",
+    "ubuntu/source_distribution/packages-bionic-maintainer-only.txt",
+    "ubuntu/source_distribution/packages-bionic-test-only.txt",
+    "ubuntu/source_distribution/packages-focal.txt",
+    "ubuntu/source_distribution/packages-focal-doc-only.txt",
+    "ubuntu/source_distribution/packages-focal-maintainer-only.txt",
+    "ubuntu/source_distribution/packages-focal-test-only.txt",
 ])
 
 install_files(

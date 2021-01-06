@@ -90,11 +90,12 @@ class ProximityEngine {
 
   /* Adds the given `shape` to the engine's _dynamic_ geometry.
    @param shape   The shape to add.
+   @param X_WG    The pose of the shape in the world frame.
    @param id      The id of the geometry in SceneGraph to which this shape
                   belongs.
    @param props   The proximity properties for the shape.  */
-  void AddDynamicGeometry(const Shape& shape, GeometryId id,
-                          const ProximityProperties& props = {});
+  void AddDynamicGeometry(const Shape& shape, const math::RigidTransformd& X_WG,
+                          GeometryId id, const ProximityProperties& props = {});
 
   /* Adds the given `shape` to the engine's _anchored_ geometry.
    @param shape   The shape to add.
@@ -214,8 +215,11 @@ class ProximityEngine {
   // and drake issue #10577. Once that is resolved, this definition can be
   // revisited (and ProximityEngineTest::Issue10577Regression_Osculation can
   // be updated).
-  /* Implementation of GeometryState::ComputePointPairPenetration().  */
-  std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
+  /* Implementation of GeometryState::ComputePointPairPenetration().
+   This includes `X_WGs`, the current poses of all geometries in World in the
+   current scalar type, keyed on each geometry's GeometryId.  */
+  std::vector<PenetrationAsPointPair<T>> ComputePointPairPenetration(
+      const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs)
       const;
 
   /* Implementation of GeometryState::ComputeContactSurfaces().
@@ -231,7 +235,7 @@ class ProximityEngine {
   void ComputeContactSurfacesWithFallback(
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs,
       std::vector<ContactSurface<T>>* surfaces,
-      std::vector<PenetrationAsPointPair<double>>* point_pairs) const;
+      std::vector<PenetrationAsPointPair<T>>* point_pairs) const;
 
   /* Implementation of GeometryState::FindCollisionCandidates().  */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const;

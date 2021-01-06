@@ -10,6 +10,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/type_safe_index.h"
 
@@ -99,10 +100,29 @@ class VolumeElement {
     return vertex_.at(i);
   }
 
+  /** Checks to see whether the given VolumeElement use the same four
+   VolumeVertexIndex's in the same order. We check for equality to the last
+   bit consistently with VolumeMesh::Equal(). Two permutations of
+   the four vertex indices of a tetrahedron are considered different
+   tetrahedra even though they span the same space.
+   */
+  bool Equal(const VolumeElement& e) const {
+    return this->vertex_ == e.vertex_;
+  }
+
  private:
   // The vertices of this element.
   std::array<VolumeVertexIndex, 4> vertex_;
 };
+
+inline bool operator==(const VolumeElement& e1, const VolumeElement& e2) {
+  return e1.Equal(e2);
+}
+
+inline bool operator!=(const VolumeElement& e1, const VolumeElement& e2) {
+  return !(e1 == e2);
+}
+
 
 // Forward declaration of VolumeMeshTester<T>. VolumeMesh<T> will grant
 // friend access to VolumeMeshTester<T>.
@@ -129,10 +149,11 @@ class VolumeMesh {
 
   using ScalarType = T;
 
-  // TODO(DamrongGuoy): Remove kDim and replace its usage like (kDim + 1) by
-  //  kVertexPerElement in mesh_to_vtk, mesh_field_linear, and
-  //  bounding_volume_hierarchy. Issue #12756.
-
+  DRAKE_DEPRECATED(
+      "2021-04-01",
+      "kDim has been deemed redundant, and its usage is being dropped in "
+      "favor of using kVertexPerElement. The relationship between kDim and "
+      "kVertexPerElement is: kVertexPerElement = kDim + 1.")
   static constexpr int kDim = 3;
 
   /**
@@ -156,7 +177,7 @@ class VolumeMesh {
    could calculate one of the bᵢ from the others; however, there is no
    standard way to omit one of the coordinates.
   */
-  using Barycentric = Vector<T, kDim + 1>;
+  using Barycentric = Vector<T, kVertexPerElement>;
 
   /** Type of Cartesian coordinates. Mesh consumers can use it in conversion
    from Cartesian coordinates to barycentric coordinates.
@@ -223,6 +244,17 @@ class VolumeMesh {
     return volume;
   }
 
+  /** Calculates the volume of `this` mesh by taking the sum of the volume of
+   *  each tetrahedral element.
+   */
+  T CalcVolume() const {
+    T volume(0.0);
+    for (int e = 0; e < num_elements(); ++e) {
+      volume += CalcTetrahedronVolume(VolumeElementIndex(e));
+    }
+    return volume;
+  }
+
   /** Calculate barycentric coordinates with respect to the tetrahedron `e`
    of the point Q'. This operation is expensive compared with going from
    barycentric to Cartesian.
@@ -272,10 +304,7 @@ class VolumeMesh {
 
     // Check tetrahedral elements.
     for (VolumeElementIndex i(0); i < this->num_elements(); ++i) {
-      const VolumeElement& element1 = this->element(i);
-      const VolumeElement& element2 = mesh.element(i);
-      for (int j = 0; j < 4; ++j)
-        if (element1.vertex(j) != element2.vertex(j)) return false;
+      if (!this->element(i).Equal(mesh.element(i))) return false;
     }
     // Check vertices.
     for (VolumeVertexIndex i(0); i < this->num_vertices(); ++i) {

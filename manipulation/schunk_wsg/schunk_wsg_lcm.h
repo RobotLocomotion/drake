@@ -33,6 +33,7 @@ namespace schunk_wsg {
 /// - force_limit
 /// @endsystem
 ///
+/// @ingroup manipulation_systems
 class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgCommandReceiver)
@@ -75,16 +76,17 @@ class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
 /// name: SchunkWsgCommandSender
 /// input_ports:
 /// - position
-/// - force_limit
+/// - force_limit (optional)
 /// output_ports:
 /// - lcmt_schunk_wsg_command
 /// @endsystem
 ///
+/// @ingroup manipulation_systems
 class SchunkWsgCommandSender : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgCommandSender)
 
-  SchunkWsgCommandSender();
+  explicit SchunkWsgCommandSender(double default_force_limit = 40.0);
 
   const systems::InputPort<double>& get_position_input_port()
   const {
@@ -108,6 +110,7 @@ class SchunkWsgCommandSender : public systems::LeafSystem<double> {
  private:
   const systems::InputPortIndex position_input_port_{};
   const systems::InputPortIndex force_limit_input_port_{};
+  const double default_force_limit_;
 };
 
 
@@ -125,6 +128,7 @@ class SchunkWsgCommandSender : public systems::LeafSystem<double> {
 /// - force
 /// @endsystem
 ///
+/// @ingroup manipulation_systems
 class SchunkWsgStatusReceiver : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgStatusReceiver)

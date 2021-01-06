@@ -163,14 +163,15 @@ class LinkWriter : public SystemVisitor<double> {
     // Add edges from the input port nodes to the subsystems that
     // actually service that port.
     for (InputPortIndex i(0); i < diagram.num_input_ports(); ++i) {
-      const Diagram<double>::InputPortLocator& dest =
-          diagram.get_input_port_locator(i);
-      const System<double>* dest_sys = dest.first;
-      *html_ << "{ ";
-      *html_ << "from: \"" << diagram.get_name() << "_u" << i << "\", ";
-      ToPortTokenWriter output_writer(dest.second, html_);
-      dest_sys->Accept(&output_writer);
-      *html_ << "},\n";
+      const auto& dests = diagram.GetInputPortLocators(i);
+      for (const auto& dest : dests) {
+        const System<double>* dest_sys = dest.first;
+        *html_ << "{ ";
+        *html_ << "from: \"" << diagram.get_name() << "_u" << i << "\", ";
+        ToPortTokenWriter output_writer(dest.second, html_);
+        dest_sys->Accept(&output_writer);
+        *html_ << "},\n";
+      }
     }
 
     // Add edges to the output ports.
@@ -200,12 +201,11 @@ class LinkWriter : public SystemVisitor<double> {
 
 std::string GenerateHtml(const System<double>& system, int initial_depth) {
   std::stringstream html;
-
-  // Note: Consider using this website for rapid prototyping the javascript:
-  // https://observablehq.com/@russtedrake/gojs-for-drake-system-diagrams
-  html << R"!(
-<div style='height:400px;' id='myDiagramDiv' ></div>
-<script src="https://unpkg.com/gojs/release/go.js"></script>
+  html << R"""(
+<div style='height:400px;' id='myDiagramDiv'>
+The implementation of GenerateHtml has been temporarily removed from Drake due
+to licensing restrictions.
+</div>
 <script>
   $ = go.GraphObject.make
   var diagram = $(go.Diagram, "myDiagramDiv", {
@@ -347,24 +347,24 @@ std::string GenerateHtml(const System<double>& system, int initial_depth) {
     linkFromPortIdProperty: "fromPort", // required information:
     linkToPortIdProperty: "toPort", // identifies data property names
     nodeDataArray: [
-)!";
+)""";
 
   NodeWriter node_writer("", &html, initial_depth);
   system.Accept(&node_writer);
 
-  html << R"!(
+  html << R"""(
     ],
     linkDataArray: [
-)!";
+)""";
 
   LinkWriter link_writer(&html);
   system.Accept(&link_writer);
 
-  html << R"!(
+  html << R"""(
     ]
   });
 </script>
-)!";
+)""";
   return html.str();
 }
 

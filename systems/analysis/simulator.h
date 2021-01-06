@@ -12,9 +12,9 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/extract_double.h"
 #include "drake/systems/analysis/integrator_base.h"
+#include "drake/systems/analysis/simulator_config.h"
 #include "drake/systems/analysis/simulator_status.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
@@ -23,17 +23,14 @@
 namespace drake {
 namespace systems {
 
-namespace internal {
-// Default value of target_realtime_rate_.
-const double kDefaultTargetRealtimeRate = 0.0;
-
-// Default integrator used by a Simulator.
-const char* const kDefaultIntegratorName = "runge_kutta3";
-
-// Default value of both publish_every_time_step_ and
-// publish_at_initialization_.
-const bool kDefaultPublishEveryTimeStep = false;
-}  // namespace internal
+/// @ingroup simulation
+/// Parameters for fine control of simulator initialization.
+/// @see Simulator<T>::Initialize().
+struct InitializeParams {
+  /// Whether to trigger initialization events. Events are triggered by
+  /// default; it may be useful to suppress them when reusing a simulator.
+  bool suppress_initialization_events{false};
+};
 
 /** @ingroup simulation
 A class for advancing the state of hybrid dynamic systems, represented by
@@ -186,6 +183,7 @@ procedure AdvancePendingEvents() → status
 // trajectory, and thus the value the Context should contain at the start of the
 // first simulation step.
 procedure Initialize(t₀, x₀) → status
+  // Initialization events can be optionally suppressed.
   x⁺(t₀) ← DoAnyInitializationUpdates as in Step()
   x⁻(t₀) ← x⁺(t₀)  // No continuous update needed.
 
@@ -196,16 +194,20 @@ procedure Initialize(t₀, x₀) → status
   DoAnyPublishes(t₀, x⁻(t₀))
   CallMonitor(t₀, x⁻(t₀))
 ```
-Initialize() can be viewed as a "0ᵗʰ step" that occurs before the first
-Step() call as described above. Like Step(), Initialize() first
-performs pending updates (in this case only initialization events can be
-"pending"). Time doesn't advance so there is no continuous update phase and
-witnesses cannot trigger. Finally, again like Step(), the initial trajectory
-point `{t₀, x⁻(t₀)}` is provided to the handlers for any triggered publish
-events. That includes initialization publish events, per-step publish events,
-and periodic or timed publish events that trigger at t₀, followed by a call
-to the monitor() function if one has been defined (a monitor is semantically
-identical to a per-step publish).
+
+Initialize() can be viewed as a "0ᵗʰ step" that occurs before the first Step()
+call as described above. Like Step(), Initialize() first performs pending
+updates (in this case only initialization events can be "pending", and even
+those may be optionally suppressed). Time doesn't advance so there is no
+continuous update phase and witnesses cannot trigger. Finally, again like
+Step(), the initial trajectory point `{t₀, x⁻(t₀)}` is provided to the handlers
+for any triggered publish events. That includes initialization publish events
+(if not suppressed), per-step publish events, and periodic or timed publish
+events that trigger at t₀, followed by a call to the monitor() function if one
+has been defined (a monitor is semantically identical to a per-step publish).
+
+Optionally, initialization events can be suppressed. This can be useful when
+reusing the simulator over the same system and time span.
 
 @tparam_nonsymbolic_scalar
 */
@@ -238,19 +240,21 @@ class Simulator {
             std::unique_ptr<Context<T>> context = nullptr);
 
   // TODO(sherm1) Make Initialize() attempt to satisfy constraints.
-  // TODO(sherm1) Add a ReInitialize() or Resume() method that is called
-  //              automatically by AdvanceTo() if the Context has changed.
   /// Prepares the %Simulator for a simulation. In order, the sequence of
   /// actions taken here are:
   /// - The active integrator's Initialize() method is invoked.
   /// - Statistics are reset.
-  /// - Initialization update events are triggered and handled to produce the
-  ///   initial trajectory value `{t₀, x(t₀)}`.
+  /// - By default, initialization update events are triggered and handled to
+  ///   produce the initial trajectory value `{t₀, x(t₀)}`. If initialization
+  ///   events are suppressed, it is the caller's responsibility to ensure the
+  ///   desired initial state.
+
   /// - Then that initial value is provided to the handlers for any publish
-  ///   events that have triggered, including initialization and per-step
-  ///   publish events, periodic or other time-triggered publish events
-  ///   that are scheduled for the initial time t₀, and finally a call to the
-  ///   monitor() function if one has been defined.
+  ///   events that have triggered, including initialization events if any, and
+  ///   per-step publish events, periodic or other time-triggered publish
+  ///   events that are scheduled for the initial time t₀, and finally a call
+  ///   to the monitor() function if one has been defined.
+
   ///
   /// See the class documentation for more information. We recommend calling
   /// Initialize() explicitly prior to beginning a simulation so that error
@@ -262,9 +266,17 @@ class Simulator {
   /// AdvanceTo() calls you should consider whether to call Initialize() before
   /// resuming; AdvanceTo() will not do that automatically for you. Whether to
   /// do so depends on whether you want the above initialization operations
-  /// performed. For example, if you changed the time you will likely want the
-  /// time-triggered events to be recalculated in case one is due at the new
-  /// starting time.
+  /// performed.
+  ///
+  /// @note In particular, if you changed the time you must call Initialize().
+  /// The time-triggered events must be recalculated in case one is due at the
+  /// new starting time. The AdvanceTo() call will throw an exception if the
+  /// Initialize() call is missing.
+  ///
+  /// @note The only way to suppress initialization events is by calling
+  /// Initialize() explicitly. The most common scenario for this is when
+  /// reusing a Simulator object. In this case, the caller is responsible for
+  /// ensuring the correctness of the initial state.
   ///
   /// @warning Initialize() does not automatically attempt to satisfy System
   /// constraints -- it is up to you to make sure that constraints are
@@ -274,11 +286,13 @@ class Simulator {
   /// doesn't make sense. Other failures are possible from the System and
   /// integrator in use.
   ///
+  /// @param params (optional) a parameter structure (@see InitializeParams).
+  ///
   /// @retval status A SimulatorStatus object indicating success, termination,
   ///                or an error condition as reported by event handlers or
   ///                the monitor function.
   /// @see AdvanceTo(), AdvancePendingEvents(), SimulatorStatus
-  SimulatorStatus Initialize();
+  SimulatorStatus Initialize(const InitializeParams& params = {});
 
   /// Advances the System's trajectory until `boundary_time` is reached in
   /// the context or some other termination condition occurs. A variety of
@@ -585,18 +599,6 @@ class Simulator {
   /// state of the system.
   IntegratorBase<T>& get_mutable_integrator() { return *integrator_.get(); }
 
-  template <class U>
-  DRAKE_DEPRECATED(
-      "2020-08-01",
-      "Use void or max-step-size version of reset_integrator() instead.")
-  U* reset_integrator(std::unique_ptr<U> integrator) {
-    if (!integrator)
-      throw std::logic_error("Integrator cannot be null.");
-    initialization_done_ = false;
-    integrator_ = std::move(integrator);
-    return static_cast<U*>(integrator_.get());
-  }
-
   /// Resets the integrator with a new one using factory construction.
   /// @code
   /// simulator.reset_integrator<RungeKutta3Integrator<double>>().
@@ -772,9 +774,6 @@ class Simulator {
     return std::numeric_limits<double>::quiet_NaN();
   }
 
-  static constexpr double kDefaultAccuracy = 1e-3;  // 1/10 of 1%.
-  static constexpr double kDefaultInitialStepSizeAttempt = 1e-3;
-
   // Do not use this.  This is valid iff the constructor is passed a
   // unique_ptr (allowing the Simulator to maintain ownership).  Use the
   // system_ variable instead, which is valid always.
@@ -788,11 +787,11 @@ class Simulator {
   VectorX<T> w0_, wf_;
 
   // Slow down to this rate if possible (user settable).
-  double target_realtime_rate_{internal::kDefaultTargetRealtimeRate};
+  double target_realtime_rate_{SimulatorConfig{}.target_realtime_rate};
 
-  bool publish_every_time_step_{internal::kDefaultPublishEveryTimeStep};
+  bool publish_every_time_step_{SimulatorConfig{}.publish_every_time_step};
 
-  bool publish_at_initialization_{internal::kDefaultPublishEveryTimeStep};
+  bool publish_at_initialization_{SimulatorConfig{}.publish_every_time_step};
 
   // These are recorded at initialization or statistics reset.
   double initial_simtime_{nan()};  // Simulated time at start of period.
@@ -812,6 +811,10 @@ class Simulator {
 
   // Set by Initialize() and reset by various traumas.
   bool initialization_done_{false};
+
+  // Set by Initialize() and AdvanceTo(). Used to detect unexpected jumps in
+  // time.
+  double last_known_simtime_{nan()};
 
   // The vector of active witness functions.
   std::unique_ptr<std::vector<const WitnessFunction<T>*>> witness_functions_;
@@ -838,10 +841,6 @@ class Simulator {
   TimeOrWitnessTriggered time_or_witness_triggered_{
       TimeOrWitnessTriggered::kNothingTriggered
   };
-
-  // The time that the next timed event is to be handled. This value is set in
-  // both Initialize() and AdvanceTo().
-  T next_timed_event_time_{std::numeric_limits<double>::quiet_NaN()};
 
   // Pre-allocated temporaries for updated discrete states.
   std::unique_ptr<DiscreteValues<T>> discrete_updates_;

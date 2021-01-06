@@ -73,7 +73,14 @@ def to_float(x):
 
 
 def assert_equal(a, b):
-    """Compare scalars or arrays directly, requiring equality."""
+    """
+    Compare scalars or arrays directly, requiring equality.
+
+    For non-object dtypes, this has the same behavior as
+    ``np.testing.assert_equal``, namely that two NaNs being in the same
+    positions in an array implies equality, rather than NaN being compared as
+    numbers.
+    """
     a, b = map(np.asarray, (a, b))
     if a.size == 0 and b.size == 0:
         return
@@ -116,7 +123,10 @@ def assert_not_equal(a, b):
 
 def assert_float_equal(a, bf):
     """Checks equality of `a` (non-float) and `bf` (float) by converting `a` to
-    floats."""
+    floats.
+
+    See also: ``assert_equal``
+    """
     assert np.asarray(bf).dtype == float, np.asarray(bf).dtype
     af = to_float(a)
     assert_equal(af, bf)

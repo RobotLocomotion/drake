@@ -52,6 +52,8 @@ drake_pybind_library(
     cc_so_name = "_module_py",
     cc_srcs = [
         "module_py.cc",
+        "text_logging_pybind.h",
+        "text_logging_pybind.cc",
     ],
     package_info = PACKAGE_INFO,
     py_srcs = [
@@ -138,6 +140,12 @@ drake_cc_library(
     ],
 )
 
+drake_py_library(
+    name = "jupyter_py",
+    srcs = ["jupyter.py"],
+    imports = PACKAGE_INFO.py_imports,
+)
+
 drake_pybind_library(
     name = "value_py",
     cc_deps = [
@@ -197,6 +205,7 @@ drake_pybind_library(
         ":cpp_template_pybind",
         ":default_scalars_pybind",
         ":eigen_geometry_pybind",
+        ":eigen_pybind",
         ":type_pack",
         ":value_pybind",
     ],
@@ -256,15 +265,6 @@ drake_cc_library(
     ],
 )
 
-drake_py_library(
-    name = "cpp_const_py",
-    srcs = ["cpp_const.py"],
-    deps = [
-        ":module_py",
-        "//bindings/pydrake/third_party:wrapt_py",
-    ],
-)
-
 drake_cc_library(
     name = "sorted_pair_pybind",
     hdrs = ["sorted_pair_pybind.h"],
@@ -313,21 +313,45 @@ drake_py_library(
     ],
 )
 
+drake_pybind_library(
+    name = "schema_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake:symbolic_types_pybind",
+    ],
+    cc_srcs = ["schema_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        "//bindings/pydrake:math_py",
+    ],
+)
+
+drake_py_library(
+    name = "yaml_py",
+    srcs = ["yaml.py"],
+    deps = [
+        ":module_py",
+    ],
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":_init_py",
     ":eigen_geometry_py",
+    ":schema_py",
     ":value_py",
 ]
 
 PY_LIBRARIES = [
     ":compatibility_py",
     ":containers_py",
-    ":cpp_const_py",
     ":cpp_param_py",
     ":cpp_template_py",
     ":deprecation_py",
+    ":jupyter_py",
     ":module_py",
     ":pybind11_version_py",
+    ":yaml_py",
 ]
 
 # Symbol roll-up (for user ease).
@@ -428,6 +452,8 @@ drake_py_library(
 drake_py_unittest(
     name = "deprecation_test",
     deps = [
+        # N.B. We include this here due to awkward setup for `pydrake.common`.
+        ":module_py",
         ":deprecation_example",
     ],
 )
@@ -436,13 +462,6 @@ drake_py_unittest(
     name = "numpy_compare_test",
     deps = [
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
-    ],
-)
-
-drake_py_unittest(
-    name = "cpp_const_test",
-    deps = [
-        ":cpp_const_py",
     ],
 )
 
@@ -576,6 +595,20 @@ drake_py_unittest(
     name = "wrap_pybind_test",
     deps = [
         ":wrap_test_util_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "schema_test",
+    deps = [
+        ":schema_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "yaml_test",
+    deps = [
+        ":yaml_py",
     ],
 )
 

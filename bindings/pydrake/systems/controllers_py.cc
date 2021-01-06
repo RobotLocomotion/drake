@@ -92,70 +92,75 @@ PYBIND11_MODULE(controllers, m) {
           py::arg("robot"), py::arg("kp"), py::arg("ki"), py::arg("kd"),
           py::arg("has_reference_acceleration"),
           // Keep alive, reference: `self` keeps `robot` alive.
-          py::keep_alive<1, 2>(), doc.InverseDynamicsController.ctor.doc)
+          py::keep_alive<1, 2>(),
+          doc.InverseDynamicsController.ctor.doc_5args_referenced_plant)
       .def("set_integral_value",
           &InverseDynamicsController<double>::set_integral_value,
           doc.InverseDynamicsController.set_integral_value.doc)
       .def("get_input_port_desired_acceleration",
           &InverseDynamicsController<
               double>::get_input_port_desired_acceleration,
-          py_reference_internal,
+          py_rvp::reference_internal,
           doc.InverseDynamicsController.get_input_port_desired_acceleration.doc)
       .def("get_input_port_estimated_state",
           &InverseDynamicsController<double>::get_input_port_estimated_state,
-          py_reference_internal,
+          py_rvp::reference_internal,
           doc.InverseDynamicsController.get_input_port_estimated_state.doc)
       .def("get_input_port_desired_state",
           &InverseDynamicsController<double>::get_input_port_desired_state,
-          py_reference_internal,
+          py_rvp::reference_internal,
           doc.InverseDynamicsController.get_input_port_desired_state.doc)
       .def("get_output_port_control",
           &InverseDynamicsController<double>::get_output_port_control,
-          py_reference_internal,
+          py_rvp::reference_internal,
           doc.InverseDynamicsController.get_output_port_control.doc);
 
   py::class_<PidControlledSystem<double>, Diagram<double>>(
       m, "PidControlledSystem", doc.PidControlledSystem.doc)
       .def(py::init<std::unique_ptr<System<double>>, double, double, double,
-               int>(),
+               int, int>(),
           py::arg("plant"), py::arg("kp"), py::arg("ki"), py::arg("kd"),
           py::arg("state_output_port_index") = 0,
-          // Keep alive, ownership: `plant` keeps `self` alive.
-          py::keep_alive<2, 1>(),
-          doc.PidControlledSystem.ctor.doc_5args_double_gains)
-      .def(py::init<std::unique_ptr<System<double>>, const VectorX<double>&,
-               const VectorX<double>&, const VectorX<double>&, int>(),
-          py::arg("plant"), py::arg("kp"), py::arg("ki"), py::arg("kd"),
-          py::arg("state_output_port_index") = 0,
-          // Keep alive, ownership: `plant` keeps `self` alive.
-          py::keep_alive<2, 1>(),
-          doc.PidControlledSystem.ctor.doc_5args_vector_gains)
-      .def(py::init<std::unique_ptr<System<double>>, const MatrixX<double>&,
-               double, double, double, int>(),
-          py::arg("plant"), py::arg("feedback_selector"), py::arg("kp"),
-          py::arg("ki"), py::arg("kd"), py::arg("state_output_port_index") = 0,
+          py::arg("plant_input_port_index") = 0,
           // Keep alive, ownership: `plant` keeps `self` alive.
           py::keep_alive<2, 1>(),
           doc.PidControlledSystem.ctor.doc_6args_double_gains)
-      .def(py::init<std::unique_ptr<System<double>>, const MatrixX<double>&,
-               const VectorX<double>&, const VectorX<double>&,
-               const VectorX<double>&, int>(),
-          py::arg("plant"), py::arg("feedback_selector"), py::arg("kp"),
-          py::arg("ki"), py::arg("kd"), py::arg("state_output_port_index") = 0,
+      .def(py::init<std::unique_ptr<System<double>>, const VectorX<double>&,
+               const VectorX<double>&, const VectorX<double>&, int, int>(),
+          py::arg("plant"), py::arg("kp"), py::arg("ki"), py::arg("kd"),
+          py::arg("state_output_port_index") = 0,
+          py::arg("plant_input_port_index") = 0,
           // Keep alive, ownership: `plant` keeps `self` alive.
           py::keep_alive<2, 1>(),
           doc.PidControlledSystem.ctor.doc_6args_vector_gains)
+      .def(py::init<std::unique_ptr<System<double>>, const MatrixX<double>&,
+               double, double, double, int, int>(),
+          py::arg("plant"), py::arg("feedback_selector"), py::arg("kp"),
+          py::arg("ki"), py::arg("kd"), py::arg("state_output_port_index") = 0,
+          py::arg("plant_input_port_index") = 0,
+          // Keep alive, ownership: `plant` keeps `self` alive.
+          py::keep_alive<2, 1>(),
+          doc.PidControlledSystem.ctor.doc_7args_double_gains)
+      .def(py::init<std::unique_ptr<System<double>>, const MatrixX<double>&,
+               const VectorX<double>&, const VectorX<double>&,
+               const VectorX<double>&, int, int>(),
+          py::arg("plant"), py::arg("feedback_selector"), py::arg("kp"),
+          py::arg("ki"), py::arg("kd"), py::arg("state_output_port_index") = 0,
+          py::arg("plant_input_port_index") = 0,
+          // Keep alive, ownership: `plant` keeps `self` alive.
+          py::keep_alive<2, 1>(),
+          doc.PidControlledSystem.ctor.doc_7args_vector_gains)
       .def("get_control_input_port",
           &PidControlledSystem<double>::get_control_input_port,
-          py_reference_internal,
+          py_rvp::reference_internal,
           doc.PidControlledSystem.get_control_input_port.doc)
       .def("get_state_input_port",
           &PidControlledSystem<double>::get_state_input_port,
-          py_reference_internal,
+          py_rvp::reference_internal,
           doc.PidControlledSystem.get_state_input_port.doc)
       .def("get_state_output_port",
           &PidControlledSystem<double>::get_state_output_port,
-          py_reference_internal,
+          py_rvp::reference_internal,
           doc.PidControlledSystem.get_state_output_port.doc);
 
   // TODO(eric.cousineau): Expose multiple inheritance from
@@ -184,15 +189,16 @@ PYBIND11_MODULE(controllers, m) {
           doc.PidController.get_Kd_vector.doc)
       .def("get_input_port_estimated_state",
           &PidController<double>::get_input_port_estimated_state,
-          py_reference_internal,
+          py_rvp::reference_internal,
           doc.PidController.get_input_port_estimated_state.doc)
       .def("get_input_port_desired_state",
           &PidController<double>::get_input_port_desired_state,
-          py_reference_internal,
+          py_rvp::reference_internal,
           doc.PidController.get_input_port_desired_state.doc)
       .def("get_output_port_control",
           &PidController<double>::get_output_port_control,
-          py_reference_internal, doc.PidController.get_output_port_control.doc);
+          py_rvp::reference_internal,
+          doc.PidController.get_output_port_control.doc);
 
   m.def("FittedValueIteration", WrapCallbacks(&FittedValueIteration),
       doc.FittedValueIteration.doc);

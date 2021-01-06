@@ -155,7 +155,7 @@ GTEST_TEST(IpoptSolverTest, AcceptableResult) {
 
 GTEST_TEST(IpoptSolverTest, QPDualSolution1) {
   IpoptSolver solver;
-  TestQPDualSolution1(solver, 1e-5);
+  TestQPDualSolution1(solver, {} /* solver_options */, 1e-5);
 }
 
 GTEST_TEST(IpoptSolverTest, QPDualSolution2) {

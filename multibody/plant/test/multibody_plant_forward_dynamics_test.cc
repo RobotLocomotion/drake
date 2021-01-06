@@ -41,6 +41,7 @@ class KukaIiwaModelForwardDynamicsTests : public test::KukaIiwaModelTests {
       const Eigen::Ref<const VectorX<double>>& q,
       const Eigen::Ref<const VectorX<double>>& v,
       EigenPtr<VectorX<double>> vdot) {
+    DRAKE_DEMAND(vdot != nullptr);
     // Update joint positions and velocities.
     VectorX<double> x(q.size() + v.size());
     x << q, v;
@@ -59,6 +60,7 @@ class KukaIiwaModelForwardDynamicsTests : public test::KukaIiwaModelTests {
       const Eigen::Ref<const VectorX<double>>& q,
       const Eigen::Ref<const VectorX<double>>& v,
       EigenPtr<VectorX<double>> vdot) {
+    DRAKE_DEMAND(vdot != nullptr);
     // Update joint positions and velocities.
     VectorX<double> x(q.size() + v.size());
     x << q, v;

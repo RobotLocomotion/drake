@@ -1,5 +1,5 @@
---- linsys/direct/private.c.orig	2019-07-08 15:10:47.000000000 -0400
-+++ linsys/direct/private.c		2019-09-12 10:30:51.329827125 -0400
+--- linsys/cpu/direct/private.c.orig	2019-07-08 15:10:47.000000000 -0400
++++ linsys/cpu/direct/private.c		2019-09-12 10:30:51.329827125 -0400
 @@ -176,7 +176,7 @@
    scs_int *Lnz = (scs_int *)scs_malloc(n * sizeof(scs_int));
    scs_int *iwork= (scs_int *)scs_malloc(3 * n * sizeof(scs_int));

@@ -11,6 +11,7 @@
 #include "drake/solvers/test/quadratic_program_examples.h"
 #include "drake/solvers/test/second_order_cone_program_examples.h"
 #include "drake/solvers/test/semidefinite_program_examples.h"
+#include "drake/solvers/test/sos_examples.h"
 
 namespace drake {
 namespace solvers {
@@ -39,7 +40,7 @@ TEST_F(UnboundedLinearProgramTest0, Test) {
         result.get_solver_details<MosekSolver>();
     EXPECT_EQ(mosek_solver_details.rescode, 0);
     // This problem status is defined in
-    // https://docs.mosek.com/9.0/capi/constants.html#mosek.prosta
+    // https://docs.mosek.com/9.2/capi/constants.html#mosek.prosta
     const int MSK_SOL_STA_DUAL_INFEAS_CER = 6;
     EXPECT_EQ(mosek_solver_details.solution_status,
               MSK_SOL_STA_DUAL_INFEAS_CER);
@@ -240,7 +241,7 @@ GTEST_TEST(MosekTest, SolverOptionsTest) {
   mosek_solver.Solve(prog, {}, solver_options, &result);
   EXPECT_FALSE(result.is_success());
   // This response code is defined in
-  // https://docs.mosek.com/9.0/capi/response-codes.html#mosek.rescode
+  // https://docs.mosek.com/9.2/capi/response-codes.html#mosek.rescode
   const int MSK_RES_ERR_HUGE_C{1375};
   EXPECT_EQ(result.get_solver_details<MosekSolver>().rescode,
             MSK_RES_ERR_HUGE_C);
@@ -262,11 +263,11 @@ GTEST_TEST(MosekSolver, SolverOptionsErrorTest) {
   mosek_solver.Solve(prog, {}, solver_options, &result);
   const auto& solver_details = result.get_solver_details<MosekSolver>();
   // This response code is defined in
-  // https://docs.mosek.com/9.0/capi/response-codes.html#mosek.rescode
+  // https://docs.mosek.com/9.2/capi/response-codes.html#mosek.rescode
   const int MSK_RES_ERR_PARAM_NAME_INT = 1207;
   EXPECT_EQ(solver_details.rescode, MSK_RES_ERR_PARAM_NAME_INT);
   // This problem status is defined in
-  // https://docs.mosek.com/9.0/capi/constants.html#mosek.prosta
+  // https://docs.mosek.com/9.2/capi/constants.html#mosek.prosta
   const int MSK_PRO_STA_UNKNOWN = 0;
   EXPECT_EQ(solver_details.solution_status, MSK_PRO_STA_UNKNOWN);
 
@@ -315,6 +316,159 @@ GTEST_TEST(MosekSolver, TestInitialGuess) {
   solver.Solve(prog, prog.initial_guess(), solver_options, &result);
   EXPECT_TRUE(result.is_success());
   EXPECT_NEAR(result.get_optimal_cost(), 1.0 / 17, tol);
+}
+
+GTEST_TEST(MosekTest, UnivariateQuarticSos) {
+  UnivariateQuarticSos dut;
+  MosekSolver solver;
+  if (solver.available()) {
+    const auto result = solver.Solve(dut.prog());
+    dut.CheckResult(result, 1E-10);
+  }
+}
+
+GTEST_TEST(MosekTest, BivariateQuarticSos) {
+  BivariateQuarticSos dut;
+  MosekSolver solver;
+  if (solver.available()) {
+    const auto result = solver.Solve(dut.prog());
+    dut.CheckResult(result, 1E-10);
+  }
+}
+
+GTEST_TEST(MosekTest, SimpleSos1) {
+  SimpleSos1 dut;
+  MosekSolver solver;
+  if (solver.available()) {
+    const auto result = solver.Solve(dut.prog());
+    dut.CheckResult(result, 2E-9);
+  }
+}
+
+GTEST_TEST(MosekTest, MotzkinPolynomial) {
+  MotzkinPolynomial dut;
+  MosekSolver solver;
+  if (solver.available()) {
+    const auto result = solver.Solve(dut.prog());
+    dut.CheckResult(result, 1.3E-9);
+  }
+}
+
+GTEST_TEST(MosekTest, UnivariateNonnegative1) {
+  UnivariateNonnegative1 dut;
+  MosekSolver solver;
+  if (solver.available()) {
+    const auto result = solver.Solve(dut.prog());
+    dut.CheckResult(result, 1E-9);
+  }
+}
+
+GTEST_TEST(MosekTest, MinimalDistanceFromSphereProblem) {
+  for (bool with_linear_cost : {true, false}) {
+    MinimalDistanceFromSphereProblem<3> dut1(Eigen::Vector3d(0, 0, 0),
+                                             Eigen::Vector3d(0, 0, 0), 1,
+                                             with_linear_cost);
+    MinimalDistanceFromSphereProblem<3> dut2(Eigen::Vector3d(0, 0, 1),
+                                             Eigen::Vector3d(0, 0, 0), 1,
+                                             with_linear_cost);
+    MinimalDistanceFromSphereProblem<3> dut3(Eigen::Vector3d(0, 1, 1),
+                                             Eigen::Vector3d(0, 0, 0), 1,
+                                             with_linear_cost);
+    MinimalDistanceFromSphereProblem<3> dut4(Eigen::Vector3d(0, 1, 1),
+                                             Eigen::Vector3d(-1, -1, 0), 1,
+                                             with_linear_cost);
+    MosekSolver solver;
+    if (solver.available()) {
+      const double tol = 1E-4;
+      dut1.SolveAndCheckSolution(solver, tol);
+      dut2.SolveAndCheckSolution(solver, tol);
+      dut3.SolveAndCheckSolution(solver, tol);
+      dut4.SolveAndCheckSolution(solver, tol);
+    }
+  }
+}
+
+GTEST_TEST(MosekTest, SolveSDPwithQuadraticCosts) {
+  MosekSolver solver;
+  if (solver.available()) {
+    SolveSDPwithQuadraticCosts(solver, 1E-8);
+  }
+}
+
+GTEST_TEST(MosekTest, LPDualSolution1) {
+  MosekSolver solver;
+  if (solver.available()) {
+    TestLPDualSolution1(solver, 1E-8);
+  }
+}
+
+GTEST_TEST(MosekTest, LPDualSolution2) {
+  MosekSolver solver;
+  if (solver.available()) {
+    TestLPDualSolution2(solver, 1E-8);
+  }
+}
+
+GTEST_TEST(MosekTest, LPDualSolution2Scaled) {
+  MosekSolver solver;
+  if (solver.available()) {
+    TestLPDualSolution2Scaled(solver, 1E-8);
+  }
+}
+
+GTEST_TEST(MosekTest, LPDualSolution3) {
+  MosekSolver solver;
+  if (solver.available()) {
+    TestLPDualSolution3(solver, 1E-8);
+  }
+}
+
+GTEST_TEST(MosekTest, QPDualSolution1) {
+  MosekSolver solver;
+  if (solver.available()) {
+    SolverOptions solver_options;
+    // The default tolerance is 1E-8, and one entry of the optimal solution is
+    // 0. This means the error on the primal and dual solution is in the order
+    // of 1E-4, that is too large.
+    solver_options.SetOption(solver.id(), "MSK_DPAR_INTPNT_QO_TOL_REL_GAP",
+                             1e-12);
+    TestQPDualSolution1(solver, solver_options, 4E-6);
+  }
+}
+
+GTEST_TEST(MosekTest, QPDualSolution2) {
+  MosekSolver solver;
+  if (solver.available()) {
+    TestQPDualSolution2(solver);
+  }
+}
+
+GTEST_TEST(MosekTest, QPDualSolution3) {
+  MosekSolver solver;
+  if (solver.available()) {
+    TestQPDualSolution3(solver, 1E-6, 3E-4);
+  }
+}
+
+GTEST_TEST(MosekTest, EqualityConstrainedQPDualSolution1) {
+  MosekSolver solver;
+  if (solver.available()) {
+    TestEqualityConstrainedQPDualSolution1(solver);
+  }
+}
+
+GTEST_TEST(MosekTest, EqualityConstrainedQPDualSolution2) {
+  MosekSolver solver;
+  if (solver.available()) {
+    TestEqualityConstrainedQPDualSolution2(solver);
+  }
+}
+
+GTEST_TEST(MosekTest, SDPDualSolution1) {
+  MosekSolver solver;
+  if (solver.available()) {
+    TestSDPDualSolution1(solver, 3E-6);
+  }
 }
 }  // namespace test
 }  // namespace solvers

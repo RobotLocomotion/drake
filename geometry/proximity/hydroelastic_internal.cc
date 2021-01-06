@@ -31,7 +31,7 @@ SoftMesh& SoftMesh::operator=(const SoftMesh& s) {
   // We can't simply copy the mesh field; the copy must contain a pointer to
   // the new mesh. So, we use CloneAndSetMesh() instead.
   pressure_ = s.pressure().CloneAndSetMesh(mesh_.get());
-  bvh_ = make_unique<BoundingVolumeHierarchy<VolumeMesh<double>>>(s.bvh());
+  bvh_ = make_unique<Bvh<VolumeMesh<double>>>(s.bvh());
 
   return *this;
 }
@@ -200,11 +200,13 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 }
 
 std::optional<RigidGeometry> MakeRigidRepresentation(
-    const Box& box, const ProximityProperties& props) {
+    const Box& box, const ProximityProperties&) {
   PositiveDouble validator("Box", "rigid");
-  const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
+  // Use the coarsest mesh for the box. The safety factor 1.1 guarantees the
+  // resolution-hint argument is larger than the box size, so the mesh
+  // will have only 8 vertices and 12 triangles.
   auto mesh = make_unique<SurfaceMesh<double>>(
-      MakeBoxSurfaceMesh<double>(box, edge_length));
+      MakeBoxSurfaceMesh<double>(box, 1.1 * box.size().maxCoeff()));
 
   return RigidGeometry(RigidMesh(move(mesh)));
 }
@@ -238,6 +240,15 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
   return RigidGeometry(RigidMesh(move(mesh)));
 }
 
+std::optional<RigidGeometry> MakeRigidRepresentation(
+    const Convex& convex_spec, const ProximityProperties&) {
+  // Convex does not use any properties.
+  auto mesh = make_unique<SurfaceMesh<double>>(
+      ReadObjToSurfaceMesh(convex_spec.filename(), convex_spec.scale()));
+
+  return RigidGeometry(RigidMesh(move(mesh)));
+}
+
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Sphere& sphere, const ProximityProperties& props) {
   PositiveDouble validator("Sphere", "soft");
@@ -263,9 +274,8 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
     const Box& box, const ProximityProperties& props) {
   PositiveDouble validator("Box", "soft");
   // First, create the mesh.
-  const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
-  auto mesh = make_unique<VolumeMesh<double>>(
-      MakeBoxVolumeMesh<double>(box, edge_length));
+  auto mesh =
+      make_unique<VolumeMesh<double>>(MakeBoxVolumeMeshWithMa<double>(box));
 
   const double elastic_modulus =
       validator.Extract(props, kMaterialGroup, kElastic);

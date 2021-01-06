@@ -21,6 +21,7 @@ drake_cc_package_library(
         ":contact_jacobians",
         ":contact_results",
         ":coulomb_friction",
+        ":discrete_contact_pair",
         ":externally_applied_spatial_force",
         ":hydroelastic_contact_info",
         ":hydroelastic_quadrature_point_data",
@@ -29,7 +30,16 @@ drake_cc_package_library(
         ":point_pair_contact_info",
         ":propeller",
         ":tamsi_solver",
-        ":tamsi_solver_results",
+    ],
+)
+
+drake_cc_library(
+    name = "discrete_contact_pair",
+    srcs = [],
+    hdrs = ["discrete_contact_pair.h"],
+    deps = [
+        "//common:essential",
+        "//geometry:geometry_ids",
     ],
 )
 
@@ -56,10 +66,10 @@ drake_cc_library(
         ":contact_jacobians",
         ":contact_results",
         ":coulomb_friction",
+        ":discrete_contact_pair",
         ":externally_applied_spatial_force",
         ":hydroelastic_traction",
         ":tamsi_solver",
-        ":tamsi_solver_results",
         "//common:default_scalars",
         "//common:essential",
         "//geometry:geometry_ids",
@@ -67,6 +77,8 @@ drake_cc_library(
         "//geometry:scene_graph",
         "//math:geometric_transform",
         "//math:orthonormal_basis",
+        "//multibody/contact_solvers:contact_solver",
+        "//multibody/contact_solvers:sparse_linear_operator",
         "//multibody/hydroelastics:hydroelastic_engine",
         "//multibody/topology:multibody_graph",
         "//multibody/tree",
@@ -128,19 +140,6 @@ drake_cc_library(
     ],
     deps = [
         "//geometry/proximity:surface_mesh",
-    ],
-)
-
-drake_cc_library(
-    name = "tamsi_solver_results",
-    srcs = [
-        "tamsi_solver_results.cc",
-    ],
-    hdrs = [
-        "tamsi_solver_results.h",
-    ],
-    deps = [
-        "//common:default_scalars",
     ],
 )
 
@@ -233,7 +232,7 @@ drake_cc_library(
     hdrs = ["externally_applied_spatial_force.h"],
     deps = [
         "//common:default_scalars",
-        "//multibody/math:spatial_force",
+        "//multibody/math:spatial_algebra",
         "//multibody/tree:multibody_tree_indexes",
     ],
 )
@@ -446,8 +445,24 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "multibody_plant_mass_matrix_test",
     data = [
+        "test/atlas_with_fixed_joints.urdf",
         "//examples/atlas:models",
         "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
+    ],
+    deps = [
+        ":plant",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_plant_reflected_inertia_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
     ],
     deps = [
         ":plant",
@@ -462,12 +477,24 @@ drake_cc_googletest(
     deps = [
         ":plant",
         "//common/test_utilities:eigen_matrix_compare",
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//math:geometric_transform",
         "//multibody/plant:contact_results_to_lcm",
         "//systems/analysis:implicit_euler_integrator",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_plant_kinematics_test",
+    deps = [
+        ":plant",
+        "//common:autodiff",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+        "//math:gradient",
+        "//multibody/test_utilities:spatial_derivative",
     ],
 )
 
@@ -479,7 +506,9 @@ drake_cc_googletest(
         "//common:autodiff",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
+        "//math:gradient",
         "//multibody/test_utilities:add_fixed_objects_to_plant",
+        "//multibody/test_utilities:spatial_derivative",
     ],
 )
 
@@ -514,7 +543,7 @@ drake_cc_googletest(
     deps = [
         ":contact_results_to_lcm",
         "//common/test_utilities:eigen_geometry_compare",
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//multibody/benchmarks/acrobot",
         "//multibody/benchmarks/inclined_plane",
     ],
@@ -583,6 +612,15 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "multibody_plant_com_test",
+    deps = [
+        ":plant",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_plant_momentum_energy_test",
     deps = [
         ":plant",
         "//common/test_utilities:eigen_matrix_compare",

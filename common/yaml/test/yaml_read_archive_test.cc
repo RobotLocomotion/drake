@@ -1,11 +1,7 @@
 #include "drake/common/yaml/yaml_read_archive.h"
 
-#include <cmath>
-#include <limits>
-#include <sstream>
 #include <vector>
 
-#include <Eigen/Core>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -13,180 +9,20 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/yaml/test/example_structs.h"
 
 // TODO(jwnimmer-tri) All of these regexps would be better off using the
 // std::regex::basic grammar, where () and {} are not special characters.
 
-namespace {
-
-// A value used in the test data below to include a default (placeholder) value
-// when initializing struct data members.
-constexpr double kNominalDouble = 1.2345;
-
-// These unit tests use a variety of sample Serializable structs, showing what
-// a user may write for their own schemas.
-
-struct DoubleStruct {
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  double value = kNominalDouble;
-};
-
-bool operator==(const DoubleStruct& a, const DoubleStruct& b) {
-  return a.value == b.value;
-}
-
-struct ArrayStruct {
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  ArrayStruct() {
-    value.fill(kNominalDouble);
-  }
-
-  std::array<double, 3> value;
-};
-
-struct VectorStruct {
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  VectorStruct() {
-    value.resize(1, kNominalDouble);
-  }
-
-  std::vector<double> value;
-};
-
-struct MapStruct {
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  MapStruct() {
-    value["kNominalDouble"] = kNominalDouble;
-  }
-
-  std::map<std::string, double> value;
-};
-
-struct OptionalStruct {
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  OptionalStruct() {
-    value = kNominalDouble;
-  }
-
-  std::optional<double> value;
-};
-
-using Variant3 = std::variant<std::string, double, DoubleStruct>;
-
-std::ostream& operator<<(std::ostream& os, const Variant3& value) {
-  if (value.index() == 0) {
-    os << "std::string{" << std::get<0>(value) << "}";
-  } else if (value.index() == 1) {
-    os << "double{" << std::get<1>(value) << "}";
-  } else {
-    os << "DoubleStruct{" << std::get<2>(value).value << "}";
-  }
-  return os;
-}
-
-struct VariantStruct {
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  VariantStruct() {
-    value = kNominalDouble;
-  }
-
-  Variant3 value;
-};
-
-struct VariantWrappingStruct {
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(inner));
-  }
-
-  VariantStruct inner;
-};
-
-template <int Rows, int Cols>
-struct EigenStruct {
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  EigenStruct() {
-    if (value.size() == 0) {
-      value.resize(1, 1);
-    }
-    value.setConstant(kNominalDouble);
-  }
-
-  Eigen::Matrix<double, Rows, Cols> value;
-};
-
-using EigenVecStruct = EigenStruct<Eigen::Dynamic, 1>;
-using EigenVec3Struct = EigenStruct<3, 1>;
-using EigenMatrixStruct = EigenStruct<Eigen::Dynamic, Eigen::Dynamic>;
-using EigenMatrix34Struct = EigenStruct<3, 4>;
-
-struct OuterStruct {
-  struct InnerStruct {
-    double inner_value = kNominalDouble;
-
-    template <typename Archive>
-    void Serialize(Archive* a) {
-      a->Visit(DRAKE_NVP(inner_value));
-    }
-  };
-
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(outer_value));
-    a->Visit(DRAKE_NVP(inner_struct));
-  }
-
-  double outer_value = kNominalDouble;
-  InnerStruct inner_struct;
-};
-
-struct BigMapStruct {
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  BigMapStruct() {
-    value["foo"].outer_value = 1.0;
-    value["foo"].inner_struct.inner_value = 2.0;
-  }
-
-  std::map<std::string, OuterStruct> value;
-};
-
-}  // namespace
-
 namespace drake {
 namespace yaml {
+namespace test {
 namespace {
+
+// TODO(jwnimmer-tri) Add a test case for reading NonPodVectorStruct.
+// TODO(jwnimmer-tri) Add a test case for reading OuterWithBlankInner.
+// TODO(jwnimmer-tri) Add a test case for reading StringStruct.
+// TODO(jwnimmer-tri) Add a test case for reading UnorderedMapStruct.
 
 // A test fixture with common helpers.
 class YamlReadArchiveTest
@@ -356,14 +192,14 @@ TEST_P(YamlReadArchiveTest, BigStdMapAppend) {
     // The parser would raise an uninteresting exception in this case.
     return;
   }
-  std::string doc = R"R(
+  std::string doc = R"""(
 doc:
   value:
     bar:
       outer_value: 3.0
       inner_struct:
         inner_value: 4.0
-)R";
+)""";
   const auto& x = AcceptNoThrow<BigMapStruct>(Load(doc));
   if (GetParam().retain_map_defaults) {
     EXPECT_EQ(x.value.size(), 2);
@@ -381,12 +217,12 @@ TEST_P(YamlReadArchiveTest, BigStdMapMergeNewOuterValue) {
     // The parser would raise an uninteresting exception in this case.
     return;
   }
-  std::string doc = R"R(
+  std::string doc = R"""(
 doc:
   value:
     foo:
       outer_value: 3.0
-)R";
+)""";
   const auto& x = AcceptNoThrow<BigMapStruct>(Load(doc));
   EXPECT_EQ(x.value.size(), 1);
   EXPECT_EQ(x.value.at("foo").outer_value, 3.0);
@@ -402,13 +238,13 @@ TEST_P(YamlReadArchiveTest, BigStdMapMergeNewInnerValue) {
     // The parser would raise an uninteresting exception in this case.
     return;
   }
-  std::string doc = R"R(
+  std::string doc = R"""(
 doc:
   value:
     foo:
       inner_struct:
         inner_value: 4.0
-)R";
+)""";
   const auto& x = AcceptNoThrow<BigMapStruct>(Load(doc));
   EXPECT_EQ(x.value.size(), 1);
   if (GetParam().retain_map_defaults) {
@@ -424,11 +260,11 @@ TEST_P(YamlReadArchiveTest, BigStdMapMergeEmpty) {
     // The parser would raise an uninteresting exception in this case.
     return;
   }
-  std::string doc = R"R(
+  std::string doc = R"""(
 doc:
   value:
     foo: {}
-)R";
+)""";
   const auto& x = AcceptNoThrow<BigMapStruct>(Load(doc));
   EXPECT_EQ(x.value.size(), 1);
   if (GetParam().retain_map_defaults) {
@@ -458,7 +294,7 @@ TEST_P(YamlReadArchiveTest, StdMapWithMergeKeys) {
   };
 
   // Use merge keys to populate some keys.
-  test(R"R(
+  test(R"""(
 _template: &template
   foo: 1.0
 
@@ -466,10 +302,10 @@ doc:
   value:
     << : *template
     bar: 2.0
-)R", {{"foo", 1.0}, {"bar", 2.0}});
+)""", {{"foo", 1.0}, {"bar", 2.0}});
 
   // A pre-existing value should win, though.
-  test(R"R(
+  test(R"""(
 _template: &template
   foo: 3.0
 
@@ -478,10 +314,10 @@ doc:
     << : *template
     foo: 1.0
     bar: 2.0
-)R", {{"foo", 1.0}, {"bar", 2.0}});
+)""", {{"foo", 1.0}, {"bar", 2.0}});
 
   // A list of merges should also work.
-  test(R"R(
+  test(R"""(
 _template: &template
   - foo: 1.0
   - baz: 3.0
@@ -490,33 +326,33 @@ doc:
   value:
     << : *template
     bar: 2.0
-)R", {{"foo", 1.0}, {"bar", 2.0}, {"baz", 3.0}});
+)""", {{"foo", 1.0}, {"bar", 2.0}, {"baz", 3.0}});
 }
 
 TEST_P(YamlReadArchiveTest, StdMapWithBadMergeKey) {
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AcceptIntoDummy<MapStruct>(Load(R"R(
+      AcceptIntoDummy<MapStruct>(Load(R"""(
 _template: &template 99.0
 
 doc:
   value:
     << : *template
     bar: 2.0
-)R")),
+)""")),
       std::runtime_error,
       "YAML node of type Map \\(with size 1 and keys \\{value\\}\\)"
       " has invalid merge key type \\(Scalar\\) within entry"
       " for std::map<[^ ]*> value\\.");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AcceptIntoDummy<MapStruct>(Load(R"R(
+      AcceptIntoDummy<MapStruct>(Load(R"""(
 _template: &template
 
 doc:
   value:
     << : *template
     bar: 2.0
-)R")),
+)""")),
       std::runtime_error,
       "YAML node of type Map \\(with size 1 and keys \\{value\\}\\)"
       " has invalid merge key type \\(Null\\) within entry"
@@ -524,8 +360,8 @@ doc:
 }
 
 TEST_P(YamlReadArchiveTest, Optional) {
-  const auto test = [](const std::string& doc,
-                       const std::optional<double>& expected) {
+  const auto test_with_default = [](const std::string& doc,
+                                    const std::optional<double>& expected) {
     const auto& x = AcceptNoThrow<OptionalStruct>(Load(doc));
     if (expected.has_value()) {
       ASSERT_TRUE(x.value.has_value()) << *expected;
@@ -534,18 +370,82 @@ TEST_P(YamlReadArchiveTest, Optional) {
       EXPECT_FALSE(x.value.has_value());
     }
   };
+  const auto test_no_default = [](const std::string& doc,
+                                  const std::optional<double>& expected) {
+    const auto& x = AcceptNoThrow<OptionalStructNoDefault>(Load(doc));
+    if (expected.has_value()) {
+      ASSERT_TRUE(x.value.has_value()) << *expected;
+      EXPECT_EQ(x.value.value(), expected.value()) << *expected;
+    } else {
+      EXPECT_FALSE(x.value.has_value());
+    }
+  };
 
-  test("doc: {}", std::nullopt);
-  if (GetParam().allow_yaml_with_no_cpp) {
-    test("doc:\n  foo: bar", std::nullopt);
+  /*
+    If the YAML data provided a value for the optional key, then we should
+    always take that value (1-4). If the YAML data provided an explicit null for
+    the optional key, then we should always take that null (5-8). If the YAML
+    data did not mention the key (9-12), the situation is more subtle. In the
+    case where allow_cpp_with_no_yaml is false, then every C++ member field must
+    match up with YAML -- with the caveat that optional members can be omitted;
+    in that case, an absent YAML node must interpreted as nullopt so that C++
+    and YAML remain congruent (9, 11). In the case where allow_cpp_with_no_yaml
+    is true, we should only be changing C++ values when the yaml data mentions
+    the key; unmentioned values should stay undisturbed; in that case, a missing
+    key should have no effect (10, 12); only an explicit null key (7, 8) should
+    evidence a change.
+
+     # | yaml   | store | acwny || want
+    ===+========+=======+=======++========
+     1 | Scalar | False | False || Scalar
+     2 | Scalar | False | True  || Scalar
+     3 | Scalar | True  | False || Scalar
+     4 | Scalar | True  | True  || Scalar
+     5 | Null   | False | False || False
+     6 | Null   | False | True  || False
+     7 | Null   | True  | False || False
+     8 | Null   | True  | True  || False
+     9 | Absent | False | False || False
+    10 | Absent | False | True  || False
+    11 | Absent | True  | False || False
+    12 | Absent | True  | True  || True
+
+    yaml = node type present in yaml file
+    store = nvp.value().has_value() initial condition
+    acwny = Options.allow_cpp_with_no_yaml
+    want = nvp.value() desired final condition
+  */
+
+  test_no_default("doc:\n  value: 1.0", 1.0);         // # 1, 2
+  test_with_default("doc:\n  value: 1.0", 1.0);       // # 3, 4
+  test_no_default("doc:\n  value:", std::nullopt);    // # 5, 6
+  test_with_default("doc:\n  value:", std::nullopt);  // # 7, 8
+
+  test_no_default("doc: {}", std::nullopt);  // # 9, 10
+  if (GetParam().allow_cpp_with_no_yaml) {
+    test_with_default("doc: {}", kNominalDouble);  // # 12
+  } else {
+    test_with_default("doc: {}", std::nullopt);  // # 11
   }
-  test("doc:\n  value:", std::nullopt);
-  test("doc:\n  value: 1.0", 1.0);
+
+  if (GetParam().allow_yaml_with_no_cpp) {
+    test_no_default("doc:\n  foo: bar\n  value: 1.0", 1.0);         // # 1, 2
+    test_with_default("doc:\n  foo: bar\n  value: 1.0", 1.0);       // # 3, 4
+    test_no_default("doc:\n  foo: bar\n  value:", std::nullopt);    // # 5, 6
+    test_with_default("doc:\n  foo: bar\n  value:", std::nullopt);  // # 7, 8
+
+    test_no_default("doc:\n  foo: bar", std::nullopt);  // # 9, 10
+    if (GetParam().allow_cpp_with_no_yaml) {
+      test_with_default("doc:\n  foo: bar", kNominalDouble);  // # 12
+    } else {
+      test_with_default("doc:\n  foo: bar", std::nullopt);  // # 11
+    }
+  }
 }
 
 TEST_P(YamlReadArchiveTest, Variant) {
   const auto test = [](const std::string& doc,
-                       const Variant3& expected) {
+                       const Variant4& expected) {
     const auto& x = AcceptNoThrow<VariantStruct>(Load(doc));
     EXPECT_EQ(x.value, expected) << doc;
   };
@@ -593,13 +493,32 @@ TEST_P(YamlReadArchiveTest, EigenMatrix) {
     EXPECT_TRUE(drake::CompareMatrices(mat34.value, expected));
   };
 
-  test(R"R(
+  test(R"""(
 doc:
   value:
   - [0.0, 1.0, 2.0, 3.0]
   - [4.0, 5.0, 6.0, 7.0]
   - [8.0, 9.0, 10.0, 11.0]
-)R", (Matrix34d{} << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11).finished());
+)""", (Matrix34d{} << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11).finished());
+}
+
+TEST_P(YamlReadArchiveTest, EigenMatrix00) {
+  const auto test = [](const std::string& doc) {
+    const auto& mat = AcceptNoThrow<EigenMatrixStruct>(Load(doc));
+    const auto& mat00 = AcceptNoThrow<EigenMatrix00Struct>(Load(doc));
+    const Eigen::MatrixXd empty;
+    EXPECT_TRUE(drake::CompareMatrices(mat.value, empty));
+    EXPECT_TRUE(drake::CompareMatrices(mat00.value, empty));
+  };
+
+  test(R"""(
+doc:
+  value: []
+)""");
+  test(R"""(
+doc:
+  value: [[]]
+)""");
 }
 
 TEST_P(YamlReadArchiveTest, EigenMissing) {
@@ -616,12 +535,12 @@ TEST_P(YamlReadArchiveTest, EigenMissing) {
 }
 
 TEST_P(YamlReadArchiveTest, Nested) {
-  const auto& x = AcceptNoThrow<OuterStruct>(Load(R"R(
+  const auto& x = AcceptNoThrow<OuterStruct>(Load(R"""(
 doc:
   outer_value: 1.0
   inner_struct:
     inner_value: 2.0
-)R"));
+)"""));
   EXPECT_EQ(x.outer_value, 1.0);
   EXPECT_EQ(x.inner_struct.inner_value, 2.0);
 }
@@ -640,7 +559,7 @@ TEST_P(YamlReadArchiveTest, NestedWithMergeKeys) {
   };
 
   // Use merge keys to populate InnerStruct.
-  test(R"R(
+  test(R"""(
 _template: &template
   inner_value: 2.0
   ignored_key: ignored_value
@@ -649,11 +568,11 @@ doc:
   inner_struct:
     << : *template
   outer_value: 1.0
-)R");
+)""");
 
   // Use merge keys to populate InnerStruct, though to no effect because the
   // existing value wins.
-  test(R"R(
+  test(R"""(
 _template: &template
   inner_value: 3.0
   ignored_key: ignored_value
@@ -663,10 +582,10 @@ doc:
     << : *template
     inner_value: 2.0
   outer_value: 1.0
-)R");
+)""");
 
   // Use merge keys to populate OuterStruct.
-  test(R"R(
+  test(R"""(
 _template: &template
   inner_struct:
     inner_value: 2.0
@@ -675,11 +594,11 @@ _template: &template
 doc:
   << : *template
   outer_value: 1.0
-)R");
+)""");
 
   // Use array of merge keys to populate OuterStruct.
   // First array with a value wins.
-  test(R"R(
+  test(R"""(
 _template: &template
   - inner_struct:
       inner_value: 2.0
@@ -690,19 +609,19 @@ _template: &template
 doc:
   << : *template
   outer_value: 1.0
-)R");
+)""");
 }
 
 TEST_P(YamlReadArchiveTest, NestedWithBadMergeKey) {
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AcceptIntoDummy<OuterStruct>(Load(R"R(
+      AcceptIntoDummy<OuterStruct>(Load(R"""(
 _template: &template 99.0
 
 doc:
   inner_struct:
     << : *template
   outer_value: 1.0
-)R")),
+)""")),
       std::runtime_error,
       "YAML node of type Map"
       " \\(with size 2 and keys \\{inner_struct, outer_value\\}\\)"
@@ -710,14 +629,14 @@ doc:
       " for .*::OuterStruct::InnerStruct inner_struct\\.");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AcceptIntoDummy<OuterStruct>(Load(R"R(
+      AcceptIntoDummy<OuterStruct>(Load(R"""(
 _template: &template
 
 doc:
   inner_struct:
     << : *template
   outer_value: 1.0
-)R")),
+)""")),
       std::runtime_error,
       "YAML node of type Map"
       " \\(with size 2 and keys \\{inner_struct, outer_value\\}\\)"
@@ -725,7 +644,7 @@ doc:
       " for .*::OuterStruct::InnerStruct inner_struct\\.");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AcceptIntoDummy<OuterStruct>(Load(R"R(
+      AcceptIntoDummy<OuterStruct>(Load(R"""(
 _template: &template
   - inner_value
   - 2.0
@@ -733,7 +652,7 @@ _template: &template
 doc:
   << : *template
   outer_value: 1.0
-)R")),
+)""")),
       std::runtime_error,
       "YAML node of type Map \\(with size 1 and keys \\{outer_value\\}\\)"
       " has invalid merge key type \\(Sequence-of-non-Map\\) within entry"
@@ -743,12 +662,12 @@ doc:
 // This finds nothing when a scalar was wanted, because the name had a typo.
 TEST_P(YamlReadArchiveTest, VisitScalarFoundNothing) {
   // This has a "_TYPO" in a field name.
-  const YAML::Node node = Load(R"R(
+  const YAML::Node node = Load(R"""(
 doc:
   outer_value: 1.0
   inner_struct:
     inner_value_TYPO: 2.0
-)R");
+)""");
   if (GetParam().allow_cpp_with_no_yaml &&
       GetParam().allow_yaml_with_no_cpp) {
     const auto& x = AcceptNoThrow<OuterStruct>(node);
@@ -780,12 +699,12 @@ doc:
 // This finds an array when a scalar was wanted.
 TEST_P(YamlReadArchiveTest, VisitScalarFoundArray) {
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AcceptIntoDummy<OuterStruct>(Load(R"R(
+      AcceptIntoDummy<OuterStruct>(Load(R"""(
 doc:
   outer_value: 1.0
   inner_struct:
     inner_value: [2.0, 3.0]
-)R")),
+)""")),
       std::runtime_error,
       "YAML node of type Map \\(with size 1 and keys \\{inner_value\\}\\)"
       " has non-Scalar \\(Sequence\\) entry for double inner_value"
@@ -797,13 +716,13 @@ doc:
 // This finds a struct when a scalar was wanted.
 TEST_P(YamlReadArchiveTest, VisitScalarFoundStruct) {
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AcceptIntoDummy<OuterStruct>(Load(R"R(
+      AcceptIntoDummy<OuterStruct>(Load(R"""(
 doc:
   outer_value: 1.0
   inner_struct:
     inner_value:
        key: 2.0
-)R")),
+)""")),
       std::runtime_error,
       "YAML node of type Map \\(with size 1 and keys \\{inner_value\\}\\)"
       " has non-Scalar \\(Map\\) entry for double inner_value"
@@ -833,11 +752,11 @@ TEST_P(YamlReadArchiveTest, VisitArrayFoundScalar) {
 // This finds a sub-structure when a std::array was wanted.
 TEST_P(YamlReadArchiveTest, VisitArrayFoundStruct) {
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AcceptIntoDummy<ArrayStruct>(Load(R"R(
+      AcceptIntoDummy<ArrayStruct>(Load(R"""(
 doc:
   value:
     inner_value: 1.0
-)R")),
+)""")),
       std::runtime_error,
       "YAML node of type Map \\(with size 1 and keys \\{value\\}\\)"
       " has non-Sequence \\(Map\\) entry for std::array<.*> value\\.");
@@ -864,11 +783,11 @@ TEST_P(YamlReadArchiveTest, VisitVectorFoundScalar) {
 // This finds a sub-structure when a std::vector was wanted.
 TEST_P(YamlReadArchiveTest, VisitVectorFoundStruct) {
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AcceptIntoDummy<VectorStruct>(Load(R"R(
+      AcceptIntoDummy<VectorStruct>(Load(R"""(
 doc:
   value:
     inner_value: 1.0
-)R")),
+)""")),
       std::runtime_error,
       "YAML node of type Map \\(with size 1 and keys \\{value\\}\\)"
       " has non-Sequence \\(Map\\) entry for std::vector<.*> value\\.");
@@ -893,12 +812,12 @@ TEST_P(YamlReadArchiveTest, VisitVariantFoundNoTag) {
       "YAML node of type Map \\(with size 1 and keys \\{value\\}\\)"
       " has non-Scalar \\(Null\\) entry for std::string value"
       " while accepting YAML node of type Map \\(with size 1 and keys"
-      " \\{inner\\}\\) while visiting \\(anonymous\\)::VariantStruct inner.");
+      " \\{inner\\}\\) while visiting drake::yaml::test::VariantStruct inner.");
 
   // std::string values should load correctly even without a YAML type tag.
   const auto& str = AcceptNoThrow<VariantWrappingStruct>(
       Load("doc:\n  inner:\n    value: foo"));
-  EXPECT_EQ(str.inner.value, Variant3("foo"));
+  EXPECT_EQ(str.inner.value, Variant4("foo"));
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<VariantWrappingStruct>(
@@ -907,7 +826,7 @@ TEST_P(YamlReadArchiveTest, VisitVariantFoundNoTag) {
       "YAML node of type Map \\(with size 1 and keys \\{value\\}\\)"
       " has non-Scalar \\(Sequence\\) entry for std::string value"
       " while accepting YAML node of type Map \\(with size 1 and keys"
-      " \\{inner\\}\\) while visiting \\(anonymous\\)::VariantStruct inner.");
+      " \\{inner\\}\\) while visiting drake::yaml::test::VariantStruct inner.");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<VariantWrappingStruct>(
@@ -916,7 +835,7 @@ TEST_P(YamlReadArchiveTest, VisitVariantFoundNoTag) {
       "YAML node of type Map \\(with size 1 and keys \\{value\\}\\)"
       " has non-Scalar \\(Map\\) entry for std::string value\\"
       " while accepting YAML node of type Map \\(with size 1 and keys"
-      " \\{inner\\}\\) while visiting \\(anonymous\\)::VariantStruct inner.");
+      " \\{inner\\}\\) while visiting drake::yaml::test::VariantStruct inner.");
 }
 
 // This finds an unknown tag when a variant was wanted.
@@ -927,7 +846,8 @@ TEST_P(YamlReadArchiveTest, VisitVariantFoundUnknownTag) {
       "YAML node of type Map \\(with size 1 and keys \\{value\\}\\) "
       "has unsupported type tag !UnknownTag "
       "while selecting a variant<> entry for "
-      "st.::variant<std::string,double,\\(anonymous\\)::DoubleStruct> value.");
+      "std::variant<std::string,double,drake::yaml::test::DoubleStruct,"
+      "drake::yaml::test::EigenStruct<-1,1>> value.");
 }
 
 // This finds nothing when an Eigen::Vector or Eigen::Matrix was wanted.
@@ -999,13 +919,13 @@ TEST_P(YamlReadArchiveTest, VisitEigenMatrixFoundOneDimensional) {
 
 // This finds a non-square (4+4+3) matrix, when an Eigen::Matrix was wanted.
 TEST_P(YamlReadArchiveTest, VisitEigenMatrixFoundNonSquare) {
-  const std::string doc(R"R(
+  const std::string doc(R"""(
 doc:
   value:
   - [0.0, 1.0, 2.0, 3.0]
   - [4.0, 5.0, 6.0, 7.0]
   - [8.0, 9.0, 0.0]
-)R");
+)""");
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<EigenMatrixStruct>(Load(doc)),
       std::runtime_error,
@@ -1020,10 +940,10 @@ doc:
 
 // This finds nothing when a sub-structure was wanted.
 TEST_P(YamlReadArchiveTest, VisitStructFoundNothing) {
-  const YAML::Node node = Load(R"R(
+  const YAML::Node node = Load(R"""(
   doc:
     outer_value: 1.0
-  )R");
+  )""");
   if (GetParam().allow_cpp_with_no_yaml) {
     const auto& x = AcceptNoThrow<OuterStruct>(node);
     EXPECT_EQ(x.outer_value, 1.0);
@@ -1040,11 +960,11 @@ TEST_P(YamlReadArchiveTest, VisitStructFoundNothing) {
 // This finds a scalar when a sub-structure was wanted.
 TEST_P(YamlReadArchiveTest, VisitStructFoundScalar) {
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AcceptIntoDummy<OuterStruct>(Load(R"R(
+      AcceptIntoDummy<OuterStruct>(Load(R"""(
 doc:
   outer_value: 1.0
   inner_struct: 2.0
-)R")),
+)""")),
       std::runtime_error,
       "YAML node of type Map"
       " \\(with size 2 and keys \\{inner_struct, outer_value\\}\\)"
@@ -1054,11 +974,11 @@ doc:
 // This finds an array when a sub-structure was wanted.
 TEST_P(YamlReadArchiveTest, VisitStructFoundArray) {
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AcceptIntoDummy<OuterStruct>(Load(R"R(
+      AcceptIntoDummy<OuterStruct>(Load(R"""(
 doc:
   outer_value: 1.0
   inner_struct: [2.0, 3.0]
-)R")),
+)""")),
       std::runtime_error,
       "YAML node of type Map"
       " \\(with size 2 and keys \\{inner_struct, outer_value\\}\\)"
@@ -1082,5 +1002,6 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::ValuesIn(MakeAllPossibleOptions()));
 
 }  // namespace
+}  // namespace test
 }  // namespace yaml
 }  // namespace drake

@@ -12,12 +12,12 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/value.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
-#include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/query_results/contact_surface.h"
@@ -41,9 +41,9 @@ namespace contact_surface {
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using geometry::Box;
-using geometry::ConnectDrakeVisualizer;
 using geometry::ContactSurface;
 using geometry::Cylinder;
+using geometry::DrakeVisualizer;
 using geometry::FrameId;
 using geometry::FramePoseVector;
 using geometry::GeometryFrame;
@@ -321,7 +321,7 @@ int do_main() {
   DrakeLcm lcm;
 
   // Visualize geometry.
-  ConnectDrakeVisualizer(&builder, scene_graph, &lcm);
+  DrakeVisualizer::AddToBuilder(&builder, scene_graph, &lcm);
 
   // Visualize contacts.
   auto& contact_to_lcm =

@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
@@ -69,7 +70,8 @@ class QueryObject {
   /** Constructs a default QueryObject (all pointers are null). */
   QueryObject() = default;
 
-  /** @name Implements CopyConstructible, CopyAssignable, MoveConstructible, MoveAssignable
+  /** @name Implements CopyConstructible, CopyAssignable, \
+                       MoveConstructible, MoveAssignable
 
    Calling the copy constructor or assignment will turn a _live_ %QueryObject
    into a _baked_ %QueryObject (an expensive operation). Copying baked
@@ -103,28 +105,42 @@ class QueryObject {
    inspector() to access the SceneGraphInspector.  */
   //@{
 
-  // TODO(SeanCurtis-TRI): When I have RigidTransform internally, make these
-  // const references.
-  /** Reports the position of the frame indicated by `id` relative to the world
-   frame.
-   @throws std::logic_error if the frame `id` is not valid.  */
+  /** Reports the position of the frame indicated by `frame_id` relative to the
+   world frame.
+   @throws std::exception if the frame `frame_id` is not valid.  */
+  const math::RigidTransform<T>& GetPoseInWorld(FrameId frame_id) const;
+
+  /** Deprecated variant of GetPoseInWorld(FrameId).  */
+  DRAKE_DEPRECATED("2021-04-01", "Please use GetPoseInWorld(FrameId) instead.")
   const math::RigidTransform<T>& X_WF(FrameId id) const;
 
-  /** Reports the position of the frame indicated by `id` relative to its parent
-   frame. If the frame was registered with the world frame as its parent frame,
-   this value will be identical to that returned by X_WF().
-   @note This is analogous to but distinct from SceneGraphInspector::X_PG().
-   In this case, the pose will *always* be relative to another frame.
-   @throws std::logic_error if the frame `id` is not valid.  */
+  /** Reports the position of the frame indicated by `frame_id` relative to its
+   parent frame. If the frame was registered with the world frame as its parent
+   frame, this value will be identical to that returned by GetPoseInWorld().
+   @note This is analogous to but distinct from
+   SceneGraphInspector::GetPoseInParent(). In this case, the pose will *always*
+   be relative to another frame.
+   @throws std::exception if the frame `frame_id` is not valid.  */
+  const math::RigidTransform<T>& GetPoseInParent(FrameId frame_id) const;
+
+  /** Deprecated variant of GetPoseInParent().  */
+  DRAKE_DEPRECATED("2021-04-01", "Please use GetPoseInParent(FrameId) instead.")
   const math::RigidTransform<T>& X_PF(FrameId id) const;
 
-  /** Reports the position of the geometry indicated by `id` relative to the
-   world frame.
-   @throws std::logic_error if the geometry `id` is not valid.  */
+  /** Reports the position of the geometry indicated by `geometry_id` relative
+   to the world frame.
+   @throws std::exception if the geometry `geometry_id` is not valid.  */
+  const math::RigidTransform<T>& GetPoseInWorld(GeometryId geometry_id) const;
+
+  /** Deprecated variant of GetPoseInWorld(GeometryId).  */
+  DRAKE_DEPRECATED("2021-04-01",
+                   "Please use GetPoseInWorld(GeometryId) instead.")
   const math::RigidTransform<T>& X_WG(GeometryId id) const;
 
   //@}
 
+  // TODO(hongkai.dai): allow T=AutodiffXd and some primitive geometries
+  // collide.
   /**
    @anchor collision_queries
    @name                Collision Queries
@@ -162,23 +178,17 @@ class QueryObject {
    <h3>Scalar support</h3>
    This method only provides double-valued penetration results.
 
-   <!--
-   TODO(SeanCurtis-TRI): This can/should be changed to offer at least partial
-   AutoDiffXd support. At the very least, it should be declared on T and throw
-   for AutoDiffXd. This is related to PR 11143
-   https://github.com/RobotLocomotion/drake/pull/11143. In that PR, MBP is
-   taking responsibility to know whether or not QueryObject supports AutoDiff
-   penetration queries; MBP should not be responsible for that knowledge. By
-   moving the exception into SceneGraph, it removes the false dependency and
-   allows us to gradually increase the AutoDiff support for penetration.
-   -->
-
    @returns A vector populated with all detected penetrations characterized as
-            point pairs.
-   @warning This silently ignores Mesh geometries (but Convex mesh geometries
-            are included). */
-  std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
-      const;
+            point pairs. The ordering of the results is guaranteed to be
+            consistent -- for fixed geometry poses, the results will remain
+            the same.
+   @warning For Mesh shapes, their convex hulls are used in this query. It is
+            *not* computationally efficient or particularly accurate.
+   @throws if T = AutoDiffXd and an unsupported pair of geometries are in
+   collision. Currently for T = AutoDiffXd, we support the collision between a
+   sphere with another simple geometry including box, cylinder, capsule and
+   halfspace.*/
+  std::vector<PenetrationAsPointPair<T>> ComputePointPairPenetration() const;
 
   /**
    Reports pairwise intersections and characterizes each non-empty
@@ -200,9 +210,9 @@ class QueryObject {
        | Box       |  yes  |  yes  |
        | Capsule   |  no   |  no   |
        | Ellipsoid |  yes  |  yes  |
-       | HalfSpace |  no   |  no   |
+       | HalfSpace |  yes  |  yes  |
        | Mesh      |  no   |  yes  |
-       | Convex    |  no   |  no   |
+       | Convex    |  no   |  yes  |
 
      - One geometry must be soft, and the other must be rigid. There is no
        support for soft-soft collision or rigid-rigid collision. If such
@@ -218,13 +228,17 @@ class QueryObject {
    <h3>Scalar support</h3>
 
    This method provides support only for double. Attempting to invoke this
-   method with T = AutoDiffXd will throw an exception if there are *any*
-   geometry pairs that couldn't be culled.
+   method with T = AutoDiffXd will throw an exception if there are unsupported
+   geometry pairs (like box-to-box) that couldn't be culled.
 
    @returns A vector populated with all detected intersections characterized as
-            contact surfaces.  */
+            contact surfaces. The ordering of the results is guaranteed to be
+            consistent -- for fixed geometry poses, the results will remain
+            the same.  */
   std::vector<ContactSurface<T>> ComputeContactSurfaces() const;
 
+  // TODO(hongkai.dai): allow T=AutodiffXd and some primitive geometries
+  // collide.
   /** Reports pair-wise intersections and characterizes each non-empty
    intersection as a ContactSurface _where possible_ and as a
    PenetrationAsPointPair where not.
@@ -243,14 +257,33 @@ class QueryObject {
    Because point pairs can only be computed for double-valued systems, this can
    also only support double-valued ContactSurface instances.
 
+   The ordering of the _added_ results is guaranteed to be consistent -- for
+   fixed geometry poses, the results will remain the same.
+
+   @warning Invoking this with T = AutoDiffXd may throw an exception. The logic
+   controlling when this throws is subtle; it is dependent on the behavior when
+   T = double. For T = double, contact between a colliding pair of geometries
+   (g1, g2) will be reported as either ContactSurface or PenetrationAsPointPair
+   (depending on the geometry properties). The guiding principle is that a
+   contact should always be characterized with the same collision type
+   (regardless of scalar type). If that collision type is not supported for a
+   particular scalar, this query throws.
+   - If (g1, g2) produces a ContactSurface for T = double, T = AutoDiffXd will
+     definitely throw.
+   - If (g1, g2) produces a PenetrationAsPointPair for T = double,
+     T = AutoDiffXd will throw under the same conditions as documented in
+     ComputePointPairPenetration().
+
    @param[out] surfaces     The vector that contact surfaces will be added to.
                             The vector will _not_ be cleared.
    @param[out] point_pairs  The vector that fall back point pair data will be
                             added to. The vector will _not_ be cleared.
-   @pre Neither `surfaces` nor `point_pairs` is nullptr.  */
+   @pre Neither `surfaces` nor `point_pairs` is nullptr.
+   @throws if T = AutoDiffXd and unsupported object (like box-to-box) actually
+   collides. */
   void ComputeContactSurfacesWithFallback(
       std::vector<ContactSurface<T>>* surfaces,
-      std::vector<PenetrationAsPointPair<double>>* point_pairs) const;
+      std::vector<PenetrationAsPointPair<T>>* point_pairs) const;
 
   /** Applies a conservative culling mechanism to create a subset of all
    possible geometry pairs based on non-zero intersections. A geometry pair
@@ -258,15 +291,15 @@ class QueryObject {
    b) *known* to be separated. The caller is responsible for confirming that
    the remaining, unculled geometry pairs are *actually* in collision.
 
-   @returns A vector populated with collision pair candidates.
-   @warning This silently ignores Mesh geometries (but Convex mesh geometries
-            are included). */
+   @returns A vector populated with collision pair candidates (the order will
+            remain constant for a fixed population but can change as geometry
+            ids are added/removed).  */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const;
 
   /** Reports true if there are _any_ collisions between unfiltered pairs in the
    world.
-   @warning This silently ignores Mesh geometries (but Convex mesh geometries
-            are included). */
+   @warning For Mesh shapes, their convex hulls are used in this query. It is
+            *not* computationally efficient or particularly accurate.  */
   bool HasCollisions() const;
 
   //@}
@@ -352,7 +385,9 @@ class QueryObject {
 
    @returns The signed distance (and supporting data) for all unfiltered
             geometry pairs whose distance is less than or equal to
-            `max_distance`.  */
+            `max_distance`.
+   @warning For Mesh shapes, their convex hulls are used in this query. It is
+            *not* computationally efficient or particularly accurate.  */
   std::vector<SignedDistancePair<T>> ComputeSignedDistancePairwiseClosestPoints(
       const double max_distance =
           std::numeric_limits<double>::infinity()) const;
@@ -362,10 +397,12 @@ class QueryObject {
    indicated by id. This function has the same restrictions on scalar report
    as ComputeSignedDistancePairwiseClosestPoints().
 
-   @throws if either geometry id is invalid, or if the pair (id_A, id_B) has
-           been marked as filtered.  */
+   @throws std::exception if either geometry id is invalid, or if the pair
+                          (A, B) has been marked as filtered.
+   @warning For Mesh shapes, their convex hulls are used in this query. It is
+            *not* computationally efficient or particularly accurate.  */
   SignedDistancePair<T> ComputeSignedDistancePairClosestPoints(
-      GeometryId id_A, GeometryId id_B) const;
+      GeometryId geometry_id_A, GeometryId geometry_id_B) const;
 
   // TODO(DamrongGuoy): Improve and refactor documentation of
   // ComputeSignedDistanceToPoint(). Move the common sections into Signed
@@ -467,24 +504,39 @@ class QueryObject {
    */
   //@{
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   /** Renders an RGB image for the given `camera` posed with respect to the
    indicated parent frame P.
 
    @param camera                The intrinsic properties of the camera.
    @param parent_frame          The id for the camera's parent frame.
-   @param X_PC                  The pose of the camera body in the world frame.
+   @param X_PC                  The pose of the camera body in the parent frame.
    @param show_window           If true, the render window will be displayed.
    @param[out] color_image_out  The rendered color image. */
+  DRAKE_DEPRECATED("2021-04-01",
+                   "CameraProperties are being deprecated. Please use the "
+                   "ColorRenderCamera variant.")
   void RenderColorImage(const render::CameraProperties& camera,
                         FrameId parent_frame,
                         const math::RigidTransformd& X_PC,
                         bool show_window,
                         systems::sensors::ImageRgba8U* color_image_out) const;
+#pragma GCC diagnostic pop
 
+  /** Renders an RGB image for the given `camera` posed with respect to the
+   indicated parent frame P.
+
+   @param camera                The camera to render from.
+   @param parent_frame          The id for the camera's parent frame.
+   @param X_PC                  The pose of the camera body in the parent frame.
+   @param[out] color_image_out  The rendered color image. */
   void RenderColorImage(const render::ColorRenderCamera& camera,
                         FrameId parent_frame, const math::RigidTransformd& X_PC,
                         systems::sensors::ImageRgba8U* color_image_out) const;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   /** Renders a depth image for the given `camera` posed with respect to the
    indicated parent frame P.
 
@@ -494,31 +546,59 @@ class QueryObject {
 
    @param camera                The intrinsic properties of the camera.
    @param parent_frame          The id for the camera's parent frame.
-   @param X_PC                  The pose of the camera body in the world frame.
+   @param X_PC                  The pose of the camera body in the parent frame.
    @param[out] depth_image_out  The rendered depth image. */
+  DRAKE_DEPRECATED("2021-04-01",
+                   "CameraProperties are being deprecated. Please use the "
+                   "DepthRenderCamera variant.")
   void RenderDepthImage(const render::DepthCameraProperties& camera,
                         FrameId parent_frame,
                         const math::RigidTransformd& X_PC,
                         systems::sensors::ImageDepth32F* depth_image_out) const;
+#pragma GCC diagnostic pop
 
+  /** Renders a depth image for the given `camera` posed with respect to the
+   indicated parent frame P.
+
+   In contrast to the other rendering methods, rendering depth images doesn't
+   provide the option to display the window; generally, basic depth images are
+   not readily communicative to humans.
+
+   @param camera                The camera to render from.
+   @param parent_frame          The id for the camera's parent frame.
+   @param X_PC                  The pose of the camera body in the parent frame.
+   @param[out] depth_image_out  The rendered depth image. */
   void RenderDepthImage(const render::DepthRenderCamera& camera,
                         FrameId parent_frame, const math::RigidTransformd& X_PC,
                         systems::sensors::ImageDepth32F* depth_image_out) const;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   /** Renders a label image for the given `camera` posed with respect to the
    indicated parent frame P.
 
    @param camera                The intrinsic properties of the camera.
    @param parent_frame          The id for the camera's parent frame.
-   @param X_PC                  The pose of the camera body in the world frame.
+   @param X_PC                  The pose of the camera body in the parent frame.
    @param show_window           If true, the render window will be displayed.
    @param[out] label_image_out  The rendered label image. */
+  DRAKE_DEPRECATED("2021-04-01",
+                   "CameraProperties are being deprecated. Please use the "
+                   "ColorRenderCamera variant.")
   void RenderLabelImage(const render::CameraProperties& camera,
                         FrameId parent_frame,
                         const math::RigidTransformd& X_PC,
                         bool show_window,
                         systems::sensors::ImageLabel16I* label_image_out) const;
+#pragma GCC diagnostic pop
 
+  /** Renders a label image for the given `camera` posed with respect to the
+   indicated parent frame P.
+
+   @param camera                The camera to render from.
+   @param parent_frame          The id for the camera's parent frame.
+   @param X_PC                  The pose of the camera body in the parent frame.
+   @param[out] label_image_out  The rendered label image. */
   void RenderLabelImage(const render::ColorRenderCamera& camera,
                         FrameId parent_frame, const math::RigidTransformd& X_PC,
                         systems::sensors::ImageLabel16I* label_image_out) const;

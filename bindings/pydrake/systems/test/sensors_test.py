@@ -1,14 +1,24 @@
 import pydrake.systems.sensors as mut
 
+import gc
 import unittest
 
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
 from pydrake.geometry import FrameId
-from pydrake.geometry.render import CameraProperties, DepthCameraProperties
+from pydrake.geometry.render import (
+    CameraProperties,
+    ClippingRange,
+    ColorRenderCamera,
+    DepthCameraProperties,
+    DepthRange,
+    DepthRenderCamera,
+    RenderCameraCore,
+)
 from pydrake.math import (
     RigidTransform,
     RollPitchYaw,
@@ -154,6 +164,17 @@ class TestSensors(unittest.TestCase):
                     self.assertTrue(
                         np.allclose(data[ih, iw, :], image.at(iw, ih)))
 
+            # Ensure that keep alive works by using temporary objects.
+
+            def check_keep_alive():
+                image = ImageT(w, h, channel_default)
+                return (image.data, image.mutable_data)
+
+            data, mutable_data = check_keep_alive()
+            gc.collect()
+            np.testing.assert_array_equal(data, channel_default)
+            np.testing.assert_array_equal(mutable_data, channel_default)
+
     def test_constants(self):
         # Simply ensure we can access the constants.
         values = [
@@ -179,6 +200,8 @@ class TestSensors(unittest.TestCase):
 
         infos = [
             mut.CameraInfo(width=width, height=height, fov_y=fov_y),
+            mut.CameraInfo(
+                width=width, height=height, intrinsic_matrix=intrinsic_matrix),
             mut.CameraInfo(
                 width=width, height=height, focal_x=focal_x, focal_y=focal_y,
                 center_x=center_x, center_y=center_y),
@@ -246,46 +269,89 @@ class TestSensors(unittest.TestCase):
         width = 1280
         height = 720
 
-        color_properties = CameraProperties(
-            width=width, height=height, fov_y=np.pi/6,
-            renderer_name="renderer")
-        depth_properties = DepthCameraProperties(
-            width=width, height=height, fov_y=np.pi/6,
-            renderer_name="renderer", z_near=0.1, z_far=5.5)
+        # There are *two* variants of the constructor for each camera
+        # representation: one with color and depth explicitly specified and one
+        # with only depth. We enumerate all four here.
+
+        def construct_deprecated(parent_id, X_PB):
+            # One deprecation warning for CameraPoses and one for RgbdSensor.
+            with catch_drake_warnings(expected_count=4):
+                color_properties = CameraProperties(
+                    width=width, height=height, fov_y=np.pi/6,
+                    renderer_name="renderer")
+                depth_properties = DepthCameraProperties(
+                    width=width, height=height, fov_y=np.pi/6,
+                    renderer_name="renderer", z_near=0.1, z_far=5.5)
+                camera_poses = mut.RgbdSensor.CameraPoses(
+                    X_BC=RigidTransform(), X_BD=RigidTransform())
+                return mut.RgbdSensor(parent_id=parent_id, X_PB=X_PB,
+                                      color_properties=color_properties,
+                                      depth_properties=depth_properties,
+                                      camera_poses=camera_poses,
+                                      show_window=False)
+
+        def construct(parent_id, X_PB):
+            color_camera = ColorRenderCamera(
+                RenderCameraCore(
+                    "renderer",
+                    mut.CameraInfo(width, height, np.pi/6),
+                    ClippingRange(0.1, 6.0),
+                    RigidTransform()
+                ), False)
+            depth_camera = DepthRenderCamera(color_camera.core(),
+                                             DepthRange(0.1, 5.5))
+            return mut.RgbdSensor(parent_id=parent_id, X_PB=X_PB,
+                                  color_camera=color_camera,
+                                  depth_camera=depth_camera)
+
+        def construct_single_deprecated(parent_id, X_PB):
+            with catch_drake_warnings(expected_count=3):
+                depth_properties = DepthCameraProperties(
+                        width=width, height=height, fov_y=np.pi/6,
+                        renderer_name="renderer", z_near=0.1, z_far=5.5)
+                return mut.RgbdSensor(
+                    parent_id=parent_id, X_PB=X_PB,
+                    properties=depth_properties,
+                    camera_poses=mut.RgbdSensor.CameraPoses(),
+                    show_window=False)
+
+        def construct_single(parent_id, X_PB):
+            depth_camera = DepthRenderCamera(
+                RenderCameraCore(
+                    "renderer",
+                    mut.CameraInfo(width, height, np.pi/6),
+                    ClippingRange(0.1, 6.0),
+                    RigidTransform()
+                ),
+                DepthRange(0.1, 5.5))
+            return mut.RgbdSensor(parent_id=parent_id, X_PB=X_PB,
+                                  depth_camera=depth_camera)
 
         # Put it at the origin.
         X_WB = RigidTransform()
         # This id would fail if we tried to render; no such id exists.
         parent_id = FrameId.get_new_id()
-        camera_poses = mut.RgbdSensor.CameraPoses(
-            X_BC=RigidTransform(), X_BD=RigidTransform())
-        sensor = mut.RgbdSensor(parent_id=parent_id, X_PB=X_WB,
-                                color_properties=color_properties,
-                                depth_properties=depth_properties,
-                                camera_poses=camera_poses,
-                                show_window=False)
 
         def check_info(camera_info):
             self.assertIsInstance(camera_info, mut.CameraInfo)
             self.assertEqual(camera_info.width(), width)
             self.assertEqual(camera_info.height(), height)
 
-        check_info(sensor.color_camera_info())
-        check_info(sensor.depth_camera_info())
-        self.assertIsInstance(sensor.X_BC(),
-                              RigidTransform)
-        self.assertIsInstance(sensor.X_BD(),
-                              RigidTransform)
-        self.assertEqual(sensor.parent_frame_id(), parent_id)
-        check_ports(sensor)
+        for constructor in [construct_deprecated, construct,
+                            construct_single_deprecated,
+                            construct_single]:
+            sensor = constructor(parent_id, X_WB)
+            check_info(sensor.color_camera_info())
+            check_info(sensor.depth_camera_info())
+            self.assertIsInstance(sensor.X_BC(),
+                                  RigidTransform)
+            self.assertIsInstance(sensor.X_BD(),
+                                  RigidTransform)
+            self.assertEqual(sensor.parent_frame_id(), parent_id)
+            check_ports(sensor)
 
-        # Test discrete camera, reconstructing using single-properties
-        # constructor.
-        color_and_depth_properties = depth_properties
-        sensor = mut.RgbdSensor(parent_id=parent_id, X_PB=X_WB,
-                                properties=color_and_depth_properties,
-                                camera_poses=camera_poses,
-                                show_window=False)
+        # Test discrete camera. We'll simply use the last sensor constructed.
+
         period = mut.RgbdSensorDiscrete.kDefaultPeriod
         discrete = mut.RgbdSensorDiscrete(
             sensor=sensor, period=period, render_label_image=True)
@@ -296,7 +362,11 @@ class TestSensors(unittest.TestCase):
         # That we can access the state as images.
         context = discrete.CreateDefaultContext()
         values = context.get_abstract_state()
-        self.assertIsInstance(values.get_value(0), Value[mut.ImageRgba8U])
-        self.assertIsInstance(values.get_value(1), Value[mut.ImageDepth32F])
-        self.assertIsInstance(values.get_value(2), Value[mut.ImageDepth16U])
-        self.assertIsInstance(values.get_value(3), Value[mut.ImageLabel16I])
+        self.assertIsInstance(values.get_value(0),
+                              Value[mut.ImageRgba8U])
+        self.assertIsInstance(values.get_value(1),
+                              Value[mut.ImageDepth32F])
+        self.assertIsInstance(values.get_value(2),
+                              Value[mut.ImageDepth16U])
+        self.assertIsInstance(values.get_value(3),
+                              Value[mut.ImageLabel16I])

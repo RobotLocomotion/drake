@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
@@ -23,7 +24,7 @@ namespace {
 class SimpleAbstractType {
  public:
   explicit SimpleAbstractType(int size)
-      : value_(size) {}
+      : value_(Eigen::VectorXd::Zero(size)) {}
   explicit SimpleAbstractType(const Eigen::VectorXd& value)
       : value_(value) {}
   const Eigen::VectorXd& value() const { return value_; }
@@ -31,27 +32,42 @@ class SimpleAbstractType {
   Eigen::VectorXd value_;
 };
 
-class PassThroughTest : public ::testing::TestWithParam<bool> {
+class PassThroughTest
+    : public ::testing::TestWithParam<std::tuple<bool, bool>> {
  protected:
   PassThroughTest()
-      : is_abstract_(GetParam()) {}
+      : is_abstract_(std::get<0>(GetParam())),
+        use_default_value_(std::get<1>(GetParam())) {}
 
   void SetUp() override {
     const int size = 3;
+    default_value_.resize(size);
+    default_value_ << -.23, 0.5, 3.14;
     input_value_.resize(size);
     input_value_ << 1.0, 3.14, 2.18;
 
     if (!is_abstract_) {
-      pass_through_ = make_unique<PassThrough<double>>(size);
+      if (use_default_value_) {
+        pass_through_ = make_unique<PassThrough<double>>(default_value_);
+      } else {
+        pass_through_ = make_unique<PassThrough<double>>(size);
+      }
     } else {
-      pass_through_ =
-          make_unique<PassThrough<double>>(Value<SimpleAbstractType>(size));
+      if (use_default_value_) {
+        pass_through_ = make_unique<PassThrough<double>>(
+            Value<SimpleAbstractType>(default_value_));
+      } else {
+        pass_through_ =
+            make_unique<PassThrough<double>>(Value<SimpleAbstractType>(size));
+      }
     }
     context_ = pass_through_->CreateDefaultContext();
   }
 
   const bool is_abstract_;
+  const bool use_default_value_;
 
+  Eigen::VectorXd default_value_;
   Eigen::VectorXd input_value_;
   std::unique_ptr<System<double>> pass_through_;
   std::unique_ptr<Context<double>> context_;
@@ -63,6 +79,20 @@ TEST_P(PassThroughTest, VectorThroughPassThroughSystem) {
   // are consistent.
   ASSERT_EQ(1, context_->num_input_ports());
   ASSERT_EQ(1, pass_through_->num_input_ports());
+
+  // Test default values.
+  Eigen::VectorXd output;
+  if (!is_abstract_) {
+    output = pass_through_->get_output_port(0).Eval(*context_);
+  } else {
+    output = pass_through_->get_output_port(0).
+          Eval<SimpleAbstractType>(*context_).value();
+  }
+  if (use_default_value_) {
+    EXPECT_EQ(output, default_value_);
+  } else {
+    EXPECT_TRUE(output.isZero());
+  }
 
   // Hook input of the expected size.
   if (!is_abstract_) {
@@ -76,7 +106,6 @@ TEST_P(PassThroughTest, VectorThroughPassThroughSystem) {
   // output are consistent.
   ASSERT_EQ(1, pass_through_->num_output_ports());
 
-  Eigen::VectorXd output;
   if (!is_abstract_) {
     output = pass_through_->get_output_port(0).Eval(*context_);
   } else {
@@ -95,6 +124,7 @@ TEST_P(PassThroughTest, PassThroughIsStateless) {
 
 // Tests that PassThrough is direct feedthrough.
 TEST_P(PassThroughTest, DirectFeedthrough) {
+  // Note: The system will report feedthrough even when no input is connected.
   EXPECT_TRUE(pass_through_->HasAnyDirectFeedthrough());
 }
 
@@ -108,7 +138,18 @@ TEST_P(PassThroughTest, ToSymbolic) {
 
 // Instantiate parameterized test cases for is_abstract_ = {false, true}
 INSTANTIATE_TEST_SUITE_P(test, PassThroughTest,
-    ::testing::Values(false, true));
+                         ::testing::Values(std::make_tuple(false, false),
+                                           std::make_tuple(false, true),
+                                           std::make_tuple(true, false),
+                                           std::make_tuple(true, true)));
+
+GTEST_TEST(PassThroughTest, AutoDiffFromDouble) {
+  const Eigen::Vector3d value(1., 3., 0.42);
+  PassThrough<AutoDiffXd> pass(value);
+  auto context = pass.CreateDefaultContext();
+  EXPECT_EQ(value,
+            math::DiscardZeroGradient(pass.get_output_port().Eval(*context)));
+}
 
 }  // namespace
 }  // namespace systems

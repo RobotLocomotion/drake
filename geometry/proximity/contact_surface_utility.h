@@ -75,7 +75,7 @@ Vector3<T> CalcPolygonCentroid(
  @pre `polygon` is planar.
  @pre `n_F` is perpendicular to the defined `polygon`.
  @pre `n_F` has non-trivial length.
- @tparam T  The computational scalar type. Only supports double and AutoDiffXd. 
+ @tparam T  The computational scalar type. Only supports double and AutoDiffXd.
  */
 template <typename T>
 void AddPolygonToMeshData(

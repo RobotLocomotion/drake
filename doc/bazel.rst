@@ -161,7 +161,7 @@ Proprietary Solvers
 The Drake Bazel build currently supports the following proprietary solvers:
 
  * Gurobi 9.0.2
- * MOSEK 9.0
+ * MOSEK 9.2
  * SNOPT 7.4
 
 .. When upgrading SNOPT to a newer revision, re-enable TestPrintFile in
@@ -201,7 +201,7 @@ See https://docs.bazel.build/versions/master/user-manual.html#bazelrc.
 MOSEK
 -----
 
-The Drake Bazel build system downloads MOSEK 9.0.96 automatically.  No manual
+The Drake Bazel build system downloads MOSEK 9.2.33 automatically.  No manual
 installation is required.  Set the location of your license file as follows:
 
 ``export MOSEKLM_LICENSE_FILE=/path/to/mosek.lic``
@@ -264,13 +264,15 @@ kcov
 ----
 
 ``kcov`` can analyze coverage for any binary that contains DWARF format
-debuggging symbols, and produce nicely formatted browse-able coverage reports.
+debugging symbols, and produce nicely formatted browse-able coverage reports.
 
 Drake's ``kcov`` build system integration is only supported on Ubuntu, not
 macOS.
 
-To use kcov, you must first run Drake's ``install_prereqs`` setup script using
-the ``--with-kcov`` option.
+To use kcov on Ubuntu 18.04 (Bionic), you must first run Drake's
+``install_prereqs`` setup script using the ``--with-kcov`` option. On Ubuntu
+20.04 (Focal), the option is ignored. The macOS ``install_prereqs`` setup
+script does not install kcov, and passing a ``--with-kcov`` option is an error.
 
 To analyze test coverage, run one (or more) tests under ``kcov``::
 
@@ -280,5 +282,16 @@ Note that it disables compiler-optimization (``-O0``) to have a better and more
 precise coverage report.  If you have trouble with kcov and unoptimized programs,
 you can turn it back on by also supplying ``--copt -O2``.
 
-The coverage report is written to the ``drake/bazel-kcov`` directory.  To
-view it, browse to ``drake/bazel-kcov/index.html``.
+For each test program, individual coverage reports are written to per-target
+directories.  Use the ``kcov_tool`` to merge coverage data into a new directory::
+
+  tools/dynamic_analysis/kcov_tool merge [OUTPUT-DIR]
+
+To view the merged data, browse to ``index.html`` in the OUTPUT-DIR.
+
+In a local developer workspace, coverage data may accumulate over successive
+build jobs, even if source files or other dependencies have changed. The stale
+data would be scattered within the directory tree linked as
+``bazel-testlogs``. To clear out old data, use ``kcov_tool clean``::
+
+  tools/dynamic_analysis/kcov_tool clean

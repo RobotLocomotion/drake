@@ -10,6 +10,8 @@ namespace drake {
 namespace pydrake {
 namespace {
 
+// Please review the end-result deprecation behavior in `deprecation_test.py`.
+
 PYBIND11_MODULE(cc_module, m) {
   constexpr auto& doc = pydrake_doc.drake.example_class;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -17,8 +19,18 @@ PYBIND11_MODULE(cc_module, m) {
 
   m.def("emit_deprecation", []() {
     // N.B. This is only for coverage. You generally do not need this.
-    WarnDeprecated("Example emitting of deprecation");
+    WarnDeprecated("Example emitting of deprecation", "2038-01-19");
   });
+
+  {
+    using Class = ExampleCppStruct;
+    constexpr auto& cls_doc = doc.ExampleCppStruct;
+    py::class_<Class> cls(m, "ExampleCppStruct", cls_doc.doc);
+    cls  // BR
+        .def(DeprecatedParamInit<Class>("Deprecated as of 2038-01-19"))
+        .def_readwrite("i", &Class::i)
+        .def_readwrite("j", &Class::j);
+  }
 
   {
     using Class = ExampleCppClass;

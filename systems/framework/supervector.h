@@ -1,12 +1,8 @@
 #pragma once
 
 #include <algorithm>
-#include <cstdint>
-#include <stdexcept>
 #include <utility>
 #include <vector>
-
-#include <Eigen/Dense>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
@@ -21,7 +17,7 @@ namespace systems {
 ///
 /// @tparam_default_scalar
 template <typename T>
-class Supervector : public VectorBase<T> {
+class Supervector final : public VectorBase<T> {
  public:
   // Supervector objects are neither copyable nor moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Supervector)
@@ -37,26 +33,38 @@ class Supervector : public VectorBase<T> {
     }
   }
 
-  int size() const override {
+  int size() const final {
     return lookup_table_.empty() ? 0 : lookup_table_.back();
   }
 
- protected:
-  const T& DoGetAtIndex(int index) const override {
-    const auto target = GetSubvectorAndOffset(index);
-    return (*target.first)[target.second];
-  }
-
-  T& DoGetAtIndex(int index) override {
-    const auto target = GetSubvectorAndOffset(index);
-    return (*target.first)[target.second];
-  }
-
  private:
+  const T& DoGetAtIndexUnchecked(int index) const final {
+    DRAKE_ASSERT(index < size());
+    const auto& [subvector, offset] = GetSubvectorAndOffset(index);
+    return (*subvector)[offset];
+  }
+
+  T& DoGetAtIndexUnchecked(int index) final {
+    DRAKE_ASSERT(index < size());
+    const auto& [subvector, offset] = GetSubvectorAndOffset(index);
+    return (*subvector)[offset];
+  }
+
+  const T& DoGetAtIndexChecked(int index) const final {
+    if (index >= size()) { this->ThrowOutOfRange(index); }
+    const auto& [subvector, offset] = GetSubvectorAndOffset(index);
+    return (*subvector)[offset];
+  }
+
+  T& DoGetAtIndexChecked(int index) final {
+    if (index >= size()) { this->ThrowOutOfRange(index); }
+    const auto& [subvector, offset] = GetSubvectorAndOffset(index);
+    return (*subvector)[offset];
+  }
+
   // Given an index into the supervector, returns the subvector that
   // contains that index, and its offset within the subvector. This operation
-  // is O(log(N)) in the number of subvectors. Throws std::out_of_range for
-  // invalid indices.
+  // is O(log(N)) in the number of subvectors.
   //
   // Example: if the lookup table is [1, 4, 9], and @p index is 5, this
   // function returns a pointer to the third of three subvectors, with offset
@@ -66,15 +74,11 @@ class Supervector : public VectorBase<T> {
   // 0 | 1 2 3 | 4 5 6 7 8
   //               ^ index 5
   std::pair<VectorBase<T>*, int> GetSubvectorAndOffset(int index) const {
-    if (index >= size() || index < 0) {
-      throw std::out_of_range("Index " + std::to_string(index) +
-                              " out of bounds for supervector of size " +
-                              std::to_string(size()));
-    }
     // Binary-search the lookup_table_ for the first element that is larger
     // than the specified index.
     const auto it =
         std::upper_bound(lookup_table_.begin(), lookup_table_.end(), index);
+    DRAKE_DEMAND(it != lookup_table_.end());
 
     // Use the lookup result to identify the subvector that contains the index.
     const int subvector_id =

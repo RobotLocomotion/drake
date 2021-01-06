@@ -4,6 +4,7 @@ from pydrake.solvers.snopt import SnoptSolver
 from pydrake.solvers.mathematicalprogram import (
     LinearConstraint,
     MathematicalProgramResult,
+    PyFunctionConstraint,
     SolverOptions,
     SolverType,
     SolverId,
@@ -19,7 +20,6 @@ import numpy as np
 import pydrake
 from pydrake.common import kDrakeAssertIsArmed
 from pydrake.autodiffutils import AutoDiffXd
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.forwarddiff import jacobian
 from pydrake.math import ge
@@ -285,6 +285,9 @@ class TestMathematicalProgram(unittest.TestCase):
         ce = prog.AddLinearEqualityConstraint(2*x0, 1).evaluator()
 
         self.assertTrue(c.CheckSatisfied([2.], tol=1e-3))
+        satisfied = c.CheckSatisfiedVectorized(
+            np.array([1., 2., 3.]).reshape((1, 3)), tol=1e-3)
+        self.assertEqual(satisfied, [False, True, True])
         self.assertFalse(c.CheckSatisfied([AutoDiffXd(1.)]))
         self.assertIsInstance(c.CheckSatisfied([x0]), sym.Formula)
 
@@ -352,11 +355,26 @@ class TestMathematicalProgram(unittest.TestCase):
         for (constraint, value_expected) in enum:
             value = result.EvalBinding(constraint)
             self.assertTrue(np.allclose(value, value_expected))
+            value = prog.EvalBinding(constraint, x_expected)
+            self.assertTrue(np.allclose(value, value_expected))
+            value = prog.EvalBindingVectorized(
+                constraint,
+                np.vstack((x_expected, x_expected)).T)
+            a = np.vstack((value_expected, value_expected)).T
+            self.assertTrue(np.allclose(
+                value, np.vstack((value_expected, value_expected)).T))
 
         enum = zip(costs, cost_values_expected)
         for (cost, value_expected) in enum:
             value = result.EvalBinding(cost)
             self.assertTrue(np.allclose(value, value_expected))
+            value = prog.EvalBinding(cost, x_expected)
+            self.assertTrue(np.allclose(value, value_expected))
+            value = prog.EvalBindingVectorized(
+                cost,
+                np.vstack((x_expected, x_expected)).T)
+            self.assertTrue(np.allclose(
+                value, np.vstack((value_expected, value_expected)).T))
 
         self.assertIsInstance(
             result.EvalBinding(costs[0]), np.ndarray)
@@ -436,6 +454,7 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddLinearEqualityConstraint(d[0] + d[1] == 1)
         result = mp.Solve(prog)
         self.assertTrue(result.is_success())
+        result.GetSolution(poly)
 
         (poly, Q_oo, Q_ee) = prog.NewEvenDegreeSosPolynomial(
             indeterminates=sym.Variables(x), degree=2)
@@ -556,6 +575,39 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddLinearEqualityConstraint(np.eye(2), np.zeros(2), x)
         prog.AddLinearEqualityConstraint(x[0] == 1)
         prog.AddLinearEqualityConstraint(x[0] + x[1], 1)
+        prog.AddLinearEqualityConstraint(
+            2 * x[:2] + np.array([0, 1]), np.array([3, 2]))
+
+    def test_constraint_set_bounds(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, "x")
+
+        def constraint(x):
+            return x[1] ** 2
+        binding = prog.AddConstraint(constraint, [0], [1], vars=x)
+        self.assertIsInstance(binding.evaluator(), PyFunctionConstraint)
+        np.testing.assert_array_equal(
+            binding.evaluator().lower_bound(), np.array([0.]))
+        np.testing.assert_array_equal(
+            binding.evaluator().upper_bound(), np.array([1.]))
+        # Test UpdateLowerBound()
+        binding.evaluator().UpdateLowerBound(new_lb=[-1.])
+        np.testing.assert_array_equal(
+            binding.evaluator().lower_bound(), np.array([-1.]))
+        np.testing.assert_array_equal(
+            binding.evaluator().upper_bound(), np.array([1.]))
+        # Test UpdateLowerBound()
+        binding.evaluator().UpdateUpperBound(new_ub=[2.])
+        np.testing.assert_array_equal(
+            binding.evaluator().lower_bound(), np.array([-1.]))
+        np.testing.assert_array_equal(
+            binding.evaluator().upper_bound(), np.array([2.]))
+        # Test set_bounds()
+        binding.evaluator().set_bounds(lower_bound=[-3.], upper_bound=[4.])
+        np.testing.assert_array_equal(
+            binding.evaluator().lower_bound(), np.array([-3.]))
+        np.testing.assert_array_equal(
+            binding.evaluator().upper_bound(), np.array([4.]))
 
     def test_constraint_gradient_sparsity(self):
         prog = mp.MathematicalProgram()
@@ -817,6 +869,41 @@ class TestMathematicalProgram(unittest.TestCase):
         x_expected = np.array([1-2**(-0.5), 1-2**(-0.5)])
         self.assertTrue(np.allclose(result.GetSolution(x), x_expected))
 
+    def test_add_lorentz_cone_constraint(self):
+        # Call AddLorentzConeConstraint, make sure no error is thrown.
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(3)
+
+        prog.AddLorentzConeConstraint(
+            v=np.array([x[0]+1, x[1]+x[2], 2*x[1]]))
+        prog.AddLorentzConeConstraint(
+            linear_expression=x[0] + x[1] + 1,
+            quadratic_expression=x[0]*x[0] + x[1] * x[1] + 2 * x[0] * x[1] + 1,
+            tol=0.)
+        A = np.array([[1, 0], [0, 1], [1, 0], [0, 0]])
+        b = np.array([1, 1, 0, 2])
+        constraint = prog.AddLorentzConeConstraint(A=A, b=b, vars=x[:2])
+        np.testing.assert_allclose(
+            constraint.evaluator().A().todense(), A)
+        np.testing.assert_allclose(constraint.evaluator().b(), b)
+
+    def test_add_rotated_lorentz_cone_constraint(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(3)
+
+        A = np.array([[1, 0], [1, 1], [1, 0], [0, 1], [0, 0]])
+        b = np.array([1, 0, 1, 0, 2])
+        constraint = prog.AddRotatedLorentzConeConstraint(A=A, b=b, vars=x[:2])
+        np.testing.assert_allclose(
+            constraint.evaluator().A().todense(), A)
+        np.testing.assert_allclose(constraint.evaluator().b(), b)
+
+        prog.AddRotatedLorentzConeConstraint(
+            v=[x[0]+1, x[0]+x[1], x[0], x[2]+1, 2])
+        constraint = prog.AddRotatedLorentzConeConstraint(
+            linear_expression1=x[0]+1, linear_expression2=x[0]+x[1],
+            quadratic_expression=x[0]*x[0] + 2*x[0] + x[1]*x[1] + 5)
+
     def test_solver_options(self):
         prog = mp.MathematicalProgram()
 
@@ -852,10 +939,6 @@ class TestMathematicalProgram(unittest.TestCase):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(1)
         result = mp.Solve(prog)
-        with catch_drake_warnings(expected_count=1):
-            infeasible = mp.GetInfeasibleConstraints(prog=prog, result=result,
-                                                     tol=1e-4)
-            self.assertEqual(len(infeasible), 0)
 
         infeasible = result.GetInfeasibleConstraints(prog)
         self.assertEqual(len(infeasible), 0)

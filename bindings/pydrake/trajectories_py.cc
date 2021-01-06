@@ -7,7 +7,9 @@
 #include "drake/bindings/pydrake/polynomial_types_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/polynomial.h"
+#include "drake/common/trajectories/bspline_trajectory.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
+#include "drake/common/trajectories/piecewise_quaternion.h"
 #include "drake/common/trajectories/trajectory.h"
 
 namespace drake {
@@ -22,10 +24,45 @@ PYBIND11_MODULE(trajectories, m) {
   using T = double;
 
   py::class_<Trajectory<T>>(m, "Trajectory", doc.Trajectory.doc)
+      .def("value", &Trajectory<T>::value, py::arg("t"),
+          doc.Trajectory.value.doc)
+      .def("vector_values", &Trajectory<T>::vector_values,
+          doc.Trajectory.vector_values.doc)
       .def("EvalDerivative", &Trajectory<T>::EvalDerivative, py::arg("t"),
           py::arg("derivative_order") = 1, doc.Trajectory.EvalDerivative.doc)
+      .def("MakeDerivative", &Trajectory<T>::MakeDerivative,
+          py::arg("derivative_order") = 1, doc.Trajectory.MakeDerivative.doc)
+      .def("start_time", &Trajectory<T>::start_time,
+          doc.Trajectory.start_time.doc)
+      .def("end_time", &Trajectory<T>::end_time, doc.Trajectory.end_time.doc)
       .def("rows", &Trajectory<T>::rows, doc.Trajectory.rows.doc)
       .def("cols", &Trajectory<T>::cols, doc.Trajectory.cols.doc);
+
+  py::class_<BsplineTrajectory<T>, Trajectory<T>>(
+      m, "BsplineTrajectory", doc.BsplineTrajectory.doc)
+      .def(py::init<>())
+      .def(py::init<math::BsplineBasis<T>, std::vector<MatrixX<T>>>(),
+          py::arg("basis"), py::arg("control_points"),
+          doc.BsplineTrajectory.ctor.doc)
+      .def("Clone", &BsplineTrajectory<T>::Clone,
+          doc.BsplineTrajectory.Clone.doc)
+      .def("num_control_points", &BsplineTrajectory<T>::num_control_points,
+          doc.BsplineTrajectory.num_control_points.doc)
+      .def("control_points", &BsplineTrajectory<T>::control_points,
+          doc.BsplineTrajectory.control_points.doc)
+      .def("InitialValue", &BsplineTrajectory<T>::InitialValue,
+          doc.BsplineTrajectory.InitialValue.doc)
+      .def("FinalValue", &BsplineTrajectory<T>::FinalValue,
+          doc.BsplineTrajectory.FinalValue.doc)
+      .def("basis", &BsplineTrajectory<T>::basis,
+          doc.BsplineTrajectory.basis.doc)
+      .def("InsertKnots", &BsplineTrajectory<T>::InsertKnots,
+          py::arg("additional_knots"), doc.BsplineTrajectory.InsertKnots.doc)
+      .def("CopyBlock", &BsplineTrajectory<T>::CopyBlock, py::arg("start_row"),
+          py::arg("start_col"), py::arg("block_rows"), py::arg("block_cols"),
+          doc.BsplineTrajectory.CopyBlock.doc)
+      .def("CopyHead", &BsplineTrajectory<T>::CopyHead, py::arg("n"),
+          doc.BsplineTrajectory.CopyHead.doc);
 
   py::class_<PiecewiseTrajectory<T>, Trajectory<T>>(
       m, "PiecewiseTrajectory", doc.PiecewiseTrajectory.doc)
@@ -42,6 +79,8 @@ PYBIND11_MODULE(trajectories, m) {
           py::arg("segment_index"), doc.PiecewiseTrajectory.end_time.doc)
       .def("duration", &PiecewiseTrajectory<T>::duration,
           py::arg("segment_index"), doc.PiecewiseTrajectory.duration.doc)
+      // N.B. We must redefine these two overloads, as we cannot use the base
+      // classes' overloads. See: https://github.com/pybind/pybind11/issues/974
       .def("start_time",
           overload_cast_explicit<double>(&PiecewiseTrajectory<T>::start_time),
           doc.PiecewiseTrajectory.start_time.doc)
@@ -53,9 +92,7 @@ PYBIND11_MODULE(trajectories, m) {
       .def("get_segment_index", &PiecewiseTrajectory<T>::get_segment_index,
           py::arg("t"), doc.PiecewiseTrajectory.get_segment_index.doc)
       .def("get_segment_times", &PiecewiseTrajectory<T>::get_segment_times,
-          doc.PiecewiseTrajectory.get_segment_times.doc)
-      .def("vector_values", &PiecewiseTrajectory<T>::vector_values,
-          doc.Trajectory.vector_values.doc);
+          doc.PiecewiseTrajectory.get_segment_times.doc);
 
   py::class_<PiecewisePolynomial<T>, PiecewiseTrajectory<T>>(
       m, "PiecewisePolynomial", doc.PiecewisePolynomial.doc)
@@ -115,8 +152,6 @@ PYBIND11_MODULE(trajectories, m) {
               &PiecewisePolynomial<T>::LagrangeInterpolatingPolynomial),
           py::arg("times"), py::arg("samples"),
           doc.PiecewisePolynomial.LagrangeInterpolatingPolynomial.doc)
-      .def("value", &PiecewisePolynomial<T>::value, py::arg("t"),
-          doc.PiecewisePolynomial.value.doc)
       .def("derivative", &PiecewisePolynomial<T>::derivative,
           py::arg("derivative_order") = 1,
           doc.PiecewisePolynomial.derivative.doc)
@@ -144,6 +179,10 @@ PYBIND11_MODULE(trajectories, m) {
           &PiecewisePolynomial<T>::AppendCubicHermiteSegment, py::arg("time"),
           py::arg("sample"), py::arg("sample_dot"),
           doc.PiecewisePolynomial.AppendCubicHermiteSegment.doc)
+      .def("AppendFirstOrderSegment",
+          &PiecewisePolynomial<T>::AppendFirstOrderSegment, py::arg("time"),
+          py::arg("sample"),
+          doc.PiecewisePolynomial.AppendFirstOrderSegment.doc)
       .def("RemoveFinalSegment", &PiecewisePolynomial<T>::RemoveFinalSegment,
           doc.PiecewisePolynomial.RemoveFinalSegment.doc)
       .def("ReverseTime", &PiecewisePolynomial<T>::ReverseTime,
@@ -155,11 +194,47 @@ PYBIND11_MODULE(trajectories, m) {
           doc.PiecewisePolynomial.slice.doc)
       .def("shiftRight", &PiecewisePolynomial<T>::shiftRight, py::arg("offset"),
           doc.PiecewisePolynomial.shiftRight.doc)
+      .def(py::self + py::self)
       .def("setPolynomialMatrixBlock",
           &PiecewisePolynomial<T>::setPolynomialMatrixBlock,
           py::arg("replacement"), py::arg("segment_index"),
           py::arg("row_start") = 0, py::arg("col_start") = 0,
           doc.PiecewisePolynomial.setPolynomialMatrixBlock.doc);
+
+  py::class_<PiecewiseQuaternionSlerp<T>, PiecewiseTrajectory<T>>(
+      m, "PiecewiseQuaternionSlerp", doc.PiecewiseQuaternionSlerp.doc)
+      .def(py::init<>(), doc.PiecewiseQuaternionSlerp.ctor.doc_0args)
+      .def(py::init<const std::vector<double>&,
+               const std::vector<Quaternion<T>>&>(),
+          py::arg("breaks"), py::arg("quaternions"),
+          doc.PiecewiseQuaternionSlerp.ctor.doc_2args_breaks_quaternions)
+      .def(py::init<const std::vector<double>&,
+               const std::vector<Matrix3<T>>&>(),
+          py::arg("breaks"), py::arg("rotation_matrices"),
+          doc.PiecewiseQuaternionSlerp.ctor.doc_2args_breaks_rotation_matrices)
+      .def(py::init<const std::vector<double>&,
+               const std::vector<math::RotationMatrix<T>>&>(),
+          py::arg("breaks"), py::arg("rotation_matrices"),
+          doc.PiecewiseQuaternionSlerp.ctor.doc_2args_breaks_rotation_matrices)
+      .def(py::init<const std::vector<double>&,
+               const std::vector<AngleAxis<T>>&>(),
+          py::arg("breaks"), py::arg("angle_axes"),
+          doc.PiecewiseQuaternionSlerp.ctor.doc_2args_breaks_angle_axes)
+      .def("Append",
+          py::overload_cast<const T&, const Quaternion<T>&>(
+              &PiecewiseQuaternionSlerp<T>::Append),
+          py::arg("time"), py::arg("quaternion"),
+          doc.PiecewiseQuaternionSlerp.Append.doc_2args_time_quaternion)
+      .def("Append",
+          py::overload_cast<const T&, const math::RotationMatrix<T>&>(
+              &PiecewiseQuaternionSlerp<T>::Append),
+          py::arg("time"), py::arg("rotation_matrix"),
+          doc.PiecewiseQuaternionSlerp.Append.doc_2args_time_rotation_matrix)
+      .def("Append",
+          py::overload_cast<const T&, const AngleAxis<T>&>(
+              &PiecewiseQuaternionSlerp<T>::Append),
+          py::arg("time"), py::arg("angle_axis"),
+          doc.PiecewiseQuaternionSlerp.Append.doc_2args_time_angle_axis);
 }
 
 }  // namespace pydrake

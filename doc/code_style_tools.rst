@@ -56,10 +56,20 @@ The :ref:`Mandatory platform specific instructions <platform_specific_setup>`
 install Drake's required version of ``clang-format``, depending on the platform
 (macOS or Ubuntu).
 
-To run clang-format::
+To run ``clang-format``::
 
     # For development on macOS:
     /usr/local/opt/llvm@9/bin/clang-format -i -style=file [file name]
 
     # For development on Ubuntu:
     clang-format-9 -i -style=file [file name]
+
+Using ``clang-format`` will modify the entire file that is specified. As an
+alternative, you can use ``git clang-format`` on Ubuntu to change only the
+portions of a file that you have modified. To run ``git clang-format``::
+
+    # For development on Ubuntu: format a file that has been staged in git
+    git clang-format-9 --binary=/usr/bin/clang-format-9 -- [file name]
+
+    # For development on Ubuntu: format a file that has been modified but not staged
+    git clang-format-9 --binary=/usr/bin/clang-format-9 -f -- [file name]

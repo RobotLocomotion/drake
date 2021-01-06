@@ -26,32 +26,36 @@ GTEST_TEST(OpenGlGeometryTest, Construction) {
   EXPECT_EQ(default_geometry.vertex_buffer, OpenGlGeometry::kInvalid);
   EXPECT_EQ(default_geometry.index_buffer, OpenGlGeometry::kInvalid);
   EXPECT_EQ(default_geometry.index_buffer_size, 0);
+  EXPECT_EQ(default_geometry.has_tex_coord, false);
 
-  const OpenGlGeometry geometry{1, 2, 3, 4};
+  const OpenGlGeometry geometry{1, 2, 3, 4, true};
   EXPECT_EQ(geometry.vertex_array, 1);
   EXPECT_EQ(geometry.vertex_buffer, 2);
   EXPECT_EQ(geometry.index_buffer, 3);
   EXPECT_EQ(geometry.index_buffer_size, 4);
+  EXPECT_EQ(geometry.has_tex_coord, true);
 
-  DRAKE_EXPECT_THROWS_MESSAGE(OpenGlGeometry(1, 2, 3, -1), std::logic_error,
-                              "Index buffer size must be non-negative");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      OpenGlGeometry(1, 2, 3, -1, false), std::logic_error,
+      "Index buffer size must be non-negative");
 }
 
 GTEST_TEST(OpenGlGeometryTest, IsDefined) {
   const GLuint kInvalid = OpenGlGeometry::kInvalid;
 
-  EXPECT_TRUE(OpenGlGeometry(1, 2, 3, 4).is_defined());
-  EXPECT_FALSE(OpenGlGeometry(kInvalid, 2, 3, 4).is_defined());
-  EXPECT_FALSE(OpenGlGeometry(1, kInvalid, 3, 4).is_defined());
-  EXPECT_FALSE(OpenGlGeometry(1, 2, kInvalid, 4).is_defined());
-  EXPECT_FALSE(OpenGlGeometry(kInvalid, kInvalid, 3, 4).is_defined());
-  EXPECT_FALSE(OpenGlGeometry(kInvalid, 2, kInvalid, 4).is_defined());
-  EXPECT_FALSE(OpenGlGeometry(1, kInvalid, kInvalid, 4).is_defined());
-  EXPECT_FALSE(OpenGlGeometry(kInvalid, kInvalid, kInvalid, 4).is_defined());
+  EXPECT_TRUE(OpenGlGeometry(1, 2, 3, 4, false).is_defined());
+  EXPECT_FALSE(OpenGlGeometry(kInvalid, 2, 3, 4, false).is_defined());
+  EXPECT_FALSE(OpenGlGeometry(1, kInvalid, 3, 4, false).is_defined());
+  EXPECT_FALSE(OpenGlGeometry(1, 2, kInvalid, 4, false).is_defined());
+  EXPECT_FALSE(OpenGlGeometry(kInvalid, kInvalid, 3, 4, false).is_defined());
+  EXPECT_FALSE(OpenGlGeometry(kInvalid, 2, kInvalid, 4, false).is_defined());
+  EXPECT_FALSE(OpenGlGeometry(1, kInvalid, kInvalid, 4, false).is_defined());
+  EXPECT_FALSE(
+      OpenGlGeometry(kInvalid, kInvalid, kInvalid, 4, false).is_defined());
 }
 
 GTEST_TEST(OpenGlGeometryTest, ThrowIfUndefined) {
-  const OpenGlGeometry valid{1, 2, 3, 4};
+  const OpenGlGeometry valid{1, 2, 3, 4, false};
   EXPECT_NO_THROW(valid.throw_if_undefined("test message"));
   DRAKE_EXPECT_THROWS_MESSAGE(
       OpenGlGeometry().throw_if_undefined("default is undefined"),
@@ -60,11 +64,20 @@ GTEST_TEST(OpenGlGeometryTest, ThrowIfUndefined) {
 }
 
 GTEST_TEST(OpenGlInstanceTest, Construction) {
-  const OpenGlGeometry geometry(1, 2, 3, 4);
+  const OpenGlGeometry geometry(1, 2, 3, 4, true);
   const RigidTransformd X_WG{Vector3d{-1, -2, 3}};
   const Vector3d scale{0.25, 0.5, 0.75};
-  const RenderLabel label(17);
-  const OpenGlInstance instance{geometry, X_WG, scale, label};
+  // We'll create a pretend block of depth data; simply a double value with no
+  // real meaning.
+  const ShaderProgramData depth_data{ShaderId::get_new_id(),
+                                     AbstractValue::Make(7.3)};
+  const ShaderProgramData label_data{ShaderId::get_new_id(),
+                                     AbstractValue::Make(RenderLabel(13))};
+  const ShaderProgramData color_data(
+      ShaderId::get_new_id(), AbstractValue::Make(33));
+
+  const OpenGlInstance instance{geometry,   X_WG,       scale,
+                                color_data, depth_data, label_data};
 
   EXPECT_EQ(instance.geometry.vertex_array, geometry.vertex_array);
   EXPECT_EQ(instance.geometry.vertex_buffer, geometry.vertex_buffer);
@@ -73,7 +86,22 @@ GTEST_TEST(OpenGlInstanceTest, Construction) {
   EXPECT_TRUE(
       CompareMatrices(instance.X_WG.GetAsMatrix34(), X_WG.GetAsMatrix34()));
   EXPECT_TRUE(CompareMatrices(instance.scale, scale));
-  EXPECT_EQ(instance.label, label);
+
+  EXPECT_EQ(
+      instance.shader_data[RenderType::kDepth].value().get_value<double>(),
+      depth_data.value().get_value<double>());
+  EXPECT_EQ(instance.shader_data[RenderType::kDepth].shader_id(),
+            depth_data.shader_id());
+  EXPECT_EQ(
+      instance.shader_data[RenderType::kLabel].value().get_value<RenderLabel>(),
+      label_data.value().get_value<RenderLabel>());
+  EXPECT_EQ(instance.shader_data[RenderType::kLabel].shader_id(),
+            label_data.shader_id());
+  EXPECT_EQ(
+      instance.shader_data[RenderType::kColor].value().get_value<int>(),
+      color_data.value().get_value<int>());
+  EXPECT_EQ(instance.shader_data[RenderType::kColor].shader_id(),
+            color_data.shader_id());
 }
 
 }  // namespace

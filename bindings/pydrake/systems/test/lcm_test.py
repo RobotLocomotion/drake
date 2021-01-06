@@ -165,7 +165,8 @@ class TestSystemsLcm(unittest.TestCase):
         mut.ConnectLcmScope(src=source.get_output_port(0),
                             channel="TEST_CHANNEL",
                             builder=builder,
-                            lcm=DrakeLcm())
+                            lcm=DrakeLcm(),
+                            publish_period=0.001)
 
     def test_lcm_interface_system_diagram(self):
         # First, check the class doc.

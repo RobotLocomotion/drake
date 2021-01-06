@@ -7,6 +7,7 @@
 #include <Eigen/Dense>
 #include <fmt/format.h>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
@@ -1082,3 +1083,6 @@ RotationMatrix<T>::ThrowIfNotValid(const Matrix3<S>& R) {
 
 }  // namespace math
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::math::RotationMatrix)

@@ -80,11 +80,16 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
                                   .get_value()));
 
   // Check feedforward_torque command.
-  station.GetInputPort("iiwa_feedforward_torque")
-      .FixValue(context.get(), VectorXd::Zero(7));
   VectorXd tau_with_no_ff = station.GetOutputPort("iiwa_torque_commanded")
                                 .Eval<BasicVector<double>>(*context)
                                 .get_value();
+  // Confirm that default values are zero.
+  station.GetInputPort("iiwa_feedforward_torque")
+      .FixValue(context.get(), VectorXd::Zero(7));
+  EXPECT_TRUE(CompareMatrices(tau_with_no_ff,
+                              station.GetOutputPort("iiwa_torque_commanded")
+                                  .Eval<BasicVector<double>>(*context)
+                                  .get_value()));
   station.GetInputPort("iiwa_feedforward_torque")
       .FixValue(context.get(), tau_ff);
   EXPECT_TRUE(CompareMatrices(tau_with_no_ff + tau_ff,
@@ -355,6 +360,41 @@ GTEST_TEST(ManipulationStationTest, RegisterRgbdCameraTest) {
     multibody::MultibodyPlant<double>& plant =
         dut.get_mutable_multibody_plant();
 
+    geometry::render::DepthRenderCamera depth_camera{
+        {dut.default_renderer_name(), {640, 480, M_PI_4}, {0.05, 3.0}, {}},
+        {0.1, 2.0}};
+
+    const Eigen::Translation3d X_WF0(0, 0, 0.2);
+    const Eigen::Translation3d X_F0C0(0.3, 0.2, 0.0);
+    const auto& frame0 =
+        plant.AddFrame(std::make_unique<multibody::FixedOffsetFrame<double>>(
+            "frame0", plant.world_frame(), X_WF0));
+    dut.RegisterRgbdSensor("camera0", frame0, X_F0C0, depth_camera);
+
+    const Eigen::Translation3d X_F0F1(0, -0.1, 0.2);
+    const Eigen::Translation3d X_F1C1(-0.2, 0.2, 0.33);
+    const auto& frame1 =
+        plant.AddFrame(std::make_unique<multibody::FixedOffsetFrame<double>>(
+            "frame1", frame0, X_F0F1));
+    dut.RegisterRgbdSensor("camera1", frame1, X_F1C1, depth_camera);
+
+    std::map<std::string, math::RigidTransform<double>> camera_poses =
+        dut.GetStaticCameraPosesInWorld();
+
+    EXPECT_EQ(camera_poses.size(), 2);
+    EXPECT_TRUE(camera_poses.at("camera0").IsExactlyEqualTo(X_WF0 * X_F0C0));
+    EXPECT_TRUE(
+        camera_poses.at("camera1").IsExactlyEqualTo(X_WF0 * X_F0F1 * X_F1C1));
+  }
+
+  {
+    // Repeat the above test for the deprecated API.
+    ManipulationStation<double> dut;
+    multibody::MultibodyPlant<double>& plant =
+        dut.get_mutable_multibody_plant();
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     geometry::render::DepthCameraProperties camera_properties(
         640, 480, M_PI_4, dut.default_renderer_name(), 0.1, 2.0);
 
@@ -371,6 +411,7 @@ GTEST_TEST(ManipulationStationTest, RegisterRgbdCameraTest) {
         plant.AddFrame(std::make_unique<multibody::FixedOffsetFrame<double>>(
             "frame1", frame0, X_F0F1));
     dut.RegisterRgbdSensor("camera1", frame1, X_F1C1, camera_properties);
+#pragma GCC diagnostic pop
 
     std::map<std::string, math::RigidTransform<double>> camera_poses =
         dut.GetStaticCameraPosesInWorld();

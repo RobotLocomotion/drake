@@ -35,9 +35,6 @@ class PendulumPlant final : public systems::LeafSystem<T> {
 
   ~PendulumPlant() final;
 
-  /// Returns the input port to the externally applied force.
-  const systems::InputPort<T>& get_input_port() const;
-
   /// Returns the port to output state.
   const systems::OutputPort<T>& get_state_output_port() const;
 

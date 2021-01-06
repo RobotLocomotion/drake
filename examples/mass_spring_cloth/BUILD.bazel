@@ -1,0 +1,73 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load(
+    "@drake//tools/vector_gen:vector_gen.bzl",
+    "drake_cc_vector_gen_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+drake_cc_library(
+    name = "cloth_spring_model",
+    srcs = [
+        "cloth_spring_model.cc",
+    ],
+    hdrs = [
+        "cloth_spring_model.h",
+    ],
+    deps = [
+        ":cloth_spring_model_params",
+        "//common:essential",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "cloth_spring_model_geometry",
+    srcs = ["cloth_spring_model_geometry.cc"],
+    hdrs = ["cloth_spring_model_geometry.h"],
+    deps = [
+        ":cloth_spring_model",
+        ":cloth_spring_model_params",
+        "//geometry:geometry_roles",
+        "//geometry:scene_graph",
+        "//math:geometric_transform",
+        "//systems/framework:diagram_builder",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_vector_gen_library(
+    name = "cloth_spring_model_params",
+    srcs = ["cloth_spring_model_params_named_vector.yaml"],
+)
+
+drake_cc_binary(
+    name = "run_cloth_spring_model",
+    srcs = [
+        "run_cloth_spring_model.cc",
+    ],
+    deps = [
+        ":cloth_spring_model",
+        ":cloth_spring_model_geometry",
+        "//common:add_text_logging_gflags",
+        "//geometry:drake_visualizer",
+        "//systems/analysis:simulator_gflags",
+        "//systems/framework:diagram",
+    ],
+)
+
+drake_cc_googletest(
+    name = "cloth_spring_model_test",
+    deps = [
+        ":cloth_spring_model",
+        "//systems/analysis:simulator",
+    ],
+)
+
+add_lint_tests()

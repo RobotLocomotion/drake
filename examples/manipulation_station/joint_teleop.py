@@ -11,7 +11,7 @@ import numpy as np
 from pydrake.examples.manipulation_station import (
     ManipulationStation, ManipulationStationHardwareInterface,
     CreateClutterClearingYcbObjectList)
-from pydrake.geometry import ConnectDrakeVisualizer
+from pydrake.geometry import DrakeVisualizer
 from pydrake.manipulation.simple_ui import JointSliders, SchunkWsgButtons
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.systems.framework import DiagramBuilder
@@ -78,14 +78,14 @@ def main():
 
         station.Finalize()
 
-        ConnectDrakeVisualizer(builder, station.get_scene_graph(),
-                               station.GetOutputPort("pose_bundle"))
+        DrakeVisualizer.AddToBuilder(builder,
+                                     station.GetOutputPort("query_object"))
         if args.meshcat:
-            meshcat = builder.AddSystem(MeshcatVisualizer(
-                    station.get_scene_graph(), zmq_url=args.meshcat,
-                    open_browser=args.open_browser))
-            builder.Connect(station.GetOutputPort("pose_bundle"),
-                            meshcat.get_input_port(0))
+            meshcat = ConnectMeshcatVisualizer(
+                builder, output_port=station.GetOutputPort("geometry_query"),
+                zmq_url=args.meshcat, open_browser=args.open_browser)
+            if args.setup == 'planar':
+                meshcat.set_planar_viewpoint()
         if args.setup == 'planar':
             pyplot_visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(
                 station.get_scene_graph()))

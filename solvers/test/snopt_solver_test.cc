@@ -457,7 +457,7 @@ GTEST_TEST(SnoptTest, VariableScaling2) {
 
 GTEST_TEST(SnoptSolverTest, QPDualSolution1) {
   SnoptSolver solver;
-  TestQPDualSolution1(solver, 1e-5);
+  TestQPDualSolution1(solver, {} /* solver_options */, 1e-5);
 }
 
 GTEST_TEST(SnoptSolverTest, QPDualSolution2) {

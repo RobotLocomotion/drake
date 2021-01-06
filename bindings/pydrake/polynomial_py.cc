@@ -3,7 +3,6 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/polynomial_types_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -38,17 +37,6 @@ PYBIND11_MODULE(polynomial, m) {
             py::arg("other"), py::arg("tol") = 0.0,
             py::arg("tol_type") = ToleranceType::kAbsolute,
             cls_doc.CoefficientsAlmostEqual.doc)
-        .def(
-            "IsApprox",
-            [](Polynomial<T>* self, const Polynomial<T>& other,
-                const Polynomial<T>::RealScalar& tol) {
-              WarnDeprecated(
-                  "Use CoefficientAlmostEqual with tol_type=kRelative instead "
-                  "of IsApprox.  Support will be removed after 2020-08-01.");
-              return self->CoefficientsAlmostEqual(
-                  other, tol, ToleranceType::kRelative);
-            },
-            py::arg("other"), py::arg("tol"))
         // Arithmetic
         .def(-py::self)
         .def(py::self + py::self)

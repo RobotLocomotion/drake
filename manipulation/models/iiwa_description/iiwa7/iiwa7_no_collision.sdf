@@ -1,10 +1,9 @@
-<?xml version="1.0" ?>
-<sdf version='1.6'>
-  <model name='iiwa7'>
-    <link name='iiwa_link_0'>
-      <pose frame=''>0 0 0 0 -0 0</pose>
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="iiwa7">
+    <link name="iiwa_link_0">
       <inertial>
-        <pose frame=''>-0.013 0 0.07 0 -0 0</pose>
+        <pose>-0.013 0 0.07 0 0 0</pose>
         <mass>3.863</mass>
         <inertia>
           <ixx>0.0141</ixx>
@@ -15,8 +14,7 @@
           <izz>0.0178</izz>
         </inertia>
       </inertial>
-      <visual name='iiwa_link_0_visual'>
-        <pose frame=''>0 0 0 0 0 0</pose>
+      <visual name="iiwa_link_0_visual">
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -31,11 +29,10 @@
       <velocity_decay/>
       <self_collide>0</self_collide>
     </link>
-
-    <link name='iiwa_link_1'>
-      <pose frame=''>0 0 0.1575 0 -0 0</pose>
+    <link name="iiwa_link_1">
+      <pose>0 0 0.1575 0 0 0</pose>
       <inertial>
-        <pose frame=''>0 -0.0347 0.113 0 -0 0</pose>
+        <pose>0 -0.0347 0.113 0 0 0</pose>
         <mass>2.7025</mass>
         <inertia>
           <ixx>0.0171</ixx>
@@ -46,8 +43,7 @@
           <izz>0.006</izz>
         </inertia>
       </inertial>
-      <visual name='iiwa_link_1_visual'>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+      <visual name="iiwa_link_1_visual">
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -62,11 +58,11 @@
       <velocity_decay/>
       <self_collide>0</self_collide>
     </link>
-    <joint name='iiwa_joint_1' type='revolute'>
+    <joint name="iiwa_joint_1" type="revolute">
       <child>iiwa_link_1</child>
       <parent>iiwa_link_0</parent>
       <axis>
-        <xyz>0 0 1</xyz>
+        <xyz expressed_in="__model__">0 0 1</xyz>
         <limit>
           <lower>-2.96706</lower>
           <upper>2.96706</upper>
@@ -79,13 +75,12 @@
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
-    <link name='iiwa_link_2'>
-      <pose frame=''>0 0 0.3405 1.5708 -0 -3.14159</pose>
+    <link name="iiwa_link_2">
+      <pose>0 0 0.3405 1.5708 0 -3.14159</pose>
       <inertial>
-        <pose frame=''>0.000 0.0668 0.0344 0 -0 0</pose>
+        <pose>0.000 0.0668 0.0344 0 0 0</pose>
         <mass>2.7258</mass>
         <inertia>
           <ixx>0.0170</ixx>
@@ -96,8 +91,7 @@
           <izz>0.0061</izz>
         </inertia>
       </inertial>
-      <visual name='iiwa_link_2_visual'>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+      <visual name="iiwa_link_2_visual">
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -112,11 +106,11 @@
       <velocity_decay/>
       <self_collide>0</self_collide>
     </link>
-    <joint name='iiwa_joint_2' type='revolute'>
+    <joint name="iiwa_joint_2" type="revolute">
       <child>iiwa_link_2</child>
       <parent>iiwa_link_1</parent>
       <axis>
-        <xyz>-0 1 0</xyz>
+        <xyz expressed_in="__model__">-0 1 0</xyz>
         <limit>
           <lower>-2.0944</lower>
           <upper>2.0944</upper>
@@ -129,13 +123,12 @@
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
-    <link name='iiwa_link_3'>
-      <pose frame=''>0 -0 0.5245 0 0 0</pose>
+    <link name="iiwa_link_3">
+      <pose>0 0 0.5245 0 0 0</pose>
       <inertial>
-        <pose frame=''>0 0.0296 0.1265 0 -0 0</pose>
+        <pose>0 0.0296 0.1265 0 0 0</pose>
         <mass>3.175</mass>
         <inertia>
           <ixx>0.025</ixx>
@@ -146,8 +139,7 @@
           <izz>0.0076</izz>
         </inertia>
       </inertial>
-      <visual name='iiwa_link_3_visual'>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+      <visual name="iiwa_link_3_visual">
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -162,11 +154,11 @@
       <velocity_decay/>
       <self_collide>0</self_collide>
     </link>
-    <joint name='iiwa_joint_3' type='revolute'>
+    <joint name="iiwa_joint_3" type="revolute">
       <child>iiwa_link_3</child>
       <parent>iiwa_link_2</parent>
       <axis>
-        <xyz>0 0 1</xyz>
+        <xyz expressed_in="__model__">0 0 1</xyz>
         <limit>
           <lower>-2.96706</lower>
           <upper>2.96706</upper>
@@ -179,13 +171,12 @@
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
-    <link name='iiwa_link_4'>
-      <pose frame=''>0 -0 0.74 1.5708 0 0</pose>
+    <link name="iiwa_link_4">
+      <pose>0 0 0.74 1.5708 0 0</pose>
       <inertial>
-        <pose frame=''>0 0.067 0.034 0 -0 0</pose>
+        <pose>0 0.067 0.034 0 0 0</pose>
         <mass>2.73</mass>
         <inertia>
           <ixx>0.017</ixx>
@@ -196,8 +187,7 @@
           <izz>0.0061</izz>
         </inertia>
       </inertial>
-      <visual name='iiwa_link_4_visual'>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+      <visual name="iiwa_link_4_visual">
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -212,11 +202,11 @@
       <velocity_decay/>
       <self_collide>0</self_collide>
     </link>
-    <joint name='iiwa_joint_4' type='revolute'>
+    <joint name="iiwa_joint_4" type="revolute">
       <child>iiwa_link_4</child>
       <parent>iiwa_link_3</parent>
       <axis>
-        <xyz>0 -1 0</xyz>
+        <xyz expressed_in="__model__">0 -1 0</xyz>
         <limit>
           <lower>-2.0944</lower>
           <upper>2.0944</upper>
@@ -229,13 +219,12 @@
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
-    <link name='iiwa_link_5'>
-      <pose frame=''>0 -0 0.924 0 -0 -3.14159</pose>
+    <link name="iiwa_link_5">
+      <pose>0 0 0.924 0 0 -3.14159</pose>
       <inertial>
-        <pose frame=''>0.0001 0.021 0.076 0 -0 0</pose>
+        <pose>0.0001 0.021 0.076 0 0 0</pose>
         <mass>1.69</mass>
         <inertia>
           <ixx>0.01</ixx>
@@ -246,8 +235,7 @@
           <izz>0.00449</izz>
         </inertia>
       </inertial>
-      <visual name='iiwa_link_5_visual'>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+      <visual name="iiwa_link_5_visual">
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -262,11 +250,11 @@
       <velocity_decay/>
       <self_collide>0</self_collide>
     </link>
-    <joint name='iiwa_joint_5' type='revolute'>
+    <joint name="iiwa_joint_5" type="revolute">
       <child>iiwa_link_5</child>
       <parent>iiwa_link_4</parent>
       <axis>
-        <xyz>0 0 1</xyz>
+        <xyz expressed_in="__model__">0 0 1</xyz>
         <limit>
           <lower>-2.96706</lower>
           <upper>2.96706</upper>
@@ -279,13 +267,12 @@
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
-    <link name='iiwa_link_6'>
-      <pose frame=''>0 0 1.1395 1.5708 -0 -3.14159</pose>
+    <link name="iiwa_link_6">
+      <pose>0 0 1.1395 1.5708 0 -3.14159</pose>
       <inertial>
-        <pose frame=''>0 0.0026 0.0005 0 -0 0</pose>
+        <pose>0 0.0026 0.0005 0 0 0</pose>
         <mass>1.8</mass>
         <inertia>
           <ixx>0.0051</ixx>
@@ -296,8 +283,8 @@
           <izz>0.0035</izz>
         </inertia>
       </inertial>
-      <visual name='iiwa_link_6_visual'>
-        <pose frame=''>0 0 -0.060700 0 -0 0</pose>
+      <visual name="iiwa_link_6_visual">
+        <pose>0 0 -0.060700 0 0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -312,11 +299,11 @@
       <velocity_decay/>
       <self_collide>0</self_collide>
     </link>
-    <joint name='iiwa_joint_6' type='revolute'>
+    <joint name="iiwa_joint_6" type="revolute">
       <child>iiwa_link_6</child>
       <parent>iiwa_link_5</parent>
       <axis>
-        <xyz>-0 1 -0</xyz>
+        <xyz expressed_in="__model__">-0 1 -0</xyz>
         <limit>
           <lower>-2.0944</lower>
           <upper>2.0944</upper>
@@ -329,13 +316,12 @@
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
-    <link name='iiwa_link_7'>
-      <pose frame=''>0 0 1.22 0 0 0</pose>
+    <link name="iiwa_link_7">
+      <pose>0 0 1.22 0 0 0</pose>
       <inertial>
-        <pose frame=''>0 0 0.0294 0 -0 0</pose>
+        <pose>0 0 0.0294 0 0 0</pose>
         <mass>.4</mass>
         <inertia>
           <ixx>0.0004</ixx>
@@ -346,8 +332,7 @@
           <izz>0.0005</izz>
         </inertia>
       </inertial>
-      <visual name='iiwa_link_7_visual'>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+      <visual name="iiwa_link_7_visual">
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -362,11 +347,11 @@
       <velocity_decay/>
       <self_collide>0</self_collide>
     </link>
-    <joint name='iiwa_joint_7' type='revolute'>
+    <joint name="iiwa_joint_7" type="revolute">
       <child>iiwa_link_7</child>
       <parent>iiwa_link_6</parent>
       <axis>
-        <xyz>0 0 1</xyz>
+        <xyz expressed_in="__model__">0 0 1</xyz>
         <limit>
           <lower>-3.05433</lower>
           <upper>3.05433</upper>
@@ -379,11 +364,10 @@
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <static>0</static>
-    <plugin name='gazebo_ros_controller' filename='libgazebo_ros_control.so'>
+    <plugin name="gazebo_ros_controller" filename="libgazebo_ros_control.so">
       <robotNamespace>/iiwa</robotNamespace>
     </plugin>
   </model>

@@ -14,13 +14,13 @@
 
 #include "drake/common/sorted_pair.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_tinyxml.h"
 #include "drake/multibody/parsing/detail_urdf_geometry.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
+#include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/universal_joint.h"
@@ -76,6 +76,11 @@ SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
 
   const RotationalInertia<double> I_BBcm_Bi(ixx, iyy, izz, ixy, ixz, iyz);
 
+  // If this is a massless body, return a zero SpatialInertia.
+  if (body_mass == 0. && I_BBcm_Bi.get_moments().isZero() &&
+      I_BBcm_Bi.get_products().isZero()) {
+    return SpatialInertia<double>(body_mass, {0., 0., 0.}, {0., 0., 0});
+  }
   // B and Bi are not necessarily aligned.
   const math::RotationMatrix<double> R_BBi(X_BBi.rotation());
 
@@ -446,6 +451,15 @@ void ParseJoint(ModelInstanceIndex model_instance,
     ParseJointDynamics(name, node, &damping);
     plant->AddJoint<BallRpyJoint>(name, parent_body, X_PJ,
                                   child_body, std::nullopt, damping);
+  } else if (type.compare("planar") == 0) {
+    throw_on_custom_joint(true);
+    Vector3d damping_vec(0, 0, 0);
+    XMLElement* dynamics_node = node->FirstChildElement("dynamics");
+    if (dynamics_node) {
+      ParseVectorAttribute(dynamics_node, "damping", &damping_vec);
+    }
+    plant->AddJoint<PlanarJoint>(name, parent_body, X_PJ,
+                                 child_body, std::nullopt, damping_vec);
   } else if (type.compare("universal") == 0) {
     throw_on_custom_joint(true);
     ParseJointDynamics(name, node, &damping);
@@ -547,7 +561,36 @@ void ParseTransmission(
     return;
   }
 
-  plant->AddJointActuator(actuator_name, joint, effort_iter->second);
+  const JointActuator<double>& actuator =
+      plant->AddJointActuator(actuator_name, joint, effort_iter->second);
+
+  // Parse and add the optional drake:rotor_inertia parameter.
+  XMLElement* rotor_inertia_node =
+      actuator_node->FirstChildElement("drake:rotor_inertia");
+  if (rotor_inertia_node) {
+    double rotor_inertia;
+    if (!ParseScalarAttribute(rotor_inertia_node, "value", &rotor_inertia)) {
+      throw std::runtime_error(
+          "ERROR: joint actuator " + actuator_name +
+          "'s drake:rotor_inertia does not have a \"value\" attribute!");
+    }
+    plant->get_mutable_joint_actuator(actuator.index())
+        .set_default_rotor_inertia(rotor_inertia);
+  }
+
+  // Parse and add the optional drake:gear_ratio parameter.
+  XMLElement* gear_ratio_node =
+      actuator_node->FirstChildElement("drake:gear_ratio");
+  if (gear_ratio_node) {
+    double gear_ratio;
+    if (!ParseScalarAttribute(gear_ratio_node, "value", &gear_ratio)) {
+      throw std::runtime_error(
+          "ERROR: joint actuator " + actuator_name +
+          "'s drake:gear_ratio does not have a \"value\" attribute!");
+    }
+    plant->get_mutable_joint_actuator(actuator.index())
+        .set_default_gear_ratio(gear_ratio);
+  }
 }
 
 void ParseFrame(ModelInstanceIndex model_instance,
@@ -727,31 +770,48 @@ ModelInstanceIndex ParseUrdf(
 
 }  // namespace
 
-ModelInstanceIndex AddModelFromUrdfFile(
-    const std::string& file_name,
+ModelInstanceIndex AddModelFromUrdf(
+    const DataSource& data_source,
     const std::string& model_name_in,
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
+  data_source.DemandExactlyOne();
 
-  const std::string full_path = GetFullPath(file_name);
+  // When the data_source is a filename, we'll use its parent directory to be
+  // the root directory to search for files referenced within the URDF file.
+  // If data_source is a string, this will remain unset and relative-path
+  // resources that would otherwise require a root directory will not be found.
+  std::string root_dir;
 
   // Opens the URDF file and feeds it into the XML parser.
   XMLDocument xml_doc;
-  xml_doc.LoadFile(full_path.c_str());
-  if (xml_doc.ErrorID()) {
-    throw std::runtime_error("Failed to parse XML in file " + full_path +
-                             "\n" + xml_doc.ErrorName());
-  }
-
-  // Uses the directory holding the URDF to be the root directory
-  // in which to search for files referenced within the URDF file.
-  std::string root_dir = ".";
-  size_t found = full_path.find_last_of("/\\");
-  if (found != std::string::npos) {
-    root_dir = full_path.substr(0, found);
+  if (data_source.file_name) {
+    const std::string full_path = GetFullPath(*data_source.file_name);
+    size_t found = full_path.find_last_of("/\\");
+    if (found != std::string::npos) {
+      root_dir = full_path.substr(0, found);
+    } else {
+      // TODO(jwnimmer-tri) This is not unit tested.  In any case, we should be
+      // using drake::filesystem for path manipulation, not string searching.
+      root_dir = ".";
+    }
+    xml_doc.LoadFile(full_path.c_str());
+    if (xml_doc.ErrorID()) {
+      throw std::runtime_error(fmt::format(
+          "Failed to parse XML file {}:\n{}",
+          full_path, xml_doc.ErrorName()));
+    }
+  } else {
+    DRAKE_DEMAND(data_source.file_contents);
+    xml_doc.Parse(data_source.file_contents->c_str());
+    if (xml_doc.ErrorID()) {
+      throw std::runtime_error(fmt::format(
+          "Failed to parse XML string: {}",
+          xml_doc.ErrorName()));
+    }
   }
 
   if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {

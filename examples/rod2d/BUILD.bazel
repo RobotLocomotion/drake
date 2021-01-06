@@ -26,16 +26,13 @@ drake_cc_binary(
     test_rule_args = [" --sim_duration=0.01"],
     deps = [
         ":rod2d",
-        "//attic/systems/rendering:drake_visualizer_client",
-        "//common:add_text_logging_gflags",
+        ":rod2d_geometry",
         "//common:essential",
-        "//lcm",
-        "//lcmtypes:viewer",
-        "//systems/analysis",
+        "//geometry:drake_visualizer",
+        "//systems/analysis:implicit_euler_integrator",
+        "//systems/analysis:runge_kutta3_integrator",
+        "//systems/analysis:simulator",
         "//systems/framework",
-        "//systems/lcm:lcm_pubsub_system",
-        "//systems/rendering:pose_aggregator",
-        "//systems/rendering:pose_bundle_to_draw_message",
         "@gflags",
     ],
 )
@@ -56,6 +53,26 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "rod2d_geometry",
+    srcs = ["rod2d_geometry.cc"],
+    hdrs = [
+        "rod2d_geometry.h",
+    ],
+    deps = [
+        "//geometry:frame_kinematics",
+        "//geometry:geometry_frame",
+        "//geometry:geometry_ids",
+        "//geometry:geometry_instance",
+        "//geometry:geometry_roles",
+        "//geometry:rgba",
+        "//geometry:scene_graph",
+        "//math:geometric_transform",
+        "//systems/framework:diagram_builder",
+        "//systems/framework:leaf_system",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -66,7 +83,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//multibody/constraint",
-        "//systems/analysis",
+        "//systems/analysis:simulator",
     ],
 )
 

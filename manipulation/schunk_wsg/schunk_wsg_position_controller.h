@@ -38,7 +38,7 @@ namespace schunk_wsg {
 /// name: SchunkWSGPdController
 /// input_ports:
 /// - desired_state
-/// - force_limit
+/// - force_limit (optional)
 /// - state
 /// output_ports:
 /// - generalized_force
@@ -47,14 +47,15 @@ namespace schunk_wsg {
 ///
 /// The desired_state is a BasicVector<double> of size 2 (position and
 /// velocity of the distance between the fingers).  The force_limit is a
-/// scalar (BasicVector<double> of size 1).  The state is a
-/// BasicVector<double> of size 4 (positions and velocities of the two
-/// fingers).  The output generalized_force is a BasicVector<double> of size
-/// 2 (generalized force inputs to the two fingers).  The output grip_force is
-/// a scalar surrogate for the force measurement from the driver,
-/// f = abs(f₀-f₁) which, like the gripper itself, only reports a positive
-/// force.
+/// scalar (BasicVector<double> of size 1) and is optional; if the input port is
+/// not connected then the constant value passed into the constructor is used.
+/// The state is a BasicVector<double> of size 4 (positions and velocities of
+/// the two fingers).  The output generalized_force is a BasicVector<double> of
+/// size 2 (generalized force inputs to the two fingers).  The output grip_force
+/// is a scalar surrogate for the force measurement from the driver, f =
+/// abs(f₀-f₁) which, like the gripper itself, only reports a positive force.
 ///
+/// @ingroup manipulation_systems
 class SchunkWsgPdController : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgPdController)
@@ -67,7 +68,8 @@ class SchunkWsgPdController : public systems::LeafSystem<double> {
   // kuka tests.  They could be tuned in better with more simulation effort.
   SchunkWsgPdController(double kp_command = 200.0, double kd_command = 5.0,
                         double kp_constraint = 2000.0,
-                        double kd_constraint = 5.0);
+                        double kd_constraint = 5.0,
+                        double default_force_limit = 40.0);
 
   const systems::InputPort<double>& get_desired_state_input_port() const {
     return get_input_port(desired_state_input_port_);
@@ -104,6 +106,7 @@ class SchunkWsgPdController : public systems::LeafSystem<double> {
   const double kd_command_;
   const double kp_constraint_;
   const double kd_constraint_;
+  const double default_force_limit_;
 
   systems::InputPortIndex desired_state_input_port_{};
   systems::InputPortIndex force_limit_input_port_{};
@@ -121,7 +124,7 @@ class SchunkWsgPdController : public systems::LeafSystem<double> {
 /// name: SchunkWSGPositionController
 /// input_ports:
 /// - desired_position
-/// - force_limit
+/// - force_limit (optional)
 /// - state
 /// output_ports:
 /// - generalized_force
@@ -129,6 +132,7 @@ class SchunkWsgPdController : public systems::LeafSystem<double> {
 /// @endsystem
 ///
 /// @see SchunkWsgPdController
+/// @ingroup manipulation_systems
 class SchunkWsgPositionController : public systems::Diagram<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgPositionController)
@@ -141,26 +145,8 @@ class SchunkWsgPositionController : public systems::Diagram<double> {
                               double kp_command = 200.0,
                               double kd_command = 5.0,
                               double kp_constraint = 2000.0,
-                              double kd_constraint = 5.0);
-
-  // The controller stores the last commanded desired position as state.
-  // This is a helper method to reset that state.
-  DRAKE_DEPRECATED("2020-09-01",
-      "There's no need anymore to zero the velocity estimate via this method.")
-  void set_initial_position(systems::State<double>* state,
-                            double desired_position) const;
-
-  // The controller stores the last commanded desired position as state.
-  // This is a helper method to reset that state.
-  DRAKE_DEPRECATED("2020-09-01",
-      "There's no need anymore to zero the velocity estimate via this method.")
-  void set_initial_position(systems::Context<double>* context,
-                            double desired_position) const {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    set_initial_position(&context->get_mutable_state(), desired_position);
-#pragma GCC diagnostic pop
-  }
+                              double kd_constraint = 5.0,
+                              double default_force_limit = 40.0);
 
   const systems::InputPort<double>& get_desired_position_input_port() const {
     return get_input_port(desired_position_input_port_);

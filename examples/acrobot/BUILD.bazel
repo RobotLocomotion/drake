@@ -125,7 +125,7 @@ drake_cc_binary(
     deps = [
         ":acrobot_geometry",
         ":acrobot_plant",
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//systems/analysis:simulator",
         "@gflags",
     ],
@@ -144,7 +144,7 @@ drake_cc_binary(
         ":acrobot_geometry",
         ":acrobot_plant",
         "//common/proto:call_python",
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//systems/analysis:simulator",
         "//systems/estimators:kalman_filter",
         "//systems/framework:diagram",
@@ -166,7 +166,7 @@ drake_cc_binary(
     deps = [
         ":acrobot_geometry",
         ":acrobot_plant",
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "@gflags",
@@ -189,7 +189,7 @@ drake_cc_binary(
         ":acrobot_plant",
         ":spong_controller",
         ":spong_controller_params",
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//systems/analysis:simulator",
         "@gflags",
     ],
@@ -206,7 +206,7 @@ drake_cc_binary(
         ":acrobot_geometry",
         ":acrobot_plant",
         "//common:is_approx_equal_abstol",
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//solvers:solve",
         "//systems/analysis:simulator",
         "//systems/controllers:finite_horizon_linear_quadratic_regulator",
@@ -249,9 +249,10 @@ drake_cc_binary(
         ":acrobot_geometry",
         ":acrobot_lcm",
         ":acrobot_plant",
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//systems/analysis:simulator",
         "//systems/controllers:linear_quadratic_regulator",
+        "//systems/lcm",
         "@gflags",
     ],
 )
@@ -281,6 +282,28 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
     ],
+)
+
+drake_cc_binary(
+    name = "benchmark_autodiff",
+    srcs = ["benchmark_autodiff.cc"],
+    deps = [
+        ":acrobot_plant",
+        "//common:essential",
+        "//common:find_resource",
+        "//math:autodiff",
+        "//math:gradient",
+        "//multibody/benchmarks/acrobot:make_acrobot_plant",
+        "//multibody/parsing",
+        "@googlebenchmark//:benchmark",
+    ],
+)
+
+sh_test(
+    name = "benchmark_autodiff_test",
+    size = "small",
+    srcs = ["test/benchmark_autodiff_test.sh"],
+    data = [":benchmark_autodiff"],
 )
 
 install_data()

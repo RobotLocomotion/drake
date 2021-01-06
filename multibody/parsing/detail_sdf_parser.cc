@@ -13,15 +13,16 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_ignition.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_scene_graph.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
+#include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
+#include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/multibody/tree/universal_joint.h"
 #include "drake/multibody/tree/weld_joint.h"
@@ -110,6 +111,12 @@ SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
 
   const RotationalInertia<double> I_BBcm_Bi =
       ExtractRotationalInertiaAboutBcmExpressedInBi(Inertial_BBcm_Bi);
+
+  // If this is a massless body, return a zero SpatialInertia.
+  if (mass == 0. && I_BBcm_Bi.get_moments().isZero() &&
+      I_BBcm_Bi.get_products().isZero()) {
+    return SpatialInertia<double>(mass, {0., 0., 0.}, {0., 0., 0});
+  }
 
   // Pose of the "<inertial>" frame Bi in the body frame B.
   // TODO(amcastro-tri): Verify we don't get funny results when X_BBi is not
@@ -229,7 +236,22 @@ void AddJointActuatorFromSpecification(
   // as a way to specify un-actuated joints. Thus, the user would say
   // <effort>0</effort> for un-actuated joints.
   if (effort_limit != 0) {
-    plant->AddJointActuator(joint_spec.Name(), joint, effort_limit);
+    const JointActuator<double>& actuator =
+        plant->AddJointActuator(joint_spec.Name(), joint, effort_limit);
+
+    // Parse and add the optional drake:rotor_inertia parameter.
+    if (joint_spec.Element()->HasElement("drake:rotor_inertia")) {
+      plant->get_mutable_joint_actuator(actuator.index())
+          .set_default_rotor_inertia(
+              joint_spec.Element()->Get<double>("drake:rotor_inertia"));
+    }
+
+    // Parse and add the optional drake:gear_ratio parameter.
+    if (joint_spec.Element()->HasElement("drake:gear_ratio")) {
+      plant->get_mutable_joint_actuator(actuator.index())
+          .set_default_gear_ratio(
+              joint_spec.Element()->Get<double>("drake:gear_ratio"));
+    }
   }
 }
 
@@ -420,19 +442,26 @@ void AddJointFromSpecification(
 // object.
 std::string LoadSdf(
     sdf::Root* root,
-    const std::string& file_name) {
+    const DataSource& data_source) {
+  data_source.DemandExactlyOne();
 
-  const std::string full_path = GetFullPath(file_name);
-
-  // Load the SDF file.
-  ThrowAnyErrors(root->Load(full_path));
-
-  // Uses the directory holding the SDF to be the root directory
-  // in which to search for files referenced within the SDF file.
-  std::string root_dir = ".";
-  size_t found = full_path.find_last_of("/\\");
-  if (found != std::string::npos) {
-    root_dir = full_path.substr(0, found);
+  std::string root_dir;
+  if (data_source.file_name) {
+    const std::string full_path = GetFullPath(*data_source.file_name);
+    ThrowAnyErrors(root->Load(full_path));
+    // Uses the directory holding the SDF to be the root directory
+    // in which to search for files referenced within the SDF file.
+    size_t found = full_path.find_last_of("/\\");
+    if (found != std::string::npos) {
+      root_dir = full_path.substr(0, found);
+    } else {
+      // TODO(jwnimmer-tri) This is not unit tested.  In any case, we should be
+      // using drake::filesystem for path manipulation, not string searching.
+      root_dir = ".";
+    }
+  } else {
+    DRAKE_DEMAND(data_source.file_contents);
+    ThrowAnyErrors(root->LoadSdfString(*data_source.file_contents));
   }
 
   return root_dir;
@@ -566,55 +595,91 @@ const Frame<double>& AddFrameFromSpecification(
   return frame;
 }
 
+Eigen::Vector3d ParseVector3(const sdf::ElementPtr node,
+                             const char* element_name) {
+  if (!node->HasElement(element_name)) {
+    throw std::runtime_error(
+        fmt::format("<{}>: Unable to find the <{}> child tag.", node->GetName(),
+                    element_name));
+  }
+
+  auto value = node->Get<ignition::math::Vector3d>(element_name);
+
+  return ToVector3(value);
+}
+
+const Frame<double>& ParseFrame(const sdf::ElementPtr node,
+                                MultibodyPlant<double>* plant,
+                                const char* element_name) {
+  if (!node->HasElement(element_name)) {
+    throw std::runtime_error(
+        fmt::format("<{}>: Unable to find the <{}> child tag.", node->GetName(),
+                    element_name));
+  }
+
+  const std::string frame_name = node->Get<std::string>(element_name);
+
+  if (!plant->HasFrameNamed(frame_name)) {
+    throw std::runtime_error(fmt::format(
+        "<{}>: Frame '{}' specified for <{}> does not exist in the model.",
+        node->GetName(), frame_name, element_name));
+  }
+
+  return plant->GetFrameByName(frame_name);
+}
+
+// TODO(eric.cousineau): Update parsing pending resolution of
+// https://github.com/osrf/sdformat/issues/288
+void AddDrakeJointFromSpecification(const sdf::ElementPtr node,
+                                    MultibodyPlant<double>* plant) {
+  if (!node->HasAttribute("type")) {
+    throw std::runtime_error(
+        "<drake:joint>: Unable to find the 'type' attribute.");
+  }
+  const std::string joint_type = node->Get<std::string>("type");
+  if (!node->HasAttribute("name")) {
+    throw std::runtime_error(
+        "<drake:joint>: Unable to find the 'name' attribute.");
+  }
+  const std::string joint_name = node->Get<std::string>("name");
+
+  // TODO(eric.cousineau): Add support for parsing joint pose.
+  if (node->HasElement("pose")) {
+    throw std::runtime_error(
+        "<drake:joint> does not yet support the <pose> child tag.");
+  }
+
+  const Frame<double>& parent_frame = ParseFrame(node, plant, "drake:parent");
+  const Frame<double>& child_frame = ParseFrame(node, plant, "drake:child");
+
+  if (joint_type == "planar") {
+    // TODO(eric.cousineau): Error out when there are unused tags.
+    Vector3d damping = ParseVector3(node, "drake:damping");
+    plant->AddJoint(std::make_unique<PlanarJoint<double>>(
+        joint_name, parent_frame, child_frame, damping));
+  } else {
+    throw std::runtime_error(
+        "ERROR: <drake:joint> '" + joint_name +
+        "' has unrecognized value for 'type' attribute: " + joint_type);
+  }
+}
+
 const LinearBushingRollPitchYaw<double>& AddBushingFromSpecification(
     const sdf::ElementPtr node, MultibodyPlant<double>* plant) {
   // Functor to read a vector valued child tag with tag name: `element_name`
   // e.g. <element_name>0 0 0</element_name>
-  // Throws an error if the tag does not exist or if the value is not properly
-  // formatted.
+  // Throws an error if the tag does not exist.
   auto read_vector = [node](const char* element_name) -> Eigen::Vector3d {
-    if (!node->HasElement(element_name)) {
-      throw std::runtime_error(
-          fmt::format("Unable to find the <{}> tag.", element_name));
-    }
-
-    auto [value, successful] = node->Get<ignition::math::Vector3d>(
-        element_name, ignition::math::Vector3d() /* default value. not used */);
-
-    if (!successful) {
-      throw std::runtime_error(fmt::format(
-          "Unable to read the value of the <{}> tag.", element_name));
-    }
-
-    return ToVector3(value);
+    return ParseVector3(node, element_name);
   };
 
   // Functor to read a child tag with tag name: `element_name` that specifies a
   // frame name, e.g. <element_name>frame_name</element_name>
-  // Throws an error if the tag does not exist or if the value
-  // is not properly formatted.
+  // Throws an error if the tag does not exist or if the frame does not exist in
+  // the plant.
   auto read_frame = [node,
                      plant](const char* element_name) -> const Frame<double>& {
-    if (!node->HasElement(element_name)) {
-      throw std::runtime_error(
-          fmt::format("Unable to find the <{}> tag.", element_name));
-    }
-
-    auto [frame_name, successful] = node->Get<std::string>(
-        element_name, std::string() /* default value. not used */);
-
-    if (!successful) {
-      throw std::runtime_error(fmt::format(
-          "Unable to read the value of the <{}> tag.", element_name));
-    }
-
-    if (!plant->HasFrameNamed(frame_name)) {
-      throw std::runtime_error(fmt::format(
-          "Frame: {} specified for <{}> does not exist in the model.",
-          frame_name, element_name));
-    }
-
-    return plant->GetFrameByName(frame_name);
+    return ParseFrame(node, plant, element_name);
   };
 
   return ParseLinearBushingRollPitchYaw(read_vector, read_frame, plant);
@@ -694,6 +759,15 @@ ModelInstanceIndex AddModelFromSpecification(
     AddFrameFromSpecification(frame, model_instance, model_frame, plant);
   }
 
+  drake::log()->trace("sdf_parser: Add drake custom joints");
+  if (model.Element()->HasElement("drake:joint")) {
+    for (sdf::ElementPtr joint_node =
+             model.Element()->GetElement("drake:joint");
+         joint_node; joint_node = joint_node->GetNextElement("drake:joint")) {
+      AddDrakeJointFromSpecification(joint_node, plant);
+    }
+  }
+
   drake::log()->trace("sdf_parser: Add linear_bushing_rpy");
   if (model.Element()->HasElement("drake:linear_bushing_rpy")) {
     for (sdf::ElementPtr bushing_node =
@@ -731,8 +805,8 @@ ModelInstanceIndex AddModelFromSpecification(
 
 }  // namespace
 
-ModelInstanceIndex AddModelFromSdfFile(
-    const std::string& file_name,
+ModelInstanceIndex AddModelFromSdf(
+    const DataSource& data_source,
     const std::string& model_name_in,
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
@@ -742,7 +816,7 @@ ModelInstanceIndex AddModelFromSdfFile(
 
   sdf::Root root;
 
-  std::string root_dir = LoadSdf(&root, file_name);
+  std::string root_dir = LoadSdf(&root, data_source);
 
   if (root.ModelCount() != 1) {
     throw std::runtime_error("File must have a single <model> element.");
@@ -762,8 +836,8 @@ ModelInstanceIndex AddModelFromSdfFile(
       model, model_name, plant, package_map, root_dir);
 }
 
-std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
-    const std::string& file_name,
+std::vector<ModelInstanceIndex> AddModelsFromSdf(
+    const DataSource& data_source,
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
@@ -772,7 +846,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
 
   sdf::Root root;
 
-  std::string root_dir = LoadSdf(&root, file_name);
+  std::string root_dir = LoadSdf(&root, data_source);
 
   // Throw an error if there are no models or worlds.
   if (root.ModelCount() == 0 && root.WorldCount() == 0) {

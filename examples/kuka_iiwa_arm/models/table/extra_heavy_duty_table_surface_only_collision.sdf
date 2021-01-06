@@ -1,6 +1,6 @@
-<?xml version='1.0'?>
-<sdf version='1.6'>
-  <model name='extra_heavy_duty_table_surface_only_collision'>
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="extra_heavy_duty_table_surface_only_collision">
     <!--
     This model is identical to the extra heavy duty table in nearly
     every respect except that the collision tags are present only for
@@ -8,11 +8,9 @@
     involving the table due to a decrease in number of collision
     checks needed.
     -->
-    <link name='link'>
-      <pose frame=''>0 0 0 0 -0 0</pose>
+    <link name="link">
       <inertial>
         <mass>53.5</mass>
-        <pose frame=''>0 0 0 0 -0 0</pose>
         <!--
         The spatial inertia values given below were derived based on the
         equation for a cuboid:
@@ -38,8 +36,8 @@
       </inertial>
       <self_collide>0</self_collide>
       <kinematic>0</kinematic>
-      <visual name='back_right_leg'>
-        <pose frame=''>-0.33 -0.35 0.381 0 -0 0</pose>
+      <visual name="back_right_leg">
+        <pose>-0.33 -0.35 0.381 0 0 0</pose>
         <geometry>
           <box>
             <size>0.05 0.05 0.762</size>
@@ -54,15 +52,15 @@
           <diffuse>0.7 0.7 0.7 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
-          <shader type='vertex'>
+          <shader type="vertex">
             <normal_map>__default__</normal_map>
           </shader>
         </material>
         <cast_shadows>1</cast_shadows>
         <transparency>0</transparency>
       </visual>
-      <visual name='front_left_leg'>
-        <pose frame=''>0.33 0.35 0.381 0 -0 0</pose>
+      <visual name="front_left_leg">
+        <pose>0.33 0.35 0.381 0 0 0</pose>
         <geometry>
           <box>
             <size>0.05 0.05 0.762</size>
@@ -77,15 +75,15 @@
           <diffuse>0.7 0.7 0.7 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
-          <shader type='vertex'>
+          <shader type="vertex">
             <normal_map>__default__</normal_map>
           </shader>
         </material>
         <cast_shadows>1</cast_shadows>
         <transparency>0</transparency>
       </visual>
-      <visual name='left_crossbar'>
-        <pose frame=''>0.33 0 0.13335 0 -0 0</pose>
+      <visual name="left_crossbar">
+        <pose>0.33 0 0.13335 0 0 0</pose>
         <geometry>
           <box>
             <size>0.05 0.662 0.05</size>
@@ -100,15 +98,15 @@
           <diffuse>0.7 0.7 0.7 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
-          <shader type='vertex'>
+          <shader type="vertex">
             <normal_map>__default__</normal_map>
           </shader>
         </material>
         <cast_shadows>1</cast_shadows>
         <transparency>0</transparency>
       </visual>
-      <visual name='right_crossbar'>
-        <pose frame=''>-0.33 0 0.13335 0 -0 0</pose>
+      <visual name="right_crossbar">
+        <pose>-0.33 0 0.13335 0 0 0</pose>
         <geometry>
           <box>
             <size>0.05 0.662 0.05</size>
@@ -123,15 +121,15 @@
           <diffuse>0.7 0.7 0.7 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
-          <shader type='vertex'>
+          <shader type="vertex">
             <normal_map>__default__</normal_map>
           </shader>
         </material>
         <cast_shadows>1</cast_shadows>
         <transparency>0</transparency>
       </visual>
-      <visual name='back_left_leg'>
-        <pose frame=''>-0.33 0.35 0.381 0 -0 0</pose>
+      <visual name="back_left_leg">
+        <pose>-0.33 0.35 0.381 0 0 0</pose>
         <geometry>
           <box>
             <size>0.05 0.05 0.762</size>
@@ -146,15 +144,15 @@
           <diffuse>0.7 0.7 0.7 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
-          <shader type='vertex'>
+          <shader type="vertex">
             <normal_map>__default__</normal_map>
           </shader>
         </material>
         <cast_shadows>1</cast_shadows>
         <transparency>0</transparency>
       </visual>
-      <visual name='front_right_leg'>
-        <pose frame=''>0.33 -0.35 0.381 0 -0 0</pose>
+      <visual name="front_right_leg">
+        <pose>0.33 -0.35 0.381 0 0 0</pose>
         <geometry>
           <box>
             <size>0.05 0.05 0.762</size>
@@ -169,15 +167,15 @@
           <diffuse>0.7 0.7 0.7 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
-          <shader type='vertex'>
+          <shader type="vertex">
             <normal_map>__default__</normal_map>
           </shader>
         </material>
         <cast_shadows>1</cast_shadows>
         <transparency>0</transparency>
       </visual>
-      <visual name='back_crossbar'>
-        <pose frame=''>0 0.35 0.13335 0 -0 0</pose>
+      <visual name="back_crossbar">
+        <pose>0 0.35 0.13335 0 0 0</pose>
         <geometry>
           <box>
             <size>0.6112 0.05 0.05</size>
@@ -192,15 +190,15 @@
           <diffuse>0.7 0.7 0.7 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
-          <shader type='vertex'>
+          <shader type="vertex">
             <normal_map>__default__</normal_map>
           </shader>
         </material>
         <cast_shadows>1</cast_shadows>
         <transparency>0</transparency>
       </visual>
-      <visual name='front_crossbar'>
-        <pose frame=''>0 -0.35 0.13335 0 -0 0</pose>
+      <visual name="front_crossbar">
+        <pose>0 -0.35 0.13335 0 0 0</pose>
         <geometry>
           <box>
             <size>0.6112 0.05 0.05</size>
@@ -215,15 +213,15 @@
           <diffuse>0.7 0.7 0.7 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
-          <shader type='vertex'>
+          <shader type="vertex">
             <normal_map>__default__</normal_map>
           </shader>
         </material>
         <cast_shadows>1</cast_shadows>
         <transparency>0</transparency>
       </visual>
-      <visual name='visual1'>
-        <pose frame=''>0 0 0.736 0 -0 0</pose>
+      <visual name="visual1">
+        <pose>0 0 0.736 0 0 0</pose>
         <geometry>
           <box>
             <size>0.7112 0.762 0.057</size>
@@ -238,17 +236,17 @@
           <diffuse>0.7 0.7 0.7 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
-          <shader type='vertex'>
+          <shader type="vertex">
             <normal_map>__default__</normal_map>
           </shader>
         </material>
         <cast_shadows>1</cast_shadows>
         <transparency>0</transparency>
       </visual>
-      <collision name='surface'>
+      <collision name="surface">
         <laser_retro>0</laser_retro>
         <max_contacts>10</max_contacts>
-        <pose frame=''>0 0 0.736 0 -0 0</pose>
+        <pose>0 0 0.736 0 0 0</pose>
         <geometry>
           <box>
             <size>0.7112 0.762 0.057</size>
@@ -301,16 +299,14 @@
         </surface>
       </collision>
     </link>
-
-    <frame name='top_center'>
+    <frame name="top_center">
       <!--
       TODO(eric.cousineau): @frame='link' is redundant, but not having it
       causes RBT SDFormat parsing code to segfault. Remove this once RBT is
       removed.
       -->
-      <pose frame='link'>0 0 0.7645 0 -0 0</pose>
+      <pose relative_to="link">0 0 0.7645 0 0 0</pose>
     </frame>
-
     <!--
     N.B. This model used to have <static>true</static>, but this creates
     issues in reusability with the current implementation of MBP parsing

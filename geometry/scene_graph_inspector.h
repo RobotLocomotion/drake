@@ -1,15 +1,18 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
 #include <unordered_set>
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_state.h"
+#include "drake/geometry/internal_frame.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
@@ -97,6 +100,12 @@ class SceneGraphInspector {
     return state_->get_frame_ids();
   }
 
+  /** Reports the id for the world frame.  */
+  FrameId world_frame_id() const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return internal::InternalFrame::world_frame_id();
+  }
+
   /** Reports the _total_ number of geometries in the scene graph.  */
   int num_geometries() const {
     DRAKE_DEMAND(state_ != nullptr);
@@ -151,32 +160,43 @@ class SceneGraphInspector {
   /** @name                Sources and source-related data  */
   //@{
 
-  /** Reports `true` if the given `id` maps to a registered source.  */
-  bool SourceIsRegistered(SourceId id) const {
+  /** Reports `true` if the given `source_id` maps to a registered source.  */
+  bool SourceIsRegistered(SourceId source_id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->SourceIsRegistered(id);
+    return state_->SourceIsRegistered(source_id);
+  }
+
+  /** Reports the name for the source with the given `source_id`.
+   @throws std::exception if `source_id` does not map to a registered source. */
+  const std::string& GetName(SourceId source_id) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->GetName(source_id);
   }
 
   /** Reports the name for the source with the given `id`.
-   @throws std::logic_error if `id` does not map to a registered source.  */
+   @throws std::logic_error if `id` does not map to a registered source. */
+  DRAKE_DEPRECATED("2021-04-01", "Please use GetName(SourceId) instead.")
   const std::string& GetSourceName(SourceId id) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->GetName(id);
   }
 
-  /** Reports the number of frames registered to the source with the given `id`.
-   @throws std::logic_error if `id` does not map to a registered source.  */
-  int NumFramesForSource(SourceId id) const {
+  /** Reports the number of frames registered to the source with the given
+   `source_id`.
+   @throws std::logic_error if `source_id` does not map to a registered source.
+   */
+  int NumFramesForSource(SourceId source_id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->NumFramesForSource(id);
+    return state_->NumFramesForSource(source_id);
   }
 
   /** Reports the ids of all of the frames registered to the source with the
-   given source `id`.
-   @throws std::logic_error if `id` does not map to a registered source.  */
-  const std::unordered_set<FrameId>& FramesForSource(SourceId id) const {
+   given source `source_id`.
+   @throws std::logic_error if `source_id` does not map to a registered source.
+   */
+  const std::unordered_set<FrameId>& FramesForSource(SourceId source_id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->FramesForSource(id);
+    return state_->FramesForSource(source_id);
   }
 
   //@}
@@ -198,51 +218,68 @@ class SceneGraphInspector {
   }
 
   /** Reports the _name_ of the geometry source that registered the frame with
-   the given `id`.
-   @throws std::logic_error  If `id` does not map to a registered frame.  */
-  const std::string& GetOwningSourceName(FrameId id) const {
-    DRAKE_DEMAND(state_ != nullptr);
-    return state_->GetOwningSourceName(id);
-  }
-
-  /** Reports the name of the frame with the given `id`.
-   @throws std::logic_error if `id` does not map to a registered frame.
-   @pydrake_mkdoc_identifier{1args_frame_id}
+   the given `frame_id`.
+   @throws std::logic_error  If `frame_id` does not map to a registered frame.
    */
-  const std::string& GetName(FrameId id) const {
+  const std::string& GetOwningSourceName(FrameId frame_id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->GetName(id);
+    return state_->GetOwningSourceName(frame_id);
   }
 
-  /** Reports the frame group for the frame with the given `id`.
-   @throws  std::logic_error if `id` does not map to a registered frame.
+  /** Reports the name of the frame with the given `frame_id`.
+   @throws std::logic_error if `frame_id` does not map to a registered frame.
+   */
+  const std::string& GetName(FrameId frame_id) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->GetName(frame_id);
+  }
+
+  /** Reports the frame group for the frame with the given `frame_id`.
+   @throws  std::logic_error if `frame_id` does not map to a registered frame.
    @internal This value is equivalent to the old "model instance id".  */
-  int GetFrameGroup(FrameId id) const {
+  int GetFrameGroup(FrameId frame_id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->GetFrameGroup(id);
+    return state_->GetFrameGroup(frame_id);
   }
 
-  /** Reports the number of geometries affixed to the frame with the given `id`.
-   This count does _not_ include geometries attached to frames that are
-   descendants of this frame.
-   @throws std::logic_error if `id` does not map to a registered frame.  */
-  int NumGeometriesForFrame(FrameId id) const {
+  /** Reports the number of geometries affixed to the frame with the given
+   `frame_id`. This count does _not_ include geometries attached to frames that
+   are descendants of this frame.
+   @throws std::logic_error if `frame_id` does not map to a registered frame.
+   */
+  int NumGeometriesForFrame(FrameId frame_id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->NumGeometriesForFrame(id);
+    return state_->NumGeometriesForFrame(frame_id);
   }
 
   /** Reports the total number of geometries with the given `role` directly
-   registered to the frame with the given `id`. This count does _not_ include
-   geometries attached to frames that are descendants of this frame.
-   @throws std::logic_error if `id` does not map to a registered frame.  */
-  int NumGeometriesForFrameWithRole(FrameId id, Role role) const {
+   registered to the frame with the given `frame_id`. This count does _not_
+   include geometries attached to frames that are descendants of this frame.
+   @throws std::logic_error if `frame_id` does not map to a registered frame.
+   */
+  int NumGeometriesForFrameWithRole(FrameId frame_id, Role role) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->NumGeometriesForFrameWithRole(id, role);
+    return state_->NumGeometriesForFrameWithRole(frame_id, role);
+  }
+
+  /** Returns geometry ids that have been registered directly to the frame
+   indicated by `frame_id`. If a `role` is provided, only geometries with that
+   role assigned will be returned, otherwise all geometries will be returned.
+   @param frame_id    The id of the frame in question.
+   @param role  The requested role; if omitted, all geometries registered to the
+                frame are returned.
+   @returns The requested unique geometry ids in a consistent order.
+   @throws std::logic_error if `id` does not map to a registered frame.  */
+  std::vector<GeometryId> GetGeometries(
+      FrameId frame_id, const std::optional<Role>& role = std::nullopt) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->GetGeometries(frame_id, role);
   }
 
   /** Reports the id of the geometry with the given `name` and `role`, attached
-   to the frame with the given frame `id`.
-   @param id        The id of the frame whose geometry is being queried.
+   to the frame with the given frame `frame_id`.
+   @param frame_id  The frame_id of the frame whose geometry is being
+                    queried.
    @param role      The assigned role of the desired geometry.
    @param name      The name of the geometry to query for. The name will be
                     canonicalized prior to lookup (see
@@ -250,12 +287,12 @@ class SceneGraphInspector {
                     details).
    @return The id of the queried geometry.
    @throws std::logic_error if no such geometry exists, multiple geometries have
-                            that name, or if the `id` does not map to a
+                            that name, or if the `frame_id` does not map to a
                             registered frame.  */
-  GeometryId GetGeometryIdByName(FrameId id, Role role,
+  GeometryId GetGeometryIdByName(FrameId frame_id, Role role,
                                  const std::string& name) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->GetGeometryIdByName(id, role, name);
+    return state_->GetGeometryIdByName(frame_id, role, name);
   }
 
   //@}
@@ -277,126 +314,168 @@ class SceneGraphInspector {
   }
 
   /** Reports the _name_ of the geometry source that registered the geometry
-   with the given `id`.
-   @throws std::logic_error  If `id` does not map to a registered geometry.  */
-  const std::string& GetOwningSourceName(GeometryId id) const {
+   with the given `geometry_id`.
+   @throws std::logic_error  If `geometry_id` does not map to a registered
+   geometry. */
+  const std::string& GetOwningSourceName(GeometryId geometry_id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->GetOwningSourceName(id);
+    return state_->GetOwningSourceName(geometry_id);
   }
 
   /** Reports the id of the frame to which the given geometry with the given
-   `id` is registered.
-   @throws std::logic_error if `id` does not map to a registered geometry.  */
-  FrameId GetFrameId(GeometryId id) const {
+   `geometry_id` is registered.
+   @throws std::logic_error if `geometry_id` does not map to a registered
+   geometry.  */
+  FrameId GetFrameId(GeometryId geometry_id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->GetFrameId(id);
+    return state_->GetFrameId(geometry_id);
   }
 
-  /** Reports the stored, canonical name of the geometry with the given `id`
-   (see  @ref canonicalized_geometry_names "GeometryInstance" for details).
-   @throws std::logic_error if `id` does not map to a registered geometry.
-   @pydrake_mkdoc_identifier{1args_geometry_id}
-   */
-  const std::string& GetName(GeometryId id) const {
+  /** Reports the stored, canonical name of the geometry with the given
+   `geometry_id` (see  @ref canonicalized_geometry_names "GeometryInstance" for
+   details).
+   @throws std::logic_error if `geometry_id` does not map to a registered
+   geometry.  */
+  const std::string& GetName(GeometryId geometry_id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->GetName(id);
+    return state_->GetName(geometry_id);
   }
 
-  /** Returns the shape specified for the geometry with the given `id`. In order
-   to extract the details of the shape, it should be passed through an
+  /** Returns the shape specified for the geometry with the given `geometry_id`.
+   In order to extract the details of the shape, it should be passed through an
    implementation of a ShapeReifier.  */
-  const Shape& GetShape(GeometryId id) const {
+  const Shape& GetShape(GeometryId geometry_id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->GetShape(id);
+    return state_->GetShape(geometry_id);
   }
 
-  /** Reports the pose of the geometry G with the given `id` in its registered
-   _topological parent_ P, `X_PG`. That topological parent may be a frame F or
-   another geometry. If the geometry was registered directly to F, then
-   `X_PG = X_FG`.
+  /** Reports the pose of the geometry G with the given `geometry_id` in its
+   registered _topological parent_ P, `X_PG`. That topological parent may be a
+   frame F or another geometry. If the geometry was registered directly to F,
+   then `X_PG = X_FG`.
    @sa GetPoseInFrame()
-   @throws std::logic_error if `id` does not map to a registered geometry.  */
-  const math::RigidTransform<double>& GetPoseInParent(GeometryId id) const {
+   @throws std::logic_error if `geometry_id` does not map to a registered
+   geometry.  */
+  const math::RigidTransform<double>& GetPoseInParent(
+      GeometryId geometry_id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->GetPoseInParent(id);
+    return state_->GetPoseInParent(geometry_id);
   }
 
-  /** Reports the pose of the geometry G with the given `id` in its registered
-   frame F (regardless of whether its _topological parent_ is another geometry P
-   or not). If the geometry was registered directly to the frame F, then
-   `X_PG = X_FG`.
+  /** Reports the pose of the geometry G with the given `geometry_id` in its
+   registered frame F (regardless of whether its _topological parent_ is another
+   geometry P or not). If the geometry was registered directly to the frame F,
+   then `X_PG = X_FG`.
    @sa GetPoseInParent()
-   @throws std::logic_error if `id` does not map to a registered geometry.  */
-  const math::RigidTransform<double>& GetPoseInFrame(GeometryId id) const {
+   @throws std::logic_error if `geometry_id` does not map to a registered
+   geometry.  */
+  const math::RigidTransform<double>& GetPoseInFrame(
+      GeometryId geometry_id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->GetPoseInFrame(id);
+    return state_->GetPoseInFrame(geometry_id);
+  }
+
+  /** Return a pointer to the const properties indicated by `role` of the
+   geometry with the given `geometry_id`.
+   @param geometry_id    The identifier for the queried geometry.
+   @param role           The role whose properties are acquired.
+   @return A pointer to the properties (or `nullptr` if there are no such
+           properties).
+   @throws std::exception if `geometry_id` does not map to a registered
+           geometry.  */
+  const GeometryProperties* GetProperties(GeometryId geometry_id,
+                                          Role role) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    switch (role) {
+      case Role::kProximity:
+        return state_->GetProximityProperties(geometry_id);
+      case Role::kIllustration:
+        return state_->GetIllustrationProperties(geometry_id);
+      case Role::kPerception:
+        return state_->GetPerceptionProperties(geometry_id);
+      case Role::kUnassigned:
+        return nullptr;
+    }
+    return nullptr;
   }
 
   /** Returns a pointer to the const proximity properties of the geometry with
-   the given `id`.
-   @param id   The identifier for the queried geometry.
-   @return A pointer to the properties (or nullptr if there are no such
+   the given `geometry_id`.
+   @param geometry_id   The identifier for the queried geometry.
+   @return A pointer to the properties (or `nullptr` if there are no such
            properties).
-   @throws std::logic_error if `id` does not map to a registered geometry.  */
+   @throws std::exception if `geometry_id` does not map to a registered
+           geometry.  */
   const ProximityProperties* GetProximityProperties(
-      GeometryId id) const {
+      GeometryId geometry_id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->GetProximityProperties(id);
+    return state_->GetProximityProperties(geometry_id);
   }
 
   /** Returns a pointer to the const illustration properties of the geometry
-   with the given `id`.
-   @param id   The identifier for the queried geometry.
-   @return A pointer to the properties (or nullptr if there are no such
+   with the given `geometry_id`.
+   @param geometry_id   The identifier for the queried geometry.
+   @return A pointer to the properties (or `nullptr` if there are no such
            properties).
-   @throws std::logic_error if `id` does not map to a registered geometry.  */
+   @throws std::exception if `geometry_id` does not map to a registered
+           geometry.  */
   const IllustrationProperties* GetIllustrationProperties(
-      GeometryId id) const {
+      GeometryId geometry_id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->GetIllustrationProperties(id);
+    return state_->GetIllustrationProperties(geometry_id);
   }
 
   /** Returns a pointer to the const perception properties of the geometry
-   with the given `id`.
-   @param id   The identifier for the queried geometry.
-   @return A pointer to the properties (or nullptr if there are no such
+   with the given `geometry_id`.
+   @param geometry_id   The identifier for the queried geometry.
+   @return A pointer to the properties (or `nullptr` if there are no such
            properties).
-   @throws std::logic_error if `id` does not map to a registered geometry.  */
+   @throws std::exception if `geometry_id` does not map to a registered
+           geometry.  */
   const PerceptionProperties* GetPerceptionProperties(
-      GeometryId id) const {
+      GeometryId geometry_id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->GetPerceptionProperties(id);
+    return state_->GetPerceptionProperties(geometry_id);
   }
 
-  /** Reports true if the two geometries with given ids `id1` and `id2`, define
-   a collision pair that has been filtered out.
-   @throws std::logic_error if either id does not map to a registered
-                            geometry or if any of the geometries do not have
-                            a proximity role.  */
-  bool CollisionFiltered(GeometryId id1, GeometryId id2) const {
+  /** Reports true if the two geometries with given ids `geometry_id1` and
+   `geometry_id2`, define a collision pair that has been filtered out.
+   @throws std::logic_error if either id does not map to a registered geometry
+                            or if any of the geometries do not have a proximity
+                            role.  */
+  bool CollisionFiltered(GeometryId geometry_id1,
+                         GeometryId geometry_id2) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->CollisionFiltered(id1, id2);
+    return state_->CollisionFiltered(geometry_id1, geometry_id2);
   }
 
-  /** Introspects the geometry indicated by the given `id`. The geometry will
-   be passed into the provided `reifier`. This is the mechanism by which
-   external code can discover and respond to the different types of geometries
-   stored in SceneGraph. See ShapeToString as an example.
-   @throws std::logic_error if the `id` does not refer to a valid geometry.  */
-  void Reify(GeometryId id, ShapeReifier* reifier) const {
+  /** Introspects the geometry indicated by the given `geometry_id`. The
+   geometry will be passed into the provided `reifier`. This is the mechanism by
+   which external code can discover and respond to the different types of
+   geometries stored in SceneGraph. See ShapeToString as an example.
+   @throws std::logic_error if the `geometry_id` does not refer to a valid
+   geometry.  */
+  void Reify(GeometryId geometry_id, ShapeReifier* reifier) const {
     DRAKE_DEMAND(state_ != nullptr);
-    state_->GetShape(id).Reify(reifier);
+    state_->GetShape(geometry_id).Reify(reifier);
   }
 
   /** Obtains a new GeometryInstance that copies the geometry indicated by the
-   given `id`.
+   given `geometry_id`.
    @return A new GeometryInstance that is ready to be added as a new geometry.
            All roles/properties will be copied, the shape will be cloned based
            off of the original, but the returned id() will completely unique.
-   @throws std::logic_error if the `id` does not refer to a valid geometry.  */
+   @throws std::logic_error if the `geometry_id` does not refer to a valid
+   geometry.  */
   std::unique_ptr<GeometryInstance>
-  CloneGeometryInstance(GeometryId id) const;
+  CloneGeometryInstance(GeometryId geometry_id) const;
 
+  /** Returns the geometry version that can be used to detect changes
+   to the geometry data associated with geometry roles. The reference returned
+   should not be persisted. If it needs to be persisted, it should be copied. */
+  const GeometryVersion& geometry_version() const {
+    return state_->geometry_version();
+  }
   //@}
 
  private:

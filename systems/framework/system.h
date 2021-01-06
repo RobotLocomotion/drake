@@ -929,6 +929,17 @@ class System : public SystemBase {
         this->GetInputPortBaseOrThrow(__func__, port_index));
   }
 
+  /** Convenience method for the case of exactly one input port. */
+  const InputPort<T>& get_input_port() const {
+    static constexpr char message[] =
+        "Cannot use the get_input_port() convenience method unless there is"
+        " exactly one input port. num_input_ports() = {}";
+    if (num_input_ports() != 1) {
+      throw std::logic_error(fmt::format(message, num_input_ports()));
+    }
+    return get_input_port(0);
+  }
+
   /** Returns the typed input port specified by the InputPortSelection or by
   the InputPortIndex.  Returns nullptr if no port is selected.  This is
   provided as a convenience method since many algorithms provide the same
@@ -942,11 +953,26 @@ class System : public SystemBase {
   @throws std::logic_error if port_name is not found. */
   const InputPort<T>& GetInputPort(const std::string& port_name) const;
 
+  /** Returns true iff the system has an InputPort of the given @p
+   port_name. */
+  bool HasInputPort(const std::string& port_name) const;
+
   // TODO(sherm1) Make this an OutputPortIndex.
   /** Returns the typed output port at index @p port_index. */
   const OutputPort<T>& get_output_port(int port_index) const {
     return dynamic_cast<const OutputPort<T>&>(
         this->GetOutputPortBaseOrThrow(__func__, port_index));
+  }
+
+  /** Convenience method for the case of exactly one output port. */
+  const OutputPort<T>& get_output_port() const {
+    static constexpr char message[] =
+        "Cannot use the get_output_port() convenience method unless there is"
+        " exactly one output port. num_output_ports() = {}";
+    if (num_output_ports() != 1) {
+      throw std::logic_error(fmt::format(message, num_output_ports()));
+    }
+    return get_output_port(0);
   }
 
   /** Returns the typed output port specified by the OutputPortSelection or by
@@ -961,6 +987,11 @@ class System : public SystemBase {
   get_output_port() when performance is a concern.
   @throws std::logic_error if port_name is not found. */
   const OutputPort<T>& GetOutputPort(const std::string& port_name) const;
+
+  /** Returns true iff the system has an OutputPort of the given @p
+   port_name. */
+  bool HasOutputPort(const std::string& port_name) const;
+
 
   /** Returns the number of constraints specified for the system. */
   int num_constraints() const;

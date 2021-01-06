@@ -4,7 +4,6 @@
 
 #include <memory>
 
-#include "robotlocomotion/robot_plan_t.hpp"
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
@@ -13,6 +12,7 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_jaco_command.hpp"
 #include "drake/lcmt_jaco_status.hpp"
+#include "drake/lcmt_robot_plan.hpp"
 #include "drake/manipulation/kinova_jaco/jaco_command_sender.h"
 #include "drake/manipulation/kinova_jaco/jaco_constants.h"
 #include "drake/manipulation/kinova_jaco/jaco_status_receiver.h"
@@ -27,8 +27,6 @@
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/demultiplexer.h"
 #include "drake/systems/primitives/multiplexer.h"
-
-using robotlocomotion::robot_plan_t;
 
 DEFINE_string(urdf, "", "Name of urdf to load");
 DEFINE_int32(num_joints,
@@ -57,8 +55,8 @@ int DoMain() {
   lcm::DrakeLcm lcm;
   systems::DiagramBuilder<double> builder;
 
-  auto plan_sub =
-      builder.AddSystem(systems::lcm::LcmSubscriberSystem::Make<robot_plan_t>(
+  auto plan_sub = builder.AddSystem(
+      systems::lcm::LcmSubscriberSystem::Make<lcmt_robot_plan>(
           kLcmPlanChannel, &lcm));
 
   const std::string urdf =
@@ -182,7 +180,7 @@ int DoMain() {
       &status_context, first_status);
 
   // Run forever, using the lcmt_jaco_status message to dictate when simulation
-  // time advances.  The robot_plan_t message is handled whenever the next
+  // time advances.  The lcmt_robot_plan message is handled whenever the next
   // lcmt_jaco_status occurs.
   drake::log()->info("Controller started");
   while (true) {

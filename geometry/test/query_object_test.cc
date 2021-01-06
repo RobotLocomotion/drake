@@ -120,7 +120,8 @@ TEST_F(QueryObjectTest, CopySemantics) {
   QueryObject<double> from_default{default_object};
   EXPECT_TRUE(is_default(from_default));
 
-  unique_ptr<Context<double>> live_context = scene_graph_.AllocateContext();
+  unique_ptr<Context<double>> live_context =
+      scene_graph_.CreateDefaultContext();
   unique_ptr<QueryObject<double>> live_query_object =
       MakeQueryObject(live_context.get(), &scene_graph_);
   EXPECT_TRUE(is_live(*live_query_object));
@@ -142,7 +143,10 @@ TEST_F(QueryObjectTest, CopySemantics) {
 // the class (SceneGraph) that actually *performs* those queries. The
 // correctness of those queries is handled in geometry_state_test.cc. The
 // wrapper merely confirms that the state is correct and that wrapper
-// functionality is tested in DefaultQueryThrows.
+// functionality is tested in DefaultQueryThrows. Arguably, the question of
+// "do the parameters and return values" get mapped correctly could be under
+// test. But, for now, we assume the parameters and return values are propagated
+// correctly.
 TEST_F(QueryObjectTest, DefaultQueryThrows) {
   QueryObject<double> default_object;
   EXPECT_TRUE(is_default(default_object));
@@ -156,14 +160,23 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   // Enumerate *all* queries to confirm they throw the proper exception.
 
   // Scalar-dependent state queries.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_DEFAULT_ERROR(default_object.X_WF(FrameId::get_new_id()));
   EXPECT_DEFAULT_ERROR(default_object.X_PF(FrameId::get_new_id()));
   EXPECT_DEFAULT_ERROR(default_object.X_WG(GeometryId::get_new_id()));
-
+#pragma GCC diagnostic pop
+  EXPECT_DEFAULT_ERROR(default_object.GetPoseInWorld(FrameId::get_new_id()));
+  EXPECT_DEFAULT_ERROR(default_object.GetPoseInParent(FrameId::get_new_id()));
+  EXPECT_DEFAULT_ERROR(default_object.GetPoseInWorld(GeometryId::get_new_id()));
 
   // Penetration queries.
   EXPECT_DEFAULT_ERROR(default_object.ComputePointPairPenetration());
   EXPECT_DEFAULT_ERROR(default_object.ComputeContactSurfaces());
+  std::vector<ContactSurface<double>> surfaces;
+  std::vector<PenetrationAsPointPair<double>> point_pairs;
+  EXPECT_DEFAULT_ERROR(default_object.ComputeContactSurfacesWithFallback(
+      &surfaces, &point_pairs));
 
   // Signed distance queries.
   EXPECT_DEFAULT_ERROR(
@@ -175,35 +188,35 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
 
   EXPECT_DEFAULT_ERROR(default_object.FindCollisionCandidates());
   EXPECT_DEFAULT_ERROR(default_object.HasCollisions());
-  EXPECT_DEFAULT_ERROR(default_object.X_WF(FrameId::get_new_id()));
-  EXPECT_DEFAULT_ERROR(default_object.X_PF(FrameId::get_new_id()));
-  EXPECT_DEFAULT_ERROR(default_object.X_WG(GeometryId::get_new_id()));
 
   // Render queries.
   const ColorRenderCamera color_camera{
       {"n/a", {2, 2, M_PI}, {0.1, 10}, RigidTransformd{}}, false};
   const DepthRenderCamera depth_camera{
       {"n/a", {2, 2, M_PI}, {0.1, 10}, RigidTransformd{}}, {0.2, 0.9}};
-  const DepthCameraProperties properties(2, 2, M_PI, "dummy_renderer", 0.1,
-                                         5.0);
   const RigidTransformd X_WC = RigidTransformd::Identity();
+
   ImageRgba8U color;
   EXPECT_DEFAULT_ERROR(default_object.RenderColorImage(
-      properties, FrameId::get_new_id(), X_WC, false, &color));
-  EXPECT_DEFAULT_ERROR(default_object.RenderColorImage(
       color_camera, FrameId::get_new_id(), X_WC, &color));
-
   ImageDepth32F depth;
   EXPECT_DEFAULT_ERROR(default_object.RenderDepthImage(
-      properties, FrameId::get_new_id(), X_WC, &depth));
-  EXPECT_DEFAULT_ERROR(default_object.RenderDepthImage(
       depth_camera, FrameId::get_new_id(), X_WC, &depth));
-
   ImageLabel16I label;
   EXPECT_DEFAULT_ERROR(default_object.RenderLabelImage(
-      properties, FrameId::get_new_id(), X_WC, false, &label));
-  EXPECT_DEFAULT_ERROR(default_object.RenderLabelImage(
       color_camera, FrameId::get_new_id(), X_WC, &label));
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  const DepthCameraProperties properties(2, 2, M_PI, "dummy_renderer", 0.1,
+                                         5.0);
+  EXPECT_DEFAULT_ERROR(default_object.RenderColorImage(
+      properties, FrameId::get_new_id(), X_WC, false, &color));
+  EXPECT_DEFAULT_ERROR(default_object.RenderDepthImage(
+      properties, FrameId::get_new_id(), X_WC, &depth));
+  EXPECT_DEFAULT_ERROR(default_object.RenderLabelImage(
+      properties, FrameId::get_new_id(), X_WC, false, &label));
+#pragma GCC diagnostic pop
 
   EXPECT_DEFAULT_ERROR(default_object.GetRenderEngineByName("dummy"));
 
@@ -220,7 +233,7 @@ TEST_F(QueryObjectTest, CreateValidInspector) {
   GeometryId geometry_id = scene_graph_.RegisterGeometry(
       source_id, frame_id, make_unique<GeometryInstance>(
                                identity, make_unique<Sphere>(1.0), "sphere"));
-  unique_ptr<Context<double>> context = scene_graph_.AllocateContext();
+  unique_ptr<Context<double>> context = scene_graph_.CreateDefaultContext();
   unique_ptr<QueryObject<double>> query_object =
       MakeQueryObject(context.get(), &scene_graph_);
 
@@ -238,7 +251,7 @@ TEST_F(QueryObjectTest, CreateValidInspector) {
 TEST_F(QueryObjectTest, BakedCopyHasFullUpdate) {
   SourceId s_id = scene_graph_.RegisterSource("BakeTest");
   FrameId frame_id = scene_graph_.RegisterFrame(s_id, GeometryFrame("frame"));
-  unique_ptr<Context<double>> context = scene_graph_.AllocateContext();
+  unique_ptr<Context<double>> context = scene_graph_.CreateDefaultContext();
   RigidTransformd X_WF{Vector3d{1, 2, 3}};
   FramePoseVector<double> poses{{frame_id, X_WF}};
   scene_graph_.get_source_pose_port(s_id).FixValue(context.get(), poses);

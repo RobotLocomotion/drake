@@ -24,7 +24,7 @@ content = """
     "spdlog": {
       "Type": "dylib",
       "Includes": ["@prefix@/include/spdlog"],
-      "Location": "@prefix@/lib/libspdlog.so",
+      "Location": "@prefix@/lib/libdrake_spdlog.so",
       "Definitions": [
         "HAVE_SPDLOG",
         "SPDLOG_COMPILED_LIB",

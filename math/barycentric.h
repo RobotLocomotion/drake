@@ -130,6 +130,7 @@ class BarycentricMesh {
       const Eigen::Ref<const MatrixX<ValueT>>& mesh_values,
       const Eigen::Ref<const VectorX<T>>& input,
       EigenPtr<VectorX<ValueT>> output) const {
+    DRAKE_DEMAND(output != nullptr);
     DRAKE_DEMAND(input.size() == get_input_size());
     DRAKE_DEMAND(mesh_values.cols() == get_num_mesh_points());
 

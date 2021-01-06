@@ -118,7 +118,7 @@ void TimeVaryingAffineSystem<T>::CalcOutputY(
 template <typename T>
 void TimeVaryingAffineSystem<T>::DoCalcTimeDerivatives(
     const Context<T>& context, ContinuousState<T>* derivatives) const {
-  if (num_states_ == 0) return;
+  if (num_states_ == 0 || time_period_ > 0) return;
 
   const T t = context.get_time();
 

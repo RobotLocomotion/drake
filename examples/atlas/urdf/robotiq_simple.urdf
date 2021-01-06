@@ -1,6 +1,5 @@
-<?xml version="1.0" ?>
-
-<robot name="s-model_articulated" xmlns:xacro="http://ros.org/wiki/xacro">
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="s-model_articulated">
   <link name="finger_1_link_0">
     <visual>
       <origin rpy="0 0 0" xyz="0.020 0 0"/>
@@ -31,7 +30,7 @@
         <box size=".028 .01 .03"/>
       </geometry>
       <material name="yellow">
-	      <color rgba="0 1 1 1"/>
+        <color rgba="0 1 1 1"/>
       </material>
     </collision>
     <inertial>
@@ -42,10 +41,10 @@
   </link>
   <link name="finger_1_link_2">
     <!--
-			NOTE: This link has an offset in the z-direction based on the models that were
-			used to generate grap-it poses.  With the offset below the model appears visually
-			correct, but it is suspect.
-			-->
+      NOTE: This link has an offset in the z-direction based on the models that were
+      used to generate grap-it poses.  With the offset below the model appears visually
+      correct, but it is suspect.
+      -->
     <visual>
       <origin rpy="0 0 0" xyz="0.039 0 0.0075"/>
       <geometry>
@@ -118,15 +117,15 @@
         <color rgba=".2 .2 .2 1"/>
       </material>
     </visual>
-    <!--<collision>	
-				<origin xyz="-0.0455 0.0414 0.036" rpy="0 3.1416 -1.57"/>
-				<geometry>
-					<mesh filename="package://Atlas/urdf/meshes/s-model_articulated/collision/link_0.STL" />
-				</geometry>
-				<material name="yellow">
-					<color rgba="0 1 1 1"/>
-				</material>
-			</collision>-->
+    <!--<collision>
+        <origin xyz="-0.0455 0.0414 0.036" rpy="0 3.1416 -1.57"/>
+        <geometry>
+          <mesh filename="package://Atlas/urdf/meshes/s-model_articulated/collision/link_0.STL" />
+        </geometry>
+        <material name="yellow">
+          <color rgba="0 1 1 1"/>
+        </material>
+      </collision>-->
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <mass value="0.05"/>
@@ -156,10 +155,10 @@
   </link>
   <link name="finger_2_link_2">
     <!--
-			NOTE: This link has an offset in the z-direction based on the models that were
-			used to generate grap-it poses.  With the offset below the model appears visually
-			correct, but it is suspect.
-			-->
+      NOTE: This link has an offset in the z-direction based on the models that were
+      used to generate grap-it poses.  With the offset below the model appears visually
+      correct, but it is suspect.
+      -->
     <visual>
       <origin rpy="0 0 0" xyz="0.039 0 0.0075"/>
       <geometry>
@@ -232,15 +231,15 @@
         <color rgba=".2 .2 .2 1"/>
       </material>
     </visual>
-    <!--<collision>	
-				<origin xyz="-0.0455 0.0414 0.036" rpy="0 3.1416 -1.57"/>
-				<geometry>
-					<mesh filename="package://Atlas/urdf/meshes/s-model_articulated/collision/link_0.STL" />
-				</geometry>
-				<material name="yellow">
-					<color rgba="0 1 1 1"/>
-				</material>
-			</collision>-->
+    <!--<collision>
+        <origin xyz="-0.0455 0.0414 0.036" rpy="0 3.1416 -1.57"/>
+        <geometry>
+          <mesh filename="package://Atlas/urdf/meshes/s-model_articulated/collision/link_0.STL" />
+        </geometry>
+        <material name="yellow">
+          <color rgba="0 1 1 1"/>
+        </material>
+      </collision>-->
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <mass value="0.05"/>
@@ -270,10 +269,10 @@
   </link>
   <link name="finger_middle_link_2">
     <!--
-			NOTE: This link has an offset in the z-direction based on the models that were
-			used to generate grap-it poses.  With the offset below the model appears visually
-			correct, but it is suspect.
-			-->
+      NOTE: This link has an offset in the z-direction based on the models that were
+      used to generate grap-it poses.  With the offset below the model appears visually
+      correct, but it is suspect.
+      -->
     <visual>
       <origin rpy="0 0 0" xyz="0.039 0 0.0075"/>
       <geometry>
@@ -378,51 +377,40 @@
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 1.57" xyz="0.0455 0.0214 0"/>
   </joint>
-
   <transmission name="finger_middle_joint_0" type="SimpleTransmission">
     <actuator name="finger_middle_joint_0"/>
     <joint name="finger_middle_joint_0"/>
   </transmission>
-
   <transmission name="finger_middle_joint_1" type="SimpleTransmission">
     <actuator name="finger_middle_joint_1"/>
     <joint name="finger_middle_joint_1"/>
   </transmission>
-
   <transmission name="finger_middle_joint_2" type="SimpleTransmission">
     <actuator name="finger_middle_joint_2"/>
     <joint name="finger_middle_joint_2"/>
   </transmission>
-
   <transmission name="finger_1_joint_0" type="SimpleTransmission">
     <actuator name="finger_1_joint_0"/>
     <joint name="finger_1_joint_0"/>
   </transmission>
-
   <transmission name="finger_1_joint_1" type="SimpleTransmission">
     <actuator name="finger_1_joint_1"/>
     <joint name="finger_1_joint_1"/>
   </transmission>
-
   <transmission name="finger_1_joint_2" type="SimpleTransmission">
     <actuator name="finger_1_joint_2"/>
     <joint name="finger_1_joint_2"/>
   </transmission>
-
   <transmission name="finger_2_joint_0" type="SimpleTransmission">
     <actuator name="finger_2_joint_0"/>
     <joint name="finger_2_joint_0"/>
   </transmission>
-
   <transmission name="finger_2_joint_1" type="SimpleTransmission">
     <actuator name="finger_2_joint_1"/>
     <joint name="finger_2_joint_1"/>
   </transmission>
-
   <transmission name="finger_2_joint_2" type="SimpleTransmission">
     <actuator name="finger_2_joint_2"/>
     <joint name="finger_2_joint_2"/>
   </transmission>
-
 </robot>
-
