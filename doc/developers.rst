@@ -204,6 +204,10 @@ alignment with the team's goals. During this review, you and your reviewer
 should also strive to minimize the number of changes that will be necessary
 in platform review.
 
+If you are still not sure whom to assign for code review, consider using
+`GitHub's reviewer suggestions <https://docs.github.com/en/free-pro-team@latest/github/collaborating-with-issues-and-pull-requests/requesting-a-pull-request-review>`_ (powered by ``git blame``), or ask on the
+`#onramp <https://drakedevelopers.slack.com/archives/C2CK4CWE7>`_ Slack channel.
+
 **Platform Review.** After your feature reviewer has signed off on your change,
 reassign it to a Drake owner for platform review. The owner will inspect for
 architectural compatibility, stability, performance, test coverage, and style.
