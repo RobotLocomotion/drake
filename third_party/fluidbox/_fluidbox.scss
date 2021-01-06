@@ -1,0 +1,95 @@
+// Variable 
+$fluidbox__transition-duration: .5s !default;
+$fluidbox__overlay-bg-color: rgba(255,255,255,.85) !default;
+$fluidbox__animation-bg-color: $fluidbox__overlay-bg-color !default;
+
+// Animation
+@keyframes fluidboxLoading {
+	0%		{ transform: translate(-50%, -50%) rotateX(0)		rotateY(0);			}
+	50%		{ transform: translate(-50%, -50%) rotateX(-180deg)	rotateY(0);			}
+	100%	{ transform: translate(-50%, -50%) rotateX(-180deg)	rotateY(-180deg);	}
+}
+
+// Rules
+.fluidbox {
+	outline: none;
+}
+.fluidbox__overlay {
+	background-color: $fluidbox__overlay-bg-color;
+	cursor: pointer;
+	cursor: zoom-out;
+	opacity: 0;
+	pointer-events: none;
+	position: fixed;
+	top: -100%;		/* Negative top and bottom is to fix some Safari cases where image got blurry */
+	left: 0;
+	bottom: -100%;	/* Negative top and bottom is to fix some Safari cases where image got blurry */
+	right: 0;
+	/* Transition time for overlay is halved to ensure that flickering doesn't happen */
+	transition: all $fluidbox__transition-duration ease-in-out;
+	
+	.fluidbox--opened & { pointer-events: auto;}
+}
+.fluidbox__wrap {
+	background-position: center center;
+	background-size: cover;
+	margin: 0 auto;
+	position: relative;
+	transition: all $fluidbox__transition-duration ease-in-out;
+}
+.fluidbox__thumb {
+	transition: opacity 0s ease-in-out 0s;
+	/* To prevent flickering, we delay the showing of the image */
+	.fluidbox--closed & { transition: opacity 0s ease-in-out 0s; }
+}
+.fluidbox__ghost {
+	background-size: 100% 100%;
+	background-position: center center;	
+	background-repeat: no-repeat;
+	position: absolute;
+	transition: opacity 0s 0s, transform $fluidbox__transition-duration 0s;
+
+	.fluidbox--opened & {
+		cursor: pointer;
+		cursor: -webkit-zoom-out;
+		cursor: -moz-zoom-out;
+		cursor: zoom-out;
+	}
+	.fluidbox--closed & {
+		transition: opacity 0s $fluidbox__transition-duration, transform $fluidbox__transition-duration 0s;
+	}
+}
+.fluidbox__loader {
+	opacity: 0;
+	perspective: 200px;
+	pointer-events: none;
+	position: absolute;
+	top: 0;
+	left: 0;
+	bottom: 0;
+	right: 0;
+
+	&::before {
+		/* You can replace this with any color you want, or even a loading gif if desired */
+		background-color: $fluidbox__animation-bg-color;
+		content: '';
+		transform-style: preserve-3d;
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		width: 20%;
+		padding-bottom: 20%;
+		transform: translate(-50%, -50%);
+		transition-property: transform;
+		transition-duration: $fluidbox__transition-duration;
+		transition-delay: 0s;
+	}
+}
+
+.fluidbox--loading .fluidbox__loader {
+	opacity: 1;
+	transition: opacity $fluidbox__transition-duration ease-in-out $fluidbox__transition-duration;
+	&::before {
+		animation: fluidboxLoading 1s 0s infinite ease-in-out forwards;
+	}
+}

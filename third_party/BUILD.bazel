@@ -18,6 +18,21 @@ exports_files(
     ],
 )
 
+exports_files(
+    glob(["history_js/**"]),
+    licenses = ["notice"],  # BSD-3-Clause
+)
+
+exports_files(
+    glob(["waypoints/**"]),
+    licenses = ["notice"],  # MIT
+)
+
+exports_files(
+    glob(["fluidbox/**"]),
+    licenses = ["notice"],  # MIT
+)
+
 add_lint_tests(
     bazel_lint_extra_srcs = [
         "com_github_bazelbuild_rules_cc/whole_archive.bzl",
