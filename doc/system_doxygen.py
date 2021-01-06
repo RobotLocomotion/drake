@@ -15,21 +15,17 @@
 import re
 import sys
 import yaml
+from textwrap import indent
 
 
-def generate_system_html(comment):
+def system_yaml_to_html(system_yaml):
     """
-    Converts a yaml description of a system into an html table.  It is designed to accept the text *between* (and not including) the @system and @endsystem tags.  It allows C++ comments:
-      - /// and leading * comments markings are simply removed, as we expect the tag to reside in a comment block.
-      - // comments imply that the remainder of the line should be removed.
+    Converts a yaml description of a system into an html table.
     """
-    comment = re.sub(r'\/\/\/', '', comment)
-    comment = re.sub(r'\/\/.*', '', comment)
-    comment = re.sub(r'\n\s*\*', '\n', comment)
     try:
-        y = yaml.load(comment, Loader=yaml.SafeLoader)
+        y = yaml.load(system_yaml, Loader=yaml.SafeLoader)
     except yaml.scanner.ScannerError as e:
-        print(comment, file=sys.stderr)
+        print(system_yaml, file=sys.stderr)
         raise(e)
 
     input_port_html = ""
@@ -50,9 +46,33 @@ def generate_system_html(comment):
     return html
 
 
-def process_doxygen_system_tags(s, add_rst_preamble=False):
+def system_yaml_to_rst_directive(system_yaml):
     """
-    Given a multiline string s (potentially the entire contents of a c++ file), this finds the @system / @endsystem tags and calls generate_system_html() on their contents.
+    Converts a raw yaml description of a system into a corresponding reST directive.
+    """
+    content = indent(system_yaml.strip(), '    ')
+    return f".. pydrake_system::\n\n{content}"
+
+
+def strip_cpp_comment_cruft(comment):
+    """
+    Intended to process the text *between* (and not including) the @system and
+    @endsystem tags.
+    This normalizes against C++ comments as they are seen by `mkdoc`
+    (`clang.cindex`).
+    - /// and leading * comments markings are simply removed, as we expect the
+    tag to reside in a comment block.
+    - // comments imply that the remainder of the line should be removed.
+    """
+    comment = re.sub(r'///', '', comment)
+    comment = re.sub(r'\s*//.*', '', comment)
+    comment = re.sub(r'^\s*\*', '', comment, flags=re.MULTILINE)
+    return comment
+
+
+def _process_doxygen(s, transform_func):
+    """
+    Given a multiline string s (potentially the entire contents of a c++ file), this finds the @system / @endsystem tags and calls system_yaml_to_html() on their contents.
     """ 
     index = 0
     start_tag = "@system"
@@ -60,12 +80,20 @@ def process_doxygen_system_tags(s, add_rst_preamble=False):
     while s.find(start_tag, index) > 0:
         start = s.find(start_tag, index)
         end = s.find(end_tag, start + len(start_tag))
-        html = generate_system_html(s[start + len(start_tag):end])
-        if add_rst_preamble:
-            html = ".. raw:: html\n\n   " + html + "\n\n"
-        s = s[:start] + html + s[end + len(end_tag):]
-        index = start + len(html)
+        comment = s[start + len(start_tag):end]
+        comment_stripped = strip_cpp_comment_cruft(comment)
+        transformed = transform_func(comment_stripped)
+        s = s[:start] + transformed + s[end + len(end_tag):]
+        index = start + len(transformed)
     return s
+
+
+def process_doxygen_to_sphinx(s):
+    return _process_doxygen(s, system_yaml_to_rst_directive)
+
+
+def process_doxygen_system_tags(s):
+    return _process_doxygen(s, system_yaml_to_html)
 
 
 if __name__ == "__main__":

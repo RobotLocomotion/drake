@@ -1,3 +1,19 @@
+"""
+Regression tests for coverage.
+
+To regenerate regression artifacts, run the following (after the test fails):
+
+    cp \
+        bazel-bin/tools/workspace/pybind11/file_coverage_test.csv \
+        tools/workspace/pybind11/test/sample_header_file_coverage_expected.csv
+    cp \
+        bazel-bin/tools/workspace/pybind11/class_coverage_test.csv \
+        tools/workspace/pybind11/test/sample_header_class_coverage_expected.csv
+    cp \
+        bazel-bin/tools/workspace/pybind11/sample_header_documentation_test.xml \
+        tools/workspace/pybind11/test/sample_header_documentation_pybind_expected.xml
+"""  # noqa
+
 import filecmp
 import os
 import sys
@@ -34,7 +50,10 @@ class TestLibclangParser(unittest.TestCase):
     def assert_file_equal(self, actual_file, expected_file):
         actual = _read(actual_file)
         expected = _read(expected_file)
-        self.assertMultiLineEqual(actual, expected, actual_file)
+        self.assertMultiLineEqual(
+            actual,
+            expected,
+            f"Files are different:\n  {actual_file}\n  {expected_file}")
 
     def assert_xml_file_semantically_equal(self, actual_file, expected_file):
         """Read two documents and compare the re-exported string of their
@@ -43,7 +62,11 @@ class TestLibclangParser(unittest.TestCase):
         actual = _read_xml(actual_file)
         expected = _read_xml(expected_file)
         self.maxDiff = None
-        self.assertMultiLineEqual(actual, expected, actual_file)
+        self.assertMultiLineEqual(
+            actual,
+            expected,
+            f"Files have semantic XML differences:"
+            f"\n  {actual_file}\n  {expected_file}")
 
     def get_test_file(self, relpath):
         return os.path.join("tools/workspace/pybind11", relpath)

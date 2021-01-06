@@ -34,6 +34,7 @@ drake_py_binary(
     deps = [
         "//bindings/pydrake",  # We must import `pydrake` to document it.
         "//doc:sphinx_base",
+        "//doc:system_doxygen",
     ],
 )
 
