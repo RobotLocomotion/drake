@@ -19,6 +19,18 @@ if ! command -v brew &>/dev/null; then
     "$(/usr/bin/curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 fi
 
+# Do not automatically update before running brew install, brew upgrade, or brew
+# tap during execution of this script. We manually update where necessary and
+# retry if the update fails.
+export HOMEBREW_NO_AUTO_UPDATE=1
+
+# Do not automatically cleanup installed, upgraded, and/or reinstalled formulae
+# during execution of this script. Manually run brew cleanup after the script
+# completes or wait for the next automatic cleanup if necessary
+export HOMEBREW_NO_INSTALL_CLEANUP=1
+
+brew update
+
 # TODO(jamiesnape): Remove lines tapping robotlocomotion/director and
 # uninstalling ipopt@3.11, vtk@8.2, ospray@1.8, and embree@3.5 on or after
 # 2021-03-01.
