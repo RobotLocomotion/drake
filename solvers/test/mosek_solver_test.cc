@@ -82,8 +82,9 @@ TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   }
 }
 
-INSTANTIATE_TEST_SUITE_P(MosekTest, TestEllipsoidsSeparation,
-                        ::testing::ValuesIn(GetEllipsoidsSeparationProblems()));
+INSTANTIATE_TEST_SUITE_P(
+    MosekTest, TestEllipsoidsSeparation,
+    ::testing::ValuesIn(GetEllipsoidsSeparationProblems()));
 
 TEST_P(TestQPasSOCP, TestSOCP) {
   MosekSolver mosek_solver;
@@ -93,7 +94,7 @@ TEST_P(TestQPasSOCP, TestSOCP) {
 }
 
 INSTANTIATE_TEST_SUITE_P(MosekTest, TestQPasSOCP,
-                        ::testing::ValuesIn(GetQPasSOCPProblems()));
+                         ::testing::ValuesIn(GetQPasSOCPProblems()));
 
 TEST_P(TestFindSpringEquilibrium, TestSOCP) {
   MosekSolver mosek_solver;
@@ -183,7 +184,7 @@ GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithOverlappingVariables) {
 GTEST_TEST(TestExponentialConeProgram, ExponentialConeTrivialExample) {
   MosekSolver solver;
   if (solver.available()) {
-    ExponentialConeTrivialExample(solver, 1E-5);
+    ExponentialConeTrivialExample(solver, 1E-5, true);
   }
 }
 
@@ -232,7 +233,7 @@ GTEST_TEST(MosekTest, SolverOptionsTest) {
   prog.AddLinearConstraint(100 * x(0) + 100 * x(1) <= 1);
   prog.AddConstraint(x(0) >= 0);
   prog.AddConstraint(x(1) >= 0);
-  prog.AddLinearCost(1E5* x(0) + x(1));
+  prog.AddLinearCost(1E5 * x(0) + x(1));
 
   SolverOptions solver_options;
   solver_options.SetOption(MosekSolver::id(), "MSK_DPAR_DATA_TOL_C_HUGE", 1E3);
@@ -461,6 +462,22 @@ GTEST_TEST(MosekTest, EqualityConstrainedQPDualSolution2) {
   MosekSolver solver;
   if (solver.available()) {
     TestEqualityConstrainedQPDualSolution2(solver);
+  }
+}
+
+GTEST_TEST(MosekSolver, SocpDualSolution1) {
+  MosekSolver solver;
+  if (solver.available()) {
+    SolverOptions solver_options{};
+    TestSocpDualSolution1(solver, solver_options, 1E-7);
+  }
+}
+
+GTEST_TEST(MosekSolver, SocpDualSolution2) {
+  MosekSolver solver;
+  if (solver.available()) {
+    SolverOptions solver_options{};
+    TestSocpDualSolution2(solver, solver_options, 1E-6, true);
   }
 }
 
