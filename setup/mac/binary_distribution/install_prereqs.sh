@@ -15,7 +15,8 @@ if command -v conda &>/dev/null; then
 fi
 
 if ! command -v brew &>/dev/null; then
-  /usr/bin/ruby -e "$(/usr/bin/curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+  /bin/bash -c \
+    "$(/usr/bin/curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 fi
 
 # TODO(jamiesnape): Remove lines tapping robotlocomotion/director and
