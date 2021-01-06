@@ -38,7 +38,7 @@
 import re
 import textwrap
 
-from drake.doc.system_doxygen import process_doxygen_system_tags
+from drake.doc.system_doxygen import process_doxygen_to_sphinx
 
 
 def process_comment(comment):
@@ -256,7 +256,7 @@ def process_doxygen_commands(s):
         s = re.sub(r'[@\\]%s(?:\{\.\w+\})?\s?(.*?)\s?[@\\]%s' % (start_, end_),
                    r"```\n\1\n```\n", s, flags=re.DOTALL)
 
-    s = process_doxygen_system_tags(s, add_rst_preamble=True)
+    s = process_doxygen_to_sphinx(s)
 
     # TODO (betsymcphail): Not tested
     s = re.sub(r'[@\\](?:end)?htmlonly\s+', r'', s)
