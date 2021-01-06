@@ -35,16 +35,16 @@ if [[ "${EUID}" -eq 0 ]]; then
   exit 1
 fi
 
-if ! command -v /usr/local/bin/brew &>/dev/null; then
+if ! command -v brew &>/dev/null; then
   echo 'ERROR: brew is NOT installed. Please ensure that the prerequisites for binary distributions have been installed.' >&2
   exit 4
 fi
 
-/usr/local/bin/brew update
-/usr/local/bin/brew bundle --file="${BASH_SOURCE%/*}/Brewfile" --no-lock
+brew update
+brew bundle --file="${BASH_SOURCE%/*}/Brewfile" --no-lock
 
 if [[ "${with_maintainer_only}" -eq 1 ]]; then
-  /usr/local/bin/brew bundle \
+  brew bundle \
     --file="${BASH_SOURCE%/*}/Brewfile-maintainer-only" --no-lock
 fi
 
