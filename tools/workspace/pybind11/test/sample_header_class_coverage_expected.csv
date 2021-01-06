@@ -7,6 +7,7 @@ drake::mkdoc_test::DrakeDeprecatedClass,0/3,,,,,,,0/3
 drake::mkdoc_test::DrakeDeprecatedTemplateClass,,,,,,,,
 drake::mkdoc_test::Struct,0/2,,,,,,,
 drake::mkdoc_test::TemplateClass,0/3,,,,,,,0/3
+namespace_1::MySimpleSystem,,,,,,,,
 namespace_1::namespace_2::DummyClass,1/5,,,0/1,,,,1/4
 namespace_1::namespace_2::Struct1,8/8,,,,,,,
 namespace_1::namespace_2::Struct2,,,,,,,,

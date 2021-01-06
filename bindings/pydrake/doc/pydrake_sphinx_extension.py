@@ -13,14 +13,20 @@ For guidance, see:
 
 from collections import namedtuple
 import re
-import warnings
+from textwrap import indent
 from typing import Any, Tuple
+import warnings
 
+from docutils import nodes
+from docutils.parsers.rst import Directive
+from docutils.statemachine import ViewList
 from sphinx import version_info as sphinx_version
 from sphinx.locale import _
 import sphinx.domains.python as pydoc
 from sphinx.ext import autodoc
+from sphinx.util.nodes import nested_parse_with_titles
 
+from drake.doc.system_doxygen import system_yaml_to_html
 from pydrake.common.cpp_template import TemplateBase
 from pydrake.common.deprecation import DrakeDeprecationWarning
 
@@ -363,6 +369,42 @@ def autodoc_member_order_function(app, documenter):
     return fullname.lower()
 
 
+class PydrakeSystemDirective(Directive):
+    """
+    Translates `pydrake_system` directives (with YAML) to `raw` HTML
+    directives.
+
+    See also:
+    - https://www.sphinx-doc.org/en/1.6.7/extdev/tutorial.html#the-directive-classes
+    - https://docutils.sourceforge.io/docs/howto/rst-directives.html#error-handling
+    - Example: https://github.com/sphinx-contrib/autoprogram/blob/0.1.5/sphinxcontrib/autoprogram.py
+    """  # noqa
+
+    has_content = True
+
+    def run(self):
+        system_yaml = '\n'.join(self.content)
+        try:
+            system_html = system_yaml_to_html(system_yaml)
+        except TypeError as e:
+            raise self.severe(f"pydrake_system error: {e}")
+        raw_content = indent(system_html.strip(), '   ')
+        raw_rst = f".. raw:: html\n\n{raw_content}"
+        node = _parse_rst(self.state, raw_rst)
+        return node.children
+
+
+def _parse_rst(state, rst_text):
+    # Adapted from `autoprogram` source.
+    result = ViewList()
+    for line in rst_text.splitlines():
+        result.append(line, '<parsed>')
+    node = nodes.section()
+    node.document = state.document
+    nested_parse_with_titles(state, result, node)
+    return node
+
+
 def setup(app):
     """Installs Drake-specific extensions and patches.
     """
@@ -370,6 +412,8 @@ def setup(app):
         app.add_css_file('css/custom.css')
     else:
         app.add_stylesheet('css/custom.css')
+    # Add directive to process system doxygen.
+    app.add_directive('pydrake_system', PydrakeSystemDirective)
     # Do not warn on Drake deprecations.
     # TODO(eric.cousineau): See if there is a way to intercept this.
     warnings.simplefilter('ignore', DrakeDeprecationWarning)
