@@ -9,9 +9,9 @@ namespace multibody {
 namespace fixed_fem {
 namespace test {
 namespace {
-const ElementIndex kElementIndex = ElementIndex(0);
-const std::array<NodeIndex, 3> kNodeIndices = {
-    {NodeIndex(0), NodeIndex(1), NodeIndex(2)}};
+const ElementIndex kZeroIndex = ElementIndex(0);
+const std::array<NodeIndex, DummyElementTraits::kNumNodes> kNodeIndices = {
+    {NodeIndex(0), NodeIndex(1)}};
 
 class FemElementTest : public ::testing::Test {
  protected:
@@ -26,27 +26,15 @@ class FemElementTest : public ::testing::Test {
   static VectorX<double> qdot() { return Vector3<double>(0.3, 0.4, 0.5); }
 
   /* FemElement under test. */
-  DummyElement element_{kElementIndex, kNodeIndices};
+  DummyElement element_{kZeroIndex, kNodeIndices};
 };
 
-TEST_F(FemElementTest, Basic) {
-  EXPECT_EQ(element_.natural_dimension(),
-            DummyElementTraits::kNaturalDimension);
-  EXPECT_EQ(element_.spatial_dimension(),
-            DummyElementTraits::kSpatialDimension);
-  EXPECT_EQ(element_.solution_dimension(),
-            DummyElementTraits::kSolutionDimension);
-  EXPECT_EQ(element_.num_quadrature_points(),
-            DummyElementTraits::kNumQuadraturePoints);
-  EXPECT_EQ(element_.num_nodes(), DummyElementTraits::kNumNodes);
-  EXPECT_EQ(element_.num_dofs(), DummyElementTraits::kNumDofs);
-  EXPECT_EQ(element_.ode_order(), DummyElementTraits::kODEOrder);
+TEST_F(FemElementTest, Constructor) {
   EXPECT_EQ(element_.node_indices(), kNodeIndices);
-  EXPECT_EQ(element_.element_index(), kElementIndex);
-  EXPECT_EQ(element_.MakeElementCacheEntry(),
-            DummyElementCacheEntry(kElementIndex));
+  EXPECT_EQ(element_.element_index(), kZeroIndex);
 }
 
+/* Test that CalcResidual() is calling the expected DoCalcResidual(). */
 TEST_F(FemElementTest, Residual) {
   FemState<DummyElement> state = MakeFemState();
   Vector<T, DummyElementTraits::kNumDofs> residual;
@@ -54,6 +42,8 @@ TEST_F(FemElementTest, Residual) {
   EXPECT_EQ(residual, element_.dummy_residual());
 }
 
+/* Test that CalcStiffnessMatrix() is calling the expected
+ DoCalcStiffnessMatrix(). */
 TEST_F(FemElementTest, StiffnessMatrix) {
   FemState<DummyElement> state = MakeFemState();
   Eigen::Matrix<T, DummyElementTraits::kNumDofs, DummyElementTraits::kNumDofs>
@@ -62,6 +52,8 @@ TEST_F(FemElementTest, StiffnessMatrix) {
   EXPECT_EQ(K, element_.dummy_stiffness_matrix());
 }
 
+/* Test that CalcDampingMatrix() is calling the expected DoCalcDampingMatrix().
+ */
 TEST_F(FemElementTest, DampingMatrix) {
   FemState<DummyElement> state = MakeFemState();
   Eigen::Matrix<T, DummyElementTraits::kNumDofs, DummyElementTraits::kNumDofs>
@@ -70,6 +62,7 @@ TEST_F(FemElementTest, DampingMatrix) {
   EXPECT_EQ(D, element_.dummy_damping_matrix());
 }
 
+/* Test that CalcMassMatrix() is calling the expected DoCalcMassMatrix(). */
 TEST_F(FemElementTest, MassMatrix) {
   FemState<DummyElement> state = MakeFemState();
   Eigen::Matrix<T, DummyElementTraits::kNumDofs, DummyElementTraits::kNumDofs>

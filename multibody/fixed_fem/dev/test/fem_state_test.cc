@@ -11,31 +11,33 @@ namespace multibody {
 namespace fixed_fem {
 namespace test {
 namespace {
-// Number of state dofs.
 static constexpr int kNumDofs = 3;
 static constexpr int kNumElements = 2;
-const std::vector<ElementIndex> element_indices{ElementIndex(0),
+const std::vector<ElementIndex> kElementIndices{ElementIndex(0),
                                                 ElementIndex(1)};
+const std::array<NodeIndex, DummyElementTraits::kNumNodes> kNodeIndices = {
+    {NodeIndex(0), NodeIndex(1)}};
+
 using Eigen::VectorXd;
 
 class FemStateTest : public ::testing::Test {
  protected:
   void SetUp() {
-    /* Create a couple of dummy cache entries. */
-    state_.ResetElementCache(MakeElementCache());
+    elements_ = std::make_unique<std::vector<DummyElement>>();
+    for (ElementIndex element_id : kElementIndices) {
+      elements_->emplace_back(element_id, kNodeIndices);
+    }
+    state_.MakeElementData(*elements_);
   }
 
   /* Default values for the state. */
   static VectorX<double> q() { return Vector3<double>(0.1, 0.2, 0.3); }
   static VectorX<double> qdot() { return Vector3<double>(0.3, 0.4, 0.5); }
 
-  static std::vector<DummyElementCacheEntry> MakeElementCache() {
-    return {DummyElementCacheEntry(element_indices[0], 1.23),
-            DummyElementCacheEntry(element_indices[1], 4.56)};
-  }
-
+  // TODO(xuchenhan-tri): Test the other constructors of FemState.
   /* FemState under test. */
   FemState<DummyElement> state_{q(), qdot()};
+  std::unique_ptr<std::vector<DummyElement>> elements_;
 };
 
 /* Verify setters and getters are working properly. */
@@ -65,64 +67,35 @@ TEST_F(FemStateTest, SetStates) {
 TEST_F(FemStateTest, ConservativeResize) {
   state_.Resize(2 * kNumDofs);
   EXPECT_EQ(state_.num_generalized_positions(), 2 * kNumDofs);
-  // The first kDof entres should remain unchanged.
+  /* The first kDof entries should remain unchanged. */
   EXPECT_EQ(state_.qdot().head(kNumDofs), qdot());
   EXPECT_EQ(state_.q().head(kNumDofs), q());
+  /* After downsizing, the first `smaller_size` entries should remain unchanged.
+   */
+  int smaller_size = kNumDofs / 2;
+  state_.Resize(smaller_size);
+  EXPECT_EQ(state_.num_generalized_positions(), smaller_size);
+  EXPECT_EQ(state_.qdot().head(smaller_size), qdot().head(smaller_size));
+  EXPECT_EQ(state_.q().head(smaller_size), q().head(smaller_size));
 }
 
-TEST_F(FemStateTest, ElementCache) {
+/* Test that element_data() retrieves the updated data. */
+TEST_F(FemStateTest, ElementData) {
   EXPECT_EQ(state_.element_cache_size(), kNumElements);
-  const std::vector<DummyElementCacheEntry> expected_cache = MakeElementCache();
   for (int i = 0; i < kNumElements; ++i) {
-    const DummyElementCacheEntry cache_entry =
-        state_.element_cache_entry(element_indices[i]);
-    EXPECT_EQ(cache_entry, expected_cache[i]);
-  }
-  /* An exception is expected if the element cache doesn't exist. */
-  EXPECT_THROW(state_.element_cache_entry(ElementIndex(100)), std::exception);
-}
-
-TEST_F(FemStateTest, ResetElementCache) {
-  DummyElementCacheEntry new_cache_entry(ElementIndex(0), 123.456);
-  const std::vector<DummyElementCacheEntry> new_cache = {new_cache_entry};
-  state_.ResetElementCache(new_cache);
-  EXPECT_EQ(state_.element_cache_size(), 1);
-  EXPECT_EQ(state_.element_cache_entry(ElementIndex(0)), new_cache_entry);
-
-  const std::vector<DummyElementCacheEntry> invalid_cache = {
-      DummyElementCacheEntry(ElementIndex(1), 123.456)};
-  /* An exception is expected if the element cache doesn't exist. */
-  DRAKE_EXPECT_THROWS_MESSAGE(state_.ResetElementCache(invalid_cache),
-                              std::exception,
-                              "Element cache indexes are not consecutive.");
-}
-
-TEST_F(FemStateTest, Clone) {
-  std::unique_ptr<FemState<DummyElement>> clone = state_.Clone();
-  EXPECT_EQ(clone->qdot(), state_.qdot());
-  EXPECT_EQ(clone->q(), state_.q());
-  for (int i = 0; i < kNumElements; ++i) {
-    const DummyElementCacheEntry cloned_cache_entry =
-        clone->element_cache_entry(element_indices[i]);
-    const DummyElementCacheEntry original_cache_entry =
-        state_.element_cache_entry(element_indices[i]);
-    EXPECT_EQ(cloned_cache_entry, original_cache_entry);
+    const DummyElement& element = (*elements_)[i];
+    EXPECT_EQ(DummyElement::dummy_data(),
+              state_.element_data(element).dummy_data);
   }
 }
 
-TEST_F(FemStateTest, SetFrom) {
-  // Set up an empty state.
-  FemState<DummyElement> dest;
-  dest.SetFrom(state_);
-  EXPECT_EQ(dest.qdot(), qdot());
-  EXPECT_EQ(dest.q(), q());
-  for (int i = 0; i < kNumElements; ++i) {
-    const DummyElementCacheEntry source_cache_entry =
-        state_.element_cache_entry(element_indices[i]);
-    const DummyElementCacheEntry dest_cache_entry =
-        dest.element_cache_entry(element_indices[i]);
-    EXPECT_EQ(source_cache_entry, dest_cache_entry);
-  }
+TEST_F(FemStateTest, MakeElementData) {
+  std::vector<DummyElement> invalid_ordered_elements;
+  invalid_ordered_elements.emplace_back(ElementIndex(1), kNodeIndices);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      state_.MakeElementData(invalid_ordered_elements), std::exception,
+      "Input element entry at 0 has index 1 instead of 0. The entry with index "
+      "i must be stored at position i.");
 }
 }  // namespace
 }  // namespace test

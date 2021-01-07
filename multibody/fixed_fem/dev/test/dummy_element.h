@@ -10,100 +10,97 @@ namespace drake {
 namespace multibody {
 namespace fixed_fem {
 namespace test {
-// A dummy element cache entry.
-class DummyElementCacheEntry final : public ElementCacheEntry {
- public:
-  DummyElementCacheEntry(ElementIndex element_index, double data)
-      : ElementCacheEntry(element_index), data_(data) {}
-
-  explicit DummyElementCacheEntry(ElementIndex element_index)
-      : DummyElementCacheEntry(element_index, 0.0) {}
-
-  double data() const { return data_; }
-
-  bool operator==(const DummyElementCacheEntry& other) const {
-    return this->data() == other.data() &&
-           this->element_index() == other.element_index();
-  }
-
- private:
-  // Some fake data for testing.
-  double data_;
-};
-
-// Dummy traits for dummy element.
+class DummyElement;
+/* The traits for the DummyElement. In this case, all of the traits are unique
+ values so we can detect that each value is used in the expected context. */
 struct DummyElementTraits {
   using T = double;
-  using ElementCacheEntryType = DummyElementCacheEntry;
-  static constexpr int kNumNodes = 3;
-  static constexpr int kNumQuadraturePoints = 1;
-  static constexpr int kNaturalDimension = 2;
-  static constexpr int kSpatialDimension = 3;
-  static constexpr int kSolutionDimension = 3;
-  static constexpr int kNumDofs = kSolutionDimension * kNumNodes;
-  static constexpr int kODEOrder = 1;
+  struct Data {
+    double dummy_data{0};
+  };
+  static constexpr int kNumNodes = 2;
+  static constexpr int kNumQuadraturePoints = 3;
+  static constexpr int kNaturalDimension = 4;
+  static constexpr int kSpatialDimension = 5;
+  static constexpr int kSolutionDimension = 6;
+  static constexpr int kNumDofs = 7;
+  static constexpr int kOdeOrder = 1;
 };
-
-// Dummy element.
+/* A simple FemElement implementation. The calculation methods are implemented
+ as returning a fixed value (which can independently be accessed by calling
+ the corresponding dummy_* method -- e.g., CalcResidual() should return the
+ value in dummy_residual(). */
 class DummyElement final : public FemElement<DummyElement, DummyElementTraits> {
  public:
   using Base = FemElement<DummyElement, DummyElementTraits>;
   using T = typename Base::T;
-  using Base::num_dofs;
 
   DummyElement(ElementIndex element_index,
-               const std::array<NodeIndex, num_nodes()>& node_indices)
+               const std::array<NodeIndex, Traits::kNumNodes>& node_indices)
       : Base(element_index, node_indices) {}
 
-  /* Provides a dummy value for the residual. */
-  static Vector<T, num_dofs()> dummy_residual() {
-    return Vector<T, num_dofs()>::Constant(1.23456);
+  /* Provides a fixed return value for CalcResidual(). */
+  static Vector<T, Traits::kNumDofs> dummy_residual() {
+    return Vector<T, Traits::kNumDofs>::Constant(1.23456);
   }
 
-  /* Provides a dummy value for the stiffness matrix. */
-  static Eigen::Matrix<T, num_dofs(), num_dofs()> dummy_stiffness_matrix() {
-    return Eigen::Matrix<T, num_dofs(), num_dofs()>::Constant(1.23);
+  /* Provides a fixed return value for CalcStiffnessMatrix(). */
+  static Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs>
+  dummy_stiffness_matrix() {
+    return Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs>::Constant(1.23);
   }
 
-  /* Provides a dummy value for the damping matrix. */
-  static Eigen::Matrix<T, num_dofs(), num_dofs()> dummy_damping_matrix() {
-    return Eigen::Matrix<T, num_dofs(), num_dofs()>::Constant(4.56);
+  /* Provides a fixed return value for CalcDampingMatrix(). */
+  static Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs>
+  dummy_damping_matrix() {
+    return Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs>::Constant(4.56);
   }
 
-  /* Provides a dummy value for the mass matrix. */
-  static Eigen::Matrix<T, num_dofs(), num_dofs()> dummy_mass_matrix() {
-    return Eigen::Matrix<T, num_dofs(), num_dofs()>::Constant(7.89);
+  /* Provides a fixed return value for CalcMassMatrix(). */
+  static Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs>
+  dummy_mass_matrix() {
+    return Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs>::Constant(7.89);
   }
+
+  /* Updates the element data corresponding to the DummyElement to a fixed
+   value. */
+  static double dummy_data() { return 1.732; }
 
  private:
   /* Friend the base class so that the interface in the CRTP base class can
    access the private implementations of this class. */
   friend Base;
 
+  /* Implements FemElement::UpdateData(). */
+  void DoUpdateData(const FemState<DummyElement>& state,
+                    typename Traits::Data* data) const {
+    data->dummy_data = dummy_data();
+  }
+
   /* Implements FemElement::CalcResidual(). */
   void DoCalcResidual(const FemState<DummyElement>& state,
-                      EigenPtr<Vector<T, num_dofs()>> residual) const {
+                      EigenPtr<Vector<T, Traits::kNumDofs>> residual) const {
     *residual = dummy_residual();
   }
 
   /* Implements FemElement::CalcStiffnessMatrix(). */
   void DoCalcStiffnessMatrix(
       const FemState<DummyElement>& state,
-      EigenPtr<Eigen::Matrix<T, num_dofs(), num_dofs()>> K) const {
+      EigenPtr<Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs>> K) const {
     *K = dummy_stiffness_matrix();
   }
 
   /* Implements FemElement::CalcDampingMatrix(). */
   void DoCalcDampingMatrix(
       const FemState<DummyElement>& state,
-      EigenPtr<Eigen::Matrix<T, num_dofs(), num_dofs()>> D) const {
+      EigenPtr<Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs>> D) const {
     *D = dummy_damping_matrix();
   }
 
   /* Implements FemElement::CalcMassMatrix(). */
   void DoCalcMassMatrix(
       const FemState<DummyElement>& state,
-      EigenPtr<Eigen::Matrix<T, num_dofs(), num_dofs()>> M) const {
+      EigenPtr<Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs>> M) const {
     *M = dummy_mass_matrix();
   }
 };

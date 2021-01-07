@@ -12,41 +12,32 @@
 namespace drake {
 namespace multibody {
 namespace fixed_fem {
-/** The states in the FEM simulation that are associated with the nodes and the
- elements. The states include the generalized positions associated with each
+/** Stores the per-node state and per-element state-dependent quantities.
+ The states include the generalized positions associated with each
  node, `q`, and optionally, their first and second time derivatives, `qdot` and
- `qddot`. %FemState also contains the cache entries that are associated with the
- elements whose values depend on the states. See ElementCacheEntry for more on
- these state-dependent quantities.
- @tparam Element The type of FemElement that consumes this %FemState.
- This template parameter provides the scalar type, the type of ElementCacheEntry
+ `qddot`. %FemState also stores the per-element state-dependent quantities for
+ its corresponding elements (see ElementCacheEntry).
+ @tparam Element The type of FemElement that consumes this %FemState. This
+ template parameter provides the scalar type, the type of per-element data
  this %FemState stores and the order of the ODE after FEM spatial
  discretization. */
 template <typename Element>
 class FemState {
  public:
   using T = typename Element::T;
-  using ElementCacheEntryType = typename Element::ElementCacheEntryType;
 
-  /** Copy, move and assign are disabled. Copy constructors and assignment are
-   usually expensive for %FemState. If a copy is required, use Clone()
-   if a deep copy is required. Use SetFrom() if you want to set `this`
-   %FemState from another %FemState. */
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FemState);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FemState);
 
   /** The order of the ODE problem after FEM spatial discretization. */
-  static constexpr int ode_order() { return Element::ode_order(); }
-
-  /** Constructs an %FemState with empty states and empty cache. */
-  FemState() {
-    DRAKE_ASSERT(q_.size() == 0);
-    DRAKE_ASSERT(qdot_.size() == 0);
-    DRAKE_ASSERT(qddot_.size() == 0);
+  static constexpr int ode_order() {
+    constexpr int order = Element::Traits::kOdeOrder;
+    static_assert(order == 0 || order == 1 || order == 2);
+    return order;
   }
 
   /** Constructs an %FemState of a zero-th order equation with prescribed
    generalized positions.
-   @param[in] q The prescribed generalized positions.
+   @param[in] q    The prescribed generalized positions.
    @pre ode_order() == 0. */
   explicit FemState(const Eigen::Ref<const VectorX<T>>& q) : q_(q) {
     DRAKE_THROW_UNLESS(ode_order() == 0);
@@ -56,10 +47,10 @@ class FemState {
 
   /** Constructs an %FemState of a first order equation with prescribed
    generalized positions and their time derivatives.
-   @param[in] q The prescribed generalized positions.
-   @param[in] qdot The prescribed time derivatives of generalized positions.
+   @param[in] q    The prescribed generalized positions.
+   @param[in] qdot    The prescribed time derivatives of generalized positions.
    @pre ode_order() == 1.
-   @pre `q` and `qdot` must have the same sizes. */
+   @pre q.size() == qdot.size(). */
   FemState(const Eigen::Ref<const VectorX<T>>& q,
            const Eigen::Ref<const VectorX<T>>& qdot)
       : q_(q), qdot_(qdot) {
@@ -70,12 +61,13 @@ class FemState {
 
   /** Constructs an %FemState of a second order equation with prescribed
    generalized positions and their first and second order time derivatives.
-   @param[in] q The prescribed generalized positions.
-   @param[in] qdot The prescribed time derivatives of generalized positions.
-   @param[in] qddot The prescribed time second derivatives of generalized
+   @param[in] q    The prescribed generalized positions.
+   @param[in] qdot    The prescribed time derivatives of generalized positions.
+   @param[in] qddot    The prescribed time second derivatives of generalized
    positions.
    @pre ode_order() == 2.
-   @pre `q`, `qdot` and `qddot` must have the same sizes. */
+   @pre q.size() == qdot.size().
+   @pre q.size() == qddot.size(). */
   FemState(const Eigen::Ref<const VectorX<T>>& q,
            const Eigen::Ref<const VectorX<T>>& qdot,
            const Eigen::Ref<const VectorX<T>>& qddot)
@@ -85,57 +77,33 @@ class FemState {
     DRAKE_THROW_UNLESS(q_.size() == qddot_.size());
   }
 
-  /** Copies the input `element_cache` and sets it as the element cache that
-   `this` %FemState owns. */
-  void ResetElementCache(
-      const std::vector<ElementCacheEntryType>& element_cache) {
-    element_cache_ = element_cache;
-    ThrowIfElementsAreNotConsecutive();
-  }
-
-  /** Moves the input `element_cache` and sets it as the element cache that
-   `this` %FemState owns. The element indexes of the cache entries in
-   `element_cache` must start from 0 and are consecutive.
-   @throw `std::exception` if the element indexes of the cache entries in
-   `element_cache` do not start from 0 or are not consecutive. */
-  void ResetElementCache(std::vector<ElementCacheEntryType>&& element_cache) {
-    element_cache_ = std::move(element_cache);
-    ThrowIfElementsAreNotConsecutive();
+  /** Creates the per-element state-dependent data for the given `elements`. The
+  `elements` are expected to have their ElementIndex ordered from 0 to
+  `elements.size()-1` as %FemState assumes that order when the
+  Element::Traits::Data are accessed via element_data().
+  @throw std::expcetion if the element indexes of `elements` are not ordered
+  from 0 to `elements.size()-1`. */
+  void MakeElementData(const std::vector<Element>& elements) {
+    element_cache_.clear();
+    for (int i = 0; i < static_cast<int>(elements.size()); ++i) {
+      if (elements[i].element_index() != ElementIndex(i)) {
+        throw std::runtime_error(
+            "Input element entry at " + std::to_string(i) + " has index " +
+            std::to_string(elements[i].element_index()) + " instead of " +
+            std::to_string(i) +
+            ". The entry with index i must be stored at position i.");
+      }
+    }
+    element_cache_.resize(elements.size());
   }
 
   int num_generalized_positions() const { return q_.size(); }
 
   int element_cache_size() const { return element_cache_.size(); }
-
-  /** Creates a deep identical copy of `this` %FemState with all its
-   states and cache. Returns a unique pointer to the copy. */
-  std::unique_ptr<FemState<Element>> Clone() const {
-    std::unique_ptr<FemState<Element>> clone;
-    if constexpr (ode_order() == 0)
-      clone = std::make_unique<FemState<Element>>(q());
-    else if constexpr (ode_order() == 1)
-      clone = std::make_unique<FemState<Element>>(q(), qdot());
-    else if constexpr (ode_order() == 2)
-      clone = std::make_unique<FemState<Element>>(q(), qdot(), qddot());
-    clone->element_cache_ = element_cache_;
-    return clone;
-  }
-
-  /** Sets the states and cache of `this` %FemState from the input %FemState
-   `other`. After this method is called, the state and cache in `this`
-   %FemState will be an identical copy of those in the `other` %FemState. */
-  void SetFrom(const FemState<Element>& other) {
-    Resize(other.num_generalized_positions());
-    set_q(other.q());
-    if constexpr (ode_order() >= 1) set_qdot(other.qdot());
-    if constexpr (ode_order() == 2) set_qddot(other.qddot());
-    element_cache_ = other.element_cache_;
-  }
-
-  /** Resize the number of generalized positions. The existing values are
-   unchanged if `num_generalized_positions` is greater than or equal to the
-   number of existing generalized positions.
-   @pre num_generalized_positions >= 0. */
+  /** `q`, `qdot`, and `qddot` are resized (if they exist) with the semantics
+  outlined in <a
+  href="https://eigen.tuxfamily.org/dox/classEigen_1_1PlainObjectBase.html#a78a42a7c0be768374781f67f40c9ab0d">
+  Eigen::conservativeResize</a>. */
   void Resize(int num_generalized_positions) {
     DRAKE_ASSERT(num_generalized_positions >= 0);
     q_.conservativeResize(num_generalized_positions);
@@ -161,8 +129,7 @@ class FemState {
   /** @} */
 
   /** @name State setters.
-   The size of the values provided must match the current size
-   of the states.
+   The size of the values provided must match the current size of the states.
    @{ */
   void set_q(const Eigen::Ref<const VectorX<T>>& value) {
     DRAKE_THROW_UNLESS(value.size() == q_.size());
@@ -183,8 +150,8 @@ class FemState {
   /** @} */
 
   /** @name Mutable state getters.
-   The values of the states are mutable but the sizes
-   of the states are not allowed to change.
+   The values of the states are mutable but the sizes of the states are not
+   allowed to change.
    @{ */
   Eigen::VectorBlock<VectorX<T>> mutable_q() { return q_.head(q_.size()); }
 
@@ -199,27 +166,20 @@ class FemState {
   }
   /** @} */
 
-  /** Getter for cache entries. Mutable getters are not provided so as
-   to enforce the fact the element and element cache entries share the same
-   element index. Use this method to get the cache entries if you wish to modify
-   the cached values as the cached values are `mutable` in ElementCacheEntry.
-   @throw `std::exception` if the the element cache with the given index does
-   not exist.*/
-  const ElementCacheEntryType& element_cache_entry(ElementIndex e) const {
-    DRAKE_ASSERT(e.is_valid());
-    DRAKE_THROW_UNLESS(e < element_cache_size());
-    return element_cache_[e];
+  /** Getter for element state-dependpent quantities. */
+  const typename Element::Traits::Data& element_data(
+      const Element& element) const {
+    ElementIndex id = element.element_index();
+    DRAKE_ASSERT(id.is_valid() && id < element_cache_size());
+    // TODO(xuchenhan-tri): Currently the data is always recomputed when this
+    //  method is invoked. Cache these data in the future.
+    typename Element::Traits::Data& data =
+        element_cache_[id].mutable_element_data();
+    element.UpdateData(*this, &data);
+    return data;
   }
 
  private:
-  void ThrowIfElementsAreNotConsecutive() const {
-    for (int i = 0; i < element_cache_size(); ++i) {
-      if (element_cache_[i].element_index() != ElementIndex(i)) {
-        throw std::runtime_error("Element cache indexes are not consecutive.");
-      }
-    }
-  }
-
   /* Generalized node positions. */
   VectorX<T> q_{};
   /* Time derivatives of generalized node positions. */
@@ -227,7 +187,8 @@ class FemState {
   /* Time second derivatives of generalized node positions. */
   VectorX<T> qddot_{};
   /* Owned element cache entries. */
-  std::vector<ElementCacheEntryType> element_cache_{};
+  mutable std::vector<ElementCacheEntry<typename Element::Traits::Data>>
+      element_cache_{};
 };
 }  // namespace fixed_fem
 }  // namespace multibody
