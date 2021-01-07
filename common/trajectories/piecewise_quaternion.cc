@@ -9,6 +9,11 @@
 namespace drake {
 namespace trajectories {
 
+using std::abs;
+using std::cos;
+using std::max;
+using std::min;
+
 template <typename T>
 bool PiecewiseQuaternionSlerp<T>::is_approx(
     const PiecewiseQuaternionSlerp<T>& other, double tol) const {
@@ -24,9 +29,9 @@ bool PiecewiseQuaternionSlerp<T>::is_approx(
     // A quick reference:
     // Page "Metric on sphere of unit quaternions" from
     // http://www.cs.cmu.edu/afs/cs/academic/class/16741-s07/www/Lecture8.pdf
-    double dot = std::abs(
-        ExtractDoubleOrThrow(quaternions_[i].dot(other.quaternions_[i])));
-    if (dot < std::cos(tol / 2)) {
+    double dot =
+        abs(ExtractDoubleOrThrow(quaternions_[i].dot(other.quaternions_[i])));
+    if (dot < cos(tol / 2)) {
       return false;
     }
   }
@@ -127,8 +132,8 @@ T PiecewiseQuaternionSlerp<T>::ComputeInterpTime(int segment_index,
                                                   const T& time) const {
   T interp_time =
       (time - this->start_time(segment_index)) / this->duration(segment_index);
-  interp_time = std::max(interp_time, T(0.0));
-  interp_time = std::min(interp_time, T(1.0));
+  interp_time = max(interp_time, T(0.0));
+  interp_time = min(interp_time, T(1.0));
   return interp_time;
 }
 
