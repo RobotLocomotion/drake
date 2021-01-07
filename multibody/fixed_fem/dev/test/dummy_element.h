@@ -62,19 +62,17 @@ class DummyElement final : public FemElement<DummyElement, DummyElementTraits> {
     return Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs>::Constant(7.89);
   }
 
-  /* Updates the element data corresponding to the DummyElement to a fixed
-   value. */
-  static double dummy_data() { return 1.732; }
+  /* Provides a fixed value for the `Data` for `ComputeData()`. */
+  static Traits::Data dummy_data() { return {1.732}; }
 
  private:
   /* Friend the base class so that the interface in the CRTP base class can
    access the private implementations of this class. */
   friend Base;
 
-  /* Implements FemElement::UpdateData(). */
-  void DoUpdateData(const FemState<DummyElement>& state,
-                    typename Traits::Data* data) const {
-    data->dummy_data = dummy_data();
+  /* Implements FemElement::ComputeData(). */
+  Traits::Data DoComputeData(const FemState<DummyElement>& state) const {
+    return dummy_data();
   }
 
   /* Implements FemElement::CalcResidual(). */

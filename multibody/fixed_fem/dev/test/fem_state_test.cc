@@ -23,11 +23,10 @@ using Eigen::VectorXd;
 class FemStateTest : public ::testing::Test {
  protected:
   void SetUp() {
-    elements_ = std::make_unique<std::vector<DummyElement>>();
     for (ElementIndex element_id : kElementIndices) {
-      elements_->emplace_back(element_id, kNodeIndices);
+      elements_.emplace_back(element_id, kNodeIndices);
     }
-    state_.MakeElementData(*elements_);
+    state_.MakeElementData(elements_);
   }
 
   /* Default values for the state. */
@@ -37,7 +36,7 @@ class FemStateTest : public ::testing::Test {
   // TODO(xuchenhan-tri): Test the other constructors of FemState.
   /* FemState under test. */
   FemState<DummyElement> state_{q(), qdot()};
-  std::unique_ptr<std::vector<DummyElement>> elements_;
+  std::vector<DummyElement> elements_;
 };
 
 /* Verify setters and getters are working properly. */
@@ -83,9 +82,8 @@ TEST_F(FemStateTest, ConservativeResize) {
 TEST_F(FemStateTest, ElementData) {
   EXPECT_EQ(state_.element_cache_size(), kNumElements);
   for (int i = 0; i < kNumElements; ++i) {
-    const DummyElement& element = (*elements_)[i];
-    EXPECT_EQ(DummyElement::dummy_data(),
-              state_.element_data(element).dummy_data);
+    EXPECT_EQ(DummyElement::dummy_data().dummy_data,
+              state_.element_data(elements_[i]).dummy_data);
   }
 }
 

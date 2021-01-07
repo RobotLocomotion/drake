@@ -59,19 +59,18 @@ class FemElement {
   /** The ElementIndex of this element within the model. */
   ElementIndex element_index() const { return element_index_; }
 
-  /** Updates the per-element, state-dependent data associated with
+  /** Computes the per-element, state-dependent data associated with this
    `DerivedElement` given the `state`.
    @pre data != nullptr. */
-  void UpdateData(const FemState<DerivedElement>& state,
-                  typename Traits::Data* data) const {
-    DRAKE_ASSERT(data != nullptr);
-    static_cast<const DerivedElement*>(this)->DoUpdateData(state, data);
+  typename Traits::Data ComputeData(
+      const FemState<DerivedElement>& state) const {
+    return static_cast<const DerivedElement*>(this)->DoComputeData(state);
   }
 
   /** Calculates the element residual of this element evaluated at the input
    state.
    @param[in] state    The FEM state at which to evaluate the residual.
-   @param[out] residual    a vector of residual of size `Traits::kNumDofs`. All
+   @param[out] residual    A vector of residual of size `Traits::kNumDofs`. All
    values in `residual` will be overwritten.
    @pre residual != nullptr */
   void CalcResidual(const FemState<DerivedElement>& state,
@@ -154,18 +153,19 @@ class FemElement {
     }
   }
 
-  /** `DerivedElement` must provide an implementation for `DoUpdateData()`.
+  /** `DerivedElement` must provide an implementation for `DoComputeData()`.
    @throw std::exception if `DerivedElement` does not provide an implementation
-   for `DoUpdateData()`. */
-  void DoUpdateData(const FemState<DerivedElement>& state,
-                    typename Traits::Data* data) const {
+   for `DoComputeData()`. */
+  typename Traits::Data DoComputeData(
+      const FemState<DerivedElement>& state) const {
     ThrowIfNotImplemented(__func__);
   }
 
   /** `DerivedElement` must provide an implementation for
-   `DoCalcResidual()` to provide the residual that is up-to-date given the
-   `state`. The residual will have size `Traits::kNumDofs` and thus all entries
-   in `residual` will be written to.
+   `DoCalcResidual()` to provide the residual that is up to date given the
+   `state`. The caller guarantees that `residual` is non-null and contains all
+   zeros; the implementation in the derived class does not have to test for
+   this.
    @throw std::exception if `DerivedElement` does not provide an implementation
    for `DoCalcResidual()`. */
   void DoCalcResidual(const FemState<DerivedElement>& state,
@@ -174,10 +174,10 @@ class FemElement {
   }
 
   /** `DerivedElement` must provide an implementation for
-   `DoCalcStiffnessMatrix()` to provide the stiffness matrix that is up-to-date
-   given the `state`. The stiffness matrix will have size
-   `Traits::kNumDofs`-by-`Traits::kNumDofs` and thus all entries in
-   `K` will be written to.
+   `DoCalcStiffnessMatrix()` to provide the stiffness matrix that is up to date
+   given the `state`. The caller guarantees that `K` is non-null and contains
+   all zeros; the implementation in the derived class does not have to test for
+   this.
    @throw std::exception if `DerivedElement` does not provide an implementation
    for `DoCalcStiffnessMatrix()`. */
   void DoCalcStiffnessMatrix(
@@ -187,11 +187,11 @@ class FemElement {
   }
 
   /** `DerivedElement` must provide an implementation for
-   `DoCalcDampingMatrix()` to provide the damping matrix that is up-to-date
+   `DoCalcDampingMatrix()` to provide the damping matrix that is up to date
    given the `state` or to throw an exception indicating a damping matrix does
-   not exist. The damping matrix will have size
-   `Traits::kNumDofs`-by-`Traits::kNumDofs` if it exists, and thus all entries
-   in `D` will be written to if the damping matrix exists.
+   not exist. The caller guarantees that `D` is non-null and contains all
+   zeros; the implementation in the derived class does not have to test for
+   this.
    @throw std::exception if `DerivedElement` does not provide an implementation
    for `DoCalcDampingMatrix()`. */
   void DoCalcDampingMatrix(
@@ -202,9 +202,9 @@ class FemElement {
 
   /** `DerivedElement` must provide an implementation for `DoCalcMassMatrix()`
    to provide the mass matrix that is up-to-date given the `state` or to throw
-   an exception indicating a mass matrix does not exist. The mass matrix will
-   have size `Traits::kNumDofs`-by-`Traits::kNumDofs` if it exists, and thus all
-   entries in `M` will be written to if the mass matrix exists.
+   an exception indicating a mass matrix does not exist. The caller guarantees
+   that `M` is non-null and contains all zeros; the implementation in the
+   derived class does not have to test for this.
    @throw std::exception if `DerivedElement` does not provide an implementation
    for `DoCalcMassMatrix()`. */
   void DoCalcMassMatrix(

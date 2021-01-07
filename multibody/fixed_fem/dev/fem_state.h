@@ -12,11 +12,11 @@
 namespace drake {
 namespace multibody {
 namespace fixed_fem {
-/** Stores the per-node state and per-element state-dependent quantities.
- The states include the generalized positions associated with each
- node, `q`, and optionally, their first and second time derivatives, `qdot` and
- `qddot`. %FemState also stores the per-element state-dependent quantities for
- its corresponding elements (see ElementCacheEntry).
+/** Stores the fem model state and per-element state-dependent quantities.The
+ states include the generalized positions associated with each node, `q`, and
+ optionally, their first and second time derivatives, `qdot` and `qddot`.
+ %FemState also stores the per-element state-dependent quantities for its
+ corresponding elements (see ElementCacheEntry).
  @tparam Element The type of FemElement that consumes this %FemState. This
  template parameter provides the scalar type, the type of per-element data
  this %FemState stores and the order of the ODE after FEM spatial
@@ -78,11 +78,11 @@ class FemState {
   }
 
   /** Creates the per-element state-dependent data for the given `elements`. The
-  `elements` are expected to have their ElementIndex ordered from 0 to
-  `elements.size()-1` as %FemState assumes that order when the
-  Element::Traits::Data are accessed via element_data().
-  @throw std::expcetion if the element indexes of `elements` are not ordered
-  from 0 to `elements.size()-1`. */
+  following invariant must be satisfied: `elements[i].element_index() == i` --
+  the i-th element reports an element index of `i`, as %FemState assumes this
+  invariant when the Element::Traits::Data are accessed via element_data().
+  @throw std::exception if elements[i].element_index() != i for some `i` = 0,
+  ..., `element.size()-1`. */
   void MakeElementData(const std::vector<Element>& elements) {
     element_cache_.clear();
     for (int i = 0; i < static_cast<int>(elements.size()); ++i) {
@@ -175,7 +175,7 @@ class FemState {
     //  method is invoked. Cache these data in the future.
     typename Element::Traits::Data& data =
         element_cache_[id].mutable_element_data();
-    element.UpdateData(*this, &data);
+    data = element.ComputeData(*this);
     return data;
   }
 
