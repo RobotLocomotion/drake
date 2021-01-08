@@ -46,6 +46,8 @@ TEST_F(FemStateTest, GetStates) {
   EXPECT_EQ(state_.q(), q());
   /* The dummy element has order 1 and does not have second derivatives of the
    generalized positions. */
+  // TODO(xuchenhan-tri): Add a test for successful invocation of the getter and
+  //  setter for `qddot()`.
   EXPECT_THROW(state_.qddot(), std::exception);
 }
 
@@ -82,8 +84,8 @@ TEST_F(FemStateTest, ConservativeResize) {
 TEST_F(FemStateTest, ElementData) {
   EXPECT_EQ(state_.element_cache_size(), kNumElements);
   for (int i = 0; i < kNumElements; ++i) {
-    EXPECT_EQ(DummyElement::dummy_data().dummy_data,
-              state_.element_data(elements_[i]).dummy_data);
+    EXPECT_EQ(DummyElement::dummy_data().value,
+              state_.element_data(elements_[i]).value);
   }
 }
 

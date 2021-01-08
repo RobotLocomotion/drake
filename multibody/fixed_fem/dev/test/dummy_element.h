@@ -10,13 +10,12 @@ namespace drake {
 namespace multibody {
 namespace fixed_fem {
 namespace test {
-class DummyElement;
 /* The traits for the DummyElement. In this case, all of the traits are unique
  values so we can detect that each value is used in the expected context. */
 struct DummyElementTraits {
   using T = double;
   struct Data {
-    double dummy_data{0};
+    double value{0};
   };
   static constexpr int kNumNodes = 2;
   static constexpr int kNumQuadraturePoints = 3;

@@ -17,12 +17,12 @@ class ElementCacheEntry {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ElementCacheEntry);
 
+  static_assert(std::is_default_constructible_v<ElementData>,
+                "The template parameter 'ElementData' in ElementCacheEntry "
+                "must be default constructible. ");
+
   /** Constructs a new %ElementCacheEntry with default initialized data. */
-  ElementCacheEntry() {
-    static_assert(std::is_default_constructible_v<ElementData>,
-                  "The template parameter 'ElementData' in ElementCacheEntry "
-                  "must be default constructible. ");
-  }
+  ElementCacheEntry() {}
 
   ~ElementCacheEntry() = default;
 

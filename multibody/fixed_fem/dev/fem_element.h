@@ -26,9 +26,9 @@ namespace fixed_fem {
  be accompanied by a corresponding traits class that declares the compile time
  quantities and type declarations that this base class requires.
 
- %FemElement should be used in tandem with ElementCacheEntry which stores the
- per-element, state-dependent data for %FemElement. The data specific to the
- `DerivedElement` should be declared in `DerivedTraits`.
+ %FemElement also comes with per-element, state-dependent data. The data
+ specific to the `DerivedElement` should be declared in `DerivedTraits`, along
+ with the other responsibilities of `DerivedTraits` detailed below.
  @tparam DerivedElement The concrete FEM element that inherits from %FemElement
  through CRTP.
  @tparam DerivedTraits The traits class associated with the DerivedElement. It
@@ -123,7 +123,6 @@ class FemElement {
       const FemState<DerivedElement>& state,
       EigenPtr<Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs>> M) const {
     DRAKE_ASSERT(M != nullptr);
-    M->setZero();
     static_cast<const DerivedElement*>(this)->DoCalcMassMatrix(state, M);
   }
 
@@ -203,7 +202,7 @@ class FemElement {
   /** `DerivedElement` must provide an implementation for `DoCalcMassMatrix()`
    to provide the mass matrix that is up-to-date given the `state` or to throw
    an exception indicating a mass matrix does not exist. The caller guarantees
-   that `M` is non-null and contains all zeros; the implementation in the
+   that `M` is non-null (but it is uninitialized); the implementation in the
    derived class does not have to test for this.
    @throw std::exception if `DerivedElement` does not provide an implementation
    for `DoCalcMassMatrix()`. */
