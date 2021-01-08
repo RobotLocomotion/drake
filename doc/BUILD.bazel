@@ -87,6 +87,7 @@ filegroup(
         "images/**",
     ]) + [
         "404.html",
+        "index.html",
         "_config.yml",
         "css/style.scss",
         "_data/settings.yml",
