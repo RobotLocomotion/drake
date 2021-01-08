@@ -439,6 +439,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("body"), py::arg("V_WB"), py::arg("context"),
             cls_doc.SetFreeBodySpatialVelocity.doc_3args)
+        .def("HasUniqueFreeBaseBody", &Class::HasUniqueFreeBaseBody,
+            py::arg("model_instance"), cls_doc.HasUniqueFreeBaseBody.doc)
+        .def("GetUniqueFreeBaseBodyOrThrow",
+            &Class::GetUniqueFreeBaseBodyOrThrow, py::arg("model_instance"),
+            cls_doc.GetUniqueFreeBaseBodyOrThrow.doc)
         .def(
             "EvalBodyPoseInWorld",
             [](const Class* self, const Context<T>& context,

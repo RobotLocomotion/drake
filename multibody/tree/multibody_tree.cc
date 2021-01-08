@@ -85,6 +85,33 @@ MultibodyTree<T>::MultibodyTree() {
 }
 
 template <typename T>
+bool MultibodyTree<T>::HasUniqueFreeBaseBodyImpl(
+    ModelInstanceIndex model_instance) const {
+  std::optional<BodyIndex> base_body_index =
+      MaybeGetUniqueBaseBodyIndex(model_instance);
+  return base_body_index.has_value() &&
+         owned_bodies_[base_body_index.value()]->is_floating();
+}
+
+template <typename T>
+const Body<T>& MultibodyTree<T>::GetUniqueFreeBaseBodyOrThrowImpl(
+    ModelInstanceIndex model_instance) const {
+  std::optional<BodyIndex> base_body_index =
+      MaybeGetUniqueBaseBodyIndex(model_instance);
+  if (!base_body_index.has_value()) {
+    throw std::logic_error("Model " +
+                           instance_index_to_name_.at(model_instance) +
+                           " does not have a unique base body.");
+  }
+  if (!owned_bodies_[base_body_index.value()]->is_floating()) {
+    throw std::logic_error("Model " +
+                           instance_index_to_name_.at(model_instance) +
+                           " has a unique base body, but it is not free.");
+  }
+  return *owned_bodies_[base_body_index.value()];
+}
+
+template <typename T>
 VectorX<T> MultibodyTree<T>::GetActuationFromArray(
     ModelInstanceIndex model_instance,
     const Eigen::Ref<const VectorX<T>>& u) const {
@@ -2613,6 +2640,26 @@ VectorX<double> MultibodyTree<T>::GetAccelerationUpperLimits() const {
   return vd_upper;
 }
 
+template <typename T>
+std::optional<BodyIndex> MultibodyTree<T>::MaybeGetUniqueBaseBodyIndex(
+    ModelInstanceIndex model_instance) const {
+  DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+  if (model_instance == world_model_instance()) {
+    return std::nullopt;
+  }
+  std::optional<BodyIndex> base_body_index{};
+  for (const auto& body : owned_bodies_) {
+    if (body->model_instance() == model_instance &&
+        (topology_.get_body(body->index()).parent_body == world_index())) {
+      if (base_body_index.has_value()) {
+        // More than one base body associated with this model.
+        return std::nullopt;
+      }
+      base_body_index = body->index();
+    }
+  }
+  return base_body_index;
+}
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
