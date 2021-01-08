@@ -90,6 +90,7 @@ filegroup(
         "index.html",
         "_config.yml",
         "css/style.scss",
+        "release_notes.html",
         "_data/settings.yml",
         "_js/drake.js",
         "//third_party:history_js/history.adapter.jquery.js",
