@@ -2992,8 +2992,8 @@ class MultibodyTree {
 
   // If there exists a unique base body (a body whose parent is the world body)
   // in the model given by `model_instance`, return the index of that body.
-  // Otherwise return std::nullopt. If the given `model_instance` is the world
-  // model instance, return the index of the world body.
+  // Otherwise return std::nullopt. In particular, if the given `model_instance`
+  // is the world model instance, return `std::nullopt`.
   // @throws std::exception if `model_instance` is not valid.
   std::optional<BodyIndex> MaybeGetUniqueBaseBodyIndex(
       ModelInstanceIndex model_instance) const;

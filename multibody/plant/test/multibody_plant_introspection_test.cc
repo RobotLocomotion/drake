@@ -101,6 +101,8 @@ GTEST_TEST(MultibodyPlantIntrospection, FloatingBodies) {
 
   // The "world" is not considered as a free body.
   EXPECT_FALSE(plant.world_body().is_floating());
+  // Moreover, the "world" does not have a base body because by definition, a
+  // base body is a body whose parent is the world.
   EXPECT_FALSE(plant.HasUniqueFreeBaseBody(world_model_instance()));
 
   // The table has been anchored to the world.
@@ -143,7 +145,7 @@ GTEST_TEST(MultibodyPlantIntrospection, NonUniqueBaseBody) {
       "fixed_body", default_model_instance(), SpatialInertia<double>());
   plant.WeldFrames(plant.world_frame(), fixed_body.body_frame());
   plant.Finalize();
-  // Even there is only one free body, the base body is not unique.
+  // Even though there is only one free body, the base body is not unique.
   EXPECT_FALSE(plant.HasUniqueFreeBaseBody(default_model_instance()));
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.GetUniqueFreeBaseBodyOrThrow(default_model_instance()),

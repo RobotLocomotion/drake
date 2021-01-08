@@ -2645,7 +2645,7 @@ std::optional<BodyIndex> MultibodyTree<T>::MaybeGetUniqueBaseBodyIndex(
     ModelInstanceIndex model_instance) const {
   DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
   if (model_instance == world_model_instance()) {
-    return world_index();
+    return std::nullopt;
   }
   std::optional<BodyIndex> base_body_index{};
   for (const auto& body : owned_bodies_) {
