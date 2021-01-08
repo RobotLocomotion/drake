@@ -57,9 +57,15 @@ def _format_commit(gh, drake, commit):
     """Returns (packages, bullet) for the given commit.
 
     The packages is a list of top-level directories whose files were edited in
-    this commit.
+    this commit. If the packages list is empty, then the commit is ineligible
+    for release notes and should be dropped.
 
     The bullet is a "* Detail (#123)" summary of the change for release notes.
+
+    Ineligible commits: currently commits that only change files in dev
+    directories are ineligible. More ineligible commit conditions may be
+    defined later.
+
     """
     # Grab the commit message subject and body.
     message = commit.message
@@ -71,6 +77,13 @@ def _format_commit(gh, drake, commit):
     comparison = drake.compare_commits(
         base=commit.parents[0].get('sha'), head=commit.sha)
     committed_files = [x.get('filename') for x in comparison.files]
+
+    # If all files in the commit are in dev directories, return empty data to
+    # indicate the commit is ineligible.
+    committed_nondev_files = [x for x in committed_files if '/dev/' not in x]
+    if not committed_nondev_files:
+        return [], ""
+
     packages = sorted(set([
         _filename_to_primary_package(x) for x in committed_files
     ])) or ["tools"]
@@ -164,6 +177,11 @@ def _update(args, rst_filename, gh, drake):
         # Try not to hit GitHub API rate limits.
         time.sleep(0.2)
         packages, bullet = _format_commit(gh, drake, commit)
+
+        # Skip commits deemed ineligible.
+        if not packages:
+            continue
+
         primary_package = packages[0]
         preamble = ""
         if len(packages) > 1:
