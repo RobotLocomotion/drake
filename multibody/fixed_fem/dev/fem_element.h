@@ -10,6 +10,8 @@
 namespace drake {
 namespace multibody {
 namespace fixed_fem {
+// TODO(xuchenhan-tri) Document the definition of quantities like "natural
+// dimension". See issue #14475.
 /** %FemElement is the base class for spatially discretized FEM elements.
  It computes quantities such as the residual and the stiffness matrix on a
  single FEM element given the state of the FEM system. These quantities are then
@@ -35,16 +37,12 @@ namespace fixed_fem {
  needs to provide a nested class `Data` for storing the per-element,
  state-dependent data used by `DerivedElement`. In particular, the `Data` class
  needs to provide a default constructor. It also needs to provide the following
- compile time constants for the `DerivedElement`: the dimension of the parent
- domain (or the natural dimension), `kNaturalDimension`; the dimension of the
- co-domain of the solution to the PDE that `DerivedElement` is solving for (or
- the solution dimension), `kSolutionDimension`; the dimension of the reference
- domain (or the spatial dimension), `kSpatialDimension`; the number of
- quadrature points in a single `DerivedElement`, `kNumQuadraturePoints`; the
- number of nodes associated with a single `DerivedElement`, `kNumNodes`; the
- number of degrees of freedom that a single `DerivedElement` possesses,
- `kNumDofs`; the order of the ODE problem after FEM spatial discretization,
- `kOdeOrder`. */
+ compile time constants for the `DerivedElement`: `kNaturalDimension`,
+ `kSolutionDimension`, `kSpatialDimension`, the number of quadrature points in a
+ single `DerivedElement`, `kNumQuadraturePoints`, the number of nodes associated
+ with a single `DerivedElement`, `kNumNodes`, the number of degrees of freedom
+ that a single `DerivedElement` possesses, `kNumDofs`, and the order of the ODE
+ problem after FEM spatial discretization, `kOdeOrder`. */
 template <class DerivedElement, class DerivedTraits>
 class FemElement {
  public:
