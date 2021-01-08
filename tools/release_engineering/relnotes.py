@@ -32,6 +32,7 @@ either here or in release_playbook.rst.
 """
 
 import argparse
+from collections import Counter
 import logging
 import os.path
 import re
@@ -76,17 +77,21 @@ def _format_commit(gh, drake, commit):
     # notes author sort things better.
     comparison = drake.compare_commits(
         base=commit.parents[0].get('sha'), head=commit.sha)
-    committed_files = [x.get('filename') for x in comparison.files]
-
+    committed_files_weighted = (
+        {x.get('filename'): x.get('changes') for x in comparison.files})
     # If all files in the commit are in dev directories, return empty data to
     # indicate the commit is ineligible.
-    committed_nondev_files = [x for x in committed_files if '/dev/' not in x]
+    committed_nondev_files = [
+        x for x in committed_files_weighted.keys() if '/dev/' not in x]
     if not committed_nondev_files:
         return [], ""
 
-    packages = sorted(set([
-        _filename_to_primary_package(x) for x in committed_files
-    ])) or ["tools"]
+    # Report packages in order of most lines changed.
+    packages_weighted = sum(
+        [Counter({_filename_to_primary_package(k): v})
+         for k, v in committed_files_weighted.items()],
+        Counter())
+    packages = [k for k, v in packages_weighted.most_common()] or ["tools"]
     if len(packages) > 1 and "bindings" in packages:
         packages.remove("bindings")
 
