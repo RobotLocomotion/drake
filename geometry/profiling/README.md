@@ -35,35 +35,28 @@ configure Hydroelastic Contact Visualization plugin as follows:
  Visualization.
 2. Change "Maximum pressure" to a reasonably large number (for example, 4e7).
 3. Check or uncheck "Render contact surface with pressure" as you prefer.
-4. Check or uncheck "Renter contact surface wireframe" as you prefer.
+4. Check or uncheck "Render contact surface wireframe" as you prefer.
 5. Click "OK".
 6. Run this profiling example.
 
-Instead of the default rigid bowl, it can optionally use a rigid ball or a
-rigid box. Instead of the default soft ball, it can use a soft box.
-Totally there are six possible combinations: 
+Instead of the default rigid bowl, it can optionally use a rigid ball, a
+rigid box, or a rigid cylinder. Instead of the default soft ball, it can use
+a soft box or a soft cylinder.
 
 - default rigid bowl and default soft ball,
 ```
 bazel-bin/geometry/profiling/contact_surface_rigid_bowl_soft_ball
 ```
-- default rigid bowl and soft box option,
+- default rigid bowl with a soft box option,
 ```
 bazel-bin/geometry/profiling/contact_surface_rigid_bowl_soft_ball --soft=box
-```
-- rigid ball option and default soft ball,
-```
-bazel-bin/geometry/profiling/contact_surface_rigid_bowl_soft_ball --rigid=ball
-```
-- rigid ball option and soft box option,
-```
-bazel-bin/geometry/profiling/contact_surface_rigid_bowl_soft_ball --rigid=ball --soft=box
 ```
 - rigid box option and default soft ball,
 ```
 bazel-bin/geometry/profiling/contact_surface_rigid_bowl_soft_ball --rigid=box
 ```
-- rigid box option and soft box option.
+- general syntax with all options.
 ```
-bazel-bin/geometry/profiling/contact_surface_rigid_bowl_soft_ball --rigid=box --soft=box
+bazel-bin/geometry/profiling/contact_surface_rigid_bowl_soft_ball \
+--rigid=[ball, bowl, box, cylinder] --soft=[ball, box, cylinder]
 ```

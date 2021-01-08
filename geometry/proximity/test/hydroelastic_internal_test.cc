@@ -518,8 +518,8 @@ TEST_F(HydroelasticRigidGeometryTest, Cylinder) {
 
   // Smoke test the surface mesh.
   const SurfaceMesh<double>& mesh = cylinder->mesh();
-  EXPECT_EQ(mesh.num_vertices(), 14);
-  EXPECT_EQ(mesh.num_faces(), 24);
+  EXPECT_EQ(mesh.num_vertices(), 8);
+  EXPECT_EQ(mesh.num_faces(), 12);
   for (SurfaceVertexIndex v(0); v < mesh.num_vertices(); ++v) {
     const auto [x, y, z] = unpack(mesh.vertex(v).r_MV());
     // Only check that the vertex is within the cylinder. It does not check
@@ -959,7 +959,7 @@ TEST_F(HydroelasticSoftGeometryTest, Cylinder) {
 
   // Smoke test the mesh and the pressure field. It relies on unit tests for
   // the generators of the mesh and the pressure field.
-  const int expected_num_vertices = 15;
+  const int expected_num_vertices = 9;
   EXPECT_EQ(cylinder->mesh().num_vertices(), expected_num_vertices);
   const double E =
       properties.GetPropertyOrDefault(kMaterialGroup, kElastic, 1e8);

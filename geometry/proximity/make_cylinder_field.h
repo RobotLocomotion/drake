@@ -8,6 +8,7 @@
 #include "drake/geometry/proximity/distance_to_point_callback.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
+#include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
@@ -20,13 +21,28 @@ namespace internal {
  as E * e(x) where e ∈ [0,1] is the extent -- a measure of penetration into
  the volume, and E is the given `elastic_modulus`. The pressure is zero on the
  boundary with maximum E in the interior.
- @param cylinder         The cylinder with its canonical frame C.
- @param mesh_C           A pointer to a tetrahedral mesh of the cylinder. It
+
+ For hydroelastics, an optimal mesh, `mesh_C` parameter, for this field is from
+ MakeCylinderMeshWithMa() because it conforms to the medial axis, which
+ allows more accurate representation of the pressure field with fewer
+ tetrahedra. These two picture files show examples of a pressure field on three
+ kinds of cylinders. The first picture shows the pressure field in the
+ interior of the mesh. The second picture shows the pressure isosurfaces,
+ which are essentially offset surfaces of the cylinder.
+
+ |geometry/proximity/images/cylinder_mesh_medial_axis_pressure.png           |
+ | Pressure field on meshes with medial axis of three kinds of cylinders.    |
+ | :-----------------------------------------------------------------------: |
+ |geometry/proximity/images/cylinder_mesh_medial_axis_pressure_isosurface.png|
+ | Pressure isosurfaces on three kinds of cylinders.                         |
+
+ @param[in] cylinder     The cylinder with its canonical frame C.
+ @param[in] mesh_C       A pointer to a tetrahedral mesh of the cylinder. It
                          is aliased in the returned pressure field and must
                          remain alive as long as the field. The position
                          vectors of mesh vertices are expressed in the
                          cylinder's frame C.
- @param elastic_modulus  Scale extent to pressure.
+ @param[in] elastic_modulus  Scale extent to pressure.
  @return                 The pressure field defined on the tetrahedral mesh.
  @pre                    `elastic_modulus` is strictly positive.
                          `mesh_C` represents the cylinder and has enough
@@ -78,8 +94,18 @@ VolumeMeshFieldLinear<T, T> MakeCylinderPressureField(
     const T extent = -signed_distance / T(min_half_size);
     pressure_values.push_back(elastic_modulus * extent);
   }
-  return VolumeMeshFieldLinear<T, T>("pressure", std::move(pressure_values),
-                                     mesh_C);
+
+  // Make sure the boundary vertices have zero pressure. Numerical rounding
+  // can cause the boundary vertices to be slightly off the boundary surface
+  // of the cylinder.
+  std::vector<VolumeVertexIndex> boundary_vertices =
+      CollectUniqueVertices(IdentifyBoundaryFaces(mesh_C->tetrahedra()));
+  for (VolumeVertexIndex bv : boundary_vertices) {
+    pressure_values[bv] = T(0.);
+  }
+
+  return VolumeMeshFieldLinear<T, T>("pressure(Pa)",
+                                     std::move(pressure_values), mesh_C);
 }
 
 }  // namespace internal

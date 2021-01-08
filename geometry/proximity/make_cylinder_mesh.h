@@ -37,18 +37,12 @@ namespace internal {
  |medium cylinder | cylinder.length()/2 = cylinder.radius() |
  |short cylinder  | cylinder.length()/2 < cylinder.radius() |
 
- The following three picture files show examples of a mesh of a long cylinder,
+ The following picture file shows examples of a mesh of a long cylinder,
  a mesh of a medium cylinder, and a mesh of a short cylinder. The files are
  distributed with the source code.
 
- |geometry/proximity/images/LongCylinderWithMaPressureField.png      |
- | A cut-away tetrahedral mesh of a long cylinder with medial axis.  |
- | :---------------------------------------------------------------: |
- |geometry/proximity/images/MediumCylinderWithMaPressureField.png    |
- | A cut-away tetrahedral mesh of a medium cylinder with medial axis.|
- | :---------------------------------------------------------------: |
- |geometry/proximity/images/ShortCylinderWithMaPressureField.png     |
- | A cut-away tetrahedral mesh of a short cylinder with medial axis. |
+ |geometry/proximity/images/cylinder_mesh_medial_axis_pressure.png   |
+ | Meshes of a long cylinder, a medium cylinder, and a short cylinder|
 
  The following three pictures show X-Z cross sections of the three kinds of
  cylinders together with their MAs. Each cylinder has its Z-axis as the axis
@@ -137,6 +131,7 @@ namespace internal {
                              of the cylinder. The smaller value of
                              resolution_hint will make the larger number of
                              tetrahedra.
+ @pre resolution_hint is positive.
  @retval volume_mesh
  @tparam_nonsymbolic_scalar
 
@@ -676,18 +671,15 @@ VolumeMesh<T> MakeCylinderVolumeMesh(const Cylinder& cylinder,
 
 // Creates a surface mesh for the given `cylinder`; the level of
 // tessellation is guided by the `resolution_hint` parameter in the same way
-// as MakeCylinderVolumeMesh.
+// as MakeCylinderVolumeMeshWithMa().
 //
 // @param[in] cylinder
 //    Specification of the parameterized cylinder the output surface mesh
 //    should approximate.
 // @param[in] resolution_hint
 //    The positive characteristic edge length for the mesh. The coarsest
-//    possible mesh (a rectangular prism) is guaranteed for any value of
-//    `resolution_hint` greater than √2 times the radius of the cylinder.
-//    For any cylinder, there is a `resolution_hint` value that serves as the
-//    smallest value that will produce more triangles -- values smaller than
-//    that will have no effect.
+//    possible mesh (a triangular prism) is guaranteed for any value of
+//    `resolution_hint` at least 3 times the radius of the cylinder.
 // @returns The triangulated surface mesh for the given cylinder.
 // @pre resolution_hint is positive.
 // @tparam T
@@ -697,7 +689,7 @@ SurfaceMesh<T> MakeCylinderSurfaceMesh(const Cylinder& cylinder,
                                        double resolution_hint) {
   DRAKE_DEMAND(resolution_hint > 0.0);
   return ConvertVolumeToSurfaceMesh<T>(
-      MakeCylinderVolumeMesh<T>(cylinder, resolution_hint));
+      MakeCylinderVolumeMeshWithMa<T>(cylinder, resolution_hint));
 }
 
 }  // namespace internal

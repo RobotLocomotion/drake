@@ -292,7 +292,7 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   // First, create the mesh.
   const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
   auto mesh = make_unique<VolumeMesh<double>>(
-      MakeCylinderVolumeMesh<double>(cylinder, edge_length));
+      MakeCylinderVolumeMeshWithMa<double>(cylinder, edge_length));
 
   const double elastic_modulus =
       validator.Extract(props, kMaterialGroup, kElastic);
