@@ -69,6 +69,4 @@ if __name__ == "__main__":
     if "--cc" in sys.argv:
         sys.argv.remove("--cc")
         _backend = "cc"
-
-    assert _backend == "cc"  # TODO(#13494) Python backend temporarily missing.
     unittest.main()
