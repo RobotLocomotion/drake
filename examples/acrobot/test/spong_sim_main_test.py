@@ -5,7 +5,7 @@ import unittest
 
 from pydrake.common import FindResourceOrThrow
 
-from drake.examples.acrobot.dev.acrobot_io import load_output, load_scenario
+from drake.examples.acrobot.acrobot_io import load_output, load_scenario
 
 
 _backend = "py"
@@ -15,7 +15,7 @@ class TestRunSpongControlledAcrobot(unittest.TestCase):
 
     def setUp(self):
         self.dut = FindResourceOrThrow(
-            f"drake/examples/acrobot/dev/spong_sim_main_{_backend}")
+            f"drake/examples/acrobot/spong_sim_main_{_backend}")
         # 4 states x 30 seconds of samples at 20 Hz per sample_scenario.
         self.nominal_x_tape_shape = (4, 601)
 
@@ -31,7 +31,7 @@ class TestRunSpongControlledAcrobot(unittest.TestCase):
 
     def test_example_scenario(self):
         scenario = FindResourceOrThrow(
-            "drake/examples/acrobot/dev/test/example_scenario.yaml")
+            "drake/examples/acrobot/test/example_scenario.yaml")
         output = os.path.join(os.environ["TEST_TMPDIR"], "output.yaml")
         subprocess.check_call([
             self.dut, "--scenario", scenario, "--output", output])
@@ -43,7 +43,7 @@ class TestRunSpongControlledAcrobot(unittest.TestCase):
             return  # Python backend does not support stochastic scenarios.
 
         scenario = FindResourceOrThrow(
-            "drake/examples/acrobot/dev/test/example_stochastic_scenario.yaml")
+            "drake/examples/acrobot/test/example_stochastic_scenario.yaml")
         output = os.path.join(os.environ["TEST_TMPDIR"], "output.yaml")
         dump_file = os.path.join(os.environ["TEST_TMPDIR"],
                                  "scenario_out.yaml")

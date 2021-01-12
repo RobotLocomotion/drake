@@ -6,6 +6,13 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+    "drake_py_library",
+    "drake_py_test",
+    "drake_py_unittest",
+)
 load("//tools/install:install_data.bzl", "install_data")
 load(
     "@drake//tools/vector_gen:vector_gen.bzl",
@@ -19,6 +26,14 @@ drake_cc_vector_gen_library(
     name = "acrobot_input",
     srcs = ["acrobot_input_named_vector.yaml"],
     visibility = ["//visibility:public"],
+)
+
+drake_py_library(
+    name = "acrobot_io",
+    srcs = ["acrobot_io.py"],
+    deps = [
+        "//bindings/pydrake",
+    ],
 )
 
 drake_cc_vector_gen_library(
@@ -97,6 +112,45 @@ drake_cc_library(
         "//systems/framework:leaf_system",
         "//systems/framework:vector",
         "//systems/primitives:linear_system",
+    ],
+)
+
+drake_py_library(
+    # This is the library form of spong_sim.py.
+    name = "spong_sim_lib_py",
+    srcs = ["spong_sim.py"],
+    deps = [
+        ":acrobot_io",
+        "//bindings/pydrake",
+    ],
+)
+
+drake_py_binary(
+    # This is the directly-runnable form of spong_sim.py.
+    name = "spong_sim_main_py",
+    srcs = ["spong_sim.py"],
+    main = "spong_sim.py",
+    deps = [
+        ":acrobot_io",
+        "//bindings/pydrake",
+    ],
+)
+
+drake_cc_binary(
+    name = "spong_sim_main_cc",
+    srcs = ["spong_sim.cc"],
+    deps = [
+        "//common:add_text_logging_gflags",
+        "//common:name_value",
+        "//common/schema:stochastic",
+        "//common/yaml:yaml_read_archive",
+        "//common/yaml:yaml_write_archive",
+        "//examples/acrobot:acrobot_plant",
+        "//examples/acrobot:spong_controller",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram_builder",
+        "//systems/primitives:signal_logger",
+        "@yaml_cpp",
     ],
 )
 
@@ -257,6 +311,17 @@ drake_cc_binary(
     ],
 )
 
+drake_py_unittest(
+    name = "acrobot_io_test",
+    data = [
+        ":test/example_scenario.yaml",
+    ],
+    deps = [
+        ":acrobot_io",
+        "//bindings/pydrake",
+    ],
+)
+
 drake_cc_googletest(
     name = "acrobot_plant_test",
     deps = [
@@ -281,6 +346,45 @@ drake_cc_googletest(
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
+    ],
+)
+
+drake_py_unittest(
+    name = "spong_sim_lib_py_test",
+    deps = [
+        ":spong_sim_lib_py",
+    ],
+)
+
+drake_py_test(
+    name = "spong_sim_main_py_test",
+    srcs = ["test/spong_sim_main_test.py"],
+    allow_import_unittest = True,
+    data = [
+        ":spong_sim_main_py",
+        ":test/example_scenario.yaml",
+    ],
+    main = "test/spong_sim_main_test.py",
+    deps = [
+        ":acrobot_io",
+        "//bindings/pydrake",
+    ],
+)
+
+drake_py_test(
+    name = "spong_sim_main_cc_test",
+    srcs = ["test/spong_sim_main_test.py"],
+    allow_import_unittest = True,
+    args = ["--cc"],
+    data = [
+        ":spong_sim_main_cc",
+        ":test/example_scenario.yaml",
+        ":test/example_stochastic_scenario.yaml",
+    ],
+    main = "test/spong_sim_main_test.py",
+    deps = [
+        ":acrobot_io",
+        "//bindings/pydrake",
     ],
 )
 

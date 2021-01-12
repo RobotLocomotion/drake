@@ -1,6 +1,6 @@
 import unittest
 
-from drake.examples.acrobot.dev.spong_sim import simulate
+from drake.examples.acrobot.spong_sim import simulate
 
 
 class TestSpongControlledAcrobot(unittest.TestCase):
