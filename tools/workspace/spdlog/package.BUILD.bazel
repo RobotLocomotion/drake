@@ -1,5 +1,8 @@
 # -*- python -*-
 
+# This file is only used in cases when we need to rebuild spdlog from source.
+# See repository.bzl for the logic to select when that occurs.
+
 load(
     "@drake//tools/install:install.bzl",
     "cmake_config",
@@ -15,8 +18,8 @@ config_setting(
     visibility = ["//visibility:private"],
 )
 
-# The public headers are all of the non-inl include files.
-# We use Drake's @fmt external, not the bundled version inside spdlog.
+# The public headers are all of the non-inl include files.  When we're building
+# our own spdlog, we'll use Drake's @fmt external, not the bundled version.
 _HDRS = glob(
     [
         "include/spdlog/**",
