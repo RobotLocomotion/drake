@@ -19,6 +19,8 @@ using Eigen::Vector3d;
 void CheckMinMaxBoundaryValue(
     const VolumeMeshFieldLinear<double, double>& pressure_field,
     const double elastic_modulus) {
+  // We pick the relative error 1e-14 of the elastic modulus empirically.
+  const double tolerance = 1e-14 * elastic_modulus;
   // Check that all vertices have their pressure values within the range of
   // zero to elastic_modulus, and their minimum and maximum values are indeed
   // zero and elastic_modulus respectively.
@@ -26,8 +28,8 @@ void CheckMinMaxBoundaryValue(
   double min_pressure = std::numeric_limits<double>::max();
   for (VolumeVertexIndex v(0); v < pressure_field.mesh().num_vertices(); ++v) {
     double pressure = pressure_field.EvaluateAtVertex(v);
-    EXPECT_LE(pressure, elastic_modulus);
-    EXPECT_GE(pressure, 0.0);
+    ASSERT_LE(pressure, elastic_modulus + tolerance);
+    ASSERT_GE(pressure, 0.0);
     if (pressure > max_pressure) {
       max_pressure = pressure;
     }
@@ -36,7 +38,7 @@ void CheckMinMaxBoundaryValue(
     }
   }
   EXPECT_EQ(min_pressure, 0.0);
-  EXPECT_EQ(max_pressure, elastic_modulus);
+  EXPECT_NEAR(max_pressure, elastic_modulus, tolerance);
 
   // Check that all boundary vertices have zero pressure.
   std::vector<VolumeVertexIndex> boundary_vertex_indices =
@@ -44,22 +46,27 @@ void CheckMinMaxBoundaryValue(
           IdentifyBoundaryFaces(pressure_field.mesh().tetrahedra()));
   for (const VolumeVertexIndex& v : boundary_vertex_indices) {
     double pressure = pressure_field.EvaluateAtVertex(v);
-    EXPECT_EQ(pressure, 0.0);
+    ASSERT_EQ(pressure, 0.0);
   }
 
-  // Check that the center (0,0,0) of the shape has the max_pressure.
-  // This test assumes that the mesh has a vertex at the origin of its
-  // canonical frame.
+  // This test only applies to a mesh that has a vertex at the center of
+  // the geometric shape, where we check that the center vertex has the
+  // max_pressure.
   VolumeVertexIndex center_vertex{0};
+  bool has_center_vertex = false;
   for (VolumeVertexIndex v{0}; v < pressure_field.mesh().num_vertices(); ++v) {
     if (pressure_field.mesh().vertex(v).r_MV() == Vector3d::Zero()) {
       center_vertex = v;
+      has_center_vertex = true;
       break;
     }
   }
-  ASSERT_EQ(Vector3d::Zero(),
-            pressure_field.mesh().vertex(center_vertex).r_MV());
-  EXPECT_EQ(max_pressure, pressure_field.EvaluateAtVertex(center_vertex));
+  if (has_center_vertex) {
+    ASSERT_EQ(Vector3d::Zero(),
+              pressure_field.mesh().vertex(center_vertex).r_MV());
+    EXPECT_NEAR(max_pressure, pressure_field.EvaluateAtVertex(center_vertex),
+                tolerance);
+  }
 }
 
 GTEST_TEST(MakeCylinderFieldTest, MakeCylinderPressureField) {
@@ -74,6 +81,39 @@ GTEST_TEST(MakeCylinderFieldTest, MakeCylinderPressureField) {
 
   const double kElasticModulus = 1.0e5;
   VolumeMeshFieldLinear<double, double> pressure_field =
+      MakeCylinderPressureField<double>(cylinder, &mesh, kElasticModulus);
+
+  CheckMinMaxBoundaryValue(pressure_field, kElasticModulus);
+}
+
+GTEST_TEST(MakeCylinderFieldTest, MakeCylinderPressureFieldWithMaLong) {
+  const Cylinder cylinder(1., 3.);
+  const VolumeMesh<double> mesh =
+      MakeCylinderVolumeMeshWithMa<double>(cylinder, 0.25);
+  const double kElasticModulus = 1.0e5;
+  const VolumeMeshFieldLinear<double, double> pressure_field =
+      MakeCylinderPressureField<double>(cylinder, &mesh, kElasticModulus);
+
+  CheckMinMaxBoundaryValue(pressure_field, kElasticModulus);
+}
+
+GTEST_TEST(MakeCylinderFieldTest, MakeCylinderPressureFieldWithMaMedium) {
+  const Cylinder cylinder(1., 2.);
+  const VolumeMesh<double> mesh =
+      MakeCylinderVolumeMeshWithMa<double>(cylinder, 0.25);
+  const double kElasticModulus = 1.0e5;
+  const VolumeMeshFieldLinear<double, double> pressure_field =
+      MakeCylinderPressureField<double>(cylinder, &mesh, kElasticModulus);
+
+  CheckMinMaxBoundaryValue(pressure_field, kElasticModulus);
+}
+
+GTEST_TEST(MakeCylinderFieldTest, MakeCylinderPressureFieldWithMaShort) {
+  const Cylinder cylinder(1., 1.);
+  const VolumeMesh<double> mesh =
+      MakeCylinderVolumeMeshWithMa<double>(cylinder, 0.25);
+  const double kElasticModulus = 1.0e5;
+  const VolumeMeshFieldLinear<double, double> pressure_field =
       MakeCylinderPressureField<double>(cylinder, &mesh, kElasticModulus);
 
   CheckMinMaxBoundaryValue(pressure_field, kElasticModulus);

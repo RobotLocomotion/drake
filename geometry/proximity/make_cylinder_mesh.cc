@@ -355,6 +355,7 @@ std::vector<VolumeElement> CalcShortCylinderVolumeMeshWithMa(
 template <typename T>
 VolumeMesh<T> MakeCylinderVolumeMeshWithMa(const Cylinder& cylinder,
                                            const double resolution_hint) {
+  DRAKE_DEMAND(resolution_hint > 0.0);
   const double top_z = cylinder.length() / 2.;
   const double bottom_z = -top_z;
   enum class CylinderClass { kLong, kMedium, kShort };
