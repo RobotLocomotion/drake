@@ -15,47 +15,57 @@ namespace multibody {
 namespace fixed_fem {
 /** The traits class for ElasticityElement. This traits class is meant to be
  inherited by StaticElasticityElementTraits and DynamicElasticityElementTraits
- and is not meant to be used directly by itself. */
-template <class IsoparametricElement, class Quadrature, class ConstitutiveModel>
+ and is not meant to be used directly by itself. Furthermore, derived elasticity
+ elements can *add* to the traits, but should not overwrite any of the members
+ defined here. In particular, the derived elasticity elements *must* specify the
+ order of the spatially discretized ODE problem, `kOdeOrder`, for the traits to
+ be compatible with `FemState`. */
+template <class IsoparametricElementType, class QuadratureType,
+          class ConstitutiveModelType>
 struct ElasticityElementTraits {
   /* Check that template parameters are of the correct types. */
-  static_assert(is_isoparametric_element<IsoparametricElement>::value,
-                "IsoparametricElementType must be a derived class of "
-                "IsoparametricElement");
-  static_assert(is_quadrature<Quadrature>::value,
-                "Quadrature must be a derived class of "
-                "Quadrature<T, NaturalDim, NumLocations>, where NaturalDim can "
-                "be 1, 2 or 3.");
-  static_assert(is_constitutive_model<ConstitutiveModel>::value,
-                "ConstitutiveModel must be a derived class of "
-                "ConstitutiveModel");
+  static_assert(
+      is_isoparametric_element<IsoparametricElementType>::value,
+      "The IsoparametricElementType template parameter must be a derived "
+      "class of IsoparametricElement");
+  static_assert(
+      is_quadrature<QuadratureType>::value,
+      "The QuadratureType template parameter must be a derived class of "
+      "Quadrature<T, NaturalDim, NumLocations>, where NaturalDim can "
+      "be 1, 2 or 3.");
+  static_assert(
+      is_constitutive_model<ConstitutiveModelType>::value,
+      "The ConstitutiveModelType template parameter must be a derived "
+      "class of ConstitutiveModel");
   /* Check that the scalar types are compatible. */
-  static_assert(std::is_same_v<typename IsoparametricElement::T,
-                               typename ConstitutiveModel::T>);
+  static_assert(std::is_same_v<typename IsoparametricElementType::T,
+                               typename ConstitutiveModelType::T>);
   /* Check that the number of quadrature points are compatible. */
-  static_assert(Quadrature::num_quadrature_points() ==
-                IsoparametricElement::num_sample_locations());
-  static_assert(Quadrature::num_quadrature_points() ==
-                ConstitutiveModel::num_locations());
+  static_assert(QuadratureType::num_quadrature_points() ==
+                IsoparametricElementType::num_sample_locations());
+  static_assert(QuadratureType::num_quadrature_points() ==
+                ConstitutiveModelType::num_locations());
   /* Check that the natural dimensions are compatible. */
-  static_assert(IsoparametricElement::natural_dimension() ==
-                Quadrature::natural_dimension());
+  static_assert(IsoparametricElementType::natural_dimension() ==
+                QuadratureType::natural_dimension());
   /* Only 3D elasticity is supported. */
-  static_assert(IsoparametricElement::spatial_dimension() == 3);
+  static_assert(IsoparametricElementType::spatial_dimension() == 3);
 
-  using T = typename ConstitutiveModel::T;
+  using T = typename ConstitutiveModelType::T;
 
-  static constexpr int kNumNodes = IsoparametricElement::num_nodes();
+  static constexpr int kNumNodes = IsoparametricElementType::num_nodes();
   static constexpr int kNumQuadraturePoints =
-      Quadrature::num_quadrature_points();
-  static constexpr int kNaturalDimension = Quadrature::natural_dimension();
+      QuadratureType::num_quadrature_points();
+  static constexpr int kNaturalDimension = QuadratureType::natural_dimension();
   static constexpr int kSpatialDimension =
-      IsoparametricElement::spatial_dimension();
+      IsoparametricElementType::spatial_dimension();
   static constexpr int kSolutionDimension = 3;
   static constexpr int kNumDofs = kSolutionDimension * kNumNodes;
 
+  /* The data shared by any elasticity element. Derived classes may extend this
+   data. */
   struct Data {
-    typename ConstitutiveModel::Traits::DeformationGradientCacheEntryType
+    typename ConstitutiveModelType::Traits::DeformationGradientCacheEntryType
         deformation_gradient_cache_entry;
     /* The elastic energy density evaluated at quadrature points. */
     std::array<T, kNumQuadraturePoints> Psi;
@@ -72,38 +82,46 @@ struct ElasticityElementTraits {
   };
 };
 
-/** The FEM element class for static and dynamic 3D elasticity problems.
- %ElasticityElement serves as an intermediate base class for
- DynamicElasticityElement and StaticElasticityElement. It provides methods such
- as `CalcElasticEnergy()` that are common to both static and dynamic elasticity
- problems. It does not (and should not), however, implement
- the CRTP base class FemElement because the calculations related to
- static and dynamic elasticities are different.
- @tparam IsoparametricElement    The type of isoparametric element used in this
- %ElasticityElement. %IsoparametricElement must be a derived class from
+/** The FEM class which encodes the common aspects of static and dynamic 3D
+ elasticity problems. It serves as the non-virtual base class for
+ DynamicElasticityElement and StaticElasticityElement. This builds on
+ FemElement, adding the common elasticity functionality (e.g.,
+ CalcElasticEnergy()), but does not implement the FemElement interface (e.g.
+ DoCalcResidual()); the details of those methods differ according to dynamic and
+ static elasticities. Derived elasticity element types are responsible for
+ implementing those. In essence, this is a purely abstract class.
+ @tparam IsoparametricElementType    The type of isoparametric element used in
+ this %ElasticityElement. IsoparametricElementType must be a derived class from
  IsoparametricElement.
- @tparam Quadrature    The type of quadrature rule used in this
- %ElasticityElement. %Quadrature must be a derived class from Quadrature.
- @tparam ConstitutiveModel    The type of constitutive model used in this
- %ElasticityElement. %ConstitutiveModel must be a derived class from
+ @tparam QuadratureType    The type of quadrature rule used in this
+ %ElasticityElement. QuadratureType must be a derived class from Quadrature.
+ @tparam ConstitutiveModelType    The type of constitutive model used in this
+ %ElasticityElement. ConstitutiveModelType must be a derived class from
  ConstitutiveModel.
  @tparam DerivedElement    The concrete FEM element that inherits from
  %ElasticityElement through CRTP.
  @tparam DerivedTraits    The traits class associated with the DerivedElement.
- */
-template <class IsoparametricElement, class Quadrature, class ConstitutiveModel,
-          class DerivedElement, class DerivedTraits>
+ DerivedTraits should be derived from ElasticityElementTraits. */
+template <class IsoparametricElementType, class QuadratureType,
+          class ConstitutiveModelType, class DerivedElement,
+          class DerivedTraits>
 class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
  public:
   using Traits = DerivedTraits;
   using T = typename Traits::T;
+  static_assert(
+      std::is_base_of<
+          ElasticityElementTraits<IsoparametricElementType, QuadratureType,
+                                  ConstitutiveModelType>,
+          Traits>::value,
+      "The DerivedTraits template parameter must be derived from "
+      "ElasticityElementTraits.");
 
-  /** Given the current state, calculates the elastic potential energy stored in
-   this element in unit J. */
+  /** Given the current state, calculates the elastic potential energy (in
+   joules) stored in this element. */
   T CalcElasticEnergy(const FemState<DerivedElement>& state) const {
     T elastic_energy = 0;
-    const typename Traits::Data& data =
-        state.element_data(get_derived_element());
+    const typename Traits::Data& data = state.element_data(derived_element());
     for (int q = 0; q < Traits::kNumQuadraturePoints; ++q) {
       elastic_energy += reference_volume_[q] * data.Psi[q];
     }
@@ -112,7 +130,8 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
 
  protected:
   /** Assignment and copy constructions are prohibited. Move constructor is
-   allowed so that %ElasticityElement can be stored in `std::vector`. */
+   allowed so that derived elasticity elements can likewise implement the move
+   constructor so they can be stored in `std::vector`. */
   ElasticityElement(const ElasticityElement&) = delete;
   ElasticityElement(ElasticityElement&&) = default;
   const ElasticityElement& operator=(const ElasticityElement&) = delete;
@@ -131,17 +150,19 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
   ElasticityElement(
       ElementIndex element_index,
       const std::array<NodeIndex, Traits::kNumNodes>& node_indices,
-      const ConstitutiveModel& constitutive_model,
+      const ConstitutiveModelType& constitutive_model,
       const Eigen::Ref<
           const Eigen::Matrix<T, Traits::kSpatialDimension, Traits::kNumNodes>>&
           reference_positions)
       : FemElement<DerivedElement, DerivedTraits>(element_index, node_indices),
         constitutive_model_(constitutive_model) {
-    /* Record the quadrature point volumes for the new element. */
+    /* Find the Jacobian of the change of variable function X(ξ). */
     const std::array<
         Eigen::Matrix<T, Traits::kSpatialDimension, Traits::kNaturalDimension>,
         Traits::kNumQuadraturePoints>
-        dXdxi = shape_.CalcJacobian(reference_positions);
+        dXdxi = isoparametric_element_.CalcJacobian(reference_positions);
+    /* Record the quadrature point volume in reference configuration for each
+     quadrature location. */
     for (int q = 0; q < Traits::kNumQuadraturePoints; ++q) {
       /* The scale to transform quadrature weight in parent coordinates to
        reference coordinates. */
@@ -176,12 +197,12 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
 
     /* Record the inverse Jacobian at the reference configuration which is used
      in the calculation of deformation gradient. */
-    dxidX_ = shape_.CalcJacobianPseudoinverse(dXdxi);
+    dxidX_ = isoparametric_element_.CalcJacobianPseudoinverse(dXdxi);
 
     const std::array<
         Eigen::Matrix<T, Traits::kNumNodes, Traits::kNaturalDimension>,
         Traits::kNumQuadraturePoints>& dSdxi =
-        shape_.GetGradientInParentCoordinates();
+        isoparametric_element_.GetGradientInParentCoordinates();
     // TODO(xuchenhan-tri) Replace this with CalcGradientInSpatialCoordinates()
     //  when it is available in IsoparametricElement.
     for (int q = 0; q < Traits::kNumQuadraturePoints; ++q) {
@@ -189,22 +210,22 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
     }
   }
 
-  /** Calculates the negative elastic force on the nodes in this element.
+  /** Adds the negative elastic force on the nodes of this element into the
+   given force vector.
    @param[in] state    The FEM state at which to evaluate the negative elastic
    force.
    @param[out] neg_force    The negative force vector.
    @pre neg_force != nullptr.
-   @warning The data in `neg_force` will NOT be set to zero before writing in
-   the new data. The caller is responsible for clearing any stale data. */
-  void CalcNegativeElasticForce(
+   @warning It is the responsibility of the caller to initialize neg_force to
+   zero appropriately. */
+  void AddNegativeElasticForce(
       const FemState<DerivedElement>& state,
       EigenPtr<Vector<T, Traits::kNumDofs>> neg_force) const {
     DRAKE_ASSERT(neg_force != nullptr);
     auto neg_force_matrix = Eigen::Map<
         Eigen::Matrix<T, Traits::kSolutionDimension, Traits::kNumNodes>>(
         neg_force->data(), Traits::kSolutionDimension, Traits::kNumNodes);
-    const typename Traits::Data& data =
-        state.element_data(get_derived_element());
+    const typename Traits::Data& data = state.element_data(derived_element());
     for (int q = 0; q < Traits::kNumQuadraturePoints; ++q) {
       /* Negative force is the gradient of energy.
        -f = ∫dΨ/dx = ∫dΨ/dF : dF/dx dX.
@@ -215,26 +236,18 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
     }
   }
 
-  /** Calculates the derivative of the negative elastic force on the nodes with
-   respect to the positions of the nodes in this element.
-   @param[in] state    The FEM state at which to evaluate the negative elastic
-   force derivatives.
-   @param[out] K    The negative force derivative matrix.
-   @pre K != nullptr.
-   @warning The data in `K` will NOT be set to zero before writing in the new
-   data. The caller is responsible for clearing any stale data. */
   /* The matrix calculated here is the same as the stiffness matrix
    calculated in [Bonet, 2016] equation (9.50b) without the external force
    component.
    Without the external force component, (9,50b) reads Kₐᵦ = Kₐᵦ,c + Kₐᵦ,σ.
    Kₐᵦ,c is given by ∫dSᵃ/dxₖ cᵢₖⱼₗ dSᵇ/dxₗ dx (9.35), and
-   Kₐᵦ,σ is given by ∫dSᵃ/dxₖ σₖₗ dSᵇ/dxₗ dx (9.44c). Notice that we used S to
+   Kₐᵦ,σ is given by ∫dSᵃ/dxₖ σₖₗ dSᵇ/dxₗ dx (9.44c). Notice that we use S to
    denote shape functions whereas [Bonet, 2016] uses N.
-   The negative force derivative we calculate here is given by ∫ dF/dxᵇ : dP/dF
-   : dF/dxᵃ dX. The calculation uses a different conjugate pair pair, but is
+   The negative force derivative we calculate here is given by ∫ dF/dxᵇ :
+   dP/dF : dF/dxᵃ dX. The calculation uses a different conjugate pair, but is
    analytically equal to Kₐᵦ,c + Kₐᵦ,σ. See
-   multibody/fem/dev/doc/stiffness_matrix.pdf for the derivation that shows the
-   equivalence.
+   multibody/fem/dev/doc/stiffness_matrix.pdf for the derivation that shows
+   the equivalence.
    // TODO(xuchenhan-tri): Update the directory above when this file moves out
    //  of dev/.
 
@@ -243,14 +256,23 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
    statics. Cambridge University Press, 2016. */
 
   /* TODO(xuchenhan-tri): Consider performing the calculation in current
-  coordinates. A few trade-offs:
-   1. The shape function derivatives needs to be recalculated every time.
-   2. There will be two terms instead of one.
-   3. The c matrix has symmetries that can be exploited and can be represented
-  by a symmetric 6x6 matrix, whereas dP/dF is an unsymmetric 9x9 matrix. The two
-  stress-strain pairs need to be carefully profiled against each other as this
-  operation might be (one of) the bottleneck(s). */
-  void CalcNegativeElasticForceDerivative(
+   coordinates. A few trade-offs:
+    1. The shape function derivatives needs to be recalculated every time.
+    2. There will be two terms instead of one.
+    3. The c matrix has symmetries that can be exploited and can be represented
+   by a symmetric 6x6 matrix, whereas dP/dF is an asymmetric 9x9 matrix. The
+   two stress-strain pairs need to be carefully profiled against each other as
+   this operation might be (one of) the bottleneck(s). */
+
+  /** Adds the derivative of the negative elastic force on the nodes of this
+   element into the given matrix.
+   @param[in] state    The FEM state at which to evaluate the negative elastic
+   force derivatives.
+   @param[out] K    The negative force derivative matrix.
+   @pre K != nullptr.
+   @warning It is the responsibility of the caller to initialize K to
+   zero appropriately. */
+  void AddNegativeElasticForceDerivative(
       const FemState<DerivedElement>& state,
       EigenPtr<Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs>> K) const {
     DRAKE_ASSERT(K != nullptr);
@@ -262,8 +284,7 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
      We calculate the first term:
      dF/dxᵇⱼ : d²ψ/dF² : dF/dxᵃᵢ = dFₘₙ/dxᵃᵢ dPₘₙ/dFₖₗ dFₖₗ/dxᵇⱼ.  */
     // clang-format on
-    const typename Traits::Data& data =
-        state.element_data(get_derived_element());
+    const typename Traits::Data& data = state.element_data(derived_element());
     // The ab-th 3-by-3 block of K.
     Matrix3<T> K_ab;
     for (int q = 0; q < Traits::kNumQuadraturePoints; ++q) {
@@ -271,7 +292,7 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
        Kᵃᵇᵢⱼ = dFₘₙ/dxᵃᵢ dPₘₙ/dFₖₗ dFₖₗ/dxᵇⱼ =  dSᵃ/dXₙ dPᵢₙ/dFⱼₗ dSᵇ/dXₗ. */
       for (int a = 0; a < Traits::kNumNodes; ++a) {
         for (int b = 0; b < Traits::kNumNodes; ++b) {
-          DoDoubleTensorContraction(
+          PerformDoubleTensorContraction(
               data.dPdF[q], dSdX_transpose_[q].col(a),
               dSdX_transpose_[q].col(b) * reference_volume_[q], &K_ab);
           AccumulateMatrixBlock(K_ab, a, b, K);
@@ -280,7 +301,9 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
     }
   }
 
-  const IsoparametricElement isoparametric_element() const { return shape_; }
+  const IsoparametricElementType isoparametric_element() const {
+    return isoparametric_element_;
+  }
 
   const std::array<T, Traits::kNumQuadraturePoints>& reference_volume() const {
     return reference_volume_;
@@ -324,9 +347,9 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
     for (int i = 0; i < Traits::kNumNodes; ++i) {
       element_x.col(i) = x.col(this->node_indices()[i]);
     }
-    const std::array<typename IsoparametricElement::JacobianMatrix,
+    const std::array<typename IsoparametricElementType::JacobianMatrix,
                      Traits::kNumQuadraturePoints>
-        dxdxi = shape_.CalcJacobian(element_x);
+        dxdxi = isoparametric_element_.CalcJacobian(element_x);
     for (int q = 0; q < Traits::kNumQuadraturePoints; ++q) {
       F[q] = dxdxi[q] * dxidX_[q];
     }
@@ -353,7 +376,7 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
                 |           |           |           |
                 -------------------------------------
   Namely the ik-th entry in the jl-th block corresponds to the value Aᵢⱼₖₗ. */
-  static void DoDoubleTensorContraction(
+  static void PerformDoubleTensorContraction(
       const Eigen::Ref<const Eigen::Matrix<T, 9, 9>>& A,
       const Eigen::Ref<const Vector3<T>>& u,
       const Eigen::Ref<const Vector3<T>>& v, EigenPtr<Matrix3<T>> B) {
@@ -373,28 +396,24 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
   static void AccumulateMatrixBlock(
       const Eigen::Ref<const Matrix3<T>>& block, int node_a, int node_b,
       EigenPtr<Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs>> matrix) {
-    for (int j = 0; j < 3; ++j) {
-      for (int i = 0; i < 3; ++i) {
-        (*matrix)(3 * node_a + i, 3 * node_b + j) += block(i, j);
-      }
-    }
+    matrix->template block<3, 3>(3 * node_a, 3 * node_b) += block;
   }
 
   /* Return `this` element statically cast either as StaticElasticityElement or
    DynamicElasticityElement depending on its type. */
-  const DerivedElement& get_derived_element() const {
+  const DerivedElement& derived_element() const {
     return static_cast<const DerivedElement&>(*this);
   }
 
   // TODO(xuchenhan-tri): Consider bumping this up into FemElement when new
   //  FemElement types are added.
   /* The quadrature rule used for this element. */
-  Quadrature quadrature_;
-  /* The isoparametric shape function used for this element. */
-  IsoparametricElement shape_{quadrature_.get_points()};
+  QuadratureType quadrature_;
+  /* The isoparametric element used for this element. */
+  IsoparametricElementType isoparametric_element_{quadrature_.get_points()};
   /* The constitutive model that describes the stress-strain relationship
    for this element. */
-  ConstitutiveModel constitutive_model_;
+  ConstitutiveModelType constitutive_model_;
   /* The inverse element Jacobian evaluated at reference configuration at
    the quadrature points in this element. */
   std::array<

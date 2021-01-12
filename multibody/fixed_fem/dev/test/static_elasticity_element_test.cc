@@ -61,7 +61,7 @@ class StaticElasticityElementTest : public ::testing::Test {
     state_->MakeElementData(elements_);
   }
 
-  /* Set an arbitrary reference positions such that the tetrahedron is not
+  /* Set arbitrary reference positions such that the tetrahedron is not
    inverted. */
   Eigen::Matrix<AutoDiffXd, kSpatialDimension, kNumNodes>
   get_reference_positions() const {
@@ -88,6 +88,9 @@ class StaticElasticityElementTest : public ::testing::Test {
 TEST_F(StaticElasticityElementTest, Constructor) {
   EXPECT_EQ(element().node_indices(), dummy_node_indices);
   EXPECT_EQ(element().element_index(), kDummyElementIndex);
+  ElementType move_constructed_element(std::move(elements_[0]));
+  EXPECT_EQ(move_constructed_element.node_indices(), dummy_node_indices);
+  EXPECT_EQ(move_constructed_element.element_index(), kDummyElementIndex);
 }
 
 TEST_F(StaticElasticityElementTest, ResidualIsNegativeEnergyDerivative) {

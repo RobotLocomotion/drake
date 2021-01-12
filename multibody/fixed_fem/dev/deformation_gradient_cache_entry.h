@@ -10,6 +10,8 @@ namespace multibody {
 namespace fixed_fem {
 template <class>
 class DeformationGradientCacheEntry;
+// TODO(xuchenhan-tri) Consider renaming this class and its derived classes to
+//  `FooData` instead of `FooCacheEntry`.
 /** %DeformationGradientCacheEntry stores per element cached quantities
  that work in tandem with ConstitutiveModel. It is a static
  interface that concrete constitutive model cache entries must inherit from to

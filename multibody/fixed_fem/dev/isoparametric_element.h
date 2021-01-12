@@ -226,10 +226,11 @@ class IsoparametricElement {
   LocationsType locations_;
 };
 
-template <class T>
+template <class Element>
 struct is_isoparametric_element {
   static constexpr bool value =
-      std::is_base_of<IsoparametricElement<T, typename T::Traits>, T>::value;
+      std::is_base_of<IsoparametricElement<Element, typename Element::Traits>,
+                      Element>::value;
 };
 }  // namespace fixed_fem
 }  // namespace multibody

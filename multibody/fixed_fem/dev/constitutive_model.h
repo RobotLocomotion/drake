@@ -125,10 +125,11 @@ class ConstitutiveModel {
   ConstitutiveModel() = default;
 };
 
-template <class T>
+template <class Model>
 struct is_constitutive_model {
   static constexpr bool value =
-      std::is_base_of<ConstitutiveModel<T, typename T::Traits>, T>::value;
+      std::is_base_of<ConstitutiveModel<Model, typename Model::Traits>,
+                      Model>::value;
 };
 }  // namespace fixed_fem
 }  // namespace multibody
