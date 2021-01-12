@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version="1.0" ?>
 <Root>
   <Node doc_var="" file_name="" full_name="sample_header_doc" ignore="" kind="None" name="sample_header_doc">
     <Node doc_var="sample_header_doc.RootLevelSymbol.doc" file_name="drake/tools/workspace/pybind11/test/sample_header.h" full_name="RootLevelSymbol" ignore="0" kind="CursorKind.STRUCT_DECL" name="RootLevelSymbol"/>
@@ -56,6 +56,7 @@
       </Node>
     </Node>
     <Node doc_var="" file_name="" full_name="namespace_1" ignore="" kind="CursorKind.NAMESPACE" name="namespace_1">
+      <Node doc_var="sample_header_doc.namespace_1.MySimpleSystem.doc" file_name="drake/tools/workspace/pybind11/test/sample_header.h" full_name="namespace_1::MySimpleSystem" ignore="0" kind="CursorKind.CLASS_DECL" name="MySimpleSystem"/>
       <Node doc_var="" file_name="" full_name="namespace_1::namespace_2" ignore="" kind="CursorKind.NAMESPACE" name="namespace_2">
         <Node doc_var="sample_header_doc.namespace_1.namespace_2.DummyClass.doc" file_name="drake/tools/workspace/pybind11/test/sample_header.h" full_name="namespace_1::namespace_2::DummyClass" ignore="0" kind="CursorKind.CLASS_DECL" name="DummyClass">
           <Node doc_var="sample_header_doc.namespace_1.namespace_2.DummyClass.Details.doc" file_name="drake/tools/workspace/pybind11/test/sample_header.h" full_name="namespace_1::namespace_2::DummyClass::Details" ignore="0" kind="CursorKind.TYPE_ALIAS_DECL" name="Details"/>

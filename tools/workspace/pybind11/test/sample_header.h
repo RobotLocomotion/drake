@@ -361,4 +361,17 @@ struct IgnoredStruct {
 };
 
 }
+
+// N.B. Breaking comment styles will cause parsing to break (#14498).
+/// My simple system.
+///
+/// @system
+/// name: Wooh
+/// input_ports:
+/// - u
+/// output_ports:
+/// - y
+/// @endsystem
+class MySimpleSystem {};
+
 }  // namespace namespace_1

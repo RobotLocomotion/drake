@@ -104,9 +104,8 @@ drake_py_binary(
 add_lint_tests(
     python_lint_exclude = [
         ":conf.py",
-        # The following needs the executable flag to be run by doxygen, but the
-        # linter complains:
-        ":system_doxygen.py",
     ],
-    python_lint_extra_srcs = [":doxygen.py"],
+    python_lint_extra_srcs = [
+        ":doxygen.py",
+    ],
 )
