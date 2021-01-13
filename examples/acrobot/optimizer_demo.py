@@ -14,10 +14,10 @@ from scipy.optimize import fmin
 
 from pydrake.common import FindResourceOrThrow
 
-from drake.examples.acrobot.dev.acrobot_io import (
+from drake.examples.acrobot.acrobot_io import (
     load_output, load_scenario, save_scenario)
 
-from drake.examples.acrobot.dev.metrics import (
+from drake.examples.acrobot.metrics import (
     ensemble_cost, success_rate)
 
 
@@ -30,7 +30,7 @@ def evaluate_metric_once(scenario, metric, seeds):
     with each random seed in seeds.
     """
     runner = FindResourceOrThrow(
-        "drake/examples/acrobot/dev/spong_sim_main_cc")
+        "drake/examples/acrobot/spong_sim_main_cc")
     env_tmpdir = os.getenv("TEST_TEMPDIR") or os.getenv("TMPDIR") or "/tmp"
     with tempfile.TemporaryDirectory(prefix="optimizer_demo",
                                      dir=env_tmpdir) as temp_dir:
@@ -89,25 +89,32 @@ def optimize_controller_params(
 
 def main():
     parser = argparse.ArgumentParser(__doc__)
+    # There is a subtlety to the default `scenario_file`: any default must be
+    # a bazel `data=` dependency, but any user-specified file cannot be relied
+    # on to be a bazel dependency, so we do `FindResourceOrThrow` resolution
+    # only on the default and not on any user-provided argument.
     parser.add_argument(
         "--scenario_file", "-f", type=str, default=None,
-        help="Scenario to run (default is example_stochastic_scenario.yaml)")
+        help="Scenario to run (default: example_stochastic_scenario.yaml)")
     parser.add_argument(
         "--metric", "-m", type=str, choices=METRICS.keys(),
+        help="Choice of metric to optimize (default: %(default)s)",
         default="ensemble_cost")
     parser.add_argument(
         "--ensemble_size", "-e", type=int, default=10,
-        help="Size of ensemble for each cost function evaluation.")
+        help=("Size of ensemble for each cost function evaluation "
+              "(default: %(default)s)"))
     parser.add_argument(
         "--num_evaluations", "-n", type=int, default=250,
-        help="Cost function call budget of the optimizer.")
+        help=("Cost function call budget of the optimizer "
+              "(default: %(default)s)"))
     parser.add_argument(
         "--output", "-o", type=argparse.FileType("w"), default=sys.stdout,
-        help="File to write the optimized output (default=stdout)")
+        help="File to write the optimized output (default: stdout)")
     args = parser.parse_args()
     with closing(args.output) as output:
         scenario_file = args.scenario_file or FindResourceOrThrow(
-            "drake/examples/acrobot/dev/test/example_stochastic_scenario.yaml")
+            "drake/examples/acrobot/test/example_stochastic_scenario.yaml")
         input_scenario = load_scenario(filename=scenario_file)
         result = optimize_controller_params(
             scenario=input_scenario,
