@@ -13,25 +13,23 @@
 namespace drake {
 namespace multibody {
 namespace fixed_fem {
-namespace {
-constexpr int kNaturalDimension = 3;
-constexpr int kSpatialDimension = 3;
-constexpr int kQuadratureOrder = 1;
-const ElementIndex kDummyElementIndex(0);
-
 class StaticElasticityElementTest : public ::testing::Test {
  protected:
+  static constexpr int kNaturalDimension = 3;
+  static constexpr int kSpatialDimension = 3;
+  static constexpr int kQuadratureOrder = 1;
+  const ElementIndex kZeroIndex{0};
+  using T = AutoDiffXd;
   using QuadratureType =
       SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
   static constexpr int kNumQuads = QuadratureType::num_quadrature_points();
   using IsoparametricElementType =
-      LinearSimplexElement<AutoDiffXd, kNaturalDimension, kSpatialDimension,
-                           kNumQuads>;
-  using ConstitutiveModelType = LinearConstitutiveModel<AutoDiffXd, kNumQuads>;
+      LinearSimplexElement<T, kNaturalDimension, kSpatialDimension, kNumQuads>;
+  using ConstitutiveModelType = LinearConstitutiveModel<T, kNumQuads>;
   using ElementType =
       StaticElasticityElement<IsoparametricElementType, QuadratureType,
                               ConstitutiveModelType>;
-  static constexpr int kDofs = ElementType::Traits::kNumDofs;
+  static constexpr int kNumDofs = ElementType::Traits::kNumDofs;
   static constexpr int kNumNodes = ElementType::Traits::kNumNodes;
   const std::array<NodeIndex, kNumNodes> dummy_node_indices = {
       {NodeIndex(0), NodeIndex(1), NodeIndex(2), NodeIndex(3)}};
@@ -42,20 +40,19 @@ class StaticElasticityElementTest : public ::testing::Test {
   }
 
   void SetupElement() {
-    Eigen::Matrix<AutoDiffXd, kSpatialDimension, kNumNodes>
-        reference_positions = get_reference_positions();
+    Eigen::Matrix<T, kSpatialDimension, kNumNodes> reference_positions =
+        get_reference_positions();
     ConstitutiveModelType model(1, 0.25);
-    elements_.emplace_back(kDummyElementIndex, dummy_node_indices, model,
+    elements_.emplace_back(kZeroIndex, dummy_node_indices, model,
                            reference_positions);
   }
 
+  /* Set up a state with arbitrary positions. */
   void SetupState() {
-    // Set arbitrary node positions and the gradient.
-    Vector<double, kDofs> x;
+    /* Set arbitrary node positions and the gradient. */
+    Vector<double, kNumDofs> x;
     x << 0.18, 0.63, 0.54, 0.13, 0.92, 0.17, 0.03, 0.86, 0.85, 0.25, 0.53, 0.67;
-    const Eigen::Matrix<double, kDofs, Eigen::Dynamic> gradient =
-        MatrixX<double>::Identity(kDofs, kDofs);
-    Vector<AutoDiffXd, kDofs> x_autodiff;
+    Vector<T, kNumDofs> x_autodiff;
     math::initializeAutoDiff(x, x_autodiff);
     state_ = std::make_unique<FemState<ElementType>>(x_autodiff);
     state_->MakeElementData(elements_);
@@ -63,10 +60,10 @@ class StaticElasticityElementTest : public ::testing::Test {
 
   /* Set arbitrary reference positions such that the tetrahedron is not
    inverted. */
-  Eigen::Matrix<AutoDiffXd, kSpatialDimension, kNumNodes>
-  get_reference_positions() const {
-    Eigen::Matrix<AutoDiffXd, kSpatialDimension, kNumNodes> X(kSpatialDimension,
-                                                              kNumNodes);
+  Eigen::Matrix<T, kSpatialDimension, kNumNodes> get_reference_positions()
+      const {
+    Eigen::Matrix<T, kSpatialDimension, kNumNodes> X(kSpatialDimension,
+                                                     kNumNodes);
     // clang-format off
     X << -0.10, 0.90, 0.02, 0.10,
          1.33, 0.23, 0.04, 0.01,
@@ -81,42 +78,57 @@ class StaticElasticityElementTest : public ::testing::Test {
     return elements_[0];
   }
 
+  /* Calculates the negative elastic force evaluted at `state_`. */
+  Vector<T, kNumDofs> CalcNegativeElasticForce() const {
+    Vector<T, kNumDofs> neg_force = Vector<T, kNumDofs>::Zero();
+    element().AddNegativeElasticForce(*state_, &neg_force);
+    return neg_force;
+  }
+
+  /* Calculates the negative elastic force derivatives with respect to positions
+   evaluted at `state_`. */
+  Eigen::Matrix<T, kNumDofs, kNumDofs> CalcNegativeElasticForceDerivative()
+      const {
+    Eigen::Matrix<T, kNumDofs, kNumDofs> neg_force_derivative =
+        Eigen::Matrix<T, kNumDofs, kNumDofs>::Zero();
+    element().AddNegativeElasticForceDerivative(*state_, &neg_force_derivative);
+    return neg_force_derivative;
+  }
+
   std::vector<ElementType> elements_;
   std::unique_ptr<FemState<ElementType>> state_;
 };
 
+namespace {
 TEST_F(StaticElasticityElementTest, Constructor) {
   EXPECT_EQ(element().node_indices(), dummy_node_indices);
-  EXPECT_EQ(element().element_index(), kDummyElementIndex);
+  EXPECT_EQ(element().element_index(), kZeroIndex);
   ElementType move_constructed_element(std::move(elements_[0]));
   EXPECT_EQ(move_constructed_element.node_indices(), dummy_node_indices);
-  EXPECT_EQ(move_constructed_element.element_index(), kDummyElementIndex);
+  EXPECT_EQ(move_constructed_element.element_index(), kZeroIndex);
 }
 
-TEST_F(StaticElasticityElementTest, ResidualIsNegativeEnergyDerivative) {
-  AutoDiffXd energy = element().CalcElasticEnergy(*state_);
-  Vector<AutoDiffXd, kDofs> residual;
+/* Tests that the calculation of the residual calls the calculation of the
+ negative elastic force and the external force. */
+TEST_F(StaticElasticityElementTest, ResidualIsNegativeElasticForce) {
+  Vector<T, kNumDofs> residual;
   element().CalcResidual(*state_, &residual);
-
-  EXPECT_TRUE(CompareMatrices(energy.derivatives(), residual,
-                              std::numeric_limits<double>::epsilon()));
+  // TODO(xuchenhan-tri): Modify this test to account for external forces when
+  //  external forces are added. */
+  EXPECT_TRUE(CompareMatrices(CalcNegativeElasticForce(), residual, 0));
 }
 
-TEST_F(StaticElasticityElementTest, StiffnessMatrixIsResidualDerivative) {
-  Vector<AutoDiffXd, kDofs> residual;
-  element().CalcResidual(*state_, &residual);
-  Eigen::Matrix<AutoDiffXd, kDofs, kDofs> stiffness_matrix;
+/* Tests that the calculation of the stiffness matrix calls the calculation of
+ the negative elastic force derivatives. */
+TEST_F(StaticElasticityElementTest, StiffnessMatrixIsNegativeElasticForce) {
+  Eigen::Matrix<T, kNumDofs, kNumDofs> stiffness_matrix;
   element().CalcStiffnessMatrix(*state_, &stiffness_matrix);
-
-  for (int i = 0; i < kDofs; ++i) {
-    EXPECT_TRUE(CompareMatrices(residual(i).derivatives().transpose(),
-                                stiffness_matrix.row(i),
-                                std::numeric_limits<double>::epsilon()));
-  }
+  EXPECT_TRUE(CompareMatrices(CalcNegativeElasticForceDerivative(),
+                              stiffness_matrix, 0));
 }
 
 TEST_F(StaticElasticityElementTest, NoDampingMatrix) {
-  Eigen::Matrix<AutoDiffXd, kDofs, kDofs> damping_matrix;
+  Eigen::Matrix<T, kNumDofs, kNumDofs> damping_matrix;
   DRAKE_EXPECT_THROWS_MESSAGE(
       element().CalcDampingMatrix(*state_, &damping_matrix), std::exception,
       "Static elasticity forms a zero-th order ODE and does not provide a "
@@ -124,7 +136,7 @@ TEST_F(StaticElasticityElementTest, NoDampingMatrix) {
 }
 
 TEST_F(StaticElasticityElementTest, NoMassMatrix) {
-  Eigen::Matrix<AutoDiffXd, kDofs, kDofs> mass_matrix;
+  Eigen::Matrix<T, kNumDofs, kNumDofs> mass_matrix;
   DRAKE_EXPECT_THROWS_MESSAGE(
       element().CalcMassMatrix(*state_, &mass_matrix), std::exception,
       "Static elasticity forms a zero-th order ODE and does not provide a mass "

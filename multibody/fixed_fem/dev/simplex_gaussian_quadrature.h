@@ -68,7 +68,7 @@ class SimplexGaussianQuadrature
         // TODO(xuchenhan-tri): fix the bug in cpplint as described in
         // https://github.com/google/styleguide/issues/541. A solution has been
         // proposed at https://github.com/cpplint/cpplint/pull/136.
-        // NOLINTNEXTLINE(readability/braces)
+        // NOLINTNEXTLINE(readability/braces) false positive
       } else if constexpr (Order == 2) {
         // quadrature point location,  weight/area
         //  (1/6, 1/6)                     1/3
@@ -83,7 +83,7 @@ class SimplexGaussianQuadrature
         points[2] = {1.0 / 6.0, 2.0 / 3.0};
         WeightsType weights = {{1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0}};
         return make_pair(move(points), move(weights));
-        // NOLINTNEXTLINE(readability/braces)
+        // NOLINTNEXTLINE(readability/braces) false positive
       } else if constexpr (Order == 3) {
         // quadrature point location,  weight/area
         //  (1/3, 1/3)                     -9/16
@@ -101,7 +101,7 @@ class SimplexGaussianQuadrature
       } else {
         DRAKE_UNREACHABLE();
       }
-      // NOLINTNEXTLINE(readability/braces)
+      // NOLINTNEXTLINE(readability/braces) false positive
     } else if constexpr (NaturalDimension == 3) {
       // For a unit tetrahedron, area = 1/6.
       if constexpr (Order == 1) {
@@ -110,7 +110,7 @@ class SimplexGaussianQuadrature
         LocationsType points = {{{0.25, 0.25, 0.25}}};
         WeightsType weights = {{1.0 / 6.0}};
         return make_pair(move(points), move(weights));
-        // NOLINTNEXTLINE(readability/braces)
+        // NOLINTNEXTLINE(readability/braces) false positive
       } else if constexpr (Order == 2) {
         // quadrature point location,  weight/area
         //  (a, b, b)                      1/4
@@ -128,7 +128,7 @@ class SimplexGaussianQuadrature
         WeightsType weights = {
             {1.0 / 24.0, 1.0 / 24.0, 1.0 / 24.0, 1.0 / 24.0}};
         return make_pair(move(points), move(weights));
-        // NOLINTNEXTLINE(readability/braces)
+        // NOLINTNEXTLINE(readability/braces) false positive
       } else if constexpr (Order == 3) {
         // quadrature point location,  weight/area
         //  (1/4, 1/4, 1/4)               -4/5

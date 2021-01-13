@@ -81,6 +81,7 @@ class StaticElasticityElement final
   /* Friend the base class so that the public methods in the CRTP base class can
    access the private implementations of this class. */
   friend FemElementType;
+  friend class StaticElasticityElementTest;
 
   /* Implements FemElement::CalcResidual(). */
   void DoCalcResidual(const FemState<ElementType>& state,
