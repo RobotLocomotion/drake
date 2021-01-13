@@ -26,6 +26,11 @@ while [ "${1:-}" != "" ]; do
     --without-test-only)
       source_distribution_args+=(--without-test-only)
       ;;
+    # Do NOT call brew update during execution of this script.
+    --without-update)
+      binary_distribution_args+=(--without-update)
+      source_distribution_args+=(--without-update)
+      ;;
     *)
       echo 'Invalid command line argument' >&2
       exit 1

@@ -12,6 +12,7 @@ with_doc_only=0
 with_kcov=0
 with_maintainer_only=0
 with_test_only=1
+with_update=1
 
 while [ "${1:-}" != "" ]; do
   case "$1" in
@@ -39,6 +40,12 @@ while [ "${1:-}" != "" ]; do
     --without-test-only)
       with_test_only=0
       ;;
+    # Do NOT call apt-get update during execution of this script, unless
+    # absolutely necessary, e.g., if kcov is to be installed on Ubuntu 18.04
+    # (Bionic).
+    --without-update)
+      with_update=0
+      ;;
     *)
       echo 'Invalid command line argument' >&2
       exit 3
@@ -49,6 +56,10 @@ done
 if [[ "${EUID}" -ne 0 ]]; then
   echo 'ERROR: This script must be run as root' >&2
   exit 1
+fi
+
+if [[ "${with_update}" -eq 1 && "${binary_distribution_called_update:-0}" -ne 1 ]]; then
+  apt-get update || (sleep 30; apt-get update)
 fi
 
 apt-get install --no-install-recommends $(cat <<EOF
@@ -66,11 +77,10 @@ if [[ "${codename}" == 'bionic' ]] && [[ "${with_kcov}" -eq 1 ]]; then
   apt-key adv --fetch-keys https://drake-apt.csail.mit.edu/drake.pub.gpg
   echo "deb [arch=amd64] https://drake-apt.csail.mit.edu/${codename} ${codename} main" \
     > /etc/apt/sources.list.d/drake.list
-  apt-get update
+  apt-get update || (sleep 30; apt-get update)
   apt-get install --no-install-recommends kcov-35
 fi
 
-apt-get update
 packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}.txt")
 apt-get install --no-install-recommends ${packages}
 
