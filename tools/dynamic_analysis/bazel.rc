@@ -218,6 +218,9 @@ build:memcheck --copt -g
 # https://sourceforge.net/p/valgrind/mailman/valgrind-developers/?viewmonth=201806&viewday=11&style=flat
 build:memcheck --copt -O2
 build:memcheck --run_under=//tools/dynamic_analysis:valgrind
+# We explicitly do not filter `sh` targets because some C++ binaries are tested
+# indirectly via those targets. Any Python code that is run through a `sh`
+# target may need `tags = ["no_memcheck"]` if it incurs CI issues.
 build:memcheck --test_lang_filters=-py
 build:memcheck --test_tag_filters=-gurobi,-mosek,-snopt,-lint,-no_memcheck,-no_valgrind_tools
 # Slowdown factor can range from 5-100.
