@@ -63,7 +63,7 @@ struct ElasticityElementTraits {
   static constexpr int kNumDofs = kSolutionDimension * kNumNodes;
 
   /* The data shared by any elasticity element. Derived classes may extend this
-   data. */
+   Data by inheriting it. */
   struct Data {
     typename ConstitutiveModelType::Traits::DeformationGradientCacheEntryType
         deformation_gradient_cache_entry;
@@ -89,7 +89,8 @@ struct ElasticityElementTraits {
  CalcElasticEnergy()), but does not implement the FemElement interface (e.g.
  DoCalcResidual()); the details of those methods differ according to dynamic and
  static elasticities. Derived elasticity element types are responsible for
- implementing those. In essence, this is a purely abstract class.
+ implementing those. This is similar to an abstract class in that it cannot be
+ instantiated itself; only derived class can be.
  @tparam IsoparametricElementType    The type of isoparametric element used in
  this %ElasticityElement. IsoparametricElementType must be a derived class from
  IsoparametricElement.
@@ -172,7 +173,7 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
         /* Degenerate tetrahedron in the initial configuration is not allowed.
          */
         DRAKE_DEMAND(volume_scale > 0);
-        // NOLINTNEXTLINE(readability/braces)
+        // NOLINTNEXTLINE(readability/braces) false positive
       } else if constexpr (Traits::kNaturalDimension == 2) {
         /* Given the QR decomposition of the Jacobian matrix J = QR, where Q is
          unitary and R is upper triangular, the 2x2 top left corner of R gives
