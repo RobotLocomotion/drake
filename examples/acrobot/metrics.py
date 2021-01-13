@@ -38,8 +38,7 @@ def is_success(x_tape):
     Returns true if the final state in `x_tape` is close to the upright
     equilibrium.
     """
-    return np.linalg.norm(deviation_from_upright_equilibrium(
-        x_tape[:, -1])) < 1e-3
+    return final_state_cost(x_tape) < 1e-3
 
 
 def success_rate(x_tapes):

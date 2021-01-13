@@ -14,10 +14,10 @@ from scipy.optimize import fmin
 
 from pydrake.common import FindResourceOrThrow
 
-from drake.examples.acrobot.dev.acrobot_io import (
+from drake.examples.acrobot.acrobot_io import (
     load_output, load_scenario, save_scenario)
 
-from drake.examples.acrobot.dev.metrics import (
+from drake.examples.acrobot.metrics import (
     ensemble_cost, success_rate)
 
 
@@ -30,7 +30,7 @@ def evaluate_metric_once(scenario, metric, seeds):
     with each random seed in seeds.
     """
     runner = FindResourceOrThrow(
-        "drake/examples/acrobot/dev/spong_sim_main_cc")
+        "drake/examples/acrobot/spong_sim_main_cc")
     env_tmpdir = os.getenv("TEST_TEMPDIR") or os.getenv("TMPDIR") or "/tmp"
     with tempfile.TemporaryDirectory(prefix="optimizer_demo",
                                      dir=env_tmpdir) as temp_dir:
@@ -107,7 +107,7 @@ def main():
     args = parser.parse_args()
     with closing(args.output) as output:
         scenario_file = args.scenario_file or FindResourceOrThrow(
-            "drake/examples/acrobot/dev/test/example_stochastic_scenario.yaml")
+            "drake/examples/acrobot/test/example_stochastic_scenario.yaml")
         input_scenario = load_scenario(filename=scenario_file)
         result = optimize_controller_params(
             scenario=input_scenario,
