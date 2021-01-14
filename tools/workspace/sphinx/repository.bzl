@@ -7,7 +7,7 @@ def sphinx_repository(name):
         name = name,
         command = "sphinx-build",
         additional_search_paths = [
-            "/usr/local/opt/sphinx-doc@1.8/bin",
             "/usr/share/sphinx/scripts/python3",
         ],
+        allow_missing = True,
     )
