@@ -65,11 +65,16 @@ class DefaultRgbaColorShader final : public ShaderProgram {
     LoadFromSources(kVertexShader, kFragmentShader);
     diffuse_color_loc_ = GetUniformLocation("diffuse_color");
     normal_mat_loc_ = GetUniformLocation("normal_mat");
+    light_dir_loc_ = GetUniformLocation("light_dir_C");
   }
 
   void SetInstanceParameters(const ShaderProgramData& data) const final {
     glUniform4fv(diffuse_color_loc_, 1,
                  data.value().get_value<Vector4<float>>().data());
+  }
+
+  void SetLightDirection(const Vector3<float>& light_dir_C) const final {
+    glUniform3fv(light_dir_loc_, 1, light_dir_C.data());
   }
 
  private:
@@ -114,6 +119,9 @@ class DefaultRgbaColorShader final : public ShaderProgram {
   // The location of the "normal_mat" uniform in the shader.
   GLint normal_mat_loc_{};
 
+  // The location of the "light_dir_C" uniform in the shader.
+  GLint light_dir_loc_{};
+
   // The vertex shader:
   //   - Transforms the vertex into device *and* camera coordinates.
   //   - Transforms the normal into camera coordinates to be interpolated
@@ -139,12 +147,10 @@ void main() {
   static constexpr char kFragmentShader[] = R"""(
 #version 330
 uniform vec4 diffuse_color;
+uniform vec3 light_dir_C;
 varying vec3 n_C;
 out vec4 color;
 void main() {
-  // The light is "infinitely" far away in the (0, 0, 1) direction; so it is
-  // a fixed direction to *every* point.
-  vec3 light_dir_C = vec3(0, 0, 1);
   // NOTE: Depending on triangle size and variance of normal direction over
   // that triangle, n_C may not be unit length; to play it safe, we blindly
   // normalize it. Consider *not* normalizing it if it improves performance
@@ -171,6 +177,7 @@ class DefaultTextureColorShader final : public internal::ShaderProgram {
     diffuse_map_loc_ = GetUniformLocation("diffuse_map");
     diffuse_scale_loc_ = GetUniformLocation("diffuse_map_scale");
     normal_mat_loc_ = GetUniformLocation("normal_mat");
+    light_dir_loc_ = GetUniformLocation("light_dir_C");
   }
 
   void SetInstanceParameters(const ShaderProgramData& data) const final {
@@ -179,6 +186,10 @@ class DefaultTextureColorShader final : public internal::ShaderProgram {
     const auto& my_data = data.value().get_value<InstanceData>();
     glBindTexture(GL_TEXTURE_2D, my_data.texture_id);
     glUniform2fv(diffuse_scale_loc_, 1, my_data.texture_scale.data());
+  }
+
+  void SetLightDirection(const Vector3<float>& light_dir_C) const final {
+    glUniform3fv(light_dir_loc_, 1, light_dir_C.data());
   }
 
  private:
@@ -246,6 +257,9 @@ class DefaultTextureColorShader final : public internal::ShaderProgram {
   // The location of the "normal_mat" uniform in the shader.
   GLint normal_mat_loc_{};
 
+  // The location of the "light_dir_C" uniform in the shader.
+  GLint light_dir_loc_{};
+
   // The vertex shader:
   //   - Transforms the vertex into device *and* camera coordinates.
   //   - Transforms the normal into camera coordinates to be interpolated
@@ -279,11 +293,9 @@ uniform vec2 diffuse_map_scale;
 varying vec4 p_CV;
 varying vec3 n_C;
 varying vec2 tex_coord;
+uniform vec3 light_dir_C;
 out vec4 color;
 void main() {
-  // The light is "infinitely" far away in the (0, 0, 1) direction; so it is
-  // a fixed direction to *every* point.
-  vec3 light_dir_C = vec3(0, 0, 1);
   // NOTE: Depending on triangle size and variance of normal direction over
   // that triangle, n_C may not be unit length; consider normalizing it.
   vec3 nhat_C = normalize(n_C);
@@ -695,6 +707,7 @@ void RenderEngineGl::DoRenderColorImage(const ColorRenderCamera& camera,
     const ShaderProgram& shader_program = *shader_ptr;
     shader_program.Use();
 
+    shader_program.SetLightDirection(light_dir_C_);
     shader_program.SetProjectionMatrix(T_DC);
 
     // Now I need to render the geometries.
