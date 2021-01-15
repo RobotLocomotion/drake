@@ -73,7 +73,7 @@ if __name__ == "__main__":
         raise RuntimeError("Usage: system_doxygen.py input_file")
 
     # Load the file in batch into a string.
-    with open(sys.argv[1], 'r') as f:
+    with open(sys.argv[1], 'r', encoding='utf-8') as f:
         s = f.read()
 
     s = process_doxygen_system_tags(s)
