@@ -404,7 +404,8 @@ class Simulator {
   /// simulator.set_monitor([&plant](const Context<T>& root_context) {
   ///   const Context<T>& plant_context =
   ///       plant.GetMyContextFromRoot(root_context);
-  ///   const Vector3<T> com = plant.CalcCenterOfMassPosition(plant_context);
+  ///   const Vector3<T> com =
+  ///       plant.CalcCenterOfMassPositionInWorld(plant_context);
   ///   if (com[2] < 0.1) {  // Check z height of com.
   ///     return EventStatus::Failed(plant, "System fell over.");
   ///   }

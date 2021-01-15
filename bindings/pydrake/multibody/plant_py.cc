@@ -283,16 +283,17 @@ void DoScalarDependentDefinitions(py::module m, T) {
         // TODO(eric.cousineau): Include `CalcInverseDynamics` once there is an
         // overload that (a) services MBP directly and (b) uses body
         // association that is less awkward than implicit BodyNodeIndex.
-        .def("CalcCenterOfMassPosition",
+        .def("CalcCenterOfMassPositionInWorld",
             overload_cast_explicit<Vector3<T>, const Context<T>&>(
-                &Class::CalcCenterOfMassPosition),
-            py::arg("context"), cls_doc.CalcCenterOfMassPosition.doc_1args)
-        .def("CalcCenterOfMassPosition",
+                &Class::CalcCenterOfMassPositionInWorld),
+            py::arg("context"),
+            cls_doc.CalcCenterOfMassPositionInWorld.doc_1args)
+        .def("CalcCenterOfMassPositionInWorld",
             overload_cast_explicit<Vector3<T>, const Context<T>&,
                 const std::vector<ModelInstanceIndex>&>(
-                &Class::CalcCenterOfMassPosition),
+                &Class::CalcCenterOfMassPositionInWorld),
             py::arg("context"), py::arg("model_instances"),
-            cls_doc.CalcCenterOfMassPosition.doc_2args)
+            cls_doc.CalcCenterOfMassPositionInWorld.doc_2args)
         .def(
             "CalcSpatialMomentumInWorldAboutPoint",
             [](const Class* self, const Context<T>& context,

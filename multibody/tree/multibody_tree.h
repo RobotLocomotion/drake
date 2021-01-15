@@ -1289,34 +1289,27 @@ class MultibodyTree {
       EigenPtr<MatrixX<T>> p_AQi) const;
 
   // See MultibodyPlant method.
-  Vector3<T> CalcCenterOfMassPosition(const systems::Context<T>& context) const;
+  Vector3<T> CalcCenterOfMassPositionInWorld(
+      const systems::Context<T>& context) const;
 
   // See MultibodyPlant method.
-  Vector3<T> CalcCenterOfMassPosition(
+  Vector3<T> CalcCenterOfMassPositionInWorld(
       const systems::Context<T>& context,
       const std::vector<ModelInstanceIndex>& model_instances) const;
 
-  // This method computes the center of mass position p_WCcm of specified
-  // bodies measured and expressed in world frame W. The specified bodies
-  // are considered as a single composite body C, whose center of mass
-  // `composite_mass` is located at Ccm. The bodies are selected by a vector of
-  // body indexes `body_indexes`. This function does not distinguish between
-  // welded bodies, joint connected bodies and floating bodies. The
-  // world_body() is ignored.
-  //
-  // @param[in] context
-  //   The context containing the state of the model. It stores the
-  //   generalized positions q of the model.
-  // @param[in] body_indexes
-  //   The vector of selected bodies. `body_indexes` **must** not be empty.
-  // @retval p_WCcm
-  //   The output position of center of mass in the world frame W.
-  //
-  // @throws std::runtime_error if `MultibodyPlant` has no body except
-  //   `world_body()`.
-  // @throws std::runtime_error if `body_indexes.empty() == true`.
-  // @throws std::runtime_error unless `composite_mass > 0`.
-  Vector3<T> CalcCenterOfMassPosition(
+  // Calculates the position vector from the world origin Wo to the center of
+  // mass of all bodies specified by body_indexes, expressed in world frame W.
+  // @param[in] context Contains the state of the model.
+  // @param[in] body_indexes  The vector of selected bodies.  This method does
+  // not distinguish between welded, joint connected, or floating bodies.
+  // @retval p_WScm_W position vector from Wo to Scm expressed in world frame W,
+  // where Scm is the center of mass of the system S of bodies specified by
+  // body_indexes.
+  // @throws std::exception if body_indexes is empty or body_indexes has no body
+  // except world_body().
+  // @throws std::exception if mₛ ≤ 0 (mₛ is the mass of the system S).
+  // @note The world_body() is ignored.
+  Vector3<T> CalcCenterOfMassPositionInWorld(
       const systems::Context<T>& context,
       const std::vector<BodyIndex>& body_indexes) const;
 

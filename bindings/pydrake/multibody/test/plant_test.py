@@ -781,9 +781,9 @@ class TestPlant(unittest.TestCase):
             frame_A=world_frame).T
         self.assertTupleEqual(p_AQi.shape, (2, 3))
 
-        p_com = plant.CalcCenterOfMassPosition(context=context)
+        p_com = plant.CalcCenterOfMassPositionInWorld(context=context)
         self.assertTupleEqual(p_com.shape, (3, ))
-        p_com = plant.CalcCenterOfMassPosition(
+        p_com = plant.CalcCenterOfMassPositionInWorld(
             context=context, model_instances=[instance])
         self.assertTupleEqual(p_com.shape, (3, ))
 
