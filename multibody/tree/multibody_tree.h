@@ -17,6 +17,7 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/common/random.h"
+#include "drake/common/sorted_pair.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/tree/articulated_body_force_cache.h"
@@ -3012,6 +3013,10 @@ class MultibodyTree {
   std::vector<std::unique_ptr<internal::ModelInstance<T>>> model_instances_;
 
   std::vector<std::unique_ptr<Joint<T>>> owned_joints_;
+
+  // Map used to detect redundant joints.
+  using BodiesKey = SortedPair<BodyIndex>;
+  std::unordered_map<BodiesKey, JointIndex> bodies_to_joint_;
 
   // List of all frames in the system ordered by their FrameIndex.
   // This vector contains a pointer to all frames in owned_frames_ as well as a

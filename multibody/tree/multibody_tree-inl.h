@@ -284,6 +284,31 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
   static_assert(std::is_convertible<JointType<T>*, Joint<T>*>::value,
                 "JointType must be a sub-class of Joint<T>.");
 
+  if (joint == nullptr) {
+    throw std::logic_error("Input joint is a nullptr.");
+  }
+
+  if (topology_is_valid()) {
+    throw std::logic_error("This MultibodyTree is finalized already. "
+                           "Therefore adding more joints is not allowed. "
+                           "See documentation for Finalize() for details.");
+  }
+
+  const JointIndex joint_index(owned_joints_.size());
+  auto [map_iter, inserted] = bodies_to_joint_.insert(
+      {{joint->parent_body().index(), joint->child_body().index()},
+            joint_index});
+  if (!inserted) {
+    auto [bodies_key, existing_joint_index] = *map_iter;
+    const auto& existing_joint = get_joint(existing_joint_index);
+    const auto& body0 = get_body(bodies_key.first());
+    const auto& body1 = get_body(bodies_key.second());
+    throw std::runtime_error(
+        "This MultibodyTree already has a joint '" + existing_joint.name() +
+        "' connecting '" + body0.name() + "' to '" + body1.name() +
+        "'. Therefore adding joint '" + joint->name() + "' is not allowed.");
+  }
+
   if (HasJointNamed(joint->name(), joint->model_instance())) {
     throw std::logic_error(
         "Model instance '" +
@@ -292,15 +317,6 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
             "Joint names must be unique within a given model.");
   }
 
-  if (topology_is_valid()) {
-    throw std::logic_error("This MultibodyTree is finalized already. "
-                           "Therefore adding more joints is not allowed. "
-                           "See documentation for Finalize() for details.");
-  }
-  if (joint == nullptr) {
-    throw std::logic_error("Input joint is a nullptr.");
-  }
-  const JointIndex joint_index(owned_joints_.size());
   joint->set_parent_tree(this, joint_index);
   JointType<T>* raw_joint_ptr = joint.get();
   joint_name_to_index_.insert({joint->name(), joint->index()});
