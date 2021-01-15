@@ -514,7 +514,10 @@ GTEST_TEST(SdfParser, StaticModelWithJoints) {
         pair.plant->world_frame(), pair.plant->GetFrameByName("a"));
     pair.plant->Finalize();
   };
-  EXPECT_THROW(weld_and_finalize(), std::runtime_error);
+  // The message contains the elaborate joint name inserted by the parser.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      weld_and_finalize(), std::runtime_error,
+      ".*sdformat_model_static.*");
 
   // Drake does not support "frozen" joints (#12227).
   DRAKE_EXPECT_THROWS_MESSAGE(

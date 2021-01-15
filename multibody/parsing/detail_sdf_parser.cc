@@ -790,12 +790,17 @@ ModelInstanceIndex AddModelFromSpecification(
     }
     // Weld all links that have been added, but are not (yet) attached to the
     // world.
-    // N.B. This implementation prevents "reposturing" a static model after
-    // parsing. See #12227 for a more concrete example.
+    // N.B. This implementation complicates "reposturing" a static model after
+    // parsing. See #12227 and #14518 for more discussion.
     for (const LinkInfo& link_info : added_link_infos) {
       if (!AreWelded(*plant, plant->world_body(), *link_info.body)) {
-        plant->WeldFrames(
-            plant->world_frame(), link_info.body->body_frame(), link_info.X_WL);
+        const auto& A = plant->world_frame();
+        const auto& B = link_info.body->body_frame();
+        const std::string joint_name =
+            "sdformat_model_static_" + A.name() + "_welds_to_" + B.name();
+        plant->AddJoint(
+            std::make_unique<WeldJoint<double>>(
+                joint_name, A, B, link_info.X_WL));
       }
     }
   }

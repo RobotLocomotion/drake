@@ -22,6 +22,7 @@ drake_cc_library(
         "multibody_graph.h",
     ],
     deps = [
+        "//common:sorted_pair",
         "//multibody/tree:multibody_tree_indexes",
     ],
 )

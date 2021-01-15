@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/sorted_pair.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 
 namespace drake {
@@ -206,6 +207,10 @@ class MultibodyGraph {
   std::vector<Joint> joints_;
 
   std::unordered_map<std::string, JointTypeIndex> joint_type_name_to_index_;
+
+  // Map used to detect redundant joints.
+  using BodiesKey = SortedPair<BodyIndex>;
+  std::unordered_map<BodiesKey, JointIndex> bodies_to_joint_;
 
   // The xxx_name_to_index_ structures are multimaps because
   // bodies/joints/actuators/etc may appear with the same name in different
