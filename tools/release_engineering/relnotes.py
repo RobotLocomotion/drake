@@ -135,8 +135,13 @@ def _format_commit(gh, drake, commit):
     if detail:
         detail = f"  # {detail}"
 
+    # Add a multi-packages hint, if we have too many.
+    preamble = ""
+    if len(packages) > 1:
+        preamble = "[" + ",".join(packages) + "] "
+
     # Format as top-level rst bullet point.
-    return packages, f"* TBD {nice_summary} (`#{pr}`_){detail}"
+    return packages, f"* TBD {preamble}{nice_summary} (`#{pr}`_){detail}"
 
 
 def _update(args, rst_filename, gh, drake):
@@ -192,9 +197,6 @@ def _update(args, rst_filename, gh, drake):
             continue
 
         primary_package = packages[0]
-        preamble = ""
-        if len(packages) > 1:
-            preamble = "[" + ",".join(packages) + "] "
         # Find the section for this commit, matching a line that looks like:
         # <relnotes for foo,{package},bar go here>
         found = False
@@ -204,7 +206,7 @@ def _update(args, rst_filename, gh, drake):
                 (anchors_csv,) = match.groups()
                 anchors = anchors_csv.split(",")
                 if primary_package in anchors:
-                    lines.insert(i + 1, f"{preamble}{bullet}\n")
+                    lines.insert(i + 1, f"{bullet}\n")
                     found = True
                     break
         if not found:
@@ -259,8 +261,10 @@ def _create(args, notes_dir, rst_filename, gh, drake):
         oldest_commit_exclusive=prior_sha,
         newest_commit_inclusive=prior_sha,
     )
-    # TODO(jwnimmer-tri) Strip out "This document is the template ..."
-    # boilerplate before writing out the file.
+
+    # Strip out "This document is the template ..." boilerplate, which is the
+    # first line of the file.
+    content = content[content.index("\n") + 1:]
 
     # Write the notes skeleton to disk.
     with open(rst_filename, "w") as f:
