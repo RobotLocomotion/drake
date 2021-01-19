@@ -74,28 +74,24 @@ Miscellaneous features and fixes
 
 .. <relnotes for common,math,lcm,lcmtypes,manipulation,perception go here>
 
-* None
+* Add MeshcatVisualizer option to draw collision geometry (`#14467`_)
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
 
 .. <relnotes for bindings go here>
 
-* TBD Add MeshcatVisualizer option to draw collision geometry (`#14467`_)
-* TBD pydrake/doc: Ensure any deps on sphinx have `tags = ["manual"]` (`#14520`_)  # Hotfix for 9868cf0b25c58912023d2dc941f3408faf960936.
-* TBD pydrake doc: Add `pydrake_system` directive to Sphinx (`#14500`_)  # Have mkdoc_comment use this directive
-
 New features
 
-* TBD
+* System diagrams now appear in the Sphinx documentation (`#14500`_)
 
 Fixes
 
-* TBD
+* None
 
 Newly bound
 
-* TBD
+* None
 
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
