@@ -123,22 +123,16 @@ Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
 
 * drake::systems::ContextBase::FixInputPort with AbstractValue unique_ptr (`#14453`_)
-
-  * Use pass-by-const-reference instead.
-
 * drake::systems::LeafSystem::DeclareAbstractState with AbstractValue unique_ptr (`#14453`_)
-
-  * Use pass-by-const-reference instead.
-
 * drake::manipulation::PiecewiseCubicTrajectory (`#14337`_)
+* drake::manipulation::PiecewiseCartesianTrajectory (`#14337`_)
+* drake::systems::framework::Diagram::get_input_port_locator (`#14361`_)
 
-  * Use PiecewisePolynomial instead.
+  * This was actually deprecated in v0.25.0, but the initial announcement for that release forgot to list it.
 
-* PiecewiseCartesianTrajectory (`#14337`_)
+* The ability for MeshcatVisualizer to use a pose_bundle input port (`#14292`_)
 
-  * Use PiecewisePoseTrajectory instead.
-
-* TBD more
+  * This was actually deprecated in v0.25.0, but the initial announcement for that release forgot to list it.
 
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -161,9 +155,11 @@ Drake binary releases incorporate a pre-compiled version of `SNOPT
 Philip E. Gill and Elizabeth Wong for their kind support.
 
 .. <begin issue links>
+.. _#14292: https://github.com/RobotLocomotion/drake/pull/14292
 .. _#14297: https://github.com/RobotLocomotion/drake/pull/14297
 .. _#14337: https://github.com/RobotLocomotion/drake/pull/14337
 .. _#14349: https://github.com/RobotLocomotion/drake/pull/14349
+.. _#14361: https://github.com/RobotLocomotion/drake/pull/14361
 .. _#14383: https://github.com/RobotLocomotion/drake/pull/14383
 .. _#14412: https://github.com/RobotLocomotion/drake/pull/14412
 .. _#14421: https://github.com/RobotLocomotion/drake/pull/14421
