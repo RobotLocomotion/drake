@@ -137,8 +137,20 @@ Newly-deprecated APIs
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* TBD Remove deprecated code 2021-01 (`#14486`_)
-* TBD more
+* The numpy external (`#14116`_, `#14486`_)
+* drake/multibody/math/spatial_acceleration.h include path (`#14117`_, `#14486`_)
+* drake/multibody/math/spatial_force.h include path (`#14117`_, `#14486`_)
+* drake/multibody/math/spatial_momentum.h include path (`#14117`_, `#14486`_)
+* drake/multibody/math/spatial_vector.h include path (`#14117`_, `#14486`_)
+* drake/multibody/math/spatial_velocity.h include path (`#14117`_, `#14486`_)
+* drake/systems/analysis/simulator_flags.h include path (`#14135`_, `#14486`_)
+* drake::math::closestExpmap (`#14099`_, `#14486`_)
+* drake::math::expmap2quat (`#14099`_, `#14486`_)
+* drake::math::quat2expmap (`#14099`_, `#14486`_)
+* drake::math::quat2expmapSequence (`#14099`_, `#14486`_)
+* drake::systems::Context::FixInputPort() (`#14093`_, `#14486`_)
+* tools/vector_gen/vector_gen.bzl:drake_cc_vector_gen (`#14092`_, `#14486`_)
+* tools/vector_gen/vector_gen.bzl:drake_vector_gen_lcm_sources (`#14092`_, `#14486`_)
 
 Notes
 -----
@@ -155,6 +167,12 @@ Drake binary releases incorporate a pre-compiled version of `SNOPT
 Philip E. Gill and Elizabeth Wong for their kind support.
 
 .. <begin issue links>
+.. _#14092: https://github.com/RobotLocomotion/drake/pull/14092
+.. _#14093: https://github.com/RobotLocomotion/drake/pull/14093
+.. _#14099: https://github.com/RobotLocomotion/drake/pull/14099
+.. _#14116: https://github.com/RobotLocomotion/drake/pull/14116
+.. _#14117: https://github.com/RobotLocomotion/drake/pull/14117
+.. _#14135: https://github.com/RobotLocomotion/drake/pull/14135
 .. _#14292: https://github.com/RobotLocomotion/drake/pull/14292
 .. _#14297: https://github.com/RobotLocomotion/drake/pull/14297
 .. _#14337: https://github.com/RobotLocomotion/drake/pull/14337
