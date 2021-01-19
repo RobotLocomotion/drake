@@ -1,5 +1,3 @@
-.. This document is the template used by tools/release_engineering/relnotes.
-
 *************
 Drake v0.26.0
 *************
