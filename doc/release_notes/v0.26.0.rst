@@ -21,6 +21,7 @@ Dynamical Systems
 ~~~~~~~~~~~~~~~~~
 
 .. <relnotes for systems go here>
+
 [systems,manipulation,examples,geometry] * TBD systems: Use const-ref arguments, not unique_ptr (`#14453`_)  # This commit changes FixInputPort and DeclareAbstractState to require pass-by-value (the unique_ptr overloads are deprecated). These two now-deprecated functions ... - ContextBase::FixInputPort(int, std::unique_ptr<AbstractValue>) - LeafSystem::DeclareAbstractState(std::unique_ptr<AbstractValue>) ... now clone the argument, instead of moving it.  Calling code that relied on retaining an alias into the transferred storage will now end up with a dangling pointer.  This is a breaking change for any code that relied on such aliasing.
 * TBD PidControlledSystem takes in user specified plant input port (`#14490`_)
 
@@ -36,6 +37,7 @@ Mathematical Program
 ~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for solvers go here>
+
 [solvers,tools,doc] * TBD upgrade mosek to mosek 9.2 (`#14484`_)  # * upgrade mosek to mosek 92
 * TBD Retrieve dual solution for conic constraint in Mosek (`#14383`_)
 
@@ -51,17 +53,18 @@ Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for geometry,multibody go here>
+
 * TBD Methods, documentation, and tests for CalcCenterOfMassTranslationalVelocityInWorld() (`#14297`_)
 * TBD [geometry] This PR prepare for next PR "Make Cylinder mesh with medial axis." (`#14421`_)  # Utilities for mesh generation: SplitTriangularPrismToTetrahedra() and SplitPyramidToTetrahedra().
 * TBD  Change /// to // within internal namespace within multibody_tree.h to address part of issue #13738 (`#14459`_)
 * TBD Change /// to // within internal namespace in mobilizer.h (`#14461`_)  # Co-authored-by: mitiguy <paul.mitiguy@tri.global>
 * TBD Change /// to // for internal namespace in commonly-encountered header files (`#14468`_)
 * TBD [geometry] Documentation of MeshFieldLinear() about (`#14460`_)  # calculate_gradient parameter. (#14460)
-[geometry,tools] * TBD tools: Move cc macros for per_os support to common skylark (`#14471`_)
-[multibody,math,common] * TBD In .h files within internal namespace, change /// and /** to // and /* to resolve issue #13738 (`#14474`_)
+* TBD [geometry,tools] tools: Move cc macros for per_os support to common skylark (`#14471`_)
+* TBD [multibody,math,common] In .h files within internal namespace, change /// and /** to // and /* to resolve issue #13738 (`#14474`_)
 * TBD mutlibody_plant: Convert class overview to javadoc (`#14499`_)  # * multibody_plant: Convert class overview to javadoc
 * TBD [geometry] Make Cylinder's tetrahedral mesh with medial axis (`#14469`_)
-[multibody,examples] * TBD Implement MBP::GetUniqueBaseBody() (`#14450`_)  # * Implement MBP::GetUniqueFreeBaseBodyOrThrow() In addition, implement MBP::HasUniqueFreeBaseBody(). Fix #9747. Resolve the third item in #10736.
+* TBD [multibody,examples] Implement MBP::GetUniqueBaseBody() (`#14450`_)  # * Implement MBP::GetUniqueFreeBaseBodyOrThrow() In addition, implement MBP::HasUniqueFreeBaseBody(). Fix #9747. Resolve the third item in #10736.
 * TBD [geometry] Use Cylinder's meshes with medial axes in hydroelastics (`#14506`_)
 * TBD multibody: Remove add_package_path from model directives (`#14529`_)  # Package URIs are controlled by PackageMap, not in-band directives. This is a breaking change.
 
@@ -77,6 +80,7 @@ Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for examples,tutorials go here>
+
 * TBD Move acrobot monte carlo simulation out of dev (`#14522`_)  # * Toward #13904 * This is the infrastructure to run monte carlo simulations of the acrobot under Spong control. * This is an example of how to use the stochastic schema mechanism for monte carlo testing * A subsequent PR will bring in an example of using this along with an optimizer to learn controller parameters (that code remains in dev in this PR)
 * TBD
 
@@ -84,6 +88,7 @@ Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for common,math,lcm,lcmtypes,manipulation,perception go here>
+
 [manipulation,systems] * TBD doxygen: add @ingroup tags to schunk wsg systems (`#14412`_)
 [math,systems,tools,multibody,geometry,setup] * TBD Remove deprecated code 2021-01 (`#14486`_)
 * TBD schema: Correct stddev comments (`#14494`_)
@@ -96,6 +101,7 @@ pydrake bindings
 ~~~~~~~~~~~~~~~~
 
 .. <relnotes for bindings go here>
+
 * TBD Add MeshcatVisualizer option to draw collision geometry (`#14467`_)
 * TBD pydrake/doc: Ensure any deps on sphinx have `tags = ["manual"]` (`#14520`_)  # Hotfix for 9868cf0b25c58912023d2dc941f3408faf960936.
 
@@ -115,14 +121,15 @@ Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for attic,cmake,doc,setup,third_party,tools go here>
+
 * TBD workspace: Update optitrack_driver to latest commit (`#14451`_)
-[doc,tools] * TBD doc: Add release notes v0.25.0 (`#14435`_)
+* TBD [doc,tools] doc: Add release notes v0.25.0 (`#14435`_)
 * TBD Add jekyll and ruby as docs-only dependency (`#14349`_)
 * TBD Add prerequisites for TRI motion planning tools (`#14437`_)  # * Add common_robotics_utilities and voxelized_geometry_tools externals and their tests.
 * TBD tools: No need for incompatible_restrict_string_escapes anymore (`#14458`_)  # This reverts commit fce3bdb591a6deb97e6414dcd82aa0eb4b67c7bb.
-[tools,doc] * TBD tools: Move relnotes out of dev, into proper support (`#14456`_)
+* TBD [tools,doc] tools: Move relnotes out of dev, into proper support (`#14456`_)
 * TBD tools: Disable relnotes help test, for now (`#14466`_)
-[tools,setup] * TBD tools: Re-enable relnotes_test using new ubuntu_only macros (`#14470`_)  # Move its dependencies from maintainer-only to test-only.
+* TBD [tools,setup] tools: Re-enable relnotes_test using new ubuntu_only macros (`#14470`_)  # Move its dependencies from maintainer-only to test-only.
 * TBD Allow brew to be found in the PATH (`#14496`_)  # There will be two supported locations soon, related to the transition to Apple Silicon.
 * TBD Use the new Homebrew install shell script when necessary (`#14496`_)  # Apple have said they will stop providing system ruby at some unspecified time in the future.
 * TBD Do not auto-cleanup or auto-update during Homebrew setup (`#14496`_)
@@ -134,8 +141,8 @@ Build system and dependencies
 * TBD Doc Setup: Remove js packages (`#14512`_)  # 'libjs-imagesloaded' is not available on Focal.
 * TBD setup: Install fmt and spdlog via homebrew (`#14517`_)  # Adding in anticipation of compiling against the host library, instead of our own separate copy. Relates to 36f9a518e149e4738914ff615f7099a060657932 for Ubuntu.
 * TBD relnotes.py: Use line counts to get better primary package guess (`#14511`_)  # Guess the package with the most lines changed is the primary for the commit. The patch implements an idea from discussions between rpoyner-tri and jwnimmer-tri after the v0.25.0 release cycle.
-[doc,tools] * TBD pydrake doc: Add `pydrake_system` directive to Sphinx (`#14500`_)  # Have mkdoc_comment use this directive
-[tools,common] * TBD workspace: Change how fmt and spdlog dependencies are obtained (`#14427`_)  # On Ubuntu 18.04, we downgrade to spdlog 5.1.0 and fmt 6.1.2, but we still compile them from github source releases. On Ubuntu 20.04, fmt and spdlog are obtained from the host now.  (The host copy is also installed by Drake, because Ubuntu's packaging is deficient.) The versions are spdlog 5.1.0 with bundled fmt 6.1.2. On macOS, fmt and spdlog are obtained from homebrew now.  The versions are the latest available, per the usual homebrew policy.
+* TBD [doc,tools] pydrake doc: Add `pydrake_system` directive to Sphinx (`#14500`_)  # Have mkdoc_comment use this directive
+* TBD [tools,common] workspace: Change how fmt and spdlog dependencies are obtained (`#14427`_)  # On Ubuntu 18.04, we downgrade to spdlog 5.1.0 and fmt 6.1.2, but we still compile them from github source releases. On Ubuntu 20.04, fmt and spdlog are obtained from the host now.  (The host copy is also installed by Drake, because Ubuntu's packaging is deficient.) The versions are spdlog 5.1.0 with bundled fmt 6.1.2. On macOS, fmt and spdlog are obtained from homebrew now.  The versions are the latest available, per the usual homebrew policy.
 * TBD dynamic_analysis: Comment on memcheck's exception for sh filtering (`#14523`_)  # See Slack conversation: https://drakedevelopers.slack.com/archives/C270MN28G/p1610544838306100?thread_ts=1610539112.305300&cid=C270MN28G
 * TBD sphinx: Allow sphinx-build to be missing during fetch (`#14528`_)  # This allows for `bazel query` to still succeed, even though trying `bazel build` would fail.
 * TBD Bump CRU and VGT for bugfix to voxel grid lookup functions (`#14530`_)
