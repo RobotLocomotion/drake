@@ -14,6 +14,7 @@ Breaking changes since v0.25.0
 
 * Downgrade the spdlog external to release 5.1.0 and fmt external to release 6.1.2 (`#14427`_).
 * FixInputPort and DeclareAbstractState no longer allow for mutation through an alias (`#14453`_).
+* Remove support for the add_package_path stanza in multibody parsing model directives  (`#14529`_).
 * ??? Refactor PiecewiseCartesianTrajectory to PiecewisePoseTrajectory (`#14337`_, `#14503`_)
 
 Changes since v0.25.0
@@ -52,27 +53,15 @@ Multibody Dynamics
 
 .. <relnotes for geometry,multibody go here>
 
-* TBD Methods, documentation, and tests for CalcCenterOfMassTranslationalVelocityInWorld() (`#14297`_)
-* TBD [geometry] This PR prepare for next PR "Make Cylinder mesh with medial axis." (`#14421`_)  # Utilities for mesh generation: SplitTriangularPrismToTetrahedra() and SplitPyramidToTetrahedra().
-* TBD  Change /// to // within internal namespace within multibody_tree.h to address part of issue #13738 (`#14459`_)
-* TBD Change /// to // within internal namespace in mobilizer.h (`#14461`_)  # Co-authored-by: mitiguy <paul.mitiguy@tri.global>
-* TBD Change /// to // for internal namespace in commonly-encountered header files (`#14468`_)
-* TBD [geometry] Documentation of MeshFieldLinear() about (`#14460`_)  # calculate_gradient parameter. (#14460)
-* TBD [geometry,tools] tools: Move cc macros for per_os support to common skylark (`#14471`_)
-* TBD [multibody,math,common] In .h files within internal namespace, change /// and /** to // and /* to resolve issue #13738 (`#14474`_)
-* TBD mutlibody_plant: Convert class overview to javadoc (`#14499`_)  # * multibody_plant: Convert class overview to javadoc
-* TBD [geometry] Make Cylinder's tetrahedral mesh with medial axis (`#14469`_)
-* TBD [multibody,examples] Implement MBP::GetUniqueBaseBody() (`#14450`_)  # * Implement MBP::GetUniqueFreeBaseBodyOrThrow() In addition, implement MBP::HasUniqueFreeBaseBody(). Fix #9747. Resolve the third item in #10736.
-* TBD [geometry] Use Cylinder's meshes with medial axes in hydroelastics (`#14506`_)
-* TBD multibody: Remove add_package_path from model directives (`#14529`_)  # Package URIs are controlled by PackageMap, not in-band directives. This is a breaking change.
-
 New features
 
-* TBD
+* Add MultibodyPlant::CalcCenterOfMassTranslationalVelocityInWorld (`#14297`_)
+* Add MultibodyPlant::GetUniqueBaseBody and MultibodyPlant::HasUniqueFreeBaseBody (`#14450`_)
+* New hydroelastic contact model in progress (`#14506`_, `#14469`_)
 
 Fixes
 
-* TBD
+* None
 
 Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
