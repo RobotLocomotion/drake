@@ -12,7 +12,9 @@ Announcements
 Breaking changes since v0.25.0
 ------------------------------
 
-* TBD
+* Downgrade the spdlog external to release 5.1.0 and fmt external to release 6.1.2 (`#14427`_).
+* FixInputPort and DeclareAbstractState no longer allow for mutation through an alias (`#14453`_).
+* ??? Refactor PiecewiseCartesianTrajectory to PiecewisePoseTrajectory (`#14337`_, `#14503`_)
 
 Changes since v0.25.0
 ---------------------
@@ -22,32 +24,28 @@ Dynamical Systems
 
 .. <relnotes for systems go here>
 
-[systems,manipulation,examples,geometry] * TBD systems: Use const-ref arguments, not unique_ptr (`#14453`_)  # This commit changes FixInputPort and DeclareAbstractState to require pass-by-value (the unique_ptr overloads are deprecated). These two now-deprecated functions ... - ContextBase::FixInputPort(int, std::unique_ptr<AbstractValue>) - LeafSystem::DeclareAbstractState(std::unique_ptr<AbstractValue>) ... now clone the argument, instead of moving it.  Calling code that relied on retaining an alias into the transferred storage will now end up with a dangling pointer.  This is a breaking change for any code that relied on such aliasing.
-* TBD PidControlledSystem takes in user specified plant input port (`#14490`_)
-
 New features
 
-* TBD
+* PidControlledSystem takes in user specified plant input port (`#14490`_)
+* Refactor PiecewiseCartesianTrajectory to PiecewisePoseTrajectory (`#14337`_, `#14503`_)
 
 Fixes
 
-* TBD
+* None
 
 Mathematical Program
 ~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for solvers go here>
 
-[solvers,tools,doc] * TBD upgrade mosek to mosek 9.2 (`#14484`_)  # * upgrade mosek to mosek 92
-* TBD Retrieve dual solution for conic constraint in Mosek (`#14383`_)
-
 New features
 
-* TBD
+* Retrieve dual solution for conic constraint in Mosek (`#14383`_)
+* Allow for incomplete symbolic derivatives (`#14514`_)
 
 Fixes
 
-* TBD
+* None
 
 Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
@@ -81,21 +79,14 @@ Tutorials and examples
 
 .. <relnotes for examples,tutorials go here>
 
-* TBD Move acrobot monte carlo simulation out of dev (`#14522`_)  # * Toward #13904 * This is the infrastructure to run monte carlo simulations of the acrobot under Spong control. * This is an example of how to use the stochastic schema mechanism for monte carlo testing * A subsequent PR will bring in an example of using this along with an optimizer to learn controller parameters (that code remains in dev in this PR)
-* TBD
+* Add example of monte carlo simulation using acrobot (`#14522`_)
 
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for common,math,lcm,lcmtypes,manipulation,perception go here>
 
-[manipulation,systems] * TBD doxygen: add @ingroup tags to schunk wsg systems (`#14412`_)
-[math,systems,tools,multibody,geometry,setup] * TBD Remove deprecated code 2021-01 (`#14486`_)
-* TBD schema: Correct stddev comments (`#14494`_)
-[common,manipulation] * TBD trajectories: Refactor PiecewiseCartesianTrajectory to PiecewisePoseTrajectory (`#14337`_)  # * Refactor PiecewiseCartesianTrajectory to PiecewisePoseTrajectory - #13973
-* TBD Hotfix to repair build failure caused by #14337 (`#14503`_)
-* TBD Allow incomplete derivatives, signaling with NaN at evaluation-time where possible (`#14514`_)  # * Addresses #8648 (full resolution pends on adding a Discontinuities() accessor to Formula or similar)
-* TBD
+* None
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
@@ -127,6 +118,7 @@ Build system and dependencies
 * Downgrade spdlog to release 5.1.0 (`#14427`_)
 * Upgrade fcl to latest commit (`#14497`_)
 * Upgrade ghc_filesystem to latest release 1.4.0 (`#14504`_)
+* Upgrade mosek to latest release 9.2 (`#14484`_)
 * Upgrade optitrack_driver to latest commit (`#14451`_)
 * Allow sphinx-build to be missing during bazel fetch (`#14528`_)
 * Add dependency on TRI common_robotics_utilities; for now this is only used by test code, but in a future release will be used by a forthcoming new drake/planning/... library (`#14437`_, `#14530`_)
@@ -146,12 +138,16 @@ Changes specific to Ubuntu:
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
 
-* TBD
+* drake::systems::ContextBase::FixInputPort with AbstractValue unique_ptr (`#14453`_)
+* drake::systems::LeafSystem::DeclareAbstractState with AbstractValue unique_ptr (`#14453`_)
+* ??? Refactor PiecewiseCartesianTrajectory to PiecewisePoseTrajectory (`#14337`_, `#14503`_)
+* TBD more
 
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* TBD
+* TBD Remove deprecated code 2021-01 (`#14486`_)
+* TBD more
 
 Notes
 -----
