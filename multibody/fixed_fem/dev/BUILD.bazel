@@ -51,6 +51,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "eigen_conjugate_gradient_solver",
+    hdrs = [
+        "eigen_conjugate_gradient_solver.h",
+    ],
+    deps = [
+        ":linear_system_solver",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "elasticity_element",
     hdrs = [
         "elasticity_element.h",
@@ -154,6 +165,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "linear_system_solver",
+    hdrs = [
+        "linear_system_solver.h",
+    ],
+    deps = [
+        "//common:essential",
+        "//multibody/contact_solvers:linear_operator",
+    ],
+)
+
+drake_cc_library(
     name = "quadrature",
     hdrs = [
         "quadrature.h",
@@ -206,6 +228,16 @@ drake_cc_googletest(
         ":simplex_gaussian_quadrature",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "eigen_conjugate_gradient_solver_test",
+    deps = [
+        ":eigen_conjugate_gradient_solver",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:gradient",
+        "//multibody/contact_solvers:sparse_linear_operator",
     ],
 )
 
