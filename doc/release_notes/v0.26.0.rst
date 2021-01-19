@@ -21,6 +21,8 @@ Dynamical Systems
 ~~~~~~~~~~~~~~~~~
 
 .. <relnotes for systems go here>
+[systems,manipulation,examples,geometry] * TBD systems: Use const-ref arguments, not unique_ptr (`#14453`_)  # This commit changes FixInputPort and DeclareAbstractState to require pass-by-value (the unique_ptr overloads are deprecated). These two now-deprecated functions ... - ContextBase::FixInputPort(int, std::unique_ptr<AbstractValue>) - LeafSystem::DeclareAbstractState(std::unique_ptr<AbstractValue>) ... now clone the argument, instead of moving it.  Calling code that relied on retaining an alias into the transferred storage will now end up with a dangling pointer.  This is a breaking change for any code that relied on such aliasing.
+* TBD PidControlledSystem takes in user specified plant input port (`#14490`_)
 
 New features
 
@@ -34,6 +36,8 @@ Mathematical Program
 ~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for solvers go here>
+[solvers,tools,doc] * TBD upgrade mosek to mosek 9.2 (`#14484`_)  # * upgrade mosek to mosek 92
+* TBD Retrieve dual solution for conic constraint in Mosek (`#14383`_)
 
 New features
 
@@ -47,6 +51,19 @@ Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for geometry,multibody go here>
+* TBD Methods, documentation, and tests for CalcCenterOfMassTranslationalVelocityInWorld() (`#14297`_)
+* TBD [geometry] This PR prepare for next PR "Make Cylinder mesh with medial axis." (`#14421`_)  # Utilities for mesh generation: SplitTriangularPrismToTetrahedra() and SplitPyramidToTetrahedra().
+* TBD  Change /// to // within internal namespace within multibody_tree.h to address part of issue #13738 (`#14459`_)
+* TBD Change /// to // within internal namespace in mobilizer.h (`#14461`_)  # Co-authored-by: mitiguy <paul.mitiguy@tri.global>
+* TBD Change /// to // for internal namespace in commonly-encountered header files (`#14468`_)
+* TBD [geometry] Documentation of MeshFieldLinear() about (`#14460`_)  # calculate_gradient parameter. (#14460)
+[geometry,tools] * TBD tools: Move cc macros for per_os support to common skylark (`#14471`_)
+[multibody,math,common] * TBD In .h files within internal namespace, change /// and /** to // and /* to resolve issue #13738 (`#14474`_)
+* TBD mutlibody_plant: Convert class overview to javadoc (`#14499`_)  # * multibody_plant: Convert class overview to javadoc
+* TBD [geometry] Make Cylinder's tetrahedral mesh with medial axis (`#14469`_)
+[multibody,examples] * TBD Implement MBP::GetUniqueBaseBody() (`#14450`_)  # * Implement MBP::GetUniqueFreeBaseBodyOrThrow() In addition, implement MBP::HasUniqueFreeBaseBody(). Fix #9747. Resolve the third item in #10736.
+* TBD [geometry] Use Cylinder's meshes with medial axes in hydroelastics (`#14506`_)
+* TBD multibody: Remove add_package_path from model directives (`#14529`_)  # Package URIs are controlled by PackageMap, not in-band directives. This is a breaking change.
 
 New features
 
@@ -60,18 +77,27 @@ Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for examples,tutorials go here>
+* TBD Move acrobot monte carlo simulation out of dev (`#14522`_)  # * Toward #13904 * This is the infrastructure to run monte carlo simulations of the acrobot under Spong control. * This is an example of how to use the stochastic schema mechanism for monte carlo testing * A subsequent PR will bring in an example of using this along with an optimizer to learn controller parameters (that code remains in dev in this PR)
 * TBD
 
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for common,math,lcm,lcmtypes,manipulation,perception go here>
+[manipulation,systems] * TBD doxygen: add @ingroup tags to schunk wsg systems (`#14412`_)
+[math,systems,tools,multibody,geometry,setup] * TBD Remove deprecated code 2021-01 (`#14486`_)
+* TBD schema: Correct stddev comments (`#14494`_)
+[common,manipulation] * TBD trajectories: Refactor PiecewiseCartesianTrajectory to PiecewisePoseTrajectory (`#14337`_)  # * Refactor PiecewiseCartesianTrajectory to PiecewisePoseTrajectory - #13973
+* TBD Hotfix to repair build failure caused by #14337 (`#14503`_)
+* TBD Allow incomplete derivatives, signaling with NaN at evaluation-time where possible (`#14514`_)  # * Addresses #8648 (full resolution pends on adding a Discontinuities() accessor to Formula or similar)
 * TBD
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
 
 .. <relnotes for bindings go here>
+* TBD Add MeshcatVisualizer option to draw collision geometry (`#14467`_)
+* TBD pydrake/doc: Ensure any deps on sphinx have `tags = ["manual"]` (`#14520`_)  # Hotfix for 9868cf0b25c58912023d2dc941f3408faf960936.
 
 New features
 
@@ -89,6 +115,31 @@ Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for attic,cmake,doc,setup,third_party,tools go here>
+* TBD workspace: Update optitrack_driver to latest commit (`#14451`_)
+[doc,tools] * TBD doc: Add release notes v0.25.0 (`#14435`_)
+* TBD Add jekyll and ruby as docs-only dependency (`#14349`_)
+* TBD Add prerequisites for TRI motion planning tools (`#14437`_)  # * Add common_robotics_utilities and voxelized_geometry_tools externals and their tests.
+* TBD tools: No need for incompatible_restrict_string_escapes anymore (`#14458`_)  # This reverts commit fce3bdb591a6deb97e6414dcd82aa0eb4b67c7bb.
+[tools,doc] * TBD tools: Move relnotes out of dev, into proper support (`#14456`_)
+* TBD tools: Disable relnotes help test, for now (`#14466`_)
+[tools,setup] * TBD tools: Re-enable relnotes_test using new ubuntu_only macros (`#14470`_)  # Move its dependencies from maintainer-only to test-only.
+* TBD Allow brew to be found in the PATH (`#14496`_)  # There will be two supported locations soon, related to the transition to Apple Silicon.
+* TBD Use the new Homebrew install shell script when necessary (`#14496`_)  # Apple have said they will stop providing system ruby at some unspecified time in the future.
+* TBD Do not auto-cleanup or auto-update during Homebrew setup (`#14496`_)
+* TBD doc/developers: Mention leaving review unassigned for feature review (`#14495`_)  # In the case that the author does not know who the most appropriate feature reviewer may be.
+* TBD workspace: Bump fcl to latest commit on master (`#14497`_)
+* TBD relnotes.py: Ignore /dev/ commits (`#14508`_)  # The easiest way to document commits to /dev/ directories is to ignore them. The patch implements an idea from discussions between rpoyner-tri and jwnimmer-tri after the v0.25.0 release cycle.
+* TBD workspace: Upgrade ghc_filesystem to latest release 1.4.0 (`#14504`_)
+* TBD Setup: Update packages needed to generate Jekyll website (`#14507`_)
+* TBD Doc Setup: Remove js packages (`#14512`_)  # 'libjs-imagesloaded' is not available on Focal.
+* TBD setup: Install fmt and spdlog via homebrew (`#14517`_)  # Adding in anticipation of compiling against the host library, instead of our own separate copy. Relates to 36f9a518e149e4738914ff615f7099a060657932 for Ubuntu.
+* TBD relnotes.py: Use line counts to get better primary package guess (`#14511`_)  # Guess the package with the most lines changed is the primary for the commit. The patch implements an idea from discussions between rpoyner-tri and jwnimmer-tri after the v0.25.0 release cycle.
+[doc,tools] * TBD pydrake doc: Add `pydrake_system` directive to Sphinx (`#14500`_)  # Have mkdoc_comment use this directive
+[tools,common] * TBD workspace: Change how fmt and spdlog dependencies are obtained (`#14427`_)  # On Ubuntu 18.04, we downgrade to spdlog 5.1.0 and fmt 6.1.2, but we still compile them from github source releases. On Ubuntu 20.04, fmt and spdlog are obtained from the host now.  (The host copy is also installed by Drake, because Ubuntu's packaging is deficient.) The versions are spdlog 5.1.0 with bundled fmt 6.1.2. On macOS, fmt and spdlog are obtained from homebrew now.  The versions are the latest available, per the usual homebrew policy.
+* TBD dynamic_analysis: Comment on memcheck's exception for sh filtering (`#14523`_)  # See Slack conversation: https://drakedevelopers.slack.com/archives/C270MN28G/p1610544838306100?thread_ts=1610539112.305300&cid=C270MN28G
+* TBD sphinx: Allow sphinx-build to be missing during fetch (`#14528`_)  # This allows for `bazel query` to still succeed, even though trying `bazel build` would fail.
+* TBD Bump CRU and VGT for bugfix to voxel grid lookup functions (`#14530`_)
+* TBD Explicitly set encoding when opening files in system_doxygen.py (`#14536`_)
 * TBD
 
 Newly-deprecated APIs
@@ -116,8 +167,57 @@ Drake binary releases incorporate a pre-compiled version of `SNOPT
 Philip E. Gill and Elizabeth Wong for their kind support.
 
 .. <begin issue links>
+.. _#14297: https://github.com/RobotLocomotion/drake/pull/14297
+.. _#14337: https://github.com/RobotLocomotion/drake/pull/14337
+.. _#14349: https://github.com/RobotLocomotion/drake/pull/14349
+.. _#14383: https://github.com/RobotLocomotion/drake/pull/14383
+.. _#14412: https://github.com/RobotLocomotion/drake/pull/14412
+.. _#14421: https://github.com/RobotLocomotion/drake/pull/14421
+.. _#14427: https://github.com/RobotLocomotion/drake/pull/14427
+.. _#14435: https://github.com/RobotLocomotion/drake/pull/14435
+.. _#14437: https://github.com/RobotLocomotion/drake/pull/14437
+.. _#14450: https://github.com/RobotLocomotion/drake/pull/14450
+.. _#14451: https://github.com/RobotLocomotion/drake/pull/14451
+.. _#14453: https://github.com/RobotLocomotion/drake/pull/14453
+.. _#14456: https://github.com/RobotLocomotion/drake/pull/14456
+.. _#14458: https://github.com/RobotLocomotion/drake/pull/14458
+.. _#14459: https://github.com/RobotLocomotion/drake/pull/14459
+.. _#14460: https://github.com/RobotLocomotion/drake/pull/14460
+.. _#14461: https://github.com/RobotLocomotion/drake/pull/14461
+.. _#14466: https://github.com/RobotLocomotion/drake/pull/14466
+.. _#14467: https://github.com/RobotLocomotion/drake/pull/14467
+.. _#14468: https://github.com/RobotLocomotion/drake/pull/14468
+.. _#14469: https://github.com/RobotLocomotion/drake/pull/14469
+.. _#14470: https://github.com/RobotLocomotion/drake/pull/14470
+.. _#14471: https://github.com/RobotLocomotion/drake/pull/14471
+.. _#14474: https://github.com/RobotLocomotion/drake/pull/14474
+.. _#14484: https://github.com/RobotLocomotion/drake/pull/14484
+.. _#14486: https://github.com/RobotLocomotion/drake/pull/14486
+.. _#14490: https://github.com/RobotLocomotion/drake/pull/14490
+.. _#14494: https://github.com/RobotLocomotion/drake/pull/14494
+.. _#14495: https://github.com/RobotLocomotion/drake/pull/14495
+.. _#14496: https://github.com/RobotLocomotion/drake/pull/14496
+.. _#14497: https://github.com/RobotLocomotion/drake/pull/14497
+.. _#14499: https://github.com/RobotLocomotion/drake/pull/14499
+.. _#14500: https://github.com/RobotLocomotion/drake/pull/14500
+.. _#14503: https://github.com/RobotLocomotion/drake/pull/14503
+.. _#14504: https://github.com/RobotLocomotion/drake/pull/14504
+.. _#14506: https://github.com/RobotLocomotion/drake/pull/14506
+.. _#14507: https://github.com/RobotLocomotion/drake/pull/14507
+.. _#14508: https://github.com/RobotLocomotion/drake/pull/14508
+.. _#14511: https://github.com/RobotLocomotion/drake/pull/14511
+.. _#14512: https://github.com/RobotLocomotion/drake/pull/14512
+.. _#14514: https://github.com/RobotLocomotion/drake/pull/14514
+.. _#14517: https://github.com/RobotLocomotion/drake/pull/14517
+.. _#14520: https://github.com/RobotLocomotion/drake/pull/14520
+.. _#14522: https://github.com/RobotLocomotion/drake/pull/14522
+.. _#14523: https://github.com/RobotLocomotion/drake/pull/14523
+.. _#14528: https://github.com/RobotLocomotion/drake/pull/14528
+.. _#14529: https://github.com/RobotLocomotion/drake/pull/14529
+.. _#14530: https://github.com/RobotLocomotion/drake/pull/14530
+.. _#14536: https://github.com/RobotLocomotion/drake/pull/14536
 .. <end issue links>
 
 ..
   Current oldest_commit 2862d87c99ee0fa35b331ccc25f26ec3a85ceabf (exclusive).
-  Current newest_commit 2862d87c99ee0fa35b331ccc25f26ec3a85ceabf (inclusive).
+  Current newest_commit f20d6761e8c30433fce022cfba2b78f832213329 (inclusive).
