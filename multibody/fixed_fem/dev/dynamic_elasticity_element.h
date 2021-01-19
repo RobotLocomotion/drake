@@ -19,17 +19,10 @@ struct DynamicElasticityElementTraits
   static constexpr int kOdeOrder = 2;
 };
 
-/** The FEM element class for dynamic 3D elasticity problems. Implements the
- CRTP base class, FemElement.
- @tparam IsoparametricElementType    The type of isoparametric element used in
- this %DynamicElasticityElement. IsoparametricElementType must be a derived
- class from IsoparametricElement.
- @tparam QuadratureType    The type of quadrature rule used in this
- %DynamicElasticityElement. QuadratureType must be a derived class from
- Quadrature.
- @tparam ConstitutiveModelType    The type of constitutive model used in this
- %DynamicElasticityElement. %ConstitutiveModelType must be a derived class from
- ConstitutiveModel. */
+/** The FEM element class for dynamic 3D elasticity problems that model
+ inertia effects and damping forces. Implements the CRTP base class,
+ ElasticityElement. See ElasticityElement for documentation on the template
+ paramenters. */
 template <class IsoparametricElementType, class QuadratureType,
           class ConstitutiveModelType>
 class DynamicElasticityElement final
@@ -63,7 +56,7 @@ class DynamicElasticityElement final
       const Eigen::Ref<const Eigen::Matrix<T, Traits::kSolutionDimension,
                                            Traits::kNumNodes>>&
           reference_positions,
-      const T& density, const DampingModel& damping_model)
+      const T& density, const DampingModel<T>& damping_model)
 
       : ElasticityElementType(element_index, node_indices, constitutive_model,
                               reference_positions),
@@ -105,8 +98,9 @@ class DynamicElasticityElement final
       EigenPtr<Vector<T, Traits::kNumDofs>> negative_damping_force) const {
     Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs> damping_matrix;
     FemElementType::CalcDampingMatrix(state, &damping_matrix);
-    /* The sign is correct here because fᵥ = -D * v, where D is the damping
-     matrix. */
+    /* Note that the damping force fᵥ = -D * v, where D is the damping matrix.
+     As we are accumulating the negative damping force here, the `+=` sign
+     should be used. */
     *negative_damping_force += damping_matrix * state.qdot();
   }
 
@@ -127,8 +121,8 @@ class DynamicElasticityElement final
     /* D = αM + βK, where α is the mass damping coefficient and β is the
      stiffness damping coefficient. */
     FemElementType::CalcStiffnessMatrix(state, D);
-    *D *= damping_model_.stiffness_damping;
-    *D += damping_model_.mass_damping * mass_matrix_;
+    *D *= damping_model_.stiffness_damping();
+    *D += damping_model_.mass_damping() * mass_matrix_;
   }
 
   /* Implements FemElement::CalcMassMatrix(). */
@@ -150,7 +144,7 @@ class DynamicElasticityElement final
     for (int q = 0; q < Traits::kNumQuadraturePoints; ++q) {
       S_mat.col(q) = S[q];
     }
-    /* weighted_shape calculates the shape function weighted by the reference
+    /* weighted_S stores the shape function weighted by the reference
      volume of the quadrature point. */
     Eigen::Matrix<T, Traits::kNumNodes, Traits::kNumQuadraturePoints>
         weighted_S(S_mat);
@@ -161,14 +155,12 @@ class DynamicElasticityElement final
      ∫SᵢSⱼ dX */
     Eigen::Matrix<T, Traits::kNumNodes, Traits::kNumNodes> weighted_SST =
         weighted_S * S_mat.transpose();
+    constexpr int kDim = Traits::kSolutionDimension;
     for (int i = 0; i < Traits::kNumNodes; ++i) {
       for (int j = 0; j < Traits::kNumNodes; ++j) {
-        mass.template block<Traits::kSpatialDimension,
-                            Traits::kSpatialDimension>(
-            Traits::kSpatialDimension * i, Traits::kSpatialDimension * j) =
-            Eigen::Matrix<T, Traits::kSpatialDimension,
-                          Traits::kSpatialDimension>::Identity() *
-            weighted_SST(i, j) * density_;
+        mass.template block<kDim, kDim>(kDim * i, kDim * j) =
+            Eigen::Matrix<T, kDim, kDim>::Identity() * weighted_SST(i, j) *
+            density_;
       }
     }
     return mass;
@@ -177,7 +169,7 @@ class DynamicElasticityElement final
   /* The mass density of the element in the reference configuration with
    unit kg/m³. */
   T density_;
-  DampingModel damping_model_;
+  DampingModel<T> damping_model_;
   /* Precomputed mass matrix. */
   Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs> mass_matrix_;
 };

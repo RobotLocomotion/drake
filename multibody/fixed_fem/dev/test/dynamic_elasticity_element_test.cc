@@ -33,7 +33,7 @@ class DynamicElasticityElementTest : public ::testing::Test {
   static constexpr int kNumDofs = ElementType::Traits::kNumDofs;
   const std::array<NodeIndex, kNumNodes> dummy_node_indices = {
       {NodeIndex(0), NodeIndex(1), NodeIndex(2), NodeIndex(3)}};
-  const DampingModel dummy_damping_model{0.001, 0.002};
+  const DampingModel<T> dummy_damping_model{0.001, 0.002};
 
   void SetUp() override {
     SetupElement();
@@ -88,7 +88,7 @@ class DynamicElasticityElementTest : public ::testing::Test {
     return elements_[0];
   }
 
-  DampingModel damping_model(const ElementType& e) const {
+  const DampingModel<T>& damping_model(const ElementType& e) const {
     return e.damping_model_;
   }
 
@@ -120,19 +120,19 @@ namespace {
 TEST_F(DynamicElasticityElementTest, Constructor) {
   EXPECT_EQ(element().node_indices(), dummy_node_indices);
   EXPECT_EQ(element().element_index(), kZeroIndex);
-  EXPECT_EQ(damping_model(element()).mass_damping,
-            dummy_damping_model.mass_damping);
-  EXPECT_EQ(damping_model(element()).stiffness_damping,
-            dummy_damping_model.stiffness_damping);
+  EXPECT_EQ(damping_model(element()).mass_damping(),
+            dummy_damping_model.mass_damping());
+  EXPECT_EQ(damping_model(element()).stiffness_damping(),
+            dummy_damping_model.stiffness_damping());
   EXPECT_EQ(density(element()), kDummyDensity);
 
   ElementType move_constructed_element(std::move(elements_[0]));
   EXPECT_EQ(move_constructed_element.node_indices(), dummy_node_indices);
   EXPECT_EQ(move_constructed_element.element_index(), kZeroIndex);
-  EXPECT_EQ(damping_model(move_constructed_element).mass_damping,
-            dummy_damping_model.mass_damping);
-  EXPECT_EQ(damping_model(move_constructed_element).stiffness_damping,
-            dummy_damping_model.stiffness_damping);
+  EXPECT_EQ(damping_model(move_constructed_element).mass_damping(),
+            dummy_damping_model.mass_damping());
+  EXPECT_EQ(damping_model(move_constructed_element).stiffness_damping(),
+            dummy_damping_model.stiffness_damping());
   EXPECT_EQ(density(move_constructed_element), kDummyDensity);
 }
 
