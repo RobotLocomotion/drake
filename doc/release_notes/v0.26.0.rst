@@ -7,7 +7,7 @@ Drake v0.26.0
 Announcements
 -------------
 
-* TBD
+* None
 
 Breaking changes since v0.25.0
 ------------------------------
@@ -15,7 +15,6 @@ Breaking changes since v0.25.0
 * Downgrade the spdlog external to release 5.1.0 and fmt external to release 6.1.2 (`#14427`_).
 * FixInputPort and DeclareAbstractState no longer allow for mutation through an alias (`#14453`_).
 * Remove support for the add_package_path stanza in multibody parsing model directives  (`#14529`_).
-* ??? Refactor PiecewiseCartesianTrajectory to PiecewisePoseTrajectory (`#14337`_, `#14503`_)
 
 Changes since v0.25.0
 ---------------------
@@ -27,8 +26,8 @@ Dynamical Systems
 
 New features
 
+* Add PiecewisePoseTrajectory (`#14337`_, `#14503`_)
 * PidControlledSystem takes in user specified plant input port (`#14490`_)
-* Refactor PiecewiseCartesianTrajectory to PiecewisePoseTrajectory (`#14337`_, `#14503`_)
 
 Fixes
 
@@ -128,8 +127,21 @@ Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
 
 * drake::systems::ContextBase::FixInputPort with AbstractValue unique_ptr (`#14453`_)
+
+  * Use pass-by-const-reference instead.
+
 * drake::systems::LeafSystem::DeclareAbstractState with AbstractValue unique_ptr (`#14453`_)
-* ??? Refactor PiecewiseCartesianTrajectory to PiecewisePoseTrajectory (`#14337`_, `#14503`_)
+
+  * Use pass-by-const-reference instead.
+
+* drake::manipulation::PiecewiseCubicTrajectory (`#14337`_)
+
+  * Use PiecewisePolynomial instead.
+
+* PiecewiseCartesianTrajectory (`#14337`_)
+
+  * Use PiecewisePoseTrajectory instead.
+
 * TBD more
 
 Removal of deprecated items
