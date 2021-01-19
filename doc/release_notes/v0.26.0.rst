@@ -123,31 +123,24 @@ Build system and dependencies
 .. <relnotes for attic,cmake,doc,setup,third_party,tools go here>
 
 * TBD workspace: Update optitrack_driver to latest commit (`#14451`_)
-* TBD [doc,tools] doc: Add release notes v0.25.0 (`#14435`_)
 * TBD Add jekyll and ruby as docs-only dependency (`#14349`_)
 * TBD Add prerequisites for TRI motion planning tools (`#14437`_)  # * Add common_robotics_utilities and voxelized_geometry_tools externals and their tests.
 * TBD tools: No need for incompatible_restrict_string_escapes anymore (`#14458`_)  # This reverts commit fce3bdb591a6deb97e6414dcd82aa0eb4b67c7bb.
-* TBD [tools,doc] tools: Move relnotes out of dev, into proper support (`#14456`_)
-* TBD tools: Disable relnotes help test, for now (`#14466`_)
-* TBD [tools,setup] tools: Re-enable relnotes_test using new ubuntu_only macros (`#14470`_)  # Move its dependencies from maintainer-only to test-only.
 * TBD Allow brew to be found in the PATH (`#14496`_)  # There will be two supported locations soon, related to the transition to Apple Silicon.
 * TBD Use the new Homebrew install shell script when necessary (`#14496`_)  # Apple have said they will stop providing system ruby at some unspecified time in the future.
 * TBD Do not auto-cleanup or auto-update during Homebrew setup (`#14496`_)
 * TBD doc/developers: Mention leaving review unassigned for feature review (`#14495`_)  # In the case that the author does not know who the most appropriate feature reviewer may be.
 * TBD workspace: Bump fcl to latest commit on master (`#14497`_)
-* TBD relnotes.py: Ignore /dev/ commits (`#14508`_)  # The easiest way to document commits to /dev/ directories is to ignore them. The patch implements an idea from discussions between rpoyner-tri and jwnimmer-tri after the v0.25.0 release cycle.
 * TBD workspace: Upgrade ghc_filesystem to latest release 1.4.0 (`#14504`_)
 * TBD Setup: Update packages needed to generate Jekyll website (`#14507`_)
 * TBD Doc Setup: Remove js packages (`#14512`_)  # 'libjs-imagesloaded' is not available on Focal.
 * TBD setup: Install fmt and spdlog via homebrew (`#14517`_)  # Adding in anticipation of compiling against the host library, instead of our own separate copy. Relates to 36f9a518e149e4738914ff615f7099a060657932 for Ubuntu.
-* TBD relnotes.py: Use line counts to get better primary package guess (`#14511`_)  # Guess the package with the most lines changed is the primary for the commit. The patch implements an idea from discussions between rpoyner-tri and jwnimmer-tri after the v0.25.0 release cycle.
 * TBD [doc,tools] pydrake doc: Add `pydrake_system` directive to Sphinx (`#14500`_)  # Have mkdoc_comment use this directive
 * TBD [tools,common] workspace: Change how fmt and spdlog dependencies are obtained (`#14427`_)  # On Ubuntu 18.04, we downgrade to spdlog 5.1.0 and fmt 6.1.2, but we still compile them from github source releases. On Ubuntu 20.04, fmt and spdlog are obtained from the host now.  (The host copy is also installed by Drake, because Ubuntu's packaging is deficient.) The versions are spdlog 5.1.0 with bundled fmt 6.1.2. On macOS, fmt and spdlog are obtained from homebrew now.  The versions are the latest available, per the usual homebrew policy.
 * TBD dynamic_analysis: Comment on memcheck's exception for sh filtering (`#14523`_)  # See Slack conversation: https://drakedevelopers.slack.com/archives/C270MN28G/p1610544838306100?thread_ts=1610539112.305300&cid=C270MN28G
 * TBD sphinx: Allow sphinx-build to be missing during fetch (`#14528`_)  # This allows for `bazel query` to still succeed, even though trying `bazel build` would fail.
 * TBD Bump CRU and VGT for bugfix to voxel grid lookup functions (`#14530`_)
 * TBD Explicitly set encoding when opening files in system_doxygen.py (`#14536`_)
-* TBD
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
