@@ -50,6 +50,7 @@ Multibody Dynamics
 
 .. <relnotes for geometry,multibody go here>
 
+* TBD multibody: Give better errors when joints overlap with SDF static welds (`#14534`_)  # Closes #14518. Indicate SDF-inserted welds by using an elaborate joint name. Since this defeats the fail-fast error induced by having duplicate joint names (for redundant welds), implement a more robust fail-fast error that complains about any two joints that connect the same two bodies, regardless of direction or other details.
 New features
 
 * Add MultibodyPlant::CalcCenterOfMassTranslationalVelocityInWorld (`#14297`_)
@@ -65,6 +66,7 @@ Tutorials and examples
 
 .. <relnotes for examples,tutorials go here>
 
+* TBD [examples,geometry,manipulation,multibody] Use DrakeVisualizerd instead of DrakeVisualizer (`#14547`_)  # In the future PR we will templatize DrakeVisualizer class.  This PR makes sure the code doesn't break, and is compatible with the future templated DrakeVisualizer class. Co-authored-by: Jeremy Nimmer <jeremy.nimmer@tri.global>
 * Add example of monte carlo simulation using acrobot (`#14522`_)
 
 Miscellaneous features and fixes
@@ -174,56 +176,34 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#14292: https://github.com/RobotLocomotion/drake/pull/14292
 .. _#14297: https://github.com/RobotLocomotion/drake/pull/14297
 .. _#14337: https://github.com/RobotLocomotion/drake/pull/14337
-.. _#14349: https://github.com/RobotLocomotion/drake/pull/14349
 .. _#14361: https://github.com/RobotLocomotion/drake/pull/14361
 .. _#14383: https://github.com/RobotLocomotion/drake/pull/14383
-.. _#14412: https://github.com/RobotLocomotion/drake/pull/14412
-.. _#14421: https://github.com/RobotLocomotion/drake/pull/14421
 .. _#14427: https://github.com/RobotLocomotion/drake/pull/14427
-.. _#14435: https://github.com/RobotLocomotion/drake/pull/14435
 .. _#14437: https://github.com/RobotLocomotion/drake/pull/14437
 .. _#14450: https://github.com/RobotLocomotion/drake/pull/14450
 .. _#14451: https://github.com/RobotLocomotion/drake/pull/14451
 .. _#14453: https://github.com/RobotLocomotion/drake/pull/14453
-.. _#14456: https://github.com/RobotLocomotion/drake/pull/14456
-.. _#14458: https://github.com/RobotLocomotion/drake/pull/14458
-.. _#14459: https://github.com/RobotLocomotion/drake/pull/14459
-.. _#14460: https://github.com/RobotLocomotion/drake/pull/14460
-.. _#14461: https://github.com/RobotLocomotion/drake/pull/14461
-.. _#14466: https://github.com/RobotLocomotion/drake/pull/14466
 .. _#14467: https://github.com/RobotLocomotion/drake/pull/14467
-.. _#14468: https://github.com/RobotLocomotion/drake/pull/14468
 .. _#14469: https://github.com/RobotLocomotion/drake/pull/14469
-.. _#14470: https://github.com/RobotLocomotion/drake/pull/14470
-.. _#14471: https://github.com/RobotLocomotion/drake/pull/14471
-.. _#14474: https://github.com/RobotLocomotion/drake/pull/14474
 .. _#14484: https://github.com/RobotLocomotion/drake/pull/14484
 .. _#14486: https://github.com/RobotLocomotion/drake/pull/14486
 .. _#14490: https://github.com/RobotLocomotion/drake/pull/14490
-.. _#14494: https://github.com/RobotLocomotion/drake/pull/14494
-.. _#14495: https://github.com/RobotLocomotion/drake/pull/14495
 .. _#14496: https://github.com/RobotLocomotion/drake/pull/14496
 .. _#14497: https://github.com/RobotLocomotion/drake/pull/14497
-.. _#14499: https://github.com/RobotLocomotion/drake/pull/14499
 .. _#14500: https://github.com/RobotLocomotion/drake/pull/14500
 .. _#14503: https://github.com/RobotLocomotion/drake/pull/14503
 .. _#14504: https://github.com/RobotLocomotion/drake/pull/14504
 .. _#14506: https://github.com/RobotLocomotion/drake/pull/14506
-.. _#14507: https://github.com/RobotLocomotion/drake/pull/14507
-.. _#14508: https://github.com/RobotLocomotion/drake/pull/14508
-.. _#14511: https://github.com/RobotLocomotion/drake/pull/14511
-.. _#14512: https://github.com/RobotLocomotion/drake/pull/14512
 .. _#14514: https://github.com/RobotLocomotion/drake/pull/14514
 .. _#14517: https://github.com/RobotLocomotion/drake/pull/14517
-.. _#14520: https://github.com/RobotLocomotion/drake/pull/14520
 .. _#14522: https://github.com/RobotLocomotion/drake/pull/14522
-.. _#14523: https://github.com/RobotLocomotion/drake/pull/14523
 .. _#14528: https://github.com/RobotLocomotion/drake/pull/14528
 .. _#14529: https://github.com/RobotLocomotion/drake/pull/14529
 .. _#14530: https://github.com/RobotLocomotion/drake/pull/14530
-.. _#14536: https://github.com/RobotLocomotion/drake/pull/14536
+.. _#14534: https://github.com/RobotLocomotion/drake/pull/14534
+.. _#14547: https://github.com/RobotLocomotion/drake/pull/14547
 .. <end issue links>
 
 ..
   Current oldest_commit 2862d87c99ee0fa35b331ccc25f26ec3a85ceabf (exclusive).
-  Current newest_commit f20d6761e8c30433fce022cfba2b78f832213329 (inclusive).
+  Current newest_commit 75364f35a590f21f07a70d283f6525c40bc1e4f5 (inclusive).
