@@ -145,6 +145,12 @@ class TestDeprecation(unittest.TestCase):
             self.assertIn(message_expected, str(item.message))
 
     def test_member_deprecation(self):
+        """
+        Tests low-level deprecation API for members.
+
+        Please see `deprecation_example_test.py` as a easy-to-use template
+        (pattern matching) for testing C++/Python API deprecations.
+        """
         from deprecation_example import ExampleClass
 
         def base_deprecation():
@@ -222,8 +228,13 @@ class TestDeprecation(unittest.TestCase):
             warnings.simplefilter("once", DrakeDeprecationWarning)
 
     def test_deprecation_pybind(self):
-        """Test C++ usage in `deprecation_pybind.h`, as is used in
-        `cc_module_py.cc`."""
+        """
+        Tests low-level deprecation pybind11 API from `deprecation_pybind.h`,
+        as is used in `cc_module_py.cc`.
+
+        Please see `deprecation_example_test.py` as a easy-to-use template
+        (pattern matching) for testing C++/Python API deprecations.
+        """
         from deprecation_example.cc_module import (
             ExampleCppClass,
             ExampleCppStruct,
@@ -237,9 +248,10 @@ class TestDeprecation(unittest.TestCase):
             self.assertEqual(len(w), 1)
             self._check_warning(w[0], "Do not use DeprecatedMethod()", False)
             # Same for a property.
-            ExampleCppClass.deprecated_prop
+            ExampleCppClass.deprecated_aliased_prop
             self.assertEqual(len(w), 2)
-            self._check_warning(w[1], "Do not use deprecated_prop", False)
+            self._check_warning(
+                w[1], "Do not use deprecated_aliased_prop", False)
             # Call good overload; no new warnings.
             obj = ExampleCppClass()
             obj.overload()
@@ -264,9 +276,15 @@ class TestDeprecation(unittest.TestCase):
             # Param init (regardless of arguments).
             ExampleCppStruct()
             self.assertEqual(len(w), 7)
-            self._check_warning(w[6], "Deprecated as of 2038-01-19", False)
+            self._check_warning(w[6], "Do not use ExampleCppStruct", False)
 
     def test_deprecated_callable(self):
+        """
+        Tests low-level deprecation API for callables.
+
+        Please see `deprecation_example_test.py` as a easy-to-use template
+        (pattern matching) for testing C++/Python API deprecations.
+        """
         import deprecation_example.cc_module as m_new
         # Spoof module name.
         var_dict = dict(__name__="fake_module")
