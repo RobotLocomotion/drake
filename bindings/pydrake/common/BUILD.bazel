@@ -399,6 +399,7 @@ drake_cc_googletest(
 drake_cc_library(
     name = "deprecation_example_class",
     testonly = 1,
+    srcs = ["test/deprecation_example/example_class.cc"],
     hdrs = ["test/deprecation_example/example_class.h"],
     deps = [
         "//:drake_shared_library",
@@ -449,12 +450,26 @@ drake_py_library(
     ],
 )
 
+# Note: This is to test the low-level API for deprecation. If you are a Drake
+# developer looking to copy-and-paste patterns for deprecation, please see
+# `deprecation_example.py`.
 drake_py_unittest(
     name = "deprecation_test",
     deps = [
         # N.B. We include this here due to awkward setup for `pydrake.common`.
         ":module_py",
         ":deprecation_example",
+    ],
+)
+
+# Use this as an example to blindly copy-and-paste patterns from for
+# deprecation. Of course, ignore everything that is example-specific (e.g.
+# `deprecation_example`).
+drake_py_unittest(
+    name = "deprecation_example_test",
+    deps = [
+        ":deprecation_example",
+        "//bindings/pydrake/common/test_utilities:deprecation_py",
     ],
 )
 

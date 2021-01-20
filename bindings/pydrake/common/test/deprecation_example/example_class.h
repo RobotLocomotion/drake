@@ -1,6 +1,7 @@
 #pragma once
 
 #include "drake/common/drake_deprecated.h"
+#include "drake/common/unused.h"
 
 namespace drake {
 namespace example_class {
@@ -15,10 +16,10 @@ class ExampleCppClass {
   // up the following deprecation below.
 
   DRAKE_DEPRECATED("2038-01-19", "Do not use ExampleCppClass(int).")
-  explicit ExampleCppClass(int) {}
+  explicit ExampleCppClass(int x) { unused(x); }
 
   DRAKE_DEPRECATED("2038-01-19", "Do not use ExampleCppClass(double).")
-  explicit ExampleCppClass(double) {}
+  explicit ExampleCppClass(double y) { unused(y); }
 
   DRAKE_DEPRECATED("2038-01-19", "Do not use DeprecatedMethod().")
   void DeprecatedMethod() {}
@@ -26,17 +27,21 @@ class ExampleCppClass {
   /// Good property.
   int prop{};
 
+  // N.B. It doesn't really make sense to show a DRAKE_DEPRECATED property here
+  // because that causes the whole class to be deprecated.
+
   /// Good overload.
   void overload() {}
 
   DRAKE_DEPRECATED("2038-01-19", "Do not use overload(int).")
-  void overload(int) {}
+  void overload(int x) { unused(x); }
 };
 
 /// Serves as an example for binding (and deprecating) a simple struct. This
 /// allows the struct to be constructed with ParamInit and deprecated using
 /// the corresponding DeprecatedParamInit.
-struct ExampleCppStruct {
+struct DRAKE_DEPRECATED(
+    "2038-01-19", "Do not use ExampleCppStruct") ExampleCppStruct {
   int i{};
   int j{};
 };
