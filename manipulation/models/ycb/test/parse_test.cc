@@ -39,8 +39,8 @@ namespace {
 using geometry::DrakeVisualizerd;
 using geometry::SceneGraph;
 using multibody::AddMultibodyPlantSceneGraph;
-using multibody::ModelInstanceIndex;
 using multibody::MultibodyPlant;
+using multibody::ModelInstanceIndex;
 using multibody::Parser;
 using systems::DiagramBuilder;
 using systems::Simulator;
