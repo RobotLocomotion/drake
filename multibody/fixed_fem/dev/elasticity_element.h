@@ -320,7 +320,7 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
     }
   }
 
-  const IsoparametricElementType isoparametric_element() const {
+  const IsoparametricElementType& isoparametric_element() const {
     return isoparametric_element_;
   }
 
