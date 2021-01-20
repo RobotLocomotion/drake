@@ -104,7 +104,12 @@ struct DrakeVisualizerParams {
    - Evaluating a single instance of %DrakeVisualizer across several threads,
      such that the data in the per-thread systems::Context varies.
    - Evaluating multiple instances of %DrakeVisualizer in a single thread that
-     share the same lcm::DrakeLcmInterface.  */
+     share the same lcm::DrakeLcmInterface.
+
+@warning In the future, we will add a `template <typename T>` to this class
+to support multiple scalar types.  To insulate your code from this change, we
+recommend using the geometry::DrakeVisualizerd alias when referring to this
+class. */
 class DrakeVisualizer : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeVisualizer)
@@ -262,6 +267,14 @@ class DrakeVisualizer : public systems::LeafSystem<double> {
   /* The parameters for the visualizer.  */
   DrakeVisualizerParams params_;
 };
+
+/** A convenient alias for the DrakeVisualizer class when using the `double`
+scalar type.
+
+@note At the moment, DrakeVisualizer is not templated on a scalar type, but
+we plan to do so in the future.  To insulate your code from that change, we
+recommend using this alias when referring to the class. */
+using DrakeVisualizerd = DrakeVisualizer;
 
 }  // namespace geometry
 }  // namespace drake

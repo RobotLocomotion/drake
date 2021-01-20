@@ -39,7 +39,7 @@ int DoMain() {
   auto* scene_graph = builder.AddSystem<geometry::SceneGraph>();
   ClothSpringModelGeometry::AddToBuilder(&builder, *cloth_spring_model,
                                          scene_graph);
-  geometry::DrakeVisualizer::AddToBuilder(&builder, *scene_graph);
+  geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph);
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();
   auto simulator =

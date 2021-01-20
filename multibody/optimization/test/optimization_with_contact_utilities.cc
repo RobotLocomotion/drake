@@ -19,7 +19,7 @@ template <>
 void AddDrakeVisualizer<double>(
     systems::DiagramBuilder<double>* builder,
     const geometry::SceneGraph<double>& scene_graph) {
-  geometry::DrakeVisualizer::AddToBuilder(builder, scene_graph);
+  geometry::DrakeVisualizerd::AddToBuilder(builder, scene_graph);
 }
 
 template <typename T>

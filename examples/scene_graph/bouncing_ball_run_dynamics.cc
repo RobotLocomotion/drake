@@ -36,7 +36,7 @@ namespace {
 
 using Eigen::Vector3d;
 using Eigen::Vector4d;
-using geometry::DrakeVisualizer;
+using geometry::DrakeVisualizerd;
 using geometry::GeometryInstance;
 using geometry::SceneGraph;
 using geometry::GeometryId;
@@ -103,7 +103,7 @@ int do_main() {
                   bouncing_ball2->get_geometry_query_input_port());
 
   DrakeLcm lcm;
-  DrakeVisualizer::AddToBuilder(&builder, *scene_graph, &lcm);
+  DrakeVisualizerd::AddToBuilder(&builder, *scene_graph, &lcm);
 
   if (FLAGS_render_on) {
     PerceptionProperties properties;

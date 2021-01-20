@@ -33,7 +33,7 @@ int do_main() {
   auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
   AcrobotGeometry::AddToBuilder(
       &builder, acrobot->get_output_port(0), scene_graph);
-  geometry::DrakeVisualizer::AddToBuilder(&builder, *scene_graph);
+  geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph);
 
   auto controller = builder.AddSystem<AcrobotSpongController>();
   builder.Connect(acrobot->get_output_port(0), controller->get_input_port(0));

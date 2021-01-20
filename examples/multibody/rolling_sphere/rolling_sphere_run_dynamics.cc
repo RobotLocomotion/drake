@@ -156,7 +156,7 @@ int do_main() {
       scene_graph.get_source_pose_port(plant.get_source_id().value()));
 
   if (FLAGS_visualize) {
-    geometry::DrakeVisualizer::AddToBuilder(&builder, scene_graph);
+    geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
     ConnectContactResultsToDrakeVisualizer(&builder, plant);
   }
   auto diagram = builder.Build();

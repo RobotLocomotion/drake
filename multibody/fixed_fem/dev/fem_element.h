@@ -78,8 +78,9 @@ class FemElement {
     static_cast<const DerivedElement*>(this)->DoCalcResidual(state, residual);
   }
 
-  /** Calculates the stiffness matrix (the derivative of the residual with
-  respect to the generalized positions) of this element given the state.
+  /** Calculates the stiffness matrix (the derivative, or an approximation
+  thereof, of the residual with respect to the generalized positions) of this
+  element given the state.
   @param[in] state    The FEM state at which to evaluate the stiffness matrix.
   @param[out] K    The stiffness matrix of size
   `Traits::kNumDofs`-by-`Traits::kNumDofs`. All values of `K` will be

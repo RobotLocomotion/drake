@@ -51,7 +51,7 @@ using Eigen::Vector4d;
 using geometry::Box;
 using geometry::ContactSurface;
 using geometry::Cylinder;
-using geometry::DrakeVisualizer;
+using geometry::DrakeVisualizerd;
 using geometry::FrameId;
 using geometry::FramePoseVector;
 using geometry::GeometryFrame;
@@ -364,7 +364,7 @@ int do_main() {
   DrakeLcm lcm;
 
   // Visualize geometry.
-  DrakeVisualizer::AddToBuilder(&builder, scene_graph, &lcm);
+  DrakeVisualizerd::AddToBuilder(&builder, scene_graph, &lcm);
 
   // Visualize contacts.
   auto& contact_to_lcm =

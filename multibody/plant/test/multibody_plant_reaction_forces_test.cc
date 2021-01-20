@@ -74,7 +74,7 @@ class LadderTest : public ::testing::Test {
 
     // Add visualization for verification of the results when we have the
     // visualizer running.
-    geometry::DrakeVisualizer::AddToBuilder(&builder, *scene_graph_, &lcm_);
+    geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph_, &lcm_);
     ConnectContactResultsToDrakeVisualizer(&builder, *plant_, &lcm_);
 
     diagram_ = builder.Build();
