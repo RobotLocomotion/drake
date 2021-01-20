@@ -403,6 +403,7 @@ drake_cc_googletest(
 drake_cc_library(
     name = "deprecation_example_class",
     testonly = 1,
+    srcs = ["test/deprecation_example/example_class.cc"],
     hdrs = ["test/deprecation_example/example_class.h"],
     deps = [
         "//:drake_shared_library",
@@ -438,6 +439,9 @@ drake_pybind_library(
         "test/deprecation_example/cc_module_py.cc",
     ],
     package_info = PACKAGE_INFO,
+    py_deps = [
+        "//bindings/pydrake:module_py",
+    ],
     visibility = ["//visibility:private"],
 )
 
@@ -453,12 +457,24 @@ drake_py_library(
     ],
 )
 
+# Note: This target tests the low-level deprecation API.
+# Please see `deprecation_utility_test` for a unittest on higher-level
+# deprecation API.
 drake_py_unittest(
     name = "deprecation_test",
     deps = [
         # N.B. We include this here due to awkward setup for `pydrake.common`.
         ":module_py",
         ":deprecation_example",
+    ],
+)
+
+# Provides a unittest for high-level deprecation API.
+drake_py_unittest(
+    name = "deprecation_utility_test",
+    deps = [
+        ":deprecation_example",
+        "//bindings/pydrake/common/test_utilities:deprecation_py",
     ],
 )
 
