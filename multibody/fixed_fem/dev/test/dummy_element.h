@@ -11,8 +11,14 @@ namespace multibody {
 namespace fixed_fem {
 namespace test {
 /* The traits for the DummyElement. In this case, all of the traits are unique
- values so we can detect that each value is used in the expected context. */
+ values so we can detect that each value is used in the expected context.
+ @tparam OdeOrder    The order of the ODE for the DummyElement. Useful for
+ creating dummy elements with desired OdeOrder for testing purposes. Must be 0,
+ 1, or 2. */
+template <int OdeOrder>
 struct DummyElementTraits {
+  static_assert(OdeOrder == 0 || OdeOrder == 1 || OdeOrder == 2,
+                "The template parameter OdeOrder must be 0, 1 or 2.");
   using T = double;
   struct Data {
     double value{0};
@@ -23,15 +29,23 @@ struct DummyElementTraits {
   static constexpr int kSpatialDimension = 5;
   static constexpr int kSolutionDimension = 6;
   static constexpr int kNumDofs = 7;
-  static constexpr int kOdeOrder = 1;
+  static constexpr int kOdeOrder = OdeOrder;
 };
 /* A simple FemElement implementation. The calculation methods are implemented
  as returning a fixed value (which can independently be accessed by calling
  the corresponding dummy_* method -- e.g., CalcResidual() should return the
- value in dummy_residual(). */
-class DummyElement final : public FemElement<DummyElement, DummyElementTraits> {
+ value in dummy_residual().
+ @tparam OdeOrder    The order of the ODE for the DummyElement. Useful for
+ creating dummy elements with desired OdeOrder for testing purposes. Must be 0,
+ 1, or 2.*/
+template <int OdeOrder>
+class DummyElement final
+    : public FemElement<DummyElement<OdeOrder>, DummyElementTraits<OdeOrder>> {
  public:
-  using Base = FemElement<DummyElement, DummyElementTraits>;
+  static_assert(OdeOrder == 0 || OdeOrder == 1 || OdeOrder == 2,
+                "The template parameter OdeOrder must be 0, 1 or 2.");
+  using Base = FemElement<DummyElement<OdeOrder>, DummyElementTraits<OdeOrder>>;
+  using Traits = DummyElementTraits<OdeOrder>;
   using T = typename Base::T;
 
   DummyElement(ElementIndex element_index,
@@ -62,7 +76,7 @@ class DummyElement final : public FemElement<DummyElement, DummyElementTraits> {
   }
 
   /* Provides a fixed value for the `Data` for `ComputeData()`. */
-  static Traits::Data dummy_data() { return {1.732}; }
+  static typename Traits::Data dummy_data() { return {1.732}; }
 
  private:
   /* Friend the base class so that the interface in the CRTP base class can
@@ -70,7 +84,8 @@ class DummyElement final : public FemElement<DummyElement, DummyElementTraits> {
   friend Base;
 
   /* Implements FemElement::ComputeData(). */
-  Traits::Data DoComputeData(const FemState<DummyElement>& state) const {
+  typename Traits::Data DoComputeData(
+      const FemState<DummyElement>& state) const {
     return dummy_data();
   }
 

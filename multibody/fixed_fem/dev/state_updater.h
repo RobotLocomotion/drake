@@ -5,15 +5,14 @@
 namespace drake {
 namespace multibody {
 namespace fixed_fem {
-namespace internal {
-/* %StateUpdater provides the interface to update FemState in NewtonSolver.
+/** %StateUpdater provides the interface to update FemState in NewtonSolver.
  In each Newton-Raphson iteration of the FEM solver, we are solving for an
  equation in the form of
         G(q, q̇, q̈) = 0.
- For different FemModels, G takes different forms. For dynamic elasticity, 
+ For different FemModels, G takes different forms. For dynamic elasticity,
         G(q, q̇, q̈) = Mq̈ - fₑ(q) - fᵥ(q, q̇) - fₑₓₜ,
  where M is the mass matrix, fₑ(q) is the elastic force, fᵥ(q, q̇) is the
- damping force, and fₑₓₜ are the external forces. For static elasticity, 
+ damping force, and fₑₓₜ are the external forces. For static elasticity,
         G(q, q̇, q̈) = G(q) = -fₑ(q) + fₑₓₜ.
  For the Poisson equation,
         G(q, q̇, q̈) = G(q) = Kq − f.
@@ -21,7 +20,7 @@ namespace internal {
  single variable, which we dub the name "key variable" and denote it with `z`.
  For example, for dynamic elasticity with Newmark scheme,
         q̈ = z;
-        q̇ = q̇ₙ + dt ⋅ (γ ⋅ q̈ₙ + (1−γ) ⋅ z)
+        q̇ = q̇ₙ + dt ⋅ (γ ⋅ z + (1−γ) ⋅ q̈ₙ)
         q = qₙ + dt ⋅ q̇ₙ + dt² ⋅ [β ⋅ z + (0.5−β) ⋅ q̈ₙ].
  Hence, we can write the system of equations as
         G(z) = 0,
@@ -31,7 +30,7 @@ namespace internal {
  where ∇G = ∂G/∂z. StateUpdater is responsible for updating the FemState given
  the solution of the linear solve, `dz`. In addition, %StateUpdater also
  provides the derivatives of the states with respect to the key variable `z`,
- namely, `dq/dz`,  `dq̇/dz`, and `dq̈/dz`, that are needed for building ∇G.
+ namely, `∂q/∂z`,  `∂q̇/∂z`, and `∂q̈/∂z`, that are needed for building ∇G.
  @tparam State    The type of FemState to be updated by this %StateUpdater. The
  template parameter State must be an instantiation of FemState. */
 template <class State>
@@ -41,12 +40,12 @@ class StateUpdater {
 
   virtual ~StateUpdater() = default;
 
-  /* Returns the derivative of the state with respect to the key variable `z`,
-   [dq/dz, dq̇/dz, dq̈/dz]. If q̇ or q̈ are not a part of the state, their
+  /** Returns the derivative of the state with respect to the key variable `z`,
+   [∂q/∂z, ∂q̇/∂z, ∂q̈/∂z]. If q̇ or q̈ are not a part of the state, their
    derivatives are set to 0.  */
   virtual Vector3<T> state_derivatives() const = 0;
 
-  /* Updates the FemState `state` given the change in the value of the key
+  /** Updates the FemState `state` given the change in the value of the key
    variable `z`.
    @pre state != nullptr.
    @pre dz.size() == state.num_generalized_positions(). */
@@ -60,13 +59,12 @@ class StateUpdater {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StateUpdater);
   StateUpdater() = default;
 
-  /* Derived classes must override this method to udpate the FemState `state`
+  /** Derived classes must override this method to udpate the FemState `state`
    given the key variable `dz` based on the time-stepping scheme of the derived
    class. The `dz` provided here has compatible size with the number of
    generalized positions in `state` and does not need to be checked again.  */
   virtual void DoUpdateState(const VectorX<T>& dz, State* state) const = 0;
 };
-}  // namespace internal
 }  // namespace fixed_fem
 }  // namespace multibody
 }  // namespace drake

@@ -54,6 +54,9 @@ struct ElasticityElementTraits {
   static_assert(IsoparametricElementType::spatial_dimension() == 3);
 
   using T = typename ConstitutiveModelType::T;
+  using IsoparametricElement = IsoparametricElementType;
+  using Quadrature = QuadratureType;
+  using ConstitutiveModel = ConstitutiveModelType;
 
   static constexpr int kNumNodes = IsoparametricElementType::num_nodes();
   static constexpr int kNumQuadraturePoints =
