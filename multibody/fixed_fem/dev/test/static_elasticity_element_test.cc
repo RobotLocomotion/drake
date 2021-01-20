@@ -127,6 +127,20 @@ TEST_F(StaticElasticityElementTest, StiffnessMatrixIsNegativeElasticForce) {
                               stiffness_matrix, 0));
 }
 
+/* Tests that the stiffness matrix is the derivative of the residual with
+ respect to the generalized positions. */
+TEST_F(StaticElasticityElementTest, StiffnessMatrixIsPositionDerivative) {
+  Vector<T, kNumDofs> residual;
+  element().CalcResidual(*state_, &residual);
+  Eigen::Matrix<T, kNumDofs, kNumDofs> stiffness_matrix;
+  element().CalcStiffnessMatrix(*state_, &stiffness_matrix);
+  for (int i = 0; i < kNumDofs; ++i) {
+    EXPECT_TRUE(CompareMatrices(
+        residual(i).derivatives().transpose().head(kNumDofs),
+        stiffness_matrix.row(i), std::numeric_limits<double>::epsilon()));
+  }
+}
+
 TEST_F(StaticElasticityElementTest, NoDampingMatrix) {
   Eigen::Matrix<T, kNumDofs, kNumDofs> damping_matrix;
   DRAKE_EXPECT_THROWS_MESSAGE(
