@@ -62,9 +62,6 @@ struct ElasticityElementTraits {
   static constexpr int kSpatialDimension =
       IsoparametricElementType::spatial_dimension();
   static constexpr int kSolutionDimension = 3;
-  /* The number of degrees of freedom should be equal to the solution dimension
-   (which gives the number of degrees of freedom for a single vertex) times
-   the number of nodes. */
   static constexpr int kNumDofs = kSolutionDimension * kNumNodes;
 
   /* The data shared by any elasticity element. Derived classes may extend this
@@ -126,13 +123,6 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
           Traits>::value,
       "The DerivedTraits template parameter must be derived from "
       "ElasticityElementTraits.");
-  static_assert(Traits::kSolutionDimension == 3 &&
-                    Traits::kSpatialDimension == 3,
-                "Only 3D elasticity is supported and thus kSpatialDimension "
-                "and kSolutionDimension must be 3.");
-  static_assert(Traits::kNumDofs ==
-                    Traits::kNumNodes * Traits::kSolutionDimension,
-                "kNumDofs must be equal to kNumNodes * kSolutionDimension");
 
   /** Given the current state, calculates the elastic potential energy (in
    joules) stored in this element. */

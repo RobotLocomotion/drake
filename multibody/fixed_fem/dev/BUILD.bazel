@@ -22,13 +22,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "damping_model",
-    hdrs = [
-        "damping_model.h",
-    ],
-)
-
-drake_cc_library(
     name = "deformation_gradient_cache_entry",
     hdrs = [
         "deformation_gradient_cache_entry.h",
@@ -36,17 +29,6 @@ drake_cc_library(
     deps = [
         ":fem_indexes",
         "//common:essential",
-    ],
-)
-
-drake_cc_library(
-    name = "dynamic_elasticity_element",
-    hdrs = [
-        "dynamic_elasticity_element.h",
-    ],
-    deps = [
-        ":damping_model",
-        ":elasticity_element",
     ],
 )
 
@@ -194,18 +176,6 @@ drake_cc_library(
         ":element_cache_entry",
         ":fem_element",
         ":fem_state",
-    ],
-)
-
-drake_cc_googletest(
-    name = "dynamic_elasticity_element_test",
-    deps = [
-        ":dynamic_elasticity_element",
-        ":linear_constitutive_model",
-        ":linear_simplex_element",
-        ":simplex_gaussian_quadrature",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//math:gradient",
     ],
 )
 

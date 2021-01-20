@@ -19,8 +19,16 @@ struct StaticElasticityElementTraits
 };
 
 /** The FEM element class for static 3D elasticity problems. Implements the
- CRTP base class, ElasticityElement. See ElasticityElement for documentation on
- the template paramenters. */
+ the CRTP base class, FemElement.
+ @tparam IsoparametricElementType The type of isoparametric element used in this
+ %StaticElasticityElement. IsoparametricElementType must be a derived class from
+ IsoparametricElement.
+ @tparam QuadratureType The type of quadrature rule used in this
+ %StaticElasticityElement. QuadratureType must be a derived class from
+ Quadrature.
+ @tparam ConstitutiveModelType The type of constitutive model used in this
+ %StaticElasticityElement. ConstitutiveModelType must be a derived class from
+ ConstitutiveModel. */
 template <class IsoparametricElementType, class QuadratureType,
           class ConstitutiveModelType>
 class StaticElasticityElement final
