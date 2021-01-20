@@ -121,8 +121,8 @@ class DynamicElasticityElement final
     /* D = αM + βK, where α is the mass damping coefficient and β is the
      stiffness damping coefficient. */
     FemElementType::CalcStiffnessMatrix(state, D);
-    *D *= damping_model_.stiffness_damping();
-    *D += damping_model_.mass_damping() * mass_matrix_;
+    *D *= damping_model_.stiffness_coeff();
+    *D += damping_model_.mass_coeff() * mass_matrix_;
   }
 
   /* Implements FemElement::CalcMassMatrix(). */

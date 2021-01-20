@@ -120,19 +120,19 @@ namespace {
 TEST_F(DynamicElasticityElementTest, Constructor) {
   EXPECT_EQ(element().node_indices(), dummy_node_indices);
   EXPECT_EQ(element().element_index(), kZeroIndex);
-  EXPECT_EQ(damping_model(element()).mass_damping(),
-            dummy_damping_model.mass_damping());
-  EXPECT_EQ(damping_model(element()).stiffness_damping(),
-            dummy_damping_model.stiffness_damping());
+  EXPECT_EQ(damping_model(element()).mass_coeff(),
+            dummy_damping_model.mass_coeff());
+  EXPECT_EQ(damping_model(element()).stiffness_coeff(),
+            dummy_damping_model.stiffness_coeff());
   EXPECT_EQ(density(element()), kDummyDensity);
 
   ElementType move_constructed_element(std::move(elements_[0]));
   EXPECT_EQ(move_constructed_element.node_indices(), dummy_node_indices);
   EXPECT_EQ(move_constructed_element.element_index(), kZeroIndex);
-  EXPECT_EQ(damping_model(move_constructed_element).mass_damping(),
-            dummy_damping_model.mass_damping());
-  EXPECT_EQ(damping_model(move_constructed_element).stiffness_damping(),
-            dummy_damping_model.stiffness_damping());
+  EXPECT_EQ(damping_model(move_constructed_element).mass_coeff(),
+            dummy_damping_model.mass_coeff());
+  EXPECT_EQ(damping_model(move_constructed_element).stiffness_coeff(),
+            dummy_damping_model.stiffness_coeff());
   EXPECT_EQ(density(move_constructed_element), kDummyDensity);
 }
 

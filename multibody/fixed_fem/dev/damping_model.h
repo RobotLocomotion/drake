@@ -19,22 +19,22 @@ class DampingModel {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DampingModel);
   /** Constructs a Rayleigh damping model with the given mass and stiffness
    damping coefficients.
-   @throw std::exception if either `mass_damping` or `stiffness_damping` is
+   @throw std::exception if either `mass_coeff` or `stiffness_coeff` is
    negative. */
-  DampingModel(T mass_damping, T stiffness_damping)
-      : mass_damping_(mass_damping), stiffness_damping_(stiffness_damping) {
-    if (mass_damping < 0.0 || stiffness_damping < 0.0) {
+  DampingModel(T mass_coeff, T stiffness_coeff)
+      : mass_coeff_(mass_coeff), stiffness_coeff_(stiffness_coeff) {
+    if (mass_coeff < 0.0 || stiffness_coeff < 0.0) {
       throw std::logic_error(
           "Mass and stiffness damping coefficients must be non-negative.");
     }
   }
 
-  T mass_damping() const { return mass_damping_; }
-  T stiffness_damping() const { return stiffness_damping_; }
+  const T& mass_coeff() const { return mass_coeff_; }
+  const T& stiffness_coeff() const { return stiffness_coeff_; }
 
  private:
-  T mass_damping_;
-  T stiffness_damping_;
+  T mass_coeff_;
+  T stiffness_coeff_;
 };
 }  // namespace fixed_fem
 }  // namespace multibody
