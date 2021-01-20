@@ -1,3 +1,9 @@
+"""
+Tests low-level deprecation API.
+
+Please see `deprecation_utility_test.py` for a unittest on higher-level API.
+"""
+
 import rlcompleter
 import sys
 from types import ModuleType
@@ -145,6 +151,12 @@ class TestDeprecation(unittest.TestCase):
             self.assertIn(message_expected, str(item.message))
 
     def test_member_deprecation(self):
+        """
+        Tests low-level deprecation API for members.
+
+        Please see `deprecation_utility_test.py` for a unittest on
+        higher-level API.
+        """
         from deprecation_example import ExampleClass
 
         def base_deprecation():
@@ -221,52 +233,13 @@ class TestDeprecation(unittest.TestCase):
             warnings.simplefilter("ignore", DeprecationWarning)
             warnings.simplefilter("once", DrakeDeprecationWarning)
 
-    def test_deprecation_pybind(self):
-        """Test C++ usage in `deprecation_pybind.h`, as is used in
-        `cc_module_py.cc`."""
-        from deprecation_example.cc_module import (
-            ExampleCppClass,
-            ExampleCppStruct,
-            emit_deprecation,
-        )
-        # TODO(eric.cousineau): Break these apart.
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("once", DrakeDeprecationWarning)
-            # This is a descriptor, so it will trigger on class access.
-            ExampleCppClass.DeprecatedMethod
-            self.assertEqual(len(w), 1)
-            self._check_warning(w[0], "Do not use DeprecatedMethod()", False)
-            # Same for a property.
-            ExampleCppClass.deprecated_prop
-            self.assertEqual(len(w), 2)
-            self._check_warning(w[1], "Do not use deprecated_prop", False)
-            # Call good overload; no new warnings.
-            obj = ExampleCppClass()
-            obj.overload()
-            self.assertEqual(len(w), 2)
-            # Call bad overload.
-            obj.overload(10)
-            self.assertEqual(len(w), 3)
-            self._check_warning(w[2], "Do not use overload(int)", False)
-            # Call bad constructors.
-            ExampleCppClass(1)
-            self.assertEqual(len(w), 4)
-            self._check_warning(w[3], "Do not use ExampleCppClass(int)", False)
-            # - Factory.
-            ExampleCppClass(2.0)
-            self.assertEqual(len(w), 5)
-            self._check_warning(
-                w[4], "Do not use ExampleCppClass(double)", False)
-            # Explicit call.
-            emit_deprecation()
-            self.assertEqual(len(w), 6)
-            self._check_warning(w[5], "Example emitting of deprecation", False)
-            # Param init (regardless of arguments).
-            ExampleCppStruct()
-            self.assertEqual(len(w), 7)
-            self._check_warning(w[6], "Deprecated as of 2038-01-19", False)
-
     def test_deprecated_callable(self):
+        """
+        Tests low-level deprecation API for callables.
+
+        Please see `deprecation_utility_test.py` for a unittest on
+        higher-level API.
+        """
         import deprecation_example.cc_module as m_new
         # Spoof module name.
         var_dict = dict(__name__="fake_module")
