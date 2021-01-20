@@ -206,7 +206,7 @@ def _update(args, rst_filename, gh, drake):
                 (anchors_csv,) = match.groups()
                 anchors = anchors_csv.split(",")
                 if primary_package in anchors:
-                    lines.insert(i + 1, f"{bullet}\n")
+                    lines.insert(i + 2, f"{bullet}\n")
                     found = True
                     break
         if not found:

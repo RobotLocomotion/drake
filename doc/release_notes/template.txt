@@ -22,6 +22,7 @@ Dynamical Systems
 
 .. <relnotes for systems go here>
 
+
 New features
 
 * TBD
@@ -34,6 +35,7 @@ Mathematical Program
 ~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for solvers go here>
+
 
 New features
 
@@ -48,6 +50,7 @@ Multibody Dynamics
 
 .. <relnotes for geometry,multibody go here>
 
+
 New features
 
 * TBD
@@ -60,18 +63,21 @@ Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for examples,tutorials go here>
+
 * TBD
 
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for common,math,lcm,lcmtypes,manipulation,perception go here>
+
 * TBD
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
 
 .. <relnotes for bindings go here>
+
 
 New features
 
@@ -89,6 +95,7 @@ Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for attic,cmake,doc,setup,third_party,tools go here>
+
 * TBD
 
 Newly-deprecated APIs
