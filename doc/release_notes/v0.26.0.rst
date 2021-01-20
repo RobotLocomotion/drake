@@ -9,8 +9,8 @@ Announcements
   ``<typename T>`` to support multiple scalar types (`#14547`_).
 
   * To insulate your code from this change, we now offer a C++ alias
-    ``drake::geometry::DrakeVizualierd`` (i.e., with a "d" suffix) that matches
-    the current uses of a ``double`` system.
+    ``drake::geometry::DrakeVisualizerd`` (i.e., with a "d" suffix) that
+    matches the current uses of a ``double`` system.
 
   * We recommend that C++ users preemptively refactor to use this new alias, so
     the addition of the template in a future release will not be a breaking
