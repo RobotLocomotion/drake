@@ -66,7 +66,7 @@ int do_main(int argc, char* argv[]) {
   }
   station->Finalize();
 
-  geometry::DrakeVisualizer::AddToBuilder(
+  geometry::DrakeVisualizerd::AddToBuilder(
       &builder, station->GetOutputPort("query_object"));
   multibody::ConnectContactResultsToDrakeVisualizer(
       &builder, station->get_mutable_multibody_plant(),

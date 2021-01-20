@@ -45,7 +45,7 @@ int do_main() {
   auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
   AcrobotGeometry::AddToBuilder(
       &builder, acrobot_w_encoder->get_output_port(1), scene_graph);
-  geometry::DrakeVisualizer::AddToBuilder(&builder, *scene_graph);
+  geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph);
 
   // Make a Kalman filter observer.
   auto observer_acrobot = std::make_unique<AcrobotWEncoder<double>>();

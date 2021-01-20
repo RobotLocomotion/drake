@@ -685,12 +685,12 @@ TEST_F(DrakeVisualizerTest, AddToBuilderSceneGraph) {
       [](DiagramBuilder<double>* builder, const SceneGraph<double>& scene_graph,
          DrakeLcmInterface* lcm,
          DrakeVisualizerParams params) -> const DrakeVisualizer& {
-    return DrakeVisualizer::AddToBuilder(builder, scene_graph, lcm, params);
+    return DrakeVisualizerd::AddToBuilder(builder, scene_graph, lcm, params);
   };
   auto add_to_builder_no_params =
       [](DiagramBuilder<double>* builder, const SceneGraph<double>& scene_graph,
          DrakeLcmInterface* lcm) -> const DrakeVisualizer& {
-    return DrakeVisualizer::AddToBuilder(builder, scene_graph, lcm);
+    return DrakeVisualizerd::AddToBuilder(builder, scene_graph, lcm);
   };
   auto pose_source =
       [](const SceneGraph<double>& sg) -> const SceneGraph<double>& {
@@ -706,13 +706,13 @@ TEST_F(DrakeVisualizerTest, AddToBuilderQueryObjectPort) {
       [](DiagramBuilder<double>* builder,
          const systems::OutputPort<double>& port, DrakeLcmInterface* lcm,
          DrakeVisualizerParams params) -> const DrakeVisualizer& {
-    return DrakeVisualizer::AddToBuilder(builder, port, lcm, params);
+    return DrakeVisualizerd::AddToBuilder(builder, port, lcm, params);
   };
   auto add_to_builder_no_params =
       [](DiagramBuilder<double>* builder,
          const systems::OutputPort<double>& port,
          DrakeLcmInterface* lcm) -> const DrakeVisualizer& {
-    return DrakeVisualizer::AddToBuilder(builder, port, lcm);
+    return DrakeVisualizerd::AddToBuilder(builder, port, lcm);
   };
   auto pose_source =
       [](const SceneGraph<double>& sg) -> const systems::OutputPort<double>& {

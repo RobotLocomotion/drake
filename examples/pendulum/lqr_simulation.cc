@@ -53,7 +53,7 @@ int DoMain() {
   auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
   PendulumGeometry::AddToBuilder(
       &builder, pendulum->get_state_output_port(), scene_graph);
-  geometry::DrakeVisualizer::AddToBuilder(&builder, *scene_graph);
+  geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph);
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
