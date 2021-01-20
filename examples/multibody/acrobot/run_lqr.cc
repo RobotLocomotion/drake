@@ -144,7 +144,7 @@ int do_main() {
       acrobot.get_geometry_poses_output_port(),
       scene_graph.get_source_pose_port(acrobot.get_source_id().value()));
 
-  geometry::DrakeVisualizer::AddToBuilder(&builder, scene_graph);
+  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);

@@ -104,7 +104,7 @@ void DoMain() {
   builder.Connect(scene_graph.get_query_output_port(),
                   plant.get_geometry_query_input_port());
 
-  geometry::DrakeVisualizer::AddToBuilder(&builder, scene_graph);
+  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
 
   // Create a context for this system:

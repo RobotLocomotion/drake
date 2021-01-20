@@ -122,7 +122,7 @@ int do_main() {
   // We are done defining the model. Finalize and build the diagram.
   four_bar.Finalize();
 
-  geometry::DrakeVisualizer::AddToBuilder(&builder, scene_graph);
+  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
   auto diagram = builder.Build();
 
   // Create a context for this system and sub-context for the four bar system.

@@ -36,7 +36,7 @@ class Quadrotor : public systems::Diagram<T> {
     systems::DiagramBuilder<T> builder;
     auto [plant, scene_graph] =
         multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
-    geometry::DrakeVisualizer::AddToBuilder(&builder, scene_graph);
+    geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
     multibody::Parser parser(&plant);
     parser.AddModelFromFile(
         FindResourceOrThrow("drake/examples/quadrotor/quadrotor.urdf"));

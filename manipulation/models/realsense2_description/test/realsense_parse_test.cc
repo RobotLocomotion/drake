@@ -34,7 +34,7 @@ namespace drake {
 namespace manipulation {
 namespace {
 
-using geometry::DrakeVisualizer;
+using geometry::DrakeVisualizerd;
 using geometry::SceneGraph;
 using multibody::AddMultibodyPlantSceneGraph;
 using multibody::Parser;
@@ -62,7 +62,7 @@ TEST_P(ParseTest, ParsesUrdfAndVisualizes) {
 
   // Visualize via publishing, if requested.
   if (FLAGS_visualize) {
-    DrakeVisualizer::AddToBuilder(&builder, scene_graph);
+    DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
     plant.Finalize();
     auto diagram = builder.Build();
     drake::log()->info("Visualize: {}", object_name);

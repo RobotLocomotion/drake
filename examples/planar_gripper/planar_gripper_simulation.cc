@@ -349,7 +349,7 @@ int DoMain() {
                     plant.get_actuation_input_port());
   }
 
-  geometry::DrakeVisualizer::AddToBuilder(&builder, scene_graph, lcm);
+  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, lcm);
 
   // Publish contact results for visualization.
   if (FLAGS_visualize_contacts) {

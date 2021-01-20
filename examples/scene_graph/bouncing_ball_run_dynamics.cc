@@ -36,27 +36,26 @@ namespace {
 
 using Eigen::Vector3d;
 using Eigen::Vector4d;
-using geometry::DrakeVisualizer;
-using geometry::GeometryInstance;
-using geometry::SceneGraph;
+using geometry::DrakeVisualizerd;
 using geometry::GeometryId;
+using geometry::GeometryInstance;
 using geometry::HalfSpace;
 using geometry::IllustrationProperties;
 using geometry::PerceptionProperties;
 using geometry::ProximityProperties;
+using geometry::SceneGraph;
+using geometry::SourceId;
 using geometry::render::ColorRenderCamera;
 using geometry::render::DepthRenderCamera;
 using geometry::render::RenderEngineVtkParams;
 using geometry::render::RenderLabel;
-using geometry::SceneGraph;
-using geometry::SourceId;
 using lcm::DrakeLcm;
 using math::RigidTransformd;
 using math::RotationMatrixd;
+using std::make_unique;
 using systems::InputPort;
 using systems::sensors::PixelType;
 using systems::sensors::RgbdSensor;
-using std::make_unique;
 
 int do_main() {
   systems::DiagramBuilder<double> builder;
@@ -103,7 +102,7 @@ int do_main() {
                   bouncing_ball2->get_geometry_query_input_port());
 
   DrakeLcm lcm;
-  DrakeVisualizer::AddToBuilder(&builder, *scene_graph, &lcm);
+  DrakeVisualizerd::AddToBuilder(&builder, *scene_graph, &lcm);
 
   if (FLAGS_render_on) {
     PerceptionProperties properties;

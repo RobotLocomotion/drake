@@ -105,6 +105,7 @@ struct DrakeVisualizerParams {
      such that the data in the per-thread systems::Context varies.
    - Evaluating multiple instances of %DrakeVisualizer in a single thread that
      share the same lcm::DrakeLcmInterface.  */
+
 class DrakeVisualizer : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeVisualizer)
@@ -262,6 +263,8 @@ class DrakeVisualizer : public systems::LeafSystem<double> {
   /* The parameters for the visualizer.  */
   DrakeVisualizerParams params_;
 };
+
+using DrakeVisualizerd = DrakeVisualizer;
 
 }  // namespace geometry
 }  // namespace drake
