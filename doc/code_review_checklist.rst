@@ -30,6 +30,21 @@ Is the code the minimal set of what you want?
       `DRAKE_DEPRECATED <https://drake.mit.edu/doxygen_cxx/drake__deprecated_8h.html>`_ for C++
       and `pydrake deprecation <https://drake.mit.edu/doxygen_cxx/group__python__bindings.html#PydrakeDeprecation>`_ for Python.
 
+    - To search for previous examples of C++ deprecations, please use a
+      ``git diff`` search such as::
+
+          cd drake
+          git log -S DRAKE_DEPRECATED
+
+      To constrain the search to effects in Python bindings, you can also use a
+      search such as::
+
+          cd drake
+          git log -S Wdeprecated-declarations -- ./bindings/
+
+      A simple contrived example of a deprecation reaching Python bindings can
+      be seen in this toy commit: `drake@61d53483f8 <https://github.com/RobotLocomotion/drake/commit/61d53483f8>`_.
+
   - If you are introducing a new feature, consider adding only test cases
     now, and deferring the first application use to a follow-up PR.
 
