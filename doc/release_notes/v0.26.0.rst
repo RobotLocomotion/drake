@@ -5,7 +5,19 @@ Drake v0.26.0
 Announcements
 -------------
 
-* None
+* In a future release, the DrakeVisualizer system will become templated on
+  ``<typename T>`` to support multiple scalar types (`#14547`_).
+
+  * To insulate your code from this change, we now offer a C++ alias
+    ``drake::geometry::DrakeVizualierd`` (i.e., with a "d" suffix) that matches
+    the current uses of a ``double`` system.
+
+  * We recommend that C++ users preemptively refactor to use this new alias, so
+    the addition of the template in a future release will not be a breaking
+    change.  See `#14547`_ for examples.
+
+  * Python users do not need to make any preemptive changes.  The new template
+    argument will not disturb pydrake.
 
 Breaking changes since v0.25.0
 ------------------------------
@@ -50,7 +62,6 @@ Multibody Dynamics
 
 .. <relnotes for geometry,multibody go here>
 
-* TBD multibody: Give better errors when joints overlap with SDF static welds (`#14534`_)  # Closes #14518. Indicate SDF-inserted welds by using an elaborate joint name. Since this defeats the fail-fast error induced by having duplicate joint names (for redundant welds), implement a more robust fail-fast error that complains about any two joints that connect the same two bodies, regardless of direction or other details.
 New features
 
 * Add MultibodyPlant::CalcCenterOfMassTranslationalVelocityInWorld (`#14297`_)
@@ -59,14 +70,13 @@ New features
 
 Fixes
 
-* None
+* Give better errors when joints overlap with SDF static welds (`#14534`_)
 
 Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for examples,tutorials go here>
 
-* TBD [examples,geometry,manipulation,multibody] Use DrakeVisualizerd instead of DrakeVisualizer (`#14547`_)  # In the future PR we will templatize DrakeVisualizer class.  This PR makes sure the code doesn't break, and is compatible with the future templated DrakeVisualizer class. Co-authored-by: Jeremy Nimmer <jeremy.nimmer@tri.global>
 * Add example of monte carlo simulation using acrobot (`#14522`_)
 
 Miscellaneous features and fixes
@@ -75,6 +85,7 @@ Miscellaneous features and fixes
 .. <relnotes for common,math,lcm,lcmtypes,manipulation,perception go here>
 
 * Add MeshcatVisualizer option to draw collision geometry (`#14467`_)
+* Add DrakeVisualizerd compatibility alias (`#14547`_)
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
