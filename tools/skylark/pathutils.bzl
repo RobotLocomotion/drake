@@ -51,7 +51,7 @@ def __remove_prefix(path, prefix):
             # remaining components (len(prefix) - n - 1; the 1 is the current
             # prefix component) less one (since we need to keep at least one
             # component of the path).
-            k = len(path) - (len(prefix) - n - 2)
+            k = len(path) - (len(prefix) - n - 1)
 
             # Try to complete the match, iterating (backwards) over the number
             # of components that the multi-glob might match.
@@ -126,7 +126,7 @@ def join_paths(*args):
 
     for part in args:
         if part.endswith("/"):
-            part = part[-1]
+            part = part[:-1]
 
         if part == "" or part == ".":
             continue
