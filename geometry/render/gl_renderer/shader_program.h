@@ -119,6 +119,11 @@ class ShaderProgram {
   virtual void SetDepthCameraParameters(
       const DepthRenderCamera& /* camera */) const {}
 
+  /* Sets the direction of the directional light (if supported).
+   @pre light_dir_C.norm() == 1.0.  */
+  virtual void SetLightDirection(
+      const Vector3<float>& /* light_dir_C */) const {}
+
   /* Sets the OpenGl projection matrix state. The projection matrix transforms a
    vertex from the camera frame C to the OpenGl 2D device frame D -- it
    projects a point in 3D to a point on the image.  */
