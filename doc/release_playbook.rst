@@ -160,7 +160,7 @@ Cutting the release
 
 12. Merge the release notes PR
 
-   a. After merge, go to https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-bionic-gcc-bazel-nightly-documentation/ and push "Build now".
+   a. After merge, go to https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-bionic-unprovisioned-gcc-bazel-nightly-documentation/ and push "Build now".
 
       i. If you don't have "Build now" click "Log in" first in upper right.
 
