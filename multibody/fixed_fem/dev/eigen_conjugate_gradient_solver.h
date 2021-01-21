@@ -7,9 +7,12 @@ namespace drake {
 namespace multibody {
 namespace fixed_fem {
 namespace internal {
-/* A wrapper around contact_solvers::LinearOperator to turn it into an Eigen
- object with bespoke implementaion of multiplication with dense Eigen vectors.
- */
+/* In order to implement the linear solver for contact_solvers::LinearOperator,
+ we implement the matrix-free concept in
+ https://eigen.tuxfamily.org/dox/group__MatrixfreeSolverExample.html through the
+ EigenMatrixProxy class. It wraps around the linear operator and turns it into
+ an Eigen object. It provides the methods rows(), cols(), and a bespoke
+ multiplication operator. */
 template <typename T>
 class EigenMatrixProxy : public Eigen::EigenBase<EigenMatrixProxy<T>> {
  public:
@@ -96,6 +99,8 @@ struct traits<drake::multibody::fixed_fem::internal::EigenMatrixProxy<T>> {
     ColsAtCompileTime = Dynamic,
     MaxRowsAtCompileTime = Dynamic,
     MaxColsAtCompileTime = Dynamic,
+    /* Compile time properties of the matrix. See
+       https://eigen.tuxfamily.org/dox-devel/group__flags.html. */
     Flags = 0x0
   };
 };
@@ -182,7 +187,7 @@ class EigenConjugateGradientSolver : public LinearSystemSolver<T> {
   Eigen::ConjugateGradient<EigenMatrixProxy<T>, Eigen::Lower | Eigen::Upper,
                            Eigen::IdentityPreconditioner>
       cg_;
-};  // namespace internal
+};
 }  // namespace internal
 }  // namespace fixed_fem
 }  // namespace multibody
