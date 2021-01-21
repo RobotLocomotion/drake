@@ -31,8 +31,10 @@ Here's an example of how to create (and then update) a new release notes
 document:
 
   bazel build //tools/release_engineering:relnotes
-  bazel-bin/tools/release_engineering/relnotes --action=create --version=v0.26.0 --prior_version=v0.25.0
-  bazel-bin/tools/release_engineering/relnotes --action=update --version=v0.26.0
+  bazel-bin/tools/release_engineering/relnotes --action=create \
+    --version=v0.26.0 --prior_version=v0.25.0
+  bazel-bin/tools/release_engineering/relnotes --action=update \
+    --version=v0.26.0
 """
 
 import argparse
