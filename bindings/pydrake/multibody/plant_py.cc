@@ -285,17 +285,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         // association that is less awkward than implicit BodyNodeIndex.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        .def("CalcCenterOfMassPosition",
-            overload_cast_explicit<Vector3<T>, const Context<T>&>(
-                &Class::CalcCenterOfMassPosition),
-            py::arg("context"),
-            cls_doc.CalcCenterOfMassPosition.doc_1args)
-        .def("CalcCenterOfMassPosition",
-            overload_cast_explicit<Vector3<T>, const Context<T>&,
-                const std::vector<ModelInstanceIndex>&>(
-                &Class::CalcCenterOfMassPosition),
-            py::arg("context"), py::arg("model_instances"),
-            cls_doc.CalcCenterOfMassPosition.doc_2args)
+     cls.def("DeprecatedMethod", &Class::CalcCenterOfMassPosition,
+         cls_doc.CalcCenterOfMassPosition.doc_deprecated);
 #pragma GCC diagnostic pop
         .def("CalcCenterOfMassPositionInWorld",
             overload_cast_explicit<Vector3<T>, const Context<T>&>(
