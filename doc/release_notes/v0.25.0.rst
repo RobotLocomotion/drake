@@ -296,8 +296,13 @@ C++
 * drake::geometry::SceneGraphInspector::GetSourceName (`#14280`_)
 * drake::geometry::SurfaceMesh::kDim (`#14420`_)
 * drake::geometry::VolumeMesh::kDim (`#14420`_)
+* drake::systems::framework::Diagram::get_input_port_locator (`#14361`_)
 * drake::systems::sensors::RgbdSensor::CameraPoses (`#14358`_)
 * drake::systems::sensors::RgbdSensor::RgbdSensor constructor with CameraPoses or CameraProperties (`#14358`_)
+
+Python
+
+* The ability for MeshcatVisualizer to use a pose_bundle input port (`#14292`_)
 
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
