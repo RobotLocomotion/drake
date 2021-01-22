@@ -29,7 +29,7 @@ DEFINE_double(pitch, -1.3,
               "target pitch (radians) about world y axis for end effector");
 DEFINE_double(yaw, -1.8,
               "target yaw (radians) about world z axis for end effector");
-DEFINE_string(ee_name, "j2s7s300_end_effector",
+DEFINE_string(ee_name, "j2s6s300_end_effector",
               "Name of the end effector link");
 
 namespace drake {
@@ -41,16 +41,21 @@ using manipulation::util::MoveIkDemoBase;
 
 const char kUrdfPath[] =
     "drake/manipulation/models/jaco_description/urdf/"
-    "j2s7s300_sphere_collision.urdf";
+    "j2s6s300_sphere_collision.urdf";
 
 int DoMain() {
+
+  std::cout<<"constructing rigid pose\n";
   math::RigidTransformd pose(
       math::RollPitchYawd(FLAGS_roll, FLAGS_pitch, FLAGS_yaw),
       Eigen::Vector3d(FLAGS_x, FLAGS_y, FLAGS_z));
+  std::cout<<"constructed rigid pose\n";
 
+  std::cout<<"MoveIkDemo building\n";
   MoveIkDemoBase demo(
       !FLAGS_urdf.empty() ? FLAGS_urdf : FindResourceOrThrow(kUrdfPath),
       "base", FLAGS_ee_name, 100);
+  std::cout<<"MoveIkDemo built\n";
 
   ::lcm::LCM lc;
   lc.subscribe<lcmt_jaco_status>(

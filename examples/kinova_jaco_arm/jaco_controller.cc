@@ -46,7 +46,7 @@ using manipulation::planner::RobotPlanInterpolator;
 
 const char* const kJacoUrdf =
     "drake/manipulation/models/jaco_description/urdf/"
-    "j2s7s300_sphere_collision.urdf";
+    "j2s6s300_sphere_collision.urdf";
 const char* const kLcmStatusChannel = "KINOVA_JACO_STATUS";
 const char* const kLcmCommandChannel = "KINOVA_JACO_COMMAND";
 const char* const kLcmPlanChannel = "COMMITTED_ROBOT_PLAN";
@@ -68,6 +68,11 @@ int DoMain() {
 
   const int num_joints = FLAGS_num_joints;
   const int num_fingers = FLAGS_num_fingers;
+  std::cout<<"num_joints:" << num_joints <<"\n";
+  std::cout<<"num_fingers:" << num_fingers <<"\n";
+  std::cout<<"plan_source->plant().num_positions()"<< plan_source->plant().num_positions() << "\n";
+  std::cout<<"plan_source->plant().num_velocities()"<< plan_source->plant().num_velocities() << "\n";
+
   DRAKE_DEMAND(plan_source->plant().num_positions() ==
                num_joints + num_fingers);
   DRAKE_DEMAND(plan_source->plant().num_velocities() ==

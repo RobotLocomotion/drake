@@ -51,7 +51,7 @@ namespace {
 
 const char kUrdfPath[] =
     "drake/manipulation/models/jaco_description/urdf/"
-    "j2s7s300_sphere_collision.urdf";
+    "j2s6s300_sphere_collision.urdf";
 
 int DoMain() {
   systems::DiagramBuilder<double> builder;

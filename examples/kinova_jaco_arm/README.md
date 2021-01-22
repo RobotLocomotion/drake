@@ -34,7 +34,7 @@ The following examples of a simulated jaco are present:
 
 
 ```
-bazel-bin/examples/kinova_jaco_arm/jaco_simulation
+
 ```
 
 Simulates a Jaco arm with an inverse dynamics controller,

@@ -43,25 +43,11 @@
        renamed from "root" -->
   <link name="base"/>
 
-  <!-- for gazebo -->
-  <link name="world"/>
-  <joint name="connect_root_and_world" type="fixed">
-    <child link="base"/>
-    <parent link="world"/>
-    <origin rpy="0 0 0" xyz="0 0 0"/>
-  </joint>
-  <!-- ros_control plugin -->
-  <gazebo>
-    <plugin filename="libgazebo_ros_control.so" name="gazebo_ros_control">
-      <robotNamespace>j2s6s300</robotNamespace>
-      <robotSimType>gazebo_ros_control/DefaultRobotHWSim</robotSimType>
-      <legacyModeNS>true</legacyModeNS>
-    </plugin>
-  </gazebo>
+  <!-- removed  gazebo -->
   <link name="j2s6s300_link_base">
     <visual>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/base.dae"/>
+        <mesh filename="../meshes/base.dae"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -69,7 +55,7 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/base.dae"/>
+	      <mesh filename="../meshes/base.dae"/>
       </geometry>
     </collision>
     <inertial>
@@ -89,7 +75,7 @@
   <link name="j2s6s300_link_1">
     <visual>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/shoulder.dae"/>
+        <mesh filename="../meshes/shoulder.dae"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -97,12 +83,12 @@
     </visual>
     <visual>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/ring_big.dae"/>
+        <mesh filename="../meshes/ring_big.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/shoulder.dae"/>
+        <mesh filename="../meshes/shoulder.dae"/>
       </geometry>
     </collision>
     <inertial>
@@ -130,20 +116,10 @@
     </actuator>
   </transmission>
   <!--For torque sensing in simulation-->
-  <gazebo reference="j2s6s300_joint_1">
-    <provideFeedback>true</provideFeedback>
-  </gazebo>
-  <gazebo>
-    <plugin filename="libgazebo_ros_ft_sensor.so" name="ft_sensor">
-      <updateRate>30.0</updateRate>
-      <topicName>j2s6s300_joint_1_ft_sensor_topic</topicName>
-      <jointName>j2s6s300_joint_1</jointName>
-    </plugin>
-  </gazebo>
   <link name="j2s6s300_link_2">
     <visual>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/arm.dae"/>
+	  <mesh filename="../meshes/arm.dae"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -151,12 +127,12 @@
     </visual>
     <visual>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/ring_big.dae"/>
+        <mesh filename="../meshes/ring_big.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/arm.dae"/>
+        <mesh filename="../meshes/arm.dae"/>
       </geometry>
     </collision>
     <inertial>
@@ -184,20 +160,10 @@
     </actuator>
   </transmission>
   <!--For torque sensing in simulation-->
-  <gazebo reference="j2s6s300_joint_2">
-    <provideFeedback>true</provideFeedback>
-  </gazebo>
-  <gazebo>
-    <plugin filename="libgazebo_ros_ft_sensor.so" name="ft_sensor">
-      <updateRate>30.0</updateRate>
-      <topicName>j2s6s300_joint_2_ft_sensor_topic</topicName>
-      <jointName>j2s6s300_joint_2</jointName>
-    </plugin>
-  </gazebo>
   <link name="j2s6s300_link_3">
     <visual>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/forearm.dae"/>
+        <mesh filename="../meshes/forearm.dae"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -205,12 +171,12 @@
     </visual>
     <visual>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/ring_big.dae"/>
+        <mesh filename="../meshes/ring_big.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/forearm.dae"/>
+        <mesh filename="../meshes/forearm.dae"/>
       </geometry>
     </collision>
     <inertial>
@@ -238,20 +204,10 @@
     </actuator>
   </transmission>
   <!--For torque sensing in simulation-->
-  <gazebo reference="j2s6s300_joint_3">
-    <provideFeedback>true</provideFeedback>
-  </gazebo>
-  <gazebo>
-    <plugin filename="libgazebo_ros_ft_sensor.so" name="ft_sensor">
-      <updateRate>30.0</updateRate>
-      <topicName>j2s6s300_joint_3_ft_sensor_topic</topicName>
-      <jointName>j2s6s300_joint_3</jointName>
-    </plugin>
-  </gazebo>
   <link name="j2s6s300_link_4">
     <visual>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/wrist_spherical_1.dae"/>
+     <mesh filename="../meshes/wrist_spherical_1.dae"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -259,12 +215,12 @@
     </visual>
     <visual>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/ring_small.dae"/>
+        <mesh filename="../meshes/ring_small.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/wrist_spherical_1.dae"/>
+        <mesh filename="../meshes/wrist_spherical_1.dae"/>
       </geometry>
     </collision>
     <inertial>
@@ -292,20 +248,10 @@
     </actuator>
   </transmission>
   <!--For torque sensing in simulation-->
-  <gazebo reference="j2s6s300_joint_4">
-    <provideFeedback>true</provideFeedback>
-  </gazebo>
-  <gazebo>
-    <plugin filename="libgazebo_ros_ft_sensor.so" name="ft_sensor">
-      <updateRate>30.0</updateRate>
-      <topicName>j2s6s300_joint_4_ft_sensor_topic</topicName>
-      <jointName>j2s6s300_joint_4</jointName>
-    </plugin>
-  </gazebo>
   <link name="j2s6s300_link_5">
     <visual>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/wrist_spherical_2.dae"/>
+        <mesh filename="../meshes/wrist_spherical_2.dae"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -313,12 +259,12 @@
     </visual>
     <visual>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/ring_small.dae"/>
+	      <mesh filename="../meshes/ring_small.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/wrist_spherical_2.dae"/>
+        <mesh filename="../meshes/wrist_spherical_2.dae"/>
       </geometry>
     </collision>
     <inertial>
@@ -346,20 +292,10 @@
     </actuator>
   </transmission>
   <!--For torque sensing in simulation-->
-  <gazebo reference="j2s6s300_joint_5">
-    <provideFeedback>true</provideFeedback>
-  </gazebo>
-  <gazebo>
-    <plugin filename="libgazebo_ros_ft_sensor.so" name="ft_sensor">
-      <updateRate>30.0</updateRate>
-      <topicName>j2s6s300_joint_5_ft_sensor_topic</topicName>
-      <jointName>j2s6s300_joint_5</jointName>
-    </plugin>
-  </gazebo>
   <link name="j2s6s300_link_6">
     <visual>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/hand_3finger.dae"/>
+        <mesh filename="../meshes/hand_3finger.dae"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -367,12 +303,12 @@
     </visual>
     <visual>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/ring_small.dae"/>
+        <mesh filename="../meshes/ring_small.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/hand_3finger.dae"/>
+        <mesh filename="../meshes/hand_3finger.dae"/>
       </geometry>
     </collision>
     <inertial>
@@ -400,16 +336,6 @@
     </actuator>
   </transmission>
   <!--For torque sensing in simulation-->
-  <gazebo reference="j2s6s300_joint_6">
-    <provideFeedback>true</provideFeedback>
-  </gazebo>
-  <gazebo>
-    <plugin filename="libgazebo_ros_ft_sensor.so" name="ft_sensor">
-      <updateRate>30.0</updateRate>
-      <topicName>j2s6s300_joint_6_ft_sensor_topic</topicName>
-      <jointName>j2s6s300_joint_6</jointName>
-    </plugin>
-  </gazebo>
   <link name="j2s6s300_end_effector"/>
   <joint name="j2s6s300_joint_end_effector" type="fixed">
     <parent link="j2s6s300_link_6"/>
@@ -421,7 +347,7 @@
   <link name="j2s6s300_link_finger_1">
     <visual>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/finger_proximal.dae"/>
+        <mesh filename="../meshes/finger_proximal.dae"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -429,7 +355,7 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/finger_proximal.dae"/>
+	<mesh filename="../meshes/finger_proximal.dae"/>
       </geometry>
     </collision>
     <inertial>
@@ -458,7 +384,7 @@
   <link name="j2s6s300_link_finger_tip_1">
     <visual>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/finger_distal.dae"/>
+        <mesh filename="../meshes/finger_distal.dae"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -466,7 +392,7 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/finger_distal.dae"/>
+        <mesh filename="../meshes/finger_distal.dae"/>
       </geometry>
     </collision>
     <inertial>
@@ -495,7 +421,7 @@
   <link name="j2s6s300_link_finger_2">
     <visual>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/finger_proximal.dae"/>
+        <mesh filename="../meshes/finger_proximal.dae"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -503,7 +429,7 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/finger_proximal.dae"/>
+        <mesh filename="../meshes/finger_proximal.dae"/>
       </geometry>
     </collision>
     <inertial>
@@ -532,7 +458,7 @@
   <link name="j2s6s300_link_finger_tip_2">
     <visual>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/finger_distal.dae"/>
+	      <mesh filename="../meshes/finger_distal.dae"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -540,7 +466,7 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/finger_distal.dae"/>
+        <mesh filename="../meshes/finger_distal.dae"/>
       </geometry>
     </collision>
     <inertial>
@@ -569,7 +495,7 @@
   <link name="j2s6s300_link_finger_3">
     <visual>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/finger_proximal.dae"/>
+        <mesh filename="../meshes/finger_proximal.dae"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -577,7 +503,7 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/finger_proximal.dae"/>
+        <mesh filename="../meshes/finger_proximal.dae"/>
       </geometry>
     </collision>
     <inertial>
@@ -606,7 +532,7 @@
   <link name="j2s6s300_link_finger_tip_3">
     <visual>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/finger_distal.dae"/>
+        <mesh filename="../finger_distal.dae"/>
       </geometry>
       <material name="carbon_fiber">
         <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
@@ -614,7 +540,7 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://kinova_description/meshes/finger_distal.dae"/>
+        <mesh filename="../meshes/finger_distal.dae"/>
       </geometry>
     </collision>
     <inertial>
