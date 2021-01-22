@@ -5,9 +5,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/filesystem.h"
-#include "drake/geometry/render/gl_renderer/render_engine_gl.h"
 #include "drake/geometry/render/gl_renderer/render_engine_gl_factory.h"
-#include "drake/geometry/render/render_engine_vtk.h"
 #include "drake/geometry/render/render_engine_vtk_factory.h"
 #include "drake/systems/sensors/image_writer.h"
 
@@ -53,27 +51,16 @@ const double kZNear = 0.5;
 const double kZFar = 5.;
 const double kFovY = M_PI_4;
 
+/* The render engines generally supported by this benchmark; not all
+ renderers are supported by all operating systems.  */
+enum class EngineType { Vtk, Gl };
+
 /* Creates a render engine of the given type with the given background color.
  For each supported render engine type, this must be specialized. (See below.
  */
-template <typename EngineType>
+template <EngineType engine_type>
 std::unique_ptr<RenderEngine> MakeEngine(const Vector3d& bg_rgb) {
   throw std::runtime_error("Not implemented!");
-}
-
-template <>
-std::unique_ptr<RenderEngine> MakeEngine<RenderEngineVtk>(
-    const Vector3d& bg_rgb) {
-  RenderEngineVtkParams params{{}, {}, bg_rgb};
-  return MakeRenderEngineVtk(params);
-}
-
-template <>
-std::unique_ptr<RenderEngine> MakeEngine<RenderEngineGl>(
-    const Vector3d& bg_rgb) {
-  RenderEngineGlParams params;
-  params.default_clear_color.set(bg_rgb[0], bg_rgb[1], bg_rgb[2], 1.0);
-  return MakeRenderEngineGl(params);
 }
 
 class RenderBenchmark : public benchmark::Fixture {
@@ -86,10 +73,10 @@ class RenderBenchmark : public benchmark::Fixture {
   using benchmark::Fixture::SetUp;
   void SetUp(const ::benchmark::State&) { depth_cameras_.clear(); }
 
-  template <typename EngineType>
+  template <EngineType engine_type>
   // NOLINTNEXTLINE(runtime/references)
   void ColorImage(::benchmark::State& state, const std::string& name) {
-    auto renderer = MakeEngine<EngineType>(bg_rgb_);
+    auto renderer = MakeEngine<engine_type>(bg_rgb_);
     auto [sphere_count, camera_count, width, height] = ReadState(state);
     SetupScene(sphere_count, camera_count, width, height, renderer.get());
     ImageRgba8U color_image(width, height);
@@ -108,10 +95,10 @@ class RenderBenchmark : public benchmark::Fixture {
     }
   }
 
-  template <typename EngineType>
+  template <EngineType engine_type>
   // NOLINTNEXTLINE(runtime/references)
   void DepthImage(::benchmark::State& state, const std::string& name) {
-    auto renderer = MakeEngine<EngineType>(bg_rgb_);
+    auto renderer = MakeEngine<engine_type>(bg_rgb_);
     auto [sphere_count, camera_count, width, height] = ReadState(state);
     SetupScene(sphere_count, camera_count, width, height, renderer.get());
     ImageDepth32F depth_image(width, height);
@@ -129,10 +116,10 @@ class RenderBenchmark : public benchmark::Fixture {
     }
   }
 
-  template <typename EngineType>
+  template <EngineType engine_type>
   // NOLINTNEXTLINE(runtime/references)
   void LabelImage(::benchmark::State& state, const std::string& name) {
-    auto renderer = MakeEngine<EngineType>(bg_rgb_);
+    auto renderer = MakeEngine<engine_type>(bg_rgb_);
     auto [sphere_count, camera_count, width, height] = ReadState(state);
     SetupScene(sphere_count, camera_count, width, height, renderer.get());
     ImageLabel16I label_image(width, height);
@@ -315,8 +302,7 @@ std::set<std::string> RenderBenchmark::saved_image_paths;
 
  such that there must be a `RenderEngineFoo` type (e.g., RenderEngineVtk) and
  ImageType must be one of (Color, Depth, or Label). Capitalization matters.
- There must also be a specialization of MakeEngine<RenderEngineFoo> (see the top
- of the file).
+ There must also be a specialization of MakeEngine<EngineType::Foo> (see below).
 
  N.B. The macro STR converts a single macro parameter into a string and we use
  it to make a string out of the concatenation of two macro parameters (i.e., we
@@ -328,7 +314,7 @@ std::set<std::string> RenderBenchmark::saved_image_paths;
 #define MAKE_BENCHMARK(Renderer, ImageT) \
 BENCHMARK_DEFINE_F(RenderBenchmark, Renderer##ImageT) \
     (benchmark::State&state) { \
-  ImageT##Image<RenderEngine##Renderer>(state, STR(Renderer##ImageT)); \
+  ImageT##Image<EngineType::Renderer>(state, STR(Renderer##ImageT)); \
 } \
 BENCHMARK_REGISTER_F(RenderBenchmark, Renderer##ImageT) \
     ->Unit(benchmark::kMillisecond) \
@@ -347,12 +333,31 @@ BENCHMARK_REGISTER_F(RenderBenchmark, Renderer##ImageT) \
     ->Args({1200, 1, 1280, 960}) \
     ->Args({1200, 1, 2560, 1920})
 
+
+template <>
+std::unique_ptr<RenderEngine> MakeEngine<EngineType::Vtk>(
+    const Vector3d& bg_rgb) {
+  RenderEngineVtkParams params{{}, {}, bg_rgb};
+  return MakeRenderEngineVtk(params);
+}
+
 MAKE_BENCHMARK(Vtk, Color);
-MAKE_BENCHMARK(Gl, Color);
 MAKE_BENCHMARK(Vtk, Depth);
-MAKE_BENCHMARK(Gl, Depth);
 MAKE_BENCHMARK(Vtk, Label);
+
+#ifdef RENDER_ENGINE_GL_SUPPORTED
+template <>
+std::unique_ptr<RenderEngine> MakeEngine<EngineType::Gl>(
+    const Vector3d& bg_rgb) {
+  RenderEngineGlParams params;
+  params.default_clear_color.set(bg_rgb[0], bg_rgb[1], bg_rgb[2], 1.0);
+  return MakeRenderEngineGl(params);
+}
+
+MAKE_BENCHMARK(Gl, Color);
+MAKE_BENCHMARK(Gl, Depth);
 MAKE_BENCHMARK(Gl, Label);
+#endif
 
 void Cleanup() {
   if (!RenderBenchmark::saved_image_paths.empty()) {
