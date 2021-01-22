@@ -73,6 +73,7 @@ from pydrake.common.cpp_param import List
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.deprecation import install_numpy_warning_filters
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue, Value
 from pydrake.geometry import (
     Box,
@@ -786,6 +787,13 @@ class TestPlant(unittest.TestCase):
         p_com = plant.CalcCenterOfMassPositionInWorld(
             context=context, model_instances=[instance])
         self.assertTupleEqual(p_com.shape, (3, ))
+
+        with catch_drake_warnings(expected_count=2):
+            p_com = plant.CalcCenterOfMassPositionInWorld(context=context)
+            self.assertTupleEqual(p_com.shape, (3, ))
+            p_com = plant.CalcCenterOfMassPositionInWorld(
+                context=context, model_instances=[instance])
+            self.assertTupleEqual(p_com.shape, (3, ))
 
         nq = plant.num_positions()
         nv = plant.num_velocities()

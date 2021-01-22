@@ -279,15 +279,27 @@ void DoScalarDependentDefinitions(py::module m, T) {
               return p_AQi;
             },
             py::arg("context"), py::arg("frame_B"), py::arg("p_BQi"),
-            py::arg("frame_A"), cls_doc.CalcPointsPositions.doc)
-        // TODO(eric.cousineau): Include `CalcInverseDynamics` once there is an
-        // overload that (a) services MBP directly and (b) uses body
-        // association that is less awkward than implicit BodyNodeIndex.
+            py::arg("frame_A"), cls_doc.CalcPointsPositions.doc);
+    // TODO(eric.cousineau): Include `CalcInverseDynamics` once there is an
+    // overload that (a) services MBP directly and (b) uses body
+    // association that is less awkward than implicit BodyNodeIndex.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-     cls.def("DeprecatedMethod", &Class::CalcCenterOfMassPosition,
-         cls_doc.CalcCenterOfMassPosition.doc_deprecated);
+    cls  // BR
+         .def("CalcCenterOfMassPosition",
+            WrapDeprecated(cls_doc.CalcCenterOfMassPosition.doc_deprecated,
+                overload_cast_explicit<Vector3<T>, const Context<T>&>(
+                    &Class::CalcCenterOfMassPosition)),
+            py::arg("context"), cls_doc.CalcCenterOfMassPosition.doc_deprecated)
+        .def("CalcCenterOfMassPosition",
+            WrapDeprecated(cls_doc.CalcCenterOfMassPosition.doc_deprecated,
+                overload_cast_explicit<Vector3<T>, const Context<T>&,
+                    const std::vector<ModelInstanceIndex>&>(
+                    &Class::CalcCenterOfMassPositionInWorld)),
+            py::arg("context"), py::arg("model_instances"),
+            cls_doc.CalcCenterOfMassPosition.doc_deprecated);
 #pragma GCC diagnostic pop
+    cls  // BR
         .def("CalcCenterOfMassPositionInWorld",
             overload_cast_explicit<Vector3<T>, const Context<T>&>(
                 &Class::CalcCenterOfMassPositionInWorld),
