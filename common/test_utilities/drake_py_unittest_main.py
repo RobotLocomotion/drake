@@ -12,6 +12,7 @@ import sys
 import trace
 import unittest
 import warnings
+import xmlrunner
 
 try:
     from pydrake.common.deprecation import DrakeDeprecationWarning
@@ -127,7 +128,13 @@ def main():
         # warnings settings, exploting a loophole where it checks "if warnings
         # is None" to check if the user passed a kwarg, but "if warning" to
         # actually apply the user's kwarg.
-        unittest.main(module=test_name, argv=unittest_argv, warnings=False)
+        if "XML_OUTPUT_FILE" in os.environ:
+            with open(os.environ["XML_OUTPUT_FILE"], "wb") as output:
+                unittest.main(
+                    module=test_name, argv=unittest_argv, warnings=False,
+                    testRunner=xmlrunner.XMLTestRunner(output=output))
+        else:
+            unittest.main(module=test_name, argv=unittest_argv, warnings=False)
 
     # Ensure deprecation warnings are always shown at least once.
     warnings.simplefilter(args.deprecation_action, DeprecationWarning)
