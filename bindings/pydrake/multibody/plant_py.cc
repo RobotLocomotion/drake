@@ -286,7 +286,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     cls  // BR
-         .def("CalcCenterOfMassPosition",
+        .def("CalcCenterOfMassPosition",
             WrapDeprecated(cls_doc.CalcCenterOfMassPosition.doc_deprecated,
                 overload_cast_explicit<Vector3<T>, const Context<T>&>(
                     &Class::CalcCenterOfMassPosition)),
