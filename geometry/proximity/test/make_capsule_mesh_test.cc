@@ -11,31 +11,6 @@ namespace geometry {
 namespace internal {
 namespace {
 
-using Eigen::Vector3d;
-
-// Signed distance to capsule boundary is radius of the capsule minus the
-// distance to medial axis of the capsule. This takes the convention that signed
-// distance is positive inside the capsule and negative outside.
-struct DistanceToCapsuleBoundaryFromPointInside {
-  explicit DistanceToCapsuleBoundaryFromPointInside(const Capsule& capsule_in)
-      : capsule(capsule_in) {
-    p = Vector3d(0, 0, 0.5 * capsule_in.length());
-    q = Vector3d(0, 0, -0.5 * capsule_in.length());
-  }
-
-  double operator()(const Vector3d& r) const {
-    // Find the closest point on the segment pq to r.
-    const double t = std::clamp(
-        (r - p).dot(q - p) / (capsule.length() * capsule.length()), 0.0, 1.0);
-    const Vector3d closest = p + t * (q - p);
-    return capsule.radius() - (closest - r).norm();
-  }
-
-  Capsule capsule;
-  Vector3d p;  // Top endpoint of medial axis.
-  Vector3d q;  // Bottom endpoint of medial axis.
-};
-
 // Returns true if `tetrahedron` in `mesh` has at least one vertex lying on the
 // medial axis and at least one vertex lying on the boundary.
 //
