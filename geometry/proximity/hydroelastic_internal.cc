@@ -6,6 +6,8 @@
 
 #include "drake/geometry/proximity/make_box_field.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
+#include "drake/geometry/proximity/make_capsule_field.h"
+#include "drake/geometry/proximity/make_capsule_mesh.h"
 #include "drake/geometry/proximity/make_cylinder_field.h"
 #include "drake/geometry/proximity/make_cylinder_mesh.h"
 #include "drake/geometry/proximity/make_ellipsoid_field.h"
@@ -222,6 +224,16 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 }
 
 std::optional<RigidGeometry> MakeRigidRepresentation(
+    const Capsule& capsule, const ProximityProperties& props) {
+  PositiveDouble validator("Capsule", "rigid");
+  const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
+  auto mesh = make_unique<SurfaceMesh<double>>(
+      MakeCapsuleSurfaceMesh<double>(capsule, edge_length));
+
+  return RigidGeometry(RigidMesh(move(mesh)));
+}
+
+std::optional<RigidGeometry> MakeRigidRepresentation(
     const Ellipsoid& ellipsoid, const ProximityProperties& props) {
   PositiveDouble validator("Ellipsoid", "rigid");
   const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
@@ -299,6 +311,23 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
 
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeCylinderPressureField(cylinder, mesh.get(), elastic_modulus));
+
+  return SoftGeometry(SoftMesh(move(mesh), move(pressure)));
+}
+
+std::optional<SoftGeometry> MakeSoftRepresentation(
+    const Capsule& capsule, const ProximityProperties& props) {
+  PositiveDouble validator("Capsule", "soft");
+  // First, create the mesh.
+  const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
+  auto mesh = make_unique<VolumeMesh<double>>(
+      MakeCapsuleVolumeMesh<double>(capsule, edge_length));
+
+  const double elastic_modulus =
+      validator.Extract(props, kMaterialGroup, kElastic);
+
+  auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
+      MakeCapsulePressureField(capsule, mesh.get(), elastic_modulus));
 
   return SoftGeometry(SoftMesh(move(mesh), move(pressure)));
 }
