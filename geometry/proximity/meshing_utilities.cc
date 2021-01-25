@@ -6,6 +6,12 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
+void Append(const std::vector<VolumeElement>& new_elements,
+            std::vector<VolumeElement>* mesh_elements) {
+  mesh_elements->insert(mesh_elements->end(), new_elements.begin(),
+                        new_elements.end());
+}
+
 using std::unordered_set;
 
 std::vector<VolumeElement> SplitTriangularPrismToTetrahedra(

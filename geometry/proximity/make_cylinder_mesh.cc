@@ -11,12 +11,6 @@ namespace internal {
 
 namespace {
 
-void Append(const std::vector<VolumeElement>& new_elements,
-            std::vector<VolumeElement>* mesh_elements) {
-  mesh_elements->insert(mesh_elements->end(), new_elements.begin(),
-                        new_elements.end());
-}
-
 /* Generates tetrahedral elements of a long cylinder conforming to its medial
  axis. It assumes the mesh vertices on the surface of the cylinder was already
  generated on the bottom and the top circular rims of the cylinder together
