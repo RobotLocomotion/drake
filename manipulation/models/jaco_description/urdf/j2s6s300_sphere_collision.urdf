@@ -269,7 +269,7 @@
     </visual>
     <visual>
       <geometry>
-        <mesh filename="../meshes/ring_small.obj"/>
+        <mesh filename="../meshes/ring_big.obj"/>
       </geometry>
     </visual>
     <collision>
