@@ -392,6 +392,11 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Cylinder& cylinder, const ProximityProperties& props);
 
+/* Rigid capsule support. Requires the ('hydroelastic', 'resolution_hint')
+ property.  */
+std::optional<RigidGeometry> MakeRigidRepresentation(
+    const Capsule& capsule, const ProximityProperties& props);
+
 /* Rigid ellipsoid support. Requires the ('hydroelastic', 'resolution_hint')
  property.  */
 std::optional<RigidGeometry> MakeRigidRepresentation(
@@ -441,6 +446,12 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
  ('material', 'elastic_modulus') properties.  */
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Cylinder& cylinder, const ProximityProperties& props);
+
+/* Creates a soft capsule (assuming the proximity properties have sufficient
+ information). Requires the ('hydroelastic', 'resolution_hint') and
+ ('material', 'elastic_modulus') properties.  */
+std::optional<SoftGeometry> MakeSoftRepresentation(
+    const Capsule& capsule, const ProximityProperties& props);
 
 /* Creates a soft ellipsoid (assuming the proximity properties have sufficient
  information). Requires the ('hydroelastic', 'resolution_hint') and

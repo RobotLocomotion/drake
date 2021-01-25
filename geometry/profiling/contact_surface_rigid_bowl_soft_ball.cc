@@ -50,6 +50,7 @@ using Eigen::Vector3d;
 using Eigen::Vector4d;
 using geometry::Box;
 using geometry::ContactSurface;
+using geometry::Capsule;
 using geometry::Cylinder;
 using geometry::DrakeVisualizerd;
 using geometry::FrameId;
@@ -70,6 +71,7 @@ using geometry::Sphere;
 using geometry::SurfaceMesh;
 using geometry::SurfaceFaceIndex;
 using geometry::SurfaceVertex;
+using geometry::SurfaceMeshFieldLinear;
 using lcm::DrakeLcm;
 using math::RigidTransformd;
 using std::make_unique;
@@ -94,11 +96,11 @@ DEFINE_double(resolution_hint, 0.0125,
               "none of the rigid bowl, the rigid box, or the soft box.");
 DEFINE_string(rigid, "bowl",
               "Specify the shape of the rigid geometry.\n"
-              "[--rigid={ball,bowl,box,cylinder}]\n"
+              "[--rigid={ball,bowl,box,capsule,cylinder}]\n"
               "By default, it is the bowl.\n");
 DEFINE_string(soft, "ball",
               "Specify the shape of the soft geometry.\n"
-              "[--soft={ball,box,cylinder}]\n"
+              "[--soft={ball,box,capsule,cylinder}]\n"
               "By default, it is the ball.\n");
 
 /* Places a soft geometry (a ball by default) and defines its velocity as being
@@ -156,6 +158,13 @@ class MovingSoftGeometry final : public LeafSystem<double> {
           make_unique<GeometryInstance>(
               RigidTransformd(), make_unique<Box>(Box::MakeCube(1.5 * kRadius)),
               "soft box"));
+    } else if (FLAGS_soft == "capsule") {
+      geometry_id_ = scene_graph->RegisterGeometry(
+          source_id_, frame_id_,
+          make_unique<GeometryInstance>(
+              RigidTransformd(),
+              make_unique<Capsule>(Capsule(1.2 * kRadius, 1.5 * kRadius)),
+              "soft capsule"));
     } else if (FLAGS_soft == "cylinder") {
       geometry_id_ = scene_graph->RegisterGeometry(
           source_id_, frame_id_,
@@ -331,6 +340,10 @@ int do_main() {
     rigid_geometry_id = scene_graph.RegisterAnchoredGeometry(
         source_id, make_unique<GeometryInstance>(
                        X_WB, make_unique<Box>(0.15, 0.15, 0.02), "rigid box"));
+  } else if (FLAGS_rigid == "capsule") {
+    rigid_geometry_id = scene_graph.RegisterAnchoredGeometry(
+        source_id, make_unique<GeometryInstance>(
+            X_WB, make_unique<Capsule>(0.05, 0.02), "rigid capsule"));
   } else if (FLAGS_rigid == "cylinder") {
     rigid_geometry_id = scene_graph.RegisterAnchoredGeometry(
         source_id, make_unique<GeometryInstance>(
