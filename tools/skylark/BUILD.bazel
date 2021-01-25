@@ -1,6 +1,7 @@
 # -*- python -*-
 
 load("//tools/skylark:py.bzl", "py_binary")
+load("//tools/skylark:drake_py.bzl", "drake_py_unittest")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
@@ -14,5 +15,15 @@ config_setting(
 exports_files([
     "py_env_runner.py",
 ])
+
+drake_py_unittest(
+    name = "pathutils_test",
+    data = [
+        ":pathutils.bzl",
+    ],
+    deps = [
+        "@bazel_tools//tools/python/runfiles",
+    ],
+)
 
 add_lint_tests()
