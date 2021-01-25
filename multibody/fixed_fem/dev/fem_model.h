@@ -132,12 +132,7 @@ class FemModel {
     DRAKE_DEMAND(state.element_cache_size() == num_elements());
     /* The values are accumulated in the tangent_matrix, so it is important to
      clear the old data. */
-    for (int k = 0; k < tangent_matrix->outerSize(); ++k)
-      for (typename Eigen::SparseMatrix<T>::InnerIterator it(*tangent_matrix,
-                                                             k);
-           it; ++it) {
-        it.valueRef() = 0.0;
-      }
+    tangent_matrix->setZero();
     /* Aliases to improve readability. */
     constexpr int kNumDofs = Element::Traits::kNumDofs;
     constexpr int kNumNodes = Element::Traits::kNumNodes;
@@ -256,21 +251,19 @@ class FemModel {
     elements_[element_index].CalcStiffnessMatrix(state, &stiffness_matrix);
     if constexpr (FemState<Element>::ode_order() == 0) {
       return state_derivatives[0] * stiffness_matrix;
-    } else {
-      MatrixType damping_matrix = MatrixType::Zero();
-      elements_[element_index].CalcDampingMatrix(state, &damping_matrix);
-      if constexpr (FemState<Element>::ode_order() == 1) {
-        return state_derivatives[0] * stiffness_matrix +
-               state_derivatives[1] * damping_matrix;
-      } else {
-        static_assert(FemState<Element>::ode_order() == 2);
-        MatrixType mass_matrix = MatrixType::Zero();
-        elements_[element_index].CalcMassMatrix(state, &mass_matrix);
-        return state_derivatives[0] * stiffness_matrix +
-               state_derivatives[1] * damping_matrix +
-               state_derivatives[2] * mass_matrix;
-      }
     }
+    MatrixType damping_matrix = MatrixType::Zero();
+    elements_[element_index].CalcDampingMatrix(state, &damping_matrix);
+    if constexpr (FemState<Element>::ode_order() == 1) {
+      return state_derivatives[0] * stiffness_matrix +
+             state_derivatives[1] * damping_matrix;
+    }
+    DRAKE_ASSERT(FemState<Element>::ode_order() == 2);
+    MatrixType mass_matrix = MatrixType::Zero();
+    elements_[element_index].CalcMassMatrix(state, &mass_matrix);
+    return state_derivatives[0] * stiffness_matrix +
+           state_derivatives[1] * damping_matrix +
+           state_derivatives[2] * mass_matrix;
   }
 
   /* FemElements owned by this model. */
