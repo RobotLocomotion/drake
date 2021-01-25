@@ -40,8 +40,8 @@ configure Hydroelastic Contact Visualization plugin as follows:
 6. Run this profiling example.
 
 Instead of the default rigid bowl, it can optionally use a rigid ball, a
-rigid box, or a rigid cylinder. Instead of the default soft ball, it can use
-a soft box or a soft cylinder.
+rigid box, a rigid cylinder or a rigid capsule. Instead of the default soft
+ball, it can use a soft box, a soft cylinder or a soft capsule.
 
 - default rigid bowl and default soft ball,
 ```
@@ -58,5 +58,5 @@ bazel-bin/geometry/profiling/contact_surface_rigid_bowl_soft_ball --rigid=box
 - general syntax with all options.
 ```
 bazel-bin/geometry/profiling/contact_surface_rigid_bowl_soft_ball \
---rigid=[ball, bowl, box, cylinder] --soft=[ball, box, cylinder]
+--rigid=[ball, bowl, box, capsule, cylinder] --soft=[ball, box, capsule, cylinder]
 ```
