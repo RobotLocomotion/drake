@@ -26,6 +26,7 @@ drake_cc_package_library(
         ":hydroelastic_internal",
         ":make_box_field",
         ":make_box_mesh",
+        ":make_capsule_field",
         ":make_capsule_mesh",
         ":make_cylinder_field",
         ":make_cylinder_mesh",
@@ -212,6 +213,7 @@ drake_cc_library(
         ":bvh",
         ":make_box_field",
         ":make_box_mesh",
+        ":make_capsule_field",
         ":make_capsule_mesh",
         ":make_cylinder_field",
         ":make_cylinder_mesh",
@@ -264,6 +266,17 @@ drake_cc_library(
     hdrs = ["make_cylinder_field.h"],
     deps = [
         ":distance_to_point_callback",
+        ":mesh_field",
+        "//common:essential",
+        "//common:unused",
+        "//geometry:shape_specification",
+    ],
+)
+
+drake_cc_library(
+    name = "make_capsule_field",
+    hdrs = ["make_capsule_field.h"],
+    deps = [
         ":mesh_field",
         "//common:essential",
         "//common:unused",
@@ -693,6 +706,15 @@ drake_cc_googletest(
     deps = [
         ":make_cylinder_field",
         ":make_cylinder_mesh",
+        ":volume_to_surface_mesh",
+    ],
+)
+
+drake_cc_googletest(
+    name = "make_capsule_field_test",
+    deps = [
+        ":make_capsule_field",
+        ":make_capsule_mesh",
         ":volume_to_surface_mesh",
     ],
 )
