@@ -30,7 +30,7 @@
 
 DEFINE_string(urdf, "", "Name of urdf to load");
 DEFINE_int32(num_joints,
-             drake::manipulation::kinova_jaco::kJacoDefaultArmNumJoints,
+             6 , //drake::manipulation::kinova_jaco::kJacoDefaultArmNumJoints,
              "Number of joints in the arm (not including fingers)");
 DEFINE_int32(num_fingers,
              drake::manipulation::kinova_jaco::kJacoDefaultArmNumFingers,
@@ -187,7 +187,8 @@ int DoMain() {
   // Run forever, using the lcmt_jaco_status message to dictate when simulation
   // time advances.  The lcmt_robot_plan message is handled whenever the next
   // lcmt_jaco_status occurs.
-  drake::log()->info("Controller started");
+  std::cout<<"Controller started\n";
+
   while (true) {
     // Wait for an lcmt_jaco_status message.
     status_sub.clear();
