@@ -1,6 +1,5 @@
 # -*- python -*-
 
-load("@drake//tools/install:install.bzl", "install")
 load("@drake//tools/skylark:py.bzl", "py_library")
 
 licenses(["notice"])  # BSD-3-Clause
@@ -13,7 +12,7 @@ py_library(
     name = "github3_py",
     srcs = glob([
         "src/github3/**",
-    ]) or fail("No match"),
+    ], allow_empty = False),
     imports = [
         "src",
     ],
