@@ -140,8 +140,10 @@ class FemModel {
     /* Scratch space to store the contribution to the tangent matrix from each
      element. */
     Eigen::Matrix<T, kNumDofs, kNumDofs> element_tangent_matrix;
+    const Vector3<T>& state_derivatives = updater.state_derivatives();
     for (ElementIndex e(0); e < num_elements(); ++e) {
-      element_tangent_matrix = CalcElementTangentMatrix(state, updater, e);
+      element_tangent_matrix =
+          CalcElementTangentMatrix(state, state_derivatives, e);
       const std::array<NodeIndex, kNumNodes>& element_node_indices =
           elements_[e].node_indices();
       for (int a = 0; a < kNumNodes; ++a) {
@@ -233,18 +235,17 @@ class FemModel {
  private:
   /* Builds the element tangent matrix for the element with index
    `element_index` by combining the stiffness matrix, damping matrix, and the
-   mass matrix according to the weights provided by the `updater`.
+   mass matrix according to the weights provided by `state_derivatives`.
    @param[in] state    The FemState to evaluate the residual at.
-   @param[in] updater    The StateUpdater that updates the FemState given the
-   solution to the system G(z) = 0.
+   @param[in] state_derivatives    The derivatives of the states with respect to
+   the key variable `z`, namely, `∂q/∂z`,  `∂q̇/∂z`, and `∂q̈/∂z`.
    @param[in] element_index    Index of the element whose element tangent matrix
    is being built. */
   Eigen::Matrix<T, Element::Traits::kNumDofs, Element::Traits::kNumDofs>
   CalcElementTangentMatrix(const FemState<Element>& state,
-                           const StateUpdater<FemState<Element>>& updater,
+                           const Vector3<T>& state_derivatives,
                            ElementIndex element_index) const {
     DRAKE_ASSERT(element_index.is_valid() && element_index < num_elements());
-    const Vector3<T>& state_derivatives = updater.state_derivatives();
     using MatrixType =
         Eigen::Matrix<T, Element::Traits::kNumDofs, Element::Traits::kNumDofs>;
     MatrixType stiffness_matrix = MatrixType::Zero();
