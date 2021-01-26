@@ -1020,6 +1020,51 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("id_N", &Class::id_N, doc.ContactSurface.id_N.doc)
         .def("mesh_W", &Class::mesh_W, doc.ContactSurface.mesh_W.doc);
   }
+
+  // DrakeVisualizer
+  {
+    using Class = DrakeVisualizer<T>;
+    constexpr auto& cls_doc = doc.DrakeVisualizer;
+    auto cls = DefineTemplateClassWithDefault<Class, LeafSystem<T>>(
+        m, "DrakeVisualizer", param, cls_doc.doc);
+    cls  // BR
+        .def(py::init<lcm::DrakeLcmInterface*, DrakeVisualizerParams>(),
+            py::arg("lcm") = nullptr,
+            py::arg("params") = DrakeVisualizerParams{},
+            // Keep alive, reference: `self` keeps `lcm` alive.
+            py::keep_alive<1, 2>(),  // BR
+            cls_doc.ctor.doc)
+        .def("query_object_input_port", &Class::query_object_input_port,
+            py_rvp::reference_internal, cls_doc.query_object_input_port.doc)
+        .def_static("AddToBuilder",
+            py::overload_cast<systems::DiagramBuilder<T>*, const SceneGraph<T>&,
+                lcm::DrakeLcmInterface*, DrakeVisualizerParams>(
+                &DrakeVisualizer<T>::AddToBuilder),
+            py::arg("builder"), py::arg("scene_graph"),
+            py::arg("lcm") = nullptr,
+            py::arg("params") = DrakeVisualizerParams{},
+            // Keep alive, ownership: `return` keeps `builder` alive.
+            py::keep_alive<0, 1>(),
+            // Keep alive, reference: `builder` keeps `lcm` alive.
+            py::keep_alive<1, 3>(), py_rvp::reference,
+            cls_doc.AddToBuilder.doc_4args_builder_scene_graph_lcm_params)
+        .def_static("AddToBuilder",
+            py::overload_cast<systems::DiagramBuilder<T>*,
+                const systems::OutputPort<T>&, lcm::DrakeLcmInterface*,
+                DrakeVisualizerParams>(&DrakeVisualizer<T>::AddToBuilder),
+            py::arg("builder"), py::arg("query_object_port"),
+            py::arg("lcm") = nullptr,
+            py::arg("params") = DrakeVisualizerParams{},
+            // Keep alive, ownership: `return` keeps `builder` alive.
+            py::keep_alive<0, 1>(),
+            // Keep alive, reference: `builder` keeps `lcm` alive.
+            py::keep_alive<1, 3>(), py_rvp::reference,
+            cls_doc.AddToBuilder.doc_4args_builder_query_object_port_lcm_params)
+        .def_static("DispatchLoadMessage",
+            &DrakeVisualizer<T>::DispatchLoadMessage, py::arg("scene_graph"),
+            py::arg("lcm"), py::arg("params") = DrakeVisualizerParams{},
+            cls_doc.DispatchLoadMessage.doc);
+  }
 }  // NOLINT(readability/fn_size)
 
 void DoScalarIndependentDefinitions(py::module m) {
@@ -1119,48 +1164,6 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def_readwrite("role", &DrakeVisualizerParams::role, cls_doc.role.doc)
         .def_readwrite("default_color", &DrakeVisualizerParams::default_color,
             cls_doc.default_color.doc);
-  }
-
-  {
-    using Class = DrakeVisualizer;
-    constexpr auto& cls_doc = doc.DrakeVisualizer;
-    py::class_<Class, LeafSystem<double>>(m, "DrakeVisualizer", cls_doc.doc)
-        .def(py::init<lcm::DrakeLcmInterface*, DrakeVisualizerParams>(),
-            py::arg("lcm") = nullptr,
-            py::arg("params") = DrakeVisualizerParams{},
-            // Keep alive, reference: `self` keeps `lcm` alive.
-            py::keep_alive<1, 2>(),  // BR
-            cls_doc.ctor.doc)
-        .def("query_object_input_port", &Class::query_object_input_port,
-            py_rvp::reference_internal, cls_doc.query_object_input_port.doc)
-        .def_static("AddToBuilder",
-            py::overload_cast<systems::DiagramBuilder<double>*,
-                const SceneGraph<double>&, lcm::DrakeLcmInterface*,
-                DrakeVisualizerParams>(&DrakeVisualizer::AddToBuilder),
-            py::arg("builder"), py::arg("scene_graph"),
-            py::arg("lcm") = nullptr,
-            py::arg("params") = DrakeVisualizerParams{},
-            // Keep alive, ownership: `return` keeps `builder` alive.
-            py::keep_alive<0, 1>(),
-            // Keep alive, reference: `builder` keeps `lcm` alive.
-            py::keep_alive<1, 3>(), py_rvp::reference,
-            cls_doc.AddToBuilder.doc_4args_builder_scene_graph_lcm_params)
-        .def_static("AddToBuilder",
-            py::overload_cast<systems::DiagramBuilder<double>*,
-                const systems::OutputPort<double>&, lcm::DrakeLcmInterface*,
-                DrakeVisualizerParams>(&DrakeVisualizer::AddToBuilder),
-            py::arg("builder"), py::arg("query_object_port"),
-            py::arg("lcm") = nullptr,
-            py::arg("params") = DrakeVisualizerParams{},
-            // Keep alive, ownership: `return` keeps `builder` alive.
-            py::keep_alive<0, 1>(),
-            // Keep alive, reference: `builder` keeps `lcm` alive.
-            py::keep_alive<1, 3>(), py_rvp::reference,
-            cls_doc.AddToBuilder.doc_4args_builder_query_object_port_lcm_params)
-        .def_static("DispatchLoadMessage",
-            &DrakeVisualizer::DispatchLoadMessage, py::arg("scene_graph"),
-            py::arg("lcm"), py::arg("params") = DrakeVisualizerParams{},
-            cls_doc.DispatchLoadMessage.doc);
   }
 
   // Shape constructors
