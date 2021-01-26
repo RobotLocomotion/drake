@@ -789,9 +789,9 @@ class TestPlant(unittest.TestCase):
         self.assertTupleEqual(p_com.shape, (3, ))
 
         with catch_drake_warnings(expected_count=2):
-            p_com = plant.CalcCenterOfMassPositionInWorld(context=context)
+            p_com = plant.CalcCenterOfMassPosition(context=context)
             self.assertTupleEqual(p_com.shape, (3, ))
-            p_com = plant.CalcCenterOfMassPositionInWorld(
+            p_com = plant.CalcCenterOfMassPosition(
                 context=context, model_instances=[instance])
             self.assertTupleEqual(p_com.shape, (3, ))
 
