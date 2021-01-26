@@ -18,6 +18,9 @@
 
 namespace drake {
 namespace geometry {
+// Forward declare a tester class used as a friend of DrakeVisualizer.
+template <typename T>
+class DrakeVisualizerTest;
 
 /** The set of parameters for configuring DrakeVisualizer.  */
 struct DrakeVisualizerParams {
@@ -31,6 +34,17 @@ struct DrakeVisualizerParams {
   /** The color to apply to any geometry that hasn't defined one.  */
   Rgba default_color{0.9, 0.9, 0.9, 1.0};
 };
+
+namespace internal {
+/* Data stored in the cache; populated when we transmit a load message and
+ read from for a pose message.  */
+struct DynamicFrameData {
+  FrameId frame_id;
+  int num_geometry{};
+  std::string name;
+};
+
+}  // namespace internal
 
 /** A system that publishes LCM messages compatible with the `drake_visualizer`
  application representing the current state of a SceneGraph instance (whose
@@ -110,7 +124,8 @@ struct DrakeVisualizerParams {
 to support multiple scalar types.  To insulate your code from this change, we
 recommend using the geometry::DrakeVisualizerd alias when referring to this
 class. */
-class DrakeVisualizer : public systems::LeafSystem<double> {
+template <typename T>
+class DrakeVisualizer final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeVisualizer)
 
@@ -125,10 +140,15 @@ class DrakeVisualizer : public systems::LeafSystem<double> {
   DrakeVisualizer(lcm::DrakeLcmInterface* lcm = nullptr,
                   DrakeVisualizerParams params = {});
 
+  /** Constructor used for scalar conversions. It should only be used to convert
+   _from_ double _to_ other scalar types.  */
+  template <typename U>
+  explicit DrakeVisualizer(const DrakeVisualizer<U>& other);
+
   /** Returns the QueryObject-valued input port. It should be connected to
    SceneGraph's QueryObject-valued output port. Failure to do so will cause a
    runtime error when attempting to broadcast messages.  */
-  const systems::InputPort<double>& query_object_input_port() const {
+  const systems::InputPort<T>& query_object_input_port() const {
     return this->get_input_port(query_object_input_port_);
   }
 
@@ -151,16 +171,15 @@ class DrakeVisualizer : public systems::LeafSystem<double> {
 
   /** Connects the newly added DrakeVisualizer to the given SceneGraph's
    QueryObject-valued output port.  */
-  static const DrakeVisualizer& AddToBuilder(
-      systems::DiagramBuilder<double>* builder,
-      const SceneGraph<double>& scene_graph,
+  static const DrakeVisualizer<T>& AddToBuilder(
+      systems::DiagramBuilder<T>* builder, const SceneGraph<T>& scene_graph,
       lcm::DrakeLcmInterface* lcm = nullptr, DrakeVisualizerParams params = {});
 
   /** Connects the newly added DrakeVisualizer to the given QueryObject-valued
    output port.  */
-  static const DrakeVisualizer& AddToBuilder(
-      systems::DiagramBuilder<double>* builder,
-      const systems::OutputPort<double>& query_object_port,
+  static const DrakeVisualizer<T>& AddToBuilder(
+      systems::DiagramBuilder<T>* builder,
+      const systems::OutputPort<T>& query_object_port,
       lcm::DrakeLcmInterface* lcm = nullptr, DrakeVisualizerParams params = {});
   //@}
 
@@ -175,62 +194,58 @@ class DrakeVisualizer : public systems::LeafSystem<double> {
    with an API that will simply generate the lcm *messages* that the caller
    can then do whatever they like with.
    @pre `lcm != nullptr`.  */
-  static void DispatchLoadMessage(const SceneGraph<double>& scene_graph,
+  static void DispatchLoadMessage(const SceneGraph<T>& scene_graph,
                                   lcm::DrakeLcmInterface* lcm,
                                   DrakeVisualizerParams params = {});
 
  private:
+  template <typename>
   friend class DrakeVisualizerTest;
+
+  // DrakeVisualizer of different scalar types can all access each other's data.
+  template <typename>
+  friend class DrakeVisualizer;
 
   /* The periodic event handler. It tests to see if the last scene description
    is valid (if not, updates it) and then broadcasts poses.  */
   systems::EventStatus SendGeometryMessage(
-      const systems::Context<double>& context) const;
-
-  /* Data stored in the cache; populated when we transmit a load message and
-   read from for a pose message.  */
-  struct DynamicFrameData {
-    FrameId frame_id;
-    int num_geometry{};
-    std::string name;
-  };
+      const systems::Context<T>& context) const;
 
   /* Dispatches a "load geometry" message; replacing the whole scene with the
    current scene.  */
   static void SendLoadMessage(
-      const SceneGraphInspector<double>& inspector,
+      const SceneGraphInspector<T>& inspector,
       const DrakeVisualizerParams& params,
-      const std::vector<DynamicFrameData>& dynamic_frames,
-      double time,
-      lcm::DrakeLcmInterface* lcm);
+      const std::vector<internal::DynamicFrameData>& dynamic_frames,
+      double time, lcm::DrakeLcmInterface* lcm);
 
   /* Dispatches a "draw" message for geometry that is known to have been
    loaded.  */
   static void SendDrawMessage(
-      const QueryObject<double>& query_object,
-      const std::vector<DynamicFrameData>& dynamic_frames,
-      double time,
-      lcm::DrakeLcmInterface* lcm);
+      const QueryObject<T>& query_object,
+      const std::vector<internal::DynamicFrameData>& dynamic_frames,
+      double time, lcm::DrakeLcmInterface* lcm);
 
   /* Identifies all of the frames with dynamic data and stores them (with
    additional data) in the given vector `frame_data`.  */
-  void CalcDynamicFrameData(const systems::Context<double>& context,
-                            std::vector<DynamicFrameData>* frame_data) const;
+  void CalcDynamicFrameData(
+      const systems::Context<T>& context,
+      std::vector<internal::DynamicFrameData>* frame_data) const;
 
   /* Refreshes the cached dynamic frame data.  */
-  const std::vector<DynamicFrameData>& RefreshDynamicFrameData(
-      const systems::Context<double>& context) const;
+  const std::vector<internal::DynamicFrameData>& RefreshDynamicFrameData(
+      const systems::Context<T>& context) const;
 
   /* Simple wrapper for evaluating the dynamic frame data cache entry.  */
-  const std::vector<DynamicFrameData>& EvalDynamicFrameData(
-      const systems::Context<double>& context) const;
+  const std::vector<internal::DynamicFrameData>& EvalDynamicFrameData(
+      const systems::Context<T>& context) const;
 
   /* Generic utility for populating the dynamic frames. Available to the ad hoc
    publishing methods as well as the cache-entry instance method.  */
   static void PopulateDynamicFrameData(
-      const SceneGraphInspector<double>& inspector,
+      const SceneGraphInspector<T>& inspector,
       const DrakeVisualizerParams& params,
-      std::vector<DynamicFrameData>* frame_data);
+      std::vector<internal::DynamicFrameData>* frame_data);
 
   /* DrakeVisualizer stores a "model" of what it thinks is registered in the
    drake_visualizer application. Because drake_visualizer is not part of the
@@ -269,12 +284,27 @@ class DrakeVisualizer : public systems::LeafSystem<double> {
 };
 
 /** A convenient alias for the DrakeVisualizer class when using the `double`
-scalar type.
-
-@note At the moment, DrakeVisualizer is not templated on a scalar type, but
-we plan to do so in the future.  To insulate your code from that change, we
-recommend using this alias when referring to the class. */
-using DrakeVisualizerd = DrakeVisualizer;
+scalar type. */
+using DrakeVisualizerd = DrakeVisualizer<double>;
 
 }  // namespace geometry
+
+// Define the conversion trait to *only* allow double -> AutoDiffXd conversion.
+// Symbolic is not supported yet, and AutoDiff -> double doesn't "make sense".
+namespace systems {
+namespace scalar_conversion {
+template <>
+struct Traits<geometry::DrakeVisualizer> {
+  template <typename T, typename U>
+  using supported =
+      typename std::conditional<!std::is_same<T, symbolic::Expression>::value &&
+                                    std::is_same<U, double>::value,
+                                std::true_type, std::false_type>::type;
+};
+}  // namespace scalar_conversion
+}  // namespace systems
+
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::geometry::DrakeVisualizer)
