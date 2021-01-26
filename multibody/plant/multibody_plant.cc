@@ -26,6 +26,7 @@
 #include "drake/multibody/plant/hydroelastic_traction_calculator.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/triangle_quadrature/gaussian_triangle_quadrature_rule.h"
 
 namespace drake {
 namespace multibody {
@@ -1186,29 +1187,20 @@ void MultibodyPlant<T>::CalcContactResultsContinuous(
       break;
 
     case ContactModel::kHydroelasticsOnly:
-      CalcContactResultsContinuousHydroelastic(context, contact_results);
+      AppendContactResultsContinuousHydroelastic(context, contact_results);
       break;
 
     case ContactModel::kHydroelasticWithFallback:
-      // Simply compute the contributions of both contact representations.
-
-      // TODO(SeanCurtis-TRI): In the current semantics,
-      // CalcContactResultsContinuousPointPair() *clears* the input parameter.
-      // CalcContactResultsContinuousHydroelastic() does *not*. That suggests
-      // the *name* of CalcContactResultsContinuousHydroelastic() is
-      // inconsistent with its behavior. Reconcile the two and if it's not a
-      // name change (but rather a behavior change) modify this accumulation
-      // accordingly. But, for now, executing these methods in this order should
-      // properly accumulate all contact results.
+      // Simply merge the contributions of each contact representation.
       CalcContactResultsContinuousPointPair(context, contact_results);
-      CalcContactResultsContinuousHydroelastic(context, contact_results);
+      AppendContactResultsContinuousHydroelastic(context, contact_results);
       break;
   }
 }
 
 template <>
 void MultibodyPlant<symbolic::Expression>::
-    CalcContactResultsContinuousHydroelastic(
+    AppendContactResultsContinuousHydroelastic(
         const Context<symbolic::Expression>&,
         ContactResults<symbolic::Expression>*) const {
   throw std::logic_error(
@@ -1216,7 +1208,7 @@ void MultibodyPlant<symbolic::Expression>::
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcContactResultsContinuousHydroelastic(
+void MultibodyPlant<T>::AppendContactResultsContinuousHydroelastic(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
   this->ValidateContext(context);
@@ -1364,6 +1356,36 @@ template <typename T>
 void MultibodyPlant<T>::CalcContactResultsDiscrete(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
+  DRAKE_DEMAND(contact_results != nullptr);
+  contact_results->Clear();
+  if (num_collision_geometries() == 0) return;
+
+  switch (contact_model_) {
+    case ContactModel::kPointContactOnly:
+      CalcContactResultsDiscretePointPair(context, contact_results);
+      break;
+
+    case ContactModel::kHydroelasticsOnly:
+      // N.B. We are simply computing the hydro force as function of the state,
+      // not the actual discrete approximation used by the contact solver.
+      AppendContactResultsContinuousHydroelastic(context, contact_results);
+      break;
+
+    case ContactModel::kHydroelasticWithFallback:
+      // Simply merge the contributions of each contact representation.
+      CalcContactResultsDiscretePointPair(context, contact_results);
+
+      // N.B. We are simply computing the hydro force as function of the state,
+      // not the actual discrete approximation used by the contact solver.
+      AppendContactResultsContinuousHydroelastic(context, contact_results);
+      break;
+  }
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcContactResultsDiscretePointPair(
+    const systems::Context<T>& context,
+    ContactResults<T>* contact_results) const {
   this->ValidateContext(context);
   DRAKE_DEMAND(contact_results != nullptr);
   if (num_collision_geometries() == 0) return;
@@ -1380,11 +1402,13 @@ void MultibodyPlant<T>::CalcContactResultsDiscrete(
   const VectorX<T>& vt = solver_results.vt;
   const VectorX<T>& vn = solver_results.vn;
 
+  // The strict equality is true only when point contact is used alone.
+  // Otherwise there are quadrature points in addition to the point pairs.
   const int num_contacts = point_pairs.size();
-  DRAKE_DEMAND(fn.size() == num_contacts);
-  DRAKE_DEMAND(ft.size() == 2 * num_contacts);
-  DRAKE_DEMAND(vn.size() == num_contacts);
-  DRAKE_DEMAND(vt.size() == 2 * num_contacts);
+  DRAKE_DEMAND(fn.size() >= num_contacts);
+  DRAKE_DEMAND(ft.size() >= 2 * num_contacts);
+  DRAKE_DEMAND(vn.size() >= num_contacts);
+  DRAKE_DEMAND(vt.size() >= 2 * num_contacts);
 
   contact_results->Clear();
   for (size_t icontact = 0; icontact < point_pairs.size(); ++icontact) {
@@ -1854,6 +1878,15 @@ MultibodyPlant<T>::CalcDiscreteContactPairs(
 
   if (num_collision_geometries() == 0) return {};
 
+  // N.B. For discrete hydro we use a first order quadrature rule.
+  // Higher order quadratures are possible, however using a lower order
+  // quadrature leads to a smaller number of discrete pairs and therefore a
+  // smaller number of constraints in the discrete contact problem.
+  const GaussianTriangleQuadratureRule quadrature(1 /* order */);
+  const std::vector<Vector2<double>>& xi = quadrature.quadrature_points();
+  const std::vector<double>& wq = quadrature.weights();
+  const int num_quad_points = wq.size();
+
   // Only numeric values are supported. We detect that T is a Drake numeric type
   // using scalar_predicate::is_bool. That is true for numeric types and false
   // for symbolic.
@@ -1872,8 +1905,17 @@ MultibodyPlant<T>::CalcDiscreteContactPairs(
         contact_model_ == ContactModel::kHydroelasticWithFallback) {
       num_point_pairs = EvalPointPairPenetrations(context).size();
     }
-    // TODO(amcastro-tri): include hydroelastic quadrature pairs.
-    const int num_quadrature_pairs = 0;  // to be included next PR.
+
+    int num_quadrature_pairs = 0;
+    if (contact_model_ == ContactModel::kHydroelasticsOnly ||
+        contact_model_ == ContactModel::kHydroelasticWithFallback) {
+      const std::vector<geometry::ContactSurface<T>>& surfaces =
+          EvalContactSurfaces(context);
+      for (const auto& s : surfaces) {
+        const geometry::SurfaceMesh<T>& mesh = s.mesh_W();
+        num_quadrature_pairs += num_quad_points * mesh.num_faces();
+      }
+    }
     const int num_contact_pairs = num_point_pairs + num_quadrature_pairs;
 
     std::vector<internal::DiscreteContactPair<T>> contact_pairs;
@@ -1888,10 +1930,8 @@ MultibodyPlant<T>::CalcDiscreteContactPairs(
       const std::vector<PenetrationAsPointPair<T>>& point_pairs =
           EvalPointPairPenetrations(context);
       for (const PenetrationAsPointPair<T>& pair : point_pairs) {
-        const auto [kA, dA] =
-            GetPointContactParameters(pair.id_A, inspector);
-        const auto [kB, dB] =
-            GetPointContactParameters(pair.id_B, inspector);
+        const auto [kA, dA] = GetPointContactParameters(pair.id_A, inspector);
+        const auto [kB, dB] = GetPointContactParameters(pair.id_B, inspector);
         const auto [k, d] = CombinePointContactParameters(kA, kB, dA, dB);
         const T phi0 = -pair.depth;
         const T fn0 = k * pair.depth;
@@ -1905,7 +1945,127 @@ MultibodyPlant<T>::CalcDiscreteContactPairs(
       }
     }
 
-    // TODO(amcastro-tri): fill in hydroelastic quadrature pairs.
+    // Append the Hydroelastics quadrature points.
+    if (num_quadrature_pairs > 0) {
+      const std::vector<geometry::ContactSurface<T>>& surfaces =
+          EvalContactSurfaces(context);
+      for (const auto& s : surfaces) {
+        const geometry::SurfaceMesh<T>& mesh_W = s.mesh_W();
+
+        // Combined Hunt & Crossley dissipation.
+        const T dissipation = hydroelastics_engine_.CalcCombinedDissipation(
+            s.id_M(), s.id_N(), inspector);
+
+        for (geometry::SurfaceFaceIndex face(0); face < mesh_W.num_faces();
+             ++face) {
+          const T& Ae = mesh_W.area(face);  // Face element area.
+
+          // We found out that the hydroelastic query might report
+          // infinitesimally small triangles (consider for instance an initial
+          // condition that perfectly places an object at zero distance from the
+          // ground.) While the area of zero sized triangles is not a problem by
+          // itself, the badly computed normal on these triangles leads to
+          // problems when computing the contact Jacobians (since we need to
+          // obtain an orthonormal basis based on that normal.)
+          // We therefore ignore infinitesimally small triangles. The tolerance
+          // below is somehow arbitrary and could possibly be tightened.
+          if (Ae > 1.0e-14) {
+            // N.B Assuming rigid-soft contact, and thus only a single pressure
+            // gradient is considered to be valid. We first verify this indeed
+            // is the case by checking that only one side has gradient
+            // information (the volumetric side).
+            const bool M_is_soft = s.HasGradE_M();
+            const bool N_is_soft = s.HasGradE_N();
+            DRAKE_DEMAND(M_is_soft ^ N_is_soft);
+
+            // Pressure gradient always points into the soft geometry by
+            // construction.
+            const Vector3<T>& grad_pres_W = M_is_soft
+                                                ? s.EvaluateGradE_M_W(face)
+                                                : s.EvaluateGradE_N_W(face);
+
+            // From ContactSurface's documentation: The normal of each face is
+            // guaranteed to point "out of" N and "into" M.
+            const Vector3<T>& nhat_W = mesh_W.face_normal(face);
+            for (int qp = 0; qp < num_quad_points; ++qp) {
+              const Vector3<T> barycentric(xi[qp](0), xi[qp](1),
+                                           1.0 - xi[qp](0) - xi[qp](1));
+              // Pressure at the quadrature point.
+              const T p0 = s.EvaluateE_MN(face, barycentric);
+
+              // Force contribution by this quadrature point.
+              const T fn0 = wq[qp] * Ae * p0;
+
+              // Since the normal always points into M, regardless of which body
+              // is soft, we must take into account the change of sign when body
+              // N is soft and M is rigid.
+              const T sign = M_is_soft ? 1.0 : -1.0;
+
+              // In order to provide some intuition, and though not entirely
+              // complete, here we document the first order idea that leads to
+              // the discrete hydroelastic approximation used below. In
+              // hydroelastics, each quadrature point contributes to the total
+              // "elastic" force along the normal direction as:
+              //   f₀ₚ = ωₚ Aₑ pₚ
+              // where subindex p denotes a quantity evaluated at quadrature
+              // point P and subindex e identifies the e-th contact surface
+              // element in which the quadrature is being evaluated.
+              // Notice f₀ only includes the "elastic" contribution. Dissipation
+              // is dealt with by a separate multiplicative factor. Given the
+              // local stiffness for the normal forces contribution, our
+              // discrete TAMSI solver implicitly handles the dissipative Hunt &
+              // Crossley forces.
+              // In point contact, stiffness is related to changes in the normal
+              // force with changes in the penetration distance. In that spirit,
+              // the approximation used here is to define the discrete
+              // hydroelastics stiffness as the directional derivative of the
+              // scalar force f₀ₚ along the normal direction n̂:
+              //   k := ∂f₀ₚ/∂n̂ ≈ ωₚ⋅Aₑ⋅∇pₚ⋅n̂ₚ
+              // that is, the variation of the normal force experiences if the
+              // quadrature point is pushed inwards in the direction of the
+              // normal. Notice that this expression approximates the element
+              // area and normal as constant. Keeping normals and Jacobians
+              // is a very common approximation in first order methods. Keeping
+              // the area constant here is a higher order approximation for
+              // inner triangles given that shrinkage of a triangle is related
+              // the growth of a neighboring triangle (i.e. the contact surface
+              // does not stretch nor shrink). For triangles close to the
+              // boundary of the contact surface, this is only a first order
+              // approximation.
+              const T k = sign * wq[qp] * Ae * grad_pres_W.dot(nhat_W);
+
+              // N.B. The normal is guaranteed to point into M. However, when M
+              // is soft, the gradient is not guaranteed to be in the direction
+              // of the normal. The geometry code that determines which
+              // triangles to keep in the contact surface may keep triangles for
+              // which the pressure gradient times normal is negative (see
+              // IsFaceNormalInNormalDirection() in contact_surface_utility.cc).
+              // Therefore there are cases for which the definition above of k
+              // might lead to negative values. We observed that this condition
+              // happens sparsely at some of the boundary triangles of the
+              // contact surface, while the positive values in inner triangles
+              // dominates the overall compliance. In practice we did not
+              // observe this to cause stability issues. Since a negative value
+              // of k is correct, we decided to keep these contributions.
+
+              // Position of quadrature point Q in the world frame (since mesh_W
+              // is measured and expressed in W).
+              const Vector3<T> p_WQ =
+                  mesh_W.CalcCartesianFromBarycentric(face, barycentric);
+
+              // N.B. Today 01/25/2021, Only TAMSI supports discrete
+              // hydroelastics and uses the discrete force fn0 instead of the
+              // distance function phi0. phi0 is only used in experimental
+              // ContactSolver(s). Therefore we set phi0 to NaN since it is not
+              // used by TAMSI.
+              const T nan_phi0 = std::numeric_limits<double>::quiet_NaN();
+              contact_pairs.push_back({s.id_M(), s.id_N(), p_WQ, nhat_W,
+                                       nan_phi0, fn0, k, dissipation});
+            }
+          }
+        }
+      }
+    }
 
     return contact_pairs;
   } else {

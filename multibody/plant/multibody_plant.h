@@ -4087,6 +4087,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Depending on the ContactModel, this method performs point contact and
   // hydroelastic queries and prepares the results in the form of a list of
   // DiscreteContactPair to be consummed by our discrete solvers.
+  // TODO(amcastro-tri): consider adding a separate unit test for this method.
   std::vector<internal::DiscreteContactPair<T>> CalcDiscreteContactPairs(
       const systems::Context<T>& context) const;
 
@@ -4102,19 +4103,22 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context,
       ContactResults<T>* contact_results) const;
 
-  // Helper method for the continuous mode plant, to fill in the ContactResults
-  // for the hydroelastic model, given the current context. Called by
-  // CalcContactResultsContinuous.
-  void CalcContactResultsContinuousHydroelastic(
+  // Helper method to fill in `contact_results` with hydroelastic forces as a
+  // function of the state stored in `context`.
+  void AppendContactResultsContinuousHydroelastic(
       const systems::Context<T>& context,
       ContactResults<T>* contact_results) const;
 
-  // Helper method to fill in the ContactResults given the current context when
-  // the model is discrete. If cached contact solver results are not up-to-date
-  // with `context`, they'll be  recomputed, see EvalTamsiResults(). The solver
-  // results are then used to compute contact results into `contacts`.
+  // This method accumulates both point and hydroelastic contact results into
+  // contact_results when the model is discrete.
   void CalcContactResultsDiscrete(const systems::Context<T>& context,
                                   ContactResults<T>* contact_results) const;
+
+  // Helper method to fill in contact_results with point contact information
+  // for the given state stored in context, when the model is discrete.
+  void CalcContactResultsDiscretePointPair(
+      const systems::Context<T>& context,
+      ContactResults<T>* contact_results) const;
 
   // Evaluate contact results.
   const ContactResults<T>& EvalContactResults(
@@ -4776,7 +4780,7 @@ void MultibodyPlant<symbolic::Expression>::CalcHydroelasticContactForces(
         symbolic::Expression>*) const;
 template <>
 void MultibodyPlant<symbolic::Expression>::
-    CalcContactResultsContinuousHydroelastic(
+    AppendContactResultsContinuousHydroelastic(
         const systems::Context<symbolic::Expression>&,
         ContactResults<symbolic::Expression>*) const;
 template <>
