@@ -419,7 +419,9 @@ drake_cc_googletest(
         ":plant",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//geometry:drake_visualizer",
         "//math:geometric_transform",
+        "//systems/analysis:simulator",
         "//systems/framework:diagram",
     ],
 )
