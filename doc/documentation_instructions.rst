@@ -59,7 +59,7 @@ yet.* Currently, this process will generate or serve an empty page (index.html).
 
 It is *not* necessary to build Drake prior to running either command below.
 
-To serve page locally at http://127.0.0.1:<n>::
+To serve page locally at ``http://127.0.0.1:<n>``::
 
     $ bazel run //doc:serve_jekyll [-- --default_port <n>]
 
