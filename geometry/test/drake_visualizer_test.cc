@@ -43,24 +43,34 @@ using systems::DiagramBuilder;
 using systems::Simulator;
 
 namespace {
+/* Collection of data for reporting what is waiting in the LCM queue.  */
+struct MessageResults {
+  int num_load{};
+  // Zeroed out unless num_load > 0.
+  lcmt_viewer_load_robot load_message{};
+  int num_draw{};
+  // Zeroed out unless num_draw > 0.
+  lcmt_viewer_draw draw_message{};
+};
 
 /* Serves as a source of pose values for SceneGraph input ports. */
-class PoseSource : public systems::LeafSystem<double> {
+template <typename T>
+class PoseSource : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PoseSource)
   PoseSource() {
-    this->DeclareAbstractOutputPort(FramePoseVector<double>(),
-                                    &PoseSource::ReadPoses);
+    this->DeclareAbstractOutputPort(FramePoseVector<T>(),
+                                    &PoseSource<T>::ReadPoses);
   }
 
-  void SetPoses(FramePoseVector<double> poses) { poses_ = move(poses); }
+  void SetPoses(FramePoseVector<T> poses) { poses_ = move(poses); }
 
  private:
-  void ReadPoses(const Context<double>&, FramePoseVector<double>* poses) const {
+  void ReadPoses(const Context<T>&, FramePoseVector<T>* poses) const {
     *poses = poses_;
   }
 
-  FramePoseVector<double> poses_;
+  FramePoseVector<T> poses_;
 };
 
 }  // namespace
@@ -84,29 +94,28 @@ class PoseSource : public systems::LeafSystem<double> {
  satisfies the friend declaration in DrakeVisualizer.  */
 
 /* Infrastructure for testing the DrakeVisualizer. */
+template <typename T>
 class DrakeVisualizerTest : public ::testing::Test {
  protected:
-  void SetUp() override {
-    ASSERT_EQ(lcm_.get_lcm_url(), "memq://");
-  }
+  void setUp() { ASSERT_EQ(lcm_.get_lcm_url(), "memq://"); }
 
   /* Returns the pointer to the `visualizer`'s owned lcm interface (may be
    nullptr). */
   static const DrakeLcmInterface* get_owned_interface(
-      const DrakeVisualizer& visualizer) {
+      const DrakeVisualizer<T>& visualizer) {
     return visualizer.owned_lcm_.get();
   }
 
   /* Returns the pointer to the `visualizer`'s active lcm interface -- the one
    being invoked to do work (can't be nullptr). */
   static const DrakeLcmInterface* get_active_interface(
-      const DrakeVisualizer& visualizer) {
+      const DrakeVisualizer<T>& visualizer) {
     return visualizer.lcm_;
   }
 
   /* Returns the parameters the given visualizer is configured with.  */
   static const DrakeVisualizerParams& get_params(
-      const DrakeVisualizer& visualizer) {
+      const DrakeVisualizer<T>& visualizer) {
     return visualizer.params_;
   }
 
@@ -116,13 +125,14 @@ class DrakeVisualizerTest : public ::testing::Test {
                         Role role = Role::kIllustration,
                         const Rgba& default_color = Rgba{0.1, 0.2, 0.3, 0.4}) {
     DrakeVisualizerParams params{period, role, default_color};
-    DiagramBuilder<double> builder;
-    scene_graph_ = builder.AddSystem<SceneGraph<double>>();
-    visualizer_ = builder.AddSystem<DrakeVisualizer>(&lcm_, move(params));
+    DiagramBuilder<T> builder;
+    scene_graph_ = builder.template AddSystem<SceneGraph<T>>();
+    visualizer_ =
+        builder.template AddSystem<DrakeVisualizer<T>>(&lcm_, move(params));
     builder.Connect(scene_graph_->get_query_output_port(),
                     visualizer_->query_object_input_port());
     source_id_ = scene_graph_->RegisterSource(kSourceName);
-    pose_source_ = builder.AddSystem<PoseSource>();
+    pose_source_ = builder.template AddSystem<PoseSource<T>>();
     builder.Connect(pose_source_->get_output_port(0),
                     scene_graph_->get_source_pose_port(source_id_));
     diagram_ = builder.Build();
@@ -164,20 +174,10 @@ class DrakeVisualizerTest : public ::testing::Test {
                                       "proximity"));
     scene_graph_->AssignRole(source_id_, g2_id, ProximityProperties());
 
-    pose_source_->SetPoses({{f0_id, RigidTransformd{}},
-                            {f1_id, RigidTransformd{}},
-                            {proximity_frame_id_, RigidTransformd{}}});
+    pose_source_->SetPoses({{f0_id, math::RigidTransform<T>{}},
+                            {f1_id, math::RigidTransform<T>{}},
+                            {proximity_frame_id_, math::RigidTransform<T>{}}});
   }
-
-  /* Collection of data for reporting what is waiting in the LCM queue.  */
-  struct MessageResults {
-    int num_load{};
-    // Zeroed out unless num_load > 0.
-    lcmt_viewer_load_robot load_message{};
-    int num_draw{};
-    // Zeroed out unless num_draw > 0.
-    lcmt_viewer_draw draw_message{};
-  };
 
   /* Processes the message queue, reporting the number of load and draw messges
    and, if that number is non-zero, the last message of each type received.  */
@@ -236,8 +236,8 @@ class DrakeVisualizerTest : public ::testing::Test {
     {
       /* Case: Confirm successful construction, connection, and that the passed
        lcm interface is used.  */
-      DiagramBuilder<double> builder;
-      const auto& scene_graph = *builder.AddSystem<SceneGraph<double>>();
+      DiagramBuilder<T> builder;
+      const auto& scene_graph = *builder.template AddSystem<SceneGraph<T>>();
       /* The fact that a visualizer is returned is proof that a DrakeVisualizer
        was created.  */
       const auto& visualizer =
@@ -249,12 +249,12 @@ class DrakeVisualizerTest : public ::testing::Test {
       const auto& sg_context = scene_graph.GetMyContextFromRoot(*context);
       const auto& viz_context = visualizer.GetMyContextFromRoot(*context);
       const auto& sg_query_object =
-          scene_graph.get_query_output_port().Eval<QueryObject<double>>(
+          scene_graph.get_query_output_port().template Eval<QueryObject<T>>(
               sg_context);
       /* Not throwing is evidence of *some* connection.  */
       const auto& viz_query_object =
-          visualizer.query_object_input_port()
-              .template Eval<QueryObject<double>>(viz_context);
+          visualizer.query_object_input_port().template Eval<QueryObject<T>>(
+              viz_context);
 
       /* Confirm correct connection.  */
       EXPECT_TRUE(sg_query_object.inspector().geometry_version().IsSameAs(
@@ -275,8 +275,8 @@ class DrakeVisualizerTest : public ::testing::Test {
 
     {
       /* Case: No Lcm provided, confirm owned lcm.  */
-      DiagramBuilder<double> builder;
-      const auto& scene_graph = *builder.AddSystem<SceneGraph<double>>();
+      DiagramBuilder<T> builder;
+      const auto& scene_graph = *builder.template AddSystem<SceneGraph<T>>();
       const auto& visualizer =
           add_to_builder_no_param(&builder, port_source(scene_graph), nullptr);
       EXPECT_NE(get_owned_interface(visualizer), nullptr);
@@ -287,14 +287,13 @@ class DrakeVisualizerTest : public ::testing::Test {
 
     {
       /* Case: Parameters given, confirm custom parameters get passed along.  */
-      DiagramBuilder<double> builder;
-      const auto& scene_graph = *builder.AddSystem<SceneGraph<double>>();
+      DiagramBuilder<T> builder;
+      const auto& scene_graph = *builder.template AddSystem<SceneGraph<T>>();
       const DrakeVisualizerParams params{1 / 13.0, Role::kPerception,
                                          Rgba{0.1, 0.2, 0.3, 0.4}};
       const auto& visualizer =
           add_to_builder(&builder, port_source(scene_graph), &lcm_, params);
-      const DrakeVisualizerParams& vis_params =
-          DrakeVisualizerTest::get_params(visualizer);
+      const DrakeVisualizerParams& vis_params = this->get_params(visualizer);
       EXPECT_EQ(vis_params.publish_period, params.publish_period);
       EXPECT_EQ(vis_params.role, params.role);
       EXPECT_EQ(vis_params.default_color, params.default_color);
@@ -318,46 +317,51 @@ class DrakeVisualizerTest : public ::testing::Test {
   lcm::Subscriber<lcmt_viewer_load_robot> load_subscriber_{&lcm_, kLoadChannel};
 
   /* Raw pointer into the diagram's scene graph.  */
-  SceneGraph<double>* scene_graph_{};
+  SceneGraph<T>* scene_graph_{};
   /* Raw pointer into the diagram's visualizer.  */
-  DrakeVisualizer* visualizer_{};
+  DrakeVisualizer<T>* visualizer_{};
   /* Raw pointer to the pose data.  */
-  PoseSource* pose_source_{};
+  PoseSource<T>* pose_source_{};
   SourceId source_id_;
   /* A diagram containing scene graph and connected visualizer.  */
-  unique_ptr<Diagram<double>> diagram_;
+  unique_ptr<Diagram<T>> diagram_;
   /* The id of the frame registered by PopulateScene() with the proximity
    geometry.  */
   FrameId proximity_frame_id_;
 };
 
+using ScalarTypes = ::testing::Types<double, AutoDiffXd>;
+TYPED_TEST_SUITE(DrakeVisualizerTest, ScalarTypes);
 /* Confirms that the visualizer publishes at the specified period.  */
-TEST_F(DrakeVisualizerTest, PublishPeriod) {
+
+TYPED_TEST(DrakeVisualizerTest, PublishPeriod) {
+  using T = TypeParam;
   for (double period : {1 / 30.0, 1 / 10.0}) {
-    ConfigureDiagram(period);
-    Simulator<double> simulator(*diagram_);
+    this->ConfigureDiagram(period);
+    Simulator<T> simulator(*(this->diagram_));
     ASSERT_EQ(simulator.get_context().get_time(), 0.0);
 
     SCOPED_TRACE(fmt::format("Period = {:.4}", period));
 
     // When we start up, we should get a load and a draw at time 0.
     simulator.AdvanceTo(0.0);
-    EXPECT_TRUE(ExpectedMessageCount(1, 1));
+    EXPECT_TRUE(this->ExpectedMessageCount(1, 1));
 
     // Advancing past five period boundaries --> five draw messages.
     simulator.AdvanceTo(period * 5.1);
-    EXPECT_TRUE(ExpectedMessageCount(0, 5));
+    EXPECT_TRUE(this->ExpectedMessageCount(0, 5));
   }
 }
 
 /* Confirms messages are sent, even if there is nothing. This matters because
  a no-op would *not* clear drake_visualizer leading to confusing results (if
  the visualizer already contained geometry from a previous session).  */
-TEST_F(DrakeVisualizerTest, EmptyScene) {
-  ConfigureDiagram();
-  Simulator<double> simulator(*diagram_);
+TYPED_TEST(DrakeVisualizerTest, EmptyScene) {
+  using T = TypeParam;
+  this->ConfigureDiagram();
+  Simulator<T> simulator(*(this->diagram_));
   simulator.AdvanceTo(0.0);
-  MessageResults results = ProcessMessages();
+  MessageResults results = this->ProcessMessages();
   ASSERT_EQ(results.num_load, 1);
   EXPECT_EQ(results.load_message.num_links, 0);
 
@@ -369,18 +373,19 @@ TEST_F(DrakeVisualizerTest, EmptyScene) {
 /* DrakeVisualizer can accept an lcm interface from the user or instantiate its
  own. This tests that logic. However, it does *not* do any work on the owned
  lcm interface because we don't want this unit test to spew network traffic.  */
-TEST_F(DrakeVisualizerTest, OwnedLcm) {
-  DrakeVisualizer visualizer_external(&lcm_);
-  EXPECT_EQ(get_owned_interface(visualizer_external), nullptr);
-  EXPECT_EQ(get_active_interface(visualizer_external), &lcm_);
+TYPED_TEST(DrakeVisualizerTest, OwnedLcm) {
+  using T = TypeParam;
+  DrakeVisualizer<T> visualizer_external(&(this->lcm_));
+  EXPECT_EQ(this->get_owned_interface(visualizer_external), nullptr);
+  EXPECT_EQ(this->get_active_interface(visualizer_external), &(this->lcm_));
 
   /* Note: do not do any work with this instance that would cause LCM messages
    to be spewed!  */
-  DrakeVisualizer visualizer_owning;
-  EXPECT_NE(get_owned_interface(visualizer_owning), nullptr);
-  EXPECT_NE(get_owned_interface(visualizer_owning), &lcm_);
-  EXPECT_EQ(get_active_interface(visualizer_owning),
-            get_owned_interface(visualizer_owning));
+  DrakeVisualizer<T> visualizer_owning;
+  EXPECT_NE(this->get_owned_interface(visualizer_owning), nullptr);
+  EXPECT_NE(this->get_owned_interface(visualizer_owning), &(this->lcm_));
+  EXPECT_EQ(this->get_active_interface(visualizer_owning),
+            this->get_owned_interface(visualizer_owning));
 }
 
 /* DrakeVisualizer uses the cache to facilitate coordination between what got
@@ -388,21 +393,22 @@ TEST_F(DrakeVisualizerTest, OwnedLcm) {
  message. This confirms we get the same results with cache enabled and disabled.
  In this case, we use the number and names of the dynamic frames and the draw
  messages as evidence. */
-TEST_F(DrakeVisualizerTest, CacheInsensitive) {
+TYPED_TEST(DrakeVisualizerTest, CacheInsensitive) {
+  using T = TypeParam;
   lcmt_viewer_draw messages[2];
 
   for (bool cache_enabled : {true, false}) {
-    ConfigureDiagram();
-    PopulateScene();
+    this->ConfigureDiagram();
+    this->PopulateScene();
 
-    Simulator<double> simulator(*diagram_);
+    Simulator<T> simulator(*(this->diagram_));
     if (cache_enabled) {
       simulator.get_mutable_context().EnableCaching();
     } else {
       simulator.get_mutable_context().DisableCaching();
     }
     simulator.AdvanceTo(0.0);
-    MessageResults results = ProcessMessages();
+    MessageResults results = this->ProcessMessages();
     /* Confirm that messages were sent.  */
     ASSERT_EQ(results.num_load, 1);
     ASSERT_EQ(results.num_draw, 1);
@@ -421,24 +427,27 @@ TEST_F(DrakeVisualizerTest, CacheInsensitive) {
 
 /* Confirm that configuring the default diffuse color affects the resulting
  color for geometries with no specified diffuse values.  */
-TEST_F(DrakeVisualizerTest, ConfigureDefaultDiffuse) {
+TYPED_TEST(DrakeVisualizerTest, ConfigureDefaultDiffuse) {
+  using T = TypeParam;
   /* Apply to arbitrary default diffuse and confirm the geometry (with no)
    diffuse color defined, inherits it.  */
   for (const auto& expected_rgba :
        {Rgba{0.75, 0.25, 0.125, 1.0}, Rgba{0.5, 0.75, 0.875, 0.5}}) {
-    ConfigureDiagram(kPublishPeriod, Role::kProximity, expected_rgba);
-    const FrameId f_id =
-        scene_graph_->RegisterFrame(source_id_, GeometryFrame("frame", 0));
-    const GeometryId g_id = scene_graph_->RegisterGeometry(
-        source_id_, f_id,
+    this->ConfigureDiagram(this->kPublishPeriod, Role::kProximity,
+                           expected_rgba);
+    const FrameId f_id = this->scene_graph_->RegisterFrame(
+        this->source_id_, GeometryFrame("frame", 0));
+    const GeometryId g_id = this->scene_graph_->RegisterGeometry(
+        this->source_id_, f_id,
         make_unique<GeometryInstance>(RigidTransformd{}, make_unique<Sphere>(1),
                                       "proximity_sphere"));
     // ProximityProperties will make use of the default diffuse value.
-    scene_graph_->AssignRole(source_id_, g_id, ProximityProperties());
-    pose_source_->SetPoses({{f_id, RigidTransformd{}}});
-    Simulator<double> simulator(*diagram_);
+    this->scene_graph_->AssignRole(this->source_id_, g_id,
+                                   ProximityProperties());
+    this->pose_source_->SetPoses({{f_id, math::RigidTransform<T>{}}});
+    Simulator<T> simulator(*(this->diagram_));
     simulator.AdvanceTo(0.0);
-    MessageResults results = ProcessMessages();
+    MessageResults results = this->ProcessMessages();
     ASSERT_EQ(results.num_load, 1);
     ASSERT_EQ(results.load_message.num_links, 1);
     ASSERT_EQ(results.load_message.link[0].num_geom, 1);
@@ -452,32 +461,36 @@ TEST_F(DrakeVisualizerTest, ConfigureDefaultDiffuse) {
  geometries are loaded (with the "world" frame holding the anchored geometries
  and all dynamic geometries on other frames). The draw message should only
  provide data for the dynamic frames (i.e., "world" will not be included).  */
-TEST_F(DrakeVisualizerTest, AnchoredAndDynamicGeometry) {
-  ConfigureDiagram(kPublishPeriod, Role::kProximity);
-  const FrameId f_id =
-      scene_graph_->RegisterFrame(source_id_, GeometryFrame("frame", 0));
-  const GeometryId g0_id = scene_graph_->RegisterGeometry(
-      source_id_, f_id,
+TYPED_TEST(DrakeVisualizerTest, AnchoredAndDynamicGeometry) {
+  using T = TypeParam;
+  this->ConfigureDiagram(this->kPublishPeriod, Role::kProximity);
+  const FrameId f_id = this->scene_graph_->RegisterFrame(
+      this->source_id_, GeometryFrame("frame", 0));
+  const GeometryId g0_id = this->scene_graph_->RegisterGeometry(
+      this->source_id_, f_id,
       make_unique<GeometryInstance>(RigidTransformd{}, make_unique<Sphere>(1),
                                     "sphere0"));
-  scene_graph_->AssignRole(source_id_, g0_id, ProximityProperties());
-  const GeometryId g1_id = scene_graph_->RegisterGeometry(
-      source_id_, f_id,
+  this->scene_graph_->AssignRole(this->source_id_, g0_id,
+                                 ProximityProperties());
+  const GeometryId g1_id = this->scene_graph_->RegisterGeometry(
+      this->source_id_, f_id,
       make_unique<GeometryInstance>(RigidTransformd{Vector3d{10, 0, 0}},
                                     make_unique<Sphere>(1), "sphere1"));
-  scene_graph_->AssignRole(source_id_, g1_id, ProximityProperties());
+  this->scene_graph_->AssignRole(this->source_id_, g1_id,
+                                 ProximityProperties());
 
-  const GeometryId g2_id = scene_graph_->RegisterAnchoredGeometry(
-      source_id_,
+  const GeometryId g2_id = this->scene_graph_->RegisterAnchoredGeometry(
+      this->source_id_,
       make_unique<GeometryInstance>(RigidTransformd{Vector3d{5, 0, 0}},
                                     make_unique<Sphere>(1), "sphere3"));
-  scene_graph_->AssignRole(source_id_, g2_id, ProximityProperties());
+  this->scene_graph_->AssignRole(this->source_id_, g2_id,
+                                 ProximityProperties());
 
-  pose_source_->SetPoses({{f_id, RigidTransformd{}}});
+  this->pose_source_->SetPoses({{f_id, math::RigidTransform<T>{}}});
 
-  Simulator<double> simulator(*diagram_);
+  Simulator<T> simulator(*(this->diagram_));
   simulator.AdvanceTo(0.0);
-  MessageResults results = ProcessMessages();
+  MessageResults results = this->ProcessMessages();
 
   // Confirm load message; three geometries on two links.
   ASSERT_EQ(results.num_load, 1);
@@ -487,19 +500,22 @@ TEST_F(DrakeVisualizerTest, AnchoredAndDynamicGeometry) {
   ASSERT_EQ(results.load_message.link[0].num_geom, 1);
 
   // Now test for the dynamic frame (with its two geometries).
-  ASSERT_EQ(results.load_message.link[1].name, string(kSourceName) + "::frame");
+  ASSERT_EQ(results.load_message.link[1].name,
+            string(this->kSourceName) + "::frame");
   ASSERT_EQ(results.load_message.link[1].num_geom, 2);
 
   // Confirm draw message; a single link.
   ASSERT_EQ(results.num_draw, 1);
   ASSERT_EQ(results.draw_message.num_links, 1);
-  ASSERT_EQ(results.draw_message.link_name[0], string(kSourceName) + "::frame");
+  ASSERT_EQ(results.draw_message.link_name[0],
+            string(this->kSourceName) + "::frame");
 }
 
 /* Confirms that the role parameter leads to the correct geometry being
  selected.  */
-TEST_F(DrakeVisualizerTest, TargetRole) {
-  const string source_name(kSourceName);
+TYPED_TEST(DrakeVisualizerTest, TargetRole) {
+  using T = TypeParam;
+  const string source_name(this->kSourceName);
   /* For a given role, the name of the *unique* frame we expect to load. The
    frame should have a single geometry affixed to it.  */
   const map<Role, string> expected{
@@ -507,11 +523,11 @@ TEST_F(DrakeVisualizerTest, TargetRole) {
       {Role::kPerception, source_name + "::perception"},
       {Role::kProximity, source_name + "::proximity"}};
   for (const auto& [role, name] : expected) {
-    ConfigureDiagram(kPublishPeriod, role);
-    PopulateScene();
-    Simulator<double> simulator(*diagram_);
+    this->ConfigureDiagram(this->kPublishPeriod, role);
+    this->PopulateScene();
+    Simulator<T> simulator(*(this->diagram_));
     simulator.AdvanceTo(0.0);
-    MessageResults results = ProcessMessages();
+    MessageResults results = this->ProcessMessages();
 
     /* Confirm that messages were sent.  */
     ASSERT_EQ(results.num_load, 1);
@@ -526,38 +542,40 @@ TEST_F(DrakeVisualizerTest, TargetRole) {
 }
 
 /* Confirms that a force publish is sufficient.  */
-TEST_F(DrakeVisualizerTest, ForcePublish) {
-  ConfigureDiagram(kPublishPeriod, Role::kIllustration);
-  PopulateScene();
-  auto context = diagram_->CreateDefaultContext();
-  const auto& vis_context = visualizer_->GetMyContextFromRoot(*context);
-  visualizer_->Publish(vis_context);
+TYPED_TEST(DrakeVisualizerTest, ForcePublish) {
+  this->ConfigureDiagram(this->kPublishPeriod, Role::kIllustration);
+  this->PopulateScene();
+  auto context = this->diagram_->CreateDefaultContext();
+  const auto& vis_context = this->visualizer_->GetMyContextFromRoot(*context);
+  this->visualizer_->Publish(vis_context);
 
   /* Confirm that messages were sent.  */
-  MessageResults results = ProcessMessages();
+  MessageResults results = this->ProcessMessages();
   ASSERT_EQ(results.num_load, 1);
   ASSERT_EQ(results.num_draw, 1);
 }
 
 /* When targeting a non-illustration role, if that same geometry *has* an
  illustration role with color, that value is used instead of the default.  */
-TEST_F(DrakeVisualizerTest, GeometryWithIllustrationFallback) {
-  ConfigureDiagram(kPublishPeriod, Role::kProximity);
-  const GeometryId g_id = scene_graph_->RegisterAnchoredGeometry(
-      source_id_, make_unique<GeometryInstance>(
-                      RigidTransformd{}, make_unique<Sphere>(1), "sphere0"));
+TYPED_TEST(DrakeVisualizerTest, GeometryWithIllustrationFallback) {
+  using T = TypeParam;
+  this->ConfigureDiagram(this->kPublishPeriod, Role::kProximity);
+  const GeometryId g_id = this->scene_graph_->RegisterAnchoredGeometry(
+      this->source_id_,
+      make_unique<GeometryInstance>(RigidTransformd{}, make_unique<Sphere>(1),
+                                    "sphere0"));
   const Rgba expected_rgba{0.25, 0.125, 0.75, 0.5};
   ASSERT_NE(expected_rgba, DrakeVisualizerParams().default_color);
   IllustrationProperties illus_props;
   illus_props.AddProperty("phong", "diffuse", expected_rgba);
-  scene_graph_->AssignRole(source_id_, g_id, ProximityProperties());
-  scene_graph_->AssignRole(source_id_, g_id, illus_props);
+  this->scene_graph_->AssignRole(this->source_id_, g_id, ProximityProperties());
+  this->scene_graph_->AssignRole(this->source_id_, g_id, illus_props);
 
-  Simulator<double> simulator(*diagram_);
+  Simulator<T> simulator(*(this->diagram_));
   simulator.AdvanceTo(0.0);
 
   // We're just checking the load message for the right color.
-  MessageResults results = ProcessMessages();
+  MessageResults results = this->ProcessMessages();
   ASSERT_EQ(results.num_load, 1);
   ASSERT_EQ(results.load_message.num_links, 1);
   ASSERT_EQ(results.load_message.link[0].num_geom, 1);
@@ -568,29 +586,31 @@ TEST_F(DrakeVisualizerTest, GeometryWithIllustrationFallback) {
 
 /* For *any* role type, if the properties include ("phong", "diffuse"), *that*
  color will be used.  */
-TEST_F(DrakeVisualizerTest, AllRolesCanDefineDiffuse) {
+TYPED_TEST(DrakeVisualizerTest, AllRolesCanDefineDiffuse) {
+  using T = TypeParam;
   for (const Role role : {Role::kProximity, Role::kPerception}) {
-    ConfigureDiagram(kPublishPeriod, role);
-    const GeometryId g_id = scene_graph_->RegisterAnchoredGeometry(
-        source_id_, make_unique<GeometryInstance>(
-                        RigidTransformd{}, make_unique<Sphere>(1), "sphere0"));
+    this->ConfigureDiagram(this->kPublishPeriod, role);
+    const GeometryId g_id = this->scene_graph_->RegisterAnchoredGeometry(
+        this->source_id_,
+        make_unique<GeometryInstance>(RigidTransformd{}, make_unique<Sphere>(1),
+                                      "sphere0"));
     const Rgba expected_rgba{0.25, 0.125, 0.75, 0.5};
     ASSERT_NE(expected_rgba, DrakeVisualizerParams().default_color);
     if (role == Role::kProximity) {
       ProximityProperties props;
       props.AddProperty("phong", "diffuse", expected_rgba);
-      scene_graph_->AssignRole(source_id_, g_id, props);
+      this->scene_graph_->AssignRole(this->source_id_, g_id, props);
     } else if (role == Role::kPerception) {
       PerceptionProperties props;
       props.AddProperty("phong", "diffuse", expected_rgba);
-      scene_graph_->AssignRole(source_id_, g_id, props);
+      this->scene_graph_->AssignRole(this->source_id_, g_id, props);
     }
 
-    Simulator<double> simulator(*diagram_);
+    Simulator<T> simulator(*(this->diagram_));
     simulator.AdvanceTo(0.0);
 
     // We're just checking the load message for the right color.
-    MessageResults results = ProcessMessages();
+    MessageResults results = this->ProcessMessages();
     ASSERT_EQ(results.num_load, 1);
     ASSERT_EQ(results.load_message.num_links, 1);
     ASSERT_EQ(results.load_message.link[0].num_geom, 1);
@@ -601,53 +621,57 @@ TEST_F(DrakeVisualizerTest, AllRolesCanDefineDiffuse) {
 }
 
 /* Confirms that the documented prerequisites do bad things.  */
-TEST_F(DrakeVisualizerTest, BadParameters) {
+TYPED_TEST(DrakeVisualizerTest, BadParameters) {
+  using T = TypeParam;
   // Zero publish period.
-  EXPECT_THROW(
-      DrakeVisualizer(&lcm_, DrakeVisualizerParams{0, Role::kIllustration,
-                                                   Rgba{1, 1, 1, 1}}),
-      std::exception);
+  EXPECT_THROW(DrakeVisualizer<T>(&(this->lcm_),
+                                  DrakeVisualizerParams{0, Role::kIllustration,
+                                                        Rgba{1, 1, 1, 1}}),
+               std::exception);
 
   // Negative publish period.
   EXPECT_THROW(
-      DrakeVisualizer(&lcm_, DrakeVisualizerParams{-0.1, Role::kIllustration,
-                                                   Rgba{1, 1, 1, 1}}),
+      DrakeVisualizer<T>(
+          &(this->lcm_),
+          DrakeVisualizerParams{-0.1, Role::kIllustration, Rgba{1, 1, 1, 1}}),
       std::exception);
 
   // Unassigned role.
-  EXPECT_THROW(
-      DrakeVisualizer(&lcm_, DrakeVisualizerParams{0.1, Role::kUnassigned,
-                                                   Rgba{1, 1, 1, 1}}),
-      std::exception);
+  EXPECT_THROW(DrakeVisualizer<T>(&(this->lcm_),
+                                  DrakeVisualizerParams{0.1, Role::kUnassigned,
+                                                        Rgba{1, 1, 1, 1}}),
+               std::exception);
 }
 
 /* This confirms that DrakeVisualizer will dispatch a new load message when it
  recognizes a change in the visualized role's version. We'll confirm both the
  positive case (change to expected role triggers load) and the negative case
  (change to other roles does *not* trigger load).  */
-TEST_F(DrakeVisualizerTest, ChangesInVersion) {
+TYPED_TEST(DrakeVisualizerTest, ChangesInVersion) {
+  using T = TypeParam;
   for (const Role role :
        {Role::kProximity, Role::kPerception, Role::kIllustration}) {
-    ConfigureDiagram(kPublishPeriod, role);
-    const GeometryId g_id = scene_graph_->RegisterAnchoredGeometry(
-        source_id_, make_unique<GeometryInstance>(
-                        RigidTransformd{}, make_unique<Sphere>(1), "sphere0"));
+    this->ConfigureDiagram(this->kPublishPeriod, role);
+    const GeometryId g_id = this->scene_graph_->RegisterAnchoredGeometry(
+        this->source_id_,
+        make_unique<GeometryInstance>(RigidTransformd{}, make_unique<Sphere>(1),
+                                      "sphere0"));
 
-    Simulator<double> simulator(*diagram_);
-    Context<double>& diagram_context = simulator.get_mutable_context();
-    Context<double>& sg_context =
-        diagram_->GetMutableSubsystemContext(*scene_graph_, &diagram_context);
+    Simulator<T> simulator(*(this->diagram_));
+    Context<T>& diagram_context = simulator.get_mutable_context();
+    Context<T>& sg_context = this->diagram_->GetMutableSubsystemContext(
+        *(this->scene_graph_), &diagram_context);
     double t = 0.0;
     simulator.AdvanceTo(t);
     // Confirm the initial load/draw message pair.
-    MessageResults results = ProcessMessages();
+    MessageResults results = this->ProcessMessages();
     ASSERT_EQ(results.num_load, 1);
     ASSERT_EQ(results.num_draw, 1);
 
-    t += kPublishPeriod;
+    t += this->kPublishPeriod;
     simulator.AdvanceTo(t);
     // Confirm draw only.
-    results = ProcessMessages();
+    results = this->ProcessMessages();
     ASSERT_EQ(results.num_load, 0);
     ASSERT_EQ(results.num_draw, 1);
 
@@ -661,15 +685,15 @@ TEST_F(DrakeVisualizerTest, ChangesInVersion) {
     // for a modified perception role.
     for (const Role modified_role : {Role::kProximity, Role::kIllustration}) {
       if (modified_role == Role::kProximity) {
-        scene_graph_->AssignRole(&sg_context, source_id_, g_id,
-                                 ProximityProperties());
+        this->scene_graph_->AssignRole(&sg_context, this->source_id_, g_id,
+                                       ProximityProperties());
       } else if (modified_role == Role::kIllustration) {
-        scene_graph_->AssignRole(&sg_context, source_id_, g_id,
-                                 IllustrationProperties());
+        this->scene_graph_->AssignRole(&sg_context, this->source_id_, g_id,
+                                       IllustrationProperties());
       }
-      t += kPublishPeriod;
+      t += this->kPublishPeriod;
       simulator.AdvanceTo(t);
-      results = ProcessMessages();
+      results = this->ProcessMessages();
       EXPECT_EQ(results.num_load, modified_role == role ? 1 : 0)
           << "For visualized role '" << role << "' and modified role '" << role
           << "'\n";
@@ -680,45 +704,56 @@ TEST_F(DrakeVisualizerTest, ChangesInVersion) {
 
 /* Tests the AddToBuilder method that connects directly to a provided SceneGraph
  instance -- see TestAddToBuilder for testing details.  */
-TEST_F(DrakeVisualizerTest, AddToBuilderSceneGraph) {
-  auto add_to_builder =
-      [](DiagramBuilder<double>* builder, const SceneGraph<double>& scene_graph,
-         DrakeLcmInterface* lcm,
-         DrakeVisualizerParams params) -> const DrakeVisualizer& {
-    return DrakeVisualizerd::AddToBuilder(builder, scene_graph, lcm, params);
-  };
-  auto add_to_builder_no_params =
-      [](DiagramBuilder<double>* builder, const SceneGraph<double>& scene_graph,
-         DrakeLcmInterface* lcm) -> const DrakeVisualizer& {
-    return DrakeVisualizerd::AddToBuilder(builder, scene_graph, lcm);
-  };
-  auto pose_source =
-      [](const SceneGraph<double>& sg) -> const SceneGraph<double>& {
-    return sg;
-  };
-  TestAddToBuilder(add_to_builder, add_to_builder_no_params, pose_source);
+template <typename T>
+const DrakeVisualizer<T>& add_to_builder_sg(DiagramBuilder<T>* builder,
+                                            const SceneGraph<T>& scene_graph,
+                                            DrakeLcmInterface* lcm,
+                                            DrakeVisualizerParams params) {
+  return DrakeVisualizer<T>::AddToBuilder(builder, scene_graph, lcm, params);
+}
+
+template <typename T>
+const DrakeVisualizer<T>& add_to_builder_sg_no_params(
+    DiagramBuilder<T>* builder, const SceneGraph<T>& scene_graph,
+    DrakeLcmInterface* lcm) {
+  return DrakeVisualizer<T>::AddToBuilder(builder, scene_graph, lcm);
+}
+
+template <typename T>
+const SceneGraph<T>& pose_source_sg(const SceneGraph<T>& sg) {
+  return sg;
+}
+
+TYPED_TEST(DrakeVisualizerTest, AddToBuilderSceneGraph) {
+  using T = TypeParam;
+  this->TestAddToBuilder(add_to_builder_sg<T>, add_to_builder_sg_no_params<T>,
+                         pose_source_sg<T>);
 }
 
 /* Tests the AddToBuilder method that connects directly to a provided
  QueryObject-valued port -- see TestAddToBuilder for testing details.  */
-TEST_F(DrakeVisualizerTest, AddToBuilderQueryObjectPort) {
-  auto add_to_builder =
-      [](DiagramBuilder<double>* builder,
-         const systems::OutputPort<double>& port, DrakeLcmInterface* lcm,
-         DrakeVisualizerParams params) -> const DrakeVisualizer& {
-    return DrakeVisualizerd::AddToBuilder(builder, port, lcm, params);
-  };
-  auto add_to_builder_no_params =
-      [](DiagramBuilder<double>* builder,
-         const systems::OutputPort<double>& port,
-         DrakeLcmInterface* lcm) -> const DrakeVisualizer& {
-    return DrakeVisualizerd::AddToBuilder(builder, port, lcm);
-  };
-  auto pose_source =
-      [](const SceneGraph<double>& sg) -> const systems::OutputPort<double>& {
-    return sg.get_query_output_port();
-  };
-  TestAddToBuilder(add_to_builder, add_to_builder_no_params, pose_source);
+template <typename T>
+const DrakeVisualizer<T>& add_to_builder_port(
+    DiagramBuilder<T>* builder, const systems::OutputPort<T>& port,
+    DrakeLcmInterface* lcm, DrakeVisualizerParams params) {
+  return DrakeVisualizer<T>::AddToBuilder(builder, port, lcm, params);
+}
+
+template <typename T>
+const DrakeVisualizer<T>& add_to_builder_port_no_params(
+    DiagramBuilder<T>* builder, const systems::OutputPort<T>& port,
+    DrakeLcmInterface* lcm) {
+  return DrakeVisualizer<T>::AddToBuilder(builder, port, lcm);
+}
+template <typename T>
+const systems::OutputPort<T>& pose_source_port(const SceneGraph<T>& sg) {
+  return sg.get_query_output_port();
+}
+
+TYPED_TEST(DrakeVisualizerTest, AddToBuilderQueryObjectPort) {
+  using T = TypeParam;
+  this->TestAddToBuilder(add_to_builder_port<T>,
+                         add_to_builder_port_no_params<T>, pose_source_port<T>);
 }
 
 /* Confirms that DispatchLoadMessage works on the scene graph model. We need to
@@ -736,19 +771,21 @@ TEST_F(DrakeVisualizerTest, AddToBuilderQueryObjectPort) {
  confirm 1 & 2 simultaneously by looking for the single frame with a name
  that depends on the role broadcast. We confirm 3 in that we get messages at
  all. */
-TEST_F(DrakeVisualizerTest, DispatchLoadMessageFromModel) {
-  ConfigureDiagram();
-  PopulateScene();
+TYPED_TEST(DrakeVisualizerTest, DispatchLoadMessageFromModel) {
+  using T = TypeParam;
+  this->ConfigureDiagram();
+  this->PopulateScene();
 
   {
     // Case: role = illustration (via default) --> one frame labeled with
     // "illustration".
-    DrakeVisualizer::DispatchLoadMessage(*scene_graph_, &lcm_);
-    MessageResults results = ProcessMessages();
+    DrakeVisualizer<T>::DispatchLoadMessage(*(this->scene_graph_),
+                                            &(this->lcm_));
+    MessageResults results = this->ProcessMessages();
     ASSERT_EQ(results.num_load, 1);
     ASSERT_EQ(results.load_message.num_links, 1);
     ASSERT_EQ(results.load_message.link[0].name,
-              string(kSourceName) + "::illustration");
+              string(this->kSourceName) + "::illustration");
     ASSERT_EQ(results.load_message.link[0].num_geom, 1);
     ASSERT_EQ(results.num_draw, 0);
   }
@@ -756,16 +793,33 @@ TEST_F(DrakeVisualizerTest, DispatchLoadMessageFromModel) {
     // Case: role = proximity --> one frame labeled with "proximity".
     DrakeVisualizerParams params;
     params.role = Role::kProximity;
-    DrakeVisualizer::DispatchLoadMessage(*scene_graph_, &lcm_, params);
-    MessageResults results = ProcessMessages();
+    DrakeVisualizer<T>::DispatchLoadMessage(*(this->scene_graph_),
+                                            &(this->lcm_), params);
+    MessageResults results = this->ProcessMessages();
     ASSERT_EQ(results.num_load, 1);
     ASSERT_EQ(results.load_message.num_links, 1);
     ASSERT_EQ(results.load_message.link[0].name,
-              string(kSourceName) + "::proximity");
+              string(this->kSourceName) + "::proximity");
     ASSERT_EQ(results.load_message.link[0].num_geom, 1);
     ASSERT_EQ(results.num_draw, 0);
   }
 }
 
+GTEST_TEST(DrakeVisualizerdTest, Transmogrify) {
+  // Construct a DrakeVisualizer which owns its lcm.
+  DrakeVisualizerd vis_d_own_lcm;
+  auto sys_own_lcm_ad = vis_d_own_lcm.ToAutoDiffXd();
+  DrakeVisualizer<AutoDiffXd>* vis_own_lcm_ad =
+      dynamic_cast<DrakeVisualizer<AutoDiffXd>*>(sys_own_lcm_ad.get());
+  ASSERT_NE(vis_own_lcm_ad, nullptr);
+
+  // Construct a DrakeVisualizer which doesn't own its lcm.
+  lcm::DrakeLcm lcm;
+  DrakeVisualizerd vis_d_not_own_lcm(&lcm);
+  auto sys_not_own_lcm_ad = vis_d_not_own_lcm.ToAutoDiffXd();
+  DrakeVisualizer<AutoDiffXd>* vis_not_own_lcm_ad =
+      dynamic_cast<DrakeVisualizer<AutoDiffXd>*>(sys_not_own_lcm_ad.get());
+  ASSERT_NE(vis_not_own_lcm_ad, nullptr);
+}
 }  // namespace geometry
 }  // namespace drake
