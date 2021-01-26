@@ -52,6 +52,25 @@ hydroelastic representation and some types of contact which aren't modeled yet.
   - Drake `Mesh` shapes can only be modeled with _rigid_ hydroleastic
     representation
 
+__Solvers__
+
+When the system is modeled as continuous, the multibody
+system's dynamics is described by an ODE of the form `ẋ = f(t,x)`. Drake's
+simulator then uses error-controlled integration to advance this dynamics
+forward in time. When the system is modeled as discrete, the multibody system's
+dynamics is described by an algebraic equation of the form
+`x[n+1] = f(t[n],x[n], u[n])`. This algebraic relation involves a complex
+computation performed by Drake's contact solver which solves the system's
+dynamics subject to contact constraints.
+
+This example allows us to choose between a continuous or discrete modeling of
+the system dynamics for both point and hydroelastic contact. Use `--mbp_dt` to
+enable the continuous modeling of the system. For instance, to use a discrete
+update period of one millisecond, supply the additional command line flag
+`--mbp_dt=1.0e-3`. The continuous approximation is the default (with
+`--mbp_dt=0`).
+
+
 __Changing the configuration__
 
 This example allows you to experiment with the contact models by changing the
@@ -133,10 +152,21 @@ Various incarnations of the example combining the parameters in ways to
 illustrate the differences that contact model and hydroelastic representation
 can make.
 
-##### Default behavior
+##### Default behavior.
+The command below runs the default configuration using a continuous modeling of
+the dynamics.
 ```
 bazel-bin/examples/multibody/rolling_sphere/rolling_sphere_run_dynamics
 ```
+
+##### Default behavior, discrete solver.
+Run the same configuration as above, but this time using a discrete
+approximation of the dynamics with a period of one millisecond.
+```
+bazel-bin/examples/multibody/rolling_sphere/rolling_sphere_run_dynamics --mbp_dt=1.0e-3
+```
+The discrete solver supports all other configurations below, including hybrid
+contact.
 
 ##### Default behavior with hydroelastic contact with default compliance; rigid ground, soft ball
 ```
