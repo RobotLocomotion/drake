@@ -4110,11 +4110,18 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       ContactResults<T>* contact_results) const;
 
   // Helper method to fill in the ContactResults given the current context when
-  // the model is discrete. If cached contact solver results are not up-to-date
-  // with `context`, they'll be  recomputed, see EvalTamsiResults(). The solver
-  // results are then used to compute contact results into `contacts`.
+  // the model is discrete, regardless of the contact model (point or
+  // hydroelastic.)
   void CalcContactResultsDiscrete(const systems::Context<T>& context,
                                   ContactResults<T>* contact_results) const;
+
+  // Helper method to fill in the ContactResults given the current context when
+  // the model is discrete. If cached contact solver results are not up-to-date
+  // with `context`, they'll be  recomputed, see EvalTamsiResults(). The solver
+  // results are then used to update `contacts_results`.
+  void CalcContactResultsDiscretePointPair(
+      const systems::Context<T>& context,
+      ContactResults<T>* contact_results) const;
 
   // Evaluate contact results.
   const ContactResults<T>& EvalContactResults(
