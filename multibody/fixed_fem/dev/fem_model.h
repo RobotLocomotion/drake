@@ -9,7 +9,6 @@
 #include "drake/multibody/fixed_fem/dev/fem_element.h"
 #include "drake/multibody/fixed_fem/dev/fem_indexes.h"
 #include "drake/multibody/fixed_fem/dev/fem_state.h"
-#include "drake/multibody/fixed_fem/dev/state_updater.h"
 
 namespace drake {
 namespace multibody {
@@ -115,8 +114,8 @@ class FemModel {
    (calculated by CalcResidual()) with respect to the j-th generalized unknown
    zⱼ.
    @param[in] state    The FemState at which the residual is evaluated.
-   @param[in] updater    The StateUpdater that updates the FemState given the
-   solution to the system G(z) = 0.
+   @param[in] weights    The ordered weights to combine stiffness matrix,
+   damping matrix and mass matrix into the tangent matrix.
    @param[out] tangent_matrix    The output tangent_matrix. Suppose the linear
    or nonlinear system generated from the FEM discretization is G(z) = 0, then
    `tangent_matrix` is equal to ∇G evaluated at the input `state`.
@@ -124,7 +123,7 @@ class FemModel {
    @pre The size of the matrix behind `tangent_matrix` is `num_dofs()` *
    `num_dofs()`. */
   void CalcTangentMatrix(const FemState<Element>& state,
-                         const StateUpdater<FemState<Element>>& updater,
+                         const Vector3<T>& weights,
                          Eigen::SparseMatrix<T>* tangent_matrix) const {
     DRAKE_DEMAND(tangent_matrix != nullptr &&
                  tangent_matrix->rows() == num_dofs() &&
@@ -140,10 +139,9 @@ class FemModel {
     /* Scratch space to store the contribution to the tangent matrix from each
      element. */
     Eigen::Matrix<T, kNumDofs, kNumDofs> element_tangent_matrix;
-    const Vector3<T>& state_derivatives = updater.state_derivatives();
     for (ElementIndex e(0); e < num_elements(); ++e) {
       element_tangent_matrix =
-          CalcElementTangentMatrix(state, state_derivatives, e);
+          CalcElementTangentMatrix(state, weights, e);
       const std::array<NodeIndex, kNumNodes>& element_node_indices =
           elements_[e].node_indices();
       for (int a = 0; a < kNumNodes; ++a) {
@@ -235,15 +233,15 @@ class FemModel {
  private:
   /* Builds the element tangent matrix for the element with index
    `element_index` by combining the stiffness matrix, damping matrix, and the
-   mass matrix according to the weights provided by `state_derivatives`.
+   mass matrix according to the given `weights`.
    @param[in] state    The FemState to evaluate the residual at.
-   @param[in] state_derivatives    The derivatives of the states with respect to
-   the key variable `z`, namely, `∂q/∂z`,  `∂q̇/∂z`, and `∂q̈/∂z`.
+   @param[in] weights    The ordered weights to combine stiffness matrix,
+   damping matrix and mass matrix into the tangent matrix.
    @param[in] element_index    Index of the element whose element tangent matrix
    is being built. */
   Eigen::Matrix<T, Element::Traits::kNumDofs, Element::Traits::kNumDofs>
   CalcElementTangentMatrix(const FemState<Element>& state,
-                           const Vector3<T>& state_derivatives,
+                           const Vector3<T>& weights,
                            ElementIndex element_index) const {
     DRAKE_ASSERT(element_index.is_valid() && element_index < num_elements());
     using MatrixType =
@@ -251,20 +249,20 @@ class FemModel {
     MatrixType stiffness_matrix = MatrixType::Zero();
     elements_[element_index].CalcStiffnessMatrix(state, &stiffness_matrix);
     if constexpr (FemState<Element>::ode_order() == 0) {
-      return state_derivatives[0] * stiffness_matrix;
+      return weights[0] * stiffness_matrix;
     }
     MatrixType damping_matrix = MatrixType::Zero();
     elements_[element_index].CalcDampingMatrix(state, &damping_matrix);
     if constexpr (FemState<Element>::ode_order() == 1) {
-      return state_derivatives[0] * stiffness_matrix +
-             state_derivatives[1] * damping_matrix;
+      return weights[0] * stiffness_matrix +
+             weights[1] * damping_matrix;
     }
     DRAKE_ASSERT(FemState<Element>::ode_order() == 2);
     MatrixType mass_matrix = MatrixType::Zero();
     elements_[element_index].CalcMassMatrix(state, &mass_matrix);
-    return state_derivatives[0] * stiffness_matrix +
-           state_derivatives[1] * damping_matrix +
-           state_derivatives[2] * mass_matrix;
+    return weights[0] * stiffness_matrix +
+           weights[1] * damping_matrix +
+           weights[2] * mass_matrix;
   }
 
   /* FemElements owned by this model. */
