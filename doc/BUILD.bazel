@@ -82,12 +82,9 @@ drake_py_library(
     ],
 )
 
-drake_py_binary(
-    name = "gen_jekyll",
-    srcs = ["gen_jekyll.py"],
-    add_test_rule = 1,
-    data = glob([
-        "**/*.md",
+filegroup(
+    name = "jekyll_data",
+    srcs = glob([
         "_config.yml",
         "_data/*.yml",
         "_includes/**",
@@ -103,13 +100,18 @@ drake_py_binary(
         "//third_party:waypoints/waypoint.js",
         "//third_party:fluidbox/_fluidbox.scss",
     ],
+)
+
+drake_py_binary(
+    name = "gen_jekyll",
+    srcs = ["gen_jekyll.py"],
+    add_test_rule = 1,
+    data = [":jekyll_data"],
     tags = [
         # This target requires the appropriate prerequisites script for each
         # platform to be run with the optional --with-doc-only command line
         # option.
         "manual",
-        # Test exceeds timeout when run under Valgrind tools.
-        "no_valgrind_tools",
     ],
     test_rule_args = [
         "--out_dir=<test>",
@@ -122,14 +124,16 @@ drake_py_binary(
 drake_py_binary(
     name = "serve_jekyll",
     srcs = ["serve_jekyll.py"],
-    data = [":gen_jekyll"],
+    data = [":jekyll_data"],
     tags = [
         # This target requires the appropriate prerequisites script for each
         # platform to be run with the optional --with-doc-only command line
         # option.
         "manual",
     ],
-    deps = [":jekyll_base"],
+    deps = [
+        ":jekyll_base",
+    ],
 )
 
 drake_py_library(
@@ -165,9 +169,8 @@ drake_py_binary(
 add_lint_tests(
     python_lint_exclude = [
         ":conf.py",
-        # The following needs the executable flag to be run by doxygen, but the
-        # linter complains:
-        ":system_doxygen.py",
     ],
-    python_lint_extra_srcs = [":doxygen.py"],
+    python_lint_extra_srcs = [
+        ":doxygen.py",
+    ],
 )

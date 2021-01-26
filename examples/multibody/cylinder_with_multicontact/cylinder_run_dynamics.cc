@@ -92,7 +92,7 @@ int do_main() {
                   plant.get_geometry_query_input_port());
 
   DrakeLcm lcm;
-  geometry::DrakeVisualizer::AddToBuilder(&builder, scene_graph, &lcm);
+  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, &lcm);
 
   // This is the source of poses for the visualizer.
   builder.Connect(

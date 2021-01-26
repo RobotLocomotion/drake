@@ -74,7 +74,7 @@ int do_main(int argc, char* argv[]) {
   // #9747.
   station->Finalize();
 
-  geometry::DrakeVisualizer::AddToBuilder(
+  geometry::DrakeVisualizerd::AddToBuilder(
       &builder, station->GetOutputPort("query_object"));
 
   auto lcm = builder.AddSystem<systems::lcm::LcmInterfaceSystem>();

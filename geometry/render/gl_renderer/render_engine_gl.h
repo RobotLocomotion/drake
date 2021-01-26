@@ -188,6 +188,10 @@ class RenderEngineGl final : public RenderEngine {
       const PerceptionProperties& properties,
       internal::RenderType render_type) const;
 
+  void SetDefaultLightPosition(const Vector3<double>& light_dir_C) override {
+    light_dir_C_ = light_dir_C.normalized().cast<float>();
+  }
+
   // The cached value transformation between camera and world frames.
   math::RigidTransformd X_CW_;
 
@@ -262,6 +266,9 @@ class RenderEngineGl final : public RenderEngine {
   // context. However, each independent copy is allowed to independently
   // modify their copy of visuals_ (adding and removing geometries).
   std::unordered_map<GeometryId, internal::OpenGlInstance> visuals_;
+
+  // The direction *to* the light expressed in the camera frame.
+  Vector3<float> light_dir_C_{0.0f, 0.0f, 1.0f};
 };
 
 }  // namespace render

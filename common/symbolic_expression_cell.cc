@@ -1267,9 +1267,10 @@ Expression ExpressionAbs::Substitute(const Substitution& s) const {
 
 Expression ExpressionAbs::Differentiate(const Variable& x) const {
   if (GetVariables().include(x)) {
-    ostringstream oss;
-    Display(oss) << " is not differentiable with respect to " << x << ".";
-    throw runtime_error(oss.str());
+    const Expression& arg{get_argument()};
+    const Expression deriv = arg.Differentiate(x);
+    return if_then_else(arg < 0, -deriv,
+                        if_then_else(arg == 0, Expression::NaN(), deriv));
   } else {
     return Expression::Zero();
   }
@@ -1674,9 +1675,12 @@ Expression ExpressionMin::Substitute(const Substitution& s) const {
 
 Expression ExpressionMin::Differentiate(const Variable& x) const {
   if (GetVariables().include(x)) {
-    ostringstream oss;
-    Display(oss) << " is not differentiable with respect to " << x << ".";
-    throw runtime_error(oss.str());
+    const Expression& e1{get_first_argument()};
+    const Expression& e2{get_second_argument()};
+    return if_then_else(e1 < e2, e1.Differentiate(x),
+                        if_then_else(
+                            e1 == e2, Expression::NaN(),
+                            e2.Differentiate(x)));
   } else {
     return Expression::Zero();
   }
@@ -1709,9 +1713,11 @@ Expression ExpressionMax::Substitute(const Substitution& s) const {
 
 Expression ExpressionMax::Differentiate(const Variable& x) const {
   if (GetVariables().include(x)) {
-    ostringstream oss;
-    Display(oss) << " is not differentiable with respect to " << x << ".";
-    throw runtime_error(oss.str());
+    const Expression& e1{get_first_argument()};
+    const Expression& e2{get_second_argument()};
+    return if_then_else(e1 > e2, e1.Differentiate(x),
+                        if_then_else(e1 == e2, Expression::NaN(),
+                                     e2.Differentiate(x)));
   } else {
     return Expression::Zero();
   }
@@ -1740,9 +1746,11 @@ Expression ExpressionCeiling::Substitute(const Substitution& s) const {
 
 Expression ExpressionCeiling::Differentiate(const Variable& x) const {
   if (GetVariables().include(x)) {
-    ostringstream oss;
-    Display(oss) << " is not differentiable with respect to " << x << ".";
-    throw runtime_error(oss.str());
+    const Expression& arg{get_argument()};
+    // FYI:  'ceil(x) == floor(x)` is the same as `x % 1 == 0`.
+    return if_then_else(ceil(arg) == floor(arg),
+                        Expression::NaN(),
+                        Expression::Zero());
   } else {
     return Expression::Zero();
   }
@@ -1770,9 +1778,11 @@ Expression ExpressionFloor::Substitute(const Substitution& s) const {
 
 Expression ExpressionFloor::Differentiate(const Variable& x) const {
   if (GetVariables().include(x)) {
-    ostringstream oss;
-    Display(oss) << " is not differentiable with respect to " << x << ".";
-    throw runtime_error(oss.str());
+    const Expression& arg{get_argument()};
+    // FYI:  'ceil(x) == floor(x)` is the same as `x % 1 == 0`.
+    return if_then_else(ceil(arg) == floor(arg),
+                        Expression::NaN(),
+                        Expression::Zero());
   } else {
     return Expression::Zero();
   }
@@ -1858,9 +1868,27 @@ Expression ExpressionIfThenElse::Substitute(const Substitution& s) const {
 
 Expression ExpressionIfThenElse::Differentiate(const Variable& x) const {
   if (GetVariables().include(x)) {
-    ostringstream oss;
-    Display(oss) << " is not differentiable with respect to " << x << ".";
-    throw runtime_error(oss.str());
+    if (is_relational(f_cond_)) {
+      // In relational formulae, the discontinuity is at lhs == rhs.
+      // TODO(ggould-tri) The logic of where/whether to find discontinuities
+      // in a `Formula` belongs in that class, not here.  That could also
+      // handle eg the degenerate case of constant formulae.
+      return if_then_else(
+          get_lhs_expression(f_cond_) == get_rhs_expression(f_cond_),
+          Expression::NaN(),
+          if_then_else(f_cond_,
+                       e_then_.Differentiate(x),
+                       e_else_.Differentiate(x)));
+    } else {
+      // Because we cannot write an expression for whether the condition is
+      // discontinuous at a given environment, we blanket disallow
+      // differentiation where the condition contains the differentiand.  We
+      // hope that users can generally avoid this in practice, eg by using min
+      // and max instead.
+      ostringstream oss;
+      Display(oss) << " is not differentiable with respect to " << x << ".";
+      throw runtime_error(oss.str());
+    }
   } else {
     return Expression::Zero();
   }

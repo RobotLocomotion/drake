@@ -1,8 +1,5 @@
 package drake;
 
-// DRAKE DEPRECATED: This message is unused within Drake and therefore will be
-// removed on or after 2021-04-01.
-
 struct lcmt_robot_state
 {
   int64_t utime;

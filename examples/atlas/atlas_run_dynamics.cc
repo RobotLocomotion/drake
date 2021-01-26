@@ -92,7 +92,7 @@ int do_main() {
   // Publish contact results for visualization.
   ConnectContactResultsToDrakeVisualizer(&builder, plant);
 
-  geometry::DrakeVisualizer::AddToBuilder(&builder, pair.scene_graph);
+  geometry::DrakeVisualizerd::AddToBuilder(&builder, pair.scene_graph);
   auto diagram = builder.Build();
 
   // Create a context for this system:

@@ -2,14 +2,35 @@
 
 package(default_visibility = ["//visibility:private"])
 
-load("@drake//tools/skylark:drake_py.bzl", "drake_py_binary")
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+    "drake_py_library",
+)
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
+
+# TODO(eric.cousineau): Add a smaller stub library stub to test this extension.
+drake_py_library(
+    name = "pydrake_sphinx_extension_py",
+    srcs = ["pydrake_sphinx_extension.py"],
+    tags = [
+        # This target requires the appropriate prerequisites script for each
+        # platform to be run with the optional --with-doc-only command line
+        # option.
+        "manual",
+    ],
+    deps = [
+        "//bindings/pydrake/common:cpp_template_py",
+        "//bindings/pydrake/common:deprecation_py",
+        "//doc:sphinx_base",
+        "//doc:system_doxygen",
+    ],
+)
 
 drake_py_binary(
     name = "gen_sphinx",
     srcs = [
         "gen_sphinx.py",
-        "pydrake_sphinx_extension.py",
     ],
     add_test_rule = 1,
     data = [
@@ -32,6 +53,7 @@ drake_py_binary(
     test_rule_args = ["--out_dir=<test>"],
     test_rule_size = "medium",
     deps = [
+        ":pydrake_sphinx_extension_py",
         "//bindings/pydrake",  # We must import `pydrake` to document it.
         "//doc:sphinx_base",
     ],

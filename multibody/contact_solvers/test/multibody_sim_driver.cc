@@ -30,7 +30,7 @@ void MultibodySimDriver::Initialize() {
   // desirable, and we only want to load the geometry without the system
   // evaluation, we need some mechanism that will send a load message based on
   // SceneGraph's geometry data.
-  geometry::DrakeVisualizer::AddToBuilder(&builder_, *scene_graph_);
+  geometry::DrakeVisualizerd::AddToBuilder(&builder_, *scene_graph_);
   diagram_ = builder_.Build();
 
   simulator_ = std::make_unique<systems::Simulator<double>>(*diagram_);

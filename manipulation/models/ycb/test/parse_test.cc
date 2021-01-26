@@ -36,7 +36,7 @@ namespace drake {
 namespace manipulation {
 namespace {
 
-using geometry::DrakeVisualizer;
+using geometry::DrakeVisualizerd;
 using geometry::SceneGraph;
 using multibody::AddMultibodyPlantSceneGraph;
 using multibody::MultibodyPlant;
@@ -55,7 +55,7 @@ TEST_P(ParseTest, Quantities) {
   DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
   Parser(&plant).AddModelFromFile(filename);
-  DrakeVisualizer::AddToBuilder(&builder, scene_graph);
+  DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
   plant.Finalize();
   auto diagram = builder.Build();
 

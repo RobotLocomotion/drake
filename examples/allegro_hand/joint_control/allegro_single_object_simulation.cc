@@ -186,7 +186,7 @@ void DoMain() {
   plant.Finalize();
 
   // Visualization
-  geometry::DrakeVisualizer::AddToBuilder(&builder, scene_graph);
+  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
   DRAKE_DEMAND(!!plant.get_source_id());
   builder.Connect(
       plant.get_geometry_poses_output_port(),

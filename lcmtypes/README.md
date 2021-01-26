@@ -30,7 +30,6 @@ also unused within Drake and therefore are being removed:
 - lcmt_foot_flag
 - lcmt_quadrotor_input_t
 - lcmt_quadrotor_output_t
-- lcmt_robot_state
 - lcmt_scope_data
 - lcmt_simulation_command
 

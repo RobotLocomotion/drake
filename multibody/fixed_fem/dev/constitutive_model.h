@@ -34,7 +34,8 @@ class ConstitutiveModel {
       std::is_same_v<typename DerivedTraits::ModelType,
                      DerivedConstitutiveModel>,
       "The DerivedConstitutiveModel and the DerivedTraits must be compatible.");
-  using T = typename DerivedTraits::Scalar;
+  using Traits = DerivedTraits;
+  using T = typename Traits::Scalar;
 
   ~ConstitutiveModel() = default;
 
@@ -75,8 +76,28 @@ class ConstitutiveModel {
   }
 
   /** Calculates the derivative of First Piola stress with respect to the
-   deformation gradient, given the model cache entry.
-   @pre `dPdF != nullptr`. */
+   deformation gradient, given the model cache entry. The stress derivative
+   dPᵢⱼ/dFₖₗ is a 4-th order tensor that is flattened to a 9-by-9 matrix. The
+   9-by-9 matrix is organized into 3-by-3 blocks of 3-by-3 submatrices. The
+   ik-th entry in the jl-th block corresponds to the value dPᵢⱼ/dFₖₗ. Let A
+   denote the fourth order tensor dP/dF, then A is flattened to a 9-by-9 matrix
+   in the following way:
+
+                       l = 1       l = 2       l = 3
+                   -------------------------------------
+                   |           |           |           |
+         j = 1     |   Aᵢ₁ₖ₁   |   Aᵢ₁ₖ₂   |   Aᵢ₁ₖ₃   |
+                   |           |           |           |
+                   -------------------------------------
+                   |           |           |           |
+         j = 2     |   Aᵢ₂ₖ₁   |   Aᵢ₂ₖ₂   |   Aᵢ₂ₖ₃   |
+                   |           |           |           |
+                   -------------------------------------
+                   |           |           |           |
+         j = 3     |   Aᵢ₃ₖ₁   |   Aᵢ₃ₖ₂   |   Aᵢ₃ₖ₃   |
+                   |           |           |           |
+                   -------------------------------------
+  @pre `dPdF != nullptr`. */
   void CalcFirstPiolaStressDerivative(
       const typename DerivedTraits::DeformationGradientCacheEntryType&
           cache_entry,
@@ -102,6 +123,13 @@ class ConstitutiveModel {
    construction of a base class object. Concrete instances should be obtained
    through the constructors of the derived constitutive models. */
   ConstitutiveModel() = default;
+};
+
+template <class Model>
+struct is_constitutive_model {
+  static constexpr bool value =
+      std::is_base_of<ConstitutiveModel<Model, typename Model::Traits>,
+                      Model>::value;
 };
 }  // namespace fixed_fem
 }  // namespace multibody

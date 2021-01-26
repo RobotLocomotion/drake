@@ -2,7 +2,7 @@ import numpy as np
 import unittest
 
 from pydrake.common import FindResourceOrThrow
-from drake.examples.acrobot.dev.acrobot_io import (
+from drake.examples.acrobot.acrobot_io import (
     load_scenario, save_scenario,
     load_output, save_output)
 
@@ -12,7 +12,7 @@ class TestIo(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
         self.example = FindResourceOrThrow(
-            "drake/examples/acrobot/dev/test/example_scenario.yaml")
+            "drake/examples/acrobot/test/example_scenario.yaml")
         # When saving, everything comes out as floats (not `int`, etc.).
         self.expected_save = """example:
   controller_params: [5.0, 50.0, 5.0, 1000.0]

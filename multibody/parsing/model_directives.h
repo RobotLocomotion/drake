@@ -95,34 +95,6 @@ struct AddModelInstance {
   std::string name;
 };
 
-/// Directive to add a path in the filesystem to the resolution of
-/// `package://` URIs during the processing of model directives and the
-/// models they load.
-/// @warning:  This is expected to be deprecated soon.
-struct AddPackagePath {
-  bool IsValid() const {
-    if (name.empty()) {
-      drake::log()->error("add_package_path: `name` must be non-empty.");
-      return false;
-    } else if (path.empty()) {
-      drake::log()->error("add_package_path: `path` must be non-empty.");
-      return false;
-    }
-    return true;
-  }
-
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(name));
-    a->Visit(DRAKE_NVP(path));
-  }
-
-  /// The model instance name.
-  std::string name;
-  /// The filesystem path to the package root.
-  std::string path;
-};
-
 /// Directive to add a Frame to the scene.  The added frame must have a name
 /// and a transform with a base frame and offset.
 struct AddFrame {
@@ -194,11 +166,11 @@ struct ModelDirective {
     const bool unique =
         (add_model.has_value() + add_model_instance.has_value() +
          add_frame.has_value() + add_weld.has_value() +
-         add_package_path.has_value() + add_directives.has_value()) == 1;
+         add_directives.has_value()) == 1;
     if (!unique) {
       drake::log()->error(
           "directive: Specify one of `add_model`, `add_model_instance`, "
-          "`add_frame`, `add_package_path`, or `add_directives`");
+          "`add_frame`, or `add_directives`");
       return false;
     } else if (add_model) {
       return add_model->IsValid();
@@ -208,8 +180,6 @@ struct ModelDirective {
       return add_frame->IsValid();
     } else if (add_weld) {
       return add_weld->IsValid();
-    } else if (add_package_path) {
-      return add_package_path->IsValid();
     } else {
       return add_directives->IsValid();
     }
@@ -221,7 +191,6 @@ struct ModelDirective {
     a->Visit(DRAKE_NVP(add_model_instance));
     a->Visit(DRAKE_NVP(add_frame));
     a->Visit(DRAKE_NVP(add_weld));
-    a->Visit(DRAKE_NVP(add_package_path));
     a->Visit(DRAKE_NVP(add_directives));
   }
 
@@ -229,7 +198,6 @@ struct ModelDirective {
   std::optional<AddModelInstance> add_model_instance;
   std::optional<AddFrame> add_frame;
   std::optional<AddWeld> add_weld;
-  std::optional<AddPackagePath> add_package_path;
   std::optional<AddDirectives> add_directives;
 };
 

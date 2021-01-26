@@ -50,7 +50,8 @@ using Eigen::Vector3d;
 using Eigen::Vector4d;
 using geometry::Box;
 using geometry::ContactSurface;
-using geometry::DrakeVisualizer;
+using geometry::Cylinder;
+using geometry::DrakeVisualizerd;
 using geometry::FrameId;
 using geometry::FramePoseVector;
 using geometry::GeometryFrame;
@@ -93,11 +94,11 @@ DEFINE_double(resolution_hint, 0.0125,
               "none of the rigid bowl, the rigid box, or the soft box.");
 DEFINE_string(rigid, "bowl",
               "Specify the shape of the rigid geometry.\n"
-              "[--rigid={ball,bowl,box}]\n"
+              "[--rigid={ball,bowl,box,cylinder}]\n"
               "By default, it is the bowl.\n");
 DEFINE_string(soft, "ball",
               "Specify the shape of the soft geometry.\n"
-              "[--soft={ball,box}]\n"
+              "[--soft={ball,box,cylinder}]\n"
               "By default, it is the ball.\n");
 
 /* Places a soft geometry (a ball by default) and defines its velocity as being
@@ -155,6 +156,13 @@ class MovingSoftGeometry final : public LeafSystem<double> {
           make_unique<GeometryInstance>(
               RigidTransformd(), make_unique<Box>(Box::MakeCube(1.5 * kRadius)),
               "soft box"));
+    } else if (FLAGS_soft == "cylinder") {
+      geometry_id_ = scene_graph->RegisterGeometry(
+          source_id_, frame_id_,
+          make_unique<GeometryInstance>(
+              RigidTransformd(),
+              make_unique<Cylinder>(Cylinder(1.2 * kRadius, 1.5 * kRadius)),
+              "soft cylinder"));
     } else {
       geometry_id_ = scene_graph->RegisterGeometry(
           source_id_, frame_id_,
@@ -163,7 +171,8 @@ class MovingSoftGeometry final : public LeafSystem<double> {
       if (FLAGS_soft != "ball") {
         std::cout << "Unsupported value for --soft==" << FLAGS_rigid
                   << ", default to a soft ball.\n"
-                  << "Supported values are ball or box." << std::endl;
+                  << "Supported values are ball or box or cylinder."
+                  << std::endl;
       }
     }
     ProximityProperties prox_props;
@@ -322,6 +331,10 @@ int do_main() {
     rigid_geometry_id = scene_graph.RegisterAnchoredGeometry(
         source_id, make_unique<GeometryInstance>(
                        X_WB, make_unique<Box>(0.15, 0.15, 0.02), "rigid box"));
+  } else if (FLAGS_rigid == "cylinder") {
+    rigid_geometry_id = scene_graph.RegisterAnchoredGeometry(
+        source_id, make_unique<GeometryInstance>(
+            X_WB, make_unique<Cylinder>(0.05, 0.02), "rigid cylinder"));
   } else {
     rigid_geometry_id = scene_graph.RegisterAnchoredGeometry(
         source_id,
@@ -330,7 +343,8 @@ int do_main() {
     if (FLAGS_rigid != "bowl") {
       std::cout << "Unsupported value for --rigid==" << FLAGS_rigid
                 << ", default to bowl.\n"
-                << "Supported values are ball, bowl, or box." << std::endl;
+                << "Supported values are ball, bowl, box, or cylinder."
+                << std::endl;
     }
   }
   ProximityProperties rigid_props;
@@ -350,7 +364,7 @@ int do_main() {
   DrakeLcm lcm;
 
   // Visualize geometry.
-  DrakeVisualizer::AddToBuilder(&builder, scene_graph, &lcm);
+  DrakeVisualizerd::AddToBuilder(&builder, scene_graph, &lcm);
 
   // Visualize contacts.
   auto& contact_to_lcm =

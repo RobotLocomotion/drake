@@ -64,7 +64,7 @@ int do_main() {
       cart_pole.get_geometry_poses_output_port(),
       scene_graph.get_source_pose_port(cart_pole.get_source_id().value()));
 
-  geometry::DrakeVisualizer::AddToBuilder(&builder, scene_graph);
+  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
   auto diagram = builder.Build();
 
   // Create a context for this system:

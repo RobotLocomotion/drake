@@ -245,7 +245,7 @@ int do_main() {
                   plant.get_geometry_query_input_port());
 
   DrakeLcm lcm;
-  geometry::DrakeVisualizer::AddToBuilder(&builder, scene_graph, &lcm);
+  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, &lcm);
   builder.Connect(
       plant.get_geometry_poses_output_port(),
       scene_graph.get_source_pose_port(plant.get_source_id().value()));

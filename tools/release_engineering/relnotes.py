@@ -27,11 +27,18 @@ browser to https://github.com/settings/tokens and create a new token (it does
 not need any extra permissions; the default "no checkboxes are set" is good),
 and save the plaintext hexadecimal token to that file.
 
-TODO(jwnimmer-tri) Add specific example command lines to cargo cult from,
-either here or in release_playbook.rst.
+Here's an example of how to create (and then update) a new release notes
+document:
+
+  bazel build //tools/release_engineering:relnotes
+  bazel-bin/tools/release_engineering/relnotes --action=create \
+    --version=v0.26.0 --prior_version=v0.25.0
+  bazel-bin/tools/release_engineering/relnotes --action=update \
+    --version=v0.26.0
 """
 
 import argparse
+from collections import Counter
 import logging
 import os.path
 import re
@@ -57,9 +64,15 @@ def _format_commit(gh, drake, commit):
     """Returns (packages, bullet) for the given commit.
 
     The packages is a list of top-level directories whose files were edited in
-    this commit.
+    this commit. If the packages list is empty, then the commit is ineligible
+    for release notes and should be dropped.
 
     The bullet is a "* Detail (#123)" summary of the change for release notes.
+
+    Ineligible commits: currently commits that only change files in dev
+    directories are ineligible. More ineligible commit conditions may be
+    defined later.
+
     """
     # Grab the commit message subject and body.
     message = commit.message
@@ -70,10 +83,21 @@ def _format_commit(gh, drake, commit):
     # notes author sort things better.
     comparison = drake.compare_commits(
         base=commit.parents[0].get('sha'), head=commit.sha)
-    committed_files = [x.get('filename') for x in comparison.files]
-    packages = sorted(set([
-        _filename_to_primary_package(x) for x in committed_files
-    ])) or ["tools"]
+    committed_files_weighted = (
+        {x.get('filename'): x.get('changes') for x in comparison.files})
+    # If all files in the commit are in dev directories, return empty data to
+    # indicate the commit is ineligible.
+    committed_nondev_files = [
+        x for x in committed_files_weighted.keys() if '/dev/' not in x]
+    if not committed_nondev_files:
+        return [], ""
+
+    # Report packages in order of most lines changed.
+    packages_weighted = sum(
+        [Counter({_filename_to_primary_package(k): v})
+         for k, v in committed_files_weighted.items()],
+        Counter())
+    packages = [k for k, v in packages_weighted.most_common()] or ["tools"]
     if len(packages) > 1 and "bindings" in packages:
         packages.remove("bindings")
 
@@ -113,8 +137,13 @@ def _format_commit(gh, drake, commit):
     if detail:
         detail = f"  # {detail}"
 
+    # Add a multi-packages hint, if we have too many.
+    preamble = ""
+    if len(packages) > 1:
+        preamble = "[" + ",".join(packages) + "] "
+
     # Format as top-level rst bullet point.
-    return packages, f"* TBD {nice_summary} (`#{pr}`_){detail}"
+    return packages, f"* TBD {preamble}{nice_summary} (`#{pr}`_){detail}"
 
 
 def _update(args, rst_filename, gh, drake):
@@ -164,10 +193,12 @@ def _update(args, rst_filename, gh, drake):
         # Try not to hit GitHub API rate limits.
         time.sleep(0.2)
         packages, bullet = _format_commit(gh, drake, commit)
+
+        # Skip commits deemed ineligible.
+        if not packages:
+            continue
+
         primary_package = packages[0]
-        preamble = ""
-        if len(packages) > 1:
-            preamble = "[" + ",".join(packages) + "] "
         # Find the section for this commit, matching a line that looks like:
         # <relnotes for foo,{package},bar go here>
         found = False
@@ -177,7 +208,7 @@ def _update(args, rst_filename, gh, drake):
                 (anchors_csv,) = match.groups()
                 anchors = anchors_csv.split(",")
                 if primary_package in anchors:
-                    lines.insert(i + 1, f"{preamble}{bullet}\n")
+                    lines.insert(i + 2, f"{bullet}\n")
                     found = True
                     break
         if not found:
@@ -232,8 +263,10 @@ def _create(args, notes_dir, rst_filename, gh, drake):
         oldest_commit_exclusive=prior_sha,
         newest_commit_inclusive=prior_sha,
     )
-    # TODO(jwnimmer-tri) Strip out "This document is the template ..."
-    # boilerplate before writing out the file.
+
+    # Strip out "This document is the template ..." boilerplate, which is the
+    # first line of the file.
+    content = content[content.index("\n") + 1:]
 
     # Write the notes skeleton to disk.
     with open(rst_filename, "w") as f:

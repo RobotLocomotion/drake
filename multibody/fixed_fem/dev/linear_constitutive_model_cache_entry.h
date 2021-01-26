@@ -24,19 +24,12 @@ class LinearConstitutiveModelCacheEntry
   using Base = DeformationGradientCacheEntry<
       LinearConstitutiveModelCacheEntry<T, num_locations>>;
 
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(
-      LinearConstitutiveModelCacheEntry);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LinearConstitutiveModelCacheEntry);
 
   ~LinearConstitutiveModelCacheEntry() = default;
 
-  /** Constructs a %LinearConstitutiveModelCacheEntry with the given
-   element index.
-   @param element_index The index of the FemElement associated with this
-   DeformationGradientCacheEntry. */
-  explicit LinearConstitutiveModelCacheEntry(ElementIndex element_index)
-      : DeformationGradientCacheEntry<
-            LinearConstitutiveModelCacheEntry<T, num_locations>>(
-            element_index) {
+  /** Constructs a %LinearConstitutiveModelCacheEntry with zero strain. */
+  LinearConstitutiveModelCacheEntry() {
     std::fill(strain_.begin(), strain_.end(), Matrix3<T>::Zero());
     std::fill(trace_strain_.begin(), trace_strain_.end(), 0);
   }

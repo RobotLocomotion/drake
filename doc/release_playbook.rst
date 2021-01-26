@@ -29,12 +29,13 @@ Prior to release
      git fetch upstream pull/14208/head
      git cherry-pick 674b84877bc08448b59a2243f3b910a7b6dbab43
 
-4. Push that branch and then open a new pull request titled::
+4. Push that branch and then open a new draft pull request titled::
 
      doc: Add release notes v0.N.0
 
    Make sure that "Allow edits from maintainers" on the GitHub PR page is
-   enabled (the checkbox is checked).
+   enabled (the checkbox is checked).  Add "do not merge" and "do not review"
+   issue labels for now.
 5. For release notes, on an ongoing basis, add recent commit messages to the
    release notes draft using the ``tools/release_engineering/relnotes`` tooling.
    (Instructions for using ``relnotes`` are found atop its `source code
@@ -159,7 +160,7 @@ Cutting the release
 
 12. Merge the release notes PR
 
-   a. After merge, go to https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-bionic-gcc-bazel-nightly-documentation/ and push "Build now".
+   a. After merge, go to https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-bionic-unprovisioned-gcc-bazel-nightly-documentation/ and push "Build now".
 
       i. If you don't have "Build now" click "Log in" first in upper right.
 
