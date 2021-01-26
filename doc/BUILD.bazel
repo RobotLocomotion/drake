@@ -94,7 +94,7 @@ filegroup(
         "images/**",
     ]) + [
         "404.html",
-        "js/drake.js",
+        "_js/drake.js",
         "//third_party:history_js/history.adapter.jquery.js",
         "//third_party:history_js/history.js",
         "//third_party:waypoints/waypoint.js",
