@@ -25,11 +25,11 @@ using drake::multibody::UnitInertia;
 using drake::math::RigidTransformd;
 
 std::unique_ptr<drake::multibody::MultibodyPlant<double>> MakeBouncingBallPlant(
-    double radius, double mass, double elastic_modulus, double dissipation,
-    const CoulombFriction<double>& surface_friction,
+    double mbp_dt, double radius, double mass, double elastic_modulus,
+    double dissipation, const CoulombFriction<double>& surface_friction,
     const Vector3<double>& gravity_W, bool rigid_sphere, bool soft_ground,
     SceneGraph<double>* scene_graph) {
-  auto plant = std::make_unique<MultibodyPlant<double>>(0.0);
+  auto plant = std::make_unique<MultibodyPlant<double>>(mbp_dt);
 
   UnitInertia<double> G_Bcm = UnitInertia<double>::SolidSphere(radius);
   SpatialInertia<double> M_Bcm(mass, Vector3<double>::Zero(), G_Bcm);

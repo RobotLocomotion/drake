@@ -22,6 +22,9 @@ namespace bouncing_ball {
 /// use the resulting plant with a contact model consistent with the
 /// configuration of the ball and ground.
 ///
+/// @param[in] mbp_dt
+///   The discrete update period when MultibodyPlant is modeled as a discrete
+///   system. If zero, the plant is modeled as a continuous system.
 /// @param[in] radius
 ///   The radius of the ball.
 /// @param[in] mass
@@ -53,6 +56,7 @@ namespace bouncing_ball {
 /// the new model once you are done creating it.
 std::unique_ptr<drake::multibody::MultibodyPlant<double>>
 MakeBouncingBallPlant(
+    double mbp_dt,
     double radius, double mass,
     double elastic_modulus, double dissipation,
     const drake::multibody::CoulombFriction<double>& surface_friction,

@@ -6,8 +6,11 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 using drake::geometry::FrameId;
@@ -18,6 +21,7 @@ using drake::geometry::Sphere;
 using drake::math::RigidTransformd;
 using drake::systems::Context;
 using drake::systems::Diagram;
+using drake::systems::Simulator;
 using Eigen::Vector3d;
 using std::make_unique;
 using std::unique_ptr;
@@ -49,9 +53,10 @@ namespace {
 // hydroelastic contact.
 class HydroelasticModelTests : public ::testing::Test {
  protected:
-  void SetUp() override {
+  void SetUpModel(double mbp_dt) {
     systems::DiagramBuilder<double> builder;
-    std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, 0.0);
+    std::tie(plant_, scene_graph_) =
+        AddMultibodyPlantSceneGraph(&builder, mbp_dt);
 
     AddGround(kFrictionCoefficient_, plant_);
     body_ = &AddObject(plant_, kSphereRadius_, kElasticModulus_, kDissipation_,
@@ -65,6 +70,10 @@ class HydroelasticModelTests : public ::testing::Test {
     ASSERT_EQ(plant_->get_contact_model(), ContactModel::kHydroelasticsOnly);
 
     plant_->Finalize();
+
+    // Connect visualizer. Useful for when this test is used for debugging.
+    drake::geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph_);
+    ConnectContactResultsToDrakeVisualizer(&builder, *plant_);
 
     diagram_ = builder.Build();
 
@@ -93,8 +102,7 @@ class HydroelasticModelTests : public ::testing::Test {
   }
 
   const RigidBody<double>& AddObject(MultibodyPlant<double>* plant,
-                                     double radius,
-                                     double elastic_modulus,
+                                     double radius, double elastic_modulus,
                                      double dissipation,
                                      double friction_coefficient) {
     // Inertial properties are only needed when verifying accelerations since
@@ -121,8 +129,8 @@ class HydroelasticModelTests : public ::testing::Test {
         elastic_modulus, dissipation,
         CoulombFriction<double>(friction_coefficient, friction_coefficient),
         &props);
-    plant->RegisterCollisionGeometry(
-        body, X_BG, shape, "BodyCollisionGeometry", std::move(props));
+    plant->RegisterCollisionGeometry(body, X_BG, shape, "BodyCollisionGeometry",
+                                     std::move(props));
     return body;
   }
 
@@ -160,7 +168,9 @@ class HydroelasticModelTests : public ::testing::Test {
   const double kFrictionCoefficient_{0.0};  // [-]
   const double kSphereRadius_{0.05};        // [m]
   const double kElasticModulus_{1.e5};      // [Pa]
-  const double kDissipation_{0.0};          // [s/m]
+  // A non-zero dissipation value is used to quickly dissipate energy in tests
+  // running a simulation on this case.
+  const double kDissipation_{10.0};         // [s/m]
   const double kMass_{1.2};                 // [kg]
 
   MultibodyPlant<double>* plant_{nullptr};
@@ -183,6 +193,7 @@ class HydroelasticModelTests : public ::testing::Test {
 // TODO(amcastro-tri): Extend this test to verify convergence on mesh refinement
 // once we have the capability to specify mesh refinement.
 TEST_F(HydroelasticModelTests, ContactForce) {
+  SetUpModel(0.0);
   auto calc_force = [this](double penetration) -> double {
     SetPose(penetration);
     const auto& F_BBo_W_array =
@@ -228,6 +239,7 @@ TEST_F(HydroelasticModelTests, ContactForce) {
 // Therefore we only test the acceleration of the CoM and ignore angular
 // accelerations.
 TEST_F(HydroelasticModelTests, ContactDynamics) {
+  SetUpModel(0.0);
   const double penetration = 0.02;
   SetPose(penetration);
   const auto& F_BBo_W_array =
@@ -251,6 +263,41 @@ TEST_F(HydroelasticModelTests, ContactDynamics) {
       fhydro_BBo_W / kMass_ + plant_->gravity_field().gravity_vector();
   EXPECT_TRUE(CompareMatrices(a_WBo_expected, a_WBo,
                               40 * std::numeric_limits<double>::epsilon()));
+}
+
+// In this test we run the model of the sphere lying on the ground for long
+// enough to reach a steady state in which the hydroelastic forces balance the
+// weight of the sphere. The purpose of this test is to verify the results of a
+// simulation using the discrete approximation of hydroelastics.
+TEST_F(HydroelasticModelTests, DiscreteTamsiSolver) {
+  SetUpModel(5.0e-3);
+  Simulator<double> simulator(*diagram_);
+  auto& diagram_context = simulator.get_mutable_context();
+  auto& plant_context = plant_->GetMyMutableContextFromRoot(&diagram_context);
+
+  // Set initial condition.
+  const RigidTransformd X_WB(Vector3d(0.0, 0.0, kSphereRadius_));
+  plant_->SetFreeBodyPose(&plant_context, *body_, X_WB);
+  diagram_->Publish(diagram_context);
+
+  // Run simulation for long enough to reach the steady state.
+  simulator.AdvanceTo(0.5);
+
+  // In steady state, the normal hydroelastic force must match the weight of
+  // the sphere. We verify this.
+  const auto& F_BBo_W_array =
+      MultibodyPlantTester::EvalHydroelasticContactForces(*plant_,
+                                                          plant_context);
+  const SpatialForce<double>& F_BBo_W = F_BBo_W_array[body_->node_index()];
+  const Vector3<double> fz_BBo_W = F_BBo_W.translational();
+
+  // The contact force should match the weight of the sphere.
+  const Vector3<double> fz_BBo_W_expeted =
+      -plant_->gravity_field().gravity_vector() * kMass_;
+
+  // We use a tolerance value based on previous runs of this test.
+  const double tolerance = 2.0e-8;
+  EXPECT_TRUE(CompareMatrices(fz_BBo_W, fz_BBo_W_expeted, tolerance));
 }
 
 // This tests consistency across the ContactModel modes: point pair,
