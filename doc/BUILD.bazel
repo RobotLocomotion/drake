@@ -85,6 +85,7 @@ drake_py_library(
 filegroup(
     name = "jekyll_data",
     srcs = glob([
+        "**/*.md",
         "_config.yml",
         "_data/*.yml",
         "_includes/**",
