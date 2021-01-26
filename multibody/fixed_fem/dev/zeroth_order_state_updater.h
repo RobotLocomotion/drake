@@ -21,8 +21,8 @@ class ZerothOrderStateUpdater final : public StateUpdater<State> {
   ZerothOrderStateUpdater() = default;
   ~ZerothOrderStateUpdater() = default;
 
-  /** Implements StateUpdater::state_derivatives(). */
-  Vector3<T> state_derivatives() const final { return {1, 0, 0}; }
+  /** Implements StateUpdater::weights(). */
+  Vector3<T> weights() const final { return {1, 0, 0}; }
 
  private:
   /* Implements StateUpdater::DoUpdateState(). */

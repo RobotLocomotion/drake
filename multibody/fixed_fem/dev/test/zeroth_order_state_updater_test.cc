@@ -16,8 +16,8 @@ class ZerothOrderStateUpdaterTest : public ::testing::Test {
 };
 
 TEST_F(ZerothOrderStateUpdaterTest, StateDerivative) {
-  EXPECT_TRUE(CompareMatrices(state_updater.state_derivatives(),
-                              Vector3<double>(1, 0, 0), 0));
+  EXPECT_TRUE(
+      CompareMatrices(state_updater.weights(), Vector3<double>(1, 0, 0), 0));
 }
 
 TEST_F(ZerothOrderStateUpdaterTest, UpdateState) {

@@ -41,9 +41,11 @@ class StateUpdater {
   virtual ~StateUpdater() = default;
 
   /** Returns the derivative of the state with respect to the key variable `z`,
-   [∂q/∂z, ∂q̇/∂z, ∂q̈/∂z]. If q̇ or q̈ are not a part of the state, their
-   derivatives are set to 0.  */
-  virtual Vector3<T> state_derivatives() const = 0;
+   [∂q/∂z, ∂q̇/∂z, ∂q̈/∂z], for a single degree of freedom. The derivatives can be
+   used as weights to combine stiffness, damping and mass matrices to form the
+   tangent matrix. If q̇ or q̈ are not a part of the state, their derivatives are
+   set to 0.  */
+  virtual Vector3<T> weights() const = 0;
 
   /** Updates the FemState `state` given the change in the value of the key
    variable `z`.
