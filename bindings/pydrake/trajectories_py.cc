@@ -234,7 +234,14 @@ PYBIND11_MODULE(trajectories, m) {
           py::overload_cast<const T&, const AngleAxis<T>&>(
               &PiecewiseQuaternionSlerp<T>::Append),
           py::arg("time"), py::arg("angle_axis"),
-          doc.PiecewiseQuaternionSlerp.Append.doc_2args_time_angle_axis);
+          doc.PiecewiseQuaternionSlerp.Append.doc_2args_time_angle_axis)
+      .def("orientation", &PiecewiseQuaternionSlerp<T>::orientation,
+          py::arg("time"), doc.PiecewiseQuaternionSlerp.orientation.doc)
+      .def("angular_velocity", &PiecewiseQuaternionSlerp<T>::angular_velocity,
+          py::arg("time"), doc.PiecewiseQuaternionSlerp.angular_velocity.doc)
+      .def("angular_acceleration",
+          &PiecewiseQuaternionSlerp<T>::angular_acceleration, py::arg("time"),
+          doc.PiecewiseQuaternionSlerp.angular_acceleration.doc);
 }
 
 }  // namespace pydrake
