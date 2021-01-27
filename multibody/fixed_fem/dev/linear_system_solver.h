@@ -24,33 +24,39 @@ class LinearSystemSolver {
   /* Returns the size of the linear system, which is equal to the number of rows
    and columns of the matrix A. */
   int size() const {
-    DRAKE_ASSERT(A_ != nullptr);
+    DRAKE_THROW_UNLESS(A_ != nullptr);
     return A_->rows();
   }
 
-  /* Returns the underlying linear operator. Useful for debugging purposes. */
+  /* Sets up the left-hand side of the linear system. This class keeps a
+   reference to input linear operator `A` and therefore it is
+   required that `A` outlives this object. */
+  void SetUp(const contact_solvers::internal::LinearOperator<T>* A) {
+    DRAKE_THROW_UNLESS(A != nullptr);
+    DRAKE_THROW_UNLESS(A->rows() == A->cols());
+    A_ = A;
+    DoSetUp(A);
+  }
+
+  /* Returns the underlying linear operator. Useful for debugging purposes.
+   */
   const contact_solvers::internal::LinearOperator<T>& A() {
-    DRAKE_ASSERT(A_ != nullptr);
+    DRAKE_THROW_UNLESS(A_ != nullptr);
     return *A_;
   }
 
  protected:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemSolver);
 
-  /* Constructs a new linear solver with the prescribed linear operator A.
-   This class keeps a reference to input linear operator `A` and therefore it is
-   required that `A` outlives this object.
-   @param[in] A    The linear operator that describes the linear system. The
-   number of rows and columns must be the same for A.
-   @throw std::exception if A.rows() != A.cols(). */
-  explicit LinearSystemSolver(
-      const contact_solvers::internal::LinearOperator<T>& A)
-      : A_(&A) {
-    DRAKE_THROW_UNLESS(A.rows() == A.cols());
-  }
+  LinearSystemSolver() = default;
+
+  /* Derived classes must implement this method to set up the left hand side of
+   the system. */
+  virtual void DoSetUp(
+      const contact_solvers::internal::LinearOperator<T>* A) = 0;
 
  private:
-  const contact_solvers::internal::LinearOperator<T>* A_;
+  const contact_solvers::internal::LinearOperator<T>* A_{nullptr};
 };
 }  // namespace internal
 }  // namespace fixed_fem

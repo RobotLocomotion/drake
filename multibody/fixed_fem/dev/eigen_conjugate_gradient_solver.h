@@ -30,12 +30,12 @@ class EigenMatrixProxy : public Eigen::EigenBase<EigenMatrixProxy<T>> {
   };
 
   StorageIndex rows() const {
-    DRAKE_ASSERT(linear_operator_ != nullptr);
+    DRAKE_THROW_UNLESS(linear_operator_ != nullptr);
     return linear_operator_->rows();
   }
 
   StorageIndex cols() const {
-    DRAKE_ASSERT(linear_operator_ != nullptr);
+    DRAKE_THROW_UNLESS(linear_operator_ != nullptr);
     return linear_operator_->cols();
   }
 
@@ -52,13 +52,16 @@ class EigenMatrixProxy : public Eigen::EigenBase<EigenMatrixProxy<T>> {
   }
 
   /* Custom APIs */
-  /* Constructs an EigenMatrixProxy wrapping around the input "linear_operator".
+  EigenMatrixProxy() = default;
+
+  /* Sets the EigenMatrixProxy to wrap around the input "linear_operator".
    This class keeps a reference to the input `linear_operator` and therefore it
    is required that `linear_operator` outlives this object. */
-  EigenMatrixProxy(
-      const contact_solvers::internal::LinearOperator<T>& linear_operator)
-      : linear_operator_(&linear_operator),
-        scratch_vector_(linear_operator.rows()) {}
+  void SetOperator(
+      const contact_solvers::internal::LinearOperator<T>* linear_operator) {
+    linear_operator_ = linear_operator;
+    scratch_vector_.resize(linear_operator_->rows());
+  }
 
   ~EigenMatrixProxy() = default;
 
@@ -151,10 +154,7 @@ class EigenConjugateGradientSolver : public LinearSystemSolver<T> {
   Eigen::ConjudateGradient solver will iterate until the relative error
   ||Ax-b||/||b|| is smaller than the set tolerance or when the max number of
   iterations is reached.  */
-  EigenConjugateGradientSolver(
-      const contact_solvers::internal::LinearOperator<T>& A, double tol = 1e-4)
-      : LinearSystemSolver<T>(A), matrix_proxy_(A) {
-    cg_.compute(matrix_proxy_);
+  explicit EigenConjugateGradientSolver(double tol = 1e-4) {
     cg_.setTolerance(tol);
   }
 
@@ -181,6 +181,11 @@ class EigenConjugateGradientSolver : public LinearSystemSolver<T> {
   void set_tolerance(double tol) { cg_.setTolerance(tol); }
 
  private:
+  void DoSetUp(const contact_solvers::internal::LinearOperator<T>* A) final {
+    matrix_proxy_.SetOperator(A);
+    cg_.compute(matrix_proxy_);
+  }
+
   EigenMatrixProxy<T> matrix_proxy_;
   /* TODO(xuchenhan-tri): Allow for custom preconditioner if needed in the
    future. */
