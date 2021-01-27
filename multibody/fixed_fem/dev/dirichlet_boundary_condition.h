@@ -26,7 +26,7 @@ namespace fixed_fem {
  like:
  ```
  // First, apply the boundary condition to the state.
- bc.ApplyBoundaryCondition(&state).
+ bc.ApplyBoundaryCondition(&state);
  // Then find the residual for the system without BC using FemModel.
  model.CalcResidual(state, &residual);
  // Modify the residual to account for the BC.

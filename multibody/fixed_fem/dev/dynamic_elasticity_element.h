@@ -80,14 +80,14 @@ class DynamicElasticityElement final
   /* Implements FemElement::CalcResidual(). */
   void DoCalcResidual(const FemState<ElementType>& state,
                       EigenPtr<Vector<T, Traits::kNumDofs>> residual) const {
-    /* residual = Ma-fₑ(x)-fᵥ(x, v)+fₑₓₜ, where M is the mass matrix, fₑ(x) is
+    /* residual = Ma-fₑ(x)-fᵥ(x, v)-fₑₓₜ, where M is the mass matrix, fₑ(x) is
      the elastic force, fᵥ(x, v) is the damping force and fₑₓₜ is the external
      force. */
     *residual += this->mass_matrix() *
                  this->ExtractElementDofs(this->node_indices(), state.qddot());
     this->AddNegativeElasticForce(state, residual);
     AddNegativeDampingForce(state, residual);
-    this->AddExternalForce(state, residual);
+    this->AddScaledExternalForce(state, -1.0, residual);
   }
 
   /* Adds the negative damping force on the nodes of this element into the given

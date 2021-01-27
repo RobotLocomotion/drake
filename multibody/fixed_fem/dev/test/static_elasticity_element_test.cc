@@ -113,12 +113,12 @@ TEST_F(StaticElasticityElementTest, Constructor) {
 /* Tests that the calculation of the residual calls the calculation of the
  negative elastic force and the external force. */
 TEST_F(StaticElasticityElementTest,
-       ResidualIsNegativeElasticForcePlusExternalForce) {
+       ResidualIsNegativeElasticForceMinusExternalForce) {
   Vector<T, kNumDofs> residual;
   element().CalcResidual(*state_, &residual);
   Vector<T, kNumDofs> external_force = Vector<T, kNumDofs>::Zero();
-  element().AddExternalForce(*state_, &external_force);
-  EXPECT_TRUE(CompareMatrices(CalcNegativeElasticForce() + external_force,
+  element().AddScaledExternalForce(*state_, 1.0, &external_force);
+  EXPECT_TRUE(CompareMatrices(CalcNegativeElasticForce() - external_force,
                               residual, 0));
 }
 
