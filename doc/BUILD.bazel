@@ -36,7 +36,6 @@ drake_py_binary(
         "images/logo_w_text.jpg",
         "images/mathematical_program.svg",
         "images/systems.svg",
-        "images/doxygen_instructions/visual_studio_build_targets.png",
         "sample_vimrc",
     ],
     tags = [
