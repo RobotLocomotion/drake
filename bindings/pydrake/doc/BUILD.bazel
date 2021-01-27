@@ -58,6 +58,7 @@ drake_py_binary(
         # Test exceeds timeout when run under Valgrind tools.
         "no_valgrind_tools",
     ],
+    visibility = ["//doc:__pkg__"],
     deps = [
         ":pydrake_sphinx_extension_py",
         "//bindings/pydrake",  # We must import `pydrake` to document it.
@@ -75,6 +76,7 @@ drake_py_binary(
         # option.
         "manual",
     ],
+    visibility = ["//doc:__pkg__"],
     deps = ["//doc:sphinx_base"],
 )
 
