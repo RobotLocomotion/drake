@@ -66,6 +66,7 @@ position for testing) and sends the resulting plan over LCM.  Requires
 You must get close to the object within the drake visualizer to see the move
 
 For running:
+the value manipulation/kinova_jaco/jaco_constants.h needs to be set to 6 This ought to be softcoded
 j2s6s300_sphere_collision.urdf
 
 launch simulator
