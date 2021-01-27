@@ -234,19 +234,22 @@ class TestTrajectories(unittest.TestCase):
         np.testing.assert_equal(
             np.array([1, 0, 0, 0]), pq.orientation(time=0).wxyz()
         )
-        np.testing.assert_equal(
-            np.array([0, 0, np.pi/2]), pq.angular_velocity(time=0)
+        np.testing.assert_allclose(
+            np.array([0, 0, np.pi/2]), pq.angular_velocity(time=0),
+            atol=1e-15, rtol=0,
         )
         np.testing.assert_equal(
             np.zeros(3), pq.angular_acceleration(time=0)
         )
 
-        np.testing.assert_equal(
+        np.testing.assert_allclose(
             np.array([np.cos(np.pi/4), 0, 0, np.sin(np.pi/4)]),
             pq.orientation(time=1).wxyz(),
+            atol=1e-15, rtol=0,
         )
-        np.testing.assert_equal(
-            np.array([0, 0, np.pi/2]), pq.angular_velocity(time=1)
+        np.testing.assert_allclose(
+            np.array([0, 0, np.pi/2]), pq.angular_velocity(time=1),
+            atol=1e-15, rtol=0,
         )
         np.testing.assert_equal(
             np.zeros(3), pq.angular_acceleration(time=1)
