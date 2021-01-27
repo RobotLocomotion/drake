@@ -91,6 +91,9 @@ filegroup(
         "_data/settings.yml",
         "_js/drake.js",
         "index.md",
+        "//third_party:history_js/history.adapter.jquery.js",
+        "//third_party:history_js/history.js",
+        "//third_party:waypoints/waypoint.js",
     ],
 )
 

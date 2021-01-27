@@ -1,7 +1,8 @@
 import argparse
 import os
 from os.path import abspath, exists, isabs, isdir, join
-from shutil import rmtree
+from pathlib import Path
+from shutil import copy, rmtree
 from subprocess import check_call
 import sys
 import tempfile
@@ -13,19 +14,38 @@ def _die(s):
 
 
 def _minify(input_dir, out_dir):
-    # TODO(betsymcphail): Once implemented for production, the Jekyll site may
-    #  require third party .js plugins in addition to drake.js.
-    # Add the full path to any plugins here.
-    drake_js = join(input_dir, "_js", "drake.js")
-    plugins = [drake_js]
     plugin_dir = join(out_dir, "js")
     if not exists(plugin_dir):
         os.mkdir(plugin_dir)
+
+    # drake-specific plugin
+    drake_js = join(input_dir, "_js", "drake.js")
+    drake_min_js = join(plugin_dir, "drake-min.js")
+    check_call(
+        [
+            "uglifyjs", drake_js,
+            "-o", drake_min_js,
+            "-c", "-m",
+        ]
+    )
+
+    # third party plugins
+    third_party_dir = join(Path(input_dir).parent, "third_party")
+    history_adapter_js = join(
+        third_party_dir, "history_js", "history.adapter.jquery.js")
+    history_js = join(third_party_dir, "history_js", "history.js")
+    waypoint_js = join(third_party_dir, "waypoints", "waypoint.js")
+
+    plugins = [history_adapter_js,
+               history_js,
+               waypoint_js]
+
     plugins_min_js = join(plugin_dir, "plugins-min.js")
     check_call(
         [
-            "uglifyjs",
-            " ".join(plugins),
+            "uglifyjs"
+        ] + plugins +
+        [
             "-o", plugins_min_js,
             "-c", "-m",
         ]
