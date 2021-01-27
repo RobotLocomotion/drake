@@ -10,16 +10,32 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
+# Unless `setup/ubuntu/install_prereqs.sh --with-doc-only` has been run, most
+# targets in this package will fail to build, so by default we'll disable them.
+#
+# A developer will have to explicitly opt-in in order to build these.
+_DEFAULT_BINARY_TAGS = [
+    "manual",
+]
+
+# Unless `setup/ubuntu/install_prereqs.sh --with-doc-only` has been run, most
+# tests in this package will fail to pass, so by default we'll disable them.
+#
+# A developer will have to explicitly opt-in in order to test these.
+_DEFAULT_TEST_TAGS = [
+    "manual",
+    # Some (currently disabled) Sphinx extensions try to reach out to the
+    # network; we should fail-fast if someone tries to turn them on.  In
+    # general, none our documentation tools should hit the internet, but
+    # their ecosystems might be doing so without us being aware.
+    "block-network",
+]
+
 drake_py_library(
     name = "sphinx_base",
     srcs = ["sphinx_base.py"],
     data = ["@sphinx//:sphinx-build"],
-    tags = [
-        # This target requires the appropriate prerequisites script for each
-        # platform to be run with the optional --with-doc-only command line
-        # option.
-        "manual",
-    ],
+    tags = _DEFAULT_BINARY_TAGS,
     deps = ["@rules_python//python/runfiles"],
 )
 
@@ -38,26 +54,9 @@ drake_py_binary(
         "images/systems.svg",
         "sample_vimrc",
     ],
-    tags = [
-        # This target requires the appropriate prerequisites script for each
-        # platform to be run with the optional --with-doc-only command line
-        # option.
-        "manual",
-    ],
-    test_rule_args = [
-        "--out_dir=<test>",
-    ],
-    test_rule_tags = [
-        # Some (currently disabled) Sphinx extensions try to reach out to the
-        # network; we should fail-fast if someone tries to turn them on.
-        "block-network",
-        # This target requires the appropriate prerequisites script for each
-        # platform to be run with the optional --with-doc-only command line
-        # option.
-        "manual",
-        # Test exceeds timeout when run under Valgrind tools.
-        "no_valgrind_tools",
-    ],
+    tags = _DEFAULT_BINARY_TAGS,
+    test_rule_args = ["--out_dir=<test>"],
+    test_rule_tags = _DEFAULT_TEST_TAGS,
     deps = [
         ":sphinx_base",
     ],
@@ -67,24 +66,14 @@ drake_py_binary(
     name = "serve_sphinx",
     srcs = ["serve_sphinx.py"],
     data = [":gen_sphinx"],
-    tags = [
-        # This target requires the appropriate prerequisites script for each
-        # platform to be run with the optional --with-doc-only command line
-        # option.
-        "manual",
-    ],
+    tags = _DEFAULT_BINARY_TAGS,
     deps = [":sphinx_base"],
 )
 
 drake_py_library(
     name = "jekyll_base",
     srcs = ["jekyll_base.py"],
-    tags = [
-        # This target requires the appropriate prerequisites script for each
-        # platform to be run with the optional --with-doc-only command line
-        # option.
-        "manual",
-    ],
+    tags = _DEFAULT_BINARY_TAGS,
 )
 
 filegroup(
@@ -102,21 +91,9 @@ drake_py_binary(
     srcs = ["gen_jekyll.py"],
     add_test_rule = 1,
     data = [":jekyll_data"],
-    tags = [
-        # This target requires the appropriate prerequisites script for each
-        # platform to be run with the optional --with-doc-only command line
-        # option.
-        "manual",
-    ],
-    test_rule_args = [
-        "--out_dir=<test>",
-    ],
-    test_rule_tags = [
-        # This target requires the appropriate prerequisites script for each
-        # platform to be run with the optional --with-doc-only command line
-        # option.
-        "manual",
-    ],
+    tags = _DEFAULT_BINARY_TAGS,
+    test_rule_args = ["--out_dir=<test>"],
+    test_rule_tags = _DEFAULT_TEST_TAGS,
     deps = [
         ":jekyll_base",
     ],
@@ -126,12 +103,7 @@ drake_py_binary(
     name = "serve_jekyll",
     srcs = ["serve_jekyll.py"],
     data = [":jekyll_data"],
-    tags = [
-        # This target requires the appropriate prerequisites script for each
-        # platform to be run with the optional --with-doc-only command line
-        # option.
-        "manual",
-    ],
+    tags = _DEFAULT_BINARY_TAGS,
     deps = [
         ":jekyll_base",
     ],
@@ -159,11 +131,34 @@ drake_py_binary(
         "@bazel_tools//tools/python/runfiles",
         "@doxygen",
     ],
-    tags = [
-        # This target requires the appropriate prerequisites script for each
-        # platform to be run with the optional --with-doc-only command line
-        # option.
-        "manual",
+    tags = _DEFAULT_BINARY_TAGS,
+)
+
+# This rule is used by our CI scripts as a single point of entry to ensure that
+# all of our manually-tagged documentation binaries can be built successfully.
+filegroup(
+    name = "manual_binaries",
+    srcs = [
+        ":doxygen",
+        ":gen_jekyll",
+        ":gen_sphinx",
+        ":serve_jekyll",
+        ":serve_sphinx",
+        "//bindings/pydrake/doc:gen_sphinx",
+        "//bindings/pydrake/doc:serve_sphinx",
+    ],
+    tags = ["manual"],
+)
+
+# This rule is used by our CI scripts as a single point of entry to ensure that
+# all of our manually-tagged documentation tests pass.
+test_suite(
+    name = "manual_tests",
+    tags = ["manual"],
+    tests = [
+        ":gen_jekyll_test",
+        ":gen_sphinx_test",
+        "//bindings/pydrake/doc:gen_sphinx_test",
     ],
 )
 
