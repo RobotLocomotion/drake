@@ -112,6 +112,7 @@ def drake_py_binary(
         add_test_rule = 0,
         test_rule_args = [],
         test_rule_data = [],
+        test_rule_tags = None,
         test_rule_size = None,
         test_rule_timeout = None,
         test_rule_flaky = 0,
@@ -153,7 +154,7 @@ def drake_py_binary(
             size = test_rule_size,
             timeout = test_rule_timeout,
             flaky = test_rule_flaky,
-            tags = tags + ["nolint"],
+            tags = (test_rule_tags or []) + ["nolint"],
             # N.B. Same as the warning in `drake_pybind_cc_googletest`: numpy
             # imports unittest unconditionally.
             allow_import_unittest = True,

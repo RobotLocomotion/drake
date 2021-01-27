@@ -40,6 +40,14 @@ drake_py_binary(
     imports = ["."],
     main = "gen_sphinx.py",
     tags = [
+        # This target requires the appropriate prerequisites script for each
+        # platform to be run with the optional --with-doc-only command line
+        # option.
+        "manual",
+    ],
+    test_rule_args = ["--out_dir=<test>"],
+    test_rule_size = "medium",
+    test_rule_tags = [
         # Some (currently disabled) Sphinx extensions try to reach out to the
         # network; we should fail-fast if someone tries to turn them on.
         "block-network",
@@ -50,8 +58,6 @@ drake_py_binary(
         # Test exceeds timeout when run under Valgrind tools.
         "no_valgrind_tools",
     ],
-    test_rule_args = ["--out_dir=<test>"],
-    test_rule_size = "medium",
     deps = [
         ":pydrake_sphinx_extension_py",
         "//bindings/pydrake",  # We must import `pydrake` to document it.
