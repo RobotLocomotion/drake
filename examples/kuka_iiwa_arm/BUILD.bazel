@@ -100,10 +100,10 @@ drake_cc_binary(
         ":models",
         "//manipulation/models/iiwa_description:models",
     ],
+    test_rule_args = ["--simulation_sec=0.1 --target_realtime_rate=0.0"],
     # TODO(kyle.edwards@kitware.com): Re-enable this test when it no longer
     # causes timeouts in kcov.
-    tags = ["no_kcov"],
-    test_rule_args = ["--simulation_sec=0.1 --target_realtime_rate=0.0"],
+    test_rule_tags = ["no_kcov"],
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",

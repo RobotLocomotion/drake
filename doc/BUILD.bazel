@@ -40,6 +40,15 @@ drake_py_binary(
         "sample_vimrc",
     ],
     tags = [
+        # This target requires the appropriate prerequisites script for each
+        # platform to be run with the optional --with-doc-only command line
+        # option.
+        "manual",
+    ],
+    test_rule_args = [
+        "--out_dir=<test>",
+    ],
+    test_rule_tags = [
         # Some (currently disabled) Sphinx extensions try to reach out to the
         # network; we should fail-fast if someone tries to turn them on.
         "block-network",
@@ -49,9 +58,6 @@ drake_py_binary(
         "manual",
         # Test exceeds timeout when run under Valgrind tools.
         "no_valgrind_tools",
-    ],
-    test_rule_args = [
-        "--out_dir=<test>",
     ],
     deps = [
         ":sphinx_base",
@@ -105,6 +111,12 @@ drake_py_binary(
     ],
     test_rule_args = [
         "--out_dir=<test>",
+    ],
+    test_rule_tags = [
+        # This target requires the appropriate prerequisites script for each
+        # platform to be run with the optional --with-doc-only command line
+        # option.
+        "manual",
     ],
     deps = [
         ":jekyll_base",

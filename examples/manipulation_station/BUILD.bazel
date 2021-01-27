@@ -82,11 +82,11 @@ drake_cc_binary(
         "mock_station_simulation.cc",
     ],
     add_test_rule = 1,
-    tags = vtk_test_tags(),
     test_rule_args = [
         "--target_realtime_rate=0.0",
         "--duration=0.1",
     ],
+    test_rule_tags = vtk_test_tags(),
     deps = [
         ":manipulation_station",
         "//geometry:drake_visualizer",
@@ -106,12 +106,12 @@ drake_cc_binary(
         "proof_of_life.cc",
     ],
     add_test_rule = 1,
-    tags = vtk_test_tags(),
     test_rule_args = [
         "--target_realtime_rate=0.0",
         "--duration=0.1",
         "--test",
     ],
+    test_rule_tags = vtk_test_tags(),
     test_rule_timeout = "moderate",
     deps = [
         ":manipulation_station",
@@ -162,12 +162,12 @@ drake_py_binary(
     name = "joint_teleop",
     srcs = ["joint_teleop.py"],
     add_test_rule = 1,
-    tags = vtk_test_tags(),
     test_rule_args = [
         "--target_realtime_rate=0.0",
         "--duration=0.1",
         "--test",
     ],
+    test_rule_tags = vtk_test_tags(),
     test_rule_timeout = "moderate",  # Frequently exceeds short timeout in dbg.
     deps = [
         "//bindings/pydrake",
@@ -178,14 +178,14 @@ drake_py_binary(
     name = "end_effector_teleop_dualshock4",
     srcs = ["end_effector_teleop_dualshock4.py"],
     add_test_rule = 1,
-    # Disable testing for this module since it will fail on CI
-    # because it assumes that dualshock4 controller is connected.
-    tags = vtk_test_tags() + ["manual"],
     test_rule_args = [
         "--target_realtime_rate=0.0",
         "--duration=0.1",
         "--test",
     ],
+    # Disable testing for this module since it will fail on CI
+    # because it assumes that dualshock4 controller is connected.
+    test_rule_tags = vtk_test_tags() + ["manual"],
     test_rule_timeout = "moderate",  # Frequently exceeds short timeout in dbg.
     deps = [
         ":differential_ik",
@@ -198,12 +198,12 @@ drake_py_binary(
     name = "end_effector_teleop_mouse",
     srcs = ["end_effector_teleop_mouse.py"],
     add_test_rule = 1,
-    tags = vtk_test_tags(),
     test_rule_args = [
         "--target_realtime_rate=0.0",
         "--duration=0.1",
         "--test",
     ],
+    test_rule_tags = vtk_test_tags(),
     test_rule_timeout = "moderate",  # Frequently exceeds short timeout in dbg.
     deps = [
         ":differential_ik",
@@ -216,12 +216,12 @@ drake_py_binary(
     name = "end_effector_teleop_sliders",
     srcs = ["end_effector_teleop_sliders.py"],
     add_test_rule = 1,
-    tags = vtk_test_tags(),
     test_rule_args = [
         "--target_realtime_rate=0.0",
         "--duration=0.1",
         "--test",
     ],
+    test_rule_tags = vtk_test_tags(),
     test_rule_timeout = "moderate",  # Frequently exceeds short timeout in dbg.
     deps = [
         ":differential_ik",
