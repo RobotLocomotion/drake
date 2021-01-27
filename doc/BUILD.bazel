@@ -134,11 +134,27 @@ drake_py_binary(
     tags = _DEFAULT_BINARY_TAGS,
 )
 
+drake_py_binary(
+    name = "build",
+    srcs = ["build.py"],
+    data = [
+        ":doxygen",
+        ":gen_jekyll",
+        ":gen_sphinx",
+        "//bindings/pydrake/doc:gen_sphinx",
+    ],
+    tags = _DEFAULT_BINARY_TAGS,
+    deps = [
+        "@bazel_tools//tools/python/runfiles",
+    ],
+)
+
 # This rule is used by our CI scripts as a single point of entry to ensure that
 # all of our manually-tagged documentation binaries can be built successfully.
 filegroup(
     name = "manual_binaries",
     srcs = [
+        ":build",
         ":doxygen",
         ":gen_jekyll",
         ":gen_sphinx",

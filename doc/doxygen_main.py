@@ -34,6 +34,8 @@ def _run_doxygen(drake_workspace, args):
     out_dir = os.path.abspath(args.out_dir)
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
+    # TODO(jwnimmer-tri) We should use a working_dir that is outside the source
+    # tree.  As it stands, we're leaving junk lying around when we crash.
     working_dir = os.path.join(drake_workspace, "doxygen_tmp")
     input_root = os.path.join(working_dir, "input")
     source_root = os.path.join(input_root, "drake")
