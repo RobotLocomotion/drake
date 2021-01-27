@@ -10,15 +10,15 @@ namespace fixed_fem {
 namespace test {
 namespace {
 const ElementIndex kZeroIndex = ElementIndex(0);
-const std::array<NodeIndex, DummyElementTraits::kNumNodes> kNodeIndices = {
+const std::array<NodeIndex, DummyElementTraits<1>::kNumNodes> kNodeIndices = {
     {NodeIndex(0), NodeIndex(1)}};
 constexpr double dummy_value = 3.14;
 
 /* An minimal FemElement to test FemElement::CalcFoo() methods. */
 class CalcFooElement final
-    : public FemElement<CalcFooElement, DummyElementTraits> {
+    : public FemElement<CalcFooElement, DummyElementTraits<1>> {
  public:
-  using Base = FemElement<CalcFooElement, DummyElementTraits>;
+  using Base = FemElement<CalcFooElement, DummyElementTraits<1>>;
   CalcFooElement(ElementIndex element_index,
                  const std::array<NodeIndex, Traits::kNumNodes>& node_indices,
                  double value)
@@ -82,7 +82,7 @@ class CalcFooElement final
 
 class FemElementTest : public ::testing::Test {
  protected:
-  using T = DummyElementTraits::T;
+  using T = DummyElementTraits<1>::T;
 
   /* Default values for the state. */
   static VectorX<double> q() { return Vector3<double>(0.1, 0.2, 0.3); }
@@ -104,20 +104,22 @@ TEST_F(FemElementTest, Constructor) {
  FemElement that tests the input vector in DoCalc methods and returns a
  specific value. */
 TEST_F(FemElementTest, Residual) {
-  Vector<T, DummyElementTraits::kNumDofs> residual;
+  Vector<T, DummyElementTraits<0>::kNumDofs> residual;
   element_.CalcResidual(state_, &residual);
   EXPECT_EQ(residual, element_.expected_residual());
 }
 
 TEST_F(FemElementTest, StiffnessMatrix) {
-  Eigen::Matrix<T, DummyElementTraits::kNumDofs, DummyElementTraits::kNumDofs>
+  Eigen::Matrix<T, DummyElementTraits<0>::kNumDofs,
+                DummyElementTraits<0>::kNumDofs>
       K;
   element_.CalcStiffnessMatrix(state_, &K);
   EXPECT_EQ(K, element_.expected_matrix());
 }
 
 TEST_F(FemElementTest, DampingMatrix) {
-  Eigen::Matrix<T, DummyElementTraits::kNumDofs, DummyElementTraits::kNumDofs>
+  Eigen::Matrix<T, DummyElementTraits<0>::kNumDofs,
+                DummyElementTraits<0>::kNumDofs>
       D;
   element_.CalcDampingMatrix(state_, &D);
   EXPECT_EQ(D, element_.expected_matrix());
@@ -125,7 +127,8 @@ TEST_F(FemElementTest, DampingMatrix) {
 
 /* Test that CalcMassMatrix() is calling the expected DoCalcMassMatrix(). */
 TEST_F(FemElementTest, MassMatrix) {
-  Eigen::Matrix<T, DummyElementTraits::kNumDofs, DummyElementTraits::kNumDofs>
+  Eigen::Matrix<T, DummyElementTraits<0>::kNumDofs,
+                DummyElementTraits<0>::kNumDofs>
       M;
   element_.CalcMassMatrix(state_, &M);
   EXPECT_EQ(M, element_.expected_matrix());
