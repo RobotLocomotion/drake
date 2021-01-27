@@ -1,0 +1,36 @@
+// - - - - - - - - - - - - - - - - - -
+
+// Component - Post Card
+
+// - - - - - - - - - - - - - - - - - -
+
+.post__card {
+  transition: all 120ms;
+  box-sizing: content-box;
+
+  &:hover {
+    transform: translateY(-4px);
+  }
+
+  .post__link {
+    display: block;
+  }
+
+  .post__image {
+    width: 100%;
+    height: 220px;
+    background-size: cover;
+    background-position: center;
+    margin-bottom: 16px;
+  }
+
+  .post__date {
+    margin-bottom: 6px;
+  }
+
+  @include mq("460px") {
+    .post__image {
+      height: 250px;
+    }
+  }
+}

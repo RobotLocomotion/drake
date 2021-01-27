@@ -78,10 +78,18 @@ drake_py_library(
 
 filegroup(
     name = "jekyll_data",
-    srcs = [
+    srcs =
+        glob([
+        "_includes/**",
+        "_layouts/*.html",
+        "_sass/**",
+        "images/**",
+    ]) + [
+        "404.html",
         "_config.yml",
+        "css/style.scss",
+        "_data/settings.yml",
         "_js/drake.js",
-        "_layouts/default.html",
         "index.md",
     ],
 )

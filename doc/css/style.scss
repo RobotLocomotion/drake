@@ -1,0 +1,187 @@
+---
+---
+
+// - - - - - - - - - - Foundations
+
+@import "_reset";
+@import "_mixins";
+
+
+
+// - - - - - - - - - - Variables
+
+
+// Colors
+
+$light-background-color: {{ site.data.settings.color_settings.light_background_color }};
+$background-color: {{ site.data.settings.color_settings.background_color }};
+$background-alt-color: {{ site.data.settings.color_settings.background_alt_color }};
+$border-color: {{ site.data.settings.color_settings.border_color }};
+
+$text-dark-color: {{ site.data.settings.color_settings.text_dark_color }};
+$text-medium-color: {{ site.data.settings.color_settings.text_medium_color }};
+$text-light-color: {{ site.data.settings.color_settings.text_light_color }};
+
+$accent-color: {{ site.data.settings.color_settings.accent_color }};
+$dark-background-color: {{ site.data.settings.color_settings.dark_background_color }};
+$grey-background-color: {{ site.data.settings.color_settings.grey_background_color }};
+
+$error-color: {{ site.data.settings.color_settings.error_color }};
+
+
+// Fonts
+
+$body-font: {{ site.data.settings.font_settings.body_font }};
+$title-font: {{ site.data.settings.font_settings.title_font }};
+
+$regular-weight: {{ site.data.settings.font_settings.regular_weight }};
+$bold-weight: {{ site.data.settings.font_settings.bold_weight }};
+
+
+// Typography
+
+$sitetitle-small: {{ site.data.settings.font_settings.site_title.small_size }}px;
+$sitetitle-medium: {{ site.data.settings.font_settings.site_title.medium_size }}px;
+$sitetitle-large: {{ site.data.settings.font_settings.site_title.large_size }}px;
+$sitetitle-weight: {{ site.data.settings.font_settings.site_title.weight }};
+$sitetitle-spacing: {{ site.data.settings.font_settings.site_title.letter_spacing }}em;
+
+$menu-small: {{ site.data.settings.font_settings.menu.small_size }}px;
+$menu-medium: {{ site.data.settings.font_settings.menu.medium_size }}px;
+$menu-large: {{ site.data.settings.font_settings.menu.large_size }}px;
+$menu-weight: {{ site.data.settings.font_settings.menu.weight }};
+$menu-spacing: {{ site.data.settings.font_settings.menu.letter_spacing }}em;
+
+$h1-size: {{ site.data.settings.font_settings.h1.size }}px;
+$h1-size-small: {{ site.data.settings.font_settings.h1.size_small }}px;
+$h1-weight: {{ site.data.settings.font_settings.h1.weight }};
+$h1-spacing: {{ site.data.settings.font_settings.h1.letter_spacing }}px;
+$h1-spacing-small: {{ site.data.settings.font_settings.h1.letter_spacing_small }}px;
+$h1-lineheight: {{ site.data.settings.font_settings.h1.line_height }}px;
+$h1-lineheight-small: {{ site.data.settings.font_settings.h1.line_height_small }}px;
+
+$h2-size: {{ site.data.settings.font_settings.h2.size }}px;
+$h2-size-small: {{ site.data.settings.font_settings.h2.size_small }}px;
+$h2-weight: {{ site.data.settings.font_settings.h2.weight }};
+$h2-spacing: {{ site.data.settings.font_settings.h2.letter_spacing }}px;
+$h2-spacing-small: {{ site.data.settings.font_settings.h2.letter_spacing_small }}px;
+$h2-lineheight: {{ site.data.settings.font_settings.h2.line_height }}px;
+$h2-lineheight-small: {{ site.data.settings.font_settings.h2.line_height_small }}px;
+
+$h3-size: {{ site.data.settings.font_settings.h3.size }}px;
+$h3-size-small: {{ site.data.settings.font_settings.h3.size_small }}px;
+$h3-weight: {{ site.data.settings.font_settings.h3.weight }};
+$h3-spacing: {{ site.data.settings.font_settings.h3.letter_spacing }}px;
+$h3-spacing-small: {{ site.data.settings.font_settings.h3.letter_spacing_small }}px;
+$h3-lineheight: {{ site.data.settings.font_settings.h3.line_height }}px;
+$h3-lineheight-small: {{ site.data.settings.font_settings.h3.line_height_small }}px;
+
+$h4-size: {{ site.data.settings.font_settings.h4.size }}px;
+$h4-size-small: {{ site.data.settings.font_settings.h4.size_small }}px;
+$h4-weight: {{ site.data.settings.font_settings.h4.weight }};
+$h4-spacing: {{ site.data.settings.font_settings.h4.letter_spacing }}px;
+$h4-spacing-small: {{ site.data.settings.font_settings.h4.letter_spacing_small }}px;
+$h4-lineheight: {{ site.data.settings.font_settings.h4.line_height }}px;
+
+$h5-small: {{ site.data.settings.font_settings.h5.small_size }}px;
+$h5-medium: {{ site.data.settings.font_settings.h5.medium_size }}px;
+$h5-large: {{ site.data.settings.font_settings.h5.large_size }}px;
+$h5-weight: {{ site.data.settings.font_settings.h5.weight }};
+$h5-spacing: {{ site.data.settings.font_settings.h5.letter_spacing }}em;
+$h5-lineheight: {{ site.data.settings.font_settings.h5.line_height }};
+
+$h6-small: {{ site.data.settings.font_settings.h6.small_size }}px;
+$h6-medium: {{ site.data.settings.font_settings.h6.medium_size }}px;
+$h6-large: {{ site.data.settings.font_settings.h6.large_size }}px;
+$h6-weight: {{ site.data.settings.font_settings.h6.weight }};
+$h6-spacing: {{ site.data.settings.font_settings.h6.letter_spacing }}em;
+$h6-lineheight: {{ site.data.settings.font_settings.h6.line_height }};
+
+$subtitle-size: {{ site.data.settings.font_settings.subtitle.size }}px;
+$subtitle-size-small: {{ site.data.settings.font_settings.subtitle.size_small }}px;
+$subtitle-weight-regular: {{ site.data.settings.font_settings.subtitle.weight_regular }};
+$subtitle-weight-heavy: {{ site.data.settings.font_settings.subtitle.weight_heavy }};
+$subtitle-spacing: {{ site.data.settings.font_settings.subtitle.letter_spacing }}px;
+$subtitle-spacing-small: {{ site.data.settings.font_settings.subtitle.letter_spacing_small }}px;
+$subtitle-lineheight: {{ site.data.settings.font_settings.subtitle.line_height }}px;
+$subtitle-lineheight-small: {{ site.data.settings.font_settings.subtitle.line_height_small }}px;
+
+$p-size: {{ site.data.settings.font_settings.p.size }}px;
+$p-size-small: {{ site.data.settings.font_settings.p.size_small }}px;
+$p-weight: {{ site.data.settings.font_settings.p.weight }};
+$p-spacing: {{ site.data.settings.font_settings.p.letter_spacing }}px;
+$p-lineheight: {{ site.data.settings.font_settings.p.line_height }}px;
+
+$p-small-size: {{ site.data.settings.font_settings.p_small.size }}px;
+$p-small-size-small: {{ site.data.settings.font_settings.p_small.size_small }}px;
+$p-small-weight: {{ site.data.settings.font_settings.p_small.weight }};
+$p-small-spacing: {{ site.data.settings.font_settings.p_small.letter_spacing }}px;
+$p-small-lineheight: {{ site.data.settings.font_settings.p_small.line_height }}px;
+
+$label-size: {{ site.data.settings.font_settings.label.size }}px;
+$label-small: {{ site.data.settings.font_settings.label.small_size }}px;
+$label-weight: {{ site.data.settings.font_settings.label.weight }};
+$label-spacing: {{ site.data.settings.font_settings.label.letter_spacing }}px;
+$label-spacing-small: {{ site.data.settings.font_settings.label.small_letter_spacing }}px;
+$label-lineheight: {{ site.data.settings.font_settings.label.line_height }}px;
+
+$footnote-size: {{ site.data.settings.font_settings.footnote.size }}px;
+$footnote-weight: {{ site.data.settings.font_settings.footnote.weight }};
+$footnote-spacing: {{ site.data.settings.font_settings.footnote.letter_spacing }}px;
+$footnote-lineheight: {{ site.data.settings.font_settings.footnote.line_height }}px;
+
+$blockquote-small: {{ site.data.settings.font_settings.blockquote.small_size }}px;
+$blockquote-medium: {{ site.data.settings.font_settings.blockquote.medium_size }}px;
+$blockquote-large: {{ site.data.settings.font_settings.blockquote.large_size }}px;
+$blockquote-weight: {{ site.data.settings.font_settings.blockquote.weight }};
+$blockquote-spacing: {{ site.data.settings.font_settings.blockquote.letter_spacing }}em;
+$blockquote-lineheight: {{ site.data.settings.font_settings.blockquote.line_height }};
+
+$button-weight: {{ site.data.settings.font_settings.buttons.weight }};
+$button-spacing: {{ site.data.settings.font_settings.buttons.letter_spacing }}px;
+
+
+// Logo
+$logo-width: {{ site.data.settings.header_settings.logo_width }}px;
+$logo-mobile-width: {{ site.data.settings.header_settings.logo_mobile_width }}px;
+$footer-logo-width: {{ site.data.settings.footer_settings.logo_width }}px;
+
+
+// Post details
+$grid-spacing: {{ site.data.settings.post_settings.grid_spacing }}px;
+
+
+// Base URL
+$baseurl: '{{ site.baseurl }}';
+
+
+
+// - - - - - - - - - - Global styles
+
+@import "_basic";
+@import "_typography";
+@import "_buttons";
+@import "_structure";
+
+
+@import "_pages/_page";
+@import "_pages/_page__home";
+@import "_pages/_page__blog";
+@import "_pages/_page__post";
+
+@import "_includes/_component__header";
+@import "_includes/_component__footer";
+
+@import "_includes/_syntax";
+@import "_includes/_component__contact-form";
+@import "_includes/_component__post-card";
+@import "_includes/_component__core";
+@import "_includes/_section__about";
+@import "_includes/_section__recent-posts";
+
+
+
+// // - - - - - - - - - - Section styles
+
+@import "_includes/_section__listing";
+@import "_includes/_section__hero";

@@ -1,0 +1,47 @@
+<header class="header--main black-back">
+
+	<div class="wrap grid__2-col">
+
+		{% if site.data.settings.header_settings.logo_image %}
+		<a href="{{ site.baseurl }}/" class="header__logo">
+			<img src="{{ site.data.settings.header_settings.logo_image | relative_url }}" class="header__logo__img">
+		</a>
+		{% else %}
+		<a href="{{ site.baseurl }}/" class="header__title">
+			{{ site.data.settings.basic_settings.site_title }}
+		</a>
+		{% endif %}
+
+		<div class="menu__toggle js-menu-toggle">
+			<div class="menu__toggle__icon"><span></span></div>
+		</div>
+
+		<nav class="header__menu">
+			<div class="menu__wrap">
+				<ul class="menu__list">
+					{% for item in site.data.settings.menu_settings.menu_items %}
+					<li class="menu__list__item menu__list__item__link button--text">
+						{% if item.url %}<a href="{{ item.url | relative_url }}" class="menu__list__item__link button--text">{% endif %}{{ item.title }}{% if item.url %}</a>{% endif %}
+						
+						{% if item.subfolderitems[0] %}
+							<div class="menu_sub">
+							{% for entry in item.subfolderitems %}
+								<a href="{{ entry.url | relative_url}}" class="menu__list__item__link button--text">{{ entry.page }}</a>
+							{% endfor %}
+							</div>
+						{% endif %}
+					</li>
+						
+					{% endfor %}
+					
+					{% if site.data.settings.header_settings.github_link %}
+					<li class="menu__list__item menu__list__item__link button--text github--link">
+						<a href="{{ site.data.settings.header_settings.github_link | relative_url  }}" class="menu__list__item__link button--text">Github <img src="/images/github-white.svg" /></a>
+					</li>
+					{% endif %}
+				</ul>
+			</div>
+		</nav>
+	</div>
+
+</header>
