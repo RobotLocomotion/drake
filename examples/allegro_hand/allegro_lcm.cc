@@ -14,8 +14,10 @@ using systems::Context;
 using systems::DiscreteValues;
 using systems::DiscreteUpdateEvent;
 
-AllegroCommandReceiver::AllegroCommandReceiver(int num_joints)
-    : num_joints_(num_joints) {
+AllegroCommandReceiver::AllegroCommandReceiver(int num_joints,
+                                               double lcm_period)
+    : num_joints_(num_joints), lcm_period_(lcm_period) {
+  DRAKE_THROW_UNLESS(lcm_period > 0);
   this->DeclareAbstractInputPort(
       systems::kUseDefaultName,
       Value<lcmt_allegro_command>{});
@@ -29,7 +31,7 @@ AllegroCommandReceiver::AllegroCommandReceiver(int num_joints)
       [this](const Context<double>& c, BasicVector<double>* o) {
         this->CopyStateToOutput(c, num_joints_ * 2, num_joints_, o);
       }).get_index();
-  this->DeclarePeriodicDiscreteUpdate(kLcmStatusPeriod);
+  this->DeclarePeriodicDiscreteUpdate(lcm_period_);
   // State + torque
   this->DeclareDiscreteState(num_joints_ * 3);
 }
