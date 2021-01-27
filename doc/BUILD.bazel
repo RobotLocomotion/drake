@@ -160,7 +160,4 @@ add_lint_tests(
     python_lint_exclude = [
         ":conf.py",
     ],
-    python_lint_extra_srcs = [
-        ":doxygen.py",
-    ],
 )
