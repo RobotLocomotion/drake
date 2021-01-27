@@ -62,3 +62,18 @@ Calculates a motion plan for the Jaco arm, to the end effector
 position specified on the command line (with a reachable default
 position for testing) and sends the resulting plan over LCM.  Requires
 `jaco_controller` to execute the resulting plan.
+
+You must get close to the object within the drake visualizer to see the move
+
+For running:
+j2s6s300_sphere_collision.urdf
+
+launch simulator
+bazel-bin/examples/kinova_jaco_arm/jaco_simulator -urdf manipulation/models/jaco_description/urdf/j2s6s300_sphere_collision.urdf
+
+launch controller
+bazel-bin/examples/kinova_jaco_arm/jaco_controller -urdf manipulation/models/jaco_description/urdf/j2s6s300_sphere_collision.urdf -num_joints 6 -num_fingers 3
+
+move arm
+bazel-bin/examples/kinova_jaco_arm/move_jaco_ee -urdf manipulation/models/jaco_description/urdf/j2s6s300_sphere_collision.urdf -ee_name j2s6s300_end_effector
+

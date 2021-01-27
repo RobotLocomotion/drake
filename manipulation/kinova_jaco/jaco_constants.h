@@ -7,8 +7,10 @@ namespace kinova_jaco {
 /// The LCM system classes for the Jaco default to a 7dof model with 3
 /// fingers.  Different configurations are supported by passing the
 /// proper arguments to the system constructors.
-//  pmb hardcoded num joints and fingers
-constexpr int kJacoDefaultArmNumJoints = 6;
+//  pmb hardcoded num joints and fingers the method to set this value needs to be done via
+//  some runtime method
+//constexpr int kJacoDefaultArmNumJoints = 6;
+constexpr int kJacoDefaultArmNumJoints = 7;
 constexpr int kJacoDefaultArmNumFingers = 3;
 
 /// The Jaco URDF models the fingers as having a single revolute joint, but

@@ -22,7 +22,8 @@
 #include "drake/systems/lcm/lcm_interface_system.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
-
+DEFINE_string(urdf,     "drake/manipulation/models/jaco_description/urdf/j2s6s300_sphere_collision.urdf", "Name of urdf to load");
+DEFINE_string(baseName, "base", "Name of the base of robot");
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
               "Number of seconds to simulate.");
 DEFINE_double(realtime_rate, 1.0, "");
@@ -51,9 +52,13 @@ namespace {
 
 const char kUrdfPath[] =
     "drake/manipulation/models/jaco_description/urdf/"
-    "j2s6s300_sphere_collision.urdf";
+    "j2s7s300_sphere_collision.urdf";
 
 int DoMain() {
+
+  const std::string urdf =
+      (!FLAGS_urdf.empty() ? FLAGS_urdf : FindResourceOrThrow(kUrdfPath));
+
   systems::DiagramBuilder<double> builder;
 
   SceneGraph<double>* scene_graph = builder.AddSystem<SceneGraph>();
@@ -71,9 +76,9 @@ int DoMain() {
 
   const multibody::ModelInstanceIndex jaco_id =
       Parser(jaco_plant, scene_graph).AddModelFromFile(
-          FindResourceOrThrow(kUrdfPath));
+          FindResourceOrThrow(urdf));
   jaco_plant->WeldFrames(jaco_plant->world_frame(),
-                         jaco_plant->GetFrameByName("base"));
+                         jaco_plant->GetFrameByName(FLAGS_baseName));
   jaco_plant->Finalize();
 
   // These gains are really just a guess.  Velocity limits are not enforced,

@@ -28,9 +28,12 @@
 #include "drake/systems/primitives/demultiplexer.h"
 #include "drake/systems/primitives/multiplexer.h"
 
-DEFINE_string(urdf, "", "Name of urdf to load");
+DEFINE_string(urdf,
+    "drake/manipulation/models/jaco_description/urdf/j2s7s300_sphere_collision.urdf",
+    "Name of urdf to load");
+
 DEFINE_int32(num_joints,
-             6 , //drake::manipulation::kinova_jaco::kJacoDefaultArmNumJoints,
+             drake::manipulation::kinova_jaco::kJacoDefaultArmNumJoints,
              "Number of joints in the arm (not including fingers)");
 DEFINE_int32(num_fingers,
              drake::manipulation::kinova_jaco::kJacoDefaultArmNumFingers,
@@ -46,7 +49,7 @@ using manipulation::planner::RobotPlanInterpolator;
 
 const char* const kJacoUrdf =
     "drake/manipulation/models/jaco_description/urdf/"
-    "j2s6s300_sphere_collision.urdf";
+    "j2s7s300_sphere_collision.urdf";
 const char* const kLcmStatusChannel = "KINOVA_JACO_STATUS";
 const char* const kLcmCommandChannel = "KINOVA_JACO_COMMAND";
 const char* const kLcmPlanChannel = "COMMITTED_ROBOT_PLAN";
