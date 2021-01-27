@@ -296,7 +296,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             WrapDeprecated(cls_doc.CalcCenterOfMassPosition.doc_deprecated,
                 overload_cast_explicit<Vector3<T>, const Context<T>&,
                     const std::vector<ModelInstanceIndex>&>(
-                    &Class::CalcCenterOfMassPositionInWorld)),
+                    &Class::CalcCenterOfMassPosition)),
             py::arg("context"), py::arg("model_instances"),
             cls_doc.CalcCenterOfMassPosition.doc_deprecated);
 #pragma GCC diagnostic pop
