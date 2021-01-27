@@ -10,6 +10,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/lcmt_jaco_command.hpp"
 #include "drake/lcmt_jaco_status.hpp"
 #include "drake/lcmt_robot_plan.hpp"
@@ -157,6 +158,8 @@ int DoMain() {
   drake::log()->info("Waiting for first lcmt_jaco_status");
   lcm::Subscriber<lcmt_jaco_status> status_sub(&lcm, kLcmStatusChannel);
   LcmHandleSubscriptionsUntil(&lcm, [&]() { return status_sub.count() > 0; });
+  drake::log()->info("got my first lcmt_jaco_status");
+
 
   const lcmt_jaco_status& first_status = status_sub.message();
   DRAKE_DEMAND(first_status.num_joints == 0 ||
@@ -172,16 +175,30 @@ int DoMain() {
   for (int i = 0; i < first_status.num_fingers; ++i) {
     q0(i + num_joints) = first_status.finger_position[i];
   }
+  #define RAD2DEG (180.0/3.1415)
+  std::cout<<"joints\n";
+  std::cout<<"deg q0[0]:"<<q0[0]*RAD2DEG<<"\n";
+  std::cout<<"deg q0[1]:"<<q0[1]*RAD2DEG<<"\n";
+  std::cout<<"deg q0[2]:"<<q0[2]*RAD2DEG<<"\n";
+  std::cout<<"deg q0[3]:"<<q0[3]*RAD2DEG<<"\n";
+  std::cout<<"deg q0[4]:"<<q0[4]*RAD2DEG<<"\n";
+  std::cout<<"deg q0[5]:"<<q0[5]*RAD2DEG<<"\n";
+  std::cout<<"finger\n";
+  std::cout<<"q0[6]:"<<q0[6]<<"\n";
+  std::cout<<"q0[7]:"<<q0[7]<<"\n";
+  std::cout<<"q0[8]:"<<q0[8]<<"\n";
 
   systems::Context<double>& diagram_context = simulator.get_mutable_context();
   const double t0 = first_status.utime * 1e-6;
   diagram_context.SetTime(t0);
 
+  std::cout<<"Controller started 0\n";
   auto& plan_source_context =
       diagram->GetMutableSubsystemContext(*plan_source, &diagram_context);
   plan_source->Initialize(t0, q0,
                           &plan_source_context.get_mutable_state());
 
+  std::cout<<"Controller started 1\n";
   systems::Context<double>& status_context =
       diagram->GetMutableSubsystemContext(*status_receiver, &diagram_context);
   auto& status_value = status_receiver->get_input_port().FixValue(

@@ -130,6 +130,21 @@ int DoMain() {
   // Set the initial position to something similar to where the jaco moves to
   // when starting teleop.
   VectorXd initial_position = VectorXd::Zero(num_positions);
+  if(num_positions== 9)
+  {
+  #define DEG2RAD (3.14/180.0)
+  std::cout<<"6dof 3 finger arm\n";
+  initial_position(0) = 283.138*DEG2RAD;
+  initial_position(1) = 162.756*DEG2RAD;
+  initial_position(2) = 43.4881*DEG2RAD;
+  initial_position(3) =265.285*DEG2RAD;
+  initial_position(4) =257.477*DEG2RAD;
+  initial_position(5) =288.351*DEG2RAD;
+
+  }
+  else
+  {
+  std::cout<<"7dof 3 finger arm\n";
   initial_position(0) = 1.80;
   initial_position(1) = 3.44;
   initial_position(2) = 3.14;
@@ -137,6 +152,7 @@ int DoMain() {
   initial_position(4) = 4.63;
   initial_position(5) = 4.49;
   initial_position(6) = 5.03;
+  }
 
   command_receiver->set_initial_position(
       &diagram->GetMutableSubsystemContext(*command_receiver, &root_context),

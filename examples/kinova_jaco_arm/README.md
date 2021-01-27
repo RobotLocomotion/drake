@@ -70,7 +70,7 @@ the value manipulation/kinova_jaco/jaco_constants.h needs to be set to 6 This ou
 j2s6s300_sphere_collision.urdf
 
 launch simulator
-bazel-bin/examples/kinova_jaco_arm/jaco_simulator -urdf manipulation/models/jaco_description/urdf/j2s6s300_sphere_collision.urdf
+bazel-bin/examples/kinova_jaco_arm/jaco_simulation -urdf manipulation/models/jaco_description/urdf/j2s6s300_sphere_collision.urdf
 
 launch controller
 bazel-bin/examples/kinova_jaco_arm/jaco_controller -urdf manipulation/models/jaco_description/urdf/j2s6s300_sphere_collision.urdf -num_joints 6 -num_fingers 3
