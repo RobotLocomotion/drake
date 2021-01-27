@@ -24,6 +24,11 @@ exports_files(
 )
 
 exports_files(
+    glob(["waypoints/**"]),
+    licenses = ["notice"],  # MIT
+)
+
+exports_files(
     glob(["fluidbox/**"]),
     licenses = ["notice"],  # MIT
 )
