@@ -16,15 +16,24 @@ namespace drake {
 namespace multibody {
 namespace {
 
-GTEST_TEST(EmptyMultibodyPlantCenterOfMassTest, GetCenterOfMassPosition) {
+GTEST_TEST(EmptyMultibodyPlantCenterOfMassTest, CalcCenterOfMassPosition) {
   MultibodyPlant<double> plant(0.0);
   plant.Finalize();
   auto context_ = plant.CreateDefaultContext();
   DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.CalcCenterOfMassPositionInWorld(*context_),
+      std::exception,
+      "CalcCenterOfMassPositionInWorld\\(\\): This MultibodyPlant contains "
+      "only the world_body\\(\\) so its center of mass is undefined.");
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  DRAKE_EXPECT_THROWS_MESSAGE(
       plant.CalcCenterOfMassPosition(*context_),
       std::exception,
-      "CalcCenterOfMassPosition\\(\\): This MultibodyPlant contains only the "
-      "world_body\\(\\) so its center of mass is undefined.");
+      "CalcCenterOfMassPositionInWorld\\(\\): This MultibodyPlant contains "
+      "only the world_body\\(\\) so its center of mass is undefined.");
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.CalcCenterOfMassTranslationalVelocityInWorld(*context_),
@@ -76,10 +85,18 @@ class MultibodyPlantCenterOfMassTest : public ::testing::Test {
         ((p_WSo_W + R_WS * p_SScm_S_) * mass_S_ +
          (p_WTo_W + R_WT * p_TTcm_T_) * mass_T_) /
         (mass_S_ + mass_T_);
-    Eigen::Vector3d p_WCcm = plant_.CalcCenterOfMassPosition(*context_);
+    Eigen::Vector3d p_WCcm = plant_.CalcCenterOfMassPositionInWorld(*context_);
     // Allow for 3 bits (2^3 = 8) of error.
     const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
     EXPECT_TRUE(CompareMatrices(p_WCcm, p_WCcm_expected, kTolerance));
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    Eigen::Vector3d p_WCcm_deprecated =
+        plant_.CalcCenterOfMassPosition(*context_);
+    EXPECT_TRUE(
+        CompareMatrices(p_WCcm_deprecated, p_WCcm_expected, kTolerance));
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
   }
 
   const RigidBody<double>& GetSphereBody() {
@@ -141,7 +158,7 @@ class MultibodyPlantCenterOfMassTest : public ::testing::Test {
 
 TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
   // Verify the plant's default center of mass position makes sense.
-  Eigen::Vector3d p_WCcm = plant_.CalcCenterOfMassPosition(*context_);
+  Eigen::Vector3d p_WCcm = plant_.CalcCenterOfMassPositionInWorld(*context_);
   const math::RigidTransformd X_WS0 = math::RigidTransformd::Identity();
   const math::RigidTransformd X_WT0 = math::RigidTransformd::Identity();
   Eigen::Vector3d result =
@@ -150,6 +167,13 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
   // Allow for 3 bits (2^3 = 8) of error.
   const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(CompareMatrices(p_WCcm, result, kTolerance));
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  Eigen::Vector3d p_WCcm_deprecatedA =
+      plant_.CalcCenterOfMassPosition(*context_);
+  EXPECT_TRUE(CompareMatrices(p_WCcm_deprecatedA, result, kTolerance));
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
   // Verify the plant's center of mass location for an arbitrary input.
   const Eigen::Vector3d p_WSo_W(1.1, 2.3, 3.7);
@@ -173,9 +197,9 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
   // Ensure center of mass methods throw an exception for empty model_instances.
   std::vector<ModelInstanceIndex> model_instances;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant_.CalcCenterOfMassPosition(*context_, model_instances),
+      plant_.CalcCenterOfMassPositionInWorld(*context_, model_instances),
       std::exception,
-      "CalcCenterOfMassPosition\\(\\): There were no bodies specified. "
+      "CalcCenterOfMassPositionInWorld\\(\\): There were no bodies specified. "
       "You must provide at least one selected body.");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -208,18 +232,26 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
 
   // Try one instance in model_instances.
   model_instances.push_back(triangle_instance_);
-  p_WCcm = plant_.CalcCenterOfMassPosition(*context_, model_instances);
+  p_WCcm = plant_.CalcCenterOfMassPositionInWorld(*context_, model_instances);
   EXPECT_TRUE(CompareMatrices(p_WCcm, p_WTo_W + p_TTcm_T_, kTolerance));
 
-  // Verify CalcCenterOfMassPosition() works for 2 instances in model_instances.
+  // Verify CalcCenterOfMassPositionInWorld() works for 2 instances
+  // in model_instances.
   model_instances.push_back(sphere_instance_);
   result = ((p_WSo_W + p_SScm_S_) * mass_S_ + (p_WTo_W + p_TTcm_T_) * mass_T_) /
            (mass_S_ + mass_T_);
-  p_WCcm = plant_.CalcCenterOfMassPosition(*context_, model_instances);
+  p_WCcm = plant_.CalcCenterOfMassPositionInWorld(*context_, model_instances);
   EXPECT_TRUE(CompareMatrices(p_WCcm, result, kTolerance));
 
-  // Verify CalcCenterOfMassPosition() works for 2 instances in model_instances,
-  // where the 2 objects have arbitrary orientation and position.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  Eigen::Vector3d p_WCcm_deprecatedB =
+      plant_.CalcCenterOfMassPosition(*context_, model_instances);
+  EXPECT_TRUE(CompareMatrices(p_WCcm_deprecatedB, result, kTolerance));
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+
+  // Verify CalcCenterOfMassPositionInWorld() works for 2 objects in
+  // model_instances, where the 2 objects have arbitrary orientation/position.
   const math::RigidTransformd X_WS2(math::RollPitchYawd(0.3, -1.5, 0.7),
                                     Eigen::Vector3d(5.2, -3.1, 10.9));
   const math::RigidTransformd X_WT2(math::RollPitchYawd(-2.3, -3.5, 1.2),
@@ -230,9 +262,9 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
   set_mass_sphere(0.0);
   set_mass_triangle(0.0);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant_.CalcCenterOfMassPosition(*context_, model_instances),
+      plant_.CalcCenterOfMassPositionInWorld(*context_, model_instances),
       std::exception,
-      "CalcCenterOfMassPosition\\(\\): The "
+      "CalcCenterOfMassPositionInWorld\\(\\): The "
       "system's total mass must be greater than zero.");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -261,11 +293,12 @@ TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
   // Ensure an exception is thrown if there is an invalid ModelInstanceIndex.
   ModelInstanceIndex error_index(10);
   model_instances.push_back(error_index);
-  EXPECT_THROW(plant_.CalcCenterOfMassPosition(*context_, model_instances),
-               std::exception);
+  EXPECT_THROW(plant_.CalcCenterOfMassPositionInWorld(
+      *context_, model_instances),
+          std::exception);
   EXPECT_THROW(plant_.CalcCenterOfMassTranslationalVelocityInWorld(
                    *context_, model_instances),
-               std::exception);
+                       std::exception);
 }
 
 }  // namespace

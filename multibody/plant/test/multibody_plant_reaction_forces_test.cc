@@ -228,7 +228,8 @@ class LadderTest : public ::testing::Test {
     const double weight = kGravity_ * kLadderMass_;
 
     // Position of the ladder's center of gravity.
-    const Vector3d p_WBcm = plant_->CalcCenterOfMassPosition(*plant_context_);
+    const Vector3d p_WBcm =
+        plant_->CalcCenterOfMassPositionInWorld(*plant_context_);
 
     // The x component of the contact force must counteract the torque due to
     // gravity plus the actuation torque.

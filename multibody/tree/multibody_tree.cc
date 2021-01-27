@@ -1239,12 +1239,12 @@ void MultibodyTree<T>::CalcPointsPositions(
 }
 
 template <typename T>
-Vector3<T> MultibodyTree<T>::CalcCenterOfMassPosition(
+Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
     const systems::Context<T>& context) const {
   if (!(num_bodies() > 1)) {
     throw std::runtime_error(
-        "CalcCenterOfMassPosition(): This MultibodyPlant contains only the "
-        "world_body() so its center of mass is undefined.");
+        "CalcCenterOfMassPositionInWorld(): This MultibodyPlant contains only "
+        "the world_body() so its center of mass is undefined.");
   }
 
   std::vector<ModelInstanceIndex> model_instances;
@@ -1252,17 +1252,17 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPosition(
        model_instance_index < num_model_instances(); ++model_instance_index)
     model_instances.push_back(model_instance_index);
 
-  return CalcCenterOfMassPosition(context, model_instances);
+  return CalcCenterOfMassPositionInWorld(context, model_instances);
 }
 
 template <typename T>
-Vector3<T> MultibodyTree<T>::CalcCenterOfMassPosition(
+Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
     const systems::Context<T>& context,
     const std::vector<ModelInstanceIndex>& model_instances) const {
   if (!(num_model_instances() > 1)) {
     throw std::runtime_error(
-        "CalcCenterOfMassPosition(): This MultibodyPlant contains only the "
-        "world_body() so its center of mass is undefined.");
+        "CalcCenterOfMassPositionInWorld(): This MultibodyPlant contains only "
+        "the world_body() so its center of mass is undefined.");
   }
 
   std::vector<BodyIndex> body_indexes;
@@ -1273,21 +1273,21 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPosition(
       body_indexes.push_back(body_index);
   }
 
-  return CalcCenterOfMassPosition(context, body_indexes);
+  return CalcCenterOfMassPositionInWorld(context, body_indexes);
 }
 
 template <typename T>
-Vector3<T> MultibodyTree<T>::CalcCenterOfMassPosition(
+Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
     const systems::Context<T>& context,
     const std::vector<BodyIndex>& body_indexes) const {
   if (!(num_bodies() > 1)) {
     throw std::logic_error(
-        "CalcCenterOfMassPosition(): This MultibodyPlant contains only the "
-        "world_body() so its center of mass is undefined.");
+        "CalcCenterOfMassPositionInWorld(): This MultibodyPlant contains only "
+        "the world_body() so its center of mass is undefined.");
   }
   if (body_indexes.empty()) {
     throw std::logic_error(
-        "CalcCenterOfMassPosition(): There were no bodies specified. "
+        "CalcCenterOfMassPositionInWorld(): There were no bodies specified. "
         "You must provide at least one selected body.");
   }
 
@@ -1312,7 +1312,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPosition(
 
   if (composite_mass <= 0) {
     throw std::logic_error(
-        "CalcCenterOfMassPosition(): The "
+        "CalcCenterOfMassPositionInWorld(): The "
         "system's total mass must be greater than zero.");
   }
 

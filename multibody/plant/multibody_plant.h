@@ -2428,50 +2428,54 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         context, frame_B, p_BQi, frame_A, p_AQi);
   }
 
-  /// This method computes the center of mass position p_WCcm of all bodies in
-  /// `MultibodyPlant` measured and expressed in world frame W. The bodies are
-  /// considered as a single composite body C, whose center of mass
-  /// `composite_mass` is located at Ccm. The world_body() is ignored.
-  ///
-  /// @param[in] context
-  ///   The context containing the state of the model. It stores the
-  ///   generalized positions q of the model.
-  /// @retval p_WCcm
-  ///   The output position of center of mass in the world frame W.
-  ///
-  /// @throws std::runtime_error if `MultibodyPlant` has no body except
-  ///   `world_body()`.
-  /// @throws std::exception if `composite_mass <= 0`.
-  Vector3<T> CalcCenterOfMassPosition(
+  /// Calculates the position vector from the world origin Wo to the center of
+  /// mass of all bodies in this MultibodyPlant, expressed in the world frame W.
+  /// @param[in] context Contains the state of the model.
+  /// @retval p_WScm_W position vector from Wo to Scm expressed in world frame
+  /// W, where Scm is the center of mass of the system S stored by `this` plant.
+  /// @throws std::exception if `this` has no body except world_body().
+  /// @throws std::exception if mₛ ≤ 0 (mₛ is the mass of `this` system S).
+  /// @note The world_body() is ignored.
+  Vector3<T> CalcCenterOfMassPositionInWorld(
       const systems::Context<T>& context) const {
     this->ValidateContext(context);
-    return internal_tree().CalcCenterOfMassPosition(context);
+    return internal_tree().CalcCenterOfMassPositionInWorld(context);
   }
 
-  /// This method computes the center of mass position p_WCcm of specified model
-  /// instances measured and expressed in world frame W. The specified model
-  /// instances are considered as a single composite body C, whose center of
-  /// mass `composite_mass` is located at Ccm. The models are selected by a
-  /// vector of model instances `model_instances`. This function does not
-  /// distinguish between welded bodies, joint connected bodies and free
-  /// bodies in the `model_instances`. The world_body() is ignored.
-  ///
-  /// @param[in] context
-  ///   The context containing the state of the model. It stores the
-  ///   generalized positions q of the model.
-  /// @param[in] model_instances
-  ///   The vector of selected model instances.
-  /// @retval p_WCcm
-  ///   The output position of center of mass in the world frame W.
-  ///
-  /// @throws std::runtime_error if `MultibodyPlant` has no model_instance
-  ///   except `world_model_instance()`.
-  /// @throws std::exception if `composite_mass <= 0`.
+  DRAKE_DEPRECATED("2021-04-21", "Use CalcCenterOfMassPositionInWorld() "
+                   "instead of CalcCenterOfMassPosition().")
   Vector3<T> CalcCenterOfMassPosition(
+      const systems::Context<T>& context) const {
+    return CalcCenterOfMassPositionInWorld(context);
+  }
+
+  /// Calculates the position vector from the world origin Wo to the center of
+  /// mass of all bodies contained in model_instances, expressed in the world
+  /// frame W.
+  /// @param[in] context Contains the state of the model.
+  /// @param[in] model_instances Vector of selected model instances. This method
+  /// does not distinguish between welded, joint connected, or floating bodies.
+  /// @retval p_WScm_W position vector from world origin Wo to Scm expressed in
+  /// the world frame W, where Scm is the center of mass of the system S of
+  /// bodies contained in model_instances.
+  /// @throws std::exception if model_instance only has world_model_instance(),
+  /// i.e., model_instances has no body except world_body().
+  /// @throws std::exception if mₛ ≤ 0 (mₛ is the mass of the system S).
+  /// @note The world_body() is ignored.
+  Vector3<T> CalcCenterOfMassPositionInWorld(
       const systems::Context<T>& context,
       const std::vector<ModelInstanceIndex>& model_instances) const {
     this->ValidateContext(context);
-    return internal_tree().CalcCenterOfMassPosition(context, model_instances);
+    return internal_tree().
+        CalcCenterOfMassPositionInWorld(context, model_instances);
+  }
+
+  DRAKE_DEPRECATED("2021-04-21", "Use CalcCenterOfMassPositionInWorld() "
+                   "instead of CalcCenterOfMassPosition().")
+  Vector3<T> CalcCenterOfMassPosition(
+      const systems::Context<T>& context,
+      const std::vector<ModelInstanceIndex>& model_instances) const {
+    return CalcCenterOfMassPositionInWorld(context, model_instances);
   }
 
   /// Calculates system center of mass translational velocity in world frame W.
@@ -2514,7 +2518,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// (the system's center of mass), use something like: <pre>
   ///   MultibodyPlant<T> plant;
   ///   // ... code to load a model ....
-  ///   const Vector3<T> p_WoScm_W = plant.CalcCenterOfMassPosition(context);
+  ///   const Vector3<T> p_WoScm_W =
+  ///     plant.CalcCenterOfMassPositionInWorld(context);
   ///   const SpatialMomentum<T> L_WScm_W =
   ///     plant.CalcSpatialMomentumInWorldAboutPoint(context, p_WoScm_W);
   /// </pre>
@@ -2545,7 +2550,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   const std::vector<ModelInstanceIndex> model_instances{
   ///     gripper_model_instance, robot_model_instance};
   ///   const Vector3<T> p_WoScm_W =
-  ///     plant.CalcCenterOfMassPosition(context, model_instances);
+  ///     plant.CalcCenterOfMassPositionInWorld(context, model_instances);
   ///   SpatialMomentum<T> L_WScm_W =
   ///     plant.CalcSpatialMomentumInWorldAboutPoint(context, model_instances,
   ///                                                p_WoScm_W);
