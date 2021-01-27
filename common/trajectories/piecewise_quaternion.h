@@ -85,30 +85,30 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
 
   /**
    * Interpolates orientation.
-   * @param time Time for interpolation.
-   * @return The interpolated quaternion at `time`.
+   * @param t Time for interpolation.
+   * @return The interpolated quaternion at `t`.
    */
-  Quaternion<T> orientation(const T& time) const;
+  Quaternion<T> orientation(const T& t) const;
 
-  MatrixX<T> value(const T& time) const override {
-    return orientation(time).matrix();
+  MatrixX<T> value(const T& t) const override {
+    return orientation(t).matrix();
   }
 
   /**
    * Interpolates angular velocity.
-   * @param time Time for interpolation.
-   * @return The interpolated angular velocity at `time`,
+   * @param t Time for interpolation.
+   * @return The interpolated angular velocity at `t`,
    * which is constant per segment.
    */
-  Vector3<T> angular_velocity(const T& time) const;
+  Vector3<T> angular_velocity(const T& t) const;
 
   /**
    * Interpolates angular acceleration.
-   * @param time Time for interpolation.
-   * @return The interpolated angular acceleration at `time`,
+   * @param t Time for interpolation.
+   * @return The interpolated angular acceleration at `t`,
    * which is always zero for slerp.
    */
-  Vector3<T> angular_acceleration(const T& time) const;
+  Vector3<T> angular_acceleration(const T& t) const;
 
   /**
    * Getter for the internal quaternion samples.

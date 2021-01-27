@@ -226,28 +226,3 @@ class TestTrajectories(unittest.TestCase):
         pq.Append(time=3., quaternion=q)
         pq.Append(time=4., rotation_matrix=R)
         pq.Append(time=5., angle_axis=a)
-
-        # Test getters.
-        pq = PiecewiseQuaternionSlerp(
-            breaks=[0, 1], angle_axes=[a, AngleAxis(np.pi/2, [0, 0, 1])]
-        )
-        np.testing.assert_equal(
-            np.array([1, 0, 0, 0]), pq.orientation(time=0).wxyz()
-        )
-        np.testing.assert_equal(
-            np.array([0, 0, np.pi/2]), pq.angular_velocity(time=0)
-        )
-        np.testing.assert_equal(
-            np.zeros(3), pq.angular_acceleration(time=0)
-        )
-
-        np.testing.assert_equal(
-            np.array([np.cos(np.pi/4), 0, 0, np.sin(np.pi/4)]),
-            pq.orientation(time=1).wxyz(),
-        )
-        np.testing.assert_equal(
-            np.array([0, 0, np.pi/2]), pq.angular_velocity(time=1)
-        )
-        np.testing.assert_equal(
-            np.zeros(3), pq.angular_acceleration(time=1)
-        )
