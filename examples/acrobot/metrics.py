@@ -8,6 +8,7 @@ def _wrap_to(value, low, high):
 
 def deviation_from_upright_equilibrium(x):
     return np.array([
+        # The upright equilibrium theta0 is pi; rotate this angle accordingly.
         _wrap_to(x[0], 0, 2 * np.pi) - np.pi,
         _wrap_to(x[1], -np.pi, np.pi),
         x[2],
@@ -18,7 +19,7 @@ def deviation_from_upright_equilibrium(x):
 def final_state_cost(x_tape):
     """
     Returns the L2-norm of the deviation from the upright equilibrium at the
-    final state in `x_tape`
+    final state in `x_tape`.
     """
     return np.linalg.norm(deviation_from_upright_equilibrium(x_tape[:, -1]))
 
@@ -38,8 +39,7 @@ def is_success(x_tape):
     Returns true if the final state in `x_tape` is close to the upright
     equilibrium.
     """
-    return np.linalg.norm(deviation_from_upright_equilibrium(
-        x_tape[:, -1])) < 1e-3
+    return final_state_cost(x_tape) < 1e-3
 
 
 def success_rate(x_tapes):

@@ -98,6 +98,11 @@ drake_cc_library(
     ],
 )
 
+drake_py_library(
+    name = "metrics",
+    srcs = ["metrics.py"],
+)
+
 drake_cc_library(
     name = "spong_controller",
     srcs = ["spong_controller.cc"],
@@ -165,6 +170,19 @@ drake_cc_binary(
         "//lcm",
         "//lcmtypes:acrobot",
         "//systems/analysis:simulator",
+    ],
+)
+
+drake_py_binary(
+    name = "optimizer_demo",
+    srcs = ["optimizer_demo.py"],
+    data = [
+        ":spong_sim_main_cc",
+        ":test/example_stochastic_scenario.yaml",
+    ],
+    deps = [
+        ":acrobot_io",
+        ":metrics",
     ],
 )
 
@@ -338,6 +356,13 @@ drake_cc_googletest(
     ],
 )
 
+drake_py_unittest(
+    name = "metrics_test",
+    deps = [
+        ":metrics",
+    ],
+)
+
 drake_cc_googletest(
     name = "multibody_dynamics_test",
     data = [":models"],
@@ -346,6 +371,17 @@ drake_cc_googletest(
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
+    ],
+)
+
+sh_test(
+    name = "optimizer_demo_smoke_test",
+    srcs = ["test/optimizer_demo_smoke_test.sh"],
+    data = [
+        ":optimizer_demo",
+    ],
+    tags = [
+        "no_memcheck",  # This wraps python; python is memcheck-exempt.
     ],
 )
 
