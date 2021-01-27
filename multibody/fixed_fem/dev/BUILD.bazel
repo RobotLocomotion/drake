@@ -192,6 +192,22 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "fem_solver",
+    hdrs = [
+        "fem_solver.h",
+    ],
+    deps = [
+        ":dirichlet_boundary_condition",
+        ":eigen_conjugate_gradient_solver",
+        ":fem_model",
+        ":linear_system_solver",
+        ":state_updater",
+        "//common:essential",
+        "//multibody/contact_solvers:sparse_linear_operator",
+    ],
+)
+
+drake_cc_library(
     name = "fem_state",
     hdrs = [
         "fem_state.h",
@@ -427,6 +443,23 @@ drake_cc_googletest(
     name = "fem_element_test",
     deps = [
         ":dummy_element",
+    ],
+)
+
+drake_cc_googletest(
+    name = "fem_solver_test",
+    deps = [
+        ":eigen_conjugate_gradient_solver",
+        ":fem_solver",
+        ":linear_constitutive_model",
+        ":linear_simplex_element",
+        ":simplex_gaussian_quadrature",
+        ":static_elasticity_element",
+        ":static_elasticity_model",
+        ":zeroth_order_state_updater",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry/proximity:make_box_mesh",
+        "//math:gradient",
     ],
 )
 

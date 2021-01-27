@@ -91,14 +91,15 @@ TEST_F(StaticElasticityModelTest, Geometry) {
 
 /* Tests that the residual of the model is the derivative of the elastic energy
  with respect to the generalized positions plus external force. */
-TEST_F(StaticElasticityModelTest, ResidualIsEnergyDerivativePlusExternalForce) {
+TEST_F(StaticElasticityModelTest,
+       ResidualIsEnergyDerivativeMinusExternalForce) {
   FemState<ElementType> state = MakeDeformedState();
   T energy = model_.CalcElasticEnergy(state);
   VectorX<T> residual(state.num_generalized_positions());
   model_.CalcResidual(state, &residual);
   VectorX<T> external_force(state.num_generalized_positions());
   model_.CalcExternalForce(state, &external_force);
-  EXPECT_TRUE(CompareMatrices(energy.derivatives() + external_force, residual,
+  EXPECT_TRUE(CompareMatrices(energy.derivatives() - external_force, residual,
                               std::numeric_limits<double>::epsilon()));
 }
 

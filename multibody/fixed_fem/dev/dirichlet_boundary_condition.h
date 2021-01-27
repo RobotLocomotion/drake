@@ -13,6 +13,8 @@
 namespace drake {
 namespace multibody {
 namespace fixed_fem {
+// TODO(xuchenhan-tri): Have FemModel own DirichletBoundaryCondition. See issue
+// #14668.
 /** %DirichletBoundaryCondition provides functionalities related to Dirichlet
  boundary conditions (BC) to the FEM solver. In particular, it provides the
  following functionalities:
@@ -26,7 +28,7 @@ namespace fixed_fem {
  like:
  ```
  // First, apply the boundary condition to the state.
- bc.ApplyBoundaryCondition(&state).
+ bc.ApplyBoundaryCondition(&state);
  // Then find the residual for the system without BC using FemModel.
  model.CalcResidual(state, &residual);
  // Modify the residual to account for the BC.
