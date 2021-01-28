@@ -2,6 +2,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/text_logging_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -91,6 +92,9 @@ PYBIND11_MODULE(_module_py, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
   m.doc() = "Bindings for //common:common";
 
+  // WARNING: Deprecations for this code is *weird* because of stupid cyclic
+  // dependencies (#7912). See the deferred deperecation function below.
+
   constexpr auto& doc = pydrake_doc.drake;
   m.attr("_HAVE_SPDLOG") = logging::kHaveSpdlog;
 
@@ -99,9 +103,13 @@ PYBIND11_MODULE(_module_py, m) {
 
   internal::RedirectPythonLogging();
 
-  py::enum_<drake::ToleranceType>(m, "ToleranceType", doc.ToleranceType.doc)
-      .value("absolute", drake::ToleranceType::kAbsolute)
-      .value("relative", drake::ToleranceType::kRelative);
+  py::enum_<drake::ToleranceType> tolerance_enum(
+      m, "ToleranceType", doc.ToleranceType.doc);
+  tolerance_enum  // BR
+      .value("kAbsolute", drake::ToleranceType::kAbsolute,
+          doc.ToleranceType.kAbsolute.doc)
+      .value("kRelative", drake::ToleranceType::kRelative,
+          doc.ToleranceType.kRelative.doc);
 
   py::enum_<drake::RandomDistribution>(
       m, "RandomDistribution", doc.RandomDistribution.doc)
@@ -181,6 +189,38 @@ PYBIND11_MODULE(_module_py, m) {
   // Define testing.
   py::module m_testing = m.def_submodule("_testing");
   testing::def_testing(m_testing);
+
+  // As noted above, we must defer *all* deprecated definitions to this
+  // function, so that it can be triggered once `common` is fully loaded for
+  // the `pydrake` root package, and permits the import of `deprecated`.
+  m.def("_deferred_deprecations_due_to_stupid_dependency_cyle",
+      // N.B. We need `mutable` so that we can keep (of course) mutate
+      // `tolerance_enum` while keeping the relevant data alive.
+      [tolerance_enum]() mutable {
+        // Define these as properties so we can deprecate them.
+        constexpr char absolute_deprecated[] =
+            "Deprecated:\n  ToleranceType.absolute is deprecated. Please use "
+            "ToleranceType.kAbsolute instead. This will be removed on or "
+            "after 2021-05-01.";
+        tolerance_enum.def_property_static(
+            "absolute",
+            [](py::handle /* cls */) {
+              WarnDeprecated(absolute_deprecated);
+              return drake::ToleranceType::kAbsolute;
+            },
+            nullptr, absolute_deprecated);
+        constexpr char relative_deprecated[] =
+            "Deprecated:\n  ToleranceType.relative is deprecated. Please use "
+            "ToleranceType.kRelative instead. This will be removed on or "
+            "after 2021-05-01.";
+        tolerance_enum.def_property_static(
+            "relative",
+            [](py::handle /* cls */) {
+              WarnDeprecated(relative_deprecated);
+              return drake::ToleranceType::kRelative;
+            },
+            nullptr, relative_deprecated);
+      });
 }
 
 }  // namespace

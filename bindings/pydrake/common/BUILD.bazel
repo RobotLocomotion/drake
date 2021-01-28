@@ -41,6 +41,7 @@ PACKAGE_INFO = get_pybind_package_info("//bindings")
 # dependency cycles with `pydrake:module_py`.
 # TODO(eric.cousineau): Decouple this module from the full-fledged
 # `libdrake.so`.
+# TODO(eric.cousineau): Remove this dependency cycle (#7912).
 drake_pybind_library(
     name = "_init_py",
     cc_deps = [
@@ -378,7 +379,10 @@ install(
 drake_py_unittest(
     name = "module_test",
     data = ["//examples/atlas:models"],
-    deps = [":module_py"],
+    deps = [
+        ":module_py",
+        "//bindings/pydrake/common/test_utilities:deprecation_py",
+    ],
 )
 
 drake_cc_googletest(

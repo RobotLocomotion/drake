@@ -43,6 +43,7 @@ from .common.deprecation import ModuleShim
 
 __all__ = ['common', 'getDrakePath']
 common.set_assertion_failure_to_throw_exception()
+common._module_py._deferred_deprecations_due_to_stupid_dependency_cyle()
 
 
 def getDrakePath():
