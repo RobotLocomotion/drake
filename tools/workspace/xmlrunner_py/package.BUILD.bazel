@@ -1,0 +1,15 @@
+# -*- python -*-
+
+load("@drake//tools/skylark:py.bzl", "py_library")
+
+licenses(["notice"])  # BSD-2-Clause
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+py_library(
+    name = "xmlrunner_py",
+    srcs = glob(["xmlrunner/**"], allow_empty = False),
+    imports = ["."],
+)

@@ -272,7 +272,7 @@ class ManipulationStation : public systems::Diagram<T> {
   /// camera body, RGB, and depth image frames are related.
   /// @param properties Properties for the RGBD camera.
   /// @pydrake_mkdoc_identifier{single_properties}
-  DRAKE_DEPRECATED("2021-03-01",
+  DRAKE_DEPRECATED("2021-04-01",
                    "CameraProperties are being deprecated. Please use the "
                    "DepthRenderCamera variant.")
   void RegisterRgbdSensor(

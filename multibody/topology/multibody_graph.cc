@@ -125,6 +125,24 @@ JointIndex MultibodyGraph::AddJoint(const std::string& name,
 
   // next available index.
   const JointIndex joint_index(num_joints());
+  auto [map_iter, inserted] = bodies_to_joint_.insert(
+      {{parent_body_index, child_body_index}, joint_index});
+  if (!inserted) {
+    auto existing_joint_index = map_iter->second;
+    const auto& existing_joint = get_joint(existing_joint_index);
+    const auto& existing_parent = get_body(existing_joint.parent_body());
+    const auto& existing_child = get_body(existing_joint.child_body());
+    const auto& new_parent = get_body(parent_body_index);
+    const auto& new_child = get_body(child_body_index);
+    throw std::runtime_error(
+        "This MultibodyGraph already has a joint '" + existing_joint.name() +
+        "' connecting '" + existing_parent.name() +
+        "' to '" + existing_child.name() +
+        "'. Therefore adding joint '" + name +
+        "' connecting '" + new_parent.name() + "' to '" + new_child.name() +
+        "' is not allowed.");
+  }
+
   // provide fast name lookup.
   joint_name_to_index_.insert({name, joint_index});
 

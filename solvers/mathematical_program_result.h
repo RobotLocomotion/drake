@@ -248,11 +248,13 @@ class MathematicalProgramResult final {
   /**
    * Gets the dual solution associated with a constraint.
    *
-   * We interpret the dual variable value as the "shadow price" of the original
-   * problem. Namely if we change the constraint bound by one unit (each unit is
-   * infinitesimally small), the change of the optimal cost is the value of the
-   * dual solution times the unit. Mathematically dual_solution = ∂optimal_cost
-   * / ∂bound.
+   * For constraints in the form lower <= f(x) <= upper (including linear
+   * inequality, linear equality, bounding box constraints, and general
+   * nonlinear constraints), we interpret the dual variable value as the "shadow
+   * price" of the original problem. Namely if we change the constraint bound by
+   * one unit (each unit is infinitesimally small), the change of the optimal
+   * cost is the value of the dual solution times the unit. Mathematically
+   * dual_solution = ∂optimal_cost / ∂bound.
    *
    * For a linear equality constraint Ax = b where b ∈ ℝⁿ, the vector of dual
    * variables has n rows, and dual_solution(i) is the value of the dual
@@ -273,8 +275,9 @@ class MathematicalProgramResult final {
    * For a bounding box constraint lower <= x <= upper, the interpretation of
    * the dual solution is the same as the linear inequality constraint.
    *
-   * For a Lorentz cone or rotated Lorentz cone constraint that Ax + b is in the
-   * cone, depending on the solver, the dual solution has different meanings:
+   * For a Lorentz cone or rotated Lorentz cone constraint that Ax + b is in
+   * the cone, depending on the solver, the dual solution has different
+   * meanings:
    * 1. If the solver is Gurobi, then the user can only obtain the dual solution
    *    by explicitly setting the options for computing dual solution.
    *    @code
@@ -297,6 +300,20 @@ class MathematicalProgramResult final {
    * 2. For nonlinear solvers like IPOPT, the dual solution for Lorentz cone
    *    constraint (with EvalType::kConvex) is the shadow price for
    *    z₀ - sqrt(z₁² + ... +zₙ²) ≥ 0, where z = Ax+b.
+   * 3. For other convex conic solver such as SCS, Mosek, CSDP, etc, the dual
+   *    solution to the (rotated) Lorentz cone constraint doesn't have the
+   *    "shadow price" interpretation, but should lie in the dual cone, and
+   *    satisfy the KKT condition. For more information, refer to
+   *    https://docs.mosek.com/9.2/capi/prob-def-conic.html#duality-for-conic-optimization
+   *    as an explanation.
+   *
+   * The interpretation for the dual variable to conic constraint x ∈ K can be
+   * different. Here K is a convex cone, including exponential cone, power
+   * cone, PSD cone, etc. When the problem is solved by a convex solver (like
+   * SCS, Mosek, CSDP, etc), often it has a dual variable z ∈ K*, where K* is
+   * the dual cone. Here the dual variable DOESN'T have the interpretation of
+   * "shadow price", but should satisfy the KKT condition, while the dual
+   * variable stays inside the dual cone.
    */
   template <typename C>
   Eigen::VectorXd GetDualSolution(const Binding<C>& constraint) const {

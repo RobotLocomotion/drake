@@ -24,7 +24,6 @@ drake_cc_package_library(
         ":discrete_lyapunov_equation",
         ":eigen_sparse_triplet",
         ":evenly_distributed_pts_on_sphere",
-        ":expmap",
         ":geometric_transform",
         ":gradient",
         ":gray_code",
@@ -217,16 +216,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "expmap",
-    srcs = ["expmap.cc"],
-    hdrs = ["expmap.h"],
-    deps = [
-        ":gradient",
-        "//common:essential",
-    ],
-)
-
-drake_cc_library(
     name = "gray_code",
     srcs = ["gray_code.cc"],
     hdrs = ["gray_code.h"],
@@ -373,17 +362,6 @@ drake_cc_googletest(
     name = "evenly_distributed_pts_on_sphere_test",
     deps = [
         ":evenly_distributed_pts_on_sphere",
-        "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "expmap_test",
-    copts = [
-        "-Wno-deprecated-declarations",
-    ],
-    deps = [
-        ":expmap",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )

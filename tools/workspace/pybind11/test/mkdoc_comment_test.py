@@ -332,8 +332,11 @@ eu non diam phasellus vestibulum.
         self.assertEqual(process_comment(input), output)
 
     def test_doxygen_system_tags(self):
-        # First empty line is required to parse system tags correctly
+        # First line is required to parse system tags correctly.
+        # This line must be non-empty, or reflow logic does not work as
+        # intended.
         input = """\
+/// Some text.
 ///
 /// @system
 /// name: Alchemist
@@ -344,16 +347,15 @@ eu non diam phasellus vestibulum.
 /// @endsystem
 """.rstrip()
         output = """\
-.. raw:: html
+Some text.
 
-<table align=center cellpadding=0 cellspacing=0><tr align=center><td
-style="vertical-align:middle"><table cellspacing=0
-cellpadding=0><tr><td align=right style="padding:5px 0px 5px
-0px">lead&rarr;</td></tr></table></td><td align=center
-style="border:solid;padding-left:20px;padding-right:20px;vertical-align:middle"
-bgcolor=#F0F0F0>Alchemist</td><td style="vertical-align:middle"><table
-cellspacing=0 cellpadding=0><tr><td align=left style="padding:5px 0px
-5px 0px">&rarr; gold</td></tr></table></td></tr></table>
+.. pydrake_system::
+
+    name: Alchemist
+    input_ports:
+    - lead
+    output_ports:
+    - gold
 """.rstrip()
         self.assertEqual(process_comment(input), output)
 

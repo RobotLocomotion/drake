@@ -16,60 +16,60 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/// This mobilizer fixes the relative pose `X_FM` of an outboard frame M in an
-/// inboard frame F as if "welding" them together at this fixed relative pose.
-/// Therefore, this mobilizer has no associated state with it.
-///
-/// @tparam_default_scalar
+// This mobilizer fixes the relative pose `X_FM` of an outboard frame M in an
+// inboard frame F as if "welding" them together at this fixed relative pose.
+// Therefore, this mobilizer has no associated state with it.
+//
+// @tparam_default_scalar
 template <typename T>
 class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WeldMobilizer)
 
-  /// Constructor for a %WeldMobilizer between the `inboard_frame_F` and
-  /// `outboard_frame_M`.
-  /// @param[in] X_FM Pose of `outboard_frame_M` in the `inboard_frame_F`.
+  // Constructor for a %WeldMobilizer between the `inboard_frame_F` and
+  // `outboard_frame_M`.
+  // @param[in] X_FM Pose of `outboard_frame_M` in the `inboard_frame_F`.
   WeldMobilizer(const Frame<T>& inboard_frame_F,
                 const Frame<T>& outboard_frame_M,
                 const math::RigidTransform<double>& X_FM) :
       MobilizerBase(inboard_frame_F, outboard_frame_M), X_FM_(X_FM) {}
 
-  /// @retval X_FM The pose of the outboard frame M in the inboard frame F.
+  // @retval X_FM The pose of the outboard frame M in the inboard frame F.
   const math::RigidTransform<double>& get_X_FM() const { return X_FM_; }
 
-  /// Computes the across-mobilizer transform `X_FM`, which for this mobilizer
-  /// is independent of the state stored in `context`.
+  // Computes the across-mobilizer transform `X_FM`, which for this mobilizer
+  // is independent of the state stored in `context`.
   math::RigidTransform<T> CalcAcrossMobilizerTransform(
       const systems::Context<T>& context) const final;
 
-  /// Computes the across-mobilizer velocity `V_FM` which for this mobilizer is
-  /// always zero since the outboard frame M is fixed to the inboard frame F.
+  // Computes the across-mobilizer velocity `V_FM` which for this mobilizer is
+  // always zero since the outboard frame M is fixed to the inboard frame F.
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const final;
 
-  /// Computes the across-mobilizer acceleration `A_FM` which for this mobilizer
-  /// is always zero since the outboard frame M is fixed to the inboard frame F.
+  // Computes the across-mobilizer acceleration `A_FM` which for this mobilizer
+  // is always zero since the outboard frame M is fixed to the inboard frame F.
   SpatialAcceleration<T> CalcAcrossMobilizerSpatialAcceleration(
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& vdot) const final;
 
-  /// Since this mobilizer has no generalized velocities associated with it,
-  /// this override is a no-op.
+  // Since this mobilizer has no generalized velocities associated with it,
+  // this override is a no-op.
   void ProjectSpatialForce(
       const systems::Context<T>& context,
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const final;
 
-  /// This override is a no-op since this mobilizer has no generalized
-  /// velocities associated with it.
+  // This override is a no-op since this mobilizer has no generalized
+  // velocities associated with it.
   void MapVelocityToQDot(
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v,
       EigenPtr<VectorX<T>> qdot) const final;
 
-  /// This override is a no-op since this mobilizer has no generalized
-  /// velocities associated with it.
+  // This override is a no-op since this mobilizer has no generalized
+  // velocities associated with it.
   void MapQDotToVelocity(
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& qdot,

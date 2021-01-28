@@ -133,9 +133,6 @@ class CameraInfo final {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CameraInfo)
 
-  // TODO(SeanCurtis-TRI): Add constructor from Matrix3<double> -- an intrinsic
-  //  matrix.
-
   /**
    Constructor that directly sets the image size, principal point, and focal
    lengths.
@@ -151,6 +148,16 @@ class CameraInfo final {
   */
   CameraInfo(int width, int height, double focal_x, double focal_y,
              double center_x, double center_y);
+
+  /**
+   Constructs this instance by extracting focal_x, focal_y, center_x, and
+   center_y from the provided intrinsic_matrix.
+
+   @throws std::runtime_error if intrinsic_matrix is not of the form indicated
+   above for the pinhole camera model (representing an affine / homogeneous
+   transform).
+  */
+  CameraInfo(int width, int height, const Eigen::Matrix3d& intrinsic_matrix);
 
   /**
    Constructs this instance from image size and vertical field of view. We

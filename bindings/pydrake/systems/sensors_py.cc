@@ -36,6 +36,7 @@ template <typename T, T... kPixelTypes>
 using constant_pack = type_pack<type_pack<constant<T, kPixelTypes>>...>;
 
 using Eigen::Map;
+using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using geometry::FrameId;
 using geometry::render::CameraProperties;
@@ -276,11 +277,15 @@ PYBIND11_MODULE(sensors, m) {
     py::class_<Class> cls(m, "CameraInfo", cls_doc.doc);
     cls  // BR
         .def(py::init<int, int, double>(), py::arg("width"), py::arg("height"),
-            py::arg("fov_y"), cls_doc.ctor.doc_3args)
+            py::arg("fov_y"), cls_doc.ctor.doc_3args_width_height_fov_y)
+        .def(py::init<int, int, const Matrix3d&>(), py::arg("width"),
+            py::arg("height"), py::arg("intrinsic_matrix"),
+            cls_doc.ctor.doc_3args_width_height_intrinsic_matrix)
         .def(py::init<int, int, double, double, double, double>(),
             py::arg("width"), py::arg("height"), py::arg("focal_x"),
             py::arg("focal_y"), py::arg("center_x"), py::arg("center_y"),
-            cls_doc.ctor.doc_6args)
+            cls_doc.ctor
+                .doc_6args_width_height_focal_x_focal_y_center_x_center_y)
         .def("width", &Class::width, cls_doc.width.doc)
         .def("height", &Class::height, cls_doc.height.doc)
         .def("focal_x", &Class::focal_x, cls_doc.focal_x.doc)

@@ -11,7 +11,7 @@
 namespace drake {
 namespace multibody {
 namespace internal {
-/**
+/*
  * The nonlinear constraints to be imposed for static friction force. See
  * AddStaticFrictionConeComplementarityConstraint() for more details. The
  * nonlinear constraints are (1) - (4) in
@@ -24,7 +24,7 @@ class StaticFrictionConeComplementarityNonlinearConstraint
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(
       StaticFrictionConeComplementarityNonlinearConstraint)
 
-  /**
+  /*
    * See AddStaticFrictionConeComplementarityConstraint() for details.
    */
   StaticFrictionConeComplementarityNonlinearConstraint(
@@ -33,11 +33,11 @@ class StaticFrictionConeComplementarityNonlinearConstraint
 
   ~StaticFrictionConeComplementarityNonlinearConstraint() override {}
 
-  /** The slack variable for n_Wᵀ * f_W. See
+  /* The slack variable for n_Wᵀ * f_W. See
    * AddStaticFrictionConeComplementarityConstraint().*/
   const symbolic::Variable& alpha_var() const { return alpha_var_; }
 
-  /** The slack variable for sdf. See
+  /* The slack variable for sdf. See
    * AddStaticFrictionConeComplementarityConstraint(). */
   const symbolic::Variable& beta_var() const { return beta_var_; }
 
@@ -56,7 +56,7 @@ class StaticFrictionConeComplementarityNonlinearConstraint
     *beta = x(x.rows() - 1);
   }
 
-  /**
+  /*
    * Create a binding of the constraint, together with the bound variables
    * q, λ, α and β. See AddStaticFrictionConeComplementarityConstraint()
    * for more details.

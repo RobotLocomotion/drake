@@ -53,15 +53,26 @@ def _check_shebang(filename, disallow_executable):
     """Return 0 if the filename's executable bit is consistent with the
     presence of a shebang line and the shebang line is in the whitelist of
     acceptable shebang lines, and 1 otherwise.
+
+    If the string "# noqa: shebang" is present in the file, then this check
+    will be ignored.
     """
+    with open(filename, mode='r', encoding='utf8') as file:
+        content = file.read()
+    if "# noqa: shebang" in content:
+        # Ignore.
+        return 0
+
     is_executable = os.access(filename, os.X_OK)
     if is_executable and disallow_executable:
         print("ERROR: {} is executable, but should not be".format(filename))
         print("note: fix via chmod a-x '{}'".format(filename))
         return 1
-    with open(filename, mode='r', encoding='utf8') as file:
-        shebang = file.readline().rstrip("\n")
-        has_shebang = shebang.startswith("#!")
+
+    lines = content.splitlines()
+    assert len(lines) > 0, f"Empty file? {filename}"
+    shebang = lines[0]
+    has_shebang = shebang.startswith("#!")
     if is_executable and not has_shebang:
         print("ERROR: {} is executable but lacks a shebang".format(filename))
         print("note: fix via chmod a-x '{}'".format(filename))

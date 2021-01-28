@@ -502,7 +502,7 @@ class GeometryState {
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   /** Implementation of QueryObject::RenderColorImage().
    @pre All poses have already been updated.  */
-  DRAKE_DEPRECATED("2021-03-01",
+  DRAKE_DEPRECATED("2021-04-01",
                    "CameraProperties are being deprecated. Please use the "
                    "ColorRenderCamera variant.")
   void RenderColorImage(const render::CameraProperties& camera,
@@ -512,7 +512,7 @@ class GeometryState {
 
   /** Implementation of QueryObject::RenderDepthImage().
    @pre All poses have already been updated.  */
-  DRAKE_DEPRECATED("2021-03-01",
+  DRAKE_DEPRECATED("2021-04-01",
                    "CameraProperties are being deprecated. Please use the "
                    "DepthRenderCamera variant.")
   void RenderDepthImage(const render::DepthCameraProperties& camera,
@@ -521,7 +521,7 @@ class GeometryState {
 
   /** Implementation of QueryObject::RenderLabelImage().
    @pre All poses have already been updated.  */
-  DRAKE_DEPRECATED("2021-03-01",
+  DRAKE_DEPRECATED("2021-04-01",
                    "CameraProperties are being deprecated. Please use the "
                    "ColorRenderCamera variant.")
   void RenderLabelImage(const render::CameraProperties& camera,

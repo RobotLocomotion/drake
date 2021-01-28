@@ -2,14 +2,51 @@
 
 package(default_visibility = ["//visibility:private"])
 
-load("@drake//tools/skylark:drake_py.bzl", "drake_py_binary")
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+    "drake_py_library",
+)
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
+
+# Unless `setup/ubuntu/install_prereqs.sh --with-doc-only` has been run, most
+# targets in this package will fail to build, so by default we'll disable them.
+#
+# A developer will have to explicitly opt-in in order to build these.
+_DEFAULT_BINARY_TAGS = [
+    "manual",
+]
+
+# Unless `setup/ubuntu/install_prereqs.sh --with-doc-only` has been run, most
+# tests in this package will fail to pass, so by default we'll disable them.
+#
+# A developer will have to explicitly opt-in in order to test these.
+_DEFAULT_TEST_TAGS = [
+    "manual",
+    # Some (currently disabled) Sphinx extensions try to reach out to the
+    # network; we should fail-fast if someone tries to turn them on.  In
+    # general, none our documentation tools should hit the internet, but
+    # their ecosystems might be doing so without us being aware.
+    "block-network",
+]
+
+# TODO(eric.cousineau): Add a smaller stub library stub to test this extension.
+drake_py_library(
+    name = "pydrake_sphinx_extension_py",
+    srcs = ["pydrake_sphinx_extension.py"],
+    tags = _DEFAULT_BINARY_TAGS,
+    deps = [
+        "//bindings/pydrake/common:cpp_template_py",
+        "//bindings/pydrake/common:deprecation_py",
+        "//doc:sphinx_base",
+        "//doc:system_doxygen",
+    ],
+)
 
 drake_py_binary(
     name = "gen_sphinx",
     srcs = [
         "gen_sphinx.py",
-        "pydrake_sphinx_extension.py",
     ],
     add_test_rule = 1,
     data = [
@@ -18,20 +55,13 @@ drake_py_binary(
     ],
     imports = ["."],
     main = "gen_sphinx.py",
-    tags = [
-        # Some (currently disabled) Sphinx extensions try to reach out to the
-        # network; we should fail-fast if someone tries to turn them on.
-        "block-network",
-        # This target requires the appropriate prerequisites script for each
-        # platform to be run with the optional --with-doc-only command line
-        # option.
-        "manual",
-        # Test exceeds timeout when run under Valgrind tools.
-        "no_valgrind_tools",
-    ],
+    tags = _DEFAULT_BINARY_TAGS,
     test_rule_args = ["--out_dir=<test>"],
     test_rule_size = "medium",
+    test_rule_tags = _DEFAULT_TEST_TAGS,
+    visibility = ["//doc:__pkg__"],
     deps = [
+        ":pydrake_sphinx_extension_py",
         "//bindings/pydrake",  # We must import `pydrake` to document it.
         "//doc:sphinx_base",
     ],
@@ -41,12 +71,8 @@ drake_py_binary(
     name = "serve_sphinx",
     srcs = ["serve_sphinx.py"],
     data = [":gen_sphinx"],
-    tags = [
-        # This target requires the appropriate prerequisites script for each
-        # platform to be run with the optional --with-doc-only command line
-        # option.
-        "manual",
-    ],
+    tags = _DEFAULT_BINARY_TAGS,
+    visibility = ["//doc:__pkg__"],
     deps = ["//doc:sphinx_base"],
 )
 

@@ -483,6 +483,7 @@ drake_py_unittest(
         "//examples/kuka_iiwa_arm:models",
         "//examples/multibody/cart_pole:models",
         "//examples/quadrotor:models",
+        "//manipulation/models/allegro_hand_description:models",
         "//manipulation/models/iiwa_description:models",
         "//systems/sensors:test_models",
     ],

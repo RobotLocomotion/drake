@@ -118,34 +118,38 @@ PYBIND11_MODULE(controllers, m) {
   py::class_<PidControlledSystem<double>, Diagram<double>>(
       m, "PidControlledSystem", doc.PidControlledSystem.doc)
       .def(py::init<std::unique_ptr<System<double>>, double, double, double,
-               int>(),
+               int, int>(),
           py::arg("plant"), py::arg("kp"), py::arg("ki"), py::arg("kd"),
           py::arg("state_output_port_index") = 0,
-          // Keep alive, ownership: `plant` keeps `self` alive.
-          py::keep_alive<2, 1>(),
-          doc.PidControlledSystem.ctor.doc_5args_double_gains)
-      .def(py::init<std::unique_ptr<System<double>>, const VectorX<double>&,
-               const VectorX<double>&, const VectorX<double>&, int>(),
-          py::arg("plant"), py::arg("kp"), py::arg("ki"), py::arg("kd"),
-          py::arg("state_output_port_index") = 0,
-          // Keep alive, ownership: `plant` keeps `self` alive.
-          py::keep_alive<2, 1>(),
-          doc.PidControlledSystem.ctor.doc_5args_vector_gains)
-      .def(py::init<std::unique_ptr<System<double>>, const MatrixX<double>&,
-               double, double, double, int>(),
-          py::arg("plant"), py::arg("feedback_selector"), py::arg("kp"),
-          py::arg("ki"), py::arg("kd"), py::arg("state_output_port_index") = 0,
+          py::arg("plant_input_port_index") = 0,
           // Keep alive, ownership: `plant` keeps `self` alive.
           py::keep_alive<2, 1>(),
           doc.PidControlledSystem.ctor.doc_6args_double_gains)
-      .def(py::init<std::unique_ptr<System<double>>, const MatrixX<double>&,
-               const VectorX<double>&, const VectorX<double>&,
-               const VectorX<double>&, int>(),
-          py::arg("plant"), py::arg("feedback_selector"), py::arg("kp"),
-          py::arg("ki"), py::arg("kd"), py::arg("state_output_port_index") = 0,
+      .def(py::init<std::unique_ptr<System<double>>, const VectorX<double>&,
+               const VectorX<double>&, const VectorX<double>&, int, int>(),
+          py::arg("plant"), py::arg("kp"), py::arg("ki"), py::arg("kd"),
+          py::arg("state_output_port_index") = 0,
+          py::arg("plant_input_port_index") = 0,
           // Keep alive, ownership: `plant` keeps `self` alive.
           py::keep_alive<2, 1>(),
           doc.PidControlledSystem.ctor.doc_6args_vector_gains)
+      .def(py::init<std::unique_ptr<System<double>>, const MatrixX<double>&,
+               double, double, double, int, int>(),
+          py::arg("plant"), py::arg("feedback_selector"), py::arg("kp"),
+          py::arg("ki"), py::arg("kd"), py::arg("state_output_port_index") = 0,
+          py::arg("plant_input_port_index") = 0,
+          // Keep alive, ownership: `plant` keeps `self` alive.
+          py::keep_alive<2, 1>(),
+          doc.PidControlledSystem.ctor.doc_7args_double_gains)
+      .def(py::init<std::unique_ptr<System<double>>, const MatrixX<double>&,
+               const VectorX<double>&, const VectorX<double>&,
+               const VectorX<double>&, int, int>(),
+          py::arg("plant"), py::arg("feedback_selector"), py::arg("kp"),
+          py::arg("ki"), py::arg("kd"), py::arg("state_output_port_index") = 0,
+          py::arg("plant_input_port_index") = 0,
+          // Keep alive, ownership: `plant` keeps `self` alive.
+          py::keep_alive<2, 1>(),
+          doc.PidControlledSystem.ctor.doc_7args_vector_gains)
       .def("get_control_input_port",
           &PidControlledSystem<double>::get_control_input_port,
           py_rvp::reference_internal,

@@ -298,7 +298,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
    @param data_as_state  `true` stores the data as State; `false` stores it as a
                          Parameter.  */
   DRAKE_DEPRECATED(
-      "2021-02-01",
+      "2021-04-01",
       "The choice of storing geometry data as State has been deprecated. "
       "Please use the default constructor which sets the geometry data as a "
       "Parameter. If this doesn't work for you please submit an issue in Drake "

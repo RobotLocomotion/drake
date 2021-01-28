@@ -381,7 +381,7 @@ GTEST_TEST(RenderEngine, DetectDoCloneFailure) {
 }
 
 // Test infrastructure to support deprecation efforts. After completing the
-// deprecation (2021-03-01), all of this test infrastructure can/should simply
+// deprecation (2021-04-01), all of this test infrastructure can/should simply
 // go away. In the deprecation period there are three possible configurations of
 // a child RenderEngine class:
 //

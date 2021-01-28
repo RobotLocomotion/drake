@@ -241,17 +241,21 @@ class TestControllers(unittest.TestCase):
     def test_pid_controlled_system(self):
         controllers = [
             PidControlledSystem(plant=PendulumPlant(), kp=1., ki=0.,
-                                kd=2., state_output_port_index=0),
+                                kd=2., state_output_port_index=0,
+                                plant_input_port_index=0),
             PidControlledSystem(plant=PendulumPlant(), kp=[0], ki=[1],
-                                kd=[2], state_output_port_index=0),
+                                kd=[2], state_output_port_index=0,
+                                plant_input_port_index=0),
             PidControlledSystem(plant=PendulumPlant(),
                                 feedback_selector=np.eye(2), kp=1.,
                                 ki=0., kd=2.,
-                                state_output_port_index=0),
+                                state_output_port_index=0,
+                                plant_input_port_index=0),
             PidControlledSystem(plant=PendulumPlant(),
                                 feedback_selector=np.eye(2),
                                 kp=[0], ki=[1], kd=[2],
-                                state_output_port_index=0),
+                                state_output_port_index=0,
+                                plant_input_port_index=0),
         ]
 
         for controller in controllers:

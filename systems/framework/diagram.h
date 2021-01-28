@@ -99,7 +99,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
   /// Returns an arbitrary "locator" for one of the subsystem input ports that
   /// were exported to the @p port_index input port for the Diagram.
-  DRAKE_DEPRECATED("2021-03-01", "Use GetInputPortLocators() instead.")
+  DRAKE_DEPRECATED("2021-04-01", "Use GetInputPortLocators() instead.")
   InputPortLocator get_input_port_locator(InputPortIndex port_index) const;
 
   /// Returns the "locator" for the subsystem output port that was exported as

@@ -52,7 +52,7 @@
 namespace drake {
 namespace multibody {
 namespace internal {
-/**
+/*
  * Impose the nonlinear constraints in @ref
  * sliding_friction_complementarity_constraint, namely constraint (1) - (4).
  * Notice that we will relax the complementarity constraint (2) as
@@ -69,7 +69,7 @@ class SlidingFrictionComplementarityNonlinearConstraint
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(
       SlidingFrictionComplementarityNonlinearConstraint)
 
-  /**
+  /*
    * @param contact_wrench_evaluator An evaluator that computes the contact
    * wrench between a pair of geometries. We will only impose the constraint on
    * the contact force, the contact torque is unconstrained.
@@ -84,7 +84,7 @@ class SlidingFrictionComplementarityNonlinearConstraint
 
   void UpdateComplementarityTolerance(double complementarity_tolerance);
 
-  /**
+  /*
    * Getter for the slack variable c, used in the constraint
    *
    *     f_sliding_tangential = -c * v_sliding
@@ -116,7 +116,7 @@ class SlidingFrictionComplementarityNonlinearConstraint
     *x << q, v, lambda, f_static, f_sliding, c;
   }
 
-  /**
+  /*
    * Return the sparsity pattern of the constraint, when we compute the gradient
    * of the constraint w.r.t the variable itself (namely when
    * autoDiffToGradientMatrix(x) = Identity in DoEval(x, y)).

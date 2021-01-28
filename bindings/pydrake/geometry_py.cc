@@ -279,7 +279,7 @@ void def_geometry_render(py::module m) {
         m, "CameraProperties", doc.CameraProperties.doc_deprecated);
     cls  // BR
         .def(py_init_deprecated<Class, int, int, double, std::string>(
-                 "Deprecated; due to be removed after 2021-03-01. Please use "
+                 "Deprecated; due to be removed after 2021-04-01. Please use "
                  "ColorRenderCamera instead"),
             py::arg("width"), py::arg("height"), py::arg("fov_y"),
             py::arg("renderer_name"), doc.CameraProperties.ctor.doc)
@@ -299,7 +299,7 @@ void def_geometry_render(py::module m) {
     cls  // BR
         .def(py_init_deprecated<Class, int, int, double, std::string, double,
                  double>(
-                 "Deprecated; due to be removed after 2021-03-01. Please use "
+                 "Deprecated; due to be removed after 2021-04-01. Please use "
                  "DepthRenderCamera instead"),
             py::arg("width"), py::arg("height"), py::arg("fov_y"),
             py::arg("renderer_name"), py::arg("z_near"), py::arg("z_far"),
@@ -490,7 +490,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             WrapDeprecated(
                 "Please use SceneGraphInspector.SourceIsRegistered("
                 "source_id=value) instead. This variant will be removed after"
-                " after 2021-03-01",
+                " after 2021-04-01",
                 &Class::SourceIsRegistered),
             py::arg("id"), cls_doc.SourceIsRegistered.doc)
         .def("GetName",
@@ -818,7 +818,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             WrapDeprecated("Please use "
                            "QueryObject.ComputeSignedDistancePairClosestPoints("
                            "geometry_id_A=value1, geometry_id_B=value2). This "
-                           "variant will be removed on or after 2021-03-01.",
+                           "variant will be removed on or after 2021-04-01.",
                 &QueryObject<T>::ComputeSignedDistancePairClosestPoints),
             py::arg("id_A"), py::arg("id_B"),
             cls_doc.ComputeSignedDistancePairClosestPoints.doc)

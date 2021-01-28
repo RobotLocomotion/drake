@@ -8,16 +8,30 @@ namespace sensors {
 
 CameraInfo::CameraInfo(int width, int height, double focal_x, double focal_y,
              double center_x, double center_y)
-    : width_(width), height_(height), intrinsic_matrix_((
+    : CameraInfo(width, height, (
           Eigen::Matrix3d() << focal_x, 0., center_x,
                                0., focal_y, center_y,
-                               0., 0., 1.).finished()) {
+                               0., 0., 1.).finished()) {}
+
+CameraInfo::CameraInfo(
+      int width, int height, const Eigen::Matrix3d& intrinsic_matrix)
+    : width_(width), height_(height),
+      intrinsic_matrix_(intrinsic_matrix) {
   DRAKE_ASSERT(width > 0);
   DRAKE_ASSERT(height > 0);
-  DRAKE_ASSERT(focal_x > 0);
-  DRAKE_ASSERT(focal_y > 0);
-  DRAKE_ASSERT(center_x > 0 && center_x < static_cast<double>(width));
-  DRAKE_ASSERT(center_y > 0 && center_y < static_cast<double>(height));
+  const Eigen::Matrix3d& K = intrinsic_matrix;
+  DRAKE_ASSERT(K(0, 0) > 0);
+  DRAKE_ASSERT(K(1, 1) > 0);
+  DRAKE_ASSERT(K(0, 2) > 0 && K(0, 2) < static_cast<double>(width));
+  DRAKE_ASSERT(K(1, 2) > 0 && K(1, 2) < static_cast<double>(height));
+  // TODO(eric.cousineau): Relax this with a tolerance?
+  // Check off-diagonal terms.
+  DRAKE_ASSERT(K(0, 1) == 0.0);
+  DRAKE_ASSERT(K(1, 0) == 0.0);
+  // Check homogeneous row.
+  DRAKE_ASSERT(K(2, 0) == 0.0);
+  DRAKE_ASSERT(K(2, 1) == 0.0);
+  DRAKE_ASSERT(K(2, 2) == 1.0);
 }
 
 CameraInfo::CameraInfo(int width, int height, double vertical_fov_rad)
@@ -32,6 +46,8 @@ CameraInfo::CameraInfo(int width, int height, double vertical_fov_rad)
 //  However, we don't want to look like this class is coupled with OpenGL. How
 //  do we articulate this math in a way that *doesn't* depend on OpenGL?
 //  See https://github.com/SeanCurtis-TRI/drake/pull/5#pullrequestreview-264447958.
+
+
 
 }  // namespace sensors
 }  // namespace systems

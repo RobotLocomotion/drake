@@ -43,7 +43,7 @@ ZeroOrderHold<T>::ZeroOrderHold(
         },
         {this->xa_ticket()});
 
-    this->DeclareAbstractState(abstract_model_value_->Clone());
+    this->DeclareAbstractState(*abstract_model_value_);
     this->DeclarePeriodicUnrestrictedUpdateEvent(period_sec_, 0.,
         &ZeroOrderHold::LatchInputAbstractValueToState);
   }

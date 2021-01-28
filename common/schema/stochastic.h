@@ -54,7 +54,7 @@ Alternatively, you might load a YAML file such as this:
 stuff:
   value: !Gaussian
     mean: 1.0
-    std: 0.5
+    stddev: 0.5
 ```
 
 Now, `stuff.value` is set to gaussian variable with the given mean and standard
@@ -88,7 +88,7 @@ These one-line spellings are the equivalent to those above.
 
 ```
 stuff:
-  value: !Gaussian { mean: 1.0, std: 0.5 }
+  value: !Gaussian { mean: 1.0, stddev: 0.5 }
 ```
 
 ```
@@ -185,7 +185,7 @@ Or:
 thing:
   value: !GaussianVector  # The first element is a constant 2.0, not stochastic.
     mean: [2.0, 3.0]
-    std: [0.0, 1.0]
+    stddev: [0.0, 1.0]
 ```
 
 # See also

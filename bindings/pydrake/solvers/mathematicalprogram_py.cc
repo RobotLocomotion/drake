@@ -207,6 +207,10 @@ class PyFunctionConstraint : public Constraint {
         double_func_(Wrap<double, DoubleFunc>(func)),
         autodiff_func_(Wrap<AutoDiffXd, AutoDiffFunc>(func)) {}
 
+  using Constraint::set_bounds;
+  using Constraint::UpdateLowerBound;
+  using Constraint::UpdateUpperBound;
+
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
       Eigen::VectorXd* y) const override {
@@ -1262,6 +1266,17 @@ for every column of ``prog_var_vals``. )""")
             return self.CheckSatisfied(x);
           },
           py::arg("x"), doc.Constraint.CheckSatisfied.doc);
+
+  py::class_<PyFunctionConstraint, Constraint,
+      std::shared_ptr<PyFunctionConstraint>>(m, "PyFunctionConstraint",
+      "Constraint with its evaluator as a Python function")
+      .def("UpdateLowerBound", &PyFunctionConstraint::UpdateLowerBound,
+          py::arg("new_lb"), "Update the lower bound of the constraint.")
+      .def("UpdateUpperBound", &PyFunctionConstraint::UpdateUpperBound,
+          py::arg("new_ub"), "Update the upper bound of the constraint.")
+      .def("set_bounds", &PyFunctionConstraint::set_bounds,
+          py::arg("lower_bound"), py::arg("upper_bound"),
+          "Set both the lower and upper bounds of the constraint.");
 
   py::class_<LinearConstraint, Constraint, std::shared_ptr<LinearConstraint>>(
       m, "LinearConstraint", doc.LinearConstraint.doc)

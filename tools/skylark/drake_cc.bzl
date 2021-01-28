@@ -502,6 +502,7 @@ def drake_cc_binary(
         add_test_rule = 0,
         test_rule_args = [],
         test_rule_data = [],
+        test_rule_tags = None,
         test_rule_size = None,
         test_rule_timeout = None,
         test_rule_flaky = 0,
@@ -569,7 +570,7 @@ def drake_cc_binary(
             flaky = test_rule_flaky,
             linkstatic = linkstatic,
             args = test_rule_args,
-            tags = tags + ["nolint"],
+            tags = (test_rule_tags or []) + ["nolint"],
             **kwargs
         )
 

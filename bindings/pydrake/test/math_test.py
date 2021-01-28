@@ -169,7 +169,6 @@ class TestMath(unittest.TestCase):
         self.assertEqual((X @ v).shape, (3,))
         self.assertEqual((X @ v.reshape((3, 1))).shape, (3, 1))
         self.assertEqual((X @ vs).shape, (3, 2))
-        print(help(RigidTransform.multiply))
         # - Test vector multiplication.
         R_AB = RotationMatrix([
             [0., 1, 0],

@@ -93,6 +93,7 @@ drake_cc_library(
     hdrs = [
         "trajectory_utils.h",
     ],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         "//common/trajectories:piecewise_polynomial",
         "//common/trajectories:piecewise_quaternion",
@@ -160,6 +161,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "trajectory_utils_test",
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":trajectory_utils",
         "//common/test_utilities:eigen_matrix_compare",

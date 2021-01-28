@@ -40,7 +40,7 @@ TEST_F(UnboundedLinearProgramTest0, Test) {
         result.get_solver_details<MosekSolver>();
     EXPECT_EQ(mosek_solver_details.rescode, 0);
     // This problem status is defined in
-    // https://docs.mosek.com/9.0/capi/constants.html#mosek.prosta
+    // https://docs.mosek.com/9.2/capi/constants.html#mosek.prosta
     const int MSK_SOL_STA_DUAL_INFEAS_CER = 6;
     EXPECT_EQ(mosek_solver_details.solution_status,
               MSK_SOL_STA_DUAL_INFEAS_CER);
@@ -82,8 +82,9 @@ TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   }
 }
 
-INSTANTIATE_TEST_SUITE_P(MosekTest, TestEllipsoidsSeparation,
-                        ::testing::ValuesIn(GetEllipsoidsSeparationProblems()));
+INSTANTIATE_TEST_SUITE_P(
+    MosekTest, TestEllipsoidsSeparation,
+    ::testing::ValuesIn(GetEllipsoidsSeparationProblems()));
 
 TEST_P(TestQPasSOCP, TestSOCP) {
   MosekSolver mosek_solver;
@@ -93,7 +94,7 @@ TEST_P(TestQPasSOCP, TestSOCP) {
 }
 
 INSTANTIATE_TEST_SUITE_P(MosekTest, TestQPasSOCP,
-                        ::testing::ValuesIn(GetQPasSOCPProblems()));
+                         ::testing::ValuesIn(GetQPasSOCPProblems()));
 
 TEST_P(TestFindSpringEquilibrium, TestSOCP) {
   MosekSolver mosek_solver;
@@ -183,7 +184,7 @@ GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithOverlappingVariables) {
 GTEST_TEST(TestExponentialConeProgram, ExponentialConeTrivialExample) {
   MosekSolver solver;
   if (solver.available()) {
-    ExponentialConeTrivialExample(solver, 1E-5);
+    ExponentialConeTrivialExample(solver, 1E-5, true);
   }
 }
 
@@ -232,7 +233,7 @@ GTEST_TEST(MosekTest, SolverOptionsTest) {
   prog.AddLinearConstraint(100 * x(0) + 100 * x(1) <= 1);
   prog.AddConstraint(x(0) >= 0);
   prog.AddConstraint(x(1) >= 0);
-  prog.AddLinearCost(1E5* x(0) + x(1));
+  prog.AddLinearCost(1E5 * x(0) + x(1));
 
   SolverOptions solver_options;
   solver_options.SetOption(MosekSolver::id(), "MSK_DPAR_DATA_TOL_C_HUGE", 1E3);
@@ -241,7 +242,7 @@ GTEST_TEST(MosekTest, SolverOptionsTest) {
   mosek_solver.Solve(prog, {}, solver_options, &result);
   EXPECT_FALSE(result.is_success());
   // This response code is defined in
-  // https://docs.mosek.com/9.0/capi/response-codes.html#mosek.rescode
+  // https://docs.mosek.com/9.2/capi/response-codes.html#mosek.rescode
   const int MSK_RES_ERR_HUGE_C{1375};
   EXPECT_EQ(result.get_solver_details<MosekSolver>().rescode,
             MSK_RES_ERR_HUGE_C);
@@ -263,11 +264,11 @@ GTEST_TEST(MosekSolver, SolverOptionsErrorTest) {
   mosek_solver.Solve(prog, {}, solver_options, &result);
   const auto& solver_details = result.get_solver_details<MosekSolver>();
   // This response code is defined in
-  // https://docs.mosek.com/9.0/capi/response-codes.html#mosek.rescode
+  // https://docs.mosek.com/9.2/capi/response-codes.html#mosek.rescode
   const int MSK_RES_ERR_PARAM_NAME_INT = 1207;
   EXPECT_EQ(solver_details.rescode, MSK_RES_ERR_PARAM_NAME_INT);
   // This problem status is defined in
-  // https://docs.mosek.com/9.0/capi/constants.html#mosek.prosta
+  // https://docs.mosek.com/9.2/capi/constants.html#mosek.prosta
   const int MSK_PRO_STA_UNKNOWN = 0;
   EXPECT_EQ(solver_details.solution_status, MSK_PRO_STA_UNKNOWN);
 
@@ -461,6 +462,22 @@ GTEST_TEST(MosekTest, EqualityConstrainedQPDualSolution2) {
   MosekSolver solver;
   if (solver.available()) {
     TestEqualityConstrainedQPDualSolution2(solver);
+  }
+}
+
+GTEST_TEST(MosekSolver, SocpDualSolution1) {
+  MosekSolver solver;
+  if (solver.available()) {
+    SolverOptions solver_options{};
+    TestSocpDualSolution1(solver, solver_options, 1E-7);
+  }
+}
+
+GTEST_TEST(MosekSolver, SocpDualSolution2) {
+  MosekSolver solver;
+  if (solver.available()) {
+    SolverOptions solver_options{};
+    TestSocpDualSolution2(solver, solver_options, 1E-6, true);
   }
 }
 

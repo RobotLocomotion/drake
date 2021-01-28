@@ -16,7 +16,7 @@
 
 using Rod2D = drake::examples::rod2d::Rod2D<double>;
 using drake::examples::rod2d::Rod2dGeometry;
-using drake::geometry::DrakeVisualizer;
+using drake::geometry::DrakeVisualizerd;
 using drake::geometry::SceneGraph;
 using drake::systems::Context;
 using drake::systems::DiagramBuilder;
@@ -57,7 +57,7 @@ int main(int argc, char* argv[]) {
   auto& scene_graph = *builder.AddSystem<SceneGraph<double>>();
   Rod2dGeometry::AddToBuilder(FLAGS_rod_radius, rod->get_rod_half_length() * 2,
                               &builder, rod->state_output(), &scene_graph);
-  DrakeVisualizer::AddToBuilder(&builder, scene_graph);
+  DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
 
   // Set the names of the systems.
   rod->set_name("rod");

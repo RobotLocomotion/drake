@@ -16,48 +16,8 @@ drake_cc_package_library(
     name = "math",
     visibility = ["//visibility:public"],
     deps = [
-        ":spatial_acceleration",
         ":spatial_algebra",
-        ":spatial_force",
-        ":spatial_momentum",
-        ":spatial_vector",
-        ":spatial_velocity",
     ],
-)
-
-drake_cc_library(
-    name = "spatial_vector",
-    deprecation = "DRAKE_DEPRECATED: Do not directly depend on this library. Depend on \"@drake//multibody/math:spatial_algebra\" or \"@drake//multibody/math\" instead. This library will be removed on 2021-01-01.",  # noqa
-    tags = ["manual"],
-    deps = [":spatial_algebra"],
-)
-
-drake_cc_library(
-    name = "spatial_velocity",
-    deprecation = "DRAKE_DEPRECATED: Do not directly depend on this library. Depend on \"@drake//multibody/math:spatial_algebra\" or \"@drake//multibody/math\" instead. This library will be removed on 2021-01-01.",  # noqa
-    tags = ["manual"],
-    deps = [":spatial_algebra"],
-)
-
-drake_cc_library(
-    name = "spatial_acceleration",
-    deprecation = "DRAKE_DEPRECATED: Do not directly depend on this library. Depend on \"@drake//multibody/math:spatial_algebra\" or \"@drake//multibody/math\" instead. This library will be removed on 2021-01-01.",  # noqa
-    tags = ["manual"],
-    deps = [":spatial_algebra"],
-)
-
-drake_cc_library(
-    name = "spatial_force",
-    deprecation = "DRAKE_DEPRECATED: Do not directly depend on this library. Depend on \"@drake//multibody/math:spatial_algebra\" or \"@drake//multibody/math\" instead. This library will be removed on 2021-01-01.",  # noqa
-    tags = ["manual"],
-    deps = [":spatial_algebra"],
-)
-
-drake_cc_library(
-    name = "spatial_momentum",
-    deprecation = "DRAKE_DEPRECATED: Do not directly depend on this library. Depend on \"@drake//multibody/math:spatial_algebra\" or \"@drake//multibody/math\" instead. This library will be removed on 2021-01-01.",  # noqa
-    tags = ["manual"],
-    deps = [":spatial_algebra"],
 )
 
 drake_cc_library(

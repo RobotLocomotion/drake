@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/common/trajectories/piecewise_quaternion.h"
@@ -19,7 +20,8 @@ namespace manipulation {
  * assumed to be independent of each other.
  */
 template <typename T>
-class PiecewiseCubicTrajectory {
+class DRAKE_DEPRECATED("2021-05-01", "Use PiecewisePolynomial instead.")
+PiecewiseCubicTrajectory {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PiecewiseCubicTrajectory)
 
@@ -117,7 +119,8 @@ class PiecewiseCubicTrajectory {
  * PiecewiseQuaternionSlerp.
  */
 template <typename T>
-class PiecewiseCartesianTrajectory {
+class DRAKE_DEPRECATED("2021-05-01", "Use PiecewisePoseTrajectory instead.")
+PiecewiseCartesianTrajectory {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PiecewiseCartesianTrajectory)
 

@@ -581,11 +581,17 @@ DiscreteStateIndex LeafSystem<T>::DeclareDiscreteState(
 
 template <typename T>
 AbstractStateIndex LeafSystem<T>::DeclareAbstractState(
-    std::unique_ptr<AbstractValue> abstract_state) {
+    const AbstractValue& abstract_state) {
   const AbstractStateIndex index(model_abstract_states_.size());
-  model_abstract_states_.AddModel(index, std::move(abstract_state));
+  model_abstract_states_.AddModel(index, abstract_state.Clone());
   this->AddAbstractState(index);
   return index;
+}
+
+template <typename T>
+AbstractStateIndex LeafSystem<T>::DeclareAbstractState(
+    std::unique_ptr<AbstractValue> abstract_state) {
+  return this->DeclareAbstractState(*abstract_state);
 }
 
 template <typename T>

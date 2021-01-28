@@ -18,14 +18,15 @@ ElasticityElement<T, IsoparametricElementType, QuadratureType>::
       density_(density),
       constitutive_model_(std::move(constitutive_model)),
       dxidX_(num_quadrature_points()),
+      dSdX_transpose_(num_quadrature_points()),
       reference_positions_(reference_positions),
       reference_volume_(num_quadrature_points()) {
   /* TODO(xuchenhan-tri): Consider removing the template NaturalDim from
    IsoparametricElement and Quadrature (e.g. with CRTP). */
   static_assert(is_isoparametric_element<IsoparametricElementType>::value,
-      "IsoparametricElementType must be a derived class of "
-      "IsoparametricElement<T, NaturalDim>, where NaturalDim can "
-      "be 1, 2 or 3.");
+                "IsoparametricElementType must be a derived class of "
+                "IsoparametricElement<T, NaturalDim>, where NaturalDim can "
+                "be 1, 2 or 3.");
   static_assert(is_quadrature<QuadratureType>::value,
                 "QuadratureType must be a derived class of "
                 "Quadrature<T, NaturalDim>, where NaturalDim can "
@@ -64,8 +65,11 @@ ElasticityElement<T, IsoparametricElementType, QuadratureType>::
   // Record the inverse Jacobian at the reference configuration which is used in
   // the calculation of deformation gradient.
   const std::vector<MatrixX<T>> dxidX = shape_.CalcJacobianInverse(dXdxi);
+  const std::vector<MatrixX<T>>& dSdxi =
+      shape_.CalcGradientInParentCoordinates();
   for (int q = 0; q < num_quadrature_points(); ++q) {
     dxidX_[q] = Eigen::Ref<const MatrixD3>(dxidX[q]);
+    dSdX_transpose_[q] = (dSdxi[q] * dxidX[q]).transpose();
   }
 }
 
@@ -98,6 +102,67 @@ T ElasticityElement<T, IsoparametricElementType,
   return elastic_energy;
 }
 
+/* The stiffness matrix calculated here is the same as the stiffness matrix
+ calculated in [Bonet, 2016] equation (9.50b) without the external force
+ component.
+ Without the external force component, (9,50b) reads Kₐᵦ = Kₐᵦ,c + Kₐᵦ,σ.
+ Kₐᵦ,c is given by ∫dSᵃ/dxₖ cᵢₖⱼₗ dSᵇ/dxₗ dx (9.35), and
+ Kₐᵦ,σ is given by ∫dSᵃ/dxₖ σₖₗ dSᵇ/dxₗ dx (9.44c). Notice that we used S to
+ denote shape functions whereas [Bonet, 2016] uses N.
+ The stiffness we calculate here is given by ∫ dF/dxᵇ : dP/dF : dF/dxᵃ dX.
+ The calculation uses a different conjugate pair pair, but is analytically equal
+ to Kₐᵦ,c + Kₐᵦ,σ. See multibody/fem/dev/doc/stiffness_matrix.pdf for the
+ derivation that shows the equivalence.
+ // TODO(xuchenhan-tri): Update the directory above when this file moves out of
+ dev/.
+
+ Reference: [Bonet, 2016] Bonet, Javier, Antonio J.Gil, and
+ Richard D. Wood. Nonlinear solid mechanics for finite element analysis:
+ statics. Cambridge University Press, 2016. */
+
+/* TODO(xuchenhan-tri): Consider performing the calculation in current
+coordinates. A few trade-offs:
+ 1. The shape function derivatives needs to be recalculated every time.
+ 2. There will be two terms instead of one.
+ 3. The c matrix has symmetries that can be exploited and can be represented by
+ a symmetric 6x6 matrix, whereas dP/dF is an unsymmetric 9x9 matrix.
+ The two stress-strain pairs need to be carefully profiled against each other as
+ this operation might be (one of) the bottleneck(s). */
+template <typename T, class IsoparametricElementType, class QuadratureType>
+void ElasticityElement<T, IsoparametricElementType, QuadratureType>::
+    CalcStiffnessMatrix(const FemState<T>& state,
+                        EigenPtr<MatrixX<T>> K) const {
+  DRAKE_ASSERT(K->rows() == 3 * num_nodes());
+  DRAKE_ASSERT(K->cols() == 3 * num_nodes());
+  K->setZero();
+  // clang-format off
+  /* Let e be the elastic energy, then the ab-th block of the stiffness
+   matrix K is given by:
+   Kᵃᵇᵢⱼ = d²e/dxᵃᵢdxᵇⱼ = ∫dF/dxᵇⱼ:d²ψ/dF²:dF/dxᵃᵢ + dψ/dF:d²F/dxᵃᵢdxᵇⱼ dX.
+   The second term vanishes because Fₖₗ = xᵃₖdSᵃ/dXₗ is linear in x.
+   We calculate the first term:
+   dF/dxᵇⱼ : d²ψ/dF² : dF/dxᵃᵢ = dFₘₙ/dxᵃᵢ dPₘₙ/dFₖₗ dFₖₗ/dxᵇⱼ.  */
+  // clang-format on
+  // TODO(xuchenhan-tri): Use the corresponding Eval method when caching is
+  // ready.
+  std::vector<Eigen::Matrix<T, 9, 9>> dPdF;
+  CalcFirstPiolaStressDerivative(state, &dPdF);
+  // The ab-th 3-by-3 block of K.
+  Matrix3<T> K_ab;
+  for (int q = 0; q < num_quadrature_points(); ++q) {
+    /* Notice that Fₖₗ = xᵃₖdSᵃ/dXₗ, so dFₖₗ/dxᵇⱼ = δᵃᵇδₖⱼdSᵃ/dXₗ, and thus
+     Kᵃᵇᵢⱼ = dFₘₙ/dxᵃᵢ dPₘₙ/dFₖₗ dFₖₗ/dxᵇⱼ =  dSᵃ/dXₙ dPᵢₙ/dFⱼₗ dSᵇ/dXₗ. */
+    for (int a = 0; a < num_nodes(); ++a) {
+      for (int b = 0; b < num_nodes(); ++b) {
+        DoDoubleTensorContraction(
+            dPdF[q], dSdX_transpose_[q].col(a),
+            dSdX_transpose_[q].col(b) * reference_volume_[q], &K_ab);
+        AccumulateMatrixBlock(K_ab, a, b, K);
+      }
+    }
+  }
+}
+
 template <typename T, class IsoparametricElementType, class QuadratureType>
 void ElasticityElement<T, IsoparametricElementType,
                        QuadratureType>::DoCalcResidual(const FemState<T>& state,
@@ -111,6 +176,16 @@ void ElasticityElement<T, IsoparametricElementType,
 
 template <typename T, class IsoparametricElementType, class QuadratureType>
 void ElasticityElement<T, IsoparametricElementType, QuadratureType>::
+    DoCalcTangentMatrix(const FemState<T>& state,
+                        EigenPtr<MatrixX<T>> tangent_matrix) const {
+  // TODO(xuchenhan-tri): Add inertia terms when mass matrix is in
+  // place.
+  // TODO(xuchenhan-tri): Add damping force derivatives.
+  CalcStiffnessMatrix(state, tangent_matrix);
+}
+
+template <typename T, class IsoparametricElementType, class QuadratureType>
+void ElasticityElement<T, IsoparametricElementType, QuadratureType>::
     CalcNegativeElasticForce(const FemState<T>& state,
                              EigenPtr<VectorX<T>> neg_force) const {
   neg_force->setZero();
@@ -120,16 +195,13 @@ void ElasticityElement<T, IsoparametricElementType, QuadratureType>::
   // place.
   std::vector<Matrix3<T>> P(num_quadrature_points());
   CalcFirstPiolaStress(state, &P);
-  const std::vector<MatrixX<T>>& dSdxi =
-      shape_.CalcGradientInParentCoordinates();
   for (int q = 0; q < num_quadrature_points(); ++q) {
     /* Negative force is the gradient of energy.
-     -f = ∫dΨ/dx = ∫dΨ/dF : dF/dx dX.
-     Notice that Fᵢⱼ = xₐᵢdSₐ/dXⱼ, so dFᵢⱼ/dxᵦₖ = δₐᵦδᵢₖdSₐ/dXⱼ,
+     -f = ∫dΨ/dx dX = ∫dΨ/dF : dF/dx dX.
+     Notice that Fᵢⱼ = xᵃᵢdSᵃ/dXⱼ, so dFᵢⱼ/dxᵇₖ = δᵃᵇδᵢₖdSᵃ/dXⱼ,
      and dΨ/dFᵢⱼ = Pᵢⱼ, so the integrand becomes
-     PᵢⱼδₐᵦδᵢₖdSₐ/dXⱼ = PₖⱼdSᵦ/dXⱼ = P * dSdX.transpose() */
-    const auto& dSdX = dSdxi[q] * dxidX_[q];
-    neg_force_matrix += reference_volume_[q] * P[q] * dSdX.transpose();
+     PᵢⱼδᵃᵇδᵢₖdSᵃ/dXⱼ = PₖⱼdSᵇ/dXⱼ = P * dSdX.transpose() */
+    neg_force_matrix += reference_volume_[q] * P[q] * dSdX_transpose_[q];
   }
 }
 
@@ -190,6 +262,19 @@ void ElasticityElement<T, IsoparametricElementType, QuadratureType>::
   constitutive_model_->CalcFirstPiolaStress(deformation_gradient_cache_entry,
                                             P);
 }
+
+template <typename T, class IsoparametricElementType, class QuadratureType>
+void ElasticityElement<T, IsoparametricElementType, QuadratureType>::
+    CalcFirstPiolaStressDerivative(
+        const FemState<T>& state,
+        std::vector<Eigen::Matrix<T, 9, 9>>* dPdF) const {
+  dPdF->resize(num_quadrature_points());
+  const DeformationGradientCacheEntry<T>& deformation_gradient_cache_entry =
+      EvalDeformationGradientCacheEntry(state);
+  constitutive_model_->CalcFirstPiolaStressDerivative(
+      deformation_gradient_cache_entry, dPdF);
+}
+
 template class ElasticityElement<double, LinearSimplexElement<double, 3>,
                                  SimplexGaussianQuadrature<double, 1, 3>>;
 template class ElasticityElement<AutoDiffXd,

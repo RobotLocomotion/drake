@@ -42,12 +42,16 @@ _IGNORED_REPOSITORIES = [
     # We don't know how to check non-default branches yet.
     "clang_cindex_python3",
     "pybind11",
+    # We've purposely pinned these to older revisions, as noted by comments in
+    # their repository.bzl files.
+    "fmt",
+    "spdlog",
 ]
 
 # For these repositories, we only look at tags, not releases.  For the dict
 # value, use a blank value to match the latest tag or a regex to only select
 # tags that share the match with the tag currently in use.  (This can be used
-# to ping to a given major or major.minor release series.)
+# to pin to a given major or major.minor release series.)
 _OVERLOOK_RELEASE_REPOSITORIES = {
     "github3_py": r"^(\d+.)",
     "pycodestyle": "",

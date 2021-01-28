@@ -11,7 +11,7 @@ namespace parameter_conversion {
 
 // Conversions for SpatialInertia<T>
 struct SpatialInertiaIndex {
-  /// The total number of rows (coordinates).
+  // The total number of rows (coordinates).
   inline static const int k_num_coordinates = 10;
 
   // The index of each individual coordinate.

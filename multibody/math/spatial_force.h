@@ -1,8 +1,7 @@
 #pragma once
 
 #ifndef DRAKE_SPATIAL_ALGEBRA_HEADER
-// NOLINTNEXTLINE(whitespace/line_length)
-#warning DRAKE_DEPRECATED: Do not directly include this file. Include "drake/multibody/math/spatial_algebra.h". This warning will be promoted to an error on 2021-01-01.
+#error Please include "drake/multibody/math/spatial_algebra.h", not this file.
 #endif
 
 #include <limits>

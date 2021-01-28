@@ -74,7 +74,7 @@ class LadderTest : public ::testing::Test {
 
     // Add visualization for verification of the results when we have the
     // visualizer running.
-    geometry::DrakeVisualizer::AddToBuilder(&builder, *scene_graph_, &lcm_);
+    geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph_, &lcm_);
     ConnectContactResultsToDrakeVisualizer(&builder, *plant_, &lcm_);
 
     diagram_ = builder.Build();
@@ -228,7 +228,8 @@ class LadderTest : public ::testing::Test {
     const double weight = kGravity_ * kLadderMass_;
 
     // Position of the ladder's center of gravity.
-    const Vector3d p_WBcm = plant_->CalcCenterOfMassPosition(*plant_context_);
+    const Vector3d p_WBcm =
+        plant_->CalcCenterOfMassPositionInWorld(*plant_context_);
 
     // The x component of the contact force must counteract the torque due to
     // gravity plus the actuation torque.

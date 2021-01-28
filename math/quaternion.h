@@ -348,7 +348,7 @@ bool IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB(
 }
 
 namespace internal {
-/**
+/*
  * Given a unit-length quaternion, convert this quaternion to angle-axis
  * representation. Note that we always choose the angle to be within [0, pi].
  * This function is the same as Eigen::AngleAxis<T>(Eigen::Quaternion<T> z),

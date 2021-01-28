@@ -184,7 +184,7 @@ class ContactWrenchFromForceInWorldFrameEvaluator final
 };
 
 namespace internal {
-/**
+/*
  * This struct records the contact wrench evaluator, together with the indices
  * of lambda used in this evaluator, among all lambda.
  *

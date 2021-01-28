@@ -161,7 +161,7 @@ Proprietary Solvers
 The Drake Bazel build currently supports the following proprietary solvers:
 
  * Gurobi 9.0.2
- * MOSEK 9.0
+ * MOSEK 9.2
  * SNOPT 7.4
 
 .. When upgrading SNOPT to a newer revision, re-enable TestPrintFile in
@@ -201,7 +201,7 @@ See https://docs.bazel.build/versions/master/user-manual.html#bazelrc.
 MOSEK
 -----
 
-The Drake Bazel build system downloads MOSEK 9.0.96 automatically.  No manual
+The Drake Bazel build system downloads MOSEK 9.2.33 automatically.  No manual
 installation is required.  Set the location of your license file as follows:
 
 ``export MOSEKLM_LICENSE_FILE=/path/to/mosek.lic``

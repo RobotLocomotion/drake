@@ -36,8 +36,16 @@ GTEST_TEST(TestCameraInfo, ConstructionTest) {
   const Eigen::Matrix3d expected(
       (Eigen::Matrix3d() << kFx, 0., kCx, 0., kFy, kCy, 0., 0., 1.).finished());
 
-  CameraInfo dut(kWidth, kHeight, kFx, kFy, kCx, kCy);
-  Verify(expected, dut);
+  {
+    SCOPED_TRACE("Spelled out");
+    CameraInfo dut(kWidth, kHeight, kFx, kFy, kCx, kCy);
+    Verify(expected, dut);
+  }
+  {
+    SCOPED_TRACE("Matrix");
+    CameraInfo dut(kWidth, kHeight, expected);
+    Verify(expected, dut);
+  }
 }
 
 // The focal lengths become identical with this constructor.

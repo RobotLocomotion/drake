@@ -42,6 +42,7 @@ using math::RigidTransformd;
 using math::RollPitchYawd;
 using multibody::JointActuator;
 using multibody::JointActuatorIndex;
+using multibody::ModelInstanceIndex;
 using multibody::MultibodyPlant;
 
 DEFINE_double(simulation_time, std::numeric_limits<double>::infinity(),
@@ -105,7 +106,7 @@ void DoMain() {
       "drake/examples/allegro_hand/joint_control/simple_mug.sdf");
   multibody::Parser parser(&plant);
   parser.AddModelFromFile(hand_model_path);
-  parser.AddModelFromFile(object_model_path);
+  ModelInstanceIndex mug_model = parser.AddModelFromFile(object_model_path);
 
   // Weld the hand to the world frame
   const auto& joint_hand_root = plant.GetBodyByName("hand_root");
@@ -185,7 +186,7 @@ void DoMain() {
   plant.Finalize();
 
   // Visualization
-  geometry::DrakeVisualizer::AddToBuilder(&builder, scene_graph);
+  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
   DRAKE_DEMAND(!!plant.get_source_id());
   builder.Connect(
       plant.get_geometry_poses_output_port(),
@@ -268,7 +269,6 @@ void DoMain() {
   diagram->SetDefaultContext(diagram_context.get());
 
   // Set the position of object
-  const multibody::Body<double>& mug = plant.GetBodyByName("main_body");
   const multibody::Body<double>& hand = plant.GetBodyByName("hand_root");
   systems::Context<double>& plant_context =
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
@@ -279,7 +279,8 @@ void DoMain() {
   RigidTransformd X_WM(
       RollPitchYawd(M_PI / 2, 0, 0),
       p_WHand + Eigen::Vector3d(0.095, 0.062, 0.095));
-  plant.SetFreeBodyPose(&plant_context, mug, X_WM);
+  plant.SetFreeBodyPose(&plant_context,
+                        plant.GetUniqueFreeBaseBodyOrThrow(mug_model), X_WM);
 
   // set the initial command for the hand
   hand_command_receiver.set_initial_position(

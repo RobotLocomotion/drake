@@ -183,7 +183,7 @@ TEST_F(TwoDofPlanarPendulumTest, CalcBodyASpatialMomentumInWorldAboutPoint) {
   // Calculate body A's spatial momentum in world W, about Acm, expressed in W.
   // Compare to expected results.
   const Vector3<double> p_WoAcm_W =
-      plant_.CalcCenterOfMassPosition(*context_, model_instances);
+      plant_.CalcCenterOfMassPositionInWorld(*context_, model_instances);
   const SpatialMomentum<double> L_WAcm_W =
       plant_.CalcSpatialMomentumInWorldAboutPoint(*context_, model_instances,
                                                   p_WoAcm_W);
@@ -199,7 +199,7 @@ TEST_F(TwoDofPlanarPendulumTest, CalcBodyBSpatialMomentumInWorldAboutPoint) {
   std::vector<ModelInstanceIndex> model_instances;
   model_instances.push_back(bodyB_model_instance_);
   const Vector3<double> p_WoBcm_W =
-      plant_.CalcCenterOfMassPosition(*context_, model_instances);
+      plant_.CalcCenterOfMassPositionInWorld(*context_, model_instances);
   const SpatialMomentum<double> L_WBcm_W =
       plant_.CalcSpatialMomentumInWorldAboutPoint(*context_, model_instances,
                                                   p_WoBcm_W);
@@ -246,7 +246,7 @@ TEST_F(TwoDofPlanarPendulumTest, CalcSystemSpatialMomentumInWorldAboutPoint) {
   model_instances.push_back(bodyB_model_instance_);
   model_instances.push_back(bodyA_model_instance_);
   const Vector3<double> p_WoScm_W =
-      plant_.CalcCenterOfMassPosition(*context_, model_instances);
+      plant_.CalcCenterOfMassPositionInWorld(*context_, model_instances);
   SpatialMomentum<double> L_WScm_W =
       plant_.CalcSpatialMomentumInWorldAboutPoint(*context_, model_instances,
                                                   p_WoScm_W);

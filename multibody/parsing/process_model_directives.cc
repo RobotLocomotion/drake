@@ -170,24 +170,6 @@ void ProcessModelDirectivesImpl(
           get_scoped_frame(directive.add_weld->child),
           error_func, plant, added_models);
 
-    } else if (directive.add_package_path) {
-      auto& package_path = *directive.add_package_path;
-      drake::log()->debug("  add_package_path: {}", package_path.name);
-      const fs::path abspath_xml =
-          drake::FindResourceOrThrow(package_path.path + "/package.xml");
-      std::string path = abspath_xml.parent_path().string();
-
-      // It is possible to get the same `add_package_path` directive twice,
-      // e.g. by including the same directives yaml twice.  That's fine so
-      // long as they agree.
-      if (parser->package_map().Contains(package_path.name)) {
-        std::string old_path = parser->package_map().GetPath(package_path.name);
-        if (old_path.back() == '/') old_path.pop_back();
-        if (path.back() == '/') path.pop_back();
-        DRAKE_DEMAND(path == old_path);
-      } else {
-        parser->package_map().Add(package_path.name, path);
-      }
     } else {
       // Recurse.
       auto& sub = *directive.add_directives;

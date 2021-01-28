@@ -233,7 +233,7 @@ class RenderEngine : public ShapeReifier {
    @param show_window           If true, the render window will be displayed.
    @param[out] color_image_out  The rendered color image.
    @pydrake_mkdoc_identifier{deprecated}  */
-  DRAKE_DEPRECATED("2021-03-01",
+  DRAKE_DEPRECATED("2021-04-01",
                    "CameraProperties are being deprecated. Prefer the "
                    "ColorRenderCamera variant; implement the protected "
                    "DoRenderColorImage() method.")
@@ -252,7 +252,7 @@ class RenderEngine : public ShapeReifier {
 
    @param camera                The intrinsic properties of the camera.
    @param[out] depth_image_out  The rendered depth image.  */
-  DRAKE_DEPRECATED("2021-03-01",
+  DRAKE_DEPRECATED("2021-04-01",
                    "DepthCameraProperties are being deprecated. Prefer the "
                    "DepthRenderCamera variant; implement the protected "
                    "DoRenderDepthImage() method.")
@@ -271,7 +271,7 @@ class RenderEngine : public ShapeReifier {
    @param show_window           If true, the render window will be displayed.
    @param[out] label_image_out  The rendered label image.
    @pydrake_mkdoc_identifier{deprecated}  */
-  DRAKE_DEPRECATED("2021-03-01",
+  DRAKE_DEPRECATED("2021-04-01",
                    "CameraProperties are being deprecated. Prefer the "
                    "ColorRenderCamera variant; implement the protected "
                    "DoRenderLabelImage() method.")

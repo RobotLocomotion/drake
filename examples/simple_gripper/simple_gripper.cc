@@ -36,6 +36,7 @@ using math::RollPitchYawd;
 using multibody::Body;
 using multibody::ConnectContactResultsToDrakeVisualizer;
 using multibody::CoulombFriction;
+using multibody::ModelInstanceIndex;
 using multibody::MultibodyPlant;
 using multibody::Parser;
 using multibody::PrismaticJoint;
@@ -166,7 +167,7 @@ int do_main() {
 
   full_name =
       FindResourceOrThrow("drake/examples/simple_gripper/simple_mug.sdf");
-  parser.AddModelFromFile(full_name);
+  ModelInstanceIndex mug_model = parser.AddModelFromFile(full_name);
 
   // Obtain the "translate_joint" axis so that we know the direction of the
   // forced motions. We do not apply gravity if motions are forced in the
@@ -244,7 +245,7 @@ int do_main() {
                   plant.get_geometry_query_input_port());
 
   DrakeLcm lcm;
-  geometry::DrakeVisualizer::AddToBuilder(&builder, scene_graph, &lcm);
+  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, &lcm);
   builder.Connect(
       plant.get_geometry_poses_output_port(),
       scene_graph.get_source_pose_port(plant.get_source_id().value()));
@@ -302,9 +303,6 @@ int do_main() {
   // Set initial position of the left finger.
   finger_slider.set_translation(&plant_context, -FLAGS_grip_width);
 
-  // Get mug body so we can set its initial pose.
-  const Body<double>& mug = plant.GetBodyByName("main_body");
-
   // Initialize the mug pose to be right in the middle between the fingers.
   const Vector3d& p_WBr =
       plant.EvalBodyPoseInWorld(plant_context, right_finger).translation();
@@ -316,7 +314,8 @@ int do_main() {
       RollPitchYawd(FLAGS_rx * M_PI / 180, FLAGS_ry * M_PI / 180,
                     (FLAGS_rz * M_PI / 180) + M_PI),
       Vector3d(0.0, mug_y_W, 0.0));
-  plant.SetFreeBodyPose(&plant_context, mug, X_WM);
+  plant.SetFreeBodyPose(&plant_context,
+                        plant.GetUniqueFreeBaseBodyOrThrow(mug_model), X_WM);
 
   // Set the initial height of the gripper and its initial velocity so that with
   // the applied harmonic forces it continues to move in a harmonic oscillation

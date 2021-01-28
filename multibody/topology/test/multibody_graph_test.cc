@@ -62,6 +62,22 @@ GTEST_TEST(MultibodyGraph, SerialChain) {
                      BodyIndex(2)),
       std::runtime_error, "AddJoint\\(\\): Duplicate joint name.*");
 
+  // We cannot add a redundant joint.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      graph.AddJoint("other", model_instance, kRevoluteType, BodyIndex(1),
+                     BodyIndex(2)),
+      std::runtime_error,
+      "This MultibodyGraph already has a joint 'pin2' connecting 'body1'"
+      " to 'body2'. Therefore adding joint 'other' connecting 'body1' to"
+      " 'body2' is not allowed.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      graph.AddJoint("reverse", model_instance, kRevoluteType, BodyIndex(2),
+                     BodyIndex(1)),
+      std::runtime_error,
+      "This MultibodyGraph already has a joint 'pin2' connecting 'body1'"
+      " to 'body2'. Therefore adding joint 'reverse' connecting 'body2' to"
+      " 'body1' is not allowed.");
+
   // We cannot add an unregistered joint type.
   DRAKE_EXPECT_THROWS_MESSAGE(graph.AddJoint("screw1", model_instance, "screw",
                                              BodyIndex(1), BodyIndex(2)),

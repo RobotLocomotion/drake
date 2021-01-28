@@ -99,7 +99,7 @@ class RgbdSensor final : public LeafSystem<double> {
 
   /** Specifies poses of cameras with respect ot the sensor base `B`.
    */
-  struct DRAKE_DEPRECATED("2021-03-01",
+  struct DRAKE_DEPRECATED("2021-04-01",
                    "The constructors that take poses explicitly have been "
                    "deprecated. Pose is now part of the RenderCamera "
                    "interface. See the RenderCamera-based RgbdSensor "
@@ -141,7 +141,7 @@ class RgbdSensor final : public LeafSystem<double> {
                          off-screen rendering is executed. The default is false.
    @pydrake_mkdoc_identifier{legacy_individual_intrinsics}
    */
-  DRAKE_DEPRECATED("2021-03-01",
+  DRAKE_DEPRECATED("2021-04-01",
                    "CameraProperties are being deprecated. Please use the "
                    "RenderCamera variant.")
   RgbdSensor(geometry::FrameId parent_id,
@@ -156,7 +156,7 @@ class RgbdSensor final : public LeafSystem<double> {
    properties, and all of `properties` for depth properties.
    @pydrake_mkdoc_identifier{legacy_combined_intrinsics}
    */
-  DRAKE_DEPRECATED("2021-03-01",
+  DRAKE_DEPRECATED("2021-04-01",
                    "CameraProperties are being deprecated. Please use the "
                    "RenderCamera variant.")
   RgbdSensor(geometry::FrameId parent_id, const math::RigidTransformd& X_PB,

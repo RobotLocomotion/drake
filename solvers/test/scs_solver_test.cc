@@ -307,7 +307,8 @@ GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithOverlappingVariables) {
 GTEST_TEST(TestExponentialConeProgram, ExponentialConeTrivialExample) {
   ScsSolver solver;
   if (solver.available()) {
-    ExponentialConeTrivialExample(solver, kTol);
+    // Currently we don't support retrieving dual solution from SCS yet.
+    ExponentialConeTrivialExample(solver, kTol, false);
   }
 }
 
