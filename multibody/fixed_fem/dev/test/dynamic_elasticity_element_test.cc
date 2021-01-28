@@ -33,6 +33,7 @@ class DynamicElasticityElementTest : public ::testing::Test {
   static constexpr int kNumDofs = ElementType::Traits::kNumDofs;
   const std::array<NodeIndex, kNumNodes> dummy_node_indices = {
       {NodeIndex(0), NodeIndex(1), NodeIndex(2), NodeIndex(3)}};
+  const Vector3<T> kGravity_W{0, 0, -9.8};
   const DampingModel<T> dummy_damping_model{0.001, 0.002};
 
   void SetUp() override {
@@ -46,7 +47,7 @@ class DynamicElasticityElementTest : public ::testing::Test {
     ConstitutiveModelType model(1, 0.25);
     elements_.emplace_back(kZeroIndex, dummy_node_indices, model,
                            reference_positions, kDummyDensity,
-                           dummy_damping_model);
+                           kGravity_W, dummy_damping_model);
   }
 
   void SetupState() {
@@ -92,12 +93,6 @@ class DynamicElasticityElementTest : public ::testing::Test {
     return e.damping_model_;
   }
 
-  T density(const ElementType& e) const { return e.density_; }
-
-  std::array<T, kNumQuads> reference_volume() const {
-    return element().reference_volume();
-  }
-
   /* Get the negative elastic force evaluated at `state_`. */
   Vector<T, kNumDofs> negative_elastic_force() const {
     Vector<T, kNumDofs> f = Vector<T, kNumDofs>::Zero();
@@ -112,6 +107,10 @@ class DynamicElasticityElementTest : public ::testing::Test {
     return f;
   }
 
+  const Vector<T, kNumDofs>& gravity_force() const {
+    return element().gravity_force();
+  }
+
   std::vector<ElementType> elements_;
   std::unique_ptr<FemState<ElementType>> state_;
 };
@@ -124,7 +123,6 @@ TEST_F(DynamicElasticityElementTest, Constructor) {
             dummy_damping_model.mass_coeff());
   EXPECT_EQ(damping_model(element()).stiffness_coeff(),
             dummy_damping_model.stiffness_coeff());
-  EXPECT_EQ(density(element()), kDummyDensity);
 
   ElementType move_constructed_element(std::move(elements_[0]));
   EXPECT_EQ(move_constructed_element.node_indices(), dummy_node_indices);
@@ -133,7 +131,6 @@ TEST_F(DynamicElasticityElementTest, Constructor) {
             dummy_damping_model.mass_coeff());
   EXPECT_EQ(damping_model(move_constructed_element).stiffness_coeff(),
             dummy_damping_model.stiffness_coeff());
-  EXPECT_EQ(density(move_constructed_element), kDummyDensity);
 }
 
 /* Tests that the calculation of the residual calls the calculation of the
@@ -147,9 +144,11 @@ TEST_F(DynamicElasticityElementTest, Residual) {
   Vector<T, kNumDofs> momentum_change = mass_matrix * state_->qddot();
   Vector<T, kNumDofs> negative_fe = negative_elastic_force();
   Vector<T, kNumDofs> negative_fv = negative_damping_force();
-  // TODO(xuchenhan-tri): Add external force.
-  EXPECT_TRUE(CompareMatrices(residual,
-                              negative_fe + negative_fv + momentum_change, 0));
+  Vector<T, kNumDofs> external_force = Vector<T, kNumDofs>::Zero();
+  element().AddExternalForce(*state_, &external_force);
+  EXPECT_TRUE(CompareMatrices(
+      residual, momentum_change + negative_fe + negative_fv + external_force,
+      0));
 }
 
 /* Tests that the stiffness matrix for DynamicElasticityElement is the
@@ -192,21 +191,6 @@ TEST_F(DynamicElasticityElementTest, MassMatrixIsAccelerationDerivative) {
         residual(i).derivatives().transpose().tail(kNumDofs),
         mass_matrix.row(i), std::numeric_limits<double>::epsilon()));
   }
-}
-
-/* In each dimension, the entries of the mass matrix should sum up to the total
- mass assigned to the element. */
-TEST_F(DynamicElasticityElementTest, MassMatrixSumUpToTotalMass) {
-  Eigen::Matrix<T, kNumDofs, kNumDofs> mass_matrix;
-  element().CalcMassMatrix(*state_, &mass_matrix);
-  double mass_matrix_sum = mass_matrix.sum().value();
-  double total_mass = 0;
-  for (int q = 0; q < kNumQuads; ++q) {
-    total_mass += (reference_volume()[q] * kDummyDensity).value();
-  }
-  /* The mass matrix repeats the mass in each spatial dimension and needs to be
-   scaled accordingly. */
-  EXPECT_EQ(mass_matrix_sum, total_mass * kSpatialDimension);
 }
 }  // namespace
 }  // namespace fixed_fem

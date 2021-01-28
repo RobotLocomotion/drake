@@ -13,7 +13,6 @@
 namespace drake {
 namespace multibody {
 namespace fixed_fem {
-namespace {
 constexpr int kNaturalDimension = 3;
 constexpr int kSpatialDimension = 3;
 constexpr int kQuadratureOrder = 1;
@@ -54,11 +53,13 @@ class DummyElasticityElement final
       const ConstitutiveModelType& constitutive_model,
       const Eigen::Ref<const Eigen::Matrix<T, Traits::kSolutionDimension,
                                            Traits::kNumNodes>>&
-          reference_positions)
+          reference_positions,
+      const T& density, const Vector<T, Traits::kSpatialDimension>& gravity)
       : ElasticityElement<IsoparametricElementType, QuadratureType,
                           ConstitutiveModelType, DummyElasticityElement,
                           Traits>(element_index, node_indices,
-                                  constitutive_model, reference_positions) {}
+                                  constitutive_model, reference_positions,
+                                  density, gravity) {}
 
   /* Calculates the negative elastic force evaluted at `state`. */
   Vector<T, Traits::kNumDofs> CalcNegativeElasticForce(
@@ -82,21 +83,24 @@ class DummyElasticityElement final
 
 class ElasticityElementTest : public ::testing::Test {
  protected:
+  using T = AutoDiffXd;
   using ElementType = DummyElasticityElement;
   static constexpr int kNumDofs = ElementType::Traits::kNumDofs;
   static constexpr int kNumNodes = ElementType::Traits::kNumNodes;
   const std::array<NodeIndex, kNumNodes> dummy_node_indices = {
       {NodeIndex(0), NodeIndex(1), NodeIndex(2), NodeIndex(3)}};
-  const AutoDiffXd kYoungsModulus{1};
-  const AutoDiffXd kPoissonRatio{0.25};
+  const T kYoungsModulus{1};
+  const T kPoissonRatio{0.25};
+  const T kDummyDensity{1.23};
+  const Vector3<T> kGravity_W{0, 0, -9.8};
 
   void SetUp() override { SetupElement(); }
 
   void SetupElement() {
-    Eigen::Matrix<AutoDiffXd, kSpatialDimension, kNumNodes> X =
-        reference_positions();
+    Eigen::Matrix<T, kSpatialDimension, kNumNodes> X = reference_positions();
     ConstitutiveModelType model(kYoungsModulus, kPoissonRatio);
-    elements_.emplace_back(kZeroIndex, dummy_node_indices, model, X);
+    elements_.emplace_back(kZeroIndex, dummy_node_indices, model, X,
+                           kDummyDensity, kGravity_W);
   }
 
   /* Set up a state so that the element is deformed. */
@@ -104,13 +108,12 @@ class ElasticityElementTest : public ::testing::Test {
     Vector<double, kNumDofs> perturbation;
     perturbation << 0.18, 0.63, 0.54, 0.13, 0.92, 0.17, 0.03, 0.86, 0.85, 0.25,
         0.53, 0.67;
-    Eigen::Matrix<AutoDiffXd, kSpatialDimension, kNumNodes> X =
-        reference_positions();
+    Eigen::Matrix<T, kSpatialDimension, kNumNodes> X = reference_positions();
     Vector<double, kNumDofs> x =
         Eigen::Map<Vector<double, kNumDofs>>(math::DiscardGradient(X).data(),
                                              reference_positions().size()) +
         perturbation;
-    Vector<AutoDiffXd, kNumDofs> x_autodiff;
+    Vector<T, kNumDofs> x_autodiff;
     math::initializeAutoDiff(x, x_autodiff);
     FemState<ElementType> state(x_autodiff);
     state.MakeElementData(elements_);
@@ -119,11 +122,10 @@ class ElasticityElementTest : public ::testing::Test {
 
   /* Set up a state where the positions are the same as reference positions. */
   FemState<ElementType> SetupInitialState() {
-    Eigen::Matrix<AutoDiffXd, kSpatialDimension, kNumNodes> X =
-        reference_positions();
+    Eigen::Matrix<T, kSpatialDimension, kNumNodes> X = reference_positions();
     Vector<double, kNumDofs> x(Eigen::Map<Vector<double, kNumDofs>>(
         math::DiscardGradient(X).data(), reference_positions().size()));
-    Vector<AutoDiffXd, kNumDofs> x_autodiff;
+    Vector<T, kNumDofs> x_autodiff;
     math::initializeAutoDiff(x, x_autodiff);
     FemState<ElementType> state(x_autodiff);
     state.MakeElementData(elements_);
@@ -132,10 +134,9 @@ class ElasticityElementTest : public ::testing::Test {
 
   /* Set arbitrary reference positions such that the tetrahedron is not
    inverted. */
-  Eigen::Matrix<AutoDiffXd, kSpatialDimension, kNumNodes> reference_positions()
-      const {
-    Eigen::Matrix<AutoDiffXd, kSpatialDimension, kNumNodes> X(kSpatialDimension,
-                                                              kNumNodes);
+  Eigen::Matrix<T, kSpatialDimension, kNumNodes> reference_positions() const {
+    Eigen::Matrix<T, kSpatialDimension, kNumNodes> X(kSpatialDimension,
+                                                     kNumNodes);
     // clang-format off
     X << -0.10, 0.90, 0.02, 0.10,
          1.33, 0.23, 0.04, 0.01,
@@ -151,24 +152,40 @@ class ElasticityElementTest : public ::testing::Test {
   }
 
   void VerifyEnergyAndForceAreZero(const FemState<ElementType>& state) const {
-    AutoDiffXd energy = element().CalcElasticEnergy(state);
+    T energy = element().CalcElasticEnergy(state);
     EXPECT_NEAR(energy.value(), 0, std::numeric_limits<double>::epsilon());
-    Vector<AutoDiffXd, kNumDofs> neg_elastic_force =
+    Vector<T, kNumDofs> neg_elastic_force =
         element().CalcNegativeElasticForce(state);
-    EXPECT_TRUE(CompareMatrices(Vector<AutoDiffXd, kNumDofs>::Zero(),
-                                neg_elastic_force,
+    EXPECT_TRUE(CompareMatrices(Vector<T, kNumDofs>::Zero(), neg_elastic_force,
                                 std::numeric_limits<double>::epsilon()));
+  }
+
+  const T& density(const ElementType& e) const { return e.density_; }
+
+  const std::array<T, kNumQuads>& reference_volume() const {
+    return element().reference_volume();
+  }
+
+  const Eigen::Matrix<T, kNumDofs, kNumDofs>& get_mass_matrix() const {
+    return element().mass_matrix();
+  }
+
+  const Vector<T, kNumDofs>& gravity_force() const {
+    return element().gravity_force();
   }
 
   std::vector<ElementType> elements_;
 };
 
+namespace {
 TEST_F(ElasticityElementTest, Constructor) {
   EXPECT_EQ(element().node_indices(), dummy_node_indices);
   EXPECT_EQ(element().element_index(), kZeroIndex);
+  EXPECT_EQ(density(element()), kDummyDensity);
   ElementType move_constructed_element(std::move(elements_[0]));
   EXPECT_EQ(move_constructed_element.node_indices(), dummy_node_indices);
   EXPECT_EQ(move_constructed_element.element_index(), kZeroIndex);
+  EXPECT_EQ(density(move_constructed_element), kDummyDensity);
 }
 
 /* Any undeformed state gives zero energy and zero force. */
@@ -184,16 +201,14 @@ TEST_F(ElasticityElementTest, UndeformedState) {
   //  it gives nonzero energy under rotation. Make the rigid transform a general
   //  one when we have isotropic nonlinear constitutive models.
   /* Any rigid transformation of a undeformed state is undeformed. */
-  math::RigidTransform<AutoDiffXd> transform(
-      Vector3<AutoDiffXd>(0.314, 0.159, 0.265));
-  Eigen::Matrix<AutoDiffXd, kSpatialDimension, kNumNodes> X =
-      reference_positions();
-  Eigen::Matrix<AutoDiffXd, kSpatialDimension, kNumNodes> rigid_transformed_X;
+  math::RigidTransform<T> transform(Vector3<T>(0.314, 0.159, 0.265));
+  Eigen::Matrix<T, kSpatialDimension, kNumNodes> X = reference_positions();
+  Eigen::Matrix<T, kSpatialDimension, kNumNodes> rigid_transformed_X;
   for (int i = 0; i < kNumNodes; ++i) {
     rigid_transformed_X.col(i) = transform * X.col(i);
   }
-  state.set_q(Eigen::Map<Vector<AutoDiffXd, kNumDofs>>(
-      rigid_transformed_X.data(), rigid_transformed_X.size()));
+  state.set_q(Eigen::Map<Vector<T, kNumDofs>>(rigid_transformed_X.data(),
+                                              rigid_transformed_X.size()));
   VerifyEnergyAndForceAreZero(state);
 }
 
@@ -262,8 +277,8 @@ TEST_F(ElasticityElementTest, DeformedState) {
  elastic energy with respect to the generalized positions. */
 TEST_F(ElasticityElementTest, NegativeElasticForceIsEnergyDerivative) {
   FemState<ElementType> state = SetupDeformedState();
-  AutoDiffXd energy = element().CalcElasticEnergy(state);
-  Vector<AutoDiffXd, kNumDofs> neg_elastic_force =
+  T energy = element().CalcElasticEnergy(state);
+  Vector<T, kNumDofs> neg_elastic_force =
       element().CalcNegativeElasticForce(state);
   EXPECT_TRUE(CompareMatrices(energy.derivatives(), neg_elastic_force,
                               std::numeric_limits<double>::epsilon()));
@@ -273,15 +288,42 @@ TEST_F(ElasticityElementTest, NegativeElasticForceIsEnergyDerivative) {
  fact calculates the derivative of the negative elastic force. */
 TEST_F(ElasticityElementTest, ElasticForceCompatibleWithItsDerivative) {
   FemState<ElementType> state = SetupDeformedState();
-  Vector<AutoDiffXd, kNumDofs> neg_elastic_force =
+  Vector<T, kNumDofs> neg_elastic_force =
       element().CalcNegativeElasticForce(state);
-  Eigen::Matrix<AutoDiffXd, kNumDofs, kNumDofs> neg_elastic_force_derivative =
+  Eigen::Matrix<T, kNumDofs, kNumDofs> neg_elastic_force_derivative =
       element().CalcNegativeElasticForceDerivative(state);
   for (int i = 0; i < kNumDofs; ++i) {
     EXPECT_TRUE(CompareMatrices(neg_elastic_force(i).derivatives().transpose(),
                                 neg_elastic_force_derivative.row(i),
                                 std::numeric_limits<double>::epsilon()));
   }
+}
+
+/* In each dimension, the entries of the mass matrix should sum up to the total
+ mass assigned to the element. */
+TEST_F(ElasticityElementTest, MassMatrixSumUpToTotalMass) {
+  const Eigen::Matrix<T, kNumDofs, kNumDofs> mass_matrix = get_mass_matrix();
+  const double mass_matrix_sum = mass_matrix.sum().value();
+  double total_mass = 0;
+  for (int q = 0; q < kNumQuads; ++q) {
+    total_mass += (reference_volume()[q] * kDummyDensity).value();
+  }
+  /* The mass matrix repeats the mass in each spatial dimension and needs to be
+   scaled accordingly. */
+  EXPECT_EQ(mass_matrix_sum, total_mass * kSpatialDimension);
+}
+
+/* Tests that the gravity forces match the expected value. */
+TEST_F(ElasticityElementTest, Gravity) {
+  const Eigen::Matrix<T, kNumDofs, kNumDofs> mass_matrix = get_mass_matrix();
+  Vector<T, kNumDofs> element_gravity_acceleration;
+  for (int i = 0; i < kNumNodes; ++i) {
+    element_gravity_acceleration.template segment<kSpatialDimension>(
+        i * kSpaceDimension) = kGravity_W;
+  }
+  const Vector<T, kNumDofs> expected_gravity_force =
+      mass_matrix * element_gravity_acceleration;
+  EXPECT_TRUE(CompareMatrices(expected_gravity_force, gravity_force()));
 }
 }  // namespace
 }  // namespace fixed_fem

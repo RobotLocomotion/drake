@@ -45,20 +45,22 @@ class StaticElasticityElement final
                                     ConstitutiveModelType>;
   using T = typename Traits::T;
 
-  /** Constructs a new FEM static elasticity element. */
+  /** Constructs a new FEM static elasticity element.
+   @pre density > 0. */
   StaticElasticityElement(
       ElementIndex element_index,
       const std::array<NodeIndex, Traits::kNumNodes>& node_indices,
       const ConstitutiveModelType& constitutive_model,
       const Eigen::Ref<const Eigen::Matrix<T, Traits::kSolutionDimension,
                                            Traits::kNumNodes>>&
-          reference_positions)
+          reference_positions,
+      const T& density, const Vector<T, Traits::kSpatialDimension>& gravity)
       : ElasticityElement<
             IsoparametricElementType, QuadratureType, ConstitutiveModelType,
             StaticElasticityElement<IsoparametricElementType, QuadratureType,
                                     ConstitutiveModelType>,
             Traits>(element_index, node_indices, constitutive_model,
-                    reference_positions) {}
+                    reference_positions, density, gravity) {}
 
  private:
   /** Type alias for convenience and readability. */
@@ -80,17 +82,15 @@ class StaticElasticityElement final
                       EigenPtr<Vector<T, Traits::kNumDofs>> residual) const {
     /* residual = -fₑ(x) + fₑₓₜ, where fₑ(x) is the elastic force and fₑₓₜ is
      the external force. */
-    ElasticityElementType::AddNegativeElasticForce(state, residual);
-    // TODO(xuchenhan-tri): Add external force component. This may involve
-    //  moving mass density from DynamicElasticityElement into
-    //  ElasticityElement.
+    this->AddNegativeElasticForce(state, residual);
+    this->AddExternalForce(state, residual);
   }
 
   /* Implements FemElement::CalcStiffnessMatrix(). */
   void DoCalcStiffnessMatrix(
       const FemState<ElementType>& state,
       EigenPtr<Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs>> K) const {
-    ElasticityElementType::AddNegativeElasticForceDerivative(state, K);
+    this->AddNegativeElasticForceDerivative(state, K);
   }
 
   /* Implements FemElement::CalcDampingMatrix(). */
