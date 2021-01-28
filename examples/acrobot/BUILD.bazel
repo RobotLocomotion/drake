@@ -31,6 +31,7 @@ drake_cc_vector_gen_library(
 drake_py_library(
     name = "acrobot_io",
     srcs = ["acrobot_io.py"],
+    visibility = ["//visibility:public"],
     deps = [
         "//bindings/pydrake",
     ],
@@ -101,6 +102,7 @@ drake_cc_library(
 drake_py_library(
     name = "metrics",
     srcs = ["metrics.py"],
+    visibility = ["//visibility:public"],
 )
 
 drake_cc_library(
@@ -144,6 +146,7 @@ drake_py_binary(
 drake_cc_binary(
     name = "spong_sim_main_cc",
     srcs = ["spong_sim.cc"],
+    visibility = ["//visibility:public"],
     deps = [
         "//common:add_text_logging_gflags",
         "//common:name_value",
