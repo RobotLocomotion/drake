@@ -3,6 +3,7 @@ import unittest
 
 import pydrake.common as mut
 import pydrake.common._module_py._testing as mut_testing
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 
 
 class TestCommon(unittest.TestCase):
@@ -35,8 +36,17 @@ class TestCommon(unittest.TestCase):
 
     def test_tolerance_type(self):
         # Simply test the spelling
-        mut.ToleranceType.absolute
-        mut.ToleranceType.relative
+        mut.ToleranceType.kAbsolute
+        mut.ToleranceType.kRelative
+        with catch_drake_warnings(expected_count=2):
+            self.assertEqual(
+                mut.ToleranceType.absolute,
+                mut.ToleranceType.kAbsolute,
+            )
+            self.assertEqual(
+                mut.ToleranceType.relative,
+                mut.ToleranceType.kRelative,
+            )
 
     def test_random_distribution(self):
         # Simply test the spelling

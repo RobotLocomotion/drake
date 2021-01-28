@@ -23,7 +23,7 @@ class TestPolynomial(unittest.TestCase):
         p_i = p.Integral(integration_constant=0)
         self.assertEqual(p_i.GetDegree(), 3)
         self.assertTrue(
-            p.CoefficientsAlmostEqual(p, 1e-14, ToleranceType.relative))
+            p.CoefficientsAlmostEqual(p, 1e-14, ToleranceType.kRelative))
 
     def test_arithmetic(self):
         p = Polynomial([0, 1])
