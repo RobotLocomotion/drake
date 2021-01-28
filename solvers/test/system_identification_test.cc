@@ -168,10 +168,12 @@ GTEST_TEST(SystemIdentificationTest, BasicEstimateParameters) {
 
     EXPECT_LT(error, 1e-5);
     EXPECT_EQ(estimated_params.size(), 3u);
+    const double kEps = std::numeric_limits<double>::epsilon();
     for (const auto& var : {a_var, b_var, c_var}) {
       // `9 * error` here in case all of the RMS error was in a single term.
+      // We also need an absolute tolerance here in case error is very near 0.
       EXPECT_NEAR(estimated_params[var], expected_params.at(var),
-                  9 * error);
+                  std::max(9 * error, 64 * kEps));
     }
   }
 

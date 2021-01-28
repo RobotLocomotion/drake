@@ -353,7 +353,10 @@ class SpinningRodTest : public ::testing::Test {
   }
 
   void VerifyJointReactionForces() {
-    const double kTolerance = 20 * std::numeric_limits<double>::epsilon();
+    // Tolerance appears loose here because the absolute tolerance tests below
+    // should really be relative tolerance in some cases since the reaction
+    // forces can be large.
+    const double kTolerance = 32 * std::numeric_limits<double>::epsilon();
 
     // Evaluate the spatial acceleration of the rod.
     const auto& A_WB_all =

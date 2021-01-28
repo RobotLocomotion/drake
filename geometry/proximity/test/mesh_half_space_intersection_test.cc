@@ -168,7 +168,8 @@ class MeshHalfspaceIntersectionTest : public ::testing::Test {
   bool AreFacesEquivalent(const SurfaceFace& fa,
                           const SurfaceMesh<double>& mesh_a,
                           const SurfaceFace& fb, const SurfaceMesh<T>& mesh_b) {
-    constexpr double kEps = 10 * std::numeric_limits<double>::epsilon();
+    // Tolerance loosened from 10ε to 16ε to pass with AVX instructions enabled.
+    constexpr double kEps = 16 * std::numeric_limits<double>::epsilon();
     // Get the three vertices from each.
     std::array<Vector3d, 3> vertices_a = {mesh_a.vertex(fa.vertex(0)).r_MV(),
                                           mesh_a.vertex(fa.vertex(1)).r_MV(),

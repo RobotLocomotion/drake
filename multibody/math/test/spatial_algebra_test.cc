@@ -717,7 +717,8 @@ TYPED_TEST(SpatialAccelerationTest, CoriolisAcceleration) {
       the z direction, this contribution points in the positive y direction.*/
       2.0 * w_AP.norm() * V_PQ.translational().norm() * Vector3<T>::UnitY();
 
-  EXPECT_TRUE(A_AQ.IsApprox(A_AQ_expected));
+  constexpr double kEps = std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(A_AQ.IsApprox(A_AQ_expected, 4*kEps));
 }
 
 // Unit test for the method SpatialAcceleration::Shift().

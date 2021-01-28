@@ -310,13 +310,13 @@ GTEST_TEST(RotationMatrix, ConstructorWithRollPitchYaw) {
                     * Eigen::AngleAxisd(r, Vector3d::UnitX())).matrix();
   const RotationMatrix<double> R_eigen(m);
   const RotationMatrix<double> R_rpy(rpy);
-  EXPECT_TRUE(R_rpy.IsNearlyEqualTo(R_eigen, kEpsilon));
+  EXPECT_TRUE(R_rpy.IsNearlyEqualTo(R_eigen, 4*kEpsilon));
 
   RotationMatrixd R1 = RotationMatrix<double>::MakeZRotation(y);
   RotationMatrixd R2 = RotationMatrix<double>::MakeYRotation(p);
   RotationMatrixd R3 = RotationMatrix<double>::MakeXRotation(r);
   RotationMatrixd R_expected = R1 * R2 * R3;
-  EXPECT_TRUE(R_rpy.IsExactlyEqualTo(R_expected));
+  EXPECT_TRUE(R_rpy.IsNearlyEqualTo(R_expected, 4*kEpsilon));
 }
 
 // Test calculating the inverse and transpose of a RotationMatrix.

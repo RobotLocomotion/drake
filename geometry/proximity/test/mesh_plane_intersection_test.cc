@@ -299,11 +299,13 @@ class SliceTetWithPlaneTest : public ::testing::Test {
           // product indicates that S *cannot* lie between V0 and V1 (colinear
           // or not) and a positive value equal to |V0S| * |V0V1| indicates
           // colinearity.
-          if (std::abs(p_V0V1_F.dot(p_V0S_F) - d_V0V1 * d_V0S) > kEps) continue;
+          // Tolerance loosened to 2ε to pass when AVX instructions enabled.
+          if (std::abs(p_V0V1_F.dot(p_V0S_F) - d_V0V1 * d_V0S) > 2*kEps)
+            continue;
           // Define weight w such that: S = w * V0 + (1 - w) * V1.
           double w = 1.0 - d_V0S / d_V0V1;
           // The previous test already confirmed colinearity and w >= 0.
-          if (w > 1 + kEps) {
+          if (w > 1 + 2*kEps) {
             return {{},
                     ::testing::AssertionFailure()
                         << "Vertex " << v << " is co-linear with edge " << e

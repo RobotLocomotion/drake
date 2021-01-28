@@ -58,7 +58,7 @@ class AutoDiffXdTest : public ::testing::Test {
 
     return CompareMatrices(
         value_and_der_x, value_and_der_3,
-        2.0 * std::numeric_limits<double>::epsilon(),
+        4.0 * std::numeric_limits<double>::epsilon(),
         MatrixCompareType::relative)
       << "\n(where xd.size() = " << e_xd.derivatives().size() << ")";
   }

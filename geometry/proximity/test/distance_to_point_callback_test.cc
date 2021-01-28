@@ -120,9 +120,10 @@ class PointShapeAutoDiffSignedDistanceTester {
     EXPECT_NEAR(grad_W_squared_norm.value(), 1, tolerance_);
     // The gradient of grad_W_squared_norm should be 0.
     if (grad_W_squared_norm.derivatives().size() > 0) {
+      // Looser tolerance required to pass when AVX instructions enabled.
       auto grad_W_unit_length_derivative_compare =
           CompareMatrices(grad_W_squared_norm.derivatives(),
-                          Eigen::VectorXd::Zero(grad_size), tolerance_);
+                          Eigen::VectorXd::Zero(grad_size), 2*tolerance_);
       if (!grad_W_unit_length_derivative_compare) {
         if (error) failure << "\n";
         error = true;

@@ -194,13 +194,13 @@ TEST_F(IsoparametricElementTest, JacobianInverse3DTriangle) {
      dξ/dx should be the pseudoinverse of the Jacobian. */
     EXPECT_TRUE(CompareMatrices(dxidx[i] * dxdxi[i],
                                 MatrixX<double>::Identity(2, 2),
-                                std::numeric_limits<double>::epsilon()));
+                                4.0 * std::numeric_limits<double>::epsilon()));
     // dx/dξ * dξ/dx should be symmetric.
     auto A = dxdxi[i] * dxidx[i];
     EXPECT_TRUE(CompareMatrices(A, A.transpose(),
-                                std::numeric_limits<double>::epsilon()));
+                                4.0 * std::numeric_limits<double>::epsilon()));
     EXPECT_TRUE(CompareMatrices(VectorX<double>::Zero(2), dxidx[i] * n,
-                                std::numeric_limits<double>::epsilon()));
+                                4.0 * std::numeric_limits<double>::epsilon()));
   }
 }
 

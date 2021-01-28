@@ -248,7 +248,8 @@ Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
  */
 Binding<LorentzConeConstraint> ParseLorentzConeConstraint(
     const symbolic::Expression& linear_expr,
-    const symbolic::Expression& quadratic_expr, double tol = 0);
+    const symbolic::Expression& quadratic_expr,
+    double tol = 4*std::numeric_limits<double>::epsilon());
 
 /*
  * Assist MathematicalProgram::AddRotatedLorentzConeConstraint(...)
@@ -262,7 +263,8 @@ Binding<RotatedLorentzConeConstraint> ParseRotatedLorentzConeConstraint(
 Binding<RotatedLorentzConeConstraint> ParseRotatedLorentzConeConstraint(
     const symbolic::Expression& linear_expr1,
     const symbolic::Expression& linear_expr2,
-    const symbolic::Expression& quadratic_expr, double tol = 0);
+    const symbolic::Expression& quadratic_expr,
+    double tol = 4*std::numeric_limits<double>::epsilon());
 
 // TODO(eric.cousineau): Implement this if variable creation is separated.
 // Format would be (tuple(linear_binding, psd_binding), new_vars)

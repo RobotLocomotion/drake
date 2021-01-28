@@ -172,8 +172,8 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
               << "Failed at interpolator type: " << interp_str;
   }
 
-  // Check that the final knot point has zero acceleration and
-  // velocity.
+  // Check that the final knot point has zero acceleration and velocity.
+  const double kEps = std::numeric_limits<double>::epsilon();
   if (interp_type == InterpolatorType::Cubic ||
       interp_type == InterpolatorType::ZeroOrderHold ||
       interp_type == InterpolatorType::Pchip) {
@@ -186,9 +186,9 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
     const double accel =
         output->get_vector_data(dut.get_acceleration_output_port().get_index())
             ->GetAtIndex(0);
-    EXPECT_FLOAT_EQ(velocity, 0)
+    EXPECT_NEAR(velocity, 0, 8*kEps)
               << "Failed at interpolator type: " << interp_str;
-    EXPECT_FLOAT_EQ(accel, 0)
+    EXPECT_NEAR(accel, 0, 8*kEps)
               << "Failed at interpolator type: " << interp_str;
   }
 
@@ -200,7 +200,7 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
   double position =
       output->get_vector_data(dut.get_state_output_port().get_index())
           ->GetAtIndex(0);
-  EXPECT_DOUBLE_EQ(1, position)
+  EXPECT_NEAR(1, position, 8*kEps)
             << "Failed at interpolator type: " << interp_str;
 
   plan.num_states = 0;
@@ -210,7 +210,7 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
   dut.CalcOutput(*context, output.get());
   position = output->get_vector_data(
       dut.get_state_output_port().get_index())->GetAtIndex(0);
-  EXPECT_DOUBLE_EQ(1, position)
+  EXPECT_NEAR(1, position, 8*kEps)
             << "Failed at interpolator type: " << interp_str;
 }
 

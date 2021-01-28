@@ -20,6 +20,7 @@ rotation: !Rpy { deg: [10, 20, 30] }
 )""";
 
 GTEST_TEST(DeterministicTest, TransformTest) {
+  constexpr double kEps = std::numeric_limits<double>::epsilon();
   Transform transform;
   YamlReadArchive(YAML::Load(deterministic)).Accept(&transform);
 
@@ -31,10 +32,10 @@ GTEST_TEST(DeterministicTest, TransformTest) {
       Eigen::Vector3d(1., 2., 3.));
   EXPECT_TRUE(drake::CompareMatrices(
       transform.GetDeterministicValue().GetAsMatrix34(),
-      expected.GetAsMatrix34()));
+      expected.GetAsMatrix34(), 2*kEps));
   EXPECT_TRUE(drake::CompareMatrices(
       transform.Mean().GetAsMatrix34(),
-      expected.GetAsMatrix34()));
+      expected.GetAsMatrix34(), 2*kEps));
 }
 
 const char* random = R"""(
