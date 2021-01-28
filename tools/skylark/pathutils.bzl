@@ -1,72 +1,71 @@
-#==============================================================================
-#BEGIN internal helpers
+def _match_single_glob_tokens(path_tokens, prefix_tokens):
+    """If the prefix matches the path (anchored at the start), returns the
+    segment of the path tokens that matched -- or None if no match.  The
+    arguments are lists of strings, with an implied "/" between elements.
 
-#------------------------------------------------------------------------------
-# Remove prefix from path.
-def ___remove_prefix(path, prefix):
-    # If the prefix has more parts than the path, failure is certain.
-    if len(prefix) > len(path):
+    The token "*" must match exactly one path token.
+    The token "**" is not allowed.
+    """
+    if len(prefix_tokens) > len(path_tokens):
+        # The prefix is too long ==> no match.
         return None
 
-    # Iterate over components to determine if a match exists.
-    for n in range(len(prefix)):
-        if prefix[n] == path[n]:
+    # Check the tokens pairwise (stopping at the shorter of the two lists).
+    for prefix, path in zip(prefix_tokens, path_tokens):
+        if prefix == "*":
+            # The "*" matches anything.
             continue
-        elif prefix[n] == "*":
-            continue
-        else:
+        if prefix != path:
+            # Mismatch.
             return None
 
-    return "/".join(path[len(prefix):])
+    # Successful match.
+    return path_tokens[:len(prefix_tokens)]
 
-def __remove_prefix(path, prefix):
-    # Ignore trailing empty element (happens if prefix string ends with "/").
-    if len(prefix[-1]) == 0:
-        prefix = prefix[:-1]
+def _match_double_glob_tokens(path_tokens, prefix_tokens):
+    """If the prefix matches the path (anchored at the start), returns the
+    segment of the path tokens that matched -- or None if no match.  The
+    arguments are lists of strings, with an implied "/" between elements.
 
-    # If the prefix has more parts than the path, failure is certain. (We also
-    # need at least one component of the path left over so the stripped path is
-    # not empty.)
-    if len(prefix) > (len(path) - 1):
-        return None
+    The token "*" must match exactly one path token.
+    The token "**" match any number of path tokens, greedily.
+    """
 
-    # Iterate over components to determine if a match exists.
-    for n in range(len(prefix)):
-        # Same path components match.
-        if prefix[n] == path[n]:
+    # Expand the double ("**") globs into a list of brute-force candidates,
+    # i.e., ["**"] ==> [], ["*"], ["*", "*"],  ["*", "*", "*"], etc. up to the
+    # most that we could need.  To produce greedy matching, we rank them from
+    # longest to shorest, and expand the earlier globs first.  Each candidate
+    # is a prefix token list, with either a literal str or a "*" in each item.
+    candidates = [[]]
+    for prefix_token in prefix_tokens:
+        # For a literal token or a "*", append it to every candidate.
+        if prefix_token != "**":
+            for i in range(len(candidates)):
+                candidates[i].append(prefix_token)
             continue
 
-        # Single-glob matches any (one) path component.
-        if prefix[n] == "*":
-            continue
+        # For a ** token, replicate the candidates for possible ** matches.
+        # The longest ** match should be as long as the whole path.
+        expansions = [
+            ["*"] * i
+            for i in reversed(range(len(path_tokens) + 1))
+        ]
+        new_candidates = [
+            candidate + expansion
+            for candidate in candidates
+            for expansion in expansions
+        ]
+        candidates = new_candidates
 
-        # Mulit-glob matches one or more components.
-        if prefix[n] == "**":
-            # If multi-glob is at the end of the prefix, return the last path
-            # component.
-            if n + 1 == len(prefix):
-                return path[-1]
+    # Check each candidate prefix token list for a match against the path.  The
+    # first candidate that matches, wins.
+    for candidate_tokens in candidates:
+        match = _match_single_glob_tokens(path_tokens, candidate_tokens)
+        if match != None:
+            return match
 
-            # Otherwise, the most components the multi-glob can match is the
-            # remaining components (len(prefix) - n - 1; the 1 is the current
-            # prefix component) less one (since we need to keep at least one
-            # component of the path).
-            k = len(path) - (len(prefix) - n - 2)
-
-            # Try to complete the match, iterating (backwards) over the number
-            # of components that the multi-glob might match.
-            for t in reversed(range(n, k)):
-                x = ___remove_prefix(path[t:], prefix[n + 1:])
-                if x != None:
-                    return x
-
-            # Multi-glob failed to match.
-            return None
-
-        # Components did not match.
-        return None
-
-    return "/".join(path[len(prefix):])
+    # Nothing matched.
+    return None
 
 def _remove_prefix(path, prefix):
     """Remove prefix from path.
@@ -75,8 +74,7 @@ def _remove_prefix(path, prefix):
     prefix may contain the globs ``*`` or ``**``, which match one or many
     path components, respectively. Matching is greedy. Globs may only be
     matched against complete path components (e.g. ``a/*/`` is okay, but
-    ``a*/`` is not treated as a glob and will be matched literally). Due to
-    Skylark limitations, at most one ``**`` may be matched.
+    ``a*/`` is not treated as a glob and will be matched literally).
 
     Args:
         path (:obj:`str`) The path to modify.
@@ -86,18 +84,25 @@ def _remove_prefix(path, prefix):
         :obj:`str`: The path with the prefix removed if successful, or None if
         the prefix does not match the path.
     """
-    return __remove_prefix(path.split("/"), prefix.split("/"))
+    path_tokens = path.split("/")
+    prefix_tokens = prefix.split("/")
 
-#END internal helpers
-#==============================================================================
-#BEGIN macros
+    # Ignore trailing empty element (happens if prefix string ends with "/").
+    if len(prefix_tokens[-1]) == 0:
+        prefix_tokens = prefix_tokens[:-1]
 
-#------------------------------------------------------------------------------
+    # Match the prefix against the path, leaving the final path name intact.
+    match = _match_double_glob_tokens(path_tokens[:-1], prefix_tokens)
+
+    # If a match was found, return the stripped path, else None
+    if match == None:
+        return None
+    return "/".join(path_tokens[len(match):])
+
 def basename(path):
     """Return the file name portion of a file path."""
     return path.split("/")[-1]
 
-#------------------------------------------------------------------------------
 def dirname(path):
     """Return the directory portion of a file path."""
     if path == "/":
@@ -110,7 +115,6 @@ def dirname(path):
 
     return "."
 
-#------------------------------------------------------------------------------
 def join_paths(*args):
     """Join paths without duplicating separators.
 
@@ -135,7 +139,6 @@ def join_paths(*args):
 
     return result[:-1]
 
-#------------------------------------------------------------------------------
 def output_path(ctx, input_file, strip_prefix, package_root = None):
     """Compute "output path".
 
@@ -198,5 +201,3 @@ def output_path(ctx, input_file, strip_prefix, package_root = None):
             return output_path
 
     return input_path
-
-#END macros
