@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+
 #include "drake/multibody/fixed_fem/dev/elasticity_element.h"
 #include "drake/multibody/fixed_fem/dev/fem_model.h"
 
@@ -32,6 +34,49 @@ class ElasticityModel : public FemModel<Element> {
       energy += e.CalcElasticEnergy(state);
     }
     return energy;
+  }
+
+  /** Sets gravity and precomputes gravity force. The default value for gravity
+   is [0, 0, -9.81]. */
+  void SetGravity(
+      const Vector<T, Element::Traits::kSpatialDimension>& gravity) {
+    for (ElementIndex e(0); e < this->num_elements(); ++e) {
+      this->mutable_element(e).SetGravity(gravity);
+    }
+  }
+
+  /** Calculates the total external force exerted on the %ElasticityModel at
+   the given `state`.
+   @param[in] state The FemState at which to evaluate the external force.
+   @param[out] external_force The external force evaluated at `state`.
+   @pre external_force != nullptr.
+   @pre The size of the vector behind `external_force` must be `num_dofs()`. */
+  void CalcExternalForce(const FemState<Element>& state,
+                         EigenPtr<VectorX<T>> external_force) {
+    DRAKE_DEMAND(external_force != nullptr &&
+                 external_force->size() == this->num_dofs());
+    DRAKE_DEMAND(state.element_cache_size() == this->num_elements());
+    /* The values are accumulated in the external_force, so it is important to
+     clear the old data. */
+    external_force->setZero();
+    /* Aliases to improve readability. */
+    constexpr int kNumDofs = Element::Traits::kNumDofs;
+    constexpr int kNumNodes = Element::Traits::kNumNodes;
+    constexpr int kDim = Element::Traits::kSpatialDimension;
+    /* Scratch space to store the contribution to the residual from each
+     element. */
+    Vector<T, kNumDofs> element_force;
+    for (ElementIndex e(0); e < this->num_elements(); ++e) {
+      element_force.setZero();
+      this->element(e).AccumulateExternalForce(state, &element_force);
+      const std::array<NodeIndex, kNumNodes>& element_node_indices =
+          this->element(e).node_indices();
+      for (int i = 0; i < kNumNodes; ++i) {
+        const int ei = element_node_indices[i];
+        external_force->template segment<kDim>(ei * kDim) +=
+            element_force.template segment<kDim>(i * kDim);
+      }
+    }
   }
 
  protected:

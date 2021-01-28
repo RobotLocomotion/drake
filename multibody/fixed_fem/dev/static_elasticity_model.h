@@ -39,7 +39,7 @@ class StaticElasticityModel : public ElasticityModel<Element> {
    @throw std::exception if Element::Traits::kNumNodes != 4. */
   void AddStaticElasticityElementsFromTetMesh(
       const geometry::VolumeMesh<T>& mesh,
-      const ConstitutiveModel& constitutive_model) {
+      const ConstitutiveModel& constitutive_model, const T& density) {
     /* Alias for more readability. */
     constexpr int kDim = Element::Traits::kSolutionDimension;
     constexpr int kNumNodes = Element::Traits::kNumNodes;
@@ -67,7 +67,8 @@ class StaticElasticityModel : public ElasticityModel<Element> {
       }
       ElementIndex next_element_index = ElementIndex(this->num_elements());
       this->AddElement(next_element_index, element_node_indices,
-                       constitutive_model, element_reference_positions);
+                       constitutive_model, element_reference_positions,
+                       density);
     }
 
     this->increment_num_nodes(num_new_vertices);
