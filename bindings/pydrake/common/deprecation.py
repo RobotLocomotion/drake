@@ -151,7 +151,9 @@ class _DeprecatedDescriptor:
     """
 
     def __init__(self, original, message, *, date=None):
-        assert hasattr(original, '__get__'), "`original` must be a descriptor"
+        assert hasattr(original, '__get__'), (
+            f"`original` must be a descriptor: {original}"
+        )
         self._original = original
         self.__doc__ = self._original.__doc__
         self._message = message
