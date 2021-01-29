@@ -92,7 +92,7 @@ TEST_F(ElasticityElementTest, Basic) {
 TEST_F(ElasticityElementTest, ElasticForceIsNegativeEnergyDerivative) {
   AutoDiffXd energy = elasticity_element_->CalcElasticEnergy(*state_);
   VectorX<AutoDiffXd> neg_force = CalcNegativeElasticForce();
-  EXPECT_TRUE(CompareMatrices(energy.derivatives(), neg_force,
+  EXPECT_TRUE(CompareMatrices(energy.const_derivatives(), neg_force,
                               std::numeric_limits<double>::epsilon()));
   // TODO(xuchenhan-tri) Modify this to account for damping forces and inertia
   // terms.
@@ -108,7 +108,7 @@ TEST_F(ElasticityElementTest, StiffnessMatrixIsNegativeElasticForceDerivative) {
   MatrixX<AutoDiffXd> stiffness_matrix(kDof, kDof);
   elasticity_element_->CalcStiffnessMatrix(*state_, &stiffness_matrix);
   for (int i = 0; i < kDof; ++i) {
-    EXPECT_TRUE(CompareMatrices(neg_force(i).derivatives().transpose(),
+    EXPECT_TRUE(CompareMatrices(neg_force(i).const_derivatives().transpose(),
                                 stiffness_matrix.row(i),
                                 std::numeric_limits<double>::epsilon()));
   }

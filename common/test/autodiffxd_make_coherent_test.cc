@@ -17,7 +17,8 @@ GTEST_TEST(AutoDiffXdMakeCoherentTest, AutoDiffEmptyDerivatives) {
   autodiffxd_make_coherent(donor, &recipient);
   EXPECT_EQ(4., recipient.value());
   EXPECT_TRUE(
-      CompareMatrices(recipient.const_derivatives(), Eigen::Vector2d::Zero()));
+      CompareMatrices(recipient.const_derivatives(),
+                      Eigen::Vector2d::Zero()));
 }
 
 GTEST_TEST(AutoDiffXdMakeCoherentTest, AutoDiffNonemptyDerivatives) {

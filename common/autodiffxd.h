@@ -589,6 +589,12 @@ class PoolVectorXd {
     return os << pvxd.to_eigen();
   }
 
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    // TODO(rpoyner-tri) implement this.
+    DRAKE_UNREACHABLE();
+  }
+
   /* Reinterpret a const VectorXd as a const PoolVectorXd. */
   static const PoolVectorXd& to_pool_vector(const Eigen::VectorXd& vxd) {
     static_assert(sizeof(PoolVectorXd) == sizeof(Eigen::VectorXd));

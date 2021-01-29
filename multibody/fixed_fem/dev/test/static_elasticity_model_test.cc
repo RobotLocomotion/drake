@@ -96,9 +96,15 @@ TEST_F(StaticElasticityModelTest, ResidualIsEnergyDerivativePlusExternalForce) {
   T energy = model_.CalcElasticEnergy(state);
   VectorX<T> residual(state.num_generalized_positions());
   model_.CalcResidual(state, &residual);
+<<<<<<< HEAD
   VectorX<T> external_force(state.num_generalized_positions());
   model_.CalcExternalForce(state, &external_force);
   EXPECT_TRUE(CompareMatrices(energy.derivatives() + external_force, residual,
+||||||| merged common ancestors
+  EXPECT_TRUE(CompareMatrices(energy.derivatives(), residual,
+=======
+  EXPECT_TRUE(CompareMatrices(energy.const_derivatives(), residual,
+>>>>>>> wip: should compile
                               std::numeric_limits<double>::epsilon()));
 }
 
@@ -123,7 +129,7 @@ TEST_F(StaticElasticityModelTest, TangentMatrixIsResidualDerivative) {
 
   MatrixX<T> dense_tangent_matrix(tangent_matrix);
   for (int i = 0; i < state.num_generalized_positions(); ++i) {
-    EXPECT_TRUE(CompareMatrices(residual(i).derivatives(),
+    EXPECT_TRUE(CompareMatrices(residual(i).const_derivatives(),
                                 dense_tangent_matrix.col(i),
                                 std::numeric_limits<double>::epsilon()));
   }

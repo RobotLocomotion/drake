@@ -140,7 +140,7 @@ TEST_F(StaticElasticityElementTest, StiffnessMatrixIsPositionDerivative) {
   element().CalcStiffnessMatrix(*state_, &stiffness_matrix);
   for (int i = 0; i < kNumDofs; ++i) {
     EXPECT_TRUE(CompareMatrices(
-        residual(i).derivatives().transpose().head(kNumDofs),
+        residual(i).const_derivatives().transpose().head(kNumDofs),
         stiffness_matrix.row(i), std::numeric_limits<double>::epsilon()));
   }
 }
