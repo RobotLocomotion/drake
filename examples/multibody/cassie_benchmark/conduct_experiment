@@ -3,93 +3,14 @@
 
 set -e -u -o pipefail
 
-ME=$(readlink -f $0)
-HERE=$(dirname $ME)
 TARGET=//examples/multibody/cassie_benchmark:record_results
+ME=$(python3 -c 'import os; print(os.path.realpath("'"$0"'"))')
+HERE=$(dirname $ME)
 
-NO_TURBO_CONTROL_FILE=/sys/devices/system/cpu/intel_pstate/no_turbo
-
-CPU_GOVERNOR=
-NO_TURBO=
-
-die () {
-    echo $"$@"
-    exit 1
-}
-
-is_default_ubuntu () {
-    [[ $(uname) = "Linux" && $(echo $(lsb_release -irs)) = "Ubuntu 18.04" ]]
-}
-
-is_default_compiler () {
-    # Use deep bash magic to assert variables are unset.
-    [[ -z ${CC+x} && -z ${CXX+x} ]]
-}
-
-is_supported_cpu () {
-    [[ -e "$NO_TURBO_CONTROL_FILE" ]]
-}
-
-say () {
-    echo
-    echo === "$@" ===
-    echo
-}
-
-get_cpu_governor () {
-    cpupower frequency-info -p |sed -n 's%.*governor "\([^"]*\)".*%\1%pg'
-}
-
-set_cpu_governor () {
-    sudo cpupower frequency-set --governor "$1"
-}
-
-get_no_turbo () {
-    cat "$NO_TURBO_CONTROL_FILE"
-}
-
-set_no_turbo () {
-    sudo sh -c "echo $1 > $NO_TURBO_CONTROL_FILE"
-}
-
-clean () {
-    say Restore CPU speed settings.
-    [[ -n "$CPU_GOVERNOR" ]] && set_cpu_governor "$CPU_GOVERNOR"
-    [[ -n "$NO_TURBO" ]] && set_no_turbo "$NO_TURBO"
-}
-
-say Validate input.
-[[ "$#" -ge 1 ]] || die "missing argument: destination directory"
-DESTINATION="$1"
+OUTPUT_DIR="$1"
 shift
 
-say Validate environment.
-is_default_ubuntu || die "experiments only supported on default platform"
-is_default_compiler || die "experiments only supported with default compiler"
-is_supported_cpu || die "experiments only supported with Intel CPUs"
+cd "$HERE"/../../..
 
-say Validate sudo access, to avoid later interruptions.
-sudo -v
-
-say Install tools for CPU speed control.
-sudo apt install linux-tools-$(uname -r)
-
-say Build code.
-bazel build "$TARGET"
-
-say Wait for lingering activity to subside.
-sync
-sleep 10
-
-say Control CPU speed variation.
-trap clean EXIT
-CPU_GOVERNOR=$(get_cpu_governor)
-NO_TURBO=$(get_no_turbo)
-set_cpu_governor performance
-set_no_turbo 1
-
-say Run the experiment.
-bazel run "$TARGET" -- "$@"
-
-say Save data.
-"$HERE"/copy_results_to "$DESTINATION"
+./tools/performance/benchmark_tool conduct_experiment \
+    $TARGET "$OUTPUT_DIR" -- "$@"
