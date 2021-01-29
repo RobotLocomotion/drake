@@ -161,7 +161,7 @@ TEST_F(DynamicElasticityElementTest, StiffnessMatrixIsPositionDerivative) {
   element().CalcStiffnessMatrix(*state_, &stiffness_matrix);
   for (int i = 0; i < kNumDofs; ++i) {
     EXPECT_TRUE(CompareMatrices(
-        residual(i).derivatives().transpose().head(kNumDofs),
+        residual(i).const_derivatives().transpose().head(kNumDofs),
         stiffness_matrix.row(i), std::numeric_limits<double>::epsilon()));
   }
 }
@@ -174,7 +174,7 @@ TEST_F(DynamicElasticityElementTest, DampingMatrixIsVelocityDerivative) {
   element().CalcDampingMatrix(*state_, &damping_matrix);
   for (int i = 0; i < kNumDofs; ++i) {
     EXPECT_TRUE(CompareMatrices(
-        residual(i).derivatives().transpose().segment<kNumDofs>(kNumDofs),
+        residual(i).const_derivatives().transpose().segment<kNumDofs>(kNumDofs),
         damping_matrix.row(i), std::numeric_limits<double>::epsilon()));
   }
 }
@@ -188,7 +188,7 @@ TEST_F(DynamicElasticityElementTest, MassMatrixIsAccelerationDerivative) {
   element().CalcMassMatrix(*state_, &mass_matrix);
   for (int i = 0; i < kNumDofs; ++i) {
     EXPECT_TRUE(CompareMatrices(
-        residual(i).derivatives().transpose().tail(kNumDofs),
+        residual(i).const_derivatives().transpose().tail(kNumDofs),
         mass_matrix.row(i), std::numeric_limits<double>::epsilon()));
   }
 }
