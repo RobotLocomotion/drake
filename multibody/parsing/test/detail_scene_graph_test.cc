@@ -182,8 +182,9 @@ GTEST_TEST(SceneGraphParserDetail, MakeBoxFromSdfGeometry) {
   EXPECT_EQ(box->size(), Vector3d(1.0, 2.0, 3.0));
 }
 
-// Verify MakeShapeFromSdfGeometry can make a capsule from an sdf::Geometry.
-GTEST_TEST(SceneGraphParserDetail, MakeCapsuleFromSdfGeometry) {
+// Verify MakeShapeFromSdfGeometry can make a Drake capsule from an
+// sdf::Geometry.
+GTEST_TEST(SceneGraphParserDetail, MakeDrakeCapsuleFromSdfGeometry) {
   unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
       "<drake:capsule>"
       "  <radius>0.5</radius>"
@@ -198,7 +199,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeCapsuleFromSdfGeometry) {
 }
 
 // Verify MakeShapeFromSdfGeometry checks for invalid capsules.
-GTEST_TEST(SceneGraphParserDetail, CheckInvalidCapsules) {
+GTEST_TEST(SceneGraphParserDetail, CheckInvalidDrakeCapsules) {
   unique_ptr<sdf::Geometry> no_radius_geometry = MakeSdfGeometryFromString(
       "<drake:capsule>"
       "  <length>1.2</length>"
@@ -217,6 +218,21 @@ GTEST_TEST(SceneGraphParserDetail, CheckInvalidCapsules) {
       "Element <length> is required within element <drake:capsule>.");
 }
 
+// Verify MakeShapeFromSdfGeometry can make a capsule from an sdf::Geometry.
+GTEST_TEST(SceneGraphParserDetail, MakeCapsuleFromSdfGeometry) {
+  unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
+      "<capsule>"
+      "  <radius>0.5</radius>"
+      "  <length>1.2</length>"
+      "</capsule>");
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(
+      *sdf_geometry, NoopResolveFilename);
+  const Capsule* capsule = dynamic_cast<const Capsule*>(shape.get());
+  ASSERT_NE(capsule, nullptr);
+  EXPECT_EQ(capsule->radius(), 0.5);
+  EXPECT_EQ(capsule->length(), 1.2);
+}
+
 // Verify MakeShapeFromSdfGeometry can make a cylinder from an sdf::Geometry.
 GTEST_TEST(SceneGraphParserDetail, MakeCylinderFromSdfGeometry) {
   unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
@@ -232,8 +248,9 @@ GTEST_TEST(SceneGraphParserDetail, MakeCylinderFromSdfGeometry) {
   EXPECT_EQ(cylinder->length(), 1.2);
 }
 
-// Verify MakeShapeFromSdfGeometry can make an ellipsoid from an sdf::Geometry.
-GTEST_TEST(SceneGraphParserDetail, MakeEllipsoidFromSdfGeometry) {
+// Verify MakeShapeFromSdfGeometry can make a Drake ellipsoid from an
+// sdf::Geometry.
+GTEST_TEST(SceneGraphParserDetail, MakeDrakeEllipsoidFromSdfGeometry) {
   unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
       "<drake:ellipsoid>"
       "  <a>0.5</a>"
@@ -278,6 +295,22 @@ GTEST_TEST(SceneGraphParserDetail, CheckInvalidEllipsoids) {
       MakeShapeFromSdfGeometry(*no_c_geometry, NoopResolveFilename),
       std::runtime_error,
       "Element <c> is required within element <drake:ellipsoid>.");
+}
+
+
+// Verify MakeShapeFromSdfGeometry can make an ellipsoid from an sdf::Geometry.
+GTEST_TEST(SceneGraphParserDetail, MakeEllipsoidFromSdfGeometry) {
+  unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
+      "<ellipsoid>"
+      "  <radii>0.5 1.2 0.9</radii>"
+      "</ellipsoid>");
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(
+      *sdf_geometry, NoopResolveFilename);
+  const Ellipsoid* ellipsoid = dynamic_cast<const Ellipsoid*>(shape.get());
+  ASSERT_NE(ellipsoid, nullptr);
+  EXPECT_EQ(ellipsoid->a(), 0.5);
+  EXPECT_EQ(ellipsoid->b(), 1.2);
+  EXPECT_EQ(ellipsoid->c(), 0.9);
 }
 
 // Verify MakeShapeFromSdfGeometry can make a sphere from an sdf::Geometry.

@@ -33,6 +33,14 @@
           </drake:capsule>
         </geometry>
       </visual>
+      <visual name="CapsuleSdf">
+        <geometry>
+          <capsule>
+            <length>1</length>
+            <radius>0.1</radius>
+          </capsule>
+        </geometry>
+      </visual>
       <visual name="Convex">
         <geometry>
           <mesh>
@@ -56,6 +64,13 @@
             <b>2.0</b>
             <c>3.0</c>
           </drake:ellipsoid>
+        </geometry>
+      </visual>
+      <visual name="EllipsoidSdf">
+        <geometry>
+          <ellipsoid>
+            <radii>1.0 2.0 3.0</radii>
+          </ellipsoid>
         </geometry>
       </visual>
       <visual name="Mesh">

@@ -10,8 +10,8 @@ def ignition_math_repository(
     github_archive(
         name = name,
         repository = "ignitionrobotics/ign-math",
-        commit = "ignition-math6_6.7.0",
-        sha256 = "8456af51cbb128d7468d65b55124af7a235f052214ac2a239c3f23197416f2d2",  # noqa
+        commit = "ignition-math6_6.8.0-pre2",
+        sha256 = "1670453b35ab382b130cdafaf3927f14f60743bdb7811ae7b2ee82ac97d16fc3",  # noqa
         build_file = "@drake//tools/workspace/ignition_math:package.BUILD.bazel",  # noqa
         mirrors = mirrors,
     )

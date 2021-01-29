@@ -917,12 +917,14 @@ ModelInstanceIndex AddModelFromSdf(
 
   std::string root_dir = LoadSdf(&root, data_source);
 
+  SDF_SUPPRESS_DEPRECATED_BEGIN
   if (root.ModelCount() != 1) {
     throw std::runtime_error("File must have a single <model> element.");
   }
+  SDF_SUPPRESS_DEPRECATED_END
 
   // Get the only model in the file.
-  const sdf::Model& model = *root.ModelByIndex(0);
+  const sdf::Model& model = *root.Model();
 
   if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
     plant->RegisterAsSourceForSceneGraph(scene_graph);
@@ -948,7 +950,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
   std::string root_dir = LoadSdf(&root, data_source);
 
   // Throw an error if there are no models or worlds.
-  if (root.ModelCount() == 0 && root.WorldCount() == 0) {
+  if (root.Model() == nullptr && root.WorldCount() == 0) {
     throw std::runtime_error(
         "File must have at least one <model>, or <world> with one "
         "child <model> element.");
@@ -960,7 +962,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
   }
 
   // Do not allow a <world> to have a <model> sibling.
-  if (root.ModelCount() > 0 && root.WorldCount() > 0) {
+  if (root.Model() != nullptr && root.WorldCount() > 0) {
     throw std::runtime_error("A <world> and <model> cannot be siblings.");
   }
 
@@ -972,14 +974,16 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
 
   // At this point there should be only Models or a single World at the Root
   // levelt.
-  if (root.ModelCount() > 0) {
+  if (root.Model() != nullptr) {
     // Load all the models at the root level.
+    SDF_SUPPRESS_DEPRECATED_BEGIN
     for (uint64_t i = 0; i < root.ModelCount(); ++i) {
       // Get the model.
       const sdf::Model& model = *root.ModelByIndex(i);
       model_instances.push_back(AddModelFromSpecification(
             model, model.Name(), {}, plant, package_map, root_dir));
     }
+    SDF_SUPPRESS_DEPRECATED_END
   } else {
     // Load the world and all the models in the world.
     const sdf::World& world = *root.WorldByIndex(0);
