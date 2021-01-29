@@ -12,11 +12,12 @@ namespace multibody {
 namespace fixed_fem {
 namespace test {
 namespace {
+/* An arbitrary number of degree of freedom made up for testing purpose. */
 static constexpr int kNumDofs = 4;
 using DenseMatrix = Eigen::Matrix<double, kNumDofs, kNumDofs>;
 using Eigen::VectorXd;
 using SparseMatrix = Eigen::SparseMatrix<double>;
-using Element = DummyElement;
+using Element = DummyElement<1>;
 using State = FemState<Element>;
 constexpr int kOdeOrder = Element::Traits::kOdeOrder;
 
@@ -28,12 +29,12 @@ class DirichletBoundaryConditionTest : public ::testing::Test {
   }
 
   /* Makes an arbitrary residual vector with appropriate size. */
-  static VectorXd residual() {
+  static VectorXd MakeResidual() {
     return Vector<double, kNumDofs>(1.1, 2.2, 3.3, 4.4);
   }
 
   /* Makes an arbitrary SPD tangent matrix with appropriate size. */
-  static SparseMatrix tangent_matrix() {
+  static SparseMatrix MakeTangentMatrix() {
     DenseMatrix A;
     // clang-format off
     A << 3,   1,     0.5, -1,
@@ -46,7 +47,7 @@ class DirichletBoundaryConditionTest : public ::testing::Test {
   }
 
   /* Makes an arbitrary compatible FemState with appropriate size. */
-  static State state() {
+  static State MakeState() {
     State state{Vector<double, kNumDofs>(0.1, 0.2, 0.3, 0.4),
                 Vector<double, kNumDofs>(0.5, 0.6, 0.7, 0.8)};
     return state;
@@ -57,9 +58,9 @@ class DirichletBoundaryConditionTest : public ::testing::Test {
 };
 
 /* Tests that the DirichletBoundaryCondition under test successfully modifies
- a given state, which is the second documented responsibility of the class . */
+ a given state. */
 TEST_F(DirichletBoundaryConditionTest, ApplyBcToState) {
-  State s = state();
+  State s = MakeState();
   bc_.ApplyBoundaryConditions(&s);
   EXPECT_TRUE(CompareMatrices(s.q(), Vector<double, kNumDofs>{3, 0.2, 1, 0.4}));
   EXPECT_TRUE(
@@ -67,42 +68,48 @@ TEST_F(DirichletBoundaryConditionTest, ApplyBcToState) {
 }
 
 /* Tests that the DirichletBoundaryCondition under test successfully modifies
- a given reisdual and tangent matrix pair, which is the third documented
- responsibility of the class . */
+ a given residual. */
+TEST_F(DirichletBoundaryConditionTest, ApplyBcToResidual) {
+  VectorXd b = MakeResidual();
+  bc_.ApplyBcToResidual(&b);
+  const Vector<double, kNumDofs> b_expected(0, 2.2, 0, 4.4);
+  EXPECT_TRUE(CompareMatrices(b, b_expected));
+}
+
+/* Tests that the DirichletBoundaryCondition under test successfully modifies a
+ given tangent matrix. */
 TEST_F(DirichletBoundaryConditionTest, ApplyBcResidualAndTangentMatrix) {
-  SparseMatrix A = tangent_matrix();
-  const int nnz = A.nonZeros();
-  VectorXd b = residual();
-  /* Keep a copy of the original tangent matrix/residual pair to test the third
-   property of ApplyBoundaryCondition(). */
-  const DenseMatrix A_old(A);
-  const VectorXd b_old = b;
-  bc_.ApplyBoundaryConditions(&A, &b);
+  SparseMatrix A_sparse = MakeTangentMatrix();
+  const int nnz = A_sparse.nonZeros();
+  bc_.ApplyBcToTangentMatrix(&A_sparse);
   /* The number of nonzeros should not change. */
-  EXPECT_EQ(A.nonZeros(), nnz);
-  const DenseMatrix A_new(A);
+  EXPECT_EQ(A_sparse.nonZeros(), nnz);
+  const DenseMatrix A(A_sparse);
   DenseMatrix A_expected;
   // clang-format off
   A_expected << 1, 0,     0, 0,
                 0, 2,     0, 0.125,
                 0, 0,     1, 0,
                 0, 0.125, 0, 4;
-  // clang-format on
-  /* Tests for the first property documented in ApplyBoundaryCondition() as
-   A_expected is clearly SPD as it is diagonally dominant. */
-  EXPECT_TRUE(CompareMatrices(A_new, A_expected));
+  EXPECT_TRUE(CompareMatrices(A, A_expected));
+}
 
-  Eigen::FullPivLU<DenseMatrix> lu(A_new);
-  Vector<double, kNumDofs> x = lu.solve(b);
-  /* Tests for the second property documented in ApplyBoundaryCondition(). */
-  EXPECT_DOUBLE_EQ(x(0), 0);
-  EXPECT_DOUBLE_EQ(x(2), 0);
-  /* Tests for the third property documented in ApplyBoundaryCondition(). */
-  /* Hard constrain the dofs under BC to their prescribed values. */
-  x(0) = 2;
-  x(2) = 0;
-  EXPECT_DOUBLE_EQ((A_old * x)(1), b_old(1));
-  EXPECT_DOUBLE_EQ((A_old * x)(3), b_old(3));
+/* Tests out-of-bound BCs throw an exception. */
+TEST_F(DirichletBoundaryConditionTest, OutOfBound) {
+  /* Put a dof that is out-of-bound under BC. */
+  bc_.AddBoundaryCondition(DofIndex(4), Vector<double, kOdeOrder + 1>(3, 4));
+  State state = MakeState();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+  bc_.ApplyBoundaryConditions(&state), std::exception,
+          "An index of the dirichlet boundary condition is out of the range.");
+  VectorXd b = MakeResidual();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+  bc_.ApplyBcToResidual(&b), std::exception,
+          "An index of the dirichlet boundary condition is out of the range.");
+  SparseMatrix A_sparse = MakeTangentMatrix();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+  bc_.ApplyBcToTangentMatrix(&A_sparse), std::exception,
+          "An index of the dirichlet boundary condition is out of the range.");
 }
 }  // namespace
 }  // namespace test
