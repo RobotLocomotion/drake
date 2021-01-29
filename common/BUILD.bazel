@@ -621,6 +621,7 @@ drake_cc_googletest(
         "test/autodiffxd_tan_test.cc",
         "test/autodiffxd_tanh_test.cc",
         "test/autodiffxd_test.h",
+        "test/autodiffxd_thread_test.cc",
     ],
     deps = [
         ":autodiff",
