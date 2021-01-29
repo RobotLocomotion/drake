@@ -530,7 +530,7 @@ class PoolVectorXd {
       __m256d* d = reinterpret_cast<__m256d*>(data);
 
       __m256d inn = _mm256_loadu_pd(in);  // May be unaligned.
-      *d = _mm256_sub_pd(*d, inn);  // d = d + inn
+      *d = _mm256_sub_pd(*d, inn);  // d = d - inn
 
       inn = _mm256_loadu_pd(in + 4);
       *(d + 1) = _mm256_sub_pd(*(d + 1), inn);
@@ -544,7 +544,7 @@ class PoolVectorXd {
       data += 16; in += 16;
     }
     while (data != this_end()) {
-      *data++ += *in++;
+      *data++ -= *in++;
     }
     return *this;
   }
