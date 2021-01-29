@@ -265,7 +265,7 @@ TEST_F(ElasticityElementTest, NegativeElasticForceIsEnergyDerivative) {
   AutoDiffXd energy = element().CalcElasticEnergy(state);
   Vector<AutoDiffXd, kNumDofs> neg_elastic_force =
       element().CalcNegativeElasticForce(state);
-  EXPECT_TRUE(CompareMatrices(energy.derivatives(), neg_elastic_force,
+  EXPECT_TRUE(CompareMatrices(energy.const_derivatives(), neg_elastic_force,
                               std::numeric_limits<double>::epsilon()));
 }
 
@@ -278,9 +278,10 @@ TEST_F(ElasticityElementTest, ElasticForceCompatibleWithItsDerivative) {
   Eigen::Matrix<AutoDiffXd, kNumDofs, kNumDofs> neg_elastic_force_derivative =
       element().CalcNegativeElasticForceDerivative(state);
   for (int i = 0; i < kNumDofs; ++i) {
-    EXPECT_TRUE(CompareMatrices(neg_elastic_force(i).derivatives().transpose(),
-                                neg_elastic_force_derivative.row(i),
-                                std::numeric_limits<double>::epsilon()));
+    EXPECT_TRUE(CompareMatrices(
+                    neg_elastic_force(i).const_derivatives().transpose(),
+                    neg_elastic_force_derivative.row(i),
+                    std::numeric_limits<double>::epsilon()));
   }
 }
 }  // namespace

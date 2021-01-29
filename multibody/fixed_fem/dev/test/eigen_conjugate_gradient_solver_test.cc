@@ -103,7 +103,7 @@ GTEST_TEST(EigenConjugateGradientSolverTest, AutoDiffSolverTestRhs) {
      df/db. We know that this gradient is such that grad.row(i) = A \ eᵢ, hence
      the check below. */
     const Vector<double, kD> expected_derivatives = lu.solve(unit_derivative);
-    EXPECT_TRUE(CompareMatrices(x(i).derivatives(), expected_derivatives,
+    EXPECT_TRUE(CompareMatrices(x(i).const_derivatives(), expected_derivatives,
                                 std::numeric_limits<double>::epsilon()));
   }
 }
