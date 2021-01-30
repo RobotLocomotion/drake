@@ -1,10 +1,10 @@
-#include "drake/multibody/fixed_fem/dev/linear_constitutive_model.h"
-
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/multibody/fixed_fem/dev/corotated_model.h"
+#include "drake/multibody/fixed_fem/dev/linear_constitutive_model.h"
 
 namespace drake {
 namespace multibody {
@@ -12,6 +12,7 @@ namespace fixed_fem {
 namespace {
 const ElementIndex kDummyElementIndex(0);
 constexpr int kNumQuads = 1;
+const double kTol = 1e-12;
 
 // Creates a vector of arbitrary deformation gradients.
 std::array<Matrix3<AutoDiffXd>, kNumQuads> MakeDeformationGradients() {
@@ -37,49 +38,40 @@ std::array<Matrix3<AutoDiffXd>, kNumQuads> MakeDeformationGradients() {
   return deformation_gradients_autodiff;
 }
 
-GTEST_TEST(LinearConstitutiveModelTest, Parameters) {
-  const LinearConstitutiveModel<double, kNumQuads> model(100.0, 0.25);
+/* Template parameter Model must be of type LinearConstitutiveModel or
+ CorotatedModel. */
+template <class Model>
+void TestParameters() {
+  const Model model(100.0, 0.25);
   const double mu = 40.0;
   const double lambda = 40.0;
   EXPECT_EQ(model.youngs_modulus(), 100.0);
   EXPECT_EQ(model.poisson_ratio(), 0.25);
   EXPECT_EQ(model.shear_modulus(), mu);
   EXPECT_EQ(model.lame_first_parameter(), lambda);
+
+  DRAKE_EXPECT_THROWS_MESSAGE((Model(-1.0, 0.25)), std::logic_error,
+                              "Young's modulus must be nonnegative.");
+
+  DRAKE_EXPECT_THROWS_MESSAGE((Model(100.0, 0.5)), std::logic_error,
+                              "Poisson ratio must be in \\(-1, 0.5\\).");
+
+  DRAKE_EXPECT_THROWS_MESSAGE((Model(100.0, 0.6)), std::logic_error,
+                              "Poisson ratio must be in \\(-1, 0.5\\).");
+
+  DRAKE_EXPECT_THROWS_MESSAGE((Model(100.0, -1.0)), std::logic_error,
+                              "Poisson ratio must be in \\(-1, 0.5\\).");
+
+  DRAKE_EXPECT_THROWS_MESSAGE((Model(100.0, -1.1)), std::logic_error,
+                              "Poisson ratio must be in \\(-1, 0.5\\).");
 }
 
-GTEST_TEST(LinearConstitutiveModelTest, InvalidYoungsModulus) {
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      (LinearConstitutiveModel<double, kNumQuads>(-1.0, 0.25)),
-      std::logic_error, "Young's modulus must be nonnegative.");
-}
-
-GTEST_TEST(LinearConstitutiveModelTest, InvalidPoissonRatioAtUpperLimit) {
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      (LinearConstitutiveModel<double, kNumQuads>(100.0, 0.5)),
-      std::logic_error, "Poisson ratio must be in \\(-1, 0.5\\).");
-}
-
-GTEST_TEST(LinearConstitutiveModelTest, InvalidPoissonRatioOverUpperLimit) {
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      (LinearConstitutiveModel<double, kNumQuads>(100.0, 0.6)),
-      std::logic_error, "Poisson ratio must be in \\(-1, 0.5\\).");
-}
-
-GTEST_TEST(LinearConstitutiveModelTest, InvalidPoissonRatioAtLower) {
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      (LinearConstitutiveModel<double, kNumQuads>(100.0, -1.0)),
-      std::logic_error, "Poisson ratio must be in \\(-1, 0.5\\).");
-}
-
-GTEST_TEST(LinearConstitutiveModelTest, InvalidPoissonRatioBelowLowerLimit) {
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      (LinearConstitutiveModel<double, kNumQuads>(100.0, -1.1)),
-      std::logic_error, "Poisson ratio must be in \\(-1, 0.5\\).");
-}
-
-GTEST_TEST(LinearConstitutiveModelTest, UndeformedState) {
-  const LinearConstitutiveModel<double, kNumQuads> model(100.0, 0.25);
-  LinearConstitutiveModelCacheEntry<double, kNumQuads> cache_entry;
+/* Template parameter Model must be of type LinearConstitutiveModel or
+ CorotatedModel. */
+template <class Model>
+void TestUndeformedState() {
+  const Model model(100.0, 0.25);
+  typename Model::Traits::DeformationGradientCacheEntryType cache_entry;
   const std::array<Matrix3<double>, kNumQuads> F{Matrix3<double>::Identity()};
   cache_entry.UpdateCacheEntry(F);
   // In undeformed state, the energy density should be zero.
@@ -95,9 +87,12 @@ GTEST_TEST(LinearConstitutiveModelTest, UndeformedState) {
   EXPECT_EQ(stress, analytic_stress);
 }
 
-GTEST_TEST(LinearConstitutiveModelTest, PIsDerivativeOfPsi) {
-  const LinearConstitutiveModel<AutoDiffXd, kNumQuads> model(100.0, 0.3);
-  LinearConstitutiveModelCacheEntry<AutoDiffXd, kNumQuads> cache_entry;
+/* Template parameter Model must be of type LinearConstitutiveModel or
+ CorotatedModel instantiated with AutoDiffXd. */
+template <class Model>
+void TestPIsDerivativeOfPsi() {
+  const Model model(100.0, 0.3);
+  typename Model::Traits::DeformationGradientCacheEntryType cache_entry;
   const std::array<Matrix3<AutoDiffXd>, kNumQuads> deformation_gradients =
       MakeDeformationGradients();
   // P should be derivative of Psi.
@@ -109,14 +104,16 @@ GTEST_TEST(LinearConstitutiveModelTest, PIsDerivativeOfPsi) {
   for (int i = 0; i < kNumQuads; ++i) {
     EXPECT_TRUE(CompareMatrices(
         Eigen::Map<const Matrix3<double>>(energy[i].derivatives().data(), 3, 3),
-        P[i]));
+        P[i], kTol));
   }
 }
-// TODO(xuchenhan-tri): This test applies to all ConstitutiveModels. Consider
-// moving it to ConstitutiveModelTest.
-GTEST_TEST(LinearConstitutiveModelTest, dPdFIsDerivativeOfP) {
-  const LinearConstitutiveModel<AutoDiffXd, kNumQuads> model(100.0, 0.3);
-  LinearConstitutiveModelCacheEntry<AutoDiffXd, kNumQuads> cache_entry;
+
+/* Template parameter Model must be of type LinearConstitutiveModel or
+ CorotatedModel instantiated with AutoDiffXd. */
+template <class Model>
+void TestdPdFIsDerivativeOfP() {
+  const Model model(100.0, 0.3);
+  typename Model::Traits::DeformationGradientCacheEntryType cache_entry;
   const std::array<Matrix3<AutoDiffXd>, kNumQuads> deformation_gradients =
       MakeDeformationGradients();
   cache_entry.UpdateCacheEntry(deformation_gradients);
@@ -135,10 +132,30 @@ GTEST_TEST(LinearConstitutiveModelTest, dPdFIsDerivativeOfP) {
         }
         EXPECT_TRUE(CompareMatrices(Eigen::Map<const Matrix3<double>>(
                                         P[q](i, j).derivatives().data(), 3, 3),
-                                    dPijdF));
+                                    dPijdF, kTol));
       }
     }
   }
+}
+
+GTEST_TEST(LinearConstitutiveModelTest, Parameters) {
+  TestParameters<LinearConstitutiveModel<double, kNumQuads>>();
+  TestParameters<CorotatedModel<double, kNumQuads>>();
+}
+
+GTEST_TEST(LinearConstitutiveModelTest, UndeformedState) {
+  TestUndeformedState<LinearConstitutiveModel<double, kNumQuads>>();
+  TestUndeformedState<CorotatedModel<double, kNumQuads>>();
+}
+
+GTEST_TEST(LinearConstitutiveModelTest, PIsDerivativeOfPsi) {
+  TestPIsDerivativeOfPsi<LinearConstitutiveModel<AutoDiffXd, kNumQuads>>();
+  TestPIsDerivativeOfPsi<CorotatedModel<AutoDiffXd, kNumQuads>>();
+}
+
+GTEST_TEST(LinearConstitutiveModelTest, dPdFIsDerivativeOfP) {
+  TestdPdFIsDerivativeOfP<LinearConstitutiveModel<AutoDiffXd, kNumQuads>>();
+  TestdPdFIsDerivativeOfP<CorotatedModel<AutoDiffXd, kNumQuads>>();
 }
 }  // namespace
 }  // namespace fixed_fem
