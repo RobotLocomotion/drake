@@ -6,7 +6,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/examples/manipulation_station/manipulation_station.h"
-#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/lcmt_schunk_wsg_command.hpp"
@@ -74,8 +74,8 @@ int do_main(int argc, char* argv[]) {
   // #9747.
   station->Finalize();
 
-  geometry::ConnectDrakeVisualizer(&builder, station->get_scene_graph(),
-                                   station->GetOutputPort("pose_bundle"));
+  geometry::DrakeVisualizer::AddToBuilder(
+      &builder, station->GetOutputPort("query_object"));
 
   auto lcm = builder.AddSystem<systems::lcm::LcmInterfaceSystem>();
 
@@ -85,7 +85,9 @@ int do_main(int argc, char* argv[]) {
   auto iiwa_command =
       builder.AddSystem<manipulation::kuka_iiwa::IiwaCommandReceiver>();
   builder.Connect(iiwa_command_subscriber->get_output_port(),
-                  iiwa_command->get_input_port());
+                  iiwa_command->get_message_input_port());
+  builder.Connect(station->GetOutputPort("iiwa_position_measured"),
+                  iiwa_command->get_position_measured_input_port());
 
   // Pull the positions out of the state.
   builder.Connect(iiwa_command->get_commanded_position_output_port(),
@@ -144,15 +146,6 @@ int do_main(int argc, char* argv[]) {
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
-  auto& context = simulator.get_mutable_context();
-  auto& station_context =
-      diagram->GetMutableSubsystemContext(*station, &context);
-
-  // Get the initial Iiwa pose and initialize the iiwa_command to match.
-  VectorXd q0 = station->GetIiwaPosition(station_context);
-  iiwa_command->set_initial_position(
-      &diagram->GetMutableSubsystemContext(*iiwa_command, &context), q0);
-
   simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.AdvanceTo(FLAGS_duration);

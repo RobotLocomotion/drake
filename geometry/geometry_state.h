@@ -16,9 +16,11 @@
 #include "drake/geometry/geometry_index.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_set.h"
+#include "drake/geometry/geometry_version.h"
 #include "drake/geometry/internal_frame.h"
 #include "drake/geometry/internal_geometry.h"
 #include "drake/geometry/proximity_engine.h"
+#include "drake/geometry/render/render_camera.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/utilities.h"
 
@@ -65,7 +67,7 @@ using FrameIdSet = std::unordered_set<FrameId>;
 template <typename T>
 class GeometryState {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryState)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryState);
 
   /** An object that represents the range of FrameId values in the state. It
    is used in range-based for loops to iterate through registered frames.  */
@@ -129,6 +131,10 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::GetCollisionCandidates().  */
   std::set<std::pair<GeometryId, GeometryId>> GetCollisionCandidates() const;
 
+  /** Implementation of SceneGraphInspector::GetGeometryVersion().  */
+  const GeometryVersion& geometry_version() const {
+      return geometry_version_;
+  }
   //@}
 
   /** @name          Sources and source-related data  */
@@ -137,7 +143,7 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::SourceIsRegistered().  */
   bool SourceIsRegistered(SourceId source_id) const;
 
-  /** Implementation of SceneGraphInspector::GetSourceName().  */
+  /** Implementation of SceneGraphInspector::GetName().  */
   const std::string& GetName(SourceId id) const;
 
   /** Implementation of SceneGraphInspector::NumFramesForSource().  */
@@ -171,6 +177,10 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::NumGeometriesForFrameWithRole().
    */
   int NumGeometriesForFrameWithRole(FrameId frame_id, Role role) const;
+
+  /** Implementation of SceneGraphInspector::GetGeometries.  */
+  std::vector<GeometryId> GetGeometries(FrameId frame_id,
+                                        std::optional<Role> role) const;
 
   // TODO(SeanCurtis-TRI): Redundant w.r.t. NumGeometriesForFrameWithRole().
   /** Reports the number of child geometries for this frame that have the
@@ -233,14 +243,14 @@ class GeometryState {
    registered frames.  */
   //@{
 
-  /** Implementation of QueryObject::X_WF().  */
+  /** Implementation of QueryObject::GetPoseInWorld(FrameId).  */
   const math::RigidTransform<T>& get_pose_in_world(FrameId frame_id) const;
 
-  /** Implementation of QueryObject::X_WG().  */
+  /** Implementation of QueryObject::GetPoseInWorld(GeometryId).  */
   const math::RigidTransform<T>& get_pose_in_world(
       GeometryId geometry_id) const;
 
-  /** Implementation of QueryObject::X_PF().  */
+  /** Implementation of QueryObject::GetPoseInParent().  */
   const math::RigidTransform<T>& get_pose_in_parent(FrameId frame_id) const;
 
   //@}
@@ -366,7 +376,6 @@ class GeometryState {
                             d) the context has already been allocated.  */
   int RemoveFromRenderer(const std::string& renderer_name, SourceId source_id,
                          GeometryId geometry_id);
-
   //@}
 
   //----------------------------------------------------------------------------
@@ -375,9 +384,8 @@ class GeometryState {
   //@{
 
   /** Implementation of QueryObject::ComputePointPairPenetration().  */
-  std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
-      const {
-    return geometry_engine_->ComputePointPairPenetration();
+  std::vector<PenetrationAsPointPair<T>> ComputePointPairPenetration() const {
+    return geometry_engine_->ComputePointPairPenetration(X_WGs_);
   }
 
   /** Implementation of QueryObject::ComputeContactSurfaces().  */
@@ -388,7 +396,7 @@ class GeometryState {
   /** Implementation of QueryObject::ComputeContactSurfacesWithFallback().  */
   void ComputeContactSurfacesWithFallback(
       std::vector<ContactSurface<T>>* surfaces,
-      std::vector<PenetrationAsPointPair<double>>* point_pairs) const {
+      std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
     DRAKE_DEMAND(surfaces);
     DRAKE_DEMAND(point_pairs);
     return geometry_engine_->ComputeContactSurfacesWithFallback(
@@ -475,14 +483,28 @@ class GeometryState {
     return render_engines_.count(name) > 0;
   }
 
+  /** Implementation of QueryObject::GetRenderEngineByName.  */
+  const render::RenderEngine* GetRenderEngineByName(
+      const std::string& name) const {
+    if (render_engines_.count(name) > 0) {
+      return render_engines_.at(name).get();
+    }
+    return nullptr;
+  }
+
   /** Implementation of SceneGraph::RendererCount().  */
   int RendererCount() const { return static_cast<int>(render_engines_.size()); }
 
   /** Implementation of SceneGraph::RegisteredRendererNames().  */
   std::vector<std::string> RegisteredRendererNames() const;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   /** Implementation of QueryObject::RenderColorImage().
    @pre All poses have already been updated.  */
+  DRAKE_DEPRECATED("2021-04-01",
+                   "CameraProperties are being deprecated. Please use the "
+                   "ColorRenderCamera variant.")
   void RenderColorImage(const render::CameraProperties& camera,
                         FrameId parent_frame, const math::RigidTransformd& X_PC,
                         bool show_window,
@@ -490,15 +512,41 @@ class GeometryState {
 
   /** Implementation of QueryObject::RenderDepthImage().
    @pre All poses have already been updated.  */
+  DRAKE_DEPRECATED("2021-04-01",
+                   "CameraProperties are being deprecated. Please use the "
+                   "DepthRenderCamera variant.")
   void RenderDepthImage(const render::DepthCameraProperties& camera,
                         FrameId parent_frame, const math::RigidTransformd& X_PC,
                         systems::sensors::ImageDepth32F* depth_image_out) const;
 
   /** Implementation of QueryObject::RenderLabelImage().
    @pre All poses have already been updated.  */
+  DRAKE_DEPRECATED("2021-04-01",
+                   "CameraProperties are being deprecated. Please use the "
+                   "ColorRenderCamera variant.")
   void RenderLabelImage(const render::CameraProperties& camera,
                         FrameId parent_frame, const math::RigidTransformd& X_PC,
                         bool show_window,
+                        systems::sensors::ImageLabel16I* label_image_out) const;
+
+#pragma GCC diagnostic pop
+
+  /** Implementation of QueryObject::RenderColorImage().
+   @pre All poses have already been updated.  */
+  void RenderColorImage(const render::ColorRenderCamera& camera,
+                        FrameId parent_frame, const math::RigidTransformd& X_PC,
+                        systems::sensors::ImageRgba8U* color_image_out) const;
+
+  /** Implementation of QueryObject::RenderDepthImage().
+   @pre All poses have already been updated.  */
+  void RenderDepthImage(const render::DepthRenderCamera& camera,
+                        FrameId parent_frame, const math::RigidTransformd& X_PC,
+                        systems::sensors::ImageDepth32F* depth_image_out) const;
+
+  /** Implementation of QueryObject::RenderLabelImage().
+   @pre All poses have already been updated.  */
+  void RenderLabelImage(const render::ColorRenderCamera& camera,
+                        FrameId parent_frame, const math::RigidTransformd& X_PC,
                         systems::sensors::ImageLabel16I* label_image_out) const;
 
   //@}
@@ -535,7 +583,8 @@ class GeometryState {
         geometries_(source.geometries_),
         frame_index_to_id_map_(source.frame_index_to_id_map_),
         geometry_engine_(std::move(source.geometry_engine_->ToAutoDiffXd())),
-        render_engines_(source.render_engines_) {
+        render_engines_(source.render_engines_),
+        geometry_version_(source.geometry_version_) {
     auto convert_pose_vector = [](const std::vector<math::RigidTransform<U>>& s,
                                   std::vector<math::RigidTransform<T>>* d) {
       std::vector<math::RigidTransform<T>>& dest = *d;
@@ -819,6 +868,9 @@ class GeometryState {
   // The collection of all registered renderers.
   std::unordered_map<std::string, copyable_unique_ptr<render::RenderEngine>>
       render_engines_;
+
+  // The version for this geometry data.
+  GeometryVersion geometry_version_;
 };
 }  // namespace geometry
 }  // namespace drake

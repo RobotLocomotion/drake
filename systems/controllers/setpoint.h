@@ -115,22 +115,22 @@ class CartesianSetpoint {
   }
 
   // Getters
-  inline const math::RigidTransform<Scalar>& desired_pose() const {
+  const math::RigidTransform<Scalar>& desired_pose() const {
     return pose_d_;
   }
-  inline const Vector6<Scalar>& desired_velocity() const { return vel_d_; }
-  inline const Vector6<Scalar>& desired_acceleration() const { return acc_d_; }
-  inline const Vector6<Scalar>& Kp() const { return Kp_; }
-  inline const Vector6<Scalar>& Kd() const { return Kd_; }
+  const Vector6<Scalar>& desired_velocity() const { return vel_d_; }
+  const Vector6<Scalar>& desired_acceleration() const { return acc_d_; }
+  const Vector6<Scalar>& Kp() const { return Kp_; }
+  const Vector6<Scalar>& Kd() const { return Kd_; }
 
   // Setters
-  inline math::RigidTransform<Scalar>& mutable_desired_pose() {
+  math::RigidTransform<Scalar>& mutable_desired_pose() {
     return pose_d_;
   }
-  inline Vector6<Scalar>& mutable_desired_velocity() { return vel_d_; }
-  inline Vector6<Scalar>& mutable_desired_acceleration() { return acc_d_; }
-  inline Vector6<Scalar>& mutable_Kp() { return Kp_; }
-  inline Vector6<Scalar>& mutable_Kd() { return Kd_; }
+  Vector6<Scalar>& mutable_desired_velocity() { return vel_d_; }
+  Vector6<Scalar>& mutable_desired_acceleration() { return acc_d_; }
+  Vector6<Scalar>& mutable_Kp() { return Kp_; }
+  Vector6<Scalar>& mutable_Kd() { return Kd_; }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -149,8 +149,8 @@ class CartesianSetpoint {
 };
 
 template <typename Scalar>
-inline std::ostream& operator<<(std::ostream& out,
-                                const CartesianSetpoint<Scalar>& setpoint) {
+std::ostream& operator<<(std::ostream& out,
+                         const CartesianSetpoint<Scalar>& setpoint) {
   const math::RigidTransform<Scalar> X(setpoint.desired_pose());
   const math::RollPitchYaw<Scalar> rpy(X.rotation());
   out << "pose: (" << X.translation().transpose()
@@ -249,19 +249,19 @@ class VectorSetpoint {
   }
 
   // Getters
-  inline const VectorX<Scalar>& desired_position() const { return pos_d_; }
-  inline const VectorX<Scalar>& desired_velocity() const { return vel_d_; }
-  inline const VectorX<Scalar>& desired_acceleration() const { return acc_d_; }
-  inline const VectorX<Scalar>& Kp() const { return Kp_; }
-  inline const VectorX<Scalar>& Kd() const { return Kd_; }
-  inline int size() const { return pos_d_.size(); }
+  const VectorX<Scalar>& desired_position() const { return pos_d_; }
+  const VectorX<Scalar>& desired_velocity() const { return vel_d_; }
+  const VectorX<Scalar>& desired_acceleration() const { return acc_d_; }
+  const VectorX<Scalar>& Kp() const { return Kp_; }
+  const VectorX<Scalar>& Kd() const { return Kd_; }
+  int size() const { return pos_d_.size(); }
 
   // Setters
-  inline VectorX<Scalar>& mutable_desired_position() { return pos_d_; }
-  inline VectorX<Scalar>& mutable_desired_velocity() { return vel_d_; }
-  inline VectorX<Scalar>& mutable_desired_acceleration() { return acc_d_; }
-  inline VectorX<Scalar>& mutable_Kp() { return Kp_; }
-  inline VectorX<Scalar>& mutable_Kd() { return Kd_; }
+  VectorX<Scalar>& mutable_desired_position() { return pos_d_; }
+  VectorX<Scalar>& mutable_desired_velocity() { return vel_d_; }
+  VectorX<Scalar>& mutable_desired_acceleration() { return acc_d_; }
+  VectorX<Scalar>& mutable_Kp() { return Kp_; }
+  VectorX<Scalar>& mutable_Kd() { return Kd_; }
 
  private:
   // Desired position

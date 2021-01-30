@@ -155,8 +155,7 @@ class OutputPort : public OutputPortBase {
   void Calc(const Context<T>& context, AbstractValue* value) const {
     DRAKE_DEMAND(value != nullptr);
     DRAKE_ASSERT_VOID(get_system_interface().ValidateContext(context));
-    DRAKE_ASSERT_VOID(CheckValidOutputType(*value));
-
+    DRAKE_ASSERT_VOID(ThrowIfInvalidPortValueType(context, *value));
     DoCalc(context, value);
   }
 
@@ -223,59 +222,28 @@ class OutputPort : public OutputPortBase {
                  the System whose output port this is. */
   virtual const AbstractValue& DoEval(const Context<T>& context) const = 0;
 
+  /** Check that an AbstractValue provided to Calc() is suitable for this port.
+  Derived classes should throw a helpful message if not (see LeafOutputPort
+  for an example). It is OK for this to be an expensive check because we will
+  only call it in Debug builds. */
+  virtual void ThrowIfInvalidPortValueType(
+      const Context<T>& context, const AbstractValue& proposed_value) const = 0;
+
+  /** Static method allows DiagramOutputPort to call this recursively. */
+  static void ThrowIfInvalidPortValueType(
+      const OutputPort<T>& port,
+      const Context<T>& context, const AbstractValue& proposed_value) {
+    port.ThrowIfInvalidPortValueType(context, proposed_value);
+  }
+
  private:
   // If this is a vector-valued port, we can check that the returned abstract
   // value actually holds a BasicVector-derived object, and for fixed-size ports
   // that the object has the right size.
   void CheckValidAllocation(const AbstractValue&) const;
 
-  // Check that an AbstractValue provided to Calc() is suitable for this port.
-  // (Very expensive; use in Debug only.)
-  void CheckValidOutputType(const AbstractValue&) const;
-
   const System<T>& system_;
 };
-
-template <typename T>
-void OutputPort<T>::CheckValidAllocation(const AbstractValue& proposed) const {
-  if (this->get_data_type() != kVectorValued)
-    return;  // Nothing we can check for an abstract port.
-
-  auto proposed_vec = dynamic_cast<const Value<BasicVector<T>>*>(&proposed);
-  if (proposed_vec == nullptr) {
-    throw std::logic_error(
-        fmt::format("OutputPort::Allocate(): expected BasicVector output type "
-                    "but got {} for {}.",
-                    proposed.GetNiceTypeName(), GetFullDescription()));
-  }
-
-  if (this->size() == kAutoSize) return;  // Any size is acceptable.
-
-  const int proposed_size = proposed_vec->get_value().size();
-  if (proposed_size != this->size()) {
-    throw std::logic_error(
-        fmt::format("OutputPort::Allocate(): expected vector output type of "
-                    "size {} but got a vector of size {} for {}.",
-                    this->size(), proposed_size, GetFullDescription()));
-  }
-}
-
-// See CacheEntry::CheckValidAbstractValue; treat both methods similarly.
-template <typename T>
-void OutputPort<T>::CheckValidOutputType(const AbstractValue& proposed) const {
-  // TODO(sherm1) Consider whether we can depend on there already being an
-  // object of this type in the output port's CacheEntryValue so we wouldn't
-  // have to allocate one here. If so could also store a precomputed
-  // type_index there for further savings. Would need to pass in a Context.
-  auto good = DoAllocate();  // Expensive!
-  if (proposed.type_info() != good->type_info()) {
-    throw std::logic_error(
-        fmt::format("OutputPort::Calc(): expected output type {} "
-                    "but got {} for {}.",
-                    good->GetNiceTypeName(), proposed.GetNiceTypeName(),
-                    GetFullDescription()));
-  }
-}
 
 }  // namespace systems
 }  // namespace drake

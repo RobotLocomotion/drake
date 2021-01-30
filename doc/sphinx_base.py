@@ -10,7 +10,7 @@ import sys
 import tempfile
 import webbrowser
 
-_SPHINX_BUILD = "doc/sphinx_build.py"
+from rules_python.python.runfiles import runfiles
 
 
 def _die(s):
@@ -27,7 +27,8 @@ def gen_main(input_dir, strict, src_func=None):
         src_func: (optional) Callable of form `f(src_dir)` which will introduce
             additional source files to `src_dir`.
     """
-    assert isfile(_SPHINX_BUILD), "Please execute via 'bazel run'"
+    sphinx_build = runfiles.Create().Rlocation("sphinx/sphinx-build")
+    assert isfile(sphinx_build), "Please execute via 'bazel run'"
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--out_dir", type=str, required=True,
@@ -63,14 +64,18 @@ def gen_main(input_dir, strict, src_func=None):
             "-N", "-Q",  # Be very quiet.
             "-T",  # Traceback (for plugin)
         ]
-    check_call([
-        sys.executable, _SPHINX_BUILD,
-        "-b", "html",  # HTML output.
-        "-a", "-E",  # Don't use caching.
-        "-d", doctree_dir] + warning_args + [
-        src_dir,  # Source dir.
-        out_dir,
-    ])
+    os.environ["LANG"] = "en_US.UTF-8"
+    check_call(
+        [
+            sphinx_build,
+            "-b", "html",  # HTML output.
+            "-a", "-E",  # Don't use caching.
+            "-d", doctree_dir
+        ] + warning_args + [
+            src_dir,  # Source dir.
+            out_dir,
+        ]
+    )
     if not args.debug:
         rmtree(tmp_dir)
     else:
@@ -95,7 +100,8 @@ def preview_main(gen_script, default_port):
         gen_script: Generation script, required to generate docs.
         default_port: Default port for local HTTP server.
     """
-    assert isfile(_SPHINX_BUILD), "Please execute via 'bazel run'"
+    sphinx_build = runfiles.Create().Rlocation("sphinx/sphinx-build")
+    assert isfile(sphinx_build), "Please execute via 'bazel run'"
     parser = argparse.ArgumentParser()
     parser.register('type', 'bool', _str2bool)
     parser.add_argument(

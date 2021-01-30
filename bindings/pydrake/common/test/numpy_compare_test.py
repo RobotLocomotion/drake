@@ -7,7 +7,7 @@ from pydrake.common.test_utilities import numpy_compare
 from pydrake.symbolic import Expression, Formula, Variable
 
 
-class Custom(object):
+class Custom:
     def __init__(self, value):
         assert isinstance(value, str)
         self._str = value

@@ -16,8 +16,8 @@ PYBIND11_MODULE(nlopt, m) {
 
   m.doc() = "NLopt solver bindings for MathematicalProgram";
 
+  py::module::import("pydrake.common.value");
   py::module::import("pydrake.solvers.mathematicalprogram");
-  py::module::import("pydrake.systems.framework");
 
   py::class_<NloptSolver, SolverInterface>(
       m, "NloptSolver", doc.NloptSolver.doc)
@@ -25,7 +25,7 @@ PYBIND11_MODULE(nlopt, m) {
 
   py::class_<NloptSolverDetails>(
       m, "NloptSolverDetails", doc.NloptSolverDetails.doc)
-      .def_readwrite("status", &NloptSolverDetails::status,
+      .def_readonly("status", &NloptSolverDetails::status,
           doc.NloptSolverDetails.status.doc);
   AddValueInstantiation<NloptSolverDetails>(m);
 }

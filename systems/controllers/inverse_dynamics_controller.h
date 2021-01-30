@@ -26,6 +26,16 @@ namespace controllers {
  * `q` and `v` stand for the generalized position and velocity, and `vd` is
  * the generalized acceleration. `*` indicates reference values.
  *
+ * @system
+ * name: InverseDynamicsController
+ * input_ports:
+ * - estimated_state
+ * - desired_state
+ * - desired_acceleration*
+ * output_ports:
+ * - force
+ * @endsystem
+ *
  * This controller always has a BasicVector input port for estimated robot state
  * `(q, v)`, a BasicVector input port for reference robot state `(q*, v*)` and
  * a BasicVector output port for computed torque `torque`. A constructor flag
@@ -36,7 +46,7 @@ namespace controllers {
  * Note that this class assumes the robot is fully actuated, its position
  * and velocity have the same dimension, and it does not have a floating base.
  * If violated, the program will abort. This controller was not designed for
- * closed loop systems: the controller accounts for neither constraint forces
+ * closed-loop systems: the controller accounts for neither constraint forces
  * nor actuator forces applied at loop constraints. Use on such systems is not
  * recommended.
  *
@@ -72,6 +82,8 @@ class InverseDynamicsController : public Diagram<T>,
    *  - The model is not fully actuated.
    *  - Vector kp, ki and kd do not all have the same size equal to the number
    *    of generalized positions.
+   *
+   * @pydrake_mkdoc_identifier{5args_referenced_plant}
    */
   InverseDynamicsController(
       const multibody::MultibodyPlant<T>& plant,
@@ -79,6 +91,18 @@ class InverseDynamicsController : public Diagram<T>,
       const VectorX<double>& ki,
       const VectorX<double>& kd,
       bool has_reference_acceleration);
+
+  /**
+   * Constructs an inverse dynamics controller and takes the ownership of the
+   * input `plant`.
+   *
+   * @pydrake_mkdoc_identifier{5args_owned_plant}
+   */
+  InverseDynamicsController(std::unique_ptr<multibody::MultibodyPlant<T>> plant,
+                            const VectorX<double>& kp,
+                            const VectorX<double>& ki,
+                            const VectorX<double>& kd,
+                            bool has_reference_acceleration);
 
   ~InverseDynamicsController() override;
 
@@ -128,17 +152,17 @@ class InverseDynamicsController : public Diagram<T>,
 
  private:
   void SetUp(const VectorX<double>& kp, const VectorX<double>& ki,
-      const VectorX<double>& kd,
-      const controllers::InverseDynamics<T>& inverse_dynamics,
-      DiagramBuilder<T>* diagram_builder);
+             const VectorX<double>& kd);
 
+  const std::unique_ptr<multibody::MultibodyPlant<T>>
+      owned_plant_for_control_{};
   const multibody::MultibodyPlant<T>* multibody_plant_for_control_{nullptr};
   PidController<T>* pid_{nullptr};
   const bool has_reference_acceleration_{false};
-  int input_port_index_estimated_state_{-1};
-  int input_port_index_desired_state_{-1};
-  int input_port_index_desired_acceleration_{-1};
-  int output_port_index_control_{-1};
+  InputPortIndex input_port_index_estimated_state_;
+  InputPortIndex input_port_index_desired_state_;
+  InputPortIndex input_port_index_desired_acceleration_;
+  OutputPortIndex output_port_index_control_;
 };
 
 }  // namespace controllers

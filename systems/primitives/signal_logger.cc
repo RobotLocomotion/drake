@@ -83,13 +83,8 @@ void SignalLogger<T>::set_forced_publish_only() {
 
 template <typename T>
 EventStatus SignalLogger<T>::WriteToLog(const Context<T>& context) const {
-  log_.AddData(context.get_time(), get_input_port().Eval(context));
+  log_.AddData(context.get_time(), this->get_input_port().Eval(context));
   return EventStatus::Succeeded();
-}
-
-template <typename T>
-const InputPort<T>& SignalLogger<T>::get_input_port() const {
-  return System<T>::get_input_port(0);
 }
 
 }  // namespace systems

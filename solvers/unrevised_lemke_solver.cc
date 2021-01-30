@@ -872,7 +872,8 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
 
 template <typename T>
 UnrevisedLemkeSolver<T>::UnrevisedLemkeSolver()
-    : SolverBase(&id, &is_available, &ProgramAttributesSatisfied) {}
+    : SolverBase(&id, &is_available, &is_enabled,
+                 &ProgramAttributesSatisfied) {}
 
 template <typename T>
 UnrevisedLemkeSolver<T>::~UnrevisedLemkeSolver() = default;
@@ -889,6 +890,11 @@ SolverId UnrevisedLemkeSolver<T>::id() {
 
 template <typename T>
 bool UnrevisedLemkeSolver<T>::is_available() {
+  return true;
+}
+
+template <typename T>
+bool UnrevisedLemkeSolver<T>::is_enabled() {
   return true;
 }
 

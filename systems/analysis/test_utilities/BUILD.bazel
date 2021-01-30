@@ -13,6 +13,7 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "test_utilities",
     testonly = 1,
+    visibility = ["//visibility:public"],
     deps = [
         ":controlled_spring_mass_system",
         ":cubic_scalar_system",
@@ -29,6 +30,7 @@ drake_cc_package_library(
         ":quintic_scalar_system",
         ":robertson_system",
         ":spring_mass_damper_system",
+        ":spring_mass_system",
         ":stateless_system",
         ":stationary_system",
         ":stiff_double_mass_spring_system",
@@ -41,9 +43,9 @@ drake_cc_library(
     srcs = ["controlled_spring_mass_system.cc"],
     hdrs = ["controlled_spring_mass_system.h"],
     deps = [
+        ":spring_mass_system",
         "//systems/controllers:pid_controller",
         "//systems/framework",
-        "//systems/plants/spring_mass_system",
         "//systems/primitives:adder",
         "//systems/primitives:constant_vector_source",
         "//systems/primitives:demultiplexer",
@@ -127,7 +129,7 @@ drake_cc_library(
     testonly = 1,
     hdrs = ["my_spring_mass_system.h"],
     deps = [
-        "//systems/plants/spring_mass_system",
+        ":spring_mass_system",
     ],
 )
 
@@ -179,7 +181,27 @@ drake_cc_library(
     testonly = 1,
     hdrs = ["spring_mass_damper_system.h"],
     deps = [
-        "//systems/plants/spring_mass_system",
+        ":spring_mass_system",
+    ],
+)
+
+drake_cc_library(
+    name = "spring_mass_system",
+    testonly = 1,
+    srcs = ["spring_mass_system.cc"],
+    hdrs = ["spring_mass_system.h"],
+    deps = [
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "spring_mass_system_test",
+    size = "medium",
+    deps = [
+        ":spring_mass_system",
+        "//common/test_utilities",
+        "//systems/framework/test_utilities",
     ],
 )
 
@@ -195,8 +217,10 @@ drake_cc_library(
 drake_cc_library(
     name = "stationary_system",
     testonly = 1,
+    srcs = ["stationary_system.cc"],
     hdrs = ["stationary_system.h"],
     deps = [
+        "//common:default_scalars",
         "//systems/framework",
     ],
 )

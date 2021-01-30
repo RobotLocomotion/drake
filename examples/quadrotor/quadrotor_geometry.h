@@ -10,10 +10,13 @@ namespace quadrotor {
 
 /// Expresses a QuadrotorPlant's geometry to a SceneGraph.
 ///
-/// @system{QuadrotorGeometry,
-///    @input_port{state},
-///    @output_port{geometry_pose}
-/// }
+/// @system
+/// name: QuadrotorGeometry
+/// input_ports:
+/// - state
+/// output_ports:
+/// - geometry_pose
+/// @endsystem
 ///
 /// This class has no public constructor; instead use the AddToBuilder() static
 /// method to create and add it to a DiagramBuilder directly.

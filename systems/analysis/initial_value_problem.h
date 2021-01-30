@@ -76,9 +76,6 @@ class InitialValueProblem {
   using OdeFunction = std::function<VectorX<T>(const T& t, const VectorX<T>& x,
                                                const VectorX<T>& k)>;
 
-  DRAKE_DEPRECATED("2020-07-01", "ODEFunction has been renamed OdeFunction.")
-  typedef OdeFunction ODEFunction;
-
   /// A collection of values i.e. initial time t₀, initial state vector 𝐱₀
   /// and parameters vector 𝐤.to further specify the ODE system (in order
   /// to become an initial value problem).  This places the same role as
@@ -107,9 +104,6 @@ class InitialValueProblem {
     std::optional<VectorX<T>> x0;  ///< The initial state vector 𝐱₀ for the IVP.
     std::optional<VectorX<T>> k;  ///< The parameter vector 𝐤 for the IVP.
   };
-
-  DRAKE_DEPRECATED("2020-07-01", "SpecifiedValues has been renamed OdeContext.")
-  typedef OdeContext SpecifiedValues;
 
   /// Constructs an IVP described by the given @p ode_function, using
   /// given @p default_values.t0 and @p default_values.x0 as initial

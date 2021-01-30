@@ -1,12 +1,13 @@
 #include "drake/lcm/drake_lcm_interface.h"
 
+#include <stdexcept>
 #include <string>
 
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/lcm/drake_mock_lcm.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/lcmt_drake_signal_utils.h"
 #include "drake/lcmt_drake_signal.hpp"
 
@@ -14,8 +15,8 @@
 // declared in drake_lcm_interface.h.
 //
 // Since DrakeLcmInterface and DrakeSubscription are pure virtual, we end up
-// using DrakeMockLcm's implementation of them and presuming DrakeMockLcm's
-// correctness in these test cases.
+// using DrakeLcm's implementation of them and presuming its correctness in
+// these test cases.
 
 namespace drake {
 namespace lcm {
@@ -38,7 +39,7 @@ class DrakeLcmInterfaceTest : public ::testing::Test {
   }
 
  protected:
-  DrakeMockLcm lcm_;
+  DrakeLcm lcm_;
   const std::string channel_ = "NAME";
 
   // A convenient, populated sample message and its encoded form.
@@ -83,6 +84,13 @@ TEST_F(DrakeLcmInterfaceTest, DefaultErrorHandlingTest) {
       std::runtime_error,
       "Error decoding message on NAME");
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(received, Message{}));
+  received = {};
+
+  // We can still publish successfully.
+  lcm_.Publish(channel_, sample_bytes_.data(), sample_bytes_.size(), {});
+  EXPECT_EQ(lcm_.HandleSubscriptions(0), 1);
+  EXPECT_TRUE(CompareLcmtDrakeSignalMessages(received, sample_));
+  received = {};
 }
 
 // Tests the Subscribe free function's customizable error handling.

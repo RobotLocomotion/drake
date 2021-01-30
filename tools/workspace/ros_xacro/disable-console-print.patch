@@ -1,0 +1,13 @@
+Disable a stray console print, unwanted while in -o mode.
+
+--- src/xacro/__init__.py	2019-12-08 06:12:25.000000000 -0500
++++ src/xacro/__init__.py	2020-05-14 18:25:21.332219192 -0400
+@@ -1092,7 +1092,7 @@
+ 
+     # write output
+     out.write(doc.toprettyxml(indent='  ', **encoding))
+-    print()
++    # print()
+     # only close output file, but not stdout
+     if opts.output:
+         out.close()

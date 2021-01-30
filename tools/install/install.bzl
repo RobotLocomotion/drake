@@ -42,9 +42,9 @@ def _rename(file_dest, rename):
         return join_paths(dirname(file_dest), renamed)
     return file_dest
 
-def _depset_to_list(l):
+def _depset_to_list(x):
     """Helper function to convert depset to list."""
-    iter_list = l.to_list() if type(l) == "depset" else l
+    iter_list = x.to_list() if type(x) == "depset" else x
     return iter_list
 
 #------------------------------------------------------------------------------
@@ -142,11 +142,6 @@ def _install_action(
         _output_path(ctx, artifact, strip_prefix, warn_foreign),
     )
     file_dest = _rename(file_dest, rename)
-
-    if "/attic/" in file_dest and not file_dest.startswith("lib/python"):
-        fail("Do not expose attic paths to the install tree ({})".format(
-            file_dest,
-        ))
 
     return struct(src = artifact, dst = file_dest)
 

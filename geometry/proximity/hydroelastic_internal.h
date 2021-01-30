@@ -6,11 +6,12 @@
 #include <utility>
 #include <variant>
 
+#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
-#include "drake/geometry/proximity/bounding_volume_hierarchy.h"
+#include "drake/geometry/proximity/bvh.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
 #include "drake/geometry/proximity_properties.h"
@@ -23,28 +24,47 @@ namespace hydroelastic {
 
 // TODO(SeanCurtis-TRI): When we do soft-soft contact, we'll need ∇p̃(e) as well.
 //  ∇p̃(e) is piecewise constant -- one ℜ³ vector per tetrahedron.
-/** Defines a soft mesh -- a mesh, its linearized pressure field, p̃(e), and its
- bounding volume hierarchy. While this struct retains ownership of the mesh,
+/* Defines a soft mesh -- a mesh, its linearized pressure field, p̃(e), and its
+ bounding volume hierarchy. While this class retains ownership of the mesh,
  we assume that both the pressure field and the bounding volume hierarchy
  are derived from the mesh. */
-struct SoftMesh {
-  std::unique_ptr<VolumeMesh<double>> mesh;
-  std::unique_ptr<VolumeMeshField<double, double>> pressure;
-  std::unique_ptr<BoundingVolumeHierarchy<VolumeMesh<double>>> bvh;
-
+class SoftMesh {
+ public:
   SoftMesh() = default;
 
-  SoftMesh(std::unique_ptr<VolumeMesh<double>> mesh_in,
-           std::unique_ptr<VolumeMeshField<double, double>> pressure_in)
-      : mesh(std::move(mesh_in)),
-        pressure(std::move(pressure_in)),
-        bvh(std::make_unique<BoundingVolumeHierarchy<VolumeMesh<double>>>(
-            *mesh)) {
-    DRAKE_ASSERT(mesh.get() == &pressure->mesh());
+  SoftMesh(std::unique_ptr<VolumeMesh<double>> mesh,
+           std::unique_ptr<VolumeMeshField<double, double>> pressure)
+      : mesh_(std::move(mesh)),
+        pressure_(std::move(pressure)),
+        bvh_(std::make_unique<Bvh<VolumeMesh<double>>>(*mesh_)) {
+    DRAKE_ASSERT(mesh_.get() == &pressure_->mesh());
   }
+
+  SoftMesh(const SoftMesh& s) { *this = s; }
+  SoftMesh& operator=(const SoftMesh& s);
+  SoftMesh(SoftMesh&&) = default;
+  SoftMesh& operator=(SoftMesh&&) = default;
+
+  const VolumeMesh<double>& mesh() const {
+    DRAKE_DEMAND(mesh_ != nullptr);
+    return *mesh_;
+  }
+  const VolumeMeshField<double, double>& pressure() const {
+    DRAKE_DEMAND(pressure_ != nullptr);
+    return *pressure_;
+  }
+  const Bvh<VolumeMesh<double>>& bvh() const {
+    DRAKE_DEMAND(bvh_ != nullptr);
+    return *bvh_;
+  }
+
+ private:
+  std::unique_ptr<VolumeMesh<double>> mesh_;
+  std::unique_ptr<VolumeMeshField<double, double>> pressure_;
+  std::unique_ptr<Bvh<VolumeMesh<double>>> bvh_;
 };
 
-/** Defines a soft half space. The half space is defined such that the half
+/* Defines a soft half space. The half space is defined such that the half
  space's boundary plane is z = 0 in Frame H. Vector Hz points _out_ of the half
  space. The half space is considered to be a soft layer of thickness h
  overlaying a rigid substrate of infinite extent. Its compliance is
@@ -59,7 +79,7 @@ struct SoftMesh {
  elastic modulus, `d` is the positive penetration measure, and `h` is the slab
  thickness -- a simple linear function where pressure is a scale of the depth.
  This model is valid for small penetrations but fails to capture the increased
- stiffness for deformations that approch or penetrate the rigid substrate.
+ stiffness for deformations that approach or penetrate the rigid substrate.
 
  The hydroelastic representation combines elastic modulus and slab thickness
  into a "pressure scale" value: `s = E / h`, which maps penetration depth to
@@ -76,27 +96,24 @@ struct SoftHalfSpace {
   //  future; one that isn't simply the scaled, normalized penetration distance.
 };
 
-/** Definition of a soft geometry for hydroelastic implementations. To be a
+/* Definition of a soft geometry for hydroelastic implementations. To be a
  soft geometry, a shape must be associated with either:
 
    - a volume mesh (including a linearized scalar pressure field), or
    - a soft half space (with a "slab thickness").  */
 class SoftGeometry {
  public:
-  /** Constructs a soft half space representation.  */
+  /* Constructs a soft half space representation.  */
   explicit SoftGeometry(const SoftHalfSpace& soft_half_space)
       : geometry_(soft_half_space) {}
 
-  /** Constructs a soft mesh representation.  */
+  /* Constructs a soft mesh representation.  */
   explicit SoftGeometry(SoftMesh&& soft_mesh)
       : geometry_(std::move(soft_mesh)) {}
 
-  SoftGeometry(const SoftGeometry& g) { *this = g; }
-  SoftGeometry& operator=(const SoftGeometry& g);
-  SoftGeometry(SoftGeometry&&) = default;
-  SoftGeometry& operator=(SoftGeometry&&) = default;
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SoftGeometry)
 
-  /** @name  Distinguishing compliant representations
+  /* @name  Distinguishing compliant representations
 
    The %SoftGeometry can contain either a volume mesh (used as the
    representation for most shapes) or a half space. Accessing the members of
@@ -112,37 +129,37 @@ class SoftGeometry {
     return std::holds_alternative<SoftHalfSpace>(geometry_);
   }
 
-  /** Returns a reference to the volume mesh -- calling this will throw if
+  /* Returns a reference to the volume mesh -- calling this will throw if
    is_half_space() returns `true`.  */
   const VolumeMesh<double>& mesh() const {
     if (is_half_space()) {
       throw std::runtime_error(
           "SoftGeometry::mesh() cannot be invoked for soft half space");
     }
-    return *std::get<SoftMesh>(geometry_).mesh;
+    return std::get<SoftMesh>(geometry_).mesh();
   }
 
-  /** Returns a reference to the mesh's linearized pressure field -- calling
+  /* Returns a reference to the mesh's linearized pressure field -- calling
    this will throw if is_half_space() returns `true`.  */
   const VolumeMeshField<double, double>& pressure_field() const {
     if (is_half_space()) {
       throw std::runtime_error("SoftGeometry::pressure_field() cannot be "
                                "invoked for soft half space");
     }
-    return *std::get<SoftMesh>(geometry_).pressure;
+    return std::get<SoftMesh>(geometry_).pressure();
   }
 
-  /** Returns a reference to the bounding volume hierarchy -- calling this will
+  /* Returns a reference to the bounding volume hierarchy -- calling this will
    throw if is_half_space() returns `true`.  */
-  const BoundingVolumeHierarchy<VolumeMesh<double>>& bvh() const {
+  const Bvh<VolumeMesh<double>>& bvh() const {
     if (is_half_space()) {
       throw std::runtime_error(
           "SoftGeometry::bvh() cannot be invoked for soft half space");
     }
-    return *std::get<SoftMesh>(geometry_).bvh;
+    return std::get<SoftMesh>(geometry_).bvh();
   }
 
-  /** Returns the half space's pressure scale -- calling this will throw if
+  /* Returns the half space's pressure scale -- calling this will throw if
    is_half_space() returns `false`.  */
   double pressure_scale() const {
     if (!is_half_space()) {
@@ -158,62 +175,72 @@ class SoftGeometry {
   std::variant<SoftHalfSpace, SoftMesh> geometry_;
 };
 
-/** Defines a rigid mesh -- a surface mesh and its bounding volume hierarchy.
- This struct retains ownership of the mesh, with the bounding volume hierarchy
+/* Defines a rigid mesh -- a surface mesh and its bounding volume hierarchy.
+ This class retains ownership of the mesh, with the bounding volume hierarchy
  just referencing it.  */
-struct RigidMesh {
-  std::unique_ptr<SurfaceMesh<double>> mesh;
-  std::unique_ptr<BoundingVolumeHierarchy<SurfaceMesh<double>>> bvh;
-
+class RigidMesh {
+ public:
   RigidMesh() = default;
 
-  explicit RigidMesh(std::unique_ptr<SurfaceMesh<double>> mesh_in)
-      : mesh(std::move(mesh_in)),
-        bvh(std::make_unique<BoundingVolumeHierarchy<SurfaceMesh<double>>>(
-            *mesh)) {}
+  explicit RigidMesh(std::unique_ptr<SurfaceMesh<double>> mesh)
+      : mesh_(std::move(mesh)),
+        bvh_(std::make_unique<Bvh<SurfaceMesh<double>>>(
+            *mesh_)) {}
+
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidMesh)
+
+  const SurfaceMesh<double>& mesh() const {
+    DRAKE_DEMAND(mesh_ != nullptr);
+    return *mesh_;
+  }
+  const Bvh<SurfaceMesh<double>>& bvh() const {
+    DRAKE_DEMAND(bvh_ != nullptr);
+    return *bvh_;
+  }
+
+ private:
+  copyable_unique_ptr<SurfaceMesh<double>> mesh_;
+  copyable_unique_ptr<Bvh<SurfaceMesh<double>>> bvh_;
 };
 
-/** The base representation of rigid geometries. Generally, a rigid geometry
+/* The base representation of rigid geometries. Generally, a rigid geometry
  is represented with a SurfaceMesh. However, half spaces do not get tessellated
  and are treated as primitives. This class contains either representation.  */
 class RigidGeometry {
  public:
-  /** Constructs a rigid half space representation -- the half space, like its
+  /* Constructs a rigid half space representation -- the half space, like its
    specification HalfSpace, is defined in its canonical frame H with the
    boundary plane at z = 0 and its outward normal pointing in the Hz direction.
    */
   explicit RigidGeometry(const HalfSpace&) {}
 
-  /** Constructs a rigid mesh representation.  */
+  /* Constructs a rigid mesh representation.  */
   explicit RigidGeometry(RigidMesh&& rigid_mesh)
       : geometry_(RigidMesh(std::move(rigid_mesh))) {}
 
-  RigidGeometry(const RigidGeometry& g) { *this = g; }
-  RigidGeometry& operator=(const RigidGeometry& g);
-  RigidGeometry(RigidGeometry&&) = default;
-  RigidGeometry& operator=(RigidGeometry&&) = default;
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidGeometry)
 
-  /** Returns true if this RigidGeometry is a half space.  */
+  /* Returns true if this RigidGeometry is a half space.  */
   bool is_half_space() const { return !geometry_.has_value(); }
 
-  /** Returns a reference to the surface mesh -- calling this will throw unless
+  /* Returns a reference to the surface mesh -- calling this will throw unless
    is_half_space() returns false.  */
   const SurfaceMesh<double>& mesh() const {
     if (is_half_space()) {
       throw std::runtime_error(
           "RigidGeometry::mesh() cannot be invoked for rigid half space");
     }
-    return *(geometry_->mesh);
+    return geometry_->mesh();
   }
 
-  /** Returns a reference to the bounding volume hierarchy -- calling this will
+  /* Returns a reference to the bounding volume hierarchy -- calling this will
    throw unless is_half_space() returns false.  */
-  const BoundingVolumeHierarchy<SurfaceMesh<double>>& bvh() const {
+  const Bvh<SurfaceMesh<double>>& bvh() const {
     if (is_half_space()) {
       throw std::runtime_error(
           "RigidGeometry::bvh() cannot be invoked for rigid half space");
     }
-    return *(geometry_->bvh);
+    return geometry_->bvh();
   }
 
  private:
@@ -221,7 +248,7 @@ class RigidGeometry {
   std::optional<RigidMesh> geometry_{std::nullopt};
 };
 
-/** This class stores all instantiated hydroelastic representations of declared
+/* This class stores all instantiated hydroelastic representations of declared
  geometry. They are keyed by the geometry's global GeometryId.
 
  In order for a geometry with id `g_id` to have a representation in this
@@ -242,7 +269,7 @@ class Geometries final : public ShapeReifier {
 
   Geometries() = default;
 
-  /** Reports the hydroelastic representation type for the given id. The
+  /* Reports the hydroelastic representation type for the given id. The
    following invariants should always hold:
 
      - If HydroelasticType::kUndefined is returned, there is no representation
@@ -255,24 +282,24 @@ class Geometries final : public ShapeReifier {
        SoftGeometry.  */
   HydroelasticType hydroelastic_type(GeometryId id) const;
 
-  /** Returns the representation of the soft geometry with the given `id`.
+  /* Returns the representation of the soft geometry with the given `id`.
    @pre hydroelastic_type(id) returns HydroelasticType::kSoft.  */
   const SoftGeometry& soft_geometry(GeometryId id) const {
     DRAKE_DEMAND(hydroelastic_type(id) == HydroelasticType::kSoft);
     return soft_geometries_.at(id);
   }
 
-  /** Returns the representation of the rigid geometry with the given `id`.
+  /* Returns the representation of the rigid geometry with the given `id`.
    @pre hydroelastic_type(id) returns HydroelasticType::kRigid.  */
   const RigidGeometry& rigid_geometry(GeometryId id) const {
     DRAKE_DEMAND(hydroelastic_type(id) == HydroelasticType::kRigid);
     return rigid_geometries_.at(id);
   }
 
-  /** Removes the geometry (if it has a hydroelastic representation).  */
+  /* Removes the geometry (if it has a hydroelastic representation).  */
   void RemoveGeometry(GeometryId id);
 
-  /** Examines the given shape and properties, adding a hydroelastic
+  /* Examines the given shape and properties, adding a hydroelastic
    representation as indicated by the `properties` and supported by the current
    hydroelastic infrastructure. No exception is thrown if the given shape is
    not supported in the current infrastructure. However, if it *is* supported,
@@ -328,7 +355,7 @@ class Geometries final : public ShapeReifier {
   std::unordered_map<GeometryId, RigidGeometry> rigid_geometries_;
 };
 
-/** @name Creating hydroelastic representations of shapes
+/* @name Creating hydroelastic representations of shapes
 
  By default *no* shapes are supported with hydroelastic representations.
  Attempting to do so will print a warning to the Drake log and these functions
@@ -338,7 +365,7 @@ class Geometries final : public ShapeReifier {
  type is declared below.  */
 //@{
 
-/** Generic interface for handling unsupported rigid Shapes. Unsupported
+/* Generic interface for handling unsupported rigid Shapes. Unsupported
  geometries will return a std::nullopt.  */
 template <typename Shape>
 std::optional<RigidGeometry> MakeRigidRepresentation(
@@ -351,35 +378,42 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
   return {};
 }
 
-/** Rigid sphere support. Requires the ('hydroelastic', 'resolution_hint')
+/* Rigid sphere support. Requires the ('hydroelastic', 'resolution_hint')
  property.  */
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Sphere& sphere, const ProximityProperties& props);
 
-/** Rigid box support. Requires the ('hydroelastic', 'resolution_hint')
- property.  */
+/* Rigid box support. It doesn't depend on any of the proximity properties. */
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Box& box, const ProximityProperties& props);
 
-/** Rigid cylinder support. Requires the ('hydroelastic', 'resolution_hint')
+/* Rigid cylinder support. Requires the ('hydroelastic', 'resolution_hint')
  property.  */
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Cylinder& cylinder, const ProximityProperties& props);
 
-/** Rigid ellipsoid support. Requires the ('hydroelastic', 'resolution_hint')
+/* Rigid ellipsoid support. Requires the ('hydroelastic', 'resolution_hint')
  property.  */
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Ellipsoid& ellipsoid, const ProximityProperties& props);
 
-/** Rigid mesh support. It doesn't depend on any of the proximity properties. */
+/* Rigid mesh support. It doesn't depend on any of the proximity properties. */
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Mesh& mesh, const ProximityProperties& props);
 
-/** Rigid half space support.  */
+/* Rigid convex support. It doesn't depend on any of the proximity properties.
+ Note: the convexity of the mesh is *not* tested (and does not need to be).
+ The representation of a Convex mesh is the same as a general Mesh, so its
+ representation and functionality is indistinguishable, whether convex or not.
+ */
+std::optional<RigidGeometry> MakeRigidRepresentation(
+    const Convex& convex, const ProximityProperties& props);
+
+/* Rigid half space support.  */
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const HalfSpace& half_space, const ProximityProperties& props);
 
-/** Generic interface for handling unsupported soft Shapes. Unsupported
+/* Generic interface for handling unsupported soft Shapes. Unsupported
  geometries will return a std::nullopt.  */
 template <typename Shape>
 std::optional<SoftGeometry> MakeSoftRepresentation(const Shape& shape,
@@ -391,31 +425,30 @@ std::optional<SoftGeometry> MakeSoftRepresentation(const Shape& shape,
   return {};
 }
 
-/** Creates a soft sphere (assuming the proximity properties have sufficient
+/* Creates a soft sphere (assuming the proximity properties have sufficient
  information). Requires the ('hydroelastic', 'resolution_hint') and
  ('material', 'elastic_modulus') properties.  */
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Sphere& sphere, const ProximityProperties& props);
 
-/** Creates a soft box (assuming the proximity properties have sufficient
- information). Requires the ('hydroelastic', 'resolution_hint') and
- ('material', 'elastic_modulus') properties.  */
+/* Creates a soft box (assuming the proximity properties have sufficient
+ information). Requires the ('material', 'elastic_modulus') properties.  */
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Box& box, const ProximityProperties& props);
 
-/** Creates a soft cylinder (assuming the proximity properties have sufficient
+/* Creates a soft cylinder (assuming the proximity properties have sufficient
  information). Requires the ('hydroelastic', 'resolution_hint') and
  ('material', 'elastic_modulus') properties.  */
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Cylinder& cylinder, const ProximityProperties& props);
 
-/** Creates a soft ellipsoid (assuming the proximity properties have sufficient
+/* Creates a soft ellipsoid (assuming the proximity properties have sufficient
  information). Requires the ('hydroelastic', 'resolution_hint') and
  ('material', 'elastic_modulus') properties.  */
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Ellipsoid& ellipsoid, const ProximityProperties& props);
 
-/** Creates a compliant half space (assuming the proximity properties have
+/* Creates a compliant half space (assuming the proximity properties have
  sufficient information). Requires the ('hydroelastic', 'slab_thickness') and
  ('material', 'elastic_modulus') properties.  */
 std::optional<SoftGeometry> MakeSoftRepresentation(

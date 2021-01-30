@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "third_party/com_github_finetjul_bender/vtkCapsuleSource.h"
 #include <vtkCellArray.h>
 #include <vtkFloatArray.h>
 #include <vtkInformation.h>
@@ -14,7 +15,6 @@
 #include <vtkPolyData.h>
 #include <vtkPolyDataAlgorithm.h>
 #include <vtkStreamingDemandDrivenPipeline.h>
-#include "third_party/com_github_finetjul_bender/vtkCapsuleSource.h"
 
 #include "drake/common/scope_exit.h"
 
@@ -31,6 +31,13 @@ using Eigen::Vector3d;
 // TODO(SeanCurtis-TRI): The semantics of this textured box needs to be
 //  explained *somewhere* in the documentation. The layout of the texture on the
 //  box and (eventually) its ability to be transformed. But also for all shapes.
+
+// TODO(SeanCurtis-TRI): The vtkCylinderSource has a similar artifact as the
+//  cube source. The top and bottom faces tile the texture across those faces.
+//  The corner of the texture is located at the center of the face and then
+//  tiles once per each unit the face spans. This is a horrible behavior.
+//  Create a DrakeCylinderSource that matches the Cylinder used in the
+//  RenderEngineGl geometry for consistency.
 
 /* A custom poly data algorithm for creating a Box for Drake. This differs from
  (and is preferred over) the vtkCubeSource for the following reasons.
@@ -182,7 +189,7 @@ class DrakeCubeSource : public vtkPolyDataAlgorithm {
                                                          {-1, 1}};  // v3.
       // The index of the first vertex we're about to add.
       const vtkIdType first = newPoints->GetNumberOfPoints();
-      for (const auto [x, y] : vertices) {
+      for (const auto& [x, y] : vertices) {
         const Vector3d p_FV = p_FPc + (x * sx) * Fx + (y * sy) * Fy;
         newPoints->InsertNextPoint(p_FV[0], p_FV[1], p_FV[2]);
         newNormals->InsertNextTuple(normal_F);

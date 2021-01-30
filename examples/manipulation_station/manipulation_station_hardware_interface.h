@@ -21,25 +21,28 @@ namespace manipulation_station {
 ///
 /// @{
 ///
-/// @system{ ManipulationStationHardwareInterface,
-///   @input_port{iiwa_position}
-///   @input_port{iiwa_feedforward_torque}
-///   @input_port{wsg_position}
-///   @input_port{wsg_force_limit},
-///   @output_port{iiwa_position_commanded}
-///   @output_port{iiwa_position_measured}
-///   @output_port{iiwa_velocity_estimated}
-///   @output_port{iiwa_torque_commanded}
-///   @output_port{iiwa_torque_measured}
-///   @output_port{iiwa_torque_external}
-///   @output_port{wsg_state_measured}
-///   @output_port{wsg_force_measured}
-///   @output_port{camera_[NAME]_rgb_image}
-///   @output_port{camera_[NAME]_depth_image}
-///   @output_port{...}
-///   @output_port{camera_[NAME]_rgb_image}
-///   @output_port{camera_[NAME]_depth_image}
-/// }
+/// @system
+/// name: ManipulationStationHardwareInterface
+/// input_ports:
+/// - iiwa_position
+/// - iiwa_feedforward_torque
+/// - wsg_position
+/// - wsg_force_limit (optional)
+/// output_ports:
+/// - iiwa_position_commanded
+/// - iiwa_position_measured
+/// - iiwa_velocity_estimated
+/// - iiwa_torque_commanded
+/// - iiwa_torque_measured
+/// - iiwa_torque_external
+/// - wsg_state_measured
+/// - wsg_force_measured
+/// - camera_[NAME]_rgb_image
+/// - camera_[NAME]_depth_image
+/// - ...
+/// - camera_[NAME]_rgb_image
+/// - camera_[NAME]_depth_image
+/// @endsystem
 ///
 /// @ingroup manipulation_station_systems
 /// @}
@@ -72,6 +75,10 @@ class ManipulationStationHardwareInterface : public systems::Diagram<double> {
     return camera_names_;
   }
 
+  /// Gets the number of joints in the IIWA (only -- does not include the
+  /// gripper).
+  int num_iiwa_joints() const;
+
  private:
   std::unique_ptr<multibody::MultibodyPlant<double>> owned_controller_plant_;
   std::unique_ptr<lcm::DrakeLcm> owned_lcm_;
@@ -80,6 +87,7 @@ class ManipulationStationHardwareInterface : public systems::Diagram<double> {
   std::vector<systems::lcm::LcmSubscriberSystem*> camera_subscribers_;
 
   const std::vector<std::string> camera_names_;
+  multibody::ModelInstanceIndex iiwa_model_instance_{};
 };
 
 }  // namespace manipulation_station

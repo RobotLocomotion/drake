@@ -37,10 +37,10 @@ typical examples below; for more reading about target patterns, see:
 https://docs.bazel.build/versions/master/user-manual.html#target-patterns.
 
 On Ubuntu, the default compiler is the first ``gcc`` compiler in the
-``PATH``, usually GCC 7.5 on Bionic. On macOS, the default compiler is the Apple
-LLVM compiler. To use Clang 6.0 on Ubuntu, set the ``CC`` and ``CXX``
-environment variables before running **bazel build**, **bazel test**, or any
-other **bazel** commands.
+``PATH``, usually GCC 7.5 on Bionic and GCC 9.3 on Focal. On macOS, the default
+compiler is the Apple LLVM compiler. To use Clang 9 on Ubuntu, set the ``CC``
+and ``CXX`` environment variables before running **bazel build**, **bazel test**
+or any other **bazel** commands.
 
 Cheat sheet for operating on the entire project::
 
@@ -48,8 +48,8 @@ Cheat sheet for operating on the entire project::
   bazel build //...                               # Build the entire project.
   bazel test //...                                # Build and test the entire project.
 
-  CC=clang CXX=clang++ bazel build //...          # Build using Clang 6.0 on Bionic.
-  CC=clang CXX=clang++ bazel test //...           # Build and test using Clang 6.0 on Bionic.
+  CC=clang-9 CXX=clang++-9 bazel build //...      # Build using Clang 9 on Ubuntu.
+  CC=clang-9 CXX=clang++-9 bazel test //...       # Build and test using Clang 9 on Ubuntu.
 
 - The "``//``" means "starting from the root of the project".
 - The "``...``" means "everything including the subdirectories' ``BUILD`` files".
@@ -160,7 +160,7 @@ Proprietary Solvers
 
 The Drake Bazel build currently supports the following proprietary solvers:
 
- * Gurobi 8.0.1
+ * Gurobi 9.0.2
  * MOSEK 9.0
  * SNOPT 7.4
 
@@ -169,7 +169,7 @@ The Drake Bazel build currently supports the following proprietary solvers:
 
 .. _gurobi:
 
-Gurobi 8.0.1
+Gurobi 9.0.2
 ------------
 
 Install on Ubuntu
@@ -177,16 +177,16 @@ Install on Ubuntu
 1. Register for an account on https://www.gurobi.com.
 2. Set up your Gurobi license file in accordance with Gurobi documentation.
 3. ``export GRB_LICENSE_FILE=/path/to/gurobi.lic``.
-4. Download ``gurobi8.0.1_linux64.tar.gz``
-5. Unzip it.  We suggest that you use ``/opt/gurobi801`` to simplify working with Drake installations.
-6. ``export GUROBI_PATH=/opt/gurobi801/linux64``
+4. Download ``gurobi9.0.2_linux64.tar.gz``
+5. Unzip it.  We suggest that you use ``/opt/gurobi902`` to simplify working with Drake installations.
+6. If you unzipped into a location other than ``/opt/gurobi902``, then call ``export GUROBI_HOME=GUROBI_UNZIP_PATH/linux64`` to set the path you used, where in ``GUROBI_HOME`` folder you can find ``bin`` folder.
 
 Install on macOS
 ~~~~~~~~~~~~~~~~
 1. Register for an account on http://www.gurobi.com.
 2. Set up your Gurobi license file in accordance with Gurobi documentation.
 3. ``export GRB_LICENSE_FILE=/path/to/gurobi.lic``
-4. Download and install ``gurobi8.0.1_mac64.pkg``.
+4. Download and install ``gurobi9.0.2_mac64.pkg``.
 
 
 To confirm that your setup was successful, run the tests that require Gurobi:
@@ -264,24 +264,34 @@ kcov
 ----
 
 ``kcov`` can analyze coverage for any binary that contains DWARF format
-debuggging symbols, and produce nicely formatted browse-able coverage reports.
+debugging symbols, and produce nicely formatted browse-able coverage reports.
 
-To analyze test coverage, run the tests under ``kcov``::
+Drake's ``kcov`` build system integration is only supported on Ubuntu, not
+macOS.
 
-  bazel test --config kcov //...
+To use kcov on Ubuntu 18.04 (Bionic), you must first run Drake's
+``install_prereqs`` setup script using the ``--with-kcov`` option. On Ubuntu
+20.04 (Focal), the option is ignored. The macOS ``install_prereqs`` setup
+script does not install kcov, and passing a ``--with-kcov`` option is an error.
+
+To analyze test coverage, run one (or more) tests under ``kcov``::
+
+  bazel test --config=kcov common:polynomial_test
 
 Note that it disables compiler-optimization (``-O0``) to have a better and more
 precise coverage report.  If you have trouble with kcov and unoptimized programs,
 you can turn it back on by also supplying ``--copt -O2``.
 
-The coverage report is written to the ``drake/bazel-kcov`` directory.  To
-view it, browse to ``drake/bazel-kcov/index.html``.
+For each test program, individual coverage reports are written to per-target
+directories.  Use the ``kcov_tool`` to merge coverage data into a new directory::
 
-kcov on macOS
-~~~~~~~~~~~~~
+  tools/dynamic_analysis/kcov_tool merge [OUTPUT-DIR]
 
-Be sure that your account has developer mode enabled, which gives you the
-privileges necessary to run debuggers and similar tools. If you are an
-administrator, use this command::
+To view the merged data, browse to ``index.html`` in the OUTPUT-DIR.
 
-  sudo /usr/sbin/DevToolsSecurity --enable
+In a local developer workspace, coverage data may accumulate over successive
+build jobs, even if source files or other dependencies have changed. The stale
+data would be scattered within the directory tree linked as
+``bazel-testlogs``. To clear out old data, use ``kcov_tool clean``::
+
+  tools/dynamic_analysis/kcov_tool clean

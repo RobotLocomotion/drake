@@ -79,7 +79,8 @@ Vector3<T> MassDamperSpringAnalyticalSolution<T>::CalculateOutputImpl(
     const T factor1DtDt = -wd * wd * factor1;
     const T factor2DtDt = (-zeta*wn) * (-zeta*wn) * exp(-zeta * wn * t);
     xDtDt = factor1DtDt*factor2 + 2*factor1Dt*factor2Dt + factor1*factor2DtDt;
-  } else if (zeta > 1) {
+  } else {
+    DRAKE_DEMAND(zeta > 1);
     // Overdamped  free vibration (zeta > 1).
     const T p1 = -wn * (zeta - sqrt(zeta * zeta - 1));
     const T p2 = -wn * (zeta + sqrt(zeta * zeta - 1));

@@ -7,8 +7,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/math/spatial_acceleration.h"
-#include "drake/multibody/math/spatial_velocity.h"
+#include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 
@@ -47,15 +46,14 @@ class AccelerationKinematicsCache {
     vdot_.setZero();
   }
 
-  /// Returns a constant reference to the spatial acceleration `A_WB` of the
-  /// body B (associated with node @p body_node_index) as measured and expressed
-  /// in the world frame W.
+  /// For the body B associated with node @p body_node_index, returns A_WB,
+  /// body B's spatial acceleration in the world frame W.
   /// This method aborts in Debug builds if `body_node_index` does not
   /// correspond to a valid BodyNode in the MultibodyTree.
   /// @param[in] body_node_index The unique index for the computational
   ///                            BodyNode object associated with body B.
-  /// @retval A_WB the spatial acceleration of the body frame B measured and
-  ///              expressed in the world frame W.
+  /// @retval A_WB_W body B's spatial acceleration in the world frame W,
+  /// expressed in W (for point Bo, the body's origin).
   const SpatialAcceleration<T>& get_A_WB(BodyNodeIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < get_num_nodes());
     return A_WB_pool_[body_node_index];

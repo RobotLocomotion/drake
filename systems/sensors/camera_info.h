@@ -10,8 +10,9 @@ namespace sensors {
 
 // TODO(kunimatsu-tri) Add camera distortion parameters and other parameters as
 // needed.
+// TODO(SeanCurtis-TRI) Deprecate the name CameraInfo in favor of Intrinsics.
 /**
- Simple struct for characterizing the Drake camera model. The camera model is
+ Simple class for characterizing the Drake camera model. The camera model is
  based on the
  [pinhole _model_](http://docs.opencv.org/2.4/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html)
  , which is related to but distinct from an actual
@@ -61,8 +62,8 @@ namespace sensors {
  - (c_x, c_y) defines the principal point.
  - (f_x, f_y) defines the model focal length.
 
- In other words, for point Q in the world frame, its texture coordinates
- `(u_Q, v_Q)` are calculated as:
+ In other words, for point Q in the world frame, its projected position in the
+ 2D image `(u_Q, v_Q)` is calculated as:
 
       │ u_Q │
      s│ v_Q │ = K ⋅ X_CW ⋅ p_WQ
@@ -125,7 +126,8 @@ namespace sensors {
  When looking at the resulting image and reasoning about the camera that
  produced it, one can say that Cz points into the image, Cx is parallel with the
  image rows, pointing to the right, and Cy is parallel with the image columns,
- pointing down leading to language such as: "X-right", "Y-down", and "Z-forward".
+ pointing down leading to language such as: "X-right", "Y-down", and
+ "Z-forward".
 */
 class CameraInfo final {
  public:
@@ -146,6 +148,16 @@ class CameraInfo final {
   */
   CameraInfo(int width, int height, double focal_x, double focal_y,
              double center_x, double center_y);
+
+  /**
+   Constructs this instance by extracting focal_x, focal_y, center_x, and
+   center_y from the provided intrinsic_matrix.
+
+   @throws std::runtime_error if intrinsic_matrix is not of the form indicated
+   above for the pinhole camera model (representing an affine / homogeneous
+   transform).
+  */
+  CameraInfo(int width, int height, const Eigen::Matrix3d& intrinsic_matrix);
 
   /**
    Constructs this instance from image size and vertical field of view. We
@@ -174,6 +186,12 @@ class CameraInfo final {
 
   /** Returns the focal length y in pixels. */
   double focal_y() const { return intrinsic_matrix_(1, 1); }
+
+  /** Returns the field of view in the x-direction (in radians).  */
+  double fov_x() const { return 2 * std::atan(width_ / (2 * focal_x())); }
+
+  /** Returns the field of view in the y-direction (in radians).  */
+  double fov_y() const { return 2 * std::atan(height_ / (2 * focal_y())); }
 
   // TODO(eric.cousineau): Deprecate "center_{x,y}" and use
   // "principal_point_{x,y}" or "pp{x,y}".

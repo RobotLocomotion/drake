@@ -1,11 +1,11 @@
 #pragma once
 
+#include <unordered_map>
 #include <vector>
 
 #include <fcl/fcl.h>
 
 #include "drake/geometry/proximity/collision_filter_legacy.h"
-#include "drake/geometry/proximity/proximity_utilities.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 
 namespace drake {
@@ -13,22 +13,25 @@ namespace geometry {
 namespace internal {
 namespace penetration_as_point_pair {
 
-// TODO(SeanCurtis-TRI): Template this and include X_WGs when this query
-//  supports AutoDiff scalars.
-/** Supporting data for the detecting collision between geometries and reporting
+/* Supporting data for the detecting collision between geometries and reporting
  them as a pair of points (see PenetrationAsPointPair). It includes:
 
-    - A collision filter instance.
-    - An fcl collision request.
+    - A collision filter instance. Aliased.
+    - An fcl collision request. Aliased.
+    - The poses. Aliased.
     - A vector of point pairs -- one instance of PenetrationAsPointPair for
-      every supported, unfiltered penetrating pair.  */
+      every supported, unfiltered penetrating pair. Aliased. */
+template <typename T>
 struct CallbackData {
   CallbackData(
       const CollisionFilterLegacy* collision_filter_in,
-      std::vector<PenetrationAsPointPair<double>>* point_pairs_in)
-  : collision_filter(*collision_filter_in),
-    point_pairs(*point_pairs_in) {
+      const std::unordered_map<GeometryId, math::RigidTransform<T>>* X_WGs_in,
+      std::vector<PenetrationAsPointPair<T>>* point_pairs_in)
+      : collision_filter(*collision_filter_in),
+        X_WGs(*X_WGs_in),
+        point_pairs(*point_pairs_in) {
     DRAKE_DEMAND(collision_filter_in);
+    DRAKE_DEMAND(X_WGs_in);
     DRAKE_DEMAND(point_pairs_in);
     request.num_max_contacts = 1;
     request.enable_contact = true;
@@ -41,18 +44,24 @@ struct CallbackData {
     request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
   }
 
-  /** The collision filter system.  */
+  /* The collision filter system.  */
   const CollisionFilterLegacy& collision_filter;
 
-  /** The parameters for the fcl object-object collision function.  */
+  /* The parameters for the fcl object-object collision function.  */
   fcl::CollisionRequestd request;
 
-  /** The results of the collision query.  */
-  std::vector<PenetrationAsPointPair<double>>& point_pairs;
+  /** The pose of each geometry in the scene. */
+  const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs;
+
+  /* The results of the collision query.  */
+  std::vector<PenetrationAsPointPair<T>>& point_pairs;
 };
 
-// Callback function for FCL's collide() function for retrieving a *single*
-// contact.
+/* Callback function for FCL's collide() function for retrieving a *single*
+ contact. As documented by QueryObject::ComputePointPairPenetration(), the
+ result added to the output data is the same, regardless of the order of
+ the two fcl objects.  */
+template <typename T>
 bool Callback(fcl::CollisionObjectd* fcl_object_A_ptr,
               fcl::CollisionObjectd* fcl_object_B_ptr, void* callback_data);
 

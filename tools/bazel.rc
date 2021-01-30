@@ -49,9 +49,10 @@ test --test_env=MPLBACKEND=Template
 
 ### A configuration that enables Gurobi. ###
 # -- To use this config, the GRB_LICENSE_FILE environment variable must be set
-# -- to the location of the Gurobi license key file. On Ubuntu, the GUROBI_PATH
+# -- to the location of the Gurobi license key file. On Ubuntu, the GUROBI_HOME
 # -- environment variable must be set to the linux64 directory of the extracted
-# -- archive downloaded from gurobi.com.
+# -- archive downloaded from gurobi.com when the installation was not at the
+# -- default location of /opt/gurobi902/linux64.
 #
 # -- To run tests where Gurobi is used, ensure that you include
 # -- "gurobi_test_tags()" from //tools/skylark:test_tags.bzl.
@@ -75,11 +76,6 @@ build:mosek --define=WITH_MOSEK=ON
 # -- To run tests that require SNOPT, also specify a set of test_tag_filters
 # -- that does not exclude the "snopt" tag.
 build:snopt --define=WITH_SNOPT=ON
-
-# TODO(jwnimmer-tri) Remove this stanza on or after 2020-05-01.
-# The --config=snopt_fortran spelling is no longer supported.
-# Instead, use --config=snopt for the same effect.
-build:snopt_fortran --define=WITH_SNOPT_FORTRAN=ON
 
 ### A configuration that enables all optional dependencies. ###
 test:everything --test_tag_filters=-no_everything

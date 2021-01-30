@@ -1,5 +1,6 @@
-<sdf version='1.7'>
-  <model name='test_robot'>
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="test_robot">
     <!-- This sdf file defines a simple test robot with a single link that
          contains one visual tag for each supported geometry type. We're
          confirming that each geometry declaration produces a corresponding
@@ -16,18 +17,15 @@
          the world, will be denoted as `P`.
          Because there is no <pose> tag at the root level, `X_PM` will be
          identity. -->
-
-    <link name='link1'>
-
-      <visual name = 'Box'>
+    <link name="link1">
+      <visual name="Box">
         <geometry>
           <box>
             <size>1.0 2.0 3.0</size>
           </box>
         </geometry>
       </visual>
-
-      <visual name = 'Capsule'>
+      <visual name="Capsule">
         <geometry>
           <drake:capsule>
             <length>1</length>
@@ -35,8 +33,7 @@
           </drake:capsule>
         </geometry>
       </visual>
-
-      <visual name = 'Convex'>
+      <visual name="Convex">
         <geometry>
           <mesh>
             <drake:declare_convex/>
@@ -44,8 +41,7 @@
           </mesh>
         </geometry>
       </visual>
-
-      <visual name = 'Cylinder'>
+      <visual name="Cylinder">
         <geometry>
           <cylinder>
             <length>1</length>
@@ -53,8 +49,7 @@
           </cylinder>
         </geometry>
       </visual>
-
-      <visual name = 'Ellipsoid'>
+      <visual name="Ellipsoid">
         <geometry>
           <drake:ellipsoid>
             <a>1.0</a>
@@ -63,24 +58,21 @@
           </drake:ellipsoid>
         </geometry>
       </visual>
-
-      <visual name = 'Mesh'>
+      <visual name="Mesh">
         <geometry>
           <mesh>
             <uri>../tri_cube.obj</uri>
           </mesh>
         </geometry>
       </visual>
-
-      <visual name = 'HalfSpace'>
+      <visual name="HalfSpace">
         <geometry>
           <plane>
             <normal>1.0 2.0 3.0</normal>
           </plane>
         </geometry>
       </visual>
-
-      <visual name = 'Sphere'>
+      <visual name="Sphere">
         <geometry>
           <sphere>
             <radius>1.0</radius>
@@ -88,9 +80,8 @@
         </geometry>
       </visual>
     </link>
-
     <!-- Ensure we can weld to the world. -->
-    <joint name='weld_link1' type='fixed'>
+    <joint name="weld_link1" type="fixed">
       <parent>world</parent>
       <child>link1</child>
     </joint>

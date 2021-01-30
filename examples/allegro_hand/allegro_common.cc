@@ -1,5 +1,7 @@
 #include "drake/examples/allegro_hand/allegro_common.h"
 
+#include <iostream>
+
 namespace drake {
 namespace examples {
 namespace allegro_hand {
@@ -9,11 +11,30 @@ const double AllegroHandMotionState::velocity_thresh_ = 0.07;
 using drake::multibody::JointIndex;
 using drake::multibody::MultibodyPlant;
 
-void SetPositionControlledGains(Eigen::VectorXd* Kp, Eigen::VectorXd* Ki,
+void SetPositionControlledGains(double pid_frequency, double Ieff,
+                                Eigen::VectorXd* Kp, Eigen::VectorXd* Ki,
                                 Eigen::VectorXd* Kd) {
-  *Kp = Eigen::VectorXd::Ones(kAllegroNumJoints) * 0.05;
-  *Kd = Eigen::VectorXd::Constant(Kp->size(), 5e-3);
-  (*Kp)[0] = 0.08;
+  // Each finger joint with PID control is equivalent to a spring mass system
+  // with mass Ieff, spring constant gain_prop, and damping coefficient
+  // gain_der.
+  // pid_frequency is the desired (angular, rad/sec) frequency of the PID
+  // controlled joint. In this regard, this parameter specifies the desired time
+  // scale of the effective system.
+  // Therefore we use the harmonic oscillator expressions to obtain the PID
+  // gains given pid_frequency and Ieff:
+  //   pid_frequency² = gain_prop / Ieff
+  //   2 * pid_frequency * zeta = gain_der / Ieff
+  const double gain_prop = pid_frequency * pid_frequency * Ieff;
+  const double zeta = 0.4;
+  const double gain_der = 2.0 * pid_frequency * Ieff * zeta;
+
+  std::cout << "PID frequency [Hz]: " << pid_frequency << std::endl;
+  std::cout << "Kp [Nm/rad]: " << gain_prop << std::endl;
+  std::cout << "Kd [Nms/rad]: " << gain_der << std::endl;
+
+  *Kp = Eigen::VectorXd::Ones(kAllegroNumJoints) * gain_prop;
+  *Kd = Eigen::VectorXd::Constant(Kp->size(), gain_der);
+  (*Kp)[0] *= 1.6;  // The thumb is slightly more massive.
   *Ki = Eigen::VectorXd::Zero(kAllegroNumJoints);
 }
 

@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package>
+  <name>ycb</name>
+  <version>1.0.0</version>
+  <description>
+    This incorporates a subset of the YCB Models, using mesh files from
+    `RobotLocomotion/models`.
+
+    For more information, please see the `ycb README` in the 
+    in the `models` repository: 
+    https://github.com/RobotLocomotion/models/tree/master/ycb.
+  </description>
+  <author email="drake-users@mit.edu">Drake Users</author>
+  <maintainer email="drake-users@mit.edu">Drake Users</maintainer>
+  <license>BSD</license>
+</package>

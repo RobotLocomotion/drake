@@ -30,8 +30,7 @@ class AffineLinearSystemTest : public ::testing::Test {
   virtual void Initialize() = 0;
 
   void SetInput(const Eigen::Ref<const VectorX<double>>& u) {
-    input_vector_->get_mutable_value() << u;
-    context_->FixInputPort(0, std::move(input_vector_));
+    input_port_->FixValue(context_.get(), u);
   }
 
   static Eigen::MatrixXd make_2x2_matrix(double a, double b, double c,
@@ -49,10 +48,10 @@ class AffineLinearSystemTest : public ::testing::Test {
 
  protected:
   std::unique_ptr<Context<double>> context_;
+  const InputPort<double>* input_port_;
 
   ContinuousState<double>* state_{};
   std::unique_ptr<BasicVector<double>> state_vector_;
-  std::unique_ptr<BasicVector<double>> input_vector_;
   std::unique_ptr<ContinuousState<double>> derivatives_;
   std::unique_ptr<DiscreteValues<double>> updates_;
 

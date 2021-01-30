@@ -21,9 +21,9 @@ GTEST_TEST(GeometryInstanceTest, IsCopyable) {
   // Verify that this is copyable as defined by copyable_unique_ptr. We don't
   // have a runtime check available but this will fail to compile if the class
   // is not copyable.
-  copyable_unique_ptr<GeometryInstance> geo(make_unique<GeometryInstance>
+  copyable_unique_ptr<GeometryInstance> geometry(make_unique<GeometryInstance>
       (RigidTransformd(), make_unique<Sphere>(1), "sphere"));
-  EXPECT_TRUE(geo->id().is_valid());
+  EXPECT_TRUE(geometry->id().is_valid());
 }
 
 GTEST_TEST(GeometryInstanceTest, IdCopies) {
@@ -66,6 +66,14 @@ GTEST_TEST(GeometryInstanceTest, CanonicalName) {
   EXPECT_EQ(trailing.name(), canonical);
 
   DRAKE_EXPECT_THROWS_MESSAGE(make_instance(" "), std::logic_error,
+                              "GeometryInstance given the name '.*' which is "
+                              "an empty canonical string");
+
+  GeometryInstance to_rename = make_instance(canonical);
+  to_rename.set_name("renamed");
+  EXPECT_EQ(to_rename.name(), "renamed");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(to_rename.set_name(" "), std::logic_error,
                               "GeometryInstance given the name '.*' which is "
                               "an empty canonical string");
 }

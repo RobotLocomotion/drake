@@ -9,21 +9,28 @@
 // for) these binding capabilities.
 
 namespace drake {
+
+/// For more high-level information, see the @ref python_bindings
+/// "Python Bindings" technical notes.
+///
+/// Drake developers should prefer any aliases defined here over their full
+/// spellings in `pybind11`.
+///
+/// `namespace py` is a shorthand alias to `pybind11` for consistency. (This
+/// symbol cannot be exposed directly in Doxygen.)
+///
+/// @note Downstream users should avoid `using namespace drake::pydrake`, as
+/// this may create ambiguous aliases (especially for GCC). Instead, consider
+/// using your own alias directly to the `pybind11` namespace.
 namespace pydrake {
 
 // Note: Doxygen apparently doesn't process comments for namespace aliases. If
-// you put Doxygen comments here they will apply instead to py_reference. See
-// the "Convenience aliases" section above for documentation.
+// you put Doxygen comments here they will apply instead to py_rvp.
 namespace py = pybind11;
 
-/// Used when returning `T& or `const T&`, as pybind's default behavior is to
-/// copy lvalue references.
-const auto py_reference = py::return_value_policy::reference;
-
-/// Used when returning references to objects that are internally owned by
-/// `self`. Implies both `py_reference` and `py::keep_alive<0, 1>`, which
-/// implies "Keep alive, reference: `return` keeps` self` alive".
-const auto py_reference_internal = py::return_value_policy::reference_internal;
+/// Shortened alias for py::return_value_policy. For more information, see
+/// the @ref PydrakeReturnValuePolicy "Return Value Policy" section.
+using py_rvp = py::return_value_policy;
 
 /// Use this when you must do manual casting - e.g. lists or tuples of nurses,
 /// where the container may get discarded but the items kept. Prefer this over
@@ -32,6 +39,17 @@ const auto py_reference_internal = py::return_value_policy::reference_internal;
 inline py::object py_keep_alive(py::object nurse, py::object patient) {
   py::detail::keep_alive_impl(nurse, patient);
   return nurse;
+}
+
+/// Use this to manually cast an iterable type (e.g. py::list, py::set). See
+/// pydrake_pybind_test for an example.
+/// N.B. This should *not* be used for `py::dict`.
+template <typename PyType>
+inline PyType py_keep_alive_iterable(PyType nurses, py::object patient) {
+  for (py::handle nurse : nurses) {
+    py_keep_alive(py::reinterpret_borrow<py::object>(nurse), patient);
+  }
+  return nurses;
 }
 
 // Implementation for `overload_cast_explicit`. We must use this structure so
@@ -105,7 +123,7 @@ auto ParamInit() {
     // reference may evaporate by the time the true holding pybind11 record is
     // constructed. Would be alleviated using old-style pybind11 init :(
     Class obj{};
-    py::object py_obj = py::cast(&obj, py_reference);
+    py::object py_obj = py::cast(&obj, py_rvp::reference);
     py::module::import("pydrake").attr("_setattr_kwargs")(py_obj, kwargs);
     return obj;
   });

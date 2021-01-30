@@ -8,7 +8,6 @@
 #include "drake/common/random.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/systems/analysis/test_utilities/stateless_system.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -24,6 +23,11 @@
 #include "drake/systems/primitives/gain.h"
 #include "drake/systems/primitives/integrator.h"
 #include "drake/systems/primitives/zero_order_hold.h"
+
+using Eigen::Vector2d;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+using Eigen::VectorXd;
 
 namespace drake {
 namespace systems {
@@ -338,7 +342,7 @@ GTEST_TEST(BadDiagramTest, UnconnectedInsideInputPort) {
   BadDiagram diagram;
   auto context = diagram.AllocateContext();
 
-  context->FixInputPort(0, {1});
+  diagram.get_input_port(0).FixValue(context.get(), 1.0);
 
   const Context<double>& inside_context =
       diagram.GetSubsystemContext(diagram.inside(), *context);
@@ -365,11 +369,11 @@ class KitchenSinkStateAndParameters final : public LeafSystem<T> {
     for (int i = 0; i < 2; ++i)  // Make two "groups" of discrete variables.
       this->DeclareDiscreteState(4 + i);
     for (int i = 0; i < 10; ++i)  // Ten abstract state variables.
-      this->DeclareAbstractState(AbstractValue::Make<int>(3 + i));
+      this->DeclareAbstractState(Value<int>(3 + i));
     for (int i = 0; i < 3; ++i)  // Three "groups" of numeric parameters.
       this->DeclareNumericParameter(BasicVector<T>(1 + i));
     for (int i = 0; i < 7; ++i)  // Seven abstract parameters.
-      this->DeclareAbstractParameter(*AbstractValue::Make<int>(29 + i));
+      this->DeclareAbstractParameter(Value<int>(29 + i));
   }
 
   // Scalar-converting copy constructor. See @ref system_scalar_conversion.
@@ -398,12 +402,26 @@ GTEST_TEST(KitchenSinkStateAndParametersTest, LeafSystemCounts) {
   EXPECT_EQ(kitchen_sink.num_abstract_parameters(), 7);
 }
 
+// Helper class that has one input port, and no output ports.
+template <typename T>
+class Sink final : public LeafSystem<T> {
+ public:
+  explicit Sink(int size) : LeafSystem<T>(SystemTypeTag<Sink>{}) {
+    this->DeclareInputPort("in", kVectorValued, size);
+  }
+
+  // Scalar-converting copy constructor. See @ref system_scalar_conversion.
+  template <typename U>
+  explicit Sink(const Sink<U>& other): Sink<T>(other.get_input_port().size()) {}
+};
+
 /* ExampleDiagram has the following structure:
 adder0_: (input0_ + input1_) -> A
 adder1_: (A + input2_)       -> B, output 0
 adder2_: (A + B)             -> output 1
 integrator1_: A              -> C
 integrator2_: C              -> output 2
+sink_ : (input2_)
 It also uses a StatelessSystem to verify Diagram's ability to retrieve
 witness functions from its subsystems.
 
@@ -417,21 +435,27 @@ witness functions from its subsystems.
           u1 |  +--------+ |  | Adder1    |  B   |       +-----------+  |
              |             |  |           +------+-------> u1        |  |
 64, 128, 256 |             |  |           | 73,146,292   |           |  |
-         +--------------------> u1        |              | Adder2    |  |
-          u2 |             |  +-----------+              |           +----->
-             |             |                 A           |           |  | y1
-             |             +-----------------------------> u0        |  |
-             |             |     9, 18, 36               +-----------+  |  82
-             |             |                                            | 164
-             |             |                                            | 328
-             |             |                                            |
-             |             |  +------------+             +-----------+  |
-             |             |  |            |             |           |  |
-             |           A |  |            |     C       |           |  |
-             |             +--> Integ0     +-------------> Integ1    +----->
-             |                |            |             |           |  | y2
-             |                |  3, 9, 27  |             |81,243,729 |  |
-             |                +------------+             +-----------+  |
+         +----------+---------> u1        |              | Adder2    |  |
+          u2 |      |      |  +-----------+              |           +----->
+             |      |      |                 A           |           |  | y1
+             |      |      +-----------------------------> u0        |  |
+             |      |      |     9, 18, 36               +-----------+  |  82
+             |      |      |                                            | 164
+             |      |      |                                            | 328
+             |      |      |                                            |
+             |      |      |  +------------+             +-----------+  |
+             |      |      |  |            |             |           |  |
+             |      |    A |  |            |     C       |           |  |
+             |      |      +--> Integ0     +-------------> Integ1    +----->
+             |      |         |            |             |           |  | y2
+             |      |         |  3, 9, 27  |             |81,243,729 |  |
+             |      |         +------------+             +-----------+  |
+             |      |                                                   |
+             |      |         +------+                                  |
+             |      |         |      |                                  |
+             |      +---------> Sink |                                  |
+             |                |      |                                  |
+             |                +------+                                  |
              |                                                          |
              |  +-----------+  +----------------+  +----------------+   |
              |  |           |  | ConstantVector |  |                |   |
@@ -462,6 +486,8 @@ class ExampleDiagram : public Diagram<double> {
     integrator0_->set_name("integrator0");
     integrator1_ = builder.AddSystem<Integrator<double>>(size);
     integrator1_->set_name("integrator1");
+    sink_ = builder.AddSystem<Sink>(size);
+    sink_->set_name("sink");
 
     builder.Connect(adder0_->get_output_port(), adder1_->get_input_port(0));
     builder.Connect(adder0_->get_output_port(), adder2_->get_input_port(0));
@@ -474,7 +500,8 @@ class ExampleDiagram : public Diagram<double> {
 
     builder.ExportInput(adder0_->get_input_port(0));
     builder.ExportInput(adder0_->get_input_port(1), "adder0");
-    builder.ExportInput(adder1_->get_input_port(1));
+    const auto port_index = builder.ExportInput(adder1_->get_input_port(1));
+    builder.ConnectInput(port_index, sink_->get_input_port());
     builder.ExportOutput(adder1_->get_output_port());
     builder.ExportOutput(adder2_->get_output_port(), "adder2");
     builder.ExportOutput(integrator1_->get_output_port());
@@ -497,6 +524,7 @@ class ExampleDiagram : public Diagram<double> {
   Adder<double>* adder2() { return adder2_; }
   Integrator<double>* integrator0() { return integrator0_; }
   Integrator<double>* integrator1() { return integrator1_; }
+  Sink<double>* sink() { return sink_; }
   analysis_test::StatelessSystem<double>* stateless() { return stateless_; }
   KitchenSinkStateAndParameters<double>* kitchen_sink() {
     return kitchen_sink_;
@@ -510,6 +538,7 @@ class ExampleDiagram : public Diagram<double> {
 
   Integrator<double>* integrator0_ = nullptr;
   Integrator<double>* integrator1_ = nullptr;
+  Sink<double>* sink_ = nullptr;
 
   KitchenSinkStateAndParameters<double>* kitchen_sink_ = nullptr;
 };
@@ -550,18 +579,18 @@ class DiagramTest : public ::testing::Test {
   // Asserts that output_ is what it should be for the default values
   // of input0_, input1_, and input2_.
   void ExpectDefaultOutputs() {
-    Eigen::Vector3d expected_output0(
+    Vector3d expected_output0(
         1 + 8 + 64,
         2 + 16 + 128,
         4 + 32 + 256);  // B
 
-    Eigen::Vector3d expected_output1(
+    Vector3d expected_output1(
         1 + 8,
         2 + 16,
         4 + 32);  // A
     expected_output1 += expected_output0;       // A + B
 
-    Eigen::Vector3d expected_output2(81, 243, 729);  // state of integrator1_
+    Vector3d expected_output2(81, 243, 729);  // state of integrator1_
 
     const BasicVector<double>* output0 = output_->get_vector_data(0);
     ASSERT_TRUE(output0 != nullptr);
@@ -583,9 +612,9 @@ class DiagramTest : public ::testing::Test {
   }
 
   void AttachInputs() {
-    context_->FixInputPort(0, input0_);
-    context_->FixInputPort(1, input1_);
-    context_->FixInputPort(2, input2_);
+    diagram_->get_input_port(0).FixValue(context_.get(), input0_);
+    diagram_->get_input_port(1).FixValue(context_.get(), input1_);
+    diagram_->get_input_port(2).FixValue(context_.get(), input2_);
   }
 
   Adder<double>* adder0() { return diagram_->adder0(); }
@@ -596,9 +625,9 @@ class DiagramTest : public ::testing::Test {
 
   std::unique_ptr<ExampleDiagram> diagram_;
 
-  const BasicVector<double> input0_{1, 2, 4};
-  const BasicVector<double> input1_{8, 16, 32};
-  const BasicVector<double> input2_{64, 128, 256};
+  const Vector3d input0_{1, 2, 4};
+  const Vector3d input1_{8, 16, 32};
+  const Vector3d input2_{64, 128, 256};
 
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
@@ -792,6 +821,11 @@ TEST_F(DiagramTest, Graphviz) {
   // [Diagram Input 2] -> [Adder 1, input 1]
   EXPECT_NE(std::string::npos, dot.find(
       "_" + id + "_u2 -> " + adder1_id + ":u1 [color=blue];")) << dot;
+  // [Diagram Input 2] -> [Sink, input]
+  const std::string sink_id = std::to_string(
+      reinterpret_cast<int64_t>(diagram_->sink()));
+  EXPECT_NE(std::string::npos, dot.find(
+      "_" + id + "_u2 -> " + sink_id + ":u0 [color=blue];")) << dot;
   // [Adder 2, output 0] -> [Diagram Output 1]
   EXPECT_NE(std::string::npos, dot.find(
       adder2_id + ":y0 -> _" + id + "_y1 [color=green];")) << dot;
@@ -954,8 +988,19 @@ TEST_F(DiagramTest, CachingChangePropagation) {
 
 // Tests that a diagram can be transmogrified to AutoDiffXd.
 TEST_F(DiagramTest, ToAutoDiffXd) {
+  std::string double_inputs;
+  for (int k = 0; k < diagram_->num_input_ports(); k++) {
+    double_inputs += diagram_->get_input_port(k).get_name();
+    double_inputs += ",";
+  }
   std::unique_ptr<System<AutoDiffXd>> ad_diagram =
       diagram_->ToAutoDiffXd();
+  std::string ad_inputs;
+  for (int k = 0; k < ad_diagram->num_input_ports(); k++) {
+    ad_inputs += ad_diagram->get_input_port(k).get_name();
+    ad_inputs += ",";
+  }
+  ASSERT_EQ(double_inputs, ad_inputs);
   std::unique_ptr<Context<AutoDiffXd>> context =
       ad_diagram->CreateDefaultContext();
   std::unique_ptr<SystemOutput<AutoDiffXd>> output =
@@ -970,20 +1015,20 @@ TEST_F(DiagramTest, ToAutoDiffXd) {
   /// adder2_: (A + B)             -> output 1
   /// integrator1_: A              -> C
   /// integrator2_: C              -> output 2
-  BasicVector<AutoDiffXd> input0(3);
-  BasicVector<AutoDiffXd> input1(3);
-  BasicVector<AutoDiffXd> input2(3);
+  VectorX<AutoDiffXd> input0(3);
+  VectorX<AutoDiffXd> input1(3);
+  VectorX<AutoDiffXd> input2(3);
   for (int i = 0; i < 3; ++i) {
     input0[i].value() = 1 + 0.1 * i;
-    input0[i].derivatives() = Eigen::VectorXd::Unit(9, i);
+    input0[i].derivatives() = VectorXd::Unit(9, i);
     input1[i].value() = 2 + 0.2 * i;
-    input1[i].derivatives() = Eigen::VectorXd::Unit(9, 3 + i);
+    input1[i].derivatives() = VectorXd::Unit(9, 3 + i);
     input2[i].value() = 3 + 0.3 * i;
-    input2[i].derivatives() = Eigen::VectorXd::Unit(9, 6 + i);
+    input2[i].derivatives() = VectorXd::Unit(9, 6 + i);
   }
-  context->FixInputPort(0, input0);
-  context->FixInputPort(1, input1);
-  context->FixInputPort(2, input2);
+  ad_diagram->get_input_port(0).FixValue(context.get(), input0);
+  ad_diagram->get_input_port(1).FixValue(context.get(), input1);
+  ad_diagram->get_input_port(2).FixValue(context.get(), input2);
 
   ad_diagram->CalcOutput(*context, output.get());
   ASSERT_EQ(kSize, output->num_ports());
@@ -1053,23 +1098,44 @@ TEST_F(DiagramTest, ToSymbolic) {
 // Tests that the same diagram can be evaluated into the same output with
 // different contexts interchangeably.
 TEST_F(DiagramTest, Clone) {
-  context_->FixInputPort(0, input0_);
-  context_->FixInputPort(1, input1_);
-  context_->FixInputPort(2, input2_);
+  AttachInputs();
 
   // Compute the output with the default inputs and sanity-check it.
   diagram_->CalcOutput(*context_, output_.get());
   ExpectDefaultOutputs();
 
+  // Verify that we start with a DiagramContext with Diagram ingredients.
+  EXPECT_TRUE(is_dynamic_castable<DiagramContext<double>>(context_));
+  EXPECT_TRUE(is_dynamic_castable<DiagramContinuousState<double>>(
+      diagram_->AllocateTimeDerivatives()));
+  EXPECT_TRUE(is_dynamic_castable<DiagramDiscreteValues<double>>(
+      diagram_->AllocateDiscreteVariables()));
+  const State<double>& state = context_->get_state();
+  EXPECT_TRUE(is_dynamic_castable<DiagramState<double>>(&state));
+  EXPECT_TRUE(is_dynamic_castable<DiagramContinuousState<double>>(
+      &state.get_continuous_state()));
+  EXPECT_TRUE(is_dynamic_castable<DiagramDiscreteValues<double>>(
+      &state.get_discrete_state()));
+  // FYI there is no DiagramAbstractValues.
+
   // Create a clone of the context and change an input.
   auto clone = context_->Clone();
 
+  // Verify that the clone is also a DiagramContext with Diagram ingredients.
+  EXPECT_TRUE(is_dynamic_castable<DiagramContext<double>>(clone));
+  const State<double>& clone_state = context_->get_state();
+  EXPECT_TRUE(is_dynamic_castable<DiagramState<double>>(&clone_state));
+  EXPECT_TRUE(is_dynamic_castable<DiagramContinuousState<double>>(
+      &clone_state.get_continuous_state()));
+  EXPECT_TRUE(is_dynamic_castable<DiagramDiscreteValues<double>>(
+      &clone_state.get_discrete_state()));
+
   DRAKE_DEMAND(kSize == 3);
-  clone->FixInputPort(0, {3, 6, 9});
+  diagram_->get_input_port(0).FixValue(clone.get(), Vector3d(3, 6, 9));
 
   // Recompute the output and check the values.
   diagram_->CalcOutput(*clone, output_.get());
-  Eigen::Vector3d expected_output0(
+  Vector3d expected_output0(
       3 + 8 + 64,
       6 + 16 + 128,
       9 + 32 + 256);  // B
@@ -1079,7 +1145,7 @@ TEST_F(DiagramTest, Clone) {
   EXPECT_EQ(expected_output0[1], output0->get_value()[1]);
   EXPECT_EQ(expected_output0[2], output0->get_value()[2]);
 
-  Eigen::Vector3d expected_output1(
+  Vector3d expected_output1(
       3 + 8,
       6 + 16,
       9 + 32);  // A
@@ -1143,9 +1209,9 @@ class DiagramOfDiagramsTest : public ::testing::Test {
 
     output_ = diagram_->AllocateOutput();
 
-    context_->FixInputPort(0, {8});
-    context_->FixInputPort(1, {64});
-    context_->FixInputPort(2, {512});
+    diagram_->get_input_port(0).FixValue(context_.get(), 8.0);
+    diagram_->get_input_port(1).FixValue(context_.get(), 64.0);
+    diagram_->get_input_port(2).FixValue(context_.get(), 512.0);
 
     // Initialize the integrator states.
     Context<double>& d0_context =
@@ -1277,9 +1343,8 @@ TEST_F(DiagramOfDiagramsTest, EvalOutput) {
   //   output0 = 586 + 660 + 9 = 1255
   //   output1 = output0 + 586 + 660 = 2501
   //   output2 = 81 (state of integrator1_)
-  auto value10 = BasicVector<double>::Make({10});
   FixedInputPortValue& port_value =
-      context_->FixInputPort(0, std::move(value10));
+      diagram_->get_input_port(0).FixValue(context_.get(), 10.0);
   EXPECT_EQ(1255, diagram_->get_output_port(0).
       Eval<BasicVector<double>>(*context_)[0]);
   EXPECT_EQ(2501, diagram_->get_output_port(1).
@@ -1342,7 +1407,7 @@ GTEST_TEST(DiagramSubclassTest, TwelvePlusSevenIsNineteen) {
   ASSERT_TRUE(context != nullptr);
   ASSERT_TRUE(output != nullptr);
 
-  context->FixInputPort(0, {12.0});
+  plus_seven.get_input_port(0).FixValue(context.get(), 12.0);
   plus_seven.CalcOutput(*context, output.get());
 
   ASSERT_EQ(1, output->num_ports());
@@ -1738,6 +1803,7 @@ GTEST_TEST(GetSystemsTest, GetSystems) {
                 diagram->adder0(), diagram->adder1(), diagram->adder2(),
                 diagram->stateless(),
                 diagram->integrator0(), diagram->integrator1(),
+                diagram->sink(),
                 diagram->kitchen_sink()
             }),
             diagram->GetSystems());
@@ -1845,8 +1911,8 @@ class DiscreteStateTest : public ::testing::Test {
  public:
   void SetUp() override {
     context_ = diagram_.CreateDefaultContext();
-    context_->FixInputPort(0, {17.0});
-    context_->FixInputPort(1, {23.0});
+    diagram_.get_input_port(0).FixValue(context_.get(), 17.0);
+    diagram_.get_input_port(1).FixValue(context_.get(), 23.0);
   }
 
  protected:
@@ -2227,7 +2293,7 @@ class SystemWithAbstractState : public LeafSystem<double> {
  public:
   SystemWithAbstractState(int id, double update_period) : id_(id) {
     DeclarePeriodicUnrestrictedUpdate(update_period, 0);
-    DeclareAbstractState(AbstractValue::Make<double>(id_));
+    DeclareAbstractState(Value<double>(id_));
 
     // Verify that no periodic discrete updates are registered.
     EXPECT_FALSE(this->GetUniquePeriodicDiscreteUpdateAttribute());
@@ -2444,7 +2510,7 @@ TEST_F(AbstractStateDiagramTest, UnrestrictedUpdateNotificationsAreLocalized) {
   // Selectively apply the update; only hold1 should get notified.
   diagram_.ApplyUnrestrictedUpdate(unrestricted_events, updates.get(),
                                        context_.get());
-  // Sanity check that the update actually occured -- should have added time
+  // Sanity check that the update actually occurred -- should have added time
   // to sys1's abstract id.
   EXPECT_EQ(get_sys1_abstract_data_as_double(), kSys1Id + next_time);
   EXPECT_EQ(get_sys2_abstract_data_as_double(), kSys2Id);
@@ -2776,7 +2842,7 @@ GTEST_TEST(MutateSubcontextTest, DiagramRecalculatesOnSubcontextChange) {
 
   auto diagram_context = diagram->AllocateContext();
   diagram_context->EnableCaching();
-  diagram_context->FixInputPort(0, {1.5});  // u(=u0)
+  diagram->get_input_port(0).FixValue(diagram_context.get(), 1.5);  // u(=u0)
 
   // Hunt down the cache entry for the Diagram's derivative computation so we
   // can verify that it gets invalidated and recomputed as we expect.
@@ -2791,7 +2857,7 @@ GTEST_TEST(MutateSubcontextTest, DiagramRecalculatesOnSubcontextChange) {
   // extra computations.
   int64_t expected_derivative_serial = derivative_cache.serial_number();
 
-  Eigen::VectorXd init_state(3);
+  VectorXd init_state(3);
   init_state << 5., 6., 7.;  // x0(=y0=u1), x1(=y1), x2(=y2)
 
   // Set the state from the diagram level, then evaluate the diagram
@@ -2810,7 +2876,8 @@ GTEST_TEST(MutateSubcontextTest, DiagramRecalculatesOnSubcontextChange) {
   // Must set the dangling input port to a value to evaluate derivatives.
   Context<double>& context2 =
       diagram->GetMutableSubsystemContext(*integ2, &*diagram_context);
-  FixedInputPortValue& u2_value = context2.FixInputPort(0, {0.75});
+  FixedInputPortValue& u2_value =
+      integ2->get_input_port(0).FixValue(&context2, 0.75);
 
   // The diagram derivatives should be (u0,u1,u2)=(u,x0,u2).
   auto& eval_derivs =
@@ -2830,7 +2897,7 @@ GTEST_TEST(MutateSubcontextTest, DiagramRecalculatesOnSubcontextChange) {
   Context<double>& context1 =
       diagram->GetMutableSubsystemContext(*integ1, &*diagram_context);
 
-  Eigen::VectorXd new_x0(1), new_x1(1);
+  VectorXd new_x0(1), new_x1(1);
   new_x0 << 13.; new_x1 << 17.;
   context0.SetContinuousState(new_x0);
   context1.SetContinuousState(new_x1);
@@ -2942,7 +3009,7 @@ class PerStepActionTestSystem : public LeafSystem<double> {
  public:
   PerStepActionTestSystem() {
     DeclareDiscreteState(1);
-    DeclareAbstractState(AbstractValue::Make<std::string>(""));
+    DeclareAbstractState(Value<std::string>(""));
   }
 
   using LeafSystem<double>::DeclarePerStepEvent;
@@ -3185,7 +3252,7 @@ class ConstraintTestSystem : public LeafSystem<T> {
                                     1, "x0");
     this->DeclareInequalityConstraint(
         &ConstraintTestSystem::CalcStateConstraint,
-        { Eigen::Vector2d::Zero(), std::nullopt }, "x");
+        { Vector2d::Zero(), std::nullopt }, "x");
   }
 
   // Scalar-converting copy constructor.
@@ -3228,14 +3295,14 @@ GTEST_TEST(DiagramConstraintTest, SystemConstraintsTest) {
   // Set sys1 context.
   diagram->GetMutableSubsystemContext(*sys1, context.get())
       .get_mutable_continuous_state_vector()
-      .SetFromVector(Eigen::Vector2d(5.0, 7.0));
+      .SetFromVector(Vector2d(5.0, 7.0));
 
   // Set sys2 context.
   diagram->GetMutableSubsystemContext(*sys2, context.get())
       .get_mutable_continuous_state_vector()
-      .SetFromVector(Eigen::Vector2d(11.0, 12.0));
+      .SetFromVector(Vector2d(11.0, 12.0));
 
-  Eigen::VectorXd value;
+  VectorXd value;
   // Check system 1's x0 constraint.
   const SystemConstraint<double>& constraint0 =
       diagram->get_constraint(SystemConstraintIndex(0));
@@ -3353,9 +3420,9 @@ class RandomContextTestSystem : public LeafSystem<double> {
  public:
   RandomContextTestSystem() {
     this->DeclareContinuousState(
-        BasicVector<double>(Eigen::Vector2d(-1.0, -2.0)));
+        BasicVector<double>(Vector2d(-1.0, -2.0)));
     this->DeclareNumericParameter(
-        BasicVector<double>(Eigen::Vector3d(1.0, 2.0, 3.0)));
+        BasicVector<double>(Vector3d(1.0, 2.0, 3.0)));
   }
 
   void SetRandomState(const Context<double>& context, State<double>* state,
@@ -3388,9 +3455,9 @@ GTEST_TEST(RandomContextTest, SetRandomTest) {
   auto context = diagram->CreateDefaultContext();
 
   // Back-up the numeric context values.
-  Eigen::Vector4d state = context->get_continuous_state_vector().CopyToVector();
-  Eigen::Vector3d params0 = context->get_numeric_parameter(0).CopyToVector();
-  Eigen::Vector3d params1 = context->get_numeric_parameter(1).CopyToVector();
+  Vector4d state = context->get_continuous_state_vector().CopyToVector();
+  Vector3d params0 = context->get_numeric_parameter(0).CopyToVector();
+  Vector3d params1 = context->get_numeric_parameter(1).CopyToVector();
 
   // Should return the (same) original values.
   diagram->SetDefaultContext(context.get());
@@ -3520,6 +3587,68 @@ GTEST_TEST(InitializationTest, InitializationTest) {
 }
 
 // TODO(siyuan) add direct tests for EventCollection
+
+// A System that does not override the default implicit time derivatives
+// implementation.
+class DefaultExplicitSystem : public LeafSystem<double> {
+ public:
+  DefaultExplicitSystem() { DeclareContinuousState(3); }
+
+  static Vector3d fixed_derivative() { return {1., 2., 3.}; }
+
+ private:
+  void DoCalcTimeDerivatives(const Context<double>& context,
+                             ContinuousState<double>* derivatives) const final {
+    derivatives->SetFromVector(fixed_derivative());
+  }
+};
+
+// A System that _does_ override the default implicit time derivatives
+// implementation, and also changes the residual size from its default.
+class OverrideImplicitSystem : public DefaultExplicitSystem {
+ public:
+  OverrideImplicitSystem() {
+    DeclareImplicitTimeDerivativesResidualSize(1);
+  }
+
+ private:
+  void DoCalcImplicitTimeDerivativesResidual(
+    const systems::Context<double>& context,
+    const systems::ContinuousState<double>& proposed_derivatives,
+    EigenPtr<VectorX<double>> residual) const final {
+    EXPECT_EQ(residual->size(), 1);
+    (*residual)[0] = proposed_derivatives.CopyToVector().sum();
+  }
+};
+
+// A Diagram should concatenate the implicit time derivatives from its
+// component subsystems, and tally up the size correctly.
+GTEST_TEST(ImplicitTimeDerivatives, DiagramProcessing) {
+  const Vector3d derivs = DefaultExplicitSystem::fixed_derivative();
+
+  DiagramBuilder<double> builder;
+  builder.AddSystem<DefaultExplicitSystem>();   // 3 residuals
+  builder.AddSystem<OverrideImplicitSystem>();  // 1 residual
+  builder.AddSystem<DefaultExplicitSystem>();   // 3 more residuals
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+
+  EXPECT_EQ(diagram->implicit_time_derivatives_residual_size(), 7);
+  VectorXd residual = diagram->AllocateImplicitTimeDerivativesResidual();
+  EXPECT_EQ(residual.size(), 7);
+
+  auto xdot = diagram->AllocateTimeDerivatives();
+  EXPECT_EQ(xdot->size(), 9);  // 3 derivatives each subsystem
+  const auto xdot_vector = VectorXd::LinSpaced(9, 11., 19.);
+  xdot->SetFromVector(xdot_vector);
+  VectorXd expected_result(7);
+  expected_result.segment<3>(0) = xdot_vector.segment<3>(0) - derivs;
+  expected_result[3] = xdot_vector.segment<3>(3).sum();
+  expected_result.segment<3>(4) = xdot_vector.segment<3>(6) - derivs;
+
+  diagram->CalcImplicitTimeDerivativesResidual(*context, *xdot, &residual);
+  EXPECT_EQ(residual, expected_result);
+}
 
 }  // namespace
 }  // namespace systems

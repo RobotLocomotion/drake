@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+<!-- @author: Joseph Masterjohn (github: @joemasterjohn)
+     @author: Robin Deits (github: @rdeits)
+
+     These files are an adaptation of the original Strandbeest example in
+     Drake, written by Robin Deits:
+       
+     https://github.com/RobotLocomotion/drake/blob/last_sha_with_original_matlab/drake/examples/Strandbeest/
+-->
+<robot xmlns:drake="http://drake.mit.edu" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xacro="http://ros.org/wiki/xacro" xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="LegPair">
+  <xacro:include filename="Macros.xacro"/>
+  <xacro:include filename="LegAssembly.xacro"/>
+  <xacro:macro name="strandbeest_leg_pair" params="prefix">
+    <!-- Create the two legs -->
+    <xacro:strandbeest_leg prefix="${prefix}_leg1"/>
+    <xacro:strandbeest_leg prefix="${prefix}_leg2"/>
+    <!-- Links -->
+    <link name="${prefix}_bar_l">
+      <xacro:strandbeest_cylinder xyz="0 0 0.039" rpy="0 0 0" length="0.078" radius="0.01" material="tri_black"/>
+    </link>
+    <link name="${prefix}_bar_a">
+      <xacro:strandbeest_cylinder xyz="0 0 0" rpy="0 0 0" length="0.76" radius="0.01" material="tri_black"/>
+    </link>
+    <link name="${prefix}_bar_m">
+      <xacro:strandbeest_cylinder xyz="0 0 0.075" rpy="0 0 0" length="0.15" radius="0.01" material="tri_red"/>
+    </link>
+    <!-- Joints -->
+    <joint name="${prefix}_joint_l_a" type="fixed">
+      <axis xyz="0 1 0"/>
+      <parent link="${prefix}_bar_l"/>
+      <child link="${prefix}_bar_a"/>
+      <origin rpy="0 ${-pi/2} 0" xyz="0 0 0"/>
+    </joint>
+    <joint name="${prefix}_leg1_joint_m_j" type="continuous">
+      <axis xyz="0 1 0"/>
+      <parent link="${prefix}_bar_m"/>
+      <child link="${prefix}_leg1_bar_j"/>
+      <origin rpy="0 0 0" xyz="0 0 0.15"/>
+    </joint>
+    <joint name="${prefix}_leg2_joint_m_j" type="continuous">
+      <axis xyz="0 1 0"/>
+      <parent link="${prefix}_bar_m"/>
+      <child link="${prefix}_leg2_bar_j"/>
+      <origin rpy="0 0 ${pi}" xyz="0 0 0.15"/>
+    </joint>
+    <!-- Custom Bushing Elements -->
+    <frame name="${prefix}_leg1_loop_a_c_bushing_frameA" link="${prefix}_bar_a" rpy="${-pi/2} 0 0" xyz="0 0 0.38"/>
+    <frame name="${prefix}_leg1_loop_a_c_bushing_frameC" link="${prefix}_leg1_bar_c" rpy="${-pi/2} 0 0" xyz="0 0 0.393"/>
+    <drake:linear_bushing_rpy>
+      <drake:bushing_frameA name="${prefix}_leg1_loop_a_c_bushing_frameA"/>
+      <drake:bushing_frameC name="${prefix}_leg1_loop_a_c_bushing_frameC"/>
+      <drake:bushing_torque_stiffness value="${torque_stiffness} ${torque_stiffness} 0"/>
+      <drake:bushing_torque_damping value="${torque_damping} ${torque_damping} 0"/>
+      <drake:bushing_force_stiffness value="${force_stiffness} ${force_stiffness} ${force_stiffness}"/>
+      <drake:bushing_force_damping value="${force_damping} ${force_damping} ${force_damping}"/>
+    </drake:linear_bushing_rpy>
+    <frame name="${prefix}_leg2_loop_a_c_bushing_frameA" link="${prefix}_bar_a" rpy="${-pi/2} 0 ${pi}" xyz="0 0 -0.38"/>
+    <frame name="${prefix}_leg2_loop_a_c_bushing_frameC" link="${prefix}_leg2_bar_c" rpy="${-pi/2} 0 0" xyz="0 0 0.393"/>
+    <drake:linear_bushing_rpy>
+      <drake:bushing_frameA name="${prefix}_leg2_loop_a_c_bushing_frameA"/>
+      <drake:bushing_frameC name="${prefix}_leg2_loop_a_c_bushing_frameC"/>
+      <drake:bushing_torque_stiffness value="${torque_stiffness} ${torque_stiffness} 0"/>
+      <drake:bushing_torque_damping value="${torque_damping} ${torque_damping} 0"/>
+      <drake:bushing_force_stiffness value="${force_stiffness} ${force_stiffness} ${force_stiffness}"/>
+      <drake:bushing_force_damping value="${force_damping} ${force_damping} ${force_damping}"/>
+    </drake:linear_bushing_rpy>
+  </xacro:macro>
+</robot>

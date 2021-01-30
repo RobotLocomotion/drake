@@ -1,15 +1,11 @@
-<?xml version="1.0" ?>
-
+<?xml version="1.0"?>
 <!--
 Defines an SDF model with various types of joints used for testing the parser.
 -->
-
-<sdf version='1.6'>
-  <model name='joint_parsing_test'>
-    <link name='link1'>
-      <pose frame=''>0 0 0 0 -0 0</pose>
+<sdf version="1.7">
+  <model name="joint_parsing_test">
+    <link name="link1">
       <inertial>
-        <pose frame=''>0 0 0 0 -0 0</pose>
         <mass>1</mass>
         <inertia>
           <ixx>0.1</ixx>
@@ -21,10 +17,8 @@ Defines an SDF model with various types of joints used for testing the parser.
         </inertia>
       </inertial>
     </link>
-    <link name='link2'>
-      <pose frame=''>0 0 0 0 -0 0</pose>
+    <link name="link2">
       <inertial>
-        <pose frame=''>0 0 0 0 -0 0</pose>
         <mass>1</mass>
         <inertia>
           <ixx>0.1</ixx>
@@ -36,11 +30,11 @@ Defines an SDF model with various types of joints used for testing the parser.
         </inertia>
       </inertial>
     </link>
-    <joint name='revolute_joint' type='revolute'>
+    <joint name="revolute_joint" type="revolute">
       <child>link2</child>
       <parent>link1</parent>
       <axis>
-        <xyz>0 0 1</xyz>
+        <xyz expressed_in="__model__">0 0 1</xyz>
         <limit>
           <lower>-1</lower>
           <upper>2</upper>
@@ -48,16 +42,14 @@ Defines an SDF model with various types of joints used for testing the parser.
           <velocity>100</velocity>
         </limit>
         <dynamics>
+          <damping>0.2</damping>
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
-    <link name='link3'>
-      <pose frame=''>0 0 0 0 -0 0</pose>
+    <link name="link3">
       <inertial>
-        <pose frame=''>0 0 0 0 -0 0</pose>
         <mass>1</mass>
         <inertia>
           <ixx>0.1</ixx>
@@ -69,11 +61,11 @@ Defines an SDF model with various types of joints used for testing the parser.
         </inertia>
       </inertial>
     </link>
-    <joint name='prismatic_joint' type='prismatic'>
+    <joint name="prismatic_joint" type="prismatic">
       <child>link3</child>
       <parent>link2</parent>
       <axis>
-        <xyz>0 0 1</xyz>
+        <xyz expressed_in="__model__">0 0 1</xyz>
         <limit>
           <lower>-2</lower>
           <upper>1</upper>
@@ -81,16 +73,14 @@ Defines an SDF model with various types of joints used for testing the parser.
           <velocity>5</velocity>
         </limit>
         <dynamics>
+          <damping>0.3</damping>
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
-    <link name='link4'>
-      <pose frame=''>0 0 0 0 -0 0</pose>
+    <link name="link4">
       <inertial>
-        <pose frame=''>0 0 0 0 -0 0</pose>
         <mass>1</mass>
         <inertia>
           <ixx>0.1</ixx>
@@ -102,17 +92,82 @@ Defines an SDF model with various types of joints used for testing the parser.
         </inertia>
       </inertial>
     </link>
-    <joint name='revolute_joint_no_limits' type='revolute'>
+    <joint name="revolute_joint_no_limits" type="revolute">
       <child>link4</child>
       <parent>link3</parent>
       <axis>
-        <xyz>0 0 1</xyz>
+        <xyz expressed_in="__model__">0 0 1</xyz>
         <dynamics>
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
+    <link name="link5">
+      <inertial>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0.1</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.1</iyy>
+          <iyz>0</iyz>
+          <izz>0.1</izz>
+        </inertia>
+      </inertial>
+    </link>
+    <joint name="ball_joint" type="ball">
+      <child>link5</child>
+      <parent>link4</parent>
+      <axis>
+        <dynamics>
+          <damping>0.1</damping>
+        </dynamics>
+        <xyz expressed_in="__model__">0 0 1</xyz>
+      </axis>
+    </joint>
+    <link name="link6">
+      <inertial>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0.1</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.1</iyy>
+          <iyz>0</iyz>
+          <izz>0.1</izz>
+        </inertia>
+      </inertial>
+    </link>
+    <joint name="universal_joint" type="universal">
+      <child>link6</child>
+      <parent>link5</parent>
+      <axis>
+        <dynamics>
+          <damping>0.1</damping>
+        </dynamics>
+        <xyz expressed_in="__model__">0 0 1</xyz>
+      </axis>
+    </joint>
+    <link name="link7">
+      <inertial>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0.1</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.1</iyy>
+          <iyz>0</iyz>
+          <izz>0.1</izz>
+        </inertia>
+      </inertial>
+    </link>
+    <frame name='frame6' attached_to='link6'/>
+    <frame name='frame7' attached_to='link7'/>
+    <drake:joint name="planar_joint" type="planar">
+      <drake:child>frame7</drake:child>
+      <drake:parent>frame6</drake:parent>
+      <drake:damping>0.1 0.1 0.1</drake:damping>
+    </drake:joint>
   </model>
 </sdf>

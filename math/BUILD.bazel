@@ -12,6 +12,7 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
     name = "math",
+    visibility = ["//visibility:public"],
     deps = [
         ":autodiff",
         ":barycentric",
@@ -68,6 +69,7 @@ drake_cc_library(
     ],
     deps = [
         "//common:default_scalars",
+        "//common:name_value",
     ],
 )
 
@@ -303,6 +305,7 @@ drake_cc_googletest(
     deps = [
         ":bspline_basis",
         "//common/test_utilities",
+        "//common/yaml",
     ],
 )
 
@@ -376,6 +379,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "expmap_test",
+    copts = [
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":expmap",
         "//common/test_utilities:eigen_matrix_compare",

@@ -42,9 +42,6 @@ const InPort& IiwaStatusSender::get_torque_measured_input_port() const {
 const InPort& IiwaStatusSender::get_torque_external_input_port() const {
   return LeafSystem<double>::get_input_port(5);
 }
-const systems::OutputPort<double>& IiwaStatusSender::get_output_port() const {
-  return LeafSystem<double>::get_output_port(0);
-}
 
 namespace {
 // Returns the first one of port1.Eval or port2.Eval that has a value.

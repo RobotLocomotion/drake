@@ -12,6 +12,13 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 
+// TODO(SeanCurtis-TRI) Resolving the deprecation below will entail removing
+// this whole file. In addition, there are a number of more subtle tendrils to
+// clean up:
+//    - GeometryVisualizationImpl is declared as a friend in geometry_state.h
+//    - geometry_roles.h has a reference to `ConnectDrakeVisualizer` to remove.
+//    - DispatchLoadMessage is declared a friend of SceneGraph.
+
 namespace drake {
 namespace geometry {
 
@@ -51,10 +58,10 @@ class GeometryVisualizationImpl {
  @ref geometry_roles for details). Specifically, only geometries with
  the illustration role assigned will be included. The visualization function
  looks for the following properties in the IllustrationProperties instance.
- | Group name | Required | Property Name |  Property Type  | Property
- Description | | :--------: | :------: | :-----------: | :-------------: |
- :------------------- | |    phong   | no       | diffuse       |
- Eigen::Vector4d | The rgba value of the object surface |
+
+ | Group name | Required | Property Name |  Property Type  | Property Description |
+ | :--------: | :------: | :-----------: | :-------------: | :------------------- |
+ |    phong   | no       | diffuse       | Eigen::Vector4d | The rgba value of the object surface |
 
  See MakePhongIllustrationProperties() to facilitate making a compliant set of
  illustration properties.
@@ -90,6 +97,7 @@ class GeometryVisualizationImpl {
  @see geometry::DispatchLoadMessage()
  @ingroup visualization
  */
+DRAKE_DEPRECATED("2021-04-01", "Please use DrakeVisualizer::AddToBuilder().")
 systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const SceneGraph<double>& scene_graph,
@@ -105,6 +113,7 @@ systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
 
  @see ConnectDrakeVisualizer().
  */
+DRAKE_DEPRECATED("2021-04-01", "Please use DrakeVisualizer::AddToBuilder().")
 systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const SceneGraph<double>& scene_graph,
@@ -120,6 +129,7 @@ systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
  LCM channel "DRAKE_VIEWER_LOAD_ROBOT".
 
  @see geometry::ConnectDrakeVisualizer() */
+DRAKE_DEPRECATED("2021-04-01", "Please use DrakeVisualizer::SendLoadMessage().")
 void DispatchLoadMessage(const SceneGraph<double>& scene_graph,
                          lcm::DrakeLcmInterface* lcm,
                          Role role = Role::kIllustration);

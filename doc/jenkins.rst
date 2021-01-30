@@ -103,11 +103,20 @@ are necessary for :ref:`binary installation <binary-installation>`) and
 ``binary_distribution``, you do not need to duplicate binary prerequisites in
 ``source_distribution``.
 
+Prerequisites of the ``source_distribution`` are further split into three
+parts: those that are needed for building and running the ``//:install`` target
+using ``bazel`` (``bazel run //:install``), those additional dependencies for
+building and running tests (``bazel test ...``), and those additional
+dependencies for running select maintainer scripts (e.g., ``mirror_to_s3.py``
+and ``new_release.py``). Again, it is expected that a given prerequisite will
+only appear in one of these lists.
+
 When updating prerequisites with these scripts, the normal experimental CI will
 most likely fail. To test new prerequisites, you should first request
 unprovisioned experimental builds, e.g.:
 
 * ``@drake-jenkins-bot linux-bionic-unprovisioned-gcc-bazel-experimental-release please``
+* ``@drake-jenkins-bot linux-focal-unprovisioned-gcc-bazel-experimental-release please``
 * ``@drake-jenkins-bot mac-catalina-unprovisioned-clang-bazel-experimental-release please``
 
 After this has passed, go through normal review. Once normal review is done,
@@ -123,22 +132,26 @@ To schedule an "experimental" build of the :ref:`binary packages <binary-install
 comment on an open pull request as follows:
 
 * ``@drake-jenkins-bot linux-bionic-unprovisioned-gcc-bazel-experimental-snopt-packaging please``
-* ``@drake-jenkins-bot mac-mojave-unprovisioned-clang-bazel-experimental-snopt-packaging please``
+* ``@drake-jenkins-bot linux-focal-unprovisioned-gcc-bazel-experimental-snopt-packaging please``
+* ``@drake-jenkins-bot mac-catalina-unprovisioned-clang-bazel-experimental-snopt-packaging please``
 
 or follow the :ref:`instructions above <scheduling-builds-via-the-jenkins-user-interface>`
 to schedule a build of one of the following jobs from the Jenkins user
 interface:
 
 * linux-bionic-unprovisioned-gcc-bazel-experimental-snopt-packaging
-* mac-mojave-unprovisioned-clang-bazel-experimental-snopt-packaging
+* linux-focal-unprovisioned-gcc-bazel-experimental-snopt-packaging
+* mac-catalina-unprovisioned-clang-bazel-experimental-snopt-packaging
 
 The URL from which to download the built package will be indicated in the
 Jenkins console log for the completed build, for example::
 
     -- Uploading package archive 1 of 1 to AWS S3...
 
-    upload: drake-<yyymmddhhmmss>-<commit>-<bionic|mac>.tar.gz to s3://drake-packages/drake/experimental/drake-<yyymmddhhmmss>-<commit>-<bionic|mac>.tar.gz
-    -- Package URL 1 of 1: https://drake-packages.csail.mit.edu/drake/experimental/drake-<yyymmddhhmmss>-<commit>-<bionic|mac>.tar.gz
+    upload: drake-<yyymmddhhmmss>-<commit>-<platform>.tar.gz to s3://drake-packages/drake/experimental/drake-<yyymmddhhmmss>-<commit>-<platform>.tar.gz
+    -- Package URL 1 of 1: https://drake-packages.csail.mit.edu/drake/experimental/drake-<yyymmddhhmmss>-<commit>-<platform>.tar.gz
     -- Uploading package archive checksum 1 of 1 to AWS S3...
 
-    upload: drake-<yyymmddhhmmss>-<commit>-<bionic|mac>.tar.gz.sha512 to s3://drake-packages/drake/experimental/drake-<yyymmddhhmmss>-<commit>-<bionic|mac>.tar.gz.sha512
+    upload: drake-<yyymmddhhmmss>-<commit>-<platform>.tar.gz.sha512 to s3://drake-packages/drake/experimental/drake-<yyymmddhhmmss>-<commit>-<platform>.tar.gz.sha512
+
+where ``<platform>`` is ``bionic``, ``focal``, or ``mac``.

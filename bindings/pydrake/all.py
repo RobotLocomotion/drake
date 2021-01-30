@@ -25,9 +25,6 @@ To see example usages, please see `doc/python_bindings.rst`.
 """
 
 
-# Legacy symbols.
-from .attic.all import *
-
 # Normal symbols.
 from . import getDrakePath
 from .autodiffutils import *
@@ -47,5 +44,4 @@ from .manipulation.all import *
 from .multibody.all import *
 from .solvers.all import *
 from .systems.all import *
-# - `third_party` does not offer public Drake library symbols.
 from .visualization.all import *

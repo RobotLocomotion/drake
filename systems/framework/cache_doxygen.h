@@ -1,3 +1,6 @@
+/** @file
+ Doxygen-only documentation for @ref cache_design_notes.  */
+
 #pragma once
 
 // Putting this document in drake::systems namespace makes the links work.

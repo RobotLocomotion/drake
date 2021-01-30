@@ -3,8 +3,8 @@
 #include <fstream>
 #include <memory>
 
-#include <gtest/gtest.h>
 #include "robotlocomotion/image_array_t.hpp"
+#include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
 #include "drake/systems/sensors/image.h"

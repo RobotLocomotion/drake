@@ -33,7 +33,7 @@ namespace internal {
 class GeometryStateCollisionFilterAttorney;
 #endif
 
-/** The underlying engine for performing geometric _proximity_ queries.
+/* The underlying engine for performing geometric _proximity_ queries.
  It owns the geometry instances and, once it has been provided with the poses
  of the geometry, it provides geometric queries on that geometry.
 
@@ -66,37 +66,38 @@ class ProximityEngine {
   ProximityEngine();
   ~ProximityEngine();
 
-  /** Construct a deep copy of the provided `other` engine.  */
+  /* Construct a deep copy of the provided `other` engine.  */
   ProximityEngine(const ProximityEngine& other);
 
-  /** Set `this` engine to be a deep copy of the `other` engine.  */
+  /* Set `this` engine to be a deep copy of the `other` engine.  */
   ProximityEngine& operator=(const ProximityEngine& other);
 
-  /** Construct an engine by moving the data of a source engine. The source
+  /* Construct an engine by moving the data of a source engine. The source
    engine will be returned to its default-initialized state.  */
   ProximityEngine(ProximityEngine&& other) noexcept;
 
-  /** Move assign a source engine to this engine. The source
+  /* Move assign a source engine to this engine. The source
    engine will be returned to its default-initialized state.  */
   ProximityEngine& operator=(ProximityEngine&& other) noexcept;
 
-  /** Returns an independent copy of this engine templated on the AutoDiffXd
+  /* Returns an independent copy of this engine templated on the AutoDiffXd
    scalar type. If the engine is already an AutoDiffXd engine, it is equivalent
    to using the copy constructor to create a duplicate on the heap.  */
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ToAutoDiffXd() const;
 
-  /** @name Topology management */
+  /* @name Topology management */
   //@{
 
-  /** Adds the given `shape` to the engine's _dynamic_ geometry.
+  /* Adds the given `shape` to the engine's _dynamic_ geometry.
    @param shape   The shape to add.
+   @param X_WG    The pose of the shape in the world frame.
    @param id      The id of the geometry in SceneGraph to which this shape
                   belongs.
    @param props   The proximity properties for the shape.  */
-  void AddDynamicGeometry(const Shape& shape, GeometryId id,
-                          const ProximityProperties& props = {});
+  void AddDynamicGeometry(const Shape& shape, const math::RigidTransformd& X_WG,
+                          GeometryId id, const ProximityProperties& props = {});
 
-  /** Adds the given `shape` to the engine's _anchored_ geometry.
+  /* Adds the given `shape` to the engine's _anchored_ geometry.
    @param shape   The shape to add.
    @param X_WG    The pose of the shape in the world frame.
    @param id      The id of the geometry in SceneGraph to which this shape
@@ -106,7 +107,7 @@ class ProximityEngine {
                            const math::RigidTransformd& X_WG, GeometryId id,
                            const ProximityProperties& props = {});
 
-  /** Possibly updates the proximity representation of the given `geometry`
+  /* Possibly updates the proximity representation of the given `geometry`
    based on the relationship between its _current_ proximity properties and the
    given _new_ proximity properties. The underlying representation may not
    change if the change in proximity properties isn't of significance to the
@@ -126,24 +127,24 @@ class ProximityEngine {
 
   // TODO(SeanCurtis-TRI): Decide if knowing whether something is dynamic or not
   //  is *actually* sufficiently helpful to justify this act.
-  /** Removes the given geometry indicated by `id` from the engine.
+  /* Removes the given geometry indicated by `id` from the engine.
    @param id          The id of the geometry to be removed.
    @param is_dynamic  True if the geometry is dynamic, false if anchored.
    @throws std::logic_error if `id` does not refer to a geometry in this engine.
   */
   void RemoveGeometry(GeometryId id, bool is_dynamic);
 
-  /** Reports the _total_ number of geometries in the engine -- dynamic and
+  /* Reports the _total_ number of geometries in the engine -- dynamic and
    anchored (spanning all sources).  */
   int num_geometries() const;
 
-  /** Reports the number of _dynamic_ geometries (spanning all sources).  */
+  /* Reports the number of _dynamic_ geometries (spanning all sources).  */
   int num_dynamic() const;
 
-  /** Reports the number of _anchored_ geometries (spanning all sources).  */
+  /* Reports the number of _anchored_ geometries (spanning all sources).  */
   int num_anchored() const;
 
-  /** The distance (signed/unsigned/penetration distance) is generally computed
+  /* The distance (signed/unsigned/penetration distance) is generally computed
    from an iterative process. The distance_tolerance determines when the
    iterative process will terminate.
    As a rule of rule of thumb, one can generally assume that the answer will
@@ -154,7 +155,7 @@ class ProximityEngine {
 
   //@}
 
-  /** Updates the poses for all of the _dynamic_ geometries in the engine.
+  /* Updates the poses for all of the _dynamic_ geometries in the engine.
    @param X_WGs     The poses of each geometry `G` measured and expressed in the
                     world frame `W` (including geometries which may *not* be
                     registered with the proximity engine or may not be
@@ -168,12 +169,12 @@ class ProximityEngine {
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs);
 
   // ----------------------------------------------------------------------
-  /** @name              Signed Distance Queries
+  /* @name              Signed Distance Queries
   See @ref signed_distance_query "Signed Distance Query" for more details.  */
 
   //@{
   // NOTE: This maps to Model::ClosestPointsAllToAll().
-  /** Implementation of
+  /* Implementation of
    GeometryState::ComputeSignedDistancePairwiseClosestPoints().
    This includes `X_WGs`, the current poses of all geometries in World in the
    current scalar type, keyed on each geometry's GeometryId.  */
@@ -182,7 +183,7 @@ class ProximityEngine {
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs,
       const double max_distance) const;
 
-  /** Implementation of
+  /* Implementation of
    GeometryState::ComputeSignedDistancePairClosestPoints().
    This includes `X_WGs`, the current poses of all geometries in World in the
    current scalar type, keyed on each geometry's GeometryId.  */
@@ -191,7 +192,7 @@ class ProximityEngine {
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs)
       const;
 
-  /** Implementation of GeometryState::ComputeSignedDistanceToPoint().
+  /* Implementation of GeometryState::ComputeSignedDistanceToPoint().
    This includes `X_WGs`, the current poses of all geometries in World in the
    current scalar type, keyed on each geometry's GeometryId.  */
   std::vector<SignedDistanceToPoint<T>>
@@ -203,7 +204,7 @@ class ProximityEngine {
 
 
   //----------------------------------------------------------------------------
-  /** @name                Collision Queries
+  /* @name                Collision Queries
   See @ref collision_queries "Collision Queries" for more details.  */
 
   //@{
@@ -214,34 +215,37 @@ class ProximityEngine {
   // and drake issue #10577. Once that is resolved, this definition can be
   // revisited (and ProximityEngineTest::Issue10577Regression_Osculation can
   // be updated).
-  /** Implementation of GeometryState::ComputePointPairPenetration().  */
-  std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
+  /* Implementation of GeometryState::ComputePointPairPenetration().
+   This includes `X_WGs`, the current poses of all geometries in World in the
+   current scalar type, keyed on each geometry's GeometryId.  */
+  std::vector<PenetrationAsPointPair<T>> ComputePointPairPenetration(
+      const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs)
       const;
 
-  /** Implementation of GeometryState::ComputeContactSurfaces().
+  /* Implementation of GeometryState::ComputeContactSurfaces().
    This includes `X_WGs`, the current poses of all geometries in World in the
    current scalar type, keyed on each geometry's GeometryId.  */
   std::vector<ContactSurface<T>> ComputeContactSurfaces(
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs)
       const;
 
-  /** Implementation of GeometryState::ComputeContactSurfacesWithFallback().
+  /* Implementation of GeometryState::ComputeContactSurfacesWithFallback().
    This includes `X_WGs`, the current poses of all geometries in World in the
    current scalar type, keyed on each geometry's GeometryId.  */
   void ComputeContactSurfacesWithFallback(
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs,
       std::vector<ContactSurface<T>>* surfaces,
-      std::vector<PenetrationAsPointPair<double>>* point_pairs) const;
+      std::vector<PenetrationAsPointPair<T>>* point_pairs) const;
 
-  /** Implementation of GeometryState::FindCollisionCandidates().  */
+  /* Implementation of GeometryState::FindCollisionCandidates().  */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const;
 
-  /** Implementation of GeometryState::HasCollisions().  */
+  /* Implementation of GeometryState::HasCollisions().  */
   bool HasCollisions() const;
 
   //@}
 
-  /** @name               Collision filters
+  /* @name               Collision filters
 
    This interface provides the mechanism through which pairs of geometries are
    removed from the "candidate pair set" for collision detection.
@@ -251,7 +255,7 @@ class ProximityEngine {
    */
   //@{
 
-  /** Excludes geometry pairs from collision evaluation by updating the
+  /* Excludes geometry pairs from collision evaluation by updating the
    candidate pair set `C = C - P`, where `P = {(gᵢ, gⱼ)}, ∀ gᵢ, gⱼ ∈ G` and
    `G = dynamic ⋃ anchored = {g₀, g₁, ..., gₙ}`.
    @param[in]   dynamic     The set of geometry ids for _dynamic_ geometries
@@ -263,7 +267,7 @@ class ProximityEngine {
       const std::unordered_set<GeometryId>& dynamic,
       const std::unordered_set<GeometryId>& anchored);
 
-  /** Excludes geometry pairs from collision evaluation by updating the
+  /* Excludes geometry pairs from collision evaluation by updating the
    candidate pair set `C = C - P`, where `P = {(a, b)}, ∀ a ∈ A, b ∈ B` and
    `A = dynamic1 ⋃ anchored1 = {a₀, a₁, ..., aₘ}` and
    `B = dynamic2 ⋃ anchored2 = {b₀, b₁, ..., bₙ}`. This does _not_
@@ -274,7 +278,7 @@ class ProximityEngine {
       const std::unordered_set<GeometryId>& dynamic2,
       const std::unordered_set<GeometryId>& anchored2);
 
-  /** Reports true if the geometry pair (id1, id2) has been filtered from
+  /* Reports true if the geometry pair (id1, id2) has been filtered from
    collision.  */
   bool CollisionFiltered(GeometryId id1, bool is_dynamic_1,
                          GeometryId id2, bool is_dynamic_2) const;

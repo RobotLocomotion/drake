@@ -16,7 +16,7 @@ def subshell(cmd, shell=True, strip=True):
     return output
 
 
-class FileProcessor(object):
+class FileProcessor:
     def __init__(self):
         # Files processed
         self.build_files = set()

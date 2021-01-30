@@ -1,8 +1,7 @@
 #pragma once
 
 #ifndef DRAKE_COMMON_SYMBOLIC_HEADER
-// TODO(soonho-tri): Change to #error, when #6613 merged.
-#warning Do not directly include this file. Include "drake/common/symbolic.h".
+#error Do not directly include this file. Include "drake/common/symbolic.h".
 #endif
 
 #include <cstddef>
@@ -48,18 +47,18 @@ class Variables {
   explicit Variables(const Eigen::Ref<const VectorX<Variable>>& vec);
 
   /** Returns the number of elements. */
-  size_type size() const { return vars_.size(); }
+  [[nodiscard]] size_type size() const { return vars_.size(); }
 
   /** Checks if this set is empty or not. */
-  bool empty() const { return vars_.empty(); }
+  [[nodiscard]] bool empty() const { return vars_.empty(); }
 
   /** Returns string representation of Variables. */
-  std::string to_string() const;
+  [[nodiscard]] std::string to_string() const;
 
   /** Implements the @ref hash_append concept. */
   template <class HashAlgorithm>
-  friend void hash_append(
-      HashAlgorithm& hasher, const Variables& item) noexcept {
+  friend void hash_append(HashAlgorithm& hasher,
+                          const Variables& item) noexcept {
     using drake::hash_append;
     hash_append(hasher, item.vars_);
   }
@@ -69,25 +68,29 @@ class Variables {
   /** Returns an iterator to the end. */
   iterator end() { return vars_.end(); }
   /** Returns an iterator to the beginning. */
-  const_iterator begin() const { return vars_.cbegin(); }
+  [[nodiscard]] const_iterator begin() const { return vars_.cbegin(); }
   /** Returns an iterator to the end. */
-  const_iterator end() const { return vars_.cend(); }
+  [[nodiscard]] const_iterator end() const { return vars_.cend(); }
   /** Returns a const iterator to the beginning. */
-  const_iterator cbegin() const { return vars_.cbegin(); }
+  [[nodiscard]] const_iterator cbegin() const { return vars_.cbegin(); }
   /** Returns a const iterator to the end. */
-  const_iterator cend() const { return vars_.cend(); }
+  [[nodiscard]] const_iterator cend() const { return vars_.cend(); }
   /** Returns a reverse iterator to the beginning. */
   reverse_iterator rbegin() { return vars_.rbegin(); }
   /** Returns a reverse iterator to the end. */
   reverse_iterator rend() { return vars_.rend(); }
   /** Returns a reverse iterator to the beginning. */
-  const_reverse_iterator rbegin() const { return vars_.crbegin(); }
+  [[nodiscard]] const_reverse_iterator rbegin() const {
+    return vars_.crbegin();
+  }
   /** Returns a reverse iterator to the end. */
-  const_reverse_iterator rend() const { return vars_.crend(); }
+  [[nodiscard]] const_reverse_iterator rend() const { return vars_.crend(); }
   /** Returns a const reverse-iterator to the beginning. */
-  const_reverse_iterator crbegin() const { return vars_.crbegin(); }
+  [[nodiscard]] const_reverse_iterator crbegin() const {
+    return vars_.crbegin();
+  }
   /** Returns a const reverse-iterator to the end. */
-  const_reverse_iterator crend() const { return vars_.crend(); }
+  [[nodiscard]] const_reverse_iterator crend() const { return vars_.crend(); }
 
   /** Inserts a variable @p var into a set. */
   void insert(const Variable& var) { vars_.insert(var); }
@@ -108,19 +111,23 @@ class Variables {
 
   /** Finds element with specific key. */
   iterator find(const Variable& key) { return vars_.find(key); }
-  const_iterator find(const Variable& key) const { return vars_.find(key); }
+  [[nodiscard]] const_iterator find(const Variable& key) const {
+    return vars_.find(key);
+  }
 
   /** Return true if @p key is included in the Variables. */
-  bool include(const Variable& key) const { return find(key) != end(); }
+  [[nodiscard]] bool include(const Variable& key) const {
+    return find(key) != end();
+  }
 
   /** Return true if @p vars is a subset of the Variables. */
-  bool IsSubsetOf(const Variables& vars) const;
+  [[nodiscard]] bool IsSubsetOf(const Variables& vars) const;
   /** Return true if @p vars is a superset of the Variables. */
-  bool IsSupersetOf(const Variables& vars) const;
+  [[nodiscard]] bool IsSupersetOf(const Variables& vars) const;
   /** Return true if @p vars is a strict subset of the Variables. */
-  bool IsStrictSubsetOf(const Variables& vars) const;
+  [[nodiscard]] bool IsStrictSubsetOf(const Variables& vars) const;
   /** Return true if @p vars is a strict superset of the Variables. */
-  bool IsStrictSupersetOf(const Variables& vars) const;
+  [[nodiscard]] bool IsStrictSupersetOf(const Variables& vars) const;
 
   friend bool operator==(const Variables& vars1, const Variables& vars2);
 
@@ -173,6 +180,6 @@ Variables intersect(const Variables& vars1, const Variables& vars2);
 
 namespace std {
 /* Provides std::hash<drake::symbolic::Variables>. */
-template <> struct hash<drake::symbolic::Variables>
-    : public drake::DefaultHash {};
+template <>
+struct hash<drake::symbolic::Variables> : public drake::DefaultHash {};
 }  // namespace std

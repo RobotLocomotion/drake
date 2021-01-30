@@ -1,0 +1,115 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+drake_cc_package_library(
+    name = "kinova_jaco",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":jaco_command_receiver",
+        ":jaco_command_sender",
+        ":jaco_constants",
+        ":jaco_status_receiver",
+        ":jaco_status_sender",
+    ],
+)
+
+drake_cc_library(
+    name = "jaco_constants",
+    hdrs = ["jaco_constants.h"],
+)
+
+drake_cc_library(
+    name = "jaco_command_receiver",
+    srcs = ["jaco_command_receiver.cc"],
+    hdrs = ["jaco_command_receiver.h"],
+    deps = [
+        ":jaco_constants",
+        "//common:essential",
+        "//lcmtypes:lcmtypes_drake_cc",
+        "//systems/framework:leaf_system",
+        "//systems/lcm:lcm_pubsub_system",
+    ],
+)
+
+drake_cc_library(
+    name = "jaco_command_sender",
+    srcs = ["jaco_command_sender.cc"],
+    hdrs = ["jaco_command_sender.h"],
+    deps = [
+        ":jaco_constants",
+        "//common:essential",
+        "//lcmtypes:lcmtypes_drake_cc",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "jaco_status_receiver",
+    srcs = ["jaco_status_receiver.cc"],
+    hdrs = ["jaco_status_receiver.h"],
+    deps = [
+        ":jaco_constants",
+        "//common:essential",
+        "//lcmtypes:lcmtypes_drake_cc",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "jaco_status_sender",
+    srcs = ["jaco_status_sender.cc"],
+    hdrs = ["jaco_status_sender.h"],
+    deps = [
+        ":jaco_constants",
+        "//common:essential",
+        "//lcmtypes:lcmtypes_drake_cc",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "jaco_command_receiver_test",
+    deps = [
+        ":jaco_command_receiver",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "jaco_command_sender_test",
+    deps = [
+        ":jaco_command_sender",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "jaco_status_receiver_test",
+    deps = [
+        ":jaco_status_receiver",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "jaco_status_sender_test",
+    deps = [
+        ":jaco_status_sender",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+add_lint_tests()

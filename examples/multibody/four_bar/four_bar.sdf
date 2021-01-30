@@ -1,0 +1,312 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="four_bar">
+    <!--
+    This sdf file produces a model of a planar four bar linkage.
+    See the README for more details on the modelling done in this file.
+
+    We replace one of the 4 revolute joints with a model revolute joint
+    implemented with a LinearBushingRollPitchYaw ForceElement in the code.
+    This SDF provides the frames at which to place the above mentioned bushing.
+
+    Links A, B, C, and (the implicit) World link complete the closed kinematic
+    chain.
+
+    Links A, B, C have length 4 m and mass 20 kg and in 3D are modeled
+    by boxes with dimensions (4.2 m, 0.1 m, 0.2 m).
+
+    For each link we define a frame: A, B, C, and W.
+
+              Wz
+              ^
+              |
+   Wx  <- - - ·
+
+   Frame W is the implicit world link with Wo its origin, Wz pointing up, Wx
+   pointing left, and Wy pointing out of the page. Gravity points in the -Wz
+   direction.
+
+   In the zero configuration, frame A is coincident with frame W. In other
+   words X_WA is the identity.
+   The Ax axis points along the link.
+
+   Frame B is defined relative to A.
+   The origin of the B frame measured in A, p_AB, is (-4, 0, 0)
+   In the zero configuration, frame B's orientation measured in A, R_AB,
+   is the identity.
+   The Bx axis points along the link.
+
+   Frame C is defined relative to W.
+   The origin of the C frame measured in the world, p_WC, is (-2, 0, 0).
+   In the zero configuration, frame C's orientation measured in the world,
+   R_WC, is the identity.
+   The Cx axis points along the link.
+
+   In pseudo code, the frames in the zero configuration can be written:
+   X_WA = RigidTransformd::Identity();
+   X_AB = RigidTransformd(Vector3d(4, 0, 0));
+   X_WC = RigidTransformd(Vector3d(-2, 0, 0));
+
+   For each link, we also define a revolute joint, located at the
+   origin of that link's frame, oriented along the world's y-axis.
+
+   joint_WA is the y-axis revolute joint between the parent world and the child A.
+   joint_WA's joint angle is denoted q_WA.
+
+   joint_AB is the y-axis revolute joint between the parent A and the child B.
+   joint_AB's joint angle is denoted q_AB.
+
+   joint_WC is the y-axis revolute joint between the parent world and the child B.
+   joint_WC's joint angle is denoted q_WC.
+
+   There is no joint connecting link B to link C. We will model a
+   revolute joint between them with a LinearBushingRollPitchYaw ForceElement in
+   the code. For this we define two frames:
+   Bc_bushing is a frame attached to link B.
+   Cb_bushing is a frame attached to link C.
+   See their definition below for the details of how they are defined.
+
+   In the default configuration (i.e. q_WA = q_AB = q_WC = 0) all of the links
+   lie flat along the Wx axis. Note this is not a valid configuration that
+   satisfies loop closure. However, they are defined in such a way to make
+   this SDF readable and so at least q_WA and q_WC are measured relative to a
+   fixed axis of the world frame. Please see the README for a detailed
+   diagram with configuration angles that satisfy the loop closure equation.
+    -->
+    <link name="A">
+      <!-- The frame A measured in the world frame, X_WA is the identity. This 
+      link is also called 'Crank' in the diagram in README.md -->
+      <inertial>
+        <!-- Acm (A's center of mass) is located at the midpoint of the 4 meter long link. -->
+        <pose>2 0 0 0 0 0</pose>
+        <mass>20</mass>
+        <inertia>
+          <!-- Inertia tensor for a solid cuboid of dimensions
+          (l, w, h) = (4.2 m, 0.1 m, 0.2 m) and mass 20 kg-->
+          <ixx>0.08333333333333334</ixx>
+          <iyy>29.46666666666666</iyy>
+          <izz>29.416666666666668</izz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
+        </inertia>
+      </inertial>
+      <!-- A skinny red box along the Ax axis -->
+      <visual name="A_visual">
+        <pose>2 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>4.2 0.1 0.2</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>1 0 0 1</diffuse>
+        </material>
+      </visual>
+      <!-- A visual representing the revolute joint between the world and
+       link A. -->
+      <visual name="A_pivot_visual">
+        <!-- Rotation around Ax by 90° = π/2 radians ≈ 1.57079632679 -->
+        <pose>0 0 0 1.57079632679 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.01</radius>
+            <length>0.15</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>0 1 0 1</diffuse>
+        </material>
+      </visual>
+    </link>
+    <link name="B">
+      <!-- The frame B measured in A, X_AB, is a translation along the Ax
+      axis, and a small translation along the Ay (revolute) axis for visual
+      purposes. This link is also called 'Coupler' in the diagram in README.md -->
+      <pose relative_to="A">4 0.1 0 0 0 0</pose>
+      <inertial>
+        <!-- Bcm (B's center of mass) is located at the midpoint of the 4 meter long link. -->
+        <pose>2 0 0 0 0 0</pose>
+        <mass>20</mass>
+        <inertia>
+          <!-- Inertia tensor for a solid cuboid of dimensions
+          (l, w, h) = (4.2 m, 0.1 m, 0.2 m) and mass 20 kg-->
+          <ixx>0.08333333333333334</ixx>
+          <iyy>29.46666666666666</iyy>
+          <izz>29.416666666666668</izz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
+        </inertia>
+      </inertial>
+      <!-- A skinny blue box along the Bx axis -->
+      <visual name="B_visual">
+        <pose>2 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>4.2 0.1 0.2</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0 0 1 1</diffuse>
+        </material>
+      </visual>
+      <!-- A visual representing the revolute joint between
+      link A and link B.  -->
+      <visual name="B_pivot_visual">
+        <!-- Rotation around Bx by 90° = π/2 radians ≈ 1.57079632679 -->
+        <pose>0 -0.05 0 1.57079632679 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.01</radius>
+            <length>0.25</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>0 1 0 1</diffuse>
+        </material>
+      </visual>
+      <!-- A visual representing the 'Coupler-Point' P -->
+      <visual name="CouplerPoint">
+        <!-- Translation down Bx by 2 and down Bz by -2 -->
+        <pose relative_to="B">2 0 -2 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.1</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>0 0 1 1</diffuse>
+        </material>
+      </visual>
+    </link>
+    <link name="C">
+      <!-- The frame C measured in W, X_WC, is a translation along the Wx
+      axis, and a small translation along the Wy (revolute) axis for visual
+      purposes. This link is also called 'Rocker' in the diagram in README.md -->
+      <pose>-2 0.2 0 0 0 0</pose>
+      <inertial>
+        <!-- Ccm (C's center of mass) is located at the midpoint of the 4 meter long link. -->
+        <pose>2 0 0 0 0 0</pose>
+        <mass>20</mass>
+        <inertia>
+          <!-- Inertia tensor for a solid cuboid of dimensions
+          (l, w, h) = (4.2 m, 0.1 m, 0.2 m) and mass 20 kg-->
+          <ixx>0.08333333333333334</ixx>
+          <iyy>29.46666666666666</iyy>
+          <izz>29.416666666666668</izz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
+        </inertia>
+      </inertial>
+      <!-- A skinny yellow box along the Bx axis -->
+      <visual name="C_visual">
+        <pose>2 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>4.2 0.1 0.2</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>1 1 0 1</diffuse>
+        </material>
+      </visual>
+      <!-- A visual representing the revolute joint between the world
+      and link C.  -->
+      <visual name="C_pivot_visual">
+        <!-- Rotation around Cx by 90° = π/2 radians ≈ 1.57079632679 -->
+        <pose>0 0 0 1.57079632679 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.01</radius>
+            <length>0.15</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>0 1 0 1</diffuse>
+        </material>
+      </visual>
+    </link>
+    <joint name="joint_WA" type="revolute">
+      <child>A</child>
+      <parent>world</parent>
+      <axis>
+        <!--
+          This revolute joint's initial angle is
+          tan⁻¹(√15) ≈ 1.318116071652818 ≈ 75.52°.
+          See the README for more details.
+        -->
+        <initial_position>1.318116071652818</initial_position>
+        <xyz expressed_in="__model__">0 1 0</xyz>
+        <limit>
+          <!-- No limit provided. sdformat defaults to -1, which we parse as
+               an actuated joint. -->
+        </limit>
+        <dynamics>
+          <damping>0.0</damping>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name="joint_AB" type="revolute">
+      <child>B</child>
+      <parent>A</parent>
+      <axis>
+        <!-- 
+          This revolute joint's initial angle is
+          π − tan⁻¹(√15) ≈ 1.8234765819369751 ≈ 104.48°.
+          See the README for more details.
+        -->
+        <initial_position>1.8234765819369751</initial_position>
+        <xyz expressed_in="__model__">0 1 0</xyz>
+        <limit>
+          <!-- An effort of 0 is parsed as an unactuated joint. -->
+          <effort>0</effort>
+        </limit>
+        <dynamics>
+          <damping>0.0</damping>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name="joint_WC" type="revolute">
+      <child>C</child>
+      <parent>world</parent>
+      <axis>
+        <!-- 
+          This revolute joint's initial angle is
+          π − tan⁻¹(√15) ≈ 1.8234765819369751 ≈ 104.48°.
+          See the README for more details.
+        -->
+        <initial_position>1.8234765819369751</initial_position>
+        <xyz expressed_in="__model__">0 1 0</xyz>
+        <limit>
+          <!-- An effort of 0 is parsed as an unactuated joint. -->
+          <effort>0</effort>
+        </limit>
+        <dynamics>
+          <damping>0.0</damping>
+        </dynamics>
+      </axis>
+    </joint>
+    <!-- 
+      A frame at the end of the B link, down the Bx axis. The frame is
+      rotated so that the z of Bc_bushing is aligned with the By axis. This is
+      done so the LinearBushingRollPitchYaw ForceElement freely rotates around
+      its z axis (Yaw) to avoid gimbal lock on the y axis (Pitch).
+    -->
+    <frame name="Bc_bushing" attached_to="B">
+      <!-- This frame is rotated relative from link B, around Bx, by -90° = -π/2 radians ≈ -1.57079632679 -->
+      <pose relative_to="B">4 0 0 -1.57079632679 0 0</pose>
+    </frame>
+    <!-- 
+      A frame at the end of the C link, down the Cx axis. The frame is
+      rotated so that the z of Cb_bushing is aligned with the Cy axis. This is
+      done so the LinearBushingRollPitchYaw ForceElement freely rotates around
+      its z axis (Yaw) to avoid gimbal lock on the y axis (Pitch).
+    -->
+    <frame name="Cb_bushing" attached_to="C">
+      <!-- This frame is rotated relative from link C, around Cx, by -90° = -π/2 radians ≈ -1.57079632679 -->
+      <pose relative_to="C">4 0 0 -1.57079632679 0 0</pose>
+    </frame>
+  </model>
+</sdf>

@@ -1,0 +1,53 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load("@drake//tools/skylark:drake_cc.bzl", "drake_cc_binary")
+load("@drake//tools/skylark:drake_py.bzl", "drake_py_unittest")
+load("@drake//tools/workspace/ros_xacro:defs.bzl", "xacro_file")
+load("@drake//tools/lint:lint.bzl", "add_lint_tests")
+
+xacro_file(
+    name = "Strandbeest.urdf",
+    src = "model/Strandbeest.xacro",
+    data = [
+        "model/LegAssembly.xacro",
+        "model/LegPair.xacro",
+        "model/Macros.xacro",
+    ],
+)
+
+drake_cc_binary(
+    name = "run_with_motor",
+    srcs = ["run_with_motor.cc"],
+    data = [":Strandbeest.urdf"],
+    deps = [
+        "//common:add_text_logging_gflags",
+        "//common:find_resource",
+        "//geometry:drake_visualizer",
+        "//multibody/inverse_kinematics",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//multibody/plant:contact_results_to_lcm",
+        "//multibody/tree",
+        "//solvers",
+        "//systems/analysis:simulator",
+        "//systems/analysis:simulator_gflags",
+        "//systems/analysis:simulator_print_stats",
+        "//systems/framework:diagram",
+        "@fmt",
+        "@gflags",
+    ],
+)
+
+drake_py_unittest(
+    name = "run_with_motor_test",
+    args = select({
+        "//tools/cc_toolchain:debug": ["TestEmpty"],
+        "//conditions:default": ["TestRunWithMotor"],
+    }),
+    data = [
+        ":run_with_motor",
+    ],
+)
+
+add_lint_tests()

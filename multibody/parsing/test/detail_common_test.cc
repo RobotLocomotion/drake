@@ -14,6 +14,7 @@ using geometry::internal::kComplianceType;
 using geometry::internal::kElastic;
 using geometry::internal::kFriction;
 using geometry::internal::kHcDissipation;
+using geometry::internal::kPointStiffness;
 using geometry::internal::kHydroGroup;
 using geometry::internal::kMaterialGroup;
 using geometry::internal::kRezHint;
@@ -31,8 +32,7 @@ optional<double> empty_read_double(const char*) { return {}; }
 ReadDoubleFunc param_read_double(
     const std::string& tag, double value) {
   return [&tag, value](const char* name) -> optional<double> {
-    if (tag == name) return value;
-    return {};
+    return (tag == name) ? optional<double>(value) : std::nullopt;
   };
 }
 
@@ -172,6 +172,19 @@ GTEST_TEST(ParseProximityPropertiesTest, Dissipation) {
   EXPECT_EQ(properties.num_groups(), 2);  // Material and default groups.
 }
 
+// Confirms successful parsing of stiffness.
+GTEST_TEST(ParseProximityPropertiesTest, Stiffness) {
+  const double kValue = 300.0;
+  ProximityProperties properties = ParseProximityProperties(
+      param_read_double("drake:point_contact_stiffness", kValue), !rigid,
+      !soft);
+  EXPECT_TRUE(
+      ExpectScalar(kMaterialGroup, kPointStiffness, kValue, properties));
+  // Stiffness is the only property.
+  EXPECT_EQ(properties.GetPropertiesInGroup(kMaterialGroup).size(), 1u);
+  EXPECT_EQ(properties.num_groups(), 2);  // Material and default groups.
+}
+
 // Confirms successful parsing of friction.
 GTEST_TEST(ParseProximityPropertiesTest, Friction) {
   // We're not testing the case where *no* coefficients are provided; that's
@@ -179,12 +192,13 @@ GTEST_TEST(ParseProximityPropertiesTest, Friction) {
   auto friction_read_double = [](optional<double> mu_d,
       optional<double> mu_s) -> ReadDoubleFunc {
     return [mu_d, mu_s](const char* name) -> optional<double> {
+      optional<double> result;
       if (mu_d.has_value() && std::string("drake:mu_dynamic") == name) {
-        return *mu_d;
+        result = *mu_d;
       } else if (mu_s.has_value() && std::string("drake:mu_static") == name) {
-        return *mu_s;
+        result = *mu_s;
       }
-      return {};
+      return result;
     };
   };
 

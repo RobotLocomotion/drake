@@ -1,0 +1,43 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+)
+load("//tools/install:install_data.bzl", "install_data")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("@drake//tools/workspace:forward_files.bzl", "forward_files")
+load("//tools/workspace/models:files.bzl", "franka_description_mesh_files")
+
+# This package is public so that other packages can refer to
+# individual files in model from their bazel rules.
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+_FRANKA_DESCRIPTION_MESHES = forward_files(
+    srcs = ["@models//:" + x for x in franka_description_mesh_files()],
+    dest_prefix = "",
+    strip_prefix = "@models//:franka_description/",
+    visibility = ["//visibility:private"],
+)
+
+install_data(
+    extra_prod_models = _FRANKA_DESCRIPTION_MESHES + [
+        "LICENSE.TXT",
+    ],
+)
+# === test/ ===
+
+drake_cc_googletest(
+    name = "franka_arm_test",
+    srcs = ["urdf/test/franka_arm_test.cc"],
+    data = [":models"],
+    deps = [
+        "//common:find_resource",
+        "//multibody/parsing",
+        "//multibody/plant",
+    ],
+)
+
+add_lint_tests()

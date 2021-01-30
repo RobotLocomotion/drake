@@ -4,7 +4,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/examples/multibody/cylinder_with_multicontact/make_cylinder_plant.h"
-#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
@@ -92,7 +92,7 @@ int do_main() {
                   plant.get_geometry_query_input_port());
 
   DrakeLcm lcm;
-  geometry::ConnectDrakeVisualizer(&builder, scene_graph, &lcm);
+  geometry::DrakeVisualizer::AddToBuilder(&builder, scene_graph, &lcm);
 
   // This is the source of poses for the visualizer.
   builder.Connect(

@@ -14,6 +14,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
 #include "drake/common/value.h"
@@ -1123,10 +1124,41 @@ class LeafSystem : public System<T> {
   //@{
 
   /** Declares an abstract state.
-  @param abstract_state The abstract state, its ownership is transferred.
+  @param abstract_state The abstract state model value.
   @return index of the declared abstract state. */
   AbstractStateIndex DeclareAbstractState(
+      const AbstractValue& abstract_state);
+
+  /** Declares an abstract state.
+  @param abstract_state The abstract state model value.  The internal model
+  value will contain a copy of `value` (not retain a pointer to `value`).
+  @return index of the declared abstract state. */
+  DRAKE_DEPRECATED("2021-04-01",
+      "Pass the abstract_state by value, not by-unique-ptr")
+  AbstractStateIndex DeclareAbstractState(
       std::unique_ptr<AbstractValue> abstract_state);
+  //@}
+
+
+  /** @name    (Advanced) Declare size of implicit time derivatives residual
+  for use with System::CalcImplicitTimeDerivativeResidual(). Most commonly
+  the default value, same as num_continuous_states(), will be the correct
+  size for the residual. */
+  //@{
+
+  /** (Advanced) Overrides the default size for the implicit time
+  derivatives residual. If no value is set, the default size is
+  n=num_continuous_states().
+
+  @param[in] n The size of the residual vector output argument of
+               System::CalcImplicitTimeDerivativesResidual(). If n <= 0
+               restore to the default, num_continuous_states().
+
+  @see implicit_time_derivatives_residual_size()
+  @see System::CalcImplicitTimeDerivativesResidual() */
+  void DeclareImplicitTimeDerivativesResidualSize(int n) {
+    this->set_implicit_time_derivatives_residual_size(n);
+  }
   //@}
 
   // =========================================================================
@@ -1161,7 +1193,7 @@ class LeafSystem : public System<T> {
   /** Declares an abstract-valued input port using the given @p model_value.
   This is the best way to declare LeafSystem abstract input ports.
 
-  Any port connected to this input, and any call to FixInputPort for this
+  Any port connected to this input, and any call to FixValue for this
   input, must provide for values whose type matches this @p model_value.
 
   @see System::DeclareInputPort() for more information. */
@@ -1239,27 +1271,34 @@ class LeafSystem : public System<T> {
   @anchor DeclareLeafOutputPort_feedthrough
   <em><u>Direct feedthrough</u></em>
 
-  The direct-feedthrough relation from input ports to output ports is
-  reported via methods such as System::HasDirectFeedthrough().
-
   By default, %LeafSystem assumes there is direct feedthrough of values
   from every input to every output. This is a conservative assumption that
   ensures we detect and can prevent the formation of algebraic loops
   (implicit computations) in system Diagrams. Systems which do not have
   direct feedthrough may override that assumption in either of two ways:
 
-  (1) When declaring output ports (e.g., DeclareVectorOutputPort()),
-  provide a non-default value to the `prerequisites_of_calc` argument.
-  When `the prerequisites_of_calc` implies no dependency on some inputs,
-  the framework automatically infers that the output is not
-  direct-feedthrough for those inputs.  For example:
+  (1) When declaring an output port (e.g., DeclareVectorOutputPort()),
+  provide a non-default value for the `prerequisites_of_calc` argument.
+  In that case the dependency path from each input port to that output port is
+  probed via the fast cache invalidation mechanism to see if it has a direct or
+  indirect dependence that input port. For example:
   @code
   PendulumPlant<T>::PendulumPlant() {
-    // ...
+    // No feedthrough because the output port depends only on state,
+    // and state has no dependencies.
     this->DeclareVectorOutputPort(
         "state", &PendulumPlant::CopyStateOut,
         {this->all_state_ticket()});
-    // ...
+
+    // Has feedthrough from input port 0 but not from any others.
+    this->DeclareVectorOutputPort(
+        "tau", &PendulumPlant::CopyTauOut,
+        {this->input_port_ticket(InputPortIndex(0))});
+
+    // Doesn't specify prerequisites. We'll assume feedthrough from all
+    // inputs unless we can apply symbolic analysis (see below).
+    this->DeclareVectorOutputPort(
+        "result", &PendulumPlant::CalcResult);
   }
   @endcode
 
@@ -1270,11 +1309,18 @@ class LeafSystem : public System<T> {
   @ref system_scalar_conversion_how_to_write_a_system
   "How to write a System that supports scalar conversion".
   This allows the %LeafSystem to infer the sparsity from the symbolic
-  equations.
+  equations for any of the output ports that don't specify an explicit
+  list of prerequisites.
 
   Option 2 is a convenient default for simple systems that already support
   symbolic::Expression, but option 1 should be preferred as the most direct
-  mechanism to control feedthrough reporting. */
+  mechanism to control feedthrough reporting.
+
+  Normally the direct-feedthrough relations are checked automatically to
+  detect algebraic loops. If you want to examine the computed feedthrough
+  status for all ports or a particular port, see
+  System::GetDirectFeedthroughs(), System::HasDirectFeedthrough(), and
+  related methods. */
   //@{
 
   /** Declares a vector-valued output port by specifying (1) a model vector of

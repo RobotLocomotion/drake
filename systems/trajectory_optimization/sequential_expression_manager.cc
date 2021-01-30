@@ -8,6 +8,8 @@ namespace trajectory_optimization {
 namespace internal {
 
 using std::string;
+using std::vector;
+
 using symbolic::Expression;
 using symbolic::Substitution;
 using symbolic::Variable;
@@ -73,6 +75,22 @@ int SequentialExpressionManager::num_rows(const string& name) const {
   DRAKE_THROW_UNLESS(it !=
                      name_to_placeholders_and_sequential_expressions_.end());
   return it->second.first.size();
+}
+
+vector<string> SequentialExpressionManager::GetSequentialExpressionNames()
+    const {
+  vector<string> ret;
+  for (const auto& item : name_to_placeholders_and_sequential_expressions_) {
+    const MatrixX<symbolic::Expression>& sequential_expressions{
+        item.second.second};
+    for (int i = 0; i < static_cast<int>(sequential_expressions.rows()); ++i) {
+      for (int j = 0; j < static_cast<int>(sequential_expressions.cols());
+           ++j) {
+        ret.emplace_back(sequential_expressions(i, j).to_string());
+      }
+    }
+  }
+  return ret;
 }
 
 }  // namespace internal

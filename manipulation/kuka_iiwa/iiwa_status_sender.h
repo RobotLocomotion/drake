@@ -36,15 +36,19 @@ namespace kuka_iiwa {
 /// This system is presently only used in simulation. The robot hardware drivers
 /// publish directly to LCM and do not make use of this system.
 ///
-/// @system { IiwaStatusSender,
-///   @input_port{position_commanded}
-///   @input_port{position_measured}
-///   @input_port{velocity_estimated (optional)}
-///   @input_port{torque_commanded}
-///   @input_port{torque_measured (optional)}
-///   @input_port{torque_external (optional)}
-///   @output_port{lcmt_iiwa_status}
-/// }
+/// @system
+/// name: IiwaStatusSender
+/// input_ports:
+/// - position_commanded
+/// - position_measured
+/// - velocity_estimated (optional)
+/// - torque_commanded
+/// - torque_measured (optional)
+/// - torque_external (optional)
+/// output_ports:
+/// - lcmt_iiwa_status
+/// @endsystem
+///
 /// @see `lcmt_iiwa_status.lcm` for additional documentation.
 class IiwaStatusSender : public systems::LeafSystem<double> {
  public:
@@ -60,7 +64,6 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
   const systems::InputPort<double>& get_torque_commanded_input_port() const;
   const systems::InputPort<double>& get_torque_measured_input_port() const;
   const systems::InputPort<double>& get_torque_external_input_port() const;
-  const systems::OutputPort<double>& get_output_port() const;
   //@}
 
  private:

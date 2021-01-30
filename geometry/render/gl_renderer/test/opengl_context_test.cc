@@ -27,6 +27,29 @@ GTEST_TEST(OpenGlContext, GetContext) {
   EXPECT_FALSE(glIsEnabled(GL_BLEND));
 }
 
+GTEST_TEST(OpenGlContext, WindowVisibility) {
+  OpenGlContext opengl_context;
+
+  // Initially, there is no viewable window.
+  EXPECT_FALSE(opengl_context.IsWindowViewable());
+
+  // Calling once, makes it viewable.
+  opengl_context.DisplayWindow(640, 480);
+  EXPECT_TRUE(opengl_context.IsWindowViewable());
+
+  // Calling it again doesn't change that.
+  opengl_context.DisplayWindow(640, 480);
+  EXPECT_TRUE(opengl_context.IsWindowViewable());
+
+  // Hiding it makes it no longer viewable.
+  opengl_context.HideWindow();
+  EXPECT_FALSE(opengl_context.IsWindowViewable());
+
+  // Calling it again doesn't have any effect.
+  opengl_context.HideWindow();
+  EXPECT_FALSE(opengl_context.IsWindowViewable());
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace render

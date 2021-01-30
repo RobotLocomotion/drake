@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <utility>
 
 #include <fmt/format.h>
 
@@ -113,8 +114,8 @@ T PiecewisePolynomial<T>::scalarValue(const T& t, Eigen::Index row,
 }
 
 template <typename T>
-MatrixX<T> PiecewisePolynomial<T>::EvalDerivative(const T& t,
-                                                  int derivative_order) const {
+MatrixX<T> PiecewisePolynomial<T>::DoEvalDerivative(
+    const T& t, int derivative_order) const {
   const int segment_index = this->get_segment_index(t);
   const T time = min(max(t, this->start_time()), this->end_time());
   Eigen::Matrix<T, PolynomialMatrix::RowsAtCompileTime,
@@ -179,7 +180,7 @@ PiecewisePolynomial<T>& PiecewisePolynomial<T>::operator*=(
     throw runtime_error(
         "Multiplication not yet implemented when segment times are not equal");
   for (size_t i = 0; i < polynomials_.size(); i++) {
-    polynomials_[i].array() *= other.polynomials_[i].array();
+    polynomials_[i] *= other.polynomials_[i];
   }
   return *this;
 }
@@ -217,6 +218,15 @@ const PiecewisePolynomial<T> PiecewisePolynomial<T>::operator-(
 }
 
 template <typename T>
+const PiecewisePolynomial<T> PiecewisePolynomial<T>::operator-() const {
+  PiecewisePolynomial<T> ret = *this;
+  for (size_t i = 0; i < polynomials_.size(); i++) {
+    ret.polynomials_[i] = -polynomials_[i];
+  }
+  return ret;
+}
+
+template <typename T>
 const PiecewisePolynomial<T> PiecewisePolynomial<T>::operator*(
     const PiecewisePolynomial<T>& other) const {
   PiecewisePolynomial<T> ret = *this;
@@ -242,7 +252,8 @@ const PiecewisePolynomial<T> PiecewisePolynomial<T>::operator-(
 
 template <typename T>
 bool PiecewisePolynomial<T>::isApprox(const PiecewisePolynomial<T>& other,
-                                      double tol) const {
+                                      double tol,
+                                      const ToleranceType& tol_type) const {
   if (rows() != other.rows() || cols() != other.cols()) return false;
 
   if (!this->SegmentTimesEqual(other, tol)) return false;
@@ -253,7 +264,8 @@ bool PiecewisePolynomial<T>::isApprox(const PiecewisePolynomial<T>& other,
     const PolynomialMatrix& other_matrix = other.polynomials_[segment_index];
     for (Eigen::Index row = 0; row < rows(); row++) {
       for (Eigen::Index col = 0; col < cols(); col++) {
-        if (!matrix(row, col).IsApprox(other_matrix(row, col), tol)) {
+        if (!matrix(row, col).CoefficientsAlmostEqual(other_matrix(row, col),
+                                                      tol, tol_type)) {
           return false;
         }
       }
@@ -322,7 +334,32 @@ void PiecewisePolynomial<T>::AppendCubicHermiteSegment(
       matrix(row, col) = Polynomial<T>(coeffs);
     }
   }
-  polynomials_.push_back(matrix);
+  polynomials_.push_back(std::move(matrix));
+  this->get_mutable_breaks().push_back(time);
+}
+
+template <typename T>
+void PiecewisePolynomial<T>::AppendFirstOrderSegment(
+    const T& time, const Eigen::Ref<const MatrixX<T>>& sample) {
+  DRAKE_DEMAND(!empty());
+  DRAKE_DEMAND(time > this->end_time());
+  DRAKE_DEMAND(sample.rows() == rows());
+  DRAKE_DEMAND(sample.cols() == cols());
+
+  const int segment_index = polynomials_.size() - 1;
+  const T dt = time - this->end_time();
+
+  PolynomialMatrix matrix(rows(), cols());
+
+  for (int row = 0; row < rows(); ++row) {
+    for (int col = 0; col < cols(); ++col) {
+      const T start = EvaluateSegmentAbsoluteTime(
+          segment_index, this->end_time(), row, col);
+      matrix(row, col) = Polynomial<T>(
+          Eigen::Matrix<T, 2, 1>(start, (sample(row, col) - start) / dt));
+    }
+  }
+  polynomials_.push_back(std::move(matrix));
   this->get_mutable_breaks().push_back(time);
 }
 
@@ -346,37 +383,15 @@ void PiecewisePolynomial<T>::ReverseTime() {
       for (int col = 0; col < cols(); col++) {
         const int d = matrix(row, col).GetDegree();
         if (d == 0) continue;
-        const VectorX<T> coeffs = matrix(row, col).GetCoefficients();
-
         // Must shift this segment by h, because it will now be evaluated
         // relative to breaks[i+1] instead of breaks[i], via p_after(t) =
-        // p_before(t+h). This is a slightly involved operation, because
-        // substituing (t+h) in a monomial with degree k will effect the
-        // coefficients for many monomials.
-
-        // We can perform the time-reversal at the same time, using the variant
-        // p_after(t) = p_before(h-t).
-
-        // Compute (h-t) powers, where (h-t)^(j+1) = \sum_j H(j,k) t^(k-1).
-        // TODO(russt): For efficiency, I could compute this outside the loop
-        // (being careful that every polynomial could have a different
-        // degree).
-        MatrixX<T> H = MatrixX<T>::Zero(d, d + 1);
-        H(0, 0) = h;
-        H(0, 1) = -1;
-        for (int j = 1; j < d; j++) {
-          H.block(j, 0, 1, j + 1) = h * H.block(j - 1, 0, 1, j + 1);
-          H.block(j, 1, 1, j + 1) -= H.block(j - 1, 0, 1, j + 1);
-        }
-
-        VectorX<T> new_coeffs = VectorX<T>::Zero(d + 1);
-        new_coeffs(0) = coeffs(0);
-        // Update coefficients.
-        for (int j = 0; j < d; j++) {
-          new_coeffs += coeffs(j + 1) * H.row(j);
-        }
-
-        matrix(row, col) = Polynomial<T>(new_coeffs);
+        // p_before(t+h).  But we can perform the time-reversal at the same
+        // time, using the variant p_after(t) = p_before(h-t).
+        const auto& vars = matrix(row, col).GetVariables();
+        DRAKE_ASSERT(vars.size() == 1);
+        const typename Polynomial<T>::VarType& t = *vars.begin();
+        matrix(row, col) =
+            matrix(row, col).Substitute(t, h - Polynomial<T>(1.0, t));
       }
     }
   }
@@ -483,6 +498,37 @@ Eigen::Index PiecewisePolynomial<T>::cols() const {
     throw std::runtime_error(
         "PiecewisePolynomial has no segments. Number of columns is undefined.");
   }
+}
+
+template <typename T>
+void PiecewisePolynomial<T>::Reshape(int rows, int cols) {
+  DRAKE_DEMAND(rows * cols == this->rows() * this->cols());
+  for (auto& p : polynomials_) {
+    // Accordining to the Eigen documentation, data is preserved when the total
+    // number of elements does not change.
+    p.resize(rows, cols);
+  }
+}
+
+template <typename T>
+PiecewisePolynomial<T> PiecewisePolynomial<T>::Block(int start_row,
+                                                     int start_col,
+                                                     int block_rows,
+                                                     int block_cols) const {
+  DRAKE_DEMAND(start_row >= 0 && start_row < rows());
+  DRAKE_DEMAND(start_col >= 0 && start_col < cols());
+  DRAKE_DEMAND(block_rows >= 0 && start_row + block_rows <= rows());
+  DRAKE_DEMAND(block_cols >= 0 && start_col + block_cols <= cols());
+
+  std::vector<PolynomialMatrix> block_polynomials;
+  std::transform(polynomials_.begin(), polynomials_.end(),
+                 std::back_inserter(block_polynomials),
+                 [start_row, start_col, block_rows,
+                  block_cols](const PolynomialMatrix& matrix) {
+                   return matrix.block(start_row, start_col, block_rows,
+                                       block_cols);
+                 });
+  return PiecewisePolynomial<T>(block_polynomials, this->breaks());
 }
 
 // Static generators for splines.
@@ -985,6 +1031,58 @@ PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
   return PiecewisePolynomial<T>(polynomials, times);
 }
 
+template <typename T>
+PiecewisePolynomial<T> PiecewisePolynomial<T>::LagrangeInterpolatingPolynomial(
+    const std::vector<T>& times, const std::vector<MatrixX<T>>& samples) {
+  using std::pow;
+
+  // Check the inputs.
+  DRAKE_DEMAND(times.size() > 1);
+  DRAKE_DEMAND(samples.size() == times.size());
+  const int rows = samples[0].rows();
+  const int cols = samples[0].cols();
+  for (size_t i = 1; i < times.size(); ++i) {
+    DRAKE_DEMAND(times[i] - times[i - 1] >
+                 PiecewiseTrajectory<T>::kEpsilonTime);
+    DRAKE_DEMAND(samples[i].rows() == rows);
+    DRAKE_DEMAND(samples[i].cols() == cols);
+  }
+
+  // https://en.wikipedia.org/wiki/Polynomial_interpolation notes that
+  // this Vandermonde matrix can be poorly conditioned if times are close
+  // together, and suggests that there are special O(n^2) algorithms available
+  // for this particular problem.  But we just implement the simple algorithm
+  // here for now.
+
+  // Set up the system of linear equations to solve for the coefficients.
+  MatrixX<T> A(times.size(), times.size());
+  VectorX<T> b(times.size());
+
+  // Only need to set up the A matrix once.
+  for (size_t i = 0; i < times.size(); ++i) {
+    const T relative_time = times[i] - times[0];
+    A(i, 0) = 1.0;
+    for (size_t j = 1; j < times.size(); ++j) {
+      A(i, j) = A(i, j-1)*relative_time;
+    }
+  }
+  Eigen::ColPivHouseholderQR<MatrixX<T>> Aqr(A);
+
+  // Solve for the coefficient matrices.
+  PolynomialMatrix polynomials(rows, cols);
+  for (int i = 0; i < rows; ++i) {
+    for (int j = 0; j < cols; ++j) {
+      for (size_t k = 0; k < times.size(); ++k) {
+        b(k) = samples[k](i, j);
+      }
+      polynomials(i, j) = Polynomial<T>(Aqr.solve(b));
+    }
+  }
+
+  return PiecewisePolynomial<T>({polynomials},
+                                {times[0], times[times.size() - 1]});
+}
+
 namespace {
 
 // Helper method to go from the Eigen entry points to the std::vector versions.
@@ -1066,6 +1164,16 @@ PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
   std::vector<T> my_breaks(breaks.data(), breaks.data() + breaks.size());
   return PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
       my_breaks, ColsToStdVector(samples), periodic_end_condition);
+}
+
+template <typename T>
+PiecewisePolynomial<T> PiecewisePolynomial<T>::LagrangeInterpolatingPolynomial(
+    const Eigen::Ref<const VectorX<T>>& times,
+    const Eigen::Ref<const MatrixX<T>>& samples) {
+  DRAKE_DEMAND(samples.cols() == times.size());
+  std::vector<T> my_times(times.data(), times.data() + times.size());
+  return PiecewisePolynomial<T>::LagrangeInterpolatingPolynomial(
+      my_times, ColsToStdVector(samples));
 }
 
 // Computes the cubic spline coefficients based on the given values and first

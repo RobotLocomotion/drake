@@ -1,5 +1,4 @@
-<?xml version="1.0" ?>
-
+<?xml version="1.0"?>
 <robot name="non_conflicting_materials_1">
   <material name="brown">
     <color rgba="0.93333333333 0.79607843137 0.67843137254 1"/>
@@ -10,10 +9,10 @@
   <link name="base_link">
     <visual>
       <geometry>
-        <box size=".2 .2 .2" />
+        <box size=".2 .2 .2"/>
       </geometry>
       <material name="green">
-        <color rgba="0 1 0 1" />
+        <color rgba="0 1 0 1"/>
       </material>
     </visual>
     <visual>
@@ -26,7 +25,7 @@
         <sphere radius="0.25"/>
       </geometry>
       <material name="textured">
-        <texture filename="empty.png" />
+        <texture filename="empty.png"/>
       </material>
     </visual>
     <visual>
@@ -34,8 +33,8 @@
         <sphere radius="0.25"/>
       </geometry>
       <material name="texture_and_color">
-        <texture filename="empty.png" />
-        <color rgba="0 1 0 1" />
+        <texture filename="empty.png"/>
+        <color rgba="0 1 0 1"/>
       </material>
     </visual>
   </link>

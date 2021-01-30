@@ -122,6 +122,118 @@ class JointActuator final
   /// Returns the actuator effort limit.
   double effort_limit() const { return effort_limit_; }
 
+  /// @anchor reflected_inertia
+  /// @name                 Reflected Inertia
+  ///
+  /// The %JointActuator class offers the ability to model the effects of
+  /// reflected inertia for revolute and prismatic joints via an approximation
+  /// commonly used in robotics (see [Featherstone, 2008]).
+  /// Reflected inertia is an approximate method for accounting for the
+  /// mass/inertia contributions to kinetic energy and equations of motion for
+  /// effects of a spinning motor's rotor (and any additional shafts/gears)
+  /// inside a gearmotor. This "quick and dirty" approximation does not depend
+  /// on the internals of the gearbox (e.g., whether there is a single stage or
+  /// multistage gear, whether there are additional shafts/gears, or the
+  /// relative position or orientation of the outboard shaft with respect to the
+  /// motor rotor's shaft. Note: Reflected inertia **does not** account for
+  /// mass/inertia of the body attached to the gearmotor's output shaft (labeled
+  /// S in the figure below). The value of reflected inertia is a function of
+  /// the gear ratio and the rotor inertia of the modeled motor. %JointActuator
+  /// exposes these two values as parameters (see SetRotorInertia() and
+  /// SetGearRatio()). Reflected inertia has units of kg for prismatic joints
+  /// and units of kg⋅m² for revolute joints. A zero value indicates reflected
+  /// inertia is not modeled. This value is used as part of an approximation of
+  /// a rotor's inertial effects in a geared motor. It should be noted that the
+  /// approximation is reasonable for high gear ratios but less so for small
+  /// gear ratios (see [Featherstone, 2008], Chapter 9.6 on gears).
+  ///
+  /// @image html multibody/tree/images/GearBoxSchematic.png width=50%
+  /// @image html multibody/tree/images/GearedMotorAPiqselsComCC0.jpg width=50%
+  ///
+  /// #### Actuated revolute joints
+  /// For an actuator driving a revolute joint, the reflected inertia can be
+  /// estimated from the rotational inertia Iᵣ of the actuator's rotor about
+  /// its axis of rotation and from the dimensionless gear ratio ρ.
+  /// To define gear ratio ρ, consider a gear-motor combination that has a
+  /// stator/rigid case A, motor rotor R, and output shaft B. Rotor R spins
+  /// relative to stator A with angular speed wR and shaft B spins relative to
+  /// stator A with angular speed wB. The gear ratio is defined ρ ≝ wR / wB.
+  /// Typically, ρ >> 1. For this gear-motor, reflected inertia Iᵣᵢ = ρ² ⋅ Iᵣ.
+  ///
+  /// #### Actuated prismatic joints
+  /// To define the gear ratio ρ for prismatic joints, consider a gear-motor
+  /// combination that has a stator/rigid case A, motor rotor R, and translating
+  /// output shaft B. Rotor R spins relative to stator A with angular speed wR
+  /// and shaft B translates relative to stator A with translational speed vB.
+  /// The gear ratio is defined ρ ≝ wR / vB (units of 1/m). Typically, ρ >> 1.
+  /// For the gear-motor here, reflected inertia Iᵣᵢ = ρ² ⋅ Iᵣ (units of kg).
+  ///@{
+
+  /// Gets the default value for this actuator's rotor inertia.
+  /// See @ref reflected_inertia.
+  double default_rotor_inertia() const { return default_rotor_inertia_; }
+
+  /// Gets the default value for this actuator's gear ratio.
+  /// See @ref reflected_inertia.
+  double default_gear_ratio() const { return default_gear_ratio_; }
+
+  /// Sets the default value for this actuator's rotor inertia.
+  /// See @ref reflected_inertia.
+  void set_default_rotor_inertia(double rotor_inertia) {
+    default_rotor_inertia_ = rotor_inertia;
+  }
+
+  /// Sets the default value for this actuator's gear ratio.
+  /// See @ref reflected_inertia.
+  void set_default_gear_ratio(double gear_ratio) {
+    default_gear_ratio_ = gear_ratio;
+  }
+
+  /// Returns the default value for this actuator's reflected inertia.
+  /// It is calculated as ρ²⋅Iᵣ, where ρ is the default gear ratio and Iᵣ is the
+  /// default rotor inertia for this actuator.
+  /// See @ref reflected_inertia.
+  double default_reflected_inertia() const {
+    return default_gear_ratio_ * default_gear_ratio_ * default_rotor_inertia_;
+  }
+
+  /// Returns the associated rotor inertia value for this actuator, stored in
+  /// `context`.
+  /// See @ref reflected_inertia.
+  const T& rotor_inertia(const systems::Context<T>& context) const {
+    return context.get_numeric_parameter(rotor_inertia_parameter_index_)[0];
+  }
+
+  /// Returns the associated gear ratio value for this actuator, stored in
+  /// `context`.
+  /// See @ref reflected_inertia.
+  const T& gear_ratio(const systems::Context<T>& context) const {
+    return context.get_numeric_parameter(gear_ratio_parameter_index_)[0];
+  }
+
+  /// Sets the associated rotor inertia value for this actuator in `context`.
+  /// See @ref reflected_inertia.
+  void SetRotorInertia(systems::Context<T>* context, const T& rotor_inertia) {
+    context->get_mutable_numeric_parameter(rotor_inertia_parameter_index_)[0] =
+        rotor_inertia;
+  }
+
+  /// Sets the associated gear ratio value for this actuator in `context`.
+  /// See @ref reflected_inertia.
+  void SetGearRatio(systems::Context<T>* context, const T& gear_ratio) {
+    context->get_mutable_numeric_parameter(gear_ratio_parameter_index_)[0] =
+        gear_ratio;
+  }
+
+  /// Calculates the reflected inertia value for this actuator in `context`.
+  /// See @ref reflected_inertia.
+  T calc_reflected_inertia(const systems::Context<T>& context) const {
+    const T& rho = gear_ratio(context);
+    const T& Ir = rotor_inertia(context);
+    return rho * rho * Ir;
+  }
+  /// @} <!-- Reflected Inertia -->
+
   /// @cond
   // For internal use only.
   // NVI to DoCloneToScalar() templated on the scalar type of the new clone to
@@ -141,8 +253,12 @@ class JointActuator final
 
   // Private constructor used for cloning.
   JointActuator(const std::string& name, JointIndex joint_index,
-                double effort_limit)
-      : name_(name), joint_index_(joint_index), effort_limit_(effort_limit) {}
+                double effort_limit, double rotor_inertia, double gear_ratio)
+      : name_(name),
+        joint_index_(joint_index),
+        effort_limit_(effort_limit),
+        default_rotor_inertia_(rotor_inertia),
+        default_gear_ratio_(gear_ratio) {}
 
   // Helper to clone an actuator (templated on T) to an actuator templated on
   // `double`.
@@ -162,6 +278,19 @@ class JointActuator final
   // from the parent MultibodyTree.
   void DoSetTopology(const internal::MultibodyTreeTopology&) final;
 
+  // Implementation for MultibodyElement::DoDeclareParameters().
+  void DoDeclareParameters(
+      internal::MultibodyTreeSystem<T>* tree_system) final {
+    // Declare parent classes' parameters
+    MultibodyElement<JointActuator, T, JointActuatorIndex>::DoDeclareParameters(
+        tree_system);
+    rotor_inertia_parameter_index_ = this->DeclareNumericParameter(
+        tree_system,
+        systems::BasicVector<T>(Vector1<T>(default_rotor_inertia_)));
+    gear_ratio_parameter_index_ = this->DeclareNumericParameter(
+        tree_system, systems::BasicVector<T>(Vector1<T>(default_gear_ratio_)));
+  }
+
   // The actuator's unique name in the MultibodyTree model
   std::string name_;
 
@@ -170,6 +299,23 @@ class JointActuator final
 
   // Actuator effort limit. It must be greater than 0.
   double effort_limit_;
+
+  // The rotor inertia for this actuator. A zero value indicates that motor
+  // inertial effects are not modeled for `this` actuator.
+  double default_rotor_inertia_{0.0};
+
+  // The gear ratio between this actuator's rotor and output shaft. The default
+  // value is set to 1.0 to allow convenient sysId by just varying the single
+  // rotor inertia paramter.
+  double default_gear_ratio_{1.0};
+
+  // System parameter index for `this` actuator's rotor inertia stored in a
+  // context.
+  systems::NumericParameterIndex rotor_inertia_parameter_index_;
+
+  // System parameter index for `this` actuator's gear ratio stored in a
+  // context.
+  systems::NumericParameterIndex gear_ratio_parameter_index_;
 
   // The topology of this actuator. Only valid post- MultibodyTree::Finalize().
   internal::JointActuatorTopology topology_;

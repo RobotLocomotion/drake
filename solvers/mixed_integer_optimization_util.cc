@@ -80,33 +80,47 @@ void AddLogarithmicSos1Constraint(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,
     const Eigen::Ref<const VectorXDecisionVariable>& y,
-    const Eigen::Ref<const Eigen::MatrixXi>& codes) {
+    const Eigen::Ref<const Eigen::MatrixXi>& binary_encoding) {
   const int num_lambda = lambda.rows();
-  const int num_digits = CeilLog2(num_lambda);
-  DRAKE_DEMAND(codes.rows() == num_lambda && codes.cols() == num_digits);
-  DRAKE_DEMAND(y.rows() == num_digits);
-  for (int i = 0; i < num_digits; ++i) {
+  const int num_y = CeilLog2(num_lambda);
+  DRAKE_DEMAND(binary_encoding.rows() == num_lambda &&
+               binary_encoding.cols() == num_y);
+  DRAKE_DEMAND(y.rows() == num_y);
+  for (int i = 0; i < num_y; ++i) {
     DRAKE_ASSERT(y(i).get_type() == symbolic::Variable::Type::BINARY);
   }
   for (int i = 0; i < num_lambda; ++i) {
     prog->AddLinearConstraint(lambda(i) >= 0);
   }
   prog->AddLinearConstraint(lambda.sum() == 1);
-  for (int j = 0; j < num_digits; ++j) {
+  for (int j = 0; j < num_y; ++j) {
     symbolic::Expression lambda_sum1{0};
     symbolic::Expression lambda_sum2{0};
     for (int k = 0; k < num_lambda; ++k) {
-      if (codes(k, j) == 1) {
+      if (binary_encoding(k, j) == 1) {
         lambda_sum1 += lambda(k);
-      } else if (codes(k, j) == 0) {
+      } else if (binary_encoding(k, j) == 0) {
         lambda_sum2 += lambda(k);
       } else {
-        throw std::runtime_error("The codes entry can be only 0 or 1.");
+        throw std::runtime_error(
+            "The binary_encoding entry can be only 0 or 1.");
       }
     }
     prog->AddLinearConstraint(lambda_sum1 <= y(j));
     prog->AddLinearConstraint(lambda_sum2 <= 1 - y(j));
   }
+}
+
+std::pair<VectorX<symbolic::Variable>, VectorX<symbolic::Variable>>
+AddLogarithmicSos1Constraint(MathematicalProgram* prog, int num_lambda) {
+  const int num_y = CeilLog2(num_lambda);
+  const Eigen::MatrixXi binary_encoding =
+      math::CalculateReflectedGrayCodes(num_y).topRows(num_lambda);
+  auto lambda = prog->NewContinuousVariables(num_lambda);
+  auto y = prog->NewBinaryVariables(num_y);
+  AddLogarithmicSos1Constraint(prog, lambda.cast<symbolic::Expression>(), y,
+                               binary_encoding);
+  return std::make_pair(lambda, y);
 }
 
 void AddBilinearProductMcCormickEnvelopeMultipleChoice(

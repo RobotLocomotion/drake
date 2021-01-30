@@ -1,4 +1,4 @@
-<?xml version="1.0" ?>
+<?xml version="1.0"?>
 <!--
   The file is converted from allegro_hand_description_left.xacro from the
   unofficial ROS package of Allegro Hand (https://github.com/felixduvallet/
@@ -25,7 +25,7 @@
   enough that its removal is unlikely to cause us to miss meaningful
   collisions.
 -->
-<robot name="allegro_hand_left" xmlns:xacro="http://www.ros.org/wiki/xacro">
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="allegro_hand_left">
   <!-- Base link -->
   <link name="hand_root">
     <origin xyz="0 0 0"/>
@@ -39,7 +39,7 @@
   <link name="palm_link">
     <visual>
       <geometry>
-        <mesh filename="../meshes/base_link_left.obj"/>
+        <mesh filename="package://allegro_hand_description/meshes/base_link_left.obj"/>
       </geometry>
       <origin rpy="-1.5707963259 0 0" xyz="0 0 0 "/>
       <material name="black">
@@ -55,14 +55,14 @@
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <mass value="0.4154"/>
-      <inertia ixx="2.089e-03" ixy="-0.0036e-03" ixz="0.2233e-03" iyy="1.829e-03" iyz="-0.018e-03" izz="0.4825e-03" />
+      <inertia ixx="2.089e-03" ixy="-0.0036e-03" ixz="0.2233e-03" iyy="1.829e-03" iyz="-0.018e-03" izz="0.4825e-03"/>
     </inertial>
   </link>
   <!-- [LINK 0, 4, 8] -->
   <link name="link_8">
     <visual>
       <geometry>
-        <mesh filename="../meshes/link_0.0.obj"/>
+        <mesh filename="package://allegro_hand_description/meshes/link_0.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -75,7 +75,7 @@
     <inertial>
       <mass value="0.0119"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="1.95377e-06" ixy="3.03372e-09" ixz="8.92323e-08" iyy="1.17908e-06" iyz="-3.7069e-08" izz="1.49673e-06" />
+      <inertia ixx="1.95377e-06" ixy="3.03372e-09" ixz="8.92323e-08" iyy="1.17908e-06" iyz="-3.7069e-08" izz="1.49673e-06"/>
     </inertial>
   </link>
   <joint name="joint_8" type="revolute">
@@ -96,7 +96,7 @@
   <link name="link_9">
     <visual>
       <geometry>
-        <mesh filename="../meshes/link_1.0.obj"/>
+        <mesh filename="package://allegro_hand_description/meshes/link_1.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -109,7 +109,7 @@
     <inertial>
       <mass value="0.065"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="7.192e-05" ixy="0" ixz="0" iyy="7.438e-05" iyz="7.322e-07" izz="5.406e-06" />
+      <inertia ixx="7.192e-05" ixy="0" ixz="0" iyy="7.438e-05" iyz="7.322e-07" izz="5.406e-06"/>
     </inertial>
   </link>
   <joint name="joint_9" type="revolute">
@@ -130,7 +130,7 @@
   <link name="link_10">
     <visual>
       <geometry>
-        <mesh filename="../meshes/link_2.0.obj"/>
+        <mesh filename="package://allegro_hand_description/meshes/link_2.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -143,7 +143,7 @@
     <inertial>
       <mass value="0.0355"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="3.16925e-05" ixy="1.07094e-09" ixz="-4.91273e-09" iyy="3.10516e-05" iyz="3.87549e-08" izz="3.20319e-06" />
+      <inertia ixx="3.16925e-05" ixy="1.07094e-09" ixz="-4.91273e-09" iyy="3.10516e-05" iyz="3.87549e-08" izz="3.20319e-06"/>
     </inertial>
   </link>
   <joint name="joint_10" type="revolute">
@@ -164,7 +164,7 @@
   <link name="link_11">
     <visual>
       <geometry>
-        <mesh filename="../meshes/link_3.0.obj"/>
+        <mesh filename="package://allegro_hand_description/meshes/link_3.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -177,7 +177,7 @@
     <inertial>
       <mass value="0.0096"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="2.13975e-06" ixy="1.59554e-09" ixz="-7.47528e-09" iyy="1.52036e-06" iyz="-9.89336e-09" izz="1.20271e-06" />
+      <inertia ixx="2.13975e-06" ixy="1.59554e-09" ixz="-7.47528e-09" iyy="1.52036e-06" iyz="-9.89336e-09" izz="1.20271e-06"/>
     </inertial>
   </link>
   <joint name="joint_11" type="revolute">
@@ -198,7 +198,7 @@
   <link name="link_11_tip">
     <visual>
       <geometry>
-        <mesh filename="../meshes/link_3.0_tip.obj"/>
+        <mesh filename="package://allegro_hand_description/meshes/link_3.0_tip.obj"/>
       </geometry>
       <material name="white">
         <color rgba=".9 .9 .9 1"/>
@@ -212,7 +212,7 @@
     <inertial>
       <mass value="0.0168"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="1.19599e-05" ixy="0" ixz="0" iyy="1.19598e-05" iyz="0" izz="1.10345e-06" />
+      <inertia ixx="1.19599e-05" ixy="0" ixz="0" iyy="1.19598e-05" iyz="0" izz="1.10345e-06"/>
     </inertial>
   </link>
   <joint name="joint_11_tip" type="fixed">
@@ -224,7 +224,7 @@
   <link name="link_4">
     <visual>
       <geometry>
-        <mesh filename="../meshes/link_0.0.obj"/>
+        <mesh filename="package://allegro_hand_description/meshes/link_0.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -237,7 +237,7 @@
     <inertial>
       <mass value="0.0119"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="1.95377e-06" ixy="3.03372e-09" ixz="8.92323e-08" iyy="1.17908e-06" iyz="-3.7069e-08" izz="1.49673e-06" />
+      <inertia ixx="1.95377e-06" ixy="3.03372e-09" ixz="8.92323e-08" iyy="1.17908e-06" iyz="-3.7069e-08" izz="1.49673e-06"/>
     </inertial>
   </link>
   <joint name="joint_4" type="revolute">
@@ -258,7 +258,7 @@
   <link name="link_5">
     <visual>
       <geometry>
-        <mesh filename="../meshes/link_1.0.obj"/>
+        <mesh filename="package://allegro_hand_description/meshes/link_1.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -271,7 +271,7 @@
     <inertial>
       <mass value="0.065"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="7.19218e-05" ixy="0" ixz="0" iyy="7.4377e-05" iyz="7.32186e-07" izz="5.40622e-06" />
+      <inertia ixx="7.19218e-05" ixy="0" ixz="0" iyy="7.4377e-05" iyz="7.32186e-07" izz="5.40622e-06"/>
     </inertial>
   </link>
   <joint name="joint_5" type="revolute">
@@ -292,7 +292,7 @@
   <link name="link_6">
     <visual>
       <geometry>
-        <mesh filename="../meshes/link_2.0.obj"/>
+        <mesh filename="package://allegro_hand_description/meshes/link_2.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -305,7 +305,7 @@
     <inertial>
       <mass value="0.0355"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="3.16925e-05" ixy="1.07094e-09" ixz="-4.91273e-09" iyy="3.10516e-05" iyz="3.87549e-08" izz="3.20319e-06" />
+      <inertia ixx="3.16925e-05" ixy="1.07094e-09" ixz="-4.91273e-09" iyy="3.10516e-05" iyz="3.87549e-08" izz="3.20319e-06"/>
     </inertial>
   </link>
   <joint name="joint_6" type="revolute">
@@ -326,7 +326,7 @@
   <link name="link_7">
     <visual>
       <geometry>
-        <mesh filename="../meshes/link_3.0.obj"/>
+        <mesh filename="package://allegro_hand_description/meshes/link_3.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -339,7 +339,7 @@
     <inertial>
       <mass value="0.0096"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="2.13975e-06" ixy="1.59554e-09" ixz="-7.47528e-09" iyy="1.52036e-06" iyz="-9.89336e-09" izz="1.20271e-06" />
+      <inertia ixx="2.13975e-06" ixy="1.59554e-09" ixz="-7.47528e-09" iyy="1.52036e-06" iyz="-9.89336e-09" izz="1.20271e-06"/>
     </inertial>
   </link>
   <joint name="joint_7" type="revolute">
@@ -360,7 +360,7 @@
   <link name="link_7_tip">
     <visual>
       <geometry>
-        <mesh filename="../meshes/link_3.0_tip.obj"/>
+        <mesh filename="package://allegro_hand_description/meshes/link_3.0_tip.obj"/>
       </geometry>
       <material name="white">
         <color rgba=".9 .9 .9 1"/>
@@ -374,7 +374,7 @@
     <inertial>
       <mass value="0.0168"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="1.19599e-05" ixy="0" ixz="0" iyy="1.19598e-05" iyz="0" izz="1.10345e-06" />
+      <inertia ixx="1.19599e-05" ixy="0" ixz="0" iyy="1.19598e-05" iyz="0" izz="1.10345e-06"/>
     </inertial>
   </link>
   <joint name="joint_7_tip" type="fixed">
@@ -386,7 +386,7 @@
   <link name="link_0">
     <visual>
       <geometry>
-        <mesh filename="../meshes/link_0.0.obj"/>
+        <mesh filename="package://allegro_hand_description/meshes/link_0.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -399,7 +399,7 @@
     <inertial>
       <mass value="0.0119"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="1.95377e-06" ixy="3.03372e-09" ixz="8.92323e-08" iyy="1.17908e-06" iyz="-3.7069e-08" izz="1.49673e-06" />
+      <inertia ixx="1.95377e-06" ixy="3.03372e-09" ixz="8.92323e-08" iyy="1.17908e-06" iyz="-3.7069e-08" izz="1.49673e-06"/>
     </inertial>
   </link>
   <joint name="joint_0" type="revolute">
@@ -420,7 +420,7 @@
   <link name="link_1">
     <visual>
       <geometry>
-        <mesh filename="../meshes/link_1.0.obj"/>
+        <mesh filename="package://allegro_hand_description/meshes/link_1.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -433,7 +433,7 @@
     <inertial>
       <mass value="0.065"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="7.19218e-05" ixy="0" ixz="0" iyy="7.4377e-05" iyz="7.32186e-07" izz="5.40622e-06" />
+      <inertia ixx="7.19218e-05" ixy="0" ixz="0" iyy="7.4377e-05" iyz="7.32186e-07" izz="5.40622e-06"/>
     </inertial>
   </link>
   <joint name="joint_1" type="revolute">
@@ -454,7 +454,7 @@
   <link name="link_2">
     <visual>
       <geometry>
-        <mesh filename="../meshes/link_2.0.obj"/>
+        <mesh filename="package://allegro_hand_description/meshes/link_2.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -467,7 +467,7 @@
     <inertial>
       <mass value="0.0355"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="3.16925e-05" ixy="1.07094e-09" ixz="-4.91273e-09" iyy="3.10516e-05" iyz="3.87549e-08" izz="3.20319e-06" />
+      <inertia ixx="3.16925e-05" ixy="1.07094e-09" ixz="-4.91273e-09" iyy="3.10516e-05" iyz="3.87549e-08" izz="3.20319e-06"/>
     </inertial>
   </link>
   <joint name="joint_2" type="revolute">
@@ -488,7 +488,7 @@
   <link name="link_3">
     <visual>
       <geometry>
-        <mesh filename="../meshes/link_3.0.obj"/>
+        <mesh filename="package://allegro_hand_description/meshes/link_3.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -501,7 +501,7 @@
     <inertial>
       <mass value="0.0096"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="2.13975e-06" ixy="1.59554e-09" ixz="-7.47528e-09" iyy="1.52036e-06" iyz="-9.89336e-09" izz="1.20271e-06" />
+      <inertia ixx="2.13975e-06" ixy="1.59554e-09" ixz="-7.47528e-09" iyy="1.52036e-06" iyz="-9.89336e-09" izz="1.20271e-06"/>
     </inertial>
   </link>
   <joint name="joint_3" type="revolute">
@@ -522,7 +522,7 @@
   <link name="link_3_tip">
     <visual>
       <geometry>
-        <mesh filename="../meshes/link_3.0_tip.obj"/>
+        <mesh filename="package://allegro_hand_description/meshes/link_3.0_tip.obj"/>
       </geometry>
       <material name="white">
         <color rgba=".9 .9 .9 1"/>
@@ -536,7 +536,7 @@
     <inertial>
       <mass value="0.0168"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="1.19599e-05" ixy="0" ixz="0" iyy="1.19598e-05" iyz="0" izz="1.10345e-06" />
+      <inertia ixx="1.19599e-05" ixy="0" ixz="0" iyy="1.19598e-05" iyz="0" izz="1.10345e-06"/>
     </inertial>
   </link>
   <joint name="joint_3_tip" type="fixed">
@@ -548,7 +548,7 @@
   <link name="link_12">
     <visual>
       <geometry>
-        <mesh filename="../meshes/link_12.0_left.obj"/>
+        <mesh filename="package://allegro_hand_description/meshes/link_12.0_left.obj"/>
       </geometry>
       <material name="black">
         <color rgba=".2 .2 .2 1"/>
@@ -564,7 +564,7 @@
     <inertial>
       <mass value="0.0176"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="8.13883e-06" ixy="-2.55226e-06" ixz="3.89933e-06" iyy="1.31421e-05" iyz="1.46267e-06" izz="1.00171e-05" />
+      <inertia ixx="8.13883e-06" ixy="-2.55226e-06" ixz="3.89933e-06" iyy="1.31421e-05" iyz="1.46267e-06" izz="1.00171e-05"/>
     </inertial>
   </link>
   <joint name="joint_12" type="revolute">
@@ -585,7 +585,7 @@
   <link name="link_13">
     <visual>
       <geometry>
-        <mesh filename="../meshes/link_13.0.obj"/>
+        <mesh filename="package://allegro_hand_description/meshes/link_13.0.obj"/>
       </geometry>
       <material name="black">
         <color rgba=".2 .2 .2 1"/>
@@ -600,7 +600,7 @@
     <inertial>
       <mass value="0.0119"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="1.9263e-06" ixy="3.05433e-09" ixz="8.86582e-08" iyy="1.15276e-06" iyz="-3.64521e-08" izz="1.4957e-06" />
+      <inertia ixx="1.9263e-06" ixy="3.05433e-09" ixz="8.86582e-08" iyy="1.15276e-06" iyz="-3.64521e-08" izz="1.4957e-06"/>
     </inertial>
   </link>
   <joint name="joint_13" type="revolute">
@@ -621,7 +621,7 @@
   <link name="link_14">
     <visual>
       <geometry>
-        <mesh filename="../meshes/link_14.0.obj"/>
+        <mesh filename="package://allegro_hand_description/meshes/link_14.0.obj"/>
       </geometry>
       <material name="black">
                 </material>
@@ -635,7 +635,7 @@
     <inertial>
       <mass value="0.038"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="3.67044e-05" ixy="1.02277e-09" ixz="1.4854e-07" iyy="3.54042e-05" iyz="-3.67203e-08" izz="3.63275e-06" />
+      <inertia ixx="3.67044e-05" ixy="1.02277e-09" ixz="1.4854e-07" iyy="3.54042e-05" iyz="-3.67203e-08" izz="3.63275e-06"/>
     </inertial>
   </link>
   <joint name="joint_14" type="revolute">
@@ -656,7 +656,7 @@
   <link name="link_15">
     <visual>
       <geometry>
-        <mesh filename="../meshes/link_15.0.obj"/>
+        <mesh filename="package://allegro_hand_description/meshes/link_15.0.obj"/>
       </geometry>
       <material name="black">
                 </material>
@@ -670,7 +670,7 @@
     <inertial>
       <mass value="0.0388"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="4.30919e-05" ixy="0" ixz="0" iyy="3.85425e-05" iyz="-3.0146e-08" izz="1.72974e-05" />
+      <inertia ixx="4.30919e-05" ixy="0" ixz="0" iyy="3.85425e-05" iyz="-3.0146e-08" izz="1.72974e-05"/>
     </inertial>
   </link>
   <joint name="joint_15" type="revolute">
@@ -691,7 +691,7 @@
   <link name="link_15_tip">
     <visual>
       <geometry>
-        <mesh filename="../meshes/link_15.0_tip.obj"/>
+        <mesh filename="package://allegro_hand_description/meshes/link_15.0_tip.obj"/>
       </geometry>
       <material name="white">
         <color rgba=".9 .9 .9 1"/>
@@ -706,7 +706,7 @@
     <inertial>
       <mass value="0.0168"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="1.19599e-05" ixy="0" ixz="0" iyy="1.19598e-05" iyz="0" izz="1.10345e-06" />
+      <inertia ixx="1.19599e-05" ixy="0" ixz="0" iyy="1.19598e-05" iyz="0" izz="1.10345e-06"/>
     </inertial>
   </link>
   <joint name="joint_15_tip" type="fixed">

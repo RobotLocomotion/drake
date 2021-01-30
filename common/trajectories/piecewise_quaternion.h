@@ -4,9 +4,9 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/piecewise_trajectory.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace trajectories {
@@ -55,7 +55,16 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
    */
   PiecewiseQuaternionSlerp(
       const std::vector<double>& breaks,
-      const std::vector<Matrix3<T>>& rot_matrices);
+      const std::vector<Matrix3<T>>& rotation_matrices);
+
+  /**
+   * Builds a PiecewiseQuaternionSlerp.
+   * @throws std::logic_error if breaks and rot_matrices have different length,
+   * or breaks have length < 2.
+   */
+  PiecewiseQuaternionSlerp(
+      const std::vector<double>& breaks,
+      const std::vector<math::RotationMatrix<T>>& rotation_matrices);
 
   /**
    * Builds a PiecewiseQuaternionSlerp.
@@ -64,7 +73,7 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
    */
   PiecewiseQuaternionSlerp(
       const std::vector<double>& breaks,
-      const std::vector<AngleAxis<T>>& ang_axes);
+      const std::vector<AngleAxis<T>>& angle_axes);
 
   ~PiecewiseQuaternionSlerp() override = default;
 
@@ -94,13 +103,6 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
   Vector3<T> angular_velocity(double t) const;
 
   /**
-   * @throws std::runtime_error (always) because it is not implemented yet.
-   */
-  // TODO(russt): Implement this if/when someone needs it!
-  std::unique_ptr<Trajectory<T>> MakeDerivative(
-      int derivative_order = 1) const override;
-
-  /**
    * Interpolates angular acceleration.
    * @param t Time for interpolation.
    * @return The interpolated angular acceleration at `t`,
@@ -121,13 +123,6 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
     return quaternions_;
   }
 
-  DRAKE_DEPRECATED(
-      "2020-07-01",
-      "get_quaternion_knots() is renamed get_quaternion_samples().")
-  const std::vector<Quaternion<T>>& get_quaternion_knots() const {
-    return quaternions_;
-  }
-
   /**
    * Returns true if all the corresponding segment times are within
    * @p tol seconds, and the angle difference between the corresponding
@@ -136,17 +131,37 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
   bool is_approx(const PiecewiseQuaternionSlerp<T>& other,
                  const T& tol) const;
 
+  /**
+   * Given a new Quaternion, this method adds one segment to the end of `this`.
+   */
+  void Append(const T& time, const Quaternion<T>& quaternion);
+
+  /**
+   * Given a new RotationMatrix, this method adds one segment to the end of
+   * `this`.
+   */
+  void Append(const T& time, const math::RotationMatrix<T>& rotation_matrix);
+
+  /**
+   * Given a new AngleAxis, this method adds one segment to the end of `this`.
+   */
+  void Append(const T& time, const AngleAxis<T>& angle_axis);
+
  private:
   // Initialize quaternions_ and computes angular velocity for each segment.
   void Initialize(
       const std::vector<double>& breaks,
       const std::vector<Quaternion<T>>& quaternions);
 
-  // Computes angular velocity for each segment.
-  void ComputeAngularVelocities();
-
   // Computes the interpolation time within each segment. Result is in [0, 1].
   double ComputeInterpTime(int segment_index, double time) const;
+
+  bool do_has_derivative() const override;
+
+  MatrixX<T> DoEvalDerivative(const T& t, int derivative_order) const override;
+
+  std::unique_ptr<Trajectory<T>> DoMakeDerivative(
+      int derivative_order) const override;
 
   std::vector<Quaternion<T>> quaternions_;
   std::vector<Vector3<T>> angular_velocities_;

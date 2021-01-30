@@ -148,6 +148,32 @@ GTEST_TEST(SnoptTest, TestPrintFile) {
   EXPECT_TRUE(filesystem::exists({print_file}));
 }
 
+GTEST_TEST(SnoptTest, TestStringOption) {
+  const SnoptSolver solver;
+
+  MathematicalProgram prog_minimize;
+  const auto x_minimize = prog_minimize.NewContinuousVariables<1>();
+  prog_minimize.AddLinearConstraint(x_minimize(0) <= 1);
+  prog_minimize.AddLinearConstraint(x_minimize(0) >= -1);
+  prog_minimize.AddLinearCost(x_minimize(0));
+
+
+  prog_minimize.SetSolverOption(SnoptSolver::id(), "Minimize", "");
+  auto result_minimize = solver.Solve(prog_minimize, {}, {});
+  EXPECT_EQ(result_minimize.get_optimal_cost(), -1);
+
+  MathematicalProgram prog_maximize;
+  const auto x_maximize = prog_maximize.NewContinuousVariables<1>();
+  prog_maximize.AddLinearConstraint(x_maximize(0) <= 1);
+  prog_maximize.AddLinearConstraint(x_maximize(0) >= -1);
+  prog_maximize.AddLinearCost(x_maximize(0));
+
+
+  prog_maximize.SetSolverOption(SnoptSolver::id(), "Maximize", "");
+  auto result_maximize = solver.Solve(prog_maximize, {}, {});
+  EXPECT_EQ(result_maximize.get_optimal_cost(), 1);
+}
+
 GTEST_TEST(SnoptTest, TestSparseCost) {
   // Test nonlinear optimization problem, whose cost has sparse gradient.
   MathematicalProgram prog;
@@ -427,6 +453,46 @@ GTEST_TEST(SnoptTest, VariableScaling2) {
     EXPECT_TRUE(CompareMatrices(result.GetSolution(x),
                                 Eigen::Vector2d(-3 * s, -4), tol));
   }
+}
+
+GTEST_TEST(SnoptSolverTest, QPDualSolution1) {
+  SnoptSolver solver;
+  TestQPDualSolution1(solver, {} /* solver_options */, 1e-5);
+}
+
+GTEST_TEST(SnoptSolverTest, QPDualSolution2) {
+  SnoptSolver solver;
+  TestQPDualSolution2(solver);
+}
+
+GTEST_TEST(SnoptSolverTest, QPDualSolution3) {
+  SnoptSolver solver;
+  TestQPDualSolution3(solver);
+}
+
+GTEST_TEST(SnoptSolverTest, EqualityConstrainedQPDualSolution1) {
+  SnoptSolver solver;
+  TestEqualityConstrainedQPDualSolution1(solver);
+}
+
+GTEST_TEST(SnoptSolverTest, EqualityConstrainedQPDualSolution2) {
+  SnoptSolver solver;
+  TestEqualityConstrainedQPDualSolution2(solver);
+}
+
+GTEST_TEST(SnoptTest, TestLPDualSolution2) {
+  SnoptSolver solver;
+  TestLPDualSolution2(solver);
+}
+
+GTEST_TEST(SnoptTest, TestLPDualSolution2Scaled) {
+  SnoptSolver solver;
+  TestLPDualSolution2Scaled(solver);
+}
+
+GTEST_TEST(SnoptSolverTest, EckhardtDualSolution) {
+  SnoptSolver solver;
+  TestEckhardtDualSolution(solver, Eigen::Vector3d(1., 1., 5.));
 }
 
 }  // namespace test

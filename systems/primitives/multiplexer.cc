@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <memory>
+#include <numeric>
 #include <utility>
 
 #include "drake/common/default_scalars.h"

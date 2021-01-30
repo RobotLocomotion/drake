@@ -22,3 +22,7 @@ Drake binary releases incorporate a pre-compiled version of `SNOPT
 `Mathematical Program toolbox
 <https://drake.mit.edu/doxygen_cxx/group__solvers.html>`__. Thanks to
 Philip E. Gill and Elizabeth Wong for their kind support.
+
+..
+  Current oldest_commit 0b8401bed108fbab20972fb78fc57fa8a68a6dfe (inclusive).
+  Current newest_commit b2293bc15d192473dbe76e48e9861c860c739549 (inclusive).

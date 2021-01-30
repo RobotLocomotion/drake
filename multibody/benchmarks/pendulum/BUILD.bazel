@@ -13,6 +13,7 @@ package(default_visibility = ["//visibility:private"])
 
 drake_cc_package_library(
     name = "pendulum",
+    visibility = ["//visibility:public"],
     deps = [
         ":make_pendulum_plant",
     ],

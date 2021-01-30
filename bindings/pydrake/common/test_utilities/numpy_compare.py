@@ -27,7 +27,7 @@ class _UnwantedEquality(AssertionError):
     pass
 
 
-class _Registry(object):
+class _Registry:
     # Scalar comparator.
     # `assert_eq` will be vectorized; it should raise an assertion error upon
     # first inequality.
@@ -73,7 +73,14 @@ def to_float(x):
 
 
 def assert_equal(a, b):
-    """Compare scalars or arrays directly, requiring equality."""
+    """
+    Compare scalars or arrays directly, requiring equality.
+
+    For non-object dtypes, this has the same behavior as
+    ``np.testing.assert_equal``, namely that two NaNs being in the same
+    positions in an array implies equality, rather than NaN being compared as
+    numbers.
+    """
     a, b = map(np.asarray, (a, b))
     if a.size == 0 and b.size == 0:
         return
@@ -116,7 +123,10 @@ def assert_not_equal(a, b):
 
 def assert_float_equal(a, bf):
     """Checks equality of `a` (non-float) and `bf` (float) by converting `a` to
-    floats."""
+    floats.
+
+    See also: ``assert_equal``
+    """
     assert np.asarray(bf).dtype == float, np.asarray(bf).dtype
     af = to_float(a)
     assert_equal(af, bf)
@@ -177,8 +187,8 @@ def _register_autodiff():
         np.testing.assert_equal(a.derivatives(), b.derivatives())
 
     def autodiff_ne(a, b):
-        if (a.value() == b.value() and
-                (a.derivatives() == b.derivatives()).all()):
+        if (a.value() == b.value()
+                and (a.derivatives() == b.derivatives()).all()):
             raise _UnwantedEquality(str(a.value(), b.derivatives()))
 
     _registry.register_to_float(AutoDiffXd, AutoDiffXd.value)

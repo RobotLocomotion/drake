@@ -2,6 +2,8 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/drake_deprecated.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -29,8 +31,9 @@ class PoseVector : public BasicVector<T> {
              const Eigen::Translation<T, 3>& translation);
 
   /// Returns the transform X_WA.
-  Isometry3<T> get_isometry() const;
-  // TODO(david-german-tri): Provide set_isometry, once #5274 is resolved.
+  math::RigidTransform<T> get_transform() const;
+  /// Assigns the transform X_WA.
+  void set_transform(const math::RigidTransform<T>& transform);
 
   /// Returns the translation p_WA.
   Eigen::Translation<T, 3> get_translation() const;

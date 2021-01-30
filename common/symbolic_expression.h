@@ -1,8 +1,7 @@
 #pragma once
 
 #ifndef DRAKE_COMMON_SYMBOLIC_HEADER
-// TODO(soonho-tri): Change to #error, when #6613 merged.
-#warning Do not directly include this file. Include "drake/common/symbolic.h".
+#error Do not directly include this file. Include "drake/common/symbolic.h".
 #endif
 
 #include <algorithm>  // for cpplint only
@@ -25,7 +24,6 @@
 #include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/dummy_value.h"
 #include "drake/common/eigen_types.h"
@@ -37,20 +35,6 @@
 namespace drake {
 
 namespace symbolic {
-
-#ifndef DRAKE_DOXYGEN_CXX
-class Expression;
-namespace internal {
-// Helper to implement (deprecated) Expression::ToPolynomial.
-// TODO(soonho-tri): Remove this on or after 2020-07-01 when we remove
-// Expression::ToPolynomial.
-struct ToPolynomialHelperTag {};
-template <typename Dummy>
-auto ToPolynomialHelper(const Expression& e, const Dummy&) {
-  return ToPolynomial(e, Dummy{});
-}
-}  // namespace internal
-#endif
 
 /** Kinds of symbolic expressions. */
 enum class ExpressionKind {
@@ -185,11 +169,32 @@ symbolic::Formula instead of bool. Those operations are declared in
 symbolic_formula.h file. To check structural equality between two expressions a
 separate function, Expression::EqualTo, is provided.
 
+Regarding NaN, we have the following rules:
+ 1. NaN values are extremely rare during typical computations. Because they are
+    difficult to handle symbolically, we will round that up to "must never
+    occur". We allow the user to form ExpressionNaN cells in a symbolic
+    tree. For example, the user can initialize an Expression to NaN and then
+    overwrite it later. However, evaluating a tree that has NaN in its evaluated
+    sub-trees is an error (see rule (3) below).
+ 2. It's still valid for code to check `isnan` in order to fail-fast. So we
+    provide isnan(const Expression&) for the common case of non-NaN value
+    returning False. This way, code can fail-fast with double yet still compile
+    with Expression.
+ 3. If there are expressions that embed separate cases (`if_then_else`), some of
+    the sub-expressions may be not used in evaluation when they are in the
+    not-taken case (for NaN reasons or any other reason). Bad values within
+    those not-taken branches does not cause exceptions.
+ 4. The isnan check is different than if_then_else. In the latter, the
+    ExpressionNaN is within a dead sub-expression branch. In the former, it
+    appears in an evaluated trunk. That goes against rule (1) where a NaN
+    anywhere in a computation (other than dead code) is an error.
+
 symbolic::Expression can be used as a scalar type of Eigen types.
 */
 class Expression {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Expression)
+  ~Expression() = default;
 
   /** Default constructor. It constructs Zero(). */
   Expression() { *this = Zero(); }
@@ -203,9 +208,9 @@ class Expression {
   // NOLINTNEXTLINE(runtime/explicit): This conversion is desirable.
   Expression(const Variable& var);
   /** Returns expression kind. */
-  ExpressionKind get_kind() const;
+  [[nodiscard]] ExpressionKind get_kind() const;
   /** Collects variables in expression. */
-  Variables GetVariables() const;
+  [[nodiscard]] Variables GetVariables() const;
 
   /** Checks structural equality.
    *
@@ -234,26 +239,15 @@ class Expression {
    *
    *     (p1.Expand() - p2.Expand()).EqualTo(0).
    */
-  bool EqualTo(const Expression& e) const;
+  [[nodiscard]] bool EqualTo(const Expression& e) const;
 
   /** Provides lexicographical ordering between expressions.
       This function is used as a compare function in map<Expression> and
       set<Expression> via std::less<drake::symbolic::Expression>. */
-  bool Less(const Expression& e) const;
+  [[nodiscard]] bool Less(const Expression& e) const;
 
   /** Checks if this symbolic expression is convertible to Polynomial. */
-  bool is_polynomial() const;
-
-  /** Returns a Polynomial representing this expression.
-   *  Note that the ID of a variable is preserved in this translation.
-   *  \pre{is_polynomial() is true.}
-   */
-  template <typename Dummy = internal::ToPolynomialHelperTag>
-  DRAKE_DEPRECATED("2020-07-01",
-                   "Use drake::ToPolynomial(const Expression&) instead.")
-  auto ToPolynomial() const {
-    return internal::ToPolynomialHelper<Dummy>(*this, Dummy{});
-  }
+  [[nodiscard]] bool is_polynomial() const;
 
   /** Evaluates using a given environment (by default, an empty environment) and
    * a random number generator. If there is a random variable in this expression
@@ -285,7 +279,7 @@ class Expression {
    *
    * @throws std::runtime_error if NaN is detected during evaluation.
    */
-  Expression EvaluatePartial(const Environment& env) const;
+  [[nodiscard]] Expression EvaluatePartial(const Environment& env) const;
 
   /** Returns true if this symbolic expression is already
    * expanded. Expression::Expand() uses this flag to avoid calling
@@ -296,7 +290,7 @@ class Expression {
    * that the expression is not expanded. This is because exact checks can be
    * costly and we want to avoid the exact check at the construction time.
    */
-  bool is_expanded() const;
+  [[nodiscard]] bool is_expanded() const;
 
   /** Expands out products and positive integer powers in expression. For
    * example, `(x + 1) * (x - 1)` is expanded to `x^2 - 1` and `(x + y)^2` is
@@ -307,13 +301,14 @@ class Expression {
    *
    * @throws std::runtime_error if NaN is detected during expansion.
    */
-  Expression Expand() const;
+  [[nodiscard]] Expression Expand() const;
 
   /** Returns a copy of this expression replacing all occurrences of @p var
    * with @p e.
    * @throws std::runtime_error if NaN is detected during substitution.
    */
-  Expression Substitute(const Variable& var, const Expression& e) const;
+  [[nodiscard]] Expression Substitute(const Variable& var,
+                                      const Expression& e) const;
 
   /** Returns a copy of this expression replacing all occurrences of the
    * variables in @p s with corresponding expressions in @p s. Note that the
@@ -321,23 +316,23 @@ class Expression {
    * y}, {y, x}}) gets (y / x).
    * @throws std::runtime_error if NaN is detected during substitution.
    */
-  Expression Substitute(const Substitution& s) const;
+  [[nodiscard]] Expression Substitute(const Substitution& s) const;
 
   /** Differentiates this symbolic expression with respect to the variable @p
    * var.
    * @throws std::runtime_error if it is not differentiable.
    */
-  Expression Differentiate(const Variable& x) const;
+  [[nodiscard]] Expression Differentiate(const Variable& x) const;
 
   /** Let `f` be this Expression, computes a row vector of derivatives,
    * `[∂f/∂vars(0), ... , ∂f/∂vars(n-1)]` with respect to the variables
    * @p vars.
    */
-  RowVectorX<Expression> Jacobian(
+  [[nodiscard]] RowVectorX<Expression> Jacobian(
       const Eigen::Ref<const VectorX<Variable>>& vars) const;
 
   /** Returns string representation of Expression. */
-  std::string to_string() const;
+  [[nodiscard]] std::string to_string() const;
 
   /** Returns zero. */
   static Expression Zero();
@@ -882,14 +877,14 @@ class uniform_real_distribution<drake::symbolic::Expression> {
   }
 
   /// Returns the minimum value a.
-  RealType a() const { return a_; }
+  [[nodiscard]] RealType a() const { return a_; }
   /// Returns the maximum value b.
-  RealType b() const { return b_; }
+  [[nodiscard]] RealType b() const { return b_; }
 
   /// Returns the minimum potentially generated value.
-  result_type min() const { return a_; }
+  [[nodiscard]] result_type min() const { return a_; }
   /// Returns the maximum potentially generated value.
-  result_type max() const { return b_; }
+  [[nodiscard]] result_type max() const { return b_; }
 
  private:
   using Variable = drake::symbolic::Variable;
@@ -1015,18 +1010,22 @@ class normal_distribution<drake::symbolic::Expression> {
   }
 
   /// Returns the mean μ distribution parameter.
-  RealType mean() const { return mean_; }
+  [[nodiscard]] RealType mean() const { return mean_; }
   /// Returns the deviation σ distribution parameter.
-  RealType stddev() const { return stddev_; }
+  [[nodiscard]] RealType stddev() const { return stddev_; }
 
   /// Returns the minimum potentially generated value.
   ///
   /// @note In libstdc++ std::normal_distribution<> defines min() and max() to
   /// return -DBL_MAX and DBL_MAX while the one in libc++ returns -INFINITY and
   /// INFINITY. We follows libc++ and return -INFINITY and INFINITY.
-  result_type min() const { return -std::numeric_limits<double>::infinity(); }
-  /// Returns the maximum potentially generated value.
-  result_type max() const { return std::numeric_limits<double>::infinity(); }
+  [[nodiscard]] result_type min() const {
+    return -std::numeric_limits<double>::infinity();
+  }
+  /// Returns the maximum potentially generated value.o
+  [[nodiscard]] result_type max() const {
+    return std::numeric_limits<double>::infinity();
+  }
 
  private:
   using Variable = drake::symbolic::Variable;
@@ -1116,15 +1115,17 @@ class exponential_distribution<drake::symbolic::Expression> {
   }
 
   /// Returns the lambda λ distribution parameter.
-  RealType lambda() const { return lambda_; }
+  [[nodiscard]] RealType lambda() const { return lambda_; }
   /// Returns the minimum potentially generated value.
-  result_type min() const { return 0.0; }
+  [[nodiscard]] result_type min() const { return 0.0; }
 
   /// Returns the maximum potentially generated value.
   /// @note that in libstdc++ exponential_distribution<>::max() returns DBL_MAX
   /// while the one in libc++ returns INFINITY. We follows libc++ and return
   /// INFINITY.
-  result_type max() const { return std::numeric_limits<double>::infinity(); }
+  [[nodiscard]] result_type max() const {
+    return std::numeric_limits<double>::infinity();
+  }
 
  private:
   using Variable = drake::symbolic::Variable;
@@ -1400,7 +1401,7 @@ Substitute(const Eigen::MatrixBase<Derived>& m, const Variable& var,
 /// @throws std::logic_error if there is an expression in @p vec which is not a
 /// variable.
 VectorX<Variable> GetVariableVector(
-    const Eigen::Ref<const VectorX<Expression>>& evec);
+    const Eigen::Ref<const VectorX<Expression>>& expressions);
 
 /// Computes the Jacobian matrix J of the vector function @p f with respect to
 /// @p vars. J(i,j) contains ∂f(i)/∂vars(j).

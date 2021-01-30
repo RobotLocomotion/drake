@@ -19,17 +19,6 @@
     "install_files.files": true
   },
   "NamePriority": {
-    "bitbucket_archive.repository":   300,
-       "github_archive.repository":   300,
-    "bitbucket_archive.commit":       310,
-       "github_archive.commit":       310,
-    "bitbucket_archive.sha256":       340,
-       "github_archive.sha256":       340,
-    "bitbucket_archive.strip_prefix": 350,
-       "github_archive.strip_prefix": 350,
-    "bitbucket_archive.build_file":   360,
-       "github_archive.build_file":   360,
-
     "git_repository.remote": 300,
     "git_repository.commit": 310,
 

@@ -48,26 +48,28 @@ namespace solar_system {
  Illustration of the orrery:
 
  Legend:
-        Frames   | Meaning
-    :-----------:|:--------------------
-        S        | The sun's frame
-        E - ◯    | Earth's frame
-        M - ◍    | Mars's frame
-        L - ◑    | Luna's (Earth's moon) frame
-        P - ●    | Phobos's (Mars's moon) frame
-        Oᵢ       | Body's orbit in a circular path. `i ∈ {e, m, l, p}` for Earth, Mars, Luna, and Phobos, respectively.
+     Frames   | Meaning
+ :-----------:|:--------------------
+     S        | The sun's frame
+     E - ◯    | Earth's frame
+     M - ◍    | Mars's frame
+     L - ◑    | Luna's (Earth's moon) frame
+     P - ●    | Phobos's (Mars's moon) frame
+     Oᵢ       | Body's orbit in a circular path¹
 
-     Pose Symbol | Meaning
-    :-----------:|:--------------------
-       `X_SOₑ`   | Earth's orbit Oₑ relative to S
-       `X_OₑE`   | Earth's frame E relative to its orbit Oₑ
-       `X_OₑOₗ`  | Luna's orbit Oₗ relative to Earth's Oₑ
-       `X_OₗL`   | Luna's geometry L relative to its orbit Oₗ
-       `X_SOₘ`   | Mars's orbit Oₘ relative to S
-       `X_OₘM`   | Mars's frame M relative to its orbit Oₘ
-       `X_OₘOₚ`  | Phobos's orbit Oₚ relative to Mars's orbit Oₘ
-       `X_OₚP`   | Phobos's frame P relative to its orbit Oₚ
-       `X_MR`    | Mars's rings R relative to Mars's frame M (not shown in diagram).
+ ¹ `i ∈ {e, m, l, p}` for Earth, Mars, Luna, and Phobos, respectively.
+
+  Pose Symbol | Meaning
+ :-----------:|:--------------------
+    `X_SOₑ`   | Earth's orbit Oₑ relative to S
+    `X_OₑE`   | Earth's frame E relative to its orbit Oₑ
+    `X_OₑOₗ`  | Luna's orbit Oₗ relative to Earth's Oₑ
+    `X_OₗL`   | Luna's geometry L relative to its orbit Oₗ
+    `X_SOₘ`   | Mars's orbit Oₘ relative to S
+    `X_OₘM`   | Mars's frame M relative to its orbit Oₘ
+    `X_OₘOₚ`  | Phobos's orbit Oₚ relative to Mars's orbit Oₘ
+    `X_OₚP`   | Phobos's frame P relative to its orbit Oₚ
+    `X_MR`    | Mars's rings R relative to Mars's frame M (not shown in diagram)
 
 ```
     X_OₑE  X_OₗL                          X_OₘM  X_OₚP

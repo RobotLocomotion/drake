@@ -56,11 +56,14 @@ def _impl(repository_ctx):
         fail(os_result.error)
 
     if os_result.is_macos:
-        archive = "dv-0.1.0-406-g4c3e570a-python-3.7.5-qt-5.13.2-vtk-8.2.0-mac-x86_64.tar.gz"  # noqa
-        sha256 = "88a2c1b6b908e6ec93425208e7ecca5041a17931755062467b995e18fd52c815"  # noqa
+        archive = "dv-0.1.0-406-g4c3e570a-python-3.8.6-qt-5.15.1-vtk-8.2.0-mac-x86_64.tar.gz"  # noqa
+        sha256 = "292f46d391359d2a2ae71906eb852433dba8e06138dc88b59303a295cf9af1a7"  # noqa
     elif os_result.ubuntu_release == "18.04":
-        archive = "dv-0.1.0-406-g4c3e570a-python-3.6.8-qt-5.9.5-vtk-8.2.0-bionic-x86_64.tar.gz"  # noqa
-        sha256 = "70043c4bff0ea142e06b2b26c9dfceb549db5131c14a139bc57e1b4fa35094af"  # noqa
+        archive = "dv-0.1.0-406-g4c3e570a-python-3.6.9-qt-5.9.5-vtk-8.2.0-bionic-x86_64-1.tar.gz"  # noqa
+        sha256 = "2c477c2f1186cd151710af9a6f50bd3720034ced3c5ed21d977b0a822ac56237"  # noqa
+    elif os_result.ubuntu_release == "20.04":
+        archive = "dv-0.1.0-406-g4c3e570a-python-3.8.2-qt-5.12.8-vtk-8.2.0-focal-x86_64-1.tar.gz"  # noqa
+        sha256 = "282438d7fabd72dddc8a9f5b3b7481b6b6ea53e4355f79f5bda1dae6e258d6be"  # noqa
     else:
         fail("Operating system is NOT supported", attr = os_result)
 
@@ -136,6 +139,10 @@ install_files(
     name = "install",
     dest = ".",
     files = [":drake_visualizer"],
+    rename = {
+        # Try to 'hide' the binary so that they only use the wrapper script.
+        "bin/drake-visualizer": ".drake-visualizer-real",
+    },
     visibility = ["//visibility:public"],
 )
 """

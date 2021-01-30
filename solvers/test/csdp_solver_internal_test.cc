@@ -47,7 +47,7 @@ void CheckSparseblock(const csdp::sparseblock& block,
   }
 }
 
-TEST_F(SDPwithOverlappingVariables,
+TEST_F(SDPwithOverlappingVariables1,
        GenerateCsdpProblemDataWithoutFreeVariables) {
   const SdpaFreeFormat dut(*prog_);
   struct csdp::blockmatrix C_csdp;
@@ -57,9 +57,10 @@ TEST_F(SDPwithOverlappingVariables,
                                               &constraints);
 
   // Check the cost min 2 * x0 + x2
-  EXPECT_EQ(C_csdp.nblocks, 2);
+  EXPECT_EQ(C_csdp.nblocks, 3);
   CompareBlockrec(C_csdp.blocks[1], csdp::MATRIX, 2, {-2, 0, 0, 0}, 0);
   CompareBlockrec(C_csdp.blocks[2], csdp::MATRIX, 2, {0, -0.5, -0.5, 0}, 0);
+  CompareBlockrec(C_csdp.blocks[3], csdp::DIAG, 2, {0, 0}, 0);
 
   // Check the equality constraint from
   // [x0 x1] is psd
@@ -99,15 +100,40 @@ TEST_F(SDPwithOverlappingVariables,
   EXPECT_EQ(blockptr->next, nullptr);
   EXPECT_EQ(rhs_csdp[3], 0);
 
-  // The equality constraint x1 = 1
+  // The equality constraint x0 - X(4, 4) = 0.5
   blockptr = constraints[4].blocks;
   block_entries.clear();
-  block_entries.emplace_back(0, 1, 0.5);
+  block_entries.emplace_back(0, 0, 1);
   CheckSparseblock(*blockptr, block_entries, 1, 2, 4);
+  blockptr = blockptr->next;
+  block_entries.clear();
+  block_entries.emplace_back(0, 0, -1);
+  CheckSparseblock(*blockptr, block_entries, 3, 2, 4);
   EXPECT_EQ(blockptr->next, nullptr);
-  EXPECT_EQ(rhs_csdp[4], 1);
+  EXPECT_EQ(rhs_csdp[4], 0.5);
 
-  FreeCsdpProblemData(4, C_csdp, rhs_csdp, constraints);
+  // The equality constraint x1 = 1
+  blockptr = constraints[5].blocks;
+  block_entries.clear();
+  block_entries.emplace_back(0, 1, 0.5);
+  CheckSparseblock(*blockptr, block_entries, 1, 2, 5);
+  EXPECT_EQ(blockptr->next, nullptr);
+  EXPECT_EQ(rhs_csdp[5], 1);
+
+  // To impose the inequality constraint x2 <= 2, we add the equality constraint
+  // x2 + X(5, 5) = 2
+  blockptr = constraints[6].blocks;
+  block_entries.clear();
+  block_entries.emplace_back(0, 1, 0.5);
+  CheckSparseblock(*blockptr, block_entries, 2, 2, 6);
+  blockptr = blockptr->next;
+  block_entries.clear();
+  block_entries.emplace_back(1, 1, 1);
+  CheckSparseblock(*blockptr, block_entries, 3, 2, 6);
+  EXPECT_EQ(blockptr->next, nullptr);
+  EXPECT_EQ(rhs_csdp[6], 2);
+
+  FreeCsdpProblemData(6, C_csdp, rhs_csdp, constraints);
 }
 
 TEST_F(CsdpDocExample, GenerateCsdpProblemDataWithoutFreeVariables) {
@@ -204,7 +230,7 @@ TEST_F(TrivialSDP1, GenerateCsdpProblemDataWithoutFreeVariables) {
   FreeCsdpProblemData(2, C_csdp, rhs_csdp, constraints);
 }
 
-TEST_F(SDPwithOverlappingVariables, Solve) {
+TEST_F(SDPwithOverlappingVariables1, Solve) {
   const SdpaFreeFormat dut(*prog_);
   csdp::blockmatrix C;
   double* rhs;
@@ -224,9 +250,38 @@ TEST_F(SDPwithOverlappingVariables, Solve) {
   EXPECT_NEAR(pobj, -1, tol);
   EXPECT_NEAR(dobj, -1, tol);
   // Check the value of X
-  EXPECT_EQ(X.nblocks, 2);
+  EXPECT_EQ(X.nblocks, 3);
   CompareBlockrec(X.blocks[1], csdp::MATRIX, 2, {1, 1, 1, 1}, tol);
   CompareBlockrec(X.blocks[2], csdp::MATRIX, 2, {1, -1, -1, 1}, tol);
+  CompareBlockrec(X.blocks[3], csdp::DIAG, 2, {0.5, 3}, tol);
+
+  csdp::free_prob(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints, X, y,
+                  Z);
+}
+
+TEST_F(SDPwithOverlappingVariables2, Solve) {
+  const SdpaFreeFormat dut(*prog_);
+  csdp::blockmatrix C;
+  double* rhs;
+  csdp::constraintmatrix* constraints{nullptr};
+  GenerateCsdpProblemDataWithoutFreeVariables(dut, &C, &rhs, &constraints);
+
+  struct csdp::blockmatrix X, Z;
+  double* y;
+  csdp::initsoln(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints, &X, &y,
+                 &Z);
+  double pobj, dobj;
+  const int ret =
+      csdp::easy_sdp(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints,
+                     -dut.constant_min_cost_term(), &X, &y, &Z, &pobj, &dobj);
+  EXPECT_EQ(ret, 0 /* 0 is for success */);
+  const double tol = 1E-7;
+  EXPECT_NEAR(pobj, -5, tol);
+  EXPECT_NEAR(dobj, -5, tol);
+  // Check the value of X
+  EXPECT_EQ(X.nblocks, 2);
+  CompareBlockrec(X.blocks[1], csdp::MATRIX, 2, {2, 1, 1, 2}, tol);
+  CompareBlockrec(X.blocks[2], csdp::DIAG, 3, {0, 1, 0}, tol);
 
   csdp::free_prob(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints, X, y,
                   Z);
@@ -291,121 +346,6 @@ TEST_F(TrivialSDP1, Solve) {
 
   csdp::free_prob(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints, X, y,
                   Z);
-}
-
-void CheckRemoveFreeVariableByNullspaceApproach(
-    const SdpaFreeFormat& dut, const Eigen::SparseMatrix<double>& C_hat,
-    const std::vector<Eigen::SparseMatrix<double>>& A_hat,
-    const Eigen::VectorXd& rhs_hat, const Eigen::VectorXd& y_hat,
-    const Eigen::SparseQR<Eigen::SparseMatrix<double>,
-                          Eigen::COLAMDOrdering<int>>& QR_B,
-    double tol) {
-  EXPECT_EQ(y_hat.rows(), static_cast<int>(dut.A().size()));
-  // Check Bᵀ * ŷ = d
-  EXPECT_TRUE(CompareMatrices(Eigen::VectorXd(dut.B().transpose() * y_hat),
-                              Eigen::VectorXd(dut.d()), tol));
-  // Check Ĉ = C -∑ᵢ ŷᵢAᵢ
-  Eigen::SparseMatrix<double> C_hat_expected = dut.C();
-  for (int i = 0; i < y_hat.rows(); ++i) {
-    C_hat_expected -= y_hat(i) * dut.A()[i];
-  }
-  EXPECT_TRUE(CompareMatrices(Eigen::MatrixXd(C_hat),
-                              Eigen::MatrixXd(C_hat_expected), tol));
-  // N is the null space of Bᵀ. Namely if we do a QR decomposition on B, then
-  // N = Q₂.
-  Eigen::SparseMatrix<double> Q;
-  Q = QR_B.matrixQ();
-  const Eigen::SparseMatrix<double> N =
-      Q.rightCols(dut.B().rows() - QR_B.rank());
-  EXPECT_TRUE(CompareMatrices(Eigen::MatrixXd(dut.B().transpose() * N),
-                              Eigen::MatrixXd::Zero(dut.B().cols(), N.cols()),
-                              tol));
-  // Check rhs_hat = Nᵀ * rhs
-  EXPECT_TRUE(
-      CompareMatrices(rhs_hat, Eigen::VectorXd(N.transpose() * dut.g()), tol));
-  // Check Âᵢ = ∑ⱼNⱼᵢAⱼ
-  EXPECT_EQ(static_cast<int>(A_hat.size()), N.cols());
-  for (int i = 0; i < N.cols(); ++i) {
-    Eigen::SparseMatrix<double> A_hat_expected(dut.num_X_rows(),
-                                               dut.num_X_rows());
-    A_hat_expected.setZero();
-    for (int j = 0; j < static_cast<int>(dut.A().size()); ++j) {
-      A_hat_expected += N.coeff(j, i) * dut.A()[j];
-    }
-    EXPECT_TRUE(CompareMatrices(Eigen::MatrixXd(A_hat[i]),
-                                Eigen::MatrixXd(A_hat_expected), tol));
-  }
-}
-
-void TestRemoveFreeVariableByNullspaceApproach(
-    const MathematicalProgram& prog) {
-  const SdpaFreeFormat dut(prog);
-  Eigen::SparseMatrix<double> C_hat;
-  std::vector<Eigen::SparseMatrix<double>> A_hat;
-  Eigen::VectorXd rhs_hat, y_hat;
-  Eigen::SparseQR<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>> QR_B;
-  RemoveFreeVariableByNullspaceApproach(dut, &C_hat, &A_hat, &rhs_hat, &y_hat,
-                                        &QR_B);
-  CheckRemoveFreeVariableByNullspaceApproach(dut, C_hat, A_hat, rhs_hat, y_hat,
-                                             QR_B, 1E-10);
-}
-
-TEST_F(LinearProgramBoundingBox1, RemoveFreeVariableByNullspaceApproach) {
-  const SdpaFreeFormat dut(*prog_);
-  Eigen::SparseMatrix<double> C_hat;
-  std::vector<Eigen::SparseMatrix<double>> A_hat;
-  Eigen::VectorXd rhs_hat, y_hat;
-  Eigen::SparseQR<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>> QR_B;
-  RemoveFreeVariableByNullspaceApproach(dut, &C_hat, &A_hat, &rhs_hat, &y_hat,
-                                        &QR_B);
-  CheckRemoveFreeVariableByNullspaceApproach(dut, C_hat, A_hat, rhs_hat, y_hat,
-                                             QR_B, 1E-10);
-
-  // Now try to call CSDP to solve this problem.
-  csdp::blockmatrix C_csdp;
-  double* rhs_csdp{nullptr};
-  csdp::constraintmatrix* constraints_csdp{nullptr};
-  ConvertSparseMatrixFormatToCsdpProblemData(dut.X_blocks(), C_hat, A_hat,
-                                              rhs_hat, &C_csdp, &rhs_csdp,
-                                              &constraints_csdp);
-  struct csdp::blockmatrix X_csdp, Z;
-  double* y{nullptr};
-  csdp::initsoln(dut.num_X_rows(), rhs_hat.rows(), C_csdp, rhs_csdp,
-                 constraints_csdp, &X_csdp, &y, &Z);
-  double pobj{0};
-  double dobj{0};
-  const int ret = csdp::easy_sdp(
-      dut.num_X_rows(), rhs_hat.rows(), C_csdp, rhs_csdp, constraints_csdp,
-      -dut.constant_min_cost_term() + dut.g().dot(y_hat), &X_csdp, &y, &Z,
-      &pobj, &dobj);
-  EXPECT_EQ(ret, 0 /* 0 is for success */);
-  Eigen::SparseMatrix<double> X_hat(dut.num_X_rows(), dut.num_X_rows());
-  ConvertCsdpBlockMatrixtoEigen(X_csdp, &X_hat);
-  // Now compute the free variable values.
-  Eigen::VectorXd AX(dut.A().size());
-  for (int i = 0; i < AX.rows(); ++i) {
-    AX(i) = (dut.A()[i].cwiseProduct(X_hat)).sum();
-  }
-  Eigen::VectorXd s_val;
-  s_val = QR_B.solve(dut.g() - AX);
-  const double tol = 1E-6;
-  EXPECT_NEAR(pobj, 43, tol);
-  EXPECT_EQ(X_csdp.nblocks, 1);
-  CompareBlockrec(X_csdp.blocks[1], csdp::DIAG, 7, {0, 5, 0, 0, 0, 7, 0}, tol);
-  csdp::free_prob(dut.num_X_rows(), rhs_hat.rows(), C_csdp, rhs_csdp,
-                  constraints_csdp, X_csdp, y, Z);
-}
-
-TEST_F(CsdpLinearProgram2, RemoveFreeVariableByNullspaceApproach) {
-  TestRemoveFreeVariableByNullspaceApproach(*prog_);
-}
-
-TEST_F(TrivialSDP2, RemoveFreeVariableByNullspaceApproach) {
-  TestRemoveFreeVariableByNullspaceApproach(*prog_);
-}
-
-TEST_F(TrivialSOCP1, RemoveFreeVariableByNullspaceApproach) {
-  TestRemoveFreeVariableByNullspaceApproach(*prog_);
 }
 }  // namespace internal
 }  // namespace solvers

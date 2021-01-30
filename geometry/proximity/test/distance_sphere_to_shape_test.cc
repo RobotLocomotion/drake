@@ -20,7 +20,7 @@
 // TODO(SeanCurtis-TRI): Figure out the right decomposition of code for
 // primitive tests.
 
-/** @file
+/* @file
  This tests only the code in distance_to_shape_callback.h that supports
  (sphere-shape) signed distance queries. Ultimately, we'll have unit tests for
  all shapeA-shapeB primitive functions.  */

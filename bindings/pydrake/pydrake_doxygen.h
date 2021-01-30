@@ -1,5 +1,5 @@
-/// @file
-/// Generic doxygen-only documentation.
+/** @file
+ Doxygen-only documentation for @ref python_bindings.  */
 
 /** @defgroup python_bindings Python Bindings
 @ingroup technical_notes
@@ -14,24 +14,71 @@ At present, a fork of `pybind11` is used which permits bindings matrices with
 `dtype=object`, passing `unique_ptr` objects, and prevents aliasing for Python
 classes derived from `pybind11` classes.
 
+Before delving too deep into this, please first review the user-facing
+documentation about
+[What's Available from Python](https://drake.mit.edu/python_bindings.html#what-s-available-from-python).
+
 ## Module Organization
 
+<!--
+TODO(eric.cousineau): Migrate the header -> module mapping to user docs.
+-->
+
 The structure of the bindings generally follow the *directory structure*, not
-the namespace structure. As an example, if in C++  you do:
+the namespace structure. As an example, the following code in C++:
 
-    #include <drake/multibody/plant/{header}.h>
-    using drake::multibody::{symbol};
+```{.cc}
+#include <drake/multibody/parsing/parser.h>
+#include <drake/multibody/plant/multibody_plant.h>
 
-then in Python you would do:
+using drake::multibody::MultibodyPlant;
+using drake::multibody::Parser;
+```
 
-    from pydrake.multibody.plant import {symbol}
+will look similar in Python, but you won't use the header file's name:
 
-Some (but not all) exceptions:
+```{.py}
+from pydrake.multibody.parsing import Parser
+from pydrake.multibody.plant import MultibodyPlant
+```
 
-- `drake/multibody/rigid_body_tree.h` is actually contained in the module
-`pydrake.multibody.rigid_body_tree`.
-- `drake/solvers/mathematical_program.h` is actually contained in the module
-`pydrake.solvers.mathematicalprogram`.
+In general, you can find where a symbol is bound by searching for the symbol's
+name in quotes underneath the directory `drake/bindings/pydrake`.
+
+For example, you should search for `"MultibodyPlant"`, `"Parser"`, etc. To
+elaborate, the binding of `Parser` is found in
+`.../pydrake/multibody/parsing_py.cc`, and looks like this:
+
+```{.cc}
+using Class = Parser;
+py::class_<Class>(m, "Parser", ...)
+```
+
+and binding of `MultibodyPlant` template instantiations are in
+`.../pydrake/multibody/plant_py.cc` and look like this:
+
+```{.cc}
+using Class = MultibodyPlant<T>;
+DefineTemplateClassWithDefault<Class, systems::LeafSystem<T>>(
+    m, "MultibodyPlant", ...)
+```
+
+where the function containing this definition is templated on type `T` and
+invoked for the scalar types mentioned in `drake/common/default_scalars.h`.
+
+Some (but not all) exceptions to the above rules:
+
+- `drake/common/autodiff.h` symbols live in `pydrake.autodiffutils`.
+- `drake/common/symbolic.h` symbols live in `pydrake.symbolic`.
+- `drake/common/value.h` symbols live in `pydrake.common.value`.
+- `drake/solvers/mathematical_program.h` symbols live in
+`pydrake.solvers.mathematicalprogram` (notice the Python name has no
+underscore).
+- `drake/systems/framework/*.h` symbols live in `pydrake.systems.framework`
+(per the rule) and the bindings are ultimately linked via
+`pydrake/systems/framework_py.cc`, but for compilation speed the binding
+definitions themselves are split into
+`./framework_py_{semantics,systems,values}.cc`.
 
 ## `pybind11` Tips
 
@@ -140,9 +187,10 @@ components being built.
 
 ## pybind Module Definitions
 
+- Modules should be defined within the drake::pydrake namespace. Please review
+this namespace for available helper methods / classes.
 - Any Drake pybind module should include `pydrake_pybind.h`.
 - `PYBIND_MODULE` should be used to define modules.
-- Modules should be defined within the namespace `drake::pydrake`.
 - The alias `namespace py = pybind11` is defined as `drake::pydrake::py`. Drake
 modules should not re-define this alias at global scope.
 - If a certain namespace is being bound (e.g. `drake::systems::sensors`), you
@@ -156,14 +204,14 @@ Drake uses a modified version of `mkdoc.py` from `pybind11`, where `libclang`
 Python bindings are used to generate C++ docstrings accessible to the C++
 binding code.
 
-These docstrings are avaialable within `constexpr struct ... pydrake_doc`
+These docstrings are available within `constexpr struct ... pydrake_doc`
 as `const char*` values . When these are not available or not suitable for
 Python documentation, provide custom strings. If this custom string is long,
 consider placing them in a heredoc string.
 
 An example of incorporating docstrings from `pydrake_doc`:
 
-~~~{.cc}
+```{.cc}
     #include "drake/bindings/pydrake/documentation_pybind.h"
 
     PYBIND11_MODULE(math, m) {
@@ -183,11 +231,11 @@ An example of incorporating docstrings from `pydrake_doc`:
               doc.RigidTransform.set_rotation.doc)
       ...
     }
-~~~
+```
 
 An example of supplying custom strings:
 
-~~~{.cc}
+```{.cc}
     constexpr char another_helper_doc[] = R"""(
     Another helper docstring. This is really long.
     And has multiple lines.
@@ -197,12 +245,12 @@ An example of supplying custom strings:
       m.def("helper", []() { return 42; }, "My helper method");
       m.def("another_helper", []() { return 10; }, another_helper_doc);
     }
-~~~
+```
 
 @note Consider using scoped aliases to abbreviate both the usage of bound types
 and the docstring structures. Borrowing from above:
 
-~~~{.cc}
+```{.cc}
     {
       using Class = RigidTransform<T>;
       constexpr auto& cls_doc = doc.RigidTransform;
@@ -210,7 +258,7 @@ and the docstring structures. Borrowing from above:
           .def(py::init(), cls_doc.ctor.doc_0args)
           ...
     }
-~~~
+```
 
 To view the documentation rendered in Sphinx:
 
@@ -227,11 +275,6 @@ generate and open the docstring header:
     bazel build //bindings/pydrake:documentation_pybind.h
     $EDITOR bazel-bin/bindings/pydrake/documentation_pybind.h
 
-Docstrings for attic components can be previewed in the following header:
-
-    bazel build //bindings/pydrake/attic:documentation_pybind.h
-    $EDITOR bazel-bin/bindings/pydrake/attic/documentation_pybind.h
-
 Search the comments for the symbol of interest, e.g.,
 `drake::math::RigidTransform::RigidTransform<T>`, and view the include file and
 line corresponding to the symbol that the docstring was pulled from.
@@ -242,11 +285,11 @@ efficient editor!
 @note If you are debugging a certain file and want quicker generation and a
 smaller generated file, you can hack `mkdoc.py` to focus only on your include
 file of chioce. As an example, debugging `mathematical_program.h`:
-~~~{.py}
+```{.py}
     ...
     assert len(include_files) > 0  # Existing code.
     include_files = ["drake/solvers/mathematical_program.h"]  # HACK
-~~~
+```
 This may break the bindings themselves, and should only be used for inspecting
 the output.
 
@@ -273,6 +316,27 @@ generated documentation.
 @c \@pydrake_mkdoc_identifier{foobar} to the Doxygen comment.
 - The docstring for a method that is marked as deprecated in C++ Doxygen will
 be named `.doc_deprecated...` instead of just `.doc...`.
+
+@anchor PydrakeDeprecation
+## Deprecation
+
+Decorators and utilites for deprecation in pure Python are available in
+[`pydrake.common.deprecation`](https://drake.mit.edu/pydrake/pydrake.common.deprecation.html).
+
+Deprecations for Python bindings in C++ are available in
+[`drake/bindings/pydrake/common/deprecation_pybind.h`](https://drake.mit.edu/doxygen_cxx/deprecation__pybind_8h.html).
+
+For examples of how to use the deprecations and what side effects they will
+have, please see:
+
+- [`drake/bindings/.../deprecation_example/`](https://github.com/RobotLocomotion/drake/tree/master/bindings/pydrake/common/test/deprecation_example)
+- [`drake/bindings/.../deprecation_test.py`](https://github.com/RobotLocomotion/drake/blob/master/bindings/pydrake/common/test/deprecation_test.py)
+
+@note All deprecations in Drake should ultimately use the
+[Python `warnings` module](https://docs.python.org/3.6/library/warnings.html),
+and the
+[`DrakeDeprecationWarning`](https://drake.mit.edu/pydrake/pydrake.common.deprecation.html#pydrake.common.deprecation.DrakeDeprecationWarning)
+class. The utilities mentioned above use them.
 
 @anchor PydrakeKeepAlive
 ## Keep Alive Behavior
@@ -301,6 +365,25 @@ Some example comments:
 // Keep alive, ownership (tr.): `return` keeps `self` alive.
 ```
 
+@anchor PydrakeReturnValuePolicy
+## Return Value Policy
+
+For more information about `pybind11` return value policies, see [the pybind11
+documentation](
+https://pybind11.readthedocs.io/en/stable/advanced/functions.html#return-value-policies).
+
+`pydrake` offers the @ref drake::pydrake::py_rvp "py_rvp" alias to help with
+shortened usage of `py::return_value_policy`. The most used (non-default)
+policies in `pydrake` are `reference` and `reference_internal` due to the usage
+of raw pointers / references in the public C++ API (rather than
+`std::shared_ptr<>`).
+
+@note While `py_rvp::reference_internal` effectively implies
+`py_rvp::reference` and `py::keep_alive<0, 1>()`, we choose to only use it when
+`self` is the intended patient (i.e. the bound item is a class method). For
+static / free functions, we instead explicitly spell out `py_rvp::reference`
+and `py::keep_alive<0, 1>()`.
+
 @anchor PydrakeOverloads
 ## Function Overloads
 
@@ -314,6 +397,90 @@ This works about 80% of the time.
 - Lambdas, e.g. `[](Args... args) -> auto&& { return func(args...); }`
 (using perfect forwarding when appropriate).
 
+### Public C++ API Considerations for Function and Method Templates
+
+The motivation behind this section can be found under the
+"C++ Function and Method Template Instantiations in Python" section in
+`doc/python_bindings.rst`.
+
+In general, Drake uses techniques like parameter packs and type erasure to
+create sugar functions. These functions map their inputs to parameters of some
+concrete, under-the-hood method that actually does the work, and is devoid of
+such tricks. To facilitate python bindings, this underlying function should
+also be exposed in the public API.
+
+As an example for parameter packs,
+`MultibodyPlant<T>::AddJoint<JointType, Args...>(...)`
+([code permalink](https://git.io/JfqhI))
+is a C++ sugar method
+that uses parameter packs and ultimately passes the result to
+`MultibodyPlant<T>::AddJoint<JointType>(unique_ptr<JointType>)`
+([code permalink](https://git.io/JfqhU)), and only the
+`unique_ptr` function is bound ([code permalink](https://git.io/Jfqie)):
+
+```
+using Class = MultibodyPlant<T>;
+...
+    .def("AddJoint",
+        [](Class* self, std::unique_ptr<Joint<T>> joint) -> auto& {
+          return self->AddJoint(std::move(joint));
+        },
+        py::arg("joint"), py_rvp::reference_internal, cls_doc.AddJoint.doc_1args)
+...
+```
+
+As an example for parameter packs,
+`GeometryProperties::AddProperty<ValueType>`
+([code permalink](https://git.io/JfqhL)) is a C++ sugar method that uses
+type erasure and ultimately passes the result to
+`GeometryProperties::AddPropertyAbstract`
+([code permalink](https://git.io/Jfqhm)), and only the `AddPropertyAbstract`
+flavor is used in the bindings, but in such a way that it is similar to the C++
+API for `AddProperty` ([code permalink](https://git.io/JfqiT)):
+
+```
+using Class = GeometryProperties;
+py::handle abstract_value_cls =
+    py::module::import("pydrake.systems.framework").attr("AbstractValue");
+...
+    .def("AddProperty",
+        [abstract_value_cls](Class* self, const std::string& group_name,
+            const std::string& name, py::object value) {
+          py::object abstract = abstract_value_cls.attr("Make")(value);
+          self->AddPropertyAbstract(
+              group_name, name, abstract.cast<const AbstractValue&>());
+        },
+        py::arg("group_name"), py::arg("name"), py::arg("value"),
+        cls_doc.AddProperty.doc)
+...
+```
+
+### Matrix-multiplication-like Methods
+
+For objects that may be represented by matrices or vectors (e.g.
+RigidTransform, RotationMatrix), the `*` operator (via `__mul__`) should *not*
+be bound because the `*` operator in NumPy implies elemnt-wise multiplication
+for arrays.
+
+For simplicity, we instead bind the explicitly named `.multiply()` method, and
+alias the `__matmul__` operator `@` to this function.
+
+@anchor PydrakeReturnVectorsOrMatrices
+#### Returning Vectors or Matrices
+
+Certain bound methods, like `RigidTransform.multiply()`, will have overloads
+that can multiply and return (a) other `RigidTransform` instances, (b) vectors,
+or (c) matrices (representing a list of vectors).
+
+In the cases of (a) and (c), `pybind11` provides sufficient mechanisms to
+provide an unambiguous output return type. However, for (b), `pybind11` will
+return `ndarray` with shape `(3,)`. This can cause an issue when users pass
+a vector of shape `(3, 1)` as input. Nominally, pybind11 will return a `(3,)`
+array, but the user may expect `(3, 1)` as an output. To accommodate this, you
+should use the drake::pydrake::WrapToMatchInputShape function.
+
+@sa https://github.com/RobotLocomotion/drake/issues/13885
+
 ## Python Subclassing of C++ Classes
 
 In general, minimize the amount in which users may subclass C++ classes in
@@ -321,19 +488,6 @@ Python. When you do wish to do this, ensure that you use a trampoline class
 in `pybind`, and ensure that the trampoline class inherits from the
 `py::wrapper<>` class specific to our fork of `pybind`. This ensures that no
 slicing happens with the subclassed instances.
-
-## Convenience aliases
-
-Some aliases are provided; prefer these to the full spellings.
-
-`namespace py` is a shorthand alias to `pybind11` for consistency.
-
-@see py_reference, py_reference_internal for dealing with %common ownership
-     issues.
-
-@note Downstream users should avoid `using namespace drake::pydrake`, as
-this may create ambiguous aliases (especially for GCC). Instead, consider
-an alias.
 
 @anchor PydrakeBazelDebug
 # Interactive Debugging with Bazel

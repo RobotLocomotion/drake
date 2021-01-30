@@ -87,6 +87,8 @@ class WeldJoint final : public Joint<T> {
     return 0;
   }
 
+  void do_set_default_positions(const VectorX<double>&) override { return; }
+
   // Joint<T> overrides:
   std::unique_ptr<typename Joint<T>::BluePrint>
   MakeImplementationBlueprint() const override;
@@ -104,9 +106,6 @@ class WeldJoint final : public Joint<T> {
   // WeldJoint<T> so that CloneToScalar<ToAnyOtherScalar>() can access
   // private members of WeldJoint<T>.
   template <typename> friend class WeldJoint;
-
-  // Friend class to facilitate testing.
-  friend class JointTester;
 
   // Returns the mobilizer implementing this joint.
   // The internal implementation of this joint could change in a future version.

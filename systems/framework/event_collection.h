@@ -7,6 +7,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/pointer_cast.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/event.h"
 #include "drake/systems/framework/state.h"

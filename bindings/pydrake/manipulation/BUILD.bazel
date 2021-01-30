@@ -45,6 +45,19 @@ drake_pybind_library(
     ],
 )
 
+drake_pybind_library(
+    name = "schunk_wsg_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:eigen_pybind",
+    ],
+    cc_srcs = ["schunk_wsg_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+    ],
+)
+
 drake_py_library(
     name = "simple_ui_py",
     srcs = ["simple_ui.py"],
@@ -54,6 +67,7 @@ drake_py_library(
 
 PY_LIBRARIES_WITH_INSTALL = [
     ":planner_py",
+    ":schunk_wsg_py",
 ]
 
 PY_LIBRARIES = [
@@ -69,6 +83,14 @@ drake_py_unittest(
     deps = [
         ":planner_py",
         "//bindings/pydrake/multibody",
+    ],
+)
+
+drake_py_unittest(
+    name = "schunk_wsg_test",
+    deps = [
+        ":schunk_wsg_py",
+        "//bindings/pydrake/systems",
     ],
 )
 

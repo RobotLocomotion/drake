@@ -58,7 +58,10 @@ class FreeRotatingBodyPlant final : public internal::MultibodyTreeSystem<T> {
   math::RigidTransform<T> CalcPoseInWorldFrame(
       const systems::Context<T>& context) const;
 
-  /// Computes the spatial velocity `V_WB` of the body in the world frame.
+  /// Calculates V_WB, body B's spatial velocity in the world frame W.
+  /// @param[in] context Contains the state of the model.
+  /// @retval V_WB_W body B's spatial velocity in the world frame W,
+  /// expressed in W (for point Bo, the body frame's origin).
   SpatialVelocity<T> CalcSpatialVelocityInWorldFrame(
       const systems::Context<T>& context) const;
 
@@ -72,20 +75,6 @@ class FreeRotatingBodyPlant final : public internal::MultibodyTreeSystem<T> {
   const internal::MultibodyTree<T>& tree() const {
     return internal::GetInternalTree(*this);
   }
-
-  void DoCalcTimeDerivatives(
-      const systems::Context<T> &context,
-      systems::ContinuousState<T> *derivatives) const override;
-
-  void DoMapQDotToVelocity(
-      const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& qdot,
-      systems::VectorBase<T>* generalized_velocity) const override;
-
-  void DoMapVelocityToQDot(
-      const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& generalized_velocity,
-      systems::VectorBase<T>* qdot) const override;
 
   // Helper method to build the MultibodyTree model for this plant.
   void BuildMultibodyTreeModel();

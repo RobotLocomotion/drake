@@ -7,6 +7,7 @@
 #include "drake/solvers/test/linear_program_examples.h"
 #include "drake/solvers/test/second_order_cone_program_examples.h"
 #include "drake/solvers/test/semidefinite_program_examples.h"
+#include "drake/solvers/test/sos_examples.h"
 
 namespace drake {
 namespace solvers {
@@ -70,10 +71,10 @@ TEST_F(TrivialSDP1, Solve) {
   }
 }
 
-std::vector<CsdpSolver::RemoveFreeVariableMethod>
-GetRemoveFreeVariableMethods() {
-  return {CsdpSolver::RemoveFreeVariableMethod::kTwoSlackVariables,
-          CsdpSolver::kTwoSlackVariables};
+std::vector<RemoveFreeVariableMethod> GetRemoveFreeVariableMethods() {
+  return {RemoveFreeVariableMethod::kNullspace,
+          RemoveFreeVariableMethod::kTwoSlackVariables,
+          RemoveFreeVariableMethod::kLorentzConeSlack};
 }
 
 TEST_F(LinearProgramBoundingBox1, Solve) {
@@ -179,7 +180,8 @@ TEST_F(TrivialSOCP3, Solve) {
       MathematicalProgramResult result;
       solver.Solve(*prog_, {}, {}, &result);
       EXPECT_TRUE(result.is_success());
-      const double tol = 1.E-6;
+      // The accuracy for this test on the Mac machine is 5E-6.
+      const double tol = 5.E-6;
       EXPECT_NEAR(result.get_optimal_cost(), 2 - std::sqrt(7.1), tol);
       EXPECT_TRUE(CompareMatrices(result.GetSolution(x_),
                                   Eigen::Vector2d(-0.1, 2 - std::sqrt(7.1)),
@@ -291,6 +293,61 @@ GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
   for (auto method : GetRemoveFreeVariableMethods()) {
     CsdpSolver solver(method);
     SolveAndCheckSmallestEllipsoidCoveringProblems(solver, 1E-6);
+  }
+}
+
+GTEST_TEST(TestSOS, UnivariateQuarticSos) {
+  UnivariateQuarticSos dut;
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    CsdpSolver solver(method);
+    if (solver.available()) {
+      const auto result = solver.Solve(dut.prog());
+      dut.CheckResult(result, 1E-10);
+    }
+  }
+}
+
+GTEST_TEST(TestSOS, BivariateQuarticSos) {
+  BivariateQuarticSos dut;
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    CsdpSolver solver(method);
+    if (solver.available()) {
+      const auto result = solver.Solve(dut.prog());
+      dut.CheckResult(result, 1E-10);
+    }
+  }
+}
+
+GTEST_TEST(TestSOS, SimpleSos1) {
+  SimpleSos1 dut;
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    CsdpSolver solver(method);
+    if (solver.available()) {
+      const auto result = solver.Solve(dut.prog());
+      dut.CheckResult(result, 1E-10);
+    }
+  }
+}
+
+GTEST_TEST(TestSOS, MotzkinPolynomial) {
+  MotzkinPolynomial dut;
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    CsdpSolver solver(method);
+    if (solver.available()) {
+      const auto result = solver.Solve(dut.prog());
+      dut.CheckResult(result, 1.5E-8);
+    }
+  }
+}
+
+GTEST_TEST(TestSOS, UnivariateNonnegative1) {
+  UnivariateNonnegative1 dut;
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    CsdpSolver solver(method);
+    if (solver.available()) {
+      const auto result = solver.Solve(dut.prog());
+      dut.CheckResult(result, 6E-9);
+    }
   }
 }
 }  // namespace test

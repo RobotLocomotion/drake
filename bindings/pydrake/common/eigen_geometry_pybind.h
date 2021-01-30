@@ -10,74 +10,15 @@
 #include <string>
 #include <utility>
 
-#include <Eigen/Dense>
 #include "pybind11/eigen.h"
+#include <Eigen/Dense>
 
+#include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/common/drake_assert.h"
 
 namespace drake {
 namespace pydrake {
 namespace internal {
-
-// Implements a `type_caster<>` specialization used to convert types using a
-// specific wrapping policy.
-// @tparam Wrapper
-//  Struct which must provide `Type`, `WrappedType`, `unwrap`, and `wrap`.
-// @tparam copy_only
-//  This may only pass between C++ and Python as copies, not references.
-// See `eigen_wrapper_*` structs below for more details.
-template <typename Wrapper>
-struct type_caster_wrapped {
-  using Type = typename Wrapper::Type;
-  using WrappedType = typename Wrapper::WrappedType;
-  using WrappedTypeCaster = py::detail::type_caster<WrappedType>;
-
-  // Python to C++.
-  bool load(py::handle src, bool converter) {
-    WrappedTypeCaster caster;
-    if (!caster.load(src, converter)) {
-      return false;
-    }
-    value_ = Wrapper::unwrap(caster.operator WrappedType&());
-    loaded_ = true;
-    return true;
-  }
-
-  // See `pybind11/eigen.h`, `type_caster<>` implementations.
-  // N.B. Do not use `PYBIND11_TYPE_CASTER(...)` so we can avoid casting
-  // garbage values.
-  operator Type&() {
-    DRAKE_DEMAND(loaded_);
-    return value_;
-  }
-  template <typename T>
-  using cast_op_type = py::detail::movable_cast_op_type<T>;
-  static constexpr auto name = WrappedTypeCaster::props::descriptor;
-
-  // C++ to Python.
-  template <typename TType>
-  static py::handle cast(
-      TType&& src, py::return_value_policy policy, py::handle parent) {
-    if (policy == py::return_value_policy::reference ||
-        policy == py::return_value_policy::reference_internal) {
-      // N.B. We must declare a local `static constexpr` here to prevent
-      // linking errors. This does not appear achievable with
-      // `constexpr char[]`, so we use `py::detail::descr`.
-      // See `pybind11/pybind11.h`, `cpp_function::initialize(...)` for an
-      // example.
-      static constexpr auto original_name = Wrapper::original_name;
-      throw py::cast_error(
-          std::string("Can only pass ") + original_name.text + " by value.");
-    }
-    return WrappedTypeCaster::cast(
-        Wrapper::wrap(std::forward<TType>(src)), policy, parent);
-  }
-
- private:
-  bool loaded_{false};
-  Type value_;
-};
 
 // Wrapper for Eigen::Translation<>, to be used as first parameter to
 // `type_caster_wrapped`.
@@ -86,8 +27,11 @@ struct type_caster_wrapped {
 template <typename T, int Dim>
 struct wrapper_eigen_translation {
   using Type = Eigen::Translation<T, Dim>;
-  using WrappedType = Eigen::Matrix<T, Dim, 1>;
   static constexpr auto original_name = py::detail::_("Eigen::Translation<>");
+  using WrappedType = Eigen::Matrix<T, Dim, 1>;
+  static constexpr auto wrapped_name =
+      py::detail::type_caster<WrappedType>::props::descriptor;
+
   static Type unwrap(const WrappedType& arg_wrapped) {
     return Type(arg_wrapped);
   }

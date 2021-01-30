@@ -266,16 +266,21 @@ struct is_eigen_nonvector_of
 /// This wrapper class provides a way to write non-template functions taking raw
 /// pointers to Eigen objects as parameters while limiting the number of copies,
 /// similar to `Eigen::Ref`. Internally, it keeps an instance of `Eigen::Ref<T>`
-/// and provides access to it via `operator*` and `operator->`.
+/// and provides access to it via `operator*` and `operator->`. As with ordinary
+/// pointers, these operators do not perform nullptr checks in Release builds.
+/// User-facing APIs should check for nullptr explicitly.
 ///
-/// The motivation of this class is to follow <a
+/// The primary motivation of this class is to follow <a
 /// href="https://google.github.io/styleguide/cppguide.html#Reference_Arguments">GSG's
-/// "output arguments should be pointers" rule</a> while taking advantage of
-/// using `Eigen::Ref`. Here is an example.
+/// "output arguments should be pointers" convention</a> while taking advantage
+/// of using `Eigen::Ref`. It can also be used to pass optional Eigen objects
+/// since %EigenPtr, unlike `Eigen::Ref`, can be null.
+///
+/// Some examples:
 ///
 /// @code
 /// // This function is taking an Eigen::Ref of a matrix and modifies it in
-/// // the body. This violates GSG's rule on output parameters.
+/// // the body. This violates GSG's pointer convention for output parameters.
 /// void foo(Eigen::Ref<Eigen::MatrixXd> M) {
 ///    M(0, 0) = 0;
 /// }
@@ -285,6 +290,7 @@ struct is_eigen_nonvector_of
 ///
 /// // We can rewrite the above function into the following using EigenPtr.
 /// void foo(EigenPtr<Eigen::MatrixXd> M) {
+///    DRAKE_THROW_UNLESS(M != nullptr);  // If you want a Release-build check.
 ///    (*M)(0, 0) = 0;
 /// }
 /// // Note that, call sites should be changed to:
@@ -296,8 +302,8 @@ struct is_eigen_nonvector_of
 /// foo(&tmp);
 /// @endcode
 ///
-/// Notice that methods taking an EigenPtr can mutate the entries of a matrix as
-/// in method `foo()` in the example code above, but cannot change its size.
+/// Notice that methods taking an %EigenPtr can mutate the entries of a matrix
+/// as in method `foo()` in the example code above, but cannot change its size.
 /// This is because `operator*` and `operator->` return an `Eigen::Ref<T>`
 /// object and only plain matrices/arrays can be resized and not expressions.
 /// This **is** the desired behavior, since resizing the block of a matrix or
@@ -330,8 +336,7 @@ class EigenPtr {
   // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
   EigenPtr(std::nullptr_t) {}
 
-  /// Constructs with a reference to the given matrix type.
-  // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
+  /// Copy constructor results in a _reference_ to the given matrix type.
   EigenPtr(const EigenPtr& other) { assign(other); }
 
   /// Constructs with a reference to another matrix type.
@@ -344,7 +349,7 @@ class EigenPtr {
     }
   }
 
-  /// Constructs from another EigenPtr.
+  /// Constructs from another %EigenPtr.
   template <typename PlainObjectTypeIn>
   // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
   EigenPtr(const EigenPtr<PlainObjectTypeIn>& other) {
@@ -352,6 +357,7 @@ class EigenPtr {
     assign(other);
   }
 
+  /// Copy assignment results in a _reference_ to the given matrix type.
   EigenPtr& operator=(const EigenPtr& other) {
     // We must explicitly override this version of operator=.
     // The template below will not take precedence over this one.
@@ -363,10 +369,10 @@ class EigenPtr {
     return assign(other);
   }
 
-  /// @throws std::runtime_error if this is a null dereference.
+  /// @pre The pointer is not null (enforced in Debug builds only).
   RefType& operator*() const { return get_reference(); }
 
-  /// @throws std::runtime_error if this is a null dereference.
+  /// @pre The pointer is not null (enforced in Debug builds only).
   RefType* operator->() const { return &get_reference(); }
 
   /// Returns whether or not this contains a valid reference.
@@ -443,8 +449,8 @@ class EigenPtr {
 
   // Consolidate getting a reference here.
   RefType& get_reference() const {
-    if (!m_.has_value())
-      throw std::runtime_error("EigenPtr: nullptr dereference");
+    // Keep this tiny so it inlines.
+    DRAKE_ASSERT(m_.has_value());
     return m_.value();
   }
 

@@ -8,6 +8,7 @@ const char* const kMaterialGroup = "material";
 const char* const kElastic = "elastic_modulus";
 const char* const kFriction = "coulomb_friction";
 const char* const kHcDissipation = "hunt_crossley_dissipation";
+const char* const kPointStiffness = "point_contact_stiffness";
 
 const char* const kHydroGroup = "hydroelastic";
 const char* const kRezHint = "resolution_hint";
@@ -38,6 +39,15 @@ void AddContactMaterial(
     const std::optional<double>& dissipation,
     const std::optional<multibody::CoulombFriction<double>>& friction,
     ProximityProperties* properties) {
+  AddContactMaterial(elastic_modulus, dissipation, {}, friction, properties);
+}
+
+void AddContactMaterial(
+    const std::optional<double>& elastic_modulus,
+    const std::optional<double>& dissipation,
+    const std::optional<double>& point_stiffness,
+    const std::optional<multibody::CoulombFriction<double>>& friction,
+    ProximityProperties* properties) {
   if (elastic_modulus.has_value()) {
     if (*elastic_modulus <= 0) {
       throw std::logic_error(fmt::format(
@@ -53,6 +63,16 @@ void AddContactMaterial(
     }
     properties->AddProperty(internal::kMaterialGroup, internal::kHcDissipation,
                             *dissipation);
+  }
+
+  if (point_stiffness.has_value()) {
+    if (*point_stiffness <= 0) {
+      throw std::logic_error(fmt::format(
+          "The point_contact_stiffness must be strictly positive; given {}",
+          *point_stiffness));
+    }
+    properties->AddProperty(internal::kMaterialGroup, internal::kPointStiffness,
+                            *point_stiffness);
   }
 
   if (friction.has_value()) {

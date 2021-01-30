@@ -13,11 +13,10 @@
 /// drake::systems::Diagram class permits modeling complex systems from
 /// libraries of parts.
 ///
-/// For a "Hello, World!" example of writing a dynamical system, see
-/// simple_continuous_time_system.cc and/or simple_discrete_time_system.cc.
-/// For an example of a system that uses some of the more advanced
-/// features, such as typed input, output, state, and parameter vectors,
-/// see simple_car.h .
+/// For an introduction to using systems in python, see the dynamical_systems
+/// tutorial.  For a "Hello, World!" example of writing a dynamical system in
+/// C++, see simple_continuous_time_system.cc and/or
+/// simple_discrete_time_system.cc.
 ///
 /// @}
 
@@ -30,12 +29,12 @@
 ///   @defgroup sensor_systems Sensors
 ///   @defgroup manipulation_systems Manipulation
 ///   @defgroup message_passing Message Passing
+///   @defgroup multibody_systems Multibody Systems
 ///   @defgroup perception_systems Perception
 ///   @defgroup discrete_systems Discrete Systems
 ///   @defgroup stochastic_systems Stochastic Systems
 ///   @defgroup visualization Visualization
 ///   @defgroup example_systems Examples
-///   @defgroup rigid_body_systems (Attic) Rigid-Body Systems
 /// @}
 
 /// @addtogroup primitive_systems
@@ -91,6 +90,11 @@
 /// @}
 // TODO(russt): Add pointers to / recommendations for connecting to ROS.
 // TODO(russt): Add ZMQ.
+
+/// @addtogroup multibody_systems
+/// @{
+/// @brief Systems that relate to, or add functionality to, MultibodyPlant.
+/// @}
 
 /// @addtogroup perception_systems
 /// @{

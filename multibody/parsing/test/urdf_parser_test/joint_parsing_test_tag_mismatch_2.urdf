@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="joint_parsing_tag_mismatch_test_2">
+  <link name="link1"/>
+  <link name="link2"/>
+  <joint name="ball_joint" type="ball">
+    <parent link="link1"/>
+    <child link="link2"/>
+  </joint>
+</robot>

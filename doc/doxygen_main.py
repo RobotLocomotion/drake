@@ -63,6 +63,9 @@ def _run_doxygen(drake_workspace, args):
             continue
         if rel_x.startswith("cmake"):
             continue
+        if rel_x.startswith("debian"):
+            # N.B. Only present when building .deb packages.
+            continue
         if rel_x.startswith("doc"):
             # N.B. Done above.
             continue

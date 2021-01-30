@@ -1,0 +1,24 @@
+# -*- python -*-
+
+load("@drake//tools/skylark:py.bzl", "py_binary")
+load("@drake//tools/workspace:generate_file.bzl", "generate_file")
+
+licenses(["notice"])  # BSD-3-Clause
+
+generate_file(
+    name = "src/ros_xacro_main.py",
+    # This is the same as scripts/xacro from upstream, except that we lose the
+    # unused shebang line and we use a filename that is not subject to import
+    # path conflicts.
+    content = "import xacro; xacro.main()",
+)
+
+py_binary(
+    name = "xacro",
+    main = "src/ros_xacro_main.py",
+    srcs = ["src/ros_xacro_main.py"] + glob([
+        "src/xacro/**/*.py",
+    ], allow_empty = False),
+    imports = ["src"],
+    visibility = ["//visibility:public"],
+)

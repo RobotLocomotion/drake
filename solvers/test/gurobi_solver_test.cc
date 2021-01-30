@@ -1,5 +1,6 @@
 #include "drake/solvers/gurobi_solver.h"
 
+#include <limits>
 #include <thread>
 
 #include <gtest/gtest.h>
@@ -15,6 +16,7 @@
 namespace drake {
 namespace solvers {
 namespace test {
+const double kInf = std::numeric_limits<double>::infinity();
 
 TEST_P(LinearProgramTest, TestLP) {
   GurobiSolver solver;
@@ -58,7 +60,7 @@ TEST_F(UnboundedLinearProgramTest0, TestGurobiUnbounded) {
     EXPECT_EQ(result.get_solution_result(),
               SolutionResult::kInfeasible_Or_Unbounded);
     // This code is defined in
-    // https://www.gurobi.com/documentation/8.0/refman/optimization_status_codes.html
+    // https://www.gurobi.com/documentation/9.0/refman/optimization_status_codes.html
     const int GRB_INF_OR_UNBD = 4;
     EXPECT_EQ(result.get_solver_details<GurobiSolver>().optimization_status,
               GRB_INF_OR_UNBD);
@@ -68,7 +70,7 @@ TEST_F(UnboundedLinearProgramTest0, TestGurobiUnbounded) {
     EXPECT_FALSE(result.is_success());
     EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
     // This code is defined in
-    // https://www.gurobi.com/documentation/8.0/refman/optimization_status_codes.html
+    // https://www.gurobi.com/documentation/9.0/refman/optimization_status_codes.html
     const int GRB_UNBOUNDED = 5;
     EXPECT_EQ(result.get_solver_details<GurobiSolver>().optimization_status,
               GRB_UNBOUNDED);
@@ -269,7 +271,7 @@ GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem2) {
   GurobiSolver solver;
   if (solver.available()) {
     const auto result = solver.Solve(prob.prog(), {}, {});
-    // Gurobi 8.0.0 returns a solution that is accurate up to 1.4E-6 for this
+    // Gurobi 9.0.0 returns a solution that is accurate up to 1.4E-6 for this
     // specific problem. Might need to change the tolerance when we upgrade
     // Gurobi.
     prob.CheckSolution(result, 1.4E-6);
@@ -359,7 +361,7 @@ GTEST_TEST(GurobiTest, GurobiErrorCode) {
     solver_options.SetOption(solver.solver_id(), "Foo", 1);
     auto result = solver.Solve(prog, {}, solver_options);
     // The error code is listed in
-    // https://www.gurobi.com/documentation/8.0/refman/error_codes.html
+    // https://www.gurobi.com/documentation/9.0/refman/error_codes.html
     const int UNKNOWN_PARAMETER{10007};
     EXPECT_EQ(result.get_solver_details<GurobiSolver>().error_code,
               UNKNOWN_PARAMETER);
@@ -368,7 +370,7 @@ GTEST_TEST(GurobiTest, GurobiErrorCode) {
     prog.AddQuadraticCost(x(0) * x(0) - x(1) * x(1));
     result = solver.Solve(prog, {}, {});
     // The error code is listed in
-    // https://www.gurobi.com/documentation/8.0/refman/error_codes.html
+    // https://www.gurobi.com/documentation/9.0/refman/error_codes.html
     const int Q_NOT_PSD{10020};
     EXPECT_EQ(result.get_solver_details<GurobiSolver>().error_code,
               Q_NOT_PSD);
@@ -405,6 +407,112 @@ GTEST_TEST(GurobiTest, SolutionPool) {
     EXPECT_NEAR(result.get_optimal_cost(), 0, tol);
     EXPECT_NEAR(result.get_suboptimal_objective(0), 0, tol);
     EXPECT_NEAR(result.get_suboptimal_objective(1), 1, tol);
+  }
+}
+
+GTEST_TEST(GurobiTest, QPDualSolution1) {
+  GurobiSolver solver;
+  TestQPDualSolution1(solver, {} /* solver_options */, 1e-6);
+}
+
+GTEST_TEST(GurobiTest, QPDualSolution2) {
+  GurobiSolver solver;
+  TestQPDualSolution2(solver);
+}
+
+GTEST_TEST(GurobiTest, QPDualSolution3) {
+  GurobiSolver solver;
+  TestQPDualSolution3(solver);
+}
+
+GTEST_TEST(GurobiTest, EqualityConstrainedQPDualSolution1) {
+  GurobiSolver solver;
+  TestEqualityConstrainedQPDualSolution1(solver);
+}
+
+GTEST_TEST(GurobiTest, EqualityConstrainedQPDualSolution2) {
+  GurobiSolver solver;
+  TestEqualityConstrainedQPDualSolution2(solver);
+}
+
+GTEST_TEST(GurobiTest, LPDualSolution1) {
+  GurobiSolver solver;
+  TestLPDualSolution1(solver);
+}
+
+GTEST_TEST(GurobiTest, LPDualSolution2) {
+  GurobiSolver solver;
+  TestLPDualSolution2(solver);
+}
+
+GTEST_TEST(GurobiTest, LPDualSolution3) {
+  GurobiSolver solver;
+  TestLPDualSolution3(solver);
+}
+
+GTEST_TEST(GurobiTest, SOCPDualSolution1) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto constraint1 = prog.AddLorentzConeConstraint(
+      Vector3<symbolic::Expression>(2., 2 * x(0), 3 * x(1) + 1));
+  GurobiSolver solver;
+  prog.AddLinearCost(x(1));
+  if (solver.is_available()) {
+    // By default the dual solution for second order cone is not computed.
+    MathematicalProgramResult result = solver.Solve(prog);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        result.GetDualSolution(constraint1), std::invalid_argument,
+        "You used Gurobi to solve this optimization problem.*");
+    SolverOptions options;
+    options.SetOption(solver.id(), "QCPDual", 1);
+    result = solver.Solve(prog, std::nullopt, options);
+    // The shadow price can be computed analytically, since the optimal cost
+    // is (-sqrt(4 + eps) - 1)/3, when the Lorentz cone constraint is perturbed
+    // by eps as 2*x(0)² + (3*x(1)+1)² <= 4 + eps. The gradient of the optimal
+    // cost (-sqrt(4 + eps) - 1)/3 w.r.t eps is -1/12.
+    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint1),
+                                Vector1d(-1. / 12), 1e-7));
+
+    // Now add a bounding box constraint to the program. By setting QCPDual to
+    // 0, the program should throw an error.
+    auto bb_con = prog.AddBoundingBoxConstraint(0, kInf, x(1));
+    options.SetOption(solver.id(), "QCPDual", 0);
+    result = solver.Solve(prog, std::nullopt, options);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        result.GetDualSolution(bb_con), std::invalid_argument,
+        "You used Gurobi to solve this optimization problem.*");
+    // Now set QCPDual = 1, we should be able to retrieve the dual solution to
+    // the bounding box constraint.
+    options.SetOption(solver.id(), "QCPDual", 1);
+    result = solver.Solve(prog, std::nullopt, options);
+    // The cost is x(1), hence the shadow price for the constraint x(1) >= 0
+    // should be 1.
+    EXPECT_TRUE(
+        CompareMatrices(result.GetDualSolution(bb_con), Vector1d(1.), 1E-8));
+  }
+}
+
+GTEST_TEST(GurobiTest, SOCPDualSolution2) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<1>()(0);
+  auto constraint1 = prog.AddRotatedLorentzConeConstraint(
+      Vector3<symbolic::Expression>(2., x + 1.5, x));
+  auto constraint2 =
+      prog.AddLorentzConeConstraint(Vector2<symbolic::Expression>(1, x + 1));
+  prog.AddLinearCost(x);
+  GurobiSolver solver;
+  if (solver.is_available()) {
+    SolverOptions options;
+    options.SetOption(GurobiSolver::id(), "QCPDual", 1);
+    const auto result = solver.Solve(prog, {}, options);
+    // By pertubing the constraint1 as x^2 <= 2x + 3 + eps, the optimal cost
+    // becomes -1 - sqrt(4+eps). The gradient of the cost w.r.t eps is -1/4.
+    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint1),
+                                Vector1d(-1.0 / 4), 1e-8));
+    // constraint 2 is not active at the optimal solution, hence the shadow
+    // price is 0.
+    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint2),
+                                Vector1d(0), 1e-8));
   }
 }
 

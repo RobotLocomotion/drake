@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <utility>
 
 #include "drake/solvers/mathematical_program.h"
 
@@ -114,7 +115,7 @@ void AddSos2Constraint(
  *   λ(i) ≥ 0 ∀i
  *   ∃ j ∈ {0, 1, ..., n-1}, s.t λ(j) = 1
  * </pre>
- * one and only one of λ(i) is strictly positive (equals to 1 in this case).
+ * where one and only one of λ(i) is 1, all other λ(j) are 0.
  * We will need to add ⌈log₂(n)⌉ binary variables, where n is the number of
  * rows in λ. For more information, please refer to
  *   Modeling Disjunctive Constraints with a Logarithmic Number of Binary
@@ -124,17 +125,44 @@ void AddSos2Constraint(
  * @param lambda lambda is in SOS1.
  * @param y The binary variables indicating which λ is positive. For a given
  * assignment on the binary variable `y`, if (y(0), ..., y(⌈log₂(n)⌉) represents
- * integer M in `codes`, then only λ(M) is positive. Namely, if
- * (y(0), ..., y(⌈log₂(n)⌉) equals to codes.row(M), then λ(M) = 1
- * @param codes A n x ⌈log₂(n)⌉ matrix. code.row(i) represents integer i.
- * No two rows of `codes` can be the same.
- * @throws std::runtime_error if @p codes has a non-binary entry (0, 1).
+ * integer M in `binary_encoding`, then only λ(M) is positive. Namely, if
+ * (y(0), ..., y(⌈log₂(n)⌉) equals to binary_encoding.row(M), then λ(M) = 1
+ * @param binary_encoding A n x ⌈log₂(n)⌉ matrix. binary_encoding.row(i)
+ * represents integer i. No two rows of `binary_encoding` can be the same.
+ * @throws std::runtime_error if @p binary_encoding has a non-binary entry (0,
+ * 1).
  */
 void AddLogarithmicSos1Constraint(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,
     const Eigen::Ref<const VectorXDecisionVariable>& y,
-    const Eigen::Ref<const Eigen::MatrixXi>& codes);
+    const Eigen::Ref<const Eigen::MatrixXi>& binary_encoding);
+
+/**
+ * Adds the special ordered set of type 1 (SOS1) constraint. Namely
+ * <pre>
+ *   λ(0) + ... + λ(n-1) = 1
+ *   λ(i) ≥ 0 ∀i
+ *   ∃ j ∈ {0, 1, ..., n-1}, s.t λ(j) = 1
+ * </pre>
+ * where one and only one of λ(i) is 1, all other λ(j) are 0.
+ * We will need to add ⌈log₂(n)⌉ binary variables, where n is the number of
+ * rows in λ. For more information, please refer to
+ *   Modeling Disjunctive Constraints with a Logarithmic Number of Binary
+ *   Variables and Constraints
+ *   by J. Vielma and G. Nemhauser, 2011.
+ * @param prog The program to which the SOS1 constraint is added.
+ * @param num_lambda n in the documentation above.
+ * @return (lambda, y) lambda is λ in the documentation above. Notice that
+ * λ are declared as continuous variables, but they only admit binary
+ * solutions. y are binary variables of size ⌈log₂(n)⌉.
+ * When this sos1 constraint is satisfied, suppose that
+ * λ(i)=1 and λ(j)=0 ∀ j≠i, then y is the Reflected Gray code of i. For example,
+ * suppose n = 8, i = 5, then y is a vector of size ⌈log₂(n)⌉ = 3, and the value
+ * of y is (1, 1, 0) which equals to 5 according to reflected Gray code.
+ */
+std::pair<VectorX<symbolic::Variable>, VectorX<symbolic::Variable>>
+AddLogarithmicSos1Constraint(MathematicalProgram* prog, int num_lambda);
 
 /**
  * For a continuous variable whose range is cut into small intervals, we will

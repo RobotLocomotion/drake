@@ -38,12 +38,12 @@ def _check_includes(filename):
     tool.format_includes()
     first_difference = tool.get_first_differing_original_index()
     if first_difference is not None:
-        print("ERROR: " + filename + ":" + str(first_difference + 1) + ": " +
+        print(f"ERROR: {filename}:{first_difference + 1}: "
               "the #include ordering is incorrect")
-        print("note: fix via bazel-bin/tools/lint/clang-format-includes " +
-              filename)
-        print("note: if that program does not exist, " +
-              "you might need to compile it first: " +
+        print("note: fix via bazel-bin/tools/lint/clang-format-includes "
+              + filename)
+        print("note: if that program does not exist, "
+              "you might need to compile it first: "
               "bazel build //tools/lint/...")
         return 1
     return 0

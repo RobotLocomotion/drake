@@ -13,7 +13,13 @@ namespace systems {
 /// or continuous) or abstract, and discrete output y, where the y is sampled
 /// from u with a fixed period.
 ///
-/// @system{ZeroOrderHold, @input_port{u}, @output_port{y}}
+/// @system
+/// name: ZeroOrderHold
+/// input_ports:
+/// - u
+/// output_ports:
+/// - y
+/// @endsystem
 ///
 /// The discrete state space dynamics of %ZeroOrderHold is:
 /// ```
@@ -64,16 +70,6 @@ class ZeroOrderHold final : public LeafSystem<T> {
   explicit ZeroOrderHold(const ZeroOrderHold<U>& other);
 
   ~ZeroOrderHold() final = default;
-
-  /// Returns the sole input port.
-  const InputPort<T>& get_input_port() const {
-    return LeafSystem<T>::get_input_port(0);
-  }
-
-  /// Returns the sole output port.
-  const OutputPort<T>& get_output_port() const {
-    return LeafSystem<T>::get_output_port(0);
-  }
 
   /// Reports the period of this hold (in seconds).
   double period() const { return period_sec_; }

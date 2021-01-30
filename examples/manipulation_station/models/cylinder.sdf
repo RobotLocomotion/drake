@@ -1,5 +1,5 @@
-<?xml version="1.0" ?>
-<sdf version="1.6">
+<?xml version="1.0"?>
+<sdf version="1.7">
   <model name="cylinder">
     <!--
     Axes:
@@ -9,7 +9,6 @@
       (0, 0, 0) at the center (while ignoring the handle).
     -->
     <link name="base_link">
-      <pose>0 0 0 0 0 0</pose>
       <inertial>
         <pose>0.0042 0.00000 -0.0059 0 0 0</pose>
         <mass>0.321</mass>
@@ -23,7 +22,6 @@
         </inertia>
       </inertial>
       <visual name="visual_cylinder">
-        <pose>0 0 0 0 0 0</pose>
         <geometry>
           <cylinder>
             <radius>0.043</radius>
@@ -45,9 +43,7 @@
           <diffuse>1.0 0 0 1.0</diffuse>
         </material>
       </visual>
-
       <collision name="collision_cylinder">
-        <pose>0 0 0 0 0 0</pose>
         <geometry>
           <cylinder>
             <radius>0.043</radius>
@@ -180,4 +176,3 @@
     </link>
   </model>
 </sdf>
-

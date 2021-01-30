@@ -1,202 +1,33 @@
 #include "drake/common/yaml/yaml_write_archive.h"
 
-#include <cmath>
 #include <vector>
 
-#include <Eigen/Core>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/name_value.h"
-
-using drake::yaml::YamlWriteArchive;
-
-namespace {
-
-// These unit tests use a variety of sample Serializable structs, showing what
-// a user may write for their own schemas.
-
-struct DoubleStruct {
-  double value = NAN;
-
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-};
-
-struct StringStruct {
-  std::string value = "NAN";
-
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-};
-
-struct ArrayStruct {
-  std::array<double, 3> value;
-
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  ArrayStruct() {
-    value.fill(NAN);
-  }
-
-  explicit ArrayStruct(const std::array<double, 3>& value_in)
-      : value(value_in) {}
-};
-
-struct VectorStruct {
-  std::vector<double> value;
-
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  VectorStruct() {
-    value.resize(1, NAN);
-  }
-
-  explicit VectorStruct(const std::vector<double>& value_in)
-      : value(value_in) {}
-};
-
-struct NonPodVectorStruct {
-  std::vector<StringStruct> value;
-
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  NonPodVectorStruct() {
-    value.resize(1, {"NAN"});
-  }
-};
-
-struct MapStruct {
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  std::map<std::string, double> value;
-};
-
-struct UnorderedMapStruct {
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  std::unordered_map<std::string, double> value;
-};
-
-struct OptionalStruct {
-  std::optional<double> value;
-
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  OptionalStruct()
-      : OptionalStruct(NAN) {}
-
-  explicit OptionalStruct(const double value_in)
-      : OptionalStruct(std::optional<double>(value_in)) {}
-
-  explicit OptionalStruct(const std::optional<double>& value_in)
-      : value(value_in) {}
-};
-
-using Variant3 = std::variant<std::string, double, DoubleStruct>;
-
-struct VariantStruct {
-  Variant3 value;
-
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  VariantStruct()
-      : VariantStruct(NAN) {}
-
-  explicit VariantStruct(const Variant3& value_in)
-      : value(value_in) {}
-};
-
-struct VariantWrappingStruct {
-  VariantStruct inner;
-
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(inner));
-  }
-};
-
-template <int Rows, int Cols>
-struct EigenStruct {
-  Eigen::Matrix<double, Rows, Cols> value;
-
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  EigenStruct() {
-    value.setConstant(NAN);
-  }
-
-  explicit EigenStruct(const Eigen::Matrix<double, Rows, Cols>& value_in)
-      : value(value_in) {}
-};
-
-using EigenVecStruct = EigenStruct<Eigen::Dynamic, 1>;
-using EigenVec3Struct = EigenStruct<3, 1>;
-using EigenMatrixStruct = EigenStruct<Eigen::Dynamic, Eigen::Dynamic>;
-using EigenMatrix34Struct = EigenStruct<3, 4>;
-
-struct OuterStruct {
-  struct InnerStruct {
-    double inner_value = NAN;
-
-    template <typename Archive>
-    void Serialize(Archive* a) {
-      a->Visit(DRAKE_NVP(inner_value));
-    }
-  };
-
-  double outer_value = NAN;
-  InnerStruct inner_struct;
-
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(outer_value));
-    a->Visit(DRAKE_NVP(inner_struct));
-  }
-};
-
-}  // namespace
+#include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/yaml/test/example_structs.h"
 
 namespace drake {
 namespace yaml {
+namespace test {
 namespace {
 
 // A test fixture with common helpers.
 class YamlWriteArchiveTest : public ::testing::Test {
  public:
   template <typename Serializable>
-  static std::string Save(const Serializable& data) {
+  static std::string Save(const Serializable& data,
+                          const std::string& root_name) {
     YamlWriteArchive archive;
     archive.Accept(data);
-    return archive.EmitString("doc");
+    return archive.EmitString(root_name);
+  }
+
+  template <typename Serializable>
+  static std::string Save(const Serializable& data) {
+    return Save(data, "doc");
   }
 
   static std::string WrapDoc(const std::string& value) {
@@ -242,9 +73,9 @@ TEST_F(YamlWriteArchiveTest, StdArray) {
     EXPECT_EQ(Save(x), expected);
   };
 
-  test({1.0, 2.0, 3.0}, R"R(doc:
+  test({1.0, 2.0, 3.0}, R"""(doc:
   value: [1.0, 2.0, 3.0]
-)R");
+)""");
 }
 
 TEST_F(YamlWriteArchiveTest, StdVector) {
@@ -256,13 +87,13 @@ TEST_F(YamlWriteArchiveTest, StdVector) {
 
   // When the vector items are simple YAML scalars, we should use
   // "flow" style, where they all appear on a single line.
-  test({}, R"R(doc:
+  test({}, R"""(doc:
   value: []
-)R");
+)""");
 
-  test({1.0, 2.0, 3.0}, R"R(doc:
+  test({1.0, 2.0, 3.0}, R"""(doc:
   value: [1.0, 2.0, 3.0]
-)R");
+)""");
 
   // When the vector items are not simple scalars, we should use
   // "block" style, where each gets its own line(s).
@@ -271,11 +102,11 @@ TEST_F(YamlWriteArchiveTest, StdVector) {
     {.value = "foo"},
     {.value = "bar"},
   };
-  EXPECT_EQ(Save(x), R"R(doc:
+  EXPECT_EQ(Save(x), R"""(doc:
   value:
     - value: foo
     - value: bar
-)R");
+)""");
 }
 
 TEST_F(YamlWriteArchiveTest, StdMap) {
@@ -285,20 +116,20 @@ TEST_F(YamlWriteArchiveTest, StdMap) {
     EXPECT_EQ(Save(x), expected);
   };
 
-  test({}, R"R(doc:
+  test({}, R"""(doc:
   value: {}
-)R");
+)""");
 
-  test({{"foo", 0.0}}, R"R(doc:
+  test({{"foo", 0.0}}, R"""(doc:
   value:
     foo: 0.0
-)R");
+)""");
 
-  test({{"foo", 0.0}, {"bar", 1.0}}, R"R(doc:
+  test({{"foo", 0.0}, {"bar", 1.0}}, R"""(doc:
   value:
     bar: 1.0
     foo: 0.0
-)R");
+)""");
 }
 
 
@@ -322,7 +153,7 @@ TEST_F(YamlWriteArchiveTest, StdUnorderedMap) {
     {"charlie", 2.0},
     {"bravo", 1.0},
     {"alpha", 0.0},
-  }, R"R(doc:
+  }, R"""(doc:
   value:
     alpha: 0.0
     bravo: 1.0
@@ -331,7 +162,7 @@ TEST_F(YamlWriteArchiveTest, StdUnorderedMap) {
     echo: 4.0
     fox: 5.0
     gulf: 6.0
-)R");
+)""");
 }
 
 TEST_F(YamlWriteArchiveTest, Optional) {
@@ -346,12 +177,22 @@ TEST_F(YamlWriteArchiveTest, Optional) {
 }
 
 TEST_F(YamlWriteArchiveTest, Variant) {
-  const auto test = [](const Variant3& value, const std::string& expected) {
+  const auto test = [](const Variant4& value, const std::string& expected) {
     const VariantStruct x{value};
     EXPECT_EQ(Save(x), WrapDoc(expected));
   };
 
-  test(Variant3(std::string("foo")), "foo");
+  test(Variant4(std::string("foo")), "foo");
+  test(Variant4(DoubleStruct{1.0}), "!DoubleStruct\n    value: 1.0");
+  test(Variant4(EigenVecStruct{Eigen::Vector2d(1.0, 2.0)}),
+       "!EigenStruct\n    value: [1.0, 2.0]");
+
+  // TODO(jwnimmer-tri) We'd like to see "!!float 1.0" here, but our writer
+  // does not yet support that output syntax.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      Save(VariantStruct{double{1.0}}),
+      std::exception,
+      "Cannot YamlWriteArchive the variant type double with a non-zero index");
 }
 
 TEST_F(YamlWriteArchiveTest, EigenVector) {
@@ -363,9 +204,9 @@ TEST_F(YamlWriteArchiveTest, EigenVector) {
     EXPECT_EQ(Save(x3), expected);
   };
 
-  test(Eigen::Vector3d(1.0, 2.0, 3.0), R"R(doc:
+  test(Eigen::Vector3d(1.0, 2.0, 3.0), R"""(doc:
   value: [1.0, 2.0, 3.0]
-)R");
+)""");
 }
 
 TEST_F(YamlWriteArchiveTest, EigenVectorX) {
@@ -375,12 +216,12 @@ TEST_F(YamlWriteArchiveTest, EigenVectorX) {
     EXPECT_EQ(Save(x), expected);
   };
 
-  test(Eigen::VectorXd(), R"R(doc:
+  test(Eigen::VectorXd(), R"""(doc:
   value: []
-)R");
-  test(Eigen::Matrix<double, 1, 1>(1.0), R"R(doc:
+)""");
+  test(Eigen::Matrix<double, 1, 1>(1.0), R"""(doc:
   value: [1.0]
-)R");
+)""");
 }
 
 TEST_F(YamlWriteArchiveTest, EigenMatrix) {
@@ -393,12 +234,26 @@ TEST_F(YamlWriteArchiveTest, EigenMatrix) {
   };
 
   test((Matrix34d{} << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11).finished(),
-       R"R(doc:
+       R"""(doc:
   value:
     - [0.0, 1.0, 2.0, 3.0]
     - [4.0, 5.0, 6.0, 7.0]
     - [8.0, 9.0, 10.0, 11.0]
-)R");
+)""");
+}
+
+TEST_F(YamlWriteArchiveTest, EigenMatrix00) {
+  const auto test = [](const std::string& expected) {
+    const Eigen::MatrixXd empty;
+    const EigenMatrixStruct x{empty};
+    EXPECT_EQ(Save(x), expected);
+    const EigenMatrix00Struct x00;
+    EXPECT_EQ(Save(x00), expected);
+  };
+
+  test(R"""(doc:
+  value: []
+)""");
 }
 
 TEST_F(YamlWriteArchiveTest, Nested) {
@@ -407,14 +262,68 @@ TEST_F(YamlWriteArchiveTest, Nested) {
   x.outer_value = 1.0;
 
   const std::string saved = Save(x);
-  const std::string expected = R"R(doc:
+  const std::string expected = R"""(doc:
   outer_value: 1.0
   inner_struct:
     inner_value: 2.0
-)R";
+)""";
   EXPECT_EQ(saved, expected);
 }
 
+TEST_F(YamlWriteArchiveTest, BlankInner) {
+  OuterWithBlankInner x;
+  x.outer_value = 1.0;
+
+  const std::string saved = Save(x);
+  const std::string expected = R"""(doc:
+  outer_value: 1.0
+  inner_struct: {}
+)""";
+  EXPECT_EQ(saved, expected);
+}
+
+// Test the Emitter function given different key names and a provided
+// serializable content.
+TEST_F(YamlWriteArchiveTest, EmitterWithProvidedSerializable) {
+  const auto test = [](const std::string& root_name,
+                       const std::string& expected) {
+    const DoubleStruct x{1.0};
+    EXPECT_EQ(Save(x, root_name), expected);
+  };
+
+  // Test default key name.
+  const std::string expected_default_root_name = R"""(root:
+  value: 1.0
+)""";
+  test("root", expected_default_root_name);
+
+  // Test empty key name.
+  const std::string expected_empty_root_name = R"""(value: 1.0
+)""";
+  test("", expected_empty_root_name);
+}
+
+// Test the Emitter function given different key names. The serializable
+// content is empty.
+TEST_F(YamlWriteArchiveTest, EmitterNoProvidedSerializable) {
+  const auto test = [](const std::string& root_name,
+                       const std::string& expected) {
+    YamlWriteArchive archive;
+    EXPECT_EQ(archive.EmitString(root_name), expected);
+  };
+
+  // Test non-empty key name will return a node with empty value.
+  const std::string expected_default_root_name = R"""(root:
+)""";
+  test("root", expected_default_root_name);
+
+  // Test empty key name will yield an empty map.
+  const std::string expected_empty_root_name = R"""({}
+)""";
+  test("", expected_empty_root_name);
+}
+
 }  // namespace
+}  // namespace test
 }  // namespace yaml
 }  // namespace drake

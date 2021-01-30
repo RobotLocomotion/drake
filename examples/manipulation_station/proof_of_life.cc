@@ -4,7 +4,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/examples/manipulation_station/manipulation_station.h"
-#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/systems/analysis/simulator.h"
@@ -66,8 +66,8 @@ int do_main(int argc, char* argv[]) {
   }
   station->Finalize();
 
-  geometry::ConnectDrakeVisualizer(&builder, station->get_mutable_scene_graph(),
-                                   station->GetOutputPort("pose_bundle"));
+  geometry::DrakeVisualizer::AddToBuilder(
+      &builder, station->GetOutputPort("query_object"));
   multibody::ConnectContactResultsToDrakeVisualizer(
       &builder, station->get_mutable_multibody_plant(),
       station->GetOutputPort("contact_results"));

@@ -16,7 +16,7 @@ enum class ControlMode { kPosition = 0, kForce = 1 };
  * control mode specified for the controller, which can be either
  * ControlMode::kPosition or ControlMode::kForce. In both cases, the overall
  * layout of the diagram is:
- *```
+ * ```
  *             ┌─────────────┐
  * joint       │Joint State  │   ┌──────────┐
  * state ─────▶│To Control   ├──▶│          │
@@ -45,12 +45,12 @@ enum class ControlMode { kPosition = 0, kForce = 1 };
  *                 │   ┌──┐  └──▶│Saturation├──▶│To Joint   ├──▶│   │
  * max force / 2 ──┴──▶│-1├─────▶│          │   │Force      │   └───┘
  *                     └──┘      └──────────┘   └───────────┘
- *```
+ * ```
  * The blocks with double outlines (══) differ between the two control modes:
  *
  * - Generate Desired Control State
  *   - ControlMode::kPosition
- *```
+ * ```
  *        ┌───────────┐
  *        │Desired    │
  *        │Mean Finger├──▶█
@@ -62,9 +62,9 @@ enum class ControlMode { kPosition = 0, kForce = 1 };
  *         grip   ───────▶█
  *         state
  *
- *```
+ * ```
  *    - ControlMode::kForce
- *```
+ * ```
  *        ┌───────────┐
  *        │Desired    │                          desired
  *        │Mean Finger├────────────────────────▶ control
@@ -74,10 +74,10 @@ enum class ControlMode { kPosition = 0, kForce = 1 };
  *         desired        ┌────────┐
  *         grip   ───────▶│IGNORED │
  *         state          └────────┘
- *```
+ * ```
  * - Handle Feed-Forward Force
  *   - ControlMode::kPosition
- *```
+ * ```
  *                                     █────▶ mean finger force
  *         pid                         █
  *         controller ────────────────▶█
@@ -86,9 +86,9 @@ enum class ControlMode { kPosition = 0, kForce = 1 };
  *         feed           ┌────────┐
  *         forward ──────▶│IGNORED │
  *         force          └────────┘
- *```
+ * ```
  *   - ControlMode::kForce
- *```
+ * ```
  *         pid
  *         controller ──────────────────────▶ mean finger force
  *         output
@@ -97,7 +97,7 @@ enum class ControlMode { kPosition = 0, kForce = 1 };
  *         forward ─────────────────────────▶ grip force
  *         force
  *
- *```
+ * ```
  * The remaining blocks differ only in their numerical parameters.
  *
  * Note that the "feed forward force" input is ignored for
@@ -148,13 +148,11 @@ class SchunkWsgPlainController
     return systems::Diagram<double>::get_output_port(0);
   }
 
-  const systems::OutputPort<double>& get_output_port(int) const = delete;
-
  private:
-  int desired_grip_state_input_port_{-1};
-  int feed_forward_force_input_port_{-1};
-  int state_input_port_{-1};
-  int max_force_input_port_{-1};
+  systems::InputPortIndex desired_grip_state_input_port_;
+  systems::InputPortIndex feed_forward_force_input_port_;
+  systems::InputPortIndex state_input_port_;
+  systems::InputPortIndex max_force_input_port_;
 };
 
 }  // namespace schunk_wsg

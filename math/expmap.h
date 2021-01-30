@@ -9,6 +9,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 
@@ -60,6 +61,10 @@ Eigen::Matrix<typename Derived::Scalar, 4, 1> expmap2quatDegenerate(
 }  // namespace internal
 
 template <typename Derived>
+DRAKE_DEPRECATED("2021-01-01",
+    "All functions in drake/math/expmap.h are unused within Drake and will be "
+    "removed.  Users may copy the functions into their own project per Drake's "
+    "license terms.")
 Eigen::Matrix<typename Derived::Scalar, 4, 1> expmap2quat(
     const Eigen::MatrixBase<Derived>& v) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
@@ -73,6 +78,10 @@ Eigen::Matrix<typename Derived::Scalar, 4, 1> expmap2quat(
 }
 
 template <typename DerivedQ>
+DRAKE_DEPRECATED("2021-01-01",
+    "All functions in drake/math/expmap.h are unused within Drake and will be "
+    "removed.  Users may copy the functions into their own project per Drake's "
+    "license terms.")
 Eigen::Matrix<typename DerivedQ::Scalar, 3, 1> quat2expmap(
     const Eigen::MatrixBase<DerivedQ>& q) {
   typedef typename DerivedQ::Scalar Scalar;
@@ -91,6 +100,10 @@ Eigen::Matrix<typename DerivedQ::Scalar, 3, 1> quat2expmap(
 }
 
 template <typename Derived1, typename Derived2>
+DRAKE_DEPRECATED("2021-01-01",
+    "All functions in drake/math/expmap.h are unused within Drake and will be "
+    "removed.  Users may copy the functions into their own project per Drake's "
+    "license terms.")
 Eigen::Matrix<typename Derived1::Scalar, 3, 1> closestExpmap(
     const Eigen::MatrixBase<Derived1>& expmap1,
     const Eigen::MatrixBase<Derived2>& expmap2) {
@@ -140,6 +153,10 @@ Eigen::Matrix<typename Derived1::Scalar, 3, 1> closestExpmap(
 }
 
 template <typename DerivedQ, typename DerivedE>
+DRAKE_DEPRECATED("2021-01-01",
+    "All functions in drake/math/expmap.h are unused within Drake and will be "
+    "removed.  Users may copy the functions into their own project per Drake's "
+    "license terms.")
 void quat2expmapSequence(const Eigen::MatrixBase<DerivedQ>& quat,
                          const Eigen::MatrixBase<DerivedQ>& quat_dot,
                          // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).

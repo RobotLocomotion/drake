@@ -7,6 +7,7 @@
 #include <Eigen/Dense>
 #include <fmt/format.h>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
@@ -135,7 +136,7 @@ class RotationMatrix {
   /// Vice-versa, there are high-accuracy RollPitchYaw constructor/methods that
   /// form a RollPitchYaw from a rotation matrix.
   explicit RotationMatrix(const RollPitchYaw<T>& rpy) {
-    // TODO(@mitiguy) Add publically viewable documentation on how Sherm and
+    // TODO(@mitiguy) Add publicly viewable documentation on how Sherm and
     // Goldstein like to visualize/conceptualize rotation sequences.
     const T& r = rpy.roll_angle();
     const T& p = rpy.pitch_angle();
@@ -1082,3 +1083,6 @@ RotationMatrix<T>::ThrowIfNotValid(const Matrix3<S>& R) {
 
 }  // namespace math
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::math::RotationMatrix)

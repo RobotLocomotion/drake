@@ -30,15 +30,44 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
  file, this method makes a new drake::geometry::GeometryInstance object from
  this specification at a pose `X_LG` relatve to its parent link.
  This method returns nullptr when the given SDF specification corresponds
- to a geometry of type `sdf::GeometryType::EMPTY` (`<empty/>` SDF tag.)  */
+ to a geometry of type `sdf::GeometryType::EMPTY` (`<empty/>` SDF tag.)
+
+ <!-- TODO(SeanCurtis-TRI): Ultimately, a module for what we parse should be
+  written outside of this _internal_ namespace. This should go there and
+  merely reference it.  -->
+
+ <h2>Targeting Renderers</h2>
+
+ In addition to the standard SDF <visual> hierarchy, Drake offers an additional
+ tag `<drake:accepting_renderer>`:
+
+ ```
+    <visual>
+      <geometry ... />
+      <drake:accepting_renderer>renderer_name</drake:accepting_renderer>
+      ...
+    </visual>
+ ```
+
+ The new tag serves as a list of renderers for which this visual is targeted.
+
+  - The _value_ of the tag is the name of the renderer.
+  - If the _value_ is empty, that is a parsing error.
+  - If no instance of `<drake:accepting_renderer>` every renderer will be given
+    the chance to reify this visual geometry.
+  - Multiple instances of this tag are allowed. Each instance adds a renderer to
+    the list of targeted renderers.
+
+ This feature is one way to provide multiple visual representations of a body.
+ */
 std::unique_ptr<geometry::GeometryInstance> MakeGeometryInstanceFromSdfVisual(
     const sdf::Visual& sdf_visual, ResolveFilename resolve_filename,
     const math::RigidTransformd& X_LG);
 
 /** Extracts the material properties from the given sdf::Visual object.
  The sdf::Visual object represents a corresponding <visual> tag from an SDF
- file. The material properties are placed into a
- geometry::IllustrationProperties as follows:
+ file. The material properties are placed into both a
+ geometry::IllustrationProperties and geometry::PerceptionProperties as follows:
 
  <!-- NOTE: Lines longer than 80 columns required for the doxygen tables. -->
  | Group |    Name     |      Type       | Description |
@@ -113,7 +142,7 @@ math::RigidTransformd MakeGeometryPoseFromSdfCollision(
  of these properties.
  | Tag                              | Group        | Property                  | Notes                                                                                                                            |
  | :------------------------------: | :----------: | :-----------------------: | :------------------------------------------------------------------------------------------------------------------------------: |
- | drake:mesh_resolution_hint       | hydroelastic | resolution_hint           | Required for shapes that require tesselation to support hydroelastic contact.                                                    |
+ | drake:mesh_resolution_hint       | hydroelastic | resolution_hint           | Required for shapes that require tessellation to support hydroelastic contact.                                                    |
  | drake:elastic_modulus            | material     | elastic_modulus           | Finite positive value. Required for soft hydroelastic representations.                                                           |
  | drake:hunt_crossley_dissipation  | material     | hunt_crossley_dissipation |                                                                                                                                  |
  | drake:mu_dynamic                 | material     | coulomb_friction          | See note below on friction.                                                                                                      |
@@ -162,9 +191,8 @@ geometry::ProximityProperties MakeProximityPropertiesForCollision(
      </surface>
    </collision>
  ```
- If a `<surface>` is not found, it returns arbitrary default coefficients
- (typically mu = mu2 = 1). If `<surface>` is found, all other nested elements
- are required and an exception is thrown if not present.  */
+ If mu or mu2 (or both) are not found, it returns the default coefficients of
+ mu = mu2 = 1, consistent with the SDFormat specification. */
 CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
     const sdf::Collision& sdf_collision);
 

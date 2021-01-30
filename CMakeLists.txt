@@ -2,6 +2,11 @@
 # vi: set ft=cmake :
 
 cmake_minimum_required(VERSION 3.10)
+
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.16)
+  cmake_policy(VERSION 3.16)
+endif()
+
 project(drake
   DESCRIPTION "Model-based design and verification for robotics"
   LANGUAGES C CXX
@@ -29,10 +34,10 @@ set(UNIX_DISTRIBUTION_ID)
 set(UNIX_DISTRIBUTION_CODENAME)
 
 if(APPLE)
-  if(CMAKE_SYSTEM_VERSION VERSION_LESS 18)
+  if(CMAKE_SYSTEM_VERSION VERSION_LESS 19)
     message(FATAL_ERROR
       "Darwin ${CMAKE_SYSTEM_VERSION} is NOT supported. Please use Darwin "
-      "18.x (macOS Mojave) or Darwin 19.x (macOS Catalina)."
+      "Darwin 19.x (macOS Catalina)."
     )
   endif()
 else()
@@ -76,17 +81,17 @@ else()
 
   # The supported releases should match those listed in both doc/developers.rst
   # and tools/workspace/os.bzl.
-  if(NOT UNIX_DISTRIBUTION_CODENAME STREQUAL bionic)
+  if(NOT UNIX_DISTRIBUTION_CODENAME MATCHES "^(bionic|focal)$")
     message(FATAL_ERROR
       "Release ${UNIX_DISTRIBUTION_CODENAME} is NOT supported. Please use "
-      "Ubuntu 18.04 (Bionic)."
+      "Ubuntu 18.04 (Bionic) or 20.04 (Focal)."
     )
   endif()
 endif()
 
 # The version passed to find_package(Bazel) should match the
 # minimum_bazel_version value in the call to versions.check() in WORKSPACE.
-set(MINIMUM_BAZEL_VERSION 2.0)
+set(MINIMUM_BAZEL_VERSION 3.0)
 find_package(Bazel ${MINIMUM_BAZEL_VERSION} MODULE REQUIRED)
 
 get_filename_component(C_COMPILER_REALPATH "${CMAKE_C_COMPILER}" REALPATH)
@@ -103,10 +108,9 @@ endif()
 
 # The minimum compiler versions should match those listed in both
 # doc/developers.rst and tools/workspace/cc/repository.bzl.
-# TODO(jwnimmer-tri) On 2020-07-01 update GCC min to 7.5 here and in the bzl.
 set(MINIMUM_APPLE_CLANG_VERSION 11)
-set(MINIMUM_CLANG_VERSION 6)
-set(MINIMUM_GNU_VERSION 7.4)
+set(MINIMUM_CLANG_VERSION 9)
+set(MINIMUM_GNU_VERSION 7.5)
 
 if(CMAKE_C_COMPILER_ID STREQUAL AppleClang)
   if(CMAKE_C_COMPILER_VERSION VERSION_LESS ${MINIMUM_APPLE_CLANG_VERSION})
@@ -203,11 +207,14 @@ set(CMAKE_CXX_STANDARD 17)
 # The supported Python major/minor versions should match those listed in both
 # doc/developers.rst and tools/workspace/python/repository.bzl.
 if(APPLE)
-  set(FIND_PROGRAM_PYTHON3_PATHS /usr/local/bin)
-  set(SUPPORTED_PYTHON_VERSIONS 3.7)
+  set(FIND_PROGRAM_PYTHON3_PATHS /usr/local/opt/python@3.8/bin)
 else()
   set(FIND_PROGRAM_PYTHON3_PATHS /usr/bin)
+endif()
+if(UNIX_DISTRIBUTION_CODENAME STREQUAL bionic)
   set(SUPPORTED_PYTHON_VERSIONS 3.6)
+else()
+  set(SUPPORTED_PYTHON_VERSIONS 3.8)
 endif()
 
 if(CMAKE_VERSION VERSION_LESS 3.12)
@@ -359,13 +366,13 @@ set(BAZEL_CONFIGS)
 option(WITH_GUROBI "Build with support for Gurobi" OFF)
 
 if(WITH_GUROBI)
-  find_package(Gurobi 8.0.1 EXACT MODULE REQUIRED)
+  find_package(Gurobi 9.0.2 EXACT MODULE REQUIRED)
 
   list(APPEND BAZEL_CONFIGS --config=gurobi)
 
   if(NOT APPLE)
-    get_filename_component(GUROBI_PATH "${Gurobi_INCLUDE_DIRS}" DIRECTORY)
-    list(APPEND BAZEL_ENV "GUROBI_PATH=${GUROBI_PATH}")
+    get_filename_component(GUROBI_HOME "${Gurobi_INCLUDE_DIRS}" DIRECTORY)
+    list(APPEND BAZEL_ENV "GUROBI_HOME=${GUROBI_HOME}")
   endif()
 endif()
 

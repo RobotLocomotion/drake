@@ -51,6 +51,7 @@ using tinyxml2::XMLElement;
 
 using math::RigidTransformd;
 using geometry::GeometryInstance;
+using geometry::IllustrationProperties;
 using geometry::ProximityProperties;
 
 // Confirms the logic for reconciling named references to materials.
@@ -205,13 +206,13 @@ GTEST_TEST(DetailUrdfGeometryTest, AddMaterialToMaterialMap) {
 // <collision> tag.
 unique_ptr<XMLDocument> MakeCollisionDocFromString(
     const std::string& collision_spec) {
-  const std::string urdf_harness = R"_(
+  const std::string urdf_harness = R"""(
 <?xml version="1.0"?>
   <collision>
     <geometry>
       <box size=".1 .2 .3"/>
     </geometry>{}
-  </collision>)_";
+  </collision>)""";
   const std::string urdf = fmt::format(urdf_harness, collision_spec);
   auto doc = make_unique<XMLDocument>();
   doc->Parse(urdf.c_str());
@@ -554,14 +555,14 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
   // confirm that all of the basic tags get parsed and focus on the logic that
   // is unique to `ParseCollision()`.
   {
-    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"_(
+    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"""(
   <drake:proximity_properties>
     <drake:mesh_resolution_hint value="2.5"/>
     <drake:elastic_modulus value="3.5" />
     <drake:hunt_crossley_dissipation value="3.5" />
     <drake:mu_dynamic value="3.25" />
     <drake:mu_static value="3.5" />
-  </drake:proximity_properties>)_");
+  </drake:proximity_properties>)""");
     const XMLElement* collision_node = doc->FirstChildElement("collision");
     ASSERT_NE(collision_node, nullptr);
     GeometryInstance instance =
@@ -579,10 +580,10 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
 
   // Case: specifies rigid hydroelastic.
   {
-    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"_(
+    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"""(
   <drake:proximity_properties>
     <drake:rigid_hydroelastic/>
-  </drake:proximity_properties>)_");
+  </drake:proximity_properties>)""");
     const XMLElement* collision_node = doc->FirstChildElement("collision");
     ASSERT_NE(collision_node, nullptr);
     GeometryInstance instance =
@@ -598,10 +599,10 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
 
   // Case: specifies soft hydroelastic.
   {
-    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"_(
+    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"""(
   <drake:proximity_properties>
     <drake:soft_hydroelastic/>
-  </drake:proximity_properties>)_");
+  </drake:proximity_properties>)""");
     const XMLElement* collision_node = doc->FirstChildElement("collision");
     ASSERT_NE(collision_node, nullptr);
     GeometryInstance instance =
@@ -617,11 +618,11 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
 
   // Case: specifies both -- should be an error.
   {
-    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"_(
+    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"""(
   <drake:proximity_properties>
     <drake:soft_hydroelastic/>
     <drake:rigid_hydroelastic/>
-  </drake:proximity_properties>)_");
+  </drake:proximity_properties>)""");
     const XMLElement* collision_node = doc->FirstChildElement("collision");
     ASSERT_NE(collision_node, nullptr);
     DRAKE_EXPECT_THROWS_MESSAGE(
@@ -636,11 +637,11 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
   // Case: has no drake:proximity_properties coefficients, only drake_compliance
   // coeffs.
   {
-    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"_(
+    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"""(
   <drake_compliance>
     <static_friction>3.5</static_friction>
     <dynamic_friction>2.5</dynamic_friction>
-  </drake_compliance>)_");
+  </drake_compliance>)""");
     const XMLElement* collision_node = doc->FirstChildElement("collision");
     ASSERT_NE(collision_node, nullptr);
     GeometryInstance instance =
@@ -652,14 +653,14 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
 
   // Case: has both drake_compliance and drake:proximity_properties;
   // drake:proximity_properties wins.
-  unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"_(
+  unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"""(
   <drake_compliance>
     <static_friction>3.5</static_friction>
     <dynamic_friction>2.5</dynamic_friction>
   </drake_compliance>
   <drake:proximity_properties>
     <drake:mu_dynamic value="4.5" />
-  </drake:proximity_properties>)_");
+  </drake:proximity_properties>)""");
   const XMLElement* collision_node = doc->FirstChildElement("collision");
   ASSERT_NE(collision_node, nullptr);
   GeometryInstance instance =
@@ -667,6 +668,50 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
   ASSERT_NE(instance.proximity_properties(), nullptr);
   const ProximityProperties& properties = *instance.proximity_properties();
   verify_friction(properties, {4.5, 4.5});
+}
+
+// Confirms that the <drake:accepting_renderer> tag gets properly parsed.
+TEST_F(UrdfGeometryTests, AcceptingRenderers) {
+  const std::string resource_dir{
+    "drake/multibody/parsing/test/urdf_parser_test/"};
+  const std::string file_no_conflict_1 = FindResourceOrThrow(
+      resource_dir + "accepting_renderer.urdf");
+
+  // TODO(SeanCurtis-TRI): Test for the <drake:accepting_renderer> tag without
+  //  name attribute when we can test using an in-memory XML.
+
+  DRAKE_EXPECT_NO_THROW(ParseUrdfGeometry(file_no_conflict_1));
+
+  ASSERT_EQ(visual_instances_.size(), 3);
+
+  const std::string group = "renderer";
+  const std::string property = "accepting";
+
+  for (const auto& instance : visual_instances_) {
+    // TODO(SeanCurtis-TRI): When perception properties are uniquely parsed
+    //  from the file, change this to PerceptionProperties.
+    EXPECT_NE(instance.illustration_properties(), nullptr);
+    const IllustrationProperties& props = *instance.illustration_properties();
+    if (instance.name() == "all_renderers") {
+      EXPECT_FALSE(props.HasProperty(group, property));
+    } else if (instance.name() == "single_renderer") {
+      EXPECT_TRUE(props.HasProperty(group, property));
+      const auto& names =
+          props.GetProperty<std::set<std::string>>(group, property);
+      EXPECT_EQ(names.size(), 1);
+      EXPECT_EQ(names.count("renderer1"), 1);
+    } else if (instance.name() == "multi_renderer") {
+      EXPECT_TRUE(props.HasProperty(group, property));
+      const auto& names =
+          props.GetProperty<std::set<std::string>>(group, property);
+      EXPECT_EQ(names.size(), 2);
+      EXPECT_EQ(names.count("renderer1"), 1);
+      EXPECT_EQ(names.count("renderer2"), 1);
+    } else {
+      GTEST_FAIL() << "Encountered visual geometry not expected: "
+                     << instance.name();
+    }
+  }
 }
 
 }  // namespace

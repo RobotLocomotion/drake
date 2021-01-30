@@ -63,12 +63,13 @@ GTEST_TEST(GeometryVisualization, SimpleScene) {
       make_unique<Sphere>(radius), "sphere_collision"));
   scene_graph.AssignRole(source_id, collision_id, ProximityProperties());
 
-  unique_ptr<Context<double>> context = scene_graph.AllocateContext();
+  unique_ptr<Context<double>> context = scene_graph.CreateDefaultContext();
 
   // This exploits the knowledge that the GeometryState is the zero-indexed
-  // abstract state in the scene graph-allocated context.
+  // abstract Parameter in the scene graph-allocated context.
   const GeometryState<double>& geometry_state =
-      context->get_state().get_abstract_state<GeometryState<double>>(0);
+      context->get_parameters().get_abstract_parameter<GeometryState<double>>(
+          0);
 
   // Checks the load message for visual geometries.
   {

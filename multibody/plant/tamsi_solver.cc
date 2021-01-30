@@ -263,6 +263,7 @@ void TamsiSolver<T>::SetOneWayCoupledProblemData(
     EigenPtr<const MatrixX<T>> Jn, EigenPtr<const MatrixX<T>> Jt,
     EigenPtr<const VectorX<T>> p_star,
     EigenPtr<const VectorX<T>> fn, EigenPtr<const VectorX<T>> mu) {
+  DRAKE_DEMAND(M && Jn && Jt && p_star && fn && mu);
   nc_ = fn->size();
   DRAKE_THROW_UNLESS(p_star->size() == nv_);
   DRAKE_THROW_UNLESS(M->rows() == nv_ && M->cols() == nv_);
@@ -278,9 +279,11 @@ template <typename T>
 void TamsiSolver<T>::SetTwoWayCoupledProblemData(
     EigenPtr<const MatrixX<T>> M, EigenPtr<const MatrixX<T>> Jn,
     EigenPtr<const MatrixX<T>> Jt, EigenPtr<const VectorX<T>> p_star,
-    EigenPtr<const VectorX<T>> x0, EigenPtr<const VectorX<T>> stiffness,
+    EigenPtr<const VectorX<T>> fn0, EigenPtr<const VectorX<T>> stiffness,
     EigenPtr<const VectorX<T>> dissipation, EigenPtr<const VectorX<T>> mu) {
-  nc_ = x0->size();
+  DRAKE_DEMAND(M && Jn && Jt && p_star && fn0 && stiffness && dissipation
+                   && mu);
+  nc_ = fn0->size();
   DRAKE_THROW_UNLESS(p_star->size() == nv_);
   DRAKE_THROW_UNLESS(M->rows() == nv_ && M->cols() == nv_);
   DRAKE_THROW_UNLESS(Jn->rows() == nc_ && Jn->cols() == nv_);
@@ -289,7 +292,7 @@ void TamsiSolver<T>::SetTwoWayCoupledProblemData(
   DRAKE_THROW_UNLESS(stiffness->size() == nc_);
   DRAKE_THROW_UNLESS(dissipation->size() == nc_);
   // Keep references to the problem data.
-  problem_data_aliases_.SetTwoWayCoupledData(M, Jn, Jt, p_star, x0, stiffness,
+  problem_data_aliases_.SetTwoWayCoupledData(M, Jn, Jt, p_star, fn0, stiffness,
                                              dissipation, mu);
   variable_size_workspace_.ResizeIfNeeded(nc_, nv_);
 }
@@ -454,7 +457,6 @@ void TamsiSolver<T>::CalcFrictionForcesGradient(
 
 template <typename T>
 void TamsiSolver<T>::CalcNormalForces(
-    const Eigen::Ref<const VectorX<T>>& x,
     const Eigen::Ref<const VectorX<T>>& vn,
     const Eigen::Ref<const MatrixX<T>>& Jn,
     double dt,
@@ -472,47 +474,47 @@ void TamsiSolver<T>::CalcNormalForces(
   }
 
   // Convenient aliases to problem data.
+  const auto& fn0 = problem_data_aliases_.fn0();
   const auto& stiffness = problem_data_aliases_.stiffness();
   const auto& dissipation = problem_data_aliases_.dissipation();
 
-  VectorX<T> x_capped(nc);  // = x₊
-  VectorX<T> H_x(nc);  // = H(x), with H the Heaviside function.
-  VectorX<T> k_vn_capped(nc);  // = k(vₙ)₊ = k (1 − d vₙ)₊
-  VectorX<T> H_k_vn(nc);  // = H(k(vₙ)).
+  // Below we use the following notation:
+  //   (x)₊ =  max(x, 0),
+  //   H(x) = d(x)₊/dx, the Heaviside function.
+  // We define the undamped normal force as undamped_fn = (fₙ₀ − h k vₙ)₊.
+  VectorX<T> undamped_fn(nc);
+  // We define damping_factor = (1 − d vₙ)₊.
+  VectorX<T> damping_factor(nc);
+  VectorX<T> H_damping_factor(nc);  // = H(1 − d vₙ)
+  VectorX<T> H_undamped_fn(nc);     // = H(fₙ₀ − h k vₙ)
 
   auto& fn = *fn_ptr;
   for (int ic = 0; ic < nc; ++ic) {
-    // Stiffness as a function of vn, k(vₙ) = k (1 − d vₙ)₊
-    // where x₊ = max(x, 0).
-    T k_vn = stiffness(ic) * (1.0 - dissipation(ic) * vn(ic));
+    const T signed_damping_factor = (1.0 - dissipation(ic) * vn(ic));
+    damping_factor(ic) = max(0.0, signed_damping_factor);
 
-    k_vn_capped(ic) = max(0.0, k_vn);
-    x_capped(ic) = max(0.0, x(ic));
-    // fₙ = k(vₙ)₊ x₊
-    fn(ic) = k_vn_capped(ic) * x_capped(ic);
-    // Factors in the derivatives of x₊ and k(vₙ)₊
-    H_x(ic) = x(ic) > 0 ? 1.0 : 0.0;
-    H_k_vn(ic) = k_vn > 0 ? 1.0 : 0.0;
+    // fₙ = (1 − d vₙ)₊ (fₙ₀ − h k vₙ)₊
+    const T signed_undamped_fn = fn0(ic) - dt * stiffness(ic) * vn(ic);
+    undamped_fn(ic) = max(0.0, signed_undamped_fn);
+    fn(ic) = damping_factor(ic) * undamped_fn(ic);
+
+    // Factors in the derivatives of damping factor (1 − d vₙ)₊ and the
+    // undamped normal force defined as (fₙ₀ − h k vₙ)₊.
+    H_damping_factor(ic) = signed_damping_factor >= 0 ? 1.0 : 0.0;
+    H_undamped_fn(ic) = signed_undamped_fn >= 0 ? 1.0 : 0.0;
   }
 
-  // ∇ᵥxˢ⁺¹₊ = −δt diag(H(xˢ⁺¹)) Jₙ, with xˢ⁺¹ = xˢ − δt vₙˢ⁺¹.
-  // of size nc x nv.
-  MatrixX<T> nabla_x_capped = -dt * H_x.asDiagonal() * Jn;
+  // We simply use the product rule to compute the derivative of fₙ as a
+  // function of vₙ (on a per contact basis, that's why the use of .array()
+  // operations below). dfₙ/dvₙ = -d⋅H(1 − d vₙ)⋅(fₙ₀ − h k vₙ)₊  - h⋅k⋅(1 − d
+  // vₙ)₊⋅H(fₙ₀ − h k vₙ) Note that dfₙ/dvₙ < 0 always.
+  const VectorX<T> dfn_dvn = -(
+      dissipation.array() * H_damping_factor.array() * undamped_fn.array() +
+      dt * stiffness.array() * damping_factor.array() * H_undamped_fn.array());
 
-  // ∇ᵥk(vₙˢ⁺¹)₊ = −diag(H(k(vₙˢ⁺¹))) diag(k) diag(d) Jₙ
-  // of size nc x nv.
-  MatrixX<T> nabla_k_vn_capped = -(
-      (H_k_vn.array() *
-          stiffness.array() * dissipation.array()).matrix().asDiagonal() * Jn);
-
+  // We use the chain rule to compute Gn = ∇ᵥfₙ. Since ∇ᵥvₙ = Jn, we have:
   auto& Gn = *Gn_ptr;
-
-  // fₙ = k(vₙ)₊ x₊
-  // Gn = ∇ᵥfₙ(xˢ⁺¹, vₙˢ⁺¹) =
-  //        diag(x₊) ∇ᵥk(vₙˢ⁺¹)₊ + diag(k(vₙ)₊) ∇ᵥxˢ⁺¹₊
-  // Gn is of size nc x nv.
-  Gn = x_capped.asDiagonal() * nabla_k_vn_capped +
-      k_vn_capped.asDiagonal() * nabla_x_capped;
+  Gn = dfn_dvn.asDiagonal() * Jn;
 }
 
 template <typename T>
@@ -660,7 +662,6 @@ TamsiSolverResult TamsiSolver<T>::SolveWithGuess(
   auto mu_vt = variable_size_workspace_.mutable_mu();
   auto t_hat = variable_size_workspace_.mutable_t_hat();
   auto fn = variable_size_workspace_.mutable_fn();
-  auto x = variable_size_workspace_.mutable_x();
   auto v_slip = variable_size_workspace_.mutable_v_slip();
 
   // Initialize vt_error to an arbitrary value larger than tolerance so that the
@@ -676,14 +677,7 @@ TamsiSolverResult TamsiSolver<T>::SolveWithGuess(
     vn = Jn * v;
     vt = Jt * v;
 
-    if (has_two_way_coupling()) {
-      // Update the penetration for the two-way coupling scheme.
-      const auto& x0 = problem_data_aliases_.x0();
-      x = x0 - dt * vn;
-    }
-
-    CalcNormalForces(x, vn, Jn, dt, &fn, &Gn);
-
+    CalcNormalForces(vn, Jn, dt, &fn, &Gn);
 
     // Update v_slip, t_hat, mus and ft as a function of vt and fn.
     CalcFrictionForces(vt, fn, &v_slip, &t_hat, &mu_vt, &ft);

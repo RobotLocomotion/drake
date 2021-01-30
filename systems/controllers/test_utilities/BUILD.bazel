@@ -13,6 +13,7 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "test_utilities",
     testonly = 1,
+    visibility = ["//visibility:public"],
     deps = [
         ":compute_torque",
     ],

@@ -68,8 +68,9 @@ namespace drake {
  prefer the practice of returning std::optional<Identifier> instead.
 
  It is the designed intent of this class, that ids derived from this class can
- be passed and returned by value. Passing ids by const reference should be
- considered a misuse.
+ be passed and returned by value. (Drake's typical calling convention requires
+ passing input arguments by const reference, or by value when moved from. That
+ convention does not apply to this class.)
 
  The following alias will create a unique identifier type for class `Foo`:
  @code{.cpp}
@@ -213,8 +214,7 @@ class Identifier {
  @relates Identifier
  */
 template <typename Tag>
-inline std::ostream& operator<<(std::ostream& out,
-                                const Identifier<Tag>& id) {
+std::ostream& operator<<(std::ostream& out, const Identifier<Tag>& id) {
   out << id.get_value();
   return out;
 }
@@ -222,7 +222,7 @@ inline std::ostream& operator<<(std::ostream& out,
 /** Enables use of identifiers with to_string. It requires ADL to work. So,
  it should be invoked as: `to_string(id);` and should be preceded by
  `using std::to_string`.*/
-template <typename Tag> inline
+template <typename Tag>
 std::string to_string(const drake::Identifier<Tag>& id) {
   return std::to_string(id.get_value());
 }

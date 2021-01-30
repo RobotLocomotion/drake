@@ -2,28 +2,22 @@
 
 import copy
 import unittest
+
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
-from pydrake.common.eigen_geometry import Isometry3
-from pydrake.math import RigidTransform, RotationMatrix
+from pydrake.common.value import AbstractValue, Value
+from pydrake.common.test_utilities import numpy_compare
 from pydrake.symbolic import Expression
 from pydrake.systems.framework import (
-    AbstractValue,
     BasicVector, BasicVector_,
     Parameters,
-    Value,
     VectorBase,
     )
-from pydrake.systems.test.test_util import (
-    make_unknown_abstract_value,
-    MoveOnlyType,
-)
 
 
 def pass_through(x):
     return x
-
 
 # TODO(eric.cousineau): Add negative (or positive) test cases for AutoDiffXd
 # and Symbolic once they are in the bindings.
@@ -40,6 +34,7 @@ class TestValue(unittest.TestCase):
                 expected_init = wrap([float(x) for x in range(n)])
                 expected_add = wrap([x + 1 for x in expected_init])
                 expected_set = wrap([x + 10 for x in expected_init])
+                expected_plus_eq = wrap([3*x for x in expected_set])
 
                 value_data = BasicVector(expected_init)
                 value = value_data.get_mutable_value()
@@ -56,15 +51,43 @@ class TestValue(unittest.TestCase):
                     np.allclose(value_data.get_mutable_value(), expected_add))
 
                 # Set value from `BasicVector`.
-                value_data.SetFromVector(expected_set)
+                value_data.SetFromVector(value=expected_set)
                 self.assertTrue(np.allclose(value, expected_set))
                 self.assertTrue(
                     np.allclose(value_data.get_value(), expected_set))
                 self.assertTrue(
                     np.allclose(value_data.get_mutable_value(), expected_set))
+
+                # Set value to zero.
+                old_value = value_data.CopyToVector()
+                value_data.SetZero()
+                if n > 0:
+                    self.assertFalse(np.allclose(old_value, np.zeros(n)))
+                self.assertTrue(np.allclose(value, np.zeros(n)))
+                self.assertTrue(
+                    np.allclose(value_data.get_value(), np.zeros(n)))
+                self.assertTrue(
+                    np.allclose(value_data.get_mutable_value(), np.zeros(n)))
+
+                # Set value from `BasicVector`.
+                value_data.set_value(expected_set)
+                self.assertTrue(np.allclose(value, expected_set))
+                self.assertTrue(
+                    np.allclose(value_data.get_value(), expected_set))
+                self.assertTrue(
+                    np.allclose(value_data.get_mutable_value(), expected_set))
+
                 # Ensure we can construct from size.
+                old_value_data = value_data
                 value_data = BasicVector(n)
                 self.assertEqual(value_data.size(), n)
+                value_data.SetFrom(value=old_value_data)
+                self.assertTrue(
+                    np.allclose(value_data.get_value(), expected_set))
+                new_value_data = value_data.PlusEqScaled(scale=2,
+                                                         rhs=old_value_data)
+                self.assertTrue(
+                    np.allclose(value_data.get_value(), expected_plus_eq))
                 # Ensure we can clone.
                 value_copies = [
                     value_data.Clone(),
@@ -77,91 +100,53 @@ class TestValue(unittest.TestCase):
 
     def test_basic_vector_set_get(self):
         value = BasicVector(np.arange(3., 5.))
-        self.assertEqual(value.GetAtIndex(1), 4.)
-        value.SetAtIndex(1, 5.)
-        self.assertEqual(value.GetAtIndex(1), 5.)
+        self.assertEqual(value.GetAtIndex(index=1), 4.)
+        value.SetAtIndex(index=1, value=5.)
+        self.assertEqual(value[1], 5.)
+        value[1] = 6.
+        self.assertEqual(value[1], 6.)
 
-    def test_abstract_value_copyable(self):
-        expected = "Hello world"
-        value = Value[str](expected)
-        self.assertIsInstance(value, AbstractValue)
-        self.assertEqual(value.get_value(), expected)
-        expected_new = "New value"
-        value.set_value(expected_new)
-        self.assertEqual(value.get_value(), expected_new)
-        # Test docstring.
-        self.assertFalse("unique_ptr" in value.set_value.__doc__)
+    def assert_basic_vector_equal(self, a, b):
+        self.assertIs(type(a), type(b))
+        self.assertIsNot(a, b)
+        np.testing.assert_equal(a.get_value(), b.get_value())
 
-    def test_abstract_value_move_only(self):
-        obj = MoveOnlyType(10)
-        # This *always* clones `obj`.
+    def test_str_and_repr(self):
+        # T=float
+        self.assertIs(BasicVector, BasicVector_[float])
+        vector_f = [1.]
+        value_f = BasicVector_[float](vector_f)
+        self.assertEqual(str(value_f), "[1.0]")
+        self.assertEqual(repr(value_f), "BasicVector_[float]([1.0])")
+        # Check repr() invariant.
+        self.assert_basic_vector_equal(value_f, eval(repr(value_f)))
+        # - Empty.
+        value_f_empty = BasicVector_[float]([])
+        self.assertEqual(str(value_f_empty), "[]")
+        self.assertEqual(repr(value_f_empty), "BasicVector_[float]([])")
+        # - Multiple values.
+        value_f_multi = BasicVector_[float]([1., 2.])
+        self.assertEqual(str(value_f_multi), "[1.0, 2.0]")
         self.assertEqual(
-            str(Value[MoveOnlyType]),
-            "<class 'pydrake.systems.framework.Value[MoveOnlyType]'>")
-        value = Value[MoveOnlyType](obj)
-        self.assertTrue(value.get_value() is not obj)
-        self.assertEqual(value.get_value().x(), 10)
-        # Set value.
-        value.get_mutable_value().set_x(20)
-        self.assertEqual(value.get_value().x(), 20)
-        # Test custom emplace constructor.
-        emplace_value = Value[MoveOnlyType](30)
-        self.assertEqual(emplace_value.get_value().x(), 30)
-        # Test docstring.
-        self.assertTrue("unique_ptr" in value.set_value.__doc__)
+            repr(value_f_multi), "BasicVector_[float]([1.0, 2.0])")
+        # TODO(eric.cousineau): Make repr() for AutoDiffXd and Expression be
+        # semi-usable.
+        # T=AutoDiffXd
+        value_ad = BasicVector_[AutoDiffXd](vector_f)
+        self.assertEqual(str(value_ad), "[<AutoDiffXd 1.0 nderiv=0>]")
+        self.assertEqual(
+            repr(value_ad),
+            "BasicVector_[AutoDiffXd]([<AutoDiffXd 1.0 nderiv=0>])")
+        # T=Expression
+        value_sym = BasicVector_[Expression](vector_f)
+        self.assertEqual(str(value_sym), "[<Expression \"1\">]")
+        self.assertEqual(
+            repr(value_sym),
+            "BasicVector_[Expression]([<Expression \"1\">])")
 
-    def test_abstract_value_py_object(self):
-        expected = {"x": 10}
-        value = Value[object](expected)
-        # Value is by reference, *not* by copy.
-        self.assertTrue(value.get_value() is expected)
-        # Update mutable version.
-        value.get_mutable_value()["y"] = 30
-        self.assertEqual(value.get_value(), expected)
-        # Cloning the value should perform a deep copy of the Python object.
-        value_clone = copy.deepcopy(value)
-        self.assertEqual(value_clone.get_value(), expected)
-        self.assertTrue(value_clone.get_value() is not expected)
-        # Using `set_value` on the original value changes object reference.
-        expected_new = {"a": 20}
-        value.set_value(expected_new)
-        self.assertEqual(value.get_value(), expected_new)
-        self.assertTrue(value.get_value() is not expected)
-
-    def test_abstract_value_make(self):
-        value = AbstractValue.Make("Hello world")
-        self.assertIsInstance(value, Value[str])
-        value = AbstractValue.Make(MoveOnlyType(10))
-        self.assertIsInstance(value, Value[MoveOnlyType])
-        value = AbstractValue.Make({"x": 10})
-        self.assertIsInstance(value, Value[object])
-        for T in [float, AutoDiffXd, Expression]:
-            value = AbstractValue.Make(BasicVector_[T](size=1))
-            self.assertIsInstance(value, Value[BasicVector_[T]])
-
-    def test_abstract_value_unknown(self):
-        value = make_unknown_abstract_value()
-        self.assertIsInstance(value, AbstractValue)
-        with self.assertRaises(RuntimeError) as cm:
-            value.get_value()
-        self.assertTrue(all(
-            s in str(cm.exception) for s in [
-                "AbstractValue",
-                "UnknownType",
-                "get_value",
-                "AddValueInstantiation",
-            ]), cm.exception)
-
-    def test_value_registration(self):
-        # Existience check.
-        Value[object]
-        Value[str]
-        Value[bool]
-        Value[RigidTransform]
-        Value[RotationMatrix]
-        Value[Isometry3]
-        for T in [float, AutoDiffXd, Expression]:
-            Value[BasicVector_[T]]
+    @numpy_compare.check_all_types
+    def test_value_registration(self, T):
+        Value[BasicVector_[T]]
 
     def test_parameters_api(self):
 

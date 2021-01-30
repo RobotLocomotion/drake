@@ -1,5 +1,4 @@
-<?xml version="1.0" ?>
-
+<?xml version="1.0"?>
 <!--
 Defines an SDF model with various types of joint limits used for testing the
 joint actuator parser. The only focus is the <effort> tag. Other values,
@@ -7,10 +6,9 @@ therefore, are set arbitrarily.
 This is an accompanying file to detail_sdf_parser_test.cc and therefore they
 must be kept in sync with each other.
 -->
-
-<sdf version='1.6'>
-  <model name='joint_actuator_parsing_test'>
-    <link name='link1'>
+<sdf version="1.7">
+  <model name="joint_actuator_parsing_test">
+    <link name="link1">
       <inertial>
         <mass>1</mass>
         <inertia>
@@ -23,7 +21,7 @@ must be kept in sync with each other.
         </inertia>
       </inertial>
     </link>
-    <link name='link2'>
+    <link name="link2">
       <inertial>
         <mass>1</mass>
         <inertia>
@@ -36,7 +34,7 @@ must be kept in sync with each other.
         </inertia>
       </inertial>
     </link>
-    <joint name='revolute_joint_positive_limit' type='revolute'>
+    <joint name="revolute_joint_positive_limit" type="revolute">
       <child>link2</child>
       <parent>link1</parent>
       <axis>
@@ -49,7 +47,7 @@ must be kept in sync with each other.
         </limit>
       </axis>
     </joint>
-    <link name='link3'>
+    <link name="link3">
       <inertial>
         <mass>1</mass>
         <inertia>
@@ -62,7 +60,7 @@ must be kept in sync with each other.
         </inertia>
       </inertial>
     </link>
-    <joint name='prismatic_joint_zero_limit' type='prismatic'>
+    <joint name="prismatic_joint_zero_limit" type="prismatic">
       <child>link3</child>
       <parent>link2</parent>
       <axis>
@@ -75,7 +73,7 @@ must be kept in sync with each other.
         </limit>
       </axis>
     </joint>
-    <link name='link4'>
+    <link name="link4">
       <inertial>
         <mass>1</mass>
         <inertia>
@@ -88,7 +86,7 @@ must be kept in sync with each other.
         </inertia>
       </inertial>
     </link>
-    <joint name='revolute_joint_no_limit' type='revolute'>
+    <joint name="revolute_joint_no_limit" type="revolute">
       <child>link4</child>
       <parent>link3</parent>
       <axis>

@@ -38,20 +38,13 @@ class TamsiSolverTester {
     auto v_slip = solver.variable_size_workspace_.mutable_v_slip();
     std::vector<Matrix2<double>>& dft_dvt =
         solver.variable_size_workspace_.mutable_dft_dvt();
-    auto x = solver.variable_size_workspace_.mutable_x();
 
     // Normal separation velocity.
     vn = Jn * v;
 
-    if (solver.has_two_way_coupling()) {
-      const auto x0 = solver.problem_data_aliases_.x0();
-      // Penetration distance (positive when there is penetration).
-      x = x0 - dt * vn;
-    }
-
     // Computes friction forces fn and gradients Gn as a function of x, vn,
     // Jn and dt.
-    solver.CalcNormalForces(x, vn, Jn, dt, &fn, &Gn);
+    solver.CalcNormalForces(vn, Jn, dt, &fn, &Gn);
 
     // Tangential velocity.
     vt = Jt * v;
@@ -68,6 +61,13 @@ class TamsiSolverTester {
     solver.CalcJacobian(M, Jn, Jt, Gn, dft_dvt, t_hat, mus, dt, &J);
 
     return J;
+  }
+
+  /// Returns the size of TAMSI's workspace that was last allocated. It is
+  /// measured as the number of contact points since the last call to either
+  /// SetOneWayCoupledProblemData() or SetTwoWayCoupledProblemData.
+  static int get_capacity(const TamsiSolver<double>& solver) {
+    return solver.variable_size_workspace_.capacity();
   }
 };
 namespace {
@@ -812,7 +812,7 @@ class RollingCylinder : public ::testing::Test {
   // to the out-of-plane (z-axis) tangential velocity. Since the problem is 2D,
   // the second component along the z axis is zero always.
   MatrixX<double> ComputeTangentialJacobian() {
-    MatrixX<double> D(2 * nc_, nv_);
+    MatrixX<double> D(2, nv_);
     // vt = vx + w * R = [1, 0, R] * v
     D << 1.0, 0.0, R_,   // Along the x axis
         0.0, 0.0, 0.0;  // Along the z axis out of the plane.
@@ -826,31 +826,45 @@ class RollingCylinder : public ::testing::Test {
   //   mu: friction coefficient between the cylinder and the ground.
   //   height: the initial height the cylinder is dropped from.
   //   dt: time step used by the solver.
+  //   num_contacts_multiplier: for testing purposes, we repeat the same contact
+  //   point num_contacts_multiplier times. This allow us to test how the solver
+  //   does in situations with multiple points of contact even if coincident.
   void SetImpactProblem(const Vector3<double>& v0, const Vector3<double>& tau,
-                        double mu, double height, double dt) {
+                        double mu, double height, double dt,
+                        int num_contacts_multiplier = 1) {
     // Next time step generalized momentum if there are no contact forces.
     p_star_ = M_ * v0 + dt * tau;
 
+    // This problem has a single contact point. We multiply it to emulate
+    // a system with multiple points of contact.
+    nc_ = num_contacts_multiplier;
+
     // Friction coefficient for the only contact point in the problem.
-    mu_vector_(0) = mu;
+    mu_vector_ = VectorX<double>::Constant(nc_, mu);
 
     // Compute Jacobian matrices.
-    Jn_ << 0, 1, 0;
-    Jt_ = ComputeTangentialJacobian();
+    Jn_.resize(nc_, nv_);
+    Jn_ = RowVector3<double>(0, 1, 0).replicate(num_contacts_multiplier, 1);
+    Jt_.resize(2 * nc_, nv_);
+    Jt_ = ComputeTangentialJacobian().replicate(num_contacts_multiplier, 1);
 
     // A very small penetration allowance for practical purposes.
     const double penetration_allowance = 1.0e-6;
     // Initial penetration of O(dt), in tests below we use dt = 1.0e-3.
-    x0_(0) = 1.0e-3;
-    stiffness_(0) = m_ * g_ / penetration_allowance;
+    const double xini = 1.0e-3;
+    // We evenly distribute xinitial among all contact points.
+    x0_ = VectorX<double>::Constant(nc_, xini / nc_);
+    const double k = m_ * g_ / penetration_allowance;
+    stiffness_ = VectorX<double>::Constant(nc_, k);
+    fn0_ = stiffness_.array() * x0_.array();
     const double omega = sqrt(stiffness_(0) / m_);
     const double time_scale = 1.0 / omega;
     const double damping_ratio = 1.0;
     const double dissipation =
         damping_ratio * time_scale / penetration_allowance;
-    dissipation_(0) = dissipation;
+    dissipation_ = VectorX<double>::Constant(nc_, dissipation);
 
-    solver_.SetTwoWayCoupledProblemData(&M_, &Jn_, &Jt_, &p_star_, &x0_,
+    solver_.SetTwoWayCoupledProblemData(&M_, &Jn_, &Jt_, &p_star_, &fn0_,
                                         &stiffness_, &dissipation_,
                                         &mu_vector_);
   }
@@ -881,27 +895,28 @@ class RollingCylinder : public ::testing::Test {
 
   // Problem sizes.
   const int nv_{3};  // number of generalized velocities.
-  const int nc_{1};  // number of contact points.
+  int nc_{1};  // number of contact points.
 
   // Mass matrix.
   MatrixX<double> M_{nv_, nv_};
 
   // Tangential velocities Jacobian.
-  MatrixX<double> Jt_{2 * nc_, nv_};
+  MatrixX<double> Jt_;
 
   // Normal separation velocities Jacobian.
-  MatrixX<double> Jn_{nc_, nv_};
+  MatrixX<double> Jn_;
 
-  VectorX<double> stiffness_{nc_};
-  VectorX<double> dissipation_{nc_};
-  VectorX<double> x0_{nc_};
+  VectorX<double> stiffness_;
+  VectorX<double> dissipation_;
+  VectorX<double> x0_;
+  VectorX<double> fn0_;
 
   // TAMSI solver for this problem.
   TamsiSolver<double> solver_{nv_};
 
   // Additional solver data that must outlive solver_ during solution.
   VectorX<double> p_star_{nv_};  // Generalized momentum.
-  VectorX<double> mu_vector_{nc_};  // Friction at each contact point.
+  VectorX<double> mu_vector_;  // Friction at each contact point.
 };
 
 TEST_F(RollingCylinder, StictionAfterImpact) {
@@ -926,67 +941,70 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
   // Initial velocity.
   const Vector3<double> v0(vx0, vy0, 0.0);
 
-  SetImpactProblem(v0, tau, mu, h0, dt);
+  // We solve exactly the same problem but repeating the contact point multiple
+  // times to emulate multi-point contact.
+  for (int num_contacts = 1; num_contacts <= 256; num_contacts *= 4) {
+    SetImpactProblem(v0, tau, mu, h0, dt, num_contacts);
 
-  TamsiSolverParameters parameters;  // Default parameters.
-  parameters.stiction_tolerance = 1.0e-6;
-  solver_.set_solver_parameters(parameters);
+    // Verify solver has allocated the proper workspace size.
+    EXPECT_GE(TamsiSolverTester::get_capacity(solver_), num_contacts);
 
-  TamsiSolverResult info = solver_.SolveWithGuess(dt, v0);
-  ASSERT_EQ(info, TamsiSolverResult::kSuccess);
+    TamsiSolverParameters parameters;  // Default parameters.
+    parameters.stiction_tolerance = 1.0e-6;
+    solver_.set_solver_parameters(parameters);
 
-  VectorX<double> tau_f = solver_.get_generalized_friction_forces();
+    TamsiSolverResult info = solver_.SolveWithGuess(dt, v0);
+    ASSERT_EQ(info, TamsiSolverResult::kSuccess);
 
-  const auto& stats = solver_.get_iteration_statistics();
+    VectorX<double> tau_f = solver_.get_generalized_friction_forces();
 
-  const double vt_tolerance =
-      solver_.get_solver_parameters().relative_tolerance *
-          solver_.get_solver_parameters().stiction_tolerance;
-  EXPECT_TRUE(stats.vt_residual() < vt_tolerance);
+    const auto& stats = solver_.get_iteration_statistics();
 
-  // Friction should only act horizontally.
-  EXPECT_NEAR(tau_f(1), 0.0, kTolerance);
+    const double vt_tolerance =
+        solver_.get_solver_parameters().relative_tolerance *
+        solver_.get_solver_parameters().stiction_tolerance;
+    EXPECT_TRUE(stats.vt_residual() < vt_tolerance);
 
-  // The moment due to friction Mf should exactly match R * ft.
-  EXPECT_NEAR(tau_f(2), R_ * tau_f(0), kTolerance);
+    // Friction should only act horizontally.
+    EXPECT_NEAR(tau_f(1), 0.0, kTolerance);
 
-  const VectorX<double>& vt = solver_.get_tangential_velocities();
-  ASSERT_EQ(vt.size(), 2 * nc_);
+    // The moment due to friction Mf should exactly match R * ft.
+    EXPECT_NEAR(tau_f(2), R_ * tau_f(0), kTolerance);
 
-  // There should be no spurious out-of-plane tangential velocity.
-  EXPECT_NEAR(vt(1), 0.0, kTolerance);
+    const VectorX<double>& vt = solver_.get_tangential_velocities();
+    ASSERT_EQ(vt.size(), 2 * num_contacts);
+    for (int ic = 0; ic < num_contacts; ++ic) {
+      // There should be no spurious out-of-plane tangential velocity.
+      EXPECT_NEAR(vt(2 * ic + 1), 0.0, kTolerance);
 
-  // We expect stiction, to within the stiction tolerance.
-  EXPECT_LT(std::abs(vt(0)), parameters.stiction_tolerance);
+      // We expect stiction, to within the stiction tolerance.
+      EXPECT_LT(std::abs(vt(2 * ic)), parameters.stiction_tolerance);
+    }
 
-  const VectorX<double>& v = solver_.get_generalized_velocities();
-  ASSERT_EQ(v.size(), nv_);
+    const VectorX<double>& v = solver_.get_generalized_velocities();
+    ASSERT_EQ(v.size(), nv_);
 
-  // We expect rolling, i.e. vt = vx + omega * R = 0, to within the stiction
-  // tolerance.
-  EXPECT_LT(std::abs(v(0) + R_ * v(2)), parameters.stiction_tolerance);
+    // We expect rolling, i.e. vt = vx + omega * R = 0, to within the stiction
+    // tolerance.
+    EXPECT_LT(std::abs(v(0) + R_ * v(2)), parameters.stiction_tolerance);
 
-  // Compute the Newton-Raphson Jacobian of the residual J = ∇ᵥR using the
-  // solver's internal implementation.
-  MatrixX<double> J =
-      TamsiSolverTester::CalcJacobian(solver_, v, dt);
+    // Compute the Newton-Raphson Jacobian of the residual J = ∇ᵥR using the
+    // solver's internal implementation.
+    MatrixX<double> J = TamsiSolverTester::CalcJacobian(solver_, v, dt);
 
-  // Compute the same Newton-Raphson Jacobian of the residual J = ∇ᵥR but with
-  // a completely separate implementation using automatic differentiation.
-  const double v_stiction = parameters.stiction_tolerance;
-  const double epsilon_v = v_stiction * parameters.relative_tolerance;
-  MatrixX<double> J_expected = test::CalcTwoWayCoupledJacobianWithAutoDiff(
-      M_, Jn_, Jt_, p_star_, x0_, mu_vector_,
-      stiffness_, dissipation_, dt, v_stiction, epsilon_v, v);
+    // Compute the same Newton-Raphson Jacobian of the residual J = ∇ᵥR but with
+    // a completely separate implementation using automatic differentiation.
+    const double v_stiction = parameters.stiction_tolerance;
+    const double epsilon_v = v_stiction * parameters.relative_tolerance;
+    MatrixX<double> J_expected = test::CalcTwoWayCoupledJacobianWithAutoDiff(
+        M_, Jn_, Jt_, p_star_, x0_, mu_vector_, stiffness_, dissipation_, dt,
+        v_stiction, epsilon_v, v);
 
-  // We use a tolerance scaled by the norm and size of the matrix.
-  const double J_tolerance =
-      J_expected.rows() * J_expected.norm() *
-          std::numeric_limits<double>::epsilon();
-
-  // Verify the result.
-  EXPECT_TRUE(CompareMatrices(
-      J, J_expected, J_tolerance, MatrixCompareType::absolute));
+    // Verify the result.
+    const double J_tolerance = 30 * std::numeric_limits<double>::epsilon();
+    EXPECT_TRUE(CompareMatrices(J, J_expected, J_tolerance,
+                                MatrixCompareType::relative));
+  }
 }
 
 // Same tests a RollingCylinder::StictionAfterImpact but with a smaller friction
@@ -1087,11 +1105,11 @@ GTEST_TEST(EmptyWorld, Solve) {
   TamsiSolver<double> solver{nv};
 
   // (Empty) problem data.
-  VectorX<double> p_star, mu_vector, x0, stiffness, dissipation;
+  VectorX<double> p_star, mu_vector, fn0, stiffness, dissipation;
   MatrixX<double> M, Jn, Jt;
 
   DRAKE_EXPECT_NO_THROW(solver.SetTwoWayCoupledProblemData(
-      &M, &Jn, &Jt, &p_star, &x0, &stiffness, &dissipation, &mu_vector));
+      &M, &Jn, &Jt, &p_star, &fn0, &stiffness, &dissipation, &mu_vector));
 }
 
 }  // namespace

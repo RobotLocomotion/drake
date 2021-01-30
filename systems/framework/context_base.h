@@ -198,16 +198,16 @@ class ContextBase : public internal::ContextMessageInterface {
     return output_port_tickets_[port_num];
   }
 
-  /** Connects the input port at `index` to a FixedInputPortValue with
-  the given abstract `value`. Returns a reference to the allocated
+  /** (Advanced) Connects the input port at `index` to a FixedInputPortValue
+  with the given abstract `value`. Returns a reference to the allocated
   FixedInputPortValue that will remain valid until this input port's value
   source is replaced or the Context is destroyed. You may use that reference to
   modify the input port's value using the appropriate FixedInputPortValue
   method, which will ensure that invalidation notifications are delivered.
 
   This is the most general way to provide a value (type-erased) for an
-  unconnected input port. See `Context<T>` for more-convenient overloads of
-  FixInputPort() for vector values with elements of type T.
+  unconnected input port. Using the `FixValue()` method of the input port to set
+  the value is the preferred workflow due to its additional sugar.
 
   @note Calling this method on an already connected input port, i.e., an
   input port that has previously been passed into a call to
@@ -215,23 +215,18 @@ class ContextBase : public internal::ContextMessageInterface {
   value present on that port.
 
   @pre `index` selects an existing input port of this Context. */
+  FixedInputPortValue& FixInputPort(int index, const AbstractValue& value);
+
+  /** (Advanced) Same as above method but the value is passed by unique_ptr
+  instead of by const reference. The port will contain a copy of the `value`
+  (not retain a pointer to the `value`). */
+  DRAKE_DEPRECATED("2021-04-01",
+      "Use input_port.FixValue() instead of context.FixInputPort(), or in "
+      "rare cases if an InputPort is not available, pass the value argument "
+      "here by-value, instead of by-unique-ptr.")
   FixedInputPortValue& FixInputPort(
-      int index, std::unique_ptr<AbstractValue> value);
-
-  /** Same as above method but the value is passed by const reference instead
-  of by unique_ptr. The port will contain a copy of the `value` (not retain a
-  pointer to the `value`).
-
-  @note Calling this method on an already connected input port, i.e., an
-  input port that has previously been passed into a call to
-  DiagramBuilder::Connect(), causes FixedInputPortValue to override any other
-  value present on that port.
-
-  @exclude_from_pydrake_mkdoc{The prior overload's docstring is better, and we
-  only need one of the two -- overloading on ownership doesn't make sense for
-  pydrake.} */
-  FixedInputPortValue& FixInputPort(int index, const AbstractValue& value) {
-    return FixInputPort(index, value.Clone());
+      int index, std::unique_ptr<AbstractValue> value) {
+    return FixInputPort(index, *value);
   }
 
   /** For input port `index`, returns a const FixedInputPortValue if the port is

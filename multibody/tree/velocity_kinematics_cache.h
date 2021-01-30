@@ -7,13 +7,15 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/math/spatial_velocity.h"
+#include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 
 namespace drake {
 namespace multibody {
 namespace internal {
+
+// TODO(sherm1) Should cache qdot here.
 
 /// This class is one of the cache entries in the Context. It holds the
 /// kinematics results of computations that depend not only on the generalized
@@ -61,13 +63,11 @@ class VelocityKinematicsCache {
     }
   }
 
-  /// Returns a constant reference to the spatial velocity `V_WB` of the body B
-  /// (associated with node `body_node_index`) as measured and expressed in the
-  /// world frame W.
+  /// Returns V_WB, body B's spatial velocity in the world frame W.
   /// @param[in] body_node_index The unique index for the computational
   ///                            BodyNode object associated with body B.
-  /// @returns `V_WB` the spatial velocity of the body frame B measured and
-  ///                 expressed in the world frame W.
+  /// @retval V_WB_W body B's spatial velocity in the world frame W,
+  /// expressed in W (for point Bo, the body frame's origin).
   const SpatialVelocity<T>& get_V_WB(BodyNodeIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return V_WB_pool_[body_node_index];

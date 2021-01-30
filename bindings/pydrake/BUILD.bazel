@@ -64,9 +64,7 @@ generate_pybind_documentation_header(
     out_xml = "documentation_pybind.xml",
     root_name = "pydrake_doc",
     targets = [
-        # TODO(eric.cousineau): Replace `drake_headers_no_attic` with
-        # `drake_shared_library` once the attic is removed.
-        "//tools/install/libdrake:drake_headers_no_attic",
+        "//tools/install/libdrake:drake_headers",
         "//examples/compass_gait:compass_gait",
         "//examples/manipulation_station:manipulation_station",
         "//examples/manipulation_station:manipulation_station_hardware_interface",  # noqa
@@ -149,7 +147,6 @@ drake_pybind_library(
     name = "lcm_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
     ],
     cc_srcs = ["lcm_py.cc"],
     package_info = PACKAGE_INFO,
@@ -167,8 +164,9 @@ drake_pybind_library(
         "//bindings/pydrake:symbolic_types_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
+        "//bindings/pydrake/common:eigen_pybind",
         "//bindings/pydrake/common:type_pack",
+        "//bindings/pydrake/common:value_pybind",
     ],
     cc_srcs = ["math_py.cc"],
     package_info = PACKAGE_INFO,
@@ -177,6 +175,7 @@ drake_pybind_library(
         "//bindings/pydrake:autodiffutils_py",
         "//bindings/pydrake:symbolic_py",
         "//bindings/pydrake/common:eigen_geometry_py",
+        "//bindings/pydrake/common:value_py",
     ],
     py_srcs = ["_math_extra.py"],
 )
@@ -191,7 +190,7 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
-        "//bindings/pydrake/systems:framework_py",
+        "//bindings/pydrake/common:value_py",
         "//bindings/pydrake/systems:sensors_py",
     ],
 )
@@ -214,7 +213,6 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
-        "//bindings/pydrake/common:deprecation_py",
     ],
 )
 
@@ -275,8 +273,6 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":polynomial_py",
     ":symbolic_py",
     ":trajectories_py",
-    "//bindings/pydrake/attic",
-    "//bindings/pydrake/third_party",
     "//bindings/pydrake/visualization",
 ] + PYBIND_SUBPACKAGES_FOR_COVERAGE
 
@@ -343,6 +339,12 @@ drake_py_unittest(
     ],
 )
 
+drake_py_unittest(
+    name = "all_each_import_test",
+    timeout = "moderate",
+    deps = [":all_py"],
+)
+
 drake_py_library(
     name = "algebra_test_util_py",
     testonly = 1,
@@ -379,6 +381,34 @@ drake_py_unittest(
         ":math_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
         "//bindings/pydrake/common/test_utilities:pickle_compare_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "text_logging_test_py",
+    testonly = 1,
+    add_install = False,
+    cc_so_name = "test/text_logging_test",
+    cc_srcs = ["test/text_logging_test_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_srcs = ["test/__init__.py"],
+    visibility = ["//visibility:private"],
+)
+
+drake_py_binary(
+    name = "text_logging_example",
+    testonly = 1,
+    srcs = ["test/text_logging_example.py"],
+    deps = [
+        ":module_py",
+        ":text_logging_test_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "text_logging_test",
+    data = [
+        ":text_logging_example",
     ],
 )
 
@@ -504,7 +534,9 @@ drake_py_unittest(
 drake_py_unittest(
     name = "trajectories_test",
     deps = [
+        ":math_py",
         ":trajectories_py",
+        "//bindings/pydrake/common:eigen_geometry_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
     ],
 )

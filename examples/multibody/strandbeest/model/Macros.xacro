@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<!-- @author: Joseph Masterjohn (github: @joemasterjohn)
+     @author: Robin Deits (github: @rdeits)
+
+     These files are an adaptation of the original Strandbeest example in
+     Drake, written by Robin Deits:
+       
+     https://github.com/RobotLocomotion/drake/blob/last_sha_with_original_matlab/drake/examples/Strandbeest/
+-->
+<robot xmlns:drake="http://drake.mit.edu" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xacro="http://ros.org/wiki/xacro" xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="Macros">
+  <!-- LinearBushingRollPitchYaw parameters -->
+  <xacro:property name="torque_stiffness" value="20000"/>
+  <xacro:property name="torque_damping" value="2000"/>
+  <xacro:property name="force_stiffness" value="20000"/>
+  <xacro:property name="force_damping" value="2000"/>
+  <!--PVC Material Properties -->
+  <!-- http://www.midcoonline.com/web/Pages/Products/Pipe/Info/PVC_CPVC/ -->
+  <!-- PVC linear density: mass per unit length constant. -->
+  <xacro:property name="pvc_kg_per_m" value=".476212462"/>
+  <xacro:property name="pvc_radius_outer" value="0.03683"/>
+  <xacro:property name="pvc_radius_inner" value="0.0266446"/>
+  <!-- Macro to create the inertial properties modelling pvc pipe -->
+  <xacro:macro name="strandbeest_cylinder_inertial" params="xyz rpy length">
+    <inertial>
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+      <mass value="${pvc_kg_per_m * length}"/>
+      <!-- Inertial tensor for a cylindrical tube (e.g. pvc pipe) -->
+      <inertia ixx="${(1.0/12.0)               * (pvc_kg_per_m * length)               * (3*(pvc_radius_outer**2 + pvc_radius_inner**2) + length**2)}" iyy="${(1.0/12.0)               * (pvc_kg_per_m * length)               * (3*(pvc_radius_outer**2 + pvc_radius_inner**2) + length**2)}" izz="${0.5 * (pvc_kg_per_m * length)               * (pvc_radius_outer**2 + pvc_radius_inner**2)}" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </xacro:macro>
+  <!-- Macro to create the visual properties for a length of pvc -->
+  <xacro:macro name="strandbeest_cylinder_visual" params="xyz rpy length radius material">
+    <visual>
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+      <geometry>
+        <cylinder length="${length}" radius="${radius}"/>
+      </geometry>
+      <material name="${material}"/>
+    </visual>
+  </xacro:macro>
+  <!-- Macro to create the inertial and visual tags for a length of pvc -->
+  <xacro:macro name="strandbeest_cylinder" params="xyz rpy length radius material">
+    <xacro:strandbeest_cylinder_inertial xyz="${xyz}" rpy="${rpy}" length="${length}"/>
+    <xacro:strandbeest_cylinder_visual xyz="${xyz}" rpy="${rpy}" length="${length}" radius="${radius}" material="${material}"/>
+  </xacro:macro>
+</robot>

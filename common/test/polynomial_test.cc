@@ -511,24 +511,6 @@ GTEST_TEST(PolynomialTest, FromExpression) {
   }
 }
 
-// Checks deprecated aliases.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
-// TODO(soonho-tri): Remove the following checks when we remove ::Polynomial.
-static_assert(
-    std::is_same<::Polynomial<double>, drake::Polynomial<double>>::value,
-    "::Polynomial should be an alias of drake::Polynomial.");
-static_assert(std::is_same<::Polynomiald, drake::Polynomiald>::value,
-              "::Polynomiald should be an alias of drake::Polynomiald.");
-static_assert(std::is_same<::VectorXPoly, drake::VectorXPoly>::value,
-              "::VectorXPoly should be an alias of drake::VectorXPoly.");
-GTEST_TEST(PolynomialTest, DeprecatedPow) {
-  const Polynomiald x = Polynomiald("x");
-  EXPECT_EQ(::pow(x, 2), x * x);
-}
-#pragma GCC diagnostic pop
-
 template <typename T>
 void TestScalarType() {
   Eigen::Vector3d coeffs(1., 2., 3.);
@@ -537,10 +519,10 @@ void TestScalarType() {
               1e-14);
 
   EXPECT_THROW(p.Roots(), std::runtime_error);
-  EXPECT_TRUE(static_cast<bool>(p.IsApprox(p, 1e-14)));
+  EXPECT_TRUE(static_cast<bool>(p.CoefficientsAlmostEqual(p, 1e-14)));
 
-  Polynomial<T> x("x");
-  Polynomial<T> y("y");
+  Polynomial<T> x("x", 1);
+  Polynomial<T> y("y", 1);
   const std::map<Polynomiald::VarType, double> eval_point = {
     {x.GetSimpleVariable(), 1},
     {y.GetSimpleVariable(), 2}};
@@ -552,6 +534,68 @@ void TestScalarType() {
 GTEST_TEST(PolynomialTest, ScalarTypes) {
   TestScalarType<AutoDiffXd>();
   TestScalarType<symbolic::Expression>();
+
+  // Checks that we can create an instance, Polynomial<T>(0). `Scalar(0)` (where
+  // Scalar = Polynomial<T>) is a common pattern in Eigen internals and we want
+  // to make sure that we can build these instances.
+  const Polynomial<double> p_double(0);
+  const Polynomial<AutoDiffXd> p_autodiffxd(0);
+  const Polynomial<symbolic::Expression> p_symbolic(0);
+}
+
+GTEST_TEST(PolynomialTest, CoefficientsAlmostEqualTest) {
+  Polynomiald x = Polynomiald("x");
+  Polynomiald y = Polynomiald("y");
+
+  EXPECT_FALSE(x.CoefficientsAlmostEqual(y));
+  EXPECT_TRUE((x + y).CoefficientsAlmostEqual(y + x));
+
+  EXPECT_TRUE((x + x * x + 3 * pow(x, 3))
+                  .CoefficientsAlmostEqual(3 * pow(x, 3) + x + x * x));
+
+  // Test relative and absolute tolerance.
+  EXPECT_TRUE(
+      (100 * x).CoefficientsAlmostEqual(99 * x, 0.1, ToleranceType::kRelative));
+  EXPECT_FALSE(
+      (100 * x).CoefficientsAlmostEqual(99 * x, 0.1, ToleranceType::kAbsolute));
+  EXPECT_FALSE((0.01 * x).CoefficientsAlmostEqual(0.02 * x, 0.1,
+                                                  ToleranceType::kRelative));
+  EXPECT_TRUE((0.01 * x).CoefficientsAlmostEqual(0.02 * x, 0.1,
+                                                 ToleranceType::kAbsolute));
+
+  // Test missing monomials.
+  EXPECT_FALSE((x + y + 0.01 * x * x).CoefficientsAlmostEqual(x + y));
+  EXPECT_FALSE((x + y).CoefficientsAlmostEqual(x + y + 0.01 * x * x));
+  // Missing monomials is ok only for absolute tolerance.
+  EXPECT_TRUE(
+      (x + y + 0.01 * x * x)
+          .CoefficientsAlmostEqual(x + y, 0.02, ToleranceType::kAbsolute));
+  EXPECT_TRUE((x + y).CoefficientsAlmostEqual(x + y + 0.01 * x * x, 0.02,
+                                              ToleranceType::kAbsolute));
+  EXPECT_FALSE(
+      (x + y + 0.01 * x * x)
+          .CoefficientsAlmostEqual(x + y, 0.02, ToleranceType::kRelative));
+  EXPECT_FALSE((x + y).CoefficientsAlmostEqual(x + y + 0.01 * x * x, 0.02,
+                                               ToleranceType::kRelative));
+}
+
+GTEST_TEST(PolynomialTest, SubsitutionTest) {
+  Polynomiald x = Polynomiald("x");
+  Polynomiald y = Polynomiald("y");
+
+  Polynomiald::VarType xvar = x.GetSimpleVariable();
+  Polynomiald::VarType yvar = y.GetSimpleVariable();
+
+  EXPECT_TRUE(x.Substitute(xvar, y).CoefficientsAlmostEqual(y));
+
+  Polynomiald p1 = x + 3 * x * x + 3 * y;
+  EXPECT_TRUE(
+      p1.Substitute(xvar, 1 + x)
+          .CoefficientsAlmostEqual(1 + x + 3 * (1 + x) * (1 + x) + 3 * y));
+  EXPECT_TRUE(p1.Substitute(yvar, 1 + x)
+                  .CoefficientsAlmostEqual(3 + 4 * x + 3 * x * x));
+  EXPECT_TRUE(p1.Substitute(xvar, x * x)
+                  .CoefficientsAlmostEqual(x * x + 3 * pow(x, 4) + 3 * y));
 }
 
 }  // anonymous namespace

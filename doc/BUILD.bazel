@@ -6,18 +6,21 @@ load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
+    "drake_py_unittest",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
-
-drake_py_binary(
-    name = "sphinx_build",
-    srcs = ["sphinx_build.py"],
-)
 
 drake_py_library(
     name = "sphinx_base",
     srcs = ["sphinx_base.py"],
-    deps = [":sphinx_build"],
+    data = ["@sphinx//:sphinx-build"],
+    tags = [
+        # This target requires the appropriate prerequisites script for each
+        # platform to be run with the optional --with-doc-only command line
+        # option.
+        "manual",
+    ],
+    deps = ["@rules_python//python/runfiles"],
 )
 
 drake_py_binary(
@@ -40,6 +43,10 @@ drake_py_binary(
         # Some (currently disabled) Sphinx extensions try to reach out to the
         # network; we should fail-fast if someone tries to turn them on.
         "block-network",
+        # This target requires the appropriate prerequisites script for each
+        # platform to be run with the optional --with-doc-only command line
+        # option.
+        "manual",
         # Test exceeds timeout when run under Valgrind tools.
         "no_valgrind_tools",
     ],
@@ -55,7 +62,24 @@ drake_py_binary(
     name = "serve_sphinx",
     srcs = ["serve_sphinx.py"],
     data = [":gen_sphinx"],
+    tags = [
+        # This target requires the appropriate prerequisites script for each
+        # platform to be run with the optional --with-doc-only command line
+        # option.
+        "manual",
+    ],
     deps = [":sphinx_base"],
+)
+
+drake_py_library(
+    name = "system_doxygen",
+    srcs = ["system_doxygen.py"],
+    visibility = ["//visibility:public"],
+)
+
+drake_py_unittest(
+    name = "system_doxygen_test",
+    deps = [":system_doxygen"],
 )
 
 drake_py_binary(
@@ -64,13 +88,25 @@ drake_py_binary(
         "doxygen_main.py",
     ],
     data = [
+        "system_doxygen.py",
         "//:.bazelproject",
         "@bazel_tools//tools/python/runfiles",
         "@doxygen",
     ],
+    tags = [
+        # This target requires the appropriate prerequisites script for each
+        # platform to be run with the optional --with-doc-only command line
+        # option.
+        "manual",
+    ],
 )
 
 add_lint_tests(
-    python_lint_exclude = [":conf.py"],
+    python_lint_exclude = [
+        ":conf.py",
+        # The following needs the executable flag to be run by doxygen, but the
+        # linter complains:
+        ":system_doxygen.py",
+    ],
     python_lint_extra_srcs = [":doxygen.py"],
 )

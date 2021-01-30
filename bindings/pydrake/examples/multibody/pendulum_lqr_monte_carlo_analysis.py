@@ -50,7 +50,7 @@ def main():
         help="Torque limit of the pendulum.")
     args = parser.parse_args()
     if args.torque_limit < 0:
-        raise InvalidArgumentError("Please supply a nonnegative torque limit.")
+        raise ValueError("Please supply a nonnegative torque limit.")
 
     # Assemble the Pendulum plant.
     builder = DiagramBuilder()
@@ -95,7 +95,7 @@ def main():
                     torque_limiter.get_input_port(0))
     builder.Connect(torque_limiter.get_output_port(0),
                     pendulum.get_actuation_input_port())
-    builder.Connect(pendulum.get_output_port(0),
+    builder.Connect(pendulum.get_state_output_port(),
                     controller.get_input_port(0))
     diagram = builder.Build()
 
@@ -146,8 +146,8 @@ def main():
     # torque = r x f = r * (m * 9.81 * sin(theta))
     # theta = asin(torque / (r * m))
     if torque_limit <= (arm_radius * arm_mass * 9.81):
-        roa_half_width = np.arcsin(torque_limit /
-                                   (arm_radius * arm_mass * 9.81))
+        roa_half_width = np.arcsin(torque_limit
+                                   / (arm_radius * arm_mass * 9.81))
     else:
         roa_half_width = np.pi
 

@@ -9,6 +9,7 @@
 #include <fmt/format.h>
 
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
@@ -20,7 +21,7 @@ namespace internal {
 //  eventually get included in the public API.
 
 // TODO(SeanCurtis-TRI): Snake case this name.
-/** Calculates an absolute tolerance value conditioned to a problem's
+/* Calculates an absolute tolerance value conditioned to a problem's
  characteristic, positive-valued `size`. The tolerance is sufficient to account
  for round-off error which arises due to transformations.
  @pre size > 0.  */
@@ -28,7 +29,7 @@ constexpr double DistanceToPointRelativeTolerance(double size) {
   return 1e-14 * std::max(1.0, size);
 }
 
-/** Class for coordinating the collision objects stored in the proximity engine
+/* Class for coordinating the collision objects stored in the proximity engine
  with the geometries stored in SceneGraph. The two are related in that the
  collision object stores the GeometryId of the corresponding SceneGraph
  geometry as well as a bit to mark whether it is anchored or dynamic.
@@ -43,7 +44,7 @@ class EncodedData {
  public:
   using ValueType = decltype(GeometryId::get_new_id().get_value());
 
-  /** Constructs encoded data directly from the id and the known
+  /* Constructs encoded data directly from the id and the known
    anchored/dynamic characterization.  */
   EncodedData(GeometryId id, bool is_dynamic)
       : data_(static_cast<ValueType>(id.get_value())) {
@@ -55,42 +56,42 @@ class EncodedData {
     // be taken in the dynamic case.
   }
 
-  /** Constructs encoded data by extracting it from the given collision object.
+  /* Constructs encoded data by extracting it from the given collision object.
    */
   explicit EncodedData(const fcl::CollisionObject<double>& fcl_object)
       : data_(reinterpret_cast<ValueType>(fcl_object.getUserData())) {}
 
-  /** Constructs encoded data for the given id identified as dynamic.  */
+  /* Constructs encoded data for the given id identified as dynamic.  */
   static EncodedData encode_dynamic(GeometryId id) {
     return {id, true};
   }
 
-  /** Constructs encoded data for the given id identified as anchored.  */
+  /* Constructs encoded data for the given id identified as anchored.  */
   static EncodedData encode_anchored(GeometryId id) {
     return {id, false};
   }
 
-  /** Sets the encoded data to be dynamic.  */
+  /* Sets the encoded data to be dynamic.  */
   void set_dynamic() { data_ |= kIsDynamicMask; }
 
-  /** Sets the encoded data to be anchored.  */
+  /* Sets the encoded data to be anchored.  */
   void set_anchored() { data_ &= ~kIsDynamicMask; }
 
-  /** Writes the encoded data into the collision object's user data.  */
+  /* Writes the encoded data into the collision object's user data.  */
   void write_to(fcl::CollisionObject<double>* object) const {
     object->setUserData(reinterpret_cast<void*>(data_));
   }
 
-  /** Reports true if the encoded data is marked as dynamic. False if anchored.
+  /* Reports true if the encoded data is marked as dynamic. False if anchored.
    */
   bool is_dynamic() const { return (data_ & kIsDynamicMask) != 0; }
 
-  /** Reports the stored id.  */
+  /* Reports the stored id.  */
   GeometryId id() const {
     return static_cast<GeometryId>(data_ & ~kIsDynamicMask);
   }
 
-  /** Reports the encoded data.  */
+  /* Reports the encoded data.  */
   ValueType encoding() const { return data_; }
 
  private:
@@ -122,9 +123,33 @@ class EncodedData {
   ValueType data_{};
 };
 
-/** Returns the name of the geometry associated with the given collision
+/* Returns the name of the geometry associated with the given collision
  `object`.  */
 std::string GetGeometryName(const fcl::CollisionObjectd& object);
+
+/* Counts the unique 1-simplices (edges) in `mesh`. */
+int CountEdges(const VolumeMesh<double>& mesh);
+
+/* Counts the unique 2-simplices (faces) in the `mesh` */
+int CountFaces(const VolumeMesh<double>& mesh);
+
+/*
+  Computes the generalized Euler characteristic:
+
+   χ = k₀ - k₁ + k₂ - k₃
+
+  Where kᵢ is the number of i-simplexes in the mesh.
+
+  We can use χ in a necessary condition for a _conforming_
+  tetrahedral mesh (any two tetrahedra intersect in their shared
+  face, or shared edge, or shared vertex, or not at all. There is
+  no partial overlapping of two tetrahedra.).
+
+  For example, every tetrahedral mesh of every geometric primitive
+  (Box , Cylinder, Ellipsoid, Sphere, etc.) must have χ = 1 because
+  it is topologically equivalent to a solid ball.
+*/
+int ComputeEulerCharacteristic(const VolumeMesh<double>& mesh);
 
 }  // namespace internal
 }  // namespace geometry

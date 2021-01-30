@@ -42,7 +42,7 @@ void CheckMinMaxBoundaryValue(
   std::vector<VolumeVertexIndex> boundary_vertex_indices =
       CollectUniqueVertices(
           IdentifyBoundaryFaces(pressure_field.mesh().tetrahedra()));
-  for (const VolumeVertexIndex v : boundary_vertex_indices) {
+  for (const VolumeVertexIndex& v : boundary_vertex_indices) {
     double pressure = pressure_field.EvaluateAtVertex(v);
     EXPECT_EQ(pressure, 0.0);
   }
@@ -70,7 +70,8 @@ GTEST_TEST(MakeEllipsoidFieldTest, MakeEllipsoidPressureField) {
   // not exactly on the surface of the ellipsoid due to numerical roundings.
   // We do not want to use the coarsest mesh (octahedron) since all vertices
   // are exactly on the coordinate axes.
-  auto mesh = MakeEllipsoidVolumeMesh<double>(ellipsoid, 0.04);
+  auto mesh = MakeEllipsoidVolumeMesh<double>(
+      ellipsoid, 0.04, TessellationStrategy::kDenseInteriorVertices);
   // Confirm that the mesh is not the coarsest one (octahedron).
   ASSERT_GT(mesh.num_vertices(), 7);
   ASSERT_GT(mesh.num_elements(), 8);

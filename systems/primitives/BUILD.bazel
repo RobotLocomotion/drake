@@ -12,6 +12,7 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
     name = "primitives",
+    visibility = ["//visibility:public"],
     deps = [
         ":adder",
         ":affine_system",
@@ -500,6 +501,7 @@ drake_cc_googletest(
     name = "pass_through_test",
     deps = [
         ":pass_through",
+        "//math:gradient",
         "//systems/framework",
         "//systems/framework/test_utilities",
     ],

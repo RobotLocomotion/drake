@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<!-- An acceptance test that libsdformat can upgrade very old files. -->
+<sdf version="1.2">
+  <model name="robot">
+    <link name="need_at_least_one_link"/>
+  </model>
+</sdf>

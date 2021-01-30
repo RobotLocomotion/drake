@@ -17,7 +17,7 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-/** @name  Declaring general contact material properties
+/* @name  Declaring general contact material properties
 
  String constants used to access the contact material properties that
  SceneGraph depends on. These are not the exhaustive set of contact material
@@ -30,16 +30,18 @@ namespace internal {
  called out in the documentation of the ProximityProperties class).  */
 //@{
 
-extern const char* const kMaterialGroup;  ///< The contact material group name.
-extern const char* const kElastic;        ///< Elastic modulus property name.
-extern const char* const kFriction;       ///< Friction coefficients property
-                                          ///< name.
-extern const char* const kHcDissipation;  ///< Hunt-Crossley dissipation
-                                          ///< property name.
+extern const char* const kMaterialGroup;   ///< The contact material group name.
+extern const char* const kElastic;         ///< Elastic modulus property name.
+extern const char* const kFriction;        ///< Friction coefficients property
+                                           ///< name.
+extern const char* const kHcDissipation;   ///< Hunt-Crossley dissipation
+                                           ///< property name.
+extern const char* const kPointStiffness;  ///< Point stiffness property
+                                           ///< name.
 
 //@}
 
-/** @name  Declaring geometry for hydroelastic contact.
+/* @name  Declaring geometry for hydroelastic contact.
 
  In order for a geometry to be used in hydroelastic contact, it must be declared
  as such. The declaration consists of setting a number of properties in the
@@ -73,7 +75,7 @@ extern const char* const kSlabThickness;    ///< Slab thickness property name
 //  very stiff and one very soft object interact, it might make sense to
 //  consider the stiff object as effectively rigid and simplify the computation.
 //  In this case, the object would get two representations.
-/** Classification of the type of representation a shape has for the
+/* Classification of the type of representation a shape has for the
  hydroelastic contact model: rigid or soft.  */
 enum class HydroelasticType {
   kUndefined,
@@ -81,25 +83,56 @@ enum class HydroelasticType {
   kSoft
 };
 
-/** Streaming operator for writing hydroelastic type to output stream.  */
+/* Streaming operator for writing hydroelastic type to output stream.  */
 std::ostream& operator<<(std::ostream& out, const HydroelasticType& type);
 
 }  // namespace internal
 
+/**
+ * @anchor contact_material_utility_functions
+ * @name         Contact Material Utility Functions
+ * AddContactMaterial() adds contact material properties to the given set of
+ * proximity `properties`. Only the parameters that carry values will be added
+ * to the given set of `properties`; no default values will be provided.
+ * Downstream consumers of the contact materials can optionally provide
+ * defaults for missing properties.
+ *
+ * For legacy and backwards compatibility purposes, two overloads for
+ * AddContactMaterial() are provided. One supports all contact material
+ * properties **except** `point_stiffness`, and the other includes it.
+ * Users are encouraged to use the overload that contains the argument for
+ * `point_stiffness`.
+ *
+ * These functions will throw an error if:
+ * - `elastic_modulus` is not positive
+ * - `dissipation` is negative
+ * - `point_stiffness` is not positive
+ * - Any of the contact material properties have already been defined in
+ *   `properties`.
+ */
+///@{
+/**
+ * @throws std::logic_error if any parameter doesn't satisfy the requirements
+ *                          listed in @ref contact_material_utility_functions
+ *                          "Contact Material Utility Functions".
+ */
+void AddContactMaterial(
+    const std::optional<double>& elastic_modulus,
+    const std::optional<double>& dissipation,
+    const std::optional<double>& point_stiffness,
+    const std::optional<multibody::CoulombFriction<double>>& friction,
+    ProximityProperties* properties);
 
-/** Adds contact material properties to the given set of proximity `properties`.
- Only the parameters that carry values will be added to the given set of
- `properties`; no default values will be provided. Downstream consumers of the
- contact materials can optionally provide defaults for missing properties.
-
- @throws std::logic_error if `elastic_modulus` is not positive, `dissipation` is
-                          negative, or any of the contact material properties
-                          have already been defined in `properties`.  */
+/**
+ * @warning Please use the overload of AddContactMaterial() that includes the
+ * argument for `point_stiffness` rather than this one.
+ */
 void AddContactMaterial(
     const std::optional<double>& elastic_modulus,
     const std::optional<double>& dissipation,
     const std::optional<multibody::CoulombFriction<double>>& friction,
     ProximityProperties* properties);
+///@}
 
 /** Adds properties to the given set of proximity properties sufficient to cause
  the associated geometry to generate a rigid hydroelastic representation.

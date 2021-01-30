@@ -24,6 +24,7 @@ filegroup(
 
 drake_cc_package_library(
     name = "free_body",
+    visibility = ["//visibility:public"],
     deps = [
         ":free_body_only",
     ],
@@ -53,7 +54,7 @@ drake_cc_googletest(
         ":free_body",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/test_utilities:floating_body_plant",
-        "//systems/analysis",
+        "//systems/analysis:simulator",
     ],
 )
 

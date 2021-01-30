@@ -1,3 +1,6 @@
+/** @file
+ Doxygen-only documentation for @ref solvers.  */
+
 /** @addtogroup solvers
  * @{
  * Drake's MathematicalProgram class is used to solve the mathematical
@@ -95,7 +98,7 @@
  *     CSDP</a></td>
  *     <td align="center">&diams;</td>
  *     <td></td>
- *     <td></td>
+ *     <td align="center">&diams;</td>
  *     <td align="center">&diams;</td>
  *     <td align="center">&diams;</td>
  * </tr>
@@ -125,7 +128,14 @@
  *    <td align="center">&diams;</td>
  *    <td></td>
  * </tr>
+ * <tr><td> &loz;
+ * @ref drake::solvers::MixedIntegerBranchAndBound "naive branch-and-bound" </td>
+ *    <td align="center">&diams;</td>
+ *    <td align="center">&diams;</td>
+ *    <td align="center">&diams;</td>
+ *    <td align="center">&diams;</td>
  * </table>
+ * &loz; We implement only the basic branch-and-bound algorithm, without cutting planes nor advanced branching heuristics. Its usefulness is likely restricted to small-sized problems with dozens of binary variables.
  *
  * <b>Nonconvex Programming</b>
  *

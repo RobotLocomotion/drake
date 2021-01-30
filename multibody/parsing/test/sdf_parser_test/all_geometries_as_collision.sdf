@@ -1,5 +1,6 @@
-<sdf version='1.7'>
-  <model name='test_robot'>
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="test_robot">
     <!-- This sdf file defines a simple test robot with a single link that
          contains one collision tag for each supported geometry type. We're
          confirming that each geometry declaration produces a corresponding
@@ -16,18 +17,15 @@
          the world, will be denoted as `P`.
          Because there is no <pose> tag at the root level, `X_PM` will be
          identity. -->
-
-    <link name='link1'>
-
-      <collision name = 'Box'>
+    <link name="link1">
+      <collision name="Box">
         <geometry>
           <box>
             <size>1.0 2.0 3.0</size>
           </box>
         </geometry>
       </collision>
-
-      <collision name = 'Capsule'>
+      <collision name="Capsule">
         <geometry>
           <drake:capsule>
             <length>1</length>
@@ -35,8 +33,7 @@
           </drake:capsule>
         </geometry>
       </collision>
-
-      <collision name = 'Convex'>
+      <collision name="Convex">
         <geometry>
           <mesh>
             <drake:declare_convex/>
@@ -44,8 +41,7 @@
           </mesh>
         </geometry>
       </collision>
-
-      <collision name = 'Cylinder'>
+      <collision name="Cylinder">
         <geometry>
           <cylinder>
             <length>1</length>
@@ -53,8 +49,7 @@
           </cylinder>
         </geometry>
       </collision>
-
-      <collision name = 'Ellipsoid'>
+      <collision name="Ellipsoid">
         <geometry>
           <drake:ellipsoid>
             <a>1.0</a>
@@ -63,24 +58,21 @@
           </drake:ellipsoid>
         </geometry>
       </collision>
-
-      <collision name = 'HalfSpace'>
+      <collision name="HalfSpace">
         <geometry>
           <plane>
             <normal>1.0 2.0 3.0</normal>
           </plane>
         </geometry>
       </collision>
-
-      <collision name = 'Mesh'>
+      <collision name="Mesh">
         <geometry>
           <mesh>
             <uri>../tri_cube.obj</uri>
           </mesh>
         </geometry>
       </collision>
-
-      <collision name = 'Sphere'>
+      <collision name="Sphere">
         <geometry>
           <sphere>
             <radius>1.0</radius>
@@ -88,9 +80,8 @@
         </geometry>
       </collision>
     </link>
-
     <!-- Ensure we can weld to the world. -->
-    <joint name='weld_link1' type='fixed'>
+    <joint name="weld_link1" type="fixed">
       <parent>world</parent>
       <child>link1</child>
     </joint>

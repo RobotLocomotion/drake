@@ -1,8 +1,7 @@
 #pragma once
 
 #ifndef DRAKE_COMMON_SYMBOLIC_HEADER
-// TODO(soonho-tri): Change to #error, when #6613 merged.
-#warning Do not directly include this file. Include "drake/common/symbolic.h".
+#error Do not directly include this file. Include "drake/common/symbolic.h".
 #endif
 
 #include <initializer_list>
@@ -97,13 +96,13 @@ class Environment {
   /** Returns an iterator to the end. */
   iterator end() { return map_.end(); }
   /** Returns a const iterator to the beginning. */
-  const_iterator begin() const { return map_.cbegin(); }
+  [[nodiscard]] const_iterator begin() const { return map_.cbegin(); }
   /** Returns a const iterator to the end. */
-  const_iterator end() const { return map_.cend(); }
+  [[nodiscard]] const_iterator end() const { return map_.cend(); }
   /** Returns a const iterator to the beginning. */
-  const_iterator cbegin() const { return map_.cbegin(); }
+  [[nodiscard]] const_iterator cbegin() const { return map_.cbegin(); }
   /** Returns a const iterator to the end. */
-  const_iterator cend() const { return map_.cend(); }
+  [[nodiscard]] const_iterator cend() const { return map_.cend(); }
 
   /** Inserts a pair (@p key, @p elem). */
   void insert(const key_type& key, const mapped_type& elem);
@@ -119,20 +118,22 @@ class Environment {
               const Eigen::Ref<const MatrixX<mapped_type>>& elements);
 
   /** Checks whether the container is empty.  */
-  bool empty() const { return map_.empty(); }
+  [[nodiscard]] bool empty() const { return map_.empty(); }
   /** Returns the number of elements. */
-  size_t size() const { return map_.size(); }
+  [[nodiscard]] size_t size() const { return map_.size(); }
 
   /** Finds element with specific key. */
   iterator find(const key_type& key) { return map_.find(key); }
   /** Finds element with specific key. */
-  const_iterator find(const key_type& key) const { return map_.find(key); }
+  [[nodiscard]] const_iterator find(const key_type& key) const {
+    return map_.find(key);
+  }
 
   /** Returns the domain of this environment. */
-  Variables domain() const;
+  [[nodiscard]] Variables domain() const;
 
   /** Returns string representation. */
-  std::string to_string() const;
+  [[nodiscard]] std::string to_string() const;
 
   /** Returns a reference to the value that is mapped to a key equivalent to
    *  @p key, performing an insertion if such key does not already exist.

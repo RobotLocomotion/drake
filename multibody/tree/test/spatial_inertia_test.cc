@@ -8,6 +8,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rotation_matrix.h"
@@ -60,10 +61,10 @@ GTEST_TEST(SpatialInertia, DefaultConstructor) {
 GTEST_TEST(SpatialInertia, ConstructionFromMasComAndUnitInertia) {
   const double mass = 2.5;
   const Vector3d com(0.1, -0.2, 0.3);
-  const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
-  const Vector3d p(0.1, -0.1, 0.2);  // p for products.
-  UnitInertia<double> G(m(0), m(1), m(2), /* moments of inertia */
-                        p(0), p(1), p(2));/* products of inertia */
+  const Vector3d m(2.0, 2.3, 2.4);         // m for moments.
+  const Vector3d p(0.1, -0.1, 0.2);        // p for products.
+  UnitInertia<double> G(m(0), m(1), m(2),  /* moments of inertia */
+                        p(0), p(1), p(2)); /* products of inertia */
   SpatialInertia<double> M(mass, com, G);
   ASSERT_TRUE(M.IsPhysicallyValid());
 
@@ -96,11 +97,11 @@ GTEST_TEST(SpatialInertia, ConstructionFromMasComAndUnitInertia) {
 GTEST_TEST(SpatialInertia, CastToAutoDiff) {
   const double mass_double = 2.5;
   const Vector3d com_double(0.1, -0.2, 0.3);
-  const Vector3d m_double(2.0,  2.3, 2.4);  // m for moments.
+  const Vector3d m_double(2.0, 2.3, 2.4);   // m for moments.
   const Vector3d p_double(0.1, -0.1, 0.2);  // p for products.
   const UnitInertia<double> G_double(
-      m_double(0), m_double(1), m_double(2), /* moments of inertia */
-      p_double(0), p_double(1), p_double(2));/* products of inertia */
+      m_double(0), m_double(1), m_double(2),  /* moments of inertia */
+      p_double(0), p_double(1), p_double(2)); /* products of inertia */
   const SpatialInertia<double> M_double(mass_double, com_double, G_double);
   ASSERT_TRUE(M_double.IsPhysicallyValid());
 
@@ -139,10 +140,10 @@ GTEST_TEST(SpatialInertia, CastToAutoDiff) {
 GTEST_TEST(SpatialInertia, ShiftOperator) {
   const double mass = 2.5;
   const Vector3d com(0.1, -0.2, 0.3);
-  const Vector3d m(2.0,  2.3, 2.4);  // m for moments.
-  const Vector3d p(0.1, -0.1, 0.2);  // p for products.
-  UnitInertia<double> G(m(0), m(1), m(2), /* moments of inertia */
-                        p(0), p(1), p(2));/* products of inertia */
+  const Vector3d m(2.0, 2.3, 2.4);         // m for moments.
+  const Vector3d p(0.1, -0.1, 0.2);        // p for products.
+  UnitInertia<double> G(m(0), m(1), m(2),  /* moments of inertia */
+                        p(0), p(1), p(2)); /* products of inertia */
   SpatialInertia<double> M(mass, com, G);
 
   std::stringstream stream;
@@ -168,10 +169,8 @@ GTEST_TEST(SpatialInertia, PlusEqualOperator) {
   const double mass_right = 1.5;  // Mass of the cube on the right.
   // So far the "about point" is the cube's centroid.
   // We'll shift the about point below.
-  SpatialInertia<double> MRightBox_Wo_W(
-      mass_right,
-      Vector3d::Zero(),
-      UnitInertia<double>::SolidCube(L));
+  SpatialInertia<double> MRightBox_Wo_W(mass_right, Vector3d::Zero(),
+                                        UnitInertia<double>::SolidCube(L));
   MRightBox_Wo_W.ShiftInPlace(-Vector3d::UnitX());
   // Check if after transformation this still is a physically valid inertia.
   EXPECT_TRUE(MRightBox_Wo_W.IsPhysicallyValid());
@@ -181,10 +180,8 @@ GTEST_TEST(SpatialInertia, PlusEqualOperator) {
   const double mass_left = 0.5;  // Mass of the cube on the left.
   // So far the "about point" is the cube's centroid.
   // We'll shift the about point below.
-  SpatialInertia<double> MLeftBox_Wo_W(
-      mass_left,
-      Vector3d::Zero(),
-      UnitInertia<double>::SolidCube(L));
+  SpatialInertia<double> MLeftBox_Wo_W(mass_left, Vector3d::Zero(),
+                                       UnitInertia<double>::SolidCube(L));
   MLeftBox_Wo_W.ShiftInPlace(Vector3d::UnitX());
   // Check if after transformation this still is a physically valid inertia.
   EXPECT_TRUE(MLeftBox_Wo_W.IsPhysicallyValid());
@@ -207,13 +204,11 @@ GTEST_TEST(SpatialInertia, PlusEqualOperator) {
   // We compute here in `com` the center of mass of the combined system
   // consisting of the two boxes.
   const double mass = mass_left + mass_right;
-  const Vector3d com(
-      (mass_left * MLeftBox_Wo_W.get_com() +
-       mass_right * MRightBox_Wo_W.get_com()) / mass);
+  const Vector3d com((mass_left * MLeftBox_Wo_W.get_com() +
+                      mass_right * MRightBox_Wo_W.get_com()) /
+                     mass);
   SpatialInertia<double> MExpected_Wo_W(
-      mass,
-      com,
-      UnitInertia<double>::SolidBox(2 * L, L, L));
+      mass, com, UnitInertia<double>::SolidBox(2 * L, L, L));
   EXPECT_TRUE(MBox_Wo_W.CopyToFullMatrix6().isApprox(
       MExpected_Wo_W.CopyToFullMatrix6(), kEpsilon));
 }
@@ -223,7 +218,7 @@ GTEST_TEST(SpatialInertia, ReExpress) {
   // Spatial inertia for a cube C computed about a point P and expressed in a
   // frame E.
   const double Lx = 0.2, Ly = 1.0, Lz = 0.5;  // Cube's lengths.
-  const double mass = 1.3;  // Cube's mass
+  const double mass = 1.3;                    // Cube's mass
   SpatialInertia<double> M_CP_E(  // First computed about its centroid.
       mass, Vector3d::Zero(), UnitInertia<double>::SolidBox(Lx, Ly, Lz));
   // Shift to point P placed one unit in the y direction along the y axis in
@@ -277,7 +272,7 @@ GTEST_TEST(SpatialInertia, Shift) {
   M_BBcm_W.ReExpressInPlace(R_WB);
 
   // Vector from Bcm to the the top of the cylinder Btop.
-  Vector3d p_BcmBtop_W(0, length/2.0, 0);
+  Vector3d p_BcmBtop_W(0, length / 2.0, 0);
 
   // Computes spatial inertia about Btop, still expressed in W.
   SpatialInertia<double> M_BBtop_W = M_BBcm_W.Shift(p_BcmBtop_W);
@@ -294,8 +289,8 @@ GTEST_TEST(SpatialInertia, Shift) {
 
   // Expected moment of inertia for a rod when computed about one of its ends.
   const double I_end =
-      mass * (3 * radius * radius + length * length) / 12  /*About centroid.*/
-      + mass * length * length / 4;  /*Parallel axis theorem shift.*/
+      mass * (3 * radius * radius + length * length) / 12 /*About centroid.*/
+      + mass * length * length / 4; /*Parallel axis theorem shift.*/
   const auto I_Xo_W = M_BBtop_W.CalcRotationalInertia();
   EXPECT_NEAR(I_Xo_W(0, 0), I_end, kEpsilon);
   EXPECT_NEAR(I_Xo_W(2, 2), I_end, kEpsilon);
@@ -311,9 +306,8 @@ GTEST_TEST(SpatialInertia, Shift) {
 // since IsPhysicallyValid() will fail in the constructor.
 GTEST_TEST(SpatialInertia, IsPhysicallyValidWithNegativeMass) {
   try {
-    SpatialInertia<double> M(
-        -1.0, Vector3d::Zero(),
-        UnitInertia<double>::SolidSphere(1.0));
+    SpatialInertia<double> M(-1.0, Vector3d::Zero(),
+                             UnitInertia<double>::SolidSphere(1.0));
     GTEST_FAIL();
   } catch (std::runtime_error& e) {
     std::string expected_msg =
@@ -333,9 +327,8 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidWithNegativeMass) {
 // inconsistently too far out for the unit inertia provided.
 GTEST_TEST(SpatialInertia, IsPhysicallyValidWithCOMTooFarOut) {
   try {
-    SpatialInertia<double> M(
-        1.0, Vector3d(2.0, 0.0, 0.0),
-        UnitInertia<double>::SolidSphere(1.0));
+    SpatialInertia<double> M(1.0, Vector3d(2.0, 0.0, 0.0),
+                             UnitInertia<double>::SolidSphere(1.0));
     GTEST_FAIL();
   } catch (std::runtime_error& e) {
     std::string expected_msg =
@@ -349,6 +342,15 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidWithCOMTooFarOut) {
         " is not physically valid. See SpatialInertia::IsPhysicallyValid()";
     EXPECT_EQ(e.what(), expected_msg);
   }
+}
+
+// Tessts that by setting skip_validity_check = true, it is possible to create
+// invalid spatial inertias with negative mass and malformed COM
+GTEST_TEST(SpatialInertia, SkipValidityCheck) {
+  DRAKE_EXPECT_NO_THROW(SpatialInertia<double>(-1.0, Vector3d::Zero(),
+                           UnitInertia<double>::SolidSphere(1.0), true));
+  DRAKE_EXPECT_NO_THROW(SpatialInertia<double>(1.0, Vector3d(2.0, 0.0, 0.0),
+                           UnitInertia<double>::SolidSphere(1.0), true));
 }
 
 // Tests the method SpatialInertia::MakeFromCentralInertia(...).
@@ -369,8 +371,8 @@ GTEST_TEST(SpatialInertia, MakeFromCentralInertia) {
   // Check spatial inertia for proper moments/products of inertia.
   // Note: The values below for Ixx, Iyy, Izz were calculated by MotionGenesis.
   const RotationalInertia<double> I_BBo_B = M_BBo_B.CalcRotationalInertia();
-  const Vector3d moments  = I_BBo_B.get_moments();
-  const double Ixx = 88, Iyy = 75,  Izz = 58;
+  const Vector3d moments = I_BBo_B.get_moments();
+  const double Ixx = 88, Iyy = 75, Izz = 58;
   EXPECT_NEAR(moments(0), Ixx, kEpsilon);
   EXPECT_NEAR(moments(1), Iyy, kEpsilon);
   EXPECT_NEAR(moments(2), Izz, kEpsilon);
@@ -421,8 +423,7 @@ GTEST_TEST(SpatialInertia, KineticEnergy) {
   const Vector3<double>& w_WB = V_WBcm.rotational();
   const Vector3<double>& v_WBcm = V_WBcm.translational();
   const double ke_WB_expected =
-      0.5 * w_WB.dot(I_Bcm_W * w_WB) +
-      0.5 * mass * v_WBcm.squaredNorm();
+      0.5 * w_WB.dot(I_Bcm_W * w_WB) + 0.5 * mass * v_WBcm.squaredNorm();
 
   EXPECT_NEAR(ke_WB, ke_WB_expected, 50 * kEpsilon);
 }
@@ -455,9 +456,9 @@ GTEST_TEST(SpatialInertia, SymbolicNan) {
 
   const Variable mass{"m"};
   const Vector3<T> p_PScm_E = symbolic::MakeVectorContinuousVariable(3, "p");
-  const UnitInertia<T> G_SP_E{
-      Variable{"Ixx"}, Variable{"Iyy"}, Variable{"Izz"},
-      Variable{"Ixy"}, Variable{"Ixz"}, Variable{"Iyz"}};
+  const UnitInertia<T> G_SP_E{Variable{"Ixx"}, Variable{"Iyy"},
+                              Variable{"Izz"}, Variable{"Ixy"},
+                              Variable{"Ixz"}, Variable{"Iyz"}};
   const SpatialInertia<T> I{mass, p_PScm_E, G_SP_E};
   ASSERT_EQ(
       I.IsNaN().to_string(),
@@ -473,10 +474,10 @@ GTEST_TEST(SpatialInertia, SymbolicConstant) {
   // Make a "constant" symbolic expression of a spatial inertia.
   const T mass(2.5);
   const Vector3<T> com(0.1, -0.2, 0.3);
-  const Vector3<T> m(2.0,  2.3, 2.4);  // m for moments.
+  const Vector3<T> m(2.0, 2.3, 2.4);   // m for moments.
   const Vector3<T> p(0.1, -0.1, 0.2);  // p for products.
-  UnitInertia<T> G(m(0), m(1), m(2), /* moments of inertia */
-                   p(0), p(1), p(2));/* products of inertia */
+  UnitInertia<T> G(m(0), m(1), m(2),   /* moments of inertia */
+                   p(0), p(1), p(2));  /* products of inertia */
   SpatialInertia<T> M(mass, com, G);
 
   // The expression can still be evaluated since all terms are constants.

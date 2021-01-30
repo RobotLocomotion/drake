@@ -40,6 +40,8 @@ def _impl(repo_ctx):
                 result.error,
             ))
         return
+    if os_result.ubuntu_release not in ["18.04", "20.04"]:
+        fail("Operating system is NOT supported", attr = os_result)
     result = setup_new_deb_archive(repo_ctx)
     if result.error != None:
         fail("Unable to complete setup for @{} repository: {}".format(
@@ -63,12 +65,9 @@ ibex_repository = repository_rule(
         # in the pkg_config_repository rule.
         "pkg_config_paths": attr.string_list(
             default = [
-                # TODO(soonho-tri): Remove the following two lines.
                 "/usr/local/opt/clp/lib/pkgconfig",
                 "/usr/local/opt/coinutils/lib/pkgconfig",
-                "/usr/local/opt/clp@1.17/lib/pkgconfig",
                 "/usr/local/opt/ibex@{}/share/pkgconfig".format(IBEX_VERSION),
-                "/usr/local/opt/nlopt/lib/pkgconfig",
             ],
         ),
         # On macOS we are using IBEX from homebrew, so Drake's installation

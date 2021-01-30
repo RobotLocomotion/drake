@@ -1,0 +1,43 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("@drake//tools/workspace:forward_files.bzl", "forward_files")
+
+_EVO_MESH = forward_files(
+    srcs = ["@models//:dishes/bowls/evo_bowl_no_mtl.obj"],
+    dest_prefix = "",
+    strip_prefix = "@models//:dishes/bowls/",
+    visibility = ["//visibility:private"],
+)
+
+drake_cc_binary(
+    name = "contact_surface_rigid_bowl_soft_ball",
+    srcs = ["contact_surface_rigid_bowl_soft_ball.cc"],
+    add_test_rule = 1,
+    data = [":models"],
+    test_rule_args = [
+        "--simulation_time=0.01",
+    ],
+    deps = [
+        "//common",
+        "//geometry:drake_visualizer",
+        "//geometry:scene_graph",
+        "//lcmtypes:contact_results_for_viz",
+        "//systems/analysis:explicit_euler_integrator",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//systems/lcm:lcm_pubsub_system",
+        "@gflags",
+    ],
+)
+
+filegroup(
+    name = "models",
+    srcs = _EVO_MESH,
+)
+
+add_lint_tests()

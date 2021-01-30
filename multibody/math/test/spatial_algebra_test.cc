@@ -3,13 +3,10 @@
 #include <sstream>
 #include <string>
 
-#include <Eigen/Dense>
 #include <gtest/gtest.h>
 
-#include "drake/common/autodiff.h"
-#include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
-#include "drake/common/symbolic.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 
 namespace drake {
 namespace multibody {
@@ -586,7 +583,7 @@ TYPED_TEST(ElementsInF6Test, ShiftOperation) {
   EXPECT_TRUE(F_Bo_E.IsApprox(expected_F_Bo_E));
 
   // We perform the shift operation on a Matrix storing a spatial force in each
-  // column.
+  // column. First we'll use the not-in-place Shift() method.
   constexpr int num_forces = 3;
   const Matrix6X<T> Fmatrix_Ao_E =
       F_Ao_E.get_coeffs().rowwise().replicate(num_forces);
@@ -597,6 +594,12 @@ TYPED_TEST(ElementsInF6Test, ShiftOperation) {
     SpatialQuantity Fj_Bo_E(Fmatrix_Bo_E.col(j));
     EXPECT_TRUE(Fj_Bo_E.IsApprox(expected_F_Bo_E));
   }
+
+  // Now shift it back using the ShiftInPlace() method. We're expecting
+  // near-perfect results.
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+  SpatialForce<T>::ShiftInPlace(&Fmatrix_Bo_E, -p_AB_E);
+  EXPECT_TRUE(CompareMatrices(Fmatrix_Bo_E, Fmatrix_Ao_E, kTolerance));
 }
 
 // Tests operator+().

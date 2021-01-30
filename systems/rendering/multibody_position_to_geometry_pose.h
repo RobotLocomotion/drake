@@ -14,10 +14,13 @@ namespace rendering {
  * directly to a geometry::FramePoseVector<T> to behave like a
  * MultibodyPlant::get_geometry_pose_output_port().
  *
- * @system{ MultibodyPositionToGeometryPose,
- *          @input_port{position},
- *          @output_port{geometry_pose}
- * }
+ * @system
+ * name: MultibodyPositionToGeometryPose
+ * input_ports:
+ * - position
+ * output_ports:
+ * - geometry_pose
+ * @endsystem
  *
  * The position input must be a vector whose length matches either the
  * number of positions in the MultibodyPlant or the number of states (based
@@ -69,16 +72,6 @@ class MultibodyPositionToGeometryPose final : public LeafSystem<T> {
 
   /** Returns true if this system owns its MultibodyPlant. */
   bool owns_plant() const { return owned_plant_ != nullptr; }
-
-  /** Returns the multibody position input port. */
-  const InputPort<T>& get_input_port() const {
-    return LeafSystem<T>::get_input_port(0);
-  }
-
-  /** Returns the geometry::FramePoseVector output port. */
-  const OutputPort<T>& get_output_port() const {
-    return LeafSystem<T>::get_output_port(0);
-  }
 
  private:
   // Configure the input/output ports and prepare for calculation.

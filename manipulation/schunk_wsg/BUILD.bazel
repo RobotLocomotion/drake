@@ -18,6 +18,7 @@ package(
 
 drake_cc_package_library(
     name = "schunk_wsg",
+    visibility = ["//visibility:public"],
     deps = [
         ":schunk_wsg_constants",
         ":schunk_wsg_controller",
@@ -43,6 +44,7 @@ drake_cc_library(
     srcs = ["schunk_wsg_lcm.cc"],
     hdrs = ["schunk_wsg_lcm.h"],
     deps = [
+        "//lcm:lcm_messages",
         "//lcmtypes:schunk",
         "//systems/framework:leaf_system",
         "//systems/primitives:matrix_gain",

@@ -42,7 +42,7 @@ void CheckMinMaxBoundaryValue(
   std::vector<VolumeVertexIndex> boundary_vertex_indices =
       CollectUniqueVertices(
           IdentifyBoundaryFaces(pressure_field.mesh().tetrahedra()));
-  for (const VolumeVertexIndex v : boundary_vertex_indices) {
+  for (const VolumeVertexIndex& v : boundary_vertex_indices) {
     double pressure = pressure_field.EvaluateAtVertex(v);
     EXPECT_EQ(pressure, 0.0);
   }

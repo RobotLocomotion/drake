@@ -14,16 +14,16 @@ class TestAll(unittest.TestCase):
         self.assertTrue("pydrake.all" not in sys.modules)
         # - While this may be redundant, let's do it for good measure.
         self.assertTrue("pydrake.all" not in sys.modules)
-        # Enable *all* warnings, and ensure that we don't trigger them.
-        with warnings.catch_warnings():
-            # TODO(eric.cousineau): Figure out a more conservative filter to
-            # avoid issues on different machines, but still catch meaningful
-            # warnings.
-            warnings.simplefilter("error", Warning)
+        # Catch all warnings using their normal specification.
+        with warnings.catch_warnings(record=True) as w:
             warnings.filterwarnings(
                 "ignore", message="Matplotlib is building the font cache",
                 category=UserWarning)
+            warnings.filterwarnings(
+                "ignore", message=".* from 'collections.abc' is deprecated",
+                category=DeprecationWarning)
             import pydrake.all
+            self.assertEqual(len(w), 0, [x.message for x in w])
 
     def test_usage_no_all(self):
         from pydrake.common import FindResourceOrThrow
@@ -76,14 +76,6 @@ class TestAll(unittest.TestCase):
         expected_symbols = (
             # __init__
             "getDrakePath",
-            # attic
-            # - solvers
-            "RigidBodyConstraint",
-            # - systems
-            # - - controllers
-            "RbtInverseDynamics",
-            # - - sensors
-            "RgbdCamera",
             # autodiffutils
             "AutoDiffXd",
             # common
@@ -102,6 +94,10 @@ class TestAll(unittest.TestCase):
             "cos",
             # geometry
             "SceneGraph",
+            # yaml
+            "yaml_load_data",
+            # schema
+            "ToDistributionVector",
             # - render
             "CameraProperties",
             # lcm
@@ -125,23 +121,17 @@ class TestAll(unittest.TestCase):
             "PackageMap",
             # - plant
             "MultibodyPlant",
-            # - rigid_body_plant
-            "RigidBodyPlant",
-            # - rigid_body_tree
-            "RigidBodyTree",
-            # - shapes
-            # TODO(eric.cousineau): Avoid collision with `collision.Element`.
-            # Import modules, since these names are generic.
-            "Element",
             # - tree
             "MultibodyForces",
             # perception
             "PointCloud",
             # solvers
+            # - mixed_integer_optimization_util
+            "AddLogarithmicSos2Constraint",
             # - gurobi
             "GurobiSolver",
-            # - ik
-            "IKResults",
+            # - sdpa_free_format
+            "GenerateSDPA",
             # - ipopt
             "IpoptSolver",
             # - branch_and_bound

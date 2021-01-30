@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<sdf version="1.6">
+<sdf version="1.7">
   <model name="FourBar">
     <link name="base_link">
       <inertial>
@@ -14,7 +14,6 @@
         </inertia>
       </inertial>
       <visual name="base">
-        <pose>0 0 0 0 0 0</pose>
         <geometry>
           <cylinder>
             <length>4</length>
@@ -141,7 +140,6 @@
     <joint name="joint_3" type="revolute">
       <parent>base_link</parent>
       <child>link_3</child>
-      <pose>0 0 0 0 0 0</pose>
       <axis>
         <xyz>0 1 0</xyz>
         <limit>

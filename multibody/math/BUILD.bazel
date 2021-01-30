@@ -14,6 +14,7 @@ package(
 
 drake_cc_package_library(
     name = "math",
+    visibility = ["//visibility:public"],
     deps = [
         ":spatial_acceleration",
         ":spatial_algebra",
@@ -26,71 +27,57 @@ drake_cc_package_library(
 
 drake_cc_library(
     name = "spatial_vector",
-    srcs = [],
-    hdrs = ["spatial_vector.h"],
-    deps = [
-        "//common:essential",
-        "//math:geometric_transform",
-    ],
+    deprecation = "DRAKE_DEPRECATED: Do not directly depend on this library. Depend on \"@drake//multibody/math:spatial_algebra\" or \"@drake//multibody/math\" instead. This library will be removed on 2021-01-01.",  # noqa
+    tags = ["manual"],
+    deps = [":spatial_algebra"],
 )
 
 drake_cc_library(
     name = "spatial_velocity",
-    srcs = ["spatial_velocity.cc"],
-    hdrs = ["spatial_velocity.h"],
-    deps = [
-        ":spatial_vector",
-        "//common:default_scalars",
-        "//common:essential",
-    ],
+    deprecation = "DRAKE_DEPRECATED: Do not directly depend on this library. Depend on \"@drake//multibody/math:spatial_algebra\" or \"@drake//multibody/math\" instead. This library will be removed on 2021-01-01.",  # noqa
+    tags = ["manual"],
+    deps = [":spatial_algebra"],
 )
 
 drake_cc_library(
     name = "spatial_acceleration",
-    srcs = ["spatial_acceleration.cc"],
-    hdrs = ["spatial_acceleration.h"],
-    deps = [
-        ":spatial_vector",
-        ":spatial_velocity",
-        "//common:default_scalars",
-        "//common:essential",
-        "//math:vector3_util",
-    ],
+    deprecation = "DRAKE_DEPRECATED: Do not directly depend on this library. Depend on \"@drake//multibody/math:spatial_algebra\" or \"@drake//multibody/math\" instead. This library will be removed on 2021-01-01.",  # noqa
+    tags = ["manual"],
+    deps = [":spatial_algebra"],
 )
 
 drake_cc_library(
     name = "spatial_force",
-    srcs = ["spatial_force.cc"],
-    hdrs = ["spatial_force.h"],
-    deps = [
-        ":spatial_vector",
-        "//common:default_scalars",
-        "//common:essential",
-    ],
+    deprecation = "DRAKE_DEPRECATED: Do not directly depend on this library. Depend on \"@drake//multibody/math:spatial_algebra\" or \"@drake//multibody/math\" instead. This library will be removed on 2021-01-01.",  # noqa
+    tags = ["manual"],
+    deps = [":spatial_algebra"],
 )
 
 drake_cc_library(
     name = "spatial_momentum",
-    srcs = ["spatial_momentum.cc"],
-    hdrs = ["spatial_momentum.h"],
-    deps = [
-        ":spatial_vector",
-        "//common:default_scalars",
-        "//common:essential",
-    ],
+    deprecation = "DRAKE_DEPRECATED: Do not directly depend on this library. Depend on \"@drake//multibody/math:spatial_algebra\" or \"@drake//multibody/math\" instead. This library will be removed on 2021-01-01.",  # noqa
+    tags = ["manual"],
+    deps = [":spatial_algebra"],
 )
 
 drake_cc_library(
     name = "spatial_algebra",
-    srcs = [],
-    hdrs = ["spatial_algebra.h"],
+    srcs = [
+        "spatial_algebra.cc",
+    ],
+    hdrs = [
+        "spatial_acceleration.h",
+        "spatial_algebra.h",
+        "spatial_force.h",
+        "spatial_momentum.h",
+        "spatial_vector.h",
+        "spatial_velocity.h",
+    ],
     deps = [
-        ":spatial_acceleration",
-        ":spatial_force",
-        ":spatial_momentum",
-        ":spatial_vector",
-        ":spatial_velocity",
+        "//common:default_scalars",
         "//common:essential",
+        "//math:geometric_transform",
+        "//math:vector3_util",
     ],
 )
 
@@ -98,8 +85,7 @@ drake_cc_googletest(
     name = "spatial_algebra_test",
     deps = [
         ":spatial_algebra",
-        "//common:autodiff",
-        "//common:symbolic",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

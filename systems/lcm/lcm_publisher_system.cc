@@ -24,7 +24,8 @@ LcmPublisherSystem::LcmPublisherSystem(
     : channel_(channel),
       serializer_(std::move(serializer)),
       owned_lcm_(lcm ? nullptr : new DrakeLcm()),
-      lcm_(lcm ? lcm : owned_lcm_.get()) {
+      lcm_(lcm ? lcm : owned_lcm_.get()),
+      publish_period_(publish_period) {
   DRAKE_DEMAND(serializer_ != nullptr);
   DRAKE_DEMAND(lcm_);
   DRAKE_DEMAND(publish_period >= 0.0);
@@ -64,13 +65,6 @@ LcmPublisherSystem::LcmPublisherSystem(
     systems::PublishEvent<double>([this](
         const systems::Context<double>& context,
         const systems::PublishEvent<double>&) {
-      // TODO(edrumwri) Remove this code once set_publish_period(.) has
-      // been removed; it exists so that one does not get both a per-step
-      // publish and a periodic publish if a user constructs the publisher
-      // the "old" way (construction followed by set_publish_period()).
-      if (this->disable_internal_per_step_publish_events_)
-        return;
-
       this->PublishInputAsLcmMessage(context);
     }));
   }
@@ -108,6 +102,10 @@ std::string LcmPublisherSystem::make_name(const std::string& channel) {
 
 const std::string& LcmPublisherSystem::get_channel_name() const {
   return channel_;
+}
+
+double LcmPublisherSystem::get_publish_period() const {
+  return publish_period_;
 }
 
 // Takes the VectorBase from the input port of the context and publishes

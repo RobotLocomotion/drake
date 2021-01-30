@@ -331,6 +331,15 @@ GTEST_TEST(SplineTests, RandomizedLinearSplineTest) {
     EXPECT_TRUE(CheckContinuity(spline, 1e-12, 0));
     EXPECT_TRUE(CheckValues(spline, {Y}, 1e-12));
     EXPECT_TRUE(CheckInterpolatedValuesAtBreakTime(spline, T, Y, 1e-12));
+
+    // Now test that we could have constructed the same trajectory
+    // incrementally.
+    PiecewisePolynomial<double> incremental =
+        PiecewisePolynomial<double>::FirstOrderHold({T[0], T[1]}, {Y[0], Y[1]});
+    for (int i = 2; i < N; i++) {
+      incremental.AppendFirstOrderSegment(T[i], Y[i]);
+    }
+    EXPECT_TRUE(spline.isApprox(incremental, 1e-10));
   }
 }
 
@@ -463,8 +472,8 @@ GTEST_TEST(SplineTests, RandomizedCubicSplineTest) {
 
   // Test CubicHermite(T, Y, Ydots)
   for (int ctr = 0; ctr < num_tests; ++ctr) {
-    std::vector<double> T =
-        PiecewiseTrajectory<double>::RandomSegmentTimes(N - 1, generator);
+    std::vector<double> T(N);
+    std::iota(T.begin(), T.end(), 0);
     std::vector<MatrixX<double>> Y(N);
     std::vector<MatrixX<double>> Ydot(N);
 
@@ -684,6 +693,43 @@ GTEST_TEST(SplineTests, TestException) {
   Ydot.front().resize(rows + 2, cols + 1);
   EXPECT_THROW(PiecewisePolynomial<double>::CubicHermite(T, Y, Ydot),
                std::runtime_error);
+}
+
+GTEST_TEST(SplineTests, LagrangeInterpolatingPolynomialTest) {
+  Eigen::Vector4d times(0.1, 0.5, 0.8, 1.34);
+  Eigen::RowVector4d samples(4.1, -1.3, 0.5, -3.4);
+
+  PiecewisePolynomial<double> scalar_trajectory =
+      PiecewisePolynomial<double>::LagrangeInterpolatingPolynomial(times,
+                                                                   samples);
+
+  EXPECT_EQ(scalar_trajectory.start_time(), times[0]);
+  EXPECT_EQ(scalar_trajectory.end_time(), times[times.size() - 1]);
+  EXPECT_EQ(scalar_trajectory.get_number_of_segments(), 1);
+  EXPECT_EQ(scalar_trajectory.getPolynomial(0, 0, 0).GetDegree(),
+            times.size() - 1);
+  EXPECT_TRUE(CompareMatrices(
+      scalar_trajectory.vector_values({times[0], times[1], times[2], times[3]}),
+      samples, 1e-12));
+
+  std::vector<double> mtimes = {-3.2, 0.4, 6.7};
+  std::vector<Eigen::MatrixXd> msamples(3);
+  const int rows = 3;
+  const int cols = 2;
+  for (size_t i = 0; i < mtimes.size(); ++i) {
+    msamples[i] = Eigen::MatrixXd::Random(rows, cols);
+  }
+  PiecewisePolynomial<double> matrix_trajectory =
+      PiecewisePolynomial<double>::LagrangeInterpolatingPolynomial(mtimes,
+                                                                   msamples);
+  EXPECT_EQ(matrix_trajectory.start_time(), mtimes[0]);
+  EXPECT_EQ(matrix_trajectory.end_time(), mtimes[mtimes.size() - 1]);
+  EXPECT_EQ(matrix_trajectory.get_number_of_segments(), 1);
+
+  for (size_t i = 0; i < mtimes.size(); ++i) {
+    EXPECT_TRUE(CompareMatrices(matrix_trajectory.value(mtimes[i]), msamples[i],
+                                1e-12));
+  }
 }
 
 }  // namespace

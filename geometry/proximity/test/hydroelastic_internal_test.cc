@@ -10,6 +10,9 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/proximity/make_sphere_field.h"
+#include "drake/geometry/proximity/make_sphere_mesh.h"
+#include "drake/geometry/proximity/tessellation_strategy.h"
 #include "drake/geometry/proximity_properties.h"
 
 namespace drake {
@@ -20,7 +23,311 @@ namespace {
 
 using Eigen::Vector3d;
 using std::function;
+using std::make_unique;
 using std::pow;
+
+GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
+  const Sphere sphere(0.5);
+  const double resolution_hint = 0.5;
+  auto mesh = make_unique<VolumeMesh<double>>(MakeSphereVolumeMesh<double>(
+      sphere, resolution_hint, TessellationStrategy::kSingleInteriorVertex));
+  const double elastic_modulus = 1e+7;
+  auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
+      MakeSpherePressureField(sphere, mesh.get(), elastic_modulus));
+
+  const SoftMesh original(std::move(mesh), std::move(pressure));
+
+  // Test copy-assignment operator.
+  {
+    SoftMesh copy;
+    copy = original;
+
+    // Test for uniqueness.
+    EXPECT_NE(&original.mesh(), &copy.mesh());
+    EXPECT_NE(&original.pressure(), &copy.pressure());
+    EXPECT_NE(&original.bvh(), &copy.bvh());
+
+    EXPECT_TRUE(copy.mesh().Equal(original.mesh()));
+
+    const auto& copy_pressure =
+        static_cast<const VolumeMeshFieldLinear<double, double>&>(
+            copy.pressure());
+    const auto& original_pressure =
+        static_cast<const VolumeMeshFieldLinear<double, double>&>(
+            original.pressure());
+    EXPECT_TRUE(copy_pressure.Equal(original_pressure));
+
+    EXPECT_TRUE(copy.bvh().Equal(original.bvh()));
+  }
+
+  // Test copy constructor.
+  {
+    SoftMesh copy(original);
+
+    // Test for uniqueness.
+    EXPECT_NE(&original.mesh(), &copy.mesh());
+    EXPECT_NE(&original.pressure(), &copy.pressure());
+    EXPECT_NE(&original.bvh(), &copy.bvh());
+
+    EXPECT_TRUE(copy.mesh().Equal(original.mesh()));
+
+    const auto& copy_pressure =
+        static_cast<const VolumeMeshFieldLinear<double, double>&>(
+            copy.pressure());
+    const auto& original_pressure =
+        static_cast<const VolumeMeshFieldLinear<double, double>&>(
+            original.pressure());
+    EXPECT_TRUE(copy_pressure.Equal(original_pressure));
+
+    EXPECT_TRUE(copy.bvh().Equal(original.bvh()));
+  }
+
+  // Test move constructor and move-assignment operator.
+  // We will move the content from `start` to `move_constructed` to
+  // `move_assigned`, each time confirming that the target of the move has taken
+  // ownership.
+  {
+    SoftMesh start(original);  // Assume the copy constructor is correct.
+
+    // Grab raw pointers so we can determine that their ownership changes due to
+    // move semantics.
+    const VolumeMesh<double>* const mesh_ptr = &start.mesh();
+    const VolumeMeshField<double, double>* const pressure_ptr =
+        &start.pressure();
+    const Bvh<VolumeMesh<double>>* const bvh_ptr = &start.bvh();
+
+    // Test move constructor.
+    SoftMesh move_constructed(std::move(start));
+    EXPECT_EQ(&move_constructed.mesh(), mesh_ptr);
+    EXPECT_EQ(&move_constructed.pressure(), pressure_ptr);
+    EXPECT_EQ(&move_constructed.bvh(), bvh_ptr);
+
+    // Test move-assignment operator.
+    SoftMesh move_assigned;
+    move_assigned = std::move(move_constructed);
+    EXPECT_EQ(&move_assigned.mesh(), mesh_ptr);
+    EXPECT_EQ(&move_assigned.pressure(), pressure_ptr);
+    EXPECT_EQ(&move_assigned.bvh(), bvh_ptr);
+  }
+}
+
+// SoftGeometry can represent either a mesh or a half space (and in the future,
+// possibly more types). Therefore, in construction, the source can be one of
+// any of the types and in assignment, the target can likewise be any
+// supported type. We do not explicitly test all combinations. We rely on the
+// fact that SoftGeometry's management of these exclusive types is handled by
+// std::variant and the move/copy semantics of the underlying data types
+// (already tested). If SoftGeometry changes its implementation details, this
+// logic would need to be revisited.
+GTEST_TEST(SoftGeometryTest, TestCopyMoveAssignConstruct) {
+  const Sphere sphere(0.5);
+  const double resolution_hint = 0.5;
+  auto mesh = make_unique<VolumeMesh<double>>(MakeSphereVolumeMesh<double>(
+      sphere, resolution_hint, TessellationStrategy::kSingleInteriorVertex));
+  const double elastic_modulus = 1e+7;
+  auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
+      MakeSpherePressureField(sphere, mesh.get(), elastic_modulus));
+
+  const SoftGeometry original(SoftMesh(std::move(mesh), std::move(pressure)));
+
+  // Test copy-assignment operator.
+  {
+    // Initialize `dut` as a SoftGeometry representing a half space.
+    // Then, change it to a SoftGeometry representing a mesh by copy-assignment.
+    SoftGeometry dut(SoftHalfSpace{1e+7});
+    dut = original;
+
+    // Test for uniqueness. The contents have different memory addresses.
+    EXPECT_NE(&original.mesh(), &dut.mesh());
+    EXPECT_NE(&original.pressure_field(), &dut.pressure_field());
+    EXPECT_NE(&original.bvh(), &dut.bvh());
+
+    EXPECT_TRUE(dut.mesh().Equal(original.mesh()));
+    const auto& copy_pressure =
+        static_cast<const VolumeMeshFieldLinear<double, double>&>(
+            dut.pressure_field());
+    const auto& original_pressure =
+        static_cast<const VolumeMeshFieldLinear<double, double>&>(
+            original.pressure_field());
+    EXPECT_TRUE(copy_pressure.Equal(original_pressure));
+    EXPECT_TRUE(dut.bvh().Equal(original.bvh()));
+  }
+
+  // Test copy constructor.
+  {
+    SoftGeometry copy(original);
+
+    // Test for uniqueness. The contents have different memory addresses.
+    EXPECT_NE(&original.mesh(), &copy.mesh());
+    EXPECT_NE(&original.pressure_field(), &copy.pressure_field());
+    EXPECT_NE(&original.bvh(), &copy.bvh());
+
+    EXPECT_TRUE(copy.mesh().Equal(original.mesh()));
+    const auto& copy_pressure =
+        static_cast<const VolumeMeshFieldLinear<double, double>&>(
+            copy.pressure_field());
+    const auto& original_pressure =
+        static_cast<const VolumeMeshFieldLinear<double, double>&>(
+            original.pressure_field());
+    EXPECT_TRUE(copy_pressure.Equal(original_pressure));
+    EXPECT_TRUE(copy.bvh().Equal(original.bvh()));
+  }
+
+  // Test move constructor and move-assignment operator.
+  // We will move the content from `start` to `move_constructed` to
+  // `move_assigned`, each time confirming that the target of the move has taken
+  // ownership.
+  {
+    SoftGeometry start(original);  // Assume the copy constructor is correct.
+
+    // Grab raw pointers so we can determine that their ownership changes due to
+    // move semantics.
+    const VolumeMesh<double>* const mesh_ptr = &start.mesh();
+    const VolumeMeshField<double, double>* const pressure_ptr =
+        &start.pressure_field();
+    const Bvh<VolumeMesh<double>>* const bvh_ptr = &start.bvh();
+
+    // Test move constructor.
+    SoftGeometry move_constructed(std::move(start));
+    EXPECT_EQ(&move_constructed.mesh(), mesh_ptr);
+    EXPECT_EQ(&move_constructed.pressure_field(), pressure_ptr);
+    EXPECT_EQ(&move_constructed.bvh(), bvh_ptr);
+
+    // Test move-assignment operator.
+    // Initialize `move_assigned` as a SoftGeometry representing a half spce.
+    // Then, change it to a SoftGeometry of a soft mesh by move-assignment
+    // from `move_constructed`.
+    SoftGeometry move_assigned(SoftHalfSpace{1e+7});
+    move_assigned = std::move(move_constructed);
+    EXPECT_EQ(&move_assigned.mesh(), mesh_ptr);
+    EXPECT_EQ(&move_assigned.pressure_field(), pressure_ptr);
+    EXPECT_EQ(&move_assigned.bvh(), bvh_ptr);
+  }
+}
+
+GTEST_TEST(RigidMeshTest, TestCopyMoveAssignConstruct) {
+  const Sphere sphere(0.5);
+  const double resolution_hint = 0.5;
+  auto mesh = make_unique<SurfaceMesh<double>>(
+      MakeSphereSurfaceMesh<double>(sphere, resolution_hint));
+
+  const RigidMesh original(std::move(mesh));
+
+  // Test copy-assignment operator.
+  {
+    RigidMesh copy;
+    copy = original;
+
+    // Test for uniqueness.
+    EXPECT_NE(&original.mesh(), &copy.mesh());
+    EXPECT_NE(&original.bvh(), &copy.bvh());
+
+    EXPECT_TRUE(copy.mesh().Equal(original.mesh()));
+    EXPECT_TRUE(copy.bvh().Equal(original.bvh()));
+  }
+
+  // Test copy constructor.
+  {
+    RigidMesh copy(original);
+
+    // Test for uniqueness.
+    EXPECT_NE(&original.mesh(), &copy.mesh());
+    EXPECT_NE(&original.bvh(), &copy.bvh());
+
+    EXPECT_TRUE(copy.mesh().Equal(original.mesh()));
+    EXPECT_TRUE(copy.bvh().Equal(original.bvh()));
+  }
+
+  // Test move constructor and move-assignment operator.
+  // We will move the content from `start` to `move_constructed` to
+  // `move_assigned`, each time confirming that the target of the move has taken
+  // ownership.
+  {
+    RigidMesh start(original);  // Assume the copy constructor is correct.
+
+    // Grab raw pointers so we can determine that their ownership changes due to
+    // move semantics.
+    const SurfaceMesh<double>* const mesh_ptr = &start.mesh();
+    const Bvh<SurfaceMesh<double>>* const bvh_ptr = &start.bvh();
+
+    // Test move constructor.
+    RigidMesh move_constructed(std::move(start));
+    EXPECT_EQ(&move_constructed.mesh(), mesh_ptr);
+    EXPECT_EQ(&move_constructed.bvh(), bvh_ptr);
+
+    // Test move-assignment operator.
+    RigidMesh move_assigned;
+    move_assigned = std::move(move_constructed);
+    EXPECT_EQ(&move_assigned.mesh(), mesh_ptr);
+    EXPECT_EQ(&move_assigned.bvh(), bvh_ptr);
+  }
+}
+
+// RigidGeometry can represent either a mesh or a half space (and in the future,
+// possibly more types). Therefore, in construction, the source can be one of
+// any of the types and in assignment, the target can likewise be any
+// supported type. We do not explicitly test all combinations. We rely on the
+// fact that RigidGeometry's management of these exclusive types is handled by
+// std::optional and the move/copy semantics of the underlying data types
+// (already tested). If RigidGeometry changes its implementation details, this
+// logic would need to be revisited.
+GTEST_TEST(RigidGeometryTest, TestCopyMoveAssignConstruct) {
+  const RigidGeometry original(RigidMesh(make_unique<SurfaceMesh<double>>(
+      MakeSphereSurfaceMesh<double>(Sphere(1.25), 2.0))));
+
+  // Test copy-assignment operator.
+  {
+    // Initialize `dut` as a RigidGeometry representing a half space. Then,
+    // change it to a RigidGeometry representing a mesh by copy-assignment.
+    RigidGeometry dut(HalfSpace{});
+    dut = original;
+
+    // Test for uniqueness. The contents have different memory addresses.
+    EXPECT_NE(&original.mesh(), &dut.mesh());
+    EXPECT_NE(&original.bvh(), &dut.bvh());
+
+    EXPECT_TRUE(dut.mesh().Equal(original.mesh()));
+    EXPECT_TRUE(dut.bvh().Equal(original.bvh()));
+  }
+
+  // Test copy constructor.
+  {
+    RigidGeometry copy(original);
+
+    // Test for uniqueness. Their contents are at different memory addresses.
+    EXPECT_NE(&original.mesh(), &copy.mesh());
+    EXPECT_NE(&original.bvh(), &copy.bvh());
+
+    EXPECT_TRUE(copy.mesh().Equal(original.mesh()));
+    EXPECT_TRUE(copy.bvh().Equal(original.bvh()));
+  }
+
+  // Test move constructor and move-assignment operator.
+  // We will move the content from `start` to `move_constructed` to
+  // `move_assigned`, each time confirming that the target of the move has taken
+  // ownership.
+  {
+    RigidGeometry start(original);  // Assume the copy constructor is correct.
+
+    // Grab raw pointers so we can determine that their ownership changes due to
+    // move semantics.
+    const SurfaceMesh<double>* const mesh_ptr = &start.mesh();
+    const Bvh<SurfaceMesh<double>>* const bvh_ptr = &start.bvh();
+
+    // Test move constructor.
+    RigidGeometry move_constructed(std::move(start));
+    EXPECT_EQ(&move_constructed.mesh(), mesh_ptr);
+    EXPECT_EQ(&move_constructed.bvh(), bvh_ptr);
+
+    // Test move-assignment operator.
+    // Initialize `move_assigned` as a RigidGeometry representing a half space.
+    // Then, change it to a RigidGeometry of a mesh by move-assignment.
+    RigidGeometry move_assigned(HalfSpace{});
+    move_assigned = std::move(move_constructed);
+    EXPECT_EQ(&move_assigned.mesh(), mesh_ptr);
+    EXPECT_EQ(&move_assigned.bvh(), bvh_ptr);
+  }
+}
 
 // Tests the simple public API of the hydroelastic::Geometries: adding
 // geometries and querying the data stored.
@@ -106,7 +413,7 @@ GTEST_TEST(Hydroelastic, RemoveGeometry) {
 
 class HydroelasticRigidGeometryTest : public ::testing::Test {
  protected:
-  /** Creates a simple set of properties for generating rigid geometry. */
+  /* Creates a simple set of properties for generating rigid geometry. */
   ProximityProperties rigid_properties(double edge_length = 0.1) const {
     ProximityProperties properties;
     AddRigidHydroelasticProperties(edge_length, &properties);
@@ -123,10 +430,6 @@ TEST_F(HydroelasticRigidGeometryTest, UnsupportedRigidShapes) {
   ProximityProperties props = rigid_properties();
 
   EXPECT_EQ(MakeRigidRepresentation(Capsule(1, 1), props), std::nullopt);
-
-  // Note: the file name doesn't have to be valid for this (and the Mesh) test.
-  const std::string obj = "drake/geometry/proximity/test/no_such_files.obj";
-  EXPECT_EQ(MakeRigidRepresentation(Convex(obj, 1.0), props), std::nullopt);
 }
 
 // Confirm support for a rigid half space. Tests that a hydroelastic
@@ -187,9 +490,9 @@ TEST_F(HydroelasticRigidGeometryTest, Box) {
   EXPECT_EQ(mesh.num_vertices(), 8);
   // Because it is a cube centered at the origin, the distance from the origin
   // to each vertex should be sqrt(3) * edge_len / 2.
-  const double expecte_dist = std::sqrt(3) * edge_len / 2;
+  const double expected_dist = std::sqrt(3) * edge_len / 2;
   for (SurfaceVertexIndex v(0); v < mesh.num_vertices(); ++v) {
-    ASSERT_NEAR(mesh.vertex(v).r_MV().norm(), expecte_dist, 1e-15);
+    ASSERT_NEAR(mesh.vertex(v).r_MV().norm(), expected_dist, 1e-15);
   }
 }
 
@@ -257,26 +560,55 @@ TEST_F(HydroelasticRigidGeometryTest, Ellipsoid) {
   }
 }
 
-// Confirm support for a rigid Mesh. Tests that a hydroelastic representation
-// is made.
-TEST_F(HydroelasticRigidGeometryTest, Mesh) {
-  std::string file =
-    FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj");
-  const double scale = 1.1;
+// Confirm that a mesh type (convex/mesh) has a rigid representation. We rely
+// on the fact that we're loading a unit cube (vertices one unit away from the
+// origin along each axis) to confirm that the correct mesh got loaded. We also
+// confirm that the scale factor is included in the rigid representation.
+template <typename MeshType>
+void TestRigidMeshType() {
+  std::string file = FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
   // Empty props since its contents do not matter.
   ProximityProperties props;
 
-  std::optional<RigidGeometry> mesh_rigid_geometry =
-      MakeRigidRepresentation(Mesh(file, scale), props);
-  ASSERT_NE(mesh_rigid_geometry, std::nullopt);
-  ASSERT_FALSE(mesh_rigid_geometry->is_half_space());
+  constexpr double kEps = 2 * std::numeric_limits<double>::epsilon();
 
-  // We only check that the obj file was read by verifying the number of
-  // vertices and triangles, which depend on the specific content of
-  // the obj file.
-  const SurfaceMesh<double>& surface_mesh = mesh_rigid_geometry->mesh();
-  EXPECT_EQ(surface_mesh.num_vertices(), 5);
-  EXPECT_EQ(surface_mesh.num_faces(), 6);
+  for (const double scale : {1.0, 5.1, 0.4}) {
+    std::optional<RigidGeometry> geometry =
+        MakeRigidRepresentation(MeshType(file, scale), props);
+    ASSERT_NE(geometry, std::nullopt);
+    ASSERT_FALSE(geometry->is_half_space());
+
+    // We only check that the obj file was read by verifying the number of
+    // vertices and triangles, which depend on the specific content of
+    // the obj file.
+    const SurfaceMesh<double>& surface_mesh = geometry->mesh();
+    EXPECT_EQ(surface_mesh.num_vertices(), 8);
+    EXPECT_EQ(surface_mesh.num_faces(), 12);
+
+    // The scale factor multiplies the measure of every vertex position, so
+    // the expected distance of the vertex to the origin should be:
+    // scale * sqrt(3) (because the original mesh was the unit sphere).
+    const double expected_dist = std::sqrt(3) * scale;
+    for (SurfaceVertexIndex v(0); v < surface_mesh.num_vertices(); ++v) {
+      const double dist = surface_mesh.vertex(v).r_MV().norm();
+      ASSERT_NEAR(dist, expected_dist, scale * kEps)
+          << "for scale: " << scale << " at vertex " << v;
+    }
+  }
+}
+
+// Confirm support for a rigid Mesh. Tests that a hydroelastic representation
+// is made.
+TEST_F(HydroelasticRigidGeometryTest, Mesh) {
+  SCOPED_TRACE("Rigid Mesh");
+  TestRigidMeshType<Mesh>();
+}
+
+// Confirm support for a rigid Convex. Tests that a hydroelastic representation
+// is made.
+TEST_F(HydroelasticRigidGeometryTest, Convex) {
+  SCOPED_TRACE("Rigid Convex");
+  TestRigidMeshType<Convex>();
 }
 
 // Template magic to instantiate a particular kind of shape at compile time.
@@ -372,9 +704,9 @@ void TestPropertyErrors(
     // This error message comes from GeometryProperties::GetProperty().
     DRAKE_EXPECT_THROWS_MESSAGE(
         maker(shape_spec, wrong_value), std::logic_error,
-        fmt::format(".*The property '{}' .+ exists, but is of a different "
-                    "type.+string'",
-                    property_name));
+        fmt::format(".*The property \\('{}', '{}'\\) exists, but is of a "
+                    "different type.+string'",
+                    group_name, property_name));
   }
 
   // Error case: property value is not positive.
@@ -394,9 +726,10 @@ void TestPropertyErrors(
 // Test suite for testing the common failure conditions for generating rigid
 // geometry. Specifically, they just need to be tessellated into a triangle mesh
 // and, therefore, only depend on the (hydroelastic, characteristic_length)
-// value. This actively excludes HalfSpace and Mesh because they don't get
-// tessellated (see the `RigidErrorShapeTypes` declaration below.) It should
-// include every *other* supported rigid shape type.
+// value. This actively excludes Box, Convex, HalfSpace and Mesh because they
+// don't depend on any of the proximity properties (see the
+// `RigidErrorShapeTypes` declaration below.) It should include every *other*
+// supported rigid shape type.
 template <typename ShapeType>
 class HydroelasticRigidGeometryErrorTests : public ::testing::Test {};
 
@@ -416,13 +749,13 @@ TYPED_TEST_P(HydroelasticRigidGeometryErrorTests, BadResolutionHint) {
 
 REGISTER_TYPED_TEST_SUITE_P(HydroelasticRigidGeometryErrorTests,
                             BadResolutionHint);
-typedef ::testing::Types<Sphere, Cylinder, Box, Ellipsoid> RigidErrorShapeTypes;
+typedef ::testing::Types<Sphere, Cylinder, Ellipsoid> RigidErrorShapeTypes;
 INSTANTIATE_TYPED_TEST_SUITE_P(My, HydroelasticRigidGeometryErrorTests,
                               RigidErrorShapeTypes);
 
 class HydroelasticSoftGeometryTest : public ::testing::Test {
  protected:
-  /** Creates a simple set of properties for generating soft geometry. */
+  /* Creates a simple set of properties for generating soft geometry. */
   ProximityProperties soft_properties(double edge_length = 0.1) const {
     ProximityProperties soft_properties;
     AddContactMaterial(1e8, {}, {}, &soft_properties);
@@ -535,21 +868,72 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
     EXPECT_NEAR(sphere1->pressure_field().EvaluateAtVertex(v), expected_p,
                 kEps * E);
   }
+
+  // Confirm that it respects the ("hydroelastic", "tessellation_strategy")
+  // property in the following ways:
+  {
+      // It defaults to single-interior-vertex if nothing is defined.
+
+      // Sphere 1 and sphere 2 have resolution hints that differ by a factor
+      // of two --> sphere 2's level of refinement is one greater than sphere
+      // 1's. Both are missing the "tessellation_strategy" property so it should
+      // default to kSingleInteriorVertex. So, sphere 2 must have 4X the
+      // tetrahedra as sphere 1.
+      EXPECT_EQ(sphere1->mesh().num_elements() * 4,
+                sphere2->mesh().num_elements());
+  }
+
+  {
+    // Defining kDenseInteriorVertices produces a mesh with an increased number
+    // of tets (compared to an otherwise identical mesh declared to sparse).
+
+    // Starting with sphere 1's properties, we'll set it to dense and observe
+    // more tets.
+    ProximityProperties dense_properties(properties1);
+    dense_properties.AddProperty(kHydroGroup, "tessellation_strategy",
+                                 TessellationStrategy::kDenseInteriorVertices);
+    std::optional<SoftGeometry> dense_sphere =
+        MakeSoftRepresentation(sphere_spec, dense_properties);
+    EXPECT_LT(sphere1->mesh().num_elements(),
+              dense_sphere->mesh().num_elements());
+  }
+
+  {
+    // Explicitly defining kSingleInteriorVertex still produces sparse.
+
+    // Starting with sphere 1's properties, we'll explicitly set it to sparse
+    // and observe the same number of tets.
+    ProximityProperties dense_properties(properties1);
+    dense_properties.AddProperty(kHydroGroup, "tessellation_strategy",
+                                 TessellationStrategy::kSingleInteriorVertex);
+    std::optional<SoftGeometry> dense_sphere =
+        MakeSoftRepresentation(sphere_spec, dense_properties);
+    EXPECT_EQ(sphere1->mesh().num_elements(),
+              dense_sphere->mesh().num_elements());
+  }
+
+  {
+    // A value that isn't a TessellationStrategy throws.
+    // Starting with sphere 1's properties, we'll set the property to be a
+    // string. Should throw.
+    ProximityProperties dense_properties(properties1);
+    dense_properties.AddProperty(kHydroGroup, "tessellation_strategy", "dense");
+    EXPECT_THROW(MakeSoftRepresentation(sphere_spec, dense_properties),
+                 std::logic_error);
+  }
 }
 
 // Test construction of a soft box.
 TEST_F(HydroelasticSoftGeometryTest, Box) {
   const Box box_spec(0.2, 0.4, 0.8);
 
-  // Confirm that characteristic length is being fed in properly. The length
-  // 0.1 should create mesh vertices on a 3 x 5 x 9 Cartesian grid.
-  ProximityProperties properties = soft_properties(0.1);
+  ProximityProperties properties = soft_properties();
   std::optional<SoftGeometry> box =
       MakeSoftRepresentation(box_spec, properties);
 
   // Smoke test the mesh and the pressure field. It relies on unit tests for
   // the generators of the mesh and the pressure field.
-  const int expected_num_vertices = 3 * 5 * 9;
+  const int expected_num_vertices = 12;
   EXPECT_EQ(box->mesh().num_vertices(), expected_num_vertices);
   const double E =
       properties.GetPropertyOrDefault(kMaterialGroup, kElastic, 1e8);
@@ -613,14 +997,65 @@ TEST_F(HydroelasticSoftGeometryTest, Ellipsoid) {
     EXPECT_GE(pressure, 0);
     EXPECT_LE(pressure, E);
   }
+
+  // The remaining tests confirm that it respects the
+  // ("hydroelastic", "tessellation_strategy") property.
+
+  ProximityProperties basic_properties = soft_properties(0.08);
+  ProximityProperties sparse_properties(basic_properties);
+  sparse_properties.AddProperty(kHydroGroup, "tessellation_strategy",
+                                TessellationStrategy::kSingleInteriorVertex);
+  ProximityProperties dense_properties(basic_properties);
+  dense_properties.AddProperty(kHydroGroup, "tessellation_strategy",
+                               TessellationStrategy::kDenseInteriorVertices);
+
+  std::optional<SoftGeometry> implicit_sparse_ellipsoid =
+      MakeSoftRepresentation(ellipsoid_spec, basic_properties);
+  std::optional<SoftGeometry> sparse_ellipsoid =
+      MakeSoftRepresentation(ellipsoid_spec, sparse_properties);
+  std::optional<SoftGeometry> dense_ellipsoid =
+      MakeSoftRepresentation(ellipsoid_spec, dense_properties);
+
+  {
+    // It defaults to kSingleInteriorVertex if nothing is defined.
+
+    // The implicitly sparse ellipsoid should have the same number of tets
+    // as that declared explicitly.
+    EXPECT_EQ(implicit_sparse_ellipsoid->mesh().num_elements(),
+              sparse_ellipsoid->mesh().num_elements());
+  }
+
+  {
+    // Explicitly specifying the two strategies produces meshes with different
+    // numbers of tets.
+
+    // The dense ellipsoid (with the same resolution hint) should have more
+    // tets.
+    EXPECT_LT(sparse_ellipsoid->mesh().num_elements(),
+              dense_ellipsoid->mesh().num_elements());
+  }
+
+  {
+    // A value that isn't a TessellationStrategy throws.
+
+    // Starting with the basic properties, we'll set the property to be a
+    // string. Should throw.
+    ProximityProperties bad_properties(basic_properties);
+    bad_properties.AddProperty(kHydroGroup, "tessellation_strategy", "dense");
+    EXPECT_THROW(MakeSoftRepresentation(ellipsoid_spec, bad_properties),
+                 std::logic_error);
+  }
 }
 
 // Test suite for testing the common failure conditions for generating soft
 // geometry. Specifically, they need to be tessellated into a tet mesh
-// and define a pressure field. This actively excludes HalfSpace and Mesh
-// because they are treated specially (they don't get tessellated).
-// (See the `SoftErrorShapeTypes` declaration below.) It should include every
-// *other* supported soft shape type.
+// and define a pressure field. This actively excludes Convex and Mesh
+// because soft Convex and soft Mesh are not currently supported for
+// hydroelastic contact. (See the `SoftErrorShapeTypes` declaration below.)
+// It should include every *other* supported soft shape type. For HalfSpace
+// and Box, they are included in the test suite but exempt from
+// BadResolutionHint because they do not depend on the resolution hint
+// parameter. Only HalfSpace is tested in BadSlabThickness.
 template <typename ShapeType>
 class HydroelasticSoftGeometryErrorTests : public ::testing::Test {};
 
@@ -629,7 +1064,8 @@ TYPED_TEST_SUITE_P(HydroelasticSoftGeometryErrorTests);
 TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadResolutionHint) {
   using ShapeType = TypeParam;
   ShapeType shape_spec = make_default_shape<ShapeType>();
-  if (ShapeName(shape_spec).name() != "HalfSpace") {
+  if (ShapeName(shape_spec).name() != "HalfSpace" &&
+      ShapeName(shape_spec).name() != "Box") {
     TestPropertyErrors<ShapeType, double>(
         shape_spec, kHydroGroup, kRezHint, "soft",
         [](const ShapeType& s, const ProximityProperties& p) {
@@ -673,7 +1109,7 @@ TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadSlabThickness) {
 REGISTER_TYPED_TEST_SUITE_P(HydroelasticSoftGeometryErrorTests,
                             BadResolutionHint, BadElasticModulus,
                             BadSlabThickness);
-typedef ::testing::Types<Sphere, Cylinder, Box, Ellipsoid, HalfSpace>
+typedef ::testing::Types<Sphere, Box, Cylinder, Ellipsoid, HalfSpace>
     SoftErrorShapeTypes;
 INSTANTIATE_TYPED_TEST_SUITE_P(My, HydroelasticSoftGeometryErrorTests,
                                SoftErrorShapeTypes);

@@ -1,0 +1,39 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+filegroup(
+    name = "models",
+    srcs = glob([
+        "**/*.sdf",
+    ]),
+)
+
+drake_cc_binary(
+    name = "passive_simulation",
+    srcs = ["passive_simulation.cc"],
+    add_test_rule = 1,
+    data = [":models"],
+    test_rule_args = [
+        "--simulation_time=0.1",
+    ],
+    deps = [
+        "//common:find_resource",
+        "//geometry:drake_visualizer",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//multibody/tree",
+        "//systems/analysis:simulator",
+        "//systems/analysis:simulator_gflags",
+        "//systems/analysis:simulator_print_stats",
+        "//systems/framework:diagram",
+        "@gflags",
+    ],
+)
+
+add_lint_tests()

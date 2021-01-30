@@ -38,7 +38,7 @@ drake_cc_googletest(
     name = "fibonacci_difference_equation_test",
     deps = [
         ":fibonacci_difference_equation",
-        "//systems/analysis",
+        "//systems/analysis:simulator",
         "//systems/primitives:signal_logger",
     ],
 )

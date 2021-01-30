@@ -53,6 +53,9 @@ def getDrakePath():
 def _execute_extra_python_code(m):
     # See `ExecuteExtraPythonCode` in `pydrake_pybind.h` for usage details and
     # rationale.
+    if m.__name__ not in sys.modules:
+        # N.B. This is necessary for C++ extensions in Python 3.
+        sys.modules[m.__name__] = m
     module_path = m.__name__.split(".")
     if len(module_path) == 1:
         raise RuntimeError((
@@ -77,6 +80,23 @@ def _setattr_kwargs(obj, kwargs):
         setattr(obj, name, value)
 
 
+def _import_cc_module_vars(cc_module, py_module_name):
+    # Imports the cc_module's public symbols into the named py module
+    # (py_module_name), resetting their __module__ to be the py module in the
+    # process.
+    # Returns a list[str] of the public symbol names imported.
+    py_module = sys.modules[py_module_name]
+    var_list = []
+    for name, value in cc_module.__dict__.items():
+        if name.startswith("_"):
+            continue
+        if getattr(value, "__module__", None) == cc_module.__name__:
+            value.__module__ = py_module_name
+        setattr(py_module, name, value)
+        var_list.append(name)
+    return var_list
+
+
 class _DrakeImportWarning(Warning):
     pass
 
@@ -92,9 +112,16 @@ https://github.com/pytorch/pytorch/issues/3059#issuecomment-534676459
 
 
 def _check_for_rtld_global_usages():
-    # Naively check if `torch` is using RTLD_GLOBAL.
+    # Naively check if `torch` is using RTLD_GLOBAL. For more information, see
+    # the above _RTLD_GLOBAL_WARNING message, #12073, and #13707.
     torch = sys.modules.get("torch")
     if torch is None:
+        return False
+    # This symbol was introduced in v1.5.0 (pytorch@ddff4efa2).
+    # N.B. Per investigation in #13707, it seems like torch==1.4.0 also plays
+    # better with pydrake. However, we will keep our warning conservative.
+    using_rtld_global = getattr(torch, "USE_RTLD_GLOBAL_WITH_LIBTORCH", True)
+    if not using_rtld_global:
         return False
     init_file = getattr(torch, "__file__")
     if init_file.endswith(".pyc"):

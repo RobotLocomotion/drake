@@ -1,4 +1,4 @@
-<?xml version="1.0" ?>
+<?xml version="1.0"?>
 <!--
 SDF automatically generated with: gz sdf -p /my_urdf.urdf > /my_sdf.sdf
 
@@ -7,12 +7,11 @@ Later edited by hand to:
 * remove damping from the joints
 * use pose frame semantics to reflect URDF pose values.
 -->
-<sdf version='1.7'>
-  <model name='iiwa14'>
-    <link name='iiwa_link_0'>
-      <pose>0 0 0 0 -0 0</pose>
+<sdf version="1.7">
+  <model name="iiwa14">
+    <link name="iiwa_link_0">
       <inertial>
-        <pose>-0.1 0 0.07 0 -0 0</pose>
+        <pose>-0.1 0 0.07 0 0 0</pose>
         <mass>5</mass>
         <inertia>
           <ixx>0.05</ixx>
@@ -23,8 +22,7 @@ Later edited by hand to:
           <izz>0.03</izz>
         </inertia>
       </inertial>
-      <visual name='iiwa_link_0_fixed_joint_lump__iiwa_link_0_visual'>
-        <pose>0 0 0 0 0 0</pose>
+      <visual name="iiwa_link_0_fixed_joint_lump__iiwa_link_0_visual">
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -39,11 +37,10 @@ Later edited by hand to:
       <velocity_decay/>
       <self_collide>0</self_collide>
     </link>
-
-    <link name='iiwa_link_1'>
-      <pose relative_to="iiwa_joint_1">0 0 0 0 0 0</pose>
+    <link name="iiwa_link_1">
+      <pose relative_to="iiwa_joint_1"/>
       <inertial>
-        <pose>0 -0.03 0.12 0 -0 0</pose>
+        <pose>0 -0.03 0.12 0 0 0</pose>
         <mass>5.76</mass>
         <inertia>
           <ixx>0.033</ixx>
@@ -54,8 +51,7 @@ Later edited by hand to:
           <izz>0.0123</izz>
         </inertia>
       </inertial>
-      <visual name='iiwa_link_1_visual'>
-        <pose>0 0 0 0 -0 0</pose>
+      <visual name="iiwa_link_1_visual">
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -70,7 +66,7 @@ Later edited by hand to:
       <velocity_decay/>
       <self_collide>0</self_collide>
     </link>
-    <joint name='iiwa_joint_1' type='revolute'>
+    <joint name="iiwa_joint_1" type="revolute">
       <pose relative_to="iiwa_link_0">0 0 0.1575 0 0 0</pose>
       <child>iiwa_link_1</child>
       <parent>iiwa_link_0</parent>
@@ -90,11 +86,10 @@ Later edited by hand to:
         </dynamics>
       </axis>
     </joint>
-    <!-- SDFormat 1.7 -->
-    <link name='iiwa_link_2'>
-      <pose relative_to="iiwa_joint_2">0 0 0 0 0 0</pose>
+    <link name="iiwa_link_2">
+      <pose relative_to="iiwa_joint_2"/>
       <inertial>
-        <pose>0.0003 0.059 0.042 0 -0 0</pose>
+        <pose>0.0003 0.059 0.042 0 0 0</pose>
         <mass>6.35</mass>
         <inertia>
           <ixx>0.0305</ixx>
@@ -105,8 +100,7 @@ Later edited by hand to:
           <izz>0.011</izz>
         </inertia>
       </inertial>
-      <visual name='iiwa_link_2_visual_grey'>
-        <pose>0 0 0 0 -0 0</pose>
+      <visual name="iiwa_link_2_visual_grey">
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -117,8 +111,7 @@ Later edited by hand to:
           <diffuse>0.4 0.4 0.4 1.0</diffuse>
         </material>
       </visual>
-      <visual name='iiwa_link_2_visual_orange'>
-        <pose>0 0 0 0 -0 0</pose>
+      <visual name="iiwa_link_2_visual_orange">
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -133,7 +126,7 @@ Later edited by hand to:
       <velocity_decay/>
       <self_collide>0</self_collide>
     </link>
-    <joint name='iiwa_joint_2' type='revolute'>
+    <joint name="iiwa_joint_2" type="revolute">
       <pose relative_to="iiwa_link_1">
         0 0 0.2025 1.570796326794897 0 3.141592653589793
       </pose>
@@ -155,10 +148,10 @@ Later edited by hand to:
         </dynamics>
       </axis>
     </joint>
-    <link name='iiwa_link_3'>
-      <pose relative_to="iiwa_joint_3">0 0 0 0 0 0</pose>
+    <link name="iiwa_link_3">
+      <pose relative_to="iiwa_joint_3"/>
       <inertial>
-        <pose>0 0.03 0.13 0 -0 0</pose>
+        <pose>0 0.03 0.13 0 0 0</pose>
         <mass>3.5</mass>
         <inertia>
           <ixx>0.025</ixx>
@@ -169,8 +162,7 @@ Later edited by hand to:
           <izz>0.0076</izz>
         </inertia>
       </inertial>
-      <visual name='iiwa_link_3_visual'>
-        <pose>0 0 0 0 -0 0</pose>
+      <visual name="iiwa_link_3_visual">
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -181,8 +173,7 @@ Later edited by hand to:
           <diffuse>0.4 0.4 0.4 1.0</diffuse>
         </material>
       </visual>
-      <visual name='iiwa_link_3_visual_band'>
-        <pose>0 0 0 0 -0 0</pose>
+      <visual name="iiwa_link_3_visual_band">
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -193,8 +184,7 @@ Later edited by hand to:
           <diffuse>0.6 0.6 0.6 1.0</diffuse>
         </material>
       </visual>
-      <visual name='iiwa_link_3_visual_kuka'>
-        <pose>0 0 0 0 -0 0</pose>
+      <visual name="iiwa_link_3_visual_kuka">
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -209,7 +199,7 @@ Later edited by hand to:
       <velocity_decay/>
       <self_collide>0</self_collide>
     </link>
-    <joint name='iiwa_joint_3' type='revolute'>
+    <joint name="iiwa_joint_3" type="revolute">
       <pose relative_to="iiwa_link_2">0 0.2045 0 1.570796326794897 0 3.141592653589793</pose>
       <child>iiwa_link_3</child>
       <parent>iiwa_link_2</parent>
@@ -229,10 +219,10 @@ Later edited by hand to:
         </dynamics>
       </axis>
     </joint>
-    <link name='iiwa_link_4'>
-      <pose relative_to="iiwa_joint_4">0 0 0 0 0 0</pose>
+    <link name="iiwa_link_4">
+      <pose relative_to="iiwa_joint_4"/>
       <inertial>
-        <pose>0 0.067 0.034 0 -0 0</pose>
+        <pose>0 0.067 0.034 0 0 0</pose>
         <mass>3.5</mass>
         <inertia>
           <ixx>0.017</ixx>
@@ -243,8 +233,7 @@ Later edited by hand to:
           <izz>0.006</izz>
         </inertia>
       </inertial>
-      <visual name='iiwa_link_4_visual_grey'>
-        <pose>0 0 0 0 -0 0</pose>
+      <visual name="iiwa_link_4_visual_grey">
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -255,8 +244,7 @@ Later edited by hand to:
           <diffuse>0.4 0.4 0.4 1.0</diffuse>
         </material>
       </visual>
-      <visual name='iiwa_link_4_visual_orange'>
-        <pose>0 0 0 0 -0 0</pose>
+      <visual name="iiwa_link_4_visual_orange">
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -271,7 +259,7 @@ Later edited by hand to:
       <velocity_decay/>
       <self_collide>0</self_collide>
     </link>
-    <joint name='iiwa_joint_4' type='revolute'>
+    <joint name="iiwa_joint_4" type="revolute">
       <pose relative_to="iiwa_link_3">0 0 0.2155 1.570796326794897 0 0</pose>
       <child>iiwa_link_4</child>
       <parent>iiwa_link_3</parent>
@@ -291,10 +279,10 @@ Later edited by hand to:
         </dynamics>
       </axis>
     </joint>
-    <link name='iiwa_link_5'>
-      <pose relative_to="iiwa_joint_5">0 0 0 0 0 0</pose>
+    <link name="iiwa_link_5">
+      <pose relative_to="iiwa_joint_5"/>
       <inertial>
-        <pose>0.0001 0.021 0.076 0 -0 0</pose>
+        <pose>0.0001 0.021 0.076 0 0 0</pose>
         <mass>3.5</mass>
         <inertia>
           <ixx>0.01</ixx>
@@ -305,8 +293,7 @@ Later edited by hand to:
           <izz>0.00449</izz>
         </inertia>
       </inertial>
-      <visual name='iiwa_link_5_visual'>
-        <pose>0 0 0 0 -0 0</pose>
+      <visual name="iiwa_link_5_visual">
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -317,8 +304,7 @@ Later edited by hand to:
           <diffuse>0.4 0.4 0.4 1.0</diffuse>
         </material>
       </visual>
-      <visual name='iiwa_link_5_visual_band'>
-        <pose>0 0 0 0 -0 0</pose>
+      <visual name="iiwa_link_5_visual_band">
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -329,8 +315,7 @@ Later edited by hand to:
           <diffuse>0.6 0.6 0.6 1.0</diffuse>
         </material>
       </visual>
-      <visual name='iiwa_link_5_visual_kuka'>
-        <pose>0 0 0 0 -0 0</pose>
+      <visual name="iiwa_link_5_visual_kuka">
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -345,7 +330,7 @@ Later edited by hand to:
       <velocity_decay/>
       <self_collide>0</self_collide>
     </link>
-    <joint name='iiwa_joint_5' type='revolute'>
+    <joint name="iiwa_joint_5" type="revolute">
       <pose relative_to="iiwa_link_4">0 0.1845 0 -1.570796326794897 3.141592653589793 0</pose>
       <child>iiwa_link_5</child>
       <parent>iiwa_link_4</parent>
@@ -365,10 +350,10 @@ Later edited by hand to:
         </dynamics>
       </axis>
     </joint>
-    <link name='iiwa_link_6'>
-      <pose relative_to="iiwa_joint_6">0 0 0 0 0 0</pose>
+    <link name="iiwa_link_6">
+      <pose relative_to="iiwa_joint_6"/>
       <inertial>
-        <pose>0 0.0006 0.0004 0 -0 0</pose>
+        <pose>0 0.0006 0.0004 0 0 0</pose>
         <mass>1.8</mass>
         <inertia>
           <ixx>0.0049</ixx>
@@ -379,8 +364,7 @@ Later edited by hand to:
           <izz>0.0036</izz>
         </inertia>
       </inertial>
-      <visual name='iiwa_link_6_visual_grey'>
-        <pose>0 0 0 0 -0 0</pose>
+      <visual name="iiwa_link_6_visual_grey">
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -391,8 +375,7 @@ Later edited by hand to:
           <diffuse>0.4 0.4 0.4 1.0</diffuse>
         </material>
       </visual>
-      <visual name='iiwa_link_6_visual_orange'>
-        <pose>0 0 0 0 -0 0</pose>
+      <visual name="iiwa_link_6_visual_orange">
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -407,7 +390,7 @@ Later edited by hand to:
       <velocity_decay/>
       <self_collide>0</self_collide>
     </link>
-    <joint name='iiwa_joint_6' type='revolute'>
+    <joint name="iiwa_joint_6" type="revolute">
       <pose relative_to="iiwa_link_5">0 0 0.2155 1.570796326794897 0 0</pose>
       <child>iiwa_link_6</child>
       <parent>iiwa_link_5</parent>
@@ -427,10 +410,10 @@ Later edited by hand to:
         </dynamics>
       </axis>
     </joint>
-    <link name='iiwa_link_7'>
-      <pose relative_to="iiwa_joint_7">0 0 0 0 0 0</pose>
+    <link name="iiwa_link_7">
+      <pose relative_to="iiwa_joint_7"/>
       <inertial>
-        <pose>0 0 0.02 0 -0 0</pose>
+        <pose>0 0 0.02 0 0 0</pose>
         <mass>1.2</mass>
         <inertia>
           <ixx>0.001</ixx>
@@ -441,8 +424,7 @@ Later edited by hand to:
           <izz>0.001</izz>
         </inertia>
       </inertial>
-      <visual name='iiwa_link_7_visual'>
-        <pose>0 0 0 0 -0 0</pose>
+      <visual name="iiwa_link_7_visual">
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -457,7 +439,7 @@ Later edited by hand to:
       <velocity_decay/>
       <self_collide>0</self_collide>
     </link>
-    <joint name='iiwa_joint_7' type='revolute'>
+    <joint name="iiwa_joint_7" type="revolute">
       <pose relative_to="iiwa_link_6">
         0 0.081 0 -1.570796326794897 3.141592653589793 0
       </pose>
@@ -480,7 +462,7 @@ Later edited by hand to:
       </axis>
     </joint>
     <static>0</static>
-    <plugin name='gazebo_ros_controller' filename='libgazebo_ros_control.so'>
+    <plugin name="gazebo_ros_controller" filename="libgazebo_ros_control.so">
       <robotNamespace>/iiwa</robotNamespace>
     </plugin>
   </model>

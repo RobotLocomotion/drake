@@ -5,6 +5,7 @@ import sys
 import types
 
 from pydrake.common.cpp_param import get_param_names, get_param_canonical
+from pydrake.common.deprecation import _warn_deprecated
 
 
 def _get_module_from_stack(frame=2):
@@ -13,8 +14,8 @@ def _get_module_from_stack(frame=2):
 
 
 def _is_pybind11_type_error(e):
-    return ("incompatible function arguments" in str(e) or
-            "incompatible constructor arguments" in str(e))
+    return ("incompatible function arguments" in str(e)
+            or "incompatible constructor arguments" in str(e))
 
 
 def get_or_init(scope, name, template_cls, *args, **kwargs):
@@ -42,7 +43,14 @@ def get_or_init(scope, name, template_cls, *args, **kwargs):
     return template
 
 
-class TemplateBase(object):
+class _Deprecation:
+    # Denotes a (message, date) tuple.
+    def __init__(self, *, message, date):
+        self.message = message
+        self.date = date
+
+
+class TemplateBase:
     """Provides a mechanism to map parameters (types or literals) to
     instantiations, following C++ mechanics.
     """
@@ -63,6 +71,7 @@ class TemplateBase(object):
             scope = _get_module_from_stack()
         self._scope = scope
         self._instantiation_func = None
+        self._deprecation_map = {}
         self.__doc__ = ""
 
     def __getitem__(self, *param):
@@ -124,7 +133,7 @@ class TemplateBase(object):
     # should print out that `MyTemplate` is `<TemplateClass ...MyTemplate>`,
     # would only be called when the user requests something such as
     # `MyTemplate[float]`.
-    class _Deferred(object):
+    class _Deferred:
         pass
 
     _deferred = _Deferred()
@@ -149,6 +158,9 @@ class TemplateBase(object):
         elif instantiation is None and throw_error:
             raise RuntimeError("Invalid instantiation: {}".format(
                 self._instantiation_name(param)))
+        deprecation = self._deprecation_map.get(param)
+        if deprecation is not None:
+            _warn_deprecated(deprecation.message, date=deprecation.date)
         return (instantiation, param)
 
     def add_instantiation(self, param, instantiation):
@@ -199,6 +211,32 @@ class TemplateBase(object):
         self._instantiation_func = instantiation_func
         for param in param_list:
             self.add_instantiation(param, TemplateBase._deferred)
+
+    def deprecate_instantiation(self, param, message, *, date=None):
+        """Deprecates an instantiation for the given set of parameters.
+
+        Note:
+            This method can only be called once for a given instantiation.
+
+        Args:
+            param: Parameters for an instantiation that is already registered.
+            message: Message to be shown when issuing a deprecation warning.
+            date: (Optional) String of the form "YYYY-MM-DD".
+                If supplied, will reformat the message to add the date as is
+                done with DRAKE_DEPRECATED and its processing in mkdoc.py. This
+                must be present if ``message`` does not contain the date
+                itself.
+        Returns:
+            (instantiation, param), where ``param`` is the resolved parameters.
+        """
+        param = get_param_canonical(self._param_resolve(param))
+        if param in self._deprecation_map:
+            raise RuntimeError(
+                f"Deprecation already registered: "
+                f"{self._instantiation_name(param)}")
+        instantiation, param = self.get_instantiation(param)
+        self._deprecation_map[param] = _Deprecation(message=message, date=date)
+        return (instantiation, param)
 
     def get_param_set(self, instantiation):
         """Returns all parameters for a given `instantiation`.
@@ -252,7 +290,7 @@ class TemplateBase(object):
         return instantiation
 
     @classmethod
-    def define(cls, name, param_list, *args, **kwargs):
+    def define(cls, name, param_list, *args, scope=None, **kwargs):
         """Provides a decorator for functions that defines a template using
         `name`. The template instantiations are added using
         `add_instantiations`, where the instantiation function is the decorated
@@ -277,12 +315,14 @@ class TemplateBase(object):
                                       param_list=[(int,), (float,)])
                 def MyTemplate(param):
                     T, = param
-                    class Impl(object):
+                    class Impl:
                         def __init__(self):
                             self.T = T
                     return Impl
         """
-        template = cls(name, *args, **kwargs)
+        if scope is None:
+            scope = _get_module_from_stack()
+        template = cls(name, *args, scope=scope, **kwargs)
 
         def decorator(instantiation_func):
             template.add_instantiations(instantiation_func, param_list)
@@ -404,7 +444,7 @@ class TemplateMethod(TemplateBase):
     def _full_name(self):
         return '{}.{}'.format(self._cls.__name__, self.name)
 
-    class _Bound(object):
+    class _Bound:
         def __init__(self, template, obj):
             self._tpl = template
             self._obj = obj

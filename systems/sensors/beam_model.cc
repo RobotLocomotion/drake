@@ -11,7 +11,7 @@ namespace sensors {
 
 template <typename T>
 BeamModel<T>::BeamModel(int num_depth_readings, double max_range)
-    : max_range_(max_range) {
+    : LeafSystem<T>(SystemTypeTag<BeamModel>{}), max_range_(max_range) {
   DRAKE_DEMAND(num_depth_readings > 0);
   DRAKE_DEMAND(max_range >= 0.0);
   // Declare depth input port.
@@ -53,6 +53,11 @@ BeamModel<T>::BeamModel(int num_depth_readings, double max_range)
       SystemConstraintBounds(Vector1d(0), std::nullopt),
       "event probabilities sum to one");
 }
+
+template <typename T>
+template <typename U>
+BeamModel<T>::BeamModel(const BeamModel<U>& other)
+    : BeamModel<T>(other.max_range(), other.get_depth_input_port().size()) {}
 
 template <typename T>
 BeamModelParams<T>& BeamModel<T>::get_mutable_parameters(

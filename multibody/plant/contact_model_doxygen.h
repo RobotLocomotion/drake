@@ -1,3 +1,6 @@
+/** @file
+ Doxygen-only documentation for @ref drake_contacts.  */
+
 /** @defgroup drake_contacts   Contact Modeling in Drake
     @ingroup multibody
 
@@ -5,7 +8,7 @@ Drake is concerned with the simulation of _physical_ phenomena, including
 contact between simulated objects.
 Drake approximates real-world physical contact phenomena with a combination
 of geometric techniques and response models. Here we discuss the
-parameterization and idiosyncracies of a particular contact response model,
+parameterization and idiosyncrasies of a particular contact response model,
 based on point contact, non-penetration imposed with a penalty force, and a
 continuous model of friction approximating Coulomb stiction and sliding friction
 effects.
@@ -52,8 +55,8 @@ and the materials are linear (i.e. are described by the Hookean law).
 In general, when two solids come into contact, they inevitably must undergo
 deformation in order to avoid the physical impossibility of interpenetration.
 This constraint is described by the Signorini boundary condition, which at each
-point in the contact surface imposes a complementarit constraint between normal
-stress and penetration (described by a gap function).
+point in the contact surface imposes a complementarity constraint between
+normal stress and penetration (described by a gap function).
 Stresses on the contact surface are the result of these deformations.
 
 Ultimately, contact forces are the result of integrating these contact
@@ -211,8 +214,8 @@ Next topic: @ref contact_engineering
  <h2>Choice of Time Advancement Strategy</h2>
 
  @ref drake::multibody::MultibodyPlant "MultibodyPlant" offers two different
- modalities to model mechanical sytems in time. These are:
-   1. As a discrete system with periodic updates (the prefered method for
+ modalities to model mechanical systems in time. These are:
+   1. As a discrete system with periodic updates (the preferred method for
       robustness and speed).
    2. As a continuous system.
 

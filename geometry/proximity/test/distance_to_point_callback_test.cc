@@ -178,7 +178,7 @@ class PointShapeAutoDiffSignedDistanceTester {
 GTEST_TEST(DistanceToPoint, Sphere) {
   const double kEps = 4 * std::numeric_limits<double>::epsilon();
 
-  // Provide some arbitary pose of the sphere in the world.
+  // Provide some arbitrary pose of the sphere in the world.
   const RotationMatrix<double> R_WG(
       AngleAxis<double>(M_PI / 5, Vector3d{1, 2, 3}.normalized()));
   const Vector3d p_WG{0.5, 1.25, -2};
@@ -300,7 +300,7 @@ GTEST_TEST(DistanceToPoint, Box) {
 GTEST_TEST(DistanceToPoint, Capsule) {
   const double kEps = 6 * std::numeric_limits<double>::epsilon();
 
-  // Provide some arbitary pose of the capsule G in the world.
+  // Provide some arbitrary pose of the capsule G in the world.
   const RotationMatrix<double> R_WG(
       AngleAxis<double>(M_PI / 5, Vector3d{1, 2, 3}.normalized()));
   const Vector3d p_WG{0.5, 1.25, -2};
@@ -407,7 +407,7 @@ GTEST_TEST(DistanceToPoint, Halfspace) {
 GTEST_TEST(DistanceToPoint, Cylinder) {
   const double kEps = 4 * std::numeric_limits<double>::epsilon();
 
-  // Provide some arbitary pose of the cylinder in the world.
+  // Provide some arbitrary pose of the cylinder in the world.
   const RotationMatrix<double> R_WG(
       AngleAxis<double>(M_PI / 5, Vector3d{1, 2, 3}.normalized()));
   const Vector3d p_WG{0.5, 1.25, -2};

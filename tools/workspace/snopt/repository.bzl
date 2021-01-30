@@ -220,6 +220,7 @@ _attrs = {
         allow_single_file = True,
         default = "@drake//tools/workspace/snopt:package.BUILD.bazel",
     ),
+    "recursive_init_submodules": attr.bool(),
 }
 
 _snopt_repository = repository_rule(

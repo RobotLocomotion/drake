@@ -47,24 +47,19 @@ void CacheEntry::Calc(const ContextBase& context,
                       AbstractValue* value) const {
   DRAKE_DEMAND(value != nullptr);
   DRAKE_ASSERT_VOID(owning_system_->ValidateContext(context));
-  DRAKE_ASSERT_VOID(CheckValidAbstractValue(*value));
+  DRAKE_ASSERT_VOID(CheckValidAbstractValue(context, *value));
 
   calc_function_(context, value);
 }
 
-// See OutputPort::CheckValidOutputType; treat both methods similarly.
-void CacheEntry::CheckValidAbstractValue(const AbstractValue& proposed) const {
-  // TODO(sherm1) Consider whether we can depend on there already being an
-  //              object of this type in the context's CacheEntryValue so we
-  //              wouldn't have to allocate one here. If so could also store
-  //              a precomputed type_index there for further savings. Would
-  //              need to pass in a ContextBase.
-  auto good_ptr = Allocate();  // Very expensive!
-  const AbstractValue& good = *good_ptr;
-  if (proposed.type_info() != good.type_info()) {
+void CacheEntry::CheckValidAbstractValue(const ContextBase& context,
+                                         const AbstractValue& proposed) const {
+  const CacheEntryValue& cache_value = get_cache_entry_value(context);
+  const AbstractValue& value = cache_value.PeekAbstractValueOrThrow();
+  if (proposed.type_info() != value.type_info()) {
     throw std::logic_error(FormatName("Calc") +
                            "expected AbstractValue output type " +
-                           good.GetNiceTypeName() + " but got " +
+                           value.GetNiceTypeName() + " but got " +
                            proposed.GetNiceTypeName() + ".");
   }
 }

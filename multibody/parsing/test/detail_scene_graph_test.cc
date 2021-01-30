@@ -5,8 +5,8 @@
 #include <optional>
 #include <sstream>
 
-#include <gtest/gtest.h>
 #include "fmt/ostream.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
@@ -64,7 +64,7 @@ unique_ptr<sdf::Geometry> MakeSdfGeometryFromString(
     const std::string& geometry_spec) {
   const std::string sdf_str =
       "<?xml version='1.0'?>"
-      "<sdf version='1.6'>"
+      "<sdf version='1.7'>"
       "  <model name='my_model'>"
       "    <link name='link'>"
       "      <visual name='link_visual'>"
@@ -101,7 +101,7 @@ unique_ptr<sdf::Visual> MakeSdfVisualFromString(
     const std::string& visual_spec) {
   const std::string sdf_str =
       "<?xml version='1.0'?>"
-      "<sdf version='1.6'>"
+      "<sdf version='1.7'>"
       "  <model name='my_model'>"
       "    <link name='link'>"
       + visual_spec +
@@ -138,7 +138,7 @@ unique_ptr<sdf::Collision> MakeSdfCollisionFromString(
     const std::string& collision_spec) {
   const std::string sdf_str =
       "<?xml version='1.0'?>"
-          "<sdf version='1.6'>"
+          "<sdf version='1.7'>"
           "  <model name='my_model'>"
           "    <link name='link'>"
           + collision_spec +
@@ -406,7 +406,7 @@ GTEST_TEST(SceneGraphParserDetail, VisualGeometryNameRequirements) {
   auto valid_parse = [](const std::string& visual_str) -> bool {
     const std::string sdf_str = fmt::format(
         "<?xml version='1.0'?>"
-        "<sdf version='1.6'>"
+        "<sdf version='1.7'>"
         "  <model name='my_model'>"
         "    <link name='link'>{}"
         "    </link>"
@@ -829,10 +829,12 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
   }
 
   // Case: Values out of range:
-  //  Alpha simply gets clamped to the range [0, 1]
-  //  Negative R, G, B get set to zero.
-  //  R, G, B > 1 get divided by 255.
-  // These rules don't guarantee valid values.
+  //  A (alpha) simply gets clamped to the range [0, 1]
+  //  For each individual element in R, G, B:
+  //    Negative values are set to zero.
+  //    Values > 1 are divided by 255
+  // This test *must* show that these rules (from libsdformat) do not
+  // guarantee valid values.
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         "<visual name='some_link_visual'>"
@@ -846,11 +848,106 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
         "    <diffuse>-0.1 255 65025 2</diffuse>"
         "  </material>"
         "</visual>");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename),
+        std::runtime_error,
+        "All values must be within the range \\[0, 1\\]. Values provided: "
+        "\\(r=0(\\.0)?, g=1(\\.0)?, b=255(\\.0)?, a=1(\\.0)?\\)");
+  }
+}
+
+// Confirms that the <drake:accepting_renderer> tag gets properly parsed.
+GTEST_TEST(SceneGraphParseDetail, AcceptingRenderers) {
+  const std::string group = "renderer";
+  const std::string property = "accepting";
+
+  // Case: no <drake:accepting_renderer> tag.
+  {
+    unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
+        "<visual name='some_link_visual'>"
+        "  <pose>0 0 0 0 0 0</pose>"
+        "  <geometry>"
+        "    <sphere>"
+        "      <radius>1</radius>"
+        "    </sphere>"
+        "  </geometry>"
+        "  <material>"
+        "    <diffuse>0.25 1 0.5 0.25 2</diffuse>"
+        "  </material>"
+        "</visual>");
     IllustrationProperties material =
         MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
-    Vector4<double> expected_diffuse{0, 1, 255, 1};
-    EXPECT_TRUE(expect_phong(material, true, expected_diffuse, {}, {}, {}, {}));
+    EXPECT_FALSE(material.HasProperty(group, property));
   }
+
+  // Case: single <drake:accepting_renderer> tag.
+  {
+    unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
+        "<visual name='some_link_visual'>"
+        "  <pose>0 0 0 0 0 0</pose>"
+        "  <geometry>"
+        "    <sphere>"
+        "      <radius>1</radius>"
+        "    </sphere>"
+        "  </geometry>"
+        "  <material>"
+        "    <diffuse>0.25 1 0.5 0.25 2</diffuse>"
+        "  </material>"
+        "  <drake:accepting_renderer>renderer1</drake:accepting_renderer>"
+        "</visual>");
+    IllustrationProperties material =
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
+    EXPECT_TRUE(material.HasProperty(group, property));
+    const auto& names =
+        material.GetProperty<std::set<std::string>>(group, property);
+    EXPECT_EQ(names.size(), 1);
+    EXPECT_EQ(names.count("renderer1"), 1);
+  }
+
+  // Case: Multiple <drake:accepting_renderer> tag.
+  {
+    unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
+        "<visual name='some_link_visual'>"
+        "  <pose>0 0 0 0 0 0</pose>"
+        "  <geometry>"
+        "    <sphere>"
+        "      <radius>1</radius>"
+        "    </sphere>"
+        "  </geometry>"
+        "  <material>"
+        "    <diffuse>0.25 1 0.5 0.25 2</diffuse>"
+        "  </material>"
+        "  <drake:accepting_renderer>renderer1</drake:accepting_renderer>"
+        "  <drake:accepting_renderer>renderer2</drake:accepting_renderer>"
+        "</visual>");
+    IllustrationProperties material =
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
+    EXPECT_TRUE(material.HasProperty(group, property));
+    const auto& names =
+        material.GetProperty<std::set<std::string>>(group, property);
+    EXPECT_EQ(names.size(), 2);
+    EXPECT_EQ(names.count("renderer1"), 1);
+    EXPECT_EQ(names.count("renderer2"), 1);
+  }
+
+  // Case: Missing names throws exception.
+  unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
+        "<visual name='some_link_visual'>"
+        "  <pose>0 0 0 0 0 0</pose>"
+        "  <geometry>"
+        "    <sphere>"
+        "      <radius>1</radius>"
+        "    </sphere>"
+        "  </geometry>"
+        "  <material>"
+        "    <diffuse>0.25 1 0.5 0.25 2</diffuse>"
+        "  </material>"
+        "  <drake:accepting_renderer> </drake:accepting_renderer>"
+        "</visual>");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+      MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename),
+      std::runtime_error,
+      "<drake:accepting_renderer> tag given without any name");
 }
 
 // Verify MakeGeometryPoseFromSdfCollision() makes the pose X_LG of geometry
@@ -921,7 +1018,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
   // It contains a `{}` place holder such that child tags of <collision> can be
   // injected to test various expressions of collision properties --
   // substitution via fmt::format.
-  const std::string collision_xml = R"_(
+  const std::string collision_xml = R"""(
 <collision name="some_geo">
   <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
   <geometry>
@@ -930,7 +1027,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
     </plane>
   </geometry>{}
 </collision>
-)_";
+)""";
 
   auto make_sdf_collision = [&collision_xml](const char* material_string) {
     return MakeSdfCollisionFromString(
@@ -960,14 +1057,14 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
   // confirm that all of the basic tags get parsed and focus on the logic that
   // is unique to `MakeProximityPropertiesForCollision()`.
   {
-    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"_(
+    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"""(
   <drake:proximity_properties>
     <drake:mesh_resolution_hint>2.5</drake:mesh_resolution_hint>
     <drake:elastic_modulus>3.5</drake:elastic_modulus>
     <drake:hunt_crossley_dissipation>4.5</drake:hunt_crossley_dissipation>
     <drake:mu_dynamic>4.5</drake:mu_dynamic>
     <drake:mu_static>4.75</drake:mu_static>
-  </drake:proximity_properties>)_");
+  </drake:proximity_properties>)""");
     ProximityProperties properties =
         MakeProximityPropertiesForCollision(*sdf_collision);
     assert_single_property(properties, geometry::internal::kHydroGroup,
@@ -981,10 +1078,10 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
 
   // Case: specifies rigid hydroelastic.
   {
-    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"_(
+    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"""(
   <drake:proximity_properties>
     <drake:rigid_hydroelastic/>
-  </drake:proximity_properties>)_");
+  </drake:proximity_properties>)""");
     ProximityProperties properties =
         MakeProximityPropertiesForCollision(*sdf_collision);
     ASSERT_TRUE(properties.HasProperty(geometry::internal::kHydroGroup,
@@ -996,10 +1093,10 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
 
   // Case: specifies soft hydroelastic.
   {
-    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"_(
+    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"""(
   <drake:proximity_properties>
     <drake:soft_hydroelastic/>
-  </drake:proximity_properties>)_");
+  </drake:proximity_properties>)""");
     ProximityProperties properties =
         MakeProximityPropertiesForCollision(*sdf_collision);
     ASSERT_TRUE(properties.HasProperty(geometry::internal::kHydroGroup,
@@ -1011,11 +1108,11 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
 
   // Case: specifies both -- should be an error.
   {
-    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"_(
+    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"""(
   <drake:proximity_properties>
     <drake:rigid_hydroelastic/>
     <drake:soft_hydroelastic/>
-  </drake:proximity_properties>)_");
+  </drake:proximity_properties>)""");
     DRAKE_EXPECT_THROWS_MESSAGE(
         MakeProximityPropertiesForCollision(*sdf_collision),
         std::runtime_error,
@@ -1026,7 +1123,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
   // Case: has no drake coefficients, only mu & m2 in ode: contains mu, mu2
   // friction.
   {
-    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"_(
+    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"""(
   <surface>
     <friction>
       <ode>
@@ -1034,7 +1131,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
         <mu2>0.3</mu2>
       </ode>
     </friction>
-  </surface>)_");
+  </surface>)""");
     ProximityProperties properties =
         MakeProximityPropertiesForCollision(*sdf_collision);
     assert_friction(properties, {0.8, 0.3});
@@ -1043,7 +1140,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
   // Case: has both ode (mu, mu2) and drake (dynamic): contains
   // drake::mu_dynamic wins.
   {
-    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"_(
+    unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"""(
   <drake:proximity_properties>
     <drake:mu_dynamic>0.3</drake:mu_dynamic>
   </drake:proximity_properties>
@@ -1054,7 +1151,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
         <mu2>1.3</mu2>
       </ode>
     </friction>
-  </surface>)_");
+  </surface>)""");
     ProximityProperties properties =
         MakeProximityPropertiesForCollision(*sdf_collision);
     assert_friction(properties, {0.3, 0.3});
@@ -1169,10 +1266,9 @@ GTEST_TEST(SceneGraphParserDetail,
       "    </friction>"
       "  </surface>"
       "</collision>");
-  DRAKE_EXPECT_THROWS_MESSAGE(
+  EXPECT_EQ(
       MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
-      std::runtime_error,
-      "Element <mu> is required within element <ode>.");
+      CoulombFriction<double>(default_friction().static_friction(), 0.8));
 }
 
 GTEST_TEST(SceneGraphParserDetail,
@@ -1188,15 +1284,14 @@ GTEST_TEST(SceneGraphParserDetail,
       "  <surface>"
       "    <friction>"
       "      <ode>"
-      "        <mu>0.8</mu>"
+      "        <mu>1.1</mu>"
       "      </ode>"
       "    </friction>"
       "  </surface>"
       "</collision>");
-  DRAKE_EXPECT_THROWS_MESSAGE(
+  EXPECT_EQ(
       MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
-      std::runtime_error,
-      "Element <mu2> is required within element <ode>.");
+      CoulombFriction<double>(1.1, default_friction().dynamic_friction()));
 }
 
 GTEST_TEST(SceneGraphParserDetail,
@@ -1210,16 +1305,18 @@ GTEST_TEST(SceneGraphParserDetail,
       "    </plane>"
       "  </geometry>"
       "  <surface>"
-      "    <ode>"
+      "    <ode>"  // WRONG: This should be //surface/friction/ode.
       "      <mu>0.3</mu>"
       "      <mu2>0.8</mu2>"
       "    </ode>"
       "  </surface>"
       "</collision>");
-  DRAKE_EXPECT_THROWS_MESSAGE(
+  // TODO(jwnimmer-tri) Ideally, the misplaced <ode/> element above would
+  // report a parsing error and/or raise an exception.  For now though, we
+  // ignore it and use the defaults.
+  EXPECT_EQ(
       MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
-      std::runtime_error,
-      "Element <friction> not found nested within element <surface>.");
+      default_friction());
 }
 
 GTEST_TEST(SceneGraphParserDetail,
@@ -1233,16 +1330,18 @@ GTEST_TEST(SceneGraphParserDetail,
           "    </plane>"
           "  </geometry>"
           "  <surface>"
-          "    <friction>"
+          "    <friction>"  // WRONG: This should be //surface/friction/ode.
           "      <mu>0.3</mu>"
           "      <mu2>0.8</mu2>"
           "    </friction>"
           "  </surface>"
           "</collision>");
-  DRAKE_EXPECT_THROWS_MESSAGE(
+  // TODO(jwnimmer-tri) Ideally, the misplaced <friction/> element above would
+  // report a parsing error and/or raise an exception.  For now though, we
+  // ignore it and use the defaults.
+  EXPECT_EQ(
       MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
-      std::runtime_error,
-      "Element <ode> not found nested within element <friction>.");
+      default_friction());
 }
 
 }  // namespace

@@ -1,10 +1,11 @@
 import pydrake.math as mut
-import pydrake.math._test as mtest
 from pydrake.math import (BarycentricMesh, wrap_to)
+from pydrake.common import RandomGenerator
+from pydrake.common.cpp_param import List
 from pydrake.common.eigen_geometry import Isometry3_, Quaternion_, AngleAxis_
+from pydrake.common.value import Value
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 import pydrake.common.test_utilities.numpy_compare as numpy_compare
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 
@@ -162,6 +163,13 @@ class TestMath(unittest.TestCase):
             X.multiply(other=RigidTransform()), RigidTransform)
         self.assertIsInstance(X @ RigidTransform(), RigidTransform)
         self.assertIsInstance(X @ [0, 0, 0], np.ndarray)
+        # - Test shaping (#13885).
+        v = np.array([0., 0., 0.])
+        vs = np.array([[1., 2., 3.], [4., 5., 6.]]).T
+        self.assertEqual((X @ v).shape, (3,))
+        self.assertEqual((X @ v.reshape((3, 1))).shape, (3, 1))
+        self.assertEqual((X @ vs).shape, (3, 2))
+        print(help(RigidTransform.multiply))
         # - Test vector multiplication.
         R_AB = RotationMatrix([
             [0., 1, 0],
@@ -179,14 +187,6 @@ class TestMath(unittest.TestCase):
             X_AB.multiply(p_BoQ_B=p_BQlist), p_AQlist)
         # Test pickling.
         assert_pickle(self, X_AB, RigidTransform.GetAsMatrix4, T=T)
-
-    @numpy_compare.check_all_types
-    def test_isometry_implicit(self, T):
-        Isometry3 = Isometry3_[T]
-        # Explicitly disabled, to mirror C++ API.
-        with self.assertRaises(TypeError):
-            self.assertTrue(mtest.TakeRigidTransform(Isometry3()))
-        self.assertTrue(mtest.TakeIsometry3(mut.RigidTransform()))
 
     @numpy_compare.check_all_types
     def test_rotation_matrix(self, T):
@@ -258,6 +258,12 @@ class TestMath(unittest.TestCase):
         vlist_B = np.array([v_B, v_B]).T
         vlist_A = np.array([v_A, v_A]).T
         numpy_compare.assert_float_equal(R_AB.multiply(v_B=vlist_B), vlist_A)
+        # - Test shaping (#13885).
+        v = np.array([0., 0., 0.])
+        vs = np.array([[1., 2., 3.], [4., 5., 6.]]).T
+        self.assertEqual((R_AB @ v).shape, (3,))
+        self.assertEqual((R_AB @ v.reshape((3, 1))).shape, (3, 1))
+        self.assertEqual((R_AB @ vs).shape, (3, 2))
         # Matrix checks
         numpy_compare.assert_equal(R.IsValid(), True)
         R = RotationMatrix()
@@ -313,10 +319,54 @@ class TestMath(unittest.TestCase):
         # Test pickling.
         assert_pickle(self, rpy, RollPitchYaw.vector, T=T)
 
+    @numpy_compare.check_all_types
+    def test_bspline_basis(self, T):
+        BsplineBasis = mut.BsplineBasis_[T]
+
+        bspline = BsplineBasis()
+        self.assertEqual(bspline.order(), 0)
+        self.assertEqual(BsplineBasis(other=bspline).order(), 0)
+        bspline = BsplineBasis(order=2, knots=[0, 1, 3, 5])
+        self.assertEqual(bspline.order(), 2)
+        bspline = BsplineBasis(order=2, num_basis_functions=3,
+                               type=mut.KnotVectorType.kUniform,
+                               initial_parameter_value=5.,
+                               final_parameter_value=6.)
+        self.assertEqual(bspline.order(), 2)
+        self.assertEqual(bspline.degree(), 1)
+        self.assertEqual(bspline.num_basis_functions(), 3)
+        numpy_compare.assert_float_equal(bspline.knots(),
+                                         [4.5, 5.0, 5.5, 6.0, 6.5])
+        numpy_compare.assert_float_equal(bspline.initial_parameter_value(), 5.)
+        numpy_compare.assert_float_equal(bspline.final_parameter_value(), 6.)
+        self.assertEqual(
+            bspline.FindContainingInterval(parameter_value=5.2), 1)
+        self.assertEqual(
+            bspline.ComputeActiveBasisFunctionIndices(
+                parameter_interval=[5.2, 5.7]),
+            [0, 1, 2])
+        self.assertEqual(
+            bspline.ComputeActiveBasisFunctionIndices(parameter_value=5.4),
+            [0, 1])
+        numpy_compare.assert_float_equal(
+            bspline.EvaluateBasisFunctionI(i=0, parameter_value=5.7), 0.)
+
     def test_orthonormal_basis(self):
         R = mut.ComputeBasisFromAxis(axis_index=0, axis_W=[1, 0, 0])
         self.assertAlmostEqual(np.linalg.det(R), 1.0)
         self.assertTrue(np.allclose(R.dot(R.T), np.eye(3)))
+
+    def test_random_rotations(self):
+        g = RandomGenerator()
+        quat = mut.UniformlyRandomQuaternion(g)
+        self.assertIsInstance(quat, Quaternion_[float])
+        angle_axis = mut.UniformlyRandomAngleAxis(g)
+        self.assertIsInstance(angle_axis, AngleAxis_[float])
+        rot_mat = mut.UniformlyRandomRotationMatrix(g)
+        self.assertIsInstance(rot_mat, mut.RotationMatrix)
+        rpy = mut.UniformlyRandomRPY(g)
+        self.assertIsInstance(rpy, np.ndarray)
+        self.assertEqual(len(rpy), 3)
 
     def test_matrix_util(self):
         A = np.array([[1, 2], [3, 4]])
@@ -357,3 +407,11 @@ class TestMath(unittest.TestCase):
         R = [0.3]
 
         mut.DiscreteAlgebraicRiccatiEquation(A=A, B=B, Q=Q, R=R)
+
+    @numpy_compare.check_all_types
+    def test_value_instantiations(self, T):
+        # Existence checks.
+        Value[mut.RigidTransform_[T]]
+        Value[List[mut.RigidTransform_[T]]]
+        Value[mut.RotationMatrix_[T]]
+        Value[List[mut.RotationMatrix_[T]]]
