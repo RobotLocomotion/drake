@@ -1,10 +1,12 @@
 #pragma once
 
 #include <array>
+#include <utility>
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
 #include "drake/multibody/fixed_fem/dev/constitutive_model.h"
+#include "drake/multibody/fixed_fem/dev/constitutive_model_utilities.h"
 #include "drake/multibody/fixed_fem/dev/linear_constitutive_model_cache_entry.h"
 
 namespace drake {
@@ -53,8 +55,10 @@ class LinearConstitutiveModel final
    0.5. */
   LinearConstitutiveModel(const T& youngs_modulus, const T& poisson_ratio)
       : E_(youngs_modulus), nu_(poisson_ratio) {
-    VerifyParameterValidity(E_, nu_);
-    SetLameParameters(E_, nu_);
+    const std::pair<T, T> lame_parameters =
+        internal::CalcLameParameters(E_, nu_);
+    lambda_ = lame_parameters.first;
+    mu_ = lame_parameters.second;
     /* Recall that
           Pᵢⱼ = 2μ * εᵢⱼ + λ * εₐₐ * δᵢⱼ,
       So,
@@ -130,25 +134,6 @@ class LinearConstitutiveModel final
       std::array<Eigen::Matrix<T, 9, 9>, num_locations>* dPdF) const {
     unused(cache_entry);
     std::fill(dPdF->begin(), dPdF->end(), dPdF_);
-  }
-
-  /* Set the Lamé parameters from Young's modulus and Poisson ratio. It's
-   important to keep the Lamé Parameters in sync with Young's modulus and
-   Poisson ratio as most computations use Lame parameters. */
-  void VerifyParameterValidity(const T& youngs_modulus,
-                               const T& poisson_ratio) const {
-    if (youngs_modulus < 0.0) {
-      throw std::logic_error("Young's modulus must be nonnegative.");
-    }
-    if (poisson_ratio >= 0.5 || poisson_ratio <= -1) {
-      throw std::logic_error("Poisson ratio must be in (-1, 0.5).");
-    }
-  }
-
-  void SetLameParameters(const T& youngs_modulus, const T& poisson_ratio) {
-    mu_ = youngs_modulus / (2.0 * (1.0 + poisson_ratio));
-    lambda_ = youngs_modulus * poisson_ratio /
-              ((1.0 + poisson_ratio) * (1.0 - 2.0 * poisson_ratio));
   }
 
   T E_;       // Young's modulus, N/m².
