@@ -2,5 +2,5 @@
 title: Using Drake From Other Programs
 ---
 
-[![python](/images/python.svg){: .logo-link}](/python-bindings.html)
-[![julia](/images/julia.svg){: .logo-link}](/julia-bindings.html)
+[![python](/third_party/images/python-logo-generic.svg){: .logo-link}](/python-bindings.html)
+[![julia](/third_party/images/julia-logo-color.svg){: .logo-link}](/julia-bindings.html)
