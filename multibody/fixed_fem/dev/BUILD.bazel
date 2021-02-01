@@ -40,6 +40,18 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "dirichlet_boundary_condition",
+    hdrs = [
+        "dirichlet_boundary_condition.h",
+    ],
+    deps = [
+        ":fem_indexes",
+        ":fem_state",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "dynamic_elasticity_element",
     hdrs = [
         "dynamic_elasticity_element.h",
@@ -261,6 +273,17 @@ drake_cc_library(
     ],
 )
 # === test/ ===
+
+drake_cc_googletest(
+    name = "dirichlet_boundary_condition_test",
+    deps = [
+        ":dirichlet_boundary_condition",
+        ":dummy_element",
+        ":fem_state",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
 
 drake_cc_library(
     name = "dummy_element",
