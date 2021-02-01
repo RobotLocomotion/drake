@@ -1,10 +1,8 @@
-.. _issues:
+---
+title: GitHub Issue Management
+---
 
-***********************
-GitHub Issue Management
-***********************
-
-Drake uses `GitHub issues <https://github.com/RobotLocomotion/drake/issues>`_
+Drake uses [GitHub issues](https://github.com/RobotLocomotion/drake/issues)
 to coordinate bug resolution and feature development. We organize issues using
 labels.  Each label uses the format ``group: value``, where ``group`` is one
 of the following:
@@ -19,149 +17,102 @@ of the following:
 Please only assign labels if you are reasonably confident they are correct.
 The Drake development team will apply appropriate labels later as needed.
 
-Owner
-=====
+#### Owner
 
 Every issue must have at least one owner assigned.
 
-.. _issues-team:
-
-Team
-====
+#### Team
 
 Every issue must have at least one ``team`` label. The teams, their leads, and
 their responsibilities are:
 
-- ``dynamics``
-
-  lead: sherm1
-
-  responsibilities: physical accuracy, numerical methods, collision,
+* ``dynamics``
+  * lead: sherm1
+  * responsibilities: physical accuracy, numerical methods, collision,
   systems framework
 
-- ``kitware``
+* ``kitware``
+  * lead: jamiesnape
+  * responsibilities: build, continuous integration
 
-  lead: jamiesnape
-
-  responsibilities: build, continuous integration
-
-- ``manipulation``
-
-  lead: hongkai-dai
-
-  responsibilities: optimizers, solvers, symbolic analysis,
+* ``manipulation``
+  * lead: hongkai-dai
+  * responsibilities: optimizers, solvers, symbolic analysis,
   ``drake/manipulation/`` subdirectory
 
-- ``robot locomotion group``
+* ``robot locomotion group``
+  * lead: RussTedrake
+  * responsibilities: examples/requests from MIT projects / MIT courses
 
-  lead: RussTedrake
-
-  responsibilities: examples/requests from MIT projects / MIT courses
-
-.. _issues-component:
-
-Component
-=========
+#### Component
 
 Every issue must have at most one ``component`` label. The components are:
 
-- ``build system``
+* ``build system``
+  * Bazel, CMake, dependencies, memory checkers, linters, etc.
+  * typical team: kitware
 
-  Bazel, CMake, dependencies, memory checkers, linters, etc.
+* ``continuous integration``
+  * Jenkins, CDash, mirroring of externals, Drake website, etc.
+  * typical team: kitware
 
-  typical team: kitware
-
-- ``continuous integration``
-
-  Jenkins, CDash, mirroring of externals, Drake website, etc.
-
-  typical team: kitware
-
-- ``distribution``
-
-  Nightly binaries, monthly releases, docker, installation
+* ``distribution``
+  * Nightly binaries, monthly releases, docker, installation
   via apt or brew, etc.
+  * typical team: kitware
 
-  typical team: kitware
+* ``geometry externals``
+  * VTK, FCL, drake_visualizer (core behavior), etc.
+  * typical team: kitware
 
-- ``geometry externals``
-
-  VTK, FCL, drake_visualizer (core behavior), etc.
-
-  typical team: kitware
-
-- ``geometry general``
-
-  Geometry infrastructure or topics that defy categorization into other geometry
+* ``geometry general``
+  * Geometry infrastructure or topics that defy categorization into other geometry
   components.
+  * typical team: dynamics
 
-  typical team: dynamics
+* ``geometry illustration``
+  * What and how geometry gets communicated to external visualizers.
+  * typical team: dynamics
 
-- ``geometry illustration``
+* ``geometry perception``
+  * How geometry appears in color, depth, and label images (via the RenderEngine API).
+  * typical team: dynamics
 
-  What and how geometry gets communicated to external visualizers.
+* ``geometry proximity``
+  * Contact, distance, signed distance queries and related properties.
+  * typical team: dynamics
 
-  typical team: dynamics
+* ``jupyter``
+  * Jupyter notebook infrastructure, Binder integration, etc.
+  * *Note*: This label does not imply content authoring for tutorials.
+  * typical team: kitware
 
-- ``geometry perception``
-
-  How geometry appears in color, depth, and label images (via the RenderEngine API).
-
-  typical team: dynamics
-
-- ``geometry proximity``
-
-  Contact, distance, signed distance queries and related properties.
-
-  typical team: dynamics
-
-- ``jupyter``
-
-  Jupyter notebook infrastructure, Binder integration, etc.
-
-  *Note*: This label does not imply content authoring for tutorials.
-
-  typical team: kitware
-
-- ``mathematical program``
-
-  Formulating and solving mathematical programs through numerical optimization,
+* ``mathematical program``
+  * Formulating and solving mathematical programs through numerical optimization,
   usually in ``drake/solvers``.
+  * typical team: manipulation
 
-  typical team: manipulation
-
-- ``multibody plant``
-
-  MultibodyPlant and related code and documentation
+* ``multibody plant``
+  * MultibodyPlant and related code and documentation
   usually in ``drake/multibody``.
+  * typical team: dynamics
 
-  typical team: dynamics
-
-- ``pydrake``
-
-  Python API and documentation under ``//bindings/pydrake`` (and
+* ``pydrake``
+  * Python API and documentation under ``//bindings/pydrake`` (and
   its supporting Starlark macros), the ``RobotLocomotion/pybind11`` fork, etc.
+  * typical team: kitware
 
-  typical team: kitware
-
-- ``simulator``
-
-  Simulator, integrators, and related code and documentation,
+* ``simulator``
+  * Simulator, integrators, and related code and documentation,
   usually in ``drake/systems/analysis``.
+  * typical team: dynamics
 
-  typical team: dynamics
-
-- ``system framework``
-
-  System, Context, and related code and documentation,
+* ``system framework``
+  * System, Context, and related code and documentation,
   usually in ``drake/systems/framework``.
+  * typical team: dynamics
 
-  typical team: dynamics
-
-.. _issues-priority:
-
-Priority
-========
+#### Priority
 
 The ``emergency`` priority indicates that the owning team should not work
 on anything else until the issue is resolved.
@@ -174,15 +125,13 @@ thumb may be useful for issues:
 * ``priority: low`` - planned for a subsequent quarter.
 * ``priority: backlog`` - will be handled on an ad-hoc basis, as time permits.
 
-Configuration
-=============
+#### Configuration
 
 An issue may have configuration label(s) such as ``linux``, ``mac``,
 ``python``, etc.  If no ``configuration`` label is present, the issue is
 assumed to affect all configurations.
 
-Status
-======
+#### Status
 
 For the most part, we rely on reviewable.io to communicate PR status.
 Status labels are optional, but Drake developers managing the PR queue

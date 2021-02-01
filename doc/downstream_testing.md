@@ -1,34 +1,28 @@
-******************************************
-Downstream Testing (Drake as a Dependency)
-******************************************
+---
+title: Downstream Testing (Drake as a Dependency)
+---
 
-Introduction
-============
+#### Introduction
 
 To ensure that Drake enables downstream consumption, there are downstream tests
 that show basic usage of Drake as a dependency. Those tests are located in
-the `drake-external-examples <https://github.com/RobotLocomotion/drake-external-examples>`_
+the [drake-external-examples](https://github.com/RobotLocomotion/drake-external-examples)
 repository.
 
-Continuous Integration
-======================
+#### Continuous Integration
 
-Please see the drake-external-examples `Continuous Integration
-<https://github.com/RobotLocomotion/drake-external-examples#continuous-integration>`_
+Please see the drake-external-examples [Continuous Integration](https://github.com/RobotLocomotion/drake-external-examples#continuous-integration)
 section.
 
-Local Testing
-=============
+#### Local Testing
 
 For CMake, see the
-`drake_cmake_installed
-<https://github.com/RobotLocomotion/drake-external-examples/tree/master/drake_cmake_installed#developer-testing>`_
+[drake_cmake_installed](https://github.com/RobotLocomotion/drake-external-examples/tree/master/drake_cmake_installed#developer-testing)
 example.
 
 For Bazel, see the
-`drake_bazel_external <https://github.com/RobotLocomotion/drake-external-examples/tree/master/drake_bazel_external>`_
+[drake_bazel_external](https://github.com/RobotLocomotion/drake-external-examples/tree/master/drake_bazel_external)
 example, and note the comment in
-`WORKSPACE <https://github.com/RobotLocomotion/drake-external-examples/blob/master/drake_bazel_external/WORKSPACE>`_
+[WORKSPACE](https://github.com/RobotLocomotion/drake-external-examples/blob/master/drake_bazel_external/WORKSPACE)
 which mentions using something like
-`local_repository <https://docs.bazel.build/versions/master/be/workspace.html#local_repository>`_
-to consume a local checkout of Drake.
+[local_repository](https://docs.bazel.build/versions/master/be/workspace.html#local_repository) to consume a local checkout of Drake.

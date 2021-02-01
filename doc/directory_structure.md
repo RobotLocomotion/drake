@@ -1,19 +1,14 @@
-.. _directory_structure:
-
-*******************
-Directory Structure
-*******************
+---
+title: Directory Structure
+---
 
 The current directory structure in Drake is organized to (1) group functional
 components, (2) limit dependencies, and (3) prevent circular dependencies.
 
-.. _directory_structure_special_directories:
-
-Dev Directories
-===============
+#### Dev Directories
 
 All code in Drake must adhere to the code standards described in
-:ref:`Developer Notes <developer_notes>` and must be covered by tests, unless
+[Developer Notes](/developers.html#developer-notes) and must be covered by tests, unless
 the code lives in a subdirectory named ``dev``.
 
 To promote rapid development of research ideas, experimental code may be placed
@@ -29,10 +24,7 @@ say ``srcs = ["dev/bar.cc"],``; instead, ``foo/dev/BUILD.bazel`` must exist and
 must say ``srcs = ["bar.cc"],``.)  This ensures that all ``dev`` code has a
 package name (``//foo/dev``) that clearly denotes it as such.
 
-.. _directory_structure_controlling_dependencies:
-
-Controlling Dependencies
-========================
+#### Controlling Dependencies
 
 We would like to avoid circular dependencies in the source code tree.  For
 example, some code in ``drake/systems`` depends on code in ``drake/solvers``, so
