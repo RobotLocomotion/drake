@@ -43,12 +43,6 @@ robotlocomotion/director/embree@3.5
 EOF
 )
 
-# Ensure numpy is updated to the most recent version to avoid conflicts with
-# robotlocomotion/drake/numpy@1.19.4
-# TODO(jamiesnape): Remove line upgrading numpy or after 2021-02-01.
-brew list numpy &>/dev/null \
-  && (brew outdated numpy >/dev/null || brew upgrade numpy)
-
 brew bundle --file="${BASH_SOURCE%/*}/Brewfile" --no-lock
 
 if ! command -v /usr/local/opt/python@3.8/bin/pip3 &>/dev/null; then
