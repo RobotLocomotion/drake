@@ -165,8 +165,8 @@ DrakeVisualizer<T>::DrakeVisualizer(const DrakeVisualizer<U>& other)
       dynamic_cast<const lcm::DrakeLcm*>(other.owned_lcm_.get());
   if (owned_lcm == nullptr) {
     throw std::runtime_error(
-        "DrakeVisualizer can only be scalar converted if its DrakeLcmInterface "
-        "is a DrakeLcm instance.");
+        "DrakeVisualizer can only be scalar converted if it owns its "
+        "DrakeLcmInterface instance.");
   }
   owned_lcm_ = make_unique<lcm::DrakeLcm>(owned_lcm->get_lcm_url());
   lcm_ = owned_lcm_.get();
