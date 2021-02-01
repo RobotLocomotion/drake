@@ -834,9 +834,10 @@ GTEST_TEST(DrakeVisualizerdTest, Transmogrify) {
   // DrakeVisualizer does not own DrakeLcm implementation.
   lcm::DrakeLcm lcm;
   DrakeVisualizerd vis_not_own_lcm_d(&lcm);
-  DRAKE_EXPECT_THROWS_MESSAGE(vis_not_own_lcm_d.ToAutoDiffXd(), std::exception,
-                              "DrakeVisualizer can only be scalar converted if "
-                              "its DrakeLcmInterface is a DrakeLcm instance.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      vis_not_own_lcm_d.ToAutoDiffXd(), std::exception,
+      "DrakeVisualizer can only be scalar converted if it owns its "
+      "DrakeLcmInterface instance.");
 }
 }  // namespace
 }  // namespace geometry

@@ -125,13 +125,9 @@ struct DynamicFrameData {
  %DrakeVisualizer is templated on `T` and can be used in a `double`- or
  AutoDiffXd-valued Diagram. However, the diagram can only be converted from one
  scalar type to another if the %DrakeVisualizer *owns* its
- `lcm::DrakeLcmInterface` instance. Attempts to scalar convert the system
+ lcm::DrakeLcmInterface instance. Attempts to scalar convert the system
  otherwise will throw an exception.
-
-@warning In the future, we will add a `template <typename T>` to this class
-to support multiple scalar types.  To insulate your code from this change, we
-recommend using the geometry::DrakeVisualizerd alias when referring to this
-class. */
+*/
 template <typename T>
 class DrakeVisualizer final : public systems::LeafSystem<T> {
  public:
@@ -148,8 +144,8 @@ class DrakeVisualizer final : public systems::LeafSystem<T> {
   DrakeVisualizer(lcm::DrakeLcmInterface* lcm = nullptr,
                   DrakeVisualizerParams params = {});
 
-  /** Constructor used for scalar conversions. It should only be used to convert
-   _from_ double _to_ other scalar types.
+  /** Scalar-converting copy constructor. See @ref system_scalar_conversion.
+   It should only be used to convert _from_ double _to_ other scalar types.
    @throws std::exception if `other` does not *own* its lcm::DrakeLcmInterface.
    */
   template <typename U>
@@ -211,7 +207,8 @@ class DrakeVisualizer final : public systems::LeafSystem<T> {
  private:
   friend class DrakeVisualizerTester;
 
-  // DrakeVisualizer of different scalar types can all access each other's data.
+  /* DrakeVisualizer of different scalar types can all access each other's data.
+   */
   template <typename>
   friend class DrakeVisualizer;
 

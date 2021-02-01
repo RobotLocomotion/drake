@@ -9,6 +9,7 @@
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
+#include "drake/geometry/utilities.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/lcmt_viewer_geometry_data.hpp"
@@ -165,8 +166,8 @@ DrakeVisualizer<T>::DrakeVisualizer(const DrakeVisualizer<U>& other)
       dynamic_cast<const lcm::DrakeLcm*>(other.owned_lcm_.get());
   if (owned_lcm == nullptr) {
     throw std::runtime_error(
-        "DrakeVisualizer can only be scalar converted if its DrakeLcmInterface "
-        "is a DrakeLcm instance.");
+        "DrakeVisualizer can only be scalar converted if it owns its "
+        "DrakeLcmInterface instance.");
   }
   owned_lcm_ = make_unique<lcm::DrakeLcm>(owned_lcm->get_lcm_url());
   lcm_ = owned_lcm_.get();
@@ -210,8 +211,9 @@ DrakeVisualizer<T>::DrakeVisualizer(lcm::DrakeLcmInterface* lcm,
       owned_lcm_((lcm || !use_lcm) ? nullptr : new lcm::DrakeLcm()),
       lcm_((lcm && use_lcm) ? lcm : owned_lcm_.get()),
       params_(std::move(params)) {
-  // N.B. Referencing lcm_ or owned_lcm_ in this constructor would be
-  // defective. They may both be null during the scope of this constructor.
+  // This constructor should not do anything that requires lcm_ (or owned_lcm_)
+  // to be non-nullptr. By design, both being nullptr is a desired, expected
+  // possibility during the scope of the constructor.
   if (params_.publish_period <= 0) {
     throw std::runtime_error(fmt::format(
         "DrakeVisualizer requires a positive publish period; {} was given",
@@ -340,24 +342,6 @@ void DrakeVisualizer<T>::SendLoadMessage(
   lcm::Publish(lcm, "DRAKE_VIEWER_LOAD_ROBOT", message, time);
 }
 
-namespace {
-template <typename T>
-RigidTransformd ToDouble(const math::RigidTransform<T>& X) {
-  if constexpr (std::is_same<T, double>::value) {
-    return X;
-  } else {
-    const Eigen::Matrix<T, 4, 4> X_mat = X.GetAsMatrix4();
-    Eigen::Matrix4d X_mat_double;
-    for (int i = 0; i < 4; ++i) {
-      for (int j = 0; j < 4; ++j) {
-        X_mat_double(i, j) = ExtractDoubleOrThrow(X_mat(i, j));
-      }
-    }
-    return RigidTransformd(X_mat_double);
-  }
-}
-}  // namespace
-
 template <typename T>
 void DrakeVisualizer<T>::SendDrawMessage(
     const QueryObject<T>& query_object,
@@ -380,8 +364,8 @@ void DrakeVisualizer<T>::SendDrawMessage(
     message.robot_num[i] = inspector.GetFrameGroup(frame_id);
     message.link_name[i] = dynamic_frames[i].name;
 
-    const RigidTransformd& X_WF =
-        ToDouble(query_object.GetPoseInWorld(frame_id));
+    const math::RigidTransformd& X_WF =
+        internal::convert_to_double(query_object.GetPoseInWorld(frame_id));
     message.position[i].resize(3);
     message.position[i][0] = X_WF.translation()[0];
     message.position[i][1] = X_WF.translation()[1];
