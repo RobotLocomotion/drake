@@ -120,6 +120,14 @@ struct DynamicFrameData {
    - Evaluating multiple instances of %DrakeVisualizer in a single thread that
      share the same lcm::DrakeLcmInterface.
 
+ <h3>Scalar support and conversion</h3>
+
+ %DrakeVisualizer is templated on `T` and can be used in a `double`- or
+ AutoDiffXd-valued Diagram. However, the diagram can only be converted from one
+ scalar type to another if the %DrakeVisualizer *owns* its
+ `lcm::DrakeLcmInterface` instance. Attempts to scalar convert the system
+ otherwise will throw an exception.
+
 @warning In the future, we will add a `template <typename T>` to this class
 to support multiple scalar types.  To insulate your code from this change, we
 recommend using the geometry::DrakeVisualizerd alias when referring to this
@@ -141,7 +149,9 @@ class DrakeVisualizer final : public systems::LeafSystem<T> {
                   DrakeVisualizerParams params = {});
 
   /** Constructor used for scalar conversions. It should only be used to convert
-   _from_ double _to_ other scalar types.  */
+   _from_ double _to_ other scalar types.
+   @throws std::exception if `other` does not *own* its lcm::DrakeLcmInterface.
+   */
   template <typename U>
   explicit DrakeVisualizer(const DrakeVisualizer<U>& other);
 
@@ -199,12 +209,16 @@ class DrakeVisualizer final : public systems::LeafSystem<T> {
                                   DrakeVisualizerParams params = {});
 
  private:
-  template <typename>
-  friend class DrakeVisualizerTest;
+  friend class DrakeVisualizerTester;
 
   // DrakeVisualizer of different scalar types can all access each other's data.
   template <typename>
   friend class DrakeVisualizer;
+
+  /* Special constructor that optionally leaves the lcm interface unspecified.
+   For use of the scalar-converting copy constructor. */
+  DrakeVisualizer(lcm::DrakeLcmInterface* lcm, DrakeVisualizerParams params,
+                  bool use_lcm);
 
   /* The periodic event handler. It tests to see if the last scene description
    is valid (if not, updates it) and then broadcasts poses.  */
@@ -294,13 +308,7 @@ using DrakeVisualizerd = DrakeVisualizer<double>;
 namespace systems {
 namespace scalar_conversion {
 template <>
-struct Traits<geometry::DrakeVisualizer> {
-  template <typename T, typename U>
-  using supported =
-      typename std::conditional<!std::is_same<T, symbolic::Expression>::value &&
-                                    std::is_same<U, double>::value,
-                                std::true_type, std::false_type>::type;
-};
+struct Traits<geometry::DrakeVisualizer> : public NonSymbolicTraits {};
 }  // namespace scalar_conversion
 }  // namespace systems
 

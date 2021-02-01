@@ -9,12 +9,14 @@
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/rgba.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/drake_mock_lcm.h"
 #include "drake/lcm/lcm_messages.h"
 #include "drake/lcmt_viewer_draw.hpp"
@@ -41,6 +43,32 @@ using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
 using systems::Simulator;
+
+class DrakeVisualizerTester {
+ public:
+  template <typename T>
+  static std::string lcm_url(const DrakeVisualizer<T>& visualizer) {
+    return dynamic_cast<lcm::DrakeLcm*>(visualizer.lcm_)->get_lcm_url();
+  }
+
+  template <typename T>
+  static const DrakeLcmInterface* owned_lcm_interface(
+      const DrakeVisualizer<T>& visualizer) {
+    return visualizer.owned_lcm_.get();
+  }
+
+  template <typename T>
+  static const DrakeLcmInterface* active_lcm_interface(
+      const DrakeVisualizer<T>& visualizer) {
+    return visualizer.lcm_;
+  }
+
+  template <typename T>
+  static const DrakeVisualizerParams& get_params(
+      const DrakeVisualizer<T>& visualizer) {
+    return visualizer.params_;
+  }
+};
 
 namespace {
 /* Collection of data for reporting what is waiting in the LCM queue.  */
@@ -73,8 +101,6 @@ class PoseSource : public systems::LeafSystem<T> {
   FramePoseVector<T> poses_;
 };
 
-}  // namespace
-
 // TODO(SeanCurtis-TRI): These unit tests aren't complete. Much of the DUT has
 //  code from the old `geometry_visualizer.{h|cc}. That code wasn't particularly
 //  tested either, but has been run thousands of times. That code lives on in
@@ -89,35 +115,11 @@ class PoseSource : public systems::LeafSystem<T> {
 // every user. If this ever changes, it might be worthwhile to test these
 // things.
 
-
-/* Note: We're not using an anonymous namespace so the DrakeVisualizerTest
- satisfies the friend declaration in DrakeVisualizer.  */
-
 /* Infrastructure for testing the DrakeVisualizer. */
 template <typename T>
 class DrakeVisualizerTest : public ::testing::Test {
  protected:
   void setUp() { ASSERT_EQ(lcm_.get_lcm_url(), "memq://"); }
-
-  /* Returns the pointer to the `visualizer`'s owned lcm interface (may be
-   nullptr). */
-  static const DrakeLcmInterface* get_owned_interface(
-      const DrakeVisualizer<T>& visualizer) {
-    return visualizer.owned_lcm_.get();
-  }
-
-  /* Returns the pointer to the `visualizer`'s active lcm interface -- the one
-   being invoked to do work (can't be nullptr). */
-  static const DrakeLcmInterface* get_active_interface(
-      const DrakeVisualizer<T>& visualizer) {
-    return visualizer.lcm_;
-  }
-
-  /* Returns the parameters the given visualizer is configured with.  */
-  static const DrakeVisualizerParams& get_params(
-      const DrakeVisualizer<T>& visualizer) {
-    return visualizer.params_;
-  }
 
   /* Configures the diagram (and raw pointers) with a DrakeVisualizer configured
    by the given parameters.  */
@@ -233,6 +235,7 @@ class DrakeVisualizerTest : public ::testing::Test {
   void TestAddToBuilder(const AddFunctor& add_to_builder,
                         const AddFunctorNoParam& add_to_builder_no_param,
                         const SourceFunctor& port_source) {
+    using Tester = DrakeVisualizerTester;
     {
       /* Case: Confirm successful construction, connection, and that the passed
        lcm interface is used.  */
@@ -262,12 +265,12 @@ class DrakeVisualizerTest : public ::testing::Test {
           Role::kIllustration));
 
       /* Confirm unowned active lcm interface.  */
-      EXPECT_EQ(get_owned_interface(visualizer), nullptr);
-      EXPECT_EQ(get_active_interface(visualizer), &lcm_);
+      EXPECT_EQ(Tester::owned_lcm_interface(visualizer), nullptr);
+      EXPECT_EQ(Tester::active_lcm_interface(visualizer), &lcm_);
 
       /* Confirm default parameters used when non specified.  */
       const DrakeVisualizerParams default_params;
-      const DrakeVisualizerParams& vis_params = get_params(visualizer);
+      const DrakeVisualizerParams& vis_params = Tester::get_params(visualizer);
       EXPECT_EQ(vis_params.publish_period, default_params.publish_period);
       EXPECT_EQ(vis_params.role, default_params.role);
       EXPECT_EQ(vis_params.default_color, default_params.default_color);
@@ -279,9 +282,9 @@ class DrakeVisualizerTest : public ::testing::Test {
       const auto& scene_graph = *builder.template AddSystem<SceneGraph<T>>();
       const auto& visualizer =
           add_to_builder_no_param(&builder, port_source(scene_graph), nullptr);
-      EXPECT_NE(get_owned_interface(visualizer), nullptr);
-      EXPECT_EQ(get_owned_interface(visualizer),
-                get_active_interface(visualizer));
+      EXPECT_NE(Tester::owned_lcm_interface(visualizer), nullptr);
+      EXPECT_EQ(Tester::owned_lcm_interface(visualizer),
+                Tester::active_lcm_interface(visualizer));
       /* NOTE: Don't do anything to broadcast here!  */
     }
 
@@ -293,7 +296,7 @@ class DrakeVisualizerTest : public ::testing::Test {
                                          Rgba{0.1, 0.2, 0.3, 0.4}};
       const auto& visualizer =
           add_to_builder(&builder, port_source(scene_graph), &lcm_, params);
-      const DrakeVisualizerParams& vis_params = this->get_params(visualizer);
+      const DrakeVisualizerParams& vis_params = Tester::get_params(visualizer);
       EXPECT_EQ(vis_params.publish_period, params.publish_period);
       EXPECT_EQ(vis_params.role, params.role);
       EXPECT_EQ(vis_params.default_color, params.default_color);
@@ -374,18 +377,19 @@ TYPED_TEST(DrakeVisualizerTest, EmptyScene) {
  own. This tests that logic. However, it does *not* do any work on the owned
  lcm interface because we don't want this unit test to spew network traffic.  */
 TYPED_TEST(DrakeVisualizerTest, OwnedLcm) {
+  using Tester = DrakeVisualizerTester;
   using T = TypeParam;
   DrakeVisualizer<T> visualizer_external(&(this->lcm_));
-  EXPECT_EQ(this->get_owned_interface(visualizer_external), nullptr);
-  EXPECT_EQ(this->get_active_interface(visualizer_external), &(this->lcm_));
+  EXPECT_EQ(Tester::owned_lcm_interface(visualizer_external), nullptr);
+  EXPECT_EQ(Tester::active_lcm_interface(visualizer_external), &(this->lcm_));
 
   /* Note: do not do any work with this instance that would cause LCM messages
    to be spewed!  */
   DrakeVisualizer<T> visualizer_owning;
-  EXPECT_NE(this->get_owned_interface(visualizer_owning), nullptr);
-  EXPECT_NE(this->get_owned_interface(visualizer_owning), &(this->lcm_));
-  EXPECT_EQ(this->get_active_interface(visualizer_owning),
-            this->get_owned_interface(visualizer_owning));
+  EXPECT_NE(Tester::owned_lcm_interface(visualizer_owning), nullptr);
+  EXPECT_NE(Tester::owned_lcm_interface(visualizer_owning), &(this->lcm_));
+  EXPECT_EQ(Tester::active_lcm_interface(visualizer_owning),
+            Tester::owned_lcm_interface(visualizer_owning));
 }
 
 /* DrakeVisualizer uses the cache to facilitate coordination between what got
@@ -805,21 +809,35 @@ TYPED_TEST(DrakeVisualizerTest, DispatchLoadMessageFromModel) {
   }
 }
 
+/* Confirm transmogrification logic. Specifically:
+  - If the source owns its lcm (it must be a DrakeLcm), the system can be
+    transmogrified AND
+      - the result owns its own DrakeLcm.
+      - It is a different instance than the source.
+      - they have the same URL.
+  - If the source does *not* own its lcm (whether it is an actual DrakeLcm or
+    not) converting throws.  */
 GTEST_TEST(DrakeVisualizerdTest, Transmogrify) {
-  // Construct a DrakeVisualizer which owns its lcm.
-  DrakeVisualizerd vis_d_own_lcm;
-  auto sys_own_lcm_ad = vis_d_own_lcm.ToAutoDiffXd();
-  DrakeVisualizer<AutoDiffXd>* vis_own_lcm_ad =
+  using Tester = DrakeVisualizerTester;
+
+  // DrakeVisualizer which owns its lcm.
+  DrakeVisualizerd vis_own_lcm_d;
+  auto sys_own_lcm_ad = vis_own_lcm_d.ToAutoDiffXd();
+  auto* vis_own_lcm_ad =
       dynamic_cast<DrakeVisualizer<AutoDiffXd>*>(sys_own_lcm_ad.get());
   ASSERT_NE(vis_own_lcm_ad, nullptr);
+  ASSERT_NE(Tester::owned_lcm_interface(*vis_own_lcm_ad), nullptr);
+  ASSERT_NE(Tester::active_lcm_interface(vis_own_lcm_d),
+            Tester::owned_lcm_interface(*vis_own_lcm_ad));
+  ASSERT_EQ(Tester::lcm_url(vis_own_lcm_d), Tester::lcm_url(*vis_own_lcm_ad));
 
-  // Construct a DrakeVisualizer which doesn't own its lcm.
+  // DrakeVisualizer does not own DrakeLcm implementation.
   lcm::DrakeLcm lcm;
-  DrakeVisualizerd vis_d_not_own_lcm(&lcm);
-  auto sys_not_own_lcm_ad = vis_d_not_own_lcm.ToAutoDiffXd();
-  DrakeVisualizer<AutoDiffXd>* vis_not_own_lcm_ad =
-      dynamic_cast<DrakeVisualizer<AutoDiffXd>*>(sys_not_own_lcm_ad.get());
-  ASSERT_NE(vis_not_own_lcm_ad, nullptr);
+  DrakeVisualizerd vis_not_own_lcm_d(&lcm);
+  DRAKE_EXPECT_THROWS_MESSAGE(vis_not_own_lcm_d.ToAutoDiffXd(), std::exception,
+                              "DrakeVisualizer can only be scalar converted if "
+                              "its DrakeLcmInterface is a DrakeLcm instance.");
 }
+}  // namespace
 }  // namespace geometry
 }  // namespace drake

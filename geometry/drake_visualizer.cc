@@ -153,49 +153,23 @@ class ShapeToLcm : public ShapeReifier {
 template <typename T>
 DrakeVisualizer<T>::DrakeVisualizer(lcm::DrakeLcmInterface* lcm,
                                     DrakeVisualizerParams params)
-    : systems::LeafSystem<T>(SystemTypeTag<DrakeVisualizer>{}),
-      owned_lcm_(lcm ? nullptr : new lcm::DrakeLcm()),
-      lcm_(lcm ? lcm : owned_lcm_.get()),
-      params_(std::move(params)) {
-  if (params_.publish_period <= 0) {
-    throw std::runtime_error(fmt::format(
-        "DrakeVisualizer requires a positive publish period; {} was given",
-        params_.publish_period));
-  }
-  if (params_.role == Role::kUnassigned) {
-    throw std::runtime_error(
-        "DrakeVisualizer cannot be be used for geometries with the "
-        "Role::kUnassigned value. Please choose proximity, perception, or "
-        "illustration");
-  }
-
-  this->DeclarePeriodicPublishEvent(params_.publish_period, 0.0,
-                                    &DrakeVisualizer<T>::SendGeometryMessage);
-  this->DeclareForcedPublishEvent(&DrakeVisualizer<T>::SendGeometryMessage);
-
-  query_object_input_port_ =
-      this->DeclareAbstractInputPort("query_object", Value<QueryObject<T>>())
-          .get_index();
-
-  // This cache entry depends on *nothing*.
-  dynamic_data_cache_index_ =
-      this->DeclareCacheEntry("dynamic_frames",
-                              vector<internal::DynamicFrameData>(),
-                              &DrakeVisualizer<T>::CalcDynamicFrameData,
-                              {this->nothing_ticket()})
-          .cache_index();
-}
+    : DrakeVisualizer(lcm, std::move(params), true) {}
 
 template <typename T>
 template <typename U>
 DrakeVisualizer<T>::DrakeVisualizer(const DrakeVisualizer<U>& other)
-    : DrakeVisualizer(nullptr, other.params_) {
-  if (other.owned_lcm_) {
-    this->owned_lcm_ = std::move(std::unique_ptr<lcm::DrakeLcm>(
-        new lcm::DrakeLcm(dynamic_cast<lcm::DrakeLcm*>(other.owned_lcm_.get())
-                              ->get_lcm_url())));
-    this->lcm_ = this->owned_lcm_.get();
+    : DrakeVisualizer(nullptr, other.params_, false) {
+  DRAKE_DEMAND(owned_lcm_ == nullptr);
+  DRAKE_DEMAND(lcm_ == nullptr);
+  const lcm::DrakeLcm* owned_lcm =
+      dynamic_cast<const lcm::DrakeLcm*>(other.owned_lcm_.get());
+  if (owned_lcm == nullptr) {
+    throw std::runtime_error(
+        "DrakeVisualizer can only be scalar converted if its DrakeLcmInterface "
+        "is a DrakeLcm instance.");
   }
+  owned_lcm_ = make_unique<lcm::DrakeLcm>(owned_lcm->get_lcm_url());
+  lcm_ = owned_lcm_.get();
 }
 
 template <typename T>
@@ -227,6 +201,44 @@ void DrakeVisualizer<T>::DispatchLoadMessage(const SceneGraph<T>& scene_graph,
                            &dynamic_frames);
   SendLoadMessage(scene_graph.model_inspector(), params, dynamic_frames, 0,
                   lcm);
+}
+
+template <typename T>
+DrakeVisualizer<T>::DrakeVisualizer(lcm::DrakeLcmInterface* lcm,
+                                    DrakeVisualizerParams params, bool use_lcm)
+    : systems::LeafSystem<T>(SystemTypeTag<DrakeVisualizer>{}),
+      owned_lcm_((lcm || !use_lcm) ? nullptr : new lcm::DrakeLcm()),
+      lcm_((lcm && use_lcm) ? lcm : owned_lcm_.get()),
+      params_(std::move(params)) {
+  // N.B. Referencing lcm_ or owned_lcm_ in this constructor would be
+  // defective. They may both be null during the scope of this constructor.
+  if (params_.publish_period <= 0) {
+    throw std::runtime_error(fmt::format(
+        "DrakeVisualizer requires a positive publish period; {} was given",
+        params_.publish_period));
+  }
+  if (params_.role == Role::kUnassigned) {
+    throw std::runtime_error(
+        "DrakeVisualizer cannot be be used for geometries with the "
+        "Role::kUnassigned value. Please choose proximity, perception, or "
+        "illustration");
+  }
+
+  this->DeclarePeriodicPublishEvent(params_.publish_period, 0.0,
+                                    &DrakeVisualizer<T>::SendGeometryMessage);
+  this->DeclareForcedPublishEvent(&DrakeVisualizer<T>::SendGeometryMessage);
+
+  query_object_input_port_ =
+      this->DeclareAbstractInputPort("query_object", Value<QueryObject<T>>())
+          .get_index();
+
+  // This cache entry depends on *nothing*.
+  dynamic_data_cache_index_ =
+      this->DeclareCacheEntry("dynamic_frames",
+                              vector<internal::DynamicFrameData>(),
+                              &DrakeVisualizer<T>::CalcDynamicFrameData,
+                              {this->nothing_ticket()})
+          .cache_index();
 }
 
 template <typename T>
