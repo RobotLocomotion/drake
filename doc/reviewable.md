@@ -1,21 +1,13 @@
-.. _reviewable:
+---
+title: Tips for Participating In Drake Code Reviews using reviewable.io
+---
 
-****************************************************************
-Tips for Participating In Drake Code Reviews using reviewable.io
-****************************************************************
+#### Introduction
 
-.. contents:: `Table of contents`
-   :depth: 3
-   :local:
-
-Introduction
-============
-
-Drake code reviews use https://reviewable.io. This page documents some
+Drake code reviews use [https://reviewable.io](https://reviewable.io). This page documents some
 best practices for communicating effectively in Reviewable.
 
-GitHub Integration
-==================
+#### GitHub Integration
 
 Avoid using the GitHub UI to comment on code during a review. Reviewable will
 import comments from GitHub, but cannot reliably match them to lines of diff.
@@ -29,14 +21,12 @@ Every time you push to your GitHub branch under review, Reviewable will
 snapshot a new diff. Because it maintains an independent diff series, you can
 rebase freely without corrupting the review history.
 
-Life of a Reviewable Comment
-============================
+#### Life of a Reviewable Comment
 
 All threads in Reviewable must be resolved before you can merge your PR.
 
 The semantics of discussion resolution is more nuanced than GitHub's default
-code review tool. We recommend to read `this explanation
-<https://github.com/Reviewable/Reviewable/issues/510#issue-272337333>`_ to
+code review tool. We recommend to read [this explanation](https://github.com/Reviewable/Reviewable/issues/510#issue-272337333) to
 understand the details.
 
 Before commenting on a line of code, reviewers should check to see if there
@@ -48,10 +38,7 @@ Reviewers should click the eye-shaped buttons to indicate that they have
 reviewed a file.  Reviewable will remember the revisions at which the file
 was reviewed, and mark them with an eye icon in the file history.
 
-.. _curate_commits_before_merging:
-
-Curated Commits
-===============
+#### Curated Commits
 
 Each commit on Drake master should pass all unit tests and lint checks, should
 be logically cohesive (should not require other commits to make sense), and
@@ -79,11 +66,10 @@ curated``, which removes the single-commit requirement.  PRs with this label
 should be merged to master using the "Create a merge commit" option, not
 "Squash and merge" option.
 
-Joint Feature and Platform review
-=================================
+#### Joint Feature and Platform review
 
 For a review to be considered complete, both Feature Review and Platform Review
-must be completed (see :ref:`Review Process <review_process>`).
+must be completed (see [Review Process](/developers.html#review-process)).
 
 Therefore, our reviewable settings require at least two assigned reviewers.  In
 cases where the platform reviewer decides to double-count as feature review,

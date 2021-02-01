@@ -1,9 +1,9 @@
-.. _build_from_source_ubuntu:
+---
+title: Ubuntu
+---
 
-******
-Ubuntu
-******
+Prerequisite setup is automated, simply run:
 
-Prerequisite setup is automated, simply run::
-
-    sudo ./setup/ubuntu/install_prereqs.sh
+```
+sudo ./setup/ubuntu/install_prereqs.sh
+```
