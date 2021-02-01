@@ -120,8 +120,8 @@ def _impl(repository_ctx):
     # even if they happen to support the necessary compiler flags.
 
     if compiler_id == "AppleClang":
-        if compiler_version_major < 11:
-            fail("AppleClang compiler version {}.{} is less than 11.0.".format(
+        if compiler_version_major < 12:
+            fail("AppleClang compiler version {}.{} is less than 12.0.".format(
                 compiler_version_major,
                 compiler_version_minor,
             ))
