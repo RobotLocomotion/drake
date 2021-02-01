@@ -87,9 +87,10 @@ struct DynamicFrameData {
    - Otherwise, the configured default color will be applied (see
      DrakeVisualizerParams).
 
- | Group name | Required | Property Name |  Property Type  | Property Description |
- | :--------: | :------: | :-----------: | :-------------: | :------------------- |
- |    phong   | no       | diffuse       |     Rgba        | The rgba value of the object surface. |
+ | Group name | Required | Property Name |  Property Type  | Property
+ Description | | :--------: | :------: | :-----------: | :-------------: |
+ :------------------- | |    phong   | no       | diffuse       |     Rgba | The
+ rgba value of the object surface. |
 
  <h4>Appearance of OBJ files</h4>
 
@@ -125,13 +126,9 @@ struct DynamicFrameData {
  %DrakeVisualizer is templated on `T` and can be used in a `double`- or
  AutoDiffXd-valued Diagram. However, the diagram can only be converted from one
  scalar type to another if the %DrakeVisualizer *owns* its
- `lcm::DrakeLcmInterface` instance. Attempts to scalar convert the system
+ lcm::DrakeLcmInterface instance. Attempts to scalar convert the system
  otherwise will throw an exception.
-
-@warning In the future, we will add a `template <typename T>` to this class
-to support multiple scalar types.  To insulate your code from this change, we
-recommend using the geometry::DrakeVisualizerd alias when referring to this
-class. */
+*/
 template <typename T>
 class DrakeVisualizer final : public systems::LeafSystem<T> {
  public:
