@@ -19,5 +19,6 @@ void OsqpSolver::DoSolve(
       "solver.");
 }
 
+bool OsqpSolver::is_bounded_lp_broken() { return false; }
 }  // namespace solvers
 }  // namespace drake

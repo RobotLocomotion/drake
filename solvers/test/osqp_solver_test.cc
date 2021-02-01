@@ -4,11 +4,86 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/test/csdp_test_examples.h"
+#include "drake/solvers/test/linear_program_examples.h"
 #include "drake/solvers/test/quadratic_program_examples.h"
 
 namespace drake {
 namespace solvers {
 namespace test {
+
+TEST_P(LinearProgramTest, TestLP) {
+  OsqpSolver solver;
+  prob()->RunProblem(&solver);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    OsqpTest, LinearProgramTest,
+    ::testing::Combine(::testing::ValuesIn(linear_cost_form()),
+                       ::testing::ValuesIn(linear_constraint_form()),
+                       ::testing::ValuesIn(linear_problems())));
+
+TEST_F(InfeasibleLinearProgramTest0, TestOsqp) {
+  prog_->SetInitialGuessForAllVariables(Eigen::Vector2d(1, 2));
+  OsqpSolver solver;
+  if (solver.available()) {
+    auto result = solver.Solve(*prog_, {}, {});
+    EXPECT_EQ(result.get_solution_result(),
+              SolutionResult::kInfeasibleConstraints);
+  }
+}
+
+TEST_F(UnboundedLinearProgramTest0, TestOsqp) {
+  prog_->SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
+  OsqpSolver solver;
+  if (solver.available() && !solver.is_bounded_lp_broken()) {
+    auto result = solver.Solve(*prog_, {}, {});
+    EXPECT_EQ(result.get_solution_result(), SolutionResult::kDualInfeasible);
+  }
+}
+
+TEST_F(LinearProgramBoundingBox1, Solve) {
+  OsqpSolver solver;
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    solver.Solve(*prog_, {}, {}, &result);
+    EXPECT_TRUE(result.is_success());
+    const double tol = 2E-7;
+    EXPECT_NEAR(result.get_optimal_cost(), -43, tol);
+    Eigen::Matrix<double, 7, 1> x_expected;
+    x_expected << 0, 5, -1, 10, 5, 0, 1;
+    EXPECT_TRUE(
+        CompareMatrices(result.GetSolution(x_).head<7>(), x_expected, tol));
+  }
+}
+
+TEST_F(CsdpLinearProgram2, Solve) {
+  OsqpSolver solver;
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    solver.Solve(*prog_, {}, {}, &result);
+    EXPECT_TRUE(result.is_success());
+    const double tol = 1E-7;
+    EXPECT_NEAR(result.get_optimal_cost(), 28.0 / 13, tol);
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(x_),
+                                Eigen::Vector3d(5.0 / 13, -2.0 / 13, 9.0 / 13),
+                                tol));
+  }
+}
+
+TEST_F(CsdpLinearProgram3, Solve) {
+  OsqpSolver solver;
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    solver.Solve(*prog_, {}, {}, &result);
+    EXPECT_TRUE(result.is_success());
+    const double tol = 1E-7;
+    EXPECT_NEAR(result.get_optimal_cost(), -121.0 / 9, tol);
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(x_),
+                                Eigen::Vector3d(10, -2.0 / 3, -17.0 / 9), tol));
+  }
+}
+
 GTEST_TEST(QPtest, TestUnconstrainedQP) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>("x");

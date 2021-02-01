@@ -404,5 +404,6 @@ void OsqpSolver::DoSolve(
   c_free(settings);
 }
 
+bool OsqpSolver::is_bounded_lp_broken() { return false; }
 }  // namespace solvers
 }  // namespace drake

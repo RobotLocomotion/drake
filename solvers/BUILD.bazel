@@ -1477,6 +1477,8 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "osqp_solver_test",
     deps = [
+        ":csdp_test_examples",
+        ":linear_program_examples",
         ":mathematical_program",
         ":mathematical_program_test_util",
         ":osqp_solver",

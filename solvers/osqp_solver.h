@@ -45,6 +45,8 @@ class OsqpSolver final : public SolverBase {
   OsqpSolver();
   ~OsqpSolver() final;
 
+  static bool is_bounded_lp_broken();
+
   /// @name Static versions of the instance methods with similar names.
   //@{
   static SolverId id();
