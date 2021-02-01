@@ -165,8 +165,8 @@ DrakeVisualizer<T>::DrakeVisualizer(const DrakeVisualizer<U>& other)
       dynamic_cast<const lcm::DrakeLcm*>(other.owned_lcm_.get());
   if (owned_lcm == nullptr) {
     throw std::runtime_error(
-        "DrakeVisualizer can only be scalar converted if its DrakeLcmInterface "
-        "is a DrakeLcm instance.");
+        "DrakeVisualizer can only be scalar converted if it owns its "
+        "DrakeLcmInterface instance.");
   }
   owned_lcm_ = make_unique<lcm::DrakeLcm>(owned_lcm->get_lcm_url());
   lcm_ = owned_lcm_.get();
@@ -210,8 +210,9 @@ DrakeVisualizer<T>::DrakeVisualizer(lcm::DrakeLcmInterface* lcm,
       owned_lcm_((lcm || !use_lcm) ? nullptr : new lcm::DrakeLcm()),
       lcm_((lcm && use_lcm) ? lcm : owned_lcm_.get()),
       params_(std::move(params)) {
-  // N.B. Referencing lcm_ or owned_lcm_ in this constructor would be
-  // defective. They may both be null during the scope of this constructor.
+  // This constructor should not do anything that requires lcm_ (or owned_lcm_)
+  // to be non-nullptr. By design, both being nullptr is a desired, expected
+  // possibility during the scope of the constructor.
   if (params_.publish_period <= 0) {
     throw std::runtime_error(fmt::format(
         "DrakeVisualizer requires a positive publish period; {} was given",
@@ -344,7 +345,7 @@ namespace {
 template <typename T>
 RigidTransformd ToDouble(const math::RigidTransform<T>& X) {
   if constexpr (std::is_same<T, double>::value) {
-    return X;
+    return std::move(X);
   } else {
     const Eigen::Matrix<T, 4, 4> X_mat = X.GetAsMatrix4();
     Eigen::Matrix4d X_mat_double;
