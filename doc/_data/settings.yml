@@ -41,7 +41,7 @@ footer_settings:
       url: https://drake.mit.edu/pydrake/index.html
 
 hero_settings:
-  background_image: /images/Drake_Illustration_RGB.png
+  background_image: /images/drake-dragon.png
 
 color_settings:
   background_color: '#F5F5F5'
