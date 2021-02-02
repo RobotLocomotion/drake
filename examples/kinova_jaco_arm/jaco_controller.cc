@@ -104,12 +104,12 @@ int DoMain() {
   {
     std::cout << "number if joints:"<<num_joints<<":\n";
     // taken from the kinova_ros driver j2s6s300.yaml
-    jaco_kp(0) = 1;//5000;
-    jaco_kp(1) = 1;//5000;
-    jaco_kp(2) = 1;//5000;
-    jaco_kp(3) = 1;//500;
-    jaco_kp(4) = 1;//200;
-    jaco_kp(5) = 1;//500;
+    jaco_kp(0) = 0;//5000;
+    jaco_kp(1) = 0;//5000;
+    jaco_kp(2) = 0;//5000;
+    jaco_kp(3) = 0;//500;
+    jaco_kp(4) = 0;//200;
+    jaco_kp(5) = 0;//500;
   }
   else
   {
