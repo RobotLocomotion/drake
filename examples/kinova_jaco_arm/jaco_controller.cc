@@ -94,16 +94,39 @@ int DoMain() {
   Eigen::VectorXd jaco_ki = Eigen::VectorXd::Zero(num_joints + num_fingers);
   Eigen::VectorXd jaco_kd = Eigen::VectorXd::Zero(num_joints + num_fingers);
 
-  // I (sam.creasey) have no idea what would be good values here.
-  // This seems to work OK at the low speeds of the jaco.
-  jaco_kp.head(num_joints).fill(10);
-  jaco_kp.tail(num_fingers).fill(1);
-  jaco_kd.head(num_joints).fill(1);
 
+  // home coords
+  // 0.2112,-0.2655,0.5065  1.6476,1.1079,0.1280
+
+
+
+  if ( num_joints == 6)
+  {
+    std::cout << "number if joints:"<<num_joints<<":\n";
+    // taken from the kinova_ros driver j2s6s300.yaml
+    jaco_kp(0) = 1;//5000;
+    jaco_kp(1) = 1;//5000;
+    jaco_kp(2) = 1;//5000;
+    jaco_kp(3) = 1;//500;
+    jaco_kp(4) = 1;//200;
+    jaco_kp(5) = 1;//500;
+  }
+  else
+  {
+   // I (sam.creasey) have no idea what would be good values here.
+   // This seems to work OK at the low speeds of the jaco.
+   std::cout << "number if joints:"<<num_joints<<":\n";
+   jaco_kp.head(num_joints).fill(10);
+   jaco_kp.tail(num_fingers).fill(1);
+   jaco_kd.head(num_joints).fill(1);
+  }
+  std::cout << "jaco_kp:\n" << jaco_kp << std::endl;
+  std::cout << "jaco_ki:\n" << jaco_ki << std::endl;
+  std::cout << "jaco_kd:\n" << jaco_kd << std::endl;
   // The finger velocities reported from the Jaco aren't meaningful,
   // so we shouldn't try to control based on them.
   jaco_kd.tail(num_fingers).fill(0);
-
+  std::cout << "jaco_kd:\n" << jaco_kd << std::endl;
   auto pid_controller = builder.AddSystem<systems::controllers::PidController>(
       jaco_kp, jaco_ki, jaco_kd);
 
@@ -183,11 +206,21 @@ int DoMain() {
   std::cout<<"deg q0[3]:"<<q0[3]*RAD2DEG<<"\n";
   std::cout<<"deg q0[4]:"<<q0[4]*RAD2DEG<<"\n";
   std::cout<<"deg q0[5]:"<<q0[5]*RAD2DEG<<"\n";
-  std::cout<<"finger\n";
-  std::cout<<"q0[6]:"<<q0[6]<<"\n";
-  std::cout<<"q0[7]:"<<q0[7]<<"\n";
-  std::cout<<"q0[8]:"<<q0[8]<<"\n";
-
+  if (num_joints == 7)
+  {
+   std::cout<<"deg q0[6]:"<<q0[6]*RAD2DEG<<"\n";
+   std::cout<<"finger\n";
+   std::cout<<"q0[7]:"<<q0[7]<<"\n";
+   std::cout<<"q0[8]:"<<q0[8]<<"\n";
+   std::cout<<"q0[9]:"<<q0[9]<<"\n";
+  }
+  else
+  {
+    std::cout<<"finger\n";
+    std::cout<<"q0[6]:"<<q0[6]<<"\n";
+    std::cout<<"q0[7]:"<<q0[7]<<"\n";
+    std::cout<<"q0[8]:"<<q0[8]<<"\n";
+  }
   systems::Context<double>& diagram_context = simulator.get_mutable_context();
   const double t0 = first_status.utime * 1e-6;
   diagram_context.SetTime(t0);

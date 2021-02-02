@@ -20,18 +20,27 @@ DEFINE_string(lcm_status_channel, "KINOVA_JACO_STATUS",
               "Channel on which to listen for lcmt_jaco_status messages.");
 DEFINE_string(lcm_plan_channel, "COMMITTED_ROBOT_PLAN",
               "Channel on which to send lcmt_robot_plan messages.");
-DEFINE_double(x, 0.3, "x coordinate (meters) to move to");
-DEFINE_double(y, -0.26, "y coordinate (meters) to move to");
-DEFINE_double(z, 0.5, "z coordinate (meters) to move to");
-DEFINE_double(roll, -1.7,
+
+
+ // home coords
+ // 0.2112,-0.2655,0.5065  1.6476,1.1079,0.1280
+
+
+
+DEFINE_double(x, 0.2112, "x coordinate (meters) to move to");
+DEFINE_double(y, -0.2655, "y coordinate (meters) to move to");
+DEFINE_double(z, 0.5065, "z coordinate (meters) to move to");
+DEFINE_double(roll,0.1280 ,
               "target roll (radians) about world x axis for end effector");
-DEFINE_double(pitch, -1.3,
+DEFINE_double(pitch, 1.6476,
               "target pitch (radians) about world y axis for end effector");
-DEFINE_double(yaw, -1.8,
+DEFINE_double(yaw, 1.1079,
               "target yaw (radians) about world z axis for end effector");
 DEFINE_string(ee_name, "j2s7s300_end_effector",
               "Name of the end effector link");
 
+DEFINE_string(baseName, "base",
+              "Name of the base in the urdf file");
 namespace drake {
 namespace examples {
 namespace kinova_jaco_arm {
@@ -51,10 +60,10 @@ int DoMain() {
       Eigen::Vector3d(FLAGS_x, FLAGS_y, FLAGS_z));
   std::cout<<"constructed rigid pose\n";
 
-  std::cout<<"MoveIkDemo building\n";
+  std::cout<<"MoveIkDemo building baseNam:"<<FLAGS_baseName <<"\n";
   MoveIkDemoBase demo(
       !FLAGS_urdf.empty() ? FLAGS_urdf : FindResourceOrThrow(kUrdfPath),
-      "base", FLAGS_ee_name, 100);
+      FLAGS_baseName, FLAGS_ee_name, 100);
   std::cout<<"MoveIkDemo built\n";
 
   ::lcm::LCM lc;
