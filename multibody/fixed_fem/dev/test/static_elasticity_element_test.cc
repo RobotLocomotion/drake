@@ -116,7 +116,7 @@ TEST_F(StaticElasticityElementTest,
   Vector<T, kNumDofs> residual;
   element().CalcResidual(*state_, &residual);
   Vector<T, kNumDofs> external_force = Vector<T, kNumDofs>::Zero();
-  element().AccumulateExternalForce(*state_, &external_force);
+  element().AddExternalForce(*state_, &external_force);
   EXPECT_TRUE(CompareMatrices(CalcNegativeElasticForce() + external_force,
                               residual, 0));
 }

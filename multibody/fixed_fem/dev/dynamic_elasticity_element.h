@@ -83,10 +83,10 @@ class DynamicElasticityElement final
     /* residual = Ma-fₑ(x)-fᵥ(x, v)+fₑₓₜ, where M is the mass matrix, fₑ(x) is
      the elastic force, fᵥ(x, v) is the damping force and fₑₓₜ is the external
      force. */
-    *residual += ElasticityElementType::mass_matrix() * state.qddot();
-    ElasticityElementType::AddNegativeElasticForce(state, residual);
+    *residual += this->mass_matrix() * state.qddot();
+    this->AddNegativeElasticForce(state, residual);
     AddNegativeDampingForce(state, residual);
-    ElasticityElementType::AccumulateExternalForce(state, residual);
+    this->AddExternalForce(state, residual);
   }
 
   /* Adds the negative damping force on the nodes of this element into the given
@@ -96,7 +96,7 @@ class DynamicElasticityElement final
       const FemState<ElementType>& state,
       EigenPtr<Vector<T, Traits::kNumDofs>> negative_damping_force) const {
     Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs> damping_matrix;
-    FemElementType::CalcDampingMatrix(state, &damping_matrix);
+    this->CalcDampingMatrix(state, &damping_matrix);
     /* Note that the damping force fᵥ = -D * v, where D is the damping matrix.
      As we are accumulating the negative damping force here, the `+=` sign
      should be used. */
@@ -110,7 +110,7 @@ class DynamicElasticityElement final
   void DoCalcStiffnessMatrix(
       const FemState<ElementType>& state,
       EigenPtr<Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs>> K) const {
-    ElasticityElementType::AddNegativeElasticForceDerivative(state, K);
+    this->AddNegativeElasticForceDerivative(state, K);
   }
 
   /* Implements FemElement::CalcDampingMatrix(). */
@@ -119,9 +119,9 @@ class DynamicElasticityElement final
       EigenPtr<Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs>> D) const {
     /* D = αM + βK, where α is the mass damping coefficient and β is the
      stiffness damping coefficient. */
-    FemElementType::CalcStiffnessMatrix(state, D);
+    this->CalcStiffnessMatrix(state, D);
     *D *= damping_model_.stiffness_coeff();
-    *D += damping_model_.mass_coeff() * ElasticityElementType::mass_matrix();
+    *D += damping_model_.mass_coeff() * this->mass_matrix();
   }
 
   /* Implements FemElement::CalcMassMatrix(). */

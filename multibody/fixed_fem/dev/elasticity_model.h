@@ -23,6 +23,8 @@ class ElasticityModel : public FemModel<Element> {
                             Element, typename Element::Traits>,
           Element>,
       "The template parameter Element must be derived from ElasticityModel.");
+  static_assert(Element::Traits::kSpatialDimension == 3,
+                "Only 3D elasticity is supported.");
   using T = typename Element::Traits::T;
 
   /** Calculates the total elastic potential energy (in joules) in this
@@ -36,8 +38,8 @@ class ElasticityModel : public FemModel<Element> {
     return energy;
   }
 
-  /** Sets gravity and precomputes gravity force. The default value for gravity
-   is [0, 0, -9.81]. */
+  /** Sets gravity and precomputes gravity force for existing elements in the
+   model. The default value for gravity is [0, 0, 0]. */
   void SetGravity(
       const Vector<T, Element::Traits::kSpatialDimension>& gravity) {
     for (ElementIndex e(0); e < this->num_elements(); ++e) {
@@ -53,8 +55,8 @@ class ElasticityModel : public FemModel<Element> {
    @pre The size of the vector behind `external_force` must be `num_dofs()`. */
   void CalcExternalForce(const FemState<Element>& state,
                          EigenPtr<VectorX<T>> external_force) {
-    DRAKE_DEMAND(external_force != nullptr &&
-                 external_force->size() == this->num_dofs());
+    DRAKE_DEMAND(external_force != nullptr);
+    DRAKE_DEMAND(external_force->size() == this->num_dofs());
     DRAKE_DEMAND(state.element_cache_size() == this->num_elements());
     /* The values are accumulated in the external_force, so it is important to
      clear the old data. */
@@ -68,7 +70,7 @@ class ElasticityModel : public FemModel<Element> {
     Vector<T, kNumDofs> element_force;
     for (ElementIndex e(0); e < this->num_elements(); ++e) {
       element_force.setZero();
-      this->element(e).AccumulateExternalForce(state, &element_force);
+      this->element(e).AddExternalForce(state, &element_force);
       const std::array<NodeIndex, kNumNodes>& element_node_indices =
           this->element(e).node_indices();
       for (int i = 0; i < kNumNodes; ++i) {

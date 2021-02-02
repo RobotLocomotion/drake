@@ -82,15 +82,15 @@ class StaticElasticityElement final
                       EigenPtr<Vector<T, Traits::kNumDofs>> residual) const {
     /* residual = -fₑ(x) + fₑₓₜ, where fₑ(x) is the elastic force and fₑₓₜ is
      the external force. */
-    ElasticityElementType::AddNegativeElasticForce(state, residual);
-    ElasticityElementType::AccumulateExternalForce(state, residual);
+    this->AddNegativeElasticForce(state, residual);
+    this->AddExternalForce(state, residual);
   }
 
   /* Implements FemElement::CalcStiffnessMatrix(). */
   void DoCalcStiffnessMatrix(
       const FemState<ElementType>& state,
       EigenPtr<Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs>> K) const {
-    ElasticityElementType::AddNegativeElasticForceDerivative(state, K);
+    this->AddNegativeElasticForceDerivative(state, K);
   }
 
   /* Implements FemElement::CalcDampingMatrix(). */

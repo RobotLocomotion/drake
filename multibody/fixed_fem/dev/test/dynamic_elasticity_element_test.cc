@@ -144,7 +144,7 @@ TEST_F(DynamicElasticityElementTest, Residual) {
   Vector<T, kNumDofs> negative_fe = negative_elastic_force();
   Vector<T, kNumDofs> negative_fv = negative_damping_force();
   Vector<T, kNumDofs> external_force = Vector<T, kNumDofs>::Zero();
-  element().AccumulateExternalForce(*state_, &external_force);
+  element().AddExternalForce(*state_, &external_force);
   EXPECT_TRUE(CompareMatrices(
       residual, momentum_change + negative_fe + negative_fv + external_force,
       0));

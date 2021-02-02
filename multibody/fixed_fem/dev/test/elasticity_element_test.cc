@@ -92,6 +92,7 @@ class ElasticityElementTest : public ::testing::Test {
   const T kYoungsModulus{1};
   const T kPoissonRatio{0.25};
   const T kDummyDensity{1.23};
+  const Vector3<T> kGravity{0, 0, -9.8};
 
   void SetUp() override { SetupElement(); }
 
@@ -314,11 +315,12 @@ TEST_F(ElasticityElementTest, MassMatrixSumUpToTotalMass) {
 
 /* Tests that the gravity forces match the expected value. */
 TEST_F(ElasticityElementTest, Gravity) {
+  elements_[0].SetGravity(kGravity);
   const Eigen::Matrix<T, kNumDofs, kNumDofs> mass_matrix = get_mass_matrix();
   Vector<T, kNumDofs> element_gravity_acceleration;
   for (int i = 0; i < kNumNodes; ++i) {
     element_gravity_acceleration.template segment<kSpatialDimension>(
-        i * kSpaceDimension) = element().gravity();
+        i * kSpaceDimension) = kGravity;
   }
   const Vector<T, kNumDofs> expected_gravity_force =
       mass_matrix * element_gravity_acceleration;
