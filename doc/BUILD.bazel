@@ -85,6 +85,7 @@ filegroup(
         "_layouts/*.html",
         "_sass/**",
         "images/**",
+        "third_party/**",
     ]) + [
         "404.html",
         "index.html",
