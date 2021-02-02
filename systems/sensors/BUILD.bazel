@@ -45,10 +45,7 @@ drake_cc_package_library(
 drake_cc_library(
     name = "accelerometer",
     srcs = ["accelerometer.cc"],
-    hdrs = [
-        "accelerometer.h",
-        "accelerometer_sensor.h",
-    ],
+    hdrs = ["accelerometer.h"],
     deps = [
         "//math:geometric_transform",
         "//multibody/math",
@@ -90,10 +87,7 @@ drake_cc_library(
 drake_cc_library(
     name = "gyroscope",
     srcs = ["gyroscope.cc"],
-    hdrs = [
-        "gyroscope.h",
-        "gyroscope_sensor.h",
-    ],
+    hdrs = ["gyroscope.h"],
     deps = [
         "//math:geometric_transform",
         "//multibody/math",
