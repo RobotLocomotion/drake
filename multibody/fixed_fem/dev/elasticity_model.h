@@ -38,13 +38,22 @@ class ElasticityModel : public FemModel<Element> {
     return energy;
   }
 
-  /** Sets gravity and precomputes gravity force for existing elements in the
-   model. The default value for gravity is [0, 0, 0]. */
+  /** Sets gravity and precomputes gravity force for all elements in the model.
+   The default value for gravity is [0, 0, -9.81]. */
   void SetGravity(
       const Vector<T, Element::Traits::kSpatialDimension>& gravity) {
+    /* Store gravity so that all elements added after the call to this method
+     get the "new" gravity constant. */
+    gravity_ = gravity;
+    /* Update the precomputed gravity force in elements added before the call to
+     this method. */
     for (ElementIndex e(0); e < this->num_elements(); ++e) {
-      this->mutable_element(e).SetGravity(gravity);
+      this->mutable_element(e).PrecomputeGravityForce(gravity);
     }
+  }
+
+  const Vector<T, Element::Traits::kSpatialDimension> gravity() const {
+    return gravity_;
   }
 
   /** Calculates the total external force exerted on the %ElasticityModel at
@@ -85,6 +94,10 @@ class ElasticityModel : public FemModel<Element> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ElasticityModel);
   ElasticityModel() = default;
   virtual ~ElasticityModel() = default;
+
+ private:
+  /* The gravitational acceleration in the world frame. */
+  Vector<T, Element::Traits::kSpatialDimension> gravity_{0, 0, -9.81};
 };
 }  // namespace fixed_fem
 }  // namespace multibody

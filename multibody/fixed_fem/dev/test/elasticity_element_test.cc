@@ -54,12 +54,12 @@ class DummyElasticityElement final
       const Eigen::Ref<const Eigen::Matrix<T, Traits::kSolutionDimension,
                                            Traits::kNumNodes>>&
           reference_positions,
-      const T& density)
+      const T& density, const Vector<T, Traits::kSpatialDimension>& gravity)
       : ElasticityElement<IsoparametricElementType, QuadratureType,
                           ConstitutiveModelType, DummyElasticityElement,
                           Traits>(element_index, node_indices,
                                   constitutive_model, reference_positions,
-                                  density) {}
+                                  density, gravity) {}
 
   /* Calculates the negative elastic force evaluted at `state`. */
   Vector<T, Traits::kNumDofs> CalcNegativeElasticForce(
@@ -92,7 +92,7 @@ class ElasticityElementTest : public ::testing::Test {
   const T kYoungsModulus{1};
   const T kPoissonRatio{0.25};
   const T kDummyDensity{1.23};
-  const Vector3<T> kGravity{0, 0, -9.8};
+  const Vector3<T> kGravity_W{0, 0, -9.8};
 
   void SetUp() override { SetupElement(); }
 
@@ -100,7 +100,7 @@ class ElasticityElementTest : public ::testing::Test {
     Eigen::Matrix<T, kSpatialDimension, kNumNodes> X = reference_positions();
     ConstitutiveModelType model(kYoungsModulus, kPoissonRatio);
     elements_.emplace_back(kZeroIndex, dummy_node_indices, model, X,
-                           kDummyDensity);
+                           kDummyDensity, kGravity_W);
   }
 
   /* Set up a state so that the element is deformed. */
@@ -315,12 +315,11 @@ TEST_F(ElasticityElementTest, MassMatrixSumUpToTotalMass) {
 
 /* Tests that the gravity forces match the expected value. */
 TEST_F(ElasticityElementTest, Gravity) {
-  elements_[0].SetGravity(kGravity);
   const Eigen::Matrix<T, kNumDofs, kNumDofs> mass_matrix = get_mass_matrix();
   Vector<T, kNumDofs> element_gravity_acceleration;
   for (int i = 0; i < kNumNodes; ++i) {
     element_gravity_acceleration.template segment<kSpatialDimension>(
-        i * kSpaceDimension) = kGravity;
+        i * kSpaceDimension) = kGravity_W;
   }
   const Vector<T, kNumDofs> expected_gravity_force =
       mass_matrix * element_gravity_acceleration;

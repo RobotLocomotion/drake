@@ -29,7 +29,8 @@ class StaticElasticityModel : public ElasticityModel<Element> {
   /** Add tetrahedral StaticElasticityElements to the %StaticElasticityModel
    from a mesh. The positions of the vertices in the mesh are used as reference
    positions for the volume as well as the generalized positions for the model
-   in MakeFemState().
+   in MakeFemState(). The gravity constant for the newly added elements is given
+   by `ElasticityElement::gravity()`.
    @param mesh    The input tetrahedral mesh that describes the connectivity and
    the positions of the vertices. Each geometry::VolumeElement in the input
    `mesh` will generate a StaticElasticityElement in this
@@ -67,8 +68,8 @@ class StaticElasticityModel : public ElasticityModel<Element> {
       }
       ElementIndex next_element_index = ElementIndex(this->num_elements());
       this->AddElement(next_element_index, element_node_indices,
-                       constitutive_model, element_reference_positions,
-                       density);
+                       constitutive_model, element_reference_positions, density,
+                       this->gravity());
     }
 
     this->increment_num_nodes(num_new_vertices);

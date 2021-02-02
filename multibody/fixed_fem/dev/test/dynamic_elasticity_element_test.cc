@@ -33,6 +33,7 @@ class DynamicElasticityElementTest : public ::testing::Test {
   static constexpr int kNumDofs = ElementType::Traits::kNumDofs;
   const std::array<NodeIndex, kNumNodes> dummy_node_indices = {
       {NodeIndex(0), NodeIndex(1), NodeIndex(2), NodeIndex(3)}};
+  const Vector3<T> kGravity_W{0, 0, -9.8};
   const DampingModel<T> dummy_damping_model{0.001, 0.002};
 
   void SetUp() override {
@@ -46,7 +47,7 @@ class DynamicElasticityElementTest : public ::testing::Test {
     ConstitutiveModelType model(1, 0.25);
     elements_.emplace_back(kZeroIndex, dummy_node_indices, model,
                            reference_positions, kDummyDensity,
-                           dummy_damping_model);
+                           kGravity_W, dummy_damping_model);
   }
 
   void SetupState() {

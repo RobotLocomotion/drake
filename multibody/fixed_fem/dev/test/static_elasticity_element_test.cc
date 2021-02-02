@@ -34,6 +34,7 @@ class StaticElasticityElementTest : public ::testing::Test {
   const std::array<NodeIndex, kNumNodes> dummy_node_indices = {
       {NodeIndex(0), NodeIndex(1), NodeIndex(2), NodeIndex(3)}};
   const T kDensity{0.123};
+  const Vector3<T> kGravity_W{0, 0, -9.8};
 
   void SetUp() override {
     SetupElement();
@@ -45,7 +46,7 @@ class StaticElasticityElementTest : public ::testing::Test {
         get_reference_positions();
     ConstitutiveModelType model(1, 0.25);
     elements_.emplace_back(kZeroIndex, dummy_node_indices, model,
-                           reference_positions, kDensity);
+                           reference_positions, kDensity, kGravity_W);
   }
 
   /* Set up a state with arbitrary positions. */

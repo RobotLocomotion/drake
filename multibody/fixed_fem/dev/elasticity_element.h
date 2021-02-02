@@ -159,10 +159,17 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
     *external_force += gravity_force_;
   }
 
-  /** Sets the gravity vector (for this element not the entire mesh) and then
-   computes and stores the gravity force on the element. */
-  void SetGravity(const Vector<T, Traits::kSpatialDimension>& gravity) {
-    ComputeGravityForce(gravity);
+  /** Computes the gravity force on each node in the element using the stored
+   mass and gravity vector. */
+  void PrecomputeGravityForce(
+      const Vector<T, Traits::kSpatialDimension>& gravity) {
+    constexpr int kDim = Traits::kSpatialDimension;
+    for (int i = 0; i < Traits::kNumNodes; ++i) {
+      /* The following computation is equivalent to performing the matrix-vector
+       multiplication of the mass matrix and the stacked gravity vector. */
+      gravity_force_.template segment<kDim>(kDim * i) =
+          lumped_mass_.template segment<kDim>(kDim * i).cwiseProduct(gravity);
+    }
   }
 
  protected:
@@ -184,6 +191,9 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
    element.
    @param[in] reference_positions    The positions (in world frame) of the nodes
    of this element in the reference configuration.
+   @param[in] denstiy    The mass density of the element with unit kg/m³.
+   @param[in] gravity    The gravitational accleration (in world frame) for the
+   new element with unit m/s².
    @pre element_index must be valid.
    @pre density > 0. */
   ElasticityElement(
@@ -193,7 +203,7 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
       const Eigen::Ref<
           const Eigen::Matrix<T, Traits::kSpatialDimension, Traits::kNumNodes>>&
           reference_positions,
-      const T& density)
+      const T& density, const Vector<T, Traits::kSpatialDimension>& gravity)
       : FemElement<DerivedElement, DerivedTraits>(element_index, node_indices),
         constitutive_model_(constitutive_model),
         density_(density) {
@@ -254,6 +264,8 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
      compute volume, mass, gravity in that order. */
     mass_matrix_ = PrecomputeMassMatrix();
     lumped_mass_ = mass_matrix_.rowwise().sum();
+
+    PrecomputeGravityForce(gravity);
   }
 
   /** Adds the negative elastic force on the nodes of this element into the
@@ -362,8 +374,11 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
     return mass_matrix_;
   }
 
-  /** Returns the lumped mass vector whose i-th entry is the row sum of the i-th
-   row of the mass matrix. */
+  /** Returns the lumped mass vector. The diagonal lumped mass matrix can be
+   created by putting the lumped mass vector on the diagonal. The lumped mass
+   matrix can be used as an approximation of the mass matrix. The approximation
+   has the advantage of being positive definite whereas the mass matrix is only
+   positive semidefinite. */
   const Vector<T, Traits::kNumDofs>& lumped_mass() const {
     return lumped_mass_;
   }
@@ -502,19 +517,6 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
     return mass;
   }
 
-  /* Computes the gravity force on each node in the element using the stored
-   mass and gravity vector. */
-  void ComputeGravityForce(
-      const Vector<T, Traits::kSpatialDimension>& gravity) {
-    constexpr int kDim = Traits::kSpatialDimension;
-    for (int i = 0; i < Traits::kNumNodes; ++i) {
-      /* The following computation is equivalent to performing the matrix-vector
-       multiplication of the mass matrix and the stacked gravity vector. */
-      gravity_force_.template segment<kDim>(kDim * i) =
-          lumped_mass_.template segment<kDim>(kDim * i).cwiseProduct(gravity);
-    }
-  }
-
   // TODO(xuchenhan-tri): Consider bumping this up into FemElement when new
   //  FemElement types are added.
   /* The quadrature rule used for this element. */
@@ -549,8 +551,7 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
    `mass_matrix_`. */
   Vector<T, Traits::kNumDofs> lumped_mass_;
   /* Gravity force on the element. */
-  Vector<T, Traits::kNumDofs> gravity_force_{
-      Vector<T, Traits::kNumDofs>::Zero()};
+  Vector<T, Traits::kNumDofs> gravity_force_;
 };
 }  // namespace fixed_fem
 }  // namespace multibody

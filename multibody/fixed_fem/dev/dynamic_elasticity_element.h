@@ -57,10 +57,10 @@ class DynamicElasticityElement final
       const Eigen::Ref<const Eigen::Matrix<T, Traits::kSolutionDimension,
                                            Traits::kNumNodes>>&
           reference_positions,
-      const T& density, const DampingModel<T>& damping_model)
-
+      const T& density, const Vector<T, Traits::kSpatialDimension>& gravity,
+      const DampingModel<T>& damping_model)
       : ElasticityElementType(element_index, node_indices, constitutive_model,
-                              reference_positions, density),
+                              reference_positions, density, gravity),
         damping_model_(damping_model) {}
 
  private:
