@@ -22,7 +22,7 @@
 #include "drake/systems/lcm/lcm_interface_system.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
-DEFINE_string(urdf,     "drake/manipulation/models/jaco_description/urdf/j2s6s300_sphere_collision.urdf", "Name of urdf to load");
+DEFINE_string(urdf,     "drake/manipulation/models/jaco_description/urdf/j2s7s300_sphere_collision.urdf", "Name of urdf to load");
 DEFINE_string(baseName, "base", "Name of the base of robot");
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
               "Number of seconds to simulate.");

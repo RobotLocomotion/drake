@@ -27,14 +27,14 @@ DEFINE_string(lcm_plan_channel, "COMMITTED_ROBOT_PLAN",
 
 
 
-DEFINE_double(x, 0.2112, "x coordinate (meters) to move to");
-DEFINE_double(y, -0.2655, "y coordinate (meters) to move to");
-DEFINE_double(z, 0.5065, "z coordinate (meters) to move to");
-DEFINE_double(roll,0.1280 ,
+DEFINE_double(x, 0.3 , "x coordinate (meters) to move to");
+DEFINE_double(y, -0.26, "y coordinate (meters) to move to");
+DEFINE_double(z, 0.5, "z coordinate (meters) to move to");
+DEFINE_double(roll,-1.7 ,
               "target roll (radians) about world x axis for end effector");
-DEFINE_double(pitch, 1.6476,
+DEFINE_double(pitch, -1.3,
               "target pitch (radians) about world y axis for end effector");
-DEFINE_double(yaw, 1.1079,
+DEFINE_double(yaw, -1.8, 
               "target yaw (radians) about world z axis for end effector");
 DEFINE_string(ee_name, "j2s7s300_end_effector",
               "Name of the end effector link");

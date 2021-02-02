@@ -78,3 +78,4 @@ bazel-bin/examples/kinova_jaco_arm/jaco_controller -urdf manipulation/models/jac
 move arm
 bazel-bin/examples/kinova_jaco_arm/move_jaco_ee -urdf manipulation/models/jaco_description/urdf/j2s6s300_sphere_collision.urdf -ee_name j2s6s300_end_effector
 
+A hard coded value in drake/manipulayion/kinova/jaco_const.h is either 6 or 7 depending on the robot
