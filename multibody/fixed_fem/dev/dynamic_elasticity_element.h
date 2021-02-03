@@ -83,7 +83,8 @@ class DynamicElasticityElement final
     /* residual = Ma-fₑ(x)-fᵥ(x, v)+fₑₓₜ, where M is the mass matrix, fₑ(x) is
      the elastic force, fᵥ(x, v) is the damping force and fₑₓₜ is the external
      force. */
-    *residual += this->mass_matrix() * state.qddot();
+    *residual += this->mass_matrix() *
+                 this->ExtractElementDofs(this->node_indices(), state.qddot());
     this->AddNegativeElasticForce(state, residual);
     AddNegativeDampingForce(state, residual);
     this->AddExternalForce(state, residual);
@@ -100,7 +101,9 @@ class DynamicElasticityElement final
     /* Note that the damping force fᵥ = -D * v, where D is the damping matrix.
      As we are accumulating the negative damping force here, the `+=` sign
      should be used. */
-    *negative_damping_force += damping_matrix * state.qdot();
+    *negative_damping_force +=
+        damping_matrix *
+        this->ExtractElementDofs(this->node_indices(), state.qdot());
   }
 
   /* Implements FemElement::CalcStiffnessMatrix().
