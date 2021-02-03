@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <limits>
 
+#include <immintrin.h>
+
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 
@@ -16,43 +18,58 @@ using math::RigidTransformd;
 using math::RollPitchYawd;
 using math::RotationMatrixd;
 
+void multX2(const double* a /*R_AB*/, const double* x /*p_AB*/,
+            const double* A /*R_BC*/, const double* X /*p_BC*/,
+            double* r /*R_AC*/, double* xx /*p_AC*/);
+
 bool Obb::HasOverlap(const Obb& a, const Obb& b,
                      const math::RigidTransformd& X_GH) {
   // The canonical frame A of box `a` is posed in the hierarchy frame G, and
   // the canonical frame B of box `b` is posed in the hierarchy frame H.
   const RigidTransformd& X_GA = a.pose();
   const RigidTransformd& X_HB = b.pose();
-  const RigidTransformd X_AB = X_GA.inverse() * X_GH * X_HB;
 
-  // We need to split the transform into the position and rotation components,
-  // `p_AB` and `R_AB`. For the purposes of streamlining the math below, they
-  // will henceforth be named `t` and `r` respectively.
-  const Vector3d& t = X_AB.translation();
-  const Matrix3d& r = X_AB.rotation().matrix();
+  // Previously we composed the rigid transforms like this:
+  //
+  // const RigidTransformd X_AB = X_GA.inverse() * X_GH * X_HB;
+  //
+  // Now we will use AVX instructions and do composition in two steps.
+  // Step 1. Get R_AH and p_AH from X_GA.inverse() and X_GH.
+  const RigidTransformd& X_AG = X_GA.inverse();
+  const double* R_AG = &X_AG.rotation().matrix().coeff(0, 0);
+  const double* p_AG = &X_AG.translation().coeff(0);
+  const double* R_GH = &X_GH.rotation().matrix().coeff(0, 0);
+  const double* p_GH = &X_GH.translation().coeff(0);
+  double R_AH[9];
+  double p_AH[3];
+  multX2(R_AG, p_AG, R_GH, p_GH, R_AH, p_AH);
+  // Step 2. Get R_AB and p_AB from (R_AH, p_AH) and X_HB.
+  const double* R_HB = &X_HB.rotation().matrix().coeff(0, 0);
+  const double* p_HB = &X_HB.translation().coeff(0);
+  double R_AB_double[9];
+  double p_AB_double[3];
+  multX2(R_AH, p_AH, R_HB, p_HB, R_AB_double, p_AB_double);
+
+  const Vector3d p_AB(p_AB_double);
+  const Matrix3d R_AB(R_AB_double);
 
   // Compute some common subexpressions and add epsilon to counteract
   // arithmetic error, e.g. when two edges are parallel. We use the value as
   // specified from Gottschalk's OBB robustness tests.
   const double kEpsilon = 0.000001;
-  Matrix3d abs_r = r;
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 3; ++j) {
-      abs_r(i, j) = abs(abs_r(i, j)) + kEpsilon;
-    }
-  }
+  Matrix3d absR_AB = R_AB.array().abs() + kEpsilon;
 
   // First category of cases separating along a's axes.
-  for (int i = 0; i < 3; ++i) {
-    if (abs(t[i]) >
-        a.half_width()[i] + b.half_width().dot(abs_r.block<1, 3>(i, 0))) {
-      return false;
-    }
+  const Vector3d& ha_A = a.half_width();
+  const Vector3d& hb_B = b.half_width();
+  if ((p_AB.array().abs() > (ha_A + absR_AB * hb_B).array()).any()) {
+    return false;
   }
 
   // Second category of cases separating along b's axes.
   for (int i = 0; i < 3; ++i) {
-    if (abs(t.dot(r.block<3, 1>(0, i))) >
-        b.half_width()[i] + a.half_width().dot(abs_r.block<3, 1>(0, i))) {
+    if (abs(p_AB.dot(R_AB.block<3, 1>(0, i))) >
+        b.half_width()[i] + a.half_width().dot(absR_AB.block<3, 1>(0, i))) {
       return false;
     }
   }
@@ -65,12 +82,12 @@ bool Obb::HasOverlap(const Obb& a, const Obb& b,
     int j1 = 1;
     for (int j = 0; j < 3; ++j) {
       const int j2 = (j1 + 1) % 3;
-      if (abs(t[i2] * r(i1, j) -
-              t[i1] * r(i2, j)) >
-          a.half_width()[i1] * abs_r(i2, j) +
-              a.half_width()[i2] * abs_r(i1, j) +
-              b.half_width()[j1] * abs_r(i, j2) +
-              b.half_width()[j2] * abs_r(i, j1)) {
+      if (abs(p_AB[i2] * R_AB(i1, j) -
+              p_AB[i1] * R_AB(i2, j)) >
+          a.half_width()[i1] * absR_AB(i2, j) +
+              a.half_width()[i2] * absR_AB(i1, j) +
+              b.half_width()[j1] * absR_AB(i, j2) +
+              b.half_width()[j2] * absR_AB(i, j1)) {
         return false;
       }
       j1 = j2;
@@ -79,6 +96,51 @@ bool Obb::HasOverlap(const Obb& a, const Obb& b,
   }
 
   return true;
+}
+
+void multX2(const double* a /*R_AB*/, const double* x /*p_AB*/,
+            const double* A /*R_BC*/, const double* X /*p_BC*/,
+            double* r /*R_AC*/, double* xx /*p_AC*/) {
+  //constexpr uint64_t yes = 0x8000000000000000ULL;    //NOLINT(*)
+  constexpr uint64_t yes  = uint64_t(1ull << 63);    //NOLINT(*)
+  constexpr uint64_t no  = uint64_t(0);    //NOLINT(*)
+  const __m256i mask = _mm256_setr_epi64x(yes, yes, yes, no);    //NOLINT(*)
+  const __m256d col0 = _mm256_loadu_pd(a);            // a b c (d)  d is unused    //NOLINT(*)
+  const __m256d col1 = _mm256_loadu_pd(a+3);          // d e f (g)  g is unused    //NOLINT(*)
+  const __m256d col2 = _mm256_maskload_pd(a+6, mask); // g h i (0)    //NOLINT(*)
+  // Column rst    //NOLINT(*)
+  __m256d dup0 = _mm256_broadcast_sd(A);  // A A A A    //NOLINT(*)
+  __m256d dup1 = _mm256_broadcast_sd(A+1);// B B B B    //NOLINT(*)
+  __m256d dup2 = _mm256_broadcast_sd(A+2);// C C C C    //NOLINT(*)
+  __m256d res = _mm256_mul_pd(col0, dup0);        // aA bA cA (dA)    //NOLINT(*)
+  res = _mm256_fmadd_pd(col1, dup1, res); // aA+dB bA+eB cA+fB (dA+gB)    //NOLINT(*)
+  res = _mm256_fmadd_pd(col2, dup2, res); // aA+dB+gC bA+eB+hC cA+fB+iC (dA+gB+0C)    //NOLINT(*)
+  _mm256_storeu_pd(r, res);               // r s t (u)  will overwrite u    //NOLINT(*)
+  // Column uvw    //NOLINT(*)
+  dup0 = _mm256_broadcast_sd(A+3);        // D D D D    //NOLINT(*)
+  dup1 = _mm256_broadcast_sd(A+4);        // E E E E    //NOLINT(*)
+  dup2 = _mm256_broadcast_sd(A+5);        // F F F F    //NOLINT(*)
+  res = _mm256_mul_pd(col0, dup0);        // aD bD cD (dD)    //NOLINT(*)
+  res = _mm256_fmadd_pd(col1, dup1, res); // aD+dE bD+eE cD+fE (dD+gE)    //NOLINT(*)
+  res = _mm256_fmadd_pd(col2, dup2, res); // aD+dE+gF bD+eE+hF cD+fE+iF (dD+gE+0F)    //NOLINT(*)
+  _mm256_storeu_pd(r+3, res);             // u v w (x)  will overwrite x    //NOLINT(*)
+  // Column xyz    //NOLINT(*)
+  dup0 = _mm256_broadcast_sd(A+6);        // G G G G    //NOLINT(*)
+  dup1 = _mm256_broadcast_sd(A+7);        // H H H H    //NOLINT(*)
+  dup2 = _mm256_broadcast_sd(A+8);        // I I I I    //NOLINT(*)
+  res = _mm256_mul_pd(col0, dup0);        // aG bG cG (dG)    //NOLINT(*)
+  res = _mm256_fmadd_pd(col1, dup1, res); // aG+dH bG+eH cG+fH (dG+gH)    //NOLINT(*)
+  res = _mm256_fmadd_pd(col2, dup2, res); // aG+dH+gI bG+eH+hI cG+fH+iI (dG+gH+0I)    //NOLINT(*)
+  _mm256_maskstore_pd(r+6, mask, res);    // x y z    //NOLINT(*)
+  // Column xx yy zz    //NOLINT(*)
+  dup0 = _mm256_broadcast_sd(X);            // X X X X    //NOLINT(*)
+  dup1 = _mm256_broadcast_sd(X+1);          // Y Y Y Y    //NOLINT(*)
+  dup2 = _mm256_broadcast_sd(X+2);          // Z Z Z Z    //NOLINT(*)
+  const __m256d col3 = _mm256_maskload_pd(x, mask); // x y z (0)    //NOLINT(*)
+  res = _mm256_fmadd_pd(col0, dup0, col3);// x+aX y+bX z+cX (0+dX)    //NOLINT(*)
+  res = _mm256_fmadd_pd(col1, dup1, res); // x+aX+dY    y+bX+eY    z+cX+fY    (0+dX+gY)    //NOLINT(*)
+  res = _mm256_fmadd_pd(col2, dup2, res); // x+aX+dY+gZ y+bX+eY+hZ z+cX+fY+iZ (0+dX+gY+0Z)    //NOLINT(*)
+  _mm256_maskstore_pd(xx, mask, res);     // xx yy zz    //NOLINT(*)
 }
 
 bool Obb::HasOverlap(const Obb& bv, const Plane<double>& plane_P,
