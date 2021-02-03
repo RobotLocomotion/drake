@@ -14,6 +14,7 @@ me='The Drake source distribution prerequisite setup script'
 
 trap at_exit EXIT
 
+binary_distribution_args=()
 source_distribution_args=()
 
 while [ "${1:-}" != "" ]; do
@@ -48,6 +49,11 @@ while [ "${1:-}" != "" ]; do
     --without-test-only)
       source_distribution_args+=(--without-test-only)
       ;;
+    # Do NOT call apt-get update during execution of this script.
+    --without-update)
+      binary_distribution_args+=(--without-update)
+      source_distribution_args+=(--without-update)
+      ;;
     *)
       echo 'Invalid command line argument' >&2
       exit 1
@@ -63,7 +69,8 @@ done
 # generate the dependencies of the drake .deb package, so does not include
 # development dependencies such as build-essential and cmake.
 
-source "${BASH_SOURCE%/*}/binary_distribution/install_prereqs.sh"
+source "${BASH_SOURCE%/*}/binary_distribution/install_prereqs.sh" \
+  "${binary_distribution_args[@]:-}"
 
 # The following additional dependencies are only needed when developing with
 # source distributions.

@@ -5,6 +5,7 @@
 
 set -euxo pipefail
 
+binary_distribution_args=()
 source_distribution_args=()
 
 while [ "${1:-}" != "" ]; do
@@ -26,6 +27,11 @@ while [ "${1:-}" != "" ]; do
     --without-test-only)
       source_distribution_args+=(--without-test-only)
       ;;
+    # Do NOT call brew update during execution of this script.
+    --without-update)
+      binary_distribution_args+=(--without-update)
+      source_distribution_args+=(--without-update)
+      ;;
     *)
       echo 'Invalid command line argument' >&2
       exit 1
@@ -37,7 +43,8 @@ done
 # needed when developing with binary distributions are also needed when
 # developing with source distributions.
 
-source "${BASH_SOURCE%/*}/binary_distribution/install_prereqs.sh"
+source "${BASH_SOURCE%/*}/binary_distribution/install_prereqs.sh" \
+  "${binary_distribution_args[@]:-}"
 
 # The following additional dependencies are only needed when developing with
 # source distributions.
