@@ -14,6 +14,7 @@ me='The Drake source distribution prerequisite setup script'
 
 trap at_exit EXIT
 
+binary_distribution_args=()
 source_distribution_args=()
 
 while [ "${1:-}" != "" ]; do
@@ -47,6 +48,11 @@ while [ "${1:-}" != "" ]; do
     # bazel { build, run } //:install.
     --without-test-only)
       source_distribution_args+=(--without-test-only)
+      ;;
+    # Do NOT call apt-get update during execution of this script.
+    --without-update)
+      binary_distribution_args+=(--without-update)
+      source_distribution_args+=(--without-update)
       ;;
     *)
       echo 'Invalid command line argument' >&2
