@@ -242,6 +242,22 @@ TEST_F(YamlWriteArchiveTest, EigenMatrix) {
 )""");
 }
 
+TEST_F(YamlWriteArchiveTest, EigenMatrixUpTo6) {
+  using Matrix34d = Eigen::Matrix<double, 3, 4>;
+  const auto test = [](const Matrix34d& value, const std::string& expected) {
+    const EigenMatrixUpTo6Struct x{value};
+    EXPECT_EQ(Save(x), expected);
+  };
+
+  test((Matrix34d{} << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11).finished(),
+       R"""(doc:
+  value:
+    - [0.0, 1.0, 2.0, 3.0]
+    - [4.0, 5.0, 6.0, 7.0]
+    - [8.0, 9.0, 10.0, 11.0]
+)""");
+}
+
 TEST_F(YamlWriteArchiveTest, EigenMatrix00) {
   const auto test = [](const std::string& expected) {
     const Eigen::MatrixXd empty;
