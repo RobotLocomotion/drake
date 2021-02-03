@@ -167,7 +167,7 @@ struct OptionalStructNoDefault {
   std::optional<double> value;
 };
 
-template <int Rows, int Cols>
+template <int Rows, int Cols, int MaxRows = Rows, int MaxCols = Cols>
 struct EigenStruct {
   template <typename Archive>
   void Serialize(Archive* a) {
@@ -184,7 +184,14 @@ struct EigenStruct {
   explicit EigenStruct(const Eigen::Matrix<double, Rows, Cols>& value_in)
       : value(value_in) {}
 
-  Eigen::Matrix<double, Rows, Cols> value;
+  // We'd like to test a non-default value for Options, but it's awkward to have
+  // to specify one as part of our template arguments.  Instead, we'll use our
+  // variation in values of existing template arguments to establish variation
+  // of Options as well.  The particular choice of Rows and DontAlign here is
+  // irrelevant -- we just need any kind of variation.
+  static constexpr int Options = (MaxRows != Rows) ? Eigen::DontAlign : 0;
+
+  Eigen::Matrix<double, Rows, Cols, Options, MaxRows, MaxCols> value;
 };
 
 // This is used only for EXPECT_EQ, not by any YAML operations.
@@ -199,6 +206,8 @@ using EigenVec3Struct = EigenStruct<3, 1>;
 using EigenMatrixStruct = EigenStruct<Eigen::Dynamic, Eigen::Dynamic>;
 using EigenMatrix34Struct = EigenStruct<3, 4>;
 using EigenMatrix00Struct = EigenStruct<0, 0>;
+using EigenMatrixUpTo6Struct =
+    EigenStruct<Eigen::Dynamic, Eigen::Dynamic, 6, 6>;
 
 using Variant4 = std::variant<
     std::string, double, DoubleStruct, EigenVecStruct>;
