@@ -19,7 +19,6 @@ def _check_unguarded_openmp_uses(filename):
 
     for index, current_line in enumerate(lines):
         if openmp_include in current_line or openmp_pragma in current_line:
-            previous_index = index - 1
             previous_line = lines[index - 1] if (index - 1) >= 0 else ""
             next_line = lines[index + 1] if (index + 1) < len(lines) else ""
 
