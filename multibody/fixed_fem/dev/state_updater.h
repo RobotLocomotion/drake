@@ -59,6 +59,25 @@ class StateUpdater {
     DoUpdateState(dz, state);
   }
 
+  // TODO(xuchenhan-tri): Consider passing in more than one previous state when
+  //  we implement multi-step methods. */
+  /** Advance the given `state` by one time step.
+   More specifically, if State::ode_order() > 0, then advance `state` in time
+   using the concrete time stepping scheme by a time step of size dt which is
+   stored in the time stepping scheme.
+   If State::ode_order() == 0, throw an exception.
+   @param[in] prev_state The state at the previous time step.
+   @param[in, out] state The state at the current time step. The highest order
+   state will be used as input (and will not be modified by this method). For
+   example, if State::ode_order() == 2, then State::qddot() will be used as
+   input (and will not be modified) and State::q() and State::qdot() will be
+   modified by numerically integrating in time.
+   @pre state != nullptr. */
+  void IntegrateTime(const State& prev_state, State* state) const {
+    DRAKE_DEMAND(state != nullptr);
+    DoIntegrateTime(prev_state, state);
+  }
+
  protected:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StateUpdater);
   StateUpdater() = default;
@@ -68,6 +87,19 @@ class StateUpdater {
    class. The `dz` provided here has compatible size with the number of
    generalized positions in `state` and does not need to be checked again.  */
   virtual void DoUpdateState(const VectorX<T>& dz, State* state) const = 0;
+
+  /** Derived classes templated on FemState whose ode_order() is greater than 0
+   must override this method to integrate the state in time according to the
+   specific time stepping scheme. */
+  virtual void DoIntegrateTime(const State& prev_state, State* state) const {
+    if constexpr (State::ode_order() == 0) {
+      throw std::logic_error(
+          "There is no notion of time in a zeroth order ODE.");
+    }
+    throw std::runtime_error(
+        "IntegrateTime() should be implemented for this StateUpdater but is "
+        "not implemented.");
+  }
 };
 }  // namespace fixed_fem
 }  // namespace multibody

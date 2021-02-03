@@ -211,6 +211,20 @@ class FemElement {
     ThrowIfNotImplemented(__func__);
   }
 
+  /** Extract the dofs corresponding to `this` element from the given
+   `state_dofs`. */
+  Vector<T, Traits::kSolutionDimension * Traits::kNumNodes> ExtractElementDofs(
+      const VectorX<T>& state_dofs) const {
+    constexpr int kDim = Traits::kSolutionDimension;
+    Vector<T, kDim * Traits::kNumNodes> element_dofs;
+    for (int i = 0; i < Traits::kNumNodes; ++i) {
+      DRAKE_ASSERT((this->node_indices()[i] + 1) * kDim <= state_dofs.size());
+      element_dofs.template segment<kDim>(i * kDim) =
+          state_dofs.template segment<kDim>(this->node_indices()[i] * kDim);
+    }
+    return element_dofs;
+  }
+
  private:
   /* Helper to throw a descriptive exception when a given function is not
    implemented. */
