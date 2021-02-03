@@ -374,6 +374,8 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
     return mass_matrix_;
   }
 
+  // TODO(xuchenhan-tri): Consider exposing the lumped mass and/or add an option
+  //  to toggle between standard mass matrix and lumped mass matrix. */
   /** Returns the lumped mass vector. The diagonal lumped mass matrix can be
    created by putting the lumped mass vector on the diagonal. The lumped mass
    matrix can be used as an approximation of the mass matrix. The approximation

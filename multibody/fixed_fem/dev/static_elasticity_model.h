@@ -30,7 +30,7 @@ class StaticElasticityModel : public ElasticityModel<Element> {
    from a mesh. The positions of the vertices in the mesh are used as reference
    positions for the volume as well as the generalized positions for the model
    in MakeFemState(). The gravity constant for the newly added elements is given
-   by `ElasticityElement::gravity()`.
+   by ElasticityModel::gravity().
    @param mesh    The input tetrahedral mesh that describes the connectivity and
    the positions of the vertices. Each geometry::VolumeElement in the input
    `mesh` will generate a StaticElasticityElement in this
