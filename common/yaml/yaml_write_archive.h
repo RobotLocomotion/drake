@@ -209,19 +209,20 @@ class YamlWriteArchive final {
     this->VisitVariant(nvp);
   }
 
-  // For Eigen::Vector.
-  template <typename NVP, typename T, int Rows>
-  void DoVisit(const NVP& nvp, const Eigen::Matrix<T, Rows, 1>&, int32_t) {
-    Eigen::Matrix<T, Rows, 1>& value = *nvp.value();
-    const bool empty = value.size() == 0;
-    this->VisitArrayLike<T>(nvp.name(), value.size(),
-                            empty ? nullptr : &value.coeffRef(0));
-  }
-
-  // For Eigen::Matrix.
-  template <typename NVP, typename T, int Rows, int Cols>
-  void DoVisit(const NVP& nvp, const Eigen::Matrix<T, Rows, Cols>&, int32_t) {
-    this->VisitMatrix<T>(nvp.name(), nvp.value());
+  // For Eigen::Matrix or Eigen::Vector.
+  template <typename NVP, typename T, int Rows, int Cols,
+      int Options = 0, int MaxRows = Rows, int MaxCols = Cols>
+  void DoVisit(const NVP& nvp,
+               const Eigen::Matrix<T, Rows, Cols, Options, MaxRows, MaxCols>&,
+               int32_t) {
+    if constexpr (Cols == 1) {
+      auto& value = *nvp.value();
+      const bool empty = value.size() == 0;
+      this->VisitArrayLike<T>(nvp.name(), value.size(),
+                              empty ? nullptr : &value.coeffRef(0));
+    } else {
+      this->VisitMatrix<T>(nvp.name(), nvp.value());
+    }
   }
 
   // If no other DoVisit matched, we'll treat the value as a scalar.
@@ -336,8 +337,10 @@ class YamlWriteArchive final {
     root_[name] = std::move(sub_node);
   }
 
-  template <typename T, int Rows, int Cols>
-  void VisitMatrix(const char* name, Eigen::Matrix<T, Rows, Cols>* matrix) {
+  template <typename T, int Rows, int Cols,
+      int Options = 0, int MaxRows = Rows, int MaxCols = Cols>
+  void VisitMatrix(const char* name,
+      const Eigen::Matrix<T, Rows, Cols, Options, MaxRows, MaxCols>* matrix) {
     YAML::Node sub_node(YAML::NodeType::Sequence);
     for (int i = 0; i < matrix->rows(); ++i) {
       Eigen::Matrix<T, Cols, 1> row = matrix->row(i);
