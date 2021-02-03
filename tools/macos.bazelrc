@@ -2,11 +2,6 @@
 # N.B. Ensure this is consistent with `execute.bzl`.
 build --action_env=PATH=/usr/local/bin:/usr/bin:/bin
 
-# Work around alignment-related issues when compiling code that uses
-# Eigen <= 3.3.7 with Apple LLVM 11.0.0. Most are fixed in the 3.3 branch of
-# Eigen as of commit a5c3d12.
-build --copt=-fno-stack-check
-
 # Suppress numerous "'_FORTIFY_SOURCE' macro redefined" warnings when using
 # sanitizers.
 build:asan --copt=-Wno-macro-redefined
