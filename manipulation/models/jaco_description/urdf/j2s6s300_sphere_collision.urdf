@@ -258,7 +258,7 @@
   </transmission>
 
  
-  <link name="j2s6s300_link_4">
+  <link name="j2s6s300_link_3">
     <visual>
       <geometry>
         <mesh filename="../meshes/forearm.obj"/>
@@ -350,25 +350,25 @@
       <inertia ixx="0.00142022431908" ixy="0" ixz="0" iyy="0.000304335" iyz="0" izz="0.00142022431908"/>
     </inertial>
   </link>
-  <joint name="j2s6s300_joint_4" type="revolute">
+  <joint name="j2s6s300_joint_3" type="revolute">
     <parent link="j2s6s300_link_2"/>
-    <child link="j2s6s300_link_4"/>
+    <child link="j2s6s300_link_3"/>
     <axis xyz="0 0 1"/>
     <limit effort="2000" lower="0.523598775598" upper="5.75958653158" velocity="1"/>
     <origin rpy="0.0  3.14159265359 0.0" xyz="0.0 -0.410 0.0"/>
     <dynamics damping="0.0" friction="0.0"/>
   </joint>
-  <transmission name="j2s6s300_joint_4_trans">
+  <transmission name="j2s6s300_joint_3_trans">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="j2s6s300_joint_4">
+    <joint name="j2s6s300_joint_3">
       <hardwareInterface>EffortJointInterface</hardwareInterface>
     </joint>
-    <actuator name="j2s6s300_joint_4_actuator">
+    <actuator name="j2s6s300_joint_3_actuator">
       <hardwareInterface>EffortJointInterface</hardwareInterface>
       <mechanicalReduction>160</mechanicalReduction>
     </actuator>
   </transmission>
-  <link name="j2s6s300_link_5">
+  <link name="j2s6s300_link_4">
     <visual>
       <geometry>
         <mesh filename="../meshes/wrist_spherical_1.obj"/>
@@ -406,25 +406,25 @@
       <inertia ixx="0.0004321316048" ixy="0" ixz="0" iyy="0.0004321316048" iyz="0" izz="9.26e-05"/>
     </inertial>
   </link>
-  <joint name="j2s6s300_joint_5" type="continuous">
-    <parent link="j2s6s300_link_4"/>
-    <child link="j2s6s300_link_5"/>
+  <joint name="j2s6s300_joint_4" type="continuous">
+    <parent link="j2s6s300_link_3"/>
+    <child link="j2s6s300_link_4"/>
     <axis xyz="0 0 1"/>
     <limit effort="2000" lower="-174.532925" upper="174.532925" velocity="1"/>
     <origin rpy="-1.57079632679 0 3.14159265359" xyz="0 0.2073 -0.0114"/>
     <dynamics damping="0.0" friction="0.0"/>
   </joint>
-  <transmission name="j2s6s300_joint_5_trans">
+  <transmission name="j2s6s300_joint_4_trans">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="j2s6s300_joint_5">
+    <joint name="j2s6s300_joint_4">
       <hardwareInterface>EffortJointInterface</hardwareInterface>
     </joint>
-    <actuator name="j2s6s300_joint_5_actuator">
+    <actuator name="j2s6s300_joint_4_actuator">
       <hardwareInterface>EffortJointInterface</hardwareInterface>
       <mechanicalReduction>160</mechanicalReduction>
     </actuator>
   </transmission>
-  <link name="j2s6s300_link_6">
+  <link name="j2s6s300_link_5">
     <visual>
       <geometry>
         <mesh filename="../meshes/wrist_spherical_2.obj"/>
@@ -462,25 +462,25 @@
       <inertia ixx="0.0004321316048" ixy="0" ixz="0" iyy="9.26e-05" iyz="0" izz="0.0004321316048"/>
     </inertial>
   </link>
-  <joint name="j2s6s300_joint_6" type="revolute">
-    <parent link="j2s6s300_link_5"/>
-    <child link="j2s6s300_link_6"/>
+  <joint name="j2s6s300_joint_5" type="revolute">
+    <parent link="j2s6s300_link_4"/>
+    <child link="j2s6s300_link_5"/>
     <axis xyz="0 0 1"/>
     <limit effort="2000" lower="0.523598775598" upper="5.75958653158" velocity="1"/>
     <origin rpy="1.57079632679 0 3.14159265359" xyz="0 0 -0.10375"/>
     <dynamics damping="0.0" friction="0.0"/>
   </joint>
-  <transmission name="j2s6s300_joint_6_trans">
+  <transmission name="j2s6s300_joint_5_trans">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="j2s6s300_joint_6">
+    <joint name="j2s6s300_joint_5">
       <hardwareInterface>EffortJointInterface</hardwareInterface>
     </joint>
-    <actuator name="j2s6s300_joint_6_actuator">
+    <actuator name="j2s6s300_joint_5_actuator">
       <hardwareInterface>EffortJointInterface</hardwareInterface>
       <mechanicalReduction>160</mechanicalReduction>
     </actuator>
   </transmission>
-  <link name="j2s6s300_link_7">
+  <link name="j2s6s300_link_6">
     <visual>
       <geometry>
         <mesh filename="../meshes/hand_3finger.obj"/>
@@ -548,20 +548,20 @@
       <inertia ixx="0.0003453236187" ixy="0" ixz="0" iyy="0.0003453236187" iyz="0" izz="0.0005816"/>
     </inertial>
   </link>
-  <joint name="j2s6s300_joint_7" type="continuous">
-    <parent link="j2s6s300_link_6"/>
-    <child link="j2s6s300_link_7"/>
+  <joint name="j2s6s300_joint_6" type="continuous">
+    <parent link="j2s6s300_link_5"/>
+    <child link="j2s6s300_link_6"/>
     <axis xyz="0 0 1"/>
     <limit effort="2000" lower="-174.532925" upper="174.532925" velocity="1"/>
     <origin rpy="-1.57079632679 0 3.14159265359" xyz="0 0.10375 0"/>
     <dynamics damping="0.0" friction="0.0"/>
   </joint>
-  <transmission name="j2s6s300_joint_7_trans">
+  <transmission name="j2s6s300_joint_6_trans">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="j2s6s300_joint_7">
+    <joint name="j2s6s300_joint_6">
       <hardwareInterface>EffortJointInterface</hardwareInterface>
     </joint>
-    <actuator name="j2s6s300_joint_7_actuator">
+    <actuator name="j2s6s300_joint_6_actuator">
       <hardwareInterface>EffortJointInterface</hardwareInterface>
       <mechanicalReduction>160</mechanicalReduction>
     </actuator>
@@ -579,7 +579,7 @@
     </collision>
   </link>
   <joint name="j2s6s300_joint_end_effector" type="fixed">
-    <parent link="j2s6s300_link_7"/>
+    <parent link="j2s6s300_link_6"/>
     <child link="j2s6s300_end_effector"/>
     <axis xyz="0 0 0"/>
     <limit effort="2000" lower="0" upper="0" velocity="1"/>
@@ -625,7 +625,7 @@
     </inertial>
   </link>
   <joint name="j2s6s300_joint_finger_1" type="revolute">
-    <parent link="j2s6s300_link_7"/>
+    <parent link="j2s6s300_link_6"/>
     <child link="j2s6s300_link_finger_1"/>
     <axis xyz="0 0 1"/>
     <origin rpy="-1.570796327 .649262481663582 1.35961148639407" xyz="0.00279 0.03126 -0.11467"/>
@@ -733,7 +733,7 @@
     </inertial>
   </link>
   <joint name="j2s6s300_joint_finger_2" type="revolute">
-    <parent link="j2s6s300_link_7"/>
+    <parent link="j2s6s300_link_6"/>
     <child link="j2s6s300_link_finger_2"/>
     <axis xyz="0 0 1"/>
     <origin rpy="-1.570796327 .649262481663582 -1.38614049188413" xyz="0.02226 -0.02707 -0.11482"/>
@@ -841,7 +841,7 @@
     </inertial>
   </link>
   <joint name="j2s6s300_joint_finger_3" type="revolute">
-    <parent link="j2s6s300_link_7"/>
+    <parent link="j2s6s300_link_6"/>
     <child link="j2s6s300_link_finger_3"/>
     <axis xyz="0 0 1"/>
     <origin rpy="-1.570796327 .649262481663582 -1.75545216211587" xyz="-0.02226 -0.02707 -0.11482"/>
