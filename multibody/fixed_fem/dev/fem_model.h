@@ -214,6 +214,12 @@ class FemModel {
     return elements_[i];
   }
 
+  Element& mutable_element(ElementIndex i) {
+    DRAKE_ASSERT(i.is_valid());
+    DRAKE_ASSERT(i < num_elements());
+    return elements_[i];
+  }
+
   /** Moves the input `element` into the vector of elements held by `this`
    %FemModel. */
   void AddElement(Element&& element) {

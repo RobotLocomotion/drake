@@ -48,7 +48,8 @@ class DynamicElasticityElement final
                                      ConstitutiveModelType>;
   using T = typename Traits::T;
 
-  /** Constructs a new FEM dynamic elasticity element. */
+  /** Constructs a new FEM dynamic elasticity element.
+   @pre density > 0. */
   DynamicElasticityElement(
       ElementIndex element_index,
       const std::array<NodeIndex, Traits::kNumNodes>& node_indices,
@@ -56,13 +57,11 @@ class DynamicElasticityElement final
       const Eigen::Ref<const Eigen::Matrix<T, Traits::kSolutionDimension,
                                            Traits::kNumNodes>>&
           reference_positions,
-      const T& density, const DampingModel<T>& damping_model)
-
+      const T& density, const Vector<T, Traits::kSpatialDimension>& gravity,
+      const DampingModel<T>& damping_model)
       : ElasticityElementType(element_index, node_indices, constitutive_model,
-                              reference_positions),
-        density_(density),
-        damping_model_(damping_model),
-        mass_matrix_(PrecomputeMassMatrix()) {}
+                              reference_positions, density, gravity),
+        damping_model_(damping_model) {}
 
  private:
   /* Type alias for convenience and readability. */
@@ -84,10 +83,10 @@ class DynamicElasticityElement final
     /* residual = Ma-fₑ(x)-fᵥ(x, v)+fₑₓₜ, where M is the mass matrix, fₑ(x) is
      the elastic force, fᵥ(x, v) is the damping force and fₑₓₜ is the external
      force. */
-    ElasticityElementType::AddNegativeElasticForce(state, residual);
+    *residual += this->mass_matrix() * state.qddot();
+    this->AddNegativeElasticForce(state, residual);
     AddNegativeDampingForce(state, residual);
-    *residual += mass_matrix_ * state.qddot();
-    // TODO(xuchenhan-tri): Add external force component.
+    this->AddExternalForce(state, residual);
   }
 
   /* Adds the negative damping force on the nodes of this element into the given
@@ -97,7 +96,7 @@ class DynamicElasticityElement final
       const FemState<ElementType>& state,
       EigenPtr<Vector<T, Traits::kNumDofs>> negative_damping_force) const {
     Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs> damping_matrix;
-    FemElementType::CalcDampingMatrix(state, &damping_matrix);
+    this->CalcDampingMatrix(state, &damping_matrix);
     /* Note that the damping force fᵥ = -D * v, where D is the damping matrix.
      As we are accumulating the negative damping force here, the `+=` sign
      should be used. */
@@ -111,7 +110,7 @@ class DynamicElasticityElement final
   void DoCalcStiffnessMatrix(
       const FemState<ElementType>& state,
       EigenPtr<Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs>> K) const {
-    ElasticityElementType::AddNegativeElasticForceDerivative(state, K);
+    this->AddNegativeElasticForceDerivative(state, K);
   }
 
   /* Implements FemElement::CalcDampingMatrix(). */
@@ -120,58 +119,19 @@ class DynamicElasticityElement final
       EigenPtr<Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs>> D) const {
     /* D = αM + βK, where α is the mass damping coefficient and β is the
      stiffness damping coefficient. */
-    FemElementType::CalcStiffnessMatrix(state, D);
+    this->CalcStiffnessMatrix(state, D);
     *D *= damping_model_.stiffness_coeff();
-    *D += damping_model_.mass_coeff() * mass_matrix_;
+    *D += damping_model_.mass_coeff() * this->mass_matrix();
   }
 
   /* Implements FemElement::CalcMassMatrix(). */
   void DoCalcMassMatrix(
       const FemState<ElementType>& state,
       EigenPtr<Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs>> M) const {
-    *M = mass_matrix_;
+    *M = ElasticityElementType::mass_matrix();
   }
 
-  Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs> PrecomputeMassMatrix()
-      const {
-    Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs> mass =
-        Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs>::Zero();
-    const std::array<Vector<T, Traits::kNumNodes>,
-                     Traits::kNumQuadraturePoints>& S =
-        ElasticityElementType::isoparametric_element().GetShapeFunctions();
-    /* S_mat is the matrix representation of S. */
-    Eigen::Matrix<T, Traits::kNumNodes, Traits::kNumQuadraturePoints> S_mat;
-    for (int q = 0; q < Traits::kNumQuadraturePoints; ++q) {
-      S_mat.col(q) = S[q];
-    }
-    /* weighted_S stores the shape function weighted by the reference
-     volume of the quadrature point. */
-    Eigen::Matrix<T, Traits::kNumNodes, Traits::kNumQuadraturePoints>
-        weighted_S(S_mat);
-    for (int q = 0; q < Traits::kNumQuadraturePoints; ++q) {
-      weighted_S.col(q) *= ElasticityElementType::reference_volume()[q];
-    }
-    /* weighted_SST = weighted_S * Sᵀ. The ij-th entry approximates the integral
-     ∫SᵢSⱼ dX */
-    Eigen::Matrix<T, Traits::kNumNodes, Traits::kNumNodes> weighted_SST =
-        weighted_S * S_mat.transpose();
-    constexpr int kDim = Traits::kSolutionDimension;
-    for (int i = 0; i < Traits::kNumNodes; ++i) {
-      for (int j = 0; j < Traits::kNumNodes; ++j) {
-        mass.template block<kDim, kDim>(kDim * i, kDim * j) =
-            Eigen::Matrix<T, kDim, kDim>::Identity() * weighted_SST(i, j) *
-            density_;
-      }
-    }
-    return mass;
-  }
-
-  /* The mass density of the element in the reference configuration with
-   unit kg/m³. */
-  T density_;
   DampingModel<T> damping_model_;
-  /* Precomputed mass matrix. */
-  Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs> mass_matrix_;
 };
 }  // namespace fixed_fem
 }  // namespace multibody
