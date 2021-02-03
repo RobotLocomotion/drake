@@ -15,36 +15,25 @@ def _check_unguarded_openmp_uses(filename):
     openmp_post_guard = "#endif"
 
     with open(filename, mode='r', encoding='utf-8') as file:
-        if not file:
-            print("ERROR: unable to open " + filename)
-            return 1
-
         lines = file.readlines()
-        for index in range(len(lines)):
-            current_line = lines[index]
-            if openmp_include in current_line or openmp_pragma in current_line:
-                previous_index = index - 1
-                if previous_index in range(len(lines)):
-                    previous_line = lines[previous_index]
-                else:
-                    previous_line = ""
 
-                next_index = index + 1
-                if next_index in range(len(lines)):
-                    next_line = lines[next_index]
-                else:
-                    next_line = ""
+    for index in range(len(lines)):
+        current_line = lines[index]
+        if openmp_include in current_line or openmp_pragma in current_line:
+            previous_index = index - 1
+            previous_line = lines[index - 1] if (index - 1) >= 0 else ""
+            next_line = lines[index + 1] if (index + 1) < len(lines) else ""
 
-                missing_pre_guard = previous_line.strip() != openmp_pre_guard
-                missing_post_guard = next_line.strip() != openmp_post_guard
+            missing_pre_guard = previous_line.strip() != openmp_pre_guard
+            missing_post_guard = next_line.strip() != openmp_post_guard
 
-                if missing_pre_guard or missing_post_guard:
-                    print(f"ERROR: {filename}:{index + 1}: "
-                          "OpenMP includes and directives must be guarded by "
-                          f"{openmp_pre_guard} on the previous line and "
-                          f"{openmp_post_guard} on the following line")
+            if missing_pre_guard or missing_post_guard:
+                print(f"ERROR: {filename}:{index + 1}: "
+                      "OpenMP includes and directives must be guarded by "
+                      f"{openmp_pre_guard} on the previous line and "
+                      f"{openmp_post_guard} on the following line")
 
-                    return 1
+                return 1
     return 0
 
 
@@ -54,9 +43,6 @@ def _check_invalid_line_endings(filename):
     """
     # Ask Python to read the file and determine the newlines convention.
     with open(filename, mode='r', encoding='utf-8') as file:
-        if not file:
-            print("ERROR: unable to open " + filename)
-            return 1
         file.read()
         if file.newlines is None:
             newlines = tuple()
