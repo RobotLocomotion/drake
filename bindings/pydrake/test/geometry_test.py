@@ -260,9 +260,9 @@ class TestGeometry(unittest.TestCase):
             self.assertEqual(load_subscriber.count, 2)
             self.assertEqual(draw_subscriber.count, 1)
 
-    def test_drake_visualizer(self):
+    @numpy_compare.check_nonsymbolic_types
+    def test_drake_visualizer(self, T):
         # Test visualization API.
-        T = float
         SceneGraph = mut.SceneGraph_[T]
         DiagramBuilder = DiagramBuilder_[T]
         Simulator = Simulator_[T]
@@ -283,17 +283,17 @@ class TestGeometry(unittest.TestCase):
         # There are three ways to configure DrakeVisualizer.
         def by_hand(builder, scene_graph, params):
             visualizer = builder.AddSystem(
-                mut.DrakeVisualizer(lcm=lcm, params=params))
+                mut.DrakeVisualizer_[T](lcm=lcm, params=params))
             builder.Connect(scene_graph.get_query_output_port(),
                             visualizer.query_object_input_port())
 
         def auto_connect_to_system(builder, scene_graph, params):
-            mut.DrakeVisualizer.AddToBuilder(builder=builder,
-                                             scene_graph=scene_graph,
-                                             lcm=lcm, params=params)
+            mut.DrakeVisualizer_[T].AddToBuilder(builder=builder,
+                                                 scene_graph=scene_graph,
+                                                 lcm=lcm, params=params)
 
         def auto_connect_to_port(builder, scene_graph, params):
-            mut.DrakeVisualizer.AddToBuilder(
+            mut.DrakeVisualizer_[T].AddToBuilder(
                 builder=builder,
                 query_object_port=scene_graph.get_query_output_port(),
                 lcm=lcm, params=params)
@@ -316,7 +316,8 @@ class TestGeometry(unittest.TestCase):
         # Ad hoc broadcasting.
         scene_graph = SceneGraph()
 
-        mut.DrakeVisualizer.DispatchLoadMessage(scene_graph, lcm, params)
+        mut.DrakeVisualizer_[T].DispatchLoadMessage(
+            scene_graph, lcm, params)
         lcm.HandleSubscriptions(0)
         self.assertEqual(load_subscriber.count, 1)
         self.assertEqual(draw_subscriber.count, 0)
