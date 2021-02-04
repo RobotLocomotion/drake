@@ -44,6 +44,7 @@ drake_cc_package_library(
         ":plane",
         ":posed_half_space",
         ":proximity_utilities",
+        ":simd_avx",
         ":sorted_triplet",
         ":surface_mesh",
         ":tessellation_strategy",
@@ -424,6 +425,7 @@ drake_cc_library(
     hdrs = ["obb.h"],
     deps = [
         ":posed_half_space",
+        ":simd_avx",
         ":surface_mesh",
         ":volume_mesh",
         "//common",
@@ -497,6 +499,18 @@ drake_cc_library(
         "@fcl",
         "@fmt",
     ],
+)
+
+drake_cc_library(
+    name = "simd_avx",
+    srcs = ["simd_avx.cc"],
+    hdrs = ["simd_avx.h"],
+    copts = select({
+        "//tools/cc_toolchain:apple": [],
+        "//conditions:default": [
+            "-march=broadwell",
+        ],
+    }),
 )
 
 drake_cc_library(

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <limits>
 
+#include "drake/geometry/proximity/simd_avx.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 
@@ -22,24 +23,30 @@ bool Obb::HasOverlap(const Obb& a, const Obb& b,
   // the canonical frame B of box `b` is posed in the hierarchy frame H.
   const RigidTransformd& X_GA = a.pose();
   const RigidTransformd& X_HB = b.pose();
-  const RigidTransformd X_AB = X_GA.inverse() * X_GH * X_HB;
 
-  // We need to split the transform into the position and rotation components,
-  // `p_AB` and `R_AB`. For the purposes of streamlining the math below, they
-  // will henceforth be named `t` and `r` respectively.
-  const Vector3d& t = X_AB.translation();
-  const Matrix3d& r = X_AB.rotation().matrix();
+  // Previously we composed the rigid transforms like this:
+  //
+  // const RigidTransformd X_AB = X_GA.inverse() * X_GH * X_HB;
+  //
+  // Now we will use AVX instructions (when available) via multXinvX() and
+  // multXX().
+  double X_AH_double[12];
+  multXinvX(reinterpret_cast<const double*>(&X_GA),
+            reinterpret_cast<const double*>(&X_GH), X_AH_double);
+  double X_AB_double[12];
+  multXX(X_AH_double, reinterpret_cast<const double*>(&X_HB), X_AB_double);
+
+  // We need to split the transform into the position and rotation
+  // components, `p_AB` and `R_AB`. For the purposes of streamlining the
+  // math below, they will henceforth be named `t` and `r` respectively.
+  const Vector3d t(X_AB_double + 9);
+  const Matrix3d r(X_AB_double);
 
   // Compute some common subexpressions and add epsilon to counteract
   // arithmetic error, e.g. when two edges are parallel. We use the value as
   // specified from Gottschalk's OBB robustness tests.
   const double kEpsilon = 0.000001;
-  Matrix3d abs_r = r;
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 3; ++j) {
-      abs_r(i, j) = abs(abs_r(i, j)) + kEpsilon;
-    }
-  }
+  const Matrix3d abs_r = r.array().abs() + kEpsilon;
 
   // First category of cases separating along a's axes.
   for (int i = 0; i < 3; ++i) {
@@ -80,6 +87,8 @@ bool Obb::HasOverlap(const Obb& a, const Obb& b,
 
   return true;
 }
+
+
 
 bool Obb::HasOverlap(const Obb& bv, const Plane<double>& plane_P,
                       const math::RigidTransformd& X_PH) {
