@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <limits>
 
+#include "drake/geometry/proximity/simd_avx.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 
@@ -16,70 +17,157 @@ using math::RigidTransformd;
 using math::RollPitchYawd;
 using math::RotationMatrixd;
 
-bool Obb::HasOverlap(const Obb& a, const Obb& b,
+bool Obb::HasOverlap(const Obb& a_G, const Obb& b_H,
                      const math::RigidTransformd& X_GH) {
   // The canonical frame A of box `a` is posed in the hierarchy frame G, and
   // the canonical frame B of box `b` is posed in the hierarchy frame H.
-  const RigidTransformd& X_GA = a.pose();
-  const RigidTransformd& X_HB = b.pose();
-  const RigidTransformd X_AB = X_GA.inverse() * X_GH * X_HB;
+  const RigidTransformd& X_GA = a_G.pose();
+  const RigidTransformd& X_HB = b_H.pose();
 
-  // We need to split the transform into the position and rotation components,
-  // `p_AB` and `R_AB`. For the purposes of streamlining the math below, they
-  // will henceforth be named `t` and `r` respectively.
-  const Vector3d& t = X_AB.translation();
-  const Matrix3d& r = X_AB.rotation().matrix();
+  // Previously we composed the rigid transforms like this:
+  //
+  // const RigidTransformd X_AB = X_GA.inverse() * X_GH * X_HB;
+  //
+  // Now we will use AVX instructions and do composition in two steps.
+  // Step 1. Get R_AH and p_AH from X_GA.inverse() and X_GH.
+  const RigidTransformd& X_AG = X_GA.inverse();
+  const double* R_AG = &X_AG.rotation().matrix().coeff(0, 0);
+  const double* p_AG = &X_AG.translation().coeff(0);
+  const double* R_GH = &X_GH.rotation().matrix().coeff(0, 0);
+  const double* p_GH = &X_GH.translation().coeff(0);
+  double R_AH[9];
+  double p_AH[3];
+  multX2(R_AG, p_AG, R_GH, p_GH, R_AH, p_AH);
+  // Step 2. Get R_AB and p_AB from (R_AH, p_AH) and X_HB.
+  const double* R_HB = &X_HB.rotation().matrix().coeff(0, 0);
+  const double* p_HB = &X_HB.translation().coeff(0);
+  double R_AB_double[9];
+  double p_AB_double[3];
+  multX2(R_AH, p_AH, R_HB, p_HB, R_AB_double, p_AB_double);
+
+  const Vector3d p_AB(p_AB_double);
+  const Matrix3d R_AB(R_AB_double);
+
+  // Previous code and comments:-
+  // // We need to split the transform into the position and rotation
+  // // components, `p_AB` and `R_AB`. For the purposes of streamlining the
+  // // math below, they will henceforth be named `t` and `r` respectively.
+  // // const Vector3d& t = X_AB.translation();
+  // // const Matrix3d& r = X_AB.rotation().matrix();
+
+  // Previous code prefers `t` and `r`. Now experiment with `p_AB` and `R_AB`.
+  const Matrix3d R_BA = R_AB.transpose();
 
   // Compute some common subexpressions and add epsilon to counteract
   // arithmetic error, e.g. when two edges are parallel. We use the value as
   // specified from Gottschalk's OBB robustness tests.
   const double kEpsilon = 0.000001;
-  Matrix3d abs_r = r;
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 3; ++j) {
-      abs_r(i, j) = abs(abs_r(i, j)) + kEpsilon;
-    }
-  }
+  // Previous code.
+  // Matrix3d abs_r = r;
+  // for (int i = 0; i < 3; ++i) {
+  //   for (int j = 0; j < 3; ++j) {
+  //     abs_r(i, j) = abs(abs_r(i, j)) + kEpsilon;
+  //   }
+  // }
+  const Matrix3d absR_AB = R_AB.array().abs() + kEpsilon;
 
   // First category of cases separating along a's axes.
-  for (int i = 0; i < 3; ++i) {
-    if (abs(t[i]) >
-        a.half_width()[i] + b.half_width().dot(abs_r.block<1, 3>(i, 0))) {
-      return false;
-    }
+  // Previous code:-
+  // for (int i = 0; i < 3; ++i) {
+  //   if (abs(t[i]) >
+  //       a.half_width()[i] + b.half_width().dot(abs_r.block<1, 3>(i, 0))) {
+  //     return false;
+  //   }
+  // }
+  // New code uses matrix-vector multiplication but lost the short-circuit
+  // capability in the old code.
+  const Vector3d& ha_A = a_G.half_width();
+  const Vector3d& hb_B = b_H.half_width();
+  if ((p_AB.array().abs() > (ha_A + absR_AB * hb_B).array()).any()) {
+    return false;
   }
 
   // Second category of cases separating along b's axes.
-  for (int i = 0; i < 3; ++i) {
-    if (abs(t.dot(r.block<3, 1>(0, i))) >
-        b.half_width()[i] + a.half_width().dot(abs_r.block<3, 1>(0, i))) {
-      return false;
-    }
+  // Previous code:-
+  // for (int i = 0; i < 3; ++i) {
+  //   if (abs(t.dot(r.block<3, 1>(0, i))) >
+  //       b.half_width()[i] + a.half_width().dot(abs_r.block<3, 1>(0, i))) {
+  //     return false;
+  //   }
+  // }
+  // New code uses matrix-vector multiplication but lost the short-circuit
+  // capability in the old code.
+  if (((R_BA * p_AB).array().abs() >
+       (hb_B + absR_AB.transpose() * ha_A).array())
+          .any()) {
+    return false;
   }
 
   // Third category of cases separating along the axes formed from the cross
   // products of a's and b's axes.
-  int i1 = 1;
+  // Previous code:-
+  //  int i1 = 1;
+  //  for (int i = 0; i < 3; ++i) {
+  //    const int i2 = (i1 + 1) % 3;  // Calculate common sub expressions.
+  //    int j1 = 1;
+  //    for (int j = 0; j < 3; ++j) {
+  //      const int j2 = (j1 + 1) % 3;
+  //      if (abs(t[i2] * r(i1, j) -
+  //              t[i1] * r(i2, j)) >
+  //          a.half_width()[i1] * abs_r(i2, j) +
+  //              a.half_width()[i2] * abs_r(i1, j) +
+  //              b.half_width()[j1] * abs_r(i, j2) +
+  //              b.half_width()[j2] * abs_r(i, j1)) {
+  //        return false;
+  //      }
+  //      j1 = j2;
+  //    }
+  //    i1 = i2;
+  //  }
+  // New code uses matrix-vector multiplications instead of nested for-loops
+  // with less degree of short circuits. Since each matrix is 2/3 full, we'll
+  // have to see whether the gain from AVX instructions will pay for the
+  // null column(or diagonal) overhead.
+  Matrix3d M[3];
+  M[0] << 0,          -R_AB(2, 0),  R_AB(1, 0),       // NOLINT(*)
+          0,          -R_AB(2, 1),  R_AB(1, 1),       // NOLINT(*)
+          0,          -R_AB(2, 2),  R_AB(1, 2);       // NOLINT(*)
+  M[1] << R_AB(2,0),   0,          -R_AB(0,0),        // NOLINT(*)
+          R_AB(2,1),   0,          -R_AB(0,1),        // NOLINT(*)
+          R_AB(2,2),   0,          -R_AB(0,2);        // NOLINT(*)
+  M[2] << -R_AB(1,0),  R_AB(0,0),  0,                 // NOLINT(*)
+          -R_AB(1,1),  R_AB(0,1),  0,                 // NOLINT(*)
+          -R_AB(1,2),  R_AB(0,2),  0;                 // NOLINT(*)
+  Matrix3d N[3];
+  N[0] << 0,             absR_AB(2,0),  absR_AB(1,0),       // NOLINT(*)
+          0,             absR_AB(2,1),  absR_AB(1,1),       // NOLINT(*)
+          0,             absR_AB(2,2),  absR_AB(1,2);       // NOLINT(*)
+  N[1] << absR_AB(2,0),  0,             absR_AB(0,0),       // NOLINT(*)
+          absR_AB(2,1),  0,             absR_AB(0,1),       // NOLINT(*)
+          absR_AB(2,2),  0,             absR_AB(0,2);       // NOLINT(*)
+  N[2] << absR_AB(1,0),  absR_AB(0,0),  0,                  // NOLINT(*)
+          absR_AB(1,1),  absR_AB(0,1),  0,                  // NOLINT(*)
+          absR_AB(1,2),  absR_AB(0,2),  0;                  // NOLINT(*)
+  Matrix3d L[3];
+  L[0] << 0,             absR_AB(0,2),  absR_AB(0,1),       // NOLINT(*)
+          absR_AB(0,2),  0,             absR_AB(0,0),       // NOLINT(*)
+          absR_AB(0,1),  absR_AB(0,0),  0;                  // NOLINT(*)
+  L[1] << 0,             absR_AB(1,2),  absR_AB(1,1),       // NOLINT(*)
+          absR_AB(1,2),  0,             absR_AB(1,0),       // NOLINT(*)
+          absR_AB(1,1),  absR_AB(1,0),  0;                  // NOLINT(*)
+  L[2] << 0,             absR_AB(2,2),  absR_AB(2,1),       // NOLINT(*)
+          absR_AB(2,2),  0,             absR_AB(2,0),       // NOLINT(*)
+          absR_AB(2,1),  absR_AB(2,0),  0;                  // NOLINT(*)
   for (int i = 0; i < 3; ++i) {
-    const int i2 = (i1 + 1) % 3;  // Calculate common sub expressions.
-    int j1 = 1;
-    for (int j = 0; j < 3; ++j) {
-      const int j2 = (j1 + 1) % 3;
-      if (abs(t[i2] * r(i1, j) -
-              t[i1] * r(i2, j)) >
-          a.half_width()[i1] * abs_r(i2, j) +
-              a.half_width()[i2] * abs_r(i1, j) +
-              b.half_width()[j1] * abs_r(i, j2) +
-              b.half_width()[j2] * abs_r(i, j1)) {
-        return false;
-      }
-      j1 = j2;
-    }
-    i1 = i2;
+    if (((M[i] * p_AB).array().abs() > (N[i] * ha_A + L[i] * hb_B).array())
+            .any())
+      return false;
   }
 
   return true;
 }
+
+
 
 bool Obb::HasOverlap(const Obb& bv, const Plane<double>& plane_P,
                       const math::RigidTransformd& X_PH) {
