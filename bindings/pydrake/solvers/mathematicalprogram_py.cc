@@ -564,6 +564,32 @@ top-level documentation for :py:mod:`pydrake.math`.
           py::arg("indeterminates"), py::arg("degree"),
           py::arg("coeff_name") = "a",
           doc.MathematicalProgram.NewOddDegreeFreePolynomial.doc)
+      .def("NewNonnegativePolynomial",
+          static_cast<std::pair<Polynomial, MatrixXDecisionVariable> (
+              MathematicalProgram::*)(
+              const Eigen::Ref<const VectorX<symbolic::Monomial>>&,
+              MathematicalProgram::NonnegativePolynomial)>(
+              &MathematicalProgram::NewNonnegativePolynomial),
+          py::arg("monomial_basis"), py::arg("type"),
+          doc.MathematicalProgram.NewNonnegativePolynomial
+              .doc_2args_monomial_basis_type)
+      .def("NewNonnegativePolynomial",
+          static_cast<symbolic::Polynomial (MathematicalProgram::*)(
+              const Eigen::Ref<const MatrixX<symbolic::Variable>>&,
+              const Eigen::Ref<const VectorX<symbolic::Monomial>>&,
+              MathematicalProgram::NonnegativePolynomial)>(
+              &MathematicalProgram::NewNonnegativePolynomial),
+          py::arg("grammian"), py::arg("monomial_basis"), py::arg("type"),
+          doc.MathematicalProgram.NewNonnegativePolynomial
+              .doc_3args_grammian_monomial_basis_type)
+      .def("NewNonnegativePolynomial",
+          static_cast<std::pair<symbolic::Polynomial, MatrixXDecisionVariable> (
+              MathematicalProgram::*)(const symbolic::Variables&, int degree,
+              MathematicalProgram::NonnegativePolynomial)>(
+              &MathematicalProgram::NewNonnegativePolynomial),
+          py::arg("indeterminates"), py::arg("degree"), py::arg("type"),
+          doc.MathematicalProgram.NewNonnegativePolynomial
+              .doc_3args_indeterminates_degree_type)
       .def("NewSosPolynomial",
           static_cast<std::pair<Polynomial, MatrixXDecisionVariable> (
               MathematicalProgram::*)(
@@ -1164,6 +1190,16 @@ for every column of ``prog_var_vals``. )""")
             update(prog.GetSolverOptionsStr(id));
             return out;
           });
+
+  py::enum_<MathematicalProgram::NonnegativePolynomial>(prog_cls,
+      "NonnegativePolynomial",
+      doc.MathematicalProgram.NonnegativePolynomial.doc)
+      .value("kSos", MathematicalProgram::NonnegativePolynomial::kSos,
+          doc.MathematicalProgram.NonnegativePolynomial.kSos.doc)
+      .value("kSdsos", MathematicalProgram::NonnegativePolynomial::kSdsos,
+          doc.MathematicalProgram.NonnegativePolynomial.kSdsos.doc)
+      .value("kDsos", MathematicalProgram::NonnegativePolynomial::kDsos,
+          doc.MathematicalProgram.NonnegativePolynomial.kDsos.doc);
 
   py::enum_<SolutionResult>(m, "SolutionResult", doc.SolutionResult.doc)
       .value("kSolutionFound", SolutionResult::kSolutionFound,
