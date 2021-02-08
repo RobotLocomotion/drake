@@ -37,7 +37,7 @@ if(APPLE)
   if(CMAKE_SYSTEM_VERSION VERSION_LESS 19)
     message(FATAL_ERROR
       "Darwin ${CMAKE_SYSTEM_VERSION} is NOT supported. Please use Darwin "
-      "Darwin 19.x (macOS Catalina)."
+      "Darwin 19.x (macOS Catalina) or 20.x (macOS Big Sur)."
     )
   endif()
 else()

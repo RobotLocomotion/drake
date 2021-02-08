@@ -113,11 +113,6 @@ def _determine_macos(repository_ctx):
 
     # Match supported macOS release(s).
     if macos_release in ["10.15", "11"]:
-        if macos_release == "11":
-            print(
-                "WARNING: macOS Big Sur 11.x is NOT yet supported. " +
-                "Compilation, tests, and/or other functionality may fail.",
-            )
         return _make_result(macos_release = macos_release)
 
     # Nothing matched.
