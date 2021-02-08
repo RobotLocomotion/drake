@@ -605,11 +605,6 @@ class PoolVectorXd {
     return pool().max_size();
   }
 
-  static Pool& static_pool() {
-    static drake::never_destroyed<Pool> the_pool(128, 10);
-    return the_pool.access();
-  }
-
  private:
   static double* my_new(size_t sz) {
 #ifdef DRAKE_AUTODIFF_USE_POOL
@@ -627,7 +622,12 @@ class PoolVectorXd {
 #endif
   }
 
-  static Pool& pool() { return pool_; }
+  static inline Pool& pool() {
+    if (!pool_) {
+      pool_ = new Pool(128, 10);
+    }
+    return *pool_;
+  }
 
   const double* this_end() const { return data_ + size_; }
   const double* this_end4()  const { return data_ + (size_ & ~0b11); }
@@ -640,7 +640,7 @@ class PoolVectorXd {
   double* data_{};
   ptrdiff_t size_{0};
 
-  static Pool& pool_;
+  static __thread Pool* pool_;
 };
 
 }  // namespace internal

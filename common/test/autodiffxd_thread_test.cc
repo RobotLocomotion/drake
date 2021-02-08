@@ -34,7 +34,6 @@ TEST_F(AutoDiffXdTest, Thread) {
   for (auto& item : threads) {
     item.join();
   }
-
 }
 
 }  // namespace
