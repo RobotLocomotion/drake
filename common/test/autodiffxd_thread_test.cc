@@ -14,7 +14,7 @@ TEST_F(AutoDiffXdTest, Thread) {
   const int kThreads = 1000;
 
   // In each thread, ask for some AutoDiffXd and then sleep.
-  auto thread_action = []() {
+  auto thread_action = [=]() {
     std::vector<AutoDiffXd> held;
     for (int k = 0; k < kBlockSize; k++) {
       Eigen::VectorXd v(kAdSize);

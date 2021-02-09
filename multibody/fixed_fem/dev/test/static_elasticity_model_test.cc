@@ -99,7 +99,7 @@ TEST_F(StaticElasticityModelTest, ResidualIsEnergyDerivativePlusExternalForce) {
   VectorX<T> external_force(state.num_generalized_positions());
   model_.CalcExternalForce(state, &external_force);
   EXPECT_TRUE(CompareMatrices(energy.const_derivatives() + external_force,
-                              nresidual,
+                              residual,
                               std::numeric_limits<double>::epsilon()));
 }
 
