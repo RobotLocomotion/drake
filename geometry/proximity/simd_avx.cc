@@ -37,12 +37,13 @@ void multX_NoAVX(const double* R_AB, const double* p_AB, const double* R_BC,
     p_AC[i] = p_AB[i] + row_x_col_NoAVX(&R_AB[i], p_BC);
 }
 
-#ifdef __DISABLE_AVX__
-using multX2 = multX_NoAVX;
-#else
 void multX2(const double* a /*R_AB*/, const double* x /*p_AB*/,
             const double* A /*R_BC*/, const double* X /*p_BC*/,
             double* r /*R_AC*/, double* xx /*p_AC*/) {
+#ifdef __APPLE__
+  multX_NoAVX(a, x, A, X, r, xx);
+}
+#else
   //constexpr uint64_t yes = 0x8000000000000000ULL;                                         //NOLINT(*)
   constexpr u_int64_t yes  = u_int64_t(1ull << 63);                                         //NOLINT(*)
   constexpr u_int64_t no  = u_int64_t(0);                                                   //NOLINT(*)

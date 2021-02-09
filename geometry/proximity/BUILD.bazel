@@ -505,9 +505,12 @@ drake_cc_library(
     name = "simd_avx",
     srcs = ["simd_avx.cc"],
     hdrs = ["simd_avx.h"],
-    copts = [
-        "-march=broadwell",
-    ],
+    copts = select({
+        "//tools/cc_toolchain:apple": [],
+        "//conditions:default": [
+            "-march=broadwell",
+        ],
+    }),
 )
 
 drake_cc_library(
