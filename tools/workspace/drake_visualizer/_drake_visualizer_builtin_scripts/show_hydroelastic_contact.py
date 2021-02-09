@@ -6,6 +6,7 @@ from director import objectmodel as om
 from director import visualization as vis
 from director.debugVis import DebugData
 import director.vtkAll as vtk
+import director.vtkNumpy as vnp
 import numpy as np
 from PythonQt import QtCore, QtGui
 
@@ -338,19 +339,22 @@ def get_sub_menu_or_make(menu, menu_name):
 
 
 def create_texture(texture_size, color_map):
-    '''Creates a texture image that by mapping the interval [0, 1] to the given
-    color map. '''
+    """Creates a texture image that by mapping the interval [0, 1] to the given
+    color map."""
     samples = np.linspace(0.0, 1.0, texture_size)
     texture_image = vtk.vtkImageCanvasSource2D()
     texture_image.SetScalarTypeToUnsignedChar()
-    texture_image.SetExtent(0, texture_size, 0, 1, 0, 0)
+    texture_image.SetExtent(0, texture_size-1, 0, 0, 0, 0)
     texture_image.SetNumberOfScalarComponents(3)
     for i in range(0, texture_size):
         [r, g, b] = color_map.get_color(samples[i])
         texture_image.SetDrawColor(255*r, 255*g, 255*b, 0)
         texture_image.DrawPoint(i, 0)
     texture_image.Update()
-    return texture_image
+    texture = vtk.vtkTexture()
+    texture.SetInputConnection(texture_image.GetOutputPort())
+    texture.RepeatOff()
+    return texture
 
 
 class HydroelasticContactVisualizer:
@@ -370,7 +374,6 @@ class HydroelasticContactVisualizer:
         self.min_pressure = 0
         self.max_pressure = 10
         self.texture_size = 128
-        self.texture = create_texture(self.texture_size, FlameMap())
         self.show_contact_edges = True
         self.show_pressure = True
         self.max_pressure_observed = 0
@@ -382,7 +385,7 @@ class HydroelasticContactVisualizer:
         self.magnitude_mode = ContactVisModes.kFixedLength
         self.global_scale = 0.3
         self.min_magnitude = 1e-4
-        self.actor = vtk.vtkActor()
+        self.texture = create_texture(self.texture_size, FlameMap())
 
         menu_bar = applogic.getMainWindow().menuBar()
         plugin_menu = get_sub_menu_or_make(menu_bar, '&Plugins')
@@ -461,31 +464,32 @@ class HydroelasticContactVisualizer:
             self.remove_subscriber()
 
     def calc_uv(self, pressure):
-        u = (pressure-self.min_pressure) / \
-            ((self.max_pressure - self.min_pressure))
-        # Stay away from the boundary of the texture map.
-        epsilon = 1/self.texture_size
-        return [min(u, 1-epsilon), 0]
+        u = (pressure - self.min_pressure) / \
+            (self.max_pressure - self.min_pressure)
+        return (min(max(0, u), 1), 0)
 
     def process_triangles(self, surface):
-        ''' Process a hydroelastic surface message and return the positions of
+        """Process a hydroelastic surface message and return the positions of
         the vertices, the positions of the vertices with an offset (see below),
-        the texture coordinate the pressure triangles, the pressure triangle
-        mesh and the contact edge segment mesh. '''
+        the texture coordinates, the pressure triangle mesh and the contact
+        edge segment mesh. Both the pressure triangle mesh and the contact edge
+        segment mesh index into the positions of the vertices. The pressure
+        triangle mesh forms the contact patch while the contact edge segment
+        mesh forms the wireframe of the contact patch."""
         triangles = surface.triangles
         vertex_id = 0
         tri_mesh_id = 0
         vertex_position_to_id = {}
         max_num_verts = surface.num_triangles*3
-        pos = [None] * max_num_verts
-        uvs = [None] * max_num_verts
+        pos = np.empty((max_num_verts, 3))
+        uvs = np.empty((max_num_verts, 2))
         # Compute a normal to each vertex. We need this normal
         # because the visualized pressure surface can be coplanar
         # with parts of the visualized geometry, in which case a
         # dithering type effect would appear. So we use the normal
         # to draw two triangles slightly offset to both sides of
         # the contact surface.
-        normals = [np.zeros(3)] * max_num_verts
+        normals = np.full((max_num_verts, 3), 0.0)
         # TODO(xuchenhan-tri): Expose this so that users can modify it.
         offset_scalar = 1e-4
 
@@ -497,6 +501,7 @@ class HydroelasticContactVisualizer:
             vc_np = np.array([tri.p_WC[0], tri.p_WC[1], tri.p_WC[2]])
             normal = np.cross(vb_np - va_np, vc_np - vb_np)
             norm_normal = np.linalg.norm(normal)
+            # Zero area triangles are ignored.
             if norm_normal > 0:
                 va = (tri.p_WA[0], tri.p_WA[1], tri.p_WA[2])
                 vb = (tri.p_WB[0], tri.p_WB[1], tri.p_WB[2])
@@ -732,40 +737,32 @@ class HydroelasticContactVisualizer:
                 om.addToObjectModel(item, folder)
                 item.setProperty('Visible', True)
                 item.setProperty('Alpha', 1.0)
+                # Coloring for force and moment vectors.
                 item.colorBy('RGB255')
 
             if self.show_pressure or self.show_contact_edges:
                 pos, pos_above, pos_below, uvs, tri_mesh, seg_mesh = \
                     self.process_triangles(surface)
-            if self.show_pressure:
+            if self.show_pressure and len(tri_mesh) > 0:
                 # Copy data to VTK objects.
-                vtk_pos_above = vtk.vtkPoints()
-                vtk_pos_below = vtk.vtkPoints()
+                vtk_uvs = vnp.getVtkFromNumpy(uvs)
                 vtk_tris_above = vtk.vtkCellArray()
                 vtk_tris_below = vtk.vtkCellArray()
-                vtk_uvs = vtk.vtkFloatArray()
-                vtk_uvs.SetNumberOfComponents(2)
-                vtk_pos_above.Allocate(len(pos_above))
-                vtk_pos_below.Allocate(len(pos_below))
                 vtk_tris_above.Allocate(len(tri_mesh))
                 vtk_tris_below.Allocate(len(tri_mesh))
-                vtk_uvs.Allocate(len(pos))
-                for p in pos_below:
-                    vtk_pos_below.InsertNextPoint(p)
-                for p in pos_above:
-                    vtk_pos_above.InsertNextPoint(p)
-                for uv in uvs:
-                    vtk_uvs.InsertNextTuple(uv)
                 for tri in tri_mesh:
                     vtk_tris_above.InsertNextCell(3, tri)
                     vtk_tris_below.InsertNextCell(3, tri)
 
                 vtk_polydata_tris_above = vtk.vtkPolyData()
-                vtk_polydata_tris_above.SetPoints(vtk_pos_above)
+                vtk_polydata_tris_above.SetPoints(
+                    vnp.getVtkPointsFromNumpy(pos_above))
                 vtk_polydata_tris_above.SetPolys(vtk_tris_above)
                 vtk_polydata_tris_above.GetPointData().SetTCoords(vtk_uvs)
+
                 vtk_polydata_tris_below = vtk.vtkPolyData()
-                vtk_polydata_tris_below.SetPoints(vtk_pos_below)
+                vtk_polydata_tris_below.SetPoints(
+                    vnp.getVtkPointsFromNumpy(pos_below))
                 vtk_polydata_tris_below.SetPolys(vtk_tris_below)
                 vtk_polydata_tris_below.GetPointData().SetTCoords(vtk_uvs)
 
@@ -774,37 +771,31 @@ class HydroelasticContactVisualizer:
                 vtk_mapper_below = vtk.vtkPolyDataMapper()
                 vtk_mapper_below.SetInputData(vtk_polydata_tris_below)
 
-                texture = vtk.vtkTexture()
-                texture.SetInputConnection(self.texture.GetOutputPort())
-
                 # Feed VTK objects into director.
                 item_name = 'Pressure between {}, {}'.format(
                     surface.body1_name, surface.body2_name)
                 polydata_item_above = vis.PolyDataItem(
                     item_name, vtk_polydata_tris_above, view)
                 polydata_item_above.actor.SetMapper(vtk_mapper_above)
-                polydata_item_above.actor.SetTexture(texture)
+                polydata_item_above.actor.SetTexture(self.texture)
                 om.addToObjectModel(polydata_item_above, folder)
                 item_name = 'Pressure between {}, {}'.format(
                     surface.body1_name, surface.body2_name)
                 polydata_item_below = vis.PolyDataItem(
                     item_name, vtk_polydata_tris_below, view)
                 polydata_item_below.actor.SetMapper(vtk_mapper_below)
-                polydata_item_below.actor.SetTexture(texture)
+                polydata_item_below.actor.SetTexture(self.texture)
                 om.addToObjectModel(polydata_item_below, folder)
 
-            if self.show_contact_edges:
+            if self.show_contact_edges and len(seg_mesh) > 0:
                 # Copy data to VTK objects.
-                vtk_pos = vtk.vtkPoints()
                 vtk_segs = vtk.vtkCellArray()
-                vtk_pos.Allocate(len(pos))
                 vtk_segs.Allocate(len(seg_mesh))
-                for p in pos:
-                    vtk_pos.InsertNextPoint(p)
                 for seg in seg_mesh:
                     vtk_segs.InsertNextCell(2, seg)
                 vtk_polydata_segs = vtk.vtkPolyData()
-                vtk_polydata_segs.SetPoints(vtk_pos)
+                vtk_polydata_segs.SetPoints(
+                    vnp.getVtkPointsFromNumpy(pos))
                 vtk_polydata_segs.SetLines(vtk_segs)
 
                 vtk_mapper = vtk.vtkPolyDataMapper()
