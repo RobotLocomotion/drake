@@ -10,6 +10,36 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
+// Dot product of a row of l and a column of r, where both l and r are 3x3s in
+// column order.
+static double row_x_col_NoAVX(const double* l, const double* m) {
+  return l[0] * m[0] + l[3] * m[1] + l[6] * m[2];
+}
+
+// Straightforward 3x3 multiply: a = l*r. Matrices in column order.
+static void mult3x3_NoAVX(const double* l, const double* m, double* o) {
+  for (int i = 0; i < 3; ++i)
+    for (int j = 0; j < 3; ++j) {
+      const int c = 3 * j;  // Column start index.
+      o[c + i] = row_x_col_NoAVX(&l[i], &m[c]);
+    }
+}
+
+// Compose RigidTransforms stored as 3x3 RotationMatrix and separate position
+// vector. On return R_AC=R_AB*R_BC and p_AC = p_AB + p_BC_A where
+// p_BC_A=R_AB*p_BC.
+// I cannot declare `static` for this function. Otherwise, I got "error
+// unused function."
+void multX_NoAVX(const double* R_AB, const double* p_AB, const double* R_BC,
+                 const double* p_BC, double* R_AC, double* p_AC) {
+  mult3x3_NoAVX(R_AB, R_BC, R_AC);
+  for (int i = 0; i < 3; ++i)
+    p_AC[i] = p_AB[i] + row_x_col_NoAVX(&R_AB[i], p_BC);
+}
+
+#ifdef __DISABLE_AVX__
+using multX2 = multX_NoAVX;
+#else
 void multX2(const double* a /*R_AB*/, const double* x /*p_AB*/,
             const double* A /*R_BC*/, const double* X /*p_BC*/,
             double* r /*R_AC*/, double* xx /*p_AC*/) {
@@ -54,6 +84,7 @@ void multX2(const double* a /*R_AB*/, const double* x /*p_AB*/,
   res = _mm256_fmadd_pd(col2, dup2, res); // x+aX+dY+gZ y+bX+eY+hZ z+cX+fY+iZ (0+dX+gY+0Z)  //NOLINT(*)
   _mm256_maskstore_pd(xx, mask, res);     // xx yy zz                                       //NOLINT(*)
 }
+#endif
 
 }  // namespace internal
 }  // namespace geometry
