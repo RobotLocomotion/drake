@@ -226,12 +226,17 @@ class _ColorMapConfigurationDialog(QtGui.QDialog):
 
 
 class ColorMap:
-    # Virtual class for mapping the range [0, 1] to colors.
-    def __init__(self):
-        self.data_range = [0.0, 1.0]
+    # Virtual class for mapping a range of values to colors.
+    def __init__(self, data_range=None):
+        if data_range is None:
+            self.data_range = [0.0, 10]
+        else:
+            self.data_range = data_range
 
-    def get_color(self, value):
-        norm_data = max(0.0, min(1.0, value))
+    def get_color(self, value, range=None):
+        if range is None:
+            range = self.data_range
+        norm_data = self._normalize(value, range)
         return self._do_get_color(norm_data)
 
     # Gets a color that will always contrast with those produced by the color
@@ -245,12 +250,28 @@ class ColorMap:
     def _do_get_color(self, norm_value):
         raise NotImplementedError('Subclasses need to implement this')
 
+    def _normalize(self, data, range=None):
+        '''Returns an affine mapped version of the data based on the data range
+         provided'''
+        if range is None:
+            range = self.data_range
+        (min_val, max_val) = range
+        if (min_val > max_val):
+            raise AttributeError(
+                'Bad range: [{}, {}]'.format(min_val, max_val))
+        assert(max_val >= min_val)
+        range = max_val - min_val
+        if (range > 0.00001):
+            return np.clip((data - min_val) / (max_val - min_val), 0.0, 1.0)
+        else:
+            return np.zeros_like(data)
+
 
 class FlameMap(ColorMap):
     '''Color map that maps
-    [0, 1] -> black, blue, magenta, orange, yellow, white
-    linearly. Saturates to black and white for values below 0 or above
-    1, respectively'''
+    [min_val, max_val] -> black, blue, magenta, orange, yellow, white
+    linearly. Saturates to black and white for values below min_val or above
+    max_val, respectively'''
 
     def _do_get_color(self, norm_data):
         color = [0, 0, 0]
@@ -270,6 +291,9 @@ class FlameMap(ColorMap):
 
 
 class IntensityMap(ColorMap):
+    def __init__(self, data_range=None):
+        ColorMap.__init__(self, data_range)
+
     def _do_get_color(self, norm_data):
         # TODO(drum) Make the color configurable.
         return np.array((1.0, 0.0, 0.0), dtype=np.float) * norm_data
@@ -280,8 +304,8 @@ class IntensityMap(ColorMap):
 
 
 class TwoToneMap(ColorMap):
-    def __init__(self):
-        ColorMap.__init__(self)
+    def __init__(self, data_range=None):
+        ColorMap.__init__(self, data_range)
         # TODO(drum) Make the two colors configurable. Currently they lie
         # between blue and hot pink.
         self.min_color = np.array((240, 1, 1.0))
@@ -341,6 +365,7 @@ def get_sub_menu_or_make(menu, menu_name):
 def create_texture(texture_size, color_map):
     """Creates a texture image that by mapping the interval [0, 1] to the given
     color map."""
+    color_map.data_range = [0, 1]
     samples = np.linspace(0.0, 1.0, texture_size)
     texture_image = vtk.vtkImageCanvasSource2D()
     texture_image.SetScalarTypeToUnsignedChar()
@@ -464,10 +489,13 @@ class HydroelasticContactVisualizer:
             self.remove_subscriber()
 
     def calc_uv(self, pressure):
-        u = (pressure - self.min_pressure) / \
-            (self.max_pressure - self.min_pressure)
+        u = ((pressure - self.min_pressure)
+             / (self.max_pressure - self.min_pressure))
         return (min(max(0, u), 1), 0)
 
+    # TODO(xuchenhan-tri): The lcm message about the contact surface from
+    # upstream should provide mesh information instead of just information
+    # about individual triangles.
     def process_triangles(self, surface):
         """Process a hydroelastic surface message and return the positions of
         the vertices, the positions of the vertices with an offset (see below),
@@ -477,67 +505,49 @@ class HydroelasticContactVisualizer:
         triangle mesh forms the contact patch while the contact edge segment
         mesh forms the wireframe of the contact patch."""
         triangles = surface.triangles
-        vertex_id = 0
-        tri_mesh_id = 0
-        vertex_position_to_id = {}
-        max_num_verts = surface.num_triangles*3
-        pos = np.empty((max_num_verts, 3))
-        uvs = np.empty((max_num_verts, 2))
+        num_verts = surface.num_triangles*3
+        pos = np.empty((num_verts, 3))
+        uvs = np.empty((num_verts, 2))
         # Compute a normal to each vertex. We need this normal
         # because the visualized pressure surface can be coplanar
         # with parts of the visualized geometry, in which case a
         # dithering type effect would appear. So we use the normal
         # to draw two triangles slightly offset to both sides of
         # the contact surface.
-        normals = np.full((max_num_verts, 3), 0.0)
+        normals = np.empty((num_verts, 3))
         # TODO(xuchenhan-tri): Expose this so that users can modify it.
         offset_scalar = 1e-4
 
-        tri_mesh = [None] * surface.num_triangles
-        seg_mesh_set = set()
+        tri_mesh = np.empty((surface.num_triangles, 3), dtype=int)
+        seg_mesh = np.empty((surface.num_triangles * 3, 2), dtype=int)
+        vertex_id = 0
+        tri_mesh_id = 0
+        seg_mesh_id = 0
         for tri in triangles:
             va_np = np.array([tri.p_WA[0], tri.p_WA[1], tri.p_WA[2]])
             vb_np = np.array([tri.p_WB[0], tri.p_WB[1], tri.p_WB[2]])
             vc_np = np.array([tri.p_WC[0], tri.p_WC[1], tri.p_WC[2]])
             normal = np.cross(vb_np - va_np, vc_np - vb_np)
-            norm_normal = np.linalg.norm(normal)
-            # Zero area triangles are ignored.
-            if norm_normal > 0:
-                va = (tri.p_WA[0], tri.p_WA[1], tri.p_WA[2])
-                vb = (tri.p_WB[0], tri.p_WB[1], tri.p_WB[2])
-                vc = (tri.p_WC[0], tri.p_WC[1], tri.p_WC[2])
-                for v, pressure, v_np in \
-                    zip([va, vb, vc],
-                        [tri.pressure_A, tri.pressure_B, tri.pressure_C],
-                        [va_np, vb_np, vc_np]):
-                    if v not in vertex_position_to_id:
-                        vertex_position_to_id[v] = vertex_id
-                        pos[vertex_id] = v_np
-                        uvs[vertex_id] = self.calc_uv(pressure)
-                        self.max_pressure_observed = max(
-                            self.max_pressure_observed, pressure)
-                        vertex_id += 1
-                va_id = vertex_position_to_id[va]
-                vb_id = vertex_position_to_id[vb]
-                vc_id = vertex_position_to_id[vc]
-                # Accumulate area-weighted normals.
-                for id in [va_id, vb_id, vc_id]:
-                    normals[id] += normal
-                # Record trimesh.
-                tri_mesh[tri_mesh_id] = [va_id, vb_id, vc_id]
-                tri_mesh_id += 1
-                # Record segmesh.
-                if (min(va_id, vb_id), max(va_id, vb_id)) not in seg_mesh_set:
-                    seg_mesh_set.add((min(va_id, vb_id), max(va_id, vb_id)))
-                if (min(va_id, vc_id), max(va_id, vc_id)) not in seg_mesh_set:
-                    seg_mesh_set.add((min(va_id, vc_id), max(va_id, vc_id)))
-                if (min(vb_id, vc_id), max(vb_id, vc_id)) not in seg_mesh_set:
-                    seg_mesh_set.add((min(vb_id, vc_id), max(vb_id, vc_id)))
-        # Cut off values that were not written to.
-        normals = normals[:vertex_id]
-        tri_mesh = tri_mesh[:tri_mesh_id]
-        pos = pos[:vertex_id]
-        uvs = uvs[:vertex_id]
+            # Record trimesh.
+            tri_mesh[tri_mesh_id] = [vertex_id, vertex_id + 1, vertex_id + 2]
+            tri_mesh_id += 1
+            # Record segmesh.
+            seg_mesh[seg_mesh_id] = [vertex_id, vertex_id + 1]
+            seg_mesh_id += 1
+            seg_mesh[seg_mesh_id] = [vertex_id, vertex_id + 2]
+            seg_mesh_id += 1
+            seg_mesh[seg_mesh_id] = [vertex_id + 1, vertex_id + 2]
+            seg_mesh_id += 1
+            # Record vertex quantities.
+            for pressure, v_np in \
+                zip([tri.pressure_A, tri.pressure_B, tri.pressure_C],
+                    [va_np, vb_np, vc_np]):
+                pos[vertex_id] = v_np
+                uvs[vertex_id] = self.calc_uv(pressure)
+                normals[vertex_id] = normal
+                self.max_pressure_observed = max(
+                    self.max_pressure_observed, pressure)
+                vertex_id += 1
         # Normalize normals while preventing division by 0.
         epsilon = 1e-12
         unit_normals = [n / (np.linalg.norm(n)+epsilon) for n in normals]
@@ -546,7 +556,6 @@ class HydroelasticContactVisualizer:
             vertex + offset_scalar * n for vertex, n in zip(pos, unit_normals)]
         pos_below = [
             vertex - offset_scalar * n for vertex, n in zip(pos, unit_normals)]
-        seg_mesh = list(seg_mesh_set)
         return pos, pos_above, pos_below, uvs, tri_mesh, seg_mesh
 
     def handle_message(self, msg):
