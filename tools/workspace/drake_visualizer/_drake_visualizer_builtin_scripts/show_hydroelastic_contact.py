@@ -363,8 +363,8 @@ def get_sub_menu_or_make(menu, menu_name):
 
 
 def create_texture(texture_size, color_map):
-    """Creates a texture image that by mapping the interval [0, 1] to the given
-    color map."""
+    """Creates a texture image by uniformly sampling the color space in the
+    given color map."""
     color_map.data_range = [0, 1]
     samples = np.linspace(0.0, 1.0, texture_size)
     texture_image = vtk.vtkImageCanvasSource2D()
@@ -684,7 +684,10 @@ class HydroelasticContactVisualizer:
             # Iterate over all quadrature points, drawing traction and slip
             # velocity vectors.
             if self.show_traction_vectors or self.show_slip_velocity_vectors:
-                has_debug_data = True
+                # Arrows and/or spheres are drawn through debug data if there
+                # exists a quadrature point.
+                if surface.num_quadrature_points > 0:
+                    has_debug_data = True
                 for quad_point_data in surface.quadrature_point_data:
                     origin = np.array([quad_point_data.p_WQ[0],
                                        quad_point_data.p_WQ[1],
