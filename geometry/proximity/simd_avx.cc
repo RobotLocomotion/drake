@@ -40,7 +40,7 @@ void multX_NoAVX(const double* R_AB, const double* p_AB, const double* R_BC,
 void multX2(const double* a /*R_AB*/, const double* x /*p_AB*/,
             const double* A /*R_BC*/, const double* X /*p_BC*/,
             double* r /*R_AC*/, double* xx /*p_AC*/) {
-#ifdef __APPLE__
+#if !(defined(__FMA__) && defined(__AVX2__))
   multX_NoAVX(a, x, A, X, r, xx);
 }
 #else
