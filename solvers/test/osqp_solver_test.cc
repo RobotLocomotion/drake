@@ -207,7 +207,7 @@ GTEST_TEST(OsqpSolverTest, TimeLimitTest) {
     osqp_solver.Solve(prog, {}, solver_options, &result);
     EXPECT_NE(result.get_solver_details<OsqpSolver>().status_val, OSQP_SOLVED);
     EXPECT_TRUE(result.get_solver_details<OsqpSolver>().solve_time <
-                one_tenth_solve_time * 2);
+                one_tenth_solve_time * 4);
 
     // Now set the options in prog.
     prog.SetSolverOption(osqp_solver.solver_id(), "time_limit",
@@ -215,7 +215,7 @@ GTEST_TEST(OsqpSolverTest, TimeLimitTest) {
     osqp_solver.Solve(prog, {}, {}, &result);
     EXPECT_NE(result.get_solver_details<OsqpSolver>().status_val, OSQP_SOLVED);
     EXPECT_TRUE(result.get_solver_details<OsqpSolver>().solve_time <
-                one_tenth_solve_time * 2);
+                one_tenth_solve_time * 4);
   }
 }
 
