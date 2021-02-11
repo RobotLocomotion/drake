@@ -1,6 +1,15 @@
 import argparse
 import sys
 
+if sys.platform == "darwin":
+    # TODO(jamiesnape): Fix this example on macOS Big Sur. Skipping on all
+    # macOS for simplicity and because of the tendency for macOS versioning
+    # schemes to unexpectedly change.
+    # ImportError: C++ type is not registered in pybind:
+    # NSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEE
+    print("ERROR: Skipping this example on macOS because it fails on Big Sur")
+    sys.exit(0)
+
 try:
     import tkinter as tk
 except ImportError:
