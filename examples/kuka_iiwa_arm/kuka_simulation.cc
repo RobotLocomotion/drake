@@ -137,7 +137,7 @@ int DoMain() {
                   plant_state_demux->get_input_port(0));
   builder.Connect(plant_state_demux->get_output_port(0),
                   status_sender->get_position_measured_input_port());
-  builder.Connect(plant_state_demux->get_output_port(0),
+  builder.Connect(plant_state_demux->get_output_port(1),
                   status_sender->get_velocity_estimated_input_port());
   builder.Connect(command_receiver->get_commanded_position_output_port(),
                   status_sender->get_position_commanded_input_port());
