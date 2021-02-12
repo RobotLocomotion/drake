@@ -1,0 +1,6 @@
+package drake;
+
+struct experimental_lcmt_deformable_tri_meshes_init {
+  int32_t num_meshes;
+  experimental_lcmt_deformable_tri_mesh_init meshes[num_meshes];
+}
