@@ -13,6 +13,7 @@ py_library(
 py_library(
     name = "_drake_visualizer_builtin_scripts",
     srcs = [
+        "experimental_show_deformable_mesh.py",
         "grid_wireframe.py",
         "limit_clipping_range.py",
         "show_frame.py",
