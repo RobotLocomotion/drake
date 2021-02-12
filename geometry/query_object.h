@@ -93,7 +93,7 @@ class SceneGraph;
      observed error in this context is necessarily relative -- there truly is
      that much variability in the families of algorithms.
    - These values are an attempt to capture the *worst* case outcome. The
-     error shown is a single-signficant-digit approximation of that observed
+     error shown is a single-significant-digit approximation of that observed
      error.
    - These values may not actually represent the true worst case; discovering
      the true worst case is generally challenging. These represent our best
@@ -323,8 +323,6 @@ class QueryObject {
             the same.  */
   std::vector<ContactSurface<T>> ComputeContactSurfaces() const;
 
-  // TODO(hongkai.dai): allow T=AutodiffXd and some primitive geometries
-  // collide.
   /** Reports pair-wise intersections and characterizes each non-empty
    intersection as a ContactSurface _where possible_ and as a
    PenetrationAsPointPair where not.
@@ -453,17 +451,59 @@ class QueryObject {
    and anchored objects. We DO NOT report the distance between two anchored
    objects.
 
-   <h3>Scalar support</h3>
-   This function does not support halfspaces. If an unfiltered pair contains
-   a halfspace, an exception will be thrown for all scalar types. Otherwise,
-   this query supports all other pairs of Drake geometry types for `double`.
-   For `AutoDiffXd`, it only supports distance between sphere-box and
-   sphere-sphere. If there are any unfiltered geometry pairs that include other
-   geometries, the AutoDiff throws an exception.
+   @anchor query_object_compute_pairwise_distance_table
+   <h3>Characterizing the returned values</h3>
 
-   <!-- TODO(SeanCurtis-TRI): Document expected precision of answer based on
-   members of shape pair. See
-   https://github.com/RobotLocomotion/drake/issues/10907 -->
+   As discussed in the
+   @ref query_object_precision_methodology "class's documentation", this table
+   documents the support given by this query for pairs of geometry types and
+   scalar. See the description in the link for details on how to interpret the
+   table results. The query is symmetric with respect to shape *ordering*, the
+   pair (ShapeA, ShapeB) will be the same as (ShapeB, ShapeA), so we only fill
+   in half the table.
+
+   |           |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid | %HalfSpace |  %Mesh  | %Sphere |
+   | --------: | :-----: | :------: | :-----: | :-------: | :--------: | :--------: | :-----: | :-----: |
+   | Box       |  4e-15  |  ░░░░░░  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Capsule   |  3e-6   |   2e-5   |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Convex    |  3e-15  |   2e-5   |  3e-15  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Cylinder  |  6e-6   |   1e-5   |   6e-6  |   2e-5    |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Ellipsoid |  9e-6   |   5e-6   |   9e-6  |   5e-5    |    2e-5    |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | HalfSpace | throwsᵃ |  throwsᵃ | throwsᵃ |  throwsᵃ  |  throwsᵃ   |   throwsᵃ  |  ░░░░░  |  ░░░░░  |
+   | Mesh      |    ᶜ    |    ᶜ     |    ᶜ    |     ᶜ     |      ᶜ     |   throwsᵃ  |    ᶜ    |  ░░░░░  |
+   | Sphere    |  3e-15  |  6e-15   |   3e-6  |   5e-15   |    4e-5    |    3e-15   |    ᶜ    |  6e-15  |
+   __*Table 3*__: Worst observed error (in m) for 2mm penetration/separation
+   between geometries approximately 20cm in size for `T` = `double`.
+
+   |           |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid | %HalfSpace |  %Mesh  | %Sphere |
+   | --------: | :-----: | :------: | :-----: | :-------: | :--------: | :--------: | :-----: | :-----: |
+   | Box       | throwsᵇ |  ░░░░░░  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Capsule   | throwsᵇ |  throwsᵇ |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Convex    | throwsᵇ |  throwsᵇ | throwsᵇ |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Cylinder  | throwsᵇ |  throwsᵇ | throwsᵇ |  throwsᵇ  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Ellipsoid | throwsᵇ |  throwsᵇ | throwsᵇ |  throwsᵇ  |  throwsᵇ   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | HalfSpace | throwsᵃ |  throwsᵃ | throwsᵃ |  throwsᵃ  |  throwsᵃ   |   throwsᵃ  |  ░░░░░  |  ░░░░░  |
+   | Mesh      |    ᶜ    |    ᶜ     |    ᶜ    |     ᶜ     |      ᶜ     |      ᵃ     |    ᶜ    |  ░░░░░  |
+   | Sphere    |  2e-15  |  throwsᵇ | throwsᵇ |  throwsᵇ  |  throwsᵇ   |    2e-15   |    ᶜ    |  4e-15  |
+   __*Table 4*__: Worst observed error (in m) for 2mm penetration/separation
+   between geometries approximately 20cm in size for `T` =
+   @ref drake::AutoDiffXd "AutoDiffXd".
+
+   - ᵃ We don't currently support queries between HalfSpace and any other shape
+       (except for Sphere).
+   - ᵇ These results are simply not supported for
+       `T` = @ref drake::AutoDiffXd "AutoDiffXd" at this time.
+   - ᶜ Meshes are represented by the *convex* hull of the mesh, therefore the
+       results for Mesh are the same as for Convex.
+
+   <!-- Note to developers: the tests that support the assertions here are
+   located in distance_to_shape_characterize_test.cc. The values in this
+   table should be reflected in the expected values there.  -->
+
+  <!-- Numerous values show deviation at 1e-6. This is a hard-coded iteration
+   limit in proximity engine. Consider exposing that parameter to the query
+   so that the user can choose to improve the answer.  -->
+
    <!-- TODO(SeanCurtis-TRI): Support queries of halfspace-A, where A is _not_ a
    halfspace. See https://github.com/RobotLocomotion/drake/issues/10905 -->
 
@@ -472,6 +512,7 @@ class QueryObject {
    @returns The signed distance (and supporting data) for all unfiltered
             geometry pairs whose distance is less than or equal to
             `max_distance`.
+   @throws std::exception as indicated in the table above.
    @warning For Mesh shapes, their convex hulls are used in this query. It is
             *not* computationally efficient or particularly accurate.  */
   std::vector<SignedDistancePair<T>> ComputeSignedDistancePairwiseClosestPoints(
@@ -483,8 +524,16 @@ class QueryObject {
    indicated by id. This function has the same restrictions on scalar report
    as ComputeSignedDistancePairwiseClosestPoints().
 
-   @throws std::exception if either geometry id is invalid, or if the pair
-                          (A, B) has been marked as filtered.
+   <h3>Characterizing the returned values</h3>
+
+   This method merely exercises the same mechanisms as
+   ComputeSignedDistancePairwiseClosestPoints() for evaluating signed distance.
+   Refer to @ref query_object_compute_pairwise_distance_table
+   "the table for ComputeSignedDistancePairwiseClosestPoints()" for details.
+
+   @throws std::exception if either geometry id is invalid, the pair (A, B) has
+                          been marked as filtered, or according to the scalar
+                          support table.
    @warning For Mesh shapes, their convex hulls are used in this query. It is
             *not* computationally efficient or particularly accurate.  */
   SignedDistancePair<T> ComputeSignedDistancePairClosestPoints(
