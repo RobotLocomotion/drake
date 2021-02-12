@@ -15,6 +15,7 @@ py_library(
     srcs = [
         "grid_wireframe.py",
         "limit_clipping_range.py",
+        "show_deformable_mesh.py",
         "show_frame.py",
         "show_hydroelastic_contact.py",
         "show_image.py",
