@@ -18,6 +18,7 @@ import weakref
 # N.B. Keep this in sync (with the same ordering) as the keys defined in
 # `available` in `use_builtin_scripts.py`.
 AVAILABLE_SCRIPTS = [
+    "experimental_deformable_mesh",
     "frame",
     "hydroelastic_contact",
     "image",

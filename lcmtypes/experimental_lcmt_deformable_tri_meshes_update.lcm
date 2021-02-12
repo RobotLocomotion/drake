@@ -1,0 +1,10 @@
+package drake;
+// For each mesh included in this message, provide the number of vertices and
+// their positions in world space at time `timestamp`.
+struct experimental_lcmt_deformable_tri_meshes_update {
+  // in microseconds
+  int64_t timestamp;
+
+  int32_t num_meshes;
+  experimental_lcmt_deformable_tri_mesh_update meshes[num_meshes];
+}
