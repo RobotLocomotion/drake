@@ -9,6 +9,7 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/proximity/proximity_utilities.h"
 #include "drake/geometry/proximity_engine.h"
 #include "drake/geometry/utilities.h"
 #include "drake/math/orthonormal_basis.h"
@@ -22,39 +23,51 @@ using Eigen::Vector3d;
 using math::RigidTransform;
 using std::vector;
 
-std::string to_string(const fcl::NODE_TYPE& node) {
-  switch (node) {
-    case fcl::BV_UNKNOWN:
-    case fcl::BV_AABB:
-    case fcl::BV_OBB:
-    case fcl::BV_RSS:
-    case fcl::BV_kIOS:
-    case fcl::BV_OBBRSS:
-    case fcl::BV_KDOP16:
-    case fcl::BV_KDOP18:
-    case fcl::BV_KDOP24:
-    case fcl::GEOM_CONE:
-    case fcl::GEOM_PLANE:
-    case fcl::GEOM_TRIANGLE:
-    case fcl::GEOM_OCTREE:
-    case fcl::NODE_COUNT:
-      return "unsupported type";
-    case fcl::GEOM_BOX:
-      return "Box";
-    case fcl::GEOM_SPHERE:
-      return "Sphere";
-    case fcl::GEOM_ELLIPSOID:
-      return "Ellipsoid";
-    case fcl::GEOM_CAPSULE:
-      return "Capsule";
-    case fcl::GEOM_CYLINDER:
-      return "Cylinder";
-    case fcl::GEOM_CONVEX:
-      return "Convex";
-    case fcl::GEOM_HALFSPACE:
-      return "HalfSpace";
+std::ostream& operator<<(std::ostream& out, GeometryType s) {
+    switch (s) {
+      case kCapsule:
+        out << "Capsule";
+        break;
+      case kEllipsoid:
+        out << "Ellipsoid";
+        break;
+      case kSphere:
+        out << "Sphere";
+        break;
+    }
+    return out;
+}
+
+QueryInstance::QueryInstance(GeometryType shape1_in, GeometryType shape2_in,
+                             double error_in)
+    : shape1(shape1_in),
+      shape2(shape2_in),
+      error(error_in),
+      outcome(kSupported) {
+  DRAKE_DEMAND(error >= 0);
+}
+
+QueryInstance::QueryInstance(GeometryType shape1_in, GeometryType shape2_in,
+                             Outcome outcome_in)
+    : shape1(shape1_in), shape2(shape2_in), error(-1), outcome(outcome_in) {
+  DRAKE_DEMAND(outcome != kSupported);
+}
+std::ostream& operator<<(std::ostream& out, const QueryInstance& c) {
+  out << c.shape1 << " vs " << c.shape2;
+  switch (c.outcome) {
+    case kSupported:
+      out << " with expected error: " << c.error;
+      break;
+    case kThrows:
+      out << " should throw";
+      break;
   }
-  DRAKE_UNREACHABLE();
+  return out;
+}
+
+std::string QueryInstanceName(
+    const testing::TestParamInfo<QueryInstance>& info) {
+  return fmt::format("{}Vs{}", info.param.shape1, info.param.shape2);
 }
 
 template <typename T>
@@ -225,19 +238,23 @@ template RigidTransform<AutoDiffXd> AlignPlanes<AutoDiffXd>(
 
 template <typename T>
 void CharacterizeResultTest<T>::RunCallback(
-    const Expectation& expectation, fcl::CollisionObjectd* obj_A,
+    const QueryInstance& query, fcl::CollisionObjectd* obj_A,
     fcl::CollisionObjectd* obj_B, const CollisionFilterLegacy* collision_filter,
     const std::unordered_map<GeometryId, RigidTransform<T>>* X_WGs)
     const {
   callback_->ClearResults();
   ASSERT_EQ(callback_->GetNumResults(), 0);
-  if (expectation.can_compute) {
-    ASSERT_FALSE(callback_->Invoke(obj_A, obj_B, collision_filter, X_WGs));
-    ASSERT_EQ(callback_->GetNumResults(), 1) << "No results reported!";
-  } else {
-    DRAKE_ASSERT_THROWS_MESSAGE(
-        callback_->Invoke(obj_A, obj_B, collision_filter, X_WGs),
-        std::exception, expectation.error_message);
+  switch (query.outcome) {
+    case kSupported:
+      ASSERT_FALSE(callback_->Invoke(obj_A, obj_B, collision_filter, X_WGs));
+      ASSERT_EQ(callback_->GetNumResults(), 1) << "No results reported!";
+      break;
+    case kThrows:
+      DRAKE_ASSERT_THROWS_MESSAGE(
+          callback_->Invoke(obj_A, obj_B, collision_filter, X_WGs),
+          std::exception,
+          ".+ queries between shapes .+ and .+ are not supported.+");
+      break;
   }
 }
 
@@ -255,9 +272,9 @@ std::optional<double> CharacterizeResultTest<T>::ComputeErrorMaybe(
 }
 
 template <typename T>
-vector<Configuration<T>> CharacterizeResultTest<T>::MakeDefaultConfigurations(
+vector<Configuration<T>> CharacterizeResultTest<T>::MakeConfigurations(
     const Shape& shape_A, const Shape& shape_B,
-    const vector<double> signed_distances) {
+    const vector<double>& signed_distances) const {
   vector<Configuration<T>> configs;
   for (const double signed_distance : signed_distances) {
     /* In order to pose the geometries, we start with X_WA = X_WB = I. That
@@ -301,7 +318,7 @@ vector<Configuration<T>> CharacterizeResultTest<T>::MakeDefaultConfigurations(
 
 template <typename T>
 void CharacterizeResultTest<T>::RunCharacterization(
-    const Expectation& expectation, const Shape& shape_A, const Shape& shape_B,
+    const QueryInstance& query, const Shape& shape_A, const Shape& shape_B,
     const vector<Configuration<T>>& configs) {
   fcl::CollisionObjectd object_A = MakeFclShape(shape_A).object();
   const GeometryId id_A = EncodeData(&object_A);
@@ -314,7 +331,7 @@ void CharacterizeResultTest<T>::RunCharacterization(
   std::optional<Configuration<T>> worst_config;
 
   auto evaluate_callback =
-      [this, &expectation, &worst_error, &worst_config](
+      [this, &query, &worst_error, &worst_config](
           char first, fcl::CollisionObjectd* obj_A, char second,
           fcl::CollisionObjectd* obj_B, auto test_config,
           const std::unordered_map<GeometryId, RigidTransform<T>>&
@@ -325,12 +342,10 @@ void CharacterizeResultTest<T>::RunCharacterization(
             "\n  Expected signed distance: {}"
             "\n  X_AB"
             "\n{}\n",
-            to_string(obj_A->collisionGeometry()->getNodeType()),
-            to_string(obj_B->collisionGeometry()->getNodeType()), first, second,
+            GetGeometryName(*obj_A), GetGeometryName(*obj_B), first, second,
             test_config.description, test_config.signed_distance,
             test_config.X_AB.GetAsMatrix34()));
-        RunCallback(expectation, obj_A, obj_B, &collision_filter_,
-                    &world_poses);
+        RunCallback(query, obj_A, obj_B, &collision_filter_, &world_poses);
         const std::optional<double> error =
             ComputeErrorMaybe(test_config.signed_distance);
         if (error.has_value() &&
@@ -352,27 +367,27 @@ void CharacterizeResultTest<T>::RunCharacterization(
     }
   }
 
-  /* Last reality check. If the expectation was for computability, we better
+  /* Last reality check. If the query was expected to be supported, we better
    report *some* value as an error, even if it's zero. */
-  ASSERT_EQ(expectation.can_compute, worst_error.has_value());
+  ASSERT_EQ(query.outcome == kSupported, worst_error.has_value());
   /* The only way worst_error has no value, is that we expected *every*
    configuration to fail. Then no value is the correct outcome. */
   if (worst_error.has_value()) {
     /* Our definition of "close" to epsilon: within 2 bits. Still a tight
      bound but gives a modicum of breathing room. */
     constexpr double cutoff = 4 * std::numeric_limits<double>::epsilon();
-    if (expectation.max_error > cutoff) {
-      EXPECT_GT(*worst_error, expectation.max_error / 2)
+    if (query.error > cutoff) {
+      EXPECT_GT(*worst_error, query.error / 2)
           << "Expected error is too big!"
           << "\n  " << worst_config->description
-          << "\n    Expected error: " << expectation.max_error
+          << "\n    Expected error: " << query.error
           << "\n    Observed error: " << (*worst_error)
           << "\n    For distance: " << worst_config->signed_distance;
     }
-    EXPECT_LE(*worst_error, expectation.max_error)
+    EXPECT_LE(*worst_error, query.error)
         << "Expected error is too small!"
         << "\n  " << worst_config->description
-        << "\n    Expected error: " << expectation.max_error
+        << "\n    Expected error: " << query.error
         << "\n    Observed error: " << (*worst_error)
         << "\n    For distance: " << worst_config->signed_distance;
   }
@@ -380,11 +395,11 @@ void CharacterizeResultTest<T>::RunCharacterization(
 
 template <typename T>
 void CharacterizeResultTest<T>::RunCharacterization(
-    const Expectation& expectation, const Shape& shape_A, const Shape& shape_B,
-    const vector<double> signed_distances) {
-  RunCharacterization(
-      expectation, shape_A, shape_B,
-      MakeDefaultConfigurations(shape_A, shape_B, signed_distances));
+    const QueryInstance& query) {
+  auto shape1 = MakeShape(query.shape1, false /* use_alt */);
+  auto shape2 = MakeShape(query.shape2, query.shape1 == query.shape2);
+  RunCharacterization(query, *shape1, *shape2,
+                      MakeConfigurations(*shape1, *shape2, TestDistances()));
 }
 
 template <typename T>

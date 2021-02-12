@@ -31,8 +31,6 @@ namespace {
 
 /* The MakeFclShapeTest tests confirm that Drake shape specifications turn into
  the expected fcl geometries. */
-// TODO(SeanCurtis-TRI) Consider templating this on T so I can show I get the
-//  same thing across double and AutoDiffXd.
 
 GTEST_TEST(MakeFclShapeTest, Capsule) {
   const Capsule capsule(0.25, 0.75);
@@ -113,7 +111,7 @@ GTEST_TEST(SampleShapeSurfaceTest, Capsule) {
 GTEST_TEST(SampleShapeSurfaceTest, Ellipsoid) {
   /* We need a bit more slack in determining the calculations of the ellipsoid.
    Empirically, one bit seemed sufficient, we'll take two to buy some
-   cross-platform resliency. */
+   cross-platform resiliency. */
   const double kEps = 4 * std::numeric_limits<double>::epsilon();
 
   const Ellipsoid ellipsoid(0.5, 0.75, 0.325);
@@ -244,7 +242,7 @@ GTEST_TEST(AlignPlanes, Correctness) {
 template <typename T>
 class DummyCallbackData {
  public:
-  explicit DummyCallbackData(std::vector<T>* results) : results_(results) {
+  explicit DummyCallbackData(vector<T>* results) : results_(results) {
     DRAKE_DEMAND(results != nullptr);
   }
 
@@ -285,20 +283,20 @@ class DummyCallbackData {
 
   static size_t get_invocations() { return invocations; }
 
-  std::vector<T>& results() { return *results_; }
-  const std::vector<T>& results() const { return *results_; }
+  vector<T>& results() { return *results_; }
+  const vector<T>& results() const { return *results_; }
 
  private:
   static size_t invocations;
-  static std::vector<T> sequence;
-  std::vector<T>* results_;
+  static vector<T> sequence;
+  vector<T>* results_;
 };
 
 template <typename T>
 size_t DummyCallbackData<T>::invocations = 0;
 
 template <typename T>
-std::vector<T> DummyCallbackData<T>::sequence;
+vector<T> DummyCallbackData<T>::sequence;
 
 template <typename T>
 bool DummyCallback(fcl::CollisionObjectd*, fcl::CollisionObjectd*, void* data) {
@@ -317,7 +315,7 @@ GTEST_TEST(DummyCallbackTest, ConfirmErrorSequence) {
     for (double truth : {-0.5, 0.75}) {
       for (double precision : {1e-3, 1e-10, 1e-15}) {
         DummyCallbackData<double>::SetValueSequence(count, truth, precision);
-        std::vector<double> results;
+        vector<double> results;
         DummyCallbackData<double> data(&results);
         for (int i = 0; i < count; ++i) {
           DummyCallback<double>(nullptr, nullptr, &data);
@@ -365,8 +363,7 @@ class DummyImplementation : public DistanceCallback<T> {
 
  In this case, we use the DummyCallback (documented above) with *known*
  semantics. Given the number of known invocations, a truth value, and a
- precision we want to predict, we want to confirm that the test detects that
- precision.
+ predicted error, we confirm that the test detects that error.
 
  We need to know the number of expected invocations. For each unique
  configuration, RunCharacterization invokes the callback multiple times:
@@ -375,32 +372,55 @@ class DummyImplementation : public DistanceCallback<T> {
      N is the number of poses reported by X_WAs().
    - Once as geometry pair (A, B) and once for (B, A) (in case there's an
      asymmetry in the algorithm that produces bad answers).
+   - We override MakeConfigurations so that there's only a single configuration
+     between the two shapes.
 
   Therefore, for one configuration there will be 2N calls to callback. */
-class RunCharacterizationTest
-    : public CharacterizeResultTest<double> {
+class RunCharacterizationCustomTest : public CharacterizeResultTest<double> {
  public:
-  RunCharacterizationTest()
+  RunCharacterizationCustomTest()
       : CharacterizeResultTest<double>(
             std::make_unique<DummyImplementation<double>>()) {}
+
+  vector<double> TestDistances() const final { return {kTruth}; }
+
+  vector<Configuration<double>> MakeConfigurations(
+      const Shape&, const Shape&, const vector<double>&) const final {
+    return {Configuration<double>{{}, kTruth, "Dummy"}};
+  }
+
+  static constexpr double kTruth{1.0};
 };
 
 /* Create a single configuration and confirm the expected results.  */
-TEST_F(RunCharacterizationTest, CustomConfigurations) {
+TEST_F(RunCharacterizationCustomTest, CustomConfigurations) {
   const int call_count = 2 * static_cast<int>(X_WAs().size());
-  const double truth = 1;
   for (const double target_precision : {1e-2, 1e-7, 1e-14}) {
-    DummyCallbackData<double>::SetValueSequence(call_count, truth,
+    DummyCallbackData<double>::SetValueSequence(call_count, this->kTruth,
                                                 target_precision);
-    const Expectation expectation{true, target_precision, ""};
-    const Configuration<double> config{{}, truth, "Dummy"};
+    const QueryInstance query{kSphere, kSphere, target_precision};
     /* If this test passes, it detected the expected precision. */
-    RunCharacterization(expectation, this->sphere(), this->sphere(true),
-                        {config});
+    RunCharacterization(query);
     /* If this test passes, it did all the required work. */
     EXPECT_EQ(DummyCallbackData<double>::get_invocations(), call_count);
   }
 }
+
+/* In this case, we confirm that if MakeConfigurations is *not* overridden, that
+ we'll get the expected collection (at least by count) of configurations
+ automatically generated. Contrast that with RunCharacterizationCustomTest. */
+class RunCharacterizationTest : public CharacterizeResultTest<double> {
+ public:
+  RunCharacterizationTest()
+      : CharacterizeResultTest<double>(
+            std::make_unique<DummyImplementation<double>>()) {}
+
+  vector<double> TestDistances() const final {
+    return {this->sphere().radius() * 0.25};
+  }
+
+  static constexpr double kTruth{1.0};
+};
 
 /* Confirm that when we don't explicitly enumerate the configurations, but
  rely on the test to generate its own, that we get the results we expect. */
@@ -412,12 +432,12 @@ TEST_F(RunCharacterizationTest, DefaultConfigurations) {
   const int call_count =
       2 * sphere_config_count * sphere_config_count * pose_count;
 
-  const double truth = sphere.radius() * 0.25;
+  const double truth = TestDistances()[0];
   const double max_error = truth * 1e-5;
   DummyCallbackData<double>::SetValueSequence(call_count, truth, max_error);
-  const Expectation expectation{true, max_error, ""};
+  const QueryInstance query(kSphere, kSphere, max_error);
   /* If this test passes, it detected the expected max_error. */
-  RunCharacterization(expectation, sphere, sphere, vector<double>{truth});
+  RunCharacterization(query);
   /* If this test passes, it did all the required work. */
   EXPECT_EQ(DummyCallbackData<double>::get_invocations(), call_count);
 }
