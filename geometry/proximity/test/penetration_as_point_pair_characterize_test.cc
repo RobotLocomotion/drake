@@ -53,35 +53,59 @@ class CharacterizePointPairResultTest : public CharacterizeResultTest<T> {
  public:
   CharacterizePointPairResultTest()
       : CharacterizeResultTest<T>(make_unique<PenetrationCallback<T>>()) {}
+
+  std::vector<double> TestDistances() const final {
+    return {-this->kDistance};
+  }
 };
 
-using ScalarTypes = ::testing::Types<double, AutoDiffXd>;
-TYPED_TEST_SUITE(CharacterizePointPairResultTest, ScalarTypes);
+class DoubleTest : public CharacterizePointPairResultTest<double>,
+                   public testing::WithParamInterface<QueryInstance> {};
 
-#define CHARACTERIZE_TEST(shape1, shape2, expect, precision)                   \
-TYPED_TEST(CharacterizePointPairResultTest, shape1##shape2) {                  \
-  this->RunCharacterization(expect<TypeParam>(precision), this->shape1(),      \
-                            this->shape2(), vector<double>{-this->kDistance}); \
+// clang-format off
+INSTANTIATE_TEST_SUITE_P(
+    PenetrationAsPointPair, DoubleTest,
+    testing::Values(
+        QueryInstance(kCapsule, kCapsule, 2e-5),
+        QueryInstance(kCapsule, kEllipsoid, 2e-4),
+        QueryInstance(kCapsule, kSphere, 3e-15),
+
+
+        QueryInstance(kEllipsoid, kEllipsoid, 5e-4),
+        QueryInstance(kEllipsoid, kSphere, 2e-4),
+
+
+        QueryInstance(kSphere, kSphere, 3e-15)),
+    QueryInstanceName);
+// clang-format on
+
+TEST_P(DoubleTest, Characterize) {
+  this->RunCharacterization(GetParam());
 }
 
-#define SELF_CHARACTERIZE_TEST(shape, expect, precision)                       \
-TYPED_TEST(CharacterizePointPairResultTest, shape##shape) {                    \
-  this->RunCharacterization(expect<TypeParam>(precision), this->shape(),       \
-                            this->shape(true),                                 \
-                            vector<double>{-this->kDistance});                 \
+class AutoDiffTest : public CharacterizePointPairResultTest<AutoDiffXd>,
+                     public testing::WithParamInterface<QueryInstance> {};
+
+// clang-format off
+INSTANTIATE_TEST_SUITE_P(
+    PenetrationAsPointPair, AutoDiffTest,
+    testing::Values(
+        QueryInstance(kCapsule, kCapsule, kThrows),
+        QueryInstance(kCapsule, kEllipsoid, kThrows),
+        QueryInstance(kCapsule, kSphere, 3e-15),
+
+        QueryInstance(kEllipsoid, kEllipsoid, kThrows),
+        QueryInstance(kEllipsoid, kSphere, kThrows),
+
+
+        QueryInstance(kSphere, kSphere, 3e-15)),
+    QueryInstanceName);
+// clang-format on
+
+TEST_P(AutoDiffTest, Characterize) {
+  this->RunCharacterization(GetParam());
 }
 
-SELF_CHARACTERIZE_TEST(capsule, ExpectDoubleOnly, 2e-5)
-CHARACTERIZE_TEST(capsule, ellipsoid, ExpectDoubleOnly, 2e-4)
-CHARACTERIZE_TEST(capsule, sphere, ExpectAllT, 3e-15)
-
-SELF_CHARACTERIZE_TEST(ellipsoid, ExpectDoubleOnly, 5e-4)
-CHARACTERIZE_TEST(ellipsoid, sphere, ExpectDoubleOnly, 2e-4)
-
-SELF_CHARACTERIZE_TEST(sphere, ExpectAllT, 3e-15)
-
-#undef CHARACTERIZE_TEST
-#undef SELF_CHARACTERIZE_TEST
 }  // namespace
 }  // namespace penetration_as_point_pair
 }  // namespace internal

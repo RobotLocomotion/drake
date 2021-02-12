@@ -56,38 +56,46 @@ class DistanceCallback {
   virtual T GetFirstSignedDistance() const = 0;
 };
 
-/* Reports the expected outcome for a characterized result test. If can_compute
- is true, `max_error` should be non-negative measure (in meters) which should
- be *near* the worst observed error. If false, `error_message` should be valid.
- */
-struct Expectation {
-  bool can_compute{};
-  double max_error{};
-  std::string error_message;
+/* Encodes the possible outcomes of performing a proximity query. For a given
+ set of query parameters/scalar attempting to perform the query should either
+ work or not. */
+enum Outcome { kSupported, kThrows };
+
+/* The types of geometries that can be considered for characterization tests.
+ Note: the geometries enumerated here includes a Point (which is not a
+ drake::Shape). */
+enum GeometryType {
+  kCapsule,
+  kEllipsoid,
+  kSphere
+};
+std::ostream& operator<<(std::ostream& out, GeometryType s);
+
+/* This represents a single cell of the table -- an instance of invoking a
+ proximity query. It explicitly calls out the two shapes and the expected
+ outcome, and relies on the context to define the scalar. */
+struct QueryInstance {
+  /* Constructs a query instance that should successfully evaluate, producing a
+   result with the given error. */
+  QueryInstance(GeometryType shape1, GeometryType shape2, double error);
+
+  /* Constructs a query instance that doesn't successfully evaluate -- the test
+   may throw or silently do nothing as indicated by the declared `outcome`.
+   @pre outcome != kSupported */
+  QueryInstance(GeometryType shape1, GeometryType shape2, Outcome outcome);
+
+  const GeometryType shape1{};
+  const GeometryType shape2{};
+  const double error{};
+  const Outcome outcome{};
 };
 
-/* Returns an Expectation where only T = double returns a valid result. */
-template <typename T>
-Expectation ExpectDoubleOnly(double max_error) {
-  if constexpr (std::is_same<T, double>::value) {
-    return {.can_compute = true, .max_error = max_error, .error_message = ""};
-  } else {
-    unused(max_error);
-    // TODO(SeanCurtis-TRI) Consider providing a prefix string that can
-    //  stand at the beginning of the error message.
-    return {.can_compute = false,
-            .max_error = -1,
-            .error_message =
-                ".+ queries between shapes .+ and .+ are not supported.+"};
-  }
-}
+std::ostream& operator<<(std::ostream& out, const QueryInstance& c);
 
-/* Returns an expectation where the query can be computed for *all* T values to
- the *same* precision. */
-template <typename T>
-Expectation ExpectAllT(double max_error) {
-  return {.can_compute = true, .max_error = max_error, .error_message = ""};
-}
+/* Function to convert QueryInstance values into meaningful value test names
+ for gtest.  */
+std::string QueryInstanceName(
+    const testing::TestParamInfo<QueryInstance>& info);
 
 /* Defines a test configuration for two shapes: the pose between the two
  shapes, the expected signed_distance, and a description to aid in assessing
@@ -98,11 +106,6 @@ struct Configuration {
   double signed_distance{};
   std::string description;
 };
-
-/* Renders an FCL enumeration into a string to support intelligible error
- messages. Note: we're only covering the enumeration values that Drake
- specifically uses.  */
-std::string to_string(const fcl::NODE_TYPE& node);
 
 /* The challenge of testing signed distance (and related) queries, is to put
  two arbitrary shapes into a non-trivial relative pose which, nevertheless,
@@ -126,7 +129,7 @@ std::string to_string(const fcl::NODE_TYPE& node);
  for penetration, at least *one* of the samples needs to have a `max_depth`
  value that is greater than or equal to the targeted depth.
 
- We use the %TangentPlane to pose geometries; see AlignTangentPlanes for
+ We use the TangentPlane to pose geometries; see AlignTangentPlanes for
  details.  */
 template <typename T>
 struct ShapeTangentPlane {
@@ -248,7 +251,7 @@ class CharacterizeResultTest : public ::testing::Test {
    query reports a single result. Otherwise, confirms that the callback
    throws with an error matching that contained in the expectation. */
   void RunCallback(
-      const Expectation& expectation, fcl::CollisionObjectd* obj_A,
+      const QueryInstance& query, fcl::CollisionObjectd* obj_A,
       fcl::CollisionObjectd* obj_B,
       const CollisionFilterLegacy* collision_filter,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>* X_WGs)
@@ -265,9 +268,9 @@ class CharacterizeResultTest : public ::testing::Test {
   //  reduce the work I do.
   /* Creates a set of configurations for the two shapes based on the surface
    sample points defined for each shape type (see SampleShapeSurface below). */
-  static std::vector<Configuration<T>> MakeDefaultConfigurations(
+  virtual std::vector<Configuration<T>> MakeConfigurations(
       const Shape& shape_A, const Shape& shape_B,
-      const std::vector<double> signed_distances);
+      const std::vector<double>& signed_distances) const;
 
   /* Runs the test to characterize the query error between geometries of
    two shape types: Shape1 and Shape2. The caller provides one or more
@@ -329,16 +332,18 @@ class CharacterizeResultTest : public ::testing::Test {
    @param shape_B      The second shape in the pair.
    @param configs      A collection of test configurations against which we
                        evaluate the callback. */
-  void RunCharacterization(const Expectation& expectation, const Shape& shape_A,
+  void RunCharacterization(const QueryInstance& query, const Shape& shape_A,
                            const Shape& shape_B,
                            const std::vector<Configuration<T>>& configs);
 
   /* Variant of RunCharacterization that creates a collection of configurations
-   with the given `signed_distance` from the points sampled on each shape (see
-   SampleShapeSurface below).  */
-  void RunCharacterization(const Expectation& expectation, const Shape& shape_A,
-                           const Shape& shape_B,
-                           const std::vector<double> signed_distances);
+   with using the distances given by TestDistances applied to the shapes
+   implied by the query.  */
+  void RunCharacterization(const QueryInstance& query);
+
+  /* Each subclass should define the distances over which it should be
+   evaluated. */
+  virtual std::vector<double> TestDistances() const = 0;
 
   /* Generates a geometry id for the given collision object, encodes the id
    into the object, and returns the id.  */
@@ -364,6 +369,18 @@ class CharacterizeResultTest : public ::testing::Test {
   /* As documented in query_object.h, the 2mm distance/depth for which the
    queries are characterized. */
   static constexpr double kDistance{2e-3};
+
+  static std::unique_ptr<Shape> MakeShape(GeometryType shape, bool use_alt) {
+    switch (shape) {
+      case kCapsule:
+        return std::make_unique<Capsule>(capsule(use_alt));
+      case kEllipsoid:
+        return std::make_unique<Ellipsoid>(ellipsoid(use_alt));
+      case kSphere:
+        return std::make_unique<Sphere>(sphere(use_alt));
+    }
+    return nullptr;
+  }
 
   static Capsule capsule(bool alt = false) {
     if (alt) {
