@@ -336,6 +336,14 @@ class ProximityEngine {
 
   // Facilitate testing.
   friend class ProximityEngineTester;
+
+  // Reports if the geometry with the given id is represented by an fcl::Convex.
+  // This function exists solely for the purpose tracking the "represent Mesh
+  // as Convex" logic in other unit tests. When we represent meshes as
+  // non-convex entities in their own right, we can remove this method.
+  // This very specifically does *not* answer is the shape generally convex, but
+  // if it is specifically represented by fcl::Convex.
+  bool IsFclConvexType(GeometryId id) const;
 };
 
 #ifndef DRAKE_DOXYGEN_CXX

@@ -64,6 +64,12 @@ class ProximityEngineTester {
       GeometryId id, const ProximityEngine<T>& engine) {
     return engine.hydroelastic_geometries().hydroelastic_type(id);
   }
+
+  template <typename T>
+  static bool IsFclConvexType(const ProximityEngine<T>& engine,
+                                 GeometryId id) {
+    return engine.IsFclConvexType(id);
+  }
 };
 
 namespace {
@@ -343,6 +349,7 @@ GTEST_TEST(ProximityEngineTests, MeshSupportAsConvex) {
     const auto& [mesh_id, X_WM] =
         AddShape(&engine, mesh, true /* is_anchored */, false /* is_soft */,
                  Vector3d::Zero());
+    ASSERT_TRUE(ProximityEngineTester::IsFclConvexType(engine, mesh_id));
     const auto& [sphere_id, X_MS] =
         AddShape(&engine, Sphere(radius), false /* is_anchored */,
                  true /* is soft */, Vector3d::Zero());
