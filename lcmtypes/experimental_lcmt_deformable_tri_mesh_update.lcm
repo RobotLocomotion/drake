@@ -1,0 +1,11 @@
+package drake;
+// An update to the vertex positions of the mesh named `name`.
+//  * `num_vertices` is the number of vertex positions to be passed in this
+//    message.
+//  * `vertices_W[i]` contains the world space position of the i-th vertex
+//    passed in this message.
+struct experimental_lcmt_deformable_tri_mesh_update {
+  string name;
+  int32_t num_vertices;
+  double vertices_W[num_vertices][3];
+}

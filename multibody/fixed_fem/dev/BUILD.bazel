@@ -2,6 +2,7 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
 )
@@ -60,6 +61,20 @@ drake_cc_library(
     name = "damping_model",
     hdrs = [
         "damping_model.h",
+    ],
+)
+
+drake_cc_library(
+    name = "deformable_visualizer",
+    srcs = ["deformable_visualizer.cc"],
+    hdrs = ["deformable_visualizer.h"],
+    deps = [
+        "//common:essential",
+        "//geometry/proximity:sorted_triplet",
+        "//geometry/proximity:volume_mesh",
+        "//lcm:drake_lcm",
+        "//lcmtypes:experimental_deformable_mesh",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -303,6 +318,20 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//common:essential",
+    ],
+)
+
+drake_cc_binary(
+    name = "run_scripted_deformable_motion",
+    srcs = [
+        "run_scripted_deformable_motion.cc",
+    ],
+    deps = [
+        ":deformable_visualizer",
+        "//common:add_text_logging_gflags",
+        "//geometry/proximity:make_box_mesh",
+        "//systems/analysis:simulator_gflags",
+        "//systems/framework:diagram_builder",
     ],
 )
 

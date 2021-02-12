@@ -105,6 +105,18 @@ drake_lcm_cc_library(
 )
 
 drake_lcm_cc_library(
+    name = "experimental_deformable_mesh",
+    lcm_package = "drake",
+    lcm_srcs = [
+        "experimental_lcmt_deformable_tri.lcm",
+        "experimental_lcmt_deformable_tri_mesh_init.lcm",
+        "experimental_lcmt_deformable_tri_meshes_init.lcm",
+        "experimental_lcmt_deformable_tri_mesh_update.lcm",
+        "experimental_lcmt_deformable_tri_meshes_update.lcm",
+    ],
+)
+
+drake_lcm_cc_library(
     name = "desired_body_motion",
     deprecation = _DEPRECATION_2021_04,
     lcm_package = "drake",
