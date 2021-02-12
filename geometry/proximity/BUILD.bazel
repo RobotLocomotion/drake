@@ -649,6 +649,17 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "distance_to_shape_characterize_test",
+    deps = [
+        ":characterization_utilities",
+        ":distance_to_shape_callback",
+        "//common:temp_directory",
+        "//geometry:proximity_engine",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
     name = "find_collision_candidates_callback_test",
     deps = [
         ":find_collision_candidates_callback",
