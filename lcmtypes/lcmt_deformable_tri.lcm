@@ -1,0 +1,6 @@
+package drake;
+
+struct lcmt_deformable_tri {
+  // Indices into a set of vertex positions.
+  int32_t vertices[3];
+}
