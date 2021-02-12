@@ -32,12 +32,54 @@ namespace {
 /* The MakeFclShapeTest tests confirm that Drake shape specifications turn into
  the expected fcl geometries. */
 
+GTEST_TEST(MakeFclShapeTest, Box) {
+  const Box box(1, 2, 3);
+  auto fcl_geometry = MakeFclShape(box).object();
+  const auto& fcl_box = dynamic_cast<fcl::Boxd&>(*fcl_geometry);
+  EXPECT_EQ(fcl_box.side, box.size());
+}
+
 GTEST_TEST(MakeFclShapeTest, Capsule) {
   const Capsule capsule(0.25, 0.75);
   auto fcl_geometry = MakeFclShape(capsule).object();
   const auto& fcl_capsule = dynamic_cast<fcl::Capsuled&>(*fcl_geometry);
   EXPECT_EQ(fcl_capsule.radius, capsule.radius());
   EXPECT_EQ(fcl_capsule.lz, capsule.length());
+}
+
+GTEST_TEST(MakeFclShapeTest, Convex) {
+  auto fcl_geometry = MakeFclShape(Convex("ignored", 1.0)).object();
+  const auto& fcl_convex = dynamic_cast<fcl::Convexd&>(*fcl_geometry);
+  /* The convex shape is actually a box with fixed dimensions. We won't *prove*
+   it's the expected box. But we'll confirm:
+     - the number of faces (6) and vertices (8)
+     - all vertices are a fixed distance from the origin
+     - The extent of an axis-aligned bounding box is that of the expected box.
+   This won't guarantee a box, but would require an overt, adversarial effort
+   to create a non-box that passes the same tests. */
+  const Box box = CharacterizeResultTest<double>::box();
+  const Vector3d half_size = box.size() / 2;
+  const double dist_to_corner = half_size.norm();
+  ASSERT_EQ(fcl_convex.getVertices().size(), 8);
+  ASSERT_EQ(fcl_convex.getFaceCount(), 6);
+  constexpr double kEps = std::numeric_limits<double>::epsilon();
+  Vector3d min_corner = Vector3d::Constant(1e8);
+  Vector3d max_corner = -min_corner;
+  for (const auto& v : fcl_convex.getVertices()) {
+    ASSERT_NEAR(v.norm(), dist_to_corner, kEps);
+    min_corner = min_corner.cwiseMin(v);
+    max_corner = max_corner.cwiseMax(v);
+  }
+  EXPECT_TRUE(CompareMatrices(min_corner, -half_size, kEps));
+  EXPECT_TRUE(CompareMatrices(max_corner, half_size, kEps));
+}
+
+GTEST_TEST(MakeFclShapeTest, Cylinder) {
+  const Cylinder cylinder(0.25, 0.75);
+  auto fcl_geometry = MakeFclShape(cylinder).object();
+  const auto& fcl_cylinder = dynamic_cast<fcl::Cylinderd&>(*fcl_geometry);
+  EXPECT_EQ(fcl_cylinder.radius, cylinder.radius());
+  EXPECT_EQ(fcl_cylinder.lz, cylinder.length());
 }
 
 GTEST_TEST(MakeFclShapeTest, Ellipsoid) {
@@ -47,6 +89,13 @@ GTEST_TEST(MakeFclShapeTest, Ellipsoid) {
   EXPECT_EQ(fcl_ellipsoid.radii[0], ellipsoid.a());
   EXPECT_EQ(fcl_ellipsoid.radii[1], ellipsoid.b());
   EXPECT_EQ(fcl_ellipsoid.radii[2], ellipsoid.c());
+}
+
+GTEST_TEST(MakeFclShapeTest, HalfSpace) {
+  auto fcl_geometry = MakeFclShape(HalfSpace{}).object();
+  const auto& fcl_half_space = dynamic_cast<fcl::Halfspaced&>(*fcl_geometry);
+  EXPECT_EQ(fcl_half_space.n, Vector3d(0, 0, 1));
+  EXPECT_EQ(fcl_half_space.d, 0);
 }
 
 GTEST_TEST(MakeFclShapeTest, Sphere) {
@@ -69,6 +118,61 @@ GTEST_TEST(MakeFclShapeTest, Sphere) {
 // TODO(SeanCurtis-TRI) When we write our own implementation of GJK/EPA the
 //  logic used here to compute the extreme point should be refactored as the
 //  per-shape support function (except for Convex).
+
+void ValidateBoxSample(const Vector3d& half_size,
+                       const ShapeTangentPlane<double>& tangent_plane) {
+  const double kEps = std::numeric_limits<double>::epsilon();
+  const Vector3d p_GP = tangent_plane.point;
+  const Vector3d n_G = tangent_plane.normal;
+  /* We select the extreme point based on the *signs* of the components of
+   the normal. */
+  // clang-format off
+      const Vector3d selector(n_G.x() > 0 ? 1 : -1,
+                              n_G.y() > 0 ? 1 : -1,
+                              n_G.z() > 0 ? 1 : -1);
+  // clang-format on
+  const Vector3d p_GE = selector.cwiseProduct(half_size);
+  /* Now confirm the extreme point lies "under" the plane. */
+  ASSERT_LE((p_GE - p_GP).dot(n_G), kEps);
+
+  /* Confirm that p_GP lies on the surface of the box.
+
+   Consider the unit box, where vertices are located at <±1, ±1, ±1>. If the
+   vertex is inside a face, one of those values will be ±1, the remaining
+   values will lie in the range [-1, 1]. We can transform the box to the
+   unit box and count the ones, and confirm the non-ones are within range.
+   */
+  const Vector3d classifier = p_GP.cwiseQuotient(half_size).cwiseAbs();
+  int one_count = 0;
+  bool inside_box = true;
+  for (int i = 0; i < 3; ++i) {
+    if (std::abs(classifier[i] - 1) < kEps) {
+      ++one_count;
+    } else if (classifier[i] > 1) {
+      inside_box = false;
+      break;
+    }
+  }
+  EXPECT_TRUE(one_count > 0 && inside_box);
+}
+
+GTEST_TEST(SampleShapeSurfaceTest, Box) {
+  const Box box = CharacterizeResultTest<double>::box();
+  const Vector3d half_size = box.size() / 2;
+  /* We validate for a requested penetration that is too deep.  */
+  EXPECT_THROW(ShapeConfigurations<double>(box, -half_size.minCoeff() * 1.01),
+               std::exception);
+  /* Box samples depend on whether it is separating or penetrating, we'll test
+   both cases.  */
+  const double min_axis = box.size().minCoeff();
+  for (const double distance_factor : {-0.1, 0.1}) {
+    const double distance = min_axis * distance_factor;
+    for (const auto& tangent_plane :
+         ShapeConfigurations<double>(box, distance).configs()) {
+      ValidateBoxSample(half_size, tangent_plane);
+    }
+  }
+}
 
 GTEST_TEST(SampleShapeSurfaceTest, Capsule) {
   const double kEps = std::numeric_limits<double>::epsilon();
@@ -105,6 +209,92 @@ GTEST_TEST(SampleShapeSurfaceTest, Capsule) {
      distance is equal to the capsule radius. */
     const double z = std::clamp(p_GP.z(), -half_length, half_length);
     ASSERT_NEAR((p_GP - Vector3d(0, 0, z)).norm(), capsule.radius(), kEps);
+  }
+}
+
+GTEST_TEST(SampleShapeSurfaceTest, Convex) {
+  /* The convex is actually a box with edge half lengths defined by
+   convex_half_size(). We'll generate the samples based on a convex declaration,
+   but test against a box.  */
+  const Convex convex("ignored", 1.0);
+  const Box box = CharacterizeResultTest<double>::box();
+  const Vector3d half_size = box.size() / 2;
+  /* We validate for a requested penetration that is too deep.  */
+  EXPECT_THROW(
+      ShapeConfigurations<double>(convex, -half_size.minCoeff() * 1.01),
+      std::exception);
+  /* Convex samples (because they are really box samples) depend on whether it
+   is separating or penetrating, we'll test both cases.  */
+  const double min_axis = box.size().minCoeff();
+  for (const double distance_factor : {-0.1, 0.1}) {
+    const double distance = min_axis * distance_factor;
+    for (const auto& tangent_plane :
+         ShapeConfigurations<double>(convex, distance).configs()) {
+      SCOPED_TRACE("Convex (as Box)");
+      ValidateBoxSample(half_size, tangent_plane);
+    }
+  }
+}
+
+GTEST_TEST(SampleShapeSurfaceTest, Cylinder) {
+  const double kEps = std::numeric_limits<double>::epsilon();
+
+  const Cylinder cylinder(0.5, 0.75);
+
+  /* We validate for a requested penetration that is too deep.  */
+  EXPECT_THROW(ShapeConfigurations<double>(cylinder, -cylinder.radius() * 1.01),
+               std::exception);
+  EXPECT_THROW(ShapeConfigurations<double>(cylinder, -cylinder.length() * 1.01),
+               std::exception);
+
+  /* Configuration can depend on distance. */
+  for (const double distance : {-0.1, 0.1}) {
+    for (const auto& tangent_plane :
+         ShapeConfigurations<double>(cylinder, distance).configs()) {
+      const Vector3d p_GP = tangent_plane.point;
+      const Vector3d n_G = tangent_plane.normal;
+      /* A valid extreme point will always lie on the barrel. If the normal is
+       perpendicular to the cylinder's axis, then it intersects the barrel at
+       a point that can serve as the extreme point (in fact, any point on the
+       line running length-wise along the barrel and passing through that point
+       will serve equally well). If the plane normal tilts *off* of the plane
+       (above or below), then one of the two end points of that line can serve
+       as the extreme point. */
+      /* The plane normal projected onto the cylinders x-y plane. */
+      const Vector3d n_xy_G(n_G.x(), n_G.y(), 0);
+      /* Identify a point on the line; if n_G is parallel with the Gz, we can
+       pick the line in an arbitrary direction.  */
+      Vector3d p_GE = cylinder.radius() * (std::abs(n_G.z()) < 1 - kEps
+                                               ? n_xy_G.normalized()
+                                               : Vector3d{1, 0, 0});
+      const double half_length = cylinder.length() / 2;
+      if (n_G.z() > kEps) {
+        /* Normal tilted *above* the x-y plane.  */
+        p_GE += Vector3d(0, 0, half_length);
+      } else if (n_G.z() < -kEps) {
+        /* Normal tilted *below* the x-y plane.  */
+        p_GE -= Vector3d(0, 0, half_length);
+      }
+      /* Now confirm the extreme point lies "under" the plane. */
+      ASSERT_LE((p_GE - p_GP).dot(n_G), kEps);
+
+      /* For the point to lie on the cylinder, it's either inside an end cap or
+       on the barrel.  */
+      if (p_GP.z() <= half_length + kEps && p_GP.z() >= -half_length - kEps) {
+        if (p_GP.z() < half_length - kEps && p_GP.z() > -half_length + kEps) {
+          /* It lies on the barrel, it must be radius distance away from Gz. */
+          EXPECT_NEAR(Vector3d(p_GP.x(), p_GP.y(), 0).norm(), cylinder.radius(),
+                      kEps);
+        } else {
+          /* It lies on one of the caps and must lie within the cap's disk. */
+          EXPECT_LE(Vector3d(p_GP.x(), p_GP.y(), 0).norm(),
+                    cylinder.radius() + kEps);
+        }
+      } else {
+        GTEST_FAIL() << "Point p_GP lies beyond the extent of the cylinder "
+                        "along axis Gz.";
+      }
+    }
   }
 }
 
@@ -163,6 +353,24 @@ GTEST_TEST(SampleShapeSurfaceTest, Ellipsoid) {
     /* Validate P lies on the ellipsoid: x²/a² + y²/b² + z²/c² = 1. */
     ASSERT_NEAR(p_GP.cwiseProduct(p_GP).cwiseQuotient(axes_squared).sum(), 1.0,
                 kEps);
+  }
+}
+
+GTEST_TEST(SampleShapeSurfaceTest, HalfSpace) {
+  const double kEps = std::numeric_limits<double>::epsilon();
+
+  /* Halfspace doesn't depend on signed distance. */
+  for (const auto& tangent_plane :
+       ShapeConfigurations<double>(HalfSpace(), 0).configs()) {
+    const Vector3d p_GP = tangent_plane.point;
+    const Vector3d n_G = tangent_plane.normal;
+    /* The origin will always serve as an extreme point. */
+    const Vector3d p_GE(0, 0, 0);
+    /* Now confirm the extreme point lies "under" the plane. */
+    ASSERT_LE((p_GE - p_GP).dot(n_G), kEps);
+
+    /* P lies on the surface of the half space of P.z = 0. */
+    EXPECT_NEAR(p_GP.z(), 0, kEps);
   }
 }
 
