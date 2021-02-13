@@ -407,20 +407,16 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
    element. */
   std::array<Matrix3<T>, Traits::kNumQuadraturePoints> CalcDeformationGradient(
       const FemState<DerivedElement>& state) const {
-    // TODO(xuchenhan-tri): Consider abstracting this potential common operation
-    //  into FemElement.
     std::array<Matrix3<T>, Traits::kNumQuadraturePoints> F;
-    Eigen::Matrix<T, Traits::kSolutionDimension, Traits::kNumNodes> element_x;
-    const VectorX<T>& x_tmp = state.q();
-    const auto& x = Eigen::Map<const Matrix3X<T>>(
-        x_tmp.data(), Traits::kSolutionDimension,
-        x_tmp.size() / Traits::kSolutionDimension);
-    for (int i = 0; i < Traits::kNumNodes; ++i) {
-      element_x.col(i) = x.col(this->node_indices()[i]);
-    }
+    constexpr int kNumDofs = Traits::kSolutionDimension * Traits::kNumNodes;
+    const Vector<T, kNumDofs> element_x =
+        this->ExtractElementDofs(this->node_indices(), state.q());
+    const auto& element_x_reshaped = Eigen::Map<
+        const Eigen::Matrix<T, Traits::kSolutionDimension, Traits::kNumNodes>>(
+        element_x.data(), Traits::kSolutionDimension, Traits::kNumNodes);
     const std::array<typename IsoparametricElementType::JacobianMatrix,
                      Traits::kNumQuadraturePoints>
-        dxdxi = isoparametric_element_.CalcJacobian(element_x);
+        dxdxi = isoparametric_element_.CalcJacobian(element_x_reshaped);
     for (int q = 0; q < Traits::kNumQuadraturePoints; ++q) {
       F[q] = dxdxi[q] * dxidX_[q];
     }
