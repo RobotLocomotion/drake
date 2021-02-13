@@ -432,6 +432,9 @@ class RigidTransform {
   /// @returns `this` %RigidTransform which has been multiplied by `other`.
   /// On return, `this = X_AC`, where `X_AC = X_AB * X_BC`.
   RigidTransform<T>& operator*=(const RigidTransform<T>& other) {
+    static_assert(!std::is_same<double, T>() ||
+            sizeof(RigidTransform<double>) == optimal_sizeof_RigidTransformd_,
+        "Optimized instructions depend on sizeof(RigidTransform<double>).");
     p_AoBo_A_ = *this * other.translation();
     R_AB_ *= other.rotation();
     return *this;
@@ -593,6 +596,22 @@ class RigidTransform {
           "Error: Bottom row of 4x4 matrix differs from [0, 0, 0, 1]"));
     }
   }
+
+  // For oprimization, perserve the order of this class's two non-static data
+  // members, namely its rotation matrix R_AB_ and position vector p_AoBo_A_.
+  // Optimization (e.g., AVX instructions for multiplying rigid transforms) can
+  // leverage a continuous memory layout of RigidTransform<double> as 12
+  // sequential doubles starting with a 3x3 RotationMatrix<double> (9 doubles)
+  // immediately followed by a 3x1 position vector (3 doubles).  A unit test
+  // verifies the ordering remains as first R_AB_followed by  p_AoBo_A_.
+  // Note: The C++ standard guarantees that the members of a class appear in
+  // memory in the same order as they are declared.  Nonstatic data members of a
+  // (non-union) class are allocated so that later members have higher addresses
+  // within a class object. Implementation alignment requirements might cause
+  // two adjacent members not to be allocated immediately after each other.
+  // Related: https://github.com/RobotLocomotion/drake/pull/14626
+  // Related: https://github.com/RobotLocomotion/drake/pull/14623
+  static constexpr double optimal_sizeof_RigidTransformd_ = 12 * sizeof(double);
 
   // Rotation matrix relating two frames, e.g. frame A and frame B.
   // The default constructor for R_AB_ is an identity matrix.
