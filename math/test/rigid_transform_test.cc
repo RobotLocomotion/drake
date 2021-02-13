@@ -716,7 +716,7 @@ GTEST_TEST(RigidTransform, OperatorMultiplyByMatrix3X) {
 }
 
 GTEST_TEST(RigidTransform, TestMemoryLayoutOfRigidTransformDouble) {
-  // For oprimization, verify the order of this class's two non-static data
+  // For optimization, verify the order of this class's two non-static data
   // members, namely rotation matrix R_AB_ and position vector p_AoBo_A_.
   // Optimization (e.g., AVX instructions for multiplying rigid transforms) can
   // leverage a continuous memory layout of RigidTransform<double> as 12

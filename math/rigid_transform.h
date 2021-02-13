@@ -597,13 +597,13 @@ class RigidTransform {
     }
   }
 
-  // For oprimization, perserve the order of this class's two non-static data
+  // For optimization, preserve the order of this class's two non-static data
   // members, namely its rotation matrix R_AB_ and position vector p_AoBo_A_.
   // Optimization (e.g., AVX instructions for multiplying rigid transforms) can
   // leverage a continuous memory layout of RigidTransform<double> as 12
   // sequential doubles starting with a 3x3 RotationMatrix<double> (9 doubles)
-  // immediately followed by a 3x1 position vector (3 doubles).  A unit test
-  // verifies the ordering remains as first R_AB_followed by  p_AoBo_A_.
+  // immediately followed by a 3x1 position vector (3 doubles).
+  // A unit test verifies the order is always R_AB_followed by  p_AoBo_A_.
   // Note: The C++ standard guarantees that the members of a class appear in
   // memory in the same order as they are declared.  Nonstatic data members of a
   // (non-union) class are allocated so that later members have higher addresses
