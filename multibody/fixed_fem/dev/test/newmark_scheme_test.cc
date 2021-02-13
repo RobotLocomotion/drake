@@ -28,12 +28,12 @@ class NewmarkSchemeTest : public ::testing::Test {
     return Vector4<double>(0.1011, 0.1112, 0.1213, 0.1314);
   }
 
-  NewmarkScheme<FemState<DummyElement<2>>> newmark_scheme{kDt, kGamma, kBeta};
+  NewmarkScheme<FemState<DummyElement<2>>> newmark_scheme_{kDt, kGamma, kBeta};
 };
 
 TEST_F(NewmarkSchemeTest, Weights) {
   EXPECT_TRUE(CompareMatrices(
-      newmark_scheme.weights(),
+      newmark_scheme_.weights(),
       Vector3<double>(kBeta * kDt * kDt, kGamma * kDt, 1.0), 0));
 }
 
@@ -43,7 +43,7 @@ TEST_F(NewmarkSchemeTest, UpdateState) {
   const Vector4<double> qddot = MakeQddot();
   FemState<DummyElement<2>> state(q, qdot, qddot);
   const Vector4<double> dqddot(1.234, 4.567, 7.890, 0.123);
-  newmark_scheme.UpdateState(dqddot, &state);
+  newmark_scheme_.UpdateState(dqddot, &state);
   EXPECT_TRUE(CompareMatrices(state.qddot(), qddot + dqddot, 0));
   EXPECT_TRUE(
       CompareMatrices(state.qdot(), qdot + dqddot * kDt * kGamma, kTol));
@@ -51,7 +51,7 @@ TEST_F(NewmarkSchemeTest, UpdateState) {
 }
 
 /* Tests that Newmark scheme reproduces analytical solutions under qddot. */
-TEST_F(NewmarkSchemeTest, IntegrateTime) {
+TEST_F(NewmarkSchemeTest, AdvanceOneTimeStep) {
   const Vector4<double> q = MakeQ();
   const Vector4<double> qdot = MakeQdot();
   const Vector4<double> qddot = MakeQddot();
@@ -61,7 +61,7 @@ TEST_F(NewmarkSchemeTest, IntegrateTime) {
   const int kTimeSteps = 10;
   for (int i = 0; i < kTimeSteps; ++i) {
     state_np1.set_qddot(state_n.qddot());
-    newmark_scheme.IntegrateTime(state_n, &state_np1);
+    newmark_scheme_.AdvanceOneTimeStep(state_n, &state_np1);
     state_n = state_np1;
   }
   const double total_time = kDt * kTimeSteps;

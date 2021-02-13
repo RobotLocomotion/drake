@@ -61,7 +61,7 @@ class StateUpdater {
    weights to combine stiffness, damping and mass matrices to form the tangent
    matrix. If q̇ or q̈ are not a part of the state, their derivatives are set to
    0. */
-  virtual Vector3<T> weights() const = 0;
+  Vector3<T> weights() const { return do_get_weights(); }
 
   /** Updates the FemState `state` given the change in the value of the key
    variable `z`.
@@ -87,14 +87,18 @@ class StateUpdater {
    input (and will not be modified) and `state->q()` and `state->qdot()` will be
    modified by numerically integrating in time.
    @pre state != nullptr. */
-  void IntegrateTime(const State& prev_state, State* state) const {
+  void AdvanceOneTimeStep(const State& prev_state, State* state) const {
     DRAKE_DEMAND(state != nullptr);
-    DoIntegrateTime(prev_state, state);
+    DoAdvanceOneTimeStep(prev_state, state);
   }
 
  protected:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StateUpdater);
   StateUpdater() = default;
+
+  /** Derived classes must override this method to provide an implementation to
+   the method weights(). */
+  virtual Vector3<T> do_get_weights() const = 0;
 
   /** Derived classes must override this method to udpate the FemState `state`
    given the key variable `dz` based on the time-stepping scheme of the derived
@@ -103,15 +107,17 @@ class StateUpdater {
   virtual void DoUpdateState(const VectorX<T>& dz, State* state) const = 0;
 
   /** Derived classes templated on FemState whose ode_order() is greater than 0
-   must override this method to integrate the state in time according to the
+   must override this method to advance a single time step according to the
    specific time stepping scheme. */
-  virtual void DoIntegrateTime(const State& prev_state, State* state) const {
+  virtual void DoAdvanceOneTimeStep(const State& prev_state,
+                                    State* state) const {
     if constexpr (State::ode_order() == 0) {
       throw std::logic_error(
           "There is no notion of time in a zeroth order ODE.");
     }
-    throw std::runtime_error(
-        "IntegrateTime() should be implemented for this StateUpdater but is "
+    throw std::logic_error(
+        "AdvanceOneTimeStep() should be implemented for this StateUpdater but "
+        "is "
         "not implemented.");
   }
 };

@@ -54,10 +54,11 @@ class DynamicElasticityModelTest : public ::testing::Test {
     geometry::Box box(length, length, length);
     geometry::VolumeMesh mesh =
         geometry::internal::MakeBoxVolumeMesh<T>(box, length);
+    DRAKE_DEMAND(mesh.num_elements() == 6);
     return mesh;
   }
 
-  void SetUp() override {
+  void AddBoxToModel() {
     geometry::VolumeMesh<T> mesh = MakeBoxTetMesh();
     const ConstitutiveModelType constitutive_model(kYoungsModulus,
                                                    kPoissonRatio);
@@ -65,6 +66,8 @@ class DynamicElasticityModelTest : public ::testing::Test {
     model_.AddDynamicElasticityElementsFromTetMesh(mesh, constitutive_model,
                                                    kDensity, damping_model);
   }
+
+  void SetUp() override { AddBoxToModel(); }
 
   /* Returns an arbitrary perturbation to the reference configuration of the
    cube geometry. */
@@ -90,7 +93,7 @@ class DynamicElasticityModelTest : public ::testing::Test {
     deformed_state.set_qddot(perturbed_qddot_autodiff);
     /* It's important to set up the `deformed_state` with `state_updater_` so
      that the derivatives such as dq/dqddot are set up. */
-    state_updater_.IntegrateTime(reference_state, &deformed_state);
+    state_updater_.AdvanceOneTimeStep(reference_state, &deformed_state);
     return deformed_state;
   }
 
@@ -125,21 +128,21 @@ TEST_F(DynamicElasticityModelTest, TangentMatrixIsResidualDerivative) {
 
   const MatrixX<T> dense_tangent_matrix(tangent_matrix);
   for (int i = 0; i < state.num_generalized_positions(); ++i) {
+    /* The tangent matrix should be the derivative of the residual. Notice that
+     here we are comparing a VectorX<double> and the value of a
+     VectorX<AutoDiffXd>. */
     EXPECT_TRUE(CompareMatrices(residual(i).derivatives(),
                                 dense_tangent_matrix.col(i),
-                                std::numeric_limits<double>::epsilon()));
+                                4 * std::numeric_limits<double>::epsilon()));
   }
 }
 
 /* Adds two copies of the same set of elements and tests that the residual for
- the two copies are identical. */
+ the two copies are identical. In particular, tests that the node offsets in
+ AddDynamicElasticityElementsFromTetMesh() are working as intended. */
 TEST_F(DynamicElasticityModelTest, MultipleMesh) {
-  geometry::VolumeMesh<T> mesh = MakeBoxTetMesh();
-  ConstitutiveModelType constitutive_model(kYoungsModulus, kPoissonRatio);
-  const DampingModel<T> damping_model(kMassDamping, kStiffnessDamping);
-  model_.AddDynamicElasticityElementsFromTetMesh(mesh, constitutive_model,
-                                                 kDensity, damping_model);
-
+  /* Add a second box mesh to the model. */
+  AddBoxToModel();
   EXPECT_EQ(model_.num_nodes(), 2 * kNumCubeVertices);
   /* Each cube is split into 6 tetrahedra. */
   EXPECT_EQ(model_.num_elements(), 2 * kNumElements);

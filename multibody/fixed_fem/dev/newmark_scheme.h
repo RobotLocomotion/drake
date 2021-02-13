@@ -6,7 +6,9 @@ namespace drake {
 namespace multibody {
 namespace fixed_fem {
 /** Implements the interface StateUpdater with Newmark-beta time integration
- scheme. The states are updated according to the following equation:
+ scheme. Given the value for the current time step accleration `a`, the states
+ are calculated from states from the previous time step according to the
+ following equations:
 
       v = vₙ + dt ⋅ (γ ⋅ a + (1−γ) ⋅ aₙ)
       x = xₙ + dt ⋅ vₙ + dt² ⋅ [β ⋅ a + (0.5−β) ⋅ aₙ].
@@ -40,12 +42,12 @@ class NewmarkScheme final : public StateUpdater<State> {
 
   ~NewmarkScheme() = default;
 
-  /** Implements StateUpdater::weights(). */
-  Vector3<T> weights() const final {
+ private:
+  /* Implements StateUpdater::weights(). */
+  Vector3<T> do_get_weights() const final {
     return {beta_ * dt_ * dt_, gamma_ * dt_, 1.0};
   }
 
- private:
   /* Implements StateUpdater::DoUpdateState(). */
   void DoUpdateState(const VectorX<T>& dz, State* state) const final {
     const VectorX<T>& a = state->qddot();
@@ -56,8 +58,8 @@ class NewmarkScheme final : public StateUpdater<State> {
     state->set_q(x + dt_ * dt_ * beta_ * dz);
   }
 
-  /* Implements StateUpdater::DoIntegrateTime(). */
-  void DoIntegrateTime(const State& prev_state, State* state) const final {
+  /* Implements StateUpdater::DoAdvanceOneTimeStep(). */
+  void DoAdvanceOneTimeStep(const State& prev_state, State* state) const final {
     const VectorX<T>& an = prev_state.qddot();
     const VectorX<T>& vn = prev_state.qdot();
     const VectorX<T>& xn = prev_state.q();

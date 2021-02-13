@@ -95,18 +95,13 @@ class ElasticityModel : public FemModel<Element> {
   ElasticityModel() = default;
   virtual ~ElasticityModel() = default;
 
-  /* Parse a tetrahedral volume mesh, store the positions of the vertices in
+  /** Parse a tetrahedral volume mesh, store the positions of the vertices in
    the mesh as the reference positions for the vertices, and increment the total
    number of vertices in the model. Returns the total number of vertices
    *before* the input `mesh` is parsed.
-
-   This function is only meant to be called by
-   DynamicElasticityModel::AddDynamicElasticityElementsFromTetMesh() and
-   StaticElasticityModel::AddStaticElasticityElementsFromTetMesh().
-
    @param mesh    The input tetrahedral mesh that describes the connectivity and
    the positions of the vertices. Each geometry::VolumeElement in the input
-   `mesh` will generate a ElasticityElement in this ElasticityModel.
+   `mesh` will generate an ElasticityElement in this ElasticityModel.
    @throw std::exception if Element::Traits::kNumNodes != 4. */
   int ParseTetMesh(const geometry::VolumeMesh<T>& mesh) {
     /* Alias for more readability. */

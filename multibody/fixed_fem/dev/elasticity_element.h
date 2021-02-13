@@ -408,7 +408,8 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
   std::array<Matrix3<T>, Traits::kNumQuadraturePoints> CalcDeformationGradient(
       const FemState<DerivedElement>& state) const {
     std::array<Matrix3<T>, Traits::kNumQuadraturePoints> F;
-    const Vector<T, Traits::kSolutionDimension* Traits::kNumNodes> element_x =
+    constexpr int kNumDofs = Traits::kSolutionDimension * Traits::kNumNodes;
+    const Vector<T, kNumDofs> element_x =
         this->ExtractElementDofs(this->node_indices(), state.q());
     const auto& element_x_reshaped = Eigen::Map<
         const Eigen::Matrix<T, Traits::kSolutionDimension, Traits::kNumNodes>>(

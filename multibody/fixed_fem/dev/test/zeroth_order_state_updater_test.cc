@@ -34,8 +34,8 @@ TEST_F(ZerothOrderStateUpdaterTest, IntegrateTime) {
   FemState<DummyElement<0>> prev_state(q);
   FemState<DummyElement<0>> new_state(prev_state);
   DRAKE_EXPECT_THROWS_MESSAGE(
-  state_updater.IntegrateTime(prev_state, &new_state), std::exception,
-          "There is no notion of time in a zeroth order ODE.");
+      state_updater.AdvanceOneTimeStep(prev_state, &new_state), std::exception,
+      "There is no notion of time in a zeroth order ODE.");
 }
 }  // namespace
 }  // namespace test

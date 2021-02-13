@@ -49,22 +49,26 @@ class DynamicElasticityModel : public ElasticityModel<Element> {
     /* Alias for more readability. */
     constexpr int kDim = Element::Traits::kSolutionDimension;
     constexpr int kNumNodes = Element::Traits::kNumNodes;
+    constexpr int kNumDofs = kDim * kNumNodes;
     DRAKE_THROW_UNLESS(kNumNodes == 4);
 
     using geometry::VolumeElementIndex;
-    /* Record the reference positions of the input mesh. */
-    const int node_offset = this->ParseTetMesh(mesh);
-    const NodeIndex node_index_offset(node_offset);
+    /* Record the reference positions of the input mesh. The returned offset is
+     from before the new tets are added. */
+    const NodeIndex node_index_offset(this->ParseTetMesh(mesh));
 
     /* Builds and adds new elements. */
     const VectorX<T>& X = this->reference_positions();
     std::array<NodeIndex, kNumNodes> element_node_indices;
     for (VolumeElementIndex i(0); i < mesh.num_elements(); ++i) {
       for (int j = 0; j < kNumNodes; ++j) {
+        /* To obtain the global node index, offset the local index of the nodes
+         in the mesh (starting from 0) by the existing number of nodes
+         before the current mesh is added. */
         const int node_id = mesh.element(i).vertex(j) + node_index_offset;
         element_node_indices[j] = NodeIndex(node_id);
       }
-      const Vector<T, kDim* kNumNodes> element_reference_positions =
+      const Vector<T, kNumDofs> element_reference_positions =
           Element::ExtractElementDofs(element_node_indices, X);
       const ElementIndex next_element_index =
           ElementIndex(this->num_elements());
