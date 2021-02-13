@@ -95,8 +95,40 @@ class ElasticityModel : public FemModel<Element> {
   ElasticityModel() = default;
   virtual ~ElasticityModel() = default;
 
+  /** Parse a tetrahedral volume mesh, store the positions of the vertices in
+   the mesh as the reference positions for the vertices, and increment the total
+   number of vertices in the model. Returns the total number of vertices
+   *before* the input `mesh` is parsed.
+   @param mesh    The input tetrahedral mesh that describes the connectivity and
+   the positions of the vertices. Each geometry::VolumeElement in the input
+   `mesh` will generate an ElasticityElement in this ElasticityModel.
+   @throw std::exception if Element::Traits::kNumNodes != 4. */
+  int ParseTetMesh(const geometry::VolumeMesh<T>& mesh) {
+    /* Alias for more readability. */
+    constexpr int kDim = Element::Traits::kSolutionDimension;
+    constexpr int kNumNodes = Element::Traits::kNumNodes;
+    DRAKE_THROW_UNLESS(kNumNodes == 4);
+
+    using geometry::VolumeVertexIndex;
+    /* Record the reference positions of the input mesh. */
+    const int num_new_vertices = mesh.num_vertices();
+    reference_positions_.conservativeResize(reference_positions_.size() +
+                                            kDim * num_new_vertices);
+    const NodeIndex node_index_offset = NodeIndex(this->num_nodes());
+    for (VolumeVertexIndex i(0); i < num_new_vertices; ++i) {
+      reference_positions_.template segment<kDim>(
+          kDim * (i + node_index_offset)) = mesh.vertex(i).r_MV();
+    }
+    /* Record the number of vertices *before* the input mesh is parsed. */
+    const int num_vertices = this->num_nodes();
+    this->increment_num_nodes(num_new_vertices);
+    return num_vertices;
+  }
+
+  const VectorX<T>& reference_positions() const { return reference_positions_; }
+
  private:
-  /* The gravitational acceleration in the world frame. */
+  VectorX<T> reference_positions_{};
   Vector<T, Element::Traits::kSpatialDimension> gravity_{0, 0, -9.81};
 };
 }  // namespace fixed_fem

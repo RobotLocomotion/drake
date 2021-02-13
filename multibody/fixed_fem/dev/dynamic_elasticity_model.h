@@ -5,45 +5,51 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/volume_mesh.h"
+#include "drake/multibody/fixed_fem/dev/damping_model.h"
 #include "drake/multibody/fixed_fem/dev/elasticity_model.h"
 
 namespace drake {
 namespace multibody {
 namespace fixed_fem {
-/** The FEM model for static 3D elasticity problems. Implements the interface in
- FemModel. It is assumed that elements are only added to, but never deleted
+/** The FEM model for dynamic 3D elasticity problems. Implements the interface
+ in FemModel. It is assumed that elements are only added to, but never deleted
  from, the model.
- @tparam Element    The type of StaticElasticityElement used in this
- %StaticElasticityModel, must be an instantiation of StaticElasticityElement. */
+ @tparam Element    The type of DynamicElasticityElement used in this
+ %DynamicElasticityModel, must be an instantiation of DynamicElasticityElement.
+ */
 template <class Element>
-class StaticElasticityModel : public ElasticityModel<Element> {
+class DynamicElasticityModel : public ElasticityModel<Element> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StaticElasticityModel);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DynamicElasticityModel);
 
   using T = typename Element::Traits::T;
   using ConstitutiveModel = typename Element::Traits::ConstitutiveModel;
 
-  StaticElasticityModel() = default;
-  ~StaticElasticityModel() = default;
+  DynamicElasticityModel() = default;
+  ~DynamicElasticityModel() = default;
 
-  /** Add tetrahedral StaticElasticityElements to the %StaticElasticityModel
+  /** Add tetrahedral DynamicElasticityElements to the %DynamicElasticityModel
    from a mesh. The positions of the vertices in the mesh are used as reference
    positions for the volume as well as the generalized positions for the model
-   in MakeFemState(). The gravity constant for the newly added elements is given
-   by ElasticityModel::gravity().
+   in MakeFemState().
    @param mesh    The input tetrahedral mesh that describes the connectivity and
    the positions of the vertices. Each geometry::VolumeElement in the input
-   `mesh` will generate a StaticElasticityElement in this
-   %StaticElasticityModel.
+   `mesh` will generate a DynamicElasticityElement in this
+   %DynamicElasticityModel.
    @param constitutive_model    The ConstitutiveModel to be used for all the
-   StaticElasticityElements created from the input `mesh`.
+   DynamicElasticityElements created from the input `mesh`.
+   @param density    The mass density of the new elements, in unit kg/m³.
+   @param damping_model    The DampingModel to be used for all the
+   DynamicElasticityElements created from the input `mesh`.
    @throw std::exception if Element::Traits::kNumNodes != 4. */
-  void AddStaticElasticityElementsFromTetMesh(
+  void AddDynamicElasticityElementsFromTetMesh(
       const geometry::VolumeMesh<T>& mesh,
-      const ConstitutiveModel& constitutive_model, const T& density) {
+      const ConstitutiveModel& constitutive_model, const T& density,
+      const DampingModel<T>& damping_model) {
     /* Alias for more readability. */
     constexpr int kDim = Element::Traits::kSolutionDimension;
     constexpr int kNumNodes = Element::Traits::kNumNodes;
+    constexpr int kNumDofs = kDim * kNumNodes;
     DRAKE_THROW_UNLESS(kNumNodes == 4);
 
     using geometry::VolumeElementIndex;
@@ -52,8 +58,8 @@ class StaticElasticityModel : public ElasticityModel<Element> {
     const NodeIndex node_index_offset(this->ParseTetMesh(mesh));
 
     /* Builds and adds new elements. */
-    std::array<NodeIndex, kNumNodes> element_node_indices;
     const VectorX<T>& X = this->reference_positions();
+    std::array<NodeIndex, kNumNodes> element_node_indices;
     for (VolumeElementIndex i(0); i < mesh.num_elements(); ++i) {
       for (int j = 0; j < kNumNodes; ++j) {
         /* To obtain the global node index, offset the local index of the nodes
@@ -62,7 +68,7 @@ class StaticElasticityModel : public ElasticityModel<Element> {
         const int node_id = mesh.element(i).vertex(j) + node_index_offset;
         element_node_indices[j] = NodeIndex(node_id);
       }
-      const Vector<T, kDim* kNumNodes> element_reference_positions =
+      const Vector<T, kNumDofs> element_reference_positions =
           Element::ExtractElementDofs(element_node_indices, X);
       const ElementIndex next_element_index =
           ElementIndex(this->num_elements());
@@ -71,16 +77,18 @@ class StaticElasticityModel : public ElasticityModel<Element> {
               element_reference_positions.data(), kDim, kNumNodes);
       this->AddElement(next_element_index, element_node_indices,
                        constitutive_model, element_reference_positions_reshaped,
-                       density, this->gravity());
+                       density, this->gravity(), damping_model);
     }
   }
 
  private:
   /* Implements FemModel::DoMakeFemState(). Generalized positions are
-   initialized to be reference positions of the input mesh vertices. */
+   initialized to be reference positions of the input mesh vertices. Velocities
+   and accelerations are initialized to 0. */
   FemState<Element> DoMakeFemState() const final {
     const VectorX<T>& X = this->reference_positions();
-    return FemState<Element>(X);
+    return FemState<Element>(X, VectorX<T>::Zero(X.size()),
+                             VectorX<T>::Zero(X.size()));
   }
 };
 }  // namespace fixed_fem

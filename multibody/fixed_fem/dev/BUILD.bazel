@@ -63,6 +63,18 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "dynamic_elasticity_model",
+    hdrs = [
+        "dynamic_elasticity_model.h",
+    ],
+    deps = [
+        ":damping_model",
+        ":elasticity_model",
+        "//geometry/proximity:volume_mesh",
+    ],
+)
+
+drake_cc_library(
     name = "eigen_conjugate_gradient_solver",
     hdrs = [
         "eigen_conjugate_gradient_solver.h",
@@ -212,6 +224,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "newmark_scheme",
+    hdrs = [
+        "newmark_scheme.h",
+    ],
+    deps = [
+        ":state_updater",
+    ],
+)
+
+drake_cc_library(
     name = "quadrature",
     hdrs = [
         "quadrature.h",
@@ -309,6 +331,21 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "dynamic_elasticity_model_test",
+    deps = [
+        ":dynamic_elasticity_element",
+        ":dynamic_elasticity_model",
+        ":linear_constitutive_model",
+        ":linear_simplex_element",
+        ":newmark_scheme",
+        ":simplex_gaussian_quadrature",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry/proximity:make_box_mesh",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
     name = "eigen_conjugate_gradient_solver_test",
     deps = [
         ":eigen_conjugate_gradient_solver",
@@ -385,6 +422,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "newmark_scheme_test",
+    deps = [
+        ":dummy_element",
+        ":newmark_scheme",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "simplex_gaussian_quadrature_test",
     deps = [
         ":simplex_gaussian_quadrature",
@@ -425,6 +471,7 @@ drake_cc_googletest(
         ":dummy_element",
         ":zeroth_order_state_updater",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
