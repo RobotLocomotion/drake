@@ -1,6 +1,7 @@
 #include "drake/geometry/proximity/simd_avx.h"
 
 #include <cstdint>
+
 #include <immintrin.h>
 
 // Warning: This is an experimental code to use AVX instructions. One
