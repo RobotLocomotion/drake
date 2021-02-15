@@ -73,8 +73,8 @@ the main body of the document:
 * Expand all acronyms (eg, MBP -> MultibodyPlant, SG -> SceneGraph).
 * Commits can be omitted if they only affect tests or non-installed examples.
   TODO(jwnimmer-tri) Explain how to check if something is installed.
-* In general you should mention removed classes and methods using their exact
-  name (for easier searching).
+* In general you should mention new bindings and deprecated/removed classes and
+  methods using their exact name (for easier searching).
 
   * In the pydrake and deprecation sections in fact you can just put the
     fully-qualified name as the whole line item; the meaning is clear from
@@ -100,6 +100,11 @@ the main body of the document:
   have no-release-notes policies, as their APIs although public are not yet
   fully supported.  Be sure to take note of which these are, or ask on
   #platform_review slack
+
+* Keep all bullet points to one line.
+
+  * Using hard linebreaks to stay under 80 columns makes the bullet lists hard
+    to maintain over time.
 
 Cutting the release
 -------------------
