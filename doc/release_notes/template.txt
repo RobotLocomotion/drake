@@ -94,7 +94,7 @@ Newly bound
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. <relnotes for attic,cmake,doc,setup,third_party,tools go here>
+.. <relnotes for cmake,doc,setup,third_party,tools go here>
 
 * TBD
 
