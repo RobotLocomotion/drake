@@ -1,9 +1,12 @@
 from os.path import isfile
 import subprocess
+import sys
 import unittest
 
 
 class TestDrakeVisualizerBazel(unittest.TestCase):
+    @unittest.skipIf(sys.platform == "darwin",
+                     "Drake Visualizer is disabled on macOS")
     def test_help(self):
         """Ensure we can call drake_visualizer --help in Bazel."""
         bin_path = "tools/drake_visualizer"
