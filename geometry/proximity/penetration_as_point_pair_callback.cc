@@ -331,10 +331,12 @@ struct ScalarSupport {
 /* Primitive support for double-valued query.  */
 template <>
 struct ScalarSupport<double> {
-  static bool is_supported(fcl::NODE_TYPE, fcl::NODE_TYPE) {
-    // Doubles (via its fallback) can support anything. (Including halfspace-X
-    // which is not supported in signed distance queries).
-    return true;
+  static bool is_supported(fcl::NODE_TYPE node1, fcl::NODE_TYPE node2) {
+    // Doubles (via its fallback) can support *almost* anything. Here, we
+    // enumerate the *very* limited unsupported cases. We can't meaningfully
+    // collide two half spaces, but fcl doesn't have an intelligent response.
+    // So, we simply short circuit at this point.
+    return !(node1 == fcl::GEOM_HALFSPACE && node2 == fcl::GEOM_HALFSPACE);
   }
 };
 

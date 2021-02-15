@@ -326,18 +326,17 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
     return X_WB;
   }
 
-  void UnsupportedGeometryAutoDiffXd(fcl::CollisionObjectd shape1,
-                                     fcl::CollisionObjectd shape2,
-                                     GeometryId id1, GeometryId id2) {
-    const std::unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs{
-        {{id1, RigidTransform<AutoDiffXd>::Identity()},
-         {id2, RigidTransform<AutoDiffXd>::Identity()}}};
-    vector<PenetrationAsPointPair<AutoDiffXd>> point_pairs;
-    CallbackData<AutoDiffXd> callback_data(&collision_filter_, &X_WGs,
-                                           &point_pairs);
+  template <typename T>
+  void UnsupportedGeometry(fcl::CollisionObjectd shape1,
+                           fcl::CollisionObjectd shape2, GeometryId id1,
+                           GeometryId id2) {
+    const std::unordered_map<GeometryId, RigidTransform<T>> X_WGs{
+        {{id1, RigidTransform<T>::Identity()},
+         {id2, RigidTransform<T>::Identity()}}};
+    vector<PenetrationAsPointPair<T>> point_pairs;
+    CallbackData<T> callback_data(&collision_filter_, &X_WGs, &point_pairs);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        Callback<AutoDiffXd>(&shape1, &shape2, &callback_data),
-        std::logic_error,
+        Callback<T>(&shape1, &shape2, &callback_data), std::logic_error,
         "Penetration queries between shapes .* and .* are not supported for "
         "scalar type .*");
   }
@@ -494,13 +493,31 @@ TEST_F(PenetrationAsPointPairCallbackTest, UnsupportedAutoDiffXd) {
   for (int i = 0; i < static_cast<int>(unsupported_geometries.size()); ++i) {
     for (int j = 0; j < static_cast<int>(unsupported_geometries.size()); ++j) {
       if (i != j) {
-        UnsupportedGeometryAutoDiffXd(
+        UnsupportedGeometry<AutoDiffXd>(
             unsupported_geometries[i].first, unsupported_geometries[j].first,
             unsupported_geometries[i].second, unsupported_geometries[j].second);
       }
     }
   }
 }
+
+// HalfSpace-HalfSpace should be unsupported for *all* scalars. Half spaces
+// are either in a non-colliding configuration or their penetration has infinite
+// depth. It is not a useful query to answer.
+TEST_F(PenetrationAsPointPairCallbackTest, UnsupportedHalfSpaceHalfSpace) {
+  // Create a second half space.
+  CollisionObjectd halfspace2(
+      make_shared<fcl::Halfspaced>(Vector3d{1, 0, 0}, 0));
+  const GeometryId hs2_id = GeometryId::get_new_id();
+  const EncodedData data(hs2_id, true);
+  data.write_to(&halfspace2);
+  this->collision_filter_.AddGeometry(data.encoding());
+  UnsupportedGeometry<double>(this->halfspace_, halfspace2, this->id_halfspace_,
+                              hs2_id);
+  UnsupportedGeometry<AutoDiffXd>(this->halfspace_, halfspace2,
+                                  this->id_halfspace_, hs2_id);
+}
+
 }  // namespace
 }  // namespace penetration_as_point_pair
 }  // namespace internal
