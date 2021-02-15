@@ -1,0 +1,223 @@
+
+*************
+Drake v0.27.0
+*************
+
+Announcements
+-------------
+
+* TBD
+
+Breaking changes since v0.26.0
+------------------------------
+
+* TBD
+
+Changes since v0.26.0
+---------------------
+
+Dynamical Systems
+~~~~~~~~~~~~~~~~~
+
+.. <relnotes for systems go here>
+
+* TBD primitives: Promote some ASSERT to DEMAND (`#14615`_)  # These checks are not performance-critical, and are checking user input (not internal invariants), so we should always leave them armed. Having these off by default let a bug slip through into Anzu.
+* TBD [systems,multibody,setup] Remove deprecated code 2021-02 (`#14607`_)
+
+New features
+
+* TBD
+
+Fixes
+
+* TBD
+
+Mathematical Program
+~~~~~~~~~~~~~~~~~~~~
+
+.. <relnotes for solvers go here>
+
+* TBD Pass the time limit to OSQP settings (`#14625`_)
+* TBD solvers: Increase error margin for OSQP solve time in the unit test (`#14637`_)
+* TBD Check status code in OSQP time limit test instead (`#14645`_)  # Check the TIMEOUT status from the OSQP result.
+
+New features
+
+* TBD
+
+Fixes
+
+* TBD
+
+Multibody Dynamics
+~~~~~~~~~~~~~~~~~~
+
+.. <relnotes for geometry,multibody go here>
+
+* TBD [render] Add RenderEngineGL to the render engine benchmark (`#14540`_)  # This does several things beyond simply exercising RenderEngineGl in addition to RenderEngineVtk. 1. Refactors the setup code so that arbitrarily large number of spheres can be added to the scene to really stress test the response to number of geometries. 2. Removes the shadow-related things (object to "catch" shadows and angled light to move the shadow out from behind the object). 3. Creates more disciplined test scenarios across all image types. - performance for varying geometry count - performance for varying camera count. - performance for varying image size. 4. Corrects incidental bug in RenderEngineGl; the primitive light API has been implemented. 5. Move documentation so it's discoverable by doxygen.
+* TBD Fix render_benchmark build error under mac (`#14558`_)  # I was directly referencing the `render_engine_foo.h` headers. I did this to template a function on RenderEngine subclass. However, there is no render_engine_gl.h for mac os. There *is* a MakeRenderEngineGlFactory that I use; it throws under mac. Solution: 1. Stop referencing the header file at all. 2. Make the gl benchmarks conditional on a macro that says whether or not the gl renderer is supported. 3. Put the macro in the benchmark's build configuration.
+* TBD [multibody,systems] Deprecate CalcCenterOfMassPosition() in favor of CalcCenterOfMassPositionInWorld() (`#14538`_)  # Fixes #14537
+* TBD Templatize DrakeVisualizer class (`#14569`_)  # Templatize DrakeVisualizer class, so it supports both double and AutoDiffXd Co-authored-by: Sean Curtis <sean.curtis@tri.global>
+* TBD [multibody,examples] Implements discrete hydroelastic model approximation with TAMSI (`#14630`_)
+* TBD [proximity] Increase ProximityEngine introspection for unit tests (`#14640`_)  # We have other tests/functionality that rely on the fact that the Mesh shape is represented by an fcl::Convex under the hood. This gives those downstream tests the ability to query that this is still happening and condition the test outcomes accordingly.
+
+New features
+
+* TBD
+
+Fixes
+
+* TBD
+
+Tutorials and examples
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. <relnotes for examples,tutorials go here>
+
+* TBD [examples,doc,tools] tools: Distinguish test_rule_tags vs tags (`#14581`_)  # Adding test-specific tags to non-test programs is misleading.
+* TBD Move remaining acrobot monte carlo material out of dev (`#14541`_)  # This moves the new matrial not from anzu, plus its immediate deps * metrics.py (from anzu) implements metrics over simulation output * optimizer_demo.py (new) demonstrates how to perform parameter optimization using Drake stochastic scenarios. * tests for the above * This resolves #13904 It also adds a README to the directory.  This is overdue given the relatively large number of binaries in here.
+* TBD acrobot: Fix spong LCM to actually work (`#14525`_)  # Previously, we were never decoding the received xhat messages.
+* TBD Disable end_effector_teleop_sliders example on macOS (`#14632`_)
+* TBD Fix output port index for kuka_simulation example (`#14631`_)  # Signed-off-by: Stephen Brawner <brawner@gmail.com>
+* TBD
+
+Miscellaneous features and fixes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. <relnotes for common,math,lcm,lcmtypes,manipulation,perception go here>
+
+* TBD lcmtypes: Remove stray deprecation notice (`#14539`_)  # This snuck in during 0da1f839 after it was rebased over bf2d26e6. Previously the plan was to deprecate this message, but after the rewrite we decided to keep it.  The BUILD.bazel file was correct but the stale comments were overlooked.
+* TBD Expose piecewise quat slerp's orientation getters (`#14585`_)  # * expose piecewise quat slerp's orientation getters.
+* TBD yaml: Allow for operating on non-default MaxRows or MaxCols storage (`#14618`_)
+* TBD
+
+pydrake bindings
+~~~~~~~~~~~~~~~~
+
+.. <relnotes for bindings go here>
+
+* TBD py trajectories: Handle numeric precision difference on Mac (`#14589`_)
+* TBD py common: Deprecate bad alises for Tolerance Type (`#14592`_)  # Make assertion error for descriptor deprecator more useful Warn about possible deprecation gymnastics
+* TBD Pybind MathematicalProgram::NewNonnegativePolynomial (`#14627`_)
+
+New features
+
+* TBD
+
+Fixes
+
+* TBD
+
+Newly bound
+
+* TBD
+
+Build system and dependencies
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. <relnotes for attic,cmake,doc,setup,third_party,tools go here>
+
+* TBD [doc,tools] doc: Add release notes v0.26.0 (`#14545`_)
+* TBD doc: Fix jenkins link to documentation build (`#14554`_)
+* TBD Add Jekyll framework (`#14531`_)
+* TBD [tools,common] tools: Add xmlrunner and use it for Python unittests (`#14560`_)
+* TBD tools: Adjust github3_py for best practices (`#14563`_)  # Remove an unused import. Prefer the glob argument vs "or fail".
+* TBD doc: Escape 'templated' URL with port number for Jekyll instructions (`#14572`_)
+* TBD doc: Remove deprecated doxygen.py stub (`#14582`_)
+* TBD doc: Remove unused visual_studio_build_targets image (`#14580`_)  # This file has been dead code since f3c093c8dcc9a6387f0b837a0e67fc6631f82dd7.
+* TBD doc: Define groupings to smooth our CI integration (`#14583`_)
+* TBD tools: Fix pathutils.bzl globbing vs double-star matching (`#14564`_)  # Re-implement strip_prefix logic to actually work.  The obvious brute force implementation is correct by inspection and plenty fast enough. Add unit test.
+* TBD doc: Add consolidated deployment tool (`#14587`_)  # This enables us to formulate the website layout within Drake inself, instead of by tweaking untestable CI scripts.
+* TBD [tools,examples] tools/performance: Start gathering sharable infrastructure (`#14505`_)  # * tools/performance: Split useful tooling out from cassie_bench Relevant to: #14464 Gather the sharable bits of experiment execution scripting and port the cassie benchmark to use it. This is a first pass at factoring out the common stuff from the cassie_benchmark tree, for use by other benchmarks. It hoists the basic techniques for data collection and variance reduction. As this gathers more uses, it can be polished more. Also missing from this patch is any documentation or tooling to help with using the compare.py script from the googlebenchmark package.
+* TBD Update VGT external for new device voxelizer interface (`#14600`_)
+* TBD doc: Remove vestigial sw2urdf.tex file (`#14609`_)
+* TBD Allow for new macOS versioning scheme (`#14608`_)
+* TBD [tools,doc] Sync minimum compiler and CMake versions for macOS (`#14608`_)
+* TBD Remove outdated macOS compiler flag related to Eigen (`#14608`_)
+* TBD Upgrade fcl to latest commit (`#14620`_)  # (Pick up full support for half space-ellipsoid contact.)
+* TBD Add lint check for unguarded OpenMP uses (`#14472`_)
+* TBD Add retry to apt-get/brew update calls and add flag to skip update altogether (`#14492`_)  # --without-update avoids redundant potentially flaky downloads for people who have already updated recently.
+* TBD [tools,doc] Add support for macOS Big Sur 11.x (`#14632`_)
+* TBD benchmark_tool: pass extra build args (`#14624`_)  # There is great interest in experimenting with various modifications to default build options. One example is to enable modern instruction set extensions. This patch to benchmark_tool permits callers to pass arbitrary bazel options to the build and run steps, to allow such experiments.
+* TBD Hydroelastic visualization speedup (`#14622`_)  # * Improve hydroelastic visualization - Fix 13665. Improve hydroelastic visualization performance by send mesh to VTK instead of individual triangle and line segments. - Fix 13664. Introduce color map as 1D texture and color the pressure according to the texture map.
+* TBD History-preserving rename of rst files to md (`#14612`_)
+* TBD History-restoring re-addition of RST documentation (`#14612`_)
+* TBD Conversion of Drake rst documentation to markdown format (`#14612`_)  # * This is a minimal translation of the existing documentation, in preparation for adding Jekyll scaffolding for the new website. * Transcribed for PR by ggould-tri (ggould@tri.global) * Add empty index.md file required by jekyll template
+* TBD Rename release notes directory per jekyll conventions (`#14612`_)
+* TBD Conversion of Drake rst release notes to markdown format (`#14612`_)  # * This is a minimal translation of the existing documentation, in preparation for adding Jekyll scaffolding for the new website. * Transcribed for PR by ggould-tri (ggould@tri.global)
+* TBD Remove one uncommitted file (`#14612`_)  # A top level release notes table of contents will be populated programatically in a later PR.
+* TBD
+
+Newly-deprecated APIs
+~~~~~~~~~~~~~~~~~~~~~
+
+* TBD
+
+Removal of deprecated items
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* TBD
+
+Notes
+-----
+
+This release provides `pre-compiled binaries
+<https://github.com/RobotLocomotion/drake/releases/tag/v0.27.0>`__ named
+``drake-YYYYMMDD-{bionic|focal|mac}.tar.gz``. See :ref:`Nightly Releases
+<nightly-releases>` for instructions on how to use them.
+
+Drake binary releases incorporate a pre-compiled version of `SNOPT
+<https://ccom.ucsd.edu/~optimizers/solvers/snopt/>`__ as part of the
+`Mathematical Program toolbox
+<https://drake.mit.edu/doxygen_cxx/group__solvers.html>`__. Thanks to
+Philip E. Gill and Elizabeth Wong for their kind support.
+
+.. <begin issue links>
+.. _#14472: https://github.com/RobotLocomotion/drake/pull/14472
+.. _#14492: https://github.com/RobotLocomotion/drake/pull/14492
+.. _#14505: https://github.com/RobotLocomotion/drake/pull/14505
+.. _#14525: https://github.com/RobotLocomotion/drake/pull/14525
+.. _#14531: https://github.com/RobotLocomotion/drake/pull/14531
+.. _#14538: https://github.com/RobotLocomotion/drake/pull/14538
+.. _#14539: https://github.com/RobotLocomotion/drake/pull/14539
+.. _#14540: https://github.com/RobotLocomotion/drake/pull/14540
+.. _#14541: https://github.com/RobotLocomotion/drake/pull/14541
+.. _#14545: https://github.com/RobotLocomotion/drake/pull/14545
+.. _#14554: https://github.com/RobotLocomotion/drake/pull/14554
+.. _#14558: https://github.com/RobotLocomotion/drake/pull/14558
+.. _#14560: https://github.com/RobotLocomotion/drake/pull/14560
+.. _#14563: https://github.com/RobotLocomotion/drake/pull/14563
+.. _#14564: https://github.com/RobotLocomotion/drake/pull/14564
+.. _#14569: https://github.com/RobotLocomotion/drake/pull/14569
+.. _#14572: https://github.com/RobotLocomotion/drake/pull/14572
+.. _#14580: https://github.com/RobotLocomotion/drake/pull/14580
+.. _#14581: https://github.com/RobotLocomotion/drake/pull/14581
+.. _#14582: https://github.com/RobotLocomotion/drake/pull/14582
+.. _#14583: https://github.com/RobotLocomotion/drake/pull/14583
+.. _#14585: https://github.com/RobotLocomotion/drake/pull/14585
+.. _#14587: https://github.com/RobotLocomotion/drake/pull/14587
+.. _#14589: https://github.com/RobotLocomotion/drake/pull/14589
+.. _#14592: https://github.com/RobotLocomotion/drake/pull/14592
+.. _#14600: https://github.com/RobotLocomotion/drake/pull/14600
+.. _#14607: https://github.com/RobotLocomotion/drake/pull/14607
+.. _#14608: https://github.com/RobotLocomotion/drake/pull/14608
+.. _#14609: https://github.com/RobotLocomotion/drake/pull/14609
+.. _#14612: https://github.com/RobotLocomotion/drake/pull/14612
+.. _#14615: https://github.com/RobotLocomotion/drake/pull/14615
+.. _#14618: https://github.com/RobotLocomotion/drake/pull/14618
+.. _#14620: https://github.com/RobotLocomotion/drake/pull/14620
+.. _#14622: https://github.com/RobotLocomotion/drake/pull/14622
+.. _#14624: https://github.com/RobotLocomotion/drake/pull/14624
+.. _#14625: https://github.com/RobotLocomotion/drake/pull/14625
+.. _#14627: https://github.com/RobotLocomotion/drake/pull/14627
+.. _#14630: https://github.com/RobotLocomotion/drake/pull/14630
+.. _#14631: https://github.com/RobotLocomotion/drake/pull/14631
+.. _#14632: https://github.com/RobotLocomotion/drake/pull/14632
+.. _#14637: https://github.com/RobotLocomotion/drake/pull/14637
+.. _#14640: https://github.com/RobotLocomotion/drake/pull/14640
+.. _#14645: https://github.com/RobotLocomotion/drake/pull/14645
+.. <end issue links>
+
+..
+  Current oldest_commit 5b3377b92387cd149d5aa7b88f8ce5866347bbc1 (exclusive).
+  Current newest_commit 2903e475a856263e175b95d91dd28cc3f925f53c (inclusive).
