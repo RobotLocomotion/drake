@@ -1,4 +1,4 @@
-"""Tool to help populate doc/release_notes/*.rst entries by automatically
+r"""Tool to help populate doc/release_notes/*.rst entries by automatically
 adding commit messages' content into a structured document template.
 
 This program is intended only for use by Drake maintainers who are preparing
