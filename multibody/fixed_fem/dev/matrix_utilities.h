@@ -6,9 +6,9 @@ namespace drake {
 namespace multibody {
 namespace fixed_fem {
 namespace internal {
-/* Some of the following methods involves calculations about 4th order tensor
+/* Some of the following methods involve calculations about a 4th order tensor
 (call it A) of dimension 3*3*3*3. We follow the following convention to flatten
-the 4th order tensor into 9*9 matrices that are organized as following
+the 4th order tensor into 9*9 matrices that are organized as follows:
 
                   l = 1       l = 2       l = 3
               -------------------------------------
@@ -26,8 +26,9 @@ the 4th order tensor into 9*9 matrices that are organized as following
               -------------------------------------
 Namely the ik-th entry in the jl-th block corresponds to the value Aᵢⱼₖₗ. */
 
-/* Calculates the unique polar decomposition of a 3-by-3 matrix F = RS where R
- is a rotation matrix and S is a symmetric matrix. */
+/* Calculates the polar decomposition of a 3-by-3 matrix F = RS where R is a
+ rotation matrix and S is a symmetric matrix. The decomposition is unique when F
+ is non-singular. */
 template <typename T>
 void PolarDecompose(const Matrix3<T>& F, EigenPtr<Matrix3<T>> R,
                     EigenPtr<Matrix3<T>> S) {
@@ -81,7 +82,8 @@ void PolarDecompose(const Matrix3<T>& F, EigenPtr<Matrix3<T>> R,
  @param[in] R The rotation matrix in the polar decomposition F = RS.
  @param[in] S The symmetric matrix in the polar decomposition F = RS.
  @param[in] scale The scalar multiple of the result.
- @param[out] scaled_dRdF The variable to which scale * dR/dF is added. */
+ @param[out] scaled_dRdF The variable to which scale * dR/dF is added.
+ @pre tr(S)I − S is invertible. */
 template <typename T>
 void AddScaledRotationalDerivative(
     const Matrix3<T>& R, const Matrix3<T>& S, const T& scale,
@@ -89,16 +91,16 @@ void AddScaledRotationalDerivative(
   Matrix3<T> A = -S;
   A.diagonal().array() += S.trace();
   const T J = A.determinant();
-  DRAKE_ASSERT(J != 0);
+  DRAKE_DEMAND(J != 0);
   const T scale_over_J = scale / J;
   const auto RA = R * A;
   const auto sRA = scale_over_J * RA;
   const auto sRART = sRA * R.transpose();
-  for (int a = 0; a < 3; a++) {
-    for (int b = 0; b < 3; b++) {
+  for (int a = 0; a < 3; ++a) {
+    for (int b = 0; b < 3; ++b) {
       const int column_index = 3 * b + a;
-      for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
+      for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
           const int row_index = 3 * j + i;
           (*scaled_dRdF)(row_index, column_index) +=
               sRART(i, a) * A(j, b) - sRA(i, b) * RA(a, j);

@@ -55,21 +55,18 @@ class CorotatedModel final
    0.5. */
   CorotatedModel(const T& youngs_modulus, const T& poisson_ratio)
       : E_(youngs_modulus), nu_(poisson_ratio) {
-    const std::pair<T, T> lame_parameters =
-        internal::CalcLameParameters(E_, nu_);
-    lambda_ = lame_parameters.first;
-    mu_ = lame_parameters.second;
+    std::tie(lambda_, mu_) = internal::CalcLameParameters(E_, nu_);
   }
 
   ~CorotatedModel() = default;
 
-  T youngs_modulus() const { return E_; }
+  const T& youngs_modulus() const { return E_; }
 
-  T poisson_ratio() const { return nu_; }
+  const T& poisson_ratio() const { return nu_; }
 
-  T shear_modulus() const { return mu_; }
+  const T& shear_modulus() const { return mu_; }
 
-  T lame_first_parameter() const { return lambda_; }
+  const T& lame_first_parameter() const { return lambda_; }
 
  private:
   friend Base;

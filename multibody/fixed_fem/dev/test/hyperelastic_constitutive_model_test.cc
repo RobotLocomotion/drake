@@ -16,7 +16,7 @@ const double kTol = 1e-12;
 
 // Creates a vector of arbitrary deformation gradients.
 std::array<Matrix3<AutoDiffXd>, kNumQuads> MakeDeformationGradients() {
-  // Create random AutoDiffXd deformation.
+  // Create an arbitrary AutoDiffXd deformation.
   Matrix3<double> F;
   // clang-format off
   F << 0.18, 0.63, 0.54,
@@ -38,8 +38,26 @@ std::array<Matrix3<AutoDiffXd>, kNumQuads> MakeDeformationGradients() {
   return deformation_gradients_autodiff;
 }
 
-/* Template parameter Model must be of type LinearConstitutiveModel or
- CorotatedModel. */
+/* Calculates an approximation of the condition number for the given matrix A.
+@tparam_nonsymbolic_scalar T. */
+template <typename T>
+double CalcConditionNumber(const Eigen::Ref<const MatrixX<T>>& A) {
+  Eigen::JacobiSVD<MatrixX<T>> svd(A);
+  /* Prevents division by zero for singular matrix. */
+  const T epsilon = 1e-14;
+  const T cond =
+      svd.singularValues()(0) /
+      (svd.singularValues()(svd.singularValues().size() - 1) + epsilon);
+  if constexpr (std::is_same_v<T, double>) {
+    return cond;
+  } else {
+    return cond.value();
+  }
+}
+
+/* Tests the constructor and the accessors.
+@tparam Model    Must be instantiations of LinearConstitutiveModel or
+CorotatedModel. */
 template <class Model>
 void TestParameters() {
   const Model model(100.0, 0.25);
@@ -66,17 +84,19 @@ void TestParameters() {
                               "Poisson ratio must be in \\(-1, 0.5\\).");
 }
 
-/* Template parameter Model must be of type LinearConstitutiveModel or
- CorotatedModel. */
+/* Tests that the energy density and the stress are zero at the undeformed
+state.
+@tparam Model    Must be instantiations of LinearConstitutiveModel or
+CorotatedModel. */
 template <class Model>
 void TestUndeformedState() {
   const Model model(100.0, 0.25);
   typename Model::Traits::DeformationGradientCacheEntryType cache_entry;
   const std::array<Matrix3<double>, kNumQuads> F{Matrix3<double>::Identity()};
   cache_entry.UpdateCacheEntry(F);
-  // In undeformed state, the energy density should be zero.
+  // At the undeformed state, the energy density should be zero.
   const std::array<double, kNumQuads> analytic_energy_density{0};
-  // In undeformaed state, the stress should be zero.
+  // At the undeformed state, the stress should be zero.
   const std::array<Matrix3<double>, kNumQuads> analytic_stress{
       Matrix3<double>::Zero()};
   std::array<double, kNumQuads> energy_density;
@@ -87,8 +107,11 @@ void TestUndeformedState() {
   EXPECT_EQ(stress, analytic_stress);
 }
 
-/* Template parameter Model must be of type LinearConstitutiveModel or
- CorotatedModel instantiated with AutoDiffXd. */
+/* Tests that the energy density and the stress are consistent by verifying the
+stress matches the derivative of energy density produced by automatic
+differentiation.
+@tparam Model    Must be AutoDiffXd instantiations of LinearConstitutiveModel or
+CorotatedModel. */
 template <class Model>
 void TestPIsDerivativeOfPsi() {
   const Model model(100.0, 0.3);
@@ -104,12 +127,14 @@ void TestPIsDerivativeOfPsi() {
   for (int i = 0; i < kNumQuads; ++i) {
     EXPECT_TRUE(CompareMatrices(
         Eigen::Map<const Matrix3<double>>(energy[i].derivatives().data(), 3, 3),
-        P[i], kTol));
+        P[i], CalcConditionNumber<AutoDiffXd>(P[i]) * kTol));
   }
 }
 
-/* Template parameter Model must be of type LinearConstitutiveModel or
- CorotatedModel instantiated with AutoDiffXd. */
+/* Tests that the stress and the stress derivatives are consistent by verifying
+the handcrafted derivative matches that produced by automatic differentiation.
+@tparam Model    Must be AutoDiffXd instantiations of LinearConstitutiveModel or
+CorotatedModel. */
 template <class Model>
 void TestdPdFIsDerivativeOfP() {
   const Model model(100.0, 0.3);
@@ -130,9 +155,10 @@ void TestdPdFIsDerivativeOfP() {
             dPijdF(k, l) = dPdF[q](3 * j + i, 3 * l + k).value();
           }
         }
-        EXPECT_TRUE(CompareMatrices(Eigen::Map<const Matrix3<double>>(
-                                        P[q](i, j).derivatives().data(), 3, 3),
-                                    dPijdF, kTol));
+        EXPECT_TRUE(CompareMatrices(
+            Eigen::Map<const Matrix3<double>>(P[q](i, j).derivatives().data(),
+                                              3, 3),
+            dPijdF, CalcConditionNumber<double>(dPijdF) * kTol));
       }
     }
   }
