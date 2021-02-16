@@ -1407,6 +1407,34 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesWeldedTo) {
               UnorderedElementsAre(&upper_ad, &lower_ad));
 }
 
+// Regression test for unhelpful error message -- see #14641.
+GTEST_TEST(MultibodyPlantTest, ReversedWeldError) {
+  // This test expects that the following model has a world body and a pair of
+  // welded-together bodies.
+  const std::string sdf_file =
+      FindResourceOrThrow("drake/multibody/plant/test/split_pendulum.sdf");
+  MultibodyPlant<double> plant(0.0);
+  Parser(&plant).AddModelFromFile(sdf_file);
+
+  // Add a new body, and weld it in the wrong direction using `WeldFrames`.
+  const Body<double>& extra = plant.AddRigidBody(
+      "extra", default_model_instance(), SpatialInertia<double>());
+  plant.WeldFrames(extra.body_frame(), plant.world_frame());
+
+  // The important property of this message is that it reports some identifier
+  // for the involved objects, so at least the developer can map those back to
+  // objects and deduce what API call was in error. If the details of the
+  // message change, update this check to match. If in future the error can be
+  // caught at the WeldFrames() step, so much the better. Modify this test to
+  // reflect that.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.Finalize(),
+      std::runtime_error,
+      "This multibody tree already has a mobilizer connecting "
+      "inboard frame \\(index=0\\) and outboard frame \\(index=\\d*\\). "
+      "More than one mobilizer between two frames is not allowed.");
+}
+
 // Utility to verify that the only ports of MultibodyPlant that are feedthrough
 // are acceleration and reaction force ports.
 bool OnlyAccelerationAndReactionPortsFeedthrough(

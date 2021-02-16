@@ -28,6 +28,8 @@
 #include <utility>
 #include <vector>
 
+#include <fmt/format.h>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
@@ -46,20 +48,21 @@ struct BodyTopology {
 
   // Constructs a body topology struct with index `body_index` and a body frame
   // with index `frame_index`.
-  BodyTopology(BodyIndex body_index, FrameIndex frame_index) :
-      index(body_index), body_frame(frame_index) {}
+  BodyTopology(BodyIndex body_index, FrameIndex frame_index)
+      : index(body_index), body_frame(frame_index) {}
 
   // Returns `true` if all members of `this` topology are exactly equal to the
   // members of `other`.
   bool operator==(const BodyTopology& other) const {
     if (index != other.index) return false;
-    if (inboard_mobilizer.is_valid() !=
-        other.inboard_mobilizer.is_valid()) return false;
+    if (inboard_mobilizer.is_valid() != other.inboard_mobilizer.is_valid())
+      return false;
     if (inboard_mobilizer.is_valid() &&
-        inboard_mobilizer != other.inboard_mobilizer) return false;
+        inboard_mobilizer != other.inboard_mobilizer)
+      return false;
     if (parent_body.is_valid() != other.parent_body.is_valid()) return false;
-    if (parent_body.is_valid() &&
-        parent_body != other.parent_body) return false;
+    if (parent_body.is_valid() && parent_body != other.parent_body)
+      return false;
     if (child_bodies != other.child_bodies) return false;
     if (body_frame != other.body_frame) return false;
     if (level != other.level) return false;
@@ -121,8 +124,8 @@ struct FrameTopology {
 
   // Constructs a frame topology for a frame with index `frame_index`
   // associated with a body with index `body_index`.
-  FrameTopology(FrameIndex frame_index, BodyIndex body_index) :
-      index(frame_index), body(body_index) {}
+  FrameTopology(FrameIndex frame_index, BodyIndex body_index)
+      : index(frame_index), body(body_index) {}
 
   // Returns `true` if all members of `this` topology are exactly equal to the
   // members of `other`.
@@ -164,15 +167,16 @@ struct MobilizerTopology {
   // The constructed topology will correspond to that of a Mobilizer with
   // `num_positions_in` generalized positions and `num_velocities_in`
   // generalized velocities.
-  MobilizerTopology(
-      MobilizerIndex mobilizer_index,
-      FrameIndex in_frame, FrameIndex out_frame,
-      BodyIndex in_body, BodyIndex out_body,
-      int num_positions_in, int num_velocities_in) :
-      index(mobilizer_index),
-      inboard_frame(in_frame), outboard_frame(out_frame),
-      inboard_body(in_body), outboard_body(out_body),
-      num_positions(num_positions_in), num_velocities(num_velocities_in) {}
+  MobilizerTopology(MobilizerIndex mobilizer_index, FrameIndex in_frame,
+                    FrameIndex out_frame, BodyIndex in_body, BodyIndex out_body,
+                    int num_positions_in, int num_velocities_in)
+      : index(mobilizer_index),
+        inboard_frame(in_frame),
+        outboard_frame(out_frame),
+        inboard_body(in_body),
+        outboard_body(out_body),
+        num_positions(num_positions_in),
+        num_velocities(num_velocities_in) {}
 
   // Returns `true` if all members of `this` topology are exactly equal to the
   // members of `other`.
@@ -210,9 +214,7 @@ struct MobilizerTopology {
 
   // Returns `true` if this mobilizer topology corresponds to that of a weld
   // mobilizer.
-  bool is_weld_mobilizer() const {
-    return num_velocities == 0;
-  }
+  bool is_weld_mobilizer() const { return num_velocities == 0; }
 
   // Unique index in the set of mobilizers.
   MobilizerIndex index;
@@ -258,8 +260,8 @@ struct ForceElementTopology {
   ForceElementTopology() {}
 
   // Constructs a force element topology with index `force_element_index`.
-  explicit ForceElementTopology(ForceElementIndex force_element_index) :
-      index(force_element_index) {}
+  explicit ForceElementTopology(ForceElementIndex force_element_index)
+      : index(force_element_index) {}
 
   // Returns `true` if all members of `this` topology are exactly equal to the
   // members of `other`.
@@ -282,12 +284,11 @@ struct JointActuatorTopology {
   JointActuatorTopology() {}
 
   // Constructs a joint actuator topology with index `joint_actuator_index`.
-  JointActuatorTopology(
-      JointActuatorIndex joint_actuator_index,
-      int start_index, int ndofs) :
-      index(joint_actuator_index),
-      actuator_index_start(start_index),
-      num_dofs(ndofs) {}
+  JointActuatorTopology(JointActuatorIndex joint_actuator_index,
+                        int start_index, int ndofs)
+      : index(joint_actuator_index),
+        actuator_index_start(start_index),
+        num_dofs(ndofs) {}
 
   // Returns `true` if all members of `this` topology are exactly equal to the
   // members of `other`.
@@ -336,13 +337,15 @@ struct BodyNodeTopology {
   //                       `body_in`. In other words, `parent_body_in` is the
   //                       body associated with node `parent_node_in`.
   // @param mobilizer_in The index to the mobilizer associated with this node.
-  BodyNodeTopology(
-      BodyNodeIndex index_in, int level_in,
-      BodyNodeIndex parent_node_in,
-      BodyIndex body_in, BodyIndex parent_body_in, MobilizerIndex mobilizer_in)
-      : index(index_in), level(level_in),
-      parent_body_node(parent_node_in),
-      body(body_in), parent_body(parent_body_in), mobilizer(mobilizer_in) {}
+  BodyNodeTopology(BodyNodeIndex index_in, int level_in,
+                   BodyNodeIndex parent_node_in, BodyIndex body_in,
+                   BodyIndex parent_body_in, MobilizerIndex mobilizer_in)
+      : index(index_in),
+        level(level_in),
+        parent_body_node(parent_node_in),
+        body(body_in),
+        parent_body(parent_body_in),
+        mobilizer(mobilizer_in) {}
 
   // Returns `true` if all members of `this` topology are exactly equal to the
   // members of `other`.
@@ -350,24 +353,24 @@ struct BodyNodeTopology {
     if (index != other.index) return false;
     if (level != other.level) return false;
 
-    if (parent_body_node.is_valid() !=
-        other.parent_body_node.is_valid()) return false;
+    if (parent_body_node.is_valid() != other.parent_body_node.is_valid())
+      return false;
     if (parent_body_node.is_valid() &&
-        parent_body_node != other.parent_body_node) return false;
+        parent_body_node != other.parent_body_node)
+      return false;
 
     if (body != other.body) return false;
 
     if (parent_body.is_valid() != other.parent_body.is_valid()) return false;
-    if (parent_body.is_valid() &&
-        parent_body != other.parent_body) return false;
+    if (parent_body.is_valid() && parent_body != other.parent_body)
+      return false;
 
     if (mobilizer.is_valid() != other.mobilizer.is_valid()) return false;
     if (mobilizer.is_valid() && mobilizer != other.mobilizer) return false;
 
     if (child_nodes != other.child_nodes) return false;
 
-    if (num_mobilizer_positions != other.num_mobilizer_positions)
-      return false;
+    if (num_mobilizer_positions != other.num_mobilizer_positions) return false;
     if (mobilizer_positions_start != other.mobilizer_positions_start)
       return false;
     if (num_mobilizer_velocities != other.num_mobilizer_velocities)
@@ -375,12 +378,10 @@ struct BodyNodeTopology {
     if (mobilizer_velocities_start != other.mobilizer_velocities_start)
       return false;
 
-    if (num_flexible_positions != other.num_flexible_positions)
-      return false;
+    if (num_flexible_positions != other.num_flexible_positions) return false;
     if (flexible_positions_start != other.flexible_positions_start)
       return false;
-    if (num_flexible_velocities != other.num_flexible_velocities)
-      return false;
+    if (num_flexible_velocities != other.num_flexible_velocities) return false;
     if (flexible_velocities_start != other.flexible_velocities_start)
       return false;
 
@@ -405,8 +406,7 @@ struct BodyNodeTopology {
   std::vector<BodyNodeIndex> child_nodes;
 
   // Returns the number of children to this node.
-  int get_num_children() const { return static_cast<int>(child_nodes.size());}
-
+  int get_num_children() const { return static_cast<int>(child_nodes.size()); }
 
   // Start and number of dofs for this node's mobilizer.
   int num_mobilizer_positions{0};
@@ -465,16 +465,12 @@ class MultibodyTreeTopology {
   int num_bodies() const { return static_cast<int>(bodies_.size()); }
 
   // Returns the number of physical frames in the multibody tree.
-  int num_frames() const {
-    return static_cast<int>(frames_.size());
-  }
+  int num_frames() const { return static_cast<int>(frames_.size()); }
 
   // Returns the number of mobilizers in the multibody tree. Since the "world"
   // body does not have a mobilizer, the number of mobilizers will always equal
   // the number of bodies minus one.
-  int num_mobilizers() const {
-    return static_cast<int>(mobilizers_.size());
-  }
+  int num_mobilizers() const { return static_cast<int>(mobilizers_.size()); }
 
   // Returns the number of tree nodes. This must equal the number of bodies.
   int get_num_body_nodes() const {
@@ -492,9 +488,7 @@ class MultibodyTreeTopology {
   }
 
   // Returns the number of tree levels in the topology.
-  int tree_height() const {
-    return tree_height_;
-  }
+  int tree_height() const { return tree_height_; }
 
   // Returns a constant reference to the corresponding FrameTopology given the
   // FrameIndex.
@@ -549,9 +543,10 @@ class MultibodyTreeTopology {
   // assigned to the new BodyTopology.
   std::pair<BodyIndex, FrameIndex> add_body() {
     if (is_valid()) {
-      throw std::logic_error("This MultibodyTreeTopology is finalized already. "
-                             "Therefore adding more bodies is not allowed. "
-                             "See documentation for Finalize() for details.");
+      throw std::logic_error(
+          "This MultibodyTreeTopology is finalized already. "
+          "Therefore adding more bodies is not allowed. "
+          "See documentation for Finalize() for details.");
     }
     BodyIndex body_index = BodyIndex(num_bodies());
     FrameIndex body_frame_index = add_frame(body_index);
@@ -568,9 +563,10 @@ class MultibodyTreeTopology {
   // @returns The FrameIndex assigned to the new FrameTopology.
   FrameIndex add_frame(BodyIndex body_index) {
     if (is_valid()) {
-      throw std::logic_error("This MultibodyTreeTopology is finalized already. "
-                             "Therefore adding more frames is not allowed. "
-                             "See documentation for Finalize() for details.");
+      throw std::logic_error(
+          "This MultibodyTreeTopology is finalized already. "
+          "Therefore adding more frames is not allowed. "
+          "See documentation for Finalize() for details.");
     }
     FrameIndex frame_index(num_frames());
     frames_.emplace_back(frame_index, body_index);
@@ -592,13 +588,13 @@ class MultibodyTreeTopology {
   // topology.
   //
   // @returns The MobilizerIndex assigned to the new MobilizerTopology.
-  MobilizerIndex add_mobilizer(
-      FrameIndex in_frame, FrameIndex out_frame,
-      int num_positions, int num_velocities) {
+  MobilizerIndex add_mobilizer(FrameIndex in_frame, FrameIndex out_frame,
+                               int num_positions, int num_velocities) {
     if (is_valid()) {
-      throw std::logic_error("This MultibodyTreeTopology is finalized already. "
-                             "Therefore adding more mobilizers is not allowed. "
-                             "See documentation for Finalize() for details.");
+      throw std::logic_error(
+          "This MultibodyTreeTopology is finalized already. "
+          "Therefore adding more mobilizers is not allowed. "
+          "See documentation for Finalize() for details.");
     }
     // Note: MultibodyTree double checks the mobilizer's frames belong to that
     // tree. Therefore the validity of in_frame and out_frame is already
@@ -610,16 +606,20 @@ class MultibodyTreeTopology {
           "Attempting to add a mobilizer between a frame and itself");
     }
     if (IsThereAMobilizerBetweenFrames(in_frame, out_frame)) {
-      throw std::runtime_error(
-          "This multibody tree already has a mobilizer connecting these two "
-          "frames. More than one mobilizer between two frames is not allowed");
+      throw std::runtime_error(fmt::format(
+          "This multibody tree already has a mobilizer connecting "
+          "inboard frame (index={}) and outboard frame (index={}). "
+          "More than one mobilizer between two frames is not allowed.",
+          in_frame, out_frame));
     }
     const BodyIndex inboard_body = frames_[in_frame].body;
     const BodyIndex outboard_body = frames_[out_frame].body;
     if (IsThereAMobilizerBetweenBodies(inboard_body, outboard_body)) {
-      throw std::runtime_error(
-          "This multibody tree already has a mobilizer connecting these two "
-          "bodies. More than one mobilizer between two bodies is not allowed");
+      throw std::runtime_error(fmt::format(
+          "This multibody tree already has a mobilizer connecting "
+          "inboard body (index={}) and outboard body (index={}). "
+          "More than one mobilizer between two bodies is not allowed.",
+          inboard_body, outboard_body));
     }
     // Checks for graph loops. Each body can have only one inboard mobilizer.
     if (bodies_[outboard_body].inboard_mobilizer.is_valid()) {
@@ -648,10 +648,8 @@ class MultibodyTreeTopology {
     // structure of MultibodyTree.
     bodies_[inboard_body].child_bodies.push_back(outboard_body);
 
-    mobilizers_.emplace_back(mobilizer_index,
-                             in_frame, out_frame,
-                             inboard_body, outboard_body,
-                             num_positions, num_velocities);
+    mobilizers_.emplace_back(mobilizer_index, in_frame, out_frame, inboard_body,
+                             outboard_body, num_positions, num_velocities);
     return mobilizer_index;
   }
 
@@ -666,8 +664,8 @@ class MultibodyTreeTopology {
     if (is_valid()) {
       throw std::logic_error(
           "This MultibodyTreeTopology is finalized already. "
-              "Therefore adding more force elements is not allowed. "
-              "See documentation for Finalize() for details.");
+          "Therefore adding more force elements is not allowed. "
+          "See documentation for Finalize() for details.");
     }
     ForceElementIndex force_index(num_force_elements());
     force_elements_.emplace_back(force_index);
@@ -693,8 +691,8 @@ class MultibodyTreeTopology {
     }
     const int actuator_index_start = num_actuated_dofs();
     const JointActuatorIndex actuator_index(num_joint_actuators());
-    joint_actuators_.emplace_back(
-        actuator_index, actuator_index_start, num_dofs);
+    joint_actuators_.emplace_back(actuator_index, actuator_index_start,
+                                  num_dofs);
     num_actuated_dofs_ += num_dofs;
     return actuator_index;
   }
@@ -725,7 +723,8 @@ class MultibodyTreeTopology {
     // Re-compilation is not allowed.
     if (is_valid()) {
       throw std::logic_error(
-          "Attempting to call MultibodyTree::Finalize() on an already """
+          "Attempting to call MultibodyTree::Finalize() on an already "
+          ""
           "finalized MultibodyTree.");
     }
 
@@ -745,7 +744,7 @@ class MultibodyTreeTopology {
       bodies_[current].body_node = node;
 
       // Computes level.
-      int level = 0;  // level = 0 for the world body.
+      int level = 0;       // level = 0 for the world body.
       if (current != 0) {  // Not the world body.
         level = bodies_[parent].level + 1;
         const MobilizerIndex mobilizer = bodies_[current].inboard_mobilizer;
@@ -767,9 +766,8 @@ class MultibodyTreeTopology {
       // Creates BodyNodeTopology.
       body_nodes_.emplace_back(
           node, level /* node index and level */,
-          parent_node /* This node's parent */,
-          current     /* This node's body */,
-          bodies_[current].parent_body       /* This node's parent body */,
+          parent_node /* This node's parent */, current /* This node's body */,
+          bodies_[current].parent_body /* This node's parent body */,
           bodies_[current].inboard_mobilizer /* This node's mobilizer */);
 
       // Pushes children to the back of the queue and pops current.
@@ -788,7 +786,7 @@ class MultibodyTreeTopology {
     for (BodyIndex body(0); body < num_bodies(); ++body) {
       if (bodies_[body].level < 0) {
         throw std::runtime_error("Body with index " + std::to_string(body) +
-            " was not assigned a mobilizer");
+                                 " was not assigned a mobilizer");
       }
     }
 
@@ -817,8 +815,8 @@ class MultibodyTreeTopology {
     // velocities.
     int position_index = 0;
     int velocity_index = num_positions_;
-    for (BodyNodeIndex node_index(1);
-         node_index < get_num_body_nodes(); ++node_index) {
+    for (BodyNodeIndex node_index(1); node_index < get_num_body_nodes();
+         ++node_index) {
       BodyNodeTopology& node = body_nodes_[node_index];
       MobilizerTopology& mobilizer = mobilizers_[node.mobilizer];
 
@@ -852,11 +850,11 @@ class MultibodyTreeTopology {
       // Demand indexes to be positive only for mobilizers with a non-zero
       // number of dofs.
       DRAKE_DEMAND(0 <= node.mobilizer_velocities_start_in_v ||
-          node.num_mobilizer_velocities == 0);
+                   node.num_mobilizer_velocities == 0);
       // This test would not pass for a model with all weld joints. Therefore
       // the check for num_velocities_ == 0.
       DRAKE_DEMAND(node.mobilizer_velocities_start_in_v < num_velocities_ ||
-          num_velocities_ == 0);
+                   num_velocities_ == 0);
     }
     DRAKE_DEMAND(position_index == num_positions_);
     DRAKE_DEMAND(velocity_index == num_states_);
@@ -923,7 +921,7 @@ class MultibodyTreeTopology {
 
     // Navigate the tree inwards starting at "from" and ending at the root.
     for (BodyNodeIndex node = from; node > BodyNodeIndex(0);
-        node = get_body_node(node).parent_body_node) {
+         node = get_body_node(node).parent_body_node) {
       (*path_to_world)[get_body_node(node).level] = node;
     }
     // Verify the last added node to the path is a child of the world.
@@ -971,7 +969,7 @@ class MultibodyTreeTopology {
   //   element zero in the returned vector.
   // - The minimum size of the list is one. This corresponds to a topology with
   //   all bodies welded to the world.
-  std::vector<std::set<BodyIndex>> CreateListOfWeldedBodies() const   {
+  std::vector<std::set<BodyIndex>> CreateListOfWeldedBodies() const {
     std::vector<std::set<BodyIndex>> welded_bodies;
     // Reserve the maximum possible of welded bodies (that is, when each body
     // forms its own welded body) in advance in order to avoid reallocation in
@@ -982,16 +980,16 @@ class MultibodyTreeTopology {
     // We build the list of welded bodies recursively, starting with the world
     // body added to the very first welded body in the list.
     std::set<BodyIndex>& bodies_welded_to_world = welded_bodies.back();
-    CreateListOfWeldedBodiesRecurse(
-        world_index(), &bodies_welded_to_world, &welded_bodies);
+    CreateListOfWeldedBodiesRecurse(world_index(), &bodies_welded_to_world,
+                                    &welded_bodies);
     return welded_bodies;
   }
 
  private:
   // Returns `true` if there is _any_ mobilizer in the multibody tree
   // connecting the frames with indexes `frame` and `frame2`.
-  bool IsThereAMobilizerBetweenFrames(
-      FrameIndex frame1, FrameIndex frame2) const {
+  bool IsThereAMobilizerBetweenFrames(FrameIndex frame1,
+                                      FrameIndex frame2) const {
     for (const auto& mobilizer_topology : mobilizers_) {
       if (mobilizer_topology.connects_frames(frame1, frame2)) return true;
     }
@@ -1000,8 +998,7 @@ class MultibodyTreeTopology {
 
   // Returns `true` if there is _any_ mobilizer in the multibody tree
   // connecting the bodies with indexes `body2` and `body2`.
-  bool IsThereAMobilizerBetweenBodies(
-      BodyIndex body1, BodyIndex body2) const {
+  bool IsThereAMobilizerBetweenBodies(BodyIndex body1, BodyIndex body2) const {
     for (const auto& mobilizer_topology : mobilizers_) {
       if (mobilizer_topology.connects_bodies(body1, body2)) return true;
     }
@@ -1014,8 +1011,8 @@ class MultibodyTreeTopology {
   // body, parent_welded_body. Otherwise a new welded body is created for the
   // child body and gets added to the list of all welded bodies, welded_bodies.
   void CreateListOfWeldedBodiesRecurse(
-      BodyIndex parent_index, std::set<BodyIndex> *parent_welded_body,
-      std::vector<std::set<BodyIndex>> *welded_bodies) const {
+      BodyIndex parent_index, std::set<BodyIndex>* parent_welded_body,
+      std::vector<std::set<BodyIndex>>* welded_bodies) const {
     const BodyTopology& parent = get_body(parent_index);
     for (BodyIndex child_index : parent.child_bodies) {
       const BodyTopology& child = get_body(child_index);
@@ -1026,16 +1023,15 @@ class MultibodyTreeTopology {
         // the parent's body welded body, parent_welded_body. We continue the
         // recursion down the tree starting at child.
         parent_welded_body->insert(child_index);
-        CreateListOfWeldedBodiesRecurse(
-            child_index, parent_welded_body, welded_bodies);
+        CreateListOfWeldedBodiesRecurse(child_index, parent_welded_body,
+                                        welded_bodies);
       } else {
         // If the child body is not welded to the parent body, then we create a
         // new welded body to which child is added. We continue the recursion
         // down the tree starting at child.
         welded_bodies->push_back(std::set<BodyIndex>{child_index});
         std::set<BodyIndex>& child_group = welded_bodies->back();
-        CreateListOfWeldedBodiesRecurse(child_index,
-                                        &child_group,
+        CreateListOfWeldedBodiesRecurse(child_index, &child_group,
                                         welded_bodies);
       }
     }
