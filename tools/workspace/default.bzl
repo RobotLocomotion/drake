@@ -18,6 +18,7 @@ load("@drake//tools/workspace/double_conversion:repository.bzl", "double_convers
 load("@drake//tools/workspace/doxygen:repository.bzl", "doxygen_repository")
 load("@drake//tools/workspace/drake_visualizer:repository.bzl", "drake_visualizer_repository")  # noqa
 load("@drake//tools/workspace/dreal:repository.bzl", "dreal_repository")
+load("@drake//tools/workspace/eigen:repository.bzl", "eigen_repository")
 load("@drake//tools/workspace/expat:repository.bzl", "expat_repository")
 load("@drake//tools/workspace/fcl:repository.bzl", "fcl_repository")
 load("@drake//tools/workspace/fmt:repository.bzl", "fmt_repository")
@@ -131,6 +132,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         drake_visualizer_repository(name = "drake_visualizer", mirrors = mirrors)  # noqa
     if "dreal" not in excludes:
         dreal_repository(name = "dreal", mirrors = mirrors)
+    if "eigen" not in excludes:
+        eigen_repository(name = "eigen")
     if "expat" not in excludes:
         expat_repository(name = "expat")
     if "fcl" not in excludes:

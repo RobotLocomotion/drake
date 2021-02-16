@@ -26,25 +26,3 @@ load("@bazel_skylib//lib:versions.bzl", "versions")
 # to actually be defined. The minimum_bazel_version value should match the
 # version passed to the find_package(Bazel) call in the root CMakeLists.txt.
 versions.check(minimum_bazel_version = "3.0")
-
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-
-http_archive(
-    name = "eigen",
-    strip_prefix = "eigen-3.3.9",
-    urls = ["https://gitlab.com/libeigen/eigen/-/archive/3.3.9/eigen-3.3.9.tar.gz"],
-    build_file_content = """
-cc_library(
-    name = "eigen",
-    hdrs = glob(
-        [
-            "Eigen/**",
-            "unsupported/**",
-        ],
-        exclude = ["**/CMakeLists.txt"],
-    ),
-    includes = ["."],
-    visibility = ["//visibility:public"],
-)
-    """,
-)
