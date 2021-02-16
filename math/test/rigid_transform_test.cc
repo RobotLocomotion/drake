@@ -716,13 +716,9 @@ GTEST_TEST(RigidTransform, OperatorMultiplyByMatrix3X) {
 }
 
 GTEST_TEST(RigidTransform, TestMemoryLayoutOfRigidTransformDouble) {
-  // For optimization, verify the order of this class's two non-static data
-  // members, namely rotation matrix R_AB_ and position vector p_AoBo_A_.
-  // Optimization (e.g., AVX instructions for multiplying rigid transforms) can
-  // leverage a continuous memory layout of RigidTransform<double> as 12
-  // sequential doubles starting with a 3x3 RotationMatrix<double> (9 doubles)
-  // immediately followed by a 3x1 position vector (3 doubles).  This unit test
-  // verifies the ordering remains as first R_AB_followed by  p_AoBo_A_.
+  // For optimization (e.g., AVX instructions), verify RigidTransform<double>
+  // is packed into 12 consecutive doubles, first with a 3x3 rotation matrix
+  // (9 doubles) followed by a 3x1  position vector (3 doubles).
   RigidTransform<double> X;
   const double* X_address = reinterpret_cast<const double*>(&X);
   const double* R_address = reinterpret_cast<const double*>(&X.rotation());
@@ -730,7 +726,7 @@ GTEST_TEST(RigidTransform, TestMemoryLayoutOfRigidTransformDouble) {
   EXPECT_EQ(X_address, R_address);
   EXPECT_EQ(X_address + 9, p_address);
 
-  // Test that the entire class is only 12 doubles long.
+  // Test that the entire class occupies memory equal to 12 doubles.
   EXPECT_EQ(sizeof(X), 12 * sizeof(double));
 }
 
