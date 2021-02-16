@@ -13,8 +13,7 @@ import sys
 sys.dont_write_bytecode = True  # noqa
 
 if sys.platform == "darwin":
-    print("ERROR: Drake Visualizer is disabled on macOS", file=sys.stderr)
-    sys.exit(0)
+    sys.exit("ERROR: Drake Visualizer is disabled on macOS")
 
 from _drake_visualizer_builtin_scripts import (
     _exec_drake_visualizer_with_plugins,
