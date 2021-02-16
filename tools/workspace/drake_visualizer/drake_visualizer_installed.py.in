@@ -10,6 +10,10 @@ match that of the real `drake-visualizer` binary.
 from os.path import isdir, join, dirname, realpath
 import sys
 
+if sys.platform == "darwin":
+    print("ERROR: Drake Visualizer is disabled on macOS", file=sys.stderr)
+    sys.exit(0)
+
 # Ensure that we can import the necessary scripts, accommodating symlinks.
 PREFIX_DIR = dirname(dirname(realpath(__file__)))
 assert isdir(join(PREFIX_DIR, "bin")), f"Bad location: {PREFIX_DIR}"
