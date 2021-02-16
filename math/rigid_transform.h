@@ -604,11 +604,11 @@ class RigidTransform {
 
 // To enable low-level optimizations we insist that RigidTransform<double> is
 // packed into 12 consecutive doubles, with a 3x3 RotationMatrix<double> in
-// the first 9 doubles and the translation vector in the last 3 doubles.
+// the first 9 doubles and a translation vector in the last 3 doubles.
 // A unit test verifies this memory layout for a RigidTransform<double>.
-// Note: The C++ standard guarantees that the non-static members of a class
-// appear in memory in the same order as they are declared.  Implementation
-// alignment requirements might cause a gap in memory between adjacent members.
+// Note: The C++ standard guarantees that non-static members of a class appear
+// in memory in the same order as they are declared.  Implementation alignment
+// requirements can cause an alignment gap in memory between adjacent members.
 static_assert(sizeof(RigidTransform<double>) == 12 * sizeof(double),
     "Low-level optimizations depend on RigidTransform<double> being "
     "stored as 12 sequential doubles in memory.");
