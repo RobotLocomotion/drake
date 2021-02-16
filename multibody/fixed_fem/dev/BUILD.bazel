@@ -22,6 +22,41 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "constitutive_model_utilities",
+    hdrs = [
+        "constitutive_model_utilities.h",
+    ],
+)
+
+drake_cc_library(
+    name = "corotated_model",
+    hdrs = [
+        "corotated_model.h",
+    ],
+    deps = [
+        ":constitutive_model",
+        ":constitutive_model_utilities",
+        ":corotated_model_cache_entry",
+        ":matrix_utilities",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "corotated_model_cache_entry",
+    hdrs = [
+        "corotated_model_cache_entry.h",
+    ],
+    deps = [
+        ":deformation_gradient_cache_entry",
+        ":matrix_utilities",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "damping_model",
     hdrs = [
         "damping_model.h",
@@ -184,6 +219,7 @@ drake_cc_library(
     ],
     deps = [
         ":constitutive_model",
+        ":constitutive_model_utilities",
         ":linear_constitutive_model_cache_entry",
         "//common:default_scalars",
         "//common:essential",
@@ -220,6 +256,16 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//multibody/contact_solvers:linear_operator",
+    ],
+)
+
+drake_cc_library(
+    name = "matrix_utilities",
+    hdrs = [
+        "matrix_utilities.h",
+    ],
+    deps = [
+        "//common:essential",
     ],
 )
 
@@ -295,6 +341,15 @@ drake_cc_library(
     ],
 )
 # === test/ ===
+
+drake_cc_library(
+    name = "test_utilities",
+    testonly = 1,
+    hdrs = ["test/test_utilities.h"],
+    deps = [
+        "//common:essential",
+    ],
+)
 
 drake_cc_googletest(
     name = "dirichlet_boundary_condition_test",
@@ -387,22 +442,24 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "hyperelastic_constitutive_model_test",
+    deps = [
+        ":corotated_model",
+        ":linear_constitutive_model",
+        ":test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
     name = "isoparametric_element_test",
     deps = [
         ":isoparametric_element",
         ":linear_simplex_element",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "linear_constitutive_model_test",
-    deps = [
-        ":linear_constitutive_model",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
-        "//math:gradient",
     ],
 )
 
@@ -418,6 +475,18 @@ drake_cc_googletest(
     name = "linear_simplex_element_test",
     deps = [
         ":linear_simplex_element",
+    ],
+)
+
+drake_cc_googletest(
+    name = "matrix_utilities_test",
+    deps = [
+        ":matrix_utilities",
+        ":test_utilities",
+        "//common:essential",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+        "//math:gradient",
     ],
 )
 
