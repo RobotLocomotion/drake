@@ -198,7 +198,7 @@ void VerifyCylinderMeshWithMa(const VolumeMesh<double>& mesh,
   //     each tetrahedron has at least one interior vertex.
   std::vector<VolumeVertexIndex> boundary_vertices =
       CollectUniqueVertices(IdentifyBoundaryFaces(mesh.tetrahedra()));
-  for (const VolumeElement tetrahedron : mesh.tetrahedra()) {
+  for (const VolumeElement& tetrahedron : mesh.tetrahedra()) {
     bool tetrahedron_has_an_interior_vertex = false;
     for (int i = 0;
          i < mesh.kVertexPerElement && !tetrahedron_has_an_interior_vertex;

@@ -155,7 +155,7 @@ bool VerifyBoxMeshWithMa(const VolumeMesh<double>& mesh, const Box& box) {
   //     each tetrahedron has at least one interior vertex.
   std::vector<VolumeVertexIndex> boundary_vertices =
       CollectUniqueVertices(IdentifyBoundaryFaces(mesh.tetrahedra()));
-  for (const VolumeElement tetrahedron : mesh.tetrahedra()) {
+  for (const VolumeElement& tetrahedron : mesh.tetrahedra()) {
     bool tetrahedron_has_an_interior_vertex = false;
     for (int i = 0;
          i < mesh.kVertexPerElement && !tetrahedron_has_an_interior_vertex;
@@ -182,7 +182,7 @@ bool VerifyBoxMeshWithMa(const VolumeMesh<double>& mesh, const Box& box) {
   };
   const double distance_tolerance =
       DistanceToPointRelativeTolerance(half_size.maxCoeff());
-  for (const VolumeElement tetrahedron : mesh.tetrahedra()) {
+  for (const VolumeElement& tetrahedron : mesh.tetrahedra()) {
     const double distance_v0 =
         distance_to_boundary(mesh.vertex(tetrahedron.vertex(0)).r_MV());
     bool different_distance_from_v0 = false;
@@ -202,7 +202,7 @@ bool VerifyBoxMeshWithMa(const VolumeMesh<double>& mesh, const Box& box) {
   }
   // C3. Each tetrahedron conforms to MA.
   // Assume the mesh already passes B2 (no mesh's vertex is outside the box).
-  for (const VolumeElement tetrahedron : mesh.tetrahedra()) {
+  for (const VolumeElement& tetrahedron : mesh.tetrahedra()) {
     bool tetrahedron_conform_to_MA =
         IsTetrahedronRespectingMa(tetrahedron, mesh, box, distance_tolerance);
     EXPECT_TRUE(tetrahedron_conform_to_MA)
