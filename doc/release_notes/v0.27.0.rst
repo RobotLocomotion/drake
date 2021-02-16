@@ -6,7 +6,7 @@ Drake v0.27.0
 Announcements
 -------------
 
-* None
+* macOS Big Sur 11.x is now supported on Intel Macs (`#14632`_)
 
 Breaking changes since v0.26.0
 ------------------------------
@@ -16,8 +16,9 @@ Breaking changes since v0.26.0
       ``d`` suffix) that matches the current uses of the ``double`` system.
     * Python users do not need to make any changes. The new template
       argument will not disturb pydrake.
-    * Certain compilers may not be able to infer the template argument (e.g.
+    * Certain compilers may not be able to infer the template argument (e.g.,
       when referring to static methods).
+* ``end_effector_teleop_sliders`` is no longer supported on macOS (`#14632`_)
 
 Changes since v0.26.0
 ---------------------
@@ -56,6 +57,7 @@ Multibody Dynamics
 New features
 
 * Implement discrete hydroelastic model approximation with TAMSI (`#14630`_)
+* DrakeVisualizer class is now templatized (`#14569`_)
 
 Fixes
 
@@ -66,9 +68,8 @@ Tutorials and examples
 
 .. <relnotes for examples,tutorials go here>
 
-* Move remaining acrobot monte carlo material out of dev (`#14541`_)
-* Fix ``acrobot`` Spong controller LCM communication to actually work
-  (`#14525`_)
+* Provide a complete end-to-end demonstration, using the stochastic schema mechanisms, of how Monte Carlo scenarios can be used to optimize the parameters for a controller (`#14541`_)
+* Fix ``acrobot`` Spong controller LCM communication to actually work (`#14525`_)
 * ``end_effector_teleop_sliders`` is no longer supported on macOS (`#14632`_)
 * Fix output port index for ``kuka_simulation`` example (`#14631`_)
 
@@ -78,11 +79,12 @@ Miscellaneous features and fixes
 .. <relnotes for common,math,lcm,lcmtypes,manipulation,perception go here>
 
 * Expose PiecewiseQuaternionSlerp's orientation getters (`#14585`_)
-* Allow ``yaml`` to operate on non-default MaxRows or MaxCols storage
-  (`#14618`_)
-* Add RenderEngineGL to the render engine benchmark (`#14540`_)
-* Fix ``render_benchmark`` build error under mac (`#14558`_)
-* Increase ProximityEngine introspection for unit tests (`#14640`_)
+* Allow ``yaml`` to operate on non-default MaxRows or MaxCols storage (`#14618`_)
+
+.. Not installed:
+    * Add RenderEngineGL to the render engine benchmark (`#14540`_)
+    * Fix ``render_benchmark`` build error under mac (`#14558`_)
+    * Increase ProximityEngine introspection for unit tests (`#14640`_)
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
@@ -99,31 +101,26 @@ Fixes
 
 Newly bound
 
-* Bind ``MathematicalProgram::NewNonnegativePolynomial`` (`#14627`_)
+* ``pydrake.solvers.mathematicalprogram.MathematicalProgram.NewNonnegativePolynomial`` (`#14627`_)
 
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for attic,cmake,doc,setup,third_party,tools go here>
 
-* Add support for macOS Big Sur 11.x (`#14632`_, `#14608`_, `#14608`_,
-  `#14608`_)
-* Update ``voxelized_geometry_tools`` for new device voxelizer interface
-  (`#14600`_)
+* Add support for macOS Big Sur 11.x (`#14632`_, `#14608`_, `#14608`_, `#14608`_)
 * Upgrade fcl to latest commit (`#14620`_)
+* Upgrade voxelized_geometry_tools to latest commit (`#14600`_)
 * Fix ``pathutils.bzl`` globbing vs double-star matching (`#14564`_)
-* Add retry to apt-get/brew update calls and add flag to skip update altogether
-  (`#14492`_)
+* Add retry to apt-get/brew update calls and add flag to skip update altogether (#14492`_)
+* Add lint check for unguarded OpenMP uses (`#14472`_)
+* Distinguish test_rule_tags vs tags (`#14581`_)
+* Add xmlrunner and use it for Python unittests (`#14560`_)
 
 .. Not installed:
-     * Start gathering sharable performance benchmarking infrastructure
-       (`#14505`_)
-     * Add lint check for unguarded OpenMP uses (`#14472`_)
-     * Prepare for Jekyll website conversion (`#14531`_, `#14612`_)
-     * Minor cleanup (`#14582`_, `#14572`_, `#14563`_, `#14554`_, `#14580`_)
-      `#14609`_)
-    * Distinguish test_rule_tags vs tags (`#14581`_)
-    * Add xmlrunner and use it for Python unittests (`#14560`_)
+    * Start gathering sharable performance benchmarking infrastructure (`#14505`_)
+    * Prepare for Jekyll website conversion (`#14531`_, `#14612`_)
+    * Minor cleanup (`#14582`_, `#14572`_, `#14563`_, `#14554`_, `#14580`_)
     * Define groupings in ``//doc`` to smooth our CI integration (`#14583`_)
     * Add consolidated ``//doc`` deployment tool (`#14587`_)
 
@@ -139,14 +136,13 @@ Newly-deprecated APIs
 
 C++
 
-* ``drake::multibody::MultibodyPlant::CalcCenterOfMassPosition`` (`#14538`_)
+* ``drake::multibody::MultibodyPlant::CalcCenterOfMassPosition -> CalcCenterOfMassPositionInWorld`` (`#14538`_)
 
 Python
 
-* ``pydrake.multibody.plant.MultibodyPlant.CalcCenterOfMassPosition``
-  (`#14538`_)
-* ``pydrake.common.ToleranceType.absolute`` (`#14592`_)
-* ``pydrake.common.ToleranceType.relative`` (`#14592`_)
+* ``pydrake.multibody.plant.MultibodyPlant.CalcCenterOfMassPosition -> CalcCenterOfMassPositionInWorld`` (`#14538`_)
+* ``pydrake.common.ToleranceType.absolute -> kAbsolute`` (`#14592`_)
+* ``pydrake.common.ToleranceType.relative -> kRelative`` (`#14592`_)
 
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
