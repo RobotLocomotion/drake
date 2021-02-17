@@ -17,11 +17,11 @@ of the following:
 Please only assign labels if you are reasonably confident they are correct.
 The Drake development team will apply appropriate labels later as needed.
 
-#### Owner
+# Owner
 
 Every issue must have at least one owner assigned.
 
-#### Team
+# Team
 
 Every issue must have at least one ``team`` label. The teams, their leads, and
 their responsibilities are:
@@ -44,7 +44,7 @@ their responsibilities are:
   * lead: RussTedrake
   * responsibilities: examples/requests from MIT projects / MIT courses
 
-#### Component
+# Component
 
 Every issue must have at most one ``component`` label. The components are:
 
@@ -112,7 +112,7 @@ Every issue must have at most one ``component`` label. The components are:
   usually in ``drake/systems/framework``.
   * typical team: dynamics
 
-#### Priority
+# Priority
 
 The ``emergency`` priority indicates that the owning team should not work
 on anything else until the issue is resolved.
@@ -125,13 +125,13 @@ thumb may be useful for issues:
 * ``priority: low`` - planned for a subsequent quarter.
 * ``priority: backlog`` - will be handled on an ad-hoc basis, as time permits.
 
-#### Configuration
+# Configuration
 
 An issue may have configuration label(s) such as ``linux``, ``mac``,
 ``python``, etc.  If no ``configuration`` label is present, the issue is
 assumed to affect all configurations.
 
-#### Status
+# Status
 
 For the most part, we rely on reviewable.io to communicate PR status.
 Status labels are optional, but Drake developers managing the PR queue

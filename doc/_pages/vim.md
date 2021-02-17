@@ -3,7 +3,7 @@ title: Vim/Neovim Notes
 ---
 
 
-#### Introduction
+# Introduction
 
 
 This page contains notes on ways to use [Vim](https://www.vim.org/) or
@@ -11,14 +11,14 @@ This page contains notes on ways to use [Vim](https://www.vim.org/) or
 between the two the Neovim value will be given in curly braces after the Vim
 value (e.g. ``.vimrc`` {``.config/nvim/init.vim``}).
 
-#### Installing Neovim
+# Installing Neovim
 
 If you want to use Neovim, follow the instructions on the Neovim wiki
 ([Ubuntu](https://github.com/neovim/neovim/wiki/Installing-Neovim#ubuntu),
 [Homebrew](https://github.com/neovim/neovim/wiki/Installing-Neovim#homebrew-macos--linuxbrew-linux)).
 Ubuntu users should make sure that they install the Python modules as well.
 
-#### Configuration Files
+# Configuration Files
 
 ``sample_vimrc`` ([download](/downloads/sample_vimrc)) provides a sample
 configuration file that sets up some plugins and key-mappings that users may
@@ -43,7 +43,7 @@ is to install the plugins that it specifies.
          {``~/.local/share/nvim/site/autoload/plug.vim``}
       * ``~/.vim/plugged`` {``~/.local/share/nvim/plugged``}
 
-#### Setting up Code-Completion/Linting/Jump To Declaration
+# Setting up Code-Completion/Linting/Jump To Declaration
 
 [YouCompleteMe](https://github.com/Valloric/YouCompleteMe) is a plugin that
 provides real-time linting + jump-to-declaration functionality. It has a
@@ -87,7 +87,7 @@ YouCompleteMe to compile the current file. Note that for YouCompleteMe to see
 a given Drake header file, the corresponding Bazel target must have been built.
 See also, [Linting and Jump-to-Declaration Mappings](#linting-and-jump-to-declaration-mappings).
 
-#### Additional Mappings
+# Additional Mappings
 
 The aforementioned ``sample_vimrc`` file pulls in several plugins and defines
 mappings for working with them. It also defines some general-purpose mappings.
@@ -95,7 +95,7 @@ Here are some highlights. A lot of these start with <leader>, which in the
 attached file is mapped to ";" (so <leader>gv becomes ;gv). You can, of course,
 change <leader> to whatever you prefer in your ``.vimrc`` {``init.vim``} file.
 
-##### Git Mappings
+## Git Mappings
 
 These mappings use [fugitive.git](https://github.com/tpope/vim-fugitive) and
 [Gitv](https://github.com/gregsexton/gitv) to perform Git-related tasks.
@@ -108,7 +108,7 @@ These mappings use [fugitive.git](https://github.com/tpope/vim-fugitive) and
 * ``<leader>gv`` launches gitv, a Gitk clone for Vim. You can use this to inspect
    commits, switch branches, cherry-pick, and more
 
-##### Linting and Jump-to-Declaration Mappings
+## Linting and Jump-to-Declaration Mappings
 
 These mappings use [YouCompleteMe](https://github.com/Valloric/YouCompleteMe)
 and [ListToggle](https://github.com/Valloric/ListToggle).
@@ -121,7 +121,7 @@ and [ListToggle](https://github.com/Valloric/ListToggle).
    errors found by YouCompleteMe are listed in the location list, which can
    make it easy to go from one to the next.
 
-##### File Tree Explorer Mappings
+## File Tree Explorer Mappings
 
 These mappings use NERDTree](https://github.com/scrooloose/nerdtree)to
 provide a file tree explorer in Vim.
@@ -131,7 +131,7 @@ provide a file tree explorer in Vim.
    particularly useful for getting to the appropriate ``BUILD.bazel`` file for a
    given source file.
 
-##### Fuzzy Finder Mappings
+## Fuzzy Finder Mappings
 
 These mappings use [ctrlp.vim](https://github.com/ctrlpvim/ctrlp.vim) to
 provide fuzzy file lookup in Vim.

@@ -2,7 +2,7 @@
 title: Detailed Notes on Drake's Unit Tests
 ---
 
-#### Introduction
+# Introduction
 
 Unit tests are essential for software maintainability. They demonstrate the
 correctness of existing code and prevent future changes from breaking the
@@ -11,9 +11,9 @@ way for developers to inform Drake's
 [Continuous Integration (CI)](/developers.html#continuous-integration-notes) service how
 the software is *supposed* to behave.
 
-#### Unit Testing Frameworks
+# Unit Testing Frameworks
 
-##### C++ Code
+## C++ Code
 
 Please use the
 [Google Test Framework](https://github.com/google/googletest). It is already
