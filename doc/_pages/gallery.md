@@ -2,11 +2,12 @@
 title: Gallery
 ---
 
-<div class="aside">
-  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js"></script>
-</div>
-If you have an example from your own work that you would like to showcase, please edit ``doc/gallery.rst`` directly and submit a pull request!
+If you have an example from your own work that you would like to showcase, please edit ``doc/_pages/gallery.md`` directly and submit a pull request!
 
+<!--
+TODO(eric.cousineau): Make video preview images resize according to their
+aspect ratio.
+-->
 
 # Underactuated Robotics
 
@@ -99,7 +100,7 @@ its restoration and completion.
 Caelan Garrett has examples using Drake in his STRIPStream/PDDLStream
 task-and-motion-planning framework.
 
-![Drake Kuka](/images/drake_kuka.png)
+<img class="gallery" height="224" src="https://github.com/caelan/pddlstream/raw/d0eb256e88b8b5174fbd136a82867fd9e9cebc67/images/drake_kuka.png"/>
 
 *Source Code:* [https://github.com/caelan/pddlstream#drake](https://github.com/caelan/pddlstream#drake)
 
@@ -143,6 +144,6 @@ planning, control, and depth sensing, all through the pydrake interface.
 Zhaoyuan Gu learned Drake from scratch as a 2019 TRI summer intern and
 wrote this beginner's tutorial: [https://drake.guzhaoyuan.com](https://drake.guzhaoyuan.com/)
 
-![](/images/Untitled.gif)
+<img class="gallery" height="224px" src="https://blobscdn.gitbook.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-LgYfwVg89cfloOSocyC%2F-LhJQm219Jka_jubcY86%2F-LhJQsQLlSIty5iywZxX%2FUntitled.gif?alt=media&token=c343b42a-5927-48c9-981b-b2074ae3da56"/>
 
-![Cart Pole Tracking](/images/cart_pole_tracking.gif)
+<img class="gallery" height="224px" src="https://blobscdn.gitbook.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-LgYfwVg89cfloOSocyC%2F-Lhq9MPiXqZNYqPUQ9bG%2F-Lhq9Tp8S5LlQUyPQaW-%2Fcart_pole_tracking.gif?alt=media&token=d5e653f0-810e-4008-8279-f1607cb12664"/>

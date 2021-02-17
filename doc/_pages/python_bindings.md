@@ -1,6 +1,12 @@
 ---
 title: Using Drake from Python
+layout: page_with_toc
 ---
+
+{% include toc.md %}
+<article class="markdown-body" markdown="1">
+
+# Installation
 
 A substantial subset of the Drake C++ functionality is available from Python.
 The Drake Python bindings are generated using [pybind11](https://github.com/pybind/pybind11),
@@ -441,3 +447,5 @@ If you have SNOPT enabled (either `-DWITH_SNOPT=ON` or `-DWITH_ROBOTLOCOMOTION_S
 If you are developing Python bindings, please see the Doxygen page
 [Python Bindings](https://drake.mit.edu/doxygen_cxx/group__python__bindings.html) which provides information on programming conventions, documentation, tips
 for debugging, and other advice.
+
+</article>
