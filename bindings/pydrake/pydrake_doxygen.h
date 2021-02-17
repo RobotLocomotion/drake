@@ -330,7 +330,7 @@ For examples of how to use the deprecations and what side effects they will
 have, please see:
 
 - [`drake/bindings/.../deprecation_example/`](https://github.com/RobotLocomotion/drake/tree/master/bindings/pydrake/common/test/deprecation_example)
-- [`drake/bindings/.../deprecation_test.py`](https://github.com/RobotLocomotion/drake/blob/master/bindings/pydrake/common/test/deprecation_test.py)
+- [`drake/bindings/.../deprecation_utility_test.py`](https://github.com/RobotLocomotion/drake/blob/master/bindings/pydrake/common/test/deprecation_utility_test.py)
 
 @note All deprecations in Drake should ultimately use the
 [Python `warnings` module](https://docs.python.org/3.6/library/warnings.html),
