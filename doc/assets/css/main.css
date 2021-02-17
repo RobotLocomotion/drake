@@ -277,15 +277,18 @@ section {
 
 .sub {
   position: absolute;
-  width: 100%;
+  width: auto;
   white-space: nowrap;
   opacity: 0;
   visibility: hidden;
   text-align: left;
 
   margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--primary);
+  margin-left: -10px;
+  padding: 10px;
+  border-top: 3px solid var(--darkened);
+
+  background-color: #1C1818DD;
 
   transition: all 0.6s cubic-bezier(0.2, 0.3, 0, 1);
   -webkit-transition: all 0.6s cubic-bezier(0.2, 0.3, 0, 1);
@@ -336,7 +339,7 @@ section {
     opacity: 0;
     visibility: hidden;
 
-    position: absolute;
+    position: relative;
     top: 0;
     left: 0;
     width: 100vw;
