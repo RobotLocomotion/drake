@@ -55,7 +55,7 @@ export PYTHONPATH=/opt/drake/lib/python3.6/site-packages:${PYTHONPATH}
 *macOS:*
 
 ```bash
- export PYTHONPATH=/opt/drake/lib/python3.8/site-packages:${PYTHONPATH}
+ export PYTHONPATH=/opt/drake/lib/python3.9/site-packages:${PYTHONPATH}
 ```
 
 See [below](#using-the-python-bindings) for usage instructions.
@@ -137,7 +137,7 @@ export PYTHONPATH=${PWD}/install/lib/python3.8/site-packages:${PYTHONPATH}
 
 ```bash
 cd drake-build
-export PYTHONPATH=${PWD}/install/lib/python3.8/site-packages:${PYTHONPATH}
+export PYTHONPATH=${PWD}/install/lib/python3.9/site-packages:${PYTHONPATH}
 ```
 
 # Using the Python Bindings
