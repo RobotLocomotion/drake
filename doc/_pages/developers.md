@@ -1,6 +1,10 @@
 ---
 title: For Developers
+layout: page_with_toc
 ---
+
+{% include toc.md %}
+<article class="markdown-body" markdown="1">
 
 # Introduction
 
@@ -42,6 +46,11 @@ own projects.  Please consider contributing to our [Drake Gallery](gallery.html)
 extremely flexible terms intended to encourage use by anyone, for any
 purpose. When you make a contribution to the Drake project, you are
 agreeing to do so under those same terms.
+
+## Website Licensing
+
+See [Website Third-Party Licenses](/website_licenses.html) for the licenses
+of artifacts distributed with this website.
 
 # Testing
 
@@ -274,3 +283,5 @@ can can look into the question.
 * [Avoid Accidental Pushes to the Repository](/no_push_to_origin.html)
 * [Model Version Control](/model_version_control.html)
 * [Release Playbook](/release_playbook.html)
+
+</article>

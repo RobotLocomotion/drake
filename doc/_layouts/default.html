@@ -1,13 +1,33 @@
 <!DOCTYPE html>
-<html>
+<html lang="en-US">
   <head>
-    <meta charset="utf-8">
-    <title>{% if page.title %}{{ page.title | escape }}{% else %}{{ site.title | escape }}{% endif %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta charset="utf-8"/>
+    <link rel="shortcut icon" href="{{ '/images/favicon.png' | relative_url }}"/>
+    <title>Drake: {{ page.title }}</title>
+    <meta
+      name="description"
+      content="{{ site.custom.meta.content | xml_escape}}"/>
+    <!--
+    The "Work Sans" font is licensed under the SIL Open Font License (OFL). For
+    more information, see:
+    - https://fonts.google.com/specimen/Work+Sans?preview.text_type=custom#about
+    - https://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL
+    -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Work+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="{{ "/third_party/github-styling/github-markdown.css" | relative_url }}"/>
+    <link rel="stylesheet" href="{{ "/third_party/dracula/syntax.css" | relative_url }}"/>
+    <link rel="stylesheet" href="{{ "/third_party/pylons/pylons.css" | relative_url }}"/>
+    <link rel="stylesheet" href="{{ "/assets/css/main.css" | relative_url }}"/>
   </head>
   <body>
-    {{ content }}
+    {% include header.html %}
+    <div class="page">
+      <div class="content">
+        {{ content }}
+        {% include footer.html %}
+      </div>
+    </div>
+    <script src="{{ "/assets/js/mobile.js" | relative_url }}"></script>
   </body>
-<!-- Javascript Assets -->
-<script src="{{ '/js/plugins-min.js' | relative_url }}"></script>
 </html>
-
