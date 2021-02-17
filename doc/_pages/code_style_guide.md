@@ -15,7 +15,7 @@ Note: Many of the files in the repository were written before this style guide,
 or did not follow it precisely.  If you find style errors, go ahead and change
 it and submit a pull request.
 
-#### C++ Style
+# C++ Style
 
 The Drake C++ style guide (which is derived from the Google C++ style guide)
 can be found
@@ -23,7 +23,7 @@ can be found
 Its source lives in
 [the styleguide repository](https://github.com/RobotLocomotion/styleguide).
 
-#### Python Style
+# Python Style
 
 Drake strictly follows [PEP 8 -- Style Guide for Python Code](
 https://www.python.org/dev/peps/pep-0008/) except for the specific
@@ -45,19 +45,19 @@ TODO(eric.cousineau): Move these clarifications and exceptions to styleguide
    repo.
 {% endcomment %}
 
-##### Clarifications
+## Clarifications
 
 * External, third-party, and auto-generated source files are not to be checked
   for style.
 * Always prefer long, human-readable variable/method/class names to short
   acronyms.
 
-##### Exceptions
+## Exceptions
 
 * Lines containing a long URL may be longer than 80 columns if necessary to
   avoid splitting the URL.
 
-##### Additional Rules
+## Additional Rules
 
 * When importing in-tree modules, always use absolute import paths; explicit
   relative import paths are disallowed. See the [PEP 8 discussion of imports](
@@ -83,7 +83,7 @@ TODO(eric.cousineau): Move these clarifications and exceptions to styleguide
 Generally, this means scripts that run via ``bazel run``,
    ``bazel test``, or ``./bazel-bin/...``.
 
-#### Java Style
+# Java Style
 
 We also strictly follow the [Google Java Style Guide](
 https://google.github.io/styleguide/javaguide.html).
@@ -93,13 +93,13 @@ Here are some additional comments:
 * All Java classes should be in packages relative to the Drake root,
    e.g.: package drake.examples.Pendulum
 
-#### LCM Style
+# LCM Style
 
 * LCM types are under_scored with a leading `lcmt_` added. If the type is
   specific to a particular robot, then it begins with `lcmt_robotname_`.
 * Variable names in LCM types follow the rules above.
 
-#### package.xml Style
+# package.xml Style
 
 [Robot Operating System (ROS)](http://www.ros.org/) organizes code and data
 into packages. Each package is located in its own directory, which contains a
@@ -144,12 +144,12 @@ The following minimal ``package.xml`` file can get you started:
 In the above example, replace "package_name" with the name of your package. This
 is typically the name of the directory holding the ``package.xml`` file.
 
-#### Shell Script Style
+# Shell Script Style
 
 We follow the [Google Shell Style Guide](
 https://google.github.io/styleguide/shell.xml).
 
-#### Version numbers
+# Version numbers
 
 We'll adopt the following convention for version numbers in Drake:
 The version number will have the format W.X.Y.Z where

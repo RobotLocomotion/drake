@@ -2,19 +2,19 @@
 title: Downstream Testing (Drake as a Dependency)
 ---
 
-#### Introduction
+# Introduction
 
 To ensure that Drake enables downstream consumption, there are downstream tests
 that show basic usage of Drake as a dependency. Those tests are located in
 the [drake-external-examples](https://github.com/RobotLocomotion/drake-external-examples)
 repository.
 
-#### Continuous Integration
+# Continuous Integration
 
 Please see the drake-external-examples [Continuous Integration](https://github.com/RobotLocomotion/drake-external-examples#continuous-integration)
 section.
 
-#### Local Testing
+# Local Testing
 
 For CMake, see the
 [drake_cmake_installed](https://github.com/RobotLocomotion/drake-external-examples/tree/master/drake_cmake_installed#developer-testing)

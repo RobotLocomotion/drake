@@ -2,7 +2,7 @@
 title: Avoid Accidental Pushes to the Repository
 ---
 
-#### The Issue
+# The Issue
 
 We want to prevent developers from accidentally pushing changes into RobotLocomotion/drake. This is accomplished by:
 
@@ -10,7 +10,7 @@ We want to prevent developers from accidentally pushing changes into RobotLocomo
 2. Providing a dummy url for the repository we want to protect.
 
 
-#### A Convention
+# A Convention
 
 To make the notion of ``origin`` consistent with the idea of the one repository you work with, we agree in the following convention:
 
@@ -19,7 +19,7 @@ To make the notion of ``origin`` consistent with the idea of the one repository 
 
 so that a simple ``git push`` will push changes into a developer's fork. This still does not prevent you from pushing into ``upstream``. To protect developers from making this simple mistake the following solution is proposed.
 
-#### A Solution
+# A Solution
 
 A way to avoid pushing into a repository is providing a dummy url address to the repository. This is accomplished by issuing the git command:
 

@@ -3,7 +3,7 @@ title: Model Version Control
 ---
 
 
-#### Adding Model Artifacts in Pull Requests
+# Adding Model Artifacts in Pull Requests
 
 Model artifacts have the potential to be very large, and we should avoid
 committing large files directly to Git.
@@ -22,7 +22,7 @@ them, as Drake is not a model repository.
 
 See below for the suggested workflow.
 
-##### Develop Changes Locally
+## Develop Changes Locally
 
 1. Clone ``RobotLocomotion/models`` locally
 2. Create a Git branch in your local checkouts of *both* ``models`` and
@@ -39,7 +39,7 @@ See below for the suggested workflow.
    [drake/manipulation/models/ycb/BUILD.bazel](https://github.com/RobotLocomotion/drake/blob/master/manipulation/models/ycb/BUILD.bazel).
 7. Ensure your tests pass under ``bazel test``.
 
-##### Submit Changes in a Pull Request
+## Submit Changes in a Pull Request
 
 1. Push your changes to your fork of ``RobotLocomotion/models``. Make a PR.
 2. Update ``drake/tools/workspace/models/models/repository.bzl`` to use the

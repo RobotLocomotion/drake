@@ -10,11 +10,11 @@ We publish a minor release approximately once per month in the middle of the
 calendar month, with version number is ``v0.N.0`` where ``N`` is monotonically
 increasing.
 
-#### Minor releases
+# Minor releases
 
 Begin this process around 1 week prior to the intended release date.
 
-##### Prior to release
+## Prior to release
 
 1. Choose the next version number.
 2. Create a local Drake branch named ``release_notes-v0.N.0`` (so that others
@@ -54,7 +54,7 @@ Begin this process around 1 week prior to the intended release date.
        the code for ``YYYY-MM-01`` deprecation notations, for the ``MM`` values
        that would have been associated with our +3 months typical period.
 
-##### Polishing the release notes
+## Polishing the release notes
 
 Here are some guidelines for bringing commit notes from the relnotes tool into
 the main body of the document:
@@ -87,7 +87,7 @@ the main body of the document:
   fully supported.  Be sure to take note of which these are, or ask on
   `#platform_review` slack.
 
-##### Cutting the release
+## Cutting the release
 
 9. Find a plausible build to use
    1. Make sure [https://drake-jenkins.csail.mit.edu/view/Production/](https://drake-jenkins.csail.mit.edu/view/Production/) is clean

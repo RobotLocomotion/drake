@@ -2,7 +2,7 @@
 title: Build Cop
 ---
 
-#### Overview
+# Overview
 
 The Drake build cop monitors [continuous](https://drake-jenkins.csail.mit.edu/view/Continuous%20Production/),
 [nightly](https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/), and
@@ -16,7 +16,7 @@ The build cop will rotate on a weekly basis. The
 is maintained on the
 [RobotLocomotion/drake-ci](https://github.com/RobotLocomotion/drake-ci) wiki.
 
-#### Process
+# Process
 
 The build cop is expected to be on duty during normal business hours Eastern
 Time, approximately 9am to 5pm on weekdays, holidays excepted. Developers are
@@ -50,7 +50,7 @@ At the end of each rotation, the build cop should complete the
 [build cop review and retrospective](https://docs.google.com/document/d/120AOAaamIMO-SM1UaJ6vfzpA15LnXHexDF4a7MLAS3o/edit#heading=h.sxk1djc2v0yg),
 and should notify the next build cop on the [DrakeDevelopers Slack channel #buildcop](https://drakedevelopers.slack.com/messages/buildcop/details/).
 
-#### Revert Template
+# Revert Template
 
 When creating a revert PR, the build cop will assign that PR to the original
 author, and include the following template in the PR description.
@@ -93,7 +93,7 @@ author, and include the following template in the PR description.
  [2] https://drake.mit.edu/buildcop.html#workflow-for-handling-a-build-cop-revert
 ```
 
-#### Workflow for Handling a Build Cop Revert
+# Workflow for Handling a Build Cop Revert
 
 Suppose your merged PR was reverted on the master branch. What do you do?
 
@@ -110,11 +110,11 @@ Here's one workflow:
    PR in your new PR.
 
 
-#### Build Cop Playbook
+# Build Cop Playbook
 
 This section is a quick-reference manual for the on-call build cop.
 
-##### Monitor the Build
+## Monitor the Build
 
 Check the [Continuous Production](https://drake-jenkins.csail.mit.edu/view/Continuous%20Production/)
 build dashboard in Jenkins at least once an hour during on-call hours. These
@@ -133,7 +133,7 @@ color of the previous build.
 
 Note that CDash pages may take a minute to populate.
 
-##### Respond to Breakage
+## Respond to Breakage
 
 There are various reasons the build might break. Diagnose the failure, and
 then take appropriate action. This section lists some common failures and
@@ -153,7 +153,7 @@ such an issue, consider adding the build information to the issue for future
 analysis. The [build cop review and retrospective](https://docs.google.com/document/d/120AOAaamIMO-SM1UaJ6vfzpA15LnXHexDF4a7MLAS3o/edit#heading=h.sxk1djc2v0yg)
 also describes current build issues.
 
-##### Broken Compile or Test
+## Broken Compile or Test
 
 Sometimes people merge code that doesn't compile, or that fails a test.
 This can happen for several reasons:
@@ -176,7 +176,7 @@ proceed as specified in that message.
 experimental build on the rollback PR. If it passes, the odds are good that you
 have found the culprit. Proceed as specified in the template message.
 
-##### Flaky Test
+## Flaky Test
 
 Sometimes people introduce code that makes a test non-deterministic, failing
 on some runs and passing on others. You cannot reliably attribute a flaky test
@@ -190,7 +190,7 @@ After you identify one, create a rollback by clicking "Revert" in the
 GitHub UI. Use the [template message](/buildcop.html#revert-template) to communicate
 with the author, and proceed as specified in that message.
 
-##### Restarting Mac Nightly Builds
+## Restarting Mac Nightly Builds
 
 Occasionally there will be flaky tests or timeouts in the Mac nightly builds.
 While it is tempting to restart these builds to clear the errors, Mac resources
@@ -206,7 +206,7 @@ their best judgement, keeping in mind the following guidelines:
 * If the timed-out test failed last build (not just timed out), you may consider re-running.
 
 
-##### Broken CI Script
+## Broken CI Script
 
 Sometimes people merge changes to the Drake CI scripts that result in spurious
 CI failures. The list of commits in Jenkins for each continuous build includes
@@ -218,7 +218,7 @@ If they are not responsive, revert the commit yourself and see what happens on
 the next continuous build. There are no pre-merge builds you can run that
 exercise changes to the CI scripts themselves.
 
-##### Infrastructure Flake
+## Infrastructure Flake
 
 The machinery of the CI system itself sometimes fails for reasons unrelated to
 any code change. The most common infrastructure flakes include:
@@ -241,7 +241,7 @@ can be safely ignored.
 If you see "All nodes of label <label> are offline", this should disappear
 eventually and the build should run, once Jenkins gets a node booted up.
 
-##### Infrastructure Collapse
+## Infrastructure Collapse
 
 Occasionally, some piece of CI infrastructure completely stops working. For
 instance, GitHub, AWS, or MacStadium could have an outage, or our Jenkins server
@@ -253,7 +253,7 @@ alert Kitware by assigning a GitHub issue to both @BetsyMcPhail and
 @jamiesnape. If it's under a vendor's control, spread the news and simply wait
 it out.
 
-##### Drake External Examples
+## Drake External Examples
 
 Details of failures in the [drake-external-examples](https://github.com/RobotLocomotion/drake-external-examples/)
 repository, which may be denoted by red "build failing" icons at the top of the build

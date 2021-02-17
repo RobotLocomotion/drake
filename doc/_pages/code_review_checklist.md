@@ -7,12 +7,12 @@ on pull requests.  Before submitting or assigning reviewers to a pull
 request to Drake, please take a moment to re-read your changes with
 these common errors in mind.
 
-#### Does your code compile?  :facepalm:
+# Does your code compile?  :facepalm:
 
 * If your code doesn't pass Jenkins, why are you asking for a detailed
   code review?
 
-#### Is the code the minimal set of what you want?
+# Is the code the minimal set of what you want?
 
 * If the PR includes more than 750 added or changed lines,
   try to divide it into multiple PRs. The following techniques may be useful.
@@ -39,7 +39,7 @@ these common errors in mind.
 * Don't include files with only whitespace diffs in your pull request
   (unless of course the purpose of the changes is whitespace fixes).
 
-#### Are your classes, methods, arguments, and fields correctly named?
+# Are your classes, methods, arguments, and fields correctly named?
 
 * Classes are ``UppercaseStyle`` and nouns or noun-phrases.
 * Methods are ``UppercaseStyle`` and verbs or verb-phrases, except for
@@ -51,7 +51,7 @@ these common errors in mind.
   documented, even though it's longer than one letter.)
 * Member fields are ``lowercase_style_with_trailing_underscore_``.
 
-#### Are you using pointers well?
+# Are you using pointers well?
 
 * ``shared_ptr<>`` usually means you haven't thought through
   ownerships and lifespans.
@@ -62,7 +62,7 @@ these common errors in mind.
   pass-by-reference) and if so ensure that any nontrivial lifetime
   guarantee is documented and you checked for ``nullptr``.
 
-#### Did you document your API?  Did you comment your complexity?
+# Did you document your API?  Did you comment your complexity?
 
 * Every nontrivial public symbol must have a Doxygen-formatted
   comment.
@@ -77,14 +77,14 @@ these common errors in mind.
 * Anything in your code that confuses you or makes you read it twice
   to understand its workings should have an implementation comment.
 
-#### Are your comments clear and grammatical?
+# Are your comments clear and grammatical?
 
 * If a comment is or is meant to be a complete sentence, capitalize
   it, punctuate it, and re-read it to make sure it parses!
 * If your editor has a spell-checker for strings and comments, did you
   run it?
 
-#### Did you use ``const`` where you could?
+# Did you use ``const`` where you could?
 
 * A large majority of arguments and locals and a significant fraction
   of methods and fields can be made ``const``.  This improves
@@ -93,7 +93,7 @@ these common errors in mind.
   * See [our style guide](https://drake.mit.edu/styleguide/cppguide.html#Variable_and_Array_Initialization)
     citing "in-class member initialization."
 
-#### Did you use a C-style cast by accident?
+# Did you use a C-style cast by accident?
 
 * You usually want ``static_cast<To>(from)``.
 * To cast to superclasses or subclasses, ``dynamic_cast<To>(from)``;
@@ -102,7 +102,7 @@ these common errors in mind.
 * You very, very rarely want ``reinterpret_cast``.  Use with great
   caution.
 
-#### Did you change third-party software?
+# Did you change third-party software?
 
 Changes to third-party software (e.g., upgrading to a newer version) are the
 most common cause of CI divergence between Ubuntu and macOS.  For PRs with such
@@ -113,11 +113,11 @@ flavor, for example:
 
 * ``@drake-jenkins-bot mac-catalina-clang-bazel-experimental-everything-release please``
 
-#### Have you run linting tools?
+# Have you run linting tools?
 
 * See [Automated style checks](/code_style_tools.html).
 
-#### Is your code deterministic?
+# Is your code deterministic?
 
 * Do not use ``Eigen::Random``, ``libc rand``, or anything like it.
   You can use ``libstdc++``'s new random generators, as long as you

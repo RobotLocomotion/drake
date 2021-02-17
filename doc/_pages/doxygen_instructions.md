@@ -5,7 +5,7 @@ title: Doxygen Instructions
 This section contains instructions on how to use
 [Doxygen](http://www.stack.nl/~dimitri/doxygen/) with Drake.
 
-#### Doxygen Style Guide
+# Doxygen Style Guide
 
 Coming soon. See issue
 [#2051](https://github.com/RobotLocomotion/drake/issues/2051) and PR
@@ -38,7 +38,7 @@ system for an example of a system with a variable number of ports.  The
 of the system to the documentation, if the system is most clearly described by a
 few examples.
 
-#### Documentation Tips and Tricks
+# Documentation Tips and Tricks
 
 We encourage the use of [unicode](/unicode_tips_tricks.html) in documentation.
 
@@ -50,7 +50,7 @@ The Emacs [ascii-art-to-unicode](https://elpa.gnu.org/packages/ascii-art-to-unic
 ascii-art block diagrams even prettier by replacing ``-``, ``|``, etc. with unicode
 [box-drawing characters](https://en.wikipedia.org/wiki/Box-drawing_character).
 
-#### Doxygen Website Generation
+# Doxygen Website Generation
 
 To generate and view Drake's Doxygen website, see:
 [Documentation Instructions](/documentation_instructions.html).
