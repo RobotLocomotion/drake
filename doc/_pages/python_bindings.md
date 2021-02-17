@@ -9,12 +9,11 @@ class which is exposed to C++ has been explicitly enumerated in one of the
 source files inside the ``bindings/pydrake`` folder. These bindings are
 installed as a single package called ``pydrake``.
 
-{% include post-components/warning.html
-  content = "The Python environment supplied by Anaconda is neither tested nor supported
-   for building and using the Drake Python bindings."
-%}
-
-#### Installation
+<div class="warning" markdown="1">
+Drake is incompatible with the Python environment supplied by Anaconda. Please
+uninstall Anaconda or remove the Anaconda bin directory from the `PATH` before
+building or using the Drake Python bindings.
+</div>
 
 Before attempting installation, please review the
 [supported configurations](/developers.html#supported-configurations) to know what
@@ -82,13 +81,9 @@ tar -xvzf drake.tar.gz -C <venv_path> --strip-components=1
 python3 -m virtualenv -p python3 <venv_path> --system-site-packages
 ```
 
-{% include post-components/note.html
-    content="You can extract Drake into an existing ``virtualenv`` tree if you have
-    already run ``install_prereqs``; however, you should ensure that you have
-    run ``install_prereqs``. Before you do this, you should capture / freeze
-    your current requirements to reproduce your environment if there are
-    conflicts."
-%}
+<div class="note" markdown="1">
+You can extract Drake into an existing `virtualenv` tree if you have already run `install_prereqs`; however, you should ensure that you have run `install_prereqs`. Before you do this, you should capture / freeze your current requirements to reproduce your environment if there are conflicts.
+</div>
 
 To check if this worked, follow the instructions as
 [shown below](#using-the-python-bindings), but either:
@@ -156,14 +151,9 @@ After following the above install steps, check to ensure you can import
 python3 -c 'import pydrake; print(pydrake.__file__)'
 ```
 
-{% include post-components/note.html
-    content='If you are using Gurobi, you must either have it installed in
-    the suggested location under <code class="highlighter-rouge">/opt/...</code>
-    mentioned in <a class="reference internal" href="bazel.html#gurobi">
-    <span class="std std-ref">Gurobi 9.0.2</span></a>, or you must ensure
-    that you define the <code class="highlighter-rouge">${GUROBI_HOME}</code>
-    environment variable, or specify
-    <code class="highlighter-rouge">${GUROBI_INCLUDE_DIR}</code> via CMake.'}
+<div class="note" markdown="1">
+If you are using Gurobi, you must either have it installed in the suggested location under `/opt/...`> mentioned in Gurobi 9.0.2, or you must ensure that you define the `${GUROBI_HOME}` environment variable, or specify `${GUROBI_INCLUDE_DIR}` via CMake.
+</div>
 
 
 ## What's Available from Python
@@ -430,11 +420,9 @@ if __name__ == "__main__":
     main()
 ```
 
-
-{% include post-components/note.html
-    content='If you are developing in Drake and are using the
-    `drake_py_unittest` macro, you can specify the argument `--trace=user`
-    to get the same behavior.'}
+<div class="note" markdown="1">
+If you are developing in Drake and are using the `drake_py_unittest` macro, you can specify the argument `--trace=user` to get the same behavior.
+</div>
 
 This generally should help you trace where the code is dying. However, if you
 still need to dig in, you can build the bindings in debug mode, without symbol
@@ -444,9 +432,9 @@ stripping, so you can debug with ``gdb`` or ``lldb``:
 cmake -DCMAKE_BUILD_TYPE=Debug ../drake
 ```
 
-{% include post-components/note.html
-  content='If you have SNOPT enabled (either ``-DWITH_SNOPT=ON`` or
-    ``-DWITH_ROBOTLOCOMOTION_SNOPT=ON``), symbols will *still* be stripped.'}
+<div class="warning" markdown="1">
+If you have SNOPT enabled (either `-DWITH_SNOPT=ON` or `-DWITH_ROBOTLOCOMOTION_SNOPT=ON`), symbols will *still* be stripped.
+</div>
 
 ## For Developers
 
