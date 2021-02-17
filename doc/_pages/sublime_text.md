@@ -2,30 +2,30 @@
 title: Sublime Text Notes
 ---
 
-#### Introduction
+# Introduction
 
 This page contains notes on how to use
 [Sublime Text](https://www.sublimetext.com/) with Drake.
 
-#### Packages
+# Packages
 
 This subsection lists various [packages](https://packagecontrol.io/) that we
 recommend you install.
 
-##### cpplint
+## cpplint
 
 [https://packagecontrol.io/packages/SublimeLinter-cpplint](https://packagecontrol.io/packages/SublimeLinter-cpplint)
 
-##### Trailing Spaces
+## Trailing Spaces
 
 [https://packagecontrol.io/packages/TrailingSpaces](https://packagecontrol.io/packages/TrailingSpaces)
 
-#### User Preferences
+# User Preferences
 
 To change your custom user preferences, go to "Sublime Text", "Preferences",
 "Settings - User." Then add the following:
 
-##### Full File Path Display
+## Full File Path Display
 
 Note that this only needs to be done on macOS since the full path appears by
 default on Linux machines.
@@ -36,7 +36,7 @@ To display the current file's full path in the title bar on macOS:
 "show_full_path": true,
 ```
 
-##### Show \*.sdf Files in Side Bar
+## Show \*.sdf Files in Side Bar
 
 To show ``*.sdf`` files in the side bar:
 
@@ -68,7 +68,7 @@ To show ``*.sdf`` files in the side bar:
 Note that the above list does not include ``*.sdf``. This is expected since by
 default ``*.sdf`` does show up in the list.
 
-##### Automatically Show an 80-character Ruler
+## Automatically Show an 80-character Ruler
 
 To view an 80 character-wide ruler::
 

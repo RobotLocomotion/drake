@@ -19,7 +19,7 @@ Before attempting installation, please review the
 [supported configurations](/developers.html#supported-configurations) to know what
 versions of Python are supported for your platform.
 
-##### Binary Installation for Python
+## Binary Installation for Python
 
 First, download and extract an [available binary package.](/from_binary.html).
 
@@ -60,7 +60,7 @@ export PYTHONPATH=/opt/drake/lib/python3.6/site-packages:${PYTHONPATH}
 
 See [below](#using-the-python-bindings) for usage instructions.
 
-##### Inside ``virtualenv``
+## Inside ``virtualenv``
 
 At present, Drake is not installable via ``pip``. However, you can still
 incorporate its install tree into a ``virtualenv``
@@ -91,7 +91,7 @@ To check if this worked, follow the instructions as
 * Use ``<venv_path>/bin/python`` instead of ``python3``, or
 * Source ``<venv_path>/bin/activate`` in your current shell session.
 
-##### Building the Python Bindings
+## Building the Python Bindings
 
 To use the Python bindings from Drake externally, we recommend using CMake.
 As an example:
@@ -140,9 +140,9 @@ cd drake-build
 export PYTHONPATH=${PWD}/install/lib/python3.8/site-packages:${PYTHONPATH}
 ```
 
-#### Using the Python Bindings
+# Using the Python Bindings
 
-##### Check Installation
+## Check Installation
 
 After following the above install steps, check to ensure you can import
 ``pydrake``.
@@ -156,7 +156,7 @@ If you are using Gurobi, you must either have it installed in the suggested loca
 </div>
 
 
-##### What's Available from Python
+## What's Available from Python
 
 You should first browse the [Python API](https://drake.mit.edu/pydrake/index.html#://) to see what
 modules are available. The most up-to-date high-level demonstrations of what
@@ -231,12 +231,12 @@ diagram = builder.Build()
 simulator = pydrake.systems.analysis.Simulator(diagram)
 ```
 
-##### Differences with C++ API
+## Differences with C++ API
 
 In general, the [Python API](https://drake.mit.edu/pydrake/index.html#://) should be close to the
 [C++ API](https://drake.mit.edu/doxygen_cxx/index.html#://). There are some exceptions:
 
-###### C++ Class Template Instantiations in Python
+### C++ Class Template Instantiations in Python
 
 When you define a general class template, e.g.
 ``template <typename T> class Value``, something like ``Value<std::string>`` is
@@ -256,7 +256,7 @@ C++ type. Some examples:
 Thus, the instantiation ``Value<std::string>`` will be bound in Python as
 ``Value[str]``.
 
-##### Scalar Types
+## Scalar Types
 
 Most classes in the Systems framework and in the multibody dynamics
 computational framework are templated on a scalar type, ``T``.
@@ -308,7 +308,7 @@ Additionally, you may convert an instance (if the conversion is available) using
 <pydrake.systems.primitives.Adder_[Expression] object at 0x...>
 ```
 
-##### C++ Function and Method Template Instantiations in Python
+## C++ Function and Method Template Instantiations in Python
 
 The above section indicates that C++ types are generally registered with
 Python, and a similar approach could be used for function and method templates.
@@ -356,7 +356,7 @@ InputPort_[T].Eval(context)
 GeometryProperties.AddProperty(group_name, name, value)
 ```
 
-##### Debugging with the Python Bindings
+## Debugging with the Python Bindings
 
 You may encounter issues with the Python Bindings that may arise from the
 underlying C++ code, and it may not always be obvious what the root cause is.
@@ -436,7 +436,7 @@ cmake -DCMAKE_BUILD_TYPE=Debug ../drake
 If you have SNOPT enabled (either `-DWITH_SNOPT=ON` or `-DWITH_ROBOTLOCOMOTION_SNOPT=ON`), symbols will *still* be stripped.
 </div>
 
-##### For Developers
+## For Developers
 
 If you are developing Python bindings, please see the Doxygen page
 [Python Bindings](https://drake.mit.edu/doxygen_cxx/group__python__bindings.html) which provides information on programming conventions, documentation, tips

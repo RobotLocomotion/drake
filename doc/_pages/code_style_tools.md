@@ -9,7 +9,7 @@ If your favorite tools or methodologies are not listed, we would be delighted
 to learn about them. Please document your trick and submit a pull request!
 
 
-#### Automated style checks
+# Automated style checks
 
 Code style tests are run by default during ``bazel test`` and the results are
 cached so that only edited files are re-checked.  In other words, no special
@@ -36,9 +36,9 @@ User manuals for the style-checking tools are as follows:
 * Bazel: Uses both pycodestyle like Python, and also [buildifier](/bazel.html#buildifier).
 
 
-#### Manual style fixups
+# Manual style fixups
 
-##### C/C++: Clang-Format
+## C/C++: Clang-Format
 
 The [Mandatory platform specific instructions](/from_source.html#mandatory-platform-specific-instructions)
 install Drake's required version of ``clang-format``, depending on the platform

@@ -18,7 +18,7 @@ This includes API documentation
 [Python](https://drake.mit.edu/pydrake/index.html)) and
 [Drake’s website](https://drake.mit.edu/).
 
-#### When using Bazel
+# When using Bazel
 
 First, install the appropriate prerequisites with the ``--with-doc-only`` command
 line option, e.g., :

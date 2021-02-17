@@ -8,20 +8,20 @@ Drake's primary build system is Bazel.  For more information about Bazel, see
 Drake also offers a CMake build system wrapper that invokes Bazel under the
 hood.
 
-#### Bazel Installation
+# Bazel Installation
 
 Follow Drake's
 [platform-specific setup instructions](/from_source.html#mandatory-platform-specific-instructions)
 to install Bazel.
 
-#### Drake clone and platform setup
+# Drake clone and platform setup
 
 * Start with a **git clone** of drake, per the [Getting Drake](/from_source.html#getting-drake)
   instructions.
 * Continue with the *"Mandatory platform specific instructions"* on the same
   page.
 
-#### Developing Drake using Bazel
+# Developing Drake using Bazel
 
 To build or test Drake, run **bazel build** or **bazel test** with the desired
 target label (and optional configuration options if desired).  We give some
@@ -101,7 +101,7 @@ bazel test --config lint //...                       # Only run style checks; do
   prerequisite libraries are also compiled and linked in ``dbg`` mode.
 * For the definitions of the "``--config``" options see ``drake/tools/bazel.rc``.
 
-##### Running with Flags
+## Running with Flags
 
 In general, to figure out what binary-specific arguments are available, add
 "``-- --help``" to your ``bazel run`` command. If the binary can only run via
@@ -122,7 +122,7 @@ If a Python unittest is run via ``drake_py_unittest_main.py`` (e.g. using
 bazel run bindings/pydrake:py/symbolic_test -- --trace=user --deprecation_action=error
 ```
 
-##### Debugging on macOS
+## Debugging on macOS
 
 On macOS, DWARF debug symbols are emitted to a ``.dSYM`` file.  The Bazel
 ``cc_binary`` and ``cc_test`` rules do not natively generate or expose this
@@ -137,7 +137,7 @@ lldb ./bazel-bin/path/to/my/binary_or_test
 
 For more information, see [https://github.com/bazelbuild/bazel/issues/2537](https://github.com/bazelbuild/bazel/issues/2537).
 
-#### Updating BUILD files
+# Updating BUILD files
 
 Please use the "``buildifier``" tool to format edits to ``BUILD`` files (in the
 same spirit as ``clang-format`` formatting C++ code):
@@ -156,7 +156,7 @@ cd /path/to/drake
 bazel build //tools/lint:buildifier
 ```
 
-#### Proprietary Solvers
+# Proprietary Solvers
 
 The Drake Bazel build currently supports the following proprietary solvers:
 
@@ -164,9 +164,9 @@ The Drake Bazel build currently supports the following proprietary solvers:
 * MOSEK 9.2
 * SNOPT 7.4
 
-##### Gurobi 9.0.2
+## Gurobi 9.0.2
 
-###### Install on Ubuntu
+### Install on Ubuntu
 
 1. Register for an account on [https://www.gurobi.com](https://www.gurobi.com).
 2. Set up your Gurobi license file in accordance with Gurobi documentation.
@@ -175,7 +175,7 @@ The Drake Bazel build currently supports the following proprietary solvers:
 5. Unzip it.  We suggest that you use ``/opt/gurobi902`` to simplify working with Drake installations.
 6. If you unzipped into a location other than ``/opt/gurobi902``, then call ``export GUROBI_HOME=GUROBI_UNZIP_PATH/linux64`` to set the path you used, where in ``GUROBI_HOME`` folder you can find ``bin`` folder.
 
-###### Install on macOS
+### Install on macOS
 
 1. Register for an account on [http://www.gurobi.com](http://www.gurobi.com).
 2. Set up your Gurobi license file in accordance with Gurobi documentation.
@@ -191,7 +191,7 @@ these tests.  If you will be developing with Gurobi regularly, you may wish
 to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
 See [https://docs.bazel.build/versions/master/user-manual.html#bazelrc](https://docs.bazel.build/versions/master/user-manual.html#bazelrc).
 
-##### MOSEK
+## MOSEK
 
 The Drake Bazel build system downloads MOSEK 9.2.33 automatically.  No manual
 installation is required.  Set the location of your license file as follows:
@@ -207,13 +207,13 @@ these tests.  If you will be developing with MOSEK regularly, you may wish
 to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
 See [https://docs.bazel.build/versions/master/user-manual.html#bazelrc](https://docs.bazel.build/versions/master/user-manual.html#bazelrc).
 
-##### SNOPT
+## SNOPT
 
 Drake provides two mechanisms to include the SNOPT sources.  One mechanism is
 to provide your own SNOPT source archive.  The other mechanism is via access to
 a private RobotLocomotion git repository.
 
-###### Using your own source archive
+### Using your own source archive
 
 1. Download the SNOPT sources from the distributor in ``.tar.gz`` format (e.g.,
    named ``snopt7.4.tar.gz``).
@@ -239,14 +239,14 @@ See [https://docs.bazel.build/versions/master/user-manual.html#bazelrc](https://
 SNOPT support has some known problems on certain programs (see drake issue
 [#10422](https://github.com/RobotLocomotion/drake/issues/10422) for a summary).
 
-#### Optional Tools
+# Optional Tools
 
 The Drake Bazel build system has integration support for some optional
 development tools:
 
 * kcov -- test coverage analysis
 
-##### kcov
+## kcov
 
 ``kcov`` can analyze coverage for any binary that contains DWARF format
 debugging symbols, and produce nicely formatted browse-able coverage reports.

@@ -2,7 +2,7 @@
 title: Binary installation (macOS, Ubuntu)
 ---
 
-#### Nightly releases
+# Nightly releases
 
 There are [binary packages](https://github.com/RobotLocomotion/drake/issues/1766#issuecomment-318955338) of Drake available at:
 
@@ -39,7 +39,7 @@ Thanks to Philip E. Gill and Elizabeth Wong for their kind support.
 Drake maintainers may build "experimental" packages on demand using Jenkins by
 following [these instructions](/jenkins.html#building-binary-packages-on-demand).
 
-#### Historical Note
+# Historical Note
 
 Older releases were built around substantial MATLAB support, and are
 described on [release notes page](/release_notes/older_releases.html#older-releases).

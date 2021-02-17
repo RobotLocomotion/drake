@@ -20,7 +20,7 @@ If the build fails for other various reasons you can rebuild:
 You can also view the [Jenkins UI](https://drake-jenkins.csail.mit.edu/)
 directly.
 
-#### Rebuilding via Reviewable
+# Rebuilding via Reviewable
 
 When posting a ``@drake-jenkins-bot ... please`` comment in Reviewable,
 never use the large green "Publish" button in the upper right corner.
@@ -34,7 +34,7 @@ it, in the lower-right corner of the "Review discussion" box.
 (For details, see
 [Reviewable#576](https://github.com/Reviewable/Reviewable/issues/576).)
 
-#### Scheduling an On-Demand Build
+# Scheduling an On-Demand Build
 
 There are a number of Jenkins builds that do not normally run pre-merge, but do
 run post-merge, nightly, or weekly. These builds include lower-priority
@@ -56,7 +56,7 @@ For example:
 * ``@drake-jenkins-bot mac-catalina-clang-bazel-experimental-release please``
 * ``@drake-jenkins-bot linux-bionic-clang-bazel-experimental-valgrind-memcheck please``
 
-##### Scheduling Builds via the Jenkins User Interface
+## Scheduling Builds via the Jenkins User Interface
 
 Alternatively, to schedule a build of an open pull request or arbitrary commit
 in the ``RobotLocomotion/drake`` repository:
@@ -78,7 +78,7 @@ of [continuous](https://drake-jenkins.csail.mit.edu/view/Continuous/>),
 [weekly](https://drake-jenkins.csail.mit.edu/view/Weekly/>) builds,
 but you should not schedule continuous, nightly, or weekly builds directly.
 
-##### Updating Installation Prerequisites
+## Updating Installation Prerequisites
 
 Installation prerequisites are packages that are not pulled in Bazel, but
 instead installed on the OS itself using a package manager like ``apt``,
@@ -112,7 +112,7 @@ After this has passed, go through normal review. Once normal review is done,
 add ``@jamiesnape`` for review and request that the provisioned instances be
 updated. He will then respond on when it is appropriate to merge the PR.
 
-##### Building Binary Packages on Demand
+## Building Binary Packages on Demand
 
 To schedule an "experimental" build of the [binary packages](/from_binary.html),
 comment on an open pull request as follows:
