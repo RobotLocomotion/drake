@@ -1,30 +1,4 @@
-# Drake Website Preview
-
-To stage changes to Drake Website.
-
-## Stakeholders
-
-* [Eric Cousineau](https://github.com/EricCousineau-TRI/) (TRI) - responsible
-on TRI side to incorporate website into the Drake repository, check licensing,
-etc.
-* [Zack Skynar](https://github.com/devechocharlie) (EchoCharlie) - website
-design
-
-## Goal
-
-Put artifacts in as close of a form into the following directory: <br/>
-<https://github.com/RobotLocomotion/drake/tree/v0.26.0/doc>
-
-Ensure licensing / derivative works are apparent.
-
-Starting state derived from: <br/>
-<https://github.com/jekyll/jekyll/tree/v4.2.0/lib/blank_template>
-
-See `jekyll.LICENSE.md` for Jekyll's licensing terms.
-
-## Tracking Issues
-
-* <https://github.com/RobotLocomotion/drake/issues/14575>
+# Drake Website - Jekyll Information
 
 ## Relevant Documentation
 
@@ -77,7 +51,7 @@ This is what we use. However, due the
 [order in which Jekyll parses things](https://jekyllrb.com/tutorials/orderofinterpretation/), we cannot automagically "wrap" page contents without
 doing so explicitly.
 
-However, it's not that bad. :shrug:
+However, it's not that bad. `:shrug:`
 
 Here's an example patch of adding TOC to a page:
 
