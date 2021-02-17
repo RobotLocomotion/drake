@@ -85,8 +85,16 @@ defaults:
       layout: "release"
 
 exclude:
-  - LICENSE.md
-  - '*.LICENSE.md'
+  # Bazel binaries + Python source files.
+  - gen_jekyll
+  - gen_jekyll.py
+  - jekyll_base.py
+  - serve_jekyll
+  - serve_jekyll.py
+  # Miscellaneous information.
+  # TODO(eric.cousineau): Should serve this up for license purposes.
+  - LICENSE*
+  - '*.LICENSE*'
   - README.md
   - '*.README.md'
 
