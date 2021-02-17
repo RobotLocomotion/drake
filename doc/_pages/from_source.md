@@ -2,7 +2,7 @@
 title: Source installation (macOS, Ubuntu)
 ---
 
-#### Getting Drake
+# Getting Drake
 
 We recommend that you [setup SSH access to Github.com](https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/)
 to avoid needing to type your password each time you access it. The following
@@ -35,7 +35,7 @@ git remote add upstream git@github.com:RobotLocomotion/drake.git
 git remote set-url --push upstream no_push
 ```
 
-#### Mandatory platform specific instructions
+# Mandatory platform specific instructions
 
 Before running the build, you must follow some one-time platform-specific
 setup steps:
@@ -47,14 +47,14 @@ See [supported configurations](/developers.html#supported-configurations)
 for the configurations and platforms that Drake officially supports.
 All else being equal, we would recommend developers use Ubuntu Bionic.
 
-#### Build with Bazel
+# Build with Bazel
 
 For instructions, jump to [Using Bazel](/bazel.html#developing-drake-using-bazel), or check out the
 full details at:
 
 * [Bazel build system](/bazel.html)
 
-#### Historical Note
+# Historical Note
 
 Older releases were built around substantial MATLAB support, and are
 described on [this release notes page](/older_releases.html).

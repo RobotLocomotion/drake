@@ -8,7 +8,7 @@ title: Gallery
 If you have an example from your own work that you would like to showcase, please edit ``doc/gallery.rst`` directly and submit a pull request!
 
 
-#### Underactuated Robotics
+# Underactuated Robotics
 
 Drake is being used to teach [Underactuated Robotics](http://underactuated.csail.mit.edu/)
 at MIT.  The course textbook has
@@ -19,7 +19,7 @@ problems in dynamics and control for robotics.
 TODO(russt): Add videos of a few relevant examples.
 {% endcomment %}
 
-#### Manipulation
+# Manipulation
 
 The Robotics team at TRI is working hard to close the gap between simulation and
 reality.  For manipulation, one important piece is accurate simulation of
@@ -38,7 +38,7 @@ rigid-body contact.
 *Source Code:* [drake/examples/kuka_iiwa_arm](https://github.com/RobotLocomotion/drake/tree/master/examples/kuka_iiwa_arm)
 
 
-#### Manipulation class at MIT
+# Manipulation class at MIT
 
 Drake is being used to teach a new [course on manipulation at MIT](http://manipulation.csail.mit.edu/).
 The course software and materials give
@@ -60,7 +60,7 @@ https://github.com/gizatt/blender_server/tree/manipulation_station_demo
 once gizatt is happy with it.
 {% endcomment %}
 
-#### Trajectory Optimization
+# Trajectory Optimization
 
 Michael Posa and the UPenn DAIR lab have an implementation of DIRCON,
 as described in
@@ -70,7 +70,7 @@ as described in
 
 *Source Code:* [https://github.com/DAIRLab/dairlib-public/tree/master/systems/trajectory_optimization](https://github.com/DAIRLab/dairlib-public/tree/master/systems/trajectory_optimization)
 
-#### Perception
+# Perception
 
 Drake aims to have a wide suite of simulated sensors. As these tools
 expand, we'll include video highlighting their functionality.
@@ -94,7 +94,7 @@ its restoration and completion.
 %}
 
 
-#### Task and Motion Planning
+# Task and Motion Planning
 
 Caelan Garrett has examples using Drake in his STRIPStream/PDDLStream
 task-and-motion-planning framework.
@@ -104,7 +104,7 @@ task-and-motion-planning framework.
 *Source Code:* [https://github.com/caelan/pddlstream#drake](https://github.com/caelan/pddlstream#drake)
 
 
-#### Modelling Closed Loop Topologies
+# Modelling Closed Loop Topologies
 
 Drake has examples of combining its rigid body kinematic tree dynamics with
 penalty forces to model a closed loop topology, such as a four bar linkage.
@@ -123,9 +123,9 @@ penalty forces to model a closed loop topology, such as a four bar linkage.
 
 *Strandbeest Source Code:* [https://github.com/RobotLocomotion/drake/tree/master/examples/multibody/strandbeest](https://github.com/RobotLocomotion/drake/tree/master/examples/multibody/strandbeest)
 
-#### Third Party Documentation / Tutorials
+# Third Party Documentation / Tutorials
 
-##### Greg's Tutorial (Python)
+## Greg's Tutorial (Python)
 
 Greg Izatt put together a nice tutorial demonstrating how to put together a
 pretty complete simulation of kuka iiwa picking up a block with dynamics,
@@ -138,7 +138,7 @@ planning, control, and depth sensing, all through the pydrake interface.
 
 *Source Code:* [https://github.com/gizatt/drake_periscope_tutorial](https://github.com/gizatt/drake_periscope_tutorial)
 
-##### Zhaoyuan's Tutorial (Drake concepts, C++ examples)
+## Zhaoyuan's Tutorial (Drake concepts, C++ examples)
 
 Zhaoyuan Gu learned Drake from scratch as a 2019 TRI summer intern and
 wrote this beginner's tutorial: [https://drake.guzhaoyuan.com](https://drake.guzhaoyuan.com/)

@@ -2,7 +2,7 @@
 title: For Developers
 ---
 
-#### Introduction
+# Introduction
 
 
 If you have improvements to Drake, send us your pull requests!
@@ -36,14 +36,14 @@ We would like to hear about your success stories if you've used Drake in your
 own projects.  Please consider contributing to our [Drake Gallery](gallery.html) by editing
 ``doc/gallery.rst`` and submitting a pull request with the update!
 
-#### Licensing
+# Licensing
 
 **Important note:** Drake is an open source project licensed under
 extremely flexible terms intended to encourage use by anyone, for any
 purpose. When you make a contribution to the Drake project, you are
 agreeing to do so under those same terms.
 
-#### Testing
+# Testing
 
 * [Detailed Notes on Drake's Unit Tests](/unit_testing_instructions.html)
 * [Downstream Testing (Drake as a Dependency)](/downstream_testing.html)
@@ -54,7 +54,7 @@ See :doc:`unit_testing_instructions`
 {%endcomment%}
 
 
-#### Supported Configurations
+# Supported Configurations
 
 The following table shows the configurations and platforms that Drake
 officially supports. Supported configurations are tested in continuous
@@ -76,7 +76,7 @@ not supported. Plans for any future arm64 support on macOS and/or Ubuntu are
 discussed in [issue #13514](https://github.com/RobotLocomotion/drake/issues/13514).
 
 
-##### Configuration Management Non-Determinism
+## Configuration Management Non-Determinism
 
 The indicated versions for build systems and languages are recorded after
 having been tested on Continuous Integration.
@@ -95,7 +95,7 @@ If you have tried and are unable to configure your system by
 [following the instructions](/build_from_source.html) please do not hesitate
 to [ask for help](/getting_help.html).
 
-##### Binary Packages
+## Binary Packages
 
 The binary releases of Drake are built with GCC 7.5 on Ubuntu 18.04 (Bionic),
 GCC 9.3 on Ubuntu 20.04 (Focal), and Apple LLVM 12.0.0 on macOS Catalina
@@ -103,15 +103,15 @@ GCC 9.3 on Ubuntu 20.04 (Focal), and Apple LLVM 12.0.0 on macOS Catalina
 
 The links for these packages are listed in :ref:`binary-installation`.
 
-#### Issue Tracking
+# Issue Tracking
 
 * [GitHub Issue Management](/issues.html)
 * [Platform Reviewer Checklists](/platform-reviewer-checklist.html)
 
-#### Code Review
+# Code Review
 
 
-##### Review Process
+## Review Process
 
 For complex changes, especially those that will span multiple PRs, please
 open a GitHub issue and solicit design feedback before you invest a lot of
@@ -207,17 +207,17 @@ Choose the "Squash and merge option" unless otherwise instructed (see
 **After Merge.** If your PR breaks continuous integration, the :doc:`buildcop`
 will contact you to work out a resolution.
 
-##### Review Process Tooling
+## Review Process Tooling
 
 # [Tips for Participating In Drake Code Reviews using reviewable.io](/reviewable.html)
 
-#### User Assistance
+# User Assistance
 
 The user-facing instructions for requesting assistance are located in
 [Getting Help](/getting_help.html). The two main options for requesting assistance are either
 posting a GitHub issue or a StackOverflow question.
 
-##### Handling User GitHub Issues
+## Handling User GitHub Issues
 
 See [GitHub Issue Management](/issues.html).
 
@@ -226,7 +226,7 @@ tutorial nature that does not require code or documentation modification),
 please request that the user repost the question on StackOverflow, post the
 new link on the GitHub issue, and close the issue.
 
-##### Handling User StackOverflow Questions
+## Handling User StackOverflow Questions
 
 Please subscribe to the ``drake`` tag by following these instructions:
 
@@ -237,20 +237,20 @@ once per day. If there are unanswered questions that you are unsure of the
 answer, consider posting on the Slack ``#onramp`` channel to see if someone
 can can look into the question.
 
-#### Continuous Integration Notes
+# Continuous Integration Notes
 
 * [CDash](https://drake-cdash.csail.mit.edu/index.php?project=Drake)
 * [GitHub PR Interaction with Jenkins](/jenkins.html)
 * [Build Cop](/buildcop.html)
 
-#### Documentation Instructions
+# Documentation Instructions
 
 
 * [Documentation Generation Instructions](/documentation_instructions.html)
 * [Doxygen Instructions](/doxygen_instructions.html)
 * [Sphinx Instructions](/sphinx_instructions.html)
 
-#### IDE and Text Editor Notes
+# IDE and Text Editor Notes
 
 * [CLion IDE setup](/clion.html)
 * [Eclipse](https://github.com/tkoolen/drake/wiki/Eclipse-setup-(experimental))
@@ -258,18 +258,18 @@ can can look into the question.
 * [Unicode Tips & Tricks](/unicode_tips_tricks.html)
 * [Vim/Neovim Notes](/vim.html)
 
-#### Operating System Notes
+# Operating System Notes
 
 * [Drake Development on macOS](/development_on_mac.html)
 
-#### Programming Style Notes
+# Programming Style Notes
 
 * [Code Review Checklist](/code_review_checklist.html)
 * [Code Style Guide](/code_style_guide.html)
 * [Tools for Code Style Compliance](/code_style_tools.html)
 * [Directory Structure](/directory_structure.html)
 
-#### Version Control
+# Version Control
 
 * [Avoid Accidental Pushes to the Repository](/no_push_to_origin.html)
 * [Model Version Control](/model_version_control.html)

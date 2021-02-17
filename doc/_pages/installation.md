@@ -2,7 +2,7 @@
 title: Installation and Quickstart
 ---
 
-#### Previewing
+# Previewing
 
 Before installing, you can preview the Python functionality of Drake by using
 Binder:
@@ -16,7 +16,7 @@ Binder:
 As you are exploring, you should also review
 [What's Available from Python](/python_bindings.html#whats-available-from-python).
 
-#### Choose an installation method
+# Choose an installation method
 
 You can choose to download a pre-compiled version of Drake, or to build it from source. The pre-compiled versions are much easier to use, but the source version is easier to update and will make it easier for you to contribute your fixes/improvements.
 

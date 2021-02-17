@@ -2,7 +2,7 @@
 title: Getting Help
 ---
 
-#### Searching For Your Question
+# Searching For Your Question
 
 If you need help with Drake, please first review the documentation on this
 website for things such as [installation](/installation.html),
@@ -14,7 +14,7 @@ Please also briefly review
 and [StackOverflow posts tagged for Drake](https://stackoverflow.com/questions/tagged/drake)
 to see if your issue has been encountered by someone else before.
 
-#### Asking Your Question
+# Asking Your Question
 
 If you know your question is a bug or feature request, please
 [post a GitHub issue](https://github.com/RobotLocomotion/drake/issues/new).
@@ -32,7 +32,7 @@ them access if you invite them directly via Slack.)
 
 If you wish to contribute a patch, please see how to [submit a pull request](/developers.html#pull-request).
 
-#### Helpful Information
+# Helpful Information
 
 When reporting an issue, please consider providing the following information
 (*examples in italics*, ``helper command in monospace``):
@@ -55,7 +55,7 @@ When reporting an issue, please consider providing the following information
     * Contents of ``drake/share/doc/drake/VERSION.txt``
     * Building downstream project ([drake_cmake_installed](https://github.com/RobotLocomotion/drake-external-examples/tree/master/drake_cmake_installed))
 
-#### Older Sources
+# Older Sources
 
 Some information was previously on a
 [mailing list](http://mailman.mit.edu/mailman/listinfo/drake-users).

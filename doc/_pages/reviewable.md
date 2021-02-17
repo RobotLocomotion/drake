@@ -2,12 +2,12 @@
 title: Tips for Participating In Drake Code Reviews using reviewable.io
 ---
 
-#### Introduction
+# Introduction
 
 Drake code reviews use [https://reviewable.io](https://reviewable.io). This page documents some
 best practices for communicating effectively in Reviewable.
 
-#### GitHub Integration
+# GitHub Integration
 
 Avoid using the GitHub UI to comment on code during a review. Reviewable will
 import comments from GitHub, but cannot reliably match them to lines of diff.
@@ -21,7 +21,7 @@ Every time you push to your GitHub branch under review, Reviewable will
 snapshot a new diff. Because it maintains an independent diff series, you can
 rebase freely without corrupting the review history.
 
-#### Life of a Reviewable Comment
+# Life of a Reviewable Comment
 
 All threads in Reviewable must be resolved before you can merge your PR.
 
@@ -38,7 +38,7 @@ Reviewers should click the eye-shaped buttons to indicate that they have
 reviewed a file.  Reviewable will remember the revisions at which the file
 was reviewed, and mark them with an eye icon in the file history.
 
-#### Curated Commits
+# Curated Commits
 
 Each commit on Drake master should pass all unit tests and lint checks, should
 be logically cohesive (should not require other commits to make sense), and
@@ -66,7 +66,7 @@ curated``, which removes the single-commit requirement.  PRs with this label
 should be merged to master using the "Create a merge commit" option, not
 "Squash and merge" option.
 
-#### Joint Feature and Platform review
+# Joint Feature and Platform review
 
 For a review to be considered complete, both Feature Review and Platform Review
 must be completed (see [Review Process](/developers.html#review-process)).
