@@ -1,6 +1,5 @@
 #include "drake/systems/framework/system.h"
 
-#include <cctype>
 #include <memory>
 #include <stdexcept>
 
@@ -16,7 +15,6 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/leaf_output_port.h"
-#include "drake/systems/framework/output_port.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
 
@@ -29,7 +27,9 @@ const int kSize = 3;
 // Note that Systems in this file are derived directly from drake::System for
 // testing purposes. User Systems should be derived only from LeafSystem which
 // handles much of the bookkeeping you'll see here, and won't need to call
-// methods that are intended only for internal use.
+// methods that are intended only for internal use. Some additional System tests
+// are found in leaf_system_test.cc in order to exploit LeafSystem to satisfy
+// the many pure virtuals in System.
 
 // A shell System to test the default implementations.
 class TestSystem : public System<double> {
