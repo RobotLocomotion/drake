@@ -2464,6 +2464,86 @@ GTEST_TEST(SimulatorTest, MissedPublishEventIssue13296) {
   EXPECT_EQ(periodic_system->publish_count(), 1);
 }
 
+// Simulator::AdvanceTo() could miss an event that was triggered by a
+// DoCalcNextUpdateTime() override with side effects. See issues #12620
+// and #14644. The problem occurred only if the overridden
+// DoCalcNextUpdateTime() declared a trigger time but did not provide an
+// Event to handle that trigger. This was fixed in PR #14663.
+//
+// Here we create a 2-subsystem diagram in which one of the subsystems has
+// a periodic publish and the other has a one-time trigger that occurs just
+// prior to one of the periodic publishes, but does not provide any Event
+// handler. We want to verify that all the periodic publishes still occur;
+// the test fails without the #14663 fix.
+GTEST_TEST(SimulatorTest, MissedEventIssue12620) {
+  // Just an ordinary System that has a periodic event. We're
+  // going to try to make the other System prevent one of the periodic events
+  // from issuing.
+  class PeriodicEventSystem : public LeafSystem<double> {
+   public:
+    explicit PeriodicEventSystem(double period) {
+      this->DeclarePeriodicPublishEvent(period, 0.,
+                                        &PeriodicEventSystem::MakeItCount);
+    }
+
+    int publish_count() const { return publish_counter_; }
+    void reset_count() { publish_counter_ = 0; }
+
+   private:
+    EventStatus MakeItCount(const Context<double>&) const {
+      ++publish_counter_;
+      return EventStatus::Succeeded();
+    }
+    mutable int publish_counter_{0};
+  };
+
+  // This models systems like LcmInterfaceSystem that generate a timed event
+  // but don't actually provide an event handler. Prior to PR #14663 the
+  // timed event trigger would be ignored since there was no handler,
+  // potentially allowing time to advance beyond some time at which a later
+  // timed event should have triggered.
+  class TriggerTimeButNoEventSystem : public LeafSystem<double> {
+   public:
+    // Make sure this is an exactly-representable time.
+    explicit TriggerTimeButNoEventSystem(double trigger_time)
+        : trigger_time_(trigger_time) {}
+
+    bool triggered() const { return triggered_; }
+
+   private:
+    void DoCalcNextUpdateTime(const Context<double>& context,
+                              CompositeEventCollection<double>*,
+                              double* next_update_time) const final {
+      *next_update_time = std::numeric_limits<double>::infinity();
+      if (!triggered_ && context.get_time() == trigger_time_) {
+        *next_update_time = trigger_time_;
+        triggered_ = true;
+      }
+
+      // Don't push anything to the EventCollection.
+    }
+
+    const double trigger_time_;
+    mutable bool triggered_{false};
+  };
+
+  DiagramBuilder<double> builder;
+  auto periodic_system = builder.AddSystem<PeriodicEventSystem>(0.4);
+  auto trigger_system = builder.AddSystem<TriggerTimeButNoEventSystem>(.375);
+  Simulator<double> simulator(builder.Build());
+
+  // Advance in 8 steps of 0.125s (exactly representable). There should be
+  // substeps taken at .375, .4, and .8s for a total of 11 internal steps.
+  // Without the fix, the .375 trigger is ignored allowing time to advance
+  // to .5 and missing the .4 publish altogether so only 9 substeps are taken
+  // and just the 0 and .8 publishes occur.
+  for (int step=1; step <= 8; ++step)
+    simulator.AdvanceTo(step * 0.125);
+  EXPECT_EQ(simulator.get_num_steps_taken(), 11);
+  EXPECT_EQ(periodic_system->publish_count(), 3);  // 0, 0.4, 0.8
+  EXPECT_TRUE(trigger_system->triggered());
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
