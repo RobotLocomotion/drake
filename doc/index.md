@@ -19,7 +19,7 @@ purpose of the front page (HTML for layout, Markdown for content).
     <p class="drake-hero-intro">
       {{ page.description }}
     </p>
-    <a href="/quickstart.html" class="button">Get Started</a>
+    <a href="/installation.html" class="button">Install</a>
     <div class="hero-image">
       <img src="{{ site.custom.hero_image | relative_url }}">
     </div>
@@ -32,15 +32,15 @@ purpose of the front page (HTML for layout, Markdown for content).
     <div class="grid grid-3col">
       <div class="core-el">
         <h4>Modeling Dynamical<br> Systems</h4>
-        <a class="button--text" href="https://drake.mit.edu/doxygen_cxx/group__systems.html" target="_blank">DOCS</a> | <a class="button--text" href="https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release?filepath=tutorials/dynamical_systems.ipynb" target="_blank">TUTORIALS</a>
+        <a class="button--text" href="https://drake.mit.edu/doxygen_cxx/group__systems.html" target="_blank">API</a> | <a class="button--text" href="https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release?filepath=tutorials/dynamical_systems.ipynb" target="_blank">TUTORIAL</a>
       </div>
       <div class="core-el">
         <h4>Solving Mathematical<br> Programs</h4>
-        <a class="button--text" href="https://drake.mit.edu/doxygen_cxx/group__solvers.html" target="_blank">DOCS</a> | <a class="button--text" href="https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release?filepath=tutorials/mathematical_program.ipynb" target="_blank">TUTORIALS</a>
+        <a class="button--text" href="https://drake.mit.edu/doxygen_cxx/group__solvers.html" target="_blank">API</a> | <a class="button--text" href="https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release?filepath=tutorials/mathematical_program.ipynb" target="_blank">TUTORIAL</a>
       </div>
       <div class="core-el">
         <h4>Multibody Kinematics<br> and Dynamics</h4>
-        <a class="button--text" href="https://drake.mit.edu/doxygen_cxx/group__multibody.html" target="_blank">DOCS</a>
+        <a class="button--text" href="https://drake.mit.edu/doxygen_cxx/group__multibody.html" target="_blank">API</a>
       </div>
     </div>
   </div>
@@ -62,7 +62,7 @@ purpose of the front page (HTML for layout, Markdown for content).
 <article markdown="1">
 ## Overview
 
-**Drake (“dragon” in Middle English) is a C++ toolbox started by the [Robot Locomotion Group](http://groups.csail.mit.edu/locomotion/) at the MIT Computer Science and Artificial Intelligence Lab (CSAIL). The [development team](/credits.html) has now grown significantly, with core development led by the [Toyota Research Institute](https://www.tri.global/). It is a collection of tools for analyzing the dynamics of our robots and building control systems for them, with a heavy emphasis on optimization-based design/analysis.**
+**Drake ("dragon" in Middle English) is a C++ toolbox started by the [Robot Locomotion Group](http://groups.csail.mit.edu/locomotion/) at the MIT Computer Science and Artificial Intelligence Lab (CSAIL). The [development team](/credits.html) has now grown significantly, with core development led by the [Toyota Research Institute](https://www.tri.global/). It is a collection of tools for analyzing the dynamics of our robots and building control systems for them, with a heavy emphasis on optimization-based design/analysis.**
 
 While there are an increasing number of simulation tools available for robotics, most of them function like a black box: commands go in, sensors come out. Drake aims to simulate even very complex dynamics of robots (e.g. including friction, contact, aerodynamics, …), but always with an emphasis on exposing the structure in the governing equations (sparsity, analytical gradients, polynomial structure, uncertainty quantification, …) and making this information available for advanced planning, control, and analysis algorithms. Drake provides an interface to Python to enable rapid-prototyping of new algorithms, and also aims to provide solid open-source implementations for many state-of-the-art algorithms. Finally, we hope Drake provides many compelling examples that can help people get started and provide much needed benchmarks. We are excited to accept user contributions to improve the coverage.
 
@@ -86,10 +86,10 @@ You may find more information about how to run these locally with Jupyter, the b
 
 ```
 @misc{drake,
- author = “Russ Tedrake and the Drake Development Team”,
- title = “Drake: Model-based design and verification for robotics”,
+ author = "Russ Tedrake and the Drake Development Team",
+ title = "Drake: Model-based design and verification for robotics",
  year = 2019,
- url = “https://drake.mit.edu”
+ url = "https://drake.mit.edu"
 }
 ```
 </article>
@@ -124,6 +124,14 @@ The Drake developers would like to acknowledge significant support from the [Toy
 
 [Julia](./julia_bindings.md)
 
+</article>
+
+
+<article markdown="1">
+
+## Temporary: For Review
+
+Please visit pages reachable from [`all.html`](/all.html).
 </article>
 
 <!-- End main content. -->
