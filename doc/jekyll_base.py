@@ -12,26 +12,6 @@ def _die(s):
     sys.exit(1)
 
 
-def _minify(input_dir, out_dir):
-    # TODO(betsymcphail): Once implemented for production, the Jekyll site may
-    #  require third party .js plugins in addition to drake.js.
-    # Add the full path to any plugins here.
-    drake_js = join(input_dir, "_js", "drake.js")
-    plugins = [drake_js]
-    plugin_dir = join(out_dir, "js")
-    if not exists(plugin_dir):
-        os.mkdir(plugin_dir)
-    plugins_min_js = join(plugin_dir, "plugins-min.js")
-    check_call(
-        [
-            "uglifyjs",
-            " ".join(plugins),
-            "-o", plugins_min_js,
-            "-c", "-m",
-        ]
-    )
-
-
 def gen_main(input_dir):
     """Main entry point for generation.
 
@@ -55,9 +35,6 @@ def gen_main(input_dir):
 
     # Create output directory.
     os.makedirs(out_dir)
-
-    # Minify files directly to output location.
-    _minify(input_dir, out_dir)
 
     # Generate.
     check_call(
@@ -83,9 +60,6 @@ def preview_main(input_dir, default_port):
 
     # Choose an arbitrary, temporary location for generating documentation.
     with tempfile.TemporaryDirectory() as out_dir:
-        # Minify files directly to output location.
-        _minify(input_dir, out_dir)
-
         # Generate.
         check_call(
             [
