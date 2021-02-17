@@ -7,6 +7,6 @@ const mobileButton = document.querySelector('.menu-mobile-toggle')
 const body = document.querySelector('body')
 
 mobileButton.addEventListener('click', function(event) {
-	siteHeader.classList.toggle('open');
-	body.classList.toggle('overflow-hidden');
+  siteHeader.classList.toggle('open');
+  body.classList.toggle('overflow-hidden');
 })

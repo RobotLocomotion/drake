@@ -13,8 +13,8 @@ doc/
 ├── images/ - Legacy static assets (to be merged w/ assets/).
 ├── _includes/ - Jekyll include components (via Liquid). Can render Markdown.
 ├── _layouts/ - Jekyll HTML layouts. Can *not* render Markdown.
-├── _pages/ - Jekyll container: Add'l root-level pages. Can render Markdown.
-├── _release-notes/ - Jekyll container: Index of versioned releases.
+├── _pages/ - Jekyll collection: Add'l root-level pages. Can render Markdown.
+├── _release-notes/ - Jekyll collection: Index of versioned releases.
 ├── third_party/ - Third party assets.
 ├── index.md - Home page.
 └── release_notes.md - Index for release notes.
