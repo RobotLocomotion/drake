@@ -2,16 +2,15 @@
 title: CLion IDE setup
 ---
 
-{% include post-components/note.html
-  content = "EVERY SETUP STEP IN THIS DOCUMENT IS CRITICAL TO GET CLION WORKING
-  PROPERLY.  Read carefully, and do not skip anything."
-%}
+<div class="note" markdown="1">
+EVERY SETUP STEP IN THIS DOCUMENT IS CRITICAL TO GET CLION WORKING PROPERLY.
+Read carefully, and do not skip anything.
+</div>
 
-{% include post-components/note.html
-  content = 'The Bazel plugin for CLion does not support macOS, per
-  <a href="https://github.com/bazelbuild/intellij/issues/109">
-    https://github.com/bazelbuild/intellij/issues/109</a>.'
-%}
+<div class="note" markdown="1">
+The Bazel plugin for CLion does not support macOS, per
+<https://github.com/bazelbuild/intellij/issues/109>
+</div>
 
 This guide describes how to set up Drake in the JetBrains CLion IDE on Ubuntu.
 

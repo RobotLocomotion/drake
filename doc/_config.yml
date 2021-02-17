@@ -24,7 +24,7 @@ custom:
   header:
     menu_items:
       - title: 'Installation'
-        url: '/quickstart.html'
+        url: '/installation.html'
       - title: 'Gallery'
         url: '/gallery.html'
       - title: 'API Documentation'
