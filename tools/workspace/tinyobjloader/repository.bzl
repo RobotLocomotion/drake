@@ -7,9 +7,9 @@ def tinyobjloader_repository(
         mirrors = None):
     github_archive(
         name = name,
-        repository = "syoyo/tinyobjloader",
-        commit = "v1.0.6",
-        sha256 = "19ee82cd201761954dd833de551edb570e33b320d6027e0d91455faf7cd4c341",  # noqa
+        repository = "calderpg-tri/tinyobjloader",
+        commit = "129a88b40f115951163c284dc9d62de5bbfc3bd1",
+        sha256 = "96bb917d81ac7fbfeb391bc39a7cc5e6a409a12a39fbf5e7169189dfdd7ef284",  # noqa
         build_file = "@drake//tools/workspace/tinyobjloader:package.BUILD.bazel",  # noqa
         mirrors = mirrors,
         patches = [
