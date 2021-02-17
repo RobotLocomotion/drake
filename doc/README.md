@@ -1,5 +1,31 @@
 # Drake Website - Jekyll Information
 
+## Directory Structure
+
+Here is the directory structure relevant to Jekyll:
+
+```
+doc/
+├── assets/ - Static assets.
+│   ├── css/
+│   ├── images/
+│   └── js/
+├── images/ - Legacy static assets (to be merged w/ assets/).
+├── _includes/ - Jekyll include components (via Liquid). Can render Markdown.
+├── _layouts/ - Jekyll HTML layouts. Can *not* render Markdown.
+├── _pages/ - Jekyll container: Add'l root-level pages. Can render Markdown.
+├── _release-notes/ - Jekyll container: Index of versioned releases.
+├── third_party/ - Third party assets.
+├── index.md - Home page.
+└── release_notes.md - Index for release notes.
+```
+
+<!--
+Above text adapted from the output of the following:
+    cd doc/
+    tree -F --dirsfirst -P '*.md|*.txt|*.html'
+-->
+
 ## Relevant Documentation
 
 For documentation regarding client-side technology:
