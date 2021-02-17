@@ -25,12 +25,12 @@ The Robotics team at TRI is working hard to close the gap between simulation and
 reality.  For manipulation, one important piece is accurate simulation of
 rigid-body contact.
 
-{% include post-components/video.html
+{% include video.html
   url = "https://www.youtube.com/embed/X9QuMrx-psk"
   full_width = true
 %}
 
-{% include post-components/video.html
+{% include video.html
   url = "https://www.youtube.com/embed/b_HfjGCa0jU"
   full_width = true
 %}
@@ -47,7 +47,7 @@ perception, planning, and control.  Here is a highlight video of the class
 "manipulation station" (the three views are rendered from the RGB-D cameras
 mounted on the station):
 
-{% include post-components/video.html
+{% include video.html
   url = "https://www.youtube.com/embed/zUS33rvbRsc"
   full_width = true
 %}
@@ -88,7 +88,7 @@ used. For maintenance reasons, it has been removed. If, in the future, users
 feel they'd like to have it back, please post an issue and we can investigate
 its restoration and completion.
 
-{% include post-components/video.html
+{% include video.html
   url = "https://www.youtube.com/embed/UKxytyIJmq8"
   full_width = true
 %}
@@ -109,12 +109,12 @@ task-and-motion-planning framework.
 Drake has examples of combining its rigid body kinematic tree dynamics with
 penalty forces to model a closed loop topology, such as a four bar linkage.
 
-{% include post-components/video.html
+{% include video.html
   url = "https://www.youtube.com/embed/X34hCwJ_iq8"
   full_width = true
 %}
 
-{% include post-components/video.html
+{% include video.html
   url = "https://www.youtube.com/embed/MGdETFQVqMg"
   full_width = true
 %}
@@ -131,7 +131,7 @@ Greg Izatt put together a nice tutorial demonstrating how to put together a
 pretty complete simulation of kuka iiwa picking up a block with dynamics,
 planning, control, and depth sensing, all through the pydrake interface.
 
-{% include post-components/video.html
+{% include video.html
   url = "https://www.youtube.com/embed/JS5l5lrEhJw"
   full_width = true
 %}
