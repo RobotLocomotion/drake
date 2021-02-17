@@ -146,7 +146,7 @@ typename MatGradMult<DerivedDA, DerivedB>::type matGradMult(
        DerivedB::RowsAtCompileTime == Eigen::Dynamic)
           ? Eigen::Dynamic
           : static_cast<int>(DerivedDA::RowsAtCompileTime) /
-                             static_cast<int>(DerivedB::RowsAtCompileTime);
+                static_cast<int>(DerivedB::RowsAtCompileTime);
 
   typename MatGradMult<DerivedDA, DerivedB>::type ret(A_rows * B.cols(),
                                                       dA.cols());
