@@ -156,6 +156,12 @@ section {
   height: 0;
   padding-top: 56.25%;
   margin: 20px 0;
+  max-width: 640px;
+  max-height: 480px;
+  /* Center align */
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .video-wrap.video-autoplay {
@@ -642,6 +648,12 @@ footer.site-footer>div.contain {
 }
 
 /* General */
+
+img.gallery {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
 
 /* See `pylons.css` for portions derived from pylons. */
 

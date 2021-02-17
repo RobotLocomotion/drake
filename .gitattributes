@@ -9,3 +9,5 @@ WORKSPACE diff=python
 *.obj -diff
 # VTK polygon data
 *.vtp -diff
+# Scalable vector graphics.
+*.svg -diff
