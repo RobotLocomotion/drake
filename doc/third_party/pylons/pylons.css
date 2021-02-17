@@ -1,0 +1,15 @@
+/* Derived from: pylons.css_t, `div.note` */
+.note {
+  background: #dedede url(/third_party/pylons/dialog-note.png) no-repeat 10px 8px;
+  border: 2px solid #bebebe;
+  padding: 10px 20px 10px 60px;
+  margin: 10px 0px;
+}
+
+/* Derived from: pylons.css_t, `div.warning` */
+.warning {
+  background: #fbe3e4 url(/third_party/pylons/dialog-warning.png) no-repeat 10px 8px;
+  border: 2px solid #fbc4c4;
+  padding: 10px 20px 10px 60px;
+  margin: 10px 0px;
+}
