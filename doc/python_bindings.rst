@@ -63,7 +63,7 @@ Next, ensure that your ``PYTHONPATH`` is properly configured.
 
 .. code-block:: shell
 
-    export PYTHONPATH=/opt/drake/lib/python3.8/site-packages:${PYTHONPATH}
+    export PYTHONPATH=/opt/drake/lib/python3.9/site-packages:${PYTHONPATH}
 
 See :ref:`below <using-python-bindings>` for usage instructions.
 
@@ -152,7 +152,7 @@ You will also need to have your ``PYTHONPATH`` configured correctly.
 .. code-block:: shell
 
     cd drake-build
-    export PYTHONPATH=${PWD}/install/lib/python3.8/site-packages:${PYTHONPATH}
+    export PYTHONPATH=${PWD}/install/lib/python3.9/site-packages:${PYTHONPATH}
 
 .. _using-python-bindings:
 
