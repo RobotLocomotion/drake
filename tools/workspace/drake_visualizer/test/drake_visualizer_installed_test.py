@@ -1,10 +1,13 @@
 from os.path import join
+import sys
 import unittest
 
 import install_test_helper
 
 
 class TestDrakeVisualizerInstalled(unittest.TestCase):
+    @unittest.skipIf(sys.platform == "darwin",
+                     "Drake Visualizer is disabled on macOS")
     def test_help(self):
         """Ensures we can call `./bin/drake-visualizer --help` from install."""
         # Get install directory.
