@@ -1,0 +1,21 @@
+From 11f988658c1d659d2172aa9d265fe03408e6448c Mon Sep 17 00:00:00 2001
+From: Jamie Snape <jamie.snape@kitware.com>
+Date: Wed, 7 Mar 2018 12:00:00 -0400
+Subject: [PATCH] Pass CMAKE_MODULE_LINKER_FLAGS to external projects
+
+---
+ distro/superbuild/cmake/externals.cmake | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/distro/superbuild/cmake/externals.cmake b/distro/superbuild/cmake/externals.cmake
+index 61fa5d00..4d76cda7 100644
+--- a/distro/superbuild/cmake/externals.cmake
++++ b/distro/superbuild/cmake/externals.cmake
+@@ -50,6 +50,7 @@ set(default_cmake_args
+   "-DCMAKE_CXX_COMPILER:FILEPATH=${CMAKE_CXX_COMPILER}"
+   "-DCMAKE_CXX_FLAGS:STRING=${CMAKE_CXX_FLAGS}"
+   "-DCMAKE_EXE_LINKER_FLAGS:STRING=${CMAKE_EXE_LINKER_FLAGS}"
++  "-DCMAKE_MODULE_LINKER_FLAGS:STRING=${CMAKE_MODULE_LINKER_FLAGS}"
+   "-DCMAKE_SHARED_LINKER_FLAGS:STRING=${CMAKE_SHARED_LINKER_FLAGS}"
+   "-DCMAKE_VERBOSE_MAKEFILE:BOOL=${CMAKE_VERBOSE_MAKEFILE}"
+   )

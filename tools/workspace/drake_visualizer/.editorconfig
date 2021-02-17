@@ -1,0 +1,5 @@
+# https://editorconfig.org
+
+[*.patch]
+insert_final_newline = false
+trim_trailing_whitespace = false
