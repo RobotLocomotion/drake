@@ -23,6 +23,8 @@ custom:
 
   header:
     menu_items:
+      - title: 'Home'
+        url: '/'
       - title: 'Installation'
         url: '/installation.html'
       - title: 'Gallery'
