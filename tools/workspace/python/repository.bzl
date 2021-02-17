@@ -48,7 +48,7 @@ load("@drake//tools/workspace:os.bzl", "determine_os")
 _VERSION_SUPPORT_MATRIX = {
     "ubuntu:18.04": ["3.6"],
     "ubuntu:20.04": ["3.8"],
-    "macos": ["3.8"],
+    "macos": ["3.9"],
 }
 
 def repository_python_info(repository_ctx):
@@ -177,7 +177,7 @@ def _impl(repository_ctx):
 
     linkopts_direct_link = list(linkopts)
 
-    # python3.8-config --libs is missing the python3.8 library.
+    # python3.9-config --libs is missing the python3.9 library.
     has_direct_link = False
     libpy = "python" + py_info.version
     for i in reversed(range(len(linkopts))):
