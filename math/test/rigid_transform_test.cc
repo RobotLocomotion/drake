@@ -715,6 +715,21 @@ GTEST_TEST(RigidTransform, OperatorMultiplyByMatrix3X) {
   }
 }
 
+GTEST_TEST(RigidTransform, TestMemoryLayoutOfRigidTransformDouble) {
+  // For optimization (e.g., AVX instructions), verify RigidTransform<double>
+  // is packed into 12 consecutive doubles, first with a 3x3 rotation matrix
+  // (9 doubles) followed by a 3x1  position vector (3 doubles).
+  RigidTransform<double> X;
+  const double* X_address = reinterpret_cast<const double*>(&X);
+  const double* R_address = reinterpret_cast<const double*>(&X.rotation());
+  const double* p_address = reinterpret_cast<const double*>(&X.translation());
+  EXPECT_EQ(X_address, R_address);
+  EXPECT_EQ(X_address + 9, p_address);
+
+  // Test that the entire class occupies memory equal to 12 doubles.
+  EXPECT_EQ(sizeof(X), 12 * sizeof(double));
+}
+
 }  // namespace
 }  // namespace math
 }  // namespace drake
