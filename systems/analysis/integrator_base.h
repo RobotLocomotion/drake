@@ -126,7 +126,7 @@ class IntegratorBase {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IntegratorBase)
 
   /**
-   Status returned by StepOnceAtMost().
+   Status returned by IntegrateNoFurtherThanTime().
    When a step is successful, it will return an indication of what caused it
    to stop where it did. When unsuccessful it will throw an exception so you
    won't see any return value. When return of control is due ONLY to reaching
@@ -552,8 +552,8 @@ class IntegratorBase {
    to make the values mutable without permitting changing the size of
    the vector. Requires re-initializing the integrator after calling
    this method; if Initialize() is not called afterward, an exception will be
-   thrown when attempting to call StepOnceAtMost(). If the caller sets
-   one of the entries to a negative value, an exception will be thrown
+   thrown when attempting to call IntegrateNoFurtherThanTime(). If the caller
+   sets one of the entries to a negative value, an exception will be thrown
    when the integrator is initialized.
    */
   Eigen::VectorBlock<Eigen::VectorXd>
@@ -578,8 +578,8 @@ class IntegratorBase {
    to make the values mutable without permitting changing the size of
    the vector. Requires re-initializing the integrator after calling this
    method. If Initialize() is not called afterward, an exception will be
-   thrown when attempting to call StepOnceAtMost(). If the caller sets
-   one of the entries to a negative value, an exception will be thrown
+   thrown when attempting to call IntegrateNoFurtherThanTime(). If the caller
+   sets one of the entries to a negative value, an exception will be thrown
    when the integrator is initialized.
    */
   Eigen::VectorBlock<Eigen::VectorXd> get_mutable_misc_state_weight_vector() {
@@ -886,8 +886,8 @@ class IntegratorBase {
    An integrator must be initialized before being used. The pointer to the
    context must be set before Initialize() is called (or an std::logic_error
    will be thrown). If Initialize() is not called, an exception will be
-   thrown when attempting to call StepOnceAtMost(). To reinitialize the
-   integrator, Reset() should be called followed by Initialize().
+   thrown when attempting to call IntegrateNoFurtherThanTime(). To reinitialize
+   the integrator, Reset() should be called followed by Initialize().
    @throws std::logic_error If the context has not been set or a user-set
            parameter has been set illogically (i.e., one of the
            weighting matrix coefficients is set to a negative value- this
@@ -994,9 +994,9 @@ class IntegratorBase {
                             t_final is in the past.
    @sa IntegrateNoFurtherThanTime(), which is designed to be operated by
        Simulator and accounts for publishing and state reinitialization.
-   @sa IntegrateWithSingleStepToTime(), which is also designed to be operated
-       *outside of* Simulator, but throws an exception if the integrator
-       cannot advance time to `t_final` in a single step.
+   @sa IntegrateWithSingleFixedStepToTime(), which is also designed to be
+       operated *outside of* Simulator, but throws an exception if the
+       integrator cannot advance time to `t_final` in a single step.
 
    This method at a glance:
    - For integrating ODEs/DAEs not using Simulator

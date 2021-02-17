@@ -2464,6 +2464,135 @@ GTEST_TEST(SimulatorTest, MissedPublishEventIssue13296) {
   EXPECT_EQ(periodic_system->publish_count(), 1);
 }
 
+// Simulator::AdvanceTo() could miss an event that was triggered by a
+// DoCalcNextUpdateTime() override that returned a finite next-trigger time but
+// no Event object to handle the event. See issues #12620 and #14644. (The
+// observed use case in the wild was that the override was being used for
+// message polling and had a side effect of queueing external messages that had
+// arrived, for later processing.) This was fixed in PR #14663.
+//
+// Here we create a 2-subsystem diagram in which one of the subsystems has
+// a periodic publish and the other has a one-time trigger that occurs just
+// prior to one of the periodic publishes, but does not provide any Event
+// handler. We want to verify that all the periodic publishes still occur;
+// the tests fail without the #14663 fix.
+GTEST_TEST(SimulatorTest, MissedEventIssue12620) {
+  // Just an ordinary System that has a periodic event. We're
+  // going to try to make the other System prevent one of the periodic events
+  // from issuing. This is constructed with a function to call to find out
+  // if some external condition triggered.
+  class PeriodicEventSystem : public LeafSystem<double> {
+   public:
+    PeriodicEventSystem(double period, std::function<bool()> triggered)
+        : triggered_(triggered) {
+      this->DeclarePeriodicPublishEvent(period, 0.,
+                                        &PeriodicEventSystem::MakeItCount);
+    }
+
+    int publish_count() const { return publish_counter_; }
+    int publish_after_trigger_count() const {
+      return publish_after_trigger_count_;
+    }
+
+   private:
+    EventStatus MakeItCount(const Context<double>&) const {
+      ++publish_counter_;
+      if (triggered_())
+        ++publish_after_trigger_count_;
+      return EventStatus::Succeeded();
+    }
+
+    std::function<bool()> triggered_;
+    mutable int publish_counter_{0};
+    mutable int publish_after_trigger_count_{0};
+  };
+
+  // This models systems like LcmInterfaceSystem that generate a timed event
+  // but don't actually provide an event handler. Prior to PR #14663 the
+  // timed event trigger would be ignored since there was no handler,
+  // potentially allowing time to advance beyond some time at which a later
+  // timed event should have triggered.
+  class TriggerTimeButNoEventSystem : public LeafSystem<double> {
+   public:
+    // Make sure this is an exactly-representable time.
+    explicit TriggerTimeButNoEventSystem(double trigger_time)
+        : trigger_time_(trigger_time) {}
+
+    bool triggered() const { return triggered_; }
+
+   private:
+    void DoCalcNextUpdateTime(const Context<double>& context,
+                              CompositeEventCollection<double>*,
+                              double* next_update_time) const final {
+      *next_update_time = std::numeric_limits<double>::infinity();
+      if (!triggered_ && context.get_time() == trigger_time_) {
+        *next_update_time = trigger_time_;
+        triggered_ = true;
+      }
+
+      // Don't push anything to the EventCollection.
+    }
+
+    const double trigger_time_;
+    mutable bool triggered_{false};
+  };
+
+  // Below we'll take steps of 0.125 which is 2⁻³ so exactly representable.
+
+  // Case 1: the one-shot trigger occurs at a different time than any of
+  //         the periodic events.
+  //
+  // What we expect:
+  //   - Calls to MakeItCount at 0, .4, and .8s.
+  //   - One-shot trigger at .375
+  //   - The MakeItCount calls at .4 and .8 should see that the one-shot
+  //     trigger occurred.
+  //   - There should be extra substeps taken at .375, .4, and .8s for
+  //     a total of 11 internal steps.
+  //
+  // Without the fix, the .375 trigger is ignored allowing time to advance
+  // to .5 and missing the .4 publish altogether so only 9 substeps are taken
+  // and just the 0 and .8 publishes occur.
+  DiagramBuilder<double> builder;
+  auto trigger_system = builder.AddSystem<TriggerTimeButNoEventSystem>(.375);
+  auto periodic_system = builder.AddSystem<PeriodicEventSystem>(0.4,
+      [trigger_system](){ return trigger_system->triggered(); });
+  Simulator<double> simulator(builder.Build());
+
+  for (int step = 1; step <= 8; ++step)
+    simulator.AdvanceTo(step * 0.125);
+  EXPECT_EQ(simulator.get_num_steps_taken(), 11);
+  EXPECT_EQ(periodic_system->publish_count(), 3);  // 0, .4, .8
+  EXPECT_EQ(periodic_system->publish_after_trigger_count(), 2);  // .4, .8
+  EXPECT_TRUE(trigger_system->triggered());
+
+  // Case 2: the one-shot trigger time is coincident with one of the
+  //         periodic events.
+  //
+  // What we expect:
+  //   - 9 calls to MakeItCount at 0 .125 .25 .375 .5 .625, .75, .875 1
+  //   - One-shot trigger at .375 (note that MakeItCount at .375 does *not*
+  //       see that the one-shot has triggered).
+  //   - Only the 5 calls to MakeItCount at .5, .625, .75, .875, and 1.0 see
+  //       that the one-shot has triggered.
+  //   - There is one extra substep at .375, for a total of 9.
+  //
+  // Without the fix, the .375 trigger is ignored allowing time to advance
+  // to .5 and missing the .5 publish altogether.
+  DiagramBuilder<double> builder2;
+  auto trigger_system2 = builder2.AddSystem<TriggerTimeButNoEventSystem>(.375);
+  auto periodic_system2 = builder2.AddSystem<PeriodicEventSystem>(0.125,
+      [trigger_system2](){ return trigger_system2->triggered(); });
+  Simulator<double> simulator2(builder2.Build());
+
+  for (int step=1; step <= 8; ++step)
+    simulator2.AdvanceTo(step * 0.125);
+  EXPECT_TRUE(trigger_system2->triggered());
+  EXPECT_EQ(simulator2.get_num_steps_taken(), 9);
+  EXPECT_EQ(periodic_system2->publish_count(), 9);
+  EXPECT_EQ(periodic_system2->publish_after_trigger_count(), 5);
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake

@@ -729,11 +729,10 @@ class Simulator {
   }
 
   TimeOrWitnessTriggered IntegrateContinuousState(
-      const T& next_publish_dt,
-      const T& next_update_dt,
-      const T& time_of_next_timed_event,
-      const T& boundary_dt,
-      CompositeEventCollection<T>* events);
+      const T& next_publish_time,
+      const T& next_update_time,
+      const T& boundary_time,
+      CompositeEventCollection<T>* witnessed_events);
 
   // Private methods related to witness functions.
   void IsolateWitnessTriggers(
