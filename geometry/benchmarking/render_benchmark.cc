@@ -80,6 +80,18 @@ class RenderBenchmark : public benchmark::Fixture {
     auto [sphere_count, camera_count, width, height] = ReadState(state);
     SetupScene(sphere_count, camera_count, width, height, renderer.get());
     ImageRgba8U color_image(width, height);
+
+    /* To account for RenderEngine implementations that do extraordinary work
+     in their first invocations, we perform a couple of render passes in order
+     to warm start the engine and actually measure its steady state performance.
+     */
+    for (int i = 0; i < 2; ++i) {
+      const ColorRenderCamera color_cam(depth_cameras_[0].core(),
+                                        FLAGS_show_window);
+      renderer->RenderColorImage(color_cam, &color_image);
+    }
+
+    /* Now the timed loop. */
     for (auto _ : state) {
       renderer->UpdatePoses(poses_);
       for (int i = 0; i < camera_count; ++i) {
@@ -103,6 +115,15 @@ class RenderBenchmark : public benchmark::Fixture {
     SetupScene(sphere_count, camera_count, width, height, renderer.get());
     ImageDepth32F depth_image(width, height);
 
+    /* To account for RenderEngine implementations that do extraordinary work
+     in their first invocations, we perform a couple of render passes in order
+     to warm start the engine and actually measure its steady state performance.
+     */
+    for (int i = 0; i < 2; ++i) {
+      renderer->RenderDepthImage(depth_cameras_[0], &depth_image);
+    }
+
+    /* Now the timed loop. */
     for (auto _ : state) {
       renderer->UpdatePoses(poses_);
       for (int i = 0; i < camera_count; ++i) {
@@ -123,6 +144,18 @@ class RenderBenchmark : public benchmark::Fixture {
     auto [sphere_count, camera_count, width, height] = ReadState(state);
     SetupScene(sphere_count, camera_count, width, height, renderer.get());
     ImageLabel16I label_image(width, height);
+
+    /* To account for RenderEngine implementations that do extraordinary work
+     in their first invocations, we perform a couple of render passes in order
+     to warm start the engine and actually measure its steady state performance.
+     */
+    for (int i = 0; i < 2; ++i) {
+      const ColorRenderCamera color_cam(depth_cameras_[0].core(),
+                                        FLAGS_show_window);
+      renderer->RenderLabelImage(color_cam, &label_image);
+    }
+
+    /* Now the timed loop. */
     for (auto _ : state) {
       renderer->UpdatePoses(poses_);
       for (int i = 0; i < camera_count; ++i) {

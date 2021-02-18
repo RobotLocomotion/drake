@@ -22,6 +22,19 @@ namespace render {
  The output image can be configured to an arbitrary size; larger images take
  more rendering time.
 
+ <h2>Warm-starting RenderEngine Implementations</h2>
+
+ Some RenderEngine implementations may defer some of the initialization work
+ until the rendering API is actually invoked (e.g., RenderEngineVtk). In these
+ cases, the first rendering will be misleadingly expensive. The benchmark
+ "warm starts" each render engine under evaluation by performing two renderings
+ outside of the timed loop. This allows the benchmark to better report the
+ expected results in the engine's "steady state".
+
+ When comparing these benchmark results with observed performance in
+ applications, remember that the first and possibly second renderings may
+ deceptively impact any analysis of *average* render performance.
+
  <h2>Benchmarks</h2>
 
  The benchmarks have been configured to examine the following characteristics of
@@ -62,34 +75,38 @@ namespace render {
  ------------------------------------------------------------------------------------  // NOLINT(*)
  Benchmark                                          Time             CPU   Iterations  // NOLINT(*)
  ------------------------------------------------------------------------------------  // NOLINT(*)
- RenderBenchmark/VtkColor/1/1/640/480           0.704 ms        0.694 ms          988  // NOLINT(*)
- RenderBenchmark/VtkColor/12/1/640/480           1.08 ms         1.06 ms          731  // NOLINT(*)
- RenderBenchmark/VtkColor/120/1/640/480          4.74 ms         4.59 ms          115  // NOLINT(*)
- RenderBenchmark/VtkColor/1200/1/640/480          857 ms          845 ms            1  // NOLINT(*)
- RenderBenchmark/VtkColor/1/10/640/480           6.99 ms         6.84 ms           97  // NOLINT(*)
- RenderBenchmark/VtkColor/1200/10/640/480         951 ms          932 ms            1  // NOLINT(*)
- RenderBenchmark/VtkColor/1/1/320/240           0.268 ms        0.262 ms         2304  // NOLINT(*)
- RenderBenchmark/VtkColor/1/1/1280/960           2.79 ms         2.70 ms          213  // NOLINT(*)
- RenderBenchmark/VtkColor/1/1/2560/1920          12.2 ms         11.9 ms           59  // NOLINT(*)
- RenderBenchmark/VtkColor/1200/1/320/240          681 ms          663 ms            1  // NOLINT(*)
- RenderBenchmark/VtkColor/1200/1/1280/960         681 ms          668 ms            1  // NOLINT(*)
- RenderBenchmark/VtkColor/1200/1/2560/1920        715 ms          698 ms            1  // NOLINT(*)
- RenderBenchmark/GlColor/1/1/640/480            0.576 ms        0.489 ms         1309  // NOLINT(*)
- RenderBenchmark/GlColor/12/1/640/480           0.624 ms        0.539 ms         1173  // NOLINT(*)
- RenderBenchmark/GlColor/120/1/640/480          0.922 ms        0.814 ms          847  // NOLINT(*)
- RenderBenchmark/GlColor/1200/1/640/480          4.13 ms         4.08 ms          161  // NOLINT(*)
- RenderBenchmark/GlColor/1/10/640/480            5.66 ms         4.80 ms          141  // NOLINT(*)
- RenderBenchmark/GlColor/1200/10/640/480         42.1 ms         41.6 ms           15  // NOLINT(*)
- RenderBenchmark/GlColor/1/1/320/240            0.170 ms        0.151 ms         4617  // NOLINT(*)
- RenderBenchmark/GlColor/1/1/1280/960            2.20 ms         2.16 ms          343  // NOLINT(*)
- RenderBenchmark/GlColor/1/1/2560/1920           10.5 ms         9.62 ms           74  // NOLINT(*)
- RenderBenchmark/GlColor/1200/1/320/240          3.74 ms         3.41 ms          205  // NOLINT(*)
- RenderBenchmark/GlColor/1200/1/1280/960         5.93 ms         5.89 ms          108  // NOLINT(*)
- RenderBenchmark/GlColor/1200/1/2560/1920        14.6 ms         14.5 ms           36  // NOLINT(*)
- RenderBenchmark/VtkDepth/1/1/640/480            1.69 ms         1.64 ms          424  // NOLINT(*)
- RenderBenchmark/GlDepth/1/1/640/480            0.541 ms        0.541 ms         1220  // NOLINT(*)
- RenderBenchmark/VtkLabel/1/1/640/480            1.65 ms         1.60 ms          339  // NOLINT(*)
- RenderBenchmark/GlLabel/1/1/640/480             1.77 ms         1.72 ms          334  // NOLINT(*)
+ RenderBenchmark/VtkColor/1/1/640/480           0.641 ms        0.641 ms         1026  // NOLINT(*)
+ RenderBenchmark/VtkColor/12/1/640/480          0.843 ms        0.843 ms          882  // NOLINT(*)
+ RenderBenchmark/VtkColor/120/1/640/480          2.58 ms         2.58 ms          280  // NOLINT(*)
+ RenderBenchmark/VtkColor/240/1/640/480          5.30 ms         5.30 ms          100  // NOLINT(*)
+ RenderBenchmark/VtkColor/480/1/640/480          9.10 ms         9.10 ms           79  // NOLINT(*)
+ RenderBenchmark/VtkColor/1200/1/640/480         23.4 ms         23.4 ms           30  // NOLINT(*)
+ RenderBenchmark/VtkColor/1/10/640/480           6.36 ms         6.36 ms          117  // NOLINT(*)
+ RenderBenchmark/VtkColor/1200/10/640/480         179 ms          179 ms            4  // NOLINT(*)
+ RenderBenchmark/VtkColor/1/1/320/240           0.267 ms        0.267 ms         2318  // NOLINT(*)
+ RenderBenchmark/VtkColor/1/1/1280/960           2.39 ms         2.39 ms          317  // NOLINT(*)
+ RenderBenchmark/VtkColor/1/1/2560/1920          11.5 ms         11.5 ms           65  // NOLINT(*)
+ RenderBenchmark/VtkColor/1200/1/320/240         24.1 ms         24.0 ms           30  // NOLINT(*)
+ RenderBenchmark/VtkColor/1200/1/1280/960        27.0 ms         26.9 ms           26  // NOLINT(*)
+ RenderBenchmark/VtkColor/1200/1/2560/1920       39.8 ms         39.7 ms           19  // NOLINT(*)
+ RenderBenchmark/GlColor/1/1/640/480            0.523 ms        0.480 ms         1382  // NOLINT(*)
+ RenderBenchmark/GlColor/12/1/640/480           0.553 ms        0.511 ms         1236  // NOLINT(*)
+ RenderBenchmark/GlColor/120/1/640/480          0.833 ms        0.790 ms          884  // NOLINT(*)
+ RenderBenchmark/GlColor/240/1/640/480           1.20 ms         1.15 ms          591  // NOLINT(*)
+ RenderBenchmark/GlColor/480/1/640/480           1.87 ms         1.83 ms          384  // NOLINT(*)
+ RenderBenchmark/GlColor/1200/1/640/480          3.76 ms         3.72 ms          188  // NOLINT(*)
+ RenderBenchmark/GlColor/1/10/640/480            4.98 ms         4.56 ms          137  // NOLINT(*)
+ RenderBenchmark/GlColor/1200/10/640/480         37.1 ms         36.6 ms           19  // NOLINT(*)
+ RenderBenchmark/GlColor/1/1/320/240            0.151 ms        0.147 ms         4830  // NOLINT(*)
+ RenderBenchmark/GlColor/1/1/1280/960            1.93 ms         1.88 ms          335  // NOLINT(*)
+ RenderBenchmark/GlColor/1/1/2560/1920           9.14 ms         9.08 ms           72  // NOLINT(*)
+ RenderBenchmark/GlColor/1200/1/320/240          3.46 ms         3.42 ms          199  // NOLINT(*)
+ RenderBenchmark/GlColor/1200/1/1280/960         5.29 ms         5.25 ms          127  // NOLINT(*)
+ RenderBenchmark/GlColor/1200/1/2560/1920        12.5 ms         12.5 ms           57  // NOLINT(*)
+ RenderBenchmark/VtkDepth/1/1/640/480            1.89 ms         1.89 ms          391  // NOLINT(*)
+ RenderBenchmark/GlDepth/1/1/640/480            0.486 ms        0.486 ms         1578  // NOLINT(*)
+ RenderBenchmark/VtkLabel/1/1/640/480            1.35 ms         1.35 ms          513  // NOLINT(*)
+ RenderBenchmark/GlLabel/1/1/640/480             1.34 ms         1.30 ms          521  // NOLINT(*)
  ```
 
  Additional configuration is possible via the following flags:
