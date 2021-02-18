@@ -5,14 +5,10 @@ title: Installation and Quickstart
 # Previewing
 
 Before installing, you can preview the Python functionality of Drake by using
-Binder:
-
-<div class="aside">
-    <a target="_doc" href="https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release-binder?filepath=tutorials">
-      <img src="https://mybinder.org/badge_logo.svg"/>
-    </a>
-</div>
-
+Binder: <br/>
+<a target="_doc" href="https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release-binder?filepath=tutorials">
+  <img src="https://mybinder.org/badge_logo.svg"/>
+</a> <br/>
 As you are exploring, you should also review
 [What's Available from Python](/python_bindings.html#whats-available-from-python).
 

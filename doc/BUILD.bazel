@@ -40,9 +40,13 @@ drake_py_library(
 )
 
 filegroup(
-    name = "sphinx_images",
+    name = "images",
     srcs = [
+        "images/drake-dragon.png",
+        "images/drake-logo.svg",
+        "images/drake-logo-white.svg",
         "images/favicon.ico",
+        "images/favicon.png",
         "images/jenkins_bot_reviewable_comment.png",
         "images/logo_w_text.jpg",
         "images/mathematical_program.svg",
@@ -59,7 +63,7 @@ drake_py_binary(
     ]) + [
         "conf.py",
         "sample_vimrc",
-        ":sphinx_images",
+        ":images",
     ],
     tags = _DEFAULT_BINARY_TAGS,
     test_rule_args = ["--out_dir=<test>"],
@@ -84,12 +88,30 @@ drake_py_library(
 )
 
 filegroup(
+    name = "third_party_data",
+    srcs = glob([
+        "third_party/**/*",
+    ]),
+)
+
+filegroup(
     name = "jekyll_data",
     srcs = [
         "_config.yml",
-        "_js/drake.js",
-        "_layouts/default.html",
         "index.md",
+        "release_notes.md",
+    ] + glob([
+        "_includes/*.html",
+        "_includes/*.md",
+        "_layouts/*.html",
+        "_pages/*.md",
+        "_release-notes/*.md",
+        "assets/**/*.css",
+        "assets/**/*.js",
+    ]),
+    data = [
+        ":images",
+        ":third_party_data",
     ],
 )
 
