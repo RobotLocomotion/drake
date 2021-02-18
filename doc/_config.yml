@@ -68,6 +68,9 @@ collections:
   release-notes:
     output: true
     permalink: /release_notes/:path
+  # Home-page elements
+  homeblocks:
+    output: true
 
 defaults:
   - scope:

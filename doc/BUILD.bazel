@@ -103,6 +103,7 @@ filegroup(
     ] + glob([
         "_includes/*.html",
         "_includes/*.md",
+        "_homeblocks/*.md",
         "_layouts/*.html",
         "_pages/*.md",
         "_release-notes/*.md",
