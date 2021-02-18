@@ -143,7 +143,7 @@ void VerifyCapsuleMeshWithMa(const VolumeMesh<double>& mesh,
 GTEST_TEST(MakeCapsuleVolumeMesTest, Long) {
   const double radius = 1.0;
   const double length = 3.0;
-  const double resolution_hint = 0.05;
+  const double resolution_hint = 0.5;
   const Capsule capsule(radius, length);
   const VolumeMesh<double> mesh =
       MakeCapsuleVolumeMesh<double>(capsule, resolution_hint);
