@@ -1,6 +1,6 @@
 # -*- python -*-
 
-load("//tools/skylark:py.bzl", "py_binary", "py_library", "py_test")
+load("@drake//tools/skylark:py.bzl", "py_binary", "py_library", "py_test")
 
 def drake_py_library(
         name,
@@ -172,7 +172,7 @@ def drake_py_unittest(
     contain a __main__ handler nor a shebang line.  By default, sets test size
     to "small" to indicate a unit test.
     """
-    helper = "//common/test_utilities:drake_py_unittest_main.py"
+    helper = "@drake//common/test_utilities:drake_py_unittest_main.py"
     if kwargs.pop("srcs", None):
         fail("Changing srcs= is not allowed by drake_py_unittest." +
              " Use drake_py_test instead, if you need something weird.")
@@ -225,7 +225,7 @@ def drake_py_test(
     if "//:module_py" not in deps:
         deps += ["//:module_py"]
     if not allow_import_unittest:
-        deps = deps + ["//common/test_utilities:disable_python_unittest"]
+        deps = deps + ["@drake//common/test_utilities:disable_python_unittest"]
     if "py" not in tags:
         tags = tags + ["py"]
     _py_target_isolated(

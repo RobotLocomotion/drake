@@ -1,11 +1,11 @@
 # -*- python -*-
 
-load("//tools/skylark:py.bzl", "py_library")
+load("@drake//tools/skylark:py.bzl", "py_library")
 load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_library",
 )
-load("//tools/workspace:generate_file.bzl", "generate_file")
+load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
 def _combine_relative_labels(arg_list, arg_map):
     # Merge the relative_labels= and relative_labels_map= arguments as seen in

@@ -1,7 +1,7 @@
 # -*- python -*-
 
 load(
-    "//tools/workspace/lcm:lcm.bzl",
+    "@drake//tools/workspace/lcm:lcm.bzl",
     "lcm_cc_library",
     "lcm_java_library",
     "lcm_py_library",

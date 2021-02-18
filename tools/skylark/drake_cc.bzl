@@ -94,7 +94,7 @@ def _platform_copts(rule_copts, rule_gcc_copts, rule_clang_copts, cc_test = 0):
     if type(result) != "list":
         return result
     return select({
-        "//tools:drake_werror": result,
+        "@drake//tools:drake_werror": result,
         "//conditions:default": [
             x.replace("-Werror=", "-W")
             for x in result
@@ -104,7 +104,7 @@ def _platform_copts(rule_copts, rule_gcc_copts, rule_clang_copts, cc_test = 0):
 def _dsym_command(name):
     """Returns the command to produce .dSYM on macOS, or a no-op on Linux."""
     return select({
-        "//tools/cc_toolchain:apple_debug": (
+        "@drake//tools/cc_toolchain:apple_debug": (
             "dsymutil -f $(location :" + name + ") -o $@ 2> /dev/null"
         ),
         "//conditions:default": (
@@ -126,7 +126,7 @@ def _check_library_deps_blacklist(name, deps):
             continue
         if dep.endswith(":add_text_logging_gflags"):
             fail("The cc_library '" + name + "' must not depend on " +
-                 "//common:add_text_logging_gflags; only cc_binary targets " +
+                 "@drake//common:add_text_logging_gflags; only cc_binary targets " +
                  "are allowed to have gflags")
         if dep.endswith(":main"):
             fail("The cc_library '" + name + "' must not depend on a :main " +
@@ -649,7 +649,7 @@ def drake_cc_googletest(
     """
     if use_default_main:
         deps = deps + [
-            "//common/test_utilities:drake_cc_googletest_main",
+            "@drake//common/test_utilities:drake_cc_googletest_main",
         ]
     else:
         deps = deps + ["@gtest//:without_main"]
@@ -659,7 +659,7 @@ def drake_cc_googletest(
         # If we're in debug compilation mode, then skip all test cases so that
         # the test will trivially pass.
         new_args = args + select({
-            "//tools/cc_toolchain:debug": ["--gtest_filter=-*"],
+            "@drake//tools/cc_toolchain:debug": ["--gtest_filter=-*"],
             "//conditions:default": [],
         })
 

@@ -1,6 +1,6 @@
 # -*- python -*-
 
-load("//tools/skylark:py.bzl", "py_library")
+load("@drake//tools/skylark:py.bzl", "py_library")
 load("@cc//:compiler.bzl", "COMPILER_ID")
 
 # @see bazelbuild/bazel#3493 for needing `@drake//` when loading `install`.
@@ -401,7 +401,7 @@ generate_pybind_documentation_header = rule(
         ),
         "target_deps": attr.label_list(),
         "_mkdoc": attr.label(
-            default = Label("//tools/workspace/pybind11:mkdoc"),
+            default = Label("@drake//tools/workspace/pybind11:mkdoc"),
             allow_files = True,
             cfg = "host",
             executable = True,
@@ -476,7 +476,7 @@ generate_pybind_coverage = rule(
         "pybind_coverage_data": attr.label_list(allow_files = True),
         "_script": attr.label(
             default = Label(
-                "//tools/workspace/pybind11:generate_pybind_coverage",
+                "@drake//tools/workspace/pybind11:generate_pybind_coverage",
             ),
             allow_files = True,
             executable = True,
