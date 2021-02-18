@@ -101,5 +101,5 @@ kramdown:
 
 liquid:
   error_mode: strict
-  strict_variables: true
+  strict_variables: false
   strict_filters: true
