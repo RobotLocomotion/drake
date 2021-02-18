@@ -368,7 +368,7 @@ def _generate_pybind_documentation_header_impl(ctx):
              ",".join(ctx.attr.ignore_dirs_for_coverage))
     for p in ctx.attr.exclude_hdr_patterns:
         args.add("-exclude-hdr-patterns=" + p)
-    args.add_all(ctx.fragments.cpp.cxxopts, uniquify = True)
+    args.add("-std=c++17")
     args.add("-w")
 
     # N.B. This is for `targets` only.
@@ -415,7 +415,6 @@ generate_pybind_documentation_header = rule(
             default = [],
         ),
     },
-    fragments = ["cpp"],
     implementation = _generate_pybind_documentation_header_impl,
     output_to_genfiles = True,
 )
