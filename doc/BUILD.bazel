@@ -39,6 +39,17 @@ drake_py_library(
     deps = ["@rules_python//python/runfiles"],
 )
 
+filegroup(
+    name = "sphinx_images",
+    srcs = [
+        "images/favicon.ico",
+        "images/jenkins_bot_reviewable_comment.png",
+        "images/logo_w_text.jpg",
+        "images/mathematical_program.svg",
+        "images/systems.svg",
+    ],
+)
+
 drake_py_binary(
     name = "gen_sphinx",
     srcs = ["gen_sphinx.py"],
@@ -47,12 +58,8 @@ drake_py_binary(
         "**/*.rst",
     ]) + [
         "conf.py",
-        "images/favicon.ico",
-        "images/jenkins_bot_reviewable_comment.png",
-        "images/logo_w_text.jpg",
-        "images/mathematical_program.svg",
-        "images/systems.svg",
         "sample_vimrc",
+        ":sphinx_images",
     ],
     tags = _DEFAULT_BINARY_TAGS,
     test_rule_args = ["--out_dir=<test>"],
