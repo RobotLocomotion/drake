@@ -51,6 +51,8 @@ MeshData LoadMeshFromObj(std::istream* input_stream,
   const bool ret =
       tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, input_stream,
                        material_reader, do_tinyobj_triangulation);
+  // TODO(SeanCurtis-TRI) Consider improving this exception message to clarify
+  // why LoadObj failed to load the file.
   if (!ret) {
     throw std::runtime_error(
         fmt::format("tinyobj::LoadObj failed to load file: {}", filename));

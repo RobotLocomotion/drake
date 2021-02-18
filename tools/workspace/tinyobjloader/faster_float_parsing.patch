@@ -19,7 +19,7 @@
    if (s >= s_end) {
      return false;
    }
-+  
++
 +#if defined(__APPLE__)
 +  static locale_t c_locale = newlocale(LC_ALL_MASK, NULL, NULL);
 +#else
