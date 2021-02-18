@@ -52,16 +52,15 @@ class EigenMatrixProxy : public Eigen::EigenBase<EigenMatrixProxy<T>> {
   }
 
   /* Custom APIs */
-  EigenMatrixProxy() = default;
-
-  /* Sets the EigenMatrixProxy to wrap around the input "linear_operator".
+  /* Constructs an EigenMatrixProxy wrapping around the input "linear_operator".
    This class keeps a reference to the input `linear_operator` and therefore it
    is required that `linear_operator` outlives this object. */
-  void SetOperator(
-      const contact_solvers::internal::LinearOperator<T>* linear_operator) {
-    linear_operator_ = linear_operator;
-    scratch_vector_.resize(linear_operator_->rows());
-  }
+  EigenMatrixProxy(
+      const contact_solvers::internal::LinearOperator<T>* linear_operator)
+      : linear_operator_(linear_operator) {}
+
+  /* Resize the scratch vector to match the size of the linear operator. */
+  void Resize() { scratch_vector_.resize(linear_operator_->rows()); }
 
   ~EigenMatrixProxy() = default;
 
@@ -154,9 +153,9 @@ class EigenConjugateGradientSolver : public LinearSystemSolver<T> {
   Eigen::ConjudateGradient solver will iterate until the relative error
   ||Ax-b||/||b|| is smaller than the set tolerance or when the max number of
   iterations is reached.  */
-  explicit EigenConjugateGradientSolver(double tol = 1e-4) {
-    cg_.setTolerance(tol);
-  }
+  EigenConjugateGradientSolver(
+      const contact_solvers::internal::LinearOperator<T>* A, double tol = 1e-4)
+      : LinearSystemSolver<T>(A), matrix_proxy_(A) {}
 
   ~EigenConjugateGradientSolver() {}
 
@@ -178,12 +177,11 @@ class EigenConjugateGradientSolver : public LinearSystemSolver<T> {
   double tolerance() const { return cg_.tolerance(); }
 
   /* Forwards to Eigen::ConjugateGradient::setTolerance(). */
-  void set_tolerance(double tol) { cg_.setTolerance(tol); }
+  void set_tolerance(const T& tol) final { cg_.setTolerance(tol); }
 
  private:
-  void DoResetOperator(
-      const contact_solvers::internal::LinearOperator<T>* A) final {
-    matrix_proxy_.SetOperator(A);
+  void DoCompute() final {
+    matrix_proxy_.Resize();
     cg_.compute(matrix_proxy_);
   }
 

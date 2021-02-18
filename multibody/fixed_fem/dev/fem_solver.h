@@ -7,6 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/sparse_linear_operator.h"
 #include "drake/multibody/fixed_fem/dev/dirichlet_boundary_condition.h"
+#include "drake/multibody/fixed_fem/dev/eigen_conjugate_gradient_solver.h"
 #include "drake/multibody/fixed_fem/dev/fem_model.h"
 #include "drake/multibody/fixed_fem/dev/linear_system_solver.h"
 #include "drake/multibody/fixed_fem/dev/state_updater.h"
@@ -44,13 +45,13 @@ class FemSolver {
   using State = FemState<typename Model::ElementType>;
 
   // TODO(xuchenhan-tri): Consider moving LinearSystemSolver out of internal
-  // namespace.
-  /** Constructs a new FemSolver with the given FemModel and LinearSystemSolver.
-   */
-  FemSolver(std::unique_ptr<Model> model,
-            std::unique_ptr<internal::LinearSystemSolver<T>> linear_solver)
-      : model_(std::move(model)), linear_solver_(std::move(linear_solver)) {
+  // namespace and allow users to configure the linear solver.
+  /** Constructs a new FemSolver with the given FemModel and an Eigen Conjugate
+   Gradient solver as the linear solver. */
+  explicit FemSolver(std::unique_ptr<Model> model) : model_(std::move(model)) {
     Resize();
+    linear_solver_ =
+        std::make_unique<internal::EigenConjugateGradientSolver<T>>(&A_op_);
   }
 
   /** Uses a Newton-Raphson solver to solve for the solution state at which the
@@ -93,8 +94,7 @@ class FemSolver {
       if (dirichlet_bc_ != nullptr) {
         dirichlet_bc_->ApplyBcToTangentMatrix(&A_);
       }
-      contact_solvers::internal::SparseLinearOperator<T> A_op("A", &A_);
-      linear_solver_->ResetOperator(&A_op);
+      linear_solver_->Compute();
       /* Solving for A * dz = -b. */
       linear_solver_->Solve(-b_, &dz_);
       state_updater.UpdateState(dz_, state);
@@ -150,6 +150,13 @@ class FemSolver {
     absolute_tolerance_ = tolerance;
   }
 
+  /** Sets the relative tolerance for the linear solver used in `this`
+   FemSolver if the linear solver is iterative. No-op if the linear solver is
+   direct. */
+  void set_linear_solve_tolerance(const T& tolerance) {
+    linear_solver_->set_tolerance(tolerance);
+  }
+
  private:
   /* Resize the scratch quantities to the size of the model. */
   void Resize() const {
@@ -169,6 +176,8 @@ class FemSolver {
   std::unique_ptr<DirichletBoundaryCondition<State>> dirichlet_bc_;
   /* A scratch sparse matrix to store the tangent matrix of the model. */
   mutable Eigen::SparseMatrix<T> A_;
+  /* The operator form of A_. */
+  const contact_solvers::internal::SparseLinearOperator<T> A_op_{"A", &A_};
   /* A scratch vector to store the residual of the model. */
   mutable VectorX<T> b_;
   /* A scratch vector to store the solution to A * dz = -b. */

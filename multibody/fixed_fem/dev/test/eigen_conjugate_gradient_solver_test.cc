@@ -53,8 +53,8 @@ GTEST_TEST(EigenConjugateGradientSolverTest, DoubleDenseSolverTest) {
   const Eigen::SparseMatrix<double> A = MakeSpdMatrix().sparseView();
   contact_solvers::internal::SparseLinearOperator<double> A_op("A", &A);
   const Vector<double, kD> b = MakeRhs();
-  EigenConjugateGradientSolver<double> solver(kTol);
-            solver.ResetOperator(&A_op);
+  EigenConjugateGradientSolver<double> solver(&A_op, kTol);
+  solver.Compute();
   Eigen::Matrix<double, kD, 1> x;
   solver.Solve(b, &x);
 
@@ -72,8 +72,8 @@ GTEST_TEST(EigenConjugateGradientSolverTest, DoubleSparseSolverTest) {
 
   contact_solvers::internal::SparseLinearOperator<double> A_op("A", &A);
   const Vector<double, kD> b = MakeRhs();
-  EigenConjugateGradientSolver<double> solver(kTol);
-            solver.ResetOperator(&A_op);
+  EigenConjugateGradientSolver<double> solver(&A_op, kTol);
+  solver.Compute();
   Eigen::Matrix<double, kD, 1> x;
   solver.Solve(b, &x);
 
@@ -93,8 +93,8 @@ GTEST_TEST(EigenConjugateGradientSolverTest, AutoDiffSolverTestRhs) {
   Vector<T, kD> b_autodiff;
   math::initializeAutoDiff(b, b_autodiff);
   /* Build the solve and solve for x. */
-  EigenConjugateGradientSolver<T> solver(kTol);
-            solver.ResetOperator(&A_op);
+  EigenConjugateGradientSolver<T> solver(&A_op, kTol);
+  solver.Compute();
   Eigen::Matrix<T, kD, 1> x;
   solver.Solve(b_autodiff, &x);
   /* Use LU decomposition to invert the matrix A. */
@@ -134,8 +134,8 @@ GTEST_TEST(EigenConjugateGradientSolverTest, AutoDiffSolverTestLhs) {
   /* Set up solver and rhs and solve for the solution, x_cg. */
   const Eigen::SparseMatrix<T> A_sparse = A_autodiff.sparseView();
   contact_solvers::internal::SparseLinearOperator<T> A_op("A", &A_sparse);
-  EigenConjugateGradientSolver<T> solver(kTol);
-            solver.ResetOperator(&A_op);
+  EigenConjugateGradientSolver<T> solver(&A_op, kTol);
+  solver.Compute();
   const Vector<double, kD> b = MakeRhs();
   Vector<T, kD> x_cg;
   solver.Solve(b.cast<T>(), &x_cg);

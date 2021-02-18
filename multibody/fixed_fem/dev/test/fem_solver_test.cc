@@ -63,14 +63,9 @@ class FemSolverTest : public ::testing::Test {
     std::unique_ptr<ModelType> model = MakeBoxModel();
     model->SetGravity(kGravity);
 
-    /* Builds the LinearSystemSolver. */
-    auto linear_solver =
-        std::make_unique<internal::EigenConjugateGradientSolver<T>>();
-    linear_solver->set_tolerance(kTol);
-
     /* Builds the FemSolver. */
-    solver_ = std::make_unique<SolverType>(std::move(model),
-                                           std::move(linear_solver));
+    solver_ = std::make_unique<SolverType>(std::move(model));
+    solver_->set_linear_solve_tolerance(kTol);
     solver_->set_relative_tolerance(kTol);
     solver_->set_absolute_tolerance(kTol);
 

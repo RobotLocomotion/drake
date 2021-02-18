@@ -198,6 +198,7 @@ drake_cc_library(
     ],
     deps = [
         ":dirichlet_boundary_condition",
+        ":eigen_conjugate_gradient_solver",
         ":fem_model",
         ":linear_system_solver",
         ":state_updater",
