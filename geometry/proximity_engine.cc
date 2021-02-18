@@ -139,6 +139,7 @@ namespace {
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
+    std::string warn;
     std::string err;
 
     // Tinyobj doesn't infer the search directory from the directory containing
@@ -148,11 +149,14 @@ namespace {
     const std::string obj_folder = filename.substr(0, pos + 1);
     const char* mtl_basedir = obj_folder.c_str();
 
-    bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err,
+    bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err,
                                 filename.c_str(), mtl_basedir, triangulate);
     if (!ret || !err.empty()) {
       throw std::runtime_error("Error parsing file '" + filename +
                                "' : " + err);
+    }
+    if (!warn.empty()) {
+      drake::log()->warn("Warning parsing file '{}' : {}", filename, warn);
     }
 
     if (shapes.size() != 1) {

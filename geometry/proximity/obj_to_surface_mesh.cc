@@ -12,6 +12,7 @@
 #include <tiny_obj_loader.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/text_logging.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 
 namespace drake {
@@ -128,16 +129,21 @@ SurfaceMesh<double> ReadObjToSurfaceMesh(std::istream* input_stream,
   tinyobj::attrib_t attrib;  // Used for vertices.
   std::vector<tinyobj::shape_t> shapes;  // Used for triangles.
   std::vector<tinyobj::material_t> materials;  // Not used.
+  std::string warn;
   std::string err;
   // Ignore material-library file.
   tinyobj::MaterialReader* readMatFn = nullptr;
   // triangulate non-triangle faces.
   bool triangulate = true;
 
-  bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, input_stream,
-                              readMatFn, triangulate);
+  bool ret = tinyobj::LoadObj(
+      &attrib, &shapes, &materials, &warn, &err, input_stream, readMatFn,
+      triangulate);
   if (!ret || !err.empty()) {
     throw std::runtime_error("Error parsing Wavefront obj file : " + err);
+  }
+  if (!warn.empty()) {
+    drake::log()->warn("Warning parsing Wavefront obj file : {}", warn);
   }
   if (shapes.size() == 0) {
     throw std::runtime_error("The Wavefront obj file has no faces.");

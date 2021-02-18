@@ -70,7 +70,7 @@ f 1//0 2//0 3//0
 )""");
     DRAKE_EXPECT_THROWS_MESSAGE(
         LoadMeshFromObj(&in_stream), std::runtime_error,
-        "Not all faces reference texture coordinates.+");
+        "tinyobj::LoadObj failed to load file.+");
   }
 }
 
