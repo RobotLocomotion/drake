@@ -5,6 +5,8 @@
 namespace drake {
 namespace multibody {
 namespace fixed_fem {
+// TODO(xuchenhan-tri): Template this class on scalar type only so that
+//  FemModelBase can own it.
 /** %StateUpdater provides the interface to update FemState in NewtonSolver.
  In each Newton-Raphson iteration of the FEM solver, we are solving for an
  equation in the form of

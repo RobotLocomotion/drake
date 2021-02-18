@@ -6,80 +6,82 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/sparse_linear_operator.h"
-#include "drake/multibody/fixed_fem/dev/dirichlet_boundary_condition.h"
+#include "drake/multibody/fixed_fem/dev/abstract_fem_model.h"
+#include "drake/multibody/fixed_fem/dev/abstract_fem_state.h"
 #include "drake/multibody/fixed_fem/dev/eigen_conjugate_gradient_solver.h"
-#include "drake/multibody/fixed_fem/dev/fem_model.h"
-#include "drake/multibody/fixed_fem/dev/linear_system_solver.h"
-#include "drake/multibody/fixed_fem/dev/state_updater.h"
 
 namespace drake {
 namespace multibody {
 namespace fixed_fem {
-// TODO(xuchenhan-tri): Remove the template by making the model and the state
-// abstract. See issue #14667.
 /** %FemSolver solves for the state of a given FemModel at which residual of the
- FemModel is sufficiently close to zero. %FemSolver uses a simple Newton-Raphson
+ model is sufficiently close to zero. %FemSolver uses a simple Newton-Raphson
  solver to solve for the zero residual state. A common workflow looks like:
  ```
  // Creates a solver for a given FemModel and sets the LinearSystemSolver used
  // in the Newton-Raphson iterations.
- FemSolver<Model> solver(std::move(fem_model), std::move(linear_solver);
- // Optionally, sets the tolerance under which we deem the residual is
+ FemSolver solver(std::move(fem_model));
+ // Optionally, sets the tolerances under which we deem the residual is
  // effectively zero.
- solver.set_tolerance(kTolereance);
- // Optionally, sets the desired boundary condition.
- solver.SetDirichletBoundaryCondition(std::move(bc));
+ solver.set_absolute_tolerance(kAbsoluteTolereance);
+ solver.set_relative_tolerance(kRelativeTolereance);
  // Finally, provide an initial guess and solve for the zero residual state.
- solver.SolveWithInitialGuess(state_updater, &state);
- // Now the residual at `state` has 2-norm smaller than `kTolerance` if the
- // solver has converged.
+ solver.SolveWithInitialGuess(&state);
  ```
- @tparam Model    The type of model that `this` %FemSolver solves for. Must be
- derived from FemModel. */
-template <class Model>
+ @tparam_nonsymbolic_scalar T. */
+template <typename T>
 class FemSolver {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FemSolver);
-  static_assert(
-      std::is_base_of_v<FemModel<typename Model::ElementType>, Model>,
-      "The template parameter Model should be derived from FemModel. ");
-  using T = typename Model::T;
-  using State = FemState<typename Model::ElementType>;
 
-  // TODO(xuchenhan-tri): Consider moving LinearSystemSolver out of internal
-  // namespace and allow users to configure the linear solver.
+  // TODO(xuchenhan-tri): Consider allowing users to configure the linear
+  //  solver.
   /** Constructs a new FemSolver with the given FemModel and an Eigen Conjugate
-   Gradient solver as the linear solver. */
-  explicit FemSolver(std::unique_ptr<Model> model) : model_(std::move(model)) {
+   Gradient solver as the linear solver.
+   @pre model != nullptr. */
+  explicit FemSolver(std::unique_ptr<FemModelBase<T>> model)
+      : model_(std::move(model)) {
+    DRAKE_DEMAND(model_ != nullptr);
     Resize();
     linear_solver_ =
         std::make_unique<internal::EigenConjugateGradientSolver<T>>(&A_op_);
   }
 
-  /** Uses a Newton-Raphson solver to solve for the solution state at which the
-   residual of the FemModel is below the set tolerance (see set_tolerance()).
-   @param[in] state_updater    The StateUpdater used to update `state` in each
-   Newton-Raphson iteration.
-   @param[in, out] state    As input, `state` provides an initial guess of the
-   solution. As output, `state` reports the solution state at which the residual
-   of the FemModel is deemed sufficiently close to zero.
-   @pre state != nullptr. */
-  int SolveWithInitialGuess(const StateUpdater<State>& state_updater,
-                            State* state) const {
+  /** Advances the given FEM state from the previous time step to the next time
+   step.
+   @param[in] prev_state The state of the FEM model evaluated at the previous
+   time step.
+   @param[in, out] next_state As input, `next_state` provides an initial guess
+   for the highest order state of the FEM model at the next time step. As
+   output, `state` stores the state of the FEM model evaluated at the next time
+   step.
+   @pre next_state != nullptr.
+   @throw std::exception if the input `prev_state` or `next_state` is
+   incompatible with the FEM model associated with `this` %FemSolver. */
+  void AdvanceOneTimeStep(const FemStateBase<T>& prev_state,
+                          FemStateBase<T>* next_state) const {
+    DRAKE_DEMAND(next_state != nullptr);
+    model_->ThrowIfModelStateIncompatible(__func__, prev_state);
+    model_->ThrowIfModelStateIncompatible(__func__, *next_state);
+    model_->AdvanceOneTimeStep(prev_state, next_state);
+    SolveWithInitialGuess(next_state);
+  }
+
+  /** Uses a Newton-Raphson solver to solve for the solution state that
+   satisfy the tolerances. See set_relative_tolerance() and
+   set_absolute_tolerance().
+   @param[in, out] state    As input, `state` provides an initial guess of
+   the solution. As output, `state` reports the solution state.
+   @pre state != nullptr.
+   @throw std::exception if the type of `state` is not compatible with the
+   type of the model owned by `this` solver. */
+  int SolveWithInitialGuess(FemStateBase<T>* state) const {
     DRAKE_DEMAND(state != nullptr);
-    DRAKE_DEMAND(model_ != nullptr);
-    DRAKE_DEMAND(linear_solver_ != nullptr);
+    model_->ThrowIfModelStateIncompatible(__func__, *state);
     /* Make sure the scratch quantities are of the correct size and apply BC if
      one is specified. */
     Resize();
-    if (dirichlet_bc_ != nullptr) {
-      dirichlet_bc_->ApplyBoundaryConditions(state);
-    }
-
+    model_->ApplyBoundaryConditions(state);
     model_->CalcResidual(*state, &b_);
-    if (dirichlet_bc_ != nullptr) {
-      dirichlet_bc_->ApplyBcToResidual(&b_);
-    }
     int iter = 0;
     /* Newton-Raphson iterations. We iterate until any of the following is true:
      1. The max number of allowed iterations is reached;
@@ -88,18 +90,12 @@ class FemSolver {
      3. The relative error (the norm of the change in the state divided by the
         norm of the state) is smaller than the unitless relative tolerance. */
     do {
-      model_->CalcTangentMatrix(*state, state_updater.weights(), &A_);
-      if (dirichlet_bc_ != nullptr) {
-        dirichlet_bc_->ApplyBcToTangentMatrix(&A_);
-      }
+      model_->CalcTangentMatrix(*state, &A_);
       linear_solver_->Compute();
       /* Solving for A * dz = -b. */
       linear_solver_->Solve(-b_, &dz_);
-      state_updater.UpdateState(dz_, state);
+      model_->UpdateState(dz_, state);
       model_->CalcResidual(*state, &b_);
-      if (dirichlet_bc_ != nullptr) {
-        dirichlet_bc_->ApplyBcToResidual(&b_);
-      }
       ++iter;
     } while (dz_.norm() >
                  std::max(relative_tolerance_ * state->HighestOrderStateNorm(),
@@ -117,22 +113,13 @@ class FemSolver {
   }
 
   /** Returns the FemModel that this solver owns. */
-  const Model& model() const {
-    DRAKE_THROW_UNLESS(model_ != nullptr);
+  const FemModelBase<T>& model() const {
     return *model_;
   }
 
   /** Returns the mutable FemModel that this solver owns. */
-  Model& mutable_model() {
-    DRAKE_THROW_UNLESS(model_ != nullptr);
+  FemModelBase<T>& mutable_model() {
     return *model_;
-  }
-
-  /** Takes ownership of the given Dirichlet boundary condition and applies it
-   to the FemModel this solver owns. */
-  void SetDirichletBoundaryCondition(
-      std::unique_ptr<DirichletBoundaryCondition<State>> dirichlet_bc) {
-    dirichlet_bc_ = std::move(dirichlet_bc);
   }
 
   /** Sets the relative tolerance, unitless. The Newton-Raphson iterations are
@@ -171,11 +158,9 @@ class FemSolver {
   }
 
   /* The FEM model being solved by `this` solver. */
-  std::unique_ptr<Model> model_;
+  std::unique_ptr<FemModelBase<T>> model_;
   /* The linear solver used to solve the FEM model. */
   std::unique_ptr<internal::LinearSystemSolver<T>> linear_solver_;
-  /* The Dirichlet boundary condition imposed on the model. */
-  std::unique_ptr<DirichletBoundaryCondition<State>> dirichlet_bc_;
   /* A scratch sparse matrix to store the tangent matrix of the model. */
   mutable Eigen::SparseMatrix<T> A_;
   /* The operator form of A_. */

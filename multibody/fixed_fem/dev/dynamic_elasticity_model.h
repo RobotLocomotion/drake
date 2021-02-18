@@ -1,12 +1,14 @@
 #pragma once
 
 #include <array>
+#include <memory>
 #include <utility>
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/multibody/fixed_fem/dev/damping_model.h"
 #include "drake/multibody/fixed_fem/dev/elasticity_model.h"
+#include "drake/multibody/fixed_fem/dev/newmark_scheme.h"
 
 namespace drake {
 namespace multibody {
@@ -25,7 +27,16 @@ class DynamicElasticityModel : public ElasticityModel<Element> {
   using T = typename Element::Traits::T;
   using ConstitutiveModel = typename Element::Traits::ConstitutiveModel;
 
-  DynamicElasticityModel() = default;
+  // TODO(xuchenhan-tri): Currently the time stepping scheme is hard coded to
+  // the mid-point rule. Consider letting the user configure the time stepping
+  // scheme.
+  /** Creates a new %DynamicElasticityModel with the given discrete time step.
+   */
+  explicit DynamicElasticityModel(double dt)
+      : ElasticityModel<Element>(
+            std::make_unique<NewmarkScheme<FemState<Element>>>(dt, 0.5, 0.25)) {
+  }
+
   ~DynamicElasticityModel() = default;
 
   /** Add tetrahedral DynamicElasticityElements to the %DynamicElasticityModel
