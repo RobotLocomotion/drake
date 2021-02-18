@@ -112,7 +112,7 @@ class FemModel {
     }
     /* Add per-vertex residuals that are explicitly specified at each vertex
      instead of accumulated from elements. */
-    DoAddExplicitResidual(residual);
+    AddExplicitResidual(residual);
   }
 
   /** Calculates the tangent matrix at the given FemState. The ij-th entry of
@@ -240,10 +240,10 @@ class FemModel {
   }
 
   /** Adds per-vertex residuals that are explicitly specified at each vertex
-   instead of accumulated from elements. The default implementation is empty.
+   instead of accumulated from elements. The default implementation is a no-op.
    Derived classes must override this method if their residuals have
    per-vertex contribution. */
-  virtual void DoAddExplicitResidual(EigenPtr<VectorX<T>> residual) const {}
+  virtual void AddExplicitResidual(EigenPtr<VectorX<T>> residual) const {}
 
   void increment_num_nodes(int num_new_nodes) { num_nodes_ += num_new_nodes; }
 

@@ -31,11 +31,11 @@ class LinearSystemSolver {
   /* Sets up the left-hand side of the linear system. This class keeps a
    reference to input linear operator `A` and therefore it is
    required that `A` outlives this object. */
-  void SetUp(const contact_solvers::internal::LinearOperator<T>* A) {
+  void ResetOperator(const contact_solvers::internal::LinearOperator<T>* A) {
     DRAKE_THROW_UNLESS(A != nullptr);
     DRAKE_THROW_UNLESS(A->rows() == A->cols());
     A_ = A;
-    DoSetUp(A);
+      DoResetOperator(A);
   }
 
   /* Returns the underlying linear operator. Useful for debugging purposes.
@@ -52,7 +52,7 @@ class LinearSystemSolver {
 
   /* Derived classes must implement this method to set up the left hand side of
    the system. */
-  virtual void DoSetUp(
+  virtual void DoResetOperator(
       const contact_solvers::internal::LinearOperator<T>* A) = 0;
 
  private:

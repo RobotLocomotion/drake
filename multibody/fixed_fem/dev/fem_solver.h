@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <memory>
 #include <utility>
 
@@ -76,15 +77,24 @@ class FemSolver {
     if (dirichlet_bc_ != nullptr) {
       dirichlet_bc_->ApplyBcToResidual(&b_);
     }
+    const T initial_error = b_.norm();
     int iter = 0;
-    /* Newton-Raphson iterations. */
-    while (b_.norm() > tolerance_ && iter < kMaxIterations_) {
+    /* Newton-Raphson iterations. We iterate until any of the following is true:
+     1. The max number of allowed iterations is reached;
+     2. The norm of the residual is smaller than the absolute tolerance which
+        has the same unit as the residual.
+     3. The relative error (the norm of the residual divided by the norm of the
+        residual evaluated at the initial guess) is smaller than the unitless
+        relative tolerance. */
+    while (b_.norm() > std::max(relative_tolerance_ * initial_error,
+                                absolute_tolerance_) &&
+           iter < kMaxIterations_) {
       model_->CalcTangentMatrix(*state, state_updater.weights(), &A_);
       if (dirichlet_bc_ != nullptr) {
         dirichlet_bc_->ApplyBcToTangentMatrix(&A_);
       }
       contact_solvers::internal::SparseLinearOperator<T> A_op("A", &A_);
-      linear_solver_->SetUp(&A_op);
+      linear_solver_->ResetOperator(&A_op);
       /* Solving for A * dz = -b. */
       linear_solver_->Solve(-b_, &dz_);
       state_updater.UpdateState(dz_, state);
@@ -124,9 +134,21 @@ class FemSolver {
     dirichlet_bc_ = std::move(dirichlet_bc);
   }
 
-  /** Sets the tolerance under which the norm of the residual of the model is
-   deemed sufficiently close to zero. The default value is 1e-3. */
-  void set_tolerance(const T& tolerance) { tolerance_ = tolerance; }
+  /** Sets the relative tolerance, unitless. The Newton-Raphson iterations are
+   considered as converged if the residual norm is smaller than the residual
+   norm of the initial guess times the relative tolerace. The default value is
+   1e-3. */
+  void set_relative_tolerance(const T& tolerance) {
+    relative_tolerance_ = tolerance;
+  }
+
+  /** Sets the absolute tolerance which has the same unit as the residual of the
+   model. The Newton-Raphson iterations are considered as converged if the
+   residual norm is smaller than the absolute tolerance. The default value is
+   1e-14. */
+  void set_absolute_tolerance(const T& tolerance) {
+    absolute_tolerance_ = tolerance;
+  }
 
  private:
   /* Resize the scratch quantities to the size of the model. */
@@ -151,9 +173,12 @@ class FemSolver {
   mutable VectorX<T> b_;
   /* A scratch vector to store the solution to A * dz = -b. */
   mutable VectorX<T> dz_;
-  /* The tolerance under which we deem the norm of the residual to be
-   sufficiently close to zero. It has the same unit as the residual. */
-  T tolerance_{1e-3};
+  /* The relative tolerance for determining the convergence of the Newton
+   solver, unitless. */
+  T relative_tolerance_{1e-3};
+  /* The absolute tolerance for determining the convergence of the Newton
+   solver. It has the same unit as the residual. */
+  T absolute_tolerance_{1e-4};
   // TODO(xuchenhan-tri): Consider making `kMaxIterations_` configurable.
   /* Any reasonable Newton solve should converge within 20 iterations. If it
    doesn't converge in 20 iterations, chances are it will never converge. */

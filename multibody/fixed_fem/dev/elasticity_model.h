@@ -56,8 +56,10 @@ class ElasticityModel : public FemModel<Element> {
     return gravity_;
   }
 
-  /** Sets explicitly specified external forces on the dofs in the model.  To
-   turn off explicit external force, pass in an empty vector.
+  /** Sets explicitly specified external forces (with units N) on the dofs in
+   the model. These explicit forces show up in the CalcResidual() and
+   CalcExternalForce(). To turn off explicit external forces, pass in an empty
+   vector.
    @throw std::exception if the size of `forces` is greater than zero but not
    equal to num_dofs().
    @note If the size of the model is changed after SetExplicitExternalForce() is
@@ -75,8 +77,8 @@ class ElasticityModel : public FemModel<Element> {
         std::to_string(this->num_dofs()) + " dofs.");
   }
 
-  /** Calculates the total external force exerted on the %ElasticityModel at
-   the given `state`.
+  /** Calculates the total external force exerted on the vertices of
+   %ElasticityModel at the given `state`. The forces have units N.
    @param[in] state The FemState at which to evaluate the external force.
    @param[out] external_force The external force evaluated at `state`.
    @pre external_force != nullptr.
@@ -150,7 +152,7 @@ class ElasticityModel : public FemModel<Element> {
 
  private:
   /* Adds per-vertex residuals that are explicitly specified at each vertex. */
-  void DoAddExplicitResidual(EigenPtr<VectorX<T>> residual) const final {
+  void AddExplicitResidual(EigenPtr<VectorX<T>> residual) const final {
     /* Note that external forces enter the residual with a negative sign. */
     AddScaledExplicitExternalForces(-1, residual);
   }

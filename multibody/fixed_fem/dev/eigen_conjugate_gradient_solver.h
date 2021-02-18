@@ -181,7 +181,8 @@ class EigenConjugateGradientSolver : public LinearSystemSolver<T> {
   void set_tolerance(double tol) { cg_.setTolerance(tol); }
 
  private:
-  void DoSetUp(const contact_solvers::internal::LinearOperator<T>* A) final {
+  void DoResetOperator(
+      const contact_solvers::internal::LinearOperator<T>* A) final {
     matrix_proxy_.SetOperator(A);
     cg_.compute(matrix_proxy_);
   }

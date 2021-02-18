@@ -53,6 +53,8 @@ class FemSolverTest : public ::testing::Test {
     const geometry::Box box(kLength, kLength, kLength);
     const geometry::VolumeMesh<T> mesh =
         geometry::internal::MakeBoxVolumeMesh<T>(box, kLength);
+    EXPECT_EQ(mesh.num_elements(), 6);
+    EXPECT_EQ(mesh.num_vertices(), 8);
     return mesh;
   }
 
@@ -69,7 +71,8 @@ class FemSolverTest : public ::testing::Test {
     /* Builds the FemSolver. */
     solver_ = std::make_unique<SolverType>(std::move(model),
                                            std::move(linear_solver));
-    solver_->set_tolerance(kTol);
+    solver_->set_relative_tolerance(kTol);
+    solver_->set_absolute_tolerance(kTol);
 
     /* Set up the Dirichlet BC. */
     std::unique_ptr<DirichletBoundaryCondition<State>> bc = MakeCeilingBc();
@@ -86,6 +89,7 @@ class FemSolverTest : public ::testing::Test {
     return model;
   }
 
+  /* Creates the undeformed state of the model under test. */
   static State MakeReferenceState() {
     std::unique_ptr<ModelType> model = MakeBoxModel();
     return model->MakeFemState();
@@ -119,7 +123,8 @@ class FemSolverTest : public ::testing::Test {
   }
 
   /* Creates an arbitrary position vector with dofs compatible with the box
-   mesh. */
+   mesh. The position vector created is not the same as the reference positions.
+  */
   static Vector<double, kNumDofs> MakeArbitraryPositions() {
     Vector<double, kNumDofs> q;
     q << 0.18, 0.63, 0.54, 0.13, 0.92, 0.17, 0.03, 0.86, 0.85, 0.25, 0.53, 0.67,
@@ -136,21 +141,23 @@ namespace {
 force f exerted on the vertices. Then if we apply f on the vertices in the
 reference state, we should recover the positions q for static equilibrium. */
 TEST_F(FemSolverTest, StaticForceEquilibrium) {
-  /* Create an arbitrary state and find the force exerted on the vertices of the
-   mesh. */
+  /* Create an arbitrary state and find the nodel force exerted on the vertices
+   of the mesh (in unit N). */
   const State prescribed_state = MakeArbitraryState();
   const ModelType& model = solver_->model();
-  VectorX<T> force(kNumDofs);
-  model.CalcResidual(prescribed_state, &force);
+  VectorX<T> nodal_force(kNumDofs);
+  model.CalcResidual(prescribed_state, &nodal_force);
 
   /* If we exert the same force on the reference state, we should expect to
    recover the same positions as above. */
+  const T initial_error = nodal_force.norm();
   ModelType& mutable_model = solver_->mutable_model();
-  mutable_model.SetExplicitExternalForce(force);
+  mutable_model.SetExplicitExternalForce(nodal_force);
   State state = MakeReferenceState();
   const ZerothOrderStateUpdater<State> state_updater;
   solver_->SolveWithInitialGuess(state_updater, &state);
-  EXPECT_TRUE(CompareMatrices(state.q(), prescribed_state.q(), kTol));
+  EXPECT_TRUE(CompareMatrices(state.q(), prescribed_state.q(),
+                              std::max(kTol, kTol * initial_error)));
 }
 }  // namespace
 }  // namespace fixed_fem
