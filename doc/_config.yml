@@ -100,6 +100,7 @@ kramdown:
   show_warnings: true
 
 liquid:
-  error_mode: strict
-  strict_variables: true
-  strict_filters: true
+  # TODO(eric.cousineau): Make these stricter at some point.
+  error_mode: warn
+  strict_variables: false
+  strict_filters: false
