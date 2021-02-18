@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/fixed_fem/dev/eigen_conjugate_gradient_solver.h"
@@ -12,6 +13,7 @@
 #include "drake/multibody/fixed_fem/dev/simplex_gaussian_quadrature.h"
 #include "drake/multibody/fixed_fem/dev/static_elasticity_element.h"
 #include "drake/multibody/fixed_fem/dev/static_elasticity_model.h"
+#include "drake/multibody/fixed_fem/dev/test/dummy_element.h"
 #include "drake/multibody/fixed_fem/dev/zeroth_order_state_updater.h"
 
 namespace drake {
@@ -37,7 +39,6 @@ using ElementType =
     StaticElasticityElement<IsoparametricElementType, QuadratureType,
                             ConstitutiveModelType>;
 using ModelType = StaticElasticityModel<ElementType>;
-using SolverType = FemSolver<ModelType>;
 using State = FemState<ElementType>;
 const double kYoungsModulus = 1.234;
 const double kPoissonRatio = 0.4567;
@@ -62,16 +63,15 @@ class FemSolverTest : public ::testing::Test {
     /* Builds the FemModel. */
     std::unique_ptr<ModelType> model = MakeBoxModel();
     model->SetGravity(kGravity);
+    /* Set up the Dirichlet BC. */
+    std::unique_ptr<DirichletBoundaryCondition<T>> bc = MakeCeilingBc();
+    model->SetDirichletBoundaryCondition(std::move(bc));
 
     /* Builds the FemSolver. */
-    solver_ = std::make_unique<SolverType>(std::move(model));
+    solver_ = std::make_unique<FemSolver<T>>(std::move(model));
     solver_->set_linear_solve_tolerance(kTol);
     solver_->set_relative_tolerance(kTol);
     solver_->set_absolute_tolerance(kTol);
-
-    /* Set up the Dirichlet BC. */
-    std::unique_ptr<DirichletBoundaryCondition<State>> bc = MakeCeilingBc();
-    solver_->SetDirichletBoundaryCondition(std::move(bc));
   }
 
   static std::unique_ptr<ModelType> MakeBoxModel() {
@@ -92,8 +92,8 @@ class FemSolverTest : public ::testing::Test {
 
   /* Creates a Dirichlet boundary condition that constrains the first
    `kNumDirichlet` vertices. */
-  static std::unique_ptr<DirichletBoundaryCondition<State>> MakeCeilingBc() {
-    auto bc = std::make_unique<DirichletBoundaryCondition<State>>();
+  static std::unique_ptr<DirichletBoundaryCondition<T>> MakeCeilingBc() {
+    auto bc = std::make_unique<DirichletBoundaryCondition<T>>(0);
     const State state = MakeReferenceState();
     const VectorX<T>& q = state.q();
     for (int node = 0; node < kNumDirichlet; ++node) {
@@ -112,8 +112,8 @@ class FemSolverTest : public ::testing::Test {
     State state = MakeReferenceState();
     const VectorX<T> q = MakeArbitraryPositions();
     state.SetQ(q);
-    std::unique_ptr<DirichletBoundaryCondition<State>> bc = MakeCeilingBc();
-    bc->ApplyBoundaryConditions(&state);
+    std::unique_ptr<DirichletBoundaryCondition<T>> bc = MakeCeilingBc();
+    state.ApplyBoundaryConditions(*bc);
     return state;
   }
 
@@ -130,7 +130,7 @@ class FemSolverTest : public ::testing::Test {
   }
 
   /* The solver under test. */
-  std::unique_ptr<SolverType> solver_;
+  std::unique_ptr<FemSolver<T>> solver_;
 };
 
 namespace {
@@ -141,21 +141,40 @@ TEST_F(FemSolverTest, StaticForceEquilibrium) {
   /* Create an arbitrary state and find the nodel force exerted on the vertices
    of the mesh (in unit N). */
   const State prescribed_state = MakeArbitraryState();
-  const ModelType& model = solver_->model();
+  const FemModelBase<T>& model = solver_->model();
   VectorX<T> nodal_force(kNumDofs);
   model.CalcResidual(prescribed_state, &nodal_force);
 
   /* If we exert the same force on the reference state, we should expect to
    recover the same positions as above. */
   const T initial_error = nodal_force.norm();
-  ModelType& mutable_model = solver_->mutable_model();
+  ModelType& mutable_model = dynamic_cast<ModelType&>(solver_->mutable_model());
   mutable_model.SetExplicitExternalForce(nodal_force);
   State state = MakeReferenceState();
   const ZerothOrderStateUpdater<State> state_updater;
-  solver_->SolveWithInitialGuess(state_updater, &state);
+  solver_->SolveStaticModelWithInitialGuess(&state);
   EXPECT_TRUE(CompareMatrices(state.q(), prescribed_state.q(),
                               std::max(kTol, kTol * initial_error)));
 }
+
+/* Verifies that methods that take FemStateBase as argument throw if the
+ concrete state type is incompatible with the model type. */
+TEST_F(FemSolverTest, IncompatibleState) {
+  FemState<test::DummyElement<0>> dummy_state(Vector3<double>(1, 2, 3));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      solver_->SolveStaticModelWithInitialGuess(&dummy_state), std::exception,
+      "SolveStaticModelWithInitialGuess\\(\\): The type of the FemState is "
+      "incompatible "
+      "with the type of the FemModel.");
+  State state_with_wrong_size(Vector3<double>(1, 2, 3));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      solver_->SolveStaticModelWithInitialGuess(&state_with_wrong_size),
+      std::exception,
+      "SolveStaticModelWithInitialGuess\\(\\): The size of the "
+      "FemState \\(3\\) is incompatible "
+      "with the size of the FemModel \\(24\\).");
+}
+// TODO(xuchenhan-tri): Add unit test for AdvanceOneTimeStep().
 }  // namespace
 }  // namespace fixed_fem
 }  // namespace multibody
