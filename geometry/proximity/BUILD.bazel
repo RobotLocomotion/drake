@@ -26,6 +26,7 @@ drake_cc_package_library(
         ":hydroelastic_internal",
         ":make_box_field",
         ":make_box_mesh",
+        ":make_capsule_mesh",
         ":make_cylinder_field",
         ":make_cylinder_mesh",
         ":make_ellipsoid_field",
@@ -211,6 +212,7 @@ drake_cc_library(
         ":bvh",
         ":make_box_field",
         ":make_box_mesh",
+        ":make_capsule_mesh",
         ":make_cylinder_field",
         ":make_cylinder_mesh",
         ":make_ellipsoid_field",
@@ -273,6 +275,21 @@ drake_cc_library(
     name = "make_cylinder_mesh",
     srcs = ["make_cylinder_mesh.cc"],
     hdrs = ["make_cylinder_mesh.h"],
+    deps = [
+        ":meshing_utilities",
+        ":proximity_utilities",
+        ":surface_mesh",
+        ":volume_mesh",
+        ":volume_to_surface_mesh",
+        "//common:essential",
+        "//geometry:shape_specification",
+    ],
+)
+
+drake_cc_library(
+    name = "make_capsule_mesh",
+    srcs = ["make_capsule_mesh.cc"],
+    hdrs = ["make_capsule_mesh.h"],
     deps = [
         ":meshing_utilities",
         ":proximity_utilities",
@@ -688,6 +705,15 @@ drake_cc_googletest(
     size = "medium",
     deps = [
         ":make_cylinder_mesh",
+        ":proximity_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "make_capsule_mesh_test",
+    deps = [
+        ":make_capsule_mesh",
+        ":mesh_to_vtk",
         ":proximity_utilities",
     ],
 )
