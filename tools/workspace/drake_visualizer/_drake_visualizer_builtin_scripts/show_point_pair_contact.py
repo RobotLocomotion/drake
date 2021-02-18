@@ -55,7 +55,7 @@ class _ContactConfigDialog(QtGui.QDialog):
     '''A simple dialog for configuring the contact visualization'''
     def __init__(self, visualizer, parent=None):
         QtGui.QDialog.__init__(self, parent)
-        self.setWindowTitle("Force Vector Visualization")
+        self.setWindowTitle("Point-Contact Force Vector Visualization")
         layout = QtGui.QGridLayout()
         layout.setColumnStretch(0, 0)
         layout.setColumnStretch(1, 1)
@@ -160,7 +160,7 @@ class ContactVisualizer:
 
     def update_screen_text(self):
         folder = om.getOrCreateContainer(self._folder_name)
-        my_text = 'Contact vector: {}'.format(
+        my_text = 'Point contact vector: {}'.format(
             ContactVisModes.get_mode_string(self.magnitude_mode))
 
         # TODO(SeanCurtis-TRI): Figure out how to anchor this in the bottom-
