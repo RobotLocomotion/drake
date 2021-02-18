@@ -105,6 +105,7 @@ drake_cc_library(
     deps = [
         ":damping_model",
         ":elasticity_model",
+        ":newmark_scheme",
         "//geometry/proximity:volume_mesh",
     ],
 )
@@ -184,9 +185,11 @@ drake_cc_library(
         "fem_model.h",
     ],
     deps = [
+        ":dirichlet_boundary_condition",
         ":fem_element",
         ":fem_indexes",
         ":fem_state",
+        ":state_updater",
         "//common:essential",
     ],
 )
@@ -197,7 +200,6 @@ drake_cc_library(
         "fem_solver.h",
     ],
     deps = [
-        ":dirichlet_boundary_condition",
         ":eigen_conjugate_gradient_solver",
         ":fem_model",
         ":linear_system_solver",
@@ -343,6 +345,7 @@ drake_cc_library(
     ],
     deps = [
         ":elasticity_model",
+        ":zeroth_order_state_updater",
         "//geometry/proximity:volume_mesh",
     ],
 )

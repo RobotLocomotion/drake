@@ -45,7 +45,7 @@ class StaticElasticityModelTest : public ::testing::Test {
   static geometry::VolumeMesh<T> MakeBoxTetMesh() {
     const double length = 0.1;
     geometry::Box box(length, length, length);
-    geometry::VolumeMesh mesh =
+    geometry::VolumeMesh<T> mesh =
         geometry::internal::MakeBoxVolumeMesh<T>(box, length);
     return mesh;
   }
@@ -113,8 +113,7 @@ TEST_F(StaticElasticityModelTest, TangentMatrixIsResidualDerivative) {
 
   Eigen::SparseMatrix<T> tangent_matrix;
   model_.SetTangentMatrixSparsityPattern(&tangent_matrix);
-  ZerothOrderStateUpdater<FemState<ElementType>> state_updater;
-  model_.CalcTangentMatrix(state, state_updater.weights(), &tangent_matrix);
+  model_.CalcTangentMatrix(state, &tangent_matrix);
 
   /* In the discretization of the unit cube by 6 tetrahedra, there are 19 edges,
    and 8 nodes, creating 19*2 + 8 blocks of 3-by-3 nonzero entries. Hence the
