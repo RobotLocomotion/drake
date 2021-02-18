@@ -15,6 +15,8 @@
 namespace drake {
 namespace multibody {
 namespace fixed_fem {
+// TODO(xuchenhan-tri): Remove the template by making the model and the state
+// abstract. See issue #14667.
 /** %FemSolver solves for the state of a given FemModel at which residual of the
  FemModel is sufficiently close to zero. %FemSolver uses a simple Newton-Raphson
  solver to solve for the zero residual state. A common workflow looks like:
@@ -78,18 +80,14 @@ class FemSolver {
     if (dirichlet_bc_ != nullptr) {
       dirichlet_bc_->ApplyBcToResidual(&b_);
     }
-    const T initial_error = b_.norm();
     int iter = 0;
     /* Newton-Raphson iterations. We iterate until any of the following is true:
      1. The max number of allowed iterations is reached;
-     2. The norm of the residual is smaller than the absolute tolerance which
-        has the same unit as the residual.
-     3. The relative error (the norm of the residual divided by the norm of the
-        residual evaluated at the initial guess) is smaller than the unitless
-        relative tolerance. */
-    while (b_.norm() > std::max(relative_tolerance_ * initial_error,
-                                absolute_tolerance_) &&
-           iter < kMaxIterations_) {
+     2. The norm of the change in the state in a single iteration is smaller
+        than the absolute tolerance.
+     3. The relative error (the norm of the change in the state divided by the
+        norm of the state) is smaller than the unitless relative tolerance. */
+    do {
       model_->CalcTangentMatrix(*state, state_updater.weights(), &A_);
       if (dirichlet_bc_ != nullptr) {
         dirichlet_bc_->ApplyBcToTangentMatrix(&A_);
@@ -103,7 +101,9 @@ class FemSolver {
         dirichlet_bc_->ApplyBcToResidual(&b_);
       }
       ++iter;
-    }
+    } while (dz_.norm() > std::max(relative_tolerance_ * state->Norm(),
+                                   absolute_tolerance_) &&
+             iter < kMaxIterations_);
     if (iter == kMaxIterations_) {
       // TODO(xuchenhan-tri): Provide some advice on how to get a "better
       //  initial guess". Or instead, return a status indicating the solver
@@ -135,17 +135,18 @@ class FemSolver {
   }
 
   /** Sets the relative tolerance, unitless. The Newton-Raphson iterations are
-   considered as converged if the residual norm is smaller than the residual
-   norm of the initial guess times the relative tolerace. The default value is
-   1e-3. */
+   considered as converged if the norm of the change in the state in one
+   iteration is smaller than the norm of the current state times the relative
+   tolerace. The default value is 1e-6. */
   void set_relative_tolerance(const T& tolerance) {
     relative_tolerance_ = tolerance;
   }
 
-  /** Sets the absolute tolerance which has the same unit as the residual of the
-   model. The Newton-Raphson iterations are considered as converged if the
-   residual norm is smaller than the absolute tolerance. The default value is
-   1e-14. */
+  /** Sets the absolute tolerance which has the same unit as the state with the
+   highest order of the model. For example, for dynamic elasticity, it has the
+   unit of m/s², and for static elasticity, it has the unit of m. The
+   Newton-Raphson iterations are considered as converged if the change in the
+   state is smaller than the absolute tolerance. The default value is 1e-6. */
   void set_absolute_tolerance(const T& tolerance) {
     absolute_tolerance_ = tolerance;
   }
@@ -184,10 +185,10 @@ class FemSolver {
   mutable VectorX<T> dz_;
   /* The relative tolerance for determining the convergence of the Newton
    solver, unitless. */
-  T relative_tolerance_{1e-3};
+  T relative_tolerance_{1e-6};
   /* The absolute tolerance for determining the convergence of the Newton
-   solver. It has the same unit as the residual. */
-  T absolute_tolerance_{1e-4};
+   solver. It has the same unit as the highest order state. */
+  T absolute_tolerance_{1e-6};
   // TODO(xuchenhan-tri): Consider making `kMaxIterations_` configurable.
   /* Any reasonable Newton solve should converge within 20 iterations. If it
    doesn't converge in 20 iterations, chances are it will never converge. */

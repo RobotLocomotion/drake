@@ -56,7 +56,7 @@ class ElasticityModel : public FemModel<Element> {
     return gravity_;
   }
 
-  /** Sets explicitly specified external forces (with units N) on the dofs in
+  /** Sets explicitly specified external forces (with units of N) on the dofs in
    the model. These explicit forces show up in the CalcResidual() and
    CalcExternalForce(). To turn off explicit external forces, pass in an empty
    vector.
