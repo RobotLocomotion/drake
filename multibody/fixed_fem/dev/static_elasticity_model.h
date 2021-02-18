@@ -1,11 +1,13 @@
 #pragma once
 
 #include <array>
+#include <memory>
 #include <utility>
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/multibody/fixed_fem/dev/elasticity_model.h"
+#include "drake/multibody/fixed_fem/dev/zeroth_order_state_updater.h"
 
 namespace drake {
 namespace multibody {
@@ -23,7 +25,10 @@ class StaticElasticityModel : public ElasticityModel<Element> {
   using T = typename Element::Traits::T;
   using ConstitutiveModel = typename Element::Traits::ConstitutiveModel;
 
-  StaticElasticityModel() = default;
+  StaticElasticityModel()
+      : ElasticityModel<Element>(
+            std::make_unique<ZerothOrderStateUpdater<FemState<Element>>>()) {}
+
   ~StaticElasticityModel() = default;
 
   /** Add tetrahedral StaticElasticityElements to the %StaticElasticityModel

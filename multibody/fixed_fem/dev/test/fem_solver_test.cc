@@ -37,7 +37,6 @@ using ElementType =
     StaticElasticityElement<IsoparametricElementType, QuadratureType,
                             ConstitutiveModelType>;
 using ModelType = StaticElasticityModel<ElementType>;
-using SolverType = FemSolver<ModelType>;
 using State = FemState<ElementType>;
 const double kYoungsModulus = 1.234;
 const double kPoissonRatio = 0.4567;
@@ -62,16 +61,15 @@ class FemSolverTest : public ::testing::Test {
     /* Builds the FemModel. */
     std::unique_ptr<ModelType> model = MakeBoxModel();
     model->SetGravity(kGravity);
+    /* Set up the Dirichlet BC. */
+    std::unique_ptr<DirichletBoundaryCondition<State>> bc = MakeCeilingBc();
+    model->SetDirichletBoundaryCondition(std::move(bc));
 
     /* Builds the FemSolver. */
-    solver_ = std::make_unique<SolverType>(std::move(model));
+    solver_ = std::make_unique<FemSolver<T>>(std::move(model));
     solver_->set_linear_solve_tolerance(kTol);
     solver_->set_relative_tolerance(kTol);
     solver_->set_absolute_tolerance(kTol);
-
-    /* Set up the Dirichlet BC. */
-    std::unique_ptr<DirichletBoundaryCondition<State>> bc = MakeCeilingBc();
-    solver_->SetDirichletBoundaryCondition(std::move(bc));
   }
 
   static std::unique_ptr<ModelType> MakeBoxModel() {
@@ -130,7 +128,7 @@ class FemSolverTest : public ::testing::Test {
   }
 
   /* The solver under test. */
-  std::unique_ptr<SolverType> solver_;
+  std::unique_ptr<FemSolver<T>> solver_;
 };
 
 namespace {
@@ -141,18 +139,18 @@ TEST_F(FemSolverTest, StaticForceEquilibrium) {
   /* Create an arbitrary state and find the nodel force exerted on the vertices
    of the mesh (in unit N). */
   const State prescribed_state = MakeArbitraryState();
-  const ModelType& model = solver_->model();
+  const AbstractFemModel<T>& model = solver_->model();
   VectorX<T> nodal_force(kNumDofs);
   model.CalcResidual(prescribed_state, &nodal_force);
 
   /* If we exert the same force on the reference state, we should expect to
    recover the same positions as above. */
   const T initial_error = nodal_force.norm();
-  ModelType& mutable_model = solver_->mutable_model();
+  ModelType& mutable_model = dynamic_cast<ModelType&>(solver_->mutable_model());
   mutable_model.SetExplicitExternalForce(nodal_force);
   State state = MakeReferenceState();
   const ZerothOrderStateUpdater<State> state_updater;
-  solver_->SolveWithInitialGuess(state_updater, &state);
+  solver_->SolveWithInitialGuess(&state);
   EXPECT_TRUE(CompareMatrices(state.q(), prescribed_state.q(),
                               std::max(kTol, kTol * initial_error)));
 }

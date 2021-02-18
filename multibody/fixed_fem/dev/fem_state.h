@@ -5,12 +5,14 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/fixed_fem/dev/abstract_fem_state.h"
 #include "drake/multibody/fixed_fem/dev/element_cache_entry.h"
 #include "drake/multibody/fixed_fem/dev/fem_indexes.h"
 
 namespace drake {
 namespace multibody {
 namespace fixed_fem {
+
 /** Stores the fem model state and per-element state-dependent quantities.The
  states include the generalized positions associated with each node, `q`, and
  optionally, their first and second time derivatives, `qdot` and `qddot`.
@@ -21,7 +23,7 @@ namespace fixed_fem {
  this %FemState stores and the order of the ODE after FEM spatial
  discretization. */
 template <typename Element>
-class FemState {
+class FemState : public AbstractFemState<typename Element::T> {
  public:
   using T = typename Element::T;
 
@@ -96,7 +98,7 @@ class FemState {
     element_cache_.resize(elements.size());
   }
 
-  int num_generalized_positions() const { return q_.size(); }
+  int num_generalized_positions() const final { return q_.size(); }
 
   int element_cache_size() const { return element_cache_.size(); }
   /** `q`, `qdot`, and `qddot` are resized (if they exist) with the semantics
@@ -179,7 +181,7 @@ class FemState {
   }
 
   /** Calculates the norm of the state with the highest order. */
-  T HighestOrderStateNorm() const {
+  T HighestOrderStateNorm() const final {
     if constexpr (ode_order() == 0) return q_.norm();
     if constexpr (ode_order() == 1) return qdot_.norm();
     if constexpr (ode_order() == 2) return qddot_.norm();

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <memory>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -8,13 +9,17 @@
 #include <Eigen/Sparse>
 
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/fixed_fem/dev/abstract_fem_model.h"
+#include "drake/multibody/fixed_fem/dev/dirichlet_boundary_condition.h"
 #include "drake/multibody/fixed_fem/dev/fem_element.h"
 #include "drake/multibody/fixed_fem/dev/fem_indexes.h"
 #include "drake/multibody/fixed_fem/dev/fem_state.h"
+#include "drake/multibody/fixed_fem/dev/state_updater.h"
 
 namespace drake {
 namespace multibody {
 namespace fixed_fem {
+
 /** %FemModel calculates the components of the discretized FEM equations.
  Suppose the PDE at hand is of the form
 
@@ -50,7 +55,7 @@ namespace fixed_fem {
  such as the natural, spatial and solution dimensions and the number of
  nodes/quadrature points in each element. */
 template <class Element>
-class FemModel {
+class FemModel : public AbstractFemModel<typename Element::Traits::T> {
  public:
   static_assert(
       std::is_base_of_v<FemElement<Element, typename Element::Traits>, Element>,
@@ -68,26 +73,75 @@ class FemModel {
   }
 
   /** The number of degrees of freedom in the model. */
-  int num_dofs() const {
-    return Element::Traits::kSolutionDimension * num_nodes();
+  int num_dofs() const final {
+    return Element::Traits::kSolutionDimension * this->num_nodes();
   }
 
   /** The number of FemElements owned by `this` %FemModel. */
-  int num_elements() const { return elements_.size(); }
+  int num_elements() const final { return elements_.size(); }
 
-  /** The number of nodes that are associated with `this` %FemModel. */
-  int num_nodes() const { return num_nodes_; }
+  /** Takes ownership of the given Dirichlet boundary condition and apply it
+   when the model is evaluated. */
+  void SetDirichletBoundaryCondition(
+      std::unique_ptr<DirichletBoundaryCondition<FemState<Element>>>
+          dirichlet_bc) {
+    dirichlet_bc_ = std::move(dirichlet_bc);
+  }
 
-  /** Calculates the residual at the given FemState by assembling the residual
-   from each element. Suppose the linear or nonlinear system generated from the
-   FEM discretization is G(z) = 0, then the output `residual` is equal to the
-   function G evaluated at the input `state`.
-   @param[in] state The FemState at which to evaluate the residual.
-   @param[out] residual The output residual evaluated at `state`.
-   @pre residual != nullptr.
-   @pre The size of the vector behind `residual` must be `num_dofs()`. */
-  void CalcResidual(const FemState<Element>& state,
-                    EigenPtr<VectorX<T>> residual) const {
+ protected:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FemModel);
+
+  explicit FemModel(
+      std::unique_ptr<StateUpdater<FemState<Element>>> state_updater)
+      : state_updater_(std::move(state_updater)) {}
+
+  virtual ~FemModel() = default;
+
+  /** Derived classes must implement this method to create a new FemState. */
+  virtual FemState<Element> DoMakeFemState() const = 0;
+
+  const Element& element(ElementIndex i) const {
+    DRAKE_ASSERT(i.is_valid());
+    DRAKE_ASSERT(i < num_elements());
+    return elements_[i];
+  }
+
+  Element& mutable_element(ElementIndex i) {
+    DRAKE_ASSERT(i.is_valid());
+    DRAKE_ASSERT(i < num_elements());
+    return elements_[i];
+  }
+
+  /** Moves the input `element` into the vector of elements held by `this`
+   %FemModel. */
+  void AddElement(Element&& element) {
+    elements_.emplace_back(std::move(element));
+  }
+
+  /** Alternative signature for adding a new element to `this` %FemModel.
+   Forwards the arguments `args` to the constructor of the Element and
+   potentially creates the new element in place. */
+  template <typename... Args>
+  void AddElement(Args&&... args) {
+    elements_.emplace_back(std::forward<Args>(args)...);
+  }
+
+  /** Adds per-vertex residuals that are explicitly specified at each vertex
+   instead of accumulated from elements. The default implementation is a
+   no-op. Derived classes must override this method if their residuals have
+   per-vertex contribution. */
+  virtual void AddExplicitResidual(EigenPtr<VectorX<T>> residual) const {}
+
+ private:
+  /* Implements AbstractFemModel::MakeAbstractFemState() by simply hiding the
+   result from MakeFemState() behind a unique_ptr to AbstractFemState. */
+  std::unique_ptr<AbstractFemState<T>> MakeAbstractFemState() const final {
+    return std::make_unique<FemState<Element>>(MakeFemState());
+  }
+
+  /* Helper for DoCalcResidual(). */
+  void CalcResidualHelper(const FemState<Element>& state,
+                          EigenPtr<VectorX<T>> residual) const {
     DRAKE_DEMAND(residual != nullptr && residual->size() == num_dofs());
     DRAKE_DEMAND(state.element_cache_size() == num_elements());
     /* The values are accumulated in the residual, so it is important to clear
@@ -113,24 +167,15 @@ class FemModel {
     /* Add per-vertex residuals that are explicitly specified at each vertex
      instead of accumulated from elements. */
     AddExplicitResidual(residual);
+
+    if (dirichlet_bc_ != nullptr) {
+      dirichlet_bc_->ApplyBcToResidual(residual);
+    }
   }
 
-  /** Calculates the tangent matrix at the given FemState. The ij-th entry of
-   the tangent matrix is the derivative of the i-th entry of the residual
-   (calculated by CalcResidual()) with respect to the j-th generalized unknown
-   zⱼ.
-   @param[in] state    The FemState at which the residual is evaluated.
-   @param[in] weights    The ordered weights to combine stiffness matrix,
-   damping matrix and mass matrix into the tangent matrix.
-   @param[out] tangent_matrix    The output tangent_matrix. Suppose the linear
-   or nonlinear system generated from the FEM discretization is G(z) = 0, then
-   `tangent_matrix` is equal to ∇G evaluated at the input `state`.
-   @pre tangent_matrix != nullptr.
-   @pre The size of the matrix behind `tangent_matrix` is `num_dofs()` *
-   `num_dofs()`. */
-  void CalcTangentMatrix(const FemState<Element>& state,
-                         const Vector3<T>& weights,
-                         Eigen::SparseMatrix<T>* tangent_matrix) const {
+  /* Helper for DoCalcTangentMatrix(). */
+  void CalcTangentMatrixHelper(const FemState<Element>& state,
+                               Eigen::SparseMatrix<T>* tangent_matrix) const {
     DRAKE_DEMAND(tangent_matrix != nullptr &&
                  tangent_matrix->rows() == num_dofs() &&
                  tangent_matrix->cols() == num_dofs());
@@ -145,6 +190,7 @@ class FemModel {
     /* Scratch space to store the contribution to the tangent matrix from each
      element. */
     Eigen::Matrix<T, kNumDofs, kNumDofs> element_tangent_matrix;
+    const Vector3<T>& weights = state_updater_->weights();
     for (ElementIndex e(0); e < num_elements(); ++e) {
       element_tangent_matrix = CalcElementTangentMatrix(state, weights, e);
       const std::array<NodeIndex, kNumNodes>& element_node_indices =
@@ -163,15 +209,14 @@ class FemModel {
         }
       }
     }
+    if (dirichlet_bc_ != nullptr) {
+      dirichlet_bc_->ApplyBcToTangentMatrix(tangent_matrix);
+    }
   }
 
-  /** Sets the sparsity pattern for the tangent matrix of this %FemModel.
-   @param[out] tangent_matrix    The tangent matrix of this %FemModel. Its
-   size and sparsity pattern will be set and it will be ready to be passed
-   into CalcTangentMatrix().
-   @pre `tangent_matrix` must not be the null pointer. */
-  void SetTangentMatrixSparsityPattern(
-      Eigen::SparseMatrix<T>* tangent_matrix) const {
+  /* Implements AbstractFemModel::SetTangentMatrixSparsityPattern(). */
+  void DoSetTangentMatrixSparsityPattern(
+      Eigen::SparseMatrix<T>* tangent_matrix) const final {
     DRAKE_DEMAND(tangent_matrix != nullptr);
     tangent_matrix->resize(num_dofs(), num_dofs());
     std::vector<Eigen::Triplet<T>> non_zero_entries;
@@ -205,49 +250,22 @@ class FemModel {
     tangent_matrix->makeCompressed();
   }
 
- protected:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FemModel);
-  FemModel() = default;
-  virtual ~FemModel() = default;
-
-  /** Derived classes must implement this method to create a new FemState. */
-  virtual FemState<Element> DoMakeFemState() const = 0;
-
-  const Element& element(ElementIndex i) const {
-    DRAKE_ASSERT(i.is_valid());
-    DRAKE_ASSERT(i < num_elements());
-    return elements_[i];
+  /* Implements AbstractFemModel::CalcResidual() by casting the AbstractFemState
+   to its concrete type. */
+  void DoCalcResidual(const AbstractFemState<T>& state,
+                      EigenPtr<VectorX<T>> residual) const final {
+    const FemState<Element>& concrete_state = cast_to_concrete_state(state);
+    CalcResidualHelper(concrete_state, residual);
   }
 
-  Element& mutable_element(ElementIndex i) {
-    DRAKE_ASSERT(i.is_valid());
-    DRAKE_ASSERT(i < num_elements());
-    return elements_[i];
+  /* Implements AbstractFemModel::CalcTangentMatrix() by casting the
+   AbstractFemState to its concrete type. */
+  void DoCalcTangentMatrix(const AbstractFemState<T>& state,
+                           Eigen::SparseMatrix<T>* tangent_matrix) const final {
+    const FemState<Element>& concrete_state = cast_to_concrete_state(state);
+    CalcTangentMatrixHelper(concrete_state, tangent_matrix);
   }
 
-  /** Moves the input `element` into the vector of elements held by `this`
-   %FemModel. */
-  void AddElement(Element&& element) {
-    elements_.emplace_back(std::move(element));
-  }
-
-  /** Alternative signature for adding a new element to `this` %FemModel.
-   Forwards the arguments `args` to the constructor of the Element and
-   potentially creates the new element in place. */
-  template <typename... Args>
-  void AddElement(Args&&... args) {
-    elements_.emplace_back(std::forward<Args>(args)...);
-  }
-
-  /** Adds per-vertex residuals that are explicitly specified at each vertex
-   instead of accumulated from elements. The default implementation is a no-op.
-   Derived classes must override this method if their residuals have
-   per-vertex contribution. */
-  virtual void AddExplicitResidual(EigenPtr<VectorX<T>> residual) const {}
-
-  void increment_num_nodes(int num_new_nodes) { num_nodes_ += num_new_nodes; }
-
- private:
   /* Builds the element tangent matrix for the element with index
    `element_index` by combining the stiffness matrix, damping matrix, and the
    mass matrix according to the given `weights`.
@@ -280,10 +298,68 @@ class FemModel {
            weights[2] * mass_matrix;
   }
 
+  /* Implements AbstractFemModel::DoUpdateState(). */
+  void DoUpdateState(const VectorX<T>& dz,
+                     AbstractFemState<T>* state) const final {
+    FemState<Element>& mutable_concrete_state =
+        cast_to_mutable_concrete_state(state);
+    state_updater_->UpdateState(dz, &mutable_concrete_state);
+  }
+
+  /* Implements AbstractFemModel::DoAdvanceOneTimeStep(). */
+  void DoAdvanceOneTimeStep(const AbstractFemState<T>& prev_state,
+                            AbstractFemState<T>* next_state) const final {
+    FemState<Element>& next_state_concrete =
+        cast_to_mutable_concrete_state(next_state);
+    const FemState<Element>& prev_state_concrete =
+        cast_to_concrete_state(prev_state);
+    state_updater_->AdvanceOneTimeStep(prev_state_concrete,
+                                       &next_state_concrete);
+  }
+
+  /* Implements AbstractFemModel::ApplyBoundaryConditions() by casting the
+   abstract state to the concrete state and invoking the overloaded method for
+   the concrete state. */
+  void DoApplyBoundaryConditions(AbstractFemState<T>* state) const final {
+    FemState<Element>& concrete_state = cast_to_mutable_concrete_state(state);
+    if (dirichlet_bc_ != nullptr) {
+      dirichlet_bc_->ApplyBoundaryConditions(&concrete_state);
+    }
+  }
+
+  /* Dynamically cast the given AbstractFemState to the FemState compatible
+   with `this` FemModel. Throw an exception if the cast fails. */
+  const FemState<Element>& cast_to_concrete_state(
+      const AbstractFemState<T>& abstract_state) const {
+    const auto* concrete_state_ptr =
+        dynamic_cast<const FemState<Element>*>(&abstract_state);
+    if (concrete_state_ptr == nullptr) {
+      throw std::logic_error(
+          "The type of the FemState is incompatible with the type of the "
+          "FemModel.");
+    }
+    return *concrete_state_ptr;
+  }
+
+  /* Mutable version of cast_to_concrete_state() that takes a pointer to the
+   abstract state. Throw an exception if the cast fails. */
+  FemState<Element>& cast_to_mutable_concrete_state(
+      AbstractFemState<T>* abstract_state) const {
+    auto* concrete_state_ptr = dynamic_cast<FemState<Element>*>(abstract_state);
+    if (concrete_state_ptr == nullptr) {
+      throw std::logic_error(
+          "The type of the FemState is incompatible with the type of the "
+          "FemModel.");
+    }
+    return *concrete_state_ptr;
+  }
+
   /* FemElements owned by this model. */
   std::vector<Element> elements_{};
-  /* The total number of nodes in the system. */
-  int num_nodes_{0};
+  /* The StateUpdater that updates the states for this model. */
+  std::unique_ptr<StateUpdater<FemState<Element>>> state_updater_;
+  /* The Dirichlet boundary condition imposed on the model. */
+  std::unique_ptr<DirichletBoundaryCondition<FemState<Element>>> dirichlet_bc_;
 };
 }  // namespace fixed_fem
 }  // namespace multibody

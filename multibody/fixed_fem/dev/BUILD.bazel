@@ -11,6 +11,28 @@ package(
 )
 
 drake_cc_library(
+    name = "abstract_fem_model",
+    srcs = [
+        "abstract_fem_model.cc",
+    ],
+    hdrs = [
+        "abstract_fem_model.h",
+    ],
+    deps = [
+        ":abstract_fem_state",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "abstract_fem_state",
+    hdrs = [
+        "abstract_fem_state.h",
+    ],
+)
+
+drake_cc_library(
     name = "constitutive_model",
     hdrs = [
         "constitutive_model.h",
@@ -105,6 +127,7 @@ drake_cc_library(
     deps = [
         ":damping_model",
         ":elasticity_model",
+        ":newmark_scheme",
         "//geometry/proximity:volume_mesh",
     ],
 )
@@ -184,9 +207,12 @@ drake_cc_library(
         "fem_model.h",
     ],
     deps = [
+        ":abstract_fem_model",
+        ":dirichlet_boundary_condition",
         ":fem_element",
         ":fem_indexes",
         ":fem_state",
+        ":state_updater",
         "//common:essential",
     ],
 )
@@ -197,7 +223,6 @@ drake_cc_library(
         "fem_solver.h",
     ],
     deps = [
-        ":dirichlet_boundary_condition",
         ":eigen_conjugate_gradient_solver",
         ":fem_model",
         ":linear_system_solver",
@@ -213,6 +238,7 @@ drake_cc_library(
         "fem_state.h",
     ],
     deps = [
+        ":abstract_fem_state",
         ":element_cache_entry",
         "//common:essential",
     ],
@@ -343,6 +369,7 @@ drake_cc_library(
     ],
     deps = [
         ":elasticity_model",
+        ":zeroth_order_state_updater",
         "//geometry/proximity:volume_mesh",
     ],
 )
@@ -408,7 +435,6 @@ drake_cc_googletest(
         ":dynamic_elasticity_model",
         ":linear_constitutive_model",
         ":linear_simplex_element",
-        ":newmark_scheme",
         ":simplex_gaussian_quadrature",
         "//common/test_utilities:eigen_matrix_compare",
         "//geometry/proximity:make_box_mesh",
@@ -560,7 +586,6 @@ drake_cc_googletest(
         ":simplex_gaussian_quadrature",
         ":static_elasticity_element",
         ":static_elasticity_model",
-        ":zeroth_order_state_updater",
         "//common/test_utilities:eigen_matrix_compare",
         "//geometry/proximity:make_box_mesh",
         "//math:gradient",

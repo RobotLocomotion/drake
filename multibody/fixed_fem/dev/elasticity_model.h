@@ -1,6 +1,8 @@
 #pragma once
 
 #include <array>
+#include <memory>
+#include <utility>
 
 #include "drake/multibody/fixed_fem/dev/elasticity_element.h"
 #include "drake/multibody/fixed_fem/dev/fem_model.h"
@@ -115,7 +117,11 @@ class ElasticityModel : public FemModel<Element> {
 
  protected:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ElasticityModel);
-  ElasticityModel() = default;
+
+  explicit ElasticityModel(
+      std::unique_ptr<StateUpdater<FemState<Element>>> state_updater)
+      : FemModel<Element>(std::move(state_updater)) {}
+
   virtual ~ElasticityModel() = default;
 
   /** Parse a tetrahedral volume mesh, store the positions of the vertices in
