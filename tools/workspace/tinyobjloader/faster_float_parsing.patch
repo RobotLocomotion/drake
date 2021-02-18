@@ -15,16 +15,9 @@
  
  namespace tinyobj {
  
-@@ -838,126 +846,23 @@ static bool tryParseDouble(const char *s, const char *s_end, double *result) {
-   if (s >= s_end) {
+@@ -839,125 +847,20 @@ static bool tryParseDouble(const char *s, const char *s_end, double *result) {
      return false;
    }
-+
-+#if defined(__APPLE__)
-+  static locale_t c_locale = newlocale(LC_ALL_MASK, NULL, NULL);
-+#else
-+  static locale_t c_locale = newlocale(LC_ALL_MASK, "C", (locale_t)0);
-+#endif
  
 -  double mantissa = 0.0;
 -  // This exponent is base 2 rather than 10.
@@ -82,7 +75,12 @@
 -    // We must make sure we actually got something.
 -    if (read == 0) goto fail;
 -  }
--
++#if defined(__APPLE__)
++  static locale_t c_locale = newlocale(LC_ALL_MASK, NULL, NULL);
++#else
++  static locale_t c_locale = newlocale(LC_ALL_MASK, "C", (locale_t)0);
++#endif
+ 
 -  // We allow numbers of form "#", "###" etc.
 -  if (!end_not_reached) goto assemble;
 -
@@ -105,11 +103,9 @@
 -      end_not_reached = (curr != s_end);
 -    }
 -  } else if (*curr == 'e' || *curr == 'E') {
-+  errno = 0;
 +  char *str_end = NULL;
 +  const double val = strtod_l(s, &str_end, c_locale);
-+  if (str_end != s && errno != ERANGE && isfinite(val)) {
-+    errno = 0;
++  if (str_end != s && isfinite(val)) {
 +    *result = val;
 +    return true;
    } else {
