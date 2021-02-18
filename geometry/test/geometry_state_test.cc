@@ -3106,7 +3106,7 @@ TEST_F(GeometryStateTest, RemoveGeometryFromRenderer) {
   // addition,
   //   a) report itself in the "other" render engine, xor
   //   b) be present in the `removed_from_renderer` set.
-  auto confirm_renderers = [=, &other_engine](
+  auto confirm_renderers = [this, &other_engine](
                                set<GeometryId> removed_from_renderer) {
     set<GeometryId> ids(geometries_.begin(), geometries_.end());
     ids.insert(anchored_geometry_);
@@ -3183,7 +3183,7 @@ TEST_F(GeometryStateTest, RemoveFrameFromRenderer) {
   // addition,
   //   a) report itself in the "other" render engine, xor
   //   b) be present in the `removed_from_renderer` set.
-  auto confirm_renderers = [=, &other_engine](
+  auto confirm_renderers = [this, &other_engine](
                                set<GeometryId> removed_from_renderer) {
     set<GeometryId> ids(geometries_.begin(), geometries_.end());
     ids.insert(anchored_geometry_);
