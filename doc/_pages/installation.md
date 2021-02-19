@@ -19,4 +19,4 @@ You can choose to download a pre-compiled version of Drake, or to build it from 
 * [Binary installation (macOS, Ubuntu)](/from_binary.html)  
 * [Source installation (macOS, Ubuntu)](/from_source.html)  
 * [Using the Drake Docker Images From Docker Hub](/docker.html)  
-* [Release Notes](/release_notes.html)  
+* [Release Notes](/release_notes/release_notes.html)

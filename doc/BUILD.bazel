@@ -99,7 +99,6 @@ filegroup(
     srcs = [
         "_config.yml",
         "index.md",
-        "release_notes.md",
     ] + glob([
         "_includes/*.html",
         "_includes/*.md",
