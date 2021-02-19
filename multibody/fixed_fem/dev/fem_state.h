@@ -178,6 +178,14 @@ class FemState {
     return data;
   }
 
+  /** Calculates the norm of the state with the highest order. */
+  T HighestOrderStateNorm() const {
+    if constexpr (ode_order() == 0) return q_.norm();
+    if constexpr (ode_order() == 1) return qdot_.norm();
+    if constexpr (ode_order() == 2) return qddot_.norm();
+    DRAKE_UNREACHABLE();
+  }
+
  private:
   /* Generalized node positions. */
   VectorX<T> q_{};

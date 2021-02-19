@@ -5,6 +5,8 @@
 #include <utility>
 #include <vector>
 
+#include <Eigen/Sparse>
+
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/fixed_fem/dev/fem_element.h"
 #include "drake/multibody/fixed_fem/dev/fem_indexes.h"
@@ -54,6 +56,7 @@ class FemModel {
       std::is_base_of_v<FemElement<Element, typename Element::Traits>, Element>,
       "The template parameter Element should be derived from FemElement. ");
   using T = typename Element::Traits::T;
+  using ElementType = Element;
 
   /** Creates a new FemState. The new state's number of generalized positions is
    equal to `num_dofs()`. The new state's element data is constructed using the
@@ -107,6 +110,9 @@ class FemModel {
             element_residual.template segment<kDim>(i * kDim);
       }
     }
+    /* Add per-vertex residuals that are explicitly specified at each vertex
+     instead of accumulated from elements. */
+    AddExplicitResidual(residual);
   }
 
   /** Calculates the tangent matrix at the given FemState. The ij-th entry of
@@ -140,8 +146,7 @@ class FemModel {
      element. */
     Eigen::Matrix<T, kNumDofs, kNumDofs> element_tangent_matrix;
     for (ElementIndex e(0); e < num_elements(); ++e) {
-      element_tangent_matrix =
-          CalcElementTangentMatrix(state, weights, e);
+      element_tangent_matrix = CalcElementTangentMatrix(state, weights, e);
       const std::array<NodeIndex, kNumNodes>& element_node_indices =
           elements_[e].node_indices();
       for (int a = 0; a < kNumNodes; ++a) {
@@ -234,6 +239,12 @@ class FemModel {
     elements_.emplace_back(std::forward<Args>(args)...);
   }
 
+  /** Adds per-vertex residuals that are explicitly specified at each vertex
+   instead of accumulated from elements. The default implementation is a no-op.
+   Derived classes must override this method if their residuals have
+   per-vertex contribution. */
+  virtual void AddExplicitResidual(EigenPtr<VectorX<T>> residual) const {}
+
   void increment_num_nodes(int num_new_nodes) { num_nodes_ += num_new_nodes; }
 
  private:
@@ -260,14 +271,12 @@ class FemModel {
     MatrixType damping_matrix = MatrixType::Zero();
     elements_[element_index].CalcDampingMatrix(state, &damping_matrix);
     if constexpr (FemState<Element>::ode_order() == 1) {
-      return weights[0] * stiffness_matrix +
-             weights[1] * damping_matrix;
+      return weights[0] * stiffness_matrix + weights[1] * damping_matrix;
     }
     DRAKE_ASSERT(FemState<Element>::ode_order() == 2);
     MatrixType mass_matrix = MatrixType::Zero();
     elements_[element_index].CalcMassMatrix(state, &mass_matrix);
-    return weights[0] * stiffness_matrix +
-           weights[1] * damping_matrix +
+    return weights[0] * stiffness_matrix + weights[1] * damping_matrix +
            weights[2] * mass_matrix;
   }
 
