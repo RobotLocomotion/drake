@@ -42,4 +42,4 @@ following [these instructions](/jenkins.html#building-binary-packages-on-demand)
 # Historical Note
 
 Older releases were built around substantial MATLAB support, and are
-described on [release notes page](/release_notes/older_releases.html#older-releases).
+described on [release notes page](/release_notes/older_releases.html).

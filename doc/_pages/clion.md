@@ -134,7 +134,7 @@ may be slightly different in previous versions.
 
 1. Open the Settings dialog (``File`` > ``Settings``) or ``Alt+Ctrl+S``.
 2. Navigate to ``Tools`` > ``External Tools``.
-3. Click the :raw-html:`<font size="5" color="green">+</font>` sign to add a new
+3. Click the {::nomarkdown}<font color="green">+</font>{:/} sign to add a new
    tool.
 4. Set the appropriate fields in the ``Edit Tool``. See the following tools for
    details.
