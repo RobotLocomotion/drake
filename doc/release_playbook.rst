@@ -38,7 +38,7 @@ Prior to release
    issue labels for now.
 5. For release notes, on an ongoing basis, add recent commit messages to the
    release notes draft using the ``tools/release_engineering/relnotes`` tooling.
-   (Instructions can be found atop its soure code: `relnotes.py
+   (Instructions can be found atop its source code: `relnotes.py
    <https://github.com/RobotLocomotion/drake/blob/master/tools/release_engineering/relnotes.py>`_.)
 
    a. On the first run, use ``--action=create`` to bootstrap the file.
