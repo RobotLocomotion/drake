@@ -70,7 +70,7 @@ TODO(eric.cousineau): Move these clarifications and exceptions to styleguide
   syntax. Rationale: exceptions raised in lazy formatting get printed to
   ``stderr``, but are otherwise ignored, and thus may escape notice.
 * Executable Python files should be limited to *only* scripts which are not run
-  via Bazel-generated Python proxy scripts. If a script
+  via Bazel-generated Python proxy scripts [1]. If a script
   qualifies, use the following "shebang" line:
 
 ```
@@ -80,7 +80,7 @@ TODO(eric.cousineau): Move these clarifications and exceptions to styleguide
   executable. This is also recommended by
   [PEP 394](https://www.python.org/dev/peps/pep-0394/).
 
-Generally, this means scripts that run via ``bazel run``,
+[1] Generally, this means scripts that run via ``bazel run``,
    ``bazel test``, or ``./bazel-bin/...``.
 
 # Java Style

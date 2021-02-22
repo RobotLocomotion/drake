@@ -57,4 +57,4 @@ full details at:
 # Historical Note
 
 Older releases were built around substantial MATLAB support, and are
-described on [this release notes page](/older_releases.html).
+described on [this release notes page](/release_notes/older_releases.html).
