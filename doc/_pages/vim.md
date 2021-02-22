@@ -20,7 +20,7 @@ Ubuntu users should make sure that they install the Python modules as well.
 
 # Configuration Files
 
-``sample_vimrc`` ([download](/downloads/sample_vimrc)) provides a sample
+``sample_vimrc`` ([download](/sample_vimrc)) provides a sample
 configuration file that sets up some plugins and key-mappings that users may
 find useful for working with Drake. It should work out of the box if copied
 to ``~/.vimrc`` {``~/.config/nvim/init.vim``}. Be sure to back up any existing
@@ -62,9 +62,9 @@ git submodule update --init --recursive
 
 In order for YouCompleteMe to provide code-completion and linting for Drake's
 C++ files, it needs to know what flags to use when compiling them. Fortunately,
-bazel-compilation-database](https://github.com/grailbio/bazel-compilation-database) provides a way for
-YouCompleteMe to get this information from Bazel. The following steps should
-get this working in Drake:
+[bazel-compilation-database](https://github.com/grailbio/bazel-compilation-database)
+provides a way for YouCompleteMe to get this information from Bazel. The
+following steps should get this working in Drake:
 
 1. Download the bazel-compilation-database 0.2.2
   [tarball](https://github.com/grailbio/bazel-compilation-database/archive/0.2.2.tar.gz).
@@ -91,9 +91,9 @@ See also, [Linting and Jump-to-Declaration Mappings](#linting-and-jump-to-declar
 
 The aforementioned ``sample_vimrc`` file pulls in several plugins and defines
 mappings for working with them. It also defines some general-purpose mappings.
-Here are some highlights. A lot of these start with <leader>, which in the
-attached file is mapped to ";" (so <leader>gv becomes ;gv). You can, of course,
-change <leader> to whatever you prefer in your ``.vimrc`` {``init.vim``} file.
+Here are some highlights. A lot of these start with ``<leader>``, which in the
+attached file is mapped to ``;`` (so ``<leader>gv`` becomes ``;gv``). You can, of course,
+change ``<leader>`` to whatever you prefer in your ``.vimrc`` {``init.vim``} file.
 
 ## Git Mappings
 

@@ -99,6 +99,7 @@ filegroup(
     srcs = [
         "_config.yml",
         "index.md",
+        "sample_vimrc",
     ] + glob([
         "_includes/*.html",
         "_includes/*.md",
