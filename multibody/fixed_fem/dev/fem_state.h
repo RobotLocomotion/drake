@@ -105,6 +105,7 @@ class FemState {
   Eigen::conservativeResize</a>. */
   void Resize(int num_generalized_positions) {
     DRAKE_ASSERT(num_generalized_positions >= 0);
+    InvalidateAllCacheEntries();
     q_.conservativeResize(num_generalized_positions);
     if constexpr (ode_order() >= 1)
       qdot_.conservativeResize(num_generalized_positions);
@@ -148,19 +149,31 @@ class FemState {
   }
   /** @} */
 
-  /** @name Mutable state getters.
+  /** @name (Advanced) Mutable state getters.
    The values of the states are mutable but the sizes of the states are not
-   allowed to change.
+   allowed to change. Calling these mutable getters will invalidate all cache
+   entries associated with `this` %FemState. Users should, however, take extreme
+   caution if they decide to hold on to the mutable reference. If the mutable
+   reference is used to update the state again *after* element_data() is called,
+   the state-dependent data stored will *not* be updated according to the most
+   up-to-date state, and element_data() may (and most likely *will*) provide
+   incorrect results. Therefore, users of these mutable getters are advised to
+   keep the scope in which they are used as small as possible.
    @{ */
-  Eigen::VectorBlock<VectorX<T>> mutable_q() { return q_.head(q_.size()); }
+  Eigen::VectorBlock<VectorX<T>> mutable_q() {
+    InvalidateAllCacheEntries();
+    return q_.head(q_.size());
+  }
 
   Eigen::VectorBlock<VectorX<T>> mutable_qdot() {
     DRAKE_THROW_UNLESS(ode_order() >= 1);
+    InvalidateAllCacheEntries();
     return qdot_.head(qdot_.size());
   }
 
   Eigen::VectorBlock<VectorX<T>> mutable_qddot() {
     DRAKE_THROW_UNLESS(ode_order() == 2);
+    InvalidateAllCacheEntries();
     return qddot_.head(qddot_.size());
   }
   /** @} */
@@ -170,11 +183,13 @@ class FemState {
       const Element& element) const {
     ElementIndex id = element.element_index();
     DRAKE_ASSERT(id.is_valid() && id < element_cache_size());
-    // TODO(xuchenhan-tri): Currently the data is always recomputed when this
-    //  method is invoked. Cache these data in the future.
+    if (!element_cache_[id].is_stale()) {
+      return element_cache_[id].element_data();
+    }
     typename Element::Traits::Data& data =
         element_cache_[id].mutable_element_data();
     data = element.ComputeData(*this);
+    element_cache_[id].set_stale(false);
     return data;
   }
 
@@ -187,6 +202,19 @@ class FemState {
   }
 
  private:
+  friend class FemStateTest;
+
+  // TODO(xuchenhan-tri): Currently, all cache entries are thrashed when *any*
+  //  state (q, qdot, or qddot) is changed. For many FEM models (e.g.
+  //  static/dynamic elasticity), there exist more fine-grained caching
+  //  mechanisms which may improve the cache efficiency.
+  /* Mark all cache entries associated with `this` FemState as stale. */
+  void InvalidateAllCacheEntries() {
+    for (auto& element_cache_entry : element_cache_) {
+      element_cache_entry.set_stale(true);
+    }
+  }
+
   /* Generalized node positions. */
   VectorX<T> q_{};
   /* Time derivatives of generalized node positions. */
@@ -194,7 +222,8 @@ class FemState {
   /* Time second derivatives of generalized node positions. */
   VectorX<T> qddot_{};
   /* Owned element cache entries. */
-  mutable std::vector<ElementCacheEntry<typename Element::Traits::Data>>
+  mutable std::vector<
+      internal::ElementCacheEntry<typename Element::Traits::Data>>
       element_cache_{};
 };
 }  // namespace fixed_fem
