@@ -54,8 +54,8 @@ The contents of the Python API documentation are also available via
 Jekyll
 ======
 
-*Note: Jekyll documentation is a work in progress and is not published live
-yet.* Currently, this process will generate or serve an empty page (index.html).
+*Note: Jekyll documentation is a work in progress and is not published on
+the drake.mit.edu website yet. You can still preview it locally.*
 
 It is *not* necessary to build Drake prior to running either command below.
 
