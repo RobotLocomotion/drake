@@ -1034,6 +1034,16 @@ TEST_F(RotationMatrixConversionTests, AngleAxisToRotationMatrix) {
   }
 }
 
+TEST_F(RotationMatrixConversionTests, twoVectorsToRotationMatrix) {
+  Vector3<double> alpha(1, 0, 0);
+  Vector3<double> beta(1, 0, 0);
+  RotationMatrix<double> R =
+      RotationMatrix<double>::CalcRotationMatrixFromTwoUnitVectors(alpha, beta);
+  ASSERT_TRUE(R.IsExactlyIdentity());
+  // RotationMatrix<double> R_expected;  // Identity matrix.
+  // ASSERT_TRUE(R.IsNearlyEqualTo(R_expected, 200 * kEpsilon));
+}
+
 }  // namespace
 }  // namespace math
 }  // namespace drake
