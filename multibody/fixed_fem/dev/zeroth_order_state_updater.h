@@ -27,7 +27,7 @@ class ZerothOrderStateUpdater final : public StateUpdater<State> {
 
   /* Implements StateUpdater::DoUpdateState(). */
   void DoUpdateState(const VectorX<T>& dz, State* state) const final {
-    state->set_q(state->q() + dz);
+    state->SetQ(state->q() + dz);
   }
 };
 }  // namespace fixed_fem

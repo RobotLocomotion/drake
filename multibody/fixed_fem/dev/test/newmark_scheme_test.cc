@@ -60,7 +60,7 @@ TEST_F(NewmarkSchemeTest, AdvanceOneTimeStep) {
   FemState<DummyElement<2>> state_np1(state_0);
   const int kTimeSteps = 10;
   for (int i = 0; i < kTimeSteps; ++i) {
-    state_np1.set_qddot(state_n.qddot());
+    state_np1.SetQddot(state_n.qddot());
     newmark_scheme_.AdvanceOneTimeStep(state_n, &state_np1);
     state_n = state_np1;
   }
