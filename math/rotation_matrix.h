@@ -103,14 +103,34 @@ class RotationMatrix {
     set(Eigen::AngleAxis<T>(theta, lambda / norm).toRotationMatrix());
   }
 
-  // Constructs a 3x3 rotation matrix R_AB from two vectors alpha and beta.
+  // Calculates a rotation matrix R_AB from two unit vectors alpha and beta.
   // @param[alpha] unit vector expressed in either frame A or frame B.
   // @param[beta] unit vector expressed in the same frame as alpha (A or B).
-  // @retval 3x3 rotation matrix R_AB
-  static RotationMatrix<T> CalcRotationMatrixFromTwoUnitVectors(
+  // @retval rotation matrix R_AB.
+  static RotationMatrix<T> MakeRotationMatrixFromTwoUnitVectors(
       const Vector3<T>& alphaUnitVector, const Vector3<T>& betaUnitVector) {
+    // DRAKE_ASSERT(std::abs(alphaUnitVector.norm() - 1) <= kEpsilon);
+    // DRAKE_ASSERT(std::abs(betaUnitVector.norm() - 1) <= kEpsilon);
     return RotationMatrix<T>(
-        CalcRotationMatrixFromTwoVectors(alphaUnitVector, betaUnitVector));
+        MakeMatrix33FromTwoVectors(alphaUnitVector, betaUnitVector));
+  }
+
+  // Calculates a rotation matrix R_AB from two vectors alpha and beta.
+  // @param[alpha] vector expressed in either frame A or frame B.
+  // @param[beta]  vector expressed in the same frame as alpha (A or B).
+  // @retval rotation matrix R_AB.
+  // @note CalcRotationMatrixFromTwoUnitVectors() is more efficient if one knows
+  // apriori that alpha and beta are unit vectors.
+  static RotationMatrix<T> MakeRotationMatrixFromTwoVectors(
+      const Vector3<T>& alpha, const Vector3<T>& beta) {
+    const T alpha_norm_squared = alpha.squaredNorm();
+    const T beta_norm_squared = beta.squaredNorm();
+    // DRAKE_ASSERT(alpha_norm_squared >= kEpsilon);
+    // DRAKE_ASSERT(beta_norm_squared >= kEpsilon);
+    const T one_over_alpha_beta_norm =
+        1.0 / sqrt(alpha_norm_squared * beta_norm_squared);
+    return RotationMatrix<T>(
+        MakeMatrix33FromTwoVectors(alpha, beta * one_over_alpha_beta_norm));
   }
 
   /// Constructs a %RotationMatrix from an %RollPitchYaw.  In other words,
@@ -941,7 +961,7 @@ class RotationMatrix {
   // @param[alpha] vector which may or may not have unit length.
   // @param[beta] vector which may or may not have unit length.
   // @retval 3x3 rotation matrix
-  static Matrix3<T> CalcRotationMatrixFromTwoVectors(
+  static Matrix3<T> MakeMatrix33FromTwoVectors(
       const Vector3<T>& alpha, const Vector3<T>& beta) {
     Matrix3<T> m;
     const T c = alpha.dot(beta);  // cos(theta), theta = angle(alpha, beta).
