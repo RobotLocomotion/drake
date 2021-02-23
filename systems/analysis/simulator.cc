@@ -101,8 +101,7 @@ SimulatorStatus Simulator<T>::Initialize(const InitializeParams& params) {
       internal::GetPreviousNormalizedValue(current_time);
   context_->PerturbTime(slightly_before_current_time, current_time);
 
-  // Get the next timed event. Note that it is possible for this to return
-  // an event trigger time but no timed_events_. That's fine; just a no-op.
+  // Get the next timed event.
   const T time_of_next_timed_event =
       system_.CalcNextUpdateTime(*context_, timed_events_.get());
 
@@ -126,7 +125,7 @@ SimulatorStatus Simulator<T>::Initialize(const InitializeParams& params) {
   // processed here; just publish events.
   init_events->AddToEnd(*per_step_events_);
   if (time_or_witness_triggered_ & kTimeTriggered)
-    init_events->AddToEnd(*timed_events_);  // Might not be any; see above.
+    init_events->AddToEnd(*timed_events_);
   HandlePublish(init_events->get_publish_events());
 
   // TODO(siyuan): transfer publish entirely to individual systems.
@@ -243,27 +242,30 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
 
     // How far can we go before we have to handle timed events? This can return
     // infinity, meaning we don't see any timed events coming. When an earlier
-    // event trigger time is returned, specific Event objects may be returned.
-    // If there are none, we treat that like a no-op Publish Event. Note that
-    // if the returned time is the current time, we handle the Events and then
-    // restart at the same time, possibly discovering more events.
+    // event trigger time is returned, at least one Event object must be
+    // returned. Note that if the returned time is the current time, we handle
+    // the Events and then restart at the same time, possibly discovering more
+    // events.
     const T time_of_next_timed_event =
         system_.CalcNextUpdateTime(*context_, timed_events_.get());
     DRAKE_DEMAND(time_of_next_timed_event >= step_start_time);
 
+    using std::isfinite;
+    DRAKE_DEMAND(!isfinite(time_of_next_timed_event) ||
+                 timed_events_->HasEvents());
+
     // Determine whether the set of events requested by the System at
-    // time_of_next_timed_event includes an Update action, a Publish action,
-    // both, or neither. In the case of neither, we still want to interrupt
-    // the step without making any changes.
-    const bool has_update_event = timed_events_->HasDiscreteUpdateEvents() ||
-                                  timed_events_->HasUnrestrictedUpdateEvents();
-    const T next_update_time = has_update_event
-                                   ? time_of_next_timed_event
-                                   : std::numeric_limits<double>::infinity();
-    const T next_publish_time =
-        !has_update_event || timed_events_->HasPublishEvents()
-            ? time_of_next_timed_event
-            : std::numeric_limits<double>::infinity();
+    // time_of_next_timed_event includes an Update action, a Publish action, or
+    // both.
+    T next_update_time = std::numeric_limits<double>::infinity();
+    T next_publish_time = std::numeric_limits<double>::infinity();
+    if (timed_events_->HasDiscreteUpdateEvents() ||
+        timed_events_->HasUnrestrictedUpdateEvents()) {
+      next_update_time = time_of_next_timed_event;
+    }
+    if (timed_events_->HasPublishEvents()) {
+      next_publish_time = time_of_next_timed_event;
+    }
 
     // Integrate the continuous state forward in time. Note that if
     // time_of_next_timed_event is the current time, this will return
@@ -287,7 +289,7 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
 
     // Only merge timed / witnessed events in if an event was triggered.
     if (time_or_witness_triggered_ & kTimeTriggered)
-      merged_events->AddToEnd(*timed_events_);  // Might not be any; see above.
+      merged_events->AddToEnd(*timed_events_);
     if (time_or_witness_triggered_ & kWitnessTriggered)
       merged_events->AddToEnd(*witnessed_events_);
 
