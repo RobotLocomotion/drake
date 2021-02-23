@@ -99,6 +99,13 @@ notebooks online with no need for local installation. You can use Binder to
 preview and execute the notebooks (but startup time may be long), or you can
 use nbviewer to only preview the notebook (where startup time is fast):
 
+<a target="_doc" href="https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release-binder?filepath=tutorials">
+  <img src="https://mybinder.org/badge_logo.svg"/>
+</a>
+<a target="_doc" href="https://nbviewer.jupyter.org/github/RobotLocomotion/drake/blob/nightly-release/tutorials/">
+  <img src="https://img.shields.io/badge/view%20on-nbviewer-brightgreen.svg"/>
+</a>
+
 If you are browsing on nbviewer, you may click on the Binder button at the
 top-right of the page.
 
