@@ -103,6 +103,16 @@ class RotationMatrix {
     set(Eigen::AngleAxis<T>(theta, lambda / norm).toRotationMatrix());
   }
 
+  // Constructs a 3x3 rotation matrix R_AB from two vectors alpha and beta.
+  // @param[alpha] unit vector expressed in either frame A or frame B.
+  // @param[beta] unit vector expressed in the same frame as alpha (A or B).
+  // @retval 3x3 rotation matrix R_AB
+  static RotationMatrix<T> CalcRotationMatrixFromTwoUnitVectors(
+      const Vector3<T>& alphaUnitVector, const Vector3<T>& betaUnitVector) {
+    return RotationMatrix<T>(
+        CalcRotationMatrixFromTwoVectors(alphaUnitVector, betaUnitVector));
+  }
+
   /// Constructs a %RotationMatrix from an %RollPitchYaw.  In other words,
   /// makes the %RotationMatrix for a Space-fixed (extrinsic) X-Y-Z rotation by
   /// "roll-pitch-yaw" angles `[r, p, y]`, which is equivalent to a Body-fixed
@@ -923,6 +933,36 @@ class RotationMatrix {
     m.coeffRef(2, 0) = sxz - swy;
     m.coeffRef(2, 1) = syz + swx;
     m.coeffRef(2, 2) = T(1) - sxx - syy;
+
+    return m;
+  }
+
+  // Constructs a 3x3 rotation matrix from two vectors alpha and beta.
+  // @param[alpha] vector which may or may not have unit length.
+  // @param[beta] vector which may or may not have unit length.
+  // @retval 3x3 rotation matrix
+  static Matrix3<T> CalcRotationMatrixFromTwoVectors(
+      const Vector3<T>& alpha, const Vector3<T>& beta) {
+    Matrix3<T> m;
+    const T c = alpha.dot(beta);  // cos(theta), theta = angle(alpha, beta).
+    const T oc = 1/(1+c);         // oc denotes one over (1+c).
+    const Vector3<T> s = alpha.cross(beta);  // magnitude(s) = sin(theta).
+    const T sx  = s(0);
+    const T sy  = s(1);
+    const T sz  = s(2);
+    const T sxyc = sx * sy * oc;
+    const T sxzc = sx * sz * oc;
+    const T syzc = sy * sz * oc;
+
+    m.coeffRef(0, 0) = c + sx * sx * oc;
+    m.coeffRef(0, 1) = sxyc - sz;
+    m.coeffRef(0, 2) = sy + sxzc;
+    m.coeffRef(1, 0) = sz + sxyc;
+    m.coeffRef(1, 1) = c + sy * sy * oc;
+    m.coeffRef(1, 2) = syzc - sx;
+    m.coeffRef(2, 0) = sxzc - sy;
+    m.coeffRef(2, 1) = sx + syzc;
+    m.coeffRef(2, 2) = c + sz * sz * oc;
 
     return m;
   }
