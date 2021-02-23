@@ -571,6 +571,7 @@ class TestPlant(unittest.TestCase):
             mass=2.5, p_PScm_E=[0.1, -0.2, 0.3],
             G_SP_E=UnitInertia(Ixx=2.0, Iyy=2.3, Izz=2.4))
         numpy_compare.assert_float_equal(spatial_inertia.get_mass(), 2.5)
+        copied_inertia = copy.deepcopy(spatial_inertia)
         self.assertIsInstance(spatial_inertia.get_com(), np.ndarray)
         self.assertIsInstance(spatial_inertia.CalcComMoment(), np.ndarray)
         self.assertIsInstance(spatial_inertia.get_unit_inertia(), UnitInertia)

@@ -995,6 +995,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(py::self += py::self)
         .def(py::self * SpatialAcceleration<T>())
         .def(py::self * SpatialVelocity<T>());
+    DefCopyAndDeepCopy(&cls);
   }
   // NOLINTNEXTLINE(readability/fn_size)
 }
