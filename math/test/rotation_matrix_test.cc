@@ -1035,13 +1035,53 @@ TEST_F(RotationMatrixConversionTests, AngleAxisToRotationMatrix) {
 }
 
 TEST_F(RotationMatrixConversionTests, twoVectorsToRotationMatrix) {
+  // Test degenerate case when alpha = beta.
   Vector3<double> alpha(1, 0, 0);
   Vector3<double> beta(1, 0, 0);
   RotationMatrix<double> R =
       RotationMatrix<double>::CalcRotationMatrixFromTwoUnitVectors(alpha, beta);
   ASSERT_TRUE(R.IsExactlyIdentity());
-  // RotationMatrix<double> R_expected;  // Identity matrix.
-  // ASSERT_TRUE(R.IsNearlyEqualTo(R_expected, 200 * kEpsilon));
+
+  // Test degenerate case when alpha = -beta.
+  beta = Vector3<double>(-1, 0, 0);
+  R = RotationMatrix<double>::CalcRotationMatrixFromTwoUnitVectors(alpha, beta);
+  ASSERT_TRUE(R.IsExactlyIdentity());
+
+  // Test appoximately 3^3 * 5^3 = 3375 non-degenerate cases.
+  for (double xA = -1.0;  xA <= 1.0;  xA += 1.0) {
+    for (double yA = -1.0;  yA <= 1.0;  yA += 1.0) {
+      for (double zA = -1.0;  zA <= 1.0;  zA += 1.0) {
+        for (double xB = -1.0;  xB <= 1.0;  xB += 0.5) {
+          for (double yB = -1.0;  yB <= 1.0;  yB += 0.5) {
+            for (double zB = -1.0;  zB <= 1.0;  zB += 0.5) {
+              alpha = Vector3<double>(xA, yA, zA);
+              beta = Vector3<double>(xB, yB, zB);
+              Vector3<double> lambda = alpha.cross(beta);
+              const double alpha_norm = alpha.norm();
+              const double beta_norm = beta.norm();
+              const double lambda_norm = lambda.norm();
+              constexpr double ktolerance = 256 * kEpsilon;
+              if (alpha_norm > ktolerance && beta_norm > ktolerance &&
+                  lambda_norm > ktolerance) {
+                alpha /= alpha_norm;    // Make alpha into a unit vector.
+                beta /= beta_norm;      // Make beta into a unit vector.
+                lambda /= lambda_norm;  // Make lambda into a unit vector.
+                R = RotationMatrix<
+                  double>::CalcRotationMatrixFromTwoUnitVectors(alpha, beta);
+
+                // Use AngleAxis to calculate the expected rotation matrix.
+                const double cosTheta = alpha.dot(beta);
+                const double theta = std::acos(cosTheta);
+                const Eigen::AngleAxis<double> theta_lambda(theta, lambda);
+                RotationMatrix<double> R_expected(theta_lambda);
+                ASSERT_TRUE(R.IsNearlyEqualTo(R_expected, ktolerance));
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 }  // namespace
