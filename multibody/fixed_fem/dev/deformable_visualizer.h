@@ -23,12 +23,13 @@ namespace fixed_fem {
  input_ports:
  - vertex_positions
  @endsystem
- The input port is a abstract-valued port containing an `std::vector` of vector
- values. Each vector in the `std::vector` contains 3N values, where N + 1 is the
- *largest* vertex index referenced in the corresponding tetrahedral mesh
- topology. For the iᵗʰ vertex, its x-, y-, and z-positions (measured and
- expressed in the *world* frame) are the 3i, 3i + 1, and 3i + 2 elements of the
- input port.  */
+ The input port is an abstract-valued port containing
+ std::vector<VectorX<double>>. There is one VectorX for each mesh with which the
+ visualizer was instantiated. The ith mesh corresponds to the ith VectorX. The
+ ith VectorX has 3N doubles where N + 1 is the largest vertex index referenced
+ by the ith tetrahedral mesh. For mesh i, the x-, y-, and z-positions (measured
+ and expressed in the world frame) of the jth vertex are 3j, 3j + 1, and 3j + 2
+ in the ith VectorX from the input port. */
 class DeformableVisualizer : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DeformableVisualizer)
@@ -51,6 +52,8 @@ class DeformableVisualizer : public systems::LeafSystem<double> {
       const std::vector<geometry::VolumeMesh<double>>& tet_meshes,
       lcm::DrakeLcmInterface* lcm = nullptr);
 
+  // TODO(xuchenhan-tri): Rethink the initialization/update paradigm as the
+  //  intialization event may be received after update events.
   /** Send the mesh initialization message. This can be invoked explicitly but
    is generally not necessary. The initialization method is also called by
    an initialization event.  */
@@ -87,7 +90,7 @@ class DeformableVisualizer : public systems::LeafSystem<double> {
    with index `surface_to_volume_vertices_[i][j]`.  */
   std::vector<std::vector<int>> surface_to_volume_vertices_;
 
-  /* Surface meshes representing the topology of the volume meshes' surface.  */
+  /* Surface meshes representing the topology of the volume meshes' surfaces. */
   std::vector<std::vector<Vector3<int>>> surface_triangles_;
 
   /* The total number of vertices expected on the input port as implied by the
@@ -95,7 +98,7 @@ class DeformableVisualizer : public systems::LeafSystem<double> {
   std::vector<int> volume_vertex_counts_{};
 
   /* Port Indexes.  */
-  systems::InputPortIndex vertex_positions_port_;
+  systems::InputPortIndex vertex_positions_port_{};
 };
 }  // namespace fixed_fem
 }  // namespace multibody

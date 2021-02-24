@@ -105,14 +105,14 @@ drake_lcm_cc_library(
 )
 
 drake_lcm_cc_library(
-    name = "deformable_mesh",
+    name = "experimental_deformable_mesh",
     lcm_package = "drake",
     lcm_srcs = [
-        "lcmt_deformable_tri.lcm",
-        "lcmt_deformable_tri_mesh_init.lcm",
-        "lcmt_deformable_tri_meshes_init.lcm",
-        "lcmt_deformable_tri_mesh_update.lcm",
-        "lcmt_deformable_tri_meshes_update.lcm",
+        "experimental_lcmt_deformable_tri.lcm",
+        "experimental_lcmt_deformable_tri_mesh_init.lcm",
+        "experimental_lcmt_deformable_tri_meshes_init.lcm",
+        "experimental_lcmt_deformable_tri_mesh_update.lcm",
+        "experimental_lcmt_deformable_tri_meshes_update.lcm",
     ],
 )
 

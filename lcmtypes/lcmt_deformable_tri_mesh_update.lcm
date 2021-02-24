@@ -1,7 +1,0 @@
-package drake;
-
-struct lcmt_deformable_tri_mesh_update {
-  string mesh_name;
-  int32_t data_size;
-  double data[data_size];
-}

@@ -1,0 +1,9 @@
+package drake;
+
+struct experimental_lcmt_deformable_tri_mesh_init {
+  // Unique name for the mesh.
+  string name;
+  int32_t num_vertices;
+  int32_t num_tris;
+  experimental_lcmt_deformable_tri tris[num_tris];
+}

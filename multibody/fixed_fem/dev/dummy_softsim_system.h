@@ -10,8 +10,8 @@
 namespace drake {
 namespace multibody {
 namespace fixed_fem {
-/** A dummy softsim system that moves registered geometries in sinusoidal
- motion. */
+/** A dummy softsim system that deforms registered geometry with a sinusoidal
+ ripple motion. */
 class DummySoftsimSystem final : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummySoftsimSystem)
@@ -23,6 +23,9 @@ class DummySoftsimSystem final : public systems::LeafSystem<double> {
   }
 
   /** Adds a body modeled with the given geometry to the system.
+   @param[in] mesh The input tetrahedral mesh that describes the connectivity
+   and the positions of the vertices that make up the body.
+   @param[in] name Name of the newly added body.
    @param[in] amplitude The amplitude of the sinusoidal motion for the new
    body.
    @param[in] velocity The velocity of the sinusoidal motion for the new body.
@@ -49,14 +52,14 @@ class DummySoftsimSystem final : public systems::LeafSystem<double> {
     return systems::System<double>::get_output_port(0);
   }
 
-  int num_bodys() const { return meshes_.size(); }
+  int num_bodies() const { return meshes_.size(); }
 
   /** Get the volume meshes of the registered bodies. */
   const std::vector<geometry::VolumeMesh<double>>& get_meshes() const {
     return meshes_;
   }
 
-  /** Get the names of all the registered bodys. */
+  /** Get the names of all the registered bodies. */
   const std::vector<std::string>& get_names() const { return names_; }
 
  private:
@@ -64,9 +67,9 @@ class DummySoftsimSystem final : public systems::LeafSystem<double> {
    The order of the model follows that of soft_body_indexes. */
   void CopyVertexPositionsOut(const systems::Context<double>& context,
                               std::vector<VectorX<double>>* output) const {
-    output->resize(num_bodys());
+    output->resize(num_bodies());
     const double t = context.get_time();
-    for (int i = 0; i < num_bodys(); ++i) {
+    for (int i = 0; i < num_bodies(); ++i) {
       const std::vector<geometry::VolumeVertex<double>> vertices =
           meshes_[i].vertices();
       const int num_vertices = meshes_[i].num_vertices();

@@ -73,7 +73,7 @@ drake_cc_library(
         "//geometry/proximity:sorted_triplet",
         "//geometry/proximity:volume_mesh",
         "//lcm:drake_lcm",
-        "//lcmtypes:deformable_mesh",
+        "//lcmtypes:experimental_deformable_mesh",
         "//systems/framework:leaf_system",
     ],
 )

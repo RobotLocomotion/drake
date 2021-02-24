@@ -6,13 +6,13 @@
 #include <set>
 #include <utility>
 
+#include "drake/experimental_lcmt_deformable_tri.hpp"
+#include "drake/experimental_lcmt_deformable_tri_mesh_init.hpp"
+#include "drake/experimental_lcmt_deformable_tri_mesh_update.hpp"
+#include "drake/experimental_lcmt_deformable_tri_meshes_init.hpp"
+#include "drake/experimental_lcmt_deformable_tri_meshes_update.hpp"
 #include "drake/geometry/proximity/sorted_triplet.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/lcmt_deformable_tri.hpp"
-#include "drake/lcmt_deformable_tri_mesh_init.hpp"
-#include "drake/lcmt_deformable_tri_mesh_update.hpp"
-#include "drake/lcmt_deformable_tri_meshes_init.hpp"
-#include "drake/lcmt_deformable_tri_meshes_update.hpp"
 
 namespace drake {
 namespace multibody {
@@ -87,9 +87,8 @@ void DeformableVisualizer::AnalyzeTets(
      index.  */
     int largest_index = -1;
     const VolumeMesh<double>& tet_mesh = tet_meshes[i];
-    const vector<VolumeElement>& tet_elements = tet_mesh.tetrahedra();
     map<SortedTriplet<int>, array<int, 3>> border_faces;
-    for (const VolumeElement& tet : tet_elements) {
+    for (const VolumeElement& tet : tet_mesh.tetrahedra()) {
       for (const array<int, 3>& tet_face : local_indices) {
         const array<int, 3> face{tet.vertex(tet_face[0]),
                                  tet.vertex(tet_face[1]),
@@ -103,9 +102,14 @@ void DeformableVisualizer::AnalyzeTets(
         }
       }
     }
-    /* We're assuming that all of the mesh vertices are used in the topology.
-     So, the expected number of vertices for the current mesh is the largest
-     index + 1. This is the third documented responsibility of this function. */
+    /* Record the expected number of vertex positions to be received. For
+     simplicity we choose a generous upper bound: the total number of vertices
+     in the tetrahedral mesh, even though we really only need the positions of
+     the vertices on the surface. */
+    // TODO(xuchenhan-tri) It might be worthwhile to make largest_index the
+    //  largest index that lies on the surface. Then, when we create our meshes,
+    //  if we intentionally construct them so that the surface vertices come
+    //  first, we will process a very compact representation.
     volume_vertex_counts_[i] = largest_index + 1;
 
     /* Using a set because the vertices will be nicely ordered. Ideally, we'll
@@ -152,19 +156,21 @@ void DeformableVisualizer::AnalyzeTets(
 }
 
 void DeformableVisualizer::SendMeshInit() const {
-  lcmt_deformable_tri_meshes_init message;
+  experimental_lcmt_deformable_tri_meshes_init message;
   message.num_meshes = static_cast<int>(surface_to_volume_vertices_.size());
   message.meshes.resize(message.num_meshes);
   for (int i = 0; i < message.num_meshes; ++i) {
-    message.meshes[i].mesh_name = mesh_names_[i];
-    message.meshes[i].num_vertices =
-        static_cast<int>(surface_to_volume_vertices_[i].size());
-    message.meshes[i].num_tris = static_cast<int>(surface_triangles_[i].size());
-    message.meshes[i].tris.resize(message.meshes[i].num_tris);
+    auto& mesh = message.meshes[i];
+    mesh.name = mesh_names_[i];
+    mesh.num_vertices = static_cast<int>(surface_to_volume_vertices_[i].size());
+    // TODO(xuchenhan-tri): Consider flatten the message hierarchy by sending 3T
+    //  indices instead of T triangles.
+    mesh.num_tris = static_cast<int>(surface_triangles_[i].size());
+    mesh.tris.resize(mesh.num_tris);
     for (int t = 0; t < message.meshes[i].num_tris; ++t) {
-      message.meshes[i].tris[t].vertices[0] = surface_triangles_[i][t](0);
-      message.meshes[i].tris[t].vertices[1] = surface_triangles_[i][t](1);
-      message.meshes[i].tris[t].vertices[2] = surface_triangles_[i][t](2);
+      mesh.tris[t].vertices[0] = surface_triangles_[i][t](0);
+      mesh.tris[t].vertices[1] = surface_triangles_[i][t](1);
+      mesh.tris[t].vertices[2] = surface_triangles_[i][t](2);
     }
   }
 
@@ -179,7 +185,7 @@ EventStatus DeformableVisualizer::PublishMeshInit(
 
 void DeformableVisualizer::PublishMeshUpdate(
     const Context<double>& context) const {
-  lcmt_deformable_tri_meshes_update message;
+  experimental_lcmt_deformable_tri_meshes_update message;
   message.timestamp =
       static_cast<int64_t>(ExtractDoubleOrThrow(context.get_time()) * 1e6);
 
@@ -192,16 +198,23 @@ void DeformableVisualizer::PublishMeshUpdate(
   message.num_meshes = vertex_states.size();
   message.meshes.resize(message.num_meshes);
   for (int i = 0; i < num_meshes; ++i) {
-    message.meshes[i].mesh_name = mesh_names_[i];
+    if (vertex_states[i].size() < volume_vertex_counts_[i]) {
+      throw std::logic_error(
+          "The number of vertex positions received is " +
+          std::to_string(vertex_states[i].size()) +
+          ", which is smaller than the expected number of positions, " +
+          std::to_string(volume_vertex_counts_[i]) + ".");
+    }
+    auto& mesh = message.meshes[i];
+    mesh.name = mesh_names_[i];
     const int v_count = static_cast<int>(surface_to_volume_vertices_[i].size());
-    message.meshes[i].data_size = v_count * 3;
-    message.meshes[i].data.resize(message.meshes[i].data_size);
-    for (int v = 0; v < v_count; ++v) {
-      const int out_index = v * 3;
+    mesh.data_size = v_count * 3;
+    mesh.data.resize(mesh.data_size);
+    for (int v = 0, out_index = 0; v < v_count; ++v, out_index += 3) {
       const int state_index = (surface_to_volume_vertices_[i][v]) * 3;
-      message.meshes[i].data[out_index] = vertex_states[i](state_index);
-      message.meshes[i].data[out_index + 1] = vertex_states[i](state_index + 1);
-      message.meshes[i].data[out_index + 2] = vertex_states[i](state_index + 2);
+      mesh.data[out_index] = vertex_states[i](state_index);
+      mesh.data[out_index + 1] = vertex_states[i](state_index + 1);
+      mesh.data[out_index + 2] = vertex_states[i](state_index + 2);
     }
   }
   lcm::Publish(lcm_, "DEFORMABLE_MESHES_UPDATE", message);

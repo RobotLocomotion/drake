@@ -12,14 +12,14 @@ import drake as lcmdrakemsg
 from _drake_visualizer_builtin_scripts import scoped_singleton_func
 
 
-class DeformableMeshVisualizer:
+class ExperimentalDeformableMeshVisualizer:
     def __init__(self):
         self._folder_name = "DeformableMesh"
         self._name = "Deformable Mesh Visualizer"
         self._enabled = False
         # The subscribers: one for init and one for update.
         self._subs = None
-        self._mesh_names = []
+        self._names = []
         self._vertex_counts = []
         self._poly_data_list = []
         self._poly_item_list = []
@@ -34,7 +34,8 @@ class DeformableMeshVisualizer:
         self._subs.append(
             lcmUtils.addSubscriber(
                 "DEFORMABLE_MESHES_INIT",
-                messageClass=lcmdrakemsg.lcmt_deformable_tri_meshes_init,
+                messageClass=lcmdrakemsg.
+                experimental_lcmt_deformable_tri_meshes_init,
                 callback=self.handle_init_message,
             )
         )
@@ -42,7 +43,8 @@ class DeformableMeshVisualizer:
         self._subs.append(
             lcmUtils.addSubscriber(
                 "DEFORMABLE_MESHES_UPDATE",
-                messageClass=lcmdrakemsg.lcmt_deformable_tri_meshes_update,
+                messageClass=lcmdrakemsg.
+                experimental_lcmt_deformable_tri_meshes_update,
                 callback=self.handle_update_message,
             )
         )
@@ -69,7 +71,9 @@ class DeformableMeshVisualizer:
         else:
             self.remove_subscriber()
             # Removes the folder completely and resets the known meshes.
-            om.removeFromObjectModel(om.findObjectByName(self._folder_name))
+            om.removeFromObjectModel(
+                om.findObjectByName(self._folder_name)
+            )
             self._poly_item_list = []
 
     def handle_init_message(self, msg):
@@ -78,12 +82,12 @@ class DeformableMeshVisualizer:
         for poly_item in self._poly_item_list:
             om.removeFromObjectModel(poly_item)
 
-        self._mesh_names = []
+        self._names = []
         self._vertex_counts = []
         self._poly_data_list = []
         self._poly_item_list = []
         for mesh in msg.meshes:
-            self._mesh_names.append(mesh.mesh_name)
+            self._names.append(mesh.name)
             # Initial vertex positions are garbage; meaningful values will be
             # set by the update message.
             points = vtk.vtkPoints()
@@ -99,7 +103,7 @@ class DeformableMeshVisualizer:
             poly_data.SetPoints(points)
             poly_data.SetPolys(triangles)
             poly_item = vis.showPolyData(
-                poly_data, mesh.mesh_name, parent=folder
+                poly_data, mesh.name, parent=folder
             )
             poly_item.setProperty("Surface Mode", "Surface with edges")
             self._poly_data_list.append(poly_data)
@@ -117,11 +121,12 @@ class DeformableMeshVisualizer:
             return
         for mesh_id in range(msg.num_meshes):
             mesh = msg.meshes[mesh_id]
-            if mesh.mesh_name != self._mesh_names[mesh_id]:
+            if mesh.name != self._names[mesh_id]:
                 print(
                     "The deformable mesh update message contains data for "
-                    "a mesh named '{}', expected name '{}'."
-                    .format(mesh.mesh_name, self._mesh_names[mesh_id])
+                    "a mesh named '{}', expected name '{}'.".format(
+                        mesh.name, self._names[mesh_id]
+                    )
                 )
                 return
             if mesh.data_size != self._vertex_counts[mesh_id] * 3:
@@ -152,7 +157,7 @@ class DeformableMeshVisualizer:
 @scoped_singleton_func
 def init_visualizer():
     # Create a visualizer instance.
-    my_visualizer = DeformableMeshVisualizer()
+    my_visualizer = ExperimentalDeformableMeshVisualizer()
     # Adds to the "Tools" menu.
     applogic.MenuActionToggleHelper(
         "Tools",
