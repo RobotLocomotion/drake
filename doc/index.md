@@ -85,7 +85,7 @@ examples that can help people get started and provide much needed benchmarks.
 We are excited to accept user contributions to improve the coverage.
 
 We hope you find this tool useful. Please see
-[Getting Help](/getting-help.html) if you wish to share your comments,
+[Getting Help](/getting_help.html) if you wish to share your comments,
 questions, success stories, or frustrations. And please contribute your best
 bug fixes, features, and examples!
 </article>
@@ -168,7 +168,7 @@ The Drake developers would like to acknowledge significant support from the
 
 ### Others
 
-[Julia](./julia_bindings.md)
+[Julia](./julia_bindings.html)
 
 </article>
 
