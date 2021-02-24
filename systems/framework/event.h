@@ -452,9 +452,12 @@ class Event {
   /// Returns `true` if this is a DiscreteUpdateEvent.
   virtual bool is_discrete_update() const = 0;
 
-  /**
+  /*
    * Clones this instance.
    */
+  DRAKE_DEPRECATED("2021-0-01",
+                   "Clone() is being deprecated. Please use the copy "
+                   "constructor for a class derived from Event instead.")
   std::unique_ptr<Event> Clone() const {
     return std::unique_ptr<Event>(DoClone());
   }
@@ -469,18 +472,24 @@ class Event {
    */
   bool has_event_data() const { return event_data_ != nullptr; }
 
-  /**
+  /*
    * Returns a const pointer to the event data. The returned value
    * can be nullptr, which means this event does not have any associated
    * data.
    */
+  DRAKE_DEPRECATED("2021-0-01",
+                   "get_event_data() is being deprecated. Please use "
+                   "event_data() instead.")
   const EventData* get_event_data() const { return event_data_.get(); }
 
-  /**
+  /*
    * Returns a mutable pointer to the event data. The returned value
    * can be nullptr, which means this event does not have any associated
    * data.
    */
+  DRAKE_DEPRECATED("2021-0-01",
+                   "get_mutable_event_data() is being deprecated. Please use "
+                   "mutable_event_data() instead.")
   EventData* get_mutable_event_data() { return event_data_.get(); }
 
   // Note: Users should not be calling this.
@@ -496,7 +505,7 @@ class Event {
   #endif
 
   /**
-   * Adds a clone of `this` event to the event collection `events`, with
+   * Adds a copy of `this` event to the event collection `events`, with
    * the given trigger type. If `this` event has an unknown trigger type, then
    * any trigger type is acceptable. Otherwise the given trigger type must
    * match match the trigger type stored in `this` event.
@@ -525,7 +534,7 @@ class Event {
  protected:
   Event(const Event& other) : trigger_type_(other.trigger_type_) {
     if (other.event_data_ != nullptr)
-      set_event_data(other.event_data_->Clone());
+      set_event_data(other.event_data_);
   }
 
   // Note: Users should not be calling this.
