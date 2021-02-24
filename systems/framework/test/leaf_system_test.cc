@@ -3028,6 +3028,86 @@ GTEST_TEST(ImplicitTimeDerivatives, ResetToDefaultResidualSize) {
   EXPECT_EQ(dut.implicit_time_derivatives_residual_size(), 3);
 }
 
+// Simulator::AdvanceTo() could miss an event that was triggered by a
+// DoCalcNextUpdateTime() override that returned a finite next-trigger time but
+// no Event object to handle the event. See issues #12620 and #14644.
+//
+// PR #14663 redefined this as an error -- an Event must be returned if there
+// is a finite trigger time. That PR also replaced an assert with a real error
+// message in the case the time is returned NaN; we check that here also.
+//
+// Note that this is really just a System test, but we need a LeafSystem
+// to satisfy all the uninteresting pure virtuals.
+GTEST_TEST(SystemTest, MissedEventIssue12620) {
+  class TriggerTimeButNoEventSystem : public LeafSystem<double> {
+   public:
+    explicit TriggerTimeButNoEventSystem(double trigger_time)
+        : trigger_time_(trigger_time) {
+      this->set_name("MyTriggerSystem");
+    }
+
+   private:
+    void DoCalcNextUpdateTime(const Context<double>& context,
+                              CompositeEventCollection<double>*,
+                              double* next_update_time) const final {
+      *next_update_time = trigger_time_;
+      // Don't push anything to the EventCollection.
+    }
+
+    const double trigger_time_;
+  };
+
+  LeafCompositeEventCollection<double> events;
+
+  // First test returns NaN, which should be detected.
+  TriggerTimeButNoEventSystem nan_system(NAN);
+  auto nan_context = nan_system.AllocateContext();
+  nan_context->SetTime(0.25);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      nan_system.CalcNextUpdateTime(*nan_context, &events), std::exception,
+      ".*CalcNextUpdateTime.*TriggerTimeButNoEventSystem.*MyTriggerSystem.*"
+      "time=0.25.*no update time.*NaN.*Return infinity.*");
+
+  // Second test returns a trigger time but no Event object.
+  TriggerTimeButNoEventSystem trigger_system(0.375);
+  auto trigger_context = trigger_system.AllocateContext();
+  trigger_context->SetTime(0.25);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      trigger_system.CalcNextUpdateTime(*trigger_context, &events),
+      std::exception,
+      ".*CalcNextUpdateTime.*TriggerTimeButNoEventSystem.*MyTriggerSystem.*"
+      "time=0.25.*update time 0.375.*empty Event collection.*"
+      "at least one Event object must be provided.*");
+}
+
+// Check that a DoCalcNextUpdateTime() override that fails to set the update
+// time at all gets an error message. (This is detected as a returned time of
+// NaN because calling code initializes the time that way.)
+GTEST_TEST(SystemTest, ForgotToSetTheUpdateTime) {
+  class ForgotToSetTimeSystem : public LeafSystem<double> {
+   public:
+    ForgotToSetTimeSystem() { this->set_name("MyForgetfulSystem"); }
+
+   private:
+    void DoCalcNextUpdateTime(const Context<double>& context,
+                              CompositeEventCollection<double>*,
+                              double* next_update_time) const final {
+      // Oops -- forgot to set the time.
+    }
+  };
+
+  LeafCompositeEventCollection<double> events;
+
+  ForgotToSetTimeSystem forgot_system;
+  auto forgot_context = forgot_system.AllocateContext();
+  forgot_context->SetTime(0.25);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      forgot_system.CalcNextUpdateTime(*forgot_context, &events),
+      std::exception,
+      ".*CalcNextUpdateTime.*ForgotToSetTimeSystem.*MyForgetfulSystem.*"
+      "time=0.25.*no update time.*NaN.*Return infinity.*");
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
