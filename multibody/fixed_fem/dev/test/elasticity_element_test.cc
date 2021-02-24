@@ -207,7 +207,7 @@ TEST_F(ElasticityElementTest, UndeformedState) {
   for (int i = 0; i < kNumNodes; ++i) {
     rigid_transformed_X.col(i) = transform * X.col(i);
   }
-  state.set_q(Eigen::Map<Vector<T, kNumDofs>>(rigid_transformed_X.data(),
+  state.SetQ(Eigen::Map<Vector<T, kNumDofs>>(rigid_transformed_X.data(),
                                               rigid_transformed_X.size()));
   VerifyEnergyAndForceAreZero(state);
 }
@@ -219,7 +219,7 @@ TEST_F(ElasticityElementTest, DeformedState) {
   /* Deform the element by scaling the initial position by a factor of 2. The
    resulting deformation gradient would be a diagonal matrix with 2 on the
    diagonals. The linear strain then would the identity matrix. */
-  state.set_q(state.q() * 2.0);
+  state.SetQ(state.q() * 2.0);
   const auto strain = Matrix3<double>::Identity();
   const double trace_strain = strain.trace();
 

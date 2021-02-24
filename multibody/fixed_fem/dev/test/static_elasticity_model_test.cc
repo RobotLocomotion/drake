@@ -75,7 +75,7 @@ class StaticElasticityModelTest : public ::testing::Test {
         math::autoDiffToValueMatrix(state.q()) + perturbation();
     Vector<T, kNumDofs> perturbed_q_autodiff;
     math::initializeAutoDiff(perturbed_q, perturbed_q_autodiff);
-    state.set_q(perturbed_q_autodiff);
+    state.SetQ(perturbed_q_autodiff);
     return state;
   }
 

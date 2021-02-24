@@ -83,6 +83,9 @@ class FemState {
   @throw std::exception if elements[i].element_index() != i for some `i` = 0,
   ..., `element.size()-1`. */
   void MakeElementData(const std::vector<Element>& elements) {
+    /* Note: the element data is stored in a simple bespoke cache (see
+     internal::ElementCacheEntry). The newly created cache entries are
+     initially stale. */
     element_cache_.clear();
     for (int i = 0; i < static_cast<int>(elements.size()); ++i) {
       if (elements[i].element_index() != ElementIndex(i)) {
@@ -131,18 +134,18 @@ class FemState {
   /** @name State setters.
    The size of the values provided must match the current size of the states.
    @{ */
-  void set_q(const Eigen::Ref<const VectorX<T>>& value) {
+  void SetQ(const Eigen::Ref<const VectorX<T>>& value) {
     DRAKE_THROW_UNLESS(value.size() == q_.size());
     mutable_q() = value;
   }
 
-  void set_qdot(const Eigen::Ref<const VectorX<T>>& value) {
+  void SetQdot(const Eigen::Ref<const VectorX<T>>& value) {
     DRAKE_THROW_UNLESS(ode_order() >= 1);
     DRAKE_THROW_UNLESS(value.size() == qdot_.size());
     mutable_qdot() = value;
   }
 
-  void set_qddot(const Eigen::Ref<const VectorX<T>>& value) {
+  void SetQddot(const Eigen::Ref<const VectorX<T>>& value) {
     DRAKE_THROW_UNLESS(ode_order() == 2);
     DRAKE_THROW_UNLESS(value.size() == qddot_.size());
     mutable_qddot() = value;
@@ -183,13 +186,12 @@ class FemState {
       const Element& element) const {
     ElementIndex id = element.element_index();
     DRAKE_ASSERT(id.is_valid() && id < element_cache_size());
-    if (!element_cache_[id].is_stale()) {
-      return element_cache_[id].element_data();
-    }
     typename Element::Traits::Data& data =
         element_cache_[id].mutable_element_data();
-    data = element.ComputeData(*this);
-    element_cache_[id].set_stale(false);
+    if (element_cache_[id].is_stale()) {
+      data = element.ComputeData(*this);
+      element_cache_[id].set_stale(false);
+    }
     return data;
   }
 

@@ -111,7 +111,7 @@ class FemSolverTest : public ::testing::Test {
   static State MakeArbitraryState() {
     State state = MakeReferenceState();
     const VectorX<T> q = MakeArbitraryPositions();
-    state.set_q(q);
+    state.SetQ(q);
     std::unique_ptr<DirichletBoundaryCondition<State>> bc = MakeCeilingBc();
     bc->ApplyBoundaryConditions(&state);
     return state;

@@ -75,16 +75,16 @@ TEST_F(FemStateTest, GetStates) {
 }
 
 TEST_F(FemStateTest, SetStates) {
-  state_.set_qdot(3.14 * qdot());
-  state_.set_q(-1.23 * q());
+  state_.SetQdot(3.14 * qdot());
+  state_.SetQ(-1.23 * q());
   EXPECT_EQ(state_.qdot(), 3.14 * qdot());
   EXPECT_EQ(state_.q(), -1.23 * q());
   /* Setting values with incompatible sizes should throw. */
-  EXPECT_THROW(state_.set_qdot(VectorXd::Constant(1, 1.0)), std::exception);
-  EXPECT_THROW(state_.set_q(VectorXd::Constant(1, 1.0)), std::exception);
+  EXPECT_THROW(state_.SetQdot(VectorXd::Constant(1, 1.0)), std::exception);
+  EXPECT_THROW(state_.SetQ(VectorXd::Constant(1, 1.0)), std::exception);
   /* The dummy element has order 1 and does not have second derivatives of the
    generalized positions. */
-  EXPECT_THROW(state_.set_qddot(VectorXd::Constant(3, 1.0)), std::exception);
+  EXPECT_THROW(state_.SetQddot(VectorXd::Constant(3, 1.0)), std::exception);
 }
 
 /* Verify resizing does not thrash existing values. */
@@ -121,7 +121,7 @@ TEST_F(FemStateTest, MakeElementData) {
       "i must be stored at position i.");
 }
 
-/* Tests that element data cache are invalidated when the state changes and that
+/* Tests that element data cache is invalidated when the state changes and that
  the request for the cached data triggers appropriate recalculations. */
 TEST_F(FemStateTest, ElementCache) {
   /* Verify that cache entries are intially invalid and becomes valid after the
@@ -130,9 +130,9 @@ TEST_F(FemStateTest, ElementCache) {
 
   /* Verify that state setters thrash the cache entries and the cached
    quantities are correctly recomputed. */
-  state_.set_q(2 * q());
+  state_.SetQ(2 * q());
   VerifyCacheEntries();
-  state_.set_qdot(2 * qdot());
+  state_.SetQdot(2 * qdot());
   VerifyCacheEntries();
 
   /* Verify that mutable getters thrash the cache entries and the cached
@@ -141,7 +141,7 @@ TEST_F(FemStateTest, ElementCache) {
   unused(qdot);
   VerifyCacheEntries();
 
-  /* Verify that resizing thrash the cache entries and the cached
+  /* Verify that resizing thrashes the cache entries and the cached
    quantities are correctly recomputed. */
   const int state_size = 1;
   state_.Resize(state_size);

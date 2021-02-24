@@ -6,7 +6,7 @@ namespace drake {
 namespace multibody {
 namespace fixed_fem {
 /** Implements the interface StateUpdater with Newmark-beta time integration
- scheme. Given the value for the current time step accleration `a`, the states
+ scheme. Given the value for the current time step acceleration `a`, the states
  are calculated from states from the previous time step according to the
  following equations:
 
@@ -53,9 +53,9 @@ class NewmarkScheme final : public StateUpdater<State> {
     const VectorX<T>& a = state->qddot();
     const VectorX<T>& v = state->qdot();
     const VectorX<T>& x = state->q();
-    state->set_qddot(a + dz);
-    state->set_qdot(v + dt_ * gamma_ * dz);
-    state->set_q(x + dt_ * dt_ * beta_ * dz);
+    state->SetQddot(a + dz);
+    state->SetQdot(v + dt_ * gamma_ * dz);
+    state->SetQ(x + dt_ * dt_ * beta_ * dz);
   }
 
   /* Implements StateUpdater::DoAdvanceOneTimeStep(). */
@@ -64,8 +64,8 @@ class NewmarkScheme final : public StateUpdater<State> {
     const VectorX<T>& vn = prev_state.qdot();
     const VectorX<T>& xn = prev_state.q();
     const VectorX<T>& a = state->qddot();
-    state->set_qdot(vn + dt_ * (gamma_ * a + (1.0 - gamma_) * an));
-    state->set_q(xn + dt_ * vn + dt_ * dt_ * (beta_ * a + (0.5 - beta_) * an));
+    state->SetQdot(vn + dt_ * (gamma_ * a + (1.0 - gamma_) * an));
+    state->SetQ(xn + dt_ * vn + dt_ * dt_ * (beta_ * a + (0.5 - beta_) * an));
   }
 
   double dt_{0};

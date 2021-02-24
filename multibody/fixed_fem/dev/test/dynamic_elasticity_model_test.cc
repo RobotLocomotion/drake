@@ -90,7 +90,7 @@ class DynamicElasticityModelTest : public ::testing::Test {
         math::autoDiffToValueMatrix(deformed_state.qddot()) + perturbation();
     Vector<T, kNumDofs> perturbed_qddot_autodiff;
     math::initializeAutoDiff(perturbed_qddot, perturbed_qddot_autodiff);
-    deformed_state.set_qddot(perturbed_qddot_autodiff);
+    deformed_state.SetQddot(perturbed_qddot_autodiff);
     /* It's important to set up the `deformed_state` with `state_updater_` so
      that the derivatives such as dq/dqddot are set up. */
     state_updater_.AdvanceOneTimeStep(reference_state, &deformed_state);
