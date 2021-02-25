@@ -163,7 +163,7 @@ class EmptySystemDiagram : public Diagram<double> {
   }
 };
 
-void CheckPeriodAndOffset(const PeriodicEventData& data) {
+void CheckPeriodAndOffset(const PeriodicTriggerData& data) {
   EXPECT_EQ(data.period_sec(), 1.125);
   EXPECT_EQ(data.offset_sec(), 2.25);
 }
@@ -172,7 +172,7 @@ void CheckPeriodAndOffset(const PeriodicEventData& data) {
 // GetUniquePeriodicDiscreteUpdateAttribute().
 GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdateUnique) {
   // Check diagrams with no recursion.
-  std::optional<PeriodicEventData> periodic_data;
+  std::optional<PeriodicTriggerData> periodic_data;
   EmptySystemDiagram d_sys2upd_zero(
       EmptySystemDiagram::kOneUpdatePerLevelSys1, 0, true);
   EmptySystemDiagram d_sys1upd_zero(
@@ -231,7 +231,7 @@ GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdateUnique) {
 // GetUniquePeriodicDiscreteUpdateAttribute() with non-unique updates
 GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdate) {
   // Check diagrams with no recursion.
-  PeriodicEventData periodic_data;
+  PeriodicTriggerData periodic_data;
   EmptySystemDiagram d_sys2upd_zero(
       EmptySystemDiagram::kOneUpdatePerLevelSys1, 0, false);
   EmptySystemDiagram d_sys1upd_zero(
@@ -1428,7 +1428,7 @@ class PublishingSystem : public LeafSystem<double> {
  protected:
   void DoPublish(
       const Context<double>& context,
-      const std::vector<const PublishEvent<double>*>&) const override {
+      const std::vector<PublishEvent<double>>&) const override {
     callback_(this->get_input_port(0).Eval(context)[0]);
   }
 
@@ -1827,7 +1827,7 @@ class TestPublishingSystem : public LeafSystem<double> {
  protected:
   void DoPublish(
       const Context<double>& context,
-      const std::vector<const PublishEvent<double>*>& events) const override {
+      const std::vector<PublishEvent<double>>& events) const override {
     published_ = true;
   }
 
@@ -2304,7 +2304,7 @@ class SystemWithAbstractState : public LeafSystem<double> {
   // Abstract state is set to input state value + time.
   void DoCalcUnrestrictedUpdate(
       const Context<double>& context,
-      const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
+      const std::vector<UnrestrictedUpdateEvent<double>>&,
       State<double>* state) const override {
     double& state_num = state->get_mutable_abstract_state()
                             .get_mutable_value(0)
@@ -3025,14 +3025,14 @@ class PerStepActionTestSystem : public LeafSystem<double> {
 
   void DoCalcDiscreteVariableUpdates(
       const Context<double>& context,
-      const std::vector<const DiscreteUpdateEvent<double>*>& events,
+      const std::vector<DiscreteUpdateEvent<double>>&,
       DiscreteValues<double>* discrete_state) const override {
     (*discrete_state)[0] = context.get_discrete_state(0)[0] + 1;
   }
 
   void DoCalcUnrestrictedUpdate(
       const Context<double>& context,
-      const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
+      const std::vector<UnrestrictedUpdateEvent<double>>&,
       State<double>* state) const override {
     int int_num =
         static_cast<int>(context.get_discrete_state(0)[0]);
@@ -3042,7 +3042,7 @@ class PerStepActionTestSystem : public LeafSystem<double> {
 
   void DoPublish(
       const Context<double>& context,
-      const std::vector<const PublishEvent<double>*>& events) const override {
+      const std::vector<PublishEvent<double>>&) const override {
     publish_ctr_++;
   }
 
@@ -3153,12 +3153,12 @@ class MyEventTestSystem : public LeafSystem<double> {
  private:
   void DoPublish(
       const Context<double>& context,
-      const std::vector<const PublishEvent<double>*>& events) const override {
-    for (const PublishEvent<double>* event : events) {
-      if (event->get_trigger_type() ==
+      const std::vector<PublishEvent<double>>& events) const override {
+    for (const PublishEvent<double>& event : events) {
+      if (event.get_trigger_type() ==
           TriggerType::kPeriodic) {
         periodic_count_++;
-      } else if (event->get_trigger_type() ==
+      } else if (event.get_trigger_type() ==
           TriggerType::kPerStep) {
         per_step_count_++;
       } else {
@@ -3535,20 +3535,20 @@ GTEST_TEST(InitializationTest, InitializationTest) {
 
     void DoCalcDiscreteVariableUpdates(
         const Context<double>&,
-        const std::vector<const DiscreteUpdateEvent<double>*>& events,
+        const std::vector<DiscreteUpdateEvent<double>>& events,
         DiscreteValues<double>*) const final {
       EXPECT_EQ(events.size(), 1);
-      EXPECT_EQ(events.front()->get_trigger_type(),
+      EXPECT_EQ(events.front().get_trigger_type(),
                 TriggerType::kInitialization);
       dis_update_init_ = true;
     }
 
     void DoCalcUnrestrictedUpdate(
         const Context<double>&,
-        const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
+        const std::vector<UnrestrictedUpdateEvent<double>>& events,
         State<double>*) const final {
       EXPECT_EQ(events.size(), 1);
-      EXPECT_EQ(events.front()->get_trigger_type(),
+      EXPECT_EQ(events.front().get_trigger_type(),
                 TriggerType::kInitialization);
       unres_update_init_ = true;
     }

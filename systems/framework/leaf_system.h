@@ -991,7 +991,7 @@ class LeafSystem : public System<T> {
     DRAKE_DEMAND(update != nullptr);
 
     // Instantiate the event.
-    auto forced = std::make_unique<DiscreteUpdateEvent<T>>(
+    DiscreteUpdateEvent<T> forced(
         TriggerType::kForced,
         [this_ptr, update](const Context<T>& context,
                            const DiscreteUpdateEvent<T>&,
@@ -1003,7 +1003,7 @@ class LeafSystem : public System<T> {
 
     // Add the event to the collection of forced discrete update events.
     this->get_mutable_forced_discrete_update_events().add_event(
-        std::move(forced));
+        forced);
   }
 
   /** Declares a function that is called whenever a user directly calls

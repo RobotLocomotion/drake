@@ -61,7 +61,7 @@ class TestSystem : public System<double> {
 
   std::unique_ptr<CompositeEventCollection<double>>
   AllocateCompositeEventCollection() const override {
-    return std::make_unique<LeafCompositeEventCollection<double>>();
+    return std::make_unique<internal::LeafCompositeEventCollection<double>>();
   }
 
   void SetDefaultState(const Context<double>& context,
@@ -128,7 +128,7 @@ class TestSystem : public System<double> {
 
   // The default publish function.
   void MyPublish(const Context<double>& context,
-                 const std::vector<const PublishEvent<double>*>& events) const {
+                 const std::vector<PublishEvent<double>>& events) const {
     ++publish_count_;
   }
 
@@ -145,8 +145,8 @@ class TestSystem : public System<double> {
   void DispatchPublishHandler(
       const Context<double>& context,
       const EventCollection<PublishEvent<double>>& events) const final {
-    const LeafEventCollection<PublishEvent<double>>& leaf_events =
-       dynamic_cast<const LeafEventCollection<PublishEvent<double>>&>(events);
+    const internal::LeafEventCollection<PublishEvent<double>>& leaf_events =
+       dynamic_cast<const internal::LeafEventCollection<PublishEvent<double>>&>(events);
     if (leaf_events.HasEvents()) {
       this->MyPublish(context, leaf_events.get_events());
     }
@@ -156,8 +156,8 @@ class TestSystem : public System<double> {
       const Context<double>& context,
       const EventCollection<DiscreteUpdateEvent<double>>& events,
       DiscreteValues<double>* discrete_state) const final {
-    const LeafEventCollection<DiscreteUpdateEvent<double>>& leaf_events =
-        dynamic_cast<const LeafEventCollection<DiscreteUpdateEvent<double>>&>(
+    const internal::LeafEventCollection<DiscreteUpdateEvent<double>>& leaf_events =
+        dynamic_cast<const internal::LeafEventCollection<DiscreteUpdateEvent<double>>&>(
             events);
     if (leaf_events.HasEvents()) {
       this->MyCalcDiscreteVariableUpdates(context, leaf_events.get_events(),
@@ -204,32 +204,32 @@ class TestSystem : public System<double> {
   // The default update function.
   void MyCalcDiscreteVariableUpdates(
       const Context<double>& context,
-      const std::vector<const DiscreteUpdateEvent<double>*>& events,
+      const std::vector<DiscreteUpdateEvent<double>>& events,
       DiscreteValues<double>* discrete_state) const {
     ++update_count_;
   }
 
   std::unique_ptr<EventCollection<PublishEvent<double>>>
   AllocateForcedPublishEventCollection() const override {
-    return LeafEventCollection<
+    return internal::LeafEventCollection<
         PublishEvent<double>>::MakeForcedEventCollection();
   }
 
   std::unique_ptr<EventCollection<DiscreteUpdateEvent<double>>>
   AllocateForcedDiscreteUpdateEventCollection() const override {
-    return LeafEventCollection<
+    return internal::LeafEventCollection<
         DiscreteUpdateEvent<double>>::MakeForcedEventCollection();
   }
 
   std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<double>>>
   AllocateForcedUnrestrictedUpdateEventCollection() const override {
-    return LeafEventCollection<
+    return internal::LeafEventCollection<
         UnrestrictedUpdateEvent<double>>::MakeForcedEventCollection();
   }
 
-  std::map<PeriodicEventData,
+  std::map<PeriodicTriggerData,
       std::vector<const Event<double>*>,
-      PeriodicEventDataComparator>
+      PeriodicTriggerDataComparator>
       DoGetPeriodicEvents() const override {
     return {};
   }
@@ -322,10 +322,10 @@ TEST_F(SystemTest, DiscretePublish) {
   auto event_info = system_.AllocateCompositeEventCollection();
   system_.CalcNextUpdateTime(*context_, event_info.get());
   const auto& events =
-      dynamic_cast<const LeafCompositeEventCollection<double>*>(
+      dynamic_cast<const internal::LeafCompositeEventCollection<double>*>(
           event_info.get())->get_publish_events().get_events();
   EXPECT_EQ(events.size(), 1);
-  EXPECT_EQ(events.front()->get_trigger_type(),
+  EXPECT_EQ(events.front().get_trigger_type(),
             TriggerType::kPeriodic);
 
   system_.Publish(*context_, event_info->get_publish_events());
@@ -635,7 +635,7 @@ class ValueIOTestSystem : public System<T> {
 
   std::unique_ptr<CompositeEventCollection<T>>
   AllocateCompositeEventCollection() const override {
-    return std::make_unique<LeafCompositeEventCollection<T>>();
+    return std::make_unique<internal::LeafCompositeEventCollection<T>>();
   }
 
   void SetDefaultState(const Context<T>& context,
@@ -709,23 +709,23 @@ class ValueIOTestSystem : public System<T> {
 
   std::unique_ptr<EventCollection<PublishEvent<T>>>
   AllocateForcedPublishEventCollection() const override {
-    return LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection();
+    return internal::LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection();
   }
 
   std::unique_ptr<EventCollection<DiscreteUpdateEvent<T>>>
   AllocateForcedDiscreteUpdateEventCollection() const override {
-    return LeafEventCollection<
+    return internal::LeafEventCollection<
         DiscreteUpdateEvent<T>>::MakeForcedEventCollection();
   }
 
   std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>>
   AllocateForcedUnrestrictedUpdateEventCollection() const override {
-    return LeafEventCollection<
+    return internal::LeafEventCollection<
         UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection();
   }
 
-  std::map<PeriodicEventData, std::vector<const Event<T>*>,
-           PeriodicEventDataComparator>
+  std::map<PeriodicTriggerData, std::vector<const Event<T>*>,
+           PeriodicTriggerDataComparator>
   DoGetPeriodicEvents() const override {
     return {};
   }
@@ -1066,8 +1066,8 @@ class ComputationTestSystem final : public System<double> {
     ADD_FAILURE() << "Implementation is required, but unused here.";
   }
 
-  std::map<PeriodicEventData, std::vector<const Event<double>*>,
-           PeriodicEventDataComparator>
+  std::map<PeriodicTriggerData, std::vector<const Event<double>*>,
+           PeriodicTriggerDataComparator>
   DoGetPeriodicEvents() const final { return {}; }
 
   mutable int xcdot_count_{};

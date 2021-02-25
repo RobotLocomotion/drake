@@ -109,7 +109,7 @@ struct Impl {
 
     // Trampoline virtual methods.
     void DoPublish(const Context<T>& context,
-        const vector<const PublishEvent<T>*>& events) const override {
+        const std::vector<PublishEvent<T>>& events) const override {
       // Yuck! We have to dig in and use internals :(
       // We must ensure that pybind only sees pointers, since this method may
       // be called from C++, and pybind will not have seen these objects yet.
@@ -131,7 +131,7 @@ struct Impl {
     }
 
     void DoCalcDiscreteVariableUpdates(const Context<T>& context,
-        const std::vector<const DiscreteUpdateEvent<T>*>& events,
+        const std::vector<DiscreteUpdateEvent<T>>& events,
         DiscreteValues<T>* discrete_state) const override {
       // See `DoPublish` for explanation.
       PYBIND11_OVERLOAD_INT(void, LeafSystem<T>,
@@ -204,7 +204,7 @@ struct Impl {
 
     // Trampoline virtual methods.
     void DoPublish(const Context<T>& context,
-        const vector<const PublishEvent<T>*>& events) const override {
+        const std::vector<PublishEvent<T>>& events) const override {
       // Copied from above, since we cannot use `PyLeafSystemBase` due to final
       // overrides of some methods.
       // TODO(eric.cousineau): Make this more granular?

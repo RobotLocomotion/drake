@@ -97,7 +97,7 @@ class SparseSystem : public LeafSystem<symbolic::Expression> {
   void DoCalcDiscreteVariableUpdates(
       const systems::Context<symbolic::Expression>& context,
       const std::vector<
-          const systems::DiscreteUpdateEvent<symbolic::Expression>*>&,
+          systems::DiscreteUpdateEvent<symbolic::Expression>>&,
       systems::DiscreteValues<symbolic::Expression>* discrete_state)
       const override {
     const auto& u0 = this->get_input_port(0).Eval(context);

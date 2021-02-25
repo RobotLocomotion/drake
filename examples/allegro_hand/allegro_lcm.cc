@@ -45,7 +45,7 @@ void AllegroCommandReceiver::set_initial_position(
 
 void AllegroCommandReceiver::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
-    const std::vector<const DiscreteUpdateEvent<double>*>&,
+    const std::vector<DiscreteUpdateEvent<double>>&,
     DiscreteValues<double>* discrete_state) const {
   const AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);

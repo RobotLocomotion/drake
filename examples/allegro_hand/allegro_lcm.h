@@ -57,7 +57,7 @@ class AllegroCommandReceiver : public systems::LeafSystem<double> {
 
   void DoCalcDiscreteVariableUpdates(
       const systems::Context<double>& context,
-      const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
+      const std::vector<systems::DiscreteUpdateEvent<double>>&,
       systems::DiscreteValues<double>* discrete_state) const override;
 
  private:

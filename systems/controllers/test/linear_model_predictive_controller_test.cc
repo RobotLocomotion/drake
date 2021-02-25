@@ -109,7 +109,7 @@ class CubicPolynomialSystem final : public LeafSystem<T> {
   // x2(k+1) = -x1³(k)
   void DoCalcDiscreteVariableUpdates(
       const Context<T>& context,
-      const std::vector<const DiscreteUpdateEvent<T>*>&,
+      const std::vector<DiscreteUpdateEvent<T>>&,
       DiscreteValues<T>* next_state) const final {
     using std::pow;
     const T& x1 = context.get_discrete_state(0).get_value()[0];

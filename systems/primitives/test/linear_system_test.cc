@@ -361,7 +361,7 @@ class TestNonPeriodicSystem : public LeafSystem<double> {
 
   void DoCalcDiscreteVariableUpdates(
       const Context<double>& context,
-      const std::vector<const DiscreteUpdateEvent<double>*>&,
+      const std::vector<DiscreteUpdateEvent<double>>&,
       DiscreteValues<double>* discrete_state) const override {
     (*discrete_state)[0] = context.get_discrete_state(0).GetAtIndex(0) + 1;
   }
@@ -759,7 +759,7 @@ class MimoSystem final : public LeafSystem<T> {
 
   void DoCalcDiscreteVariableUpdates(
       const Context<T>& context,
-      const std::vector<const DiscreteUpdateEvent<T>*>&,
+      const std::vector<DiscreteUpdateEvent<T>>&,
       DiscreteValues<T>* discrete_state) const final {
     Vector1<T> u0 = this->get_input_port(0).Eval(context);
     Vector3<T> u1 = this->get_input_port(1).Eval(context);

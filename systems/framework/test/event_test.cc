@@ -7,10 +7,10 @@ namespace systems {
 namespace {
 
 GTEST_TEST(EventsTest, PeriodicAttributeComparatorTest) {
-  PeriodicEventDataComparator comparator;
+  PeriodicTriggerDataComparator comparator;
 
   // Create two periodic event data objects.
-  PeriodicEventData d1, d2;
+  PeriodicTriggerData d1, d2;
   d1.set_period_sec(0);
   d1.set_offset_sec(0);
   d2.set_period_sec(0);
