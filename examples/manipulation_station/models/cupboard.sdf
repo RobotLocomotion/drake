@@ -110,7 +110,7 @@
     <joint name="left_door_hinge" type="revolute">
       <child>left_door</child>
       <parent>cupboard_body</parent>
-      <pose>-0.008 -0.1395 0 0 0 </pose>
+      <pose>-0.008 -0.1395 0 0 0 0</pose>
       <axis>
         <xyz> 0 0 1 </xyz>
         <limit>
@@ -174,7 +174,7 @@
     <joint name="right_door_hinge" type="revolute">
       <child>right_door</child>
       <parent>cupboard_body</parent>
-      <pose>-0.008 0.1395 0 0 0 </pose>
+      <pose>-0.008 0.1395 0 0 0 0</pose>
       <axis>
         <xyz> 0 0 1 </xyz>
         <limit>

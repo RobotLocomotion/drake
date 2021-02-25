@@ -1,5 +1,5 @@
-<!-- This sdf file is based on schunk_wsg_50.sdf -->
 <?xml version="1.0"?>
+<!-- This sdf file is based on schunk_wsg_50.sdf -->
 <sdf version="1.7">
   <model name="Schunk_Gripper">
     <link name="body">

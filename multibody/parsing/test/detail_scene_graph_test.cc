@@ -343,6 +343,17 @@ GTEST_TEST(SceneGraphParserDetail, MakeConvexFromSdfGeometry) {
   EXPECT_EQ(convex->scale(), 3);
 }
 
+// Verify that MakeShapeFromSdfGeometry does nothing with a heightmap.
+GTEST_TEST(SceneGraphParserDetail, MakeHeightmapFromSdfGeometry) {
+  unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
+      "<heightmap>"
+      "  <uri>/path/to/some/heightmap.png</uri>"
+      "</heightmap>");
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(
+      *sdf_geometry, NoopResolveFilename);
+  EXPECT_EQ(shape, nullptr);
+}
+
 // Verify MakeGeometryInstanceFromSdfVisual can make a GeometryInstance from an
 // sdf::Visual.
 // Since we test MakeShapeFromSdfGeometry separately, there is no need to unit
@@ -430,7 +441,7 @@ GTEST_TEST(SceneGraphParserDetail, VisualGeometryNameRequirements) {
 
   // These whitespace characters are *not* considered to be whitespace by SDF.
   std::vector<std::pair<char, std::string>> ignored_whitespace{
-      {'\n', "\\n"}, {'\v', "\\v"}, {'\r', "\\r"}, {'\f', "\\f"}};
+      {'\v', "\\v"}, {'\f', "\\f"}};
   for (const auto& pair : ignored_whitespace) {
     // Case: Whitespace-only name.
     EXPECT_TRUE(valid_parse(fmt::format(visual_tag, pair.first)))
@@ -542,6 +553,25 @@ GTEST_TEST(SceneGraphParserDetail, MakeEmptyGeometryInstanceFromSdfVisual) {
       "  </geometry>"
       "</visual>");
 
+  unique_ptr<GeometryInstance> geometry_instance =
+      MakeGeometryInstanceFromSdfVisual(
+          *sdf_visual, NoopResolveFilename,
+          ToRigidTransform(sdf_visual->RawPose()));
+  EXPECT_EQ(geometry_instance, nullptr);
+}
+
+
+// Verify that MakeGeometryInstanceFromSdfVisual does nothing with a heightmap.
+GTEST_TEST(SceneGraphParserDetail, MakeHeightmapGeometryInstanceFromSdfVisual) {
+  unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
+    "<visual name='some_link_visual'>"
+    "  <pose>1.0 2.0 3.0 3.14 6.28 1.57</pose>"
+    "  <geometry>"
+    "    <heightmap>"
+    "      <uri>/path/to/some/heightmap.png</uri>"
+    "    </heightmap>"
+    "  </geometry>"
+    "</visual>");
   unique_ptr<GeometryInstance> geometry_instance =
       MakeGeometryInstanceFromSdfVisual(
           *sdf_visual, NoopResolveFilename,
@@ -779,7 +809,7 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
   // TODO(SeanCurtis-TRI): The following tests capture current behavior for
   // sdformat. The behavior isn't necessarily desirable and an issue has been
   // filed.
-  // https://bitbucket.org/osrf/sdformat/issues/193/using-element-get-has-surprising-defaults
+  // https://github.com/osrf/sdformat/issues/193
   // When this issue gets resolved, modify these tests accordingly.
 
   // sdformat maps the diffuse values into a `Color` using the following rules:
@@ -824,7 +854,7 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
         "</visual>");
     IllustrationProperties material =
         MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
-    Vector4<double> expected_diffuse{0, 1, 0, 1};
+    Vector4<double> expected_diffuse{0, 1, 1, 1};
     EXPECT_TRUE(expect_phong(material, true, expected_diffuse, {}, {}, {}, {}));
   }
 
