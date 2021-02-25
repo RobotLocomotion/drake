@@ -500,7 +500,7 @@ class Rod2D : public systems::LeafSystem<T> {
                                const override;
   void DoCalcDiscreteVariableUpdates(
       const systems::Context<T>& context,
-      const std::vector<const systems::DiscreteUpdateEvent<T>*>& events,
+      const std::vector<systems::DiscreteUpdateEvent<T>>& events,
       systems::DiscreteValues<T>* discrete_state) const override;
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override;

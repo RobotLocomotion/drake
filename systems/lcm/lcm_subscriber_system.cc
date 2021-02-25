@@ -129,7 +129,7 @@ void LcmSubscriberSystem::DoCalcNextUpdateTime(
   EventCollection<UnrestrictedUpdateEvent<double>>& uu_events =
       events->get_mutable_unrestricted_update_events();
   uu_events.add_event(
-      std::make_unique<systems::UnrestrictedUpdateEvent<double>>(
+      systems::UnrestrictedUpdateEvent<double>(
           TriggerType::kTimed, callback));
 }
 

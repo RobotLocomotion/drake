@@ -78,7 +78,7 @@ OptitrackPoseExtractor::OptitrackPoseExtractor(
 
 void OptitrackPoseExtractor::DoCalcUnrestrictedUpdate(
     const Context<double>& context,
-    const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
+    const std::vector<systems::UnrestrictedUpdateEvent<double>>&,
     systems::State<double>* state) const {
   // Extract Internal state.
   Isometry3<double>& internal_state =

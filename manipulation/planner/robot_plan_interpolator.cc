@@ -171,7 +171,7 @@ void RobotPlanInterpolator::Initialize(double plan_start_time,
 
 void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
     const systems::Context<double>& context,
-    const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
+    const std::vector<systems::UnrestrictedUpdateEvent<double>>&,
     systems::State<double>* state) const {
   PlanData& plan =
       state->get_mutable_abstract_state<PlanData>(plan_index_);

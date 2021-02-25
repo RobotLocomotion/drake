@@ -99,7 +99,7 @@ void IiwaCommandReceiver::DoCalcNextUpdateTime(
   // Schedule a discrete update event at now to latch the current position.
   *time = context.get_time();
   auto& discrete_events = events->get_mutable_discrete_update_events();
-  discrete_events.add_event(std::make_unique<DiscreteUpdateEvent<double>>(
+  discrete_events.add_event(DiscreteUpdateEvent<double>(
       [this](const Context<double>& event_context,
              const DiscreteUpdateEvent<double>&,
              DiscreteValues<double>* next_values) {

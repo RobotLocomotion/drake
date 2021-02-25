@@ -4024,7 +4024,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // TODO(amcastro-tri): Update this docs when contact is added.
   void DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<T>& context0,
-      const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
+      const std::vector<drake::systems::DiscreteUpdateEvent<T>>& events,
       drake::systems::DiscreteValues<T>* updates) const override;
 
   // Helper method used within DoCalcDiscreteVariableUpdates() to update

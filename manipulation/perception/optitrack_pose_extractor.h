@@ -78,7 +78,7 @@ class OptitrackPoseExtractor : public systems::LeafSystem<double> {
  private:
   void DoCalcUnrestrictedUpdate(
       const systems::Context<double>& context,
-      const std::vector<const systems::UnrestrictedUpdateEvent<double>*>& event,
+      const std::vector<systems::UnrestrictedUpdateEvent<double>>& event,
       systems::State<double>* state) const override;
 
   // The Calc() method for the measured_pose_output_port.

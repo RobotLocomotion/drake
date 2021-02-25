@@ -92,7 +92,7 @@ class DifferentialInverseKinematicsIntegrator
   // Calls DoDifferentialInverseKinematics and performs one integration step.
   void DoCalcDiscreteVariableUpdates(
       const systems::Context<double>& context,
-      const std::vector<const systems::DiscreteUpdateEvent<double>*>& events,
+      const std::vector<systems::DiscreteUpdateEvent<double>>& events,
       systems::DiscreteValues<double>* discrete_state) const override;
 
   // Outputs the current position value.

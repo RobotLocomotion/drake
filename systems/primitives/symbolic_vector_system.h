@@ -187,7 +187,7 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
 
   void DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<T>& context,
-      const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
+      const std::vector<drake::systems::DiscreteUpdateEvent<T>>& events,
       drake::systems::DiscreteValues<T>* updates) const final;
 
   const std::optional<symbolic::Variable> time_var_{std::nullopt};

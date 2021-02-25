@@ -597,7 +597,7 @@ class LeafCompositeEventCollection final : public CompositeEventCollection<T> {
             std::make_unique<
                 LeafEventCollection<UnrestrictedUpdateEvent<T>>>()) {}
 
-  /**
+  /*
    * Returns a const reference to the collection of publish events.
    */
   const LeafEventCollection<PublishEvent<T>>& get_publish_events() const {
@@ -605,7 +605,7 @@ class LeafCompositeEventCollection final : public CompositeEventCollection<T> {
         CompositeEventCollection<T>::get_publish_events());
   }
 
-  /**
+  /*
    * Returns a const reference to the collection of discrete update events.
    */
   const LeafEventCollection<DiscreteUpdateEvent<T>>&
@@ -614,7 +614,7 @@ class LeafCompositeEventCollection final : public CompositeEventCollection<T> {
         CompositeEventCollection<T>::get_discrete_update_events());
   }
 
-  /**
+  /*
    * Returns a const reference to the collection of unrestricted update events.
    */
   const LeafEventCollection<UnrestrictedUpdateEvent<T>>&
@@ -624,7 +624,7 @@ class LeafCompositeEventCollection final : public CompositeEventCollection<T> {
   }
 };
 
-/**
+/*
  * CompositeEventCollection for a Diagram.
  *
  * End users should never need to use or know about this class.  It is for
@@ -636,7 +636,7 @@ class DiagramCompositeEventCollection final
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramCompositeEventCollection)
 
-  /**
+  /*
    * Allocated CompositeEventCollection for all constituent subsystems are
    * passed in `subevents` (a vector of size of the number of subsystems of
    * the corresponding diagram), for which ownership is also transferred to
@@ -684,7 +684,7 @@ class DiagramCompositeEventCollection final
     }
   }
 
-  /**
+  /*
    * Returns the number of subsystems for which this object contains event
    * collections.
    */

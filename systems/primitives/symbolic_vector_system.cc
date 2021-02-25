@@ -354,9 +354,8 @@ void SymbolicVectorSystem<T>::DoCalcTimeDerivatives(
 template <typename T>
 void SymbolicVectorSystem<T>::DoCalcDiscreteVariableUpdates(
     const drake::systems::Context<T>& context,
-    const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
+    const std::vector<drake::systems::DiscreteUpdateEvent<T>>&,
     drake::systems::DiscreteValues<T>* updates) const {
-  unused(events);
   DRAKE_DEMAND(time_period_ > 0.0);
   DRAKE_DEMAND(dynamics_.size() > 0);
   EvaluateWithContext(context, dynamics_, dynamics_jacobian_,

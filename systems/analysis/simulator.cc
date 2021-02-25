@@ -76,9 +76,10 @@ SimulatorStatus Simulator<T>::Initialize(const InitializeParams& params) {
   ResetStatistics();
 
   // Process all the initialization events.
-  auto init_events = system_.AllocateCompositeEventCollection();
+  merged_events_ = system_.AllocateCompositeEventCollection();
+  CompositeEventCollection<T>* init_events = merged_events_.get();
   if (!params.suppress_initialization_events) {
-    system_.GetInitializationEvents(*context_, init_events.get());
+    system_.GetInitializationEvents(*context_, init_events);
   }
 
   // Do unrestricted updates first.
@@ -123,10 +124,10 @@ SimulatorStatus Simulator<T>::Initialize(const InitializeParams& params) {
   // events to precede any per-step or timed events in the merged collection.
   // Note that per-step and timed discrete/unrestricted update events are *not*
   // processed here; just publish events.
-  init_events->AddToEnd(*per_step_events_);
+  merged_events_->AddToEnd(*per_step_events_);
   if (time_or_witness_triggered_ & kTimeTriggered)
-    init_events->AddToEnd(*timed_events_);
-  HandlePublish(init_events->get_publish_events());
+    merged_events_->AddToEnd(*timed_events_);
+  HandlePublish(merged_events_->get_publish_events());
 
   // TODO(siyuan): transfer publish entirely to individual systems.
   // Do a force-publish before the simulation starts.
@@ -208,20 +209,19 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
   SimulatorStatus status(ExtractDoubleOrThrow(boundary_time));
 
   // Integrate until desired interval has completed.
-  auto merged_events = system_.AllocateCompositeEventCollection();
   DRAKE_DEMAND(timed_events_ != nullptr);
   DRAKE_DEMAND(witnessed_events_ != nullptr);
-  DRAKE_DEMAND(merged_events != nullptr);
+  DRAKE_DEMAND(merged_events_ != nullptr);
 
   // Clear events for the loop iteration.
-  merged_events->Clear();
-  merged_events->AddToEnd(*per_step_events_);
+  merged_events_->Clear();
+  merged_events_->AddToEnd(*per_step_events_);
 
   // Merge in timed and witnessed events, if necessary.
   if (time_or_witness_triggered_ & kTimeTriggered)
-    merged_events->AddToEnd(*timed_events_);
+    merged_events_->AddToEnd(*timed_events_);
   if (time_or_witness_triggered_ & kWitnessTriggered)
-    merged_events->AddToEnd(*witnessed_events_);
+    merged_events_->AddToEnd(*witnessed_events_);
 
   while (true) {
     // Starting a new step on the trajectory.
@@ -236,9 +236,9 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
     // publish. The "timed" actions happen before the "per step" ones.
 
     // Do unrestricted updates first.
-    HandleUnrestrictedUpdate(merged_events->get_unrestricted_update_events());
+    HandleUnrestrictedUpdate(merged_events_->get_unrestricted_update_events());
     // Do restricted (discrete variable) updates next.
-    HandleDiscreteUpdate(merged_events->get_discrete_update_events());
+    HandleDiscreteUpdate(merged_events_->get_discrete_update_events());
 
     // How far can we go before we have to handle timed events?
     const T next_timed_event_time =
@@ -272,19 +272,19 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
     // TODO(sherm1) Constraint projection goes here.
 
     // Clear events for the next loop iteration.
-    merged_events->Clear();
+    merged_events_->Clear();
 
     // Merge in per-step events.
-    merged_events->AddToEnd(*per_step_events_);
+    merged_events_->AddToEnd(*per_step_events_);
 
     // Only merge timed / witnessed events in if an event was triggered.
     if (time_or_witness_triggered_ & kTimeTriggered)
-      merged_events->AddToEnd(*timed_events_);
+      merged_events_->AddToEnd(*timed_events_);
     if (time_or_witness_triggered_ & kWitnessTriggered)
-      merged_events->AddToEnd(*witnessed_events_);
+      merged_events_->AddToEnd(*witnessed_events_);
 
     // Handle any publish events at the end of the loop.
-    HandlePublish(merged_events->get_publish_events());
+    HandlePublish(merged_events_->get_publish_events());
 
     // TODO(siyuan): transfer per step publish entirely to individual systems.
     // Allow System a chance to produce some output.
@@ -523,7 +523,8 @@ void Simulator<T>::PopulateTriggerDataForTriggeredWitness(
   data.set_tf(tf);
   data.set_xc0(event_handler_xc_.get());
   data.set_xcf(&context_->get_continuous_state());
-  event->AddToComposite(events);
+  get_system().AddTriggeredWitnessFunctionToCompositeEventCollection(
+      event, events);
 }
 
 // (Re)determines the set of witness functions active over this interval,

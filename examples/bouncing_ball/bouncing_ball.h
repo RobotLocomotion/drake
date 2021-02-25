@@ -101,7 +101,7 @@ class BouncingBall final : public systems::LeafSystem<T> {
   // is called by the Simulator when the signed distance witness function
   // triggers.
   void DoCalcUnrestrictedUpdate(const systems::Context<T>& context,
-      const std::vector<const systems::UnrestrictedUpdateEvent<T>*>&,
+      const std::vector<systems::UnrestrictedUpdateEvent<T>>&,
       systems::State<T>* next_state) const override {
     systems::VectorBase<T>& next_cstate =
         next_state->get_mutable_continuous_state().get_mutable_vector();

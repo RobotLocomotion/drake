@@ -110,7 +110,7 @@ PoseSmoother::PoseSmoother(double desired_max_linear_velocity,
 
 void PoseSmoother::DoCalcUnrestrictedUpdate(
     const systems::Context<double>& context,
-    const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
+    const std::vector<systems::UnrestrictedUpdateEvent<double>>&,
     systems::State<double>* state) const {
   // Extract Internal state.
   InternalState& internal_state =

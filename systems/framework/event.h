@@ -215,18 +215,9 @@ namespace systems {
 template <class T>
 class WitnessFunction;
 
-// Forward declaration of the event container classes.
-// -- Containers for homogeneous events.
-template <typename EventType>
-class EventCollection;
-template <typename EventType>
-class LeafEventCollection;
-
-// -- Containers for heterogeneous events.
+// Forward declaration of the container of heterogeneous events.
 template <typename T>
 class CompositeEventCollection;
-template <typename T>
-class LeafCompositeEventCollection;
 
 /**
  * Base class for storing trigger-specific data to be passed to event handlers.

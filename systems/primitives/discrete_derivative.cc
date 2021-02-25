@@ -60,7 +60,7 @@ void DiscreteDerivative<T>::set_input_history(
 template <typename T>
 void DiscreteDerivative<T>::DoCalcDiscreteVariableUpdates(
     const drake::systems::Context<T>& context,
-    const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>&,
+    const std::vector<drake::systems::DiscreteUpdateEvent<T>>&,
     drake::systems::DiscreteValues<T>* state) const {
   // x₀[n+1] = u[n].
   state->get_mutable_vector(0).SetFromVector(

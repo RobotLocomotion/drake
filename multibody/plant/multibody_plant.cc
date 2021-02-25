@@ -2478,7 +2478,7 @@ void MultibodyPlant<T>::DoCalcForwardDynamicsDiscrete(
 template<typename T>
 void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
     const drake::systems::Context<T>& context0,
-    const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>&,
+    const std::vector<drake::systems::DiscreteUpdateEvent<T>>&,
     drake::systems::DiscreteValues<T>* updates) const {
   this->ValidateContext(context0);
 

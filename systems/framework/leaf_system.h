@@ -1033,7 +1033,7 @@ class LeafSystem : public System<T> {
     DRAKE_DEMAND(update != nullptr);
 
     // Instantiate the event.
-    auto forced = std::make_unique<UnrestrictedUpdateEvent<T>>(
+    const UnrestrictedUpdateEvent<T> forced(
         TriggerType::kForced,
         [this_ptr, update](const Context<T>& context,
                            const UnrestrictedUpdateEvent<T>&, State<T>* state) {
@@ -1043,7 +1043,7 @@ class LeafSystem : public System<T> {
 
     // Add the event to the collection of forced unrestricted update events.
     this->get_mutable_forced_unrestricted_update_events().add_event(
-        std::move(forced));
+        forced);
   }
   //@}
 

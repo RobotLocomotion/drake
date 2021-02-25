@@ -86,9 +86,8 @@ void DifferentialInverseKinematicsIntegrator::UpdateRobotContext(
 
 void DifferentialInverseKinematicsIntegrator::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
-    const std::vector<const systems::DiscreteUpdateEvent<double>*>& events,
+    const std::vector<systems::DiscreteUpdateEvent<double>>&,
     systems::DiscreteValues<double>* discrete_state) const {
-  unused(events);
   const AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_DEMAND(input);
   const math::RigidTransformd& X_WE_desired =

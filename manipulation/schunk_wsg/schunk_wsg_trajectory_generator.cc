@@ -63,7 +63,7 @@ void SchunkWsgTrajectoryGenerator::OutputForce(
 
 void SchunkWsgTrajectoryGenerator::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
-    const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
+    const std::vector<systems::DiscreteUpdateEvent<double>>&,
     DiscreteValues<double>* discrete_state) const {
   const double desired_position =
       get_desired_position_input_port().Eval(context)[0];
