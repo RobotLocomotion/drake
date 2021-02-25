@@ -30,7 +30,9 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
  file, this method makes a new drake::geometry::GeometryInstance object from
  this specification at a pose `X_LG` relatve to its parent link.
  This method returns nullptr when the given SDF specification corresponds
- to a geometry of type `sdf::GeometryType::EMPTY` (`<empty/>` SDF tag.)
+ to an uninterpreted geometry type:
+ - `sdf::GeometryType::EMPTY` (`<empty/>` SDF tag.)
+ - `sdf::GeometryType::HEIGHTMAP` (`<heightmap/>` SDF tag.)
 
  <!-- TODO(SeanCurtis-TRI): Ultimately, a module for what we parse should be
   written outside of this _internal_ namespace. This should go there and
