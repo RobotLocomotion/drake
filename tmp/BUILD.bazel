@@ -1,0 +1,16 @@
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+)
+
+filegroup(
+    name = "models",
+    srcs = ["dummy.sdf"],
+)
+
+drake_py_binary(
+    name = "repro",
+    srcs = ["repro.py"],
+    data = [":models"],
+    deps = ["//bindings/pydrake"],
+)

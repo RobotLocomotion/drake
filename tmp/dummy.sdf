@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="dummy">
+    <link name="dummy"/>
+  </model>
+</sdf>
