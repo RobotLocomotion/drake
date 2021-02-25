@@ -1,0 +1,165 @@
+# GENERATED FILE - DO NOT EDIT BY HAND
+configurations:
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, -0.049133, 0.0]
+    name: Schunk_Gripper::body
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, -0.049133, 0.0]
+    name: Schunk_Gripper::body_frame
+  - X_WF:
+      rotation:
+      - [-0.9999999999997864, 0.0, 6.535897930762418e-07]
+      - [0.0, 1.0, 0.0]
+      - [-6.535897930762418e-07, 0.0, -0.9999999999997864]
+      translation: [-0.006000000000000001, 0.028000000000000004, -5.668987788540901e-25]
+    name: Schunk_Gripper::left_finger
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.006, 0.028000000000000004, 0.0]
+    name: Schunk_Gripper::right_finger
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  note: Zeros
+  q:
+    names: [left_finger_sliding_joint, right_finger_sliding_joint]
+    values: [0.0, 0.0]
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, -0.049133, 0.0]
+    name: Schunk_Gripper::body
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, -0.049133, 0.0]
+    name: Schunk_Gripper::body_frame
+  - X_WF:
+      rotation:
+      - [-0.9999999999997864, 0.0, 6.535897930762418e-07]
+      - [0.0, 1.0, 0.0]
+      - [-6.535897930762418e-07, 0.0, -0.9999999999997864]
+      translation: [0.9939999999997864, 0.028000000000000004, 6.535897930762418e-07]
+    name: Schunk_Gripper::left_finger
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [1.006, 0.028000000000000004, 0.0]
+    name: Schunk_Gripper::right_finger
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  note: Ones
+  q:
+    names: [left_finger_sliding_joint, right_finger_sliding_joint]
+    values: [1.0, 1.0]
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, -0.049133, 0.0]
+    name: Schunk_Gripper::body
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, -0.049133, 0.0]
+    name: Schunk_Gripper::body_frame
+  - X_WF:
+      rotation:
+      - [-0.9999999999997864, 0.0, 6.535897930762418e-07]
+      - [0.0, 1.0, 0.0]
+      - [-6.535897930762418e-07, 0.0, -0.9999999999997864]
+      translation: [0.09399999999997864, 0.028000000000000004, 6.535897930762418e-08]
+    name: Schunk_Gripper::left_finger
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.20600000000000002, 0.028000000000000004, 0.0]
+    name: Schunk_Gripper::right_finger
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  note: Incrementing
+  q:
+    names: [left_finger_sliding_joint, right_finger_sliding_joint]
+    values: [0.1, 0.2]
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, -0.049133, 0.0]
+    name: Schunk_Gripper::body
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, -0.049133, 0.0]
+    name: Schunk_Gripper::body_frame
+  - X_WF:
+      rotation:
+      - [-0.9999999999997864, 0.0, 6.535897930762418e-07]
+      - [0.0, 1.0, 0.0]
+      - [-6.535897930762418e-07, 0.0, -0.9999999999997864]
+      translation: [1.564796326794561, 0.028000000000000004, 1.026656446194797e-06]
+    name: Schunk_Gripper::left_finger
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [1.5767963267948966, 0.028000000000000004, 0.0]
+    name: Schunk_Gripper::right_finger
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  note: Pi/2
+  q:
+    names: [left_finger_sliding_joint, right_finger_sliding_joint]
+    values: [1.5707963267948966, 1.5707963267948966]
+expression: {expr: 'make_plant(try_find_file(''manipulation/models/wsg_50_description/sdf/schunk_wsg_50_no_tip.sdf''),
+    find_resource=False)', module: __main__}
+type_name: tuple

@@ -1,0 +1,165 @@
+# GENERATED FILE - DO NOT EDIT BY HAND
+configurations:
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: Acrobot::base_link
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.25, -3.1]
+    name: Acrobot::hand
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.25, -1.0]
+    name: Acrobot::lower_link
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.15, 0.0]
+    name: Acrobot::upper_link
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  note: Zeros
+  q:
+    names: [shoulder, elbow]
+    values: [0.0, 0.0]
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: Acrobot::base_link
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.25, -3.1]
+    name: Acrobot::hand
+  - X_WF:
+      rotation:
+      - [-0.4161468365471423, 0.0, 0.9092974268256818]
+      - [0.0, 1.0, 0.0]
+      - [-0.9092974268256818, 0.0, -0.4161468365471423]
+      translation: [-0.8414709848078965, 0.25, -0.5403023058681398]
+    name: Acrobot::lower_link
+  - X_WF:
+      rotation:
+      - [0.5403023058681398, 0.0, 0.8414709848078965]
+      - [0.0, 1.0, 0.0]
+      - [-0.8414709848078965, 0.0, 0.5403023058681398]
+      translation: [0.0, 0.15, 0.0]
+    name: Acrobot::upper_link
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  note: Ones
+  q:
+    names: [shoulder, elbow]
+    values: [1.0, 1.0]
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: Acrobot::base_link
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.25, -3.1]
+    name: Acrobot::hand
+  - X_WF:
+      rotation:
+      - [0.9553364891256061, 0.0, 0.2955202066613396]
+      - [0.0, 1.0, 0.0]
+      - [-0.2955202066613396, 0.0, 0.9553364891256061]
+      translation: [-0.09983341664682815, 0.25, -0.9950041652780258]
+    name: Acrobot::lower_link
+  - X_WF:
+      rotation:
+      - [0.9950041652780258, 0.0, 0.09983341664682815]
+      - [0.0, 1.0, 0.0]
+      - [-0.09983341664682815, 0.0, 0.9950041652780258]
+      translation: [0.0, 0.15, 0.0]
+    name: Acrobot::upper_link
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  note: Incrementing
+  q:
+    names: [shoulder, elbow]
+    values: [0.1, 0.2]
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: Acrobot::base_link
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.25, -3.1]
+    name: Acrobot::hand
+  - X_WF:
+      rotation:
+      - [-1.0, 0.0, 1.2246467991473532e-16]
+      - [0.0, 1.0, 0.0]
+      - [-1.2246467991473532e-16, 0.0, -1.0]
+      translation: [-1.0, 0.25, -6.123233995736766e-17]
+    name: Acrobot::lower_link
+  - X_WF:
+      rotation:
+      - [6.123233995736766e-17, 0.0, 1.0]
+      - [0.0, 1.0, 0.0]
+      - [-1.0, 0.0, 6.123233995736766e-17]
+      translation: [0.0, 0.15, 0.0]
+    name: Acrobot::upper_link
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  note: Pi/2
+  q:
+    names: [shoulder, elbow]
+    values: [1.5707963267948966, 1.5707963267948966]
+expression: {expr: 'make_plant(try_find_file(''examples/acrobot/Acrobot.sdf''), find_resource=False)',
+  module: __main__}
+type_name: tuple
