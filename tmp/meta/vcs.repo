@@ -1,0 +1,22 @@
+# From Addisu.
+repositories:
+  ign_cmake:
+    type: git
+    url: https://github.com/ignitionrobotics/ign-cmake
+    version: ign-cmake2
+  ign_math:
+    type: git
+    url: https://github.com/ignitionrobotics/ign-math
+    version: ign-math6
+  sdformat:
+    type: git
+    url: https://github.com/osrf/sdformat
+    version: master
+  ign_tools:
+    type: git
+    url: https://github.com/ignitionrobotics/ign-tools
+    version: ign-tools1
+  ign_utils:
+    type: git
+    url: https://github.com/ignitionrobotics/ign-utils
+    version: main

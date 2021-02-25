@@ -17,10 +17,10 @@ import yaml
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.systems.framework import DiagramBuilder
-from pydrake.geometry import (
-    ConnectDrakeVisualizer, SceneGraph, DispatchLoadMessage)
+from pydrake.geometry import DrakeVisualizer, SceneGraph
 from pydrake.lcm import DrakeLcm
 
+from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.parsing import (
     Parser,
 )
@@ -32,7 +32,7 @@ from pydrake.multibody.plant import (
     MultibodyPlant,
     AddMultibodyPlantSceneGraph,
 )
-from pydrake.common.eigen_geometry import Isometry3, AngleAxis
+from pydrake.common.eigen_geometry import AngleAxis
 
 
 def indent(prefix, s):
@@ -95,14 +95,14 @@ class Frame(object):
     """Contains frame name and pose w.r.t. world at given configuration."""
     def __init__(self, name, X_WF):
         self.name = str(name)
-        self.X_WF = Isometry3(X_WF)
+        self.X_WF = RigidTransform(X_WF)
 
     def compare(self, b, cmp_, parent_path):
         """Compares to another frame `b` given `cmp_` metrics."""
         path = parent_path + "/frame[@name='{}']".format(self.name)
         assert self.name == b.name, path
         X_AB = self.X_WF.inverse().multiply(b.X_WF)
-        rot_err = AngleAxis(X_AB.rotation()).angle()
+        rot_err = AngleAxis(X_AB.rotation().matrix()).angle()
         if np.abs(rot_err - np.pi) < np.abs(rot_err):
             rot_err -= np.pi
         tr_err = np.linalg.norm(X_AB.translation())
@@ -116,9 +116,9 @@ class Frame(object):
         """Creates from a dict (from YAML)."""
         return cls(
             name=d["name"],
-            X_WF=Isometry3(
-                rotation=d["X_WF"]["rotation"],
-                translation=d["X_WF"]["translation"],
+            X_WF=RigidTransform(
+                R=RotationMatrix(d["X_WF"]["rotation"]),
+                p=d["X_WF"]["translation"],
             ),
         )
 
@@ -128,7 +128,7 @@ class Frame(object):
             name=str(self.name),
             X_WF=dict(
                 translation=self.X_WF.translation().tolist(),
-                rotation=self.X_WF.rotation().tolist(),
+                rotation=self.X_WF.rotation().matrix().tolist(),
             ),
         )
 
@@ -516,12 +516,15 @@ class MbpAdaptor(Adaptor):
         return config_frames
 
 
-def make_plant(model_path):
+def make_plant(model_path, *, find_resource=True):
     builder = DiagramBuilder()
-    plant, scene_graph = AddMultibodyPlantSceneGraph(builder)
-    Parser(plant).AddModelFromFile(FindResourceOrThrow(model_path))
+    arbitrary_time_step = 0.01  # See #14688.
+    plant, scene_graph = AddMultibodyPlantSceneGraph(builder, time_step=arbitrary_time_step)
+    if find_resource:
+        model_path = FindResourceOrThrow(model_path)
+    Parser(plant).AddModelFromFile(model_path)
     plant.Finalize()
-    ConnectDrakeVisualizer(
+    DrakeVisualizer.AddToBuilder(
         builder=builder, scene_graph=scene_graph)
     diagram = builder.Build()
     return plant, scene_graph, diagram

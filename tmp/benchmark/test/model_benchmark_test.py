@@ -8,7 +8,8 @@ import unittest
 
 import numpy as np
 
-from pydrake.common.eigen_geometry import Isometry3, AngleAxis
+from pydrake.math import RigidTransform, RotationMatrix
+from pydrake.common.eigen_geometry import AngleAxis
 
 import model_benchmark as mut
 from model_benchmark import (
@@ -20,13 +21,14 @@ simple_expr = Expression("simple_mbp()", __name__)
 
 
 def simple_mbp():
-    return make_plant("drake/examples/double_pendulum/models/double_pendulum.sdf")
+    return make_plant("drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf")
 
 
 def corrupt_frame(frame):
-    X_err = Isometry3(
-        rotation=AngleAxis(np.pi / 2, [1, 0, 0]).rotation(),
-        translation=[0, 0, 0])
+    X_err = RigidTransform(
+        R=RotationMatrix(AngleAxis(np.pi / 2, [1, 0, 0]).rotation()),
+        p=[0, 0, 0],
+    )
     frame.X_WF = frame.X_WF.multiply(X_err)
 
 

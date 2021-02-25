@@ -9,6 +9,9 @@ drake_py_binary(
     name = "model_benchmark",
     srcs = ["model_benchmark.py"],
     testonly = 1,
+    data = [
+        "//manipulation/models/allegro_hand_description:models",
+    ],
     deps = [
         "//bindings/pydrake",
     ],
@@ -18,7 +21,6 @@ drake_py_binary(
 
 drake_py_unittest(
     name = "model_benchmark_test",
-    data = ["//examples/double_pendulum:models"],
     deps = [":model_benchmark"],
 )
 
