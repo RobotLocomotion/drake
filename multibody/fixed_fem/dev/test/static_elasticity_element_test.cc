@@ -33,6 +33,8 @@ class StaticElasticityElementTest : public ::testing::Test {
   static constexpr int kNumNodes = ElementType::Traits::kNumNodes;
   const std::array<NodeIndex, kNumNodes> dummy_node_indices = {
       {NodeIndex(0), NodeIndex(1), NodeIndex(2), NodeIndex(3)}};
+  const T kDensity{0.123};
+  const Vector3<T> kGravity_W{0, 0, -9.8};
 
   void SetUp() override {
     SetupElement();
@@ -44,7 +46,7 @@ class StaticElasticityElementTest : public ::testing::Test {
         get_reference_positions();
     ConstitutiveModelType model(1, 0.25);
     elements_.emplace_back(kZeroIndex, dummy_node_indices, model,
-                           reference_positions);
+                           reference_positions, kDensity, kGravity_W);
   }
 
   /* Set up a state with arbitrary positions. */
@@ -110,12 +112,14 @@ TEST_F(StaticElasticityElementTest, Constructor) {
 
 /* Tests that the calculation of the residual calls the calculation of the
  negative elastic force and the external force. */
-TEST_F(StaticElasticityElementTest, ResidualIsNegativeElasticForce) {
+TEST_F(StaticElasticityElementTest,
+       ResidualIsNegativeElasticForceMinusExternalForce) {
   Vector<T, kNumDofs> residual;
   element().CalcResidual(*state_, &residual);
-  // TODO(xuchenhan-tri): Modify this test to account for external forces when
-  //  external forces are added. */
-  EXPECT_TRUE(CompareMatrices(CalcNegativeElasticForce(), residual, 0));
+  Vector<T, kNumDofs> external_force = Vector<T, kNumDofs>::Zero();
+  element().AddScaledExternalForce(*state_, 1.0, &external_force);
+  EXPECT_TRUE(CompareMatrices(CalcNegativeElasticForce() - external_force,
+                              residual, 0));
 }
 
 /* Tests that the calculation of the stiffness matrix calls the calculation of

@@ -38,7 +38,7 @@ Prior to release
    issue labels for now.
 5. For release notes, on an ongoing basis, add recent commit messages to the
    release notes draft using the ``tools/release_engineering/relnotes`` tooling.
-   (Instructions for using ``relnotes`` are found atop its `source code
+   (Instructions can be found atop its source code: `relnotes.py
    <https://github.com/RobotLocomotion/drake/blob/master/tools/release_engineering/relnotes.py>`_.)
 
    a. On the first run, use ``--action=create`` to bootstrap the file.
@@ -73,8 +73,8 @@ the main body of the document:
 * Expand all acronyms (eg, MBP -> MultibodyPlant, SG -> SceneGraph).
 * Commits can be omitted if they only affect tests or non-installed examples.
   TODO(jwnimmer-tri) Explain how to check if something is installed.
-* In general you should mention removed classes and methods using their exact
-  name (for easier searching).
+* In general you should mention new bindings and deprecated/removed classes and
+  methods using their exact name (for easier searching).
 
   * In the pydrake and deprecation sections in fact you can just put the
     fully-qualified name as the whole line item; the meaning is clear from
@@ -101,6 +101,11 @@ the main body of the document:
   fully supported.  Be sure to take note of which these are, or ask on
   #platform_review slack
 
+* Keep all bullet points to one line.
+
+  * Using hard linebreaks to stay under 80 columns makes the bullet lists hard
+    to maintain over time.
+
 Cutting the release
 -------------------
 
@@ -110,66 +115,45 @@ Cutting the release
    b. Make sure https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/
       has nothing still running (modulo the ``*-coverage`` builds, which we can
       ignore)
-   c. Take
-      https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-catalina-unprovisioned-clang-bazel-nightly-snopt-packaging/
-      and
-      https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-bionic-unprovisioned-gcc-bazel-nightly-snopt-packaging/
-      and
-      https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-focal-unprovisioned-gcc-bazel-nightly-snopt-packaging/
-      builds for that night and make sure they share the same git sha (``HEAD``
-      from the moment they were launched).  Note it.
+   c. Open the latest builds from the following builds:
 
-      i. If the git sha for all three does not match, wait and try again
-         tomorrow night.
+      1) https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-catalina-unprovisioned-clang-bazel-nightly-snopt-packaging/
+      2) https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-bionic-unprovisioned-gcc-bazel-nightly-snopt-packaging/
+      3) https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-focal-unprovisioned-gcc-bazel-nightly-snopt-packaging/
 
    d. Check the logs for those packaging builds and find the URLs they posted
-      to.  It will be ``YYYYMMDD`` with today's date (they kick off after
-      midnight).  Note it.
+      to (open the latest build, go to "View as plain text", and search for
+      ``drake/nightly/drake-20``), and find the date.  It will be ``YYYYMMDD``
+      with today's date (they kick off after midnight).  All of the builds
+      should have the same date. If not, wait until the following night.
 
-      i. N.B. The packaging script uploads the file twice, with two different
-         names.  One is ``YYYYMMDD`` and one is ``latest``.  We will use the
-         ``YYYYMMDD`` one.
+   e. Use the
+      ``tools/release_engineering/download_release_candidate`` tool to download
+      and verify that all the release candidates are built from the same
+      commit.  (It's usage
+      instructions are atop its source code: `download_release_candidate.py
+      <https://github.com/RobotLocomotion/drake/blob/master/tools/release_engineering/download_release_candidate.py>`_.)
 
 10. Update the release notes to have the ``YYYYMMDD`` we choose, and to make
     sure that the nightly build git sha from the prior step matches the
     ``newest_commit`` whose changes are enumerated in the notes.
-11. Prepare the binaries
 
-   a. Make a local folder, maybe ``$HOME/tmp/v0.N.0``
-   b. Fetch all the things (
-      https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-catalina-unprovisioned-clang-bazel-nightly-snopt-packaging/
-      and
-      https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-bionic-unprovisioned-gcc-bazel-nightly-snopt-packaging/
-      and
-      https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-focal-unprovisioned-gcc-bazel-nightly-snopt-packaging/)
-
-      i. ``wget https://drake-packages.csail.mit.edu/drake/nightly/drake-YYYYMMDD-bionic.tar.gz``
-      ii. ``wget https://drake-packages.csail.mit.edu/drake/nightly/drake-YYYYMMDD-bionic.tar.gz.sha512``
-      iii. ``wget https://drake-packages.csail.mit.edu/drake/nightly/drake-YYYYMMDD-focal.tar.gz``
-      iv. ``wget https://drake-packages.csail.mit.edu/drake/nightly/drake-YYYYMMDD-focal.tar.gz.sha512``
-      v. ``wget https://drake-packages.csail.mit.edu/drake/nightly/drake-YYYYMMDD-mac.tar.gz``
-      vi. ``wget https://drake-packages.csail.mit.edu/drake/nightly/drake-YYYYMMDD-mac.tar.gz.sha512``
-
-   c. Checksums
-
-      i. ``sha512sum -c *.sha512``
-      ii. ``sha256sum drake-YYYYMMDD-bionic.tar.gz >  drake-YYYYMMDD-bionic.tar.gz.sha256``
-      iii. ``sha256sum drake-YYYYMMDD-focal.tar.gz >  drake-YYYYMMDD-focal.tar.gz.sha256``
-      iv. ``sha256sum drake-YYYYMMDD-mac.tar.gz >  drake-YYYYMMDD-mac.tar.gz.sha256``
-      v. ``sha256sum -c *.sha256``
-
-12. Merge the release notes PR
+11. Merge the release notes PR
 
    a. After merge, go to https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-bionic-unprovisioned-gcc-bazel-nightly-documentation/ and push "Build now".
 
       i. If you don't have "Build now" click "Log in" first in upper right.
 
-13. Open https://github.com/RobotLocomotion/drake/releases and choose "Draft a
+12. Open https://github.com/RobotLocomotion/drake/releases and choose "Draft a
     new release".  Note that this page does has neither history nor undo.  Be
     slow and careful!
 
     a. Tag version is: v0.N.0
     b. Target is: [the git sha from above]
+
+       *  You should select the commit from Target > Recent Commits. The search
+          via commit does not work if you don't use the correct length.
+
     c. Release title is: Drake v0.N.0
     d. The body of the release should be forked from the prior release (open the
        prior release's web page and click "Edit" to get the markdown), with
@@ -182,11 +166,13 @@ Cutting the release
        tarballs, and their 6 checksums)
     f. Choose "Save draft" and take a deep breath.
 
-14. Once the documentation build finishes, release!
+13. Once the documentation build finishes, release!
 
     a. Check that the link to drake.mit.edu docs from the GitHub release draft
        page actually works.
     b. Click "Publish release"
-    c. Notify @jamiesnape to manually tag docker images and upload the releases
-       to S3.
-    d. Party on, Wayne.
+    c. Notify @jamiesnape via a GitHub comment to manually tag docker images
+       and upload the releases to S3. Be sure to provide him with the binary
+       date, commit SHA, and release tag in the same ping.
+    d. Announce on Drake Slack, ``#general``.
+    e. Party on, Wayne.

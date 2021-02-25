@@ -37,6 +37,7 @@ const double kPoissonRatio = 0.456;
 constexpr int kNumCubeVertices = 8;
 constexpr int kNumDofs = kNumCubeVertices * kSolutionDimension;
 constexpr int kNumElements = 6;
+const T kDensity{0.123};
 
 class StaticElasticityModelTest : public ::testing::Test {
  protected:
@@ -52,7 +53,8 @@ class StaticElasticityModelTest : public ::testing::Test {
   void SetUp() override {
     geometry::VolumeMesh<T> mesh = MakeBoxTetMesh();
     ConstitutiveModelType constitutive_model(kYoungsModulus, kPoissonRatio);
-    model_.AddStaticElasticityElementsFromTetMesh(mesh, constitutive_model);
+    model_.AddStaticElasticityElementsFromTetMesh(mesh, constitutive_model,
+                                                  kDensity);
   }
 
   /* Returns an arbitrary perturbation to the reference configuration of the
@@ -73,7 +75,7 @@ class StaticElasticityModelTest : public ::testing::Test {
         math::autoDiffToValueMatrix(state.q()) + perturbation();
     Vector<T, kNumDofs> perturbed_q_autodiff;
     math::initializeAutoDiff(perturbed_q, perturbed_q_autodiff);
-    state.set_q(perturbed_q_autodiff);
+    state.SetQ(perturbed_q_autodiff);
     return state;
   }
 
@@ -88,13 +90,16 @@ TEST_F(StaticElasticityModelTest, Geometry) {
 }
 
 /* Tests that the residual of the model is the derivative of the elastic energy
- with respect to the generalized positions when there is no external force. */
-TEST_F(StaticElasticityModelTest, ResidualIsEnergyDerivative) {
+ with respect to the generalized positions plus external force. */
+TEST_F(StaticElasticityModelTest,
+       ResidualIsEnergyDerivativeMinusExternalForce) {
   FemState<ElementType> state = MakeDeformedState();
   T energy = model_.CalcElasticEnergy(state);
   VectorX<T> residual(state.num_generalized_positions());
   model_.CalcResidual(state, &residual);
-  EXPECT_TRUE(CompareMatrices(energy.derivatives(), residual,
+  VectorX<T> external_force(state.num_generalized_positions());
+  model_.CalcExternalForce(state, &external_force);
+  EXPECT_TRUE(CompareMatrices(energy.derivatives() - external_force, residual,
                               std::numeric_limits<double>::epsilon()));
 }
 
@@ -130,7 +135,8 @@ TEST_F(StaticElasticityModelTest, TangentMatrixIsResidualDerivative) {
 TEST_F(StaticElasticityModelTest, MultipleMesh) {
   geometry::VolumeMesh<T> mesh = MakeBoxTetMesh();
   ConstitutiveModelType constitutive_model(kYoungsModulus, kPoissonRatio);
-  model_.AddStaticElasticityElementsFromTetMesh(mesh, constitutive_model);
+  model_.AddStaticElasticityElementsFromTetMesh(mesh, constitutive_model,
+                                                kDensity);
 
   EXPECT_EQ(model_.num_nodes(), 2 * kNumCubeVertices);
   /* Each cube is split into 6 tetrahedra. */
@@ -143,6 +149,26 @@ TEST_F(StaticElasticityModelTest, MultipleMesh) {
   model_.CalcResidual(state, &residual);
   EXPECT_TRUE(
       CompareMatrices(residual.head(kNumDofs), residual.tail(kNumDofs), 0));
+}
+
+/* Tests that the total external force exerted on a model matches the expected
+ value. */
+TEST_F(StaticElasticityModelTest, ExternalForce) {
+  FemState<ElementType> state = MakeDeformedState();
+  const Vector3<T> gravity{1, 0, 0};
+  model_.SetGravity(gravity);
+  VectorX<T> external_force(state.num_generalized_positions());
+  model_.CalcExternalForce(state, &external_force);
+  Vector3<T> total_external_force = Vector3<T>::Zero();
+  for (int i = 0; i < model_.num_nodes(); ++i) {
+    total_external_force += external_force.template segment<3>(i * 3);
+  }
+  T volume = MakeBoxTetMesh().CalcVolume();
+  // TODO(xuchenhan-tri) We are assuming that the only external force is gravity
+  //  now. This might change in the future. Change this test accordingly.
+  Vector3<T> expected_external_force = gravity * kDensity * volume;
+  EXPECT_TRUE(CompareMatrices(total_external_force, expected_external_force,
+                              std::numeric_limits<double>::epsilon()));
 }
 }  // namespace
 }  // namespace fixed_fem

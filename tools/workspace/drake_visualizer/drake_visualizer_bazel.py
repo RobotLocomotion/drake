@@ -12,6 +12,14 @@ import sys
 # or `bazel run`.
 sys.dont_write_bytecode = True  # noqa
 
+if sys.platform == "darwin":
+    # Drake Visualizer is disabled for at least as long as it takes to
+    # transition Drake and VTK 8.2 to Python 3.9 or some alternative solution
+    # is found, see https://github.com/RobotLocomotion/drake/issues/14650 for
+    # updates.
+    sys.exit("ERROR: Drake Visualizer is disabled on macOS, see "
+             "https://git.io/Jt1BG for updates")
+
 from _drake_visualizer_builtin_scripts import (
     _exec_drake_visualizer_with_plugins,
 )

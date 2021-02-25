@@ -1,0 +1,20 @@
+---
+layout: default
+---
+
+<div class="drake-page">
+  <header class="drake-page-header">
+    <div class="contain">
+      <h1>{{ page.title }}</h1>
+    </div>
+  </header>
+  <section class="padding">
+    <div class="contain grid grid-1-2col-nav-and-body">
+      <!--
+      N.B. The page is responsible for including the front + end matter.
+      See "Caveats" in drake/doc/README.txt.
+      -->
+      {{ page.content }}
+    </div>
+  </section>
+</div>

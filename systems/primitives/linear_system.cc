@@ -63,7 +63,7 @@ unique_ptr<LinearSystem<T>> LinearSystem<T>::MakeLinearSystem(
   //
   // where x = state_vars and u = input_vars.
   const int num_states = state_vars.size();
-  DRAKE_ASSERT(num_states == dynamics.size());
+  DRAKE_DEMAND(num_states == dynamics.size());
   const int num_inputs = input_vars.size();
   const int num_outputs = output.size();
 

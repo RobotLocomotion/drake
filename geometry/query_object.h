@@ -175,8 +175,15 @@ class QueryObject {
    For two penetrating geometries g_A and g_B, it is guaranteed that they will
    map to `id_A` and `id_B` in a fixed, repeatable manner.
 
-   <h3>Scalar support</h3>
-   This method only provides double-valued penetration results.
+   <h3>Scalar and Shape Support</h3>
+    - For scalar type `double`, we support all Shape-Shape pairs *except* for
+      HalfSpace-HalfSpace. In that case, half spaces are either non-colliding or
+      have an infinite amount of penetration.
+    - For scalar type AutoDiffXd, we only support query pairs Sphere-Box,
+      Sphere-Capsule, Sphere-Cylinder, Sphere-HalfSpace, and Sphere-Sphere.
+
+   For a Shape-Shape pair in collision that is *not* supported for a given
+   scalar type, an exception is thrown.
 
    @returns A vector populated with all detected penetrations characterized as
             point pairs. The ordering of the results is guaranteed to be
@@ -184,10 +191,8 @@ class QueryObject {
             the same.
    @warning For Mesh shapes, their convex hulls are used in this query. It is
             *not* computationally efficient or particularly accurate.
-   @throws if T = AutoDiffXd and an unsupported pair of geometries are in
-   collision. Currently for T = AutoDiffXd, we support the collision between a
-   sphere with another simple geometry including box, cylinder, capsule and
-   halfspace.*/
+   @throws std::exception if unsupported pairs are in contact (see "Scalar
+   and Shape Support" for description of "unsupported pairs").*/
   std::vector<PenetrationAsPointPair<T>> ComputePointPairPenetration() const;
 
   /**

@@ -230,6 +230,7 @@ void SetOsqpSolverSettings(const SolverOptions& solver_options,
   // Default polish to true, to get an accurate solution.
   SetOsqpSolverSettingWithDefaultValue(options_int, "polish",
                                        &(settings->polish), 1);
+  SetOsqpSolverSetting(options_double, "time_limit", &(settings->time_limit));
 }
 
 template <typename C>

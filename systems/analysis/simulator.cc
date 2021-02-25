@@ -102,14 +102,14 @@ SimulatorStatus Simulator<T>::Initialize(const InitializeParams& params) {
   context_->PerturbTime(slightly_before_current_time, current_time);
 
   // Get the next timed event.
-  const T next_timed_event_time =
+  const T time_of_next_timed_event =
       system_.CalcNextUpdateTime(*context_, timed_events_.get());
 
   // Reset the context time.
   context_->SetTime(current_time);
 
   // Indicate a timed event is to be handled, if appropriate.
-  if (next_timed_event_time == current_time) {
+  if (time_of_next_timed_event == current_time) {
     time_or_witness_triggered_ = kTimeTriggered;
   } else {
     time_or_witness_triggered_ = kNothingTriggered;
@@ -240,29 +240,39 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
     // Do restricted (discrete variable) updates next.
     HandleDiscreteUpdate(merged_events->get_discrete_update_events());
 
-    // How far can we go before we have to handle timed events?
-    const T next_timed_event_time =
+    // How far can we go before we have to handle timed events? This can return
+    // infinity, meaning we don't see any timed events coming. When an earlier
+    // event trigger time is returned, at least one Event object must be
+    // returned. Note that if the returned time is the current time, we handle
+    // the Events and then restart at the same time, possibly discovering more
+    // events.
+    const T time_of_next_timed_event =
         system_.CalcNextUpdateTime(*context_, timed_events_.get());
-    DRAKE_DEMAND(next_timed_event_time >= step_start_time);
+    DRAKE_DEMAND(time_of_next_timed_event >= step_start_time);
+
+    using std::isfinite;
+    DRAKE_DEMAND(!isfinite(time_of_next_timed_event) ||
+                 timed_events_->HasEvents());
 
     // Determine whether the set of events requested by the System at
-    // next_timed_event_time includes an Update action, a Publish action, or
+    // time_of_next_timed_event includes an Update action, a Publish action, or
     // both.
     T next_update_time = std::numeric_limits<double>::infinity();
     T next_publish_time = std::numeric_limits<double>::infinity();
     if (timed_events_->HasDiscreteUpdateEvents() ||
         timed_events_->HasUnrestrictedUpdateEvents()) {
-      next_update_time = next_timed_event_time;
+      next_update_time = time_of_next_timed_event;
     }
     if (timed_events_->HasPublishEvents()) {
-      next_publish_time = next_timed_event_time;
+      next_publish_time = time_of_next_timed_event;
     }
 
-    // Integrate the continuous state forward in time.
+    // Integrate the continuous state forward in time. Note that if
+    // time_of_next_timed_event is the current time, this will return
+    // immediately without time having advanced. That still counts as a step.
     time_or_witness_triggered_ = IntegrateContinuousState(
         next_publish_time,
         next_update_time,
-        next_timed_event_time,
         boundary_time,
         witnessed_events_.get());
 
@@ -541,25 +551,25 @@ void Simulator<T>::RedetermineActiveWitnessFunctionsIfNecessary() {
 }
 
 // Integrates the continuous state forward in time while also locating
-// the first zero of any triggered witness functions.
+// the first zero of any triggered witness functions. Any of these times may
+// be set to infinity to indicate that nothing is scheduled.
+//
 // @param next_publish_time the time at which the next publish event occurs.
 // @param next_update_time the time at which the next update event occurs.
-// @param time_of_next_event the time at which the next timed event occurs.
 // @param boundary_time the maximum time to advance to.
-// @param events a non-null collection of events, which the method will clear
-//        on entry.
-// @returns the event triggers that terminated integration.
+// @param witnessed_events a non-null collection of events, which the method
+//     will clear on entry.
+// @returns the kind of event triggers that terminated integration.
 template <class T>
 typename Simulator<T>::TimeOrWitnessTriggered
 Simulator<T>::IntegrateContinuousState(
     const T& next_publish_time, const T& next_update_time,
-    const T&, const T& boundary_time,
-    CompositeEventCollection<T>* events) {
+    const T& boundary_time, CompositeEventCollection<T>* witnessed_events) {
   using std::abs;
 
   // Clear the composite event collection.
-  DRAKE_ASSERT(events);
-  events->Clear();
+  DRAKE_ASSERT(witnessed_events);
+  witnessed_events->Clear();
 
   // Save the time and current state.
   const Context<T>& context = get_context();
@@ -575,7 +585,7 @@ Simulator<T>::IntegrateContinuousState(
 
   // Attempt to integrate. Updates and boundary times are consciously
   // distinguished between. See internal documentation for
-  // IntegratorBase::StepOnceAtMost() for more information.
+  // IntegratorBase::IntegrateNoFurtherThanTime() for more information.
   typename IntegratorBase<T>::StepResult result =
       integrator_->IntegrateNoFurtherThanTime(
           next_publish_time, next_update_time, boundary_time);
@@ -618,7 +628,8 @@ Simulator<T>::IntegrateContinuousState(
         event->set_trigger_type(TriggerType::kWitness);
         event->set_event_data(std::make_unique<WitnessTriggeredEventData<T>>());
       }
-      PopulateEventDataForTriggeredWitness(t0, tf, fn, event.get(), events);
+      PopulateEventDataForTriggeredWitness(t0, tf, fn, event.get(),
+                                           witnessed_events);
     }
 
     // When successful, the isolation process produces a vector of witnesses
@@ -658,8 +669,8 @@ Simulator<T>::IntegrateContinuousState(
 
   // No witness function triggered; handle integration as usual.
   // Updates and boundary times are consciously distinguished between. See
-  // internal documentation for IntegratorBase::StepOnceAtMost() for more
-  // information.
+  // internal documentation for IntegratorBase::IntegrateNoFurtherThanTime() for
+  // more information.
   switch (result) {
     case IntegratorBase<T>::kReachedUpdateTime:
     case IntegratorBase<T>::kReachedPublishTime:

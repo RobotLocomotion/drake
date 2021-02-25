@@ -28,6 +28,8 @@
 #include <utility>
 #include <vector>
 
+#include <fmt/format.h>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
@@ -610,16 +612,20 @@ class MultibodyTreeTopology {
           "Attempting to add a mobilizer between a frame and itself");
     }
     if (IsThereAMobilizerBetweenFrames(in_frame, out_frame)) {
-      throw std::runtime_error(
-          "This multibody tree already has a mobilizer connecting these two "
-          "frames. More than one mobilizer between two frames is not allowed");
+      throw std::runtime_error(fmt::format(
+          "This multibody tree already has a mobilizer connecting "
+          "inboard frame (index={}) and outboard frame (index={}). "
+          "More than one mobilizer between two frames is not allowed.",
+          in_frame, out_frame));
     }
     const BodyIndex inboard_body = frames_[in_frame].body;
     const BodyIndex outboard_body = frames_[out_frame].body;
     if (IsThereAMobilizerBetweenBodies(inboard_body, outboard_body)) {
-      throw std::runtime_error(
-          "This multibody tree already has a mobilizer connecting these two "
-          "bodies. More than one mobilizer between two bodies is not allowed");
+      throw std::runtime_error(fmt::format(
+          "This multibody tree already has a mobilizer connecting "
+          "inboard body (index={}) and outboard body (index={}). "
+          "More than one mobilizer between two bodies is not allowed.",
+          inboard_body, outboard_body));
     }
     // Checks for graph loops. Each body can have only one inboard mobilizer.
     if (bodies_[outboard_body].inboard_mobilizer.is_valid()) {

@@ -932,6 +932,12 @@ class RotationMatrix {
   Matrix3<T> R_AB_;
 };
 
+// To enable low-level optimizations we insist that RotationMatrix<double> is
+// packed into 9 consecutive doubles, with no extra alignment padding.
+static_assert(sizeof(RotationMatrix<double>) == 9 * sizeof(double),
+    "Low-level optimizations depend on RotationMatrix<double> being stored as "
+    "9 sequential doubles in memory, with no extra memory alignment padding.");
+
 /// Abbreviation (alias/typedef) for a RotationMatrix double scalar type.
 /// @relates RotationMatrix
 using RotationMatrixd = RotationMatrix<double>;

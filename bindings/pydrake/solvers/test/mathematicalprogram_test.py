@@ -428,6 +428,29 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(np.all(eigs >= -tol))
         self.assertTrue(S[0, 1] >= -tol)
 
+    def test_nonnegative_polynomial(self):
+        # Only check if the API works.
+        prog = mp.MathematicalProgram()
+        x = prog.NewIndeterminates(3, "x")
+        (poly1, grammian1) = prog.NewNonnegativePolynomial(
+            indeterminates=sym.Variables(x), degree=4,
+            type=mp.MathematicalProgram.NonnegativePolynomial.kSdsos)
+        self.assertIsInstance(poly1, sym.Polynomial)
+        self.assertIsInstance(grammian1, np.ndarray)
+
+        grammian2 = prog.NewSymmetricContinuousVariables(2)
+        poly2 = prog.NewNonnegativePolynomial(
+            grammian=grammian2,
+            monomial_basis=(sym.Monomial(x[0]), sym.Monomial(x[1])),
+            type=mp.MathematicalProgram.NonnegativePolynomial.kDsos)
+        self.assertIsInstance(grammian2, np.ndarray)
+
+        poly3, grammian3 = prog.NewNonnegativePolynomial(
+            monomial_basis=(sym.Monomial(x[0]), sym.Monomial(x[1])),
+            type=mp.MathematicalProgram.NonnegativePolynomial.kSos)
+        self.assertIsInstance(poly3, sym.Polynomial)
+        self.assertIsInstance(grammian3, np.ndarray)
+
     def test_sos(self):
         # Find a,b,c,d subject to
         # a(0) + a(1)*x,

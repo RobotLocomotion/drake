@@ -176,6 +176,50 @@ GTEST_TEST(OsqpSolverTest, SolverOptionsTest) {
     EXPECT_NE(result.get_solver_details<OsqpSolver>().status_val, OSQP_SOLVED);
   }
 }
+
+GTEST_TEST(OsqpSolverTest, TimeLimitTest) {
+  // Intentionally create a slightly big problem to get a longer solve time.
+  int n_x = 200;
+
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(n_x);
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(n_x, n_x);
+  Eigen::VectorXd b = Eigen::VectorXd::Ones(n_x);
+  prog.AddLinearConstraint(A, -b, b, x);
+  prog.AddQuadraticErrorCost(A, -1.1 * b, x);
+
+  MathematicalProgramResult result;
+  OsqpSolver osqp_solver;
+  if (osqp_solver.available()) {
+    osqp_solver.Solve(prog, {}, {}, &result);
+    // Status codes listed in
+    // https://osqp.org/docs/interfaces/status_values.html
+    const int OSQP_SOLVED = 1;
+    const int OSQP_TIME_LIMIT_REACHED = -6;
+    EXPECT_EQ(result.get_solver_details<OsqpSolver>().status_val, OSQP_SOLVED);
+    // OSQP is not very accurate, use a loose tolerance.
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(x), -b, 1E-5));
+
+    // Now only allow one tenth of the solve time in the OSQP solver. The solver
+    // should not be able to solve the problem in time.
+    const double one_tenth_solve_time =
+        result.get_solver_details<OsqpSolver>().solve_time / 10;
+    SolverOptions solver_options;
+    solver_options.SetOption(osqp_solver.solver_id(), "time_limit",
+                             one_tenth_solve_time);
+    osqp_solver.Solve(prog, {}, solver_options, &result);
+    EXPECT_EQ(result.get_solver_details<OsqpSolver>().status_val,
+              OSQP_TIME_LIMIT_REACHED);
+
+    // Now set the options in prog.
+    prog.SetSolverOption(osqp_solver.solver_id(), "time_limit",
+                         one_tenth_solve_time);
+    osqp_solver.Solve(prog, {}, {}, &result);
+    EXPECT_EQ(result.get_solver_details<OsqpSolver>().status_val,
+              OSQP_TIME_LIMIT_REACHED);
+  }
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

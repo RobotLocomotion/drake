@@ -335,6 +335,7 @@ drake_cc_googletest(
     name = "drake_visualizer_test",
     deps = [
         ":drake_visualizer",
+        "//common/test_utilities:expect_throws_message",
         "//lcm:mock",
         "//systems/analysis:simulator",
     ],

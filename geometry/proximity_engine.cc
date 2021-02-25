@@ -139,6 +139,7 @@ namespace {
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
+    std::string warn;
     std::string err;
 
     // Tinyobj doesn't infer the search directory from the directory containing
@@ -148,11 +149,14 @@ namespace {
     const std::string obj_folder = filename.substr(0, pos + 1);
     const char* mtl_basedir = obj_folder.c_str();
 
-    bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err,
+    bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err,
                                 filename.c_str(), mtl_basedir, triangulate);
     if (!ret || !err.empty()) {
       throw std::runtime_error("Error parsing file '" + filename +
                                "' : " + err);
+    }
+    if (!warn.empty()) {
+      drake::log()->warn("Warning parsing file '{}' : {}", filename, warn);
     }
 
     if (shapes.size() != 1) {
@@ -921,6 +925,20 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return hydroelastic_geometries_;
   }
 
+  bool IsFclConvexType(GeometryId id) const {
+    auto iter = dynamic_objects_.find(id);
+    if (iter == dynamic_objects_.end()) {
+      iter = anchored_objects_.find(id);
+      if (iter == anchored_objects_.end()) {
+        throw std::logic_error(
+            fmt::format("ProximityEngine::IsFclConvexType() cannot be "
+                        "called for invalid geometry id {}.",
+                        id));
+      }
+    }
+    return iter->second->getNodeType() == fcl::GEOM_CONVEX;
+  }
+
  private:
   // Engine on one scalar can see the members of other engines.
   friend class ProximityEngineTester;
@@ -1227,6 +1245,11 @@ template <typename T>
 const hydroelastic::Geometries& ProximityEngine<T>::hydroelastic_geometries()
     const {
   return impl_->hydroelastic_geometries();
+}
+
+template <typename T>
+bool ProximityEngine<T>::IsFclConvexType(GeometryId id) const {
+  return impl_->IsFclConvexType(id);
 }
 
 }  // namespace internal

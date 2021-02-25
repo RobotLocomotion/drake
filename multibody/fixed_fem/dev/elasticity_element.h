@@ -148,6 +148,34 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
     return elastic_energy;
   }
 
+  /** Accumulates the total external force exerted on the %ElasticityElement at
+   the given `state` scaled by `scale` into the output parameter
+   `external_force`.
+   @pre external_force != nullptr. */
+  void AddScaledExternalForce(
+      const FemState<DerivedElement>& state, const T& scale,
+      EigenPtr<Vector<T, Traits::kNumDofs>> external_force) const {
+    DRAKE_ASSERT(external_force != nullptr);
+    /* So far, the only external force is gravity. */
+    *external_force += scale * gravity_force_;
+  }
+
+  /** Computes the gravity force on each node in the element using the stored
+   mass and gravity vector. */
+  void PrecomputeGravityForce(
+      const Vector<T, Traits::kSpatialDimension>& gravity) {
+    constexpr int kDim = Traits::kSpatialDimension;
+    // TODO(xuchenhan-tri): Consider caching the lumped mass locally when it is
+    //  used for more than computing the gravity force.
+    const auto& lumped_mass = mass_matrix_.rowwise().sum();
+    for (int i = 0; i < Traits::kNumNodes; ++i) {
+      /* The following computation is equivalent to performing the matrix-vector
+       multiplication of the mass matrix and the stacked gravity vector. */
+      gravity_force_.template segment<kDim>(kDim * i) =
+          lumped_mass.template segment<kDim>(kDim * i).cwiseProduct(gravity);
+    }
+  }
+
  protected:
   /** Assignment and copy constructions are prohibited. Move constructor is
    allowed so that derived elasticity elements can likewise implement the move
@@ -157,25 +185,33 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
   const ElasticityElement& operator=(const ElasticityElement&) = delete;
   ElasticityElement&& operator=(const ElasticityElement&&) = delete;
 
-  /** Constructs a new ElasticityElement. The constructor is made protected
-   because ElasticityElement should not be constructed directly. Use the
-   constructor of the derived classes instead.
+  /** Constructs a new ElasticityElement. In that process, precomputes the mass
+   matrix and the gravity force acting on the element. The constructor is made
+   protected because ElasticityElement should not be constructed directly. Use
+   the constructor of the derived classes instead.
    @param[in] element_index    The index of the new element.
    @param[in] node_indices    The node indices of the nodes of this element.
    @param[in] constitutive_model    The ConstitutiveModel to be used for this
    element.
    @param[in] reference_positions    The positions (in world frame) of the nodes
    of this element in the reference configuration.
-   @pre element_index must be valid. */
+   @param[in] denstiy    The mass density of the element with unit kg/m³.
+   @param[in] gravity    The gravitational accleration (in world frame) for the
+   new element with unit m/s².
+   @pre element_index must be valid.
+   @pre density > 0. */
   ElasticityElement(
       ElementIndex element_index,
       const std::array<NodeIndex, Traits::kNumNodes>& node_indices,
       const ConstitutiveModelType& constitutive_model,
       const Eigen::Ref<
           const Eigen::Matrix<T, Traits::kSpatialDimension, Traits::kNumNodes>>&
-          reference_positions)
+          reference_positions,
+      const T& density, const Vector<T, Traits::kSpatialDimension>& gravity)
       : FemElement<DerivedElement, DerivedTraits>(element_index, node_indices),
-        constitutive_model_(constitutive_model) {
+        constitutive_model_(constitutive_model),
+        density_(density) {
+    DRAKE_DEMAND(density_ > 0);
     /* Find the Jacobian of the change of variable function X(ξ). */
     const std::array<
         Eigen::Matrix<T, Traits::kSpatialDimension, Traits::kNaturalDimension>,
@@ -228,6 +264,11 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
     for (int q = 0; q < Traits::kNumQuadraturePoints; ++q) {
       dSdX_transpose_[q] = (dSdxi[q] * dxidX_[q]).transpose();
     }
+    /* Gravity force depends on mass, which depends on volume. Therefore we must
+     compute volume, mass, gravity in that order. */
+    mass_matrix_ = PrecomputeMassMatrix();
+
+    PrecomputeGravityForce(gravity);
   }
 
   /** Adds the negative elastic force on the nodes of this element into the
@@ -331,6 +372,15 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
     return reference_volume_;
   }
 
+  const Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs>& mass_matrix()
+      const {
+    return mass_matrix_;
+  }
+
+  const Vector<T, Traits::kNumDofs>& gravity_force() const {
+    return gravity_force_;
+  }
+
  private:
   /* Friend the base class so that FemElement::ComputeData() can reach its
    implementation. */
@@ -358,20 +408,16 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
    element. */
   std::array<Matrix3<T>, Traits::kNumQuadraturePoints> CalcDeformationGradient(
       const FemState<DerivedElement>& state) const {
-    // TODO(xuchenhan-tri): Consider abstracting this potential common operation
-    //  into FemElement.
     std::array<Matrix3<T>, Traits::kNumQuadraturePoints> F;
-    Eigen::Matrix<T, Traits::kSolutionDimension, Traits::kNumNodes> element_x;
-    const VectorX<T>& x_tmp = state.q();
-    const auto& x = Eigen::Map<const Matrix3X<T>>(
-        x_tmp.data(), Traits::kSolutionDimension,
-        x_tmp.size() / Traits::kSolutionDimension);
-    for (int i = 0; i < Traits::kNumNodes; ++i) {
-      element_x.col(i) = x.col(this->node_indices()[i]);
-    }
+    constexpr int kNumDofs = Traits::kSolutionDimension * Traits::kNumNodes;
+    const Vector<T, kNumDofs> element_x =
+        this->ExtractElementDofs(this->node_indices(), state.q());
+    const auto& element_x_reshaped = Eigen::Map<
+        const Eigen::Matrix<T, Traits::kSolutionDimension, Traits::kNumNodes>>(
+        element_x.data(), Traits::kSolutionDimension, Traits::kNumNodes);
     const std::array<typename IsoparametricElementType::JacobianMatrix,
                      Traits::kNumQuadraturePoints>
-        dxdxi = isoparametric_element_.CalcJacobian(element_x);
+        dxdxi = isoparametric_element_.CalcJacobian(element_x_reshaped);
     for (int q = 0; q < Traits::kNumQuadraturePoints; ++q) {
       F[q] = dxdxi[q] * dxidX_[q];
     }
@@ -427,6 +473,40 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
     return static_cast<const DerivedElement&>(*this);
   }
 
+  Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs> PrecomputeMassMatrix()
+      const {
+    Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs> mass =
+        Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs>::Zero();
+    const std::array<Vector<T, Traits::kNumNodes>,
+                     Traits::kNumQuadraturePoints>& S =
+        isoparametric_element().GetShapeFunctions();
+    /* S_mat is the matrix representation of S. */
+    Eigen::Matrix<T, Traits::kNumNodes, Traits::kNumQuadraturePoints> S_mat;
+    for (int q = 0; q < Traits::kNumQuadraturePoints; ++q) {
+      S_mat.col(q) = S[q];
+    }
+    /* weighted_S stores the shape function weighted by the reference
+     volume of the quadrature point. */
+    Eigen::Matrix<T, Traits::kNumNodes, Traits::kNumQuadraturePoints>
+        weighted_S(S_mat);
+    for (int q = 0; q < Traits::kNumQuadraturePoints; ++q) {
+      weighted_S.col(q) *= reference_volume_[q];
+    }
+    /* weighted_SST = weighted_S * Sᵀ. The ij-th entry approximates the integral
+     ∫SᵢSⱼ dX */
+    Eigen::Matrix<T, Traits::kNumNodes, Traits::kNumNodes> weighted_SST =
+        weighted_S * S_mat.transpose();
+    constexpr int kDim = Traits::kSolutionDimension;
+    for (int i = 0; i < Traits::kNumNodes; ++i) {
+      for (int j = 0; j < Traits::kNumNodes; ++j) {
+        mass.template block<kDim, kDim>(kDim * i, kDim * j) =
+            Eigen::Matrix<T, kDim, kDim>::Identity() * weighted_SST(i, j) *
+            density_;
+      }
+    }
+    return mass;
+  }
+
   // TODO(xuchenhan-tri): Consider bumping this up into FemElement when new
   //  FemElement types are added.
   /* The quadrature rule used for this element. */
@@ -452,6 +532,13 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
    reference domain, sum f(q)*reference_volume_[q] over all the quadrature
    points q in the element. */
   std::array<T, Traits::kNumQuadraturePoints> reference_volume_;
+  /* The mass density of the element in the reference configuration with
+   unit kg/m³. */
+  T density_;
+  /* Precomputed mass matrix. */
+  Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs> mass_matrix_;
+  /* Gravity force on the element. */
+  Vector<T, Traits::kNumDofs> gravity_force_;
 };
 }  // namespace fixed_fem
 }  // namespace multibody

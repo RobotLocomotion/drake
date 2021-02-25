@@ -73,6 +73,7 @@ GTEST_TEST(PydrakePybindTest, PyKeepAlive) {
 
 // Class which has a copy constructor, for testing `DefCopyAndDeepCopy`.
 struct ExampleDefCopyAndDeepCopy {
+  explicit ExampleDefCopyAndDeepCopy(int v) : value(v) {}
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ExampleDefCopyAndDeepCopy);
   int value{};
   bool operator==(const ExampleDefCopyAndDeepCopy& other) const {
@@ -86,7 +87,7 @@ GTEST_TEST(PydrakePybindTest, DefCopyAndDeepCopy) {
     using Class = ExampleDefCopyAndDeepCopy;
     py::class_<Class> cls(m, "ExampleDefCopyAndDeepCopy");
     cls  // BR
-        .def(py::init([](int value) { return Class{value}; }))
+        .def(py::init([](int value) { return Class(value); }))
         .def(py::self == py::self);
     DefCopyAndDeepCopy(&cls);
   }

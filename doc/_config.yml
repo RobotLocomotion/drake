@@ -1,13 +1,106 @@
-# Jekyll config file
+# For more information, see: https://jekyllrb.com/docs/configuration/
 
-title: drake
+url: "" # the base hostname & protocol for the site
+baseurl: "" # the subpath of the site
+title: Drake
+
+# N.B. Items under this `custom` section are not part of the standard Jekyll
+# configuration schema; instead, they are used by the relevant templates.
+custom:
+  header_logo: /images/drake-logo-white.svg
+  footer_logo: /images/drake-logo.svg
+  hero_image: /images/drake-dragon.png
+
+  meta:
+    author: Drake Developers
+    content: |
+      Drake ("dragon" in Middle English) is a C++ toolbox started by the Robot
+      Locomotion Group at the MIT Computer Science and Artificial Intelligence
+      Lab (CSAIL). The development team has now grown significantly, with core
+      development led by the Toyota Research Institute. It is a collection of
+      tools for analyzing the dynamics of our robots and building control
+      systems for them, with a heavy emphasis on optimization-based design/
+      analysis.
+
+  header:
+    menu_items:
+      - title: 'Home'
+        url: '/'
+      - title: 'Installation'
+        url: '/installation.html'
+      - title: 'Gallery'
+        url: '/gallery.html'
+      - title: 'API Documentation'
+        subfolderitems:
+        - page: 'C++'
+          url: https://drake.mit.edu/doxygen_cxx/index.html
+        - page: 'Python'
+          url: https://drake.mit.edu/pydrake/index.html
+      - title: 'Resources'
+        subfolderitems:
+        - page: 'Getting Help'
+          url: /getting_help.html
+        - page: 'Tutorials'
+          url: 'https://github.com/RobotLocomotion/drake/tree/master/tutorials'
+        - page: 'Python Bindings'
+          url: '/python_bindings.html'
+        - page: 'For Developers'
+          url: /developers.html
+        - page: 'Credits'
+          url: /credits.html
+
+  footer:
+    menu_items:
+      - title: 'C++'
+        url: https://drake.mit.edu/doxygen_cxx/index.html
+      - title: 'Python'
+        url: https://drake.mit.edu/pydrake/index.html
+
+# Using `:path` in the permalink allows us to preserve underscores in the
+# names, so we have a best-effort backwards-compatibility with the Sphinx URLs.
+# (Otherwise, the URL slugs replace `_` with `-`.)
+collections:
+  # Normal pages, listed at the root.
+  pages:
+    output: true
+    permalink: /:path
+  # Release notes, index and listed under `/release_notes`.
+  release-notes:
+    output: true
+    permalink: /release_notes/:path
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: "default"
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "page"
+  - scope:
+      path: ""
+      type: "release-notes"
+    values:
+      layout: "release"
 
 exclude:
+  # Bazel binaries + Python source files.
   - gen_jekyll
   - gen_jekyll.py
   - jekyll_base.py
   - serve_jekyll
   - serve_jekyll.py
 
-keep_files:
-  - js
+kramdown:
+  # https://kramdown.gettalong.org/converter/html.html#options
+  auto_ids: true
+  toc_levels: [1,2]
+  show_warnings: true
+
+liquid:
+  # TODO(eric.cousineau): Make these stricter at some point.
+  error_mode: warn
+  strict_variables: false
+  strict_filters: false

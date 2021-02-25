@@ -7,9 +7,9 @@ def tinyobjloader_repository(
         mirrors = None):
     github_archive(
         name = name,
-        repository = "syoyo/tinyobjloader",
-        commit = "v1.0.6",
-        sha256 = "19ee82cd201761954dd833de551edb570e33b320d6027e0d91455faf7cd4c341",  # noqa
+        repository = "tinyobjloader/tinyobjloader",
+        commit = "9173980d1de273b17eba5e10eb189e8b4be89425",
+        sha256 = "fe06bf462bf386ea7f6bf34f94c78099c849df348d4a6df681707fba5b5b643c",  # noqa
         build_file = "@drake//tools/workspace/tinyobjloader:package.BUILD.bazel",  # noqa
         mirrors = mirrors,
         patches = [
@@ -18,5 +18,8 @@ def tinyobjloader_repository(
             # dependency of Drake and we don't want the definition to leak into
             # all target that consume Drake.
             "@drake//tools/workspace/tinyobjloader:double_precision.patch",
+            # We replace tinyobjloader's implementation of float parsing with a
+            # faster call to strtod_l.
+            "@drake//tools/workspace/tinyobjloader:faster_float_parsing.patch",
         ],
     )

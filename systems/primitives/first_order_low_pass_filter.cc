@@ -22,8 +22,8 @@ FirstOrderLowPassFilter<T>::FirstOrderLowPassFilter(
           SystemTypeTag<FirstOrderLowPassFilter>{},
           time_constants.size(), time_constants.size()),
       time_constants_(time_constants) {
-  DRAKE_ASSERT(time_constants.size() > 0);
-  DRAKE_ASSERT((time_constants.array() > 0).all());
+  DRAKE_DEMAND(time_constants.size() > 0);
+  DRAKE_DEMAND((time_constants.array() > 0).all());
   this->DeclareContinuousState(time_constants.size());
 }
 
@@ -56,7 +56,7 @@ void FirstOrderLowPassFilter<T>::set_initial_output_value(
     Context<T>* context, const Eigen::Ref<const VectorX<T>>& z0) const {
   VectorBase<T>& state_vector = context->get_mutable_continuous_state_vector();
   // Asserts that the input value is a column vector of the appropriate size.
-  DRAKE_ASSERT(z0.rows() == state_vector.size() && z0.cols() == 1);
+  DRAKE_DEMAND(z0.rows() == state_vector.size() && z0.cols() == 1);
   state_vector.SetFromVector(z0);
 }
 

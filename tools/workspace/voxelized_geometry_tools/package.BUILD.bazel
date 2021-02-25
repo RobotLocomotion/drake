@@ -33,6 +33,7 @@ cc_library(
     ],
     hdrs = [
         "include/voxelized_geometry_tools/cuda_voxelization_helpers.h",
+        "include/voxelized_geometry_tools/device_voxelization_interface.hpp",
     ],
     includes = ["include"],
     deps = [
@@ -47,6 +48,7 @@ cc_library(
         "src/voxelized_geometry_tools/dummy_opencl_voxelization_helpers.cc",
     ],
     hdrs = [
+        "include/voxelized_geometry_tools/device_voxelization_interface.hpp",
         "include/voxelized_geometry_tools/opencl_voxelization_helpers.h",
     ],
     includes = ["include"],
@@ -60,15 +62,14 @@ cc_library(
     name = "pointcloud_voxelization",
     srcs = [
         "src/voxelized_geometry_tools/cpu_pointcloud_voxelization.cpp",
-        "src/voxelized_geometry_tools/cuda_pointcloud_voxelization.cpp",
-        "src/voxelized_geometry_tools/opencl_pointcloud_voxelization.cpp",
+        "src/voxelized_geometry_tools/device_pointcloud_voxelization.cpp",
         "src/voxelized_geometry_tools/pointcloud_voxelization.cpp",
     ],
     hdrs = [
         "include/voxelized_geometry_tools/cpu_pointcloud_voxelization.hpp",
-        "include/voxelized_geometry_tools/cuda_pointcloud_voxelization.hpp",
         "include/voxelized_geometry_tools/cuda_voxelization_helpers.h",
-        "include/voxelized_geometry_tools/opencl_pointcloud_voxelization.hpp",
+        "include/voxelized_geometry_tools/device_pointcloud_voxelization.hpp",
+        "include/voxelized_geometry_tools/device_voxelization_interface.hpp",
         "include/voxelized_geometry_tools/opencl_voxelization_helpers.h",
         "include/voxelized_geometry_tools/pointcloud_voxelization.hpp",
         "include/voxelized_geometry_tools/pointcloud_voxelization_interface.hpp",  # noqa

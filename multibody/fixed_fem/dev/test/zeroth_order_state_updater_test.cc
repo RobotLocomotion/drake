@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/fixed_fem/dev/test/dummy_element.h"
 
 namespace drake {
@@ -15,17 +16,26 @@ class ZerothOrderStateUpdaterTest : public ::testing::Test {
   ZerothOrderStateUpdater<FemState<DummyElement<0>>> state_updater;
 };
 
-TEST_F(ZerothOrderStateUpdaterTest, StateDerivative) {
+TEST_F(ZerothOrderStateUpdaterTest, Weights) {
   EXPECT_TRUE(
       CompareMatrices(state_updater.weights(), Vector3<double>(1, 0, 0), 0));
 }
 
 TEST_F(ZerothOrderStateUpdaterTest, UpdateState) {
-  VectorX<double> q = Vector4<double>(1.23, 2.34, 3.45, 4.56);
-  VectorX<double> dq = Vector4<double>(0.23, 0.34, 0.45, 0.56);
+  const VectorX<double> q = Vector4<double>(1.23, 2.34, 3.45, 4.56);
+  const VectorX<double> dq = Vector4<double>(0.23, 0.34, 0.45, 0.56);
   FemState<DummyElement<0>> state(q);
   state_updater.UpdateState(dq, &state);
   EXPECT_TRUE(CompareMatrices(state.q(), q + dq, 0));
+}
+
+TEST_F(ZerothOrderStateUpdaterTest, IntegrateTime) {
+  const VectorX<double> q = Vector4<double>(1.23, 2.34, 3.45, 4.56);
+  FemState<DummyElement<0>> prev_state(q);
+  FemState<DummyElement<0>> new_state(prev_state);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      state_updater.AdvanceOneTimeStep(prev_state, &new_state), std::exception,
+      "There is no notion of time in a zeroth order ODE.");
 }
 }  // namespace
 }  // namespace test

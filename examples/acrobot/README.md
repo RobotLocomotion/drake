@@ -115,9 +115,6 @@ in one process and the model in a separate process, so that the same
 controller process can be run against a real robot.  An example of this
 pattern is provided here.
 
-:bangbang: #14524 :bangbang: | [This example does not currently work](https://github.com/RobotLocomotion/drake/issues/14524)
-:---: | :---:
-
 ### `//examples/acrobot:`*spong_controller_w_lcm*
 
 This runs the same control as `run_swing_up` above, but instead of connecting

@@ -22,6 +22,41 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "constitutive_model_utilities",
+    hdrs = [
+        "constitutive_model_utilities.h",
+    ],
+)
+
+drake_cc_library(
+    name = "corotated_model",
+    hdrs = [
+        "corotated_model.h",
+    ],
+    deps = [
+        ":constitutive_model",
+        ":constitutive_model_utilities",
+        ":corotated_model_cache_entry",
+        ":matrix_utilities",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "corotated_model_cache_entry",
+    hdrs = [
+        "corotated_model_cache_entry.h",
+    ],
+    deps = [
+        ":deformation_gradient_cache_entry",
+        ":matrix_utilities",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "damping_model",
     hdrs = [
         "damping_model.h",
@@ -40,6 +75,18 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "dirichlet_boundary_condition",
+    hdrs = [
+        "dirichlet_boundary_condition.h",
+    ],
+    deps = [
+        ":fem_indexes",
+        ":fem_state",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "dynamic_elasticity_element",
     hdrs = [
         "dynamic_elasticity_element.h",
@@ -47,6 +94,18 @@ drake_cc_library(
     deps = [
         ":damping_model",
         ":elasticity_element",
+    ],
+)
+
+drake_cc_library(
+    name = "dynamic_elasticity_model",
+    hdrs = [
+        "dynamic_elasticity_model.h",
+    ],
+    deps = [
+        ":damping_model",
+        ":elasticity_model",
+        "//geometry/proximity:volume_mesh",
     ],
 )
 
@@ -133,6 +192,22 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "fem_solver",
+    hdrs = [
+        "fem_solver.h",
+    ],
+    deps = [
+        ":dirichlet_boundary_condition",
+        ":eigen_conjugate_gradient_solver",
+        ":fem_model",
+        ":linear_system_solver",
+        ":state_updater",
+        "//common:essential",
+        "//multibody/contact_solvers:sparse_linear_operator",
+    ],
+)
+
+drake_cc_library(
     name = "fem_state",
     hdrs = [
         "fem_state.h",
@@ -160,6 +235,7 @@ drake_cc_library(
     ],
     deps = [
         ":constitutive_model",
+        ":constitutive_model_utilities",
         ":linear_constitutive_model_cache_entry",
         "//common:default_scalars",
         "//common:essential",
@@ -196,6 +272,26 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//multibody/contact_solvers:linear_operator",
+    ],
+)
+
+drake_cc_library(
+    name = "matrix_utilities",
+    hdrs = [
+        "matrix_utilities.h",
+    ],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "newmark_scheme",
+    hdrs = [
+        "newmark_scheme.h",
+    ],
+    deps = [
+        ":state_updater",
     ],
 )
 
@@ -263,6 +359,26 @@ drake_cc_library(
 # === test/ ===
 
 drake_cc_library(
+    name = "test_utilities",
+    testonly = 1,
+    hdrs = ["test/test_utilities.h"],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "dirichlet_boundary_condition_test",
+    deps = [
+        ":dirichlet_boundary_condition",
+        ":dummy_element",
+        ":fem_state",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_library(
     name = "dummy_element",
     testonly = 1,
     hdrs = ["test/dummy_element.h"],
@@ -281,6 +397,21 @@ drake_cc_googletest(
         ":linear_simplex_element",
         ":simplex_gaussian_quadrature",
         "//common/test_utilities:eigen_matrix_compare",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "dynamic_elasticity_model_test",
+    deps = [
+        ":dynamic_elasticity_element",
+        ":dynamic_elasticity_model",
+        ":linear_constitutive_model",
+        ":linear_simplex_element",
+        ":newmark_scheme",
+        ":simplex_gaussian_quadrature",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry/proximity:make_box_mesh",
         "//math:gradient",
     ],
 )
@@ -316,6 +447,23 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "fem_solver_test",
+    deps = [
+        ":eigen_conjugate_gradient_solver",
+        ":fem_solver",
+        ":linear_constitutive_model",
+        ":linear_simplex_element",
+        ":simplex_gaussian_quadrature",
+        ":static_elasticity_element",
+        ":static_elasticity_model",
+        ":zeroth_order_state_updater",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry/proximity:make_box_mesh",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
     name = "fem_state_test",
     deps = [
         ":dummy_element",
@@ -327,22 +475,24 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "hyperelastic_constitutive_model_test",
+    deps = [
+        ":corotated_model",
+        ":linear_constitutive_model",
+        ":test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
     name = "isoparametric_element_test",
     deps = [
         ":isoparametric_element",
         ":linear_simplex_element",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "linear_constitutive_model_test",
-    deps = [
-        ":linear_constitutive_model",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
-        "//math:gradient",
     ],
 )
 
@@ -358,6 +508,27 @@ drake_cc_googletest(
     name = "linear_simplex_element_test",
     deps = [
         ":linear_simplex_element",
+    ],
+)
+
+drake_cc_googletest(
+    name = "matrix_utilities_test",
+    deps = [
+        ":matrix_utilities",
+        ":test_utilities",
+        "//common:essential",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "newmark_scheme_test",
+    deps = [
+        ":dummy_element",
+        ":newmark_scheme",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -402,6 +573,7 @@ drake_cc_googletest(
         ":dummy_element",
         ":zeroth_order_state_updater",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

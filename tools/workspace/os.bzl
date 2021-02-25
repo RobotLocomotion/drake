@@ -106,15 +106,13 @@ def _determine_macos(repository_ctx):
         return _make_result(error = error_prologue + sw_vers.error)
 
     major_minor_versions = sw_vers.stdout.strip().split(".")[:2]
-    macos_release = ".".join(major_minor_versions)
+    if int(major_minor_versions[0]) < 11:
+        macos_release = ".".join(major_minor_versions)
+    else:
+        macos_release = major_minor_versions[0]
 
     # Match supported macOS release(s).
-    if macos_release in ["10.15", "11.0"]:
-        if macos_release == "11.0":
-            print(
-                "WARNING: macOS Big Sur 11.0 is NOT yet supported. " +
-                "Compilation, tests, and/or other functionality may fail.",
-            )
+    if macos_release in ["10.15", "11"]:
         return _make_result(macos_release = macos_release)
 
     # Nothing matched.
@@ -135,7 +133,8 @@ def determine_os(repository_ctx):
         - error: str iff any error occurred, else None
         - distribution: str either "ubuntu" or "macos" if no error
         - is_macos: True iff on a supported macOS release, else False
-        - macos_release: str like "10.15" iff on a supported macOS, else None
+        - macos_release: str like "10.15" or "11" iff on a supported macOS,
+                         else None
         - is_ubuntu: True iff on a supported Ubuntu version, else False
         - ubuntu_release: str like "18.04" iff on a supported ubuntu, else None
     """

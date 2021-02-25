@@ -39,6 +39,21 @@ drake_py_library(
     deps = ["@rules_python//python/runfiles"],
 )
 
+filegroup(
+    name = "images",
+    srcs = [
+        "images/drake-dragon.png",
+        "images/drake-logo.svg",
+        "images/drake-logo-white.svg",
+        "images/favicon.ico",
+        "images/favicon.png",
+        "images/jenkins_bot_reviewable_comment.png",
+        "images/logo_w_text.jpg",
+        "images/mathematical_program.svg",
+        "images/systems.svg",
+    ],
+)
+
 drake_py_binary(
     name = "gen_sphinx",
     srcs = ["gen_sphinx.py"],
@@ -47,12 +62,8 @@ drake_py_binary(
         "**/*.rst",
     ]) + [
         "conf.py",
-        "images/favicon.ico",
-        "images/jenkins_bot_reviewable_comment.png",
-        "images/logo_w_text.jpg",
-        "images/mathematical_program.svg",
-        "images/systems.svg",
         "sample_vimrc",
+        ":images",
     ],
     tags = _DEFAULT_BINARY_TAGS,
     test_rule_args = ["--out_dir=<test>"],
@@ -77,12 +88,30 @@ drake_py_library(
 )
 
 filegroup(
+    name = "third_party_data",
+    srcs = glob([
+        "third_party/**/*",
+    ]),
+)
+
+filegroup(
     name = "jekyll_data",
     srcs = [
         "_config.yml",
-        "_js/drake.js",
-        "_layouts/default.html",
         "index.md",
+        "sample_vimrc",
+    ] + glob([
+        "_includes/*.html",
+        "_includes/*.md",
+        "_layouts/*.html",
+        "_pages/*.md",
+        "_release-notes/*.md",
+        "assets/**/*.css",
+        "assets/**/*.js",
+    ]),
+    data = [
+        ":images",
+        ":third_party_data",
     ],
 )
 

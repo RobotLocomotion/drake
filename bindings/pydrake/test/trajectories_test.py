@@ -174,7 +174,7 @@ class TestTrajectories(unittest.TestCase):
         pp1 = PiecewisePolynomial.FirstOrderHold([0., 1., 2.], x)
         pp2 = PiecewisePolynomial.FirstOrderHold([2., 3., 4.], x)
         self.assertTrue(pp1.isApprox(
-            other=pp1, tol=1e-14, tol_type=ToleranceType.relative))
+            other=pp1, tol=1e-14, tol_type=ToleranceType.kRelative))
         pp1.ConcatenateInTime(other=pp2)
         self.assertEqual(pp1.end_time(), 4.)
 

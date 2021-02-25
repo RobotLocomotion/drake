@@ -83,10 +83,23 @@ class DummyElement final
    access the private implementations of this class. */
   friend Base;
 
-  /* Implements FemElement::ComputeData(). */
+  /* Implements FemElement::ComputeData(). Returns a dummy data if `state` is
+    empty. Otherwise return the sum of the last entries in each state. */
   typename Traits::Data DoComputeData(
       const FemState<DummyElement>& state) const {
-    return dummy_data();
+    const int num_dofs = state.num_generalized_positions();
+    if (state.num_generalized_positions() == 0) {
+      return dummy_data();
+    }
+    typename Traits::Data data;
+    data.value = state.q()(num_dofs - 1);
+    if constexpr (OdeOrder >= 1) {
+      data.value += state.qdot()(num_dofs - 1);
+    }
+    if constexpr (OdeOrder == 2) {
+      data.value += state.qddot()(num_dofs - 1);
+    }
+    return data;
   }
 
   /* Implements FemElement::CalcResidual(). */
