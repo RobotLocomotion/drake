@@ -166,6 +166,10 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
         return make_unique<geometry::Mesh>(file_name, scale);
       }
     }
+    case sdf::GeometryType::HEIGHTMAP: {
+      throw std::runtime_error(
+          "Drake does not support the <heightmap> SDFormat element");
+    }
   }
 
   DRAKE_UNREACHABLE();
@@ -206,6 +210,10 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
     case sdf::GeometryType::SPHERE: {
       // X_LC = X_LG for these geometries.
       break;
+    }
+    case sdf::GeometryType::HEIGHTMAP: {
+      throw std::runtime_error(
+          "Drake does not support the <heightmap> SDFormat element");
     }
     case sdf::GeometryType::PLANE: {
       const sdf::Plane& shape = *sdf_geometry.PlaneShape();
@@ -351,6 +359,10 @@ RigidTransformd MakeGeometryPoseFromSdfCollision(
     case sdf::GeometryType::SPHERE: {
       // X_LC = X_LG for these geometries.
       break;
+    }
+    case sdf::GeometryType::HEIGHTMAP: {
+      throw std::runtime_error(
+          "Drake does not support the <heightmap> SDFormat element");
     }
     case sdf::GeometryType::PLANE: {
       const sdf::Plane& shape = *sdf_geometry.PlaneShape();
