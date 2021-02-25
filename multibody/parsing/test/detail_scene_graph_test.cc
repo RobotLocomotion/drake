@@ -343,6 +343,17 @@ GTEST_TEST(SceneGraphParserDetail, MakeConvexFromSdfGeometry) {
   EXPECT_EQ(convex->scale(), 3);
 }
 
+// Verify that MakeShapeFromSdfGeometry does nothing with a heightmap.
+GTEST_TEST(SceneGraphParserDetail, MakeHeightmapFromSdfGeometry) {
+  unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
+      "<heightmap>"
+      "  <uri>/path/to/some/heightmap.png</uri>"
+      "</heightmap>");
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(
+      *sdf_geometry, NoopResolveFilename);
+  EXPECT_EQ(shape, nullptr);
+}
+
 // Verify MakeGeometryInstanceFromSdfVisual can make a GeometryInstance from an
 // sdf::Visual.
 // Since we test MakeShapeFromSdfGeometry separately, there is no need to unit
@@ -430,7 +441,7 @@ GTEST_TEST(SceneGraphParserDetail, VisualGeometryNameRequirements) {
 
   // These whitespace characters are *not* considered to be whitespace by SDF.
   std::vector<std::pair<char, std::string>> ignored_whitespace{
-      {'\n', "\\n"}, {'\v', "\\v"}, {'\r', "\\r"}, {'\f', "\\f"}};
+      {'\v', "\\v"}, {'\f', "\\f"}};
   for (const auto& pair : ignored_whitespace) {
     // Case: Whitespace-only name.
     EXPECT_TRUE(valid_parse(fmt::format(visual_tag, pair.first)))
@@ -824,7 +835,7 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
         "</visual>");
     IllustrationProperties material =
         MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
-    Vector4<double> expected_diffuse{0, 1, 0, 1};
+    Vector4<double> expected_diffuse{0, 1, 1, 1};
     EXPECT_TRUE(expect_phong(material, true, expected_diffuse, {}, {}, {}, {}));
   }
 

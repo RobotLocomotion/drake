@@ -166,6 +166,9 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
         return make_unique<geometry::Mesh>(file_name, scale);
       }
     }
+    case sdf::GeometryType::HEIGHTMAP: {
+      return std::unique_ptr<geometry::Shape>(nullptr);
+    }
   }
 
   DRAKE_UNREACHABLE();
@@ -200,6 +203,7 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
   // other geometry types whenever X_LC != X_LG.
   switch (sdf_geometry.Type()) {
     case sdf::GeometryType::EMPTY:  // Also includes custom geometries.
+    case sdf::GeometryType::HEIGHTMAP:
     case sdf::GeometryType::BOX:
     case sdf::GeometryType::CYLINDER:
     case sdf::GeometryType::MESH:
@@ -345,6 +349,7 @@ RigidTransformd MakeGeometryPoseFromSdfCollision(
   const sdf::Geometry& sdf_geometry = *sdf_collision.Geom();
   switch (sdf_geometry.Type()) {
     case sdf::GeometryType::EMPTY:
+    case sdf::GeometryType::HEIGHTMAP:
     case sdf::GeometryType::BOX:
     case sdf::GeometryType::CYLINDER:
     case sdf::GeometryType::MESH:
