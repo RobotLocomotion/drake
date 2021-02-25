@@ -136,7 +136,7 @@ class DirectTranscriptionConstraint : public solvers::Constraint {
 };
 
 double get_period(const System<double>* system) {
-  std::optional<PeriodicEventData> periodic_data =
+  std::optional<PeriodicTriggerData> periodic_data =
       system->GetUniquePeriodicDiscreteUpdateAttribute();
   DRAKE_DEMAND(periodic_data.has_value());
   DRAKE_DEMAND(periodic_data->offset_sec() == 0.0);

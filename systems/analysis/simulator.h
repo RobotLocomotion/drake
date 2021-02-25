@@ -741,7 +741,7 @@ class Simulator {
       const VectorX<T>& w0,
       const T& t0, const VectorX<T>& x0, const T& tf,
       std::vector<const WitnessFunction<T>*>* triggered_witnesses);
-  void PopulateEventDataForTriggeredWitness(
+  void PopulateTriggerDataForTriggeredWitness(
       const T& t0, const T& tf, const WitnessFunction<T>* witness,
       Event<T>* event, CompositeEventCollection<T>* events) const;
   static bool DidWitnessTrigger(

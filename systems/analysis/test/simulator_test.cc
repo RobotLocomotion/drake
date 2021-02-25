@@ -51,7 +51,7 @@ namespace {
 
 // Stateless system with a DoCalcTimeDerivatives implementation. This class
 // will serve to confirm that the time derivative calculation is not called.
-class StatelessSystemPlusDerivs : public systems::LeafSystem<double> {
+class StatelessSystemPlusDerivs final : public systems::LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StatelessSystemPlusDerivs)
 
  public:
@@ -64,7 +64,7 @@ class StatelessSystemPlusDerivs : public systems::LeafSystem<double> {
  private:
   void DoCalcTimeDerivatives(
       const Context<double>& context,
-      ContinuousState<double>* derivatives) const override {
+      ContinuousState<double>* derivatives) const final {
     // Modifying system members in DoCalcTimeDerivatives() is an anti-pattern.
     // It is done here only to simplify the testing code.
     do_calc_time_derivatives_called_ = true;
@@ -74,7 +74,7 @@ class StatelessSystemPlusDerivs : public systems::LeafSystem<double> {
 };
 
 // Empty diagram
-class StatelessDiagram : public Diagram<double> {
+class StatelessDiagram final : public Diagram<double> {
  public:
     DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StatelessDiagram)
 
@@ -98,7 +98,7 @@ class StatelessDiagram : public Diagram<double> {
 };
 
 // Diagram for testing witness functions.
-class ExampleDiagram : public Diagram<double> {
+class ExampleDiagram final : public Diagram<double> {
  public:
     DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExampleDiagram)
 
@@ -187,7 +187,7 @@ GTEST_TEST(SimulatorTest, DiagramWitness) {
 
 // A composite system using the logistic system with the clock-based
 // witness function.
-class CompositeSystem : public analysis_test::LogisticSystem<double> {
+class CompositeSystem final : public analysis_test::LogisticSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CompositeSystem)
 
@@ -216,7 +216,7 @@ class CompositeSystem : public analysis_test::LogisticSystem<double> {
  protected:
   void DoGetWitnessFunctions(
       const Context<double>&,
-      std::vector<const WitnessFunction<double>*>* w) const override {
+      std::vector<const WitnessFunction<double>*>* w) const final {
     w->push_back(clock_witness_.get());
     w->push_back(logistic_witness_.get());
   }
@@ -242,7 +242,7 @@ class CompositeSystem : public analysis_test::LogisticSystem<double> {
 };
 
 // An empty system using two clock witnesses.
-class TwoWitnessStatelessSystem : public LeafSystem<double> {
+class TwoWitnessStatelessSystem final : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TwoWitnessStatelessSystem)
 
@@ -266,14 +266,14 @@ class TwoWitnessStatelessSystem : public LeafSystem<double> {
  protected:
   void DoGetWitnessFunctions(
       const Context<double>&,
-      std::vector<const WitnessFunction<double>*>* w) const override {
+      std::vector<const WitnessFunction<double>*>* w) const final {
     w->push_back(witness1_.get());
     w->push_back(witness2_.get());
   }
 
   void DoPublish(
       const Context<double>& context,
-      const std::vector<const PublishEvent<double>*>& events) const override {
+      const std::vector<PublishEvent<double>>&) const final {
     if (publish_callback_ != nullptr) publish_callback_(context);
   }
 
@@ -1036,7 +1036,7 @@ GTEST_TEST(SimulatorTest, SpringMass) {
 // doxygen example in the systems/discrete_systems.h module. This class should
 // be as identical to the code there as possible; ideally, just a
 // copy-and-paste.
-class ExampleDiscreteSystem : public LeafSystem<double> {
+class ExampleDiscreteSystem final : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExampleDiscreteSystem)
 
@@ -1110,7 +1110,7 @@ GTEST_TEST(SimulatorTest, ExampleDiscreteSystem) {
 //   y_n     = x_n
 // With proper initial conditions, this should produce a one-step-delayed
 // sample of the periodic function, so that y_n = sin(1.234 * (n-1)*h).
-class SinusoidalDelayHybridSystem : public LeafSystem<double> {
+class SinusoidalDelayHybridSystem final : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SinusoidalDelayHybridSystem)
 
@@ -1194,7 +1194,7 @@ GTEST_TEST(SimulatorTest, SinusoidalHybridSystem) {
 }
 
 // A continuous system that outputs unity plus time.
-class ShiftedTimeOutputter : public LeafSystem<double> {
+class ShiftedTimeOutputter final : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ShiftedTimeOutputter)
 
@@ -1214,7 +1214,7 @@ class ShiftedTimeOutputter : public LeafSystem<double> {
 // A hybrid discrete-continuous system:
 //   x_{n+1} = x_n + u(t)
 //   x_0     = 0
-class SimpleHybridSystem : public LeafSystem<double> {
+class SimpleHybridSystem final : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleHybridSystem)
 
@@ -1277,7 +1277,7 @@ GTEST_TEST(SimulatorTest, SimpleHybridSystemTestOffsetZero) {
 // time) when the output is 1. This function of time is continuous otherwise.
 // We'll verify that the output of this system into a discrete system produces
 // samples at the expected instant in time.
-class DeltaFunction : public LeafSystem<double> {
+class DeltaFunction final : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DeltaFunction)
 
@@ -1307,7 +1307,7 @@ class DeltaFunction : public LeafSystem<double> {
 //    x_0     = 0
 // By plugging interesting things into the input we can test whether we're
 // sampling the continuous input at the appropriate times.
-class DiscreteInputAccumulator : public LeafSystem<double> {
+class DiscreteInputAccumulator final : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteInputAccumulator)
 
@@ -1400,17 +1400,17 @@ GTEST_TEST(SimulatorTest, SpikeTest) {
 }
 
 // A mock System that requests a single update at a prespecified time.
-class UnrestrictedUpdater : public LeafSystem<double> {
+class UnrestrictedUpdater final : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnrestrictedUpdater)
 
   explicit UnrestrictedUpdater(double t_upd) : t_upd_(t_upd) {}
 
-  ~UnrestrictedUpdater() override {}
+  ~UnrestrictedUpdater() final {}
 
   void DoCalcNextUpdateTime(const Context<double>& context,
                             CompositeEventCollection<double>* event_info,
-                            double* time) const override {
+                            double* time) const final {
     const double inf = std::numeric_limits<double>::infinity();
     *time = (context.get_time() < t_upd_) ? t_upd_ : inf;
     UnrestrictedUpdateEvent<double> event(
@@ -1420,15 +1420,15 @@ class UnrestrictedUpdater : public LeafSystem<double> {
 
   void DoCalcUnrestrictedUpdate(
       const Context<double>& context,
-      const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
-      State<double>* state) const override {
+      const std::vector<UnrestrictedUpdateEvent<double>>&,
+      State<double>* state) const final {
     if (unrestricted_update_callback_ != nullptr)
       unrestricted_update_callback_(context, state);
   }
 
   void DoCalcTimeDerivatives(
       const Context<double>& context,
-      ContinuousState<double>* derivatives) const override {
+      ContinuousState<double>* derivatives) const final {
     if (derivatives_callback_ != nullptr) derivatives_callback_(context);
   }
 
@@ -1580,7 +1580,7 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
 // user-configured callbacks on DoPublish, DoCalcDiscreteVariableUpdates, and
 // EvalTimeDerivatives. This hybrid system will be used to verify expected state
 // update ordering -- discrete, continuous (i.e., integration), then publish.
-class MixedContinuousDiscreteSystem : public LeafSystem<double> {
+class MixedContinuousDiscreteSystem final : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MixedContinuousDiscreteSystem)
 
@@ -1598,24 +1598,24 @@ class MixedContinuousDiscreteSystem : public LeafSystem<double> {
     set_name("TestSystem");
   }
 
-  ~MixedContinuousDiscreteSystem() override {}
+  ~MixedContinuousDiscreteSystem() final {}
 
   void DoCalcDiscreteVariableUpdates(
       const Context<double>& context,
-      const std::vector<const DiscreteUpdateEvent<double>*>& events,
-      DiscreteValues<double>* updates) const override {
+      const std::vector<DiscreteUpdateEvent<double>>&,
+      DiscreteValues<double>* updates) const final {
     if (update_callback_ != nullptr) update_callback_(context);
   }
 
   void DoPublish(
       const Context<double>& context,
-      const std::vector<const PublishEvent<double>*>& events) const override {
+      const std::vector<PublishEvent<double>>&) const final {
     if (publish_callback_ != nullptr) publish_callback_(context);
   }
 
   void DoCalcTimeDerivatives(
       const Context<double>& context,
-      ContinuousState<double>* derivatives) const override {
+      ContinuousState<double>* derivatives) const final {
     if (derivatives_callback_ != nullptr) derivatives_callback_(context);
   }
 
@@ -1974,7 +1974,7 @@ GTEST_TEST(SimulatorTest, StretchedStepPerfectStorm) {
 // action handler logs the context time when it's called, and the test compares
 // the time stamp against the integrator's h.
 GTEST_TEST(SimulatorTest, PerStepAction) {
-  class PerStepActionTestSystem : public LeafSystem<double> {
+  class PerStepActionTestSystem final : public LeafSystem<double> {
    public:
     PerStepActionTestSystem() {
       // We need some continuous state (which will be unused) so that the
@@ -2013,28 +2013,28 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
    private:
     void DoCalcTimeDerivatives(
         const Context<double>& context,
-        ContinuousState<double>* derivatives) const override {
+        ContinuousState<double>* derivatives) const final {
       // Derivative will always be zero, making the system stationary.
       derivatives->get_mutable_vector().SetAtIndex(0, 0.0);
     }
 
     void DoCalcDiscreteVariableUpdates(
         const Context<double>& context,
-        const std::vector<const DiscreteUpdateEvent<double>*>& events,
-        DiscreteValues<double>* discrete_state) const override {
+        const std::vector<DiscreteUpdateEvent<double>>&,
+        DiscreteValues<double>* discrete_state) const final {
       discrete_update_times_.push_back(context.get_time());
     }
 
     void DoCalcUnrestrictedUpdate(
         const Context<double>& context,
-        const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
-        State<double>* state) const override {
+        const std::vector<UnrestrictedUpdateEvent<double>>&,
+        State<double>* state) const final {
       unrestricted_update_times_.push_back(context.get_time());
     }
 
     void DoPublish(
         const Context<double>& context,
-        const std::vector<const PublishEvent<double>*>& events) const override {
+        const std::vector<PublishEvent<double>>&) const final {
       publish_times_.push_back(context.get_time());
     }
 
@@ -2101,7 +2101,7 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
 
 // Tests initialization from the simulator.
 GTEST_TEST(SimulatorTest, Initialization) {
-  class InitializationTestSystem : public LeafSystem<double> {
+  class InitializationTestSystem final : public LeafSystem<double> {
    public:
     InitializationTestSystem() {
       PublishEvent<double> pub_event(
@@ -2141,10 +2141,10 @@ GTEST_TEST(SimulatorTest, Initialization) {
 
     void DoCalcDiscreteVariableUpdates(
         const Context<double>& context,
-        const std::vector<const DiscreteUpdateEvent<double>*>& events,
+        const std::vector<DiscreteUpdateEvent<double>>& events,
         DiscreteValues<double>*) const final {
       EXPECT_EQ(events.size(), 1);
-      if (events.front()->get_trigger_type() ==
+      if (events.front().get_trigger_type() ==
           TriggerType::kInitialization) {
         EXPECT_EQ(context.get_time(), 0);
         dis_update_init_ = true;
@@ -2153,10 +2153,10 @@ GTEST_TEST(SimulatorTest, Initialization) {
 
     void DoCalcUnrestrictedUpdate(
         const Context<double>& context,
-        const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
+        const std::vector<UnrestrictedUpdateEvent<double>>& events,
         State<double>*) const final {
       EXPECT_EQ(events.size(), 1);
-      if (events.front()->get_trigger_type() ==
+      if (events.front().get_trigger_type() ==
           TriggerType::kInitialization) {
         EXPECT_EQ(context.get_time(), 0);
         unres_update_init_ = true;
@@ -2202,7 +2202,7 @@ GTEST_TEST(SimulatorTest, OwnedSystemTest) {
 class WastefulIntegrator final : public IntegratorBase<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WastefulIntegrator)
-  ~WastefulIntegrator() override = default;
+  ~WastefulIntegrator() final = default;
 
   WastefulIntegrator(const System<double>& system, double max_step_size,
                      Context<double>* context = nullptr)
@@ -2353,7 +2353,7 @@ GTEST_TEST(SimulatorTest, MissedPublishEventIssue13296) {
   // an event as soon as possible after an external message arrives. Here we
   // just set a flag to indicate that a "message" is waiting and generate an
   // event whenever that flag is set.
-  class RightNowEventSystem : public LeafSystem<double> {
+  class RightNowEventSystem final : public LeafSystem<double> {
    public:
     int publish_count() const { return publish_counter_; }
     void reset_count() { publish_counter_ = 0; }
@@ -2388,7 +2388,7 @@ GTEST_TEST(SimulatorTest, MissedPublishEventIssue13296) {
   // Just an ordinary system that has a periodic event with period 0.25. It
   // should play nicely with simultaneous events from the
   // RightNowEventSystem above.
-  class PeriodicEventSystem : public LeafSystem<double> {
+  class PeriodicEventSystem final : public LeafSystem<double> {
    public:
     PeriodicEventSystem() {
       this->DeclarePeriodicPublishEvent(0.25, 0.,

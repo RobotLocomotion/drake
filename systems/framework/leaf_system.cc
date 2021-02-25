@@ -15,7 +15,7 @@ namespace {
 // Returns the next sample time for the given @p attribute.
 template <typename T>
 T GetNextSampleTime(
-    const PeriodicEventData& attribute,
+    const PeriodicTriggerData& attribute,
     const T& current_time_sec) {
   const double period = attribute.period_sec();
   DRAKE_ASSERT(period > 0);
@@ -49,7 +49,7 @@ LeafSystem<T>::~LeafSystem() {}
 template <typename T>
 std::unique_ptr<CompositeEventCollection<T>>
 LeafSystem<T>::AllocateCompositeEventCollection() const {
-  return std::make_unique<LeafCompositeEventCollection<T>>();
+  return std::make_unique<internal::LeafCompositeEventCollection<T>>();
 }
 
 template <typename T>
@@ -62,7 +62,7 @@ template <typename T>
 std::unique_ptr<EventCollection<PublishEvent<T>>>
 LeafSystem<T>::AllocateForcedPublishEventCollection() const {
   auto collection =
-      LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection();
+      internal::LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection();
   if (this->forced_publish_events_exist())
     collection->SetFrom(this->get_forced_publish_events());
   return collection;
@@ -72,7 +72,7 @@ template <typename T>
 std::unique_ptr<EventCollection<DiscreteUpdateEvent<T>>>
 LeafSystem<T>::AllocateForcedDiscreteUpdateEventCollection() const {
   auto collection =
-      LeafEventCollection<
+      internal::LeafEventCollection<
           DiscreteUpdateEvent<T>>::MakeForcedEventCollection();
   if (this->forced_discrete_update_events_exist())
     collection->SetFrom(this->get_forced_discrete_update_events());
@@ -83,7 +83,7 @@ template <typename T>
 std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>>
 LeafSystem<T>::AllocateForcedUnrestrictedUpdateEventCollection() const {
   auto collection =
-      LeafEventCollection<
+      internal::LeafEventCollection<
         UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection();
   if (this->forced_unrestricted_update_events_exist())
     collection->SetFrom(this->get_forced_unrestricted_update_events());
@@ -332,9 +332,7 @@ void LeafSystem<T>::AddTriggeredWitnessFunctionToCompositeEventCollection(
     Event<T>* event,
     CompositeEventCollection<T>* events) const {
   DRAKE_DEMAND(event);
-  DRAKE_DEMAND(event->get_event_data());
-  DRAKE_DEMAND(dynamic_cast<const WitnessTriggeredEventData<T>*>(
-      event->get_event_data()));
+  DRAKE_DEMAND(event->get_trigger_type() == TriggerType::kWitness);
   DRAKE_DEMAND(events);
   event->AddToComposite(events);
 }
@@ -354,9 +352,9 @@ void LeafSystem<T>::DoCalcNextUpdateTime(
   // and store the set of declared events that will occur at that time.
   std::vector<const Event<T>*> next_events;
   for (const auto& event_pair : periodic_events_) {
-    const PeriodicEventData& event_data = event_pair.first;
+    const PeriodicTriggerData& trigger_data = event_pair.first;
     const Event<T>* const event = event_pair.second.get();
-    const T t = GetNextSampleTime(event_data, context.get_time());
+    const T t = GetNextSampleTime(trigger_data, context.get_time());
     if (t < min_time) {
       min_time = t;
       next_events = {event};
@@ -689,16 +687,6 @@ std::unique_ptr<WitnessFunction<T>> LeafSystem<T>::MakeWitnessFunction(
 }
 
 template <typename T>
-std::unique_ptr<WitnessFunction<T>> LeafSystem<T>::MakeWitnessFunction(
-    const std::string& description,
-    const WitnessFunctionDirection& direction_type,
-    std::function<T(const Context<T>&)> calc,
-    const Event<T>& e) const {
-  return std::make_unique<WitnessFunction<T>>(
-      this, this, description, direction_type, calc, e.Clone());
-}
-
-template <typename T>
 SystemConstraintIndex LeafSystem<T>::DeclareEqualityConstraint(
     ContextConstraintCalc<T> calc, int count,
     std::string description) {
@@ -719,29 +707,29 @@ SystemConstraintIndex LeafSystem<T>::DeclareInequalityConstraint(
 template <typename T>
 void LeafSystem<T>::DoPublish(
     const Context<T>& context,
-    const std::vector<const PublishEvent<T>*>& events) const {
-  for (const PublishEvent<T>* event : events) {
-    event->handle(context);
+    const std::vector<PublishEvent<T>>& events) const {
+  for (const PublishEvent<T>& event : events) {
+    event.handle(context);
   }
 }
 
 template <typename T>
 void LeafSystem<T>::DoCalcDiscreteVariableUpdates(
     const Context<T>& context,
-    const std::vector<const DiscreteUpdateEvent<T>*>& events,
+    const std::vector<DiscreteUpdateEvent<T>>& events,
     DiscreteValues<T>* discrete_state) const {
-  for (const DiscreteUpdateEvent<T>* event : events) {
-    event->handle(context, discrete_state);
+  for (const DiscreteUpdateEvent<T>& event : events) {
+    event.handle(context, discrete_state);
   }
 }
 
 template <typename T>
 void LeafSystem<T>::DoCalcUnrestrictedUpdate(
     const Context<T>& context,
-    const std::vector<const UnrestrictedUpdateEvent<T>*>& events,
+    const std::vector<UnrestrictedUpdateEvent<T>>& events,
     State<T>* state) const {
-  for (const UnrestrictedUpdateEvent<T>* event : events) {
-    event->handle(context, state);
+  for (const UnrestrictedUpdateEvent<T>& event : events) {
+    event.handle(context, state);
   }
 }
 
@@ -765,10 +753,10 @@ std::unique_ptr<AbstractValue> LeafSystem<T>::DoAllocateInput(
 }
 
 template <typename T>
-std::map<PeriodicEventData, std::vector<const Event<T>*>,
-    PeriodicEventDataComparator> LeafSystem<T>::DoGetPeriodicEvents() const {
-  std::map<PeriodicEventData, std::vector<const Event<T>*>,
-      PeriodicEventDataComparator> periodic_events_map;
+std::map<PeriodicTriggerData, std::vector<const Event<T>*>,
+    PeriodicTriggerDataComparator> LeafSystem<T>::DoGetPeriodicEvents() const {
+  std::map<PeriodicTriggerData, std::vector<const Event<T>*>,
+      PeriodicTriggerDataComparator> periodic_events_map;
   for (const auto& i : periodic_events_) {
     periodic_events_map[i.first].push_back(i.second.get());
   }
@@ -779,8 +767,9 @@ template <typename T>
 void LeafSystem<T>::DispatchPublishHandler(
     const Context<T>& context,
     const EventCollection<PublishEvent<T>>& events) const {
-  const LeafEventCollection<PublishEvent<T>>& leaf_events =
-     dynamic_cast<const LeafEventCollection<PublishEvent<T>>&>(events);
+  const internal::LeafEventCollection<PublishEvent<T>>& leaf_events =
+      dynamic_cast<const internal::LeafEventCollection<PublishEvent<T>>&>(
+          events);
   // Only call DoPublish if there are publish events.
   DRAKE_DEMAND(leaf_events.HasEvents());
   this->DoPublish(context, leaf_events.get_events());
@@ -791,9 +780,9 @@ void LeafSystem<T>::DispatchDiscreteVariableUpdateHandler(
     const Context<T>& context,
     const EventCollection<DiscreteUpdateEvent<T>>& events,
     DiscreteValues<T>* discrete_state) const {
-  const LeafEventCollection<DiscreteUpdateEvent<T>>& leaf_events =
-      dynamic_cast<const LeafEventCollection<DiscreteUpdateEvent<T>>&>(
-          events);
+  const internal::LeafEventCollection<DiscreteUpdateEvent<T>>& leaf_events =
+      dynamic_cast<
+          const internal::LeafEventCollection<DiscreteUpdateEvent<T>>&>(events);
   DRAKE_DEMAND(leaf_events.HasEvents());
 
   // Must initialize the output argument with the current contents of the
@@ -808,7 +797,8 @@ void LeafSystem<T>::DoApplyDiscreteVariableUpdate(
     const EventCollection<DiscreteUpdateEvent<T>>& events,
     DiscreteValues<T>* discrete_state, Context<T>* context) const {
   DRAKE_ASSERT(
-      dynamic_cast<const LeafEventCollection<DiscreteUpdateEvent<T>>*>(
+      dynamic_cast<
+          const internal::LeafEventCollection<DiscreteUpdateEvent<T>>*>(
           &events) != nullptr);
   DRAKE_DEMAND(events.HasEvents());
   // TODO(sherm1) Should swap rather than copy.
@@ -820,9 +810,8 @@ void LeafSystem<T>::DispatchUnrestrictedUpdateHandler(
     const Context<T>& context,
     const EventCollection<UnrestrictedUpdateEvent<T>>& events,
     State<T>* state) const {
-  const LeafEventCollection<UnrestrictedUpdateEvent<T>>& leaf_events =
-      dynamic_cast<const LeafEventCollection<UnrestrictedUpdateEvent<T>>&>(
-          events);
+  const auto& leaf_events = dynamic_cast<
+      const internal::LeafEventCollection<UnrestrictedUpdateEvent<T>>&>(events);
   DRAKE_DEMAND(leaf_events.HasEvents());
 
   // Must initialize the output argument with the current contents of the
@@ -837,7 +826,8 @@ void LeafSystem<T>::DoApplyUnrestrictedUpdate(
     const EventCollection<UnrestrictedUpdateEvent<T>>& events,
     State<T>* state, Context<T>* context) const {
   DRAKE_ASSERT(
-      dynamic_cast<const LeafEventCollection<UnrestrictedUpdateEvent<T>>*>(
+      dynamic_cast<
+          const internal::LeafEventCollection<UnrestrictedUpdateEvent<T>>*>(
           &events) != nullptr);
   DRAKE_DEMAND(events.HasEvents());
   // TODO(sherm1) Should swap rather than copy.

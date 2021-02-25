@@ -673,9 +673,9 @@ class System : public SystemBase {
   determine whether a system's dynamics are at least partially governed by
   difference equations and (2) to obtain the difference equation update
   times.
-  @returns optional<PeriodicEventData> Contains the periodic trigger
+  @returns optional<PeriodicTriggerData> Contains the periodic trigger
   attributes if the unique periodic attribute exists, otherwise `nullopt`. */
-  std::optional<PeriodicEventData>
+  std::optional<PeriodicTriggerData>
       GetUniquePeriodicDiscreteUpdateAttribute() const;
 
   /** Returns true iff the state dynamics of this system are governed
@@ -698,8 +698,8 @@ class System : public SystemBase {
   /** Gets all periodic triggered events for a system. Each periodic attribute
   (offset and period, in seconds) is mapped to one or more update events
   that are to be triggered at the proper times. */
-  std::map<PeriodicEventData, std::vector<const Event<T>*>,
-    PeriodicEventDataComparator> GetPeriodicEvents() const;
+  std::map<PeriodicTriggerData, std::vector<const Event<T>*>,
+    PeriodicTriggerDataComparator> GetPeriodicEvents() const;
 
   /** Utility method that computes for _every_ output port i the value y(i) that
   should result from the current contents of the given Context. Note that
@@ -1199,11 +1199,11 @@ class System : public SystemBase {
   T CalcWitnessValue(const Context<T>& context,
                      const WitnessFunction<T>& witness_func) const;
 
-  /** Add `event` to `events` due to a witness function triggering. `events`
+  /** Add `event` to `events`. `events`
   should be allocated with this system's AllocateCompositeEventCollection.
   Neither `event` nor `events` can be nullptr. Additionally, `event` must
   contain event data (event->get_event_data() must not be nullptr) and
-  the type of that data must be WitnessTriggeredEventData. */
+  the type of that data must be WitnessTriggerData. */
   virtual void AddTriggeredWitnessFunctionToCompositeEventCollection(
       Event<T>* event,
       CompositeEventCollection<T>* events) const = 0;
@@ -1451,8 +1451,8 @@ class System : public SystemBase {
   @see GetPeriodicEvents() for a detailed description of the returned
        variable.
   @note The default implementation returns an empty map. */
-  virtual std::map<PeriodicEventData,
-      std::vector<const Event<T>*>, PeriodicEventDataComparator>
+  virtual std::map<PeriodicTriggerData,
+      std::vector<const Event<T>*>, PeriodicTriggerDataComparator>
     DoGetPeriodicEvents() const = 0;
 
   /** Implement this method to return any events to be handled before the

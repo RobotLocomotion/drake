@@ -249,10 +249,10 @@ class EventData {
  * triggered at time = offset_sec + i * period_sec, where i is a non-negative
  * integer.
  */
-class PeriodicEventData : public EventData {
+class PeriodicTriggerData : public EventData {
  public:
-  PeriodicEventData() {}
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PeriodicEventData);
+  PeriodicTriggerData() {}
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PeriodicTriggerData);
 
   /// Gets the period with which this event should recur.
   double period_sec() const { return period_sec_; }
@@ -268,7 +268,7 @@ class PeriodicEventData : public EventData {
 
  private:
   [[nodiscard]] EventData* DoClone() const override {
-    PeriodicEventData* clone = new PeriodicEventData;
+    PeriodicTriggerData* clone = new PeriodicTriggerData;
     clone->period_sec_ = period_sec_;
     clone->offset_sec_ = offset_sec_;
     return clone;
@@ -277,6 +277,10 @@ class PeriodicEventData : public EventData {
   double period_sec_{0.0};
   double offset_sec_{0.0};
 };
+
+using PeriodicEventData
+      DRAKE_DEPRECATED("2021-06-01", "Use PeriodicTriggerData instead.")
+      = PeriodicTriggerData;
 
 /**
  * Class for storing data from a witness function triggering to be passed
@@ -287,10 +291,10 @@ class PeriodicEventData : public EventData {
  * triggered.
  */
 template <class T>
-class WitnessTriggeredEventData : public EventData {
+class WitnessTriggerData : public EventData {
  public:
-  WitnessTriggeredEventData() {}
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(WitnessTriggeredEventData);
+  WitnessTriggerData() {}
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(WitnessTriggerData);
 
   /// Gets the witness function that triggered the event handler.
   const WitnessFunction<T>* triggered_witness() const {
@@ -336,7 +340,7 @@ class WitnessTriggeredEventData : public EventData {
 
  private:
   [[nodiscard]] EventData* DoClone() const override {
-    WitnessTriggeredEventData<T>* clone = new WitnessTriggeredEventData;
+    WitnessTriggerData<T>* clone = new WitnessTriggerData;
     clone->triggered_witness_ = triggered_witness_;
     clone->t0_ = t0_;
     clone->tf_ = tf_;
@@ -351,6 +355,11 @@ class WitnessTriggeredEventData : public EventData {
   const ContinuousState<T>* xc0_{nullptr};
   const ContinuousState<T>* xcf_{nullptr};
 };
+
+template <typename T>
+using WitnessTriggeredEventData
+      DRAKE_DEPRECATED("2021-06-01", "Use WitnessTriggerData instead.")
+      = WitnessTriggerData<T>;
 
 /**
  * Predefined types of triggers for events. Used at run time to determine why
@@ -433,18 +442,13 @@ enum class TriggerType {
 template <typename T>
 class Event {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Event)
+
   #ifndef DRAKE_DOXYGEN_CXX
   // Constructs an Event with no trigger type and no event data.
   Event() { trigger_type_ = TriggerType::kUnknown; }
   virtual ~Event() {}
   #endif
-
-  /** @name Does not allow move or assignment; copy constructor is private. */
-  /** @{ */
-  void operator=(const Event&) = delete;
-  Event(Event&&) = delete;
-  void operator=(Event&&) = delete;
-  /** @} */
 
   // TODO(eric.cousineau): Deprecate and remove this alias.
   using TriggerType = systems::TriggerType;
@@ -452,12 +456,9 @@ class Event {
   /// Returns `true` if this is a DiscreteUpdateEvent.
   virtual bool is_discrete_update() const = 0;
 
-  /*
+  /**
    * Clones this instance.
    */
-  DRAKE_DEPRECATED("2021-0-01",
-                   "Clone() is being deprecated. Please use the copy "
-                   "constructor for a class derived from Event instead.")
   std::unique_ptr<Event> Clone() const {
     return std::unique_ptr<Event>(DoClone());
   }
@@ -472,25 +473,33 @@ class Event {
    */
   bool has_event_data() const { return event_data_ != nullptr; }
 
-  /*
+  /**
    * Returns a const pointer to the event data. The returned value
    * can be nullptr, which means this event does not have any associated
    * data.
    */
-  DRAKE_DEPRECATED("2021-0-01",
-                   "get_event_data() is being deprecated. Please use "
-                   "event_data() instead.")
   const EventData* get_event_data() const { return event_data_.get(); }
 
-  /*
+  /**
    * Returns a mutable pointer to the event data. The returned value
    * can be nullptr, which means this event does not have any associated
    * data.
    */
-  DRAKE_DEPRECATED("2021-0-01",
-                   "get_mutable_event_data() is being deprecated. Please use "
-                   "mutable_event_data() instead.")
-  EventData* get_mutable_event_data() { return event_data_.get(); }
+  EventData* get_mutable_event_data() { return event_data_.get_mutable(); }
+
+  // Gets witness trigger data.
+  // @pre get_trigger_type() == TriggerType::kWitness.
+  const WitnessTriggerData<T>& witness_trigger_data() const {
+    DRAKE_DEMAND(get_trigger_type() == TriggerType::kWitness);
+    return std::get<WitnessTriggerData<T>>(trigger_data_);
+  }
+
+  // Gets periodic trigger data.
+  // @pre get_trigger_type() == TriggerType::kPeriodic.
+  const PeriodicTriggerData& periodic_trigger_data() const {
+    DRAKE_DEMAND(get_trigger_type() == TriggerType::kPeriodic);
+    return std::get<PeriodicTriggerData>(trigger_data_);
+  }
 
   // Note: Users should not be calling this.
   #if !defined(DRAKE_DOXYGEN_CXX)
@@ -501,6 +510,25 @@ class Event {
   // Sets and transfers the ownership of @p data.
   void set_event_data(std::unique_ptr<EventData> data) {
     event_data_ = std::move(data);
+  }
+
+  // Gets mutable witness trigger data. Creates data if it doesn't exist.
+  // @pre get_trigger_type() == TriggerType::kWitness.
+  WitnessTriggerData<T>& mutable_witness_trigger_data() {
+    DRAKE_DEMAND(get_trigger_type() == TriggerType::kWitness);
+    // Create the data if it doesn't exist.
+    if (!std::holds_alternative<WitnessTriggerData<T>>(trigger_data_))
+      trigger_data_ = WitnessTriggerData<T>();
+    return std::get<WitnessTriggerData<T>>(trigger_data_);
+  }
+
+  // Gets mutable periodic trigger data. Creates data if it doesn't exist.
+  // @pre get_trigger_type() == TriggerType::kPeriodic.
+  PeriodicTriggerData& mutable_periodic_trigger_data() {
+    DRAKE_DEMAND(get_trigger_type() == TriggerType::kPeriodic);
+    if (!std::holds_alternative<PeriodicTriggerData>(trigger_data_))
+      trigger_data_ = PeriodicTriggerData();
+    return std::get<PeriodicTriggerData>(trigger_data_);
   }
   #endif
 
@@ -532,11 +560,6 @@ class Event {
   }
 
  protected:
-  Event(const Event& other) : trigger_type_(other.trigger_type_) {
-    if (other.event_data_ != nullptr)
-      set_event_data(other.event_data_);
-  }
-
   // Note: Users should not be calling this.
   #if !defined(DRAKE_DOXYGEN_CXX)
   // Constructs an Event with the specified @p trigger.
@@ -550,7 +573,7 @@ class Event {
   virtual void DoAddToComposite(TriggerType trigger_type,
                                 CompositeEventCollection<T>* events) const = 0;
 
-  /**
+  /*
    * Derived classes must implement this method to clone themselves. Any
    * Event-specific data is cloned using the Clone() method. Data specific
    * to the class derived from Event must be cloned by the implementation.
@@ -559,21 +582,27 @@ class Event {
 
  private:
   TriggerType trigger_type_;
-  std::unique_ptr<EventData> event_data_{nullptr};
+  drake::copyable_unique_ptr<EventData> event_data_{nullptr};
+  std::variant<PeriodicTriggerData, WitnessTriggerData<T>> trigger_data_;
 };
 
 /**
- * Structure for comparing two PeriodicEventData objects for use in a map
+ * Structure for comparing two PeriodicTriggerData objects for use in a map
  * container, using an arbitrary comparison method.
  */
-struct PeriodicEventDataComparator {
-  bool operator()(const PeriodicEventData& a,
-    const PeriodicEventData& b) const {
+struct PeriodicTriggerDataComparator {
+  bool operator()(const PeriodicTriggerData& a,
+    const PeriodicTriggerData& b) const {
       if (a.period_sec() == b.period_sec())
         return a.offset_sec() < b.offset_sec();
       return a.period_sec() < b.period_sec();
   }
 };
+
+using PeriodicEventDataComparator
+      DRAKE_DEPRECATED("2021-06-01", "Use PeriodicTriggerDataComparator "
+          "instead.")
+      = PeriodicTriggerDataComparator;
 
 /**
  * This class represents a publish event. It has an optional callback function
@@ -583,9 +612,7 @@ struct PeriodicEventDataComparator {
 template <typename T>
 class PublishEvent final : public Event<T> {
  public:
-  void operator=(const PublishEvent&) = delete;
-  PublishEvent(PublishEvent&&) = delete;
-  void operator=(PublishEvent&&) = delete;
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PublishEvent);
   bool is_discrete_update() const override { return false; }
 
   /**
@@ -626,13 +653,9 @@ class PublishEvent final : public Event<T> {
   }
 
  private:
-  PublishEvent(const PublishEvent&) = default;
-
-  void DoAddToComposite(TriggerType trigger_type,
+  void DoAddToComposite(TriggerType,
                         CompositeEventCollection<T>* events) const final {
-    auto event = std::unique_ptr<PublishEvent<T>>(this->DoClone());
-    event->set_trigger_type(trigger_type);
-    events->add_publish_event(std::move(event));
+    events->add_publish_event(*this);
   }
 
   // Clones PublishEvent-specific data.
@@ -653,9 +676,7 @@ class PublishEvent final : public Event<T> {
 template <typename T>
 class DiscreteUpdateEvent final : public Event<T> {
  public:
-  void operator=(const DiscreteUpdateEvent&) = delete;
-  DiscreteUpdateEvent(DiscreteUpdateEvent&&) = delete;
-  void operator=(DiscreteUpdateEvent&&) = delete;
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DiscreteUpdateEvent);
   bool is_discrete_update() const override { return true; }
 
   /**
@@ -700,13 +721,9 @@ class DiscreteUpdateEvent final : public Event<T> {
   }
 
  private:
-  DiscreteUpdateEvent(const DiscreteUpdateEvent&) = default;
-
-  void DoAddToComposite(TriggerType trigger_type,
+  void DoAddToComposite(TriggerType,
                         CompositeEventCollection<T>* events) const final {
-    auto event = std::unique_ptr<DiscreteUpdateEvent<T>>(this->DoClone());
-    event->set_trigger_type(trigger_type);
-    events->add_discrete_update_event(std::move(event));
+    events->add_discrete_update_event(*this);
   }
 
   // Clones DiscreteUpdateEvent-specific data.
@@ -727,9 +744,7 @@ class DiscreteUpdateEvent final : public Event<T> {
 template <typename T>
 class UnrestrictedUpdateEvent final : public Event<T> {
  public:
-  void operator=(const UnrestrictedUpdateEvent&) = delete;
-  UnrestrictedUpdateEvent(UnrestrictedUpdateEvent&&) = delete;
-  void operator=(UnrestrictedUpdateEvent&&) = delete;
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(UnrestrictedUpdateEvent);
   bool is_discrete_update() const override { return false; }
 
   /**
@@ -772,13 +787,9 @@ class UnrestrictedUpdateEvent final : public Event<T> {
   }
 
  private:
-  UnrestrictedUpdateEvent(const UnrestrictedUpdateEvent&) = default;
-
-  void DoAddToComposite(TriggerType trigger_type,
+  void DoAddToComposite(TriggerType,
                         CompositeEventCollection<T>* events) const final {
-    auto event = std::unique_ptr<UnrestrictedUpdateEvent<T>>(this->DoClone());
-    event->set_trigger_type(trigger_type);
-    events->add_unrestricted_update_event(std::move(event));
+    events->add_unrestricted_update_event(*this);
   }
 
   // Clones event data specific to UnrestrictedUpdateEvent.
@@ -794,7 +805,7 @@ class UnrestrictedUpdateEvent final : public Event<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::WitnessTriggeredEventData)
+    class ::drake::systems::WitnessTriggerData)
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::Event)

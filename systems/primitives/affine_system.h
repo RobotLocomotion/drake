@@ -136,7 +136,7 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
   /// may override this for performance reasons.
   void DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<T>& context,
-      const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
+      const std::vector<drake::systems::DiscreteUpdateEvent<T>>& events,
       drake::systems::DiscreteValues<T>* updates) const override;
 
   /// Sets the initial conditions.
@@ -276,7 +276,7 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
 
   void DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<T>& context,
-      const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
+      const std::vector<drake::systems::DiscreteUpdateEvent<T>>& events,
       drake::systems::DiscreteValues<T>* updates) const final;
 
   const Eigen::MatrixXd A_;

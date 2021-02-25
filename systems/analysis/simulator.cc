@@ -513,19 +513,17 @@ bool Simulator<T>::DidWitnessTrigger(
 // that was evaluated over the time interval [`t0`, `tf`] and adds it to the
 // given event collection (`events`).
 template <class T>
-void Simulator<T>::PopulateEventDataForTriggeredWitness(
+void Simulator<T>::PopulateTriggerDataForTriggeredWitness(
     const T& t0, const T& tf, const WitnessFunction<T>* witness,
     Event<T>* event, CompositeEventCollection<T>* events) const {
   // Populate the event data.
-  auto event_data = static_cast<WitnessTriggeredEventData<T>*>(
-      event->get_mutable_event_data());
-  event_data->set_triggered_witness(witness);
-  event_data->set_t0(t0);
-  event_data->set_tf(tf);
-  event_data->set_xc0(event_handler_xc_.get());
-  event_data->set_xcf(&context_->get_continuous_state());
-  get_system().AddTriggeredWitnessFunctionToCompositeEventCollection(
-      event, events);
+  WitnessTriggerData<T>& data = event->mutable_witness_trigger_data();
+  data.set_triggered_witness(witness);
+  data.set_t0(t0);
+  data.set_tf(tf);
+  data.set_xc0(event_handler_xc_.get());
+  data.set_xcf(&context_->get_continuous_state());
+  event->AddToComposite(events);
 }
 
 // (Re)determines the set of witness functions active over this interval,
@@ -616,9 +614,9 @@ Simulator<T>::IntegrateContinuousState(
       if (!event) {
         event = fn->get_event()->Clone();
         event->set_trigger_type(TriggerType::kWitness);
-        event->set_event_data(std::make_unique<WitnessTriggeredEventData<T>>());
+        event->mutable_witness_trigger_data() = WitnessTriggerData<T>();
       }
-      PopulateEventDataForTriggeredWitness(t0, tf, fn, event.get(), events);
+      PopulateTriggerDataForTriggeredWitness(t0, tf, fn, event.get(), events);
     }
 
     // When successful, the isolation process produces a vector of witnesses

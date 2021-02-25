@@ -163,7 +163,7 @@ class VectorSystem : public LeafSystem<T> {
   /// DoCalcVectorDiscreteVariableUpdates().
   void DoCalcDiscreteVariableUpdates(
       const Context<T>& context,
-      const std::vector<const DiscreteUpdateEvent<T>*>&,
+      const std::vector<DiscreteUpdateEvent<T>>&,
       DiscreteValues<T>* discrete_state) const final {
     // Short-circuit when there's no work to do.
     if (discrete_state->num_groups() == 0) {
