@@ -15,8 +15,36 @@ namespace drake {
 namespace multibody {
 namespace fixed_fem {
 
-/** The abstract base class for FemModel that hides its template parameter. See
- FemModel for more information.
+/** %FemModel calculates the components of the discretized FEM equations.
+ Suppose the PDE at hand is of the form
+
+     F(z, ∇z, ...) = 0.
+
+ where ... indicates possible higher derivatives that we aren't concerned with
+ here. In this PDE, z: Ω ⊂ Rᴰ → Rᵈ, is the unknown function being solved for.
+ Here, Ω is the domain, D is the dimension of the domain, and d is the solution
+ dimension. For instance, if you are solving for the temperature of a 3D object,
+ then the domain is three-dimensional (D = 3), while the solution, which is the
+ temperature at a point within the object, is one-dimensional (d = 1). After
+ spatial and time discretization, the PDE is reduced to a system of linear or
+ nonlinear equations of the form:
+
+     G(z₁, z₂, ..., zₙ) = 0,
+
+ where n is the number of nodes in the discretization and G is a function from
+ Rⁿᵈ to Rⁿᵈ. The linear or nonlinear equation in the system associated with
+ the node `a` has the form
+
+     Gₐ(z₁, z₂, ..., zₙ) = 0,
+
+ where Gₐ is a function from Rⁿᵈ → Rᵈ and a = 1, ..., n. The nodal values z₁,
+ z₂, ..., zₙ are solved for with a linear or nonlinear solver, and the solution
+ z is interpolated from these nodal values.
+
+ %FemModel calculates various components of the system of linear or nonlinear
+ equations that supports solving the system. For example, CalcResidual()
+ calculates the value of G evaluated at the current state and
+ CalcTangentMatrix() calculates ∇G at the current state.
  @tparam_nonsymbolic_scalar T. */
 template <typename T>
 class FemModelBase {
@@ -77,25 +105,31 @@ class FemModelBase {
   void SetTangentMatrixSparsityPattern(
       Eigen::SparseMatrix<T>* tangent_matrix) const;
 
-  /** Updates the FemStateBase `state` given the change in the value of the
-   highest order state `z`.
+  /** Updates the FemStateBase `state` given the change in the highest order
+   state `dz`.
    @pre state != nullptr.
-   @pre dz.size() == state.num_generalized_positions().
-   @throw std::exception if the type of concrete FemState in `state` is not
-   compatible with the concrete FemModel in `this` model. */
-  void UpdateState(const VectorX<T>& dz, FemStateBase<T>* state) const;
+   @pre dz.size() == state->num_generalized_positions().
+   @throw std::exception if the type of concrete FemState for `state` is not
+   compatible with the concrete FemModel for `this` model. */
+  void UpdateStateFromChangeInHighestOrderState(const VectorX<T>& dz,
+                                                FemStateBase<T>* state) const;
 
-  // TODO(xuchenhan-tri): Consider renaming this method to imply that the method
-  //  provides only a prediction of the state at the next time step.
-  /** Predicts the state of the FEM model at the next time step given the state
-   at the previous time step. If `this` %FemModel is zeroth_order (see
-   ode_order()), throw an exception.
+  /** For a dynamic FEM model, calculates the state at the next time step given
+   the state at the previous time step and the highest order state at the next
+   time step. If `this` %FemModel is static (ode_order() == 0), throw an
+   exception.
    @param[in] prev_state The state at the previous time step.
-   @param[in, out] next_state The predictor state at the new time step.
+   @param[in] highest_order_state The highest order state at the next time step.
+   @param[out] next_state The state at the next time step.
    @pre next_state != nullptr.
    @pre next_state->num_generalized_positions() ==
-   prev_state.num_generalized_positions(). */
+   prev_state.num_generalized_positions().
+   @pre next_state->num_generalized_positions() == highest_order_state.size().
+   @throw std::exception if the type of concrete FemState in `prev_state` or
+   `next_state` is not compatible with the concrete FemModel in `this` model.
+   @throw std::exception if ode_order() == 0. */
   void AdvanceOneTimeStep(const FemStateBase<T>& prev_state,
+                          const VectorX<T>& highest_order_state,
                           FemStateBase<T>* next_state) const;
 
   /* Apply boundary condition set for this %FemModel to the input `state`. No-op
@@ -117,9 +151,9 @@ class FemModelBase {
       const char* func, const FemStateBase<T>& state_base) const = 0;
 
  protected:
-  /** Derived classes must override this method to provide an implementation for
-   the NVI CalcResidual(). The input `state` is guaranteed to be compatible with
-   `this` FEM model. */
+  /** Derived classes must override this method to provide an implementation
+   for the NVI CalcResidual(). The input `state` is guaranteed to be
+   compatible with `this` FEM model. */
   virtual void DoCalcResidual(const FemStateBase<T>& state,
                               EigenPtr<VectorX<T>> residual) const = 0;
 
@@ -136,15 +170,17 @@ class FemModelBase {
       Eigen::SparseMatrix<T>* tangent_matrix) const = 0;
 
   /** Derived classes must override this method to provide an implementation for
-   the NVI UpdateState(). The input `state` is guaranteed to be compatible with
-   `this` FEM model. */
-  virtual void DoUpdateState(const VectorX<T>& dz,
-                             FemStateBase<T>* state) const = 0;
+   the NVI UpdateStateFromChangeInHighestOrderState(). The input `state` is
+   guaranteed to be compatible with `this` FEM model. */
+  virtual void DoUpdateStateFromChangeInHighestOrderState(
+      const VectorX<T>& dz, FemStateBase<T>* state) const = 0;
 
   /** Derived classes must override this method to provide an implementation for
    the NVI AdvanceOneTimeStep(). The input `prev_state` and `next_state` are
-   guaranteed to be compatible with `this` FEM model. */
+   guaranteed to be compatible with `this` FEM model. The size of `prev_state`,
+   `highest_order_state`, and `next_state` are guaranteed to be compatible. */
   virtual void DoAdvanceOneTimeStep(const FemStateBase<T>& prev_state,
+                                    const VectorX<T>& highest_order_state,
                                     FemStateBase<T>* next_state) const = 0;
 
   void increment_num_nodes(int num_new_nodes) { num_nodes_ += num_new_nodes; }

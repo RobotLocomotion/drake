@@ -152,7 +152,7 @@ TEST_F(FemSolverTest, StaticForceEquilibrium) {
   mutable_model.SetExplicitExternalForce(nodal_force);
   State state = MakeReferenceState();
   const ZerothOrderStateUpdater<State> state_updater;
-  solver_->SolveWithInitialGuess(&state);
+  solver_->SolveStaticModelWithInitialGuess(&state);
   EXPECT_TRUE(CompareMatrices(state.q(), prescribed_state.q(),
                               std::max(kTol, kTol * initial_error)));
 }
@@ -162,8 +162,9 @@ TEST_F(FemSolverTest, StaticForceEquilibrium) {
 TEST_F(FemSolverTest, IncompatibleState) {
   FemState<test::DummyElement<0>> dummy_state(Vector3<double>(1, 2, 3));
   DRAKE_EXPECT_THROWS_MESSAGE(
-      solver_->SolveWithInitialGuess(&dummy_state), std::exception,
-      "SolveWithInitialGuess\\(\\): The type of the FemState is incompatible "
+      solver_->SolveStaticModelWithInitialGuess(&dummy_state), std::exception,
+      "SolveStaticModelWithInitialGuess\\(\\): The type of the FemState is "
+      "incompatible "
       "with the type of the FemModel.");
 }
 // TODO(xuchenhan-tri): Add unit test for AdvanceOneTimeStep().

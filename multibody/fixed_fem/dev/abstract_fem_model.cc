@@ -36,24 +36,27 @@ void FemModelBase<T>::SetTangentMatrixSparsityPattern(
 }
 
 template <typename T>
-void FemModelBase<T>::UpdateState(const VectorX<T>& dz,
-                                  FemStateBase<T>* state) const {
+void FemModelBase<T>::UpdateStateFromChangeInHighestOrderState(
+    const VectorX<T>& dz, FemStateBase<T>* state) const {
   DRAKE_DEMAND(state != nullptr);
   DRAKE_DEMAND(dz.size() == state->num_generalized_positions());
   ThrowIfModelStateIncompatible(__func__, *state);
-  DoUpdateState(dz, state);
+  DoUpdateStateFromChangeInHighestOrderState(dz, state);
 }
 
 template <typename T>
 void FemModelBase<T>::AdvanceOneTimeStep(const FemStateBase<T>& prev_state,
+                                         const VectorX<T>& highest_order_state,
                                          FemStateBase<T>* next_state) const {
   DRAKE_DEMAND(next_state != nullptr);
   DRAKE_DEMAND(prev_state.num_generalized_positions() ==
                next_state->num_generalized_positions());
+  DRAKE_DEMAND(highest_order_state.size() ==
+               next_state->num_generalized_positions());
   DRAKE_THROW_UNLESS(ode_order() > 0);
   ThrowIfModelStateIncompatible(__func__, prev_state);
   ThrowIfModelStateIncompatible(__func__, *next_state);
-  DoAdvanceOneTimeStep(prev_state, next_state);
+  DoAdvanceOneTimeStep(prev_state, highest_order_state, next_state);
 }
 
 template <typename T>

@@ -13,6 +13,7 @@
 namespace drake {
 namespace multibody {
 namespace fixed_fem {
+// TODO(xuchenhan-tri): Move the implementation of this class to a .cc file.
 /** %FemSolver solves for the state of a given FemModel at which residual of the
  model is sufficiently close to zero. %FemSolver uses a simple Newton-Raphson
  solver to solve for the zero residual state. A common workflow looks like:
@@ -46,81 +47,66 @@ class FemSolver {
         std::make_unique<internal::EigenConjugateGradientSolver<T>>(&A_op_);
   }
 
-  /** Advances the given FEM state from the previous time step to the next time
-   step.
+  /** For dynamic models, advance the given FEM state from the previous time
+   step to the next time step. If the FEM model owned by `this` solver is
+   static, throw an exception.
    @param[in] prev_state The state of the FEM model evaluated at the previous
    time step.
    @param[in, out] next_state As input, `next_state` provides an initial guess
-   for the highest order state of the FEM model at the next time step. As
-   output, `state` stores the state of the FEM model evaluated at the next time
-   step.
+   for the state of the FEM model at the next time step. As output, `state`
+   stores the state of the FEM model evaluated at the next time step.
    @pre next_state != nullptr.
+   @pre prev_state.num_generalized_positions() ==
+   next_state->num_generalized_positions().
    @throw std::exception if the input `prev_state` or `next_state` is
-   incompatible with the FEM model associated with `this` %FemSolver. */
+   incompatible with the FEM model associated with `this` %FemSolver, or if the
+   model is not dynamic (see is_dynamic()). */
   void AdvanceOneTimeStep(const FemStateBase<T>& prev_state,
                           FemStateBase<T>* next_state) const {
     DRAKE_DEMAND(next_state != nullptr);
+    DRAKE_DEMAND(next_state->num_generalized_positions() ==
+                 prev_state.num_generalized_positions());
+    if (!is_model_dynamic()) {
+      throw std::logic_error(
+          fmt::format("{}() can only be called on a dynamic model!", __func__));
+    }
     model_->ThrowIfModelStateIncompatible(__func__, prev_state);
     model_->ThrowIfModelStateIncompatible(__func__, *next_state);
-    model_->AdvanceOneTimeStep(prev_state, next_state);
+    /* Grab the initial guess for the highest order state. */
+    const VectorX<T>& highest_order_state =
+        next_state->get_highest_order_state();
+    /* Since `highest_order_state` is only an initial guess, this only produces
+     an *initial guess* that is compatible with the previous time step. */
+    model_->AdvanceOneTimeStep(prev_state, highest_order_state, next_state);
     SolveWithInitialGuess(next_state);
   }
 
-  /** Uses a Newton-Raphson solver to solve for the solution state that
-   satisfy the tolerances. See set_relative_tolerance() and
-   set_absolute_tolerance().
-   @param[in, out] state    As input, `state` provides an initial guess of
-   the solution. As output, `state` reports the solution state.
-   @pre state != nullptr.
-   @throw std::exception if the type of `state` is not compatible with the
-   type of the model owned by `this` solver. */
-  int SolveWithInitialGuess(FemStateBase<T>* state) const {
+  /** For static models, solve for the state at equilibrium given the initial
+   guess. If the FEM model owned by the solver is dynamic, throw an exception.
+   @pre next_state != nullptr.
+   @throw std::exception if the input `state` is incompatible with the FEM model
+   associated with `this` %FemSolver, or if the model is dynamic (see
+   is_dynamic()). */
+  void SolveStaticModelWithInitialGuess(FemStateBase<T>* state) const {
     DRAKE_DEMAND(state != nullptr);
-    model_->ThrowIfModelStateIncompatible(__func__, *state);
-    /* Make sure the scratch quantities are of the correct size and apply BC if
-     one is specified. */
-    Resize();
-    model_->ApplyBoundaryConditions(state);
-    model_->CalcResidual(*state, &b_);
-    int iter = 0;
-    /* Newton-Raphson iterations. We iterate until any of the following is true:
-     1. The max number of allowed iterations is reached;
-     2. The norm of the change in the state in a single iteration is smaller
-        than the absolute tolerance.
-     3. The relative error (the norm of the change in the state divided by the
-        norm of the state) is smaller than the unitless relative tolerance. */
-    do {
-      model_->CalcTangentMatrix(*state, &A_);
-      linear_solver_->Compute();
-      /* Solving for A * dz = -b. */
-      linear_solver_->Solve(-b_, &dz_);
-      model_->UpdateState(dz_, state);
-      model_->CalcResidual(*state, &b_);
-      ++iter;
-    } while (dz_.norm() >
-                 std::max(relative_tolerance_ * state->HighestOrderStateNorm(),
-                          absolute_tolerance_) &&
-             iter < kMaxIterations_);
-    if (iter == kMaxIterations_) {
-      // TODO(xuchenhan-tri): Provide some advice on how to get a "better
-      //  initial guess". Or instead, return a status indicating the solver
-      //  did not converge and let users decide what to do.
-      throw std::runtime_error(
-          "The solver did not converge " + std::to_string(kMaxIterations_) +
-          " iterations. Please provide a better initial guess.");
+    if (is_model_dynamic()) {
+      throw std::logic_error(
+          fmt::format("{}() can only be called on a static model!", __func__));
     }
-    return iter;
+    model_->ThrowIfModelStateIncompatible(__func__, *state);
+    /* Throw if mode is *not* static. */
+    SolveWithInitialGuess(state);
   }
+
+  /** Returns true if the FEM model owned by `this` solver has ODE order greater
+   than 0. Returns false otherwise. */
+  bool is_model_dynamic() const { return model_->ode_order() > 0; }
 
   /** Returns the FemModel that this solver owns. */
-  const FemModelBase<T>& model() const {
-    return *model_;
-  }
+  const FemModelBase<T>& model() const { return *model_; }
 
   /** Returns the mutable FemModel that this solver owns. */
-  FemModelBase<T>& mutable_model() {
-    return *model_;
-  }
+  FemModelBase<T>& mutable_model() { return *model_; }
 
   /** Sets the relative tolerance, unitless. The Newton-Raphson iterations are
    considered as converged if the norm of the change in the state in one
@@ -147,6 +133,48 @@ class FemSolver {
   }
 
  private:
+  /* Uses a Newton-Raphson solver to solve for the equilibrium state that
+   satisfies the tolerances. See set_relative_tolerance() and
+   set_absolute_tolerance(). The input `state` is non-null and is guaranteed to
+   be compatible with the model owned by `this` solver.
+   @param[in, out] state  As input, `state` provides an initial guess of
+   the solution. As output, `state` reports the equilibrium state. */
+  int SolveWithInitialGuess(FemStateBase<T>* state) const {
+    /* Make sure the scratch quantities are of the correct size and apply BC if
+     one is specified. */
+    Resize();
+    model_->ApplyBoundaryConditions(state);
+    model_->CalcResidual(*state, &b_);
+    int iter = 0;
+    /* Newton-Raphson iterations. We iterate until any of the following is true:
+     1. The max number of allowed iterations is reached;
+     2. The norm of the change in the state in a single iteration is smaller
+        than the absolute tolerance.
+     3. The relative error (the norm of the change in the state divided by the
+        norm of the state) is smaller than the unitless relative tolerance. */
+    do {
+      model_->CalcTangentMatrix(*state, &A_);
+      linear_solver_->Compute();
+      /* Solving for A * dz = -b. */
+      linear_solver_->Solve(-b_, &dz_);
+      model_->UpdateStateFromChangeInHighestOrderState(dz_, state);
+      model_->CalcResidual(*state, &b_);
+      ++iter;
+    } while (dz_.norm() >
+                 std::max(relative_tolerance_ * state->HighestOrderStateNorm(),
+                          absolute_tolerance_) &&
+             iter < kMaxIterations_);
+    if (iter == kMaxIterations_) {
+      // TODO(xuchenhan-tri): Provide some advice on how to get a "better
+      //  initial guess". Or instead, return a status indicating the solver
+      //  did not converge and let users decide what to do.
+      throw std::runtime_error(
+          "The solver did not converge " + std::to_string(kMaxIterations_) +
+          " iterations. Please provide a better initial guess.");
+    }
+    return iter;
+  }
+
   /* Resize the scratch quantities to the size of the model. */
   void Resize() const {
     if (b_.size() != model_->num_dofs()) {

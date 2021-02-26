@@ -20,36 +20,14 @@ namespace drake {
 namespace multibody {
 namespace fixed_fem {
 
-/** %FemModel calculates the components of the discretized FEM equations.
- Suppose the PDE at hand is of the form
-
-     F(z, ∇z, ...) = 0.
-
- where ... indicates possible higher derivatives that we aren't concerned with
- here. In this PDE, z: Ω ⊂ Rᴰ → Rᵈ, is the unknown function being solved for.
- Here, Ω is the domain, D is the dimension of the domain, and d is the solution
- dimension. For instance, if you are solving for the temperature of a 3D object,
- then the domain is three-dimensional (D = 3), while the solution, which is the
- temperature at a point within the object, is one-dimensional (d = 1). After
- spatial and time discretization, the PDE is reduced to a system of linear or
- nonlinear equations of the form:
-
-     G(z₁, z₂, ..., zₙ) = 0,
-
- where n is the number of nodes in the discretization and G is a function from
- Rⁿᵈ to Rⁿᵈ. The linear or nonlinear equation in the system associated with
- the node `a` has the form
-
-     Gₐ(z₁, z₂, ..., zₙ) = 0,
-
- where Gₐ is a function from Rⁿᵈ → Rᵈ and a = 1, ..., n. The nodal values z₁,
- z₂, ..., zₙ are solved for with a linear or nonlinear solver, and the solution
- z is interpolated from these nodal values.
-
- %FemModel calculates various components of the system of linear or nonlinear
- equations that supports solving the system. For example, CalcResidual()
- calculates the value of G evaluated at the current state and
- CalcTangentMatrix() calculates ∇G at the current state.
+/** %FemModel provides a fixed size implementaion of FemModelBase by
+ templatizing on the type of FemElement. See FemModelBase for more information
+ on the functionalities of this class. Many methods provided by FemModelBase
+ (e.g. FemModelBase::CalcTangentMatrix()) involve evaluating computationally
+ intensive loops over FemElement, and the overhead caused by virtual methods may
+ be significant. Therefore, this class is templated on the FemElement to avoid
+ the overhead of virtual methods. The type information at compile time also
+ helps eliminate heap allocations.
  @tparam Element    The type of FemElement that makes up this %FemModel.
  This template parameter provides the scalar type and the compile time constants
  such as the natural, spatial and solution dimensions and the number of
@@ -286,21 +264,24 @@ class FemModel : public FemModelBase<typename Element::Traits::T> {
            weights[2] * mass_matrix;
   }
 
-  /* Implements FemModelBase::DoUpdateState(). */
-  void DoUpdateState(const VectorX<T>& dz, FemStateBase<T>* state) const final {
+  /* Implements FemModelBase::DoUpdateStateFromChangeInHighestOrderState(). */
+  void DoUpdateStateFromChangeInHighestOrderState(
+      const VectorX<T>& dz, FemStateBase<T>* state) const final {
     FemState<Element>& mutable_concrete_state =
         cast_to_mutable_concrete_state(state);
-    state_updater_->UpdateState(dz, &mutable_concrete_state);
+    state_updater_->UpdateStateFromChangeInHighestOrderState(
+        dz, &mutable_concrete_state);
   }
 
   /* Implements FemModelBase::DoAdvanceOneTimeStep(). */
   void DoAdvanceOneTimeStep(const FemStateBase<T>& prev_state,
+                            const VectorX<T>& highest_order_state,
                             FemStateBase<T>* next_state) const final {
     FemState<Element>& next_state_concrete =
         cast_to_mutable_concrete_state(next_state);
     const FemState<Element>& prev_state_concrete =
         cast_to_concrete_state(prev_state);
-    state_updater_->AdvanceOneTimeStep(prev_state_concrete,
+    state_updater_->AdvanceOneTimeStep(prev_state_concrete, highest_order_state,
                                        &next_state_concrete);
   }
 
