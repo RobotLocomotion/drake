@@ -189,7 +189,7 @@ const AbstractValue* SystemBase::EvalAbstractInputImpl(
   // Since it wasn't fixed, it is unconnected.
   if (get_parent_service() == nullptr) return nullptr;
 
-  // If this is the root Context, our parent can't evaluate it.
+  // If this is a root Context, our parent can't evaluate it.
   if (context.is_root_context()) return nullptr;
 
   // This is not the root System, and the port isn't fixed, so ask our parent to

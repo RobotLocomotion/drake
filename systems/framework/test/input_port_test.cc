@@ -306,7 +306,9 @@ GTEST_TEST(InputPortTest, FixValueTests) {
   }
 }
 
-// Tests that a system's input ports embedded in a Diagram can be queried and values fixed.
+// For a subsystem embedded in a diagram, test that we can query, fix, and
+// evaluate that subsystem's input ports using only a Context for that
+// subsystem (rather than the whole Diagram context).
 GTEST_TEST(InputPortTest, ContextForEmbeddedSystem) {
   DiagramBuilder<double> builder;
   auto* system = builder.AddSystem<SystemWithInputPorts>();
@@ -328,10 +330,10 @@ GTEST_TEST(InputPortTest, ContextForEmbeddedSystem) {
   const Eigen::Vector3d kVectorValue(10., 20., 30.);
 
   // Now fix the values.
-  system->basic_vec_port.FixValue(&*context, kVectorValue);
-  system->int_port.FixValue(&*context, kIntValue);
-  system->double_port.FixValue(&*context, kDoubleValue);
-  system->string_port.FixValue(&*context, kStringValue);
+  system->basic_vec_port.FixValue(context.get(), kVectorValue);
+  system->int_port.FixValue(context.get(), kIntValue);
+  system->double_port.FixValue(context.get(), kDoubleValue);
+  system->string_port.FixValue(context.get(), kStringValue);
 
   // Now verify the values.
   EXPECT_EQ(kVectorValue, system->basic_vec_port.Eval(*context));
