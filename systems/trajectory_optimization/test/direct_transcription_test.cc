@@ -54,7 +54,7 @@ class CubicPolynomialSystem final : public systems::LeafSystem<T> {
   // x[n+1] = x³[n]
   void DoCalcDiscreteVariableUpdates(
       const Context<T>& context,
-      const std::vector<const DiscreteUpdateEvent<T>*>&,
+      const std::vector<DiscreteUpdateEvent<T>>&,
       DiscreteValues<T>* discrete_state) const final {
     using std::pow;
     discrete_state->get_mutable_vector(0).SetAtIndex(

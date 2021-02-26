@@ -46,7 +46,7 @@ void CheckForSinglePeriodicEvent(const EventListType& events) {
   // ASSERT_EQ(...), to only run the following code if the prior expectation is
   // met.
   if (events.size() == 1) {
-    EXPECT_EQ(events.front()->get_trigger_type(),
+    EXPECT_EQ(events.front().get_trigger_type(),
         TriggerType::kPeriodic);
   }
 }
@@ -76,7 +76,7 @@ class ZeroOrderHoldTest : public ::testing::TestWithParam<bool> {
     }
 
     event_info_ = hold_->AllocateCompositeEventCollection();
-    leaf_info_ = dynamic_cast<const LeafCompositeEventCollection<double>*>(
+    leaf_info_ = dynamic_cast<const internal::LeafCompositeEventCollection<double>*>(
         event_info_.get());
   }
 
@@ -93,7 +93,7 @@ class ZeroOrderHoldTest : public ::testing::TestWithParam<bool> {
   std::unique_ptr<ZeroOrderHold<double>> hold_;
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<CompositeEventCollection<double>> event_info_;
-  const LeafCompositeEventCollection<double>* leaf_info_;
+  const internal::LeafCompositeEventCollection<double>* leaf_info_;
 
   const bool is_abstract_{};
   Eigen::Vector3d state_value_override_;
