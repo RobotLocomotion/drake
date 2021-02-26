@@ -9,8 +9,8 @@ def osqp_repository(
         name = name,
         repository = "oxfordcontrol/osqp",
         # When updating this commit, see drake/tools/workspace/qdldl/README.md.
-        commit = "v0.6.0",
-        sha256 = "6e00d11d1f88c1e32a4419324b7539b89e8f9cbb1c50afe69f375347c989ba2b",  # noqa
+        commit = "v0.6.2",
+        sha256 = "d973c33c3164caa381ed7387375347a46f7522523350a4e51989479b9d3b59c7",  # noqa
         build_file = "@drake//tools/workspace/osqp:package.BUILD.bazel",
         mirrors = mirrors,
     )
