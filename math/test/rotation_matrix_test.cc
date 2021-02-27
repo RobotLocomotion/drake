@@ -1042,12 +1042,26 @@ TEST_F(RotationMatrixConversionTests, twoVectorsToRotationMatrix) {
       RotationMatrix<double>::MakeRotationMatrixFromTwoUnitVectors(alpha, beta);
   ASSERT_TRUE(R.IsExactlyIdentity());
 
-#if 0
-  // Test degenerate case when alpha = -beta.
+  // Test degenerate case when beta = -alpha and alpha = [1, 0, 0].
+  constexpr double ktolerance = 256 * kEpsilon;
   beta = Vector3<double>(-1, 0, 0);
   R = RotationMatrix<double>::MakeRotationMatrixFromTwoUnitVectors(alpha, beta);
-  ASSERT_TRUE(R.IsExactlyIdentity());
-#endif
+  const RotationMatrix<double> Rz = RotationMatrix<double>::MakeZRotation(M_PI);
+  EXPECT_TRUE(CompareMatrices(R.matrix(), Rz.matrix(), ktolerance));
+
+  // Test degenerate case when beta = -alpha and alpha = [0, 1, 0].
+  alpha = Vector3<double>(0, 1, 0);
+  beta = Vector3<double>(0, -1, 0);
+  R = RotationMatrix<double>::MakeRotationMatrixFromTwoUnitVectors(alpha, beta);
+  const RotationMatrix<double> Rx = RotationMatrix<double>::MakeXRotation(M_PI);
+  EXPECT_TRUE(CompareMatrices(R.matrix(), Rx.matrix(), ktolerance));
+
+  // Test degenerate case when beta = -alpha and alpha = [0, 0, 1].
+  alpha = Vector3<double>(0, 0, 1);
+  beta = Vector3<double>(0, 0, -1);
+  R = RotationMatrix<double>::MakeRotationMatrixFromTwoUnitVectors(alpha, beta);
+  const RotationMatrix<double> Ry = RotationMatrix<double>::MakeYRotation(M_PI);
+  EXPECT_TRUE(CompareMatrices(R.matrix(), Ry.matrix(), ktolerance));
 
   // Test appoximately 3^3 * 5^3 = 3375 non-degenerate cases.
   for (double xA = -1.0;  xA <= 1.0;  xA += 1.0) {
@@ -1062,14 +1076,13 @@ TEST_F(RotationMatrixConversionTests, twoVectorsToRotationMatrix) {
               const double alpha_norm = alpha.norm();
               const double beta_norm = beta.norm();
               const double lambda_norm = lambda.norm();
-              constexpr double ktolerance = 256 * kEpsilon;
               if (alpha_norm > ktolerance && beta_norm > ktolerance &&
                   lambda_norm > ktolerance) {
                 // Use AngleAxis to calculate the expected rotation matrix.
                 double cosTheta = alpha.dot(beta) / (alpha_norm * beta_norm);
                 const double theta = std::acos(cosTheta);
                 const Eigen::AngleAxis<double> theta_lambda(theta, lambda);
-                RotationMatrix<double> R_expected(theta_lambda);
+                const RotationMatrix<double> R_expected(theta_lambda);
 
                 // Use the non-unit vector to test one of the algorithms.
                 R = RotationMatrix<double>::
