@@ -57,13 +57,13 @@ class RotationMatrix {
 
   /// Constructs a %RotationMatrix from a Matrix3.
   /// @param[in] R an allegedly valid rotation matrix.
-  /// @throws std::logic_error in debug builds if R fails IsValid(R).
+  /// @throws std::exception in debug builds if R fails IsValid(R).
   explicit RotationMatrix(const Matrix3<T>& R) { set(R); }
 
   /// Constructs a %RotationMatrix from an Eigen::Quaternion.
   /// @param[in] quaternion a non-zero, finite quaternion which may or may not
   /// have unit length [i.e., `quaternion.norm()` does not have to be 1].
-  /// @throws std::logic_error in debug builds if the rotation matrix
+  /// @throws std::exception in debug builds if the rotation matrix
   /// R that is built from `quaternion` fails IsValid(R).  For example, an
   /// exception is thrown if `quaternion` is zero or contains a NaN or infinity.
   /// @note This method has the effect of normalizing its `quaternion` argument,
@@ -90,7 +90,7 @@ class RotationMatrix {
   /// @param[in] theta_lambda an Eigen::AngleAxis whose associated axis (vector
   /// direction herein called `lambda`) is non-zero and finite, but which may or
   /// may not have unit length [i.e., `lambda.norm()` does not have to be 1].
-  /// @throws std::logic_error in debug builds if the rotation matrix
+  /// @throws std::exception in debug builds if the rotation matrix
   /// R that is built from `theta_lambda` fails IsValid(R).  For example, an
   /// exception is thrown if `lambda` is zero or contains a NaN or infinity.
   explicit RotationMatrix(const Eigen::AngleAxis<T>& theta_lambda) {
@@ -101,36 +101,6 @@ class RotationMatrix {
     const T norm = lambda.norm();
     const T& theta = theta_lambda.angle();
     set(Eigen::AngleAxis<T>(theta, lambda / norm).toRotationMatrix());
-  }
-
-  // Calculates a rotation matrix R_AB from two unit vectors alpha and beta.
-  // @param[alpha] unit vector expressed in either frame A or frame B.
-  // @param[beta] unit vector expressed in the same frame as alpha (A or B).
-  // @retval rotation matrix R_AB.
-  static RotationMatrix<T> MakeRotationMatrixFromTwoUnitVectors(
-      const Vector3<T>& alphaUnitVector, const Vector3<T>& betaUnitVector) {
-    // DRAKE_ASSERT(std::abs(alphaUnitVector.norm() - 1) <= kEpsilon);
-    // DRAKE_ASSERT(std::abs(betaUnitVector.norm() - 1) <= kEpsilon);
-    return RotationMatrix<T>(
-        MakeMatrix33FromTwoVectors(alphaUnitVector, betaUnitVector));
-  }
-
-  // Calculates a rotation matrix R_AB from two vectors alpha and beta.
-  // @param[alpha] vector expressed in either frame A or frame B.
-  // @param[beta]  vector expressed in the same frame as alpha (A or B).
-  // @retval rotation matrix R_AB.
-  // @note CalcRotationMatrixFromTwoUnitVectors() is more efficient if one knows
-  // apriori that alpha and beta are unit vectors.
-  static RotationMatrix<T> MakeRotationMatrixFromTwoVectors(
-      const Vector3<T>& alpha, const Vector3<T>& beta) {
-    const T alpha_norm_squared = alpha.squaredNorm();
-    const T beta_norm_squared = beta.squaredNorm();
-    // DRAKE_ASSERT(alpha_norm_squared >= kEpsilon);
-    // DRAKE_ASSERT(beta_norm_squared >= kEpsilon);
-    const T one_over_alpha_beta_norm =
-        1.0 / sqrt(alpha_norm_squared * beta_norm_squared);
-    return RotationMatrix<T>(
-        MakeMatrix33FromTwoVectors(alpha, beta * one_over_alpha_beta_norm));
   }
 
   /// Constructs a %RotationMatrix from an %RollPitchYaw.  In other words,
@@ -195,7 +165,7 @@ class RotationMatrix {
   /// @param[in] Bx first unit vector in right-handed orthogonal set.
   /// @param[in] By second unit vector in right-handed orthogonal set.
   /// @param[in] Bz third unit vector in right-handed orthogonal set.
-  /// @throws std::logic_error in debug builds if `R_AB` fails IsValid(R_AB).
+  /// @throws std::exception in debug builds if `R_AB` fails IsValid(R_AB).
   /// @note In release builds, the caller can subsequently test if `R_AB` is,
   /// in fact, a valid %RotationMatrix by calling `R_AB.IsValid()`.
   /// @note The rotation matrix `R_AB` relates two sets of right-handed
@@ -215,7 +185,7 @@ class RotationMatrix {
   /// @param[in] Ax first unit vector in right-handed orthogonal set.
   /// @param[in] Ay second unit vector in right-handed orthogonal set.
   /// @param[in] Az third unit vector in right-handed orthogonal set.
-  /// @throws std::logic_error in debug builds if `R_AB` fails IsValid(R_AB).
+  /// @throws std::exception in debug builds if `R_AB` fails IsValid(R_AB).
   /// @note In release builds, the caller can subsequently test if `R_AB` is,
   /// in fact, a valid %RotationMatrix by calling `R_AB.IsValid()`.
   /// @note The rotation matrix `R_AB` relates two sets of right-handed
@@ -305,6 +275,48 @@ class RotationMatrix {
     return RotationMatrix(R);
   }
 
+  // Forms a rotation matrix R_AB from two non-zero vectors.
+  // @param[in] alpha non-zero vector expressed in frame A.
+  // @param[in] beta non-zero vector expressed in frame A.
+  // @retval rotation matrix R_AB.
+  // @note Although MakeRotationMatrixFromTwoUnitVectors() is more efficient if
+  // alpha and beta are known to be unit vectors, this method is more efficient
+  // than normalizing each of alpha and beta and then calling that method.
+  static RotationMatrix<T> MakeRotationMatrixFromTwoVectors(
+      const Vector3<T>& alpha, const Vector3<T>& beta) {
+    const T alpha_norm_squared = alpha.squaredNorm();
+    const T beta_norm_squared = beta.squaredNorm();
+
+#ifdef DRAKE_ASSERT_IS_ARMED
+    // In debug builds, verify alpha and beta seem to be non-zero vectors.
+    constexpr double kEpsilon = 16 * std::numeric_limits<double>::epsilon();
+    DRAKE_ASSERT(alpha_norm_squared >= kEpsilon * kEpsilon);
+    DRAKE_ASSERT(beta_norm_squared >= kEpsilon * kEpsilon);
+#endif
+
+    const T one_over_alpha_beta_norm =
+        1.0 / sqrt(alpha_norm_squared * beta_norm_squared);
+    return MakeRotationMatrixFromTwoVectorsAndScalingFactor(
+        alpha, beta, one_over_alpha_beta_norm);
+  }
+
+  // Forms a rotation matrix R_AB from two unit vectors.
+  // @param[in] alpha_unit_vector unit vector expressed in frame A.
+  // @param[in] beta_unit_vector unit vector expressed in frame A.
+  // @retval rotation matrix R_AB.
+  // @note Use MakeRotationMatrixFromTwoVectors() for non-unit vectors.
+  static RotationMatrix<T> MakeRotationMatrixFromTwoUnitVectors(
+      const Vector3<T>& alpha_unit_vector, const Vector3<T>& beta_unit_vector) {
+#ifdef DRAKE_ASSERT_IS_ARMED
+    // In debug builds, verify method arguments are approximately unit vectors.
+    constexpr double kEpsilon = 512 * std::numeric_limits<double>::epsilon();
+    DRAKE_ASSERT(abs(alpha_unit_vector.norm() - 1) <= kEpsilon);
+    DRAKE_ASSERT(abs(beta_unit_vector.norm() - 1) <= kEpsilon);
+#endif
+    return MakeRotationMatrixFromTwoVectorsAndScalingFactor(
+        alpha_unit_vector, beta_unit_vector, 1);
+  }
+
   /// Creates a %RotationMatrix templatized on a scalar type U from a
   /// %RotationMatrix templatized on scalar type T.  For example,
   /// ```
@@ -337,7 +349,7 @@ class RotationMatrix {
 
   /// Sets `this` %RotationMatrix from a Matrix3.
   /// @param[in] R an allegedly valid rotation matrix.
-  /// @throws std::logic_error in debug builds if R fails IsValid(R).
+  /// @throws std::exception in debug builds if R fails IsValid(R).
   void set(const Matrix3<T>& R) {
     DRAKE_ASSERT_VOID(ThrowIfNotValid(R));
     SetUnchecked(R);
@@ -568,7 +580,7 @@ class RotationMatrix {
   /// bases related by matrix M does not span 3D space (when M multiples a unit
   /// vector, a vector of magnitude as small as 0 may result).
   /// @returns proper orthonormal matrix R that is closest to M.
-  /// @throws std::logic_error if R fails IsValid(R).
+  /// @throws std::exception if R fails IsValid(R).
   /// @note William Kahan (UC Berkeley) and Hongkai Dai (Toyota Research
   /// Institute) proved that for this problem, the same R that minimizes the
   /// Frobenius norm also minimizes the matrix-2 norm (a.k.a an induced-2 norm),
@@ -611,7 +623,7 @@ class RotationMatrix {
   /// chooses to return a canonical quaternion, i.e., with q(0) >= 0.
   /// @param[in] M 3x3 matrix to be made into a quaternion.
   /// @returns a unit quaternion q in canonical form, i.e., with q(0) >= 0.
-  /// @throws std::logic_error in debug builds if the quaternion `q`
+  /// @throws std::exception in debug builds if the quaternion `q`
   /// returned by this method cannot construct a valid %RotationMatrix.
   /// For example, if `M` contains NaNs, `q` will not be a valid quaternion.
   static Eigen::Quaternion<T> ToQuaternion(
@@ -692,7 +704,7 @@ class RotationMatrix {
   // @param[in] Bx first unit vector in right-handed orthogonal basis.
   // @param[in] By second unit vector in right-handed orthogonal basis.
   // @param[in] Bz third unit vector in right-handed orthogonal basis.
-  // @throws std::logic_error in debug builds if `R_AB` fails IsValid(R_AB).
+  // @throws std::exception in debug builds if `R_AB` fails IsValid(R_AB).
   // @note The rotation matrix `R_AB` relates two sets of right-handed
   // orthogonal unit vectors, namely `Ax`, `Ay`, `Az` and `Bx`, `By`, `Bz`.
   // The rows of `R_AB` are `Ax`, `Ay`, `Az` whereas the
@@ -711,7 +723,7 @@ class RotationMatrix {
   // @param[in] Ax first unit vector in right-handed orthogonal basis.
   // @param[in] Ay second unit vector in right-handed orthogonal basis.
   // @param[in] Az third unit vector in right-handed orthogonal basis.
-  // @throws std::logic_error in debug builds if `R_AB` fails R_AB.IsValid().
+  // @throws std::exception in debug builds if `R_AB` fails R_AB.IsValid().
   // @see SetFromOrthonormalColumns() for additional notes.
   void SetFromOrthonormalRows(const Vector3<T>& Ax,
                               const Vector3<T>& Ay,
@@ -957,23 +969,111 @@ class RotationMatrix {
     return m;
   }
 
-  // Constructs a 3x3 rotation matrix from two vectors alpha and beta.
+  // Returns a vector that is perpendicular to a given vector and whose maximum
+  // components is positive (the vector does not have all negative components).
+  // @param[in] v arbitrary vector expressed in an arbitrary frame.
+  // @returns a vector vₚ that is perpendicular to vector v and whose maximum
+  // component is positive (vₚ does not have all negative components).
+  static Vector3<T> CalcPerpendicularVectorMostlyPositive(const Vector3<T>& v) {
+#ifdef DRAKE_ASSERT_IS_ARMED
+    // In debug builds, verify v seem to be a non-zero vector.
+    constexpr double kEpsilon = 16 * std::numeric_limits<double>::epsilon();
+    DRAKE_ASSERT(v.squaredNorm() >= kEpsilon * kEpsilon);
+#endif
+    // To form a vector vₚ that is perpendicular to an arbitrary vector v, we
+    // judiciously choose a unit vector λ that is not parallel to v and use the
+    // fact that λ x v is guaranteed to be perpendicular to v.  The choice of λ
+    // depends on v(i), the component of v with the largest absolute value.
+    // If |vx = v(0)| is largest, set λ = [0, 1, 0] so λ x v = [-vz, 0, vx].
+    // If |vy = v(1)| is largest, set λ = [0, 0, 1] so λ x v = [vy, -vx, 0].
+    // If |vz = v(2)| is largest, set λ = [1, 0, 0] so λ x v = [0, vz, -vy].
+    // These results show λ x v ≠ 0.  They also show the component of λ x v with
+    // largest absolute value is positive if v(i) > 0 and negative if v(i) < 0.
+    // Since both +(λ x v) and -(λ x v) are perpendicular to v, we choose
+    // vₚ = +(λ x v) if v(i) > 0 and choose vₚ = -(λ x v) if v(i) < 0.
+    const T& vx = v(0);
+    const T& vy = v(1);
+    const T& vz = v(2);
+    Vector3<T> v_perp;
+    if (abs(vx) >= abs(vy) && abs(vx) >= abs(vz)) {
+      v_perp = vx > 0 ? Vector3<T>(-vz, 0, vx) : Vector3<T>(vz, 0, -vx);
+    } else if (abs(vy) >= abs(vz)) {
+      v_perp = vy > 0 ? Vector3<T>(vy, -vx, 0) : Vector3<T>(-vy, vx, 0);
+    } else {
+      v_perp = vz > 0 ? Vector3<T>(0, vz, -vy) : Vector3<T>(0, -vz, vy);
+    }
+    return v_perp;
+  }
+
+  // Constructs a rotation matrix from two vectors alpha and beta.
   // @param[alpha] vector which may or may not have unit length.
   // @param[beta] vector which may or may not have unit length.
-  // @retval 3x3 rotation matrix
-  static Matrix3<T> MakeMatrix33FromTwoVectors(
-      const Vector3<T>& alpha, const Vector3<T>& beta) {
-    Matrix3<T> m;
-    const T c = alpha.dot(beta);  // cos(theta), theta = angle(alpha, beta).
-    const T oc = 1/(1+c);         // oc denotes one over (1+c).
-    const Vector3<T> s = alpha.cross(beta);  // magnitude(s) = sin(theta).
+  // @param[one_over_alpha_beta_norm] scaling factor equal to 1/(|alpha| |beta|)
+  // that has the effect of normalizing alpha and beta to unit vectors, but with
+  // less computational cost that actually doing that normalization.
+  // @retval rotation matrix
+  static RotationMatrix<T> MakeRotationMatrixFromTwoVectorsAndScalingFactor(
+      const Vector3<T>& alpha, const Vector3<T>& beta,
+      const T& one_over_alpha_beta_norm) {
+    // Form c = cos(θ), where θ is the angle between alpha and beta.
+    // The calculation of cos(θ) follows from the definition of the dot-product:
+    // α ⋅ β = |α| |β| cos(θ).  Hence, cos(θ) = α ⋅ β / (|α| |β|).
+    const T c = alpha.dot(beta) * one_over_alpha_beta_norm;
+    const T one_plus_c = 1 + c;
+
+    // Call an efficient method that works well as long as the angle θ between
+    // the vectors is reasonably far away from π.
+    constexpr double kEpsilon = 64 * std::numeric_limits<double>::epsilon();
+    if (abs(one_plus_c) > kEpsilon) {
+      return MakeRotationMatrixFromTwoNonAntiParallelVectors(alpha, beta,
+          one_over_alpha_beta_norm, c);
+    }
+
+    // This next section provides a reasonably efficient algorithm to form a
+    // rotation matrix when cos(θ) ≈ -1 (i.e., θ ≈ π).
+    const Vector3<T> v_perp = CalcPerpendicularVectorMostlyPositive(alpha);
+    const Eigen::AngleAxis<T> theta_lambda(M_PI, v_perp);
+    return RotationMatrix<T>(theta_lambda);
+  }
+
+  // Constructs a rotation matrix from two vectors alpha and beta.
+  // @param[in] alpha vector which may or may not have unit length.
+  // @param[in] beta vector which may or may not have unit length.
+  // @param[in] [one_over_alpha_beta_norm] factor equal to 1/(|alpha| |beta|)
+  // that has the effect of normalizing alpha and beta to unit vectors, but is
+  // less costly that actually doing individual normalization of both vectors.
+  // @param[in] c = cos(θ), where θ is the angle between alpha and beta.
+  // @throws std::exception in debug builds if alpha and beta are anti-parallel.
+  // @retval rotation matrix from a simple rotation by the angle
+  static RotationMatrix<T> MakeRotationMatrixFromTwoNonAntiParallelVectors(
+      const Vector3<T>& alpha, const Vector3<T>& beta,
+      const T& one_over_alpha_beta_norm, const T& c) {
+#ifdef DRAKE_ASSERT_IS_ARMED
+    // In debug builds, verify one_over_alpha_beta_norm is not very close to
+    // zero and verify that alpha and beta are not very close to anti-parallel.
+    constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
+    DRAKE_ASSERT(one_over_alpha_beta_norm > 64 * kEpsilon * kEpsilon);
+    DRAKE_ASSERT(abs(1 + c) > 2 * kEpsilon);
+#endif
+
+    // Form the vector s equal to the cross product of the unit vector α/|α| in
+    // the direction of alpha with the unit vector β/|β| in the direction of
+    // beta as s = α/|α| ⨯ β/|β| = α ⨯ β / (|α| |β|).
+    // Note: |s| = sin(θ), i.e., the sine of the angle between alpha and beta.
+    // This follows from the cross product definition: α ⨯ β = |α| |β| sin(θ) û,
+    // where û is a unit vector.  Hence, |α ⨯ β| = |α| |β| sin(θ), so
+    // sin(θ) = |α ⨯ β| / (|α| |β|) = |s|.
+    const Vector3<T> s = alpha.cross(beta) * one_over_alpha_beta_norm;
     const T sx  = s(0);
     const T sy  = s(1);
     const T sz  = s(2);
+    const T oc = 1/(1+c);  // oc is named due to one over (1+c).
     const T sxyc = sx * sy * oc;
     const T sxzc = sx * sz * oc;
     const T syzc = sy * sz * oc;
 
+    RotationMatrix<T> R;
+    Matrix3<T>& m = R.R_AB_;
     m.coeffRef(0, 0) = c + sx * sx * oc;
     m.coeffRef(0, 1) = sxyc - sz;
     m.coeffRef(0, 2) = sy + sxzc;
@@ -984,7 +1084,7 @@ class RotationMatrix {
     m.coeffRef(2, 1) = sx + syzc;
     m.coeffRef(2, 2) = c + sz * sz * oc;
 
-    return m;
+    return R;
   }
 
   // Stores the underlying rotation matrix relating two frames (e.g. A and B).
@@ -1012,7 +1112,7 @@ using RotationMatrixd = RotationMatrix<double>;
 /// @param[in] angle_lb the lower bound of the rotation angle θ.
 /// @param[in] angle_ub the upper bound of the rotation angle θ.
 /// @return Rotation angle θ of the projected matrix, angle_lb <= θ <= angle_ub
-/// @throws std::runtime_error if M is not a 3 x 3 matrix or if
+/// @throws std::exception if M is not a 3 x 3 matrix or if
 ///         axis is the zero vector or if angle_lb > angle_ub.
 /// @note This method is useful for reconstructing a rotation matrix for a
 /// revolute joint with joint limits.

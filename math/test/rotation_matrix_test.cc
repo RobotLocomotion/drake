@@ -1058,24 +1058,30 @@ TEST_F(RotationMatrixConversionTests, twoVectorsToRotationMatrix) {
             for (double zB = -1.0;  zB <= 1.0;  zB += 0.5) {
               alpha = Vector3<double>(xA, yA, zA);
               beta = Vector3<double>(xB, yB, zB);
-              Vector3<double> lambda = alpha.cross(beta);
+              const Vector3<double> lambda = alpha.cross(beta);
               const double alpha_norm = alpha.norm();
               const double beta_norm = beta.norm();
               const double lambda_norm = lambda.norm();
               constexpr double ktolerance = 256 * kEpsilon;
               if (alpha_norm > ktolerance && beta_norm > ktolerance &&
                   lambda_norm > ktolerance) {
-                alpha /= alpha_norm;    // Make alpha into a unit vector.
-                beta /= beta_norm;      // Make beta into a unit vector.
-                lambda /= lambda_norm;  // Make lambda into a unit vector.
-                R = RotationMatrix<
-                  double>::MakeRotationMatrixFromTwoUnitVectors(alpha, beta);
-
                 // Use AngleAxis to calculate the expected rotation matrix.
-                const double cosTheta = alpha.dot(beta);
+                double cosTheta = alpha.dot(beta) / (alpha_norm * beta_norm);
                 const double theta = std::acos(cosTheta);
                 const Eigen::AngleAxis<double> theta_lambda(theta, lambda);
                 RotationMatrix<double> R_expected(theta_lambda);
+
+                // Use the non-unit vector to test one of the algorithms.
+                R = RotationMatrix<double>::
+                    MakeRotationMatrixFromTwoVectors(alpha, beta);
+                ASSERT_TRUE(R.IsNearlyEqualTo(R_expected, ktolerance));
+
+                // Create unit vectors to test the other algorithm.
+                const Vector3<double> alpha_unit_vector = alpha / alpha_norm;
+                const Vector3<double> beta_unit_vector = beta / beta_norm;
+                R = RotationMatrix<double>::
+                    MakeRotationMatrixFromTwoUnitVectors(alpha_unit_vector,
+                                                         beta_unit_vector);;
                 ASSERT_TRUE(R.IsNearlyEqualTo(R_expected, ktolerance));
               }
             }
