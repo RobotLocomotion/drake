@@ -830,9 +830,6 @@ class MultibodyTree {
   // @see AddRigidBody().
   //
   // @throws std::exception if @p model_instance is not valid for this model.
-  bool HasBodyNamed(const std::string& name,
-                    ModelInstanceIndex model_instance) const { return HasBodyNamed(name, model_instance); }
-
   bool HasBodyNamed(const std::string_view& name,
                     ModelInstanceIndex model_instance) const {
     DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
