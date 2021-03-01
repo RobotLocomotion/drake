@@ -718,6 +718,21 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "stretch_test",
+    deps = [
+        ":fem_solver",
+        ":linear_constitutive_model",
+        ":linear_simplex_element",
+        ":mesh_utilities",
+        ":simplex_gaussian_quadrature",
+        ":static_elasticity_element",
+        ":static_elasticity_model",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry/proximity:make_box_mesh",
+    ],
+)
+
+drake_cc_googletest(
     name = "zeroth_order_state_updater_test",
     deps = [
         ":dummy_element",
