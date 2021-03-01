@@ -113,7 +113,7 @@ class FemSolverTest : public ::testing::Test {
     const VectorX<T> q = MakeArbitraryPositions();
     state.SetQ(q);
     std::unique_ptr<DirichletBoundaryCondition<T>> bc = MakeCeilingBc();
-    state.ApplyBoundaryConditions(*bc);
+    state.ApplyBoundaryCondition(*bc);
     return state;
   }
 
