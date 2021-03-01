@@ -73,11 +73,11 @@ const BodyType<T>& MultibodyTree<T>::AddBody(
       &internal::BodyAttorney<T>::get_mutable_body_frame(body.get());
   body_frame->set_parent_tree(this, body_frame_index);
   DRAKE_ASSERT(body_frame->name() == body->name());
-  frame_name_to_index_.insert({body_frame->name(), body_frame_index});
+  frame_name_to_index_.emplace(body_frame->name(), body_frame_index);
   frames_.push_back(body_frame);
   // - Register body.
   BodyType<T>* raw_body_ptr = body.get();
-  body_name_to_index_.insert({body->name(), body->index()});
+  body_name_to_index_.emplace(body->name(), body->index());
   owned_bodies_.push_back(std::move(body));
   return *raw_body_ptr;
 }
@@ -303,7 +303,7 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
   const JointIndex joint_index(owned_joints_.size());
   joint->set_parent_tree(this, joint_index);
   JointType<T>* raw_joint_ptr = joint.get();
-  joint_name_to_index_.insert({joint->name(), joint->index()});
+  joint_name_to_index_.emplace(joint->name(), joint->index());
   owned_joints_.push_back(std::move(joint));
   return *raw_joint_ptr;
 }
@@ -384,7 +384,7 @@ ModelInstanceIndex MultibodyTree<T>::AddModelInstance(const std::string& name) {
                            "details.");
   }
   const ModelInstanceIndex index(num_model_instances());
-  instance_name_to_index_[name] = index;
+  instance_name_to_index_.emplace(std::string(name), index);
   instance_index_to_name_[index] = name;
   return index;
 }
