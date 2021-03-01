@@ -21,21 +21,21 @@ TEST_F(ZerothOrderStateUpdaterTest, Weights) {
       CompareMatrices(state_updater.weights(), Vector3<double>(1, 0, 0), 0));
 }
 
-TEST_F(ZerothOrderStateUpdaterTest, UpdateState) {
+TEST_F(ZerothOrderStateUpdaterTest, UpdateStateFromChangeInUnknowns) {
   const VectorX<double> q = Vector4<double>(1.23, 2.34, 3.45, 4.56);
   const VectorX<double> dq = Vector4<double>(0.23, 0.34, 0.45, 0.56);
   FemState<DummyElement<0>> state(q);
-  state_updater.UpdateState(dq, &state);
+  state_updater.UpdateStateFromChangeInUnknowns(dq, &state);
   EXPECT_TRUE(CompareMatrices(state.q(), q + dq, 0));
 }
 
-TEST_F(ZerothOrderStateUpdaterTest, IntegrateTime) {
+TEST_F(ZerothOrderStateUpdaterTest, AdvanceOneTimeStep) {
   const VectorX<double> q = Vector4<double>(1.23, 2.34, 3.45, 4.56);
   FemState<DummyElement<0>> prev_state(q);
   FemState<DummyElement<0>> new_state(prev_state);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      state_updater.AdvanceOneTimeStep(prev_state, &new_state), std::exception,
-      "There is no notion of time in a zeroth order ODE.");
+      state_updater.AdvanceOneTimeStep(prev_state, q, &new_state),
+      std::exception, "There is no notion of time in a zeroth order ODE.");
 }
 }  // namespace
 }  // namespace test
