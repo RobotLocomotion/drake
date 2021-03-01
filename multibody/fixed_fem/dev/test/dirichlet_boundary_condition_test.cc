@@ -61,7 +61,7 @@ class DirichletBoundaryConditionTest : public ::testing::Test {
  a given state. */
 TEST_F(DirichletBoundaryConditionTest, ApplyBcToState) {
   State s = MakeState();
-  s.ApplyBoundaryConditions(bc_);
+  s.ApplyBoundaryCondition(bc_);
   EXPECT_TRUE(CompareMatrices(s.q(), Vector<double, kNumDofs>{3, 0.2, 1, 0.4}));
   EXPECT_TRUE(
       CompareMatrices(s.qdot(), Vector<double, kNumDofs>{2, 0.6, 0, 0.8}));
@@ -100,7 +100,7 @@ TEST_F(DirichletBoundaryConditionTest, OutOfBound) {
   bc_.AddBoundaryCondition(DofIndex(4), Vector<double, kOdeOrder + 1>(3, 4));
   State state = MakeState();
   DRAKE_EXPECT_THROWS_MESSAGE(
-    state.ApplyBoundaryConditions(bc_), std::exception,
+    state.ApplyBoundaryCondition(bc_), std::exception,
           "An index of the dirichlet boundary condition is out of the range.");
   VectorXd b = MakeResidual();
   DRAKE_EXPECT_THROWS_MESSAGE(

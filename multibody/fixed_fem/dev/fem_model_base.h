@@ -70,7 +70,7 @@ class FemModelBase {
    with the concrete FemModel type of `this` %FemModelBase. The new state's
    number of generalized positions is equal to `num_dofs()`. The new state's
    element data is constructed using the FemElements owned by this %FemModel. */
-  virtual std::unique_ptr<FemStateBase<T>> MakeFemStateBase() const = 0;
+  std::unique_ptr<FemStateBase<T>> MakeFemStateBase() const;
 
   /** Calculates the residual at the given FemStateBase. Suppose the linear
   or nonlinear system generated from the FEM discretization is G(z) = 0, then
@@ -136,7 +136,7 @@ class FemModelBase {
   /* Apply boundary condition set for this %FemModel to the input `state`. No-op
    if no boundary condition is set.
    @pre state != nullptr. */
-  void ApplyBoundaryConditions(FemStateBase<T>* state) const;
+  void ApplyBoundaryCondition(FemStateBase<T>* state) const;
 
   /** Takes ownership of the given Dirichlet boundary condition and apply it
    when the model is evaluated. */
@@ -152,6 +152,10 @@ class FemModelBase {
       const char* func, const FemStateBase<T>& state_base) const = 0;
 
  protected:
+  /** Derived classes must override this method to provide an implementation for
+    the NVI MakeFemStateBase(). */
+  virtual std::unique_ptr<FemStateBase<T>> DoMakeFemStateBase() const = 0;
+
   /** Derived classes must override this method to provide an implementation
    for the NVI CalcResidual(). The input `state` is guaranteed to be
    compatible with `this` FEM model. */

@@ -3,7 +3,6 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/common/unused.h"
 #include "drake/multibody/fixed_fem/dev/element_cache_entry.h"
 #include "drake/multibody/fixed_fem/dev/test/dummy_element.h"
 
@@ -133,12 +132,6 @@ TEST_F(FemStateTest, ElementCache) {
   state_.SetQ(2 * q());
   VerifyCacheEntries();
   state_.SetQdot(2 * qdot());
-  VerifyCacheEntries();
-
-  /* Verify that mutable getters thrash the cache entries and the cached
-   quantities are correctly recomputed. */
-  Eigen::VectorBlock<VectorX<double>> qdot = state_.mutable_qdot();
-  unused(qdot);
   VerifyCacheEntries();
 
   /* Verify that resizing thrashes the cache entries and the cached

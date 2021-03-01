@@ -4,6 +4,11 @@ namespace drake {
 namespace multibody {
 namespace fixed_fem {
 template <typename T>
+std::unique_ptr<FemStateBase<T>> FemModelBase<T>::MakeFemStateBase() const {
+  return DoMakeFemStateBase();
+}
+
+template <typename T>
 void FemModelBase<T>::CalcResidual(const FemStateBase<T>& state,
                                    EigenPtr<VectorX<T>> residual) const {
   DRAKE_DEMAND(residual != nullptr);
@@ -58,11 +63,11 @@ void FemModelBase<T>::AdvanceOneTimeStep(const FemStateBase<T>& prev_state,
 }
 
 template <typename T>
-void FemModelBase<T>::ApplyBoundaryConditions(FemStateBase<T>* state) const {
+void FemModelBase<T>::ApplyBoundaryCondition(FemStateBase<T>* state) const {
   DRAKE_DEMAND(state != nullptr);
   ThrowIfModelStateIncompatible(__func__, *state);
   if (dirichlet_bc_ != nullptr) {
-    state->ApplyBoundaryConditions(*dirichlet_bc_);
+    state->ApplyBoundaryCondition(*dirichlet_bc_);
   }
 }
 }  // namespace fixed_fem

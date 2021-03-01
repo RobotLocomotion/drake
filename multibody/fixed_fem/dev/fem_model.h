@@ -107,7 +107,7 @@ class FemModel : public FemModelBase<typename Element::Traits::T> {
 
   /* Implements FemModelBase::MakeFemStateBase() by simply hiding the
    result from MakeFemState() behind a unique_ptr to FemStateBase. */
-  std::unique_ptr<FemStateBase<T>> MakeFemStateBase() const final {
+  std::unique_ptr<FemStateBase<T>> DoMakeFemStateBase() const final {
     return std::make_unique<FemState<Element>>(MakeFemState());
   }
 
