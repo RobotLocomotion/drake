@@ -129,7 +129,7 @@ class DynamicElasticityElement final
 
   /* Implements FemElement::CalcMassMatrix(). */
   void DoCalcMassMatrix(
-      const FemState<ElementType>& state,
+      const FemState<ElementType>&,
       EigenPtr<Eigen::Matrix<T, Traits::kNumDofs, Traits::kNumDofs>> M) const {
     *M = ElasticityElementType::mass_matrix();
   }
