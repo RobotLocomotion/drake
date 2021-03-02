@@ -37,6 +37,14 @@ drake_jupyter_py_binary(
 )
 
 drake_jupyter_py_binary(
+    name = "quadratic_program",
+    add_test_rule = 1,
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+drake_jupyter_py_binary(
     name = "dynamical_systems",
     add_test_rule = 1,
     deps = [
@@ -70,6 +78,14 @@ drake_jupyter_py_binary(
 
 drake_jupyter_py_binary(
     name = "sum_of_squares_optimization",
+    add_test_rule = 1,
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+drake_jupyter_py_binary(
+    name = "updating_costs_and_constraints",
     add_test_rule = 1,
     deps = [
         "//bindings/pydrake",
