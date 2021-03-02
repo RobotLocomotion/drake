@@ -797,6 +797,71 @@ class TestGeometry(unittest.TestCase):
         Value[mut.Rgba]
         Value[mut.render.RenderLabel]
 
+    def test_unimplemented_rendering(self):
+        # Test that a derived RenderEngine has implementations of
+        # DoRender*Image that throw something suggestive of "not implemented"
+        # and that they are overridable.
+        class MinimalEngine(mut.render.RenderEngine):
+            def UpdateViewpoint(self, X_WC):
+                pass
+
+            def DoRegisterVisual(self, id, shae, properties, X_WG):
+                pass
+
+            def DoUpdateVisualPose(self, id, X_WG):
+                pass
+
+            def DoRemoveGeometry(self, id):
+                pass
+
+            def DoClone(self):
+                pass
+
+        class ColorOnlyEngine(MinimalEngine):
+            def DoRenderColorImage(self, camera, image_out):
+                pass
+
+        class DepthOnlyEngine(MinimalEngine):
+            def DoRenderDepthImage(self, camera, image_out):
+                pass
+
+        class LabelOnlyEngine(MinimalEngine):
+            def DoRenderLabelImage(self, camera, image_out):
+                pass
+
+        identity = RigidTransform_[float]()
+        intrinsics = CameraInfo(10, 10, np.pi / 4)
+        core = mut.render.RenderCameraCore("n/a", intrinsics,
+                                           mut.render.ClippingRange(0.1, 10),
+                                           identity)
+        color_cam = mut.render.ColorRenderCamera(core, False)
+        depth_cam = mut.render.DepthRenderCamera(
+                        core, mut.render.DepthRange(0.1, 9))
+        color_image = ImageRgba8U(intrinsics.width(), intrinsics.height())
+        depth_image = ImageDepth32F(intrinsics.width(), intrinsics.height())
+        label_image = ImageLabel16I(intrinsics.width(), intrinsics.height())
+
+        color_only = ColorOnlyEngine()
+        color_only.RenderColorImage(color_cam, color_image)
+        with self.assertRaisesRegex(RuntimeError, ".+pure virtual function.+"):
+            color_only.RenderDepthImage(depth_cam, depth_image)
+        with self.assertRaisesRegex(RuntimeError, ".+pure virtual function.+"):
+            color_only.RenderLabelImage(color_cam, label_image)
+
+        depth_only = DepthOnlyEngine()
+        with self.assertRaisesRegex(RuntimeError, ".+pure virtual function.+"):
+            depth_only.RenderColorImage(color_cam, color_image)
+        depth_only.RenderDepthImage(depth_cam, depth_image)
+        with self.assertRaisesRegex(RuntimeError, ".+pure virtual function.+"):
+            depth_only.RenderLabelImage(color_cam, label_image)
+
+        label_only = LabelOnlyEngine()
+        with self.assertRaisesRegex(RuntimeError, ".+pure virtual function.+"):
+            label_only.RenderColorImage(color_cam, color_image)
+        with self.assertRaisesRegex(RuntimeError, ".+pure virtual function.+"):
+            label_only.RenderDepthImage(depth_cam, depth_image)
+        label_only.RenderLabelImage(color_cam, label_image)
+
     def test_render_engine_api(self):
         class DummyRenderEngine(mut.render.RenderEngine):
             """Mirror of C++ DummyRenderEngine."""
