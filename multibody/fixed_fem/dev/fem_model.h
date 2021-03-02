@@ -10,6 +10,7 @@
 #include <Eigen/Sparse>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/unused.h"
 #include "drake/multibody/fixed_fem/dev/fem_element.h"
 #include "drake/multibody/fixed_fem/dev/fem_indexes.h"
 #include "drake/multibody/fixed_fem/dev/fem_model_base.h"
@@ -100,7 +101,9 @@ class FemModel : public FemModelBase<typename Element::Traits::T> {
    instead of accumulated from elements. The default implementation is a
    no-op. Derived classes must override this method if their residuals have
    per-vertex contribution. */
-  virtual void AddExplicitResidual(EigenPtr<VectorX<T>> residual) const {}
+  virtual void AddExplicitResidual(EigenPtr<VectorX<T>> residual) const {
+    unused(residual);
+  }
 
  private:
   int ode_order() const final { return Element::Traits::kOdeOrder; }
@@ -151,7 +154,12 @@ class FemModel : public FemModelBase<typename Element::Traits::T> {
     DRAKE_DEMAND(state.element_cache_size() == num_elements());
     /* The values are accumulated in the tangent_matrix, so it is important to
      clear the old data. */
-    tangent_matrix->setZero();
+    using Iterator = typename Eigen::SparseMatrix<T>::InnerIterator;
+    for (int k = 0; k < tangent_matrix->outerSize(); ++k) {
+      for (Iterator it(*tangent_matrix, k); it; ++it) {
+        it.valueRef() = 0;
+      }
+    }
     /* Aliases to improve readability. */
     constexpr int kNumDofs = Element::Traits::kNumDofs;
     constexpr int kNumNodes = Element::Traits::kNumNodes;
@@ -316,11 +324,10 @@ class FemModel : public FemModelBase<typename Element::Traits::T> {
           "FemModel.");
     }
     if (concrete_state_ptr->num_generalized_positions() != num_dofs()) {
-      throw std::logic_error(
-          fmt::format("{}(): The size of the FemState ({}) is incompatible "
-                      "with the size of the FemModel ({}).",
-                      func, concrete_state_ptr->num_generalized_positions(),
-                      num_dofs()));
+      throw std::logic_error(fmt::format(
+          "{}(): The size of the FemState ({}) is incompatible "
+          "with the size of the FemModel ({}).",
+          func, concrete_state_ptr->num_generalized_positions(), num_dofs()));
     }
   }
 

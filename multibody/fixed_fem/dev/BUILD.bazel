@@ -65,6 +65,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "deformable_body_config",
+    hdrs = [
+        "deformable_body_config.h",
+    ],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "deformable_visualizer",
     srcs = ["deformable_visualizer.cc"],
     hdrs = ["deformable_visualizer.h"],
@@ -146,6 +156,7 @@ drake_cc_library(
         ":isoparametric_element",
         ":quadrature",
         "//common:essential",
+        "//common:unused",
     ],
 )
 
@@ -205,6 +216,7 @@ drake_cc_library(
         ":fem_state",
         ":state_updater",
         "//common:essential",
+        "//common:unused",
     ],
 )
 
@@ -236,6 +248,30 @@ drake_cc_library(
         ":state_updater",
         "//common:essential",
         "//multibody/contact_solvers:sparse_linear_operator",
+    ],
+)
+
+drake_cc_library(
+    name = "softsim_system",
+    srcs = [
+        "softsim_system.cc",
+    ],
+    hdrs = [
+        "softsim_system.h",
+    ],
+    deps = [
+        ":corotated_model",
+        ":deformable_body_config",
+        ":dirichlet_boundary_condition",
+        ":dynamic_elasticity_element",
+        ":dynamic_elasticity_model",
+        ":fem_solver",
+        ":linear_constitutive_model",
+        ":linear_simplex_element",
+        ":simplex_gaussian_quadrature",
+        "//common:essential",
+        "//geometry/proximity:volume_mesh",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -384,6 +420,22 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_binary(
+    name = "run_cantilever_beam",
+    srcs = [
+        "run_cantilever_beam.cc",
+    ],
+    deps = [
+        ":deformable_visualizer",
+        ":mesh_utilities",
+        ":softsim_system",
+        "//common:add_text_logging_gflags",
+        "//math:geometric_transform",
+        "//systems/analysis:simulator_gflags",
+        "//systems/framework:diagram_builder",
+    ],
+)
+
 drake_cc_library(
     name = "simplex_gaussian_quadrature",
     hdrs = [
@@ -401,6 +453,7 @@ drake_cc_library(
     ],
     deps = [
         ":fem_state",
+        "//common:unused",
     ],
 )
 
@@ -624,6 +677,16 @@ drake_cc_googletest(
     name = "simplex_gaussian_quadrature_test",
     deps = [
         ":simplex_gaussian_quadrature",
+    ],
+)
+
+drake_cc_googletest(
+    name = "softsim_system_test",
+    deps = [
+        ":softsim_system",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry/proximity:make_box_mesh",
     ],
 )
 
