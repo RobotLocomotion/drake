@@ -275,13 +275,13 @@ class RotationMatrix {
     return RotationMatrix(R);
   }
 
-  // Forms a rotation matrix R_AB from two non-zero vectors.
-  // @param[in] alpha non-zero vector expressed in frame A.
-  // @param[in] beta non-zero vector expressed in frame A.
-  // @retval rotation matrix R_AB.
-  // @note Although MakeRotationMatrixFromTwoUnitVectors() is more efficient if
-  // alpha and beta are known to be unit vectors, this method is more efficient
-  // than normalizing each of alpha and beta and then calling that method.
+  /// Returns a rotation matrix R_AB from two non-zero vectors.
+  /// @param[in] alpha non-zero vector fixed in frame A, expressed in frame A.
+  /// @param[in] beta non-zero vector fixed in frame B, expressed in frame A.
+  /// @see MakeRotationMatrixFromTwoUnitVectors() for details on this method.
+  /// Although MakeRotationMatrixFromTwoUnitVectors() is more efficient if alpha
+  /// and beta are known to be unit vectors, this method is more efficient than
+  /// normalizing each of alpha and beta and then calling that method.
   static RotationMatrix<T> MakeRotationMatrixFromTwoVectors(
       const Vector3<T>& alpha, const Vector3<T>& beta) {
     const T alpha_norm_squared = alpha.squaredNorm();
@@ -300,11 +300,18 @@ class RotationMatrix {
         alpha, beta, one_over_alpha_beta_norm);
   }
 
-  // Forms a rotation matrix R_AB from two unit vectors.
-  // @param[in] alpha_unit_vector unit vector expressed in frame A.
-  // @param[in] beta_unit_vector unit vector expressed in frame A.
-  // @retval rotation matrix R_AB.
-  // @note Use MakeRotationMatrixFromTwoVectors() for non-unit vectors.
+  /// Returns a rotation matrix R_AB from two unit vectors α and β.
+  /// @param[in] alpha_unit_vector unit vector fixed in frame A, expressed in A.
+  /// @param[in] beta_unit_vector unit vector fixed in frame B, expressed in A.
+  /// @note This method efficiently calculates the rotation matrix R_AB assuming
+  /// that initially β = α, then frame B is subjected to a right-handed rotation
+  /// characterized by θ𝛌, where 0 ≤ θ ≤ π is the angle between α and β and 𝛌 is
+  /// in the direction of α x β, i.e., 𝛌 = α x β /|α x β|.  However, this method
+  /// efficiently calculates R_AB with c = α ⋅ β and s = α x β (without θ or 𝛌).
+  /// The underlying algorithm is unique and continuous except at θ = π.
+  /// At θ = π, this method uses a different algorithm with θ = π and
+  /// 𝛌 = CalcMostlyPositivePerpendicularUnitVector(alpha_unit_vector).
+  /// @note Use MakeRotationMatrixFromTwoVectors() for non-unit vectors.
   static RotationMatrix<T> MakeRotationMatrixFromTwoUnitVectors(
       const Vector3<T>& alpha_unit_vector, const Vector3<T>& beta_unit_vector) {
 #ifdef DRAKE_ASSERT_IS_ARMED
@@ -315,6 +322,55 @@ class RotationMatrix {
 #endif
     return MakeRotationMatrixFromTwoVectorsAndScalingFactor(
         alpha_unit_vector, beta_unit_vector, 1);
+  }
+
+  /// Returns a unit vector 𝐰 that is perpendicular to a given unit vector 𝐮.
+  /// If uᵢ (i = 0 or 1 or 2) is the element of 𝐮 with smallest absolute value,
+  /// then wᵢ (the iᵗʰ element of 𝐰) is positive and the most positive element
+  /// of 𝐰.  If uᵢ = 0, then wᵢ = 1 and the other two elements of 𝐰 are 0.
+  /// @param[in] u arbitrary unit vector expressed in an arbitrary frame.
+  static Vector3<T> CalcMostlyPositivePerpendicularUnitVector(
+      const Vector3<T>& u) {
+#ifdef DRAKE_ASSERT_IS_ARMED
+    // In debug builds, verify u seem to be a unit vector.
+    constexpr double kEpsilon = 512 * std::numeric_limits<double>::epsilon();
+    DRAKE_ASSERT(abs(1 - u.norm()) <= kEpsilon);
+#endif
+    // To form a unit vector 𝐰 perpendicular to the unit vector 𝐮, we first
+    // judiciously choose a unit vector 𝐯 that is not parallel to 𝐮 and use the
+    // fact that 𝐯 x 𝐮 is guaranteed to be perpendicular to 𝐮.  The choice of
+    // 𝐯 depends on uᵢ, the element of 𝐮 with the smallest absolute value.
+    // Note: The next results show 𝐯 x 𝐮 ≠ 0 (i.e., 𝐯 is not parallel to 𝐮).
+    // If |ux = 𝐮(0)| is smallest, set 𝐯 = [1, 0, 0] so 𝐯 x 𝐮 = [0, uz, -uy].
+    // If |uy = 𝐮(1)| is smallest, set 𝐯 = [0, 1, 0] so 𝐯 x 𝐮 = [-uz, 0, ux].
+    // If |uz = 𝐮(2)| is smallest, set 𝐯 = [0, 0, 1] so 𝐯 x 𝐮 = [uy, -ux, 0].
+    // Next, we form 𝐮 x (𝐯 x 𝐮) which is guaranteed to be perpendicular to 𝐮.
+    // Using the "bac-cab" vector identity, 𝐮 x (𝐯 x 𝐮) = 𝐯(𝐮⋅𝐮) - 𝐮(𝐮⋅𝐯) =
+    // 𝐯 - uᵢ𝐮 (since 𝐮⋅𝐮 = 1 and 𝐮⋅𝐯 = uᵢ). Since |uᵢ| is small, 𝐯 - uᵢ𝐮 is
+    // mostly in the 𝐯 direction (and completely in the 𝐯 direction if ui = 0).
+    // Lastly, we efficiently form 𝐰 = (𝐯 - uᵢ𝐮) / (|𝐯 - uᵢ𝐮|) by noting that
+    // |𝐯 - uᵢ𝐮| = √((𝐯 - uᵢ𝐮)⋅(𝐯 - uᵢ𝐮)) = √(𝐯⋅𝐯 - 2uᵢ𝐮⋅𝐯 + uᵢ²𝐮⋅𝐮) =
+    // √(1 - 2uᵢ² + uᵢ²) = √(1 - uᵢ²).  Hence, 𝐰 = (𝐯 - uᵢ𝐮) / √(1 - uᵢ²).
+    const T& ux = u(0);  const T abs_ux = abs(ux);
+    const T& uy = u(1);  const T abs_uy = abs(uy);
+    const T& uz = u(2);  const T abs_uz = abs(uz);
+    Vector3<T> w;
+    // If |ux| is smallest, 𝐰 = ([1 0 0] - ux[ux uy uz]) / √(1 - ux²)
+    if (abs_ux < abs_uy && abs_ux < abs_uz) {
+      const T one_minus_uxux = 1 - ux * ux;
+      w = Vector3<T>(one_minus_uxux, ux * uy, ux * uz) / sqrt(one_minus_uxux);
+
+    // If |uy| is smallest, 𝐰 = ([0 1 0] - uy[ux uy uz]) / √(1 - uy²)
+    } else if (abs_uy < abs_uz) {
+      const T one_minus_uyuy = 1 - uy * uy;
+      w = Vector3<T>(ux * uy, one_minus_uyuy, uy * uz) / sqrt(one_minus_uyuy);
+
+    // If |uz| is smallest, 𝐰 = ([0 0 1] - uz[ux uy uz]) / √(1 - uz²)
+    } else {
+      const T one_minus_uzuz = 1 - uz * uz;
+      w = Vector3<T>(ux * uz, uy * uz, one_minus_uzuz) / sqrt(one_minus_uzuz);
+    }
+    return w;
   }
 
   /// Creates a %RotationMatrix templatized on a scalar type U from a
@@ -969,42 +1025,6 @@ class RotationMatrix {
     return m;
   }
 
-  // Returns a vector that is perpendicular to a given vector and whose maximum
-  // components is positive (the vector does not have all negative components).
-  // @param[in] v arbitrary vector expressed in an arbitrary frame.
-  // @returns a vector vₚ that is perpendicular to vector v and whose maximum
-  // component is positive (vₚ does not have all negative components).
-  static Vector3<T> CalcPerpendicularVectorMostlyPositive(const Vector3<T>& v) {
-#ifdef DRAKE_ASSERT_IS_ARMED
-    // In debug builds, verify v seem to be a non-zero vector.
-    constexpr double kEpsilon = 16 * std::numeric_limits<double>::epsilon();
-    DRAKE_ASSERT(v.squaredNorm() >= kEpsilon * kEpsilon);
-#endif
-    // To form a vector vₚ that is perpendicular to an arbitrary vector v, we
-    // judiciously choose a unit vector λ that is not parallel to v and use the
-    // fact that λ x v is guaranteed to be perpendicular to v.  The choice of λ
-    // depends on v(i), the component of v with the largest absolute value.
-    // If |vx = v(0)| is largest, set λ = [0, 1, 0] so λ x v = [-vz, 0, vx].
-    // If |vy = v(1)| is largest, set λ = [0, 0, 1] so λ x v = [vy, -vx, 0].
-    // If |vz = v(2)| is largest, set λ = [1, 0, 0] so λ x v = [0, vz, -vy].
-    // These results show λ x v ≠ 0.  They also show the component of λ x v with
-    // largest absolute value is positive if v(i) > 0 and negative if v(i) < 0.
-    // Since both +(λ x v) and -(λ x v) are perpendicular to v, we choose
-    // vₚ = +(λ x v) if v(i) > 0 and choose vₚ = -(λ x v) if v(i) < 0.
-    const T& vx = v(0);
-    const T& vy = v(1);
-    const T& vz = v(2);
-    Vector3<T> v_perp;
-    if (abs(vx) >= abs(vy) && abs(vx) >= abs(vz)) {
-      v_perp = vx > 0 ? Vector3<T>(-vz, 0, vx) : Vector3<T>(vz, 0, -vx);
-    } else if (abs(vy) >= abs(vz)) {
-      v_perp = vy > 0 ? Vector3<T>(vy, -vx, 0) : Vector3<T>(-vy, vx, 0);
-    } else {
-      v_perp = vz > 0 ? Vector3<T>(0, vz, -vy) : Vector3<T>(0, -vz, vy);
-    }
-    return v_perp;
-  }
-
   // Constructs a rotation matrix from two vectors alpha and beta.
   // @param[alpha] vector which may or may not have unit length.
   // @param[beta] vector which may or may not have unit length.
@@ -1031,8 +1051,10 @@ class RotationMatrix {
 
     // This next section provides a reasonably efficient algorithm to form a
     // rotation matrix when cos(θ) ≈ -1 (i.e., θ ≈ π).
-    const Vector3<T> v_perp = CalcPerpendicularVectorMostlyPositive(alpha);
-    const Eigen::AngleAxis<T> theta_lambda(M_PI, v_perp);
+    const Vector3<T> alpha_unit_vector = alpha / alpha.norm();
+    const Vector3<T> alpha_perp =
+        CalcMostlyPositivePerpendicularUnitVector(alpha_unit_vector);
+    const Eigen::AngleAxis<T> theta_lambda(M_PI, alpha_perp);
     return RotationMatrix<T>(theta_lambda);
   }
 
