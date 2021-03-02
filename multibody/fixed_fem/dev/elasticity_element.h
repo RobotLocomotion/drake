@@ -153,7 +153,7 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
    `external_force`.
    @pre external_force != nullptr. */
   void AddScaledExternalForce(
-      const FemState<DerivedElement>& state, const T& scale,
+      const FemState<DerivedElement>&, const T& scale,
       EigenPtr<Vector<T, Traits::kNumDofs>> external_force) const {
     DRAKE_ASSERT(external_force != nullptr);
     /* So far, the only external force is gravity. */

@@ -155,7 +155,9 @@ class EigenConjugateGradientSolver : public LinearSystemSolver<T> {
   iterations is reached.  */
   EigenConjugateGradientSolver(
       const contact_solvers::internal::LinearOperator<T>* A, double tol = 1e-4)
-      : LinearSystemSolver<T>(A), matrix_proxy_(A) {}
+      : LinearSystemSolver<T>(A), matrix_proxy_(A) {
+    set_tolerance(tol);
+  }
 
   ~EigenConjugateGradientSolver() {}
 

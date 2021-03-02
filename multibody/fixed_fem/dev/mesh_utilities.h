@@ -13,7 +13,7 @@ namespace fixed_fem {
 rectangular cells (sharing a rectangular face) are subdivided in the patterns
 that are mirrored of each other so that the mesh is conforming.
 
- The following picture file shows example of the diamond cubic box volume mesh
+The following picture file shows example of the diamond cubic box volume mesh
 and demonstrates the mirrored subdivision pattern in adjacent cells. The file is
 distributed with the source code.
 

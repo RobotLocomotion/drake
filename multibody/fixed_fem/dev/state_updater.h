@@ -116,9 +116,8 @@ class StateUpdater {
   /** Derived classes templated on FemState whose ode_order() is greater than 0
    must override this method to advance a single time step according to the
    specific time stepping scheme. */
-  virtual void DoAdvanceOneTimeStep(const State& prev_state,
-                                    const VectorX<T>& highest_order_state,
-                                    State* state) const {
+  virtual void DoAdvanceOneTimeStep(const State&, const VectorX<T>&,
+                                    State*) const {
     if constexpr (State::ode_order() == 0) {
       throw std::logic_error(
           "There is no notion of time in a zeroth order ODE.");
