@@ -1163,6 +1163,18 @@ drake_cc_googletest(
     ],
 )
 
+#(hongkai.dai): Remove this test target when we add ClpSolver class to Drake.
+drake_cc_googletest(
+    name = "clp_test",
+    deps = select({
+        "//conditions:default": [
+            "@clp",
+        ],
+        "//tools:no_clp": [
+        ],
+    }),
+)
+
 drake_cc_googletest(
     name = "csdp_solver_internal_test",
     deps = [

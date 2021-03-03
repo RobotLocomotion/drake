@@ -10,6 +10,7 @@ load("@drake//tools/workspace/cc:repository.bzl", "cc_repository")
 load("@drake//tools/workspace/ccd:repository.bzl", "ccd_repository")
 load("@drake//tools/workspace/cds:repository.bzl", "cds_repository")
 load("@drake//tools/workspace/clang_cindex_python3:repository.bzl", "clang_cindex_python3_repository")  # noqa
+load("@drake//tools/workspace/clp:repository.bzl", "clp_repository")
 load("@drake//tools/workspace/com_jidesoft_jide_oss:repository.bzl", "com_jidesoft_jide_oss_repository")  # noqa
 load("@drake//tools/workspace/common_robotics_utilities:repository.bzl", "common_robotics_utilities_repository")  # noqa
 load("@drake//tools/workspace/commons_io:repository.bzl", "commons_io_repository")  # noqa
@@ -114,6 +115,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         cds_repository(name = "cds", mirrors = mirrors)
     if "clang_cindex_python3" not in excludes:
         clang_cindex_python3_repository(name = "clang_cindex_python3", mirrors = mirrors)  # noqa
+    if "clp" not in excludes:
+        clp_repository(name = "clp")
     if "com_jidesoft_jide_oss" not in excludes:
         com_jidesoft_jide_oss_repository(name = "com_jidesoft_jide_oss", mirrors = mirrors)  # noqa
     if "common_robotics_utilities" not in excludes:
