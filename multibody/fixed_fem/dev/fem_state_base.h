@@ -19,12 +19,6 @@ class FemStateBase {
  public:
   virtual ~FemStateBase() = default;
 
-  /** Resize `this` state to the given `num_generalized_positions`. `q`, `qdot`,
-  and `qddot` are resized (if they exist) with the semantics outlined in <a
-  href="https://eigen.tuxfamily.org/dox/classEigen_1_1PlainObjectBase.html#a78a42a7c0be768374781f67f40c9ab0d">
-  Eigen::conservativeResize</a>. */
-  void Resize(int num_generalized_positions);
-
   /** @name State getters. Throw an exception if the state doesn't exist.
    @{ */
   const VectorX<T>& q() const { return q_; }

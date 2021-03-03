@@ -12,9 +12,8 @@ namespace multibody {
 namespace fixed_fem {
 
 /** %FemState implements FemStateBase for a particular type of FemElement.
- Templated on the type of FemElement, FemState knows its topological properties
- such as the natural and spatial dimension as well as its physical properties
- such as its ode_order() at compile time. It also stores the per-element
+ It is templated on the concrete FemElement type in order to allow compile time
+ optimizations based on fixed sizes. It also stores the per-element
  state-dependent quantities for its corresponding elements (see
  ElementCacheEntry).
  @tparam Element The type of FemElement that consumes this %FemState. This
@@ -40,7 +39,9 @@ class FemState : public FemStateBase<typename Element::T> {
    @param[in] q    The prescribed generalized positions.
    @pre ode_order() == 0. */
   explicit FemState(const Eigen::Ref<const VectorX<T>>& q)
-      : FemStateBase<T>(q) {}
+      : FemStateBase<T>(q) {
+    DRAKE_THROW_UNLESS(ode_order() == 0);
+  }
 
   /** Constructs an %FemState of a first order equation with prescribed
    generalized positions and their time derivatives.
@@ -52,7 +53,6 @@ class FemState : public FemStateBase<typename Element::T> {
            const Eigen::Ref<const VectorX<T>>& qdot)
       : FemStateBase<T>(q, qdot) {
     DRAKE_THROW_UNLESS(ode_order() == 1);
-    DRAKE_THROW_UNLESS(q.size() == qdot.size());
   }
 
   /** Constructs an %FemState of a second order equation with prescribed
@@ -69,8 +69,6 @@ class FemState : public FemStateBase<typename Element::T> {
            const Eigen::Ref<const VectorX<T>>& qddot)
       : FemStateBase<T>(q, qdot, qddot) {
     DRAKE_THROW_UNLESS(ode_order() == 2);
-    DRAKE_THROW_UNLESS(q.size() == qdot.size());
-    DRAKE_THROW_UNLESS(q.size() == qddot.size());
   }
 
   /** Creates the per-element state-dependent data for the given `elements`. The

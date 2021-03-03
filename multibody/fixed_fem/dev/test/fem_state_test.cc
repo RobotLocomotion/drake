@@ -86,22 +86,6 @@ TEST_F(FemStateTest, SetStates) {
   EXPECT_THROW(state_.SetQddot(VectorXd::Constant(3, 1.0)), std::exception);
 }
 
-/* Verify resizing does not thrash existing values. */
-TEST_F(FemStateTest, ConservativeResize) {
-  state_.Resize(2 * kNumDofs);
-  EXPECT_EQ(state_.num_generalized_positions(), 2 * kNumDofs);
-  /* The first kDof entries should remain unchanged. */
-  EXPECT_EQ(state_.qdot().head(kNumDofs), qdot());
-  EXPECT_EQ(state_.q().head(kNumDofs), q());
-  /* After downsizing, the first `smaller_size` entries should remain unchanged.
-   */
-  int smaller_size = kNumDofs / 2;
-  state_.Resize(smaller_size);
-  EXPECT_EQ(state_.num_generalized_positions(), smaller_size);
-  EXPECT_EQ(state_.qdot().head(smaller_size), qdot().head(smaller_size));
-  EXPECT_EQ(state_.q().head(smaller_size), q().head(smaller_size));
-}
-
 /* Test that element_data() retrieves the updated data. */
 TEST_F(FemStateTest, ElementData) {
   EXPECT_EQ(state_.element_cache_size(), kNumElements);
@@ -132,12 +116,6 @@ TEST_F(FemStateTest, ElementCache) {
   state_.SetQ(2 * q());
   VerifyCacheEntries();
   state_.SetQdot(2 * qdot());
-  VerifyCacheEntries();
-
-  /* Verify that resizing thrashes the cache entries and the cached
-   quantities are correctly recomputed. */
-  const int state_size = 1;
-  state_.Resize(state_size);
   VerifyCacheEntries();
 }
 }  // namespace

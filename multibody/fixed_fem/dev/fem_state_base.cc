@@ -4,17 +4,6 @@ namespace drake {
 namespace multibody {
 namespace fixed_fem {
 template <typename T>
-void FemStateBase<T>::Resize(int num_generalized_positions) {
-  DRAKE_ASSERT(num_generalized_positions >= 0);
-  InvalidateAllCacheEntries();
-  q_.conservativeResize(num_generalized_positions);
-  if (ode_order() >= 1)
-    qdot_.conservativeResize(num_generalized_positions);
-  if (ode_order() == 2)
-    qddot_.conservativeResize(num_generalized_positions);
-}
-
-template <typename T>
 void FemStateBase<T>::SetQ(const Eigen::Ref<const VectorX<T>>& value) {
   DRAKE_THROW_UNLESS(value.size() == q_.size());
   InvalidateAllCacheEntries();
