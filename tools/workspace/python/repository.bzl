@@ -149,6 +149,11 @@ def _impl(repository_ctx):
     # similar to that used in pkg_config.bzl and should be refactored and
     # shared instead of being duplicated in both places.
 
+    extension_suffix = execute_or_fail(
+        repository_ctx,
+        [py_info.python_config, "--extension-suffix"],
+    ).stdout.strip()
+
     includes = []
 
     for cflag in cflags:
@@ -199,10 +204,12 @@ def _impl(repository_ctx):
 # `BUILD.bazel` or `package.BUILD.bazel` files.
 
 PYTHON_BIN_PATH = "{bin_path}"
+PYTHON_EXTENSION_SUFFIX = "{extension_suffix}"
 PYTHON_VERSION = "{version}"
 PYTHON_SITE_PACKAGES_RELPATH = "{site_packages_relpath}"
 """.format(
         bin_path = py_info.python,
+        extension_suffix = extension_suffix,
         version = py_info.version,
         site_packages_relpath = py_info.site_packages_relpath,
     )
