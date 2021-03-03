@@ -333,6 +333,23 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "mesh_utilities",
+    srcs = [
+        "mesh_utilities.cc",
+    ],
+    hdrs = [
+        "mesh_utilities.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+        "//geometry/proximity:make_box_mesh",
+        "//geometry/proximity:volume_mesh",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
     name = "newmark_scheme",
     hdrs = [
         "newmark_scheme.h",
@@ -583,6 +600,14 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
         "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mesh_utilities_test",
+    deps = [
+        ":mesh_utilities",
+        "//geometry/proximity:proximity_utilities",
     ],
 )
 
