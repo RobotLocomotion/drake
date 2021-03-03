@@ -1,11 +1,8 @@
 #pragma once
 
-#include <memory>
-#include <utility>
 #include <vector>
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/fixed_fem/dev/dirichlet_boundary_condition.h"
 #include "drake/multibody/fixed_fem/dev/element_cache_entry.h"
 #include "drake/multibody/fixed_fem/dev/fem_indexes.h"
 #include "drake/multibody/fixed_fem/dev/fem_state_base.h"
@@ -14,11 +11,11 @@ namespace drake {
 namespace multibody {
 namespace fixed_fem {
 
-/** Stores the fem model state and per-element state-dependent quantities.The
- states include the generalized positions associated with each node, `q`, and
- optionally, their first and second time derivatives, `qdot` and `qddot`.
- %FemState also stores the per-element state-dependent quantities for its
- corresponding elements (see ElementCacheEntry).
+/** %FemState implements FemStateBase for a particular type of FemElement.
+ It is templated on the concrete FemElement type in order to allow compile time
+ optimizations based on fixed sizes. It also stores the per-element
+ state-dependent quantities for its corresponding elements (see
+ ElementCacheEntry).
  @tparam Element The type of FemElement that consumes this %FemState. This
  template parameter provides the scalar type, the type of per-element data
  this %FemState stores and the order of the ODE after FEM spatial
@@ -41,10 +38,9 @@ class FemState : public FemStateBase<typename Element::T> {
    generalized positions.
    @param[in] q    The prescribed generalized positions.
    @pre ode_order() == 0. */
-  explicit FemState(const Eigen::Ref<const VectorX<T>>& q) : q_(q) {
+  explicit FemState(const Eigen::Ref<const VectorX<T>>& q)
+      : FemStateBase<T>(q) {
     DRAKE_THROW_UNLESS(ode_order() == 0);
-    DRAKE_ASSERT(qdot_.size() == 0);
-    DRAKE_ASSERT(qddot_.size() == 0);
   }
 
   /** Constructs an %FemState of a first order equation with prescribed
@@ -55,10 +51,8 @@ class FemState : public FemStateBase<typename Element::T> {
    @pre q.size() == qdot.size(). */
   FemState(const Eigen::Ref<const VectorX<T>>& q,
            const Eigen::Ref<const VectorX<T>>& qdot)
-      : q_(q), qdot_(qdot) {
+      : FemStateBase<T>(q, qdot) {
     DRAKE_THROW_UNLESS(ode_order() == 1);
-    DRAKE_THROW_UNLESS(q_.size() == qdot_.size());
-    DRAKE_ASSERT(qddot_.size() == 0);
   }
 
   /** Constructs an %FemState of a second order equation with prescribed
@@ -73,10 +67,8 @@ class FemState : public FemStateBase<typename Element::T> {
   FemState(const Eigen::Ref<const VectorX<T>>& q,
            const Eigen::Ref<const VectorX<T>>& qdot,
            const Eigen::Ref<const VectorX<T>>& qddot)
-      : q_(q), qdot_(qdot), qddot_(qddot) {
+      : FemStateBase<T>(q, qdot, qddot) {
     DRAKE_THROW_UNLESS(ode_order() == 2);
-    DRAKE_THROW_UNLESS(q_.size() == qdot_.size());
-    DRAKE_THROW_UNLESS(q_.size() == qddot_.size());
   }
 
   /** Creates the per-element state-dependent data for the given `elements`. The
@@ -102,87 +94,7 @@ class FemState : public FemStateBase<typename Element::T> {
     element_cache_.resize(elements.size());
   }
 
-  int num_generalized_positions() const final { return q_.size(); }
-
   int element_cache_size() const { return element_cache_.size(); }
-  /** `q`, `qdot`, and `qddot` are resized (if they exist) with the semantics
-  outlined in <a
-  href="https://eigen.tuxfamily.org/dox/classEigen_1_1PlainObjectBase.html#a78a42a7c0be768374781f67f40c9ab0d">
-  Eigen::conservativeResize</a>. */
-  void Resize(int num_generalized_positions) {
-    DRAKE_ASSERT(num_generalized_positions >= 0);
-    InvalidateAllCacheEntries();
-    q_.conservativeResize(num_generalized_positions);
-    if constexpr (ode_order() >= 1)
-      qdot_.conservativeResize(num_generalized_positions);
-    if constexpr (ode_order() == 2)
-      qddot_.conservativeResize(num_generalized_positions);
-  }
-
-  /** @name State getters.
-   @{ */
-  const VectorX<T>& q() const { return q_; }
-
-  const VectorX<T>& qdot() const {
-    DRAKE_THROW_UNLESS(ode_order() >= 1);
-    return qdot_;
-  }
-
-  const VectorX<T>& qddot() const {
-    DRAKE_THROW_UNLESS(ode_order() == 2);
-    return qddot_;
-  }
-  /** @} */
-
-  /** @name State setters.
-   The size of the values provided must match the current size of the states.
-   @{ */
-  void SetQ(const Eigen::Ref<const VectorX<T>>& value) {
-    DRAKE_THROW_UNLESS(value.size() == q_.size());
-    mutable_q() = value;
-  }
-
-  void SetQdot(const Eigen::Ref<const VectorX<T>>& value) {
-    DRAKE_THROW_UNLESS(ode_order() >= 1);
-    DRAKE_THROW_UNLESS(value.size() == qdot_.size());
-    mutable_qdot() = value;
-  }
-
-  void SetQddot(const Eigen::Ref<const VectorX<T>>& value) {
-    DRAKE_THROW_UNLESS(ode_order() == 2);
-    DRAKE_THROW_UNLESS(value.size() == qddot_.size());
-    mutable_qddot() = value;
-  }
-  /** @} */
-
-  /** @name (Advanced) Mutable state getters.
-   The values of the states are mutable but the sizes of the states are not
-   allowed to change. Calling these mutable getters will invalidate all cache
-   entries associated with `this` %FemState. Users should, however, take extreme
-   caution if they decide to hold on to the mutable reference. If the mutable
-   reference is used to update the state again *after* element_data() is called,
-   the state-dependent data stored will *not* be updated according to the most
-   up-to-date state, and element_data() may (and most likely *will*) provide
-   incorrect results. Therefore, users of these mutable getters are advised to
-   keep the scope in which they are used as small as possible.
-   @{ */
-  Eigen::VectorBlock<VectorX<T>> mutable_q() {
-    InvalidateAllCacheEntries();
-    return q_.head(q_.size());
-  }
-
-  Eigen::VectorBlock<VectorX<T>> mutable_qdot() {
-    DRAKE_THROW_UNLESS(ode_order() >= 1);
-    InvalidateAllCacheEntries();
-    return qdot_.head(qdot_.size());
-  }
-
-  Eigen::VectorBlock<VectorX<T>> mutable_qddot() {
-    DRAKE_THROW_UNLESS(ode_order() == 2);
-    InvalidateAllCacheEntries();
-    return qddot_.head(qddot_.size());
-  }
-  /** @} */
 
   /** Getter for element state-dependpent quantities. */
   const typename Element::Traits::Data& element_data(
@@ -198,33 +110,6 @@ class FemState : public FemStateBase<typename Element::T> {
     return data;
   }
 
-  /** Calculates the norm of the state with the highest order. */
-  T HighestOrderStateNorm() const final {
-    if constexpr (ode_order() == 0) return q_.norm();
-    if constexpr (ode_order() == 1) return qdot_.norm();
-    if constexpr (ode_order() == 2) return qddot_.norm();
-    DRAKE_UNREACHABLE();
-  }
-
-  /* Implements FemStateBase::ApplyBoundaryConditions(). */
-  void ApplyBoundaryConditions(const DirichletBoundaryCondition<T>& bc) final {
-    const auto& bcs = bc.get_bcs();
-    if (bcs.size() == 0) {
-      return;
-    }
-    bc.VerifyBcIndexes(num_generalized_positions());
-    /* Write the BC to the mutable state. */
-    for (const auto& [dof_index, boundary_state] : bcs) {
-      q_(dof_index) = boundary_state(0);
-      if constexpr (ode_order() >= 1) {
-        qdot_(dof_index) = boundary_state(1);
-      }
-      if constexpr (ode_order() == 2) {
-        qddot_(dof_index) = boundary_state(2);
-      }
-    }
-  }
-
  private:
   friend class FemStateTest;
 
@@ -233,18 +118,12 @@ class FemState : public FemStateBase<typename Element::T> {
   //  static/dynamic elasticity), there exist more fine-grained caching
   //  mechanisms which may improve the cache efficiency.
   /* Mark all cache entries associated with `this` FemState as stale. */
-  void InvalidateAllCacheEntries() {
+  void InvalidateAllCacheEntries() final {
     for (auto& element_cache_entry : element_cache_) {
       element_cache_entry.set_stale(true);
     }
   }
 
-  /* Generalized node positions. */
-  VectorX<T> q_{};
-  /* Time derivatives of generalized node positions. */
-  VectorX<T> qdot_{};
-  /* Time second derivatives of generalized node positions. */
-  VectorX<T> qddot_{};
   /* Owned element cache entries. */
   mutable std::vector<
       internal::ElementCacheEntry<typename Element::Traits::Data>>

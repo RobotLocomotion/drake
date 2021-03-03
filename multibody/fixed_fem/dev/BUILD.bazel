@@ -12,29 +12,6 @@ package(
 )
 
 drake_cc_library(
-    name = "fem_model_base",
-    srcs = [
-        "fem_model_base.cc",
-    ],
-    hdrs = [
-        "fem_model_base.h",
-    ],
-    deps = [
-        ":dirichlet_boundary_condition",
-        ":fem_state_base",
-        "//common:default_scalars",
-        "//common:essential",
-    ],
-)
-
-drake_cc_library(
-    name = "fem_state_base",
-    hdrs = [
-        "fem_state_base.h",
-    ],
-)
-
-drake_cc_library(
     name = "constitutive_model",
     hdrs = [
         "constitutive_model.h",
@@ -232,6 +209,22 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "fem_model_base",
+    srcs = [
+        "fem_model_base.cc",
+    ],
+    hdrs = [
+        "fem_model_base.h",
+    ],
+    deps = [
+        ":dirichlet_boundary_condition",
+        ":fem_state_base",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "fem_solver",
     hdrs = [
         "fem_solver.h",
@@ -252,10 +245,23 @@ drake_cc_library(
         "fem_state.h",
     ],
     deps = [
-        ":dirichlet_boundary_condition",
         ":element_cache_entry",
         ":fem_state_base",
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_state_base",
+    srcs = [
+        "fem_state_base.cc",
+    ],
+    hdrs = [
+        "fem_state_base.h",
+    ],
+    deps = [
+        ":dirichlet_boundary_condition",
+        "//common:default_scalars",
     ],
 )
 

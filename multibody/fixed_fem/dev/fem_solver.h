@@ -140,7 +140,7 @@ class FemSolver {
     /* Make sure the scratch quantities are of the correct size and apply BC if
      one is specified. */
     Resize();
-    model_->ApplyBoundaryConditions(state);
+    model_->ApplyBoundaryCondition(state);
     model_->CalcResidual(*state, &b_);
     int iter = 0;
     /* Newton-Raphson iterations. We iterate until any of the following is true:
