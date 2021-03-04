@@ -12,5 +12,5 @@ Prerequisite setup is otherwise automated. Simply run:
 ./setup/mac/install_prereqs.sh
 ```
 
-After running the script, return to [Source installation (macOS, Ubuntu)](/from_-_source.html) to complete and test your
+After running the script, return to [Source installation (macOS, Ubuntu)](/from_source.html) to complete and test your
 installation.

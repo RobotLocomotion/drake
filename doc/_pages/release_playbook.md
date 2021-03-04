@@ -20,7 +20,7 @@ Begin this process around 1 week prior to the intended release date.
 2. Create a local Drake branch named ``release_notes-v0.N.0`` (so that others
    can easily find and push to it after the PR is opened).
 3. As the first commit on the branch, mimic the commit
-   ([link](https://github.com/RobotLocomotion/drake/pull/14208/commits/674b84877bc08448b59a2243f3b910a7b6dbab43>)
+   ([link](https://github.com/RobotLocomotion/drake/pull/14208/commits/674b84877bc08448b59a2243f3b910a7b6dbab43)
    from [PR 14208](https://github.com/RobotLocomotion/drake/pull/14208)
    in order to disable CI.  A quick way to do this might be:
    ```
@@ -118,7 +118,7 @@ the main body of the document:
     sure that the nightly build git sha from the prior step matches the
     ``newest_commit`` whose changes are enumerated in the notes.
 11. Merge the release notes PR
-   1. After merge, go to [https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-bionic-gcc-bazel-nightly-documentation/](https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-bionic-gcc-bazel-nightly-documentation/) and push "Build now".
+   1. After merge, go to [https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-bionic-unprovisioned-gcc-bazel-nightly-documentation/](https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-bionic-unprovisioned-gcc-bazel-nightly-documentation/) and push "Build now".
       * If you don't have "Build now" click "Log in" first in upper right.
 12. Open [https://github.com/RobotLocomotion/drake/releases](https://github.com/RobotLocomotion/drake/releases) and choose "Draft a
     new release".  Note that this page does has neither history nor undo.  Be
