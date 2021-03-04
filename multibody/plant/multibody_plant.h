@@ -1069,6 +1069,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   to the joint type it actuates. For instance, it will have units of
   ///   N⋅m (torque) for revolute joints while it will have units of N (force)
   ///   for prismatic joints.
+  /// @note The effort limit is unused by MultibodyPlant and is simply provided
+  /// here for bookkeeping purposes. It will not, for instance, saturate
+  /// external actuation inputs based on this value. If, for example, a user
+  /// intends to saturate the force/torque that is applied to the MultibodyPlant
+  /// via this actuator, the user-level code (e.g., a controller) should query
+  /// this effort limit and impose the saturation there.
   /// @returns A constant reference to the new JointActuator just added, which
   /// will remain valid for the lifetime of `this` plant.
   /// @throws std::exception if `joint.num_velocities() > 1` since for now we
