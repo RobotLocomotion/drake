@@ -263,5 +263,13 @@ void SystemBase::ThrowCantEvaluateInputPort(const char* func,
                   GetSystemPathname()));
 }
 
+void SystemBase::ThrowValidateContextMismatch(
+    const ContextBase& context) const {
+  throw std::logic_error(fmt::format(
+      "Context was not created for {} system {}; it was created for system {}",
+      this->GetSystemType(), this->GetSystemPathname(),
+      context.GetSystemPathname()));
+}
+
 }  // namespace systems
 }  // namespace drake

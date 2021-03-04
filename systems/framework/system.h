@@ -273,6 +273,7 @@ class System : public SystemBase {
        get_time_derivatives_cache_entry() */
   const ContinuousState<T>& EvalTimeDerivatives(
       const Context<T>& context) const {
+    ValidateContext(context);
     const CacheEntry& entry = get_time_derivatives_cache_entry();
     return entry.Eval<ContinuousState<T>>(context);
   }

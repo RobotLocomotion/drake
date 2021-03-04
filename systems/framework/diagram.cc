@@ -360,6 +360,7 @@ template <typename T>
 const ContinuousState<T>& Diagram<T>::GetSubsystemDerivatives(
     const System<T>& subsystem,
     const ContinuousState<T>& derivatives) const {
+  System<T>::ValidateChildOfContext(&derivatives);
   auto diagram_derivatives =
       dynamic_cast<const DiagramContinuousState<T>*>(&derivatives);
   DRAKE_DEMAND(diagram_derivatives != nullptr);
