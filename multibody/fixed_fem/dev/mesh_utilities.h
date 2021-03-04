@@ -1,10 +1,5 @@
 #pragma once
 
-#include <utility>
-#include <vector>
-
-#include "drake/common/default_scalars.h"
-#include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
@@ -14,8 +9,19 @@ namespace multibody {
 namespace fixed_fem {
 /** Generates a tetrahedral volume mesh of a given box by subdividing the box
  into _rectangular cells_ (volume bounded by six axis-aligned faces) and
- subdividing each rectangular cell into five tetrahedra. The output mesh will
- have these properties:
+ subdividing each rectangular cell into five tetrahedra. Two adjacent
+rectangular cells (sharing a rectangular face) are subdivided in the patterns
+that are mirrored of each other so that the mesh is conforming.
+
+ The following picture file shows example of the diamond cubic box volume mesh
+and demonstrates the mirrored subdivision pattern in adjacent cells. The file is
+distributed with the source code.
+
+ | multibody/fixed_fem/dev/images/diamond_cubic_box_volume_mesh.png  |
+ | (Top) A diamond cubic box volume mesh. (Center and bottom) mirrored
+   subdivision patterns to make sure the mesh is conforming.         |
+
+ The output mesh will have these properties:
 
    1. The generated vertices are unique. There is no repeating vertices in
       the list of vertex coordinates.

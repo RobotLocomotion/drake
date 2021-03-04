@@ -1,5 +1,8 @@
 #include "drake/multibody/fixed_fem/dev/mesh_utilities.h"
 
+#include <utility>
+#include <vector>
+
 #include "drake/geometry/proximity/make_box_mesh.h"
 
 namespace drake {
@@ -10,39 +13,6 @@ using geometry::VolumeElement;
 using geometry::VolumeMesh;
 using geometry::VolumeVertex;
 using geometry::VolumeVertexIndex;
-// TODO(xuchenhan-tri): This method is a copypasta from
-//  geometry::internal::GenerateVertices with the only modification being the
-//  ability to transform the vertex positions into world frame. Consider merging
-//  the two methods when this moves out of dev/.
-template <typename T>
-std::vector<VolumeVertex<T>> GenerateVertices(
-    const Box& box, const Vector3<int>& num_vertices,
-    const math::RigidTransform<T>& X_WB) {
-  const T half_x = box.width() / T(2);
-  const T half_y = box.depth() / T(2);
-  const T half_z = box.height() / T(2);
-  const auto x_coords =
-      VectorX<T>::LinSpaced(num_vertices.x(), -half_x, half_x);
-  const auto y_coords =
-      VectorX<T>::LinSpaced(num_vertices.y(), -half_y, half_y);
-  const auto z_coords =
-      VectorX<T>::LinSpaced(num_vertices.z(), -half_z, half_z);
-
-  std::vector<VolumeVertex<T>> vertices;
-  vertices.reserve(num_vertices.x() * num_vertices.y() * num_vertices.z());
-  // The order of nested i-loop, j-loop, then k-loop makes the sequence of
-  // vertices consistent with CalcSequentialIndex.
-  for (int i = 0; i < num_vertices.x(); ++i) {
-    for (int j = 0; j < num_vertices.y(); ++j) {
-      for (int k = 0; k < num_vertices.z(); ++k) {
-        vertices.emplace_back(
-            X_WB * Vector3<T>(x_coords[i], y_coords[j], z_coords[k]));
-      }
-    }
-  }
-  return vertices;
-}
-
 /* Generates connectivity for the tetrahedral elements of the mesh by splitting
  each cube into five tetrahedra.
  @param[in] num_vertices
@@ -126,8 +96,13 @@ VolumeMesh<T> MakeDiamondCubicBoxVolumeMesh(
       1 + static_cast<int>(ceil(box.depth() / resolution_hint)),
       1 + static_cast<int>(ceil(box.height() / resolution_hint))};
 
+  // Initially generate vertices in box's frame B.
   std::vector<VolumeVertex<T>> vertices =
-      GenerateVertices<T>(box, num_vertices, X_WB);
+      geometry::internal::GenerateVertices<T>(box, num_vertices);
+  for (VolumeVertex<T>& vertex : vertices) {
+    // Transform to World frame.
+    vertex = VolumeVertex<T>(X_WB * vertex.r_MV());
+  }
 
   std::vector<VolumeElement> elements =
       GenerateDiamondCubicElements(num_vertices);
