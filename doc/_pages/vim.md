@@ -123,7 +123,7 @@ and [ListToggle](https://github.com/Valloric/ListToggle).
 
 ## File Tree Explorer Mappings
 
-These mappings use NERDTree](https://github.com/scrooloose/nerdtree)to
+These mappings use [NERDTree](https://github.com/scrooloose/nerdtree) to
 provide a file tree explorer in Vim.
 
 * ``<leader>nt`` launches NERDTree for the current working directory

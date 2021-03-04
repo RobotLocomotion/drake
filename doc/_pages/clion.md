@@ -247,7 +247,8 @@ following values for the fields:
 To configure the clickable links, enter the following string in the ``Advanced
 Options`` > ``Output filters`` window:
 
-    ``$FILE_PATH$:$LINE$``
+&nbsp;&nbsp;&nbsp;
+``$FILE_PATH$:$LINE$``
 
 ### Lint selected file for Drake style addenda
 
