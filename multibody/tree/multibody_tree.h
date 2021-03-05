@@ -65,14 +65,17 @@ class StringAndView {
 
   // Mode 1 constructor with implicit conversion.
   // NOLINTNEXTLINE
-  StringAndView(std::string&& arg)
-      : storage_(std::move(arg)),
+  StringAndView(std::string&& s)
+      : storage_(std::move(s)),
         view_(storage_.value()) {}
+
+  // Mode 1 constructor with implicit conversion.
+  // NOLINTNEXTLINE
+  StringAndView(const std::string& s) : storage_(s), view_(storage_.value()) {}
 
   // Mode 2 constructor with implicit conversion.
   // NOLINTNEXTLINE
-  StringAndView(const std::string_view& view)
-        : view_(view) { storage_.reset(); }
+  StringAndView(const std::string_view& view) : view_(view) {}
 
   const std::string_view& view() const { return view_; }
 
