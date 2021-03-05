@@ -6,13 +6,13 @@
 #include <memory>
 #include <optional>
 #include <string>
-#include<string_view>
+#include <string_view>
 #include <tuple>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
-#include "drake/common/default_scalars.h"
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
@@ -34,7 +34,15 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-// Stores a string and provides a view into it.
+// This class exists because unorderded_map in C++17 does not allow using
+// different keys for storage and lookup. This class serves two purposes:
+// 1. It stores a string and provides a view into it. This is necessary
+//    for insertion into the hashtable because string_view acts only as
+//    a pointer.
+// 2. It stores a string_view only. This permits querying the hashtable
+//    with a string_view without copying the underlying string. Note that
+//    the underlying memory pointed to by the string_view must outlive
+//    `this` and all copies in this mode.
 class StringAndView {
  public:
   StringAndView() = default;
@@ -43,23 +51,33 @@ class StringAndView {
 
   StringAndView(const StringAndView& s) { operator=(s); }
 
-  StringAndView& operator=(const StringAndView& s){
-    storage_ = std::make_unique<std::string>(*s.storage_);
-    view_ = *storage_;
+  StringAndView& operator=(const StringAndView& s) {
+    storage_ = s.storage_;
+    if (storage_.has_value()) {
+      // s is used for Mode 1.
+      view_ = storage_.value();
+    } else {
+      // s is used for Mode 2.
+      view_ = s.view();
+    }
     return *this;
   }
 
+  // Mode 1 constructor with implicit conversion.
+  // NOLINTNEXTLINE
   StringAndView(std::string&& arg)
-      : storage_(std::make_unique<std::string>(std::move(arg))),
-        view_(*storage_) {}
+      : storage_(std::move(arg)),
+        view_(storage_.value()) {}
 
+  // Mode 2 constructor with implicit conversion.
+  // NOLINTNEXTLINE
   StringAndView(const std::string_view& view)
-        : view_(view) {}
+        : view_(view) { storage_.reset(); }
 
   const std::string_view& view() const { return view_; }
 
  private:
-  std::unique_ptr<std::string> storage_;
+  std::optional<std::string> storage_;
   std::string_view view_;
 
   friend bool operator==(const StringAndView& a, const StringAndView& b) {
@@ -818,10 +836,10 @@ class MultibodyTree {
   // @throws std::logic_error if the body name occurs in multiple model
   // instances.
   bool HasBodyNamed(const std::string_view& name) const {
-    const int count = body_name_to_index_.count(name);
+    const int count = body_name_to_index_.count(StringAndView(name));
     if (count > 1) {
-      throw std::logic_error(
-          "Body " + std::string(name) + " appears in multiple model instances.");
+      throw std::logic_error(fmt::format(
+          "Body {} appears in multiple model instances.", name));
     }
     return count > 0;
   }
@@ -838,7 +856,7 @@ class MultibodyTree {
     // out to be incorrect we can switch to a different data structure.
     // N.B. Please sync with `HasFrameNamed`, `HasJointNamed`, and
     // `HasJointActuatorNamed` if you change or remove this comment.
-    const auto range = body_name_to_index_.equal_range(name);
+    const auto range = body_name_to_index_.equal_range(StringAndView(name));
     for (auto it = range.first; it != range.second; ++it) {
       if (get_body(it->second).model_instance() == model_instance) {
         return true;
@@ -1093,17 +1111,18 @@ class MultibodyTree {
         return actuator;
       }
     }
-    throw std::logic_error("There is no joint actuator named '" +
-                           std::string(name) + "' in model instance '" +
-                           instance_index_to_name_.at(model_instance) + "'.");
+    throw std::logic_error(fmt::format("There is no joint actuator named {}'"
+        "' in model instance '{}'.", name,
+        instance_index_to_name_.at(model_instance)));
   }
 
   // See MultibodyPlant method.
-  ModelInstanceIndex GetModelInstanceByName(const std::string_view& name) const {
+  ModelInstanceIndex GetModelInstanceByName(
+      const std::string_view& name) const {
     const auto it = instance_name_to_index_.find(name);
     if (it == instance_name_to_index_.end()) {
-      throw std::logic_error("There is no model instance named '" +
-                             std::string(name) + "' in the model.");
+      throw std::logic_error(fmt::format("There is no model instance named '{}'"
+          "in the model.", name));
     }
     return it->second;
   }
@@ -3085,7 +3104,8 @@ class MultibodyTree {
   std::unordered_multimap<StringAndView, JointIndex> joint_name_to_index_;
 
   // Map used to find actuator indexes by their actuator name.
-  std::unordered_multimap<StringAndView, JointActuatorIndex>actuator_name_to_index_;
+  std::unordered_multimap<StringAndView, JointActuatorIndex>
+      actuator_name_to_index_;
 
   // Map used to find a model instance index by its model instance name.
   std::unordered_map<StringAndView, ModelInstanceIndex> instance_name_to_index_;

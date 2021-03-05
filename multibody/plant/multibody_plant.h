@@ -5,6 +5,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <type_traits>
 #include <unordered_map>
@@ -3663,7 +3664,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::logic_error if there is no instance with the requested name.
   /// @see HasModelInstanceNamed() to query if there exists an instance in
   /// `this` %MultibodyPlant with a given specified name.
-  ModelInstanceIndex GetModelInstanceByName(const std::string_view& name) const {
+  ModelInstanceIndex GetModelInstanceByName(
+      const std::string_view& name) const {
     return internal_tree().GetModelInstanceByName(name);
   }
 
