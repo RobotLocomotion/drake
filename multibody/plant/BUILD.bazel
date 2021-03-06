@@ -580,9 +580,7 @@ drake_cc_googletest(
     name = "inclined_plane_test",
     timeout = "moderate",
     deps = [
-        ":contact_results_to_lcm",
         ":plant",
-        "//geometry:drake_visualizer",
         "//multibody/benchmarks/inclined_plane",
         "//systems/analysis:radau_integrator",
         "//systems/analysis:simulator",

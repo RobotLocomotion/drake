@@ -27,6 +27,7 @@ namespace drake {
 namespace pydrake {
 
 using std::string;
+using std::string_view;
 
 using geometry::SceneGraph;
 using math::RigidTransform;
@@ -164,7 +165,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
   }
 
   {
-    using std::string_view;
     using Class = MultibodyPlant<T>;
     constexpr auto& cls_doc = doc.MultibodyPlant;
     auto cls = DefineTemplateClassWithDefault<Class, systems::LeafSystem<T>>(

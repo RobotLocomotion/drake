@@ -3300,7 +3300,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws std::logic_error if the body name occurs in multiple model
   /// instances.
-  bool HasBodyNamed(const std::string_view& name) const {
+  bool HasBodyNamed(std::string_view name) const {
     return internal_tree().HasBodyNamed(name);
   }
 
@@ -3310,7 +3310,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws std::exception if @p model_instance is not valid for this model.
   bool HasBodyNamed(
-      const std::string_view& name, ModelInstanceIndex model_instance) const {
+      std::string_view name, ModelInstanceIndex model_instance) const {
     return internal_tree().HasBodyNamed(name, model_instance);
   }
 
@@ -3321,7 +3321,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// instances.
   /// @see HasBodyNamed() to query if there exists a body in `this`
   /// %MultibodyPlant with a given specified name.
-  const Body<T>& GetBodyByName(const std::string_view& name) const {
+  const Body<T>& GetBodyByName(std::string_view name) const {
     return internal_tree().GetBodyByName(name);
   }
 
@@ -3331,7 +3331,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @see HasBodyNamed() to query if there exists a body in `this`
   /// %MultibodyPlant with a given specified name.
   const Body<T>& GetBodyByName(
-      const std::string_view& name, ModelInstanceIndex model_instance) const {
+      std::string_view name, ModelInstanceIndex model_instance) const {
     return internal_tree().GetBodyByName(name, model_instance);
   }
 
@@ -3349,7 +3349,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::logic_error if the requested body is not a RigidBody.
   /// @see HasBodyNamed() to query if there exists a body in `this` model with a
   /// given specified name.
-  const RigidBody<T>& GetRigidBodyByName(const std::string_view& name) const {
+  const RigidBody<T>& GetRigidBodyByName(std::string_view name) const {
     return internal_tree().GetRigidBodyByName(name);
   }
 
@@ -3362,7 +3362,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @see HasBodyNamed() to query if there exists a body in `this` model with a
   /// given specified name.
   const RigidBody<T>& GetRigidBodyByName(
-      const std::string_view& name, ModelInstanceIndex model_instance) const {
+      std::string_view name, ModelInstanceIndex model_instance) const {
     return internal_tree().GetRigidBodyByName(name, model_instance);
   }
 
@@ -3415,7 +3415,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @see AddJoint().
   /// @throws std::logic_error if the joint name occurs in multiple model
   /// instances.
-  bool HasJointNamed(const std::string_view& name) const {
+  bool HasJointNamed(std::string_view name) const {
     return internal_tree().HasJointNamed(name);
   }
 
@@ -3423,7 +3423,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @see AddJoint().
   /// @throws std::exception if @p model_instance is not valid for this model.
   bool HasJointNamed(
-      const std::string_view& name, ModelInstanceIndex model_instance) const {
+      std::string_view name, ModelInstanceIndex model_instance) const {
     return internal_tree().HasJointNamed(name, model_instance);
   }
 
@@ -3453,7 +3453,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// %MultibodyPlant with a given specified name.
   template <template <typename> class JointType = Joint>
   const JointType<T>& GetJointByName(
-      const std::string_view& name,
+      std::string_view name,
       std::optional<ModelInstanceIndex> model_instance = std::nullopt) const {
     return internal_tree().template GetJointByName<JointType>(
         name, model_instance);
@@ -3463,7 +3463,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @see GetJointByName.
   template <template <typename> class JointType = Joint>
   JointType<T>& GetMutableJointByName(
-      const std::string_view& name,
+      std::string_view name,
       std::optional<ModelInstanceIndex> model_instance = std::nullopt) {
     return this->mutable_tree().template GetMutableJointByName<JointType>(
         name, model_instance);
@@ -3488,14 +3488,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @see AddFrame().
   /// @throws std::logic_error if the frame name occurs in multiple model
   /// instances.
-  bool HasFrameNamed(const std::string_view& name) const {
+  bool HasFrameNamed(std::string_view name) const {
     return internal_tree().HasFrameNamed(name);
   }
 
   /// @returns `true` if a frame named `name` was added to @p model_instance.
   /// @see AddFrame().
   /// @throws std::exception if @p model_instance is not valid for this model.
-  bool HasFrameNamed(const std::string_view& name,
+  bool HasFrameNamed(std::string_view name,
                      ModelInstanceIndex model_instance) const {
     return internal_tree().HasFrameNamed(name, model_instance);
   }
@@ -3507,7 +3507,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// instances.
   /// @see HasFrameNamed() to query if there exists a frame in `this` model with
   /// a given specified name.
-  const Frame<T>& GetFrameByName(const std::string_view& name) const {
+  const Frame<T>& GetFrameByName(std::string_view name) const {
     return internal_tree().GetFrameByName(name);
   }
 
@@ -3519,7 +3519,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @see HasFrameNamed() to query if there exists a frame in `this` model with
   /// a given specified name.
   const Frame<T>& GetFrameByName(
-      const std::string_view& name, ModelInstanceIndex model_instance) const {
+      std::string_view name, ModelInstanceIndex model_instance) const {
     return internal_tree().GetFrameByName(name, model_instance);
   }
 
@@ -3563,7 +3563,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @see AddJointActuator().
   /// @throws std::logic_error if the actuator name occurs in multiple model
   /// instances.
-  bool HasJointActuatorNamed(const std::string_view& name) const {
+  bool HasJointActuatorNamed(std::string_view name) const {
     return internal_tree().HasJointActuatorNamed(name);
   }
 
@@ -3572,7 +3572,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @see AddJointActuator().
   /// @throws std::exception if @p model_instance is not valid for this model.
   bool HasJointActuatorNamed(
-      const std::string_view& name, ModelInstanceIndex model_instance) const {
+      std::string_view name, ModelInstanceIndex model_instance) const {
     return internal_tree().HasJointActuatorNamed(name, model_instance);
   }
 
@@ -3584,7 +3584,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @see HasJointActuatorNamed() to query if there exists an actuator in
   /// `this` %MultibodyPlant with a given specified name.
   const JointActuator<T>& GetJointActuatorByName(
-      const std::string_view& name) const {
+      std::string_view name) const {
     return internal_tree().GetJointActuatorByName(name);
   }
 
@@ -3595,7 +3595,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @see HasJointActuatorNamed() to query if there exists an actuator in
   /// `this` %MultibodyPlant with a given specified name.
   const JointActuator<T>& GetJointActuatorByName(
-      const std::string_view& name, ModelInstanceIndex model_instance) const {
+      std::string_view name, ModelInstanceIndex model_instance) const {
     return internal_tree().GetJointActuatorByName(name, model_instance);
   }
 
@@ -3655,7 +3655,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// @returns `true` if a model instance named `name` was added to this model.
   /// @see AddModelInstance().
-  bool HasModelInstanceNamed(const std::string_view& name) const {
+  bool HasModelInstanceNamed(std::string_view name) const {
     return internal_tree().HasModelInstanceNamed(name);
   }
 
@@ -3665,7 +3665,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @see HasModelInstanceNamed() to query if there exists an instance in
   /// `this` %MultibodyPlant with a given specified name.
   ModelInstanceIndex GetModelInstanceByName(
-      const std::string_view& name) const {
+      std::string_view name) const {
     return internal_tree().GetModelInstanceByName(name);
   }
 
