@@ -1,8 +1,9 @@
 #pragma once
 
 #include <optional>
-#include <string_view>
 #include <string>
+#include <string_view>
+#include <utility>
 
 namespace drake {
 namespace multibody {

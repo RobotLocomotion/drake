@@ -652,21 +652,19 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("HasModelInstanceNamed", &Class::HasModelInstanceNamed,
             py::arg("name"), cls_doc.HasModelInstanceNamed.doc)
         .def("HasBodyNamed",
-            overload_cast_explicit<bool, string_view>(
-                &Class::HasBodyNamed),
+            overload_cast_explicit<bool, string_view>(&Class::HasBodyNamed),
             py::arg("name"), cls_doc.HasBodyNamed.doc_1args)
         .def("HasBodyNamed",
-            overload_cast_explicit<bool, string_view,
-                ModelInstanceIndex>(&Class::HasBodyNamed),
+            overload_cast_explicit<bool, string_view, ModelInstanceIndex>(
+                &Class::HasBodyNamed),
             py::arg("name"), py::arg("model_instance"),
             cls_doc.HasBodyNamed.doc_2args)
         .def("HasJointNamed",
-            overload_cast_explicit<bool, string_view>(
-                &Class::HasJointNamed),
+            overload_cast_explicit<bool, string_view>(&Class::HasJointNamed),
             py::arg("name"), cls_doc.HasJointNamed.doc_1args)
         .def("HasJointNamed",
-            overload_cast_explicit<bool, string_view,
-                ModelInstanceIndex>(&Class::HasJointNamed),
+            overload_cast_explicit<bool, string_view, ModelInstanceIndex>(
+                &Class::HasJointNamed),
             py::arg("name"), py::arg("model_instance"),
             cls_doc.HasJointNamed.doc_2args)
         .def("HasJointActuatorNamed",
@@ -674,8 +672,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::HasJointActuatorNamed),
             py::arg("name"), cls_doc.HasJointActuatorNamed.doc_1args)
         .def("HasJointActuatorNamed",
-            overload_cast_explicit<bool, string_view,
-                ModelInstanceIndex>(&Class::HasJointActuatorNamed),
+            overload_cast_explicit<bool, string_view, ModelInstanceIndex>(
+                &Class::HasJointActuatorNamed),
             py::arg("name"), py::arg("model_instance"),
             cls_doc.HasJointActuatorNamed.doc_2args)
         .def("GetFrameByName",

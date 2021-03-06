@@ -24,6 +24,7 @@ drake_cc_package_library(
         ":multibody_tree_topology",
         ":rotational_inertia",
         ":spatial_inertia",
+        ":string_view_map_key",
         ":unit_inertia",
     ],
 )
@@ -94,7 +95,6 @@ drake_cc_library(
     ],
     deps = [],
 )
-
 
 drake_cc_library(
     name = "multibody_tree_core",

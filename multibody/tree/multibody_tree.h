@@ -3041,7 +3041,8 @@ class MultibodyTree {
       actuator_name_to_index_;
 
   // Map used to find a model instance index by its model instance name.
-  std::unordered_map<StringViewMapKey, ModelInstanceIndex> instance_name_to_index_;
+  std::unordered_map<StringViewMapKey, ModelInstanceIndex>
+      instance_name_to_index_;
 
   // Map used to find a model instance name by its model instance index.
   std::unordered_map<ModelInstanceIndex, std::string> instance_index_to_name_;

@@ -7,15 +7,6 @@ namespace multibody {
 namespace internal {
 namespace {
 
-// Short string for validation of SSO (short-string optimization) strings.
-const std::string kShortString = "abcde";
-
-// Long string for validation of non-SSO strings.
-const std::string kLongString = "abcdefghijklmnopqrstuvwxyz";
-
-// For "reference" keys.
-const std::string_view kReferenceView = "reference";
-
 class StringViewMapKeyTest : public ::testing::Test {
  public:
   void ValidateStorageKey(const StringViewMapKey& key) {
@@ -32,6 +23,15 @@ class StringViewMapKeyTest : public ::testing::Test {
 
  protected:
   void SetUp() {}
+
+  // Short string for validation of SSO (short-string optimization) strings.
+  const std::string kShortString = "abcde";
+
+  // Long string for validation of non-SSO strings.
+  const std::string kLongString = "abcdefghijklmnopqrstuvwxyz";
+
+  // For "reference" keys.
+  const std::string_view kReferenceView = "reference";
 
   StringViewMapKey kShortKey{kShortString};
   StringViewMapKey kLongKey{kLongString};
