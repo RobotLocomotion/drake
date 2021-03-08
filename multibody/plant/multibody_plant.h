@@ -3664,8 +3664,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::logic_error if there is no instance with the requested name.
   /// @see HasModelInstanceNamed() to query if there exists an instance in
   /// `this` %MultibodyPlant with a given specified name.
-  ModelInstanceIndex GetModelInstanceByName(
-      std::string_view name) const {
+  ModelInstanceIndex GetModelInstanceByName(std::string_view name) const {
     return internal_tree().GetModelInstanceByName(name);
   }
 
