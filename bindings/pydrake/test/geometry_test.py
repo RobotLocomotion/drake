@@ -798,14 +798,15 @@ class TestGeometry(unittest.TestCase):
         Value[mut.render.RenderLabel]
 
     def test_unimplemented_rendering(self):
-        # Test that a derived RenderEngine has implementations of
-        # DoRender*Image that throw something suggestive of "not implemented"
-        # and that they are overridable.
+        """The RenderEngine API throws exceptions for derived implementations
+        that don't override DoRender*Image (or Render*Image for the deprecated
+        API). This test confirms that behavior propagates down to Python."""
         class MinimalEngine(mut.render.RenderEngine):
+            """Minimal implementation of the RenderEngine virtual API"""
             def UpdateViewpoint(self, X_WC):
                 pass
 
-            def DoRegisterVisual(self, id, shae, properties, X_WG):
+            def DoRegisterVisual(self, id, shape, properties, X_WG):
                 pass
 
             def DoUpdateVisualPose(self, id, X_WG):
@@ -818,14 +819,17 @@ class TestGeometry(unittest.TestCase):
                 pass
 
         class ColorOnlyEngine(MinimalEngine):
+            """Rendering Depth and Label images should throw"""
             def DoRenderColorImage(self, camera, image_out):
                 pass
 
         class DepthOnlyEngine(MinimalEngine):
+            """Rendering Color and Label images should throw"""
             def DoRenderDepthImage(self, camera, image_out):
                 pass
 
         class LabelOnlyEngine(MinimalEngine):
+            """Rendering Color and Depth images should throw"""
             def DoRenderLabelImage(self, camera, image_out):
                 pass
 
