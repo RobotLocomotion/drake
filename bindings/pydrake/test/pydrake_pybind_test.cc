@@ -45,7 +45,8 @@ class ExamplePyKeepAlive {
 };
 
 GTEST_TEST(PydrakePybindTest, PyKeepAlive) {
-  py::module m("test");
+  py::module m =
+      py::module::create_extension_module("test", "", new PyModuleDef());
   {
     using Class = Nonce;
     py::class_<Class>(m, "Nonce");
@@ -82,7 +83,8 @@ struct ExampleDefCopyAndDeepCopy {
 };
 
 GTEST_TEST(PydrakePybindTest, DefCopyAndDeepCopy) {
-  py::module m("test");
+  py::module m =
+      py::module::create_extension_module("test", "", new PyModuleDef());
   {
     using Class = ExampleDefCopyAndDeepCopy;
     py::class_<Class> cls(m, "ExampleDefCopyAndDeepCopy");
@@ -120,7 +122,8 @@ class ExampleDefClone {
 };
 
 GTEST_TEST(PydrakePybindTest, DefClone) {
-  py::module m("test");
+  py::module m =
+      py::module::create_extension_module("test", "", new PyModuleDef());
   {
     using Class = ExampleDefClone;
     py::class_<Class> cls(m, "ExampleDefClone");
@@ -143,7 +146,8 @@ struct ExampleParamInit {
 };
 
 GTEST_TEST(PydrakePybindTest, ParamInit) {
-  py::module m("test");
+  py::module m =
+      py::module::create_extension_module("test", "", new PyModuleDef());
   {
     using Class = ExampleParamInit;
     py::class_<Class>(m, "ExampleParamInit")
@@ -169,7 +173,8 @@ int DoMain(int argc, char** argv) {
   py::scoped_interpreter guard;
   // Define nominal scope, and use a useful name for `ExecuteExtraPythonCode`
   // below.
-  py::module m("pydrake.test.pydrake_pybind_test");
+  py::module m = py::module::create_extension_module(
+      "pydrake.test.pydrake_pybind_test", "", new PyModuleDef());
   // Test coverage and use this method for `check_copy`.
   ExecuteExtraPythonCode(m);
   test::SynchronizeGlobalsForPython3(m);

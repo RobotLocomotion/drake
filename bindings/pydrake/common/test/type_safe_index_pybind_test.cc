@@ -29,7 +29,8 @@ void CheckValue(const string& expr, const T& expected) {
 }
 
 GTEST_TEST(TypeSafeIndexTest, CheckCasting) {
-  py::module m("__main__");
+  py::module m =
+      py::module::create_extension_module("__main__", "", new PyModuleDef());
 
   struct Tag {};
   using Index = TypeSafeIndex<Tag>;
