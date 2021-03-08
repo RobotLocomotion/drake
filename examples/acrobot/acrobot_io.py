@@ -47,11 +47,17 @@ def load_output(*, filename=None, data=None):
     """
     if sum(bool(x) for x in [data, filename]) != 1:
         raise RuntimeError("Must specify exactly one of data= and filename=")
+    # yaml.CLoader may not be available in all wheels, so fall back to the
+    # regular yaml.Loader.
+    try:
+        loader = yaml.CLoader
+    except AttributeError:
+        loader = yaml.Loader
     if data:
-        x_tape_data = yaml.load(data, Loader=yaml.CLoader)
+        x_tape_data = yaml.load(data, Loader=loader)
     else:
         with open(filename, "r") as data:
-            x_tape_data = yaml.load(data, Loader=yaml.CLoader)
+            x_tape_data = yaml.load(data, Loader=loader)
     if "x_tape" not in x_tape_data:
         raise RuntimeError(f"Did not find 'x_tape' in {x_tape_data}")
     return np.array(x_tape_data["x_tape"])
