@@ -772,7 +772,7 @@ class MultibodyTree {
     const int count = body_name_to_index_.count(name);
     if (count > 1) {
       throw std::logic_error(fmt::format(
-          "Body {} appears in multiple model instances.", name));
+          "Body {} appears in multiple model instances.", std::string(name)));
     }
     return count > 0;
   }
@@ -850,7 +850,7 @@ class MultibodyTree {
     const int count = actuator_name_to_index_.count(name);
     if (count > 1) {
       throw std::logic_error(fmt::format(
-          "Joint actuator appears in multiple model instances.", name));
+          "Joint actuator {} appears in multiple model instances.", name));
     }
     return count > 0;
   }
@@ -991,7 +991,7 @@ class MultibodyTree {
       if (joint == nullptr) {
         throw std::logic_error(fmt::format(
             "There is no joint named '{}' in model instance '{}'.", name,
-            instance_index_to_name_.at(*model_instance)));
+            name, instance_index_to_name_.at(*model_instance)));
       }
     } else {
       joint = &get_joint(
@@ -2984,7 +2984,7 @@ class MultibodyTree {
                       lower, name));
     } else if (std::next(range.first) != range.second) {
       throw std::logic_error(
-          fmt::format("{} appears in multiple model instances.",
+          fmt::format("{} {} appears in multiple model instances.",
                       element_description, name));
     }
     return range.first->second;
