@@ -1,0 +1,114 @@
+<!-- This document is the template used by tools/release_engineering/relnotes. -->
+---
+Title: Drake {version}
+---
+
+# Announcements
+
+* TBD
+
+# Breaking changes since {prior_version}
+
+* TBD
+
+# Changes since {prior_version}
+
+## Dynamical Systems
+
+<!-- <relnotes for systems go here> -->
+
+
+New features
+
+* TBD
+
+Fixes
+
+* TBD
+
+## Mathematical Program
+
+<!-- <relnotes for solvers go here> -->
+
+
+New features
+
+* TBD
+
+Fixes
+
+* TBD
+
+## Multibody Dynamics
+
+<!-- <relnotes for geometry,multibody go here> -->
+
+
+New features
+
+* TBD
+
+Fixes
+
+* TBD
+
+## Tutorials and examples
+
+<!-- <relnotes for examples,tutorials go here> -->
+
+* TBD
+
+## Miscellaneous features and fixes
+
+<!-- <relnotes for common,math,lcm,lcmtypes,manipulation,perception go here> -->
+
+* TBD
+
+## pydrake bindings
+
+<!-- <relnotes for bindings go here> -->
+
+
+New features
+
+* TBD
+
+Fixes
+
+* TBD
+
+Newly bound
+
+* TBD
+
+## Build system and dependencies
+
+<!-- <relnotes for cmake,doc,setup,third_party,tools go here> -->
+
+* TBD
+
+## Newly-deprecated APIs
+
+* TBD
+
+## Removal of deprecated items
+
+* TBD
+
+# Notes
+
+
+This release provides [pre-compiled binaries](https://github.com/RobotLocomotion/drake/releases/tag/v0.27.0) named
+``drake-YYYYMMDD-{{bionic|focal|mac}}.tar.gz``. See [Nightly Releases](/from_binary.html#nightly-releases) for instructions on how to use them.
+
+Drake binary releases incorporate a pre-compiled version of [SNOPT](https://ccom.ucsd.edu/~optimizers/solvers/snopt/) as part of the
+[Mathematical Program toolbox](https://drake.mit.edu/doxygen_cxx/group__solvers.html). Thanks to
+Philip E. Gill and Elizabeth Wong for their kind support.
+
+<!-- <begin issue links> -->
+<!-- <end issue links> -->
+
+<!--
+  Current oldest_commit {oldest_commit_exclusive} (exclusive).
+  Current newest_commit {newest_commit_inclusive} (inclusive).
+-->

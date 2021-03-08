@@ -48,6 +48,27 @@ import time
 import github3
 
 
+def _format_comment(args, text):
+    """Return `text` as a one-line comment."""
+    prefix = {"rst": ".. ", "md": "<!-- "}[args.format]
+    suffix = {"rst": "", "md": " -->"}[args.format]
+    return prefix + text + suffix
+
+
+def _format_pr_link(args, pr_num):
+    """Return (inline_part, reference_part), a link to the PR `pr_num`.  The
+    `inline_part` goes in the text; the `reference_part` goes at the bottom of
+    the file."""
+    url = f"https://github.com/RobotLocomotion/drake/pull/{pr_num}"
+    if args.format == "rst":
+        return (f"`#{pr_num}`_",
+                f".. _#{pr_num}: {url}")
+    elif args.format == "md":
+        return (f"[#{pr_num}][_#{pr_num}]",
+                f"[_#{pr_num}]: {url}")
+    raise IllegalArgumentException(f"{args.format} is not a recognized format")
+
+
 def _filename_to_primary_package(filename):
     """Given a filename (e.g., "systems/framework/system.h"), return its
     primary package (e.g., "systems").
@@ -60,7 +81,7 @@ def _filename_to_primary_package(filename):
         return "tools"
 
 
-def _format_commit(gh, drake, commit):
+def _format_commit(args, gh, drake, commit):
     """Returns (packages, bullet) for the given commit.
 
     The packages is a list of top-level directories whose files were edited in
@@ -142,15 +163,16 @@ def _format_commit(gh, drake, commit):
     if len(packages) > 1:
         preamble = "[" + ",".join(packages) + "] "
 
-    # Format as top-level rst bullet point.
-    return packages, f"* TBD {preamble}{nice_summary} (`#{pr}`_){detail}"
+    # Format as top-level bullet point.
+    inline_link, _ = _format_pr_link(args, pr)
+    return packages, f"* TBD {preamble}{nice_summary} ({inline_link}){detail}"
 
 
-def _update(args, rst_filename, gh, drake):
+def _update(args, notes_filename, gh, drake):
     """The --update action."""
 
     # Read in the existing content.
-    with open(rst_filename, "r") as f:
+    with open(notes_filename, "r") as f:
         lines = f.readlines()
 
     # Scrape the last commit from the document.  The line looks like this:
@@ -192,7 +214,7 @@ def _update(args, rst_filename, gh, drake):
             continue
         # Try not to hit GitHub API rate limits.
         time.sleep(0.2)
-        packages, bullet = _format_commit(gh, drake, commit)
+        packages, bullet = _format_commit(args, gh, drake, commit)
 
         # Skip commits deemed ineligible.
         if not packages:
@@ -217,38 +239,39 @@ def _update(args, rst_filename, gh, drake):
     # Update the issue links.  Replace the text between these markers:
     # .. <begin issue links>
     # .. <end issue links>
-    begin = lines.index(".. <begin issue links>\n")
-    end = lines.index(".. <end issue links>\n")
+    begin = lines.index(_format_comment(args, "<begin issue links>") + "\n")
+    end = lines.index(_format_comment(args, "<end issue links>") + "\n")
     assert begin < end
     pr_numbers = set()
     for i, one_line in enumerate(lines):
         if begin < i < end:
             continue
         while True:
-            match = re.search("`#([0-9]*)`_", one_line)
+            if args.format == "rst":
+                match = re.search("`#([0-9]*)`_", one_line)
+            elif args.format == "md":
+                match = re.search(r"\[_#([0-9]*)\]", one_line)
             if not match:
                 break
             (number,) = match.groups()
             pr_numbers.add(number)
             one_line = one_line[match.end(0):]
-    pr_links = [
-        f".. _#{n}: https://github.com/RobotLocomotion/drake/pull/{n}\n"
-        for n in sorted(list(pr_numbers))
-    ]
+    pr_links = [_format_pr_link(args, n)[1] + "\n"
+                for n in sorted(list(pr_numbers))]
     lines[begin + 1:end] = pr_links
 
     # Rewrite the notes file.
-    with open(rst_filename + "~", "w") as f:
+    with open(notes_filename + "~", "w") as f:
         for one_line in lines:
             f.write(one_line)
-    os.replace(rst_filename + "~", rst_filename)
+    os.replace(notes_filename + "~", notes_filename)
 
 
-def _create(args, notes_dir, rst_filename, gh, drake):
+def _create(args, notes_dir, notes_filename, gh, drake):
     """The --create action."""
 
-    if os.path.exists(rst_filename):
-        raise RuntimeError(f"{rst_filename} already exists")
+    if os.path.exists(notes_filename):
+        raise RuntimeError(f"{notes_filename} already exists")
 
     # Find the commit sha for the prior_version release.
     prior_sha = next(drake.commits(sha=args.prior_version)).sha
@@ -269,7 +292,7 @@ def _create(args, notes_dir, rst_filename, gh, drake):
     content = content[content.index("\n") + 1:]
 
     # Write the notes skeleton to disk.
-    with open(rst_filename, "w") as f:
+    with open(notes_filename, "w") as f:
         f.write(content)
 
 
@@ -281,6 +304,10 @@ def main():
     parser.add_argument(
         "--action", type=str, choices=["create", "update"], required=True,
         help="Whether to create a new notes file or update an existing one")
+    parser.add_argument(
+        "--format", type=str, choices=["rst", "md"], default="rst",
+        help='Format for output: "rst" for ReStructedText, '
+             '"md" for Jekyll Kramdown')
     parser.add_argument(
         "--version", type=str, required=True,
         help="Notes file to create or edit, e.g., v0.22.0")
@@ -307,10 +334,11 @@ def main():
     # Find the file to operate on.
     me = os.path.realpath(sys.argv[0])
     workspace = os.path.dirname(os.path.dirname(os.path.dirname(me)))
-    notes_dir = f"{workspace}/doc/release_notes"
+    notes_dir = {"rst": f"{workspace}/doc/release_notes",
+                 "md": f"{workspace}/doc/_release-notes"}[args.format]
     if not os.path.isdir(notes_dir):
         parser.error("Could not find release_notes directory")
-    rst_filename = f"{notes_dir}/{args.version}.rst"
+    notes_filename = f"{notes_dir}/{args.version}.{args.format}"
 
     # Authenticate to GitHub.
     with open(os.path.expanduser(args.token_file), "r") as f:
@@ -322,10 +350,10 @@ def main():
     if args.action == "create":
         if not args.prior_version:
             parser.error("--prior_version is required to --create")
-        _create(args, notes_dir, rst_filename, gh, drake)
+        _create(args, notes_dir, notes_filename, gh, drake)
     else:
         assert args.action == "update"
-        _update(args, rst_filename, gh, drake)
+        _update(args, notes_filename, gh, drake)
 
 
 if __name__ == '__main__':
