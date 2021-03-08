@@ -11,7 +11,7 @@ class StringViewMapKeyTest : public ::testing::Test {
  public:
   void ValidateStorageKey(const StringViewMapKey& key) {
     // Validate that the string_view is associated with the storage when the
-    // optional value is not set.
+    // optional value is set.
     ASSERT_EQ(key.storage().has_value(), true);
     EXPECT_EQ(key.storage().value().c_str(), key.view().data());
   }
@@ -22,8 +22,6 @@ class StringViewMapKeyTest : public ::testing::Test {
   }
 
  protected:
-  void SetUp() {}
-
   // Short string for validation of SSO (short-string optimization) strings.
   const std::string kShortString = "abcde";
 
@@ -33,30 +31,36 @@ class StringViewMapKeyTest : public ::testing::Test {
   // For "reference" keys.
   const std::string_view kReferenceView = "reference";
 
-  StringViewMapKey kShortKey{kShortString};
-  StringViewMapKey kLongKey{kLongString};
-  StringViewMapKey kReferenceKey{kReferenceView};
+  StringViewMapKey short_key{kShortString};
+  StringViewMapKey long_key{kLongString};
+  StringViewMapKey reference_key{kReferenceView};
 };
 
 // Validate constructed objects.
 TEST_F(StringViewMapKeyTest, Construction) {
-  ValidateStorageKey(kShortKey);
-  ValidateStorageKey(kLongKey);
-  ValidateReferenceKey(kReferenceKey);
+  ValidateStorageKey(short_key);
+  ValidateStorageKey(long_key);
+  ValidateReferenceKey(reference_key);
 }
 
 // Validate copy constructed objects.
 TEST_F(StringViewMapKeyTest, CopyConstruction) {
-  ValidateStorageKey(StringViewMapKey(kShortKey));
-  ValidateStorageKey(StringViewMapKey(kLongKey));
-  ValidateReferenceKey(StringViewMapKey(kReferenceKey));
+  const StringViewMapKey short_copy(short_key);
+  const StringViewMapKey long_copy(long_key);
+  const StringViewMapKey reference_copy(reference_key);
+  ValidateStorageKey(short_copy);
+  ValidateStorageKey(long_copy);
+  ValidateReferenceKey(reference_copy);
+  EXPECT_NE(short_copy.view().data(), short_key.view().data());
+  EXPECT_NE(long_copy.view().data(), long_key.view().data());
+  EXPECT_EQ(reference_copy.view().data(), reference_key.view().data());
 }
 
 // Validate move constructed objects.
 TEST_F(StringViewMapKeyTest, MoveConstruction) {
-  ValidateStorageKey(StringViewMapKey(std::move(kShortKey)));
-  ValidateStorageKey(StringViewMapKey(std::move(kLongKey)));
-  ValidateReferenceKey(StringViewMapKey(std::move(kReferenceKey)));
+  ValidateStorageKey(StringViewMapKey(std::move(short_key)));
+  ValidateStorageKey(StringViewMapKey(std::move(long_key)));
+  ValidateReferenceKey(StringViewMapKey(std::move(reference_key)));
 }
 
 // Validate copy assigned objects.
@@ -64,9 +68,12 @@ TEST_F(StringViewMapKeyTest, CopyAssignment) {
   StringViewMapKey short_copy;
   StringViewMapKey long_copy;
   StringViewMapKey reference_copy;
-  ValidateStorageKey(short_copy = kShortKey);
-  ValidateStorageKey(long_copy = kLongKey);
-  ValidateReferenceKey(reference_copy = kReferenceKey);
+  ValidateStorageKey(short_copy = short_key);
+  ValidateStorageKey(long_copy = long_key);
+  ValidateReferenceKey(reference_copy = reference_key);
+  EXPECT_NE(short_copy.view().data(), short_key.view().data());
+  EXPECT_NE(long_copy.view().data(), long_key.view().data());
+  EXPECT_EQ(reference_copy.view().data(), reference_key.view().data());
 }
 
 // Validate move assigned objects.
@@ -74,9 +81,9 @@ TEST_F(StringViewMapKeyTest, MoveAssignment) {
   StringViewMapKey short_move;
   StringViewMapKey long_move;
   StringViewMapKey reference_move;
-  ValidateStorageKey(short_move = std::move(kShortKey));
-  ValidateStorageKey(long_move = std::move(kLongKey));
-  ValidateReferenceKey(reference_move = std::move(kReferenceKey));
+  ValidateStorageKey(short_move = std::move(short_key));
+  ValidateStorageKey(long_move = std::move(long_key));
+  ValidateReferenceKey(reference_move = std::move(reference_key));
 }
 
 

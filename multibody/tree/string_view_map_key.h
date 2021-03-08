@@ -9,7 +9,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-// This class exists because unorderded_map in C++17 does not allow using
+// This class exists because unordered_map in C++17 does not allow using
 // different keys for storage and lookup. This class serves two purposes:
 // 1. It stores a string and provides a view into it. This is necessary
 //    for insertion into the hashtable because string_view acts only as
@@ -24,10 +24,12 @@ class StringViewMapKey {
 
   // Default move constructor may not respect short-string optimization.
   // See note in move assignment operator below.
-  StringViewMapKey(StringViewMapKey&& s) { operator=(s); }
+  StringViewMapKey(StringViewMapKey&& s) { operator=(std::move(s)); }
   StringViewMapKey(const StringViewMapKey& s) { operator=(s); }
 
   StringViewMapKey& operator=(const StringViewMapKey& s) {
+    // Note: We don't need to guard against self-assigment here, since we're not
+    // managing resources.
     storage_ = s.storage_;
     if (storage_.has_value()) {
       // s is used for Mode 1.
@@ -39,10 +41,13 @@ class StringViewMapKey {
     return *this;
   }
 
-  // Note: default move assignment may fail when short-string-optimization
-  // (SSO) is used by the underlying std::string because the moved view would
-  // still point to the array in the source.
+  // @note default move assignment may fail when short-string-optimization
+  //       (SSO) is used by the underlying std::string because the moved view
+  //       would still point to the array in the source.
+  // @note Contents of `s` will be undefined after move.
   StringViewMapKey& operator=(StringViewMapKey&& s) {
+    // Note: We don't need to guard against self-assigment here, since we're not
+    // managing resources.
     storage_ = std::move(s.storage_);
     view_ = (storage_.has_value()) ? storage_.value() : s.view();
     return *this;
@@ -56,7 +61,8 @@ class StringViewMapKey {
 
   // Mode 1 constructor with implicit conversion.
   // NOLINTNEXTLINE
-  StringViewMapKey(const std::string& s) : storage_(s), view_(storage_.value()) {}
+  StringViewMapKey(const std::string& s)
+      : storage_(s), view_(storage_.value()) {}
 
   // Mode 2 constructor with implicit conversion.
   // NOLINTNEXTLINE

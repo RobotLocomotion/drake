@@ -702,10 +702,10 @@ class MultibodyTree {
     const ForceElementType<T>* typed_force_element =
         dynamic_cast<const ForceElementType<T>*>(force_element);
     if (typed_force_element == nullptr) {
-      throw std::logic_error("ForceElement is not of type '" +
-                             NiceTypeName::Get<ForceElementType<T>>() +
-                             "' but of type '" +
-                             NiceTypeName::Get(*force_element) + "'.");
+      throw std::logic_error(
+          fmt::format("ForceElement is not of type '{}' but of type '{}'.",
+                      NiceTypeName::Get<ForceElementType<T>>(),
+                      NiceTypeName::Get(*force_element)));
     }
 
     return *typed_force_element;
@@ -740,9 +740,9 @@ class MultibodyTree {
       ModelInstanceIndex model_instance) const {
     const auto it = instance_index_to_name_.find(model_instance);
     if (it == instance_index_to_name_.end()) {
-      throw std::logic_error("There is no model instance id " +
-          std::to_string(model_instance) +
-          " in the model.");
+      throw std::logic_error(
+          fmt::format("There is no model instance id {} in the model.",
+                      std::to_string(model_instance)));
     }
     return it->second;
   }
@@ -769,7 +769,7 @@ class MultibodyTree {
   // @throws std::logic_error if the body name occurs in multiple model
   // instances.
   bool HasBodyNamed(std::string_view name) const {
-    const int count = body_name_to_index_.count(StringViewMapKey(name));
+    const int count = body_name_to_index_.count(name);
     if (count > 1) {
       throw std::logic_error(fmt::format(
           "Body {} appears in multiple model instances.", name));
@@ -789,7 +789,7 @@ class MultibodyTree {
     // out to be incorrect we can switch to a different data structure.
     // N.B. Please sync with `HasFrameNamed`, `HasJointNamed`, and
     // `HasJointActuatorNamed` if you change or remove this comment.
-    const auto range = body_name_to_index_.equal_range(StringViewMapKey(name));
+    const auto range = body_name_to_index_.equal_range(name);
     for (auto it = range.first; it != range.second; ++it) {
       if (get_body(it->second).model_instance() == model_instance) {
         return true;
@@ -802,8 +802,8 @@ class MultibodyTree {
   bool HasFrameNamed(std::string_view name) const {
     const int count = frame_name_to_index_.count(name);
     if (count > 1) {
-      throw std::logic_error("Frame " + std::string(name) +
-                             " appears in multiple model instances.");
+      throw std::logic_error(
+          fmt::format("Frame {} appears in multiple model instances.", name));
     }
     return count > 0;
   }
@@ -825,8 +825,8 @@ class MultibodyTree {
   bool HasJointNamed(std::string_view name) const {
     const int count = joint_name_to_index_.count(name);
     if (count > 1) {
-      throw std::logic_error("Joint " + std::string(name) +
-                             " appears in multiple model instances.");
+      throw std::logic_error(
+          fmt::format("Joint {} appears in multiple model instances.", name));
     }
     return count > 0;
   }
@@ -849,8 +849,8 @@ class MultibodyTree {
   bool HasJointActuatorNamed(std::string_view name) const {
     const int count = actuator_name_to_index_.count(name);
     if (count > 1) {
-      throw std::logic_error("Joint actuator " + std::string(name) +
-                             " appears in multiple model instances.");
+      throw std::logic_error(fmt::format(
+          "Joint actuator appears in multiple model instances.", name));
     }
     return count > 0;
   }
@@ -892,9 +892,9 @@ class MultibodyTree {
         return body;
       }
     }
-    throw std::logic_error("There is no body named '" + std::string(name) +
-                           "' in model instance '" +
-                           instance_index_to_name_.at(model_instance) + "'.");
+    throw std::logic_error(
+        fmt::format("There is no body named '{}' in model instance '{}.", name,
+                    instance_index_to_name_.at(model_instance)));
   }
 
   // Returns a list of body indices associated with `model_instance`.
@@ -940,9 +940,9 @@ class MultibodyTree {
         return frame;
       }
     }
-    throw std::logic_error("There is no frame named '" + std::string(name) +
-                           "' in model instance '" +
-                           instance_index_to_name_.at(model_instance) + "'.");
+    throw std::logic_error(fmt::format(
+        "There is no frame named '{}' in model instance '{}'.", name,
+        instance_index_to_name_.at(model_instance)));
   }
 
   // See MultibodyPlant method.
@@ -950,8 +950,8 @@ class MultibodyTree {
     const RigidBody<T>* body =
         dynamic_cast<const RigidBody<T>*>(&GetBodyByName(name));
     if (body == nullptr) {
-      throw std::logic_error("Body '" + std::string(name) +
-                             "' is not a RigidBody.");
+      throw std::logic_error(
+          fmt::format("Body '{}' is not a RigidBody.", name));
     }
     return *body;
   }
@@ -964,8 +964,8 @@ class MultibodyTree {
         dynamic_cast<const RigidBody<T>*>(&GetBodyByName(name, model_instance));
     if (body == nullptr) {
       throw std::logic_error(
-          "Body '" + std::string(name) + "' in model instance '" +
-          instance_index_to_name_.at(model_instance) + "' is not a RigidBody.");
+          fmt::format("Body '{}' in model instance '{}' is not a RigidBody.",
+                      name, instance_index_to_name_.at(model_instance)));
     }
     return *body;
   }
@@ -989,10 +989,9 @@ class MultibodyTree {
         }
       }
       if (joint == nullptr) {
-        throw std::logic_error("There is no joint named '" + std::string(name) +
-                               "' in model instance '" +
-                               instance_index_to_name_.at(*model_instance) +
-                               "'.");
+        throw std::logic_error(fmt::format(
+            "There is no joint named '{}' in model instance '{}'.", name,
+            instance_index_to_name_.at(*model_instance)));
       }
     } else {
       joint = &get_joint(
@@ -1001,11 +1000,11 @@ class MultibodyTree {
 
     const JointType<T>* typed_joint = dynamic_cast<const JointType<T>*>(joint);
     if (typed_joint == nullptr) {
-      throw std::logic_error(
-          "Joint '" + std::string(name) + "' in model instance " +
-          instance_index_to_name_.at(*model_instance) + " is not of type '" +
-          NiceTypeName::Get<JointType<T>>() + "' but of type '" +
-          NiceTypeName::Get(*joint) + "'.");
+      throw std::logic_error(fmt::format(
+          "Joint '{}' in model instance {} is not of type '{}' but of type "
+          "'{}'.",
+          name, instance_index_to_name_.at(*model_instance),
+          NiceTypeName::Get<JointType<T>>(), NiceTypeName::Get(*joint)));
     }
     return *typed_joint;
   }
@@ -2979,11 +2978,14 @@ class MultibodyTree {
     if (range.first == range.second) {
       std::string lower = element_description;
       std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
-      throw std::logic_error("There is no " + lower + " named '" +
-                             std::string(name) + "' in the model.");
+      throw std::logic_error(
+          fmt::format("There is no {} named '{}"
+                      "' in the model.",
+                      lower, name));
     } else if (std::next(range.first) != range.second) {
-      throw std::logic_error(element_description + " " + std::string(name) +
-                             " appears in multiple model instances.");
+      throw std::logic_error(
+          fmt::format("{} appears in multiple model instances.",
+                      element_description, name));
     }
     return range.first->second;
   }
