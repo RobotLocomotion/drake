@@ -379,6 +379,12 @@ GTEST_TEST(MultibodyPlantTest, AddMultibodyPlantSceneGraph) {
 }
 
 // Verifies that string-based queries allocate no heap.
+//
+// NOTE: Every querying API that takes strings as parameters should conform to
+// this non-allocating convention. As such, they should be invoked in this
+// test to show that they adhere to that expectation. It should be considered
+// to be a defect if such an API exists and is omitted here (for whatever
+// historical reason).
 GTEST_TEST(MultibodyPlantTest, NoHeapAllocOnStringQueries) {
   // Construct a plant with an Iiwa.
   const char kSdfPath[] =

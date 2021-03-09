@@ -2988,6 +2988,17 @@ class MultibodyTree {
     return range.first->second;
   }
 
+  // When using a StringViewMapKey as the key type in an unordered map, the
+  // instance *stored* in the map must own its string. This interface validates
+  // that invariant and should be the sole mechanism by which entries are
+  // *added* to the map.
+  template <typename ElementIndex, class MapType>
+  static void SetElementIndex(StringViewMapKey key, ElementIndex index,
+                              MapType* name_to_index) {
+    DRAKE_DEMAND(key.storage().has_value());
+    name_to_index->emplace(std::move(key), index);
+  }
+
   // If there exists a unique base body (a body whose parent is the world body)
   // in the model given by `model_instance`, return the index of that body.
   // Otherwise return std::nullopt. In particular, if the given `model_instance`
@@ -3021,6 +3032,10 @@ class MultibodyTree {
 
   // TODO(amcastro-tri): Consider moving these maps into MultibodyTreeTopology
   // since they are not templated on <T>.
+
+  // In order for the keys in the following maps to have correct semantics,
+  // indices should only be set in these maps via invocations to
+  // SetElementIndex. Never call emplace or insert directly, just to be safe.
 
   // The xxx_name_to_index_ structures are multimaps because
   // bodies/joints/actuators/etc may appear with the same name in different
