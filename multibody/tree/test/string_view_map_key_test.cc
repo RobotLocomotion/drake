@@ -36,6 +36,17 @@ class StringViewMapKeyTest : public ::testing::Test {
   StringViewMapKey reference_key{kReferenceView};
 };
 
+// Confirm the class can actually serve its published purpose: as a key in an
+// unordered map that allows string and string_view based queries.
+TEST_F(StringViewMapKeyTest, AsUnorderedMapKey) {
+  std::unordered_map<StringViewMapKey, int> values;
+  const std::string key_value{"one"};
+  const std::string_view key_view(key_value);
+  values.emplace(StringViewMapKey(key_value), 1);
+  EXPECT_EQ(values.count(key_value), 1);
+  EXPECT_EQ(values.count(key_view), 1);
+}
+
 // Validate constructed objects.
 TEST_F(StringViewMapKeyTest, Construction) {
   ValidateStorageKey(short_key);
@@ -51,6 +62,9 @@ TEST_F(StringViewMapKeyTest, CopyConstruction) {
   ValidateStorageKey(short_copy);
   ValidateStorageKey(long_copy);
   ValidateReferenceKey(reference_copy);
+
+  // Confirm that copies of owning keys own unique values and that non-owning
+  // copies share the string with the source.
   EXPECT_NE(short_copy.view().data(), short_key.view().data());
   EXPECT_NE(long_copy.view().data(), long_key.view().data());
   EXPECT_EQ(reference_copy.view().data(), reference_key.view().data());
@@ -71,6 +85,9 @@ TEST_F(StringViewMapKeyTest, CopyAssignment) {
   ValidateStorageKey(short_copy = short_key);
   ValidateStorageKey(long_copy = long_key);
   ValidateReferenceKey(reference_copy = reference_key);
+
+  // Confirm that copies of owning keys own unique values and that non-owning
+  // copies share the string with the source.
   EXPECT_NE(short_copy.view().data(), short_key.view().data());
   EXPECT_NE(long_copy.view().data(), long_key.view().data());
   EXPECT_EQ(reference_copy.view().data(), reference_key.view().data());
@@ -85,7 +102,6 @@ TEST_F(StringViewMapKeyTest, MoveAssignment) {
   ValidateStorageKey(long_move = std::move(long_key));
   ValidateReferenceKey(reference_move = std::move(reference_key));
 }
-
 
 }  // namespace
 }  // namespace internal

@@ -2979,9 +2979,7 @@ class MultibodyTree {
       std::string lower = element_description;
       std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
       throw std::logic_error(
-          fmt::format("There is no {} named '{}"
-                      "' in the model.",
-                      lower, name));
+          fmt::format("There is no {} named '{}' in the model.", lower, name));
     } else if (std::next(range.first) != range.second) {
       throw std::logic_error(
           fmt::format("{} {} appears in multiple model instances.",

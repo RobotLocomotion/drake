@@ -9,15 +9,18 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-// This class exists because unordered_map in C++17 does not allow using
-// different keys for storage and lookup. This class serves two purposes:
-// 1. It stores a string and provides a view into it. This is necessary
-//    for insertion into the hashtable because string_view acts only as
-//    a pointer.
-// 2. It stores a string_view only. This permits querying the hashtable
-//    with a string_view without copying the underlying string. Note that
-//    the underlying memory pointed to by the string_view must outlive
-//    `this` and all copies in this mode.
+// This class allows us to create unordered maps that accept both std::string
+// and std::string_view as keys in query operations. It encapsulates the two
+// types and provides implicit conversions from those types to this type. It
+// operates in one of two modes:
+//
+// 1. String-owning - the key maintains its own string value which is guaranteed
+// to live as long as the key itself. When creating an entry in the map, it is
+// critical that the key own its own storage.
+// 2. Non-owning - this is the light-weight, non-allocating mode which will
+// typically participate in performing look ups in the map (although keys in
+// both modes will serve equally well). The external string that the non-owning
+// key references must remain alive at least as long as the key.
 class StringViewMapKey {
  public:
   StringViewMapKey() = default;
