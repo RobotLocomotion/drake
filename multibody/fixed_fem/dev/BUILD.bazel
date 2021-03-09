@@ -75,6 +75,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "deformable_contact",
+    srcs = ["deformable_contact.cc"],
+    hdrs = ["deformable_contact.h"],
+    deps = [
+        "//geometry/proximity:posed_half_space",
+        "//geometry/proximity:surface_mesh",
+        "//geometry/proximity:volume_mesh",
+    ],
+)
+
+drake_cc_library(
     name = "deformable_visualizer",
     srcs = ["deformable_visualizer.cc"],
     hdrs = ["deformable_visualizer.h"],
@@ -496,6 +507,17 @@ drake_cc_library(
     hdrs = ["test/test_utilities.h"],
     deps = [
         "//common:essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "deformable_contact_test",
+    deps = [
+        ":deformable_contact",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry/proximity:mesh_intersection",
+        "//geometry/proximity:surface_mesh",
+        "//geometry/proximity:volume_mesh",
     ],
 )
 
