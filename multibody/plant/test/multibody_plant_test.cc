@@ -17,6 +17,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/query_object.h"
@@ -375,6 +376,50 @@ GTEST_TEST(MultibodyPlantTest, AddMultibodyPlantSceneGraph) {
   // These should fail:
   // AddMultibodyPlantSceneGraphResult<double> extra(plant, scene_graph);
   // AddMultibodyPlantSceneGraphResult<double> extra{*plant, *scene_graph};
+}
+
+// Verifies that string-based queries allocate no heap.
+//
+// NOTE: Every querying API that takes strings as parameters should conform to
+// this non-allocating convention. As such, they should be invoked in this
+// test to show that they adhere to that expectation. It should be considered
+// to be a defect if such an API exists and is omitted here (for whatever
+// historical reason).
+GTEST_TEST(MultibodyPlantTest, NoHeapAllocOnStringQueries) {
+  // Construct a plant with an Iiwa.
+  const char kSdfPath[] =
+      "drake/manipulation/models/iiwa_description/sdf/"
+      "iiwa14_no_collision.sdf";
+  auto plant =
+      std::make_unique<MultibodyPlant<double>>(0 /* plant type irrelevant */);
+  Parser parser(plant.get());
+  multibody::ModelInstanceIndex iiwa_instance =
+      parser.AddModelFromFile(FindResourceOrThrow(kSdfPath), "iiwa");
+  plant->Finalize();
+
+  // Use string to ensure that there is no heap allocation in the implicit
+  // conversion to string_view.
+  const std::string kLinkName = "iiwa_link_0";
+  const std::string kJointName = "iiwa_joint_1";
+
+  // Note that failed queries cause exceptions to be thrown (which allocates
+  // heap).
+  drake::test::LimitMalloc dummy;
+
+  // Check the HasX versions first. Note that functions that take no model
+  // instance argument delgate to model instance argument versions.
+  EXPECT_TRUE(plant->HasModelInstanceNamed("iiwa"));
+  EXPECT_TRUE(plant->HasBodyNamed(kLinkName, iiwa_instance));
+  EXPECT_TRUE(plant->HasFrameNamed(kLinkName, iiwa_instance));
+  EXPECT_TRUE(plant->HasJointNamed(kJointName, iiwa_instance));
+  EXPECT_TRUE(plant->HasJointActuatorNamed(kJointName, iiwa_instance));
+
+  // Check the GetX versions now.
+  plant->GetModelInstanceByName("iiwa");
+  plant->GetBodyByName(kLinkName, iiwa_instance);
+  plant->GetFrameByName(kLinkName, iiwa_instance);
+  plant->GetJointByName(kJointName, iiwa_instance);
+  plant->GetJointActuatorByName(kJointName, iiwa_instance);
 }
 
 GTEST_TEST(MultibodyPlantTest, EmptyWorldDiscrete) {
