@@ -40,10 +40,9 @@ def main():
     for item in [gen_sphinx, gen_sphinx_py, gen_jekyll, doxygen]:
         assert os.path.exists(item), item
 
-    os.makedirs(out_dir)
-    _check_call([gen_sphinx, f"--out_dir={out_dir}"])
+    _check_call([gen_jekyll, f"--out_dir={out_dir}"])
+    _check_call([gen_sphinx, f"--out_dir={out_dir}/sphinx"])
     _check_call([gen_sphinx_py, f"--out_dir={out_dir}/pydrake"])
-    _check_call([gen_jekyll, f"--out_dir={out_dir}/jekyll"])
     doxygen_scratch = f"{out_dir}/doxygen_scratch"
     _check_call([doxygen, f"--out_dir={doxygen_scratch}"])
     print(f"+ mv {doxygen_scratch}/html {out_dir}/doxygen_cxx")
