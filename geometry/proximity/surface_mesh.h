@@ -228,6 +228,45 @@ class SurfaceMesh {
     CalcAreasNormalsAndCentroid();
   }
 
+  /**
+   (Advanced) Constructs a %SurfaceMesh from faces, face normals, face areas,
+   and vertices. Other than confirming the *counts* of the per-face quantities,
+   the mathematical correctness will *not* be tested.
+
+   For each face with index f, it should be the case that normals[f] is
+   perpendicular to the face, and has unit length and that the area of that
+   triangle is areas[f].
+
+   @param faces     The faces.
+   @param normals   The unit-length vectors representing per-face normals.
+   @param areas     The per-face area values.
+   @param vertices  The vertices.
+   @pre faces.size() == normals.size() == areas.size().
+   */
+  SurfaceMesh(std::vector<SurfaceFace> faces, std::vector<Vector3<T>> normals,
+              std::vector<T> areas, std::vector<SurfaceVertex<T>> vertices)
+      : faces_(std::move(faces)),
+        vertices_(std::move(vertices)),
+        area_(std::move(areas)),
+        face_normals_(std::move(normals)) {
+    DRAKE_DEMAND(faces_.size() == area_.size());
+    DRAKE_DEMAND(faces_.size() == face_normals_.size());
+    total_area_ = 0;
+    p_MSc_.setZero();
+    for (SurfaceFaceIndex f(0); f < faces_.size(); ++f) {
+      const T& a = area_[f];
+      total_area_ += a;
+
+      const SurfaceFace& face = faces_[f];
+      const Vector3<T>& r_MA = vertices_[face.vertex(0)].r_MV();
+      const Vector3<T>& r_MB = vertices_[face.vertex(1)].r_MV();
+      const Vector3<T>& r_MC = vertices_[face.vertex(2)].r_MV();
+      p_MSc_ += a * (r_MA + r_MB + r_MC);
+    }
+    // Finalize centroid.
+    if (total_area_ != T(0.)) p_MSc_ /= (3. * total_area_);
+  }
+
   /** Transforms the vertices of this mesh from its initial frame M to the new
    frame N.
    */
@@ -291,8 +330,8 @@ class SurfaceMesh {
    Maps the barycentric coordinates `Q_barycentric` of a point Q in
    `element_index` to its position vector p_MQ.
    */
-  Vector3<T> CalcCartesianFromBarycentric(
-      ElementIndex element_index, const Barycentric& b_Q) const {
+  Vector3<T> CalcCartesianFromBarycentric(ElementIndex element_index,
+                                          const Barycentric& b_Q) const {
     const SurfaceVertex<T> va = vertex(element(element_index).vertex(0));
     const SurfaceVertex<T> vb = vertex(element(element_index).vertex(1));
     const SurfaceVertex<T> vc = vertex(element(element_index).vertex(2));
@@ -497,7 +536,7 @@ void SurfaceMesh<T>::CalcAreasNormalsAndCentroid() {
     //  For example, the code that creates ContactSurface by
     //  triangle-tetrahedron intersection can set more reliable normal vectors
     //  for the skinny intersecting triangles.  Related to issue# 12110.
-    face_normals_[f] = (norm != T(0.0))? cross / norm : cross;
+    face_normals_[f] = (norm != T(0.0)) ? cross / norm : cross;
 
     // Accumulate area-weighted surface centroid; must be divided by 3X the
     // total area afterwards.
@@ -505,8 +544,18 @@ void SurfaceMesh<T>::CalcAreasNormalsAndCentroid() {
   }
 
   // Finalize centroid.
-  if (total_area_ != T(0.))
-    p_MSc_ /= (3. * total_area_);
+  if (total_area_ != T(0.)) p_MSc_ /= (3. * total_area_);
+
+  // TODO(SeanCurtis-TRI): There are two possible cases where we end up with
+  //  the wrong centroid value:
+  //  1. A bunch of coincident vertices spanning zero-area triangles -- the
+  //     centroid would be at the location of any of the vertices.
+  //  2. The mesh is comprised of a bunch of long, degenerate triangles that
+  //     have essentially become edges. The centroid of the mesh would be the
+  //     centroid of those edges.
+  //  Currently, we're not handling either of these cases. However it is
+  //  corrected here, it should likewise be corrected in the advanced
+  //  constructor (where areas and normals are provided as inputs).
 }
 
 template <typename T>

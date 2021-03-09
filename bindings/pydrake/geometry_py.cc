@@ -1004,7 +1004,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
     cls  // BR
         .def(
             py::init<std::vector<SurfaceFace>, std::vector<SurfaceVertex<T>>>(),
-            py::arg("faces"), py::arg("vertices"), doc.SurfaceMesh.ctor.doc)
+            py::arg("faces"), py::arg("vertices"),
+            doc.SurfaceMesh.ctor.doc_2args)
+        .def(py::init<std::vector<SurfaceFace>, std::vector<Vector3<T>>,
+                 std::vector<T>, std::vector<SurfaceVertex<T>>>(),
+            py::arg("faces"), py::arg("normals"), py::arg("areas"),
+            py::arg("vertices"), doc.SurfaceMesh.ctor.doc_4args)
         .def("faces", &Class::faces, doc.SurfaceMesh.faces.doc)
         .def("vertices", &Class::vertices, doc.SurfaceMesh.vertices.doc)
         .def("centroid", &Class::centroid, doc.SurfaceMesh.centroid.doc);
