@@ -1,5 +1,7 @@
 #include "drake/multibody/tree/string_view_map_key.h"
 
+#include <unordered_map>
+
 #include <gtest/gtest.h>
 
 namespace drake {
