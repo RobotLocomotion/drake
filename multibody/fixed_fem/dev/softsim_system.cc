@@ -18,7 +18,7 @@ SoftsimSystem<T>::SoftsimSystem(double dt) : dt_(dt) {
 }
 
 template <typename T>
-BodyIndex SoftsimSystem<T>::RegisterDeformableBody(
+SoftBodyIndex SoftsimSystem<T>::RegisterDeformableBody(
     const geometry::VolumeMesh<T>& mesh, std::string name,
     const DeformableBodyConfig<T>& config) {
   /* Throw if name is not unique. */
@@ -29,7 +29,7 @@ BodyIndex SoftsimSystem<T>::RegisterDeformableBody(
           name));
     }
   }
-  BodyIndex body_index(num_bodies());
+  SoftBodyIndex body_index(num_bodies());
   switch (config.material_model()) {
     case MaterialModel::kLinear:
       RegisterDeformableBodyHelper<LinearConstitutiveModel>(
@@ -39,36 +39,91 @@ BodyIndex SoftsimSystem<T>::RegisterDeformableBody(
       RegisterDeformableBodyHelper<CorotatedModel>(mesh, std::move(name),
                                                    config);
       break;
-    default:
-      DRAKE_UNREACHABLE();
   }
   return body_index;
 }
 
 template <typename T>
-void SoftsimSystem<T>::SetRegisteredBodyInWall(int body_id,
-                                               const Vector3<T>& p_WQ,
-                                               const Vector3<T>& n_W) {
+void SoftsimSystem<T>::SetWallBoundaryCondition(SoftBodyIndex body_id,
+                                                const Vector3<T>& p_WQ,
+                                                const Vector3<T>& n_W,
+                                                double distance_tolerance) {
+  DRAKE_DEMAND(n_W.norm() > 0);
+  const Vector3<T>& n_hatW = n_W.normalized();
   DRAKE_THROW_UNLESS(body_id < num_bodies());
   const int kDim = 3;
   FemSolver<T>& fem_solver = *fem_solvers_[body_id];
   FemModelBase<T>& fem_model = fem_solver.mutable_model();
   const int num_nodes = fem_model.num_nodes();
+  // TODO(xuchenhan-tri): FemModel should support an easier way to retrieve its
+  //  reference positions.
   const std::unique_ptr<FemStateBase<T>> fem_state =
       fem_model.MakeFemStateBase();
   const VectorX<T>& initial_positions = fem_state->q();
   auto bc = std::make_unique<DirichletBoundaryCondition<T>>(/* ODE order */ 2);
   for (int n = 0; n < num_nodes; ++n) {
-    const Vector3<T>& Q = initial_positions.template segment<kDim>(n * kDim);
-    if ((Q - p_WQ).dot(n_W) <= 0) {
+    const Vector3<T>& p_WV = initial_positions.template segment<kDim>(n * kDim);
+    const T distance_to_wall = (p_WV - p_WQ).dot(n_hatW);
+    if (distance_to_wall * distance_to_wall <
+        distance_tolerance * distance_tolerance) {
       const int dof_index(kDim * n);
       for (int d = 0; d < kDim; ++d) {
         bc->AddBoundaryCondition(DofIndex(dof_index + d),
-                                 Vector3<T>(Q(d), 0, 0));
+                                 Vector3<T>(p_WV(d), 0, 0));
       }
     }
   }
   fem_model.SetDirichletBoundaryCondition(std::move(bc));
+}
+
+template <typename T>
+template <template <class, int> class Model>
+void SoftsimSystem<T>::RegisterDeformableBodyHelper(
+    const geometry::VolumeMesh<T>& mesh, std::string name,
+    const DeformableBodyConfig<T>& config) {
+  constexpr int kNaturalDimension = 3;
+  constexpr int kSpatialDimension = 3;
+  constexpr int kQuadratureOrder = 1;
+  using QuadratureType =
+      SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
+  constexpr int kNumQuads = QuadratureType::num_quadrature_points();
+  using IsoparametricElementType =
+      LinearSimplexElement<T, kNaturalDimension, kSpatialDimension, kNumQuads>;
+  using ConstitutiveModelType = Model<T, kNumQuads>;
+  static_assert(std::is_base_of_v<
+                    ConstitutiveModel<ConstitutiveModelType,
+                                      typename ConstitutiveModelType::Traits>,
+                    ConstitutiveModelType>,
+                "The template parameter 'Model' must be derived from "
+                "ConstitutiveModel.");
+  using ElementType =
+      DynamicElasticityElement<IsoparametricElementType, QuadratureType,
+                               ConstitutiveModelType>;
+  using FemModelType = DynamicElasticityModel<ElementType>;
+  using StateType = FemState<ElementType>;
+
+  const DampingModel<T> damping_model(config.mass_damping_coefficient(),
+                                      config.stiffness_damping_coefficient());
+  auto fem_model = std::make_unique<FemModelType>(dt_);
+  ConstitutiveModelType constitutive_model(config.youngs_modulus(),
+                                           config.poisson_ratio());
+  fem_model->AddDynamicElasticityElementsFromTetMesh(
+      mesh, constitutive_model, config.mass_density(), damping_model);
+  fem_model->SetGravity(gravity_);
+  const StateType state = fem_model->MakeFemState();
+  const int num_dofs = state.num_generalized_positions();
+  VectorX<T> discrete_state(num_dofs * 3);
+  discrete_state.head(num_dofs) = state.q();
+  discrete_state.segment(num_dofs, num_dofs) = state.qdot();
+  discrete_state.tail(num_dofs) = state.qddot();
+  this->DeclareDiscreteState(discrete_state);
+
+  prev_fem_states_.emplace_back(std::make_unique<StateType>(state));
+  next_fem_states_.emplace_back(std::make_unique<StateType>(state));
+  fem_solvers_.emplace_back(
+      std::make_unique<FemSolver<T>>(std::move(fem_model)));
+  initial_meshes_.emplace_back(mesh);
+  names_.emplace_back(std::move(name));
 }
 
 template <typename T>

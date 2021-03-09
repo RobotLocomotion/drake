@@ -70,17 +70,19 @@ class SoftsimSystem final : public systems::LeafSystem<T> {
    the index of the newly added deformable body.
    @pre `name` is distinct from names of all previously registered bodies.
    @pre config.IsValid() == true. */
-  BodyIndex RegisterDeformableBody(const geometry::VolumeMesh<T>& mesh,
-                             std::string name,
-                             const DeformableBodyConfig<T>& config);
+  SoftBodyIndex RegisterDeformableBody(const geometry::VolumeMesh<T>& mesh,
+                                       std::string name,
+                                       const DeformableBodyConfig<T>& config);
 
-  /** Set zero Dirichlet boundary conditions for the vertices of the registered
-   body with the given `body_id` whose initial positions are inside the half
-   space whose planar boundary passes through point Q and is normal to vector n
-   -- both quantities measured and expressed in the world frame.
+  /** Set zero Dirichlet boundary conditions for a given body. All vertices in
+   the mesh of corresponding to the deformable body with `body_id` within
+   `distance_tolerance` (measured in meters) from the halfspace defined by point
+   `p_WQ` and outward normal `n_W` will be set with a wall boundary condition.
+   @pre n_W is not zero.
    @throw std::exception if body_id >= num_bodies(). */
-  void SetRegisteredBodyInWall(int body_id, const Vector3<T>& p_WQ,
-                               const Vector3<T>& n_W);
+  void SetWallBoundaryCondition(SoftBodyIndex body_id, const Vector3<T>& p_WQ,
+                                const Vector3<T>& n_W,
+                                double distance_tolerance = 1e-6);
 
   double dt() const { return dt_; }
 
@@ -110,47 +112,8 @@ class SoftsimSystem final : public systems::LeafSystem<T> {
    must be derived from ConstitutiveModel. */
   template <template <class, int> class Model>
   void RegisterDeformableBodyHelper(const geometry::VolumeMesh<T>& mesh,
-                                   std::string name,
-                                   const DeformableBodyConfig<T>& config) {
-    constexpr int kNaturalDimension = 3;
-    constexpr int kSpatialDimension = 3;
-    constexpr int kQuadratureOrder = 1;
-    using QuadratureType =
-        SimplexGaussianQuadrature<kNaturalDimension, kQuadratureOrder>;
-    constexpr int kNumQuads = QuadratureType::num_quadrature_points();
-    using IsoparametricElementType =
-        LinearSimplexElement<T, kNaturalDimension, kSpatialDimension,
-                             kNumQuads>;
-    using ConstitutiveModelType = Model<T, kNumQuads>;
-    using ElementType =
-        DynamicElasticityElement<IsoparametricElementType, QuadratureType,
-                                 ConstitutiveModelType>;
-    using FemModelType = DynamicElasticityModel<ElementType>;
-    using StateType = FemState<ElementType>;
-
-    const DampingModel<T> damping_model(config.mass_damping_coefficient(),
-                                        config.stiffness_damping_coefficient());
-    auto fem_model = std::make_unique<FemModelType>(dt_);
-    ConstitutiveModelType constitutive_model(config.youngs_modulus(),
-                                             config.poisson_ratio());
-    fem_model->AddDynamicElasticityElementsFromTetMesh(
-        mesh, constitutive_model, config.mass_density(), damping_model);
-    fem_model->SetGravity(gravity_);
-    const StateType state = fem_model->MakeFemState();
-    const int num_dofs = state.num_generalized_positions();
-    VectorX<T> discrete_state(num_dofs * 3);
-    discrete_state.head(num_dofs) = state.q();
-    discrete_state.segment(num_dofs, num_dofs) = state.qdot();
-    discrete_state.tail(num_dofs) = state.qddot();
-    this->DeclareDiscreteState(discrete_state);
-
-    prev_fem_states_.emplace_back(std::make_unique<StateType>(state));
-    next_fem_states_.emplace_back(std::make_unique<StateType>(state));
-    fem_solvers_.emplace_back(
-        std::make_unique<FemSolver<T>>(std::move(fem_model)));
-    initial_meshes_.emplace_back(mesh);
-    names_.emplace_back(std::move(name));
-  }
+                                    std::string name,
+                                    const DeformableBodyConfig<T>& config);
 
   /* Advance the dynamics of all registered bodies by one time step and store
    the states at the new time step in the given `next_states`. */

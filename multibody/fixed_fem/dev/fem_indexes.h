@@ -15,7 +15,7 @@ using NodeIndex = TypeSafeIndex<class NodeTag>;
 using DofIndex = TypeSafeIndex<class DofTag>;
 
 /** Index into a vector of deformable bodies. */
-using BodyIndex = TypeSafeIndex<class BodyTag>;
+using SoftBodyIndex = TypeSafeIndex<class BodyTag>;
 }  // namespace fixed_fem
 }  // namespace multibody
 }  // namespace drake

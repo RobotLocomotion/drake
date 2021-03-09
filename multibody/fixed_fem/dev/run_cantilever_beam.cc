@@ -76,8 +76,9 @@ int DoMain() {
   nonlinear_bar_config.set_material_model(MaterialModel::kCorotated);
   const geometry::VolumeMesh<double> nonlinear_bar_geometry =
       MakeDiamondCubicBoxVolumeMesh<double>(box, dx, translation_left);
-  const int nonlinear_bar_body_index = softsim_system->RegisterDeformableBody(
-      nonlinear_bar_geometry, "Corotated", nonlinear_bar_config);
+  const SoftBodyIndex nonlinear_bar_body_index =
+      softsim_system->RegisterDeformableBody(nonlinear_bar_geometry,
+                                             "Corotated", nonlinear_bar_config);
 
   /* Set up the linear bar. */
   DeformableBodyConfig<double> linear_bar_config(nonlinear_bar_config);
@@ -86,19 +87,17 @@ int DoMain() {
       Vector3<double>(0, 0.5, 0));
   const geometry::VolumeMesh<double> linear_bar_geometry =
       MakeDiamondCubicBoxVolumeMesh<double>(box, dx, translation_right);
-  const int linear_bar_body_index = softsim_system->RegisterDeformableBody(
-      linear_bar_geometry, "Linear", linear_bar_config);
+  const SoftBodyIndex linear_bar_body_index =
+      softsim_system->RegisterDeformableBody(linear_bar_geometry, "Linear",
+                                             linear_bar_config);
 
-  /* Plug the two bars in to a wall. The origin of the wall is set to be -0.75.
-   The additional 0.5*dx factor does not change the de-facto position of the
-   wall, but is only there to make sure the vertices at the end of the bar
-   does not fall out of the wall due to finite precisions. */
-  const Vector3<double> wall_origin(-0.75 + 0.5 * dx, 0, 0);
+  /* Plug the two bars in to a wall. */
+  const Vector3<double> wall_origin(-0.75, 0, 0);
   const Vector3<double> wall_normal(1, 0, 0);
-  softsim_system->SetRegisteredBodyInWall(nonlinear_bar_body_index, wall_origin,
-                                          wall_normal);
-  softsim_system->SetRegisteredBodyInWall(linear_bar_body_index, wall_origin,
-                                          wall_normal);
+  softsim_system->SetWallBoundaryCondition(nonlinear_bar_body_index,
+                                           wall_origin, wall_normal);
+  softsim_system->SetWallBoundaryCondition(linear_bar_body_index, wall_origin,
+                                           wall_normal);
 
   auto& visualizer = *builder.AddSystem<DeformableVisualizer>(
       1.0 / 60.0, softsim_system->names(), softsim_system->initial_meshes());

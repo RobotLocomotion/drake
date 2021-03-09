@@ -10,33 +10,34 @@ namespace multibody {
 namespace fixed_fem {
 /** Types of material models for the deformable body. */
 enum class MaterialModel {
+  /** Corotational model. Recommended for modeling large deformations. More
+   computationally expensive than the linear elasticity model. */
+  kCorotated,
   /** Linear elasticity model. Recommended for modeling small deformations.
    Less computationally expensive than non-linear models but is inaccurate
    for large deformations. */
   kLinear,
-  /** Corotational model. Recommended for modeling large deformations. More
-   computationally expensive than the linear elasticity model. */
-  kCorotated,
 };
 
 // TODO(xuchenhan-tri): Add unit tests for this class.
 /** %DeformableBodyConfig stores the physical parameters for a deformable body.
  It contains the following fields with their corresponding valid ranges:
  - Youngs modulus: Measures the stiffness of the material, has unit Pa. Must be
-   positive.
+   positive. Default to 1e8, close to that of rubber.
  - Poisson ratio: Measures the Poisson effect (how much the material expand or
    contract in directions perpendicular to the direction of loading) of the
-   material, unitless. Must be greater than -1 and less than 0.5.
+   material, unitless. Must be greater than -1 and less than 0.5. Default to
+   0.49, close to that of rubber.
  - Mass damping coefficient: Controls the strength of mass damping. The damping
    ratio contributed by mass damping is inversely proportional to the frequency
-   of the motion. Must be non-negative.
+   of the motion. Must be non-negative. Default to 0.
  - Stiffness damping coefficient: Controls the strength of stiffness damping.
    The damping ratio contributed by stiffness damping is proportional to the
-   frequency of the motion. Must be non-negative.
- - Mass density: Has unit kg/m³. Must be positive.
- - Material model: The constitutive model that describe the stress-strain
-   relationship of the body. See MaterialModel below. Must not be
-   MaterialModel::Invalid. */
+   frequency of the motion. Must be non-negative. Default to 0.
+ - Mass density: Has unit kg/m³. Must be positive. Default to 1e3.
+ - Material model: The constitutive model that describes the stress-strain
+   relationship of the body, see MaterialModel. Must not be
+   MaterialModel::Invalid. Default to MaterialModel::kCorotated. */
 template <typename T>
 class DeformableBodyConfig {
  public:
@@ -91,8 +92,8 @@ class DeformableBodyConfig {
   MaterialModel material_model() const { return material_model_; }
 
  private:
-  T youngs_modulus_{1e7};
-  T poisson_ratio_{0.3};
+  T youngs_modulus_{1e8};
+  T poisson_ratio_{0.49};
   T mass_damping_coefficient_{0};
   T stiffness_damping_coefficient_{0};
   T mass_density_{1e3};

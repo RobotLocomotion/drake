@@ -9,7 +9,11 @@
 namespace drake {
 namespace multibody {
 namespace fixed_fem {
-/* Deformable body parameters. */
+// TODO(xuchenhan-tri): Add a test to verify that the deformable body parameters
+//  are properly passed to the FemModel.
+/* Deformable body parameters. These parameters (with the exception of
+ kMassDamping) are dummy in the sense that they do not affect the result of
+ the test as long as they are valid. */
 const double kYoungsModulus = 1.23;
 const double kPoissonRatio = 0.456;
 const double kDensity = 0.789;
@@ -91,10 +95,10 @@ TEST_F(SoftsimSystemTest, RegisterDeformableBody) {
 /* Verifies that registering a deformable body returns the expected body id and
  that registering a body with an existing name throws an exception. */
 TEST_F(SoftsimSystemTest, RegisterDeformableBodyUniqueNameRequirement) {
-  EXPECT_EQ(AddDeformableBox("box1"), BodyIndex(0));
+  EXPECT_EQ(AddDeformableBox("box1"), SoftBodyIndex(0));
   /* The returned body index should be the same as the number of deformable
    bodies in the system before the new one is added. */
-  EXPECT_EQ(AddDeformableBox("box2"), BodyIndex(1));
+  EXPECT_EQ(AddDeformableBox("box2"), SoftBodyIndex(1));
   EXPECT_EQ(softsim_system_.num_bodies(), 2);
   DRAKE_EXPECT_THROWS_MESSAGE(AddDeformableBox("box1"), std::exception,
                               "RegisterDeformableBody\\(\\): A body with name "
