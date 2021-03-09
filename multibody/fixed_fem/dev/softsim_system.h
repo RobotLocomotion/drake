@@ -18,24 +18,24 @@
 namespace drake {
 namespace multibody {
 namespace fixed_fem {
-/** A minimum drake system (see systems::System) for simulating the dynamics of
+/** A minimum Drake system (see systems::System) for simulating the dynamics of
  deformable bodies. Each deformable body is modeled as a volumetric mesh and
  spatially discretized with Finite Element Method. Currently, %SoftsimSystem is
  modeled as a discrete system with periodic updates. The discrete update
  interval `dt` is passed in at construction and must be positive.
 
  Deformable bodies can only be added, but not deleted. Each deformable body is
- uniquely identified by the its index, which is equal to the number of
- deformable bodies existing in the %SoftsimSystem at time of registration.
+ uniquely identified by its index, which is equal to the number of deformable
+ bodies existing in the %SoftsimSystem at the time of its registration.
 
  The current positions of the vertices of the mesh representing the deformable
  bodies can be queried via the `vertex_positions` output port. The output port
  is an abstract-valued port containing std::vector<VectorX<T>>. There is one
  VectorX for each deformable body registered with the system. The i-th body
- corresponds to the i-th VectorX. The i-th VectorX has 3N values where N + 1 is
- the number of vertices in the i-th mesh. For mesh i, the x-, y-, and
- z-positions (measured and expressed in the world frame) of the j-th vertex are
- 3j, 3j + 1, and 3j + 2 in the i-th VectorX from the output port.
+ corresponds to the i-th VectorX. The i-th VectorX has 3N values where N is the
+ number of vertices in the i-th mesh. For mesh i, the x-, y-, and z-positions
+ (measured and expressed in the world frame) of the j-th vertex are 3j, 3j + 1,
+ and 3j + 2 in the i-th VectorX from the output port.
 
  The connectivity of the meshes representing the deformable bodies and their
  initial positions can be queried via `initial_meshes()` which returns an
@@ -59,27 +59,28 @@ class SoftsimSystem final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SoftsimSystem)
 
-  /* Construct a SoftsimSystem with the fixed prescribed discrete time step.
+  /* Construct a %SoftsimSystem with the fixed prescribed discrete time step.
    @pre dt > 0. */
   explicit SoftsimSystem(double dt);
 
   // TODO(xuchenhan-tri): Identify deformable bodies with actual identifiers,
   //  which would make deleting deformable bodies easier to track in the future.
   /** Adds a deformable body modeled with linear simplex element, linear
-   quadrature rule, mid-point integration rule and the given
-   DeformableBodyConfig. Returns the index of the newly added deformable body.
+   quadrature rule, mid-point integration rule and the given `config`. Returns
+   the index of the newly added deformable body.
    @pre `name` is distinct from names of all previously registered bodies.
    @pre config.IsValid() == true. */
-  int RegisterDeformableBody(const geometry::VolumeMesh<T>& mesh,
+  BodyIndex RegisterDeformableBody(const geometry::VolumeMesh<T>& mesh,
                              std::string name,
                              const DeformableBodyConfig<T>& config);
 
   /** Set zero Dirichlet boundary conditions for the vertices of the registered
-   body with the given `body_id` whose initial positions are inside the
-   half-space defined by the given `origin` and `normal`.
+   body with the given `body_id` whose initial positions are inside the half
+   space whose planar boundary passes through point Q and is normal to vector n
+   -- both quantities measured and expressed in the world frame.
    @throw std::exception if body_id >= num_bodies(). */
-  void SetRegisteredBodyInWall(int body_id, const Vector3<T>& origin,
-                               const Vector3<T>& normal);
+  void SetRegisteredBodyInWall(int body_id, const Vector3<T>& p_WQ,
+                               const Vector3<T>& n_W);
 
   double dt() const { return dt_; }
 
@@ -88,7 +89,7 @@ class SoftsimSystem final : public systems::LeafSystem<T> {
   }
 
   /** Returns the number of deformable bodies in the %SoftsimSystem. */
-  int num_bodies() const { return num_bodies_; }
+  int num_bodies() const { return initial_meshes_.size(); }
 
   /** The volume meshes of the deformable bodies at the time of registration.
    The meshes have the same order as the registration of their corresponding
@@ -99,17 +100,16 @@ class SoftsimSystem final : public systems::LeafSystem<T> {
 
   /** The names of all the registered bodies in the same order as the bodies
    were registered. */
-  std::vector<std::string> names() const { return names_; }
+  const std::vector<std::string>& names() const { return names_; }
 
  private:
-  /* Throw an exception if the given `name` already exists in `names_`. */
-  void ThrowIfNameIsNotUnique(const std::string& name) const;
+  friend class SoftsimSystemTest;
 
   /* Register a deformable body with the given type of constitutive model.
    @tparam Model    The type of constitutive model for the new deformable body,
    must be derived from ConstitutiveModel. */
   template <template <class, int> class Model>
-  int RegisterDeformableBodyHelper(const geometry::VolumeMesh<T>& mesh,
+  void RegisterDeformableBodyHelper(const geometry::VolumeMesh<T>& mesh,
                                    std::string name,
                                    const DeformableBodyConfig<T>& config) {
     constexpr int kNaturalDimension = 3;
@@ -150,7 +150,6 @@ class SoftsimSystem final : public systems::LeafSystem<T> {
         std::make_unique<FemSolver<T>>(std::move(fem_model)));
     initial_meshes_.emplace_back(mesh);
     names_.emplace_back(std::move(name));
-    return num_bodies_++;
   }
 
   /* Advance the dynamics of all registered bodies by one time step and store
@@ -165,7 +164,6 @@ class SoftsimSystem final : public systems::LeafSystem<T> {
                               std::vector<VectorX<T>>* output) const;
 
   double dt_{0};
-  int num_bodies_{0};
   const Vector3<T> gravity_{0, 0, -9.81};
   /* Scratch space for the time n and time n+1 FEM states to avoid repeated
    allocation. */

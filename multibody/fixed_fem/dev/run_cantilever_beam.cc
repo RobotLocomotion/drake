@@ -18,8 +18,6 @@ In another terminal, launch the demo
 ```
 bazel-bin/multibody/fixed_fem/dev/run_cantilever_beam
 ``` */
-#include <chrono>
-#include <cstdlib>
 #include <memory>
 
 #include <gflags/gflags.h>
@@ -34,6 +32,11 @@ bazel-bin/multibody/fixed_fem/dev/run_cantilever_beam
 
 DEFINE_double(simulation_time, 10.0,
               "How many seconds to simulate the system.");
+DEFINE_double(dx, 0.1,
+              "Distance between consecutive vertices in the tet mesh, with "
+              "unit m. Must be positive and smaller than or equal to 0.1 to "
+              "provide enough resolution for reasonable accuracy. The smaller "
+              "this number is, the higher the resolution of the mesh will be.");
 DEFINE_double(E, 1e7,
               "Young's modulus of the deformable objects, with unit Pa");
 DEFINE_double(nu, 0.4, "Poisson ratio of the deformable objects, unitless");
@@ -56,22 +59,21 @@ namespace fixed_fem {
 int DoMain() {
   systems::DiagramBuilder<double> builder;
   const double dt = 1.0 / 60.0;
+  DRAKE_DEMAND(FLAGS_dx > 0);
+  const double dx = std::min(0.1, FLAGS_dx);
   auto* softsim_system = builder.AddSystem<SoftsimSystem<double>>(dt);
-  /* Distance between consecutive vertices in the tet mesh. */
-  const double dx = 0.1;
-  const geometry::Box box(15 * dx, 2 * dx, 2 * dx);
+  const geometry::Box box(1.5, 0.2, 0.2);
 
   /* Set up the corotated bar. */
   const math::RigidTransform<double> translation_left(
-      Vector3<double>(0, -5 * dx, 0));
+      Vector3<double>(0, -0.5, 0));
   DeformableBodyConfig<double> nonlinear_bar_config;
   nonlinear_bar_config.set_youngs_modulus(FLAGS_E);
   nonlinear_bar_config.set_poisson_ratio(FLAGS_nu);
   nonlinear_bar_config.set_mass_damping_coefficient(FLAGS_alpha);
   nonlinear_bar_config.set_stiffness_damping_coefficient(FLAGS_beta);
   nonlinear_bar_config.set_mass_density(FLAGS_density);
-  nonlinear_bar_config.set_material_model(
-      DeformableBodyConfig<double>::MaterialModel::Corotated);
+  nonlinear_bar_config.set_material_model(MaterialModel::kCorotated);
   const geometry::VolumeMesh<double> nonlinear_bar_geometry =
       MakeDiamondCubicBoxVolumeMesh<double>(box, dx, translation_left);
   const int nonlinear_bar_body_index = softsim_system->RegisterDeformableBody(
@@ -79,17 +81,19 @@ int DoMain() {
 
   /* Set up the linear bar. */
   DeformableBodyConfig<double> linear_bar_config(nonlinear_bar_config);
-  linear_bar_config.set_material_model(
-      DeformableBodyConfig<double>::MaterialModel::Linear);
+  linear_bar_config.set_material_model(MaterialModel::kLinear);
   const math::RigidTransform<double> translation_right(
-      Vector3<double>(0, 5 * dx, 0));
+      Vector3<double>(0, 0.5, 0));
   const geometry::VolumeMesh<double> linear_bar_geometry =
       MakeDiamondCubicBoxVolumeMesh<double>(box, dx, translation_right);
   const int linear_bar_body_index = softsim_system->RegisterDeformableBody(
       linear_bar_geometry, "Linear", linear_bar_config);
 
-  /* Plug the two bars in to a wall. */
-  const Vector3<double> wall_origin(-7 * dx, 0, 0);
+  /* Plug the two bars in to a wall. The origin of the wall is set to be -0.75.
+   The additional 0.5*dx factor does not change the de-facto position of the
+   wall, but is only there to make sure the vertices at the end of the bar
+   does not fall out of the wall due to finite precisions. */
+  const Vector3<double> wall_origin(-0.75 + 0.5 * dx, 0, 0);
   const Vector3<double> wall_normal(1, 0, 0);
   softsim_system->SetRegisteredBodyInWall(nonlinear_bar_body_index, wall_origin,
                                           wall_normal);

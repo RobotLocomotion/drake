@@ -154,10 +154,9 @@ class FemModel : public FemModelBase<typename Element::Traits::T> {
     DRAKE_DEMAND(state.element_cache_size() == num_elements());
     /* The values are accumulated in the tangent_matrix, so it is important to
      clear the old data. */
+    using Iterator = typename Eigen::SparseMatrix<T>::InnerIterator;
     for (int k = 0; k < tangent_matrix->outerSize(); ++k) {
-      for (typename Eigen::SparseMatrix<T>::InnerIterator it(*tangent_matrix,
-                                                             k);
-           it; ++it) {
+      for (Iterator it(*tangent_matrix, k); it; ++it) {
         it.valueRef() = 0;
       }
     }

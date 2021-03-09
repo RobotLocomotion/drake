@@ -120,9 +120,7 @@ class StateUpdater {
   virtual void DoAdvanceOneTimeStep(const State& prev_state,
                                     const VectorX<T>& highest_order_state,
                                     State* state) const {
-    unused(prev_state);
-    unused(highest_order_state);
-    unused(state);
+    unused(prev_state, highest_order_state, state);
     if constexpr (State::ode_order() == 0) {
       throw std::logic_error(
           "There is no notion of time in a zeroth order ODE.");

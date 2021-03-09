@@ -18,38 +18,49 @@ SoftsimSystem<T>::SoftsimSystem(double dt) : dt_(dt) {
 }
 
 template <typename T>
-int SoftsimSystem<T>::RegisterDeformableBody(
+BodyIndex SoftsimSystem<T>::RegisterDeformableBody(
     const geometry::VolumeMesh<T>& mesh, std::string name,
     const DeformableBodyConfig<T>& config) {
-  DRAKE_DEMAND(config.IsValid());
-  ThrowIfNameIsNotUnique(name);
-  if (config.material_model() ==
-      DeformableBodyConfig<T>::MaterialModel::Linear) {
-    return RegisterDeformableBodyHelper<LinearConstitutiveModel>(mesh, name,
-                                                                 config);
-  } else if (config.material_model() ==
-             DeformableBodyConfig<T>::MaterialModel::Corotated) {
-    return RegisterDeformableBodyHelper<CorotatedModel>(mesh, name, config);
+  /* Throw if name is not unique. */
+  for (int i = 0; i < num_bodies(); ++i) {
+    if (name == names_[i]) {
+      throw std::runtime_error(fmt::format(
+          "{}(): A body with name '{}' already exists in the system.", __func__,
+          name));
+    }
   }
-  DRAKE_UNREACHABLE();
+  BodyIndex body_index(num_bodies());
+  switch (config.material_model()) {
+    case MaterialModel::kLinear:
+      RegisterDeformableBodyHelper<LinearConstitutiveModel>(
+          mesh, std::move(name), config);
+      break;
+    case MaterialModel::kCorotated:
+      RegisterDeformableBodyHelper<CorotatedModel>(mesh, std::move(name),
+                                                   config);
+      break;
+    default:
+      DRAKE_UNREACHABLE();
+  }
+  return body_index;
 }
 
 template <typename T>
 void SoftsimSystem<T>::SetRegisteredBodyInWall(int body_id,
-                                               const Vector3<T>& origin,
-                                               const Vector3<T>& normal) {
+                                               const Vector3<T>& p_WQ,
+                                               const Vector3<T>& n_W) {
   DRAKE_THROW_UNLESS(body_id < num_bodies());
   const int kDim = 3;
   FemSolver<T>& fem_solver = *fem_solvers_[body_id];
   FemModelBase<T>& fem_model = fem_solver.mutable_model();
   const int num_nodes = fem_model.num_nodes();
-  const std::unique_ptr<FemStateBase<T>>& fem_state =
+  const std::unique_ptr<FemStateBase<T>> fem_state =
       fem_model.MakeFemStateBase();
   const VectorX<T>& initial_positions = fem_state->q();
   auto bc = std::make_unique<DirichletBoundaryCondition<T>>(/* ODE order */ 2);
   for (int n = 0; n < num_nodes; ++n) {
     const Vector3<T>& Q = initial_positions.template segment<kDim>(n * kDim);
-    if ((Q - origin).dot(normal) <= 0) {
+    if ((Q - p_WQ).dot(n_W) <= 0) {
       const int dof_index(kDim * n);
       for (int d = 0; d < kDim; ++d) {
         bc->AddBoundaryCondition(DofIndex(dof_index + d),
@@ -58,16 +69,6 @@ void SoftsimSystem<T>::SetRegisteredBodyInWall(int body_id,
     }
   }
   fem_model.SetDirichletBoundaryCondition(std::move(bc));
-}
-
-template <typename T>
-void SoftsimSystem<T>::ThrowIfNameIsNotUnique(const std::string& name) const {
-  for (int i = 0; i < num_bodies(); ++i) {
-    if (name == names_[i]) {
-      throw std::runtime_error(fmt::format(
-          "A body with name '{}' already exists in the system.", name));
-    }
-  }
 }
 
 template <typename T>
@@ -91,7 +92,9 @@ void SoftsimSystem<T>::AdvanceOneTimeStep(
     prev_fem_state.SetQ(q);
     prev_fem_state.SetQdot(qdot);
     prev_fem_state.SetQddot(qddot);
-    // TODO(xuchenhan-tri): FemState needs a SetFrom() method.
+    // TODO(xuchenhan-tri): FemState needs a SetFrom() method. Setting
+    //  DiscreteValues from FemStateBase (and vice-versa) should also be made
+    //  more compact.
     next_fem_state.SetQ(q);
     next_fem_state.SetQdot(qdot);
     next_fem_state.SetQddot(qddot);
