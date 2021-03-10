@@ -80,7 +80,7 @@ void BindSpatialVectorMixin(PyClass* pcls) {
           },
           py::arg("R_FE"),
           R"""(
-          Provides a Python-only implementation of rotating / re-expressing) a
+          Provides a Python-only implementation of rotating / re-expressing a
           spatial vector.
 
           Note:
