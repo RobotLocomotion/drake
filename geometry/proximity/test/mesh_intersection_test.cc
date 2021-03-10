@@ -1175,39 +1175,6 @@ GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidMoving) {
       RigidTransformd(RollPitchYawd(M_PI / 6., 2. * M_PI / 3., M_PI / 4.),
                       Vector3d{1., -0.5, 3.});
 
-  // Tests translation. Set the pose of the rigid pyramid R in S's frame as
-  // the one-unit downward translation, so that the apex of the rigid pyramid R
-  // is at the center of the soft octahedron S.
-  {
-    const auto X_SR = RigidTransformd(-Vector3d::UnitZ());
-    const auto X_WR = X_WS * X_SR;
-    // Contact surface C is expressed in World frame.
-    const auto contact = ComputeContactSurfaceFromSoftVolumeRigidSurface(
-        s_id, *pressure_S, bvh_volume_S, X_WS, r_id, *surface_R, bvh_surface_R,
-        X_WR);
-    // TODO(DamrongGuoy): More comprehensive checks on the mesh of the contact
-    //  surface. Here we only check the number of triangles.
-    EXPECT_EQ(12, contact->mesh_W().num_faces());
-
-    // Point Q is coincident with the center vertex of the soft mesh volume_S.
-    // The point C on the contact surface is coincident with Q. Check that the
-    // contact surface reports the same pressure at C as the volume does at Q.
-    {
-      const Vector3d p_SQ = Vector3d::Zero();
-      const Vector3d p_WQ = X_WS * p_SQ;
-      // Index of contact surface C's vertex coincident with Q.
-      SurfaceVertexIndex index_C;
-      ASSERT_TRUE(FindVertex(p_WQ, contact->mesh_W(), &index_C));
-      const double pressure_at_C = contact->EvaluateE_MN(index_C);
-      // Index of Q in the volume mesh.
-      VolumeVertexIndex index_Q;
-      ASSERT_TRUE(FindVertex(p_SQ, pressure_S->mesh(), &index_Q));
-      const double pressure_at_Q = pressure_S->EvaluateAtVertex(index_Q);
-
-      EXPECT_NEAR(pressure_at_C, pressure_at_Q, kEps * pressure_at_Q);
-    }
-  }
-
   // Tests rotation. First we rotate the rigid pyramid R 90 degrees around
   // X-axis of the soft octahedron S, so R will fit in the left half, instead
   // of the top half, of S. R's vertices will look like this in S's frame:
