@@ -1,6 +1,6 @@
 <!-- This document is the template used by tools/release_engineering/relnotes. -->
 ---
-Title: Drake {version}
+title: Drake {version}
 ---
 
 # Announcements
