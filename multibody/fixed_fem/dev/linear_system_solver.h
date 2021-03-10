@@ -53,7 +53,7 @@ class LinearSystemSolver {
   }
 
   /* Sets the tolerance for iterative solvers. No-op for direct solvers. */
-  virtual void set_tolerance(const T& tolerance) {}
+  virtual void set_tolerance(const T&) {}
 
  protected:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemSolver);
