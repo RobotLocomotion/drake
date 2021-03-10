@@ -17,8 +17,7 @@ with_update=1
 while [ "${1:-}" != "" ]; do
   case "$1" in
     # Install prerequisites that are only needed to build documentation,
-    # i.e., those prerequisites that are dependencies of bazel { build, run }
-    # { //doc:gen_sphinx, //bindings/pydrake/doc:gen_sphinx, //doc:doxygen }
+    # i.e., those prerequisites that are dependencies of bazel run //doc:build.
     --with-doc-only)
       with_doc_only=1
       ;;

@@ -15,12 +15,6 @@ while [ "${1:-}" != "" ]; do
     --with-maintainer-only)
       source_distribution_args+=(--with-maintainer-only)
       ;;
-    # Do NOT install prerequisites that are only needed to build documentation,
-    # i.e., those prerequisites that are dependencies of bazel { build, run }
-    # { //doc:gen_sphinx, //bindings/pydrake/doc:gen_sphinx, //doc:doxygen }
-    --without-doc-only)
-      source_distribution_args+=(--without-doc-only)
-      ;;
     # Do NOT install prerequisites that are only needed to build and/or run
     # unit tests, i.e., those prerequisites that are not dependencies of
     # bazel { build, run } //:install.

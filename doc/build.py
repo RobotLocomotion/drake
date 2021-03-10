@@ -33,16 +33,14 @@ def main():
         parser.error(f"--out_dir={out_dir} already exists")
 
     manifest = runfiles.Create()
-    gen_sphinx = manifest.Rlocation("drake/doc/gen_sphinx")
-    gen_sphinx_py = manifest.Rlocation("drake/bindings/pydrake/doc/gen_sphinx")
+    gen_sphinx = manifest.Rlocation("drake/bindings/pydrake/doc/gen_sphinx")
     gen_jekyll = manifest.Rlocation("drake/doc/gen_jekyll")
     doxygen = manifest.Rlocation("drake/doc/doxygen")
-    for item in [gen_sphinx, gen_sphinx_py, gen_jekyll, doxygen]:
+    for item in [gen_sphinx, gen_jekyll, doxygen]:
         assert os.path.exists(item), item
 
     _check_call([gen_jekyll, f"--out_dir={out_dir}"])
-    _check_call([gen_sphinx, f"--out_dir={out_dir}/sphinx"])
-    _check_call([gen_sphinx_py, f"--out_dir={out_dir}/pydrake"])
+    _check_call([gen_sphinx, f"--out_dir={out_dir}/pydrake"])
     doxygen_scratch = f"{out_dir}/doxygen_scratch"
     _check_call([doxygen, f"--out_dir={doxygen_scratch}"])
     print(f"+ mv {doxygen_scratch}/html {out_dir}/doxygen_cxx")
