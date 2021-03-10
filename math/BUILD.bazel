@@ -32,6 +32,7 @@ drake_cc_package_library(
         ":orthonormal_basis",
         ":quadratic_form",
         ":saturate",
+        ":small_matrix_fast_methods",
         ":vector3_util",
         ":wrap_to",
     ],
@@ -140,6 +141,7 @@ drake_cc_library(
         "rotation_matrix.h",
     ],
     deps = [
+        ":small_matrix_fast_methods",
         "//common:default_scalars",
         "//common:drake_bool",
         "//common:essential",
@@ -267,6 +269,23 @@ drake_cc_library(
         "//common:double",
         "//common:essential",
     ],
+)
+
+# This should be compiled with Intel AVX2 and FMA enabled if possible.
+# Currently (March 2021) we can't do that on Apple even if it is Intel-based
+# due to our old Mac CI machines. Compiling for Broadwell (or later) gets
+# those instructions.
+drake_cc_library(
+    name = "small_matrix_fast_methods",
+    srcs = ["small_matrix_fast_methods.cc"],
+    hdrs = ["small_matrix_fast_methods.h"],
+    copts = select({
+        "//tools/cc_toolchain:apple": [],
+        "//conditions:default": [
+            "-march=broadwell",
+        ],
+    }),
+    deps = [],
 )
 
 # === test/ ===
@@ -504,6 +523,15 @@ drake_cc_googletest(
     name = "wrap_to_test",
     deps = [
         ":wrap_to",
+    ],
+)
+
+drake_cc_googletest(
+    name = "small_matrix_fast_methods_test",
+    deps = [
+        ":small_matrix_fast_methods",
+        "//common:essential",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
