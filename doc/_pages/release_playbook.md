@@ -37,8 +37,7 @@ Begin this process around 1 week prior to the intended release date.
    release notes draft using the ``tools/release_engineering/relnotes`` tooling.
    (Instructions can be found atop its source code: [``relnotes.py``](https://github.com/RobotLocomotion/drake/blob/master/tools/release_engineering/relnotes.py))
     1. On the first run, use ``--action=create`` to bootstrap the file.
-       * The output is draft release notes in ``doc/release_notes/v0.N.0.rst``.
-       * Be sure to add the new file to the list in ``doc/release_notes.rst``.
+       * The output is draft release notes in ``doc/_release-notes/v0.N.0.md``.
     2. On the subsequent runs, use ``--action=update`` to refresh the file.
 6. For release notes, on an ongoing basis, clean up and relocate the commit
    notes to properly organized and wordsmithed bullet points. See [Polishing
