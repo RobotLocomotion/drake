@@ -60,7 +60,7 @@ def setup_drake(*, version, build='nightly'):
 
     # Check for conflicting pydrake installations.
     v = sys.version_info
-    path = f"/opt/drake/lib/python3.6/site-packages"
+    path = f"/opt/drake/lib/python{v.major}.{v.minor}/site-packages"
     spec = importlib.util.find_spec('pydrake')
     if spec is not None and path not in spec.origin:
         raise Exception("Found a conflicting version of pydrake on your "
