@@ -988,7 +988,7 @@ TEST_F(ComputeContactSurfaceTest, AllTetsAreConsidered) {
   ASSERT_NE(contact_surface_0, nullptr);
   EXPECT_EQ(contact_surface_0->mesh_W().num_elements(), 3);
   EXPECT_EQ(contact_surface_0->mesh_W().num_vertices(), 4);
-  const RigidTransformd X_MW = X_FM_.inverse() * X_WF_.inverse();
+  const RigidTransformd X_MW = X_FM_.InvertAndCompose(X_WF_.inverse());
   const SurfaceVertexIndex last_vertex{3};
   {
     // For tet 0, the z-value of the last vertex should be > 0.
