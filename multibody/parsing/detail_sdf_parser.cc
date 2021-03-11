@@ -829,7 +829,7 @@ ModelInstanceIndex AddModelFromSpecification(
 
   if (!is_nested) {
     plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
-        model.Name(), model_frame, RigidTransformd::Identity(),
+        model_name, model_frame, RigidTransformd::Identity(),
         world_model_instance()));
   }
 
