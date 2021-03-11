@@ -10,23 +10,6 @@ Archive naming convention:
     dv-<version>-g<commit>-python-<python version>-qt-<qt version>
         -vtk-<vtk version>-<platform>-<arch>[-<rebuild>]
 
-Build configuration:
-    BUILD_SHARED_LIBS=OFF
-    CMAKE_BUILD_TYPE=Release
-    CMAKE_C_FLAGS=-D_FORTIFY_SOURCE=2 -fstack-protector-strong
-    CMAKE_CXX_FLAGS=-D_FORTIFY_SOURCE=2 -fstack-protector-strong
-    CMAKE_EXE_LINKER_FLAGS=-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro
-    CMAKE_MODULE_LINKER_FLAGS=-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro
-    CMAKE_SHARED_LINKER_FLAGS=-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro
-    DD_QT_VERSION=5
-    USE_EXTERNAL_INSTALL=ON
-    USE_LCM=ON
-    USE_LCMGL=ON
-    USE_SYSTEM_EIGEN=ON
-    USE_SYSTEM_LCM=ON
-    USE_SYSTEM_LIBBOT=ON
-    USE_SYSTEM_VTK=ON
-
 Example:
     WORKSPACE:
         load(
