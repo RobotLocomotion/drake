@@ -1,9 +1,13 @@
 <!DOCTYPE html>
 <html lang="en-US">
   <head>
+    <meta name="msapplication-config" content="{{ '/browserconfig.xml' | relative_url }}"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <meta charset="utf-8"/>
-    <link rel="shortcut icon" href="{{ '/images/favicon.png' | relative_url }}"/>
+    <link rel="apple-touch-icon" type="image/png" href="{{ '/apple-touch-icon.png' | relative_url }}"/>
+    <link rel="manifest" type="application/manifest+json" href="{{ '/site.webmanifest' | relative_url }}"/>
+    <link rel="mask-icon" type="image/svg+xml" href="{{ '/mask-icon.svg' | relative_url }}" color="#990000"/>
+    <link rel="shortcut icon" type="image/png" href="{{ '/favicon.png' | relative_url }}"/>
     <title>Drake: {{ page.title }}</title>
     <meta
       name="description"
