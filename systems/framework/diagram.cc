@@ -1,6 +1,8 @@
 #include "drake/systems/framework/diagram.h"
 
+#include <algorithm>
 #include <limits>
+#include <queue>
 #include <set>
 #include <stdexcept>
 
@@ -80,8 +82,14 @@ template <typename T>
 std::multimap<int, int> Diagram<T>::GetDirectFeedthroughs() const {
   std::multimap<int, int> pairs;
   for (InputPortIndex u(0); u < this->num_input_ports(); ++u) {
+    // Get a sorted vector (to permit logarithmic time searches) of the input
+    // port locators corresponding to input_port.
+    std::vector<InputPortLocator> input_ids =
+        GetInputPortLocators(InputPortIndex(u));
+    std::sort(input_ids.begin(), input_ids.end());
+
     for (OutputPortIndex v(0); v < this->num_output_ports(); ++v) {
-      if (DiagramHasDirectFeedthrough(u, v)) {
+      if (DiagramHasDirectFeedthrough(input_ids, v)) {
         pairs.emplace(u, v);
       }
     }
@@ -1004,49 +1012,63 @@ const SystemBase& Diagram<T>::GetRootSystemBase() const {
 }
 
 template <typename T>
-bool Diagram<T>::DiagramHasDirectFeedthrough(int input_port, int output_port)
-    const {
-  DRAKE_ASSERT(input_port >= 0);
-  DRAKE_ASSERT(input_port < this->num_input_ports());
-  DRAKE_ASSERT(output_port >= 0);
-  DRAKE_ASSERT(output_port < this->num_output_ports());
+bool Diagram<T>::DiagramHasDirectFeedthrough(
+    const std::vector<InputPortLocator>& diagram_sorted_input_ids,
+    int output_port) const {
+  DRAKE_DEMAND(output_port >= 0);
+  DRAKE_DEMAND(output_port < this->num_output_ports());
 
-  const auto input_ids = GetInputPortLocators(InputPortIndex(input_port));
-  std::set<InputPortLocator> target_input_ids(input_ids.begin(),
-                                              input_ids.end());
+  // Search the graph for a direct-feedthrough connection from output_port
+  // back to an input port (specified indirectly via `diagram_sorted_input_ids`)
+  // of this Diagram. Maintain a set of the output port identifiers that are
+  // known to have a direct-feedthrough path to output_port.
+  std::queue<OutputPortLocator> active_queue;
+  active_queue.push(output_port_ids_[output_port]);
+  while (!active_queue.empty()) {
+    const OutputPortLocator current_output_id = active_queue.front();
+    active_queue.pop();
 
-  // Search the graph for a direct-feedthrough connection from the output_port
-  // back to the input_port. Maintain a set of the output port identifiers
-  // that are known to have a direct-feedthrough path to the output_port.
-  std::set<OutputPortLocator> active_set;
-  active_set.insert(output_port_ids_[output_port]);
-  while (!active_set.empty()) {
-    const OutputPortLocator current_output_id = *active_set.begin();
-    size_t removed_count = active_set.erase(current_output_id);
-    DRAKE_ASSERT(removed_count == 1);
+    // Get the subsystem from the queue element being processed, and get that
+    // subsystem's mappings of direct feedthroughs.
     const System<T>* sys = current_output_id.first;
+    std::multimap<int, int> direct_feedthroughs = sys->GetDirectFeedthroughs();
+
     for (InputPortIndex i(0); i < sys->num_input_ports(); ++i) {
-      if (sys->HasDirectFeedthrough(i, current_output_id.second)) {
-        const InputPortLocator curr_input_id(sys, i);
-        if (target_input_ids.count(curr_input_id)) {
-          // We've found a direct-feedthrough path to the input_port.
-          return true;
-        } else {
-          // We've found an intermediate input port has a direct-feedthrough
-          // path to the output_port. Add the upstream output port (if there
-          // is one) to the active set.
-          auto it = connection_map_.find(curr_input_id);
-          if (it != connection_map_.end()) {
-            const OutputPortLocator& upstream_output = it->second;
-            active_set.insert(upstream_output);
+      // Get all of the direct feedthroughs for `sys` that map from input i.
+      auto range = direct_feedthroughs.equal_range(i);
+
+      // Search for the output port index from the queue element being processed
+      // in the set of sys's output ports corresponding to input port i.
+      for (auto index_pair_iter = range.first; index_pair_iter != range.second;
+           ++index_pair_iter) {
+        const int candidate_output_port_index = index_pair_iter->second;
+        if (candidate_output_port_index == current_output_id.second) {
+          // The output port matches; see whether the system's input port
+          // corresponds to one of the desired Diagram input ports.
+          const InputPortLocator curr_input_id(sys, i);
+          if (std::binary_search(diagram_sorted_input_ids.begin(),
+                                 diagram_sorted_input_ids.end(),
+                                 curr_input_id)) {
+            // We've found a direct-feedthrough path to the input_port.
+            return true;
+          } else {
+            // We've found an intermediate input port that has a
+            // direct-feedthrough *path* to output_port. Add the upstream output
+            // port (if there is one) to the active set.
+            auto it = connection_map_.find(curr_input_id);
+            if (it != connection_map_.end()) {
+              const OutputPortLocator& upstream_output = it->second;
+              active_queue.push(upstream_output);
+            }
           }
         }
       }
     }
   }
+
   // If there are no intermediate output ports with a direct-feedthrough path
-  // to the output_port, there is no direct feedthrough to it from the
-  // input_port.
+  // to output_port, there is no direct feedthrough to it from the input port
+  // corresponding to `diagram_sorted_input_ids`.
   return false;
 }
 

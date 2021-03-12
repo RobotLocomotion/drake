@@ -354,9 +354,13 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
   const SystemBase& GetRootSystemBase() const final;
 
-  // Returns true if there might be direct feedthrough from the given
-  // @p input_port of the Diagram to the given @p output_port of the Diagram.
-  bool DiagramHasDirectFeedthrough(int input_port, int output_port) const;
+  // Returns true if there might be a direct feedthrough from an input
+  // port of the Diagram, for which a sorted vector of corresponding
+  // InputPortLocators is provided, to the given `output_port` of the Diagram.
+  // @pre `sorted_input_ids` is sorted (using its default comparator).
+  bool DiagramHasDirectFeedthrough(
+      const std::vector<InputPortLocator>& sorted_input_ids,
+      int output_port) const;
 
   // Allocates a collection of homogeneous events (e.g., publish events) for
   // this Diagram.
