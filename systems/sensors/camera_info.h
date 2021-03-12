@@ -50,8 +50,8 @@ namespace sensors {
  %CameraInfo defines the parameters of the intrinsic projection. The projection
  can be captured by the camera or intrinsic matrix which essentially maps points
  in the camera frame C to the image plane. The camera looks along the positive
- `z` axis, and the `y` axis points down. The projection matrix is called `A` in
- the OpenCV documentation, but typically called `K` in computer vision
+ `Cz` axis, and the `Cy` axis points down. The projection matrix is called `A`
+ in the OpenCV documentation, but typically called `K` in computer vision
  literature:
 
          │ f_x  0    c_x │
@@ -124,6 +124,9 @@ namespace sensors {
  - __sensor__: a measurement device.
  - __viewing direction__: the direction the camera is facing. Defined as being
    parallel with Cz.
+
+ @anchor camera_axes_in_image
+ <h3>Alignment of the camera frame with the image</h3>
 
  When looking at the resulting image and reasoning about the camera that
  produced it, one can say that Cz points into the image, Cx is parallel with the
