@@ -2,6 +2,9 @@
 layout: default
 title: Model-Based Design and Verification for Robotics
 description: A C++ / Python toolbox supported by the Toyota Research Institute.
+# ^^^ IMPORTANT NOTE Any changes to the wording of the "description" line above
+# must be vetted by TRI legal (at least, insofar as the line still makes
+# mention of the Toyota Research Institute).
 ---
 
 <!--

@@ -52,7 +52,7 @@ When reporting an issue, please consider providing the following information
     * [Building Drake](/from_source.html) vs. downstream project (like [drake_bazel_external](https://github.com/RobotLocomotion/drake-external-examples/tree/master/drake_bazel_external), [drake_cmake_external](https://github.com/RobotLocomotion/drake-external-examples/tree/master/drake_cmake_external))
 * If using binary release:
     * Download URL
-    * Contents of ``drake/share/doc/drake/VERSION.txt``
+    * Contents of ``drake/share/doc/drake/VERSION.TXT``
     * Building downstream project ([drake_cmake_installed](https://github.com/RobotLocomotion/drake-external-examples/tree/master/drake_cmake_installed))
 * If using Binder or Google Colaboratory:
     * A version of your notebook that we can access. Please check this by
