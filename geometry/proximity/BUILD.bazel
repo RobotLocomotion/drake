@@ -144,6 +144,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "distance_to_shape_callback",
+    srcs = ["distance_to_shape_callback.cc"],
     hdrs = ["distance_to_shape_callback.h"],
     install_hdrs_exclude = [
         # This header includes `fcl` directly, which we do not want to
