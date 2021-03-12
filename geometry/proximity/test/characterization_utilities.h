@@ -66,6 +66,29 @@ struct Expectation {
   std::string error_message;
 };
 
+/* Returns an Expectation where only T = double returns a valid result. */
+template <typename T>
+Expectation ExpectDoubleOnly(double max_error) {
+  if constexpr (std::is_same<T, double>::value) {
+    return {.can_compute = true, .max_error = max_error, .error_message = ""};
+  } else {
+    unused(max_error);
+    // TODO(SeanCurtis-TRI) Consider providing a prefix string that can
+    //  stand at the beginning of the error message.
+    return {.can_compute = false,
+            .max_error = -1,
+            .error_message =
+                ".+ queries between shapes .+ and .+ are not supported.+"};
+  }
+}
+
+/* Returns an expectation where the query can be computed for *all* T values to
+ the *same* precision. */
+template <typename T>
+Expectation ExpectAllT(double max_error) {
+  return {.can_compute = true, .max_error = max_error, .error_message = ""};
+}
+
 /* Defines a test configuration for two shapes: the pose between the two
  shapes, the expected signed_distance, and a description to aid in assessing
  test failure. */
@@ -73,12 +96,91 @@ template <typename T>
 struct Configuration {
   math::RigidTransform<T> X_AB;
   double signed_distance{};
+  std::string description;
 };
 
 /* Renders an FCL enumeration into a string to support intelligible error
  messages. Note: we're only covering the enumeration values that Drake
  specifically uses.  */
 std::string to_string(const fcl::NODE_TYPE& node);
+
+/* The challenge of testing signed distance (and related) queries, is to put
+ two arbitrary shapes into a non-trivial relative pose which, nevertheless,
+ should produce an unambiguous distance value. All of the following code
+ supports that effort. See specific notes below.  */
+
+/* Defines a tangent plane on the surface of a shape (in whatever frame the
+ shape itself is expressed in). The given `point` lies on both the plane and
+ the surface of the shape. The normal should point *out* of the shape such that
+ the shape is "under" the plane (i.e., the signed distance to the plane is <= 0
+ for all points in the shape). The normal direction may not be unique (e.g., for
+ a box's vertex, the associated normal is any direction in the corresponding
+ octant).
+
+ The tangent plane contains one further piece of information. Given the tangent
+ plane defined by point P and normal n, we define a set of points
+ Q = P - δ⋅n (for δ ≥ 0). We report a `max_depth` value -- the largest value of
+ δ such that we can guarantee that P is the closest point on the surface of the
+ geometry to all of the Qs for δ ∈ [0, δₘₐₓ]. This will inform us as to which
+ samples can be combined into a valid configuration. To be a valid configuration
+ for penetration, at least *one* of the samples needs to have a `max_depth`
+ value that is greater than or equal to the targeted depth.
+
+ We use the %TangentPlane to pose geometries; see AlignTangentPlanes for
+ details.  */
+template <typename T>
+struct ShapeTangentPlane {
+  Vector3<T> point;
+  Vector3<T> normal;
+  double max_depth{};
+  std::string description;
+};
+
+/* Creates a set of "interesting" samples (each a tangent plane) on the given
+ geometry.
+
+ The samples we return must be able to support an expected signed distance
+ query result. In some cases, the sign and magnitude of the targeted distance
+ can change what the samples are. See the various implementations for details.
+ */
+template <typename T>
+class ShapeConfigurations : public ShapeReifier {
+ public:
+  /* Constructs the configurations for the given shape and requested distance.
+   */
+  ShapeConfigurations(const Shape& shape, double distance);
+
+  /* @name Implementation of ShapeReifier interface
+
+   Where meaningful, each of these implementations will test the geometry
+   against *negative* signed distance to confirm the shape is large enough to be
+   able to manifest penetration depth of the requested magnitude. If the test
+   fails, the method throws.  */
+  //@{
+
+  using ShapeReifier::ImplementGeometry;
+  /* The capsule samples do *not* depend on `signed_distance`. One is located on
+   one of the spherical caps, the other on the barrel.  */
+  void ImplementGeometry(const Capsule& capsule, void*) final;
+
+  /* The sampling of the ellipsoid does *not* depend on `signed_distance`.
+   The samples are simply two arbitrary points on the surface of the ellipsoid
+   in different octants.  */
+  void ImplementGeometry(const Ellipsoid& ellipsoid, void*) final;
+
+  /* The samples are at two arbitrary points in different octants of the sphere.
+   */
+  void ImplementGeometry(const Sphere& sphere, void*) final;
+  //@}
+
+  /* We're returning a *copy* because we're using this in a manner in which the
+   owning reifier may not stay alive. */
+  std::vector<ShapeTangentPlane<T>> configs() const { return configs_; }
+
+ private:
+  double distance_{};
+  std::vector<ShapeTangentPlane<T>> configs_;
+};
 
 /* @name Fcl geometry from drake shape specifications. */
 class MakeFclShape : public ShapeReifier {
@@ -87,6 +189,8 @@ class MakeFclShape : public ShapeReifier {
 
   /* Implementation of ShapeReifier interface  */
   using ShapeReifier::ImplementGeometry;
+  void ImplementGeometry(const Capsule& capsule, void*) final;
+  void ImplementGeometry(const Ellipsoid& ellipsoid, void*) final;
   void ImplementGeometry(const Sphere& sphere, void*) final;
 
   std::shared_ptr<fcl::CollisionGeometry<double>> object() const {
@@ -96,6 +200,21 @@ class MakeFclShape : public ShapeReifier {
  private:
   std::shared_ptr<fcl::CollisionGeometry<double>> object_{};
 };
+
+/* Creates a transform to align two planes. The planes are defined by a
+ (point, normal) pair -- the point lies on the plane and the normal is
+ perpendicular to the plane. In this case, we have planes (P, m⃗) and (Q, n⃗). We
+ produce a transform X = [R t] such that:
+   X ⋅ Q = P
+   R ⋅ n⃗ = -m⃗
+In other words, we transform the second plane (Q, n⃗) so Q and P are coincident
+and m⃗ and n⃗ are anti-parallel. The notation is frameless, because we're
+not really relating two frames so much as creating a transform operator
+(although we *do* assume that all quantities are measured and expressed in a
+common frame). */
+template <typename T>
+math::RigidTransform<T> AlignPlanes(const Vector3<T>& P, const Vector3<T>& m,
+                                    const Vector3<T>& Q, const Vector3<T>& n);
 
 /* This test provides a common framework for testing signed-distance based
  proximity queries. Specifically, it provides *direct* support in populating
@@ -140,6 +259,15 @@ class CharacterizeResultTest : public ::testing::Test {
    results reported, no error is returned.
    @pre expected_distance != 0. */
   std::optional<double> ComputeErrorMaybe(double expected_distance) const;
+
+  // TODO(SeanCurtis-TRI) I don't need a bunch of configurations if my
+  //  expectation is that it will fail. So, I should use that information to
+  //  reduce the work I do.
+  /* Creates a set of configurations for the two shapes based on the surface
+   sample points defined for each shape type (see SampleShapeSurface below). */
+  static std::vector<Configuration<T>> MakeDefaultConfigurations(
+      const Shape& shape_A, const Shape& shape_B,
+      const std::vector<double> signed_distances);
 
   /* Runs the test to characterize the query error between geometries of
    two shape types: Shape1 and Shape2. The caller provides one or more
@@ -205,6 +333,13 @@ class CharacterizeResultTest : public ::testing::Test {
                            const Shape& shape_B,
                            const std::vector<Configuration<T>>& configs);
 
+  /* Variant of RunCharacterization that creates a collection of configurations
+   with the given `signed_distance` from the points sampled on each shape (see
+   SampleShapeSurface below).  */
+  void RunCharacterization(const Expectation& expectation, const Shape& shape_A,
+                           const Shape& shape_B,
+                           const std::vector<double> signed_distances);
+
   /* Generates a geometry id for the given collision object, encodes the id
    into the object, and returns the id.  */
   GeometryId EncodeData(fcl::CollisionObjectd* obj);
@@ -230,6 +365,22 @@ class CharacterizeResultTest : public ::testing::Test {
    queries are characterized. */
   static constexpr double kDistance{2e-3};
 
+  static Capsule capsule(bool alt = false) {
+    if (alt) {
+      return Capsule{kDistance * 19, kDistance * 100};
+    } else {
+      return Capsule{kDistance * 100, kDistance * 51};
+    }
+  }
+
+  static Ellipsoid ellipsoid(bool alt = false) {
+    if (alt) {
+      return Ellipsoid{kDistance * 35, kDistance * 100, kDistance * 68};
+    } else {
+      return Ellipsoid{kDistance * 47, kDistance * 26, kDistance * 100};
+    }
+  }
+
   static Sphere sphere(bool alt = false) {
     unused(alt);
     return Sphere(kDistance * 100);
@@ -248,3 +399,5 @@ class CharacterizeResultTest : public ::testing::Test {
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
   class ::drake::geometry::internal::CharacterizeResultTest)
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+  class ::drake::geometry::internal::ShapeConfigurations)

@@ -58,26 +58,30 @@ class CharacterizePointPairResultTest : public CharacterizeResultTest<T> {
 using ScalarTypes = ::testing::Types<double, AutoDiffXd>;
 TYPED_TEST_SUITE(CharacterizePointPairResultTest, ScalarTypes);
 
-TYPED_TEST(CharacterizePointPairResultTest, SphereSphere) {
-  using T = TypeParam;
-  Expectation expect{.can_compute = true, .max_error = -1, .error_message = ""};
-  if constexpr (std::is_same<T, double>::value) {
-    expect.max_error = 8e-16;
-  } else {
-    expect.max_error = 3e-15;
-  }
-  // Orient the sphere arbitrarily and separate them *almost* by their combined
-  // radii.
-  const Sphere sphere = this->sphere();
-  const RigidTransform<T> X_AB(
-      RotationMatrix<T>(
-          AngleAxis<T>(M_PI * 9 / 7, Vector3<T>{-1, 2, 1}.normalized())),
-      Vector3<T>{1, -1, 2}.normalized() *
-          (sphere.radius() * 2 - this->kDistance));
-  vector<Configuration<T>> configs{{X_AB, -this->kDistance}};
-  this->RunCharacterization(expect, sphere, sphere, configs);
+#define CHARACTERIZE_TEST(shape1, shape2, expect, precision)                   \
+TYPED_TEST(CharacterizePointPairResultTest, shape1##shape2) {                  \
+  this->RunCharacterization(expect<TypeParam>(precision), this->shape1(),      \
+                            this->shape2(), vector<double>{-this->kDistance}); \
 }
 
+#define SELF_CHARACTERIZE_TEST(shape, expect, precision)                       \
+TYPED_TEST(CharacterizePointPairResultTest, shape##shape) {                    \
+  this->RunCharacterization(expect<TypeParam>(precision), this->shape(),       \
+                            this->shape(true),                                 \
+                            vector<double>{-this->kDistance});                 \
+}
+
+SELF_CHARACTERIZE_TEST(capsule, ExpectDoubleOnly, 2e-5)
+CHARACTERIZE_TEST(capsule, ellipsoid, ExpectDoubleOnly, 2e-4)
+CHARACTERIZE_TEST(capsule, sphere, ExpectAllT, 3e-15)
+
+SELF_CHARACTERIZE_TEST(ellipsoid, ExpectDoubleOnly, 5e-4)
+CHARACTERIZE_TEST(ellipsoid, sphere, ExpectDoubleOnly, 2e-4)
+
+SELF_CHARACTERIZE_TEST(sphere, ExpectAllT, 3e-15)
+
+#undef CHARACTERIZE_TEST
+#undef SELF_CHARACTERIZE_TEST
 }  // namespace
 }  // namespace penetration_as_point_pair
 }  // namespace internal
