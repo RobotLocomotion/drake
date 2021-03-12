@@ -1,33 +1,28 @@
 # -*- python -*-
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//visibility:private"])
 
 load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
-    "drake_py_unittest",
+)
+load(
+    ":defs.bzl",
+    "DEFAULT_BINARY_TAGS",
+    "DEFAULT_TEST_TAGS",
+    "enumerate_filegroup",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-# Unless `setup/ubuntu/install_prereqs.sh --with-doc-only` has been run, most
-# targets in this package will fail to build, so by default we'll disable them.
-#
-# A developer will have to explicitly opt-in in order to build these.
-_DEFAULT_BINARY_TAGS = [
-    "manual",
-]
-
-# Unless `setup/ubuntu/install_prereqs.sh --with-doc-only` has been run, most
-# tests in this package will fail to pass, so by default we'll disable them.
-#
-# A developer will have to explicitly opt-in in order to test these.
-_DEFAULT_TEST_TAGS = [
-    "manual",
-    # None of our documentation tools should hit the internet, but their
-    # ecosystems might be doing so without us being aware.
-    "block-network",
-]
+drake_py_library(
+    name = "defs",
+    srcs = ["defs.py"],
+    visibility = ["//doc:__subpackages__"],
+    deps = [
+        "@bazel_tools//tools/python/runfiles",
+    ],
+)
 
 drake_py_library(
     name = "sphinx_base",
@@ -69,34 +64,15 @@ filegroup(
 )
 
 filegroup(
-    name = "images",
-    srcs = [
-        "images/drake-dragon.png",
-        "images/drake-logo.svg",
-        "images/drake-logo-white.svg",
-        "images/jenkins_bot_reviewable_comment.png",
-    ],
-)
-
-drake_py_library(
-    name = "jekyll_base",
-    srcs = ["jekyll_base.py"],
-    tags = _DEFAULT_BINARY_TAGS,
-)
-
-filegroup(
-    name = "third_party_data",
-    srcs = glob([
-        "third_party/**/*",
-    ]),
-)
-
-filegroup(
-    name = "jekyll_data",
+    name = "pages_input",
     srcs = [
         "_config.yml",
         "index.md",
         "sample_vimrc",
+        "images/drake-dragon.png",
+        "images/drake-logo.svg",
+        "images/drake-logo-white.svg",
+        "images/jenkins_bot_reviewable_comment.png",
     ] + glob([
         "_includes/*.html",
         "_includes/*.md",
@@ -105,72 +81,51 @@ filegroup(
         "_release-notes/*.md",
         "assets/**/*.css",
         "assets/**/*.js",
+        "third_party/**/*",
     ]),
     data = [
         ":favicon",
-        ":images",
-        ":third_party_data",
     ],
 )
 
+enumerate_filegroup(
+    name = "pages_input.txt",
+    data = [":pages_input"],
+)
+
 drake_py_binary(
-    name = "gen_jekyll",
-    srcs = ["gen_jekyll.py"],
+    name = "pages",
+    srcs = ["pages.py"],
     add_test_rule = 1,
-    data = [":jekyll_data"],
-    tags = _DEFAULT_BINARY_TAGS,
-    test_rule_args = ["--out_dir=<test>"],
-    test_rule_tags = _DEFAULT_TEST_TAGS,
-    deps = [
-        ":jekyll_base",
-    ],
-)
-
-drake_py_binary(
-    name = "serve_jekyll",
-    srcs = ["serve_jekyll.py"],
-    data = [":jekyll_data"],
-    tags = _DEFAULT_BINARY_TAGS,
-    deps = [
-        ":jekyll_base",
-    ],
-)
-
-drake_py_library(
-    name = "system_doxygen",
-    srcs = ["system_doxygen.py"],
-    visibility = ["//visibility:public"],
-)
-
-drake_py_unittest(
-    name = "system_doxygen_test",
-    deps = [":system_doxygen"],
-)
-
-drake_py_binary(
-    name = "doxygen",
-    srcs = [
-        "doxygen_main.py",
-    ],
     data = [
-        "system_doxygen.py",
-        "//:.bazelproject",
-        "@bazel_tools//tools/python/runfiles",
-        "@doxygen",
+        ":pages_input",
+        ":pages_input.txt",
     ],
-    tags = _DEFAULT_BINARY_TAGS,
+    tags = DEFAULT_BINARY_TAGS,
+    test_rule_args = ["--out_dir=<test>"],
+    test_rule_size = "medium",
+    test_rule_tags = DEFAULT_TEST_TAGS,
+    deps = [
+        ":defs",
+    ],
 )
 
 drake_py_binary(
     name = "build",
     srcs = ["build.py"],
+    add_test_rule = 1,
     data = [
-        ":doxygen",
-        ":gen_jekyll",
-        "//doc/pydrake:gen_sphinx",
+        ":pages",
+        "//doc/doxygen_cxx:build",
+        "//doc/pydrake:build",
+        "//doc/styleguide:build",
     ],
-    tags = _DEFAULT_BINARY_TAGS,
+    tags = DEFAULT_BINARY_TAGS,
+    test_rule_args = ["--out_dir=<test>"],
+    test_rule_size = "large",
+    test_rule_tags = DEFAULT_TEST_TAGS,
     deps = [
+        ":defs",
         "@bazel_tools//tools/python/runfiles",
     ],
 )
@@ -181,11 +136,10 @@ filegroup(
     name = "manual_binaries",
     srcs = [
         ":build",
-        ":doxygen",
-        ":gen_jekyll",
-        ":serve_jekyll",
-        "//doc/pydrake:gen_sphinx",
-        "//doc/pydrake:serve_sphinx",
+        ":pages",
+        "//doc/doxygen_cxx:build",
+        "//doc/pydrake:build",
+        "//doc/styleguide:build",
     ],
     tags = ["manual"],
 )
@@ -196,13 +150,12 @@ test_suite(
     name = "manual_tests",
     tags = ["manual"],
     tests = [
-        ":gen_jekyll_test",
-        "//doc/pydrake:gen_sphinx_test",
+        ":build_test",
+        ":pages_test",
+        "//doc/doxygen_cxx:build_test",
+        "//doc/pydrake:build_test",
+        "//doc/styleguide:build_test",
     ],
 )
 
-add_lint_tests(
-    python_lint_exclude = [
-        ":conf.py",
-    ],
-)
+add_lint_tests()

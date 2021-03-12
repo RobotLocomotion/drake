@@ -1,0 +1,10 @@
+# For more information, see: https://jekyllrb.com/docs/configuration/
+
+title: Google Style Guides for Drake
+theme: minima
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: "default"
