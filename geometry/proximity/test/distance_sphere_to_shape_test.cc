@@ -30,6 +30,13 @@ namespace geometry {
 namespace internal {
 namespace shape_distance {
 
+// TODO(SeanCurtis-TRI) This testing strategy (hijacking T = `float`) in the
+// fallback to detect when ComputeNarrowPhase dispatches to it requires that
+// ComputeNarrowPhaseDistance be *completely* available in the header file so
+// I can exercise its logic. Find some alternative formulation of the test that
+// allows me to put its definition in the .cc file. One such way would be to
+// *pass* the callback function.
+
 // Specialization of the shape-shape distance fallback function. We use float
 // as an otherwise unsupported scalar to confirm when the fallback is called
 // and when it is not. If invoked, it throws an exception, otherwise nothing.
