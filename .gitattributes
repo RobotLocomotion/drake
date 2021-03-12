@@ -3,6 +3,7 @@ WORKSPACE diff=python
 **/*.bazel diff=python
 **/*.bzl diff=python
 **/*.cps diff=json
+**/site.webmanifest diff=json
 
 # These lines tell git diff viewers to ignore data objects.
 # Wavefront geometry definition

@@ -37,13 +37,45 @@ drake_py_library(
     deps = ["@rules_python//python/runfiles"],
 )
 
+# For maximum browser compatibility these should be at the root of the
+# generated website and should not be renamed.
+filegroup(
+    name = "favicon",
+    srcs = [
+        # Manual resizing and padding of "assets/drake-dragon.png" to
+        # 192x192px.
+        "android-chrome.png",
+        # Manual resizing and padding of "assets/drake-dragon.png" to
+        # 180x180px.
+        "apple-touch-icon.png",
+        # Minimal configuration for Microsoft browsers. Versions of Edge prior
+        # to the change to WebKit always request a file named
+        # "browserconfig.xml" whether or not an alternative is specified in the
+        # HTML.
+        "browserconfig.xml",
+        # Apple Safari always requests a file named "favicon.ico" whether or
+        # not an alternative favicon is specified in the HTML.
+        # Manual resizing and padding of "assets/drake-dragon.png" to 32x32px
+        # and conversion to ICO format.
+        "favicon.ico",
+        # Manual resizing and padding of "assets/drake-dragon.png" to 32x32px.
+        "favicon.png",
+        # Mask icon for Safari pinned tabs.
+        # Manual removal of colors and layers from "assets/drake-dragon.svg"
+        # and transformation to a 0 0 16 16 view box.
+        "mask-icon.svg",
+        # Site manifest primarily for Android and Chrome.
+        # https://developer.mozilla.org/en-US/docs/Web/Manifest
+        "site.webmanifest",
+    ],
+)
+
 filegroup(
     name = "images",
     srcs = [
         "images/drake-dragon.png",
         "images/drake-logo.svg",
         "images/drake-logo-white.svg",
-        "images/favicon.png",
         "images/jenkins_bot_reviewable_comment.png",
     ],
 )
@@ -77,6 +109,7 @@ filegroup(
         "assets/**/*.js",
     ]),
     data = [
+        ":favicon",
         ":images",
         ":third_party_data",
     ],
