@@ -80,6 +80,9 @@ void OptimizationProgram::RunProblem(SolverInterface* solver) {
 double OptimizationProgram::GetSolverSolutionDefaultCompareTolerance(
     SolverType solver_type) const {
   switch (solver_type) {
+    case SolverType::kClp: {
+      return 1E-8;
+    }
     case SolverType::kMosek: {
       return 1E-10;
     }

@@ -1,6 +1,7 @@
 #include "drake/solvers/choose_best_solver.h"
 
 #include "drake/common/never_destroyed.h"
+#include "drake/solvers/clp_solver.h"
 #include "drake/solvers/csdp_solver.h"
 #include "drake/solvers/equality_constrained_qp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
@@ -37,6 +38,8 @@ SolverId ChooseBestSolver(const MathematicalProgram& prog) {
     return MosekSolver::id();
   } else if (IsMatch<GurobiSolver>(prog)) {
     return GurobiSolver::id();
+  } else if (IsMatch<ClpSolver>(prog)) {
+    return ClpSolver::id();
   } else if (IsMatch<OsqpSolver>(prog)) {
     return OsqpSolver::id();
   } else if (IsMatch<MobyLCPSolver<double>>(prog)) {
@@ -61,23 +64,26 @@ SolverId ChooseBestSolver(const MathematicalProgram& prog) {
 
 const std::set<SolverId>& GetKnownSolvers() {
   static const never_destroyed<std::set<SolverId>> result{std::set<SolverId>{
-    LinearSystemSolver::id(),
-    EqualityConstrainedQPSolver::id(),
-    MosekSolver::id(),
-    GurobiSolver::id(),
-    OsqpSolver::id(),
-    MobyLcpSolverId::id(),
-    SnoptSolver::id(),
-    IpoptSolver::id(),
-    NloptSolver::id(),
-    CsdpSolver::id(),
-    ScsSolver::id(),
+      LinearSystemSolver::id(),
+      EqualityConstrainedQPSolver::id(),
+      MosekSolver::id(),
+      GurobiSolver::id(),
+      ClpSolver::id(),
+      OsqpSolver::id(),
+      MobyLcpSolverId::id(),
+      SnoptSolver::id(),
+      IpoptSolver::id(),
+      NloptSolver::id(),
+      CsdpSolver::id(),
+      ScsSolver::id(),
   }};
   return result.access();
 }
 
 std::unique_ptr<SolverInterface> MakeSolver(const SolverId& id) {
-  if (id == LinearSystemSolver::id()) {
+  if (id == ClpSolver::id()) {
+    return std::make_unique<ClpSolver>();
+  } else if (id == LinearSystemSolver::id()) {
     return std::make_unique<LinearSystemSolver>();
   } else if (id == EqualityConstrainedQPSolver::id()) {
     return std::make_unique<EqualityConstrainedQPSolver>();
