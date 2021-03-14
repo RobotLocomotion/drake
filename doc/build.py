@@ -6,9 +6,11 @@ future, we will enhance and document it for developer use.
 
 import argparse
 import os.path
+from pathlib import Path
 import shlex
 import shutil
 import subprocess
+import urllib.parse
 
 from bazel_tools.tools.python.runfiles import runfiles
 
@@ -25,6 +27,10 @@ def main():
     parser.add_argument(
         "--out_dir", type=str, metavar="DIR", required=True,
         help="Output directory. Must be an absolute path and must not exist.")
+    parser.add_argument(
+        "--sitemap", action="store_true",
+        help="Generate a sitemap.xml in the root of the output directory")
+
     args = parser.parse_args()
     out_dir = args.out_dir
     if not os.path.isabs(out_dir):
@@ -49,6 +55,37 @@ def main():
     shutil.rmtree(doxygen_scratch)
     # TODO(jwnimmer-tri) Incorporate the Drake styleguide publication here,
     # instead of having it be a separate pipeline.
+
+    if args.sitemap:
+        # Generate a minimal sitemap.xml
+        # https://developers.google.com/search/docs/advanced/sitemaps/build-sitemap # noqa
+        import lxml.etree as ET
+
+        print("Generating sitemap.xml...")
+        root_path = Path(out_dir)
+        paths = root_path.glob("**/*.html")
+
+        XML_NAMESPACE = "http://www.sitemaps.org/schemas/sitemap/0.9"
+        ROOT_URL = "https://drake.mit.edu"
+
+        urlset = ET.Element("urlset", xmlns=XML_NAMESPACE)
+        for path in sorted(paths):
+            relative_path = path.relative_to(root_path)
+            url = ET.SubElement(urlset, "url")
+            if relative_path.name == "index.html":
+                # sitemap.xml should only include canonical urls.
+                location = relative_path.parent.as_posix() + "/"
+            else:
+                location = relative_path.as_posix()
+            location = urllib.parse.urljoin(ROOT_URL,
+                                            urllib.parse.quote(location))
+            loc = ET.SubElement(url, "loc")
+            loc.text = location
+        sitemap = ET.ElementTree(urlset)
+        sitemap.write("sitemap.xml",
+                      encoding="utf-8",
+                      pretty_print=True,
+                      xml_declaration=True)
 
 
 if __name__ == '__main__':
