@@ -5,5 +5,6 @@ notebook
 pydot
 PyYAML
 pyzmq
+semantic-version
 tornado
 u-msgpack-python
