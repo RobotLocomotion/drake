@@ -8,4 +8,5 @@ py_library(
     name = "semantic_version",
     srcs = glob(["*.py"]),
     visibility = ["//visibility:public"],
+    deprecation = "DRAKE DEPRECATED: The @semantic_version repository is being removed from Drake on or after 2021-07-01. Downstream projects should add it to their own WORKSPACE if needed.",  # noqa
 )
