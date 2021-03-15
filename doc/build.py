@@ -96,13 +96,13 @@ def _build_sitemap(site_dir: str) -> None:
             location = relative_path.as_posix()
             location = urllib.parse.urljoin(ROOT_URL,
                                             urllib.parse.quote(location))
-            loc = ET.SubElement(url, "loc")
-            loc.text = location
-        sitemap = ET.ElementTree(urlset)
-        sitemap.write(os.path.join(site_dir, "sitemap.xml"),
-                      encoding="utf-8",
-                      pretty_print=True,
-                      xml_declaration=True)
+        loc = ET.SubElement(url, "loc")
+        loc.text = location
+    sitemap = ET.ElementTree(urlset)
+    sitemap.write(os.path.join(site_dir, "sitemap.xml"),
+                  encoding="utf-8",
+                  pretty_print=True,
+                  xml_declaration=True)
 
 
 if __name__ == '__main__':
