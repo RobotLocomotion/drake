@@ -76,6 +76,15 @@ namespace sensors {
  is defined as the first two measures when the *third* measure is 1. The magic
  of homogeneous coordinates allows us to simply factor out `s`.
 
+ @anchor camera_axes_in_image
+ <h3>Alignment of the camera frame with the image</h3>
+
+ When looking at the resulting image and reasoning about the camera that
+ produced it, one can say that Cz points into the image, Cx is parallel with the
+ image rows, pointing to the right, and Cy is parallel with the image columns,
+ pointing down leading to language such as: "X-right", "Y-down", and
+ "Z-forward".
+
  <h3>Glossary</h3>
 
  These terms are important to the discussion. Some refer to real world concepts
@@ -124,15 +133,6 @@ namespace sensors {
  - __sensor__: a measurement device.
  - __viewing direction__: the direction the camera is facing. Defined as being
    parallel with Cz.
-
- @anchor camera_axes_in_image
- <h3>Alignment of the camera frame with the image</h3>
-
- When looking at the resulting image and reasoning about the camera that
- produced it, one can say that Cz points into the image, Cx is parallel with the
- image rows, pointing to the right, and Cy is parallel with the image columns,
- pointing down leading to language such as: "X-right", "Y-down", and
- "Z-forward".
 */
 class CameraInfo final {
  public:
