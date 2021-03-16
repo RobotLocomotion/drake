@@ -2530,6 +2530,24 @@ class SignedDistancePairTestData {
         expected_result_(expect),
         tolerance_(tolerance) {}
 
+  // Construct test data. The normal is optional; when not provided it is zero.
+  // If a meaningful normal is expected, it needs to be provided.
+  static SignedDistancePairTestData Make(
+      shared_ptr<const Shape> a, shared_ptr<const Shape> b,
+      const RigidTransformd& X_WA, const RigidTransformd& X_WB,
+      const Vector3d& p_ACa_A, const Vector3d& p_BCb_B, double distance,
+      const Vector3d& nhat_BA_W = Vector3d::Zero(),
+      double tolerance = 0) {
+    return {a,
+            b,
+            X_WA,
+            X_WB,
+            SignedDistancePair<double>(GeometryId::get_new_id(),
+                                       GeometryId::get_new_id(), p_ACa_A,
+                                       p_BCb_B, distance, nhat_BA_W),
+            tolerance};
+  }
+
   // Generates new test data by swapping geometry A and geometry B. It will
   // help us test the symmetric interface. For example, we can generate the
   // test data for test(box_B, sphere_A) from the test data for
@@ -2542,7 +2560,8 @@ class SignedDistancePairTestData {
     auto& distance = expected_result_.distance;
     return SignedDistancePairTestData(
         b_, a_, X_WB_, X_WA_,
-        SignedDistancePair<double>(id_B, id_A, p_BCb, p_ACa, distance),
+        SignedDistancePair<double>(id_B, id_A, p_BCb, p_ACa, distance,
+                                   -expected_result_.nhat_BA_W),
         tolerance_);
   }
 
@@ -2620,11 +2639,9 @@ std::vector<SignedDistancePairTestData> GenDistancePairTestSphereSphere(
   for (const auto& config : configurations) {
     const RigidTransformd X_AB(R_AB, config.p_ABo);
     const RigidTransformd X_WB = X_WA * X_AB;
-    test_data.emplace_back(
-        sphere_A, sphere_B, X_WA, X_WB,
-        SignedDistancePair<double>(GeometryId::get_new_id(),
-                                   GeometryId::get_new_id(), p_ACa_A, p_BCb_B,
-                                   config.pair_distance));
+    test_data.emplace_back(SignedDistancePairTestData::Make(
+        sphere_A, sphere_B, X_WA, X_WB, p_ACa_A, p_BCb_B,
+        config.pair_distance));
   }
   return test_data;
 }
@@ -2706,10 +2723,8 @@ std::vector<SignedDistancePairTestData> GenDistPairTestSphereSphereNonAligned(
   const Vector3d p_BCb = X_BA * p_ACb;
 
   std::vector<SignedDistancePairTestData> test_data{
-      {sphere_A, sphere_B, X_WA, X_WB,
-       SignedDistancePair<double>(GeometryId::get_new_id(),
-                                  GeometryId::get_new_id(), p_ACa, p_BCb,
-                                  -radius_A)}};
+      SignedDistancePairTestData::Make(sphere_A, sphere_B, X_WA, X_WB, p_ACa,
+                                       p_BCb, -radius_A)};
   return test_data;
 }
 
@@ -2777,11 +2792,8 @@ std::vector<SignedDistancePairTestData> GenDistPairTestSphereBox(
     const Vector3d p_BCa = config.p_BAo + Vector3d(-radius, 0, 0);
     const Vector3d p_ACa = X_AB * p_BCa;
 
-    test_data.emplace_back(
-        sphere_A, box_B, X_WA, X_WB,
-        SignedDistancePair<double>(GeometryId::get_new_id(),
-                                   GeometryId::get_new_id(), p_ACa, p_BCb,
-                                   config.pair_distance));
+    test_data.emplace_back(SignedDistancePairTestData::Make(
+        sphere_A, box_B, X_WA, X_WB, p_ACa, p_BCb, config.pair_distance));
   }
   return test_data;
 }
@@ -2871,11 +2883,8 @@ std::vector<SignedDistancePairTestData> GenDistPairTestSphereBoxBoundary(
         const Vector3d sign_A = R_AB * sign_B;
         // The expected witness point Ca on ∂A expressed in A's frame.
         const Vector3d p_ACa = -radius_A * sign_A.normalized();
-        test_data.emplace_back(
-            sphere_A, box_B, X_WA, X_WB,
-            SignedDistancePair<double>(GeometryId::get_new_id(),
-                                       GeometryId::get_new_id(), p_ACa, p_BCb,
-                                       -radius_A));
+        test_data.emplace_back(SignedDistancePairTestData::Make(
+            sphere_A, box_B, X_WA, X_WB, p_ACa, p_BCb, -radius_A));
       }
     }
   }
@@ -2949,11 +2958,8 @@ std::vector<SignedDistancePairTestData> GenDistPairTestSphereCapsule(
     // to A's frame.
     const Vector3d p_BCa = p_BAo + Vector3d(0, 0, -radius_A);
     const Vector3d p_ACa = X_AB * p_BCa;
-    test_data.emplace_back(
-        sphere_A, capsule_B, X_WA, X_WB,
-        SignedDistancePair<double>(GeometryId::get_new_id(),
-                                   GeometryId::get_new_id(), p_ACa, p_BCb,
-                                   pair_distance));
+    test_data.emplace_back(SignedDistancePairTestData::Make(
+        sphere_A, capsule_B, X_WA, X_WB, p_ACa, p_BCb, pair_distance));
   }
   return test_data;
 }
@@ -3024,11 +3030,8 @@ std::vector<SignedDistancePairTestData> GenDistPairTestSphereCylinder(
     // to A's frame.
     const Vector3d p_BCa = config.p_BAo + Vector3d(0, 0, -radius_A);
     const Vector3d p_ACa = X_AB * p_BCa;
-    test_data.emplace_back(
-        sphere_A, cylinder_B, X_WA, X_WB,
-        SignedDistancePair<double>(GeometryId::get_new_id(),
-                                   GeometryId::get_new_id(), p_ACa, p_BCb,
-                                   config.pair_distance));
+    test_data.emplace_back(SignedDistancePairTestData::Make(
+        sphere_A, cylinder_B, X_WA, X_WB, p_ACa, p_BCb, config.pair_distance));
   }
   return test_data;
 }
@@ -3138,12 +3141,10 @@ std::vector<SignedDistancePairTestData> GenDistPairTestSphereCylinderBoundary(
                         // Ao is on the top or bottom caps.
                       : -r_A * Vector3d(0., 0., w);
         const Vector3d p_ACa = R_AB * p_AoCa_B;
-        // We create new id's for each test case to help distinguish them.
-        const GeometryId id_A = GeometryId::get_new_id();
-        const GeometryId id_B = GeometryId::get_new_id();
-        test_data.emplace_back(
-            sphere_A, cylinder_B, X_WA, X_WB,
-            SignedDistancePair<double>(id_A, id_B, p_ACa, p_BCb, -r_A));
+        // We implicltly create new id's for each test case in the invocation of
+        // Make to help distinguish them.
+        test_data.emplace_back(SignedDistancePairTestData::Make(
+            sphere_A, cylinder_B, X_WA, X_WB, p_ACa, p_BCb, -r_A));
       }
     }
   }
@@ -3167,7 +3168,6 @@ GenDistPairTestHalfspaceSphere() {
   const GeometryId sphere_id = GeometryId::get_new_id();
   auto half_space = make_shared<const HalfSpace>();
   const GeometryId half_space_id = GeometryId::get_new_id();
-  const bool well_defined_grad = true;
   const RigidTransformd X_WG1(RollPitchYawd(M_PI / 3., M_PI / 6., M_PI_2),
                               Vector3d{10., 11., 12.});
   const RotationMatrixd R_WS;
@@ -3186,8 +3186,7 @@ GenDistPairTestHalfspaceSphere() {
       const RigidTransformd X_WS(p_WS);
       const Vector3d p_SCs = -radius * (R_WS.inverse() * nhat_HS_W);
       SignedDistancePair<double> expected(sphere_id, half_space_id, p_SCs,
-                                          p_HCh, distance, nhat_HS_W,
-                                          well_defined_grad);
+                                          p_HCh, distance, nhat_HS_W);
       test_data.emplace_back(sphere, half_space, X_WS, X_WH, expected);
       expected.SwapAAndB();
       test_data.emplace_back(half_space, sphere, X_WH, X_WS, expected);
@@ -3199,8 +3198,7 @@ GenDistPairTestHalfspaceSphere() {
       const RigidTransformd X_WS(p_WS);
       const Vector3d p_SCs = -radius * (R_WS.inverse() * nhat_HS_W);
       SignedDistancePair<double> expected(sphere_id, half_space_id, p_SCs,
-                                          p_HCh, 0, nhat_HS_W,
-                                          well_defined_grad);
+                                          p_HCh, 0, nhat_HS_W);
       test_data.emplace_back(sphere, half_space, X_WS, X_WH, expected);
       expected.SwapAAndB();
       test_data.emplace_back(half_space, sphere, X_WH, X_WS, expected);
@@ -3212,8 +3210,7 @@ GenDistPairTestHalfspaceSphere() {
       const RigidTransformd X_WS(p_WS);
       const Vector3d p_SCs = -radius * (R_WS.inverse() * nhat_HS_W);
       SignedDistancePair<double> expected(sphere_id, half_space_id, p_SCs,
-                                          p_HCh, -distance, nhat_HS_W,
-                                          well_defined_grad);
+                                          p_HCh, -distance, nhat_HS_W);
       test_data.emplace_back(sphere, half_space, X_WS, X_WH, expected);
       expected.SwapAAndB();
       test_data.emplace_back(half_space, sphere, X_WH, X_WS, expected);
@@ -3418,11 +3415,8 @@ GenDistPairTestTwoSpheresConcentricBasic(
   const Vector3d p_ACb = X_AB * p_BCb;
   const Vector3d p_ACa = -(radius_A / radius_B) * p_ACb;
 
-  return  SignedDistancePairTestData(
-      sphere_A, sphere_B, X_WA, X_WB,
-       SignedDistancePair<double>(
-           GeometryId::get_new_id(), GeometryId::get_new_id(),
-           p_ACa, p_BCb, -radius_A - radius_B));
+  return SignedDistancePairTestData(SignedDistancePairTestData::Make(
+      sphere_A, sphere_B, X_WA, X_WB, p_ACa, p_BCb, -radius_A - radius_B));
 }
 
 // Generates test data for two spheres A and B whose centers are at the same
@@ -3490,11 +3484,8 @@ GenDistPairTestSphereBoxConcentric(
   const Vector3d p_ACa = -(radius_A / half_B(0)) * p_ACb;
 
   std::vector<SignedDistancePairTestData> test_data{
-      {sphere_A, box_B, X_WA, X_WB,
-       SignedDistancePair<double>(
-           GeometryId::get_new_id(), GeometryId::get_new_id(),
-           p_ACa, p_BCb, -radius_A - half_B(0))}
-  };
+      SignedDistancePairTestData::Make(sphere_A, box_B, X_WA, X_WB, p_ACa,
+                                       p_BCb, -radius_A - half_B(0))};
   return test_data;
 }
 

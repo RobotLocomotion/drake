@@ -96,10 +96,16 @@ void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
   //  is_nhat_BA_W_unique to true.
   if (std::abs(result.min_distance) < kEps) {
     pair_data->nhat_BA_W = Eigen::Vector3d(kNan, kNan, kNan);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     pair_data->is_nhat_BA_W_unique = false;
+#pragma GCC diagnostic pop
   } else {
     pair_data->nhat_BA_W = (p_WCa - p_WCb) / result.min_distance;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     pair_data->is_nhat_BA_W_unique = true;
+#pragma GCC diagnostic pop
   }
 }
 
