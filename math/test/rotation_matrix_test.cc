@@ -1038,9 +1038,9 @@ TEST_F(RotationMatrixConversionTests, twoVectorsToRotationMatrix) {
   // Create somewhat arbitrary data to be used below.
   constexpr int num_cases = 7;
   using Vector7d = Eigen::Matrix<double, num_cases, 1>;
-  Vector7d x;  x << -9.876, -M_PI, -1, 0, std::cos(3), 1, std::sqrt(3.5);
-  Vector7d y;  y << -M_PI/2, -0.2, -1, 0, std::cos(1), 1, std::sqrt(2.3);
-  Vector7d z;  z << -M_PI/3, -0.1, -1, 0, std::cos(2), 1, std::sqrt(1.1);
+  Vector7d x;  x << -9.876, -M_PI, -1.0,  0.0, std::cos(3), 1, std::sqrt(3.5);
+  Vector7d y;  y << -M_PI/2, -1.0,  0.0, -0.2, std::cos(1), 1, std::sqrt(2.3);
+  Vector7d z;  z << -M_PI/3,  0.0, -0.1, -1.0, 1.0, std::cos(2), std::sqrt(1.1);
 
   // Create a reasonably tight tolerance to be used below.
   constexpr double ktolerance = 64 * kEpsilon;
@@ -1057,7 +1057,8 @@ TEST_F(RotationMatrixConversionTests, twoVectorsToRotationMatrix) {
      beta = alpha = Vector3<double>(x(i), y(i), z(i));
      const bool is_zero_vector = alpha == Vector3<double>::Zero();
      if (!is_zero_vector) {
-       R = RotationMatrixd::MakeRotationMatrixFromTwoVectors(alpha, beta);
+       R = RotationMatrixd::MakeRotationMatrixFromTwoUnitVectors(
+           alpha.normalized(), beta.normalized());
        m_expected = R_identity.matrix();
        EXPECT_TRUE(CompareMatrices(R.matrix(), m_expected, ktolerance));
      }
@@ -1070,33 +1071,38 @@ TEST_F(RotationMatrixConversionTests, twoVectorsToRotationMatrix) {
      beta = -(alpha = Vector3<double>(x(i), y(i), 0));
      const bool is_zero_vector = alpha == Vector3<double>::Zero();
      if (!is_zero_vector) {
-        R = RotationMatrixd::MakeRotationMatrixFromTwoVectors(alpha, beta);
+        R = RotationMatrixd::MakeRotationMatrixFromTwoUnitVectors(
+            alpha.normalized(), beta.normalized());
         m_expected = Rz.matrix();
         EXPECT_TRUE(CompareMatrices(R.matrix(), m_expected, ktolerance));
      }
   }
 
   // Test many cases with θ = π, i.e., beta = -alpha and alpha = [x, 0, z].
-  // Except when z(i) = 0, all these should result in a y-rotation by π.
+  // Except for z(i) = 0 or x(i) == 0, these should result in a y-rotation by π.
   const RotationMatrix<double> Ry = RotationMatrix<double>::MakeYRotation(M_PI);
+  const RotationMatrix<double> Rx = RotationMatrix<double>::MakeXRotation(M_PI);
   for (int i = 0; i < num_cases;  i++) {
      beta = -(alpha = Vector3<double>(x(i), 0, z(i)));
      const bool is_zero_vector = alpha == Vector3<double>::Zero();
      if (!is_zero_vector) {
-        R = RotationMatrixd::MakeRotationMatrixFromTwoVectors(alpha, beta);
-        m_expected = z(i) == 0 ? Rz.matrix() : Ry.matrix();
+        R = RotationMatrixd::MakeRotationMatrixFromTwoUnitVectors(
+            alpha.normalized(), beta.normalized());
+        // Preference is given to z-axis 1st, x-axis 2nd, y-axis 3rd.
+        m_expected =
+            z(i) == 0 ? Rz.matrix() : (x(i) == 0 ? Rx.matrix() : Ry.matrix());
         EXPECT_TRUE(CompareMatrices(R.matrix(), m_expected, ktolerance));
      }
   }
 
   // Test many cases with θ = π, i.e., beta = -alpha and alpha = [0, y, z].
   // Except when z(i) = 0, all these should result in a x-rotation by π.
-  const RotationMatrix<double> Rx = RotationMatrix<double>::MakeXRotation(M_PI);
   for (int i = 0; i < num_cases;  i++) {
      beta = -(alpha = Vector3<double>(0, y(i), z(i)));
      const bool is_zero_vector = alpha == Vector3<double>::Zero();
      if (!is_zero_vector) {
-        R = RotationMatrixd::MakeRotationMatrixFromTwoVectors(alpha, beta);
+        R = RotationMatrixd::MakeRotationMatrixFromTwoUnitVectors(
+            alpha.normalized(), beta.normalized());
         m_expected = z(i) == 0 ? Rz.matrix() : Rx.matrix();
         EXPECT_TRUE(CompareMatrices(R.matrix(), m_expected, ktolerance));
      }
@@ -1121,8 +1127,8 @@ TEST_F(RotationMatrixConversionTests, twoVectorsToRotationMatrix) {
         m_expected = R_expected.matrix();
 
         // Use the non-unit vector to test one of the algorithms.
-        R = RotationMatrix<double>::
-            MakeRotationMatrixFromTwoVectors(alpha, beta);
+        R = RotationMatrix<double>::MakeRotationMatrixFromTwoUnitVectors(
+            alpha.normalized(), beta.normalized());
         EXPECT_TRUE(CompareMatrices(R.matrix(), m_expected, ktolerance));
 
         // Create unit vectors to test the other algorithm.
