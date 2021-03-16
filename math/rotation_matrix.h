@@ -1005,9 +1005,12 @@ class RotationMatrix {
   static RotationMatrix<T> MakeRotationMatrixFromTwoNonAntiParallelUnitVectors(
       const Vector3<T>& alpha_A, const Vector3<T>& beta_A, const T& c) {
     // In debug builds, verify β ≠ -α  by checking c = α ⋅ β ≠ -1 (θ ≠ π).
+    // The next assertion allows c to be very close to -1.  This assertion is
+    // meant to be less restrictive than similar preconditions for c ≠ -1 in
+    // a calling function.
     using std::abs;
     constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
-    DRAKE_ASSERT(abs(1 + c) > 2 * kEpsilon);
+    DRAKE_ASSERT(c > -1 + 4 * kEpsilon);
 
     // Form the vector s = α ⨯ β.  It is worth menioning that |s| = sin(θ).
     // This follows from the cross product definition α ⨯ β = |α| |β| sin(θ) û,
