@@ -1025,25 +1025,34 @@ bool Diagram<T>::DiagramHasDirectFeedthrough(int input_port, int output_port)
     size_t removed_count = active_set.erase(current_output_id);
     DRAKE_ASSERT(removed_count == 1);
     const System<T>* sys = current_output_id.first;
+    std::multimap<int, int> direct_feedthroughs = sys->GetDirectFeedthroughs();
     for (InputPortIndex i(0); i < sys->num_input_ports(); ++i) {
-      if (sys->HasDirectFeedthrough(i, current_output_id.second)) {
-        const InputPortLocator curr_input_id(sys, i);
-        if (target_input_ids.count(curr_input_id)) {
-          // We've found a direct-feedthrough path to the input_port.
-          return true;
-        } else {
-          // We've found an intermediate input port has a direct-feedthrough
-          // path to the output_port. Add the upstream output port (if there
-          // is one) to the active set.
-          auto it = connection_map_.find(curr_input_id);
-          if (it != connection_map_.end()) {
-            const OutputPortLocator& upstream_output = it->second;
-            active_set.insert(upstream_output);
+      auto range = direct_feedthroughs.equal_range(i);
+
+      // Search for the output port index from the queue element being processed
+      // in the set of sys's output ports corresponding to input port i.
+      for (auto index_pair_iter = range.first; index_pair_iter != range.second;
+           ++index_pair_iter) {
+        if (index_pair_iter->second == current_output_id.second) {
+          const InputPortLocator curr_input_id(sys, i);
+          if (target_input_ids.count(curr_input_id)) {
+            // We've found a direct-feedthrough path to the input_port.
+            return true;
+          } else {
+            // We've found an intermediate input port has a direct-feedthrough
+            // path to the output_port. Add the upstream output port (if there
+            // is one) to the active set.
+            auto it = connection_map_.find(curr_input_id);
+            if (it != connection_map_.end()) {
+              const OutputPortLocator& upstream_output = it->second;
+              active_set.insert(upstream_output);
+            }
           }
         }
       }
     }
   }
+
   // If there are no intermediate output ports with a direct-feedthrough path
   // to the output_port, there is no direct feedthrough to it from the
   // input_port.
