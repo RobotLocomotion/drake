@@ -1,0 +1,9 @@
+# -*- python -*-
+
+package(default_visibility = ["//visibility:public"])
+
+# On Ubuntu, no targets should depend on @com_jidesoft_jide_oss.
+cc_library(
+    name = "com_jidesoft_jide_oss",
+    srcs = ["missing-ubuntu.cc"],
+)

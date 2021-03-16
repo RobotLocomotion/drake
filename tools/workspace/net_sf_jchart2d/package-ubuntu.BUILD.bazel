@@ -1,0 +1,15 @@
+# -*- python -*-
+
+package(default_visibility = ["//visibility:public"])
+
+# On Ubuntu, no targets should depend on @net_sf_jchart2d.
+#cc_library(
+#    name = "net_sf_jchart2d",
+#    srcs = ["missing-ubuntu.cc"],
+#)
+
+
+java_import(
+    name = "jchart2d",
+    jars = ["jchart2d.jar",], #["@drake//tools/workspace/net_sf_jchart2d:jchart.jar",],
+)

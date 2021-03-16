@@ -1,0 +1,9 @@
+# -*- python -*-
+
+package(default_visibility = ["//visibility:public"])
+
+# On Ubuntu, no targets should depend on @commons_io.
+cc_library(
+    name = "commons_io",
+    srcs = ["missing-ubuntu.cc"],
+)
