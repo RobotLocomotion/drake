@@ -55,7 +55,10 @@ void DistancePairGeometry<T>::SphereShapeDistance(const fcl::Sphered& sphere_A,
   // p_BCb is the witness point on ∂B measured and expressed in B.
   result_->p_BCb = shape_B_to_point_Ao.p_GN;
   result_->nhat_BA_W = shape_B_to_point_Ao.grad_W;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   result_->is_nhat_BA_W_unique = shape_B_to_point_Ao.is_grad_W_unique;
+#pragma GCC diagnostic pop
   // p_ACa is the witness point on ∂A measured and expressed in A.
   const math::RotationMatrix<T> R_AW = X_WA_.rotation().transpose();
   result_->p_ACa = -sphere_A.radius * (R_AW * shape_B_to_point_Ao.grad_W);

@@ -796,7 +796,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "SignedDistanceToPoint", param, doc.SignedDistanceToPoint.doc);
     cls  // BR
-        .def(ParamInit<Class>(), doc.SignedDistanceToPoint.ctor.doc)
+        .def(ParamInit<Class>(), doc.SignedDistanceToPoint.ctor.doc_4args)
         .def_readwrite("id_G", &SignedDistanceToPoint<T>::id_G,
             doc.SignedDistanceToPoint.id_G.doc)
         .def_readwrite("p_GN", &SignedDistanceToPoint<T>::p_GN,

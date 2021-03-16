@@ -952,6 +952,18 @@ struct SignedDistanceToPointTestData {
         p_WQ(p_WQ_in),
         expected_result(expect_in) {}
 
+  static SignedDistanceToPointTestData Make(shared_ptr<Shape> shape,
+                                            const RigidTransformd& X_WG,
+                                            const Vector3d& p_WQ,
+                                            const Vector3d& p_GN,
+                                            double distance,
+                                            const Vector3d& grad_W) {
+    return SignedDistanceToPointTestData{
+        shape, X_WG, p_WQ,
+        SignedDistanceToPoint{GeometryId::get_new_id(), p_GN, distance,
+                              grad_W}};
+  }
+
   // Google Test uses this operator to report the test data in the log file
   // when a test fails.
   friend std::ostream& operator<<(std::ostream& os,
@@ -1007,25 +1019,20 @@ std::vector<SignedDistanceToPointTestData> GenDistanceTestDataSphere(
   auto sphere = make_shared<Sphere>(0.7);
   std::vector<SignedDistanceToPointTestData> test_data{
       // p_GQ = (2,3,6) is outside G at the positive distance 6.3 = 7 - 0.7.
-      {sphere, X_WG, X_WG * Vector3d{2.0, 3.0, 6.0},
-       SignedDistanceToPoint<double>(
-           GeometryId::get_new_id(), Vector3d(0.2, 0.3, 0.6), 6.3,
-           X_WG.rotation() * Vector3d(2.0, 3.0, 6.0) / 7.0,
-           true /* grad_W is well defined. */)},
+      SignedDistanceToPointTestData::Make(
+          sphere, X_WG, X_WG * Vector3d{2.0, 3.0, 6.0}, Vector3d(0.2, 0.3, 0.6),
+          6.3, X_WG.rotation() * Vector3d(2.0, 3.0, 6.0) / 7.0),
       // p_GQ = (0.1,0.15,0.3) is inside G at the negative distance -0.35.
-      {sphere, X_WG, X_WG * Vector3d{0.1, 0.15, 0.3},
-       SignedDistanceToPoint<double>(
-           GeometryId::get_new_id(), Vector3d(0.2, 0.3, 0.6), -0.35,
-           X_WG.rotation() * Vector3d(2.0, 3.0, 6.0) / 7.0,
-           true /* grad_W is well defined */)},
+      SignedDistanceToPointTestData::Make(
+          sphere, X_WG, X_WG * Vector3d{0.1, 0.15, 0.3},
+          Vector3d(0.2, 0.3, 0.6), -0.35,
+          X_WG.rotation() * Vector3d(2.0, 3.0, 6.0) / 7.0),
       // Reports an arbitrary gradient vector (as defined in the
       // QueryObject::ComputeSignedDistanceToPoint() documentation) at the
       // center of the sphere.
-      {sphere, X_WG, X_WG * Vector3d{0.0, 0.0, 0.0},
-       SignedDistanceToPoint<double>(GeometryId::get_new_id(),
-                                     Vector3d(0.7, 0., 0.), -0.7,
-                                     X_WG.rotation() * Vector3d(1.0, 0.0, 0.0),
-                                     false /* grad_W is not well defined */)}};
+      SignedDistanceToPointTestData::Make(
+          sphere, X_WG, X_WG * Vector3d{0.0, 0.0, 0.0}, Vector3d(0.7, 0., 0.),
+          -0.7, X_WG.rotation() * Vector3d(1.0, 0.0, 0.0))};
   return test_data;
 }
 
@@ -1064,8 +1071,7 @@ std::vector<SignedDistanceToPointTestData> GenDistanceTestDataOutsideBox(
     const Vector3d& grad_W = data.expected_result.grad_W;
     test_data.emplace_back(
         shape, X_WG, p_WQ,
-        SignedDistanceToPoint<double>(id, p_GN, distance, grad_W,
-                                      true /* grad_W is well defined */));
+        SignedDistanceToPoint<double>(id, p_GN, distance, grad_W));
   }
   return test_data;
 }
@@ -1123,16 +1129,9 @@ std::vector<SignedDistanceToPointTestData> GenDistanceTestDataBoxBoundary(
         const RotationMatrixd& R_WG = X_WG.rotation();
         const Vector3d grad_G = s_G.normalized();
         const Vector3d grad_W = R_WG * grad_G;
-        // grad_W is not well defined if the query point Q is on the edge or
-        // vertex of the box.
-        const int num_dim_on_boundary = static_cast<int>(sx != 0) +
-                                        static_cast<int>(sy != 0) +
-                                        static_cast<int>(sz != 0);
-        const bool is_grad_W_well_defined = num_dim_on_boundary <= 1;
         test_data.emplace_back(
             box, X_WG, p_WQ,
-            SignedDistanceToPoint<double>(id, p_GN, distance, grad_W,
-                                          is_grad_W_well_defined));
+            SignedDistanceToPoint<double>(id, p_GN, distance, grad_W));
       }
     }
   }
@@ -1192,8 +1191,7 @@ std::vector<SignedDistanceToPointTestData> GenDistTestDataInsideBoxUnique(
       const Vector3d grad_W = R_WG * grad_G;
       test_data.emplace_back(
           box, X_WG, p_WQ,
-          SignedDistanceToPoint<double>(id, p_GN, -d, grad_W,
-                                        true /* grad_W is well defined */));
+          SignedDistanceToPoint<double>(id, p_GN, -d, grad_W));
     }
   }
   return test_data;
@@ -1219,39 +1217,29 @@ std::vector<SignedDistanceToPointTestData> GenDistTestDataInsideBoxNonUnique() {
   const RigidTransformd& X_WG = RigidTransformd::Identity();
   std::vector<SignedDistanceToPointTestData> test_data{
       // Q is nearest to the face [-10,10]x[-5,5]x{5}.
-      {box, X_WG, X_WG * Vector3d{6., 1., 2.},
-       SignedDistanceToPoint<double>(GeometryId::get_new_id(),
-                                     Vector3d(6., 1., 5.), -3.,
-                                     X_WG.rotation() * Vector3d(0., 0., 1.),
-                                     true /* grad_W is well defined */)},
+      SignedDistanceToPointTestData::Make(
+          box, X_WG, X_WG * Vector3d{6., 1., 2.}, Vector3d(6., 1., 5.), -3.,
+          X_WG.rotation() * Vector3d(0., 0., 1.)),
       // Q is nearest to two faces {10}x[-5,5]x[-5,5] and [-10,10]x[-5,5]x{5}.
-      {box, X_WG, X_WG * Vector3d{6., 0., 1.},
-       SignedDistanceToPoint<double>(GeometryId::get_new_id(),
-                                     Vector3d(10., 0., 1.), -4.,
-                                     X_WG.rotation() * Vector3d(1., 0., 0.),
-                                     true /* grad_W is well defined */)},
+      SignedDistanceToPointTestData::Make(
+          box, X_WG, X_WG * Vector3d{6., 0., 1.}, Vector3d(10., 0., 1.), -4.,
+          X_WG.rotation() * Vector3d(1., 0., 0.)),
       // Q is nearest to three faces {10}x[-5,5]x[-5,5], [-10,10]x{5}x[-5,5],
       // and [-10,10]x[-5,5]x{5}.
-      {box, X_WG, X_WG * Vector3d{6., 1., 1.},
-       SignedDistanceToPoint<double>(GeometryId::get_new_id(),
-                                     Vector3d(10., 1., 1.), -4.,
-                                     X_WG.rotation() * Vector3d(1., 0., 0.),
-                                     true /* grad_W is well defined */)},
+      SignedDistanceToPointTestData::Make(
+          box, X_WG, X_WG * Vector3d{6., 1., 1.}, Vector3d(10., 1., 1.), -4.,
+          X_WG.rotation() * Vector3d(1., 0., 0.)),
       // Q at the center of the box is nearest to four faces
       // [-10,10]x{5}x[-5,5], [-10,10]x{-5}x[-5,5], [-10,10]x[5,-5]x{5},
       // and [-10,10]x[5,-5]x{-5}.
-      {box, X_WG, X_WG * Vector3d{0., 0., 0.},
-       SignedDistanceToPoint<double>(GeometryId::get_new_id(),
-                                     Vector3d(0., 5., 0.), -5.,
-                                     X_WG.rotation() * Vector3d(0., 1., 0.),
-                                     true /* grad_W is well defined */)},
+      SignedDistanceToPointTestData::Make(
+          box, X_WG, X_WG * Vector3d{0., 0., 0.}, Vector3d(0., 5., 0.), -5.,
+          X_WG.rotation() * Vector3d(0., 1., 0.)),
       // Q is nearest to five faces {10}x[-5,5]x[-5,5], [-10,10]x{5}x[-5,5],
       // [-10,10]x{-5}x[-5,5], [-10,10]x[5,-5]x{5}, and [-10,10]x[5,-5]x{-5}.
-      {box, X_WG, X_WG * Vector3d{5., 0., 0.},
-       SignedDistanceToPoint<double>(GeometryId::get_new_id(),
-                                     Vector3d(10., 0., 0.), -5.,
-                                     X_WG.rotation() * Vector3d(1., 0., 0.),
-                                     true /* grad_W is well defined */)}};
+      SignedDistanceToPointTestData::Make(
+          box, X_WG, X_WG * Vector3d{5., 0., 0.}, Vector3d(10., 0., 0.), -5.,
+          X_WG.rotation() * Vector3d(1., 0., 0.))};
   return test_data;
 }
 
@@ -1263,10 +1251,9 @@ std::vector<SignedDistanceToPointTestData> GenDistanceTestDataTranslateBox() {
       // The position of the query point p_WQ(23,20,30) is closest to G at
       // (20,20,30) in World frame, which is p_GN=(10,0,0) in G's frame.
       // The gradient vector is expressed in both frames as (1,0,0).
-      {box, Translation3d(10., 20., 30.), Vector3d{23., 20., 30.},
-       SignedDistanceToPoint<double>(
-           GeometryId::get_new_id(), Vector3d(10., 0., 0.), 3.,
-           Vector3d(1., 0., 0.), true /* grad_W is well defined.*/)}};
+      SignedDistanceToPointTestData::Make(
+          box, Translation3d(10., 20., 30.), Vector3d{23., 20., 30.},
+          Vector3d(10., 0., 0.), 3., Vector3d(1., 0., 0.))};
   return test_data;
 }
 
@@ -1338,8 +1325,7 @@ GenDistTestDataCylinderBoundaryCircle(
       const Vector3d grad_W = R_WG * grad_G;
       test_data.emplace_back(cylinder, X_WG, p_WQ,
                              SignedDistanceToPoint<double>(
-                                 id, p_GN, distance, grad_W,
-                                 false /* grad_W is not well defined */));
+                                 id, p_GN, distance, grad_W));
     }
   }
   return test_data;
@@ -1419,18 +1405,15 @@ GenDistTestDataCylinderBoundarySurface(
   // test_data.
   auto convert = [&cylinder, &X_WG, &R_WG,
                   &test_data](const LocalTestData& local) {
-    // Generate new id for each test record.
-    const GeometryId id = GeometryId::get_new_id();
     const Vector3d p_WQ = X_WG * local.p_GQ;
     // Q on ∂G has distance zero.
     const double distance = 0.0;
     // Q is its own nearest point on ∂G.
     const Vector3d p_GN = local.p_GQ;
     const Vector3d grad_W = R_WG * local.grad_G;
-    test_data.emplace_back(
-        cylinder, X_WG, p_WQ,
-        SignedDistanceToPoint<double>(id, p_GN, distance, grad_W,
-                                      true /* grad_W is well defined */));
+    // Implicitly generate a new geometry id for every test record.
+    test_data.push_back(SignedDistanceToPointTestData::Make(
+        cylinder, X_WG, p_WQ, p_GN, distance, grad_W));
   };
   std::for_each(test_data_barrel.begin(), test_data_barrel.end(), convert);
   std::for_each(test_data_caps.begin(), test_data_caps.end(), convert);
@@ -1477,8 +1460,7 @@ std::vector<SignedDistanceToPointTestData> GenDistTestDataOutsideCylinder(
     const Vector3d& grad_W = data.expected_result.grad_W;
     test_data.emplace_back(
         shape, X_WG, p_WQ,
-        SignedDistanceToPoint<double>(id, p_GN, distance, grad_W,
-                                      true /* grad_W is well defined */));
+        SignedDistanceToPoint<double>(id, p_GN, distance, grad_W));
   }
   return test_data;
 }
@@ -1510,8 +1492,7 @@ std::vector<SignedDistanceToPointTestData> GenDistTestDataInsideCylinder(
     const Vector3d& grad_W = data.expected_result.grad_W;
     test_data.emplace_back(
         shape, X_WG, p_WQ,
-        SignedDistanceToPoint<double>(id, p_GN, kNegativeDistance, grad_W,
-                                      true /* grad_W is well defined */));
+        SignedDistanceToPoint<double>(id, p_GN, kNegativeDistance, grad_W));
   }
   return test_data;
 }
@@ -1536,8 +1517,7 @@ std::vector<SignedDistanceToPointTestData> GenDistTestDataCylinderCenter(
   std::vector<SignedDistanceToPointTestData> test_data;
   test_data.emplace_back(
       long_cylinder, X_WG, p_WQ,
-      SignedDistanceToPoint<double>(id, p_GN, distance, grad_W,
-                                    true /* grad_W is well defined */));
+      SignedDistanceToPoint<double>(id, p_GN, distance, grad_W));
   return test_data;
 }
 
@@ -1566,7 +1546,6 @@ std::vector<SignedDistanceToPointTestData> GenDistTestDataHalfSpace() {
                               Vector3d{10., 11., 12.});
   auto hs = make_shared<HalfSpace>();
   const GeometryId id = GeometryId::get_new_id();
-  const bool well_defined_grad = true;
 
   for (const auto& X_WG : {RigidTransformd(), X_WG1}) {
     const auto& R_WG = X_WG.rotation();
@@ -1577,21 +1556,20 @@ std::vector<SignedDistanceToPointTestData> GenDistTestDataHalfSpace() {
     // Outside the half space.
     const double distance = 1.5;
     const Vector3d p_WQ1 = p_WN + distance * grad_W;
-    test_data.emplace_back(hs, X_WG, p_WQ1,
-                           SignedDistanceToPoint<double>(
-                               id, p_GN, distance, grad_W, well_defined_grad));
+    test_data.emplace_back(
+        hs, X_WG, p_WQ1,
+        SignedDistanceToPoint<double>(id, p_GN, distance, grad_W));
 
     // On the half space boundary.
     const Vector3d p_WQ2 = p_WN;
-    test_data.emplace_back(hs, X_WG, p_WQ2,
-                           SignedDistanceToPoint<double>(id, p_GN, 0.0, grad_W,
-                                                         well_defined_grad));
+    test_data.emplace_back(
+        hs, X_WG, p_WQ2, SignedDistanceToPoint<double>(id, p_GN, 0.0, grad_W));
 
     // Inside the half space.
     const Vector3d p_WQ3 = p_WN - distance * grad_W;
-    test_data.emplace_back(hs, X_WG, p_WQ3,
-                           SignedDistanceToPoint<double>(
-                               id, p_GN, -distance, grad_W, well_defined_grad));
+    test_data.emplace_back(
+        hs, X_WG, p_WQ3,
+        SignedDistanceToPoint<double>(id, p_GN, -distance, grad_W));
   }
 
   return test_data;
