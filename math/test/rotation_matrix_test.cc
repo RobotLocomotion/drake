@@ -1034,7 +1034,7 @@ TEST_F(RotationMatrixConversionTests, AngleAxisToRotationMatrix) {
   }
 }
 
-TEST_F(RotationMatrixConversionTests, twoVectorsToRotationMatrix) {
+TEST_F(RotationMatrixConversionTests, TwoVectorsToRotationMatrix) {
   // Create somewhat arbitrary data to be used below.
   constexpr int num_cases = 7;
   using Vector7d = Eigen::Matrix<double, num_cases, 1>;
@@ -1043,7 +1043,7 @@ TEST_F(RotationMatrixConversionTests, twoVectorsToRotationMatrix) {
   Vector7d z;  z << -M_PI/3,  0.0, -0.1, -1.0, 1.0, std::cos(2), std::sqrt(1.1);
 
   // Create a reasonably tight tolerance to be used below.
-  constexpr double ktolerance = 64 * kEpsilon;
+  constexpr double kTolerance = 64 * kEpsilon;
 
   // Placeholders to be assigned and used below.
   Vector3<double> alpha, beta;
@@ -1060,7 +1060,7 @@ TEST_F(RotationMatrixConversionTests, twoVectorsToRotationMatrix) {
        R = RotationMatrixd::MakeRotationMatrixFromTwoUnitVectors(
            alpha.normalized(), beta.normalized());
        m_expected = R_identity.matrix();
-       EXPECT_TRUE(CompareMatrices(R.matrix(), m_expected, ktolerance));
+       EXPECT_TRUE(CompareMatrices(R.matrix(), m_expected, kTolerance));
      }
   }
 
@@ -1074,7 +1074,7 @@ TEST_F(RotationMatrixConversionTests, twoVectorsToRotationMatrix) {
         R = RotationMatrixd::MakeRotationMatrixFromTwoUnitVectors(
             alpha.normalized(), beta.normalized());
         m_expected = Rz.matrix();
-        EXPECT_TRUE(CompareMatrices(R.matrix(), m_expected, ktolerance));
+        EXPECT_TRUE(CompareMatrices(R.matrix(), m_expected, kTolerance));
      }
   }
 
@@ -1091,7 +1091,7 @@ TEST_F(RotationMatrixConversionTests, twoVectorsToRotationMatrix) {
         // Preference is given to z-axis 1st, x-axis 2nd, y-axis 3rd.
         m_expected =
             z(i) == 0 ? Rz.matrix() : (x(i) == 0 ? Rx.matrix() : Ry.matrix());
-        EXPECT_TRUE(CompareMatrices(R.matrix(), m_expected, ktolerance));
+        EXPECT_TRUE(CompareMatrices(R.matrix(), m_expected, kTolerance));
      }
   }
 
@@ -1104,7 +1104,7 @@ TEST_F(RotationMatrixConversionTests, twoVectorsToRotationMatrix) {
         R = RotationMatrixd::MakeRotationMatrixFromTwoUnitVectors(
             alpha.normalized(), beta.normalized());
         m_expected = z(i) == 0 ? Rz.matrix() : Rx.matrix();
-        EXPECT_TRUE(CompareMatrices(R.matrix(), m_expected, ktolerance));
+        EXPECT_TRUE(CompareMatrices(R.matrix(), m_expected, kTolerance));
      }
   }
 
@@ -1117,8 +1117,8 @@ TEST_F(RotationMatrixConversionTests, twoVectorsToRotationMatrix) {
       const double alpha_norm = alpha.norm();
       const double beta_norm = beta.norm();
       const double lambda_norm = lambda.norm();
-      if (alpha_norm > ktolerance && beta_norm > ktolerance &&
-        lambda_norm > ktolerance) {
+      if (alpha_norm > kTolerance && beta_norm > kTolerance &&
+        lambda_norm > kTolerance) {
         // Use AngleAxis to calculate the expected rotation matrix.
         double cosTheta = alpha.dot(beta) / (alpha_norm * beta_norm);
         const double theta = std::acos(cosTheta);
@@ -1129,14 +1129,14 @@ TEST_F(RotationMatrixConversionTests, twoVectorsToRotationMatrix) {
         // Use the non-unit vector to test one of the algorithms.
         R = RotationMatrix<double>::MakeRotationMatrixFromTwoUnitVectors(
             alpha.normalized(), beta.normalized());
-        EXPECT_TRUE(CompareMatrices(R.matrix(), m_expected, ktolerance));
+        EXPECT_TRUE(CompareMatrices(R.matrix(), m_expected, kTolerance));
 
         // Create unit vectors to test the other algorithm.
         const Vector3<double> alpha_unit_vector = alpha / alpha_norm;
         const Vector3<double> beta_unit_vector = beta / beta_norm;
         R = RotationMatrix<double>::MakeRotationMatrixFromTwoUnitVectors(
             alpha_unit_vector, beta_unit_vector);
-        EXPECT_TRUE(CompareMatrices(R.matrix(), m_expected, ktolerance));
+        EXPECT_TRUE(CompareMatrices(R.matrix(), m_expected, kTolerance));
       }
     }
   }

@@ -993,18 +993,15 @@ class RotationMatrix {
   // characterized by θ𝛌, where 0 ≤ θ ≤ π is the angle between α and β (herein
   // β represents its direction expressed in A after the rotation) and 𝛌 is in
   // the direction of α x β, i.e., 𝛌 = α x β /|α x β|. This method produces a
-  // unique rotation matrix R_AB that is continuous with α, β (except c ≈ -1)
-  // and uses c = α ⋅ β and s = α x β, without explicitly calculating θ or 𝛌.
+  // unique rotation matrix R_AB that is continuous with α, β (except c ≈ -1),
+  // is continuously differentiable (except c ≈ -1), and uses c = α ⋅ β and
+  // s = α x β, without explicitly calculating θ or 𝛌.
   // The underlying algorithm avoids the divide-by-zero in 𝛌 = α x β /|α x β|
   // when α = β (θ = 0) and is more efficient than the related method here:
   // https://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d
   // Specifically, the diagonal terms in the stackexchange algorithm require
   // 5 operations (3 multiply, 2 adds) whereas this has 3 (2 multiply, 1 add).
   // When θ = 0, this method returns the identity matrix.
-  // TODO(Mitiguy) Verify R_AB is continuously differentiable, including when
-  //  α = β (0 = 0).  It seems R_AB is continuously differentiable in the limit
-  //  as 0 = 0, but it seems the limit depends on either a symbolic cancellation
-  //  or a numerical 0/0 cancellation.
   static RotationMatrix<T> MakeRotationMatrixFromTwoNonAntiParallelUnitVectors(
       const Vector3<T>& alpha_A, const Vector3<T>& beta_A, const T& c) {
     // In debug builds, verify β ≠ -α  by checking c = α ⋅ β ≠ -1 (θ ≠ π).
@@ -1084,9 +1081,10 @@ class RotationMatrix {
 
     // Based on the use of < and <=, the algorithm below has slight preference
     // for returning a vector 𝐰 whose most positive component is z-directed.
-    // Secondarily, if |ux| and |uy| are equal, the algorithm as a preference
-    // for returning a vector 𝐰 whose most positive component is x-directed.
-    // Secondly, it has a slight preference for returning a vector
+    // Hence, if |uz| is smallest (but perhaps equal to |ux| or |uy|), the
+    // z-component of the returned vector 𝐰 is its most positive component.
+    // Secondarily, if |ux| is smallest (but perhaps equal to |uy|), the
+    // x-component of the returned vector 𝐰 is its most positive component.
     // TODO(Mitiguy) Consider adding a "preference" argument to this method.
 
     // Situation A: |ux| is smallest.
