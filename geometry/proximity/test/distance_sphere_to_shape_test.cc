@@ -467,6 +467,8 @@ GTEST_TEST(ComputeNarrowPhaseDistance, sphere_touches_shape) {
   EXPECT_EQ(Vector3d(1, 0, 0), result.nhat_BA_W);
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Confirms that `is_nhat_BA_W_unique` is passed from point_distance to
 // shape_distance correctly. It is a pass through from DistanceToPoint() to
 // SphereShapeDistance(). We use Sphere-Box as a representative sample and
@@ -504,6 +506,7 @@ GTEST_TEST(ComputeNarrowPhaseDistance, is_nhat_BA_W_well_defined) {
     EXPECT_EQ(false, result.is_nhat_BA_W_unique);
   }
 }
+#pragma GCC diagnostic pop
 
 template <typename T>
 class CallbackScalarSupport : public ::testing::Test {
