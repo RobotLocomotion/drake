@@ -66,10 +66,12 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "cds",
     "drake_visualizer",
     "dreal",
-    "net_sf_jchart2d",
     "optitrack_driver",
     "picosat",
 ]] + select({
+    "//conditions:default": [],
+    "//tools/cc_toolchain:apple": ["//tools/workspace/net_sf_jchart2d:install"],  # noqa
+}) + select({
     "//conditions:default": ["@csdp//:install"],
     "//tools:no_csdp": [],
 }) + select({

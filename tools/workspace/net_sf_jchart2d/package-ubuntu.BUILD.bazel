@@ -1,0 +1,19 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+java_import(
+    name = "jar",
+    jars = ["//jar:jchart2d.jar"],
+)
+
+# Placeholder install target
+install(
+    name = "install",
+    visibility = ["//visibility:public"],
+)

@@ -1,0 +1,8 @@
+# -*- python -*-
+
+package(default_visibility = ["//visibility:public"])
+
+java_import(
+    name = "jar",
+    jars = ["//jar:jide-oss.jar"],
+)

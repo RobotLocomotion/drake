@@ -4,6 +4,8 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
+# export_files() doesn't support select(), always do export even thought it's
+# not used on Linux
 exports_files(
     ["net_sf_jchart2d/LICENSE"],
     licenses = ["restricted"],  # LGPL-3.0+
