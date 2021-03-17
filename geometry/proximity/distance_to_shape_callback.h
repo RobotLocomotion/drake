@@ -8,11 +8,8 @@
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/collision_filter_legacy.h"
-#include "drake/geometry/proximity/distance_to_point_callback.h"
-#include "drake/geometry/proximity/proximity_utilities.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
 #include "drake/math/rigid_transform.h"
-#include "drake/math/rotation_matrix.h"
 
 /** @file Provides the structures and logic to support signed distance queries
  between shapes.  */
@@ -122,28 +119,17 @@ class DistancePairGeometry {
    3. Na = Ao - r * ∇φ_B(Ao)  */
   //@{
 
-  void operator()(const fcl::Sphered& sphere_A, const fcl::Sphered& sphere_B) {
-    SphereShapeDistance(sphere_A, sphere_B);
-  }
+  void operator()(const fcl::Sphered& sphere_A, const fcl::Sphered& sphere_B);
 
-  void operator()(const fcl::Sphered& sphere_A, const fcl::Boxd& box_B) {
-    SphereShapeDistance(sphere_A, box_B);
-  }
+  void operator()(const fcl::Sphered& sphere_A, const fcl::Boxd& box_B);
 
   void operator()(const fcl::Sphered& sphere_A,
-                  const fcl::Cylinderd& cylinder_B) {
-    SphereShapeDistance(sphere_A, cylinder_B);
-  }
+                  const fcl::Cylinderd& cylinder_B);
 
   void operator()(const fcl::Sphered& sphere_A,
-                  const fcl::Halfspaced& halfspace_B) {
-    SphereShapeDistance(sphere_A, halfspace_B);
-  }
+                  const fcl::Halfspaced& halfspace_B);
 
-  void operator()(const fcl::Sphered& sphere_A,
-                  const fcl::Capsuled& capsule_B) {
-    SphereShapeDistance(sphere_A, capsule_B);
-  }
+  void operator()(const fcl::Sphered& sphere_A, const fcl::Capsuled& capsule_B);
 
   //@}
 
@@ -153,22 +139,7 @@ class DistancePairGeometry {
   // they all call this private template function to minimize code duplication.
   template <typename FclShape>
   void SphereShapeDistance(const fcl::Sphered& sphere_A,
-                           const FclShape& shape_B) {
-    const SignedDistanceToPoint<T> shape_B_to_point_Ao =
-        point_distance::DistanceToPoint<T>(id_B_, X_WB_,
-                                           X_WA_.translation())(shape_B);
-    result_->id_A = id_A_;
-    result_->id_B = id_B_;
-    result_->distance = shape_B_to_point_Ao.distance - sphere_A.radius;
-    // p_BCb is the witness point on ∂B measured and expressed in B.
-    result_->p_BCb = shape_B_to_point_Ao.p_GN;
-    result_->nhat_BA_W = shape_B_to_point_Ao.grad_W;
-    result_->is_nhat_BA_W_unique =
-        shape_B_to_point_Ao.is_grad_W_unique;
-    // p_ACa is the witness point on ∂A measured and expressed in A.
-    const math::RotationMatrix<T> R_AW = X_WA_.rotation().transpose();
-    result_->p_ACa = -sphere_A.radius * (R_AW * shape_B_to_point_Ao.grad_W);
-  }
+                           const FclShape& shape_B);
 
   GeometryId id_A_;
   GeometryId id_B_;
@@ -220,6 +191,10 @@ void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
 
 //@}
 
+/* Reports if the given geometries require using the fallback. */
+bool RequiresFallback(const fcl::CollisionObjectd& a,
+                      const fcl::CollisionObjectd& b);
+
 /* Dispatches the narrowphase shape-shape query for the object pair (`a`, `b`)
  to the appropriate primitive-primitive function (optionally defaulting to the
  type- and shape-dependent fallback function).
@@ -238,75 +213,7 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
                                 const fcl::CollisionObjectd& b,
                                 const math::RigidTransform<T>& X_WB,
                                 const fcl::DistanceRequestd& request,
-                                SignedDistancePair<T>* result) {
-  DRAKE_DEMAND(result != nullptr);
-  const fcl::CollisionGeometryd* a_geometry = a.collisionGeometry().get();
-  const fcl::CollisionGeometryd* b_geometry = b.collisionGeometry().get();
-
-  const bool a_is_sphere = a_geometry->getNodeType() == fcl::GEOM_SPHERE;
-  const bool b_is_sphere = b_geometry->getNodeType() == fcl::GEOM_SPHERE;
-  const bool no_sphere = !(a_is_sphere || b_is_sphere);
-  if (no_sphere) {
-    CalcDistanceFallback<T>(a, b, request, result);
-    return;
-  }
-  DRAKE_ASSERT(a_is_sphere || b_is_sphere);
-  // We write `s` for the sphere object and `o` for the other object. We
-  // assign either (a,b) or (b,a) to (s,o) depending on whether `a` is a
-  // sphere or not. Therefore, we only need the helper DistancePairGeometry
-  // that takes (sphere, other) but not (other, sphere).  This scheme helps us
-  // keep the code compact; however, we might have to re-order the result
-  // afterwards.
-  const fcl::CollisionObjectd& s = a_is_sphere ? a : b;
-  const fcl::CollisionObjectd& o = a_is_sphere ? b : a;
-  const fcl::CollisionGeometryd* s_geometry = s.collisionGeometry().get();
-  const fcl::CollisionGeometryd* o_geometry = o.collisionGeometry().get();
-  const math::RigidTransform<T>& X_WS(a_is_sphere ? X_WA : X_WB);
-  const math::RigidTransform<T>& X_WO(a_is_sphere ? X_WB : X_WA);
-  const auto id_S = EncodedData(s).id();
-  const auto id_O = EncodedData(o).id();
-  DistancePairGeometry<T> distance_pair(id_S, id_O, X_WS, X_WO, result);
-  const auto& sphere_S = *static_cast<const fcl::Sphered*>(s_geometry);
-  switch (o_geometry->getNodeType()) {
-    case fcl::GEOM_SPHERE: {
-      const auto& sphere_O = *static_cast<const fcl::Sphered*>(o_geometry);
-      distance_pair(sphere_S, sphere_O);
-      break;
-    }
-    case fcl::GEOM_BOX: {
-      const auto& box_O = *static_cast<const fcl::Boxd*>(o_geometry);
-      distance_pair(sphere_S, box_O);
-      break;
-    }
-    case fcl::GEOM_CYLINDER: {
-      const auto& cylinder_O = *static_cast<const fcl::Cylinderd*>(o_geometry);
-      distance_pair(sphere_S, cylinder_O);
-      break;
-    }
-    case fcl::GEOM_HALFSPACE: {
-      const auto& halfspace_O =
-          *static_cast<const fcl::Halfspaced*>(o_geometry);
-      distance_pair(sphere_S, halfspace_O);
-      break;
-    }
-    case fcl::GEOM_CAPSULE: {
-      const auto& capsule_O =
-          *static_cast<const fcl::Capsuled*>(o_geometry);
-      distance_pair(sphere_S, capsule_O);
-      break;
-    }
-    default: {
-      // We don't have a closed form solution for the other geometry, so we
-      // call FCL GJK/EPA.
-      CalcDistanceFallback<T>(a, b, request, result);
-      break;
-    }
-  }
-  // If needed, re-order the result for (s,o) back to the result for (a,b).
-  if (!a_is_sphere) {
-    result->SwapAAndB();
-  }
-}
+                                SignedDistancePair<T>* result);
 
 // TODO(SeanCurtis-TRI): Replace this clunky mechanism with a new mechanism
 // which does this implicitly via ADL and templates.
@@ -329,28 +236,14 @@ struct ScalarSupport {
 /* Primitive support for double-valued query.  */
 template <>
 struct ScalarSupport<double> {
-  static bool is_supported(fcl::NODE_TYPE node1, fcl::NODE_TYPE node2) {
-    // Doubles (via its fallback) can support anything *except*
-    // halfspace-X (where X is not sphere).
-    // We use FCL's GJK/EPA fallback in those geometries we haven't explicitly
-    // supported. However, FCL doesn't support: half spaces, planes, triangles,
-    // or octtrees in that workflow. We need to give intelligent feedback rather
-    // than the segfault otherwise produced.
-    // NOTE: Currently this only tests for halfspace (because it is an otherwise
-    // supported geometry type in SceneGraph. When meshes, planes, and/or
-    // octrees are supported, this error would have to be modified.
-    // TODO(SeanCurtis-TRI): Remove this test when FCL/Drake supports signed
-    // distance queries for halfspaces (see issue #10905). Also see FCL issue
-    // https://github.com/flexible-collision-library/fcl/issues/383.
-    return (node1 != fcl::GEOM_HALFSPACE || node2 == fcl::GEOM_SPHERE) &&
-        (node2 != fcl::GEOM_HALFSPACE || node1 == fcl::GEOM_SPHERE);
-  }
+  static bool is_supported(fcl::NODE_TYPE node1, fcl::NODE_TYPE node2);
 };
 
 /* Primitive support for AutoDiff-valued query.  */
 template <typename DerType>
 struct ScalarSupport<Eigen::AutoDiffScalar<DerType>> {
   static bool is_supported(fcl::NODE_TYPE node1, fcl::NODE_TYPE node2) {
+    // TODO(SeanCurtis-TRI): Confirm derivatives for sphere-capsule.
     // Explicitly permit the following pair types (with ordering
     // permutations):
     //  (sphere, sphere)
