@@ -220,6 +220,10 @@ void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
 
 //@}
 
+/* Reports if the given geometries require using the fallback. */
+bool RequiresFallback(const fcl::CollisionObjectd& a,
+                      const fcl::CollisionObjectd& b);
+
 /* Dispatches the narrowphase shape-shape query for the object pair (`a`, `b`)
  to the appropriate primitive-primitive function (optionally defaulting to the
  type- and shape-dependent fallback function).
@@ -240,17 +244,17 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
                                 const fcl::DistanceRequestd& request,
                                 SignedDistancePair<T>* result) {
   DRAKE_DEMAND(result != nullptr);
-  const fcl::CollisionGeometryd* a_geometry = a.collisionGeometry().get();
-  const fcl::CollisionGeometryd* b_geometry = b.collisionGeometry().get();
 
-  const bool a_is_sphere = a_geometry->getNodeType() == fcl::GEOM_SPHERE;
-  const bool b_is_sphere = b_geometry->getNodeType() == fcl::GEOM_SPHERE;
-  const bool no_sphere = !(a_is_sphere || b_is_sphere);
-  if (no_sphere) {
+  if (RequiresFallback(a, b)) {
     CalcDistanceFallback<T>(a, b, request, result);
     return;
   }
-  DRAKE_ASSERT(a_is_sphere || b_is_sphere);
+
+  // If no fallback is necessary, one of these two *must* be a sphere.
+  const bool a_is_sphere =
+      a.collisionGeometry()->getNodeType() == fcl::GEOM_SPHERE;
+  DRAKE_ASSERT(a_is_sphere ||
+               b.collisionGeometry()->getNodeType() == fcl::GEOM_SPHERE);
   // We write `s` for the sphere object and `o` for the other object. We
   // assign either (a,b) or (b,a) to (s,o) depending on whether `a` is a
   // sphere or not. Therefore, we only need the helper DistancePairGeometry
@@ -296,10 +300,9 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
       break;
     }
     default: {
-      // We don't have a closed form solution for the other geometry, so we
-      // call FCL GJK/EPA.
-      CalcDistanceFallback<T>(a, b, request, result);
-      break;
+      // The only way to reach this is for the RequresFallback() method to be
+      // out of sync with this code -- that would be a bug.
+      DRAKE_UNREACHABLE();
     }
   }
   // If needed, re-order the result for (s,o) back to the result for (a,b).

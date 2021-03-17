@@ -48,6 +48,25 @@ void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
   }
 }
 
+bool RequiresFallback(const fcl::CollisionObjectd& a,
+                      const fcl::CollisionObjectd& b) {
+  /* In the current ecosystem, we only have high-fidelity geometric code for
+   Sphere-X (for *some* X). So, the conditions requiring the fallback is
+   a) neither is a sphere, or b) one is a sphere, the other is the wrong X. */
+  if (a.collisionGeometry()->getNodeType() != fcl::GEOM_SPHERE &&
+      b.collisionGeometry()->getNodeType() != fcl::GEOM_SPHERE) {
+    return true;
+  }
+  const fcl::CollisionGeometryd* other =
+      a.collisionGeometry()->getNodeType() == fcl::GEOM_SPHERE
+          ? b.collisionGeometry().get()
+          : a.collisionGeometry().get();
+  // Box, capsule, cylinder, half space, and cylinder don't required fallback.
+  // Ellipsoid, convex do. Other fcl node types aren't currently used.
+  return other->getNodeType() == fcl::GEOM_ELLIPSOID ||
+         other->getNodeType() == fcl::GEOM_CONVEX;
+}
+
 template <typename T>
 bool Callback(fcl::CollisionObjectd* object_A_ptr,
               fcl::CollisionObjectd* object_B_ptr, void* callback_data,
