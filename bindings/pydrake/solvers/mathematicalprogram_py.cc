@@ -579,9 +579,9 @@ top-level documentation for :py:mod:`pydrake.math`.
               const Eigen::Ref<const VectorX<symbolic::Monomial>>&,
               MathematicalProgram::NonnegativePolynomial)>(
               &MathematicalProgram::NewNonnegativePolynomial),
-          py::arg("grammian"), py::arg("monomial_basis"), py::arg("type"),
+          py::arg("gramian"), py::arg("monomial_basis"), py::arg("type"),
           doc.MathematicalProgram.NewNonnegativePolynomial
-              .doc_3args_grammian_monomial_basis_type)
+              .doc_3args_gramian_monomial_basis_type)
       .def("NewNonnegativePolynomial",
           static_cast<std::pair<symbolic::Polynomial, MatrixXDecisionVariable> (
               MathematicalProgram::*)(const symbolic::Variables&, int degree,

@@ -455,7 +455,7 @@ class MathematicalProgram {
   };
 
   /**
-   * Returns a pair of nonnegative polynomial p = mᵀQm and the Grammian
+   * Returns a pair of nonnegative polynomial p = mᵀQm and the Gramian
    * matrix Q, where m is @p monomial_basis. Adds Q as decision variables to the
    * program. Depending on the type of the polynomial, we will impose different
    * constraint on Q.
@@ -464,7 +464,7 @@ class MathematicalProgram {
    * - if type = kDsos, we impose Q being positive diagonally dominant.
    * @param monomial_basis The monomial basis.
    * @param type The type of the nonnegative polynomial.
-   * @return (p, Q) The polynomial p and the Grammian matrix Q. Q has been
+   * @return (p, Q) The polynomial p and the Gramian matrix Q. Q has been
    * added as decision variables to the program.
    */
   std::pair<symbolic::Polynomial, MatrixXDecisionVariable>
@@ -473,11 +473,18 @@ class MathematicalProgram {
       NonnegativePolynomial type);
 
   /**
-   * Overloads NewNonnegativePolynomial(), except the Grammian matrix Q is an
+   * Overloads NewNonnegativePolynomial(), except the Gramian matrix Q is an
    * input instead of an output.
+   * Depending on the type of the polynomial, we will impose different
+   * constraint on the Gramian matrix.
+   * - if type = kSos, we impose the Gramian matrix being positive semidefinite.
+   * - if type = kSdsos, we impose the Gramian matrix being scaled diagonally
+   *   dominant.
+   * - if type = kDsos, we impose the Gramian matrix being positive diagonally
+   *   dominant.
    */
   symbolic::Polynomial NewNonnegativePolynomial(
-      const Eigen::Ref<const MatrixX<symbolic::Variable>>& grammian,
+      const Eigen::Ref<const MatrixX<symbolic::Variable>>& gramian,
       const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
       NonnegativePolynomial type);
 
@@ -487,11 +494,16 @@ class MathematicalProgram {
    * indeterminates of total order up to @p degree / 2, hence the returned
    * polynomial p contains all the monomials of @p indeterminates of total order
    * up to @p degree.
+   * Depending on the type of the polynomial, we will impose different
+   * constraint on the polynomial.
+   * - if type = kSos, we impose the polynomial being SOS.
+   * - if type = kSdsos, we impose the polynomial being SDSOS.
+   * - if type = kDsos, we impose the polynomial being DSOS.
    * @param indeterminates All the indeterminates in the polynomial p.
    * @param degree The polynomial p will contain all the monomials up to order
    * @p degree.
    * @param type The type of the nonnegative polynomial.
-   * @return (p, Q) The polynomial p and the Grammian matrix Q. Q has been
+   * @return (p, Q) The polynomial p and the Gramian matrix Q. Q has been
    * added as decision variables to the program.
    * @pre @p degree is a positive even number.
    */
@@ -499,7 +511,7 @@ class MathematicalProgram {
   NewNonnegativePolynomial(const symbolic::Variables& indeterminates,
                            int degree, NonnegativePolynomial type);
 
-  /** Returns a pair of a SOS polynomial p = mᵀQm and the Grammian matrix Q,
+  /** Returns a pair of a SOS polynomial p = mᵀQm and the Gramian matrix Q,
    * where m is the @p monomial basis.
    * For example, `NewSosPolynomial(Vector2<Monomial>{x,y})` returns a
    * polynomial
@@ -512,7 +524,7 @@ class MathematicalProgram {
       const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis);
 
   /** Returns a pair of a SOS polynomial p = m(x)ᵀQm(x) of degree @p degree
-   * and the Grammian matrix Q that should be PSD, where m(x) is the
+   * and the Gramian matrix Q that should be PSD, where m(x) is the
    * result of calling `MonomialBasis(indeterminates, degree/2)`. For example,
    * `NewSosPolynomial({x}, 4)` returns a pair of a polynomial
    *   p = Q₍₀,₀₎x⁴ + 2Q₍₁,₀₎ x³ + (2Q₍₂,₀₎ + Q₍₁,₁₎)x² + 2Q₍₂,₁₎x + Q₍₂,₂₎
