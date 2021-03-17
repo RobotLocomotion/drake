@@ -19,7 +19,6 @@ drake_cc_package_library(
         ":collisions_exist_callback",
         ":contact_surface_utility",
         ":distance_to_point_callback",
-        ":distance_to_point_with_gradient",
         ":distance_to_shape_callback",
         ":find_collision_candidates_callback",
         ":hydroelastic_callback",
@@ -119,25 +118,6 @@ drake_cc_library(
         "//geometry:geometry_ids",
         "//geometry/query_results:signed_distance_to_point",
         "//math:geometric_transform",
-        "@fcl",
-    ],
-)
-
-drake_cc_library(
-    name = "distance_to_point_with_gradient",
-    srcs = ["distance_to_point_with_gradient.cc"],
-    hdrs = ["distance_to_point_with_gradient.h"],
-    install_hdrs_exclude = [
-        # This header includes `fcl` directly, which we do not want to
-        # expose externally.
-        "distance_to_point_with_gradient.h",
-    ],
-    deps = [
-        ":distance_to_point_callback",
-        ":proximity_utilities",
-        "//geometry:geometry_ids",
-        "//geometry/query_results:signed_distance_to_point_with_gradient",
-        "//math",
         "@fcl",
     ],
 )
@@ -642,14 +622,6 @@ drake_cc_googletest(
         "//common/test_utilities",
         "//geometry:utilities",
         "//math",
-    ],
-)
-
-drake_cc_googletest(
-    name = "distance_to_point_with_gradient_test",
-    deps = [
-        ":distance_to_point_with_gradient",
-        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
