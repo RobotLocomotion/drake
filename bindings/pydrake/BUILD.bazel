@@ -482,6 +482,16 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "geometry_render_engine_subclass_test",
+    flaky = True,
+    deps = [
+        ":geometry_py",
+        "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/systems:sensors_py",
+    ],
+)
+
+drake_py_unittest(
     name = "lcm_test",
     deps = [
         ":lcm_py",
