@@ -8,6 +8,7 @@
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -579,9 +580,24 @@ top-level documentation for :py:mod:`pydrake.math`.
               const Eigen::Ref<const VectorX<symbolic::Monomial>>&,
               MathematicalProgram::NonnegativePolynomial)>(
               &MathematicalProgram::NewNonnegativePolynomial),
-          py::arg("grammian"), py::arg("monomial_basis"), py::arg("type"),
+          py::arg("gramian"), py::arg("monomial_basis"), py::arg("type"),
           doc.MathematicalProgram.NewNonnegativePolynomial
-              .doc_3args_grammian_monomial_basis_type)
+              .doc_3args_gramian_monomial_basis_type)
+      .def("NewNonnegativePolynomial",
+          WrapDeprecated("Please use "
+                         "MathematicalProgram.NewNonnegativePolynomial(gramian,"
+                         " monomial_basis, type) instead. Notice that the "
+                         "first input argument should be gramian instead of "
+                         "grammian. This variant will be "
+                         "removed after 2021-05-01",
+              static_cast<symbolic::Polynomial (MathematicalProgram::*)(
+                  const Eigen::Ref<const MatrixX<symbolic::Variable>>&,
+                  const Eigen::Ref<const VectorX<symbolic::Monomial>>&,
+                  MathematicalProgram::NonnegativePolynomial)>(
+                  &MathematicalProgram::NewNonnegativePolynomial)),
+          py::arg("grammian"), py::arg("monomial_basis"), py::arg("type"),
+          "Same as NewNonnegativePolynomial, but the argument name is "
+          "incorrectly spelled as grammian")
       .def("NewNonnegativePolynomial",
           static_cast<std::pair<symbolic::Polynomial, MatrixXDecisionVariable> (
               MathematicalProgram::*)(const symbolic::Variables&, int degree,
