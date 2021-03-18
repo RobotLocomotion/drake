@@ -12,10 +12,7 @@ void apb11_pydrake_ColorRenderCamera_py_register(py::module &m) {
   called = true;
   using namespace drake::geometry::render;
 
-  py::class_<ColorRenderCamera> PyColorRenderCamera(
-      m, "ColorRenderCamera",
-      R"""(/** Collection of camera properties for cameras to be used with color/label 
- images.  */)""");
+  py::class_<ColorRenderCamera> PyColorRenderCamera(m, "ColorRenderCamera");
 
   PyColorRenderCamera
       .def(py::init<ColorRenderCamera const &>(), py::arg("arg0"))
@@ -27,13 +24,9 @@ void apb11_pydrake_ColorRenderCamera_py_register(py::module &m) {
            py::arg("show_window") = bool(false))
       .def("core",
            static_cast<RenderCameraCore const &(ColorRenderCamera::*)() const>(
-               &ColorRenderCamera::core),
-           R"""(/** This camera's core render properties.  */)""")
-      .def(
-          "show_window",
-          static_cast<bool (ColorRenderCamera::*)() const>(
-              &ColorRenderCamera::show_window),
-          R"""(/** If true, requests that the RenderEngine display the rendered image.  */)""")
+               &ColorRenderCamera::core))
+      .def("show_window", static_cast<bool (ColorRenderCamera::*)() const>(
+                              &ColorRenderCamera::show_window))
 
       ;
 }

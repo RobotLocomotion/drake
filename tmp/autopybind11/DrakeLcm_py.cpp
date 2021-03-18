@@ -38,10 +38,7 @@ void apb11_pydrake_DrakeLcm_py_register(py::module &m) {
   using namespace drake::lcm;
 
   py::class_<DrakeLcm, DrakeLcmInterface, DrakeLcm_trampoline> PyDrakeLcm(
-      m, "DrakeLcm",
-      R"""(/** 
- * A wrapper around a *real* LCM instance. 
- */)""");
+      m, "DrakeLcm");
 
   PyDrakeLcm.def(py::init<>())
       .def(py::init<::std::string>(), py::arg("lcm_url"))
@@ -60,20 +57,10 @@ void apb11_pydrake_DrakeLcm_py_register(py::module &m) {
                             DrakeLcmInterface::HandlerFunction)>(
                &DrakeLcm::Subscribe),
            py::arg("channel"), py::arg("arg1"))
-      .def(
-          "get_lcm_instance",
-          static_cast<::lcm::LCM *(DrakeLcm::*)()>(&DrakeLcm::get_lcm_instance),
-          R"""(/** 
- * (Advanced.) An accessor to the underlying LCM instance. The returned 
- * pointer is guaranteed to be valid for the duration of this object's 
- * lifetime. 
- */)""")
-      .def("get_lcm_url",
-           static_cast<::std::string (DrakeLcm::*)() const>(
-               &DrakeLcm::get_lcm_url),
-           R"""(/** 
- * Returns the LCM URL. 
- */)""")
+      .def("get_lcm_instance", static_cast<::lcm::LCM *(DrakeLcm::*)()>(
+                                   &DrakeLcm::get_lcm_instance))
+      .def("get_lcm_url", static_cast<::std::string (DrakeLcm::*)() const>(
+                              &DrakeLcm::get_lcm_url))
 
       ;
 }

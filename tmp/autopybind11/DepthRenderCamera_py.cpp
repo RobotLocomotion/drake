@@ -12,10 +12,7 @@ void apb11_pydrake_DepthRenderCamera_py_register(py::module &m) {
   called = true;
   using namespace drake::geometry::render;
 
-  py::class_<DepthRenderCamera> PyDepthRenderCamera(
-      m, "DepthRenderCamera",
-      R"""(/** Collection of camera properties for cameras to be used with depth images. 
- */)""");
+  py::class_<DepthRenderCamera> PyDepthRenderCamera(m, "DepthRenderCamera");
 
   PyDepthRenderCamera
       .def(py::init<DepthRenderCamera const &>(), py::arg("arg0"))
@@ -27,12 +24,10 @@ void apb11_pydrake_DepthRenderCamera_py_register(py::module &m) {
            py::arg("depth_range"))
       .def("core",
            static_cast<RenderCameraCore const &(DepthRenderCamera::*)() const>(
-               &DepthRenderCamera::core),
-           R"""(/** This camera's core render properties.  */)""")
+               &DepthRenderCamera::core))
       .def("depth_range",
            static_cast<DepthRange const &(DepthRenderCamera::*)() const>(
-               &DepthRenderCamera::depth_range),
-           R"""(/** The range of valid values for the depth camera.  */)""")
+               &DepthRenderCamera::depth_range))
 
       ;
 }

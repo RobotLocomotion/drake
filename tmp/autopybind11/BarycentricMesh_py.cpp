@@ -65,13 +65,11 @@ void apb11_pydrake_BarycentricMesh_py_register(py::module &m) {
                   const Eigen::Ref<const Eigen::Matrix<double, -1, 1, 0, -1, 1>,
                                    0, Eigen::InnerStride<1>> &)> const
                   &vector_func) { return self.MeshValuesFrom(vector_func); })
-      .def(
-          "get_all_mesh_points",
-          static_cast<::Eigen::Matrix<double, -1, -1, 0, -1, -1> (
-              BarycentricMesh<PyBarycentricMesh_double_0>::*)() const>(
-              &BarycentricMesh<
-                  PyBarycentricMesh_double_0>::get_all_mesh_points),
-          R"""(/// Returns a matrix with all of the mesh points, one per column.)""")
+      .def("get_all_mesh_points",
+           static_cast<::Eigen::Matrix<double, -1, -1, 0, -1, -1> (
+               BarycentricMesh<PyBarycentricMesh_double_0>::*)() const>(
+               &BarycentricMesh<
+                   PyBarycentricMesh_double_0>::get_all_mesh_points))
       .def("get_input_grid",
            static_cast<::std::vector<
                std::set<double, std::less<PyBarycentricMesh_double_0>,
@@ -92,15 +90,11 @@ void apb11_pydrake_BarycentricMesh_py_register(py::module &m) {
                   ::drake::EigenPtr<Eigen::Matrix<double, -1, 1, 0, -1, 1>>, 0,
                   Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
                   point) { return self.get_mesh_point(index, point); })
-      .def(
-          "get_mesh_point",
-          static_cast<::Eigen::Matrix<double, -1, 1, 0, -1, 1> (
-              BarycentricMesh<PyBarycentricMesh_double_0>::*)(int) const>(
-              &BarycentricMesh<PyBarycentricMesh_double_0>::get_mesh_point),
-          py::arg("index"),
-          R"""(/// Returns the position of a mesh point in the input space referenced by its 
-/// scalar index to @p point. 
-/// @param index must be in [0, get_num_mesh_points).)""")
+      .def("get_mesh_point",
+           static_cast<::Eigen::Matrix<double, -1, 1, 0, -1, 1> (
+               BarycentricMesh<PyBarycentricMesh_double_0>::*)(int) const>(
+               &BarycentricMesh<PyBarycentricMesh_double_0>::get_mesh_point),
+           py::arg("index"))
       .def("get_num_interpolants",
            static_cast<int (BarycentricMesh<PyBarycentricMesh_double_0>::*)()
                            const>(

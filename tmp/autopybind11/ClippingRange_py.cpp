@@ -12,10 +12,7 @@ void apb11_pydrake_ClippingRange_py_register(py::module &m) {
   called = true;
   using namespace drake::geometry::render;
 
-  py::class_<ClippingRange> PyClippingRange(
-      m, "ClippingRange",
-      R"""(/** Defines the near and far clipping planes for frustum-based (e.g. OpenGL) 
- RenderEngine cameras.  */)""");
+  py::class_<ClippingRange> PyClippingRange(m, "ClippingRange");
 
   PyClippingRange.def(py::init<ClippingRange const &>(), py::arg("arg0"))
       .def(py::init<double, double>(), py::arg("near"), py::arg("far"))

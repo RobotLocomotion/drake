@@ -12,13 +12,7 @@ void apb11_pydrake_RandomGenerator_py_register(py::module &m) {
   called = true;
   using namespace drake;
 
-  py::class_<RandomGenerator> PyRandomGenerator(
-      m, "RandomGenerator",
-      R"""(/// Defines Drake's canonical implementation of the UniformRandomBitGenerator 
-/// C++ concept (as well as a few conventional extras beyond the concept, e.g., 
-/// seeds).  This uses the 32-bit Mersenne Twister mt19937 by Matsumoto and 
-/// Nishimura, 1998.  For more information, see 
-/// https://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine)""");
+  py::class_<RandomGenerator> PyRandomGenerator(m, "RandomGenerator");
 
   PyRandomGenerator.def(py::init<RandomGenerator const &>(), py::arg("arg0"))
       .def(py::init<>())
