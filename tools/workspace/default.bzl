@@ -2,10 +2,12 @@
 
 load("@drake//tools/workspace:mirrors.bzl", "DEFAULT_MIRRORS")
 load("@drake//tools/workspace:os.bzl", "os_repository")
+load("@drake//tools/workspace/autopybind11_py:repository.bzl", "autopybind11_py_repository")  # noqa
 load("@drake//tools/workspace/bazel_skylib:repository.bzl", "bazel_skylib_repository")  # noqa
 load("@drake//tools/workspace/blas:repository.bzl", "blas_repository")
 load("@drake//tools/workspace/boost:repository.bzl", "boost_repository")
 load("@drake//tools/workspace/buildifier:repository.bzl", "buildifier_repository")  # noqa
+load("@drake//tools/workspace/castxml:repository.bzl", "castxml_repository")
 load("@drake//tools/workspace/cc:repository.bzl", "cc_repository")
 load("@drake//tools/workspace/ccd:repository.bzl", "ccd_repository")
 load("@drake//tools/workspace/cds:repository.bzl", "cds_repository")
@@ -14,6 +16,7 @@ load("@drake//tools/workspace/clp:repository.bzl", "clp_repository")
 load("@drake//tools/workspace/com_jidesoft_jide_oss:repository.bzl", "com_jidesoft_jide_oss_repository")  # noqa
 load("@drake//tools/workspace/common_robotics_utilities:repository.bzl", "common_robotics_utilities_repository")  # noqa
 load("@drake//tools/workspace/commons_io:repository.bzl", "commons_io_repository")  # noqa
+load("@drake//tools/workspace/configargparse_py:repository.bzl", "configargparse_py_repository")  # noqa
 load("@drake//tools/workspace/csdp:repository.bzl", "csdp_repository")
 load("@drake//tools/workspace/double_conversion:repository.bzl", "double_conversion_repository")  # noqa
 load("@drake//tools/workspace/doxygen:repository.bzl", "doxygen_repository")
@@ -65,6 +68,7 @@ load("@drake//tools/workspace/pybind11:repository.bzl", "pybind11_repository")
 load("@drake//tools/workspace/pycodestyle:repository.bzl", "pycodestyle_repository")  # noqa
 load("@drake//tools/workspace/pycps:repository.bzl", "pycps_repository")
 load("@drake//tools/workspace/pygame_py:repository.bzl", "pygame_py_repository")  # noqa
+load("@drake//tools/workspace/pygccxml_py:repository.bzl", "pygccxml_py_repository")  # noqa
 load("@drake//tools/workspace/python:repository.bzl", "python_repository")
 load("@drake//tools/workspace/qdldl:repository.bzl", "qdldl_repository")
 load("@drake//tools/workspace/ros_xacro:repository.bzl", "ros_xacro_repository")  # noqa
@@ -81,6 +85,7 @@ load("@drake//tools/workspace/suitesparse:repository.bzl", "suitesparse_reposito
 load("@drake//tools/workspace/tinyobjloader:repository.bzl", "tinyobjloader_repository")  # noqa
 load("@drake//tools/workspace/tinyxml2:repository.bzl", "tinyxml2_repository")
 load("@drake//tools/workspace/tinyxml:repository.bzl", "tinyxml_repository")
+load("@drake//tools/workspace/toposort_py:repository.bzl", "toposort_py_repository")  # noqa
 load("@drake//tools/workspace/uritemplate_py:repository.bzl", "uritemplate_py_repository")  # noqa
 load("@drake//tools/workspace/voxelized_geometry_tools:repository.bzl", "voxelized_geometry_tools_repository")  # noqa
 load("@drake//tools/workspace/vtk:repository.bzl", "vtk_repository")
@@ -99,6 +104,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
           be useful if a WORKSPACE file has already supplied its own external
           of a given name.
     """
+    if "autopybind11_py" not in excludes:
+        autopybind11_py_repository(name = "autopybind11_py", mirrors = mirrors)
     if "bazel_skylib" not in excludes:
         bazel_skylib_repository(name = "bazel_skylib", mirrors = mirrors)
     if "blas" not in excludes:
@@ -107,6 +114,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         boost_repository(name = "boost")
     if "buildifier" not in excludes:
         buildifier_repository(name = "buildifier", mirrors = mirrors)
+    if "castxml" not in excludes:
+        castxml_repository(name = "castxml", mirrors = mirrors)
     if "cc" not in excludes:
         cc_repository(name = "cc")
     if "ccd" not in excludes:
@@ -123,6 +132,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         common_robotics_utilities_repository(name = "common_robotics_utilities", mirrors = mirrors)  # noqa
     if "commons_io" not in excludes:
         commons_io_repository(name = "commons_io", mirrors = mirrors)
+    if "configargparse_py" not in excludes:
+        configargparse_py_repository(name = "configargparse_py", mirrors = mirrors)  # noqa
     if "csdp" not in excludes:
         csdp_repository(name = "csdp", mirrors = mirrors)
     if "double_conversion" not in excludes:
@@ -227,6 +238,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         pycps_repository(name = "pycps", mirrors = mirrors)
     if "pygame_py" not in excludes:
         pygame_py_repository(name = "pygame_py", mirrors = mirrors)
+    if "pygccxml_py" not in excludes:
+        pygccxml_py_repository(name = "pygccxml_py", mirrors = mirrors)
     if "python" not in excludes:
         python_repository(name = "python")
     if "qdldl" not in excludes:
@@ -259,6 +272,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         tinyxml2_repository(name = "tinyxml2")
     if "tinyxml" not in excludes:
         tinyxml_repository(name = "tinyxml")
+    if "toposort_py" not in excludes:
+        toposort_py_repository(name = "toposort_py", mirrors = mirrors)
     if "uritemplate_py" not in excludes:
         uritemplate_py_repository(name = "uritemplate_py", mirrors = mirrors)
     if "voxelized_geometry_tools" not in excludes:

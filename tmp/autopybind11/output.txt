@@ -1,0 +1,1006 @@
++ echo /home/eacousineau/proj/tri/repo/branches/drake/master/drake/tmp/autopybind11/output.txt
+/home/eacousineau/proj/tri/repo/branches/drake/master/drake/tmp/autopybind11/output.txt
++ bazel build //bindings/pydrake:documentation_pybind.h
+INFO: Invocation ID: e2e69ba3-0fc5-461a-96ee-3dabbff6bfb8
+Loading: 
+Loading: 0 packages loaded
+INFO: Build option --run_under has changed, discarding analysis cache.
+Analyzing: target //bindings/pydrake:documentation_pybind.h (0 packages loaded, 0 targets configured)
+INFO: Analyzed target //bindings/pydrake:documentation_pybind.h (0 packages loaded, 20224 targets configured).
+
+INFO: Found 1 target...
+[0 / 2] [Prepa] BazelWorkspaceStatusAction stable-status.txt
+Target //bindings/pydrake:documentation_pybind.h up-to-date:
+  bazel-bin/bindings/pydrake/documentation_pybind.h
+INFO: Elapsed time: 1.980s, Critical Path: 0.04s
+INFO: 1 process: 1 internal.
+INFO: Build completed successfully, 1 total action
+INFO: Build completed successfully, 1 total action
++ cat ./bazel-bin/bindings/pydrake/documentation_pybind.h
++ bazel run '--run_under=env PYTHONUNBUFFERED=1' //bindings/pydrake:autopybind11_example -- --debug --output_dir=/home/eacousineau/proj/tri/repo/branches/drake/master/drake/tmp/autopybind11
+INFO: Invocation ID: 068a99a3-d8ac-4ad8-b2ef-2f0de281a731
+Loading: 
+Loading: 0 packages loaded
+INFO: Build option --run_under has changed, discarding analysis cache.
+Analyzing: target //bindings/pydrake:autopybind11_example (0 packages loaded, 0 targets configured)
+INFO: Analyzed target //bindings/pydrake:autopybind11_example (0 packages loaded, 20288 targets configured).
+INFO: Found 1 target...
+[0 / 6] [Prepa] BazelWorkspaceStatusAction stable-status.txt
+Target //bindings/pydrake:autopybind11_example up-to-date:
+  bazel-bin/bindings/pydrake/autopybind11_example
+INFO: Elapsed time: 1.003s, Critical Path: 0.02s
+INFO: 1 process: 1 internal.
+INFO: Build completed successfully, 1 total action
+INFO: Running command line: /bin/bash -c 'env PYTHONUNBUFFERED=1 bazel-bin/bindings/pydrake/autopybind11_example --debug '\''--output_dir=/home/eacousineau/proj/tri/repo/branches/drake/master/drake/tmp/autopybind11'\'''
+INFO: Build completed successfully, 1 total action
+Running autopybind11...
++ /usr/bin/python3 -m autopybind11 --stage=2 --module_name=pydrake --castxml /mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/drake/external/castxml/castxml_bin -o /home/eacousineau/proj/tri/repo/branches/drake/master/drake/tmp/autopybind11 -y /mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/drake/bindings/pydrake/autopybind11_example.yaml -rs /mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/drake/bindings/pydrake/autopybind11_example.rsp
+Extracted:
+  archive: /mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/drake/bindings/pydrake/autopybind11_example_headers.tar
+  tmp_dir: /tmp/tmpmwsccf3u
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("lcmtypes") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/lcmtypes_bot2_core/lcmtypes") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/lcmtypes_bot2_core/lcmtypes") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/lcmtypes_bot2_core") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/lcmtypes_bot2_core") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/eigen/include/_usr_include_eigen3") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/fmt/include") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/lcmtypes_robotlocomotion/lcmtypes") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/lcmtypes_robotlocomotion/lcmtypes") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/lcmtypes_robotlocomotion") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/lcmtypes_robotlocomotion") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/optitrack_driver/lcmtypes") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/optitrack_driver/lcmtypes") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/nlopt/include") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/nlopt/include") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/ibex/opt/libibex/2.7.4/include") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/ibex/opt/libibex/2.7.4/include") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/ibex/opt/libibex/2.7.4/include/ibex") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/ibex/opt/libibex/2.7.4/include/ibex") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/ibex/opt/libibex/2.7.4/include/ibex/3rd") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/ibex/opt/libibex/2.7.4/include/ibex/3rd") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/ipopt/include/_usr_include_coin") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/ipopt/include/_usr_include_coin") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/vtk/include/vtk-8.2") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/vtk/include/vtk-8.2") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/double_conversion/include") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/double_conversion/include") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/libjpeg/include") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/libjpeg/include") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/libpng/include/_usr_include_libpng16") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/libpng/include/_usr_include_libpng16") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/libtiff/include/_usr_include_x86_64-linux-gnu") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/libtiff/include/_usr_include_x86_64-linux-gnu") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/glew/include/_usr_include_libdrm") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/glew/include/_usr_include_libdrm") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/opengl/include") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/opengl/include") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/ignition_math/include") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/ignition_math/include") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/spdlog/include") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/yaml_cpp/include") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/yaml_cpp/include") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/boost") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/boost") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/lcmtypes_drake_cc") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/acrobot") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/allegro") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/body_acceleration") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/body_motion_data") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/piecewise_polynomial") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/polynomial_matrix") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/polynomial") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/body_wrench_data") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/call_python") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/constrained_values") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/contact_information") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/contact_results_for_viz") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/hydroelastic_contact_surface_for_viz") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/hydroelastic_contact_surface_tri_for_viz") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/hydroelastic_quadrature_per_point_data_for_viz") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/point_pair_contact_info_for_viz") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/desired_body_motion") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/desired_centroidal_momentum_dot") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/desired_dof_motions") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/drake_signal") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/iiwa") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/inverse_dynamics_debug_info") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/jaco") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/joint_pd_override") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/manipulator_plan_move_end_effector") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/panda") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/planar_manipuland_status") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/planar_gripper") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/plan_eval_debug_info") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/qp_controller_input") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/support_data") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/whole_body_data") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/zmp_data") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/qp_input") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/resolved_contact") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/robot_plan") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/schunk") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/scope") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/viewer") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/viewer2_comms") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes/_virtual_includes/zmp_com_observer_state") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/drake_marker_shared_library") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/eigen") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/fmt") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/optitrack_driver") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/optitrack_driver") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/nlopt") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/nlopt") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/ibex") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/ibex") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/libblas") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/libblas") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/liblapack") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/liblapack") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/zlib") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/zlib") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/ipopt") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/ipopt") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/vtk") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/vtk") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/double_conversion") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/double_conversion") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/liblz4") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/liblz4") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/liblzma") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/liblzma") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/libjpeg") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/libjpeg") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/libpng") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/libpng") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/libtiff") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/libtiff") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/glew") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/glew") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/opengl") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/opengl") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/x11") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/x11") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/ignition_math") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/ignition_math") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/spdlog") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/tinyxml2") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/tinyxml2") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/yaml_cpp") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/yaml_cpp") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/vector") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/default_scalars") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/autodiff") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/cond") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/double") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/dummy_value") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/essential") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/symbolic") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/drake_bool") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/extract_double") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/nice_type_name") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/nice_type_name_override_header") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/hash") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/random") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/_symbolic_private_headers_impl") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/unused") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/name_value") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/leaf_system") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/leaf_context") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/cache_and_dependency_tracker") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/framework_common") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/identifier") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/type_safe_index") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/value") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/copyable_unique_ptr") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/is_cloneable") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/reset_on_copy") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/context") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/context_base") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/parameters") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/abstract_values") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/discrete_values") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/system_scalar_converter") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/state") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/continuous_state") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/pointer_cast") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/leaf_output_port") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/cache_entry") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/output_port") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/output_port_base") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/port_base") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/model_values") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/system") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/event_collection") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/input_port") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/input_port_base") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/value_to_abstract_value") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/system_base") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/system_constraint") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/system_output") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/value_checker") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/system_visitor") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/witness_function") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/system_symbolic_inspector") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/polynomial") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/fcl/include") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/fcl/include") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/ccd/src") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/ccd/src") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/tinyobjloader") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/tinyobjloader") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/sdformat/include") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/sdformat/include") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/sdformat/src/urdf") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/sdformat/src/urdf") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/find_resource") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/filesystem") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/ghc_filesystem/_virtual_includes/ghc_filesystem") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/find_runfiles") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/_virtual_includes/scene_graph") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/_virtual_includes/geometry_state") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/_virtual_includes/frame_kinematics") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/_virtual_includes/geometry_ids") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/_virtual_includes/utilities") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/common") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/autodiffxd_make_coherent") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/drake_path") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/is_approx_equal_abstol") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/is_less_than_comparable") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/reset_after_move") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/scope_exit") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/scoped_singleton") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/sorted_pair") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/sorted_vectors_have_intersection") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/symbolic_decompose") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/_virtual_includes/temp_directory") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/geometric_transform") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/_virtual_includes/geometry_frame") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/_virtual_includes/geometry_index") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/_virtual_includes/geometry_instance") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/_virtual_includes/geometry_roles") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/_virtual_includes/geometry_properties") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/_virtual_includes/rgba") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/_virtual_includes/shape_specification") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/_virtual_includes/geometry_set") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/_virtual_includes/geometry_version") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/_virtual_includes/internal_frame") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/_virtual_includes/internal_geometry") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/_virtual_includes/proximity_engine") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/proximity") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/bvh") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/obb") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/posed_half_space") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/plane") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/surface_mesh") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/volume_mesh") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/collision_filter_legacy") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/proximity_utilities") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/sorted_triplet") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/collisions_exist_callback") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/contact_surface_utility") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/distance_to_point_callback") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/query_results/_virtual_includes/signed_distance_to_point") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/distance_to_point_with_gradient") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/query_results/_virtual_includes/signed_distance_to_point_with_gradient") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/math") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/autodiff") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/barycentric") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/bspline_basis") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/compute_numerical_gradient") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/continuous_algebraic_riccati_equation") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/continuous_lyapunov_equation") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/discrete_algebraic_riccati_equation") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/discrete_lyapunov_equation") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/eigen_sparse_triplet") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/evenly_distributed_pts_on_sphere") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/gradient") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/vector3_util") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/gray_code") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/jacobian") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/matrix_util") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/orthonormal_basis") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/quadratic_form") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/saturate") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/wrap_to") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/distance_to_shape_callback") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/query_results/_virtual_includes/signed_distance_pair") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/find_collision_candidates_callback") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/hydroelastic_callback") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/hydroelastic_internal") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/make_box_field") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/mesh_field") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/make_box_mesh") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/volume_to_surface_mesh") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/make_capsule_mesh") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/meshing_utilities") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/make_cylinder_field") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/make_cylinder_mesh") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/make_ellipsoid_field") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/make_ellipsoid_mesh") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/make_sphere_mesh") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/tessellation_strategy") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/make_sphere_field") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/obj_to_surface_mesh") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/_virtual_includes/proximity_properties") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/plant/_virtual_includes/coulomb_friction") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/mesh_half_space_intersection") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/query_results/_virtual_includes/contact_surface") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/mesh_intersection") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/mesh_plane_intersection") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/penetration_as_point_pair_callback") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/query_results/_virtual_includes/penetration_as_point_pair") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/mesh_to_vtk") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/query_results/_virtual_includes/query_results") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/render/_virtual_includes/render_engine") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/render/_virtual_includes/camera_properties") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/render/_virtual_includes/render_camera") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/sensors/_virtual_includes/camera_info") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/framework") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/diagram") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/diagram_context") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/diagram_state") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/diagram_continuous_state") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/diagram_discrete_values") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/diagram_output_port") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/diagram_builder") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/single_output_vector_source") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/system_html") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/framework/_virtual_includes/vector_system") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/render/_virtual_includes/render_label") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/sensors/_virtual_includes/image") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/sensors/_virtual_includes/color_palette") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/_virtual_includes/scene_graph_inspector") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/rendering/_virtual_includes/pose_bundle") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/rendering/_virtual_includes/frame_velocity") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/math/_virtual_includes/spatial_algebra") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/render/_virtual_includes/render_engine_vtk") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/render/_virtual_includes/render_engine_vtk_base") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/render/shaders/_virtual_includes/depth_shaders") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/sensors/_virtual_includes/vtk_util") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/manipulation/schunk_wsg/_virtual_includes/schunk_wsg_constants") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/primitives/_virtual_includes/matrix_gain") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/primitives/_virtual_includes/linear_system") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/primitives/_virtual_includes/affine_system") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/manipulation/schunk_wsg/_virtual_includes/schunk_wsg_position_controller") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/primitives/_virtual_includes/discrete_derivative") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/primitives/_virtual_includes/multiplexer") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/primitives/_virtual_includes/pass_through") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/parsing/_virtual_includes/parsing") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/parsing/_virtual_includes/detail_misc") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/parsing/_virtual_includes/package_map") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/plant/_virtual_includes/plant") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/plant/_virtual_includes/calc_distance_and_time_derivative") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/plant/_virtual_includes/multibody_plant_core") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/plant/_virtual_includes/contact_jacobians") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/plant/_virtual_includes/contact_results") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/plant/_virtual_includes/hydroelastic_contact_info") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/plant/_virtual_includes/hydroelastic_quadrature_point_data") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/math/_virtual_includes/math") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/plant/_virtual_includes/point_pair_contact_info") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/tree/_virtual_includes/multibody_tree_indexes") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/plant/_virtual_includes/discrete_contact_pair") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/plant/_virtual_includes/externally_applied_spatial_force") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/plant/_virtual_includes/hydroelastic_traction") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/triangle_quadrature/_virtual_includes/triangle_quadrature") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/triangle_quadrature/_virtual_includes/triangle_quadrature_routine") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/triangle_quadrature/_virtual_includes/triangle_quadrature_rules") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/plant/_virtual_includes/tamsi_solver") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/contact_solvers/_virtual_includes/contact_solver") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/contact_solvers/_virtual_includes/contact_solver_results") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/contact_solvers/_virtual_includes/contact_solver_utils") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/contact_solvers/_virtual_includes/point_contact_data") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/contact_solvers/_virtual_includes/linear_operator") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/contact_solvers/_virtual_includes/system_dynamics_data") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/contact_solvers/_virtual_includes/sparse_linear_operator") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/hydroelastics/_virtual_includes/hydroelastic_engine") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/topology/_virtual_includes/multibody_graph") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/tree/_virtual_includes/tree") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/tree/_virtual_includes/articulated_body_inertia") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/tree/_virtual_includes/spatial_inertia") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/tree/_virtual_includes/rotational_inertia") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/tree/_virtual_includes/unit_inertia") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/tree/_virtual_includes/multibody_element") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/tree/_virtual_includes/multibody_tree_topology") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/tree/_virtual_includes/multibody_tree_caches") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/tree/_virtual_includes/multibody_tree_core") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/plant/_virtual_includes/propeller") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/parsing/_virtual_includes/detail_scene_graph") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/parsing/_virtual_includes/detail_sdf_parser") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/parsing/_virtual_includes/detail_urdf_parser") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/parsing/_virtual_includes/model_directives") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/schema/_virtual_includes/transform") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/schema/_virtual_includes/rotation") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/schema/_virtual_includes/stochastic") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/parsing/_virtual_includes/parser") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/parsing/_virtual_includes/process_model_directives") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/multibody/parsing/_virtual_includes/scoped_names") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/yaml/_virtual_includes/yaml_read_archive") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/controllers/_virtual_includes/inverse_dynamics_controller") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/controllers/_virtual_includes/inverse_dynamics") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/controllers/_virtual_includes/pid_controller") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/controllers/_virtual_includes/state_feedback_controller_interface") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/primitives/_virtual_includes/adder") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/primitives/_virtual_includes/constant_vector_source") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/primitives/_virtual_includes/demultiplexer") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/sensors/_virtual_includes/rgbd_sensor") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/primitives/_virtual_includes/zero_order_hold") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/rendering/_virtual_includes/pose_vector") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/ghc_filesystem") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/ghc_filesystem") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/bazel_tools") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/bazel_tools") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/fcl") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/fcl") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/ccd") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/ccd") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/sdformat") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/sdformat") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/tinyxml") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/tinyxml") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/glib/include/_usr_include_glib-2.0") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/glib/include/_usr_include_glib-2.0") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/glib/include/_usr_lib_x86_64-linux-gnu_glib-2.0_include") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/glib/include/_usr_lib_x86_64-linux-gnu_glib-2.0_include") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcm/_virtual_includes/lcm") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcm/_virtual_includes/drake_lcm") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcm/_virtual_includes/interface") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcm/_virtual_includes/lcm_messages") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcm/_virtual_includes/lcm_log") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcm/_virtual_includes/mock") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcm/_virtual_includes/real") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/manipulation/kuka_iiwa/_virtual_includes/iiwa_command_sender") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/manipulation/kuka_iiwa/_virtual_includes/iiwa_constants") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/manipulation/kuka_iiwa/_virtual_includes/iiwa_status_receiver") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/manipulation/schunk_wsg/_virtual_includes/schunk_wsg_lcm") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/lcm/_virtual_includes/lcm") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/lcm/_virtual_includes/connect_lcm_scope") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/lcm/_virtual_includes/lcm_publisher_system") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/lcm/_virtual_includes/serializer") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/lcm/_virtual_includes/lcm_interface_system") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/lcm/_virtual_includes/lcm_log_playback_system") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/lcm/_virtual_includes/lcm_pubsub_system") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/lcm/_virtual_includes/lcm_subscriber_system") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/lcm/_virtual_includes/lcm_scope_system") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/primitives/_virtual_includes/primitives") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/primitives/_virtual_includes/barycentric_system") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/primitives/_virtual_includes/constant_value_source") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/primitives/_virtual_includes/discrete_time_delay") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/primitives/_virtual_includes/first_order_low_pass_filter") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/primitives/_virtual_includes/gain") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/primitives/_virtual_includes/integrator") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/primitives/_virtual_includes/port_switch") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/primitives/_virtual_includes/random_source") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/primitives/_virtual_includes/saturation") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/primitives/_virtual_includes/signal_log") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/primitives/_virtual_includes/signal_logger") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/primitives/_virtual_includes/sine") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/primitives/_virtual_includes/symbolic_vector_system") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/primitives/_virtual_includes/trajectory_affine_system") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/trajectories/_virtual_includes/trajectories") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/trajectories/_virtual_includes/bspline_trajectory") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/trajectories/_virtual_includes/trajectory") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/trajectories/_virtual_includes/discrete_time_trajectory") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/trajectories/_virtual_includes/piecewise_polynomial") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/trajectories/_virtual_includes/piecewise_trajectory") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/trajectories/_virtual_includes/piecewise_pose") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/common/trajectories/_virtual_includes/piecewise_quaternion") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/primitives/_virtual_includes/trajectory_linear_system") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/primitives/_virtual_includes/trajectory_source") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/primitives/_virtual_includes/wrap_to_system") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/sensors/_virtual_includes/lcm_image_array_to_images") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/sensors/_virtual_includes/lcm_image_traits") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("external/glib") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/external/glib") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/controllers/_virtual_includes/linear_quadratic_regulator") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/analysis/_virtual_includes/simulator") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/analysis/_virtual_includes/runge_kutta2_integrator") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/analysis/_virtual_includes/integrator_base") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/analysis/_virtual_includes/runge_kutta3_integrator") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/analysis/_virtual_includes/simulator_config") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/systems/analysis/_virtual_includes/simulator_status") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+Warning: Class ShapeReifier  was not found in current module or any linked module
+Warning: Class System<float>  was not found in current module or any linked module
+Warning member Accept will not be bound due to unmet dependency SystemVisitor<double>
+Warning: Class LeafSystem<float> will not have inheritance relationship with class System<float> in binding code.
+
+                                Unable to locate class definition.
+Warning member Accept will not be bound due to unmet dependency SystemVisitor<float>
+Warning member DoCalcWitnessValue will not be bound due to unmet dependency WitnessFunction<float>
+Warning member GetGraphvizInputPortToken will not be bound due to unmet dependency InputPort<float>
+Warning member DeclareVectorInputPort will not be bound due to unmet dependency InputPort<float>
+Warning member DeclareAbstractInputPort will not be bound due to unmet dependency InputPort<float>
+Warning member DeclareVectorInputPort will not be bound due to unmet dependency InputPort<float>
+Warning member DeclareAbstractInputPort will not be bound due to unmet dependency InputPort<float>
+Warning member DeclareAbstractInputPort will not be bound due to unmet dependency InputPort<float>
+Warning member DeclareAbstractInputPort will not be bound due to unmet dependency InputPort<float>
+Warning member DeclareVectorInputPort will not be bound due to unmet dependency InputPort<float>
+Warning member DeclareVectorInputPort will not be bound due to unmet dependency InputPort<float>
+Warning member DoCalcWitnessValue will not be bound due to unmet dependency WitnessFunction<float>
+Warning member GetGraphvizInputPortToken will not be bound due to unmet dependency InputPort<float>
+Warning: Class RenderEngine will not have inheritance relationship with class ShapeReifier in binding code.
+
+                                Unable to locate class definition.
+Warning member Accept will not be bound due to unmet dependency SystemVisitor<double>
+Warning member Accept will not be bound due to unmet dependency SystemVisitor<double>
+Warning member get_context_sizes will not be bound due to unmet dependency ContextSizes
+Warning member get_mutable_context_sizes will not be bound due to unmet dependency ContextSizes
+Warning member get_context_sizes will not be bound due to unmet dependency ContextSizes
+Warning member context_sizes_ will not be bound due to unmet dependency ContextSizes
+Warning member get_context_sizes will not be bound due to unmet dependency ContextSizes
+Warning member get_context_sizes will not be bound due to unmet dependency ContextSizes
+Warning member get_mutable_context_sizes will not be bound due to unmet dependency ContextSizes
+Warning member type_ will not be bound due to unmet dependency Type
+Warning member get_type will not be bound due to unmet dependency Type
+Warning: All instances of AutoDiffXd were unable to be found
+There were 1 names to find but 0 class(es) were returned
+Warning member Accept will not be bound due to unmet dependency SystemVisitor<double>
+Warning member Convert will not be bound due to unmet dependency Image<drake::systems::sensors::PixelType::kDepth16U>
+
+
+autopybind11 run time: 93.1875s
+
+Wrote files to: /home/eacousineau/proj/tri/repo/branches/drake/master/drake/tmp/autopybind11

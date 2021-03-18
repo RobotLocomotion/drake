@@ -1,0 +1,164 @@
+# For additional examples, see the README.rst or
+#    https://gitlab.kitware.com/autopybind11/autopybind11/-/tree/master/Tests
+#    https://github.com/josephsnyder/drake-external-examples/tree/add_binding_example_2/drake_cmake_bindings/pydrake
+
+files:
+  "drake/common/random.h":
+    namespaces:
+      drake:
+        classes:
+          RandomGenerator: {}
+  "drake/common/constants.h":
+    namespaces:
+      drake:
+        enums:
+          ToleranceType: {}
+  "drake/math/autodiff.h":
+    namespaces:
+      drake:
+        namespaces:
+          math:
+            classes:
+              AutoDiffXd: {}
+  # Currently broken to externals fighting against castxml.
+  "drake/lcm/drake_lcm_interface.h":
+    namespaces:
+      drake:
+        namespaces:
+          lcm:
+            classes:
+              DrakeLcmInterface: {}
+              DrakeSubscriptionInterface: {}
+  "drake/lcm/drake_lcm.h":
+    namespaces:
+      drake:
+        namespaces:
+          lcm:
+            classes:
+              DrakeLcm: {}
+  "drake/lcm/drake_mock_lcm.h":
+    namespaces:
+      drake:
+        namespaces:
+          lcm:
+            classes:
+              DrakeMockLcm: {}
+  "drake/math/rotation_matrix.h":
+    namespaces:
+      drake:
+        namespaces:
+          math:
+            classes:
+              RotationMatrix:
+                inst: ["double", "drake::AutoDiffXd"]
+              RollPitchYaw:
+                inst: ["double", "drake::AutoDiffXd"]
+  "drake/math/barycentric.h":
+    namespaces:
+      drake:
+        namespaces:
+          math:
+            classes:
+              BarycentricMesh:
+                inst: ["double"]
+  "drake/perception/point_cloud_flags.h":
+    namespaces:
+      drake:
+        namespaces:
+          perception:
+            namespaces:
+              pc_flags:
+                enums:
+                  BaseField:
+                classes:
+                  Fields: {}
+  "drake/perception/point_cloud.h":
+    namespaces:
+      drake:
+        namespaces:
+          perception:
+            classes:
+              PointCloud: {}
+  "drake/perception/depth_image_to_point_cloud.h":
+    namespaces:
+      drake:
+        namespaces:
+          perception:
+            classes:
+              DepthImageToPointCloud: {}
+  "drake/common/symbolic.h":
+    namespaces:
+        drake:
+          namespaces:
+            symbolic:
+              classes:
+                Variable: {}
+                Monomial: {}
+                Expression: {}
+                Environment: {}
+                Formula: {}
+                # TODO(eric.cousineau): FormulaCell is not important for Python
+                # public API at the moment. No need to fix this.
+                # # TODO(joseph.snyder): FormulaCell marked as
+                # # class_declaration_t not a class_t
+                # # Therefore, we cannot properly check for abstract.
+                # # Maybe we need another?
+                # FormulaCell: {}
+  "drake/systems/framework/leaf_system.h":
+    namespaces:
+      drake:
+        namespaces:
+          systems:
+            classes:
+              LeafSystem:
+                inst: ["double", "drake::AutoDiffXd", "float"]
+                cust_name: ["LeafSystem"]
+                skiplist:
+                  member_functions:
+                    - DeclareAbstractState
+                    - DoCalcWitnessValue
+  "drake/systems/framework/system.h":
+    namespaces:
+      drake:
+        namespaces:
+          systems:
+            classes:
+              System:
+                inst: [double, "drake::AutoDiffXd"]
+                skiplist:
+                  member_functions:
+                    - AddConstraint
+  "drake/systems/framework/system_base.h":
+    namespaces:
+      drake:
+        namespaces:
+          systems:
+            classes:
+              SystemBase:
+                skiplist:
+                  member_functions:
+                    - AddInputPort
+                    - AddOutputPort
+  "drake/systems/framework/framework_common.h":
+    namespaces:
+      drake:
+        namespaces:
+          systems:
+            namespaces:
+              internal:
+                classes:
+                  SystemMessageInterface: {}
+  "drake/geometry/render/render_engine.h":
+    namespaces:
+      drake:
+        namespaces:
+          geometry:
+            namespaces:
+              render:
+                classes:
+                  ClippingRange: {}
+                  RenderCameraCore: {}
+                  ColorRenderCamera: {}
+                  DepthRange: {}
+                  DepthRenderCamera: {}
+                  RenderEngine: {}

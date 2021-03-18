@@ -1,0 +1,9 @@
+# -*- python -*-
+
+load("@drake//tools/skylark:py.bzl", "py_library")
+
+py_library(
+    name = "pygccxml_py",
+    srcs = glob(["pygccxml/**/*.py"]),
+    visibility = ["//visibility:public"],
+)
