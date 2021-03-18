@@ -1,7 +1,10 @@
 #include "drake/geometry/proximity/mesh_half_space_intersection.h"
 
 #include <limits>
+#include <memory>
 #include <utility>
+#include <variant>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -11,6 +14,8 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/contact_surface_utility.h"
 #include "drake/geometry/utilities.h"
+#include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
 
 namespace drake {
 namespace geometry {
@@ -20,7 +25,9 @@ namespace {
 using Eigen::Vector3d;
 using math::RigidTransform;
 using math::RotationMatrix;
+using std::make_unique;
 using std::move;
+using std::unique_ptr;
 
 // Creates a SurfaceMesh of a box. The box is defined in frame B, centered on
 // Bo with its dimensions aligned with Bx, By, and Bz. The resultant mesh
@@ -147,8 +154,11 @@ SurfaceMesh<double> CreateOneTriangleMesh(const Vector3d& v0,
   return SurfaceMesh<double>(move(faces), move(vertices));
 }
 
+/* This test evaluates the *values* of the mesh-half space intersection
+ algorithm for all supported scalars (double and AutoDiffXd). The derivatives
+ for AutoDiffXd are tested below. */
 template <typename T>
-class MeshHalfspaceIntersectionTest : public ::testing::Test {
+class MeshHalfSpaceValueTest : public ::testing::Test {
  public:
   // Accessors for data structures used repeatedly.
   std::vector<SurfaceVertex<T>>& new_vertices_W() { return new_vertices_W_; }
@@ -282,11 +292,11 @@ class MeshHalfspaceIntersectionTest : public ::testing::Test {
   // mesh's frame F.
   std::unique_ptr<PosedHalfSpace<T>> half_space_F_;
 };  // namespace
-TYPED_TEST_SUITE_P(MeshHalfspaceIntersectionTest);
+TYPED_TEST_SUITE_P(MeshHalfSpaceValueTest);
 
 // Verifies that a triangle that lies fully outside of the half space yields an
 // empty intersection. This covers Case 4 in the code.
-TYPED_TEST_P(MeshHalfspaceIntersectionTest, NoIntersection) {
+TYPED_TEST_P(MeshHalfSpaceValueTest, NoIntersection) {
   // Create the mesh, constructing the vertices of the triangle to lie outside
   // the half space.
   const SurfaceMesh<double> mesh_F = CreateOneTriangleMesh(
@@ -304,7 +314,7 @@ TYPED_TEST_P(MeshHalfspaceIntersectionTest, NoIntersection) {
 
 // Verifies that a triangle that lies inside or on the half space yields
 // that same triangle. This covers Case 1 in the code.
-TYPED_TEST_P(MeshHalfspaceIntersectionTest, InsideOrOnIntersection) {
+TYPED_TEST_P(MeshHalfSpaceValueTest, InsideOrOnIntersection) {
   using T = TypeParam;
 
   // An arbitrary relationship between Frames W and F -- avoiding additive and
@@ -370,7 +380,7 @@ TYPED_TEST_P(MeshHalfspaceIntersectionTest, InsideOrOnIntersection) {
 // produces either (a) a degenerate intersection (if the other two vertices lie
 // outside the half space) or (b) the original triangle (if the other two
 // vertices lie within the half space). This covers Case 1.
-TYPED_TEST_P(MeshHalfspaceIntersectionTest, VertexOnHalfspaceIntersection) {
+TYPED_TEST_P(MeshHalfSpaceValueTest, VertexOnHalfspaceIntersection) {
   using T = TypeParam;
 
   // An arbitrary relationship between Frames W and F -- avoiding additive and
@@ -437,7 +447,7 @@ TYPED_TEST_P(MeshHalfspaceIntersectionTest, VertexOnHalfspaceIntersection) {
 // space produces either (a) a degenerate intersection (if the remaining vertex
 // lies outside the half space) or (b) the original triangle (if the other
 // vertex lies within the half space). This covers Case 1.
-TYPED_TEST_P(MeshHalfspaceIntersectionTest, EdgeOnHalfspaceIntersection) {
+TYPED_TEST_P(MeshHalfSpaceValueTest, EdgeOnHalfspaceIntersection) {
   using T = TypeParam;
 
   // An arbitrary relationship between Frames W and F -- avoiding additive and
@@ -509,7 +519,7 @@ TYPED_TEST_P(MeshHalfspaceIntersectionTest, EdgeOnHalfspaceIntersection) {
 
 // Verifies that a triangle that has two vertices within the half space and
 // another outside the half space produces a quadrilateral. This covers Case 2.
-TYPED_TEST_P(MeshHalfspaceIntersectionTest, QuadrilateralResults) {
+TYPED_TEST_P(MeshHalfSpaceValueTest, QuadrilateralResults) {
   using T = TypeParam;
 
   // An arbitrary relationship between Frames W and F -- avoiding additive and
@@ -569,7 +579,7 @@ TYPED_TEST_P(MeshHalfspaceIntersectionTest, QuadrilateralResults) {
 // Verifies that a triangle that has one vertex outside the half space, one
 // vertex inside the half space, and one vertex on the half space produces two
 // triangles, one degenerate and one non-degenerate. This test covers Case 2.
-TYPED_TEST_P(MeshHalfspaceIntersectionTest, OutsideInsideOn) {
+TYPED_TEST_P(MeshHalfSpaceValueTest, OutsideInsideOn) {
   using T = TypeParam;
 
   // An arbitrary relationship between Frames W and F -- avoiding additive and
@@ -627,7 +637,7 @@ TYPED_TEST_P(MeshHalfspaceIntersectionTest, OutsideInsideOn) {
 // Verifies that a triangle with one vertex inside the half space and two
 // vertices outside of the half space produces a triangle. This test covers
 // Case 3.
-TYPED_TEST_P(MeshHalfspaceIntersectionTest, OneInsideTwoOutside) {
+TYPED_TEST_P(MeshHalfSpaceValueTest, OneInsideTwoOutside) {
   using T = TypeParam;
 
   // An arbitrary relationship between Frames W and F -- avoiding additive and
@@ -677,19 +687,18 @@ TYPED_TEST_P(MeshHalfspaceIntersectionTest, OneInsideTwoOutside) {
 // Tests that a mesh of a box bisected by the half space produces the expected
 // number of faces and vertices (other unit tests in this file assess the
 // correctness of various kinds of triangle/half space intersections).
-TYPED_TEST_P(MeshHalfspaceIntersectionTest, BoxMesh) {
+TYPED_TEST_P(MeshHalfSpaceValueTest, BoxMesh) {
   using T = TypeParam;
 
   // An arbitrary relationship between Frames W and F -- avoiding additive and
   // multiplicative identities.
-  const RigidTransform<T> X_WF(
-      RotationMatrix<T>(
-          AngleAxis<T>{M_PI / 7, Vector3<T>{1, 2, 3}.normalized()}),
-      Vector3<T>{-0.25, 0.5, 0.75});
+  const RigidTransform<T> X_WF(RotationMatrix<T>(AngleAxis<T>{
+                                   M_PI / 7, Vector3<T>{1, 2, 3}.normalized()}),
+                               Vector3<T>{-0.25, 0.5, 0.75});
 
   // Set B to an arbitrarily chosen pose relative to F.
   RigidTransform<T> X_FB(math::RollPitchYaw<T>(M_PI_4, M_PI_4, M_PI_4),
-                               Vector3<T>(1.0, 2.0, 3.0));
+                         Vector3<T>(1.0, 2.0, 3.0));
   RigidTransform<double> X_FB_d = convert_to_double(X_FB);
 
   const SurfaceMesh<double> mesh_F = CreateBoxMesh(X_FB_d);
@@ -705,8 +714,8 @@ TYPED_TEST_P(MeshHalfspaceIntersectionTest, BoxMesh) {
     // triangles that _don't_ intersect (the two triangles on the +z face).
     std::vector<FIndex> tri_indices{FIndex{8}, FIndex{9}};
     const std::unique_ptr<SurfaceMesh<T>> intersection_mesh_W =
-        ConstructSurfaceMeshFromMeshHalfspaceIntersection(
-            mesh_F, half_space_F, tri_indices, X_WF);
+        ConstructSurfaceMeshFromMeshHalfspaceIntersection(mesh_F, half_space_F,
+                                                          tri_indices, X_WF);
     EXPECT_EQ(intersection_mesh_W, nullptr);
   }
 
@@ -718,8 +727,8 @@ TYPED_TEST_P(MeshHalfspaceIntersectionTest, BoxMesh) {
     std::iota(tri_indices.begin(), tri_indices.end(), FIndex{0});
 
     const std::unique_ptr<SurfaceMesh<T>> intersection_mesh_W =
-        ConstructSurfaceMeshFromMeshHalfspaceIntersection(
-            mesh_F, half_space_F, tri_indices, X_WF);
+        ConstructSurfaceMeshFromMeshHalfspaceIntersection(mesh_F, half_space_F,
+                                                          tri_indices, X_WF);
     // Total number of vertices:            22
     //   -------------------------------------
     //   vertices lying in half space:       4
@@ -739,7 +748,7 @@ TYPED_TEST_P(MeshHalfspaceIntersectionTest, BoxMesh) {
   }
 }
 
-REGISTER_TYPED_TEST_SUITE_P(MeshHalfspaceIntersectionTest, NoIntersection,
+REGISTER_TYPED_TEST_SUITE_P(MeshHalfSpaceValueTest, NoIntersection,
                             InsideOrOnIntersection,
                             VertexOnHalfspaceIntersection,
                             EdgeOnHalfspaceIntersection, QuadrilateralResults,
@@ -962,44 +971,497 @@ GTEST_TEST(CompupteContactSurfaceFromSoftHalfSpaceRigidMeshTest, BackfaceCull) {
   // this test if that proves to be a problem (highly unlikely).
 }
 
-// AutoDiff is not currently supported and should throw with an acceptable
-// message.
-GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest,
-           AutoDiffValued) {
-  using T = AutoDiffXd;
-  const RigidTransform<T> X_WF;
-
-  const SurfaceMesh<double> mesh_F =
-      CreateOneTriangleMesh({0, 0, 0}, {1, 0, 0}, {0, 1, 0});
-  const GeometryId mesh_id = GeometryId::get_new_id();
-  const Bvh<SurfaceMesh<double>> bvh_F(mesh_F);
-
-  // Construct the half-space.
-  const RigidTransform<T> X_WH;
-  const GeometryId hs_id = GeometryId::get_new_id();
-  const double pressure_scale{1.5};
-
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
-          hs_id, X_WH, pressure_scale, mesh_id, mesh_F, bvh_F, X_WF),
-      std::logic_error,
-      "AutoDiff-valued ContactSurface calculations are not currently "
-      "supported");
-}
-
 // TODO(SeanCurtis-TRI): All of the tests where we actually examine the mesh
 //  use a mesh with a _single_ triangle. In this case, the face-local index
 //  values are perfectly aligned with the mesh-local index values. This hides
 //  potential errors where the two sets of indices do _not_ align so nicely.
 //  Add a test where we intersect a face that doesn't use vertices 0, 1, and 2.
 
-// TODO(SeanCurtis-TRI): The AutoDiffXd type here is *largely* a smoke test.
-//  We're confirming that it builds and that it runs. We're also confirming that
-//  the _value_ is correct -- we have _not_ validated that the derivative values
-//  are correct. That still needs to be done when AutoDiffXd support for
-//  hydroelastics is fully supported.
 typedef ::testing::Types<double, AutoDiffXd> MyTypes;
-INSTANTIATE_TYPED_TEST_SUITE_P(My, MeshHalfspaceIntersectionTest, MyTypes);
+INSTANTIATE_TYPED_TEST_SUITE_P(My, MeshHalfSpaceValueTest, MyTypes);
+
+/* This test fixture enables some limited testing of the autodiff-valued contact
+ surface. It computes the intersection between a half space and simple triangle
+ mesh. The basic configuration looks like this:
+
+                                 b
+                               ╱│                   ▒ - portion of triangle mesh
+                              ╱ │                       inside the half space.
+                             ╱  │                   n - outward-pointing
+                ────────────╱   │────────────────       half space normal.
+               ╱░░░░░░░░a░░╱   h│░░░░░░░░░░░░░░╱    a, b, c, d - mesh vertices.
+              ╱░░░░░░░░░░░│\   ╱│░░░░░░░░░░░░░╱         In the rigid frame R,
+             ╱░░░░░░░░░░░░│ \ ╱▒│░░░░░░░░░░░░╱          a and b are at z = 0 and
+            ╱░░n░░░░░░░░░░│ g╱▒▒│░░░░░░░░░░░╱           c and d are at z = -1.
+           ╱░░░^░░░░░░░░░░│ ╱▒\▒│░░░░░░░░░░╱        f, g, h - vertices on the
+          ╱░░░░│░░░░░░░░░░│╱▒▒▒\│░░░░░░░░░╱             surface of the half
+         ╱░░░░░│░░░░░░░░░f│▒▒j▒╱░d░░░░░░░╱              space, formed by
+        ╱░░░░░░░░░░░░░░░░░│▒▒▒╱░░░░░░░░░╱               intersecting edges.
+       ╱░░░░░░░░░░░░░░░░░░│▒▒╱░░░░░░░░░╱            j - the centroid of quad
+      ╱░░░░░░░░░░░░░░░░░░░│▒╱░░░░░░░░░╱                 (cdgf). We don't show
+     ╱░░░░░░░░░░░░░░░░░░░░│╱░░░░░░░░░╱                  the centroid of triangle
+    ╱░░░░░░░░░░░░░░░░░░░░░c░░░░░░░░░╱                   (dgh).
+    ───────────────────────────────
+
+ In the image above, the rectangle mesh is perpendicular to the half space
+ boundary. The function TestPositionDerivative() will compute multiple contact
+ surfaces by varying the relative orientation of mesh and and half space. (See
+ notes for that function.) It uses AutoDiffXd to automatically compute the
+ derivatives of all calculations *with respect to the position of frame R's
+ origin*. This is selected because it's a simple derivative to reason about.
+
+ Each individual unit test will create a function that consumes a contact
+ surface, the pose of the surface X_WR, and the angle between mesh and Wz
+ (theta) and test some aspect of the mesh and its derivatives. The
+ TestPositionDerivative() invokes that function for each unique theta. */
+class MeshHalfSpaceDerivativesTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    /* Set up the *soft* half space. */
+    id_S_ = GeometryId::get_new_id();
+    pressure_scale_ = 1.5e5;
+
+    /* Set up the *rigid* mesh. */
+    using Vertex = SurfaceVertex<double>;
+    std::vector<Vertex> vertices{Vertex{Vector3d{0, -kWidth / 2, 0}},   // a
+                                 Vertex{Vector3d{0, kWidth / 2, 0}},    // b
+                                 Vertex{Vector3d{0, -kWidth / 2, -1}},  // c
+                                 Vertex{Vector3d{0, kWidth / 2, -1}}};  // d
+    using VIndex = SurfaceVertexIndex;
+    using Face = SurfaceFace;
+    std::vector<SurfaceFace> faces{{Face{VIndex(0), VIndex(3), VIndex(1)},
+                                    Face{VIndex(0), VIndex(2), VIndex(3)}}};
+    id_R_ = GeometryId::get_new_id();
+    mesh_R_ = make_unique<SurfaceMesh<double>>(move(faces), move(vertices));
+    bvh_R_ = make_unique<Bvh<SurfaceMesh<double>>>(*mesh_R_);
+  }
+
+  /* Test for a particular quantity of the contact surface with multiple
+   rotations. For each rotation, the mesh is positioned so that a fixed portion
+   (25%) of the mesh penetrates into the half space. For each configuration, the
+   evaluate_quantity() is invoked.
+
+   @param evaluate_quantity  A function that assess some aspect of the contact
+                             surface and its derivatives. It must be written
+                             to take a variety of relative poses between
+                             half space and mesh. The provided function should
+                             make use of googletest EXPECT_* macros to perform
+                             the assessment.
+   @param diff_wrt_position  If true, we differentiate w.r.t. Ro (origin of the
+                             rigid mesh's frame). If false, we differentiate
+                             w.r.t. theta -- R_WR is a rotation of theta radians
+                             around Wy. */
+  void TestPositionDerivative(
+      const std::function<void(const ContactSurface<AutoDiffXd>&,
+                               const RigidTransform<AutoDiffXd>&, double)>&
+          evaluate_quantity) {
+    /* Theta is the angle between the half space's normal (Wz) and the plane
+     of the rectangular mesh. At 90 degrees, the mesh lies parallel with the
+     half space surface -- we don't sample at 90 degrees.  */
+    for (const double theta :
+         {0.0, M_PI / 6, M_PI / 2 * 0.9, M_PI / 2 * 0.99}) {
+      /* Set the mesh so it's 25% in and 75% out of the half space. The x- and
+       y- components don't matter. We just want to make sure they aren't zero.
+       */
+      const double z = std::cos(theta) * 0.75;
+      const Vector3<AutoDiffXd> p_WR =
+          math::initializeAutoDiff(Vector3d{0.25, -0.7, z});
+      RigidTransform<AutoDiffXd> X_WR(
+          RotationMatrix<AutoDiffXd>::MakeYRotation(theta), p_WR);
+
+      auto surface = ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+          id_S_, X_WS_, pressure_scale_, id_R_, *mesh_R_, *bvh_R_, X_WR);
+      ASSERT_NE(surface, nullptr);
+
+      /* Categorize the surface vertices so that quantities that depend on
+       understanding the vertex categories can operate. */
+      CategorizeVertices(*surface, X_WR, theta);
+
+      /* Two triangles intersect; one gets cut into a quad, the other a
+       triangle. Together, they contribute 4 + 3 triangles to the contact
+       surface. */
+      ASSERT_EQ(surface->mesh_W().num_faces(), 7);
+
+      SCOPED_TRACE(fmt::format("theta = {:.5f} radians", theta));
+      evaluate_quantity(*surface, X_WR, theta);
+    }
+  }
+
+  /* Given the mesh corresponding to a contact surface, it categorizes each
+   vertex as being "original", "surface", or "centroid" (see the definition
+   of VertexCategory below).
+
+   This function makes a number of assumptions about the nature of the contact
+   surface. Specifically, it assumes that it is some variant that is illustrated
+   in the class documentation.
+
+     - The half space surface is the Wz = 0 plane.
+     - Vertices a and b lie outside the half space
+     - Vertices c and d lie inside the half space.
+     - Vertices ca  at the *same* known depth (based on the dimensions of the
+       rigid mesh, the rotation around Ry, and the position of Ro).
+
+   Invalidating any of these assumptions may lead to googletest assertions
+   failing or, worse yet, silent, erroneous categorizations. */
+  void CategorizeVertices(const ContactSurface<AutoDiffXd>& surface,
+                          const RigidTransform<AutoDiffXd>& X_WR,
+                          double theta) {
+    const SurfaceMesh<AutoDiffXd>& mesh_W = surface.mesh_W();
+    constexpr double kEps = std::numeric_limits<double>::epsilon();
+    vertex_data_.clear();
+    using VIndex = SurfaceVertexIndex;
+    /* Return the indices of the indicated vertex's neighbors. This assumes
+     that we have a contact surface with good topological properties (i.e., no
+     duplicated vertices such that two adjacent triangles reference the same
+     vertex index). */
+    auto find_neighbors = [&mesh_W](VIndex v) {
+      std::set<VIndex> neighbors;
+      for (SurfaceFaceIndex t(0); t < mesh_W.num_elements(); ++t) {
+        const auto& tri = mesh_W.element(t);
+        for (int i = 0; i < 3; ++i) {
+          if (tri.vertex(i) == v) {
+            neighbors.insert(tri.vertex((i + 1) % 3));
+            neighbors.insert(tri.vertex((i + 2) % 3));
+            break;
+          }
+        }
+      }
+      return neighbors;
+    };
+
+    const double Ro_z = X_WR.translation().z().value();
+    const double lowest_z = Ro_z - std::cos(theta);
+    for (VIndex i(0); i < mesh_W.num_vertices(); ++i) {
+      const Vector3<AutoDiffXd>& p_WV = mesh_W.vertex(i).r_MV();
+      if (p_WV.z().value() > -kEps) {
+        /* We stash a zero vector for now and will update it after all vertices
+         have been categorized. */
+        vertex_data_.push_back({kSurface, Vector3<double>::Zero()});
+      } else if (p_WV.z() < lowest_z + kEps) {
+        vertex_data_.push_back({kOriginal, 0});
+      } else {
+        vertex_data_.push_back({kCentroid, find_neighbors(i)});
+      }
+    }
+
+    /* Surface vertices will be adjacent to one or more surface vertices, one
+     or more centroid vertices, but only one original vertex. We can infer the
+     direction of the edge that intersected the half space boundary by looking
+     at the direction from the original vertex to the surface vertex. */
+    for (VIndex i(0); i < mesh_W.num_vertices(); ++i) {
+      if (vertex_data_[i].category == kSurface) {
+        std::set<VIndex> neighbors = find_neighbors(i);
+        std::set<VIndex> original_neighbors;
+        for (VIndex n : neighbors) {
+          if (vertex_data_[n].category == kOriginal) {
+            original_neighbors.insert(n);
+          }
+        }
+        DRAKE_DEMAND(original_neighbors.size() == 1);
+        const Vector3<AutoDiffXd>& v_WS = mesh_W.vertex(i).r_MV();
+        const Vector3<AutoDiffXd>& v_WO =
+            mesh_W.vertex(*original_neighbors.begin()).r_MV();
+        vertex_data_[i].data =
+            math::autoDiffToValueMatrix((v_WS - v_WO).normalized());
+      }
+    }
+  }
+
+  /* The soft half space. */
+  const RigidTransform<AutoDiffXd> X_WS_;
+  GeometryId id_S_;
+  double pressure_scale_{};
+
+  /* The rigid mesh. */
+  GeometryId id_R_;
+  unique_ptr<SurfaceMesh<double>> mesh_R_;
+  unique_ptr<Bvh<SurfaceMesh<double>>> bvh_R_;
+  static constexpr double kWidth = 1;
+
+  /* Classification of contact surface vertices.
+
+   The vertices in the contact surface can be classified into three
+   categories.
+
+     1. Original vertices from the triangular mesh.
+       - These are the vertices on the contact surface that came from mesh
+         vertices that were inside the half space.
+     2. Vertices that lie on the half space surface.
+       - In this test, these vertices are *created* by intersecting an edge
+   with half space boundary. (Generally, it *could* include a rigid mesh
+   vertex that already lies on the surface, but that is unlikely to happen
+   even in the real world.) These vertices are, in some sense, *fixed* to the
+         surface of the half space; they can't ever get deeper or shallower.
+     3. Polygon centroids (e.g., vertex j in the diagram)
+       - For continuous hydroelastic, every polygon created by mesh-half space
+         intersection is tesselated into a triangle fan around its own
+   centroid. In the case where the polygon is a triangle, the centroid is
+   simply the average position of the triangle vertices. Where the polygon had
+   > 3 vertices, it becomes a (non-trivial) weighted combination of the
+         vertex positions. */
+  enum Category { kOriginal, kSurface, kCentroid };
+  /* For each vertex, we record its category and any data associated with that
+   category. For kOriginal, there is no data and we use a dummy int value.
+   For kSurface, we store the direction of the edge that created the surface
+   vertex. For kCentroid, we store the indices of the neighboring vertices. */
+  struct VertexData {
+    Category category;
+    std::variant<int, Vector3<double>, std::set<SurfaceVertexIndex>> data;
+  };
+  std::vector<VertexData> vertex_data_;
+};
+
+TEST_F(MeshHalfSpaceDerivativesTest, Area) {
+  /* The area of the contact surface is simply the width of the rectangle times
+   the length of the rectangle embedded in the half space. We'll possibly tilt
+   the rectangle (around Ry) to keep things interesting. We can analyze the area
+   and derivative of the area by looking at the 2D analogy.
+
+   Consider a line segment of length 1. We need to determine what portion of
+   the line segment that lies below the z = 0 line.
+
+                  +Wz
+           Ro ○ __^_______ __         ○ - Ro, the origin of the R frame.
+               ╲  ┆      ┆            a - The measure of the z-component of Ro.
+             ╱  ╲θ┆      ┆  a
+   ──────────────╲┼──────┼────> +Wx
+            1-L   ╲      ┆
+               ╱  ┆╲     ┆
+                  ┆ ╲    ┆  b
+                 L┆  ╲   ┆
+                  ┆   ╲  ┆
+                  ┆    ╲θ┆
+                  ┆     ╲┆ __
+
+                       ╱
+
+   The diagonal line shows the line segment. The frame R has been moved to the
+   point Ro, and the frame has been tilted such that Rz is θ radians away Wz.
+   The length we want is labeled L. If we examine the portion of the line
+   segment that lies above Wz = 0, we can see that:
+
+              Ro.z
+     cos(θ) = ─────, so, 1 - L = Ro.z / cos(θ), which gives us
+               1-L
+     L = 1 - Ro.z / cos(θ)
+     dL/dz = -1 / cos(θ)
+
+   When we consider the problem in 3D, we can see that L does not depend on
+   Ro.x or Ro.y (as any movement parallel with the half space doesn't change the
+   *amount* of penetration). So,
+
+     ∂L/∂Ro = [0, 0, -1 / cos(θ)]
+
+   So, we can predict the area, and its gradient for a fixed mesh and
+   orientation theta as:
+
+         A = W * L(Ro)
+           = W * (1 - Ro.z / cos(θ))
+    ∂A/∂Ro = W * ∂L/∂Ro
+           = W * [0, 0, -1 / cos(θ)]
+           = [0, 0, -width / cos(θ)]
+   */
+  auto evaluate_area =
+      [w = this->kWidth](const ContactSurface<AutoDiffXd>& surface,
+                         const RigidTransform<AutoDiffXd>& X_WR, double theta) {
+        constexpr double kEps = std::numeric_limits<double>::epsilon();
+        const double p_WRz = X_WR.translation().z().value();
+        const double expected_area = w * (1 - p_WRz / std::cos(theta));
+        const AutoDiffXd total_area = surface.mesh_W().total_area();
+        EXPECT_NEAR(total_area.value(), expected_area, kEps);
+        EXPECT_TRUE(CompareMatrices(total_area.derivatives(),
+                                    Vector3d{0, 0, -w / std::cos(theta)},
+                                    10 * kEps));
+      };
+  TestPositionDerivative(evaluate_area);
+}
+
+TEST_F(MeshHalfSpaceDerivativesTest, VertexPosition) {
+  /* In principle, we might expect that the derivatives of contact surface
+   vertex position, v, with respect to Ro, ∂v/∂Ro, would simply be the Identity.
+   After all, the mesh vertices are affixed to the mesh. This is not entirely
+   true. The actual Jacobian of vertex position depends on the vertex category
+   (see class documentation).
+
+     1. Original vertices
+        - These vertices *can* be considered to be rigidly affixed to the mesh,
+         so ∂v/∂Ro = I is accurate.
+     2. Surface vertices
+        - We'll examine ∂v/∂Ro component wise.
+          - ∂v/∂Ro.x = [1, 0, -p.x] (see Equation (1) below)
+          - ∂v/∂Ro.y = [1, 0, -p.y] (see Equation (1) below)
+          - ∂v/∂Ro.z = [0, 0, 0]. Surface points always lie on the surface. No
+            perturbation of Ro will move surface points *off* the surface.
+
+           - p = ê − (ê⋅n̂)n̂.                                         (1)
+
+         Surface vertices come from edge-plane intersections. If the edge is not
+         parallel to the plane normal, moving the plane along the normal will
+         move the intersection point across the plane. The rate of movement
+         along the plane, relative to motion perpendicular to the plane is
+         captured by p, the *projection* of the edge direction onto the plane.
+     3. Centroid vertices
+        - For centroids of *triangles*:
+
+                 C = (v0 + v1 + v2) / 3, therefore
+            ∂C/∂Ro = (∂v0/∂Ro + ∂v1/∂Ro + ∂v2/∂Ro) / 3
+
+          Therefore, we can confirm that ∂C/∂Ro is at least consistent with the
+          derivatives of the original and surface vertices that have been
+          independently confirmed.
+        - For centroids of *N-gons*, the math is far more complex:
+          - The polygon is decomposed into triangles, the area and centroid of
+            each triangle are computed. The N-gon centroid is the weighted (by
+            area) average of each of the triangle centroids. There is no simple
+            way to validate this answer, so we'll skip it for now.
+
+   We rely on the test harness to classify the vertices, and will test the
+   derivatives accordingly.  */
+  auto evaluate_positions =
+      [w = this->kWidth, &vertex_data = this->vertex_data_](
+          const ContactSurface<AutoDiffXd>& surface,
+          const RigidTransform<AutoDiffXd>&, double theta) {
+        constexpr double kEps = std::numeric_limits<double>::epsilon();
+        // We know the normal of the half space boundary to be +Wz.
+        const Vector3d n{0, 0, 1};
+        for (SurfaceVertexIndex i(0); i < vertex_data.size(); ++i) {
+          const auto p_WV = surface.mesh_W().vertex(i).r_MV();
+          switch (vertex_data[i].category) {
+            case kOriginal:
+              EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(p_WV),
+                                          Matrix3<double>::Identity(), kEps));
+              break;
+            case kSurface: {
+              const Vector3d& e = std::get<Vector3d>(vertex_data[i].data);
+              const double e_z = e.dot(n);
+              DRAKE_DEMAND(e_z > 0);
+              const Vector3d p = (e - (e.dot(n)) * n) / e_z;
+              Matrix3<double> expected_J;
+              expected_J << 1, 0, -p.x(), 0, 1, -p.y(), 0, 0, 0;
+              const Matrix3<double> J = math::autoDiffToGradientMatrix(p_WV);
+              /* For large theta, the edge directions become closer to
+               perpendicular to the plane normal, so we need a looser tolerance.
+               This simple switch accounts for the worst tolerance. */
+              EXPECT_TRUE(CompareMatrices(J, expected_J,
+                                          kEps * (theta > 1.3 ? 200 : 1.0)));
+            } break;
+            case kCentroid:
+              if (std::get<2>(vertex_data[i].data).size() == 3) {
+                /* Only attempt to validate for triangle centroids. */
+                Matrix3<double> expected_J = Matrix3<double>::Zero();
+                for (const auto nbr : std::get<2>(vertex_data[i].data)) {
+                  expected_J += math::autoDiffToGradientMatrix(
+                      surface.mesh_W().vertex(nbr).r_MV());
+                }
+                expected_J /= 3;
+                const Matrix3<double> J = math::autoDiffToGradientMatrix(p_WV);
+                EXPECT_TRUE(CompareMatrices(J, expected_J,
+                                            kEps * (theta > 1.3 ? 200 : 1.0)));
+              }
+              break;
+          }
+        }
+      };
+  TestPositionDerivative(evaluate_positions);
+}
+
+TEST_F(MeshHalfSpaceDerivativesTest, FaceNormalsWrtPosition) {
+  /* None of the face normals depend on Ro. They should all report the zero
+   matrix. */
+  auto evaluate_normals = [](const ContactSurface<AutoDiffXd>& surface,
+                             const RigidTransform<AutoDiffXd>&, double theta) {
+    constexpr double kEps = std::numeric_limits<double>::epsilon();
+    const Matrix3<double> zero_matrix = Matrix3<double>::Zero();
+    for (SurfaceFaceIndex t(0); t < surface.mesh_W().num_elements(); ++t) {
+      const auto& n = surface.mesh_W().face_normal(t);
+      /* For large theta, the mesh faces get closer to parallel with the half
+       space surface, so we need a looser tolerance. This simple switch accounts
+       for the observed behavior in this test. */
+      EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(n),
+                                  zero_matrix,
+                                  kEps * (theta > 1.3 ? 1024 : 16)));
+    }
+  };
+  TestPositionDerivative(evaluate_normals);
+}
+
+TEST_F(MeshHalfSpaceDerivativesTest, FaceNormalsWrtOrientation) {
+  /* The normals n̂ *do* depend on θ. When θ = 0, the normals point in the +Rx
+   direction. For this test, we rotate around the arbitrary axis v̂. The expected
+   derivative is simply dn̂/dθ = v̂ × n̂  = v̂ × Rx.
+
+   This test does *not* use the TestPositionDerivative() API because that
+   differentiates with respect to Ro and makes assumptions about the resulting
+   mesh. For this test, those assumptions would be invalid, so we'll simply
+   duplicate that portion of TestPositionDerivative() that is relevant for this
+   test. */
+
+  /* Arbitrary rotation axis. It is important that the vector be defined such
+   that rotations don't cause all intersecting triangles to be "backface
+   culled".  */
+  const Vector3<double> v_W = Vector3<double>{-1, 2, -3}.normalized();
+  for (const double theta : {0.0, M_PI / 6, M_PI / 2 * 0.9, M_PI / 2 * 0.99}) {
+    /* We'll push the origin down into the half space to guarantee
+     intersection without doing otherwise unnecessary analysis). We're only
+     testing normal direction; any intersection is sufficient. The x- and y-
+     elements are arbitrary, non-zero values. */
+    const Vector3<AutoDiffXd> p_WR{0.25, -0.7, -0.1};
+    AutoDiffXd theta_ad = theta;
+    theta_ad.derivatives().resize(1);
+    theta_ad.derivatives() << 1;
+    RigidTransform<AutoDiffXd> X_WR{
+        RotationMatrix<AutoDiffXd>(AngleAxis<AutoDiffXd>(theta_ad, v_W)), p_WR};
+
+    auto surface = ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+        id_S_, X_WS_, pressure_scale_, id_R_, *mesh_R_, *bvh_R_, X_WR);
+
+    SCOPED_TRACE(fmt::format("theta = {:.5f} radians", theta));
+    ASSERT_NE(surface, nullptr);
+    /* Make sure the test doesn't pass simply because we have no triangles. */
+    ASSERT_GT(surface->mesh_W().num_elements(), 0);
+
+    /* Test dn̂/dθ = v̂ × n̂  = v̂ × Rx. */
+    const Vector3<double> Rx_W =
+        math::autoDiffToValueMatrix(X_WR.rotation().col(0));
+    const Vector3<double> expected_deriv = v_W.cross(Rx_W);
+    for (SurfaceFaceIndex t(0); t < surface->mesh_W().num_elements(); ++t) {
+      const auto& n = surface->mesh_W().face_normal(t);
+      /* Precision decreases as the mesh gets closer to lying parallel to the
+       half space surface. This simple switch accounts for the observed
+       behavior in this test. */
+      EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(n),
+                                  expected_deriv, theta > 1.3 ? 1e-13 : 5e-15));
+    }
+  }
+}
+
+TEST_F(MeshHalfSpaceDerivativesTest, Pressure) {
+  /* The pressure at a point v embedded in a half space with normal n̂ and point
+   on its surface o is:
+
+     p = En̂⋅(o − v)
+       = -En̂⋅v          // The origin lies on the surface; o = 0.
+       = -E * v.z       // n̂ = [0, 0, 1]
+
+     ∂p/∂Ro = -E * ∂v.z/∂Ro
+
+   We've already tested the derivative of vertex position w.r.t. Ro, so we can
+   make use of that to confirm that the pressure derivatives are consistent. */
+  auto evaluate_pressures = [E = this->pressure_scale_](
+                                const ContactSurface<AutoDiffXd>& surface,
+                                const RigidTransform<AutoDiffXd>&,
+                                double theta) {
+    constexpr double kEps = std::numeric_limits<double>::epsilon();
+    for (SurfaceVertexIndex v(0); v < surface.mesh_W().num_vertices(); ++v) {
+      const auto& p_WV = surface.mesh_W().vertex(v).r_MV();
+      const Matrix3<double> dV_dRo = math::autoDiffToGradientMatrix(p_WV);
+      const Vector3d expected_dp_dRo = -E * dV_dRo.row(2);
+      const AutoDiffXd& p = surface.EvaluateE_MN(v);
+      EXPECT_TRUE(CompareMatrices(p.derivatives(), expected_dp_dRo, kEps));
+    }
+  };
+  TestPositionDerivative(evaluate_pressures);
+}
 
 }  // namespace
 }  // namespace internal
