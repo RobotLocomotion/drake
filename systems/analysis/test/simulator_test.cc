@@ -12,6 +12,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
@@ -1086,7 +1087,12 @@ GTEST_TEST(SimulatorTest, ExampleDiscreteSystem) {
 
   // Create a Simulator and use it to advance time until t=3*h.
   Simulator<double> simulator(*diagram);
-  simulator.AdvanceTo(3 * ExampleDiscreteSystem::kPeriod);
+  simulator
+      .Initialize();  // Trigger first (and only allowable) heap allocation.
+  {
+    test::LimitMalloc heap_alloc_checker;
+    simulator.AdvanceTo(3 * ExampleDiscreteSystem::kPeriod);
+  }
 
   testing::internal::CaptureStdout();  // Not in example.
 
