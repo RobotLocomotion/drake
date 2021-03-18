@@ -65,12 +65,8 @@ Drake for readability.
   PyFormula.def(py::init<Formula const &>(), py::arg("arg0"))
       .def(py::init<>())
       .def(py::init<bool>(), py::arg("value"))
-      .def(py::init<::std::shared_ptr<const drake::symbolic::FormulaCell>>(),
-           py::arg("ptr"))
+      .def(py::init<::std::shared_ptr<const FormulaCell>>(), py::arg("ptr"))
       .def(py::init<Variable const &>(), py::arg("var"))
-      .def_static("DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE",
-                  static_cast<void (*)()>(
-                      &Formula::DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE))
       .def("EqualTo",
            static_cast<bool (Formula::*)(Formula const &) const>(
                &Formula::EqualTo),
@@ -80,7 +76,7 @@ Drake for readability.
           static_cast<bool (Formula::*)(Environment const &,
                                         ::drake::RandomGenerator *) const>(
               &Formula::Evaluate),
-          py::arg("env") = (Environment)drake::symbolic::Environment{},
+          py::arg("env") = (Environment)Environment{},
           py::arg("random_generator") = (::drake::RandomGenerator *)nullptr,
           R"""(/** Evaluates using a given environment (by default, an empty environment) and 
  * a random number generator. If there is a random variable in this formula 

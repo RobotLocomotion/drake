@@ -28,9 +28,6 @@ void apb11_pydrake_Fields_py_register(py::module &m) {
            py::arg("descriptor_type"))
       .def(py::init<BaseFieldT>(), py::arg("base_fields"))
       .def(py::init<DescriptorType const &>(), py::arg("descriptor_type"))
-      .def_static("DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE",
-                  static_cast<void (*)()>(
-                      &Fields::DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE))
       .def("base_fields",
            static_cast<BaseFieldT (Fields::*)() const>(&Fields::base_fields),
            R"""(/// Returns the contained base fields.)""")

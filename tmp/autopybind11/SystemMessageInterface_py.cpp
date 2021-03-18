@@ -3,13 +3,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-class SystemMessageInterface_publicist
-    : public ::drake::systems::internal::SystemMessageInterface {
-public:
-  using ::drake::systems::internal::SystemMessageInterface::
-      DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE;
-};
-
 namespace py = pybind11;
 void apb11_pydrake_SystemMessageInterface_py_register(py::module &m) {
   static bool called = false;
@@ -23,10 +16,6 @@ void apb11_pydrake_SystemMessageInterface_py_register(py::module &m) {
       m, "SystemMessageInterface");
 
   PySystemMessageInterface
-      .def_static(
-          "DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE",
-          static_cast<void (*)()>(&SystemMessageInterface_publicist::
-                                      DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE))
       .def(
           "GetSystemName",
           static_cast<::std::string const &(SystemMessageInterface::*)() const>(

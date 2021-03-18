@@ -88,9 +88,8 @@ with the given `index`.
      must be assigned sequentially. */)""")
       .def(
           "AddInputPort",
-          [](SystemBase &self, drake::systems::InputPortBase port) {
-            self.AddInputPort(
-                std::make_unique<drake::systems::InputPortBase>(port));
+          [](SystemBase &self, InputPortBase port) {
+            self.AddInputPort(std::make_unique<InputPortBase>(port));
           },
           R"""(/** (Internal use only) Adds an already-constructed input port to this System. 
 Insists that the port already contains a reference to this System, and that 
@@ -108,9 +107,8 @@ the given `index`.
      must be assigned sequentially. */)""")
       .def(
           "AddOutputPort",
-          [](SystemBase &self, drake::systems::OutputPortBase port) {
-            self.AddOutputPort(
-                std::make_unique<drake::systems::OutputPortBase>(port));
+          [](SystemBase &self, OutputPortBase port) {
+            self.AddOutputPort(std::make_unique<OutputPortBase>(port));
           },
           R"""(/** (Internal use only) Adds an already-constructed output port to this 
 System. Insists that the port already contains a reference to this System, and 
@@ -119,10 +117,9 @@ for this System, and that the name of the port is unique.
 @throws std::logic_error if the name of the output port is not unique. */)""")
       .def(
           "AllocateContext",
-          static_cast<::std::unique_ptr<
-              drake::systems::ContextBase,
-              std::default_delete<drake::systems::ContextBase>> (
-              SystemBase::*)() const>(&SystemBase::AllocateContext),
+          static_cast<
+              ::std::unique_ptr<ContextBase, std::default_delete<ContextBase>> (
+                  SystemBase::*)() const>(&SystemBase::AllocateContext),
           R"""(/** Returns a Context suitable for use with this System. Context resources 
 are allocated based on resource requests that were made during System 
 construction. */)""")
@@ -131,11 +128,9 @@ construction. */)""")
           [](SystemBase &self, ::std::string description,
              CacheEntry::AllocCallback alloc_function,
              CacheEntry::CalcCallback calc_function,
-             ::std::set<
-                 drake::TypeSafeIndex<drake::systems::DependencyTag>,
-                 std::less<drake::TypeSafeIndex<drake::systems::DependencyTag>>,
-                 std::allocator<
-                     drake::TypeSafeIndex<drake::systems::DependencyTag>>>
+             ::std::set<drake::TypeSafeIndex<DependencyTag>,
+                        std::less<drake::TypeSafeIndex<DependencyTag>>,
+                        std::allocator<drake::TypeSafeIndex<DependencyTag>>>
                  prerequisites_of_calc) {
             return self.DeclareCacheEntry(description, alloc_function,
                                           calc_function, prerequisites_of_calc);
@@ -178,11 +173,9 @@ where the AbstractValue objects must resolve to the same concrete type.
              ::std::string description,
              CacheEntry::AllocCallback alloc_function,
              CacheEntry::CalcCallback calc_function,
-             ::std::set<
-                 drake::TypeSafeIndex<drake::systems::DependencyTag>,
-                 std::less<drake::TypeSafeIndex<drake::systems::DependencyTag>>,
-                 std::allocator<
-                     drake::TypeSafeIndex<drake::systems::DependencyTag>>>
+             ::std::set<drake::TypeSafeIndex<DependencyTag>,
+                        std::less<drake::TypeSafeIndex<DependencyTag>>,
+                        std::allocator<drake::TypeSafeIndex<DependencyTag>>>
                  prerequisites_of_calc) {
             return self.DeclareCacheEntryWithKnownTicket(
                 known_ticket, description, alloc_function, calc_function,
@@ -194,10 +187,10 @@ for the most-general DeclareCacheEntry() signature for the meanings of the
 other parameters here. */)""")
       .def(
           "DoAllocateContext",
-          static_cast<::std::unique_ptr<
-              drake::systems::ContextBase,
-              std::default_delete<drake::systems::ContextBase>> (
-              SystemBase::*)() const>(&SystemBase_publicist::DoAllocateContext),
+          static_cast<
+              ::std::unique_ptr<ContextBase, std::default_delete<ContextBase>> (
+                  SystemBase::*)() const>(
+              &SystemBase_publicist::DoAllocateContext),
           R"""(/** Derived class implementations should allocate a suitable concrete Context 
 type, then invoke the above InitializeContextBase() method. A Diagram must 
 then invoke AllocateContext() to obtain each of the subcontexts for its 
@@ -319,7 +312,7 @@ can be reported at Fix-time instead of EvalInput-time.*/)""")
           static_cast<::std::string (SystemBase::*)(
               ::std::variant<std::basic_string<char, std::char_traits<char>,
                                                std::allocator<char>>,
-                             drake::systems::UseDefaultName>) const>(
+                             UseDefaultName>) const>(
               &SystemBase_publicist::NextInputPortName),
           py::arg("given_name"),
           R"""(/** (Internal use only) Returns a name for the next input port, using the 
@@ -331,7 +324,7 @@ from the next available input port index.
           static_cast<::std::string (SystemBase::*)(
               ::std::variant<std::basic_string<char, std::char_traits<char>,
                                                std::allocator<char>>,
-                             drake::systems::UseDefaultName>) const>(
+                             UseDefaultName>) const>(
               &SystemBase_publicist::NextOutputPortName),
           py::arg("given_name"),
           R"""(/** (Internal use only) Returns a name for the next output port, using the 

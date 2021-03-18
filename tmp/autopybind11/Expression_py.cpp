@@ -105,9 +105,6 @@ symbolic::Expression can be used as a scalar type of Eigen types.
       .def(py::init<>())
       .def(py::init<double>(), py::arg("d"))
       .def(py::init<Variable const &>(), py::arg("var"))
-      .def_static("DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE",
-                  static_cast<void (*)()>(
-                      &Expression::DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE))
       .def(
           "Differentiate",
           static_cast<Expression (Expression::*)(Variable const &) const>(
@@ -155,7 +152,7 @@ symbolic::Expression can be used as a scalar type of Eigen types.
           static_cast<double (Expression::*)(Environment const &,
                                              ::drake::RandomGenerator *) const>(
               &Expression::Evaluate),
-          py::arg("env") = (Environment)drake::symbolic::Environment{},
+          py::arg("env") = (Environment)Environment{},
           py::arg("random_generator") = (::drake::RandomGenerator *)nullptr,
           R"""(/** Evaluates using a given environment (by default, an empty environment) and 
  * a random number generator. If there is a random variable in this expression 
@@ -209,9 +206,8 @@ symbolic::Expression can be used as a scalar type of Eigen types.
            R"""(/** Collects variables in expression. */)""")
       .def("Jacobian",
            [](Expression &self,
-              ::Eigen::Ref<const Eigen::Matrix<drake::symbolic::Variable, -1, 1,
-                                               0, -1, 1>,
-                           0, Eigen::InnerStride<1>> const &vars) {
+              ::Eigen::Ref<const Eigen::Matrix<Variable, -1, 1, 0, -1, 1>, 0,
+                           Eigen::InnerStride<1>> const &vars) {
              return self.Jacobian(vars);
            })
       .def("Less",
@@ -220,7 +216,7 @@ symbolic::Expression can be used as a scalar type of Eigen types.
            py::arg("e"),
            R"""(/** Provides lexicographical ordering between expressions. 
     This function is used as a compare function in map<Expression> and 
-    set<Expression> via std::less<drake::symbolic::Expression>. */)""")
+    set<Expression> via std::less<Expression>. */)""")
       .def_static("NaN", static_cast<Expression (*)()>(&Expression::NaN),
                   R"""(/** Returns NaN (Not-a-Number). */)""")
       .def_static("One", static_cast<Expression (*)()>(&Expression::One),

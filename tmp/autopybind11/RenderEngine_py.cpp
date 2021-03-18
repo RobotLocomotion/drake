@@ -13,8 +13,6 @@ public:
   using ::drake::geometry::render::RenderEngine::DoRenderDepthImage;
   using ::drake::geometry::render::RenderEngine::DoRenderLabelImage;
   using ::drake::geometry::render::RenderEngine::DoUpdateVisualPose;
-  using ::drake::geometry::render::RenderEngine::
-      DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE;
   using ::drake::geometry::render::RenderEngine::GetColorDFromLabel;
   using ::drake::geometry::render::RenderEngine::GetColorIFromLabel;
   using ::drake::geometry::render::RenderEngine::GetRenderLabelOrThrow;
@@ -93,20 +91,14 @@ void apb11_pydrake_RenderEngine_py_register(py::module &m) {
   PyRenderEngine
       .def(
           "Clone",
-          static_cast<::std::unique_ptr<
-              drake::geometry::render::RenderEngine,
-              std::default_delete<drake::geometry::render::RenderEngine>> (
+          static_cast<::std::unique_ptr<RenderEngine,
+                                        std::default_delete<RenderEngine>> (
               RenderEngine::*)() const>(&RenderEngine::Clone),
           R"""(/** Clones the render engine -- making the %RenderEngine compatible with 
  copyable_unique_ptr.  */)""")
-      .def_static(
-          "DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE",
-          static_cast<void (*)()>(
-              &RenderEngine_publicist::DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE))
       .def("DoClone",
-           static_cast<::std::unique_ptr<
-               drake::geometry::render::RenderEngine,
-               std::default_delete<drake::geometry::render::RenderEngine>> (
+           static_cast<::std::unique_ptr<RenderEngine,
+                                         std::default_delete<RenderEngine>> (
                RenderEngine::*)() const>(&RenderEngine_publicist::DoClone),
            R"""(/** The NVI-function for cloning this render engine.  */)""")
       .def(

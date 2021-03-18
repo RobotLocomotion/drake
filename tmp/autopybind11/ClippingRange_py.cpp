@@ -19,9 +19,6 @@ void apb11_pydrake_ClippingRange_py_register(py::module &m) {
 
   PyClippingRange.def(py::init<ClippingRange const &>(), py::arg("arg0"))
       .def(py::init<double, double>(), py::arg("near"), py::arg("far"))
-      .def_static("DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE",
-                  static_cast<void (*)()>(
-                      &ClippingRange::DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE))
       .def("far",
            static_cast<double (ClippingRange::*)() const>(&ClippingRange::far))
       .def("near",

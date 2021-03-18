@@ -40,9 +40,6 @@ void apb11_pydrake_Variable_py_register(py::module &m) {
       .def(py::init<::std::nullptr_t>(), py::arg("arg0"))
       .def(py::init<::std::string, Variable::Type>(), py::arg("name"),
            py::arg("type") = Variable::Type(Variable::Type::CONTINUOUS))
-      .def_static("DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE",
-                  static_cast<void (*)()>(
-                      &Variable::DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE))
       .def(
           "equal_to",
           static_cast<bool (Variable::*)(Variable const &) const>(

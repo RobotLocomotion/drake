@@ -23,9 +23,6 @@ void apb11_pydrake_RandomGenerator_py_register(py::module &m) {
   PyRandomGenerator.def(py::init<RandomGenerator const &>(), py::arg("arg0"))
       .def(py::init<>())
       .def(py::init<RandomGenerator::result_type>(), py::arg("value"))
-      .def_static("DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE",
-                  static_cast<void (*)()>(
-                      &RandomGenerator::DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE))
       .def_static("max", static_cast<RandomGenerator::result_type (*)()>(
                              &RandomGenerator::max))
       .def_static("min", static_cast<RandomGenerator::result_type (*)()>(

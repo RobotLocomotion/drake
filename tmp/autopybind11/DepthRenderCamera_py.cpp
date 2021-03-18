@@ -25,10 +25,6 @@ void apb11_pydrake_DepthRenderCamera_py_register(py::module &m) {
            py::arg("X_BD") = ::drake::math::RigidTransformd({}))
       .def(py::init<RenderCameraCore, DepthRange>(), py::arg("core"),
            py::arg("depth_range"))
-      .def_static(
-          "DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE",
-          static_cast<void (*)()>(
-              &DepthRenderCamera::DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE))
       .def("core",
            static_cast<RenderCameraCore const &(DepthRenderCamera::*)() const>(
                &DepthRenderCamera::core),

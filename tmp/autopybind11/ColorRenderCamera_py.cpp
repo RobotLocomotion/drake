@@ -25,10 +25,6 @@ void apb11_pydrake_ColorRenderCamera_py_register(py::module &m) {
            py::arg("X_BC") = ::drake::math::RigidTransformd({}))
       .def(py::init<RenderCameraCore, bool>(), py::arg("core"),
            py::arg("show_window") = bool(false))
-      .def_static(
-          "DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE",
-          static_cast<void (*)()>(
-              &ColorRenderCamera::DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE))
       .def("core",
            static_cast<RenderCameraCore const &(ColorRenderCamera::*)() const>(
                &ColorRenderCamera::core),

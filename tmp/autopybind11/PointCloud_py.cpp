@@ -69,8 +69,7 @@ void apb11_pydrake_PointCloud_py_register(py::module &m) {
   PyPointCloud
       .def(py::init<int, pc_flags::Fields, bool>(),
            py::arg("new_size") = int(0),
-           py::arg("fields") =
-               pc_flags::Fields(drake::perception::pc_flags::kXYZs),
+           py::arg("fields") = pc_flags::Fields(pc_flags::kXYZs),
            py::arg("skip_initialize") = bool(false))
       .def(py::init<PointCloud const &>(), py::arg("other"))
       .def(py::init<PointCloud const &, pc_flags::Fields>(), py::arg("other"),
@@ -123,8 +122,7 @@ void apb11_pydrake_PointCloud_py_register(py::module &m) {
           static_cast<void (PointCloud::*)(PointCloud const &, pc_flags::Fields,
                                            bool)>(&PointCloud::SetFrom),
           py::arg("other"),
-          py::arg("fields_in") =
-              pc_flags::Fields(drake::perception::pc_flags::kInherit),
+          py::arg("fields_in") = pc_flags::Fields(pc_flags::kInherit),
           py::arg("allow_resize") = bool(true),
           R"""(/// Copies all points from another point cloud. 
 /// @param other 

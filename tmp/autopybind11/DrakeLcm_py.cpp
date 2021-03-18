@@ -55,9 +55,9 @@ void apb11_pydrake_DrakeLcm_py_register(py::module &m) {
            py::arg("channel"), py::arg("data"), py::arg("data_size"),
            py::arg("time_sec"))
       .def("Subscribe",
-           static_cast<::std::shared_ptr<
-               drake::lcm::DrakeSubscriptionInterface> (DrakeLcm::*)(
-               ::std::string const &, DrakeLcmInterface::HandlerFunction)>(
+           static_cast<::std::shared_ptr<DrakeSubscriptionInterface> (
+               DrakeLcm::*)(::std::string const &,
+                            DrakeLcmInterface::HandlerFunction)>(
                &DrakeLcm::Subscribe),
            py::arg("channel"), py::arg("arg1"))
       .def(

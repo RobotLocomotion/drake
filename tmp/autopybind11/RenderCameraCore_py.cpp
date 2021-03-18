@@ -44,10 +44,6 @@ void apb11_pydrake_RenderCameraCore_py_register(py::module &m) {
  (i.e., a 
  <a href="https://strawlab.org/2011/11/05/augmented-reality-with-OpenGL/"> 
  classic OpenGl projection matrix</a>).  */)""")
-      .def_static(
-          "DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE",
-          static_cast<void (*)()>(
-              &RenderCameraCore::DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE))
       .def(
           "clipping",
           static_cast<ClippingRange const &(RenderCameraCore::*)() const>(

@@ -57,15 +57,11 @@ void apb11_pydrake_Environment_py_register(py::module &m) {
 
   PyEnvironment.def(py::init<Environment const &>(), py::arg("arg0"))
       .def(py::init<>())
-      .def(py::init<::std::initializer_list<
-               std::pair<const drake::symbolic::Variable, double>>>(),
+      .def(py::init<
+               ::std::initializer_list<std::pair<const Variable, double>>>(),
            py::arg("init"))
-      .def(py::init<::std::initializer_list<drake::symbolic::Variable>>(),
-           py::arg("vars"))
+      .def(py::init<::std::initializer_list<Variable>>(), py::arg("vars"))
       .def(py::init<Environment::map>(), py::arg("m"))
-      .def_static("DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE",
-                  static_cast<void (*)()>(
-                      &Environment::DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE))
       .def("begin",
            static_cast<Environment::iterator (Environment::*)()>(
                &Environment::begin),
@@ -113,9 +109,8 @@ void apb11_pydrake_Environment_py_register(py::module &m) {
            R"""(/** Inserts a pair (@p key, @p elem). */)""")
       .def("insert",
            [](Environment &self,
-              ::Eigen::Ref<const Eigen::Matrix<drake::symbolic::Variable, -1,
-                                               -1, 0, -1, -1>,
-                           0, Eigen::OuterStride<-1>> const &keys,
+              ::Eigen::Ref<const Eigen::Matrix<Variable, -1, -1, 0, -1, -1>, 0,
+                           Eigen::OuterStride<-1>> const &keys,
               ::Eigen::Ref<const Eigen::Matrix<double, -1, -1, 0, -1, -1>, 0,
                            Eigen::OuterStride<-1>> const &elements) {
              return self.insert(keys, elements);

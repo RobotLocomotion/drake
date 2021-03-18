@@ -24,19 +24,18 @@ void apb11_pydrake_Monomial_py_register(py::module &m) {
   PyMonomial.def(py::init<Monomial const &>(),py::arg("arg0"))
     .def(py::init<>())
     .def(py::init<::std::nullptr_t>(),py::arg("arg0"))
-    .def(py::init<::std::map<drake::symbolic::Variable, int, std::less<drake::symbolic::Variable>, std::allocator<std::pair<const drake::symbolic::Variable, int>>> const &>(),py::arg("powers"))
-    .def(py::init<::Eigen::Ref<const Eigen::Matrix<drake::symbolic::Variable, -1, 1, 0, -1, 1>, 0, Eigen::InnerStride<1>> const &,::Eigen::Ref<const Eigen::Matrix<int, -1, 1, 0, -1, 1>, 0, Eigen::InnerStride<1>> const &>(),py::arg("vars"),py::arg("exponents"))
+    .def(py::init<::std::map<Variable, int, std::less<Variable>, std::allocator<std::pair<const Variable, int>>> const &>(),py::arg("powers"))
+    .def(py::init<::Eigen::Ref<const Eigen::Matrix<Variable, -1, 1, 0, -1, 1>, 0, Eigen::InnerStride<1>> const &,::Eigen::Ref<const Eigen::Matrix<int, -1, 1, 0, -1, 1>, 0, Eigen::InnerStride<1>> const &>(),py::arg("vars"),py::arg("exponents"))
     .def(py::init<Expression const &>(),py::arg("e"))
     .def(py::init<Variable const &>(),py::arg("var"))
     .def(py::init<Variable const &,int>(),py::arg("var"),py::arg("exponent"))
-    .def_static("DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE", static_cast<void (*)(  )>(&Monomial::DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE))
     .def("Evaluate", static_cast<double ( Monomial::* )( Environment const & )const>(&Monomial::Evaluate), py::arg("env"), 
 R"""(/** Evaluates under a given environment @p env. 
  * 
  * @throws std::out_of_range exception if there is a variable in this monomial 
  * whose assignment is not provided by @p env. 
  */)""")
-    .def("EvaluatePartial", static_cast<::std::pair<double, drake::symbolic::Monomial> ( Monomial::* )( Environment const & )const>(&Monomial::EvaluatePartial), py::arg("env"), 
+    .def("EvaluatePartial", static_cast<::std::pair<double, Monomial> ( Monomial::* )( Environment const & )const>(&Monomial::EvaluatePartial), py::arg("env"), 
 R"""(/** Partially evaluates using a given environment @p env. The evaluation 
  * result is of type pair<double, Monomial>. The first component (: double) 
  * represents the coefficient part while the second component represents the 
@@ -56,7 +55,7 @@ R"""(/** Returns the set of variables in this monomial. */)""")
 R"""(/** Returns a symbolic expression representing this monomial. */)""")
     .def("degree", static_cast<int ( Monomial::* )( Variable const & )const>(&Monomial::degree), py::arg("v"), 
 R"""(/** Returns the degree of this Monomial in a variable @p v. */)""")
-    .def("get_powers", static_cast<::std::map<drake::symbolic::Variable, int, std::less<drake::symbolic::Variable>, std::allocator<std::pair<const drake::symbolic::Variable, int>>> const & ( Monomial::* )(  )const>(&Monomial::get_powers), 
+    .def("get_powers", static_cast<::std::map<Variable, int, std::less<Variable>, std::allocator<std::pair<const Variable, int>>> const & ( Monomial::* )(  )const>(&Monomial::get_powers), 
 R"""(/** Returns the internal representation of Monomial, the map from a base 
  * (Variable) to its exponent (int).*/)""")
     .def("pow_in_place", static_cast<Monomial & ( Monomial::* )( int )>(&Monomial::pow_in_place), py::arg("p"), 

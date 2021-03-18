@@ -52,8 +52,7 @@ void apb11_pydrake_DepthImageToPointCloud_py_register(py::module &m) {
            py::arg("depth_pixel_type") = ::drake::systems::sensors::PixelType(
                ::drake::systems::sensors::PixelType::kDepth32F),
            py::arg("scale") = float(1.),
-           py::arg("fields") =
-               pc_flags::BaseFieldT(drake::perception::pc_flags::kXYZs))
+           py::arg("fields") = pc_flags::BaseFieldT(pc_flags::kXYZs))
       .def_static(
           "Convert",
           static_cast<void (*)(

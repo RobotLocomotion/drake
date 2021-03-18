@@ -22,7 +22,7 @@ void apb11_pydrake_DrakeLcmInterface_py_register(py::module &m) {
  * 
  * Similarly, method arguments will receive breaking API changes without 
  * notice.  Users should not call this interface directly, but rather use 
- * drake::lcm::Publish() or drake::lcm::Subscribe() instead. 
+ * Publish() or Subscribe() instead. 
  */)""");
 
   PyDrakeLcmInterface
@@ -44,7 +44,7 @@ void apb11_pydrake_DrakeLcmInterface_py_register(py::module &m) {
            py::arg("channel"), py::arg("data"), py::arg("data_size"),
            py::arg("time_sec"),
            R"""(/** 
- * Most users should use the drake::lcm::Publish() free function, instead of 
+ * Most users should use the Publish() free function, instead of 
  * this interface method. 
  * 
  * Publishes an LCM message on channel @p channel. 
@@ -61,14 +61,14 @@ void apb11_pydrake_DrakeLcmInterface_py_register(py::module &m) {
  * If unknown, use nullopt or a default-constructed optional. 
  */)""")
       .def("Subscribe",
-           static_cast<::std::shared_ptr<
-               drake::lcm::DrakeSubscriptionInterface> (DrakeLcmInterface::*)(
-               ::std::string const &, DrakeLcmInterface::HandlerFunction)>(
+           static_cast<::std::shared_ptr<DrakeSubscriptionInterface> (
+               DrakeLcmInterface::*)(::std::string const &,
+                                     DrakeLcmInterface::HandlerFunction)>(
                &DrakeLcmInterface::Subscribe),
            py::arg("channel"), py::arg("arg1"),
            R"""(/** 
- * Most users should use the drake::lcm::Subscribe() free function or the 
- * drake::lcm::Subscriber wrapper class, instead of this interface method. 
+ * Most users should use the Subscribe() free function or the 
+ * Subscriber wrapper class, instead of this interface method. 
  * 
  * Subscribes to an LCM channel without automatic message decoding. The 
  * handler will be invoked when a message arrives on channel @p channel. 

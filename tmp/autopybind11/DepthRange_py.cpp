@@ -32,9 +32,6 @@ void apb11_pydrake_DepthRange_py_register(py::module &m) {
 
   PyDepthRange.def(py::init<DepthRange const &>(), py::arg("arg0"))
       .def(py::init<double, double>(), py::arg("min_in"), py::arg("max_in"))
-      .def_static("DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE",
-                  static_cast<void (*)()>(
-                      &DepthRange::DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE))
       .def("max_depth",
            static_cast<double (DepthRange::*)() const>(&DepthRange::max_depth))
       .def("min_depth",
