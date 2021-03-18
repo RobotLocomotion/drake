@@ -86,20 +86,26 @@ class TestEigenGeometry(unittest.TestCase):
         # - Copy constructor.
         cp = Quaternion(other=q)
         numpy_compare.assert_equal(q.wxyz(), cp.wxyz())
-        # Bad values.
+        # Bad (non-unit quaternion) values.
         if T != Expression:
             q = Quaternion.Identity()
             # - wxyz
             q_wxyz_bad = [1., 2, 3, 4]
-            with self.assertRaises(RuntimeError):
-                q.set_wxyz(q_wxyz_bad)
-            numpy_compare.assert_float_equal(q.wxyz(), [1., 0, 0, 0])
+            q.set_wxyz(q_wxyz_bad)
+            numpy_compare.assert_float_equal(q.wxyz(), q_wxyz_bad)
             # - Rotation.
             R_bad = np.copy(R)
             R_bad[0, 0] = 10
-            with self.assertRaises(RuntimeError):
-                q_other.set_rotation(R_bad)
-            numpy_compare.assert_float_equal(q_other.rotation(), R_I)
+            q_other.set_rotation(R_bad)
+            R_bad_projected = np.array([
+                [0.909091, -0.454545, 0.545455],
+                [0.545455, 0.909091, -0.454545],
+                [-0.454545, 0.545455, 0.909091]])
+            numpy_compare.assert_float_allclose(
+                q_other.rotation(),
+                R_bad_projected,
+                atol=1e-5,
+            )
 
         # Operations.
         q_AB = Quaternion(wxyz=[0.5, 0.5, 0.5, 0.5])
@@ -178,19 +184,19 @@ class TestEigenGeometry(unittest.TestCase):
         numpy_compare.assert_float_equal(X_AB.rotation(), R_AB)
         # - Cast
         self.check_cast(mut.Isometry3_, T)
-        # - Check transactions for bad values.
+        # - Check that bad values aren't rejected.
         if T != Expression:
             X_temp = Isometry3(rotation=R_AB, translation=p_AB)
             R_bad = np.copy(R_AB)
             R_bad[0, 0] = 10.
-            with self.assertRaises(RuntimeError):
-                X_temp.set_rotation(R_bad)
-            numpy_compare.assert_float_equal(X_temp.rotation(), R_AB)
+            X_temp.set_rotation(R_bad)
+            numpy_compare.assert_float_equal(X_temp.rotation(), R_bad)
+
+            X_temp = Isometry3(rotation=R_AB, translation=p_AB)
             X_bad_np = np.copy(X_I_np)
             X_bad_np[:3, :3] = R_bad
-            with self.assertRaises(RuntimeError):
-                X_temp.set_matrix(X_bad_np)
-            numpy_compare.assert_float_equal(X_temp.matrix(), X_AB_np)
+            X_temp.set_matrix(X_bad_np)
+            numpy_compare.assert_float_equal(X_temp.matrix(), X_bad_np)
         # Test `type_caster`s.
         if T == float:
             value = test_util.create_isometry()
@@ -264,8 +270,9 @@ class TestEigenGeometry(unittest.TestCase):
         value.set_angle(np.pi / 4)
         v = normalize(np.array([0.1, 0.2, 0.3]))
         if T != Expression:
-            with self.assertRaises(RuntimeError):
-                value.set_axis([0.1, 0.2, 0.3])
+            axis_bad = [0.1, 0.2, 0.3]
+            value.set_axis(axis_bad)
+            numpy_compare.assert_float_equal(value.axis(), axis_bad)
         value.set_axis(v)
         numpy_compare.assert_float_equal(value.angle(), np.pi / 4)
         numpy_compare.assert_float_equal(value.axis(), v)
