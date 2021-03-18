@@ -3,6 +3,10 @@
 #    https://github.com/josephsnyder/drake-external-examples/tree/add_binding_example_2/drake_cmake_bindings/pydrake
 
 files:
+  customization:
+    skiplist:
+      member_variables:
+        - DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE
   "drake/common/random.h":
     namespaces:
       drake:

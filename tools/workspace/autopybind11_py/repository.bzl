@@ -8,8 +8,8 @@ def autopybind11_py_repository(
     github_archive(
         name = name,
         repository = "autopybind11/autopybind11",
-        commit = "6d03a79aea57f281f5625c10e0bb1c0dff734f0f",
-        sha256 = "4c8d7e9d13d60f12d98464c711fb87144ed8fd9d44462c91f1ad2bb765ffa499",  # noqa
+        commit = "750e03b4149ae022fbcf2d626e82713cf50db539",
+        sha256 = "8660dd8de0072d2a9cd564d357c2f5c8661ca67728ec07f3367b3081d374b7a2",  # noqa
         build_file = "@drake//tools/workspace/autopybind11_py:package.BUILD.bazel",  # noqa
         mirrors = {
             "github": ["https://gitlab.kitware.com/{repository}/-/archive/{commit}/autopybind11-{commit}.tar.gz"],  # noqa
