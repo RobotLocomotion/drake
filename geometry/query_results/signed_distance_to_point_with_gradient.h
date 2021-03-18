@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
 
@@ -14,7 +15,10 @@ namespace geometry {
  * w.r.t p_GQ_G (the position of the query point Q measured and expressed in
  * object G's frame).
  */
-struct SignedDistanceToPointWithGradient {
+struct DRAKE_DEPRECATED(
+    "2021-07-01",
+    "This unused class is being removed. Use SignedDistanceToPoint instead.")
+SignedDistanceToPointWithGradient {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SignedDistanceToPointWithGradient)
 
   SignedDistanceToPointWithGradient(GeometryId id_G_in, Eigen::Vector3d p_GN_in,
