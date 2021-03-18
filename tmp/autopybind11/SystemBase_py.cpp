@@ -33,6 +33,7 @@ public:
   using ::drake::systems::SystemBase::ThrowNegativePortIndex;
   using ::drake::systems::SystemBase::ThrowNotAVectorInputPort;
   using ::drake::systems::SystemBase::ThrowOutputPortIndexOutOfRange;
+  using ::drake::systems::SystemBase::ThrowValidateContextMismatch;
 };
 
 namespace py = pybind11;
@@ -393,6 +394,13 @@ index is given here. */)""")
           py::arg("func"), py::arg("port_index"),
           R"""(/** Throws std::out_of_range to report bad output `port_index` that was passed 
 to API method `func`. */)""")
+      .def(
+          "ThrowValidateContextMismatch",
+          static_cast<void (SystemBase::*)(ContextBase const &) const>(
+              &SystemBase_publicist::ThrowValidateContextMismatch),
+          py::arg("arg0"),
+          R"""(/** (Internal use only) Throws std::exception with a message that the sanity 
+check(s) given by ValidateContext have failed. */)""")
       .def(
           "ValidateContext",
           static_cast<void (SystemBase::*)(ContextBase const &) const>(
