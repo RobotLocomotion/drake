@@ -78,6 +78,7 @@ cc_library(
     strip_include_prefix = "/",
     visibility = [
         "//bindings/pydrake:__pkg__",
+        "//tools/autopybind:__pkg__",
     ],
     deps = [
         ":libdrake_header_only_deps",

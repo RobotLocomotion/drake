@@ -1,0 +1,66 @@
+# -*- python -*-
+
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+    "drake_py_unittest",
+)
+load(
+    "@drake//tools/skylark:pybind.bzl",
+    "generate_autopybind11_rsp_file",
+)
+
+generate_autopybind11_rsp_file(
+    name = "generate_autopybind11_rsp_file",
+    header_archive = "bindings_to_generate_headers.tar",
+    rsp_file = "bindings_to_generate.rsp",
+    targets = [
+        "//tools/install/libdrake:drake_headers",
+        "//examples/compass_gait:compass_gait",
+        "//examples/manipulation_station:manipulation_station",
+        "//examples/manipulation_station:manipulation_station_hardware_interface",  # noqa
+        "//examples/pendulum:pendulum_plant",
+        "//examples/quadrotor:quadrotor_plant",
+        "//examples/rimless_wheel:rimless_wheel",
+        "//examples/van_der_pol:van_der_pol",
+        # TODO(eric.cousineau): Why are these necessary?
+        "@eigen",
+        "@fmt",
+        "@lcm",
+        "@spdlog",
+    ],
+)
+
+filegroup(
+    name = "config",
+    data = [
+        "autopybind11_customization.yaml",
+        "bindings_to_generate.rsp",
+        "bindings_to_generate.yaml",
+        "bindings_to_generate_headers.tar",
+    ],
+)
+
+drake_py_binary(
+    name = "generate",
+    srcs = ["generate.py"],
+    data = [
+        ":config",
+        "@castxml//:castxml_bin",
+    ],
+    deps = [
+        "//tools/lint:find_data",
+        "@autopybind11_py",
+        "@configargparse_py",
+        "@pygccxml_py",
+        "@toposort_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "generate_test",
+    data = [":generate"],
+)
+
+add_lint_tests()

@@ -45,7 +45,7 @@ def extract_archive_tempdir(archive, *, dir=None, prefix=None, debug=False):
             yield str(tmp_dir)
 
 
-def run_autopybind11(output_dir, customization_file):
+def run_autopybind11(output_dir):
     with debuggable_temporary_directory(dir=dir, prefix=prefix, debug=debug) as tmp_dir:  # noqa
         with tarfile.open(archive, "r") as tar:
             tar.extractall(path=tmp_dir)
@@ -66,11 +66,12 @@ def eprint(s):
     print(s, file=sys.stderr)
 
 
-def run_autopybind11(output_dir, customization_file, debug):
+def run_autopybind11(output_dir, debug):
     castxml_bin = find_data("external/castxml/castxml_bin")
-    config_file = find_data("bindings/pydrake/autopybind11_example.yaml")
-    response_file = find_data("bindings/pydrake/autopybind11_example.rsp")
-    headers_tar = find_data("bindings/pydrake/autopybind11_example_headers.tar")  # noqa
+    bindings_to_generate = find_data("tools/autopybind/bindings_to_generate.yaml")
+    customization_file = find_data("tools/autopybind/autopybind11_customization.yaml")
+    response_file = find_data("tools/autopybind/bindings_to_generate.rsp")
+    headers_tar = find_data("tools/autopybind/bindings_to_generate_headers.tar")  # noqa
 
     if not os.path.isdir(output_dir):
         os.makedirs(output_dir)
@@ -86,13 +87,12 @@ def run_autopybind11(output_dir, customization_file, debug):
         "-o",
         output_dir,
         "-y",
-        config_file,
+        bindings_to_generate,
         "-rs",
         response_file,
+        "-cg",
+        customization_file,
     ]
-    if customization_file:
-        argv.append("-cg")
-        argv.append(find_data(customization_file))
 
     # Since we're connecting a genrule with a proper binary, we must "simulate"
     # the genfiles directory.
@@ -134,14 +134,10 @@ def main():
         help="Outputs all generated artifcats this directory. Creates the "
              "directory if it does not exist.")
     parser.add_argument(
-        "--config_file", type=str, required=False,
-        help="Path to the YAML file which contains customization updates"
-             "to the AutoPyBind11 code.")
-    parser.add_argument(
         "--debug", action="store_true",
         help="Include verbose output and keep intermediate articats")
     args = parser.parse_args()
-    run_autopybind11(args.output_dir, args.config_file, args.debug)
+    run_autopybind11(args.output_dir, args.debug)
 
 
 if __name__ == "__main__":

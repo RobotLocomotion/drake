@@ -18,7 +18,7 @@ output_file=${stage_dir}/output.txt
 
     # Generate autopybind11 bindings.
     bazel run --run_under="env PYTHONUNBUFFERED=1" \
-        //bindings/pydrake:autopybind11_example -- \
+        //tools/autopybind:generate -- \
         --debug \
         --output_dir=${stage_dir}
 
