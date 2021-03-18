@@ -1,42 +1,43 @@
 + echo /home/eacousineau/proj/tri/repo/branches/drake/master/drake/tmp/autopybind11/output.txt
 /home/eacousineau/proj/tri/repo/branches/drake/master/drake/tmp/autopybind11/output.txt
 + bazel build //bindings/pydrake:documentation_pybind.h
-Starting local Bazel server and connecting to it...
-INFO: Invocation ID: 94561a51-e766-4b55-b77d-72533ba14728
+INFO: Invocation ID: 891242e3-73ab-437f-a773-aefc4e0e86b3
 Loading: 
 Loading: 0 packages loaded
-Analyzing: target //bindings/pydrake:documentation_pybind.h (1 packages loaded)
+Loading: 0 packages loaded
+    currently loading: bindings/pydrake
+INFO: Build option --test_env has changed, discarding analysis cache.
 Analyzing: target //bindings/pydrake:documentation_pybind.h (1 packages loaded, 0 targets configured)
-Analyzing: target //bindings/pydrake:documentation_pybind.h (79 packages loaded, 91 targets configured)
-Analyzing: target //bindings/pydrake:documentation_pybind.h (129 packages loaded, 4939 targets configured)
+Analyzing: target //bindings/pydrake:documentation_pybind.h (1 packages loaded, 0 targets configured)
+Analyzing: target //bindings/pydrake:documentation_pybind.h (137 packages loaded, 20401 targets configured)
 INFO: Analyzed target //bindings/pydrake:documentation_pybind.h (137 packages loaded, 20403 targets configured).
-
 INFO: Found 1 target...
 [0 / 2] [Prepa] BazelWorkspaceStatusAction stable-status.txt
 Target //bindings/pydrake:documentation_pybind.h up-to-date:
   bazel-bin/bindings/pydrake/documentation_pybind.h
-INFO: Elapsed time: 8.109s, Critical Path: 0.19s
-INFO: 2 processes: 1 internal, 1 linux-sandbox.
-INFO: Build completed successfully, 2 total actions
-INFO: Build completed successfully, 2 total actions
+INFO: Elapsed time: 6.013s, Critical Path: 0.14s
+INFO: 4 processes: 1 remote cache hit, 3 internal.
+INFO: Build completed successfully, 4 total actions
+INFO: Build completed successfully, 4 total actions
 + cat ./bazel-bin/bindings/pydrake/documentation_pybind.h
 + bazel run '--run_under=env PYTHONUNBUFFERED=1' //bindings/pydrake:autopybind11_example -- --debug --output_dir=/home/eacousineau/proj/tri/repo/branches/drake/master/drake/tmp/autopybind11
-INFO: Invocation ID: 730223bb-d7d5-4538-86a8-d430973d0d82
+INFO: Invocation ID: 89f0b18d-4167-4383-a3ad-3a50319889e9
 Loading: 
 Loading: 0 packages loaded
 INFO: Build option --run_under has changed, discarding analysis cache.
 Analyzing: target //bindings/pydrake:autopybind11_example (0 packages loaded, 0 targets configured)
-Analyzing: target //bindings/pydrake:autopybind11_example (5 packages loaded, 22 targets configured)
-INFO: Analyzed target //bindings/pydrake:autopybind11_example (7 packages loaded, 20469 targets configured).
+Analyzing: target //bindings/pydrake:autopybind11_example (4 packages loaded, 22 targets configured)
+Analyzing: target //bindings/pydrake:autopybind11_example (6 packages loaded, 1736 targets configured)
+INFO: Analyzed target //bindings/pydrake:autopybind11_example (6 packages loaded, 20469 targets configured).
 INFO: Found 1 target...
-[0 / 3] [Prepa] BazelWorkspaceStatusAction stable-status.txt
+[0 / 1] [Prepa] BazelWorkspaceStatusAction stable-status.txt
 Target //bindings/pydrake:autopybind11_example up-to-date:
   bazel-bin/bindings/pydrake/autopybind11_example
-INFO: Elapsed time: 3.539s, Critical Path: 0.70s
-INFO: 9 processes: 8 internal, 1 linux-sandbox.
-INFO: Build completed successfully, 9 total actions
+INFO: Elapsed time: 4.796s, Critical Path: 0.37s
+INFO: 2 processes: 2 internal.
+INFO: Build completed successfully, 2 total actions
 INFO: Running command line: /bin/bash -c 'env PYTHONUNBUFFERED=1 bazel-bin/bindings/pydrake/autopybind11_example --debug '\''--output_dir=/home/eacousineau/proj/tri/repo/branches/drake/master/drake/tmp/autopybind11'\'''
-INFO: Build completed successfully, 9 total actions
+INFO: Build completed successfully, 2 total actions
 Running autopybind11...
 + /usr/bin/python3 -m autopybind11 --stage=2 --module_name=pydrake --castxml /mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/drake/external/castxml/castxml_bin -o /home/eacousineau/proj/tri/repo/branches/drake/master/drake/tmp/autopybind11 -y /mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/drake/bindings/pydrake/autopybind11_example.yaml -rs /mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/drake/bindings/pydrake/autopybind11_example.rsp
 /mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/bindings/pydrake/autopybind11_example.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("lcmtypes") does not exist.
@@ -973,24 +974,10 @@ Running autopybind11...
   warnings.warn(msg, RuntimeWarning)
 Warning: Class ShapeReifier  was not found in current module or any linked module
 Warning: Class System<float>  was not found in current module or any linked module
-Warning member type_ will not be bound due to unmet dependency Type
-Warning member get_type will not be bound due to unmet dependency Type
-Warning member Accept will not be bound due to unmet dependency SystemVisitor<double>
-Warning member Accept will not be bound due to unmet dependency SystemVisitor<double>
-Warning: Class RenderEngine will not have inheritance relationship with class ShapeReifier in binding code.
-
-                                Unable to locate class definition.
-Warning member get_context_sizes will not be bound due to unmet dependency ContextSizes
-Warning member get_mutable_context_sizes will not be bound due to unmet dependency ContextSizes
-Warning member get_context_sizes will not be bound due to unmet dependency ContextSizes
-Warning member context_sizes_ will not be bound due to unmet dependency ContextSizes
-Warning member get_context_sizes will not be bound due to unmet dependency ContextSizes
-Warning member get_context_sizes will not be bound due to unmet dependency ContextSizes
-Warning member get_mutable_context_sizes will not be bound due to unmet dependency ContextSizes
-Warning member Accept will not be bound due to unmet dependency SystemVisitor<double>
-Warning member Convert will not be bound due to unmet dependency Image<drake::systems::sensors::PixelType::kDepth16U>
 Warning: All instances of AutoDiffXd were unable to be found
 There were 1 names to find but 0 class(es) were returned
+Warning member type_ will not be bound due to unmet dependency Type
+Warning member get_type will not be bound due to unmet dependency Type
 Warning member Accept will not be bound due to unmet dependency SystemVisitor<double>
 Warning: Class LeafSystem<float> will not have inheritance relationship with class System<float> in binding code.
 
@@ -1008,8 +995,22 @@ Warning member DeclareVectorInputPort will not be bound due to unmet dependency 
 Warning member DeclareVectorInputPort will not be bound due to unmet dependency InputPort<float>
 Warning member DoCalcWitnessValue will not be bound due to unmet dependency WitnessFunction<float>
 Warning member GetGraphvizInputPortToken will not be bound due to unmet dependency InputPort<float>
+Warning: Class RenderEngine will not have inheritance relationship with class ShapeReifier in binding code.
+
+                                Unable to locate class definition.
+Warning member get_context_sizes will not be bound due to unmet dependency ContextSizes
+Warning member get_mutable_context_sizes will not be bound due to unmet dependency ContextSizes
+Warning member get_context_sizes will not be bound due to unmet dependency ContextSizes
+Warning member context_sizes_ will not be bound due to unmet dependency ContextSizes
+Warning member get_context_sizes will not be bound due to unmet dependency ContextSizes
+Warning member get_context_sizes will not be bound due to unmet dependency ContextSizes
+Warning member get_mutable_context_sizes will not be bound due to unmet dependency ContextSizes
+Warning member Accept will not be bound due to unmet dependency SystemVisitor<double>
+Warning member Accept will not be bound due to unmet dependency SystemVisitor<double>
+Warning member Accept will not be bound due to unmet dependency SystemVisitor<double>
+Warning member Convert will not be bound due to unmet dependency Image<drake::systems::sensors::PixelType::kDepth16U>
 
 
-autopybind11 run time: 84.3099s
+autopybind11 run time: 74.3875s
 
 Wrote files to: /home/eacousineau/proj/tri/repo/branches/drake/master/drake/tmp/autopybind11
