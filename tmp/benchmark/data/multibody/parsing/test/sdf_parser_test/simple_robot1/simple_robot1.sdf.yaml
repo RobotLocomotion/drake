@@ -14,13 +14,6 @@ configurations:
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
-    name: robot1
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
     name: robot1::base_link
   - X_WF:
       rotation:
@@ -31,7 +24,7 @@ configurations:
     name: robot1::moving_link
   note: Zeros
   q:
-    names: [slider]
+    names: ['robot1::slider']
     values: [0.0]
 - frames:
   - X_WF:
@@ -41,13 +34,6 @@ configurations:
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
     name: WorldBody
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
-    name: robot1
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -64,7 +50,7 @@ configurations:
     name: robot1::moving_link
   note: Ones
   q:
-    names: [slider]
+    names: ['robot1::slider']
     values: [1.0]
 - frames:
   - X_WF:
@@ -74,13 +60,6 @@ configurations:
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
     name: WorldBody
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
-    name: robot1
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -97,7 +76,7 @@ configurations:
     name: robot1::moving_link
   note: Incrementing
   q:
-    names: [slider]
+    names: ['robot1::slider']
     values: [0.1]
 - frames:
   - X_WF:
@@ -107,13 +86,6 @@ configurations:
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
     name: WorldBody
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
-    name: robot1
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -130,7 +102,7 @@ configurations:
     name: robot1::moving_link
   note: Pi/2
   q:
-    names: [slider]
+    names: ['robot1::slider']
     values: [1.5707963267948966]
 expression: {expr: 'make_plant(try_find_file(''multibody/parsing/test/sdf_parser_test/simple_robot1/simple_robot1.sdf''),
     find_resource=False)', module: __main__}

@@ -7,13 +7,6 @@ configurations:
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
-    name: CartPole
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
     name: CartPole::Cart
   - X_WF:
       rotation:
@@ -31,16 +24,9 @@ configurations:
     name: WorldBody
   note: Zeros
   q:
-    names: [CartSlider, PolePin]
+    names: ['CartPole::CartSlider', 'CartPole::PolePin']
     values: [0.0, 0.0]
 - frames:
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [1.0, 0.0, 0.0]
-    name: CartPole
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -64,16 +50,9 @@ configurations:
     name: WorldBody
   note: Ones
   q:
-    names: [CartSlider, PolePin]
+    names: ['CartPole::CartSlider', 'CartPole::PolePin']
     values: [1.0, 1.0]
 - frames:
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.1, 0.0, 0.0]
-    name: CartPole
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -97,16 +76,9 @@ configurations:
     name: WorldBody
   note: Incrementing
   q:
-    names: [CartSlider, PolePin]
+    names: ['CartPole::CartSlider', 'CartPole::PolePin']
     values: [0.1, 0.2]
 - frames:
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [1.5707963267948966, 0.0, 0.0]
-    name: CartPole
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -130,7 +102,7 @@ configurations:
     name: WorldBody
   note: Pi/2
   q:
-    names: [CartSlider, PolePin]
+    names: ['CartPole::CartSlider', 'CartPole::PolePin']
     values: [1.5707963267948966, 1.5707963267948966]
 expression: {expr: 'make_plant(try_find_file(''examples/multibody/cart_pole/cart_pole.sdf''),
     find_resource=False)', module: __main__}

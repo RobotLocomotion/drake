@@ -1,6 +1,6 @@
 without_rename
 GetScopedFrameByName(plant, 'dummy'):
-  ERROR: : Frame dummy appears in multiple model instances.
+  <BodyFrame_[float] name='dummy' index=1 model_instance=2>
 GetScopedFrameByName(plant, 'dummy::dummy'):
   <BodyFrame_[float] name='dummy' index=1 model_instance=2>
 

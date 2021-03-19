@@ -14,13 +14,6 @@ configurations:
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
-    name: four_bar
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
     name: four_bar::A
   - X_WF:
       rotation:
@@ -52,7 +45,7 @@ configurations:
     name: four_bar::Cb_bushing
   note: Zeros
   q:
-    names: [joint_WA, joint_WC, joint_AB]
+    names: ['four_bar::joint_WA', 'four_bar::joint_WC', 'four_bar::joint_AB']
     values: [0.0, 0.0, 0.0]
 - frames:
   - X_WF:
@@ -62,13 +55,6 @@ configurations:
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
     name: WorldBody
-  - X_WF:
-      rotation:
-      - [0.5403023058681398, 0.0, 0.8414709848078965]
-      - [0.0, 1.0, 0.0]
-      - [-0.8414709848078965, 0.0, 0.5403023058681398]
-      translation: [0.0, 0.0, 0.0]
-    name: four_bar
   - X_WF:
       rotation:
       - [0.5403023058681398, 0.0, 0.8414709848078965]
@@ -106,7 +92,7 @@ configurations:
     name: four_bar::Cb_bushing
   note: Ones
   q:
-    names: [joint_WA, joint_WC, joint_AB]
+    names: ['four_bar::joint_WA', 'four_bar::joint_WC', 'four_bar::joint_AB']
     values: [1.0, 1.0, 1.0]
 - frames:
   - X_WF:
@@ -116,13 +102,6 @@ configurations:
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
     name: WorldBody
-  - X_WF:
-      rotation:
-      - [0.9950041652780258, 0.0, 0.09983341664682815]
-      - [0.0, 1.0, 0.0]
-      - [-0.09983341664682815, 0.0, 0.9950041652780258]
-      translation: [0.0, 0.0, 0.0]
-    name: four_bar
   - X_WF:
       rotation:
       - [0.9950041652780258, 0.0, 0.09983341664682815]
@@ -160,7 +139,7 @@ configurations:
     name: four_bar::Cb_bushing
   note: Incrementing
   q:
-    names: [joint_WA, joint_WC, joint_AB]
+    names: ['four_bar::joint_WA', 'four_bar::joint_WC', 'four_bar::joint_AB']
     values: [0.1, 0.2, 0.30000000000000004]
 - frames:
   - X_WF:
@@ -170,13 +149,6 @@ configurations:
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
     name: WorldBody
-  - X_WF:
-      rotation:
-      - [6.123233995736766e-17, 0.0, 1.0]
-      - [0.0, 1.0, 0.0]
-      - [-1.0, 0.0, 6.123233995736766e-17]
-      translation: [0.0, 0.0, 0.0]
-    name: four_bar
   - X_WF:
       rotation:
       - [6.123233995736766e-17, 0.0, 1.0]
@@ -214,7 +186,7 @@ configurations:
     name: four_bar::Cb_bushing
   note: Pi/2
   q:
-    names: [joint_WA, joint_WC, joint_AB]
+    names: ['four_bar::joint_WA', 'four_bar::joint_WC', 'four_bar::joint_AB']
     values: [1.5707963267948966, 1.5707963267948966, 1.5707963267948966]
 expression: {expr: 'make_plant(try_find_file(''examples/multibody/four_bar/four_bar.sdf''),
     find_resource=False)', module: __main__}

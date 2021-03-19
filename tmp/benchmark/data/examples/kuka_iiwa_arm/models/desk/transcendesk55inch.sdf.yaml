@@ -13,13 +13,6 @@ configurations:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
-    name: transcendesk
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
       translation: [-0.243716, -0.625087, 0.0]
     name: transcendesk::table_base
   - X_WF:
@@ -31,7 +24,7 @@ configurations:
     name: transcendesk::table_upper
   note: Zeros
   q:
-    names: [table_height]
+    names: ['transcendesk::table_height']
     values: [0.0]
 - frames:
   - X_WF:
@@ -41,13 +34,6 @@ configurations:
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
     name: WorldBody
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 1.0]
-    name: transcendesk
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -64,7 +50,7 @@ configurations:
     name: transcendesk::table_upper
   note: Ones
   q:
-    names: [table_height]
+    names: ['transcendesk::table_height']
     values: [1.0]
 - frames:
   - X_WF:
@@ -74,13 +60,6 @@ configurations:
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
     name: WorldBody
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.09999999999999998]
-    name: transcendesk
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -97,7 +76,7 @@ configurations:
     name: transcendesk::table_upper
   note: Incrementing
   q:
-    names: [table_height]
+    names: ['transcendesk::table_height']
     values: [0.1]
 - frames:
   - X_WF:
@@ -107,13 +86,6 @@ configurations:
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
     name: WorldBody
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 1.5707963267948966]
-    name: transcendesk
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -130,7 +102,7 @@ configurations:
     name: transcendesk::table_upper
   note: Pi/2
   q:
-    names: [table_height]
+    names: ['transcendesk::table_height']
     values: [1.5707963267948966]
 expression: {expr: 'make_plant(try_find_file(''examples/kuka_iiwa_arm/models/desk/transcendesk55inch.sdf''),
     find_resource=False)', module: __main__}

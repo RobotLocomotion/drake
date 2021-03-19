@@ -14,13 +14,6 @@ configurations:
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
-    name: iiwa14
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
     name: iiwa14::iiwa_link_0
   - X_WF:
       rotation:
@@ -73,8 +66,8 @@ configurations:
     name: iiwa14::iiwa_link_7
   note: Zeros
   q:
-    names: [iiwa_joint_1, iiwa_joint_2, iiwa_joint_3, iiwa_joint_4, iiwa_joint_5,
-      iiwa_joint_6, iiwa_joint_7]
+    names: ['iiwa14::iiwa_joint_1', 'iiwa14::iiwa_joint_2', 'iiwa14::iiwa_joint_3',
+      'iiwa14::iiwa_joint_4', 'iiwa14::iiwa_joint_5', 'iiwa14::iiwa_joint_6', 'iiwa14::iiwa_joint_7']
     values: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 - frames:
   - X_WF:
@@ -84,13 +77,6 @@ configurations:
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
     name: WorldBody
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
-    name: iiwa14
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -149,8 +135,8 @@ configurations:
     name: iiwa14::iiwa_link_7
   note: Ones
   q:
-    names: [iiwa_joint_1, iiwa_joint_2, iiwa_joint_3, iiwa_joint_4, iiwa_joint_5,
-      iiwa_joint_6, iiwa_joint_7]
+    names: ['iiwa14::iiwa_joint_1', 'iiwa14::iiwa_joint_2', 'iiwa14::iiwa_joint_3',
+      'iiwa14::iiwa_joint_4', 'iiwa14::iiwa_joint_5', 'iiwa14::iiwa_joint_6', 'iiwa14::iiwa_joint_7']
     values: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
 - frames:
   - X_WF:
@@ -160,13 +146,6 @@ configurations:
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
     name: WorldBody
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
-    name: iiwa14
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -225,8 +204,8 @@ configurations:
     name: iiwa14::iiwa_link_7
   note: Incrementing
   q:
-    names: [iiwa_joint_1, iiwa_joint_2, iiwa_joint_3, iiwa_joint_4, iiwa_joint_5,
-      iiwa_joint_6, iiwa_joint_7]
+    names: ['iiwa14::iiwa_joint_1', 'iiwa14::iiwa_joint_2', 'iiwa14::iiwa_joint_3',
+      'iiwa14::iiwa_joint_4', 'iiwa14::iiwa_joint_5', 'iiwa14::iiwa_joint_6', 'iiwa14::iiwa_joint_7']
     values: [0.1, 0.2, 0.30000000000000004, 0.4, 0.5, 0.6, 0.7000000000000001]
 - frames:
   - X_WF:
@@ -236,13 +215,6 @@ configurations:
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
     name: WorldBody
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
-    name: iiwa14
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -301,8 +273,8 @@ configurations:
     name: iiwa14::iiwa_link_7
   note: Pi/2
   q:
-    names: [iiwa_joint_1, iiwa_joint_2, iiwa_joint_3, iiwa_joint_4, iiwa_joint_5,
-      iiwa_joint_6, iiwa_joint_7]
+    names: ['iiwa14::iiwa_joint_1', 'iiwa14::iiwa_joint_2', 'iiwa14::iiwa_joint_3',
+      'iiwa14::iiwa_joint_4', 'iiwa14::iiwa_joint_5', 'iiwa14::iiwa_joint_6', 'iiwa14::iiwa_joint_7']
     values: [1.5707963267948966, 1.5707963267948966, 1.5707963267948966, 1.5707963267948966,
       1.5707963267948966, 1.5707963267948966, 1.5707963267948966]
 expression: {expr: 'make_plant(try_find_file(''manipulation/models/iiwa_description/sdf/iiwa14_polytope_collision.sdf''),

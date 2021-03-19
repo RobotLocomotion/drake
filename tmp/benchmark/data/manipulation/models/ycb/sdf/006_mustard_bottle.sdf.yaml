@@ -7,13 +7,6 @@ configurations:
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
-    name: 006_mustard_bottle
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
     name: 006_mustard_bottle::base_link_mustard
   - X_WF:
       rotation:
@@ -27,13 +20,6 @@ configurations:
     names: []
     values: []
 - frames:
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
-    name: 006_mustard_bottle
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -59,13 +45,6 @@ configurations:
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
-    name: 006_mustard_bottle
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
     name: 006_mustard_bottle::base_link_mustard
   - X_WF:
       rotation:
@@ -79,13 +58,6 @@ configurations:
     names: []
     values: []
 - frames:
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
-    name: 006_mustard_bottle
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]

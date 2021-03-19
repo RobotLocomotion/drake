@@ -13,13 +13,6 @@ configurations:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
-    name: box_with_pusher
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.5]
     name: box_with_pusher::box
   - X_WF:
@@ -38,7 +31,7 @@ configurations:
     name: box_with_pusher::ground
   note: Zeros
   q:
-    names: [x_slider, z_slider]
+    names: ['box_with_pusher::x_slider', 'box_with_pusher::z_slider']
     values: [0.0, 0.0]
 - frames:
   - X_WF:
@@ -48,13 +41,6 @@ configurations:
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
     name: WorldBody
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
-    name: box_with_pusher
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -78,7 +64,7 @@ configurations:
     name: box_with_pusher::ground
   note: Ones
   q:
-    names: [x_slider, z_slider]
+    names: ['box_with_pusher::x_slider', 'box_with_pusher::z_slider']
     values: [1.0, 1.0]
 - frames:
   - X_WF:
@@ -88,13 +74,6 @@ configurations:
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
     name: WorldBody
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
-    name: box_with_pusher
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -118,7 +97,7 @@ configurations:
     name: box_with_pusher::ground
   note: Incrementing
   q:
-    names: [x_slider, z_slider]
+    names: ['box_with_pusher::x_slider', 'box_with_pusher::z_slider']
     values: [0.1, 0.2]
 - frames:
   - X_WF:
@@ -128,13 +107,6 @@ configurations:
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
     name: WorldBody
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
-    name: box_with_pusher
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -158,7 +130,7 @@ configurations:
     name: box_with_pusher::ground
   note: Pi/2
   q:
-    names: [x_slider, z_slider]
+    names: ['box_with_pusher::x_slider', 'box_with_pusher::z_slider']
     values: [1.5707963267948966, 1.5707963267948966]
 expression: {expr: 'make_plant(try_find_file(''multibody/plant/test/box.sdf''), find_resource=False)',
   module: __main__}

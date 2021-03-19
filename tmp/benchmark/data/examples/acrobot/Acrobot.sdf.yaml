@@ -7,13 +7,6 @@ configurations:
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
-    name: Acrobot
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
     name: Acrobot::base_link
   - X_WF:
       rotation:
@@ -45,16 +38,9 @@ configurations:
     name: WorldBody
   note: Zeros
   q:
-    names: [shoulder, elbow]
+    names: ['Acrobot::shoulder', 'Acrobot::elbow']
     values: [0.0, 0.0]
 - frames:
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
-    name: Acrobot
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -92,16 +78,9 @@ configurations:
     name: WorldBody
   note: Ones
   q:
-    names: [shoulder, elbow]
+    names: ['Acrobot::shoulder', 'Acrobot::elbow']
     values: [1.0, 1.0]
 - frames:
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
-    name: Acrobot
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -139,16 +118,9 @@ configurations:
     name: WorldBody
   note: Incrementing
   q:
-    names: [shoulder, elbow]
+    names: ['Acrobot::shoulder', 'Acrobot::elbow']
     values: [0.1, 0.2]
 - frames:
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
-    name: Acrobot
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -186,7 +158,7 @@ configurations:
     name: WorldBody
   note: Pi/2
   q:
-    names: [shoulder, elbow]
+    names: ['Acrobot::shoulder', 'Acrobot::elbow']
     values: [1.5707963267948966, 1.5707963267948966]
 expression: {expr: 'make_plant(try_find_file(''examples/acrobot/Acrobot.sdf''), find_resource=False)',
   module: __main__}

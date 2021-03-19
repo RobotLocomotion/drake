@@ -13,13 +13,6 @@ configurations:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
-    name: acrobot
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
       translation: [0.0, 0.15, 0.0]
     name: acrobot::Link1
   - X_WF:
@@ -31,7 +24,7 @@ configurations:
     name: acrobot::Link2
   note: Zeros
   q:
-    names: [ShoulderJoint, ElbowJoint]
+    names: ['acrobot::ShoulderJoint', 'acrobot::ElbowJoint']
     values: [0.0, 0.0]
 - frames:
   - X_WF:
@@ -41,13 +34,6 @@ configurations:
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
     name: WorldBody
-  - X_WF:
-      rotation:
-      - [0.5403023058681398, 0.0, 0.8414709848078965]
-      - [0.0, 1.0, 0.0]
-      - [-0.8414709848078965, 0.0, 0.5403023058681398]
-      translation: [0.0, 0.0, 0.0]
-    name: acrobot
   - X_WF:
       rotation:
       - [0.5403023058681398, 0.0, 0.8414709848078965]
@@ -64,7 +50,7 @@ configurations:
     name: acrobot::Link2
   note: Ones
   q:
-    names: [ShoulderJoint, ElbowJoint]
+    names: ['acrobot::ShoulderJoint', 'acrobot::ElbowJoint']
     values: [1.0, 1.0]
 - frames:
   - X_WF:
@@ -74,13 +60,6 @@ configurations:
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
     name: WorldBody
-  - X_WF:
-      rotation:
-      - [0.9950041652780258, 0.0, 0.09983341664682815]
-      - [0.0, 1.0, 0.0]
-      - [-0.09983341664682815, 0.0, 0.9950041652780258]
-      translation: [0.0, 0.0, 0.0]
-    name: acrobot
   - X_WF:
       rotation:
       - [0.9950041652780258, 0.0, 0.09983341664682815]
@@ -97,7 +76,7 @@ configurations:
     name: acrobot::Link2
   note: Incrementing
   q:
-    names: [ShoulderJoint, ElbowJoint]
+    names: ['acrobot::ShoulderJoint', 'acrobot::ElbowJoint']
     values: [0.1, 0.2]
 - frames:
   - X_WF:
@@ -107,13 +86,6 @@ configurations:
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
     name: WorldBody
-  - X_WF:
-      rotation:
-      - [6.123233995736766e-17, 0.0, 1.0]
-      - [0.0, 1.0, 0.0]
-      - [-1.0, 0.0, 6.123233995736766e-17]
-      translation: [0.0, 0.0, 0.0]
-    name: acrobot
   - X_WF:
       rotation:
       - [6.123233995736766e-17, 0.0, 1.0]
@@ -130,7 +102,7 @@ configurations:
     name: acrobot::Link2
   note: Pi/2
   q:
-    names: [ShoulderJoint, ElbowJoint]
+    names: ['acrobot::ShoulderJoint', 'acrobot::ElbowJoint']
     values: [1.5707963267948966, 1.5707963267948966]
 expression: {expr: 'make_plant(try_find_file(''multibody/benchmarks/acrobot/acrobot.sdf''),
     find_resource=False)', module: __main__}

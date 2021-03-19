@@ -13,13 +13,6 @@ configurations:
       - [0.0007963267107332639, -0.9999996829318347, 0.0]
       - [0.9999996829318347, 0.0007963267107332639, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.0555, 3.4694458519024346e-18, 0.0505]
-    name: simple_gripper
-  - X_WF:
-      rotation:
-      - [0.0007963267107332639, -0.9999996829318347, 0.0]
-      - [0.9999996829318347, 0.0007963267107332639, 0.0]
-      - [0.0, 0.0, 1.0]
       translation: [0.10463298442148984, -3.912592027845746e-05, 0.0505]
     name: simple_gripper::body
   - X_WF:
@@ -45,7 +38,7 @@ configurations:
     name: simple_gripper::y_translate_link
   note: Zeros
   q:
-    names: [translate_joint, finger_sliding_joint]
+    names: ['simple_gripper::translate_joint', 'simple_gripper::finger_sliding_joint']
     values: [0.0, 0.0]
 - frames:
   - X_WF:
@@ -55,13 +48,6 @@ configurations:
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
     name: WorldBody
-  - X_WF:
-      rotation:
-      - [0.0007963267107332639, -0.9999996829318347, 0.0]
-      - [0.9999996829318347, 0.0007963267107332639, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0555, 3.4694458519024346e-18, 0.0505]
-    name: simple_gripper
   - X_WF:
       rotation:
       - [0.0007963267107332639, -0.9999996829318347, 0.0]
@@ -92,7 +78,7 @@ configurations:
     name: simple_gripper::y_translate_link
   note: Ones
   q:
-    names: [translate_joint, finger_sliding_joint]
+    names: ['simple_gripper::translate_joint', 'simple_gripper::finger_sliding_joint']
     values: [1.0, 1.0]
 - frames:
   - X_WF:
@@ -102,13 +88,6 @@ configurations:
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
     name: WorldBody
-  - X_WF:
-      rotation:
-      - [0.0007963267107332639, -0.9999996829318347, 0.0]
-      - [0.9999996829318347, 0.0007963267107332639, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0555, 3.4694458519024346e-18, 0.0505]
-    name: simple_gripper
   - X_WF:
       rotation:
       - [0.0007963267107332639, -0.9999996829318347, 0.0]
@@ -139,7 +118,7 @@ configurations:
     name: simple_gripper::y_translate_link
   note: Incrementing
   q:
-    names: [translate_joint, finger_sliding_joint]
+    names: ['simple_gripper::translate_joint', 'simple_gripper::finger_sliding_joint']
     values: [0.1, 0.2]
 - frames:
   - X_WF:
@@ -149,13 +128,6 @@ configurations:
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
     name: WorldBody
-  - X_WF:
-      rotation:
-      - [0.0007963267107332639, -0.9999996829318347, 0.0]
-      - [0.9999996829318347, 0.0007963267107332639, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0555, 3.4694458519024346e-18, 0.0505]
-    name: simple_gripper
   - X_WF:
       rotation:
       - [0.0007963267107332639, -0.9999996829318347, 0.0]
@@ -186,7 +158,7 @@ configurations:
     name: simple_gripper::y_translate_link
   note: Pi/2
   q:
-    names: [translate_joint, finger_sliding_joint]
+    names: ['simple_gripper::translate_joint', 'simple_gripper::finger_sliding_joint']
     values: [1.5707963267948966, 1.5707963267948966]
 expression: {expr: 'make_plant(try_find_file(''examples/simple_gripper/simple_gripper.sdf''),
     find_resource=False)', module: __main__}

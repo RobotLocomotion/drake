@@ -14,13 +14,6 @@ configurations:
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
-    name: allegro_hand_right
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
     name: allegro_hand_right::hand_root
   - X_WF:
       rotation:
@@ -136,8 +129,12 @@ configurations:
     name: allegro_hand_right::link_9
   note: Zeros
   q:
-    names: [joint_0, joint_12, joint_4, joint_8, joint_1, joint_13, joint_5, joint_9,
-      joint_2, joint_14, joint_6, joint_10, joint_3, joint_15, joint_7, joint_11]
+    names: ['allegro_hand_right::joint_0', 'allegro_hand_right::joint_12', 'allegro_hand_right::joint_4',
+      'allegro_hand_right::joint_8', 'allegro_hand_right::joint_1', 'allegro_hand_right::joint_13',
+      'allegro_hand_right::joint_5', 'allegro_hand_right::joint_9', 'allegro_hand_right::joint_2',
+      'allegro_hand_right::joint_14', 'allegro_hand_right::joint_6', 'allegro_hand_right::joint_10',
+      'allegro_hand_right::joint_3', 'allegro_hand_right::joint_15', 'allegro_hand_right::joint_7',
+      'allegro_hand_right::joint_11']
     values: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
       0.0, 0.0]
 - frames:
@@ -148,13 +145,6 @@ configurations:
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
     name: WorldBody
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
-    name: allegro_hand_right
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -276,8 +266,12 @@ configurations:
     name: allegro_hand_right::link_9
   note: Ones
   q:
-    names: [joint_0, joint_12, joint_4, joint_8, joint_1, joint_13, joint_5, joint_9,
-      joint_2, joint_14, joint_6, joint_10, joint_3, joint_15, joint_7, joint_11]
+    names: ['allegro_hand_right::joint_0', 'allegro_hand_right::joint_12', 'allegro_hand_right::joint_4',
+      'allegro_hand_right::joint_8', 'allegro_hand_right::joint_1', 'allegro_hand_right::joint_13',
+      'allegro_hand_right::joint_5', 'allegro_hand_right::joint_9', 'allegro_hand_right::joint_2',
+      'allegro_hand_right::joint_14', 'allegro_hand_right::joint_6', 'allegro_hand_right::joint_10',
+      'allegro_hand_right::joint_3', 'allegro_hand_right::joint_15', 'allegro_hand_right::joint_7',
+      'allegro_hand_right::joint_11']
     values: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
       1.0, 1.0]
 - frames:
@@ -288,13 +282,6 @@ configurations:
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
     name: WorldBody
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
-    name: allegro_hand_right
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -416,8 +403,12 @@ configurations:
     name: allegro_hand_right::link_9
   note: Incrementing
   q:
-    names: [joint_0, joint_12, joint_4, joint_8, joint_1, joint_13, joint_5, joint_9,
-      joint_2, joint_14, joint_6, joint_10, joint_3, joint_15, joint_7, joint_11]
+    names: ['allegro_hand_right::joint_0', 'allegro_hand_right::joint_12', 'allegro_hand_right::joint_4',
+      'allegro_hand_right::joint_8', 'allegro_hand_right::joint_1', 'allegro_hand_right::joint_13',
+      'allegro_hand_right::joint_5', 'allegro_hand_right::joint_9', 'allegro_hand_right::joint_2',
+      'allegro_hand_right::joint_14', 'allegro_hand_right::joint_6', 'allegro_hand_right::joint_10',
+      'allegro_hand_right::joint_3', 'allegro_hand_right::joint_15', 'allegro_hand_right::joint_7',
+      'allegro_hand_right::joint_11']
     values: [0.1, 0.2, 0.30000000000000004, 0.4, 0.5, 0.6, 0.7000000000000001, 0.8,
       0.9, 1.0, 1.1, 1.2000000000000002, 1.3000000000000003, 1.4000000000000001, 1.5000000000000002,
       1.6]
@@ -429,13 +420,6 @@ configurations:
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
     name: WorldBody
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
-    name: allegro_hand_right
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -557,8 +541,12 @@ configurations:
     name: allegro_hand_right::link_9
   note: Pi/2
   q:
-    names: [joint_0, joint_12, joint_4, joint_8, joint_1, joint_13, joint_5, joint_9,
-      joint_2, joint_14, joint_6, joint_10, joint_3, joint_15, joint_7, joint_11]
+    names: ['allegro_hand_right::joint_0', 'allegro_hand_right::joint_12', 'allegro_hand_right::joint_4',
+      'allegro_hand_right::joint_8', 'allegro_hand_right::joint_1', 'allegro_hand_right::joint_13',
+      'allegro_hand_right::joint_5', 'allegro_hand_right::joint_9', 'allegro_hand_right::joint_2',
+      'allegro_hand_right::joint_14', 'allegro_hand_right::joint_6', 'allegro_hand_right::joint_10',
+      'allegro_hand_right::joint_3', 'allegro_hand_right::joint_15', 'allegro_hand_right::joint_7',
+      'allegro_hand_right::joint_11']
     values: [1.5707963267948966, 1.5707963267948966, 1.5707963267948966, 1.5707963267948966,
       1.5707963267948966, 1.5707963267948966, 1.5707963267948966, 1.5707963267948966,
       1.5707963267948966, 1.5707963267948966, 1.5707963267948966, 1.5707963267948966,

@@ -14,27 +14,20 @@ configurations:
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
-    name: cupboard
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
     name: cupboard::cupboard_body
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.158, -0.1445, 0.0]
+      translation: [0.158, -0.14450000000000002, 0.0]
     name: cupboard::left_door
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.158, 0.1445, 0.0]
+      translation: [0.158, 0.14450000000000002, 0.0]
     name: cupboard::right_door
   - X_WF:
       rotation:
@@ -45,7 +38,7 @@ configurations:
     name: cupboard::top_and_bottom
   note: Zeros
   q:
-    names: [left_door_hinge, right_door_hinge]
+    names: ['cupboard::left_door_hinge', 'cupboard::right_door_hinge']
     values: [0.0, 0.0]
 - frames:
   - X_WF:
@@ -61,27 +54,20 @@ configurations:
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
-    name: cupboard
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
     name: cupboard::cupboard_body
   - X_WF:
       rotation:
       - [0.5403023058681398, -0.8414709848078965, 0.0]
       - [0.8414709848078965, 0.5403023058681398, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.03693721606624352, -0.20189606045293135, 0.0]
+      translation: [0.03693721606624353, -0.20189606045293135, 0.0]
     name: cupboard::left_door
   - X_WF:
       rotation:
       - [0.5403023058681398, -0.8414709848078965, 0.0]
       - [0.8414709848078965, 0.5403023058681398, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.2717076208276467, 0.21535959620985767, 0.0]
+      translation: [0.27170762082764666, 0.2153595962098577, 0.0]
     name: cupboard::right_door
   - X_WF:
       rotation:
@@ -92,7 +78,7 @@ configurations:
     name: cupboard::top_and_bottom
   note: Ones
   q:
-    names: [left_door_hinge, right_door_hinge]
+    names: ['cupboard::left_door_hinge', 'cupboard::right_door_hinge']
     values: [1.0, 1.0]
 - frames:
   - X_WF:
@@ -108,27 +94,20 @@ configurations:
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
-    name: cupboard
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
     name: cupboard::cupboard_body
   - X_WF:
       rotation:
       - [0.9950041652780258, -0.09983341664682815, 0.0]
       - [0.09983341664682815, 0.9950041652780258, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.14403327169999167, -0.14439825161054076, 0.0]
+      translation: [0.14403327169999167, -0.1443982516105408, 0.0]
     name: cupboard::left_door
   - X_WF:
       rotation:
       - [0.9800665778412416, -0.19866933079506122, 0.0]
       - [0.19866933079506122, 0.9800665778412416, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.185554904268641, 0.14887006703750727, 0.0]
+      translation: [0.18555490426864096, 0.1488700670375073, 0.0]
     name: cupboard::right_door
   - X_WF:
       rotation:
@@ -139,7 +118,7 @@ configurations:
     name: cupboard::top_and_bottom
   note: Incrementing
   q:
-    names: [left_door_hinge, right_door_hinge]
+    names: ['cupboard::left_door_hinge', 'cupboard::right_door_hinge']
     values: [0.1, 0.2]
 - frames:
   - X_WF:
@@ -155,27 +134,20 @@ configurations:
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
-    name: cupboard
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
     name: cupboard::cupboard_body
   - X_WF:
       rotation:
       - [6.123233995736766e-17, -1.0, 0.0]
       - [1.0, 6.123233995736766e-17, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.010499999999999954, -0.276, 0.0]
+      translation: [0.010499999999999982, -0.276, 0.0]
     name: cupboard::left_door
   - X_WF:
       rotation:
       - [6.123233995736766e-17, -1.0, 0.0]
       - [1.0, 6.123233995736766e-17, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.28950000000000004, 0.29200000000000004, 0.0]
+      translation: [0.2895, 0.29200000000000004, 0.0]
     name: cupboard::right_door
   - X_WF:
       rotation:
@@ -186,7 +158,7 @@ configurations:
     name: cupboard::top_and_bottom
   note: Pi/2
   q:
-    names: [left_door_hinge, right_door_hinge]
+    names: ['cupboard::left_door_hinge', 'cupboard::right_door_hinge']
     values: [1.5707963267948966, 1.5707963267948966]
 expression: {expr: 'make_plant(try_find_file(''examples/manipulation_station/models/cupboard.sdf''),
     find_resource=False)', module: __main__}
