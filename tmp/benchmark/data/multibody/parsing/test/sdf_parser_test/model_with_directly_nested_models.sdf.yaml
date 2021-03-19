@@ -1,0 +1,277 @@
+# GENERATED FILE - DO NOT EDIT BY HAND
+configurations:
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: grand_parent_model
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: grand_parent_model::parent_model
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: grand_parent_model::parent_model::robot1
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: grand_parent_model::parent_model::robot1::base_link
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: grand_parent_model::parent_model::robot1::moving_link
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: grand_parent_model::parent_model::robot2
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: grand_parent_model::parent_model::robot2::base_link
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: grand_parent_model::parent_model::robot2::moving_link
+  note: Zeros
+  q:
+    names: [slider, weld_robots, slider]
+    values: [0.0, 0.0, 0.0]
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: grand_parent_model
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: grand_parent_model::parent_model
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: grand_parent_model::parent_model::robot1
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: grand_parent_model::parent_model::robot1::base_link
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: grand_parent_model::parent_model::robot1::moving_link
+  - X_WF:
+      rotation:
+      - [0.5403023058681398, -0.8414709848078965, 0.0]
+      - [0.8414709848078965, 0.5403023058681398, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: grand_parent_model::parent_model::robot2
+  - X_WF:
+      rotation:
+      - [0.5403023058681398, -0.8414709848078965, 0.0]
+      - [0.8414709848078965, 0.5403023058681398, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: grand_parent_model::parent_model::robot2::base_link
+  - X_WF:
+      rotation:
+      - [0.5403023058681398, -0.8414709848078965, 0.0]
+      - [0.8414709848078965, 0.5403023058681398, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 1.0]
+    name: grand_parent_model::parent_model::robot2::moving_link
+  note: Ones
+  q:
+    names: [slider, weld_robots, slider]
+    values: [1.0, 1.0, 1.0]
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: grand_parent_model
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: grand_parent_model::parent_model
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: grand_parent_model::parent_model::robot1
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: grand_parent_model::parent_model::robot1::base_link
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: grand_parent_model::parent_model::robot1::moving_link
+  - X_WF:
+      rotation:
+      - [0.9800665778412416, -0.19866933079506122, 0.0]
+      - [0.19866933079506122, 0.9800665778412416, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: grand_parent_model::parent_model::robot2
+  - X_WF:
+      rotation:
+      - [0.9800665778412416, -0.19866933079506122, 0.0]
+      - [0.19866933079506122, 0.9800665778412416, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: grand_parent_model::parent_model::robot2::base_link
+  - X_WF:
+      rotation:
+      - [0.9800665778412416, -0.19866933079506122, 0.0]
+      - [0.19866933079506122, 0.9800665778412416, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.1]
+    name: grand_parent_model::parent_model::robot2::moving_link
+  note: Incrementing
+  q:
+    names: [slider, weld_robots, slider]
+    values: [0.1, 0.2, 0.30000000000000004]
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: grand_parent_model
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: grand_parent_model::parent_model
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: grand_parent_model::parent_model::robot1
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: grand_parent_model::parent_model::robot1::base_link
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: grand_parent_model::parent_model::robot1::moving_link
+  - X_WF:
+      rotation:
+      - [6.123233995736766e-17, -1.0, 0.0]
+      - [1.0, 6.123233995736766e-17, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: grand_parent_model::parent_model::robot2
+  - X_WF:
+      rotation:
+      - [6.123233995736766e-17, -1.0, 0.0]
+      - [1.0, 6.123233995736766e-17, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: grand_parent_model::parent_model::robot2::base_link
+  - X_WF:
+      rotation:
+      - [6.123233995736766e-17, -1.0, 0.0]
+      - [1.0, 6.123233995736766e-17, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 1.5707963267948966]
+    name: grand_parent_model::parent_model::robot2::moving_link
+  note: Pi/2
+  q:
+    names: [slider, weld_robots, slider]
+    values: [1.5707963267948966, 1.5707963267948966, 1.5707963267948966]
+expression: {expr: 'make_plant(try_find_file(''multibody/parsing/test/sdf_parser_test/model_with_directly_nested_models.sdf''),
+    find_resource=False)', module: __main__}
+type_name: tuple

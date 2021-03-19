@@ -14,6 +14,13 @@ configurations:
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
+    name: extra_heavy_duty_table_surface_only_collision
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
     name: extra_heavy_duty_table_surface_only_collision::link
   - X_WF:
       rotation:
@@ -34,6 +41,13 @@ configurations:
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
     name: WorldBody
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: extra_heavy_duty_table_surface_only_collision
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -66,6 +80,13 @@ configurations:
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
+    name: extra_heavy_duty_table_surface_only_collision
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
     name: extra_heavy_duty_table_surface_only_collision::link
   - X_WF:
       rotation:
@@ -86,6 +107,13 @@ configurations:
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
     name: WorldBody
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: extra_heavy_duty_table_surface_only_collision
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
