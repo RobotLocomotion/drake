@@ -153,14 +153,14 @@ def main():
     source_tree = parent_dir(abspath(__file__), count=2)
     cd(source_tree)
 
-    with safe_git_restore_context():
-        with safe_git_restore_context() as starting_ref:
-            out = (
-                checkout_merge_base_build_and_stash_regression_artifacts(
-                    starting_ref
-                )
+    with safe_git_restore_context() as starting_ref:
+        out = (
+            checkout_merge_base_build_and_stash_regression_artifacts(
+                starting_ref
             )
+        )
 
+    try:
         out.unstash_data()
         shell(f"git add -A {out.regression_data_dir}")
         shell(f"git commit -m 'Regenerate model_regression_test with merge-base {out.merge_base}'")
@@ -169,6 +169,10 @@ def main():
         generate(out.regression_data_dir)
         shell(f"git add -A {out.regression_data_dir}")
         shell(f"git commit -m 'Regenerate on latest version of code'")
+    except:
+        # Hard reset to starting ref.
+        shell(f"git reset --hard {starting_ref}")
+        raise
 
 
 if __name__ == "__main__":
