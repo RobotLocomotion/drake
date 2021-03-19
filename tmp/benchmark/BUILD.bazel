@@ -35,3 +35,10 @@ drake_py_test(
     deps = [":model_benchmark"],
     allow_import_unittest = True,
 )
+
+drake_py_binary(
+    name = "repro_anzu_issue",
+    srcs = ["repro_anzu_issue.py"],
+    data = ["repro_anzu_issue_dummy.sdf"],
+    deps = ["//bindings/pydrake"],
+)

@@ -40,7 +40,7 @@ def with_rename(model_file):
 
 
 def main():
-    model_file = FindResourceOrThrow("drake/tmp/dummy.sdf")
+    model_file = FindResourceOrThrow("drake/tmp/benchmark/repro_anzu_issue_dummy.sdf")
 
     print("without_rename")
     without_rename(model_file)

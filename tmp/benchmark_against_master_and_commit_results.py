@@ -7,7 +7,7 @@ thingers around.
 
 from contextlib import contextmanager
 import os
-from os.path import abspath, dirname, isdir
+from os.path import abspath, dirname, isdir, join
 from subprocess import run, PIPE
 from textwrap import dedent
 import sys
@@ -75,18 +75,50 @@ def safe_git_restore_context():
         shell(f"git checkout -f {starting_ref}")
 
 
+def generate(regression_data_dir):
+    # Ensure we remove the folder (in case there were ignored files).
+    shell(f"rm -rf {regression_data_dir}")
+
+    shell("bazel build //tmp/benchmark:py/model_regression_test //tmp/benchmark:repro_anzu_issue")
+    shell("./bazel-bin/tmp/benchmark/py/model_regression_test --regenerate")
+    assert isdir(regression_data_dir), regression_data_dir
+
+    repro_output = subshell("./bazel-bin/tmp/benchmark/repro_anzu_issue")
+    with open(join(regression_data_dir, "repro_anzu_issue.output.txt"), "w") as f:
+        f.write(repro_output.strip() + "\n")
+
+
+class Results:
+    # Would be nice to use dataclasses, but alas, Python 3.6 on Ubuntu 18.04 :(
+    merge_base: str = None
+    regression_data_dir: str = None
+    _stashed_regression_data_dir: str = "/tmp/drake_stash_data"
+
+    def assert_valid(self):
+        assert self.merge_base is not None
+        assert self.regression_data_dir is not None
+
+    def stash_data(self):
+        self.assert_valid()
+        # Don't use `git stash` to avoid conflicts. We're just gonna blow away the
+        # results.
+        shell(f"rm -rf {self._stashed_regression_data_dir}")
+        shell(f"mv {self.regression_data_dir} {self._stashed_regression_data_dir}")
+
+    def unstash_data(self):
+        # Blantaly use the new results, removing all old stuff.
+        self.assert_valid()
+        shell(f"rm -rf {self.regression_data_dir}")
+        shell(f"mv {self._stashed_regression_data_dir} {self.regression_data_dir}")
+
+
 def checkout_merge_base_build_and_stash_regression_artifacts(starting_ref):
     local_tmp_dir = "tmp"
     code_dir = "tmp/benchmark"
-    regression_data_dir = "tmp/benchmark/data"
     non_restorable_dir = "tmp/repos"
 
-    if isdir(regression_data_dir):
-        raise UserError(dedent(f"""\
-        The regression data folder should not yet exist: {regression_data_dir}
-        Please remove it and commit that state in git before
-        running this script.
-        """))
+    out = Results()
+    out.regression_data_dir = "tmp/benchmark/data"
 
     if isdir(non_restorable_dir):
         raise UserError(dedent(f"""\
@@ -94,23 +126,18 @@ def checkout_merge_base_build_and_stash_regression_artifacts(starting_ref):
         easily restored: {non_restorable_dir}
         """))
 
-    merge_base = subshell("git merge-base upstream/master HEAD")
-    shell(f"git checkout {merge_base}")
+    out.merge_base = subshell("git merge-base upstream/master HEAD")
+    shell(f"git checkout {out.merge_base}")
     shell("git log -n 1 --oneline --no-decorate")
 
     # Copy code directory (and have it be staged).
     assert not isdir(code_dir), code_dir
     shell(f"git checkout {starting_ref} -- {code_dir}")
 
-    shell("bazel build //tmp/benchmark:py/model_regression_test")
-    shell("./bazel-bin/tmp/benchmark/py/model_regression_test --regenerate")
+    generate(out.regression_data_dir)
+    out.stash_data()
 
-    assert isdir(regression_data_dir), regression_data_dir
-
-    # Stash the newly generated regression data.
-    shell(f"git stash push -u --keep-index -- {regression_data_dir}")
-
-    # Remove code directory.
+    # Remove code directory to prevent too many conflicts.
     shell(f"git reset")
     shell(f"rm -rf {local_tmp_dir}")
 
@@ -118,44 +145,30 @@ def checkout_merge_base_build_and_stash_regression_artifacts(starting_ref):
     status_text = subshell("git --no-pager status -s")
     assert status_text == "", status_text
 
-    return merge_base, regression_data_dir
+    out.assert_valid()
+    return out
 
 
 def main():
-    source_tree = parent_dir(abspath(__file__), count=3)
+    source_tree = parent_dir(abspath(__file__), count=2)
     cd(source_tree)
 
-    with safe_git_restore_context() as starting_ref:
-        merge_base, regression_data_dir = (
-            checkout_merge_base_build_and_stash_regression_artifacts(
-                starting_ref
-            )
-        )
-
-    # Rebuild benchmark ('cause it's confusing otherwise...)
-    shell("bazel build //tmp/benchmark:py/model_regression_test")
-
-    shell("git stash pop")
-
-    print(dedent(FR"""
-        For new artifacts, suggested staging and commit commands:
-
-            ( set -eux;
-            cd {source_tree}
-            git add -A {regression_data_dir}
-            git commit -m \
-                "Regenerate model_regression_test with merge-base {merge_base}"
+    with safe_git_restore_context():
+        with safe_git_restore_context() as starting_ref:
+            out = (
+                checkout_merge_base_build_and_stash_regression_artifacts(
+                    starting_ref
+                )
             )
 
-        To then regenerate the newer stuff:
+        out.unstash_data()
+        shell(f"git add -A {out.regression_data_dir}")
+        shell(f"git commit -m 'Regenerate model_regression_test with merge-base {out.merge_base}'")
 
-            (set -eux;
-            cd {source_tree}
-            ./bazel-bin/tmp/benchmark/py/model_regression_test --regenerate
-            git add -A {regression_data_dir}
-            git commit -m "Regenerate on latest version of code"
-            )
-    """))
+        # Replay benchmark.
+        generate(out.regression_data_dir)
+        shell(f"git add -A {out.regression_data_dir}")
+        shell(f"git commit -m 'Regenerate on latest version of code'")
 
 
 if __name__ == "__main__":

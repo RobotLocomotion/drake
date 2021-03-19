@@ -7,10 +7,12 @@ Towards testing Composition out in Drake:
 ## Benchmarking Models
 
 First, make sure your git source tree isn't dirty, then run the following
-script (which will do git finagling, some Bazel build stuff, etc.):
+script (which will do git finagling, some Bazel build stuff, etc.).
+
+**WARNING**: This will auto-commit some artifacts.
 
 ```sh
-./tmp/benchmark/generate_benchmark_from_master.py
+./tmp/benchmark_against_master_and_commit_results.py
 ```
 
 ## Direct Rebuild of External Deps
