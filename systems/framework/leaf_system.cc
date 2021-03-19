@@ -709,7 +709,7 @@ void LeafSystem<T>::DoPublish(
     const Context<T>& context,
     const std::vector<PublishEvent<T>>& events) const {
   for (const PublishEvent<T>& event : events) {
-    event.handle(context);
+    event.handle(context, *this);
   }
 }
 
@@ -719,7 +719,7 @@ void LeafSystem<T>::DoCalcDiscreteVariableUpdates(
     const std::vector<DiscreteUpdateEvent<T>>& events,
     DiscreteValues<T>* discrete_state) const {
   for (const DiscreteUpdateEvent<T>& event : events) {
-    event.handle(context, discrete_state);
+    event.handle(context, *this, discrete_state);
   }
 }
 
@@ -729,7 +729,7 @@ void LeafSystem<T>::DoCalcUnrestrictedUpdate(
     const std::vector<UnrestrictedUpdateEvent<T>>& events,
     State<T>* state) const {
   for (const UnrestrictedUpdateEvent<T>& event : events) {
-    event.handle(context, state);
+    event.handle(context, *this, state);
   }
 }
 

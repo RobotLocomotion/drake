@@ -13,6 +13,8 @@
 namespace drake {
 namespace systems {
 
+template <typename T> class System;
+
 /** @defgroup events_description System Events
     @ingroup systems
 
@@ -609,7 +611,8 @@ class PublishEvent final : public Event<T> {
   /**
    * Callback function that processes a publish event.
    */
-  typedef std::function<void(const Context<T>&, const PublishEvent<T>&)>
+  typedef std::function<void(const Context<T>&, const System<T>&,
+                             const PublishEvent<T>&)>
       PublishCallback;
 
   /// Makes a PublishEvent with no trigger type, no event data, and
@@ -639,8 +642,8 @@ class PublishEvent final : public Event<T> {
    * Calls the optional callback function, if one exists, with @p context and
    * `this`.
    */
-  void handle(const Context<T>& context) const {
-    if (callback_ != nullptr) callback_(context, *this);
+  void handle(const Context<T>& context, const System<T>& system) const {
+    if (callback_ != nullptr) callback_(context, system, *this);
   }
 
  private:
@@ -673,8 +676,8 @@ class DiscreteUpdateEvent final : public Event<T> {
   /**
    * Callback function that processes a discrete update event.
    */
-  typedef std::function<void(const Context<T>&, const DiscreteUpdateEvent<T>&,
-                             DiscreteValues<T>*)>
+  typedef std::function<void(const Context<T>&, const System<T>&,
+                             const DiscreteUpdateEvent<T>&, DiscreteValues<T>*)>
       DiscreteUpdateCallback;
 
   /// Makes a DiscreteUpdateEvent with no trigger type, no event data, and
@@ -707,8 +710,9 @@ class DiscreteUpdateEvent final : public Event<T> {
    * 'this' and @p discrete_state.
    */
   void handle(const Context<T>& context,
+              const System<T>& system,
               DiscreteValues<T>* discrete_state) const {
-    if (callback_ != nullptr) callback_(context, *this, discrete_state);
+    if (callback_ != nullptr) callback_(context, system, *this, discrete_state);
   }
 
  private:
@@ -741,7 +745,7 @@ class UnrestrictedUpdateEvent final : public Event<T> {
   /**
    * Callback function that processes an unrestricted update event.
    */
-  typedef std::function<void(const Context<T>&,
+  typedef std::function<void(const Context<T>&, const System<T>&,
                              const UnrestrictedUpdateEvent<T>&, State<T>*)>
       UnrestrictedUpdateCallback;
 
@@ -773,8 +777,8 @@ class UnrestrictedUpdateEvent final : public Event<T> {
    * Calls the optional callback function, if one exists, with @p context,
    * `this` and @p discrete_state.
    */
-  void handle(const Context<T>& context, State<T>* state) const {
-    if (callback_ != nullptr) callback_(context, *this, state);
+  void handle(const Context<T>& context, const System<T>& system, State<T>* state) const {
+    if (callback_ != nullptr) callback_(context, system, *this, state);
   }
 
  private:

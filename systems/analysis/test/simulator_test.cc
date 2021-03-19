@@ -631,9 +631,8 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimpleZeroToPos) {
   // Set empty system to trigger when time is zero.
   StatelessSystem system(0, WitnessFunctionDirection::kCrossesZero);
   int num_publishes = 0;
-  system.set_publish_callback([&](const Context<double>& context){
-    num_publishes++;
-  });
+  system.set_publish_callback(
+      [&](const Context<double>& context) { num_publishes++; });
 
   const double h = 1;
   Simulator<double> simulator(system);
@@ -725,9 +724,11 @@ class PeriodicPublishWithTimedWitnessSystem final : public LeafSystem<double> {
       1.0, 0.5, &PeriodicPublishWithTimedWitnessSystem::PublishPeriodic);
 
     // Declare the publish event for the witness trigger.
-    auto fn = [this](const Context<double>& context,
-        const PublishEvent<double>& witness_publish_event) {
-      return this->PublishWitness(context, witness_publish_event);
+    auto fn = [](const Context<double>& context, const System<double>& system,
+                 const PublishEvent<double>& witness_publish_event) {
+      const auto& sys =
+          dynamic_cast<const PeriodicPublishWithTimedWitnessSystem&>(system);
+      return sys.PublishWitness(context, witness_publish_event);
     };
     PublishEvent<double> witness_publish(fn);
     witness_ = this->MakeWitnessFunction(
@@ -1323,32 +1324,38 @@ class DiscreteInputAccumulator final : public LeafSystem<double> {
     DeclareVectorInputPort("u", BasicVector<double>(1));
 
     // Set initial condition x_0 = 0, and clear the result.
-    DeclareInitializationEvent(
-        DiscreteUpdateEvent<double>([this](const Context<double>&,
-                                           const DiscreteUpdateEvent<double>&,
-                                           DiscreteValues<double>* x_0) {
+    DeclareInitializationEvent(DiscreteUpdateEvent<double>(
+        [](const Context<double>&, const System<double>& system,
+           const DiscreteUpdateEvent<double>&, DiscreteValues<double>* x_0) {
+          auto& sys = const_cast<DiscreteInputAccumulator&>(
+              dynamic_cast<const DiscreteInputAccumulator&>(system));
           x_0->get_mutable_vector()[0] = 0.;
-          result_.clear();
+          sys.result_.clear();
         }));
 
     // Output y_n using a Drake "publish" event (occurs at the end of step n).
     DeclarePeriodicEvent(
         kPeriod, kPublishOffset,
-        PublishEvent<double>(
-            [this](const Context<double>& context,
-                   const PublishEvent<double>&) {
-              result_.push_back(get_x(context));  // y_n = x_n
-            }));
+        PublishEvent<double>([](const Context<double>& context,
+                                const System<double>& system,
+                                const PublishEvent<double>&) {
+          auto& sys = const_cast<DiscreteInputAccumulator&>(
+              dynamic_cast<const DiscreteInputAccumulator&>(system));
+          sys.result_.push_back(sys.get_x(context));  // y_n = x_n
+        }));
 
     // Update to x_{n+1} (x_np1), using a Drake "discrete update" event (occurs
     // at the beginning of step n+1).
     DeclarePeriodicEvent(
         kPeriod, kPublishOffset,
-        DiscreteUpdateEvent<double>([this](const Context<double>& context,
-                                           const DiscreteUpdateEvent<double>&,
-                                           DiscreteValues<double>* x_np1) {
-          const double x_n = get_x(context);
-          const double u = get_input_port(0).Eval(context)[0];
+        DiscreteUpdateEvent<double>([](const Context<double>& context,
+                                       const System<double>& system,
+                                       const DiscreteUpdateEvent<double>&,
+                                       DiscreteValues<double>* x_np1) {
+          auto& sys = const_cast<DiscreteInputAccumulator&>(
+              dynamic_cast<const DiscreteInputAccumulator&>(system));
+          const double x_n = sys.get_x(context);
+          const double u = sys.get_input_port(0).Eval(context)[0];
           x_np1->get_mutable_vector()[0] = x_n + u;  // x_{n+1} = x_n + u(t)
         }));
   }
@@ -2112,12 +2119,19 @@ GTEST_TEST(SimulatorTest, Initialization) {
     InitializationTestSystem() {
       PublishEvent<double> pub_event(
           TriggerType::kInitialization,
-          std::bind(&InitializationTestSystem::InitPublish, this,
-                    std::placeholders::_1, std::placeholders::_2));
+          [](const Context<double>& context, const System<double>& system,
+             const PublishEvent<double>& witness_publish_event) {
+            auto& sys = const_cast<InitializationTestSystem&>(
+                dynamic_cast<const InitializationTestSystem&>(system));
+            EXPECT_EQ(context.get_time(), 0);
+            EXPECT_EQ(witness_publish_event.get_trigger_type(),
+                      TriggerType::kInitialization);
+            sys.pub_init_ = true;
+          });
       DeclareInitializationEvent(pub_event);
 
-      DeclareInitializationEvent(DiscreteUpdateEvent<double>(
-          TriggerType::kInitialization));
+      DeclareInitializationEvent(
+          DiscreteUpdateEvent<double>(TriggerType::kInitialization));
       DeclareInitializationEvent(UnrestrictedUpdateEvent<double>(
           TriggerType::kInitialization));
 
@@ -2137,14 +2151,6 @@ GTEST_TEST(SimulatorTest, Initialization) {
     }
 
    private:
-    void InitPublish(const Context<double>& context,
-                     const PublishEvent<double>& event) const {
-      EXPECT_EQ(context.get_time(), 0);
-      EXPECT_EQ(event.get_trigger_type(),
-                TriggerType::kInitialization);
-      pub_init_ = true;
-    }
-
     void DoCalcDiscreteVariableUpdates(
         const Context<double>& context,
         const std::vector<DiscreteUpdateEvent<double>>& events,
@@ -2374,10 +2380,11 @@ GTEST_TEST(SimulatorTest, MissedPublishEventIssue13296) {
       const double inf = std::numeric_limits<double>::infinity();
       *next_update_time = message_is_waiting_ ? context.get_time() : inf;
       PublishEvent<double> event(
-          TriggerType::kTimed,
-          [this](const Context<double>& handler_context,
-                 const PublishEvent<double>& publish_event) {
-            this->MyPublishHandler(handler_context, publish_event);
+          TriggerType::kTimed, [](const Context<double>& handler_context,
+                                  const System<double>& system,
+                                  const PublishEvent<double>& publish_event) {
+            const auto& sys = dynamic_cast<const RightNowEventSystem&>(system);
+            sys.MyPublishHandler(handler_context, publish_event);
           });
       event.AddToComposite(event_info);
     }
