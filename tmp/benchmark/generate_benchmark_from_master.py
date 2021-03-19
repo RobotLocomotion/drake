@@ -146,6 +146,15 @@ def main():
             git commit -m \
                 "Regenerate model_regression_test with merge-base {merge_base}"
             )
+
+        To then regenerate the newer stuff:
+
+            (set -eux;
+            cd {source_tree}
+            ./bazel-bin/tmp/benchmark/py/model_regression_test --regenerate
+            git add -A {regression_data_dir}
+            git commit -m "Regenerate on latest version of code"
+            )
     """))
 
 
