@@ -55,11 +55,8 @@ $ bazel-bin/doc/doxygen --help  # To learn about the possible options.
 To generate the Python API documentation:
 
 ```
-$ bazel run //bindings/pydrake/doc:serve_sphinx [-- --browser=false]
+$ bazel run //doc/pydrake:serve_sphinx [-- --browser=false]
 ```
-
-The contents of the Python API documentation are also available via
-``bazel build //bindings/pydrake/doc:sphinx.zip``.
 
 # Continuous Integration
 

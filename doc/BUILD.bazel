@@ -167,7 +167,7 @@ drake_py_binary(
     data = [
         ":doxygen",
         ":gen_jekyll",
-        "//bindings/pydrake/doc:gen_sphinx",
+        "//doc/pydrake:gen_sphinx",
     ],
     tags = _DEFAULT_BINARY_TAGS,
     deps = [
@@ -184,8 +184,8 @@ filegroup(
         ":doxygen",
         ":gen_jekyll",
         ":serve_jekyll",
-        "//bindings/pydrake/doc:gen_sphinx",
-        "//bindings/pydrake/doc:serve_sphinx",
+        "//doc/pydrake:gen_sphinx",
+        "//doc/pydrake:serve_sphinx",
     ],
     tags = ["manual"],
 )
@@ -197,7 +197,7 @@ test_suite(
     tags = ["manual"],
     tests = [
         ":gen_jekyll_test",
-        "//bindings/pydrake/doc:gen_sphinx_test",
+        "//doc/pydrake:gen_sphinx_test",
     ],
 )
 
