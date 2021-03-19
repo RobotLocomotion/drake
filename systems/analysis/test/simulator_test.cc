@@ -1088,12 +1088,7 @@ GTEST_TEST(SimulatorTest, ExampleDiscreteSystem) {
 
   // Create a Simulator and use it to advance time until t=3*h.
   Simulator<double> simulator(*diagram);
-  simulator
-      .Initialize();  // Trigger first (and only allowable) heap allocation.
-  {
-    test::LimitMalloc heap_alloc_checker;
-    simulator.AdvanceTo(3 * ExampleDiscreteSystem::kPeriod);
-  }
+  simulator.AdvanceTo(3 * ExampleDiscreteSystem::kPeriod);
 
   testing::internal::CaptureStdout();  // Not in example.
 
@@ -1110,6 +1105,45 @@ GTEST_TEST(SimulatorTest, ExampleDiscreteSystem) {
                     "1: 10 (0.02)\n"
                     "2: 20 (0.04)\n"
                     "3: 30 (0.06)\n");
+}
+
+class ExamplePublishingSystem final : public LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExamplePublishingSystem)
+
+  ExamplePublishingSystem() {
+    DeclarePerStepPublishEvent(
+        &ExamplePublishingSystem::Update);
+  }
+
+ private:
+  systems::EventStatus Update(const systems::Context<double>&) const {
+    return systems::EventStatus::Succeeded();
+  }
+};
+
+
+// Tests that heap allocations do not occur from Simulator and the systems
+// framework for systems that do unrestricted updates and do not have continuous
+// state.
+GTEST_TEST(SimulatorTest,
+           NoHeapAllocsInSimulatorForSystemsWithoutContinuousState) {
+  // Build a Diagram containing the Example system so we can test both Diagrams
+  // and LeafSystems at once.
+  DiagramBuilder<double> builder;
+  builder.AddSystem<ExamplePublishingSystem>();
+  auto diagram = builder.Build();
+
+  // Create a Simulator and use it to advance time until t=3*h.
+  Simulator<double> simulator(*diagram);
+  simulator
+      .Initialize();  // Trigger first (and only allowable) heap allocation.
+  {
+    test::LimitMalloc heap_alloc_checker;
+    simulator.AdvanceTo(1.0);
+    simulator.AdvanceTo(2.0);
+    simulator.AdvanceTo(3.0);
+  }
 }
 
 // A hybrid discrete-continuous system:

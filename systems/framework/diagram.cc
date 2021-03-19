@@ -853,7 +853,7 @@ void Diagram<T>::DoCalcNextUpdateTime(const Context<T>& context,
   *next_update_time = std::numeric_limits<double>::infinity();
 
   // Iterate over the subsystems, and harvest the most imminent updates.
-  std::vector<T> times(num_subsystems());
+  std::array<T, kMaxSubsystems> times;
   for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
     const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
     CompositeEventCollection<T>& subinfo =
