@@ -6,6 +6,8 @@
 #include <pybind11/stl.h>
 #include <sstream>
 
+using namespace drake::math;
+
 namespace py = pybind11;
 void apb11_pydrake_AutoDiffXd_py_register(py::module &m) {
   static bool called = false;
@@ -13,8 +15,6 @@ void apb11_pydrake_AutoDiffXd_py_register(py::module &m) {
     return;
   }
   called = true;
-  using namespace drake::math;
-
   using PyAutoDiffXd_0 = Eigen::VectorXd;
 
   py::class_<::Eigen::AutoDiffScalar<PyAutoDiffXd_0>> PyAutoDiffXd(

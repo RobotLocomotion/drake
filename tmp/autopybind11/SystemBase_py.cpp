@@ -3,37 +3,38 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-class SystemBase_publicist : public ::drake::systems::SystemBase {
+using namespace drake::systems;
+
+class SystemBase_publicist : public SystemBase {
 public:
-  using ::drake::systems::SystemBase::AddAbstractParameter;
-  using ::drake::systems::SystemBase::AddAbstractState;
-  using ::drake::systems::SystemBase::AddDiscreteStateGroup;
-  using ::drake::systems::SystemBase::AddInputPort;
-  using ::drake::systems::SystemBase::AddNumericParameter;
-  using ::drake::systems::SystemBase::AddOutputPort;
-  using ::drake::systems::SystemBase::assign_next_dependency_ticket;
-  using ::drake::systems::SystemBase::ContextSizes;
-  using ::drake::systems::SystemBase::DeclareCacheEntryWithKnownTicket;
-  using ::drake::systems::SystemBase::DoAllocateContext;
-  using ::drake::systems::SystemBase::EvalAbstractInputImpl;
-  using ::drake::systems::SystemBase::get_parent_service;
-  using ::drake::systems::SystemBase::get_system_id;
-  using ::drake::systems::SystemBase::GetInputPortBaseOrThrow;
-  using ::drake::systems::SystemBase::GetOutputPortBaseOrThrow;
-  using ::drake::systems::SystemBase::InitializeContextBase;
-  using ::drake::systems::SystemBase::MakeFixInputPortTypeChecker;
-  using ::drake::systems::SystemBase::NextInputPortName;
-  using ::drake::systems::SystemBase::NextOutputPortName;
-  using ::drake::systems::SystemBase::
-      set_implicit_time_derivatives_residual_size;
-  using ::drake::systems::SystemBase::set_parent_service;
-  using ::drake::systems::SystemBase::ThrowCantEvaluateInputPort;
-  using ::drake::systems::SystemBase::ThrowInputPortHasWrongType;
-  using ::drake::systems::SystemBase::ThrowInputPortIndexOutOfRange;
-  using ::drake::systems::SystemBase::ThrowNegativePortIndex;
-  using ::drake::systems::SystemBase::ThrowNotAVectorInputPort;
-  using ::drake::systems::SystemBase::ThrowOutputPortIndexOutOfRange;
-  using ::drake::systems::SystemBase::ThrowValidateContextMismatch;
+  using SystemBase::AddAbstractParameter;
+  using SystemBase::AddAbstractState;
+  using SystemBase::AddDiscreteStateGroup;
+  using SystemBase::AddInputPort;
+  using SystemBase::AddNumericParameter;
+  using SystemBase::AddOutputPort;
+  using SystemBase::assign_next_dependency_ticket;
+  using SystemBase::ContextSizes;
+  using SystemBase::DeclareCacheEntryWithKnownTicket;
+  using SystemBase::DoAllocateContext;
+  using SystemBase::EvalAbstractInputImpl;
+  using SystemBase::get_parent_service;
+  using SystemBase::get_system_id;
+  using SystemBase::GetInputPortBaseOrThrow;
+  using SystemBase::GetOutputPortBaseOrThrow;
+  using SystemBase::InitializeContextBase;
+  using SystemBase::MakeFixInputPortTypeChecker;
+  using SystemBase::NextInputPortName;
+  using SystemBase::NextOutputPortName;
+  using SystemBase::set_implicit_time_derivatives_residual_size;
+  using SystemBase::set_parent_service;
+  using SystemBase::ThrowCantEvaluateInputPort;
+  using SystemBase::ThrowInputPortHasWrongType;
+  using SystemBase::ThrowInputPortIndexOutOfRange;
+  using SystemBase::ThrowNegativePortIndex;
+  using SystemBase::ThrowNotAVectorInputPort;
+  using SystemBase::ThrowOutputPortIndexOutOfRange;
+  using SystemBase::ThrowValidateContextMismatch;
 };
 
 namespace py = pybind11;
@@ -43,8 +44,6 @@ void apb11_pydrake_SystemBase_py_register(py::module &m) {
     return;
   }
   called = true;
-  using namespace drake::systems;
-
   py::class_<SystemBase, internal::SystemMessageInterface> PySystemBase(
       m, "SystemBase");
 

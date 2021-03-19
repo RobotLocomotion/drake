@@ -4,6 +4,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+using namespace drake::math;
+
 namespace py = pybind11;
 void apb11_pydrake_RotationMatrix_py_register(py::module &m) {
   static bool called = false;
@@ -11,8 +13,6 @@ void apb11_pydrake_RotationMatrix_py_register(py::module &m) {
     return;
   }
   called = true;
-  using namespace drake::math;
-
   using PyRotationMatrix_double_0 = double;
 
   py::class_<RotationMatrix<PyRotationMatrix_double_0>> PyRotationMatrix_double(
@@ -225,14 +225,14 @@ void apb11_pydrake_RotationMatrix_py_register(py::module &m) {
   using PyRotationMatrix_Eigen_AutoDiffScalar_Eigen_VectorXd_0 =
       drake::AutoDiffXd;
 
-  py::class_<RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>>>
+  py::class_<RotationMatrix<drake::AutoDiffXd>>
       PyRotationMatrix_Eigen_AutoDiffScalar_Eigen_VectorXd(
           m, "RotationMatrix_Eigen_AutoDiffScalar_Eigen_VectorXd");
 
   PyRotationMatrix_Eigen_AutoDiffScalar_Eigen_VectorXd
-      .def(py::init<Eigen::Ref<
-               RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &,
-               0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &>(),
+      .def(py::init<
+               Eigen::Ref<RotationMatrix<drake::AutoDiffXd> const &, 0,
+                          Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &>(),
            py::arg("arg0"))
       .def(py::init<>())
       .def(
@@ -244,93 +244,76 @@ void apb11_pydrake_RotationMatrix_py_register(py::module &m) {
       .def(py::init<::Eigen::Quaternion<Eigen::AutoDiffScalar<Eigen::VectorXd>,
                                         0> const &>(),
            py::arg("quaternion"))
-      .def(py::init<::Eigen::AngleAxis<
-               Eigen::AutoDiffScalar<Eigen::VectorXd>> const &>(),
+      .def(py::init<::Eigen::AngleAxis<drake::AutoDiffXd> const &>(),
            py::arg("theta_lambda"))
-      .def(py::init<
-               RollPitchYaw<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &>(),
-           py::arg("rpy"))
+      .def(py::init<RollPitchYaw<drake::AutoDiffXd> const &>(), py::arg("rpy"))
       .def(
           "GetMaximumAbsoluteDifference",
-          [](RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-             Eigen::Ref<
-                 RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &,
-                 0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &other) {
+          [](RotationMatrix<drake::AutoDiffXd> &self,
+             Eigen::Ref<RotationMatrix<drake::AutoDiffXd> const &, 0,
+                        Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &other) {
             return self.GetMaximumAbsoluteDifference(other);
           })
       .def("GetMeasureOfOrthonormality",
-           [](RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
+           [](RotationMatrix<drake::AutoDiffXd> &self,
               Eigen::Ref<::Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>,
                                          3, 3, 0, 3, 3> const &,
                          0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &R) {
              return self.GetMeasureOfOrthonormality(R);
            })
       .def_static("Identity",
-                  static_cast<RotationMatrix<
-                      Eigen::AutoDiffScalar<Eigen::VectorXd>> const &(*)()>(
-                      &RotationMatrix<
-                          Eigen::AutoDiffScalar<Eigen::VectorXd>>::Identity),
+                  static_cast<RotationMatrix<drake::AutoDiffXd> const &(*)()>(
+                      &RotationMatrix<drake::AutoDiffXd>::Identity),
                   py::return_value_policy::reference_internal)
       .def(
           "IsExactlyEqualTo",
-          [](RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-             Eigen::Ref<
-                 RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &,
-                 0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &other) {
+          [](RotationMatrix<drake::AutoDiffXd> &self,
+             Eigen::Ref<RotationMatrix<drake::AutoDiffXd> const &, 0,
+                        Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &other) {
             return self.IsExactlyEqualTo(other);
           })
       .def("IsExactlyIdentity",
-           static_cast<::drake::scalar_predicate<
-               Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                           type (RotationMatrix<Eigen::AutoDiffScalar<
-                                     Eigen::VectorXd>>::*)() const>(
-               &RotationMatrix<
-                   Eigen::AutoDiffScalar<Eigen::VectorXd>>::IsExactlyIdentity))
+           static_cast<::drake::scalar_predicate<drake::AutoDiffXd>::type (
+               RotationMatrix<drake::AutoDiffXd>::*)() const>(
+               &RotationMatrix<drake::AutoDiffXd>::IsExactlyIdentity))
       .def("IsIdentityToInternalTolerance",
-           static_cast<::drake::scalar_predicate<
-               Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                           type (RotationMatrix<Eigen::AutoDiffScalar<
-                                     Eigen::VectorXd>>::*)() const>(
-               &RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                   IsIdentityToInternalTolerance))
-      .def(
-          "IsNearlyEqualTo",
-          [](RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-             Eigen::Ref<
-                 RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &,
-                 0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &other,
-             double tolerance) {
-            return self.IsNearlyEqualTo(other, tolerance);
-          })
+           static_cast<::drake::scalar_predicate<drake::AutoDiffXd>::type (
+               RotationMatrix<drake::AutoDiffXd>::*)() const>(
+               &RotationMatrix<
+                   drake::AutoDiffXd>::IsIdentityToInternalTolerance))
+      .def("IsNearlyEqualTo",
+           [](RotationMatrix<drake::AutoDiffXd> &self,
+              Eigen::Ref<RotationMatrix<drake::AutoDiffXd> const &, 0,
+                         Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &other,
+              double tolerance) {
+             return self.IsNearlyEqualTo(other, tolerance);
+           })
       .def("IsOrthonormal",
-           [](RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
+           [](RotationMatrix<drake::AutoDiffXd> &self,
               Eigen::Ref<::Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>,
                                          3, 3, 0, 3, 3> const &,
                          0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &R,
               double tolerance) { return self.IsOrthonormal(R, tolerance); })
       .def("IsValid",
-           [](RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
+           [](RotationMatrix<drake::AutoDiffXd> &self,
               Eigen::Ref<::Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>,
                                          3, 3, 0, 3, 3> const &,
                          0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &R,
               double tolerance) { return self.IsValid(R, tolerance); })
       .def("IsValid",
-           [](RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
+           [](RotationMatrix<drake::AutoDiffXd> &self,
               Eigen::Ref<::Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>,
                                          3, 3, 0, 3, 3> const &,
                          0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &R) {
              return self.IsValid(R);
            })
-      .def(
-          "IsValid",
-          static_cast<::drake::scalar_predicate<
-              Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                          type (RotationMatrix<Eigen::AutoDiffScalar<
-                                    Eigen::VectorXd>>::*)() const>(
-              &RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>>::IsValid))
+      .def("IsValid",
+           static_cast<::drake::scalar_predicate<drake::AutoDiffXd>::type (
+               RotationMatrix<drake::AutoDiffXd>::*)() const>(
+               &RotationMatrix<drake::AutoDiffXd>::IsValid))
       .def(
           "MakeFromOrthonormalColumns",
-          [](RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
+          [](RotationMatrix<drake::AutoDiffXd> &self,
              Eigen::Ref<::Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>,
                                         3, 1, 0, 3, 1> const &,
                         0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &Bx,
@@ -344,7 +327,7 @@ void apb11_pydrake_RotationMatrix_py_register(py::module &m) {
           })
       .def(
           "MakeFromOrthonormalRows",
-          [](RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
+          [](RotationMatrix<drake::AutoDiffXd> &self,
              Eigen::Ref<::Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>,
                                         3, 1, 0, 3, 1> const &,
                         0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &Ax,
@@ -356,50 +339,47 @@ void apb11_pydrake_RotationMatrix_py_register(py::module &m) {
                         0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &Az) {
             return self.MakeFromOrthonormalRows(Ax, Ay, Az);
           })
-      .def("MakeXRotation",
-           [](RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Eigen::Ref<::Eigen::AutoDiffScalar<
-                             Eigen::Matrix<double, -1, 1, 0, -1, 1>> const &,
-                         0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
-                  &theta) { return self.MakeXRotation(theta); })
-      .def("MakeYRotation",
-           [](RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Eigen::Ref<::Eigen::AutoDiffScalar<
-                             Eigen::Matrix<double, -1, 1, 0, -1, 1>> const &,
-                         0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
-                  &theta) { return self.MakeYRotation(theta); })
-      .def("MakeZRotation",
-           [](RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Eigen::Ref<::Eigen::AutoDiffScalar<
-                             Eigen::Matrix<double, -1, 1, 0, -1, 1>> const &,
-                         0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
-                  &theta) { return self.MakeZRotation(theta); })
+      .def(
+          "MakeXRotation",
+          [](RotationMatrix<drake::AutoDiffXd> &self,
+             Eigen::Ref<::Eigen::AutoDiffScalar<Eigen::VectorXd> const &, 0,
+                        Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &theta) {
+            return self.MakeXRotation(theta);
+          })
+      .def(
+          "MakeYRotation",
+          [](RotationMatrix<drake::AutoDiffXd> &self,
+             Eigen::Ref<::Eigen::AutoDiffScalar<Eigen::VectorXd> const &, 0,
+                        Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &theta) {
+            return self.MakeYRotation(theta);
+          })
+      .def(
+          "MakeZRotation",
+          [](RotationMatrix<drake::AutoDiffXd> &self,
+             Eigen::Ref<::Eigen::AutoDiffScalar<Eigen::VectorXd> const &, 0,
+                        Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &theta) {
+            return self.MakeZRotation(theta);
+          })
       .def("ProjectToRotationMatrix",
-           [](RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
+           [](RotationMatrix<drake::AutoDiffXd> &self,
               Eigen::Ref<::Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>,
                                          3, 3, 0, 3, 3> const &,
                          0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &M,
-              Eigen::Ref<::Eigen::AutoDiffScalar<
-                             Eigen::Matrix<double, -1, 1, 0, -1, 1>> *,
-                         0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
+              Eigen::Ref<::Eigen::AutoDiffScalar<Eigen::VectorXd> *, 0,
+                         Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
                   quality_factor) {
              return self.ProjectToRotationMatrix(M, quality_factor);
            })
-      .def("ToAngleAxis",
-           static_cast<
-               ::Eigen::AngleAxis<Eigen::AutoDiffScalar<Eigen::VectorXd>> (
-                   RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)()
-                   const>(&RotationMatrix<
-                          Eigen::AutoDiffScalar<Eigen::VectorXd>>::ToAngleAxis))
-      .def(
-          "ToQuaternion",
-          static_cast<
-              ::Eigen::Quaternion<Eigen::AutoDiffScalar<Eigen::VectorXd>, 0> (
-                  RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)()
-                  const>(&RotationMatrix<
-                         Eigen::AutoDiffScalar<Eigen::VectorXd>>::ToQuaternion))
+      .def("ToAngleAxis", static_cast<::Eigen::AngleAxis<drake::AutoDiffXd> (
+                              RotationMatrix<drake::AutoDiffXd>::*)() const>(
+                              &RotationMatrix<drake::AutoDiffXd>::ToAngleAxis))
       .def("ToQuaternion",
-           [](RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
+           static_cast<
+               ::Eigen::Quaternion<Eigen::AutoDiffScalar<Eigen::VectorXd>, 0> (
+                   RotationMatrix<drake::AutoDiffXd>::*)() const>(
+               &RotationMatrix<drake::AutoDiffXd>::ToQuaternion))
+      .def("ToQuaternion",
+           [](RotationMatrix<drake::AutoDiffXd> &self,
               ::Eigen::Ref<
                   const Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>, 3,
                                       3, 0, 3, 3>,
@@ -409,11 +389,10 @@ void apb11_pydrake_RotationMatrix_py_register(py::module &m) {
       .def("ToQuaternionAsVector4",
            static_cast<::Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>,
                                        4, 1, 0, 4, 1> (
-               RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)()
-                           const>(&RotationMatrix<Eigen::AutoDiffScalar<
-                                      Eigen::VectorXd>>::ToQuaternionAsVector4))
+               RotationMatrix<drake::AutoDiffXd>::*)() const>(
+               &RotationMatrix<drake::AutoDiffXd>::ToQuaternionAsVector4))
       .def("ToQuaternionAsVector4",
-           [](RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
+           [](RotationMatrix<drake::AutoDiffXd> &self,
               Eigen::Ref<::Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>,
                                          3, 3, 0, 3, 3> const &,
                          0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &M) {
@@ -423,78 +402,58 @@ void apb11_pydrake_RotationMatrix_py_register(py::module &m) {
            static_cast<::Eigen::Block<
                const Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>, 3, 3,
                                    0, 3, 3>,
-               3, 1, true> const (RotationMatrix<Eigen::
-                                                     AutoDiffScalar<
-                                                         Eigen::VectorXd>>::*)(
-               int) const>(
-               &RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>>::col),
+               3, 1, true> const (RotationMatrix<drake::AutoDiffXd>::*)(int)
+                           const>(&RotationMatrix<drake::AutoDiffXd>::col),
            py::arg("index"))
       .def_static("get_internal_tolerance_for_orthonormality",
                   static_cast<double (*)()>(
-                      &RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
+                      &RotationMatrix<drake::AutoDiffXd>::
                           get_internal_tolerance_for_orthonormality))
-      .def(
-          "inverse",
-          static_cast<RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>> (
-              RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)()
-                          const>(
-              &RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>>::inverse))
-      .def(
-          "matrix",
-          static_cast<
-              ::Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>, 3, 3, 0,
-                              3, 3> const
-                  &(RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)()
-                      const>(
-              &RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>>::matrix),
-          py::return_value_policy::reference_internal)
+      .def("inverse", static_cast<RotationMatrix<drake::AutoDiffXd> (
+                          RotationMatrix<drake::AutoDiffXd>::*)() const>(
+                          &RotationMatrix<drake::AutoDiffXd>::inverse))
+      .def("matrix",
+           static_cast<::Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>,
+                                       3, 3, 0, 3, 3> const
+                           &(RotationMatrix<drake::AutoDiffXd>::*)() const>(
+               &RotationMatrix<drake::AutoDiffXd>::matrix),
+           py::return_value_policy::reference_internal)
       .def("row",
            static_cast<::Eigen::Block<
                const Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>, 3, 3,
                                    0, 3, 3>,
-               1, 3, false> const (RotationMatrix<Eigen::
-                                                      AutoDiffScalar<
-                                                          Eigen::VectorXd>>::*)(
-               int) const>(
-               &RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>>::row),
+               1, 3, false> const (RotationMatrix<drake::AutoDiffXd>::*)(int)
+                           const>(&RotationMatrix<drake::AutoDiffXd>::row),
            py::arg("index"))
       .def("set",
-           [](RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
+           [](RotationMatrix<drake::AutoDiffXd> &self,
               Eigen::Ref<::Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>,
                                          3, 3, 0, 3, 3> const &,
                          0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &R) {
              return self.set(R);
            })
-      .def("transpose",
-           static_cast<RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>> (
-               RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)()
-                           const>(
-               &RotationMatrix<
-                   Eigen::AutoDiffScalar<Eigen::VectorXd>>::transpose))
+      .def("transpose", static_cast<RotationMatrix<drake::AutoDiffXd> (
+                            RotationMatrix<drake::AutoDiffXd>::*)() const>(
+                            &RotationMatrix<drake::AutoDiffXd>::transpose))
 
       .def("__mul__",
-           static_cast<RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>> (
-               RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)(
-               RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &)
-                           const>(
-               &RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>>::operator
-                   *),
+           static_cast<RotationMatrix<drake::AutoDiffXd> (
+               RotationMatrix<drake::AutoDiffXd>::*)(
+               RotationMatrix<drake::AutoDiffXd> const &) const>(
+               &RotationMatrix<drake::AutoDiffXd>::operator*),
            py::arg("other"))
       .def("__mul__",
            static_cast<::Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>,
                                        3, 1, 0, 3, 1> (
-               RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)(
+               RotationMatrix<drake::AutoDiffXd>::*)(
                ::Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>, 3, 1, 0,
                                3, 1> const &) const>(
-               &RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>>::operator
-                   *),
+               &RotationMatrix<drake::AutoDiffXd>::operator*),
            py::arg("v_B"))
       .def("__imul__",
-           static_cast<RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>> &(
-               RotationMatrix<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                   *)(RotationMatrix<
-                      Eigen::AutoDiffScalar<Eigen::VectorXd>> const &)>(
-               &RotationMatrix<
-                   Eigen::AutoDiffScalar<Eigen::VectorXd>>::operator*=),
+           static_cast<RotationMatrix<drake::AutoDiffXd> &(
+               RotationMatrix<drake::AutoDiffXd>::
+                   *)(RotationMatrix<drake::AutoDiffXd> const &)>(
+               &RotationMatrix<drake::AutoDiffXd>::operator*=),
            py::arg("other"));
 }

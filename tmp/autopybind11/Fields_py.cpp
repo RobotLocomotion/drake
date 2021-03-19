@@ -4,6 +4,8 @@
 #include <pybind11/stl.h>
 #include <sstream>
 
+using namespace drake::perception::pc_flags;
+
 namespace py = pybind11;
 void apb11_pydrake_Fields_py_register(py::module &m) {
   static bool called = false;
@@ -11,8 +13,6 @@ void apb11_pydrake_Fields_py_register(py::module &m) {
     return;
   }
   called = true;
-  using namespace drake::perception::pc_flags;
-
   py::class_<Fields> PyFields(m, "Fields");
 
   PyFields.def(py::init<Fields const &>(), py::arg("arg0"))

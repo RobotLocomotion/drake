@@ -3,6 +3,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+using namespace drake::geometry::render;
+
 namespace py = pybind11;
 void apb11_pydrake_ClippingRange_py_register(py::module &m) {
   static bool called = false;
@@ -10,8 +12,6 @@ void apb11_pydrake_ClippingRange_py_register(py::module &m) {
     return;
   }
   called = true;
-  using namespace drake::geometry::render;
-
   py::class_<ClippingRange> PyClippingRange(m, "ClippingRange");
 
   PyClippingRange.def(py::init<ClippingRange const &>(), py::arg("arg0"))

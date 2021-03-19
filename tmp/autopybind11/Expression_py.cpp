@@ -5,6 +5,8 @@
 #include <pybind11/stl.h>
 #include <sstream>
 
+using namespace drake::symbolic;
+
 namespace py = pybind11;
 void apb11_pydrake_Expression_py_register(py::module &m) {
   static bool called = false;
@@ -12,8 +14,6 @@ void apb11_pydrake_Expression_py_register(py::module &m) {
     return;
   }
   called = true;
-  using namespace drake::symbolic;
-
   py::class_<Expression> PyExpression(m, "Expression");
 
   PyExpression.def(py::init<Expression const &>(), py::arg("arg0"))

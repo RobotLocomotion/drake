@@ -3,9 +3,11 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-class DrakeLcm_trampoline : public ::drake::lcm::DrakeLcm {
+using namespace drake::lcm;
+
+class DrakeLcm_trampoline : public DrakeLcm {
 public:
-  typedef ::drake::lcm::DrakeLcm DrakeLcm_alias;
+  typedef DrakeLcm DrakeLcm_alias;
   using DrakeLcm_alias::DrakeLcm;
 
   int HandleSubscriptions(int arg0) override {
@@ -20,10 +22,10 @@ public:
                       arg3);
   }
 
-  std::shared_ptr<drake::lcm::DrakeSubscriptionInterface>
+  std::shared_ptr<DrakeSubscriptionInterface>
   Subscribe(std::string const &arg0,
-            drake::lcm::DrakeLcmInterface::HandlerFunction arg1) override {
-    using localType = std::shared_ptr<drake::lcm::DrakeSubscriptionInterface>;
+            DrakeLcmInterface::HandlerFunction arg1) override {
+    using localType = std::shared_ptr<DrakeSubscriptionInterface>;
     PYBIND11_OVERLOAD(localType, DrakeLcm_alias, Subscribe, arg0, arg1);
   }
 };
@@ -35,8 +37,6 @@ void apb11_pydrake_DrakeLcm_py_register(py::module &m) {
     return;
   }
   called = true;
-  using namespace drake::lcm;
-
   py::class_<DrakeLcm, DrakeLcmInterface, DrakeLcm_trampoline> PyDrakeLcm(
       m, "DrakeLcm");
 

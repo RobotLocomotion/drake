@@ -4,21 +4,23 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-class RenderEngine_publicist : public ::drake::geometry::render::RenderEngine {
+using namespace drake::geometry::render;
+
+class RenderEngine_publicist : public RenderEngine {
 public:
-  using ::drake::geometry::render::RenderEngine::DoClone;
-  using ::drake::geometry::render::RenderEngine::DoRegisterVisual;
-  using ::drake::geometry::render::RenderEngine::DoRemoveGeometry;
-  using ::drake::geometry::render::RenderEngine::DoRenderColorImage;
-  using ::drake::geometry::render::RenderEngine::DoRenderDepthImage;
-  using ::drake::geometry::render::RenderEngine::DoRenderLabelImage;
-  using ::drake::geometry::render::RenderEngine::DoUpdateVisualPose;
-  using ::drake::geometry::render::RenderEngine::GetColorDFromLabel;
-  using ::drake::geometry::render::RenderEngine::GetColorIFromLabel;
-  using ::drake::geometry::render::RenderEngine::GetRenderLabelOrThrow;
-  using ::drake::geometry::render::RenderEngine::LabelFromColor;
-  using ::drake::geometry::render::RenderEngine::SetDefaultLightPosition;
-  using ::drake::geometry::render::RenderEngine::ThrowIfInvalid;
+  using RenderEngine::DoClone;
+  using RenderEngine::DoRegisterVisual;
+  using RenderEngine::DoRemoveGeometry;
+  using RenderEngine::DoRenderColorImage;
+  using RenderEngine::DoRenderDepthImage;
+  using RenderEngine::DoRenderLabelImage;
+  using RenderEngine::DoUpdateVisualPose;
+  using RenderEngine::GetColorDFromLabel;
+  using RenderEngine::GetColorIFromLabel;
+  using RenderEngine::GetRenderLabelOrThrow;
+  using RenderEngine::LabelFromColor;
+  using RenderEngine::SetDefaultLightPosition;
+  using RenderEngine::ThrowIfInvalid;
 };
 
 namespace py = pybind11;
@@ -28,8 +30,6 @@ void apb11_pydrake_RenderEngine_py_register(py::module &m) {
     return;
   }
   called = true;
-  using namespace drake::geometry::render;
-
   py::class_<RenderEngine> PyRenderEngine(m, "RenderEngine");
 
   PyRenderEngine

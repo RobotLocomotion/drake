@@ -4,6 +4,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+using namespace drake::math;
+
 namespace py = pybind11;
 void apb11_pydrake_BarycentricMesh_py_register(py::module &m) {
   static bool called = false;
@@ -11,8 +13,6 @@ void apb11_pydrake_BarycentricMesh_py_register(py::module &m) {
     return;
   }
   called = true;
-  using namespace drake::math;
-
   using PyBarycentricMesh_double_0 = double;
 
   py::class_<BarycentricMesh<PyBarycentricMesh_double_0>>
@@ -34,9 +34,8 @@ void apb11_pydrake_BarycentricMesh_py_register(py::module &m) {
                            Eigen::OuterStride<-1>> const &mesh_values,
               ::Eigen::Ref<const Eigen::Matrix<double, -1, 1, 0, -1, 1>, 0,
                            Eigen::InnerStride<1>> const &input,
-              Eigen::Ref<
-                  ::drake::EigenPtr<Eigen::Matrix<double, -1, 1, 0, -1, 1>>, 0,
-                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
+              Eigen::Ref<::drake::EigenPtr<Eigen::VectorXd>, 0,
+                         Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
                   output) { return self.Eval(mesh_values, input, output); })
       .def("Eval",
            [](BarycentricMesh<PyBarycentricMesh_double_0> &self,
@@ -53,9 +52,8 @@ void apb11_pydrake_BarycentricMesh_py_register(py::module &m) {
               Eigen::Ref<::drake::EigenPtr<Eigen::Matrix<int, -1, 1, 0, -1, 1>>,
                          0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
                   mesh_indices,
-              Eigen::Ref<
-                  ::drake::EigenPtr<Eigen::Matrix<double, -1, 1, 0, -1, 1>>, 0,
-                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
+              Eigen::Ref<::drake::EigenPtr<Eigen::VectorXd>, 0,
+                         Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
                   weights) {
              return self.EvalBarycentricWeights(input, mesh_indices, weights);
            })
@@ -86,9 +84,8 @@ void apb11_pydrake_BarycentricMesh_py_register(py::module &m) {
                &BarycentricMesh<PyBarycentricMesh_double_0>::get_input_size))
       .def("get_mesh_point",
            [](BarycentricMesh<PyBarycentricMesh_double_0> &self, int index,
-              Eigen::Ref<
-                  ::drake::EigenPtr<Eigen::Matrix<double, -1, 1, 0, -1, 1>>, 0,
-                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
+              Eigen::Ref<::drake::EigenPtr<Eigen::VectorXd>, 0,
+                         Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
                   point) { return self.get_mesh_point(index, point); })
       .def("get_mesh_point",
            static_cast<::Eigen::Matrix<double, -1, 1, 0, -1, 1> (

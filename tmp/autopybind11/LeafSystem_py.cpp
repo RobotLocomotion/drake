@@ -4,185 +4,143 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-class LeafSystem_double_publicist
-    : public ::drake::systems::LeafSystem<double> {
+using namespace drake::systems;
+
+class LeafSystem_double_publicist : public LeafSystem<double> {
 public:
-  using ::drake::systems::LeafSystem<
+  using LeafSystem<
       double>::AddTriggeredWitnessFunctionToCompositeEventCollection;
-  using ::drake::systems::LeafSystem<double>::AllocateAbstractState;
-  using ::drake::systems::LeafSystem<double>::AllocateContinuousState;
-  using ::drake::systems::LeafSystem<double>::AllocateDiscreteState;
-  using ::drake::systems::LeafSystem<double>::AllocateParameters;
-  using ::drake::systems::LeafSystem<double>::DeclareAbstractInputPort;
-  using ::drake::systems::LeafSystem<double>::DeclareAbstractInputPort;
-  using ::drake::systems::LeafSystem<double>::DeclareAbstractOutputPort;
-  using ::drake::systems::LeafSystem<double>::DeclareAbstractOutputPort;
-  using ::drake::systems::LeafSystem<double>::DeclareAbstractParameter;
-  using ::drake::systems::LeafSystem<double>::DeclareAbstractState;
-  using ::drake::systems::LeafSystem<double>::DeclareAbstractState;
-  using ::drake::systems::LeafSystem<double>::DeclareContinuousState;
-  using ::drake::systems::LeafSystem<double>::DeclareContinuousState;
-  using ::drake::systems::LeafSystem<double>::DeclareContinuousState;
-  using ::drake::systems::LeafSystem<double>::DeclareContinuousState;
-  using ::drake::systems::LeafSystem<double>::DeclareDiscreteState;
-  using ::drake::systems::LeafSystem<double>::DeclareDiscreteState;
-  using ::drake::systems::LeafSystem<double>::DeclareDiscreteState;
-  using ::drake::systems::LeafSystem<double>::DeclareEqualityConstraint;
-  using ::drake::systems::LeafSystem<
-      double>::DeclareImplicitTimeDerivativesResidualSize;
-  using ::drake::systems::LeafSystem<double>::DeclareInequalityConstraint;
-  using ::drake::systems::LeafSystem<double>::DeclareNumericParameter;
-  using ::drake::systems::LeafSystem<double>::DeclarePeriodicDiscreteUpdate;
-  using ::drake::systems::LeafSystem<double>::DeclarePeriodicPublish;
-  using ::drake::systems::LeafSystem<double>::DeclarePeriodicUnrestrictedUpdate;
-  using ::drake::systems::LeafSystem<double>::DeclareVectorInputPort;
-  using ::drake::systems::LeafSystem<double>::DeclareVectorInputPort;
-  using ::drake::systems::LeafSystem<double>::DeclareVectorOutputPort;
-  using ::drake::systems::LeafSystem<double>::DeclareVectorOutputPort;
-  using ::drake::systems::LeafSystem<double>::DoCalcDiscreteVariableUpdates;
-  using ::drake::systems::LeafSystem<double>::DoCalcNextUpdateTime;
-  using ::drake::systems::LeafSystem<double>::DoCalcUnrestrictedUpdate;
-  using ::drake::systems::LeafSystem<double>::DoCalcWitnessValue;
-  using ::drake::systems::LeafSystem<double>::DoMakeLeafContext;
-  using ::drake::systems::LeafSystem<double>::DoPublish;
-  using ::drake::systems::LeafSystem<double>::DoValidateAllocatedLeafContext;
-  using ::drake::systems::LeafSystem<double>::GetGraphvizFragment;
-  using ::drake::systems::LeafSystem<double>::GetGraphvizInputPortToken;
-  using ::drake::systems::LeafSystem<double>::GetGraphvizOutputPortToken;
-  using ::drake::systems::LeafSystem<double>::MakeWitnessFunction;
-  using ::drake::systems::LeafSystem<double>::MakeWitnessFunction;
+  using LeafSystem<double>::AllocateAbstractState;
+  using LeafSystem<double>::AllocateContinuousState;
+  using LeafSystem<double>::AllocateDiscreteState;
+  using LeafSystem<double>::AllocateParameters;
+  using LeafSystem<double>::DeclareAbstractInputPort;
+  using LeafSystem<double>::DeclareAbstractInputPort;
+  using LeafSystem<double>::DeclareAbstractOutputPort;
+  using LeafSystem<double>::DeclareAbstractOutputPort;
+  using LeafSystem<double>::DeclareAbstractParameter;
+  using LeafSystem<double>::DeclareAbstractState;
+  using LeafSystem<double>::DeclareAbstractState;
+  using LeafSystem<double>::DeclareContinuousState;
+  using LeafSystem<double>::DeclareContinuousState;
+  using LeafSystem<double>::DeclareContinuousState;
+  using LeafSystem<double>::DeclareContinuousState;
+  using LeafSystem<double>::DeclareDiscreteState;
+  using LeafSystem<double>::DeclareDiscreteState;
+  using LeafSystem<double>::DeclareDiscreteState;
+  using LeafSystem<double>::DeclareEqualityConstraint;
+  using LeafSystem<double>::DeclareImplicitTimeDerivativesResidualSize;
+  using LeafSystem<double>::DeclareInequalityConstraint;
+  using LeafSystem<double>::DeclareNumericParameter;
+  using LeafSystem<double>::DeclarePeriodicDiscreteUpdate;
+  using LeafSystem<double>::DeclarePeriodicPublish;
+  using LeafSystem<double>::DeclarePeriodicUnrestrictedUpdate;
+  using LeafSystem<double>::DeclareVectorInputPort;
+  using LeafSystem<double>::DeclareVectorInputPort;
+  using LeafSystem<double>::DeclareVectorOutputPort;
+  using LeafSystem<double>::DeclareVectorOutputPort;
+  using LeafSystem<double>::DoCalcDiscreteVariableUpdates;
+  using LeafSystem<double>::DoCalcNextUpdateTime;
+  using LeafSystem<double>::DoCalcUnrestrictedUpdate;
+  using LeafSystem<double>::DoCalcWitnessValue;
+  using LeafSystem<double>::DoMakeLeafContext;
+  using LeafSystem<double>::DoPublish;
+  using LeafSystem<double>::DoValidateAllocatedLeafContext;
+  using LeafSystem<double>::GetGraphvizFragment;
+  using LeafSystem<double>::GetGraphvizInputPortToken;
+  using LeafSystem<double>::GetGraphvizOutputPortToken;
+  using LeafSystem<double>::MakeWitnessFunction;
+  using LeafSystem<double>::MakeWitnessFunction;
 };
 
 class LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist
-    : public ::drake::systems::LeafSystem<
-          Eigen::AutoDiffScalar<Eigen::VectorXd>> {
+    : public LeafSystem<::drake::AutoDiffXd> {
 public:
-  using ::drake::systems::LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
+  using LeafSystem<::drake::AutoDiffXd>::
       AddTriggeredWitnessFunctionToCompositeEventCollection;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::AllocateAbstractState;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::AllocateContinuousState;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::AllocateDiscreteState;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::AllocateParameters;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DeclareAbstractInputPort;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DeclareAbstractInputPort;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DeclareAbstractOutputPort;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DeclareAbstractOutputPort;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DeclareAbstractParameter;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DeclareAbstractState;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DeclareAbstractState;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DeclareContinuousState;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DeclareContinuousState;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DeclareContinuousState;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DeclareContinuousState;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DeclareDiscreteState;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DeclareDiscreteState;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DeclareDiscreteState;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DeclareEqualityConstraint;
-  using ::drake::systems::LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-      DeclareImplicitTimeDerivativesResidualSize;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DeclareInequalityConstraint;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DeclareNumericParameter;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DeclarePeriodicDiscreteUpdate;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DeclarePeriodicPublish;
-  using ::drake::systems::LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-      DeclarePeriodicUnrestrictedUpdate;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DeclareVectorInputPort;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DeclareVectorInputPort;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DeclareVectorOutputPort;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DeclareVectorOutputPort;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DoCalcDiscreteVariableUpdates;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DoCalcNextUpdateTime;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DoCalcUnrestrictedUpdate;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DoCalcWitnessValue;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DoMakeLeafContext;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DoPublish;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DoValidateAllocatedLeafContext;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::GetGraphvizFragment;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::GetGraphvizInputPortToken;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::GetGraphvizOutputPortToken;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::MakeWitnessFunction;
-  using ::drake::systems::LeafSystem<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::MakeWitnessFunction;
+  using LeafSystem<::drake::AutoDiffXd>::AllocateAbstractState;
+  using LeafSystem<::drake::AutoDiffXd>::AllocateContinuousState;
+  using LeafSystem<::drake::AutoDiffXd>::AllocateDiscreteState;
+  using LeafSystem<::drake::AutoDiffXd>::AllocateParameters;
+  using LeafSystem<::drake::AutoDiffXd>::DeclareAbstractInputPort;
+  using LeafSystem<::drake::AutoDiffXd>::DeclareAbstractInputPort;
+  using LeafSystem<::drake::AutoDiffXd>::DeclareAbstractOutputPort;
+  using LeafSystem<::drake::AutoDiffXd>::DeclareAbstractOutputPort;
+  using LeafSystem<::drake::AutoDiffXd>::DeclareAbstractParameter;
+  using LeafSystem<::drake::AutoDiffXd>::DeclareAbstractState;
+  using LeafSystem<::drake::AutoDiffXd>::DeclareAbstractState;
+  using LeafSystem<::drake::AutoDiffXd>::DeclareContinuousState;
+  using LeafSystem<::drake::AutoDiffXd>::DeclareContinuousState;
+  using LeafSystem<::drake::AutoDiffXd>::DeclareContinuousState;
+  using LeafSystem<::drake::AutoDiffXd>::DeclareContinuousState;
+  using LeafSystem<::drake::AutoDiffXd>::DeclareDiscreteState;
+  using LeafSystem<::drake::AutoDiffXd>::DeclareDiscreteState;
+  using LeafSystem<::drake::AutoDiffXd>::DeclareDiscreteState;
+  using LeafSystem<::drake::AutoDiffXd>::DeclareEqualityConstraint;
+  using LeafSystem<
+      ::drake::AutoDiffXd>::DeclareImplicitTimeDerivativesResidualSize;
+  using LeafSystem<::drake::AutoDiffXd>::DeclareInequalityConstraint;
+  using LeafSystem<::drake::AutoDiffXd>::DeclareNumericParameter;
+  using LeafSystem<::drake::AutoDiffXd>::DeclarePeriodicDiscreteUpdate;
+  using LeafSystem<::drake::AutoDiffXd>::DeclarePeriodicPublish;
+  using LeafSystem<::drake::AutoDiffXd>::DeclarePeriodicUnrestrictedUpdate;
+  using LeafSystem<::drake::AutoDiffXd>::DeclareVectorInputPort;
+  using LeafSystem<::drake::AutoDiffXd>::DeclareVectorInputPort;
+  using LeafSystem<::drake::AutoDiffXd>::DeclareVectorOutputPort;
+  using LeafSystem<::drake::AutoDiffXd>::DeclareVectorOutputPort;
+  using LeafSystem<::drake::AutoDiffXd>::DoCalcDiscreteVariableUpdates;
+  using LeafSystem<::drake::AutoDiffXd>::DoCalcNextUpdateTime;
+  using LeafSystem<::drake::AutoDiffXd>::DoCalcUnrestrictedUpdate;
+  using LeafSystem<::drake::AutoDiffXd>::DoCalcWitnessValue;
+  using LeafSystem<::drake::AutoDiffXd>::DoMakeLeafContext;
+  using LeafSystem<::drake::AutoDiffXd>::DoPublish;
+  using LeafSystem<::drake::AutoDiffXd>::DoValidateAllocatedLeafContext;
+  using LeafSystem<::drake::AutoDiffXd>::GetGraphvizFragment;
+  using LeafSystem<::drake::AutoDiffXd>::GetGraphvizInputPortToken;
+  using LeafSystem<::drake::AutoDiffXd>::GetGraphvizOutputPortToken;
+  using LeafSystem<::drake::AutoDiffXd>::MakeWitnessFunction;
+  using LeafSystem<::drake::AutoDiffXd>::MakeWitnessFunction;
 };
 
-class LeafSystem_float_publicist : public ::drake::systems::LeafSystem<float> {
+class LeafSystem_float_publicist : public LeafSystem<float> {
 public:
-  using ::drake::systems::LeafSystem<
+  using LeafSystem<
       float>::AddTriggeredWitnessFunctionToCompositeEventCollection;
-  using ::drake::systems::LeafSystem<float>::AllocateAbstractState;
-  using ::drake::systems::LeafSystem<float>::AllocateContinuousState;
-  using ::drake::systems::LeafSystem<float>::AllocateDiscreteState;
-  using ::drake::systems::LeafSystem<float>::AllocateParameters;
-  using ::drake::systems::LeafSystem<float>::DeclareAbstractOutputPort;
-  using ::drake::systems::LeafSystem<float>::DeclareAbstractOutputPort;
-  using ::drake::systems::LeafSystem<float>::DeclareAbstractParameter;
-  using ::drake::systems::LeafSystem<float>::DeclareAbstractState;
-  using ::drake::systems::LeafSystem<float>::DeclareAbstractState;
-  using ::drake::systems::LeafSystem<float>::DeclareContinuousState;
-  using ::drake::systems::LeafSystem<float>::DeclareContinuousState;
-  using ::drake::systems::LeafSystem<float>::DeclareContinuousState;
-  using ::drake::systems::LeafSystem<float>::DeclareContinuousState;
-  using ::drake::systems::LeafSystem<float>::DeclareDiscreteState;
-  using ::drake::systems::LeafSystem<float>::DeclareDiscreteState;
-  using ::drake::systems::LeafSystem<float>::DeclareDiscreteState;
-  using ::drake::systems::LeafSystem<float>::DeclareEqualityConstraint;
-  using ::drake::systems::LeafSystem<
-      float>::DeclareImplicitTimeDerivativesResidualSize;
-  using ::drake::systems::LeafSystem<float>::DeclareInequalityConstraint;
-  using ::drake::systems::LeafSystem<float>::DeclareNumericParameter;
-  using ::drake::systems::LeafSystem<float>::DeclarePeriodicDiscreteUpdate;
-  using ::drake::systems::LeafSystem<float>::DeclarePeriodicPublish;
-  using ::drake::systems::LeafSystem<float>::DeclarePeriodicUnrestrictedUpdate;
-  using ::drake::systems::LeafSystem<float>::DeclareVectorOutputPort;
-  using ::drake::systems::LeafSystem<float>::DeclareVectorOutputPort;
-  using ::drake::systems::LeafSystem<float>::DoCalcDiscreteVariableUpdates;
-  using ::drake::systems::LeafSystem<float>::DoCalcNextUpdateTime;
-  using ::drake::systems::LeafSystem<float>::DoCalcUnrestrictedUpdate;
-  using ::drake::systems::LeafSystem<float>::DoMakeLeafContext;
-  using ::drake::systems::LeafSystem<float>::DoPublish;
-  using ::drake::systems::LeafSystem<float>::DoValidateAllocatedLeafContext;
-  using ::drake::systems::LeafSystem<float>::GetGraphvizFragment;
-  using ::drake::systems::LeafSystem<float>::GetGraphvizOutputPortToken;
-  using ::drake::systems::LeafSystem<float>::MakeWitnessFunction;
-  using ::drake::systems::LeafSystem<float>::MakeWitnessFunction;
+  using LeafSystem<float>::AllocateAbstractState;
+  using LeafSystem<float>::AllocateContinuousState;
+  using LeafSystem<float>::AllocateDiscreteState;
+  using LeafSystem<float>::AllocateParameters;
+  using LeafSystem<float>::DeclareAbstractOutputPort;
+  using LeafSystem<float>::DeclareAbstractOutputPort;
+  using LeafSystem<float>::DeclareAbstractParameter;
+  using LeafSystem<float>::DeclareAbstractState;
+  using LeafSystem<float>::DeclareAbstractState;
+  using LeafSystem<float>::DeclareContinuousState;
+  using LeafSystem<float>::DeclareContinuousState;
+  using LeafSystem<float>::DeclareContinuousState;
+  using LeafSystem<float>::DeclareContinuousState;
+  using LeafSystem<float>::DeclareDiscreteState;
+  using LeafSystem<float>::DeclareDiscreteState;
+  using LeafSystem<float>::DeclareDiscreteState;
+  using LeafSystem<float>::DeclareEqualityConstraint;
+  using LeafSystem<float>::DeclareImplicitTimeDerivativesResidualSize;
+  using LeafSystem<float>::DeclareInequalityConstraint;
+  using LeafSystem<float>::DeclareNumericParameter;
+  using LeafSystem<float>::DeclarePeriodicDiscreteUpdate;
+  using LeafSystem<float>::DeclarePeriodicPublish;
+  using LeafSystem<float>::DeclarePeriodicUnrestrictedUpdate;
+  using LeafSystem<float>::DeclareVectorOutputPort;
+  using LeafSystem<float>::DeclareVectorOutputPort;
+  using LeafSystem<float>::DoCalcDiscreteVariableUpdates;
+  using LeafSystem<float>::DoCalcNextUpdateTime;
+  using LeafSystem<float>::DoCalcUnrestrictedUpdate;
+  using LeafSystem<float>::DoMakeLeafContext;
+  using LeafSystem<float>::DoPublish;
+  using LeafSystem<float>::DoValidateAllocatedLeafContext;
+  using LeafSystem<float>::GetGraphvizFragment;
+  using LeafSystem<float>::GetGraphvizOutputPortToken;
+  using LeafSystem<float>::MakeWitnessFunction;
+  using LeafSystem<float>::MakeWitnessFunction;
 };
 
 namespace py = pybind11;
@@ -192,8 +150,6 @@ void apb11_pydrake_LeafSystem_py_register(py::module &m) {
     return;
   }
   called = true;
-  using namespace drake::systems;
-
   using PyLeafSystem_double_0 = double;
 
   py::class_<LeafSystem<PyLeafSystem_double_0>, System<PyLeafSystem_double_0>>
@@ -605,103 +561,98 @@ void apb11_pydrake_LeafSystem_py_register(py::module &m) {
   using PyLeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_0 =
       ::drake::AutoDiffXd;
 
-  py::class_<LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>,
-             System<Eigen::AutoDiffScalar<Eigen::VectorXd>>>
+  py::class_<LeafSystem<::drake::AutoDiffXd>, System<::drake::AutoDiffXd>>
       PyLeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd(
           m, "LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd");
 
   PyLeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd
       .def("AddTriggeredWitnessFunctionToCompositeEventCollection",
-           [](LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Event<Eigen::AutoDiffScalar<Eigen::VectorXd>> *event,
-              CompositeEventCollection<Eigen::AutoDiffScalar<Eigen::VectorXd>>
-                  *events) {
+           [](LeafSystem<::drake::AutoDiffXd> &self,
+              Event<::drake::AutoDiffXd> *event,
+              CompositeEventCollection<::drake::AutoDiffXd> *events) {
              return self.AddTriggeredWitnessFunctionToCompositeEventCollection(
                  event, events);
            })
       .def("AllocateAbstractState",
            static_cast<::std::unique_ptr<AbstractValues,
                                          std::default_delete<AbstractValues>> (
-               LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
+               LeafSystem<::drake::AutoDiffXd>::*)() const>(
                &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
                    AllocateAbstractState))
       .def("AllocateCompositeEventCollection",
-           static_cast<::std::unique_ptr<
-               CompositeEventCollection<::drake::AutoDiffXd>,
-               std::default_delete<
-                   CompositeEventCollection<::drake::AutoDiffXd>>> (
-               LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-               &LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                   AllocateCompositeEventCollection))
+           static_cast<
+               ::std::unique_ptr<CompositeEventCollection<::drake::AutoDiffXd>,
+                                 std::default_delete<CompositeEventCollection<
+                                     ::drake::AutoDiffXd>>> (
+                   LeafSystem<::drake::AutoDiffXd>::*)() const>(
+               &LeafSystem<
+                   ::drake::AutoDiffXd>::AllocateCompositeEventCollection))
       .def("AllocateContext",
            static_cast<::std::unique_ptr<
                LeafContext<::drake::AutoDiffXd>,
                std::default_delete<LeafContext<::drake::AutoDiffXd>>> (
-               LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-               &LeafSystem<
-                   Eigen::AutoDiffScalar<Eigen::VectorXd>>::AllocateContext))
+               LeafSystem<::drake::AutoDiffXd>::*)() const>(
+               &LeafSystem<::drake::AutoDiffXd>::AllocateContext))
       .def("AllocateContinuousState",
            static_cast<::std::unique_ptr<
                ContinuousState<::drake::AutoDiffXd>,
                std::default_delete<ContinuousState<::drake::AutoDiffXd>>> (
-               LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
+               LeafSystem<::drake::AutoDiffXd>::*)() const>(
                &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
                    AllocateContinuousState))
       .def("AllocateDiscreteState",
            static_cast<::std::unique_ptr<
                DiscreteValues<::drake::AutoDiffXd>,
                std::default_delete<DiscreteValues<::drake::AutoDiffXd>>> (
-               LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
+               LeafSystem<::drake::AutoDiffXd>::*)() const>(
                &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
                    AllocateDiscreteState))
       .def("AllocateDiscreteVariables",
            static_cast<::std::unique_ptr<
                DiscreteValues<::drake::AutoDiffXd>,
                std::default_delete<DiscreteValues<::drake::AutoDiffXd>>> (
-               LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-               &LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                   AllocateDiscreteVariables))
+               LeafSystem<::drake::AutoDiffXd>::*)() const>(
+               &LeafSystem<::drake::AutoDiffXd>::AllocateDiscreteVariables))
       .def("AllocateForcedDiscreteUpdateEventCollection",
            static_cast<::std::unique_ptr<
                EventCollection<DiscreteUpdateEvent<::drake::AutoDiffXd>>,
                std::default_delete<
                    EventCollection<DiscreteUpdateEvent<::drake::AutoDiffXd>>>> (
-               LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-               &LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
+               LeafSystem<::drake::AutoDiffXd>::*)() const>(
+               &LeafSystem<::drake::AutoDiffXd>::
                    AllocateForcedDiscreteUpdateEventCollection))
       .def("AllocateForcedPublishEventCollection",
            static_cast<::std::unique_ptr<
                EventCollection<PublishEvent<::drake::AutoDiffXd>>,
                std::default_delete<
                    EventCollection<PublishEvent<::drake::AutoDiffXd>>>> (
-               LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-               &LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                   AllocateForcedPublishEventCollection))
+               LeafSystem<::drake::AutoDiffXd>::*)() const>(
+               &LeafSystem<
+                   ::drake::AutoDiffXd>::AllocateForcedPublishEventCollection))
       .def("AllocateForcedUnrestrictedUpdateEventCollection",
            static_cast<::std::unique_ptr<
                EventCollection<UnrestrictedUpdateEvent<::drake::AutoDiffXd>>,
                std::default_delete<EventCollection<
                    UnrestrictedUpdateEvent<::drake::AutoDiffXd>>>> (
-               LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-               &LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
+               LeafSystem<::drake::AutoDiffXd>::*)() const>(
+               &LeafSystem<::drake::AutoDiffXd>::
                    AllocateForcedUnrestrictedUpdateEventCollection))
       .def("AllocateParameters",
            static_cast<::std::unique_ptr<
                Parameters<::drake::AutoDiffXd>,
                std::default_delete<Parameters<::drake::AutoDiffXd>>> (
-               LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
+               LeafSystem<::drake::AutoDiffXd>::*)() const>(
                &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
                    AllocateParameters))
       .def("AllocateTimeDerivatives",
            static_cast<::std::unique_ptr<
                ContinuousState<::drake::AutoDiffXd>,
                std::default_delete<ContinuousState<::drake::AutoDiffXd>>> (
-               LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-               &LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                   AllocateTimeDerivatives))
+               LeafSystem<::drake::AutoDiffXd>::*)() const>(
+               &LeafSystem<::drake::AutoDiffXd>::AllocateTimeDerivatives))
       .def("DeclareAbstractInputPort",
-           static_cast<InputPort<Eigen::AutoDiffScalar<Eigen::VectorXd>> &(
-               LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
+           static_cast<InputPort<::drake::AutoDiffXd> &(
+               LeafSystem<::drake::AutoDiffXd>::
                    *)(::std::variant<
                           std::basic_string<char, std::char_traits<char>,
                                             std::allocator<char>>,
@@ -712,22 +663,20 @@ void apb11_pydrake_LeafSystem_py_register(py::module &m) {
            py::arg("name"), py::arg("model_value"),
            py::return_value_policy::reference_internal)
       .def("DeclareAbstractInputPort",
-           static_cast<InputPort<Eigen::AutoDiffScalar<Eigen::VectorXd>> &(
-               LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                   *)(::drake::AbstractValue const &)>(
+           static_cast<InputPort<::drake::AutoDiffXd> &(
+               LeafSystem<::drake::AutoDiffXd>::*)(::drake::AbstractValue const
+                                                       &)>(
                &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
                    DeclareAbstractInputPort),
            py::arg("model_value"), py::return_value_policy::reference_internal)
       .def("DeclareAbstractOutputPort",
-           [](LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
+           [](LeafSystem<::drake::AutoDiffXd> &self,
               ::std::variant<std::basic_string<char, std::char_traits<char>,
                                                std::allocator<char>>,
                              UseDefaultName>
                   name,
-              LeafOutputPort<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                  AllocCallback alloc_function,
-              LeafOutputPort<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                  CalcCallback calc_function,
+              LeafOutputPort<::drake::AutoDiffXd>::AllocCallback alloc_function,
+              LeafOutputPort<::drake::AutoDiffXd>::CalcCallback calc_function,
               ::std::set<drake::TypeSafeIndex<DependencyTag>,
                          std::less<drake::TypeSafeIndex<DependencyTag>>,
                          std::allocator<drake::TypeSafeIndex<DependencyTag>>>
@@ -736,11 +685,9 @@ void apb11_pydrake_LeafSystem_py_register(py::module &m) {
                  name, alloc_function, calc_function, prerequisites_of_calc);
            })
       .def("DeclareAbstractOutputPort",
-           [](LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              LeafOutputPort<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                  AllocCallback alloc_function,
-              LeafOutputPort<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                  CalcCallback calc_function,
+           [](LeafSystem<::drake::AutoDiffXd> &self,
+              LeafOutputPort<::drake::AutoDiffXd>::AllocCallback alloc_function,
+              LeafOutputPort<::drake::AutoDiffXd>::CalcCallback calc_function,
               ::std::set<drake::TypeSafeIndex<DependencyTag>,
                          std::less<drake::TypeSafeIndex<DependencyTag>>,
                          std::allocator<drake::TypeSafeIndex<DependencyTag>>>
@@ -749,60 +696,53 @@ void apb11_pydrake_LeafSystem_py_register(py::module &m) {
                  alloc_function, calc_function, prerequisites_of_calc);
            })
       .def("DeclareAbstractParameter",
-           static_cast<int (
-               LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)(
+           static_cast<int (LeafSystem<::drake::AutoDiffXd>::*)(
                ::drake::AbstractValue const &)>(
                &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
                    DeclareAbstractParameter),
            py::arg("model_value"))
       .def("DeclareAbstractState",
-           static_cast<AbstractStateIndex (
-               LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)(
+           static_cast<AbstractStateIndex (LeafSystem<::drake::AutoDiffXd>::*)(
                ::drake::AbstractValue const &)>(
                &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
                    DeclareAbstractState),
            py::arg("abstract_state"))
       .def("DeclareAbstractState",
-           [](LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
+           [](LeafSystem<::drake::AutoDiffXd> &self,
               drake::AbstractValue abstract_state) {
              return self.DeclareAbstractState(
                  std::make_unique<drake::AbstractValue>(abstract_state));
            })
       .def("DeclareContinuousState",
-           static_cast<void (
-               LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)(int)>(
+           static_cast<void (LeafSystem<::drake::AutoDiffXd>::*)(int)>(
                &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
                    DeclareContinuousState),
            py::arg("num_state_variables"))
+      .def(
+          "DeclareContinuousState",
+          static_cast<void (LeafSystem<::drake::AutoDiffXd>::*)(int, int, int)>(
+              &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
+                  DeclareContinuousState),
+          py::arg("num_q"), py::arg("num_v"), py::arg("num_z"))
       .def("DeclareContinuousState",
-           static_cast<void (
-               LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)(int, int,
-                                                                      int)>(
-               &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
-                   DeclareContinuousState),
-           py::arg("num_q"), py::arg("num_v"), py::arg("num_z"))
-      .def("DeclareContinuousState",
-           [](LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              BasicVector<Eigen::AutoDiffScalar<Eigen::VectorXd>> const
-                  &model_vector) {
+           [](LeafSystem<::drake::AutoDiffXd> &self,
+              BasicVector<::drake::AutoDiffXd> const &model_vector) {
              return self.DeclareContinuousState(model_vector);
            })
       .def("DeclareContinuousState",
-           [](LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              BasicVector<Eigen::AutoDiffScalar<Eigen::VectorXd>> const
-                  &model_vector,
-              int num_q, int num_v, int num_z) {
+           [](LeafSystem<::drake::AutoDiffXd> &self,
+              BasicVector<::drake::AutoDiffXd> const &model_vector, int num_q,
+              int num_v, int num_z) {
              return self.DeclareContinuousState(model_vector, num_q, num_v,
                                                 num_z);
            })
       .def("DeclareDiscreteState",
-           [](LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              BasicVector<Eigen::AutoDiffScalar<Eigen::VectorXd>> const
-                  &model_vector) {
+           [](LeafSystem<::drake::AutoDiffXd> &self,
+              BasicVector<::drake::AutoDiffXd> const &model_vector) {
              return self.DeclareDiscreteState(model_vector);
            })
       .def("DeclareDiscreteState",
-           [](LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
+           [](LeafSystem<::drake::AutoDiffXd> &self,
               ::Eigen::Ref<
                   const Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>,
                                       -1, 1, 0, -1, 1>,
@@ -810,13 +750,12 @@ void apb11_pydrake_LeafSystem_py_register(py::module &m) {
              return self.DeclareDiscreteState(vector);
            })
       .def("DeclareDiscreteState",
-           static_cast<DiscreteStateIndex (
-               LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)(int)>(
-               &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
-                   DeclareDiscreteState),
+           static_cast<DiscreteStateIndex (LeafSystem<::drake::AutoDiffXd>::*)(
+               int)>(&LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
+                         DeclareDiscreteState),
            py::arg("num_state_variables"))
       .def("DeclareEqualityConstraint",
-           [](LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
+           [](LeafSystem<::drake::AutoDiffXd> &self,
               Eigen::Ref<
                   ::std::function<void(
                       const Context<::drake::AutoDiffXd> &,
@@ -828,13 +767,12 @@ void apb11_pydrake_LeafSystem_py_register(py::module &m) {
              return self.DeclareEqualityConstraint(calc, count, description);
            })
       .def("DeclareImplicitTimeDerivativesResidualSize",
-           static_cast<void (
-               LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)(int)>(
+           static_cast<void (LeafSystem<::drake::AutoDiffXd>::*)(int)>(
                &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
                    DeclareImplicitTimeDerivativesResidualSize),
            py::arg("n"))
       .def("DeclareInequalityConstraint",
-           [](LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
+           [](LeafSystem<::drake::AutoDiffXd> &self,
               Eigen::Ref<
                   ::std::function<void(
                       const Context<::drake::AutoDiffXd> &,
@@ -846,65 +784,58 @@ void apb11_pydrake_LeafSystem_py_register(py::module &m) {
              return self.DeclareInequalityConstraint(calc, bounds, description);
            })
       .def("DeclareNumericParameter",
-           [](LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              BasicVector<Eigen::AutoDiffScalar<Eigen::VectorXd>> const
-                  &model_vector) {
+           [](LeafSystem<::drake::AutoDiffXd> &self,
+              BasicVector<::drake::AutoDiffXd> const &model_vector) {
              return self.DeclareNumericParameter(model_vector);
            })
       .def("DeclarePeriodicDiscreteUpdate",
-           static_cast<void (
-               LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)(double,
-                                                                      double)>(
+           static_cast<void (LeafSystem<::drake::AutoDiffXd>::*)(double,
+                                                                 double)>(
                &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
                    DeclarePeriodicDiscreteUpdate),
            py::arg("period_sec"), py::arg("offset_sec") = double(0))
       .def("DeclarePeriodicPublish",
-           static_cast<void (
-               LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)(double,
-                                                                      double)>(
+           static_cast<void (LeafSystem<::drake::AutoDiffXd>::*)(double,
+                                                                 double)>(
                &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
                    DeclarePeriodicPublish),
            py::arg("period_sec"), py::arg("offset_sec") = double(0))
       .def("DeclarePeriodicUnrestrictedUpdate",
-           static_cast<void (
-               LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)(double,
-                                                                      double)>(
+           static_cast<void (LeafSystem<::drake::AutoDiffXd>::*)(double,
+                                                                 double)>(
                &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
                    DeclarePeriodicUnrestrictedUpdate),
            py::arg("period_sec"), py::arg("offset_sec") = double(0))
       .def(
           "DeclareVectorInputPort",
-          [](LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
+          [](LeafSystem<::drake::AutoDiffXd> &self,
              ::std::variant<std::basic_string<char, std::char_traits<char>,
                                               std::allocator<char>>,
                             UseDefaultName>
                  name,
-             BasicVector<Eigen::AutoDiffScalar<Eigen::VectorXd>> const
-                 &model_vector,
+             BasicVector<::drake::AutoDiffXd> const &model_vector,
              ::std::optional<drake::RandomDistribution> random_type) {
             return self.DeclareVectorInputPort(name, model_vector, random_type);
           },
           py::return_value_policy::reference_internal)
       .def(
           "DeclareVectorInputPort",
-          [](LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-             BasicVector<Eigen::AutoDiffScalar<Eigen::VectorXd>> const
-                 &model_vector,
+          [](LeafSystem<::drake::AutoDiffXd> &self,
+             BasicVector<::drake::AutoDiffXd> const &model_vector,
              ::std::optional<drake::RandomDistribution> random_type) {
             return self.DeclareVectorInputPort(model_vector, random_type);
           },
           py::return_value_policy::reference_internal)
       .def(
           "DeclareVectorOutputPort",
-          [](LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
+          [](LeafSystem<::drake::AutoDiffXd> &self,
              ::std::variant<std::basic_string<char, std::char_traits<char>,
                                               std::allocator<char>>,
                             UseDefaultName>
                  name,
-             BasicVector<Eigen::AutoDiffScalar<Eigen::VectorXd>> const
-                 &model_vector,
-             LeafOutputPort<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                 CalcVectorCallback vector_calc_function,
+             BasicVector<::drake::AutoDiffXd> const &model_vector,
+             LeafOutputPort<::drake::AutoDiffXd>::CalcVectorCallback
+                 vector_calc_function,
              ::std::set<drake::TypeSafeIndex<DependencyTag>,
                         std::less<drake::TypeSafeIndex<DependencyTag>>,
                         std::allocator<drake::TypeSafeIndex<DependencyTag>>>
@@ -916,11 +847,10 @@ void apb11_pydrake_LeafSystem_py_register(py::module &m) {
           py::return_value_policy::reference_internal)
       .def(
           "DeclareVectorOutputPort",
-          [](LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-             BasicVector<Eigen::AutoDiffScalar<Eigen::VectorXd>> const
-                 &model_vector,
-             LeafOutputPort<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                 CalcVectorCallback vector_calc_function,
+          [](LeafSystem<::drake::AutoDiffXd> &self,
+             BasicVector<::drake::AutoDiffXd> const &model_vector,
+             LeafOutputPort<::drake::AutoDiffXd>::CalcVectorCallback
+                 vector_calc_function,
              ::std::set<drake::TypeSafeIndex<DependencyTag>,
                         std::less<drake::TypeSafeIndex<DependencyTag>>,
                         std::allocator<drake::TypeSafeIndex<DependencyTag>>>
@@ -929,100 +859,93 @@ void apb11_pydrake_LeafSystem_py_register(py::module &m) {
                 model_vector, vector_calc_function, prerequisites_of_calc);
           },
           py::return_value_policy::reference_internal)
-      .def("DoAllocateContext",
-           static_cast<::std::unique_ptr<ContextBase,
-                                         std::default_delete<ContextBase>> (
-               LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-               &LeafSystem<
-                   Eigen::AutoDiffScalar<Eigen::VectorXd>>::DoAllocateContext))
+      .def(
+          "DoAllocateContext",
+          static_cast<
+              ::std::unique_ptr<ContextBase, std::default_delete<ContextBase>> (
+                  LeafSystem<::drake::AutoDiffXd>::*)() const>(
+              &LeafSystem<::drake::AutoDiffXd>::DoAllocateContext))
       .def("DoCalcDiscreteVariableUpdates",
-           [](LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
+           [](LeafSystem<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
               ::std::vector<const DiscreteUpdateEvent<::drake::AutoDiffXd> *,
                             std::allocator<const DiscreteUpdateEvent<
                                 ::drake::AutoDiffXd> *>> const &events,
-              DiscreteValues<Eigen::AutoDiffScalar<Eigen::VectorXd>>
-                  *discrete_state) {
+              DiscreteValues<::drake::AutoDiffXd> *discrete_state) {
              return self.DoCalcDiscreteVariableUpdates(context, events,
                                                        discrete_state);
            })
       .def("DoCalcNextUpdateTime",
-           [](LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
-              CompositeEventCollection<Eigen::AutoDiffScalar<Eigen::VectorXd>>
-                  *events,
-              Eigen::Ref<::Eigen::AutoDiffScalar<
-                             Eigen::Matrix<double, -1, 1, 0, -1, 1>> *,
-                         0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
+           [](LeafSystem<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
+              CompositeEventCollection<::drake::AutoDiffXd> *events,
+              Eigen::Ref<::Eigen::AutoDiffScalar<Eigen::VectorXd> *, 0,
+                         Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
                   time) {
              return self.DoCalcNextUpdateTime(context, events, time);
            })
       .def(
           "DoCalcUnrestrictedUpdate",
-          [](LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-             Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
+          [](LeafSystem<::drake::AutoDiffXd> &self,
+             Context<::drake::AutoDiffXd> const &context,
              ::std::vector<const UnrestrictedUpdateEvent<::drake::AutoDiffXd> *,
                            std::allocator<const UnrestrictedUpdateEvent<
                                ::drake::AutoDiffXd> *>> const &events,
-             State<Eigen::AutoDiffScalar<Eigen::VectorXd>> *state) {
+             State<::drake::AutoDiffXd> *state) {
             return self.DoCalcUnrestrictedUpdate(context, events, state);
           })
       .def("DoCalcWitnessValue",
-           [](LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
-              WitnessFunction<Eigen::AutoDiffScalar<Eigen::VectorXd>> const
-                  &witness_func) {
+           [](LeafSystem<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
+              WitnessFunction<::drake::AutoDiffXd> const &witness_func) {
              return self.DoCalcWitnessValue(context, witness_func);
            })
       .def("DoMakeLeafContext",
            static_cast<::std::unique_ptr<
                LeafContext<::drake::AutoDiffXd>,
                std::default_delete<LeafContext<::drake::AutoDiffXd>>> (
-               LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
+               LeafSystem<::drake::AutoDiffXd>::*)() const>(
                &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
                    DoMakeLeafContext))
       .def("DoPublish",
-           [](LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
+           [](LeafSystem<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
               ::std::vector<const PublishEvent<::drake::AutoDiffXd> *,
                             std::allocator<const PublishEvent<
                                 ::drake::AutoDiffXd> *>> const &events) {
              return self.DoPublish(context, events);
            })
       .def("DoValidateAllocatedLeafContext",
-           [](LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              LeafContext<Eigen::AutoDiffScalar<Eigen::VectorXd>> const
-                  &context) {
+           [](LeafSystem<::drake::AutoDiffXd> &self,
+              LeafContext<::drake::AutoDiffXd> const &context) {
              return self.DoValidateAllocatedLeafContext(context);
            })
       .def("GetDirectFeedthroughs",
            static_cast<
                ::std::multimap<int, int, std::less<int>,
                                std::allocator<std::pair<const int, int>>> (
-                   LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)()
-                   const>(&LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                              GetDirectFeedthroughs))
+                   LeafSystem<::drake::AutoDiffXd>::*)() const>(
+               &LeafSystem<::drake::AutoDiffXd>::GetDirectFeedthroughs))
       .def("GetGraphvizFragment",
-           static_cast<void (
-               LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)(
+           static_cast<void (LeafSystem<::drake::AutoDiffXd>::*)(
                int, ::std::stringstream *) const>(
                &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
                    GetGraphvizFragment),
            py::arg("max_depth"), py::arg("dot"))
       .def("GetGraphvizInputPortToken",
-           [](LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              InputPort<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &port,
-              int max_depth, ::std::stringstream *dot) {
+           [](LeafSystem<::drake::AutoDiffXd> &self,
+              InputPort<::drake::AutoDiffXd> const &port, int max_depth,
+              ::std::stringstream *dot) {
              return self.GetGraphvizInputPortToken(port, max_depth, dot);
            })
       .def("GetGraphvizOutputPortToken",
-           [](LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              OutputPort<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &port,
-              int max_depth, ::std::stringstream *dot) {
+           [](LeafSystem<::drake::AutoDiffXd> &self,
+              OutputPort<::drake::AutoDiffXd> const &port, int max_depth,
+              ::std::stringstream *dot) {
              return self.GetGraphvizOutputPortToken(port, max_depth, dot);
            })
       .def("MakeWitnessFunction",
-           [](LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
+           [](LeafSystem<::drake::AutoDiffXd> &self,
               ::std::string const &description,
               WitnessFunctionDirection const &direction_type,
               ::std::function<Eigen::AutoDiffScalar<Eigen::VectorXd>(
@@ -1031,26 +954,26 @@ void apb11_pydrake_LeafSystem_py_register(py::module &m) {
              return self.MakeWitnessFunction(description, direction_type, calc);
            })
       .def("MakeWitnessFunction",
-           [](LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
+           [](LeafSystem<::drake::AutoDiffXd> &self,
               ::std::string const &description,
               WitnessFunctionDirection const &direction_type,
               ::std::function<Eigen::AutoDiffScalar<Eigen::VectorXd>(
                   const Context<::drake::AutoDiffXd> &)>
                   calc,
-              Event<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &e) {
+              Event<::drake::AutoDiffXd> const &e) {
              return self.MakeWitnessFunction(description, direction_type, calc,
                                              e);
            })
       .def("SetDefaultParameters",
-           [](LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
-              Parameters<Eigen::AutoDiffScalar<Eigen::VectorXd>> *parameters) {
+           [](LeafSystem<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
+              Parameters<::drake::AutoDiffXd> *parameters) {
              return self.SetDefaultParameters(context, parameters);
            })
       .def("SetDefaultState",
-           [](LeafSystem<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
-              State<Eigen::AutoDiffScalar<Eigen::VectorXd>> *state) {
+           [](LeafSystem<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
+              State<::drake::AutoDiffXd> *state) {
              return self.SetDefaultState(context, state);
            })
 

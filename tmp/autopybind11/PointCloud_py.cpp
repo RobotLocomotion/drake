@@ -4,6 +4,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+using namespace drake::perception;
+
 namespace py = pybind11;
 void apb11_pydrake_PointCloud_py_register(py::module &m) {
   static bool called = false;
@@ -11,8 +13,6 @@ void apb11_pydrake_PointCloud_py_register(py::module &m) {
     return;
   }
   called = true;
-  using namespace drake::perception;
-
   py::class_<PointCloud> PyPointCloud(m, "PointCloud");
 
   PyPointCloud

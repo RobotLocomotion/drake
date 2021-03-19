@@ -4,6 +4,8 @@
 #include <pybind11/stl.h>
 #include <sstream>
 
+using namespace drake::symbolic;
+
 namespace py = pybind11;
 void apb11_pydrake_Variable_py_register(py::module &m) {
   static bool called = false;
@@ -11,8 +13,6 @@ void apb11_pydrake_Variable_py_register(py::module &m) {
     return;
   }
   called = true;
-  using namespace drake::symbolic;
-
   py::class_<Variable> PyVariable(m, "Variable");
 
   py::enum_<Variable::Type>(PyVariable, "Type", py::arithmetic())

@@ -4,121 +4,86 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-class System_double_publicist : public ::drake::systems::System<double> {
+using namespace drake::systems;
+
+class System_double_publicist : public System<double> {
 public:
-  using ::drake::systems::System<double>::AddConstraint;
-  using ::drake::systems::System<double>::DeclareInputPort;
-  using ::drake::systems::System<double>::DeclareInputPort;
-  using ::drake::systems::System<double>::DispatchDiscreteVariableUpdateHandler;
-  using ::drake::systems::System<double>::DispatchPublishHandler;
-  using ::drake::systems::System<double>::DispatchUnrestrictedUpdateHandler;
-  using ::drake::systems::System<double>::DoApplyDiscreteVariableUpdate;
-  using ::drake::systems::System<double>::DoApplyUnrestrictedUpdate;
-  using ::drake::systems::System<double>::DoCalcConservativePower;
-  using ::drake::systems::System<double>::DoCalcImplicitTimeDerivativesResidual;
-  using ::drake::systems::System<double>::DoCalcKineticEnergy;
-  using ::drake::systems::System<double>::DoCalcNextUpdateTime;
-  using ::drake::systems::System<double>::DoCalcNonConservativePower;
-  using ::drake::systems::System<double>::DoCalcPotentialEnergy;
-  using ::drake::systems::System<double>::DoCalcTimeDerivatives;
-  using ::drake::systems::System<double>::DoCalcWitnessValue;
-  using ::drake::systems::System<double>::DoGetInitializationEvents;
-  using ::drake::systems::System<double>::DoGetPerStepEvents;
-  using ::drake::systems::System<double>::DoGetPeriodicEvents;
-  using ::drake::systems::System<double>::DoGetWitnessFunctions;
-  using ::drake::systems::System<double>::DoMapQDotToVelocity;
-  using ::drake::systems::System<double>::DoMapVelocityToQDot;
-  using ::drake::systems::System<double>::GetMutableOutputVector;
-  using ::drake::systems::System<double>::forced_discrete_update_events_exist;
-  using ::drake::systems::System<double>::forced_publish_events_exist;
-  using ::drake::systems::System<
-      double>::forced_unrestricted_update_events_exist;
-  using ::drake::systems::System<double>::get_forced_discrete_update_events;
-  using ::drake::systems::System<double>::get_forced_publish_events;
-  using ::drake::systems::System<double>::get_forced_unrestricted_update_events;
-  using ::drake::systems::System<
-      double>::get_mutable_forced_discrete_update_events;
-  using ::drake::systems::System<double>::get_mutable_forced_publish_events;
-  using ::drake::systems::System<
-      double>::get_mutable_forced_unrestricted_update_events;
-  using ::drake::systems::System<double>::set_forced_discrete_update_events;
-  using ::drake::systems::System<double>::set_forced_publish_events;
-  using ::drake::systems::System<double>::set_forced_unrestricted_update_events;
+  using System<double>::AddConstraint;
+  using System<double>::DeclareInputPort;
+  using System<double>::DeclareInputPort;
+  using System<double>::DispatchDiscreteVariableUpdateHandler;
+  using System<double>::DispatchPublishHandler;
+  using System<double>::DispatchUnrestrictedUpdateHandler;
+  using System<double>::DoApplyDiscreteVariableUpdate;
+  using System<double>::DoApplyUnrestrictedUpdate;
+  using System<double>::DoCalcConservativePower;
+  using System<double>::DoCalcImplicitTimeDerivativesResidual;
+  using System<double>::DoCalcKineticEnergy;
+  using System<double>::DoCalcNextUpdateTime;
+  using System<double>::DoCalcNonConservativePower;
+  using System<double>::DoCalcPotentialEnergy;
+  using System<double>::DoCalcTimeDerivatives;
+  using System<double>::DoCalcWitnessValue;
+  using System<double>::DoGetInitializationEvents;
+  using System<double>::DoGetPerStepEvents;
+  using System<double>::DoGetPeriodicEvents;
+  using System<double>::DoGetWitnessFunctions;
+  using System<double>::DoMapQDotToVelocity;
+  using System<double>::DoMapVelocityToQDot;
+  using System<double>::GetMutableOutputVector;
+  using System<double>::forced_discrete_update_events_exist;
+  using System<double>::forced_publish_events_exist;
+  using System<double>::forced_unrestricted_update_events_exist;
+  using System<double>::get_forced_discrete_update_events;
+  using System<double>::get_forced_publish_events;
+  using System<double>::get_forced_unrestricted_update_events;
+  using System<double>::get_mutable_forced_discrete_update_events;
+  using System<double>::get_mutable_forced_publish_events;
+  using System<double>::get_mutable_forced_unrestricted_update_events;
+  using System<double>::set_forced_discrete_update_events;
+  using System<double>::set_forced_publish_events;
+  using System<double>::set_forced_unrestricted_update_events;
 };
 
 class System_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist
-    : public ::drake::systems::System<Eigen::AutoDiffScalar<Eigen::VectorXd>> {
+    : public System<::drake::AutoDiffXd> {
 public:
-  using ::drake::systems::System<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::AddConstraint;
-  using ::drake::systems::System<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DeclareInputPort;
-  using ::drake::systems::System<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DeclareInputPort;
-  using ::drake::systems::System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-      DispatchDiscreteVariableUpdateHandler;
-  using ::drake::systems::System<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DispatchPublishHandler;
-  using ::drake::systems::System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-      DispatchUnrestrictedUpdateHandler;
-  using ::drake::systems::System<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DoApplyDiscreteVariableUpdate;
-  using ::drake::systems::System<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DoApplyUnrestrictedUpdate;
-  using ::drake::systems::System<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DoCalcConservativePower;
-  using ::drake::systems::System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-      DoCalcImplicitTimeDerivativesResidual;
-  using ::drake::systems::System<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DoCalcKineticEnergy;
-  using ::drake::systems::System<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DoCalcNextUpdateTime;
-  using ::drake::systems::System<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DoCalcNonConservativePower;
-  using ::drake::systems::System<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DoCalcPotentialEnergy;
-  using ::drake::systems::System<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DoCalcTimeDerivatives;
-  using ::drake::systems::System<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DoCalcWitnessValue;
-  using ::drake::systems::System<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DoGetInitializationEvents;
-  using ::drake::systems::System<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DoGetPerStepEvents;
-  using ::drake::systems::System<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DoGetPeriodicEvents;
-  using ::drake::systems::System<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DoGetWitnessFunctions;
-  using ::drake::systems::System<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DoMapQDotToVelocity;
-  using ::drake::systems::System<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::DoMapVelocityToQDot;
-  using ::drake::systems::System<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::GetMutableOutputVector;
-  using ::drake::systems::System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-      forced_discrete_update_events_exist;
-  using ::drake::systems::System<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::forced_publish_events_exist;
-  using ::drake::systems::System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-      forced_unrestricted_update_events_exist;
-  using ::drake::systems::System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-      get_forced_discrete_update_events;
-  using ::drake::systems::System<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::get_forced_publish_events;
-  using ::drake::systems::System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-      get_forced_unrestricted_update_events;
-  using ::drake::systems::System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-      get_mutable_forced_discrete_update_events;
-  using ::drake::systems::System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-      get_mutable_forced_publish_events;
-  using ::drake::systems::System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-      get_mutable_forced_unrestricted_update_events;
-  using ::drake::systems::System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-      set_forced_discrete_update_events;
-  using ::drake::systems::System<
-      Eigen::AutoDiffScalar<Eigen::VectorXd>>::set_forced_publish_events;
-  using ::drake::systems::System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-      set_forced_unrestricted_update_events;
+  using System<::drake::AutoDiffXd>::AddConstraint;
+  using System<::drake::AutoDiffXd>::DeclareInputPort;
+  using System<::drake::AutoDiffXd>::DeclareInputPort;
+  using System<::drake::AutoDiffXd>::DispatchDiscreteVariableUpdateHandler;
+  using System<::drake::AutoDiffXd>::DispatchPublishHandler;
+  using System<::drake::AutoDiffXd>::DispatchUnrestrictedUpdateHandler;
+  using System<::drake::AutoDiffXd>::DoApplyDiscreteVariableUpdate;
+  using System<::drake::AutoDiffXd>::DoApplyUnrestrictedUpdate;
+  using System<::drake::AutoDiffXd>::DoCalcConservativePower;
+  using System<::drake::AutoDiffXd>::DoCalcImplicitTimeDerivativesResidual;
+  using System<::drake::AutoDiffXd>::DoCalcKineticEnergy;
+  using System<::drake::AutoDiffXd>::DoCalcNextUpdateTime;
+  using System<::drake::AutoDiffXd>::DoCalcNonConservativePower;
+  using System<::drake::AutoDiffXd>::DoCalcPotentialEnergy;
+  using System<::drake::AutoDiffXd>::DoCalcTimeDerivatives;
+  using System<::drake::AutoDiffXd>::DoCalcWitnessValue;
+  using System<::drake::AutoDiffXd>::DoGetInitializationEvents;
+  using System<::drake::AutoDiffXd>::DoGetPerStepEvents;
+  using System<::drake::AutoDiffXd>::DoGetPeriodicEvents;
+  using System<::drake::AutoDiffXd>::DoGetWitnessFunctions;
+  using System<::drake::AutoDiffXd>::DoMapQDotToVelocity;
+  using System<::drake::AutoDiffXd>::DoMapVelocityToQDot;
+  using System<::drake::AutoDiffXd>::GetMutableOutputVector;
+  using System<::drake::AutoDiffXd>::forced_discrete_update_events_exist;
+  using System<::drake::AutoDiffXd>::forced_publish_events_exist;
+  using System<::drake::AutoDiffXd>::forced_unrestricted_update_events_exist;
+  using System<::drake::AutoDiffXd>::get_forced_discrete_update_events;
+  using System<::drake::AutoDiffXd>::get_forced_publish_events;
+  using System<::drake::AutoDiffXd>::get_forced_unrestricted_update_events;
+  using System<::drake::AutoDiffXd>::get_mutable_forced_discrete_update_events;
+  using System<::drake::AutoDiffXd>::get_mutable_forced_publish_events;
+  using System<
+      ::drake::AutoDiffXd>::get_mutable_forced_unrestricted_update_events;
+  using System<::drake::AutoDiffXd>::set_forced_discrete_update_events;
+  using System<::drake::AutoDiffXd>::set_forced_publish_events;
+  using System<::drake::AutoDiffXd>::set_forced_unrestricted_update_events;
 };
 
 namespace py = pybind11;
@@ -128,8 +93,6 @@ void apb11_pydrake_System_py_register(py::module &m) {
     return;
   }
   called = true;
-  using namespace drake::systems;
-
   using PySystem_double_0 = double;
 
   py::class_<System<PySystem_double_0>, SystemBase> PySystem_double(
@@ -271,9 +234,8 @@ void apb11_pydrake_System_py_register(py::module &m) {
            [](System<PySystem_double_0> &self,
               Context<PySystem_double_0> const &context,
               ContinuousState<PySystem_double_0> const &proposed_derivatives,
-              Eigen::Ref<
-                  ::drake::EigenPtr<Eigen::Matrix<double, -1, 1, 0, -1, 1>>, 0,
-                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
+              Eigen::Ref<::drake::EigenPtr<Eigen::VectorXd>, 0,
+                         Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
                   residual) {
              return self.CalcImplicitTimeDerivativesResidual(
                  context, proposed_derivatives, residual);
@@ -420,9 +382,8 @@ void apb11_pydrake_System_py_register(py::module &m) {
            [](System<PySystem_double_0> &self,
               Context<PySystem_double_0> const &context,
               ContinuousState<PySystem_double_0> const &proposed_derivatives,
-              Eigen::Ref<
-                  ::drake::EigenPtr<Eigen::Matrix<double, -1, 1, 0, -1, 1>>, 0,
-                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
+              Eigen::Ref<::drake::EigenPtr<Eigen::VectorXd>, 0,
+                         Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
                   residual) {
              return self.DoCalcImplicitTimeDerivativesResidual(
                  context, proposed_derivatives, residual);
@@ -953,35 +914,30 @@ void apb11_pydrake_System_py_register(py::module &m) {
 
   using PySystem_Eigen_AutoDiffScalar_Eigen_VectorXd_0 = ::drake::AutoDiffXd;
 
-  py::class_<System<Eigen::AutoDiffScalar<Eigen::VectorXd>>, SystemBase>
+  py::class_<System<::drake::AutoDiffXd>, SystemBase>
       PySystem_Eigen_AutoDiffScalar_Eigen_VectorXd(
           m, "System_Eigen_AutoDiffScalar_Eigen_VectorXd");
 
   PySystem_Eigen_AutoDiffScalar_Eigen_VectorXd
       .def("Accept",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              SystemVisitor<Eigen::AutoDiffScalar<Eigen::VectorXd>> *v) {
-             return self.Accept(v);
-           })
+           [](System<::drake::AutoDiffXd> &self,
+              SystemVisitor<::drake::AutoDiffXd> *v) { return self.Accept(v); })
       .def("AddConstraint",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
+           [](System<::drake::AutoDiffXd> &self,
               SystemConstraint<::drake::AutoDiffXd> constraint) {
              return self.AddConstraint(
                  std::make_unique<SystemConstraint<::drake::AutoDiffXd>>(
                      constraint));
            })
       .def("AddExternalConstraint",
-           static_cast<SystemConstraintIndex (
-               System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)(
+           static_cast<SystemConstraintIndex (System<::drake::AutoDiffXd>::*)(
                ExternalSystemConstraint)>(
-               &System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                   AddExternalConstraint),
+               &System<::drake::AutoDiffXd>::AddExternalConstraint),
            py::arg("constraint"))
       .def("AddTriggeredWitnessFunctionToCompositeEventCollection",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Event<Eigen::AutoDiffScalar<Eigen::VectorXd>> *event,
-              CompositeEventCollection<Eigen::AutoDiffScalar<Eigen::VectorXd>>
-                  *events) {
+           [](System<::drake::AutoDiffXd> &self,
+              Event<::drake::AutoDiffXd> *event,
+              CompositeEventCollection<::drake::AutoDiffXd> *events) {
              return self.AddTriggeredWitnessFunctionToCompositeEventCollection(
                  event, events);
            })
@@ -990,26 +946,23 @@ void apb11_pydrake_System_py_register(py::module &m) {
                ::std::unique_ptr<CompositeEventCollection<::drake::AutoDiffXd>,
                                  std::default_delete<CompositeEventCollection<
                                      ::drake::AutoDiffXd>>> (
-                   System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-               &System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                   AllocateCompositeEventCollection))
-      .def(
-          "AllocateContext",
-          static_cast<::std::unique_ptr<
-              Context<::drake::AutoDiffXd>,
-              std::default_delete<Context<::drake::AutoDiffXd>>> (
-              System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-              &System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::AllocateContext))
+                   System<::drake::AutoDiffXd>::*)() const>(
+               &System<::drake::AutoDiffXd>::AllocateCompositeEventCollection))
+      .def("AllocateContext",
+           static_cast<::std::unique_ptr<
+               Context<::drake::AutoDiffXd>,
+               std::default_delete<Context<::drake::AutoDiffXd>>> (
+               System<::drake::AutoDiffXd>::*)() const>(
+               &System<::drake::AutoDiffXd>::AllocateContext))
       .def("AllocateDiscreteVariables",
            static_cast<::std::unique_ptr<
                DiscreteValues<::drake::AutoDiffXd>,
                std::default_delete<DiscreteValues<::drake::AutoDiffXd>>> (
-               System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-               &System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                   AllocateDiscreteVariables))
+               System<::drake::AutoDiffXd>::*)() const>(
+               &System<::drake::AutoDiffXd>::AllocateDiscreteVariables))
       .def("AllocateFixedInputs",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> *context) {
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> *context) {
              return self.AllocateFixedInputs(context);
            })
       .def("AllocateForcedDiscreteUpdateEventCollection",
@@ -1017,100 +970,95 @@ void apb11_pydrake_System_py_register(py::module &m) {
                EventCollection<DiscreteUpdateEvent<::drake::AutoDiffXd>>,
                std::default_delete<
                    EventCollection<DiscreteUpdateEvent<::drake::AutoDiffXd>>>> (
-               System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-               &System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
+               System<::drake::AutoDiffXd>::*)() const>(
+               &System<::drake::AutoDiffXd>::
                    AllocateForcedDiscreteUpdateEventCollection))
       .def("AllocateForcedPublishEventCollection",
            static_cast<::std::unique_ptr<
                EventCollection<PublishEvent<::drake::AutoDiffXd>>,
                std::default_delete<
                    EventCollection<PublishEvent<::drake::AutoDiffXd>>>> (
-               System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-               &System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                   AllocateForcedPublishEventCollection))
+               System<::drake::AutoDiffXd>::*)() const>(
+               &System<
+                   ::drake::AutoDiffXd>::AllocateForcedPublishEventCollection))
       .def("AllocateForcedUnrestrictedUpdateEventCollection",
            static_cast<::std::unique_ptr<
                EventCollection<UnrestrictedUpdateEvent<::drake::AutoDiffXd>>,
                std::default_delete<EventCollection<
                    UnrestrictedUpdateEvent<::drake::AutoDiffXd>>>> (
-               System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-               &System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
+               System<::drake::AutoDiffXd>::*)() const>(
+               &System<::drake::AutoDiffXd>::
                    AllocateForcedUnrestrictedUpdateEventCollection))
       .def("AllocateImplicitTimeDerivativesResidual",
            static_cast<::Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>,
                                        -1, 1, 0, -1, 1> (
-               System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-               &System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
+               System<::drake::AutoDiffXd>::*)() const>(
+               &System<::drake::AutoDiffXd>::
                    AllocateImplicitTimeDerivativesResidual))
       .def("AllocateInputAbstract",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              InputPort<Eigen::AutoDiffScalar<Eigen::VectorXd>> const
-                  &input_port) {
+           [](System<::drake::AutoDiffXd> &self,
+              InputPort<::drake::AutoDiffXd> const &input_port) {
              return self.AllocateInputAbstract(input_port);
            })
       .def("AllocateInputVector",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              InputPort<Eigen::AutoDiffScalar<Eigen::VectorXd>> const
-                  &input_port) { return self.AllocateInputVector(input_port); })
+           [](System<::drake::AutoDiffXd> &self,
+              InputPort<::drake::AutoDiffXd> const &input_port) {
+             return self.AllocateInputVector(input_port);
+           })
       .def("AllocateOutput",
            static_cast<::std::unique_ptr<
                SystemOutput<::drake::AutoDiffXd>,
                std::default_delete<SystemOutput<::drake::AutoDiffXd>>> (
-               System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-               &System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::AllocateOutput))
+               System<::drake::AutoDiffXd>::*)() const>(
+               &System<::drake::AutoDiffXd>::AllocateOutput))
       .def("AllocateTimeDerivatives",
            static_cast<::std::unique_ptr<
                ContinuousState<::drake::AutoDiffXd>,
                std::default_delete<ContinuousState<::drake::AutoDiffXd>>> (
-               System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-               &System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                   AllocateTimeDerivatives))
+               System<::drake::AutoDiffXd>::*)() const>(
+               &System<::drake::AutoDiffXd>::AllocateTimeDerivatives))
       .def("ApplyDiscreteVariableUpdate",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
+           [](System<::drake::AutoDiffXd> &self,
               EventCollection<DiscreteUpdateEvent<::drake::AutoDiffXd>> const
                   &events,
-              DiscreteValues<Eigen::AutoDiffScalar<Eigen::VectorXd>>
-                  *discrete_state,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> *context) {
+              DiscreteValues<::drake::AutoDiffXd> *discrete_state,
+              Context<::drake::AutoDiffXd> *context) {
              return self.ApplyDiscreteVariableUpdate(events, discrete_state,
                                                      context);
            })
       .def(
           "ApplyUnrestrictedUpdate",
-          [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
+          [](System<::drake::AutoDiffXd> &self,
              EventCollection<UnrestrictedUpdateEvent<::drake::AutoDiffXd>> const
                  &events,
-             State<Eigen::AutoDiffScalar<Eigen::VectorXd>> *state,
-             Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> *context) {
+             State<::drake::AutoDiffXd> *state,
+             Context<::drake::AutoDiffXd> *context) {
             return self.ApplyUnrestrictedUpdate(events, state, context);
           })
       .def("CalcConservativePower",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context) {
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context) {
              return self.CalcConservativePower(context);
            })
       .def("CalcDiscreteVariableUpdates",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
               EventCollection<DiscreteUpdateEvent<::drake::AutoDiffXd>> const
                   &events,
-              DiscreteValues<Eigen::AutoDiffScalar<Eigen::VectorXd>>
-                  *discrete_state) {
+              DiscreteValues<::drake::AutoDiffXd> *discrete_state) {
              return self.CalcDiscreteVariableUpdates(context, events,
                                                      discrete_state);
            })
       .def("CalcDiscreteVariableUpdates",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
-              DiscreteValues<Eigen::AutoDiffScalar<Eigen::VectorXd>>
-                  *discrete_state) {
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
+              DiscreteValues<::drake::AutoDiffXd> *discrete_state) {
              return self.CalcDiscreteVariableUpdates(context, discrete_state);
            })
       .def("CalcImplicitTimeDerivativesResidual",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
-              ContinuousState<Eigen::AutoDiffScalar<Eigen::VectorXd>> const
-                  &proposed_derivatives,
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
+              ContinuousState<::drake::AutoDiffXd> const &proposed_derivatives,
               Eigen::Ref<
                   ::drake::EigenPtr<Eigen::Matrix<
                       Eigen::AutoDiffScalar<Eigen::VectorXd>, -1, 1, 0, -1, 1>>,
@@ -1120,85 +1068,83 @@ void apb11_pydrake_System_py_register(py::module &m) {
                  context, proposed_derivatives, residual);
            })
       .def("CalcKineticEnergy",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context) {
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context) {
              return self.CalcKineticEnergy(context);
            })
       .def("CalcNextUpdateTime",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
-              CompositeEventCollection<Eigen::AutoDiffScalar<Eigen::VectorXd>>
-                  *events) { return self.CalcNextUpdateTime(context, events); })
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
+              CompositeEventCollection<::drake::AutoDiffXd> *events) {
+             return self.CalcNextUpdateTime(context, events);
+           })
       .def("CalcNonConservativePower",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context) {
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context) {
              return self.CalcNonConservativePower(context);
            })
       .def("CalcOutput",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
-              SystemOutput<Eigen::AutoDiffScalar<Eigen::VectorXd>> *outputs) {
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
+              SystemOutput<::drake::AutoDiffXd> *outputs) {
              return self.CalcOutput(context, outputs);
            })
       .def("CalcPotentialEnergy",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context) {
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context) {
              return self.CalcPotentialEnergy(context);
            })
       .def("CalcTimeDerivatives",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
-              ContinuousState<Eigen::AutoDiffScalar<Eigen::VectorXd>>
-                  *derivatives) {
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
+              ContinuousState<::drake::AutoDiffXd> *derivatives) {
              return self.CalcTimeDerivatives(context, derivatives);
            })
       .def(
           "CalcUnrestrictedUpdate",
-          [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-             Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
+          [](System<::drake::AutoDiffXd> &self,
+             Context<::drake::AutoDiffXd> const &context,
              EventCollection<UnrestrictedUpdateEvent<::drake::AutoDiffXd>> const
                  &events,
-             State<Eigen::AutoDiffScalar<Eigen::VectorXd>> *state) {
+             State<::drake::AutoDiffXd> *state) {
             return self.CalcUnrestrictedUpdate(context, events, state);
           })
       .def("CalcUnrestrictedUpdate",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
-              State<Eigen::AutoDiffScalar<Eigen::VectorXd>> *state) {
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
+              State<::drake::AutoDiffXd> *state) {
              return self.CalcUnrestrictedUpdate(context, state);
            })
       .def("CalcWitnessValue",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
-              WitnessFunction<Eigen::AutoDiffScalar<Eigen::VectorXd>> const
-                  &witness_func) {
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
+              WitnessFunction<::drake::AutoDiffXd> const &witness_func) {
              return self.CalcWitnessValue(context, witness_func);
            })
       .def("CheckSystemConstraintsSatisfied",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
-              double tol) {
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context, double tol) {
              return self.CheckSystemConstraintsSatisfied(context, tol);
            })
       .def("CheckValidOutput",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              SystemOutput<Eigen::AutoDiffScalar<Eigen::VectorXd>> const
-                  *output) { return self.CheckValidOutput(output); })
+           [](System<::drake::AutoDiffXd> &self,
+              SystemOutput<::drake::AutoDiffXd> const *output) {
+             return self.CheckValidOutput(output);
+           })
       .def("CopyContinuousStateVector",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context) {
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context) {
              return self.CopyContinuousStateVector(context);
            })
       .def("CreateDefaultContext",
            static_cast<::std::unique_ptr<
                Context<::drake::AutoDiffXd>,
                std::default_delete<Context<::drake::AutoDiffXd>>> (
-               System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-               &System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                   CreateDefaultContext))
+               System<::drake::AutoDiffXd>::*)() const>(
+               &System<::drake::AutoDiffXd>::CreateDefaultContext))
       .def("DeclareInputPort",
-           static_cast<InputPort<Eigen::AutoDiffScalar<Eigen::VectorXd>> &(
-               System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
+           static_cast<InputPort<::drake::AutoDiffXd> &(
+               System<::drake::AutoDiffXd>::
                    *)(::std::variant<
                           std::basic_string<char, std::char_traits<char>,
                                             std::allocator<char>>,
@@ -1212,10 +1158,10 @@ void apb11_pydrake_System_py_register(py::module &m) {
                ::std::optional<drake::RandomDistribution>(std::nullopt),
            py::return_value_policy::reference_internal)
       .def("DeclareInputPort",
-           static_cast<InputPort<Eigen::AutoDiffScalar<Eigen::VectorXd>> &(
-               System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                   *)(PortDataType, int,
-                      ::std::optional<drake::RandomDistribution>)>(
+           static_cast<InputPort<::drake::AutoDiffXd> &(
+               System<::drake::AutoDiffXd>::*)(PortDataType, int,
+                                               ::std::optional<
+                                                   drake::RandomDistribution>)>(
                &System_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
                    DeclareInputPort),
            py::arg("type"), py::arg("size"),
@@ -1223,61 +1169,58 @@ void apb11_pydrake_System_py_register(py::module &m) {
                ::std::optional<drake::RandomDistribution>(std::nullopt),
            py::return_value_policy::reference_internal)
       .def("DispatchDiscreteVariableUpdateHandler",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
               EventCollection<DiscreteUpdateEvent<::drake::AutoDiffXd>> const
                   &events,
-              DiscreteValues<Eigen::AutoDiffScalar<Eigen::VectorXd>>
-                  *discrete_state) {
+              DiscreteValues<::drake::AutoDiffXd> *discrete_state) {
              return self.DispatchDiscreteVariableUpdateHandler(context, events,
                                                                discrete_state);
            })
       .def(
           "DispatchPublishHandler",
-          [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-             Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
+          [](System<::drake::AutoDiffXd> &self,
+             Context<::drake::AutoDiffXd> const &context,
              EventCollection<PublishEvent<::drake::AutoDiffXd>> const &events) {
             return self.DispatchPublishHandler(context, events);
           })
       .def(
           "DispatchUnrestrictedUpdateHandler",
-          [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-             Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
+          [](System<::drake::AutoDiffXd> &self,
+             Context<::drake::AutoDiffXd> const &context,
              EventCollection<UnrestrictedUpdateEvent<::drake::AutoDiffXd>> const
                  &events,
-             State<Eigen::AutoDiffScalar<Eigen::VectorXd>> *state) {
+             State<::drake::AutoDiffXd> *state) {
             return self.DispatchUnrestrictedUpdateHandler(context, events,
                                                           state);
           })
       .def("DoApplyDiscreteVariableUpdate",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
+           [](System<::drake::AutoDiffXd> &self,
               EventCollection<DiscreteUpdateEvent<::drake::AutoDiffXd>> const
                   &events,
-              DiscreteValues<Eigen::AutoDiffScalar<Eigen::VectorXd>>
-                  *discrete_state,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> *context) {
+              DiscreteValues<::drake::AutoDiffXd> *discrete_state,
+              Context<::drake::AutoDiffXd> *context) {
              return self.DoApplyDiscreteVariableUpdate(events, discrete_state,
                                                        context);
            })
       .def(
           "DoApplyUnrestrictedUpdate",
-          [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
+          [](System<::drake::AutoDiffXd> &self,
              EventCollection<UnrestrictedUpdateEvent<::drake::AutoDiffXd>> const
                  &events,
-             State<Eigen::AutoDiffScalar<Eigen::VectorXd>> *state,
-             Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> *context) {
+             State<::drake::AutoDiffXd> *state,
+             Context<::drake::AutoDiffXd> *context) {
             return self.DoApplyUnrestrictedUpdate(events, state, context);
           })
       .def("DoCalcConservativePower",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context) {
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context) {
              return self.DoCalcConservativePower(context);
            })
       .def("DoCalcImplicitTimeDerivativesResidual",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
-              ContinuousState<Eigen::AutoDiffScalar<Eigen::VectorXd>> const
-                  &proposed_derivatives,
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
+              ContinuousState<::drake::AutoDiffXd> const &proposed_derivatives,
               Eigen::Ref<
                   ::drake::EigenPtr<Eigen::Matrix<
                       Eigen::AutoDiffScalar<Eigen::VectorXd>, -1, 1, 0, -1, 1>>,
@@ -1287,77 +1230,70 @@ void apb11_pydrake_System_py_register(py::module &m) {
                  context, proposed_derivatives, residual);
            })
       .def("DoCalcKineticEnergy",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context) {
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context) {
              return self.DoCalcKineticEnergy(context);
            })
       .def("DoCalcNextUpdateTime",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
-              CompositeEventCollection<Eigen::AutoDiffScalar<Eigen::VectorXd>>
-                  *events,
-              Eigen::Ref<::Eigen::AutoDiffScalar<
-                             Eigen::Matrix<double, -1, 1, 0, -1, 1>> *,
-                         0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
+              CompositeEventCollection<::drake::AutoDiffXd> *events,
+              Eigen::Ref<::Eigen::AutoDiffScalar<Eigen::VectorXd> *, 0,
+                         Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
                   time) {
              return self.DoCalcNextUpdateTime(context, events, time);
            })
       .def("DoCalcNonConservativePower",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context) {
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context) {
              return self.DoCalcNonConservativePower(context);
            })
       .def("DoCalcPotentialEnergy",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context) {
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context) {
              return self.DoCalcPotentialEnergy(context);
            })
       .def("DoCalcTimeDerivatives",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
-              ContinuousState<Eigen::AutoDiffScalar<Eigen::VectorXd>>
-                  *derivatives) {
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
+              ContinuousState<::drake::AutoDiffXd> *derivatives) {
              return self.DoCalcTimeDerivatives(context, derivatives);
            })
       .def("DoCalcWitnessValue",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
-              WitnessFunction<Eigen::AutoDiffScalar<Eigen::VectorXd>> const
-                  &witness_func) {
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
+              WitnessFunction<::drake::AutoDiffXd> const &witness_func) {
              return self.DoCalcWitnessValue(context, witness_func);
            })
       .def("DoGetInitializationEvents",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
-              CompositeEventCollection<Eigen::AutoDiffScalar<Eigen::VectorXd>>
-                  *events) {
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
+              CompositeEventCollection<::drake::AutoDiffXd> *events) {
              return self.DoGetInitializationEvents(context, events);
            })
       .def(
           "DoGetMutableTargetSystemCompositeEventCollection",
-          [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-             System<Eigen::AutoDiffScalar<Eigen::VectorXd>> const
-                 &target_system,
-             CompositeEventCollection<Eigen::AutoDiffScalar<Eigen::VectorXd>>
-                 *events) {
+          [](System<::drake::AutoDiffXd> &self,
+             System<::drake::AutoDiffXd> const &target_system,
+             CompositeEventCollection<::drake::AutoDiffXd> *events) {
             return self.DoGetMutableTargetSystemCompositeEventCollection(
                 target_system, events);
           },
           py::return_value_policy::reference_internal)
       .def(
           "DoGetMutableTargetSystemState",
-          [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-             System<Eigen::AutoDiffScalar<Eigen::VectorXd>> const
-                 &target_system,
-             State<Eigen::AutoDiffScalar<Eigen::VectorXd>> *state) {
+          [](System<::drake::AutoDiffXd> &self,
+             System<::drake::AutoDiffXd> const &target_system,
+             State<::drake::AutoDiffXd> *state) {
             return self.DoGetMutableTargetSystemState(target_system, state);
           },
           py::return_value_policy::reference_internal)
       .def("DoGetPerStepEvents",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
-              CompositeEventCollection<Eigen::AutoDiffScalar<Eigen::VectorXd>>
-                  *events) { return self.DoGetPerStepEvents(context, events); })
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
+              CompositeEventCollection<::drake::AutoDiffXd> *events) {
+             return self.DoGetPerStepEvents(context, events);
+           })
       .def("DoGetPeriodicEvents",
            static_cast<::std::map<
                PeriodicEventData,
@@ -1369,216 +1305,195 @@ void apb11_pydrake_System_py_register(py::module &m) {
                    std::vector<
                        const Event<::drake::AutoDiffXd> *,
                        std::allocator<const Event<::drake::AutoDiffXd> *>>>>> (
-               System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
+               System<::drake::AutoDiffXd>::*)() const>(
                &System_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
                    DoGetPeriodicEvents))
       .def(
           "DoGetTargetSystemCompositeEventCollection",
-          [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-             System<Eigen::AutoDiffScalar<Eigen::VectorXd>> const
-                 &target_system,
-             CompositeEventCollection<
-                 Eigen::AutoDiffScalar<Eigen::VectorXd>> const *events) {
+          [](System<::drake::AutoDiffXd> &self,
+             System<::drake::AutoDiffXd> const &target_system,
+             CompositeEventCollection<::drake::AutoDiffXd> const *events) {
             return self.DoGetTargetSystemCompositeEventCollection(target_system,
                                                                   events);
           },
           py::return_value_policy::reference_internal)
       .def(
           "DoGetTargetSystemContext",
-          [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-             System<Eigen::AutoDiffScalar<Eigen::VectorXd>> const
-                 &target_system,
-             Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const *context) {
+          [](System<::drake::AutoDiffXd> &self,
+             System<::drake::AutoDiffXd> const &target_system,
+             Context<::drake::AutoDiffXd> const *context) {
             return self.DoGetTargetSystemContext(target_system, context);
           },
           py::return_value_policy::reference_internal)
       .def(
           "DoGetTargetSystemContinuousState",
-          [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-             System<Eigen::AutoDiffScalar<Eigen::VectorXd>> const
-                 &target_system,
-             ContinuousState<Eigen::AutoDiffScalar<Eigen::VectorXd>> const
-                 *xc) {
+          [](System<::drake::AutoDiffXd> &self,
+             System<::drake::AutoDiffXd> const &target_system,
+             ContinuousState<::drake::AutoDiffXd> const *xc) {
             return self.DoGetTargetSystemContinuousState(target_system, xc);
           },
           py::return_value_policy::reference_internal)
       .def(
           "DoGetTargetSystemState",
-          [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-             System<Eigen::AutoDiffScalar<Eigen::VectorXd>> const
-                 &target_system,
-             State<Eigen::AutoDiffScalar<Eigen::VectorXd>> const *state) {
+          [](System<::drake::AutoDiffXd> &self,
+             System<::drake::AutoDiffXd> const &target_system,
+             State<::drake::AutoDiffXd> const *state) {
             return self.DoGetTargetSystemState(target_system, state);
           },
           py::return_value_policy::reference_internal)
       .def("DoGetWitnessFunctions",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &arg0,
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &arg0,
               ::std::vector<
                   const WitnessFunction<::drake::AutoDiffXd> *,
                   std::allocator<const WitnessFunction<::drake::AutoDiffXd> *>>
                   *arg1) { return self.DoGetWitnessFunctions(arg0, arg1); })
       .def("DoMapQDotToVelocity",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
               ::Eigen::Ref<
                   const Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>,
                                       -1, 1, 0, -1, 1>,
                   0, Eigen::InnerStride<1>> const &qdot,
-              VectorBase<Eigen::AutoDiffScalar<Eigen::VectorXd>>
-                  *generalized_velocity) {
+              VectorBase<::drake::AutoDiffXd> *generalized_velocity) {
              return self.DoMapQDotToVelocity(context, qdot,
                                              generalized_velocity);
            })
       .def("DoMapVelocityToQDot",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
               ::Eigen::Ref<
                   const Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>,
                                       -1, 1, 0, -1, 1>,
                   0, Eigen::InnerStride<1>> const &generalized_velocity,
-              VectorBase<Eigen::AutoDiffScalar<Eigen::VectorXd>> *qdot) {
+              VectorBase<::drake::AutoDiffXd> *qdot) {
              return self.DoMapVelocityToQDot(context, generalized_velocity,
                                              qdot);
            })
       .def(
           "EvalConservativePower",
-          [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-             Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context) {
+          [](System<::drake::AutoDiffXd> &self,
+             Context<::drake::AutoDiffXd> const &context) {
             return self.EvalConservativePower(context);
           },
           py::return_value_policy::reference_internal)
       .def("EvalEigenVectorInput",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
-              int port_index) {
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context, int port_index) {
              return self.EvalEigenVectorInput(context, port_index);
            })
       .def(
           "EvalKineticEnergy",
-          [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-             Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context) {
+          [](System<::drake::AutoDiffXd> &self,
+             Context<::drake::AutoDiffXd> const &context) {
             return self.EvalKineticEnergy(context);
           },
           py::return_value_policy::reference_internal)
       .def(
           "EvalNonConservativePower",
-          [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-             Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context) {
+          [](System<::drake::AutoDiffXd> &self,
+             Context<::drake::AutoDiffXd> const &context) {
             return self.EvalNonConservativePower(context);
           },
           py::return_value_policy::reference_internal)
       .def(
           "EvalPotentialEnergy",
-          [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-             Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context) {
+          [](System<::drake::AutoDiffXd> &self,
+             Context<::drake::AutoDiffXd> const &context) {
             return self.EvalPotentialEnergy(context);
           },
           py::return_value_policy::reference_internal)
       .def(
           "EvalTimeDerivatives",
-          [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-             Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context) {
+          [](System<::drake::AutoDiffXd> &self,
+             Context<::drake::AutoDiffXd> const &context) {
             return self.EvalTimeDerivatives(context);
           },
           py::return_value_policy::reference_internal)
       .def("FixInputPortsFrom",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
+           [](System<::drake::AutoDiffXd> &self,
               System<double> const &other_system,
               Context<double> const &other_context,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> *target_context) {
+              Context<::drake::AutoDiffXd> *target_context) {
              return self.FixInputPortsFrom(other_system, other_context,
                                            target_context);
            })
-      .def(
-          "GetGraphvizFragment",
-          static_cast<void (System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)(
-              int, ::std::stringstream *) const>(
-              &System<
-                  Eigen::AutoDiffScalar<Eigen::VectorXd>>::GetGraphvizFragment),
-          py::arg("max_depth"), py::arg("dot"))
+      .def("GetGraphvizFragment",
+           static_cast<void (System<::drake::AutoDiffXd>::*)(
+               int, ::std::stringstream *) const>(
+               &System<::drake::AutoDiffXd>::GetGraphvizFragment),
+           py::arg("max_depth"), py::arg("dot"))
       .def("GetGraphvizId",
-           static_cast<::int64_t (
-               System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-               &System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::GetGraphvizId))
+           static_cast<::int64_t (System<::drake::AutoDiffXd>::*)() const>(
+               &System<::drake::AutoDiffXd>::GetGraphvizId))
       .def("GetGraphvizInputPortToken",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              InputPort<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &port,
-              int max_depth, ::std::stringstream *dot) {
+           [](System<::drake::AutoDiffXd> &self,
+              InputPort<::drake::AutoDiffXd> const &port, int max_depth,
+              ::std::stringstream *dot) {
              return self.GetGraphvizInputPortToken(port, max_depth, dot);
            })
       .def("GetGraphvizOutputPortToken",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              OutputPort<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &port,
-              int max_depth, ::std::stringstream *dot) {
+           [](System<::drake::AutoDiffXd> &self,
+              OutputPort<::drake::AutoDiffXd> const &port, int max_depth,
+              ::std::stringstream *dot) {
              return self.GetGraphvizOutputPortToken(port, max_depth, dot);
            })
       .def("GetGraphvizString",
-           static_cast<::std::string (
-               System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)(int) const>(
-               &System<
-                   Eigen::AutoDiffScalar<Eigen::VectorXd>>::GetGraphvizString),
+           static_cast<::std::string (System<::drake::AutoDiffXd>::*)(
+               int) const>(&System<::drake::AutoDiffXd>::GetGraphvizString),
            py::arg("max_depth") = int(std::numeric_limits<int>::max()))
       .def("GetInitializationEvents",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
-              CompositeEventCollection<Eigen::AutoDiffScalar<Eigen::VectorXd>>
-                  *events) {
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
+              CompositeEventCollection<::drake::AutoDiffXd> *events) {
              return self.GetInitializationEvents(context, events);
            })
-      .def(
-          "GetInputPort",
-          static_cast<InputPort<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &(
-              System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                  *)(::std::string const &)const>(
-              &System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::GetInputPort),
-          py::arg("port_name"), py::return_value_policy::reference_internal)
-      .def(
-          "GetMemoryObjectName",
-          static_cast<::std::string (
-              System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-              &System<
-                  Eigen::AutoDiffScalar<Eigen::VectorXd>>::GetMemoryObjectName))
+      .def("GetInputPort",
+           static_cast<InputPort<::drake::AutoDiffXd> const &(
+               System<::drake::AutoDiffXd>::*)(::std::string const &)const>(
+               &System<::drake::AutoDiffXd>::GetInputPort),
+           py::arg("port_name"), py::return_value_policy::reference_internal)
+      .def("GetMemoryObjectName",
+           static_cast<::std::string (System<::drake::AutoDiffXd>::*)() const>(
+               &System<::drake::AutoDiffXd>::GetMemoryObjectName))
       .def("GetMutableOutputVector",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              SystemOutput<Eigen::AutoDiffScalar<Eigen::VectorXd>> *output,
-              int port_index) {
+           [](System<::drake::AutoDiffXd> &self,
+              SystemOutput<::drake::AutoDiffXd> *output, int port_index) {
              return self.GetMutableOutputVector(output, port_index);
            })
       .def(
           "GetMutableSubsystemContext",
-          [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-             System<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &subsystem,
-             Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> *context) {
+          [](System<::drake::AutoDiffXd> &self,
+             System<::drake::AutoDiffXd> const &subsystem,
+             Context<::drake::AutoDiffXd> *context) {
             return self.GetMutableSubsystemContext(subsystem, context);
           },
           py::return_value_policy::reference_internal)
       .def(
           "GetMyContextFromRoot",
-          [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-             Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const
-                 &root_context) {
+          [](System<::drake::AutoDiffXd> &self,
+             Context<::drake::AutoDiffXd> const &root_context) {
             return self.GetMyContextFromRoot(root_context);
           },
           py::return_value_policy::reference_internal)
       .def(
           "GetMyMutableContextFromRoot",
-          [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-             Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> *root_context) {
+          [](System<::drake::AutoDiffXd> &self,
+             Context<::drake::AutoDiffXd> *root_context) {
             return self.GetMyMutableContextFromRoot(root_context);
           },
           py::return_value_policy::reference_internal)
       .def("GetOutputPort",
-           static_cast<OutputPort<Eigen::AutoDiffScalar<Eigen::VectorXd>> const
-                           &(System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                                 *)(::std::string const &)const>(
-               &System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::GetOutputPort),
+           static_cast<OutputPort<::drake::AutoDiffXd> const &(
+               System<::drake::AutoDiffXd>::*)(::std::string const &)const>(
+               &System<::drake::AutoDiffXd>::GetOutputPort),
            py::arg("port_name"), py::return_value_policy::reference_internal)
       .def("GetPerStepEvents",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
-              CompositeEventCollection<Eigen::AutoDiffScalar<Eigen::VectorXd>>
-                  *events) { return self.GetPerStepEvents(context, events); })
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
+              CompositeEventCollection<::drake::AutoDiffXd> *events) {
+             return self.GetPerStepEvents(context, events);
+           })
       .def("GetPeriodicEvents",
            static_cast<::std::map<
                PeriodicEventData,
@@ -1590,144 +1505,133 @@ void apb11_pydrake_System_py_register(py::module &m) {
                    std::vector<
                        const Event<::drake::AutoDiffXd> *,
                        std::allocator<const Event<::drake::AutoDiffXd> *>>>>> (
-               System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-               &System<
-                   Eigen::AutoDiffScalar<Eigen::VectorXd>>::GetPeriodicEvents))
+               System<::drake::AutoDiffXd>::*)() const>(
+               &System<::drake::AutoDiffXd>::GetPeriodicEvents))
       .def(
           "GetSubsystemContext",
-          [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-             System<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &subsystem,
-             Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context) {
+          [](System<::drake::AutoDiffXd> &self,
+             System<::drake::AutoDiffXd> const &subsystem,
+             Context<::drake::AutoDiffXd> const &context) {
             return self.GetSubsystemContext(subsystem, context);
           },
           py::return_value_policy::reference_internal)
       .def("GetUniquePeriodicDiscreteUpdateAttribute",
            static_cast<::std::optional<PeriodicEventData> (
-               System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-               &System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
+               System<::drake::AutoDiffXd>::*)() const>(
+               &System<::drake::AutoDiffXd>::
                    GetUniquePeriodicDiscreteUpdateAttribute))
       .def("GetWitnessFunctions",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
               ::std::vector<
                   const WitnessFunction<::drake::AutoDiffXd> *,
                   std::allocator<const WitnessFunction<::drake::AutoDiffXd> *>>
                   *w) { return self.GetWitnessFunctions(context, w); })
       .def("HasAnyDirectFeedthrough",
-           static_cast<bool (
-               System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-               &System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                   HasAnyDirectFeedthrough))
+           static_cast<bool (System<::drake::AutoDiffXd>::*)() const>(
+               &System<::drake::AutoDiffXd>::HasAnyDirectFeedthrough))
       .def("HasDirectFeedthrough",
-           static_cast<bool (System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)(
-               int) const>(&System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                               HasDirectFeedthrough),
+           static_cast<bool (System<::drake::AutoDiffXd>::*)(int) const>(
+               &System<::drake::AutoDiffXd>::HasDirectFeedthrough),
            py::arg("output_port"))
-      .def(
-          "HasDirectFeedthrough",
-          static_cast<bool (System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)(
-              int, int) const>(&System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                                   HasDirectFeedthrough),
-          py::arg("input_port"), py::arg("output_port"))
+      .def("HasDirectFeedthrough",
+           static_cast<bool (System<::drake::AutoDiffXd>::*)(int, int) const>(
+               &System<::drake::AutoDiffXd>::HasDirectFeedthrough),
+           py::arg("input_port"), py::arg("output_port"))
       .def("HasInputPort",
-           static_cast<bool (System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)(
+           static_cast<bool (System<::drake::AutoDiffXd>::*)(
                ::std::string const &) const>(
-               &System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::HasInputPort),
+               &System<::drake::AutoDiffXd>::HasInputPort),
            py::arg("port_name"))
       .def("HasOutputPort",
-           static_cast<bool (System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)(
+           static_cast<bool (System<::drake::AutoDiffXd>::*)(
                ::std::string const &) const>(
-               &System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::HasOutputPort),
+               &System<::drake::AutoDiffXd>::HasOutputPort),
            py::arg("port_name"))
-      .def(
-          "IsDifferenceEquationSystem",
-          static_cast<bool (System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)(
-              double *) const>(&System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                                   IsDifferenceEquationSystem),
-          py::arg("time_period") = (double *)nullptr)
+      .def("IsDifferenceEquationSystem",
+           static_cast<bool (System<::drake::AutoDiffXd>::*)(double *) const>(
+               &System<::drake::AutoDiffXd>::IsDifferenceEquationSystem),
+           py::arg("time_period") = (double *)nullptr)
       .def("MapQDotToVelocity",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
-              VectorBase<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &qdot,
-              VectorBase<Eigen::AutoDiffScalar<Eigen::VectorXd>>
-                  *generalized_velocity) {
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
+              VectorBase<::drake::AutoDiffXd> const &qdot,
+              VectorBase<::drake::AutoDiffXd> *generalized_velocity) {
              return self.MapQDotToVelocity(context, qdot, generalized_velocity);
            })
       .def("MapQDotToVelocity",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
               ::Eigen::Ref<
                   const Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>,
                                       -1, 1, 0, -1, 1>,
                   0, Eigen::InnerStride<1>> const &qdot,
-              VectorBase<Eigen::AutoDiffScalar<Eigen::VectorXd>>
-                  *generalized_velocity) {
+              VectorBase<::drake::AutoDiffXd> *generalized_velocity) {
              return self.MapQDotToVelocity(context, qdot, generalized_velocity);
            })
       .def("MapVelocityToQDot",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
-              VectorBase<Eigen::AutoDiffScalar<Eigen::VectorXd>> const
-                  &generalized_velocity,
-              VectorBase<Eigen::AutoDiffScalar<Eigen::VectorXd>> *qdot) {
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
+              VectorBase<::drake::AutoDiffXd> const &generalized_velocity,
+              VectorBase<::drake::AutoDiffXd> *qdot) {
              return self.MapVelocityToQDot(context, generalized_velocity, qdot);
            })
       .def("MapVelocityToQDot",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
               ::Eigen::Ref<
                   const Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>,
                                       -1, 1, 0, -1, 1>,
                   0, Eigen::InnerStride<1>> const &generalized_velocity,
-              VectorBase<Eigen::AutoDiffScalar<Eigen::VectorXd>> *qdot) {
+              VectorBase<::drake::AutoDiffXd> *qdot) {
              return self.MapVelocityToQDot(context, generalized_velocity, qdot);
            })
       .def(
           "Publish",
-          [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-             Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
+          [](System<::drake::AutoDiffXd> &self,
+             Context<::drake::AutoDiffXd> const &context,
              EventCollection<PublishEvent<::drake::AutoDiffXd>> const &events) {
             return self.Publish(context, events);
           })
       .def("Publish",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context) {
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context) {
              return self.Publish(context);
            })
       .def("SetDefaultContext",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> *context) {
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> *context) {
              return self.SetDefaultContext(context);
            })
       .def("SetDefaultParameters",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
-              Parameters<Eigen::AutoDiffScalar<Eigen::VectorXd>> *parameters) {
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
+              Parameters<::drake::AutoDiffXd> *parameters) {
              return self.SetDefaultParameters(context, parameters);
            })
       .def("SetDefaultState",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
-              State<Eigen::AutoDiffScalar<Eigen::VectorXd>> *state) {
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
+              State<::drake::AutoDiffXd> *state) {
              return self.SetDefaultState(context, state);
            })
       .def("SetRandomContext",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> *context,
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> *context,
               ::drake::RandomGenerator *generator) {
              return self.SetRandomContext(context, generator);
            })
       .def("SetRandomParameters",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
-              Parameters<Eigen::AutoDiffScalar<Eigen::VectorXd>> *parameters,
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
+              Parameters<::drake::AutoDiffXd> *parameters,
               ::drake::RandomGenerator *generator) {
              return self.SetRandomParameters(context, parameters, generator);
            })
       .def("SetRandomState",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
-              Context<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &context,
-              State<Eigen::AutoDiffScalar<Eigen::VectorXd>> *state,
+           [](System<::drake::AutoDiffXd> &self,
+              Context<::drake::AutoDiffXd> const &context,
+              State<::drake::AutoDiffXd> *state,
               ::drake::RandomGenerator *generator) {
              return self.SetRandomState(context, state, generator);
            })
@@ -1735,151 +1639,127 @@ void apb11_pydrake_System_py_register(py::module &m) {
            static_cast<::std::unique_ptr<
                System<::drake::AutoDiffXd>,
                std::default_delete<System<::drake::AutoDiffXd>>> (
-               System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-               &System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::ToAutoDiffXd))
+               System<::drake::AutoDiffXd>::*)() const>(
+               &System<::drake::AutoDiffXd>::ToAutoDiffXd))
       .def("ToAutoDiffXdMaybe",
            static_cast<::std::unique_ptr<
                System<::drake::AutoDiffXd>,
                std::default_delete<System<::drake::AutoDiffXd>>> (
-               System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-               &System<
-                   Eigen::AutoDiffScalar<Eigen::VectorXd>>::ToAutoDiffXdMaybe))
+               System<::drake::AutoDiffXd>::*)() const>(
+               &System<::drake::AutoDiffXd>::ToAutoDiffXdMaybe))
       .def("ToSymbolic",
            static_cast<::std::unique_ptr<
                System<::drake::symbolic::Expression>,
                std::default_delete<System<::drake::symbolic::Expression>>> (
-               System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-               &System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::ToSymbolic))
-      .def(
-          "ToSymbolicMaybe",
-          static_cast<::std::unique_ptr<
-              System<::drake::symbolic::Expression>,
-              std::default_delete<System<::drake::symbolic::Expression>>> (
-              System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-              &System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::ToSymbolicMaybe))
+               System<::drake::AutoDiffXd>::*)() const>(
+               &System<::drake::AutoDiffXd>::ToSymbolic))
+      .def("ToSymbolicMaybe",
+           static_cast<::std::unique_ptr<
+               System<::drake::symbolic::Expression>,
+               std::default_delete<System<::drake::symbolic::Expression>>> (
+               System<::drake::AutoDiffXd>::*)() const>(
+               &System<::drake::AutoDiffXd>::ToSymbolicMaybe))
       .def("forced_discrete_update_events_exist",
-           static_cast<bool (
-               System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
+           static_cast<bool (System<::drake::AutoDiffXd>::*)() const>(
                &System_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
                    forced_discrete_update_events_exist))
       .def("forced_publish_events_exist",
-           static_cast<bool (
-               System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
+           static_cast<bool (System<::drake::AutoDiffXd>::*)() const>(
                &System_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
                    forced_publish_events_exist))
       .def("forced_unrestricted_update_events_exist",
-           static_cast<bool (
-               System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
+           static_cast<bool (System<::drake::AutoDiffXd>::*)() const>(
                &System_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
                    forced_unrestricted_update_events_exist))
       .def("get_constraint",
-           static_cast<
-               SystemConstraint<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &(
-                   System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                       *)(SystemConstraintIndex) const>(
-               &System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::get_constraint),
+           static_cast<SystemConstraint<::drake::AutoDiffXd> const &(
+               System<::drake::AutoDiffXd>::*)(SystemConstraintIndex) const>(
+               &System<::drake::AutoDiffXd>::get_constraint),
            py::arg("constraint_index"),
            py::return_value_policy::reference_internal)
       .def(
           "get_forced_discrete_update_events",
           static_cast<
               EventCollection<DiscreteUpdateEvent<::drake::AutoDiffXd>> const &(
-                  System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
+                  System<::drake::AutoDiffXd>::*)() const>(
               &System_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
                   get_forced_discrete_update_events))
       .def("get_forced_publish_events",
-           static_cast<
-               EventCollection<PublishEvent<::drake::AutoDiffXd>> const &(
-                   System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
+           static_cast<EventCollection<PublishEvent<::drake::AutoDiffXd>> const
+                           &(System<::drake::AutoDiffXd>::*)() const>(
                &System_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
                    get_forced_publish_events))
-      .def(
-          "get_forced_unrestricted_update_events",
-          static_cast<EventCollection<
-              UnrestrictedUpdateEvent<::drake::AutoDiffXd>> const
-                          &(System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)()
-                              const>(
-              &System_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
-                  get_forced_unrestricted_update_events))
-      .def(
-          "get_input_port",
-          static_cast<InputPort<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &(
-              System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)(int)const>(
-              &System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::get_input_port),
-          py::arg("port_index"), py::return_value_policy::reference_internal)
-      .def(
-          "get_input_port",
-          static_cast<InputPort<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &(
-              System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-              &System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::get_input_port),
-          py::return_value_policy::reference_internal)
-      .def(
-          "get_input_port_selection",
-          static_cast<InputPort<Eigen::AutoDiffScalar<Eigen::VectorXd>> const *(
-              System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                  *)(::std::variant<InputPortSelection,
-                                    drake::TypeSafeIndex<InputPortTag>>)const>(
-              &System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                  get_input_port_selection),
-          py::arg("port_index"), py::return_value_policy::reference_internal)
+      .def("get_forced_unrestricted_update_events",
+           static_cast<EventCollection<
+               UnrestrictedUpdateEvent<::drake::AutoDiffXd>> const
+                           &(System<::drake::AutoDiffXd>::*)() const>(
+               &System_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
+                   get_forced_unrestricted_update_events))
+      .def("get_input_port",
+           static_cast<InputPort<::drake::AutoDiffXd> const &(
+               System<::drake::AutoDiffXd>::*)(int)const>(
+               &System<::drake::AutoDiffXd>::get_input_port),
+           py::arg("port_index"), py::return_value_policy::reference_internal)
+      .def("get_input_port",
+           static_cast<InputPort<::drake::AutoDiffXd> const &(
+               System<::drake::AutoDiffXd>::*)() const>(
+               &System<::drake::AutoDiffXd>::get_input_port),
+           py::return_value_policy::reference_internal)
+      .def("get_input_port_selection",
+           static_cast<InputPort<::drake::AutoDiffXd> const *(
+               System<::drake::AutoDiffXd>::
+                   *)(::std::variant<InputPortSelection,
+                                     drake::TypeSafeIndex<InputPortTag>>)const>(
+               &System<::drake::AutoDiffXd>::get_input_port_selection),
+           py::arg("port_index"), py::return_value_policy::reference_internal)
       .def("get_mutable_forced_discrete_update_events",
-           static_cast<
-               EventCollection<DiscreteUpdateEvent<::drake::AutoDiffXd>> &(
-                   System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)()>(
+           static_cast<EventCollection<DiscreteUpdateEvent<::drake::AutoDiffXd>>
+                           &(System<::drake::AutoDiffXd>::*)()>(
                &System_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
                    get_mutable_forced_discrete_update_events))
       .def("get_mutable_forced_publish_events",
            static_cast<EventCollection<PublishEvent<::drake::AutoDiffXd>> &(
-               System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)()>(
+               System<::drake::AutoDiffXd>::*)()>(
                &System_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
                    get_mutable_forced_publish_events))
       .def("get_mutable_forced_unrestricted_update_events",
            static_cast<
                EventCollection<UnrestrictedUpdateEvent<::drake::AutoDiffXd>> &(
-                   System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)()>(
+                   System<::drake::AutoDiffXd>::*)()>(
                &System_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
                    get_mutable_forced_unrestricted_update_events))
-      .def(
-          "get_output_port",
-          static_cast<
-              OutputPort<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &(
-                  System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)(int)const>(
-              &System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::get_output_port),
-          py::arg("port_index"), py::return_value_policy::reference_internal)
-      .def(
-          "get_output_port",
-          static_cast<
-              OutputPort<Eigen::AutoDiffScalar<Eigen::VectorXd>> const &(
-                  System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-              &System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::get_output_port),
-          py::return_value_policy::reference_internal)
-      .def("get_output_port_selection",
-           static_cast<
-               OutputPort<Eigen::AutoDiffScalar<Eigen::VectorXd>> const *(
-                   System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                       *)(::std::variant<OutputPortSelection,
-                                         drake::TypeSafeIndex<OutputPortTag>>)
-                   const>(&System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                              get_output_port_selection),
+      .def("get_output_port",
+           static_cast<OutputPort<::drake::AutoDiffXd> const &(
+               System<::drake::AutoDiffXd>::*)(int)const>(
+               &System<::drake::AutoDiffXd>::get_output_port),
            py::arg("port_index"), py::return_value_policy::reference_internal)
+      .def("get_output_port",
+           static_cast<OutputPort<::drake::AutoDiffXd> const &(
+               System<::drake::AutoDiffXd>::*)() const>(
+               &System<::drake::AutoDiffXd>::get_output_port),
+           py::return_value_policy::reference_internal)
+      .def(
+          "get_output_port_selection",
+          static_cast<OutputPort<::drake::AutoDiffXd> const *(
+              System<::drake::AutoDiffXd>::
+                  *)(::std::variant<OutputPortSelection,
+                                    drake::TypeSafeIndex<OutputPortTag>>)const>(
+              &System<::drake::AutoDiffXd>::get_output_port_selection),
+          py::arg("port_index"), py::return_value_policy::reference_internal)
       .def("get_system_scalar_converter",
            static_cast<SystemScalarConverter const &(
-               System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-               &System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                   get_system_scalar_converter))
+               System<::drake::AutoDiffXd>::*)() const>(
+               &System<::drake::AutoDiffXd>::get_system_scalar_converter))
       .def("get_time_derivatives_cache_entry",
-           static_cast<CacheEntry const &(
-               System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)() const>(
-               &System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::
-                   get_time_derivatives_cache_entry))
-      .def(
-          "num_constraints",
-          static_cast<int (System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::*)()
-                          const>(
-              &System<Eigen::AutoDiffScalar<Eigen::VectorXd>>::num_constraints))
+           static_cast<CacheEntry const &(System<::drake::AutoDiffXd>::*)()
+                           const>(
+               &System<::drake::AutoDiffXd>::get_time_derivatives_cache_entry))
+      .def("num_constraints",
+           static_cast<int (System<::drake::AutoDiffXd>::*)() const>(
+               &System<::drake::AutoDiffXd>::num_constraints))
       .def(
           "set_forced_discrete_update_events",
-          [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
+          [](System<::drake::AutoDiffXd> &self,
              EventCollection<DiscreteUpdateEvent<::drake::AutoDiffXd>> forced) {
             self.set_forced_discrete_update_events(
                 std::make_unique<
@@ -1887,7 +1767,7 @@ void apb11_pydrake_System_py_register(py::module &m) {
                     forced));
           })
       .def("set_forced_publish_events",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
+           [](System<::drake::AutoDiffXd> &self,
               EventCollection<PublishEvent<::drake::AutoDiffXd>> forced) {
              self.set_forced_publish_events(
                  std::make_unique<
@@ -1895,7 +1775,7 @@ void apb11_pydrake_System_py_register(py::module &m) {
                      forced));
            })
       .def("set_forced_unrestricted_update_events",
-           [](System<Eigen::AutoDiffScalar<Eigen::VectorXd>> &self,
+           [](System<::drake::AutoDiffXd> &self,
               EventCollection<UnrestrictedUpdateEvent<::drake::AutoDiffXd>>
                   forced) {
              self.set_forced_unrestricted_update_events(
