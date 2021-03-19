@@ -34,7 +34,6 @@ _DEFAULT_TEST_TAGS = [
 drake_py_library(
     name = "pydrake_sphinx_extension_py",
     srcs = ["pydrake_sphinx_extension.py"],
-    tags = _DEFAULT_BINARY_TAGS,
     deps = [
         "//bindings/pydrake/common:cpp_template_py",
         "//bindings/pydrake/common:deprecation_py",
