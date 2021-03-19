@@ -240,10 +240,6 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
       X_LC = X_LG * X_GC;
       break;
     }
-    case sdf::GeometryType::HEIGHTMAP: {
-      throw std::runtime_error(
-          "SDFormat geometry type HEIGHTMAP is not supported in Drake.");
-    }
   }
 
   auto shape = MakeShapeFromSdfGeometry(sdf_geometry, resolve_filename);
