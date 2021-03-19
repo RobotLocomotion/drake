@@ -1,7 +1,5 @@
 # -*- python -*-
 
-DISABLE_CI
-
 # This file marks a workspace root for the Bazel build system. see
 # https://bazel.build/ .
 
