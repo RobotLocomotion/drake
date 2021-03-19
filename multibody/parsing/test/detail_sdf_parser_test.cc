@@ -157,6 +157,11 @@ GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
   EXPECT_EQ(plant.GetModelInstanceByName("acrobot"), acrobot1);
   EXPECT_EQ(plant.GetModelInstanceByName("acrobot2"), acrobot2);
 
+  // Check that the model name override is reflected in the model frame.
+  EXPECT_TRUE(plant.HasFrameNamed("instance1"));
+  EXPECT_TRUE(plant.HasFrameNamed("acrobot"));
+  EXPECT_TRUE(plant.HasFrameNamed("acrobot2"));
+
   // Check a couple links from the first model without specifying the model
   // instance.
   EXPECT_TRUE(plant.HasBodyNamed("link3"));
