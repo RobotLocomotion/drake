@@ -16,5 +16,6 @@ def tinyxml_repository(
         licenses = licenses,
         modname = modname,
         pkg_config_paths = pkg_config_paths,
+        extra_deprecation = "DRAKE DEPRECATED: The @tinyxml external is being removed from Drake on or after 2021-07-01.  Downstream projects should add it to their own WORKSPACE if needed.",  # noqa
         **kwargs
     )

@@ -6,7 +6,7 @@ title: Getting Help
 
 If you need help with Drake, please first review the documentation on this
 website for things such as [installation](/installation.html),
-the [C++ API](https://drake.mit.edu/doxygen_cxx/index.html#://), or
+the [C++ API](https://drake.mit.edu/doxygen_cxx/index.html), or
 [Python bindings](/python_bindings.html).
 
 Please also briefly review
@@ -30,7 +30,7 @@ Please note that this access may not always be readily granted. (Note: If you
 are a Drake developer wanting to invite someone, it will be faster to grant
 them access if you invite them directly via Slack.)
 
-If you wish to contribute a patch, please see how to [submit a pull request](/developers.html#pull-request).
+If you wish to contribute a patch, please see how to [submit a pull request](/developers.html).
 
 # Helpful Information
 
@@ -38,7 +38,7 @@ When reporting an issue, please consider providing the following information
 (*examples in italics*, ``helper command in monospace``):
 
 * Operating system (*Ubuntu 18.04, macOS Catalina*)
-* Language (C++, [Python](/python-bindings.html))
+* Language (C++, [Python](/python_bindings.html))
     * C++ compiler (*GCC 7.5.0, GCC 9.3.0, Clang 6.0.0*)
     * Python version (*Python 3.6.7*)
     * Python distribution (*apt, homebrew*)
@@ -52,7 +52,7 @@ When reporting an issue, please consider providing the following information
     * [Building Drake](/from_source.html) vs. downstream project (like [drake_bazel_external](https://github.com/RobotLocomotion/drake-external-examples/tree/master/drake_bazel_external), [drake_cmake_external](https://github.com/RobotLocomotion/drake-external-examples/tree/master/drake_cmake_external))
 * If using binary release:
     * Download URL
-    * Contents of ``drake/share/doc/drake/VERSION.txt``
+    * Contents of ``drake/share/doc/drake/VERSION.TXT``
     * Building downstream project ([drake_cmake_installed](https://github.com/RobotLocomotion/drake-external-examples/tree/master/drake_cmake_installed))
 * If using Binder or Google Colaboratory:
     * A version of your notebook that we can access. Please check this by

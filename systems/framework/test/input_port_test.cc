@@ -4,6 +4,7 @@
 
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
 
@@ -303,6 +304,42 @@ GTEST_TEST(InputPortTest, FixValueTests) {
   for (int i = 0; i < dut.num_input_ports(); ++i) {
     EXPECT_TRUE(dut.get_input_port(i).HasValue(*context));
   }
+}
+
+// For a subsystem embedded in a diagram, test that we can query, fix, and
+// evaluate that subsystem's input ports using only a Context for that
+// subsystem (rather than the whole Diagram context).
+GTEST_TEST(InputPortTest, ContextForEmbeddedSystem) {
+  DiagramBuilder<double> builder;
+  auto* system = builder.AddSystem<SystemWithInputPorts>();
+  auto diagram = builder.Build();
+
+  // Create a context just for the System.
+  auto context = system->CreateDefaultContext();
+
+  // Verify that we can tell that ports have no values using this Context.
+  EXPECT_FALSE(system->basic_vec_port.HasValue(*context));
+  EXPECT_FALSE(system->int_port.HasValue(*context));
+  EXPECT_FALSE(system->double_port.HasValue(*context));
+  EXPECT_FALSE(system->string_port.HasValue(*context));
+
+  // Set the values.
+  const int kIntValue = 42;
+  const double kDoubleValue = 13.25;
+  const std::string kStringValue("abstract");
+  const Eigen::Vector3d kVectorValue(10., 20., 30.);
+
+  // Now fix the values.
+  system->basic_vec_port.FixValue(context.get(), kVectorValue);
+  system->int_port.FixValue(context.get(), kIntValue);
+  system->double_port.FixValue(context.get(), kDoubleValue);
+  system->string_port.FixValue(context.get(), kStringValue);
+
+  // Now verify the values.
+  EXPECT_EQ(kVectorValue, system->basic_vec_port.Eval(*context));
+  EXPECT_EQ(kIntValue, system->int_port.Eval<int>(*context));
+  EXPECT_EQ(kDoubleValue, system->double_port.Eval<double>(*context));
+  EXPECT_EQ(kStringValue, system->string_port.Eval<std::string>(*context));
 }
 
 }  // namespace

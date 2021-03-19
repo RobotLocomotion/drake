@@ -27,6 +27,7 @@ namespace drake {
 namespace pydrake {
 
 using std::string;
+using std::string_view;
 
 using geometry::SceneGraph;
 using math::RigidTransform;
@@ -651,47 +652,47 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("HasModelInstanceNamed", &Class::HasModelInstanceNamed,
             py::arg("name"), cls_doc.HasModelInstanceNamed.doc)
         .def("HasBodyNamed",
-            overload_cast_explicit<bool, const string&>(&Class::HasBodyNamed),
+            overload_cast_explicit<bool, string_view>(&Class::HasBodyNamed),
             py::arg("name"), cls_doc.HasBodyNamed.doc_1args)
         .def("HasBodyNamed",
-            overload_cast_explicit<bool, const string&, ModelInstanceIndex>(
+            overload_cast_explicit<bool, string_view, ModelInstanceIndex>(
                 &Class::HasBodyNamed),
             py::arg("name"), py::arg("model_instance"),
             cls_doc.HasBodyNamed.doc_2args)
         .def("HasJointNamed",
-            overload_cast_explicit<bool, const string&>(&Class::HasJointNamed),
+            overload_cast_explicit<bool, string_view>(&Class::HasJointNamed),
             py::arg("name"), cls_doc.HasJointNamed.doc_1args)
         .def("HasJointNamed",
-            overload_cast_explicit<bool, const string&, ModelInstanceIndex>(
+            overload_cast_explicit<bool, string_view, ModelInstanceIndex>(
                 &Class::HasJointNamed),
             py::arg("name"), py::arg("model_instance"),
             cls_doc.HasJointNamed.doc_2args)
         .def("HasJointActuatorNamed",
-            overload_cast_explicit<bool, const string&>(
+            overload_cast_explicit<bool, string_view>(
                 &Class::HasJointActuatorNamed),
             py::arg("name"), cls_doc.HasJointActuatorNamed.doc_1args)
         .def("HasJointActuatorNamed",
-            overload_cast_explicit<bool, const string&, ModelInstanceIndex>(
+            overload_cast_explicit<bool, string_view, ModelInstanceIndex>(
                 &Class::HasJointActuatorNamed),
             py::arg("name"), py::arg("model_instance"),
             cls_doc.HasJointActuatorNamed.doc_2args)
         .def("GetFrameByName",
-            overload_cast_explicit<const Frame<T>&, const string&>(
+            overload_cast_explicit<const Frame<T>&, string_view>(
                 &Class::GetFrameByName),
             py::arg("name"), py_rvp::reference_internal,
             cls_doc.GetFrameByName.doc_1args)
         .def("GetFrameByName",
-            overload_cast_explicit<const Frame<T>&, const string&,
+            overload_cast_explicit<const Frame<T>&, string_view,
                 ModelInstanceIndex>(&Class::GetFrameByName),
             py::arg("name"), py::arg("model_instance"),
             py_rvp::reference_internal, cls_doc.GetFrameByName.doc_2args)
         .def("GetBodyByName",
-            overload_cast_explicit<const Body<T>&, const string&>(
+            overload_cast_explicit<const Body<T>&, string_view>(
                 &Class::GetBodyByName),
             py::arg("name"), py_rvp::reference_internal,
             cls_doc.GetBodyByName.doc_1args)
         .def("GetBodyByName",
-            overload_cast_explicit<const Body<T>&, const string&,
+            overload_cast_explicit<const Body<T>&, string_view,
                 ModelInstanceIndex>(&Class::GetBodyByName),
             py::arg("name"), py::arg("model_instance"),
             py_rvp::reference_internal, cls_doc.GetBodyByName.doc_2args)
@@ -701,7 +702,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("model_instance"), cls_doc.GetBodyIndices.doc)
         .def(
             "GetJointByName",
-            [](const Class* self, const string& name,
+            [](const Class* self, string_view name,
                 std::optional<ModelInstanceIndex> model_instance) -> auto& {
               return self->GetJointByName(name, model_instance);
             },
@@ -709,19 +710,19 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py_rvp::reference_internal, cls_doc.GetJointByName.doc)
         .def(
             "GetMutableJointByName",
-            [](Class * self, const string& name,
+            [](Class * self, string_view name,
                 std::optional<ModelInstanceIndex> model_instance) -> auto& {
               return self->GetMutableJointByName(name, model_instance);
             },
             py::arg("name"), py::arg("model_instance") = std::nullopt,
             py_rvp::reference_internal, cls_doc.GetJointByName.doc)
         .def("GetJointActuatorByName",
-            overload_cast_explicit<const JointActuator<T>&, const string&>(
+            overload_cast_explicit<const JointActuator<T>&, string_view>(
                 &Class::GetJointActuatorByName),
             py::arg("name"), py_rvp::reference_internal,
             cls_doc.GetJointActuatorByName.doc_1args)
         .def("GetModelInstanceByName",
-            overload_cast_explicit<ModelInstanceIndex, const string&>(
+            overload_cast_explicit<ModelInstanceIndex, string_view>(
                 &Class::GetModelInstanceByName),
             py::arg("name"), py_rvp::reference_internal,
             cls_doc.GetModelInstanceByName.doc)

@@ -1,10 +1,13 @@
 #pragma once
 
+#include "drake/common/unused.h"
 #include "drake/multibody/fixed_fem/dev/fem_state.h"
 
 namespace drake {
 namespace multibody {
 namespace fixed_fem {
+// TODO(xuchenhan-tri): Template this class on scalar type only so that
+//  FemModelBase can own it.
 /** %StateUpdater provides the interface to update FemState in NewtonSolver.
  In each Newton-Raphson iteration of the FEM solver, we are solving for an
  equation in the form of
@@ -63,14 +66,15 @@ class StateUpdater {
    0. */
   Vector3<T> weights() const { return do_get_weights(); }
 
-  /** Updates the FemState `state` given the change in the value of the key
-   variable `z`.
+  /** Updates the FemState `state` given the change in the unknown variable
+   `dz`.
    @pre state != nullptr.
    @pre dz.size() == state.num_generalized_positions(). */
-  void UpdateState(const VectorX<T>& dz, State* state) const {
+  void UpdateStateFromChangeInUnknowns(const VectorX<T>& dz,
+                                       State* state) const {
     DRAKE_DEMAND(state != nullptr);
     DRAKE_DEMAND(dz.size() == state->num_generalized_positions());
-    DoUpdateState(dz, state);
+    DoUpdateStateFromChangeInUnknowns(dz, state);
   }
 
   // TODO(xuchenhan-tri): Consider passing in more than one previous state when
@@ -87,9 +91,11 @@ class StateUpdater {
    input (and will not be modified) and `state->q()` and `state->qdot()` will be
    modified by numerically integrating in time.
    @pre state != nullptr. */
-  void AdvanceOneTimeStep(const State& prev_state, State* state) const {
+  void AdvanceOneTimeStep(const State& prev_state,
+                          const VectorX<T>& highest_order_state,
+                          State* state) const {
     DRAKE_DEMAND(state != nullptr);
-    DoAdvanceOneTimeStep(prev_state, state);
+    DoAdvanceOneTimeStep(prev_state, highest_order_state, state);
   }
 
  protected:
@@ -101,16 +107,20 @@ class StateUpdater {
   virtual Vector3<T> do_get_weights() const = 0;
 
   /** Derived classes must override this method to udpate the FemState `state`
-   given the key variable `dz` based on the time-stepping scheme of the derived
-   class. The `dz` provided here has compatible size with the number of
-   generalized positions in `state` and does not need to be checked again.  */
-  virtual void DoUpdateState(const VectorX<T>& dz, State* state) const = 0;
+   given the change in the unknown variable `dz` based on the time-stepping
+   scheme of the derived class. The `dz` provided here has compatible size with
+   the number of generalized positions in `state` and does not need to be
+   checked again.  */
+  virtual void DoUpdateStateFromChangeInUnknowns(const VectorX<T>& dz,
+                                                 State* state) const = 0;
 
   /** Derived classes templated on FemState whose ode_order() is greater than 0
    must override this method to advance a single time step according to the
    specific time stepping scheme. */
   virtual void DoAdvanceOneTimeStep(const State& prev_state,
+                                    const VectorX<T>& highest_order_state,
                                     State* state) const {
+    unused(prev_state, highest_order_state, state);
     if constexpr (State::ode_order() == 0) {
       throw std::logic_error(
           "There is no notion of time in a zeroth order ODE.");

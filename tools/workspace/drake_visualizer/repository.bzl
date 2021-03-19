@@ -10,23 +10,6 @@ Archive naming convention:
     dv-<version>-g<commit>-python-<python version>-qt-<qt version>
         -vtk-<vtk version>-<platform>-<arch>[-<rebuild>]
 
-Build configuration:
-    BUILD_SHARED_LIBS=OFF
-    CMAKE_BUILD_TYPE=Release
-    CMAKE_C_FLAGS=-D_FORTIFY_SOURCE=2 -fstack-protector-strong
-    CMAKE_CXX_FLAGS=-D_FORTIFY_SOURCE=2 -fstack-protector-strong
-    CMAKE_EXE_LINKER_FLAGS=-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro
-    CMAKE_MODULE_LINKER_FLAGS=-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro
-    CMAKE_SHARED_LINKER_FLAGS=-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro
-    DD_QT_VERSION=5
-    USE_EXTERNAL_INSTALL=ON
-    USE_LCM=ON
-    USE_LCMGL=ON
-    USE_SYSTEM_EIGEN=ON
-    USE_SYSTEM_LCM=ON
-    USE_SYSTEM_LIBBOT=ON
-    USE_SYSTEM_VTK=ON
-
 Example:
     WORKSPACE:
         load(
@@ -56,8 +39,8 @@ def _impl(repository_ctx):
         fail(os_result.error)
 
     if os_result.is_macos:
-        archive = "dv-0.1.0-406-g4c3e570a-python-3.8.6-qt-5.15.1-vtk-8.2.0-mac-x86_64.tar.gz"  # noqa
-        sha256 = "292f46d391359d2a2ae71906eb852433dba8e06138dc88b59303a295cf9af1a7"  # noqa
+        archive = "dv-0.1.0-406-g4c3e570a-python-3.9.2-qt-5.15.2-vtk-8.2.0-mac-x86_64.tar.gz"  # noqa
+        sha256 = "8a13ffa117167fada851acef8535a42d613b71be2200ea3c7139e9fea05782b8"  # noqa
     elif os_result.ubuntu_release == "18.04":
         archive = "dv-0.1.0-406-g4c3e570a-python-3.6.9-qt-5.9.5-vtk-8.2.0-bionic-x86_64-1.tar.gz"  # noqa
         sha256 = "2c477c2f1186cd151710af9a6f50bd3720034ced3c5ed21d977b0a822ac56237"  # noqa

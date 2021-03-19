@@ -911,6 +911,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "input_port_test",
     deps = [
+        ":diagram_builder",
         ":input_port",
         ":leaf_system",
         "//common/test_utilities:expect_throws_message",

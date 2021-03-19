@@ -27,7 +27,7 @@ versions of Python are supported for your platform.
 
 ## Binary Installation for Python
 
-First, download and extract an [available binary package.](/from_binary.html).
+First, download and extract an [available binary package](/from_binary.html).
 
 As an example, here is how to download and extract one of the latest releases
 to ``/opt`` (where ``<platform>`` could be ``bionic``, ``focal``, or ``mac``):
@@ -164,7 +164,7 @@ If you are using Gurobi, you must either have it installed in the suggested loca
 
 ## What's Available from Python
 
-You should first browse the [Python API](https://drake.mit.edu/pydrake/index.html#://) to see what
+You should first browse the [Python API](https://drake.mit.edu/pydrake/index.html) to see what
 modules are available. The most up-to-date high-level demonstrations of what
 can be done using ``pydrake`` are in Drake's [Tutorials](/index.html#tutorials) and
 the [Underactuated Robotics Textbook](http://underactuated.mit.edu/).
@@ -239,8 +239,8 @@ simulator = pydrake.systems.analysis.Simulator(diagram)
 
 ## Differences with C++ API
 
-In general, the [Python API](https://drake.mit.edu/pydrake/index.html#://) should be close to the
-[C++ API](https://drake.mit.edu/doxygen_cxx/index.html#://). There are some exceptions:
+In general, the [Python API](https://drake.mit.edu/pydrake/index.html) should be close to the
+[C++ API](https://drake.mit.edu/doxygen_cxx/index.html). There are some exceptions:
 
 ### C++ Class Template Instantiations in Python
 

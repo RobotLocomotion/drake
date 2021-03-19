@@ -3,6 +3,7 @@
 #include <memory>
 #include <utility>
 
+#include <fmt/format.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_no_throw.h"
@@ -499,7 +500,7 @@ class GeometrySourceSystem : public systems::LeafSystem<double> {
   explicit GeometrySourceSystem(SceneGraph<double>* scene_graph)
       : systems::LeafSystem<double>(), scene_graph_(scene_graph) {
     // Register with SceneGraph.
-    source_id_ = scene_graph->RegisterSource();
+    source_id_ = scene_graph->RegisterSource(kRegisteredSourceName);
     FrameId f_id =
         scene_graph->RegisterFrame(source_id_, GeometryFrame("frame"));
     frame_ids_.push_back(f_id);
@@ -523,6 +524,8 @@ class GeometrySourceSystem : public systems::LeafSystem<double> {
   // Method used to bring frame ids and poses out of sync. Adds a pose in
   // addition to all of the default poses.
   void add_extra_pose() { extra_poses_.push_back(RigidTransformd()); }
+
+  static constexpr char kRegisteredSourceName[] = "source_system";
 
  private:
   // Populate with the pose data.
@@ -585,8 +588,9 @@ GTEST_TEST(SceneGraphConnectionTest, FullPoseUpdateDisconnected) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       SceneGraphTester::FullPoseUpdate(*scene_graph, sg_context),
       std::logic_error,
-      "Source \\d+ has registered frames but does not provide pose values on "
-      "the input port.");
+      fmt::format("Source '{}' \\(id: \\d+\\) has registered dynamic frames "
+                  "but is not connected .+",
+                  GeometrySourceSystem::kRegisteredSourceName));
 }
 
 // Adversarial test case: Missing all port connections.
@@ -605,8 +609,9 @@ GTEST_TEST(SceneGraphConnectionTest, FullPoseUpdateNoConnections) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       SceneGraphTester::FullPoseUpdate(*scene_graph, sg_context),
       std::logic_error,
-      "Source \\d+ has registered frames but does not provide pose values on "
-      "the input port.");
+      fmt::format("Source '{}' \\(id: \\d+\\) has registered dynamic frames "
+                  "but is not connected .+",
+                  GeometrySourceSystem::kRegisteredSourceName));
 }
 
 // Confirms that the SceneGraph can be instantiated on AutoDiff type.

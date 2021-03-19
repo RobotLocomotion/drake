@@ -2,6 +2,9 @@
 layout: default
 title: Model-Based Design and Verification for Robotics
 description: A C++ / Python toolbox supported by the Toyota Research Institute.
+# ^^^ IMPORTANT NOTE Any changes to the wording of the "description" line above
+# must be vetted by TRI legal (at least, insofar as the line still makes
+# mention of the Toyota Research Institute).
 ---
 
 <!--
@@ -151,7 +154,7 @@ The Drake developers would like to acknowledge significant support from the
 [Toyota Research Institute](http://tri.global/),
 [DARPA](http://www.darpa.mil/), the
 [National Science Foundation](https://nsf.gov/), the
-[Office of Naval Research](http://www.onr.navy.mil/),
+[Office of Naval Research](https://www.onr.navy.mil/),
 [Amazon.com](https://www.amazon.com/), and
 [The MathWorks](http://www.mathworks.com/).
 </article>

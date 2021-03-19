@@ -2,6 +2,7 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
 )
@@ -64,6 +65,41 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "deformable_body_config",
+    hdrs = [
+        "deformable_body_config.h",
+    ],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "deformable_contact",
+    srcs = ["deformable_contact.cc"],
+    hdrs = ["deformable_contact.h"],
+    deps = [
+        "//geometry/proximity:posed_half_space",
+        "//geometry/proximity:surface_mesh",
+        "//geometry/proximity:volume_mesh",
+    ],
+)
+
+drake_cc_library(
+    name = "deformable_visualizer",
+    srcs = ["deformable_visualizer.cc"],
+    hdrs = ["deformable_visualizer.h"],
+    deps = [
+        "//common:essential",
+        "//geometry/proximity:sorted_triplet",
+        "//geometry/proximity:volume_mesh",
+        "//lcm:drake_lcm",
+        "//lcmtypes:experimental_deformable_mesh",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
     name = "deformation_gradient_cache_entry",
     hdrs = [
         "deformation_gradient_cache_entry.h",
@@ -81,7 +117,6 @@ drake_cc_library(
     ],
     deps = [
         ":fem_indexes",
-        ":fem_state",
         "//common:essential",
     ],
 )
@@ -105,6 +140,7 @@ drake_cc_library(
     deps = [
         ":damping_model",
         ":elasticity_model",
+        ":newmark_scheme",
         "//geometry/proximity:volume_mesh",
     ],
 )
@@ -131,6 +167,7 @@ drake_cc_library(
         ":isoparametric_element",
         ":quadrature",
         "//common:essential",
+        "//common:unused",
     ],
 )
 
@@ -186,7 +223,26 @@ drake_cc_library(
     deps = [
         ":fem_element",
         ":fem_indexes",
+        ":fem_model_base",
         ":fem_state",
+        ":state_updater",
+        "//common:essential",
+        "//common:unused",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_model_base",
+    srcs = [
+        "fem_model_base.cc",
+    ],
+    hdrs = [
+        "fem_model_base.h",
+    ],
+    deps = [
+        ":dirichlet_boundary_condition",
+        ":fem_state_base",
+        "//common:default_scalars",
         "//common:essential",
     ],
 )
@@ -197,7 +253,6 @@ drake_cc_library(
         "fem_solver.h",
     ],
     deps = [
-        ":dirichlet_boundary_condition",
         ":eigen_conjugate_gradient_solver",
         ":fem_model",
         ":linear_system_solver",
@@ -208,13 +263,52 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "softsim_system",
+    srcs = [
+        "softsim_system.cc",
+    ],
+    hdrs = [
+        "softsim_system.h",
+    ],
+    deps = [
+        ":corotated_model",
+        ":deformable_body_config",
+        ":dirichlet_boundary_condition",
+        ":dynamic_elasticity_element",
+        ":dynamic_elasticity_model",
+        ":fem_solver",
+        ":linear_constitutive_model",
+        ":linear_simplex_element",
+        ":simplex_gaussian_quadrature",
+        "//common:essential",
+        "//geometry/proximity:volume_mesh",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
     name = "fem_state",
     hdrs = [
         "fem_state.h",
     ],
     deps = [
         ":element_cache_entry",
+        ":fem_state_base",
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "fem_state_base",
+    srcs = [
+        "fem_state_base.cc",
+    ],
+    hdrs = [
+        "fem_state_base.h",
+    ],
+    deps = [
+        ":dirichlet_boundary_condition",
+        "//common:default_scalars",
     ],
 )
 
@@ -286,6 +380,23 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "mesh_utilities",
+    srcs = [
+        "mesh_utilities.cc",
+    ],
+    hdrs = [
+        "mesh_utilities.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+        "//geometry/proximity:make_box_mesh",
+        "//geometry/proximity:volume_mesh",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
     name = "newmark_scheme",
     hdrs = [
         "newmark_scheme.h",
@@ -306,6 +417,36 @@ drake_cc_library(
     ],
 )
 
+drake_cc_binary(
+    name = "run_scripted_deformable_motion",
+    srcs = [
+        "run_scripted_deformable_motion.cc",
+    ],
+    deps = [
+        ":deformable_visualizer",
+        "//common:add_text_logging_gflags",
+        "//geometry/proximity:make_box_mesh",
+        "//systems/analysis:simulator_gflags",
+        "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_binary(
+    name = "run_cantilever_beam",
+    srcs = [
+        "run_cantilever_beam.cc",
+    ],
+    deps = [
+        ":deformable_visualizer",
+        ":mesh_utilities",
+        ":softsim_system",
+        "//common:add_text_logging_gflags",
+        "//math:geometric_transform",
+        "//systems/analysis:simulator_gflags",
+        "//systems/framework:diagram_builder",
+    ],
+)
+
 drake_cc_library(
     name = "simplex_gaussian_quadrature",
     hdrs = [
@@ -323,6 +464,7 @@ drake_cc_library(
     ],
     deps = [
         ":fem_state",
+        "//common:unused",
     ],
 )
 
@@ -343,6 +485,7 @@ drake_cc_library(
     ],
     deps = [
         ":elasticity_model",
+        ":zeroth_order_state_updater",
         "//geometry/proximity:volume_mesh",
     ],
 )
@@ -364,6 +507,16 @@ drake_cc_library(
     hdrs = ["test/test_utilities.h"],
     deps = [
         "//common:essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "deformable_contact_test",
+    deps = [
+        ":deformable_contact",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry/proximity:surface_mesh",
+        "//geometry/proximity:volume_mesh",
     ],
 )
 
@@ -408,7 +561,6 @@ drake_cc_googletest(
         ":dynamic_elasticity_model",
         ":linear_constitutive_model",
         ":linear_simplex_element",
-        ":newmark_scheme",
         ":simplex_gaussian_quadrature",
         "//common/test_utilities:eigen_matrix_compare",
         "//geometry/proximity:make_box_mesh",
@@ -449,6 +601,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "fem_solver_test",
     deps = [
+        ":dummy_element",
         ":eigen_conjugate_gradient_solver",
         ":fem_solver",
         ":linear_constitutive_model",
@@ -458,6 +611,7 @@ drake_cc_googletest(
         ":static_elasticity_model",
         ":zeroth_order_state_updater",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//geometry/proximity:make_box_mesh",
         "//math:gradient",
     ],
@@ -524,6 +678,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "mesh_utilities_test",
+    deps = [
+        ":mesh_utilities",
+        "//geometry/proximity:proximity_utilities",
+    ],
+)
+
+drake_cc_googletest(
     name = "newmark_scheme_test",
     deps = [
         ":dummy_element",
@@ -536,6 +698,16 @@ drake_cc_googletest(
     name = "simplex_gaussian_quadrature_test",
     deps = [
         ":simplex_gaussian_quadrature",
+    ],
+)
+
+drake_cc_googletest(
+    name = "softsim_system_test",
+    deps = [
+        ":softsim_system",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry/proximity:make_box_mesh",
     ],
 )
 
@@ -560,10 +732,24 @@ drake_cc_googletest(
         ":simplex_gaussian_quadrature",
         ":static_elasticity_element",
         ":static_elasticity_model",
-        ":zeroth_order_state_updater",
         "//common/test_utilities:eigen_matrix_compare",
         "//geometry/proximity:make_box_mesh",
         "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "stretch_test",
+    deps = [
+        ":fem_solver",
+        ":linear_constitutive_model",
+        ":linear_simplex_element",
+        ":mesh_utilities",
+        ":simplex_gaussian_quadrature",
+        ":static_elasticity_element",
+        ":static_elasticity_model",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry/proximity:make_box_mesh",
     ],
 )
 

@@ -167,10 +167,10 @@ SDFORMAT_ALL_PUBLIC_HDRS = SDFORMAT_MOST_PUBLIC_HDRS + [
 ]
 
 # Generates the library exported to users. The explicitly listed srcs= matches
-# upstream's explicitly listed sources. The explicitly listed hdrs= matches
-# upstream's private headers. ign.hh and ign.cc are not incorporated in this
-# library, but are incorporated into the `ign_sdf_cmdline` library defined
-# below.
+# upstream's explicitly listed sources (sdformat/src/CMakeLists.txt). The
+# explicitly listed hdrs= matches upstream's private headers. ign.hh and ign.cc
+# are not incorporated in this library, but are incorporated into the
+# `ign_sdf_cmdline` library defined below.
 cc_library(
     name = "sdformat",
     srcs = [

@@ -1,0 +1,250 @@
+From 11f988658c1d659d2172aa9d265fe03408e6448c Mon Sep 17 00:00:00 2001
+From: Jamie Snape <jamie.snape@kitware.com>
+Date: Wed, 7 Mar 2018 12:00:00 -0400
+Subject: [PATCH] Suppress git, deprecated, and dev warnings from external projects
+
+---
+ distro/superbuild/cmake/externals.cmake | 80 ++++++++++++++++++++++++++++++++-
+ 1 file changed, 78 insertions(+), 2 deletions(-)
+
+diff --git a/distro/superbuild/cmake/externals.cmake b/distro/superbuild/cmake/externals.cmake
+index 7af04b68..61fa5d00 100644
+--- a/distro/superbuild/cmake/externals.cmake
++++ b/distro/superbuild/cmake/externals.cmake
+@@ -97,6 +97,9 @@ ExternalProject_Add(
+   eigen
+   URL https://bitbucket.org/eigen/eigen/get/3.3.3.tar.gz
+   URL_MD5 f21cee193e15e55cfd15ebbc16fc00a7
++  CMAKE_ARGS
++    -Wno-deprecated
++    -Wno-dev
+   CMAKE_CACHE_ARGS
+     ${default_cmake_args}
+     ${qt_args}
+@@ -139,7 +142,11 @@ if (USE_LCM AND NOT USE_SYSTEM_LCM)
+   ExternalProject_Add(lcm
+     GIT_REPOSITORY https://github.com/lcm-proj/lcm.git
+     GIT_TAG c0a0093
++    GIT_CONFIG advice.detachedHead=false
+     ${cmake3_args}
++    CMAKE_ARGS
++      -Wno-deprecated
++      -Wno-dev
+     CMAKE_CACHE_ARGS
+       -DLCM_ENABLE_EXAMPLES:BOOL=OFF
+       -DLCM_ENABLE_LUA:BOOL=OFF
+@@ -168,6 +175,10 @@ if(USE_LIBBOT AND NOT USE_SYSTEM_LIBBOT)
+   ExternalProject_Add(libbot
+     GIT_REPOSITORY https://github.com/RobotLocomotion/libbot2.git
+     GIT_TAG 4835477
++    GIT_CONFIG advice.detachedHead=false
++    CMAKE_ARGS
++      -Wno-deprecated
++      -Wno-dev
+     CMAKE_CACHE_ARGS
+       ${default_cmake_args}
+       -DWITH_BOT_VIS:BOOL=OFF
+@@ -189,7 +200,11 @@ if (USE_LCM AND NOT USE_SYSTEM_LIBBOT)
+   ExternalProject_Add(bot_core_lcmtypes
+     GIT_REPOSITORY https://github.com/openhumanoids/bot_core_lcmtypes
+     GIT_TAG 9967654
++    GIT_CONFIG advice.detachedHead=false
+     ${cmake3_args}
++    CMAKE_ARGS
++      -Wno-deprecated
++      -Wno-dev
+     CMAKE_CACHE_ARGS
+       ${default_cmake_args}
+       ${python_args}
+@@ -205,7 +220,11 @@ if (USE_LCM AND NOT USE_SYSTEM_LIBBOT)
+   ExternalProject_Add(robotlocomotion-lcmtypes
+     GIT_REPOSITORY https://github.com/robotlocomotion/lcmtypes.git
+     GIT_TAG 821ff4b
++    GIT_CONFIG advice.detachedHead=false
+     ${cmake3_args}
++    CMAKE_ARGS
++      -Wno-deprecated
++      -Wno-dev
+     CMAKE_CACHE_ARGS
+       ${default_cmake_args}
+       ${python_args}
+@@ -230,6 +249,7 @@ if(USE_STANDALONE_LCMGL)
+   ExternalProject_Add(bot-lcmgl-download
+     GIT_REPOSITORY https://github.com/RobotLocomotion/libbot.git
+     GIT_TAG 4835477
++    GIT_CONFIG advice.detachedHead=false
+     SOURCE_DIR ${source_prefix}/bot-lcmgl
+     CONFIGURE_COMMAND ""
+     BUILD_COMMAND ""
+@@ -241,6 +261,9 @@ if(USE_STANDALONE_LCMGL)
+     DOWNLOAD_COMMAND ""
+     UPDATE_COMMAND ""
+     DEPENDS bot-lcmgl-download
++    CMAKE_ARGS
++      -Wno-deprecated
++      -Wno-dev
+     CMAKE_CACHE_ARGS
+       ${default_cmake_args}
+       -DUSE_BOT_VIS:BOOL=OFF
+@@ -263,6 +286,10 @@ endif()
+ ExternalProject_Add(PythonQt
+   GIT_REPOSITORY https://github.com/commontk/PythonQt.git
+   GIT_TAG ${PythonQt_TAG}
++  GIT_CONFIG advice.detachedHead=false
++  CMAKE_ARGS
++    -Wno-deprecated
++    -Wno-dev
+   CMAKE_CACHE_ARGS
+     ${default_cmake_args}
+     ${qt_args}
+@@ -285,6 +312,10 @@ endif()
+ ExternalProject_Add(ctkPythonConsole
+   GIT_REPOSITORY https://github.com/patmarion/ctkPythonConsole
+   GIT_TAG ${ctkPythonConsole_TAG}
++  GIT_CONFIG advice.detachedHead=false
++  CMAKE_ARGS
++    -Wno-deprecated
++    -Wno-dev
+   CMAKE_CACHE_ARGS
+     ${default_cmake_args}
+     ${qt_args}
+@@ -305,6 +336,10 @@ endif()
+ ExternalProject_Add(QtPropertyBrowser
+   GIT_REPOSITORY https://github.com/patmarion/QtPropertyBrowser
+   GIT_TAG ${QtPropertyBrowser_TAG}
++  GIT_CONFIG advice.detachedHead=false
++  CMAKE_ARGS
++    -Wno-deprecated
++    -Wno-dev
+   CMAKE_CACHE_ARGS
+     ${default_cmake_args}
+     ${qt_args}
+@@ -386,7 +421,10 @@ else()
+   ExternalProject_Add(vtk
+     GIT_REPOSITORY git://vtk.org/VTK.git
+     GIT_TAG v8.2.0
+-
++    GIT_CONFIG advice.detachedHead=false
++    CMAKE_ARGS
++      -Wno-deprecated
++      -Wno-dev
+     CMAKE_CACHE_ARGS
+       ${default_cmake_args}
+       ${python_args}
+@@ -422,6 +460,10 @@ if(USE_PCL AND NOT USE_SYSTEM_PCL)
+     flann
+     GIT_REPOSITORY http://github.com/mariusmuja/flann
+     GIT_TAG cee08ec38a8df7bc70397f10a4d30b9b33518bb4
++    GIT_CONFIG advice.detachedHead=false
++    CMAKE_ARGS
++      -Wno-deprecated
++      -Wno-dev
+     CMAKE_CACHE_ARGS
+       ${default_cmake_args}
+       ${boost_args}
+@@ -460,6 +502,10 @@ if(USE_PCL AND NOT USE_SYSTEM_PCL)
+     pcl
+     GIT_REPOSITORY http://github.com/pointcloudlibrary/pcl.git
+     GIT_TAG pcl-1.8.1
++    GIT_CONFIG advice.detachedHead=false
++    CMAKE_ARGS
++      -Wno-deprecated
++      -Wno-dev
+     CMAKE_CACHE_ARGS
+       ${default_cmake_args}
+       ${eigen_args}
+@@ -494,6 +540,10 @@ if(USE_PCL)
+ ExternalProject_Add(PointCloudLibraryPlugin
+   GIT_REPOSITORY https://github.com/patmarion/PointCloudLibraryPlugin.git
+   GIT_TAG 7bd45c3
++  GIT_CONFIG advice.detachedHead=false
++  CMAKE_ARGS
++    -Wno-deprecated
++    -Wno-dev
+   CMAKE_CACHE_ARGS
+     ${default_cmake_args}
+     ${eigen_args}
+@@ -518,7 +568,11 @@ if(USE_OPENNI2_LCM)
+   ExternalProject_Add(openni2-camera-lcm
+     GIT_REPOSITORY https://github.com/openhumanoids/openni2-camera-lcm
+     GIT_TAG 6bd5573
++    GIT_CONFIG advice.detachedHead=false
+     ${cmake3_args}
++    CMAKE_ARGS
++      -Wno-deprecated
++      -Wno-dev
+     CMAKE_CACHE_ARGS
+       ${default_cmake_args}
+       -DINSTALL_BOT_SPY:BOOL=OFF
+@@ -533,6 +587,10 @@ if(USE_PERCEPTION)
+   ExternalProject_Add(cv-utils
+     GIT_REPOSITORY https://github.com/patmarion/cv-utils.git
+     GIT_TAG c4939fedf66c767de15607adde3aff44ab2b503b
++    GIT_CONFIG advice.detachedHead=false
++    CMAKE_ARGS
++      -Wno-deprecated
++      -Wno-dev
+     CMAKE_CACHE_ARGS
+       ${default_cmake_args}
+     DEPENDS
+@@ -552,6 +610,10 @@ if(USE_APRILTAGS)
+   ExternalProject_Add(apriltags
+     GIT_REPOSITORY https://github.com/psiorx/apriltags-pod.git
+     GIT_TAG 8534e91
++    GIT_CONFIG advice.detachedHead=false
++    CMAKE_ARGS
++      -Wno-deprecated
++      -Wno-dev
+     CMAKE_CACHE_ARGS
+       ${default_cmake_args}
+     )
+@@ -559,6 +621,10 @@ if(USE_APRILTAGS)
+   ExternalProject_Add(apriltags_driver
+     GIT_REPOSITORY https://github.com/patmarion/apriltags_driver.git
+     GIT_TAG fb0eff3
++    GIT_CONFIG advice.detachedHead=false
++    CMAKE_ARGS
++      -Wno-deprecated
++      -Wno-dev
+     CMAKE_CACHE_ARGS
+       ${default_cmake_args}
+     DEPENDS
+@@ -576,13 +642,17 @@ if(USE_SIGNAL_SCOPE)
+   ExternalProject_Add(signal-scope
+     GIT_REPOSITORY https://github.com/openhumanoids/signal-scope.git
+     GIT_TAG a0bc791
++    GIT_CONFIG advice.detachedHead=false
++    CMAKE_ARGS
++      -Wno-deprecated
++      -Wno-dev
+     CMAKE_CACHE_ARGS
+       ${default_cmake_args}
+       ${python_args}
+       ${qt_args}
+       -DUSED_QTVERSION:STRING=${DD_QT_VERSION}
+     DEPENDS
+-      ctkPythonConsole 
++      ctkPythonConsole
+       PythonQt
+   )
+ 
+@@ -596,6 +666,9 @@ ExternalProject_Add(director
+   SOURCE_DIR ${Superbuild_SOURCE_DIR}/../..
+   DOWNLOAD_COMMAND ""
+   ${cmake3_args}
++    CMAKE_ARGS
++      -Wno-deprecated
++      -Wno-dev
+   CMAKE_CACHE_ARGS
+ 
+     -DUSE_LCM:BOOL=${USE_LCM}
+@@ -634,6 +707,9 @@ if (USE_ROS)
+     SOURCE_DIR ${Superbuild_SOURCE_DIR}/../../catkin_ws/src
+     DOWNLOAD_COMMAND ""
+     INSTALL_COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/src/director_ros-build/devel/lib/libddROSPlugin${CMAKE_SHARED_LIBRARY_SUFFIX} ${install_prefix}/lib
++    CMAKE_ARGS
++      -Wno-deprecated
++      -Wno-dev
+     CMAKE_CACHE_ARGS
+       ${default_cmake_args}
+       ${vtk_args}

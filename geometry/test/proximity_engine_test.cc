@@ -154,13 +154,13 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
               HydroelasticType::kRigid);
   }
 
-  // Case: rigid capsule (unsupported).
+  // Case: rigid capsule.
   {
     Capsule capsule{edge_length, edge_length};
     const GeometryId capsule_id = GeometryId::get_new_id();
     engine.AddDynamicGeometry(capsule, {}, capsule_id, rigid_properties);
     EXPECT_EQ(ProximityEngineTester::hydroelastic_type(capsule_id, engine),
-              HydroelasticType::kUndefined);
+              HydroelasticType::kRigid);
   }
 
   // Case: rigid half_space.

@@ -49,8 +49,10 @@ namespace sensors {
 
  %CameraInfo defines the parameters of the intrinsic projection. The projection
  can be captured by the camera or intrinsic matrix which essentially maps points
- in the camera frame C to the image plane (the matrix is called `A` in the
- OpenCV documentation, but typically called `K` in computer vision literature):
+ in the camera frame C to the image plane. The camera looks along the positive
+ `Cz` axis, and the `Cy` axis points down. The projection matrix is called `A`
+ in the OpenCV documentation, but typically called `K` in computer vision
+ literature:
 
          │ f_x  0    c_x │
      K = │ 0    f_y  c_y │, i.e.,
@@ -73,6 +75,15 @@ namespace sensors {
  coordinate vector of the form `(s * u_Q, s * v_Q, s)`. The texture coordinate
  is defined as the first two measures when the *third* measure is 1. The magic
  of homogeneous coordinates allows us to simply factor out `s`.
+
+ @anchor camera_axes_in_image
+ <h3>Alignment of the camera frame with the image</h3>
+
+ When looking at the resulting image and reasoning about the camera that
+ produced it, one can say that Cz points into the image, Cx is parallel with the
+ image rows, pointing to the right, and Cy is parallel with the image columns,
+ pointing down leading to language such as: "X-right", "Y-down", and
+ "Z-forward".
 
  <h3>Glossary</h3>
 
@@ -122,12 +133,6 @@ namespace sensors {
  - __sensor__: a measurement device.
  - __viewing direction__: the direction the camera is facing. Defined as being
    parallel with Cz.
-
- When looking at the resulting image and reasoning about the camera that
- produced it, one can say that Cz points into the image, Cx is parallel with the
- image rows, pointing to the right, and Cy is parallel with the image columns,
- pointing down leading to language such as: "X-right", "Y-down", and
- "Z-forward".
 */
 class CameraInfo final {
  public:

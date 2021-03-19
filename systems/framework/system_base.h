@@ -800,11 +800,7 @@ class SystemBase : public internal::SystemMessageInterface {
   @note This method is sufficiently fast for performance sensitive code. */
   void ValidateContext(const ContextBase& context) const final {
     if (context.get_system_id() != system_id_) {
-      throw std::logic_error(
-          fmt::format("Context was not created for {} system {}; it was "
-                      "created for system {}",
-                      this->GetSystemType(), this->GetSystemPathname(),
-                      context.GetSystemPathname()));
+      ThrowValidateContextMismatch(context);
     }
   }
 
@@ -1074,6 +1070,10 @@ class SystemBase : public internal::SystemMessageInterface {
       ThrowOutputPortIndexOutOfRange(func, port);
     return *output_ports_[port_index];
   }
+
+  /** (Internal use only) Throws std::exception with a message that the sanity
+  check(s) given by ValidateContext have failed. */
+  [[noreturn]] void ThrowValidateContextMismatch(const ContextBase&) const;
 
   /** This method must be invoked from within derived class DoAllocateContext()
   implementations right after the concrete Context object has been allocated.

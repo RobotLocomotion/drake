@@ -200,10 +200,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 
-# The paths within which to search for the python3 executable should match the
-# interpreter paths for the Python runtimes in the Python toolchains
-# registered by Bazel in WORKSPACE.
-#
 # The supported Python major/minor versions should match those listed in both
 # doc/developers.rst and tools/workspace/python/repository.bzl.
 if(APPLE)
@@ -221,10 +217,7 @@ else()
 endif()
 
 if(CMAKE_VERSION VERSION_LESS 3.12)
-  find_program(PYTHON_EXECUTABLE NAMES python3
-    PATHS "${FIND_PROGRAM_PYTHON3_PATHS}"
-    NO_DEFAULT_PATH
-  )
+  find_program(PYTHON_EXECUTABLE NAMES "${FIND_PROGRAM_PYTHON3_NAMES}")
   if(NOT PYTHON_EXECUTABLE)
     message(FATAL_ERROR "Could NOT find the python3 executable")
   endif()

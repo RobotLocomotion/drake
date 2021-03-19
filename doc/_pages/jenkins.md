@@ -73,9 +73,9 @@ in the ``RobotLocomotion/drake`` repository:
 The list of experimental builds includes builds that automatically run on opened
 and updated pull requests, as well as numerous other builds for on-demand use.
 To help identify the on-demand build you want to run, you can consult the lists
-of [continuous](https://drake-jenkins.csail.mit.edu/view/Continuous/>),
-[nightly](https://drake-jenkins.csail.mit.edu/view/Nightly/>), and
-[weekly](https://drake-jenkins.csail.mit.edu/view/Weekly/>) builds,
+of [continuous](https://drake-jenkins.csail.mit.edu/view/Continuous/),
+[nightly](https://drake-jenkins.csail.mit.edu/view/Nightly/), and
+[weekly](https://drake-jenkins.csail.mit.edu/view/Weekly/) builds,
 but you should not schedule continuous, nightly, or weekly builds directly.
 
 ## Updating Installation Prerequisites

@@ -92,7 +92,8 @@ int main(int argc, char** argv) {
   py::scoped_interpreter guard;
 
   // Define common scope, import numpy and List for use in `eval`.
-  py::module m("__main__");
+  py::module m =
+      py::module::create_extension_module("__main__", "", new PyModuleDef());
   py::globals()["np"] = py::module::import("numpy");
   py::globals()["List"] =
       py::module::import("pydrake.common.cpp_param").attr("List");

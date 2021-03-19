@@ -360,6 +360,7 @@ template <typename T>
 const ContinuousState<T>& Diagram<T>::GetSubsystemDerivatives(
     const System<T>& subsystem,
     const ContinuousState<T>& derivatives) const {
+  System<T>::ValidateChildOfContext(&derivatives);
   auto diagram_derivatives =
       dynamic_cast<const DiagramContinuousState<T>*>(&derivatives);
   DRAKE_DEMAND(diagram_derivatives != nullptr);
@@ -1024,9 +1025,9 @@ bool Diagram<T>::DiagramHasDirectFeedthrough(int input_port, int output_port)
     size_t removed_count = active_set.erase(current_output_id);
     DRAKE_ASSERT(removed_count == 1);
     const System<T>* sys = current_output_id.first;
-    for (InputPortIndex i(0); i < sys->num_input_ports(); ++i) {
-      if (sys->HasDirectFeedthrough(i, current_output_id.second)) {
-        const InputPortLocator curr_input_id(sys, i);
+    for (const auto& [sys_input, sys_output] : sys->GetDirectFeedthroughs()) {
+      if (sys_output == current_output_id.second) {
+        const InputPortLocator curr_input_id(sys, sys_input);
         if (target_input_ids.count(curr_input_id)) {
           // We've found a direct-feedthrough path to the input_port.
           return true;
