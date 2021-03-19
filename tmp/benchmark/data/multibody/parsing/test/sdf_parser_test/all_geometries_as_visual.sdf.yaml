@@ -1,0 +1,81 @@
+# GENERATED FILE - DO NOT EDIT BY HAND
+configurations:
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: test_robot::link1
+  note: Zeros
+  q:
+    names: []
+    values: []
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: test_robot::link1
+  note: Ones
+  q:
+    names: []
+    values: []
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: test_robot::link1
+  note: Incrementing
+  q:
+    names: []
+    values: []
+- frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: WorldBody
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: test_robot::link1
+  note: Pi/2
+  q:
+    names: []
+    values: []
+expression: {expr: 'make_plant(try_find_file(''multibody/parsing/test/sdf_parser_test/all_geometries_as_visual.sdf''),
+    find_resource=False)', module: __main__}
+type_name: tuple
