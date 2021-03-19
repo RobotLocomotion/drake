@@ -2,8 +2,7 @@
 Example to show migration pain point for Anzu, from drake#14401;
 use this to figure out next step for Anzu.
 
-pre-#14401:  5839ca8992
-post-#14401: 2d70dadf3b
+See repro.output.txt for, uh, output.
 """
 from pydrake.common import FindResourceOrThrow
 from pydrake.multibody.parsing import GetScopedFrameByName, Parser
@@ -52,36 +51,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-"""
-Command: bazel run //tmp:repro
-
-Output pre-#14401:
-
-    without_rename
-    GetScopedFrameByName(plant, 'dummy'):
-      <BodyFrame_[float] name='dummy' index=1 model_instance=2>
-    GetScopedFrameByName(plant, 'dummy::dummy'):
-      <BodyFrame_[float] name='dummy' index=1 model_instance=2>
-
-    with_rename
-    GetScopedFrameByName(plant, 'dummy'):
-      <BodyFrame_[float] name='dummy' index=1 model_instance=2>
-    GetScopedFrameByName(plant, 'my_model::dummy'):
-      <BodyFrame_[float] name='dummy' index=1 model_instance=2>
-
-post-#14401:
-
-    without_rename
-    GetScopedFrameByName(plant, 'dummy'):
-      ERROR: : Frame dummy appears in multiple model instances.
-    GetScopedFrameByName(plant, 'dummy::dummy'):
-      <BodyFrame_[float] name='dummy' index=1 model_instance=2>
-
-    with_rename
-    GetScopedFrameByName(plant, 'dummy'):
-      ERROR: : Frame dummy appears in multiple model instances.
-    GetScopedFrameByName(plant, 'my_model::dummy'):
-      <BodyFrame_[float] name='dummy' index=1 model_instance=2>
-"""
