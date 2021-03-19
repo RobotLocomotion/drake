@@ -7,6 +7,13 @@ configurations:
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
+    name: 010_potted_meat_can
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
     name: 010_potted_meat_can::base_link_meat
   - X_WF:
       rotation:
@@ -20,6 +27,13 @@ configurations:
     names: []
     values: []
 - frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: 010_potted_meat_can
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -45,6 +59,13 @@ configurations:
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
+    name: 010_potted_meat_can
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
     name: 010_potted_meat_can::base_link_meat
   - X_WF:
       rotation:
@@ -58,6 +79,13 @@ configurations:
     names: []
     values: []
 - frames:
+  - X_WF:
+      rotation:
+      - [1.0, 0.0, 0.0]
+      - [0.0, 1.0, 0.0]
+      - [0.0, 0.0, 1.0]
+      translation: [0.0, 0.0, 0.0]
+    name: 010_potted_meat_can
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
