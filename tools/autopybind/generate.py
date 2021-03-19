@@ -68,10 +68,13 @@ def eprint(s):
 
 def run_autopybind11(output_dir, debug):
     castxml_bin = find_data("external/castxml/castxml_bin")
-    bindings_to_generate = find_data("tools/autopybind/bindings_to_generate.yaml")
-    customization_file = find_data("tools/autopybind/autopybind11_customization.yaml")
+    bindings_to_generate = find_data(
+        "tools/autopybind/bindings_to_generate.yaml")
+    customization_file = find_data(
+        "tools/autopybind/autopybind11_customization.yaml")
     response_file = find_data("tools/autopybind/bindings_to_generate.rsp")
-    headers_tar = find_data("tools/autopybind/bindings_to_generate_headers.tar")  # noqa
+    headers_tar = find_data(
+        "tools/autopybind/bindings_to_generate_headers.tar")
 
     if not os.path.isdir(output_dir):
         os.makedirs(output_dir)
