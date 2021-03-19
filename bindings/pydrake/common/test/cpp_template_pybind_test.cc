@@ -48,7 +48,8 @@ void CheckValue(const string& expr, const T& expected) {
 }
 
 GTEST_TEST(CppTemplateTest, TemplateClass) {
-  py::module m("__main__");
+  py::module m =
+      py::module::create_extension_module("__main__", "", new PyModuleDef());
 
   auto cls_1 = BindSimpleTemplate<int>(m);
   m.attr("DefaultInst") = cls_1;
@@ -88,7 +89,8 @@ vector<string> SimpleFunction() {
 }
 
 GTEST_TEST(CppTemplateTest, TemplateFunction) {
-  py::module m("__main__");
+  py::module m =
+      py::module::create_extension_module("__main__", "", new PyModuleDef());
 
   AddTemplateFunction(m, "SimpleFunction",  // BR
       &SimpleFunction<int>, GetPyParam<int>());
@@ -110,7 +112,8 @@ std::string Callee(double) {
 }
 
 GTEST_TEST(CppTemplateTest, Call) {
-  py::module m("__main__");
+  py::module m =
+      py::module::create_extension_module("__main__", "", new PyModuleDef());
 
   AddTemplateFunction(
       m, "Callee", py::overload_cast<int>(&Callee), GetPyParam<int>());
@@ -132,7 +135,8 @@ struct SimpleType {
 };
 
 GTEST_TEST(CppTemplateTest, TemplateMethod) {
-  py::module m("__main__");
+  py::module m =
+      py::module::create_extension_module("__main__", "", new PyModuleDef());
 
   py::class_<SimpleType> py_class(m, "SimpleType");
   py_class  // BR

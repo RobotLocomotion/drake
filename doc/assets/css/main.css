@@ -283,7 +283,7 @@ section {
   visibility: hidden;
   text-align: left;
 
-  margin-top: 10px;
+  margin-top: 0px;
   margin-left: -10px;
   padding: 10px;
   border-top: 3px solid var(--darkened);

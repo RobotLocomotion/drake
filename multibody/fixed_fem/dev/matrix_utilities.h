@@ -32,7 +32,7 @@ Namely the ik-th entry in the jl-th block corresponds to the value Aᵢⱼₖₗ
 template <typename T>
 void PolarDecompose(const Matrix3<T>& F, EigenPtr<Matrix3<T>> R,
                     EigenPtr<Matrix3<T>> S) {
-  const Eigen::JacobiSVD<Matrix3<T>> svd(
+  const Eigen::JacobiSVD<Matrix3<T>, Eigen::HouseholderQRPreconditioner> svd(
       F, Eigen::ComputeFullU | Eigen::ComputeFullV);
   auto U = svd.matrixU();
   const auto& V = svd.matrixV();

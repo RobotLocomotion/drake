@@ -70,18 +70,13 @@ TODO(eric.cousineau): Move these clarifications and exceptions to styleguide
   syntax. Rationale: exceptions raised in lazy formatting get printed to
   ``stderr``, but are otherwise ignored, and thus may escape notice.
 * Executable Python files should be limited to *only* scripts which are not run
-  via Bazel-generated Python proxy scripts [1]. If a script
-  qualifies, use the following "shebang" line:
-
-```
-#!/usr/bin/env python3
-```
+  via Bazel-generated Python proxy scripts. (The proxy scripts are those
+  run via ``bazel run``, ``bazel test``, or ``./bazel-bin/...``.)
+  If a script qualifies, use the following "shebang" line:<br/>
+  ``#!/usr/bin/env python3``<br/>
   Rationale: ``/usr/bin/env`` enables a ``PATH`` search for the Python 3
   executable. This is also recommended by
   [PEP 394](https://www.python.org/dev/peps/pep-0394/).
-
-[1] Generally, this means scripts that run via ``bazel run``,
-   ``bazel test``, or ``./bazel-bin/...``.
 
 # Java Style
 

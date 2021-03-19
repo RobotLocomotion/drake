@@ -9,8 +9,8 @@ def qdldl_repository(
         name = name,
         repository = "oxfordcontrol/qdldl",
         # When updating this commit, see drake/tools/workspace/qdldl/README.md.
-        commit = "v0.1.4",
-        sha256 = "4eaed3b2d66d051cea0a57b0f80a81fc04ec72c8a906f8020b2b07e31d3b549c",  # noqa
+        commit = "v0.1.5",
+        sha256 = "2868b0e61b7424174e9adef3cb87478329f8ab2075211ef28fe477f29e0e5c99",  # noqa
         build_file = "@drake//tools/workspace/qdldl:package.BUILD.bazel",
         mirrors = mirrors,
     )

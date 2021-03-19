@@ -70,7 +70,7 @@ default ``*.sdf`` does show up in the list.
 
 ## Automatically Show an 80-character Ruler
 
-To view an 80 character-wide ruler::
+To view an 80 character-wide ruler:
 
 ```
 "rulers": [80],

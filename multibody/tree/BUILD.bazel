@@ -24,6 +24,7 @@ drake_cc_package_library(
         ":multibody_tree_topology",
         ":rotational_inertia",
         ":spatial_inertia",
+        ":string_view_map_key",
         ":unit_inertia",
     ],
 )
@@ -84,6 +85,15 @@ drake_cc_library(
     deps = [
         ":multibody_tree_topology",
     ],
+)
+
+drake_cc_library(
+    name = "string_view_map_key",
+    srcs = [],
+    hdrs = [
+        "string_view_map_key.h",
+    ],
+    deps = [],
 )
 
 drake_cc_library(
@@ -165,6 +175,7 @@ drake_cc_library(
         ":multibody_tree_caches",
         ":multibody_tree_indexes",
         ":spatial_inertia",
+        ":string_view_map_key",
         "//common:autodiff",
         "//common:nice_type_name",
         "//common:symbolic",
@@ -347,6 +358,13 @@ drake_cc_googletest(
         "//common/test_utilities:expect_no_throw",
         "//math:geometric_transform",
         "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "string_view_map_key_test",
+    deps = [
+        ":string_view_map_key",
     ],
 )
 

@@ -103,6 +103,17 @@ install(
     ],
 )
 
+# Depend on CLP's shared library iff CLP is enabled.
+cc_library(
+    name = "clp_deps",
+    deps = select({
+        "//conditions:default": [
+            "@clp",
+        ],
+        "//tools:no_clp": [],
+    }),
+)
+
 # Depend on a shared library used by dReal iff dReal is enabled.
 cc_library(
     name = "dreal_deps",
@@ -213,6 +224,7 @@ cc_library(
 cc_library(
     name = "libdrake_runtime_so_deps",
     deps = [
+        ":clp_deps",
         ":dreal_deps",
         ":gurobi_deps",
         ":ipopt_deps",

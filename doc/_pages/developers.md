@@ -58,11 +58,6 @@ of artifacts distributed with this website.
 * [Downstream Testing (Drake as a Dependency)](/downstream_testing.html)
 
 
-{%comment%}
-See :doc:`unit_testing_instructions`
-{%endcomment%}
-
-
 # Supported Configurations
 
 The following table shows the configurations and platforms that Drake
@@ -73,10 +68,10 @@ Drake requires a compiler running in C++17 mode.
 
 | Operating System                 | Bazel | CMake | C/C++ Compiler                 | Java                          | Python |
 |----------------------------------|-------|-------|--------------------------------|-------------------------------|--------|
-| Ubuntu 18.04 LTS (Bionic Beaver) | 3.7   | 3.10  | GCC 7.5 (default) Clang 9      | OpenJDK 11                    | 3.6    |
-| Ubuntu 20.04 LTS (Focal Fossa)   |       | 3.16  | GCC 9.3 (default) Clang 9      |                               | 3.8    |
+| Ubuntu 18.04 LTS (Bionic Beaver) | 4.0   | 3.10  | GCC 7.5 (default) or Clang 9   | OpenJDK 11                    | 3.6    |
+| Ubuntu 20.04 LTS (Focal Fossa)   | 4.0   | 3.16  | GCC 9.3 (default) or Clang 9   | OpenJDK 11                    | 3.8    |
 | macOS Catalina (10.15)           | 4.0   | 3.19  | Apple LLVM 12.0.0 (Xcode 12.4) | AdoptOpenJDK 15 (HotSpot JVM) | 3.9    |
-| macOS Big Sur (11)               |       |       |                                |                               |        |
+| macOS Big Sur (11)               | 4.0   | 3.19  | Apple LLVM 12.0.0 (Xcode 12.4) | AdoptOpenJDK 15 (HotSpot JVM) | 3.9    |
 
 CPython is the only Python implementation supported. On Ubuntu, amd64
 (i.e., x86_64) is the only supported architecture. On macOS, x86_64 is the only
@@ -101,7 +96,7 @@ downgrade Bazel. If on Mac, there is no easy mechanism to downgrade with
 Homebrew; however, we generally try to stay on top of Bazel versions.
 
 If you have tried and are unable to configure your system by
-[following the instructions](/build_from_source.html) please do not hesitate
+[following the instructions](/from_source.html) please do not hesitate
 to [ask for help](/getting_help.html).
 
 ## Binary Packages
@@ -110,12 +105,13 @@ The binary releases of Drake are built with GCC 7.5 on Ubuntu 18.04 (Bionic),
 GCC 9.3 on Ubuntu 20.04 (Focal), and Apple LLVM 12.0.0 on macOS Catalina
 (10.15).
 
-The links for these packages are listed in :ref:`binary-installation`.
+The links for these packages are listed in
+[Binary installation](/from_binary.html).
 
 # Issue Tracking
 
 * [GitHub Issue Management](/issues.html)
-* [Platform Reviewer Checklists](/platform-reviewer-checklist.html)
+* [Platform Reviewer Checklists](/platform_reviewer_checklist.html)
 
 # Code Review
 
@@ -162,7 +158,7 @@ author and reviewer:
 * ``priority: emergency`` - Very quick response time, nominally reserved for
   build cop.
 * ``priority: high`` - Some urgency, quick response time.
-*``priority: medium`` - (Default) Normal response time.
+* ``priority: medium`` - (Default) Normal response time.
 * ``priority: low`` - No rush.
 * ``priority: backlog`` - Give priority to all other PRs on your plate.
 
@@ -179,7 +175,7 @@ in platform review.
 
 If you are still not sure whom to assign for code review, simply do not assign
 a reviewer. As part of a
-[platform reviewer's responsibilities](/platform_reviewer_checklists.html),
+[platform reviewer's responsibilities](/platform_reviewer_checklist.html),
 they will come across the unassigned PR and find an appropriate feature
 reviewer.
 
@@ -213,12 +209,13 @@ your change is fully reviewed and passes CI. You may click it to merge your PR.
 Choose the "Squash and merge option" unless otherwise instructed (see
 [Curated Commits](/reviewable.html#curated-commits)).
 
-**After Merge.** If your PR breaks continuous integration, the :doc:`buildcop`
-will contact you to work out a resolution.
+**After Merge.** If your PR breaks continuous integration, the
+[buildcop](/buildcop.html) will contact you to work out a resolution.
+
 
 ## Review Process Tooling
 
-# [Tips for Participating In Drake Code Reviews using reviewable.io](/reviewable.html)
+[Tips for Participating In Drake Code Reviews using reviewable.io](/reviewable.html)
 
 # User Assistance
 

@@ -176,8 +176,7 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
       return make_unique<geometry::Ellipsoid>(radii.X(), radii.Y(), radii.Z());
     }
     case sdf::GeometryType::HEIGHTMAP: {
-      throw std::runtime_error(
-          "SDFormat geometry type HEIGHTMAP is not supported in Drake.");
+      return std::unique_ptr<geometry::Shape>(nullptr);
     }
   }
 
@@ -213,6 +212,7 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
   // other geometry types whenever X_LC != X_LG.
   switch (sdf_geometry.Type()) {
     case sdf::GeometryType::EMPTY:  // Also includes custom geometries.
+    case sdf::GeometryType::HEIGHTMAP:
     case sdf::GeometryType::BOX:
     case sdf::GeometryType::CAPSULE:
     case sdf::GeometryType::CYLINDER:
@@ -240,15 +240,14 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
       X_LC = X_LG * X_GC;
       break;
     }
-    case sdf::GeometryType::HEIGHTMAP: {
-      throw std::runtime_error(
-          "SDFormat geometry type HEIGHTMAP is not supported in Drake.");
-    }
   }
 
-  auto instance = make_unique<GeometryInstance>(
-      X_LC, MakeShapeFromSdfGeometry(sdf_geometry, resolve_filename),
-      sdf_visual.Name());
+  auto shape = MakeShapeFromSdfGeometry(sdf_geometry, resolve_filename);
+  if (shape == nullptr) {
+    return nullptr;
+  }
+  auto instance =
+      make_unique<GeometryInstance>(X_LC, move(shape), sdf_visual.Name());
   instance->set_illustration_properties(
       MakeVisualPropertiesFromSdfVisual(sdf_visual, resolve_filename));
   return instance;
@@ -364,6 +363,7 @@ RigidTransformd MakeGeometryPoseFromSdfCollision(
   const sdf::Geometry& sdf_geometry = *sdf_collision.Geom();
   switch (sdf_geometry.Type()) {
     case sdf::GeometryType::EMPTY:
+    case sdf::GeometryType::HEIGHTMAP:
     case sdf::GeometryType::BOX:
     case sdf::GeometryType::CAPSULE:
     case sdf::GeometryType::CYLINDER:
@@ -388,10 +388,6 @@ RigidTransformd MakeGeometryPoseFromSdfCollision(
       // Correct X_LC to include the pose X_GC
       X_LC = X_LG * X_GC;
       break;
-    }
-    case sdf::GeometryType::HEIGHTMAP: {
-      throw std::runtime_error(
-          "SDFormat geometry type HEIGHTMAP is not supported in Drake.");
     }
   }
   return X_LC;

@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# This shell script and the accompanying Dockerfile and patch files are used by
+# the project maintainers to create the precompiled drake-visualizer binaries
+# that are downloaded during the build. They are neither called during the
+# build nor expected to be called by most developers or users of the project.
+
+# Ensure you have docker(1) installed (apt-get install docker.io or brew
+# install [--cask] docker), shasum(1) installed (apt-get install
+# libdigest-sha-perl), and the vtk tar.gz archives for both bionic and focal
+# have been copied or downloaded to same directory as this shell script.
+
+set -euxo pipefail
+
+rm -f dv-*-x86_64.tar.gz dv-*-x86_64.tar.gz.sha256
+
+if ! compgen -G "${BASH_SOURCE%/*}/vtk-*-bionic-x86_64.tar.gz" &> /dev/null; then
+  echo 'ERROR: vtk tar.gz archive for bionic x86_64 was NOT found. Please copy or download it to the same directory as this script.'  >&2
+  exit 1;
+fi
+
+docker build --build-arg UBUNTU_CODENAME=bionic --tag dv-bionic "${BASH_SOURCE%/*}"
+trap 'docker rmi dv-bionic' EXIT
+docker run --detach --name dv-bionic-build --tty dv-bionic
+trap 'docker rm --force dv-bionic-build && docker rmi dv-bionic' EXIT
+docker cp dv-bionic-build:$(docker exec dv-bionic-build \
+  find /opt/director/ -maxdepth 1 -name 'dv-*-bionic-x86_64.tar.gz') .
+
+shasum --algorithm 256 dv-*-bionic-x86_64.tar.gz | tee dv-bionic-x86_64.tar.gz.sha256
+
+if ! compgen -G "${BASH_SOURCE%/*}/vtk-*-focal-x86_64.tar.gz" &> /dev/null; then
+  echo 'ERROR: vtk tar.gz archive for focal x86_64 was NOT found. Please copy or download it to the same directory as this script.'  >&2
+  exit 2;
+fi
+
+docker build --build-arg UBUNTU_CODENAME=focal --tag dv-focal "${BASH_SOURCE%/*}"
+trap 'docker rmi dv-focal && docker rm --force dv-bionic-build && docker rmi dv-bionic' EXIT
+docker run --detach --name dv-focal-build --tty dv-focal
+trap 'docker rm --force dv-focal-build && docker rmi dv-focal && docker rm --force dv-bionic-build && docker rmi dv-bionic' EXIT
+docker cp dv-focal-build:$(docker exec dv-focal-build \
+  find /opt/director/ -maxdepth 1 -name 'dv-*-focal-x86_64.tar.gz') .
+
+shasum --algorithm 256 dv-*-focal-x86_64.tar.gz | tee dv-focal-x86_64.tar.gz.sha256

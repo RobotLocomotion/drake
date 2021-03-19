@@ -19,7 +19,6 @@
 #include "drake/geometry/proximity/collision_filter_legacy.h"
 #include "drake/geometry/proximity/collisions_exist_callback.h"
 #include "drake/geometry/proximity/distance_to_point_callback.h"
-#include "drake/geometry/proximity/distance_to_point_with_gradient.h"
 #include "drake/geometry/proximity/distance_to_shape_callback.h"
 #include "drake/geometry/proximity/find_collision_candidates_callback.h"
 #include "drake/geometry/proximity/hydroelastic_callback.h"
@@ -526,10 +525,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   void ImplementGeometry(const Capsule& capsule, void* user_data) override {
-    static const logging::Warn log_once(
-        "Capsule is currently not supported in hydroelastic contact model. "
-        "It is available for collision queries and pairwise signed distance "
-        "queries.");
     // Note: Using `shared_ptr` because of FCL API requirements.
     auto fcl_capsule =
         make_shared<fcl::Capsuled>(capsule.radius(), capsule.length());

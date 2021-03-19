@@ -323,6 +323,7 @@ drake_cc_googletest(
         "//common:autodiff",
         "//common:find_resource",
         "//common/test_utilities",
+        "//common/test_utilities:limit_malloc",
         "//geometry/test_utilities",
         "//math:geometric_transform",
         "//math:gradient",

@@ -1,0 +1,222 @@
+#!/bin/bash
+
+# This shell script is used by the project maintainers to create the
+# precompiled drake-visualizer binaries that are downloaded during the build.
+# It is neither called during the build nor expected to be called by most
+# developers or users of the project.
+
+set -euxo pipefail
+
+if [[ ! "$(command -v brew)" ]]; then
+  /bin/bash -c \
+    "$(/usr/bin/curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+fi
+
+export \
+  HOMEBREW_NO_ANALYTICS=1 \
+  HOMEBREW_NO_AUTO_UPDATE=1 \
+  HOMEBREW_NO_INSTALL_CLEANUP=1 \
+  HOMEBREW_NO_INSECURE_REDIRECT=1 \
+  HOMEBREW_UPDATE_REPORT_ONLY_INSTALLED=1
+
+trap 'brew cleanup -qs && rm -rf "$(brew --cache)"' EXIT
+brew update
+brew upgrade -q
+brew cleanup -qs
+
+# Checking for versions of Java greater than 1.8 no longer works in macOS
+# Big Sur, but it unlikely that anyone would be using such an old version and
+# still successfully run Bazel without error, so we skip the version check.
+
+if [[ ! "$(/usr/libexec/java_home)" ]]; then
+  brew install -q --cask adoptopenjdk
+fi
+
+# Note that the command line developer tools are not sufficient to use some
+# bottled dependencies.
+
+if [[ ! -d /Applications/Xcode.app ]]; then
+  echo 'FATAL: The Xcode app is not installed but is required by this script. Install Xcode from the App Store and re-run this script.' >&2
+  exit 1
+fi
+
+# Note that some dependency erroneously adds "/usr/local/include" to the C/C++
+# compiler include path, which breaks Qt 5 when Qt 6 is installed.
+
+if brew --prefix --installed qt &>/dev/null; then
+  echo 'FATAL: The qt formula is installed but is not compatible with this script. Uninstall qt and re-run this script.' >&2
+  exit 2
+fi
+
+brew install -q --formula \
+  bazel \
+  cmake \
+  coreutils \
+  eigen \
+  glib \
+  ninja \
+  pkg-config \
+  python@3.9 \
+  qt@5 \
+  robotlocomotion/director/vtk@8.2.0
+
+trap 'brew cleanup -qs && rm -rf "$(brew --cache)" "${temporary_directory}"' EXIT
+readonly temporary_directory="$(mktemp -d)"
+
+# Note that we use LCM and its dependency JChart2D from Drake, partly due to
+# mangled name of the LCM library in Drake. We do not use JChart2D, but
+# "find_package(LCM)" would fail without it. LCM is LGPL 2.1 so we
+# should not link it statically like we do for the other C/C++ dependencies of
+# drake-visualizer.
+#
+# TODO(jamiesnape): Maybe we should bundle a separate version anyway.
+#
+# Note that added flags are to follow build hardening best practice.
+
+git clone --depth 1 -q https://github.com/RobotLocomotion/drake.git \
+  "${temporary_directory}/drake"
+
+pushd "${temporary_directory}/drake"
+bazel --output_user_root="${temporary_directory}/bazel" run \
+  --copt=-fstack-protector-strong \
+  --host_copt=-fstack-protector-strong \
+  @lcm//:install -- "${temporary_directory}/director-install"
+
+bazel --output_user_root="${temporary_directory}/bazel" run \
+  --copt=-fstack-protector-strong \
+  --host_copt=-fstack-protector-strong \
+  //tools/workspace/net_sf_jchart2d:install -- "${temporary_directory}/director-install"
+
+bazel clean --expunge
+popd
+
+git clone -b master -c advice.detachedHead=false -q \
+  --single-branch https://github.com/RobotLocomotion/director.git "${temporary_directory}/director"
+git -C "${temporary_directory}/director" checkout 4c3e570a6797ff840c74067c742455daaa113d93
+readonly director_version="$(git -C "${temporary_directory}/director" describe)"
+
+readonly patches_directory="$(realpath "${BASH_SOURCE%/*}")"
+git -C "${temporary_directory}/director" apply \
+  "${patches_directory}/"*-dv-all-*.patch \
+  "${patches_directory}/"*-dv-mac-*.patch
+
+mkdir -p \
+  "${temporary_directory}/director-build" \
+  "${temporary_directory}/director-install"
+
+# Note that some flags are added to "CMAKE_CXX_FLAGS", etc., rather than their
+# usual variables (e.g., "CMAKE_CXX_STANDARD") since drake-visualizer does not
+# pass those flags down to its external project builds.
+#
+# Note that most added flags are to follow build hardening best practice or
+# suppress compiler warnings added or made more strict since drake-visualizer
+# was written.
+
+cmake \
+  -DBUILD_SHARED_LIBS:BOOL=OFF \
+  -DCMAKE_BUILD_TYPE:STRING=Release \
+  -DCMAKE_C_FLAGS:STRING='-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wno-absolute-value -Wno-deprecated-declarations -Wno-format-security' \
+  -DCMAKE_CXX_FLAGS:STRING='-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wno-absolute-value -Wno-conversion-null -Wno-deprecated-declarations -Wno-deprecated-register -Wno-format-security -std=c++17' \
+  -DCMAKE_INSTALL_PREFIX:PATH="${temporary_directory}/director-install" \
+  -DCMAKE_PREFIX_PATH:PATH="${temporary_directory}/director-install" \
+  -DDD_QT_VERSION:STRING=5 \
+  -DPYTHON_EXECUTABLE:FILEPATH=/usr/local/bin/python3 \
+  -DQt5_DIR:PATH=/usr/local/opt/qt@5/lib/cmake/Qt5 \
+  -DUSE_EXTERNAL_INSTALL:BOOL=ON \
+  -DUSE_LCM:BOOL=ON \
+  -DUSE_LCMGL:BOOL=OFF \
+  -DUSE_LIBBOT:BOOL=OFF \
+  -DUSE_SYSTEM_EIGEN:BOOL=ON \
+  -DUSE_SYSTEM_LCM:BOOL=ON \
+  -DUSE_SYSTEM_LIBBOT:BOOL=OFF \
+  -DUSE_SYSTEM_VTK:BOOL=ON \
+  -DVTK_DIR:PATH=/usr/local/opt/vtk@8.2.0/lib/cmake/vtk-8.2 \
+  -GNinja \
+  -Wno-deprecated \
+  -Wno-dev \
+  -S "${temporary_directory}/director/distro/superbuild" \
+  -B "${temporary_directory}/director-build"
+
+export PYTHONWARNINGS=ignore::SyntaxWarning
+
+ninja -C "${temporary_directory}/director-build"
+
+# Note that we remove several installed components that are either broken,
+# unused by Drake, or duplicated by Drake.
+#
+# TODO(jamiesnape): Maybe we should bundle some of the duplicate components
+# anyway.
+
+rm -rf \
+  "${temporary_directory}/director-install/bin/directorPython" \
+  "${temporary_directory}/director-install/bin/drake-visualizer.app" \
+  "${temporary_directory}/director-install/bin/"lcm-* \
+  "${temporary_directory}/director-install/include" \
+  "${temporary_directory}/director-install/lib/bot2-core" \
+  "${temporary_directory}/director-install/lib/cmake" \
+  "${temporary_directory}/director-install/lib/"*.a \
+  "${temporary_directory}/director-install/lib/libdrake_lcm.so" \
+  "${temporary_directory}/director-install/lib/pkgconfig" \
+  "${temporary_directory}/director-install/lib/python3.9/site-packages/bot_core" \
+  "${temporary_directory}/director-install/lib/python3.9/site-packages/lcm" \
+  "${temporary_directory}/director-install/lib/python3.9/site-packages/robotlocomotion" \
+  "${temporary_directory}/director-install/lib/robotlocomotion-lcmtypes" \
+  "${temporary_directory}/director-install/share/doc/jchart2d" \
+  "${temporary_directory}/director-install/share/doc/lcm" \
+  "${temporary_directory}/director-install/share/java"
+
+find "${temporary_directory}/director-install" -name __pycache__ -type d \
+  -exec rm -rf {} +
+
+# Note that we have to manually call "strip" since there is no "install/strip"
+# target when building drake-visualizer and its dependencies as external
+# projects.
+
+strip -ru "${temporary_directory}/director-install/bin/drake-visualizer"
+
+strip -x \
+  "${temporary_directory}/director-install/lib/"*.dylib \
+  "${temporary_directory}/director-install/lib/python3.9/site-packages/director/vtkDRCFiltersPython.so" \
+  "${temporary_directory}/director-install/lib/python3.9/site-packages/director/thirdparty/_transformations.so"
+
+# TODO(jamiesnape): RPATHs should not need separate patching, but CMake has
+# changed substantially since drake-visualizer was written and it handles things
+# differently and more correctly now.
+
+install_name_tool -rpath "${temporary_directory}/director-install/lib" \
+  @executable_path/../lib \
+  "${temporary_directory}/director-install/bin/drake-visualizer"
+install_name_tool -delete_rpath "${temporary_directory}/director-install/lib" \
+  "${temporary_directory}/director-install/lib/libddApp.dylib"
+install_name_tool -delete_rpath "${temporary_directory}/director-install/lib" \
+  "${temporary_directory}/director-install/lib/python3.9/site-packages/director/vtkDRCFiltersPython.so"
+install_name_tool -delete_rpath "${temporary_directory}/director-install/lib" \
+  "${temporary_directory}/director-install/lib/python3.9/site-packages/director/thirdparty/_transformations.so"
+
+# TODO(jamiesnape): Extension suffixes should not need separate patching. Python
+# support in CMake has changed substantially since drake-visualizer was written.
+
+readonly extension_suffix="$(python3-config --extension-suffix)"
+
+mv "${temporary_directory}/director-install/lib/python3.9/site-packages/director/vtkDRCFiltersPython.so" \
+  "${temporary_directory}/director-install/lib/python3.9/site-packages/director/vtkDRCFiltersPython${extension_suffix}"
+mv "${temporary_directory}/director-install/lib/python3.9/site-packages/director/thirdparty/_transformations.so" \
+  "${temporary_directory}/director-install/lib/python3.9/site-packages/director/thirdparty/_transformations${extension_suffix}"
+
+pushd "${temporary_directory}/director-install"
+
+# Create archive named dv-<version>-python-<python version>-qt-<qt version>
+#   -vtk-<vtk version>-mac-<hardware name>.tar.gz,
+
+readonly python_version="$(python3 -V | sed -n 's/Python \([[:digit:]]\{1,\}\)\.\([[:digit:]]\{1,\}\)\.\([[:digit:]]\{1,\}\)/\1.\2.\3/p')"
+readonly qt_version="$(/usr/local/opt/qt@5/bin/qmake -v | sed -n 's/^.*\n*Qt version \([[:digit:]]\{1,\}\)\.\([[:digit:]]\{1,\}\)\.\([[:digit:]]\{1,\}\).*/\1.\2.\3/p')"
+readonly vtk_version="$(sed -n 's/#define VTK_VERSION "\([[:digit:]]\{1,\}\)\.\([[:digit:]]\{1,\}\)\.\([[:digit:]]\{1,\}\)"/\1.\2.\3/p' /usr/local/opt/vtk@8.2.0/include/vtk-8.2/vtkVersionMacros.h)"
+readonly hardware_name="$(uname -m)"
+
+readonly filename="dv-${director_version}-python-${python_version}-qt-${qt_version}-vtk-${vtk_version}-mac-${hardware_name}.tar.gz"
+tar -czf "/tmp/${filename}" -- *
+
+pushd /tmp
+shasum -a 256 "${filename}" | tee "${filename}.sha256"
+popd
+popd

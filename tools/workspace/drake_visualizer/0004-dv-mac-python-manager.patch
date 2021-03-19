@@ -1,0 +1,21 @@
+From 11f988658c1d659d2172aa9d265fe03408e6448c Mon Sep 17 00:00:00 2001
+From: Jamie Snape <jamie.snape@kitware.com>
+Date: Fri, 20 Nov 2020 12:00:00 -0400
+Subject: [PATCH] Add vtk@8.2.0 site-packages to the PYTHONPATH
+
+---
+ src/app/ddPythonManager.cpp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/app/ddPythonManager.cpp b/src/app/ddPythonManager.cpp
+index 774e9aed..fe8a7afa 100644
+--- a/src/app/ddPythonManager.cpp
++++ b/src/app/ddPythonManager.cpp
+@@ -73,6 +73,7 @@ void ddPythonManager::preInitialization()
+   paths << libDir + QString("/python%1/site-packages").arg(pythonMajor);
+   paths << libDir + QString("/python%1.%2/dist-packages").arg(pythonMajor, pythonMinor);
+   paths << libDir + QString("/python%1.%2/site-packages").arg(pythonMajor, pythonMinor);
++  paths << QString("/usr/local/opt/vtk@8.2.0/lib/python%1.%2/site-packages").arg(pythonMajor, pythonMinor);
+ 
+   foreach (const QString& path, paths)
+   {

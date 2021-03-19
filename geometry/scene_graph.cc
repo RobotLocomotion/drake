@@ -475,13 +475,6 @@ void SceneGraph<T>::CalcPoseUpdate(const Context<T>& context,
   const GeometryState<T>& state = geometry_state(context);
   GeometryState<T>& mutable_state = const_cast<GeometryState<T>&>(state);
 
-  auto throw_error = [](SourceId source_id, const std::string& origin) {
-    throw std::logic_error("Source " + to_string(source_id) +
-                           " has registered frames "
-                           "but does not provide " +
-                           origin + " values on the input port.");
-  };
-
   // Process all sources *except*:
   //   - the internal source and
   //   - sources with no frames.
@@ -494,7 +487,10 @@ void SceneGraph<T>::CalcPoseUpdate(const Context<T>& context,
       if (itr != input_source_ids_.end()) {
         const auto& pose_port = this->get_input_port(itr->second.pose_port);
         if (!pose_port.HasValue(context)) {
-          throw_error(source_id, "pose");
+          throw std::logic_error(
+              fmt::format("Source '{}' (id: {}) has registered dynamic frames "
+                          "but is not connected to the appropriate input port.",
+                          state.GetName(source_id), source_id));
         }
         const auto& poses =
             pose_port.template Eval<FramePoseVector<T>>(context);

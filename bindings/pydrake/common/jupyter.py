@@ -52,10 +52,7 @@ def process_ipywidget_events(num_events_to_process=1):
         sys.stderr.flush()
         for stream, ident, parent in events:
             kernel.set_parent(ident, parent)
-            if kernel._aborting:
-                kernel._send_abort_reply(stream, parent, ident)
-            else:
-                kernel.execute_request(stream, ident, parent)
+            kernel.execute_request(stream, ident, parent)
 
     if len(events) > 0:
         loop = asyncio.get_event_loop()

@@ -33,7 +33,7 @@ User manuals for the style-checking tools are as follows:
   [http://pycodestyle.readthedocs.io/en/latest/intro.html](http://pycodestyle.readthedocs.io/en/latest/intro.html).
   * The syntax ``# noqa`` can be used to quiet the warning about an overly-long
     line.
-* Bazel: Uses both pycodestyle like Python, and also [buildifier](/bazel.html#buildifier).
+* Bazel: Uses both pycodestyle like Python, and also [buildifier](/bazel.html#updating-build-files).
 
 
 # Manual style fixups

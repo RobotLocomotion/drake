@@ -4,9 +4,9 @@ title: Source installation (macOS, Ubuntu)
 
 # Getting Drake
 
-We recommend that you [setup SSH access to Github.com](https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/)
+We recommend that you [setup SSH access to GitHub.com](https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/)
 to avoid needing to type your password each time you access it. The following
-instructions assume you have uploaded your public SSH key to your Github
+instructions assume you have uploaded your public SSH key to your GitHub
 account.
 
 Now run:
