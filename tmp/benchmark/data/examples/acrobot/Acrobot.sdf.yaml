@@ -7,13 +7,6 @@ configurations:
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
-    name: Acrobot
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
     name: Acrobot::base_link
   - X_WF:
       rotation:
@@ -48,13 +41,6 @@ configurations:
     names: [shoulder, elbow]
     values: [0.0, 0.0]
 - frames:
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
-    name: Acrobot
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -101,13 +87,6 @@ configurations:
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
-    name: Acrobot
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
     name: Acrobot::base_link
   - X_WF:
       rotation:
@@ -142,13 +121,6 @@ configurations:
     names: [shoulder, elbow]
     values: [0.1, 0.2]
 - frames:
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
-    name: Acrobot
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]

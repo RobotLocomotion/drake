@@ -6,13 +6,6 @@ configurations:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
-    name: Schunk_Gripper
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
       translation: [0.0, -0.049133, 0.0]
     name: Schunk_Gripper::body
   - X_WF:
@@ -48,13 +41,6 @@ configurations:
     names: [left_finger_sliding_joint, right_finger_sliding_joint]
     values: [0.0, 0.0]
 - frames:
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
-    name: Schunk_Gripper
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -100,13 +86,6 @@ configurations:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
-    name: Schunk_Gripper
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
       translation: [0.0, -0.049133, 0.0]
     name: Schunk_Gripper::body
   - X_WF:
@@ -142,13 +121,6 @@ configurations:
     names: [left_finger_sliding_joint, right_finger_sliding_joint]
     values: [0.1, 0.2]
 - frames:
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
-    name: Schunk_Gripper
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]

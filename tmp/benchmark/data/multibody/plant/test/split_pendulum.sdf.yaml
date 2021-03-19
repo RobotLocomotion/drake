@@ -6,13 +6,6 @@ configurations:
       - [1.0, 0.0, 0.0]
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
-    name: SplitPendulum
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
       translation: [0.0, -9.0, 0.0]
     name: SplitPendulum::lower_section
   - X_WF:
@@ -34,13 +27,6 @@ configurations:
     names: [pin]
     values: [0.0]
 - frames:
-  - X_WF:
-      rotation:
-      - [0.5403023058681398, -0.8414709848078965, 0.0]
-      - [0.8414709848078965, 0.5403023058681398, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
-    name: SplitPendulum
   - X_WF:
       rotation:
       - [0.5403023058681398, -0.8414709848078965, 0.0]
@@ -72,13 +58,6 @@ configurations:
       - [0.9950041652780258, -0.09983341664682815, 0.0]
       - [0.09983341664682815, 0.9950041652780258, 0.0]
       - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
-    name: SplitPendulum
-  - X_WF:
-      rotation:
-      - [0.9950041652780258, -0.09983341664682815, 0.0]
-      - [0.09983341664682815, 0.9950041652780258, 0.0]
-      - [0.0, 0.0, 1.0]
       translation: [0.8985007498214534, -8.955037487502233, 0.0]
     name: SplitPendulum::lower_section
   - X_WF:
@@ -100,13 +79,6 @@ configurations:
     names: [pin]
     values: [0.1]
 - frames:
-  - X_WF:
-      rotation:
-      - [6.123233995736766e-17, -1.0, 0.0]
-      - [1.0, 6.123233995736766e-17, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
-    name: SplitPendulum
   - X_WF:
       rotation:
       - [6.123233995736766e-17, -1.0, 0.0]

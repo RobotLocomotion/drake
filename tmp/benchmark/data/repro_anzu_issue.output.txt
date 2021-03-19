@@ -1,0 +1,11 @@
+without_rename
+GetScopedFrameByName(plant, 'dummy'):
+  <BodyFrame_[float] name='dummy' index=1 model_instance=2>
+GetScopedFrameByName(plant, 'dummy::dummy'):
+  <BodyFrame_[float] name='dummy' index=1 model_instance=2>
+
+with_rename
+GetScopedFrameByName(plant, 'dummy'):
+  <BodyFrame_[float] name='dummy' index=1 model_instance=2>
+GetScopedFrameByName(plant, 'my_model::dummy'):
+  <BodyFrame_[float] name='dummy' index=1 model_instance=2>

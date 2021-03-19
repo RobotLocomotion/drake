@@ -7,13 +7,6 @@ configurations:
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
       translation: [0.0, 0.0, 0.0]
-    name: CartPole
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.0, 0.0, 0.0]
     name: CartPole::Cart
   - X_WF:
       rotation:
@@ -34,13 +27,6 @@ configurations:
     names: [CartSlider, PolePin]
     values: [0.0, 0.0]
 - frames:
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [1.0, 0.0, 0.0]
-    name: CartPole
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
@@ -73,13 +59,6 @@ configurations:
       - [0.0, 1.0, 0.0]
       - [0.0, 0.0, 1.0]
       translation: [0.1, 0.0, 0.0]
-    name: CartPole
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [0.1, 0.0, 0.0]
     name: CartPole::Cart
   - X_WF:
       rotation:
@@ -100,13 +79,6 @@ configurations:
     names: [CartSlider, PolePin]
     values: [0.1, 0.2]
 - frames:
-  - X_WF:
-      rotation:
-      - [1.0, 0.0, 0.0]
-      - [0.0, 1.0, 0.0]
-      - [0.0, 0.0, 1.0]
-      translation: [1.5707963267948966, 0.0, 0.0]
-    name: CartPole
   - X_WF:
       rotation:
       - [1.0, 0.0, 0.0]
