@@ -13,8 +13,8 @@ load(
 
 generate_autopybind11_rsp_file(
     name = "generate_autopybind11_rsp_file",
-    header_archive = "bindings_to_generate_headers.tar",
-    rsp_file = "bindings_to_generate.rsp",
+    header_archive = "libdrake_headers.tar",
+    rsp_file = "libdrake_compile_info.rsp",
     targets = [
         "//tools/install/libdrake:drake_headers",
         "//examples/compass_gait:compass_gait",
@@ -33,12 +33,18 @@ generate_autopybind11_rsp_file(
 )
 
 filegroup(
+    name = "inputs",
+    data = [
+        "libdrake_compile_info.rsp",
+        "libdrake_headers.tar",
+    ],
+)
+
+filegroup(
     name = "config",
     data = [
         "autopybind11_customization.yaml",
-        "bindings_to_generate.rsp",
         "bindings_to_generate.yaml",
-        "bindings_to_generate_headers.tar",
     ],
 )
 
@@ -47,6 +53,7 @@ drake_py_binary(
     srcs = ["generate.py"],
     data = [
         ":config",
+        ":inputs",
         "@castxml//:castxml_bin",
     ],
     deps = [
@@ -60,6 +67,7 @@ drake_py_binary(
 
 drake_py_unittest(
     name = "generate_test",
+    timeout = "moderate",
     data = [":generate"],
 )
 
