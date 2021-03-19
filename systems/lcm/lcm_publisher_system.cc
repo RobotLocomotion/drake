@@ -61,12 +61,13 @@ LcmPublisherSystem::LcmPublisherSystem(
   }
 
   if (publish_triggers.find(TriggerType::kPerStep) != publish_triggers.end()) {
-    this->DeclarePerStepEvent(
-    systems::PublishEvent<double>([this](
-        const systems::Context<double>& context,
-        const systems::PublishEvent<double>&) {
-      this->PublishInputAsLcmMessage(context);
-    }));
+    this->DeclarePerStepEvent(systems::PublishEvent<double>(
+        [this](const systems::Context<double>& context,
+               const systems::System<double>& system,
+               const systems::PublishEvent<double>&) {
+          const auto& sys = dynamic_cast<const LcmPublisherSystem&>(system);
+          sys.PublishInputAsLcmMessage(context);
+        }));
   }
 }
 
@@ -90,9 +91,11 @@ void LcmPublisherSystem::AddInitializationMessage(
 
   DeclareInitializationEvent(systems::PublishEvent<double>(
       systems::TriggerType::kInitialization,
-      [this](const systems::Context<double>& context,
-             const systems::PublishEvent<double>&) {
-        this->initialization_publisher_(context, this->lcm_);
+      [](const systems::Context<double>& context,
+         const systems::System<double>& system,
+         const systems::PublishEvent<double>&) {
+        const auto& sys = dynamic_cast<const LcmPublisherSystem&>(system);
+        sys.initialization_publisher_(context, sys.lcm_);
       }));
 }
 

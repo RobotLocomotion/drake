@@ -100,10 +100,11 @@ void IiwaCommandReceiver::DoCalcNextUpdateTime(
   *time = context.get_time();
   auto& discrete_events = events->get_mutable_discrete_update_events();
   discrete_events.add_event(DiscreteUpdateEvent<double>(
-      [this](const Context<double>& event_context,
+      [](const Context<double>& event_context, const System<double>& system,
              const DiscreteUpdateEvent<double>&,
              DiscreteValues<double>* next_values) {
-        LatchInitialPosition(event_context, next_values);
+        const auto& sys = dynamic_cast<const IiwaCommandReceiver&>(system);
+        sys.LatchInitialPosition(event_context, next_values);
       }));
 }
 
