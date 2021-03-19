@@ -27,8 +27,8 @@ def gen_main(input_dir, strict, src_func=None):
         src_func: (optional) Callable of form `f(src_dir)` which will introduce
             additional source files to `src_dir`.
     """
-    sphinx_build = runfiles.Create().Rlocation("sphinx/sphinx-build")
-    assert isfile(sphinx_build), "Please execute via 'bazel run'"
+    sphinx_build = "/usr/share/sphinx/scripts/python3/sphinx-build"
+    assert isfile(sphinx_build)
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--out_dir", type=str, required=True,
