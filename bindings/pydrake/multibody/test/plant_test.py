@@ -1183,12 +1183,15 @@ class TestPlant(unittest.TestCase):
         X_EeGripper = RigidTransform_[float](
             RollPitchYaw_[float](np.pi / 2, 0, np.pi / 2), [0, 0, 0.081])
         plant_f.WeldFrames(
-                A=plant_f.world_frame(),
-                B=plant_f.GetFrameByName("iiwa_link_0", iiwa_model))
+            frame_on_parent_P=plant_f.world_frame(),
+            frame_on_child_C=plant_f.GetFrameByName("iiwa_link_0", iiwa_model),
+            X_PC=RigidTransform_[float]())
+        # Perform the second weld without named arguments to ensure that the
+        # proper binding gets invoked.
         plant_f.WeldFrames(
-            A=plant_f.GetFrameByName("iiwa_link_7", iiwa_model),
-            B=plant_f.GetFrameByName("body", gripper_model),
-            X_AB=X_EeGripper)
+            plant_f.GetFrameByName("iiwa_link_7", iiwa_model),
+            plant_f.GetFrameByName("body", gripper_model),
+            X_EeGripper)
         plant_f.Finalize()
         plant = to_type(plant_f, T)
 
@@ -1302,6 +1305,42 @@ class TestPlant(unittest.TestCase):
             context, iiwa_model), np.zeros(nq_iiwa + nv_iiwa))
 
     @numpy_compare.check_all_types
+    def test_deprecated_weld_frames_variant(self, T):
+        # Tests deprecated parameter names variant of WeldFrames(); remove
+        # after 2021-07-01.
+
+        # N.B. Please check warning above in `check_multibody_state_access`.
+        MultibodyPlant = MultibodyPlant_[T]
+        # Create a MultibodyPlant with a kuka arm and a schunk gripper.
+        # the arm is welded to the world, the gripper is welded to the
+        # arm's end effector.
+        wsg50_sdf_path = FindResourceOrThrow(
+            "drake/manipulation/models/"
+            "wsg_50_description/sdf/schunk_wsg_50.sdf")
+        iiwa_sdf_path = FindResourceOrThrow(
+            "drake/manipulation/models/"
+            "iiwa_description/sdf/iiwa14_no_collision.sdf")
+
+        timestep = 0.0002
+        # N.B. `Parser` only supports `MultibodyPlant_[float]`.
+        plant_f = MultibodyPlant_[float](timestep)
+        parser = Parser(plant_f)
+
+        iiwa_model = parser.AddModelFromFile(
+            file_name=iiwa_sdf_path, model_name='robot')
+        gripper_model = parser.AddModelFromFile(
+            file_name=wsg50_sdf_path, model_name='gripper')
+
+        # Weld the base of arm and gripper to reduce the number of states.
+        X_EeGripper = RigidTransform_[float](
+            RollPitchYaw_[float](np.pi / 2, 0, np.pi / 2), [0, 0, 0.081])
+        with catch_drake_warnings(expected_count=1):
+            plant_f.WeldFrames(
+                A=plant_f.world_frame(),
+                B=plant_f.GetFrameByName("iiwa_link_0", iiwa_model),
+                X_AB=RigidTransform())
+
+    @numpy_compare.check_all_types
     def test_model_instance_state_access_by_array(self, T):
         # N.B. Please check warning above in `check_multibody_state_access`.
         MultibodyPlant = MultibodyPlant_[T]
@@ -1329,12 +1368,13 @@ class TestPlant(unittest.TestCase):
         X_EeGripper = RigidTransform_[float](
             RollPitchYaw_[float](np.pi / 2, 0, np.pi / 2), [0, 0, 0.081])
         plant_f.WeldFrames(
-            A=plant_f.world_frame(),
-            B=plant_f.GetFrameByName("iiwa_link_0", iiwa_model))
+            frame_on_parent_P=plant_f.world_frame(),
+            frame_on_child_C=plant_f.GetFrameByName("iiwa_link_0", iiwa_model))
         plant_f.WeldFrames(
-            A=plant_f.GetFrameByName("iiwa_link_7", iiwa_model),
-            B=plant_f.GetFrameByName("body", gripper_model),
-            X_AB=X_EeGripper)
+            frame_on_parent_P=plant_f.GetFrameByName(
+                "iiwa_link_7", iiwa_model),
+            frame_on_child_C=plant_f.GetFrameByName("body", gripper_model),
+            X_PC=X_EeGripper)
         plant_f.Finalize()
         plant = to_type(plant_f, T)
 
@@ -1521,13 +1561,31 @@ class TestPlant(unittest.TestCase):
             )
 
         def make_weld_joint(plant, P, C):
-            # TODO(eric.cousineau): Update WeldJoint arg names to be consistent
-            # with other joints.
             return WeldJoint_[T](
                 name="weld",
-                parent_frame_P=P,
-                child_frame_C=C,
+                frame_on_parent_P=P,
+                frame_on_child_C=C,
                 X_PC=X_PC,
+            )
+
+        def make_deprecated_weld_joint(plant, P, C):
+            # Tests deprecated parameter name variant; remove after 2021-07-01.
+            with catch_drake_warnings(expected_count=1):
+                return WeldJoint_[T](
+                    name="weld",
+                    parent_frame_P=P,
+                    child_frame_C=C,
+                    X_PC=X_PC,
+                )
+
+        def make_noparams_weld_joint(plant, P, C):
+            # Tests deprecated parameter name variant does not interfere;
+            # remove after 2021-07-01.
+            return WeldJoint_[T](
+                "weld",
+                P,
+                C,
+                X_PC,
             )
 
         make_joint_list = [
@@ -1537,6 +1595,8 @@ class TestPlant(unittest.TestCase):
             make_revolute_joint,
             make_universal_joint,
             make_weld_joint,
+            make_deprecated_weld_joint,
+            make_noparams_weld_joint,
         ]
 
         for make_joint in make_joint_list:
