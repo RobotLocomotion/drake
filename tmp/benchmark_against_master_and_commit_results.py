@@ -82,6 +82,7 @@ def generate(regression_data_dir):
     shell("bazel build //tmp/benchmark:py/model_regression_test //tmp/benchmark:repro_anzu_issue")
     shell("./bazel-bin/tmp/benchmark/py/model_regression_test --regenerate")
     assert isdir(regression_data_dir), regression_data_dir
+    shell("bazel test //tmp/benchmark:py/model_regression_test")
 
     repro_output = subshell("./bazel-bin/tmp/benchmark/repro_anzu_issue")
     with open(join(regression_data_dir, "repro_anzu_issue.output.txt"), "w") as f:
@@ -165,12 +166,17 @@ def main():
         shell(f"git add -A {out.regression_data_dir}")
         shell(f"git commit -m 'Regenerate model_regression_test with merge-base {out.merge_base}'")
 
-        # Replay benchmark.
+        # Do regression check before regenerating data, to check between
+        # merge-base and head.
+        shell("bazel test //tmp/benchmark:py/model_regression_test")
+        # Replay benchmark to show diff.
         generate(out.regression_data_dir)
         shell(f"git add -A {out.regression_data_dir}")
         shell(f"git commit -m 'Regenerate on latest version of code'")
     except:
         # Hard reset to starting ref.
+        error_ref = subshell("git rev-parse HEAD")
+        print(f"Error occurred! Switching away from {error_ref}")
         shell(f"git reset --hard {starting_ref}")
         raise
 

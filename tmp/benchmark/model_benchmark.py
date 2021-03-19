@@ -25,8 +25,12 @@ from pydrake.multibody.parsing import (
     Parser,
 )
 from pydrake.multibody.tree import (
-    FrameIndex, JointIndex,
-    PrismaticJoint, RevoluteJoint,
+    FrameIndex,
+    JointIndex,
+    PrismaticJoint,
+    RevoluteJoint,
+    default_model_instance,
+    world_model_instance,
 )
 from pydrake.multibody.plant import (
     MultibodyPlant,
@@ -195,8 +199,9 @@ class SemanticQ(object):
             if cmp_.error(PositionNameMismatch(path, self.names, b.names)):
                 return False
         values_b = b.get_values(self.names)
-        q_err = np.linalg.norm(self._values - values_b)
-        if q_err > cmp_.tol:
+        q_err = self._values - values_b
+        q_err_norm = np.linalg.norm(q_err)
+        if q_err_norm > cmp_.tol:
             err = PositionValueMismatch(
                 path, a=self, b=b, q_err=q_err)
             if cmp_.error(err):
@@ -477,9 +482,15 @@ class MbpAdaptor(Adaptor):
         self._joint_map = {}
         self._joint_names = []
         joints = sorted(joints, key=lambda x: x.position_start())
+        ignore_prefixes_for = {default_model_instance(), world_model_instance()}
         for joint in joints:
-            self._joint_names.append(joint.name())
-            self._joint_map[joint.name()] = joint
+            joint_name = joint.name()
+            instance = joint.model_instance()
+            if instance not in ignore_prefixes_for:
+                instance_name = instance_name = plant.GetModelInstanceName(instance)
+                joint_name = f"{instance_name}::{joint_name}"
+            self._joint_names.append(joint_name)
+            self._joint_map[joint_name] = joint
         # Get frames.
         nf = plant.num_frames()
         self._frames = []

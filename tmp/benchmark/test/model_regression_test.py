@@ -100,8 +100,10 @@ KNOWN_POSSIBLE_EXCEPTIONS = {
         # Negative test case.
         "File must have a single <model> element."
     ),
+    "multibody/parsing/test/sdf_parser_test/model_with_directly_nested_models.sdf": {
+        "Newly added"
+    },
 }
-
 
 
 def list_checks(*, use_source_tree=True):
@@ -129,6 +131,7 @@ def list_checks(*, use_source_tree=True):
         else:
             assert False, file_raw
     files.sort()
+    # files = ["multibody/parsing/test/sdf_parser_test/model_with_directly_nested_models.sdf"]
     return [Check(f) for f in files]
 
 
@@ -193,10 +196,17 @@ def regenerate():
 class TestModelRegression(unittest.TestCase):
     def test_mbp_vs_saved(self):
         missing = []
+        actual_skipped = set()
         for check in list_checks():
             print(f"Check: {check.yaml_file}")
             if not os.path.exists(check.yaml_file):
-                missing.append(check.yaml_file)
+                if check.sdf_file in KNOWN_REQUIRED_EXCEPTIONS:
+                    actual_skipped.add(check.sdf_file)
+                elif check.sdf_file in KNOWN_POSSIBLE_EXCEPTIONS:
+                    pass
+                else:
+                    missing.append(check.yaml_file)
+                print("  Skipping")
                 continue
             old = Benchmark.load_yaml(check.yaml_file)
             new = create_benchmark(check.expr, old)
@@ -204,6 +214,8 @@ class TestModelRegression(unittest.TestCase):
             new.compare(old, cmp_, all_configurations=True)
             self.assertEqual(len(cmp_.errors), 0, check.sdf_file)
         self.assertEqual(len(missing), 0, "\n".join(missing))
+        expected_skipped = set(KNOWN_REQUIRED_EXCEPTIONS.keys())
+        self.assertEqual(actual_skipped, expected_skipped)
 
 
 def main():
