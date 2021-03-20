@@ -3511,8 +3511,12 @@ GTEST_TEST(InitializationTest, InitializationTest) {
     InitializationTestSystem() {
       PublishEvent<double> pub_event(
           TriggerType::kInitialization,
-          std::bind(&InitializationTestSystem::InitPublish, this,
-                    std::placeholders::_1, std::placeholders::_2));
+          [](const Context<double>& context, const System<double>& system,
+             const PublishEvent<double>& event) {
+            const auto& sys =
+                dynamic_cast<const InitializationTestSystem&>(system);
+            sys.InitPublish(context, event);
+          });
       DeclareInitializationEvent(pub_event);
 
       DeclareInitializationEvent(DiscreteUpdateEvent<double>(

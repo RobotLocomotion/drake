@@ -3,6 +3,7 @@
 #include <limits>
 #include <memory>
 #include <utility>
+#include <variant>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/value.h"
@@ -647,9 +648,11 @@ class PublishEvent final : public Event<T> {
   }
 
  private:
-  void DoAddToComposite(TriggerType,
+  void DoAddToComposite(TriggerType trigger_type,
                         CompositeEventCollection<T>* events) const final {
-    events->add_publish_event(*this);
+    PublishEvent e(*this);
+    e.set_trigger_type(trigger_type);
+    events->add_publish_event(e);
   }
 
   // Clones PublishEvent-specific data.
@@ -716,9 +719,11 @@ class DiscreteUpdateEvent final : public Event<T> {
   }
 
  private:
-  void DoAddToComposite(TriggerType,
+  void DoAddToComposite(TriggerType trigger_type,
                         CompositeEventCollection<T>* events) const final {
-    events->add_discrete_update_event(*this);
+    DiscreteUpdateEvent e(*this);
+    e.set_trigger_type(trigger_type);
+    events->add_discrete_update_event(e);
   }
 
   // Clones DiscreteUpdateEvent-specific data.
@@ -775,16 +780,19 @@ class UnrestrictedUpdateEvent final : public Event<T> {
 
   /**
    * Calls the optional callback function, if one exists, with @p context,
-   * `this` and @p discrete_state.
+   * `this` and @p state.
    */
-  void handle(const Context<T>& context, const System<T>& system, State<T>* state) const {
+  void handle(const Context<T>& context, const System<T>& system,
+              State<T>* state) const {
     if (callback_ != nullptr) callback_(context, system, *this, state);
   }
 
  private:
-  void DoAddToComposite(TriggerType,
+  void DoAddToComposite(TriggerType trigger_type,
                         CompositeEventCollection<T>* events) const final {
-    events->add_unrestricted_update_event(*this);
+    UnrestrictedUpdateEvent e(*this);
+    e.set_trigger_type(trigger_type);
+    events->add_unrestricted_update_event(e);
   }
 
   // Clones event data specific to UnrestrictedUpdateEvent.

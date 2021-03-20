@@ -450,8 +450,9 @@ class CompositeEventCollection {
    * @throws std::bad_cast if the assumption is incorrect.
    */
   void add_publish_event(const PublishEvent<T>& event) {
-    auto& events = dynamic_cast<internal::LeafEventCollection<PublishEvent<T>>&>(
-        this->get_mutable_publish_events());
+    auto& events =
+        dynamic_cast<internal::LeafEventCollection<PublishEvent<T>>&>(
+            this->get_mutable_publish_events());
     events.add_event(event);
   }
 
@@ -460,10 +461,10 @@ class CompositeEventCollection {
    * LeafEventCollection, adds the discrete update event `event` to it.
    * @throws std::bad_cast if the assumption is incorrect.
    */
-  void add_discrete_update_event(
-      const DiscreteUpdateEvent<T>& event) {
-    auto& events = dynamic_cast<internal::LeafEventCollection<DiscreteUpdateEvent<T>>&>(
-        this->get_mutable_discrete_update_events());
+  void add_discrete_update_event(const DiscreteUpdateEvent<T>& event) {
+    auto& events =
+        dynamic_cast<internal::LeafEventCollection<DiscreteUpdateEvent<T>>&>(
+            this->get_mutable_discrete_update_events());
     events.add_event(event);
   }
 
@@ -473,11 +474,10 @@ class CompositeEventCollection {
    * to it.
    * @throws std::bad_cast if the assumption is incorrect.
    */
-  void add_unrestricted_update_event(
-      const UnrestrictedUpdateEvent<T>& event) {
-    auto& events =
-        dynamic_cast<internal::LeafEventCollection<UnrestrictedUpdateEvent<T>>&>(
-            this->get_mutable_unrestricted_update_events());
+  void add_unrestricted_update_event(const UnrestrictedUpdateEvent<T>& event) {
+    auto& events = dynamic_cast<
+        internal::LeafEventCollection<UnrestrictedUpdateEvent<T>>&>(
+        this->get_mutable_unrestricted_update_events());
     events.add_event(event);
   }
 

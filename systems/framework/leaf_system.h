@@ -1705,11 +1705,10 @@ class LeafSystem : public System<T> {
           const DiscreteUpdateEvent<T>&, DiscreteValues<T>*) const) const {
     static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
                   "Expected to be invoked from a LeafSystem-derived system.");
-    auto fn = [this, du_callback](const Context<T>& context,
+    auto fn = [du_callback](const Context<T>& context, const System<T>& system,
         const DiscreteUpdateEvent<T>& du_event, DiscreteValues<T>* values) {
-      auto system_ptr = dynamic_cast<const MySystem*>(this);
-      DRAKE_DEMAND(system_ptr);
-      return (system_ptr->*du_callback)(context, du_event, values);
+      const auto& sys = dynamic_cast<const MySystem&>(system);
+      return (sys.*du_callback)(context, du_event, values);
     };
     DiscreteUpdateEvent<T> du_event(fn);
     du_event.set_trigger_type(TriggerType::kWitness);
@@ -1734,11 +1733,10 @@ class LeafSystem : public System<T> {
           const UnrestrictedUpdateEvent<T>&, State<T>*) const) const {
     static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
                   "Expected to be invoked from a LeafSystem-derived system.");
-    auto fn = [this, uu_callback](const Context<T>& context,
+    auto fn = [uu_callback](const Context<T>& context, const System<T>& system,
         const UnrestrictedUpdateEvent<T>& uu_event, State<T>* state) {
-      auto system_ptr = dynamic_cast<const MySystem*>(this);
-      DRAKE_DEMAND(system_ptr);
-      return (system_ptr->*uu_callback)(context, uu_event, state);
+      const auto& sys = dynamic_cast<const MySystem&>(system);
+      return (sys.*uu_callback)(context, uu_event, state);
     };
     UnrestrictedUpdateEvent<T> uu_event(fn);
     uu_event.set_trigger_type(TriggerType::kWitness);

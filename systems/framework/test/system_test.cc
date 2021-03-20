@@ -146,7 +146,8 @@ class TestSystem : public System<double> {
       const Context<double>& context,
       const EventCollection<PublishEvent<double>>& events) const final {
     const internal::LeafEventCollection<PublishEvent<double>>& leaf_events =
-       dynamic_cast<const internal::LeafEventCollection<PublishEvent<double>>&>(events);
+        dynamic_cast<
+            const internal::LeafEventCollection<PublishEvent<double>>&>(events);
     if (leaf_events.HasEvents()) {
       this->MyPublish(context, leaf_events.get_events());
     }
@@ -156,8 +157,9 @@ class TestSystem : public System<double> {
       const Context<double>& context,
       const EventCollection<DiscreteUpdateEvent<double>>& events,
       DiscreteValues<double>* discrete_state) const final {
-    const internal::LeafEventCollection<DiscreteUpdateEvent<double>>& leaf_events =
-        dynamic_cast<const internal::LeafEventCollection<DiscreteUpdateEvent<double>>&>(
+    const internal::LeafEventCollection<DiscreteUpdateEvent<double>>&
+        leaf_events = dynamic_cast<
+            const internal::LeafEventCollection<DiscreteUpdateEvent<double>>&>(
             events);
     if (leaf_events.HasEvents()) {
       this->MyCalcDiscreteVariableUpdates(context, leaf_events.get_events(),
@@ -709,7 +711,8 @@ class ValueIOTestSystem : public System<T> {
 
   std::unique_ptr<EventCollection<PublishEvent<T>>>
   AllocateForcedPublishEventCollection() const override {
-    return internal::LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection();
+    return internal::LeafEventCollection<
+        PublishEvent<T>>::MakeForcedEventCollection();
   }
 
   std::unique_ptr<EventCollection<DiscreteUpdateEvent<T>>>
