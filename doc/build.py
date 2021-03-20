@@ -37,7 +37,7 @@ def main():
         parser.error(f"--out_dir={out_dir} already exists")
 
     manifest = runfiles.Create()
-    gen_sphinx = manifest.Rlocation("drake/bindings/pydrake/doc/gen_sphinx")
+    gen_sphinx = manifest.Rlocation("drake/doc/pydrake/gen_sphinx")
     gen_jekyll = manifest.Rlocation("drake/doc/gen_jekyll")
     doxygen = manifest.Rlocation("drake/doc/doxygen")
     for item in [gen_sphinx, gen_jekyll, doxygen]:

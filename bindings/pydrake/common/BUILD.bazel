@@ -106,6 +106,7 @@ drake_py_library(
     imports = PACKAGE_INFO.py_imports,
     visibility = [
         "//bindings/pydrake:__subpackages__",
+        "//doc/pydrake:__pkg__",
         # Allow Drake's Jupyter scaffolding to import this module directly,
         # without also importing all of pydrake. This is only sound because
         # none of the transitive `deps` of this target use C++ code.
@@ -247,6 +248,10 @@ drake_py_library(
 drake_py_library(
     name = "cpp_template_py",
     srcs = ["cpp_template.py"],
+    visibility = [
+        "//bindings/pydrake:__subpackages__",
+        "//doc/pydrake:__pkg__",
+    ],
     deps = [
         ":cpp_param_py",
         ":module_py",
