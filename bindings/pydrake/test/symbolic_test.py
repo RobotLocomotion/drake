@@ -996,6 +996,14 @@ class TestSymbolicPolynomial(unittest.TestCase):
         result = p.Differentiate(x)  # = 2ax
         numpy_compare.assert_equal(result.ToExpression(), 2 * a * x)
 
+    def test_integrate(self):
+        e = 3 * a * (x ** 2)
+        p = sym.Polynomial(e, [x])
+        result = p.Integrate(x)  # = ax³
+        numpy_compare.assert_equal(result.ToExpression(), a * x**3)
+        result = p.Integrate(x, -1, 1)  # = 2a
+        numpy_compare.assert_equal(result.ToExpression(), 2 * a)
+
     def test_add_product(self):
         p = sym.Polynomial()
         m = sym.Monomial(x)
