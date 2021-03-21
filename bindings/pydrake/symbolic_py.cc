@@ -657,6 +657,19 @@ PYBIND11_MODULE(symbolic, m) {
           doc.Polynomial.ToExpression.doc)
       .def("Differentiate", &Polynomial::Differentiate,
           doc.Polynomial.Differentiate.doc)
+      .def(
+          "Integrate",
+          [](const Polynomial& self, const Variable& var) {
+            return self.Integrate(var);
+          },
+          py::arg("x"), doc.Polynomial.Integrate.doc_1args)
+      .def(
+          "Integrate",
+          [](const Polynomial& self, const Variable& var, double a, double b) {
+            return self.Integrate(var, a, b);
+          },
+          py::arg("x"), py::arg("a"), py::arg("b"),
+          doc.Polynomial.Integrate.doc_3args)
       .def("AddProduct", &Polynomial::AddProduct, doc.Polynomial.AddProduct.doc)
       .def("RemoveTermsWithSmallCoefficients",
           &Polynomial::RemoveTermsWithSmallCoefficients,

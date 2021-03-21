@@ -495,6 +495,37 @@ Polynomial Polynomial::Differentiate(const Variable& x) const {
   }
 }
 
+Polynomial Polynomial::Integrate(const Variable& x) const {
+  if (decision_variables().include(x)) {
+    ostringstream oss;
+    oss << x << " is a decision variable of polynomial " << *this
+        << ".  Integration with respect to decision variables is not "
+        << "supported yet.";
+    throw runtime_error(oss.str());
+  }
+
+  // Case: x is an indeterminate (or does not appear).
+  // ∫ ∑ᵢ (cᵢ * mᵢ) dx = ∑ᵢ (cᵢ * ∫ mᵢ dx)
+  Polynomial::MapType map;
+  for (const pair<const Monomial, Expression>& term :
+        monomial_to_coefficient_map_) {
+    const Monomial& m{term.first};
+    const Expression& coeff{term.second};
+    int n = 0;
+    auto it = m.get_powers().find(x);
+    if (it != m.get_powers().end()) {
+      n = it->second;
+    }
+    DoAddProduct((coeff / (n + 1)).Expand(), m * Monomial{x}, &map);
+  }
+  return Polynomial{map};
+}
+
+Polynomial Polynomial::Integrate(const Variable& x, double a, double b) const {
+  const auto p = this->Integrate(x);
+  return p.EvaluatePartial(x, b) - p.EvaluatePartial(x, a);
+}
+
 double Polynomial::Evaluate(const Environment& env) const {
   return accumulate(
       monomial_to_coefficient_map_.begin(), monomial_to_coefficient_map_.end(),
