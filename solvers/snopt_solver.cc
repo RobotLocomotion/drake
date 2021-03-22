@@ -958,7 +958,7 @@ void SetMathematicalProgramResult(
         bb_con_dual_variable_indices,
     const std::unordered_map<Binding<Constraint>, int>&
         constraint_dual_start_index,
-    MathematicalProgramResult* result) {
+    double ObjAdd, MathematicalProgramResult* result) {
   SnoptSolverDetails& solver_details =
       result->SetSolverDetailsType<SnoptSolverDetails>();
   // Populate our results structure.
@@ -973,7 +973,7 @@ void SetMathematicalProgramResult(
   if (solution_result == SolutionResult::kUnbounded) {
     result->set_optimal_cost(MathematicalProgram::kUnboundedCost);
   } else {
-    result->set_optimal_cost(solver_details.F(0));
+    result->set_optimal_cost(solver_details.F(0) + ObjAdd);
   }
 }
 
@@ -1270,7 +1270,7 @@ void SolveWithGivenOptions(
 
   SetMathematicalProgramResult(prog, snopt_status, x_val,
                                bb_con_dual_variable_indices,
-                               constraint_dual_start_index, result);
+                               constraint_dual_start_index, ObjAdd, result);
 }
 
 }  // namespace
