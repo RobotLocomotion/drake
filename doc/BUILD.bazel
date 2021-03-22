@@ -29,14 +29,6 @@ _DEFAULT_TEST_TAGS = [
     "block-network",
 ]
 
-drake_py_library(
-    name = "sphinx_base",
-    srcs = ["sphinx_base.py"],
-    data = ["@sphinx//:sphinx-build"],
-    tags = _DEFAULT_BINARY_TAGS,
-    deps = ["@rules_python//python/runfiles"],
-)
-
 # For maximum browser compatibility these should be at the root of the
 # generated website and should not be renamed.
 filegroup(
@@ -169,7 +161,7 @@ drake_py_binary(
     data = [
         ":doxygen",
         ":gen_jekyll",
-        "//bindings/pydrake/doc:gen_sphinx",
+        "//doc/pydrake:gen_sphinx",
     ],
     tags = _DEFAULT_BINARY_TAGS,
     deps = [
@@ -186,8 +178,8 @@ filegroup(
         ":doxygen",
         ":gen_jekyll",
         ":serve_jekyll",
-        "//bindings/pydrake/doc:gen_sphinx",
-        "//bindings/pydrake/doc:serve_sphinx",
+        "//doc/pydrake:gen_sphinx",
+        "//doc/pydrake:serve_sphinx",
     ],
     tags = ["manual"],
 )
@@ -199,7 +191,7 @@ test_suite(
     tags = ["manual"],
     tests = [
         ":gen_jekyll_test",
-        "//bindings/pydrake/doc:gen_sphinx_test",
+        "//doc/pydrake:gen_sphinx_test",
     ],
 )
 

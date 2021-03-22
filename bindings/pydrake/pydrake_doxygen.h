@@ -262,7 +262,7 @@ and the docstring structures. Borrowing from above:
 
 To view the documentation rendered in Sphinx:
 
-    bazel run //bindings/pydrake/doc:serve_sphinx [-- --browser=false]
+    bazel run //doc/pydrake:serve_sphinx [-- --browser=false]
 
 @note Drake's online Python documentation is generated on Ubuntu Bionic, and it
 is suggested to preview documentation using this platform. Other platforms may
