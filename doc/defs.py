@@ -161,6 +161,8 @@ def main(*, build, subdir, description, supports_quick=False,
       subdir: A subdirectory to use when offering preview mode on a local web
         server; this does NOT affect the --out_dir path.
       description: Main help str for argparse; typically the caller's __doc__.
+      supports_quick: Whether build() has a quick:bool argument.
+      supports_modules: Whether build() has a modules=list[str] argument.
     """
     parser = argparse.ArgumentParser(description=description)
     group = parser.add_mutually_exclusive_group()
@@ -180,6 +182,19 @@ def main(*, build, subdir, description, supports_quick=False,
     parser.add_argument(
         "--verbose", action="store_true",
         help="Echo detailed commands, progress, etc. to the console")
+    if supports_quick:
+        parser.add_argument(
+            "--quick", action="store_true", default=False,
+            help="Omit from the output items that are slow to generate. "
+            "This yields a faster preview, but the output will be incomplete.")
+    if supports_modules:
+        parser.add_argument(
+            "module", nargs="*",
+            help="Limit the generated documentation to only these modules and "
+            "their children.  When none are provided, all will be generated. "
+            "Either . or / may be used as a submodule delimiter. "
+            "Refer to https://drake.mit.edu/documentation_instructions.html "
+            "for example commands.")
     args = parser.parse_args()
     if args.verbose:
         global _verbose
@@ -188,6 +203,13 @@ def main(*, build, subdir, description, supports_quick=False,
     if supports_quick:
         curried_build = functools.partial(
             curried_build, quick=args.quick)
+    if supports_modules:
+        canonicalized_modules = [
+            x.replace('/', '.')
+            for x in args.module
+        ]
+        curried_build = functools.partial(
+            curried_build, modules=canonicalized_modules)
     if args.out_dir is None:
         assert args.serve
         _do_preview(build=curried_build, subdir=subdir, port=args.port)
