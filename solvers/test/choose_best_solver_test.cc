@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/solvers/clp_solver.h"
 #include "drake/solvers/csdp_solver.h"
 #include "drake/solvers/equality_constrained_qp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
@@ -23,6 +24,7 @@ class ChooseBestSolverTest : public ::testing::Test {
   ChooseBestSolverTest()
       : prog_{},
         x_{prog_.NewContinuousVariables<3>()},
+        clp_solver_{std::make_unique<ClpSolver>()},
         linear_system_solver_{std::make_unique<LinearSystemSolver>()},
         equality_constrained_qp_solver_{
             std::make_unique<EqualityConstrainedQPSolver>()},
@@ -80,6 +82,7 @@ class ChooseBestSolverTest : public ::testing::Test {
  protected:
   MathematicalProgram prog_;
   VectorDecisionVariable<3> x_;
+  std::unique_ptr<ClpSolver> clp_solver_;
   std::unique_ptr<LinearSystemSolver> linear_system_solver_;
   std::unique_ptr<EqualityConstrainedQPSolver> equality_constrained_qp_solver_;
   std::unique_ptr<MosekSolver> mosek_solver_;

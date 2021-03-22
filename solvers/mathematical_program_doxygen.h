@@ -86,9 +86,17 @@
  *    <td align="center">&diams;</td>
  *    <td align="center">&diams;</td>
  * </tr>
+ * <tr><td> <a href="https://github.com/coin-or/Clp">
+ *    CLP</a></td>
+ *    <td align="center">&diams;</td>
+ *    <td></td>
+ *    <td></td>
+ *    <td></td>
+ *    <td></td>
+ * </tr>
  * <tr><td> <a href="https://github.com/oxfordcontrol/osqp">
  *    OSQP</a></td>
- *    <td align="center">&diams;</td>
+ *    <td></td>
  *    <td align="center">&diams;</td>
  *    <td></td>
  *    <td></td>
@@ -129,13 +137,16 @@
  *    <td></td>
  * </tr>
  * <tr><td> &loz;
- * @ref drake::solvers::MixedIntegerBranchAndBound "naive branch-and-bound" </td>
+ * @ref drake::solvers::MixedIntegerBranchAndBound "naive branch-and-bound"
+ * </td>
  *    <td align="center">&diams;</td>
  *    <td align="center">&diams;</td>
  *    <td align="center">&diams;</td>
  *    <td align="center">&diams;</td>
  * </table>
- * &loz; We implement only the basic branch-and-bound algorithm, without cutting planes nor advanced branching heuristics. Its usefulness is likely restricted to small-sized problems with dozens of binary variables.
+ * &loz; We implement only the basic branch-and-bound algorithm, without cutting
+ * planes nor advanced branching heuristics. Its usefulness is likely restricted
+ * to small-sized problems with dozens of binary variables.
  *
  * <b>Nonconvex Programming</b>
  *
