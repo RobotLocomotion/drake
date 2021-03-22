@@ -26,7 +26,7 @@ import sphinx.domains.python as pydoc
 from sphinx.ext import autodoc
 from sphinx.util.nodes import nested_parse_with_titles
 
-from drake.doc.system_doxygen import system_yaml_to_html
+from drake.doc.doxygen_cxx.system_doxygen import system_yaml_to_html
 from pydrake.common.cpp_template import TemplateBase
 from pydrake.common.deprecation import DrakeDeprecationWarning
 

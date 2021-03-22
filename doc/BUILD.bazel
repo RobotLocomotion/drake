@@ -8,26 +8,12 @@ load(
     "drake_py_library",
     "drake_py_unittest",
 )
+load(
+    ":defs.bzl",
+    "DEFAULT_BINARY_TAGS",
+    "DEFAULT_TEST_TAGS",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
-
-# Unless `setup/ubuntu/install_prereqs.sh --with-doc-only` has been run, most
-# targets in this package will fail to build, so by default we'll disable them.
-#
-# A developer will have to explicitly opt-in in order to build these.
-_DEFAULT_BINARY_TAGS = [
-    "manual",
-]
-
-# Unless `setup/ubuntu/install_prereqs.sh --with-doc-only` has been run, most
-# tests in this package will fail to pass, so by default we'll disable them.
-#
-# A developer will have to explicitly opt-in in order to test these.
-_DEFAULT_TEST_TAGS = [
-    "manual",
-    # None of our documentation tools should hit the internet, but their
-    # ecosystems might be doing so without us being aware.
-    "block-network",
-]
 
 # For maximum browser compatibility these should be at the root of the
 # generated website and should not be renamed.
@@ -75,7 +61,7 @@ filegroup(
 drake_py_library(
     name = "jekyll_base",
     srcs = ["jekyll_base.py"],
-    tags = _DEFAULT_BINARY_TAGS,
+    tags = DEFAULT_BINARY_TAGS,
 )
 
 filegroup(
@@ -112,9 +98,9 @@ drake_py_binary(
     srcs = ["gen_jekyll.py"],
     add_test_rule = 1,
     data = [":jekyll_data"],
-    tags = _DEFAULT_BINARY_TAGS,
+    tags = DEFAULT_BINARY_TAGS,
     test_rule_args = ["--out_dir=<test>"],
-    test_rule_tags = _DEFAULT_TEST_TAGS,
+    test_rule_tags = DEFAULT_TEST_TAGS,
     deps = [
         ":jekyll_base",
     ],
@@ -124,46 +110,21 @@ drake_py_binary(
     name = "serve_jekyll",
     srcs = ["serve_jekyll.py"],
     data = [":jekyll_data"],
-    tags = _DEFAULT_BINARY_TAGS,
+    tags = DEFAULT_BINARY_TAGS,
     deps = [
         ":jekyll_base",
     ],
-)
-
-drake_py_library(
-    name = "system_doxygen",
-    srcs = ["system_doxygen.py"],
-    visibility = ["//visibility:public"],
-)
-
-drake_py_unittest(
-    name = "system_doxygen_test",
-    deps = [":system_doxygen"],
-)
-
-drake_py_binary(
-    name = "doxygen",
-    srcs = [
-        "doxygen_main.py",
-    ],
-    data = [
-        "system_doxygen.py",
-        "//:.bazelproject",
-        "@bazel_tools//tools/python/runfiles",
-        "@doxygen",
-    ],
-    tags = _DEFAULT_BINARY_TAGS,
 )
 
 drake_py_binary(
     name = "build",
     srcs = ["build.py"],
     data = [
-        ":doxygen",
         ":gen_jekyll",
+        "//doc/doxygen_cxx:build",
         "//doc/pydrake:gen_sphinx",
     ],
-    tags = _DEFAULT_BINARY_TAGS,
+    tags = DEFAULT_BINARY_TAGS,
     deps = [
         "@bazel_tools//tools/python/runfiles",
     ],
@@ -175,9 +136,9 @@ filegroup(
     name = "manual_binaries",
     srcs = [
         ":build",
-        ":doxygen",
         ":gen_jekyll",
         ":serve_jekyll",
+        "//doc/doxygen_cxx:build",
         "//doc/pydrake:gen_sphinx",
         "//doc/pydrake:serve_sphinx",
     ],

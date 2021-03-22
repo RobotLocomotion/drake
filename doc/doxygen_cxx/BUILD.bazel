@@ -1,0 +1,45 @@
+# -*- python -*-
+
+package(default_visibility = ["//visibility:private"])
+
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+    "drake_py_library",
+    "drake_py_unittest",
+)
+load(
+    "//doc:defs.bzl",
+    "DEFAULT_BINARY_TAGS",
+    "DEFAULT_TEST_TAGS",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+drake_py_library(
+    name = "system_doxygen",
+    srcs = ["system_doxygen.py"],
+    visibility = [
+        "//doc/pydrake:__pkg__",
+        "//tools/workspace/pybind11:__pkg__",
+    ],
+)
+
+drake_py_unittest(
+    name = "system_doxygen_test",
+    deps = [":system_doxygen"],
+)
+
+drake_py_binary(
+    name = "build",
+    srcs = ["build.py"],
+    data = [
+        "system_doxygen.py",
+        "//:.bazelproject",
+        "@bazel_tools//tools/python/runfiles",
+        "@doxygen",
+    ],
+    tags = DEFAULT_BINARY_TAGS,
+    visibility = ["//doc:__pkg__"],
+)
+
+add_lint_tests()
