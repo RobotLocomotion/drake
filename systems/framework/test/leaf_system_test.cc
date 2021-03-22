@@ -3072,7 +3072,7 @@ GTEST_TEST(SystemTest, MissedEventIssue12620) {
     const double trigger_time_;
   };
 
-  LeafCompositeEventCollection<double> events;
+  internal::LeafCompositeEventCollection<double> events;
 
   // First test returns NaN, which should be detected.
   TriggerTimeButNoEventSystem nan_system(NAN);
@@ -3111,7 +3111,7 @@ GTEST_TEST(SystemTest, ForgotToSetTheUpdateTime) {
     }
   };
 
-  LeafCompositeEventCollection<double> events;
+  internal::LeafCompositeEventCollection<double> events;
 
   ForgotToSetTimeSystem forgot_system;
   auto forgot_context = forgot_system.AllocateContext();

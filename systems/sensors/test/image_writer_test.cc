@@ -638,7 +638,8 @@ TEST_F(ImageWriterTest, SingleConfiguredPort) {
 
     {
       const auto& publish_events =
-          dynamic_cast<const internal::LeafEventCollection<PublishEvent<double>>&>(
+          dynamic_cast<
+            const internal::LeafEventCollection<PublishEvent<double>>&>(
               events->get_publish_events())
               .get_events();
       ASSERT_EQ(1u, publish_events.size());

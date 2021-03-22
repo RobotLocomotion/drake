@@ -76,8 +76,9 @@ class ZeroOrderHoldTest : public ::testing::TestWithParam<bool> {
     }
 
     event_info_ = hold_->AllocateCompositeEventCollection();
-    leaf_info_ = dynamic_cast<const internal::LeafCompositeEventCollection<double>*>(
-        event_info_.get());
+    leaf_info_ =
+        dynamic_cast<const internal::LeafCompositeEventCollection<double>*>(
+            event_info_.get());
   }
 
   void CheckForUpdateAction() const {

@@ -86,7 +86,7 @@ class LinearSystemWParams final : public systems::LeafSystem<T> {
   // x[n+1] = p0 * x[n]
   void DoCalcDiscreteVariableUpdates(
       const Context<T>& context,
-      const std::vector<const DiscreteUpdateEvent<T>*>&,
+      const std::vector<DiscreteUpdateEvent<T>>&,
       DiscreteValues<T>* discrete_state) const final {
     discrete_state->get_mutable_vector(0).SetAtIndex(
         0, context.get_numeric_parameter(0).GetAtIndex(0) *

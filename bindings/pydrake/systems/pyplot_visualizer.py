@@ -57,7 +57,7 @@ class PyPlotVisualizer(LeafSystem):
         self._is_recording = False
         self._recorded_contexts = []
 
-        def on_initialize(context, event):
+        def on_initialize(context, system, event):
             if self._show:
                 self.fig.show()
 

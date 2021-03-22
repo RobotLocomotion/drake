@@ -314,18 +314,18 @@ class TestCustom(unittest.TestCase):
                 self.called_getwitness = True
                 return [self.witness, self.reset_witness]
 
-            def _on_initialize(self, context, event):
+            def _on_initialize(self, context, system, event):
                 test.assertIsInstance(context, Context)
                 test.assertIsInstance(event, PublishEvent)
                 test.assertFalse(self.called_initialize)
                 self.called_initialize = True
 
-            def _on_per_step(self, context, event):
+            def _on_per_step(self, context, system, event):
                 test.assertIsInstance(context, Context)
                 test.assertIsInstance(event, PublishEvent)
                 self.called_per_step = True
 
-            def _on_periodic(self, context, event):
+            def _on_periodic(self, context, system, event):
                 test.assertIsInstance(context, Context)
                 test.assertIsInstance(event, PublishEvent)
                 test.assertFalse(self.called_periodic)
@@ -341,7 +341,7 @@ class TestCustom(unittest.TestCase):
                 self.called_guard = True
                 return context.get_time() - 0.5
 
-            def _reset(self, context, event, state):
+            def _reset(self, context, system, event, state):
                 test.assertIsInstance(context, Context)
                 test.assertIsInstance(event, UnrestrictedUpdateEvent)
                 test.assertIsInstance(state, State)

@@ -234,7 +234,7 @@ class MeshcatVisualizer(LeafSystem):
         if open_browser:
             webbrowser.open(self.vis.url())
 
-        def on_initialize(context, event):
+        def on_initialize(context, system, event):
             self.load(context)
 
         # TODO(russt): #13776 recommends we stop using initialization events

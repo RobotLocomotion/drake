@@ -1,5 +1,6 @@
 #include "drake/systems/framework/diagram.h"
 
+#include <array>
 #include <limits>
 #include <set>
 #include <stdexcept>

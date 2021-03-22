@@ -508,7 +508,14 @@ class LeafSystem : public System<T> {
     PeriodicTriggerData periodic_data;
     periodic_data.set_period_sec(period_sec);
     periodic_data.set_offset_sec(offset_sec);
-    auto event_copy = std::make_unique<EventType>(event);
+
+    auto event_copy = [&event]() {
+        if constexpr (std::is_same_v<EventType, Event<T>>) {
+            return event.Clone();
+        } else {
+          return std::make_unique<EventType>(event);
+        }
+    }();
     event_copy->set_trigger_type(TriggerType::kPeriodic);
     periodic_events_.emplace_back(
         std::make_pair(periodic_data, std::move(event_copy)));
@@ -1785,9 +1792,14 @@ class LeafSystem : public System<T> {
       const WitnessFunctionDirection& direction_type,
       std::function<T(const Context<T>&)> calc,
       const EventType& e) const {
-    return std::make_unique<WitnessFunction<T>>(
-        this, this, description, direction_type, calc,
-        std::unique_ptr<Event<T>>(new EventType(e)));
+    if constexpr (std::is_same_v<EventType, Event<T>>) {
+        return std::make_unique<WitnessFunction<T>>(
+            this, this, description, direction_type, calc, e.Clone());
+    } else {
+        return std::make_unique<WitnessFunction<T>>(
+            this, this, description, direction_type, calc,
+            std::unique_ptr<Event<T>>(new EventType(e)));
+    }
   }
 
   //@}

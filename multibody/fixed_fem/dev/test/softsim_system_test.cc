@@ -108,7 +108,7 @@ TEST_F(SoftsimSystemTest, RegisterDeformableBodyUniqueNameRequirement) {
 /* Verifies that the SoftsimSystem calculates the expected displacement for a
  deformable object under free fall over one time step. */
 TEST_F(SoftsimSystemTest, AdvanceOneTimeStep) {
-  std::optional<systems::PeriodicEventData> periodic_event_data =
+  std::optional<systems::PeriodicTriggerData> periodic_event_data =
       softsim_system_.GetUniquePeriodicDiscreteUpdateAttribute();
   ASSERT_TRUE(periodic_event_data.has_value());
   EXPECT_EQ(periodic_event_data.value().period_sec(), kDt);

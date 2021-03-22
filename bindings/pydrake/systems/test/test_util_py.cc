@@ -102,8 +102,8 @@ PYBIND11_MODULE(test_util, m) {
     }
     {
       // Call `Publish` to test `DoPublish`.
-      auto events =
-          LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection();
+      auto events = systems::internal::LeafEventCollection<
+          PublishEvent<T>>::MakeForcedEventCollection();
       system.Publish(*context, *events);
     }
     {
@@ -125,7 +125,7 @@ PYBIND11_MODULE(test_util, m) {
       // From t=0, return next update time for testing discrete time.
       // If there is an abstract / unrestricted update, this assumes that
       // `dt_discrete < dt_abstract`.
-      systems::LeafCompositeEventCollection<double> events;
+      systems::internal::LeafCompositeEventCollection<double> events;
       results["discrete_next_t"] = system.CalcNextUpdateTime(*context, &events);
     }
     return results;
