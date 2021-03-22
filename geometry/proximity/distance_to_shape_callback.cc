@@ -114,7 +114,8 @@ bool RequiresFallback(const fcl::CollisionObjectd& a,
           ? b.collisionGeometry().get()
           : a.collisionGeometry().get();
   // Box, capsule, cylinder, half space, and cylinder don't required fallback.
-  // Ellipsoid, convex do. Other fcl node types aren't currently used.
+  // Ellipsoid, convex do. Other fcl node types aren't currently used. Note
+  // that the convex type is used to represent drake::geometry::Mesh.
   return other->getNodeType() == fcl::GEOM_ELLIPSOID ||
          other->getNodeType() == fcl::GEOM_CONVEX;
 }

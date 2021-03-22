@@ -540,6 +540,10 @@ class CallbackScalarSupport : public ::testing::Test {
     boxes_.emplace_back(make_shared<Boxd>(0.4, 0.3, 0.2));
     apply_data(boxes_);
 
+    capsules_.emplace_back(make_shared<Capsuled>(0.25, 0.75));
+    capsules_.emplace_back(make_shared<Capsuled>(0.75, 0.25));
+    apply_data(capsules_);
+
     cylinders_.emplace_back(make_shared<Cylinderd>(0.3, 0.4));
     cylinders_.emplace_back(make_shared<Cylinderd>(0.3, 0.2));
     apply_data(cylinders_);
@@ -570,6 +574,7 @@ class CallbackScalarSupport : public ::testing::Test {
   CallbackData<T> data_;
   std::vector<CollisionObjectd> spheres_;
   std::vector<CollisionObjectd> boxes_;
+  std::vector<CollisionObjectd> capsules_;
   std::vector<CollisionObjectd> cylinders_;
   std::vector<CollisionObjectd> halfspaces_;
 };
@@ -577,11 +582,13 @@ class CallbackScalarSupport : public ::testing::Test {
 template <>
 std::vector<std::pair<CollisionObjectd&, CollisionObjectd&>>
 CallbackScalarSupport<double>::supported_pairs() {
-  // Given the shared indices, it is important that the indices in each pair
-  // include 0 and 1.
+  // Given the shared geometry ids, it is important that the indices in each
+  // pair include 0 and 1 (as shapes with a common index share a geometry id).
   return {{spheres_[0], spheres_[1]},    {spheres_[0], boxes_[1]},
-          {spheres_[0], cylinders_[1]},  {spheres_[0], halfspaces_[1]},
-          {boxes_[0], boxes_[1]},        {boxes_[0], cylinders_[1]},
+          {spheres_[0], capsules_[1]},   {spheres_[0], cylinders_[1]},
+          {spheres_[0], halfspaces_[1]}, {boxes_[0], boxes_[1]},
+          {boxes_[0], capsules_[1]},     {boxes_[0], cylinders_[1]},
+          {capsules_[0], capsules_[1]},  {cylinders_[0], capsules_[1]},
           {cylinders_[0], cylinders_[1]}};
 }
 
@@ -590,6 +597,7 @@ std::vector<std::pair<CollisionObjectd&, CollisionObjectd&>>
 CallbackScalarSupport<double>::unsupported_pairs() {
   return {
       {boxes_[0], halfspaces_[1]},
+      {capsules_[0], halfspaces_[1]},
       {cylinders_[0], halfspaces_[1]},
       {halfspaces_[0], halfspaces_[1]},
   };
@@ -608,7 +616,9 @@ std::vector<std::pair<CollisionObjectd&, CollisionObjectd&>>
 CallbackScalarSupport<AutoDiffXd>::unsupported_pairs() {
   return {
       {spheres_[0], cylinders_[1]},     {boxes_[0], boxes_[1]},
+      {spheres_[0], capsules_[1]},      {boxes_[0], capsules_[1]},
       {boxes_[0], cylinders_[1]},       {boxes_[0], halfspaces_[1]},
+      {capsules_[0], capsules_[1]},     {cylinders_[0], capsules_[1]},
       {cylinders_[0], cylinders_[1]},   {cylinders_[0], halfspaces_[1]},
       {halfspaces_[0], halfspaces_[1]},
   };
