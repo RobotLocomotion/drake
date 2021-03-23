@@ -301,6 +301,20 @@ drake_py_library(
     deps = [":all_py"],
 )
 
+# Roll-up for publicly acccessible testing utilities (for development w/
+# workflows like drake-external-examples/drake_bazel_external).
+# WARNING:
+# - This is not supported via the drake_bazel_installed workflow!
+# - This is an *unstable* API!
+drake_py_library(
+    name = "test_utilities_all_py",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":pydrake",
+        "//bindings/pydrake/common/test_utilities",
+    ],
+)
+
 install(
     name = "install",
     install_tests = [
