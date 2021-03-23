@@ -9,7 +9,8 @@ doc/
 ├── assets/ - Static assets.
 │   ├── css/
 │   └── js/
-├── images/ - Images (placed here to be compatible w/ Sphinx website).
+├── doxygen_cxx/ - C++ API reference.
+├── images/ - Images.
 ├── _includes/ - Jekyll include components (via Liquid). Can render Markdown.
 ├── _layouts/ - Jekyll HTML layouts. Can *not* render Markdown.
 ├── _pages/ - Jekyll collection: Add'l root-level pages. Can render Markdown.
