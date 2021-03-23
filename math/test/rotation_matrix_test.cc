@@ -1034,7 +1034,7 @@ TEST_F(RotationMatrixConversionTests, AngleAxisToRotationMatrix) {
   }
 }
 
-TEST_F(RotationMatrixConversionTests, TwoVectorsToRotationMatrix) {
+TEST_F(RotationMatrixConversionTests, TwoVectorsToRotationMatrixVaried) {
   // Create somewhat arbitrary data to be used below.
   constexpr int num_cases = 7;
   using Vector7d = Eigen::Matrix<double, num_cases, 1>;
@@ -1126,20 +1126,89 @@ TEST_F(RotationMatrixConversionTests, TwoVectorsToRotationMatrix) {
         const RotationMatrix<double> R_expected(theta_lambda);
         m_expected = R_expected.matrix();
 
-        // Use the non-unit vector to test one of the algorithms.
+        // Use the new algorithm to form the rotation matrix.
         R = RotationMatrix<double>::MakeRotationMatrixFromTwoUnitVectors(
             alpha.normalized(), beta.normalized());
-        EXPECT_TRUE(CompareMatrices(R.matrix(), m_expected, kTolerance));
-
-        // Create unit vectors to test the other algorithm.
-        const Vector3<double> alpha_unit_vector = alpha / alpha_norm;
-        const Vector3<double> beta_unit_vector = beta / beta_norm;
-        R = RotationMatrix<double>::MakeRotationMatrixFromTwoUnitVectors(
-            alpha_unit_vector, beta_unit_vector);
         EXPECT_TRUE(CompareMatrices(R.matrix(), m_expected, kTolerance));
       }
     }
   }
+}
+
+void SweepAngleZAxis180Degrees(const Vector3<double>& alpha) {
+  // Sweep angle 0 ≤ θ ≤ π between alpha and beta.
+  constexpr int num_cases = 10 * 180;
+  const double angle_spacing = M_PI / num_cases;
+
+  // These tests cases are focused on z-direction.  Test until 179.8 degrees.
+  const Vector3<double> lambda(0, 0, 1);
+  for (int i = 0; i < num_cases - 1; i++) {
+    // Use AngleAxis to calculate the expected rotation matrix.
+    const double theta = i * angle_spacing;
+    const Eigen::AngleAxis<double> theta_lambda(theta, lambda);
+    const RotationMatrix<double> R_expected(theta_lambda);
+    const Matrix3<double>& m_expected = R_expected.matrix();
+
+    // Determine beta that results from angle-axis rotation.
+    const Vector3<double> beta = R_expected * alpha;
+
+    // Use the new algorithm to form the rotation matrix.
+    const RotationMatrix<double> R =
+        RotationMatrix<double>::MakeRotationMatrixFromTwoUnitVectors(alpha,
+                                                                     beta);
+    // Determine the absolute value of the maximum difference in elements.
+    // const Matrix3<double> diff = (R.matrix() - m_expected).cwiseAbs();
+    // const double max_diff = diff.maxCoeff();
+
+    // Allow exponentially looser tolerance as angle theta gets closer to π.
+    // If θ = 160   degrees, use    1.000001 * kTolerance.
+    // If θ = 170   degrees, use    1.023245 * kTolerance.
+    // If θ = 175   degrees, use    4.449829 * kTolerance.
+    // If θ = 176   degrees, use   10.37761  * kTolerance.
+    // If θ = 176   degrees, use   10.37761  * kTolerance.
+    // If θ = 177   degrees, use   26.49098  * kTolerance.
+    // If θ = 178   degrees, use   70.29167  * kTolerance.
+    // If θ = 179   degrees, use  189.3543   * kTolerance.
+    // If θ = 179.8 degrees, use  424.4031   * kTolerance.
+    // If θ = 179.9 degrees, use  464.2768   * kTolerance.
+    const double theta_degrees = theta * 180 / M_PI;
+    // std::cout << "\n theta = " << theta_degrees
+    //          << "   max_diff = " << max_diff << " ";
+    const double scaling_factor = 1.0 + 512/std::exp(180-theta_degrees);
+    const double kTolerance = 512 * kEpsilon * scaling_factor;
+    EXPECT_TRUE(CompareMatrices(R.matrix(), m_expected, kTolerance));
+  }
+}
+
+TEST_F(RotationMatrixConversionTests, TwoVectorsToRotationMatrixAccuracy) {
+  // Check this algorithm works for a simple unit vector alpha.
+  Vector3<double> alpha(1, 0, 0);  // Start at boundary of quadrants VI, I.
+  SweepAngleZAxis180Degrees(alpha);
+
+  double offset_angle = M_PI / 6;  // Start within quadrant I.
+  alpha = Vector3<double>(std::cos(offset_angle), std::sin(offset_angle), 0);
+  SweepAngleZAxis180Degrees(alpha);
+
+  alpha = Vector3<double>(0, 1, 0);  // Start at boundary of quadrants I, II.
+  SweepAngleZAxis180Degrees(alpha);
+
+  offset_angle = 3 * M_PI / 4;  // Start within quadrant II.
+  alpha = Vector3<double>(std::cos(offset_angle), std::sin(offset_angle), 0);
+  SweepAngleZAxis180Degrees(alpha);
+
+  alpha = Vector3<double>(-1, 0, 0);  // Start at boundary of quadrants II, III.
+  SweepAngleZAxis180Degrees(alpha);
+
+  offset_angle = 1.1 * M_PI;  // Start within quadrant III.
+  alpha = Vector3<double>(std::cos(offset_angle), std::sin(offset_angle), 0);
+  SweepAngleZAxis180Degrees(alpha);
+
+  alpha = Vector3<double>(0, -1, 0);  // Start at boundary of quadrants III, IV.
+  SweepAngleZAxis180Degrees(alpha);
+
+  offset_angle = -2 * M_PI / 3;  // Start within quadrant IV.
+  alpha = Vector3<double>(std::cos(offset_angle), std::sin(offset_angle), 0);
+  SweepAngleZAxis180Degrees(alpha);
 }
 
 }  // namespace

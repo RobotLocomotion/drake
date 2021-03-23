@@ -282,8 +282,13 @@ class RotationMatrix {
   /// are initially aligned (initially, Ax = Bx, Ay = By, Az = Bz) and initially
   /// βᵢ = α (so α expressed in A is always the same as β expressed in B).  Then
   /// frame B is subjected to a right-handed θ𝛌 rotation relative to frame A,
-  /// where 0 ≤ θ ≤ π is the angle between α and β and 𝛌 = α x β /|α x β|. For
-  /// θ ≠ π, the underlying algorithm efficiently forms R_AB without directly
+  /// where 0 ≤ θ ≤ π is the angle between α and β and 𝛌 = α x β /|α x β|.
+  /// After the θ𝛌 rotation, β ≠ α.  Instead it has a new direction in frame A
+  /// which is the β argument passed to this method (β after the rotation). This
+  /// method does not calculate θ or 𝛌, instead it uses c = α ⋅ β and s = α x β
+  /// to produce a unique rotation matrix R_AB that, except for θ ≠ π (c = -1),
+  /// is continuous and continuously differentiable with α, β.  For θ ≠ π,
+  /// the underlying algorithm efficiently forms R_AB without directly
   /// using a θ 𝛌 angle-axis rotation and in doing so avoids a divide-by-zero in
   /// 𝛌 that would otherwise occur when α = β (θ = 0). When θ = 0, this method
   /// returns the identity matrix.  When θ = π (c = -1), we use a θ 𝛌 angle axis
@@ -310,8 +315,14 @@ class RotationMatrix {
     // MakeRotationMatrixFromTwoNonAntiParallelUnitVectors() produces a unique
     // rotation matrix that is continuous with α, β as long as c = cos(θ) =
     // α ⋅ β is not too close to -1 (i.e., the angle θ is not too close to π).
+    // TODO(Mitiguy) Determine a value of kTolerance that maintains accuratcy.
+    // In debug builds, verify β ≠ -α  by checking c = α ⋅ β ≠ -1 (θ ≠ π).
+    // The next assertion allows c to be very close to -1.  This assertion is
+    // a reality check on the calling function as it should be less restrictive
+    // than a similar precondition for c ≠ -1 in the calling function.
     using std::abs;
-    if (abs(1+c) > kEpsilon) {
+    constexpr double kTolerance = 8 * std::numeric_limits<double>::epsilon();
+    if (1 + c > kTolerance) {
       // Number of operations in dot-product above: 3 mults, 2 adds.
       // Number of operations in method below: 18 mults, 13 adds. 1 divide.
       // Total number of operations = 37: 21 mults, 15 adds. 1 divide.
@@ -986,17 +997,8 @@ class RotationMatrix {
   // @param[in] beta_A unit vector β fixed in a frame B, expressed in A.
   // @param[in] c = α ⋅ β = cos(θ) where 0 ≤ θ ≤ π is the angle between α and β.
   // @throws std::exception in debug builds if β ≈ -α (i.e., c = α ⋅ β ≈ -1).
-  // @note The rotation matrix R_AB is formed by assuming that frames A and B
-  // are initially aligned (initially, Ax = Bx, Ay = By, Az = Bz) and initially
-  // βᵢ = α (so α expressed in A is always the same as β expressed in B).
-  // Then frame B is subjected to a right-handed rotation relative to frame A
-  // characterized by θ𝛌, where 0 ≤ θ ≤ π is the angle between α and β (herein
-  // β represents its direction expressed in A after the rotation) and 𝛌 is in
-  // the direction of α x β, i.e., 𝛌 = α x β /|α x β|. This method produces a
-  // unique rotation matrix R_AB that is continuous with α, β (except c ≈ -1),
-  // is continuously differentiable (except c ≈ -1), and uses c = α ⋅ β and
-  // s = α x β, without explicitly calculating θ or 𝛌.
-  // The underlying algorithm avoids the divide-by-zero in 𝛌 = α x β /|α x β|
+  // @note MakeRotationMatrixFromTwoUnitVectors() describes many details of this
+  // method. The algorithm here avoids the divide-by-zero in 𝛌 = α x β /|α x β|
   // when α = β (θ = 0) and is more efficient than the related method here:
   // https://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d
   // Specifically, the diagonal terms in the stackexchange algorithm require
@@ -1006,11 +1008,11 @@ class RotationMatrix {
       const Vector3<T>& alpha_A, const Vector3<T>& beta_A, const T& c) {
     // In debug builds, verify β ≠ -α  by checking c = α ⋅ β ≠ -1 (θ ≠ π).
     // The next assertion allows c to be very close to -1.  This assertion is
-    // meant to be less restrictive than similar preconditions for c ≠ -1 in
-    // a calling function.
+    // a reality check on the calling function as it should be less restrictive
+    // than a similar precondition for c ≠ -1 in the calling function.
     using std::abs;
-    constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
-    DRAKE_ASSERT(c > -1 + 4 * kEpsilon);
+    constexpr double kTolerance = 4 * std::numeric_limits<double>::epsilon();
+    DRAKE_ASSERT(1 + c > kTolerance);
 
     // Form the vector s = α ⨯ β.  It is worth menioning that |s| = sin(θ).
     // This follows from the cross product definition α ⨯ β = |α| |β| sin(θ) û,
