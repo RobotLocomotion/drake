@@ -65,7 +65,8 @@ void apb11_pydrake_Environment_py_register(py::module &m) {
              return self.insert(keys, elements);
            })
       .def("size",
-           static_cast<::size_t (Environment::*)() const>(&Environment::size))
+           static_cast<drake::symbolic::Variable::Id (Environment::*)() const>(
+               &Environment::size))
       .def("to_string", static_cast<::std::string (Environment::*)() const>(
                             &Environment::to_string))
 
