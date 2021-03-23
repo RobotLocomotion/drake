@@ -8,8 +8,8 @@ def ghc_filesystem_repository(
     github_archive(
         name = name,
         repository = "gulrak/filesystem",
-        commit = "v1.4.0",
-        sha256 = "332fb8afda06671090c755c623da15889b66cfdedcf6f343d38a28a930ea5304",  # noqa
+        commit = "v1.5.0",
+        sha256 = "eb6f3b0739908ad839cde68885d70e7324db191b9fad63d9915beaa40444d9cb",  # noqa
         build_file = "@drake//tools/workspace/ghc_filesystem:package.BUILD.bazel",  # noqa
         mirrors = mirrors,
     )

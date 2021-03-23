@@ -2,6 +2,7 @@
 
 load("//tools/skylark:py.bzl", "py_library")
 load("@cc//:compiler.bzl", "COMPILER_ID")
+load("@python//:version.bzl", "PYTHON_EXTENSION_SUFFIX")
 
 # @see bazelbuild/bazel#3493 for needing `@drake//` when loading `install`.
 load("@drake//tools/install:install.bzl", "install")
@@ -54,7 +55,7 @@ def pybind_py_library(
 
     # TODO(eric.cousineau): See if we can keep non-`*.so` target name, but
     # output a *.so, so that the target name is similar to what is provided.
-    cc_so_target = cc_so_name + ".so"
+    cc_so_target = cc_so_name + PYTHON_EXTENSION_SUFFIX
 
     # GCC and Clang don't always agree / succeed when inferring storage
     # duration (#9600). Workaround it for now.
@@ -368,7 +369,7 @@ def _generate_pybind_documentation_header_impl(ctx):
              ",".join(ctx.attr.ignore_dirs_for_coverage))
     for p in ctx.attr.exclude_hdr_patterns:
         args.add("-exclude-hdr-patterns=" + p)
-    args.add_all(ctx.fragments.cpp.cxxopts, uniquify = True)
+    args.add("-std=c++17")
     args.add("-w")
 
     # N.B. This is for `targets` only.
@@ -415,7 +416,6 @@ generate_pybind_documentation_header = rule(
             default = [],
         ),
     },
-    fragments = ["cpp"],
     implementation = _generate_pybind_documentation_header_impl,
     output_to_genfiles = True,
 )

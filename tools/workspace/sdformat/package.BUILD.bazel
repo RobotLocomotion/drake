@@ -62,7 +62,7 @@ cc_library(
     includes = ["src/urdf"],
     linkstatic = 1,
     visibility = ["//visibility:private"],
-    deps = ["@tinyxml"],
+    deps = ["@tinyxml2"],
 )
 
 # Generates sdf_config.h based on the version numbers in CMake code.
@@ -99,6 +99,7 @@ SDFORMAT_MOST_PUBLIC_HDRS = [
     "include/sdf/Frame.hh",
     "include/sdf/Geometry.hh",
     "include/sdf/Gui.hh",
+    "include/sdf/Heightmap.hh",
     "include/sdf/Imu.hh",
     "include/sdf/Joint.hh",
     "include/sdf/JointAxis.hh",
@@ -119,6 +120,7 @@ SDFORMAT_MOST_PUBLIC_HDRS = [
     "include/sdf/Scene.hh",
     "include/sdf/SemanticPose.hh",
     "include/sdf/Sensor.hh",
+    "include/sdf/Sky.hh",
     "include/sdf/Sphere.hh",
     "include/sdf/Surface.hh",
     "include/sdf/Types.hh",
@@ -162,14 +164,13 @@ SDFORMAT_ALL_PUBLIC_HDRS = SDFORMAT_MOST_PUBLIC_HDRS + [
 ]
 
 # Generates the library exported to users. The explicitly listed srcs= matches
-# upstream's explicitly listed sources. The explicitly listed hdrs= matches
-# upstream's private headers. ign.hh and ign.cc are not incorporated in this
-# library, but are incorporated into the `ign_sdf_cmdline` library defined
-# below.
+# upstream's explicitly listed sources (sdformat/src/CMakeLists.txt). The
+# explicitly listed hdrs= matches upstream's private headers. ign.hh and ign.cc
+# are not incorporated in this library, but are incorporated into the
+# `ign_sdf_cmdline` library defined below.
 cc_library(
     name = "sdformat",
     srcs = [
-        "include/sdf/parser_urdf.hh",
         "src/Actor.cc",
         "src/AirPressure.cc",
         "src/Altimeter.cc",
@@ -192,6 +193,7 @@ cc_library(
         "src/FrameSemantics.hh",
         "src/Geometry.cc",
         "src/Gui.cc",
+        "src/Heightmap.cc",
         "src/Imu.cc",
         "src/Joint.cc",
         "src/JointAxis.cc",
@@ -215,6 +217,7 @@ cc_library(
         "src/Scene.cc",
         "src/SemanticPose.cc",
         "src/Sensor.cc",
+        "src/Sky.cc",
         "src/Sphere.cc",
         "src/Surface.cc",
         "src/Types.cc",
@@ -222,9 +225,12 @@ cc_library(
         "src/Utils.hh",
         "src/Visual.cc",
         "src/World.cc",
+        "src/XmlUtils.cc",
+        "src/XmlUtils.hh",
         "src/parser.cc",
         "src/parser_private.hh",
         "src/parser_urdf.cc",
+        "src/parser_urdf.hh",
         ":src/EmbeddedSdf.cc",
     ],
     hdrs = SDFORMAT_ALL_PUBLIC_HDRS,
@@ -233,13 +239,13 @@ cc_library(
     # runtime. This was likely caused by different translation units being
     # compiled with different visibility settings."
     copts = ["-w"],
-    defines = ["SDFORMAT_STATIC_DEFINE"],
+    defines = ["SDFORMAT_STATIC_DEFINE", "SDFORMAT_DISABLE_CONSOLE_LOGFILE"],
     includes = ["include"],
     linkstatic = 1,
     deps = [
         ":urdfdom",
         "@ignition_math",
-        "@tinyxml",
+        "@tinyxml2",
     ],
 )
 

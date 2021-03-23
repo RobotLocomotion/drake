@@ -6,6 +6,7 @@ tap 'robotlocomotion/director'
 
 cask 'adoptopenjdk' unless system '/usr/libexec/java_home --version 1.8+ --failfast &> /dev/null'
 
+brew 'clp'
 brew 'cmake'
 brew 'double-conversion'
 brew 'dreal-deps/ibex/ibex@2.7.4'  # N.B. Matches drake/tools/workspace/ibex/version.bzl.
@@ -20,13 +21,11 @@ brew 'ipopt'
 brew 'libyaml'
 brew 'lz4'
 brew 'nlopt'
-# brew extract last working version that depends on python@3.8.
-brew 'robotlocomotion/director/numpy@1.19.4'
+brew 'numpy'
 brew 'openblas'
 brew 'pkg-config'
-brew 'python@3.8'
-# brew extract last working version that depends on python@3.8.
-brew 'robotlocomotion/director/scipy@1.5.4'
+brew 'python@3.9'
+brew 'scipy'
 brew 'spdlog'
 brew 'suite-sparse'
 brew 'tinyxml'

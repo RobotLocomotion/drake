@@ -37,13 +37,13 @@ TEST_F(NewmarkSchemeTest, Weights) {
       Vector3<double>(kBeta * kDt * kDt, kGamma * kDt, 1.0), 0));
 }
 
-TEST_F(NewmarkSchemeTest, UpdateState) {
+TEST_F(NewmarkSchemeTest, UpdateStateFromChangeInUnknowns) {
   const Vector4<double> q = MakeQ();
   const Vector4<double> qdot = MakeQdot();
   const Vector4<double> qddot = MakeQddot();
   FemState<DummyElement<2>> state(q, qdot, qddot);
   const Vector4<double> dqddot(1.234, 4.567, 7.890, 0.123);
-  newmark_scheme_.UpdateState(dqddot, &state);
+  newmark_scheme_.UpdateStateFromChangeInUnknowns(dqddot, &state);
   EXPECT_TRUE(CompareMatrices(state.qddot(), qddot + dqddot, 0));
   EXPECT_TRUE(
       CompareMatrices(state.qdot(), qdot + dqddot * kDt * kGamma, kTol));
@@ -60,8 +60,7 @@ TEST_F(NewmarkSchemeTest, AdvanceOneTimeStep) {
   FemState<DummyElement<2>> state_np1(state_0);
   const int kTimeSteps = 10;
   for (int i = 0; i < kTimeSteps; ++i) {
-    state_np1.set_qddot(state_n.qddot());
-    newmark_scheme_.AdvanceOneTimeStep(state_n, &state_np1);
+    newmark_scheme_.AdvanceOneTimeStep(state_n, qddot, &state_np1);
     state_n = state_np1;
   }
   const double total_time = kDt * kTimeSteps;

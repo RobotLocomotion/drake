@@ -45,7 +45,8 @@ class ExamplePyKeepAlive {
 };
 
 GTEST_TEST(PydrakePybindTest, PyKeepAlive) {
-  py::module m("test");
+  py::module m =
+      py::module::create_extension_module("test", "", new PyModuleDef());
   {
     using Class = Nonce;
     py::class_<Class>(m, "Nonce");
@@ -73,6 +74,7 @@ GTEST_TEST(PydrakePybindTest, PyKeepAlive) {
 
 // Class which has a copy constructor, for testing `DefCopyAndDeepCopy`.
 struct ExampleDefCopyAndDeepCopy {
+  explicit ExampleDefCopyAndDeepCopy(int v) : value(v) {}
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ExampleDefCopyAndDeepCopy);
   int value{};
   bool operator==(const ExampleDefCopyAndDeepCopy& other) const {
@@ -81,12 +83,13 @@ struct ExampleDefCopyAndDeepCopy {
 };
 
 GTEST_TEST(PydrakePybindTest, DefCopyAndDeepCopy) {
-  py::module m("test");
+  py::module m =
+      py::module::create_extension_module("test", "", new PyModuleDef());
   {
     using Class = ExampleDefCopyAndDeepCopy;
     py::class_<Class> cls(m, "ExampleDefCopyAndDeepCopy");
     cls  // BR
-        .def(py::init([](int value) { return Class{value}; }))
+        .def(py::init([](int value) { return Class(value); }))
         .def(py::self == py::self);
     DefCopyAndDeepCopy(&cls);
   }
@@ -119,7 +122,8 @@ class ExampleDefClone {
 };
 
 GTEST_TEST(PydrakePybindTest, DefClone) {
-  py::module m("test");
+  py::module m =
+      py::module::create_extension_module("test", "", new PyModuleDef());
   {
     using Class = ExampleDefClone;
     py::class_<Class> cls(m, "ExampleDefClone");
@@ -142,7 +146,8 @@ struct ExampleParamInit {
 };
 
 GTEST_TEST(PydrakePybindTest, ParamInit) {
-  py::module m("test");
+  py::module m =
+      py::module::create_extension_module("test", "", new PyModuleDef());
   {
     using Class = ExampleParamInit;
     py::class_<Class>(m, "ExampleParamInit")
@@ -168,7 +173,8 @@ int DoMain(int argc, char** argv) {
   py::scoped_interpreter guard;
   // Define nominal scope, and use a useful name for `ExecuteExtraPythonCode`
   // below.
-  py::module m("pydrake.test.pydrake_pybind_test");
+  py::module m = py::module::create_extension_module(
+      "pydrake.test.pydrake_pybind_test", "", new PyModuleDef());
   // Test coverage and use this method for `check_copy`.
   ExecuteExtraPythonCode(m);
   test::SynchronizeGlobalsForPython3(m);

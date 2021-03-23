@@ -24,8 +24,8 @@ constexpr int kOdeOrder = Element::Traits::kOdeOrder;
 class DirichletBoundaryConditionTest : public ::testing::Test {
  protected:
   void SetUp() {
-    bc_.AddBoundaryCondition(DofIndex(0), Vector<double, kOdeOrder + 1>(3, 2));
-    bc_.AddBoundaryCondition(DofIndex(2), Vector<double, kOdeOrder + 1>(1, 0));
+    bc_.AddBoundaryCondition(DofIndex(0), Vector2<double>(3, 2));
+    bc_.AddBoundaryCondition(DofIndex(2), Vector2<double>(1, 0));
   }
 
   /* Makes an arbitrary residual vector with appropriate size. */
@@ -54,14 +54,14 @@ class DirichletBoundaryConditionTest : public ::testing::Test {
   }
 
   /* The DirichletBoundaryCondition under test. */
-  DirichletBoundaryCondition<State> bc_;
+  DirichletBoundaryCondition<double> bc_{kOdeOrder};
 };
 
 /* Tests that the DirichletBoundaryCondition under test successfully modifies
  a given state. */
 TEST_F(DirichletBoundaryConditionTest, ApplyBcToState) {
   State s = MakeState();
-  bc_.ApplyBoundaryConditions(&s);
+  s.ApplyBoundaryCondition(bc_);
   EXPECT_TRUE(CompareMatrices(s.q(), Vector<double, kNumDofs>{3, 0.2, 1, 0.4}));
   EXPECT_TRUE(
       CompareMatrices(s.qdot(), Vector<double, kNumDofs>{2, 0.6, 0, 0.8}));
@@ -100,7 +100,7 @@ TEST_F(DirichletBoundaryConditionTest, OutOfBound) {
   bc_.AddBoundaryCondition(DofIndex(4), Vector<double, kOdeOrder + 1>(3, 4));
   State state = MakeState();
   DRAKE_EXPECT_THROWS_MESSAGE(
-  bc_.ApplyBoundaryConditions(&state), std::exception,
+    state.ApplyBoundaryCondition(bc_), std::exception,
           "An index of the dirichlet boundary condition is out of the range.");
   VectorXd b = MakeResidual();
   DRAKE_EXPECT_THROWS_MESSAGE(

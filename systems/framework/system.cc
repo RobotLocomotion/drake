@@ -338,8 +338,28 @@ T System<T>::CalcNextUpdateTime(const Context<T>& context,
   events->Clear();
   T time{NAN};
   DoCalcNextUpdateTime(context, events, &time);
-  using std::isnan;
-  DRAKE_ASSERT(!isnan(time));
+  using std::isnan, std::isfinite;
+
+  if (isnan(time)) {
+    throw std::logic_error(
+        fmt::format("System::CalcNextUpdateTime(): {} system '{}' overrode "
+                    "DoCalcNextUpdateTime() but at time={} it returned with no "
+                    "update time set (or the update time was set to NaN). "
+                    "Return infinity to indicate no next update time.",
+                    this->GetSystemType(), this->GetSystemPathname(),
+                    ExtractDoubleOrThrow(context.get_time())));
+  }
+
+  if (isfinite(time) && !events->HasEvents()) {
+    throw std::logic_error(fmt::format(
+        "System::CalcNextUpdateTime(): {} system '{}' overrode "
+        "DoCalcNextUpdateTime() but at time={} it returned update "
+        "time {} with an empty Event collection. Return infinity "
+        "to indicate no next update time; otherwise at least one "
+        "Event object must be provided even if it does nothing.",
+        this->GetSystemType(), this->GetSystemPathname(),
+        ExtractDoubleOrThrow(context.get_time()), ExtractDoubleOrThrow(time)));
+  }
 
   // If the context contains a perturbed current time, and
   // DoCalcNextUpdateTime() returned "right now" (which would be the

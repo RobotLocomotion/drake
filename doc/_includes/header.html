@@ -1,0 +1,31 @@
+<header class="site-header">
+  <div class="site-header-inner contain">
+    <a href="{{ site.baseurl }}/" class="drake-logo">
+      <img src="{{ site.custom.header_logo | relative_url }}">
+    </a>
+    <div class="menu-mobile-toggle">
+      <span></span>
+    </div>
+    <nav class="site-menu">
+      <ul>
+        {% for item in site.custom.header.menu_items %}
+        <li class="site-menu-item">
+          {% if item.url %}<a href="{{ item.url | relative_url }}" class="site-menu-item">{% endif %}{{ item.title }}{% if item.url %}</a>{% endif %}
+
+          {% if item contains "subfolderitems" %}
+            <div class="sub">
+            {% for entry in item.subfolderitems %}
+              <a href="{{ entry.url | relative_url }}" class="site-menu-item">{{ entry.page }}</a>
+            {% endfor %}
+            </div>
+          {% endif %}
+        </li>
+        {% endfor %}
+
+        <li class="github-link">
+          <a href="https://github.com/RobotLocomotion/drake" class="site-menu-item">GitHub <img src="{{ '/third_party/images/GitHub-Mark-Light-64px.png' | relative_url }}" /></a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</header>

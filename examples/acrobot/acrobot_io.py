@@ -1,5 +1,4 @@
 import numpy as np
-import yaml
 
 from pydrake.common.yaml import yaml_load, yaml_dump
 
@@ -40,18 +39,11 @@ def save_scenario(*, scenario, scenario_name):
 
 def load_output(*, filename=None, data=None):
     """Given an acrobot output `filename` xor `data`, loads and returns the
-    np.ndarray. NOTE: We re-implement this here (rather than using
-    `yaml_load`) in order to use `yaml.CLoader`, which greatly improves
-    performance, but cannot be used for all the cases supported by
-    yaml_load.
+    np.ndarray.
     """
-    if sum(bool(x) for x in [data, filename]) != 1:
-        raise RuntimeError("Must specify exactly one of data= and filename=")
-    if data:
-        x_tape_data = yaml.load(data, Loader=yaml.CLoader)
-    else:
-        with open(filename, "r") as data:
-            x_tape_data = yaml.load(data, Loader=yaml.CLoader)
+    x_tape_data = yaml_load(filename=filename, data=data)
+    if not x_tape_data:
+        raise RuntimeError("Could not load acrobot output")
     if "x_tape" not in x_tape_data:
         raise RuntimeError(f"Did not find 'x_tape' in {x_tape_data}")
     return np.array(x_tape_data["x_tape"])

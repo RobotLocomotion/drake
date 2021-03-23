@@ -80,10 +80,10 @@ class StaticElasticityElement final
   /* Implements FemElement::CalcResidual(). */
   void DoCalcResidual(const FemState<ElementType>& state,
                       EigenPtr<Vector<T, Traits::kNumDofs>> residual) const {
-    /* residual = -fₑ(x) + fₑₓₜ, where fₑ(x) is the elastic force and fₑₓₜ is
+    /* residual = -fₑ(x) - fₑₓₜ, where fₑ(x) is the elastic force and fₑₓₜ is
      the external force. */
     this->AddNegativeElasticForce(state, residual);
-    this->AddExternalForce(state, residual);
+    this->AddScaledExternalForce(state, -1, residual);
   }
 
   /* Implements FemElement::CalcStiffnessMatrix(). */

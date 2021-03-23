@@ -19,7 +19,6 @@
 #include "drake/geometry/proximity/collision_filter_legacy.h"
 #include "drake/geometry/proximity/collisions_exist_callback.h"
 #include "drake/geometry/proximity/distance_to_point_callback.h"
-#include "drake/geometry/proximity/distance_to_point_with_gradient.h"
 #include "drake/geometry/proximity/distance_to_shape_callback.h"
 #include "drake/geometry/proximity/find_collision_candidates_callback.h"
 #include "drake/geometry/proximity/hydroelastic_callback.h"
@@ -139,6 +138,7 @@ namespace {
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
+    std::string warn;
     std::string err;
 
     // Tinyobj doesn't infer the search directory from the directory containing
@@ -148,11 +148,14 @@ namespace {
     const std::string obj_folder = filename.substr(0, pos + 1);
     const char* mtl_basedir = obj_folder.c_str();
 
-    bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err,
+    bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err,
                                 filename.c_str(), mtl_basedir, triangulate);
     if (!ret || !err.empty()) {
       throw std::runtime_error("Error parsing file '" + filename +
                                "' : " + err);
+    }
+    if (!warn.empty()) {
+      drake::log()->warn("Warning parsing file '{}' : {}", filename, warn);
     }
 
     if (shapes.size() != 1) {
@@ -522,10 +525,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   void ImplementGeometry(const Capsule& capsule, void* user_data) override {
-    static const logging::Warn log_once(
-        "Capsule is currently not supported in hydroelastic contact model. "
-        "It is available for collision queries and pairwise signed distance "
-        "queries.");
     // Note: Using `shared_ptr` because of FCL API requirements.
     auto fcl_capsule =
         make_shared<fcl::Capsuled>(capsule.radius(), capsule.length());

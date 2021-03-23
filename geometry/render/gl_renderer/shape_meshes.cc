@@ -35,6 +35,7 @@ MeshData LoadMeshFromObj(std::istream* input_stream,
   tinyobj::attrib_t attrib;
   vector<tinyobj::shape_t> shapes;
   vector<tinyobj::material_t> materials;
+  string warn;
   string err;
   /* This renderer assumes everything is triangles -- we rely on tinyobj to
    triangulate for us. */
@@ -48,12 +49,12 @@ MeshData LoadMeshFromObj(std::istream* input_stream,
    Ignore material-library file.  */
   tinyobj::MaterialReader* material_reader = nullptr;
   const bool ret =
-      tinyobj::LoadObj(&attrib, &shapes, &materials, &err, input_stream,
+      tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, input_stream,
                        material_reader, do_tinyobj_triangulation);
-  /* As of tinyobj v1.0.6, we expect that `ret` will *always* be true. We are
-   capturing it and asserting it so that if the version advances, and false is
-   ever returned, CI will inform us so we can update the error messages.  */
-  DRAKE_DEMAND(ret == true);
+  if (!ret) {
+    throw std::runtime_error(
+        fmt::format("tinyobj::LoadObj failed to load file: {}", filename));
+  }
 
   if (shapes.empty()) {
     throw std::runtime_error(fmt::format(
@@ -134,6 +135,11 @@ MeshData LoadMeshFromObj(std::istream* input_stream,
         const int position_index = shape_mesh.indices[v_index].vertex_index;
         const int norm_index = shape_mesh.indices[v_index].normal_index;
         const int uv_index = shape_mesh.indices[v_index].texcoord_index;
+        // TODO(SeanCurtis-TRI) PR 14656 changed parse semantics. This error
+        // condition appears to no longer be reachable (it no longer appears
+        // in the unit tests) and the condition that this detects won't trigger
+        // this helpful message. Either clean up this case or find a way to give
+        // this feedback under the new tinyobj.
         if (norm_index < 0) {
           throw std::runtime_error(
               fmt::format("Not all faces reference normals: {}", filename));

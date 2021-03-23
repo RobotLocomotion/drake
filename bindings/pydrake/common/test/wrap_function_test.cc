@@ -81,7 +81,7 @@ GTEST_TEST(WrapFunction, Methods) {
 
 // Move-only arguments.
 struct MoveOnlyValue {
-  MoveOnlyValue() = default;
+  explicit MoveOnlyValue(int val) : value(val) {}
   MoveOnlyValue(const MoveOnlyValue&) = delete;
   MoveOnlyValue& operator=(const MoveOnlyValue&) = delete;
   MoveOnlyValue(MoveOnlyValue&&) = default;
@@ -118,6 +118,7 @@ GTEST_TEST(WrapFunction, ArgMoveOnly) {
 
 // Provides a functor which can be default constructed and moved only.
 struct MoveOnlyFunctor {
+  MoveOnlyFunctor() = default;
   MoveOnlyFunctor(const MoveOnlyFunctor&) = delete;
   MoveOnlyFunctor& operator=(const MoveOnlyFunctor&) = delete;
   MoveOnlyFunctor(MoveOnlyFunctor&&) = default;

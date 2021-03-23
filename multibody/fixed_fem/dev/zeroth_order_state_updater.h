@@ -25,9 +25,10 @@ class ZerothOrderStateUpdater final : public StateUpdater<State> {
   /* Implements StateUpdater::weights(). */
   Vector3<T> do_get_weights() const final { return {1, 0, 0}; }
 
-  /* Implements StateUpdater::DoUpdateState(). */
-  void DoUpdateState(const VectorX<T>& dz, State* state) const final {
-    state->set_q(state->q() + dz);
+  /* Implements StateUpdater::DoUpdateStateFromChangeInUnknowns(). */
+  void DoUpdateStateFromChangeInUnknowns(const VectorX<T>& dz,
+                                                  State* state) const final {
+    state->SetQ(state->q() + dz);
   }
 };
 }  // namespace fixed_fem

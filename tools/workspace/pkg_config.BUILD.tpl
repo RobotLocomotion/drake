@@ -15,6 +15,7 @@ cc_library(
     includes = %{includes},
     linkopts = %{linkopts},
     deps = %{deps},
+    deprecation = %{extra_deprecation},
 )
 
 %{build_epilog}

@@ -4,6 +4,7 @@
 #include <type_traits>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/unused.h"
 #include "drake/multibody/fixed_fem/dev/constitutive_model.h"
 #include "drake/multibody/fixed_fem/dev/fem_element.h"
 #include "drake/multibody/fixed_fem/dev/fem_state.h"
@@ -149,14 +150,16 @@ class ElasticityElement : public FemElement<DerivedElement, DerivedTraits> {
   }
 
   /** Accumulates the total external force exerted on the %ElasticityElement at
-   the given `state` into the output parameter `external_force`.
+   the given `state` scaled by `scale` into the output parameter
+   `external_force`.
    @pre external_force != nullptr. */
-  void AddExternalForce(
-      const FemState<DerivedElement>& state,
+  void AddScaledExternalForce(
+      const FemState<DerivedElement>& state, const T& scale,
       EigenPtr<Vector<T, Traits::kNumDofs>> external_force) const {
     DRAKE_ASSERT(external_force != nullptr);
+    unused(state);
     /* So far, the only external force is gravity. */
-    *external_force += gravity_force_;
+    *external_force += scale * gravity_force_;
   }
 
   /** Computes the gravity force on each node in the element using the stored

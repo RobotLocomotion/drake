@@ -232,16 +232,17 @@ void DoMain() {
                   hand_output_torque_converter.get_input_port());
 
   // Create the command subscriber and status publisher for the hand.
+  const double kLcmPeriod = examples::allegro_hand::kHardwareStatusPeriod;
   auto& hand_command_sub = *builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<lcmt_allegro_command>(
           "ALLEGRO_COMMAND", lcm));
   hand_command_sub.set_name("hand_command_subscriber");
   auto& hand_command_receiver =
-      *builder.AddSystem<AllegroCommandReceiver>(kAllegroNumJoints);
+      *builder.AddSystem<AllegroCommandReceiver>(kAllegroNumJoints, kLcmPeriod);
   hand_command_receiver.set_name("hand_command_receiver");
   auto& hand_status_pub = *builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_allegro_status>(
-          "ALLEGRO_STATUS", lcm, kLcmStatusPeriod /* publish period */));
+          "ALLEGRO_STATUS", lcm, kLcmPeriod /* publish period */));
   hand_status_pub.set_name("hand_status_publisher");
   auto& status_sender =
       *builder.AddSystem<AllegroStatusSender>(kAllegroNumJoints);

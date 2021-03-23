@@ -61,22 +61,19 @@ if [[ "${with_update}" -eq 1 ]]; then
 fi
 
 # TODO(jamiesnape): Remove lines tapping robotlocomotion/director and
-# uninstalling ipopt@3.11, vtk@8.2, ospray@1.8, and embree@3.5 on or after
-# 2021-03-01.
+# uninstalling numpy@1.19.4 and scipy@1.5.4 on or after 2021-05-01.
 brew tap robotlocomotion/director
 brew uninstall --force $(cat <<EOF
-robotlocomotion/director/ipopt@3.11
-robotlocomotion/director/vtk@8.2
-robotlocomotion/director/ospray@1.8
-robotlocomotion/director/embree@3.5
+robotlocomotion/director/scipy@1.5.4
+robotlocomotion/director/numpy@1.19.4
 EOF
 )
 
 brew bundle --file="${BASH_SOURCE%/*}/Brewfile" --no-lock
 
-if ! command -v /usr/local/opt/python@3.8/bin/pip3 &>/dev/null; then
-  echo 'ERROR: pip3 for python@3.8 is NOT installed. The post-install step for the python@3.8 formula may have failed.' >&2
+if ! command -v pip3.9 &>/dev/null; then
+  echo 'ERROR: pip3.9 is NOT installed. The post-install step for the python@3.9 formula may have failed.' >&2
   exit 2
 fi
 
-/usr/local/opt/python@3.8/bin/pip3 install --upgrade --requirement "${BASH_SOURCE%/*}/requirements.txt"
+pip3.9 install --upgrade --requirement "${BASH_SOURCE%/*}/requirements.txt"

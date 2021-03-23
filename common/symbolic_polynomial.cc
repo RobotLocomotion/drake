@@ -18,6 +18,7 @@ using std::ostream;
 using std::ostringstream;
 using std::pair;
 using std::runtime_error;
+using std::to_string;
 
 namespace drake {
 namespace symbolic {
@@ -493,6 +494,41 @@ Polynomial Polynomial::Differentiate(const Variable& x) const {
     // The variable `x` does not appear in this polynomial.
     return Polynomial{};  // Zero polynomial.
   }
+}
+
+Polynomial Polynomial::Integrate(const Variable& x) const {
+  if (decision_variables().include(x)) {
+    ostringstream oss;
+    oss << x << " is a decision variable of polynomial " << *this
+        << ".  Integration with respect to decision variables is not "
+        << "supported yet.";
+    throw runtime_error(oss.str());
+  }
+
+  // Case: x is an indeterminate (or does not appear).
+  // ∫ ∑ᵢ (cᵢ * mᵢ) dx = ∑ᵢ (cᵢ * ∫ mᵢ dx)
+  Polynomial::MapType map;
+  for (const pair<const Monomial, Expression>& term :
+        monomial_to_coefficient_map_) {
+    const Monomial& m{term.first};
+    const Expression& coeff{term.second};
+    int n = 0;
+    auto new_powers = m.get_powers();
+    auto it = new_powers.find(x);
+    if (it != new_powers.end()) {
+      n = it->second++;
+    } else {
+      new_powers.emplace_hint(it, x, 1);
+    }
+    DoAddProduct((coeff / (n + 1)).Expand(), Monomial(new_powers), &map);
+  }
+  return Polynomial{map};
+}
+
+Polynomial Polynomial::Integrate(const Variable& x, double a, double b) const {
+  // Note: This is still correct if a > b.
+  const auto p = this->Integrate(x);
+  return p.EvaluatePartial(x, b) - p.EvaluatePartial(x, a);
 }
 
 double Polynomial::Evaluate(const Environment& env) const {

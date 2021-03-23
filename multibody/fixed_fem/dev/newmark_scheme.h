@@ -6,7 +6,7 @@ namespace drake {
 namespace multibody {
 namespace fixed_fem {
 /** Implements the interface StateUpdater with Newmark-beta time integration
- scheme. Given the value for the current time step accleration `a`, the states
+ scheme. Given the value for the current time step acceleration `a`, the states
  are calculated from states from the previous time step according to the
  following equations:
 
@@ -48,24 +48,28 @@ class NewmarkScheme final : public StateUpdater<State> {
     return {beta_ * dt_ * dt_, gamma_ * dt_, 1.0};
   }
 
-  /* Implements StateUpdater::DoUpdateState(). */
-  void DoUpdateState(const VectorX<T>& dz, State* state) const final {
+  /* Implements StateUpdater::DoUpdateStateFromChangeInUnknowns(). */
+  void DoUpdateStateFromChangeInUnknowns(const VectorX<T>& dz,
+                                                  State* state) const final {
     const VectorX<T>& a = state->qddot();
     const VectorX<T>& v = state->qdot();
     const VectorX<T>& x = state->q();
-    state->set_qddot(a + dz);
-    state->set_qdot(v + dt_ * gamma_ * dz);
-    state->set_q(x + dt_ * dt_ * beta_ * dz);
+    state->SetQddot(a + dz);
+    state->SetQdot(v + dt_ * gamma_ * dz);
+    state->SetQ(x + dt_ * dt_ * beta_ * dz);
   }
 
   /* Implements StateUpdater::DoAdvanceOneTimeStep(). */
-  void DoAdvanceOneTimeStep(const State& prev_state, State* state) const final {
+  void DoAdvanceOneTimeStep(const State& prev_state,
+                            const VectorX<T>& highest_order_state,
+                            State* state) const final {
     const VectorX<T>& an = prev_state.qddot();
     const VectorX<T>& vn = prev_state.qdot();
     const VectorX<T>& xn = prev_state.q();
-    const VectorX<T>& a = state->qddot();
-    state->set_qdot(vn + dt_ * (gamma_ * a + (1.0 - gamma_) * an));
-    state->set_q(xn + dt_ * vn + dt_ * dt_ * (beta_ * a + (0.5 - beta_) * an));
+    const VectorX<T>& a = highest_order_state;
+    state->SetQddot(a);
+    state->SetQdot(vn + dt_ * (gamma_ * a + (1.0 - gamma_) * an));
+    state->SetQ(xn + dt_ * vn + dt_ * dt_ * (beta_ * a + (0.5 - beta_) * an));
   }
 
   double dt_{0};

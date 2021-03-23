@@ -166,6 +166,21 @@ class Polynomial {
     return J;
   }
 
+  /** Integrates this polynomial with respect to an indeterminate @p x.
+   * Integration with respect to decision variables is not supported yet. If @p
+   * x is not an indeterminate nor decision variable, then it will be added to
+   * the list of indeterminates.
+   * @throws std::exception if @p x is a decision variable.
+   */
+  Polynomial Integrate(const Variable& x) const;
+
+  /** Computes the definite integrate of this polynomial with respect to the
+   * indeterminate @p x over the domain [a, b].  Integration with respect to
+   * decision variables is not supported yet.
+   * @throws std::exception if @p x is a decision variable.
+   */
+  Polynomial Integrate(const Variable& x, double a, double b) const;
+
   /// Evaluates this polynomial under a given environment @p env.
   ///
   /// @throws std::out_of_range if there is a variable in this polynomial whose

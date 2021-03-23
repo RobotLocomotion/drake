@@ -1,6 +1,8 @@
 #pragma once
 
 #include <array>
+#include <memory>
+#include <utility>
 
 #include "drake/multibody/fixed_fem/dev/elasticity_element.h"
 #include "drake/multibody/fixed_fem/dev/fem_model.h"
@@ -56,8 +58,29 @@ class ElasticityModel : public FemModel<Element> {
     return gravity_;
   }
 
-  /** Calculates the total external force exerted on the %ElasticityModel at
-   the given `state`.
+  /** Sets explicitly specified external forces (with units of N) on the dofs in
+   the model. These explicit forces show up in the CalcResidual() and
+   CalcExternalForce(). To turn off explicit external forces, pass in an empty
+   vector.
+   @throw std::exception if the size of `forces` is greater than zero but not
+   equal to num_dofs().
+   @note If the size of the model is changed after SetExplicitExternalForce() is
+   called, an exception will be thrown when the model is evaluated unless
+   another SetExplicitExternalForce() is called with an external force of the
+   correct size. */
+  void SetExplicitExternalForce(const VectorX<T>& forces) {
+    if (forces.size() == 0 || forces.size() == this->num_dofs()) {
+      explicit_external_forces_ = forces;
+      return;
+    }
+    throw std::runtime_error(
+        "The input force has size " + std::to_string(forces.size()) +
+        ", and it doesn't match the size of the model, which has " +
+        std::to_string(this->num_dofs()) + " dofs.");
+  }
+
+  /** Calculates the total external force exerted on the vertices of
+   %ElasticityModel at the given `state`. The forces have units N.
    @param[in] state The FemState at which to evaluate the external force.
    @param[out] external_force The external force evaluated at `state`.
    @pre external_force != nullptr.
@@ -79,7 +102,7 @@ class ElasticityModel : public FemModel<Element> {
     Vector<T, kNumDofs> element_force;
     for (ElementIndex e(0); e < this->num_elements(); ++e) {
       element_force.setZero();
-      this->element(e).AddExternalForce(state, &element_force);
+      this->element(e).AddScaledExternalForce(state, 1, &element_force);
       const std::array<NodeIndex, kNumNodes>& element_node_indices =
           this->element(e).node_indices();
       for (int i = 0; i < kNumNodes; ++i) {
@@ -88,11 +111,17 @@ class ElasticityModel : public FemModel<Element> {
             element_force.template segment<kDim>(i * kDim);
       }
     }
+    /* Add in the contribution from explicitly set external force. */
+    AddScaledExplicitExternalForces(1, external_force);
   }
 
  protected:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ElasticityModel);
-  ElasticityModel() = default;
+
+  explicit ElasticityModel(
+      std::unique_ptr<StateUpdater<FemState<Element>>> state_updater)
+      : FemModel<Element>(std::move(state_updater)) {}
+
   virtual ~ElasticityModel() = default;
 
   /** Parse a tetrahedral volume mesh, store the positions of the vertices in
@@ -128,8 +157,34 @@ class ElasticityModel : public FemModel<Element> {
   const VectorX<T>& reference_positions() const { return reference_positions_; }
 
  private:
+  /* Adds per-vertex residuals that are explicitly specified at each vertex. */
+  void AddExplicitResidual(EigenPtr<VectorX<T>> residual) const final {
+    /* Note that external forces enter the residual with a negative sign. */
+    AddScaledExplicitExternalForces(-1, residual);
+  }
+
+  /* Adds the stored `explicit_external_forces_` scaled by `scale` to the given
+   `f`. Throw an exception if their sizes don't match. */
+  void AddScaledExplicitExternalForces(const T& scale,
+                                       EigenPtr<VectorX<T>> f) const {
+    if (explicit_external_forces_.size() == f->size()) {
+      *f += scale * explicit_external_forces_;
+      return;
+    }
+    if (explicit_external_forces_.size() != 0) {
+      throw std::runtime_error(
+          "The input force has size " + std::to_string(f->size()) +
+          ", and it doesn't match the size of the stored explicit external "
+          "force which has size " +
+          std::to_string(explicit_external_forces_.size()));
+    }
+  }
+
   VectorX<T> reference_positions_{};
   Vector<T, Element::Traits::kSpatialDimension> gravity_{0, 0, -9.81};
+  /* Explicit external force set by SetExplicitExternalForce. Default is empty.
+   */
+  VectorX<T> explicit_external_forces_{};
 };
 }  // namespace fixed_fem
 }  // namespace multibody

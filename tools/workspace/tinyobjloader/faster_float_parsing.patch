@@ -1,0 +1,154 @@
+--- tiny_obj_loader.h.orig	2017-04-24 15:34:45.000000000 -0400
++++ tiny_obj_loader.h	2019-06-19 15:57:29.479457051 -0400
+@@ -62,6 +62,14 @@ THE SOFTWARE.
+ #include <map>
+ #include <string>
+ #include <vector>
++#include <math.h>
++#include <stdlib.h>
++
++#if defined(__APPLE__)
++#include <xlocale.h>
++#else
++#include <locale.h>
++#endif
+ 
+ namespace tinyobj {
+ 
+@@ -839,125 +847,20 @@ static bool tryParseDouble(const char *s, const char *s_end, double *result) {
+     return false;
+   }
+ 
+-  double mantissa = 0.0;
+-  // This exponent is base 2 rather than 10.
+-  // However the exponent we parse is supposed to be one of ten,
+-  // thus we must take care to convert the exponent/and or the
+-  // mantissa to a * 2^E, where a is the mantissa and E is the
+-  // exponent.
+-  // To get the final double we will use ldexp, it requires the
+-  // exponent to be in base 2.
+-  int exponent = 0;
+-
+-  // NOTE: THESE MUST BE DECLARED HERE SINCE WE ARE NOT ALLOWED
+-  // TO JUMP OVER DEFINITIONS.
+-  char sign = '+';
+-  char exp_sign = '+';
+-  char const *curr = s;
+-
+-  // How many characters were read in a loop.
+-  int read = 0;
+-  // Tells whether a loop terminated due to reaching s_end.
+-  bool end_not_reached = false;
+-  bool leading_decimal_dots = false;
+-
+-  /*
+-          BEGIN PARSING.
+-  */
+-
+-  // Find out what sign we've got.
+-  if (*curr == '+' || *curr == '-') {
+-    sign = *curr;
+-    curr++;
+-    if ((curr != s_end) && (*curr == '.')) {
+-      // accept. Somethig like `.7e+2`, `-.5234`
+-      leading_decimal_dots = true;
+-    }
+-  } else if (IS_DIGIT(*curr)) { /* Pass through. */
+-  } else if (*curr == '.') {
+-    // accept. Somethig like `.7e+2`, `-.5234`
+-    leading_decimal_dots = true;
+-  } else {
+-    goto fail;
+-  }
+-
+-  // Read the integer part.
+-  end_not_reached = (curr != s_end);
+-  if (!leading_decimal_dots) {
+-    while (end_not_reached && IS_DIGIT(*curr)) {
+-      mantissa *= 10;
+-      mantissa += static_cast<int>(*curr - 0x30);
+-      curr++;
+-      read++;
+-      end_not_reached = (curr != s_end);
+-    }
+-
+-    // We must make sure we actually got something.
+-    if (read == 0) goto fail;
+-  }
++#if defined(__APPLE__)
++  static locale_t c_locale = newlocale(LC_ALL_MASK, NULL, NULL);
++#else
++  static locale_t c_locale = newlocale(LC_ALL_MASK, "C", (locale_t)0);
++#endif
+ 
+-  // We allow numbers of form "#", "###" etc.
+-  if (!end_not_reached) goto assemble;
+-
+-  // Read the decimal part.
+-  if (*curr == '.') {
+-    curr++;
+-    read = 1;
+-    end_not_reached = (curr != s_end);
+-    while (end_not_reached && IS_DIGIT(*curr)) {
+-      static const double pow_lut[] = {
+-          1.0, 0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001, 0.0000001,
+-      };
+-      const int lut_entries = sizeof pow_lut / sizeof pow_lut[0];
+-
+-      // NOTE: Don't use powf here, it will absolutely murder precision.
+-      mantissa += static_cast<int>(*curr - 0x30) *
+-                  (read < lut_entries ? pow_lut[read] : std::pow(10.0, -read));
+-      read++;
+-      curr++;
+-      end_not_reached = (curr != s_end);
+-    }
+-  } else if (*curr == 'e' || *curr == 'E') {
++  char *str_end = NULL;
++  const double val = strtod_l(s, &str_end, c_locale);
++  if (str_end != s && isfinite(val)) {
++    *result = val;
++    return true;
+   } else {
+-    goto assemble;
+-  }
+-
+-  if (!end_not_reached) goto assemble;
+-
+-  // Read the exponent part.
+-  if (*curr == 'e' || *curr == 'E') {
+-    curr++;
+-    // Figure out if a sign is present and if it is.
+-    end_not_reached = (curr != s_end);
+-    if (end_not_reached && (*curr == '+' || *curr == '-')) {
+-      exp_sign = *curr;
+-      curr++;
+-    } else if (IS_DIGIT(*curr)) { /* Pass through. */
+-    } else {
+-      // Empty E is not allowed.
+-      goto fail;
+-    }
+-
+-    read = 0;
+-    end_not_reached = (curr != s_end);
+-    while (end_not_reached && IS_DIGIT(*curr)) {
+-      exponent *= 10;
+-      exponent += static_cast<int>(*curr - 0x30);
+-      curr++;
+-      read++;
+-      end_not_reached = (curr != s_end);
+-    }
+-    exponent *= (exp_sign == '+' ? 1 : -1);
+-    if (read == 0) goto fail;
++    return false;
+   }
+-
+-assemble:
+-  *result = (sign == '+' ? 1 : -1) *
+-            (exponent ? std::ldexp(mantissa * std::pow(5.0, exponent), exponent)
+-                      : mantissa);
+-  return true;
+-fail:
+-  return false;
+ }
+ 
+ static inline real_t parseReal(const char **token, double default_value = 0.0) {

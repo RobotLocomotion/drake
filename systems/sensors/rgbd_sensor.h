@@ -57,13 +57,14 @@ namespace sensors {
 
  By default, frames B, C, and D are coincident and aligned. These can be
  changed using the `camera_poses` constructor parameter. Frames C and D are
- always rigidly affixed to the sensor body frame B.
-
- <!-- TODO(SeanCurtis-TRI): Relax these assumptions into more general sensors.
- -->
- In terms of the camera intrinsics outlined in CameraInfo, this sensor assumes
- that each camera's principal point is in the center of the image and that the
- focal lengths in both the x- and y-directions are equal.
+ always rigidly affixed to the sensor body frame B. As documented in the
+ @ref camera_axes_in_image "CameraInfo documentation", the color and depth
+ cameras "look" in the positive Cz and Dz directions, respectively with the
+ positive Cy and Dy directions pointing to the bottom of the image. If R_BC and
+ R_BD are the identity rotation, we can apply the same reasoning to the body
+ frame: look in the +Bz direction with the +By direction pointing down in the
+ image. Only if the depth or color frames are re-oriented relative to the body
+ does further reasoning need to be applied.
 
  Output port image formats:
 

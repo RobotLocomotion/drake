@@ -73,11 +73,12 @@ const BodyType<T>& MultibodyTree<T>::AddBody(
       &internal::BodyAttorney<T>::get_mutable_body_frame(body.get());
   body_frame->set_parent_tree(this, body_frame_index);
   DRAKE_ASSERT(body_frame->name() == body->name());
-  frame_name_to_index_.insert({body_frame->name(), body_frame_index});
+  this->SetElementIndex(body_frame->name(), body_frame_index,
+                        &frame_name_to_index_);
   frames_.push_back(body_frame);
   // - Register body.
   BodyType<T>* raw_body_ptr = body.get();
-  body_name_to_index_.insert({body->name(), body->index()});
+  this->SetElementIndex(body->name(), body->index(), &body_name_to_index_);
   owned_bodies_.push_back(std::move(body));
   return *raw_body_ptr;
 }
@@ -148,7 +149,7 @@ const FrameType<T>& MultibodyTree<T>::AddFrame(
   frame->set_parent_tree(this, frame_index);
   FrameType<T>* raw_frame_ptr = frame.get();
   frames_.push_back(raw_frame_ptr);
-  frame_name_to_index_.insert(std::make_pair(frame->name(), frame_index));
+  this->SetElementIndex(frame->name(), frame_index, &frame_name_to_index_);
   owned_frames_.push_back(std::move(frame));
   return *raw_frame_ptr;
 }
@@ -303,7 +304,7 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
   const JointIndex joint_index(owned_joints_.size());
   joint->set_parent_tree(this, joint_index);
   JointType<T>* raw_joint_ptr = joint.get();
-  joint_name_to_index_.insert({joint->name(), joint->index()});
+  this->SetElementIndex(joint->name(), joint->index(), &joint_name_to_index_);
   owned_joints_.push_back(std::move(joint));
   return *raw_joint_ptr;
 }
@@ -365,7 +366,7 @@ const JointActuator<T>& MultibodyTree<T>::AddJointActuator(
       std::make_unique<JointActuator<T>>(name, joint, effort_limit));
   JointActuator<T>* actuator = owned_actuators_.back().get();
   actuator->set_parent_tree(this, actuator_index);
-  actuator_name_to_index_.insert(std::make_pair(name, actuator_index));
+  this->SetElementIndex(name, actuator_index, &actuator_name_to_index_);
   return *actuator;
 }
 
@@ -384,7 +385,7 @@ ModelInstanceIndex MultibodyTree<T>::AddModelInstance(const std::string& name) {
                            "details.");
   }
   const ModelInstanceIndex index(num_model_instances());
-  instance_name_to_index_[name] = index;
+  this->SetElementIndex(name, index, &instance_name_to_index_);
   instance_index_to_name_[index] = name;
   return index;
 }

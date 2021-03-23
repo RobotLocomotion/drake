@@ -18,10 +18,7 @@ namespace drake {
 namespace examples {
 namespace allegro_hand {
 
-// The publication period of hand status publish.
-// TODO(WenzhenYuan-TRI): match the value with the real hand's communication
-// rate.
-const double kLcmStatusPeriod = 0.003;
+const double kHardwareStatusPeriod = 0.003;
 
 /// Handles lcmt_allegro_command messages from a LcmSubscriberSystem.
 /// Has two output ports: one for the commanded position for each joint along
@@ -31,7 +28,8 @@ class AllegroCommandReceiver : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AllegroCommandReceiver)
 
-  explicit AllegroCommandReceiver(int num_joints = kAllegroNumJoints);
+  AllegroCommandReceiver(int num_joints = kAllegroNumJoints,
+                         double lcm_period = kHardwareStatusPeriod);
 
   /// Sets the initial position of the controlled hand prior to any
   /// commands being received.  @param x contains the starting position.
@@ -50,6 +48,10 @@ class AllegroCommandReceiver : public systems::LeafSystem<double> {
     return this->get_output_port(torque_output_port_);
   }
 
+  double lcm_period() const {
+    return lcm_period_;
+  }
+
  private:
   void CopyStateToOutput(const systems::Context<double>& context, int start_idx,
                          int length,
@@ -64,6 +66,7 @@ class AllegroCommandReceiver : public systems::LeafSystem<double> {
   int state_output_port_ = 0;
   int torque_output_port_ = 0;
   const int num_joints_ = 16;
+  const double lcm_period_;
 };
 
 /// Creates and outputs lcmt_allegro_status messages.

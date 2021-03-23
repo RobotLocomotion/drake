@@ -198,7 +198,7 @@ void VerifyCylinderMeshWithMa(const VolumeMesh<double>& mesh,
   //     each tetrahedron has at least one interior vertex.
   std::vector<VolumeVertexIndex> boundary_vertices =
       CollectUniqueVertices(IdentifyBoundaryFaces(mesh.tetrahedra()));
-  for (const VolumeElement tetrahedron : mesh.tetrahedra()) {
+  for (const VolumeElement& tetrahedron : mesh.tetrahedra()) {
     bool tetrahedron_has_an_interior_vertex = false;
     for (int i = 0;
          i < mesh.kVertexPerElement && !tetrahedron_has_an_interior_vertex;
@@ -326,44 +326,6 @@ GTEST_TEST(MakeCylinderVolumeMesh, CoarsestMesh) {
   auto mesh_fine = MakeCylinderVolumeMesh<double>(Cylinder(radius, length),
                                                   resolution_hint_below);
   EXPECT_EQ(192, mesh_fine.num_elements());
-}
-
-// The test size is increased to "medium" so that debug builds are successful
-// in CI. See BUILD.bazel.
-GTEST_TEST(MakeCylinderVolumeMesh, FinestMesh) {
-  const double radius = 1.0;
-  const double length = 2.0;
-  // The initial mesh of a cylinder with radius 1 and length 2 has 24
-  // tetrahedra. Each refinement level increases the number of tetrahedra by
-  // a factor of 8. A refinement level ℒ that could increase tetrahedra beyond
-  // 100 million is ℒ = 8, which will give 24 * 8⁸ = 402,653,184 tetrahedra.
-  // (However, we will confirm later that the algorithm will limit the number
-  // of tetrahedra within 100 million, so it should give
-  // 24 * 8⁷ = 50,331,648 tetrahedra instead.) We will calculate the
-  // resolution hint that could trigger ℒ = 8.
-  //     Each edge of the mesh on the boundary circle of the top and bottom
-  // caps is a chord of the circle with a central angle θ. The edge length e
-  // is calculated from θ and radius r as:
-  //     e = 2⋅r⋅sin(θ/2)
-  // The central angle is initially π/2, and each level of refinement
-  // decreases it by a factor of 2. For ℒ = 8, we have:
-  //     θ = (π/2)/(2⁸) = π/512
-  // Thus, we have e = 2 sin (π/512) = 0.0122717...
-  //     We use a resolution hint smaller than e in the sixth decimal digit to
-  // request 402,653,184 tetrahedra, but the algorithm should limit the
-  // number of tetrahedra within 100 million. As a result, we should have
-  // 50,331,648 tetrahedra instead.
-  const double resolution_hint_limit = 1.2271e-2;
-  auto mesh_limit = MakeCylinderVolumeMesh<double>(Cylinder(radius, length),
-                                                   resolution_hint_limit);
-  EXPECT_EQ(50331648, mesh_limit.num_elements());
-
-  // Confirm that going ten times finer resolution hint does not increase the
-  // number of tetrahedra.
-  const double resolution_hint_finer = 1.2271e-3;
-  auto mesh_same = MakeCylinderVolumeMesh<double>(Cylinder(radius, length),
-                                                   resolution_hint_finer);
-  EXPECT_EQ(50331648, mesh_same.num_elements());
 }
 
 // This test verifies that the volume of the tessellated

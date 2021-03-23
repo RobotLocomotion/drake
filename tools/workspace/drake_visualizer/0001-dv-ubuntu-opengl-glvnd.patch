@@ -1,0 +1,95 @@
+From 11f988658c1d659d2172aa9d265fe03408e6448c Mon Sep 17 00:00:00 2001
+From: Jamie Snape <jamie.snape@kitware.com>
+Date: Wed, 7 Mar 2018 12:00:00 -0400
+Subject: [PATCH] Link to GLVND instead of legacy OpenGL
+
+---
+ distro/superbuild/cmake/externals.cmake |  1 +
+ src/app/CMakeLists.txt                  |  5 ++++-
+ src/vtk/DRCFilters/CMakeLists.txt       | 11 +++++++----
+ 3 files changed, 12 insertions(+), 5 deletions(-)
+
+diff --git a/distro/superbuild/cmake/externals.cmake b/distro/superbuild/cmake/externals.cmake
+index 7b35aee1..6dbb180c 100644
+--- a/distro/superbuild/cmake/externals.cmake
++++ b/distro/superbuild/cmake/externals.cmake
+@@ -267,6 +267,7 @@ ExternalProject_Add(PythonQt
+     ${default_cmake_args}
+     ${qt_args}
+     ${python_args}
++    -DOpenGL_GL_PREFERENCE:STRING=GLVND
+     -DPythonQt_Wrap_Qtcore:BOOL=ON
+     -DPythonQt_Wrap_Qtgui:BOOL=ON
+     -DPythonQt_Wrap_Qtuitools:BOOL=ON
+diff --git a/src/app/CMakeLists.txt b/src/app/CMakeLists.txt
+index d89b8cb8..e2f74c97 100644
+--- a/src/app/CMakeLists.txt
++++ b/src/app/CMakeLists.txt
+@@ -1,5 +1,6 @@
+ find_package(PythonQt REQUIRED)
+ find_package(CTKPythonConsole REQUIRED)
++set(OpenGL_GL_PREFERENCE GLVND)
+ find_package(OpenGL REQUIRED)
+ find_package(QtPropertyBrowser REQUIRED)
+ if(DD_QT_VERSION EQUAL 4)
+@@ -156,7 +157,9 @@ set(deps
+   ${CTK_PYTHONCONSOLE_LIBRARIES}
+   ${PYTHONQT_LIBRARIES}
+   ${QTPROPERTYBROWSER_LIBRARY}
+-  ${OPENGL_LIBRARIES}
++  OpenGL::GLU
++  OpenGL::GLX
++  OpenGL::OpenGL
+   ${VTK_LIBRARIES}
+   )
+ 
+diff --git a/src/vtk/DRCFilters/CMakeLists.txt b/src/vtk/DRCFilters/CMakeLists.txt
+index 52e71541..7ebf9695 100644
+--- a/src/vtk/DRCFilters/CMakeLists.txt
++++ b/src/vtk/DRCFilters/CMakeLists.txt
+@@ -3,6 +3,7 @@
+ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+ include_directories(${CMAKE_CURRENT_BINARY_DIR})
+ 
++set(OpenGL_GL_PREFERENCE GLVND)
+ find_package(OpenGL REQUIRED)
+ 
+ find_package(Eigen REQUIRED)
+@@ -86,7 +87,9 @@ set(VTK_LIBRARIES
+ 
+ set(deps
+   ${VTK_LIBRARIES}
+-  ${OPENGL_LIBRARIES}
++  OpenGL::GLU
++  OpenGL::GLX
++  OpenGL::OpenGL
+   )
+ 
+ set(pkg_deps)
+@@ -164,7 +167,7 @@ if(USE_LCMGL)
+   include_directories(${LIBBOT_INCLUDE_DIRS})
+   list(APPEND sources vtkLCMGLProp.cxx)
+   list(APPEND headers vtkLCMGLProp.h)
+-  list(APPEND deps ${LIBBOT_LIBRARIES} ${OPENGL_LIBRARIES})
++  list(APPEND deps ${LIBBOT_LIBRARIES} OpenGL::GLX OpenGL::GLU OpenGL::OpenGL)
+ 
+ endif()
+ 
+@@ -175,7 +178,7 @@ if(USE_OCTOMAP)
+   find_library(OCTOVIS_LIBRARY octovis)
+   list(APPEND sources vtkOctomap.cxx)
+   list(APPEND headers vtkOctomap.h)
+-  list(APPEND deps ${LIBBOT_LIBRARIES} ${OPENGL_LIBRARIES} ${OCTOVIS_LIBRARY})
++  list(APPEND deps ${LIBBOT_LIBRARIES} OpenGL::GLX OpenGL::GLU OpenGL::OpenGL ${OCTOVIS_LIBRARY})
+ 
+   list(APPEND pkg_deps
+     lcmtypes_octomap-utils
+@@ -187,7 +190,7 @@ if (USE_COLLECTIONS)
+ 
+   list(APPEND sources vtkCollections.cxx)
+   list(APPEND headers vtkCollections.h)
+-  list(APPEND deps ${OPENGL_LIBRARIES})
++  list(APPEND deps OpenGL::GLX OpenGL::GLU OpenGL::OpenGL)
+ 
+   list(APPEND pkg_deps
+     lcmtypes_visualization

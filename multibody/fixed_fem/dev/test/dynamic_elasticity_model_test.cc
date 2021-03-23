@@ -9,7 +9,6 @@
 #include "drake/multibody/fixed_fem/dev/fem_state.h"
 #include "drake/multibody/fixed_fem/dev/linear_constitutive_model.h"
 #include "drake/multibody/fixed_fem/dev/linear_simplex_element.h"
-#include "drake/multibody/fixed_fem/dev/newmark_scheme.h"
 #include "drake/multibody/fixed_fem/dev/simplex_gaussian_quadrature.h"
 
 namespace drake {
@@ -40,8 +39,6 @@ constexpr int kNumDofs = kNumCubeVertices * kSolutionDimension;
 constexpr int kNumElements = 6;
 /* Parameters for Newmark scheme. */
 const double kDt = 1e-3;
-const double kGamma = 0.2;
-const double kBeta = 0.3;
 /* Parameters for the damping model. */
 const double kMassDamping = 0.01;
 const double kStiffnessDamping = 0.02;
@@ -52,7 +49,7 @@ class DynamicElasticityModelTest : public ::testing::Test {
   static geometry::VolumeMesh<T> MakeBoxTetMesh() {
     const double length = 0.1;
     geometry::Box box(length, length, length);
-    geometry::VolumeMesh mesh =
+    geometry::VolumeMesh<T> mesh =
         geometry::internal::MakeBoxVolumeMesh<T>(box, length);
     DRAKE_DEMAND(mesh.num_elements() == 6);
     return mesh;
@@ -90,16 +87,15 @@ class DynamicElasticityModelTest : public ::testing::Test {
         math::autoDiffToValueMatrix(deformed_state.qddot()) + perturbation();
     Vector<T, kNumDofs> perturbed_qddot_autodiff;
     math::initializeAutoDiff(perturbed_qddot, perturbed_qddot_autodiff);
-    deformed_state.set_qddot(perturbed_qddot_autodiff);
-    /* It's important to set up the `deformed_state` with `state_updater_` so
-     that the derivatives such as dq/dqddot are set up. */
-    state_updater_.AdvanceOneTimeStep(reference_state, &deformed_state);
+    /* It's important to set up the `deformed_state` with AdvanceOneTimeStep()
+     so that the derivatives such as dq/dqddot are set up. */
+    model_.AdvanceOneTimeStep(reference_state, perturbed_qddot_autodiff,
+                              &deformed_state);
     return deformed_state;
   }
 
   /* The model under test. */
-  DynamicElasticityModel<ElementType> model_;
-  const NewmarkScheme<FemState<ElementType>> state_updater_{kDt, kGamma, kBeta};
+  DynamicElasticityModel<ElementType> model_{kDt};
 };
 
 /* Tests the mesh has been successfully converted to elements. */
@@ -118,7 +114,7 @@ TEST_F(DynamicElasticityModelTest, TangentMatrixIsResidualDerivative) {
 
   Eigen::SparseMatrix<T> tangent_matrix;
   model_.SetTangentMatrixSparsityPattern(&tangent_matrix);
-  model_.CalcTangentMatrix(state, state_updater_.weights(), &tangent_matrix);
+  model_.CalcTangentMatrix(state, &tangent_matrix);
 
   /* In the discretization of the unit cube by 6 tetrahedra, there are 19 edges,
    and 8 nodes, creating 19*2 + 8 blocks of 3-by-3 nonzero entries. Hence the

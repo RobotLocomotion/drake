@@ -17,6 +17,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/query_object.h"
@@ -375,6 +376,50 @@ GTEST_TEST(MultibodyPlantTest, AddMultibodyPlantSceneGraph) {
   // These should fail:
   // AddMultibodyPlantSceneGraphResult<double> extra(plant, scene_graph);
   // AddMultibodyPlantSceneGraphResult<double> extra{*plant, *scene_graph};
+}
+
+// Verifies that string-based queries allocate no heap.
+//
+// NOTE: Every querying API that takes strings as parameters should conform to
+// this non-allocating convention. As such, they should be invoked in this
+// test to show that they adhere to that expectation. It should be considered
+// to be a defect if such an API exists and is omitted here (for whatever
+// historical reason).
+GTEST_TEST(MultibodyPlantTest, NoHeapAllocOnStringQueries) {
+  // Construct a plant with an Iiwa.
+  const char kSdfPath[] =
+      "drake/manipulation/models/iiwa_description/sdf/"
+      "iiwa14_no_collision.sdf";
+  auto plant =
+      std::make_unique<MultibodyPlant<double>>(0 /* plant type irrelevant */);
+  Parser parser(plant.get());
+  multibody::ModelInstanceIndex iiwa_instance =
+      parser.AddModelFromFile(FindResourceOrThrow(kSdfPath), "iiwa");
+  plant->Finalize();
+
+  // Use string to ensure that there is no heap allocation in the implicit
+  // conversion to string_view.
+  const std::string kLinkName = "iiwa_link_0";
+  const std::string kJointName = "iiwa_joint_1";
+
+  // Note that failed queries cause exceptions to be thrown (which allocates
+  // heap).
+  drake::test::LimitMalloc dummy;
+
+  // Check the HasX versions first. Note that functions that take no model
+  // instance argument delgate to model instance argument versions.
+  EXPECT_TRUE(plant->HasModelInstanceNamed("iiwa"));
+  EXPECT_TRUE(plant->HasBodyNamed(kLinkName, iiwa_instance));
+  EXPECT_TRUE(plant->HasFrameNamed(kLinkName, iiwa_instance));
+  EXPECT_TRUE(plant->HasJointNamed(kJointName, iiwa_instance));
+  EXPECT_TRUE(plant->HasJointActuatorNamed(kJointName, iiwa_instance));
+
+  // Check the GetX versions now.
+  plant->GetModelInstanceByName("iiwa");
+  plant->GetBodyByName(kLinkName, iiwa_instance);
+  plant->GetFrameByName(kLinkName, iiwa_instance);
+  plant->GetJointByName(kJointName, iiwa_instance);
+  plant->GetJointActuatorByName(kJointName, iiwa_instance);
 }
 
 GTEST_TEST(MultibodyPlantTest, EmptyWorldDiscrete) {
@@ -1405,6 +1450,34 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesWeldedTo) {
               UnorderedElementsAre(&plant_ad->world_body(), &extra_ad));
   EXPECT_THAT(plant_ad->GetBodiesWeldedTo(lower_ad),
               UnorderedElementsAre(&upper_ad, &lower_ad));
+}
+
+// Regression test for unhelpful error message -- see #14641.
+GTEST_TEST(MultibodyPlantTest, ReversedWeldError) {
+  // This test expects that the following model has a world body and a pair of
+  // welded-together bodies.
+  const std::string sdf_file =
+      FindResourceOrThrow("drake/multibody/plant/test/split_pendulum.sdf");
+  MultibodyPlant<double> plant(0.0);
+  Parser(&plant).AddModelFromFile(sdf_file);
+
+  // Add a new body, and weld it in the wrong direction using `WeldFrames`.
+  const Body<double>& extra = plant.AddRigidBody(
+      "extra", default_model_instance(), SpatialInertia<double>());
+  plant.WeldFrames(extra.body_frame(), plant.world_frame());
+
+  // The important property of this message is that it reports some identifier
+  // for the involved objects, so at least the developer can map those back to
+  // objects and deduce what API call was in error. If the details of the
+  // message change, update this check to match. If in future the error can be
+  // caught at the WeldFrames() step, so much the better. Modify this test to
+  // reflect that.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.Finalize(),
+      std::runtime_error,
+      "This multibody tree already has a mobilizer connecting "
+      "inboard frame \\(index=0\\) and outboard frame \\(index=\\d*\\). "
+      "More than one mobilizer between two frames is not allowed.");
 }
 
 // Utility to verify that the only ports of MultibodyPlant that are feedthrough

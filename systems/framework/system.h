@@ -273,6 +273,7 @@ class System : public SystemBase {
        get_time_derivatives_cache_entry() */
   const ContinuousState<T>& EvalTimeDerivatives(
       const Context<T>& context) const {
+    ValidateContext(context);
     const CacheEntry& entry = get_time_derivatives_cache_entry();
     return entry.Eval<ContinuousState<T>>(context);
   }
@@ -639,6 +640,10 @@ class System : public SystemBase {
   triggered through other mechanisms (e.g. GetPerStepEvents()), and the
   merged CompositeEventCollection will be passed to all event handling
   mechanisms.
+
+  If there is no timed event coming, the return value is Infinity. If
+  a finite update time is returned, there will be at least one Event object
+  in the returned event collection.
 
   @p events cannot be null. @p events will be cleared on entry. */
   T CalcNextUpdateTime(const Context<T>& context,
@@ -1440,6 +1445,11 @@ class System : public SystemBase {
   error-checked the parameters so you don't have to. You may assume that
   @p context has already been validated and @p events pointer is not
   null.
+
+  If you override this method, you _must_ set the returned @p time. Set it to
+  Infinity if there are no upcoming timed events. If you return a finite update
+  time, you _must_ put at least one Event object in the @p events collection.
+  These requirements are enforced by the public CalcNextUpdateTime() method.
 
   The default implementation returns with the next sample time being
   Infinity and no events added to @p events. */

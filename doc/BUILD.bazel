@@ -8,81 +8,88 @@ load(
     "drake_py_library",
     "drake_py_unittest",
 )
+load(
+    ":defs.bzl",
+    "DEFAULT_BINARY_TAGS",
+    "DEFAULT_TEST_TAGS",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-# Unless `setup/ubuntu/install_prereqs.sh --with-doc-only` has been run, most
-# targets in this package will fail to build, so by default we'll disable them.
-#
-# A developer will have to explicitly opt-in in order to build these.
-_DEFAULT_BINARY_TAGS = [
-    "manual",
-]
-
-# Unless `setup/ubuntu/install_prereqs.sh --with-doc-only` has been run, most
-# tests in this package will fail to pass, so by default we'll disable them.
-#
-# A developer will have to explicitly opt-in in order to test these.
-_DEFAULT_TEST_TAGS = [
-    "manual",
-    # Some (currently disabled) Sphinx extensions try to reach out to the
-    # network; we should fail-fast if someone tries to turn them on.  In
-    # general, none our documentation tools should hit the internet, but
-    # their ecosystems might be doing so without us being aware.
-    "block-network",
-]
-
-drake_py_library(
-    name = "sphinx_base",
-    srcs = ["sphinx_base.py"],
-    data = ["@sphinx//:sphinx-build"],
-    tags = _DEFAULT_BINARY_TAGS,
-    deps = ["@rules_python//python/runfiles"],
+# For maximum browser compatibility these should be at the root of the
+# generated website and should not be renamed.
+filegroup(
+    name = "favicon",
+    srcs = [
+        # Manual resizing and padding of "assets/drake-dragon.png" to
+        # 192x192px.
+        "android-chrome.png",
+        # Manual resizing and padding of "assets/drake-dragon.png" to
+        # 180x180px.
+        "apple-touch-icon.png",
+        # Minimal configuration for Microsoft browsers. Versions of Edge prior
+        # to the change to WebKit always request a file named
+        # "browserconfig.xml" whether or not an alternative is specified in the
+        # HTML.
+        "browserconfig.xml",
+        # Apple Safari always requests a file named "favicon.ico" whether or
+        # not an alternative favicon is specified in the HTML.
+        # Manual resizing and padding of "assets/drake-dragon.png" to 32x32px
+        # and conversion to ICO format.
+        "favicon.ico",
+        # Manual resizing and padding of "assets/drake-dragon.png" to 32x32px.
+        "favicon.png",
+        # Mask icon for Safari pinned tabs.
+        # Manual removal of colors and layers from "assets/drake-dragon.svg"
+        # and transformation to a 0 0 16 16 view box.
+        "mask-icon.svg",
+        # Site manifest primarily for Android and Chrome.
+        # https://developer.mozilla.org/en-US/docs/Web/Manifest
+        "site.webmanifest",
+    ],
 )
 
-drake_py_binary(
-    name = "gen_sphinx",
-    srcs = ["gen_sphinx.py"],
-    add_test_rule = 1,
-    data = glob([
-        "**/*.rst",
-    ]) + [
-        "conf.py",
-        "images/favicon.ico",
+filegroup(
+    name = "images",
+    srcs = [
+        "images/drake-dragon.png",
+        "images/drake-logo.svg",
+        "images/drake-logo-white.svg",
         "images/jenkins_bot_reviewable_comment.png",
-        "images/logo_w_text.jpg",
-        "images/mathematical_program.svg",
-        "images/systems.svg",
-        "sample_vimrc",
     ],
-    tags = _DEFAULT_BINARY_TAGS,
-    test_rule_args = ["--out_dir=<test>"],
-    test_rule_tags = _DEFAULT_TEST_TAGS,
-    deps = [
-        ":sphinx_base",
-    ],
-)
-
-drake_py_binary(
-    name = "serve_sphinx",
-    srcs = ["serve_sphinx.py"],
-    data = [":gen_sphinx"],
-    tags = _DEFAULT_BINARY_TAGS,
-    deps = [":sphinx_base"],
 )
 
 drake_py_library(
     name = "jekyll_base",
     srcs = ["jekyll_base.py"],
-    tags = _DEFAULT_BINARY_TAGS,
+    tags = DEFAULT_BINARY_TAGS,
+)
+
+filegroup(
+    name = "third_party_data",
+    srcs = glob([
+        "third_party/**/*",
+    ]),
 )
 
 filegroup(
     name = "jekyll_data",
     srcs = [
         "_config.yml",
-        "_js/drake.js",
-        "_layouts/default.html",
         "index.md",
+        "sample_vimrc",
+    ] + glob([
+        "_includes/*.html",
+        "_includes/*.md",
+        "_layouts/*.html",
+        "_pages/*.md",
+        "_release-notes/*.md",
+        "assets/**/*.css",
+        "assets/**/*.js",
+    ]),
+    data = [
+        ":favicon",
+        ":images",
+        ":third_party_data",
     ],
 )
 
@@ -91,9 +98,9 @@ drake_py_binary(
     srcs = ["gen_jekyll.py"],
     add_test_rule = 1,
     data = [":jekyll_data"],
-    tags = _DEFAULT_BINARY_TAGS,
+    tags = DEFAULT_BINARY_TAGS,
     test_rule_args = ["--out_dir=<test>"],
-    test_rule_tags = _DEFAULT_TEST_TAGS,
+    test_rule_tags = DEFAULT_TEST_TAGS,
     deps = [
         ":jekyll_base",
     ],
@@ -103,47 +110,21 @@ drake_py_binary(
     name = "serve_jekyll",
     srcs = ["serve_jekyll.py"],
     data = [":jekyll_data"],
-    tags = _DEFAULT_BINARY_TAGS,
+    tags = DEFAULT_BINARY_TAGS,
     deps = [
         ":jekyll_base",
     ],
-)
-
-drake_py_library(
-    name = "system_doxygen",
-    srcs = ["system_doxygen.py"],
-    visibility = ["//visibility:public"],
-)
-
-drake_py_unittest(
-    name = "system_doxygen_test",
-    deps = [":system_doxygen"],
-)
-
-drake_py_binary(
-    name = "doxygen",
-    srcs = [
-        "doxygen_main.py",
-    ],
-    data = [
-        "system_doxygen.py",
-        "//:.bazelproject",
-        "@bazel_tools//tools/python/runfiles",
-        "@doxygen",
-    ],
-    tags = _DEFAULT_BINARY_TAGS,
 )
 
 drake_py_binary(
     name = "build",
     srcs = ["build.py"],
     data = [
-        ":doxygen",
         ":gen_jekyll",
-        ":gen_sphinx",
-        "//bindings/pydrake/doc:gen_sphinx",
+        "//doc/doxygen_cxx:build",
+        "//doc/pydrake:gen_sphinx",
     ],
-    tags = _DEFAULT_BINARY_TAGS,
+    tags = DEFAULT_BINARY_TAGS,
     deps = [
         "@bazel_tools//tools/python/runfiles",
     ],
@@ -155,13 +136,11 @@ filegroup(
     name = "manual_binaries",
     srcs = [
         ":build",
-        ":doxygen",
         ":gen_jekyll",
-        ":gen_sphinx",
         ":serve_jekyll",
-        ":serve_sphinx",
-        "//bindings/pydrake/doc:gen_sphinx",
-        "//bindings/pydrake/doc:serve_sphinx",
+        "//doc/doxygen_cxx:build",
+        "//doc/pydrake:gen_sphinx",
+        "//doc/pydrake:serve_sphinx",
     ],
     tags = ["manual"],
 )
@@ -173,8 +152,7 @@ test_suite(
     tags = ["manual"],
     tests = [
         ":gen_jekyll_test",
-        ":gen_sphinx_test",
-        "//bindings/pydrake/doc:gen_sphinx_test",
+        "//doc/pydrake:gen_sphinx_test",
     ],
 )
 

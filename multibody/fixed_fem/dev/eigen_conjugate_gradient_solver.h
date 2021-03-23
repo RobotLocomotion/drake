@@ -30,12 +30,12 @@ class EigenMatrixProxy : public Eigen::EigenBase<EigenMatrixProxy<T>> {
   };
 
   StorageIndex rows() const {
-    DRAKE_ASSERT(linear_operator_ != nullptr);
+    DRAKE_THROW_UNLESS(linear_operator_ != nullptr);
     return linear_operator_->rows();
   }
 
   StorageIndex cols() const {
-    DRAKE_ASSERT(linear_operator_ != nullptr);
+    DRAKE_THROW_UNLESS(linear_operator_ != nullptr);
     return linear_operator_->cols();
   }
 
@@ -56,9 +56,11 @@ class EigenMatrixProxy : public Eigen::EigenBase<EigenMatrixProxy<T>> {
    This class keeps a reference to the input `linear_operator` and therefore it
    is required that `linear_operator` outlives this object. */
   EigenMatrixProxy(
-      const contact_solvers::internal::LinearOperator<T>& linear_operator)
-      : linear_operator_(&linear_operator),
-        scratch_vector_(linear_operator.rows()) {}
+      const contact_solvers::internal::LinearOperator<T>* linear_operator)
+      : linear_operator_(linear_operator) {}
+
+  /* Resize the scratch vector to match the size of the linear operator. */
+  void Resize() { scratch_vector_.resize(linear_operator_->rows()); }
 
   ~EigenMatrixProxy() = default;
 
@@ -152,10 +154,9 @@ class EigenConjugateGradientSolver : public LinearSystemSolver<T> {
   ||Ax-b||/||b|| is smaller than the set tolerance or when the max number of
   iterations is reached.  */
   EigenConjugateGradientSolver(
-      const contact_solvers::internal::LinearOperator<T>& A, double tol = 1e-4)
+      const contact_solvers::internal::LinearOperator<T>* A, double tol = 1e-4)
       : LinearSystemSolver<T>(A), matrix_proxy_(A) {
-    cg_.compute(matrix_proxy_);
-    cg_.setTolerance(tol);
+    set_tolerance(tol);
   }
 
   ~EigenConjugateGradientSolver() {}
@@ -178,9 +179,14 @@ class EigenConjugateGradientSolver : public LinearSystemSolver<T> {
   double tolerance() const { return cg_.tolerance(); }
 
   /* Forwards to Eigen::ConjugateGradient::setTolerance(). */
-  void set_tolerance(double tol) { cg_.setTolerance(tol); }
+  void set_tolerance(const T& tol) final { cg_.setTolerance(tol); }
 
  private:
+  void DoCompute() final {
+    matrix_proxy_.Resize();
+    cg_.compute(matrix_proxy_);
+  }
+
   EigenMatrixProxy<T> matrix_proxy_;
   /* TODO(xuchenhan-tri): Allow for custom preconditioner if needed in the
    future. */

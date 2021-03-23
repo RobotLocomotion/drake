@@ -38,10 +38,6 @@ py_library(
 py_binary(
     name = "mkdoc",
     srcs = ["mkdoc.py"],
-    data = [
-        "pybind_coverage_libclang_parser.py",
-        "pybind_coverage_xml_parser.py",
-    ],
     visibility = ["//visibility:public"],
     deps = [
         ":libclang_setup_py",
@@ -54,7 +50,7 @@ py_library(
     name = "mkdoc_comment_py",
     srcs = ["mkdoc_comment.py"],
     visibility = ["//visibility:public"],
-    deps = ["//doc:system_doxygen"],
+    deps = ["//doc/doxygen_cxx:system_doxygen"],
 )
 
 drake_py_unittest(
