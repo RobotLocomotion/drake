@@ -117,7 +117,8 @@ def _run_doxygen(drake_workspace, args):
                        for key, value in definitions.items()]
 
     # Create Doxyfile_CXX.
-    in_filename = os.path.join(drake_workspace, "doc/Doxyfile_CXX.in")
+    in_filename = os.path.join(
+        drake_workspace, "doc/doxygen_cxx/Doxyfile_CXX.in")
     doxyfile = os.path.join(working_dir, "Doxyfile_CXX")
     # TODO(eric.cousineau): Import cmake_configure_file as a py_library,
     # instead of shelling out to it.
@@ -155,9 +156,9 @@ def main():
     parser.add_argument(
         'inputs', nargs='*',
         help="Process only these files and/or directories; e.g., "
-        "'bazel-bin/doc/doxygen --quick systems/framework' "
+        "'bazel-bin/doc/doxygen_cxx/build --quick systems/framework' "
         "or using shell globbing, e.g., "
-        "'bazel-bin/doc/doxygen --quick systems/framework/*leaf*.h'.")
+        "'bazel-bin/doc/doxygen_cxx/build --quick systems/framework/*dia*.h'.")
     args = parser.parse_args()
     for x in args.inputs:
         if not os.path.exists(x):
