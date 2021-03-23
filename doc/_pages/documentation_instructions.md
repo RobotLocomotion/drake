@@ -58,6 +58,18 @@ To generate the Python API documentation:
 $ bazel run //doc/pydrake:serve_sphinx [-- --browser=false]
 ```
 
+# Style Guide
+
+To locally preview the Drake Style Guide:
+
+```
+$ bazel run //doc/styleguide:build -- --serve
+```
+
+To preview a local branch of the styleguide, set the
+[local_repository_override](https://github.com/RobotLocomotion/drake/blob/master/tools/workspace/README.md#exploring-github_archive-changes-from-a-local-clone)
+option in ``drake/tools/workspace/styleguide/`` before running the preview.
+
 # Continuous Integration
 
 To check that the documentation will pass Drake's Jenkins CI builds:

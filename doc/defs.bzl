@@ -1,7 +1,8 @@
 # -*- python -*-
 
-# This file contains constants that help define Drake's documentation targets
-# (i.e., these should only be used for BUILD files within @drake//doc/...).
+# This file contains build macros and constants that help define Drake's
+# documentation targets (i.e., these should only be used for BUILD files
+# within @drake//doc/...).
 
 # Unless `setup/ubuntu/install_prereqs.sh --with-doc-only` has been run, most
 # targets in //doc/... will fail to build, so by default we'll disable them.
@@ -21,3 +22,37 @@ DEFAULT_TEST_TAGS = [
     # ecosystems might be doing so without us being aware.
     "block-network",
 ]
+
+def _enumerate_filegroup_impl(ctx):
+    out = ctx.actions.declare_file(ctx.attr.name)
+    runpaths = {}
+    for x in ctx.attr.data:
+        for y in x.data_runfiles.files.to_list():
+            if y.short_path.startswith("../"):
+                runpath = y.short_path[3:]
+            else:
+                runpath = ctx.workspace_name + "/" + y.short_path
+            runpaths[runpath] = True
+    result = sorted(runpaths.keys())
+    ctx.actions.write(out, "\n".join(result) + "\n")
+
+    # Return the new file to our caller.
+    return [DefaultInfo(
+        files = depset([out]),
+        data_runfiles = ctx.runfiles(files = [out]),
+    )]
+
+enumerate_filegroup = rule(
+    implementation = _enumerate_filegroup_impl,
+    attrs = {
+        "data": attr.label_list(
+            allow_empty = False,
+            doc = "Filegroup whose data we should enumerate",
+        ),
+    },
+)
+"""Creates a text file of the transitive list of files in a filegroup.
+
+Args:
+  data: The filegroup target(s) to collect runfiles from.
+"""
