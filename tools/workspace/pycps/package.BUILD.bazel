@@ -16,7 +16,6 @@ py_library(
     name = "cps",
     srcs = ["cps.py"],
     visibility = ["//visibility:public"],
-    deps = ["@semantic_version"],
 )
 
 py_binary(
