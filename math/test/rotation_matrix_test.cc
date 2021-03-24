@@ -5,6 +5,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/math/orthonormal_basis.h"
 #include "drake/math/quaternion.h"
 
 namespace drake {
@@ -1031,6 +1032,70 @@ TEST_F(RotationMatrixConversionTests, AngleAxisToRotationMatrix) {
     double nan = std::numeric_limits<double>::quiet_NaN();
     const Eigen::AngleAxisd aa_nan(nan, Vector3d(1, 0, 0));
     EXPECT_THROW(const RotationMatrix<double> R_nan(aa_nan), std::logic_error);
+  }
+}
+
+// Test MakeRotationMatrixFromOneUnitVector() produces a right-handed
+// orthogonal matrix.
+GTEST_TEST(RotationMatrixTest, MakeRotationMatrixFromOneUnitVector) {
+  // Ensure a zero vector throws an exception.
+  EXPECT_THROW(RotationMatrix<double>::MakeRotationMatrixFromOneUnitVector(
+                   Vector3<double>::Zero(), 0),
+               std::exception);
+
+  // Ensure a non-unit vector throws an exception.
+  EXPECT_THROW(RotationMatrix<double>::MakeRotationMatrixFromOneUnitVector(
+                   Vector3<double>(1, 2, 3), 0),
+               std::exception);
+
+  // For the method under test, verify the rotation matrix R_AB created by that
+  // method produces accurate results for u in the Bx or By or Bz direction.
+  RotationMatrix<double> R_AB, R_identity;
+  const Matrix3<double>& m_identity = R_identity.matrix();
+  constexpr double kTolerance = 8 * std::numeric_limits<double>::epsilon();
+  for (int i = 0; i < 3; ++i) {
+    // Test when [1, 0, 0] is used for the ith column of R_AB.
+    R_AB = RotationMatrix<double>::MakeRotationMatrixFromOneUnitVector(
+                   Vector3<double>::UnitX(), i);
+    EXPECT_TRUE(R_AB.IsValid());
+    if (i == 0) {
+      EXPECT_TRUE(CompareMatrices(R_AB.matrix(), m_identity, kTolerance));
+    }
+
+    // Test when [0, 1, 0] is used for the ith column of R_AB.
+    R_AB = RotationMatrix<double>::MakeRotationMatrixFromOneUnitVector(
+                   Vector3<double>::UnitY(), i);
+    EXPECT_TRUE(R_AB.IsValid());
+    if (i == 1) {
+      EXPECT_TRUE(CompareMatrices(R_AB.matrix(), m_identity, kTolerance));
+    }
+
+    // Test when [0, 0, 1] is used for the ith column of R_AB.
+    R_AB = RotationMatrix<double>::MakeRotationMatrixFromOneUnitVector(
+                   Vector3<double>::UnitZ(), i);
+    EXPECT_TRUE(R_AB.IsValid());
+    if (i == 2) {
+      EXPECT_TRUE(CompareMatrices(R_AB.matrix(), m_identity, kTolerance));
+    }
+
+    // Test when [x, y, z].normalized() is used for the ith column of R_AB.
+    for (double x = -2.1; x <= 2.1; x += 1) {
+      for (double y = -2.2; y <= 2.2; y += 1) {
+        for (double z = -2.3; z <= 2.3; z += 1) {
+          const Vector3<double> u = Vector3<double>(x, y, z).normalized();
+          R_AB = RotationMatrix<double>::MakeRotationMatrixFromOneUnitVector(
+                   u, i);
+          EXPECT_TRUE(R_AB.IsValid());
+
+          // Use the method in orthogonal_bases.h as a check on this method.
+          // Unfortunately, that method reverses the direction on two vectors.
+          Matrix3<double> m_expected = ComputeBasisFromAxis(i, u);
+          m_expected.col((i + 1) % 3) *= -1;
+          m_expected.col((i + 2) % 3) *= -1;
+          EXPECT_TRUE(CompareMatrices(R_AB.matrix(), m_expected, kTolerance));
+        }
+      }
+    }
   }
 }
 

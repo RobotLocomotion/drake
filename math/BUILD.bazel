@@ -470,6 +470,7 @@ drake_cc_googletest(
     deps = [
         ":geometric_transform",
         "//common/test_utilities",
+        "//math:orthonormal_basis",
     ],
 )
 
