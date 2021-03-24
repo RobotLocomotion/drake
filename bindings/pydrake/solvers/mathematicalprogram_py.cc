@@ -1017,6 +1017,8 @@ top-level documentation for :py:mod:`pydrake.math`.
           doc.MathematicalProgram.FindDecisionVariableIndices.doc)
       .def("num_vars", &MathematicalProgram::num_vars,
           doc.MathematicalProgram.num_vars.doc)
+      .def("initial_guess", &MathematicalProgram::initial_guess,
+          doc.MathematicalProgram.initial_guess.doc)
       .def("decision_variables", &MathematicalProgram::decision_variables,
           doc.MathematicalProgram.decision_variables.doc)
       .def("decision_variable_index",
