@@ -276,12 +276,12 @@ class RotationMatrix {
   }
 
   /// Creates a rotation matrix R_AB from a given unit vector u and two other
-  /// internally-constructed unit vectors v and w which are orthogonal to u
+  /// internally-constructed unit vectors v and w which are orthogonal to u.
   /// @param[in] u unit vector which is expressed in frame A and represents
   ///  either Bx or By or Bz (depending on the value of index_012).
   /// @param[in] index_012 The index of the unit vector associated with u,
   ///  with 0 meaning u is Bx, 1 meaning u is By, and 2 meaning u is Bz.
-  /// @throws std::exception if |u|≠ 1 or index_012 ≠ 0 or 1 or 2.
+  /// @throws std::exception if |u| ≠ 1 or index_012 is not 0 or 1 or 2.
   /// @note The right-handed set of orthogonal unit vectors u, v, w are regarded
   ///  as forming a rigid basis B.
   static RotationMatrix<T> MakeRotationMatrixFromOneUnitVector(
@@ -320,12 +320,12 @@ class RotationMatrix {
     const T& uz = u(2);  const T abs_uz = abs(uz);
     Vector3<T> v, w;
     using std::sqrt;
-    // Situation: ui = 1 in which case return the identity matrix.
+    // If ui = 1, return the identity matrix.
     if (u(index_012) == 1) {
       v = Vector3<T>(0, 0, 0); v((index_012 + 1) % 3) = 1;
       w = Vector3<T>(0, 0, 0); w((index_012 + 2) % 3) = 1;
 
-    // Situation: |ux| ≤ |uy| and |ux| < |uz| (x is preferred over y).
+    // If |ux| is smallest: |ux| ≤ |uy| and |ux| < |uz| (x is preferred over y).
     } else if (abs_ux < abs_uy && abs_ux < abs_uz) {
       const T mag_a_cross_u = sqrt(1 - ux * ux);  // |𝐚 x 𝐮|
       const T r1 = 1 / mag_a_cross_u;         // 1 / |𝐚 x 𝐮|
@@ -333,7 +333,7 @@ class RotationMatrix {
       v = Vector3<T>(0, -r1 * uz, r1 * uy);
       w = Vector3<T>(mag_a_cross_u, r2 * uy, r2 * uz);
 
-    // Situation: |uy| < |ux| and |uy| < |uz|.
+    // If |uy| is smallest: |uy| < |ux| and |uy| < |uz|.
     } else if (abs_uy < abs_uz) {
       const T mag_a_cross_u = sqrt(1 - uy * uy);  // |𝐚 x 𝐮|
       const T r1 = 1 / mag_a_cross_u;         // 1 / |𝐚 x 𝐮|
@@ -341,7 +341,7 @@ class RotationMatrix {
       v = Vector3<T>(r1 * uz, 0, -r1 * ux);
       w = Vector3<T>(r2 * ux, mag_a_cross_u, r2 * uz);
 
-    // Situation: |uz| ≤ |ux| and |uz| ≤ |uy| (z is preferred over x, y).
+    // If |uz| is smallest: |uz| ≤ |ux| and |uz| ≤ |uy| (z preferred over x, y).
     } else {
       const T mag_a_cross_u = sqrt(1 - uz * uz);  // |𝐚 x 𝐮|
       const T r1 = 1 / mag_a_cross_u;         // 1 / |𝐚 x 𝐮|

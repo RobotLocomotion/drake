@@ -1035,8 +1035,8 @@ TEST_F(RotationMatrixConversionTests, AngleAxisToRotationMatrix) {
   }
 }
 
-// Test MakeRotationMatrixFromOneUnitVector() produces a right-handed
-// orthogonal matrix.
+// Test that the method RotationMatrix::MakeRotationMatrixFromOneUnitVector()
+// produces a sensible right-handed orthogonal matrix.
 GTEST_TEST(RotationMatrixTest, MakeRotationMatrixFromOneUnitVector) {
   // Ensure a zero vector throws an exception.
   EXPECT_THROW(RotationMatrix<double>::MakeRotationMatrixFromOneUnitVector(
@@ -1055,24 +1055,24 @@ GTEST_TEST(RotationMatrixTest, MakeRotationMatrixFromOneUnitVector) {
   constexpr double kTolerance = 8 * std::numeric_limits<double>::epsilon();
   for (int i = 0; i < 3; ++i) {
     // Test when [1, 0, 0] is used for the ith column of R_AB.
-    R_AB = RotationMatrix<double>::MakeRotationMatrixFromOneUnitVector(
-                   Vector3<double>::UnitX(), i);
+    Vector3<double> u = Vector3<double>::UnitX();
+    R_AB = RotationMatrix<double>::MakeRotationMatrixFromOneUnitVector(u, i);
     EXPECT_TRUE(R_AB.IsValid());
     if (i == 0) {
       EXPECT_TRUE(CompareMatrices(R_AB.matrix(), m_identity, kTolerance));
     }
 
     // Test when [0, 1, 0] is used for the ith column of R_AB.
-    R_AB = RotationMatrix<double>::MakeRotationMatrixFromOneUnitVector(
-                   Vector3<double>::UnitY(), i);
+    u = Vector3<double>::UnitY();
+    R_AB = RotationMatrix<double>::MakeRotationMatrixFromOneUnitVector(u, i);
     EXPECT_TRUE(R_AB.IsValid());
     if (i == 1) {
       EXPECT_TRUE(CompareMatrices(R_AB.matrix(), m_identity, kTolerance));
     }
 
     // Test when [0, 0, 1] is used for the ith column of R_AB.
-    R_AB = RotationMatrix<double>::MakeRotationMatrixFromOneUnitVector(
-                   Vector3<double>::UnitZ(), i);
+    u = Vector3<double>::UnitZ();
+    R_AB = RotationMatrix<double>::MakeRotationMatrixFromOneUnitVector(u, i);
     EXPECT_TRUE(R_AB.IsValid());
     if (i == 2) {
       EXPECT_TRUE(CompareMatrices(R_AB.matrix(), m_identity, kTolerance));
@@ -1082,9 +1082,8 @@ GTEST_TEST(RotationMatrixTest, MakeRotationMatrixFromOneUnitVector) {
     for (double x = -2.1; x <= 2.1; x += 1) {
       for (double y = -2.2; y <= 2.2; y += 1) {
         for (double z = -2.3; z <= 2.3; z += 1) {
-          const Vector3<double> u = Vector3<double>(x, y, z).normalized();
-          R_AB = RotationMatrix<double>::MakeRotationMatrixFromOneUnitVector(
-                   u, i);
+          u = Vector3<double>(x, y, z).normalized();
+          R_AB = RotationMatrixd::MakeRotationMatrixFromOneUnitVector(u, i);
           EXPECT_TRUE(R_AB.IsValid());
 
           // Use the method in orthogonal_bases.h as a check on this method.
