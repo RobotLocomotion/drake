@@ -62,9 +62,9 @@ LcmPublisherSystem::LcmPublisherSystem(
 
   if (publish_triggers.find(TriggerType::kPerStep) != publish_triggers.end()) {
     this->DeclarePerStepEvent(systems::PublishEvent<double>(
-        [this](const systems::Context<double>& context,
-               const systems::System<double>& system,
-               const systems::PublishEvent<double>&) {
+        [](const systems::Context<double>& context,
+           const systems::System<double>& system,
+           const systems::PublishEvent<double>&) {
           const auto& sys = dynamic_cast<const LcmPublisherSystem&>(system);
           sys.PublishInputAsLcmMessage(context);
         }));

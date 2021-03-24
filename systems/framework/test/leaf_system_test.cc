@@ -2200,9 +2200,9 @@ class TestTriggerSystem : public LeafSystem<double> {
 
     {
       const int data = 42;
-      PublishEvent<double> event([data](const Context<double>& c,
-                                        const System<double>& system,
-                                        const PublishEvent<double>& e) {
+      PublishEvent<double> event([](const Context<double>& c,
+                                    const System<double>& system,
+                                    const PublishEvent<double>& e) {
         const auto& sys = dynamic_cast<const TestTriggerSystem&>(system);
         sys.IntCallback(c, e, data);
       });
