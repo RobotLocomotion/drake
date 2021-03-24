@@ -11,8 +11,10 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/proximity/distance_to_point_callback.h"
 #include "drake/geometry/proximity/distance_to_shape_callback.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
+#include "drake/geometry/query_results/signed_distance_to_point.h"
 #include "drake/geometry/utilities.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rigid_transform.h"
@@ -30,51 +32,15 @@ namespace geometry {
 namespace internal {
 namespace shape_distance {
 
-// TODO(SeanCurtis-TRI) This testing strategy (hijacking T = `float`) in the
-// fallback to detect when ComputeNarrowPhase dispatches to it requires that
-// ComputeNarrowPhaseDistance be *completely* available in the header file so
-// I can exercise its logic. Find some alternative formulation of the test that
-// allows me to put its definition in the .cc file. One such way would be to
-// *pass* the callback function.
-
-// Specialization of the shape-shape distance fallback function. We use float
-// as an otherwise unsupported scalar to confirm when the fallback is called
-// and when it is not. If invoked, it throws an exception, otherwise nothing.
-template <>
-void CalcDistanceFallback<float>(const fcl::CollisionObjectd&,
-                                 const fcl::CollisionObjectd&,
-                                 const fcl::DistanceRequestd&,
-                                 SignedDistancePair<float>*) {
-  throw std::logic_error("Float fallback called!");
-}
-
-// Specializations of the DistancePairGeometry::operator() method on float so
-// that they don't actually do any *work* with floats. This goes with the
-// float specialization of CalcDistanceFallback -- in the case the fallback
-// doesn't get invoked, we don't want to actually *do* anything.
-template <>
-void DistancePairGeometry<float>::operator()(const fcl::Sphered&,
-                                             const fcl::Sphered&) {}
-
-template <>
-void DistancePairGeometry<float>::operator()(const fcl::Sphered&,
-                                             const fcl::Boxd&) {}
-
-template <>
-void DistancePairGeometry<float>::operator()(const fcl::Sphered&,
-                                             const fcl::Capsuled&) {}
-
-template <>
-void DistancePairGeometry<float>::operator()(const fcl::Sphered&,
-                                             const fcl::Cylinderd&) {}
-
 namespace {
 
 using Eigen::Vector3d;
 using fcl::Boxd;
 using fcl::Capsuled;
 using fcl::CollisionObjectd;
+using fcl::Convexd;
 using fcl::Cylinderd;
+using fcl::Ellipsoidd;
 using fcl::Halfspaced;
 using fcl::Sphered;
 using math::RigidTransform;
@@ -386,84 +352,49 @@ TEST_F(DistancePairGeometryTest, SphereCylinderAutoDiffXd) {
   EXPECT_TRUE((ResultsMatch<AutoDiffXd, Cylinderd>(Cylinderd{1.3, 2.3})));
 }
 
-// Test infrastructure for confirming that signed distance to halfspaces throws
-// an exception with an intelligible message.
-using ScalarTypes = ::testing::Types<double, AutoDiffXd>;
-template <typename T>
-class ComputeNarrowHalfspaceTest : public ::testing::Test {};
-TYPED_TEST_SUITE(ComputeNarrowHalfspaceTest, ScalarTypes);
-
-// Confirms that the distance fallback is *not* invoked for (sphere-X) pairs
-// where X is in {Sphere, Box, Cylinder}. Note the use of the `float` scalar.
-// This is a specialization of the fallback function only available to this
-// test. Invoking this fallback throws a particular exception -- this is how we
-// detect whether the fallback is called or not.
+// Test the fallback logic. It is not  invoked for (sphere-X) pairs
+// where X is in {Box, Capsule, Cylinder, HalfSpace, Sphere}.
 GTEST_TEST(ComputeNarrowPhaseDistance, NoFallbackInvocation) {
-  // Parameters that don't depend on T.
-  CollisionObjectd sphere(make_shared<Sphered>(1));
-  const GeometryId sphere_id = GeometryId::get_new_id();
-  EncodedData(sphere_id, true).write_to(&sphere);
-  const GeometryId other_id = GeometryId::get_new_id();
-  fcl::DistanceRequestd request{};
+  const CollisionObjectd box(make_shared<Boxd>(1, 2, 3));
+  const CollisionObjectd capsule(make_shared<Capsuled>(1, 2));
+  const CollisionObjectd cylinder(make_shared<Cylinderd>(1, 2));
+  const CollisionObjectd half_space(
+      make_shared<Halfspaced>(Vector3d{0, 0, 1}, 0));
+  const CollisionObjectd sphere(make_shared<Sphered>(1));
 
-  // T-valued parameters.
-  using T = float;
-  const RigidTransform<T> X_WA = RigidTransform<T>::Identity();
-  const RigidTransform<T> X_WB = RigidTransform<T>::Identity();
-  SignedDistancePair<T> result;
-
-  // These scenarios should *not* invoke the fallback; they will be exercised
-  // by primitives.
-
-  DRAKE_EXPECT_NO_THROW(ComputeNarrowPhaseDistance<T>(sphere, X_WA, sphere,
-                                                      X_WB, request, &result));
-
-  std::vector<std::shared_ptr<fcl::CollisionGeometry<double>>> supported{
-      make_shared<Boxd>(1, 1, 1), make_shared<Cylinderd>(1, 1)};
-  for (auto other_geo : supported) {
-    CollisionObjectd other(other_geo);
-    EncodedData(other_id, true).write_to(&other);
-
-    DRAKE_EXPECT_NO_THROW(ComputeNarrowPhaseDistance<T>(
-        other, X_WA, sphere, X_WB, request, &result));
-    DRAKE_EXPECT_NO_THROW(ComputeNarrowPhaseDistance<T>(
-        sphere, X_WA, other, X_WB, request, &result));
+  // All pairs which have Drake implementations.
+  for (const CollisionObjectd* other :
+       {&box, &capsule, &cylinder, &half_space, &sphere}) {
+    EXPECT_FALSE(RequiresFallback(sphere, *other));
   }
 }
 
-// Confirms that the fallback *is* invoked for other geometry pairs.
+// Confirms that the fallback *is* invoked for all other geometry pairs.
 GTEST_TEST(ComputeNarrowPhaseDistance, FallbackInvocation) {
-  // Parameters that don't depend on T.
-  const GeometryId id_A = GeometryId::get_new_id();
-  const GeometryId id_B = GeometryId::get_new_id();
-  fcl::DistanceRequestd request{};
+  const CollisionObjectd box(make_shared<Boxd>(1, 2, 3));
+  const CollisionObjectd capsule(make_shared<Capsuled>(1, 2));
+  // A minimally valid convex shape: a single vertex.
+  const CollisionObjectd convex(make_shared<Convexd>(
+      make_shared<const std::vector<Vector3d>>(1, Vector3d{0, 0, 0}), 0,
+      make_shared<const std::vector<int>>()));
+  const CollisionObjectd cylinder(make_shared<Cylinderd>(1, 2));
+  const CollisionObjectd ellipsoid(make_shared<Ellipsoidd>(1, 2, 3));
+  const CollisionObjectd half_space(
+      make_shared<Halfspaced>(Vector3d{0, 0, 1}, 0));
+  const CollisionObjectd sphere(make_shared<Sphered>(1));
 
-  // T-valued parameters.
-  using T = float;
-  const RigidTransform<T> X_WA = RigidTransform<T>::Identity();
-  const RigidTransform<T> X_WB = RigidTransform<T>::Identity();
-  SignedDistancePair<T> result;
+  // The two exceptions involving a sphere.
+  for (const CollisionObjectd* other : {&convex, &ellipsoid}) {
+    EXPECT_TRUE(RequiresFallback(sphere, *other));
+  }
 
-  // TODO(SeanCurtis-TRI): Add convex-* pairs to this list.
-  // clang-format off
-  std::vector<std::pair<std::shared_ptr<fcl::CollisionGeometry<double>>,
-                        std::shared_ptr<fcl::CollisionGeometry<double>>>>
-      unsupported_pairs{
-          {make_shared<Boxd>(1, 1, 1),   make_shared<Boxd>(1, 1, 1)},
-          {make_shared<Cylinderd>(1, 1), make_shared<Cylinderd>(1, 1)},
-          {make_shared<Boxd>(1, 1, 1),   make_shared<Cylinderd>(1, 1)}};
-  // clang-format on
-  for (const auto& pair : unsupported_pairs) {
-    CollisionObjectd A(pair.first);
-    EncodedData{id_A, true}.write_to(&A);
-    CollisionObjectd B(pair.second);
-    EncodedData{id_B, true}.write_to(&B);
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        ComputeNarrowPhaseDistance<T>(A, X_WA, B, X_WB, request, &result),
-        std::logic_error, "Float fallback called!");
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        ComputeNarrowPhaseDistance<T>(B, X_WB, A, X_WA, request, &result),
-        std::logic_error, "Float fallback called!");
+  // All other cases.
+  const std::vector<const CollisionObjectd*> others{&box, &capsule, &convex,
+                                                    &cylinder, &half_space};
+  for (const auto* s1 : others) {
+    for (const auto* s2 : others) {
+      EXPECT_TRUE(RequiresFallback(*s1, *s2));
+    }
   }
 }
 
@@ -609,6 +540,10 @@ class CallbackScalarSupport : public ::testing::Test {
     boxes_.emplace_back(make_shared<Boxd>(0.4, 0.3, 0.2));
     apply_data(boxes_);
 
+    capsules_.emplace_back(make_shared<Capsuled>(0.25, 0.75));
+    capsules_.emplace_back(make_shared<Capsuled>(0.75, 0.25));
+    apply_data(capsules_);
+
     cylinders_.emplace_back(make_shared<Cylinderd>(0.3, 0.4));
     cylinders_.emplace_back(make_shared<Cylinderd>(0.3, 0.2));
     apply_data(cylinders_);
@@ -639,6 +574,7 @@ class CallbackScalarSupport : public ::testing::Test {
   CallbackData<T> data_;
   std::vector<CollisionObjectd> spheres_;
   std::vector<CollisionObjectd> boxes_;
+  std::vector<CollisionObjectd> capsules_;
   std::vector<CollisionObjectd> cylinders_;
   std::vector<CollisionObjectd> halfspaces_;
 };
@@ -646,11 +582,13 @@ class CallbackScalarSupport : public ::testing::Test {
 template <>
 std::vector<std::pair<CollisionObjectd&, CollisionObjectd&>>
 CallbackScalarSupport<double>::supported_pairs() {
-  // Given the shared indices, it is important that the indices in each pair
-  // include 0 and 1.
+  // Given the shared geometry ids, it is important that the indices in each
+  // pair include 0 and 1 (as shapes with a common index share a geometry id).
   return {{spheres_[0], spheres_[1]},    {spheres_[0], boxes_[1]},
-          {spheres_[0], cylinders_[1]},  {spheres_[0], halfspaces_[1]},
-          {boxes_[0], boxes_[1]},        {boxes_[0], cylinders_[1]},
+          {spheres_[0], capsules_[1]},   {spheres_[0], cylinders_[1]},
+          {spheres_[0], halfspaces_[1]}, {boxes_[0], boxes_[1]},
+          {boxes_[0], capsules_[1]},     {boxes_[0], cylinders_[1]},
+          {capsules_[0], capsules_[1]},  {cylinders_[0], capsules_[1]},
           {cylinders_[0], cylinders_[1]}};
 }
 
@@ -659,6 +597,7 @@ std::vector<std::pair<CollisionObjectd&, CollisionObjectd&>>
 CallbackScalarSupport<double>::unsupported_pairs() {
   return {
       {boxes_[0], halfspaces_[1]},
+      {capsules_[0], halfspaces_[1]},
       {cylinders_[0], halfspaces_[1]},
       {halfspaces_[0], halfspaces_[1]},
   };
@@ -677,12 +616,15 @@ std::vector<std::pair<CollisionObjectd&, CollisionObjectd&>>
 CallbackScalarSupport<AutoDiffXd>::unsupported_pairs() {
   return {
       {spheres_[0], cylinders_[1]},     {boxes_[0], boxes_[1]},
+      {spheres_[0], capsules_[1]},      {boxes_[0], capsules_[1]},
       {boxes_[0], cylinders_[1]},       {boxes_[0], halfspaces_[1]},
+      {capsules_[0], capsules_[1]},     {cylinders_[0], capsules_[1]},
       {cylinders_[0], cylinders_[1]},   {cylinders_[0], halfspaces_[1]},
       {halfspaces_[0], halfspaces_[1]},
   };
 }
 
+using ScalarTypes = ::testing::Types<double, AutoDiffXd>;
 TYPED_TEST_SUITE(CallbackScalarSupport, ScalarTypes);
 
 // Tests that the pairs that are reported supported, run normally. The pairs
