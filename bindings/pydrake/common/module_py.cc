@@ -172,19 +172,22 @@ PYBIND11_MODULE(_module_py, m) {
     }
   });
   // Convenient wrapper for querying FindResource(resource_path).
-  m.def("FindResourceOrThrow", &FindResourceOrThrow,
-      "Attempts to locate a Drake resource named by the given path string. "
-      "The path refers to the relative path within the Drake repository, "
-      "e.g., drake/examples/pendulum/Pendulum.urdf. Raises an exception "
-      "if the resource was not found.",
-      py::arg("resource_path"), doc.FindResourceOrThrow.doc);
-  m.def("temp_directory", &temp_directory,
-      "Returns a directory location suitable for temporary files that is "
-      "the value of the environment variable TEST_TMPDIR if defined or "
-      "otherwise ${TMPDIR:-/tmp}/robotlocomotion_drake_XXXXXX where each X "
-      "is replaced by a character from the portable filename character set. "
-      "Any trailing / will be stripped from the output.",
-      doc.temp_directory.doc);
+  m.def("FindResourceOrThrow", &FindResourceOrThrow, py::arg("resource_path"),
+      doc.FindResourceOrThrow.doc);
+  {
+    using Class = FindResourceResult;
+    constexpr auto& cls_doc = doc.FindResourceResult;
+    py::class_<Class>(m, "FindResourceResult", cls_doc.doc)
+        .def("get_absolute_path", &Class::get_absolute_path,
+            cls_doc.get_absolute_path.doc)
+        .def("get_error_message", &Class::get_error_message,
+            cls_doc.get_error_message.doc)
+        .def("get_resource_path", &Class::get_resource_path,
+            cls_doc.get_resource_path.doc);
+  }
+  m.def("FindResource", &FindResource, py::arg("resource_path"),
+      doc.FindResourceOrThrow.doc);
+  m.def("temp_directory", &temp_directory, doc.temp_directory.doc);
   // The pydrake function named GetDrakePath is residue from when there used to
   // be a C++ method named drake::GetDrakePath(). For backward compatibility,
   // we'll keep the pydrake function name intact even though there's no

@@ -64,10 +64,12 @@ std::optional<string> GetPackagePath(
     return std::nullopt;
   }
 }
+
 }  // namespace
 
-string ResolveUri(const string& uri, const PackageMap& package_map,
-                  const string& root_dir) {
+FindResourceResult ResolveUriToResult(
+    const string& uri, const PackageMap& package_map,
+    const string& root_dir) {
   filesystem::path result;
 
   // Parse the given URI into pieces.
@@ -85,20 +87,22 @@ string ResolveUri(const string& uri, const PackageMap& package_map,
     } else if ((uri_scheme == "model") || (uri_scheme == "package")) {
       std::optional<string> package_path =
           GetPackagePath(uri_package, package_map);
-      if (!package_path) { return {}; }
+      if (!package_path) {
+        return FindResourceResult::make_error(uri, fmt::format(
+          "URI '{}' requests package '{}' but it is not find within the "
+          "package map"));
+      }
       result = filesystem::path(*package_path) / std::string(uri_path);
     } else {
-      drake::log()->warn(
+      return FindResourceResult::make_error(uri, fmt::format(
           "URI '{}' specifies an unsupported scheme; supported schemes are "
-          "'file://', 'model://', and 'package://'.", uri);
-      return {};
+          "'file://', 'model://', and 'package://'.", uri));
     }
   } else {
     if (root_dir.empty()) {
-      drake::log()->warn(
+      return FindResourceResult::make_error(uri, fmt::format(
           "URI '{}' is invalid when parsing a string instead of a filename.",
-          uri);
-      return {};
+          uri));
     }
     // Strictly speaking a URI should not just be a bare filename, but we allow
     // this for backward compatibility and user convenience.
@@ -116,12 +120,25 @@ string ResolveUri(const string& uri, const PackageMap& package_map,
   result = result.lexically_normal();
 
   if (!filesystem::exists(result)) {
-    drake::log()->warn("URI '{}' resolved to '{}' which could not be found.",
-                       uri, result.string());
-    return {};
+    return FindResourceResult::make_error(uri, fmt::format(
+        "URI '{}' resolved to '{}' which could not be found.",
+        uri, result.string()));
   }
 
-  return result.string();
+  return FindResourceResult::make_success(uri, result.string());
+}
+
+std::string ResolveUri(
+    const string& uri, const PackageMap& package_map,
+    const string& root_dir) {
+  FindResourceResult result = ResolveUriToResult(uri, package_map, root_dir);
+  auto path = result.get_absolute_path();
+  if (path) {
+    return *path;
+  } else {
+    drake::log()->warn(*result.get_error_message());
+    return {};
+  }
 }
 
 }  // namespace internal

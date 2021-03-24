@@ -45,9 +45,11 @@ drake_cc_package_library(
 drake_cc_library(
     name = "package_map",
     srcs = [
+        "detail_path_utils.cc",
         "package_map.cc",
     ],
     hdrs = [
+        "detail_path_utils.h",
         "package_map.h",
     ],
     visibility = [
@@ -64,13 +66,11 @@ drake_cc_library(
     srcs = [
         "detail_common.cc",
         "detail_ignition.cc",
-        "detail_path_utils.cc",
         "detail_tinyxml.cc",
     ],
     hdrs = [
         "detail_common.h",
         "detail_ignition.h",
-        "detail_path_utils.h",
         "detail_tinyxml.h",
     ],
     install_hdrs_exclude = [
@@ -376,6 +376,7 @@ drake_cc_googletest(
         ":package_map",
         "//common:filesystem",
         "//common:find_resource",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

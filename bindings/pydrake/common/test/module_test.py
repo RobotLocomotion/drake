@@ -25,10 +25,15 @@ class TestCommon(unittest.TestCase):
                     " condition 'false' failed",
                 ]))
 
-    def test_find_resource_or_throw(self):
-        mut.FindResourceOrThrow(
-            'drake/examples/atlas/urdf/atlas_convex_hull.urdf'
-            )
+    def test_find_resource(self):
+        relpath = 'drake/examples/atlas/urdf/atlas_convex_hull.urdf'
+        abspath = mut.FindResourceOrThrow(relpath)
+        self.assertIsInstance(abspath, str)
+        result = mut.FindResource(relpath)
+        self.assertIsInstance(result, mut.FindResourceResult)
+        self.assertEqual(abspath, result.get_absolute_path())
+        self.assertIsNone(result.get_error_message())
+        self.assertEqual(relpath, result.get_resource_path())
 
     def test_temp_directory(self):
         self.assertEqual(os.environ.get('TEST_TMPDIR'),

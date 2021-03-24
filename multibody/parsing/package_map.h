@@ -1,12 +1,21 @@
 #pragma once
 
 #include <map>
+#include <optional>
 #include <string>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/find_resource.h"
 
 namespace drake {
 namespace multibody {
+
+class PackageMapUriResult {
+ public:
+ private:
+  std::optional<std::string> value_;
+  std::optional<std::string> warning_;
+};
 
 /// Maps ROS package names to their full path on the local file system. It is
 /// used by the SDF and URDF parsers when parsing files that reference ROS
@@ -68,6 +77,32 @@ class PackageMap {
   /// @param[in] model_file The model file whose directory is the start of the
   /// search for `package.xml` files. This file must be an SDF or URDF file.
   void PopulateUpstreamToDrake(const std::string& model_file);
+
+  /// Resolves the full path of a URI to an absolute filesystem path. If @p uri
+  /// starts with "package:" or "model:", the ROS packages specified in
+  /// @p package_map are searched.
+  /// Otherwise, iff a root_dir was provided then @p uri is appended to the end
+  /// of @p root_dir (if it's not already an absolute path) and checked for
+  /// existence.  The returned path will be lexically normalized. In other
+  /// words, a path like `/some//path/to/ignored/../file.txt` (with duplicate
+  /// slashes, directory changes, etc.) would be boiled down to
+  /// `/some/path/to/file.txt`.
+  ///
+  /// @param[in] uri The name of the resource to find.
+  ///
+  /// @param[in] root_dir The root directory to look in. This is only used when
+  /// @p filename does not start with "package://" or "model://".
+  ///
+  /// @return The file's full path, lexically normalized.
+  /// @throws std::exception if the file is not found or does not exist.
+  std::string ResolveUri(
+      const std::string& path, std::optional<std::string> root_dir = {}) const;
+
+  /// Resolves a path the same as `ResolveUri`, but returns a
+  /// FindResourceResult structure which either contains the value or an error
+  /// message.
+  FindResourceResult MaybeResolveUri(
+      const std::string& path, std::optional<std::string> root_dir = {}) const;
 
   friend std::ostream& operator<<(std::ostream& out,
                                   const PackageMap& package_map);

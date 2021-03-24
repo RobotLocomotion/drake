@@ -2,10 +2,12 @@
 
 #include <algorithm>
 
+#include <fmt/format.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 
 using std::map;
 using std::string;
@@ -141,6 +143,39 @@ GTEST_TEST(PackageMapTest, TestPopulateUpstreamToDrake) {
   // Call it again to exercise the "don't add things twice" code.
   package_map.PopulateUpstreamToDrake(sdf_file_name);
   VerifyMatch(package_map, expected_packages);
+}
+
+GTEST_TEST(PackageMapTest, ResolveUri) {
+  const string sdf_relpath =
+      "package_map_test_package_a/sdf/test_model.sdf";
+  const string sdf_file_name = FindResourceOrThrow(
+      "drake/multibody/parsing/test/package_map_test_packages/" + sdf_relpath);
+
+  PackageMap package_map;
+  package_map.PopulateUpstreamToDrake(sdf_file_name);
+
+  const string sdf_uri = "package://" + sdf_relpath;
+  EXPECT_EQ(sdf_file_name, package_map.ResolveUri(sdf_uri));
+
+  const FindResourceResult result = package_map.MaybeResolveUri(sdf_uri);
+  EXPECT_EQ(sdf_file_name, result.get_absolute_path_or_throw());
+
+  // Try a negative test.
+  const string sdf_uri_bad = sdf_uri + "/sike_this_is_fake";
+  const string sdf_file_name_bad = sdf_file_name + "/sike_this_is_fake";
+
+  const string error_message_expected = fmt::format(
+      "URI '{}' resolved to '{}' which could not be found.",
+      sdf_uri_bad, sdf_file_name_bad);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      package_map.ResolveUri(sdf_uri_bad),
+      std::exception,
+      error_message_expected);
+
+  const FindResourceResult result_bad =
+      package_map.MaybeResolveUri(sdf_uri_bad);
+  EXPECT_EQ(*result_bad.get_error_message(), error_message_expected);
+  // TODO(eric): Add tests for `root_dir`.
 }
 
 // Tests that PackageMap can be populated from an env var.
