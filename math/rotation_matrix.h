@@ -35,7 +35,7 @@ namespace math {
 /// nor does it enforce strict proper usage of this class with vectors.
 ///
 /// @note When assertions are enabled, several methods in this class
-/// do a validity check and throw an exception (std::logic_error) if the
+/// do a validity check and throw an exception (std::exception) if the
 /// rotation matrix is invalid.  When assertions are disabled,
 /// many of these validity checks are skipped (which helps improve speed).
 /// In addition, these validity tests are only performed for scalar types for
@@ -57,13 +57,13 @@ class RotationMatrix {
 
   /// Constructs a %RotationMatrix from a Matrix3.
   /// @param[in] R an allegedly valid rotation matrix.
-  /// @throws std::logic_error in debug builds if R fails IsValid(R).
+  /// @throws std::exception in debug builds if R fails IsValid(R).
   explicit RotationMatrix(const Matrix3<T>& R) { set(R); }
 
   /// Constructs a %RotationMatrix from an Eigen::Quaternion.
   /// @param[in] quaternion a non-zero, finite quaternion which may or may not
   /// have unit length [i.e., `quaternion.norm()` does not have to be 1].
-  /// @throws std::logic_error in debug builds if the rotation matrix
+  /// @throws std::exception in debug builds if the rotation matrix
   /// R that is built from `quaternion` fails IsValid(R).  For example, an
   /// exception is thrown if `quaternion` is zero or contains a NaN or infinity.
   /// @note This method has the effect of normalizing its `quaternion` argument,
@@ -90,7 +90,7 @@ class RotationMatrix {
   /// @param[in] theta_lambda an Eigen::AngleAxis whose associated axis (vector
   /// direction herein called `lambda`) is non-zero and finite, but which may or
   /// may not have unit length [i.e., `lambda.norm()` does not have to be 1].
-  /// @throws std::logic_error in debug builds if the rotation matrix
+  /// @throws std::exception in debug builds if the rotation matrix
   /// R that is built from `theta_lambda` fails IsValid(R).  For example, an
   /// exception is thrown if `lambda` is zero or contains a NaN or infinity.
   explicit RotationMatrix(const Eigen::AngleAxis<T>& theta_lambda) {
@@ -165,7 +165,7 @@ class RotationMatrix {
   /// @param[in] Bx first unit vector in right-handed orthogonal set.
   /// @param[in] By second unit vector in right-handed orthogonal set.
   /// @param[in] Bz third unit vector in right-handed orthogonal set.
-  /// @throws std::logic_error in debug builds if `R_AB` fails IsValid(R_AB).
+  /// @throws std::exception in debug builds if `R_AB` fails IsValid(R_AB).
   /// @note In release builds, the caller can subsequently test if `R_AB` is,
   /// in fact, a valid %RotationMatrix by calling `R_AB.IsValid()`.
   /// @note The rotation matrix `R_AB` relates two sets of right-handed
@@ -185,7 +185,7 @@ class RotationMatrix {
   /// @param[in] Ax first unit vector in right-handed orthogonal set.
   /// @param[in] Ay second unit vector in right-handed orthogonal set.
   /// @param[in] Az third unit vector in right-handed orthogonal set.
-  /// @throws std::logic_error in debug builds if `R_AB` fails IsValid(R_AB).
+  /// @throws std::exception in debug builds if `R_AB` fails IsValid(R_AB).
   /// @note In release builds, the caller can subsequently test if `R_AB` is,
   /// in fact, a valid %RotationMatrix by calling `R_AB.IsValid()`.
   /// @note The rotation matrix `R_AB` relates two sets of right-handed
@@ -275,6 +275,140 @@ class RotationMatrix {
     return RotationMatrix(R);
   }
 
+  /// Creates a 3D right-handed orthonormal basis B from a given vector b_A,
+  /// returned as a rotation matrix R_AB. It consists of orthogonal unit vectors
+  /// u, v, w where u is the normalized b_A in the axis_index column of R_AB and
+  /// v has one element which is zero.  If an element of b_A is zero, then one
+  /// element of w is 1 and the other two elements are 0.
+  /// @param[in] b_A vector expressed in frame A that when normalized as
+  ///  u = b_A.normalized() represents Bx or By or Bz (depending on axis_index).
+  /// @param[in] axis_index The index of the unit vector associated with u, with
+  ///  0 meaning u is Bx, 1 meaning u is By, and 2 meaning u is Bz.
+  /// @pre axis_index is 0 or 1 or 2.
+  /// @throws std::exception if b_A cannot be made into a unit vector.
+  /// @see MakeFromOneUnitVector() if you want to avoid normalization.
+  /// @retval R_AB the rotation matrix with properties as described above.
+  static RotationMatrix<T> MakeFromOneVector(
+      const Vector3<T>& b_A, int axis_index) {
+    // Ensure b_A can be made into a unit vector (not a zero vector, NAN, etc.).
+    ThrowIfUnableToMakeUnitVectorDueToNanOrZeroVector(b_A, __func__);
+    const Vector3<T> u_A = b_A.normalized();
+    return MakeFromOneUnitVector(u_A, axis_index);
+  }
+
+  /// (Advanced) Creates a right-handed orthonormal basis B from a given
+  /// unit vector u_A, returned as a rotation matrix R_AB.
+  /// @param[in] u_A unit vector which is expressed in frame A and is either
+  ///  Bx or By or Bz (depending on the value of axis_index).
+  /// @param[in] axis_index The index of the unit vector associated with u_A,
+  ///  with 0 meaning u_A is Bx, 1 meaning u_A is By, and 2 meaning u_A is Bz.
+  /// @pre axis_index is 0 or 1 or 2.
+  /// @pre u_A is a unit vector within a tolerance of 4ε ≈ 8.88E-16.
+  /// @throws std::exception in Debug builds if u_A is not a unit vector.
+  /// @note This method is designed for maximum performance and does not verify
+  ///  u_A as a unit vector in Release builds.  Consider MakeFromOneVector().
+  /// @retval R_AB the rotation matrix whose properties are described in
+  /// MakeFromOneVector().
+  static RotationMatrix<T> MakeFromOneUnitVector(
+      const Vector3<T>& u_A, int axis_index) {
+    // In debug builds, verify axis_index is 0 or 1 or 2.
+    DRAKE_ASSERT(axis_index >= 0  &&  axis_index <= 2);
+
+    // In debug builds, verify u_A is within kTolerance of a unit vector.
+    // The value of kTolerance was determined empirically, is well within the
+    // tolerance achieved by normalizing a vast range of non-zero vectors, and
+    // seems to guarantee a valid RotationMatrix() (see IsValid()).
+    constexpr double kTolerance = 4 * std::numeric_limits<double>::epsilon();
+    DRAKE_ASSERT_VOID(ThrowIfNotValidUnitVector(u_A, kTolerance, __func__));
+
+    // This method forms a right-handed orthonormal basis with u_A (herein
+    // abbreviated u) and two internally-constructed unit vectors v and w.
+    // Conceptually, v = a x u / |a x u| and w = u x v where unit vector a is
+    // chosen so it is not parallel to u.  To speed this method, we judiciously
+    // choose the unit vector a and simplify the algebra as described below.
+
+    // To form a unit vector v perpendicular to the given unit vector u, we use
+    // the fact that a x u is guaranteed to be non-zero and perpendicular to u
+    // when a is a unit vector and a ≠ ±u .  We choose vector a ≠ ±u by
+    // identifying uₘᵢₙ, the element of u with the smallest absolute value.
+    // If |ux = uₘᵢₙ = u(0)|, set a = [1  0  0] so a x u = [0, -uz, uy].
+    // If |uy = uₘᵢₙ = u(1)|, set a = [0  1  0] so a x u = [uz, 0, -ux].
+    // If |uz = uₘᵢₙ = u(2)|, set a = [0  0  1] so a x u = [-uy, ux, 0].
+    // Because we select uₘᵢₙ as the element with the *smallest* magnitude, and
+    // since |u|² = ux² + uy² + uz² = 1, we are guaranteed that for the two
+    // elements that are not uₘᵢₙ, at least one must be non-zero.
+
+    // We define v = a x u / |a x u|.  From our choice of the unit vector a:
+    // if |ux| is smallest, |a x u|² = uz² + uy² = 1 - ux² = 1 - uₘᵢₙ²
+    // if |uy| is smallest, |a x u|² = uz² + ux² = 1 - uy² = 1 - uₘᵢₙ²
+    // if |uz| is smallest, |a x u|² = uy² + ux² = 1 - uz² = 1 - uₘᵢₙ²
+    // The pattern shows that regardless of which element is uₘᵢₙ, in all cases,
+    // |a x u| = √(1 - uₘᵢₙ²), hence v = a x u / √(1 - uₘᵢₙ²).
+
+    // By defining w = u x v, w is guaranteed to be a unit vector perpendicular
+    // to both u and v and ordered so u, v, w form a right-handed set.
+    // To avoid computational cost, we do not directly calculate w = u x v, but
+    // instead substitute for v and do algebraic and vector simplification.
+    //  w = u x v                  Next, substitute v = (a x u) / |a x u|.
+    //    = u x (a x u) / |a x u|  Define r = 1 /|a x u| = 1 / √(1 - uₘᵢₙ²).
+    //    = r u x (a x u)          Use vector triple product "bac-cab" property.
+    //    = r [a(u⋅u) - u(u⋅a)]    Next, Substitute u⋅u = 1 and u⋅a = uₘᵢₙ.
+    //    = r (a - uₘᵢₙ u)         This shows w is mostly in the direction of a.
+    //
+    // To efficiently form w = r(a - uₘᵢₙ u) we take advantage of a pattern.
+    // If |ux| is smallest, w = ([1  0  0] - uₘᵢₙ [uₘᵢₙ  uy  uz]) / √(1 - uₘᵢₙ²)
+    //                        = [1 - uₘᵢₙ²   -uₘᵢₙ uy   -uₘᵢₙ uz] / √(1 - uₘᵢₙ²)
+    //                        = [|a x u|   -r uₘᵢₙ uy   -r uₘᵢₙ uz]
+    //                        = [|a x u|         s uy         s uz]
+    // If |uy| is smallest, w = ([0  1  0] - uₘᵢₙ [ux  uₘᵢₙ  uz]) / √(1 - uₘᵢₙ²)
+    //                        = [-uₘᵢₙ ux    1 - uₘᵢₙ²  -uₘᵢₙ uz] / √(1 - uₘᵢₙ²)
+    //                        = [-r uₘᵢₙ ux   |a x u|   -r uₘᵢₙ uz]
+    //                        = [      s ux   |a x u|         s uz]
+    // If |uz| is smallest, w = ([0  0  1] - uₘᵢₙ [ux  uy  uₘᵢₙ]) / √(1 - uₘᵢₙ²)
+    //                        = [-uₘᵢₙ ux   -uₘᵢₙ uy  1 - uₘᵢₙ² ] / √(1 - uₘᵢₙ²)
+    //                        = [-r uₘᵢₙ ux   -r uₘᵢₙ uy    |a x u|]
+    //                        = [      s ux         s uy    |a x u|]
+    // where in each of these cases, s = -r uₘᵢₙ.
+    //
+    // The properties of the unit vectors v and w are summarized as follows.
+    // Denoting i ∈ {0, 1, 2} as the index of u corresponding to uₘᵢₙ, then
+    // v(i) = 0 and w(i) is the most positive element of w.  Moreover, since
+    // w = r (a - uₘᵢₙ u), it follows that if uₘᵢₙ = 0, then w = r a is only in
+    // the +a direction and since unit vector a has two zero elements, it is
+    // clear uₘᵢₙ = 0 results in w having two zero elements and w(i) = 1.
+
+    // Instantiate the final rotation matrix and write directly to it instead of
+    // creating temporary values and subsequently copying.
+    RotationMatrix<T> R_AB(DoNotInitializeMemberFields{});
+    R_AB.R_AB_.col(axis_index) = u_A;
+
+    // The auto keyword below improves efficiency by allowing an intermediate
+    // eigen type to use a column as a temporary - avoids copy.
+    auto v = R_AB.R_AB_.col((axis_index + 1) % 3);
+    auto w = R_AB.R_AB_.col((axis_index + 2) % 3);
+
+    // Indices i, j, k are in cyclical order: 0, 1, 2 or 1, 2, 0 or 2, 0, 1 and
+    // are used to cleverly implement the previous patterns (above) for v and w.
+    // The value of the index i is determined by identifying uₘᵢₙ = u_A(i),
+    // the element of u_A with smallest absolute value.
+    int i;
+    u_A.cwiseAbs().minCoeff(&i);  // uₘᵢₙ = u_A(i).
+    const int j = (i + 1) % 3;
+    const int k = (j + 1) % 3;
+    using std::sqrt;
+    const T mag_a_x_u = sqrt(1 - u_A(i) * u_A(i));  // |a x u| = √(1 - uₘᵢₙ²)
+    const T r = 1 / mag_a_x_u;
+    const T s = -r * u_A(i);
+    v(i) = 0;
+    v(j) = -r * u_A(k);
+    v(k) = r * u_A(j);
+    w(i) = mag_a_x_u;   // w(i) is the most positive component of w.
+    w(j) = s * u_A(j);  // w(j) = 0 if uₘᵢₙ = u_A(i) = 0.
+    w(k) = s * u_A(k);  // w(k) = 0 if uₘᵢₙ = u_A(i) = 0.
+
+    return R_AB;
+  }
+
   /// Creates a %RotationMatrix templatized on a scalar type U from a
   /// %RotationMatrix templatized on scalar type T.  For example,
   /// ```
@@ -307,7 +441,7 @@ class RotationMatrix {
 
   /// Sets `this` %RotationMatrix from a Matrix3.
   /// @param[in] R an allegedly valid rotation matrix.
-  /// @throws std::logic_error in debug builds if R fails IsValid(R).
+  /// @throws std::exception in debug builds if R fails IsValid(R).
   void set(const Matrix3<T>& R) {
     DRAKE_ASSERT_VOID(ThrowIfNotValid(R));
     SetUnchecked(R);
@@ -538,7 +672,7 @@ class RotationMatrix {
   /// bases related by matrix M does not span 3D space (when M multiples a unit
   /// vector, a vector of magnitude as small as 0 may result).
   /// @returns proper orthonormal matrix R that is closest to M.
-  /// @throws std::logic_error if R fails IsValid(R).
+  /// @throws std::exception if R fails IsValid(R).
   /// @note William Kahan (UC Berkeley) and Hongkai Dai (Toyota Research
   /// Institute) proved that for this problem, the same R that minimizes the
   /// Frobenius norm also minimizes the matrix-2 norm (a.k.a an induced-2 norm),
@@ -565,7 +699,7 @@ class RotationMatrix {
   /// @note The tolerance is chosen by developers to ensure a reasonably
   /// valid (orthonormal) rotation matrix.
   /// @note To orthonormalize a 3x3 matrix, use ProjectToRotationMatrix().
-  static double get_internal_tolerance_for_orthonormality() {
+  static constexpr double get_internal_tolerance_for_orthonormality() {
     return kInternalToleranceForOrthonormality;
   }
 
@@ -581,7 +715,7 @@ class RotationMatrix {
   /// chooses to return a canonical quaternion, i.e., with q(0) >= 0.
   /// @param[in] M 3x3 matrix to be made into a quaternion.
   /// @returns a unit quaternion q in canonical form, i.e., with q(0) >= 0.
-  /// @throws std::logic_error in debug builds if the quaternion `q`
+  /// @throws std::exception in debug builds if the quaternion `q`
   /// returned by this method cannot construct a valid %RotationMatrix.
   /// For example, if `M` contains NaNs, `q` will not be a valid quaternion.
   static Eigen::Quaternion<T> ToQuaternion(
@@ -662,7 +796,7 @@ class RotationMatrix {
   // @param[in] Bx first unit vector in right-handed orthogonal basis.
   // @param[in] By second unit vector in right-handed orthogonal basis.
   // @param[in] Bz third unit vector in right-handed orthogonal basis.
-  // @throws std::logic_error in debug builds if `R_AB` fails IsValid(R_AB).
+  // @throws std::exception in debug builds if `R_AB` fails IsValid(R_AB).
   // @note The rotation matrix `R_AB` relates two sets of right-handed
   // orthogonal unit vectors, namely `Ax`, `Ay`, `Az` and `Bx`, `By`, `Bz`.
   // The rows of `R_AB` are `Ax`, `Ay`, `Az` whereas the
@@ -681,7 +815,7 @@ class RotationMatrix {
   // @param[in] Ax first unit vector in right-handed orthogonal basis.
   // @param[in] Ay second unit vector in right-handed orthogonal basis.
   // @param[in] Az third unit vector in right-handed orthogonal basis.
-  // @throws std::logic_error in debug builds if `R_AB` fails R_AB.IsValid().
+  // @throws std::exception in debug builds if `R_AB` fails R_AB.IsValid().
   // @see SetFromOrthonormalColumns() for additional notes.
   void SetFromOrthonormalRows(const Vector3<T>& Ax,
                               const Vector3<T>& Ay,
@@ -920,6 +1054,21 @@ class RotationMatrix {
 
     return m;
   }
+
+  static void ThrowIfUnableToMakeUnitVectorDueToZeroVector(
+      const Vector3<T>& u, const char* function_name);
+
+  static void ThrowIfUnableToMakeUnitVectorDueToNanVector(
+      const Vector3<T>& u, const char* function_name);
+
+  static void ThrowIfUnableToMakeUnitVectorDueToNanOrZeroVector(
+      const Vector3<T>& u, const char* function_name) {
+    ThrowIfUnableToMakeUnitVectorDueToNanVector(u, function_name);
+    ThrowIfUnableToMakeUnitVectorDueToZeroVector(u, function_name);
+  }
+
+  static void ThrowIfNotValidUnitVector(const Vector3<T>& u, double tolerance,
+                                        const char* function_name);
 
   // Stores the underlying rotation matrix relating two frames (e.g. A and B).
   // For speed, `R_AB_` is uninitialized (public constructors set its value).
