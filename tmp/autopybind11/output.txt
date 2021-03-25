@@ -1,39 +1,47 @@
 + echo /home/eacousineau/proj/tri/repo/branches/drake/master/drake/tmp/autopybind11/output.txt
 /home/eacousineau/proj/tri/repo/branches/drake/master/drake/tmp/autopybind11/output.txt
 + bazel build //bindings/pydrake:documentation_pybind.h
-INFO: Invocation ID: 69ddf04c-2a37-4b8b-976c-fb670323753a
+INFO: Invocation ID: 099ebe1e-171c-422b-b8a8-7143b9a00be6
 Loading: 
 Loading: 0 packages loaded
-INFO: Build option --run_under has changed, discarding analysis cache.
+INFO: Build option --test_env has changed, discarding analysis cache.
 Analyzing: target //bindings/pydrake:documentation_pybind.h (0 packages loaded, 0 targets configured)
-INFO: Analyzed target //bindings/pydrake:documentation_pybind.h (0 packages loaded, 20403 targets configured).
+INFO: Analyzed target //bindings/pydrake:documentation_pybind.h (0 packages loaded, 20401 targets configured).
 INFO: Found 1 target...
 [0 / 2] [Prepa] BazelWorkspaceStatusAction stable-status.txt
+[1,170 / 1,171] Action bindings/pydrake/documentation_pybind.h; 1s remote-cache, linux-sandbox
+[1,170 / 1,171] Action bindings/pydrake/documentation_pybind.h; 6s remote-cache, linux-sandbox
+[1,170 / 1,171] Action bindings/pydrake/documentation_pybind.h; 11s remote-cache, linux-sandbox
+[1,170 / 1,171] Action bindings/pydrake/documentation_pybind.h; 16s remote-cache, linux-sandbox
+[1,170 / 1,171] Action bindings/pydrake/documentation_pybind.h; 21s remote-cache, linux-sandbox
+[1,170 / 1,171] Action bindings/pydrake/documentation_pybind.h; 26s remote-cache, linux-sandbox
+[1,170 / 1,171] Action bindings/pydrake/documentation_pybind.h; 31s remote-cache, linux-sandbox
+[1,170 / 1,171] Action bindings/pydrake/documentation_pybind.h; 38s remote-cache, linux-sandbox
 Target //bindings/pydrake:documentation_pybind.h up-to-date:
   bazel-bin/bindings/pydrake/documentation_pybind.h
-INFO: Elapsed time: 1.183s, Critical Path: 0.05s
-INFO: 1 process: 1 internal.
-INFO: Build completed successfully, 1 total action
-INFO: Build completed successfully, 1 total action
+INFO: Elapsed time: 40.918s, Critical Path: 38.83s
+INFO: 4 processes: 3 internal, 1 linux-sandbox.
+INFO: Build completed successfully, 4 total actions
+INFO: Build completed successfully, 4 total actions
 + cat ./bazel-bin/bindings/pydrake/documentation_pybind.h
 + bazel run '--run_under=env PYTHONUNBUFFERED=1' //tools/autopybind:generate -- --debug --output_dir=/home/eacousineau/proj/tri/repo/branches/drake/master/drake/tmp/autopybind11
-INFO: Invocation ID: 19dca503-d9f0-4084-8230-891838513376
+INFO: Invocation ID: bbece247-ab0c-4d44-a38c-66049b8bd395
 Loading: 
 Loading: 0 packages loaded
 INFO: Build option --run_under has changed, discarding analysis cache.
-Analyzing: target //tools/autopybind:generate (1 packages loaded, 0 targets configured)
-INFO: Analyzed target //tools/autopybind:generate (1 packages loaded, 20470 targets configured).
+Analyzing: target //tools/autopybind:generate (0 packages loaded, 0 targets configured)
+INFO: Analyzed target //tools/autopybind:generate (0 packages loaded, 20469 targets configured).
 INFO: Found 1 target...
-[0 / 2] [Prepa] BazelWorkspaceStatusAction stable-status.txt
+[0 / 3] [Prepa] BazelWorkspaceStatusAction stable-status.txt
 Target //tools/autopybind:generate up-to-date:
   bazel-bin/tools/autopybind/generate
-INFO: Elapsed time: 0.983s, Critical Path: 0.00s
+INFO: Elapsed time: 1.786s, Critical Path: 0.01s
 INFO: 1 process: 1 internal.
 INFO: Build completed successfully, 1 total action
 INFO: Running command line: /bin/bash -c 'env PYTHONUNBUFFERED=1 bazel-bin/tools/autopybind/generate --debug '\''--output_dir=/home/eacousineau/proj/tri/repo/branches/drake/master/drake/tmp/autopybind11'\'''
 INFO: Build completed successfully, 1 total action
 Running autopybind11...
-+ /usr/bin/python3 -m autopybind11 --stage=2 --module_name=pydrake --castxml /mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/drake/external/castxml/castxml_bin -o /home/eacousineau/proj/tri/repo/branches/drake/master/drake/tmp/autopybind11 -y /mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/drake/tools/autopybind/bindings_to_generate.yaml -rs /mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/drake/tools/autopybind/bindings_to_generate.rsp -cg /mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/drake/tools/autopybind/autopybind11_customization.yaml
++ /usr/bin/python3 -m autopybind11 --stage=2 --module_name=pydrake --castxml /mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/drake/external/castxml/castxml_bin -o /home/eacousineau/proj/tri/repo/branches/drake/master/drake/tmp/autopybind11 -y /mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/drake/tools/autopybind/bindings_to_generate.yaml -rs /mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/drake/tools/autopybind/libdrake_compile_info.rsp -cg /mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/drake/tools/autopybind/autopybind11_customization.yaml
 /mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("lcmtypes") does not exist.
   warnings.warn(msg, RuntimeWarning)
 /mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/lcmtypes") does not exist.
@@ -530,50 +538,6 @@ Running autopybind11...
   warnings.warn(msg, RuntimeWarning)
 /mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/query_results/_virtual_includes/signed_distance_to_point") does not exist.
   warnings.warn(msg, RuntimeWarning)
-/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/distance_to_point_with_gradient") does not exist.
-  warnings.warn(msg, RuntimeWarning)
-/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/query_results/_virtual_includes/signed_distance_to_point_with_gradient") does not exist.
-  warnings.warn(msg, RuntimeWarning)
-/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/math") does not exist.
-  warnings.warn(msg, RuntimeWarning)
-/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/autodiff") does not exist.
-  warnings.warn(msg, RuntimeWarning)
-/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/barycentric") does not exist.
-  warnings.warn(msg, RuntimeWarning)
-/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/bspline_basis") does not exist.
-  warnings.warn(msg, RuntimeWarning)
-/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/compute_numerical_gradient") does not exist.
-  warnings.warn(msg, RuntimeWarning)
-/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/continuous_algebraic_riccati_equation") does not exist.
-  warnings.warn(msg, RuntimeWarning)
-/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/continuous_lyapunov_equation") does not exist.
-  warnings.warn(msg, RuntimeWarning)
-/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/discrete_algebraic_riccati_equation") does not exist.
-  warnings.warn(msg, RuntimeWarning)
-/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/discrete_lyapunov_equation") does not exist.
-  warnings.warn(msg, RuntimeWarning)
-/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/eigen_sparse_triplet") does not exist.
-  warnings.warn(msg, RuntimeWarning)
-/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/evenly_distributed_pts_on_sphere") does not exist.
-  warnings.warn(msg, RuntimeWarning)
-/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/gradient") does not exist.
-  warnings.warn(msg, RuntimeWarning)
-/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/vector3_util") does not exist.
-  warnings.warn(msg, RuntimeWarning)
-/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/gray_code") does not exist.
-  warnings.warn(msg, RuntimeWarning)
-/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/jacobian") does not exist.
-  warnings.warn(msg, RuntimeWarning)
-/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/matrix_util") does not exist.
-  warnings.warn(msg, RuntimeWarning)
-/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/orthonormal_basis") does not exist.
-  warnings.warn(msg, RuntimeWarning)
-/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/quadratic_form") does not exist.
-  warnings.warn(msg, RuntimeWarning)
-/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/saturate") does not exist.
-  warnings.warn(msg, RuntimeWarning)
-/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/wrap_to") does not exist.
-  warnings.warn(msg, RuntimeWarning)
 /mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/distance_to_shape_callback") does not exist.
   warnings.warn(msg, RuntimeWarning)
 /mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/query_results/_virtual_includes/signed_distance_pair") does not exist.
@@ -633,6 +597,48 @@ Running autopybind11...
 /mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/proximity/_virtual_includes/mesh_to_vtk") does not exist.
   warnings.warn(msg, RuntimeWarning)
 /mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/query_results/_virtual_includes/query_results") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/query_results/_virtual_includes/signed_distance_to_point_with_gradient") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/math") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/autodiff") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/barycentric") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/bspline_basis") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/compute_numerical_gradient") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/continuous_algebraic_riccati_equation") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/continuous_lyapunov_equation") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/discrete_algebraic_riccati_equation") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/discrete_lyapunov_equation") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/eigen_sparse_triplet") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/evenly_distributed_pts_on_sphere") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/gradient") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/vector3_util") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/gray_code") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/jacobian") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/matrix_util") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/orthonormal_basis") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/quadratic_form") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/saturate") does not exist.
+  warnings.warn(msg, RuntimeWarning)
+/mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/math/_virtual_includes/wrap_to") does not exist.
   warnings.warn(msg, RuntimeWarning)
 /mnt/ssd2/eacousineau/cache/bazel/_bazel_eacousineau/b2e564e32f8ad0fdcd9d9d860a1def41/execroot/drake/bazel-out/k8-opt/bin/tools/autopybind/generate.runfiles/pygccxml_py/pygccxml/parser/config.py:207: RuntimeWarning: include directory("bazel-out/k8-opt/bin/geometry/render/_virtual_includes/render_engine") does not exist.
   warnings.warn(msg, RuntimeWarning)
@@ -969,6 +975,19 @@ Running autopybind11...
 Warning: Class ShapeReifier  was not found in current module or any linked module
 Warning: Class System<float>  was not found in current module or any linked module
 Warning member Accept will not be bound due to unmet dependency SystemVisitor<double>
+Warning member Convert will not be bound due to unmet dependency Image<drake::systems::sensors::PixelType::kDepth16U>
+Warning member type_ will not be bound due to unmet dependency Type
+Warning member get_type will not be bound due to unmet dependency Type
+Warning member get_context_sizes will not be bound due to unmet dependency ContextSizes
+Warning member get_mutable_context_sizes will not be bound due to unmet dependency ContextSizes
+Warning member get_context_sizes will not be bound due to unmet dependency ContextSizes
+Warning member context_sizes_ will not be bound due to unmet dependency ContextSizes
+Warning member get_context_sizes will not be bound due to unmet dependency ContextSizes
+Warning member get_context_sizes will not be bound due to unmet dependency ContextSizes
+Warning member get_mutable_context_sizes will not be bound due to unmet dependency ContextSizes
+Warning: All instances of AutoDiffXd were unable to be found
+There were 1 names to find but 0 class(es) were returned
+Warning member Accept will not be bound due to unmet dependency SystemVisitor<double>
 Warning: Class LeafSystem<float> will not have inheritance relationship with class System<float> in binding code.
 
                                 Unable to locate class definition.
@@ -985,26 +1004,13 @@ Warning member DeclareVectorInputPort will not be bound due to unmet dependency 
 Warning member DeclareVectorInputPort will not be bound due to unmet dependency InputPort<float>
 Warning member DoCalcWitnessValue will not be bound due to unmet dependency WitnessFunction<float>
 Warning member GetGraphvizInputPortToken will not be bound due to unmet dependency InputPort<float>
-Warning member get_context_sizes will not be bound due to unmet dependency ContextSizes
-Warning member get_mutable_context_sizes will not be bound due to unmet dependency ContextSizes
-Warning member get_context_sizes will not be bound due to unmet dependency ContextSizes
-Warning member context_sizes_ will not be bound due to unmet dependency ContextSizes
-Warning member get_context_sizes will not be bound due to unmet dependency ContextSizes
-Warning member get_context_sizes will not be bound due to unmet dependency ContextSizes
-Warning member get_mutable_context_sizes will not be bound due to unmet dependency ContextSizes
-Warning member type_ will not be bound due to unmet dependency Type
-Warning member get_type will not be bound due to unmet dependency Type
 Warning member Accept will not be bound due to unmet dependency SystemVisitor<double>
 Warning member Accept will not be bound due to unmet dependency SystemVisitor<double>
-Warning member Accept will not be bound due to unmet dependency SystemVisitor<double>
-Warning member Convert will not be bound due to unmet dependency Image<drake::systems::sensors::PixelType::kDepth16U>
 Warning: Class RenderEngine will not have inheritance relationship with class ShapeReifier in binding code.
 
                                 Unable to locate class definition.
-Warning: All instances of AutoDiffXd were unable to be found
-There were 1 names to find but 0 class(es) were returned
 
 
-autopybind11 run time: 73.0358s
+autopybind11 run time: 78.7724s
 
 Wrote files to: /home/eacousineau/proj/tri/repo/branches/drake/master/drake/tmp/autopybind11

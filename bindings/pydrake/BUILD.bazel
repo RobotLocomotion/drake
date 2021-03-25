@@ -17,7 +17,6 @@ load(
     "add_pybind_coverage_data",
     "drake_pybind_cc_googletest",
     "drake_pybind_library",
-    "generate_autopybind11_rsp_file",
     "generate_pybind_coverage",
     "generate_pybind_documentation_header",
     "get_drake_py_installs",
@@ -51,54 +50,6 @@ drake_py_library(
         "//bindings:bazel_workaround_4594_libdrake_py",
         "//bindings/pydrake/common:_init_py",
         "//bindings/pydrake/common:deprecation_py",
-    ],
-)
-
-generate_autopybind11_rsp_file(
-    name = "generate_autopybind11_rsp_file",
-    header_archive = "autopybind11_example_headers.tar",
-    rsp_file = "autopybind11_example.rsp",
-    targets = [
-        "//tools/install/libdrake:drake_headers",
-        "//examples/compass_gait:compass_gait",
-        "//examples/manipulation_station:manipulation_station",
-        "//examples/manipulation_station:manipulation_station_hardware_interface",  # noqa
-        "//examples/pendulum:pendulum_plant",
-        "//examples/quadrotor:quadrotor_plant",
-        "//examples/rimless_wheel:rimless_wheel",
-        "//examples/van_der_pol:van_der_pol",
-        # TODO(eric.cousineau): Why are these necessary?
-        "@eigen",
-        "@fmt",
-        "@lcm",
-        "@spdlog",
-    ],
-)
-
-filegroup(
-    name = "autopybind11_example_inputs",
-    data = [
-        "autopybind11_config.yaml",
-        "autopybind11_example.rsp",
-        "autopybind11_example.yaml",
-        "autopybind11_example_headers.tar",
-    ],
-)
-
-# See neighboring README.md.
-drake_py_binary(
-    name = "autopybind11_example",
-    srcs = ["autopybind11_example.py"],
-    data = [
-        ":autopybind11_example_inputs",
-        "//tools/lint:find_data.py",
-        "@castxml//:castxml_bin",
-    ],
-    deps = [
-        "@autopybind11_py",
-        "@configargparse_py",
-        "@pygccxml_py",
-        "@toposort_py",
     ],
 )
 
@@ -348,6 +299,20 @@ drake_py_library(
     name = "pydrake",
     visibility = ["//visibility:public"],
     deps = [":all_py"],
+)
+
+# Roll-up for publicly acccessible testing utilities (for development with
+# workflows like drake-external-examples/drake_bazel_external).
+drake_py_library(
+    name = "test_utilities_py",
+    testonly = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        # N.B. We depend on pydrake so as to keep symmetry with the currently
+        # offered public targets (rollup only, no granular access).
+        ":pydrake",
+        "//bindings/pydrake/common/test_utilities",
+    ],
 )
 
 install(

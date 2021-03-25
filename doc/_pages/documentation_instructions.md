@@ -6,7 +6,7 @@ This page contains instructions on how to generate Drake's documentation,
 which uses a combination of
 [Jekyll](https://jekyllrb.com/),
 [Sphinx](http://www.sphinx-doc.org/en/stable/index.html), and
-[Doxygen](https://www.stack.nl/~dimitri/doxygen/).
+[Doxygen](https://www.doxygen.nl/index.html).
 This includes [Drake's main website](https://drake.mit.edu/) and
 API documentation
 ([C++](https://drake.mit.edu/doxygen_cxx/index.html) and
@@ -47,19 +47,16 @@ To generate the C++ API documentation:
 
 ```
 $ cd drake
-$ bazel build //doc:doxygen
-$ bazel-bin/doc/doxygen [options]
-$ bazel-bin/doc/doxygen --help  # To learn about the possible options.
+$ bazel build //doc/doxygen_cxx:build
+$ bazel-bin/doc/doxygen_cxx/build [options]
+$ bazel-bin/doc/doxygen_cxx/build --help  # To learn about the possible options.
 ```
 
 To generate the Python API documentation:
 
 ```
-$ bazel run //bindings/pydrake/doc:serve_sphinx [-- --browser=false]
+$ bazel run //doc/pydrake:serve_sphinx [-- --browser=false]
 ```
-
-The contents of the Python API documentation are also available via
-``bazel build //bindings/pydrake/doc:sphinx.zip``.
 
 # Continuous Integration
 

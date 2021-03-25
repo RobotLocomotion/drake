@@ -27,7 +27,9 @@ def _impl(repository_ctx):
 
 # A symlink to {}.
 exports_files(["{}"])
-""".format(found_command, command)
+
+{}
+""".format(found_command, command, repository_ctx.attr.build_epilog)
     repository_ctx.file(
         "BUILD.bazel",
         content = build_file_content,
@@ -39,6 +41,7 @@ which_repository = repository_rule(
         "command": attr.string(mandatory = True),
         "additional_search_paths": attr.string_list(),
         "allow_missing": attr.bool(default = False),
+        "build_epilog": attr.string(),
     },
     local = True,
     configure = True,
@@ -65,4 +68,5 @@ Args:
         build time instead of fetch time -- a failure to find the command will
         still result in a BUILD.bazel target that provides the command, but
         the target will be missing.
+    build_epilog: (Optional) Extra text to add to the generated BUILD.bazel.
 """

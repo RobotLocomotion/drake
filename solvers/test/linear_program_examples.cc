@@ -81,11 +81,11 @@ LinearProgram0::LinearProgram0(CostForm cost_form,
   x_ = prog()->NewContinuousVariables<2>();
   switch (cost_form) {
     case CostForm::kNonSymbolic: {
-      prog()->AddLinearCost(Vector2d(2.0, 1.0), x_);
+      prog()->AddLinearCost(Vector2d(2.0, 1.0), 4, x_);
       break;
     }
     case CostForm::kSymbolic: {
-      prog()->AddLinearCost(2 * x_(0) + x_(1));
+      prog()->AddLinearCost(2 * x_(0) + x_(1) + 4);
       break;
     }
     default: { throw std::runtime_error("Un-supported cost form."); }
@@ -147,11 +147,11 @@ LinearProgram1::LinearProgram1(CostForm cost_form,
   x_ = prog()->NewContinuousVariables<2>();
   switch (cost_form) {
     case CostForm::kNonSymbolic: {
-      prog()->AddLinearCost(Vector2d(1.0, -2.0), x_);
+      prog()->AddLinearCost(Vector2d(1.0, -2.0), 3, x_);
       break;
     }
     case CostForm::kSymbolic: {
-      prog()->AddLinearCost(x_(0) - 2 * x_(1));
+      prog()->AddLinearCost(x_(0) - 2 * x_(1) + 3);
       break;
     }
     default:

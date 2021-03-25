@@ -958,7 +958,7 @@ void SetMathematicalProgramResult(
         bb_con_dual_variable_indices,
     const std::unordered_map<Binding<Constraint>, int>&
         constraint_dual_start_index,
-    MathematicalProgramResult* result) {
+    double objective_constant, MathematicalProgramResult* result) {
   SnoptSolverDetails& solver_details =
       result->SetSolverDetailsType<SnoptSolverDetails>();
   // Populate our results structure.
@@ -973,7 +973,7 @@ void SetMathematicalProgramResult(
   if (solution_result == SolutionResult::kUnbounded) {
     result->set_optimal_cost(MathematicalProgram::kUnboundedCost);
   } else {
-    result->set_optimal_cost(solver_details.F(0));
+    result->set_optimal_cost(solver_details.F(0) + objective_constant);
   }
 }
 
@@ -1209,7 +1209,9 @@ void SolveWithGivenOptions(
   }
 
   int Cold = 0;
-  double ObjAdd = linear_cost_constant_term;
+  double objective_constant = linear_cost_constant_term;
+  // The index of the objective row among all function evaluation F (notice that
+  // due to SNOPT using Fortran, this is 1-indexed).
   int ObjRow = 1;
   int nS = 0;
   int nInf{0};
@@ -1244,7 +1246,8 @@ void SolveWithGivenOptions(
   // Actual solve.
   const char problem_name[] = "drake_problem";
   // clang-format off
-  Snopt::snkera(Cold, problem_name, nF, nx, ObjAdd, ObjRow, snopt_userfun,
+  Snopt::snkera(Cold, problem_name, nF, nx, objective_constant, ObjRow,
+                snopt_userfun,
                 nullptr /* isnLog snLog */, nullptr /* isnLog2 snLog2 */,
                 nullptr /* isqLog sqLog */, nullptr /* isnSTOP snSTOP */,
                 iAfun.data(), jAvar.data(), lenA, A.data(),
@@ -1268,9 +1271,9 @@ void SolveWithGivenOptions(
   }
   solver_details.info = snopt_status;
 
-  SetMathematicalProgramResult(prog, snopt_status, x_val,
-                               bb_con_dual_variable_indices,
-                               constraint_dual_start_index, result);
+  SetMathematicalProgramResult(
+      prog, snopt_status, x_val, bb_con_dual_variable_indices,
+      constraint_dual_start_index, objective_constant, result);
 }
 
 }  // namespace
