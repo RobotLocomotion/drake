@@ -5,7 +5,6 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/math/orthonormal_basis.h"
 #include "drake/math/quaternion.h"
 
 namespace drake {
@@ -1035,63 +1034,57 @@ TEST_F(RotationMatrixConversionTests, AngleAxisToRotationMatrix) {
   }
 }
 
-// Test that the method RotationMatrix::MakeRotationMatrixFromOneUnitVector()
-// produces a sensible right-handed orthogonal matrix.
-GTEST_TEST(RotationMatrixTest, MakeRotationMatrixFromOneUnitVector) {
-  // Ensure a zero vector throws an exception.
-  EXPECT_THROW(RotationMatrix<double>::MakeRotationMatrixFromOneUnitVector(
-                   Vector3<double>::Zero(), 0),
-               std::exception);
+// Utility function for verification of RotationMatrix::MakeFromOneUnitVector().
+void VerifyMakeFromOneUnitVector(const Vector3<double>& u_A, int axis_index) {
+  const RotationMatrix<double> R_AB =
+      RotationMatrix<double>::MakeFromOneUnitVector(u_A, axis_index);
+  EXPECT_TRUE(R_AB.IsValid());
 
-  // Ensure a non-unit vector throws an exception.
-  EXPECT_THROW(RotationMatrix<double>::MakeRotationMatrixFromOneUnitVector(
-                   Vector3<double>(1, 2, 3), 0),
-               std::exception);
+  // Verify that the unit vector u_A is located in the correct column of R_AB.
+  EXPECT_EQ(u_A, R_AB.col(axis_index));
 
-  // For the method under test, verify the rotation matrix R_AB created by that
-  // method produces accurate results for u in the Bx or By or Bz direction.
-  RotationMatrix<double> R_AB, R_identity;
-  const Matrix3<double>& m_identity = R_identity.matrix();
+  // The next code is a copy/edit of code in the soon-to-be-deprecated function
+  // ComputeBasisFromAxis() in the old Drake file orthogonal_bases.h. It is also
+  // similar to code found in the perp() and projectDownhillToNearestPoint()
+  // functions in the Simbody files unit_vec.h and ContactGeometry.cpp.  These
+  // older functions help verify the new Drake method MakeFromOneUnitVector().
+  const Vector3<double> u_abs(u_A.cwiseAbs());
+  int minAxis;
+  u_abs.minCoeff(&minAxis);
+  Vector3<double> perpAxis = Vector3<double>::Zero();
+  perpAxis[minAxis] = 1;
+
+  // Now define additional vectors in the basis.
+  const Vector3<double> v_A = u_A.cross(perpAxis).normalized();
+  const Vector3<double> w_A = u_A.cross(v_A);
+
+  // Set the columns of the matrix similar to the old ComputeBasisFromAxis().
+  // Note: The new method MakeFromOneUnitVector() and old ComputeBasisFromAxis()
+  // have different v_A and w_A directions (differing by a negative sign).
+  Matrix3<double> m_AB;
+  m_AB.col(axis_index) = u_A;
+  m_AB.col((axis_index + 1) % 3) = -v_A;  // Notice negated direction.
+  m_AB.col((axis_index + 2) % 3) = -w_A;  // Notice negated direction.
+
   constexpr double kTolerance = 8 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(R_AB.matrix(), m_AB, kTolerance));
+}
+
+// Verify MakeFromOneUnitVector() produces a right-handed orthonormal matrix.
+GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVector) {
+  RotationMatrix<double> R_AB;
   for (int i = 0; i < 3; ++i) {
-    // Test when [1, 0, 0] is used for the ith column of R_AB.
-    Vector3<double> u = Vector3<double>::UnitX();
-    R_AB = RotationMatrix<double>::MakeRotationMatrixFromOneUnitVector(u, i);
-    EXPECT_TRUE(R_AB.IsValid());
-    if (i == 0) {
-      EXPECT_TRUE(CompareMatrices(R_AB.matrix(), m_identity, kTolerance));
-    }
-
-    // Test when [0, 1, 0] is used for the ith column of R_AB.
-    u = Vector3<double>::UnitY();
-    R_AB = RotationMatrix<double>::MakeRotationMatrixFromOneUnitVector(u, i);
-    EXPECT_TRUE(R_AB.IsValid());
-    if (i == 1) {
-      EXPECT_TRUE(CompareMatrices(R_AB.matrix(), m_identity, kTolerance));
-    }
-
-    // Test when [0, 0, 1] is used for the ith column of R_AB.
-    u = Vector3<double>::UnitZ();
-    R_AB = RotationMatrix<double>::MakeRotationMatrixFromOneUnitVector(u, i);
-    EXPECT_TRUE(R_AB.IsValid());
-    if (i == 2) {
-      EXPECT_TRUE(CompareMatrices(R_AB.matrix(), m_identity, kTolerance));
-    }
+    // Tests when [1, 0, 0] (or similar) is used for the ith column of R_AB.
+    VerifyMakeFromOneUnitVector(Vector3<double>::UnitX(), i);
+    VerifyMakeFromOneUnitVector(Vector3<double>::UnitY(), i);
+    VerifyMakeFromOneUnitVector(Vector3<double>::UnitZ(), i);
 
     // Test when [x, y, z].normalized() is used for the ith column of R_AB.
-    for (double x = -2.1; x <= 2.1; x += 1) {
-      for (double y = -2.2; y <= 2.2; y += 1) {
-        for (double z = -2.3; z <= 2.3; z += 1) {
-          u = Vector3<double>(x, y, z).normalized();
-          R_AB = RotationMatrixd::MakeRotationMatrixFromOneUnitVector(u, i);
-          EXPECT_TRUE(R_AB.IsValid());
-
-          // Use the method in orthogonal_bases.h as a check on this method.
-          // Unfortunately, that method reverses the direction on two vectors.
-          Matrix3<double> m_expected = ComputeBasisFromAxis(i, u);
-          m_expected.col((i + 1) % 3) *= -1;
-          m_expected.col((i + 2) % 3) *= -1;
-          EXPECT_TRUE(CompareMatrices(R_AB.matrix(), m_expected, kTolerance));
+    for (double x = -2.1; x <= 2.1; x += 0.25) {
+      for (double y = -2.2; y <= 2.2; y += 0.25) {
+        for (double z = -M_PI; z <= 2.3; z += 0.25) {
+          const Vector3<double> u_A = Vector3<double>(x, y, z).normalized();
+          VerifyMakeFromOneUnitVector(u_A, i);
         }
       }
     }

@@ -275,87 +275,85 @@ class RotationMatrix {
     return RotationMatrix(R);
   }
 
-  /// Creates a rotation matrix R_AB from a given unit vector u and two other
-  /// internally-constructed unit vectors v and w which are orthogonal to u.
-  /// @param[in] u unit vector which is expressed in frame A and represents
-  ///  either Bx or By or Bz (depending on the value of index_012).
-  /// @param[in] index_012 The index of the unit vector associated with u,
-  ///  with 0 meaning u is Bx, 1 meaning u is By, and 2 meaning u is Bz.
-  /// @throws std::exception if |u| ≠ 1 or index_012 is not 0 or 1 or 2.
-  /// @note The right-handed set of orthogonal unit vectors u, v, w are regarded
-  ///  as forming a rigid basis B.
-  static RotationMatrix<T> MakeRotationMatrixFromOneUnitVector(
-      const Vector3<T>& u, int index_012) {
+  /// Creates a basis B and rotation matrix R_AB from a given unit vector u_A.
+  /// @param[in] u_A unit vector which is expressed in frame A and represents
+  ///  either Bx or By or Bz (depending on the value of axis_index).
+  /// @param[in] axis_index The index of the unit vector associated with u_A,
+  ///  with 0 meaning u_A is Bx, 1 meaning u_A is By, and 2 meaning u_A is Bz.
+  /// @pre axis_index must be 0 or 1 or 2.  u_A must be a unit vector.
+  /// @note This method forms a right-handed orthonormal basis with u_A and two
+  /// other internally-constructed unit vectors.
+  /// @retval R_AB rotational matrix with u_A in the axis_index column of R_AB.
+  static RotationMatrix<T> MakeFromOneUnitVector(
+      const Vector3<T>& u_A, int axis_index) {
+    // In debug builds, verify axis_index is 0 or 1 or 2.
+    DRAKE_ASSERT(axis_index >= 0  &&  axis_index <= 2);
+
     using std::abs;
-    // In debug builds, verify u seem to be a unit vector.
-    constexpr double kEpsilon = 512 * std::numeric_limits<double>::epsilon();
-    DRAKE_THROW_UNLESS(abs(1 - u.norm()) <= kEpsilon);
+    // In debug builds, verify u_A is within a permissive kTolerance of a unit
+    // vector.  Below: In debug builds, R_AB is verified before return.
+    constexpr double kTolerance =
+        8 * get_internal_tolerance_for_orthonormality();
+    DRAKE_ASSERT(abs(1 - u_A.norm()) <= kTolerance);
 
-    // To form a unit vector 𝐯 perpendicular to the given unit vector 𝐮, we use
-    // the fact that 𝐚 x 𝐮 is guaranteed to be perpendicular to 𝐮 (where 𝐚 is
-    // any unit vector).  We judiciously choose 𝐚 so it is not parallel to 𝐮
-    // by identifying uᵢ, the element of 𝐮 with the smallest absolute value.
-    // Note: The next results show 𝐚 x 𝐮 ≠ 0 (i.e., 𝐚 is not parallel to 𝐮).
-    // If |ux = 𝐮(0)| is smallest, set 𝐚 = [1, 0, 0] so 𝐚 x 𝐮 = [0, uz, -uy].
-    // If |uy = 𝐮(1)| is smallest, set 𝐚 = [0, 1, 0] so 𝐚 x 𝐮 = [-uz, 0, ux].
-    // If |uz = 𝐮(2)| is smallest, set 𝐚 = [0, 0, 1] so 𝐚 x 𝐮 = [uy, -ux, 0].
-    // We define 𝐯 = 𝐚 x 𝐮 / |𝐚 x 𝐮|, where |𝐚 x 𝐮| is guaranteed ≠ 0.
-    // It is helpful to define r₁ = 1 /|𝐚 x 𝐮| so 𝐯 = r₁ 𝐚 x 𝐮.
+    // This method forms a right-handed orthonormal basis with u_A (herein
+    // abbreviated u) and two internally-constructed unit vectors v and w.
 
-    // By defining 𝐰 = 𝐮 x 𝐯, we can see 𝐰 is a unit vector perpendicular to
-    // both 𝐮 and 𝐯 and ordered so 𝐮, 𝐯, 𝐰 form a right-handed set.
-    // To avoid computational cost, we do not directly calculate 𝐰 = 𝐮 x 𝐯.
-    // Instead, we substitute for 𝐯 as 𝐰 = 𝐮 x (𝐚 x 𝐮) / |𝐚 x 𝐮|, which can
-    // be written 𝐰 = r₁ 𝐮 x (𝐚 x 𝐮).  Working out the vector triple product
-    // with the "bac-cab" property, 𝐮 x (𝐚 x 𝐮) = 𝐚(𝐮⋅𝐮) - 𝐮(𝐮⋅𝐚) = 𝐚 - uᵢ𝐮
-    // (since 𝐮⋅𝐮 = 1 and 𝐮⋅𝐚 = uᵢ). Since |uᵢ| is small, 𝐚 - uᵢ𝐮 is mostly in
-    // the 𝐚 direction (and completely in the 𝐚 direction if ui = 0).  Lastly,
-    // we efficiently form 𝐰 = r₁(𝐚 - uᵢ𝐮) by defining r₂ = r₁ uᵢ.
-    // 𝐰 has the following helpfully identifiable properties:
-    // If uᵢ (i = 0 or 1 or 2) is the element of 𝐮 with smallest absolute value,
-    // then wᵢ (the iᵗʰ element of 𝐰) is the most positive element of 𝐰.
-    // If uᵢ = 0, then wᵢ = 1 and the other two elements of 𝐰 are 0.
-    const T& ux = u(0);  const T abs_ux = abs(ux);
-    const T& uy = u(1);  const T abs_uy = abs(uy);
-    const T& uz = u(2);  const T abs_uz = abs(uz);
-    Vector3<T> v, w;
+    // To form a unit vector v perpendicular to the given unit vector u, we use
+    // the fact that a x u is guaranteed to be perpendicular to u (where a is
+    // any unit vector).  We judiciously choose a so it is not parallel to u
+    // by identifying uₘᵢₙ, the element of u with the smallest absolute value.
+    // Note: The next results show a x u ≠ 0 (i.e., a is not parallel to u).
+    // If |ux = u(0)| is smallest, set a = [1, 0, 0] so a x u = [0, -uz, uy].
+    // If |uy = u(1)| is smallest, set a = [0, 1, 0] so a x u = [uz, 0, -ux].
+    // If |uz = u(2)| is smallest, set a = [0, 0, 1] so a x u = [-uy, ux, 0].
+    // We define v = a x u / |a x u|, where |a x u| is guaranteed ≠ 0.
+    // It is helpful to define r₁ = 1 /|a x u| so v = r₁ a x u.
+
+    // By defining w = u x v, w is guaranteed to be a unit vector perpendicular
+    // to both u and v and ordered so u, v, w form a right-handed set.
+    // To avoid computational cost, we do not directly calculate w = u x v.
+    // Instead, we substitute for v as w = u x (a x u) / |a x u|, which can
+    // be written w = r₁ u x (a x u).  Working out the vector triple product
+    // with the "bac-cab" property, u x (a x u) = a(u⋅u) - u(u⋅a) = a - uᵢu
+    // (since 𝐮⋅𝐮 = 1 and 𝐮⋅𝐚 = uᵢ). Since |uₘᵢₙ| is small, 𝐚 - uₘᵢₙ 𝐮 is
+    // mostly in the a direction (completely in the a direction if uₘᵢₙ = 0).
+    // Lastly, we efficiently form w = r₁(a - uₘᵢₙ u) by defining r₂ = r₁ uₘᵢₙ.
+    // The unit vector w has the following helpfully identifiable properties:
+    // If uᵢ (i = 0 or 1 or 2) is the element of u with smallest absolute value,
+    // then wᵢ (the iᵗʰ element of w) is the most positive element of w.
+    // If uᵢ = 0, then wᵢ = 1 and the other two elements of w are 0.
+
     using std::sqrt;
-    // If ui = 1, return the identity matrix.
-    if (u(index_012) == 1) {
-      v = Vector3<T>(0, 0, 0); v((index_012 + 1) % 3) = 1;
-      w = Vector3<T>(0, 0, 0); w((index_012 + 2) % 3) = 1;
 
-    // If |ux| is smallest: |ux| ≤ |uy| and |ux| < |uz| (x is preferred over y).
-    } else if (abs_ux < abs_uy && abs_ux < abs_uz) {
-      const T mag_a_cross_u = sqrt(1 - ux * ux);  // |𝐚 x 𝐮|
-      const T r1 = 1 / mag_a_cross_u;         // 1 / |𝐚 x 𝐮|
-      const T r2 = -ux *r1;
-      v = Vector3<T>(0, -r1 * uz, r1 * uy);
-      w = Vector3<T>(mag_a_cross_u, r2 * uy, r2 * uz);
+    // Instantiate the final rotation matrix and write directly to it instead of
+    // creating temporary values and subsequently copying.
+    RotationMatrix<T> R_AB(DoNotInitializeMemberFields{});
+    R_AB.R_AB_.col(axis_index) = u_A;
 
-    // If |uy| is smallest: |uy| < |ux| and |uy| < |uz|.
-    } else if (abs_uy < abs_uz) {
-      const T mag_a_cross_u = sqrt(1 - uy * uy);  // |𝐚 x 𝐮|
-      const T r1 = 1 / mag_a_cross_u;         // 1 / |𝐚 x 𝐮|
-      const T r2 = -uy *r1;
-      v = Vector3<T>(r1 * uz, 0, -r1 * ux);
-      w = Vector3<T>(r2 * ux, mag_a_cross_u, r2 * uz);
+    // The auto keyword below improves efficiency by allowing an intermediate
+    // eigen type to use column as a temporary - avoids copy.
+    auto v = R_AB.R_AB_.col((axis_index + 1) % 3);
+    auto w = R_AB.R_AB_.col((axis_index + 2) % 3);
 
-    // If |uz| is smallest: |uz| ≤ |ux| and |uz| ≤ |uy| (z preferred over x, y).
-    } else {
-      const T mag_a_cross_u = sqrt(1 - uz * uz);  // |𝐚 x 𝐮|
-      const T r1 = 1 / mag_a_cross_u;         // 1 / |𝐚 x 𝐮|
-      const T r2 = -uz *r1;
-      v = Vector3<T>(-r1 * uy, r1 * ux, 0);
-      w = Vector3<T>(r2 * ux, r2 * uy, mag_a_cross_u);
-    }
+    // Indices i, j, k are in cyclical order: 0, 1, 2 or 1, 2, 0 or 2, 0, 1.
+    int i;
+    u_A.cwiseAbs().minCoeff(&i);
+    const int j = (i + 1) % 3;
+    const int k = (j + 1) % 3;
+    const T mag_a_cross_u = sqrt(1 - u_A(i) * u_A(i));
+    const T r1 = 1 / mag_a_cross_u;
+    const T r2 = -u_A(i) * r1;
+    v(i) = 0;
+    v(j) = -r1 * u_A(k);
+    v(k) = r1 * u_A(j);
+    w(i) = mag_a_cross_u;
+    w(j) = r2 * u_A(j);
+    w(k) = r2 * u_A(k);
 
-    // Set the columns of the returned matrix R_AB.
-    RotationMatrix<T> R_AB;
-    Matrix3<T>& m_AB = R_AB.R_AB_;
-    m_AB.col(index_012) = u;
-    m_AB.col((index_012 + 1) % 3) = v;
-    m_AB.col((index_012 + 2) % 3) = w;
+    // In debug builds, validate the output rotation R_AB.  This also serves as
+    // a check on the validity of the input vector u_A to a unit vector.
+    DRAKE_ASSERT(R_AB.IsValid());
 
     return R_AB;
   }
@@ -650,7 +648,7 @@ class RotationMatrix {
   /// @note The tolerance is chosen by developers to ensure a reasonably
   /// valid (orthonormal) rotation matrix.
   /// @note To orthonormalize a 3x3 matrix, use ProjectToRotationMatrix().
-  static double get_internal_tolerance_for_orthonormality() {
+  static constexpr double get_internal_tolerance_for_orthonormality() {
     return kInternalToleranceForOrthonormality;
   }
 
