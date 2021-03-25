@@ -45,6 +45,27 @@ TEST_F(UnboundedLinearProgramTest0, TestUnbounded) {
     EXPECT_EQ(result.get_solver_details<ClpSolver>().status, CLP_UNBOUNDED);
   }
 }
+
+GTEST_TEST(TestDual, DualSolution1) {
+  ClpSolver solver;
+  if (solver.available()) {
+    TestLPDualSolution1(solver);
+  }
+}
+
+GTEST_TEST(TestDual, DualSolution2) {
+  ClpSolver solver;
+  if (solver.available()) {
+    TestLPDualSolution2(solver);
+  }
+}
+
+GTEST_TEST(TestDual, DualSolution3) {
+  ClpSolver solver;
+  if (solver.available()) {
+    TestLPDualSolution3(solver);
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
