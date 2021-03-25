@@ -37,6 +37,7 @@ public:
 };
 
 namespace py = pybind11;
+
 void apb11_pydrake_DrakeMockLcm_py_register(py::module &m) {
   py::class_<DrakeMockLcm, DrakeLcm, DrakeMockLcm_trampoline> PyDrakeMockLcm(
       m, "DrakeMockLcm");

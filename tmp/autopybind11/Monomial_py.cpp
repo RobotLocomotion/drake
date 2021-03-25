@@ -8,6 +8,7 @@
 using namespace drake::symbolic;
 
 namespace py = pybind11;
+
 void apb11_pydrake_Monomial_py_register(py::module &m) {
   py::class_<Monomial> PyMonomial(m, "Monomial");
 

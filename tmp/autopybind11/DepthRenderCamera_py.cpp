@@ -6,6 +6,7 @@
 using namespace drake::geometry::render;
 
 namespace py = pybind11;
+
 void apb11_pydrake_DepthRenderCamera_py_register(py::module &m) {
   py::class_<DepthRenderCamera> PyDepthRenderCamera(m, "DepthRenderCamera");
 

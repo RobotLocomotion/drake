@@ -8,6 +8,7 @@
 using namespace drake::symbolic;
 
 namespace py = pybind11;
+
 void apb11_pydrake_Environment_py_register(py::module &m) {
   py::class_<Environment> PyEnvironment(m, "Environment");
 

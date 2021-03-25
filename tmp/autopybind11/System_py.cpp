@@ -87,8 +87,19 @@ public:
 };
 
 namespace py = pybind11;
+
+template <typename Class, typename... Options>
+py::class_<Class, Options...> DefineTemplateClass(py::handle scope,
+                                                  const char *name,
+                                                  const char *doc_string = "") {
+  py::class_<Class, Options...> py_class(scope, name, doc_string);
+  return py_class;
+};
+
 void apb11_pydrake_System_py_register(py::module &m) {
-  py::class_<System<double>, SystemBase> PySystem_double(m, "System_double");
+  // Instantiation of System<double>
+  auto PySystem_double =
+      DefineTemplateClass<System<double>, SystemBase>(m, "System_double");
 
   PySystem_double
       .def("AddConstraint",
@@ -437,7 +448,7 @@ void apb11_pydrake_System_py_register(py::module &m) {
       .def("DoMapQDotToVelocity",
            static_cast<void (System<double>::*)(
                Context<double> const &,
-               ::Eigen::Ref<const Eigen::VectorXd, 0,
+               ::Eigen::Ref<const Eigen::Matrix<double, -1, 1, 0, -1, 1>, 0,
                             Eigen::InnerStride<1>> const &,
                VectorBase<double> *) const>(
                &System_double_publicist::DoMapQDotToVelocity),
@@ -445,7 +456,7 @@ void apb11_pydrake_System_py_register(py::module &m) {
       .def("DoMapVelocityToQDot",
            static_cast<void (System<double>::*)(
                Context<double> const &,
-               ::Eigen::Ref<const Eigen::VectorXd, 0,
+               ::Eigen::Ref<const Eigen::Matrix<double, -1, 1, 0, -1, 1>, 0,
                             Eigen::InnerStride<1>> const &,
                VectorBase<double> *) const>(
                &System_double_publicist::DoMapVelocityToQDot),
@@ -456,7 +467,8 @@ void apb11_pydrake_System_py_register(py::module &m) {
                &System<double>::EvalConservativePower),
            py::arg("context"))
       .def("EvalEigenVectorInput",
-           static_cast<::Eigen::VectorBlock<const Eigen::VectorXd, -1> (
+           static_cast<::Eigen::VectorBlock<
+               const Eigen::Matrix<double, -1, 1, 0, -1, 1>, -1> (
                System<double>::*)(Context<double> const &, int) const>(
                &System<double>::EvalEigenVectorInput),
            py::arg("context"), py::arg("port_index"))
@@ -607,7 +619,7 @@ void apb11_pydrake_System_py_register(py::module &m) {
       .def("MapQDotToVelocity",
            static_cast<void (System<double>::*)(
                Context<double> const &,
-               ::Eigen::Ref<const Eigen::VectorXd, 0,
+               ::Eigen::Ref<const Eigen::Matrix<double, -1, 1, 0, -1, 1>, 0,
                             Eigen::InnerStride<1>> const &,
                VectorBase<double> *) const>(&System<double>::MapQDotToVelocity),
            py::arg("context"), py::arg("qdot"), py::arg("generalized_velocity"))
@@ -619,7 +631,7 @@ void apb11_pydrake_System_py_register(py::module &m) {
       .def("MapVelocityToQDot",
            static_cast<void (System<double>::*)(
                Context<double> const &,
-               ::Eigen::Ref<const Eigen::VectorXd, 0,
+               ::Eigen::Ref<const Eigen::Matrix<double, -1, 1, 0, -1, 1>, 0,
                             Eigen::InnerStride<1>> const &,
                VectorBase<double> *) const>(&System<double>::MapVelocityToQDot),
            py::arg("context"), py::arg("generalized_velocity"), py::arg("qdot"))
@@ -786,8 +798,9 @@ void apb11_pydrake_System_py_register(py::module &m) {
 
       ;
 
-  py::class_<System<drake::AutoDiffXd>, SystemBase>
-      PySystem_Eigen_AutoDiffScalar_Eigen_VectorXd(
+  // Instantiation of System<drake::AutoDiffXd>
+  auto PySystem_Eigen_AutoDiffScalar_Eigen_VectorXd =
+      DefineTemplateClass<System<drake::AutoDiffXd>, SystemBase>(
           m, "System_Eigen_AutoDiffScalar_Eigen_VectorXd");
 
   PySystem_Eigen_AutoDiffScalar_Eigen_VectorXd

@@ -144,9 +144,20 @@ public:
 };
 
 namespace py = pybind11;
+
+template <typename Class, typename... Options>
+py::class_<Class, Options...> DefineTemplateClass(py::handle scope,
+                                                  const char *name,
+                                                  const char *doc_string = "") {
+  py::class_<Class, Options...> py_class(scope, name, doc_string);
+  return py_class;
+};
+
 void apb11_pydrake_LeafSystem_py_register(py::module &m) {
-  py::class_<LeafSystem<double>, System<double>> PyLeafSystem_double(
-      m, "LeafSystem_double");
+  // Instantiation of LeafSystem<double>
+  auto PyLeafSystem_double =
+      DefineTemplateClass<LeafSystem<double>, System<double>>(
+          m, "LeafSystem_double");
 
   PyLeafSystem_double
       .def("AddTriggeredWitnessFunctionToCompositeEventCollection",
@@ -304,7 +315,7 @@ void apb11_pydrake_LeafSystem_py_register(py::module &m) {
            py::arg("model_vector"))
       .def("DeclareDiscreteState",
            static_cast<DiscreteStateIndex (LeafSystem<double>::*)(
-               ::Eigen::Ref<const Eigen::VectorXd, 0,
+               ::Eigen::Ref<const Eigen::Matrix<double, -1, 1, 0, -1, 1>, 0,
                             Eigen::InnerStride<1>> const &)>(
                &LeafSystem_double_publicist::DeclareDiscreteState),
            py::arg("vector"))
@@ -312,25 +323,25 @@ void apb11_pydrake_LeafSystem_py_register(py::module &m) {
            static_cast<DiscreteStateIndex (LeafSystem<double>::*)(int)>(
                &LeafSystem_double_publicist::DeclareDiscreteState),
            py::arg("num_state_variables"))
-      .def(
-          "DeclareEqualityConstraint",
-          static_cast<SystemConstraintIndex (LeafSystem<double>::*)(
-              ::std::function<void(const Context<double> &, Eigen::VectorXd *)>,
-              int, ::std::string)>(
-              &LeafSystem_double_publicist::DeclareEqualityConstraint),
-          py::arg("calc"), py::arg("count"), py::arg("description"))
+      .def("DeclareEqualityConstraint",
+           static_cast<SystemConstraintIndex (LeafSystem<double>::*)(
+               ::std::function<void(const Context<double> &,
+                                    Eigen::Matrix<double, -1, 1, 0, -1, 1> *)>,
+               int, ::std::string)>(
+               &LeafSystem_double_publicist::DeclareEqualityConstraint),
+           py::arg("calc"), py::arg("count"), py::arg("description"))
       .def("DeclareImplicitTimeDerivativesResidualSize",
            static_cast<void (LeafSystem<double>::*)(int)>(
                &LeafSystem_double_publicist::
                    DeclareImplicitTimeDerivativesResidualSize),
            py::arg("n"))
-      .def(
-          "DeclareInequalityConstraint",
-          static_cast<SystemConstraintIndex (LeafSystem<double>::*)(
-              ::std::function<void(const Context<double> &, Eigen::VectorXd *)>,
-              SystemConstraintBounds, ::std::string)>(
-              &LeafSystem_double_publicist::DeclareInequalityConstraint),
-          py::arg("calc"), py::arg("bounds"), py::arg("description"))
+      .def("DeclareInequalityConstraint",
+           static_cast<SystemConstraintIndex (LeafSystem<double>::*)(
+               ::std::function<void(const Context<double> &,
+                                    Eigen::Matrix<double, -1, 1, 0, -1, 1> *)>,
+               SystemConstraintBounds, ::std::string)>(
+               &LeafSystem_double_publicist::DeclareInequalityConstraint),
+           py::arg("calc"), py::arg("bounds"), py::arg("description"))
       .def(
           "DeclareNumericParameter",
           static_cast<int (LeafSystem<double>::*)(BasicVector<double> const &)>(
@@ -518,8 +529,10 @@ void apb11_pydrake_LeafSystem_py_register(py::module &m) {
 
       ;
 
-  py::class_<LeafSystem<drake::AutoDiffXd>, System<drake::AutoDiffXd>>
-      PyLeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd(
+  // Instantiation of LeafSystem<drake::AutoDiffXd>
+  auto PyLeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd =
+      DefineTemplateClass<LeafSystem<drake::AutoDiffXd>,
+                          System<drake::AutoDiffXd>>(
           m, "LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd");
 
   PyLeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd
@@ -949,7 +962,9 @@ void apb11_pydrake_LeafSystem_py_register(py::module &m) {
 
       ;
 
-  py::class_<LeafSystem<float>> PyLeafSystem_float(m, "LeafSystem_float");
+  // Instantiation of LeafSystem<float>
+  auto PyLeafSystem_float =
+      DefineTemplateClass<LeafSystem<float>>(m, "LeafSystem_float");
 
   PyLeafSystem_float
       .def("AddTriggeredWitnessFunctionToCompositeEventCollection",

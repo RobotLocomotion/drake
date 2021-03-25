@@ -6,6 +6,7 @@
 using namespace drake::lcm;
 
 namespace py = pybind11;
+
 void apb11_pydrake_DrakeLcmInterface_py_register(py::module &m) {
   py::class_<DrakeLcmInterface> PyDrakeLcmInterface(m, "DrakeLcmInterface");
 

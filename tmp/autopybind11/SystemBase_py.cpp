@@ -38,6 +38,7 @@ public:
 };
 
 namespace py = pybind11;
+
 void apb11_pydrake_SystemBase_py_register(py::module &m) {
   py::class_<SystemBase, internal::SystemMessageInterface> PySystemBase(
       m, "SystemBase");

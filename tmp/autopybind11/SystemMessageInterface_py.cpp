@@ -6,6 +6,7 @@
 using namespace drake::systems::internal;
 
 namespace py = pybind11;
+
 void apb11_pydrake_SystemMessageInterface_py_register(py::module &m) {
   py::class_<SystemMessageInterface> PySystemMessageInterface(
       m, "SystemMessageInterface");

@@ -31,6 +31,7 @@ public:
 };
 
 namespace py = pybind11;
+
 void apb11_pydrake_DrakeLcm_py_register(py::module &m) {
   py::class_<DrakeLcm, DrakeLcmInterface, DrakeLcm_trampoline> PyDrakeLcm(
       m, "DrakeLcm");

@@ -7,6 +7,7 @@
 using namespace drake::perception;
 
 namespace py = pybind11;
+
 void apb11_pydrake_PointCloud_py_register(py::module &m) {
   py::class_<PointCloud> PyPointCloud(m, "PointCloud");
 

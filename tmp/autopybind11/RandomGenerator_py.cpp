@@ -6,6 +6,7 @@
 using namespace drake;
 
 namespace py = pybind11;
+
 void apb11_pydrake_RandomGenerator_py_register(py::module &m) {
   py::class_<RandomGenerator> PyRandomGenerator(m, "RandomGenerator");
 

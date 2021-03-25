@@ -8,6 +8,7 @@
 using namespace drake::symbolic;
 
 namespace py = pybind11;
+
 void apb11_pydrake_Expression_py_register(py::module &m) {
   py::class_<Expression> PyExpression(m, "Expression");
 

@@ -6,6 +6,7 @@
 using namespace drake::perception;
 
 namespace py = pybind11;
+
 void apb11_pydrake_DepthImageToPointCloud_py_register(py::module &m) {
   py::class_<DepthImageToPointCloud, ::drake::systems::LeafSystem<double>>
       PyDepthImageToPointCloud(m, "DepthImageToPointCloud");

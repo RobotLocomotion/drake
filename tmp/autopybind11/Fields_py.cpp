@@ -7,6 +7,7 @@
 using namespace drake::perception::pc_flags;
 
 namespace py = pybind11;
+
 void apb11_pydrake_Fields_py_register(py::module &m) {
   py::class_<Fields> PyFields(m, "Fields");
 

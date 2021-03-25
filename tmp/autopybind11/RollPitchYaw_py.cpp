@@ -7,9 +7,19 @@
 using namespace drake::math;
 
 namespace py = pybind11;
+
+template <typename Class, typename... Options>
+py::class_<Class, Options...> DefineTemplateClass(py::handle scope,
+                                                  const char *name,
+                                                  const char *doc_string = "") {
+  py::class_<Class, Options...> py_class(scope, name, doc_string);
+  return py_class;
+};
+
 void apb11_pydrake_RollPitchYaw_py_register(py::module &m) {
-  py::class_<RollPitchYaw<double>> PyRollPitchYaw_double(m,
-                                                         "RollPitchYaw_double");
+  // Instantiation of RollPitchYaw<double>
+  auto PyRollPitchYaw_double =
+      DefineTemplateClass<RollPitchYaw<double>>(m, "RollPitchYaw_double");
 
   PyRollPitchYaw_double
       .def(py::init<RollPitchYaw<double> const &>(), py::arg("arg0"))
@@ -157,8 +167,9 @@ void apb11_pydrake_RollPitchYaw_py_register(py::module &m) {
 
       ;
 
-  py::class_<RollPitchYaw<drake::AutoDiffXd>>
-      PyRollPitchYaw_Eigen_AutoDiffScalar_Eigen_VectorXd(
+  // Instantiation of RollPitchYaw<drake::AutoDiffXd>
+  auto PyRollPitchYaw_Eigen_AutoDiffScalar_Eigen_VectorXd =
+      DefineTemplateClass<RollPitchYaw<drake::AutoDiffXd>>(
           m, "RollPitchYaw_Eigen_AutoDiffScalar_Eigen_VectorXd");
 
   PyRollPitchYaw_Eigen_AutoDiffScalar_Eigen_VectorXd
@@ -229,7 +240,7 @@ void apb11_pydrake_RollPitchYaw_py_register(py::module &m) {
       .def_static(
           "DoesCosPitchAngleViolateGimbalLockTolerance",
           static_cast<::drake::scalar_predicate<drake::AutoDiffXd>::type (*)(
-              drake::AutoDiffXd const &)>(
+              ::Eigen::AutoDiffScalar<Eigen::VectorXd> const &)>(
               &RollPitchYaw<drake::AutoDiffXd>::
                   DoesCosPitchAngleViolateGimbalLockTolerance),
           py::arg("cos_pitch_angle"))
@@ -303,24 +314,24 @@ void apb11_pydrake_RollPitchYaw_py_register(py::module &m) {
            py::arg("rpy"))
       .def("set",
            static_cast<RollPitchYaw<drake::AutoDiffXd> &(
-               RollPitchYaw<drake::AutoDiffXd>::*)(drake::AutoDiffXd const &,
-                                                   drake::AutoDiffXd const &,
-                                                   drake::AutoDiffXd const &)>(
+               RollPitchYaw<drake::AutoDiffXd>::
+                   *)(::Eigen::AutoDiffScalar<Eigen::VectorXd> const &,
+                      drake::AutoDiffXd const &, drake::AutoDiffXd const &)>(
                &RollPitchYaw<drake::AutoDiffXd>::set),
            py::arg("roll"), py::arg("pitch"), py::arg("yaw"))
       .def("set_pitch_angle",
            static_cast<void (RollPitchYaw<drake::AutoDiffXd>::*)(
-               drake::AutoDiffXd const &)>(
+               ::Eigen::AutoDiffScalar<Eigen::VectorXd> const &)>(
                &RollPitchYaw<drake::AutoDiffXd>::set_pitch_angle),
            py::arg("p"))
       .def("set_roll_angle",
            static_cast<void (RollPitchYaw<drake::AutoDiffXd>::*)(
-               drake::AutoDiffXd const &)>(
+               ::Eigen::AutoDiffScalar<Eigen::VectorXd> const &)>(
                &RollPitchYaw<drake::AutoDiffXd>::set_roll_angle),
            py::arg("r"))
       .def("set_yaw_angle",
            static_cast<void (RollPitchYaw<drake::AutoDiffXd>::*)(
-               drake::AutoDiffXd const &)>(
+               ::Eigen::AutoDiffScalar<Eigen::VectorXd> const &)>(
                &RollPitchYaw<drake::AutoDiffXd>::set_yaw_angle),
            py::arg("y"))
       .def(

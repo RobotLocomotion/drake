@@ -24,6 +24,7 @@ public:
 };
 
 namespace py = pybind11;
+
 void apb11_pydrake_RenderEngine_py_register(py::module &m) {
   py::class_<RenderEngine> PyRenderEngine(m, "RenderEngine");
 
