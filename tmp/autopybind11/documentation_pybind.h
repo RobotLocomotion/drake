@@ -399,6 +399,7 @@
 // #include "drake/solvers/binding.h"
 // #include "drake/solvers/branch_and_bound.h"
 // #include "drake/solvers/choose_best_solver.h"
+// #include "drake/solvers/clp_solver.h"
 // #include "drake/solvers/common_solver_option.h"
 // #include "drake/solvers/constraint.h"
 // #include "drake/solvers/cost.h"
@@ -11628,44 +11629,48 @@ point Q, expressed in G's frame.)""";
       } SignedDistanceToPoint;
       // Symbol: drake::geometry::SignedDistanceToPointWithGradient
       struct /* SignedDistanceToPointWithGradient */ {
-        // Source: drake/geometry/query_results/signed_distance_to_point_with_gradient.h:17
-        const char* doc =
+        // Source: drake/geometry/query_results/signed_distance_to_point_with_gradient.h:21
+        const char* doc_deprecated =
 R"""(Same as SignedDistanceToPoint, except this class also contains the
 gradient w.r.t p_GQ_G (the position of the query point Q measured and
-expressed in object G's frame).)""";
+expressed in object G's frame). / (Deprecated.)
+
+Deprecated:
+    This unused class is being removed. Use SignedDistanceToPoint
+    instead. This will be removed from Drake on or after 2021-07-01.)""";
         // Symbol: drake::geometry::SignedDistanceToPointWithGradient::SignedDistanceToPointWithGradient
         struct /* ctor */ {
-          // Source: drake/geometry/query_results/signed_distance_to_point_with_gradient.h:18
+          // Source: drake/geometry/query_results/signed_distance_to_point_with_gradient.h:22
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::geometry::SignedDistanceToPointWithGradient::ddistance_dp_GQ
         struct /* ddistance_dp_GQ */ {
-          // Source: drake/geometry/query_results/signed_distance_to_point_with_gradient.h:56
+          // Source: drake/geometry/query_results/signed_distance_to_point_with_gradient.h:60
           const char* doc =
 R"""(The gradient of the distance w.r.t p_GQ.)""";
         } ddistance_dp_GQ;
         // Symbol: drake::geometry::SignedDistanceToPointWithGradient::dgrad_W_dp_GQ
         struct /* dgrad_W_dp_GQ */ {
-          // Source: drake/geometry/query_results/signed_distance_to_point_with_gradient.h:64
+          // Source: drake/geometry/query_results/signed_distance_to_point_with_gradient.h:68
           const char* doc = R"""(The derivative of grad_W w.r.t p_GQ.)""";
         } dgrad_W_dp_GQ;
         // Symbol: drake::geometry::SignedDistanceToPointWithGradient::distance
         struct /* distance */ {
-          // Source: drake/geometry/query_results/signed_distance_to_point_with_gradient.h:54
+          // Source: drake/geometry/query_results/signed_distance_to_point_with_gradient.h:58
           const char* doc =
 R"""(Same as SignedDistanceToPoint::distance.The signed distance from the
 query point Q to the nearest point N on the surface of geometry G.)""";
         } distance;
         // Symbol: drake::geometry::SignedDistanceToPointWithGradient::dp_GN_dp_GQ
         struct /* dp_GN_dp_GQ */ {
-          // Source: drake/geometry/query_results/signed_distance_to_point_with_gradient.h:49
+          // Source: drake/geometry/query_results/signed_distance_to_point_with_gradient.h:53
           const char* doc =
 R"""(The gradient of p_GN w.r.t p_GQ (the position of query point Q
 measured and expressed in object G's frame).)""";
         } dp_GN_dp_GQ;
         // Symbol: drake::geometry::SignedDistanceToPointWithGradient::grad_W
         struct /* grad_W */ {
-          // Source: drake/geometry/query_results/signed_distance_to_point_with_gradient.h:62
+          // Source: drake/geometry/query_results/signed_distance_to_point_with_gradient.h:66
           const char* doc =
 R"""(Same as SignedDistanceToPoint::grad_W. The unit length gradient vector
 of the distance function with respect to the query point Q, expressed
@@ -11673,18 +11678,18 @@ in world frame W.)""";
         } grad_W;
         // Symbol: drake::geometry::SignedDistanceToPointWithGradient::id_G
         struct /* id_G */ {
-          // Source: drake/geometry/query_results/signed_distance_to_point_with_gradient.h:39
+          // Source: drake/geometry/query_results/signed_distance_to_point_with_gradient.h:43
           const char* doc = R"""(Same as SignedDistanceToPoint::id_G.)""";
         } id_G;
         // Symbol: drake::geometry::SignedDistanceToPointWithGradient::is_grad_W_well_defined
         struct /* is_grad_W_well_defined */ {
-          // Source: drake/geometry/query_results/signed_distance_to_point_with_gradient.h:67
+          // Source: drake/geometry/query_results/signed_distance_to_point_with_gradient.h:71
           const char* doc =
 R"""(Same as SignedDistanceToPoint::is_grad_W_well_defined.)""";
         } is_grad_W_well_defined;
         // Symbol: drake::geometry::SignedDistanceToPointWithGradient::p_GN
         struct /* p_GN */ {
-          // Source: drake/geometry/query_results/signed_distance_to_point_with_gradient.h:44
+          // Source: drake/geometry/query_results/signed_distance_to_point_with_gradient.h:48
           const char* doc =
 R"""(Same as SignedDistanceToPoint::p_GN. The position of the nearest point
 N on G's surface to the query point Q, expressed in G's frame.)""";
@@ -19817,7 +19822,7 @@ integer value ``k`` that lands the output in the desired interval.
     struct /* multibody */ {
       // Symbol: drake::multibody::AddMultibodyPlantSceneGraph
       struct /* AddMultibodyPlantSceneGraph */ {
-        // Source: drake/multibody/plant/multibody_plant.h:4687
+        // Source: drake/multibody/plant/multibody_plant.h:4691
         const char* doc_3args_systemsDiagramBuilder_double_stduniqueptr =
 R"""(Makes a new MultibodyPlant with discrete update period ``time_step``
 and adds it to a diagram builder together with the provided SceneGraph
@@ -19845,7 +19850,7 @@ Returns:
 
 Precondition:
     ``builder`` must be non-null.)""";
-        // Source: drake/multibody/plant/multibody_plant.h:4709
+        // Source: drake/multibody/plant/multibody_plant.h:4713
         const char* doc_3args_systemsDiagramBuilder_stduniqueptr_stduniqueptr =
 R"""(Adds a MultibodyPlant and a SceneGraph instance to a diagram builder,
 connecting the geometry ports.
@@ -19872,7 +19877,7 @@ Precondition:
       } AddMultibodyPlantSceneGraph;
       // Symbol: drake::multibody::AddMultibodyPlantSceneGraphResult
       struct /* AddMultibodyPlantSceneGraphResult */ {
-        // Source: drake/multibody/plant/multibody_plant.h:4719
+        // Source: drake/multibody/plant/multibody_plant.h:4723
         const char* doc =
 R"""(Temporary result from ``AddMultibodyPlantSceneGraph``. This cannot be
 constructed outside of this method.
@@ -19882,34 +19887,34 @@ Warning:
     lifetime of this object should be as short as possible.)""";
         // Symbol: drake::multibody::AddMultibodyPlantSceneGraphResult::AddMultibodyPlantSceneGraphResult<T>
         struct /* ctor */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4747
+          // Source: drake/multibody/plant/multibody_plant.h:4751
           const char* doc = R"""()""";
         } ctor;
         // Symbol: drake::multibody::AddMultibodyPlantSceneGraphResult::get
         struct /* get */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4737
+          // Source: drake/multibody/plant/multibody_plant.h:4741
           const char* doc = R"""()""";
         } get;
         // Symbol: drake::multibody::AddMultibodyPlantSceneGraphResult::operator MultibodyPlant<type-parameter-0-0> &
         struct /* operator_MultibodyPlant_ */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4724
+          // Source: drake/multibody/plant/multibody_plant.h:4728
           const char* doc =
 R"""(For assignment to a plant reference (ignoring the scene graph).)""";
         } operator_MultibodyPlant_;
         // Symbol: drake::multibody::AddMultibodyPlantSceneGraphResult::operator tuple<MultibodyPlant<type-parameter-0-0> *&, SceneGraph<type-parameter-0-0> *&>
         struct /* operator_tuple */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4727
+          // Source: drake/multibody/plant/multibody_plant.h:4731
           const char* doc =
 R"""(For assignment to a std::tie of pointers.)""";
         } operator_tuple;
         // Symbol: drake::multibody::AddMultibodyPlantSceneGraphResult::plant
         struct /* plant */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4720
+          // Source: drake/multibody/plant/multibody_plant.h:4724
           const char* doc = R"""()""";
         } plant;
         // Symbol: drake::multibody::AddMultibodyPlantSceneGraphResult::scene_graph
         struct /* scene_graph */ {
-          // Source: drake/multibody/plant/multibody_plant.h:4721
+          // Source: drake/multibody/plant/multibody_plant.h:4725
           const char* doc = R"""()""";
         } scene_graph;
       } AddMultibodyPlantSceneGraphResult;
@@ -25465,7 +25470,7 @@ Minimal formulation of joint motion for biomechanisms.
 Nonlinear dynamics, 62(1), pp.291-303.)""";
         // Symbol: drake::multibody::MultibodyPlant::AddForceElement
         struct /* AddForceElement */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1049
+          // Source: drake/multibody/plant/multibody_plant.h:1053
           const char* doc =
 R"""(Adds a new force element model of type ``ForceElementType`` to
 ``this`` MultibodyPlant. The arguments to this method ``args`` are
@@ -25607,7 +25612,7 @@ See also:
         } AddJoint;
         // Symbol: drake::multibody::MultibodyPlant::AddJointActuator
         struct /* AddJointActuator */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1083
+          // Source: drake/multibody/plant/multibody_plant.h:1087
           const char* doc =
 R"""(Creates and adds a JointActuator model for an actuator acting on a
 given ``joint``. This method returns a constant reference to the
@@ -25650,7 +25655,7 @@ Raises:
         } AddJointActuator;
         // Symbol: drake::multibody::MultibodyPlant::AddModelInstance
         struct /* AddModelInstance */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1097
+          // Source: drake/multibody/plant/multibody_plant.h:1101
           const char* doc =
 R"""(Creates a new model instance. Returns the index for the model
 instance.
@@ -25735,7 +25740,7 @@ Raises:
         } AddRigidBody;
         // Symbol: drake::multibody::MultibodyPlant::CalcBiasCenterOfMassTranslationalAcceleration
         struct /* CalcBiasCenterOfMassTranslationalAcceleration */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3152
+          // Source: drake/multibody/plant/multibody_plant.h:3156
           const char* doc =
 R"""(Calculates abias_ACcm_E, point Ccm's translational "bias" acceleration
 term in frame A with respect to "speeds" 𝑠, expressed in frame E,
@@ -25778,7 +25783,7 @@ Raises:
         } CalcBiasCenterOfMassTranslationalAcceleration;
         // Symbol: drake::multibody::MultibodyPlant::CalcBiasSpatialAcceleration
         struct /* CalcBiasSpatialAcceleration */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2939
+          // Source: drake/multibody/plant/multibody_plant.h:2943
           const char* doc =
 R"""(For one point Bp affixed/welded to a frame B, calculates A𝑠Bias_ABp,
 Bp's spatial acceleration bias in frame A with respect to "speeds" 𝑠,
@@ -25844,7 +25849,7 @@ Raises:
         } CalcBiasSpatialAcceleration;
         // Symbol: drake::multibody::MultibodyPlant::CalcBiasTerm
         struct /* CalcBiasTerm */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2851
+          // Source: drake/multibody/plant/multibody_plant.h:2855
           const char* doc =
 R"""(Computes the bias term ``C(q, v)v`` containing Coriolis, centripetal,
 and gyroscopic effects in the multibody equations of motion:
@@ -25874,7 +25879,7 @@ Parameter ``Cv``:
         } CalcBiasTerm;
         // Symbol: drake::multibody::MultibodyPlant::CalcBiasTranslationalAcceleration
         struct /* CalcBiasTranslationalAcceleration */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2894
+          // Source: drake/multibody/plant/multibody_plant.h:2898
           const char* doc =
 R"""(For each point Bi affixed/welded to a frame B, calculates a𝑠Bias_ABi,
 Bi's translational acceleration bias in frame A with respect to
@@ -25947,7 +25952,7 @@ Raises:
         } CalcBiasTranslationalAcceleration;
         // Symbol: drake::multibody::MultibodyPlant::CalcCenterOfMassPosition
         struct /* CalcCenterOfMassPosition */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2454
+          // Source: drake/multibody/plant/multibody_plant.h:2458
           const char* doc_deprecated =
 R"""((Deprecated.)
 
@@ -25958,7 +25963,7 @@ Deprecated:
         } CalcCenterOfMassPosition;
         // Symbol: drake::multibody::MultibodyPlant::CalcCenterOfMassPositionInWorld
         struct /* CalcCenterOfMassPositionInWorld */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2446
+          // Source: drake/multibody/plant/multibody_plant.h:2450
           const char* doc_1args =
 R"""(Calculates the position vector from the world origin Wo to the center
 of mass of all bodies in this MultibodyPlant, expressed in the world
@@ -25980,7 +25985,7 @@ Raises:
 
 Note:
     The world_body() is ignored.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:2472
+          // Source: drake/multibody/plant/multibody_plant.h:2476
           const char* doc_2args =
 R"""(Calculates the position vector from the world origin Wo to the center
 of mass of all bodies contained in model_instances, expressed in the
@@ -26010,7 +26015,7 @@ Note:
         } CalcCenterOfMassPositionInWorld;
         // Symbol: drake::multibody::MultibodyPlant::CalcCenterOfMassTranslationalVelocityInWorld
         struct /* CalcCenterOfMassTranslationalVelocityInWorld */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2495
+          // Source: drake/multibody/plant/multibody_plant.h:2499
           const char* doc_1args =
 R"""(Calculates system center of mass translational velocity in world frame
 W.
@@ -26030,7 +26035,7 @@ Raises:
 
 Note:
     The world_body() is ignored.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:2510
+          // Source: drake/multibody/plant/multibody_plant.h:2514
           const char* doc_2args =
 R"""(Calculates system center of mass translational velocity in world frame
 W.
@@ -26057,7 +26062,7 @@ Note:
         } CalcCenterOfMassTranslationalVelocityInWorld;
         // Symbol: drake::multibody::MultibodyPlant::CalcForceElementsContribution
         struct /* CalcForceElementsContribution */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2660
+          // Source: drake/multibody/plant/multibody_plant.h:2664
           const char* doc =
 R"""(Computes the combined force contribution of ForceElement objects in
 the model. A ForceElement can apply forces as a spatial force per body
@@ -26081,7 +26086,7 @@ Raises:
         } CalcForceElementsContribution;
         // Symbol: drake::multibody::MultibodyPlant::CalcGravityGeneralizedForces
         struct /* CalcGravityGeneralizedForces */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2685
+          // Source: drake/multibody/plant/multibody_plant.h:2689
           const char* doc =
 R"""(Computes the generalized forces ``tau_g(q)`` due to gravity as a
 function of the generalized positions ``q`` stored in the input
@@ -26113,7 +26118,7 @@ Returns:
         } CalcGravityGeneralizedForces;
         // Symbol: drake::multibody::MultibodyPlant::CalcInverseDynamics
         struct /* CalcInverseDynamics */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2635
+          // Source: drake/multibody/plant/multibody_plant.h:2639
           const char* doc =
 R"""(Given the state of this model in ``context`` and a known vector of
 generalized accelerations ``vdot``, this method computes the set of
@@ -26166,7 +26171,7 @@ Returns:
         } CalcInverseDynamics;
         // Symbol: drake::multibody::MultibodyPlant::CalcJacobianAngularVelocity
         struct /* CalcJacobianAngularVelocity */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3031
+          // Source: drake/multibody/plant/multibody_plant.h:3035
           const char* doc =
 R"""(Calculates J𝑠_w_AB, a frame B's angular velocity Jacobian in a frame A
 with respect to "speeds" 𝑠.
@@ -26214,7 +26219,7 @@ Raises:
         } CalcJacobianAngularVelocity;
         // Symbol: drake::multibody::MultibodyPlant::CalcJacobianCenterOfMassTranslationalVelocity
         struct /* CalcJacobianCenterOfMassTranslationalVelocity */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3118
+          // Source: drake/multibody/plant/multibody_plant.h:3122
           const char* doc =
 R"""(This method computes J𝑠_v_ACcm_E, point Ccm's translational velocity
 Jacobian in frame A with respect to "speeds" 𝑠, expressed in frame E,
@@ -26255,7 +26260,7 @@ Raises:
         } CalcJacobianCenterOfMassTranslationalVelocity;
         // Symbol: drake::multibody::MultibodyPlant::CalcJacobianSpatialVelocity
         struct /* CalcJacobianSpatialVelocity */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2992
+          // Source: drake/multibody/plant/multibody_plant.h:2996
           const char* doc =
 R"""(For one point Bp fixed/welded to a frame B, calculates J𝑠_V_ABp, Bp's
 spatial velocity Jacobian in frame A with respect to "speeds" 𝑠.
@@ -26323,7 +26328,7 @@ Raises:
         } CalcJacobianSpatialVelocity;
         // Symbol: drake::multibody::MultibodyPlant::CalcJacobianTranslationalVelocity
         struct /* CalcJacobianTranslationalVelocity */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3081
+          // Source: drake/multibody/plant/multibody_plant.h:3085
           const char* doc =
 R"""(For each point Bi affixed/welded to a frame B, calculates J𝑠_v_ABi,
 Bi's translational velocity Jacobian in frame A with respect to
@@ -26394,7 +26399,7 @@ Note: Each partial derivative of p_AoBi is taken in frame A.)""";
         } CalcJacobianTranslationalVelocity;
         // Symbol: drake::multibody::MultibodyPlant::CalcMassMatrix
         struct /* CalcMassMatrix */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2824
+          // Source: drake/multibody/plant/multibody_plant.h:2828
           const char* doc =
 R"""(Performs the computation of the mass matrix ``M(q)`` of the model, as
 a function of the generalized positions q stored in ``context``. This
@@ -26417,7 +26422,7 @@ Warning:
         } CalcMassMatrix;
         // Symbol: drake::multibody::MultibodyPlant::CalcMassMatrixViaInverseDynamics
         struct /* CalcMassMatrixViaInverseDynamics */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2802
+          // Source: drake/multibody/plant/multibody_plant.h:2806
           const char* doc =
 R"""(Performs the computation of the mass matrix ``M(q)`` of the model
 using inverse dynamics, where the generalized positions q are stored
@@ -26465,7 +26470,7 @@ Warning:
         } CalcMassMatrixViaInverseDynamics;
         // Symbol: drake::multibody::MultibodyPlant::CalcPointsPositions
         struct /* CalcPointsPositions */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2426
+          // Source: drake/multibody/plant/multibody_plant.h:2430
           const char* doc =
 R"""(Given the positions ``p_BQi`` for a set of points ``Qi`` measured and
 expressed in a frame B, this method computes the positions
@@ -26505,7 +26510,7 @@ Note:
         } CalcPointsPositions;
         // Symbol: drake::multibody::MultibodyPlant::CalcRelativeRotationMatrix
         struct /* CalcRelativeRotationMatrix */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2388
+          // Source: drake/multibody/plant/multibody_plant.h:2392
           const char* doc =
 R"""(Calculates the rotation matrix ``R_FG`` relating frame F and frame G.
 
@@ -26524,7 +26529,7 @@ Returns ``R_FG``:
         } CalcRelativeRotationMatrix;
         // Symbol: drake::multibody::MultibodyPlant::CalcRelativeTransform
         struct /* CalcRelativeTransform */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2370
+          // Source: drake/multibody/plant/multibody_plant.h:2374
           const char* doc =
 R"""(Calculates the rigid transform (pose) ``X_FG`` relating frame F and
 frame G.
@@ -26544,7 +26549,7 @@ Returns ``X_FG``:
         } CalcRelativeTransform;
         // Symbol: drake::multibody::MultibodyPlant::CalcSpatialAccelerationsFromVdot
         struct /* CalcSpatialAccelerationsFromVdot */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2591
+          // Source: drake/multibody/plant/multibody_plant.h:2595
           const char* doc =
 R"""(Given the state of this model in ``context`` and a known vector of
 generalized accelerations ``known_vdot``, this method computes the
@@ -26568,7 +26573,7 @@ Raises:
         } CalcSpatialAccelerationsFromVdot;
         // Symbol: drake::multibody::MultibodyPlant::CalcSpatialMomentumInWorldAboutPoint
         struct /* CalcSpatialMomentumInWorldAboutPoint */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2533
+          // Source: drake/multibody/plant/multibody_plant.h:2537
           const char* doc_2args =
 R"""(This method returns the spatial momentum of ``this`` MultibodyPlant in
 the world frame W, about a designated point P, expressed in the world
@@ -26598,7 +26603,7 @@ Note:
         plant.CalcCenterOfMassPositionInWorld(context);
       const SpatialMomentum<T> L_WScm_W =
         plant.CalcSpatialMomentumInWorldAboutPoint(context, p_WoScm_W);)""";
-          // Source: drake/multibody/plant/multibody_plant.h:2567
+          // Source: drake/multibody/plant/multibody_plant.h:2571
           const char* doc_3args =
 R"""(This method returns the spatial momentum of a set of model instances
 in the world frame W, about a designated point P, expressed in frame
@@ -26646,7 +26651,7 @@ Raises:
         } CalcSpatialMomentumInWorldAboutPoint;
         // Symbol: drake::multibody::MultibodyPlant::CollectRegisteredGeometries
         struct /* CollectRegisteredGeometries */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1344
+          // Source: drake/multibody/plant/multibody_plant.h:1348
           const char* doc =
 R"""(For each of the provided ``bodies``, collects up all geometries that
 have been registered to that body. Intended to be used in conjunction
@@ -26681,7 +26686,7 @@ Raises:
         } CollectRegisteredGeometries;
         // Symbol: drake::multibody::MultibodyPlant::EvalBodyPoseInWorld
         struct /* EvalBodyPoseInWorld */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2293
+          // Source: drake/multibody/plant/multibody_plant.h:2297
           const char* doc =
 R"""(Evaluate the pose ``X_WB`` of a body B in the world frame W.
 
@@ -26700,7 +26705,7 @@ Raises:
         } EvalBodyPoseInWorld;
         // Symbol: drake::multibody::MultibodyPlant::EvalBodySpatialAccelerationInWorld
         struct /* EvalBodySpatialAccelerationInWorld */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2324
+          // Source: drake/multibody/plant/multibody_plant.h:2328
           const char* doc =
 R"""(Evaluates A_WB, body B's spatial acceleration in the world frame W.
 
@@ -26726,7 +26731,7 @@ Note:
         } EvalBodySpatialAccelerationInWorld;
         // Symbol: drake::multibody::MultibodyPlant::EvalBodySpatialVelocityInWorld
         struct /* EvalBodySpatialVelocityInWorld */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2307
+          // Source: drake/multibody/plant/multibody_plant.h:2311
           const char* doc =
 R"""(Evaluates V_WB, body B's spatial velocity in the world frame W.
 
@@ -26746,7 +26751,7 @@ Raises:
         } EvalBodySpatialVelocityInWorld;
         // Symbol: drake::multibody::MultibodyPlant::EvalPointPairPenetrations
         struct /* EvalPointPairPenetrations */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2338
+          // Source: drake/multibody/plant/multibody_plant.h:2342
           const char* doc =
 R"""(Evaluates all point pairs of contact for a given state of the model
 stored in ``context``. Each entry in the returned vector corresponds
@@ -26766,7 +26771,7 @@ Raises:
         } EvalPointPairPenetrations;
         // Symbol: drake::multibody::MultibodyPlant::ExcludeCollisionGeometriesWithCollisionFilterGroupPair
         struct /* ExcludeCollisionGeometriesWithCollisionFilterGroupPair */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1312
+          // Source: drake/multibody/plant/multibody_plant.h:1316
           const char* doc =
 R"""(Excludes the collision geometries between two given collision filter
 groups.
@@ -26779,7 +26784,7 @@ Precondition:
         } ExcludeCollisionGeometriesWithCollisionFilterGroupPair;
         // Symbol: drake::multibody::MultibodyPlant::Finalize
         struct /* Finalize */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1126
+          // Source: drake/multibody/plant/multibody_plant.h:1130
           const char* doc =
 R"""(This method must be called after all elements in the model (joints,
 bodies, force elements, constraints, etc.) are added and before any
@@ -26811,7 +26816,7 @@ Raises:
         } Finalize;
         // Symbol: drake::multibody::MultibodyPlant::GetAccelerationLowerLimits
         struct /* GetAccelerationLowerLimits */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3753
+          // Source: drake/multibody/plant/multibody_plant.h:3757
           const char* doc =
 R"""(Returns a vector of size ``num_velocities()`` containing the lower
 acceleration limits for every generalized velocity coordinate. These
@@ -26823,7 +26828,7 @@ Raises:
         } GetAccelerationLowerLimits;
         // Symbol: drake::multibody::MultibodyPlant::GetAccelerationUpperLimits
         struct /* GetAccelerationUpperLimits */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3760
+          // Source: drake/multibody/plant/multibody_plant.h:3764
           const char* doc =
 R"""(Upper limit analog of GetAccelerationsLowerLimits(), where any
 unbounded or unspecified limits will be +infinity.
@@ -26833,7 +26838,7 @@ See also:
         } GetAccelerationUpperLimits;
         // Symbol: drake::multibody::MultibodyPlant::GetActuationFromArray
         struct /* GetActuationFromArray */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2003
+          // Source: drake/multibody/plant/multibody_plant.h:2007
           const char* doc =
 R"""(Returns a vector of actuation values for ``model_instance`` from a
 vector ``u`` of actuation values for the entire model. This method
@@ -26842,7 +26847,7 @@ MultibodyPlant::num_actuated_dofs().)""";
         } GetActuationFromArray;
         // Symbol: drake::multibody::MultibodyPlant::GetBodiesWeldedTo
         struct /* GetBodiesWeldedTo */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3405
+          // Source: drake/multibody/plant/multibody_plant.h:3409
           const char* doc =
 R"""(Returns all bodies that are transitively welded, or rigidly affixed,
 to ``body``, per these two definitions:
@@ -26884,7 +26889,7 @@ Raises:
         } GetBodiesWeldedTo;
         // Symbol: drake::multibody::MultibodyPlant::GetBodyByName
         struct /* GetBodyByName */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3330
+          // Source: drake/multibody/plant/multibody_plant.h:3334
           const char* doc_1args =
 R"""(Returns a constant reference to a body that is identified by the
 string ``name`` in ``this`` MultibodyPlant.
@@ -26898,7 +26903,7 @@ Raises:
 See also:
     HasBodyNamed() to query if there exists a body in ``this``
     MultibodyPlant with a given specified name.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:3339
+          // Source: drake/multibody/plant/multibody_plant.h:3343
           const char* doc_2args =
 R"""(Returns a constant reference to the body that is uniquely identified
 by the string ``name`` and ``model_instance`` in ``this``
@@ -26913,7 +26918,7 @@ See also:
         } GetBodyByName;
         // Symbol: drake::multibody::MultibodyPlant::GetBodyFrameIdIfExists
         struct /* GetBodyFrameIdIfExists */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1357
+          // Source: drake/multibody/plant/multibody_plant.h:1361
           const char* doc =
 R"""(If the body with ``body_index`` belongs to the called plant, it
 returns the geometry::FrameId associated with it. Otherwise, it
@@ -26921,7 +26926,7 @@ returns nullopt.)""";
         } GetBodyFrameIdIfExists;
         // Symbol: drake::multibody::MultibodyPlant::GetBodyFrameIdOrThrow
         struct /* GetBodyFrameIdOrThrow */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1371
+          // Source: drake/multibody/plant/multibody_plant.h:1375
           const char* doc =
 R"""(If the body with ``body_index`` belongs to the called plant, it
 returns the geometry::FrameId associated with it. Otherwise this
@@ -26933,20 +26938,20 @@ Raises:
         } GetBodyFrameIdOrThrow;
         // Symbol: drake::multibody::MultibodyPlant::GetBodyFromFrameId
         struct /* GetBodyFromFrameId */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1349
+          // Source: drake/multibody/plant/multibody_plant.h:1353
           const char* doc =
 R"""(Given a geometry frame identifier, returns a pointer to the body
 associated with that id (nullptr if there is no such body).)""";
         } GetBodyFromFrameId;
         // Symbol: drake::multibody::MultibodyPlant::GetBodyIndices
         struct /* GetBodyIndices */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3345
+          // Source: drake/multibody/plant/multibody_plant.h:3349
           const char* doc =
 R"""(Returns a list of body indices associated with ``model_instance``.)""";
         } GetBodyIndices;
         // Symbol: drake::multibody::MultibodyPlant::GetCollisionGeometriesForBody
         struct /* GetCollisionGeometriesForBody */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1305
+          // Source: drake/multibody/plant/multibody_plant.h:1309
           const char* doc =
 R"""(Returns an array of GeometryId's identifying the different contact
 geometries for ``body`` previously registered with a SceneGraph.
@@ -26961,7 +26966,7 @@ See also:
         } GetCollisionGeometriesForBody;
         // Symbol: drake::multibody::MultibodyPlant::GetDefaultFreeBodyPose
         struct /* GetDefaultFreeBodyPose */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2157
+          // Source: drake/multibody/plant/multibody_plant.h:2161
           const char* doc =
 R"""(Gets the default pose of ``body`` as set by SetDefaultFreeBodyPose().
 
@@ -26970,7 +26975,7 @@ Parameter ``body``:
         } GetDefaultFreeBodyPose;
         // Symbol: drake::multibody::MultibodyPlant::GetFloatingBaseBodies
         struct /* GetFloatingBaseBodies */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2099
+          // Source: drake/multibody/plant/multibody_plant.h:2103
           const char* doc =
 R"""(Returns the set of body indexes corresponding to the free (floating)
 bodies in the model, in no particular order.
@@ -26980,7 +26985,7 @@ Raises:
         } GetFloatingBaseBodies;
         // Symbol: drake::multibody::MultibodyPlant::GetForceElement
         struct /* GetForceElement */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3632
+          // Source: drake/multibody/plant/multibody_plant.h:3636
           const char* doc =
 R"""(Returns a constant reference to a force element identified by its
 unique index in ``this`` MultibodyPlant. If the optional template
@@ -26998,7 +27003,7 @@ Raises:
         } GetForceElement;
         // Symbol: drake::multibody::MultibodyPlant::GetFrameByName
         struct /* GetFrameByName */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3516
+          // Source: drake/multibody/plant/multibody_plant.h:3520
           const char* doc_1args =
 R"""(Returns a constant reference to a frame that is identified by the
 string ``name`` in ``this`` model.
@@ -27012,7 +27017,7 @@ Raises:
 See also:
     HasFrameNamed() to query if there exists a frame in ``this`` model
     with a given specified name.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:3527
+          // Source: drake/multibody/plant/multibody_plant.h:3531
           const char* doc_2args =
 R"""(Returns a constant reference to the frame that is uniquely identified
 by the string ``name`` in ``model_instance``.
@@ -27029,7 +27034,7 @@ See also:
         } GetFrameByName;
         // Symbol: drake::multibody::MultibodyPlant::GetFreeBodyPose
         struct /* GetFreeBodyPose */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2107
+          // Source: drake/multibody/plant/multibody_plant.h:2111
           const char* doc =
 R"""(Gets the pose of a given ``body`` in the world frame W.
 
@@ -27046,7 +27051,7 @@ Raises:
         } GetFreeBodyPose;
         // Symbol: drake::multibody::MultibodyPlant::GetJointActuatorByName
         struct /* GetJointActuatorByName */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3592
+          // Source: drake/multibody/plant/multibody_plant.h:3596
           const char* doc_1args =
 R"""(Returns a constant reference to an actuator that is identified by the
 string ``name`` in ``this`` MultibodyPlant.
@@ -27061,7 +27066,7 @@ Raises:
 See also:
     HasJointActuatorNamed() to query if there exists an actuator in
     ``this`` MultibodyPlant with a given specified name.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:3603
+          // Source: drake/multibody/plant/multibody_plant.h:3607
           const char* doc_2args =
 R"""(Returns a constant reference to the actuator that is uniquely
 identified by the string ``name`` and ``model_instance`` in ``this``
@@ -27079,7 +27084,7 @@ See also:
         } GetJointActuatorByName;
         // Symbol: drake::multibody::MultibodyPlant::GetJointByName
         struct /* GetJointByName */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3461
+          // Source: drake/multibody/plant/multibody_plant.h:3465
           const char* doc =
 R"""(Returns a constant reference to a joint that is identified by the
 string ``name`` in ``this`` MultibodyPlant. If the optional template
@@ -27103,13 +27108,13 @@ See also:
         } GetJointByName;
         // Symbol: drake::multibody::MultibodyPlant::GetJointIndices
         struct /* GetJointIndices */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3444
+          // Source: drake/multibody/plant/multibody_plant.h:3448
           const char* doc =
 R"""(Returns a list of joint indices associated with ``model_instance``.)""";
         } GetJointIndices;
         // Symbol: drake::multibody::MultibodyPlant::GetModelInstanceByName
         struct /* GetModelInstanceByName */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3673
+          // Source: drake/multibody/plant/multibody_plant.h:3677
           const char* doc =
 R"""(Returns the index to the model instance that is uniquely identified by
 the string ``name`` in ``this`` MultibodyPlant.
@@ -27123,7 +27128,7 @@ See also:
         } GetModelInstanceByName;
         // Symbol: drake::multibody::MultibodyPlant::GetModelInstanceName
         struct /* GetModelInstanceName */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3657
+          // Source: drake/multibody/plant/multibody_plant.h:3661
           const char* doc =
 R"""(Returns the name of a ``model_instance``.
 
@@ -27133,7 +27138,7 @@ Raises:
         } GetModelInstanceName;
         // Symbol: drake::multibody::MultibodyPlant::GetMutableJointByName
         struct /* GetMutableJointByName */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3471
+          // Source: drake/multibody/plant/multibody_plant.h:3475
           const char* doc =
 R"""(A version of GetJointByName that returns a mutable reference.
 
@@ -27142,7 +27147,7 @@ See also:
         } GetMutableJointByName;
         // Symbol: drake::multibody::MultibodyPlant::GetMutablePositions
         struct /* GetMutablePositions */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1795
+          // Source: drake/multibody/plant/multibody_plant.h:1799
           const char* doc_1args =
 R"""((Advanced) Returns a mutable vector reference containing the vector of
 generalized positions (**see warning**).
@@ -27159,7 +27164,7 @@ Warning:
 Raises:
     RuntimeError if the ``context`` is nullptr or if it does not
     correspond to the context for a multibody model.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:1815
+          // Source: drake/multibody/plant/multibody_plant.h:1819
           const char* doc_2args =
 R"""((Advanced) Returns a mutable vector reference containing the vector of
 generalized positions (**see warning**).
@@ -27182,7 +27187,7 @@ Precondition:
         } GetMutablePositions;
         // Symbol: drake::multibody::MultibodyPlant::GetMutablePositionsAndVelocities
         struct /* GetMutablePositionsAndVelocities */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1722
+          // Source: drake/multibody/plant/multibody_plant.h:1726
           const char* doc =
 R"""((Advanced) Returns a mutable vector containing the vector ``[q; v]``
 of the model with ``q`` the vector of generalized positions and ``v``
@@ -27199,7 +27204,7 @@ Raises:
         } GetMutablePositionsAndVelocities;
         // Symbol: drake::multibody::MultibodyPlant::GetMutableVelocities
         struct /* GetMutableVelocities */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1905
+          // Source: drake/multibody/plant/multibody_plant.h:1909
           const char* doc_2args =
 R"""((Advanced) Returns a mutable vector reference containing the vector of
 generalized velocities (**see warning**).
@@ -27219,13 +27224,13 @@ Raises:
 
 Precondition:
     ``state`` comes from this MultibodyPlant.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:1919
+          // Source: drake/multibody/plant/multibody_plant.h:1923
           const char* doc_1args =
 R"""(See GetMutableVelocities() method above.)""";
         } GetMutableVelocities;
         // Symbol: drake::multibody::MultibodyPlant::GetPositionLowerLimits
         struct /* GetPositionLowerLimits */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3721
+          // Source: drake/multibody/plant/multibody_plant.h:3725
           const char* doc =
 R"""(Returns a vector of size ``num_positions()`` containing the lower
 position limits for every generalized position coordinate. These
@@ -27237,7 +27242,7 @@ Raises:
         } GetPositionLowerLimits;
         // Symbol: drake::multibody::MultibodyPlant::GetPositionUpperLimits
         struct /* GetPositionUpperLimits */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3728
+          // Source: drake/multibody/plant/multibody_plant.h:3732
           const char* doc =
 R"""(Upper limit analog of GetPositionsLowerLimits(), where any unbounded
 or unspecified limits will be +infinity.
@@ -27247,7 +27252,7 @@ See also:
         } GetPositionUpperLimits;
         // Symbol: drake::multibody::MultibodyPlant::GetPositions
         struct /* GetPositions */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1762
+          // Source: drake/multibody/plant/multibody_plant.h:1766
           const char* doc_1args =
 R"""(Returns a const vector reference containing the vector of generalized
 positions.
@@ -27259,7 +27264,7 @@ Note:
 Raises:
     RuntimeError if the ``context`` does not correspond to the context
     for a multibody model.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:1778
+          // Source: drake/multibody/plant/multibody_plant.h:1782
           const char* doc_2args =
 R"""(Returns an vector containing the generalized positions (``q``) for the
 given model instance.
@@ -27274,7 +27279,7 @@ Note:
         } GetPositions;
         // Symbol: drake::multibody::MultibodyPlant::GetPositionsAndVelocities
         struct /* GetPositionsAndVelocities */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1694
+          // Source: drake/multibody/plant/multibody_plant.h:1698
           const char* doc_1args =
 R"""(Returns a const vector reference containing the vector ``[q; v]`` with
 ``q`` the vector of generalized positions and ``v`` the vector of
@@ -27287,7 +27292,7 @@ Note:
 Raises:
     RuntimeError if the ``context`` does not correspond to the context
     for a multibody model.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:1707
+          // Source: drake/multibody/plant/multibody_plant.h:1711
           const char* doc_2args =
 R"""(Returns the vector ``[q; v]`` of the model with ``q`` the vector of
 generalized positions and ``v`` the vector of generalized velocities
@@ -27303,7 +27308,7 @@ Note:
         } GetPositionsAndVelocities;
         // Symbol: drake::multibody::MultibodyPlant::GetPositionsFromArray
         struct /* GetPositionsFromArray */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2031
+          // Source: drake/multibody/plant/multibody_plant.h:2035
           const char* doc =
 R"""(Returns a vector of generalized positions for ``model_instance`` from
 a vector ``q_array`` of generalized positions for the entire model
@@ -27312,7 +27317,7 @@ MultibodyPlant::num_positions().)""";
         } GetPositionsFromArray;
         // Symbol: drake::multibody::MultibodyPlant::GetRigidBodyByName
         struct /* GetRigidBodyByName */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3358
+          // Source: drake/multibody/plant/multibody_plant.h:3362
           const char* doc_1args =
 R"""(Returns a constant reference to a rigid body that is identified by the
 string ``name`` in ``this`` model.
@@ -27329,7 +27334,7 @@ Raises:
 See also:
     HasBodyNamed() to query if there exists a body in ``this`` model
     with a given specified name.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:3370
+          // Source: drake/multibody/plant/multibody_plant.h:3374
           const char* doc_2args =
 R"""(Returns a constant reference to the rigid body that is uniquely
 identified by the string ``name`` in ``model_instance``.
@@ -27349,7 +27354,7 @@ See also:
         } GetRigidBodyByName;
         // Symbol: drake::multibody::MultibodyPlant::GetTopologyGraphvizString
         struct /* GetTopologyGraphvizString */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3682
+          // Source: drake/multibody/plant/multibody_plant.h:3686
           const char* doc =
 R"""(Returns a Graphviz string describing the topology of this plant. To
 render the string, use the Graphviz tool, ``dot``.
@@ -27359,7 +27364,7 @@ Note: this method can be called either before or after ``Finalize()``.)""";
         } GetTopologyGraphvizString;
         // Symbol: drake::multibody::MultibodyPlant::GetUniqueFreeBaseBodyOrThrow
         struct /* GetUniqueFreeBaseBodyOrThrow */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2256
+          // Source: drake/multibody/plant/multibody_plant.h:2260
           const char* doc =
 R"""(If there exists a unique base body that belongs to the model given by
 ``model_instance`` and that unique base body is free (see
@@ -27377,7 +27382,7 @@ Raises:
         } GetUniqueFreeBaseBodyOrThrow;
         // Symbol: drake::multibody::MultibodyPlant::GetVelocities
         struct /* GetVelocities */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1871
+          // Source: drake/multibody/plant/multibody_plant.h:1875
           const char* doc_1args =
 R"""(Returns a const vector reference containing the generalized
 velocities.
@@ -27385,7 +27390,7 @@ velocities.
 Note:
     This method returns a reference to existing data, exhibits
     constant i.e., O(1) time complexity, and runs very quickly.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:1887
+          // Source: drake/multibody/plant/multibody_plant.h:1891
           const char* doc_2args =
 R"""(Returns a vector containing the generalized velocities (``v``) for the
 given model instance.
@@ -27400,7 +27405,7 @@ Note:
         } GetVelocities;
         // Symbol: drake::multibody::MultibodyPlant::GetVelocitiesFromArray
         struct /* GetVelocitiesFromArray */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2054
+          // Source: drake/multibody/plant/multibody_plant.h:2058
           const char* doc =
 R"""(Returns a vector of generalized velocities for ``model_instance`` from
 a vector ``v`` of generalized velocities for the entire MultibodyPlant
@@ -27409,7 +27414,7 @@ size MultibodyPlant::num_velocities().)""";
         } GetVelocitiesFromArray;
         // Symbol: drake::multibody::MultibodyPlant::GetVelocityLowerLimits
         struct /* GetVelocityLowerLimits */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3737
+          // Source: drake/multibody/plant/multibody_plant.h:3741
           const char* doc =
 R"""(Returns a vector of size ``num_velocities()`` containing the lower
 velocity limits for every generalized velocity coordinate. These
@@ -27421,7 +27426,7 @@ Raises:
         } GetVelocityLowerLimits;
         // Symbol: drake::multibody::MultibodyPlant::GetVelocityUpperLimits
         struct /* GetVelocityUpperLimits */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3744
+          // Source: drake/multibody/plant/multibody_plant.h:3748
           const char* doc =
 R"""(Upper limit analog of GetVelocitysLowerLimits(), where any unbounded
 or unspecified limits will be +infinity.
@@ -27431,7 +27436,7 @@ See also:
         } GetVelocityUpperLimits;
         // Symbol: drake::multibody::MultibodyPlant::GetVisualGeometriesForBody
         struct /* GetVisualGeometriesForBody */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1265
+          // Source: drake/multibody/plant/multibody_plant.h:1269
           const char* doc =
 R"""(Returns an array of GeometryId's identifying the different visual
 geometries for ``body`` previously registered with a SceneGraph.
@@ -27446,7 +27451,7 @@ See also:
         } GetVisualGeometriesForBody;
         // Symbol: drake::multibody::MultibodyPlant::HasBodyNamed
         struct /* HasBodyNamed */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3309
+          // Source: drake/multibody/plant/multibody_plant.h:3313
           const char* doc_1args =
 R"""(Returns:
     ``True`` if a body named ``name`` was added to the MultibodyPlant.
@@ -27456,7 +27461,7 @@ See also:
 
 Raises:
     RuntimeError if the body name occurs in multiple model instances.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:3318
+          // Source: drake/multibody/plant/multibody_plant.h:3322
           const char* doc_2args =
 R"""(Returns:
     ``True`` if a body named ``name`` was added to the MultibodyPlant
@@ -27470,7 +27475,7 @@ Raises:
         } HasBodyNamed;
         // Symbol: drake::multibody::MultibodyPlant::HasFrameNamed
         struct /* HasFrameNamed */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3497
+          // Source: drake/multibody/plant/multibody_plant.h:3501
           const char* doc_1args =
 R"""(Returns:
     ``True`` if a frame named ``name`` was added to the model.
@@ -27480,7 +27485,7 @@ See also:
 
 Raises:
     RuntimeError if the frame name occurs in multiple model instances.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:3504
+          // Source: drake/multibody/plant/multibody_plant.h:3508
           const char* doc_2args =
 R"""(Returns:
     ``True`` if a frame named ``name`` was added to
@@ -27494,7 +27499,7 @@ Raises:
         } HasFrameNamed;
         // Symbol: drake::multibody::MultibodyPlant::HasJointActuatorNamed
         struct /* HasJointActuatorNamed */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3572
+          // Source: drake/multibody/plant/multibody_plant.h:3576
           const char* doc_1args =
 R"""(Returns:
     ``True`` if an actuator named ``name`` was added to this model.
@@ -27505,7 +27510,7 @@ See also:
 Raises:
     RuntimeError if the actuator name occurs in multiple model
     instances.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:3580
+          // Source: drake/multibody/plant/multibody_plant.h:3584
           const char* doc_2args =
 R"""(Returns:
     ``True`` if an actuator named ``name`` was added to
@@ -27519,7 +27524,7 @@ Raises:
         } HasJointActuatorNamed;
         // Symbol: drake::multibody::MultibodyPlant::HasJointNamed
         struct /* HasJointNamed */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3424
+          // Source: drake/multibody/plant/multibody_plant.h:3428
           const char* doc_1args =
 R"""(Returns:
     ``True`` if a joint named ``name`` was added to this model.
@@ -27529,7 +27534,7 @@ See also:
 
 Raises:
     RuntimeError if the joint name occurs in multiple model instances.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:3431
+          // Source: drake/multibody/plant/multibody_plant.h:3435
           const char* doc_2args =
 R"""(Returns:
     ``True`` if a joint named ``name`` was added to
@@ -27543,7 +27548,7 @@ Raises:
         } HasJointNamed;
         // Symbol: drake::multibody::MultibodyPlant::HasModelInstanceNamed
         struct /* HasModelInstanceNamed */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3664
+          // Source: drake/multibody/plant/multibody_plant.h:3668
           const char* doc =
 R"""(Returns:
     ``True`` if a model instance named ``name`` was added to this
@@ -27554,7 +27559,7 @@ See also:
         } HasModelInstanceNamed;
         // Symbol: drake::multibody::MultibodyPlant::HasUniqueFreeBaseBody
         struct /* HasUniqueFreeBaseBody */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2266
+          // Source: drake/multibody/plant/multibody_plant.h:2270
           const char* doc =
 R"""(Return true if there exists a unique base body in the model given by
 ``model_instance`` and that unique base body is free.
@@ -27567,7 +27572,7 @@ Raises:
         } HasUniqueFreeBaseBody;
         // Symbol: drake::multibody::MultibodyPlant::IsAnchored
         struct /* IsAnchored */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3299
+          // Source: drake/multibody/plant/multibody_plant.h:3303
           const char* doc =
 R"""(Returns ``True`` if ``body`` is anchored (i.e. the kinematic path
 between ``body`` and the world only contains weld joints.)
@@ -27577,7 +27582,7 @@ Raises:
         } IsAnchored;
         // Symbol: drake::multibody::MultibodyPlant::MakeActuationMatrix
         struct /* MakeActuationMatrix */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3225
+          // Source: drake/multibody/plant/multibody_plant.h:3229
           const char* doc =
 R"""(This method creates an actuation matrix B mapping a vector of
 actuation values u into generalized forces ``tau_u = B * u``, where B
@@ -27597,7 +27602,7 @@ Warning:
         } MakeActuationMatrix;
         // Symbol: drake::multibody::MultibodyPlant::MakeActuatorSelectorMatrix
         struct /* MakeActuatorSelectorMatrix */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3206
+          // Source: drake/multibody/plant/multibody_plant.h:3210
           const char* doc_1args_user_to_actuator_index_map =
 R"""(This method allows user to map a vector ``uₛ`` containing the
 actuation for a set of selected actuators into the vector u containing
@@ -27615,7 +27620,7 @@ A user specifies the preferred order in uₛ via
 concatenation of the values for each actuator in the order they appear
 in ``user_to_actuator_index_map``. The full vector of actuation values
 u is ordered by JointActuatorIndex.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:3237
+          // Source: drake/multibody/plant/multibody_plant.h:3241
           const char* doc_1args_user_to_joint_index_map =
 R"""(Alternative signature to build an actuation selector matrix ``Su``
 such that ``u = Su⋅uₛ``, where u is the vector of actuation values for
@@ -27632,7 +27637,7 @@ Raises:
         } MakeActuatorSelectorMatrix;
         // Symbol: drake::multibody::MultibodyPlant::MakeStateSelectorMatrix
         struct /* MakeStateSelectorMatrix */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3183
+          // Source: drake/multibody/plant/multibody_plant.h:3187
           const char* doc =
 R"""(This method allows users to map the state of ``this`` model, x, into a
 vector of selected state xₛ with a given preferred ordering. The
@@ -27660,7 +27665,7 @@ Raises:
         } MakeStateSelectorMatrix;
         // Symbol: drake::multibody::MultibodyPlant::MapQDotToVelocity
         struct /* MapQDotToVelocity */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2747
+          // Source: drake/multibody/plant/multibody_plant.h:2751
           const char* doc =
 R"""(Transforms the time derivative ``qdot`` of the generalized positions
 vector ``q`` (stored in ``context``) to generalized velocities ``v``.
@@ -27693,7 +27698,7 @@ See also:
         } MapQDotToVelocity;
         // Symbol: drake::multibody::MultibodyPlant::MapVelocityToQDot
         struct /* MapVelocityToQDot */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2713
+          // Source: drake/multibody/plant/multibody_plant.h:2717
           const char* doc =
 R"""(Transforms generalized velocities v to time derivatives ``qdot`` of
 the generalized positions vector ``q`` (stored in ``context``). `v`
@@ -27771,7 +27776,7 @@ R"""(Scalar-converting copy constructor. See system_scalar_conversion.)""";
         } ctor;
         // Symbol: drake::multibody::MultibodyPlant::RegisterAsSourceForSceneGraph
         struct /* RegisterAsSourceForSceneGraph */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1210
+          // Source: drake/multibody/plant/multibody_plant.h:1214
           const char* doc =
 R"""(Registers ``this`` plant to serve as a source for an instance of
 SceneGraph. This registration allows MultibodyPlant to register
@@ -27803,7 +27808,7 @@ Raises:
         } RegisterAsSourceForSceneGraph;
         // Symbol: drake::multibody::MultibodyPlant::RegisterCollisionGeometry
         struct /* RegisterCollisionGeometry */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1287
+          // Source: drake/multibody/plant/multibody_plant.h:1291
           const char* doc_5args_body_X_BG_shape_name_properties =
 R"""(Registers geometry in a SceneGraph with a given geometry::Shape to be
 used for the contact modeling of a given ``body``. More than one
@@ -27830,13 +27835,13 @@ Raises:
     RuntimeError if called post-finalize or if the properties are
     missing the coulomb friction property (or if it is of the wrong
     type).)""";
-          // Source: drake/multibody/plant/multibody_plant.h:1294
+          // Source: drake/multibody/plant/multibody_plant.h:1298
           const char* doc_5args_body_X_BG_shape_name_coulomb_friction =
 R"""(Overload which specifies a single property: coulomb_friction.)""";
         } RegisterCollisionGeometry;
         // Symbol: drake::multibody::MultibodyPlant::RegisterVisualGeometry
         struct /* RegisterVisualGeometry */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1238
+          // Source: drake/multibody/plant/multibody_plant.h:1242
           const char* doc_5args_body_X_BG_shape_name_properties =
 R"""(Registers geometry in a SceneGraph with a given geometry::Shape to be
 used for visualization of a given ``body``.
@@ -27875,13 +27880,13 @@ Raises:
 
 Returns:
     the id for the registered geometry.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:1247
+          // Source: drake/multibody/plant/multibody_plant.h:1251
           const char* doc_5args_body_X_BG_shape_name_diffuse_color =
 R"""(Overload for visual geometry registration; it converts the
 ``diffuse_color`` (RGBA with values in the range [0, 1]) into a
 geometry::DrakeVisualizer-compatible set of
 geometry::IllustrationProperties.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:1255
+          // Source: drake/multibody/plant/multibody_plant.h:1259
           const char* doc_4args_body_X_BG_shape_name =
 R"""(Overload for visual geometry registration; it relies on the downstream
 geometry::IllustrationProperties *consumer* to provide default
@@ -27889,7 +27894,7 @@ parameter values (see geometry_roles for details).)""";
         } RegisterVisualGeometry;
         // Symbol: drake::multibody::MultibodyPlant::SetActuationInArray
         struct /* SetActuationInArray */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2019
+          // Source: drake/multibody/plant/multibody_plant.h:2023
           const char* doc =
 R"""(Given the actuation values ``u_instance`` for all actuators in
 ``model_instance``, this method sets the actuation vector u for the
@@ -27908,7 +27913,7 @@ Parameter ``u``:
         } SetActuationInArray;
         // Symbol: drake::multibody::MultibodyPlant::SetDefaultFreeBodyPose
         struct /* SetDefaultFreeBodyPose */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2149
+          // Source: drake/multibody/plant/multibody_plant.h:2153
           const char* doc =
 R"""(Sets the default pose of ``body``. If ``body.is_floating()`` is true,
 this will affect subsequent calls to SetDefaultState(); otherwise,
@@ -27922,7 +27927,7 @@ Parameter ``X_WB``:
         } SetDefaultFreeBodyPose;
         // Symbol: drake::multibody::MultibodyPlant::SetDefaultState
         struct /* SetDefaultState */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1972
+          // Source: drake/multibody/plant/multibody_plant.h:1976
           const char* doc =
 R"""(Sets ``state`` according to defaults set by the user for joints (e.g.
 RevoluteJoint::set_default_angle()) and free bodies
@@ -27934,7 +27939,7 @@ Raises:
         } SetDefaultState;
         // Symbol: drake::multibody::MultibodyPlant::SetFreeBodyPose
         struct /* SetFreeBodyPose */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2120
+          // Source: drake/multibody/plant/multibody_plant.h:2124
           const char* doc_3args =
 R"""(Sets ``context`` to store the pose ``X_WB`` of a given ``body`` B in
 the world frame W.
@@ -27950,7 +27955,7 @@ Raises:
 
 Raises:
     RuntimeError if called pre-finalize.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:2134
+          // Source: drake/multibody/plant/multibody_plant.h:2138
           const char* doc_4args =
 R"""(Sets ``state`` to store the pose ``X_WB`` of a given ``body`` B in the
 world frame W, for a given ``context`` of ``this`` model.
@@ -27972,7 +27977,7 @@ Precondition:
         } SetFreeBodyPose;
         // Symbol: drake::multibody::MultibodyPlant::SetFreeBodyPoseInAnchoredFrame
         struct /* SetFreeBodyPoseInAnchoredFrame */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2244
+          // Source: drake/multibody/plant/multibody_plant.h:2248
           const char* doc =
 R"""(Updates ``context`` to store the pose ``X_FB`` of a given ``body`` B
 in a frame F. Frame F must be anchored, meaning that it is either
@@ -27988,7 +27993,7 @@ Raises:
         } SetFreeBodyPoseInAnchoredFrame;
         // Symbol: drake::multibody::MultibodyPlant::SetFreeBodyPoseInWorldFrame
         struct /* SetFreeBodyPoseInWorldFrame */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2233
+          // Source: drake/multibody/plant/multibody_plant.h:2237
           const char* doc =
 R"""(Sets ``context`` to store the pose ``X_WB`` of a given ``body`` B in
 the world frame W.
@@ -28017,7 +28022,7 @@ Raises:
         } SetFreeBodyPoseInWorldFrame;
         // Symbol: drake::multibody::MultibodyPlant::SetFreeBodyRandomPositionDistribution
         struct /* SetFreeBodyRandomPositionDistribution */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2197
+          // Source: drake/multibody/plant/multibody_plant.h:2201
           const char* doc =
 R"""(Sets the distribution used by SetRandomState() to populate the free
 body's x-y-z ``position`` with respect to World.
@@ -28030,7 +28035,7 @@ Raises:
         } SetFreeBodyRandomPositionDistribution;
         // Symbol: drake::multibody::MultibodyPlant::SetFreeBodyRandomRotationDistribution
         struct /* SetFreeBodyRandomRotationDistribution */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2207
+          // Source: drake/multibody/plant/multibody_plant.h:2211
           const char* doc =
 R"""(Sets the distribution used by SetRandomState() to populate the free
 body's ``rotation`` with respect to World.
@@ -28043,7 +28048,7 @@ Raises:
         } SetFreeBodyRandomRotationDistribution;
         // Symbol: drake::multibody::MultibodyPlant::SetFreeBodyRandomRotationDistributionToUniform
         struct /* SetFreeBodyRandomRotationDistributionToUniform */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2218
+          // Source: drake/multibody/plant/multibody_plant.h:2222
           const char* doc =
 R"""(Sets the distribution used by SetRandomState() to populate the free
 body's rotation with respect to World using uniformly random
@@ -28057,7 +28062,7 @@ Raises:
         } SetFreeBodyRandomRotationDistributionToUniform;
         // Symbol: drake::multibody::MultibodyPlant::SetFreeBodySpatialVelocity
         struct /* SetFreeBodySpatialVelocity */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2169
+          // Source: drake/multibody/plant/multibody_plant.h:2173
           const char* doc_3args =
 R"""(Sets ``context`` to store the spatial velocity ``V_WB`` of a given
 ``body`` B in the world frame W.
@@ -28073,7 +28078,7 @@ Raises:
 
 Raises:
     RuntimeError if called pre-finalize.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:2184
+          // Source: drake/multibody/plant/multibody_plant.h:2188
           const char* doc_4args =
 R"""(Sets ``state`` to store the spatial velocity ``V_WB`` of a given
 ``body`` B in the world frame W, for a given ``context`` of ``this``
@@ -28096,7 +28101,7 @@ Precondition:
         } SetFreeBodySpatialVelocity;
         // Symbol: drake::multibody::MultibodyPlant::SetPositions
         struct /* SetPositions */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1832
+          // Source: drake/multibody/plant/multibody_plant.h:1836
           const char* doc_2args =
 R"""(Sets all generalized positions from the given vector.
 
@@ -28104,7 +28109,7 @@ Raises:
     RuntimeError if the ``context`` is nullptr, if the context does
     not correspond to the context for a multibody model, or if the
     length of ``q`` is not equal to ``num_positions()``.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:1843
+          // Source: drake/multibody/plant/multibody_plant.h:1847
           const char* doc_3args =
 R"""(Sets the positions for a particular model instance from the given
 vector.
@@ -28114,7 +28119,7 @@ Raises:
     not correspond to the context for a multibody model, if the model
     instance index is invalid, or if the length of ``q_instance`` is
     not equal to ``num_positions(model_instance)``.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:1858
+          // Source: drake/multibody/plant/multibody_plant.h:1862
           const char* doc_4args =
 R"""(Sets the positions for a particular model instance from the given
 vector.
@@ -28130,7 +28135,7 @@ Precondition:
         } SetPositions;
         // Symbol: drake::multibody::MultibodyPlant::SetPositionsAndVelocities
         struct /* SetPositionsAndVelocities */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1733
+          // Source: drake/multibody/plant/multibody_plant.h:1737
           const char* doc_2args =
 R"""(Sets all generalized positions and velocities from the given vector
 [q; v].
@@ -28140,7 +28145,7 @@ Raises:
     not correspond to the context for a multibody model, or if the
     length of ``q_v`` is not equal to ``num_positions() +
     num_velocities()``.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:1746
+          // Source: drake/multibody/plant/multibody_plant.h:1750
           const char* doc_3args =
 R"""(Sets generalized positions and velocities from the given vector [q; v]
 for the specified model instance.
@@ -28154,7 +28159,7 @@ Raises:
         } SetPositionsAndVelocities;
         // Symbol: drake::multibody::MultibodyPlant::SetPositionsInArray
         struct /* SetPositionsInArray */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2042
+          // Source: drake/multibody/plant/multibody_plant.h:2046
           const char* doc =
 R"""(Sets the vector of generalized positions for ``model_instance`` in
 ``q`` using ``q_instance``, leaving all other elements in the array
@@ -28164,7 +28169,7 @@ MultibodyPlant::num_positions() or ``q_instance`` is not of size
         } SetPositionsInArray;
         // Symbol: drake::multibody::MultibodyPlant::SetRandomState
         struct /* SetRandomState */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1991
+          // Source: drake/multibody/plant/multibody_plant.h:1995
           const char* doc =
 R"""(Assigns random values to all elements of the state, by drawing samples
 independently for each joint/free body (coming soon: and then solving
@@ -28176,7 +28181,7 @@ See also:
         } SetRandomState;
         // Symbol: drake::multibody::MultibodyPlant::SetVelocities
         struct /* SetVelocities */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1929
+          // Source: drake/multibody/plant/multibody_plant.h:1933
           const char* doc_2args =
 R"""(Sets all generalized velocities from the given vector.
 
@@ -28184,7 +28189,7 @@ Raises:
     RuntimeError if the ``context`` is nullptr, if the context does
     not correspond to the context for a multibody model, or if the
     length of ``v`` is not equal to ``num_velocities()``.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:1942
+          // Source: drake/multibody/plant/multibody_plant.h:1946
           const char* doc_4args =
 R"""(Sets the generalized velocities for a particular model instance from
 the given vector.
@@ -28197,7 +28202,7 @@ Raises:
 
 Precondition:
     ``state`` comes from this MultibodyPlant.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:1958
+          // Source: drake/multibody/plant/multibody_plant.h:1962
           const char* doc_3args =
 R"""(Sets the generalized velocities for a particular model instance from
 the given vector.
@@ -28210,7 +28215,7 @@ Raises:
         } SetVelocities;
         // Symbol: drake::multibody::MultibodyPlant::SetVelocitiesInArray
         struct /* SetVelocitiesInArray */ {
-          // Source: drake/multibody/plant/multibody_plant.h:2065
+          // Source: drake/multibody/plant/multibody_plant.h:2069
           const char* doc =
 R"""(Sets the vector of generalized velocities for ``model_instance`` in
 ``v`` using ``v_instance``, leaving all other elements in the array
@@ -28220,19 +28225,24 @@ MultibodyPlant::num_velocities() or ``v_instance`` is not of size
         } SetVelocitiesInArray;
         // Symbol: drake::multibody::MultibodyPlant::WeldFrames
         struct /* WeldFrames */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1026
+          // Source: drake/multibody/plant/multibody_plant.h:1029
           const char* doc =
-R"""(Welds frames A and B with relative pose ``X_AB``. That is, the pose of
-frame B in frame A is fixed, with value ``X_AB``. The call to this
-method creates and adds a new WeldJoint to the model. The new
-WeldJoint is named as: A.name() + "_welds_to_" + B.name().
+R"""(Welds ``frame_on_parent_P`` and ``frame_on_child_C`` with relative
+pose ``X_PC``. That is, the pose of frame C in frame P is fixed, with
+value ``X_PC``. If ``X_PC`` is omitted, the identity transform will be
+used. The call to this method creates and adds a new WeldJoint to the
+model. The new WeldJoint is named as: P.name() + "_welds_to_" +
+C.name().
 
 Returns:
-    a constant reference to the WeldJoint welding frames A and B.)""";
+    a constant reference to the WeldJoint welding frames P and C.
+
+Raises:
+    RuntimeError if the weld produces a duplicate joint name.)""";
         } WeldFrames;
         // Symbol: drake::multibody::MultibodyPlant::geometry_source_is_registered
         struct /* geometry_source_is_registered */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3801
+          // Source: drake/multibody/plant/multibody_plant.h:3805
           const char* doc =
 R"""(Returns ``True`` if ``this`` MultibodyPlant was registered with a
 SceneGraph. This method can be called at any time during the lifetime
@@ -28295,7 +28305,7 @@ forces can be applied to any number of bodies in the plant.)""";
         } get_applied_spatial_force_input_port;
         // Symbol: drake::multibody::MultibodyPlant::get_body
         struct /* get_body */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3292
+          // Source: drake/multibody/plant/multibody_plant.h:3296
           const char* doc =
 R"""(Returns a constant reference to the body with unique index
 ``body_index``.
@@ -28378,14 +28388,14 @@ Raises:
         } get_body_spatial_velocities_output_port;
         // Symbol: drake::multibody::MultibodyPlant::get_contact_model
         struct /* get_contact_model */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3765
+          // Source: drake/multibody/plant/multibody_plant.h:3769
           const char* doc =
 R"""(Returns the model used for contact. See documentation for
 ContactModel.)""";
         } get_contact_model;
         // Symbol: drake::multibody::MultibodyPlant::get_contact_penalty_method_time_scale
         struct /* get_contact_penalty_method_time_scale */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1618
+          // Source: drake/multibody/plant/multibody_plant.h:1622
           const char* doc =
 R"""(Returns a time-scale estimate ``tc`` based on the requested
 penetration allowance δ set with set_penetration_allowance(). For the
@@ -28419,7 +28429,7 @@ Raises:
         } get_contact_results_output_port;
         // Symbol: drake::multibody::MultibodyPlant::get_force_element
         struct /* get_force_element */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3618
+          // Source: drake/multibody/plant/multibody_plant.h:3622
           const char* doc =
 R"""(Returns a constant reference to the force element with unique index
 ``force_element_index``.
@@ -28430,7 +28440,7 @@ Raises:
         } get_force_element;
         // Symbol: drake::multibody::MultibodyPlant::get_frame
         struct /* get_frame */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3489
+          // Source: drake/multibody/plant/multibody_plant.h:3493
           const char* doc =
 R"""(Returns a constant reference to the frame with unique index
 ``frame_index``.
@@ -28500,7 +28510,7 @@ collision geometry registration and connection with a SceneGraph.)""";
         } get_geometry_query_input_port;
         // Symbol: drake::multibody::MultibodyPlant::get_joint
         struct /* get_joint */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3416
+          // Source: drake/multibody/plant/multibody_plant.h:3420
           const char* doc =
 R"""(Returns a constant reference to the joint with unique index
 ``joint_index``.
@@ -28511,7 +28521,7 @@ Raises:
         } get_joint;
         // Symbol: drake::multibody::MultibodyPlant::get_joint_actuator
         struct /* get_joint_actuator */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3554
+          // Source: drake/multibody/plant/multibody_plant.h:3558
           const char* doc =
 R"""(Returns a constant reference to the joint actuator with unique index
 ``actuator_index``.
@@ -28522,7 +28532,7 @@ Raises:
         } get_joint_actuator;
         // Symbol: drake::multibody::MultibodyPlant::get_mutable_joint
         struct /* get_mutable_joint */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3439
+          // Source: drake/multibody/plant/multibody_plant.h:3443
           const char* doc =
 R"""(Returns a mutable reference to the joint with unique index
 ``joint_index``.
@@ -28533,7 +28543,7 @@ Raises:
         } get_mutable_joint;
         // Symbol: drake::multibody::MultibodyPlant::get_mutable_joint_actuator
         struct /* get_mutable_joint_actuator */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3563
+          // Source: drake/multibody/plant/multibody_plant.h:3567
           const char* doc =
 R"""(Returns a mutable reference to the joint actuator with unique index
 ``actuator_index``.
@@ -28572,7 +28582,7 @@ Raises:
         } get_reaction_forces_output_port;
         // Symbol: drake::multibody::MultibodyPlant::get_source_id
         struct /* get_source_id */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3792
+          // Source: drake/multibody/plant/multibody_plant.h:3796
           const char* doc =
 R"""(Returns the unique id identifying ``this`` plant as a source for a
 SceneGraph. Returns ``nullopt`` if ``this`` plant did not register any
@@ -28611,13 +28621,13 @@ Raises:
         } get_state_output_port;
         // Symbol: drake::multibody::MultibodyPlant::gravity_field
         struct /* gravity_field */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3639
+          // Source: drake/multibody/plant/multibody_plant.h:3643
           const char* doc =
 R"""(An accessor to the current gravity field.)""";
         } gravity_field;
         // Symbol: drake::multibody::MultibodyPlant::is_finalized
         struct /* is_finalized */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3270
+          // Source: drake/multibody/plant/multibody_plant.h:3274
           const char* doc =
 R"""(Returns ``True`` if this MultibodyPlant was finalized with a call to
 Finalize().
@@ -28627,17 +28637,17 @@ See also:
         } is_finalized;
         // Symbol: drake::multibody::MultibodyPlant::mutable_gravity_field
         struct /* mutable_gravity_field */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3644
+          // Source: drake/multibody/plant/multibody_plant.h:3648
           const char* doc =
 R"""(A mutable accessor to the current gravity field.)""";
         } mutable_gravity_field;
         // Symbol: drake::multibody::MultibodyPlant::num_actuated_dofs
         struct /* num_actuated_dofs */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3541
+          // Source: drake/multibody/plant/multibody_plant.h:3545
           const char* doc_0args =
 R"""(Returns the total number of actuated degrees of freedom. That is, the
 vector of actuation values u has this size. See AddJointActuator().)""";
-          // Source: drake/multibody/plant/multibody_plant.h:3546
+          // Source: drake/multibody/plant/multibody_plant.h:3550
           const char* doc_1args =
 R"""(Returns the total number of actuated degrees of freedom for a specific
 model instance. That is, the vector of actuation values u has this
@@ -28645,7 +28655,7 @@ size. See AddJointActuator().)""";
         } num_actuated_dofs;
         // Symbol: drake::multibody::MultibodyPlant::num_actuators
         struct /* num_actuators */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3534
+          // Source: drake/multibody/plant/multibody_plant.h:3538
           const char* doc =
 R"""(Returns the number of joint actuators in the model.
 
@@ -28654,7 +28664,7 @@ See also:
         } num_actuators;
         // Symbol: drake::multibody::MultibodyPlant::num_bodies
         struct /* num_bodies */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3285
+          // Source: drake/multibody/plant/multibody_plant.h:3289
           const char* doc =
 R"""(Returns the number of bodies in the model, including the "world" body,
 which is always part of the model.
@@ -28664,7 +28674,7 @@ See also:
         } num_bodies;
         // Symbol: drake::multibody::MultibodyPlant::num_collision_geometries
         struct /* num_collision_geometries */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3779
+          // Source: drake/multibody/plant/multibody_plant.h:3783
           const char* doc =
 R"""(Returns the number of geometries registered for contact modeling. This
 method can be called at any time during the lifetime of ``this``
@@ -28673,7 +28683,7 @@ calls will always return the same value.)""";
         } num_collision_geometries;
         // Symbol: drake::multibody::MultibodyPlant::num_force_elements
         struct /* num_force_elements */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3610
+          // Source: drake/multibody/plant/multibody_plant.h:3614
           const char* doc =
 R"""(Returns the number of ForceElement objects.
 
@@ -28682,7 +28692,7 @@ See also:
         } num_force_elements;
         // Symbol: drake::multibody::MultibodyPlant::num_frames
         struct /* num_frames */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3482
+          // Source: drake/multibody/plant/multibody_plant.h:3486
           const char* doc =
 R"""(Returns the number of Frame objects in this model. Frames include body
 frames associated with each of the bodies, including the *world* body.
@@ -28690,7 +28700,7 @@ This means the minimum number of frames is one.)""";
         } num_frames;
         // Symbol: drake::multibody::MultibodyPlant::num_joints
         struct /* num_joints */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3409
+          // Source: drake/multibody/plant/multibody_plant.h:3413
           const char* doc =
 R"""(Returns the number of joints in the model.
 
@@ -28699,7 +28709,7 @@ See also:
         } num_joints;
         // Symbol: drake::multibody::MultibodyPlant::num_model_instances
         struct /* num_model_instances */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3650
+          // Source: drake/multibody/plant/multibody_plant.h:3654
           const char* doc =
 R"""(Returns the number of model instances in the model.
 
@@ -28708,11 +28718,11 @@ See also:
         } num_model_instances;
         // Symbol: drake::multibody::MultibodyPlant::num_multibody_states
         struct /* num_multibody_states */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3706
+          // Source: drake/multibody/plant/multibody_plant.h:3710
           const char* doc_0args =
 R"""(Returns the size of the multibody system state vector x = [q v]. This
 will be ``num_positions()`` plus ``num_velocities()``.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:3712
+          // Source: drake/multibody/plant/multibody_plant.h:3716
           const char* doc_1args =
 R"""(Returns the size of the multibody system state vector xᵢ = [qᵢ vᵢ] for
 model instance i. (Here qᵢ ⊆ q and vᵢ ⊆ v.) will be
@@ -28721,27 +28731,27 @@ model instance i. (Here qᵢ ⊆ q and vᵢ ⊆ v.) will be
         } num_multibody_states;
         // Symbol: drake::multibody::MultibodyPlant::num_positions
         struct /* num_positions */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3685
+          // Source: drake/multibody/plant/multibody_plant.h:3689
           const char* doc_0args =
 R"""(Returns the size of the generalized position vector q for this model.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:3689
+          // Source: drake/multibody/plant/multibody_plant.h:3693
           const char* doc_1args =
 R"""(Returns the size of the generalized position vector qᵢ for model
 instance i.)""";
         } num_positions;
         // Symbol: drake::multibody::MultibodyPlant::num_velocities
         struct /* num_velocities */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3694
+          // Source: drake/multibody/plant/multibody_plant.h:3698
           const char* doc_0args =
 R"""(Returns the size of the generalized velocity vector v for this model.)""";
-          // Source: drake/multibody/plant/multibody_plant.h:3698
+          // Source: drake/multibody/plant/multibody_plant.h:3702
           const char* doc_1args =
 R"""(Returns the size of the generalized velocity vector vᵢ for model
 instance i.)""";
         } num_velocities;
         // Symbol: drake::multibody::MultibodyPlant::num_visual_geometries
         struct /* num_visual_geometries */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3771
+          // Source: drake/multibody/plant/multibody_plant.h:3775
           const char* doc =
 R"""(Returns the number of geometries registered for visualization. This
 method can be called at any time during the lifetime of ``this``
@@ -28750,7 +28760,7 @@ calls will always return the same value.)""";
         } num_visual_geometries;
         // Symbol: drake::multibody::MultibodyPlant::set_contact_model
         struct /* set_contact_model */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1561
+          // Source: drake/multibody/plant/multibody_plant.h:1565
           const char* doc =
 R"""(Sets the contact model to be used by ``this`` MultibodyPlant, see
 ContactModel for available options. The default contact model is
@@ -28761,12 +28771,12 @@ Raises:
         } set_contact_model;
         // Symbol: drake::multibody::MultibodyPlant::set_contact_solver
         struct /* set_contact_solver */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1577
+          // Source: drake/multibody/plant/multibody_plant.h:1581
           const char* doc = R"""()""";
         } set_contact_solver;
         // Symbol: drake::multibody::MultibodyPlant::set_penetration_allowance
         struct /* set_penetration_allowance */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1597
+          // Source: drake/multibody/plant/multibody_plant.h:1601
           const char* doc =
 R"""(Sets the penetration allowance used to estimate the coefficients in
 the penalty method used to impose non-penetration among bodies. Refer
@@ -28778,7 +28788,7 @@ Raises:
         } set_penetration_allowance;
         // Symbol: drake::multibody::MultibodyPlant::set_stiction_tolerance
         struct /* set_stiction_tolerance */ {
-          // Source: drake/multibody/plant/multibody_plant.h:1659
+          // Source: drake/multibody/plant/multibody_plant.h:1663
           const char* doc =
 R"""(**** Stribeck model of friction
 
@@ -28819,7 +28829,7 @@ Raises:
         } set_stiction_tolerance;
         // Symbol: drake::multibody::MultibodyPlant::time_step
         struct /* time_step */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3265
+          // Source: drake/multibody/plant/multibody_plant.h:3269
           const char* doc =
 R"""(The time step (or period) used to model ``this`` plant as a discrete
 system with periodic updates. Returns 0 (zero) if the plant is modeled
@@ -28832,13 +28842,13 @@ See also:
         } time_step;
         // Symbol: drake::multibody::MultibodyPlant::world_body
         struct /* world_body */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3273
+          // Source: drake/multibody/plant/multibody_plant.h:3277
           const char* doc =
 R"""(Returns a constant reference to the *world* body.)""";
         } world_body;
         // Symbol: drake::multibody::MultibodyPlant::world_frame
         struct /* world_frame */ {
-          // Source: drake/multibody/plant/multibody_plant.h:3278
+          // Source: drake/multibody/plant/multibody_plant.h:3282
           const char* doc =
 R"""(Returns a constant reference to the *world* frame.)""";
         } world_frame;
@@ -34985,9 +34995,9 @@ exception if invoked.)""";
         struct /* ctor */ {
           // Source: drake/multibody/tree/weld_joint.h:34
           const char* doc =
-R"""(Constructor for a WeldJoint between a ``parent_frame_P`` and a
-``child_frame_C`` so that their relative pose ``X_PC`` is fixed as if
-they were "welded" together.)""";
+R"""(Constructor for a WeldJoint between a ``frame_on_parent_P`` and a
+``frame_on_child_C`` so that their relative pose ``X_PC`` is fixed as
+if they were "welded" together.)""";
         } ctor;
         // Symbol: drake::multibody::WeldJoint::X_PC
         struct /* X_PC */ {
@@ -39641,6 +39651,54 @@ program and the availability of the solvers.
 Raises:
     invalid_argument if there is no available solver for ``prog``.)""";
       } ChooseBestSolver;
+      // Symbol: drake::solvers::ClpSolver
+      struct /* ClpSolver */ {
+        // Source: drake/solvers/clp_solver.h:27
+        const char* doc = R"""()""";
+        // Symbol: drake::solvers::ClpSolver::ClpSolver
+        struct /* ctor */ {
+          // Source: drake/solvers/clp_solver.h:29
+          const char* doc = R"""()""";
+        } ctor;
+        // Symbol: drake::solvers::ClpSolver::Details
+        struct /* Details */ {
+          // Source: drake/solvers/clp_solver.h:31
+          const char* doc = R"""()""";
+        } Details;
+        // Symbol: drake::solvers::ClpSolver::ProgramAttributesSatisfied
+        struct /* ProgramAttributesSatisfied */ {
+          // Source: drake/solvers/clp_solver.h:42
+          const char* doc = R"""()""";
+        } ProgramAttributesSatisfied;
+        // Symbol: drake::solvers::ClpSolver::id
+        struct /* id */ {
+          // Source: drake/solvers/clp_solver.h:39
+          const char* doc = R"""()""";
+        } id;
+        // Symbol: drake::solvers::ClpSolver::is_available
+        struct /* is_available */ {
+          // Source: drake/solvers/clp_solver.h:40
+          const char* doc = R"""()""";
+        } is_available;
+        // Symbol: drake::solvers::ClpSolver::is_enabled
+        struct /* is_enabled */ {
+          // Source: drake/solvers/clp_solver.h:41
+          const char* doc = R"""()""";
+        } is_enabled;
+      } ClpSolver;
+      // Symbol: drake::solvers::ClpSolverDetails
+      struct /* ClpSolverDetails */ {
+        // Source: drake/solvers/clp_solver.h:15
+        const char* doc =
+R"""(The CLP solver details after calling Solve() function. The user can
+call MathematicalProgramResult::get_solver_details<ClpSolver>() to
+obtain the details.)""";
+        // Symbol: drake::solvers::ClpSolverDetails::status
+        struct /* status */ {
+          // Source: drake/solvers/clp_solver.h:24
+          const char* doc = R"""()""";
+        } status;
+      } ClpSolverDetails;
       // Symbol: drake::solvers::CommonSolverOption
       struct /* CommonSolverOption */ {
         // Source: drake/solvers/common_solver_option.h:13
@@ -41404,7 +41462,7 @@ calling solvers::Solve() function, and obtain the results of the
 optimization.)""";
         // Symbol: drake::solvers::MathematicalProgram::AddBoundingBoxConstraint
         struct /* AddBoundingBoxConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:1703
+          // Source: drake/solvers/mathematical_program.h:1715
           const char* doc_3args_lb_ub_vars =
 R"""(Adds bounding box constraints referencing potentially a subset of the
 decision variables.
@@ -41420,7 +41478,7 @@ Parameter ``vars``:
 
 Returns:
     The newly constructed BoundingBoxConstraint.)""";
-          // Source: drake/solvers/mathematical_program.h:1714
+          // Source: drake/solvers/mathematical_program.h:1726
           const char* doc_3args_lb_ub_var =
 R"""(Adds bounds for a single variable.
 
@@ -41432,7 +41490,7 @@ Parameter ``ub``:
 
 Parameter ``var``:
     The decision variable.)""";
-          // Source: drake/solvers/mathematical_program.h:1770
+          // Source: drake/solvers/mathematical_program.h:1782
           const char* doc_3args_double_double_constEigenMatrixBase =
 R"""(Adds the same scalar lower and upper bound to every variable in
 ``vars``.
@@ -41453,12 +41511,12 @@ Parameter ``vars``:
         } AddBoundingBoxConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddConstraint
         struct /* AddConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:1156
+          // Source: drake/solvers/mathematical_program.h:1168
           const char* doc_1args_binding =
 R"""(Adds a generic constraint to the program. This should only be used if
 a more specific type of constraint is not available, as it may require
 the use of a significantly more expensive solver.)""";
-          // Source: drake/solvers/mathematical_program.h:1175
+          // Source: drake/solvers/mathematical_program.h:1187
           const char* doc_3args_e_lb_ub =
 R"""(Adds one row of constraint lb <= e <= ub where ``e`` is a symbolic
 expression.
@@ -41483,7 +41541,7 @@ depending on the arguments. Constraints of the form x == 1 (which
 could be created as a BoundingBoxConstraint or
 LinearEqualityConstraint) will be constructed as a
 LinearEqualityConstraint.)""";
-          // Source: drake/solvers/mathematical_program.h:1219
+          // Source: drake/solvers/mathematical_program.h:1231
           const char* doc_1args_f =
 R"""(Add a constraint represented by a symbolic formula to the program. The
 input formula ``f`` can be of the following forms:
@@ -41508,7 +41566,7 @@ find numerical bounds of ``e1`` and ``e2`` where ``f`` = e1 ≃ e2. We
 allow ``e1`` and ``e2`` to be infinite but only if there are no other
 terms. For example, ``x <= ∞`` is allowed. However, ``x - ∞ <= 0`` is
 not allowed because ``x ↦ ∞`` introduces ``nan`` in the evaluation.)""";
-          // Source: drake/solvers/mathematical_program.h:1280
+          // Source: drake/solvers/mathematical_program.h:1292
           const char* doc_matrix_formula =
 R"""(Add a constraint represented by an Eigen::Matrix<symbolic::Formula> to
 the program.
@@ -41524,7 +41582,7 @@ throws an exception for any f ∈ formulas.
 
 Template parameter ``Derived``:
     An Eigen Matrix type of Formula.)""";
-          // Source: drake/solvers/mathematical_program.h:1305
+          // Source: drake/solvers/mathematical_program.h:1317
           const char* doc_2args_con_vars =
 R"""(Adds a generic constraint to the program. This should only be used if
 a more specific type of constraint is not available, as it may require
@@ -41532,7 +41590,7 @@ the use of a significantly more expensive solver.)""";
         } AddConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddCost
         struct /* AddCost */ {
-          // Source: drake/solvers/mathematical_program.h:862
+          // Source: drake/solvers/mathematical_program.h:874
           const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(Adds a generic cost to the optimization program.)""";
         } AddCost;
@@ -41558,7 +41616,7 @@ Raises:
         } AddDecisionVariables;
         // Symbol: drake::solvers::MathematicalProgram::AddEqualityConstraintBetweenPolynomials
         struct /* AddEqualityConstraintBetweenPolynomials */ {
-          // Source: drake/solvers/mathematical_program.h:2454
+          // Source: drake/solvers/mathematical_program.h:2466
           const char* doc =
 R"""(Constraining that two polynomials are the same (i.e., they have the
 same coefficients for each monomial). This function is often used in
@@ -41584,7 +41642,7 @@ Note:
         } AddEqualityConstraintBetweenPolynomials;
         // Symbol: drake::solvers::MathematicalProgram::AddExponentialConeConstraint
         struct /* AddExponentialConeConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:2479
+          // Source: drake/solvers/mathematical_program.h:2491
           const char* doc_3args =
 R"""(Adds an exponential cone constraint, that z = A * vars + b should be
 in the exponential cone. Namely {z₀, z₁, z₂ | z₀ ≥ z₁ * exp(z₂ / z₁),
@@ -41598,7 +41656,7 @@ Parameter ``b``:
 
 Parameter ``vars``:
     The variables bound with this constraint.)""";
-          // Source: drake/solvers/mathematical_program.h:2489
+          // Source: drake/solvers/mathematical_program.h:2501
           const char* doc_1args =
 R"""(Add the constraint that z is in the exponential cone.
 
@@ -41611,7 +41669,7 @@ Precondition:
         } AddExponentialConeConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddIndeterminates
         struct /* AddIndeterminates */ {
-          // Source: drake/solvers/mathematical_program.h:815
+          // Source: drake/solvers/mathematical_program.h:827
           const char* doc =
 R"""(Adds indeterminates. This method appends some indeterminates to the
 end of the program's old indeterminates.
@@ -41632,24 +41690,24 @@ Precondition:
         } AddIndeterminates;
         // Symbol: drake::solvers::MathematicalProgram::AddL2NormCost
         struct /* AddL2NormCost */ {
-          // Source: drake/solvers/mathematical_program.h:1020
+          // Source: drake/solvers/mathematical_program.h:1032
           const char* doc =
 R"""(Adds a cost term of the form | Ax - b |^2.)""";
         } AddL2NormCost;
         // Symbol: drake::solvers::MathematicalProgram::AddLinearComplementarityConstraint
         struct /* AddLinearComplementarityConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:2162
+          // Source: drake/solvers/mathematical_program.h:2174
           const char* doc =
 R"""(Adds a linear complementarity constraints referencing a subset of the
 decision variables.)""";
         } AddLinearComplementarityConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddLinearConstraint
         struct /* AddLinearConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:1323
+          // Source: drake/solvers/mathematical_program.h:1335
           const char* doc_4args_A_lb_ub_vars =
 R"""(Adds linear constraints referencing potentially a subset of the
 decision variables (defined in the vars parameter).)""";
-          // Source: drake/solvers/mathematical_program.h:1351
+          // Source: drake/solvers/mathematical_program.h:1363
           const char* doc_4args_a_lb_ub_vars =
 R"""(Adds one row of linear constraint referencing potentially a subset of
 the decision variables (defined in the vars parameter). lb <= a*vars
@@ -41666,7 +41724,7 @@ Parameter ``ub``:
 
 Parameter ``vars``:
     The decision variables on which to impose the linear constraint.)""";
-          // Source: drake/solvers/mathematical_program.h:1386
+          // Source: drake/solvers/mathematical_program.h:1398
           const char* doc_3args_e_lb_ub =
 R"""(Adds one row of linear constraint lb <= e <= ub where ``e`` is a
 symbolic expression.
@@ -41685,12 +41743,12 @@ Parameter ``lb``:
 
 Parameter ``ub``:
     A scalar, the upper bound.)""";
-          // Source: drake/solvers/mathematical_program.h:1394
+          // Source: drake/solvers/mathematical_program.h:1406
           const char* doc_3args_v_lb_ub =
 R"""(Adds linear constraints represented by symbolic expressions to the
 program. It throws if @v includes a non-linear expression or ``lb <= v
 <= ub`` includes trivial/unsatisfiable constraints.)""";
-          // Source: drake/solvers/mathematical_program.h:1424
+          // Source: drake/solvers/mathematical_program.h:1436
           const char* doc_1args_f =
 R"""(Add a linear constraint represented by a symbolic formula to the
 program. The input formula ``f`` can be of the following forms:
@@ -41714,7 +41772,7 @@ such as "2 <= 1". 4. It is not possible to find numerical bounds of
 be infinite but only if there are no other terms. For example, ``x <=
 ∞`` is allowed. However, ``x - ∞ <= 0`` is not allowed because ``x ↦
 ∞`` introduces ``nan`` in the evaluation.)""";
-          // Source: drake/solvers/mathematical_program.h:1455
+          // Source: drake/solvers/mathematical_program.h:1467
           const char* doc_1args_constEigenArrayBase =
 R"""(Add a linear constraint represented by an
 Eigen::Array<symbolic::Formula> to the program. A common use-case of
@@ -41744,7 +41802,7 @@ Template parameter ``Derived``:
         } AddLinearConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddLinearCost
         struct /* AddLinearCost */ {
-          // Source: drake/solvers/mathematical_program.h:948
+          // Source: drake/solvers/mathematical_program.h:960
           const char* doc_1args =
 R"""(Adds a linear cost term of the form a'*x + b.
 
@@ -41758,18 +41816,18 @@ Precondition:
 Returns:
     The newly added linear constraint, together with the bound
     variables.)""";
-          // Source: drake/solvers/mathematical_program.h:955
+          // Source: drake/solvers/mathematical_program.h:967
           const char* doc_3args =
 R"""(Adds a linear cost term of the form a'*x + b. Applied to a subset of
 the variables and pushes onto the linear cost data structure.)""";
-          // Source: drake/solvers/mathematical_program.h:975
+          // Source: drake/solvers/mathematical_program.h:987
           const char* doc_2args =
 R"""(Adds a linear cost term of the form a'*x. Applied to a subset of the
 variables and pushes onto the linear cost data structure.)""";
         } AddLinearCost;
         // Symbol: drake::solvers::MathematicalProgram::AddLinearEqualityConstraint
         struct /* AddLinearEqualityConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:1491
+          // Source: drake/solvers/mathematical_program.h:1503
           const char* doc_2args_e_b =
 R"""(Adds one row of linear constraint e = b where ``e`` is a symbolic
 expression.
@@ -41788,7 +41846,7 @@ Parameter ``b``:
 Returns:
     The newly added linear equality constraint, together with the
     bound variable.)""";
-          // Source: drake/solvers/mathematical_program.h:1504
+          // Source: drake/solvers/mathematical_program.h:1516
           const char* doc_1args_f =
 R"""(Adds a linear equality constraint represented by a symbolic formula to
 the program. The input formula ``f`` is either an equality formula
@@ -41798,7 +41856,7 @@ It throws an exception if
 
 1. ``f`` is neither an equality formula nor a conjunction of equalities.
 2. ``f`` includes a non-linear expression.)""";
-          // Source: drake/solvers/mathematical_program.h:1527
+          // Source: drake/solvers/mathematical_program.h:1539
           const char* doc_2args_constEigenMatrixBase_constEigenMatrixBase =
 R"""(Adds linear equality constraints :math:`v = b`, where ``v(i)`` is a
 symbolic linear expression.
@@ -41824,7 +41882,7 @@ Parameter ``b``:
 Returns:
     The newly added linear equality constraint, together with the
     bound variables.)""";
-          // Source: drake/solvers/mathematical_program.h:1613
+          // Source: drake/solvers/mathematical_program.h:1625
           const char* doc_3args_Aeq_beq_vars =
 R"""(AddLinearEqualityConstraint
 
@@ -41849,13 +41907,13 @@ the elements of x, you could use
         } AddLinearEqualityConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddLinearMatrixInequalityConstraint
         struct /* AddLinearMatrixInequalityConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:2290
+          // Source: drake/solvers/mathematical_program.h:2302
           const char* doc =
 R"""(Adds a linear matrix inequality constraint to the program.)""";
         } AddLinearMatrixInequalityConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddLorentzConeConstraint
         struct /* AddLorentzConeConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:1824
+          // Source: drake/solvers/mathematical_program.h:1836
           const char* doc_1args_v =
 R"""(Adds Lorentz cone constraint referencing potentially a subset of the
 decision variables.
@@ -41878,7 +41936,7 @@ call
     {cc}
     Vector4<symbolic::Expression> v(x+1, y+1, x, 2.);
     prog.AddLorentzConeConstraint(v);)""";
-          // Source: drake/solvers/mathematical_program.h:1863
+          // Source: drake/solvers/mathematical_program.h:1875
           const char* doc_3args_linear_expression_quadratic_expression_tol =
 R"""(Adds Lorentz cone constraint on the linear expression v1 and quadratic
 expression v2, such that v1 >= sqrt(v2)
@@ -41937,7 +41995,7 @@ x+1 >= sqrt(y² + 2y + x² + 4), the user could call
 
     {cc}
     prog.AddLorentzConeConstraint(x+1, pow(y, 2) + 2 * y + pow(x, 2) + 4);)""";
-          // Source: drake/solvers/mathematical_program.h:1924
+          // Source: drake/solvers/mathematical_program.h:1936
           const char* doc_3args_A_b_vars =
 R"""(Adds Lorentz cone constraint referencing potentially a subset of the
 decision variables (defined in the vars parameter). The linear
@@ -41978,13 +42036,13 @@ call
         } AddLorentzConeConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddMaximizeGeometricMeanCost
         struct /* AddMaximizeGeometricMeanCost */ {
-          // Source: drake/solvers/mathematical_program.h:1132
+          // Source: drake/solvers/mathematical_program.h:1144
           const char* doc_3args =
 R"""(An overloaded version of maximize_geometric_mean.
 
 Precondition:
     A.rows() == b.rows(), A.rows() >= 2.)""";
-          // Source: drake/solvers/mathematical_program.h:1146
+          // Source: drake/solvers/mathematical_program.h:1158
           const char* doc_2args =
 R"""(An overloaded version of maximize_geometric_mean. We add the cost to
 maximize the geometric mean of x, i.e., c*power(∏ᵢx(i), 1/n).
@@ -42001,7 +42059,7 @@ Precondition:
         } AddMaximizeGeometricMeanCost;
         // Symbol: drake::solvers::MathematicalProgram::AddMaximizeLogDeterminantSymmetricMatrixCost
         struct /* AddMaximizeLogDeterminantSymmetricMatrixCost */ {
-          // Source: drake/solvers/mathematical_program.h:1100
+          // Source: drake/solvers/mathematical_program.h:1112
           const char* doc =
 R"""(Adds the cost to maximize the log determinant of symmetric matrix X.
 log(det(X)) is a concave function of X, so we can maximize it through
@@ -42024,14 +42082,14 @@ Note:
         } AddMaximizeLogDeterminantSymmetricMatrixCost;
         // Symbol: drake::solvers::MathematicalProgram::AddPolynomialConstraint
         struct /* AddPolynomialConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:2182
+          // Source: drake/solvers/mathematical_program.h:2194
           const char* doc =
 R"""(Adds a polynomial constraint to the program referencing a subset of
 the decision variables (defined in the vars parameter).)""";
         } AddPolynomialConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddPolynomialCost
         struct /* AddPolynomialCost */ {
-          // Source: drake/solvers/mathematical_program.h:1071
+          // Source: drake/solvers/mathematical_program.h:1083
           const char* doc =
 R"""(Adds a cost term in the polynomial form.
 
@@ -42043,7 +42101,7 @@ Returns:
         } AddPolynomialCost;
         // Symbol: drake::solvers::MathematicalProgram::AddPositiveDiagonallyDominantMatrixConstraint
         struct /* AddPositiveDiagonallyDominantMatrixConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:2327
+          // Source: drake/solvers/mathematical_program.h:2339
           const char* doc =
 R"""(Adds the constraint that a symmetric matrix is diagonally dominant
 with non-negative diagonal entries. A symmetric matrix X is diagonally
@@ -42070,7 +42128,7 @@ Returns:
         } AddPositiveDiagonallyDominantMatrixConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddPositiveSemidefiniteConstraint
         struct /* AddPositiveSemidefiniteConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:2225
+          // Source: drake/solvers/mathematical_program.h:2237
           const char* doc_1args_symmetric_matrix_var =
 R"""(Adds a positive semidefinite constraint on a symmetric matrix.
 
@@ -42080,7 +42138,7 @@ Raises:
 
 Parameter ``symmetric_matrix_var``:
     A symmetric MatrixDecisionVariable object.)""";
-          // Source: drake/solvers/mathematical_program.h:2258
+          // Source: drake/solvers/mathematical_program.h:2270
           const char* doc_1args_constEigenMatrixBase =
 R"""(Adds a positive semidefinite constraint on a symmetric matrix of
 symbolic expressions ``e``. We create a new symmetric matrix of
@@ -42117,7 +42175,7 @@ The user could call
         } AddPositiveSemidefiniteConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddQuadraticCost
         struct /* AddQuadraticCost */ {
-          // Source: drake/solvers/mathematical_program.h:996
+          // Source: drake/solvers/mathematical_program.h:1008
           const char* doc_1args =
 R"""(Add a quadratic cost term of the form 0.5*x'*Q*x + b'*x + c. Notice
 that in the optimization program, the constant term ``c`` in the cost
@@ -42131,24 +42189,24 @@ Raises:
 
 Returns:
     The newly added cost together with the bound variables.)""";
-          // Source: drake/solvers/mathematical_program.h:1052
+          // Source: drake/solvers/mathematical_program.h:1064
           const char* doc_4args =
 R"""(Adds a cost term of the form 0.5*x'*Q*x + b'x + c Applied to subset of
 the variables.)""";
-          // Source: drake/solvers/mathematical_program.h:1061
+          // Source: drake/solvers/mathematical_program.h:1073
           const char* doc_3args =
 R"""(Adds a cost term of the form 0.5*x'*Q*x + b'x Applied to subset of the
 variables.)""";
         } AddQuadraticCost;
         // Symbol: drake::solvers::MathematicalProgram::AddQuadraticErrorCost
         struct /* AddQuadraticErrorCost */ {
-          // Source: drake/solvers/mathematical_program.h:1001
+          // Source: drake/solvers/mathematical_program.h:1013
           const char* doc =
 R"""(Adds a cost term of the form (x-x_desired)'*Q*(x-x_desired).)""";
         } AddQuadraticErrorCost;
         // Symbol: drake::solvers::MathematicalProgram::AddRotatedLorentzConeConstraint
         struct /* AddRotatedLorentzConeConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:2023
+          // Source: drake/solvers/mathematical_program.h:2035
           const char* doc_4args_linear_expression1_linear_expression2_quadratic_expression_tol =
 R"""(Adds rotated Lorentz cone constraint on the linear expression v1, v2
 and quadratic expression u, such that v1 * v2 >= u, v1 >= 0, v2 >= 0
@@ -42204,7 +42262,7 @@ For example, to add the rotated Lorentz cone constraint
     {cc}
     prog.AddRotatedLorentzConeConstraint(x+1, x+y, pow(x, 2) + pow(z, 2) +
     2*z+5);)""";
-          // Source: drake/solvers/mathematical_program.h:2053
+          // Source: drake/solvers/mathematical_program.h:2065
           const char* doc_1args_v =
 R"""(Adds a constraint that a symbolic expression
 
@@ -42235,7 +42293,7 @@ could call
     Eigen::Matrix<symbolic::Expression, 5, 1> v;
     v << x+1, x+y, x, z+1, 2;
     prog.AddRotatedLorentzConeConstraint(v);)""";
-          // Source: drake/solvers/mathematical_program.h:2075
+          // Source: drake/solvers/mathematical_program.h:2087
           const char* doc_3args_A_b_vars =
 R"""(Adds a rotated Lorentz cone constraint referencing potentially a
 subset of decision variables, The linear expression :math:`z=Ax+b` is
@@ -42257,7 +42315,7 @@ Parameter ``b``:
 
 Parameter ``vars``:
     The decision variables on which the constraint is imposed.)""";
-          // Source: drake/solvers/mathematical_program.h:2120
+          // Source: drake/solvers/mathematical_program.h:2132
           const char* doc_1args_vars =
 R"""(Impose that a vector :math:`x\in\mathbb{R}^m` is in rotated Lorentz
 cone. Namely
@@ -42273,7 +42331,7 @@ Returns:
         } AddRotatedLorentzConeConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddScaledDiagonallyDominantMatrixConstraint
         struct /* AddScaledDiagonallyDominantMatrixConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:2366
+          // Source: drake/solvers/mathematical_program.h:2378
           const char* doc_was_unable_to_choose_unambiguous_names =
 R"""(This is an overloaded variant of addsdd "scaled diagonally dominant
 matrix constraint"
@@ -42299,7 +42357,7 @@ j, M[i][j] is the zero matrix.)""";
         } AddScaledDiagonallyDominantMatrixConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddSosConstraint
         struct /* AddSosConstraint */ {
-          // Source: drake/solvers/mathematical_program.h:2392
+          // Source: drake/solvers/mathematical_program.h:2404
           const char* doc_2args_p_monomial_basis =
 R"""(Adds constraints that a given polynomial ``p`` is a sums-of-squares
 (SOS), that is, ``p`` can be decomposed into ``mᵀQm``, where m is the
@@ -42309,7 +42367,7 @@ positive semidefinite.
 Note:
     It calls ``Reparse`` to enforce ``p`` to have this
     MathematicalProgram's indeterminates if necessary.)""";
-          // Source: drake/solvers/mathematical_program.h:2409
+          // Source: drake/solvers/mathematical_program.h:2421
           const char* doc_1args_p =
 R"""(Adds constraints that a given polynomial ``p`` is a sums-of-squares
 (SOS), that is, ``p`` can be decomposed into ``mᵀQm``, where m is a
@@ -42322,7 +42380,7 @@ Note:
 
 - The coefficients matrix Q, which is positive semidefinite. - The
 monomial basis m.)""";
-          // Source: drake/solvers/mathematical_program.h:2419
+          // Source: drake/solvers/mathematical_program.h:2431
           const char* doc_2args_e_monomial_basis =
 R"""(Adds constraints that a given symbolic expression ``e`` is a
 sums-of-squares (SOS), that is, ``p`` can be decomposed into ``mᵀQm``,
@@ -42330,7 +42388,7 @@ where m is the ``monomial_basis``. Note that it decomposes ``e`` into
 a polynomial with respect to ``indeterminates()`` in this mathematical
 program. It returns the coefficients matrix Q, which is positive
 semidefinite.)""";
-          // Source: drake/solvers/mathematical_program.h:2433
+          // Source: drake/solvers/mathematical_program.h:2445
           const char* doc_1args_e =
 R"""(Adds constraints that a given symbolic expression ``e`` is a
 sums-of-squares (SOS), that is, ``e`` can be decomposed into ``mᵀQm``.
@@ -42343,7 +42401,7 @@ monomial basis m.)""";
         } AddSosConstraint;
         // Symbol: drake::solvers::MathematicalProgram::AddVisualizationCallback
         struct /* AddVisualizationCallback */ {
-          // Source: drake/solvers/mathematical_program.h:832
+          // Source: drake/solvers/mathematical_program.h:844
           const char* doc =
 R"""(Adds a callback method to visualize intermediate results of the
 optimization.
@@ -42384,7 +42442,7 @@ Returns ``new_prog``:
         } Clone;
         // Symbol: drake::solvers::MathematicalProgram::EvalBinding
         struct /* EvalBinding */ {
-          // Source: drake/solvers/mathematical_program.h:2817
+          // Source: drake/solvers/mathematical_program.h:2829
           const char* doc =
 R"""(Evaluates the value of some binding, for some input value for all
 decision variables.
@@ -42400,7 +42458,7 @@ Raises:
         } EvalBinding;
         // Symbol: drake::solvers::MathematicalProgram::EvalBindingAtInitialGuess
         struct /* EvalBindingAtInitialGuess */ {
-          // Source: drake/solvers/mathematical_program.h:2933
+          // Source: drake/solvers/mathematical_program.h:2945
           const char* doc =
 R"""(Evaluates the evaluator in ``binding`` at the initial guess.
 
@@ -42409,7 +42467,7 @@ Returns:
         } EvalBindingAtInitialGuess;
         // Symbol: drake::solvers::MathematicalProgram::EvalBindings
         struct /* EvalBindings */ {
-          // Source: drake/solvers/mathematical_program.h:2849
+          // Source: drake/solvers/mathematical_program.h:2861
           const char* doc =
 R"""(Evaluates a set of bindings (plural version of ``EvalBinding``).
 
@@ -42429,7 +42487,7 @@ Raises:
         } EvalBindings;
         // Symbol: drake::solvers::MathematicalProgram::EvalVisualizationCallbacks
         struct /* EvalVisualizationCallbacks */ {
-          // Source: drake/solvers/mathematical_program.h:2902
+          // Source: drake/solvers/mathematical_program.h:2914
           const char* doc =
 R"""(Evaluates all visualization callbacks registered with the
 MathematicalProgram.
@@ -42442,7 +42500,7 @@ Raises:
         } EvalVisualizationCallbacks;
         // Symbol: drake::solvers::MathematicalProgram::FindDecisionVariableIndex
         struct /* FindDecisionVariableIndex */ {
-          // Source: drake/solvers/mathematical_program.h:2779
+          // Source: drake/solvers/mathematical_program.h:2791
           const char* doc =
 R"""(Returns the index of the decision variable. Internally the solvers
 thinks all variables are stored in an array, and it accesses each
@@ -42455,7 +42513,7 @@ Precondition:
         } FindDecisionVariableIndex;
         // Symbol: drake::solvers::MathematicalProgram::FindDecisionVariableIndices
         struct /* FindDecisionVariableIndices */ {
-          // Source: drake/solvers/mathematical_program.h:2790
+          // Source: drake/solvers/mathematical_program.h:2802
           const char* doc =
 R"""(Returns the indices of the decision variables. Internally the solvers
 thinks all variables are stored in an array, and it accesses each
@@ -42468,7 +42526,7 @@ Precondition:
         } FindDecisionVariableIndices;
         // Symbol: drake::solvers::MathematicalProgram::FindIndeterminateIndex
         struct /* FindIndeterminateIndex */ {
-          // Source: drake/solvers/mathematical_program.h:2803
+          // Source: drake/solvers/mathematical_program.h:2815
           const char* doc =
 R"""(Returns the index of the indeterminate. Internally a solver thinks all
 indeterminates are stored in an array, and it accesses each individual
@@ -42481,7 +42539,7 @@ Precondition:
         } FindIndeterminateIndex;
         // Symbol: drake::solvers::MathematicalProgram::GetAllConstraints
         struct /* GetAllConstraints */ {
-          // Source: drake/solvers/mathematical_program.h:2739
+          // Source: drake/solvers/mathematical_program.h:2751
           const char* doc =
 R"""(Getter for returning all constraints.
 
@@ -42493,7 +42551,7 @@ Note:
         } GetAllConstraints;
         // Symbol: drake::solvers::MathematicalProgram::GetAllCosts
         struct /* GetAllCosts */ {
-          // Source: drake/solvers/mathematical_program.h:2714
+          // Source: drake/solvers/mathematical_program.h:2726
           const char* doc =
 R"""(Getter returning all costs.
 
@@ -42505,7 +42563,7 @@ Note:
         } GetAllCosts;
         // Symbol: drake::solvers::MathematicalProgram::GetAllLinearConstraints
         struct /* GetAllLinearConstraints */ {
-          // Source: drake/solvers/mathematical_program.h:2727
+          // Source: drake/solvers/mathematical_program.h:2739
           const char* doc =
 R"""(Getter returning all linear constraints (both linear equality and
 inequality constraints).
@@ -42515,7 +42573,7 @@ Returns:
         } GetAllLinearConstraints;
         // Symbol: drake::solvers::MathematicalProgram::GetBindingVariableValues
         struct /* GetBindingVariableValues */ {
-          // Source: drake/solvers/mathematical_program.h:2883
+          // Source: drake/solvers/mathematical_program.h:2895
           const char* doc =
 R"""(Given the value of all decision variables, namely
 this.decision_variable(i) takes the value prog_var_vals(i), returns
@@ -42535,7 +42593,7 @@ Returns:
         } GetBindingVariableValues;
         // Symbol: drake::solvers::MathematicalProgram::GetInitialGuess
         struct /* GetInitialGuess */ {
-          // Source: drake/solvers/mathematical_program.h:2497
+          // Source: drake/solvers/mathematical_program.h:2509
           const char* doc_1args_decision_variable =
 R"""(Gets the initial guess for a single variable.
 
@@ -42545,7 +42603,7 @@ Precondition:
 
 Raises:
     RuntimeError if the pre condition is not satisfied.)""";
-          // Source: drake/solvers/mathematical_program.h:2510
+          // Source: drake/solvers/mathematical_program.h:2522
           const char* doc_1args_constEigenMatrixBase =
 R"""(Gets the initial guess for some variables.
 
@@ -42558,22 +42616,22 @@ Raises:
         } GetInitialGuess;
         // Symbol: drake::solvers::MathematicalProgram::GetSolverOptionsDouble
         struct /* GetSolverOptionsDouble */ {
-          // Source: drake/solvers/mathematical_program.h:2619
+          // Source: drake/solvers/mathematical_program.h:2631
           const char* doc = R"""()""";
         } GetSolverOptionsDouble;
         // Symbol: drake::solvers::MathematicalProgram::GetSolverOptionsInt
         struct /* GetSolverOptionsInt */ {
-          // Source: drake/solvers/mathematical_program.h:2624
+          // Source: drake/solvers/mathematical_program.h:2636
           const char* doc = R"""()""";
         } GetSolverOptionsInt;
         // Symbol: drake::solvers::MathematicalProgram::GetSolverOptionsStr
         struct /* GetSolverOptionsStr */ {
-          // Source: drake/solvers/mathematical_program.h:2629
+          // Source: drake/solvers/mathematical_program.h:2641
           const char* doc = R"""()""";
         } GetSolverOptionsStr;
         // Symbol: drake::solvers::MathematicalProgram::GetVariableScaling
         struct /* GetVariableScaling */ {
-          // Source: drake/solvers/mathematical_program.h:3000
+          // Source: drake/solvers/mathematical_program.h:3012
           const char* doc =
 R"""(Returns the mapping from a decision variable index to its scaling
 factor.
@@ -42582,7 +42640,7 @@ See variable_scaling "Variable scaling" for more information.)""";
         } GetVariableScaling;
         // Symbol: drake::solvers::MathematicalProgram::MakeCost
         struct /* MakeCost */ {
-          // Source: drake/solvers/mathematical_program.h:893
+          // Source: drake/solvers/mathematical_program.h:905
           const char* doc =
 R"""(Convert an input of type ``F`` to a FunctionCost object.
 
@@ -42592,7 +42650,7 @@ Template parameter ``F``:
         } MakeCost;
         // Symbol: drake::solvers::MathematicalProgram::MakePolynomial
         struct /* MakePolynomial */ {
-          // Source: drake/solvers/mathematical_program.h:628
+          // Source: drake/solvers/mathematical_program.h:640
           const char* doc =
 R"""(Creates a symbolic polynomial from the given expression ``e``. It uses
 this MathematicalProgram's ``indeterminates()`` in constructing the
@@ -42813,7 +42871,7 @@ readability.)""";
         } NewContinuousVariables;
         // Symbol: drake::solvers::MathematicalProgram::NewEvenDegreeDsosPolynomial
         struct /* NewEvenDegreeDsosPolynomial */ {
-          // Source: drake/solvers/mathematical_program.h:596
+          // Source: drake/solvers/mathematical_program.h:608
           const char* doc =
 R"""(see even_degree_nonnegative_polynomial for details. Variant that
 produces a DSOS polynomial. Same as NewEvenDegreeSosPolynomial, except
@@ -42840,7 +42898,7 @@ Parameter ``coeff_name``:
         } NewEvenDegreeFreePolynomial;
         // Symbol: drake::solvers::MathematicalProgram::NewEvenDegreeNonnegativePolynomial
         struct /* NewEvenDegreeNonnegativePolynomial */ {
-          // Source: drake/solvers/mathematical_program.h:567
+          // Source: drake/solvers/mathematical_program.h:579
           const char* doc =
 R"""(See even_degree_nonnegative_polynomial for more details. Variant that
 produces different non-negative polynomials depending on ``type``.
@@ -42851,14 +42909,14 @@ Parameter ``type``:
         } NewEvenDegreeNonnegativePolynomial;
         // Symbol: drake::solvers::MathematicalProgram::NewEvenDegreeSdsosPolynomial
         struct /* NewEvenDegreeSdsosPolynomial */ {
-          // Source: drake/solvers/mathematical_program.h:585
+          // Source: drake/solvers/mathematical_program.h:597
           const char* doc =
 R"""(see even_degree_nonnegative_polynomial for details. Variant that
 produces an SDSOS polynomial.)""";
         } NewEvenDegreeSdsosPolynomial;
         // Symbol: drake::solvers::MathematicalProgram::NewEvenDegreeSosPolynomial
         struct /* NewEvenDegreeSosPolynomial */ {
-          // Source: drake/solvers/mathematical_program.h:576
+          // Source: drake/solvers/mathematical_program.h:588
           const char* doc =
 R"""(See even_degree_nonnegative_polynomial for more details. Variant that
 produces a SOS polynomial.)""";
@@ -42875,7 +42933,7 @@ a₃x₁ + a₄x₀ + a₅.)""";
         } NewFreePolynomial;
         // Symbol: drake::solvers::MathematicalProgram::NewIndeterminates
         struct /* NewIndeterminates */ {
-          // Source: drake/solvers/mathematical_program.h:767
+          // Source: drake/solvers/mathematical_program.h:779
           const char* doc_2args =
 R"""(Adds indeterminates to this MathematicalProgram, with default name
 "x".
@@ -42883,7 +42941,7 @@ R"""(Adds indeterminates to this MathematicalProgram, with default name
 See also:
     NewIndeterminates(int rows, int cols, const
     std::vector<std::string>& names);)""";
-          // Source: drake/solvers/mathematical_program.h:802
+          // Source: drake/solvers/mathematical_program.h:814
           const char* doc_3args =
 R"""(Adds indeterminates to this MathematicalProgram, with default name
 "X". The new variables are returned and viewed as a matrix, with size
@@ -42897,7 +42955,7 @@ See also:
         struct /* NewNonnegativePolynomial */ {
           // Source: drake/solvers/mathematical_program.h:471
           const char* doc_2args_monomial_basis_type =
-R"""(Returns a pair of nonnegative polynomial p = mᵀQm and the Grammian
+R"""(Returns a pair of nonnegative polynomial p = mᵀQm and the Gramian
 matrix Q, where m is ``monomial_basis``. Adds Q as decision variables
 to the program. Depending on the type of the polynomial, we will
 impose different constraint on Q. - if type = kSos, we impose Q being
@@ -42912,19 +42970,28 @@ Parameter ``type``:
     The type of the nonnegative polynomial.
 
 Returns:
-    (p, Q) The polynomial p and the Grammian matrix Q. Q has been
-    added as decision variables to the program.)""";
-          // Source: drake/solvers/mathematical_program.h:479
-          const char* doc_3args_grammian_monomial_basis_type =
-R"""(Overloads NewNonnegativePolynomial(), except the Grammian matrix Q is
-an input instead of an output.)""";
-          // Source: drake/solvers/mathematical_program.h:499
+    (p, Q) The polynomial p and the Gramian matrix Q. Q has been added
+    as decision variables to the program.)""";
+          // Source: drake/solvers/mathematical_program.h:486
+          const char* doc_3args_gramian_monomial_basis_type =
+R"""(Overloads NewNonnegativePolynomial(), except the Gramian matrix Q is
+an input instead of an output. Depending on the type of the
+polynomial, we will impose different constraint on the Gramian matrix.
+- if type = kSos, we impose the Gramian matrix being positive
+semidefinite. - if type = kSdsos, we impose the Gramian matrix being
+scaled diagonally dominant. - if type = kDsos, we impose the Gramian
+matrix being positive diagonally dominant.)""";
+          // Source: drake/solvers/mathematical_program.h:511
           const char* doc_3args_indeterminates_degree_type =
 R"""(Overloads NewNonnegativePolynomial(). Instead of passing the monomial
 basis, we use a monomial basis that contains all monomials of
 ``indeterminates`` of total order up to ``degree`` / 2, hence the
 returned polynomial p contains all the monomials of ``indeterminates``
-of total order up to ``degree``.
+of total order up to ``degree``. Depending on the type of the
+polynomial, we will impose different constraint on the polynomial. -
+if type = kSos, we impose the polynomial being SOS. - if type =
+kSdsos, we impose the polynomial being SDSOS. - if type = kDsos, we
+impose the polynomial being DSOS.
 
 Parameter ``indeterminates``:
     All the indeterminates in the polynomial p.
@@ -42937,8 +43004,8 @@ Parameter ``type``:
     The type of the nonnegative polynomial.
 
 Returns:
-    (p, Q) The polynomial p and the Grammian matrix Q. Q has been
-    added as decision variables to the program.
+    (p, Q) The polynomial p and the Gramian matrix Q. Q has been added
+    as decision variables to the program.
 
 Precondition:
     ``degree`` is a positive even number.)""";
@@ -42964,9 +43031,9 @@ Parameter ``coeff_name``:
         } NewOddDegreeFreePolynomial;
         // Symbol: drake::solvers::MathematicalProgram::NewSosPolynomial
         struct /* NewSosPolynomial */ {
-          // Source: drake/solvers/mathematical_program.h:511
+          // Source: drake/solvers/mathematical_program.h:523
           const char* doc_1args =
-R"""(Returns a pair of a SOS polynomial p = mᵀQm and the Grammian matrix Q,
+R"""(Returns a pair of a SOS polynomial p = mᵀQm and the Gramian matrix Q,
 where m is the ``monomial`` basis. For example,
 ``NewSosPolynomial(Vector2<Monomial>{x,y})`` returns a polynomial p =
 Q₍₀,₀₎x² + 2Q₍₁,₀₎xy + Q₍₁,₁₎y² and Q.
@@ -42974,10 +43041,10 @@ Q₍₀,₀₎x² + 2Q₍₁,₀₎xy + Q₍₁,₁₎y² and Q.
 Note:
     Q is a symmetric monomial_basis.rows() x monomial_basis.rows()
     matrix.)""";
-          // Source: drake/solvers/mathematical_program.h:524
+          // Source: drake/solvers/mathematical_program.h:536
           const char* doc_2args =
 R"""(Returns a pair of a SOS polynomial p = m(x)ᵀQm(x) of degree ``degree``
-and the Grammian matrix Q that should be PSD, where m(x) is the result
+and the Gramian matrix Q that should be PSD, where m(x) is the result
 of calling ``MonomialBasis(indeterminates, degree/2)``. For example,
 ``NewSosPolynomial({x}, 4)`` returns a pair of a polynomial p =
 Q₍₀,₀₎x⁴ + 2Q₍₁,₀₎ x³ + (2Q₍₂,₀₎ + Q₍₁,₁₎)x² + 2Q₍₂,₁₎x + Q₍₂,₂₎ and
@@ -43076,14 +43143,14 @@ R"""(A scaled-diagonally dominant sum-of-squares polynomial.)""";
         } NonnegativePolynomial;
         // Symbol: drake::solvers::MathematicalProgram::Reparse
         struct /* Reparse */ {
-          // Source: drake/solvers/mathematical_program.h:635
+          // Source: drake/solvers/mathematical_program.h:647
           const char* doc =
 R"""(Reparses the polynomial ``p`` using this MathematicalProgram's
 indeterminates.)""";
         } Reparse;
         // Symbol: drake::solvers::MathematicalProgram::SetDecisionVariableValueInVector
         struct /* SetDecisionVariableValueInVector */ {
-          // Source: drake/solvers/mathematical_program.h:2571
+          // Source: drake/solvers/mathematical_program.h:2583
           const char* doc_3args_decision_variable_decision_variable_new_value_values =
 R"""(Updates the value of a single ``decision_variable`` inside the
 ``values`` vector to be ``decision_variable_new_value``. The other
@@ -43097,7 +43164,7 @@ Parameter ``decision_variable_new_value``:
 
 Parameter ``values``:
     The vector to be tweaked; must be of size num_vars().)""";
-          // Source: drake/solvers/mathematical_program.h:2585
+          // Source: drake/solvers/mathematical_program.h:2597
           const char* doc_3args_decision_variables_decision_variables_new_values_values =
 R"""(Updates the values of some ``decision_variables`` inside the
 ``values`` vector to be ``decision_variables_new_values``. The other
@@ -43115,7 +43182,7 @@ Parameter ``values``:
         } SetDecisionVariableValueInVector;
         // Symbol: drake::solvers::MathematicalProgram::SetInitialGuess
         struct /* SetInitialGuess */ {
-          // Source: drake/solvers/mathematical_program.h:2531
+          // Source: drake/solvers/mathematical_program.h:2543
           const char* doc_2args_decision_variable_variable_guess_value =
 R"""(Sets the initial guess for a single variable ``decision_variable``.
 The guess is stored as part of this program.
@@ -43126,7 +43193,7 @@ Precondition:
 
 Raises:
     RuntimeError if precondition is not satisfied.)""";
-          // Source: drake/solvers/mathematical_program.h:2540
+          // Source: drake/solvers/mathematical_program.h:2552
           const char* doc_2args_constEigenMatrixBase_constEigenMatrixBase =
 R"""(Sets the initial guess for the decision variables stored in
 ``decision_variable_mat`` to be ``x0``. The guess is stored as part of
@@ -43134,7 +43201,7 @@ this program.)""";
         } SetInitialGuess;
         // Symbol: drake::solvers::MathematicalProgram::SetInitialGuessForAllVariables
         struct /* SetInitialGuessForAllVariables */ {
-          // Source: drake/solvers/mathematical_program.h:2558
+          // Source: drake/solvers/mathematical_program.h:2570
           const char* doc =
 R"""(Set the initial guess for ALL decision variables. Note that variables
 begin with a default initial guess of NaN to indicate that no guess is
@@ -43145,19 +43212,19 @@ Parameter ``x0``:
         } SetInitialGuessForAllVariables;
         // Symbol: drake::solvers::MathematicalProgram::SetSolverOption
         struct /* SetSolverOption */ {
-          // Source: drake/solvers/mathematical_program.h:2590
+          // Source: drake/solvers/mathematical_program.h:2602
           const char* doc = R"""()""";
         } SetSolverOption;
         // Symbol: drake::solvers::MathematicalProgram::SetSolverOptions
         struct /* SetSolverOptions */ {
-          // Source: drake/solvers/mathematical_program.h:2610
+          // Source: drake/solvers/mathematical_program.h:2622
           const char* doc =
 R"""(Overwrite the stored solver options inside MathematicalProgram with
 the provided solver options.)""";
         } SetSolverOptions;
         // Symbol: drake::solvers::MathematicalProgram::SetVariableScaling
         struct /* SetVariableScaling */ {
-          // Source: drake/solvers/mathematical_program.h:3012
+          // Source: drake/solvers/mathematical_program.h:3024
           const char* doc =
 R"""(Setter for the scaling of decision variables starting from index
 ``idx_start`` to ``idx_end`` (including ``idx_end)``.
@@ -43177,18 +43244,18 @@ See variable_scaling "Variable scaling" for more information.)""";
         } VarType;
         // Symbol: drake::solvers::MathematicalProgram::bounding_box_constraints
         struct /* bounding_box_constraints */ {
-          // Source: drake/solvers/mathematical_program.h:2755
+          // Source: drake/solvers/mathematical_program.h:2767
           const char* doc = R"""(Getter for all bounding box constraints)""";
         } bounding_box_constraints;
         // Symbol: drake::solvers::MathematicalProgram::decision_variable
         struct /* decision_variable */ {
-          // Source: drake/solvers/mathematical_program.h:2943
+          // Source: drake/solvers/mathematical_program.h:2955
           const char* doc =
 R"""(Getter for the decision variable with index ``i`` in the program.)""";
         } decision_variable;
         // Symbol: drake::solvers::MathematicalProgram::decision_variable_index
         struct /* decision_variable_index */ {
-          // Source: drake/solvers/mathematical_program.h:2966
+          // Source: drake/solvers/mathematical_program.h:2978
           const char* doc =
 R"""(Returns the mapping from a decision variable ID to its index in the
 vector containing all the decision variables in the mathematical
@@ -43196,127 +43263,127 @@ program.)""";
         } decision_variable_index;
         // Symbol: drake::solvers::MathematicalProgram::decision_variables
         struct /* decision_variables */ {
-          // Source: drake/solvers/mathematical_program.h:2938
+          // Source: drake/solvers/mathematical_program.h:2950
           const char* doc =
 R"""(Getter for all decision variables in the program.)""";
         } decision_variables;
         // Symbol: drake::solvers::MathematicalProgram::exponential_cone_constraints
         struct /* exponential_cone_constraints */ {
-          // Source: drake/solvers/mathematical_program.h:2705
+          // Source: drake/solvers/mathematical_program.h:2717
           const char* doc =
 R"""(Getter for exponential cone constraints.)""";
         } exponential_cone_constraints;
         // Symbol: drake::solvers::MathematicalProgram::generic_constraints
         struct /* generic_constraints */ {
-          // Source: drake/solvers/mathematical_program.h:2652
+          // Source: drake/solvers/mathematical_program.h:2664
           const char* doc = R"""(Getter for all generic constraints)""";
         } generic_constraints;
         // Symbol: drake::solvers::MathematicalProgram::generic_costs
         struct /* generic_costs */ {
-          // Source: drake/solvers/mathematical_program.h:2645
+          // Source: drake/solvers/mathematical_program.h:2657
           const char* doc = R"""(Getter for all generic costs.)""";
         } generic_costs;
         // Symbol: drake::solvers::MathematicalProgram::indeterminate
         struct /* indeterminate */ {
-          // Source: drake/solvers/mathematical_program.h:2951
+          // Source: drake/solvers/mathematical_program.h:2963
           const char* doc =
 R"""(Getter for the indeterminate with index ``i`` in the program.)""";
         } indeterminate;
         // Symbol: drake::solvers::MathematicalProgram::indeterminates
         struct /* indeterminates */ {
-          // Source: drake/solvers/mathematical_program.h:2948
+          // Source: drake/solvers/mathematical_program.h:2960
           const char* doc =
 R"""(Getter for all indeterminates in the program.)""";
         } indeterminates;
         // Symbol: drake::solvers::MathematicalProgram::indeterminates_index
         struct /* indeterminates_index */ {
-          // Source: drake/solvers/mathematical_program.h:2974
+          // Source: drake/solvers/mathematical_program.h:2986
           const char* doc =
 R"""(Returns the mapping from an indeterminate ID to its index in the
 vector containing all the indeterminates in the mathematical program.)""";
         } indeterminates_index;
         // Symbol: drake::solvers::MathematicalProgram::initial_guess
         struct /* initial_guess */ {
-          // Source: drake/solvers/mathematical_program.h:2770
+          // Source: drake/solvers/mathematical_program.h:2782
           const char* doc = R"""(Getter for the initial guess)""";
         } initial_guess;
         // Symbol: drake::solvers::MathematicalProgram::linear_complementarity_constraints
         struct /* linear_complementarity_constraints */ {
-          // Source: drake/solvers/mathematical_program.h:2762
+          // Source: drake/solvers/mathematical_program.h:2774
           const char* doc =
 R"""(Getter for all linear complementarity constraints.)""";
         } linear_complementarity_constraints;
         // Symbol: drake::solvers::MathematicalProgram::linear_constraints
         struct /* linear_constraints */ {
-          // Source: drake/solvers/mathematical_program.h:2675
+          // Source: drake/solvers/mathematical_program.h:2687
           const char* doc = R"""(Getter for linear constraints.)""";
         } linear_constraints;
         // Symbol: drake::solvers::MathematicalProgram::linear_costs
         struct /* linear_costs */ {
-          // Source: drake/solvers/mathematical_program.h:2665
+          // Source: drake/solvers/mathematical_program.h:2677
           const char* doc = R"""(Getter for linear costs.)""";
         } linear_costs;
         // Symbol: drake::solvers::MathematicalProgram::linear_equality_constraints
         struct /* linear_equality_constraints */ {
-          // Source: drake/solvers/mathematical_program.h:2660
+          // Source: drake/solvers/mathematical_program.h:2672
           const char* doc = R"""(Getter for linear equality constraints.)""";
         } linear_equality_constraints;
         // Symbol: drake::solvers::MathematicalProgram::linear_matrix_inequality_constraints
         struct /* linear_matrix_inequality_constraints */ {
-          // Source: drake/solvers/mathematical_program.h:2699
+          // Source: drake/solvers/mathematical_program.h:2711
           const char* doc =
 R"""(Getter for linear matrix inequality constraints.)""";
         } linear_matrix_inequality_constraints;
         // Symbol: drake::solvers::MathematicalProgram::lorentz_cone_constraints
         struct /* lorentz_cone_constraints */ {
-          // Source: drake/solvers/mathematical_program.h:2680
+          // Source: drake/solvers/mathematical_program.h:2692
           const char* doc = R"""(Getter for Lorentz cone constraints.)""";
         } lorentz_cone_constraints;
         // Symbol: drake::solvers::MathematicalProgram::num_indeterminates
         struct /* num_indeterminates */ {
-          // Source: drake/solvers/mathematical_program.h:2794
+          // Source: drake/solvers/mathematical_program.h:2806
           const char* doc =
 R"""(Gets the number of indeterminates in the optimization program)""";
         } num_indeterminates;
         // Symbol: drake::solvers::MathematicalProgram::num_vars
         struct /* num_vars */ {
-          // Source: drake/solvers/mathematical_program.h:2767
+          // Source: drake/solvers/mathematical_program.h:2779
           const char* doc =
 R"""(Getter for number of variables in the optimization program)""";
         } num_vars;
         // Symbol: drake::solvers::MathematicalProgram::positive_semidefinite_constraints
         struct /* positive_semidefinite_constraints */ {
-          // Source: drake/solvers/mathematical_program.h:2693
+          // Source: drake/solvers/mathematical_program.h:2705
           const char* doc =
 R"""(Getter for positive semidefinite constraints.)""";
         } positive_semidefinite_constraints;
         // Symbol: drake::solvers::MathematicalProgram::quadratic_costs
         struct /* quadratic_costs */ {
-          // Source: drake/solvers/mathematical_program.h:2670
+          // Source: drake/solvers/mathematical_program.h:2682
           const char* doc = R"""(Getter for quadratic costs.)""";
         } quadratic_costs;
         // Symbol: drake::solvers::MathematicalProgram::required_capabilities
         struct /* required_capabilities */ {
-          // Source: drake/solvers/mathematical_program.h:2957
+          // Source: drake/solvers/mathematical_program.h:2969
           const char* doc =
 R"""(Getter for the required capability on the solver, given the
 cost/constraint/variable types in the program.)""";
         } required_capabilities;
         // Symbol: drake::solvers::MathematicalProgram::rotated_lorentz_cone_constraints
         struct /* rotated_lorentz_cone_constraints */ {
-          // Source: drake/solvers/mathematical_program.h:2687
+          // Source: drake/solvers/mathematical_program.h:2699
           const char* doc =
 R"""(Getter for rotated Lorentz cone constraints.)""";
         } rotated_lorentz_cone_constraints;
         // Symbol: drake::solvers::MathematicalProgram::solver_options
         struct /* solver_options */ {
-          // Source: drake/solvers/mathematical_program.h:2617
+          // Source: drake/solvers/mathematical_program.h:2629
           const char* doc =
 R"""(Returns the solver options stored inside MathematicalProgram.)""";
         } solver_options;
         // Symbol: drake::solvers::MathematicalProgram::visualization_callbacks
         struct /* visualization_callbacks */ {
-          // Source: drake/solvers/mathematical_program.h:2637
+          // Source: drake/solvers/mathematical_program.h:2649
           const char* doc = R"""(Getter for all callbacks.)""";
         } visualization_callbacks;
       } MathematicalProgram;
@@ -46382,69 +46449,74 @@ for more details.)""";
       struct /* SolverType */ {
         // Source: drake/solvers/solver_type.h:6
         const char* doc = R"""()""";
+        // Symbol: drake::solvers::SolverType::kClp
+        struct /* kClp */ {
+          // Source: drake/solvers/solver_type.h:7
+          const char* doc = R"""()""";
+        } kClp;
         // Symbol: drake::solvers::SolverType::kCsdp
         struct /* kCsdp */ {
-          // Source: drake/solvers/solver_type.h:7
+          // Source: drake/solvers/solver_type.h:8
           const char* doc = R"""()""";
         } kCsdp;
         // Symbol: drake::solvers::SolverType::kDReal
         struct /* kDReal */ {
-          // Source: drake/solvers/solver_type.h:8
+          // Source: drake/solvers/solver_type.h:9
           const char* doc = R"""()""";
         } kDReal;
         // Symbol: drake::solvers::SolverType::kEqualityConstrainedQP
         struct /* kEqualityConstrainedQP */ {
-          // Source: drake/solvers/solver_type.h:9
+          // Source: drake/solvers/solver_type.h:10
           const char* doc = R"""()""";
         } kEqualityConstrainedQP;
         // Symbol: drake::solvers::SolverType::kGurobi
         struct /* kGurobi */ {
-          // Source: drake/solvers/solver_type.h:10
+          // Source: drake/solvers/solver_type.h:11
           const char* doc = R"""()""";
         } kGurobi;
         // Symbol: drake::solvers::SolverType::kIpopt
         struct /* kIpopt */ {
-          // Source: drake/solvers/solver_type.h:11
+          // Source: drake/solvers/solver_type.h:12
           const char* doc = R"""()""";
         } kIpopt;
         // Symbol: drake::solvers::SolverType::kLinearSystem
         struct /* kLinearSystem */ {
-          // Source: drake/solvers/solver_type.h:12
+          // Source: drake/solvers/solver_type.h:13
           const char* doc = R"""()""";
         } kLinearSystem;
         // Symbol: drake::solvers::SolverType::kMobyLCP
         struct /* kMobyLCP */ {
-          // Source: drake/solvers/solver_type.h:13
+          // Source: drake/solvers/solver_type.h:14
           const char* doc = R"""()""";
         } kMobyLCP;
         // Symbol: drake::solvers::SolverType::kMosek
         struct /* kMosek */ {
-          // Source: drake/solvers/solver_type.h:14
+          // Source: drake/solvers/solver_type.h:15
           const char* doc = R"""()""";
         } kMosek;
         // Symbol: drake::solvers::SolverType::kNlopt
         struct /* kNlopt */ {
-          // Source: drake/solvers/solver_type.h:15
+          // Source: drake/solvers/solver_type.h:16
           const char* doc = R"""()""";
         } kNlopt;
         // Symbol: drake::solvers::SolverType::kOsqp
         struct /* kOsqp */ {
-          // Source: drake/solvers/solver_type.h:16
+          // Source: drake/solvers/solver_type.h:17
           const char* doc = R"""()""";
         } kOsqp;
         // Symbol: drake::solvers::SolverType::kScs
         struct /* kScs */ {
-          // Source: drake/solvers/solver_type.h:18
+          // Source: drake/solvers/solver_type.h:19
           const char* doc = R"""()""";
         } kScs;
         // Symbol: drake::solvers::SolverType::kSnopt
         struct /* kSnopt */ {
-          // Source: drake/solvers/solver_type.h:17
+          // Source: drake/solvers/solver_type.h:18
           const char* doc = R"""()""";
         } kSnopt;
         // Symbol: drake::solvers::SolverType::kUnrevisedLemke
         struct /* kUnrevisedLemke */ {
-          // Source: drake/solvers/solver_type.h:19
+          // Source: drake/solvers/solver_type.h:20
           const char* doc = R"""()""";
         } kUnrevisedLemke;
       } SolverType;
@@ -49337,7 +49409,7 @@ Raises:
 
 Raises:
     RuntimeError if NaN is detected during evaluation.)""";
-        // Source: drake/common/symbolic_polynomial.h:472
+        // Source: drake/common/symbolic_polynomial.h:487
         const char* doc_polynomial =
 R"""(Evaluates a matrix ``m`` of symbolic polynomials using ``env``.
 
@@ -52448,7 +52520,7 @@ respect to ``vars``. J(i,j) contains ∂f(i)/∂vars(j).
 
 Precondition:
     {``vars`` is non-empty}.)""";
-        // Source: drake/common/symbolic_polynomial.h:481
+        // Source: drake/common/symbolic_polynomial.h:496
         const char* doc_polynomial =
 R"""(Computes the Jacobian matrix J of the vector function ``f`` with
 respect to ``vars``. J(i,j) contains ∂f(i)/∂vars(j).
@@ -53137,13 +53209,13 @@ represent placeholders. It is used to construct a ``RewritingRule``.)""";
         const char* doc = R"""()""";
         // Symbol: drake::symbolic::Polynomial::AddProduct
         struct /* AddProduct */ {
-          // Source: drake/common/symbolic_polynomial.h:187
+          // Source: drake/common/symbolic_polynomial.h:202
           const char* doc =
 R"""(Adds ``coeff`` * ``m`` to this polynomial.)""";
         } AddProduct;
         // Symbol: drake::symbolic::Polynomial::CoefficientsAlmostEqual
         struct /* CoefficientsAlmostEqual */ {
-          // Source: drake/common/symbolic_polynomial.h:224
+          // Source: drake/common/symbolic_polynomial.h:239
           const char* doc =
 R"""(Returns true if this polynomial and ``are`` almost equal (the
 difference in the corresponding coefficients are all less than
@@ -53165,20 +53237,20 @@ indeterminate.)""";
         } Differentiate;
         // Symbol: drake::symbolic::Polynomial::EqualTo
         struct /* EqualTo */ {
-          // Source: drake/common/symbolic_polynomial.h:215
+          // Source: drake/common/symbolic_polynomial.h:230
           const char* doc =
 R"""(Returns true if this polynomial and ``p`` are structurally equal.)""";
         } EqualTo;
         // Symbol: drake::symbolic::Polynomial::EqualToAfterExpansion
         struct /* EqualToAfterExpansion */ {
-          // Source: drake/common/symbolic_polynomial.h:219
+          // Source: drake/common/symbolic_polynomial.h:234
           const char* doc =
 R"""(Returns true if this polynomial and ``p`` are equal, after expanding
 the coefficients.)""";
         } EqualToAfterExpansion;
         // Symbol: drake::symbolic::Polynomial::Evaluate
         struct /* Evaluate */ {
-          // Source: drake/common/symbolic_polynomial.h:173
+          // Source: drake/common/symbolic_polynomial.h:188
           const char* doc =
 R"""(Evaluates this polynomial under a given environment ``env``.
 
@@ -53188,13 +53260,13 @@ Raises:
         } Evaluate;
         // Symbol: drake::symbolic::Polynomial::EvaluatePartial
         struct /* EvaluatePartial */ {
-          // Source: drake/common/symbolic_polynomial.h:178
+          // Source: drake/common/symbolic_polynomial.h:193
           const char* doc_1args =
 R"""(Partially evaluates this polynomial using an environment ``env``.
 
 Raises:
     RuntimeError if NaN is detected during evaluation.)""";
-          // Source: drake/common/symbolic_polynomial.h:184
+          // Source: drake/common/symbolic_polynomial.h:199
           const char* doc_2args =
 R"""(Partially evaluates this polynomial by substituting ``var`` with
 ``c``.
@@ -53202,6 +53274,26 @@ R"""(Partially evaluates this polynomial by substituting ``var`` with
 Raises:
     RuntimeError if NaN is detected at any point during evaluation.)""";
         } EvaluatePartial;
+        // Symbol: drake::symbolic::Polynomial::Integrate
+        struct /* Integrate */ {
+          // Source: drake/common/symbolic_polynomial.h:175
+          const char* doc_1args =
+R"""(Integrates this polynomial with respect to an indeterminate ``x``.
+Integration with respect to decision variables is not supported yet.
+If ``x`` is not an indeterminate nor decision variable, then it will
+be added to the list of indeterminates.
+
+Raises:
+    RuntimeError if ``x`` is a decision variable.)""";
+          // Source: drake/common/symbolic_polynomial.h:182
+          const char* doc_3args =
+R"""(Computes the definite integrate of this polynomial with respect to the
+indeterminate ``x`` over the domain [a, b]. Integration with respect
+to decision variables is not supported yet.
+
+Raises:
+    RuntimeError if ``x`` is a decision variable.)""";
+        } Integrate;
         // Symbol: drake::symbolic::Polynomial::Jacobian
         struct /* Jacobian */ {
           // Source: drake/common/symbolic_polynomial.h:155
@@ -53250,7 +53342,7 @@ Raises:
         } ctor;
         // Symbol: drake::symbolic::Polynomial::RemoveTermsWithSmallCoefficients
         struct /* RemoveTermsWithSmallCoefficients */ {
-          // Source: drake/common/symbolic_polynomial.h:197
+          // Source: drake/common/symbolic_polynomial.h:212
           const char* doc =
 R"""(Removes the terms whose absolute value of the coefficients are smaller
 than or equal to ``coefficient_tol`` For example, if the polynomial is
@@ -53320,24 +53412,24 @@ of this polynomial.)""";
         } monomial_to_coefficient_map;
         // Symbol: drake::symbolic::Polynomial::operator!=
         struct /* operator_ne */ {
-          // Source: drake/common/symbolic_polynomial.h:232
+          // Source: drake/common/symbolic_polynomial.h:247
           const char* doc =
 R"""(Returns a symbolic formula representing the condition where this
 polynomial and ``p`` are not the same.)""";
         } operator_ne;
         // Symbol: drake::symbolic::Polynomial::operator*=
         struct /* operator_imul */ {
-          // Source: drake/common/symbolic_polynomial.h:209
+          // Source: drake/common/symbolic_polynomial.h:224
           const char* doc = R"""()""";
         } operator_imul;
         // Symbol: drake::symbolic::Polynomial::operator+=
         struct /* operator_iadd */ {
-          // Source: drake/common/symbolic_polynomial.h:199
+          // Source: drake/common/symbolic_polynomial.h:214
           const char* doc = R"""()""";
         } operator_iadd;
         // Symbol: drake::symbolic::Polynomial::operator-=
         struct /* operator_isub */ {
-          // Source: drake/common/symbolic_polynomial.h:204
+          // Source: drake/common/symbolic_polynomial.h:219
           const char* doc = R"""()""";
         } operator_isub;
       } Polynomial;
@@ -54954,7 +55046,7 @@ R"""(Updates ``vars`` with the result of set-union(``vars``, { ``var`` }).)""";
       struct /* operator_sub */ {
         // Source: drake/common/symbolic_expression.h:586
         const char* doc_1args_e = R"""(Provides unary minus operator.)""";
-        // Source: drake/common/symbolic_polynomial.h:257
+        // Source: drake/common/symbolic_polynomial.h:272
         const char* doc_1args_p = R"""(Unary minus operation for polynomial.)""";
         // Source: drake/common/symbolic_variables.h:167
         const char* doc_2args_vars1_vars2 = R"""(Returns set-minus(``var1``, ``vars2)``.)""";
