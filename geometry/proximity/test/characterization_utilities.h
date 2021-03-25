@@ -56,46 +56,15 @@ class DistanceCallback {
   virtual T GetFirstSignedDistance() const = 0;
 };
 
-/* Encodes the possible outcomes of performing a proximity query. For a given
- set of query parameters/scalar attempting to perform the query should either
- work or not. */
-enum Outcome { kSupported, kThrows };
-
-/* The types of geometries that can be considered for characterization tests.
- Note: the geometries enumerated here includes a Point (which is not a
- drake::Shape). */
-enum GeometryType {
-  kCapsule,
-  kEllipsoid,
-  kSphere
+/* Reports the expected outcome for a characterized result test. If can_compute
+ is true, `max_error` should be non-negative measure (in meters) which should
+ be *near* the worst observed error. If false, `error_message` should be valid.
+ */
+struct Expectation {
+  bool can_compute{};
+  double max_error{};
+  std::string error_message;
 };
-std::ostream& operator<<(std::ostream& out, GeometryType s);
-
-/* This represents a single cell of the table -- an instance of invoking a
- proximity query. It explicitly calls out the two shapes and the expected
- outcome, and relies on the context to define the scalar. */
-struct QueryInstance {
-  /* Constructs a query instance that should successfully evaluate, producing a
-   result with the given error. */
-  QueryInstance(GeometryType shape1, GeometryType shape2, double error);
-
-  /* Constructs a query instance that doesn't successfully evaluate -- the test
-   may throw or silently do nothing as indicated by the declared `outcome`.
-   @pre outcome != kSupported */
-  QueryInstance(GeometryType shape1, GeometryType shape2, Outcome outcome);
-
-  const GeometryType shape1{};
-  const GeometryType shape2{};
-  const double error{};
-  const Outcome outcome{};
-};
-
-std::ostream& operator<<(std::ostream& out, const QueryInstance& c);
-
-/* Function to convert QueryInstance values into meaningful value test names
- for gtest.  */
-std::string QueryInstanceName(
-    const testing::TestParamInfo<QueryInstance>& info);
 
 /* Defines a test configuration for two shapes: the pose between the two
  shapes, the expected signed_distance, and a description to aid in assessing
@@ -104,86 +73,12 @@ template <typename T>
 struct Configuration {
   math::RigidTransform<T> X_AB;
   double signed_distance{};
-  std::string description;
 };
 
-/* The challenge of testing signed distance (and related) queries, is to put
- two arbitrary shapes into a non-trivial relative pose which, nevertheless,
- should produce an unambiguous distance value. All of the following code
- supports that effort. See specific notes below.  */
-
-/* Defines a tangent plane on the surface of a shape (in whatever frame the
- shape itself is expressed in). The given `point` lies on both the plane and
- the surface of the shape. The normal should point *out* of the shape such that
- the shape is "under" the plane (i.e., the signed distance to the plane is <= 0
- for all points in the shape). The normal direction may not be unique (e.g., for
- a box's vertex, the associated normal is any direction in the corresponding
- octant).
-
- The tangent plane contains one further piece of information. Given the tangent
- plane defined by point P and normal n, we define a set of points
- Q = P - δ⋅n (for δ ≥ 0). We report a `max_depth` value -- the largest value of
- δ such that we can guarantee that P is the closest point on the surface of the
- geometry to all of the Qs for δ ∈ [0, δₘₐₓ]. This will inform us as to which
- samples can be combined into a valid configuration. To be a valid configuration
- for penetration, at least *one* of the samples needs to have a `max_depth`
- value that is greater than or equal to the targeted depth.
-
- We use the TangentPlane to pose geometries; see AlignTangentPlanes for
- details.  */
-template <typename T>
-struct ShapeTangentPlane {
-  Vector3<T> point;
-  Vector3<T> normal;
-  double max_depth{};
-  std::string description;
-};
-
-/* Creates a set of "interesting" samples (each a tangent plane) on the given
- geometry.
-
- The samples we return must be able to support an expected signed distance
- query result. In some cases, the sign and magnitude of the targeted distance
- can change what the samples are. See the various implementations for details.
- */
-template <typename T>
-class ShapeConfigurations : public ShapeReifier {
- public:
-  /* Constructs the configurations for the given shape and requested distance.
-   */
-  ShapeConfigurations(const Shape& shape, double distance);
-
-  /* @name Implementation of ShapeReifier interface
-
-   Where meaningful, each of these implementations will test the geometry
-   against *negative* signed distance to confirm the shape is large enough to be
-   able to manifest penetration depth of the requested magnitude. If the test
-   fails, the method throws.  */
-  //@{
-
-  using ShapeReifier::ImplementGeometry;
-  /* The capsule samples do *not* depend on `signed_distance`. One is located on
-   one of the spherical caps, the other on the barrel.  */
-  void ImplementGeometry(const Capsule& capsule, void*) final;
-
-  /* The sampling of the ellipsoid does *not* depend on `signed_distance`.
-   The samples are simply two arbitrary points on the surface of the ellipsoid
-   in different octants.  */
-  void ImplementGeometry(const Ellipsoid& ellipsoid, void*) final;
-
-  /* The samples are at two arbitrary points in different octants of the sphere.
-   */
-  void ImplementGeometry(const Sphere& sphere, void*) final;
-  //@}
-
-  /* We're returning a *copy* because we're using this in a manner in which the
-   owning reifier may not stay alive. */
-  std::vector<ShapeTangentPlane<T>> configs() const { return configs_; }
-
- private:
-  double distance_{};
-  std::vector<ShapeTangentPlane<T>> configs_;
-};
+/* Renders an FCL enumeration into a string to support intelligible error
+ messages. Note: we're only covering the enumeration values that Drake
+ specifically uses.  */
+std::string to_string(const fcl::NODE_TYPE& node);
 
 /* @name Fcl geometry from drake shape specifications. */
 class MakeFclShape : public ShapeReifier {
@@ -192,8 +87,6 @@ class MakeFclShape : public ShapeReifier {
 
   /* Implementation of ShapeReifier interface  */
   using ShapeReifier::ImplementGeometry;
-  void ImplementGeometry(const Capsule& capsule, void*) final;
-  void ImplementGeometry(const Ellipsoid& ellipsoid, void*) final;
   void ImplementGeometry(const Sphere& sphere, void*) final;
 
   std::shared_ptr<fcl::CollisionGeometry<double>> object() const {
@@ -203,21 +96,6 @@ class MakeFclShape : public ShapeReifier {
  private:
   std::shared_ptr<fcl::CollisionGeometry<double>> object_{};
 };
-
-/* Creates a transform to align two planes. The planes are defined by a
- (point, normal) pair -- the point lies on the plane and the normal is
- perpendicular to the plane. In this case, we have planes (P, m⃗) and (Q, n⃗). We
- produce a transform X = [R t] such that:
-   X ⋅ Q = P
-   R ⋅ n⃗ = -m⃗
-In other words, we transform the second plane (Q, n⃗) so Q and P are coincident
-and m⃗ and n⃗ are anti-parallel. The notation is frameless, because we're
-not really relating two frames so much as creating a transform operator
-(although we *do* assume that all quantities are measured and expressed in a
-common frame). */
-template <typename T>
-math::RigidTransform<T> AlignPlanes(const Vector3<T>& P, const Vector3<T>& m,
-                                    const Vector3<T>& Q, const Vector3<T>& n);
 
 /* This test provides a common framework for testing signed-distance based
  proximity queries. Specifically, it provides *direct* support in populating
@@ -246,12 +124,12 @@ class CharacterizeResultTest : public ::testing::Test {
       : callback_(std::move(callback)) {}
 
   /* Runs a single instance of the callback for the given collision objects.
-   Confirms the callback result against the expected outcome. If query.outcome
-   is kSupported, it confirms the successful execution of the query reports a
-   single result. Otherwise, confirms that the callback throws with a common
-   "unsupported operation" type exception message. */
+   Confirms the computability of the callback against the expectation. If
+   expectation.can_compute is true, it confirms the successful execution of the
+   query reports a single result. Otherwise, confirms that the callback
+   throws with an error matching that contained in the expectation. */
   void RunCallback(
-      const QueryInstance& query, fcl::CollisionObjectd* obj_A,
+      const Expectation& expectation, fcl::CollisionObjectd* obj_A,
       fcl::CollisionObjectd* obj_B,
       const CollisionFilterLegacy* collision_filter,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>* X_WGs)
@@ -263,15 +141,6 @@ class CharacterizeResultTest : public ::testing::Test {
    @pre expected_distance != 0. */
   std::optional<double> ComputeErrorMaybe(double expected_distance) const;
 
-  // TODO(SeanCurtis-TRI) I don't need a bunch of configurations if my
-  //  expectation is that it will fail. So, I should use that information to
-  //  reduce the work I do.
-  /* Creates a set of configurations for the two shapes based on the surface
-   sample points defined for each shape type (see SampleShapeSurface below). */
-  virtual std::vector<Configuration<T>> MakeConfigurations(
-      const Shape& shape_A, const Shape& shape_B,
-      const std::vector<double>& signed_distances) const;
-
   /* Runs the test to characterize the query error between geometries of
    two shape types: Shape1 and Shape2. The caller provides one or more
    configuration specifications (including relative poses of the two shapes
@@ -282,14 +151,14 @@ class CharacterizeResultTest : public ::testing::Test {
    we're testing the query under non-trivial transforms. The query is repeated
    twice: once as (A, B) and again as (B, A) for each configuration.
 
-   The expected outcome of the query is contained in `query.outcome`. It
-   declares whether the query expects to compute (`kSuported`). If it is
-   supported, error is computed between the returned signed distance and the
-   expected signed distance. Across *all* queries, the worst error is stored.
-   The worst error can't be too much worse or too much *better* than the
-   expected value (`query.error`) to pass. If the expectation is
-   that the query cannot be computed, we confirm an exception based on a
-   standard "unsupported" message used throughout the callbacks.
+   The expected outcome of the query is contained in the given `expectation`. It
+   declares whether the query runs at all (`expectation.can_compute`). If it
+   can be computed, error is computed between the returned signed distance and
+   the expected signed distance. Across *all* queries, the worst error is
+   stored. The worst error can't be too much worse or too much *better* than the
+   expected value (`expectation.max_error`) to pass. If the expectation is
+   that the query cannot be computed, we confirm an exception with the given
+   `expectation`'s error message.
 
    This test does most of the work to run the test (accumulating and testing
    worst error), but it uses `RunCallback` to execute the callback and assert
@@ -298,7 +167,7 @@ class CharacterizeResultTest : public ::testing::Test {
    The test passes if the worst error lies in the interval:
 
                 |    error    |
-                |-------------|     e = query.error
+                |-------------|     e = expectation.max_error
                 |             |
                e/2            e
 
@@ -308,7 +177,7 @@ class CharacterizeResultTest : public ::testing::Test {
    *open* interval:
 
                     error    |
-                -------------|     e = query.error
+                -------------|     e = expectation.max_error
                              |
                              3
 
@@ -327,23 +196,14 @@ class CharacterizeResultTest : public ::testing::Test {
    can get the correct answer to within machine epsilon. We want to report the
    *worst case* error and the tests should be articulated as such.
 
-   @param query        The query instance (which contains the expected error).
+   @param expectation  The expectation for the query result.
    @param shape_A      The first shape in the pair.
    @param shape_B      The second shape in the pair.
    @param configs      A collection of test configurations against which we
                        evaluate the callback. */
-  void RunCharacterization(const QueryInstance& query, const Shape& shape_A,
+  void RunCharacterization(const Expectation& expectation, const Shape& shape_A,
                            const Shape& shape_B,
                            const std::vector<Configuration<T>>& configs);
-
-  /* Variant of RunCharacterization that creates a collection of configurations
-   with using the distances given by TestDistances applied to the shapes
-   implied by the query.  */
-  void RunCharacterization(const QueryInstance& query);
-
-  /* Each subclass should define the distances over which it should be
-   evaluated. */
-  virtual std::vector<double> TestDistances() const = 0;
 
   /* Generates a geometry id for the given collision object, encodes the id
    into the object, and returns the id.  */
@@ -370,13 +230,10 @@ class CharacterizeResultTest : public ::testing::Test {
    queries are characterized. */
   static constexpr double kDistance{2e-3};
 
-  static std::unique_ptr<Shape> MakeShape(GeometryType shape, bool use_alt);
-
-  static Capsule capsule(bool alt = false);
-
-  static Ellipsoid ellipsoid(bool alt = false);
-
-  static Sphere sphere(bool alt = false);
+  static Sphere sphere(bool alt = false) {
+    unused(alt);
+    return Sphere(kDistance * 100);
+  }
 
   //}
 
@@ -391,5 +248,3 @@ class CharacterizeResultTest : public ::testing::Test {
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
   class ::drake::geometry::internal::CharacterizeResultTest)
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-  class ::drake::geometry::internal::ShapeConfigurations)
