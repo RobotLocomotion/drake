@@ -98,7 +98,7 @@ INSTANTIATE_TEST_SUITE_P(
         QueryInstance(kEllipsoid, kSphere, kThrows),
 
 
-        QueryInstance(kSphere, kSphere, 3e-15)),
+        QueryInstance(kSphere, kSphere, 4e-15)),
     QueryInstanceName);
 // clang-format on
 
