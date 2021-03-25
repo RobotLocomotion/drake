@@ -315,7 +315,7 @@ void apb11_pydrake_LeafSystem_py_register(py::module &m) {
            py::arg("model_vector"))
       .def("DeclareDiscreteState",
            static_cast<DiscreteStateIndex (LeafSystem<double>::*)(
-               ::Eigen::Ref<const Eigen::Matrix<double, -1, 1, 0, -1, 1>, 0,
+               ::Eigen::Ref<const Eigen::VectorXd, 0,
                             Eigen::InnerStride<1>> const &)>(
                &LeafSystem_double_publicist::DeclareDiscreteState),
            py::arg("vector"))
@@ -323,25 +323,25 @@ void apb11_pydrake_LeafSystem_py_register(py::module &m) {
            static_cast<DiscreteStateIndex (LeafSystem<double>::*)(int)>(
                &LeafSystem_double_publicist::DeclareDiscreteState),
            py::arg("num_state_variables"))
-      .def("DeclareEqualityConstraint",
-           static_cast<SystemConstraintIndex (LeafSystem<double>::*)(
-               ::std::function<void(const Context<double> &,
-                                    Eigen::Matrix<double, -1, 1, 0, -1, 1> *)>,
-               int, ::std::string)>(
-               &LeafSystem_double_publicist::DeclareEqualityConstraint),
-           py::arg("calc"), py::arg("count"), py::arg("description"))
+      .def(
+          "DeclareEqualityConstraint",
+          static_cast<SystemConstraintIndex (LeafSystem<double>::*)(
+              ::std::function<void(const Context<double> &, Eigen::VectorXd *)>,
+              int, ::std::string)>(
+              &LeafSystem_double_publicist::DeclareEqualityConstraint),
+          py::arg("calc"), py::arg("count"), py::arg("description"))
       .def("DeclareImplicitTimeDerivativesResidualSize",
            static_cast<void (LeafSystem<double>::*)(int)>(
                &LeafSystem_double_publicist::
                    DeclareImplicitTimeDerivativesResidualSize),
            py::arg("n"))
-      .def("DeclareInequalityConstraint",
-           static_cast<SystemConstraintIndex (LeafSystem<double>::*)(
-               ::std::function<void(const Context<double> &,
-                                    Eigen::Matrix<double, -1, 1, 0, -1, 1> *)>,
-               SystemConstraintBounds, ::std::string)>(
-               &LeafSystem_double_publicist::DeclareInequalityConstraint),
-           py::arg("calc"), py::arg("bounds"), py::arg("description"))
+      .def(
+          "DeclareInequalityConstraint",
+          static_cast<SystemConstraintIndex (LeafSystem<double>::*)(
+              ::std::function<void(const Context<double> &, Eigen::VectorXd *)>,
+              SystemConstraintBounds, ::std::string)>(
+              &LeafSystem_double_publicist::DeclareInequalityConstraint),
+          py::arg("calc"), py::arg("bounds"), py::arg("description"))
       .def(
           "DeclareNumericParameter",
           static_cast<int (LeafSystem<double>::*)(BasicVector<double> const &)>(

@@ -448,7 +448,7 @@ void apb11_pydrake_System_py_register(py::module &m) {
       .def("DoMapQDotToVelocity",
            static_cast<void (System<double>::*)(
                Context<double> const &,
-               ::Eigen::Ref<const Eigen::Matrix<double, -1, 1, 0, -1, 1>, 0,
+               ::Eigen::Ref<const Eigen::VectorXd, 0,
                             Eigen::InnerStride<1>> const &,
                VectorBase<double> *) const>(
                &System_double_publicist::DoMapQDotToVelocity),
@@ -456,7 +456,7 @@ void apb11_pydrake_System_py_register(py::module &m) {
       .def("DoMapVelocityToQDot",
            static_cast<void (System<double>::*)(
                Context<double> const &,
-               ::Eigen::Ref<const Eigen::Matrix<double, -1, 1, 0, -1, 1>, 0,
+               ::Eigen::Ref<const Eigen::VectorXd, 0,
                             Eigen::InnerStride<1>> const &,
                VectorBase<double> *) const>(
                &System_double_publicist::DoMapVelocityToQDot),
@@ -467,8 +467,7 @@ void apb11_pydrake_System_py_register(py::module &m) {
                &System<double>::EvalConservativePower),
            py::arg("context"))
       .def("EvalEigenVectorInput",
-           static_cast<::Eigen::VectorBlock<
-               const Eigen::Matrix<double, -1, 1, 0, -1, 1>, -1> (
+           static_cast<::Eigen::VectorBlock<const Eigen::VectorXd, -1> (
                System<double>::*)(Context<double> const &, int) const>(
                &System<double>::EvalEigenVectorInput),
            py::arg("context"), py::arg("port_index"))
@@ -619,7 +618,7 @@ void apb11_pydrake_System_py_register(py::module &m) {
       .def("MapQDotToVelocity",
            static_cast<void (System<double>::*)(
                Context<double> const &,
-               ::Eigen::Ref<const Eigen::Matrix<double, -1, 1, 0, -1, 1>, 0,
+               ::Eigen::Ref<const Eigen::VectorXd, 0,
                             Eigen::InnerStride<1>> const &,
                VectorBase<double> *) const>(&System<double>::MapQDotToVelocity),
            py::arg("context"), py::arg("qdot"), py::arg("generalized_velocity"))
@@ -631,7 +630,7 @@ void apb11_pydrake_System_py_register(py::module &m) {
       .def("MapVelocityToQDot",
            static_cast<void (System<double>::*)(
                Context<double> const &,
-               ::Eigen::Ref<const Eigen::Matrix<double, -1, 1, 0, -1, 1>, 0,
+               ::Eigen::Ref<const Eigen::VectorXd, 0,
                             Eigen::InnerStride<1>> const &,
                VectorBase<double> *) const>(&System<double>::MapVelocityToQDot),
            py::arg("context"), py::arg("generalized_velocity"), py::arg("qdot"))

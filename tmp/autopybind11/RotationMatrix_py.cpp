@@ -275,17 +275,17 @@ void apb11_pydrake_RotationMatrix_py_register(py::module &m) {
           py::arg("Ax"), py::arg("Ay"), py::arg("Az"))
       .def_static("MakeXRotation",
                   static_cast<RotationMatrix<drake::AutoDiffXd> (*)(
-                      ::Eigen::AutoDiffScalar<Eigen::VectorXd> const &)>(
+                      drake::AutoDiffXd const &)>(
                       &RotationMatrix<drake::AutoDiffXd>::MakeXRotation),
                   py::arg("theta"))
       .def_static("MakeYRotation",
                   static_cast<RotationMatrix<drake::AutoDiffXd> (*)(
-                      ::Eigen::AutoDiffScalar<Eigen::VectorXd> const &)>(
+                      drake::AutoDiffXd const &)>(
                       &RotationMatrix<drake::AutoDiffXd>::MakeYRotation),
                   py::arg("theta"))
       .def_static("MakeZRotation",
                   static_cast<RotationMatrix<drake::AutoDiffXd> (*)(
-                      ::Eigen::AutoDiffScalar<Eigen::VectorXd> const &)>(
+                      drake::AutoDiffXd const &)>(
                       &RotationMatrix<drake::AutoDiffXd>::MakeZRotation),
                   py::arg("theta"))
       .def_static(
