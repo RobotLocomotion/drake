@@ -1,2 +1,4 @@
 private_members: true
 enable_doc_strings: false
+pass_eigen_by_ref: False
+use_eigen_return_policy: False
