@@ -852,6 +852,7 @@ class TestMathematicalProgram(unittest.TestCase):
 
         # Test setting all values at once.
         prog.SetInitialGuessForAllVariables(x0)
+        np.testing.assert_array_equal(prog.initial_guess(), x0)
         check_and_reset()
 
         # Check an extrinsic guess.  We sanity check changes to the guess using
