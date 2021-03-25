@@ -37,9 +37,9 @@ def main():
         parser.error(f"--out_dir={out_dir} already exists")
 
     manifest = runfiles.Create()
-    gen_sphinx = manifest.Rlocation("drake/bindings/pydrake/doc/gen_sphinx")
+    gen_sphinx = manifest.Rlocation("drake/doc/pydrake/gen_sphinx")
     gen_jekyll = manifest.Rlocation("drake/doc/gen_jekyll")
-    doxygen = manifest.Rlocation("drake/doc/doxygen")
+    doxygen = manifest.Rlocation("drake/doc/doxygen_cxx/build")
     for item in [gen_sphinx, gen_jekyll, doxygen]:
         assert os.path.exists(item), item
 
@@ -78,8 +78,8 @@ def _build_sitemap(site_dir: str) -> None:
 
     print("Building sitemap.xml...")
     root_path = Path(site_dir)
-    assert (root_path.is_absolute(),
-            "Path to generated website is not an absolute path")
+    assert root_path.is_absolute(), \
+        "Path to generated website is not an absolute path"
     paths = root_path.glob("**/*.html")
 
     XML_NAMESPACE = "http://www.sitemaps.org/schemas/sitemap/0.9"

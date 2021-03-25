@@ -32,7 +32,7 @@ class LinearFeasibilityProgram : public OptimizationProgram {
 /// Adapt from the linear programming example
 /// http://cvxopt.org/examples/tutorial/lp.html
 /// Solve the following linear program
-/// min     2x0 + x1
+/// min     2x0 + x1 + 4
 /// s.t  -inf <= -x0 + x1 <= 1
 ///         2 <= x0 + x1  <=inf
 ///      -inf <= x0 - 2x1 <= 4
@@ -56,7 +56,7 @@ class LinearProgram0 : public OptimizationProgram {
 
 // Test a simple linear programming problem with only bounding box constraint
 // on x.
-// min x0 - 2*x1
+// min x0 - 2*x1 + 3
 //     0 <= x0 <= 2
 //    -1 <= x1 <= 4
 // The optimal solution is (0, 4)

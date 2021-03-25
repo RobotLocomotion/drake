@@ -3,6 +3,7 @@ import warnings
 from .mathematicalprogram import *  # noqa
 # TODO(eric.cousineau): Merge these into `mathematicalprogram`.
 from .branch_and_bound import *  # noqa
+from .clp import *  # noqa
 from .csdp import *  # noqa
 from .gurobi import *  # noqa
 from .ipopt import *  # noqa

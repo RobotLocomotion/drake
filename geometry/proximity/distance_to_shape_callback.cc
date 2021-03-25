@@ -4,10 +4,62 @@
 #include <limits>
 #include <utility>
 
+#include "drake/geometry/proximity/distance_to_point_callback.h"
+#include "drake/math/rotation_matrix.h"
+
 namespace drake {
 namespace geometry {
 namespace internal {
 namespace shape_distance {
+
+template <typename T>
+void DistancePairGeometry<T>::operator()(const fcl::Sphered& sphere_A,
+                                         const fcl::Sphered& sphere_B) {
+  SphereShapeDistance(sphere_A, sphere_B);
+}
+
+template <typename T>
+void DistancePairGeometry<T>::operator()(const fcl::Sphered& sphere_A,
+                                         const fcl::Boxd& box_B) {
+  SphereShapeDistance(sphere_A, box_B);
+}
+
+template <typename T>
+void DistancePairGeometry<T>::operator()(const fcl::Sphered& sphere_A,
+                                         const fcl::Cylinderd& cylinder_B) {
+  SphereShapeDistance(sphere_A, cylinder_B);
+}
+
+template <typename T>
+void DistancePairGeometry<T>::operator()(const fcl::Sphered& sphere_A,
+                                         const fcl::Halfspaced& halfspace_B) {
+  SphereShapeDistance(sphere_A, halfspace_B);
+}
+
+template <typename T>
+void DistancePairGeometry<T>::operator()(const fcl::Sphered& sphere_A,
+                                         const fcl::Capsuled& capsule_B) {
+  SphereShapeDistance(sphere_A, capsule_B);
+}
+
+template <typename T>
+template <typename FclShape>
+void DistancePairGeometry<T>::SphereShapeDistance(const fcl::Sphered& sphere_A,
+                                                  const FclShape& shape_B) {
+  const SignedDistanceToPoint<T> shape_B_to_point_Ao =
+      point_distance::DistanceToPoint<T>(id_B_, X_WB_,
+                                         X_WA_.translation())(shape_B);
+  result_->id_A = id_A_;
+  result_->id_B = id_B_;
+  result_->distance = shape_B_to_point_Ao.distance - sphere_A.radius;
+  // p_BCb is the witness point on ∂B measured and expressed in B.
+  result_->p_BCb = shape_B_to_point_Ao.p_GN;
+  result_->nhat_BA_W = shape_B_to_point_Ao.grad_W;
+  result_->is_nhat_BA_W_unique = shape_B_to_point_Ao.is_grad_W_unique;
+  // p_ACa is the witness point on ∂A measured and expressed in A.
+  const math::RotationMatrix<T> R_AW = X_WA_.rotation().transpose();
+  result_->p_ACa = -sphere_A.radius * (R_AW * shape_B_to_point_Ao.grad_W);
+}
 
 template <>
 void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
@@ -46,6 +98,119 @@ void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
     pair_data->nhat_BA_W = (p_WCa - p_WCb) / result.min_distance;
     pair_data->is_nhat_BA_W_unique = true;
   }
+}
+
+bool RequiresFallback(const fcl::CollisionObjectd& a,
+                      const fcl::CollisionObjectd& b) {
+  /* In the current ecosystem, we only have high-fidelity geometric code for
+   Sphere-X (for *some* X). So, the conditions requiring the fallback is
+   a) neither is a sphere, or b) one is a sphere, the other is the wrong X. */
+  if (a.collisionGeometry()->getNodeType() != fcl::GEOM_SPHERE &&
+      b.collisionGeometry()->getNodeType() != fcl::GEOM_SPHERE) {
+    return true;
+  }
+  const fcl::CollisionGeometryd* other =
+      a.collisionGeometry()->getNodeType() == fcl::GEOM_SPHERE
+          ? b.collisionGeometry().get()
+          : a.collisionGeometry().get();
+  // Box, capsule, cylinder, half space, and cylinder don't required fallback.
+  // Ellipsoid, convex do. Other fcl node types aren't currently used. Note
+  // that the convex type is used to represent drake::geometry::Mesh.
+  return other->getNodeType() == fcl::GEOM_ELLIPSOID ||
+         other->getNodeType() == fcl::GEOM_CONVEX;
+}
+
+template <typename T>
+void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
+                                const math::RigidTransform<T>& X_WA,
+                                const fcl::CollisionObjectd& b,
+                                const math::RigidTransform<T>& X_WB,
+                                const fcl::DistanceRequestd& request,
+                                SignedDistancePair<T>* result) {
+  DRAKE_DEMAND(result != nullptr);
+
+  if (RequiresFallback(a, b)) {
+    CalcDistanceFallback<T>(a, b, request, result);
+    return;
+  }
+
+  // If no fallback is necessary, one of these two *must* be a sphere.
+  const bool a_is_sphere =
+      a.collisionGeometry()->getNodeType() == fcl::GEOM_SPHERE;
+  DRAKE_ASSERT(a_is_sphere ||
+               b.collisionGeometry()->getNodeType() == fcl::GEOM_SPHERE);
+  // We write `s` for the sphere object and `o` for the other object. We
+  // assign either (a,b) or (b,a) to (s,o) depending on whether `a` is a
+  // sphere or not. Therefore, we only need the helper DistancePairGeometry
+  // that takes (sphere, other) but not (other, sphere).  This scheme helps us
+  // keep the code compact; however, we might have to re-order the result
+  // afterwards.
+  const fcl::CollisionObjectd& s = a_is_sphere ? a : b;
+  const fcl::CollisionObjectd& o = a_is_sphere ? b : a;
+  const fcl::CollisionGeometryd* s_geometry = s.collisionGeometry().get();
+  const fcl::CollisionGeometryd* o_geometry = o.collisionGeometry().get();
+  const math::RigidTransform<T>& X_WS(a_is_sphere ? X_WA : X_WB);
+  const math::RigidTransform<T>& X_WO(a_is_sphere ? X_WB : X_WA);
+  const auto id_S = EncodedData(s).id();
+  const auto id_O = EncodedData(o).id();
+  DistancePairGeometry<T> distance_pair(id_S, id_O, X_WS, X_WO, result);
+  const auto& sphere_S = *static_cast<const fcl::Sphered*>(s_geometry);
+  switch (o_geometry->getNodeType()) {
+    case fcl::GEOM_SPHERE: {
+      const auto& sphere_O = *static_cast<const fcl::Sphered*>(o_geometry);
+      distance_pair(sphere_S, sphere_O);
+      break;
+    }
+    case fcl::GEOM_BOX: {
+      const auto& box_O = *static_cast<const fcl::Boxd*>(o_geometry);
+      distance_pair(sphere_S, box_O);
+      break;
+    }
+    case fcl::GEOM_CYLINDER: {
+      const auto& cylinder_O = *static_cast<const fcl::Cylinderd*>(o_geometry);
+      distance_pair(sphere_S, cylinder_O);
+      break;
+    }
+    case fcl::GEOM_HALFSPACE: {
+      const auto& halfspace_O =
+          *static_cast<const fcl::Halfspaced*>(o_geometry);
+      distance_pair(sphere_S, halfspace_O);
+      break;
+    }
+    case fcl::GEOM_CAPSULE: {
+      const auto& capsule_O =
+          *static_cast<const fcl::Capsuled*>(o_geometry);
+      distance_pair(sphere_S, capsule_O);
+      break;
+    }
+    default: {
+      // The only way to reach this is for the RequresFallback() method to be
+      // out of sync with this code -- that would be a bug.
+      DRAKE_UNREACHABLE();
+    }
+  }
+  // If needed, re-order the result for (s,o) back to the result for (a,b).
+  if (!a_is_sphere) {
+    result->SwapAAndB();
+  }
+}
+
+bool ScalarSupport<double>::is_supported(fcl::NODE_TYPE node1,
+                                         fcl::NODE_TYPE node2) {
+  // Doubles (via its fallback) can support anything *except*
+  // halfspace-X (where X is not sphere).
+  // We use FCL's GJK/EPA fallback in those geometries we haven't explicitly
+  // supported. However, FCL doesn't support: half spaces, planes, triangles,
+  // or octtrees in that workflow. We need to give intelligent feedback rather
+  // than the segfault otherwise produced.
+  // NOTE: Currently this only tests for halfspace (because it is an otherwise
+  // supported geometry type in SceneGraph. When meshes, planes, and/or
+  // octrees are supported, this error would have to be modified.
+  // TODO(SeanCurtis-TRI): Remove this test when FCL/Drake supports signed
+  // distance queries for halfspaces (see issue #10905). Also see FCL issue
+  // https://github.com/flexible-collision-library/fcl/issues/383.
+  return (node1 != fcl::GEOM_HALFSPACE || node2 == fcl::GEOM_SPHERE) &&
+         (node2 != fcl::GEOM_HALFSPACE || node1 == fcl::GEOM_SPHERE);
 }
 
 template <typename T>
@@ -123,6 +288,15 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
   return false;
 }
 
+template void ComputeNarrowPhaseDistance<double>(
+    const fcl::CollisionObjectd&, const math::RigidTransform<double>&,
+    const fcl::CollisionObjectd&, const math::RigidTransform<double>&,
+    const fcl::DistanceRequestd&, SignedDistancePair<double>*);
+template void ComputeNarrowPhaseDistance<AutoDiffXd>(
+    const fcl::CollisionObjectd&, const math::RigidTransform<AutoDiffXd>&,
+    const fcl::CollisionObjectd&, const math::RigidTransform<AutoDiffXd>&,
+    const fcl::DistanceRequestd&, SignedDistancePair<AutoDiffXd>*);
+
 template bool Callback<double>(fcl::CollisionObjectd*, fcl::CollisionObjectd*,
                                void*, double&);
 template bool Callback<AutoDiffXd>(fcl::CollisionObjectd*,
@@ -132,3 +306,6 @@ template bool Callback<AutoDiffXd>(fcl::CollisionObjectd*,
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::geometry::internal::shape_distance::DistancePairGeometry)

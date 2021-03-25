@@ -53,29 +53,57 @@ class CharacterizePointPairResultTest : public CharacterizeResultTest<T> {
  public:
   CharacterizePointPairResultTest()
       : CharacterizeResultTest<T>(make_unique<PenetrationCallback<T>>()) {}
+
+  std::vector<double> TestDistances() const final {
+    return {-this->kDistance};
+  }
 };
 
-using ScalarTypes = ::testing::Types<double, AutoDiffXd>;
-TYPED_TEST_SUITE(CharacterizePointPairResultTest, ScalarTypes);
+class DoubleTest : public CharacterizePointPairResultTest<double>,
+                   public testing::WithParamInterface<QueryInstance> {};
 
-TYPED_TEST(CharacterizePointPairResultTest, SphereSphere) {
-  using T = TypeParam;
-  Expectation expect{.can_compute = true, .max_error = -1, .error_message = ""};
-  if constexpr (std::is_same<T, double>::value) {
-    expect.max_error = 8e-16;
-  } else {
-    expect.max_error = 3e-15;
-  }
-  // Orient the sphere arbitrarily and separate them *almost* by their combined
-  // radii.
-  const Sphere sphere = this->sphere();
-  const RigidTransform<T> X_AB(
-      RotationMatrix<T>(
-          AngleAxis<T>(M_PI * 9 / 7, Vector3<T>{-1, 2, 1}.normalized())),
-      Vector3<T>{1, -1, 2}.normalized() *
-          (sphere.radius() * 2 - this->kDistance));
-  vector<Configuration<T>> configs{{X_AB, -this->kDistance}};
-  this->RunCharacterization(expect, sphere, sphere, configs);
+// clang-format off
+INSTANTIATE_TEST_SUITE_P(
+    PenetrationAsPointPair, DoubleTest,
+    testing::Values(
+        QueryInstance(kCapsule, kCapsule, 2e-5),
+        QueryInstance(kCapsule, kEllipsoid, 2e-4),
+        QueryInstance(kCapsule, kSphere, 3e-15),
+
+
+        QueryInstance(kEllipsoid, kEllipsoid, 5e-4),
+        QueryInstance(kEllipsoid, kSphere, 2e-4),
+
+
+        QueryInstance(kSphere, kSphere, 3e-15)),
+    QueryInstanceName);
+// clang-format on
+
+TEST_P(DoubleTest, Characterize) {
+  this->RunCharacterization(GetParam());
+}
+
+class AutoDiffTest : public CharacterizePointPairResultTest<AutoDiffXd>,
+                     public testing::WithParamInterface<QueryInstance> {};
+
+// clang-format off
+INSTANTIATE_TEST_SUITE_P(
+    PenetrationAsPointPair, AutoDiffTest,
+    testing::Values(
+        QueryInstance(kCapsule, kCapsule, kThrows),
+        QueryInstance(kCapsule, kEllipsoid, kThrows),
+        QueryInstance(kCapsule, kSphere, 3e-15),
+
+        QueryInstance(kEllipsoid, kEllipsoid, kThrows),
+        QueryInstance(kEllipsoid, kSphere, kThrows),
+
+
+        QueryInstance(kSphere, kSphere, 4e-15)),
+    QueryInstanceName);
+// clang-format on
+
+TEST_P(AutoDiffTest, Characterize) {
+  this->RunCharacterization(GetParam());
 }
 
 }  // namespace

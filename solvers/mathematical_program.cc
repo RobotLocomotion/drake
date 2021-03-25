@@ -202,7 +202,7 @@ symbolic::Polynomial ComputePolynomialFromMonomialBasisAndGramMatrix(
     const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
     const Eigen::Ref<const MatrixX<symbolic::Variable>>& gram) {
   // TODO(hongkai.dai & soonho.kong): ideally we should compute p in one line as
-  // monomial_basis.dot(grammian * monomial_basis). But as explained in #10200,
+  // monomial_basis.dot(gramian * monomial_basis). But as explained in #10200,
   // this one line version is too slow, so we use this double for loop to
   // compute the matrix product by hand. I will revert to the one line version
   // when it is fast.
@@ -218,25 +218,25 @@ symbolic::Polynomial ComputePolynomialFromMonomialBasisAndGramMatrix(
 }  // namespace
 
 symbolic::Polynomial MathematicalProgram::NewNonnegativePolynomial(
-    const Eigen::Ref<const MatrixX<symbolic::Variable>>& grammian,
+    const Eigen::Ref<const MatrixX<symbolic::Variable>>& gramian,
     const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
     NonnegativePolynomial type) {
-  DRAKE_ASSERT(grammian.rows() == grammian.cols());
-  DRAKE_ASSERT(grammian.rows() == monomial_basis.rows());
+  DRAKE_ASSERT(gramian.rows() == gramian.cols());
+  DRAKE_ASSERT(gramian.rows() == monomial_basis.rows());
   const symbolic::Polynomial p =
-      ComputePolynomialFromMonomialBasisAndGramMatrix(monomial_basis, grammian);
+      ComputePolynomialFromMonomialBasisAndGramMatrix(monomial_basis, gramian);
   switch (type) {
     case MathematicalProgram::NonnegativePolynomial::kSos: {
-      AddPositiveSemidefiniteConstraint(grammian);
+      AddPositiveSemidefiniteConstraint(gramian);
       break;
     }
     case MathematicalProgram::NonnegativePolynomial::kSdsos: {
-      AddScaledDiagonallyDominantMatrixConstraint(grammian);
+      AddScaledDiagonallyDominantMatrixConstraint(gramian);
       break;
     }
     case MathematicalProgram::NonnegativePolynomial::kDsos: {
       AddPositiveDiagonallyDominantMatrixConstraint(
-          grammian.cast<symbolic::Expression>());
+          gramian.cast<symbolic::Expression>());
       break;
     }
   }

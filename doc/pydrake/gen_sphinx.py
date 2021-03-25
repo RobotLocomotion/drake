@@ -22,7 +22,7 @@ from pydrake.common import (
     cpp_param,
     cpp_template,
 )
-from drake.doc.sphinx_base import gen_main
+from drake.doc.pydrake.sphinx_base import gen_main
 
 EXCLUDE = []
 

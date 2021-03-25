@@ -617,6 +617,18 @@ void DoScalarDependentDefinitions(py::module m, T) {
     cls  // BR
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
                  const RigidTransform<double>&>(),
+            py::arg("name"), py::arg("frame_on_parent_P"),
+            py::arg("frame_on_child_C"), py::arg("X_PC"), cls_doc.ctor.doc)
+        .def(py::init([](const string& name, const Frame<T>& parent_frame_P,
+                          const Frame<T>& child_frame_C,
+                          const RigidTransform<double>& X_PC) {
+          WarnDeprecated(
+              "Please use WeldJoint(frame_on_parent_P=value1,"
+              " frame_on_child_C=value2, X_PC=value3) instead. This variant"
+              " will be removed after 2021-07-01.");
+          return std::make_unique<Class>(
+              name, parent_frame_P, child_frame_C, X_PC);
+        }),
             py::arg("name"), py::arg("parent_frame_P"),
             py::arg("child_frame_C"), py::arg("X_PC"), cls_doc.ctor.doc)
         .def(
