@@ -48,9 +48,9 @@ GTEST_TEST(ScalarConversionTest, RevoluteJointAndSpring) {
   std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_ad;
   EXPECT_NO_THROW(plant_ad =
                       drake::systems::System<double>::ToAutoDiffXd(plant));
-  DRAKE_DEMAND(plant_ad->num_velocities() == 1);
-  DRAKE_DEMAND(plant_ad->num_positions() == 1);
-  DRAKE_DEMAND(plant_ad->num_force_elements() == 2);
+  EXPECT_EQ(plant.num_velocities(), plant_ad->num_velocities());
+  EXPECT_EQ(plant.num_positions(), plant_ad->num_positions());
+  EXPECT_EQ(plant.num_force_elements(), plant_ad->num_force_elements());
 
   // We verify the correct reference to the pin joint after conversion.
   const auto& pin_ad = plant_ad->GetJointByName<RevoluteJoint>(pin.name());
