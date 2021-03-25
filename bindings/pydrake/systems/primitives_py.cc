@@ -39,6 +39,39 @@ namespace pydrake {
 
 using symbolic::Expression;
 using symbolic::Variable;
+namespace {
+
+Eigen::VectorBlock<const VectorX<double>> CopyIfNotPodType(
+    Eigen::VectorBlock<const VectorX<double>> x) {
+  // N.B. This references the existing vector's data, and does not perform a
+  // copy.
+  return x;
+}
+
+template <typename T>
+VectorX<T> CopyIfNotPodType(Eigen::VectorBlock<const VectorX<T>> x) {
+  // N.B. This references the existing vector's data, and does not perform a
+  // copy.
+  return x;
+}
+
+Eigen::Block<const MatrixX<double>, Eigen::Dynamic, Eigen::Dynamic, true>
+CopyIfNotPodType(
+    Eigen::Block<const MatrixX<double>, Eigen::Dynamic, Eigen::Dynamic, true>
+        x) {
+  // N.B. This references the existing matrix's data, and does not perform a
+  // copy.
+  return x;
+}
+
+template <typename T>
+MatrixX<T> CopyIfNotPodType(
+    Eigen::Block<const MatrixX<T>, Eigen::Dynamic, Eigen::Dynamic, true> x) {
+  // N.B. This copies the matrix's data.
+  // TODO(eric.cousineau): Remove this once #8116 is resolved.
+  return x;
+}
+}  // namespace
 
 PYBIND11_MODULE(primitives, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -235,10 +268,24 @@ PYBIND11_MODULE(primitives, m) {
         .def("set_forced_publish_only",
             &SignalLogger<T>::set_forced_publish_only,
             doc.SignalLogger.set_forced_publish_only.doc)
-        .def("sample_times", &SignalLogger<T>::sample_times,
-            py_rvp::reference_internal, doc.SignalLogger.sample_times.doc)
-        .def("data", &SignalLogger<T>::data, py_rvp::reference_internal,
-            doc.SignalLogger.data.doc)
+        .def(
+            "sample_times",
+            [](const SignalLogger<T>* self) {
+              // Reference
+              return CopyIfNotPodType(self->sample_times());
+            },
+            return_value_policy_for_scalar_type<T>(),
+            // Keep alive, ownership: `return` keeps `self` alive.
+            pybind11::keep_alive<0, 1>(), doc.SignalLogger.sample_times.doc)
+        .def(
+            "data",
+            [](const SignalLogger<T>* self) {
+              // Reference.
+              return CopyIfNotPodType(self->data());
+            },
+            return_value_policy_for_scalar_type<T>(),
+            // Keep alive, ownership: `return` keeps `self` alive.
+            pybind11::keep_alive<0, 1>(), doc.SignalLogger.data.doc)
         .def("reset", &SignalLogger<T>::reset, doc.SignalLogger.reset.doc);
 
     DefineTemplateClassWithDefault<StateInterpolatorWithDiscreteDerivative<T>,
