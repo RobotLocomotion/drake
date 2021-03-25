@@ -8,11 +8,6 @@ using namespace drake::math;
 
 namespace py = pybind11;
 void apb11_pydrake_BarycentricMesh_py_register(py::module &m) {
-  static bool called = false;
-  if (called) {
-    return;
-  }
-  called = true;
   py::class_<BarycentricMesh<double>> PyBarycentricMesh_double(
       m, "BarycentricMesh_double");
 
@@ -21,39 +16,38 @@ void apb11_pydrake_BarycentricMesh_py_register(py::module &m) {
       .def(py::init<drake::math::BarycentricMesh<double>::MeshGrid>(),
            py::arg("input_grid"))
       .def("Eval",
-           [](BarycentricMesh<double> &self,
-              ::Eigen::Ref<const Eigen::Matrix<double, -1, -1, 0, -1, -1>, 0,
-                           Eigen::OuterStride<-1>> const &mesh_values,
-              ::Eigen::Ref<const Eigen::VectorXd, 0,
-                           Eigen::InnerStride<1>> const &input,
-              Eigen::Ref<::drake::EigenPtr<Eigen::VectorXd>, 0,
-                         Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
-                  output) { return self.Eval(mesh_values, input, output); })
-      .def(
-          "Eval",
-          [](BarycentricMesh<double> &self,
-             ::Eigen::Ref<const Eigen::Matrix<double, -1, -1, 0, -1, -1>, 0,
-                          Eigen::OuterStride<-1>> const &mesh_values,
-             ::Eigen::Ref<const Eigen::VectorXd, 0, Eigen::InnerStride<1>> const
-                 &input) { return self.Eval(mesh_values, input); })
+           static_cast<void (BarycentricMesh<double>::*)(
+               ::Eigen::Ref<const Eigen::Matrix<double, -1, -1, 0, -1, -1>, 0,
+                            Eigen::OuterStride<-1>> const &,
+               ::Eigen::Ref<const Eigen::VectorXd, 0,
+                            Eigen::InnerStride<1>> const &,
+               ::drake::EigenPtr<Eigen::VectorXd>) const>(
+               &BarycentricMesh<double>::Eval),
+           py::arg("mesh_values"), py::arg("input"), py::arg("output"))
+      .def("Eval",
+           static_cast<Eigen::VectorXd (BarycentricMesh<double>::*)(
+               ::Eigen::Ref<const Eigen::Matrix<double, -1, -1, 0, -1, -1>, 0,
+                            Eigen::OuterStride<-1>> const &,
+               ::Eigen::Ref<const Eigen::VectorXd, 0,
+                            Eigen::InnerStride<1>> const &) const>(
+               &BarycentricMesh<double>::Eval),
+           py::arg("mesh_values"), py::arg("input"))
       .def("EvalBarycentricWeights",
-           [](BarycentricMesh<double> &self,
-              ::Eigen::Ref<const Eigen::VectorXd, 0,
-                           Eigen::InnerStride<1>> const &input,
-              Eigen::Ref<::drake::EigenPtr<Eigen::Matrix<int, -1, 1, 0, -1, 1>>,
-                         0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
-                  mesh_indices,
-              Eigen::Ref<::drake::EigenPtr<Eigen::VectorXd>, 0,
-                         Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
-                  weights) {
-             return self.EvalBarycentricWeights(input, mesh_indices, weights);
-           })
+           static_cast<void (BarycentricMesh<double>::*)(
+               ::Eigen::Ref<const Eigen::VectorXd, 0,
+                            Eigen::InnerStride<1>> const &,
+               ::drake::EigenPtr<Eigen::Matrix<int, -1, 1, 0, -1, 1>>,
+               ::drake::EigenPtr<Eigen::VectorXd>) const>(
+               &BarycentricMesh<double>::EvalBarycentricWeights),
+           py::arg("input"), py::arg("mesh_indices"), py::arg("weights"))
       .def("MeshValuesFrom",
-           [](BarycentricMesh<double> &self,
-              ::std::function<Eigen::VectorXd(
-                  const Eigen::Ref<const Eigen::VectorXd, 0,
-                                   Eigen::InnerStride<1>> &)> const
-                  &vector_func) { return self.MeshValuesFrom(vector_func); })
+           static_cast<::Eigen::Matrix<double, -1, -1, 0, -1, -1> (
+               BarycentricMesh<double>::*)(
+               ::std::function<Eigen::VectorXd(
+                   const Eigen::Ref<const Eigen::VectorXd, 0,
+                                    Eigen::InnerStride<1>> &)> const &) const>(
+               &BarycentricMesh<double>::MeshValuesFrom),
+           py::arg("vector_func"))
       .def("get_all_mesh_points",
            static_cast<::Eigen::Matrix<double, -1, -1, 0, -1, -1> (
                BarycentricMesh<double>::*)() const>(
@@ -66,10 +60,10 @@ void apb11_pydrake_BarycentricMesh_py_register(py::module &m) {
            static_cast<int (BarycentricMesh<double>::*)() const>(
                &BarycentricMesh<double>::get_input_size))
       .def("get_mesh_point",
-           [](BarycentricMesh<double> &self, int index,
-              Eigen::Ref<::drake::EigenPtr<Eigen::VectorXd>, 0,
-                         Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
-                  point) { return self.get_mesh_point(index, point); })
+           static_cast<void (BarycentricMesh<double>::*)(
+               int, ::drake::EigenPtr<Eigen::VectorXd>) const>(
+               &BarycentricMesh<double>::get_mesh_point),
+           py::arg("index"), py::arg("point"))
       .def("get_mesh_point",
            static_cast<Eigen::VectorXd (BarycentricMesh<double>::*)(int) const>(
                &BarycentricMesh<double>::get_mesh_point),

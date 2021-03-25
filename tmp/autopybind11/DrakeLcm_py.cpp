@@ -32,11 +32,6 @@ public:
 
 namespace py = pybind11;
 void apb11_pydrake_DrakeLcm_py_register(py::module &m) {
-  static bool called = false;
-  if (called) {
-    return;
-  }
-  called = true;
   py::class_<DrakeLcm, DrakeLcmInterface, DrakeLcm_trampoline> PyDrakeLcm(
       m, "DrakeLcm");
 

@@ -9,11 +9,6 @@ using namespace drake::symbolic;
 
 namespace py = pybind11;
 void apb11_pydrake_Expression_py_register(py::module &m) {
-  static bool called = false;
-  if (called) {
-    return;
-  }
-  called = true;
   py::class_<Expression> PyExpression(m, "Expression");
 
   PyExpression.def(py::init<Expression const &>(), py::arg("arg0"))
@@ -49,11 +44,12 @@ void apb11_pydrake_Expression_py_register(py::module &m) {
       .def("GetVariables", static_cast<Variables (Expression::*)() const>(
                                &Expression::GetVariables))
       .def("Jacobian",
-           [](Expression &self,
-              ::Eigen::Ref<const Eigen::Matrix<Variable, -1, 1, 0, -1, 1>, 0,
-                           Eigen::InnerStride<1>> const &vars) {
-             return self.Jacobian(vars);
-           })
+           static_cast<::Eigen::Matrix<Expression, 1, -1, 1, 1, -1> (
+               Expression::*)(
+               ::Eigen::Ref<const Eigen::Matrix<Variable, -1, 1, 0, -1, 1>, 0,
+                            Eigen::InnerStride<1>> const &) const>(
+               &Expression::Jacobian),
+           py::arg("vars"))
       .def("Less",
            static_cast<bool (Expression::*)(Expression const &) const>(
                &Expression::Less),

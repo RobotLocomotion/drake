@@ -25,11 +25,6 @@ public:
 
 namespace py = pybind11;
 void apb11_pydrake_RenderEngine_py_register(py::module &m) {
-  static bool called = false;
-  if (called) {
-    return;
-  }
-  called = true;
   py::class_<RenderEngine> PyRenderEngine(m, "RenderEngine");
 
   PyRenderEngine
@@ -148,11 +143,10 @@ void apb11_pydrake_RenderEngine_py_register(py::module &m) {
                &RenderEngine::RenderLabelImage),
            py::arg("camera"), py::arg("label_image_out"))
       .def("SetDefaultLightPosition",
-           [](RenderEngine &self,
-              Eigen::Ref<::Eigen::Matrix<double, 3, 1, 0, 3, 1> const &, 0,
-                         Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &X_DL) {
-             return self.SetDefaultLightPosition(X_DL);
-           })
+           static_cast<void (RenderEngine::*)(
+               ::Eigen::Matrix<double, 3, 1, 0, 3, 1> const &)>(
+               &RenderEngine_publicist::SetDefaultLightPosition),
+           py::arg("X_DL"))
       .def_static("ThrowIfInvalid",
                   static_cast<void (*)(
                       ::drake::systems::sensors::CameraInfo const &,

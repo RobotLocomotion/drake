@@ -8,11 +8,6 @@ using namespace drake::perception;
 
 namespace py = pybind11;
 void apb11_pydrake_PointCloud_py_register(py::module &m) {
-  static bool called = false;
-  if (called) {
-    return;
-  }
-  called = true;
   py::class_<PointCloud> PyPointCloud(m, "PointCloud");
 
   PyPointCloud
@@ -68,8 +63,7 @@ void apb11_pydrake_PointCloud_py_register(py::module &m) {
            static_cast<
                ::Eigen::Ref<const Eigen::Matrix<float, -1, -1, 0, -1, -1>, 0,
                             Eigen::OuterStride<-1>> (PointCloud::*)() const>(
-               &PointCloud::descriptors),
-           py::return_value_policy::reference_internal)
+               &PointCloud::descriptors))
       .def("fields", static_cast<pc_flags::Fields (PointCloud::*)() const>(
                          &PointCloud::fields))
       .def("has_descriptors", static_cast<bool (PointCloud::*)() const>(
@@ -89,45 +83,41 @@ void apb11_pydrake_PointCloud_py_register(py::module &m) {
           static_cast<::Eigen::Ref<Eigen::Matrix<float, -1, 1, 0, -1, 1>, 0,
                                    Eigen::InnerStride<1>> (PointCloud::*)(int)>(
               &PointCloud::mutable_descriptor),
-          py::arg("i"), py::return_value_policy::reference_internal)
+          py::arg("i"))
       .def("mutable_descriptors",
            static_cast<::Eigen::Ref<Eigen::Matrix<float, -1, -1, 0, -1, -1>, 0,
                                     Eigen::OuterStride<-1>> (PointCloud::*)()>(
-               &PointCloud::mutable_descriptors),
-           py::return_value_policy::reference_internal)
+               &PointCloud::mutable_descriptors))
       .def(
           "mutable_normal",
           static_cast<::Eigen::Ref<Eigen::Matrix<float, 3, 1, 0, 3, 1>, 0,
                                    Eigen::InnerStride<1>> (PointCloud::*)(int)>(
               &PointCloud::mutable_normal),
-          py::arg("i"), py::return_value_policy::reference_internal)
+          py::arg("i"))
       .def("mutable_normals",
            static_cast<::Eigen::Ref<Eigen::Matrix<float, 3, -1, 0, 3, -1>, 0,
                                     Eigen::OuterStride<-1>> (PointCloud::*)()>(
-               &PointCloud::mutable_normals),
-           py::return_value_policy::reference_internal)
+               &PointCloud::mutable_normals))
       .def("mutable_rgb",
            static_cast<::Eigen::Ref<Eigen::Matrix<unsigned char, 3, 1, 0, 3, 1>,
                                     0, Eigen::InnerStride<1>> (PointCloud::*)(
                int)>(&PointCloud::mutable_rgb),
-           py::arg("i"), py::return_value_policy::reference_internal)
+           py::arg("i"))
       .def("mutable_rgbs",
            static_cast<
                ::Eigen::Ref<Eigen::Matrix<unsigned char, 3, -1, 0, 3, -1>, 0,
                             Eigen::OuterStride<-1>> (PointCloud::*)()>(
-               &PointCloud::mutable_rgbs),
-           py::return_value_policy::reference_internal)
+               &PointCloud::mutable_rgbs))
       .def(
           "mutable_xyz",
           static_cast<::Eigen::Ref<Eigen::Matrix<float, 3, 1, 0, 3, 1>, 0,
                                    Eigen::InnerStride<1>> (PointCloud::*)(int)>(
               &PointCloud::mutable_xyz),
-          py::arg("i"), py::return_value_policy::reference_internal)
+          py::arg("i"))
       .def("mutable_xyzs",
            static_cast<::Eigen::Ref<Eigen::Matrix<float, 3, -1, 0, 3, -1>, 0,
                                     Eigen::OuterStride<-1>> (PointCloud::*)()>(
-               &PointCloud::mutable_xyzs),
-           py::return_value_policy::reference_internal)
+               &PointCloud::mutable_xyzs))
       .def("normal",
            static_cast<::Eigen::Matrix<float, 3, 1, 0, 3, 1> (PointCloud::*)(
                int) const>(&PointCloud::normal),
@@ -135,8 +125,7 @@ void apb11_pydrake_PointCloud_py_register(py::module &m) {
       .def("normals",
            static_cast<::Eigen::Ref<const Eigen::Matrix<float, 3, -1, 0, 3, -1>,
                                     0, Eigen::OuterStride<-1>> (PointCloud::*)()
-                           const>(&PointCloud::normals),
-           py::return_value_policy::reference_internal)
+                           const>(&PointCloud::normals))
       .def("resize",
            static_cast<void (PointCloud::*)(int, bool)>(&PointCloud::resize),
            py::arg("new_size"), py::arg("skip_initialize") = bool(false))
@@ -148,8 +137,7 @@ void apb11_pydrake_PointCloud_py_register(py::module &m) {
            static_cast<
                ::Eigen::Ref<const Eigen::Matrix<unsigned char, 3, -1, 0, 3, -1>,
                             0, Eigen::OuterStride<-1>> (PointCloud::*)() const>(
-               &PointCloud::rgbs),
-           py::return_value_policy::reference_internal)
+               &PointCloud::rgbs))
       .def("size", static_cast<int (PointCloud::*)() const>(&PointCloud::size))
       .def("xyz",
            static_cast<::Eigen::Matrix<float, 3, 1, 0, 3, 1> (PointCloud::*)(
@@ -158,8 +146,7 @@ void apb11_pydrake_PointCloud_py_register(py::module &m) {
       .def("xyzs",
            static_cast<::Eigen::Ref<const Eigen::Matrix<float, 3, -1, 0, 3, -1>,
                                     0, Eigen::OuterStride<-1>> (PointCloud::*)()
-                           const>(&PointCloud::xyzs),
-           py::return_value_policy::reference_internal)
+                           const>(&PointCloud::xyzs))
       .def_readonly_static("kDefaultColor", &PointCloud::kDefaultColor)
       .def_readonly_static("kDefaultValue", &PointCloud::kDefaultValue)
 

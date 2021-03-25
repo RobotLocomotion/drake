@@ -8,11 +8,6 @@ using namespace drake::geometry::render;
 
 namespace py = pybind11;
 void apb11_pydrake_RenderCameraCore_py_register(py::module &m) {
-  static bool called = false;
-  if (called) {
-    return;
-  }
-  called = true;
   py::class_<RenderCameraCore> PyRenderCameraCore(m, "RenderCameraCore");
 
   PyRenderCameraCore.def(py::init<RenderCameraCore const &>(), py::arg("arg0"))

@@ -10,23 +10,18 @@ using namespace drake::math;
 
 namespace py = pybind11;
 void apb11_pydrake_AutoDiffXd_py_register(py::module &m) {
-  static bool called = false;
-  if (called) {
-    return;
-  }
-  called = true;
   py::class_<drake::AutoDiffXd> PyAutoDiffXd(m, "AutoDiffXd");
 
   PyAutoDiffXd.def(py::init<>())
-    .def(py::init<Eigen::Ref<drake::AutoDiffXd::Scalar const &, 0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &,int,int>(),py::arg("value"),py::arg("nbDer"),py::arg("derNumber"))
-    .def(py::init<Eigen::Ref<drake::AutoDiffXd::Real const &, 0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &>(),py::arg("value"))
-    .def(py::init<Eigen::Ref<drake::AutoDiffXd::Scalar const &, 0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &,Eigen::Ref<drake::AutoDiffXd::DerType const &, 0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &>(),py::arg("value"),py::arg("der"))
-    .def(py::init<Eigen::Ref<drake::AutoDiffXd const &, 0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &,::Eigen::internal::enable_if<true, void *>::type>(),py::arg("other"),py::arg("arg1") = (::Eigen::internal::enable_if<true, void *>::type)0)
-    .def(py::init<Eigen::Ref<drake::AutoDiffXd const &, 0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &>(),py::arg("other"))
-    .def("derivatives", static_cast<drake::AutoDiffXd::DerType const & ( drake::AutoDiffXd::* )(  )const>(&drake::AutoDiffXd::derivatives), py::return_value_policy::reference_internal)
-    .def("derivatives", static_cast<drake::AutoDiffXd::DerType & ( drake::AutoDiffXd::* )(  )>(&drake::AutoDiffXd::derivatives), py::return_value_policy::reference_internal)
-    .def("value", static_cast<drake::AutoDiffXd::Scalar const & ( drake::AutoDiffXd::* )(  )const>(&drake::AutoDiffXd::value), py::return_value_policy::reference_internal)
-    .def("value", static_cast<drake::AutoDiffXd::Scalar & ( drake::AutoDiffXd::* )(  )>(&drake::AutoDiffXd::value), py::return_value_policy::reference_internal)
+    .def(py::init<drake::AutoDiffXd::Scalar const &,int,int>(),py::arg("value"),py::arg("nbDer"),py::arg("derNumber"))
+    .def(py::init<drake::AutoDiffXd::Real const &>(),py::arg("value"))
+    .def(py::init<drake::AutoDiffXd::Scalar const &,drake::AutoDiffXd::DerType const &>(),py::arg("value"),py::arg("der"))
+    .def(py::init<drake::AutoDiffXd const &,::Eigen::internal::enable_if<true, void *>::type>(),py::arg("other"),py::arg("arg1") = (::Eigen::internal::enable_if<true, void *>::type)0)
+    .def(py::init<drake::AutoDiffXd const &>(),py::arg("other"))
+    .def("derivatives", static_cast<drake::AutoDiffXd::DerType const & ( drake::AutoDiffXd::* )(  )const>(&drake::AutoDiffXd::derivatives))
+    .def("derivatives", static_cast<drake::AutoDiffXd::DerType & ( drake::AutoDiffXd::* )(  )>(&drake::AutoDiffXd::derivatives))
+    .def("value", static_cast<drake::AutoDiffXd::Scalar const & ( drake::AutoDiffXd::* )(  )const>(&drake::AutoDiffXd::value))
+    .def("value", static_cast<drake::AutoDiffXd::Scalar & ( drake::AutoDiffXd::* )(  )>(&drake::AutoDiffXd::value))
     
     .def("__neq__", static_cast<bool ( drake::AutoDiffXd::* )( drake::AutoDiffXd::Scalar const & )const>(&drake::AutoDiffXd::operator!=), py::arg("other"))
     .def("__neq__", +[](drake::AutoDiffXd::Scalar const & a,drake::AutoDiffXd const & b){ return a!=b; })

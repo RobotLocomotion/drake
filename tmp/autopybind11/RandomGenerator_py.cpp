@@ -7,11 +7,6 @@ using namespace drake;
 
 namespace py = pybind11;
 void apb11_pydrake_RandomGenerator_py_register(py::module &m) {
-  static bool called = false;
-  if (called) {
-    return;
-  }
-  called = true;
   py::class_<RandomGenerator> PyRandomGenerator(m, "RandomGenerator");
 
   PyRandomGenerator.def(py::init<RandomGenerator const &>(), py::arg("arg0"))

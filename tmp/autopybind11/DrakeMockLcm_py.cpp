@@ -38,11 +38,6 @@ public:
 
 namespace py = pybind11;
 void apb11_pydrake_DrakeMockLcm_py_register(py::module &m) {
-  static bool called = false;
-  if (called) {
-    return;
-  }
-  called = true;
   py::class_<DrakeMockLcm, DrakeLcm, DrakeMockLcm_trampoline> PyDrakeMockLcm(
       m, "DrakeMockLcm");
 

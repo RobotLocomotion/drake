@@ -9,11 +9,6 @@ using namespace drake::symbolic;
 
 namespace py = pybind11;
 void apb11_pydrake_Environment_py_register(py::module &m) {
-  static bool called = false;
-  if (called) {
-    return;
-  }
-  called = true;
   py::class_<Environment> PyEnvironment(m, "Environment");
 
   PyEnvironment.def(py::init<Environment const &>(), py::arg("arg0"))
@@ -57,13 +52,13 @@ void apb11_pydrake_Environment_py_register(py::module &m) {
                &Environment::insert),
            py::arg("key"), py::arg("elem"))
       .def("insert",
-           [](Environment &self,
-              ::Eigen::Ref<const Eigen::Matrix<Variable, -1, -1, 0, -1, -1>, 0,
-                           Eigen::OuterStride<-1>> const &keys,
-              ::Eigen::Ref<const Eigen::Matrix<double, -1, -1, 0, -1, -1>, 0,
-                           Eigen::OuterStride<-1>> const &elements) {
-             return self.insert(keys, elements);
-           })
+           static_cast<void (Environment::*)(
+               ::Eigen::Ref<const Eigen::Matrix<Variable, -1, -1, 0, -1, -1>, 0,
+                            Eigen::OuterStride<-1>> const &,
+               ::Eigen::Ref<const Eigen::Matrix<double, -1, -1, 0, -1, -1>, 0,
+                            Eigen::OuterStride<-1>> const &)>(
+               &Environment::insert),
+           py::arg("keys"), py::arg("elements"))
       .def("size",
            static_cast<drake::symbolic::Variable::Id (Environment::*)() const>(
                &Environment::size))

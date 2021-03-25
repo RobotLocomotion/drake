@@ -8,11 +8,6 @@ using namespace drake::symbolic;
 
 namespace py = pybind11;
 void apb11_pydrake_Formula_py_register(py::module &m) {
-  static bool called = false;
-  if (called) {
-    return;
-  }
-  called = true;
   py::class_<Formula> PyFormula(m, "Formula");
 
   PyFormula.def(py::init<Formula const &>(), py::arg("arg0"))

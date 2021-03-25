@@ -39,11 +39,6 @@ public:
 
 namespace py = pybind11;
 void apb11_pydrake_SystemBase_py_register(py::module &m) {
-  static bool called = false;
-  if (called) {
-    return;
-  }
-  called = true;
   py::class_<SystemBase, internal::SystemMessageInterface> PySystemBase(
       m, "SystemBase");
 

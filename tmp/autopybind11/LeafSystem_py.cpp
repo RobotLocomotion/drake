@@ -145,11 +145,6 @@ public:
 
 namespace py = pybind11;
 void apb11_pydrake_LeafSystem_py_register(py::module &m) {
-  static bool called = false;
-  if (called) {
-    return;
-  }
-  called = true;
   py::class_<LeafSystem<double>, System<double>> PyLeafSystem_double(
       m, "LeafSystem_double");
 
@@ -307,38 +302,35 @@ void apb11_pydrake_LeafSystem_py_register(py::module &m) {
                BasicVector<double> const &)>(
                &LeafSystem_double_publicist::DeclareDiscreteState),
            py::arg("model_vector"))
-      .def(
-          "DeclareDiscreteState",
-          [](LeafSystem<double> &self,
-             ::Eigen::Ref<const Eigen::VectorXd, 0, Eigen::InnerStride<1>> const
-                 &vector) { return self.DeclareDiscreteState(vector); })
+      .def("DeclareDiscreteState",
+           static_cast<DiscreteStateIndex (LeafSystem<double>::*)(
+               ::Eigen::Ref<const Eigen::VectorXd, 0,
+                            Eigen::InnerStride<1>> const &)>(
+               &LeafSystem_double_publicist::DeclareDiscreteState),
+           py::arg("vector"))
       .def("DeclareDiscreteState",
            static_cast<DiscreteStateIndex (LeafSystem<double>::*)(int)>(
                &LeafSystem_double_publicist::DeclareDiscreteState),
            py::arg("num_state_variables"))
-      .def("DeclareEqualityConstraint",
-           [](LeafSystem<double> &self,
-              Eigen::Ref<::std::function<void(const Context<double> &,
-                                              Eigen::VectorXd *)>,
-                         0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
-                  calc,
-              int count, ::std::string description) {
-             return self.DeclareEqualityConstraint(calc, count, description);
-           })
+      .def(
+          "DeclareEqualityConstraint",
+          static_cast<SystemConstraintIndex (LeafSystem<double>::*)(
+              ::std::function<void(const Context<double> &, Eigen::VectorXd *)>,
+              int, ::std::string)>(
+              &LeafSystem_double_publicist::DeclareEqualityConstraint),
+          py::arg("calc"), py::arg("count"), py::arg("description"))
       .def("DeclareImplicitTimeDerivativesResidualSize",
            static_cast<void (LeafSystem<double>::*)(int)>(
                &LeafSystem_double_publicist::
                    DeclareImplicitTimeDerivativesResidualSize),
            py::arg("n"))
-      .def("DeclareInequalityConstraint",
-           [](LeafSystem<double> &self,
-              Eigen::Ref<::std::function<void(const Context<double> &,
-                                              Eigen::VectorXd *)>,
-                         0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
-                  calc,
-              SystemConstraintBounds bounds, ::std::string description) {
-             return self.DeclareInequalityConstraint(calc, bounds, description);
-           })
+      .def(
+          "DeclareInequalityConstraint",
+          static_cast<SystemConstraintIndex (LeafSystem<double>::*)(
+              ::std::function<void(const Context<double> &, Eigen::VectorXd *)>,
+              SystemConstraintBounds, ::std::string)>(
+              &LeafSystem_double_publicist::DeclareInequalityConstraint),
+          py::arg("calc"), py::arg("bounds"), py::arg("description"))
       .def(
           "DeclareNumericParameter",
           static_cast<int (LeafSystem<double>::*)(BasicVector<double> const &)>(
@@ -532,12 +524,12 @@ void apb11_pydrake_LeafSystem_py_register(py::module &m) {
 
   PyLeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd
       .def("AddTriggeredWitnessFunctionToCompositeEventCollection",
-           [](LeafSystem<drake::AutoDiffXd> &self,
-              Event<drake::AutoDiffXd> *event,
-              CompositeEventCollection<drake::AutoDiffXd> *events) {
-             return self.AddTriggeredWitnessFunctionToCompositeEventCollection(
-                 event, events);
-           })
+           static_cast<void (LeafSystem<drake::AutoDiffXd>::*)(
+               Event<drake::AutoDiffXd> *,
+               CompositeEventCollection<drake::AutoDiffXd> *) const>(
+               &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
+                   AddTriggeredWitnessFunctionToCompositeEventCollection),
+           py::arg("event"), py::arg("events"))
       .def("AllocateAbstractState",
            static_cast<::std::unique_ptr<AbstractValues,
                                          std::default_delete<AbstractValues>> (
@@ -625,15 +617,14 @@ void apb11_pydrake_LeafSystem_py_register(py::module &m) {
                       ::drake::AbstractValue const &)>(
                &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
                    DeclareAbstractInputPort),
-           py::arg("name"), py::arg("model_value"),
-           py::return_value_policy::reference_internal)
+           py::arg("name"), py::arg("model_value"))
       .def("DeclareAbstractInputPort",
            static_cast<InputPort<drake::AutoDiffXd> &(
                LeafSystem<drake::AutoDiffXd>::*)(::drake::AbstractValue const
                                                      &)>(
                &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
                    DeclareAbstractInputPort),
-           py::arg("model_value"), py::return_value_policy::reference_internal)
+           py::arg("model_value"))
       .def("DeclareAbstractOutputPort",
            [](LeafSystem<drake::AutoDiffXd> &self,
               ::std::variant<std::basic_string<char, std::char_traits<char>,
@@ -689,66 +680,66 @@ void apb11_pydrake_LeafSystem_py_register(py::module &m) {
                    DeclareContinuousState),
            py::arg("num_q"), py::arg("num_v"), py::arg("num_z"))
       .def("DeclareContinuousState",
-           [](LeafSystem<drake::AutoDiffXd> &self,
-              BasicVector<drake::AutoDiffXd> const &model_vector) {
-             return self.DeclareContinuousState(model_vector);
-           })
+           static_cast<void (LeafSystem<drake::AutoDiffXd>::*)(
+               BasicVector<drake::AutoDiffXd> const &)>(
+               &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
+                   DeclareContinuousState),
+           py::arg("model_vector"))
       .def("DeclareContinuousState",
-           [](LeafSystem<drake::AutoDiffXd> &self,
-              BasicVector<drake::AutoDiffXd> const &model_vector, int num_q,
-              int num_v, int num_z) {
-             return self.DeclareContinuousState(model_vector, num_q, num_v,
-                                                num_z);
-           })
+           static_cast<void (LeafSystem<drake::AutoDiffXd>::*)(
+               BasicVector<drake::AutoDiffXd> const &, int, int, int)>(
+               &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
+                   DeclareContinuousState),
+           py::arg("model_vector"), py::arg("num_q"), py::arg("num_v"),
+           py::arg("num_z"))
       .def("DeclareDiscreteState",
-           [](LeafSystem<drake::AutoDiffXd> &self,
-              BasicVector<drake::AutoDiffXd> const &model_vector) {
-             return self.DeclareDiscreteState(model_vector);
-           })
+           static_cast<DiscreteStateIndex (LeafSystem<drake::AutoDiffXd>::*)(
+               BasicVector<drake::AutoDiffXd> const &)>(
+               &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
+                   DeclareDiscreteState),
+           py::arg("model_vector"))
       .def("DeclareDiscreteState",
-           [](LeafSystem<drake::AutoDiffXd> &self,
-              ::Eigen::Ref<
-                  const Eigen::Matrix<drake::AutoDiffXd, -1, 1, 0, -1, 1>, 0,
-                  Eigen::InnerStride<1>> const &vector) {
-             return self.DeclareDiscreteState(vector);
-           })
+           static_cast<DiscreteStateIndex (LeafSystem<drake::AutoDiffXd>::*)(
+               ::Eigen::Ref<
+                   const Eigen::Matrix<drake::AutoDiffXd, -1, 1, 0, -1, 1>, 0,
+                   Eigen::InnerStride<1>> const &)>(
+               &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
+                   DeclareDiscreteState),
+           py::arg("vector"))
       .def("DeclareDiscreteState",
            static_cast<DiscreteStateIndex (LeafSystem<drake::AutoDiffXd>::*)(
                int)>(&LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
                          DeclareDiscreteState),
            py::arg("num_state_variables"))
       .def("DeclareEqualityConstraint",
-           [](LeafSystem<drake::AutoDiffXd> &self,
-              Eigen::Ref<
-                  ::std::function<void(
-                      const Context<::drake::AutoDiffXd> &,
-                      Eigen::Matrix<drake::AutoDiffXd, -1, 1, 0, -1, 1> *)>,
-                  0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
-                  calc,
-              int count, ::std::string description) {
-             return self.DeclareEqualityConstraint(calc, count, description);
-           })
+           static_cast<SystemConstraintIndex (LeafSystem<drake::AutoDiffXd>::*)(
+               ::std::function<void(
+                   const Context<::drake::AutoDiffXd> &,
+                   Eigen::Matrix<drake::AutoDiffXd, -1, 1, 0, -1, 1> *)>,
+               int, ::std::string)>(
+               &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
+                   DeclareEqualityConstraint),
+           py::arg("calc"), py::arg("count"), py::arg("description"))
       .def("DeclareImplicitTimeDerivativesResidualSize",
            static_cast<void (LeafSystem<drake::AutoDiffXd>::*)(int)>(
                &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
                    DeclareImplicitTimeDerivativesResidualSize),
            py::arg("n"))
       .def("DeclareInequalityConstraint",
-           [](LeafSystem<drake::AutoDiffXd> &self,
-              Eigen::Ref<
-                  ::std::function<void(
-                      const Context<::drake::AutoDiffXd> &,
-                      Eigen::Matrix<drake::AutoDiffXd, -1, 1, 0, -1, 1> *)>,
-                  0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
-                  calc,
-              SystemConstraintBounds bounds, ::std::string description) {
-             return self.DeclareInequalityConstraint(calc, bounds, description);
-           })
+           static_cast<SystemConstraintIndex (LeafSystem<drake::AutoDiffXd>::*)(
+               ::std::function<void(
+                   const Context<::drake::AutoDiffXd> &,
+                   Eigen::Matrix<drake::AutoDiffXd, -1, 1, 0, -1, 1> *)>,
+               SystemConstraintBounds, ::std::string)>(
+               &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
+                   DeclareInequalityConstraint),
+           py::arg("calc"), py::arg("bounds"), py::arg("description"))
       .def("DeclareNumericParameter",
-           [](LeafSystem<drake::AutoDiffXd> &self,
-              BasicVector<drake::AutoDiffXd> const &model_vector) {
-             return self.DeclareNumericParameter(model_vector);
-           })
+           static_cast<int (LeafSystem<drake::AutoDiffXd>::*)(
+               BasicVector<drake::AutoDiffXd> const &)>(
+               &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
+                   DeclareNumericParameter),
+           py::arg("model_vector"))
       .def("DeclarePeriodicDiscreteUpdate",
            static_cast<void (LeafSystem<drake::AutoDiffXd>::*)(double, double)>(
                &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
@@ -764,59 +755,71 @@ void apb11_pydrake_LeafSystem_py_register(py::module &m) {
                &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
                    DeclarePeriodicUnrestrictedUpdate),
            py::arg("period_sec"), py::arg("offset_sec") = double(0))
-      .def(
-          "DeclareVectorInputPort",
-          [](LeafSystem<drake::AutoDiffXd> &self,
-             ::std::variant<std::basic_string<char, std::char_traits<char>,
-                                              std::allocator<char>>,
-                            UseDefaultName>
-                 name,
-             BasicVector<drake::AutoDiffXd> const &model_vector,
-             ::std::optional<drake::RandomDistribution> random_type) {
-            return self.DeclareVectorInputPort(name, model_vector, random_type);
-          },
-          py::return_value_policy::reference_internal)
-      .def(
-          "DeclareVectorInputPort",
-          [](LeafSystem<drake::AutoDiffXd> &self,
-             BasicVector<drake::AutoDiffXd> const &model_vector,
-             ::std::optional<drake::RandomDistribution> random_type) {
-            return self.DeclareVectorInputPort(model_vector, random_type);
-          },
-          py::return_value_policy::reference_internal)
-      .def(
-          "DeclareVectorOutputPort",
-          [](LeafSystem<drake::AutoDiffXd> &self,
-             ::std::variant<std::basic_string<char, std::char_traits<char>,
-                                              std::allocator<char>>,
-                            UseDefaultName>
-                 name,
-             BasicVector<drake::AutoDiffXd> const &model_vector,
-             LeafOutputPort<drake::AutoDiffXd>::CalcVectorCallback
-                 vector_calc_function,
-             ::std::set<drake::TypeSafeIndex<DependencyTag>,
-                        std::less<drake::TypeSafeIndex<DependencyTag>>,
-                        std::allocator<drake::TypeSafeIndex<DependencyTag>>>
-                 prerequisites_of_calc) {
-            return self.DeclareVectorOutputPort(name, model_vector,
-                                                vector_calc_function,
-                                                prerequisites_of_calc);
-          },
-          py::return_value_policy::reference_internal)
+      .def("DeclareVectorInputPort",
+           static_cast<InputPort<drake::AutoDiffXd> &(
+               LeafSystem<drake::AutoDiffXd>::
+                   *)(::std::variant<
+                          std::basic_string<char, std::char_traits<char>,
+                                            std::allocator<char>>,
+                          UseDefaultName>,
+                      BasicVector<drake::AutoDiffXd> const &,
+                      ::std::optional<drake::RandomDistribution>)>(
+               &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
+                   DeclareVectorInputPort),
+           py::arg("name"), py::arg("model_vector"),
+           py::arg("random_type") =
+               ::std::optional<drake::RandomDistribution>(std::nullopt))
+      .def("DeclareVectorInputPort",
+           static_cast<InputPort<drake::AutoDiffXd> &(
+               LeafSystem<drake::AutoDiffXd>::
+                   *)(BasicVector<drake::AutoDiffXd> const &,
+                      ::std::optional<drake::RandomDistribution>)>(
+               &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
+                   DeclareVectorInputPort),
+           py::arg("model_vector"),
+           py::arg("random_type") =
+               ::std::optional<drake::RandomDistribution>(std::nullopt))
       .def(
           "DeclareVectorOutputPort",
-          [](LeafSystem<drake::AutoDiffXd> &self,
-             BasicVector<drake::AutoDiffXd> const &model_vector,
-             LeafOutputPort<drake::AutoDiffXd>::CalcVectorCallback
-                 vector_calc_function,
-             ::std::set<drake::TypeSafeIndex<DependencyTag>,
-                        std::less<drake::TypeSafeIndex<DependencyTag>>,
-                        std::allocator<drake::TypeSafeIndex<DependencyTag>>>
-                 prerequisites_of_calc) {
-            return self.DeclareVectorOutputPort(
-                model_vector, vector_calc_function, prerequisites_of_calc);
-          },
-          py::return_value_policy::reference_internal)
+          static_cast<LeafOutputPort<drake::AutoDiffXd> &(
+              LeafSystem<drake::AutoDiffXd>::
+                  *)(::std::variant<
+                         std::basic_string<char, std::char_traits<char>,
+                                           std::allocator<char>>,
+                         UseDefaultName>,
+                     BasicVector<drake::AutoDiffXd> const &,
+                     LeafOutputPort<drake::AutoDiffXd>::CalcVectorCallback,
+                     ::std::set<
+                         drake::TypeSafeIndex<DependencyTag>,
+                         std::less<drake::TypeSafeIndex<DependencyTag>>,
+                         std::allocator<drake::TypeSafeIndex<DependencyTag>>>)>(
+              &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
+                  DeclareVectorOutputPort),
+          py::arg("name"), py::arg("model_vector"),
+          py::arg("vector_calc_function"),
+          py::arg("prerequisites_of_calc") =
+              ::std::set<drake::TypeSafeIndex<DependencyTag>,
+                         std::less<drake::TypeSafeIndex<DependencyTag>>,
+                         std::allocator<drake::TypeSafeIndex<DependencyTag>>>(
+                  {SystemBase::all_sources_ticket()}))
+      .def(
+          "DeclareVectorOutputPort",
+          static_cast<LeafOutputPort<drake::AutoDiffXd> &(
+              LeafSystem<drake::AutoDiffXd>::
+                  *)(BasicVector<drake::AutoDiffXd> const &,
+                     LeafOutputPort<drake::AutoDiffXd>::CalcVectorCallback,
+                     ::std::set<
+                         drake::TypeSafeIndex<DependencyTag>,
+                         std::less<drake::TypeSafeIndex<DependencyTag>>,
+                         std::allocator<drake::TypeSafeIndex<DependencyTag>>>)>(
+              &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
+                  DeclareVectorOutputPort),
+          py::arg("model_vector"), py::arg("vector_calc_function"),
+          py::arg("prerequisites_of_calc") =
+              ::std::set<drake::TypeSafeIndex<DependencyTag>,
+                         std::less<drake::TypeSafeIndex<DependencyTag>>,
+                         std::allocator<drake::TypeSafeIndex<DependencyTag>>>(
+                  {SystemBase::all_sources_ticket()}))
       .def(
           "DoAllocateContext",
           static_cast<
@@ -824,40 +827,41 @@ void apb11_pydrake_LeafSystem_py_register(py::module &m) {
                   LeafSystem<drake::AutoDiffXd>::*)() const>(
               &LeafSystem<drake::AutoDiffXd>::DoAllocateContext))
       .def("DoCalcDiscreteVariableUpdates",
-           [](LeafSystem<drake::AutoDiffXd> &self,
-              Context<drake::AutoDiffXd> const &context,
-              ::std::vector<const DiscreteUpdateEvent<::drake::AutoDiffXd> *,
-                            std::allocator<const DiscreteUpdateEvent<
-                                ::drake::AutoDiffXd> *>> const &events,
-              DiscreteValues<drake::AutoDiffXd> *discrete_state) {
-             return self.DoCalcDiscreteVariableUpdates(context, events,
-                                                       discrete_state);
-           })
+           static_cast<void (LeafSystem<drake::AutoDiffXd>::*)(
+               Context<drake::AutoDiffXd> const &,
+               ::std::vector<const DiscreteUpdateEvent<::drake::AutoDiffXd> *,
+                             std::allocator<const DiscreteUpdateEvent<
+                                 ::drake::AutoDiffXd> *>> const &,
+               DiscreteValues<drake::AutoDiffXd> *) const>(
+               &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
+                   DoCalcDiscreteVariableUpdates),
+           py::arg("context"), py::arg("events"), py::arg("discrete_state"))
       .def("DoCalcNextUpdateTime",
-           [](LeafSystem<drake::AutoDiffXd> &self,
-              Context<drake::AutoDiffXd> const &context,
-              CompositeEventCollection<drake::AutoDiffXd> *events,
-              Eigen::Ref<drake::AutoDiffXd *, 0,
-                         Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
-                  time) {
-             return self.DoCalcNextUpdateTime(context, events, time);
-           })
-      .def(
-          "DoCalcUnrestrictedUpdate",
-          [](LeafSystem<drake::AutoDiffXd> &self,
-             Context<drake::AutoDiffXd> const &context,
-             ::std::vector<const UnrestrictedUpdateEvent<::drake::AutoDiffXd> *,
-                           std::allocator<const UnrestrictedUpdateEvent<
-                               ::drake::AutoDiffXd> *>> const &events,
-             State<drake::AutoDiffXd> *state) {
-            return self.DoCalcUnrestrictedUpdate(context, events, state);
-          })
+           static_cast<void (LeafSystem<drake::AutoDiffXd>::*)(
+               Context<drake::AutoDiffXd> const &,
+               CompositeEventCollection<drake::AutoDiffXd> *,
+               drake::AutoDiffXd *) const>(
+               &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
+                   DoCalcNextUpdateTime),
+           py::arg("context"), py::arg("events"), py::arg("time"))
+      .def("DoCalcUnrestrictedUpdate",
+           static_cast<void (LeafSystem<drake::AutoDiffXd>::*)(
+               Context<drake::AutoDiffXd> const &,
+               ::std::vector<
+                   const UnrestrictedUpdateEvent<::drake::AutoDiffXd> *,
+                   std::allocator<const UnrestrictedUpdateEvent<
+                       ::drake::AutoDiffXd> *>> const &,
+               State<drake::AutoDiffXd> *) const>(
+               &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
+                   DoCalcUnrestrictedUpdate),
+           py::arg("context"), py::arg("events"), py::arg("state"))
       .def("DoCalcWitnessValue",
-           [](LeafSystem<drake::AutoDiffXd> &self,
-              Context<drake::AutoDiffXd> const &context,
-              WitnessFunction<drake::AutoDiffXd> const &witness_func) {
-             return self.DoCalcWitnessValue(context, witness_func);
-           })
+           static_cast<drake::AutoDiffXd (LeafSystem<drake::AutoDiffXd>::*)(
+               Context<drake::AutoDiffXd> const &,
+               WitnessFunction<drake::AutoDiffXd> const &) const>(
+               &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
+                   DoCalcWitnessValue),
+           py::arg("context"), py::arg("witness_func"))
       .def("DoMakeLeafContext",
            static_cast<::std::unique_ptr<
                LeafContext<::drake::AutoDiffXd>,
@@ -866,18 +870,20 @@ void apb11_pydrake_LeafSystem_py_register(py::module &m) {
                &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
                    DoMakeLeafContext))
       .def("DoPublish",
-           [](LeafSystem<drake::AutoDiffXd> &self,
-              Context<drake::AutoDiffXd> const &context,
-              ::std::vector<const PublishEvent<::drake::AutoDiffXd> *,
-                            std::allocator<const PublishEvent<
-                                ::drake::AutoDiffXd> *>> const &events) {
-             return self.DoPublish(context, events);
-           })
+           static_cast<void (LeafSystem<drake::AutoDiffXd>::*)(
+               Context<drake::AutoDiffXd> const &,
+               ::std::vector<const PublishEvent<::drake::AutoDiffXd> *,
+                             std::allocator<const PublishEvent<
+                                 ::drake::AutoDiffXd> *>> const &) const>(
+               &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
+                   DoPublish),
+           py::arg("context"), py::arg("events"))
       .def("DoValidateAllocatedLeafContext",
-           [](LeafSystem<drake::AutoDiffXd> &self,
-              LeafContext<drake::AutoDiffXd> const &context) {
-             return self.DoValidateAllocatedLeafContext(context);
-           })
+           static_cast<void (LeafSystem<drake::AutoDiffXd>::*)(
+               LeafContext<drake::AutoDiffXd> const &) const>(
+               &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
+                   DoValidateAllocatedLeafContext),
+           py::arg("context"))
       .def("GetDirectFeedthroughs",
            static_cast<
                ::std::multimap<int, int, std::less<int>,
@@ -891,49 +897,55 @@ void apb11_pydrake_LeafSystem_py_register(py::module &m) {
                    GetGraphvizFragment),
            py::arg("max_depth"), py::arg("dot"))
       .def("GetGraphvizInputPortToken",
-           [](LeafSystem<drake::AutoDiffXd> &self,
-              InputPort<drake::AutoDiffXd> const &port, int max_depth,
-              ::std::stringstream *dot) {
-             return self.GetGraphvizInputPortToken(port, max_depth, dot);
-           })
+           static_cast<void (LeafSystem<drake::AutoDiffXd>::*)(
+               InputPort<drake::AutoDiffXd> const &, int, ::std::stringstream *)
+                           const>(
+               &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
+                   GetGraphvizInputPortToken),
+           py::arg("port"), py::arg("max_depth"), py::arg("dot"))
       .def("GetGraphvizOutputPortToken",
-           [](LeafSystem<drake::AutoDiffXd> &self,
-              OutputPort<drake::AutoDiffXd> const &port, int max_depth,
-              ::std::stringstream *dot) {
-             return self.GetGraphvizOutputPortToken(port, max_depth, dot);
-           })
+           static_cast<void (LeafSystem<drake::AutoDiffXd>::*)(
+               OutputPort<drake::AutoDiffXd> const &, int,
+               ::std::stringstream *) const>(
+               &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
+                   GetGraphvizOutputPortToken),
+           py::arg("port"), py::arg("max_depth"), py::arg("dot"))
       .def("MakeWitnessFunction",
-           [](LeafSystem<drake::AutoDiffXd> &self,
-              ::std::string const &description,
-              WitnessFunctionDirection const &direction_type,
-              ::std::function<drake::AutoDiffXd(
-                  const Context<::drake::AutoDiffXd> &)>
-                  calc) {
-             return self.MakeWitnessFunction(description, direction_type, calc);
-           })
+           static_cast<::std::unique_ptr<
+               WitnessFunction<::drake::AutoDiffXd>,
+               std::default_delete<WitnessFunction<::drake::AutoDiffXd>>> (
+               LeafSystem<drake::AutoDiffXd>::*)(
+               ::std::string const &, WitnessFunctionDirection const &,
+               ::std::function<drake::AutoDiffXd(
+                   const Context<::drake::AutoDiffXd> &)>) const>(
+               &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
+                   MakeWitnessFunction),
+           py::arg("description"), py::arg("direction_type"), py::arg("calc"))
       .def("MakeWitnessFunction",
-           [](LeafSystem<drake::AutoDiffXd> &self,
-              ::std::string const &description,
-              WitnessFunctionDirection const &direction_type,
-              ::std::function<drake::AutoDiffXd(
-                  const Context<::drake::AutoDiffXd> &)>
-                  calc,
-              Event<drake::AutoDiffXd> const &e) {
-             return self.MakeWitnessFunction(description, direction_type, calc,
-                                             e);
-           })
+           static_cast<::std::unique_ptr<
+               WitnessFunction<::drake::AutoDiffXd>,
+               std::default_delete<WitnessFunction<::drake::AutoDiffXd>>> (
+               LeafSystem<drake::AutoDiffXd>::*)(
+               ::std::string const &, WitnessFunctionDirection const &,
+               ::std::function<drake::AutoDiffXd(
+                   const Context<::drake::AutoDiffXd> &)>,
+               Event<drake::AutoDiffXd> const &) const>(
+               &LeafSystem_Eigen_AutoDiffScalar_Eigen_VectorXd_publicist::
+                   MakeWitnessFunction),
+           py::arg("description"), py::arg("direction_type"), py::arg("calc"),
+           py::arg("e"))
       .def("SetDefaultParameters",
-           [](LeafSystem<drake::AutoDiffXd> &self,
-              Context<drake::AutoDiffXd> const &context,
-              Parameters<drake::AutoDiffXd> *parameters) {
-             return self.SetDefaultParameters(context, parameters);
-           })
+           static_cast<void (LeafSystem<drake::AutoDiffXd>::*)(
+               Context<drake::AutoDiffXd> const &,
+               Parameters<drake::AutoDiffXd> *) const>(
+               &LeafSystem<drake::AutoDiffXd>::SetDefaultParameters),
+           py::arg("context"), py::arg("parameters"))
       .def("SetDefaultState",
-           [](LeafSystem<drake::AutoDiffXd> &self,
-              Context<drake::AutoDiffXd> const &context,
-              State<drake::AutoDiffXd> *state) {
-             return self.SetDefaultState(context, state);
-           })
+           static_cast<void (LeafSystem<drake::AutoDiffXd>::*)(
+               Context<drake::AutoDiffXd> const &, State<drake::AutoDiffXd> *)
+                           const>(
+               &LeafSystem<drake::AutoDiffXd>::SetDefaultState),
+           py::arg("context"), py::arg("state"))
 
       ;
 
@@ -1077,42 +1089,34 @@ void apb11_pydrake_LeafSystem_py_register(py::module &m) {
                &LeafSystem_float_publicist::DeclareDiscreteState),
            py::arg("model_vector"))
       .def("DeclareDiscreteState",
-           [](LeafSystem<float> &self,
-              ::Eigen::Ref<const Eigen::Matrix<float, -1, 1, 0, -1, 1>, 0,
-                           Eigen::InnerStride<1>> const &vector) {
-             return self.DeclareDiscreteState(vector);
-           })
+           static_cast<DiscreteStateIndex (LeafSystem<float>::*)(
+               ::Eigen::Ref<const Eigen::Matrix<float, -1, 1, 0, -1, 1>, 0,
+                            Eigen::InnerStride<1>> const &)>(
+               &LeafSystem_float_publicist::DeclareDiscreteState),
+           py::arg("vector"))
       .def("DeclareDiscreteState",
            static_cast<DiscreteStateIndex (LeafSystem<float>::*)(int)>(
                &LeafSystem_float_publicist::DeclareDiscreteState),
            py::arg("num_state_variables"))
-      .def(
-          "DeclareEqualityConstraint",
-          [](LeafSystem<float> &self,
-             Eigen::Ref<
-                 ::std::function<void(const Context<float> &,
-                                      Eigen::Matrix<float, -1, 1, 0, -1, 1> *)>,
-                 0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
-                 calc,
-             int count, ::std::string description) {
-            return self.DeclareEqualityConstraint(calc, count, description);
-          })
+      .def("DeclareEqualityConstraint",
+           static_cast<SystemConstraintIndex (LeafSystem<float>::*)(
+               ::std::function<void(const Context<float> &,
+                                    Eigen::Matrix<float, -1, 1, 0, -1, 1> *)>,
+               int, ::std::string)>(
+               &LeafSystem_float_publicist::DeclareEqualityConstraint),
+           py::arg("calc"), py::arg("count"), py::arg("description"))
       .def("DeclareImplicitTimeDerivativesResidualSize",
            static_cast<void (LeafSystem<float>::*)(int)>(
                &LeafSystem_float_publicist::
                    DeclareImplicitTimeDerivativesResidualSize),
            py::arg("n"))
-      .def(
-          "DeclareInequalityConstraint",
-          [](LeafSystem<float> &self,
-             Eigen::Ref<
-                 ::std::function<void(const Context<float> &,
-                                      Eigen::Matrix<float, -1, 1, 0, -1, 1> *)>,
-                 0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
-                 calc,
-             SystemConstraintBounds bounds, ::std::string description) {
-            return self.DeclareInequalityConstraint(calc, bounds, description);
-          })
+      .def("DeclareInequalityConstraint",
+           static_cast<SystemConstraintIndex (LeafSystem<float>::*)(
+               ::std::function<void(const Context<float> &,
+                                    Eigen::Matrix<float, -1, 1, 0, -1, 1> *)>,
+               SystemConstraintBounds, ::std::string)>(
+               &LeafSystem_float_publicist::DeclareInequalityConstraint),
+           py::arg("calc"), py::arg("bounds"), py::arg("description"))
       .def("DeclareNumericParameter",
            static_cast<int (LeafSystem<float>::*)(BasicVector<float> const &)>(
                &LeafSystem_float_publicist::DeclareNumericParameter),

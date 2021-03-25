@@ -7,11 +7,6 @@ using namespace drake::geometry::render;
 
 namespace py = pybind11;
 void apb11_pydrake_ColorRenderCamera_py_register(py::module &m) {
-  static bool called = false;
-  if (called) {
-    return;
-  }
-  called = true;
   py::class_<ColorRenderCamera> PyColorRenderCamera(m, "ColorRenderCamera");
 
   PyColorRenderCamera

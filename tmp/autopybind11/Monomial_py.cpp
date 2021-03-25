@@ -9,11 +9,6 @@ using namespace drake::symbolic;
 
 namespace py = pybind11;
 void apb11_pydrake_Monomial_py_register(py::module &m) {
-  static bool called = false;
-  if (called) {
-    return;
-  }
-  called = true;
   py::class_<Monomial> PyMonomial(m, "Monomial");
 
   PyMonomial.def(py::init<Monomial const &>(),py::arg("arg0"))

@@ -8,77 +8,62 @@ using namespace drake::math;
 
 namespace py = pybind11;
 void apb11_pydrake_RollPitchYaw_py_register(py::module &m) {
-  static bool called = false;
-  if (called) {
-    return;
-  }
-  called = true;
   py::class_<RollPitchYaw<double>> PyRollPitchYaw_double(m,
                                                          "RollPitchYaw_double");
 
   PyRollPitchYaw_double
       .def(py::init<RollPitchYaw<double> const &>(), py::arg("arg0"))
-      .def(py::init<
-               Eigen::Ref<::Eigen::Matrix<double, 3, 1, 0, 3, 1> const &, 0,
-                          Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &>(),
+      .def(py::init<::Eigen::Matrix<double, 3, 1, 0, 3, 1> const &>(),
            py::arg("rpy"))
       .def(py::init<double const &, double const &, double const &>(),
            py::arg("roll"), py::arg("pitch"), py::arg("yaw"))
       .def(py::init<RotationMatrix<double> const &>(), py::arg("R"))
       .def(py::init<::Eigen::Quaternion<double, 0> const &>(),
            py::arg("quaternion"))
-      .def(
-          "CalcAngularVelocityInChildFromRpyDt",
-          [](RollPitchYaw<double> &self,
-             Eigen::Ref<::Eigen::Matrix<double, 3, 1, 0, 3, 1> const &, 0,
-                        Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &rpyDt) {
-            return self.CalcAngularVelocityInChildFromRpyDt(rpyDt);
-          })
-      .def(
-          "CalcAngularVelocityInParentFromRpyDt",
-          [](RollPitchYaw<double> &self,
-             Eigen::Ref<::Eigen::Matrix<double, 3, 1, 0, 3, 1> const &, 0,
-                        Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &rpyDt) {
-            return self.CalcAngularVelocityInParentFromRpyDt(rpyDt);
-          })
+      .def("CalcAngularVelocityInChildFromRpyDt",
+           static_cast<::Eigen::Matrix<double, 3, 1, 0, 3, 1> (
+               RollPitchYaw<double>::*)(
+               ::Eigen::Matrix<double, 3, 1, 0, 3, 1> const &) const>(
+               &RollPitchYaw<double>::CalcAngularVelocityInChildFromRpyDt),
+           py::arg("rpyDt"))
+      .def("CalcAngularVelocityInParentFromRpyDt",
+           static_cast<::Eigen::Matrix<double, 3, 1, 0, 3, 1> (
+               RollPitchYaw<double>::*)(
+               ::Eigen::Matrix<double, 3, 1, 0, 3, 1> const &) const>(
+               &RollPitchYaw<double>::CalcAngularVelocityInParentFromRpyDt),
+           py::arg("rpyDt"))
       .def("CalcMatrixRelatingRpyDtToAngularVelocityInParent",
            static_cast<::Eigen::Matrix<double, 3, 3, 0, 3, 3> const (
                RollPitchYaw<double>::*)() const>(
                &RollPitchYaw<
                    double>::CalcMatrixRelatingRpyDtToAngularVelocityInParent))
-      .def(
-          "CalcRotationMatrixDt",
-          [](RollPitchYaw<double> &self,
-             Eigen::Ref<::Eigen::Matrix<double, 3, 1, 0, 3, 1> const &, 0,
-                        Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &rpyDt) {
-            return self.CalcRotationMatrixDt(rpyDt);
-          })
+      .def("CalcRotationMatrixDt",
+           static_cast<::Eigen::Matrix<double, 3, 3, 0, 3, 3> (
+               RollPitchYaw<double>::*)(
+               ::Eigen::Matrix<double, 3, 1, 0, 3, 1> const &) const>(
+               &RollPitchYaw<double>::CalcRotationMatrixDt),
+           py::arg("rpyDt"))
       .def("CalcRpyDDtFromAngularAccelInChild",
-           [](RollPitchYaw<double> &self,
-              Eigen::Ref<::Eigen::Matrix<double, 3, 1, 0, 3, 1> const &, 0,
-                         Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &rpyDt,
-              Eigen::Ref<::Eigen::Matrix<double, 3, 1, 0, 3, 1> const &, 0,
-                         Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
-                  &alpha_AD_D) {
-             return self.CalcRpyDDtFromAngularAccelInChild(rpyDt, alpha_AD_D);
-           })
+           static_cast<::Eigen::Matrix<double, 3, 1, 0, 3, 1> (
+               RollPitchYaw<double>::*)(
+               ::Eigen::Matrix<double, 3, 1, 0, 3, 1> const &,
+               ::Eigen::Matrix<double, 3, 1, 0, 3, 1> const &) const>(
+               &RollPitchYaw<double>::CalcRpyDDtFromAngularAccelInChild),
+           py::arg("rpyDt"), py::arg("alpha_AD_D"))
       .def("CalcRpyDDtFromRpyDtAndAngularAccelInParent",
-           [](RollPitchYaw<double> &self,
-              Eigen::Ref<::Eigen::Matrix<double, 3, 1, 0, 3, 1> const &, 0,
-                         Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &rpyDt,
-              Eigen::Ref<::Eigen::Matrix<double, 3, 1, 0, 3, 1> const &, 0,
-                         Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
-                  &alpha_AD_A) {
-             return self.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt,
-                                                                    alpha_AD_A);
-           })
+           static_cast<::Eigen::Matrix<double, 3, 1, 0, 3, 1> (
+               RollPitchYaw<double>::*)(
+               ::Eigen::Matrix<double, 3, 1, 0, 3, 1> const &,
+               ::Eigen::Matrix<double, 3, 1, 0, 3, 1> const &) const>(
+               &RollPitchYaw<
+                   double>::CalcRpyDDtFromRpyDtAndAngularAccelInParent),
+           py::arg("rpyDt"), py::arg("alpha_AD_A"))
       .def("CalcRpyDtFromAngularVelocityInParent",
-           [](RollPitchYaw<double> &self,
-              Eigen::Ref<::Eigen::Matrix<double, 3, 1, 0, 3, 1> const &, 0,
-                         Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
-                  &w_AD_A) {
-             return self.CalcRpyDtFromAngularVelocityInParent(w_AD_A);
-           })
+           static_cast<::Eigen::Matrix<double, 3, 1, 0, 3, 1> (
+               RollPitchYaw<double>::*)(
+               ::Eigen::Matrix<double, 3, 1, 0, 3, 1> const &) const>(
+               &RollPitchYaw<double>::CalcRpyDtFromAngularVelocityInParent),
+           py::arg("w_AD_A"))
       .def_static("DoesCosPitchAngleViolateGimbalLockTolerance",
                   static_cast<::drake::scalar_predicate<double>::type (*)(
                       double const &)>(
@@ -107,17 +92,16 @@ void apb11_pydrake_RollPitchYaw_py_register(py::module &m) {
            static_cast<::drake::scalar_predicate<double>::type (
                RollPitchYaw<double>::*)() const>(
                &RollPitchYaw<double>::IsRollPitchYawInCanonicalRange))
-      .def("IsValid",
-           [](RollPitchYaw<double> &self,
-              Eigen::Ref<::Eigen::Matrix<double, 3, 1, 0, 3, 1> const &, 0,
-                         Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &rpy) {
-             return self.IsValid(rpy);
-           })
+      .def_static("IsValid",
+                  static_cast<::drake::scalar_predicate<double>::type (*)(
+                      ::Eigen::Matrix<double, 3, 1, 0, 3, 1> const &)>(
+                      &RollPitchYaw<double>::IsValid),
+                  py::arg("rpy"))
       .def("SetFromQuaternion",
-           [](RollPitchYaw<double> &self,
-              ::Eigen::Quaternion<double, 0> const &quaternion) {
-             return self.SetFromQuaternion(quaternion);
-           })
+           static_cast<void (RollPitchYaw<double>::*)(
+               ::Eigen::Quaternion<double, 0> const &)>(
+               &RollPitchYaw<double>::SetFromQuaternion),
+           py::arg("quaternion"))
       .def("SetFromRotationMatrix",
            static_cast<void (RollPitchYaw<double>::*)(
                RotationMatrix<double> const &)>(
@@ -141,11 +125,11 @@ void apb11_pydrake_RollPitchYaw_py_register(py::module &m) {
            static_cast<double const &(RollPitchYaw<double>::*)() const>(
                &RollPitchYaw<double>::roll_angle))
       .def("set",
-           [](RollPitchYaw<double> &self,
-              Eigen::Ref<::Eigen::Matrix<double, 3, 1, 0, 3, 1> const &, 0,
-                         Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &rpy) {
-             return self.set(rpy);
-           })
+           static_cast<RollPitchYaw<double> &(
+               RollPitchYaw<double>::*)(::Eigen::Matrix<double, 3, 1, 0, 3,
+                                                        1> const &)>(
+               &RollPitchYaw<double>::set),
+           py::arg("rpy"))
       .def("set",
            static_cast<RollPitchYaw<double> &(
                RollPitchYaw<double>::*)(double const &, double const &,
@@ -166,8 +150,7 @@ void apb11_pydrake_RollPitchYaw_py_register(py::module &m) {
            py::arg("y"))
       .def("vector",
            static_cast<::Eigen::Matrix<double, 3, 1, 0, 3, 1> const &(
-               RollPitchYaw<double>::*)() const>(&RollPitchYaw<double>::vector),
-           py::return_value_policy::reference_internal)
+               RollPitchYaw<double>::*)() const>(&RollPitchYaw<double>::vector))
       .def("yaw_angle",
            static_cast<double const &(RollPitchYaw<double>::*)() const>(
                &RollPitchYaw<double>::yaw_angle))
@@ -180,86 +163,76 @@ void apb11_pydrake_RollPitchYaw_py_register(py::module &m) {
 
   PyRollPitchYaw_Eigen_AutoDiffScalar_Eigen_VectorXd
       .def(py::init<RollPitchYaw<drake::AutoDiffXd> const &>(), py::arg("arg0"))
-      .def(py::init<Eigen::Ref<
-               ::Eigen::Matrix<drake::AutoDiffXd, 3, 1, 0, 3, 1> const &, 0,
-               Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &>(),
-           py::arg("rpy"))
-      .def(py::init<
-               Eigen::Ref<drake::AutoDiffXd const &, 0,
-                          Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &,
-               Eigen::Ref<drake::AutoDiffXd const &, 0,
-                          Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &,
-               Eigen::Ref<drake::AutoDiffXd const &, 0,
-                          Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &>(),
+      .def(
+          py::init<::Eigen::Matrix<drake::AutoDiffXd, 3, 1, 0, 3, 1> const &>(),
+          py::arg("rpy"))
+      .def(py::init<drake::AutoDiffXd const &, drake::AutoDiffXd const &,
+                    drake::AutoDiffXd const &>(),
            py::arg("roll"), py::arg("pitch"), py::arg("yaw"))
-      .def(py::init<
-               Eigen::Ref<RotationMatrix<drake::AutoDiffXd> const &, 0,
-                          Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &>(),
-           py::arg("R"))
+      .def(py::init<RotationMatrix<drake::AutoDiffXd> const &>(), py::arg("R"))
       .def(py::init<::Eigen::Quaternion<drake::AutoDiffXd, 0> const &>(),
            py::arg("quaternion"))
-      .def("CalcAngularVelocityInChildFromRpyDt",
-           [](RollPitchYaw<drake::AutoDiffXd> &self,
-              Eigen::Ref<
-                  ::Eigen::Matrix<drake::AutoDiffXd, 3, 1, 0, 3, 1> const &, 0,
-                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &rpyDt) {
-             return self.CalcAngularVelocityInChildFromRpyDt(rpyDt);
-           })
-      .def("CalcAngularVelocityInParentFromRpyDt",
-           [](RollPitchYaw<drake::AutoDiffXd> &self,
-              Eigen::Ref<
-                  ::Eigen::Matrix<drake::AutoDiffXd, 3, 1, 0, 3, 1> const &, 0,
-                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &rpyDt) {
-             return self.CalcAngularVelocityInParentFromRpyDt(rpyDt);
-           })
+      .def(
+          "CalcAngularVelocityInChildFromRpyDt",
+          static_cast<::Eigen::Matrix<drake::AutoDiffXd, 3, 1, 0, 3, 1> (
+              RollPitchYaw<drake::AutoDiffXd>::*)(
+              ::Eigen::Matrix<drake::AutoDiffXd, 3, 1, 0, 3, 1> const &) const>(
+              &RollPitchYaw<
+                  drake::AutoDiffXd>::CalcAngularVelocityInChildFromRpyDt),
+          py::arg("rpyDt"))
+      .def(
+          "CalcAngularVelocityInParentFromRpyDt",
+          static_cast<::Eigen::Matrix<drake::AutoDiffXd, 3, 1, 0, 3, 1> (
+              RollPitchYaw<drake::AutoDiffXd>::*)(
+              ::Eigen::Matrix<drake::AutoDiffXd, 3, 1, 0, 3, 1> const &) const>(
+              &RollPitchYaw<
+                  drake::AutoDiffXd>::CalcAngularVelocityInParentFromRpyDt),
+          py::arg("rpyDt"))
       .def("CalcMatrixRelatingRpyDtToAngularVelocityInParent",
            static_cast<::Eigen::Matrix<drake::AutoDiffXd, 3, 3, 0, 3, 3> const (
                RollPitchYaw<drake::AutoDiffXd>::*)() const>(
                &RollPitchYaw<drake::AutoDiffXd>::
                    CalcMatrixRelatingRpyDtToAngularVelocityInParent))
-      .def("CalcRotationMatrixDt",
-           [](RollPitchYaw<drake::AutoDiffXd> &self,
-              Eigen::Ref<
-                  ::Eigen::Matrix<drake::AutoDiffXd, 3, 1, 0, 3, 1> const &, 0,
-                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &rpyDt) {
-             return self.CalcRotationMatrixDt(rpyDt);
-           })
-      .def("CalcRpyDDtFromAngularAccelInChild",
-           [](RollPitchYaw<drake::AutoDiffXd> &self,
-              Eigen::Ref<
-                  ::Eigen::Matrix<drake::AutoDiffXd, 3, 1, 0, 3, 1> const &, 0,
-                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &rpyDt,
-              Eigen::Ref<
-                  ::Eigen::Matrix<drake::AutoDiffXd, 3, 1, 0, 3, 1> const &, 0,
-                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &alpha_AD_D) {
-             return self.CalcRpyDDtFromAngularAccelInChild(rpyDt, alpha_AD_D);
-           })
-      .def("CalcRpyDDtFromRpyDtAndAngularAccelInParent",
-           [](RollPitchYaw<drake::AutoDiffXd> &self,
-              Eigen::Ref<
-                  ::Eigen::Matrix<drake::AutoDiffXd, 3, 1, 0, 3, 1> const &, 0,
-                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &rpyDt,
-              Eigen::Ref<
-                  ::Eigen::Matrix<drake::AutoDiffXd, 3, 1, 0, 3, 1> const &, 0,
-                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &alpha_AD_A) {
-             return self.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt,
-                                                                    alpha_AD_A);
-           })
-      .def("CalcRpyDtFromAngularVelocityInParent",
-           [](RollPitchYaw<drake::AutoDiffXd> &self,
-              Eigen::Ref<
-                  ::Eigen::Matrix<drake::AutoDiffXd, 3, 1, 0, 3, 1> const &, 0,
-                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &w_AD_A) {
-             return self.CalcRpyDtFromAngularVelocityInParent(w_AD_A);
-           })
-      .def("DoesCosPitchAngleViolateGimbalLockTolerance",
-           [](RollPitchYaw<drake::AutoDiffXd> &self,
-              Eigen::Ref<drake::AutoDiffXd const &, 0,
-                         Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>
-                  &cos_pitch_angle) {
-             return self.DoesCosPitchAngleViolateGimbalLockTolerance(
-                 cos_pitch_angle);
-           })
+      .def(
+          "CalcRotationMatrixDt",
+          static_cast<::Eigen::Matrix<drake::AutoDiffXd, 3, 3, 0, 3, 3> (
+              RollPitchYaw<drake::AutoDiffXd>::*)(
+              ::Eigen::Matrix<drake::AutoDiffXd, 3, 1, 0, 3, 1> const &) const>(
+              &RollPitchYaw<drake::AutoDiffXd>::CalcRotationMatrixDt),
+          py::arg("rpyDt"))
+      .def(
+          "CalcRpyDDtFromAngularAccelInChild",
+          static_cast<::Eigen::Matrix<drake::AutoDiffXd, 3, 1, 0, 3, 1> (
+              RollPitchYaw<drake::AutoDiffXd>::*)(
+              ::Eigen::Matrix<drake::AutoDiffXd, 3, 1, 0, 3, 1> const &,
+              ::Eigen::Matrix<drake::AutoDiffXd, 3, 1, 0, 3, 1> const &) const>(
+              &RollPitchYaw<
+                  drake::AutoDiffXd>::CalcRpyDDtFromAngularAccelInChild),
+          py::arg("rpyDt"), py::arg("alpha_AD_D"))
+      .def(
+          "CalcRpyDDtFromRpyDtAndAngularAccelInParent",
+          static_cast<::Eigen::Matrix<drake::AutoDiffXd, 3, 1, 0, 3, 1> (
+              RollPitchYaw<drake::AutoDiffXd>::*)(
+              ::Eigen::Matrix<drake::AutoDiffXd, 3, 1, 0, 3, 1> const &,
+              ::Eigen::Matrix<drake::AutoDiffXd, 3, 1, 0, 3, 1> const &) const>(
+              &RollPitchYaw<drake::AutoDiffXd>::
+                  CalcRpyDDtFromRpyDtAndAngularAccelInParent),
+          py::arg("rpyDt"), py::arg("alpha_AD_A"))
+      .def(
+          "CalcRpyDtFromAngularVelocityInParent",
+          static_cast<::Eigen::Matrix<drake::AutoDiffXd, 3, 1, 0, 3, 1> (
+              RollPitchYaw<drake::AutoDiffXd>::*)(
+              ::Eigen::Matrix<drake::AutoDiffXd, 3, 1, 0, 3, 1> const &) const>(
+              &RollPitchYaw<
+                  drake::AutoDiffXd>::CalcRpyDtFromAngularVelocityInParent),
+          py::arg("w_AD_A"))
+      .def_static(
+          "DoesCosPitchAngleViolateGimbalLockTolerance",
+          static_cast<::drake::scalar_predicate<drake::AutoDiffXd>::type (*)(
+              drake::AutoDiffXd const &)>(
+              &RollPitchYaw<drake::AutoDiffXd>::
+                  DoesCosPitchAngleViolateGimbalLockTolerance),
+          py::arg("cos_pitch_angle"))
       .def(
           "DoesPitchAngleViolateGimbalLockTolerance",
           static_cast<::drake::scalar_predicate<drake::AutoDiffXd>::type (
@@ -271,38 +244,38 @@ void apb11_pydrake_RollPitchYaw_py_register(py::module &m) {
           static_cast<double (*)()>(
               &RollPitchYaw<drake::AutoDiffXd>::GimbalLockPitchAngleTolerance))
       .def("IsNearlyEqualTo",
-           [](RollPitchYaw<drake::AutoDiffXd> &self,
-              RollPitchYaw<drake::AutoDiffXd> const &other, double tolerance) {
-             return self.IsNearlyEqualTo(other, tolerance);
-           })
+           static_cast<::drake::scalar_predicate<drake::AutoDiffXd>::type (
+               RollPitchYaw<drake::AutoDiffXd>::*)(
+               RollPitchYaw<drake::AutoDiffXd> const &, double) const>(
+               &RollPitchYaw<drake::AutoDiffXd>::IsNearlyEqualTo),
+           py::arg("other"), py::arg("tolerance"))
       .def("IsNearlySameOrientation",
-           [](RollPitchYaw<drake::AutoDiffXd> &self,
-              RollPitchYaw<drake::AutoDiffXd> const &other, double tolerance) {
-             return self.IsNearlySameOrientation(other, tolerance);
-           })
+           static_cast<::drake::scalar_predicate<drake::AutoDiffXd>::type (
+               RollPitchYaw<drake::AutoDiffXd>::*)(
+               RollPitchYaw<drake::AutoDiffXd> const &, double) const>(
+               &RollPitchYaw<drake::AutoDiffXd>::IsNearlySameOrientation),
+           py::arg("other"), py::arg("tolerance"))
       .def(
           "IsRollPitchYawInCanonicalRange",
           static_cast<::drake::scalar_predicate<drake::AutoDiffXd>::type (
               RollPitchYaw<drake::AutoDiffXd>::*)() const>(
               &RollPitchYaw<drake::AutoDiffXd>::IsRollPitchYawInCanonicalRange))
-      .def("IsValid",
-           [](RollPitchYaw<drake::AutoDiffXd> &self,
-              Eigen::Ref<
-                  ::Eigen::Matrix<drake::AutoDiffXd, 3, 1, 0, 3, 1> const &, 0,
-                  Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &rpy) {
-             return self.IsValid(rpy);
-           })
+      .def_static(
+          "IsValid",
+          static_cast<::drake::scalar_predicate<drake::AutoDiffXd>::type (*)(
+              ::Eigen::Matrix<drake::AutoDiffXd, 3, 1, 0, 3, 1> const &)>(
+              &RollPitchYaw<drake::AutoDiffXd>::IsValid),
+          py::arg("rpy"))
       .def("SetFromQuaternion",
-           [](RollPitchYaw<drake::AutoDiffXd> &self,
-              ::Eigen::Quaternion<drake::AutoDiffXd, 0> const &quaternion) {
-             return self.SetFromQuaternion(quaternion);
-           })
+           static_cast<void (RollPitchYaw<drake::AutoDiffXd>::*)(
+               ::Eigen::Quaternion<drake::AutoDiffXd, 0> const &)>(
+               &RollPitchYaw<drake::AutoDiffXd>::SetFromQuaternion),
+           py::arg("quaternion"))
       .def("SetFromRotationMatrix",
-           [](RollPitchYaw<drake::AutoDiffXd> &self,
-              Eigen::Ref<RotationMatrix<drake::AutoDiffXd> const &, 0,
-                         Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &R) {
-             return self.SetFromRotationMatrix(R);
-           })
+           static_cast<void (RollPitchYaw<drake::AutoDiffXd>::*)(
+               RotationMatrix<drake::AutoDiffXd> const &)>(
+               &RollPitchYaw<drake::AutoDiffXd>::SetFromRotationMatrix),
+           py::arg("R"))
       .def("ToMatrix3ViaRotationMatrix",
            static_cast<::Eigen::Matrix<drake::AutoDiffXd, 3, 3, 0, 3, 3> (
                RollPitchYaw<drake::AutoDiffXd>::*)() const>(
@@ -315,66 +288,49 @@ void apb11_pydrake_RollPitchYaw_py_register(py::module &m) {
            static_cast<RotationMatrix<drake::AutoDiffXd> (
                RollPitchYaw<drake::AutoDiffXd>::*)() const>(
                &RollPitchYaw<drake::AutoDiffXd>::ToRotationMatrix))
-      .def("pitch_angle",
-           static_cast<drake::AutoDiffXd const &(
-               RollPitchYaw<drake::AutoDiffXd>::*)() const>(
-               &RollPitchYaw<drake::AutoDiffXd>::pitch_angle),
-           py::return_value_policy::reference_internal)
-      .def("roll_angle",
-           static_cast<drake::AutoDiffXd const &(
-               RollPitchYaw<drake::AutoDiffXd>::*)() const>(
-               &RollPitchYaw<drake::AutoDiffXd>::roll_angle),
-           py::return_value_policy::reference_internal)
-      .def(
-          "set",
-          [](RollPitchYaw<drake::AutoDiffXd> &self,
-             Eigen::Ref<
-                 ::Eigen::Matrix<drake::AutoDiffXd, 3, 1, 0, 3, 1> const &, 0,
-                 Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &rpy) {
-            return self.set(rpy);
-          },
-          py::return_value_policy::reference_internal)
-      .def(
-          "set",
-          [](RollPitchYaw<drake::AutoDiffXd> &self,
-             Eigen::Ref<drake::AutoDiffXd const &, 0,
-                        Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &roll,
-             Eigen::Ref<drake::AutoDiffXd const &, 0,
-                        Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &pitch,
-             Eigen::Ref<drake::AutoDiffXd const &, 0,
-                        Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &yaw) {
-            return self.set(roll, pitch, yaw);
-          },
-          py::return_value_policy::reference_internal)
+      .def("pitch_angle", static_cast<drake::AutoDiffXd const &(
+                              RollPitchYaw<drake::AutoDiffXd>::*)() const>(
+                              &RollPitchYaw<drake::AutoDiffXd>::pitch_angle))
+      .def("roll_angle", static_cast<drake::AutoDiffXd const &(
+                             RollPitchYaw<drake::AutoDiffXd>::*)() const>(
+                             &RollPitchYaw<drake::AutoDiffXd>::roll_angle))
+      .def("set",
+           static_cast<RollPitchYaw<drake::AutoDiffXd> &(
+               RollPitchYaw<drake::AutoDiffXd>::*)(::Eigen::Matrix<
+                                                   drake::AutoDiffXd, 3, 1, 0,
+                                                   3, 1> const &)>(
+               &RollPitchYaw<drake::AutoDiffXd>::set),
+           py::arg("rpy"))
+      .def("set",
+           static_cast<RollPitchYaw<drake::AutoDiffXd> &(
+               RollPitchYaw<drake::AutoDiffXd>::*)(drake::AutoDiffXd const &,
+                                                   drake::AutoDiffXd const &,
+                                                   drake::AutoDiffXd const &)>(
+               &RollPitchYaw<drake::AutoDiffXd>::set),
+           py::arg("roll"), py::arg("pitch"), py::arg("yaw"))
       .def("set_pitch_angle",
-           [](RollPitchYaw<drake::AutoDiffXd> &self,
-              Eigen::Ref<drake::AutoDiffXd const &, 0,
-                         Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &p) {
-             return self.set_pitch_angle(p);
-           })
+           static_cast<void (RollPitchYaw<drake::AutoDiffXd>::*)(
+               drake::AutoDiffXd const &)>(
+               &RollPitchYaw<drake::AutoDiffXd>::set_pitch_angle),
+           py::arg("p"))
       .def("set_roll_angle",
-           [](RollPitchYaw<drake::AutoDiffXd> &self,
-              Eigen::Ref<drake::AutoDiffXd const &, 0,
-                         Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &r) {
-             return self.set_roll_angle(r);
-           })
+           static_cast<void (RollPitchYaw<drake::AutoDiffXd>::*)(
+               drake::AutoDiffXd const &)>(
+               &RollPitchYaw<drake::AutoDiffXd>::set_roll_angle),
+           py::arg("r"))
       .def("set_yaw_angle",
-           [](RollPitchYaw<drake::AutoDiffXd> &self,
-              Eigen::Ref<drake::AutoDiffXd const &, 0,
-                         Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>> &y) {
-             return self.set_yaw_angle(y);
-           })
+           static_cast<void (RollPitchYaw<drake::AutoDiffXd>::*)(
+               drake::AutoDiffXd const &)>(
+               &RollPitchYaw<drake::AutoDiffXd>::set_yaw_angle),
+           py::arg("y"))
       .def(
           "vector",
           static_cast<::Eigen::Matrix<drake::AutoDiffXd, 3, 1, 0, 3, 1> const &(
               RollPitchYaw<drake::AutoDiffXd>::*)() const>(
-              &RollPitchYaw<drake::AutoDiffXd>::vector),
-          py::return_value_policy::reference_internal)
-      .def("yaw_angle",
-           static_cast<drake::AutoDiffXd const &(
-               RollPitchYaw<drake::AutoDiffXd>::*)() const>(
-               &RollPitchYaw<drake::AutoDiffXd>::yaw_angle),
-           py::return_value_policy::reference_internal)
+              &RollPitchYaw<drake::AutoDiffXd>::vector))
+      .def("yaw_angle", static_cast<drake::AutoDiffXd const &(
+                            RollPitchYaw<drake::AutoDiffXd>::*)() const>(
+                            &RollPitchYaw<drake::AutoDiffXd>::yaw_angle))
 
       ;
 }

@@ -8,11 +8,6 @@ using namespace drake::symbolic;
 
 namespace py = pybind11;
 void apb11_pydrake_Variable_py_register(py::module &m) {
-  static bool called = false;
-  if (called) {
-    return;
-  }
-  called = true;
   py::class_<Variable> PyVariable(m, "Variable");
 
   py::enum_<Variable::Type>(PyVariable, "Type", py::arithmetic())

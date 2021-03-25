@@ -7,11 +7,6 @@ using namespace drake::systems::internal;
 
 namespace py = pybind11;
 void apb11_pydrake_SystemMessageInterface_py_register(py::module &m) {
-  static bool called = false;
-  if (called) {
-    return;
-  }
-  called = true;
   py::class_<SystemMessageInterface> PySystemMessageInterface(
       m, "SystemMessageInterface");
 
