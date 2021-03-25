@@ -1,6 +1,7 @@
-# For additional examples, see the README.rst or
-#    https://gitlab.kitware.com/autopybind11/autopybind11/-/tree/master/Tests
-#    https://github.com/josephsnyder/drake-external-examples/tree/add_binding_example_2/drake_cmake_bindings/pydrake
+# For additional examples, see:
+# - https://gitlab.kitware.com/autopybind11/autopybind11
+# - https://gitlab.kitware.com/autopybind11/autopybind11/-/tree/master/Tests
+#   (look for `wrapper_input.yml` files)
 
 files:
   customization:
