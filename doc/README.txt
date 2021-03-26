@@ -16,6 +16,7 @@ doc/
 ├── _pages/ - Jekyll collection: Add'l root-level pages. Can render Markdown.
 ├── pydrake/ - Python API reference.
 ├── _release-notes/ - Jekyll collection: Index of versioned releases.
+├── styleguide/ - Drake Style Guide external.
 ├── third_party/ - Third party assets.
 └── index.md - Home page.
 ```
