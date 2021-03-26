@@ -40,19 +40,19 @@ def main():
     gen_sphinx = manifest.Rlocation("drake/doc/pydrake/gen_sphinx")
     gen_jekyll = manifest.Rlocation("drake/doc/gen_jekyll")
     doxygen = manifest.Rlocation("drake/doc/doxygen_cxx/build")
-    for item in [gen_sphinx, gen_jekyll, doxygen]:
+    styleguide_build = manifest.Rlocation("drake/doc/styleguide/build")
+    for item in [gen_sphinx, gen_jekyll, doxygen, styleguide_build]:
         assert os.path.exists(item), item
 
     _check_call([gen_jekyll, f"--out_dir={out_dir}"])
     _check_call([gen_sphinx, f"--out_dir={out_dir}/pydrake"])
+    _check_call([styleguide_build, f"--out_dir={out_dir}/styleguide"])
     doxygen_scratch = f"{out_dir}/doxygen_scratch"
     _check_call([doxygen, f"--out_dir={doxygen_scratch}"])
     print(f"+ mv {doxygen_scratch}/html {out_dir}/doxygen_cxx")
     os.rename(f"{doxygen_scratch}/html", f"{out_dir}/doxygen_cxx")
     print(f"+ rm -rf {doxygen_scratch}")
     shutil.rmtree(doxygen_scratch)
-    # TODO(jwnimmer-tri) Incorporate the Drake styleguide publication here,
-    # instead of having it be a separate pipeline.
 
     _build_sitemap(out_dir)
 

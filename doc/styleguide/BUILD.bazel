@@ -1,0 +1,54 @@
+# -*- python -*-
+
+package(default_visibility = ["//visibility:private"])
+
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+)
+load(
+    "//doc:defs.bzl",
+    "DEFAULT_BINARY_TAGS",
+    "DEFAULT_TEST_TAGS",
+    "enumerate_filegroup",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+filegroup(
+    name = "jekyll_input",
+    srcs = [
+        ":_config.yml",
+        ":_layouts/default.html",
+        "@styleguide//:cppguide.html",
+        "@styleguide//:include/link.png",
+        "@styleguide//:include/styleguide.css",
+        "@styleguide//:include/styleguide.js",
+        "@styleguide//:pyguide.md",
+    ],
+)
+
+enumerate_filegroup(
+    name = "jekyll_input.txt",
+    data = [":jekyll_input"],
+)
+
+drake_py_binary(
+    name = "build",
+    srcs = ["build.py"],
+    add_test_rule = 1,
+    data = [
+        ":jekyll_input",
+        ":jekyll_input.txt",
+    ],
+    tags = DEFAULT_BINARY_TAGS,
+    test_rule_args = ["--out_dir=<test>"],
+    test_rule_size = "medium",
+    test_rule_tags = DEFAULT_TEST_TAGS,
+    test_rule_timeout = "short",
+    visibility = ["//doc:__pkg__"],
+    deps = [
+        "//doc:defs",
+    ],
+)
+
+add_lint_tests()

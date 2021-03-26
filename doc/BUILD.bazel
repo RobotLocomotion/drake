@@ -15,6 +15,15 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
+drake_py_library(
+    name = "defs",
+    srcs = ["defs.py"],
+    visibility = ["//doc:__subpackages__"],
+    deps = [
+        "@bazel_tools//tools/python/runfiles",
+    ],
+)
+
 # For maximum browser compatibility these should be at the root of the
 # generated website and should not be renamed.
 filegroup(
@@ -123,6 +132,7 @@ drake_py_binary(
         ":gen_jekyll",
         "//doc/doxygen_cxx:build",
         "//doc/pydrake:gen_sphinx",
+        "//doc/styleguide:build",
     ],
     tags = DEFAULT_BINARY_TAGS,
     deps = [
@@ -141,6 +151,7 @@ filegroup(
         "//doc/doxygen_cxx:build",
         "//doc/pydrake:gen_sphinx",
         "//doc/pydrake:serve_sphinx",
+        "//doc/styleguide:build",
     ],
     tags = ["manual"],
 )
@@ -153,6 +164,7 @@ test_suite(
     tests = [
         ":gen_jekyll_test",
         "//doc/pydrake:gen_sphinx_test",
+        "//doc/styleguide:build_test",
     ],
 )
 
