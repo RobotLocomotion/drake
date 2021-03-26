@@ -11,8 +11,10 @@ namespace test {
  * min y*exp(z/y)
  * s.t y + z = 1
  *     y > 0
+ * @param check_dual If set to true, we will also check the dual solution.
  */
-void ExponentialConeTrivialExample(const SolverInterface& solver, double tol);
+void ExponentialConeTrivialExample(const SolverInterface& solver, double tol,
+                                   bool check_dual);
 
 /**
  * For a random variable x (assuming that the sample space of x is  {0, 1, 2,

@@ -18,6 +18,7 @@
 #include "drake/examples/acrobot/spong_controller.h"
 #include "drake/lcmt_acrobot_u.hpp"
 #include "drake/lcmt_acrobot_x.hpp"
+#include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/lcm/lcm_interface_system.h"
@@ -48,7 +49,8 @@ int DoMain() {
 
   // Create command sender.
   auto command_pub = builder.AddSystem(
-      systems::lcm::LcmPublisherSystem::Make<lcmt_acrobot_u>(channel_u, lcm));
+      systems::lcm::LcmPublisherSystem::Make<lcmt_acrobot_u>(
+        channel_u, lcm, 0.001));
   auto command_sender = builder.AddSystem<AcrobotCommandSender>();
   builder.Connect(command_sender->get_output_port(0),
                   command_pub->get_input_port());
@@ -60,18 +62,12 @@ int DoMain() {
                   controller->get_input_port(0));
 
   auto diagram = builder.Build();
-  auto context = diagram->CreateDefaultContext();
 
-  using clock = std::chrono::system_clock;
-  const auto& start_time = clock::now();
-  const auto& max_duration =
-      std::chrono::duration<double>(FLAGS_time_limit_sec);
-  while ((clock::now() - start_time) <= max_duration) {
-    lcm->HandleSubscriptions(0);
-    const systems::Context<double>& pub_context =
-        diagram->GetSubsystemContext(*command_pub, *context);
-    command_pub->Publish(pub_context);
-  }
+  systems::Simulator<double> simulator(*diagram);
+
+  simulator.set_target_realtime_rate(1.0);
+  simulator.Initialize();
+  simulator.AdvanceTo(FLAGS_time_limit_sec);
 
   return 0;
 }

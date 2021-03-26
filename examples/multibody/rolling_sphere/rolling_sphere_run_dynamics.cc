@@ -5,8 +5,8 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/examples/multibody/rolling_sphere/make_rolling_sphere_plant.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/geometry_instance.h"
-#include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/math/random_rotation.h"
@@ -44,6 +44,11 @@ DEFINE_bool(add_wall, false,
             "simulation to throw when the soft ball hits the wall with the "
             "'hydroelastic' model; use the 'hybrid' or 'point' contact model "
             "to simulate beyond this contact.");
+DEFINE_double(
+    mbp_dt, 0.0,
+    "The fixed time step period (in seconds) of discrete updates for the "
+    "multibody plant modeled as a discrete system. Strictly positive. "
+    "Set to zero for a continuous plant model.");
 
 DEFINE_bool(visualize, true,
             "If true, the simulation will publish messages for Drake "
@@ -104,9 +109,9 @@ int do_main() {
       FLAGS_friction_coefficient /* dynamic friction */);
 
   MultibodyPlant<double>& plant = *builder.AddSystem(MakeBouncingBallPlant(
-      radius, mass, FLAGS_elastic_modulus, FLAGS_dissipation, coulomb_friction,
-      -g * Vector3d::UnitZ(), FLAGS_rigid_ball, FLAGS_soft_ground,
-      &scene_graph));
+      FLAGS_mbp_dt, radius, mass, FLAGS_elastic_modulus, FLAGS_dissipation,
+      coulomb_friction, -g * Vector3d::UnitZ(), FLAGS_rigid_ball,
+      FLAGS_soft_ground, &scene_graph));
 
   if (FLAGS_add_wall) {
     geometry::Box wall{0.2, 4, 0.4};
@@ -156,7 +161,7 @@ int do_main() {
       scene_graph.get_source_pose_port(plant.get_source_id().value()));
 
   if (FLAGS_visualize) {
-    geometry::ConnectDrakeVisualizer(&builder, scene_graph);
+    geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);
     ConnectContactResultsToDrakeVisualizer(&builder, plant);
   }
   auto diagram = builder.Build();

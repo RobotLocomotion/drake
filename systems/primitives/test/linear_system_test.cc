@@ -73,7 +73,7 @@ class LinearSystemTest : public AffineLinearSystemTest {
     dut_ = make_unique<LinearSystem<double>>(A_, B_, C_, D_);
     dut_->set_name("test_linear_system");
     context_ = dut_->CreateDefaultContext();
-    input_vector_ = make_unique<BasicVector<double>>(2 /* size */);
+    input_port_ = &dut_->get_input_port();
     state_ = &context_->get_mutable_continuous_state();
     derivatives_ = dut_->AllocateTimeDerivatives();
   }

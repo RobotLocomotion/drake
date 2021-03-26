@@ -35,7 +35,7 @@ GTEST_TEST(FiniteHorizonLQRTest, InfiniteHorizonTest) {
   const double tf = 40.0;
   FiniteHorizonLinearQuadraticRegulatorOptions options;
   auto context = sys.CreateDefaultContext();
-  context->FixInputPort(0, Vector1d(0.0));
+  sys.get_input_port().FixValue(context.get(), 0.0);
   options.N = N;
 
   // Test that it converges towards the fixed point from zero final cost.
@@ -71,7 +71,7 @@ GTEST_TEST(FiniteHorizonLQRTest, InfiniteHorizonTest) {
                                                 options);
   auto regulator_context = regulator->CreateDefaultContext();
   const Eigen::Vector2d x(.1, -.3);
-  regulator_context->FixInputPort(0, x);
+  regulator->get_input_port(0).FixValue(regulator_context.get(), x);
   EXPECT_EQ(regulator->get_input_port(0).size(), 2);
   EXPECT_EQ(regulator->get_output_port(0).size(), 1);
   EXPECT_TRUE(
@@ -98,7 +98,7 @@ GTEST_TEST(FiniteHorizonLQRTest, NominalTrajectoryTest) {
                           .dynamics(-x + pow(x, 3) + u)
                           .Build();
   auto context = system->CreateDefaultContext();
-  context->FixInputPort(0, Vector1d(0));
+  system->get_input_port().FixValue(context.get(), 0.0);
 
   const Vector1d Q(1.0);
   const Vector1d R(1.0);
@@ -109,7 +109,7 @@ GTEST_TEST(FiniteHorizonLQRTest, NominalTrajectoryTest) {
     const Vector1d x0v(x0);
     const Vector1d u0v(x0 - std::pow(x0, 3));
     context->SetContinuousState(x0v);
-    context->FixInputPort(0, u0v);
+    system->get_input_port().FixValue(context.get(), u0v);
 
     auto linear_sys = Linearize(*system, *context);
     LinearQuadraticRegulatorResult lqr_result = LinearQuadraticRegulator(
@@ -141,7 +141,7 @@ GTEST_TEST(FiniteHorizonLQRTest, NominalTrajectoryTest) {
                                                   R, options);
     auto regulator_context = regulator->CreateDefaultContext();
     const Vector1d xs(-.3);
-    regulator_context->FixInputPort(0, xs);
+    regulator->get_input_port(0).FixValue(regulator_context.get(), xs);
     EXPECT_EQ(regulator->get_input_port(0).size(), 1);
     EXPECT_EQ(regulator->get_output_port(0).size(), 1);
     EXPECT_TRUE(
@@ -174,7 +174,7 @@ GTEST_TEST(FiniteHorizonLQRTest, DoubleIntegratorWithNonZeroGoal) {
   const double tf = 15.0;
   FiniteHorizonLinearQuadraticRegulatorOptions options;
   auto context = sys.CreateDefaultContext();
-  context->FixInputPort(0, Vector1d(0.0));
+  sys.get_input_port().FixValue(context.get(), 0.0);
   const Eigen::Vector2d xdv(2.87, 0);
   trajectories::PiecewisePolynomial<double> xd_traj(xdv);
   options.xd = &xd_traj;
@@ -199,7 +199,7 @@ GTEST_TEST(FiniteHorizonLQRTest, DoubleIntegratorWithNonZeroGoal) {
                                                 options);
   auto regulator_context = regulator->CreateDefaultContext();
   const Eigen::Vector2d x(.1, -.3);
-  regulator_context->FixInputPort(0, x);
+  regulator->get_input_port(0).FixValue(regulator_context.get(), x);
   EXPECT_TRUE(
       CompareMatrices(regulator->get_output_port(0).Eval(*regulator_context),
                       -lqr_result.K * (x - xdv), 1e-5));
@@ -239,7 +239,7 @@ GTEST_TEST(FiniteHorizonLQRTest, AffineSystemTest) {
   const double tf = 70.0;
   FiniteHorizonLinearQuadraticRegulatorOptions options;
   auto context = sys.CreateDefaultContext();
-  context->FixInputPort(0, Eigen::Vector2d::Zero());
+  sys.get_input_port().FixValue(context.get(), Eigen::Vector2d::Zero());
   const Eigen::Vector2d udv = -B.inverse() * c;
   trajectories::PiecewisePolynomial<double> ud_traj(udv);
   options.ud = &ud_traj;
@@ -266,7 +266,7 @@ GTEST_TEST(FiniteHorizonLQRTest, AffineSystemTest) {
                                                 options);
   auto regulator_context = regulator->CreateDefaultContext();
   const Eigen::Vector2d x(.1, -.3);
-  regulator_context->FixInputPort(0, x);
+  regulator->get_input_port(0).FixValue(regulator_context.get(), x);
   EXPECT_TRUE(
       CompareMatrices(regulator->get_output_port(0).Eval(*regulator_context),
                       udv - lqr_result.K * x, 1e-5));
@@ -281,7 +281,7 @@ GTEST_TEST(FiniteHorizonLQRTest, ResultSystemIsScalarConvertible) {
   LinearSystem<double> sys(A, B, Eigen::Matrix<double, 0, 2>::Zero(),
                            Eigen::Matrix<double, 0, 1>::Zero());
   auto context = sys.CreateDefaultContext();
-  context->FixInputPort(0, Vector1d(0.0));
+  sys.get_input_port().FixValue(context.get(), 0.0);
   const double t0 = 0.0;
   Eigen::Matrix2d Q = Eigen::Matrix2d::Identity();
   Vector1d R = Vector1d(1.0);

@@ -36,17 +36,14 @@ class DummyRenderEngine : public render::RenderEngine {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DummyRenderEngine);
 
   /* Constructor to exercise the default constructor of RenderEngine.  */
-  DummyRenderEngine()
-      : color_props_{-1, -1, -1.0, ""},
-        depth_props_{-1, -1, -1.0, "", -1, -1},
-        label_props_{-1, -1, -1.0, ""} {}
+  DummyRenderEngine() : DummyRenderEngine(render::RenderLabel::kUnspecified) {}
 
   /* Constructor for configuring the underlying RenderEngine.  */
   explicit DummyRenderEngine(const render::RenderLabel& label)
       : render::RenderEngine(label),
-        color_props_{-1, -1, -1.0, ""},
-        depth_props_{-1, -1, -1.0, "", -1, -1},
-        label_props_{-1, -1, -1.0, ""} {}
+        color_camera_{{"", {2, 2, 1.0}, {0.01, 1}, {}}, false},
+        depth_camera_{color_camera_.core(), {0.01, 0.011}},
+        label_camera_{color_camera_} {}
 
   /* @group No-op implementation of RenderEngine interface.  */
   //@{
@@ -56,22 +53,6 @@ class DummyRenderEngine : public render::RenderEngine {
   using render::RenderEngine::RenderColorImage;
   using render::RenderEngine::RenderDepthImage;
   using render::RenderEngine::RenderLabelImage;
-
-  void RenderColorImage(const render::CameraProperties& camera, bool,
-                        systems::sensors::ImageRgba8U*) const override {
-    ++simple_color_count_;
-    color_props_ = camera;
-  }
-  void RenderDepthImage(const render::DepthCameraProperties& camera,
-                        systems::sensors::ImageDepth32F*) const override {
-    ++simple_depth_count_;
-    depth_props_ = camera;
-  }
-  void RenderLabelImage(const render::CameraProperties& camera, bool,
-                        systems::sensors::ImageLabel16I*) const override {
-    ++simple_label_count_;
-    label_props_ = camera;
-  }
 
   using RenderEngine::ImplementGeometry;
   void ImplementGeometry(const Sphere& sphere, void* user_data) override {}
@@ -129,18 +110,18 @@ class DummyRenderEngine : public render::RenderEngine {
 
   // Reports the number of times the Render[]Image API was called using the
   // simple camera specification.
-  int num_simple_color_renders() const { return simple_color_count_;  }
-  int num_simple_depth_renders() const { return simple_depth_count_;  }
-  int num_simple_label_renders() const { return simple_label_count_;  }
+  int num_color_renders() const { return color_count_;  }
+  int num_depth_renders() const { return depth_count_;  }
+  int num_label_renders() const { return label_count_;  }
 
-  const render::CameraProperties& last_color_camera_properties() const {
-    return color_props_;
+  const render::ColorRenderCamera& last_color_camera() const {
+    return color_camera_;
   }
-  const render::DepthCameraProperties& last_depth_camera_properties() const {
-    return depth_props_;
+  const render::DepthRenderCamera& last_depth_camera() const {
+    return depth_camera_;
   }
-  const render::CameraProperties& last_label_camera_properties() const {
-    return label_props_;
+  const render::ColorRenderCamera& last_label_camera() const {
+    return label_camera_;
   }
 
   /* Returns the ids that have been updated via a call to UpdatePoses() and
@@ -198,6 +179,27 @@ class DummyRenderEngine : public render::RenderEngine {
     return std::make_unique<DummyRenderEngine>(*this);
   }
 
+  /* Implementation of RenderEngine::DoRenderColorImage().  */
+  void DoRenderColorImage(const render::ColorRenderCamera& camera,
+                          systems::sensors::ImageRgba8U*) const override {
+    ++color_count_;
+    color_camera_ = camera;
+  }
+
+  /* Implementation of RenderEngine::DoRenderDepthImage().  */
+  void DoRenderDepthImage(const render::DepthRenderCamera& camera,
+                          systems::sensors::ImageDepth32F*) const override {
+    ++depth_count_;
+    depth_camera_ = camera;
+  }
+
+  /* Implementation of RenderEngine::DoRenderLabelImage().  */
+  void DoRenderLabelImage(const render::ColorRenderCamera& camera,
+                          systems::sensors::ImageLabel16I*) const override {
+    ++label_count_;
+    label_camera_ = camera;
+  }
+
  private:
   // If true, the engine will accept all geometries.
   bool force_accept_{};
@@ -222,13 +224,13 @@ class DummyRenderEngine : public render::RenderEngine {
   // The counts of the times that the various render APIs were called.
   // This should *only* apply to the render API with *simple* camera intrinsics.
   // When that API is deprecated, this can be removed.
-  mutable int simple_color_count_{};
-  mutable int simple_depth_count_{};
-  mutable int simple_label_count_{};
+  mutable int color_count_{};
+  mutable int depth_count_{};
+  mutable int label_count_{};
 
-  mutable render::CameraProperties color_props_;
-  mutable render::DepthCameraProperties depth_props_;
-  mutable render::CameraProperties label_props_;
+  mutable render::ColorRenderCamera color_camera_;
+  mutable render::DepthRenderCamera depth_camera_;
+  mutable render::ColorRenderCamera label_camera_;
 };
 
 }  // namespace internal

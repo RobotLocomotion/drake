@@ -62,7 +62,7 @@ drake_cc_binary(
     deps = [
         ":compass_gait",
         ":compass_gait_geometry",
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//systems/analysis:simulator",
         "//systems/framework:diagram_builder",
         "@gflags",

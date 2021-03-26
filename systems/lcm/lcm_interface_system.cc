@@ -56,7 +56,7 @@ void LcmInterfaceSystem::OnHandleSubscriptionsError(
 // change as a direct result of this method.
 void LcmInterfaceSystem::DoCalcNextUpdateTime(
     const Context<double>& context,
-    systems::CompositeEventCollection<double>*,
+    systems::CompositeEventCollection<double>* events,
     double* time) const {
   const int timeout_millis = 0;  // Do not block.
   const int num_handled = lcm_->HandleSubscriptions(timeout_millis);
@@ -67,6 +67,10 @@ void LcmInterfaceSystem::DoCalcNextUpdateTime(
     // LcmSubscriberSystem might have had a (meaningful) update, without
     // simulation time advancing any further.
     *time = context.get_time();
+
+    // At least one Event object must be returned when time ≠ ∞.
+    PublishEvent<double> event(TriggerType::kTimed);
+    event.AddToComposite(events);
   } else {
     *time = std::numeric_limits<double>::infinity();
   }

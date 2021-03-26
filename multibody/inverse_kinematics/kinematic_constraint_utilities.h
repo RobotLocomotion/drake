@@ -9,7 +9,7 @@
 namespace drake {
 namespace multibody {
 namespace internal {
-/**
+/*
  * Determines if a and b are equal. a equals to b if they have the same value
  * and gradients.
  * TODO(hongkai.dai) implement and use std::equal_to<> for comparing Eigen
@@ -18,7 +18,7 @@ namespace internal {
 bool AreAutoDiffVecXdEqual(const Eigen::Ref<const AutoDiffVecXd>& a,
                            const Eigen::Ref<const AutoDiffVecXd>& b);
 
-/**
+/*
  * Check if the generalized positions in @p context are the same as @p q.
  * If they are not the same, then reset @p context's generalized positions
  * to @p q. Otherwise, leave @p context unchanged.
@@ -37,7 +37,7 @@ void UpdateContextConfiguration(systems::Context<AutoDiffXd>* context,
                                 const MultibodyPlant<AutoDiffXd>& plant,
                                 const Eigen::Ref<const AutoDiffVecXd>& q);
 
-/**
+/*
  * Normalize an Eigen vector of doubles. This function is used in the
  * constructor of some kinematic constraints.
  * @throws std::invalid_argument if the vector is close to zero.
@@ -54,7 +54,7 @@ NormalizeVector(const Eigen::MatrixBase<DerivedA>& a) {
   return a / a_norm;
 }
 
-/**
+/*
  * If `plant` is not nullptr, return a reference to the MultibodyPlant to which
  * it points.
  * @throws std::invalid_argument if `plant` is nullptr.

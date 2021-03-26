@@ -78,6 +78,9 @@ class JointSliders(VectorSystem):
             upp = joint.position_upper_limits()
             for j in range(0, joint.num_positions()):
                 index = joint.position_start() + j
+                description = joint.name()
+                if joint.num_positions() > 1:
+                    description += f"[{j}]"
                 self._slider_position_start.append(index)
                 self._slider.append(
                     FloatSlider(value=self._default_position[index],
@@ -85,7 +88,7 @@ class JointSliders(VectorSystem):
                                 max=min(upp[j], upper_limit[k]),
                                 step=resolution[k],
                                 continuous_update=True,
-                                description=joint.name(),
+                                description=description,
                                 style={'description_width': 'initial'},
                                 layout=Layout(width=f"'{length}'")))
                 display(self._slider[k])
@@ -144,7 +147,7 @@ def MakeJointSlidersThatPublishOnCallback(
 
     Args:
         plant:        A MultibodyPlant.
-        publishing_system: The System whos Publish method will be called.  Can
+        publishing_system: The System whose Publish method will be called.  Can
                            be the entire Diagram, but can also be a subsystem.
         root_context: A mutable root Context of the Diagram containing both the
                       ``plant`` and the ``publishing_system``; we will extract
@@ -215,13 +218,16 @@ def MakeJointSlidersThatPublishOnCallback(
         upp = joint.position_upper_limits()
         for j in range(joint.num_positions()):
             index = joint.position_start() + j
+            description = joint.name()
+            if joint.num_positions() > 1:
+                description += f"[{j}]"
             slider = FloatSlider(
                 value=positions[index],
                 min=max(low[j], lower_limit[slider_num]),
                 max=min(upp[j], upper_limit[slider_num]),
                 step=resolution[slider_num],
                 continuous_update=continuous_update,
-                description=joint.name(),
+                description=description,
                 style={'description_width': 'initial'},
                 layout=Layout(width=f"'{length}'"))
             slider.observe(partial(_slider_callback, index=index),

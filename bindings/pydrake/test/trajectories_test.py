@@ -4,10 +4,11 @@ import unittest
 from pydrake.common import ToleranceType
 from pydrake.common.eigen_geometry import AngleAxis, Quaternion
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.math import RotationMatrix
+from pydrake.math import BsplineBasis, RotationMatrix
 from pydrake.polynomial import Polynomial
 from pydrake.trajectories import (
-    PiecewisePolynomial, PiecewiseQuaternionSlerp, Trajectory
+    BsplineTrajectory, PiecewisePolynomial, PiecewiseQuaternionSlerp,
+    Trajectory
 )
 
 
@@ -16,6 +17,38 @@ class TestTrajectories(unittest.TestCase):
         # Acceptance check to ensure we have these base methods exposed.
         Trajectory.start_time
         Trajectory.end_time
+
+    def test_bspline_trajectory(self):
+        bspline = BsplineTrajectory()
+        self.assertIsInstance(bspline, BsplineTrajectory)
+        self.assertEqual(BsplineBasis().num_basis_functions(), 0)
+        bspline = BsplineTrajectory(
+            basis=BsplineBasis(2, [0, 1, 2, 3]),
+            control_points=[np.zeros((3, 4)), np.ones((3, 4))])
+        self.assertIsInstance(bspline.Clone(), BsplineTrajectory)
+        numpy_compare.assert_float_equal(bspline.value(t=1.5),
+                                         0.5*np.ones((3, 4)))
+        self.assertEqual(bspline.rows(), 3)
+        self.assertEqual(bspline.cols(), 4)
+        self.assertEqual(bspline.start_time(), 1.)
+        self.assertEqual(bspline.end_time(), 2.)
+        self.assertEqual(bspline.num_control_points(), 2)
+        numpy_compare.assert_float_equal(bspline.control_points()[1],
+                                         np.ones((3, 4)))
+        numpy_compare.assert_float_equal(bspline.InitialValue(),
+                                         np.zeros((3, 4)))
+        numpy_compare.assert_float_equal(bspline.FinalValue(), np.ones((3, 4)))
+        self.assertIsInstance(bspline.basis(), BsplineBasis)
+        bspline.InsertKnots(additional_knots=[1.3, 1.6])
+        self.assertEqual(len(bspline.control_points()), 4)
+        self.assertIsInstance(
+            bspline.CopyBlock(start_row=1, start_col=2,
+                              block_rows=2, block_cols=1),
+            BsplineTrajectory)
+        bspline = BsplineTrajectory(
+            basis=BsplineBasis(2, [0, 1, 2, 3]),
+            control_points=[np.zeros(3), np.ones(3)])
+        self.assertIsInstance(bspline.CopyHead(n=2), BsplineTrajectory)
 
     def test_piecewise_polynomial_empty_constructor(self):
         pp = PiecewisePolynomial()
@@ -141,7 +174,7 @@ class TestTrajectories(unittest.TestCase):
         pp1 = PiecewisePolynomial.FirstOrderHold([0., 1., 2.], x)
         pp2 = PiecewisePolynomial.FirstOrderHold([2., 3., 4.], x)
         self.assertTrue(pp1.isApprox(
-            other=pp1, tol=1e-14, tol_type=ToleranceType.relative))
+            other=pp1, tol=1e-14, tol_type=ToleranceType.kRelative))
         pp1.ConcatenateInTime(other=pp2)
         self.assertEqual(pp1.end_time(), 4.)
 
@@ -193,3 +226,31 @@ class TestTrajectories(unittest.TestCase):
         pq.Append(time=3., quaternion=q)
         pq.Append(time=4., rotation_matrix=R)
         pq.Append(time=5., angle_axis=a)
+
+        # Test getters.
+        pq = PiecewiseQuaternionSlerp(
+            breaks=[0, 1], angle_axes=[a, AngleAxis(np.pi/2, [0, 0, 1])]
+        )
+        np.testing.assert_equal(
+            np.array([1, 0, 0, 0]), pq.orientation(time=0).wxyz()
+        )
+        np.testing.assert_allclose(
+            np.array([0, 0, np.pi/2]), pq.angular_velocity(time=0),
+            atol=1e-15, rtol=0,
+        )
+        np.testing.assert_equal(
+            np.zeros(3), pq.angular_acceleration(time=0)
+        )
+
+        np.testing.assert_allclose(
+            np.array([np.cos(np.pi/4), 0, 0, np.sin(np.pi/4)]),
+            pq.orientation(time=1).wxyz(),
+            atol=1e-15, rtol=0,
+        )
+        np.testing.assert_allclose(
+            np.array([0, 0, np.pi/2]), pq.angular_velocity(time=1),
+            atol=1e-15, rtol=0,
+        )
+        np.testing.assert_equal(
+            np.zeros(3), pq.angular_acceleration(time=1)
+        )

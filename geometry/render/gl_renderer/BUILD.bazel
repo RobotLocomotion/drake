@@ -4,15 +4,14 @@ load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
-    "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 load(
-    "defs.bzl",
-    "drake_cc_googletest_gl_ubuntu_only",
-    "drake_cc_library_gl_ubuntu_only",
-    "drake_cc_package_library_gl_per_os",
+    "//tools/skylark:drake_cc_per_os.bzl",
+    "drake_cc_googletest_ubuntu_only",
+    "drake_cc_library_ubuntu_only",
+    "drake_cc_package_library_per_os",
 )
 
 # This gl_renderer package is only implemented on Ubuntu.  For macOS, only the
@@ -29,23 +28,35 @@ load(
 
 package(default_visibility = ["//visibility:private"])
 
-drake_cc_package_library_gl_per_os(
+drake_cc_package_library_per_os(
     name = "gl_renderer",
     macos_deps = [
         ":render_engine_gl_factory",
+        ":render_engine_gl_params",
     ],
     ubuntu_deps = [
+        ":gl_common",
         ":opengl_context",
         ":opengl_geometry",
         ":render_engine_gl",
         ":render_engine_gl_factory",
+        ":render_engine_gl_params",
         ":shader_program",
+        ":shader_program_data",
         ":shape_meshes",
+        ":texture_library",
     ],
     visibility = ["//visibility:public"],
 )
 
-drake_cc_library_gl_ubuntu_only(
+drake_cc_library_ubuntu_only(
+    name = "gl_common",
+    hdrs = [
+        "gl_common.h",
+    ],
+)
+
+drake_cc_library_ubuntu_only(
     name = "opengl_context",
     srcs = ["opengl_context.cc"],
     hdrs = [
@@ -61,17 +72,19 @@ drake_cc_library_gl_ubuntu_only(
     ],
 )
 
-drake_cc_library_gl_ubuntu_only(
+drake_cc_library_ubuntu_only(
     name = "opengl_geometry",
     hdrs = ["opengl_geometry.h"],
     deps = [
+        ":gl_common",
         ":opengl_context",
+        ":shader_program_data",
         "//geometry/render:render_label",
         "//math:geometric_transform",
     ],
 )
 
-drake_cc_library_gl_ubuntu_only(
+drake_cc_library_ubuntu_only(
     name = "render_engine_gl",
     srcs = [
         "render_engine_gl.cc",
@@ -83,8 +96,11 @@ drake_cc_library_gl_ubuntu_only(
     deps = [
         ":opengl_context",
         ":opengl_geometry",
+        ":render_engine_gl_params",
         ":shader_program",
+        ":shader_program_data",
         ":shape_meshes",
+        ":texture_library",
         "//common:essential",
         "//geometry/render:render_engine",
         "//geometry/render:render_label",
@@ -95,9 +111,7 @@ drake_cc_library_gl_ubuntu_only(
 drake_cc_library(
     name = "render_engine_gl_factory",
     srcs = select({
-        "//tools/cc_toolchain:apple": [
-            "no_render_engine_gl_factory.cc",
-        ],
+        "//tools/cc_toolchain:apple": [],
         "//conditions:default": [
             "render_engine_gl_factory.cc",
         ],
@@ -107,7 +121,7 @@ drake_cc_library(
     ],
     deps = select({
         "//tools/cc_toolchain:apple": [
-            "//geometry/render:render_engine",
+            ":apple_only_no_render_engine_gl_factory",
         ],
         "//conditions:default": [
             ":render_engine_gl",
@@ -115,17 +129,57 @@ drake_cc_library(
     }),
 )
 
-drake_cc_library_gl_ubuntu_only(
+drake_cc_library(
+    name = "apple_only_no_render_engine_gl_factory",
+    srcs = [
+        # Always compile this on every platform, to ensure it is well-formed.
+        "no_render_engine_gl_factory.cc",
+    ],
+    hdrs = [
+        "render_engine_gl_factory.h",
+    ],
+    tags = [
+        # We should only every _link_ it on macOS.
+        "exclude_from_package",
+    ],
+    deps = [
+        ":render_engine_gl_params",
+        "//geometry/render:render_engine",
+    ],
+)
+
+drake_cc_library(
+    name = "render_engine_gl_params",
+    hdrs = ["render_engine_gl_params.h"],
+    deps = [
+        "//geometry:rgba",
+    ],
+)
+
+drake_cc_library_ubuntu_only(
     name = "shader_program",
     srcs = ["shader_program.cc"],
     hdrs = ["shader_program.h"],
     deps = [
+        ":shader_program_data",
         "//common:essential",
+        "//geometry:geometry_roles",
+        "//geometry/render:render_engine",
         "//geometry/render/gl_renderer:opengl_context",
     ],
 )
 
-drake_cc_library_gl_ubuntu_only(
+drake_cc_library_ubuntu_only(
+    name = "shader_program_data",
+    hdrs = ["shader_program_data.h"],
+    deps = [
+        "//common:copyable_unique_ptr",
+        "//common:identifier",
+        "//common:value",
+    ],
+)
+
+drake_cc_library_ubuntu_only(
     name = "shape_meshes",
     srcs = ["shape_meshes.cc"],
     hdrs = ["shape_meshes.h"],
@@ -136,14 +190,26 @@ drake_cc_library_gl_ubuntu_only(
     ],
 )
 
-drake_cc_googletest_gl_ubuntu_only(
+drake_cc_library_ubuntu_only(
+    name = "texture_library",
+    srcs = ["texture_library.cc"],
+    hdrs = ["texture_library.h"],
+    deps = [
+        "//common:essential",
+        "//common:filesystem",
+        "//geometry/render/gl_renderer:opengl_context",
+        "@vtk//:vtkIOImage",
+    ],
+)
+
+drake_cc_googletest_ubuntu_only(
     name = "buffer_dim_test",
     deps = [
         ":render_engine_gl",
     ],
 )
 
-drake_cc_googletest_gl_ubuntu_only(
+drake_cc_googletest_ubuntu_only(
     name = "opengl_context_test",
     tags = [
         # GLX functions show up with bad reads, bad writes, possibly lost, and
@@ -157,7 +223,7 @@ drake_cc_googletest_gl_ubuntu_only(
     ],
 )
 
-drake_cc_googletest_gl_ubuntu_only(
+drake_cc_googletest_ubuntu_only(
     name = "opengl_geometry_test",
     deps = [
         ":opengl_geometry",
@@ -166,19 +232,17 @@ drake_cc_googletest_gl_ubuntu_only(
     ],
 )
 
-drake_cc_googletest_gl_ubuntu_only(
+drake_cc_googletest_ubuntu_only(
     name = "render_engine_gl_test",
-    args = select({
-        "//tools/cc_toolchain:apple": ["--gtest_filter=-*"],
-        "//conditions:default": [],
-    }),
     data = [
+        "//geometry/render:test_models",
         "//systems/sensors:test_models",
     ],
     tags = vtk_test_tags(),
     deps = [
         ":render_engine_gl",
         "//common:find_resource",
+        "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "//geometry/render:render_label",
         "//systems/sensors:color_palette",
@@ -197,7 +261,7 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest_gl_ubuntu_only(
+drake_cc_googletest_ubuntu_only(
     name = "shape_meshes_test",
     data = [
         "//systems/sensors:test_models",
@@ -211,13 +275,14 @@ drake_cc_googletest_gl_ubuntu_only(
     ],
 )
 
-drake_cc_googletest_gl_ubuntu_only(
+drake_cc_googletest_ubuntu_only(
     name = "shader_program_test",
     tags = vtk_test_tags(),
     deps = [
         ":opengl_context",
         ":shader_program",
         "//common:temp_directory",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],
 )

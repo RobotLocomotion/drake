@@ -1,6 +1,15 @@
 import argparse
 import sys
 
+if sys.platform == "darwin":
+    # TODO(jamiesnape): Fix this example on macOS Big Sur. Skipping on all
+    # macOS for simplicity and because of the tendency for macOS versioning
+    # schemes to unexpectedly change.
+    # ImportError: C++ type is not registered in pybind:
+    # NSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEE
+    print("ERROR: Skipping this example on macOS because it fails on Big Sur")
+    sys.exit(0)
+
 try:
     import tkinter as tk
 except ImportError:
@@ -10,7 +19,7 @@ import numpy as np
 from pydrake.examples.manipulation_station import (
     ManipulationStation, ManipulationStationHardwareInterface,
     CreateClutterClearingYcbObjectList, SchunkCollisionModel)
-from pydrake.geometry import ConnectDrakeVisualizer
+from pydrake.geometry import DrakeVisualizer
 from pydrake.manipulation.simple_ui import SchunkWsgButtons
 from pydrake.manipulation.planner import (
     DifferentialInverseKinematicsParameters)
@@ -19,7 +28,8 @@ from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (BasicVector, DiagramBuilder,
                                        LeafSystem)
 from pydrake.systems.lcm import LcmPublisherSystem
-from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
+from pydrake.systems.meshcat_visualizer import (
+    ConnectMeshcatVisualizer, MeshcatVisualizer)
 from pydrake.systems.primitives import FirstOrderLowPassFilter, SignalLogger
 from pydrake.systems.sensors import ImageToLcmImageArrayT, PixelType
 from pydrake.systems.planar_scenegraph_visualizer import \
@@ -248,11 +258,9 @@ def main():
         # rendering only works with drake-visualizer. Without this check,
         # running this code in a docker container produces libGL errors.
         if args.meshcat:
-            meshcat = builder.AddSystem(MeshcatVisualizer(
-                station.get_scene_graph(), zmq_url=args.meshcat,
-                open_browser=args.open_browser))
-            builder.Connect(station.GetOutputPort("pose_bundle"),
-                            meshcat.get_input_port(0))
+            meshcat = ConnectMeshcatVisualizer(
+                builder, output_port=station.GetOutputPort("geometry_query"),
+                zmq_url=args.meshcat, open_browser=args.open_browser)
             if args.setup == 'planar':
                 meshcat.set_planar_viewpoint()
 
@@ -262,8 +270,8 @@ def main():
             builder.Connect(station.GetOutputPort("pose_bundle"),
                             pyplot_visualizer.get_input_port(0))
         else:
-            ConnectDrakeVisualizer(builder, station.get_scene_graph(),
-                                   station.GetOutputPort("pose_bundle"))
+            DrakeVisualizer.AddToBuilder(builder,
+                                         station.GetOutputPort("query_object"))
             image_to_lcm_image_array = builder.AddSystem(
                 ImageToLcmImageArrayT())
             image_to_lcm_image_array.set_name("converter")

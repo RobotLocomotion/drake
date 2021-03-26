@@ -126,9 +126,8 @@ class TestSystem : public LeafSystem<T> {
     this->DeclareAbstractParameter(Value<std::string>("parameter value"));
 
     this->DeclareDiscreteState(3);
-    this->DeclareAbstractState(AbstractValue::Make<int>(5));
-    this->DeclareAbstractState(
-        AbstractValue::Make<std::string>("second abstract state"));
+    this->DeclareAbstractState(Value<int>(5));
+    this->DeclareAbstractState(Value<std::string>("second abstract state"));
   }
   ~TestSystem() override {}
 
@@ -1099,9 +1098,11 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
   dut.reset();
 
   // The first port should only accept a 1d vector.
-  context->FixInputPort(0, VectorXd::Constant(1, 0.0));
+  context->FixInputPort(0, Value<BasicVector<double>>(
+                               VectorXd::Constant(1, 0.0)));
   DRAKE_EXPECT_THROWS_MESSAGE(
-      context->FixInputPort(0, VectorXd::Constant(2, 0.0)),
+      context->FixInputPort(0, Value<BasicVector<double>>(
+                                   VectorXd::Constant(2, 0.0))),
       std::exception,
       "System::FixInputPortTypeCheck\\(\\): expected value of type "
       "drake::systems::BasicVector<double> with size=1 "
@@ -1109,7 +1110,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
       "drake::systems::BasicVector<double> with size=2. "
       "\\(System ::dut\\)");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      context->FixInputPort(0, Value<std::string>{}),
+      context->FixInputPort(0, Value<std::string>()),
       std::exception,
       "System::FixInputPortTypeCheck\\(\\): expected value of type "
       "drake::Value<drake::systems::BasicVector<double>> "
@@ -1120,7 +1121,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
   // The second port should only accept ints.
   context->FixInputPort(2, Value<int>(11));
   DRAKE_EXPECT_THROWS_MESSAGE(
-      context->FixInputPort(2, Value<std::string>{}),
+      context->FixInputPort(2, Value<std::string>()),
       std::exception,
       "System::FixInputPortTypeCheck\\(\\): expected value of type "
       "int "
@@ -1349,8 +1350,8 @@ GTEST_TEST(ModelLeafSystemTest, ModelAbstractState) {
   class DeclaredModelAbstractStateSystem : public LeafSystem<double> {
    public:
     DeclaredModelAbstractStateSystem() {
-      DeclareAbstractState(AbstractValue::Make<int>(1));
-      DeclareAbstractState(AbstractValue::Make<std::string>("wow"));
+      DeclareAbstractState(Value<int>(1));
+      DeclareAbstractState(Value<std::string>("wow"));
     }
   };
 
@@ -3025,6 +3026,86 @@ GTEST_TEST(ImplicitTimeDerivatives, ResetToDefaultResidualSize) {
 
   dut.RedeclareResidualSize(-29);
   EXPECT_EQ(dut.implicit_time_derivatives_residual_size(), 3);
+}
+
+// Simulator::AdvanceTo() could miss an event that was triggered by a
+// DoCalcNextUpdateTime() override that returned a finite next-trigger time but
+// no Event object to handle the event. See issues #12620 and #14644.
+//
+// PR #14663 redefined this as an error -- an Event must be returned if there
+// is a finite trigger time. That PR also replaced an assert with a real error
+// message in the case the time is returned NaN; we check that here also.
+//
+// Note that this is really just a System test, but we need a LeafSystem
+// to satisfy all the uninteresting pure virtuals.
+GTEST_TEST(SystemTest, MissedEventIssue12620) {
+  class TriggerTimeButNoEventSystem : public LeafSystem<double> {
+   public:
+    explicit TriggerTimeButNoEventSystem(double trigger_time)
+        : trigger_time_(trigger_time) {
+      this->set_name("MyTriggerSystem");
+    }
+
+   private:
+    void DoCalcNextUpdateTime(const Context<double>& context,
+                              CompositeEventCollection<double>*,
+                              double* next_update_time) const final {
+      *next_update_time = trigger_time_;
+      // Don't push anything to the EventCollection.
+    }
+
+    const double trigger_time_;
+  };
+
+  LeafCompositeEventCollection<double> events;
+
+  // First test returns NaN, which should be detected.
+  TriggerTimeButNoEventSystem nan_system(NAN);
+  auto nan_context = nan_system.AllocateContext();
+  nan_context->SetTime(0.25);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      nan_system.CalcNextUpdateTime(*nan_context, &events), std::exception,
+      ".*CalcNextUpdateTime.*TriggerTimeButNoEventSystem.*MyTriggerSystem.*"
+      "time=0.25.*no update time.*NaN.*Return infinity.*");
+
+  // Second test returns a trigger time but no Event object.
+  TriggerTimeButNoEventSystem trigger_system(0.375);
+  auto trigger_context = trigger_system.AllocateContext();
+  trigger_context->SetTime(0.25);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      trigger_system.CalcNextUpdateTime(*trigger_context, &events),
+      std::exception,
+      ".*CalcNextUpdateTime.*TriggerTimeButNoEventSystem.*MyTriggerSystem.*"
+      "time=0.25.*update time 0.375.*empty Event collection.*"
+      "at least one Event object must be provided.*");
+}
+
+// Check that a DoCalcNextUpdateTime() override that fails to set the update
+// time at all gets an error message. (This is detected as a returned time of
+// NaN because calling code initializes the time that way.)
+GTEST_TEST(SystemTest, ForgotToSetTheUpdateTime) {
+  class ForgotToSetTimeSystem : public LeafSystem<double> {
+   public:
+    ForgotToSetTimeSystem() { this->set_name("MyForgetfulSystem"); }
+
+   private:
+    void DoCalcNextUpdateTime(const Context<double>& context,
+                              CompositeEventCollection<double>*,
+                              double* next_update_time) const final {
+      // Oops -- forgot to set the time.
+    }
+  };
+
+  LeafCompositeEventCollection<double> events;
+
+  ForgotToSetTimeSystem forgot_system;
+  auto forgot_context = forgot_system.AllocateContext();
+  forgot_context->SetTime(0.25);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      forgot_system.CalcNextUpdateTime(*forgot_context, &events),
+      std::exception,
+      ".*CalcNextUpdateTime.*ForgotToSetTimeSystem.*MyForgetfulSystem.*"
+      "time=0.25.*no update time.*NaN.*Return infinity.*");
 }
 
 }  // namespace

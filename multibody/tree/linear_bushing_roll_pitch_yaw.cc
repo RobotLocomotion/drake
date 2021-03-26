@@ -1,6 +1,7 @@
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
 
 #include <limits>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -277,6 +278,25 @@ Vector3<T> LinearBushingRollPitchYaw<T>::CalcBushingTorqueOnCExpressedInA(
   // bushing forces on C have their resultant force 𝐟 applied at Cp (not Co).
   const Vector3<T> t_Cp_A = N.transpose() * tau;
   return t_Cp_A;  // [tx ty tz]ᴀ
+}
+
+template <typename T>
+void LinearBushingRollPitchYaw<T>::ThrowPitchAngleViolatesGimbalLockTolerance(
+    const T& pitch_angle, const char* function_name) {
+    const double pitch_radians = ExtractDoubleOrThrow(pitch_angle);
+    const double pitch_tolerance =
+        math::RollPitchYaw<double>::GimbalLockPitchAngleTolerance();
+    std::string message = fmt::format("LinearBushingRollPitchYaw::{}():"
+        " Pitch angle p = {:G} degrees is within {:G} degrees of gimbal-lock"
+        " which means p ≈ (n*π ± π/2) where n = 0, 1, 2, ..."
+        " There is a divide-by-zero error (singularity) at gimbal-lock due to"
+        " this bushing's mathematical dependence on roll-pitch-yaw angles."
+        " A pitch angle near gimbal-lock cause numerical inaccuracies.  To"
+        " avoid this pitch angle problem, use a reasonable default alignment of"
+        " the frames associated with this bushing and/or choose stiffness and"
+        " damping properties that help avoid pitch angles near gimbal lock.",
+        function_name, pitch_radians * 180 / M_PI, pitch_tolerance);
+    throw std::runtime_error(message);
 }
 
 template <typename T>

@@ -122,9 +122,9 @@ std::ostream& operator<<(std::ostream& os, Variable::Type type);
 /// @param name The common prefix for variables.
 ///             The (i, j)-th element will be named as `name(i, j)`.
 /// @param type The type of variables in the matrix.
-MatrixX<Variable> MakeMatrixVariable(int rows, int cols,
-                                     const std::string& name,
-                                     Variable::Type type);
+MatrixX<Variable> MakeMatrixVariable(
+    int rows, int cols, const std::string& name,
+    Variable::Type type = Variable::Type::CONTINUOUS);
 
 /// Creates a dynamically-sized Eigen matrix of symbolic Boolean variables.
 /// @param rows The number of rows in the new matrix.
@@ -165,8 +165,8 @@ MatrixX<Variable> MakeMatrixIntegerVariable(int rows, int cols,
 ///             The (i, j)-th element will be named as `name(i, j)`.
 /// @param type The type of variables in the matrix.
 template <int rows, int cols>
-Eigen::Matrix<Variable, rows, cols> MakeMatrixVariable(const std::string& name,
-                                                       Variable::Type type) {
+Eigen::Matrix<Variable, rows, cols> MakeMatrixVariable(
+    const std::string& name, Variable::Type type = Variable::Type::CONTINUOUS) {
   Eigen::Matrix<Variable, rows, cols> m;
   for (int i = 0; i < rows; ++i) {
     for (int j = 0; j < cols; ++j) {
@@ -227,8 +227,9 @@ Eigen::Matrix<Variable, rows, cols> MakeMatrixIntegerVariable(
 /// @param name The common prefix for variables.
 ///             The i-th element will be named as `name(i)`.
 /// @param type The type of variables in the vector.
-VectorX<Variable> MakeVectorVariable(int rows, const std::string& name,
-                                     Variable::Type type);
+VectorX<Variable> MakeVectorVariable(
+    int rows, const std::string& name,
+    Variable::Type type = Variable::Type::CONTINUOUS);
 
 /// Creates a dynamically-sized Eigen vector of symbolic Boolean variables.
 /// @param rows The size of vector.
@@ -261,8 +262,8 @@ VectorX<Variable> MakeVectorIntegerVariable(int rows, const std::string& name);
 ///             The i-th element will be named as `name(i)`.
 /// @param type The type of variables in the vector.
 template <int rows>
-Eigen::Matrix<Variable, rows, 1> MakeVectorVariable(const std::string& name,
-                                                    Variable::Type type) {
+Eigen::Matrix<Variable, rows, 1> MakeVectorVariable(
+    const std::string& name, Variable::Type type = Variable::Type::CONTINUOUS) {
   Eigen::Matrix<Variable, rows, 1> vec;
   for (int i = 0; i < rows; ++i) {
     vec[i] = Variable{name + "(" + std::to_string(i) + ")", type};

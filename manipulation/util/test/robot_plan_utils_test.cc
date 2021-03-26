@@ -53,7 +53,6 @@ GTEST_TEST(RobotPlanUtilsTest, EncodeKeyFramesTest) {
 
   std::vector<std::string> joint_names = GetJointNames(plant);
   std::vector<double> times{0, 2};
-  std::vector<int> info{1, 2};
   std::vector<Eigen::VectorXd> keyframes;
   Eigen::VectorXd q(7);
   q << 1, 2, 3, 4, 5, 6, 7;
@@ -61,16 +60,13 @@ GTEST_TEST(RobotPlanUtilsTest, EncodeKeyFramesTest) {
   q << 8, 9, 10, 11, 12, 13, 14;
   keyframes.push_back(q);
 
-  robotlocomotion::robot_plan_t plan =
-      EncodeKeyFrames(joint_names, times, info, keyframes);
-  ASSERT_EQ(plan.plan_info.size(), 2);
-  EXPECT_EQ(plan.plan_info[0], 1);
-  EXPECT_EQ(plan.plan_info[1], 2);
+  lcmt_robot_plan plan =
+      EncodeKeyFrames(joint_names, times, keyframes);
 
   ASSERT_EQ(plan.plan.size(), 2);
   EXPECT_EQ(plan.plan.size(), plan.num_states);
   for (int i = 0; i < static_cast<int>(plan.plan.size()); ++i) {
-    const bot_core::robot_state_t& step = plan.plan[i];
+    const lcmt_robot_state& step = plan.plan[i];
     EXPECT_EQ(step.utime, i * 2 * 1e6);
     ASSERT_EQ(step.num_joints, 7);
     for (int j = 0; j < step.num_joints; j++) {

@@ -63,10 +63,9 @@ drake_cc_library(
     hdrs = ["robot_plan_interpolator.h"],
     deps = [
         "//common/trajectories:piecewise_polynomial",
+        "//lcmtypes:robot_plan",
         "//multibody/parsing",
         "//systems/framework:leaf_system",
-        "@lcmtypes_bot2_core",
-        "@lcmtypes_robotlocomotion",
     ],
 )
 
@@ -121,7 +120,6 @@ drake_cc_googletest(
         ":robot_plan_interpolator",
         "//common:find_resource",
         "//systems/framework",
-        "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
     ],
 )

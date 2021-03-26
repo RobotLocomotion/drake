@@ -100,7 +100,7 @@ PoseSmoother::PoseSmoother(double desired_max_linear_velocity,
       max_angular_velocity_(desired_max_angular_velocity),
       is_filter_enabled_(filter_window_size > 1) {
   this->DeclareAbstractState(
-      AbstractValue::Make<InternalState>(
+      Value<InternalState>(
           InternalState(filter_window_size)));
   this->DeclareAbstractInputPort(
       systems::kUseDefaultName,

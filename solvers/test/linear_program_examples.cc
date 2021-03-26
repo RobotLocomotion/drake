@@ -81,11 +81,11 @@ LinearProgram0::LinearProgram0(CostForm cost_form,
   x_ = prog()->NewContinuousVariables<2>();
   switch (cost_form) {
     case CostForm::kNonSymbolic: {
-      prog()->AddLinearCost(Vector2d(2.0, 1.0), x_);
+      prog()->AddLinearCost(Vector2d(2.0, 1.0), 4, x_);
       break;
     }
     case CostForm::kSymbolic: {
-      prog()->AddLinearCost(2 * x_(0) + x_(1));
+      prog()->AddLinearCost(2 * x_(0) + x_(1) + 4);
       break;
     }
     default: { throw std::runtime_error("Un-supported cost form."); }
@@ -147,11 +147,11 @@ LinearProgram1::LinearProgram1(CostForm cost_form,
   x_ = prog()->NewContinuousVariables<2>();
   switch (cost_form) {
     case CostForm::kNonSymbolic: {
-      prog()->AddLinearCost(Vector2d(1.0, -2.0), x_);
+      prog()->AddLinearCost(Vector2d(1.0, -2.0), 3, x_);
       break;
     }
     case CostForm::kSymbolic: {
-      prog()->AddLinearCost(x_(0) - 2 * x_(1));
+      prog()->AddLinearCost(x_(0) - 2 * x_(1) + 3);
       break;
     }
     default:
@@ -493,6 +493,30 @@ void TestLPDualSolution2Scaled(const SolverInterface& solver, double tol) {
     EXPECT_TRUE(result.is_success());
     EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint),
                                 Eigen::Vector2d(1, -1), tol));
+  }
+}
+
+void TestLPDualSolution3(const SolverInterface& solver, double tol) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto constraint1 = prog.AddBoundingBoxConstraint(-2, 1, x);
+  auto constraint2 = prog.AddBoundingBoxConstraint(-1, 2, x[1]);
+  auto constraint3 = prog.AddBoundingBoxConstraint(-1, 3, x[0]);
+  prog.AddLinearCost(-x[0] + x[1]);
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    solver.Solve(prog, {}, {}, &result);
+    EXPECT_TRUE(result.is_success());
+    // The optimal solution is (1, -1).
+    // constraint1 has an upper bound x(0) <= 1 being active.
+    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint1),
+                                Eigen::Vector2d(-1, 0), tol));
+    // constraint2 has a lower bound x(1) >= -1 being active.
+    EXPECT_TRUE(
+        CompareMatrices(result.GetDualSolution(constraint2), Vector1d(1), tol));
+    // constraint 3 is not active.
+    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint3),
+                                Vector1d::Zero(), tol));
   }
 }
 }  // namespace test

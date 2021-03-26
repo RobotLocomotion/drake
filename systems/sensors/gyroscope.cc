@@ -1,6 +1,4 @@
-/* clang-format off to disable clang-format-includes */
-#include "drake/systems/sensors/gyroscope_sensor.h"
-/* clang-format on */
+#include "drake/systems/sensors/gyroscope.h"
 
 #include "drake/multibody/math/spatial_algebra.h"
 

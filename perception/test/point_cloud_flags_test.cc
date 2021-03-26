@@ -24,7 +24,7 @@ GTEST_TEST(PointCloudFlagsTest, ConstExpr) {
   EXPECT_TRUE(std::is_literal_type<pcf::DescriptorType>::value);
 }
 
-GTEST_TEST(PointCloudFlagsTest, Basic) {
+GTEST_TEST(PointCloudFlagsTest, Formatting) {
   // Check human-friendly formatting.
   {
     std::ostringstream os;
@@ -37,7 +37,9 @@ GTEST_TEST(PointCloudFlagsTest, Basic) {
     os << (pcf::kXYZs | pcf::kRGBs | pcf::kDescriptorCurvature);
     EXPECT_EQ("(kXYZs | kRGBs | kDescriptorCurvature)", os.str());
   }
+}
 
+GTEST_TEST(PointCloudFlagsTest, Basic) {
   // Check basics.
   pcf::Fields lhs = pcf::kXYZs;
   pcf::Fields rhs = pcf::kXYZs;

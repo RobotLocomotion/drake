@@ -1,11 +1,20 @@
 #include "drake/geometry/render/gl_renderer/render_engine_gl.h"
 
+#include <algorithm>
+#include <optional>
+#include <utility>
+
 #include <fmt/format.h>
+
+#include "drake/common/filesystem.h"
+#include "drake/common/text_logging.h"
+#include "drake/common/unused.h"
 
 namespace drake {
 namespace geometry {
 namespace render {
 
+using Eigen::Vector2d;
 using Eigen::Vector3d;
 using internal::BufferDim;
 using internal::MeshData;
@@ -13,12 +22,19 @@ using internal::OpenGlContext;
 using internal::OpenGlGeometry;
 using internal::OpenGlInstance;
 using internal::RenderTarget;
+using internal::RenderType;
+using internal::ShaderId;
 using internal::ShaderProgram;
+using internal::ShaderProgramData;
+using internal::TextureLibrary;
 using math::RigidTransformd;
 using std::make_shared;
+using std::make_unique;
+using std::move;
 using std::string;
 using std::unique_ptr;
 using std::unordered_map;
+using std::vector;
 using systems::sensors::ColorD;
 using systems::sensors::ColorI;
 using systems::sensors::ImageDepth32F;
@@ -28,9 +44,8 @@ using systems::sensors::InvalidDepth;
 
 namespace {
 
-// Set default boundaries for OpenGl clipping planes.
-const float kGlZNear = 0.01;
-const float kGlZFar = 10.0;
+constexpr char kInternalGroup[] = "render_engine_gl_internal";
+constexpr char kHasTexCoordProperty[] = "has_tex_coord";
 
 // Data to pass through the reification process.
 struct RegistrationData {
@@ -39,33 +54,317 @@ struct RegistrationData {
   const PerceptionProperties& properties;
 };
 
-}  // namespace
+/* The built-in shader for Rgba diffuse colored objects. This shader supports
+ all geometries because it provides a default diffuse color if none is given. */
+class DefaultRgbaColorShader final : public ShaderProgram {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DefaultRgbaColorShader)
 
-RenderEngineGl::RenderEngineGl()
-    : opengl_context_(make_shared<OpenGlContext>()) {
-  // Setup shader program.
+  explicit DefaultRgbaColorShader(const Rgba& default_diffuse)
+      : ShaderProgram(), default_diffuse_(default_diffuse) {
+    LoadFromSources(kVertexShader, kFragmentShader);
+    diffuse_color_loc_ = GetUniformLocation("diffuse_color");
+    normal_mat_loc_ = GetUniformLocation("normal_mat");
+    light_dir_loc_ = GetUniformLocation("light_dir_C");
+  }
+
+  void SetInstanceParameters(const ShaderProgramData& data) const final {
+    glUniform4fv(diffuse_color_loc_, 1,
+                 data.value().get_value<Vector4<float>>().data());
+  }
+
+  void SetLightDirection(const Vector3<float>& light_dir_C) const final {
+    glUniform3fv(light_dir_loc_, 1, light_dir_C.data());
+  }
+
+ private:
+  std::unique_ptr<ShaderProgram> DoClone() const final {
+    return make_unique<DefaultRgbaColorShader>(*this);
+  }
+
+  std::optional<ShaderProgramData> DoCreateProgramData(
+      const PerceptionProperties& properties) const final {
+    const Rgba rgba =
+        properties.GetPropertyOrDefault("phong", "diffuse", default_diffuse_);
+    Vector4<float> v4{
+        static_cast<float>(rgba.r()), static_cast<float>(rgba.g()),
+        static_cast<float>(rgba.b()), static_cast<float>(rgba.a())};
+    return ShaderProgramData{shader_id(), AbstractValue::Make(v4)};
+  }
+
+  void DoModelViewMatrix(const Eigen::Matrix4f& X_CglM,
+                         const Vector3d& scale) const override {
+    // When rendering *illuminated* objects, we have to account for the surface
+    // normals. In principle, we only need to *rotate* the normals from the
+    // model frame to the camera frame. However, if the geometry has undergone
+    // non-uniform scaling, we must *first* scale the normals by the inverse
+    // scale. So, the normal_mat below handles the scaling and the rotation. It
+    // relies on the shader to handle normalization of the scaled normals.
+    // This is the quantity historically referred to as gl_NormalMatrix
+    // (available to glsl in the "compatibility profile"). See
+    // https://www.cs.upc.edu/~robert/teaching/idi/GLSLangSpec.4.50.pdf.
+    const Eigen::DiagonalMatrix<float, 3, 3> inv_scale(
+        Vector3<float>(1.0 / scale(0), 1.0 / scale(1), 1.0 / scale(2)));
+    const Eigen::Matrix3f normal_mat = X_CglM.block<3, 3>(0, 0) * inv_scale;
+    glUniformMatrix3fv(normal_mat_loc_, 1, GL_FALSE, normal_mat.data());
+  }
+
+  // The default diffuse value to apply if missing the ("phong", "diffuse")
+  // property.
+  Rgba default_diffuse_;
+
+  // The location of the "diffuse_color" uniform in the shader.
+  GLint diffuse_color_loc_{};
+
+  // The location of the "normal_mat" uniform in the shader.
+  GLint normal_mat_loc_{};
+
+  // The location of the "light_dir_C" uniform in the shader.
+  GLint light_dir_loc_{};
+
+  // The vertex shader:
+  //   - Transforms the vertex into device *and* camera coordinates.
+  //   - Transforms the normal into camera coordinates to be interpolated
+  //     across the triangle.
+  static constexpr char kVertexShader[] = R"""(
+#version 330
+layout(location = 0) in vec3 p_MV;
+layout(location = 1) in vec3 n_M;
+uniform mat4 T_CM;  // The "model view matrix" (in OpenGl terms).
+uniform mat4 T_DC;  // The "projection matrix" (in OpenGl terms).
+uniform mat3 normal_mat;
+varying vec3 n_C;
+void main() {
+  // p_DV; the vertex position in device coordinates.
+  gl_Position = T_DC * T_CM * vec4(p_MV, 1);
+
+  // R_CM = normal_mat (although R may also include scaling).
+  n_C = normal_mat * n_M;
+})""";
+
+  // For each fragment from a geometry, compute the per-fragment, illuminated
+  // color.
+  static constexpr char kFragmentShader[] = R"""(
+#version 330
+uniform vec4 diffuse_color;
+uniform vec3 light_dir_C;
+varying vec3 n_C;
+out vec4 color;
+void main() {
+  // NOTE: Depending on triangle size and variance of normal direction over
+  // that triangle, n_C may not be unit length; to play it safe, we blindly
+  // normalize it. Consider *not* normalizing it if it improves performance
+  // without degrading visual quality.
+  vec3 nhat_C = normalize(n_C);
+  vec3 alt_diffuse = diffuse_color.rgb / 200 + vec3(0, 0, 1);
+  color = vec4(diffuse_color.rgb * max(dot(nhat_C, light_dir_C), 0.0),
+               diffuse_color.a);
+})""";
+};
+
+/* The built-in shader for texture diffuse colored objects. This shader supports
+ all geometries with a ("phong", "diffuse_map") property. */
+class DefaultTextureColorShader final : public internal::ShaderProgram {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DefaultTextureColorShader)
+
+  /* Constructs the texture shader with the given library. The library will be
+   used to access OpenGl textures.  */
+  explicit DefaultTextureColorShader(TextureLibrary* library)
+      : ShaderProgram(), library_(library) {
+    DRAKE_DEMAND(library != nullptr);
+    LoadFromSources(kVertexShader, kFragmentShader);
+    diffuse_map_loc_ = GetUniformLocation("diffuse_map");
+    diffuse_scale_loc_ = GetUniformLocation("diffuse_map_scale");
+    normal_mat_loc_ = GetUniformLocation("normal_mat");
+    light_dir_loc_ = GetUniformLocation("light_dir_C");
+  }
+
+  void SetInstanceParameters(const ShaderProgramData& data) const final {
+    glActiveTexture(GL_TEXTURE0);
+    glUniform1i(diffuse_map_loc_, 0);  // This texture is GL_TEXTURE0.
+    const auto& my_data = data.value().get_value<InstanceData>();
+    glBindTexture(GL_TEXTURE_2D, my_data.texture_id);
+    glUniform2fv(diffuse_scale_loc_, 1, my_data.texture_scale.data());
+  }
+
+  void SetLightDirection(const Vector3<float>& light_dir_C) const final {
+    glUniform3fv(light_dir_loc_, 1, light_dir_C.data());
+  }
+
+ private:
+  std::unique_ptr<ShaderProgram> DoClone() const final {
+    return make_unique<DefaultTextureColorShader>(*this);
+  }
+
+  struct InstanceData {
+    GLuint texture_id;
+    Vector2<float> texture_scale;
+  };
+
+  std::optional<ShaderProgramData>
+  DoCreateProgramData(const PerceptionProperties& properties) const final {
+    if (!properties.HasProperty("phong", "diffuse_map")) return std::nullopt;
+
+    const string& file_name =
+        properties.GetProperty<string>("phong", "diffuse_map");
+    std::optional<GLuint> texture_id = library_->GetTextureId(file_name);
+
+    if (!texture_id.has_value()) return std::nullopt;
+
+    const bool has_tex_coord = properties.GetPropertyOrDefault(
+        kInternalGroup, kHasTexCoordProperty, MeshData::kHasTexCoordDefault);
+
+    if (!has_tex_coord) {
+      // TODO(eric.cousineau): How to carry mesh name along?
+      throw std::runtime_error(fmt::format(
+          "A mesh with no texture coordinates has erroneously defined the "
+          "property ('phong', 'diffuse_map') as {}. To use a diffuse texture "
+          "map, the mesh must have texture coordinates.", file_name));
+    }
+
+    const auto& scale = properties.GetPropertyOrDefault(
+        "phong", "diffuse_scale", Vector2d(1, 1));
+    return ShaderProgramData{shader_id(), AbstractValue::Make(
+      InstanceData{*texture_id, scale.cast<float>()})};
+  }
+
+  void DoModelViewMatrix(const Eigen::Matrix4f& X_CglM,
+                         const Vector3d& scale) const override {
+    // TODO(SeanCurtis-TRI) Refactor the phong lighting intelligence across
+    //  the color shaders so I don't get code duplication.
+
+    // When rendering *illuminated* objects, we have to account for the surface
+    // normals. In principle, we only need to *rotate* the normals from the
+    // model frame to the camera frame. However, if the geometry has undergone
+    // non-uniform scaling, we must *first* scale the normals by the inverse
+    // scale. So, the normal_mat below handles the scaling and the rotation. It
+    // relies on the shader to handle normalization of the scaled normals.
+    const Eigen::DiagonalMatrix<float, 3, 3> inv_scale(
+        Vector3<float>(1.0 / scale(0), 1.0 / scale(1), 1.0 / scale(2)));
+    const Eigen::Matrix3f normal_mat = X_CglM.block<3, 3>(0, 0) * inv_scale;
+    glUniformMatrix3fv(normal_mat_loc_, 1, GL_FALSE, normal_mat.data());
+  }
+
+  TextureLibrary* library_{};
+
+  // The location of the "diffuse_map" uniform in the shader.
+  GLint diffuse_map_loc_{};
+
+  // The location of the "diffuse_scale" uniform in the shader.
+  GLint diffuse_scale_loc_{};
+
+  // The location of the "normal_mat" uniform in the shader.
+  GLint normal_mat_loc_{};
+
+  // The location of the "light_dir_C" uniform in the shader.
+  GLint light_dir_loc_{};
+
+  // The vertex shader:
+  //   - Transforms the vertex into device *and* camera coordinates.
+  //   - Transforms the normal into camera coordinates to be interpolated
+  //     across the triangle.
+  static constexpr char kVertexShader[] = R"""(
+#version 330
+layout(location = 0) in vec3 p_MV;
+layout(location = 1) in vec3 n_M;
+layout(location = 2) in vec2 tex_coord_in;
+uniform mat4 T_CM;  // The "model view matrix" (in OpenGl terms).
+uniform mat4 T_DC;  // The "projection matrix" (in OpenGl terms).
+uniform mat3 normal_mat;
+varying vec4 p_CV;
+varying vec3 n_C;
+varying vec2 tex_coord;
+void main() {
+  p_CV = T_CM * vec4(p_MV, 1);
+  gl_Position = T_DC * p_CV;
+
+  n_C = normal_mat * n_M;
+  // TODO(SeanCurtis-TRI): Support transforms for texture coordinates.
+  tex_coord = tex_coord_in;
+})""";
+
+  // For each fragment from a geometry, compute the per-fragment, illuminated
+  // color.
+  static constexpr char kFragmentShader[] = R"""(
+#version 330
+uniform sampler2D diffuse_map;
+uniform vec2 diffuse_map_scale;
+varying vec4 p_CV;
+varying vec3 n_C;
+varying vec2 tex_coord;
+uniform vec3 light_dir_C;
+out vec4 color;
+void main() {
+  // NOTE: Depending on triangle size and variance of normal direction over
+  // that triangle, n_C may not be unit length; consider normalizing it.
+  vec3 nhat_C = normalize(n_C);
+  // Note: We're clipping the texture coordinates *here* using fract() rather
+  //  than setting the texture to GL_REPEAT. Setting it GL_REPEAT can lead to
+  //  unsightly visual artifacts when a texture is supposed to exactly align
+  //  with a triangle edge, but there are floating point errors in interpolation
+  //  which cause the texture to be sampled on the other side.
+  vec4 map_rgba = texture(diffuse_map, fract(tex_coord * diffuse_map_scale));
+  color.rgb = map_rgba.rgb * max(dot(nhat_C, light_dir_C), 0.0);
+  color.a = map_rgba.a;
+})""";
+};
+
+/* The built-in shader for objects in depth images. By default, the shader
+ supports all geometries.  */
+class DefaultDepthShader final : public ShaderProgram {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DefaultDepthShader)
+
+  DefaultDepthShader() : ShaderProgram() {
+    LoadFromSources(kVertexShader, kFragmentShader);
+    depth_z_near_loc_ = GetUniformLocation("depth_z_near");
+    depth_z_far_loc_ = GetUniformLocation("depth_z_far");
+  }
+
+  void SetDepthCameraParameters(
+      const DepthRenderCamera& camera) const final {
+    glUniform1f(depth_z_near_loc_, camera.depth_range().min_depth());
+    glUniform1f(depth_z_far_loc_, camera.depth_range().max_depth());
+  }
+
+ private:
+  std::unique_ptr<ShaderProgram> DoClone() const final {
+    return make_unique<DefaultDepthShader>(*this);
+  }
+
+  std::optional<ShaderProgramData> DoCreateProgramData(
+      const PerceptionProperties&) const final {
+    // The depth shader supports all geometries, but requires no data.
+    return ShaderProgramData{shader_id(), nullptr};
+  }
+
+  // Uniform locations.
+  GLint depth_z_near_loc_{};
+  GLint depth_z_far_loc_{};
+
   // The vertex shader computes two pieces of information per vertex: its
   // transformed position and its depth. Both get linearly interpolated across
   // the rasterized triangle's fragments.
-  const string kDepthVertexShader = R"""(
+  static constexpr char kVertexShader[] = R"""(
 #version 330
 
-layout(location = 0) in vec3 p_Model;
+layout(location = 0) in vec3 p_MV;
 out float depth;
-uniform mat4 model_view_matrix;
-uniform mat4 projection_matrix;
+uniform mat4 T_CM;  // The "model view matrix" (in OpenGl terms).
+uniform mat4 T_DC;  // The "projection matrix" (in OpenGl terms).
 
 void main() {
-  vec4 p_Camera = model_view_matrix * vec4(p_Model, 1);
-  depth = -p_Camera.z;
-  gl_Position = projection_matrix * p_Camera;
+  vec4 p_CV = T_CM * vec4(p_MV, 1);
+  depth = -p_CV.z;
+  gl_Position = T_DC * p_CV;
 })""";
 
   // The fragment shader "clamps" the depth of the fragment to the specified
   // sensor range. Values closer than depth_z_near are set to zero, values
-  // farther than depth_z_far are pushed to infinity. This "clamped" depth value
-  // gets written to the frame buffer.
-  const string kDepthFragmentShader = R"""(
+  // farther than depth_z_far are pushed to infinity. This "clamped" depth
+  // value gets written to the frame buffer.
+  static constexpr char kFragmentShader[] = R"""(
 #version 330
 
 in float depth;
@@ -93,108 +392,122 @@ void main() {
   else
     encoded_depth = depth;
 })""";
+};
+
+/* The built-in shader for objects in label images. The support this shader
+ gives for geometry depends on the label encoder function. The shader program
+ assumes the encoder will either provide a label or throw based on the given
+ perception properties.  */
+class DefaultLabelShader final : public ShaderProgram {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DefaultLabelShader)
+
+  /* Constructs the label shader with the given `label_encoder`.
+
+   @param label_encoder  A function that extracts an encoded color (Vector4f)
+                         from a set of PerceptionProperties representing the
+                         color-encoded RenderLabel. If such a color can't be
+                         defined, the function should throw.
+  */
+  explicit DefaultLabelShader(
+      std::function<Vector4<float>(const PerceptionProperties&)> label_encoder)
+      : ShaderProgram(), label_encoder_(move(label_encoder)) {
+    LoadFromSources(kVertexShader, kFragmentShader);
+    encoded_label_loc_ = GetUniformLocation("encoded_label");
+  }
+
+  void SetInstanceParameters(const ShaderProgramData& data) const final {
+    glUniform4fv(encoded_label_loc_, 1,
+                 data.value().get_value<Vector4<float>>().data());
+  }
+
+ private:
+  std::unique_ptr<ShaderProgram> DoClone() const final {
+    return make_unique<DefaultLabelShader>(*this);
+  }
+
+  std::optional<ShaderProgramData> DoCreateProgramData(
+      const PerceptionProperties& properties) const final {
+    return ShaderProgramData{shader_id(),
+                             AbstractValue::Make(label_encoder_(properties))};
+  }
+
+  std::function<Vector4<float>(const PerceptionProperties&)> label_encoder_;
+
+  GLint encoded_label_loc_{};
 
   // The vertex shader simply transforms the vertices. Strictly speaking, we
   // could combine modelview and projection matrices into a single transform,
   // but there's no real value in doing so. Leaving it as is maintains
   // compatibility with the depth shader.
-  const std::string kLabelVertexShader = R"""(
+  static constexpr char kVertexShader[] = R"""(
 #version 330
-layout(location = 0) in vec3 p_Model;
-uniform mat4 model_view_matrix;
-uniform mat4 projection_matrix;
+layout(location = 0) in vec3 p_MV;
+uniform mat4 T_CM;  // The "model view matrix" (in OpenGl terms).
+uniform mat4 T_DC;  // The "projection matrix" (in OpenGl terms).
 void main() {
-  vec4 p_Camera = model_view_matrix * vec4(p_Model, 1);
-  gl_Position = projection_matrix * p_Camera;
+  // X_CM = T_CM (although X may not be a *rigid* transform).
+  vec4 p_CV = T_CM * vec4(p_MV, 1);
+  gl_Position = T_DC * p_CV;
 })""";
 
   // For each fragment from a geometry, it simply colors the fragment with the
   // provided label encoded as an RGBA color.
-  const std::string kLabelFragmentShader = R"""(
+  static constexpr char kFragmentShader[] = R"""(
 #version 330
 out vec4 color;
 uniform vec4 encoded_label;
 void main() {
   color = encoded_label;
 })""";
+};
 
-  shader_programs_[kLabel].LoadFromSources(kLabelVertexShader,
-                                           kLabelFragmentShader);
-  shader_programs_[kDepth].LoadFromSources(kDepthVertexShader,
-                                           kDepthFragmentShader);
+}  // namespace
+
+RenderEngineGl::RenderEngineGl(RenderEngineGlParams params)
+    : RenderEngine(params.default_label),
+      opengl_context_(make_shared<OpenGlContext>()),
+      texture_library_(make_shared<TextureLibrary>(opengl_context_.get())),
+      parameters_(std::move(params)) {
+  // Configuration of basic OpenGl state.
+  opengl_context_->MakeCurrent();
+  glClipControl(GL_UPPER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
+  glClearDepth(1.0);
+  glEnable(GL_DEPTH_TEST);
+  // Generally, there should be no blending for depth and label images. We'll
+  // selectively enable blending for color images.
+  glDisable(GL_BLEND);
+  // We blend the rgb values (the first two parameters), but simply accumulate
+  // transparency (the last two parameters).
+  glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
+
+  // Color shaders. See documentation on GetShaderProgram. We want color from
+  // texture to be "more preferred" than color from rgba, so we add the
+  // texture color shader *after* the rgba color shader.
+  AddShader(make_unique<DefaultRgbaColorShader>(params.default_diffuse),
+            RenderType::kColor);
+  AddShader(make_unique<DefaultTextureColorShader>(texture_library_.get()),
+            RenderType::kColor);
+
+  // Depth shaders -- a single shader that accepts all geometry.
+  AddShader(make_unique<DefaultDepthShader>(), RenderType::kDepth);
+
+  // Label shaders -- a single shader that accepts all geometry (unless it has
+  // an invalid RenderLabel -- see RenderEngine::GetLabelOrThrow).
+  // Extracts the label from properties (with error checking) and returns the
+  // r,g,b,a color to represent it.
+  auto label_encoder = [this](const PerceptionProperties& props) {
+    const RenderLabel& label = this->GetRenderLabelOrThrow(props);
+    const ColorD color = this->GetColorDFromLabel(label);
+    return Vector4<float>(color.r, color.g, color.b, 1.f);
+  };
+  AddShader(make_unique<DefaultLabelShader>(label_encoder), RenderType::kLabel);
 }
 
 RenderEngineGl::~RenderEngineGl() = default;
 
 void RenderEngineGl::UpdateViewpoint(const RigidTransformd& X_WR) {
   X_CW_ = X_WR.inverse();
-}
-
-void RenderEngineGl::RenderColorImage(const CameraProperties&, bool,
-                                      ImageRgba8U*) const {
-  throw std::runtime_error("RenderEngineGl cannot render color images");
-}
-
-void RenderEngineGl::RenderDepthImage(const DepthCameraProperties& camera,
-                                      ImageDepth32F* depth_image_out) const {
-  const ShaderProgram& shader_program = ActivateShader(ImageType::kDepth);
-  shader_program.Use();
-
-  // Configure the camera.
-  // TODO(SeanCurtis-TRI): When clipping planes get set by the user, conflict
-  //  between depth camera range and clipping range should be an error. For
-  //  now, we simply define the clipping planes to tightly (but not exactly)
-  //  bound the depth ranges. The tightness gives us the most precision in the
-  //  z-buffer in the depth range. The slightly larger (10 cm in front and 10 cm
-  //  behind) domain will allow us to recognize at least *some* fragments which
-  //  rendered outside the depth range.
-  const double near_clip = camera.z_near - 0.1;
-  const double far_clip = camera.z_far + 0.1;
-  const RenderTarget target = SetCameraProperties(
-      camera, shader_program, near_clip, far_clip, ImageType::kDepth);
-
-  // Configure depth range in the shader.
-  shader_program.SetUniformValue("depth_z_near", camera.z_near);
-  shader_program.SetUniformValue("depth_z_far", camera.z_far);
-
-  // We initialize the color buffer to be all "too far" values. This is the
-  // pixel value if nothing draws there -- i.e., nothing there implies that
-  // whatever *might* be there is "too far" beyond the depth range.
-  glClearNamedFramebufferfv(target.frame_buffer, GL_COLOR, 0,
-                            &InvalidDepth::kTooFar);
-  // TODO(SeanCurtis-TRI): Make sure RenderAt doesn't clear color buffer.
-  RenderAt(shader_program, X_CW_.GetAsMatrix4().matrix().cast<float>(), kDepth);
-  glGetTextureImage(target.value_texture, 0, GL_RED, GL_FLOAT,
-                    depth_image_out->size() * sizeof(GLfloat),
-                    depth_image_out->at(0, 0));
-}
-
-void RenderEngineGl::RenderLabelImage(const CameraProperties& camera,
-                                      bool show_window,
-                                      ImageLabel16I* label_image_out) const {
-  const ShaderProgram& shader_program = ActivateShader(ImageType::kLabel);
-
-  const RenderTarget target = SetCameraProperties(
-      camera, shader_program, kGlZNear, kGlZFar, ImageType::kLabel);
-
-  const ColorD empty_color =
-      RenderEngine::GetColorDFromLabel(RenderLabel::kEmpty);
-  float clear_color[4] = {static_cast<float>(empty_color.r),
-                          static_cast<float>(empty_color.g),
-                          static_cast<float>(empty_color.b), 1.f};
-  glClearNamedFramebufferfv(target.frame_buffer, GL_COLOR, 0, &clear_color[0]);
-  RenderAt(shader_program, X_CW_.GetAsMatrix4().matrix().cast<float>(),
-           kLabel);
-  // Note: SetWindowVisibility must be called *after* the rendering; setting the
-  // visibility is responsible for taking the target buffer and bringing it to
-  // the front buffer; reversing the order means the image we've just rendered
-  // wouldn't be visible.
-  SetWindowVisibility(camera, show_window, target);
-  // TODO(SeanCurtis-TRI): Apparently, we *should* be able to create a frame
-  // buffer texture consisting of a single-channel, 16-bit, signed int (to match
-  // the underlying RenderLabel value). Doing so would allow us to render labels
-  // directly and eliminate this additional pass.
-  GetLabelImage(label_image_out, target);
 }
 
 void RenderEngineGl::ImplementGeometry(const Sphere& sphere, void* user_data) {
@@ -243,12 +556,42 @@ void RenderEngineGl::ImplementGeometry(const Ellipsoid& ellipsoid,
 
 void RenderEngineGl::ImplementGeometry(const Mesh& mesh, void* user_data) {
   OpenGlGeometry geometry = GetMesh(mesh.filename());
-  ImplementGeometry(geometry, user_data, Vector3d(1, 1, 1) * mesh.scale());
+  ImplementMesh(geometry, user_data, Vector3d(1, 1, 1) * mesh.scale(),
+                mesh.filename());
 }
 
 void RenderEngineGl::ImplementGeometry(const Convex& convex, void* user_data) {
   OpenGlGeometry geometry = GetMesh(convex.filename());
-  ImplementGeometry(geometry, user_data, Vector3d(1, 1, 1) * convex.scale());
+  ImplementMesh(geometry, user_data, Vector3d(1, 1, 1) * convex.scale(),
+                convex.filename());
+}
+
+void RenderEngineGl::ImplementMesh(const internal::OpenGlGeometry& geometry,
+                                   void* user_data,
+                                   const Vector3<double>& scale,
+                                   const std::string& file_name) {
+  const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
+  PerceptionProperties temp_props(data.properties);
+
+  temp_props.AddProperty(
+      kInternalGroup, kHasTexCoordProperty, geometry.has_tex_coord);
+
+  // In order to maintain compatibility with RenderEngineVtk, we need to provide
+  // functionality in which a mesh of the name foo.obj can be matched to a
+  // potential png called foo.png. We rely on the fact that passing in a diffuse
+  // map that doesn't refer to a real file will silently fall back to rgba
+  // diffuse. So, we'll create a copy of the user data, set the diffuse_map
+  // property to appropriately named image and let it percolate through. We
+  // can't and don't want to change the underlying properties because they are
+  // visible to the user.
+  if (!temp_props.HasProperty("phong", "diffuse_map")) {
+    filesystem::path file_path(file_name);
+    const string png_name = file_path.replace_extension(".png").string();
+    temp_props.AddProperty("phong", "diffuse_map", png_name);
+  }
+
+  RegistrationData temp_data{data.id, data.X_WG, temp_props};
+  ImplementGeometry(geometry, &temp_data, scale);
 }
 
 bool RenderEngineGl::DoRegisterVisual(GeometryId id, const Shape& shape,
@@ -268,6 +611,25 @@ void RenderEngineGl::DoUpdateVisualPose(GeometryId id,
 bool RenderEngineGl::DoRemoveGeometry(GeometryId id) {
   auto iter = visuals_.find(id);
   if (iter != visuals_.end()) {
+    // Remove from the shader families to which it belongs!
+    auto remove_from_family = [this](GeometryId g_id,
+                                     const auto& shader_data,
+                                     RenderType render_type) {
+      const ShaderId s_id = shader_data[render_type].shader_id();
+      auto& geometries = shader_families_[render_type].at(s_id);
+      for (size_t i = 0; i < geometries.size(); ++i) {
+        if (geometries[i] == g_id) {
+          std::swap(geometries[i], geometries.back());
+          geometries.pop_back();
+          return;
+        }
+      }
+      DRAKE_UNREACHABLE();
+    };
+    const OpenGlInstance& instance = iter->second;
+    remove_from_family(id, instance.shader_data, RenderType::kColor);
+    remove_from_family(id, instance.shader_data, RenderType::kDepth);
+    remove_from_family(id, instance.shader_data, RenderType::kLabel);
     visuals_.erase(iter);
     return true;
   } else {
@@ -280,46 +642,189 @@ unique_ptr<RenderEngine> RenderEngineGl::DoClone() const {
 }
 
 void RenderEngineGl::RenderAt(const ShaderProgram& shader_program,
-                              const Eigen::Matrix4f& X_CW,
-                              ImageType image_type) const {
-  glClipControl(GL_UPPER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
-  glEnable(GL_DEPTH_TEST);
-  // Note: We're *not* clearing the color buffer here. We rely on the caller of
-  // RenderAt() to have cleared the frame buffer's color buffer to an
-  // appropriate color for an "empty" pixel.
-  glClear(GL_DEPTH_BUFFER_BIT);
+                              RenderType render_type) const {
+  // TODO(SeanCurtis-TRI) Consider storing a float-version of X_CW so it's only
+  //  created once per camera declaration (and not once per shader).
+  const Eigen::Matrix4f& X_CW = X_CW_.GetAsMatrix4().matrix().cast<float>();
+  // We rely on the calling method to clear all appropriate buffers; this method
+  // may be called multiple times per image (based on the number of shaders
+  // being used) and, therefore, can't do the clearing itself.
 
-  for (const auto& pair : visuals_) {
-    const internal::OpenGlInstance& instance = pair.second;
+  for (const GeometryId& g_id :
+       shader_families_.at(render_type).at(shader_program.shader_id())) {
+    const internal::OpenGlInstance& instance = visuals_.at(g_id);
     glBindVertexArray(instance.geometry.vertex_array);
 
-    if (image_type == kLabel) {
-      const ColorD color = RenderEngine::GetColorDFromLabel(instance.label);
-      const Vector4<float> encoded_label(color.r, color.g, color.b, 1.f);
-      shader_program.SetUniformValue("encoded_label", encoded_label);
-    }
+    shader_program.SetInstanceParameters(instance.shader_data[render_type]);
+    // TODO(SeanCurtis-TRI): Consider storing the float-valued pose in the
+    //  OpenGl instance to avoid the conversion every time it is rendered.
+    //  Generally, this wouldn't exepct much savings; an instance is only
+    //  rendered once per image type. So, for three image types, I'd cast three
+    //  times. Stored, I'd cast once.
+    shader_program.SetModelViewMatrix(
+        X_CW * instance.X_WG.GetAsMatrix4().cast<float>(), instance.scale);
 
-    Eigen::DiagonalMatrix<float, 4, 4> scale(Vector4<float>(
-        instance.scale(0), instance.scale(1), instance.scale(2), 1.0));
-    // The pose of the geometry in the camera frame is a _scaled_
-    // transform; the geometry gets scaled, then posed in the world, and finally
-    // the camera frame.
-    SetGlModelViewMatrix(
-        shader_program,
-        X_CW * instance.X_WG.GetAsMatrix4().cast<float>() * scale);
     glDrawElements(GL_TRIANGLES, instance.geometry.index_buffer_size,
                    GL_UNSIGNED_INT, 0);
   }
   // Unbind the vertex array back to the default of 0.
   glBindVertexArray(0);
-  shader_program.Unuse();
+}
+
+void RenderEngineGl::DoRenderColorImage(const ColorRenderCamera& camera,
+                                        ImageRgba8U* color_image_out) const {
+  opengl_context_->MakeCurrent();
+
+  // TODO(SeanCurtis-TRI): For transparency to work properly, I need to
+  //  segregate objects with transparency from those without. The transparent
+  //  geometries then need to be sorted from farthest to nearest the camera and
+  //  rendered in that order. This may lead to shader thrashing. Without this
+  //  ordering, I may not necessarily see objects through transparent surfaces.
+  //  Confirm that VTK handles transparency correctly and do the same.
+
+  const RenderTarget render_target =
+      GetRenderTarget(camera.core(), RenderType::kColor);
+  // TODO(SeanCurtis-TRI) Consider converting Rgba to float[4] as a method on
+  //  Rgba.
+  const Rgba& clear = parameters_.default_clear_color;
+  float clear_color[4] = {
+      static_cast<float>(clear.r()), static_cast<float>(clear.g()),
+      static_cast<float>(clear.b()), static_cast<float>(clear.a())};
+  glClearNamedFramebufferfv(render_target.frame_buffer, GL_COLOR, 0,
+                            &clear_color[0]);
+  glClear(GL_DEPTH_BUFFER_BIT);
+  // We only want blending for color; not for label or depth.
+  glEnable(GL_BLEND);
+
+  // Matrix mapping a geometry vertex from the camera frame C to the device
+  // frame D.
+  const Eigen::Matrix4f T_DC =
+      camera.core().CalcProjectionMatrix().cast<float>();
+
+  for (const auto& [shader_id, shader_ptr] :
+       shader_programs_[RenderType::kColor]) {
+    unused(shader_id);
+    const ShaderProgram& shader_program = *shader_ptr;
+    shader_program.Use();
+
+    shader_program.SetLightDirection(light_dir_C_);
+    shader_program.SetProjectionMatrix(T_DC);
+
+    // Now I need to render the geometries.
+    RenderAt(shader_program, RenderType::kColor);
+    shader_program.Unuse();
+  }
+  glDisable(GL_BLEND);
+
+  // Note: SetWindowVisibility must be called *after* the rendering; setting the
+  // visibility is responsible for taking the target buffer and bringing it to
+  // the front buffer; reversing the order means the image we've just rendered
+  // wouldn't be visible.
+  SetWindowVisibility(camera.core(), camera.show_window(), render_target);
+  glGetTextureImage(render_target.value_texture, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                    color_image_out->size(), color_image_out->at(0, 0));
+}
+
+void RenderEngineGl::DoRenderDepthImage(const DepthRenderCamera& camera,
+                                        ImageDepth32F* depth_image_out) const {
+  opengl_context_->MakeCurrent();
+
+  const RenderTarget render_target =
+      GetRenderTarget(camera.core(), RenderType::kDepth);
+
+  // We initialize the color buffer to be all "too far" values. This is the
+  // pixel value if nothing draws there -- i.e., nothing there implies that
+  // whatever *might* be there is "too far" beyond the depth range.
+  glClearNamedFramebufferfv(render_target.frame_buffer, GL_COLOR, 0,
+                            &InvalidDepth::kTooFar);
+  glClear(GL_DEPTH_BUFFER_BIT);
+
+  // Matrix mapping a geometry vertex from the camera frame C to the device
+  // frame D.
+  const Eigen::Matrix4f T_DC =
+      camera.core().CalcProjectionMatrix().cast<float>();
+
+  for (const auto& id_shader_pair : shader_programs_[RenderType::kDepth]) {
+    const ShaderProgram& shader_program = *(id_shader_pair.second);
+    shader_program.Use();
+
+    shader_program.SetProjectionMatrix(T_DC);
+    shader_program.SetDepthCameraParameters(camera);
+    RenderAt(shader_program, RenderType::kDepth);
+
+    shader_program.Unuse();
+  }
+
+  glGetTextureImage(render_target.value_texture, 0, GL_RED, GL_FLOAT,
+                    depth_image_out->size() * sizeof(GLfloat),
+                    depth_image_out->at(0, 0));
+}
+
+void RenderEngineGl::DoRenderLabelImage(const ColorRenderCamera& camera,
+                                        ImageLabel16I* label_image_out) const {
+  opengl_context_->MakeCurrent();
+
+  const RenderTarget render_target =
+      GetRenderTarget(camera.core(), RenderType::kLabel);
+  // TODO(SeanCurtis-TRI) Consider converting Rgba to float[4] as a member.
+  const ColorD empty_color =
+      RenderEngine::GetColorDFromLabel(RenderLabel::kEmpty);
+  float clear_color[4] = {static_cast<float>(empty_color.r),
+                          static_cast<float>(empty_color.g),
+                          static_cast<float>(empty_color.b), 1.f};
+  glClearNamedFramebufferfv(render_target.frame_buffer, GL_COLOR, 0,
+                            &clear_color[0]);
+  glClear(GL_DEPTH_BUFFER_BIT);
+
+  // Matrix mapping a geometry vertex from the camera frame C to the device
+  // frame D.
+  const Eigen::Matrix4f T_DC =
+      camera.core().CalcProjectionMatrix().cast<float>();
+
+  for (const auto& id_shader_pair : shader_programs_[RenderType::kLabel]) {
+    const ShaderProgram& shader_program = *(id_shader_pair.second);
+    shader_program.Use();
+
+    shader_program.SetProjectionMatrix(T_DC);
+    RenderAt(shader_program, RenderType::kLabel);
+
+    shader_program.Unuse();
+  }
+
+  // Note: SetWindowVisibility must be called *after* the rendering; setting the
+  // visibility is responsible for taking the target buffer and bringing it to
+  // the front buffer; reversing the order means the image we've just rendered
+  // wouldn't be visible.
+  SetWindowVisibility(camera.core(), camera.show_window(), render_target);
+  // TODO(SeanCurtis-TRI): Apparently, we *should* be able to create a frame
+  // buffer texture consisting of a single-channel, 16-bit, signed int (to match
+  // the underlying RenderLabel value). Doing so would allow us to render labels
+  // directly and eliminate this additional pass.
+  GetLabelImage(label_image_out, render_target);
 }
 
 void RenderEngineGl::ImplementGeometry(const OpenGlGeometry& geometry,
                                        void* user_data, const Vector3d& scale) {
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-  const RenderLabel label = GetRenderLabelOrThrow(data.properties);
-  visuals_.emplace(data.id, OpenGlInstance(geometry, data.X_WG, scale, label));
+  std::optional<ShaderProgramData> color_data =
+      GetShaderProgram(data.properties, RenderType::kColor);
+  std::optional<ShaderProgramData> depth_data =
+      GetShaderProgram(data.properties, RenderType::kDepth);
+  std::optional<ShaderProgramData> label_data =
+      GetShaderProgram(data.properties, RenderType::kLabel);
+  DRAKE_DEMAND(color_data.has_value() && depth_data.has_value() &&
+               label_data.has_value());
+
+  visuals_.emplace(data.id,
+                   OpenGlInstance(geometry, data.X_WG, scale, *color_data,
+                                  *depth_data, *label_data));
+
+  shader_families_[RenderType::kColor][color_data->shader_id()].push_back(
+      data.id);
+  shader_families_[RenderType::kDepth][depth_data->shader_id()].push_back(
+      data.id);
+  shader_families_[RenderType::kLabel][label_data->shader_id()].push_back(
+      data.id);
 }
 
 OpenGlGeometry RenderEngineGl::GetSphere() {
@@ -355,7 +860,9 @@ OpenGlGeometry RenderEngineGl::GetCylinder() {
 
 OpenGlGeometry RenderEngineGl::GetHalfSpace() {
   if (!half_space_.is_defined()) {
-    const GLfloat kMeasure = 200.f;
+    // This matches the RenderEngineVtk half space size. Keep them matching
+    // so that the common "horizon" unit test passes.
+    const GLfloat kMeasure = 100.f;
     // TODO(SeanCurtis-TRI): For vertex-lighting (as opposed to fragment
     //  lighting), this will render better with tighter resolution. Consider
     //  making this configurable.
@@ -396,45 +903,39 @@ OpenGlGeometry RenderEngineGl::GetMesh(const string& filename) {
   return mesh;
 }
 
-const internal::ShaderProgram& RenderEngineGl::ActivateShader(
-    ImageType image_type) const {
-  opengl_context_->MakeCurrent();
-  const ShaderProgram& program = shader_programs_[image_type];
-  program.Use();
-  return program;
-}
-
 std::tuple<GLint, GLenum, GLenum> RenderEngineGl::get_texture_format(
-    ImageType image_type) {
-  switch (image_type) {
-    case kDepth:
-      return std::make_tuple(GL_R32F, GL_RED, GL_FLOAT);
-    case kLabel:
+    RenderType render_type) {
+  switch (render_type) {
+    case RenderType::kColor:
+      return std::make_tuple(GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE);
+    case RenderType::kLabel:
       // TODO(SeanCurtis-TRI): Ultimately, this should be a 16-bit, signed int.
       return std::make_tuple(GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE);
-    case kTypeCount:
+    case RenderType::kDepth:
+      return std::make_tuple(GL_R32F, GL_RED, GL_FLOAT);
+    case RenderType::kTypeCount:
       // Not an actionable type; merely included for enum completeness.
       break;
   }
   DRAKE_UNREACHABLE();
 }
 
-RenderTarget RenderEngineGl::CreateRenderTarget(const CameraProperties& camera,
-                                                ImageType image_type) {
+RenderTarget RenderEngineGl::CreateRenderTarget(const RenderCameraCore& camera,
+                                                RenderType render_type) {
   // Create a framebuffer object (FBO).
   RenderTarget target;
   glCreateFramebuffers(1, &target.frame_buffer);
 
   // Create the texture object that will store the rendered result.
-  const int width = camera.width;
-  const int height = camera.height;
+  const int width = camera.intrinsics().width();
+  const int height = camera.intrinsics().height();
   glGenTextures(1, &target.value_texture);
   glBindTexture(GL_TEXTURE_2D, target.value_texture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  auto [internal_format, format, pixel_type] = get_texture_format(image_type);
+  auto [internal_format, format, pixel_type] = get_texture_format(render_type);
   glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, format,
                pixel_type, 0);
   glBindTexture(GL_TEXTURE_2D, 0);
@@ -471,55 +972,6 @@ RenderTarget RenderEngineGl::CreateRenderTarget(const CameraProperties& camera,
   return target;
 }
 
-void RenderEngineGl::SetGlProjectionMatrix(const ShaderProgram& shader_program,
-                                           const CameraProperties& camera,
-                                           double clip_near,
-                                           double clip_far) const {
-  DRAKE_ASSERT(clip_far > clip_near);
-  const float inverse_frustum_depth = 1 / (clip_far - clip_near);
-  // https://unspecified.wordpress.com/2012/06/21/calculating-the-gluperspective-matrix-and-other-opengl-matrix-maths/
-  // An OpenGL projection matrix maps points in a camera coordinate to a "clip
-  // coordinate", in which the projection step maps a 3D point into 2D
-  // normalized device coordinate (NDC). Effectively, image corners are mapped
-  // into a square from -1 to 1 in NDC. Hence, the clip coordinate is
-  // essentially a scaled version of the camera coordinate, where the camera
-  // image frustum is scaled into a "square" frustum.
-  //
-  // Because the xy elements of the image corner [f*w/2, f*h/2] is mapped to
-  // [fx*f*w/2, fy*f*h/2] in the "square" clip coordinate by the OpenGL
-  // projection matrix P, we have: fx*f*w/2 == fy*f*h/2, i.e. fx*w == fy*h.
-
-  const float fy = 1.0f / static_cast<float>(tan(camera.fov_y * 0.5));
-  const float fx = fy * camera.height / camera.width;
-  const float A = -(clip_near + clip_far) * inverse_frustum_depth;
-  const float B = -2.0f * clip_near * clip_far * inverse_frustum_depth;
-  Eigen::Matrix4f P;
-  // Eigen matrices are col-major, similar to OpenGL.
-  // clang-format off
-  P << fx, 0.0,  0.0, 0.0,
-      0.0, fy,   0.0, 0.0,
-      0.0, 0.0,    A,   B,
-      0.0, 0.0, -1.0, 0.0;
-  // clang-format on
-  auto projection_matrix_id =
-      shader_program.GetUniformLocation("projection_matrix");
-  glUniformMatrix4fv(projection_matrix_id, 1, GL_FALSE, P.data());
-}
-
-void RenderEngineGl::SetGlModelViewMatrix(const ShaderProgram& shader_program,
-                                          const Eigen::Matrix4f& X_CM) const {
-  auto model_view_matrix_id =
-      shader_program.GetUniformLocation("model_view_matrix");
-
-  // Our camera frame C wrt the OpenGL's camera frame Cgl.
-  static const Eigen::Matrix4f kX_CglC =
-      (Eigen::Matrix4f() << 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1)
-          .finished();
-
-  Eigen::Matrix4f X_CglM = kX_CglC * X_CM;
-  glUniformMatrix4fv(model_view_matrix_id, 1, GL_FALSE, X_CglM.data());
-}
-
 void RenderEngineGl::GetLabelImage(ImageLabel16I* label_image_out,
                                    const RenderTarget& target) const {
   ImageRgba8U image(label_image_out->width(), label_image_out->height());
@@ -536,25 +988,22 @@ void RenderEngineGl::GetLabelImage(ImageLabel16I* label_image_out,
   }
 }
 
-RenderTarget RenderEngineGl::SetCameraProperties(const CameraProperties& camera,
-                                                 const ShaderProgram& program,
-                                                 double clip_near,
-                                                 double clip_far,
-                                                 ImageType image_type) const {
-  SetGlProjectionMatrix(program, camera, clip_near, clip_far);
-  const BufferDim dim{camera.width, camera.height};
+RenderTarget RenderEngineGl::GetRenderTarget(const RenderCameraCore& camera,
+                                             RenderType render_type) const {
+  const auto& intrinsics = camera.intrinsics();
+  const BufferDim dim{intrinsics.width(), intrinsics.height()};
   RenderTarget target;
   std::unordered_map<BufferDim, RenderTarget>& frame_buffers =
-      frame_buffers_[image_type];
+      frame_buffers_[render_type];
   auto iter = frame_buffers.find(dim);
   if (iter == frame_buffers.end()) {
-    target = CreateRenderTarget(camera, image_type);
+    target = CreateRenderTarget(camera, render_type);
     frame_buffers.insert({dim, target});
   } else {
     target = iter->second;
   }
   glBindFramebuffer(GL_FRAMEBUFFER, target.frame_buffer);
-  glViewport(0, 0, camera.width, camera.height);
+  glViewport(0, 0, intrinsics.width(), intrinsics.height());
   return target;
 }
 
@@ -563,34 +1012,74 @@ OpenGlGeometry RenderEngineGl::CreateGlGeometry(const MeshData& mesh_data) {
   // Create the vertex array object (VAO).
   glCreateVertexArrays(1, &geometry.vertex_array);
 
-  const auto& vertices = mesh_data.positions;
-  const auto& indices = mesh_data.indices;
-
   // Create the vertex buffer object (VBO).
   glCreateBuffers(1, &geometry.vertex_buffer);
-  glNamedBufferStorage(geometry.vertex_buffer,
-                       vertices.size() * sizeof(GLfloat), vertices.data(), 0);
-  // Bind the VBO with the VAO.
-  const int kBindingIndex = 0;  // The binding point.
-  glVertexArrayVertexBuffer(geometry.vertex_array, kBindingIndex,
-                            geometry.vertex_buffer, 0, 3 * sizeof(GLfloat));
 
-  // Bind the attribute in vertex shader to the VAO at the same binding point.
-  const int kLocP_ModelAttrib = 0;  // p_Model's location in vertex shader.
-  glVertexArrayAttribFormat(geometry.vertex_array, kLocP_ModelAttrib, 3,
-                            GL_FLOAT, GL_FALSE, 0);
-  glVertexArrayAttribBinding(geometry.vertex_array, kLocP_ModelAttrib,
-                             kBindingIndex);
-  glEnableVertexArrayAttrib(geometry.vertex_array, kLocP_ModelAttrib);
+  // We're representing the vertex data as a concatenation of positions,
+  // normals, and texture coordinates (i.e., (VVVNNNUU)). There should be an
+  // equal number of vertices, normals, and texture coordinates.
+  DRAKE_DEMAND(mesh_data.positions.rows() == mesh_data.normals.rows());
+  DRAKE_DEMAND(mesh_data.positions.rows() == mesh_data.uvs.rows());
+  const int v_count = mesh_data.positions.rows();
+  vector<GLfloat> vertex_data;
+  // 3 floats each for position and normal, 2 for texture coordinates.
+  const int kFloatsPerPosition = 3;
+  const int kFloatsPerNormal = 3;
+  const int kFloatsPerUv = 2;
+  vertex_data.reserve(
+      v_count * (kFloatsPerPosition + kFloatsPerNormal + kFloatsPerUv));
+  vertex_data.insert(vertex_data.end(), mesh_data.positions.data(),
+                     mesh_data.positions.data() + v_count * kFloatsPerPosition);
+  vertex_data.insert(vertex_data.end(), mesh_data.normals.data(),
+                     mesh_data.normals.data() + v_count * kFloatsPerNormal);
+  vertex_data.insert(vertex_data.end(), mesh_data.uvs.data(),
+                     mesh_data.uvs.data() + v_count * kFloatsPerUv);
+  glNamedBufferStorage(geometry.vertex_buffer,
+                       vertex_data.size() * sizeof(GLfloat),
+                       vertex_data.data(), 0);
+
+  std::size_t vbo_offset = 0;
+
+  const int position_attrib = 0;
+  glVertexArrayVertexBuffer(geometry.vertex_array, position_attrib,
+                            geometry.vertex_buffer, vbo_offset,
+                            kFloatsPerPosition * sizeof(GLfloat));
+  glVertexArrayAttribFormat(geometry.vertex_array, position_attrib,
+                            kFloatsPerPosition, GL_FLOAT, GL_FALSE, 0);
+  glEnableVertexArrayAttrib(geometry.vertex_array, position_attrib);
+  vbo_offset += v_count * kFloatsPerPosition * sizeof(GLfloat);
+
+  const int normal_attrib = 1;
+  glVertexArrayVertexBuffer(
+      geometry.vertex_array, normal_attrib, geometry.vertex_buffer,
+      vbo_offset, kFloatsPerNormal * sizeof(GLfloat));
+  glVertexArrayAttribFormat(geometry.vertex_array, normal_attrib,
+                            kFloatsPerNormal, GL_FLOAT, GL_FALSE, 0);
+  glEnableVertexArrayAttrib(geometry.vertex_array, normal_attrib);
+  vbo_offset += v_count * kFloatsPerNormal * sizeof(GLfloat);
+
+  const int uv_attrib = 2;
+  glVertexArrayVertexBuffer(
+      geometry.vertex_array, uv_attrib, geometry.vertex_buffer,
+      vbo_offset, kFloatsPerUv * sizeof(GLfloat));
+  glVertexArrayAttribFormat(geometry.vertex_array, uv_attrib,
+                            kFloatsPerUv, GL_FLOAT,
+                            GL_FALSE, 0);
+  glEnableVertexArrayAttrib(geometry.vertex_array, uv_attrib);
+  vbo_offset += v_count * kFloatsPerUv * sizeof(GLfloat);
+  DRAKE_DEMAND(vbo_offset == vertex_data.size() * sizeof(GLfloat));
 
   // Create the index buffer object (IBO).
   glCreateBuffers(1, &geometry.index_buffer);
-  glNamedBufferStorage(geometry.index_buffer, indices.size() * sizeof(GLuint),
-                       indices.data(), 0);
+  glNamedBufferStorage(geometry.index_buffer,
+                       mesh_data.indices.size() * sizeof(GLuint),
+                       mesh_data.indices.data(), 0);
   // Bind IBO with the VAO.
   glVertexArrayElementBuffer(geometry.vertex_array, geometry.index_buffer);
 
-  geometry.index_buffer_size = indices.size();
+  geometry.index_buffer_size = mesh_data.indices.size();
+
+  geometry.has_tex_coord = mesh_data.has_tex_coord;
 
   // Note: We won't need to call the corresponding glDeleteVertexArrays or
   // glDeleteBuffers. The meshes we store are "canonical" meshes. Even if a
@@ -600,24 +1089,55 @@ OpenGlGeometry RenderEngineGl::CreateGlGeometry(const MeshData& mesh_data) {
   return geometry;
 }
 
-void RenderEngineGl::SetWindowVisibility(const CameraProperties& camera,
+void RenderEngineGl::SetWindowVisibility(const RenderCameraCore& camera,
                                          bool show_window,
                                          const RenderTarget& target) const {
   if (show_window) {
+    const auto& intrinsics = camera.intrinsics();
     // Use the render target buffer as the read buffer and the default buffer
     // (0) as the draw buffer for displaying in the window. We transfer the full
     // image from source to destination. The semantics of glBlitNamedFrameBuffer
     // are inclusive of the "minimum" pixel (0, 0) and exclusive of the
     // "maximum" pixel (width, height).
-    opengl_context_->DisplayWindow(camera.width, camera.height);
+    opengl_context_->DisplayWindow(intrinsics.width(), intrinsics.height());
     glBlitNamedFramebuffer(target.frame_buffer, 0,
-                           0, 0, camera.width, camera.height,  // Src bounds.
-                           0, 0, camera.width, camera.height,  // Dest bounds.
+                           // Src bounds.
+                           0, 0, intrinsics.width(), intrinsics.height(),
+                           // Dest bounds.
+                           0, 0, intrinsics.width(), intrinsics.height(),
                            GL_COLOR_BUFFER_BIT, GL_NEAREST);
     opengl_context_->UpdateWindow();
   } else {
     opengl_context_->HideWindow();
   }
+}
+
+ShaderId RenderEngineGl::AddShader(std::unique_ptr<ShaderProgram> program,
+                                   internal::RenderType render_type) {
+  const ShaderId shader_id = program->shader_id();
+  shader_families_[render_type].insert({shader_id, vector<GeometryId>()});
+  shader_programs_[render_type][shader_id] = move(program);
+  return shader_id;
+}
+
+ShaderProgramData RenderEngineGl::GetShaderProgram(
+    const PerceptionProperties& properties, RenderType render_type) const {
+  std::optional<ShaderProgramData> data{std::nullopt};
+  for (const auto& id_shader_pair : shader_programs_[render_type]) {
+    const ShaderProgram& program = *(id_shader_pair.second);
+    std::optional<ShaderProgramData> candidate_data =
+        program.CreateProgramData(properties);
+    if (candidate_data.has_value()) {
+      if (data.has_value()) {
+        if (candidate_data->shader_id() < data->shader_id()) continue;
+      }
+      data = move(candidate_data);
+    }
+  }
+  // There should always be, at least, the default shader that accepts the
+  // geometry.
+  DRAKE_DEMAND(data.has_value());
+  return *data;
 }
 
 }  // namespace render

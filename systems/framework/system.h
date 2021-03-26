@@ -273,6 +273,7 @@ class System : public SystemBase {
        get_time_derivatives_cache_entry() */
   const ContinuousState<T>& EvalTimeDerivatives(
       const Context<T>& context) const {
+    ValidateContext(context);
     const CacheEntry& entry = get_time_derivatives_cache_entry();
     return entry.Eval<ContinuousState<T>>(context);
   }
@@ -640,6 +641,10 @@ class System : public SystemBase {
   merged CompositeEventCollection will be passed to all event handling
   mechanisms.
 
+  If there is no timed event coming, the return value is Infinity. If
+  a finite update time is returned, there will be at least one Event object
+  in the returned event collection.
+
   @p events cannot be null. @p events will be cleared on entry. */
   T CalcNextUpdateTime(const Context<T>& context,
                        CompositeEventCollection<T>* events) const;
@@ -953,6 +958,10 @@ class System : public SystemBase {
   @throws std::logic_error if port_name is not found. */
   const InputPort<T>& GetInputPort(const std::string& port_name) const;
 
+  /** Returns true iff the system has an InputPort of the given @p
+   port_name. */
+  bool HasInputPort(const std::string& port_name) const;
+
   // TODO(sherm1) Make this an OutputPortIndex.
   /** Returns the typed output port at index @p port_index. */
   const OutputPort<T>& get_output_port(int port_index) const {
@@ -983,6 +992,11 @@ class System : public SystemBase {
   get_output_port() when performance is a concern.
   @throws std::logic_error if port_name is not found. */
   const OutputPort<T>& GetOutputPort(const std::string& port_name) const;
+
+  /** Returns true iff the system has an OutputPort of the given @p
+   port_name. */
+  bool HasOutputPort(const std::string& port_name) const;
+
 
   /** Returns the number of constraints specified for the system. */
   int num_constraints() const;
@@ -1431,6 +1445,11 @@ class System : public SystemBase {
   error-checked the parameters so you don't have to. You may assume that
   @p context has already been validated and @p events pointer is not
   null.
+
+  If you override this method, you _must_ set the returned @p time. Set it to
+  Infinity if there are no upcoming timed events. If you return a finite update
+  time, you _must_ put at least one Event object in the @p events collection.
+  These requirements are enforced by the public CalcNextUpdateTime() method.
 
   The default implementation returns with the next sample time being
   Infinity and no events added to @p events. */

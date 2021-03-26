@@ -10,6 +10,7 @@ git
 libblas-dev
 libbz2-dev
 libclang-9-dev
+libdouble-conversion-dev
 libexpat1-dev
 libgflags-dev
 libgl-dev
@@ -20,6 +21,7 @@ libjpeg-turbo8-dev
 libjsoncpp-dev
 liblapack-dev
 liblz4-dev
+liblzma-dev
 libmumps-seq-dev
 libnlopt-cxx-dev
 libopengl-dev
@@ -34,4 +36,5 @@ patch
 patchelf
 pkg-config
 python3-all-dev
+python3-semantic-version
 zlib1g-dev

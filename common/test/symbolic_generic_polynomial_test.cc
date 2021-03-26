@@ -1049,6 +1049,38 @@ TEST_F(SymbolicGenericPolynomialTest,
 }
 
 template <typename BasisElement>
+void TestPow(const std::vector<symbolic::Expression>& exprs, double tol) {
+  for (int n = 2; n <= 5; ++n) {
+    for (const Expression& e : exprs) {
+      const GenericPolynomial<BasisElement> p(e);
+      EXPECT_PRED3(test::GenericPolyAlmostEqual<BasisElement>, pow(p, n),
+                   GenericPolynomial<BasisElement>(pow(e, n)), tol);
+    }
+  }
+}
+
+TEST_F(SymbolicGenericPolynomialTest, Pow) {
+  // Test negative power
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      pow(GenericPolynomial<MonomialBasisElement>(2 * x_), -1),
+      std::runtime_error, ".*the degree should be non-negative.*");
+  // Test power of 0 degree.
+  auto result = pow(GenericPolynomial<ChebyshevBasisElement>(2 * x_), 0);
+  EXPECT_EQ(result.basis_element_to_coefficient_map().size(), 1);
+  EXPECT_EQ(
+      result.basis_element_to_coefficient_map().at(ChebyshevBasisElement()), 1);
+
+  // Test power of 1 degree.
+  result = pow(GenericPolynomial<ChebyshevBasisElement>(2 * x_), 1);
+  EXPECT_PRED2(test::GenericPolyEqual<ChebyshevBasisElement>, result,
+               GenericPolynomial<ChebyshevBasisElement>(2 * x_));
+
+  // Test higher degrees.
+  TestPow<MonomialBasisElement>(exprs_, 1E-14);
+  TestPow<ChebyshevBasisElement>(exprs_, 1E-14);
+}
+
+template <typename BasisElement>
 void CheckDivideByConstant(const std::vector<Expression>& exprs, double tol) {
   for (double v = -5.5; v <= 5.5; v += 1.0) {
     for (const Expression& e : exprs) {

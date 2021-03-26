@@ -6,6 +6,7 @@ jupyter-notebook
 libamd2
 libblas3
 libbz2-1.0
+libdouble-conversion3
 libeigen3-dev
 libexpat1
 libfreetype6
@@ -21,6 +22,7 @@ libjsoncpp1
 liblapack3
 libldl2
 liblz4-1
+liblzma5
 libmumps-seq-5.2.1
 libnetcdf15
 libnlopt-cxx0
@@ -32,7 +34,8 @@ libqt5gui5
 libqt5printsupport5
 libqt5widgets5
 libquadmath0
-libtbb2
+libspdlog-dev
+libsqlite3-0
 libtheora0
 libtiff5
 libtinyxml2-dev

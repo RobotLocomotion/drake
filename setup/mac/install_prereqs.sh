@@ -5,6 +5,7 @@
 
 set -euxo pipefail
 
+binary_distribution_args=()
 source_distribution_args=()
 
 while [ "${1:-}" != "" ]; do
@@ -14,17 +15,16 @@ while [ "${1:-}" != "" ]; do
     --with-maintainer-only)
       source_distribution_args+=(--with-maintainer-only)
       ;;
-    # Do NOT install prerequisites that are only needed to build documentation,
-    # i.e., those prerequisites that are dependencies of bazel { build, run }
-    # { //doc:gen_sphinx, //bindings/pydrake/doc:gen_sphinx, //doc:doxygen }
-    --without-doc-only)
-      source_distribution_args+=(--without-doc-only)
-      ;;
     # Do NOT install prerequisites that are only needed to build and/or run
     # unit tests, i.e., those prerequisites that are not dependencies of
     # bazel { build, run } //:install.
     --without-test-only)
       source_distribution_args+=(--without-test-only)
+      ;;
+    # Do NOT call brew update during execution of this script.
+    --without-update)
+      binary_distribution_args+=(--without-update)
+      source_distribution_args+=(--without-update)
       ;;
     *)
       echo 'Invalid command line argument' >&2
@@ -37,7 +37,8 @@ done
 # needed when developing with binary distributions are also needed when
 # developing with source distributions.
 
-source "${BASH_SOURCE%/*}/binary_distribution/install_prereqs.sh"
+source "${BASH_SOURCE%/*}/binary_distribution/install_prereqs.sh" \
+  "${binary_distribution_args[@]:-}"
 
 # The following additional dependencies are only needed when developing with
 # source distributions.

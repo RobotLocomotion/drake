@@ -13,6 +13,7 @@
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_instance.h"
@@ -24,7 +25,6 @@
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/render/gl_renderer/render_engine_gl_factory.h"
 #include "drake/geometry/render/render_engine.h"
-#include "drake/geometry/render/render_engine_ospray_factory.h"
 #include "drake/geometry/render/render_engine_vtk_factory.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/geometry/scene_graph.h"
@@ -33,8 +33,27 @@
 namespace drake {
 namespace pydrake {
 namespace {
+
+using Eigen::Vector3d;
+using geometry::GeometryId;
+using geometry::PerceptionProperties;
+using geometry::Shape;
+using geometry::render::CameraProperties;
+using geometry::render::ColorRenderCamera;
+using geometry::render::DepthCameraProperties;
+using geometry::render::DepthRenderCamera;
+using geometry::render::RenderEngine;
+using math::RigidTransformd;
 using systems::Context;
 using systems::LeafSystem;
+using systems::sensors::CameraInfo;
+using systems::sensors::ColorD;
+using systems::sensors::ColorI;
+using systems::sensors::Image;
+using systems::sensors::ImageDepth32F;
+using systems::sensors::ImageLabel16I;
+using systems::sensors::ImageRgba8U;
+using systems::sensors::PixelType;
 
 template <typename Class>
 void BindIdentifier(py::module m, const std::string& name, const char* id_doc) {
@@ -55,33 +74,233 @@ void BindIdentifier(py::module m, const std::string& name, const char* id_doc) {
       });
 }
 
+class PyRenderEngine : public py::wrapper<RenderEngine> {
+ public:
+  using Base = RenderEngine;
+  using BaseWrapper = py::wrapper<Base>;
+  PyRenderEngine() : BaseWrapper() {}
+
+  void UpdateViewpoint(RigidTransformd const& X_WR) override {
+    PYBIND11_OVERLOAD_PURE(void, Base, UpdateViewpoint, X_WR);
+  }
+
+  bool DoRegisterVisual(GeometryId id, Shape const& shape,
+      PerceptionProperties const& properties,
+      RigidTransformd const& X_WG) override {
+    PYBIND11_OVERLOAD_PURE(
+        bool, Base, DoRegisterVisual, id, shape, properties, X_WG);
+  }
+
+  void DoUpdateVisualPose(GeometryId id, RigidTransformd const& X_WG) override {
+    PYBIND11_OVERLOAD_PURE(void, Base, DoUpdateVisualPose, id, X_WG);
+  }
+
+  bool DoRemoveGeometry(GeometryId id) override {
+    PYBIND11_OVERLOAD_PURE(bool, Base, DoRemoveGeometry, id);
+  }
+
+  std::unique_ptr<RenderEngine> DoClone() const override {
+    PYBIND11_OVERLOAD_PURE(std::unique_ptr<RenderEngine>, Base, DoClone);
+  }
+
+  void DoRenderColorImage(ColorRenderCamera const& camera,
+      ImageRgba8U* color_image_out) const override {
+    PYBIND11_OVERLOAD_PURE(
+        void, Base, DoRenderColorImage, camera, color_image_out);
+  }
+
+  void DoRenderDepthImage(DepthRenderCamera const& camera,
+      ImageDepth32F* depth_image_out) const override {
+    PYBIND11_OVERLOAD_PURE(
+        void, Base, DoRenderDepthImage, camera, depth_image_out);
+  }
+
+  void DoRenderLabelImage(ColorRenderCamera const& camera,
+      ImageLabel16I* label_image_out) const override {
+    PYBIND11_OVERLOAD_PURE(
+        void, Base, DoRenderLabelImage, camera, label_image_out);
+  }
+
+  void SetDefaultLightPosition(Vector3d const& X_DL) override {
+    PYBIND11_OVERLOAD(void, Base, SetDefaultLightPosition, X_DL);
+  }
+
+  // Expose these protected methods (which are either virtual methods with
+  // default implementations, or helper functions) so that Python
+  // implementations can access them.
+  using Base::GetColorDFromLabel;
+  using Base::GetColorIFromLabel;
+  using Base::GetRenderLabelOrThrow;
+  using Base::LabelFromColor;
+  using Base::SetDefaultLightPosition;
+
+  template <typename ImageType>
+  static void ThrowIfInvalid(const systems::sensors::CameraInfo& intrinsics,
+      const ImageType* image, const char* image_type) {
+    return Base::ThrowIfInvalid<ImageType>(intrinsics, image, image_type);
+  }
+
+ private:
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // TODO(SeanCurtis-TRI) We will be removing the Render*Image API when we
+  // deprecate CameraProperties. They must be implemented in order to build
+  // this class; so we'll make sure they clearly signal if they get invoked.
+  void RenderColorImage(
+      CameraProperties const&, bool, ImageRgba8U*) const override {
+    throw std::runtime_error(
+        "Python should not be able to invoke RenderColorImage with "
+        "CameraProperties");
+  }
+
+  void RenderDepthImage(
+      DepthCameraProperties const&, ImageDepth32F*) const override {
+    throw std::runtime_error(
+        "Python should not be able to invoke RenderDepthImage with "
+        "CameraProperties");
+  }
+
+  void RenderLabelImage(
+      CameraProperties const&, bool, ImageLabel16I*) const override {
+    throw std::runtime_error(
+        "Python should not be able to invoke RenderLabelImage with "
+        "CameraProperties");
+  }
+#pragma GCC diagnostic pop
+};
+
 void def_geometry_render(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake;
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::geometry;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::geometry::render;
   m.doc() = "Local bindings for `drake::geometry::render`";
   constexpr auto& doc = pydrake_doc.drake.geometry.render;
 
   {
+    using Class = ClippingRange;
+    const auto& cls_doc = doc.ClippingRange;
+    py::class_<Class>(m, "ClippingRange", cls_doc.doc)
+        .def(py::init<Class const&>(), py::arg("other"), "Copy constructor")
+        .def(py::init<double, double>(), py::arg("near"), py::arg("far"),
+            cls_doc.ctor.doc)
+        .def("far", static_cast<double (Class::*)() const>(&Class::far),
+            cls_doc.far.doc)
+        .def("near", static_cast<double (Class::*)() const>(&Class::near),
+            cls_doc.near.doc);
+  }
+  {
+    using Class = ColorRenderCamera;
+    const auto& cls_doc = doc.ColorRenderCamera;
+    py::class_<Class> cls(m, "ColorRenderCamera", cls_doc.doc);
+    cls  // BR
+        .def(py::init<Class const&>(), py::arg("other"), "Copy constructor")
+        .def(py::init<RenderCameraCore, bool>(), py::arg("core"),
+            py::arg("show_window") = false, cls_doc.ctor.doc_2args)
+        .def("core",
+            static_cast<RenderCameraCore const& (Class::*)() const>(
+                &Class::core),
+            cls_doc.core.doc)
+        .def("show_window",
+            static_cast<bool (Class::*)() const>(&Class::show_window),
+            cls_doc.show_window.doc);
+    DefCopyAndDeepCopy(&cls);
+  }
+  {
+    using Class = DepthRange;
+    const auto& cls_doc = doc.DepthRange;
+    py::class_<Class> cls(m, "DepthRange");
+    cls  // BR
+        .def(py::init<Class const&>(), py::arg("other"), "Copy constructor")
+        .def(py::init<double, double>(), py::arg("min_in"), py::arg("min_out"),
+            cls_doc.ctor.doc)
+        .def("max_depth",
+            static_cast<double (Class::*)() const>(&Class::max_depth),
+            cls_doc.max_depth.doc)
+        .def("min_depth",
+            static_cast<double (Class::*)() const>(&Class::min_depth),
+            cls_doc.min_depth.doc);
+    DefCopyAndDeepCopy(&cls);
+  }
+  {
+    using Class = DepthRenderCamera;
+    const auto& cls_doc = doc.DepthRenderCamera;
+    py::class_<Class> cls(m, "DepthRenderCamera");
+    cls  // BR
+        .def(py::init<Class const&>(), py::arg("other"), "Copy constructor")
+        .def(py::init<RenderCameraCore, DepthRange>(), py::arg("core"),
+            py::arg("depth_range"), cls_doc.ctor.doc_2args_core_depth_range)
+        .def("core",
+            static_cast<RenderCameraCore const& (Class::*)() const>(
+                &Class::core),
+            cls_doc.core.doc)
+        .def("depth_range",
+            static_cast<DepthRange const& (Class::*)() const>(
+                &Class::depth_range),
+            cls_doc.depth_range.doc);
+    DefCopyAndDeepCopy(&cls);
+  }
+  {
+    using Class = RenderCameraCore;
+    const auto& cls_doc = doc.RenderCameraCore;
+    py::class_<Class> cls(m, "RenderCameraCore");
+    cls  // BR
+        .def(py::init<Class const&>(), py::arg("other"), "Copy constructor")
+        .def(
+            py::init<std::string, CameraInfo, ClippingRange, RigidTransformd>(),
+            py::arg("renderer_name"), py::arg("intrinsics"),
+            py::arg("clipping"), py::arg("X_BS"), cls_doc.ctor.doc_4args)
+        .def("clipping",
+            static_cast<ClippingRange const& (Class::*)() const>(
+                &Class::clipping),
+            cls_doc.clipping.doc)
+        .def("intrinsics",
+            static_cast<CameraInfo const& (Class::*)() const>(
+                &Class::intrinsics),
+            cls_doc.intrinsics.doc)
+        .def("renderer_name",
+            static_cast<::std::string const& (Class::*)() const>(
+                &Class::renderer_name),
+            cls_doc.renderer_name.doc)
+        .def("sensor_pose_in_camera_body",
+            static_cast<RigidTransformd const& (Class::*)() const>(
+                &Class::sensor_pose_in_camera_body),
+            cls_doc.sensor_pose_in_camera_body.doc);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  {
     using Class = CameraProperties;
-    py::class_<Class>(m, "CameraProperties", doc.CameraProperties.doc)
-        .def(py::init<int, int, double, std::string>(), py::arg("width"),
-            py::arg("height"), py::arg("fov_y"), py::arg("renderer_name"),
-            doc.CameraProperties.ctor.doc)
+    py::class_<Class> cls(
+        m, "CameraProperties", doc.CameraProperties.doc_deprecated);
+    cls  // BR
+        .def(py_init_deprecated<Class, int, int, double, std::string>(
+                 "Deprecated; due to be removed after 2021-04-01. Please use "
+                 "ColorRenderCamera instead"),
+            py::arg("width"), py::arg("height"), py::arg("fov_y"),
+            py::arg("renderer_name"), doc.CameraProperties.ctor.doc)
         .def_readwrite("width", &Class::width, doc.CameraProperties.width.doc)
         .def_readwrite(
             "height", &Class::height, doc.CameraProperties.height.doc)
         .def_readwrite("fov_y", &Class::fov_y, doc.CameraProperties.fov_y.doc)
         .def_readwrite("renderer_name", &Class::renderer_name,
             doc.CameraProperties.renderer_name.doc);
+    DefCopyAndDeepCopy(&cls);
   }
 
   {
     using Class = DepthCameraProperties;
-    py::class_<Class, CameraProperties>(
-        m, "DepthCameraProperties", doc.DepthCameraProperties.doc)
-        .def(py::init<int, int, double, std::string, double, double>(),
+    py::class_<Class, CameraProperties> cls(
+        m, "DepthCameraProperties", doc.DepthCameraProperties.doc_deprecated);
+    cls  // BR
+        .def(py_init_deprecated<Class, int, int, double, std::string, double,
+                 double>(
+                 "Deprecated; due to be removed after 2021-04-01. Please use "
+                 "DepthRenderCamera instead"),
             py::arg("width"), py::arg("height"), py::arg("fov_y"),
             py::arg("renderer_name"), py::arg("z_near"), py::arg("z_far"),
             doc.DepthCameraProperties.ctor.doc)
@@ -89,14 +308,98 @@ void def_geometry_render(py::module m) {
             "z_near", &Class::z_near, doc.DepthCameraProperties.z_near.doc)
         .def_readwrite(
             "z_far", &Class::z_far, doc.DepthCameraProperties.z_far.doc);
+    DefCopyAndDeepCopy(&cls);
   }
+#pragma GCC diagnostic pop
 
   {
-    // TODO(SeanCurtis-TRI): Expose the full public API after the RenderIndex
-    //  and GeometryIndex classes go away (everything will become GeometryId
-    //  centric).
     using Class = RenderEngine;
-    py::class_<Class>(m, "RenderEngine");
+    const auto& cls_doc = doc.RenderEngine;
+    py::class_<Class, PyRenderEngine>(m, "RenderEngine")
+        .def(py::init<>(), cls_doc.ctor.doc)
+        .def("Clone",
+            static_cast<::std::unique_ptr<Class> (Class::*)() const>(
+                &Class::Clone),
+            cls_doc.Clone.doc)
+        .def("RegisterVisual",
+            static_cast<bool (Class::*)(GeometryId, Shape const&,
+                PerceptionProperties const&, RigidTransformd const&, bool)>(
+                &Class::RegisterVisual),
+            py::arg("id"), py::arg("shape"), py::arg("properties"),
+            py::arg("X_WG"), py::arg("needs_updates") = true,
+            cls_doc.RegisterVisual.doc)
+        .def("RemoveGeometry",
+            static_cast<bool (Class::*)(GeometryId)>(&Class::RemoveGeometry),
+            py::arg("id"), cls_doc.RemoveGeometry.doc)
+        .def("has_geometry",
+            static_cast<bool (Class::*)(GeometryId) const>(
+                &Class::has_geometry),
+            py::arg("id"), cls_doc.has_geometry.doc)
+        .def("UpdateViewpoint",
+            static_cast<void (Class::*)(RigidTransformd const&)>(
+                &Class::UpdateViewpoint),
+            py::arg("X_WR"), cls_doc.UpdateViewpoint.doc)
+        .def("RenderColorImage",
+            static_cast<void (Class::*)(ColorRenderCamera const&, ImageRgba8U*)
+                    const>(&Class::RenderColorImage),
+            py::arg("camera"), py::arg("color_image_out"),
+            cls_doc.RenderColorImage.doc)
+        .def("RenderDepthImage",
+            static_cast<void (Class::*)(DepthRenderCamera const&,
+                ImageDepth32F*) const>(&Class::RenderDepthImage),
+            py::arg("camera"), py::arg("depth_image_out"),
+            cls_doc.RenderDepthImage.doc)
+        .def("RenderLabelImage",
+            static_cast<void (Class::*)(ColorRenderCamera const&,
+                ImageLabel16I*) const>(&Class::RenderLabelImage),
+            py::arg("camera"), py::arg("label_image_out"),
+            cls_doc.RenderLabelImage.doc)
+        .def("default_render_label",
+            static_cast<RenderLabel (Class::*)() const>(
+                &Class::default_render_label),
+            cls_doc.default_render_label.doc)
+        // N.B. We're binding against the trampoline class PyRenderEngine,
+        // rather than the direct class RenderEngine, solely for protected
+        // helper methods and non-pure virtual functions because we want them
+        // exposed for Python implementations of the interface.
+        .def("GetRenderLabelOrThrow",
+            static_cast<RenderLabel (Class::*)(PerceptionProperties const&)
+                    const>(&PyRenderEngine::GetRenderLabelOrThrow),
+            py::arg("properties"), cls_doc.GetRenderLabelOrThrow.doc)
+        .def_static("LabelFromColor",
+            static_cast<RenderLabel (*)(ColorI const&)>(
+                &PyRenderEngine::LabelFromColor),
+            py::arg("color"), cls_doc.LabelFromColor.doc)
+        .def_static("GetColorIFromLabel",
+            static_cast<ColorI (*)(RenderLabel const&)>(
+                &PyRenderEngine::GetColorIFromLabel),
+            py::arg("label"), cls_doc.GetColorIFromLabel.doc)
+        .def_static("GetColorDFromLabel",
+            static_cast<ColorD (*)(RenderLabel const&)>(
+                &PyRenderEngine::GetColorDFromLabel),
+            py::arg("label"), cls_doc.GetColorDFromLabel.doc)
+        .def("SetDefaultLightPosition",
+            static_cast<void (Class::*)(Vector3d const&)>(
+                &PyRenderEngine::SetDefaultLightPosition),
+            py::arg("X_DL"), cls_doc.SetDefaultLightPosition.doc)
+        .def_static("ThrowIfInvalid",
+            static_cast<void (*)(CameraInfo const&,
+                Image<PixelType::kRgba8U> const*, char const*)>(
+                &PyRenderEngine::ThrowIfInvalid<Image<PixelType::kRgba8U>>),
+            py::arg("intrinsics"), py::arg("image"), py::arg("image_type"),
+            cls_doc.ThrowIfInvalid.doc)
+        .def_static("ThrowIfInvalid",
+            static_cast<void (*)(CameraInfo const&,
+                Image<PixelType::kDepth32F> const*, char const*)>(
+                &PyRenderEngine::ThrowIfInvalid<Image<PixelType::kDepth32F>>),
+            py::arg("intrinsics"), py::arg("image"), py::arg("image_type"),
+            cls_doc.ThrowIfInvalid.doc)
+        .def_static("ThrowIfInvalid",
+            static_cast<void (*)(CameraInfo const&,
+                Image<PixelType::kLabel16I> const*, char const*)>(
+                &PyRenderEngine::ThrowIfInvalid<Image<PixelType::kLabel16I>>),
+            py::arg("intrinsics"), py::arg("image"), py::arg("image_type"),
+            cls_doc.ThrowIfInvalid.doc);
   }
 
   py::class_<RenderEngineVtkParams>(
@@ -111,33 +414,6 @@ void def_geometry_render(py::module m) {
 
   m.def("MakeRenderEngineVtk", &MakeRenderEngineVtk, py::arg("params"),
       doc.MakeRenderEngineVtk.doc);
-
-  {
-    using Class = OsprayMode;
-    constexpr auto& cls_doc = doc.OsprayMode;
-    py::enum_<Class>(m, "OsprayMode", cls_doc.doc)
-        .value("kRayTracer", Class::kRayTracer, cls_doc.kRayTracer.doc)
-        .value("kPathTracer", Class::kPathTracer, cls_doc.kPathTracer.doc);
-  }
-
-  {
-    using Class = RenderEngineOsprayParams;
-    constexpr auto& cls_doc = doc.RenderEngineOsprayParams;
-    py::class_<Class>(m, "RenderEngineOsprayParams", cls_doc.doc)
-        .def(ParamInit<Class>())
-        .def_readwrite("mode", &Class::mode, cls_doc.mode.doc)
-        .def_readwrite("default_diffuse", &Class::default_diffuse,
-            cls_doc.default_diffuse.doc)
-        .def_readwrite("background_color", &Class::background_color,
-            cls_doc.background_color.doc)
-        .def_readwrite("samples_per_pixel", &Class::samples_per_pixel,
-            cls_doc.samples_per_pixel.doc)
-        .def_readwrite(
-            "use_shadows", &Class::use_shadows, cls_doc.use_shadows.doc);
-  }
-
-  m.def("MakeRenderEngineOspray", &MakeRenderEngineOspray, py::arg("params"),
-      doc.MakeRenderEngineOspray.doc);
 
   {
     py::class_<RenderLabel> render_label(m, "RenderLabel", doc.RenderLabel.doc);
@@ -163,10 +439,6 @@ void def_geometry_render(py::module m) {
   AddValueInstantiation<RenderLabel>(m);
 }
 
-const char* doc_inspector_get_name_deprecation =
-    "Please use SceneGraphInspector.GetName() instead. This method will be "
-    "removed on or after 2020-10-01.";
-
 template <typename T>
 void DoScalarDependentDefinitions(py::module m, T) {
   py::tuple param = GetPyParam<T>();
@@ -183,8 +455,22 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "SceneGraphInspector", param, cls_doc.doc);
     cls  // BR
+         // Scene-graph wide data.
         .def("num_sources", &Class::num_sources, cls_doc.num_sources.doc)
         .def("num_frames", &Class::num_frames, cls_doc.num_frames.doc)
+        .def(
+            "all_frame_ids",
+            [](Class* self) -> std::vector<FrameId> {
+              std::vector<FrameId> frame_ids;
+              frame_ids.reserve(self->num_frames());
+              for (FrameId id : self->all_frame_ids()) {
+                frame_ids.push_back(id);
+              }
+              return frame_ids;
+            },
+            cls_doc.all_frame_ids.doc)
+        .def("world_frame_id", &Class::world_frame_id,
+            cls_doc.world_frame_id.doc)
         .def("num_geometries", &Class::num_geometries,
             cls_doc.num_geometries.doc)
         .def("GetAllGeometryIds", &Class::GetAllGeometryIds,
@@ -195,43 +481,82 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.NumDynamicGeometries.doc)
         .def("NumAnchoredGeometries", &Class::NumAnchoredGeometries,
             cls_doc.NumAnchoredGeometries.doc)
-        .def("SourceIsRegistered", &Class::SourceIsRegistered, py::arg("id"),
-            cls_doc.SourceIsRegistered.doc)
-        .def("GetSourceName", &Class::GetSourceName, py::arg("id"),
-            cls_doc.GetSourceName.doc)
-        .def("GetFrameId", &Class::GetFrameId, py::arg("geometry_id"),
-            cls_doc.GetFrameId.doc)
-        .def("GetGeometries", &Class::GetGeometries, py::arg("frame_id"),
-            py::arg("role") = std::nullopt, cls_doc.GetGeometries.doc)
-        .def("GetGeometryIdByName", &Class::GetGeometryIdByName,
-            py::arg("frame_id"), py::arg("role"), py::arg("name"),
-            cls_doc.GetGeometryIdByName.doc)
+        .def("GetCollisionCandidates", &Class::GetCollisionCandidates,
+            cls_doc.GetCollisionCandidates.doc)
+        // Sources and source-related data.
+        .def("SourceIsRegistered", &Class::SourceIsRegistered,
+            py::arg("source_id"), cls_doc.SourceIsRegistered.doc)
+        .def("SourceIsRegistered",
+            WrapDeprecated(
+                "Please use SceneGraphInspector.SourceIsRegistered("
+                "source_id=value) instead. This variant will be removed after"
+                " after 2021-04-01",
+                &Class::SourceIsRegistered),
+            py::arg("id"), cls_doc.SourceIsRegistered.doc)
+        .def("GetName",
+            overload_cast_explicit<const std::string&, SourceId>(
+                &Class::GetName),
+            py_rvp::reference_internal, py::arg("source_id"),
+            cls_doc.GetName.doc_1args_source_id);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("GetSourceName",
+            WrapDeprecated(
+                cls_doc.GetSourceName.doc_deprecated, &Class::GetSourceName),
+            py::arg("source_id"), cls_doc.GetSourceName.doc_deprecated);
+#pragma GCC diagnostic pop
+    cls  // BR
+        .def("NumFramesForSource", &Class::NumFramesForSource,
+            py::arg("source_id"), cls_doc.NumFramesForSource.doc)
+        .def("FramesForSource", &Class::FramesForSource, py::arg("source_id"),
+            cls_doc.FramesForSource.doc)
+        // Frames and their properties.
+        .def("BelongsToSource",
+            overload_cast_explicit<bool, FrameId, SourceId>(
+                &Class::BelongsToSource),
+            py::arg("frame_id"), py::arg("source_id"),
+            cls_doc.BelongsToSource.doc_2args_frame_id_source_id)
+        .def("GetOwningSourceName",
+            overload_cast_explicit<const std::string&, FrameId>(
+                &Class::GetOwningSourceName),
+            py_rvp::reference_internal, py::arg("frame_id"),
+            cls_doc.GetOwningSourceName.doc_1args_frame_id)
         .def("GetName",
             overload_cast_explicit<const std::string&, FrameId>(
                 &Class::GetName),
             py_rvp::reference_internal, py::arg("frame_id"),
             cls_doc.GetName.doc_1args_frame_id)
+        .def("GetFrameGroup", &Class::GetFrameGroup, py::arg("frame_id"),
+            cls_doc.GetFrameGroup.doc)
+        .def("NumGeometriesForFrame", &Class::NumGeometriesForFrame,
+            py::arg("frame_id"), cls_doc.NumGeometriesForFrame.doc)
+        .def("NumGeometriesForFrameWithRole",
+            &Class::NumGeometriesForFrameWithRole, py::arg("frame_id"),
+            py::arg("role"), cls_doc.NumGeometriesForFrameWithRole.doc)
+        .def("GetGeometries", &Class::GetGeometries, py::arg("frame_id"),
+            py::arg("role") = std::nullopt, cls_doc.GetGeometries.doc)
+        .def("GetGeometryIdByName", &Class::GetGeometryIdByName,
+            py::arg("frame_id"), py::arg("role"), py::arg("name"),
+            cls_doc.GetGeometryIdByName.doc)
+        // Geometries and their properties.
+        .def("BelongsToSource",
+            overload_cast_explicit<bool, GeometryId, SourceId>(
+                &Class::BelongsToSource),
+            py::arg("geometry_id"), py::arg("source_id"),
+            cls_doc.BelongsToSource.doc_2args_geometry_id_source_id)
+        .def("GetOwningSourceName",
+            overload_cast_explicit<const std::string&, GeometryId>(
+                &Class::GetOwningSourceName),
+            py_rvp::reference_internal, py::arg("geometry_id"),
+            cls_doc.GetOwningSourceName.doc_1args_geometry_id)
+        .def("GetFrameId", &Class::GetFrameId, py::arg("geometry_id"),
+            cls_doc.GetFrameId.doc)
         .def("GetName",
             overload_cast_explicit<const std::string&, GeometryId>(
                 &Class::GetName),
             py_rvp::reference_internal, py::arg("geometry_id"),
             cls_doc.GetName.doc_1args_geometry_id)
-        .def(
-            "GetNameByFrameId",
-            [](SceneGraphInspector<T>* self, FrameId frame_id) {
-              WarnDeprecated(doc_inspector_get_name_deprecation);
-              return self->GetName(frame_id);
-            },
-            py_rvp::reference_internal, py::arg("frame_id"),
-            doc_inspector_get_name_deprecation)
-        .def(
-            "GetNameByGeometryId",
-            [](SceneGraphInspector<T>* self, GeometryId frame_id) {
-              WarnDeprecated(doc_inspector_get_name_deprecation);
-              return self->GetName(frame_id);
-            },
-            py_rvp::reference_internal, py::arg("geometry_id"),
-            doc_inspector_get_name_deprecation)
         .def("GetShape", &Class::GetShape, py_rvp::reference_internal,
             py::arg("geometry_id"), cls_doc.GetShape.doc)
         .def("GetPoseInParent", &Class::GetPoseInParent,
@@ -240,6 +565,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("GetPoseInFrame", &Class::GetPoseInFrame,
             py_rvp::reference_internal, py::arg("geometry_id"),
             cls_doc.GetPoseInFrame.doc)
+        .def("GetProperties", &Class::GetProperties, py_rvp::reference_internal,
+            py::arg("geometry_id"), py::arg("role"), cls_doc.GetProperties.doc)
         .def("GetProximityProperties", &Class::GetProximityProperties,
             py_rvp::reference_internal, py::arg("geometry_id"),
             cls_doc.GetProximityProperties.doc)
@@ -249,8 +576,13 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("GetPerceptionProperties", &Class::GetPerceptionProperties,
             py_rvp::reference_internal, py::arg("geometry_id"),
             cls_doc.GetPerceptionProperties.doc)
+        .def("CollisionFiltered", &Class::CollisionFiltered,
+            py::arg("geometry_id1"), py::arg("geometry_id2"),
+            cls_doc.CollisionFiltered.doc)
         .def("CloneGeometryInstance", &Class::CloneGeometryInstance,
-            py::arg("geometry_id"), cls_doc.CloneGeometryInstance.doc);
+            py::arg("geometry_id"), cls_doc.CloneGeometryInstance.doc)
+        .def("geometry_version", &Class::geometry_version,
+            py_rvp::reference_internal, cls_doc.geometry_version.doc);
   }
 
   //  SceneGraph
@@ -438,74 +770,150 @@ void DoScalarDependentDefinitions(py::module m, T) {
   //  QueryObject
   {
     using Class = QueryObject<T>;
+    constexpr auto& cls_doc = doc.QueryObject;
     auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "QueryObject", param, doc.QueryObject.doc);
+        m, "QueryObject", param, cls_doc.doc);
     cls  // BR
-        .def(py::init(), doc.QueryObject.ctor.doc)
+        .def(py::init(), cls_doc.ctor.doc)
         .def("inspector", &QueryObject<T>::inspector,
-            py_rvp::reference_internal, doc.QueryObject.inspector.doc)
-        .def("X_WF", &QueryObject<T>::X_WF, py::arg("id"),
-            py_rvp::reference_internal, doc.QueryObject.X_WF.doc)
-        .def("X_PF", &QueryObject<T>::X_PF, py::arg("id"),
-            py_rvp::reference_internal, doc.QueryObject.X_PF.doc)
-        .def("X_WG", &QueryObject<T>::X_WG, py::arg("id"),
-            py_rvp::reference_internal, doc.QueryObject.X_WG.doc)
+            py_rvp::reference_internal, cls_doc.inspector.doc)
+        .def("GetPoseInWorld",
+            overload_cast_explicit<const math::RigidTransform<T>&, FrameId>(
+                &Class::GetPoseInWorld),
+            py::arg("frame_id"), py_rvp::reference_internal,
+            cls_doc.GetPoseInWorld.doc_1args_frame_id)
+        .def("GetPoseInParent", &Class::GetPoseInParent, py::arg("frame_id"),
+            py_rvp::reference_internal, cls_doc.GetPoseInParent.doc)
+        .def("GetPoseInWorld",
+            overload_cast_explicit<const math::RigidTransform<T>&, GeometryId>(
+                &Class::GetPoseInWorld),
+            py::arg("geometry_id"), py_rvp::reference_internal,
+            cls_doc.GetPoseInWorld.doc_1args_geometry_id);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("X_WF",
+            WrapDeprecated(cls_doc.X_WF.doc_deprecated, &QueryObject<T>::X_WF),
+            py::arg("id"), py_rvp::reference_internal,
+            cls_doc.X_WF.doc_deprecated)
+        .def("X_PF",
+            WrapDeprecated(cls_doc.X_PF.doc_deprecated, &QueryObject<T>::X_PF),
+            py::arg("id"), py_rvp::reference_internal,
+            cls_doc.X_PF.doc_deprecated)
+        .def("X_WG",
+            WrapDeprecated(cls_doc.X_WG.doc_deprecated, &QueryObject<T>::X_WG),
+            py::arg("id"), py_rvp::reference_internal,
+            cls_doc.X_WG.doc_deprecated);
+#pragma GCC diagnostic pop
+    cls  // BR
         .def("ComputeSignedDistancePairwiseClosestPoints",
             &QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints,
             py::arg("max_distance") = std::numeric_limits<double>::infinity(),
-            doc.QueryObject.ComputeSignedDistancePairwiseClosestPoints.doc)
+            cls_doc.ComputeSignedDistancePairwiseClosestPoints.doc)
         .def("ComputeSignedDistancePairClosestPoints",
             &QueryObject<T>::ComputeSignedDistancePairClosestPoints,
+            py::arg("geometry_id_A"), py::arg("geometry_id_B"),
+            cls_doc.ComputeSignedDistancePairClosestPoints.doc)
+        .def("ComputeSignedDistancePairClosestPoints",
+            WrapDeprecated("Please use "
+                           "QueryObject.ComputeSignedDistancePairClosestPoints("
+                           "geometry_id_A=value1, geometry_id_B=value2). This "
+                           "variant will be removed on or after 2021-04-01.",
+                &QueryObject<T>::ComputeSignedDistancePairClosestPoints),
             py::arg("id_A"), py::arg("id_B"),
-            doc.QueryObject.ComputeSignedDistancePairClosestPoints.doc)
+            cls_doc.ComputeSignedDistancePairClosestPoints.doc)
         .def("ComputePointPairPenetration",
             &QueryObject<T>::ComputePointPairPenetration,
-            doc.QueryObject.ComputePointPairPenetration.doc)
+            cls_doc.ComputePointPairPenetration.doc)
         .def("ComputeSignedDistanceToPoint",
             &QueryObject<T>::ComputeSignedDistanceToPoint, py::arg("p_WQ"),
             py::arg("threshold") = std::numeric_limits<double>::infinity(),
-            doc.QueryObject.ComputeSignedDistanceToPoint.doc)
+            cls_doc.ComputeSignedDistanceToPoint.doc)
         .def("FindCollisionCandidates",
             &QueryObject<T>::FindCollisionCandidates,
-            doc.QueryObject.FindCollisionCandidates.doc)
+            cls_doc.FindCollisionCandidates.doc)
         .def("HasCollisions", &QueryObject<T>::HasCollisions,
-            doc.QueryObject.HasCollisions.doc)
+            cls_doc.HasCollisions.doc)
         .def(
             "RenderColorImage",
-            [](const Class* self, const render::CameraProperties& camera,
-                FrameId parent_frame, const math::RigidTransformd& X_PC,
-                bool show_window) {
-              systems::sensors::ImageRgba8U img(camera.width, camera.height);
-              self->RenderColorImage(
-                  camera, parent_frame, X_PC, show_window, &img);
+            [](const Class* self, const render::ColorRenderCamera& camera,
+                FrameId parent_frame, const math::RigidTransformd& X_PC) {
+              systems::sensors::ImageRgba8U img(
+                  camera.core().intrinsics().width(),
+                  camera.core().intrinsics().height());
+              self->RenderColorImage(camera, parent_frame, X_PC, &img);
               return img;
             },
             py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
-            py::arg("show_window") = false,
-            doc.QueryObject.RenderColorImage.doc)
+            cls_doc.RenderColorImage.doc)
         .def(
             "RenderDepthImage",
-            [](const Class* self, const render::DepthCameraProperties& camera,
+            [](const Class* self, const render::DepthRenderCamera& camera,
                 FrameId parent_frame, const math::RigidTransformd& X_PC) {
-              systems::sensors::ImageDepth32F img(camera.width, camera.height);
+              systems::sensors::ImageDepth32F img(
+                  camera.core().intrinsics().width(),
+                  camera.core().intrinsics().height());
               self->RenderDepthImage(camera, parent_frame, X_PC, &img);
               return img;
             },
             py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
-            doc.QueryObject.RenderDepthImage.doc)
+            cls_doc.RenderDepthImage.doc)
         .def(
             "RenderLabelImage",
-            [](const Class* self, const render::CameraProperties& camera,
-                FrameId parent_frame, const math::RigidTransformd& X_PC,
-                bool show_window = false) {
-              systems::sensors::ImageLabel16I img(camera.width, camera.height);
-              self->RenderLabelImage(
-                  camera, parent_frame, X_PC, show_window, &img);
+            [](const Class* self, const render::ColorRenderCamera& camera,
+                FrameId parent_frame, const math::RigidTransformd& X_PC) {
+              systems::sensors::ImageLabel16I img(
+                  camera.core().intrinsics().width(),
+                  camera.core().intrinsics().height());
+              self->RenderLabelImage(camera, parent_frame, X_PC, &img);
               return img;
             },
             py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
+            cls_doc.RenderLabelImage.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("RenderColorImage",
+            WrapDeprecated(cls_doc.RenderColorImage.doc_deprecated,
+                [](const Class* self, const render::CameraProperties& camera,
+                    FrameId parent_frame, const math::RigidTransformd& X_PC,
+                    bool show_window) {
+                  systems::sensors::ImageRgba8U img(
+                      camera.width, camera.height);
+                  self->RenderColorImage(
+                      camera, parent_frame, X_PC, show_window, &img);
+                  return img;
+                }),
+            py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
             py::arg("show_window") = false,
-            doc.QueryObject.RenderLabelImage.doc);
+            cls_doc.RenderColorImage.doc_deprecated)
+        .def("RenderDepthImage",
+            WrapDeprecated(cls_doc.RenderDepthImage.doc_deprecated,
+                [](const Class* self,
+                    const render::DepthCameraProperties& camera,
+                    FrameId parent_frame, const math::RigidTransformd& X_PC) {
+                  systems::sensors::ImageDepth32F img(
+                      camera.width, camera.height);
+                  self->RenderDepthImage(camera, parent_frame, X_PC, &img);
+                  return img;
+                }),
+            py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
+            cls_doc.RenderDepthImage.doc_deprecated)
+        .def("RenderLabelImage",
+            WrapDeprecated(cls_doc.RenderLabelImage.doc_deprecated,
+                [](const Class* self, const render::CameraProperties& camera,
+                    FrameId parent_frame, const math::RigidTransformd& X_PC,
+                    bool show_window = false) {
+                  systems::sensors::ImageLabel16I img(
+                      camera.width, camera.height);
+                  self->RenderLabelImage(
+                      camera, parent_frame, X_PC, show_window, &img);
+                  return img;
+                }),
+            py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
+            py::arg("show_window") = false,
+            cls_doc.RenderLabelImage.doc_deprecated);
+#pragma GCC diagnostic pop
 
     AddValueInstantiation<QueryObject<T>>(m);
   }
@@ -598,9 +1006,66 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::init<std::vector<SurfaceFace>, std::vector<SurfaceVertex<T>>>(),
             py::arg("faces"), py::arg("vertices"), doc.SurfaceMesh.ctor.doc)
         .def("faces", &Class::faces, doc.SurfaceMesh.faces.doc)
-        .def("vertices", &Class::vertices, doc.SurfaceMesh.vertices.doc);
+        .def("vertices", &Class::vertices, doc.SurfaceMesh.vertices.doc)
+        .def("centroid", &Class::centroid, doc.SurfaceMesh.centroid.doc);
   }
-}
+
+  // ContactSurface
+  {
+    using Class = ContactSurface<T>;
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "ContactSurface", param, doc.ContactSurface.doc);
+    cls  // BR
+        .def("id_M", &Class::id_M, doc.ContactSurface.id_M.doc)
+        .def("id_N", &Class::id_N, doc.ContactSurface.id_N.doc)
+        .def("mesh_W", &Class::mesh_W, doc.ContactSurface.mesh_W.doc);
+  }
+
+  // DrakeVisualizer
+  {
+    using Class = DrakeVisualizer<T>;
+    constexpr auto& cls_doc = doc.DrakeVisualizer;
+    auto cls = DefineTemplateClassWithDefault<Class, LeafSystem<T>>(
+        m, "DrakeVisualizer", param, cls_doc.doc);
+    cls  // BR
+        .def(py::init<lcm::DrakeLcmInterface*, DrakeVisualizerParams>(),
+            py::arg("lcm") = nullptr,
+            py::arg("params") = DrakeVisualizerParams{},
+            // Keep alive, reference: `self` keeps `lcm` alive.
+            py::keep_alive<1, 2>(),  // BR
+            cls_doc.ctor.doc)
+        .def("query_object_input_port", &Class::query_object_input_port,
+            py_rvp::reference_internal, cls_doc.query_object_input_port.doc)
+        .def_static("AddToBuilder",
+            py::overload_cast<systems::DiagramBuilder<T>*, const SceneGraph<T>&,
+                lcm::DrakeLcmInterface*, DrakeVisualizerParams>(
+                &DrakeVisualizer<T>::AddToBuilder),
+            py::arg("builder"), py::arg("scene_graph"),
+            py::arg("lcm") = nullptr,
+            py::arg("params") = DrakeVisualizerParams{},
+            // Keep alive, ownership: `return` keeps `builder` alive.
+            py::keep_alive<0, 1>(),
+            // Keep alive, reference: `builder` keeps `lcm` alive.
+            py::keep_alive<1, 3>(), py_rvp::reference,
+            cls_doc.AddToBuilder.doc_4args_builder_scene_graph_lcm_params)
+        .def_static("AddToBuilder",
+            py::overload_cast<systems::DiagramBuilder<T>*,
+                const systems::OutputPort<T>&, lcm::DrakeLcmInterface*,
+                DrakeVisualizerParams>(&DrakeVisualizer<T>::AddToBuilder),
+            py::arg("builder"), py::arg("query_object_port"),
+            py::arg("lcm") = nullptr,
+            py::arg("params") = DrakeVisualizerParams{},
+            // Keep alive, ownership: `return` keeps `builder` alive.
+            py::keep_alive<0, 1>(),
+            // Keep alive, reference: `builder` keeps `lcm` alive.
+            py::keep_alive<1, 3>(), py_rvp::reference,
+            cls_doc.AddToBuilder.doc_4args_builder_query_object_port_lcm_params)
+        .def_static("DispatchLoadMessage",
+            &DrakeVisualizer<T>::DispatchLoadMessage, py::arg("scene_graph"),
+            py::arg("lcm"), py::arg("params") = DrakeVisualizerParams{},
+            cls_doc.DispatchLoadMessage.doc);
+  }
+}  // NOLINT(readability/fn_size)
 
 void DoScalarIndependentDefinitions(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -610,7 +1075,8 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     using Class = Rgba;
     constexpr auto& cls_doc = doc.Rgba;
-    py::class_<Class>(m, "Rgba", cls_doc.doc)
+    py::class_<Class> cls(m, "Rgba", cls_doc.doc);
+    cls  // BR
         .def(py::init<double, double, double, double>(), py::arg("r"),
             py::arg("g"), py::arg("b"), py::arg("a") = 1., cls_doc.ctor.doc)
         .def("r", &Class::r, cls_doc.r.doc)
@@ -625,6 +1091,7 @@ void DoScalarIndependentDefinitions(py::module m) {
           return py::str("Rgba(r={}, g={}, b={}, a={})")
               .format(self.r(), self.g(), self.b(), self.a());
         });
+    DefCopyAndDeepCopy(&cls);
     AddValueInstantiation<Rgba>(m);
   }
 
@@ -649,34 +1116,55 @@ void DoScalarIndependentDefinitions(py::module m) {
         .value("kReplace", Class::kReplace, cls_doc.kReplace.doc);
   }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   m.def("ConnectDrakeVisualizer",
-      py::overload_cast<systems::DiagramBuilder<double>*,
-          const SceneGraph<double>&, lcm::DrakeLcmInterface*, geometry::Role>(
-          &ConnectDrakeVisualizer),
+      WrapDeprecated(doc.ConnectDrakeVisualizer.doc_deprecated_4args,
+          py::overload_cast<systems::DiagramBuilder<double>*,
+              const SceneGraph<double>&, lcm::DrakeLcmInterface*,
+              geometry::Role>(&ConnectDrakeVisualizer)),
       py::arg("builder"), py::arg("scene_graph"), py::arg("lcm") = nullptr,
       py::arg("role") = geometry::Role::kIllustration,
       // Keep alive, ownership: `return` keeps `builder` alive.
       py::keep_alive<0, 1>(),
-      // Keep alive, ownership: `builder` keeps `lcm` alive.
+      // Keep alive, reference: `builder` keeps `lcm` alive.
       py::keep_alive<1, 3>(),
       // See #11531 for why `py_rvp::reference` is needed.
-      py_rvp::reference, doc.ConnectDrakeVisualizer.doc_4args);
+      py_rvp::reference, doc.ConnectDrakeVisualizer.doc_deprecated_4args);
   m.def("ConnectDrakeVisualizer",
-      py::overload_cast<systems::DiagramBuilder<double>*,
-          const SceneGraph<double>&, const systems::OutputPort<double>&,
-          lcm::DrakeLcmInterface*, geometry::Role>(&ConnectDrakeVisualizer),
+      WrapDeprecated(doc.ConnectDrakeVisualizer.doc_deprecated_5args,
+          py::overload_cast<systems::DiagramBuilder<double>*,
+              const SceneGraph<double>&, const systems::OutputPort<double>&,
+              lcm::DrakeLcmInterface*, geometry::Role>(
+              &ConnectDrakeVisualizer)),
       py::arg("builder"), py::arg("scene_graph"),
       py::arg("pose_bundle_output_port"), py::arg("lcm") = nullptr,
       py::arg("role") = geometry::Role::kIllustration,
       // Keep alive, ownership: `return` keeps `builder` alive.
       py::keep_alive<0, 1>(),
-      // Keep alive, ownership: `builder` keeps `lcm` alive.
+      // Keep alive, reference: `builder` keeps `lcm` alive.
       py::keep_alive<1, 3>(),
       // See #11531 for why `py_rvp::reference` is needed.
-      py_rvp::reference, doc.ConnectDrakeVisualizer.doc_5args);
-  m.def("DispatchLoadMessage", &DispatchLoadMessage, py::arg("scene_graph"),
-      py::arg("lcm"), py::arg("role") = geometry::Role::kIllustration,
-      doc.DispatchLoadMessage.doc);
+      py_rvp::reference, doc.ConnectDrakeVisualizer.doc_deprecated_5args);
+  m.def("DispatchLoadMessage",
+      WrapDeprecated(
+          doc.DispatchLoadMessage.doc_deprecated, &DispatchLoadMessage),
+      py::arg("scene_graph"), py::arg("lcm"),
+      py::arg("role") = geometry::Role::kIllustration,
+      doc.DispatchLoadMessage.doc_deprecated);
+#pragma GCC diagnostic pop
+
+  {
+    using Class = DrakeVisualizerParams;
+    constexpr auto& cls_doc = doc.DrakeVisualizerParams;
+    py::class_<Class>(m, "DrakeVisualizerParams", cls_doc.doc)
+        .def(ParamInit<Class>())
+        .def_readwrite("publish_period", &DrakeVisualizerParams::publish_period,
+            cls_doc.publish_period.doc)
+        .def_readwrite("role", &DrakeVisualizerParams::role, cls_doc.role.doc)
+        .def_readwrite("default_color", &DrakeVisualizerParams::default_color,
+            cls_doc.default_color.doc);
+  }
 
   // Shape constructors
   {
@@ -728,19 +1216,22 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     using Class = GeometryFrame;
     constexpr auto& cls_doc = doc.GeometryFrame;
-    py::class_<Class>(m, "GeometryFrame", cls_doc.doc)
+    py::class_<Class> cls(m, "GeometryFrame", cls_doc.doc);
+    cls  // BR
         .def(py::init<const std::string&, int>(), py::arg("frame_name"),
             py::arg("frame_group_id") = 0, cls_doc.ctor.doc)
         .def("id", &Class::id, cls_doc.id.doc)
         .def("name", &Class::name, cls_doc.name.doc)
         .def("frame_group", &Class::frame_group, cls_doc.frame_group.doc);
+    DefCopyAndDeepCopy(&cls);
   }
 
   // GeometryInstance
   {
     using Class = GeometryInstance;
     constexpr auto& cls_doc = doc.GeometryInstance;
-    py::class_<Class>(m, "GeometryInstance", cls_doc.doc)
+    py::class_<Class> cls(m, "GeometryInstance", cls_doc.doc);
+    cls  // BR
         .def(py::init<const math::RigidTransform<double>&,
                  std::unique_ptr<Shape>, const std::string&>(),
             py::arg("X_PG"), py::arg("shape"), py::arg("name"),
@@ -775,6 +1266,7 @@ void DoScalarIndependentDefinitions(py::module m) {
             cls_doc.mutable_perception_properties.doc)
         .def("perception_properties", &Class::perception_properties,
             py_rvp::reference_internal, cls_doc.perception_properties.doc);
+    DefCopyAndDeepCopy(&cls);
   }
 
   {
@@ -867,6 +1359,19 @@ void DoScalarIndependentDefinitions(py::module m) {
     constexpr auto& cls_doc = doc.GeometrySet;
     py::class_<Class>(m, "GeometrySet", cls_doc.doc)
         .def(py::init(), doc.GeometrySet.ctor.doc);
+  }
+
+  // GeometryVersion
+  {
+    using Class = GeometryVersion;
+    constexpr auto& cls_doc = doc.GeometryVersion;
+    py::class_<Class> cls(m, "GeometryVersion", cls_doc.doc);
+    cls.def(py::init(), cls_doc.ctor.doc)
+        .def(py::init<const GeometryVersion&>(), py::arg("other"),
+            "Creates a copy of the GeometryVersion.")
+        .def("IsSameAs", &Class::IsSameAs, py::arg("other"), py::arg("role"),
+            cls_doc.IsSameAs.doc);
+    DefCopyAndDeepCopy(&cls);
   }
 
   // ProximityProperties

@@ -111,11 +111,9 @@ class TestMultibodyTreeMath(unittest.TestCase):
         Provides basic acceptance tests for SpatialVelocity, beyond what's
         tested in `test_spatial_vector_types`.
         """
-        # Basic acceptance tests.
         V = SpatialVelocity_[T].Zero()
         to_T = np.vectorize(T)
         p = to_T(np.zeros(3))
-        self.assertIs(V.ShiftInPlace(p_BpBq_E=p), V)
         self.assertIsInstance(V.Shift(p_BpBq_E=p), SpatialVelocity_[T])
         self.assertIsInstance(
             V.ComposeWithMovingFrameVelocity(p_PoBo_E=p, V_PB_E=V),
@@ -128,6 +126,27 @@ class TestMultibodyTreeMath(unittest.TestCase):
         self.assertIsInstance(V @ L, T)
 
     @numpy_compare.check_all_types
+    def test_spatial_acceleration(self, T):
+        """
+        Provides basic acceptance tests for SpatialAcceleration, beyond what's
+        tested in `test_spatial_vector_types`.
+        """
+        to_T = np.vectorize(T)
+        z = to_T(np.zeros(3))
+        V = SpatialVelocity_[T].Zero()
+        dut = SpatialAcceleration_[T].Zero()
+        self.assertIsInstance(
+            dut.Shift(p_PoQ_E=z, w_WP_E=z),
+            SpatialAcceleration_[T])
+        self.assertIsInstance(
+            dut.Shift(p_PoQ_E=z),
+            SpatialAcceleration_[T])
+        self.assertIsInstance(
+            dut.ComposeWithMovingFrameAcceleration(
+                p_PB_E=z, w_WP_E=z, V_PB_E=V, A_PB_E=dut),
+            SpatialAcceleration_[T])
+
+    @numpy_compare.check_all_types
     def test_spatial_force(self, T):
         """
         Provides basic acceptance tests for SpatialForce, beyond what's
@@ -136,8 +155,21 @@ class TestMultibodyTreeMath(unittest.TestCase):
         F = SpatialForce_[T].Zero()
         to_T = np.vectorize(T)
         p = to_T(np.zeros(3))
-        self.assertIs(F.ShiftInPlace(p_BpBq_E=p), F)
         self.assertIsInstance(F.Shift(p_BpBq_E=p), SpatialForce_[T])
         V = SpatialVelocity_[T].Zero()
         self.assertIsInstance(F.dot(V_IBp_E=V), T)
         self.assertIsInstance(F @ V, T)
+
+    @numpy_compare.check_all_types
+    def test_spatial_momentum(self, T):
+        """
+        Provides basic acceptance tests for SpatialMomentum, beyond what's
+        tested in `test_spatial_vector_types`.
+        """
+        to_T = np.vectorize(T)
+        p = to_T(np.zeros(3))
+        V = SpatialVelocity_[T].Zero()
+        dut = SpatialMomentum_[T].Zero()
+        self.assertIsInstance(dut.Shift(p_BpBq_E=p), SpatialMomentum_[T])
+        self.assertIsInstance(dut.dot(V_IBp_E=V), T)
+        self.assertIsInstance(dut @ V, T)

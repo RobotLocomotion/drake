@@ -88,23 +88,6 @@ GTEST_TEST(RigidTransform, DefaultRigidTransformIsIdentity) {
   EXPECT_TRUE(X.IsExactlyIdentity());
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-// This tests the conversion operator from a RigidTransform to an Isometry3.
-// This test will fail once the conversion operator is removed per
-// resolution of #9865, and thus this test should be removed as well.
-GTEST_TEST(RigidTransform, ImplicitConstructionFromIsometry3) {
-  const RotationMatrix<double> R = GetRotationMatrixB();
-  const Vector3<double> p(4, 5, 6);
-  RigidTransform<double> X(R, p);
-
-  // An implicit conversion happens here and we hold a reference to the newly
-  // created object.
-  const Isometry3<double>& Xiso = X;
-  EXPECT_TRUE(Xiso.isApprox(X.GetAsIsometry3(), 0));
-}
-#pragma GCC diagnostic pop
-
 // Tests constructing a RigidTransform from a RotationMatrix and Vector3.
 // Also test the set method.
 GTEST_TEST(RigidTransform, ConstructorAndSet) {
@@ -730,6 +713,21 @@ GTEST_TEST(RigidTransform, OperatorMultiplyByMatrix3X) {
     Eigen::MatrixXd bad_matrix_multiply;
     EXPECT_THROW(bad_matrix_multiply = X_AB * m_7x8, std::logic_error);
   }
+}
+
+GTEST_TEST(RigidTransform, TestMemoryLayoutOfRigidTransformDouble) {
+  // For optimization (e.g., AVX instructions), verify RigidTransform<double>
+  // is packed into 12 consecutive doubles, first with a 3x3 rotation matrix
+  // (9 doubles) followed by a 3x1  position vector (3 doubles).
+  RigidTransform<double> X;
+  const double* X_address = reinterpret_cast<const double*>(&X);
+  const double* R_address = reinterpret_cast<const double*>(&X.rotation());
+  const double* p_address = reinterpret_cast<const double*>(&X.translation());
+  EXPECT_EQ(X_address, R_address);
+  EXPECT_EQ(X_address + 9, p_address);
+
+  // Test that the entire class occupies memory equal to 12 doubles.
+  EXPECT_EQ(sizeof(X), 12 * sizeof(double));
 }
 
 }  // namespace

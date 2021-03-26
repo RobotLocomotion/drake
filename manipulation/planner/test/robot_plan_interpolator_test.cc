@@ -1,9 +1,9 @@
 #include "drake/manipulation/planner/robot_plan_interpolator.h"
 
-#include "robotlocomotion/robot_plan_t.hpp"
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/lcmt_robot_plan.hpp"
 
 namespace drake {
 namespace manipulation {
@@ -78,12 +78,11 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
 
   const int num_time_steps = q.cols();
 
-  // Encode into a robot_plan_t structure.
-  robotlocomotion::robot_plan_t plan{};
+  // Encode into an lcmt_robot_plan structure.
+  lcmt_robot_plan plan{};
   plan.num_states = num_time_steps;
-  const bot_core::robot_state_t default_robot_state{};
+  const lcmt_robot_state default_robot_state{};
   plan.plan.resize(num_time_steps, default_robot_state);
-  plan.plan_info.resize(num_time_steps, 0);
 
   std::vector<std::string> joint_names;
   for (int i = 0; i < dut.plant().num_joints(); ++i) {
@@ -97,14 +96,12 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
   ASSERT_EQ(joint_names.size(), kNumJoints);
 
   for (int i = 0; i < num_time_steps; i++) {
-    bot_core::robot_state_t& step = plan.plan[i];
+    lcmt_robot_state& step = plan.plan[i];
     step.utime = t[i] * 1e6;
     step.num_joints = q.rows();
     step.joint_name = joint_names;
     for (int j = 0; j < step.num_joints; j++) {
       step.joint_position.push_back(q(j, i));
-      step.joint_velocity.push_back(0);
-      step.joint_effort.push_back(0);
     }
   }
 

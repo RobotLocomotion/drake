@@ -18,15 +18,15 @@ namespace solvers {
  */
 struct MosekSolverDetails {
   /// The mosek optimization time. Please refer to MSK_DINF_OPTIMIZER_TIME in
-  /// https://docs.mosek.com/9.0/capi/constants.html?highlight=msk_dinf_optimizer_time
+  /// https://docs.mosek.com/9.2/capi/constants.html?highlight=msk_dinf_optimizer_time
   double optimizer_time{};
   /// The response code returned from mosek solver. Check
-  /// https://docs.mosek.com/9.0/capi/response-codes.html for the meaning on the
+  /// https://docs.mosek.com/9.2/capi/response-codes.html for the meaning on the
   /// response code.
   int rescode{};
   /// The solution status after solving the problem. Check
-  /// https://docs.mosek.com/9.0/capi/accessing-solution.html and
-  /// https://docs.mosek.com/9.0/capi/constants.html#mosek.solsta for the
+  /// https://docs.mosek.com/9.2/capi/accessing-solution.html and
+  /// https://docs.mosek.com/9.2/capi/constants.html#mosek.solsta for the
   /// meaning on the solution status.
   int solution_status{};
 };
@@ -39,7 +39,7 @@ struct MosekSolverDetails {
  * (Mosek might change the values of the integer/binary variables in the
  * subsequent iterations.) If the specified integer solution is infeasible or
  * incomplete, MOSEK will simply ignore it. For more details, check
- * https://docs.mosek.com/9.0/capi/tutorial-mio-shared.html?highlight=initial
+ * https://docs.mosek.com/9.2/capi/tutorial-mio-shared.html?highlight=initial
  */
 class MosekSolver final : public SolverBase {
  public:
@@ -53,7 +53,7 @@ class MosekSolver final : public SolverBase {
 
   /**
    * Control stream logging. Refer to
-   * https://docs.mosek.com/9.0/capi/solver-io.html for more details.
+   * https://docs.mosek.com/9.2/capi/solver-io.html for more details.
    * @param flag Set to true if the user want to turn on stream logging.
    * @param log_file If the user wants to output the logging to a file, then
    * set @p log_file to the name of that file. If the user wants to output the
@@ -108,7 +108,7 @@ class MosekSolver final : public SolverBase {
   mutable std::shared_ptr<License> license_;
   // Set to true if the user wants the solver to produce output to the console
   // or a log file. Default to false, such that the solver runs silently.
-  // Check out https://docs.mosek.com/9.0/capi/solver-io.html for more info.
+  // Check out https://docs.mosek.com/9.2/capi/solver-io.html for more info.
   bool stream_logging_{false};
   // set @p log_file to the name of that file. If the user wants to output the
   // logging to the console, then set log_file to empty string. Default to an

@@ -1,0 +1,12 @@
+package drake;
+// For the mesh with the given `name`, provide the minimum number of vertices
+// expected from subsequent update messages as well as the connectivity of
+// the surface triangle mesh, which is assumed to be unchanged throughout the
+// entire simulation.
+struct experimental_lcmt_deformable_tri_mesh_init {
+  // Unique name for the mesh.
+  string name;
+  int32_t num_vertices;
+  int32_t num_tris;
+  experimental_lcmt_deformable_tri tris[num_tris];
+}

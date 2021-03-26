@@ -13,33 +13,36 @@ namespace geometry {
 namespace render {
 namespace internal {
 
+using Eigen::Vector3d;
+
 namespace {
 
 GLuint CompileShader(GLuint shader_type, const std::string& shader_code) {
-  GLuint shader_id = glCreateShader(shader_type);
+  GLuint shader_gl_id = glCreateShader(shader_type);
   char const* source_ptr = shader_code.c_str();
-  glShaderSource(shader_id, 1, &source_ptr, NULL);
-  glCompileShader(shader_id);
+  glShaderSource(shader_gl_id, 1, &source_ptr, NULL);
+  glCompileShader(shader_gl_id);
 
   // Check compilation result.
   GLint result{0};
-  glGetShaderiv(shader_id, GL_COMPILE_STATUS, &result);
+  glGetShaderiv(shader_gl_id, GL_COMPILE_STATUS, &result);
   if (!result) {
     const std::string error_prefix =
         fmt::format("Error compiling {} shader: ",
                     shader_type == GL_VERTEX_SHADER ? "vertex" : "fragment");
     std::string info("No further information available");
     int info_log_length;
-    glGetShaderiv(shader_id, GL_INFO_LOG_LENGTH, &info_log_length);
+    glGetShaderiv(shader_gl_id, GL_INFO_LOG_LENGTH, &info_log_length);
     if (info_log_length > 0) {
       std::vector<char> error_message(info_log_length + 1);
-      glGetShaderInfoLog(shader_id, info_log_length, NULL, &error_message[0]);
+      glGetShaderInfoLog(shader_gl_id, info_log_length, NULL,
+                         &error_message[0]);
       info = &error_message[0];
     }
     throw std::runtime_error(error_prefix + info);
   }
 
-  return shader_id;
+  return shader_gl_id;
 }
 
 }  // namespace
@@ -53,33 +56,36 @@ void ShaderProgram::LoadFromSources(const std::string& vertex_shader_source,
       CompileShader(GL_FRAGMENT_SHADER, fragment_shader_source);
 
   // Link.
-  program_id_ = glCreateProgram();
-  glAttachShader(program_id_, vertex_shader_id);
-  glAttachShader(program_id_, fragment_shader_id);
-  glLinkProgram(program_id_);
+  gl_id_ = glCreateProgram();
+  glAttachShader(gl_id_, vertex_shader_id);
+  glAttachShader(gl_id_, fragment_shader_id);
+  glLinkProgram(gl_id_);
 
   // Clean up.
-  glDetachShader(program_id_, vertex_shader_id);
-  glDetachShader(program_id_, fragment_shader_id);
+  glDetachShader(gl_id_, vertex_shader_id);
+  glDetachShader(gl_id_, fragment_shader_id);
   glDeleteShader(vertex_shader_id);
   glDeleteShader(fragment_shader_id);
 
   // Check.
   GLint result{0};
-  glGetProgramiv(program_id_, GL_LINK_STATUS, &result);
+  glGetProgramiv(gl_id_, GL_LINK_STATUS, &result);
   if (!result) {
     const std::string error_prefix = "Error linking shaders: ";
     std::string info("No further information available");
     int info_log_length;
-    glGetProgramiv(program_id_, GL_INFO_LOG_LENGTH, &info_log_length);
+    glGetProgramiv(gl_id_, GL_INFO_LOG_LENGTH, &info_log_length);
     if (info_log_length > 0) {
       std::vector<char> error_message(info_log_length + 1);
-      glGetProgramInfoLog(program_id_, info_log_length, NULL,
+      glGetProgramInfoLog(gl_id_, info_log_length, NULL,
                           &error_message[0]);
       info = &error_message[0];
     }
     throw std::runtime_error(error_prefix + info);
   }
+
+  projection_matrix_loc_ = GetUniformLocation("T_DC");
+  model_view_loc_ = GetUniformLocation("T_CM");
 }
 
 namespace {
@@ -99,30 +105,44 @@ void ShaderProgram::LoadFromFiles(const std::string& vertex_shader_file,
   LoadFromSources(LoadFile(vertex_shader_file), LoadFile(fragment_shader_file));
 }
 
+void ShaderProgram::SetProjectionMatrix(const Eigen::Matrix4f& T_DC) const {
+  glUniformMatrix4fv(projection_matrix_loc_, 1, GL_FALSE, T_DC.data());
+}
+
+void ShaderProgram::SetModelViewMatrix(const Eigen::Matrix4f& X_CM,
+                                       const Vector3d& scale) const {
+  const Eigen::DiagonalMatrix<float, 4, 4> scale_mat(
+      Vector4<float>(scale(0), scale(1), scale(2), 1.0));
+  // Our camera frame C wrt the OpenGL's camera frame Cgl.
+  // clang-format off
+  static const Eigen::Matrix4f kX_CglC =
+      (Eigen::Matrix4f() << 1,  0,  0, 0,
+                            0, -1,  0, 0,
+                            0,  0, -1, 0,
+                            0,  0,  0, 1)
+          .finished();
+  // clang-format on
+  const Eigen::Matrix4f X_CglM = kX_CglC * X_CM;
+  Eigen::Matrix4f T_CglM = X_CglM * scale_mat;
+  glUniformMatrix4fv(model_view_loc_, 1, GL_FALSE, T_CglM.data());
+  DoModelViewMatrix(X_CglM, scale);
+}
+
 GLint ShaderProgram::GetUniformLocation(const std::string& uniform_name) const {
-  GLint id = glGetUniformLocation(program_id_, uniform_name.c_str());
+  GLint id = glGetUniformLocation(gl_id_, uniform_name.c_str());
   if (id < 0) {
-    throw std::runtime_error("Cannot get shader uniform " + uniform_name);
+    throw std::runtime_error(
+        fmt::format("Cannot get shader uniform '{}'", uniform_name));
   }
   return id;
 }
 
-void ShaderProgram::SetUniformValue(const std::string& uniform_name,
-                                    float value) const {
-  glUniform1f(GetUniformLocation(uniform_name), value);
-}
-
-void ShaderProgram::SetUniformValue(const std::string& uniform_name,
-                                    const Vector4<float>& value) const {
-  glUniform4fv(GetUniformLocation(uniform_name), 1, value.data());
-}
-
-void ShaderProgram::Use() const { glUseProgram(program_id_); }
+void ShaderProgram::Use() const { glUseProgram(gl_id_); }
 
 void ShaderProgram::Unuse() const {
   GLint curr_program;
   glGetIntegerv(GL_CURRENT_PROGRAM, &curr_program);
-  if (curr_program == static_cast<GLint>(program_id_)) {
+  if (curr_program == static_cast<GLint>(gl_id_)) {
     glUseProgram(0);
   }
 }

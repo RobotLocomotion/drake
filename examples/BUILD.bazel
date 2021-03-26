@@ -40,7 +40,6 @@ INSTALLED_MODEL_PACKAGES = [
     "//examples/acrobot",
     "//examples/atlas",
     "//examples/compass_gait",
-    "//examples/irb140",
     "//examples/kuka_iiwa_arm",
     "//examples/manipulation_station",
     "//examples/multibody/cart_pole",

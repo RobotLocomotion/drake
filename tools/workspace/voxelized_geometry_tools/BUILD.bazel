@@ -1,0 +1,11 @@
+# -*- mode: python -*-
+# vi: set ft=python :
+
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+sh_test(
+    name = "pointcloud_voxelization_test",
+    srcs = ["@voxelized_geometry_tools//:pointcloud_voxelization_test"],
+)
+
+add_lint_tests()

@@ -31,7 +31,8 @@ struct MatGradMultMat {
       (DerivedA::RowsAtCompileTime == Eigen::Dynamic ||
                DerivedB::ColsAtCompileTime == Eigen::Dynamic
            ? Eigen::Dynamic
-           : DerivedA::RowsAtCompileTime * DerivedB::ColsAtCompileTime),
+           : static_cast<int>(DerivedA::RowsAtCompileTime) *
+             static_cast<int>(DerivedB::ColsAtCompileTime)),
       DerivedDA::ColsAtCompileTime> type;
 };
 
@@ -45,8 +46,9 @@ struct MatGradMult {
       (DerivedDA::RowsAtCompileTime == Eigen::Dynamic ||
                DerivedB::SizeAtCompileTime == Eigen::Dynamic
            ? Eigen::Dynamic
-           : DerivedDA::RowsAtCompileTime / DerivedB::RowsAtCompileTime *
-                 DerivedB::ColsAtCompileTime),
+           : static_cast<int>(DerivedDA::RowsAtCompileTime) /
+             static_cast<int>(DerivedB::RowsAtCompileTime) *
+             static_cast<int>(DerivedB::ColsAtCompileTime)),
       DerivedDA::ColsAtCompileTime> type;
 };
 
@@ -143,8 +145,8 @@ typename MatGradMult<DerivedDA, DerivedB>::type matGradMult(
       (DerivedDA::RowsAtCompileTime == Eigen::Dynamic ||
        DerivedB::RowsAtCompileTime == Eigen::Dynamic)
           ? Eigen::Dynamic
-          : static_cast<int>(DerivedDA::RowsAtCompileTime /
-                             DerivedB::RowsAtCompileTime);
+          : static_cast<int>(DerivedDA::RowsAtCompileTime) /
+                static_cast<int>(DerivedB::RowsAtCompileTime);
 
   typename MatGradMult<DerivedDA, DerivedB>::type ret(A_rows * B.cols(),
                                                       dA.cols());

@@ -17,6 +17,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/query_object.h"
@@ -375,6 +376,50 @@ GTEST_TEST(MultibodyPlantTest, AddMultibodyPlantSceneGraph) {
   // These should fail:
   // AddMultibodyPlantSceneGraphResult<double> extra(plant, scene_graph);
   // AddMultibodyPlantSceneGraphResult<double> extra{*plant, *scene_graph};
+}
+
+// Verifies that string-based queries allocate no heap.
+//
+// NOTE: Every querying API that takes strings as parameters should conform to
+// this non-allocating convention. As such, they should be invoked in this
+// test to show that they adhere to that expectation. It should be considered
+// to be a defect if such an API exists and is omitted here (for whatever
+// historical reason).
+GTEST_TEST(MultibodyPlantTest, NoHeapAllocOnStringQueries) {
+  // Construct a plant with an Iiwa.
+  const char kSdfPath[] =
+      "drake/manipulation/models/iiwa_description/sdf/"
+      "iiwa14_no_collision.sdf";
+  auto plant =
+      std::make_unique<MultibodyPlant<double>>(0 /* plant type irrelevant */);
+  Parser parser(plant.get());
+  multibody::ModelInstanceIndex iiwa_instance =
+      parser.AddModelFromFile(FindResourceOrThrow(kSdfPath), "iiwa");
+  plant->Finalize();
+
+  // Use string to ensure that there is no heap allocation in the implicit
+  // conversion to string_view.
+  const std::string kLinkName = "iiwa_link_0";
+  const std::string kJointName = "iiwa_joint_1";
+
+  // Note that failed queries cause exceptions to be thrown (which allocates
+  // heap).
+  drake::test::LimitMalloc dummy;
+
+  // Check the HasX versions first. Note that functions that take no model
+  // instance argument delgate to model instance argument versions.
+  EXPECT_TRUE(plant->HasModelInstanceNamed("iiwa"));
+  EXPECT_TRUE(plant->HasBodyNamed(kLinkName, iiwa_instance));
+  EXPECT_TRUE(plant->HasFrameNamed(kLinkName, iiwa_instance));
+  EXPECT_TRUE(plant->HasJointNamed(kJointName, iiwa_instance));
+  EXPECT_TRUE(plant->HasJointActuatorNamed(kJointName, iiwa_instance));
+
+  // Check the GetX versions now.
+  plant->GetModelInstanceByName("iiwa");
+  plant->GetBodyByName(kLinkName, iiwa_instance);
+  plant->GetFrameByName(kLinkName, iiwa_instance);
+  plant->GetJointByName(kJointName, iiwa_instance);
+  plant->GetJointActuatorByName(kJointName, iiwa_instance);
 }
 
 GTEST_TEST(MultibodyPlantTest, EmptyWorldDiscrete) {
@@ -980,6 +1025,16 @@ TEST_F(AcrobotPlantTests, SetRandomState) {
       random_context->get_mutable_continuous_state_vector().CopyToVector()));
 }
 
+// A basic sanity check for context cloning.
+TEST_F(AcrobotPlantTests, ContextClone) {
+  shoulder_->set_default_angle(0.05);
+  auto old_context = plant_->CreateDefaultContext();
+  auto new_context = old_context->Clone();
+  shoulder_->set_angle(old_context.get(), 0.01);
+  EXPECT_EQ(shoulder_->get_angle(*old_context), 0.01);
+  EXPECT_EQ(shoulder_->get_angle(*new_context), 0.05);
+}
+
 GTEST_TEST(MultibodyPlantTest, Graphviz) {
   MultibodyPlant<double> plant(0.0);
   const std::string acrobot_path =
@@ -1383,6 +1438,46 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesWeldedTo) {
               UnorderedElementsAre(&plant.world_body(), &extra));
   EXPECT_THAT(plant.GetBodiesWeldedTo(lower),
               UnorderedElementsAre(&upper, &lower));
+
+  // Briefly test scalar conversion.
+  std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_ad =
+      systems::System<double>::ToAutoDiffXd(plant);
+  const Body<AutoDiffXd>& upper_ad = plant_ad->GetBodyByName("upper_section");
+  const Body<AutoDiffXd>& lower_ad = plant_ad->GetBodyByName("lower_section");
+  const Body<AutoDiffXd>& extra_ad = plant_ad->GetBodyByName("extra");
+
+  EXPECT_THAT(plant_ad->GetBodiesWeldedTo(plant_ad->world_body()),
+              UnorderedElementsAre(&plant_ad->world_body(), &extra_ad));
+  EXPECT_THAT(plant_ad->GetBodiesWeldedTo(lower_ad),
+              UnorderedElementsAre(&upper_ad, &lower_ad));
+}
+
+// Regression test for unhelpful error message -- see #14641.
+GTEST_TEST(MultibodyPlantTest, ReversedWeldError) {
+  // This test expects that the following model has a world body and a pair of
+  // welded-together bodies.
+  const std::string sdf_file =
+      FindResourceOrThrow("drake/multibody/plant/test/split_pendulum.sdf");
+  MultibodyPlant<double> plant(0.0);
+  Parser(&plant).AddModelFromFile(sdf_file);
+
+  // Add a new body, and weld it in the wrong direction using `WeldFrames`.
+  const Body<double>& extra = plant.AddRigidBody(
+      "extra", default_model_instance(), SpatialInertia<double>());
+  plant.WeldFrames(extra.body_frame(), plant.world_frame());
+
+  // The important property of this message is that it reports some identifier
+  // for the involved objects, so at least the developer can map those back to
+  // objects and deduce what API call was in error. If the details of the
+  // message change, update this check to match. If in future the error can be
+  // caught at the WeldFrames() step, so much the better. Modify this test to
+  // reflect that.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.Finalize(),
+      std::runtime_error,
+      "This multibody tree already has a mobilizer connecting "
+      "inboard frame \\(index=0\\) and outboard frame \\(index=\\d*\\). "
+      "More than one mobilizer between two frames is not allowed.");
 }
 
 // Utility to verify that the only ports of MultibodyPlant that are feedthrough
@@ -3262,22 +3357,30 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffAcrobotParameters) {
       plant_autodiff->CreateDefaultContext();
   context_autodiff->SetTimeStateAndParametersFrom(*context);
 
-  // Set up our parameters as the independent variables.
-  // Differentiable parameters for the acrobot using only inertial parameters.
-  const AutoDiffXd m1_ad(m1, Vector3d(1, 0, 0));
-  const AutoDiffXd m2_ad(m2, Vector3d(0, 1, 0));
-  const AutoDiffXd l2_ad(l2, Vector3d(0, 0, 1));
+  // Set up our parameters as independent variables.
+  // We will use mass and length of the two links of the acrobot as our
+  // variables to differentiate with respect to. We must update multibody
+  // components that depend on these parameters so that their derivatives will
+  // propagate. For this example the multibody elements that require parameter
+  // updates are the bodies' mass and inertia, and the joints' offset frames.
+  const AutoDiffXd m1_ad(m1, Vector4<double>(1, 0, 0, 0));
+  const AutoDiffXd m2_ad(m2, Vector4<double>(0, 1, 0, 0));
+  const AutoDiffXd l1_ad(l1, Vector4<double>(0, 0, 1, 0));
+  const AutoDiffXd l2_ad(l2, Vector4<double>(0, 0, 0, 1));
+  const AutoDiffXd lc1_ad = 0.5 * l1_ad;
   const AutoDiffXd lc2_ad = 0.5 * l2_ad;
+  const AutoDiffXd Gc1_ad = (1.0 / 12.0) * l1_ad * l1_ad;
   const AutoDiffXd Gc2_ad = (1.0 / 12.0) * l2_ad * l2_ad;
 
+  // Differentiable parameters for the acrobot's mass/inertia parameters.
   // Frame L1's origin is located at the shoulder outboard frame.
-  const Vector3<AutoDiffXd> p_L1L1cm = -lc1 * Vector3d::UnitZ();
+  const Vector3<AutoDiffXd> p_L1L1cm = -lc1_ad * Vector3d::UnitZ();
   // Frame L2's origin is located at the elbow outboard frame.
   const Vector3<AutoDiffXd> p_L2L2cm = -lc2_ad * Vector3d::UnitZ();
 
   // Define each link's spatial inertia about their respective COM.
   UnitInertia<AutoDiffXd> Gc1_Bcm =
-      UnitInertia<AutoDiffXd>::StraightLine(Gc1, Vector3d::UnitZ());
+      UnitInertia<AutoDiffXd>::StraightLine(Gc1_ad, Vector3d::UnitZ());
   SpatialInertia<AutoDiffXd> M1_L1o =
       SpatialInertia<AutoDiffXd>::MakeFromCentralInertia(m1_ad, p_L1L1cm,
                                                          Gc1_Bcm * m1_ad);
@@ -3288,11 +3391,27 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffAcrobotParameters) {
       SpatialInertia<AutoDiffXd>::MakeFromCentralInertia(m2_ad, p_L2L2cm,
                                                          Gc2_Bcm * m2_ad);
 
+  // Update each body's inertial parameters.
   plant_autodiff->GetRigidBodyByName(params.link1_name())
       .SetSpatialInertiaInBodyFrame(context_autodiff.get(), M1_L1o);
 
   plant_autodiff->GetRigidBodyByName(params.link2_name())
       .SetSpatialInertiaInBodyFrame(context_autodiff.get(), M2_L2o);
+
+  // The parent frame of the elbow joint is an offset frame that depends on the
+  // length of link1. Therefore, we must update this offset frame's parameter
+  // with the autodiff variable containing the proper partial derivatives for
+  // them to propagate through dynamics computations.
+  const RevoluteJoint<AutoDiffXd>& elbow_joint_ad =
+      plant_autodiff->GetJointByName<RevoluteJoint>(params.elbow_joint_name());
+  const FixedOffsetFrame<AutoDiffXd>& elbow_joint_parent_frame =
+      dynamic_cast<const FixedOffsetFrame<AutoDiffXd>&>(
+          elbow_joint_ad.frame_on_parent());
+
+  const RigidTransform<AutoDiffXd> X_link1_Ei(-l1_ad * Vector3d::UnitZ());
+
+  elbow_joint_parent_frame.SetPoseInBodyFrame(context_autodiff.get(),
+                                              X_link1_Ei);
 
   // Take the derivative of the mass matrix w.r.t. length.
   Matrix2<AutoDiffXd> mass_matrix;
@@ -3349,6 +3468,17 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffAcrobotParameters) {
                               analytic_mass_matrix_partial_m2, kTolerance,
                               MatrixCompareType::relative));
 
+  // Analytic ∂M/∂l₁:
+  //  [ (2/3)m₁l₁ + 2m₂l₁ + 2m₂lc₂c₂   m₂lc₂c₂ ]
+  //  [        m₂lc₂c₂                    0    ]
+  Vector4<double> analytic_mass_matrix_partial_l1;
+  analytic_mass_matrix_partial_l1 <<
+     (2.0/3.0)*m1*l1 + 2*m2*l1 + 2*m2*lc2, m2*lc2,
+                                   m2*lc2,      0;
+  EXPECT_TRUE(CompareMatrices(mass_matrix_grad.col(2),
+                              analytic_mass_matrix_partial_l1, kTolerance,
+                              MatrixCompareType::relative));
+
   // Analytic ∂M/∂l₂:
   // [   (2/3)m₂l₂ + m₂l₁       (2/3)m₂l₂ + (1/2)m₂l₁ ]
   // [ (2/3)m₂l₂ + (1/2)m₂l₁          (2/3)m₂l₂       ]
@@ -3356,9 +3486,58 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffAcrobotParameters) {
   analytic_mass_matrix_partial_l2 <<
           (2.0/3.0)*m2*l2 + m2*l1, (2.0/3.0)*m2*l2 + 0.5*m2*l1,
       (2.0/3.0)*m2*l2 + 0.5*m2*l1,             (2.0/3.0)*m2*l2;
-  EXPECT_TRUE(CompareMatrices(mass_matrix_grad.col(2),
+  EXPECT_TRUE(CompareMatrices(mass_matrix_grad.col(3),
                               analytic_mass_matrix_partial_l2, kTolerance,
                               MatrixCompareType::relative));
+}
+
+GTEST_TEST(MultibodyPlantTests, FixedOffsetFrameParameters) {
+  MultibodyPlant<double> plant(0.0);
+
+  const Vector3d p_WF(0, 0, 0);
+  const RotationMatrixd R_WF{};
+  const RigidTransformd X_WF(R_WF, p_WF);
+
+  const Body<double>& body = plant.AddRigidBody("B", SpatialInertia<double>{});;
+
+  const Joint<double>& weld_joint =
+      plant.AddJoint<WeldJoint>("weld_WB", plant.world_body(), X_WF, body, {},
+                                RigidTransformd::Identity());
+
+  const FixedOffsetFrame<double>& frame_F =
+      dynamic_cast<const FixedOffsetFrame<double>&>(
+          weld_joint.frame_on_parent());
+
+  plant.Finalize();
+
+  // Create a default context.
+  auto context = plant.CreateDefaultContext();
+
+  // Verify default parameters are set for the frame and that they've propagated
+  // to the welded body's pose.
+  const RigidTransformd& X_WF_context = frame_F.CalcPoseInBodyFrame(*context);
+  const math::RigidTransformd& X_WF_body =
+      plant.EvalBodyPoseInWorld(*context, body);
+
+  EXPECT_TRUE(
+      CompareMatrices(X_WF.GetAsMatrix34(), X_WF_context.GetAsMatrix34()));
+  EXPECT_TRUE(CompareMatrices(X_WF.GetAsMatrix34(), X_WF_body.GetAsMatrix34()));
+
+  // Set new parameters and verify they propagate.
+  const Vector3d p_WF_new(1, 1, 1);
+  const RotationMatrixd R_WF_new = RotationMatrixd::MakeXRotation(3);
+  const RigidTransformd X_WF_new(R_WF_new, p_WF_new);
+
+  frame_F.SetPoseInBodyFrame(context.get(), X_WF_new);
+
+  const RigidTransformd& X_WF_context_new =
+      frame_F.CalcPoseInBodyFrame(*context);
+  const math::RigidTransformd& X_WF_body_new =
+      plant.EvalBodyPoseInWorld(*context, body);
+  EXPECT_TRUE(CompareMatrices(X_WF_new.GetAsMatrix34(),
+                              X_WF_context_new.GetAsMatrix34()));
+  EXPECT_TRUE(
+      CompareMatrices(X_WF_new.GetAsMatrix34(), X_WF_body_new.GetAsMatrix34()));
 }
 
 }  // namespace

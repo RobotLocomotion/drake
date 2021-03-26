@@ -8,6 +8,7 @@
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -207,6 +208,10 @@ class PyFunctionConstraint : public Constraint {
         double_func_(Wrap<double, DoubleFunc>(func)),
         autodiff_func_(Wrap<AutoDiffXd, AutoDiffFunc>(func)) {}
 
+  using Constraint::set_bounds;
+  using Constraint::UpdateLowerBound;
+  using Constraint::UpdateUpperBound;
+
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
       Eigen::VectorXd* y) const override {
@@ -344,6 +349,7 @@ top-level documentation for :py:mod:`pydrake.math`.
       .def("name", &SolverId::name, doc.SolverId.name.doc);
 
   py::enum_<SolverType>(m, "SolverType", doc.SolverType.doc)
+      .value("kClp", SolverType::kClp, doc.SolverType.kClp.doc)
       .value("kCsdp", SolverType::kCsdp, doc.SolverType.kCsdp.doc)
       .value("kDReal", SolverType::kDReal, doc.SolverType.kDReal.doc)
       .value("kEqualityConstrainedQP", SolverType::kEqualityConstrainedQP,
@@ -560,6 +566,47 @@ top-level documentation for :py:mod:`pydrake.math`.
           py::arg("indeterminates"), py::arg("degree"),
           py::arg("coeff_name") = "a",
           doc.MathematicalProgram.NewOddDegreeFreePolynomial.doc)
+      .def("NewNonnegativePolynomial",
+          static_cast<std::pair<Polynomial, MatrixXDecisionVariable> (
+              MathematicalProgram::*)(
+              const Eigen::Ref<const VectorX<symbolic::Monomial>>&,
+              MathematicalProgram::NonnegativePolynomial)>(
+              &MathematicalProgram::NewNonnegativePolynomial),
+          py::arg("monomial_basis"), py::arg("type"),
+          doc.MathematicalProgram.NewNonnegativePolynomial
+              .doc_2args_monomial_basis_type)
+      .def("NewNonnegativePolynomial",
+          static_cast<symbolic::Polynomial (MathematicalProgram::*)(
+              const Eigen::Ref<const MatrixX<symbolic::Variable>>&,
+              const Eigen::Ref<const VectorX<symbolic::Monomial>>&,
+              MathematicalProgram::NonnegativePolynomial)>(
+              &MathematicalProgram::NewNonnegativePolynomial),
+          py::arg("gramian"), py::arg("monomial_basis"), py::arg("type"),
+          doc.MathematicalProgram.NewNonnegativePolynomial
+              .doc_3args_gramian_monomial_basis_type)
+      .def("NewNonnegativePolynomial",
+          WrapDeprecated("Please use "
+                         "MathematicalProgram.NewNonnegativePolynomial(gramian,"
+                         " monomial_basis, type) instead. Notice that the "
+                         "first input argument should be gramian instead of "
+                         "grammian. This variant will be "
+                         "removed after 2021-05-01",
+              static_cast<symbolic::Polynomial (MathematicalProgram::*)(
+                  const Eigen::Ref<const MatrixX<symbolic::Variable>>&,
+                  const Eigen::Ref<const VectorX<symbolic::Monomial>>&,
+                  MathematicalProgram::NonnegativePolynomial)>(
+                  &MathematicalProgram::NewNonnegativePolynomial)),
+          py::arg("grammian"), py::arg("monomial_basis"), py::arg("type"),
+          "Same as NewNonnegativePolynomial, but the argument name is "
+          "incorrectly spelled as grammian")
+      .def("NewNonnegativePolynomial",
+          static_cast<std::pair<symbolic::Polynomial, MatrixXDecisionVariable> (
+              MathematicalProgram::*)(const symbolic::Variables&, int degree,
+              MathematicalProgram::NonnegativePolynomial)>(
+              &MathematicalProgram::NewNonnegativePolynomial),
+          py::arg("indeterminates"), py::arg("degree"), py::arg("type"),
+          doc.MathematicalProgram.NewNonnegativePolynomial
+              .doc_3args_indeterminates_degree_type)
       .def("NewSosPolynomial",
           static_cast<std::pair<Polynomial, MatrixXDecisionVariable> (
               MathematicalProgram::*)(
@@ -1161,6 +1208,16 @@ for every column of ``prog_var_vals``. )""")
             return out;
           });
 
+  py::enum_<MathematicalProgram::NonnegativePolynomial>(prog_cls,
+      "NonnegativePolynomial",
+      doc.MathematicalProgram.NonnegativePolynomial.doc)
+      .value("kSos", MathematicalProgram::NonnegativePolynomial::kSos,
+          doc.MathematicalProgram.NonnegativePolynomial.kSos.doc)
+      .value("kSdsos", MathematicalProgram::NonnegativePolynomial::kSdsos,
+          doc.MathematicalProgram.NonnegativePolynomial.kSdsos.doc)
+      .value("kDsos", MathematicalProgram::NonnegativePolynomial::kDsos,
+          doc.MathematicalProgram.NonnegativePolynomial.kDsos.doc);
+
   py::enum_<SolutionResult>(m, "SolutionResult", doc.SolutionResult.doc)
       .value("kSolutionFound", SolutionResult::kSolutionFound,
           doc.SolutionResult.kSolutionFound.doc)
@@ -1262,6 +1319,17 @@ for every column of ``prog_var_vals``. )""")
             return self.CheckSatisfied(x);
           },
           py::arg("x"), doc.Constraint.CheckSatisfied.doc);
+
+  py::class_<PyFunctionConstraint, Constraint,
+      std::shared_ptr<PyFunctionConstraint>>(m, "PyFunctionConstraint",
+      "Constraint with its evaluator as a Python function")
+      .def("UpdateLowerBound", &PyFunctionConstraint::UpdateLowerBound,
+          py::arg("new_lb"), "Update the lower bound of the constraint.")
+      .def("UpdateUpperBound", &PyFunctionConstraint::UpdateUpperBound,
+          py::arg("new_ub"), "Update the upper bound of the constraint.")
+      .def("set_bounds", &PyFunctionConstraint::set_bounds,
+          py::arg("lower_bound"), py::arg("upper_bound"),
+          "Set both the lower and upper bounds of the constraint.");
 
   py::class_<LinearConstraint, Constraint, std::shared_ptr<LinearConstraint>>(
       m, "LinearConstraint", doc.LinearConstraint.doc)

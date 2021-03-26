@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 
+import copy
 import unittest
+import copy
 
 import numpy as np
-import warnings
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression, Variable
+from pydrake.math import RigidTransform
 from pydrake.multibody.tree import (
     BallRpyJoint_,
     Body_,
@@ -71,6 +73,7 @@ from pydrake.common.cpp_param import List
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.deprecation import install_numpy_warning_filters
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue, Value
 from pydrake.geometry import (
     Box,
@@ -171,6 +174,7 @@ class TestPlant(unittest.TestCase):
         body_mass = body.default_mass()
         body_com = body.default_com()
         body_default_unit_inertia = body.default_unit_inertia()
+        body_default_rotational_inertial = body.default_rotational_inertia()
         body_default_spatial_inertial = body.default_spatial_inertia()
         new_model_instance = plant.AddModelInstance("new_model_instance")
         body = plant.AddRigidBody(name="new_body_2",
@@ -214,6 +218,14 @@ class TestPlant(unittest.TestCase):
             self.assertGreater(plant.num_collision_geometries(), 1)
             self.assertEqual(body1_friction.static_friction(), 1.1)
             self.assertEqual(body1_friction.dynamic_friction(), 0.8)
+
+        # Confirm that passing the diagram context into the plant (a common
+        # user error) throws a RuntimeError instead of crashing.
+        plant.Finalize()
+        diagram = builder.Build()
+        context = diagram.CreateDefaultContext()
+        with self.assertRaises(RuntimeError):
+            plant.EvalBodyPoseInWorld(context, body)
 
     @numpy_compare.check_all_types
     def test_multibody_plant_api_via_parsing(self, T):
@@ -305,9 +317,12 @@ class TestPlant(unittest.TestCase):
         self.assertIs(
             link1_frame,
             plant.GetFrameByName(name="Link1", model_instance=model_instance))
+        self.assertIs(link1.GetParentPlant(), plant)
         self.assertTrue(plant.HasModelInstanceNamed(name="acrobot"))
         self.assertEqual(
             model_instance, plant.GetModelInstanceByName(name="acrobot"))
+        self.assertEqual(
+            plant.GetBodiesWeldedTo(plant.world_body()), [plant.world_body()])
         self.assertIsInstance(
             plant.get_actuation_input_port(), InputPort)
         self.assertIsInstance(
@@ -321,6 +336,10 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(plant.num_frames(), int)
         self.assertIsInstance(plant.get_body(body_index=BodyIndex(0)), Body)
         self.assertIs(shoulder, plant.get_joint(joint_index=JointIndex(0)))
+        self.assertIs(shoulder, plant.get_mutable_joint(
+            joint_index=JointIndex(0)))
+        self.assertEqual([JointIndex(0), JointIndex(1)],
+                         plant.GetJointIndices(model_instance=model_instance))
         joint_actuator = plant.get_joint_actuator(
             actuator_index=JointActuatorIndex(0))
         self.assertIsInstance(joint_actuator, JointActuator)
@@ -338,13 +357,25 @@ class TestPlant(unittest.TestCase):
         cls = type(element)
         self.assertIsInstance(element.index(), get_index_class(cls, T))
         self.assertIsInstance(element.model_instance(), ModelInstanceIndex)
+        element.GetParentPlant()
 
     def _test_frame_api(self, T, frame):
         Frame = Frame_[T]
 
         self.assertIsInstance(frame, Frame)
         self._test_multibody_tree_element_mixin(T, frame)
+
+        self.assertIsInstance(frame.body(), Body_[T])
+        self.assertIsInstance(frame.is_world_frame(), bool)
+        self.assertIsInstance(frame.is_body_frame(), bool)
         self.assertIsInstance(frame.name(), str)
+
+        self.assertIsInstance(
+            frame.GetFixedPoseInBodyFrame(),
+            RigidTransform_[T])
+        self.assertIsInstance(
+            frame.GetFixedRotationMatrixInBodyFrame(),
+            RotationMatrix_[T])
 
     def _test_body_api(self, T, body):
         Body = Body_[T]
@@ -352,6 +383,43 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(body, Body)
         self._test_multibody_tree_element_mixin(T, body)
         self.assertIsInstance(body.name(), str)
+        self.assertIsInstance(body.get_num_flexible_positions(), int)
+        self.assertIsInstance(body.get_num_flexible_velocities(), int)
+        self.assertIsInstance(body.is_floating(), bool)
+        self.assertIsInstance(body.has_quaternion_dofs(), bool)
+        self.assertIsInstance(body.floating_positions_start(), int)
+        self.assertIsInstance(body.floating_velocities_start(), int)
+        self.assertIsInstance(body.get_default_mass(), float)
+
+    @numpy_compare.check_all_types
+    def test_body_context_methods(self, T):
+        plant = MultibodyPlant_[T](0.0)
+        dut = plant.AddRigidBody(
+            name="name", M_BBo_B=SpatialInertia_[float](
+                mass=1.0, p_PScm_E=[0.0, 0.0, 0.0],
+                G_SP_E=UnitInertia_[float](Ixx=1.0, Iyy=1.0, Izz=1.0)))
+        plant.Finalize()
+        context = plant.CreateDefaultContext()
+        self.assertIsInstance(
+            dut.get_mass(context=context),
+            T)
+        self.assertIsInstance(
+            dut.CalcCenterOfMassInBodyFrame(context=context),
+            np.ndarray)
+        self.assertIsInstance(
+            dut.CalcSpatialInertiaInBodyFrame(context=context),
+            SpatialInertia_[T])
+        self.assertIsInstance(
+            dut.EvalPoseInWorld(context=context),
+            RigidTransform_[T])
+        self.assertIsInstance(
+            dut.EvalSpatialVelocityInWorld(context=context),
+            SpatialVelocity_[T])
+        self.assertIsInstance(
+            dut.EvalSpatialAccelerationInWorld(context=context),
+            SpatialAcceleration_[T])
+        # The test_multibody_dynamics already covers GetForceInWorld,
+        # AddInForce, AddInForceInWorld.
 
     def _test_joint_api(self, T, joint):
         Joint = Joint_[T]
@@ -361,6 +429,7 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(joint, Joint)
         self._test_multibody_tree_element_mixin(T, joint)
         self.assertIsInstance(joint.name(), str)
+        self.assertIsInstance(joint.type_name(), str)
         self.assertIsInstance(joint.parent_body(), Body)
         self.assertIsInstance(joint.child_body(), Body)
         self.assertIsInstance(joint.frame_on_parent(), Frame)
@@ -406,12 +475,93 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(joint_actuator.joint(), Joint)
         self.assertIsInstance(joint_actuator.effort_limit(), float)
 
-    def check_old_spelling_exists(self, value):
-        # Just to make it obvious when this is being tested.
-        self.assertIsNot(value, None)
+    def _test_rotational_inertia_or_unit_inertia_api(self, T, Class):
+        """
+        Tests the given Class (either RotationInertia or UnitInertia) for the
+        API subset that they both share.
+        """
+        RotationMatrix = RotationMatrix_[T]
+        Class()
+        Class(Ixx=1.0, Iyy=1.0, Izz=1.0, Ixy=0.1, Ixz=0.1, Iyz=0.1)
+        Class(Ixx=1.0, Iyy=1.0, Izz=1.0)
+        dut = Class.TriaxiallySymmetric(I_triaxial=1.0)
+        self.assertIsInstance(dut, Class)
+        dut.rows()
+        dut.cols()
+        self.assertIsInstance(dut.get_moments(), np.ndarray)
+        self.assertIsInstance(dut.get_products(), np.ndarray)
+        self.assertIsInstance(dut.Trace(), T)
+        dut.CalcMaximumPossibleMomentOfInertia()
+        self.assertIsInstance(dut[0, 0], T)
+        with self.assertRaisesRegex(
+                Exception, r"incompatible function arguments"):
+            dut[0]
+        with self.assertRaisesRegex(
+                Exception, r"Unable to cast"):
+            dut[0.0, 0.0]
+        with self.assertRaisesRegex(
+                Exception, r"Expected \[i,j\]"):
+            dut[0, 0, 0]
+        self.assertIsInstance(dut.CopyToFullMatrix3(), np.ndarray)
+        dut.IsNearlyEqualTo(other=dut, precision=0.0)
+        dut.SetToNaN()
+        dut.IsNaN()
+        dut.SetZero()
+        self.assertIsInstance(dut.CalcPrincipalMomentsOfInertia(), np.ndarray)
+        dut.CouldBePhysicallyValid()
+        self.assertIsInstance(dut.ReExpress(R_AE=RotationMatrix()), Class)
+        self.assertIsInstance(copy.copy(dut), Class)
 
     @numpy_compare.check_all_types
-    def test_inertia_api(self, T):
+    def test_rotational_inertia_api(self, T):
+        """Tests rotational inertia construction and API."""
+        Class = RotationalInertia_[T]
+        self._test_rotational_inertia_or_unit_inertia_api(T, Class)
+        # Test methods present only on RotationalInernia, not UnitInertia.
+        p = [0.1, 0.2, 0.3]
+        dut = Class(mass=1.0, p_PQ_E=p)
+        self.assertIsInstance(
+            dut.ShiftFromCenterOfMass(mass=1.0, p_BcmQ_E=p), Class)
+        self.assertIsInstance(
+            dut.ShiftToCenterOfMass(mass=1.0, p_QBcm_E=p), Class)
+        self.assertIsInstance(
+            dut.ShiftToThenAwayFromCenterOfMass(
+                mass=1.0, p_PBcm_E=p, p_QBcm_E=p),
+            Class)
+        # Test operators.
+        zero = Class(Ixx=0.0, Iyy=0.0, Izz=0.0)
+        self.assertIsInstance(dut + zero, Class)
+        self.assertIsInstance(dut - zero, Class)
+        self.assertIsInstance(dut * T(1.0), Class)
+        self.assertIsInstance(T(1.0) * dut, Class)
+        self.assertIsInstance(dut * p, np.ndarray)
+        self.assertIsInstance(dut / T(1.0), Class)
+        dut += zero
+        self.assertIsInstance(dut, Class)
+        dut -= zero
+        self.assertIsInstance(dut, Class)
+        dut *= T(1.0)
+        self.assertIsInstance(dut, Class)
+        dut /= T(1.0)
+        self.assertIsInstance(dut, Class)
+
+    @numpy_compare.check_all_types
+    def test_unit_inertia_api(self, T):
+        """Tests unit inertia construction and API."""
+        UnitInertia = UnitInertia_[T]
+        self._test_rotational_inertia_or_unit_inertia_api(T, UnitInertia)
+        # Test methods present only on UnitInertia, not RotationalInernia.
+        p = [0.1, 0.2, 0.3]
+        dut = UnitInertia(I=RotationalInertia_[T](mass=1.0, p_PQ_E=p))
+        self.assertIsInstance(
+            dut.ShiftFromCenterOfMass(p_BcmQ_E=p), UnitInertia)
+        self.assertIsInstance(
+            dut.ShiftToCenterOfMass(p_QBcm_E=p), UnitInertia)
+        # N.B. There are NO valid operators on UnitInertia.  They are inherited
+        # through implementation reuse, but they are broken (#6109).
+
+    @numpy_compare.check_all_types
+    def test_spatial_inertia_api(self, T):
         RotationalInertia = RotationalInertia_[T]
         UnitInertia = UnitInertia_[T]
         SpatialInertia = SpatialInertia_[T]
@@ -420,27 +570,19 @@ class TestPlant(unittest.TestCase):
         SpatialForce = SpatialForce_[T]
         SpatialVelocity = SpatialVelocity_[T]
         SpatialMomentum = SpatialMomentum_[T]
-        # Test unit inertia construction and API.
-        UnitInertia()
-        unit_inertia = UnitInertia(Ixx=2.0, Iyy=2.3, Izz=2.4)
-        self.assertIsInstance(unit_inertia, RotationalInertia)
-        self.assertIsInstance(unit_inertia.CopyToFullMatrix3(), np.ndarray)
-        self.assertIsInstance(
-            unit_inertia.ReExpress(R_AE=RotationMatrix()), UnitInertia)
-        # Test spatial inertia construction.
         SpatialInertia()
+        SpatialInertia.MakeFromCentralInertia(
+            mass=1.3, p_PScm_E=[0.1, -0.2, 0.3],
+            I_SScm_E=RotationalInertia(Ixx=2.0, Iyy=2.3, Izz=2.4))
         spatial_inertia = SpatialInertia(
-            mass=2.5, p_PScm_E=[0.1, -0.2, 0.3], G_SP_E=unit_inertia)
+            mass=2.5, p_PScm_E=[0.1, -0.2, 0.3],
+            G_SP_E=UnitInertia(Ixx=2.0, Iyy=2.3, Izz=2.4))
         numpy_compare.assert_float_equal(spatial_inertia.get_mass(), 2.5)
         self.assertIsInstance(spatial_inertia.get_com(), np.ndarray)
         self.assertIsInstance(spatial_inertia.CalcComMoment(), np.ndarray)
         self.assertIsInstance(spatial_inertia.get_unit_inertia(), UnitInertia)
-        rotational_inertia = spatial_inertia.CalcRotationalInertia()
-        # - Briefly test rotational inertia API.
-        self.assertIsInstance(rotational_inertia, RotationalInertia)
         self.assertIsInstance(
-            rotational_inertia.ReExpress(R_AE=RotationMatrix()),
-            RotationalInertia)
+            spatial_inertia.CalcRotationalInertia(), RotationalInertia)
         # N.B. `numpy_compare.assert_equal(IsPhysicallyValid(), True)` does not
         # work.
         if T != Expression:
@@ -463,7 +605,18 @@ class TestPlant(unittest.TestCase):
     @numpy_compare.check_all_types
     def test_friction_api(self, T):
         CoulombFriction = CoulombFriction_[T]
+        CoulombFriction()
         CoulombFriction(static_friction=0.7, dynamic_friction=0.6)
+        copy.copy(CoulombFriction())
+
+    @numpy_compare.check_all_types
+    def test_rigid_body_api(self, T):
+        RigidBody = RigidBody_[T]
+        M = SpatialInertia_[float]()
+        i = ModelInstanceIndex(0)
+        RigidBody(M_BBo_B=M)
+        RigidBody(body_name="body_name", M_BBo_B=M)
+        RigidBody(body_name="body_name", model_instance=i, M_BBo_B=M)
 
     @numpy_compare.check_all_types
     def test_multibody_force_element(self, T):
@@ -596,6 +749,9 @@ class TestPlant(unittest.TestCase):
         plant = MultibodyPlant(0.0)
         with self.assertRaises(RuntimeError) as cm:
             plant.AddForceElement(UniformGravityFieldElement())
+        self.assertIsInstance(
+            UniformGravityFieldElement.kDefaultStrength,
+            float)
 
     @numpy_compare.check_all_types
     def test_multibody_tree_kinematics(self, T):
@@ -606,7 +762,7 @@ class TestPlant(unittest.TestCase):
         file_name = FindResourceOrThrow(
             "drake/bindings/pydrake/multibody/test/double_pendulum.sdf")
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
-        Parser(plant_f).AddModelFromFile(file_name)
+        instance = Parser(plant_f).AddModelFromFile(file_name)
         plant_f.Finalize()
         plant = to_type(plant_f, T)
         context = plant.CreateDefaultContext()
@@ -616,6 +772,9 @@ class TestPlant(unittest.TestCase):
         X_WL = plant.CalcRelativeTransform(
             context, frame_A=world_frame, frame_B=base_frame)
         self.assertIsInstance(X_WL, RigidTransform)
+        free_bodies = plant.GetFloatingBaseBodies()
+        self.assertEqual(len(free_bodies), 1)
+        self.assertTrue(base.index() in free_bodies)
 
         p_AQi = plant.CalcPointsPositions(
             context=context, frame_B=base_frame,
@@ -623,8 +782,18 @@ class TestPlant(unittest.TestCase):
             frame_A=world_frame).T
         self.assertTupleEqual(p_AQi.shape, (2, 3))
 
-        p_com = plant.CalcCenterOfMassPosition(context=context)
+        p_com = plant.CalcCenterOfMassPositionInWorld(context=context)
         self.assertTupleEqual(p_com.shape, (3, ))
+        p_com = plant.CalcCenterOfMassPositionInWorld(
+            context=context, model_instances=[instance])
+        self.assertTupleEqual(p_com.shape, (3, ))
+
+        with catch_drake_warnings(expected_count=2):
+            p_com = plant.CalcCenterOfMassPosition(context=context)
+            self.assertTupleEqual(p_com.shape, (3, ))
+            p_com = plant.CalcCenterOfMassPosition(
+                context=context, model_instances=[instance])
+            self.assertTupleEqual(p_com.shape, (3, ))
 
         nq = plant.num_positions()
         nv = plant.num_velocities()
@@ -662,6 +831,18 @@ class TestPlant(unittest.TestCase):
                 frame_E=world_frame)
             self.assert_sane(Js_v_AB_E)
             self.assertEqual(Js_v_AB_E.shape, (9, nw))
+
+        L_WSP_W = plant.CalcSpatialMomentumInWorldAboutPoint(
+            context=context, p_WoP_W=np.zeros(3))
+        self.assert_sane(L_WSP_W.translational(), nonzero=False)
+        self.assert_sane(L_WSP_W.rotational(), nonzero=False)
+        self.assertIsInstance(L_WSP_W, SpatialMomentum_[T])
+        L_WSP_W = plant.CalcSpatialMomentumInWorldAboutPoint(
+            context=context, model_instances=[default_model_instance()],
+            p_WoP_W=np.zeros(3))
+        self.assert_sane(L_WSP_W.translational(), nonzero=False)
+        self.assert_sane(L_WSP_W.rotational(), nonzero=False)
+        self.assertIsInstance(L_WSP_W, SpatialMomentum_[T])
 
         abias_ACcm_E = plant.CalcBiasCenterOfMassTranslationalAcceleration(
             context=context, with_respect_to=JacobianWrtVariable.kV,
@@ -711,6 +892,12 @@ class TestPlant(unittest.TestCase):
         A_WB_array = plant.CalcSpatialAccelerationsFromVdot(
             context=context, known_vdot=vdot)
         self.assertEqual(len(A_WB_array), plant.num_bodies())
+
+        # Make sure we can call these methods.
+        base.SetMass(context=context, mass=1.0)
+        base.SetCenterOfMassInBodyFrame(context=context, com=[0.0, 0.0, 0.0])
+        M = SpatialInertia_[T](1, [0, 0, 0], UnitInertia_[T](1, 1, 1))
+        base.SetSpatialInertiaInBodyFrame(context=context, M_Bo_B=M)
 
     @numpy_compare.check_all_types
     def test_multibody_state_access(self, T):
@@ -878,6 +1065,12 @@ class TestPlant(unittest.TestCase):
         # TODO(eric.cousineau): Merge `check_applied_force_input_ports` into
         # this test.
 
+    @numpy_compare.check_all_types
+    def test_externally_applied_spatial_force(self, T):
+        ExternallyAppliedSpatialForce = ExternallyAppliedSpatialForce_[T]
+        dut = ExternallyAppliedSpatialForce()
+        copy.copy(dut)
+
     @TemplateSystem.define("AppliedForceTestSystem_")
     def AppliedForceTestSystem_(T):
 
@@ -990,12 +1183,15 @@ class TestPlant(unittest.TestCase):
         X_EeGripper = RigidTransform_[float](
             RollPitchYaw_[float](np.pi / 2, 0, np.pi / 2), [0, 0, 0.081])
         plant_f.WeldFrames(
-                A=plant_f.world_frame(),
-                B=plant_f.GetFrameByName("iiwa_link_0", iiwa_model))
+            frame_on_parent_P=plant_f.world_frame(),
+            frame_on_child_C=plant_f.GetFrameByName("iiwa_link_0", iiwa_model),
+            X_PC=RigidTransform_[float]())
+        # Perform the second weld without named arguments to ensure that the
+        # proper binding gets invoked.
         plant_f.WeldFrames(
-            A=plant_f.GetFrameByName("iiwa_link_7", iiwa_model),
-            B=plant_f.GetFrameByName("body", gripper_model),
-            X_AB=X_EeGripper)
+            plant_f.GetFrameByName("iiwa_link_7", iiwa_model),
+            plant_f.GetFrameByName("body", gripper_model),
+            X_EeGripper)
         plant_f.Finalize()
         plant = to_type(plant_f, T)
 
@@ -1109,6 +1305,19 @@ class TestPlant(unittest.TestCase):
             context, iiwa_model), np.zeros(nq_iiwa + nv_iiwa))
 
     @numpy_compare.check_all_types
+    def test_deprecated_weld_frames_variant(self, T):
+        # Tests deprecated parameter names variant of WeldFrames(); remove
+        # after 2021-07-01.
+        plant = MultibodyPlant_[T](time_step=0.0002)
+        body = plant.AddRigidBody("body", SpatialInertia_[float]())
+        X_WB = RigidTransform_[float]()
+        with catch_drake_warnings(expected_count=1):
+            plant.WeldFrames(
+                A=plant.world_frame(),
+                B=body.body_frame(),
+                X_AB=X_WB)
+
+    @numpy_compare.check_all_types
     def test_model_instance_state_access_by_array(self, T):
         # N.B. Please check warning above in `check_multibody_state_access`.
         MultibodyPlant = MultibodyPlant_[T]
@@ -1136,12 +1345,13 @@ class TestPlant(unittest.TestCase):
         X_EeGripper = RigidTransform_[float](
             RollPitchYaw_[float](np.pi / 2, 0, np.pi / 2), [0, 0, 0.081])
         plant_f.WeldFrames(
-            A=plant_f.world_frame(),
-            B=plant_f.GetFrameByName("iiwa_link_0", iiwa_model))
+            frame_on_parent_P=plant_f.world_frame(),
+            frame_on_child_C=plant_f.GetFrameByName("iiwa_link_0", iiwa_model))
         plant_f.WeldFrames(
-            A=plant_f.GetFrameByName("iiwa_link_7", iiwa_model),
-            B=plant_f.GetFrameByName("body", gripper_model),
-            X_AB=X_EeGripper)
+            frame_on_parent_P=plant_f.GetFrameByName(
+                "iiwa_link_7", iiwa_model),
+            frame_on_child_C=plant_f.GetFrameByName("body", gripper_model),
+            X_PC=X_EeGripper)
         plant_f.Finalize()
         plant = to_type(plant_f, T)
 
@@ -1235,7 +1445,7 @@ class TestPlant(unittest.TestCase):
         iiwa_sdf_path = FindResourceOrThrow(
             "drake/manipulation/models/"
             "iiwa_description/sdf/iiwa14_no_collision.sdf")
-        # Use floating base to effectively add a quatnerion in the generalized
+        # Use floating base to effectively add a quaternion in the generalized
         # quaternion.
         iiwa_model = Parser(plant=plant_f).AddModelFromFile(
             file_name=iiwa_sdf_path, model_name='robot')
@@ -1248,10 +1458,16 @@ class TestPlant(unittest.TestCase):
         q_init = np.linspace(start=1.0, stop=nq, num=nq)
         plant.SetPositions(context, q_init)
         # Overwrite the (invalid) base coordinates, wherever in `q` they are.
+        link0 = plant.GetBodyByName("iiwa_link_0")
         plant.SetFreeBodyPose(
-            context, plant.GetBodyByName("iiwa_link_0"),
+            context, link0,
             RigidTransform(RollPitchYaw([0.1, 0.2, 0.3]),
                            p=[0.4, 0.5, 0.6]))
+        numpy_compare.assert_float_allclose(
+            plant.GetFreeBodyPose(context, link0).translation(),
+            [0.4, 0.5, 0.6])
+        self.assertNotEqual(link0.floating_positions_start(), -1)
+        self.assertNotEqual(link0.floating_velocities_start(), -1)
         v_expected = np.linspace(start=-1.0, stop=-nv, num=nv)
         qdot = plant.MapVelocityToQDot(context, v_expected)
         v_remap = plant.MapQDotToVelocity(context, qdot)
@@ -1294,11 +1510,22 @@ class TestPlant(unittest.TestCase):
             )
 
         def make_revolute_joint(plant, P, C):
+            # First, check that the sans-limits overload works.
+            RevoluteJoint_[T](
+                name="revolute",
+                frame_on_parent=P,
+                frame_on_child=C,
+                axis=x_axis,
+                damping=damping,
+            )
+            # Then, create one using limits.
             return RevoluteJoint_[T](
                 name="revolute",
                 frame_on_parent=P,
                 frame_on_child=C,
                 axis=x_axis,
+                pos_lower_limit=-1.5,
+                pos_upper_limit=1.5,
                 damping=damping,
             )
 
@@ -1311,13 +1538,31 @@ class TestPlant(unittest.TestCase):
             )
 
         def make_weld_joint(plant, P, C):
-            # TODO(eric.cousineau): Update WeldJoint arg names to be consistent
-            # with other joints.
             return WeldJoint_[T](
                 name="weld",
-                parent_frame_P=P,
-                child_frame_C=C,
+                frame_on_parent_P=P,
+                frame_on_child_C=C,
                 X_PC=X_PC,
+            )
+
+        def make_deprecated_weld_joint(plant, P, C):
+            # Tests deprecated parameter name variant; remove after 2021-07-01.
+            with catch_drake_warnings(expected_count=1):
+                return WeldJoint_[T](
+                    name="weld",
+                    parent_frame_P=P,
+                    child_frame_C=C,
+                    X_PC=X_PC,
+                )
+
+        def make_noparams_weld_joint(plant, P, C):
+            # Tests deprecated parameter name variant does not interfere;
+            # remove after 2021-07-01.
+            return WeldJoint_[T](
+                "weld",
+                P,
+                C,
+                X_PC,
             )
 
         make_joint_list = [
@@ -1327,9 +1572,11 @@ class TestPlant(unittest.TestCase):
             make_revolute_joint,
             make_universal_joint,
             make_weld_joint,
+            make_deprecated_weld_joint,
+            make_noparams_weld_joint,
         ]
 
-        for make_joint in make_joint_list:
+        def loop_body(make_joint):
             plant = MultibodyPlant_[T](0.0)
             child = plant.AddRigidBody("Child", SpatialInertia_[float]())
             joint = make_joint(
@@ -1348,6 +1595,13 @@ class TestPlant(unittest.TestCase):
                 self.assertIsInstance(actuator, JointActuator_[T])
             plant.Finalize()
             self._test_joint_api(T, joint)
+            if joint.num_velocities() == 1 and T == float:
+                u = np.array([0.1])
+                numpy_compare.assert_float_equal(
+                    actuator.get_actuation_vector(u=u), [0.1])
+                actuator.set_actuation_vector(
+                    u_instance=np.array([0.2]), u=u)
+                numpy_compare.assert_float_equal(u, [0.2])
 
             uniform_random = Variable(
                 name="uniform_random",
@@ -1355,6 +1609,7 @@ class TestPlant(unittest.TestCase):
 
             context = plant.CreateDefaultContext()
             if joint.name() == "ball_rpy":
+                joint.damping()
                 set_point = array_T([1., 2., 3.])
                 joint.set_angles(context=context, angles=set_point)
                 numpy_compare.assert_equal(
@@ -1366,6 +1621,8 @@ class TestPlant(unittest.TestCase):
                     set_point)
                 joint.set_random_angles_distribution(
                     uniform_random * np.array([1., 1., 1.]))
+                joint.get_default_angles()
+                joint.set_default_angles(angles=[0.0, 0.0, 0.0])
             elif joint.name() == "planar":
                 self.assertEqual(len(joint.damping()), 3)
                 set_translation = array_T([1., 2.])
@@ -1391,6 +1648,11 @@ class TestPlant(unittest.TestCase):
                 joint.set_random_pose_distribution(
                     p_FoMo_F=uniform_random * np.array([1., 1.]),
                     theta=uniform_random)
+                joint.get_default_translation()
+                joint.set_default_translation(p_FoMo_F=[0.0, 0.0])
+                joint.get_default_rotation()
+                joint.set_default_rotation(theta=0.0)
+                joint.set_default_pose(p_FoMo_F=[0.0, 0.0], theta=0.0)
             elif joint.name() == "prismatic":
                 self.assertEqual(joint.damping(), damping)
                 numpy_compare.assert_equal(joint.translation_axis(), x_axis)
@@ -1405,6 +1667,14 @@ class TestPlant(unittest.TestCase):
                     joint.get_translation_rate(context=context),
                     set_point)
                 joint.set_random_translation_distribution(uniform_random)
+                joint.position_lower_limit()
+                joint.position_upper_limit()
+                joint.velocity_lower_limit()
+                joint.velocity_upper_limit()
+                joint.acceleration_lower_limit()
+                joint.acceleration_upper_limit()
+                joint.get_default_translation()
+                joint.set_default_translation(translation=0.0)
             elif joint.name() == "revolute":
                 numpy_compare.assert_equal(joint.revolute_axis(), x_axis)
                 self.assertEqual(joint.damping(), damping)
@@ -1414,6 +1684,24 @@ class TestPlant(unittest.TestCase):
                     joint.get_angle(context=context),
                     set_point)
                 joint.set_random_angle_distribution(uniform_random)
+                joint.position_lower_limit()
+                joint.position_upper_limit()
+                joint.velocity_lower_limit()
+                joint.velocity_upper_limit()
+                joint.acceleration_lower_limit()
+                joint.acceleration_upper_limit()
+                joint.get_angular_rate(context=context)
+                joint.set_angular_rate(context=context, angle=0.0)
+                joint.get_default_angle()
+                joint.set_default_angle(angle=0.0)
+                # Check the Joint base class sugar for 1dof.
+                joint.GetOnePosition(context=context)
+                joint.GetOneVelocity(context=context)
+                # Check the Joint base class AddIn... methods.
+                forces = MultibodyForces_[T](plant=plant)
+                joint.AddInOneForce(
+                    context=context, joint_dof=0, joint_tau=0.0, forces=forces)
+                joint.AddInDamping(context=context, forces=forces)
             elif joint.name() == "universal":
                 self.assertEqual(joint.damping(), damping)
                 set_point = array_T([1., 2.])
@@ -1427,6 +1715,8 @@ class TestPlant(unittest.TestCase):
                     set_point)
                 joint.set_random_angles_distribution(
                     uniform_random * np.array([1., 1.]))
+                joint.get_default_angles()
+                joint.set_default_angles(angles=[1.0, 2.0])
             elif joint.name() == "weld":
                 numpy_compare.assert_float_equal(
                     joint.X_PC().GetAsMatrix4(),
@@ -1434,6 +1724,10 @@ class TestPlant(unittest.TestCase):
             else:
                 raise TypeError(
                     "Joint type " + joint.name() + " not recognized.")
+
+        for make_joint in make_joint_list:
+            with self.subTest(make_joint=make_joint):
+                loop_body(make_joint)
 
     @numpy_compare.check_all_types
     def test_multibody_add_frame(self, T):
@@ -1450,6 +1744,73 @@ class TestPlant(unittest.TestCase):
         numpy_compare.assert_float_equal(
             frame.GetFixedPoseInBodyFrame().GetAsMatrix4(),
             np.eye(4))
+
+        plant.Finalize()
+        context = plant.CreateDefaultContext()
+
+        X_PF = RigidTransform_[T](p=[1., 2., 3.])
+        frame.SetPoseInBodyFrame(context=context, X_PF=X_PF)
+
+        numpy_compare.assert_float_equal(
+            frame.CalcPoseInBodyFrame(context).GetAsMatrix34(),
+            numpy_compare.to_float(X_PF.GetAsMatrix34()))
+
+    @numpy_compare.check_all_types
+    def test_frame_context_methods(self, T):
+        plant = MultibodyPlant_[T](0.0)
+        dut = plant.AddFrame(frame=FixedOffsetFrame_[T](
+            name="name", P=plant.world_frame(), X_PF=RigidTransform_[float]()))
+        plant.Finalize()
+        context = plant.CreateDefaultContext()
+        X = RigidTransform_[T]()
+        self.assertIsInstance(
+            dut.CalcRotationMatrixInBodyFrame(context=context),
+            RotationMatrix_[T])
+        self.assertIsInstance(
+            dut.CalcOffsetPoseInBody(context=context, X_FQ=X),
+            RigidTransform_[T])
+        self.assertIsInstance(
+            dut.CalcOffsetRotationMatrixInBody(
+                context=context, R_FQ=X.rotation()),
+            RotationMatrix_[T])
+        self.assertIsInstance(
+            dut.GetFixedOffsetPoseInBody(X_FQ=X),
+            RigidTransform_[T])
+        self.assertIsInstance(
+            dut.GetFixedRotationMatrixInBody(R_FQ=X.rotation()),
+            RotationMatrix_[T])
+        self.assertIsInstance(
+            dut.CalcPoseInWorld(context=context),
+            RigidTransform_[T])
+        self.assertIsInstance(
+            dut.CalcPose(context=context, frame_M=dut),
+            RigidTransform_[T])
+        self.assertIsInstance(
+            dut.CalcRotationMatrix(context=context, frame_M=dut),
+            RotationMatrix_[T])
+        self.assertIsInstance(
+            dut.CalcRotationMatrixInWorld(context=context),
+            RotationMatrix_[T])
+        self.assertIsInstance(
+            dut.CalcSpatialVelocityInWorld(context=context),
+            SpatialVelocity_[T])
+        self.assertIsInstance(
+            dut.CalcSpatialVelocity(context=context, frame_M=dut, frame_E=dut),
+            SpatialVelocity_[T])
+        self.assertIsInstance(
+            dut.CalcSpatialAccelerationInWorld(context=context),
+            SpatialAcceleration_[T])
+
+    @numpy_compare.check_all_types
+    def test_fixed_offset_frame_api(self, T):
+        FixedOffsetFrame = FixedOffsetFrame_[T]
+        P = MultibodyPlant_[T](0.0).world_frame()
+        B = RigidBody_[T](SpatialInertia_[float]())
+        X = RigidTransform_[float].Identity()
+        FixedOffsetFrame(name="name", P=P, X_PF=X, model_instance=None)
+        FixedOffsetFrame(P=P, X_PF=X)
+        FixedOffsetFrame(name="name", bodyB=B, X_BF=X)
+        FixedOffsetFrame(bodyB=B, X_BF=X)
 
     @numpy_compare.check_all_types
     def test_multibody_dynamics(self, T):
@@ -1496,6 +1857,7 @@ class TestPlant(unittest.TestCase):
         tau_g = plant.CalcGravityGeneralizedForces(context)
         self.assertEqual(tau_g.shape, (nv,))
         self.assert_sane(tau_g, nonzero=True)
+        plant.gravity_field().CalcGravityGeneralizedForces(context=context)
 
         # Gravity is the only force element
         self.assertEqual(plant.num_force_elements(), 1)
@@ -1505,6 +1867,7 @@ class TestPlant(unittest.TestCase):
 
         forces = MultibodyForces(plant=plant)
         plant.CalcForceElementsContribution(context=context, forces=forces)
+        copy.copy(forces)
 
         # Test generalized forces.
         # N.B. Cannot use `ndarray[object]` to reference existing C arrays
@@ -1514,6 +1877,11 @@ class TestPlant(unittest.TestCase):
             np.testing.assert_equal(forces.generalized_forces(), 1)
             forces.SetZero()
             np.testing.assert_equal(forces.generalized_forces(), 0)
+
+        # Test standalone construction.
+        standalone_forces = MultibodyForces(nb=1, nv=2)
+        self.assertEqual(standalone_forces.num_bodies(), 1)
+        self.assertEqual(standalone_forces.num_velocities(), 2)
 
         # Test body force accessors and mutators.
         link2 = plant.GetBodyByName("Link2")
@@ -1566,10 +1934,12 @@ class TestPlant(unittest.TestCase):
         self.assertTrue(isinstance(contact_info.slip_speed(), T))
         self.assertIsInstance(
             contact_info.point_pair(), PenetrationAsPointPair)
+        copy.copy(contact_info)
 
         # ContactResults
         contact_results = ContactResults()
         self.assertTrue(contact_results.num_point_pair_contacts() == 0)
+        copy.copy(contact_results)
 
     def test_contact_model(self):
         plant = MultibodyPlant_[float](0.1)
@@ -1635,6 +2005,9 @@ class TestPlant(unittest.TestCase):
 
     @numpy_compare.check_nonsymbolic_types
     def test_scene_graph_queries(self, T):
+        # TODO(sean.curtis@tri.global) The unit test of QueryObject/SceneGraph
+        # don't belong in plant_test.py. They belong in geometry_test.py. This
+        # test should be moved.
         # SceneGraph does not support `Expression` type.
         PenetrationAsPointPair = PenetrationAsPointPair_[T]
 
@@ -1642,6 +2015,10 @@ class TestPlant(unittest.TestCase):
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
         plant_f, scene_graph_f = AddMultibodyPlantSceneGraph(builder_f, 0.0)
         parser = Parser(plant=plant_f, scene_graph=scene_graph_f)
+        # The validity of this test depends on the colliding geometries to be
+        # supported across all nonsymbolic scalar types (double, autodiffxd).
+        # If two_bodies.sdf were to change to unsupported geometries, this
+        # test would break.
         parser.AddModelFromFile(
             FindResourceOrThrow(
                 "drake/bindings/pydrake/multibody/test/two_bodies.sdf"))
@@ -1661,7 +2038,7 @@ class TestPlant(unittest.TestCase):
         query_object = scene_graph.get_query_output_port().Eval(sg_context)
         # Implicitly require that this should be size 1.
         point_pair, = query_object.ComputePointPairPenetration()
-        self.assertIsInstance(point_pair, PenetrationAsPointPair_[float])
+        self.assertIsInstance(point_pair, PenetrationAsPointPair_[T])
         signed_distance_pair, = query_object.\
             ComputeSignedDistancePairwiseClosestPoints()
         self.assertIsInstance(signed_distance_pair, SignedDistancePair_[T])
@@ -1720,6 +2097,7 @@ class TestPlant(unittest.TestCase):
                              moment_ratio=0.1)
         self.assertEqual(info.thrust_ratio, 1.0)
         self.assertEqual(info.moment_ratio, 0.1)
+        copy.copy(info)
 
         prop = Propeller_[float](body_index=BodyIndex(1),
                                  X_BP=RigidTransform_[float](),
@@ -1734,3 +2112,30 @@ class TestPlant(unittest.TestCase):
 
         prop2 = Propeller_[float]([info, info])
         self.assertEqual(prop2.num_propellers(), 2)
+
+    def test_hydroelastic_contact_results(self):
+        builder = DiagramBuilder_[float]()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        Parser(plant).AddModelFromFile(
+            FindResourceOrThrow(
+                "drake/bindings/pydrake/multibody/test/hydroelastic.sdf"))
+        plant.set_contact_model(ContactModel.kHydroelasticsOnly)
+        plant.Finalize()
+
+        diagram = builder.Build()
+        context = diagram.CreateDefaultContext()
+        plant_context = plant.GetMyContextFromRoot(context)
+
+        body1 = plant.GetBodyByName("body1")
+        X_WB = RigidTransform(p=[0, 0, 0.25])
+        plant.SetFreeBodyPose(plant_context, body1, X_WB)
+
+        contact_results = (
+            plant.get_contact_results_output_port().Eval(plant_context))
+
+        self.assertEqual(contact_results.num_hydroelastic_contacts(), 1)
+        contact_info = contact_results.hydroelastic_contact_info(0)
+        contact_info.contact_surface().id_M()
+        contact_info.contact_surface().id_N()
+        contact_info.contact_surface().mesh_W().centroid()
+        contact_info.F_Ac_W().get_coeffs()

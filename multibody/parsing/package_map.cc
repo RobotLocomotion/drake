@@ -38,6 +38,14 @@ bool PackageMap::Contains(const string& package_name) const {
   return map_.find(package_name) != map_.end();
 }
 
+void PackageMap::Remove(const string& package_name) {
+  if (map_.erase(package_name) == 0) {
+    throw std::runtime_error(
+        "Could not find and remove package://" + package_name + " from the "
+        "search path.");
+  }
+}
+
 int PackageMap::size() const {
   return map_.size();
 }
@@ -126,6 +134,8 @@ void PackageMap::AddPackageIfNew(const string& package_name,
   DRAKE_DEMAND(!path.empty());
   // Don't overwrite entries in the map.
   if (!Contains(package_name)) {
+    drake::log()->trace(
+        "PackageMap: Adding package://{}: {}", package_name, path);
     Add(package_name, path);
   } else {
     const string existing_path = GetPath(package_name);
@@ -161,6 +171,7 @@ void PackageMap::PopulateUpstreamToDrakeHelper(
 
 void PackageMap::PopulateUpstreamToDrake(const string& model_file) {
   DRAKE_DEMAND(!model_file.empty());
+  drake::log()->trace("PopulateUpstreamToDrake: {}", model_file);
 
   // Verify that the model_file names an URDF or SDF file.
   string extension = filesystem::path(model_file).extension().string();
@@ -176,6 +187,7 @@ void PackageMap::PopulateUpstreamToDrake(const string& model_file) {
   // Bail out if we can't determine the drake root.
   const std::optional<string> maybe_drake_path = MaybeGetDrakePath();
   if (!maybe_drake_path) {
+    drake::log()->trace("  Could not determine drake_path");
     return;
   }
   // Bail out if the model file is not part of Drake.
@@ -183,7 +195,7 @@ void PackageMap::PopulateUpstreamToDrake(const string& model_file) {
   auto iter = std::mismatch(drake_path.begin(), drake_path.end(),
                             model_dir.begin());
   if (iter.first != drake_path.end()) {
-    // The drake_path was not a prefix of model_dir.
+    drake::log()->trace("  drake_path was not a prefix of model_dir.");
     return;
   }
 
@@ -216,9 +228,9 @@ void PackageMap::CrawlForPackages(const string& path) {
   }
 }
 
-void PackageMap::AddPackageXml(const string& package_xml_filename) {
-  const string package_name = GetPackageName(package_xml_filename);
-  const string package_path = GetParentDirectory(package_xml_filename);
+void PackageMap::AddPackageXml(const string& filename) {
+  const string package_name = GetPackageName(filename);
+  const string package_path = GetParentDirectory(filename);
   Add(package_name, package_path);
 }
 

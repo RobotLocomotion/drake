@@ -1,4 +1,7 @@
 #include "drake/multibody/contact_solvers/test/multibody_sim_driver.h"
+
+#include "drake/geometry/drake_visualizer.h"
+
 namespace drake {
 namespace multibody {
 namespace test {
@@ -20,9 +23,14 @@ void MultibodySimDriver::Initialize() {
   plant_->Finalize();
 
   // Add visualization.
-  auto lcm = builder_.AddSystem<systems::lcm::LcmInterfaceSystem>();
-  geometry::DispatchLoadMessage(*scene_graph_, lcm);
-  geometry::ConnectDrakeVisualizer(&builder_, *scene_graph_);
+  // Note: the call to Initialize() below will cause the DrakeVisualizer
+  // periodic publish event to be processed. This will broadcast a load message
+  // *and* a draw message. The draw message requires SceneGraph to pull on its
+  // input ports (evaluating all up-stream dependencies). If this isn't
+  // desirable, and we only want to load the geometry without the system
+  // evaluation, we need some mechanism that will send a load message based on
+  // SceneGraph's geometry data.
+  geometry::DrakeVisualizerd::AddToBuilder(&builder_, *scene_graph_);
   diagram_ = builder_.Build();
 
   simulator_ = std::make_unique<systems::Simulator<double>>(*diagram_);

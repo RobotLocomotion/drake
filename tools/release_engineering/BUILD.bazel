@@ -1,0 +1,40 @@
+# -*- python -*-
+
+load(
+    "//tools/skylark:drake_py_per_os.bzl",
+    "drake_py_binary_ubuntu_only",
+    "drake_py_unittest_ubuntu_only",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:private"])
+
+# This program is used by a small subset of Drake maintainers, all of whom
+# operate solely on Ubuntu, and furthermore relies on mostly manual testing.
+# Since we never develop, use, or test this on macOS, we reflect that in the
+# build system by omitting the target entirely on macOS.
+drake_py_binary_ubuntu_only(
+    name = "relnotes",
+    srcs = ["relnotes.py"],
+    deps = [
+        "@github3_py",
+    ],
+)
+
+drake_py_unittest_ubuntu_only(
+    name = "relnotes_test",
+    data = [
+        ":relnotes",
+    ],
+    deps = [
+        "@bazel_tools//tools/python/runfiles",
+    ],
+)
+
+# N.B. Since this downloads files, this is not put under test.
+drake_py_binary_ubuntu_only(
+    name = "download_release_candidate",
+    srcs = ["download_release_candidate.py"],
+)
+
+add_lint_tests()

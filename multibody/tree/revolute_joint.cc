@@ -26,6 +26,7 @@ std::unique_ptr<Joint<ToScalar>> RevoluteJoint<T>::TemplatedDoCloneToScalar(
                                    this->velocity_upper_limits());
   joint_clone->set_acceleration_limits(this->acceleration_lower_limits(),
                                        this->acceleration_upper_limits());
+  joint_clone->set_default_positions(this->default_positions());
 
   return joint_clone;
 }

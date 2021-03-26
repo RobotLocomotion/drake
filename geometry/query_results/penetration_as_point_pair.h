@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
@@ -23,6 +25,14 @@ template <typename T>
 struct PenetrationAsPointPair {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PenetrationAsPointPair)
   PenetrationAsPointPair() = default;
+
+  /** Swaps the interpretation of geometries A and B. */
+  void SwapAAndB() {
+    // Leave depth unchanged.
+    std::swap(id_A, id_B);
+    std::swap(p_WCa, p_WCb);
+    nhat_BA_W = -nhat_BA_W;
+  }
 
   /** The id of the first geometry in the contact. */
   GeometryId id_A;

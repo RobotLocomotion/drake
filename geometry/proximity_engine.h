@@ -215,8 +215,11 @@ class ProximityEngine {
   // and drake issue #10577. Once that is resolved, this definition can be
   // revisited (and ProximityEngineTest::Issue10577Regression_Osculation can
   // be updated).
-  /* Implementation of GeometryState::ComputePointPairPenetration().  */
-  std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
+  /* Implementation of GeometryState::ComputePointPairPenetration().
+   This includes `X_WGs`, the current poses of all geometries in World in the
+   current scalar type, keyed on each geometry's GeometryId.  */
+  std::vector<PenetrationAsPointPair<T>> ComputePointPairPenetration(
+      const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs)
       const;
 
   /* Implementation of GeometryState::ComputeContactSurfaces().
@@ -232,7 +235,7 @@ class ProximityEngine {
   void ComputeContactSurfacesWithFallback(
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs,
       std::vector<ContactSurface<T>>* surfaces,
-      std::vector<PenetrationAsPointPair<double>>* point_pairs) const;
+      std::vector<PenetrationAsPointPair<T>>* point_pairs) const;
 
   /* Implementation of GeometryState::FindCollisionCandidates().  */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const;
@@ -333,6 +336,15 @@ class ProximityEngine {
 
   // Facilitate testing.
   friend class ProximityEngineTester;
+
+  // Reports if the geometry with the given id is represented by an fcl::Convex.
+  // This function exists solely for the purpose tracking the "represent Mesh
+  // as Convex" logic in other unit tests. When we represent meshes as
+  // non-convex entities in their own right, we can remove this method.
+  // This very specifically does *not* answer the question of whether the
+  // underlying shape is *mathematically* convex, just that it is implemented
+  // as fcl::Convex.
+  bool IsFclConvexType(GeometryId id) const;
 };
 
 #ifndef DRAKE_DOXYGEN_CXX

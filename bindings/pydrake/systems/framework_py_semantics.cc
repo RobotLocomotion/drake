@@ -293,22 +293,6 @@ void DefineFrameworkPySemantics(py::module m) {
             doc.Context.SetAbstractState.doc)
         // NOTE: SetTimeStateAndParametersFrom is bound below in
         // bind_context_methods_templated_on_a_secondary_scalar
-        .def("FixInputPort",
-            py::overload_cast<int, const BasicVector<T>&>(
-                &Context<T>::FixInputPort),
-            py::arg("index"), py::arg("vec"), py_rvp::reference_internal,
-            doc.Context.FixInputPort.doc_2args_index_vec)
-        .def("FixInputPort",
-            py::overload_cast<int, unique_ptr<AbstractValue>>(
-                &Context<T>::FixInputPort),
-            py::arg("index"), py::arg("value"), py_rvp::reference_internal,
-            // Keep alive, ownership: `AbstractValue` keeps `self` alive.
-            py::keep_alive<3, 1>(), doc.ContextBase.FixInputPort.doc)
-        .def("FixInputPort",
-            py::overload_cast<int, const Eigen::Ref<const VectorX<T>>&>(
-                &Context<T>::FixInputPort),
-            py::arg("index"), py::arg("data"), py_rvp::reference_internal,
-            doc.Context.FixInputPort.doc_2args_index_data)
         .def("SetAccuracy", &Context<T>::SetAccuracy, py::arg("accuracy"),
             doc.Context.SetAccuracy.doc)
         // Bindings for the Context methods in the Doxygen group titled
@@ -436,8 +420,27 @@ void DefineFrameworkPySemantics(py::module m) {
               return self->AddSystem(std::move(system));
             },
             py::arg("system"),
+            // TODO(eric.cousineau): These two keep_alive's purposely form a
+            // reference cycle as a workaround for #14355. We should find a
+            // better way?
+            // Keep alive, reference: `self` keeps `return` alive.
+            py::keep_alive<1, 0>(),
             // Keep alive, ownership: `system` keeps `self` alive.
             py::keep_alive<2, 1>(), doc.DiagramBuilder.AddSystem.doc)
+        .def(
+            "AddNamedSystem",
+            [](DiagramBuilder<T>* self, std::string& name,
+                unique_ptr<System<T>> system) {
+              return self->AddNamedSystem(name, std::move(system));
+            },
+            py::arg("name"), py::arg("system"),
+            // TODO(eric.cousineau): These two keep_alive's purposely form a
+            // reference cycle as a workaround for #14355. We should find a
+            // better way?
+            // Keep alive, reference: `self` keeps `return` alive.
+            py::keep_alive<1, 0>(),
+            // Keep alive, ownership: `system` keeps `self` alive.
+            py::keep_alive<3, 1>(), doc.DiagramBuilder.AddNamedSystem.doc)
         .def("empty", &DiagramBuilder<T>::empty, doc.DiagramBuilder.empty.doc)
         .def(
             "GetSystems",
@@ -474,6 +477,16 @@ void DefineFrameworkPySemantics(py::module m) {
         .def("ExportInput", &DiagramBuilder<T>::ExportInput, py::arg("input"),
             py::arg("name") = kUseDefaultName, py_rvp::reference_internal,
             doc.DiagramBuilder.ExportInput.doc)
+        .def("ConnectInput",
+            py::overload_cast<const std::string&, const InputPort<T>&>(
+                &DiagramBuilder<T>::ConnectInput),
+            py::arg("diagram_port_name"), py::arg("input"),
+            doc.DiagramBuilder.ConnectInput.doc_2args_diagram_port_name_input)
+        .def("ConnectInput",
+            py::overload_cast<InputPortIndex, const InputPort<T>&>(
+                &DiagramBuilder<T>::ConnectInput),
+            py::arg("diagram_port_index"), py::arg("input"),
+            doc.DiagramBuilder.ConnectInput.doc_2args_diagram_port_index_input)
         .def("ExportOutput", &DiagramBuilder<T>::ExportOutput,
             py::arg("output"), py::arg("name") = kUseDefaultName,
             py_rvp::reference_internal, doc.DiagramBuilder.ExportOutput.doc)
@@ -491,6 +504,7 @@ void DefineFrameworkPySemantics(py::module m) {
             doc.PortBase.get_data_type.doc)
         .def("get_index", &OutputPort<T>::get_index,
             doc.OutputPortBase.get_index.doc)
+        .def("get_name", &OutputPort<T>::get_name, doc.PortBase.get_name.doc)
         .def(
             "Eval",
             [](const OutputPort<T>* self, const Context<T>& context) {
@@ -606,6 +620,8 @@ void DefineFrameworkPySemantics(py::module m) {
             py::arg("context"), py::arg("value"), py_rvp::reference,
             // Keep alive, ownership: `return` keeps `context` alive.
             py::keep_alive<0, 2>(), doc.InputPort.FixValue.doc)
+        .def("HasValue", &InputPort<T>::HasValue, py::arg("context"),
+            doc.InputPort.HasValue.doc)
         .def("get_system", &InputPort<T>::get_system, py_rvp::reference,
             doc.InputPort.get_system.doc);
 
@@ -720,15 +736,68 @@ void DefineFrameworkPySemantics(py::module m) {
             doc.State.get_mutable_abstract_state.doc);
 
     // - Constituents.
-    DefineTemplateClassWithDefault<ContinuousState<T>>(
-        m, "ContinuousState", GetPyParam<T>(), doc.ContinuousState.doc)
+    auto continuous_state = DefineTemplateClassWithDefault<ContinuousState<T>>(
+        m, "ContinuousState", GetPyParam<T>(), doc.ContinuousState.doc);
+    DefClone(&continuous_state);
+    continuous_state
+        .def(py::init<unique_ptr<VectorBase<T>>>(), py::arg("state"),
+            doc.ContinuousState.ctor.doc_1args_state)
+        .def(py::init<unique_ptr<VectorBase<T>>, int, int, int>(),
+            py::arg("state"), py::arg("num_q"), py::arg("num_v"),
+            py::arg("num_z"),
+            doc.ContinuousState.ctor.doc_4args_state_num_q_num_v_num_z)
         .def(py::init<>(), doc.ContinuousState.ctor.doc_0args)
         .def("size", &ContinuousState<T>::size, doc.ContinuousState.size.doc)
+        .def("num_q", &ContinuousState<T>::num_q, doc.ContinuousState.num_q.doc)
+        .def("num_v", &ContinuousState<T>::num_v, doc.ContinuousState.num_v.doc)
+        .def("num_z", &ContinuousState<T>::num_z, doc.ContinuousState.num_z.doc)
+        .def("__getitem__",
+            overload_cast_explicit<const T&, std::size_t>(
+                &ContinuousState<T>::operator[]),
+            doc.ContinuousState.operator_array.doc)
+        .def(
+            "__setitem__",
+            [](ContinuousState<T>& self, int index, T& value) {
+              self[index] = value;
+            },
+            doc.ContinuousState.operator_array.doc)
         .def("get_vector", &ContinuousState<T>::get_vector,
             py_rvp::reference_internal, doc.ContinuousState.get_vector.doc)
         .def("get_mutable_vector", &ContinuousState<T>::get_mutable_vector,
             py_rvp::reference_internal,
             doc.ContinuousState.get_mutable_vector.doc)
+        .def("get_generalized_position",
+            &ContinuousState<T>::get_generalized_position,
+            py_rvp::reference_internal,
+            doc.ContinuousState.get_generalized_position.doc)
+        .def("get_mutable_generalized_position",
+            &ContinuousState<T>::get_mutable_generalized_position,
+            py_rvp::reference_internal,
+            doc.ContinuousState.get_mutable_generalized_position.doc)
+        .def("get_generalized_velocity",
+            &ContinuousState<T>::get_generalized_velocity,
+            py_rvp::reference_internal,
+            doc.ContinuousState.get_generalized_velocity.doc)
+        .def("get_mutable_generalized_velocity",
+            &ContinuousState<T>::get_mutable_generalized_velocity,
+            py_rvp::reference_internal,
+            doc.ContinuousState.get_mutable_generalized_velocity.doc)
+        .def("get_misc_continuous_state",
+            &ContinuousState<T>::get_misc_continuous_state,
+            py_rvp::reference_internal,
+            doc.ContinuousState.get_misc_continuous_state.doc)
+        .def("get_mutable_misc_continuous_state",
+            &ContinuousState<T>::get_mutable_misc_continuous_state,
+            py_rvp::reference_internal,
+            doc.ContinuousState.get_mutable_misc_continuous_state.doc)
+        .def(
+            "SetFrom",
+            [](ContinuousState<T>* self, const ContinuousState<double>& other) {
+              self->SetFrom(other);
+            },
+            doc.ContinuousState.SetFrom.doc)
+        .def("SetFromVector", &ContinuousState<T>::SetFromVector,
+            py::arg("value"), doc.ContinuousState.SetFromVector.doc)
         .def("CopyToVector", &ContinuousState<T>::CopyToVector,
             doc.ContinuousState.CopyToVector.doc);
 
@@ -736,6 +805,11 @@ void DefineFrameworkPySemantics(py::module m) {
         m, "DiscreteValues", GetPyParam<T>(), doc.DiscreteValues.doc);
     DefClone(&discrete_values);
     discrete_values
+        .def(py::init<unique_ptr<BasicVector<T>>>(), py::arg("datum"),
+            doc.DiscreteValues.ctor.doc_1args_datum)
+        .def(py::init<std::vector<std::unique_ptr<BasicVector<T>>>&&>(),
+            py::arg("data"), doc.DiscreteValues.ctor.doc_1args_data)
+        .def(py::init<>(), doc.DiscreteValues.ctor.doc_0args)
         .def("num_groups", &DiscreteValues<T>::num_groups,
             doc.DiscreteValues.num_groups.doc)
         .def("size", &DiscreteValues<T>::size, doc.DiscreteValues.size.doc)
@@ -750,7 +824,23 @@ void DefineFrameworkPySemantics(py::module m) {
             overload_cast_explicit<BasicVector<T>&, int>(
                 &DiscreteValues<T>::get_mutable_vector),
             py_rvp::reference_internal, py::arg("index") = 0,
-            doc.DiscreteValues.get_mutable_vector.doc_1args);
+            doc.DiscreteValues.get_mutable_vector.doc_1args)
+        .def(
+            "SetFrom",
+            [](DiscreteValues<T>* self, const DiscreteValues<double>& other) {
+              self->SetFrom(other);
+            },
+            doc.DiscreteValues.SetFrom.doc)
+        .def("__getitem__",
+            overload_cast_explicit<const T&, std::size_t>(
+                &DiscreteValues<T>::operator[]),
+            doc.DiscreteValues.operator_array.doc_1args_idx_const)
+        .def(
+            "__setitem__",
+            [](DiscreteValues<T>& self, int index, T& value) {
+              self[index] = value;
+            },
+            doc.DiscreteValues.operator_array.doc_1args_idx_nonconst);
   };
   type_visit(bind_common_scalar_types, CommonScalarPack{});
 }  // NOLINT(readability/fn_size)

@@ -4,6 +4,7 @@ from pydrake.solvers.snopt import SnoptSolver
 from pydrake.solvers.mathematicalprogram import (
     LinearConstraint,
     MathematicalProgramResult,
+    PyFunctionConstraint,
     SolverOptions,
     SolverType,
     SolverId,
@@ -427,6 +428,29 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(np.all(eigs >= -tol))
         self.assertTrue(S[0, 1] >= -tol)
 
+    def test_nonnegative_polynomial(self):
+        # Only check if the API works.
+        prog = mp.MathematicalProgram()
+        x = prog.NewIndeterminates(3, "x")
+        (poly1, gramian1) = prog.NewNonnegativePolynomial(
+            indeterminates=sym.Variables(x), degree=4,
+            type=mp.MathematicalProgram.NonnegativePolynomial.kSdsos)
+        self.assertIsInstance(poly1, sym.Polynomial)
+        self.assertIsInstance(gramian1, np.ndarray)
+
+        gramian2 = prog.NewSymmetricContinuousVariables(2)
+        poly2 = prog.NewNonnegativePolynomial(
+            gramian=gramian2,
+            monomial_basis=(sym.Monomial(x[0]), sym.Monomial(x[1])),
+            type=mp.MathematicalProgram.NonnegativePolynomial.kDsos)
+        self.assertIsInstance(gramian2, np.ndarray)
+
+        poly3, gramian3 = prog.NewNonnegativePolynomial(
+            monomial_basis=(sym.Monomial(x[0]), sym.Monomial(x[1])),
+            type=mp.MathematicalProgram.NonnegativePolynomial.kSos)
+        self.assertIsInstance(poly3, sym.Polynomial)
+        self.assertIsInstance(gramian3, np.ndarray)
+
     def test_sos(self):
         # Find a,b,c,d subject to
         # a(0) + a(1)*x,
@@ -576,6 +600,37 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddLinearEqualityConstraint(x[0] + x[1], 1)
         prog.AddLinearEqualityConstraint(
             2 * x[:2] + np.array([0, 1]), np.array([3, 2]))
+
+    def test_constraint_set_bounds(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, "x")
+
+        def constraint(x):
+            return x[1] ** 2
+        binding = prog.AddConstraint(constraint, [0], [1], vars=x)
+        self.assertIsInstance(binding.evaluator(), PyFunctionConstraint)
+        np.testing.assert_array_equal(
+            binding.evaluator().lower_bound(), np.array([0.]))
+        np.testing.assert_array_equal(
+            binding.evaluator().upper_bound(), np.array([1.]))
+        # Test UpdateLowerBound()
+        binding.evaluator().UpdateLowerBound(new_lb=[-1.])
+        np.testing.assert_array_equal(
+            binding.evaluator().lower_bound(), np.array([-1.]))
+        np.testing.assert_array_equal(
+            binding.evaluator().upper_bound(), np.array([1.]))
+        # Test UpdateLowerBound()
+        binding.evaluator().UpdateUpperBound(new_ub=[2.])
+        np.testing.assert_array_equal(
+            binding.evaluator().lower_bound(), np.array([-1.]))
+        np.testing.assert_array_equal(
+            binding.evaluator().upper_bound(), np.array([2.]))
+        # Test set_bounds()
+        binding.evaluator().set_bounds(lower_bound=[-3.], upper_bound=[4.])
+        np.testing.assert_array_equal(
+            binding.evaluator().lower_bound(), np.array([-3.]))
+        np.testing.assert_array_equal(
+            binding.evaluator().upper_bound(), np.array([4.]))
 
     def test_constraint_gradient_sparsity(self):
         prog = mp.MathematicalProgram()

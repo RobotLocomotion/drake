@@ -6,16 +6,17 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/sorted_pair.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 
 namespace drake {
 namespace multibody {
 namespace internal {
 
-/** Type used to identify joint types. */
+/* Type used to identify joint types. */
 using JointTypeIndex = TypeSafeIndex<class JointTypeTag>;
 
-/** Defines a multibody graph consisting of bodies interconnected by joints.
+/* Defines a multibody graph consisting of bodies interconnected by joints.
 The graph is defined by a sequence of calls to AddBody() and AddJoint(). Anytime
 during the lifetime of the graph, a user can ask graph specific questions such
 as how bodies are connected, by which joints or even perform more complex
@@ -32,7 +33,7 @@ class MultibodyGraph {
 
   MultibodyGraph();
 
-  /** Add a new Body to the graph.
+  /* Add a new Body to the graph.
   @param[in] name
     The unique name of the new body in the particular `model_instance`. Several
     bodies can have the same name within a %MultibodyGraph however, their name
@@ -44,7 +45,7 @@ class MultibodyGraph {
   @returns The unique BodyIndex for the added joint in the graph. */
   BodyIndex AddBody(const std::string& name, ModelInstanceIndex model_instance);
 
-  /** Add a new Joint to the graph.
+  /* Add a new Joint to the graph.
   @param[in] name
     The unique name of the new Joint in the particular `model_instance`. Several
     joints can have the same name within a %MultibodyGraph however, their name
@@ -74,27 +75,27 @@ class MultibodyGraph {
                       const std::string& type, BodyIndex parent_body_index,
                       BodyIndex child_body_index);
 
-  /** Returns the body that corresponds to the world. This body added via the
+  /* Returns the body that corresponds to the world. This body added via the
   first call to AddBody().
   @throws std::runtime_error iff AddBody() was not called even once yet. */
   const Body& world_body() const;
 
-  /** Returns the name we recognize as the World (or Ground) body. This is
+  /* Returns the name we recognize as the World (or Ground) body. This is
   the name that was provided in the first AddBody() call.
   In Drake, MultibodyPlant names it the "WorldBody".
   @throws std::runtime_error iff AddBody() was not called even once yet. */
   const std::string& world_body_name() const;
 
-  /** Returns the unique index that identifies the "weld" joint type (always
+  /* Returns the unique index that identifies the "weld" joint type (always
   zero).
   @note The SDF format calls this type a "fixed" joint. */
   static JointTypeIndex weld_type_index() { return JointTypeIndex(0); }
 
-  /** Returns the unique name reserved to identify weld joints (always "weld").
+  /* Returns the unique name reserved to identify weld joints (always "weld").
    */
   static std::string weld_type_name() { return "weld"; }
 
-  /** Register a joint type by name.
+  /* Register a joint type by name.
   MultibodyGraph() registers "weld" at construction as Drake reserves this name
   to identify weld joints. "weld" joint type has index `weld_type_index()`.
   @param[in] joint_type_name
@@ -104,14 +105,14 @@ class MultibodyGraph {
   @retval JointTypeIndex Index uniquely identifying the new joint type. */
   JointTypeIndex RegisterJointType(const std::string& joint_type_name);
 
-  /** @returns `true` iff the given `joint_type_name` was previously registered
+  /* @returns `true` iff the given `joint_type_name` was previously registered
   via a call to RegisterJointType(), or iff it equals weld_type_name(). */
   bool IsJointTypeRegistered(const std::string& joint_type_name) const;
 
-  /** Returns the number of registered joint types. */
+  /* Returns the number of registered joint types. */
   int num_joint_types() const;
 
-  /** Returns the number of bodies, including all added bodies, and the world
+  /* Returns the number of bodies, including all added bodies, and the world
   body.
   @see AddBody(), world_index(), world_body_name(). */
   int num_bodies() const { return static_cast<int>(bodies_.size()); }
@@ -119,7 +120,7 @@ class MultibodyGraph {
   /** Returns the number joints added with AddJoint(). */
   int num_joints() const { return static_cast<int>(joints_.size()); }
 
-  /** Gets a Body by index. The world body has index world_index().
+  /* Gets a Body by index. The world body has index world_index().
   @throws std::exception iff `index` does not correspond to a body in this
   graph. */
   const Body& get_body(BodyIndex index) const {
@@ -127,7 +128,7 @@ class MultibodyGraph {
     return bodies_[index];
   }
 
-  /** Gets a Joint by index.
+  /* Gets a Joint by index.
   @throws std::exception iff `index` does not correspond to a joint in this
   graph. */
   const Joint& get_joint(JointIndex index) const {
@@ -135,19 +136,19 @@ class MultibodyGraph {
     return joints_[index];
   }
 
-  /** @returns `true` if a body named `name` was added to `model_instance`.
+  /* @returns `true` if a body named `name` was added to `model_instance`.
   @see AddBody().
   @throws std::exception if `model_instance` is not a valid index. */
   bool HasBodyNamed(const std::string& name,
                     ModelInstanceIndex model_instance) const;
 
-  /** @returns `true` if a joint named `name` was added to `model_instance`.
+  /* @returns `true` if a joint named `name` was added to `model_instance`.
   @see AddBody().
   @throws std::exception if `model_instance` is not a valid index. */
   bool HasJointNamed(const std::string& name,
                      ModelInstanceIndex model_instance) const;
 
-  /** This method partitions the %MultibodyGraph into sub-graphs such that (a)
+  /* This method partitions the %MultibodyGraph into sub-graphs such that (a)
   every body is in one and only one sub-graph, and (b) two bodies are in the
   same sub-graph iff there is a path between them which includes only weld
   joints (see weld_type_name()). Each sub-graph of welded bodies is represented
@@ -164,7 +165,7 @@ class MultibodyGraph {
       all bodies welded to the world. */
   std::vector<std::set<BodyIndex>> FindSubgraphsOfWeldedBodies() const;
 
-  /** Returns all bodies that are transitively welded, or rigidly affixed, to
+  /* Returns all bodies that are transitively welded, or rigidly affixed, to
   `body_index`, per these two definitions:
     1. A body is always considered welded to itself.
     2. Two unique bodies are considered welded together exclusively by the
@@ -207,6 +208,10 @@ class MultibodyGraph {
 
   std::unordered_map<std::string, JointTypeIndex> joint_type_name_to_index_;
 
+  // Map used to detect redundant joints.
+  using BodiesKey = SortedPair<BodyIndex>;
+  std::unordered_map<BodiesKey, JointIndex> bodies_to_joint_;
+
   // The xxx_name_to_index_ structures are multimaps because
   // bodies/joints/actuators/etc may appear with the same name in different
   // model instances. The index values are still unique across the graph.
@@ -218,20 +223,20 @@ class MultibodyGraph::Body {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Body)
 
-  /** @returns its unique index in the graph. */
+  /* @returns its unique index in the graph. */
   BodyIndex index() const { return index_; }
 
-  /** @returns its model instance. */
+  /* @returns its model instance. */
   ModelInstanceIndex model_instance() const { return model_instance_; }
 
-  /** @returns its name, unique within model_instance(). */
+  /* @returns its name, unique within model_instance(). */
   const std::string& name() const { return name_; }
 
-  /** Returns the total number of joints that have `this` body as either the
+  /* Returns the total number of joints that have `this` body as either the
   parent or child body in a Joint. */
   int num_joints() const;
 
-  /** @returns all the joints that connect to `this` body. */
+  /* @returns all the joints that connect to `this` body. */
   const std::vector<JointIndex>& joints() const { return joints_; }
 
  private:

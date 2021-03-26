@@ -14,6 +14,7 @@ drake_cc_package_library(
     name = "geometry",
     visibility = ["//visibility:public"],
     deps = [
+        ":drake_visualizer",
         ":frame_kinematics",
         ":geometry_frame",
         ":geometry_ids",
@@ -23,6 +24,7 @@ drake_cc_package_library(
         ":geometry_roles",
         ":geometry_set",
         ":geometry_state",
+        ":geometry_version",
         ":geometry_visualization",
         ":internal_frame",
         ":internal_geometry",
@@ -60,6 +62,22 @@ drake_cc_library(
         "@fcl",
         "@fmt",
         "@tinyobjloader",
+    ],
+)
+
+drake_cc_library(
+    name = "drake_visualizer",
+    srcs = ["drake_visualizer.cc"],
+    hdrs = ["drake_visualizer.h"],
+    deps = [
+        ":geometry_roles",
+        ":geometry_version",
+        ":scene_graph",
+        "//common:essential",
+        "//lcm:drake_lcm",
+        "//lcmtypes:viewer",
+        "//systems/framework:context",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -131,6 +149,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "geometry_version",
+    srcs = ["geometry_version.cc"],
+    hdrs = ["geometry_version.h"],
+    deps = [
+        ":geometry_roles",
+        "//common:essential",
+        "//common:identifier",
+    ],
+)
+
+drake_cc_library(
     name = "geometry_roles",
     srcs = ["geometry_roles.cc"],
     hdrs = ["geometry_roles.h"],
@@ -157,6 +186,7 @@ drake_cc_library(
         ":geometry_index",
         ":geometry_instance",
         ":geometry_set",
+        ":geometry_version",
         ":internal_frame",
         ":internal_geometry",
         ":proximity_engine",
@@ -293,10 +323,21 @@ filegroup(
     name = "test_obj_files",
     testonly = 1,
     srcs = [
+        "test/extruded_u.obj",
         "test/forbidden_two_cubes.obj",
         "test/non_convex_mesh.obj",
         "test/quad_cube.mtl",
         "test/quad_cube.obj",
+    ],
+)
+
+drake_cc_googletest(
+    name = "drake_visualizer_test",
+    deps = [
+        ":drake_visualizer",
+        "//common/test_utilities:expect_throws_message",
+        "//lcm:mock",
+        "//systems/analysis:simulator",
     ],
 )
 
@@ -349,6 +390,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "geometry_version_test",
+    deps = [
+        ":geometry_version",
+    ],
+)
+
+drake_cc_googletest(
     name = "geometry_set_test",
     deps = [
         ":geometry_ids",
@@ -388,7 +436,6 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "scene_graph_test",
     deps = [
-        ":geometry_visualization",
         ":scene_graph",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",

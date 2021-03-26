@@ -4,8 +4,6 @@
 
 #include "pybind11/pybind11.h"
 
-#include "drake/common/drake_deprecated.h"
-
 // N.B. Avoid including other headers, such as `pybind11/eigen.sh` or
 // `pybind11/functional.sh`, such that modules can opt-in to (and pay the cost
 // for) these binding capabilities.
@@ -34,17 +32,6 @@ namespace py = pybind11;
 /// the @ref PydrakeReturnValuePolicy "Return Value Policy" section.
 using py_rvp = py::return_value_policy;
 
-/// Used when returning `T& or `const T&`, as pybind's default behavior is to
-/// copy lvalue references.
-DRAKE_DEPRECATED("2020-11-01", "Please use py_rvp::reference instead")
-const auto py_reference = py::return_value_policy::reference;
-
-/// Used when returning references to objects that are internally owned by
-/// `self`. Implies both `py_rvp::reference` and `py::keep_alive<0, 1>`, which
-/// implies "Keep alive, reference: `return` keeps` self` alive".
-DRAKE_DEPRECATED("2020-11-01", "Please use py_rvp::reference_internal instead")
-const auto py_reference_internal = py::return_value_policy::reference_internal;
-
 /// Use this when you must do manual casting - e.g. lists or tuples of nurses,
 /// where the container may get discarded but the items kept. Prefer this over
 /// `py::cast(obj, reference_internal, parent)` (pending full resolution of
@@ -52,6 +39,17 @@ const auto py_reference_internal = py::return_value_policy::reference_internal;
 inline py::object py_keep_alive(py::object nurse, py::object patient) {
   py::detail::keep_alive_impl(nurse, patient);
   return nurse;
+}
+
+/// Use this to manually cast an iterable type (e.g. py::list, py::set). See
+/// pydrake_pybind_test for an example.
+/// N.B. This should *not* be used for `py::dict`.
+template <typename PyType>
+inline PyType py_keep_alive_iterable(PyType nurses, py::object patient) {
+  for (py::handle nurse : nurses) {
+    py_keep_alive(py::reinterpret_borrow<py::object>(nurse), patient);
+  }
+  return nurses;
 }
 
 // Implementation for `overload_cast_explicit`. We must use this structure so

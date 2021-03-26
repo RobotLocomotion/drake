@@ -1,5 +1,4 @@
 import pydrake.math as mut
-import pydrake.math._test as mtest
 from pydrake.math import (BarycentricMesh, wrap_to)
 from pydrake.common import RandomGenerator
 from pydrake.common.cpp_param import List
@@ -7,7 +6,6 @@ from pydrake.common.eigen_geometry import Isometry3_, Quaternion_, AngleAxis_
 from pydrake.common.value import Value
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 import pydrake.common.test_utilities.numpy_compare as numpy_compare
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 
@@ -171,7 +169,6 @@ class TestMath(unittest.TestCase):
         self.assertEqual((X @ v).shape, (3,))
         self.assertEqual((X @ v.reshape((3, 1))).shape, (3, 1))
         self.assertEqual((X @ vs).shape, (3, 2))
-        print(help(RigidTransform.multiply))
         # - Test vector multiplication.
         R_AB = RotationMatrix([
             [0., 1, 0],
@@ -189,27 +186,6 @@ class TestMath(unittest.TestCase):
             X_AB.multiply(p_BoQ_B=p_BQlist), p_AQlist)
         # Test pickling.
         assert_pickle(self, X_AB, RigidTransform.GetAsMatrix4, T=T)
-
-    @numpy_compare.check_all_types
-    def test_isometry_implicit(self, T):
-        Isometry3 = Isometry3_[T]
-        # Explicitly disabled, to mirror C++ API.
-        with self.assertRaises(TypeError):
-            self.assertTrue(mtest.TakeRigidTransform(Isometry3()))
-        with catch_drake_warnings(expected_count=1):
-            self.assertTrue(mtest.TakeIsometry3(mut.RigidTransform()))
-
-    @numpy_compare.check_all_types
-    def test_rigid_transform_deprecated_isometry3_workalikes(self, T):
-        X_AB = mut.RigidTransform()
-        with catch_drake_warnings(expected_count=1):
-            mat = X_AB.matrix()
-        with catch_drake_warnings(expected_count=1):
-            lin = X_AB.linear()
-        self.assertIsInstance(mat, np.ndarray)
-        self.assertIsInstance(lin, np.ndarray)
-        self.assertEqual(mat.shape, (4, 4))
-        self.assertEqual(lin.shape, (3, 3))
 
     @numpy_compare.check_all_types
     def test_rotation_matrix(self, T):
@@ -341,6 +317,38 @@ class TestMath(unittest.TestCase):
             rpyDt=[0, 0, 0], alpha_AD_D=[0, 0, 0]), [0., 0., 0.])
         # Test pickling.
         assert_pickle(self, rpy, RollPitchYaw.vector, T=T)
+
+    @numpy_compare.check_all_types
+    def test_bspline_basis(self, T):
+        BsplineBasis = mut.BsplineBasis_[T]
+
+        bspline = BsplineBasis()
+        self.assertEqual(bspline.order(), 0)
+        self.assertEqual(BsplineBasis(other=bspline).order(), 0)
+        bspline = BsplineBasis(order=2, knots=[0, 1, 3, 5])
+        self.assertEqual(bspline.order(), 2)
+        bspline = BsplineBasis(order=2, num_basis_functions=3,
+                               type=mut.KnotVectorType.kUniform,
+                               initial_parameter_value=5.,
+                               final_parameter_value=6.)
+        self.assertEqual(bspline.order(), 2)
+        self.assertEqual(bspline.degree(), 1)
+        self.assertEqual(bspline.num_basis_functions(), 3)
+        numpy_compare.assert_float_equal(bspline.knots(),
+                                         [4.5, 5.0, 5.5, 6.0, 6.5])
+        numpy_compare.assert_float_equal(bspline.initial_parameter_value(), 5.)
+        numpy_compare.assert_float_equal(bspline.final_parameter_value(), 6.)
+        self.assertEqual(
+            bspline.FindContainingInterval(parameter_value=5.2), 1)
+        self.assertEqual(
+            bspline.ComputeActiveBasisFunctionIndices(
+                parameter_interval=[5.2, 5.7]),
+            [0, 1, 2])
+        self.assertEqual(
+            bspline.ComputeActiveBasisFunctionIndices(parameter_value=5.4),
+            [0, 1])
+        numpy_compare.assert_float_equal(
+            bspline.EvaluateBasisFunctionI(i=0, parameter_value=5.7), 0.)
 
     def test_orthonormal_basis(self):
         R = mut.ComputeBasisFromAxis(axis_index=0, axis_W=[1, 0, 0])

@@ -17,6 +17,7 @@ drake_cc_package_library(
         ":bspline_trajectory",
         ":discrete_time_trajectory",
         ":piecewise_polynomial",
+        ":piecewise_pose",
         ":piecewise_quaternion",
         ":piecewise_trajectory",
         ":trajectory",
@@ -73,6 +74,19 @@ drake_cc_library(
         "//common:essential",
         "//common:polynomial",
         "@fmt",
+    ],
+)
+
+drake_cc_library(
+    name = "piecewise_pose",
+    srcs = ["piecewise_pose.cc"],
+    hdrs = ["piecewise_pose.h"],
+    deps = [
+        ":piecewise_polynomial",
+        ":piecewise_quaternion",
+        "//common:essential",
+        "//common:pointer_cast",
+        "//math:geometric_transform",
     ],
 )
 
@@ -166,6 +180,14 @@ drake_cc_googletest(
     deps = [
         ":piecewise_polynomial",
         ":random_piecewise_polynomial",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "piecewise_pose_test",
+    deps = [
+        ":piecewise_pose",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )

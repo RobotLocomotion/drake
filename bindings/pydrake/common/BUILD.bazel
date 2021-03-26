@@ -41,6 +41,7 @@ PACKAGE_INFO = get_pybind_package_info("//bindings")
 # dependency cycles with `pydrake:module_py`.
 # TODO(eric.cousineau): Decouple this module from the full-fledged
 # `libdrake.so`.
+# TODO(eric.cousineau): Remove this dependency cycle (#7912).
 drake_pybind_library(
     name = "_init_py",
     cc_deps = [
@@ -105,6 +106,7 @@ drake_py_library(
     imports = PACKAGE_INFO.py_imports,
     visibility = [
         "//bindings/pydrake:__subpackages__",
+        "//doc/pydrake:__pkg__",
         # Allow Drake's Jupyter scaffolding to import this module directly,
         # without also importing all of pydrake. This is only sound because
         # none of the transitive `deps` of this target use C++ code.
@@ -246,6 +248,10 @@ drake_py_library(
 drake_py_library(
     name = "cpp_template_py",
     srcs = ["cpp_template.py"],
+    visibility = [
+        "//bindings/pydrake:__subpackages__",
+        "//doc/pydrake:__pkg__",
+    ],
     deps = [
         ":cpp_param_py",
         ":module_py",
@@ -262,15 +268,6 @@ drake_cc_library(
         ":cpp_param_pybind",
         "//bindings/pydrake:pydrake_pybind",
         "@pybind11",
-    ],
-)
-
-drake_py_library(
-    name = "cpp_const_py",
-    srcs = ["cpp_const.py"],
-    deps = [
-        ":module_py",
-        "//bindings/pydrake/third_party:wrapt_py",
     ],
 )
 
@@ -354,7 +351,6 @@ PY_LIBRARIES_WITH_INSTALL = [
 PY_LIBRARIES = [
     ":compatibility_py",
     ":containers_py",
-    ":cpp_const_py",
     ":cpp_param_py",
     ":cpp_template_py",
     ":deprecation_py",
@@ -388,7 +384,10 @@ install(
 drake_py_unittest(
     name = "module_test",
     data = ["//examples/atlas:models"],
-    deps = [":module_py"],
+    deps = [
+        ":module_py",
+        "//bindings/pydrake/common/test_utilities:deprecation_py",
+    ],
 )
 
 drake_cc_googletest(
@@ -409,6 +408,7 @@ drake_cc_googletest(
 drake_cc_library(
     name = "deprecation_example_class",
     testonly = 1,
+    srcs = ["test/deprecation_example/example_class.cc"],
     hdrs = ["test/deprecation_example/example_class.h"],
     deps = [
         "//:drake_shared_library",
@@ -444,6 +444,9 @@ drake_pybind_library(
         "test/deprecation_example/cc_module_py.cc",
     ],
     package_info = PACKAGE_INFO,
+    py_deps = [
+        "//bindings/pydrake:module_py",
+    ],
     visibility = ["//visibility:private"],
 )
 
@@ -459,10 +462,24 @@ drake_py_library(
     ],
 )
 
+# Note: This target tests the low-level deprecation API.
+# Please see `deprecation_utility_test` for a unittest on higher-level
+# deprecation API.
 drake_py_unittest(
     name = "deprecation_test",
     deps = [
+        # N.B. We include this here due to awkward setup for `pydrake.common`.
+        ":module_py",
         ":deprecation_example",
+    ],
+)
+
+# Provides a unittest for high-level deprecation API.
+drake_py_unittest(
+    name = "deprecation_utility_test",
+    deps = [
+        ":deprecation_example",
+        "//bindings/pydrake/common/test_utilities:deprecation_py",
     ],
 )
 
@@ -470,13 +487,6 @@ drake_py_unittest(
     name = "numpy_compare_test",
     deps = [
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
-    ],
-)
-
-drake_py_unittest(
-    name = "cpp_const_test",
-    deps = [
-        ":cpp_const_py",
     ],
 )
 

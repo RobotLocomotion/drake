@@ -323,6 +323,7 @@ drake_cc_googletest(
         "//common:autodiff",
         "//common:find_resource",
         "//common/test_utilities",
+        "//common/test_utilities:limit_malloc",
         "//geometry/test_utilities",
         "//math:geometric_transform",
         "//math:gradient",
@@ -419,7 +420,10 @@ drake_cc_googletest(
         ":plant",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//geometry:drake_visualizer",
         "//math:geometric_transform",
+        "//multibody/plant:contact_results_to_lcm",
+        "//systems/analysis:simulator",
         "//systems/framework:diagram",
     ],
 )
@@ -459,16 +463,42 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "multibody_plant_reflected_inertia_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
+    ],
+    deps = [
+        ":plant",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
     name = "multibody_plant_reaction_forces_test",
     deps = [
         ":plant",
         "//common/test_utilities:eigen_matrix_compare",
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//math:geometric_transform",
         "//multibody/plant:contact_results_to_lcm",
         "//systems/analysis:implicit_euler_integrator",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_plant_kinematics_test",
+    deps = [
+        ":plant",
+        "//common:autodiff",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+        "//math:gradient",
+        "//multibody/test_utilities:spatial_derivative",
     ],
 )
 
@@ -482,6 +512,7 @@ drake_cc_googletest(
         "//math:geometric_transform",
         "//math:gradient",
         "//multibody/test_utilities:add_fixed_objects_to_plant",
+        "//multibody/test_utilities:spatial_derivative",
     ],
 )
 
@@ -516,7 +547,7 @@ drake_cc_googletest(
     deps = [
         ":contact_results_to_lcm",
         "//common/test_utilities:eigen_geometry_compare",
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//multibody/benchmarks/acrobot",
         "//multibody/benchmarks/inclined_plane",
     ],
@@ -585,6 +616,15 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "multibody_plant_com_test",
+    deps = [
+        ":plant",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_plant_momentum_energy_test",
     deps = [
         ":plant",
         "//common/test_utilities:eigen_matrix_compare",

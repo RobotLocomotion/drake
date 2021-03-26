@@ -80,7 +80,7 @@ void BindSpatialVectorMixin(PyClass* pcls) {
           },
           py::arg("R_FE"),
           R"""(
-          Provides a Python-only implementation of rotating / re-expressing) a
+          Provides a Python-only implementation of rotating / re-expressing a
           spatial vector.
 
           Note:
@@ -115,8 +115,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("w"), py::arg("v"), cls_doc.ctor.doc_2args)
         .def(
             py::init<const Vector6<T>&>(), py::arg("V"), cls_doc.ctor.doc_1args)
-        .def("ShiftInPlace", &Class::ShiftInPlace, py::arg("p_BpBq_E"),
-            py_rvp::reference, cls_doc.ShiftInPlace.doc)
         .def("Shift", &Class::Shift, py::arg("p_BpBq_E"), cls_doc.Shift.doc)
         .def("ComposeWithMovingFrameVelocity",
             &Class::ComposeWithMovingFrameVelocity, py::arg("p_PoBo_E"),
@@ -142,8 +140,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(py::init<const Eigen::Ref<const Vector3<T>>&,
                  const Eigen::Ref<const Vector3<T>>&>(),
             py::arg("h"), py::arg("l"), cls_doc.ctor.doc_2args)
-        .def(py::init<const Vector6<T>&>(), py::arg("L"),
-            cls_doc.ctor.doc_1args);
+        .def(
+            py::init<const Vector6<T>&>(), py::arg("L"), cls_doc.ctor.doc_1args)
+        .def("Shift", &Class::Shift, py::arg("p_BpBq_E"), cls_doc.Shift.doc)
+        .def("dot", &Class::dot, py::arg("V_IBp_E"), cls_doc.dot.doc);
+    cls.attr("__matmul__") = cls.attr("dot");
     AddValueInstantiation<Class>(m);
     // Some ports need `Value<std::vector<Class>>`.
     AddValueInstantiation<std::vector<Class>>(m);
@@ -158,8 +159,19 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(py::init<const Eigen::Ref<const Vector3<T>>&,
                  const Eigen::Ref<const Vector3<T>>&>(),
             py::arg("alpha"), py::arg("a"), cls_doc.ctor.doc_2args)
-        .def(py::init<const Vector6<T>&>(), py::arg("A"),
-            cls_doc.ctor.doc_1args);
+        .def(
+            py::init<const Vector6<T>&>(), py::arg("A"), cls_doc.ctor.doc_1args)
+        .def("Shift",
+            overload_cast_explicit<Class, const Vector3<T>&, const Vector3<T>&>(
+                &Class::Shift),
+            py::arg("p_PoQ_E"), py::arg("w_WP_E"), cls_doc.Shift.doc_2args)
+        .def("Shift",
+            overload_cast_explicit<Class, const Vector3<T>&>(&Class::Shift),
+            py::arg("p_PoQ_E"), cls_doc.Shift.doc_1args)
+        .def("ComposeWithMovingFrameAcceleration",
+            &Class::ComposeWithMovingFrameAcceleration, py::arg("p_PB_E"),
+            py::arg("w_WP_E"), py::arg("V_PB_E"), py::arg("A_PB_E"),
+            cls_doc.ComposeWithMovingFrameAcceleration.doc);
     AddValueInstantiation<Class>(m);
     // Some ports need `Value<std::vector<Class>>`.
     AddValueInstantiation<std::vector<Class>>(m);
@@ -176,11 +188,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("tau"), py::arg("f"), cls_doc.ctor.doc_2args)
         .def(
             py::init<const Vector6<T>&>(), py::arg("F"), cls_doc.ctor.doc_1args)
-        .def("ShiftInPlace",
-            overload_cast_explicit<Class&, const Vector3<T>&>(
-                &Class::ShiftInPlace),
-            py::arg("p_BpBq_E"), py_rvp::reference,
-            cls_doc.ShiftInPlace.doc_1args)
         .def("Shift",
             overload_cast_explicit<Class, const Vector3<T>&>(&Class::Shift),
             py::arg("p_BpBq_E"), cls_doc.Shift.doc_1args)

@@ -184,13 +184,15 @@ TEST_F(YamlWriteArchiveTest, Variant) {
 
   test(Variant4(std::string("foo")), "foo");
   test(Variant4(DoubleStruct{1.0}), "!DoubleStruct\n    value: 1.0");
+  test(Variant4(EigenVecStruct{Eigen::Vector2d(1.0, 2.0)}),
+       "!EigenStruct\n    value: [1.0, 2.0]");
 
   // TODO(jwnimmer-tri) We'd like to see "!!float 1.0" here, but our writer
   // does not yet support that output syntax.
   DRAKE_EXPECT_THROWS_MESSAGE(
-    Save(VariantStruct{double{1.0}}),
-    std::exception,
-    "Cannot YamlWriteArchive the variant type double with a non-zero index");
+      Save(VariantStruct{double{1.0}}),
+      std::exception,
+      "Cannot YamlWriteArchive the variant type double with a non-zero index");
 }
 
 TEST_F(YamlWriteArchiveTest, EigenVector) {
@@ -237,6 +239,36 @@ TEST_F(YamlWriteArchiveTest, EigenMatrix) {
     - [0.0, 1.0, 2.0, 3.0]
     - [4.0, 5.0, 6.0, 7.0]
     - [8.0, 9.0, 10.0, 11.0]
+)""");
+}
+
+TEST_F(YamlWriteArchiveTest, EigenMatrixUpTo6) {
+  using Matrix34d = Eigen::Matrix<double, 3, 4>;
+  const auto test = [](const Matrix34d& value, const std::string& expected) {
+    const EigenMatrixUpTo6Struct x{value};
+    EXPECT_EQ(Save(x), expected);
+  };
+
+  test((Matrix34d{} << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11).finished(),
+       R"""(doc:
+  value:
+    - [0.0, 1.0, 2.0, 3.0]
+    - [4.0, 5.0, 6.0, 7.0]
+    - [8.0, 9.0, 10.0, 11.0]
+)""");
+}
+
+TEST_F(YamlWriteArchiveTest, EigenMatrix00) {
+  const auto test = [](const std::string& expected) {
+    const Eigen::MatrixXd empty;
+    const EigenMatrixStruct x{empty};
+    EXPECT_EQ(Save(x), expected);
+    const EigenMatrix00Struct x00;
+    EXPECT_EQ(Save(x00), expected);
+  };
+
+  test(R"""(doc:
+  value: []
 )""");
 }
 

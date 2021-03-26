@@ -401,17 +401,43 @@ class Context : public ContextBase {
     get_mutable_abstract_state<ValueType>(index) = value;
   }
 
-  // TODO(sherm1) Should treat fixed input port values same as parameters.
-  // TODO(sherm1) Change the name of this method to be more inclusive since it
-  //              also copies accuracy (now) and fixed input port values
-  //              (pending above TODO).
-  /// Sets this context's time, accuracy, state, and parameters from the
-  /// `double` values in @p source, regardless of this context's scalar type.
-  /// Sends out of date notifications for all dependent computations in this
+  // TODO(xuchenhan-tri) Should treat fixed input port values the same as
+  // parameters.
+  // TODO(xuchenhan-tri) Change the name of this method to be more inclusive
+  // since it also set fixed input port values (pending above TODO).
+  /// Copies all state and parameters in @p source, where numerical values are
+  /// of type `U`, to `this` context. Time and accuracy are unchanged in `this`
+  /// context, which means that this method can be called on a subcontext.
+  /// Sends out of date notifications for all dependent computations in `this`
   /// context.
-  /// @throws std::logic_error if this is not the root context.
   /// @note Currently does not copy fixed input port values from `source`.
   /// See System::FixInputPortsFrom() if you want to copy those.
+  /// @see SetTimeStateAndParametersFrom() if you want to copy time and accuracy
+  /// along with state and parameters to a root context.
+  template <typename U>
+  void SetStateAndParametersFrom(const Context<U>& source) {
+    // A single change event for all these changes is faster than doing
+    // each separately.
+    const int64_t change_event = this->start_new_change_event();
+
+    SetStateAndParametersFromHelper(source, change_event);
+  }
+
+  // TODO(xuchenhan-tri) Should treat fixed input port values the same as
+  // parameters.
+  // TODO(xuchenhan-tri) Change the name of this method to be more inclusive
+  // since it also copies accuracy (now) and fixed input port values
+  // (pending above TODO).
+  /// Copies time, accuracy, all state and all parameters in @p source, where
+  /// numerical values are of type `U`, to `this` context. This method can only
+  /// be called on root contexts because time and accuracy are copied.
+  /// Sends out of date notifications for all dependent computations in this
+  /// context.
+  /// @throws std::exception if this is not the root context.
+  /// @note Currently does not copy fixed input port values from `source`.
+  /// See System::FixInputPortsFrom() if you want to copy those.
+  /// @see SetStateAndParametersFrom() if you want to copy state and parameters
+  /// to a non-root context.
   template <typename U>
   void SetTimeStateAndParametersFrom(const Context<U>& source) {
     ThrowIfNotRootContext(__func__, "Time");
@@ -424,58 +450,13 @@ class Context : public ContextBase {
     PropagateTimeChange(this, converter(source.get_time()), {}, change_event);
     PropagateAccuracyChange(this, source.get_accuracy(), change_event);
 
-    // Notification is separate from the actual value change for bulk changes.
-    PropagateBulkChange(change_event, &Context<T>::NoteAllStateChanged);
-    do_access_mutable_state().SetFrom(source.get_state());
-
-    PropagateBulkChange(change_event, &Context<T>::NoteAllParametersChanged);
-    parameters_->SetFrom(source.get_parameters());
-
-    // TODO(sherm1) Fixed input copying goes here.
+    // Set state and parameters (and fixed input port values pending TODO) from
+    // the source.
+    SetStateAndParametersFromHelper(source, change_event);
   }
 
   // Allow access to the base class method (takes an AbstractValue).
   using ContextBase::FixInputPort;
-
-  /// Connects the input port at @p index to a FixedInputPortValue with
-  /// the given vector @p vec. Aborts if @p index is out of range.
-  /// Returns a reference to the allocated FixedInputPortValue. The
-  /// reference will remain valid until this input port's value source is
-  /// replaced or the %Context is destroyed. You may use that reference to
-  /// modify the input port's value using the appropriate
-  /// FixedInputPortValue method, which will ensure that invalidation
-  /// notifications are delivered.
-  /// @note Calling this method on an already connected input port, i.e., an
-  /// input port that has previously been passed into a call to
-  /// DiagramBuilder::Connect(), causes FixedInputPortValue to override any
-  /// other value present on that port.
-  FixedInputPortValue& FixInputPort(int index, const BasicVector<T>& vec);
-
-  /// Same as above method but starts with an Eigen vector whose contents are
-  /// used to initialize a BasicVector in the FixedInputPortValue.
-  /// @note Calling this method on an already connected input port, i.e., an
-  /// input port that has previously been passed into a call to
-  /// DiagramBuilder::Connect(), causes FixedInputPortValue to override any
-  /// other value present on that port.
-  FixedInputPortValue& FixInputPort(
-      int index, const Eigen::Ref<const VectorX<T>>& data);
-
-  /// Same as the above method that takes a `const BasicVector<T>&`, but here
-  /// the vector is passed by unique_ptr instead of by const reference.  The
-  /// caller must not retain any aliases to `vec`; within this method, `vec`
-  /// is cloned and then deleted.
-  /// @note Calling this method on an already connected input port, i.e., an
-  /// input port that has previously been passed into a call to
-  /// DiagramBuilder::Connect(), causes FixedInputPortValue to override any
-  /// other value present on that port.
-  /// @note This overload will become deprecated in the future, because it can
-  /// mislead users to believe that they can retain an alias of `vec` to mutate
-  /// the fixed value during a simulation.  Callers should prefer to use one of
-  /// the other overloads instead.
-  ///
-  /// @exclude_from_pydrake_mkdoc{Will be deprecated; not bound in pydrake.}
-  FixedInputPortValue& FixInputPort(
-      int index, std::unique_ptr<BasicVector<T>> vec);
 
   // TODO(sherm1) Consider whether to avoid invalidation if the new value is
   // the same as the old one.
@@ -830,6 +811,25 @@ class Context : public ContextBase {
   // Call with arguments like (__func__, "Time"), capitalized as shown.
   void ThrowIfNotRootContext(const char* func_name,
                              const char* quantity) const;
+
+  // TODO(xuchenhan-tri) Should treat fixed input port values the same as
+  // parameters.
+  // TODO(xuchenhan-tri) Change the name of this method to be more inclusive
+  // since it also fixed input port values (pending above TODO).
+  // This helper allow us to reuse this code in several APIs with a single
+  // change_event.
+  template <typename U>
+  void SetStateAndParametersFromHelper(const Context<U>& source,
+                                       int64_t change_event) {
+    // Notification is separate from the actual value change for bulk changes.
+    PropagateBulkChange(change_event, &Context<T>::NoteAllStateChanged);
+    do_access_mutable_state().SetFrom(source.get_state());
+
+    PropagateBulkChange(change_event, &Context<T>::NoteAllParametersChanged);
+    parameters_->SetFrom(source.get_parameters());
+
+    // TODO(xuchenhan-tri) Fixed input copying goes here.
+  }
 
   // These helpers allow us to reuse this code in several APIs while the
   // error message contains the actual API name.

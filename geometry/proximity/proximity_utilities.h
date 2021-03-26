@@ -9,6 +9,7 @@
 #include <fmt/format.h>
 
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
@@ -125,6 +126,40 @@ class EncodedData {
 /* Returns the name of the geometry associated with the given collision
  `object`.  */
 std::string GetGeometryName(const fcl::CollisionObjectd& object);
+
+// TODO(joemasterjohn): Move the below mesh testing utilities to a separate
+// target only used by tests.
+
+/* Counts the unique 1-simplices (edges) in `mesh`. */
+int CountEdges(const VolumeMesh<double>& mesh);
+
+/* Counts the unique 2-simplices (faces) in the `mesh` */
+int CountFaces(const VolumeMesh<double>& mesh);
+
+/*
+  Computes the generalized Euler characteristic:
+
+   χ = k₀ - k₁ + k₂ - k₃
+
+  Where kᵢ is the number of i-simplexes in the mesh.
+
+  We can use χ in a necessary condition for a _conforming_
+  tetrahedral mesh (any two tetrahedra intersect in their shared
+  face, or shared edge, or shared vertex, or not at all. There is
+  no partial overlapping of two tetrahedra.).
+
+  For example, every tetrahedral mesh of every geometric primitive
+  (Box , Cylinder, Ellipsoid, Sphere, etc.) must have χ = 1 because
+  it is topologically equivalent to a solid ball.
+*/
+int ComputeEulerCharacteristic(const VolumeMesh<double>& mesh);
+
+using Eigen::Vector3d;
+
+/* Computes the signed distance to the capsule's surface from point P. The point
+ is measured and expressed in the capsule's canonical frame C. Negative values
+ for points *inside* the capsule, positive value for points outside.  */
+double CalcDistanceToSurface(const Capsule& capsule, const Vector3d& p_CP);
 
 }  // namespace internal
 }  // namespace geometry

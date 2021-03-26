@@ -26,6 +26,10 @@ class PackageMap {
   /// Returns true if and only if this PackageMap contains @p package_name.
   bool Contains(const std::string& package_name) const;
 
+  /// Removes package @p package_name and its previously added path.
+  /// Throws if @p package_name is not present in this PackageMap.
+  void Remove(const std::string& package_name);
+
   /// Returns the number of entries in this PackageMap.
   int size() const;
 
@@ -34,9 +38,9 @@ class PackageMap {
   const std::string& GetPath(const std::string& package_name) const;
 
   /// Adds an entry into this PackageMap for the given `package.xml` filename.
-  /// Throws if @p package_xml_filename does not exist or its embedded name
-  /// already exists in this map.
-  void AddPackageXml(const std::string& package_xml_filename);
+  /// Throws if @p filename does not exist or its embedded name already exists
+  /// in this map.
+  void AddPackageXml(const std::string& filename);
 
   /// Crawls down the directory tree starting at @p path searching for
   /// directories containing the file `package.xml`. For each of these

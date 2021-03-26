@@ -95,8 +95,6 @@ SchunkWsgPlainController::SchunkWsgPlainController(ControlMode control_mode,
   // Add the saturation block.
   // Create gain blocks to convert the scalar, positive max-force input into
   // positive and negative max-joint-force vectors.
-  const auto max_force_passthrough =
-      builder.AddSystem<systems::PassThrough<double>>(1);
   const auto positive_gain = builder.AddSystem<systems::MatrixGain<double>>(
       0.5 * MatrixX<double>::Ones(ng, 1));
   const auto negative_gain = builder.AddSystem<systems::MatrixGain<double>>(
@@ -209,8 +207,10 @@ SchunkWsgPlainController::SchunkWsgPlainController(ControlMode control_mode,
   // Export the inputs.
   state_input_port_ =
       builder.ExportInput(joint_state_to_control_state->get_input_port());
+  // Max force input -> Saturation
   max_force_input_port_ =
-      builder.ExportInput(max_force_passthrough->get_input_port());
+      builder.ExportInput(positive_gain->get_input_port());
+  builder.ConnectInput(max_force_input_port_, negative_gain->get_input_port());
   if (desired_grip_state_input_port) {
     desired_grip_state_input_port_ =
         builder.ExportInput(*desired_grip_state_input_port);
@@ -234,11 +234,6 @@ SchunkWsgPlainController::SchunkWsgPlainController(ControlMode control_mode,
                   mean_finger_force_to_joint_force->get_input_port());
   // Grip force -> Saturation
   builder.Connect(*grip_force_output_port, saturation->get_input_port());
-  // Max force input -> Saturation
-  builder.Connect(max_force_passthrough->get_output_port(),
-                  positive_gain->get_input_port());
-  builder.Connect(max_force_passthrough->get_output_port(),
-                  negative_gain->get_input_port());
   builder.Connect(positive_gain->get_output_port(),
                   saturation->get_max_value_port());
   builder.Connect(negative_gain->get_output_port(),

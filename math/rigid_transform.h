@@ -6,7 +6,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/math/rotation_matrix.h"
@@ -427,31 +426,6 @@ class RigidTransform {
     return RigidTransform<T>(R_BA, R_BA * (-p_AoBo_A_));
   }
 
-#ifndef DRAKE_DOXYGEN_CXX
-  // DO NOT USE. These methods will soon be deprecated as #9865 is resolved.
-  // They are only provided to support backwards compatibility with Isometry3
-  // as we migrate Drake's codebase to use RigidTransform. New uses of
-  // Isometry3 are discouraged. These methods will remain intact (though
-  // possibly marked as deprecated) until at least 2020-07-01. N.B. Keep the
-  // deprecation date here in sync with the deprecation comment inside
-  // drake/bindings/pydrake/math_py.cc.
-  DRAKE_DEPRECATED("2020-10-01",
-      "Implicit conversion from RigidTransform to Eigen::Isometry3 is "
-      "deprecated.  You may convert explicitly by calling GetAsIsometry3(), "
-      "or try to avoid using Eigen::Isometry3 in the first place.")
-  operator Isometry3<T>() const { return GetAsIsometry3(); }
-  DRAKE_DEPRECATED("2020-10-01",
-     "The RigidTransform::linear() method was added for compatibility with "
-     "Eigen::Isometry3, and is now deprecated.  "
-     "Use RigidTransform::rotation().matrix() instead.")
-  const Matrix3<T>& linear() const { return R_AB_.matrix(); }
-  DRAKE_DEPRECATED("2020-10-01",
-     "The RigidTransform::matrix() method was added for compatibility with "
-     "Eigen::Isometry3, and is now deprecated.  "
-     "Use RigidTransform::GetAsMatrix4() instead.")
-  Matrix4<T> matrix() const { return GetAsMatrix4(); }
-#endif
-
   /// In-place multiply of `this` %RigidTransform `X_AB` by `other`
   /// %RigidTransform `X_BC`.
   /// @param[in] other %RigidTransform that post-multiplies `this`.
@@ -627,6 +601,17 @@ class RigidTransform {
   // Position vector from A's origin Ao to B's origin Bo, expressed in A.
   Vector3<T> p_AoBo_A_;
 };
+
+// To enable low-level optimizations we insist that RigidTransform<double> is
+// packed into 12 consecutive doubles, with a 3x3 RotationMatrix<double> in
+// the first 9 doubles and a translation vector in the last 3 doubles.
+// A unit test verifies this memory layout for a RigidTransform<double>.
+// Note: The C++ standard guarantees that non-static members of a class appear
+// in memory in the same order as they are declared.  Implementation alignment
+// requirements can cause an alignment gap in memory between adjacent members.
+static_assert(sizeof(RigidTransform<double>) == 12 * sizeof(double),
+    "Low-level optimizations depend on RigidTransform<double> being "
+    "stored as 12 sequential doubles in memory.");
 
 /// Abbreviation (alias/typedef) for a RigidTransform double scalar type.
 /// @relates RigidTransform

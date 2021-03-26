@@ -189,6 +189,9 @@ const AbstractValue* SystemBase::EvalAbstractInputImpl(
   // Since it wasn't fixed, it is unconnected.
   if (get_parent_service() == nullptr) return nullptr;
 
+  // If this is a root Context, our parent can't evaluate it.
+  if (context.is_root_context()) return nullptr;
+
   // This is not the root System, and the port isn't fixed, so ask our parent to
   // evaluate it.
   return get_parent_service()->EvalConnectedSubsystemInputPort(
@@ -258,6 +261,14 @@ void SystemBase::ThrowCantEvaluateInputPort(const char* func,
                       "fixed so cannot be evaluated. (System {})",
                   FmtFunc(func), get_input_port_base(port).get_name(), port,
                   GetSystemPathname()));
+}
+
+void SystemBase::ThrowValidateContextMismatch(
+    const ContextBase& context) const {
+  throw std::logic_error(fmt::format(
+      "Context was not created for {} system {}; it was created for system {}",
+      this->GetSystemType(), this->GetSystemPathname(),
+      context.GetSystemPathname()));
 }
 
 }  // namespace systems

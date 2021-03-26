@@ -8,7 +8,7 @@ drake_cc_binary(
     name = "region_of_attraction",
     srcs = ["region_of_attraction.cc"],
     add_test_rule = 1,
-    tags = mosek_test_tags(),
+    test_rule_tags = mosek_test_tags(),
     deps = [
         "//solvers:mathematical_program",
         "//solvers:solve",
@@ -20,7 +20,7 @@ drake_cc_binary(
     name = "backward_reachability",
     srcs = ["backward_reachability.cc"],
     add_test_rule = 1,
-    tags = mosek_test_tags(),
+    test_rule_tags = mosek_test_tags(),
     deps = [
         "//common/proto:call_python",
         "//solvers:mathematical_program",

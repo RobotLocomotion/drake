@@ -1,0 +1,137 @@
+\documentclass[a4paper]{article}
+
+\usepackage[english]{babel}
+\usepackage[utf8x]{inputenc}
+\usepackage{amsmath}
+
+% Macro shortcuts
+\newcommand{\mb}[1]{{\mathbf{#1}}}
+\newcommand{\EE}{\mb{E}}
+\newcommand{\FF}{\mb{F}}
+\newcommand{\II}{\mb{I}}
+\newcommand{\PP}{\mb{P}}
+\renewcommand{\SS}{\mb{S}}
+\newcommand{\XX}{\mb{X}}
+\newcommand{\xx}{\mb{x}}
+\newcommand{\ssigma}{\boldsymbol{\sigma}}
+
+
+\title{Equivalence of Stiffness Matrix Calculated in Current and Reference
+Configuration}
+\author{Xuchen Han}
+\date{December 2020}
+\begin{document}
+\maketitle
+
+We use $\FF$ to denote the deformation gradient, $\PP$ to denote the
+First Piola
+Kirchhoff stress, $\SS$ to denote the Second Piola Kirchhoff stress,
+$\ssigma$
+to denote the Cauchy stress, $\xx$ to denote the current position, $\XX$
+to denote the reference position, $N$ to denote the shape function in the
+FEM discretization, $\EE = \frac{1}{2}(\FF^T \FF - \II)$ to denote the
+Green-Lagrangian strain tensor, and $C_{IJKL} = \frac{\partial
+    S_{IJ}}{\partial E_{KL}}$ to denote the elasticity tensor in the
+reference configuration. We use subscripts $i, j, k, l, m, n, p, q$ and
+their upper case counterparts to denote spacial dimension indices which
+can take values from 1, 2 and 3. We use superscripts $a, b$ to denote
+local element indexes, ranging from 1 to the number of element nodes.
+
+The stiffness matrix given by~\cite{Bonet} without the external force
+component is
+\begin{align}
+    \label{eq:current_stiffness}
+    [K_{ab}]_{mn} = [K^c_{ab}]_{mn} + [K^\sigma_{ab}]_{mn}.
+\end{align}
+$[K^c_{ab}]_{mn}$ is given by (9.35) in~\cite{Bonet}:
+\begin{align*}
+[K^c_{ab}]
+    _{mn} = \int \frac{\partial N^a}{\partial x_i} c_{minj}
+    \frac{\partial N^b}{\partial x_j}d\xx,
+\end{align*}
+in which $c_{ijkl}$ is the current configuration elasticity tensor that
+satisfies $J c_{ijkl} = F_{iI}F_{jJ}F_{kK}F_{lL}C_{IJKL}$ ((8.12d)
+in~\cite{Bonet}).
+
+$[K^{\sigma}_{ab}]_{mn}$ is given by (9.44c) in~\cite{Bonet}
+\begin{align*}
+[K^\sigma_{ab}]
+    _{mn} = \int \frac{\partial N^a}{\partial x_i} \sigma_{ij}
+    \frac{\partial N^b}{\partial x_j} \delta_{mn} d\xx.
+\end{align*}
+
+The stiffness matrix in our implementation is given by
+\begin{align}
+    \label{eq:reference_stiffness}
+    [K_{ab}]_{mn} = \int \frac{\partial F_{iI}}{\partial x^a_m}
+    \frac{\partial P_{iI}}{\partial F_{jJ}} \frac{\partial
+        F_{jJ}}{\partial x^b_n} d\XX.
+\end{align}
+We will show that the stiffness matrix we implement in
+Equation~\ref{eq:reference_stiffness} is analytically equivalent to the
+one in Equation~\ref{eq:current_stiffness}.
+
+To see the equivalence, we make use of the identity $\PP = \FF \SS$,
+which implies
+\begin{align}\nonumber
+\frac{\partial P_{iI}}{\partial F_{jJ}} &= \frac{\partial
+    F_{iK}S_{KI}}{\partial E_{PQ}} \frac{\partial E_{PQ}}{\partial
+    F_{jJ}} \\ \nonumber
+&= \frac{\partial F_{iK}}{\partial E_{PQ}} S_{KI} \frac{\partial
+    E_{PQ}}{\partial F_{jJ}} + F_{iK}C_{KIPQ} \frac{\partial
+    E_{PQ}}{\partial F_{jJ}} \\ \nonumber
+&= \delta_{ij} \delta_{KJ} S_{KI}  + F_{iK}C_{KIPQ}\left
+(\frac{1}{2}\left(\delta_{PJ}F_{jQ} + F_{jP}\delta_{QJ}\right)\right) \\
+&= \delta_{ij}S_{IJ} + F_{iK}C_{KIJL}F_{jL} \label{eq:stress-derivative}
+\end{align}
+where the last equality uses the symmetries $S_{IJ} = S_{JI}$ and
+$C_{IJKL} = C_{IJLK}$.
+
+Plugging Equation~\ref{eq:stress-derivative} into
+Equation~\ref{eq:reference_stiffness} and using the fact that
+$\frac{\partial F_{kL}}{\partial x^a_j} = \delta_{jk} \frac{\partial
+    N^a}{\partial X_L}$, we get:
+\begin{flalign*}
+[K_{ab}]_{mn}
+&= \int \frac{\partial F_{iI}}{\partial x^a_m} \frac{\partial
+    P_{iI}}{\partial F_{jJ}} \frac{\partial F_{jJ}}{\partial x^b_n}
+d\XX. \\
+&= \int \delta_{im} \frac{\partial N^a}{\partial X_I} \frac{\partial
+    P_{iI}}{\partial F_{jJ}}\delta_{jn}\frac{\partial N^b}{\partial
+    X_J} d\XX \\
+&= \int \delta_{im} \frac{\partial N^a}{\partial X_I}
+\delta_{ij}S_{IJ}\delta_{jn}\frac{\partial N^b}{\partial X_J} d\XX
+\int \delta_{im} \frac{\partial N^a}{\partial X_I}
+F_{iK}C_{KIJL}F_{jL}\delta_{jn}\frac{\partial N^b}{\partial X_J}
+d\XX \\
+&= \int \delta_{im} \frac{\partial N^a}{\partial x_i} F_{iI}
+\delta_{ij}S_{IJ}\delta_{jn}\frac{\partial N^b}{\partial x_j}F_{jJ}
+d\XX \\
+&~~~+\int \delta_{im} \frac{\partial N^a}{\partial x_p} F_{pI}
+F_{iK}C_{KIJL}F_{jL}\delta_{jn}\frac{\partial N^b}{\partial x_q}
+F_{qJ} d\XX \\
+&= \int \delta_{mn}\frac{\partial N^a}{\partial x_i}
+F_{iI}S_{IJ}\frac{\partial N^b}{\partial x_j}F_{jJ}d\XX \\
+&~~~+ \int\frac{\partial N^a}{\partial x_p} F_{pI} F_{mK}C_{KIJL}F_{nL}
+F_{qJ}\frac{\partial N^b}{\partial x_q} d\XX \\
+&= \int \frac{\partial N^a}{\partial x_i} \sigma_{ij}  \frac{\partial
+    N^b}{\partial x_j} \delta_{mn} d\xx + \int \frac{\partial
+    N^a}{\partial x_p} c_{mpqn}  \frac{\partial N^b}{\partial
+    x_q}d\xx \\
+&= \int \frac{\partial N^a}{\partial x_i} \sigma_{ij}  \frac{\partial
+    N^b}{\partial x_j} \delta_{mn} d\xx + \int \frac{\partial
+    N^a}{\partial x_i} c_{minj}  \frac{\partial N^b}{\partial
+    x_j}d\xx \\
+&= [K^c_{ab}]_{mn} + [K^\sigma_{ab}]_{mn} &,
+\end{flalign*}
+where the sixth equality uses the identity $\ssigma = \frac{1}{J}\FF \SS
+\FF^T$ and the seventh equality uses the symmetry $c_{ijkl} = c_{ijlk}$ in
+the elasticity tensor.
+
+\begin{thebibliography}{9}
+    \bibitem{Bonet} \label{Bonet}
+    Bonet, J., Gil, A.J. and Wood, R.D \textit{Nonlinear solid mechanics
+    for finite element analysis: statics.} Cambridge University Press, 2016.
+\end{thebibliography}
+
+\end{document}

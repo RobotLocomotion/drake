@@ -55,7 +55,8 @@ class LeafContextTest : public ::testing::Test {
     // counter here so this test can add more ticketed things later.
     // (That's not allowed in user code.)
     for (int i = 0; i < kNumInputPorts; ++i) {
-      context_.FixInputPort(i, BasicVector<double>(kInputSize[i]));
+      context_.FixInputPort(
+          i, Value<BasicVector<double>>(kInputSize[i]));
       ++next_ticket_;
     }
 
@@ -354,7 +355,8 @@ TEST_F(LeafContextTest, GetVectorInput) {
   AddInputPorts(2, &context);
 
   // Add input port 0 to the context, but leave input port 1 uninitialized.
-  context.FixInputPort(0, {5.0, 6.0});
+  context.FixInputPort(0, Value<BasicVector<double>>(
+                              Eigen::Vector2d(5.0, 6.0)));
 
   // Test that port 0 is retrievable.
   VectorX<double> expected(2);
@@ -428,67 +430,6 @@ TEST_F(LeafContextTest, SetAndGetCache) {
   entry_value.set_value<int>(99);
   EXPECT_FALSE(entry_value.is_out_of_date());  // Set marked it up to date.
   EXPECT_EQ(99, entry_value.get_value<int>());
-}
-
-TEST_F(LeafContextTest, FixInputPort) {
-  const InputPortIndex index{0};
-  const int size = kInputSize[index];
-
-  // Test the unique_ptr<BasicVector> overload.
-  {
-    FixedInputPortValue& value = context_.FixInputPort(
-        index, VectorXd::Constant(size, 3.0));
-    EXPECT_EQ(context_.MaybeGetFixedInputPortValue(index), &value);
-    EXPECT_EQ(value.get_vector_value<double>()[0], 3.0);
-  }
-
-  // Test the const BasicVector& overload.
-  {
-    FixedInputPortValue& value = context_.FixInputPort(
-        index, BasicVector<double>(VectorXd::Constant(size, 2.0)));
-    EXPECT_EQ(context_.MaybeGetFixedInputPortValue(index), &value);
-    EXPECT_EQ(value.get_vector_value<double>()[0], 2.0);
-  }
-
-  // Test the Eigen::Ref overload.
-  {
-    FixedInputPortValue& value = context_.FixInputPort(
-        index, VectorXd::Constant(size, 1.0));
-    EXPECT_EQ(context_.MaybeGetFixedInputPortValue(index), &value);
-    EXPECT_EQ(value.get_vector_value<double>()[0], 1.0);
-  }
-
-  // N.B. The GetAbstractInput test case above already covers the FixInputPort
-  // overloads for AbstractValue.
-
-  // Test that type-checking guards are called, for all overloads.
-  {
-    const InputPortIndex i_new{kNumInputPorts};
-    AddInputPort(i_new, &context_, [](const AbstractValue& value) {
-        throw std::runtime_error("Bad type " + NiceTypeName::Get(value));
-      });
-    const VectorXd zero = VectorXd::Zero(1);
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        context_.FixInputPort(i_new, zero),
-        std::runtime_error,
-        "Bad type drake::Value<drake::systems::BasicVector<double>>");
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        context_.FixInputPort(i_new, BasicVector<double>(zero)),
-        std::runtime_error,
-        "Bad type drake::Value<drake::systems::BasicVector<double>>");
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        context_.FixInputPort(i_new, BasicVector<double>::Make(0.0)),
-        std::runtime_error,
-        "Bad type drake::Value<drake::systems::BasicVector<double>>");
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        context_.FixInputPort(i_new, Value<std::string>("foo")),
-        std::runtime_error,
-        "Bad type drake::Value<std::string>");
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        context_.FixInputPort(i_new, AbstractValue::Make<std::string>("foo")),
-        std::runtime_error,
-        "Bad type drake::Value<std::string>");
-  }
 }
 
 TEST_F(LeafContextTest, Clone) {

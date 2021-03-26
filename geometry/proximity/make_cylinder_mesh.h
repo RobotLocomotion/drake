@@ -18,6 +18,133 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
+/* Generates a tetrahedral volume mesh approximating a given cylinder by medial
+ axis (MA) subdivision. The cylinder is subdivided into blocks using its MA,
+ and then the blocks are subdivided into tetrahedra. Using this mesh with
+ MeshFieldLinear, we can represent the distance-to-boundary function φ of the
+ cylinder (which can be scaled by a constant elastic modulus to create a
+ hydroelastic pressure field) accurately and economically. However, this mesh
+ may not be suitable for other kinds of pressure fields, e.g., a squared
+ distance field.
+
+ The cylinder's MA is the set of all points having more than one closest point
+ on the cylinder's boundary. (See https://en.wikipedia.org/wiki/Medial_axis for
+ more about the medial axis.)
+
+ This table show how this function classifies cylinders into three kinds.
+
+ |long cylinder   | cylinder.length()/2 > cylinder.radius() |
+ |medium cylinder | cylinder.length()/2 = cylinder.radius() |
+ |short cylinder  | cylinder.length()/2 < cylinder.radius() |
+
+ The following picture file shows examples of a mesh of a long cylinder,
+ a mesh of a medium cylinder, and a mesh of a short cylinder. The files are
+ distributed with the source code.
+
+ |geometry/proximity/images/cylinder_mesh_medial_axis_pressure.png   |
+ | Meshes of a long cylinder, a medium cylinder, and a short cylinder|
+
+ The following three pictures show X-Z cross sections of the three kinds of
+ cylinders together with their MAs. Each cylinder has its Z-axis as the axis
+ of rotation.
+
+ 1. The long cylinder has cylinder.length()/2 > cylinder.radius(). Its MA
+    includes the two cone surfaces tapering from the bottom and the top
+    circular caps of the cylinder. Each cone has its apex at one of the two
+    medial vertices M₀ and M₁. The MA also includes the line segment
+    connecting M₀ and M₁. The following picture shows MA's cross section
+    consisting of four line segments (drawn with arrows) from four corners of
+    the cylinder's cross section (drawn as a rectangle with "+", "--", "|")
+    to the medial vertices M₀ and M₁ (drawn with "o"). It also shows the
+    medial line segment (drawn with "║") connecting M₀ and M₁.
+
+                   Z (axis of rotation)
+                   ↑
+                   |
+             +-----------+
+             | ↘       ↙ |
+             |   ↘   ↙   |
+             |  M₁ o     |
+             |     ║     |
+             |     ║     |  ----→ X
+             |     ║     |
+             |  M₀ o     |
+             |   ↗   ↖   |
+             | ↗       ↖ |
+             +-----------+
+
+ 2. The medium cylinder has cylinder.length()/2 = cylinder.radius(). Its MA
+    consists of two cone surfaces tapering from the bottom and the top
+    circular caps of the cylinder. The two cones share their common apex at the
+    medial vertex M₀. The following picture shows MA's cross section
+    consisting of four line segments (drawn with arrows) from four corners of
+    the cylinder's cross section (drawn as a square with "+", "--", "|") to
+    the medial vertex M₀ (drawn with "o").
+
+                   Z (axis of rotation)
+                   ↑
+                   |
+             +-----------+
+             | ↘       ↙ |
+             |   ↘   ↙   |
+             |  M₀ o     |  ----→ X
+             |   ↗   ↖   |
+             | ↗       ↖ |
+             +-----------+
+
+ 3. The short cylinder has cylinder.length()/2 < cylinder.radius(). Its MA
+    includes surfaces of the two circular frusta (truncated cones) tapering
+    from the bottom and the top circular caps of the cylinder. The two frusta
+    share the medial circular disk D₀. The following picture shows MA's cross
+    section consisting of four line segments (drawn with arrows) from four
+    corners of the cylinder's cross section (drawn as a rectangle with "+",
+    "--", "|") to the two endpoints of a line segment (drawn with "~"), which
+    is a diameter of the disk D₀.
+
+                   Z (axis of rotation)
+                   ↑
+                   |
+            +-------------+
+            | ↘    D₀   ↙ |
+            |   ~~~~~~~   |  ----→ X
+            | ↗         ↖ |
+            +-------------+
+
+ The output mesh will have these properties:
+
+   1. The generated vertices are unique. There are no repeating vertices in
+      the list of vertex coordinates.
+   2. The generated tetrahedra are _conforming_. Two tetrahedra intersect in
+      their shared face, or shared edge, or shared vertex, or not at all.
+      There is no partial overlapping of two tetrahedra.
+   3. Let n be ⌈2πr/h⌉, where r = cylinder.radius(), and h is `resolution_hint`,
+      i.e., n is the number of vertices per one circular rim of the cylinder.
+      Depending on the shape of the cylinder, the mesh has 5n, 4n, or 9n
+      tetrahedra and 2n+4, 2n+3, or 3n+3 vertices, respectively.
+      3.1 The mesh of a long cylinder has 5n tetrahedra with 2n+4 vertices.
+      3.2 The mesh of a medium cylinder has 4n tetrahedra with 2n+3 vertices.
+      3.3 The mesh of a short cylinder has 9n tetrahedra with 3n+3 vertices.
+
+ @param[in] cylinder The cylinder shape specification.
+ @param[in] resolution_hint  The target length of each edge of the mesh on
+                             each of the bottom and the top circular rims
+                             of the cylinder. The smaller value of
+                             resolution_hint will make the larger number of
+                             tetrahedra.
+ @pre resolution_hint is positive.
+ @retval volume_mesh
+ @tparam_nonsymbolic_scalar
+
+ @note   A long cylinder or a short cylinder that is almost a medium cylinder
+ (i.e., the difference between cylinder.length()/2 and cylinder.radius() is a
+ very small non-zero number) may have tetrahedral elements with very short
+ edges near its medial axis. However, an internal tolerance prevents such
+ short edges from being arbitrarily small.
+ */
+template <typename T>
+VolumeMesh<T> MakeCylinderVolumeMeshWithMa(const Cylinder& cylinder,
+                                           double resolution_hint);
+
 // Helper methods for MakeCylinderVolumeMesh().
 #ifndef DRAKE_DOXYGEN_CXX
 
@@ -544,18 +671,15 @@ VolumeMesh<T> MakeCylinderVolumeMesh(const Cylinder& cylinder,
 
 // Creates a surface mesh for the given `cylinder`; the level of
 // tessellation is guided by the `resolution_hint` parameter in the same way
-// as MakeCylinderVolumeMesh.
+// as MakeCylinderVolumeMeshWithMa().
 //
 // @param[in] cylinder
 //    Specification of the parameterized cylinder the output surface mesh
 //    should approximate.
 // @param[in] resolution_hint
 //    The positive characteristic edge length for the mesh. The coarsest
-//    possible mesh (a rectangular prism) is guaranteed for any value of
-//    `resolution_hint` greater than √2 times the radius of the cylinder.
-//    For any cylinder, there is a `resolution_hint` value that serves as the
-//    smallest value that will produce more triangles -- values smaller than
-//    that will have no effect.
+//    possible mesh (a triangular prism) is guaranteed for any value of
+//    `resolution_hint` at least 3 times the radius of the cylinder.
 // @returns The triangulated surface mesh for the given cylinder.
 // @pre resolution_hint is positive.
 // @tparam T
@@ -565,7 +689,7 @@ SurfaceMesh<T> MakeCylinderSurfaceMesh(const Cylinder& cylinder,
                                        double resolution_hint) {
   DRAKE_DEMAND(resolution_hint > 0.0);
   return ConvertVolumeToSurfaceMesh<T>(
-      MakeCylinderVolumeMesh<T>(cylinder, resolution_hint));
+      MakeCylinderVolumeMeshWithMa<T>(cylinder, resolution_hint));
 }
 
 }  // namespace internal

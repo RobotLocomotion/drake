@@ -4,7 +4,6 @@ package, Meshcat:
       https://github.com/rdeits/meshcat
 """
 import argparse
-import math
 import os
 import uuid
 import warnings
@@ -13,9 +12,13 @@ import webbrowser
 import numpy as np
 
 from drake import lcmt_viewer_load_robot
-from pydrake.common.value import AbstractValue
+from pydrake.common.deprecation import _warn_deprecated
 from pydrake.common.eigen_geometry import Quaternion, Isometry3
-from pydrake.geometry import DispatchLoadMessage, SceneGraph
+from pydrake.common.value import AbstractValue
+from pydrake.geometry import (
+    Box, Convex, Cylinder, Mesh, Sphere,
+    FrameId, QueryObject, Role, SceneGraph
+)
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.systems.framework import LeafSystem, PublishEvent, TriggerType
@@ -44,92 +47,6 @@ import meshcat.transformations as tf  # noqa
 from meshcat.animation import Animation
 
 _DEFAULT_PUBLISH_PERIOD = 1 / 30.
-
-
-def _convert_mesh(geom):
-    # Given a LCM geometry message, forms a meshcat geometry and material
-    # for that geometry, as well as a local tf to the meshcat geometry
-    # that matches the LCM geometry.
-    # For MESH geometry, this function checks if a texture file exists next
-    # to the mesh file, and uses that to provide the material information if
-    # present. For BOX, SPHERE, CYLINDER geometry as well as MESH geometry
-    # not satisfying the above, this function uses the geom.color field to
-    # create a flat color for the object. In the case of other geometry types,
-    # both fields are returned as None.
-    meshcat_geom = None
-    material = None
-    element_local_tf = RigidTransform(
-        RotationMatrix(Quaternion(geom.quaternion)),
-        geom.position).GetAsMatrix4()
-
-    # Short-circuit if the geometry scale is invalid.
-    # (All uses of float data should be strictly positive:
-    # edge lengths for boxes, radius and length for
-    # spheres and cylinders, and scaling for meshes.)
-    if not all([x > 0 for x in geom.float_data]):
-        return meshcat_geom, material, element_local_tf
-
-    if geom.type == geom.BOX:
-        assert geom.num_float_data == 3
-        meshcat_geom = meshcat.geometry.Box(geom.float_data)
-    elif geom.type == geom.SPHERE:
-        assert geom.num_float_data == 1
-        meshcat_geom = meshcat.geometry.Sphere(geom.float_data[0])
-    elif geom.type == geom.CYLINDER:
-        assert geom.num_float_data == 2
-        meshcat_geom = meshcat.geometry.Cylinder(
-            geom.float_data[1],
-            geom.float_data[0])
-        # In Drake, cylinders are along +z
-        # In meshcat, cylinders are along +y
-        # Rotate to fix this misalignment
-        extra_rotation = tf.rotation_matrix(
-            math.pi/2., [1, 0, 0])
-        element_local_tf[0:3, 0:3] = (
-            element_local_tf[0:3, 0:3].dot(
-                extra_rotation[0:3, 0:3]))
-    elif geom.type == geom.MESH:
-        meshcat_geom = meshcat.geometry.ObjMeshGeometry.from_file(
-            geom.string_data[0:-3] + "obj")
-        # Handle scaling.
-        # TODO(gizatt): See meshcat-python#40 for incorporating scale as a
-        # field rather than a matrix multiplication.
-        scale = geom.float_data[:3]
-        element_local_tf[:3, :3] = element_local_tf[:3, :3].dot(np.diag(scale))
-        # Attempt to find a texture for the object by looking for an
-        # identically-named *.png next to the model.
-        # TODO(gizatt): Support .MTLs and prefer them over png, since they're
-        # both more expressive and more standard.
-        # TODO(gizatt): In the long term, this kind of material information
-        # should be gleaned from the SceneGraph constituents themselves, so
-        # that we visualize what the simulation is *actually* reasoning about
-        # rather than what files happen to be present.
-        candidate_texture_path_png = geom.string_data[0:-3] + "png"
-        if os.path.exists(candidate_texture_path_png):
-            material = meshcat.geometry.MeshLambertMaterial(
-                map=meshcat.geometry.ImageTexture(
-                    image=meshcat.geometry.PngImage.from_file(
-                        candidate_texture_path_png)))
-    else:
-        print("UNSUPPORTED GEOMETRY TYPE {} IGNORED".format(
-              geom.type))
-        return meshcat_geom, material
-
-    if material is None:
-        def rgb_2_hex(rgb):
-            # Turn a list of R,G,B elements (any indexable list
-            # of >= 3 elements will work), where each element is
-            # specified on range [0., 1.], into the equivalent
-            # 24-bit value 0xRRGGBB.
-            val = 0
-            for i in range(3):
-                val += (256**(2 - i)) * int(255 * rgb[i])
-            return val
-        material = meshcat.geometry.MeshLambertMaterial(
-            color=rgb_2_hex(geom.color[:3]),
-            transparent=geom.color[3] != 1.,
-            opacity=geom.color[3])
-    return meshcat_geom, material, element_local_tf
 
 
 def AddTriad(vis, name, prefix, length=1., radius=0.04, opacity=1.):
@@ -169,16 +86,17 @@ def AddTriad(vis, name, prefix, length=1., radius=0.04, opacity=1.):
 
 class MeshcatVisualizer(LeafSystem):
     """
-    MeshcatVisualizer is a System block that connects to the pose bundle output
-    port of a SceneGraph and visualizes the scene in Meshcat.
+    MeshcatVisualizer is a System block that connects to the query output port
+    of a SceneGraph and visualizes the scene in Meshcat.  (The class also has
+    deprecated support for connecting to the pose bundle output of SceneGraph.)
 
     The most common workflow would be to run::
 
         bazel run @meshcat_python//:meshcat-server
 
-    in another terminal, open the url printed in that terminal in your
-    browser, then to run drake apps (potentially many times) that publish to
-    that default url.
+    in another terminal, open the url printed in that terminal in your browser,
+    then to run drake apps (potentially many times) that publish to that
+    default url.
     """
 
     @staticmethod
@@ -213,7 +131,7 @@ class MeshcatVisualizer(LeafSystem):
             help="Open a browser when creating a new meshcat-server.")
 
     def __init__(self,
-                 scene_graph,
+                 scene_graph=None,
                  draw_period=_DEFAULT_PUBLISH_PERIOD,
                  prefix="drake",
                  zmq_url="default",
@@ -223,10 +141,13 @@ class MeshcatVisualizer(LeafSystem):
                  axis_length=0.15,
                  axis_radius=0.006,
                  delete_prefix_on_load=True,
+                 role=Role.kIllustration,
                  **kwargs):
         """
         Args:
-            scene_graph: A SceneGraph object.
+            scene_graph: A SceneGraph object.  This argument is optional, and
+                is only needed to enable calls to ``load()`` without providing
+                a Context.
             draw_period: The rate at which this class publishes to the
                 visualizer.
             prefix: Appears as the root of the tree structure in the meshcat
@@ -259,8 +180,11 @@ class MeshcatVisualizer(LeafSystem):
                 downloading meshes over the websockets link, but will cause
                 geometry from previous simulations to remain in the scene.  You
                 may call ``delete_prefix()`` manually to clear the scene.
+            role: Renders geometry of the specified pydrake.geometry.Role
+                type -- defaults to Role.kIllustration to draw visual geometry,
+                and also supports Role.kProximity to draw collision geometry.
 
-        Additional kwargs will be passed to the MeshcatVisualizer constructor.
+        Additional kwargs will be passed to the meshcat.Visualizer constructor.
         Note:
             This call will not return until it connects to the
             ``meshcat-server``.
@@ -271,16 +195,22 @@ class MeshcatVisualizer(LeafSystem):
         self.DeclarePeriodicPublish(draw_period, 0.0)
         self.draw_period = draw_period
         self._delete_prefix_on_load = delete_prefix_on_load
+        if role not in [Role.kIllustration, Role.kProximity]:
+            raise ValueError("Unsupported role type specified: ", role)
+        self._role = role
 
         # Recording.
         self._is_recording = False
         self.reset_recording()
 
-        # Pose bundle (from SceneGraph) input port.
-        # TODO(tehbelinda): Rename the `lcm_visualization` port to match
-        # SceneGraph once its output port has been updated. See #12214.
-        self.DeclareAbstractInputPort("lcm_visualization",
-                                      AbstractValue.Make(PoseBundle(0)))
+        # Deprecated
+        self._lcm_visualization_input_port = self.DeclareAbstractInputPort(
+            "lcm_visualization", AbstractValue.Make(PoseBundle(0)))
+        self._scene_graph = scene_graph
+        self._warned_pose_bundle_input_port_connected = False
+
+        self._geometry_query_input_port = self.DeclareAbstractInputPort(
+            "geometry_query", AbstractValue.Make(QueryObject()))
 
         if zmq_url == "default":
             zmq_url = "tcp://127.0.0.1:6000"
@@ -296,7 +226,6 @@ class MeshcatVisualizer(LeafSystem):
             print("Connecting to meshcat-server at zmq_url=" + zmq_url + "...")
         self.vis = meshcat.Visualizer(zmq_url=zmq_url, **kwargs)
         print("Connected to meshcat-server.")
-        self._scene_graph = scene_graph
 
         # Set background color (to match drake-visualizer).
         self.vis['/Background'].set_property("top_color", [242, 242, 255])
@@ -306,18 +235,27 @@ class MeshcatVisualizer(LeafSystem):
             webbrowser.open(self.vis.url())
 
         def on_initialize(context, event):
-            self.load()
+            self.load(context)
 
+        # TODO(russt): #13776 recommends we stop using initialization events
+        # for this.
         self.DeclareInitializationEvent(
             event=PublishEvent(
                 trigger_type=TriggerType.kInitialization,
                 callback=on_initialize))
+
+        # TODO(russt): Move this to a cache entry as in DrakeVisualizer.
+        # Requires #14287.
+        self._dynamic_frames = []
 
         # drawing coordinate frames
         self.frames_to_draw = frames_to_draw
         self.frames_opacity = frames_opacity
         self.axis_length = axis_length
         self.axis_radius = axis_radius
+
+    def get_geometry_query_input_port(self):
+        return self._geometry_query_input_port
 
     def set_planar_viewpoint(
         self, camera_position=[0, -1, 0], camera_focus=[0, 0, 0], xmin=-1,
@@ -362,21 +300,6 @@ class MeshcatVisualizer(LeafSystem):
         self.vis['/Grid'].set_property("visible", False)
         self.vis['/Axes'].set_property("visible", False)
 
-    def _parse_name(self, name):
-        # Parse name, split on the first occurrence of `::` to get the source
-        # name, and let the rest be the frame name. If `::` is not in name,
-        # source name is "unnamed" and the frame name is `name`.
-        # TODO(eric.cousineau): Remove name parsing once this is reimplemented
-        # to use Shape introspection.
-        delim = "::"
-        if delim not in name:
-            default_source = "unnamed"
-            return default_source, name
-        pos = name.index(delim)
-        source_name = name[:pos]
-        frame_name = name[pos + len(delim):]
-        return source_name, frame_name
-
     def delete_prefix(self):
         """
         Manually delete the meshcat prefix path specified in the constructor.
@@ -387,107 +310,165 @@ class MeshcatVisualizer(LeafSystem):
         """
         self.vis[self.prefix].delete()
 
-    def load(self):
+    def load(self, context=None):
         """
         Loads ``meshcat`` visualization elements.
 
         Precondition:
-            The ``scene_graph`` used to construct this object must be part of a
-            fully constructed diagram (e.g. via ``DiagramBuilder.Build()``).
+            Either the context is a valid Context for this system with the
+            geometry_query port connected or the ``scene_graph`` passed in the
+            constructor must be a valid SceneGraph.
         """
         if self._delete_prefix_on_load:
             self.vis[self.prefix].delete()
 
-        # Intercept load message via memq LCM.
-        memq_lcm = DrakeLcm("memq://")
-        memq_lcm_subscriber = Subscriber(
-            lcm=memq_lcm,
-            channel="DRAKE_VIEWER_LOAD_ROBOT",
-            lcm_type=lcmt_viewer_load_robot)
-        DispatchLoadMessage(self._scene_graph, memq_lcm)
-        memq_lcm.HandleSubscriptions(0)
-        assert memq_lcm_subscriber.count > 0
-        load_robot_msg = memq_lcm_subscriber.message
+        if context and self.get_geometry_query_input_port().HasValue(context):
+            inspector = self.get_geometry_query_input_port().Eval(
+                context).inspector()
+        elif self._scene_graph:
+            inspector = self._scene_graph.model_inspector()
+        else:
+            raise RuntimeError(
+                "You must provide a valid Context for this system with the "
+                "geometry_query port connected or the ``scene_graph`` passed "
+                "in the constructor must be a valid SceneGraph.")
 
-        # Translate elements to `meshcat`.
-        for i in range(load_robot_msg.num_links):
-            link = load_robot_msg.link[i]
-            [_, frame_name] = self._parse_name(link.name)
+        vis = self.vis[self.prefix]
+        # Make a fixed-seed generator for random colors for bodies.
+        color_generator = np.random.RandomState(seed=42)
+        for frame_id in inspector.all_frame_ids():
+            count = inspector.NumGeometriesForFrameWithRole(
+                frame_id, self._role)
+            if count == 0:
+                continue
+            if frame_id == inspector.world_frame_id():
+                name = "world"
+            else:
+                # Note: MBP declares frames with SceneGraph using `::`, we
+                # replace those with `/` here to expose the full tree to
+                # meshcat.
+                name = (inspector.GetOwningSourceName(frame_id) + "/"
+                        + inspector.GetName(frame_id).replace("::", "/"))
 
-            for j in range(link.num_geom):
-                geom = link.geom[j]
-                # MultibodyPlant currently sets alpha=0 to make collision
-                # geometry "invisible".  Ignore those geometries here.
-                if geom.color[3] == 0:
-                    continue
+            frame_vis = vis[name]
+            for g_id in inspector.GetGeometries(frame_id, self._role):
+                color = 0xe5e5e5  # default color
+                alpha = 1.0
+                if self._role == Role.kIllustration:
+                    props = inspector.GetIllustrationProperties(g_id)
+                    if props and props.HasProperty("phong", "diffuse"):
+                        rgba = props.GetProperty("phong", "diffuse")
+                        # Convert Rgba from [0-1] to hex 0xRRGGBB.
+                        color = int(255*rgba.r())*256**2
+                        color += int(255*rgba.g())*256
+                        color += int(255*rgba.b())
+                        alpha = rgba.a()
+                elif self._role == Role.kProximity:
+                    # Pick a random color to make collision geometry
+                    # visually distinguishable.
+                    color = color_generator.randint(2**(24))
 
-                meshcat_geom, material, element_local_tf = _convert_mesh(geom)
-                if meshcat_geom is not None:
-                    cur_vis = (
-                        self.vis[self.prefix][str(link.robot_num)]
-                        [frame_name][str(j)])
+                material = g.MeshLambertMaterial(
+                    color=color, transparent=alpha != 1., opacity=alpha)
+
+                shape = inspector.GetShape(g_id)
+                X_FG = inspector.GetPoseInFrame(g_id).GetAsMatrix4()
+                if isinstance(shape, Box):
+                    geom = g.Box([shape.width(), shape.depth(),
+                                  shape.height()])
+                elif isinstance(shape, Sphere):
+                    geom = g.Sphere(shape.radius())
+                elif isinstance(shape, Cylinder):
+                    geom = g.Cylinder(shape.length(), shape.radius())
+                    # In Drake, cylinders are along +z
+                    # In meshcat, cylinders are along +y
+
+                    R_GC = RotationMatrix.MakeXRotation(np.pi/2.0).matrix()
+                    X_FG[0:3, 0:3] = X_FG[0:3, 0:3].dot(R_GC)
+                elif isinstance(shape, (Mesh, Convex)):
+                    geom = g.ObjMeshGeometry.from_file(
+                        shape.filename()[0:-3] + "obj")
+                    # Attempt to find a texture for the object by looking for
+                    # an identically-named *.png next to the model.
+                    # TODO(gizatt): Support .MTLs and prefer them over png,
+                    # since they're both more expressive and more standard.
+                    # TODO(gizatt): In the long term, this kind of material
+                    # information should be gleaned from the SceneGraph
+                    # constituents themselves, so that we visualize what the
+                    # simulation is *actually* reasoning about rather than what
+                    # files happen to be present.
+                    candidate_texture_path = shape.filename()[0:-3] + "png"
+                    if os.path.exists(candidate_texture_path):
+                        material = g.MeshLambertMaterial(
+                            map=g.ImageTexture(image=g.PngImage.from_file(
+                                candidate_texture_path)))
                     # Make the uuid's deterministic for mesh geometry, to
                     # support caching at the zmqserver.  This means that
                     # multiple (identical) geometries may have the same UUID,
                     # but testing suggests that meshcat + three.js are ok with
                     # it.
-                    if isinstance(meshcat_geom, meshcat.geometry.MeshGeometry):
-                        meshcat_geom.uuid = str(uuid.uuid5(
-                            uuid.NAMESPACE_X500, meshcat_geom.contents))
-                        material.uuid = str(uuid.uuid5(
-                            uuid.NAMESPACE_X500, meshcat_geom.contents
-                            + "material"))
-                        mesh = meshcat.geometry.Mesh(meshcat_geom, material)
-                        mesh.uuid = str(uuid.uuid5(
-                            uuid.NAMESPACE_X500, meshcat_geom.contents
-                            + "mesh"))
-                        cur_vis.set_object(mesh)
-                    else:
-                        cur_vis.set_object(meshcat_geom, material)
-
-                    cur_vis.set_transform(element_local_tf)
-
-                # Draw the frames in self.frames_to_draw.
-                if "::" in frame_name:
-                    robot_name, link_name = self._parse_name(frame_name)
+                    geom.uuid = str(uuid.uuid5(
+                        uuid.NAMESPACE_X500, geom.contents + "mesh"))
+                    material.uuid = str(uuid.uuid5(
+                        uuid.NAMESPACE_X500, geom.contents
+                        + "material"))
+                    X_FG = X_FG.dot(tf.scale_matrix(shape.scale()))
                 else:
-                    robot_name = "world"
-                    link_name = frame_name
-                if (robot_name in self.frames_to_draw.keys()
-                        and link_name in self.frames_to_draw[robot_name]):
-                    prefix = (self.prefix + '/' + str(link.robot_num) + '/'
-                              + frame_name)
-                    AddTriad(
-                        self.vis,
-                        name="frame",
-                        prefix=prefix,
-                        length=self.axis_length,
-                        radius=self.axis_radius,
-                        opacity=self.frames_opacity)
+                    warnings.warn(f"Unsupported shape {shape} ignored")
+                    continue
+                geometry_vis = frame_vis[str(g_id.get_value())]
+                geometry_vis.set_object(geom, material)
+                geometry_vis.set_transform(X_FG)
+
+            if frame_id != inspector.world_frame_id():
+                self._dynamic_frames.append({
+                    "id": frame_id,
+                    "name": name,
+                })
 
     def DoPublish(self, context, event):
-        # TODO(russt): Change this to declare a periodic event with a
-        # callback instead of overriding DoPublish, pending #9992.
+
         LeafSystem.DoPublish(self, context, event)
 
-        pose_bundle = self.EvalAbstractInput(context, 0).get_value()
+        if (not self._warned_pose_bundle_input_port_connected
+                and self._lcm_visualization_input_port.HasValue(context)):
+            _warn_deprecated(
+                "The pose_bundle input port is deprecated.  Use e.g.\n"
+                "builder.Connect("
+                "scene_graph.get_query_output_port(), "
+                "visualizer.get_geometry_query_input_port())\n"
+                "instead.", date="2021-04-01")
+            self._warned_pose_bundle_input_port_connected = True
 
-        for frame_i in range(pose_bundle.get_num_poses()):
-            # SceneGraph currently sets the name in PoseBundle as
-            #    "get_source_name::frame_name".
-            [_, frame_name] = self._parse_name(
-                pose_bundle.get_name(frame_i))
-            model_id = pose_bundle.get_model_instance_id(frame_i)
-            # The MBP parsers only register the plant as a nameless source.
-            # TODO(russt): Use a more textual naming convention here?
-            pose_matrix = pose_bundle.get_transform(frame_i)
-            cur_vis = (
-                self.vis[self.prefix][str(model_id)][frame_name])
-            cur_vis.set_transform(pose_matrix.GetAsMatrix4())
-            if self._is_recording:
-                with self._animation.at_frame(
-                        cur_vis, self._recording_frame_num) as cur_vis_frame:
-                    cur_vis_frame.set_transform(pose_matrix.GetAsMatrix4())
+        vis = self.vis[self.prefix]
+        if self.get_geometry_query_input_port().HasValue(context):
+            # New workflow, using SceneGraph's QueryObject.
+            query_object = self.get_geometry_query_input_port().Eval(context)
+
+            for frame in self._dynamic_frames:
+                frame_vis = vis[frame['name']]
+                X_WF = query_object.GetPoseInWorld(frame['id'])
+                frame_vis.set_transform(X_WF.GetAsMatrix4())
+                if self._is_recording:
+                    with self._animation.at_frame(
+                            frame_vis, self._recording_frame_num) as f:
+                        f.set_transform(X_WF.GetAsMatrix4())
+        else:
+            # Deprecated workflow.
+            pose_bundle = self._lcm_visualization_input_port.Eval(context)
+
+            for frame_i in range(pose_bundle.get_num_poses()):
+                # Note: MBP declares frames with SceneGraph using `::`, we
+                # replace those with `/` here to expose the full tree to
+                # meshcat.
+                name = pose_bundle.get_name(frame_i).replace("::", "/")
+                frame_vis = vis[name]
+                pose_matrix = pose_bundle.get_transform(frame_i)
+                frame_vis.set_transform(pose_matrix.GetAsMatrix4())
+                if self._is_recording:
+                    with self._animation.at_frame(
+                            frame_vis, self._recording_frame_num) as f:
+                        f.set_transform(pose_matrix.GetAsMatrix4())
 
         if self._is_recording:
             self._recording_frame_num += 1
@@ -535,23 +516,17 @@ class MeshcatContactVisualizer(LeafSystem):
     and (2) the contact results output port of the SceneGraph's associated
     MultibodyPlant.
     """
-
-    class _ContactState:
-        def __init__(self, key, needs_pruning, info, p_BC):
-            # Key for use with meshcat.
-            self.key = key
-            # Implies contact should be pruned / removed.
-            self.needs_pruning = needs_pruning
-            # ContactInfo instance.
-            self.info = info
-            # Position of contact `C` w.r.t. body `B`.
-            self.p_BC = p_BC
+    # TODO(russt): I am currently drawing both (equal and opposite) vector for
+    # each contact.  Consider taking an additional option in the constructor to
+    # provide a body prioritization, e.g. so that forces would always point
+    # *out* of the body with higher priority.
 
     def __init__(self,
                  meshcat_viz,
                  force_threshold=1e-2,
                  contact_force_scale=10,
-                 plant=None):
+                 plant=None,
+                 contact_force_radius=0.01):
         """
         Args:
             meshcat_viz: A pydrake MeshcatVisualizer instance.
@@ -561,6 +536,8 @@ class MeshcatContactVisualizer(LeafSystem):
                 displayed as a cylinder with length F/contact_force_scale
                 (in meters).
             plant: the MultibodyPlant associated with meshcat_viz.scene_graph.
+            contact_force_radius: sets the constant radius of the cylinder used
+                to visualize the forces.
         """
         LeafSystem.__init__(self)
         assert plant is not None
@@ -568,9 +545,11 @@ class MeshcatContactVisualizer(LeafSystem):
         self._force_threshold = force_threshold
         self._contact_force_scale = contact_force_scale
         self._plant = plant
+        self._radius = contact_force_radius
 
         self.set_name('meshcat_contact_visualizer')
         self.DeclarePeriodicPublish(self._meshcat_viz.draw_period, 0.0)
+
         # Pose bundle (from SceneGraph) input port.
         self.DeclareAbstractInputPort("pose_bundle",
                                       AbstractValue.Make(PoseBundle(0)))
@@ -578,146 +557,90 @@ class MeshcatContactVisualizer(LeafSystem):
         self.DeclareAbstractInputPort(
             "contact_results", AbstractValue.Make(ContactResults()))
 
-        # Make force cylinders smaller at initialization.
-        self._force_cylinder_radial_scale = 1.
-        self._force_cylinder_longitudinal_scale = 100.
-
         # This system has undeclared states, see #4330.
-        # - All contacts (previous and current), of type `_ContactState`.
-        self._contacts = []
-        # - Unique key for contacts in meshcat.
-        self._contact_key_counter = 0
-        # - Previous time at which contact was published.
-        self._t_previous = 0.
+        self._warned_pose_bundle_input_port_connected = False
+        self._published_contacts = []
+
+        # Zap any previous contact forces on this prefix
+        vis = self._meshcat_viz.vis[self._meshcat_viz.prefix]["contact_forces"]
+        vis.delete()
 
     def DoPublish(self, context, event):
         LeafSystem.DoPublish(self, context, event)
-        pose_bundle = self.EvalAbstractInput(context, 0).get_value()
-        X_WB_map = self._get_pose_map(pose_bundle)
-        self._draw_contact_forces(context, X_WB_map)
 
-    def _get_pose_map(self, pose_bundle):
-        # - Stores poses of all bodies in self._plant and its associated plant.
-        # Created via `_store_pose_map`, keyed by
-        # (int(body.model_index()), body.name()).
-        X_WB_map = dict()
-        for frame_i in range(pose_bundle.get_num_poses()):
-            # SceneGraph currently sets the name in PoseBundle as
-            # `{source_name}::{frame_name}`.
-            (source_name, frame_name) = self._meshcat_viz._parse_name(
-                pose_bundle.get_name(frame_i))
-            model_instance = pose_bundle.get_model_instance_id(frame_i)
-            pose_matrix = pose_bundle.get_transform(frame_i)
-            _, frame_name = frame_name.split("::")
-            key = (model_instance, frame_name)
-            X_WB_map[key] = pose_matrix
-        return X_WB_map
+        if (not self._warned_pose_bundle_input_port_connected
+                and self.get_input_port(0).HasValue(context)):
+            _warn_deprecated(
+                "The pose_bundle input port of MeshcatContactVisualizer is"
+                "deprecated; use the geometry_query inport port instead.",
+                date="2021-04-01")
+            self._warned_pose_bundle_input_port_connected = True
 
-    def _find_duplicate_contact(self, new, dt):
-        # Return first stored contact that is close enough, or None if contact
-        # is new.
-        assert isinstance(new, self._ContactState)
-        for old in self._contacts:
-            # Use order-insensitive comparison using `set`s.
-            old_bodies = {int(old.info.bodyA_index()),
-                          int(old.info.bodyB_index())}
-            new_bodies = {int(new.info.bodyA_index()),
-                          int(new.info.bodyB_index())}
-            if old_bodies == new_bodies:
-                # Reaching here means that `old` and `new`
-                # describe contact between the same pair of bodies.
-                v = np.sqrt(old.info.separation_speed()**2
-                            + old.info.slip_speed()**2)
-                if np.linalg.norm(new.p_BC - old.p_BC) < v * dt:
-                    old.info = new.info
-                    old.p_BC = new.p_BC
-                    return old
-        return None
-
-    def _draw_contact_forces(self, context, X_WB_map):
         contact_results = self.EvalAbstractInput(context, 1).get_value()
-        t = context.get_time()
 
-        # First, set all existing contacts to be pruned.
-        for contact in self._contacts:
-            contact.needs_pruning = True
+        vis = self._meshcat_viz.vis[self._meshcat_viz.prefix]["contact_forces"]
+        contacts = []
 
-        # Check if every element in contact_results is already in
-        #   self._contacts.
-        # If True, update the magnitude and location of
-        #   the _ContactState in self._contacts.
-        # If False, add the new contact to self._contacts
-        vis = self._meshcat_viz.vis
-        prefix = self._meshcat_viz.prefix
         for i_contact in range(contact_results.num_point_pair_contacts()):
-            contact_info_i = contact_results.point_pair_contact_info(i_contact)
+            contact_info = contact_results.point_pair_contact_info(i_contact)
 
             # Do not display small forces.
-            force_norm = np.linalg.norm(contact_info_i.contact_force())
+            force_norm = np.linalg.norm(contact_info.contact_force())
             if force_norm < self._force_threshold:
                 continue
 
-            # contact point in frame B
-            bodyB = self._plant.get_body(contact_info_i.bodyB_index())
-            X_WB_key = (int(bodyB.model_instance()), bodyB.name())
-            X_WB = X_WB_map[X_WB_key]
-            p_BC = X_WB.inverse().multiply(contact_info_i.contact_point())
-            new_contact = self._ContactState(
-                key=str(self._contact_key_counter), needs_pruning=False,
-                info=contact_info_i, p_BC=p_BC)
+            point_pair = contact_info.point_pair()
+            key = (point_pair.id_A.get_value(), point_pair.id_B.get_value())
+            cvis = vis[str(key)]
+            contacts.append(key)
+            arrow_height = self._radius*2.0
+            if key not in self._published_contacts:
+                # New key, so create the geometry. Note: the height of the
+                # cylinder is 2 and gets scaled to twice the contact force
+                # length, because I am drawing both (equal and opposite)
+                # forces.  Note also that meshcat (following three.js) puts
+                # the height of the cylinder along the y axis.
+                cvis["cylinder"].set_object(meshcat.geometry.Cylinder(
+                    height=2.0, radius=self._radius),
+                    meshcat.geometry.MeshLambertMaterial(color=0x33cc33))
+                cvis["head"].set_object(meshcat.geometry.Cylinder(
+                    height=arrow_height,
+                    radiusTop=0, radiusBottom=self._radius*2.0),
+                    meshcat.geometry.MeshLambertMaterial(color=0x00dd00))
+                cvis["tail"].set_object(meshcat.geometry.Cylinder(
+                    height=arrow_height,
+                    radiusTop=self._radius*2.0, radiusBottom=0),
+                    meshcat.geometry.MeshLambertMaterial(color=0x00dd00))
 
-            contact = self._find_duplicate_contact(
-                new_contact, dt=t - self._t_previous)
-            if contact is None:
-                # contact is new
-                self._contacts.append(new_contact)
-                self._contact_key_counter += 1
-                # create cylinders with small radius.
-                vis[prefix]["contact_forces"][new_contact.key].set_object(
-                    meshcat.geometry.Cylinder(
-                        height=1. / self._force_cylinder_longitudinal_scale,
-                        radius=0.01 / self._force_cylinder_radial_scale),
-                    meshcat.geometry.MeshLambertMaterial(color=0xff0000))
+            height = force_norm/self._contact_force_scale
+            cvis["cylinder"].set_transform(tf.scale_matrix(
+                height, direction=[0, 1, 0]))
+            cvis["head"].set_transform(tf.translation_matrix(
+                [0, height + arrow_height/2.0, 0.0]))
+            cvis["tail"].set_transform(tf.translation_matrix(
+                [0, -height - arrow_height/2.0, 0.0]))
+
+            # Frame C is located at the contact point, but with the world frame
+            # orientation.
+            if force_norm < 1e-6:
+                X_CGeom = tf.identity_matrix()
             else:
-                # contact is not new, but it's valid.
-                contact.needs_pruning = False
+                # Rotates [0,1,0] to contact_force/force_norm.
+                angle_axis = np.cross(np.array([0, 1, 0]),
+                                      contact_info.contact_force()/force_norm)
+                X_CGeom = tf.rotation_matrix(
+                    np.arcsin(np.linalg.norm(angle_axis)), angle_axis)
+            X_WC = tf.translation_matrix(contact_info.contact_point())
+            cvis.set_transform(X_WC @ X_CGeom)
 
-        # Prune old contact forces
-        for contact in list(self._contacts):
-            if contact.needs_pruning:
-                self._contacts.remove(contact)
-                vis[prefix]["contact_forces"][contact.key].delete()
+        # We only delete any contact vectors that did not persist into this
+        # publish.  It is tempting to just delete() the root branch at the
+        # beginning of this publish, but this leads to visual artifacts
+        # (flickering) in the browser.
+        for key in set(self._published_contacts) - set(contacts):
+            vis[str(key)].delete()
 
-        # visualize all valid contact forces
-        for contact in self._contacts:
-            # Compute pose of contact cylinder `C` in world frame `W`.
-            R = np.zeros((3, 3))
-            magnitude = np.linalg.norm(contact.info.contact_force())
-            y = contact.info.contact_force() / magnitude
-            R[:, 1] = y
-            R[:, 0] = [0, -y[2], y[1]]
-            R[:, 2] = np.cross(R[:, 0], y)
-            X_WC = np.eye(4)
-            X_WC[0:3, 0:3] = R
-            X_WC[0:3, 3] = contact.info.contact_point()
-            # Scale cylinder
-            visual_magnitude = self._get_visual_magnitude(magnitude)
-            T_scale = tf.translation_matrix(
-                [0, visual_magnitude / 2, 0])
-            T_scale[1, 1] = \
-                visual_magnitude * self._force_cylinder_longitudinal_scale
-            # - "expand" cylinders to a visible size.
-            T_scale[0, 0] *= self._force_cylinder_radial_scale
-            T_scale[2, 2] *= self._force_cylinder_radial_scale
-            # Publish.
-            vis[prefix]["contact_forces"][contact.key].set_transform(
-                X_WC.dot(T_scale))
-
-        # update time
-        self._t_previous = t
-
-    def _get_visual_magnitude(self, magnitude):
-        return magnitude / self._contact_force_scale
+        self._published_contacts = contacts
 
 
 def _get_native_visualizer(viz):
@@ -810,21 +733,22 @@ class MeshcatPointCloudVisualizer(LeafSystem):
         self._meshcat_viz[self._name].set_transform(self._X_WP.GetAsMatrix4())
 
 
-def ConnectMeshcatVisualizer(builder, scene_graph, output_port=None, **kwargs):
-    """Creates an instance of MeshcatVisualizer, adds it to the
-    diagram, and wires the scene_graph pose bundle output port to the input
-    port of the visualizer.  Provides an interface comparable to
-    ConnectDrakeVisualizer.
+def ConnectMeshcatVisualizer(builder, scene_graph=None, output_port=None,
+                             **kwargs):
+    """Creates an instance of MeshcatVisualizer, adds it to the diagram, and
+    wires the scene_graph query output port to the input port of the
+    visualizer.  Provides an interface comparable to
+    DrakeVisualizer.AddToBuilder.
 
     Args:
         builder: The diagram builder used to construct the Diagram.
-        scene_graph: The SceneGraph in builder containing the geometry to be
-            visualized.
+        scene_graph: (optional) The SceneGraph in builder containing the
+            geometry to be visualized.  At least one of scene_graph or
+            output_port must be valid (not None).
         output_port: (optional) If not None, then output_port will be connected
-            to the visualizer input port instead of the scene_graph.
-            get_pose_bundle_output_port().  This is required, for instance,
-            when the SceneGraph is inside a Diagram, and we must connect the
-            exposed port to the visualizer instead of the original SceneGraph
+            to the visualizer input port.  This is required, for instance, when
+            the SceneGraph is inside a Diagram, and we must connect the
+            exported port to the visualizer instead of the original SceneGraph
             port.
 
         Additional kwargs are passed through to the MeshcatVisualizer
@@ -832,10 +756,24 @@ def ConnectMeshcatVisualizer(builder, scene_graph, output_port=None, **kwargs):
 
     Returns:
         The newly created MeshcatVisualizer object.
+
+    Note:
+        Passing a scene_graph object also makes it possible to call
+        ``visualizer.load()``, without passing a ``Context`` to the
+        constructed visualizer.
     """
+    visualizer = builder.AddSystem(MeshcatVisualizer(scene_graph, **kwargs))
+
+    if output_port and isinstance(output_port.Allocate().get_value(),
+                                  PoseBundle):
+        # TODO(russt): Remove this code path on deprecation of the pose_bundle
+        # api.
+        builder.Connect(output_port, visualizer.get_input_port(0))
+        return visualizer
+
     if output_port is None:
-        output_port = scene_graph.get_pose_bundle_output_port()
-    visualizer = builder.AddSystem(
-        MeshcatVisualizer(scene_graph, **kwargs))
-    builder.Connect(output_port, visualizer.get_input_port(0))
+        assert scene_graph, ("If no output_port is specified, then the "
+                             "scene_graph must be valid.")
+        output_port = scene_graph.get_query_output_port()
+    builder.Connect(output_port, visualizer.get_geometry_query_input_port())
     return visualizer

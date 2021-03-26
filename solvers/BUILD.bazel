@@ -21,10 +21,12 @@ drake_cc_package_library(
     name = "solvers",
     visibility = ["//visibility:public"],
     deps = [
+        ":aggregate_costs_constraints",
         ":bilinear_product_util",
         ":binding",
         ":branch_and_bound",
         ":choose_best_solver",
+        ":clp_solver",
         ":constraint",
         ":cost",
         ":create_constraint",
@@ -106,6 +108,7 @@ drake_cc_library(
     srcs = ["choose_best_solver.cc"],
     hdrs = ["choose_best_solver.h"],
     deps = [
+        ":clp_solver",
         ":csdp_solver",
         ":equality_constrained_qp_solver",
         ":gurobi_solver",
@@ -145,11 +148,11 @@ drake_cc_library(
     deps = [
         ":decision_variable",
         ":evaluator_base",
-        ":symbolic_extraction",
         "//common:autodiff",
         "//common:essential",
         "//common:polynomial",
         "//common:symbolic",
+        "//common:symbolic_decompose",
         "//math:gradient",
         "//math:matrix_util",
     ],
@@ -183,12 +186,16 @@ drake_cc_library(
     name = "symbolic_extraction",
     srcs = ["symbolic_extraction.cc"],
     hdrs = ["symbolic_extraction.h"],
+    copts = [
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":decision_variable",
         "//common:autodiff",
         "//common:essential",
         "//common:polynomial",
         "//common:symbolic",
+        "//common:symbolic_decompose",
         "//math:matrix_util",
     ],
 )
@@ -200,10 +207,10 @@ drake_cc_library(
     deps = [
         ":binding",
         ":constraint",
-        ":symbolic_extraction",
         "//common:essential",
         "//common:polynomial",
         "//common:symbolic",
+        "//common:symbolic_decompose",
         "//math:quadratic_form",
     ],
 )
@@ -215,10 +222,10 @@ drake_cc_library(
     deps = [
         ":binding",
         ":cost",
-        ":symbolic_extraction",
         "//common:essential",
         "//common:polynomial",
         "//common:symbolic",
+        "//common:symbolic_decompose",
         "//common:unused",
     ],
 )
@@ -287,6 +294,7 @@ drake_cc_library(
     srcs = ["solver_type_converter.cc"],
     hdrs = ["solver_type_converter.h"],
     deps = [
+        ":clp_solver",
         ":csdp_solver",
         ":dreal_solver",
         ":equality_constrained_qp_solver",
@@ -325,11 +333,11 @@ drake_cc_library(
         ":solver_id",
         ":solver_options",
         ":sos_basis_generator",
-        ":symbolic_extraction",
         "//common:autodiff",
         "//common:essential",
         "//common:polynomial",
         "//common:symbolic",
+        "//common:symbolic_decompose",
     ],
 )
 
@@ -363,6 +371,16 @@ drake_cc_library(
         ":solver_id",
         ":solver_options",
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "aggregate_costs_constraints",
+    srcs = ["aggregate_costs_constraints.cc"],
+    hdrs = ["aggregate_costs_constraints.h"],
+    deps = [
+        ":binding",
+        ":mathematical_program",
     ],
 )
 
@@ -774,10 +792,12 @@ drake_cc_library(
     hdrs = ["mosek_solver.h"],
     deps = select({
         "//tools:with_mosek": [
+            ":aggregate_costs_constraints",
             ":mathematical_program",
             ":mathematical_program_result",
             ":solver_base",
             "//common:scoped_singleton",
+            "//math:quadratic_form",
             "@mosek",
         ],
         "//conditions:default": [
@@ -816,6 +836,31 @@ drake_cc_library(
             ":mathematical_program",
             ":solver_base",
         ],
+    }),
+)
+
+drake_cc_library(
+    name = "clp_solver",
+    srcs = ["clp_solver_common.cc"] + select({
+        "//tools:no_clp": [
+            "no_clp.cc",
+        ],
+        "//conditions:default": [
+            "clp_solver.cc",
+        ],
+    }),
+    hdrs = ["clp_solver.h"],
+    deps = [
+        "mathematical_program",
+        "solver_base",
+    ] + select({
+        "//conditions:default": [
+            "@clp",
+            ":aggregate_costs_constraints",
+            "//common:unused",
+            "//math:autodiff",
+        ],
+        "//tools:no_clp": [],
     }),
 )
 
@@ -1095,6 +1140,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "symbolic_extraction_test",
+    copts = [
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":symbolic_extraction",
         "//common/test_utilities:eigen_matrix_compare",
@@ -1140,6 +1188,14 @@ drake_cc_googletest(
         "//common:filesystem",
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "clp_solver_test",
+    deps = [
+        ":clp_solver",
+        ":linear_program_examples",
     ],
 )
 
@@ -1680,6 +1736,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "aggregate_costs_constraints_test",
+    deps = [
+        ":aggregate_costs_constraints",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
     name = "solver_options_test",
     deps = [
         ":solver_options",
@@ -1691,6 +1756,9 @@ drake_cc_googletest(
 # The extra_srcs are required here because add_lint_tests() doesn't understand
 # how to extract labels from select() functions yet.
 add_lint_tests(cpplint_extra_srcs = [
+    "clp_solver.h",
+    "clp_solver.cc",
+    "clp_solver_common.cc",
     "csdp_solver.h",
     "csdp_solver.cc",
     "csdp_solver_common.cc",
@@ -1713,6 +1781,7 @@ add_lint_tests(cpplint_extra_srcs = [
     "nlopt_solver.cc",
     "nlopt_solver.h",
     "nlopt_solver_common.cc",
+    "no_clp.cc",
     "no_csdp.cc",
     "no_dreal.cc",
     "no_gurobi.cc",

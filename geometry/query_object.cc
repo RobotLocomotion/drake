@@ -47,12 +47,32 @@ QueryObject<T>& QueryObject<T>::operator=(const QueryObject<T>& query_object) {
 }
 
 template <typename T>
+const RigidTransform<T>& QueryObject<T>::GetPoseInWorld(
+    FrameId frame_id) const {
+  ThrowIfNotCallable();
+
+  FullPoseUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return state.get_pose_in_world(frame_id);
+}
+
+template <typename T>
 const RigidTransform<T>& QueryObject<T>::X_WF(FrameId id) const {
   ThrowIfNotCallable();
 
   FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.get_pose_in_world(id);
+}
+
+template <typename T>
+const RigidTransform<T>& QueryObject<T>::GetPoseInParent(
+    FrameId frame_id) const {
+  ThrowIfNotCallable();
+
+  FullPoseUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return state.get_pose_in_parent(frame_id);
 }
 
 template <typename T>
@@ -65,6 +85,16 @@ const RigidTransform<T>& QueryObject<T>::X_PF(FrameId id) const {
 }
 
 template <typename T>
+const RigidTransform<T>& QueryObject<T>::GetPoseInWorld(
+    GeometryId geometry_id) const {
+  ThrowIfNotCallable();
+
+  FullPoseUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return state.get_pose_in_world(geometry_id);
+}
+
+template <typename T>
 const RigidTransform<T>& QueryObject<T>::X_WG(GeometryId id) const {
   ThrowIfNotCallable();
 
@@ -74,7 +104,7 @@ const RigidTransform<T>& QueryObject<T>::X_WG(GeometryId id) const {
 }
 
 template <typename T>
-std::vector<PenetrationAsPointPair<double>>
+std::vector<PenetrationAsPointPair<T>>
 QueryObject<T>::ComputePointPairPenetration() const {
   ThrowIfNotCallable();
 
@@ -115,7 +145,7 @@ QueryObject<T>::ComputeContactSurfaces() const {
 template <typename T>
 void QueryObject<T>::ComputeContactSurfacesWithFallback(
     std::vector<ContactSurface<T>>* surfaces,
-    std::vector<PenetrationAsPointPair<double>>* point_pairs) const {
+    std::vector<PenetrationAsPointPair<T>>* point_pairs) const {
   DRAKE_DEMAND(surfaces);
   DRAKE_DEMAND(point_pairs);
 
@@ -139,12 +169,13 @@ QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints(
 
 template <typename T>
 SignedDistancePair<T> QueryObject<T>::ComputeSignedDistancePairClosestPoints(
-    GeometryId id_A, GeometryId id_B) const {
+    GeometryId geometry_id_A, GeometryId geometry_id_B) const {
   ThrowIfNotCallable();
 
   FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
-  return state.ComputeSignedDistancePairClosestPoints(id_A, id_B);
+  return state.ComputeSignedDistancePairClosestPoints(geometry_id_A,
+                                                      geometry_id_B);
 }
 
 template <typename T>
@@ -159,6 +190,8 @@ QueryObject<T>::ComputeSignedDistanceToPoint(
   return state.ComputeSignedDistanceToPoint(p_WQ, threshold);
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 template <typename T>
 void QueryObject<T>::RenderColorImage(const CameraProperties& camera,
                                       FrameId parent_frame,
@@ -172,6 +205,7 @@ void QueryObject<T>::RenderColorImage(const CameraProperties& camera,
   return state.RenderColorImage(camera, parent_frame, X_PC, show_window,
                                 color_image_out);
 }
+#pragma GCC diagnostic pop
 
 template <typename T>
 void QueryObject<T>::RenderColorImage(const ColorRenderCamera& camera,
@@ -185,6 +219,8 @@ void QueryObject<T>::RenderColorImage(const ColorRenderCamera& camera,
   return state.RenderColorImage(camera, parent_frame, X_PC, color_image_out);
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 template <typename T>
 void QueryObject<T>::RenderDepthImage(const DepthCameraProperties& camera,
                                       FrameId parent_frame,
@@ -196,6 +232,7 @@ void QueryObject<T>::RenderDepthImage(const DepthCameraProperties& camera,
   const GeometryState<T>& state = geometry_state();
   return state.RenderDepthImage(camera, parent_frame, X_PC, depth_image_out);
 }
+#pragma GCC diagnostic pop
 
 template <typename T>
 void QueryObject<T>::RenderDepthImage(const DepthRenderCamera& camera,
@@ -209,6 +246,8 @@ void QueryObject<T>::RenderDepthImage(const DepthRenderCamera& camera,
   return state.RenderDepthImage(camera, parent_frame, X_PC, depth_image_out);
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 template <typename T>
 void QueryObject<T>::RenderLabelImage(const CameraProperties& camera,
                                       FrameId parent_frame,
@@ -222,6 +261,7 @@ void QueryObject<T>::RenderLabelImage(const CameraProperties& camera,
   return state.RenderLabelImage(camera, parent_frame, X_PC, show_window,
                                 label_image_out);
 }
+#pragma GCC diagnostic pop
 
 template <typename T>
 void QueryObject<T>::RenderLabelImage(const ColorRenderCamera& camera,

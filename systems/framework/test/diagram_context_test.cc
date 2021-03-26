@@ -39,7 +39,7 @@ class SystemWithDiscreteState : public LeafSystem<double> {
 class SystemWithAbstractState : public LeafSystem<double> {
  public:
   SystemWithAbstractState() {
-    DeclareAbstractState(AbstractValue::Make<int>(42));
+    DeclareAbstractState(Value<int>(42));
   }
   ~SystemWithAbstractState() override {}
 };
@@ -150,8 +150,10 @@ class DiagramContextTest : public ::testing::Test {
   }
 
   void AttachInputPorts() {
-    context_->FixInputPort(0, {128.0});
-    context_->FixInputPort(1, {256.0});
+    context_->FixInputPort(0, Value<BasicVector<double>>(
+                                  Vector1<double>(128.0)));
+    context_->FixInputPort(1, Value<BasicVector<double>>(
+                                  Vector1<double>(256.0)));
   }
 
   // Reads a FixedInputPortValue connected to @p context at @p index.
@@ -775,6 +777,64 @@ TEST_F(DiagramContextTest, SubcontextCloneIsError) {
       "this Context was created by 'adder0'.");
 }
 
+TEST_F(DiagramContextTest, SubcontextSetTimeStateAndParametersFromIsError) {
+  auto clone = dynamic_pointer_cast<DiagramContext<double>>(context_->Clone());
+  ASSERT_TRUE(clone != nullptr);
+  const auto& source_subcontext =
+      context_->GetSubsystemContext(SubsystemIndex{0});
+  auto& dest_subcontext = clone->GetMutableSubsystemContext(SubsystemIndex{0});
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dest_subcontext.SetTimeStateAndParametersFrom(source_subcontext),
+      std::exception,
+      "SetTimeStateAndParametersFrom\\(\\): Time change allowed only in the "
+      "root Context.");
+}
+
+TEST_F(DiagramContextTest, SubcontextSetStateAndParametersFrom) {
+  auto clone = dynamic_pointer_cast<DiagramContext<double>>(context_->Clone());
+  ASSERT_TRUE(clone != nullptr);
+  // Set arbitrary time, accuracy, state and parameters to the cloned
+  // context so that they are different from the original context.
+  const double new_time = context_->get_time() + 1.;
+  const double new_accuracy = 3e-12;
+  const Eigen::Vector2d new_xc(0.125, 7.5);
+  const double new_xd = -1.;
+  const int new_xa = 12345;
+  const double new_pn = -2;
+  const int new_pa = 101;
+
+  clone->SetTime(new_time);
+  clone->SetAccuracy(new_accuracy);
+  clone->SetContinuousState(new_xc);
+  clone->get_mutable_discrete_state(0)[0] = new_xd;
+  clone->get_mutable_abstract_state<int>(0) = new_xa;
+  clone->get_mutable_numeric_parameter(0).SetAtIndex(0, new_pn);
+  clone->get_mutable_abstract_parameter(0).set_value<int>(new_pa);
+
+  // Call the method under test for the subcontexts of context_.
+  for (int i = 0; i < kNumSystems; ++i) {
+    const auto& source_subcontext =
+        context_->GetSubsystemContext(SubsystemIndex{i});
+    auto& dest_subcontext =
+        clone->GetMutableSubsystemContext(SubsystemIndex{i});
+    dest_subcontext.SetStateAndParametersFrom(source_subcontext);
+  }
+
+  // The state and the parameters should have been set to be the same
+  // as the source context.
+  VerifyClonedParameters(clone->get_parameters());
+  VerifyClonedState(clone->get_state());
+
+  // Verify time and accuracy did not change for this context and its
+  // subcontexts.
+  EXPECT_EQ(clone->get_time(), new_time);
+  EXPECT_EQ(clone->get_accuracy(), new_accuracy);
+  for (SubsystemIndex i(0); i < kNumSystems; ++i) {
+    const auto& subcontext = clone->GetSubsystemContext(i);
+    EXPECT_EQ(subcontext.get_time(), new_time);
+    EXPECT_EQ(subcontext.get_accuracy(), new_accuracy);
+  }
+}
 }  // namespace
 }  // namespace systems
 }  // namespace drake

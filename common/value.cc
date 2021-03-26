@@ -15,12 +15,23 @@ int ReportZeroHash(const std::type_info& detail) {
   // once per process, to avoid spamming.
   static std::atomic<bool> g_has_warned{false};
   const bool has_warned = g_has_warned.exchange(true);
+  const std::string bad_class = NiceTypeName::Get(detail);
   const std::string message = fmt::format(
-      "TypeHash<T> cannot operate on T={}; Value<T> may suffer from slightly"
-      " impaired performance. If T uses a single non-type template parameter,"
-      " adding 'using NonTypeTemplateParameter = ...;' will enable hashing."
+      "The {} class is incompatible with the typename hasher that provides the"
+      " type-erasure checking for AbstractValue casts, most likely because the"
+      " problematic class mixes template parameters with nested classes or"
+      " non-type template parameters."
+      //
+      " As a result, operations on Value<{}> will suffer from slightly impaired"
+      " performance."
+      //
+      " If the problem relates to nested classes, you may be able to resolve it"
+      " by un-nesting the class in question."
+      //
+      " If the problem relates to a single non-type template parameter, you may"
+      " be able to resolve it by adding 'using NonTypeTemplateParameter = ...'."
       " See drake/common/test/value_test.cc for an example.",
-      NiceTypeName::Get(detail));
+      bad_class, bad_class);
   if (!has_warned) {
     log()->warn(message +
         " This is the first instance of an impaired T within this process."

@@ -10,6 +10,7 @@
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/scene_graph.h"
@@ -26,6 +27,7 @@ namespace drake {
 namespace pydrake {
 
 using std::string;
+using std::string_view;
 
 using geometry::SceneGraph;
 using math::RigidTransform;
@@ -96,6 +98,21 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("separation_speed", &Class::separation_speed,
             cls_doc.separation_speed.doc)
         .def("point_pair", &Class::point_pair, cls_doc.point_pair.doc);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  // HydroelasticContactInfo
+  {
+    using Class = HydroelasticContactInfo<T>;
+    constexpr auto& cls_doc = doc.HydroelasticContactInfo;
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "HydroelasticContactInfo", param, cls_doc.doc);
+    cls  // BR
+        .def("contact_surface", &Class::contact_surface,
+            cls_doc.contact_surface.doc)
+        .def("F_Ac_W", &Class::F_Ac_W, cls_doc.F_Ac_W.doc);
+    DefCopyAndDeepCopy(&cls);
+    AddValueInstantiation<Class>(m);
   }
 
   // ContactResults
@@ -109,7 +126,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("num_point_pair_contacts", &Class::num_point_pair_contacts,
             cls_doc.num_point_pair_contacts.doc)
         .def("point_pair_contact_info", &Class::point_pair_contact_info,
-            py::arg("i"), cls_doc.point_pair_contact_info.doc);
+            py::arg("i"), cls_doc.point_pair_contact_info.doc)
+        .def("num_hydroelastic_contacts", &Class::num_hydroelastic_contacts,
+            cls_doc.num_hydroelastic_contacts.doc)
+        .def("hydroelastic_contact_info", &Class::hydroelastic_contact_info,
+            py::arg("i"), cls_doc.hydroelastic_contact_info.doc);
+    DefCopyAndDeepCopy(&cls);
     AddValueInstantiation<Class>(m);
   }
 
@@ -120,12 +142,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "CoulombFriction", param, cls_doc.doc);
     cls  // BR
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<const T&, const T&>(), py::arg("static_friction"),
             py::arg("dynamic_friction"), cls_doc.ctor.doc_2args)
         .def("static_friction", &Class::static_friction,
             cls_doc.static_friction.doc)
         .def("dynamic_friction", &Class::dynamic_friction,
             cls_doc.dynamic_friction.doc);
+    DefCopyAndDeepCopy(&cls);
 
     AddValueInstantiation<CoulombFriction<T>>(m);
 
@@ -222,6 +246,20 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("WeldFrames",
             py::overload_cast<const Frame<T>&, const Frame<T>&,
                 const RigidTransform<double>&>(&Class::WeldFrames),
+            py::arg("frame_on_parent_P"), py::arg("frame_on_child_C"),
+            py::arg("X_PC") = RigidTransform<double>::Identity(),
+            py_rvp::reference_internal, cls_doc.WeldFrames.doc)
+        .def(
+            "WeldFrames",
+            [](Class* self, const Frame<T>& A, const Frame<T>& B,
+                const RigidTransform<double>& X_AB) -> const WeldJoint<T>& {
+              WarnDeprecated(
+                  "Please use MultibodyPlant.WeldFrames("
+                  "frame_on_parent_P=value1, frame_on_child_C=value2,"
+                  " X_PC=value3) instead. This variant will be removed"
+                  " after 2021-07-01.");
+              return self->WeldFrames(A, B, X_AB);
+            },
             py::arg("A"), py::arg("B"),
             py::arg("X_AB") = RigidTransform<double>::Identity(),
             py_rvp::reference_internal, cls_doc.WeldFrames.doc)
@@ -257,14 +295,57 @@ void DoScalarDependentDefinitions(py::module m, T) {
               return p_AQi;
             },
             py::arg("context"), py::arg("frame_B"), py::arg("p_BQi"),
-            py::arg("frame_A"), cls_doc.CalcPointsPositions.doc)
-        // TODO(eric.cousineau): Include `CalcInverseDynamics` once there is an
-        // overload that (a) services MBP directly and (b) uses body
-        // association that is less awkward than implicit BodyNodeIndex.
+            py::arg("frame_A"), cls_doc.CalcPointsPositions.doc);
+    // TODO(eric.cousineau): Include `CalcInverseDynamics` once there is an
+    // overload that (a) services MBP directly and (b) uses body
+    // association that is less awkward than implicit BodyNodeIndex.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
         .def("CalcCenterOfMassPosition",
+            WrapDeprecated(cls_doc.CalcCenterOfMassPosition.doc_deprecated,
+                overload_cast_explicit<Vector3<T>, const Context<T>&>(
+                    &Class::CalcCenterOfMassPosition)),
+            py::arg("context"), cls_doc.CalcCenterOfMassPosition.doc_deprecated)
+        .def("CalcCenterOfMassPosition",
+            WrapDeprecated(cls_doc.CalcCenterOfMassPosition.doc_deprecated,
+                overload_cast_explicit<Vector3<T>, const Context<T>&,
+                    const std::vector<ModelInstanceIndex>&>(
+                    &Class::CalcCenterOfMassPosition)),
+            py::arg("context"), py::arg("model_instances"),
+            cls_doc.CalcCenterOfMassPosition.doc_deprecated);
+#pragma GCC diagnostic pop
+    cls  // BR
+        .def("CalcCenterOfMassPositionInWorld",
             overload_cast_explicit<Vector3<T>, const Context<T>&>(
-                &Class::CalcCenterOfMassPosition),
-            py::arg("context"), cls_doc.CalcCenterOfMassPosition.doc_1args)
+                &Class::CalcCenterOfMassPositionInWorld),
+            py::arg("context"),
+            cls_doc.CalcCenterOfMassPositionInWorld.doc_1args)
+        .def("CalcCenterOfMassPositionInWorld",
+            overload_cast_explicit<Vector3<T>, const Context<T>&,
+                const std::vector<ModelInstanceIndex>&>(
+                &Class::CalcCenterOfMassPositionInWorld),
+            py::arg("context"), py::arg("model_instances"),
+            cls_doc.CalcCenterOfMassPositionInWorld.doc_2args)
+        .def(
+            "CalcSpatialMomentumInWorldAboutPoint",
+            [](const Class* self, const Context<T>& context,
+                const Vector3<T>& p_WoP_W) {
+              return self->CalcSpatialMomentumInWorldAboutPoint(
+                  context, p_WoP_W);
+            },
+            py::arg("context"), py::arg("p_WoP_W"),
+            cls_doc.CalcSpatialMomentumInWorldAboutPoint.doc_2args)
+        .def(
+            "CalcSpatialMomentumInWorldAboutPoint",
+            [](const Class* self, const Context<T>& context,
+                const std::vector<ModelInstanceIndex>& model_instances,
+                const Vector3<T>& p_WoP_W) {
+              return self->CalcSpatialMomentumInWorldAboutPoint(
+                  context, model_instances, p_WoP_W);
+            },
+            py::arg("context"), py::arg("model_instances"), py::arg("p_WoP_W"),
+            cls_doc.CalcSpatialMomentumInWorldAboutPoint.doc_3args)
         .def(
             "CalcBiasCenterOfMassTranslationalAcceleration",
             [](const Class* self, const Context<T>& context,
@@ -290,6 +371,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("context"), py::arg("with_respect_to"), py::arg("frame_A"),
             py::arg("frame_E"),
             cls_doc.CalcJacobianCenterOfMassTranslationalVelocity.doc)
+        .def("GetFreeBodyPose", &Class::GetFreeBodyPose, py::arg("context"),
+            py::arg("body"), cls_doc.GetFreeBodyPose.doc)
         .def("SetFreeBodyPose",
             overload_cast_explicit<void, Context<T>*, const Body<T>&,
                 const RigidTransform<T>&>(&Class::SetFreeBodyPose),
@@ -390,6 +473,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("body"), py::arg("V_WB"), py::arg("context"),
             cls_doc.SetFreeBodySpatialVelocity.doc_3args)
+        .def("HasUniqueFreeBaseBody", &Class::HasUniqueFreeBaseBody,
+            py::arg("model_instance"), cls_doc.HasUniqueFreeBaseBody.doc)
+        .def("GetUniqueFreeBaseBodyOrThrow",
+            &Class::GetUniqueFreeBaseBodyOrThrow, py::arg("model_instance"),
+            cls_doc.GetUniqueFreeBaseBodyOrThrow.doc)
         .def(
             "EvalBodyPoseInWorld",
             [](const Class* self, const Context<T>& context,
@@ -556,6 +644,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py_rvp::reference_internal, cls_doc.get_body.doc)
         .def("get_joint", &Class::get_joint, py::arg("joint_index"),
             py_rvp::reference_internal, cls_doc.get_joint.doc)
+        .def("get_mutable_joint", &Class::get_mutable_joint,
+            py::arg("joint_index"), py_rvp::reference_internal,
+            cls_doc.get_mutable_joint.doc)
         .def("get_joint_actuator", &Class::get_joint_actuator,
             py::arg("actuator_index"), py_rvp::reference_internal,
             cls_doc.get_joint_actuator.doc)
@@ -565,6 +656,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.gravity_field.doc)
         .def("mutable_gravity_field", &Class::mutable_gravity_field,
             py_rvp::reference_internal, cls_doc.mutable_gravity_field.doc)
+        .def("GetJointIndices", &Class::GetJointIndices,
+            py::arg("model_instance"), cls_doc.GetJointIndices.doc)
         .def("GetModelInstanceName",
             overload_cast_explicit<const string&, ModelInstanceIndex>(
                 &Class::GetModelInstanceName),
@@ -573,47 +666,47 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("HasModelInstanceNamed", &Class::HasModelInstanceNamed,
             py::arg("name"), cls_doc.HasModelInstanceNamed.doc)
         .def("HasBodyNamed",
-            overload_cast_explicit<bool, const string&>(&Class::HasBodyNamed),
+            overload_cast_explicit<bool, string_view>(&Class::HasBodyNamed),
             py::arg("name"), cls_doc.HasBodyNamed.doc_1args)
         .def("HasBodyNamed",
-            overload_cast_explicit<bool, const string&, ModelInstanceIndex>(
+            overload_cast_explicit<bool, string_view, ModelInstanceIndex>(
                 &Class::HasBodyNamed),
             py::arg("name"), py::arg("model_instance"),
             cls_doc.HasBodyNamed.doc_2args)
         .def("HasJointNamed",
-            overload_cast_explicit<bool, const string&>(&Class::HasJointNamed),
+            overload_cast_explicit<bool, string_view>(&Class::HasJointNamed),
             py::arg("name"), cls_doc.HasJointNamed.doc_1args)
         .def("HasJointNamed",
-            overload_cast_explicit<bool, const string&, ModelInstanceIndex>(
+            overload_cast_explicit<bool, string_view, ModelInstanceIndex>(
                 &Class::HasJointNamed),
             py::arg("name"), py::arg("model_instance"),
             cls_doc.HasJointNamed.doc_2args)
         .def("HasJointActuatorNamed",
-            overload_cast_explicit<bool, const string&>(
+            overload_cast_explicit<bool, string_view>(
                 &Class::HasJointActuatorNamed),
             py::arg("name"), cls_doc.HasJointActuatorNamed.doc_1args)
         .def("HasJointActuatorNamed",
-            overload_cast_explicit<bool, const string&, ModelInstanceIndex>(
+            overload_cast_explicit<bool, string_view, ModelInstanceIndex>(
                 &Class::HasJointActuatorNamed),
             py::arg("name"), py::arg("model_instance"),
             cls_doc.HasJointActuatorNamed.doc_2args)
         .def("GetFrameByName",
-            overload_cast_explicit<const Frame<T>&, const string&>(
+            overload_cast_explicit<const Frame<T>&, string_view>(
                 &Class::GetFrameByName),
             py::arg("name"), py_rvp::reference_internal,
             cls_doc.GetFrameByName.doc_1args)
         .def("GetFrameByName",
-            overload_cast_explicit<const Frame<T>&, const string&,
+            overload_cast_explicit<const Frame<T>&, string_view,
                 ModelInstanceIndex>(&Class::GetFrameByName),
             py::arg("name"), py::arg("model_instance"),
             py_rvp::reference_internal, cls_doc.GetFrameByName.doc_2args)
         .def("GetBodyByName",
-            overload_cast_explicit<const Body<T>&, const string&>(
+            overload_cast_explicit<const Body<T>&, string_view>(
                 &Class::GetBodyByName),
             py::arg("name"), py_rvp::reference_internal,
             cls_doc.GetBodyByName.doc_1args)
         .def("GetBodyByName",
-            overload_cast_explicit<const Body<T>&, const string&,
+            overload_cast_explicit<const Body<T>&, string_view,
                 ModelInstanceIndex>(&Class::GetBodyByName),
             py::arg("name"), py::arg("model_instance"),
             py_rvp::reference_internal, cls_doc.GetBodyByName.doc_2args)
@@ -623,7 +716,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("model_instance"), cls_doc.GetBodyIndices.doc)
         .def(
             "GetJointByName",
-            [](const Class* self, const string& name,
+            [](const Class* self, string_view name,
                 std::optional<ModelInstanceIndex> model_instance) -> auto& {
               return self->GetJointByName(name, model_instance);
             },
@@ -631,22 +724,30 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py_rvp::reference_internal, cls_doc.GetJointByName.doc)
         .def(
             "GetMutableJointByName",
-            [](Class * self, const string& name,
+            [](Class * self, string_view name,
                 std::optional<ModelInstanceIndex> model_instance) -> auto& {
               return self->GetMutableJointByName(name, model_instance);
             },
             py::arg("name"), py::arg("model_instance") = std::nullopt,
             py_rvp::reference_internal, cls_doc.GetJointByName.doc)
         .def("GetJointActuatorByName",
-            overload_cast_explicit<const JointActuator<T>&, const string&>(
+            overload_cast_explicit<const JointActuator<T>&, string_view>(
                 &Class::GetJointActuatorByName),
             py::arg("name"), py_rvp::reference_internal,
             cls_doc.GetJointActuatorByName.doc_1args)
         .def("GetModelInstanceByName",
-            overload_cast_explicit<ModelInstanceIndex, const string&>(
+            overload_cast_explicit<ModelInstanceIndex, string_view>(
                 &Class::GetModelInstanceByName),
             py::arg("name"), py_rvp::reference_internal,
             cls_doc.GetModelInstanceByName.doc)
+        .def(
+            "GetBodiesWeldedTo",
+            [](const Class& self, const Body<T>& body) {
+              auto welded_bodies = self.GetBodiesWeldedTo(body);
+              return py_keep_alive_iterable<py::list>(
+                  py::cast(welded_bodies), py::cast(&self));
+            },
+            py::arg("body"), cls_doc.GetBodiesWeldedTo.doc)
         .def("GetTopologyGraphvizString", &Class::GetTopologyGraphvizString,
             cls_doc.GetTopologyGraphvizString.doc);
     // Geometry.
@@ -699,6 +800,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("coulomb_friction"),
             cls_doc.RegisterCollisionGeometry
                 .doc_5args_body_X_BG_shape_name_coulomb_friction)
+        .def("GetFloatingBaseBodies", &Class::GetFloatingBaseBodies,
+            cls_doc.GetFloatingBaseBodies.doc)
         .def("get_source_id", &Class::get_source_id, cls_doc.get_source_id.doc)
         .def("get_geometry_query_input_port",
             &Class::get_geometry_query_input_port, py_rvp::reference_internal,
@@ -1001,6 +1104,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_readwrite("body_index", &Class::body_index, cls_doc.body_index.doc)
         .def_readwrite("p_BoBq_B", &Class::p_BoBq_B, cls_doc.p_BoBq_B.doc)
         .def_readwrite("F_Bq_W", &Class::F_Bq_W, cls_doc.F_Bq_W.doc);
+    DefCopyAndDeepCopy(&cls);
     AddValueInstantiation<Class>(m);
     // Some ports need `Value<std::vector<Class>>`.
     AddValueInstantiation<std::vector<Class>>(m);
@@ -1090,19 +1194,24 @@ PYBIND11_MODULE(plant, m) {
       py::keep_alive<3, 1>(),
       doc.ConnectContactResultsToDrakeVisualizer.doc_3args);
 
-  py::class_<PropellerInfo>(m, "PropellerInfo", doc.PropellerInfo.doc)
-      .def(py::init<const BodyIndex&, const math::RigidTransform<double>&,
-               double, double>(),
-          py::arg("body_index"),
-          py::arg("X_BP") = math::RigidTransform<double>::Identity(),
-          py::arg("thrust_ratio") = 1.0, py::arg("moment_ratio") = 0.0)
-      .def_readwrite("body_index", &PropellerInfo::body_index,
-          doc.PropellerInfo.body_index.doc)
-      .def_readwrite("X_BP", &PropellerInfo::X_BP, doc.PropellerInfo.X_BP.doc)
-      .def_readwrite("thrust_ratio", &PropellerInfo::thrust_ratio,
-          doc.PropellerInfo.thrust_ratio.doc)
-      .def_readwrite("moment_ratio", &PropellerInfo::moment_ratio,
-          doc.PropellerInfo.moment_ratio.doc);
+  {
+    using Class = PropellerInfo;
+    constexpr auto& cls_doc = doc.PropellerInfo;
+    py::class_<Class> cls(m, "PropellerInfo", cls_doc.doc);
+    cls  // BR
+        .def(py::init<const BodyIndex&, const math::RigidTransform<double>&,
+                 double, double>(),
+            py::arg("body_index"),
+            py::arg("X_BP") = math::RigidTransform<double>::Identity(),
+            py::arg("thrust_ratio") = 1.0, py::arg("moment_ratio") = 0.0)
+        .def_readwrite("body_index", &Class::body_index, cls_doc.body_index.doc)
+        .def_readwrite("X_BP", &Class::X_BP, cls_doc.X_BP.doc)
+        .def_readwrite(
+            "thrust_ratio", &Class::thrust_ratio, cls_doc.thrust_ratio.doc)
+        .def_readwrite(
+            "moment_ratio", &Class::moment_ratio, cls_doc.moment_ratio.doc);
+    DefCopyAndDeepCopy(&cls);
+  }
 
   {
     using Class = ContactModel;

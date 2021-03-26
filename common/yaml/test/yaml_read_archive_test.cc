@@ -502,6 +502,42 @@ doc:
 )""", (Matrix34d{} << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11).finished());
 }
 
+TEST_P(YamlReadArchiveTest, EigenMatrixUpTo6) {
+  using Matrix34d = Eigen::Matrix<double, 3, 4>;
+  const auto test = [](const std::string& doc,
+                       const Matrix34d& expected) {
+    const auto& mat = AcceptNoThrow<EigenMatrixUpTo6Struct>(Load(doc));
+    EXPECT_TRUE(drake::CompareMatrices(mat.value, expected));
+  };
+
+  test(R"""(
+doc:
+  value:
+  - [0.0, 1.0, 2.0, 3.0]
+  - [4.0, 5.0, 6.0, 7.0]
+  - [8.0, 9.0, 10.0, 11.0]
+)""", (Matrix34d{} << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11).finished());
+}
+
+TEST_P(YamlReadArchiveTest, EigenMatrix00) {
+  const auto test = [](const std::string& doc) {
+    const auto& mat = AcceptNoThrow<EigenMatrixStruct>(Load(doc));
+    const auto& mat00 = AcceptNoThrow<EigenMatrix00Struct>(Load(doc));
+    const Eigen::MatrixXd empty;
+    EXPECT_TRUE(drake::CompareMatrices(mat.value, empty));
+    EXPECT_TRUE(drake::CompareMatrices(mat00.value, empty));
+  };
+
+  test(R"""(
+doc:
+  value: []
+)""");
+  test(R"""(
+doc:
+  value: [[]]
+)""");
+}
+
 TEST_P(YamlReadArchiveTest, EigenMissing) {
   const auto& vx = AcceptEmptyDoc<EigenVecStruct>();
   const auto& vn = AcceptEmptyDoc<EigenVec3Struct>();
@@ -828,7 +864,7 @@ TEST_P(YamlReadArchiveTest, VisitVariantFoundUnknownTag) {
       "has unsupported type tag !UnknownTag "
       "while selecting a variant<> entry for "
       "std::variant<std::string,double,drake::yaml::test::DoubleStruct,"
-      "drake::yaml::test::StringStruct> value.");
+      "drake::yaml::test::EigenStruct<-1,1,-1,1>> value.");
 }
 
 // This finds nothing when an Eigen::Vector or Eigen::Matrix was wanted.

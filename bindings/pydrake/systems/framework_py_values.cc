@@ -42,13 +42,34 @@ void DefineFrameworkPyValues(py::module m) {
               return py::str("{}({})").format(cls.attr("__name__"),
                   py::cast(self.CopyToVector()).attr("tolist")());
             })
+        .def("__getitem__",
+            overload_cast_explicit<const T&, int>(&VectorBase<T>::operator[]),
+            py_rvp::reference_internal, doc.VectorBase.operator_array.doc)
+        .def(
+            "__setitem__",
+            [](VectorBase<T>& self, int index, T& value) {
+              self[index] = value;
+            },
+            doc.VectorBase.operator_array.doc)
+        .def("size", &VectorBase<T>::size, doc.VectorBase.size.doc)
+        .def("GetAtIndex",
+            overload_cast_explicit<T&, int>(&VectorBase<T>::GetAtIndex),
+            py::arg("index"), py_rvp::reference_internal,
+            doc.VectorBase.GetAtIndex.doc)
+        .def("SetAtIndex", &VectorBase<T>::SetAtIndex, py::arg("index"),
+            py::arg("value"), doc.VectorBase.SetAtIndex.doc)
+        .def("SetFrom", &VectorBase<T>::SetFrom, py::arg("value"),
+            doc.VectorBase.SetFrom.doc)
+        .def("SetFromVector", &VectorBase<T>::SetFromVector, py::arg("value"),
+            doc.VectorBase.SetFromVector.doc)
+        .def("SetZero", &VectorBase<T>::SetZero, doc.VectorBase.SetZero.doc)
         .def("CopyToVector", &VectorBase<T>::CopyToVector,
             doc.VectorBase.CopyToVector.doc)
-        .def("SetAtIndex", &VectorBase<T>::SetAtIndex,
-            doc.VectorBase.SetAtIndex.doc)
-        .def("SetFromVector", &VectorBase<T>::SetFromVector,
-            doc.VectorBase.SetFromVector.doc)
-        .def("size", &VectorBase<T>::size, doc.VectorBase.size.doc);
+        .def("PlusEqScaled",
+            overload_cast_explicit<VectorBase<T>&, const T&,
+                const VectorBase<T>&>(&VectorBase<T>::PlusEqScaled),
+            py::arg("scale"), py::arg("rhs"), py_rvp::reference_internal,
+            doc.VectorBase.PlusEqScaled.doc_2args);
 
     // TODO(eric.cousineau): Make a helper function for the Eigen::Ref<>
     // patterns.
@@ -64,6 +85,13 @@ void DefineFrameworkPyValues(py::module m) {
             doc.BasicVector.ctor.doc_1args_vec)
         .def(py::init<int>(), py::arg("size"),
             doc.BasicVector.ctor.doc_1args_size)
+        .def(
+            "set_value",
+            [](BasicVector<T>* self,
+                const Eigen::Ref<const VectorX<T>>& value) {
+              self->set_value(value);
+            },
+            doc.BasicVector.set_value.doc)
         .def(
             "get_value",
             [](const BasicVector<T>* self) -> Eigen::Ref<const VectorX<T>> {
@@ -81,14 +109,7 @@ void DefineFrameworkPyValues(py::module m) {
             [](BasicVector<T>* self) -> Eigen::Ref<VectorX<T>> {
               return self->get_mutable_value();
             },
-            py_rvp::reference_internal, doc.BasicVector.get_mutable_value.doc)
-        .def(
-            "GetAtIndex",
-            [](BasicVector<T>* self, int index) -> T& {
-              return self->GetAtIndex(index);
-            },
-            py_rvp::reference_internal, doc.VectorBase.GetAtIndex.doc)
-        .def("SetZero", &BasicVector<T>::SetZero, doc.BasicVector.SetZero.doc);
+            py_rvp::reference_internal, doc.BasicVector.get_mutable_value.doc);
 
     DefineTemplateClassWithDefault<Supervector<T>, VectorBase<T>>(
         m, "Supervector", GetPyParam<T>(), doc.Supervector.doc);
@@ -113,7 +134,7 @@ void DefineFrameworkPyValues(py::module m) {
         .def(
             "set_value",
             [](Value<BasicVector<T>>* self,
-                const Eigen::Ref<const Eigen::VectorXd>& value) {
+                const Eigen::Ref<const VectorX<T>>& value) {
               self->set_value(BasicVector<T>(value));
             },
             py::arg("value"));

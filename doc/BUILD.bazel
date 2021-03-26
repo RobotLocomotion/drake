@@ -8,83 +8,156 @@ load(
     "drake_py_library",
     "drake_py_unittest",
 )
+load(
+    ":defs.bzl",
+    "DEFAULT_BINARY_TAGS",
+    "DEFAULT_TEST_TAGS",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-drake_py_library(
-    name = "sphinx_base",
-    srcs = ["sphinx_base.py"],
-    data = ["@sphinx//:sphinx-build"],
-    deps = ["@rules_python//python/runfiles"],
-)
-
-drake_py_binary(
-    name = "gen_sphinx",
-    srcs = ["gen_sphinx.py"],
-    add_test_rule = 1,
-    data = glob([
-        "**/*.rst",
-    ]) + [
-        "conf.py",
-        "images/favicon.ico",
-        "images/jenkins_bot_reviewable_comment.png",
-        "images/logo_w_text.jpg",
-        "images/mathematical_program.svg",
-        "images/systems.svg",
-        "images/doxygen_instructions/visual_studio_build_targets.png",
-        "sample_vimrc",
-    ],
-    tags = [
-        # Some (currently disabled) Sphinx extensions try to reach out to the
-        # network; we should fail-fast if someone tries to turn them on.
-        "block-network",
-        # Test exceeds timeout when run under Valgrind tools.
-        "no_valgrind_tools",
-    ],
-    test_rule_args = [
-        "--out_dir=<test>",
-    ],
-    deps = [
-        ":sphinx_base",
-    ],
-)
-
-drake_py_binary(
-    name = "serve_sphinx",
-    srcs = ["serve_sphinx.py"],
-    data = [":gen_sphinx"],
-    deps = [":sphinx_base"],
-)
-
-drake_py_library(
-    name = "system_doxygen",
-    srcs = ["system_doxygen.py"],
-    visibility = ["//visibility:public"],
-)
-
-drake_py_unittest(
-    name = "system_doxygen_test",
-    deps = [":system_doxygen"],
-)
-
-drake_py_binary(
-    name = "doxygen",
+# For maximum browser compatibility these should be at the root of the
+# generated website and should not be renamed.
+filegroup(
+    name = "favicon",
     srcs = [
-        "doxygen_main.py",
+        # Manual resizing and padding of "assets/drake-dragon.png" to
+        # 192x192px.
+        "android-chrome.png",
+        # Manual resizing and padding of "assets/drake-dragon.png" to
+        # 180x180px.
+        "apple-touch-icon.png",
+        # Minimal configuration for Microsoft browsers. Versions of Edge prior
+        # to the change to WebKit always request a file named
+        # "browserconfig.xml" whether or not an alternative is specified in the
+        # HTML.
+        "browserconfig.xml",
+        # Apple Safari always requests a file named "favicon.ico" whether or
+        # not an alternative favicon is specified in the HTML.
+        # Manual resizing and padding of "assets/drake-dragon.png" to 32x32px
+        # and conversion to ICO format.
+        "favicon.ico",
+        # Manual resizing and padding of "assets/drake-dragon.png" to 32x32px.
+        "favicon.png",
+        # Mask icon for Safari pinned tabs.
+        # Manual removal of colors and layers from "assets/drake-dragon.svg"
+        # and transformation to a 0 0 16 16 view box.
+        "mask-icon.svg",
+        # Site manifest primarily for Android and Chrome.
+        # https://developer.mozilla.org/en-US/docs/Web/Manifest
+        "site.webmanifest",
     ],
+)
+
+filegroup(
+    name = "images",
+    srcs = [
+        "images/drake-dragon.png",
+        "images/drake-logo.svg",
+        "images/drake-logo-white.svg",
+        "images/jenkins_bot_reviewable_comment.png",
+    ],
+)
+
+drake_py_library(
+    name = "jekyll_base",
+    srcs = ["jekyll_base.py"],
+    tags = DEFAULT_BINARY_TAGS,
+)
+
+filegroup(
+    name = "third_party_data",
+    srcs = glob([
+        "third_party/**/*",
+    ]),
+)
+
+filegroup(
+    name = "jekyll_data",
+    srcs = [
+        "_config.yml",
+        "index.md",
+        "sample_vimrc",
+    ] + glob([
+        "_includes/*.html",
+        "_includes/*.md",
+        "_layouts/*.html",
+        "_pages/*.md",
+        "_release-notes/*.md",
+        "assets/**/*.css",
+        "assets/**/*.js",
+    ]),
     data = [
-        "system_doxygen.py",
-        "//:.bazelproject",
+        ":favicon",
+        ":images",
+        ":third_party_data",
+    ],
+)
+
+drake_py_binary(
+    name = "gen_jekyll",
+    srcs = ["gen_jekyll.py"],
+    add_test_rule = 1,
+    data = [":jekyll_data"],
+    tags = DEFAULT_BINARY_TAGS,
+    test_rule_args = ["--out_dir=<test>"],
+    test_rule_tags = DEFAULT_TEST_TAGS,
+    deps = [
+        ":jekyll_base",
+    ],
+)
+
+drake_py_binary(
+    name = "serve_jekyll",
+    srcs = ["serve_jekyll.py"],
+    data = [":jekyll_data"],
+    tags = DEFAULT_BINARY_TAGS,
+    deps = [
+        ":jekyll_base",
+    ],
+)
+
+drake_py_binary(
+    name = "build",
+    srcs = ["build.py"],
+    data = [
+        ":gen_jekyll",
+        "//doc/doxygen_cxx:build",
+        "//doc/pydrake:gen_sphinx",
+    ],
+    tags = DEFAULT_BINARY_TAGS,
+    deps = [
         "@bazel_tools//tools/python/runfiles",
-        "@doxygen",
+    ],
+)
+
+# This rule is used by our CI scripts as a single point of entry to ensure that
+# all of our manually-tagged documentation binaries can be built successfully.
+filegroup(
+    name = "manual_binaries",
+    srcs = [
+        ":build",
+        ":gen_jekyll",
+        ":serve_jekyll",
+        "//doc/doxygen_cxx:build",
+        "//doc/pydrake:gen_sphinx",
+        "//doc/pydrake:serve_sphinx",
+    ],
+    tags = ["manual"],
+)
+
+# This rule is used by our CI scripts as a single point of entry to ensure that
+# all of our manually-tagged documentation tests pass.
+test_suite(
+    name = "manual_tests",
+    tags = ["manual"],
+    tests = [
+        ":gen_jekyll_test",
+        "//doc/pydrake:gen_sphinx_test",
     ],
 )
 
 add_lint_tests(
     python_lint_exclude = [
         ":conf.py",
-        # The following needs the executable flag to be run by doxygen, but the
-        # linter complains:
-        ":system_doxygen.py",
     ],
-    python_lint_extra_srcs = [":doxygen.py"],
 )

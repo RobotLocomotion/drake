@@ -7,14 +7,14 @@ build:kcov --copt -g
 build:kcov --copt -O0
 build:kcov --spawn_strategy=standalone
 build:kcov --run_under //tools/dynamic_analysis:kcov
-build:kcov --local_test_jobs=1
+build:kcov --local_test_jobs=HOST_CPUS*0.5
 build:kcov --test_tag_filters=-lint,-gurobi,-mosek,-snopt,-no_kcov
 build:kcov --nocache_test_results
 # These increased timeouts were set through experimentation. Because kcov runs
 # in a separate process from the main program, the OS has to context-switch
 # between the processes every time a line is hit, slowing down execution
-# significantly. Timeouts are 3.5x default values.
-build:kcov --test_timeout=210,1050,3150,12600
+# significantly. Timeouts are 10x default values.
+build:kcov --test_timeout=600,3000,9000,36000
 
 ### Kcov everything build. ###
 build:kcov_everything --build_tests_only
@@ -25,11 +25,11 @@ build:kcov_everything --copt -g
 build:kcov_everything --copt -O0
 build:kcov_everything --spawn_strategy=standalone
 build:kcov_everything --run_under=//tools/dynamic_analysis:kcov
-build:kcov_everything --local_test_jobs=1
+build:kcov_everything --local_test_jobs=HOST_CPUS*0.5
 build:kcov_everything --test_tag_filters=-lint,-no_kcov
 build:kcov_everything --nocache_test_results
-# See timeout note above. Timeouts are 5x default values.
-build:kcov_everything --test_timeout=300,1500,4500,18000
+# See timeout note above. Timeouts are 10x default values.
+build:kcov_everything --test_timeout=600,3000,9000,36000
 
 ### ASan build. Clang only. ###
 build:asan --build_tests_only
@@ -218,6 +218,9 @@ build:memcheck --copt -g
 # https://sourceforge.net/p/valgrind/mailman/valgrind-developers/?viewmonth=201806&viewday=11&style=flat
 build:memcheck --copt -O2
 build:memcheck --run_under=//tools/dynamic_analysis:valgrind
+# We explicitly do not filter `sh` targets because some C++ binaries are tested
+# indirectly via those targets. Any Python code that is run through a `sh`
+# target may need `tags = ["no_memcheck"]` if it incurs CI issues.
 build:memcheck --test_lang_filters=-py
 build:memcheck --test_tag_filters=-gurobi,-mosek,-snopt,-lint,-no_memcheck,-no_valgrind_tools
 # Slowdown factor can range from 5-100.

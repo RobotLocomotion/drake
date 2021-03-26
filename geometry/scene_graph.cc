@@ -16,15 +16,29 @@ namespace drake {
 namespace geometry {
 
 using render::RenderLabel;
+using std::make_unique;
+using std::vector;
 using systems::Context;
 using systems::InputPort;
 using systems::LeafSystem;
-using systems::rendering::PoseBundle;
+using systems::Parameters;
+using systems::State;
 using systems::SystemTypeTag;
-using std::make_unique;
-using std::vector;
+using systems::rendering::PoseBundle;
 
 namespace {
+
+/* We're creating a T-valued abstract value (stored either as State or
+ Parameter). AbstractValues aren't really supposed to do that. They should be
+ the same type *regardless* the scalar type for the Context. However, this
+ breaks that paradigm. I need to be able to assign (i.e., call
+ Context::SetTimeStateAndParametersFrom()) on an AutoDiff-valued Context with
+ a double-valued context. The Value type would die in that attempt (because the
+ two types will be different). This implementation of the AbstractValue
+ interface has special logic to catch and handle this case. It will *still*
+ fail trying to set a double-valued Context from an autodiff-valued one; but
+ that is generally a global failure and not an artifact of this abstract state.
+ */
 template <typename T>
 class GeometryStateValue final : public Value<GeometryState<T>> {
  public:
@@ -40,15 +54,22 @@ class GeometryStateValue final : public Value<GeometryState<T>> {
 
   void SetFrom(const AbstractValue& other) override {
     if (!do_double_assign(other)) {
+      // `other` doesn't contain GeometryState<double>, fall back to
+      // Value::SetFrom() to see if assignment is otherwise valid.
       Value<GeometryState<T>>::SetFrom(other);
     }
   }
 
  private:
+  /* Assigns to the GeometryState<T> stored in *this* Value iff other contains
+   GeometryState<double>. Returns true if that assignment is successful.  */
   bool do_double_assign(const AbstractValue& other) {
     const GeometryStateValue<double>* double_value =
         dynamic_cast<const GeometryStateValue<double>*>(&other);
     if (double_value) {
+      // This relies on the GeometryState::operator= conversion operation
+      // assuming that *this* value's instance can be assigned to by a
+      // double-valued instance.
       this->get_mutable_value() = double_value->get_value();
       return true;
     }
@@ -61,12 +82,23 @@ class GeometryStateValue final : public Value<GeometryState<T>> {
 }  // namespace
 
 template <typename T>
-SceneGraph<T>::SceneGraph()
-    : LeafSystem<T>(SystemTypeTag<SceneGraph>{}) {
-  auto state_value = make_unique<GeometryStateValue<T>>();
-  initial_state_ = &state_value->get_mutable_value();
-  model_inspector_.set(initial_state_);
-  geometry_state_index_ = this->DeclareAbstractState(std::move(state_value));
+SceneGraph<T>::SceneGraph() : SceneGraph(false, 0) {}
+
+template <typename T>
+SceneGraph<T>::SceneGraph(bool data_as_state) : SceneGraph(data_as_state, 0) {}
+
+template <typename T>
+SceneGraph<T>::SceneGraph(bool data_as_state, int)
+    : LeafSystem<T>(SystemTypeTag<SceneGraph>{}),
+      data_as_state_(data_as_state) {
+  model_inspector_.set(&model_);
+  if (data_as_state_) {
+    geometry_state_index_ =
+        this->DeclareAbstractState(GeometryStateValue<T>());
+  } else {
+    geometry_state_index_ =
+        this->DeclareAbstractParameter(GeometryStateValue<T>());
+  }
 
   bundle_port_index_ = this->DeclareAbstractOutputPort(
                                "lcm_visualization", &SceneGraph::MakePoseBundle,
@@ -85,14 +117,13 @@ SceneGraph<T>::SceneGraph()
 
 template <typename T>
 template <typename U>
-SceneGraph<T>::SceneGraph(const SceneGraph<U>& other) : SceneGraph() {
-  // NOTE: If other.initial_state_ is not null, it means we're converting a
-  // system that hasn't had its context allocated yet. We want the converted
-  // system to persist the same state.
-  if (other.initial_state_ != nullptr) {
-    *initial_state_ = *(other.initial_state_->ToAutoDiffXd());
-    model_inspector_.set(initial_state_);
-  }
+SceneGraph<T>::SceneGraph(const SceneGraph<U>& other)
+    : SceneGraph(other.data_as_state_, 0) {
+  // TODO(SeanCurtis-TRI) This is very brittle; we are essentially assuming that
+  //  T = AutoDiffXd. For now, that's true. If we ever support
+  //  symbolic::Expression, this U --> T conversion will have to be more
+  //  generic.
+  model_ = *(other.model_.ToAutoDiffXd());
 
   // We need to guarantee that the same source ids map to the same port indices.
   // We'll do this by processing the source ids in monotonically increasing
@@ -122,7 +153,7 @@ SceneGraph<T>::SceneGraph(const SceneGraph<U>& other) : SceneGraph() {
 
 template <typename T>
 SourceId SceneGraph<T>::RegisterSource(const std::string& name) {
-  SourceId source_id = initial_state_->RegisterNewSource(name);
+  SourceId source_id = model_.RegisterNewSource(name);
   MakeSourcePorts(source_id);
   return source_id;
 }
@@ -142,21 +173,20 @@ const InputPort<T>& SceneGraph<T>::get_source_pose_port(
 template <typename T>
 FrameId SceneGraph<T>::RegisterFrame(SourceId source_id,
                                      const GeometryFrame& frame) {
-  return initial_state_->RegisterFrame(source_id, frame);
+  return model_.RegisterFrame(source_id, frame);
 }
 
 template <typename T>
 FrameId SceneGraph<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
                                      const GeometryFrame& frame) {
-  return initial_state_->RegisterFrame(source_id, parent_id, frame);
+  return model_.RegisterFrame(source_id, parent_id, frame);
 }
 
 template <typename T>
 GeometryId SceneGraph<T>::RegisterGeometry(
     SourceId source_id, FrameId frame_id,
     std::unique_ptr<GeometryInstance> geometry) {
-  return initial_state_->RegisterGeometry(source_id, frame_id,
-                                          std::move(geometry));
+  return model_.RegisterGeometry(source_id, frame_id, std::move(geometry));
 }
 
 template <typename T>
@@ -171,8 +201,8 @@ template <typename T>
 GeometryId SceneGraph<T>::RegisterGeometry(
     SourceId source_id, GeometryId geometry_id,
     std::unique_ptr<GeometryInstance> geometry) {
-  return initial_state_->RegisterGeometryWithParent(source_id, geometry_id,
-                                                    std::move(geometry));
+  return model_.RegisterGeometryWithParent(source_id, geometry_id,
+                                           std::move(geometry));
 }
 
 template <typename T>
@@ -187,13 +217,12 @@ GeometryId SceneGraph<T>::RegisterGeometry(
 template <typename T>
 GeometryId SceneGraph<T>::RegisterAnchoredGeometry(
     SourceId source_id, std::unique_ptr<GeometryInstance> geometry) {
-  return initial_state_->RegisterAnchoredGeometry(source_id,
-                                                  std::move(geometry));
+  return model_.RegisterAnchoredGeometry(source_id, std::move(geometry));
 }
 
 template <typename T>
 void SceneGraph<T>::RemoveGeometry(SourceId source_id, GeometryId geometry_id) {
-  initial_state_->RemoveGeometry(source_id, geometry_id);
+  model_.RemoveGeometry(source_id, geometry_id);
 }
 
 template <typename T>
@@ -206,30 +235,29 @@ void SceneGraph<T>::RemoveGeometry(Context<T>* context, SourceId source_id,
 template <typename T>
 void SceneGraph<T>::AddRenderer(
     std::string name, std::unique_ptr<render::RenderEngine> renderer) {
-  return initial_state_->AddRenderer(std::move(name), std::move(renderer));
+  return model_.AddRenderer(std::move(name), std::move(renderer));
 }
 
 template <typename T>
 bool SceneGraph<T>::HasRenderer(const std::string& name) const {
-  return initial_state_->HasRenderer(name);
+  return model_.HasRenderer(name);
 }
 
 template <typename T>
 int SceneGraph<T>::RendererCount() const {
-  return initial_state_->RendererCount();
+  return model_.RendererCount();
 }
 
 template <typename T>
 vector<std::string> SceneGraph<T>::RegisteredRendererNames() const {
-  return initial_state_->RegisteredRendererNames();
+  return model_.RegisteredRendererNames();
 }
 
 template <typename T>
 void SceneGraph<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                ProximityProperties properties,
                                RoleAssign assign) {
-  initial_state_->AssignRole(source_id, geometry_id, std::move(properties),
-                             assign);
+  model_.AssignRole(source_id, geometry_id, std::move(properties), assign);
 }
 
 template <typename T>
@@ -245,8 +273,7 @@ template <typename T>
 void SceneGraph<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                PerceptionProperties properties,
                                RoleAssign assign) {
-  initial_state_->AssignRole(source_id, geometry_id, std::move(properties),
-                             assign);
+  model_.AssignRole(source_id, geometry_id, std::move(properties), assign);
 }
 
 template <typename T>
@@ -262,8 +289,7 @@ template <typename T>
 void SceneGraph<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                IllustrationProperties properties,
                                RoleAssign assign) {
-  initial_state_->AssignRole(source_id, geometry_id, std::move(properties),
-                             assign);
+  model_.AssignRole(source_id, geometry_id, std::move(properties), assign);
 }
 
 template <typename T>
@@ -282,7 +308,7 @@ void SceneGraph<T>::AssignRole(Context<T>* context, SourceId source_id,
 
 template <typename T>
 int SceneGraph<T>::RemoveRole(SourceId source_id, FrameId frame_id, Role role) {
-  return initial_state_->RemoveRole(source_id, frame_id, role);
+  return model_.RemoveRole(source_id, frame_id, role);
 }
 
 template <typename T>
@@ -295,7 +321,7 @@ int SceneGraph<T>::RemoveRole(Context<T>* context, SourceId source_id,
 template <typename T>
 int SceneGraph<T>::RemoveRole(SourceId source_id, GeometryId geometry_id,
                               Role role) {
-  return initial_state_->RemoveRole(source_id, geometry_id, role);
+  return model_.RemoveRole(source_id, geometry_id, role);
 }
 
 template <typename T>
@@ -312,7 +338,7 @@ const SceneGraphInspector<T>& SceneGraph<T>::model_inspector() const {
 
 template <typename T>
 void SceneGraph<T>::ExcludeCollisionsWithin(const GeometrySet& geometry_set) {
-  initial_state_->ExcludeCollisionsWithin(geometry_set);
+  model_.ExcludeCollisionsWithin(geometry_set);
 }
 
 template <typename T>
@@ -325,7 +351,7 @@ void SceneGraph<T>::ExcludeCollisionsWithin(
 template <typename T>
 void SceneGraph<T>::ExcludeCollisionsBetween(const GeometrySet& setA,
                                              const GeometrySet& setB) {
-  initial_state_->ExcludeCollisionsBetween(setA, setB);
+  model_.ExcludeCollisionsBetween(setA, setB);
 }
 
 template <typename T>
@@ -337,15 +363,35 @@ void SceneGraph<T>::ExcludeCollisionsBetween(Context<T>* context,
 }
 
 template <typename T>
+void SceneGraph<T>::SetDefaultState(const Context<T>& context,
+                                    State<T>* state) const {
+  LeafSystem<T>::SetDefaultState(context, state);
+  if (data_as_state_) {
+    state->template get_mutable_abstract_state<GeometryState<T>>(
+        geometry_state_index_) = model_;
+  }
+}
+
+template <typename T>
+void SceneGraph<T>::SetDefaultParameters(const Context<T>& context,
+                                         Parameters<T>* parameters) const {
+  LeafSystem<T>::SetDefaultParameters(context, parameters);
+  if (!data_as_state_) {
+    parameters->template get_mutable_abstract_parameter<GeometryState<T>>(
+        geometry_state_index_) = model_;
+  }
+}
+
+template <typename T>
 void SceneGraph<T>::MakeSourcePorts(SourceId source_id) {
   // This will fail only if the source generator starts recycling source ids.
   DRAKE_ASSERT(input_source_ids_.count(source_id) == 0);
   // Create and store the input ports for this source id.
   SourcePorts& source_ports = input_source_ids_[source_id];
-  source_ports.pose_port = this->DeclareAbstractInputPort(
-                                   initial_state_->GetName(source_id) + "_pose",
-                                   Value<FramePoseVector<T>>())
-                               .get_index();
+  source_ports.pose_port =
+      this->DeclareAbstractInputPort(model_.GetName(source_id) + "_pose",
+                                     Value<FramePoseVector<T>>())
+          .get_index();
 }
 
 template <typename T>
@@ -367,9 +413,8 @@ void SceneGraph<T>::CalcQueryObject(const Context<T>& context,
 
 template <typename T>
 PoseBundle<T> SceneGraph<T>::MakePoseBundle() const {
-  const auto& g_state = *initial_state_;
   vector<FrameId> dynamic_frames =
-      GetDynamicFrames(g_state, Role::kIllustration);
+      GetDynamicFrames(model_, Role::kIllustration);
   return PoseBundle<T>(static_cast<int>(dynamic_frames.size()));
 }
 
@@ -430,13 +475,6 @@ void SceneGraph<T>::CalcPoseUpdate(const Context<T>& context,
   const GeometryState<T>& state = geometry_state(context);
   GeometryState<T>& mutable_state = const_cast<GeometryState<T>&>(state);
 
-  auto throw_error = [](SourceId source_id, const std::string& origin) {
-    throw std::logic_error("Source " + to_string(source_id) +
-                           " has registered frames "
-                           "but does not provide " +
-                           origin + " values on the input port.");
-  };
-
   // Process all sources *except*:
   //   - the internal source and
   //   - sources with no frames.
@@ -449,7 +487,10 @@ void SceneGraph<T>::CalcPoseUpdate(const Context<T>& context,
       if (itr != input_source_ids_.end()) {
         const auto& pose_port = this->get_input_port(itr->second.pose_port);
         if (!pose_port.HasValue(context)) {
-          throw_error(source_id, "pose");
+          throw std::logic_error(
+              fmt::format("Source '{}' (id: {}) has registered dynamic frames "
+                          "but is not connected to the appropriate input port.",
+                          state.GetName(source_id), source_id));
         }
         const auto& poses =
             pose_port.template Eval<FramePoseVector<T>>(context);
@@ -474,16 +515,28 @@ void SceneGraph<T>::ThrowUnlessRegistered(SourceId source_id,
 template <typename T>
 GeometryState<T>& SceneGraph<T>::mutable_geometry_state(
     Context<T>* context) const {
-  return context->get_mutable_state()
-      .template get_mutable_abstract_state<GeometryState<T>>(
-          geometry_state_index_);
+  if (data_as_state_) {
+    return context->get_mutable_state()
+        .template get_mutable_abstract_state<GeometryState<T>>(
+            geometry_state_index_);
+  } else {
+    return context->get_mutable_parameters()
+        .template get_mutable_abstract_parameter<GeometryState<T>>(
+            geometry_state_index_);
+  }
 }
 
 template <typename T>
 const GeometryState<T>& SceneGraph<T>::geometry_state(
     const Context<T>& context) const {
-  return context.get_state().template get_abstract_state<GeometryState<T>>(
-      geometry_state_index_);
+  if (data_as_state_) {
+    return context.get_state().template get_abstract_state<GeometryState<T>>(
+        geometry_state_index_);
+  } else {
+    return context.get_parameters()
+        .template get_abstract_parameter<GeometryState<T>>(
+            geometry_state_index_);
+  }
 }
 
 // Explicitly instantiates on the most common scalar types.

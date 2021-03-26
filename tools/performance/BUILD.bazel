@@ -1,0 +1,16 @@
+# -*- python -*-
+
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:py.bzl", "py_binary")
+
+package(default_visibility = ["//visibility:public"])
+
+py_binary(
+    name = "record_results",
+    srcs = ["record_results.py"],
+    data = [
+        "//tools/workspace/cc:identify_compiler",
+    ],
+)
+
+add_lint_tests(python_lint_extra_srcs = ["benchmark_tool"])

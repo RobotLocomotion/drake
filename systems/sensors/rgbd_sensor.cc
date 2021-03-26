@@ -7,6 +7,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/text_logging.h"
 #include "drake/geometry/render/camera_properties.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/rigid_transform.h"
@@ -35,55 +36,39 @@ using std::make_pair;
 using std::move;
 using std::pair;
 
-namespace {
-
-// Some utilities to create the full camera specification from a set of "simple"
-// camera properties.
-
-ColorRenderCamera make_color_render_camera(const CameraProperties& props_in,
-                                           bool show_window,
-                                           const RigidTransformd& X_BC) {
-  // These are the legacy clipping plane values in RenderEngineVtk.
-  const double kNear{0.01};
-  const double kFar{10.0};
-  return ColorRenderCamera{{props_in.renderer_name,
-                            {props_in.width, props_in.height, props_in.fov_y},
-                            {kNear, kFar},
-                            X_BC},
-                           show_window};
-}
-
-DepthRenderCamera make_depth_camera_model(const DepthCameraProperties& props_in,
-                                          const RigidTransformd& X_BC) {
-  // These are the legacy clipping plane values in RenderEngineVtk.
-  const double kNear{0.01};
-  const double kFar{10.0};
-  return DepthRenderCamera{{props_in.renderer_name,
-                            {props_in.width, props_in.height, props_in.fov_y},
-                            {kNear, kFar},
-                            X_BC},
-                           {props_in.z_near, props_in.z_far}};
-}
-
-}  // namespace
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 RgbdSensor::RgbdSensor(FrameId parent_id, const RigidTransformd& X_PB,
                        const CameraProperties& color_properties,
                        const DepthCameraProperties& depth_properties,
                        const CameraPoses& camera_poses, bool show_window)
-    : RgbdSensor(parent_id, X_PB,
-                 make_color_render_camera(color_properties, show_window,
-                                          camera_poses.X_BC),
-                 make_depth_camera_model(depth_properties, camera_poses.X_BD)) {
+    : RgbdSensor(
+          parent_id, X_PB,
+          ColorRenderCamera(color_properties, show_window, camera_poses.X_BC),
+          DepthRenderCamera(depth_properties, camera_poses.X_BD)) {
+  static const logging::Warn log_once(
+      "RgbdSensor constructors that take 'CameraProperties' have been "
+      "deprecated. Please use the RenderCamera variants instead.");
 }
 
 RgbdSensor::RgbdSensor(geometry::FrameId parent_id, const RigidTransformd& X_PB,
                        const DepthCameraProperties& properties,
                        const CameraPoses& camera_poses, bool show_window)
-    : RgbdSensor(
-          parent_id, X_PB,
-          make_color_render_camera(properties, show_window, camera_poses.X_BC),
-          make_depth_camera_model(properties, camera_poses.X_BD)) {}
+    : RgbdSensor(parent_id, X_PB,
+                 ColorRenderCamera(properties, show_window, camera_poses.X_BC),
+                 DepthRenderCamera(properties, camera_poses.X_BD)) {
+  static const logging::Warn log_once(
+      "RgbdSensor constructors that take 'CameraProperties' have been "
+      "deprecated. Please use the RenderCamera variants instead.");
+}
+#pragma GCC diagnostic pop
+
+RgbdSensor::RgbdSensor(FrameId parent_id, const RigidTransformd& X_PB,
+                       const DepthRenderCamera& depth_camera,
+                       bool show_color_window)
+    : RgbdSensor(parent_id, X_PB,
+                 ColorRenderCamera(depth_camera.core(), show_color_window),
+                 depth_camera) {}
 
 RgbdSensor::RgbdSensor(FrameId parent_id, const RigidTransformd& X_PB,
                        ColorRenderCamera color_camera,
@@ -196,7 +181,7 @@ void RgbdSensor::CalcX_WB(const Context<double>& context,
     X_WB = X_PB_;
   } else {
     const QueryObject<double>& query_object = get_query_object(context);
-    X_WB = query_object.X_WF(parent_frame_id_) * X_PB_;
+    X_WB = query_object.GetPoseInWorld(parent_frame_id_) * X_PB_;
   }
 
   Translation3d trans{X_WB.translation()};

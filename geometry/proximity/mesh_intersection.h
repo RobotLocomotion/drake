@@ -54,9 +54,14 @@ class SurfaceVolumeIntersector {
        defines its domain. The vertex positions of the mesh are measured and
        expressed in frame M. And the field can be evaluated at positions
        likewise measured and expressed in frame M.
+   @param[in] bvh_M
+       A bounding volume hierarchy built on the geometry contained in
+       `volume_field_M`.
    @param[in] surface_N
        The surface mesh intersected with the volume mesh to define the sample
        domain. Its vertex positions are measured and expressed in frame N.
+   @param[in] bvh_N
+       A bounding volume hierarchy built on the geometry `surface_N`.
    @param[in] X_MN
        The pose of frame N in frame M.
    @param[out] surface_MN_M
@@ -73,15 +78,6 @@ class SurfaceVolumeIntersector {
    @note
        The output surface mesh may have duplicate vertices.
    */
-  void SampleVolumeFieldOnSurface(
-      const VolumeMeshField<T, T>& volume_field_M,
-      const SurfaceMesh<T>& surface_N, const math::RigidTransform<T>& X_MN,
-      std::unique_ptr<SurfaceMesh<T>>* surface_MN_M,
-      std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN,
-      std::vector<Vector3<T>>* grad_eM_Ms);
-
-  /* A variant of SampleVolumeFieldOnSurface but with broad-phase culling to
-   reduce the number of element-pairs evaluated.  */
   void SampleVolumeFieldOnSurface(
       const VolumeMeshField<T, T>& volume_field_M,
       const Bvh<VolumeMesh<T>>& bvh_M, const SurfaceMesh<T>& surface_N,
@@ -316,9 +312,11 @@ class SurfaceVolumeIntersector {
  @param[in] field_S
      A scalar field defined on the soft volume mesh S. Mesh S's vertices are
      defined in S's frame. The scalar field is likewise defined in frame S
- (that is, it can only be evaluated on points which have been measured and
+     (that is, it can only be evaluated on points which have been measured and
      expressed in frame S). For hydroelastic contact, the scalar field is a
      "pressure" field.
+ @param[in] bvh_S
+     A bounding volume hierarchy built on the geometry contained in `field_S`.
  @param[in] X_WS
      The pose of the rigid frame S in the world frame W.
  @param[in] id_R
@@ -327,15 +325,17 @@ class SurfaceVolumeIntersector {
      The rigid geometry R is represented as a surface mesh, whose vertex
      positions are in R's frame. We assume that triangles are oriented
      outward.
+ @param[in] bvh_R
+     A bounding volume hierarchy built on the geometry contained in `mesh_R`.
  @param[in] X_WR
      The pose of the rigid frame R in the world frame W.
  @return
      The contact surface between M and N. Geometries S and R map to M and N
- with a consistent mapping (as documented in ContactSurface) but without any
+     with a consistent mapping (as documented in ContactSurface) but without any
      guarantee as to what that mapping is. Positions of vertex coordinates are
      expressed in the world frame. The pressure distribution comes from the
- soft geometry S. The normal vector field, expressed in the world frame frame,
-     comes from the rigid geometry R.
+     soft geometry S. The normal vector field, expressed in the world frame
+     frame, comes from the rigid geometry R.
 
                      ooo   soft S
                   o       o
@@ -355,30 +355,28 @@ template <typename T>
 std::unique_ptr<ContactSurface<T>>
 ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const GeometryId id_S, const VolumeMeshField<T, T>& field_S,
-    const math::RigidTransform<T>& X_WS, const GeometryId id_R,
-    const SurfaceMesh<T>& mesh_R, const math::RigidTransform<T>& X_WR);
-
-/* A variant of ComputeContactSurfaceFromSoftVolumeRigidSurface but with
- broad-phase culling to reduce the number of element-pairs evaluated.  */
-template <typename T>
-std::unique_ptr<ContactSurface<T>>
-ComputeContactSurfaceFromSoftVolumeRigidSurface(
-    const GeometryId id_S, const VolumeMeshField<T, T>& field_S,
     const Bvh<VolumeMesh<T>>& bvh_S, const math::RigidTransform<T>& X_WS,
     const GeometryId id_R, const SurfaceMesh<T>& mesh_R,
     const Bvh<SurfaceMesh<T>>& bvh_R, const math::RigidTransform<T>& X_WR);
+
+// TODO(SeanCurtis-TRI): ComputeContactSurfaceFromSoftVolumeRigidSurface is
+//  incorrectly templated. We currently have no reasonable expectation that the
+//  meshes provided as inputs will be AutoDiffXd-valued. Currently, all meshes
+//  we construct are strictly double-valued. So, the fact that the meshes are
+//  described as T-valued is probably inappropriate and needs to have careful
+//  reasoning applied.
+//
+//  One of the proofs of the incorrectness of the templating is the declaration
+//  given below. ProximityEngine calls this method with double-valued meshes
+//  and AutoDiffXd-valued transforms. Thus, the function below is *not* a
+//  specialization of the templated function but an overload.
+//  See issue #14136.
 
 // NOTE: This is a short-term hack to allow ProximityEngine to compile when
 // invoking this method. There are currently a host of issues preventing us from
 // doing contact surface computation with AutoDiffXd. This curtails those
 // issues for now by short-circuiting the functionality. (See the note on the
 // templated version of this function.)
-std::unique_ptr<ContactSurface<AutoDiffXd>>
-ComputeContactSurfaceFromSoftVolumeRigidSurface(
-    const GeometryId, const VolumeMeshField<double, double>&,
-    const math::RigidTransform<AutoDiffXd>&, const GeometryId,
-    const SurfaceMesh<double>&, const math::RigidTransform<AutoDiffXd>&);
-
 std::unique_ptr<ContactSurface<AutoDiffXd>>
 ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const GeometryId, const VolumeMeshField<double, double>&,

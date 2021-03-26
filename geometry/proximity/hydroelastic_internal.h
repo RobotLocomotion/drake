@@ -383,8 +383,7 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Sphere& sphere, const ProximityProperties& props);
 
-/* Rigid box support. Requires the ('hydroelastic', 'resolution_hint')
- property.  */
+/* Rigid box support. It doesn't depend on any of the proximity properties. */
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Box& box, const ProximityProperties& props);
 
@@ -392,6 +391,11 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
  property.  */
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Cylinder& cylinder, const ProximityProperties& props);
+
+/* Rigid capsule support. Requires the ('hydroelastic', 'resolution_hint')
+ property.  */
+std::optional<RigidGeometry> MakeRigidRepresentation(
+    const Capsule& capsule, const ProximityProperties& props);
 
 /* Rigid ellipsoid support. Requires the ('hydroelastic', 'resolution_hint')
  property.  */
@@ -401,6 +405,14 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 /* Rigid mesh support. It doesn't depend on any of the proximity properties. */
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Mesh& mesh, const ProximityProperties& props);
+
+/* Rigid convex support. It doesn't depend on any of the proximity properties.
+ Note: the convexity of the mesh is *not* tested (and does not need to be).
+ The representation of a Convex mesh is the same as a general Mesh, so its
+ representation and functionality is indistinguishable, whether convex or not.
+ */
+std::optional<RigidGeometry> MakeRigidRepresentation(
+    const Convex& convex, const ProximityProperties& props);
 
 /* Rigid half space support.  */
 std::optional<RigidGeometry> MakeRigidRepresentation(
@@ -425,8 +437,7 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
     const Sphere& sphere, const ProximityProperties& props);
 
 /* Creates a soft box (assuming the proximity properties have sufficient
- information). Requires the ('hydroelastic', 'resolution_hint') and
- ('material', 'elastic_modulus') properties.  */
+ information). Requires the ('material', 'elastic_modulus') properties.  */
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Box& box, const ProximityProperties& props);
 
@@ -435,6 +446,12 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
  ('material', 'elastic_modulus') properties.  */
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Cylinder& cylinder, const ProximityProperties& props);
+
+/* Creates a soft capsule (assuming the proximity properties have sufficient
+ information). Requires the ('hydroelastic', 'resolution_hint') and
+ ('material', 'elastic_modulus') properties.  */
+std::optional<SoftGeometry> MakeSoftRepresentation(
+    const Capsule& capsule, const ProximityProperties& props);
 
 /* Creates a soft ellipsoid (assuming the proximity properties have sufficient
  information). Requires the ('hydroelastic', 'resolution_hint') and

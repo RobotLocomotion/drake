@@ -20,9 +20,15 @@ drake_cc_binary(
 drake_cc_binary(
     name = "render_benchmark",
     srcs = ["render_benchmark.cc"],
+    defines = select({
+        "//tools/cc_toolchain:apple": [
+        ],
+        "//conditions:default": ["RENDER_ENGINE_GL_SUPPORTED"],
+    }),
     deps = [
         "//common:filesystem",
         "//geometry/render",
+        "//geometry/render/gl_renderer",
         "//systems/sensors:image_writer",
         "@fmt",
         "@gflags",

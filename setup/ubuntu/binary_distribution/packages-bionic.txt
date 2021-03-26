@@ -7,6 +7,7 @@ libamd2
 libblas3
 libboost-all-dev
 libbz2-1.0
+libdouble-conversion1
 libeigen3-dev
 libexpat1
 libfreetype6
@@ -21,6 +22,8 @@ libjpeg-turbo8
 libjsoncpp1
 liblapack3
 libldl2
+liblz4-1
+liblzma5
 libmumps-seq-5.1.2
 libnetcdf13
 libnlopt0
@@ -32,7 +35,7 @@ libqt5gui5
 libqt5printsupport5
 libqt5widgets5
 libquadmath0
-libtbb2
+libsqlite3-0
 libtheora0
 libtiff5
 libtinyxml2-dev

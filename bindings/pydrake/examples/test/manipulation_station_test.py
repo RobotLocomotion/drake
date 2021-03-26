@@ -2,6 +2,7 @@ import unittest
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.examples.manipulation_station import (
     CreateClutterClearingYcbObjectList,
     CreateManipulationClassYcbObjectList,
@@ -9,10 +10,19 @@ from pydrake.examples.manipulation_station import (
     ManipulationStation,
     ManipulationStationHardwareInterface
 )
+from pydrake.geometry.render import (
+    ClippingRange,
+    ColorRenderCamera,
+    DepthCameraProperties,
+    DepthRange,
+    DepthRenderCamera,
+    RenderCameraCore,
+)
 from pydrake.math import RigidTransform, RollPitchYaw
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.tree import ModelInstanceIndex
 from pydrake.multibody.parsing import Parser
+from pydrake.systems.sensors import CameraInfo
 
 
 class TestManipulationStation(unittest.TestCase):
@@ -167,3 +177,41 @@ class TestManipulationStation(unittest.TestCase):
 
         ycb_objects = CreateManipulationClassYcbObjectList()
         self.assertEqual(len(ycb_objects), 5)
+
+    def test_rgbd_sensor_registration(self):
+        X_PC = RigidTransform(p=[1, 2, 3])
+        station = ManipulationStation(time_step=0.001)
+        station.SetupManipulationClassStation()
+        plant = station.get_multibody_plant()
+        color_camera = ColorRenderCamera(
+            RenderCameraCore("renderer", CameraInfo(10, 10, np.pi/4),
+                             ClippingRange(0.1, 10.0), RigidTransform()),
+            False)
+        depth_camera = DepthRenderCamera(color_camera.core(),
+                                         DepthRange(0.1, 9.5))
+        station.RegisterRgbdSensor("single_sensor", plant.world_frame(), X_PC,
+                                   depth_camera)
+        station.RegisterRgbdSensor("dual_sensor", plant.world_frame(), X_PC,
+                                   color_camera, depth_camera)
+        station.Finalize()
+        camera_poses = station.GetStaticCameraPosesInWorld()
+        # The three default cameras plus the two just added.
+        self.assertEqual(len(camera_poses), 5)
+        self.assertTrue("single_sensor" in camera_poses)
+        self.assertTrue("dual_sensor" in camera_poses)
+
+    def test_rgbd_sensor_registration_deprecated(self):
+        X_PC = RigidTransform(p=[1, 2, 3])
+        station = ManipulationStation(time_step=0.001)
+        station.SetupManipulationClassStation()
+        plant = station.get_multibody_plant()
+        with catch_drake_warnings(expected_count=2):
+            properties = DepthCameraProperties(10, 10, np.pi / 4, "renderer",
+                                               0.01, 5.0)
+            station.RegisterRgbdSensor("deprecated", plant.world_frame(), X_PC,
+                                       properties)
+        station.Finalize()
+        camera_poses = station.GetStaticCameraPosesInWorld()
+        # The three default cameras plus the one just added.
+        self.assertEqual(len(camera_poses), 4)
+        self.assertTrue("deprecated" in camera_poses)

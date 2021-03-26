@@ -132,10 +132,10 @@ void System<T>::AllocateFixedInputs(Context<T>* context) const {
   for (InputPortIndex i(0); i < num_input_ports(); ++i) {
     const InputPort<T>& port = get_input_port(i);
     if (port.get_data_type() == kVectorValued) {
-      context->FixInputPort(port.get_index(), AllocateInputVector(port));
+      port.FixValue(context, *AllocateInputVector(port));
     } else {
       DRAKE_DEMAND(port.get_data_type() == kAbstractValued);
-      context->FixInputPort(port.get_index(), AllocateInputAbstract(port));
+      port.FixValue(context, *AllocateInputAbstract(port));
     }
   }
 }
@@ -338,8 +338,28 @@ T System<T>::CalcNextUpdateTime(const Context<T>& context,
   events->Clear();
   T time{NAN};
   DoCalcNextUpdateTime(context, events, &time);
-  using std::isnan;
-  DRAKE_ASSERT(!isnan(time));
+  using std::isnan, std::isfinite;
+
+  if (isnan(time)) {
+    throw std::logic_error(
+        fmt::format("System::CalcNextUpdateTime(): {} system '{}' overrode "
+                    "DoCalcNextUpdateTime() but at time={} it returned with no "
+                    "update time set (or the update time was set to NaN). "
+                    "Return infinity to indicate no next update time.",
+                    this->GetSystemType(), this->GetSystemPathname(),
+                    ExtractDoubleOrThrow(context.get_time())));
+  }
+
+  if (isfinite(time) && !events->HasEvents()) {
+    throw std::logic_error(fmt::format(
+        "System::CalcNextUpdateTime(): {} system '{}' overrode "
+        "DoCalcNextUpdateTime() but at time={} it returned update "
+        "time {} with an empty Event collection. Return infinity "
+        "to indicate no next update time; otherwise at least one "
+        "Event object must be provided even if it does nothing.",
+        this->GetSystemType(), this->GetSystemPathname(),
+        ExtractDoubleOrThrow(context.get_time()), ExtractDoubleOrThrow(time)));
+  }
 
   // If the context contains a perturbed current time, and
   // DoCalcNextUpdateTime() returned "right now" (which would be the
@@ -634,6 +654,17 @@ const InputPort<T>& System<T>::GetInputPort(
 }
 
 template <typename T>
+bool System<T>::HasInputPort(
+    const std::string& port_name) const {
+  for (InputPortIndex i{0}; i < num_input_ports(); i++) {
+    if (port_name == get_input_port_base(i).get_name()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+template <typename T>
 const OutputPort<T>* System<T>::get_output_port_selection(
     std::variant<OutputPortSelection, OutputPortIndex> port_index) const {
   if (std::holds_alternative<OutputPortIndex>(port_index)) {
@@ -662,6 +693,17 @@ const OutputPort<T>& System<T>::GetOutputPort(
   throw std::logic_error("System " + GetSystemName() +
                          " does not have an output port named " +
                          port_name);
+}
+
+template <typename T>
+bool System<T>::HasOutputPort(
+    const std::string& port_name) const {
+  for (OutputPortIndex i{0}; i < num_output_ports(); i++) {
+    if (port_name == get_output_port_base(i).get_name()) {
+      return true;
+    }
+  }
+  return false;
 }
 
 template <typename T>
@@ -823,7 +865,7 @@ void System<T>::FixInputPortsFrom(const System<double>& other_system,
         for (int j = 0; j < our_vec->size(); ++j) {
           (*our_vec)[j] = T(other_vec[j]);
         }
-        target_context->FixInputPort(i, *our_vec);
+        input_port.FixValue(target_context, *our_vec);
         continue;
       }
       case kAbstractValued: {
@@ -831,7 +873,7 @@ void System<T>::FixInputPortsFrom(const System<double>& other_system,
         // it to the port.
         const auto& other_value =
             other_port.Eval<AbstractValue>(other_context);
-        target_context->FixInputPort(i, other_value);
+        input_port.FixValue(target_context, other_value);
         continue;
       }
     }

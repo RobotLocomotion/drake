@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>process_model_directives_test</name>
+  <version>0.0.0</version>
+  <description>
+    Unit test data for `process_model_directives.cc`
+  </description>
+  <maintainer email="ggould@tri.global">Grant Gould</maintainer>
+  <author>Grant Gould</author>
+  <license>N/A</license>
+</package>

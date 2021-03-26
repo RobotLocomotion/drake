@@ -16,6 +16,6 @@ kcov \
     "--include-path=${WORKSPACE}" \
     --verify \
     --exclude-pattern=third_party \
-    "${WORKSPACE}/bazel-kcov" \
+    "${TEST_UNDECLARED_OUTPUTS_DIR}/kcov" \
     "--replace-src-path=/proc/self/cwd:${WORKSPACE}" \
     "$@"

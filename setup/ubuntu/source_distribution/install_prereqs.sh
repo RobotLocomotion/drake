@@ -8,13 +8,19 @@
 
 set -euo pipefail
 
-with_doc_only=1
+with_doc_only=0
 with_kcov=0
 with_maintainer_only=0
 with_test_only=1
+with_update=1
 
 while [ "${1:-}" != "" ]; do
   case "$1" in
+    # Install prerequisites that are only needed to build documentation,
+    # i.e., those prerequisites that are dependencies of bazel run //doc:build.
+    --with-doc-only)
+      with_doc_only=1
+      ;;
     # Install the kcov code coverage analysis tool from the
     # drake-apt.csail.mit.edu apt repository on Ubuntu 18.04 (Bionic). Ignored
     # on Ubuntu 20.04 (Focal) where kcov is always installed from the Ubuntu
@@ -27,17 +33,15 @@ while [ "${1:-}" != "" ]; do
     --with-maintainer-only)
       with_maintainer_only=1
       ;;
-    # Do NOT install prerequisites that are only needed to build documentation,
-    # i.e., those prerequisites that are dependencies of bazel { build, run }
-    # { //doc:gen_sphinx, //bindings/pydrake/doc:gen_sphinx, //doc:doxygen }
-    --without-doc-only)
-      with_doc_only=0
-      ;;
     # Do NOT install prerequisites that are only needed to build and/or run
     # unit tests, i.e., those prerequisites that are not dependencies of
     # bazel { build, run } //:install.
     --without-test-only)
       with_test_only=0
+      ;;
+    # Do NOT call apt-get update during execution of this script.
+    --without-update)
+      with_update=0
       ;;
     *)
       echo 'Invalid command line argument' >&2
@@ -51,6 +55,10 @@ if [[ "${EUID}" -ne 0 ]]; then
   exit 1
 fi
 
+if [[ "${with_update}" -eq 1 && "${binary_distribution_called_update:-0}" -ne 1 ]]; then
+  apt-get update || (sleep 30; apt-get update)
+fi
+
 apt-get install --no-install-recommends $(cat <<EOF
 ca-certificates
 wget
@@ -60,17 +68,22 @@ EOF
 codename=$(lsb_release -sc)
 
 # On Bionic, developers must opt-in to kcov support; it comes in with the
-# non-standard package name kcov-35 via a Drake-specific PPA.
+# non-standard package name kcov-35 via a Drake-specific apt repository. If
+# --without-update is passed to this script, then the gpg public key must
+# already be trusted, the apt repository must already have been added to the
+# list of sources, and apt-get update must have been called.
 if [[ "${codename}" == 'bionic' ]] && [[ "${with_kcov}" -eq 1 ]]; then
   apt-get install --no-install-recommends gnupg
-  apt-key adv --fetch-keys https://drake-apt.csail.mit.edu/drake.pub.gpg
-  echo "deb [arch=amd64] https://drake-apt.csail.mit.edu/${codename} ${codename} main" \
-    > /etc/apt/sources.list.d/drake.list
-  apt-get update
+  wget -q -O- https://drake-apt.csail.mit.edu/drake.asc \
+    | apt-key --keyring /etc/apt/trusted.gpg.d/drake.gpg add
+  if [[ "${with_update}" -eq 1 ]]; then
+    echo "deb [arch=amd64] https://drake-apt.csail.mit.edu/${codename} ${codename} main" \
+      > /etc/apt/sources.list.d/drake.list
+    apt-get update || (sleep 30; apt-get update)
+  fi
   apt-get install --no-install-recommends kcov-35
 fi
 
-apt-get update
 packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}.txt")
 apt-get install --no-install-recommends ${packages}
 
@@ -155,6 +168,6 @@ EOF
 )
 
 dpkg_install_from_wget \
-  bazel 3.5.0 \
-  https://releases.bazel.build/3.5.0/release/bazel_3.5.0-linux-x86_64.deb \
-  08b71237eccc3c313e62976894fc260d9e1c1ecdfa5b14fc7477fce1c36c618c
+  bazel 4.0.0 \
+  https://releases.bazel.build/4.0.0/release/bazel_4.0.0-linux-x86_64.deb \
+  1779ce76ebf449e55dfdd1318355335179eb85609042dfe5c1b4b34683dfd4b5

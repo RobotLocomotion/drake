@@ -1,3 +1,5 @@
+#include "drake/systems/sensors/accelerometer.h"
+
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
@@ -7,7 +9,6 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
-#include "drake/systems/sensors/accelerometer_sensor.h"
 
 namespace drake {
 namespace {

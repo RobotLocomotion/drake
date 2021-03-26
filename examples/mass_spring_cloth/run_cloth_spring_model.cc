@@ -10,7 +10,7 @@
 
 #include "drake/examples/mass_spring_cloth/cloth_spring_model.h"
 #include "drake/examples/mass_spring_cloth/cloth_spring_model_geometry.h"
-#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/systems/analysis/simulator_gflags.h"
 #include "drake/systems/framework/diagram.h"
@@ -39,7 +39,7 @@ int DoMain() {
   auto* scene_graph = builder.AddSystem<geometry::SceneGraph>();
   ClothSpringModelGeometry::AddToBuilder(&builder, *cloth_spring_model,
                                          scene_graph);
-  ConnectDrakeVisualizer(&builder, *scene_graph);
+  geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph);
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();
   auto simulator =

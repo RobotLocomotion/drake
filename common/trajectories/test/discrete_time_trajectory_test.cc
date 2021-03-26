@@ -49,12 +49,15 @@ GTEST_TEST(DiscreteTimeTrajectoryTest, ValueThrowsTest) {
 
   DiscreteTimeTrajectory<double> traj(times, values);
 
-  DRAKE_EXPECT_THROWS_MESSAGE(traj.value(-1), std::runtime_error,
-                              "Value requested at time -1.0 does not match .*");
-  DRAKE_EXPECT_THROWS_MESSAGE(traj.value(0.4), std::runtime_error,
-                              "Value requested at time 0.4 does not match .*");
-  DRAKE_EXPECT_THROWS_MESSAGE(traj.value(1), std::runtime_error,
-                              "Value requested at time 1.0 does not match .*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      traj.value(-1), std::runtime_error,
+      "Value requested at time -1(\\.0)? does not match .*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      traj.value(0.4), std::runtime_error,
+      "Value requested at time 0.4 does not match .*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      traj.value(1), std::runtime_error,
+      "Value requested at time 1(\\.0)? does not match .*");
 
   const double kLooseTolerance = 0.1;
   DiscreteTimeTrajectory<double> traj_w_loose_tol(times, values,

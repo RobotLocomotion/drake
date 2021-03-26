@@ -164,7 +164,6 @@ drake_pybind_library(
         "//bindings/pydrake:symbolic_types_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:eigen_pybind",
         "//bindings/pydrake/common:type_pack",
         "//bindings/pydrake/common:value_pybind",
@@ -274,7 +273,6 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":polynomial_py",
     ":symbolic_py",
     ":trajectories_py",
-    "//bindings/pydrake/third_party",
     "//bindings/pydrake/visualization",
 ] + PYBIND_SUBPACKAGES_FOR_COVERAGE
 
@@ -301,6 +299,20 @@ drake_py_library(
     name = "pydrake",
     visibility = ["//visibility:public"],
     deps = [":all_py"],
+)
+
+# Roll-up for publicly acccessible testing utilities (for development with
+# workflows like drake-external-examples/drake_bazel_external).
+drake_py_library(
+    name = "test_utilities_py",
+    testonly = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        # N.B. We depend on pydrake so as to keep symmetry with the currently
+        # offered public targets (rollup only, no granular access).
+        ":pydrake",
+        "//bindings/pydrake/common/test_utilities",
+    ],
 )
 
 install(
@@ -480,6 +492,16 @@ drake_py_unittest(
     deps = [
         ":geometry_py",
         "//bindings/pydrake/common/test_utilities",
+    ],
+)
+
+drake_py_unittest(
+    name = "geometry_render_engine_subclass_test",
+    flaky = True,
+    deps = [
+        ":geometry_py",
+        "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/systems:sensors_py",
     ],
 )
 

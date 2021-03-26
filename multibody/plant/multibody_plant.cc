@@ -26,6 +26,7 @@
 #include "drake/multibody/plant/hydroelastic_traction_calculator.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/triangle_quadrature/gaussian_triangle_quadrature_rule.h"
 
 namespace drake {
 namespace multibody {
@@ -574,6 +575,7 @@ void MultibodyPlant<T>::SetFreeBodyPoseInWorldFrame(
     systems::Context<T>* context,
     const Body<T>& body, const math::RigidTransform<T>& X_WB) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  this->ValidateContext(context);
   internal_tree().SetFreeBodyPoseOrThrow(body, X_WB, context);
 }
 
@@ -583,6 +585,7 @@ void MultibodyPlant<T>::SetFreeBodyPoseInAnchoredFrame(
     const Frame<T>& frame_F, const Body<T>& body,
     const math::RigidTransform<T>& X_FB) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  this->ValidateContext(context);
 
   if (!internal_tree().get_topology().IsBodyAnchored(frame_F.body().index())) {
     throw std::logic_error(
@@ -603,6 +606,7 @@ void MultibodyPlant<T>::CalcSpatialAccelerationsFromVdot(
     const systems::Context<T>& context,
     const VectorX<T>& known_vdot,
     std::vector<SpatialAcceleration<T>>* A_WB_array) const {
+  this->ValidateContext(context);
   DRAKE_THROW_UNLESS(A_WB_array != nullptr);
   DRAKE_THROW_UNLESS(static_cast<int>(A_WB_array->size()) == num_bodies());
   internal_tree().CalcSpatialAccelerationsFromVdot(
@@ -626,6 +630,7 @@ template<typename T>
 void MultibodyPlant<T>::CalcForceElementsContribution(
       const systems::Context<T>& context,
       MultibodyForces<T>* forces) const {
+  this->ValidateContext(context);
   DRAKE_THROW_UNLESS(forces != nullptr);
   DRAKE_THROW_UNLESS(forces->CheckHasRightSizeForModel(internal_tree()));
   internal_tree().CalcForceElementsContribution(
@@ -900,6 +905,7 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
     const std::vector<internal::DiscreteContactPair<T>>& contact_pairs,
     MatrixX<T>* Jn_ptr, MatrixX<T>* Jt_ptr,
     std::vector<RotationMatrix<T>>* R_WC_set) const {
+  this->ValidateContext(context);
   DRAKE_DEMAND(Jn_ptr != nullptr);
   DRAKE_DEMAND(Jt_ptr != nullptr);
 
@@ -1095,48 +1101,25 @@ void MultibodyPlant<T>::EstimatePointContactParameters(
   penalty_method_contact_parameters_.time_scale = time_scale;
 }
 
-// Specialize this function so that double is fully supported.
-template <>
-std::vector<PenetrationAsPointPair<double>>
-MultibodyPlant<double>::CalcPointPairPenetrations(
-    const systems::Context<double>& context) const {
+template <typename T>
+std::vector<PenetrationAsPointPair<T>>
+MultibodyPlant<T>::CalcPointPairPenetrations(
+    const systems::Context<T>& context) const {
+  this->ValidateContext(context);
   if (num_collision_geometries() > 0) {
     const auto& query_object = EvalGeometryQueryInput(context);
     return query_object.ComputePointPairPenetration();
   }
-  return std::vector<PenetrationAsPointPair<double>>();
+  return std::vector<PenetrationAsPointPair<T>>();
 }
 
-// Specialize this function so that AutoDiffXd is (partially) supported. This
-// AutoDiffXd specialization will throw if there are any collisions.
-// TODO(SeanCurtis-TRI): Move this logic into SceneGraph per #11454.
+// Specialize this function so that symbolic::Expression throws an error.
 template <>
-std::vector<PenetrationAsPointPair<AutoDiffXd>>
-MultibodyPlant<AutoDiffXd>::CalcPointPairPenetrations(
-    const systems::Context<AutoDiffXd>& context) const {
-  if (num_collision_geometries() > 0) {
-    const auto& query_object = EvalGeometryQueryInput(context);
-    auto results = query_object.ComputePointPairPenetration();
-    if (results.size() > 0) {
-      throw std::logic_error(
-          "CalcPointPairPenetration(): Some of the bodies in the model are in "
-          "contact for the state stored in the given context. Currently a "
-          "MultibodyPlant model cannot be auto-differentiated if contacts "
-          "are detected. Notice however that auto-differentiation is allowed "
-          "if there are no contacts for the given state. That is, you can "
-          "invoke penetration queries on a MultibodyPlant<AutoDiffXd> as long "
-          "as there are no unfiltered geometries in contact. "
-          "Refer to Github issues #11454 and #11455 for details.");
-    }
-  }
-  return {};
-}
-
-template<typename T>
-std::vector<PenetrationAsPointPair<T>>
-MultibodyPlant<T>::CalcPointPairPenetrations(const systems::Context<T>&) const {
-  throw std::domain_error(fmt::format("This method doesn't support T = {}.",
-                                      NiceTypeName::Get<T>()));
+std::vector<PenetrationAsPointPair<symbolic::Expression>>
+MultibodyPlant<symbolic::Expression>::CalcPointPairPenetrations(
+    const systems::Context<symbolic::Expression>&) const {
+  throw std::logic_error(
+      "This method doesn't support T = symbolic::Expression.");
 }
 
 template <>
@@ -1154,6 +1137,7 @@ std::vector<CoulombFriction<double>>
 MultibodyPlant<T>::CalcCombinedFrictionCoefficients(
     const drake::systems::Context<T>& context,
     const std::vector<internal::DiscreteContactPair<T>>& contact_pairs) const {
+  this->ValidateContext(context);
   std::vector<CoulombFriction<double>> combined_frictions;
   combined_frictions.reserve(contact_pairs.size());
 
@@ -1183,6 +1167,7 @@ template<typename T>
 void MultibodyPlant<T>::CopyContactResultsOutput(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
+  this->ValidateContext(context);
   DRAKE_DEMAND(contact_results != nullptr);
   *contact_results = EvalContactResults(context);
 }
@@ -1191,6 +1176,7 @@ template <typename T>
 void MultibodyPlant<T>::CalcContactResultsContinuous(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
+  this->ValidateContext(context);
   DRAKE_DEMAND(contact_results != nullptr);
   contact_results->Clear();
   if (num_collision_geometries() == 0) return;
@@ -1201,29 +1187,20 @@ void MultibodyPlant<T>::CalcContactResultsContinuous(
       break;
 
     case ContactModel::kHydroelasticsOnly:
-      CalcContactResultsContinuousHydroelastic(context, contact_results);
+      AppendContactResultsContinuousHydroelastic(context, contact_results);
       break;
 
     case ContactModel::kHydroelasticWithFallback:
-      // Simply compute the contributions of both contact representations.
-
-      // TODO(SeanCurtis-TRI): In the current semantics,
-      // CalcContactResultsContinuousPointPair() *clears* the input parameter.
-      // CalcContactResultsContinuousHydroelastic() does *not*. That suggests
-      // the *name* of CalcContactResultsContinuousHydroelastic() is
-      // inconsistent with its behavior. Reconcile the two and if it's not a
-      // name change (but rather a behavior change) modify this accumulation
-      // accordingly. But, for now, executing these methods in this order should
-      // properly accumulate all contact results.
+      // Simply merge the contributions of each contact representation.
       CalcContactResultsContinuousPointPair(context, contact_results);
-      CalcContactResultsContinuousHydroelastic(context, contact_results);
+      AppendContactResultsContinuousHydroelastic(context, contact_results);
       break;
   }
 }
 
 template <>
 void MultibodyPlant<symbolic::Expression>::
-    CalcContactResultsContinuousHydroelastic(
+    AppendContactResultsContinuousHydroelastic(
         const Context<symbolic::Expression>&,
         ContactResults<symbolic::Expression>*) const {
   throw std::logic_error(
@@ -1231,9 +1208,10 @@ void MultibodyPlant<symbolic::Expression>::
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcContactResultsContinuousHydroelastic(
+void MultibodyPlant<T>::AppendContactResultsContinuousHydroelastic(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
+  this->ValidateContext(context);
   const internal::HydroelasticContactInfoAndBodySpatialForces<T>&
       contact_info_and_spatial_body_forces =
           EvalHydroelasticContactForces(context);
@@ -1264,6 +1242,7 @@ template <typename T>
 void MultibodyPlant<T>::CalcContactResultsContinuousPointPair(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
+  this->ValidateContext(context);
 
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
       EvalPointPairPenetrations(context);
@@ -1378,6 +1357,37 @@ void MultibodyPlant<T>::CalcContactResultsDiscrete(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
   DRAKE_DEMAND(contact_results != nullptr);
+  contact_results->Clear();
+  if (num_collision_geometries() == 0) return;
+
+  switch (contact_model_) {
+    case ContactModel::kPointContactOnly:
+      CalcContactResultsDiscretePointPair(context, contact_results);
+      break;
+
+    case ContactModel::kHydroelasticsOnly:
+      // N.B. We are simply computing the hydro force as function of the state,
+      // not the actual discrete approximation used by the contact solver.
+      AppendContactResultsContinuousHydroelastic(context, contact_results);
+      break;
+
+    case ContactModel::kHydroelasticWithFallback:
+      // Simply merge the contributions of each contact representation.
+      CalcContactResultsDiscretePointPair(context, contact_results);
+
+      // N.B. We are simply computing the hydro force as function of the state,
+      // not the actual discrete approximation used by the contact solver.
+      AppendContactResultsContinuousHydroelastic(context, contact_results);
+      break;
+  }
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcContactResultsDiscretePointPair(
+    const systems::Context<T>& context,
+    ContactResults<T>* contact_results) const {
+  this->ValidateContext(context);
+  DRAKE_DEMAND(contact_results != nullptr);
   if (num_collision_geometries() == 0) return;
 
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
@@ -1392,11 +1402,13 @@ void MultibodyPlant<T>::CalcContactResultsDiscrete(
   const VectorX<T>& vt = solver_results.vt;
   const VectorX<T>& vn = solver_results.vn;
 
+  // The strict equality is true only when point contact is used alone.
+  // Otherwise there are quadrature points in addition to the point pairs.
   const int num_contacts = point_pairs.size();
-  DRAKE_DEMAND(fn.size() == num_contacts);
-  DRAKE_DEMAND(ft.size() == 2 * num_contacts);
-  DRAKE_DEMAND(vn.size() == num_contacts);
-  DRAKE_DEMAND(vt.size() == 2 * num_contacts);
+  DRAKE_DEMAND(fn.size() >= num_contacts);
+  DRAKE_DEMAND(ft.size() >= 2 * num_contacts);
+  DRAKE_DEMAND(vn.size() >= num_contacts);
+  DRAKE_DEMAND(vt.size() >= 2 * num_contacts);
 
   contact_results->Clear();
   for (size_t icontact = 0; icontact < point_pairs.size(); ++icontact) {
@@ -1432,6 +1444,7 @@ template <typename T>
 void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
     const systems::Context<T>& context,
     std::vector<SpatialForce<T>>* F_BBo_W_array) const {
+  this->ValidateContext(context);
   DRAKE_DEMAND(F_BBo_W_array != nullptr);
   DRAKE_DEMAND(static_cast<int>(F_BBo_W_array->size()) == num_bodies());
   if (num_collision_geometries() == 0) return;
@@ -1500,6 +1513,7 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
     const Context<T>& context,
     internal::HydroelasticContactInfoAndBodySpatialForces<T>*
         contact_info_and_body_forces) const {
+  this->ValidateContext(context);
   DRAKE_DEMAND(contact_info_and_body_forces != nullptr);
 
   std::vector<SpatialForce<T>>& F_BBo_W_array =
@@ -1603,6 +1617,7 @@ template <typename T>
 void MultibodyPlant<T>::AddInForcesFromInputPorts(
     const drake::systems::Context<T>& context,
     MultibodyForces<T>* forces) const {
+  this->ValidateContext(context);
   AddAppliedExternalGeneralizedForces(context, forces);
   AddAppliedExternalSpatialForces(context, forces);
   AddJointActuationForces(context, forces);
@@ -1611,6 +1626,7 @@ void MultibodyPlant<T>::AddInForcesFromInputPorts(
 template<typename T>
 void MultibodyPlant<T>::AddAppliedExternalGeneralizedForces(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  this->ValidateContext(context);
   // If there are applied generalized forces, add them in.
   const InputPort<T>& applied_generalized_force_input =
       this->get_input_port(applied_generalized_force_input_port_);
@@ -1625,6 +1641,7 @@ void MultibodyPlant<T>::AddAppliedExternalSpatialForces(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
   // Get the mutable applied external spatial forces vector
   // (a.k.a., body force vector).
+  this->ValidateContext(context);
   std::vector<SpatialForce<T>>& F_BBo_W_array = forces->mutable_body_forces();
 
   // Evaluate the input port; if it's not connected, return now.
@@ -1655,6 +1672,7 @@ void MultibodyPlant<T>::AddAppliedExternalSpatialForces(
 template<typename T>
 void MultibodyPlant<T>::AddJointActuationForces(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  this->ValidateContext(context);
   DRAKE_DEMAND(forces != nullptr);
   if (num_actuators() > 0) {
     const VectorX<T> u = AssembleActuationInput(context);
@@ -1675,6 +1693,7 @@ void MultibodyPlant<T>::AddJointActuationForces(
 template<typename T>
 void MultibodyPlant<T>::AddJointLimitsPenaltyForces(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  this->ValidateContext(context);
   DRAKE_THROW_UNLESS(is_discrete());
   DRAKE_DEMAND(forces != nullptr);
 
@@ -1722,6 +1741,7 @@ void MultibodyPlant<T>::AddJointLimitsPenaltyForces(
 template<typename T>
 VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
     const systems::Context<T>& context) const {
+  this->ValidateContext(context);
   // Assemble the vector from the model instance input ports.
   VectorX<T> actuation_input(num_actuated_dofs());
   int u_offset = 0;
@@ -1806,6 +1826,7 @@ template <typename T>
 void MultibodyPlant<T>::CalcContactSurfaces(
     const drake::systems::Context<T>& context,
     std::vector<ContactSurface<T>>* contact_surfaces) const {
+  this->ValidateContext(context);
   DRAKE_DEMAND(contact_surfaces);
 
   const auto& query_object = EvalGeometryQueryInput(context);
@@ -1821,10 +1842,11 @@ void MultibodyPlant<symbolic::Expression>::CalcContactSurfaces(
       "This method doesn't support T = symbolic::Expression.");
 }
 
-template <>
-void MultibodyPlant<double>::CalcHydroelasticWithFallback(
-    const drake::systems::Context<double>& context,
-    internal::HydroelasticFallbackCacheData<double>* data) const {
+template <typename T>
+void MultibodyPlant<T>::CalcHydroelasticWithFallback(
+    const drake::systems::Context<T>& context,
+    internal::HydroelasticFallbackCacheData<T>* data) const {
+  this->ValidateContext(context);
   DRAKE_DEMAND(data != nullptr);
 
   if (num_collision_geometries() > 0) {
@@ -1837,21 +1859,33 @@ void MultibodyPlant<double>::CalcHydroelasticWithFallback(
   }
 }
 
-template <typename T>
-void MultibodyPlant<T>::CalcHydroelasticWithFallback(
-    const drake::systems::Context<T>&,
-    internal::HydroelasticFallbackCacheData<T>*) const {
+template <>
+void MultibodyPlant<symbolic::Expression>::CalcHydroelasticWithFallback(
+    const drake::systems::Context<symbolic::Expression>&,
+    internal::HydroelasticFallbackCacheData<symbolic::Expression>*) const {
   // TODO(SeanCurtis-TRI): Special case the AutoDiff scalar such that it works
   //  as long as there are no collisions -- akin to CalcPointPairPenetrations().
-  throw std::domain_error(fmt::format("This method doesn't support T = {}.",
-                                      NiceTypeName::Get<T>()));
+  throw std::domain_error(
+      fmt::format("This method doesn't support T = {}.",
+                  NiceTypeName::Get<symbolic::Expression>()));
 }
 
 template <typename T>
 std::vector<internal::DiscreteContactPair<T>>
 MultibodyPlant<T>::CalcDiscreteContactPairs(
     const systems::Context<T>& context) const {
+  this->ValidateContext(context);
+
   if (num_collision_geometries() == 0) return {};
+
+  // N.B. For discrete hydro we use a first order quadrature rule.
+  // Higher order quadratures are possible, however using a lower order
+  // quadrature leads to a smaller number of discrete pairs and therefore a
+  // smaller number of constraints in the discrete contact problem.
+  const GaussianTriangleQuadratureRule quadrature(1 /* order */);
+  const std::vector<Vector2<double>>& xi = quadrature.quadrature_points();
+  const std::vector<double>& wq = quadrature.weights();
+  const int num_quad_points = wq.size();
 
   // Only numeric values are supported. We detect that T is a Drake numeric type
   // using scalar_predicate::is_bool. That is true for numeric types and false
@@ -1871,8 +1905,17 @@ MultibodyPlant<T>::CalcDiscreteContactPairs(
         contact_model_ == ContactModel::kHydroelasticWithFallback) {
       num_point_pairs = EvalPointPairPenetrations(context).size();
     }
-    // TODO(amcastro-tri): include hydroelastic quadrature pairs.
-    const int num_quadrature_pairs = 0;  // to be included next PR.
+
+    int num_quadrature_pairs = 0;
+    if (contact_model_ == ContactModel::kHydroelasticsOnly ||
+        contact_model_ == ContactModel::kHydroelasticWithFallback) {
+      const std::vector<geometry::ContactSurface<T>>& surfaces =
+          EvalContactSurfaces(context);
+      for (const auto& s : surfaces) {
+        const geometry::SurfaceMesh<T>& mesh = s.mesh_W();
+        num_quadrature_pairs += num_quad_points * mesh.num_faces();
+      }
+    }
     const int num_contact_pairs = num_point_pairs + num_quadrature_pairs;
 
     std::vector<internal::DiscreteContactPair<T>> contact_pairs;
@@ -1887,10 +1930,8 @@ MultibodyPlant<T>::CalcDiscreteContactPairs(
       const std::vector<PenetrationAsPointPair<T>>& point_pairs =
           EvalPointPairPenetrations(context);
       for (const PenetrationAsPointPair<T>& pair : point_pairs) {
-        const auto [kA, dA] =
-            GetPointContactParameters(pair.id_A, inspector);
-        const auto [kB, dB] =
-            GetPointContactParameters(pair.id_B, inspector);
+        const auto [kA, dA] = GetPointContactParameters(pair.id_A, inspector);
+        const auto [kB, dB] = GetPointContactParameters(pair.id_B, inspector);
         const auto [k, d] = CombinePointContactParameters(kA, kB, dA, dB);
         const T phi0 = -pair.depth;
         const T fn0 = k * pair.depth;
@@ -1904,7 +1945,127 @@ MultibodyPlant<T>::CalcDiscreteContactPairs(
       }
     }
 
-    // TODO(amcastro-tri): fill in hydroelastic quadrature pairs.
+    // Append the Hydroelastics quadrature points.
+    if (num_quadrature_pairs > 0) {
+      const std::vector<geometry::ContactSurface<T>>& surfaces =
+          EvalContactSurfaces(context);
+      for (const auto& s : surfaces) {
+        const geometry::SurfaceMesh<T>& mesh_W = s.mesh_W();
+
+        // Combined Hunt & Crossley dissipation.
+        const T dissipation = hydroelastics_engine_.CalcCombinedDissipation(
+            s.id_M(), s.id_N(), inspector);
+
+        for (geometry::SurfaceFaceIndex face(0); face < mesh_W.num_faces();
+             ++face) {
+          const T& Ae = mesh_W.area(face);  // Face element area.
+
+          // We found out that the hydroelastic query might report
+          // infinitesimally small triangles (consider for instance an initial
+          // condition that perfectly places an object at zero distance from the
+          // ground.) While the area of zero sized triangles is not a problem by
+          // itself, the badly computed normal on these triangles leads to
+          // problems when computing the contact Jacobians (since we need to
+          // obtain an orthonormal basis based on that normal.)
+          // We therefore ignore infinitesimally small triangles. The tolerance
+          // below is somehow arbitrary and could possibly be tightened.
+          if (Ae > 1.0e-14) {
+            // N.B Assuming rigid-soft contact, and thus only a single pressure
+            // gradient is considered to be valid. We first verify this indeed
+            // is the case by checking that only one side has gradient
+            // information (the volumetric side).
+            const bool M_is_soft = s.HasGradE_M();
+            const bool N_is_soft = s.HasGradE_N();
+            DRAKE_DEMAND(M_is_soft ^ N_is_soft);
+
+            // Pressure gradient always points into the soft geometry by
+            // construction.
+            const Vector3<T>& grad_pres_W = M_is_soft
+                                                ? s.EvaluateGradE_M_W(face)
+                                                : s.EvaluateGradE_N_W(face);
+
+            // From ContactSurface's documentation: The normal of each face is
+            // guaranteed to point "out of" N and "into" M.
+            const Vector3<T>& nhat_W = mesh_W.face_normal(face);
+            for (int qp = 0; qp < num_quad_points; ++qp) {
+              const Vector3<T> barycentric(xi[qp](0), xi[qp](1),
+                                           1.0 - xi[qp](0) - xi[qp](1));
+              // Pressure at the quadrature point.
+              const T p0 = s.EvaluateE_MN(face, barycentric);
+
+              // Force contribution by this quadrature point.
+              const T fn0 = wq[qp] * Ae * p0;
+
+              // Since the normal always points into M, regardless of which body
+              // is soft, we must take into account the change of sign when body
+              // N is soft and M is rigid.
+              const T sign = M_is_soft ? 1.0 : -1.0;
+
+              // In order to provide some intuition, and though not entirely
+              // complete, here we document the first order idea that leads to
+              // the discrete hydroelastic approximation used below. In
+              // hydroelastics, each quadrature point contributes to the total
+              // "elastic" force along the normal direction as:
+              //   f₀ₚ = ωₚ Aₑ pₚ
+              // where subindex p denotes a quantity evaluated at quadrature
+              // point P and subindex e identifies the e-th contact surface
+              // element in which the quadrature is being evaluated.
+              // Notice f₀ only includes the "elastic" contribution. Dissipation
+              // is dealt with by a separate multiplicative factor. Given the
+              // local stiffness for the normal forces contribution, our
+              // discrete TAMSI solver implicitly handles the dissipative Hunt &
+              // Crossley forces.
+              // In point contact, stiffness is related to changes in the normal
+              // force with changes in the penetration distance. In that spirit,
+              // the approximation used here is to define the discrete
+              // hydroelastics stiffness as the directional derivative of the
+              // scalar force f₀ₚ along the normal direction n̂:
+              //   k := ∂f₀ₚ/∂n̂ ≈ ωₚ⋅Aₑ⋅∇pₚ⋅n̂ₚ
+              // that is, the variation of the normal force experiences if the
+              // quadrature point is pushed inwards in the direction of the
+              // normal. Notice that this expression approximates the element
+              // area and normal as constant. Keeping normals and Jacobians
+              // is a very common approximation in first order methods. Keeping
+              // the area constant here is a higher order approximation for
+              // inner triangles given that shrinkage of a triangle is related
+              // the growth of a neighboring triangle (i.e. the contact surface
+              // does not stretch nor shrink). For triangles close to the
+              // boundary of the contact surface, this is only a first order
+              // approximation.
+              const T k = sign * wq[qp] * Ae * grad_pres_W.dot(nhat_W);
+
+              // N.B. The normal is guaranteed to point into M. However, when M
+              // is soft, the gradient is not guaranteed to be in the direction
+              // of the normal. The geometry code that determines which
+              // triangles to keep in the contact surface may keep triangles for
+              // which the pressure gradient times normal is negative (see
+              // IsFaceNormalInNormalDirection() in contact_surface_utility.cc).
+              // Therefore there are cases for which the definition above of k
+              // might lead to negative values. We observed that this condition
+              // happens sparsely at some of the boundary triangles of the
+              // contact surface, while the positive values in inner triangles
+              // dominates the overall compliance. In practice we did not
+              // observe this to cause stability issues. Since a negative value
+              // of k is correct, we decided to keep these contributions.
+
+              // Position of quadrature point Q in the world frame (since mesh_W
+              // is measured and expressed in W).
+              const Vector3<T> p_WQ =
+                  mesh_W.CalcCartesianFromBarycentric(face, barycentric);
+
+              // N.B. Today 01/25/2021, Only TAMSI supports discrete
+              // hydroelastics and uses the discrete force fn0 instead of the
+              // distance function phi0. phi0 is only used in experimental
+              // ContactSolver(s). Therefore we set phi0 to NaN since it is not
+              // used by TAMSI.
+              const T nan_phi0 = std::numeric_limits<double>::quiet_NaN();
+              contact_pairs.push_back({s.id_M(), s.id_N(), p_WQ, nhat_W,
+                                       nan_phi0, fn0, k, dissipation});
+            }
+          }
+        }
+      }
+    }
 
     return contact_pairs;
   } else {
@@ -1921,6 +2082,7 @@ void MultibodyPlant<T>::CalcTamsiResults(
     const drake::systems::Context<T>& context0,
     contact_solvers::internal::ContactSolverResults<T>* results) const {
   // Assert this method was called on a context storing discrete state.
+  this->ValidateContext(context0);
   DRAKE_ASSERT(context0.num_discrete_state_groups() == 1);
   DRAKE_ASSERT(context0.num_continuous_states() == 0);
 
@@ -2163,6 +2325,7 @@ void MultibodyPlant<T>::CallContactSolver(
 template <typename T>
 void MultibodyPlant<T>::CalcGeneralizedContactForcesContinuous(
     const Context<T>& context, VectorX<T>* tau_contact) const {
+  this->ValidateContext(context);
   DRAKE_DEMAND(tau_contact);
   DRAKE_DEMAND(tau_contact->size() == num_velocities());
   DRAKE_DEMAND(!is_discrete());
@@ -2203,6 +2366,7 @@ template <typename T>
 void MultibodyPlant<T>::CalcSpatialContactForcesContinuous(
       const drake::systems::Context<T>& context,
       std::vector<SpatialForce<T>>* F_BBo_W_array) const {
+  this->ValidateContext(context);
   DRAKE_DEMAND(F_BBo_W_array);
   DRAKE_DEMAND(static_cast<int>(F_BBo_W_array->size()) == num_bodies());
   DRAKE_DEMAND(!is_discrete());
@@ -2252,6 +2416,7 @@ void MultibodyPlant<T>::CalcNonContactForces(
     const drake::systems::Context<T>& context,
     bool discrete,
     MultibodyForces<T>* forces) const {
+  this->ValidateContext(context);
   DRAKE_DEMAND(forces != nullptr);
   DRAKE_DEMAND(forces->CheckHasRightSizeForModel(*this));
 
@@ -2268,6 +2433,8 @@ void MultibodyPlant<T>::CalcNonContactForces(
 template <typename T>
 void MultibodyPlant<T>::AddInForcesContinuous(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  this->ValidateContext(context);
+
   // Forces from MultibodyTree elements are handled in MultibodyTreeSystem;
   // we need only handle MultibodyPlant-specific forces here.
   AddInForcesFromInputPorts(context, forces);
@@ -2285,6 +2452,7 @@ template <typename T>
 void MultibodyPlant<T>::DoCalcForwardDynamicsDiscrete(
     const drake::systems::Context<T>& context0,
     AccelerationKinematicsCache<T>* ac) const {
+  this->ValidateContext(context0);
   DRAKE_DEMAND(ac != nullptr);
   DRAKE_DEMAND(is_discrete());
 
@@ -2312,6 +2480,8 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
     const drake::systems::Context<T>& context0,
     const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>&,
     drake::systems::DiscreteValues<T>* updates) const {
+  this->ValidateContext(context0);
+
   // Get the system state as raw Eigen vectors
   // (solution at the previous time step).
   auto x0 = context0.get_discrete_state(0).get_value();
@@ -2758,6 +2928,7 @@ template <typename T>
 void MultibodyPlant<T>::CopyMultibodyStateOut(
     const Context<T>& context, BasicVector<T>* state_vector) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  this->ValidateContext(context);
   state_vector->SetFromVector(GetPositionsAndVelocities(context));
 }
 
@@ -2766,6 +2937,7 @@ void MultibodyPlant<T>::CopyMultibodyStateOut(
     ModelInstanceIndex model_instance,
     const Context<T>& context, BasicVector<T>* state_vector) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  this->ValidateContext(context);
   state_vector->SetFromVector(
       GetPositionsAndVelocities(context, model_instance));
 }
@@ -2906,6 +3078,7 @@ void MultibodyPlant<T>::CalcBodyPosesOutput(
     const Context<T>& context,
     std::vector<math::RigidTransform<T>>* X_WB_all) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  this->ValidateContext(context);
   X_WB_all->resize(num_bodies());
   for (BodyIndex body_index(0); body_index < this->num_bodies(); ++body_index) {
     const Body<T>& body = get_body(body_index);
@@ -2918,6 +3091,7 @@ void MultibodyPlant<T>::CalcBodySpatialVelocitiesOutput(
     const Context<T>& context,
     std::vector<SpatialVelocity<T>>* V_WB_all) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  this->ValidateContext(context);
   V_WB_all->resize(num_bodies());
   for (BodyIndex body_index(0); body_index < this->num_bodies(); ++body_index) {
     const Body<T>& body = get_body(body_index);
@@ -2930,6 +3104,7 @@ void MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput(
     const Context<T>& context,
     std::vector<SpatialAcceleration<T>>* A_WB_all) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  this->ValidateContext(context);
   A_WB_all->resize(num_bodies());
   const AccelerationKinematicsCache<T>& ac = this->EvalForwardDynamics(context);
   for (BodyIndex body_index(0); body_index < this->num_bodies(); ++body_index) {
@@ -2944,7 +3119,9 @@ MultibodyPlant<T>::EvalBodySpatialAccelerationInWorld(
     const Context<T>& context,
     const Body<T>& body_B) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  this->ValidateContext(context);
   DRAKE_DEMAND(this == &body_B.GetParentPlant());
+  this->ValidateContext(context);
   const AccelerationKinematicsCache<T>& ac = this->EvalForwardDynamics(context);
   return ac.get_A_WB(body_B.node_index());
 }
@@ -2953,6 +3130,7 @@ template <typename T>
 void MultibodyPlant<T>::CalcFramePoseOutput(
     const Context<T>& context, FramePoseVector<T>* poses) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  this->ValidateContext(context);
   const internal::PositionKinematicsCache<T>& pc =
       EvalPositionKinematics(context);
 
@@ -2978,6 +3156,7 @@ template <typename T>
 void MultibodyPlant<T>::CalcReactionForces(
     const systems::Context<T>& context,
     std::vector<SpatialForce<T>>* F_CJc_Jc_array) const {
+  this->ValidateContext(context);
   DRAKE_DEMAND(F_CJc_Jc_array != nullptr);
   DRAKE_DEMAND(static_cast<int>(F_CJc_Jc_array->size()) == num_joints());
 

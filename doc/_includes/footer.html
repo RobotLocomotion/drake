@@ -1,0 +1,23 @@
+<footer class="site-footer padding">
+  <div class="contain">
+    <a href="{{ site.baseurl }}/" class="drake-logo">
+      <img src="{{ site.custom.footer_logo | relative_url }}">
+    </a>
+    <div class="footer-menu">
+      <ul>
+        {% for item in site.custom.footer.menu_items %}
+        <li>
+          {% if item.url %}<a href="{{ item.url | relative_url }}" class="site-menu-item">{% endif %}{{ item.title }}{% if item.url %}</a>{% endif %}
+        </li>
+        {% endfor %}
+
+        <li class="github-link">
+          <a href="https://github.com/RobotLocomotion/drake" class="site-menu-item">GitHub <img src="{{ '/third_party/images/GitHub-Mark-64px.png' | relative_url }}" /></a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- TODO(eric.cousineau): Consider placing copyright here. -->
+
+</footer>

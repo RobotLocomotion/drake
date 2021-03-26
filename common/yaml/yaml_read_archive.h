@@ -244,20 +244,21 @@ class YamlReadArchive final {
     this->VisitVariant(nvp);
   }
 
-  // For Eigen::Vector.
-  template <typename NVP, typename T, int Rows>
-  void DoVisit(const NVP& nvp, const Eigen::Matrix<T, Rows, 1>&, int32_t) {
-    if (Rows >= 0) {
-      this->VisitArray(nvp.name(), Rows, nvp.value()->data());
+  // For Eigen::Matrix or Eigen::Vector.
+  template <typename NVP, typename T, int Rows, int Cols,
+      int Options = 0, int MaxRows = Rows, int MaxCols = Cols>
+  void DoVisit(const NVP& nvp,
+               const Eigen::Matrix<T, Rows, Cols, Options, MaxRows, MaxCols>&,
+               int32_t) {
+    if constexpr (Cols == 1) {
+      if constexpr (Rows >= 0) {
+        this->VisitArray(nvp.name(), Rows, nvp.value()->data());
+      } else {
+        this->VisitVector(nvp);
+      }
     } else {
-      this->VisitVector(nvp);
+      this->VisitMatrix(nvp.name(), nvp.value());
     }
-  }
-
-  // For Eigen::Matrix.
-  template <typename NVP, typename T, int Rows, int Cols>
-  void DoVisit(const NVP& nvp, const Eigen::Matrix<T, Rows, Cols>&, int32_t) {
-    this->VisitMatrix(nvp.name(), nvp.value());
   }
 
   // If no other DoVisit matched, we'll treat the value as a scalar.
@@ -416,14 +417,16 @@ class YamlReadArchive final {
     }
   }
 
-  template <typename T, int Rows, int Cols>
-  void VisitMatrix(const char* name, Eigen::Matrix<T, Rows, Cols>* matrix) {
+  template <typename T, int Rows, int Cols,
+      int Options = 0, int MaxRows = Rows, int MaxCols = Cols>
+  void VisitMatrix(const char* name,
+      Eigen::Matrix<T, Rows, Cols, Options, MaxRows, MaxCols>* matrix) {
     const auto& sub_node = GetSubNode(name, YAML::NodeType::Sequence);
     if (!sub_node) { return; }
 
     // Measure the YAML Sequence-of-Sequence dimensions.
-    const size_t rows = sub_node.size();
-    const size_t cols = sub_node[0].size();
+    size_t rows = sub_node.size();
+    size_t cols = (rows == 0) ? 0 : sub_node[0].size();
     for (size_t i = 0; i < rows; ++i) {
       const YAML::Node one_row = sub_node[i];
       const size_t one_row_size = one_row.size();
@@ -437,6 +440,10 @@ class YamlReadArchive final {
         ReportError("has inconsistent cols dimensions");
         return;
       }
+    }
+    // Never return an Nx0 matrix; demote it to 0x0 instead.
+    if (cols == 0) {
+      rows = 0;
     }
 
     // Check the YAML dimensions vs Eigen dimensions, then resize (if dynamic).

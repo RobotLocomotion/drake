@@ -14,10 +14,16 @@ me='The Drake source distribution prerequisite setup script'
 
 trap at_exit EXIT
 
+binary_distribution_args=()
 source_distribution_args=()
 
 while [ "${1:-}" != "" ]; do
   case "$1" in
+    # Install prerequisites that are only needed to build documentation,
+    # i.e., those prerequisites that are dependencies of bazel run //doc:build.
+    --with-doc-only)
+      source_distribution_args+=(--with-doc-only)
+      ;;
     # Install the kcov code coverage analysis tool from the
     # drake-apt.csail.mit.edu apt repository on Ubuntu 18.04 (Bionic). Ignored
     # on Ubuntu 20.04 (Focal) where kcov is always installed from the Ubuntu
@@ -31,8 +37,7 @@ while [ "${1:-}" != "" ]; do
       source_distribution_args+=(--with-maintainer-only)
       ;;
     # Do NOT install prerequisites that are only needed to build documentation,
-    # i.e., those prerequisites that are dependencies of bazel { build, run }
-    # { //doc:gen_sphinx, //bindings/pydrake/doc:gen_sphinx, //doc:doxygen }
+    # i.e., those prerequisites that are dependencies of bazel run //doc:build.
     --without-doc-only)
       source_distribution_args+=(--without-doc-only)
       ;;
@@ -41,6 +46,11 @@ while [ "${1:-}" != "" ]; do
     # bazel { build, run } //:install.
     --without-test-only)
       source_distribution_args+=(--without-test-only)
+      ;;
+    # Do NOT call apt-get update during execution of this script.
+    --without-update)
+      binary_distribution_args+=(--without-update)
+      source_distribution_args+=(--without-update)
       ;;
     *)
       echo 'Invalid command line argument' >&2
@@ -57,7 +67,8 @@ done
 # generate the dependencies of the drake .deb package, so does not include
 # development dependencies such as build-essential and cmake.
 
-source "${BASH_SOURCE%/*}/binary_distribution/install_prereqs.sh"
+source "${BASH_SOURCE%/*}/binary_distribution/install_prereqs.sh" \
+  "${binary_distribution_args[@]:-}"
 
 # The following additional dependencies are only needed when developing with
 # source distributions.

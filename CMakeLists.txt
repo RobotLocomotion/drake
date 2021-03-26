@@ -34,10 +34,10 @@ set(UNIX_DISTRIBUTION_ID)
 set(UNIX_DISTRIBUTION_CODENAME)
 
 if(APPLE)
-  if(CMAKE_SYSTEM_VERSION VERSION_LESS 18)
+  if(CMAKE_SYSTEM_VERSION VERSION_LESS 19)
     message(FATAL_ERROR
       "Darwin ${CMAKE_SYSTEM_VERSION} is NOT supported. Please use Darwin "
-      "18.x (macOS Mojave) or Darwin 19.x (macOS Catalina)."
+      "Darwin 19.x (macOS Catalina) or 20.x (macOS Big Sur)."
     )
   endif()
 else()
@@ -91,7 +91,7 @@ endif()
 
 # The version passed to find_package(Bazel) should match the
 # minimum_bazel_version value in the call to versions.check() in WORKSPACE.
-set(MINIMUM_BAZEL_VERSION 2.0)
+set(MINIMUM_BAZEL_VERSION 3.0)
 find_package(Bazel ${MINIMUM_BAZEL_VERSION} MODULE REQUIRED)
 
 get_filename_component(C_COMPILER_REALPATH "${CMAKE_C_COMPILER}" REALPATH)
@@ -108,7 +108,7 @@ endif()
 
 # The minimum compiler versions should match those listed in both
 # doc/developers.rst and tools/workspace/cc/repository.bzl.
-set(MINIMUM_APPLE_CLANG_VERSION 11)
+set(MINIMUM_APPLE_CLANG_VERSION 12)
 set(MINIMUM_CLANG_VERSION 9)
 set(MINIMUM_GNU_VERSION 7.5)
 
@@ -200,28 +200,24 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 
-# The paths within which to search for the python3 executable should match the
-# interpreter paths for the Python runtimes in the Python toolchains
-# registered by Bazel in WORKSPACE.
-#
 # The supported Python major/minor versions should match those listed in both
 # doc/developers.rst and tools/workspace/python/repository.bzl.
 if(APPLE)
-  set(FIND_PROGRAM_PYTHON3_PATHS /usr/local/opt/python@3.8/bin)
+  set(SUPPORTED_PYTHON_VERSION 3.9)
+elseif(UNIX_DISTRIBUTION_CODENAME STREQUAL bionic)
+  set(SUPPORTED_PYTHON_VERSION 3.6)
 else()
-  set(FIND_PROGRAM_PYTHON3_PATHS /usr/bin)
+  set(SUPPORTED_PYTHON_VERSION 3.8)
 endif()
-if(UNIX_DISTRIBUTION_CODENAME STREQUAL bionic)
-  set(SUPPORTED_PYTHON_VERSIONS 3.6)
+
+if(APPLE)
+  set(FIND_PROGRAM_PYTHON3_NAMES "python${SUPPORTED_PYTHON_VERSION}")
 else()
-  set(SUPPORTED_PYTHON_VERSIONS 3.8)
+  set(FIND_PROGRAM_PYTHON3_NAMES python3)
 endif()
 
 if(CMAKE_VERSION VERSION_LESS 3.12)
-  find_program(PYTHON_EXECUTABLE NAMES python3
-    PATHS "${FIND_PROGRAM_PYTHON3_PATHS}"
-    NO_DEFAULT_PATH
-  )
+  find_program(PYTHON_EXECUTABLE NAMES "${FIND_PROGRAM_PYTHON3_NAMES}")
   if(NOT PYTHON_EXECUTABLE)
     message(FATAL_ERROR "Could NOT find the python3 executable")
   endif()
@@ -236,10 +232,7 @@ else()
     )
     unset(PYTHON_EXECUTABLE CACHE)
   endif()
-  find_program(Python_EXECUTABLE NAMES python3
-    PATHS "${FIND_PROGRAM_PYTHON3_PATHS}"
-    NO_DEFAULT_PATH
-  )
+  find_program(Python_EXECUTABLE NAMES "${FIND_PROGRAM_PYTHON3_NAMES}")
   if(NOT Python_EXECUTABLE)
     message(FATAL_ERROR "Could NOT find the python3 executable")
   endif()
@@ -258,7 +251,7 @@ else()
   )
 endif()
 
-if(NOT PYTHON_VERSION_MAJOR_MINOR IN_LIST SUPPORTED_PYTHON_VERSIONS)
+if(NOT PYTHON_VERSION_MAJOR_MINOR VERSION_EQUAL SUPPORTED_PYTHON_VERSION)
   message(WARNING
     "Python version ${PYTHON_VERSION_MAJOR_MINOR} is NOT supported. Python "
     "code in project drake_cxx_python may fail at runtime."

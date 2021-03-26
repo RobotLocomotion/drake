@@ -3,7 +3,6 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/geometry/proximity/bounding_volume_hierarchy.h"
 #include "drake/geometry/proximity/make_ellipsoid_mesh.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
 #include "drake/geometry/proximity/obb.h"
@@ -70,19 +69,6 @@ class BvhTester {
 };
 
 namespace {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
-// Since we are deprecating BoundingVolumeHierarchy by aliasing it as Bvh,
-// here we test an instantiation of the alias. We should remove this test at
-// the end of deprecation period.
-GTEST_TEST(BoundingVolumeHierarchyTest, TestInstantiation) {
-  const SurfaceMesh<double> mesh =
-      MakeSphereSurfaceMesh<double>(Sphere(1.5), 3);
-  const BoundingVolumeHierarchy<SurfaceMesh<double>> bvh(mesh);
-}
-
-#pragma GCC diagnostic pop  // pop "-Wdeprecated-declarations"
 
 GTEST_TEST(BvNodeTest, TestEqualLeaf) {
   // Bounding volume is not used in EqualLeaf. It is used in EqualTrees.
@@ -558,6 +544,19 @@ GTEST_TEST(BoundingVolumeHierarchyTest, TestEqual) {
 
   // Tests reflexive property: equal to itself.
   EXPECT_TRUE(bvh_ellipsoid.Equal(bvh_ellipsoid));
+}
+
+// Simply confirms that an Obb can be built from an autodiff mesh. We apply a
+// limited smoke test to indicate success -- the bounding volume of the root
+// node is the same as if the mesh were double-valued.
+GTEST_TEST(BoundingVolumeHierarchyTest, BvhFromAutodiffmesh) {
+  SurfaceMesh<AutoDiffXd> mesh_ad =
+      MakeSphereSurfaceMesh<AutoDiffXd>(Sphere(1.5), 3);
+  Bvh<SurfaceMesh<AutoDiffXd>> bvh_ad(mesh_ad);
+  SurfaceMesh<double> mesh_d =
+      MakeSphereSurfaceMesh<double>(Sphere(1.5), 3);
+  Bvh<SurfaceMesh<double>> bvh_d(mesh_d);
+  EXPECT_TRUE(bvh_ad.root_node().bv().Equal(bvh_d.root_node().bv()));
 }
 
 }  // namespace

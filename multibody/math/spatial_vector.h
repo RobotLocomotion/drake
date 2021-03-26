@@ -1,8 +1,7 @@
 #pragma once
 
 #ifndef DRAKE_SPATIAL_ALGEBRA_HEADER
-// NOLINTNEXTLINE(whitespace/line_length)
-#warning DRAKE_DEPRECATED: Do not directly include this file. Include "drake/multibody/math/spatial_algebra.h". This warning will be promoted to an error on 2021-01-01.
+#error Please include "drake/multibody/math/spatial_algebra.h", not this file.
 #endif
 
 #include <limits>
@@ -44,10 +43,7 @@ class SpatialVector {
   };
 
   /// The type of the underlying in-memory representation using an Eigen vector.
-  typedef Vector6<T> CoeffsEigenType;
-
-  // Make it available to implementations using SpatialVector.
-  typedef T ScalarType;
+  using CoeffsEigenType = Vector6<T>;
 
   /// Default constructor. In Release builds the elements of the newly
   /// constructed spatial vector are left uninitialized resulting in a zero

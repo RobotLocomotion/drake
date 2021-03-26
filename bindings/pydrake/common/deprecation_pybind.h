@@ -98,5 +98,21 @@ auto py_init_deprecated(py::str message, Func&& func) {
   return py::init(WrapDeprecated(message, std::forward<Func>(func)));
 }
 
+/// The deprecated flavor of ParamInit<>.
+template <typename Class>
+auto DeprecatedParamInit(py::str message) {
+  return py::init(WrapDeprecated(message, [](py::kwargs kwargs) {
+    // N.B. We use `Class` here because `pybind11` strongly requires that we
+    // return the instance itself, not just `py::object`.
+    // TODO(eric.cousineau): This may hurt `keep_alive` behavior, as this
+    // reference may evaporate by the time the true holding pybind11 record is
+    // constructed. Would be alleviated using old-style pybind11 init :(
+    Class obj{};
+    py::object py_obj = py::cast(&obj, py_rvp::reference);
+    py::module::import("pydrake").attr("_setattr_kwargs")(py_obj, kwargs);
+    return obj;
+  }));
+}
+
 }  // namespace pydrake
 }  // namespace drake

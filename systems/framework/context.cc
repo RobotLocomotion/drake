@@ -13,26 +13,6 @@ void Context<T>::SetTime(const T& time_sec) {
 }
 
 template <typename T>
-FixedInputPortValue& Context<T>::FixInputPort(
-    int index, const BasicVector<T>& vec) {
-  return ContextBase::FixInputPort(
-      index, std::make_unique<Value<BasicVector<T>>>(vec.Clone()));
-}
-
-template <typename T>
-FixedInputPortValue& Context<T>::FixInputPort(
-    int index, const Eigen::Ref<const VectorX<T>>& data) {
-  return FixInputPort(index, BasicVector<T>(data));
-}
-
-template <typename T>
-FixedInputPortValue& Context<T>::FixInputPort(
-    int index, std::unique_ptr<BasicVector<T>> vec) {
-  DRAKE_THROW_UNLESS(vec.get() != nullptr);
-  return FixInputPort(index, *vec);
-}
-
-template <typename T>
 void Context<T>::SetAccuracy(const std::optional<double>& accuracy) {
   ThrowIfNotRootContext(__func__, "Accuracy");
   const int64_t change_event = this->start_new_change_event();

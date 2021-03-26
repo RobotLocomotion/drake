@@ -5,6 +5,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <variant>
@@ -208,19 +209,20 @@ class YamlWriteArchive final {
     this->VisitVariant(nvp);
   }
 
-  // For Eigen::Vector.
-  template <typename NVP, typename T, int Rows>
-  void DoVisit(const NVP& nvp, const Eigen::Matrix<T, Rows, 1>&, int32_t) {
-    Eigen::Matrix<T, Rows, 1>& value = *nvp.value();
-    const bool empty = value.size() == 0;
-    this->VisitArrayLike<T>(nvp.name(), value.size(),
-                            empty ? nullptr : &value.coeffRef(0));
-  }
-
-  // For Eigen::Matrix.
-  template <typename NVP, typename T, int Rows, int Cols>
-  void DoVisit(const NVP& nvp, const Eigen::Matrix<T, Rows, Cols>&, int32_t) {
-    this->VisitMatrix<T>(nvp.name(), nvp.value());
+  // For Eigen::Matrix or Eigen::Vector.
+  template <typename NVP, typename T, int Rows, int Cols,
+      int Options = 0, int MaxRows = Rows, int MaxCols = Cols>
+  void DoVisit(const NVP& nvp,
+               const Eigen::Matrix<T, Rows, Cols, Options, MaxRows, MaxCols>&,
+               int32_t) {
+    if constexpr (Cols == 1) {
+      auto& value = *nvp.value();
+      const bool empty = value.size() == 0;
+      this->VisitArrayLike<T>(nvp.name(), value.size(),
+                              empty ? nullptr : &value.coeffRef(0));
+    } else {
+      this->VisitMatrix<T>(nvp.name(), nvp.value());
+    }
   }
 
   // If no other DoVisit matched, we'll treat the value as a scalar.
@@ -249,7 +251,14 @@ class YamlWriteArchive final {
   void VisitScalar(const NVP& nvp) {
     using T = typename NVP::value_type;
     const T& value = *nvp.value();
-    root_[nvp.name()] = fmt::format("{}", value);
+    if constexpr (std::is_floating_point_v<T>) {
+      // Different versions of fmt disagree on whether to omit the trailing
+      // ".0" when formatting integer-valued floating-point numbers.  Force
+      // the ".0" in all cases by using the "#" option.
+      root_[nvp.name()] = fmt::format("{:#}", value);
+    } else {
+      root_[nvp.name()] = fmt::format("{}", value);
+    }
   }
 
   template <typename NVP>
@@ -307,7 +316,13 @@ class YamlWriteArchive final {
           "Cannot YamlWriteArchive the variant type {} with a non-zero index",
           full_name));
     }
-    return NiceTypeName::RemoveNamespaces(full_name);
+    std::string short_name = NiceTypeName::RemoveNamespaces(full_name);
+    auto angle = short_name.find('<');
+    if (angle != std::string::npos) {
+      // Remove template arguments.
+      short_name.resize(angle);
+    }
+    return short_name;
   }
 
   template <typename T>
@@ -322,8 +337,10 @@ class YamlWriteArchive final {
     root_[name] = std::move(sub_node);
   }
 
-  template <typename T, int Rows, int Cols>
-  void VisitMatrix(const char* name, Eigen::Matrix<T, Rows, Cols>* matrix) {
+  template <typename T, int Rows, int Cols,
+      int Options = 0, int MaxRows = Rows, int MaxCols = Cols>
+  void VisitMatrix(const char* name,
+      const Eigen::Matrix<T, Rows, Cols, Options, MaxRows, MaxCols>* matrix) {
     YAML::Node sub_node(YAML::NodeType::Sequence);
     for (int i = 0; i < matrix->rows(); ++i) {
       Eigen::Matrix<T, Cols, 1> row = matrix->row(i);

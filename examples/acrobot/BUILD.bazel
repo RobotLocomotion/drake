@@ -6,6 +6,13 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+    "drake_py_library",
+    "drake_py_test",
+    "drake_py_unittest",
+)
 load("//tools/install:install_data.bzl", "install_data")
 load(
     "@drake//tools/vector_gen:vector_gen.bzl",
@@ -19,6 +26,14 @@ drake_cc_vector_gen_library(
     name = "acrobot_input",
     srcs = ["acrobot_input_named_vector.yaml"],
     visibility = ["//visibility:public"],
+)
+
+drake_py_library(
+    name = "acrobot_io",
+    srcs = ["acrobot_io.py"],
+    deps = [
+        "//bindings/pydrake",
+    ],
 )
 
 drake_cc_vector_gen_library(
@@ -83,6 +98,11 @@ drake_cc_library(
     ],
 )
 
+drake_py_library(
+    name = "metrics",
+    srcs = ["metrics.py"],
+)
+
 drake_cc_library(
     name = "spong_controller",
     srcs = ["spong_controller.cc"],
@@ -100,6 +120,45 @@ drake_cc_library(
     ],
 )
 
+drake_py_library(
+    # This is the library form of spong_sim.py.
+    name = "spong_sim_lib_py",
+    srcs = ["spong_sim.py"],
+    deps = [
+        ":acrobot_io",
+        "//bindings/pydrake",
+    ],
+)
+
+drake_py_binary(
+    # This is the directly-runnable form of spong_sim.py.
+    name = "spong_sim_main_py",
+    srcs = ["spong_sim.py"],
+    main = "spong_sim.py",
+    deps = [
+        ":acrobot_io",
+        "//bindings/pydrake",
+    ],
+)
+
+drake_cc_binary(
+    name = "spong_sim_main_cc",
+    srcs = ["spong_sim.cc"],
+    deps = [
+        "//common:add_text_logging_gflags",
+        "//common:name_value",
+        "//common/schema:stochastic",
+        "//common/yaml:yaml_read_archive",
+        "//common/yaml:yaml_write_archive",
+        "//examples/acrobot:acrobot_plant",
+        "//examples/acrobot:spong_controller",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram_builder",
+        "//systems/primitives:signal_logger",
+        "@yaml_cpp",
+    ],
+)
+
 # Note: This is a development tool for testing LCM communication
 # but does not actually provide test coverage as a stand-alone
 # executable.
@@ -114,6 +173,19 @@ drake_cc_binary(
     ],
 )
 
+drake_py_binary(
+    name = "optimizer_demo",
+    srcs = ["optimizer_demo.py"],
+    data = [
+        ":spong_sim_main_cc",
+        ":test/example_stochastic_scenario.yaml",
+    ],
+    deps = [
+        ":acrobot_io",
+        ":metrics",
+    ],
+)
+
 drake_cc_binary(
     name = "run_lqr",
     srcs = ["run_lqr.cc"],
@@ -125,7 +197,7 @@ drake_cc_binary(
     deps = [
         ":acrobot_geometry",
         ":acrobot_plant",
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//systems/analysis:simulator",
         "@gflags",
     ],
@@ -144,7 +216,7 @@ drake_cc_binary(
         ":acrobot_geometry",
         ":acrobot_plant",
         "//common/proto:call_python",
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//systems/analysis:simulator",
         "//systems/estimators:kalman_filter",
         "//systems/framework:diagram",
@@ -166,7 +238,7 @@ drake_cc_binary(
     deps = [
         ":acrobot_geometry",
         ":acrobot_plant",
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "@gflags",
@@ -189,7 +261,7 @@ drake_cc_binary(
         ":acrobot_plant",
         ":spong_controller",
         ":spong_controller_params",
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//systems/analysis:simulator",
         "@gflags",
     ],
@@ -206,7 +278,7 @@ drake_cc_binary(
         ":acrobot_geometry",
         ":acrobot_plant",
         "//common:is_approx_equal_abstol",
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//solvers:solve",
         "//systems/analysis:simulator",
         "//systems/controllers:finite_horizon_linear_quadratic_regulator",
@@ -249,10 +321,22 @@ drake_cc_binary(
         ":acrobot_geometry",
         ":acrobot_lcm",
         ":acrobot_plant",
-        "//geometry:geometry_visualization",
+        "//geometry:drake_visualizer",
         "//systems/analysis:simulator",
         "//systems/controllers:linear_quadratic_regulator",
+        "//systems/lcm",
         "@gflags",
+    ],
+)
+
+drake_py_unittest(
+    name = "acrobot_io_test",
+    data = [
+        ":test/example_scenario.yaml",
+    ],
+    deps = [
+        ":acrobot_io",
+        "//bindings/pydrake",
     ],
 )
 
@@ -272,6 +356,13 @@ drake_cc_googletest(
     ],
 )
 
+drake_py_unittest(
+    name = "metrics_test",
+    deps = [
+        ":metrics",
+    ],
+)
+
 drake_cc_googletest(
     name = "multibody_dynamics_test",
     data = [":models"],
@@ -281,6 +372,78 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
     ],
+)
+
+sh_test(
+    name = "optimizer_demo_smoke_test",
+    srcs = ["test/optimizer_demo_smoke_test.sh"],
+    data = [
+        ":optimizer_demo",
+    ],
+    tags = [
+        "no_memcheck",  # This wraps python; python is memcheck-exempt.
+    ],
+)
+
+drake_py_unittest(
+    name = "spong_sim_lib_py_test",
+    deps = [
+        ":spong_sim_lib_py",
+    ],
+)
+
+drake_py_test(
+    name = "spong_sim_main_py_test",
+    srcs = ["test/spong_sim_main_test.py"],
+    allow_import_unittest = True,
+    data = [
+        ":spong_sim_main_py",
+        ":test/example_scenario.yaml",
+    ],
+    main = "test/spong_sim_main_test.py",
+    deps = [
+        ":acrobot_io",
+        "//bindings/pydrake",
+    ],
+)
+
+drake_py_test(
+    name = "spong_sim_main_cc_test",
+    srcs = ["test/spong_sim_main_test.py"],
+    allow_import_unittest = True,
+    args = ["--cc"],
+    data = [
+        ":spong_sim_main_cc",
+        ":test/example_scenario.yaml",
+        ":test/example_stochastic_scenario.yaml",
+    ],
+    main = "test/spong_sim_main_test.py",
+    deps = [
+        ":acrobot_io",
+        "//bindings/pydrake",
+    ],
+)
+
+drake_cc_binary(
+    name = "benchmark_autodiff",
+    srcs = ["benchmark_autodiff.cc"],
+    deps = [
+        ":acrobot_plant",
+        "//common:essential",
+        "//common:find_resource",
+        "//math:autodiff",
+        "//math:gradient",
+        "//multibody/benchmarks/acrobot:make_acrobot_plant",
+        "//multibody/parsing",
+        "@googlebenchmark//:benchmark",
+    ],
+)
+
+sh_test(
+    name = "benchmark_autodiff_test",
+    size = "small",
+    srcs = ["test/benchmark_autodiff_test.sh"],
+    data = [":benchmark_autodiff"],
 )
 
 install_data()

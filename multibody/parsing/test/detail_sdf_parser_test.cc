@@ -514,7 +514,10 @@ GTEST_TEST(SdfParser, StaticModelWithJoints) {
         pair.plant->world_frame(), pair.plant->GetFrameByName("a"));
     pair.plant->Finalize();
   };
-  EXPECT_THROW(weld_and_finalize(), std::runtime_error);
+  // The message contains the elaborate joint name inserted by the parser.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      weld_and_finalize(), std::runtime_error,
+      ".*sdformat_model_static.*");
 
   // Drake does not support "frozen" joints (#12227).
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -907,7 +910,7 @@ void FailWithInvalidWorld(const std::string& inner) {
       ParseTestString(inner),
       std::runtime_error,
       R"([\s\S]*(attached_to|relative_to) name\[world\] specified by frame )"
-      R"(with name\[.*\] does not match a link, joint, or )"
+      R"(with name\[.*\] does not match a nested model, link, joint, or )"
       R"(frame name in model with name\[bad\][\s\S]*)");
 }
 
@@ -1137,6 +1140,66 @@ GTEST_TEST(SdfParser, BushingParsing) {
                               std::runtime_error,
                               "<drake:linear_bushing_rpy>: Unable to find the "
                               "<drake:bushing_torque_damping> child tag.");
+}
+
+GTEST_TEST(SdfParser, ReflectedInertiaParametersParsing) {
+  // Common SDF string with format options for the two custom tags.
+  const std::string test_string = R"""(
+    <model name='ReflectedInertiaModel'>
+      <link name='A'/>
+      <link name='B'/>
+      <joint name='revolute_AB' type='revolute'>
+        <child>A</child>
+        <parent>B</parent>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <limit>
+            <effort>-1</effort>
+          </limit>
+        </axis>
+        {0}
+        {1}
+      </joint>
+    </model>)""";
+
+  // Test successful parsing of both parameters.
+  {
+    auto [plant, scene_graph] = ParseTestString(fmt::format(test_string,
+        "<drake:rotor_inertia>1.5</drake:rotor_inertia>",
+        "<drake:gear_ratio>300.0</drake:gear_ratio>"));
+
+    const JointActuator<double>& actuator =
+        plant->GetJointActuatorByName("revolute_AB");
+
+    EXPECT_EQ(actuator.default_rotor_inertia(), 1.5);
+    EXPECT_EQ(actuator.default_gear_ratio(), 300.0);
+  }
+
+  // Test successful parsing of rotor_inertia and default value for
+  // gear_ratio.
+  {
+    auto [plant, scene_graph] = ParseTestString(fmt::format(
+        test_string, "<drake:rotor_inertia>1.5</drake:rotor_inertia>", ""));
+
+    const JointActuator<double>& actuator =
+        plant->GetJointActuatorByName("revolute_AB");
+
+    EXPECT_EQ(actuator.default_rotor_inertia(), 1.5);
+    EXPECT_EQ(actuator.default_gear_ratio(), 1.0);
+  }
+
+  // Test successful parsing of gear_ratio and default value for
+  // rotor_inertia.
+  {
+    auto [plant, scene_graph] = ParseTestString(fmt::format(
+        test_string, "", "<drake:gear_ratio>300.0</drake:gear_ratio>"));
+
+    const JointActuator<double>& actuator =
+        plant->GetJointActuatorByName("revolute_AB");
+
+    EXPECT_EQ(actuator.default_rotor_inertia(), 0.0);
+    EXPECT_EQ(actuator.default_gear_ratio(), 300.0);
+  }
 }
 
 }  // namespace

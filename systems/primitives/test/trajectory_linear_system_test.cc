@@ -15,9 +15,10 @@ namespace {
 
 using test::TestSystemMatrixTrajectories;
 
-enum ConstructorType { FromContinuous, FromDiscrete };
+enum class ConstructorType { FromContinuous, FromDiscrete };
 
-class TrajectoryLinearSystemTest : public ::testing::TestWithParam<double> {
+class TrajectoryLinearSystemTest
+  : public ::testing::TestWithParam<ConstructorType> {
  public:
   void SetUp() override {
     if (this->GetParam() == ConstructorType::FromContinuous) {

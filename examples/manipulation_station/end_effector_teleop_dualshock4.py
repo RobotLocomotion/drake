@@ -15,7 +15,7 @@ import numpy as np
 from pydrake.examples.manipulation_station import (
     ManipulationStation, ManipulationStationHardwareInterface,
     CreateClutterClearingYcbObjectList, SchunkCollisionModel)
-from pydrake.geometry import ConnectDrakeVisualizer
+from pydrake.geometry import DrakeVisualizer
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.manipulation.planner import (
     DifferentialInverseKinematicsParameters)
@@ -23,7 +23,8 @@ from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (BasicVector, DiagramBuilder,
                                        LeafSystem)
-from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
+from pydrake.systems.meshcat_visualizer import (
+    ConnectMeshcatVisualizer, MeshcatVisualizer)
 from pydrake.systems.primitives import FirstOrderLowPassFilter
 
 from drake.examples.manipulation_station.differential_ik import DifferentialIK
@@ -43,11 +44,20 @@ else:
     from pygame.locals import *
 
 
-def initialize_joystick():
+def initialize_joystick(joystick_id):
+    assert isinstance(joystick_id, (int, type(None)))
     pygame.init()
     try:
         pygame.joystick.init()
-        joystick = pygame.joystick.Joystick(0)
+        if joystick_id is None:
+            count = pygame.joystick.get_count()
+            if count != 1:
+                raise RuntimeError(
+                    f"joystick_id=None, but there are {count} joysticks "
+                    f"plugged in. Please specify --joystick_id, or ensure "
+                    f"that exactly 1 joystick is plugged in")
+            joystick_id = 0
+        joystick = pygame.joystick.Joystick(joystick_id)
         joystick.init()
         return joystick
     except pygame.error as e:
@@ -102,6 +112,8 @@ class TeleopDualShock4Manager:
         self._joystick = joystick
         self._axis_data = list()
         self._button_data = list()
+        self._name = joystick.get_name()
+        print(f"Using Joystick: {self._name}")
 
         for i in range(self._joystick.get_numbuttons()):
             self._button_data.append(False)
@@ -119,10 +131,18 @@ class TeleopDualShock4Manager:
                 self._button_data[event.button] = False
 
         events = dict()
-        events[DS4Axis.LEFTJOY_UP_DOWN] = self._axis_data[0]
-        events[DS4Axis.LEFTJOY_LEFT_RIGHT] = self._axis_data[1]
-        events[DS4Axis.RIGHTJOY_LEFT_RIGHT] = self._axis_data[3]
-        events[DS4Axis.RIGHTJOY_UP_DOWN] = self._axis_data[4]
+        # For example mappings, see:
+        # https://www.pygame.org/docs/ref/joystick.html#controller-mappings
+        if self._name == "Logitech Logitech Dual Action":
+            events[DS4Axis.LEFTJOY_LEFT_RIGHT] = self._axis_data[0]
+            events[DS4Axis.LEFTJOY_UP_DOWN] = self._axis_data[1]
+            events[DS4Axis.RIGHTJOY_LEFT_RIGHT] = self._axis_data[2]
+            events[DS4Axis.RIGHTJOY_UP_DOWN] = self._axis_data[3]
+        else:
+            events[DS4Axis.LEFTJOY_UP_DOWN] = self._axis_data[0]
+            events[DS4Axis.LEFTJOY_LEFT_RIGHT] = self._axis_data[1]
+            events[DS4Axis.RIGHTJOY_LEFT_RIGHT] = self._axis_data[3]
+            events[DS4Axis.RIGHTJOY_UP_DOWN] = self._axis_data[4]
         events[DS4Buttons.X_BUTTON] = self._button_data[0]
         events[DS4Buttons.O_BUTTON] = self._button_data[1]
         events[DS4Buttons.SQUARE_BUTTON] = self._button_data[3]
@@ -259,6 +279,10 @@ def main():
         help="Use the ManipulationStationHardwareInterface instead of an "
              "in-process simulation.")
     parser.add_argument(
+        "--joystick_id", type=int, default=None,
+        help="Joystick ID to use (0..N-1). If not specified, then only one "
+             "joystick must be plugged in, and that joystick will be used.")
+    parser.add_argument(
         "--test", action='store_true',
         help="Disable opening the gui window for testing.")
     parser.add_argument(
@@ -317,13 +341,12 @@ def main():
                 station.AddManipulandFromFile(model_file, X_WObject)
 
         station.Finalize()
-        ConnectDrakeVisualizer(builder, station.get_scene_graph(),
-                               station.GetOutputPort("pose_bundle"))
+        DrakeVisualizer.AddToBuilder(builder,
+                                     station.GetOutputPort("query_object"))
         if args.meshcat:
-            meshcat = builder.AddSystem(MeshcatVisualizer(
-                station.get_scene_graph(), zmq_url=args.meshcat))
-            builder.Connect(station.GetOutputPort("pose_bundle"),
-                            meshcat.get_input_port(0))
+            meshcat = ConnectMeshcatVisualizer(
+                builder, output_port=station.GetOutputPort("geometry_query"),
+                zmq_url=args.meshcat, open_browser=args.open_browser)
             if args.setup == 'planar':
                 meshcat.set_planar_viewpoint()
 
@@ -346,7 +369,8 @@ def main():
     builder.Connect(differential_ik.GetOutputPort("joint_position_desired"),
                     station.GetInputPort("iiwa_position"))
 
-    teleop = builder.AddSystem(DualShock4Teleop(initialize_joystick()))
+    joystick = initialize_joystick(args.joystick_id)
+    teleop = builder.AddSystem(DualShock4Teleop(joystick))
     filter_ = builder.AddSystem(
         FirstOrderLowPassFilter(time_constant=args.time_step, size=6))
 

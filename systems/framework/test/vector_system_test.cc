@@ -163,7 +163,7 @@ TEST_F(VectorSystemTest, TopologyFailFast) {
     // code and tests to support it.
     TestVectorSystem dut;
     DRAKE_EXPECT_NO_THROW(dut.CreateDefaultContext());
-    dut.DeclareAbstractState(std::make_unique<Value<double>>(1.0));
+    dut.DeclareAbstractState(Value<double>(1.0));
     EXPECT_THROW(dut.CreateDefaultContext(), std::exception);
   }
 
@@ -189,7 +189,7 @@ TEST_F(VectorSystemTest, OutputStateless) {
   TestVectorSystem dut;
   auto context = dut.CreateDefaultContext();
   auto& output_port = dut.get_output_port();
-  context->FixInputPort(0, {1.0, 2.0});
+  dut.get_input_port(0).FixValue(context.get(), Eigen::Vector2d(1.0, 2.0));
   const auto& output = output_port.Eval(*context);
   EXPECT_EQ(dut.get_output_count(), 1);
   EXPECT_EQ(dut.get_last_context(), context.get());
@@ -210,7 +210,7 @@ TEST_F(VectorSystemTest, OutputContinuous) {
   dut.DeclareContinuousState(TestVectorSystem::kSize);
   auto context = dut.CreateDefaultContext();
   auto& output_port = dut.get_output_port();
-  context->FixInputPort(0, {1.0, 2.0});
+  dut.get_input_port(0).FixValue(context.get(), Eigen::Vector2d(1.0, 2.0));
   context->get_mutable_continuous_state_vector().SetFromVector(
       Eigen::Vector2d::Ones());
   const auto& output = output_port.Eval(*context);
@@ -231,7 +231,7 @@ TEST_F(VectorSystemTest, OutputDiscrete) {
   dut.DeclareDiscreteState(TestVectorSystem::kSize);
   auto context = dut.CreateDefaultContext();
   auto& output_port = dut.get_output_port();
-  context->FixInputPort(0, {1.0, 2.0});
+  dut.get_input_port(0).FixValue(context.get(), Eigen::Vector2d(1.0, 2.0));
   context->get_mutable_discrete_state(0).SetFromVector(
       Eigen::Vector2d::Ones());
   const auto& output = output_port.Eval(*context);
@@ -265,7 +265,7 @@ TEST_F(VectorSystemTest, TimeDerivatives) {
   // Now we have state, so the VectorSystem base should call our DUT.
   dut.DeclareContinuousState(TestVectorSystem::kSize);
   context = dut.CreateDefaultContext();
-  context->FixInputPort(0, {1.0, 2.0});
+  dut.get_input_port(0).FixValue(context.get(), Eigen::Vector2d(1.0, 2.0));
   context->get_mutable_continuous_state_vector().SetFromVector(
       Eigen::Vector2d::Ones());
   derivatives = dut.AllocateTimeDerivatives();
@@ -294,7 +294,7 @@ TEST_F(VectorSystemTest, DiscreteVariableUpdates) {
   // Now we have state, so the VectorSystem base should call our DUT.
   dut.DeclareDiscreteState(TestVectorSystem::kSize);
   context = dut.CreateDefaultContext();
-  context->FixInputPort(0, {1.0, 2.0});
+  dut.get_input_port(0).FixValue(context.get(), Eigen::Vector2d(1.0, 2.0));
   context->get_mutable_discrete_state(0).SetFromVector(
       Eigen::Vector2d::Ones());
   discrete_updates = dut.AllocateDiscreteVariables();

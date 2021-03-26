@@ -6,6 +6,8 @@
 
 #include "drake/geometry/proximity/make_box_field.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
+#include "drake/geometry/proximity/make_capsule_field.h"
+#include "drake/geometry/proximity/make_capsule_mesh.h"
 #include "drake/geometry/proximity/make_cylinder_field.h"
 #include "drake/geometry/proximity/make_cylinder_mesh.h"
 #include "drake/geometry/proximity/make_ellipsoid_field.h"
@@ -200,11 +202,13 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 }
 
 std::optional<RigidGeometry> MakeRigidRepresentation(
-    const Box& box, const ProximityProperties& props) {
+    const Box& box, const ProximityProperties&) {
   PositiveDouble validator("Box", "rigid");
-  const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
+  // Use the coarsest mesh for the box. The safety factor 1.1 guarantees the
+  // resolution-hint argument is larger than the box size, so the mesh
+  // will have only 8 vertices and 12 triangles.
   auto mesh = make_unique<SurfaceMesh<double>>(
-      MakeBoxSurfaceMesh<double>(box, edge_length));
+      MakeBoxSurfaceMesh<double>(box, 1.1 * box.size().maxCoeff()));
 
   return RigidGeometry(RigidMesh(move(mesh)));
 }
@@ -215,6 +219,16 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
   const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
   auto mesh = make_unique<SurfaceMesh<double>>(
       MakeCylinderSurfaceMesh<double>(cylinder, edge_length));
+
+  return RigidGeometry(RigidMesh(move(mesh)));
+}
+
+std::optional<RigidGeometry> MakeRigidRepresentation(
+    const Capsule& capsule, const ProximityProperties& props) {
+  PositiveDouble validator("Capsule", "rigid");
+  const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
+  auto mesh = make_unique<SurfaceMesh<double>>(
+      MakeCapsuleSurfaceMesh<double>(capsule, edge_length));
 
   return RigidGeometry(RigidMesh(move(mesh)));
 }
@@ -234,6 +248,15 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
   // Mesh does not use any properties.
   auto mesh = make_unique<SurfaceMesh<double>>(
       ReadObjToSurfaceMesh(mesh_spec.filename(), mesh_spec.scale()));
+
+  return RigidGeometry(RigidMesh(move(mesh)));
+}
+
+std::optional<RigidGeometry> MakeRigidRepresentation(
+    const Convex& convex_spec, const ProximityProperties&) {
+  // Convex does not use any properties.
+  auto mesh = make_unique<SurfaceMesh<double>>(
+      ReadObjToSurfaceMesh(convex_spec.filename(), convex_spec.scale()));
 
   return RigidGeometry(RigidMesh(move(mesh)));
 }
@@ -263,9 +286,8 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
     const Box& box, const ProximityProperties& props) {
   PositiveDouble validator("Box", "soft");
   // First, create the mesh.
-  const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
-  auto mesh = make_unique<VolumeMesh<double>>(
-      MakeBoxVolumeMesh<double>(box, edge_length));
+  auto mesh =
+      make_unique<VolumeMesh<double>>(MakeBoxVolumeMeshWithMa<double>(box));
 
   const double elastic_modulus =
       validator.Extract(props, kMaterialGroup, kElastic);
@@ -282,13 +304,30 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   // First, create the mesh.
   const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
   auto mesh = make_unique<VolumeMesh<double>>(
-      MakeCylinderVolumeMesh<double>(cylinder, edge_length));
+      MakeCylinderVolumeMeshWithMa<double>(cylinder, edge_length));
 
   const double elastic_modulus =
       validator.Extract(props, kMaterialGroup, kElastic);
 
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeCylinderPressureField(cylinder, mesh.get(), elastic_modulus));
+
+  return SoftGeometry(SoftMesh(move(mesh), move(pressure)));
+}
+
+std::optional<SoftGeometry> MakeSoftRepresentation(
+    const Capsule& capsule, const ProximityProperties& props) {
+  PositiveDouble validator("Capsule", "soft");
+  // First, create the mesh.
+  const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
+  auto mesh = make_unique<VolumeMesh<double>>(
+      MakeCapsuleVolumeMesh<double>(capsule, edge_length));
+
+  const double elastic_modulus =
+      validator.Extract(props, kMaterialGroup, kElastic);
+
+  auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
+      MakeCapsulePressureField(capsule, mesh.get(), elastic_modulus));
 
   return SoftGeometry(SoftMesh(move(mesh), move(pressure)));
 }

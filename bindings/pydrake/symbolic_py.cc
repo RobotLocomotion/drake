@@ -11,6 +11,7 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
+#include "drake/common/symbolic_decompose.h"
 
 #pragma GCC diagnostic push
 // Apple LLVM version 10.0.1 (clang-1001.0.46.3) and Clang version 7.0.0 add
@@ -72,6 +73,7 @@ PYBIND11_MODULE(symbolic, m) {
       .def(py::init<const string&, Variable::Type>(), py::arg("name"),
           py::arg("type") = Variable::Type::CONTINUOUS, var_doc.ctor.doc_2args)
       .def("get_id", &Variable::get_id, var_doc.get_id.doc)
+      .def("get_name", &Variable::get_name, var_doc.get_name.doc)
       .def("get_type", &Variable::get_type, var_doc.get_type.doc)
       .def("__str__", &Variable::to_string, var_doc.to_string.doc)
       .def("__repr__",
@@ -150,7 +152,69 @@ PYBIND11_MODULE(symbolic, m) {
       .def(py::self != double());
   DefCopyAndDeepCopy(&var_cls);
 
-  // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
+  // Bind the free functions for MakeVectorXXXVariable
+  m  // BR
+      .def(
+          "MakeMatrixVariable",
+          [](int rows, int cols, const std::string& name, Variable::Type type) {
+            return symbolic::MakeMatrixVariable(rows, cols, name, type);
+          },
+          py::arg("rows"), py::arg("cols"), py::arg("name"),
+          py::arg("type") = symbolic::Variable::Type::CONTINUOUS,
+          doc.MakeMatrixVariable.doc_4args)
+      .def(
+          "MakeMatrixBinaryVariable",
+          [](int rows, int cols, const std::string& name) {
+            return symbolic::MakeMatrixBinaryVariable(rows, cols, name);
+          },
+          py::arg("rows"), py::arg("cols"), py::arg("name"),
+          doc.MakeMatrixBinaryVariable.doc_3args)
+      .def(
+          "MakeMatrixContinuousVariable",
+          [](int rows, int cols, const std::string& name) {
+            return symbolic::MakeMatrixContinuousVariable(rows, cols, name);
+          },
+          py::arg("rows"), py::arg("cols"), py::arg("name"),
+          doc.MakeMatrixContinuousVariable.doc_3args)
+      .def(
+          "MakeMatrixBooleanVariable",
+          [](int rows, int cols, const std::string& name) {
+            return symbolic::MakeMatrixBooleanVariable(rows, cols, name);
+          },
+          py::arg("rows"), py::arg("cols"), py::arg("name"),
+          doc.MakeMatrixBooleanVariable.doc_3args)
+      .def(
+          "MakeVectorVariable",
+          [](int rows, const std::string& name, Variable::Type type) {
+            return symbolic::MakeVectorVariable(rows, name, type);
+          },
+          py::arg("rows"), py::arg("name"),
+          py::arg("type") = symbolic::Variable::Type::CONTINUOUS,
+          doc.MakeVectorVariable.doc_3args)
+      .def(
+          "MakeVectorBinaryVariable",
+          [](int rows, const std::string& name) {
+            return symbolic::MakeVectorBinaryVariable(rows, name);
+          },
+          py::arg("rows"), py::arg("name"),
+          doc.MakeVectorBinaryVariable.doc_2args)
+      .def(
+          "MakeVectorBooleanVariable",
+          [](int rows, const std::string& name) {
+            return symbolic::MakeVectorBooleanVariable(rows, name);
+          },
+          py::arg("rows"), py::arg("name"),
+          doc.MakeVectorBooleanVariable.doc_2args)
+      .def(
+          "MakeVectorContinuousVariable",
+          [](int rows, const std::string& name) {
+            return symbolic::MakeVectorContinuousVariable(rows, name);
+          },
+          py::arg("rows"), py::arg("name"),
+          doc.MakeVectorContinuousVariable.doc_2args);
+
+  // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads,
+  // etc.
   py::class_<Variables>(m, "Variables", doc.Variables.doc)
       .def(py::init<>(), doc.Variables.ctor.doc_0args)
       .def(py::init<const Eigen::Ref<const VectorX<Variable>>&>(),
@@ -404,6 +468,9 @@ PYBIND11_MODULE(symbolic, m) {
       py::arg("m"), py::arg("env") = Environment::map{},
       py::arg("generator") = nullptr, doc.Evaluate.doc_expression);
 
+  m.def("GetVariableVector", &symbolic::GetVariableVector,
+      py::arg("expressions"), doc.GetVariableVector.doc);
+
   m.def(
       "Substitute",
       [](const MatrixX<Expression>& M, const Substitution& subst) {
@@ -500,6 +567,10 @@ PYBIND11_MODULE(symbolic, m) {
           doc.Monomial.ctor.doc_2args_var_exponent)
       .def(py::init<const map<Variable, int>&>(),
           doc.Monomial.ctor.doc_1args_powers)
+      .def(py::init<const Eigen::Ref<const VectorX<Variable>>&,
+               const Eigen::Ref<const Eigen::VectorXi>&>(),
+          py::arg("vars"), py::arg("exponents"),
+          doc.Monomial.ctor.doc_2args_vars_exponents)
       .def("degree", &Monomial::degree, doc.Monomial.degree.doc)
       .def("total_degree", &Monomial::total_degree,
           doc.Monomial.total_degree.doc)
@@ -586,6 +657,19 @@ PYBIND11_MODULE(symbolic, m) {
           doc.Polynomial.ToExpression.doc)
       .def("Differentiate", &Polynomial::Differentiate,
           doc.Polynomial.Differentiate.doc)
+      .def(
+          "Integrate",
+          [](const Polynomial& self, const Variable& var) {
+            return self.Integrate(var);
+          },
+          py::arg("x"), doc.Polynomial.Integrate.doc_1args)
+      .def(
+          "Integrate",
+          [](const Polynomial& self, const Variable& var, double a, double b) {
+            return self.Integrate(var, a, b);
+          },
+          py::arg("x"), py::arg("a"), py::arg("b"),
+          doc.Polynomial.Integrate.doc_3args)
       .def("AddProduct", &Polynomial::AddProduct, doc.Polynomial.AddProduct.doc)
       .def("RemoveTermsWithSmallCoefficients",
           &Polynomial::RemoveTermsWithSmallCoefficients,
@@ -684,9 +768,75 @@ PYBIND11_MODULE(symbolic, m) {
       drake::symbolic::Polynomial>();
 
   ExecuteExtraPythonCode(m);
+
+  // Bind the free functions in symbolic_decompose.h
+  m  // BR
+      .def(
+          "DecomposeLinearExpressions",
+          [](const Eigen::Ref<const VectorX<symbolic::Expression>>& expressions,
+              const Eigen::Ref<const VectorX<Variable>>& vars) {
+            Eigen::MatrixXd M(expressions.rows(), vars.rows());
+            symbolic::DecomposeLinearExpressions(expressions, vars, &M);
+            return M;
+          },
+          py::arg("expressions"), py::arg("vars"),
+          doc.DecomposeLinearExpressions.doc)
+      .def(
+          "DecomposeAffineExpressions",
+          [](const Eigen::Ref<const VectorX<symbolic::Expression>>& expressions,
+              const Eigen::Ref<const VectorX<symbolic::Variable>>& vars) {
+            Eigen::MatrixXd M(expressions.rows(), vars.rows());
+            Eigen::VectorXd v(expressions.rows());
+            symbolic::DecomposeAffineExpressions(expressions, vars, &M, &v);
+            return std::make_pair(M, v);
+          },
+          py::arg("expressions"), py::arg("vars"),
+          doc.DecomposeAffineExpressions.doc)
+      .def("ExtractVariablesFromExpression",
+          &symbolic::ExtractVariablesFromExpression, py::arg("e"),
+          doc.ExtractVariablesFromExpression.doc)
+      .def(
+          "DecomposeQuadraticPolynomial",
+          [](const symbolic::Polynomial& poly,
+              const std::unordered_map<symbolic::Variable::Id, int>&
+                  map_var_to_index) {
+            const int num_vars = map_var_to_index.size();
+            Eigen::MatrixXd Q(num_vars, num_vars);
+            Eigen::VectorXd b(num_vars);
+            double c;
+            symbolic::DecomposeQuadraticPolynomial(
+                poly, map_var_to_index, &Q, &b, &c);
+            return std::make_tuple(Q, b, c);
+          },
+          py::arg("poly"), py::arg("map_var_to_index"),
+          doc.DecomposeQuadraticPolynomial.doc)
+      .def(
+          "DecomposeAffineExpressions",
+          [](const Eigen::Ref<const VectorX<symbolic::Expression>>& v) {
+            Eigen::MatrixXd A;
+            Eigen::VectorXd b;
+            VectorX<Variable> vars;
+            symbolic::DecomposeAffineExpressions(v, &A, &b, &vars);
+            return std::make_tuple(A, b, vars);
+          },
+          // TODO(#14385): Use 'doc.DecomoseAffineExpressions.doc_output_vars`
+          // once we figure out why it isn't included in the output.
+          py::arg("v"), doc.DecomposeAffineExpressions.doc)
+      .def(
+          "DecomposeAffineExpression",
+          [](const symbolic::Expression& e,
+              const std::unordered_map<symbolic::Variable::Id, int>&
+                  map_var_to_index) {
+            Eigen::RowVectorXd coeffs(map_var_to_index.size());
+            double constant_term;
+            symbolic::DecomposeAffineExpression(
+                e, map_var_to_index, coeffs, &constant_term);
+            return std::make_pair(coeffs, constant_term);
+          },
+          py::arg("e"), py::arg("map_var_to_index"),
+          doc.DecomposeAffineExpression.doc);
   // NOLINTNEXTLINE(readability/fn_size)
 }
-
 }  // namespace pydrake
 }  // namespace drake
 

@@ -17,9 +17,6 @@ namespace internal {
  @tparam T The underlying scalar type. Must be a valid Eigen scalar. */
 template <typename T>
 struct DiscreteContactPair {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DiscreteContactPair)
-  DiscreteContactPair() = default;
-
   /* The id of the first geometry in the contact. */
   geometry::GeometryId id_A;
   /* The id of the second geometry in the contact. */
