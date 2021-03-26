@@ -1,4 +1,4 @@
-#include "sim/common/collision_remover.h"
+#include "drake/multibody/optimization/collision_remover.h"
 
 #include <algorithm>
 #include <functional>
@@ -16,21 +16,15 @@
 #include "drake/multibody/inverse_kinematics/minimum_distance_constraint.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
-#include "common/mathematical_program_to_string.h"
 
 using Eigen::VectorXd;
 using drake::geometry::SceneGraph;
 using drake::solvers::MathematicalProgram;
 using drake::systems::Context;
 using drake::systems::Diagram;
-using drake::multibody::Body;
-using drake::multibody::BodyIndex;
-using drake::multibody::Joint;
-using drake::multibody::JointIndex;
-using drake::multibody::MultibodyPlant;
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace multibody {
 
 namespace geom = drake::geometry;
 
@@ -46,6 +40,68 @@ enum class IkMode {
   kInsideOut = 1,
   kOutsideIn = 2,
 };
+
+// Describe the contents of a MathematicalProgram, for debugging purposes;
+// this is intended for making sense of failing IK programs which are
+// otherwise hard to interpret.
+std::string MathematicalProgramToString(
+    const std::string& program_name,
+    const drake::solvers::MathematicalProgram& program) {
+  constexpr static double kInfinity = std::numeric_limits<double>::infinity();
+  std::stringstream result;
+  result << "MathematicalProgram for " << program_name << ":" << std::endl;
+  result << "  Decision Variables:" << std::endl;
+  Eigen::VectorXd guesses =
+      program.GetInitialGuess(program.decision_variables());
+  for (int i = 0; i < program.num_vars(); i++) {
+    result << "    " << i << ": " << program.decision_variable(i)
+           << " <- " << guesses(i) << std::endl;
+  }
+  result << "  Indeterminates:" << std::endl;
+  for (int i = 0; i < program.num_indeterminates(); i++) {
+    result << "    " << i << ": " << program.indeterminate(i) << std::endl;
+  }
+  result << "  Constraints:" << std::endl;
+  for (const auto& binding : program.GetAllConstraints()) {
+    result << "    ";
+    auto constraint = binding.evaluator();
+    result << "'" << constraint->get_description() << "': ";
+    if (dynamic_cast<drake::multibody::MinimumDistanceConstraint*>(
+            constraint.get())) {
+      result << "MinimumDistanceConstraint on";
+      for (int i = 0; i < binding.variables().size(); i++) {
+        result << " " << binding.variables()(i);
+      }
+    } else {
+      drake::VectorX<drake::symbolic::Expression> exprs;
+      constraint->Eval(binding.variables(), &exprs);
+      for (int i = 0; i < exprs.size(); i++) {
+        if (constraint->lower_bound()(i) > -kInfinity) {
+          result << constraint->lower_bound()(i) << "<=";
+        }
+        result << exprs(i);
+        if (constraint->upper_bound()(i) < kInfinity) {
+          result << "<=" << constraint->upper_bound()(i);
+        }
+        result << "; ";
+      }
+    }
+    result << std::endl;
+  }
+  result << "  Costs:" << std::endl;
+  for (const auto& binding : program.GetAllCosts()) {
+    result << "    ";
+    auto cost = binding.evaluator();
+    result << "'" << cost->get_description() << "': ";
+    drake::VectorX<drake::symbolic::Expression> exprs;
+    cost->Eval(binding.variables(), &exprs);
+    for (int i = 0; i < exprs.size(); i++) {
+      result << exprs(i);
+    }
+    result << std::endl;
+  }
+  return result.str();
+}
 
 std::string PositionAsString(const MultibodyPlant<double>& plant,
                              VectorXd pos) {
@@ -358,7 +414,7 @@ class CollisionRemover::Impl {
     switch (mode) {
       case IkMode::kInsideOut: {
         program->SetInitialGuess(vars, target_positions);
-        drake::log()->debug(common::MathematicalProgramToString(
+        drake::log()->debug(MathematicalProgramToString(
             "Inside-out program (start at target, hunt for valid)", *program));
         break;
       }
@@ -368,7 +424,7 @@ class CollisionRemover::Impl {
           guess(i) = target_positions(i);
         }
         program->SetInitialGuess(vars, guess);
-        drake::log()->debug(common::MathematicalProgramToString(
+        drake::log()->debug(MathematicalProgramToString(
             "Outside-in program (start at valid, hunt for target)", *program));
         break;
       }
@@ -533,5 +589,5 @@ bool CollisionRemover::Collides(
   return impl_->Collides(context, bodies_to_decollide);
 }
 
-}  // namespace sim
-}  // namespace anzu
+}  // namespace multibody
+}  // namespace drake

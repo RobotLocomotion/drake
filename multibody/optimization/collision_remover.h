@@ -11,8 +11,8 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace multibody {
 
 /// Given a MultibodyPlant, this class provides a mechanism for adjusting
 /// a `Context` on that plant to remove collisions.  This is intended for
@@ -80,5 +80,5 @@ class CollisionRemover {
   const std::unique_ptr<Impl> impl_;
 };
 
-}  // namespace sim
-}  // namespace anzu
+}  // namespace multibody
+}  // namespace drake

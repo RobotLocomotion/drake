@@ -1,4 +1,4 @@
-#include "sim/common/collision_remover.h"
+#include "drake/multibody/optimization/collision_remover.h"
 
 #include <gtest/gtest.h>
 
@@ -6,17 +6,14 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "common/find_resource.h"
+#include "drake/common/find_resource.h"
 
-using drake::multibody::BodyIndex;
-using drake::multibody::JointIndex;
-using drake::multibody::RevoluteJoint;
 using Contextd = drake::systems::Context<double>;
 using MultibodyPlantd = drake::multibody::MultibodyPlant<double>;
 using RigidTransformd = drake::math::RigidTransform<double>;
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace multibody {
 namespace {
 
 class CollisionRemoverFixture : public ::testing::Test {
@@ -26,14 +23,14 @@ class CollisionRemoverFixture : public ::testing::Test {
     std::tie(plant, scene_graph) =
         drake::multibody::AddMultibodyPlantSceneGraph(&builder, 0.001);
     drake::multibody::Parser(plant, scene_graph)
-        .AddAllModelsFromFile(FindAnzuResourceOrThrow(
-            "sim/common/test/collision_remover_test.urdf"));
+        .AddAllModelsFromFile(FindResourceOrThrow(
+            "drake/multibody/optimization/test/collision_remover_test.urdf"));
     plant->Finalize();
     diagram = builder.Build();
     pendulum_1 = plant->GetBodyByName("pendulum_1_arm").index();
     pendulum_2 = plant->GetBodyByName("pendulum_2_arm").index();
     brick = plant->GetBodyByName("floating_brick").index();
-    dut = std::make_unique<anzu::sim::CollisionRemover>(
+    dut = std::make_unique<CollisionRemover>(
         diagram.get(), plant, scene_graph);
     known_valid_position = plant->GetPositions(
         diagram->GetSubsystemContext(*plant, *diagram->CreateDefaultContext()));
@@ -43,7 +40,7 @@ class CollisionRemoverFixture : public ::testing::Test {
   std::unique_ptr<drake::systems::Diagram<double>> diagram;
   MultibodyPlantd* plant = nullptr;
   drake::geometry::SceneGraph<double>* scene_graph = nullptr;
-  std::unique_ptr<anzu::sim::CollisionRemover> dut;
+  std::unique_ptr<CollisionRemover> dut;
   BodyIndex pendulum_1{};
   BodyIndex pendulum_2{};
   BodyIndex brick{};
@@ -176,5 +173,5 @@ TEST_F(CollisionRemoverFixture, BigBangTest) {
 }
 
 }  // namespace
-}  // namespace sim
-}  // namespace anzu
+}  // namespace multibody
+}  // namespace drake

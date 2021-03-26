@@ -26,6 +26,20 @@ drake_cc_package_library(
 )
 
 drake_cc_library(
+    name = "collision_remover",
+    srcs = ["collision_remover.cc"],
+    hdrs = ["collision_remover.h"],
+    deps = [
+        "//multibody/inverse_kinematics",
+        "//multibody/plant",
+        "//solvers:mathematical_program",
+        "//solvers:solve",
+        "//systems/framework:diagram_builder",
+        "//systems/optimization",
+    ],
+)
+
+drake_cc_library(
     name = "contact_wrench",
     srcs = [],
     hdrs = ["contact_wrench.h"],
@@ -144,6 +158,16 @@ drake_cc_library(
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
     ],
+)
+
+drake_cc_googletest(
+    name = "collision_remover_test",
+    deps = [
+        ":collision_remover",
+        "//common:find_resource",
+        "//multibody/parsing",
+    ],
+    data = ["test/collision_remover_test.urdf"],
 )
 
 drake_cc_googletest(
