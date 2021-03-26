@@ -41,6 +41,7 @@ using symbolic::Expression;
 using symbolic::Variable;
 namespace {
 
+// TODO(eric.cousineau): Consolidate these methods.
 Eigen::VectorBlock<const VectorX<double>> CopyIfNotPodType(
     Eigen::VectorBlock<const VectorX<double>> x) {
   // N.B. This references the existing vector's data, and does not perform a
@@ -275,17 +276,14 @@ PYBIND11_MODULE(primitives, m) {
               return CopyIfNotPodType(self->sample_times());
             },
             return_value_policy_for_scalar_type<T>(),
-            // Keep alive, ownership: `return` keeps `self` alive.
-            pybind11::keep_alive<0, 1>(), doc.SignalLogger.sample_times.doc)
+            doc.SignalLogger.sample_times.doc)
         .def(
             "data",
             [](const SignalLogger<T>* self) {
               // Reference.
               return CopyIfNotPodType(self->data());
             },
-            return_value_policy_for_scalar_type<T>(),
-            // Keep alive, ownership: `return` keeps `self` alive.
-            pybind11::keep_alive<0, 1>(), doc.SignalLogger.data.doc)
+            return_value_policy_for_scalar_type<T>(), doc.SignalLogger.data.doc)
         .def("reset", &SignalLogger<T>::reset, doc.SignalLogger.reset.doc);
 
     AddTemplateFunction(m, "LogOutput", &LogOutput<T>, GetPyParam<T>(),
