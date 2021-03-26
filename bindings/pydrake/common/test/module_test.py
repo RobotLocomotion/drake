@@ -1,6 +1,8 @@
 import os
 import unittest
 
+import numpy as np
+
 import pydrake.common as mut
 import pydrake.common._module_py._testing as mut_testing
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
@@ -64,6 +66,16 @@ class TestCommon(unittest.TestCase):
         self.assertEqual(g1(), 3499211612)
         g2 = mut.RandomGenerator(10)
         self.assertEqual(g2(), 3312796937)
+
+    def test_random_numpy_coordination(self):
+        # Verify that multiple numpy generators can be seeded from
+        # a single RandomGenerator without duplicating values (as
+        # discussed in #12632).
+        g = mut.RandomGenerator(123)
+        rs1 = np.random.RandomState(seed=g())
+        rs1.randint(100)  # discard one
+        rs2 = np.random.RandomState(seed=g())
+        self.assertNotEqual(rs1.randint(100), rs2.randint(100))
 
     def test_assert_is_armed(self):
         self.assertIsInstance(mut.kDrakeAssertIsArmed, bool)

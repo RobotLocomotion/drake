@@ -146,8 +146,25 @@ PYBIND11_MODULE(_module_py, m) {
           doc.RandomDistribution.kExponential.doc);
 
   // Adds a binding for drake::RandomGenerator.
-  py::class_<RandomGenerator> random_generator_cls(
-      m, "RandomGenerator", doc.RandomGenerator.doc);
+  py::class_<RandomGenerator> random_generator_cls(m, "RandomGenerator",
+      (std::string(doc.RandomGenerator.doc) + R"""(
+
+Note: For many workflows in drake, we aim to have computations that are fully
+deterministic given a single random seed.  This is accomplished by passing a
+RandomGenerator object.  To generate random numbers in numpy that are
+deterministic given the C++ random seed (see drake issue #12632 for the
+discussion), use e.g.
+
+.. code-block:: python
+    
+   generator = pydrake.common.RandomGenerator()
+   random_state = numpy.random.RandomState(generator())
+   
+   my_random_value = random_state.uniform()
+   ...
+
+)""")
+          .c_str());
   random_generator_cls
       .def(py::init<>(),
           "Default constructor. Seeds the engine with the default_seed.")
