@@ -527,7 +527,7 @@ void Simulator<T>::PopulateTriggerDataForTriggeredWitness(
     const T& t0, const T& tf, const WitnessFunction<T>* witness,
     Event<T>* event, CompositeEventCollection<T>* events) const {
   // Populate the event data.
-  WitnessTriggerData<T>& data = event->mutable_witness_trigger_data();
+  WitnessTriggeredEventData<T>& data = event->mutable_witness_trigger_data();
   data.set_triggered_witness(witness);
   data.set_t0(t0);
   data.set_tf(tf);
@@ -625,7 +625,7 @@ Simulator<T>::IntegrateContinuousState(
       if (!event) {
         event = fn->get_event()->Clone();
         event->set_trigger_type(TriggerType::kWitness);
-        event->mutable_witness_trigger_data() = WitnessTriggerData<T>();
+        event->mutable_witness_trigger_data() = WitnessTriggeredEventData<T>();
       }
       PopulateTriggerDataForTriggeredWitness(t0, tf, fn, event.get(),
                                              witnessed_events);

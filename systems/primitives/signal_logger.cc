@@ -28,7 +28,7 @@ SignalLogger<T>::SignalLogger(const SignalLogger<U>& other)
     case kPeriodic: {
       const auto& events = other.GetPeriodicEvents();
       DRAKE_DEMAND(events.size() == 1);
-      const PeriodicTriggerData& timing = events.begin()->first;
+      const PeriodicEventData& timing = events.begin()->first;
       DRAKE_DEMAND(timing.offset_sec() == 0.0);
       this->set_publish_period(timing.period_sec());
       DRAKE_DEMAND(logging_mode_ == kPeriodic);

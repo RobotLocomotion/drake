@@ -243,10 +243,10 @@ class EventData {
  * triggered at time = offset_sec + i * period_sec, where i is a non-negative
  * integer.
  */
-class PeriodicTriggerData : public EventData {
+class PeriodicEventData : public EventData {
  public:
-  PeriodicTriggerData() {}
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PeriodicTriggerData);
+  PeriodicEventData() {}
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PeriodicEventData);
 
   /// Gets the period with which this event should recur.
   double period_sec() const { return period_sec_; }
@@ -262,7 +262,7 @@ class PeriodicTriggerData : public EventData {
 
  private:
   [[nodiscard]] EventData* DoClone() const override {
-    PeriodicTriggerData* clone = new PeriodicTriggerData;
+    PeriodicEventData* clone = new PeriodicEventData;
     clone->period_sec_ = period_sec_;
     clone->offset_sec_ = offset_sec_;
     return clone;
@@ -271,10 +271,6 @@ class PeriodicTriggerData : public EventData {
   double period_sec_{0.0};
   double offset_sec_{0.0};
 };
-
-using PeriodicEventData
-      DRAKE_DEPRECATED("2021-06-01", "Use PeriodicTriggerData instead.")
-      = PeriodicTriggerData;
 
 /**
  * Class for storing data from a witness function triggering to be passed
@@ -285,10 +281,10 @@ using PeriodicEventData
  * triggered.
  */
 template <class T>
-class WitnessTriggerData : public EventData {
+class WitnessTriggeredEventData : public EventData {
  public:
-  WitnessTriggerData() {}
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(WitnessTriggerData);
+  WitnessTriggeredEventData() {}
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(WitnessTriggeredEventData);
 
   /// Gets the witness function that triggered the event handler.
   const WitnessFunction<T>* triggered_witness() const {
@@ -334,7 +330,7 @@ class WitnessTriggerData : public EventData {
 
  private:
   [[nodiscard]] EventData* DoClone() const override {
-    WitnessTriggerData<T>* clone = new WitnessTriggerData;
+    WitnessTriggeredEventData<T>* clone = new WitnessTriggeredEventData;
     clone->triggered_witness_ = triggered_witness_;
     clone->t0_ = t0_;
     clone->tf_ = tf_;
@@ -349,11 +345,6 @@ class WitnessTriggerData : public EventData {
   const ContinuousState<T>* xc0_{nullptr};
   const ContinuousState<T>* xcf_{nullptr};
 };
-
-template <typename T>
-using WitnessTriggeredEventData
-      DRAKE_DEPRECATED("2021-06-01", "Use WitnessTriggerData instead.")
-      = WitnessTriggerData<T>;
 
 /**
  * Predefined types of triggers for events. Used at run time to determine why
@@ -436,8 +427,6 @@ enum class TriggerType {
 template <typename T>
 class Event {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Event)
-
   #ifndef DRAKE_DOXYGEN_CXX
   // Constructs an Event with no trigger type and no event data.
   Event() { trigger_type_ = TriggerType::kUnknown; }
@@ -483,16 +472,16 @@ class Event {
 
   // Gets witness trigger data.
   // @pre get_trigger_type() == TriggerType::kWitness.
-  const WitnessTriggerData<T>& witness_trigger_data() const {
+  const WitnessTriggeredEventData<T>& witness_trigger_data() const {
     DRAKE_DEMAND(get_trigger_type() == TriggerType::kWitness);
-    return std::get<WitnessTriggerData<T>>(trigger_data_);
+    return std::get<WitnessTriggeredEventData<T>>(trigger_data_);
   }
 
   // Gets periodic trigger data.
   // @pre get_trigger_type() == TriggerType::kPeriodic.
-  const PeriodicTriggerData& periodic_trigger_data() const {
+  const PeriodicEventData& periodic_trigger_data() const {
     DRAKE_DEMAND(get_trigger_type() == TriggerType::kPeriodic);
-    return std::get<PeriodicTriggerData>(trigger_data_);
+    return std::get<PeriodicEventData>(trigger_data_);
   }
 
   // Note: Users should not be calling this.
@@ -508,21 +497,21 @@ class Event {
 
   // Gets mutable witness trigger data. Creates data if it doesn't exist.
   // @pre get_trigger_type() == TriggerType::kWitness.
-  WitnessTriggerData<T>& mutable_witness_trigger_data() {
+  WitnessTriggeredEventData<T>& mutable_witness_trigger_data() {
     DRAKE_DEMAND(get_trigger_type() == TriggerType::kWitness);
     // Create the data if it doesn't exist.
-    if (!std::holds_alternative<WitnessTriggerData<T>>(trigger_data_))
-      trigger_data_ = WitnessTriggerData<T>();
-    return std::get<WitnessTriggerData<T>>(trigger_data_);
+    if (!std::holds_alternative<WitnessTriggeredEventData<T>>(trigger_data_))
+      trigger_data_ = WitnessTriggeredEventData<T>();
+    return std::get<WitnessTriggeredEventData<T>>(trigger_data_);
   }
 
   // Gets mutable periodic trigger data. Creates data if it doesn't exist.
   // @pre get_trigger_type() == TriggerType::kPeriodic.
-  PeriodicTriggerData& mutable_periodic_trigger_data() {
+  PeriodicEventData& mutable_periodic_trigger_data() {
     DRAKE_DEMAND(get_trigger_type() == TriggerType::kPeriodic);
-    if (!std::holds_alternative<PeriodicTriggerData>(trigger_data_))
-      trigger_data_ = PeriodicTriggerData();
-    return std::get<PeriodicTriggerData>(trigger_data_);
+    if (!std::holds_alternative<PeriodicEventData>(trigger_data_))
+      trigger_data_ = PeriodicEventData();
+    return std::get<PeriodicEventData>(trigger_data_);
   }
   #endif
 
@@ -554,6 +543,8 @@ class Event {
   }
 
  protected:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Event)
+
   // Note: Users should not be calling this.
   #if !defined(DRAKE_DOXYGEN_CXX)
   // Constructs an Event with the specified @p trigger.
@@ -577,26 +568,21 @@ class Event {
  private:
   TriggerType trigger_type_;
   drake::copyable_unique_ptr<EventData> event_data_{nullptr};
-  std::variant<PeriodicTriggerData, WitnessTriggerData<T>> trigger_data_;
+  std::variant<PeriodicEventData, WitnessTriggeredEventData<T>> trigger_data_;
 };
 
 /**
- * Structure for comparing two PeriodicTriggerData objects for use in a map
+ * Structure for comparing two PeriodicEventData objects for use in a map
  * container, using an arbitrary comparison method.
  */
-struct PeriodicTriggerDataComparator {
-  bool operator()(const PeriodicTriggerData& a,
-    const PeriodicTriggerData& b) const {
+struct PeriodicEventDataComparator {
+  bool operator()(const PeriodicEventData& a,
+    const PeriodicEventData& b) const {
       if (a.period_sec() == b.period_sec())
         return a.offset_sec() < b.offset_sec();
       return a.period_sec() < b.period_sec();
   }
 };
-
-using PeriodicEventDataComparator
-      DRAKE_DEPRECATED("2021-06-01", "Use PeriodicTriggerDataComparator "
-          "instead.")
-      = PeriodicTriggerDataComparator;
 
 /**
  * This class represents a publish event. It has an optional callback function
@@ -808,7 +794,7 @@ class UnrestrictedUpdateEvent final : public Event<T> {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::systems::WitnessTriggerData)
+    class ::drake::systems::WitnessTriggeredEventData)
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::Event)

@@ -144,7 +144,7 @@ class TestSystem : public LeafSystem<T> {
     const double period = 10.0;
     const double offset = 5.0;
     this->DeclarePeriodicDiscreteUpdate(period, offset);
-    std::optional<PeriodicTriggerData> periodic_attr =
+    std::optional<PeriodicEventData> periodic_attr =
         this->GetUniquePeriodicDiscreteUpdateAttribute();
     ASSERT_TRUE(periodic_attr);
     EXPECT_EQ(periodic_attr.value().period_sec(), period);
@@ -154,7 +154,7 @@ class TestSystem : public LeafSystem<T> {
   void AddPeriodicUpdate(double period) {
     const double offset = 0.0;
     this->DeclarePeriodicDiscreteUpdate(period, offset);
-    std::optional<PeriodicTriggerData> periodic_attr =
+    std::optional<PeriodicEventData> periodic_attr =
        this->GetUniquePeriodicDiscreteUpdateAttribute();
     ASSERT_TRUE(periodic_attr);
     EXPECT_EQ(periodic_attr.value().period_sec(), period);

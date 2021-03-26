@@ -438,8 +438,8 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   std::unique_ptr<typename Diagram<NewType>::Blueprint> ConvertScalarType()
       const;
 
-  std::map<PeriodicTriggerData, std::vector<const Event<T>*>,
-      PeriodicTriggerDataComparator> DoGetPeriodicEvents() const override;
+  std::map<PeriodicEventData, std::vector<const Event<T>*>,
+      PeriodicEventDataComparator> DoGetPeriodicEvents() const override;
 
   void DoGetPerStepEvents(
       const Context<T>& context,

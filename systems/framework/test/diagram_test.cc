@@ -163,7 +163,7 @@ class EmptySystemDiagram : public Diagram<double> {
   }
 };
 
-void CheckPeriodAndOffset(const PeriodicTriggerData& data) {
+void CheckPeriodAndOffset(const PeriodicEventData& data) {
   EXPECT_EQ(data.period_sec(), 1.125);
   EXPECT_EQ(data.offset_sec(), 2.25);
 }
@@ -172,7 +172,7 @@ void CheckPeriodAndOffset(const PeriodicTriggerData& data) {
 // GetUniquePeriodicDiscreteUpdateAttribute().
 GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdateUnique) {
   // Check diagrams with no recursion.
-  std::optional<PeriodicTriggerData> periodic_data;
+  std::optional<PeriodicEventData> periodic_data;
   EmptySystemDiagram d_sys2upd_zero(
       EmptySystemDiagram::kOneUpdatePerLevelSys1, 0, true);
   EmptySystemDiagram d_sys1upd_zero(
@@ -231,7 +231,7 @@ GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdateUnique) {
 // GetUniquePeriodicDiscreteUpdateAttribute() with non-unique updates
 GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdate) {
   // Check diagrams with no recursion.
-  PeriodicTriggerData periodic_data;
+  PeriodicEventData periodic_data;
   EmptySystemDiagram d_sys2upd_zero(
       EmptySystemDiagram::kOneUpdatePerLevelSys1, 0, false);
   EmptySystemDiagram d_sys1upd_zero(

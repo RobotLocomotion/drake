@@ -391,9 +391,9 @@ void System<T>::GetInitializationEvents(
 }
 
 template <typename T>
-std::optional<PeriodicTriggerData>
+std::optional<PeriodicEventData>
     System<T>::GetUniquePeriodicDiscreteUpdateAttribute() const {
-  std::optional<PeriodicTriggerData> saved_attr;
+  std::optional<PeriodicEventData> saved_attr;
   auto periodic_events = GetPeriodicEvents();
   for (const auto& saved_attr_and_vector : periodic_events) {
     for (const auto& event : saved_attr_and_vector.second) {
@@ -417,7 +417,7 @@ bool System<T>::IsDifferenceEquationSystem(double* time_period) const {
     return false;
   }
 
-  std::optional<PeriodicTriggerData> periodic_data =
+  std::optional<PeriodicEventData> periodic_data =
       GetUniquePeriodicDiscreteUpdateAttribute();
   if (!periodic_data) { return false; }
   if (periodic_data->offset_sec() != 0.0) { return false; }
@@ -429,8 +429,8 @@ bool System<T>::IsDifferenceEquationSystem(double* time_period) const {
 }
 
 template <typename T>
-std::map<PeriodicTriggerData, std::vector<const Event<T>*>,
-  PeriodicTriggerDataComparator> System<T>::GetPeriodicEvents() const {
+std::map<PeriodicEventData, std::vector<const Event<T>*>,
+  PeriodicEventDataComparator> System<T>::GetPeriodicEvents() const {
   return DoGetPeriodicEvents();
 }
 

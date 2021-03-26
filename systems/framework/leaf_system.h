@@ -505,7 +505,7 @@ class LeafSystem : public System<T> {
                             const EventType& event) {
     DRAKE_DEMAND(event.get_trigger_type() == TriggerType::kUnknown ||
         event.get_trigger_type() == TriggerType::kPeriodic);
-    PeriodicTriggerData periodic_data;
+    PeriodicEventData periodic_data;
     periodic_data.set_period_sec(period_sec);
     periodic_data.set_offset_sec(offset_sec);
 
@@ -1993,8 +1993,8 @@ class LeafSystem : public System<T> {
   std::unique_ptr<AbstractValue> DoAllocateInput(
       const InputPort<T>& input_port) const final;
 
-  std::map<PeriodicTriggerData, std::vector<const Event<T>*>,
-      PeriodicTriggerDataComparator> DoGetPeriodicEvents() const override;
+  std::map<PeriodicEventData, std::vector<const Event<T>*>,
+      PeriodicEventDataComparator> DoGetPeriodicEvents() const override;
 
   // Calls DoPublish.
   // Assumes @param events is an instance of LeafEventCollection, throws
@@ -2102,7 +2102,7 @@ class LeafSystem : public System<T> {
           get_vector_from_context);
 
   // Periodic Update or Publish events declared by this system.
-  std::vector<std::pair<PeriodicTriggerData,
+  std::vector<std::pair<PeriodicEventData,
                         std::unique_ptr<Event<T>>>>
       periodic_events_;
 

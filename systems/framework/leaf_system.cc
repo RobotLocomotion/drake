@@ -15,7 +15,7 @@ namespace {
 // Returns the next sample time for the given @p attribute.
 template <typename T>
 T GetNextSampleTime(
-    const PeriodicTriggerData& attribute,
+    const PeriodicEventData& attribute,
     const T& current_time_sec) {
   const double period = attribute.period_sec();
   DRAKE_ASSERT(period > 0);
@@ -352,7 +352,7 @@ void LeafSystem<T>::DoCalcNextUpdateTime(
   // and store the set of declared events that will occur at that time.
   std::vector<const Event<T>*> next_events;
   for (const auto& event_pair : periodic_events_) {
-    const PeriodicTriggerData& trigger_data = event_pair.first;
+    const PeriodicEventData& trigger_data = event_pair.first;
     const Event<T>* const event = event_pair.second.get();
     const T t = GetNextSampleTime(trigger_data, context.get_time());
     if (t < min_time) {
@@ -753,10 +753,10 @@ std::unique_ptr<AbstractValue> LeafSystem<T>::DoAllocateInput(
 }
 
 template <typename T>
-std::map<PeriodicTriggerData, std::vector<const Event<T>*>,
-    PeriodicTriggerDataComparator> LeafSystem<T>::DoGetPeriodicEvents() const {
-  std::map<PeriodicTriggerData, std::vector<const Event<T>*>,
-      PeriodicTriggerDataComparator> periodic_events_map;
+std::map<PeriodicEventData, std::vector<const Event<T>*>,
+    PeriodicEventDataComparator> LeafSystem<T>::DoGetPeriodicEvents() const {
+  std::map<PeriodicEventData, std::vector<const Event<T>*>,
+      PeriodicEventDataComparator> periodic_events_map;
   for (const auto& i : periodic_events_) {
     periodic_events_map[i.first].push_back(i.second.get());
   }
