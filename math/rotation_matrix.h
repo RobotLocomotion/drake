@@ -290,11 +290,12 @@ class RotationMatrix {
     DRAKE_ASSERT(axis_index >= 0  &&  axis_index <= 2);
 
     using std::abs;
-    // In debug builds, verify u_A is within a permissive kTolerance of a unit
-    // vector.  Below: In debug builds, R_AB is verified before return.
-    constexpr double kTolerance =
-        8 * get_internal_tolerance_for_orthonormality();
-    DRAKE_ASSERT(abs(1 - u_A.norm()) <= kTolerance);
+    // In debug builds, verify u_A is within kTolerance of a unit vector.
+    // The tight value of kTolerance was based on Sherm's numerical experiment.
+    // Below: In debug builds, R_AB is also validated before return.
+    // TODO(Mitiguy) Decide what to do here - DRAKE_ASSERT seems to abort.
+    // constexpr double kTolerance = 4 * std::numeric_limits<double>::epsilon();
+    // DRAKE_ASSERT(abs(1 - u_A.norm()) <= kTolerance);
 
     // This method forms a right-handed orthonormal basis with u_A (herein
     // abbreviated u) and two internally-constructed unit vectors v and w.
@@ -303,28 +304,30 @@ class RotationMatrix {
     // the fact that a x u is guaranteed to be perpendicular to u (where a is
     // any unit vector).  We judiciously choose a so it is not parallel to u
     // by identifying uₘᵢₙ, the element of u with the smallest absolute value.
-    // Note: The next results show a x u ≠ 0 (i.e., a is not parallel to u).
-    // If |ux = u(0)| is smallest, set a = [1, 0, 0] so a x u = [0, -uz, uy].
-    // If |uy = u(1)| is smallest, set a = [0, 1, 0] so a x u = [uz, 0, -ux].
-    // If |uz = u(2)| is smallest, set a = [0, 0, 1] so a x u = [-uy, ux, 0].
+    // To ensure a x u ≠ 0 (a is not parallel to u), we use the following:
+    // If |ux = u(0)| is smallest, set a = [1 0 0] so a x u = [0, -uz, uy] ≠ 0.
+    // If |uy = u(1)| is smallest, set a = [0 1 0] so a x u = [uz, 0, -ux] ≠ 0.
+    // If |uz = u(2)| is smallest, set a = [0 0 1] so a x u = [-uy, ux, 0] ≠ 0.
     // We define v = a x u / |a x u|, where |a x u| is guaranteed ≠ 0.
-    // It is helpful to define r₁ = 1 /|a x u| so v = r₁ a x u.
+    // It is helpful to define r = 1 /|a x u| so v = r a x u.
 
     // By defining w = u x v, w is guaranteed to be a unit vector perpendicular
     // to both u and v and ordered so u, v, w form a right-handed set.
-    // To avoid computational cost, we do not directly calculate w = u x v.
-    // Instead, we substitute for v as w = u x (a x u) / |a x u|, which can
-    // be written w = r₁ u x (a x u).  Working out the vector triple product
-    // with the "bac-cab" property, u x (a x u) = a(u⋅u) - u(u⋅a) = a - uᵢu
-    // (since 𝐮⋅𝐮 = 1 and 𝐮⋅𝐚 = uᵢ). Since |uₘᵢₙ| is small, 𝐚 - uₘᵢₙ 𝐮 is
-    // mostly in the a direction (completely in the a direction if uₘᵢₙ = 0).
-    // Lastly, we efficiently form w = r₁(a - uₘᵢₙ u) by defining r₂ = r₁ uₘᵢₙ.
+    // To avoid computational cost, we do not directly calculate w = u x v, but
+    // instead substitute for v and do algebraic and vector simplification.
+    //   w = u x v                  // Substitute v = (a x u) / |a x u|.
+    //     = u x (a x u) / |a x u|  // Define and use r = 1 /|a x u|.
+    //     = r u x (a x u)          // Vector triple product "bac-cab" property.
+    //     = r [a(u⋅u) - u(u⋅a)]    // Substitute u⋅u = 1 and u⋅a = uₘᵢₙ.
+    //     = r (a - uₘᵢₙ u)         // Mostly in the direction of a.
+    // Notice that w is completely in the a direction if uₘᵢₙ = 0.
+    // Lastly, we efficiently form w = r(a - uₘᵢₙ u) by defining s = r uₘᵢₙ.
+    // TODO(Mitiguy) Add something more than just "Then a miracle occurs.".
+
     // The unit vector w has the following helpfully identifiable properties:
     // If uᵢ (i = 0 or 1 or 2) is the element of u with smallest absolute value,
     // then wᵢ (the iᵗʰ element of w) is the most positive element of w.
     // If uᵢ = 0, then wᵢ = 1 and the other two elements of w are 0.
-
-    using std::sqrt;
 
     // Instantiate the final rotation matrix and write directly to it instead of
     // creating temporary values and subsequently copying.
@@ -332,7 +335,7 @@ class RotationMatrix {
     R_AB.R_AB_.col(axis_index) = u_A;
 
     // The auto keyword below improves efficiency by allowing an intermediate
-    // eigen type to use column as a temporary - avoids copy.
+    // eigen type to use a column as a temporary - avoids copy.
     auto v = R_AB.R_AB_.col((axis_index + 1) % 3);
     auto w = R_AB.R_AB_.col((axis_index + 2) % 3);
 
@@ -341,19 +344,20 @@ class RotationMatrix {
     u_A.cwiseAbs().minCoeff(&i);
     const int j = (i + 1) % 3;
     const int k = (j + 1) % 3;
-    const T mag_a_cross_u = sqrt(1 - u_A(i) * u_A(i));
-    const T r1 = 1 / mag_a_cross_u;
-    const T r2 = -u_A(i) * r1;
+    using std::sqrt;
+    const T mag_a_cross_u = sqrt(1 - u_A(i) * u_A(i));  // |a x u|
+    const T r = 1 / mag_a_cross_u;                      // 1 / |a x u|
+    const T s = -u_A(i) * r;
     v(i) = 0;
-    v(j) = -r1 * u_A(k);
-    v(k) = r1 * u_A(j);
+    v(j) = -r * u_A(k);
+    v(k) = r * u_A(j);
     w(i) = mag_a_cross_u;
-    w(j) = r2 * u_A(j);
-    w(k) = r2 * u_A(k);
+    w(j) = s * u_A(j);
+    w(k) = s * u_A(k);
 
-    // In debug builds, validate the output rotation R_AB.  This also serves as
-    // a check on the validity of the input vector u_A to a unit vector.
-    DRAKE_ASSERT(R_AB.IsValid());
+    // In debug builds, validate the output rotation R_AB which also serves as a
+    // secondary check on the validity of the input vector u_A as a unit vector.
+    DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB.R_AB_));
 
     return R_AB;
   }

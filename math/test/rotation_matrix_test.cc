@@ -1074,6 +1074,18 @@ void VerifyMakeFromOneUnitVector(const Vector3<double>& u_A, int axis_index) {
 GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVector) {
   RotationMatrix<double> R_AB;
   for (int i = 0; i < 3; ++i) {
+    if (kDrakeAssertIsArmed) {
+      // Ensure a zero vector throws an exception.
+      EXPECT_THROW(RotationMatrix<double>::MakeFromOneUnitVector(
+                       Vector3<double>::Zero(), i),
+                   std::exception);
+
+      // Ensure a non-unit vector throws an exception.
+      EXPECT_THROW(RotationMatrix<double>::MakeFromOneUnitVector(
+                       Vector3<double>(1, 2, 3), i),
+                   std::exception);
+    }
+
     // Tests when [1, 0, 0] (or similar) is used for the ith column of R_AB.
     VerifyMakeFromOneUnitVector(Vector3<double>::UnitX(), i);
     VerifyMakeFromOneUnitVector(Vector3<double>::UnitY(), i);
