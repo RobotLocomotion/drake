@@ -128,6 +128,7 @@ class TestNumpyCompareSimple(unittest.TestCase):
         b = AutoDiffXd(1., [0., 1.])
         c = AutoDiffXd(2., [3., 4.])
         numpy_compare.assert_equal(a, a)
+        numpy_compare.assert_allclose(a, a)
         numpy_compare.assert_not_equal(a, b)
         numpy_compare.assert_not_equal(a, c)
 
@@ -145,6 +146,8 @@ class TestNumpyCompareSimple(unittest.TestCase):
         numpy_compare.assert_equal(Formula.True_(), True)
         numpy_compare.assert_equal(Formula.False_(), False)
         numpy_compare.assert_not_equal(Formula.True_(), False)
+        with self.assertRaises(AssertionError):
+            numpy_compare.assert_allclose(x, x)
 
     def test_decorators(self):
         T_list_all = []

@@ -119,7 +119,12 @@ class TestGeneral(unittest.TestCase):
         # Add a redundant logger via the helper method.
         if T == float:
             logger_per_step_2 = LogOutput(
-                integrator.get_output_port(0), builder)
+                integrator.get_output_port(0), builder
+            )
+        else:
+            logger_per_step_2 = LogOutput[T](
+                integrator.get_output_port(0), builder
+            )
 
         # Add a periodic logger
         logger_periodic = builder.AddSystem(SignalLogger_[T](kSize))
@@ -139,13 +144,10 @@ class TestGeneral(unittest.TestCase):
 
         self.assertTrue(t.shape[0] > 2)
         self.assertTrue(t.shape[0] == x.shape[1])
-        if T == float:
-            self.assertAlmostEqual(x[0, -1], t[-1]*kValue, places=2)
-        elif T == AutoDiffXd:
-            self.assertAlmostEqual(
-                x[0, -1].value(), (t[-1] * kValue).value(), places=2)
-        if T == float:
-            np.testing.assert_array_equal(x, logger_per_step_2.data())
+        numpy_compare.assert_allclose(
+            t[-1]*kValue, x[0, -1], atol=1e-15, rtol=0
+        )
+        numpy_compare.assert_equal(x, logger_per_step_2.data())
 
         # Verify outputs of the periodic logger
         t = logger_periodic.sample_times()
@@ -162,8 +164,7 @@ class TestGeneral(unittest.TestCase):
         del integrator
         del logger_periodic
         del logger_per_step
-        if T == float:
-            del logger_per_step_2
+        del logger_per_step_2
         del diagram
         del simulator
         del source

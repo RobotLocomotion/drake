@@ -288,6 +288,13 @@ PYBIND11_MODULE(primitives, m) {
             pybind11::keep_alive<0, 1>(), doc.SignalLogger.data.doc)
         .def("reset", &SignalLogger<T>::reset, doc.SignalLogger.reset.doc);
 
+    AddTemplateFunction(m, "LogOutput", &LogOutput<T>, GetPyParam<T>(),
+        py::arg("src"), py::arg("builder"),
+        // Keep alive, ownership: `return` keeps `builder` alive.
+        py::keep_alive<0, 2>(),
+        // See #11531 for why `py_rvp::reference` is needed.
+        py_rvp::reference, doc.LogOutput.doc);
+
     DefineTemplateClassWithDefault<StateInterpolatorWithDiscreteDerivative<T>,
         Diagram<T>>(m, "StateInterpolatorWithDiscreteDerivative",
         GetPyParam<T>(), doc.StateInterpolatorWithDiscreteDerivative.doc)
@@ -471,12 +478,6 @@ PYBIND11_MODULE(primitives, m) {
 
   m.def("IsObservable", &IsObservable, py::arg("sys"),
       py::arg("threshold") = std::nullopt, doc.IsObservable.doc);
-
-  m.def("LogOutput", &LogOutput<double>, py::arg("src"), py::arg("builder"),
-      // Keep alive, ownership: `return` keeps `builder` alive.
-      py::keep_alive<0, 2>(),
-      // See #11531 for why `py_rvp::reference` is needed.
-      py_rvp::reference, doc.LogOutput.doc);
 
   // TODO(eric.cousineau): Add more systems as needed.
 }
