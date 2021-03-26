@@ -1,6 +1,7 @@
-import numpy as np
 import os
 import unittest
+
+import numpy as np
 
 import pydrake.common as mut
 import pydrake.common._module_py._testing as mut_testing
