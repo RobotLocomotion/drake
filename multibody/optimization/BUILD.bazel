@@ -14,6 +14,7 @@ drake_cc_package_library(
     name = "optimization",
     visibility = ["//visibility:public"],
     deps = [
+        ":collision_remover",
         ":contact_wrench",
         ":contact_wrench_evaluator",
         ":manipulator_equation_constraint",
@@ -162,12 +163,12 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "collision_remover_test",
+    data = ["test/collision_remover_test.urdf"],
     deps = [
         ":collision_remover",
         "//common:find_resource",
         "//multibody/parsing",
     ],
-    data = ["test/collision_remover_test.urdf"],
 )
 
 drake_cc_googletest(

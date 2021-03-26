@@ -2,11 +2,11 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/common/find_resource.h"
 
 using Contextd = drake::systems::Context<double>;
 using MultibodyPlantd = drake::multibody::MultibodyPlant<double>;
@@ -32,8 +32,22 @@ class CollisionRemoverFixture : public ::testing::Test {
     brick = plant->GetBodyByName("floating_brick").index();
     dut = std::make_unique<CollisionRemover>(
         diagram.get(), plant, scene_graph);
-    known_valid_position = plant->GetPositions(
-        diagram->GetSubsystemContext(*plant, *diagram->CreateDefaultContext()));
+
+    // For a known-valid position, point the pendula maximally apart and move
+    // the brick out of the way.
+    {
+      auto root_context = diagram->CreateDefaultContext();
+      Contextd& plant_context =
+          diagram->GetMutableSubsystemContext(*plant, root_context.get());
+      plant->GetJointByName<RevoluteJoint>("pendulum_1_theta")
+          .set_angle(&plant_context, 1.5);
+      plant->GetJointByName<RevoluteJoint>("pendulum_2_theta")
+          .set_angle(&plant_context, -1.5);
+      plant->SetFreeBodyPose(
+          &plant_context, plant->get_body(brick),
+          RigidTransformd(Eigen::Vector3d{0., 0., 3.}));
+      known_valid_position = plant->GetPositions(plant_context);
+    }
   }
   ~CollisionRemoverFixture() {}
 
