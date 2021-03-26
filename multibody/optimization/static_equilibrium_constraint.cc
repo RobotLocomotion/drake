@@ -7,10 +7,9 @@
 namespace drake {
 namespace multibody {
 namespace {
-int GetLambdaSize(
-    const std::map<SortedPair<geometry::GeometryId>,
-                   internal::GeometryPairContactWrenchEvaluatorBinding>&
-        contact_pair_to_wrench_evaluator) {
+int GetLambdaSize(const std::map<SortedPair<geometry::GeometryId>,
+                                 GeometryPairContactWrenchEvaluatorBinding>&
+                      contact_pair_to_wrench_evaluator) {
   int num_lambda = 0;
   for (const auto& term : contact_pair_to_wrench_evaluator) {
     num_lambda += term.second.contact_wrench_evaluator->num_lambda();
@@ -22,7 +21,7 @@ StaticEquilibriumConstraint::StaticEquilibriumConstraint(
     const MultibodyPlant<AutoDiffXd>* plant,
     systems::Context<AutoDiffXd>* context,
     const std::map<SortedPair<geometry::GeometryId>,
-                   internal::GeometryPairContactWrenchEvaluatorBinding>&
+                   GeometryPairContactWrenchEvaluatorBinding>&
         contact_pair_to_wrench_evaluator)
     : solvers::Constraint(plant->num_velocities(),
                           plant->num_positions() + plant->num_actuated_dofs() +
@@ -143,7 +142,7 @@ StaticEquilibriumConstraint::MakeBinding(
   // contact_pair_to_wrench_evaluator will be used in the constructor of
   // StaticEquilibriumConstraint.
   std::map<SortedPair<geometry::GeometryId>,
-           internal::GeometryPairContactWrenchEvaluatorBinding>
+           GeometryPairContactWrenchEvaluatorBinding>
       contact_pair_to_wrench_evaluator;
   // Get the total size of lambda used in this StaticEquilibriumConstraint. We
   // find the unique lambda variable for all contact wrench evaluators.
@@ -174,8 +173,8 @@ StaticEquilibriumConstraint::MakeBinding(
     }
     contact_pair_to_wrench_evaluator.emplace(
         contact_wrench_evaluator->geometry_id_pair(),
-        internal::GeometryPairContactWrenchEvaluatorBinding{
-            lambda_indices_in_all_lambda, contact_wrench_evaluator});
+        GeometryPairContactWrenchEvaluatorBinding{lambda_indices_in_all_lambda,
+                                                  contact_wrench_evaluator});
   }
   // Now compose the vector all_lambda.
   const int num_lambda = lambda_count;
