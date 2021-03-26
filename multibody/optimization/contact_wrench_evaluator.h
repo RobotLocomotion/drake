@@ -183,13 +183,9 @@ class ContactWrenchFromForceInWorldFrameEvaluator final
                      VectorX<U>* y) const;
 };
 
-namespace internal {
 /*
  * This struct records the contact wrench evaluator, together with the indices
  * of lambda used in this evaluator, among all lambda.
- *
- * The user is not supposed to use this struct directly. It is used internally
- * by the constraint's MakeBinding() method.
  */
 struct GeometryPairContactWrenchEvaluatorBinding {
   GeometryPairContactWrenchEvaluatorBinding(
@@ -204,7 +200,6 @@ struct GeometryPairContactWrenchEvaluatorBinding {
   std::vector<int> lambda_indices_in_all_lambda;
   std::shared_ptr<ContactWrenchEvaluator> contact_wrench_evaluator;
 };
-}  // namespace internal
 
 }  // namespace multibody
 }  // namespace drake

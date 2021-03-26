@@ -67,7 +67,7 @@ class ManipulatorEquationConstraint final : public solvers::Constraint {
    * Getter for contact_pair_to_wrench_evaluator, passed in the constructor.
    */
   const std::map<SortedPair<geometry::GeometryId>,
-                 internal::GeometryPairContactWrenchEvaluatorBinding>&
+                 GeometryPairContactWrenchEvaluatorBinding>&
   contact_pair_to_wrench_evaluator() const {
     return contact_pair_to_wrench_evaluator_;
   }
@@ -81,7 +81,7 @@ class ManipulatorEquationConstraint final : public solvers::Constraint {
       const MultibodyPlant<AutoDiffXd>* plant,
       systems::Context<AutoDiffXd>* context,
       const std::map<SortedPair<geometry::GeometryId>,
-                     internal::GeometryPairContactWrenchEvaluatorBinding>&
+                     GeometryPairContactWrenchEvaluatorBinding>&
           contact_pair_to_wrench_evaluator);
 
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -94,7 +94,7 @@ class ManipulatorEquationConstraint final : public solvers::Constraint {
   const MultibodyPlant<AutoDiffXd>* const plant_;
   systems::Context<AutoDiffXd>* const context_;
   const std::map<SortedPair<geometry::GeometryId>,
-                 internal::GeometryPairContactWrenchEvaluatorBinding>
+                 GeometryPairContactWrenchEvaluatorBinding>
       contact_pair_to_wrench_evaluator_;
   const MatrixX<AutoDiffXd> B_actuation_;
 };
