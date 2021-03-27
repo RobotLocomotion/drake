@@ -275,51 +275,75 @@ class RotationMatrix {
     return RotationMatrix(R);
   }
 
-  /// Creates a basis B and rotation matrix R_AB from a given unit vector u_A.
+  /// Creates a right-handed orthonormal basis B and a rotation matrix R_AB
+  /// from a given non-zero vector b_A.
+  /// @param[in] b_A vector which is expressed in frame A and which when
+  ///  normalized, e.g., as u_A = b_A.normalized(), represents either
+  ///  Bx or By or Bz (depending on the value of axis_index).
+  /// @param[in] axis_index The index of the unit vector associated with u_A,
+  ///  with 0 meaning u_A is Bx, 1 meaning u_A is By, and 2 meaning u_A is Bz.
+  /// @pre axis_index is 0 or 1 or 2.
+  /// @retval R_AB rotational matrix with u_A in the axis_index column of R_AB.
+  static RotationMatrix<T> MakeFromOneVector(
+      const Vector3<T>& b_A, int axis_index) {
+    // Ensure b_A can be made into a unit vector (not a zero vector, NAN, etc.).
+    constexpr double kTolerance = 4 * std::numeric_limits<double>::epsilon();
+    const Vector3<T> u_A = b_A.normalized();
+    ThrowIfNotValidUnitVector(u_A, kTolerance);
+    return MakeFromOneUnitVector(u_A, axis_index);
+  }
+
+  /// (Advanced) Creates a right-handed orthonormal basis B and a rotation
+  /// matrix R_AB from a given unit vector u_A.
   /// @param[in] u_A unit vector which is expressed in frame A and represents
   ///  either Bx or By or Bz (depending on the value of axis_index).
   /// @param[in] axis_index The index of the unit vector associated with u_A,
   ///  with 0 meaning u_A is Bx, 1 meaning u_A is By, and 2 meaning u_A is Bz.
-  /// @pre axis_index must be 0 or 1 or 2.  u_A must be a unit vector.
-  /// @note This method forms a right-handed orthonormal basis with u_A and two
-  /// other internally-constructed unit vectors.
+  /// @pre axis_index is 0 or 1 or 2.
+  /// @pre u_A must be a unit vector within a tolerance of 4ε, roughly 8e-16.
+  /// @note This method is designed for maximum performance and hence does not
+  /// verify the preconditions in Release builds.
   /// @retval R_AB rotational matrix with u_A in the axis_index column of R_AB.
   static RotationMatrix<T> MakeFromOneUnitVector(
       const Vector3<T>& u_A, int axis_index) {
     // In debug builds, verify axis_index is 0 or 1 or 2.
     DRAKE_ASSERT(axis_index >= 0  &&  axis_index <= 2);
 
-    using std::abs;
     // In debug builds, verify u_A is within kTolerance of a unit vector.
-    // The tight value of kTolerance was based on Sherm's numerical experiment.
+    // The tight value of kTolerance is based on numerical experiments/testing.
     // Below: In debug builds, R_AB is also validated before return.
-    // TODO(Mitiguy) Decide what to do here - DRAKE_ASSERT seems to abort.
-    // constexpr double kTolerance = 4 * std::numeric_limits<double>::epsilon();
-    // DRAKE_ASSERT(abs(1 - u_A.norm()) <= kTolerance);
+    constexpr double kTolerance = 4 * std::numeric_limits<double>::epsilon();
+    DRAKE_ASSERT_VOID(ThrowIfNotValidUnitVector(u_A, kTolerance));
 
     // This method forms a right-handed orthonormal basis with u_A (herein
     // abbreviated u) and two internally-constructed unit vectors v and w.
 
     // To form a unit vector v perpendicular to the given unit vector u, we use
     // the fact that a x u is guaranteed to be perpendicular to u (where a is
-    // any unit vector).  We judiciously choose a so it is not parallel to u
-    // by identifying uₘᵢₙ, the element of u with the smallest absolute value.
-    // To ensure a x u ≠ 0 (a is not parallel to u), we use the following:
-    // If |ux = u(0)| is smallest, set a = [1 0 0] so a x u = [0, -uz, uy] ≠ 0.
-    // If |uy = u(1)| is smallest, set a = [0 1 0] so a x u = [uz, 0, -ux] ≠ 0.
-    // If |uz = u(2)| is smallest, set a = [0 0 1] so a x u = [-uy, ux, 0] ≠ 0.
-    // We define v = a x u / |a x u|, where |a x u| is guaranteed ≠ 0.
-    // It is helpful to define r = 1 /|a x u| so v = r a x u.
+    // any unit vector). We judiciously choose vector a so it is not parallel to
+    // u by identifying uₘᵢₙ, the element of u with the smallest absolute value.
+    // If |ux = u(0)| is smallest, set a = [1  0  0] so a x u = [0, -uz, uy].
+    // If |uy = u(1)| is smallest, set a = [0  1  0] so a x u = [uz, 0, -ux].
+    // If |uz = u(2)| is smallest, set a = [0  0  1] so a x u = [-uy, ux, 0].
+    // Because we select uₘᵢₙ as the element with the *smallest* magnitude, and
+    // since |u|² = ux² + uy² + uz² = 1, we are guaranteed that for the two
+    // elements that are not uₘᵢₙ, at least one must be non-zero.
+    // That guarantees that |a x u| ≠ 0.  Moreover, notice that:
+    // If |ux| is smallest, |a x u|² = uz² + uy² = 1 - ux² = 1 - uₘᵢₙ²
+    // If |uy| is smallest, |a x u|² = uz² + ux² = 1 - uy² = 1 - uₘᵢₙ²
+    // If |uz| is smallest, |a x u|² = uy² + ux² = 1 - uz² = 1 - uₘᵢₙ²
+    // We define v = a x u / |a x u| = a x u / √(1 - uₘᵢₙ²) = r a x u
+    // where r = 1 /√(1 - uₘᵢₙ²).
 
     // By defining w = u x v, w is guaranteed to be a unit vector perpendicular
     // to both u and v and ordered so u, v, w form a right-handed set.
     // To avoid computational cost, we do not directly calculate w = u x v, but
     // instead substitute for v and do algebraic and vector simplification.
-    //   w = u x v                  // Substitute v = (a x u) / |a x u|.
-    //     = u x (a x u) / |a x u|  // Define and use r = 1 /|a x u|.
-    //     = r u x (a x u)          // Vector triple product "bac-cab" property.
-    //     = r [a(u⋅u) - u(u⋅a)]    // Substitute u⋅u = 1 and u⋅a = uₘᵢₙ.
-    //     = r (a - uₘᵢₙ u)         // Mostly in the direction of a.
+    //  w = u x v                  Next, substitute v = (a x u) / |a x u|.
+    //    = u x (a x u) / |a x u|  Now define and use r = 1 /|a x u|.
+    //    = r u x (a x u)          Use vector triple product "bac-cab" property.
+    //    = r [a(u⋅u) - u(u⋅a)]    Next, Substitute u⋅u = 1 and u⋅a = uₘᵢₙ.
+    //    = r (a - uₘᵢₙ u)         This shows w is mostly in the direction of a.
     // Notice that w is completely in the a direction if uₘᵢₙ = 0.
     // Lastly, we efficiently form w = r(a - uₘᵢₙ u) by defining s = r uₘᵢₙ.
     // TODO(Mitiguy) Add something more than just "Then a miracle occurs.".
@@ -347,7 +371,7 @@ class RotationMatrix {
     using std::sqrt;
     const T mag_a_cross_u = sqrt(1 - u_A(i) * u_A(i));  // |a x u|
     const T r = 1 / mag_a_cross_u;                      // 1 / |a x u|
-    const T s = -u_A(i) * r;
+    const T s = -r * u_A(i);
     v(i) = 0;
     v(j) = -r * u_A(k);
     v(k) = r * u_A(j);
@@ -816,6 +840,18 @@ class RotationMatrix {
   static typename std::enable_if_t<!scalar_predicate<S>::is_bool>
   ThrowIfNotValid(const Matrix3<S>&) {}
 
+  // Throws an exception if u is not a valid unit vector.
+  // @param[in] u an allegedly valid unit vector.
+  // @note If the underlying scalar type T is non-numeric (symbolic), no
+  // validity check is made and no assertion is thrown.
+  template <typename S = T>
+  static typename std::enable_if_t<scalar_predicate<S>::is_bool>
+  ThrowIfNotValidUnitVector(const Vector3<S>& u, double tolerance);
+
+  template <typename S = T>
+  static typename std::enable_if_t<!scalar_predicate<S>::is_bool>
+  ThrowIfNotValidUnitVector(const Vector3<S>&, double) {}
+
   // Given an approximate rotation matrix M, finds the orthonormal matrix R
   // closest to M.  Closeness is measured with a matrix-2 norm (or equivalently
   // with a Frobenius norm).  Hence, this method creates an orthonormal matrix R
@@ -1172,6 +1208,33 @@ RotationMatrix<T>::ThrowIfNotValid(const Matrix3<S>& R) {
   if (R.determinant() < 0) {
     throw std::logic_error("Error: Rotation matrix determinant is negative. "
                                "It is possible a basis is left-handed");
+  }
+}
+
+// @internal The above comment for ThrowIfNotValid() explains why this code
+// cannot be in rotation_matrix.cc.
+template <typename T>
+template <typename S>
+typename std::enable_if_t<scalar_predicate<S>::is_bool>
+RotationMatrix<T>::ThrowIfNotValidUnitVector(const Vector3<S>& u,
+                                             double tolerance) {
+  if (!u.allFinite()) {
+    throw std::logic_error(
+        "Error: Unit vector contains an element that is infinity or NaN.");
+  }
+  // Give a detailed message if |u| is not within tolerance of 1.
+  using std::abs;
+  const T u_norm_as_T = u.norm();
+  const double u_norm = ExtractDoubleOrThrow(u_norm_as_T);
+  const double abs_difference_from_unity = abs(1 - u_norm);
+  if (abs_difference_from_unity > tolerance) {
+    std::string message = fmt::format(
+      "\n Error: The magnitude of a unit vector is {:E}."
+      "\n Its magnitude deviates from 1.0 by {:E}."
+      "\n The calling function allows a deviation tolerance of {:E}."
+      "\n Consider normalizing, e.g., for the vector u, use u.normalized().\n",
+      u_norm, abs_difference_from_unity, tolerance);
+    throw std::logic_error(message);
   }
 }
 
