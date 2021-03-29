@@ -33,9 +33,9 @@ using NonSymbolicScalarPack = type_pack<  // BR
 
 /** @name Handling special non-POD scalar types.
 
-Because we use dtype=object in NumPy, we cannot alias (pass references) the
-data underlying matrix objects when sharing data between NumPy and Eigen
-(#8116).
+Because we use dtype=object in NumPy, we cannot alias (share references to) the
+data underlying matrix objects when passing data between NumPy and Eigen (see
+#8116).
 
 The simple policy these functions help enforce:
 
@@ -45,43 +45,30 @@ The simple policy these functions help enforce:
  */
 //@{
 
-/** Permits referencing for builtin dtypes (e.g. T == double), but then switches
- to copying for custom dtypes (T ∈ {AutoDiffXd, Expression}).
-*/
+/** Permits referencing for builtin dtypes (e.g., T == double), but then
+switches to copying for custom dtypes (T ∈ {AutoDiffXd, Expression}). */
 template <typename T>
 py::return_value_policy return_value_policy_for_scalar_type() {
-  if (std::is_same<T, double>::value) {
+  if (std::is_same_v<T, double>) {
     return py::return_value_policy::reference_internal;
   } else {
     return py::return_value_policy::copy;
   }
 }
 
-/** References VectorX<T == double>'s data (does not copy). **/
-inline Eigen::VectorBlock<const VectorX<double>> CopyIfNotPodType(
-    Eigen::VectorBlock<const VectorX<double>> x) {
-  return x;
-}
-
-/** Copies VectorX<T != double> data (does not copy). **/
-template <typename T>
-VectorX<T> CopyIfNotPodType(Eigen::VectorBlock<const VectorX<T>> x) {
-  return x;
-}
-
-/** References MatrixX<T == double> data (does not copy). **/
-inline Eigen::Block<const MatrixX<double>, Eigen::Dynamic, Eigen::Dynamic, true>
-CopyIfNotPodType(
-    Eigen::Block<const MatrixX<double>, Eigen::Dynamic, Eigen::Dynamic, true>
-        x) {
-  return x;
-}
-
-/** Copies MatrixX<T != double>  data (does not copy). **/
-template <typename T>
-MatrixX<T> CopyIfNotPodType(
-    Eigen::Block<const MatrixX<T>, Eigen::Dynamic, Eigen::Dynamic, true> x) {
-  return x;
+/** A no-op for builtin dtypes (e.g., T == double), but then switches to copying
+for custom dtypes (T ∈ {AutoDiffXd, Expression}).
+@param SomeBlock an Eigen::Block or Eigen::VectorBlock. */
+template <typename SomeBlock>
+decltype(auto) CopyIfNotPodType(const SomeBlock& x) {
+  using NestedExpression = typename SomeBlock::NestedExpression;
+  using T = typename NestedExpression::Scalar;
+  if constexpr (std::is_same_v<T, double>) {
+    return x;
+  } else {
+    constexpr int ColsAtCompileTime = NestedExpression::ColsAtCompileTime;
+    return Eigen::Matrix<T, Eigen::Dynamic, ColsAtCompileTime>(x);
+  }
 }
 
 //@}
