@@ -52,20 +52,6 @@ int GetVariableSize(const multibody::MultibodyPlant<T>& plant,
   DRAKE_UNREACHABLE();
 }
 
-Eigen::VectorBlock<const VectorX<double>> CopyIfNotPodType(
-    Eigen::VectorBlock<const VectorX<double>> x) {
-  // N.B. This references the existing vector's data, and does not perform a
-  // copy.
-  return x;
-}
-
-template <typename T>
-VectorX<T> CopyIfNotPodType(Eigen::VectorBlock<const VectorX<T>> x) {
-  // N.B. This copies the vector's data.
-  // TODO(eric.cousineau): Remove this once #8116 is resolved.
-  return x;
-}
-
 /**
  * Adds Python bindings for its contents to module `m`, for template `T`.
  * @param m Module.

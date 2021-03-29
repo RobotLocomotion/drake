@@ -35,44 +35,11 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
 namespace drake {
-namespace pydrake {
 
 using symbolic::Expression;
 using symbolic::Variable;
-namespace {
 
-// TODO(eric.cousineau): Consolidate these methods.
-Eigen::VectorBlock<const VectorX<double>> CopyIfNotPodType(
-    Eigen::VectorBlock<const VectorX<double>> x) {
-  // N.B. This references the existing vector's data, and does not perform a
-  // copy.
-  return x;
-}
-
-template <typename T>
-VectorX<T> CopyIfNotPodType(Eigen::VectorBlock<const VectorX<T>> x) {
-  // N.B. This references the existing vector's data, and does not perform a
-  // copy.
-  return x;
-}
-
-Eigen::Block<const MatrixX<double>, Eigen::Dynamic, Eigen::Dynamic, true>
-CopyIfNotPodType(
-    Eigen::Block<const MatrixX<double>, Eigen::Dynamic, Eigen::Dynamic, true>
-        x) {
-  // N.B. This references the existing matrix's data, and does not perform a
-  // copy.
-  return x;
-}
-
-template <typename T>
-MatrixX<T> CopyIfNotPodType(
-    Eigen::Block<const MatrixX<T>, Eigen::Dynamic, Eigen::Dynamic, true> x) {
-  // N.B. This copies the matrix's data.
-  // TODO(eric.cousineau): Remove this once #8116 is resolved.
-  return x;
-}
-}  // namespace
+namespace pydrake {
 
 PYBIND11_MODULE(primitives, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
