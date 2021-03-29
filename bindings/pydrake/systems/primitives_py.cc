@@ -39,6 +39,40 @@ namespace pydrake {
 
 using symbolic::Expression;
 using symbolic::Variable;
+namespace {
+
+// TODO(eric.cousineau): Consolidate these methods.
+Eigen::VectorBlock<const VectorX<double>> CopyIfNotPodType(
+    Eigen::VectorBlock<const VectorX<double>> x) {
+  // N.B. This references the existing vector's data, and does not perform a
+  // copy.
+  return x;
+}
+
+template <typename T>
+VectorX<T> CopyIfNotPodType(Eigen::VectorBlock<const VectorX<T>> x) {
+  // N.B. This references the existing vector's data, and does not perform a
+  // copy.
+  return x;
+}
+
+Eigen::Block<const MatrixX<double>, Eigen::Dynamic, Eigen::Dynamic, true>
+CopyIfNotPodType(
+    Eigen::Block<const MatrixX<double>, Eigen::Dynamic, Eigen::Dynamic, true>
+        x) {
+  // N.B. This references the existing matrix's data, and does not perform a
+  // copy.
+  return x;
+}
+
+template <typename T>
+MatrixX<T> CopyIfNotPodType(
+    Eigen::Block<const MatrixX<T>, Eigen::Dynamic, Eigen::Dynamic, true> x) {
+  // N.B. This copies the matrix's data.
+  // TODO(eric.cousineau): Remove this once #8116 is resolved.
+  return x;
+}
+}  // namespace
 
 PYBIND11_MODULE(primitives, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -235,11 +269,29 @@ PYBIND11_MODULE(primitives, m) {
         .def("set_forced_publish_only",
             &SignalLogger<T>::set_forced_publish_only,
             doc.SignalLogger.set_forced_publish_only.doc)
-        .def("sample_times", &SignalLogger<T>::sample_times,
-            py_rvp::reference_internal, doc.SignalLogger.sample_times.doc)
-        .def("data", &SignalLogger<T>::data, py_rvp::reference_internal,
-            doc.SignalLogger.data.doc)
+        .def(
+            "sample_times",
+            [](const SignalLogger<T>* self) {
+              // Reference
+              return CopyIfNotPodType(self->sample_times());
+            },
+            return_value_policy_for_scalar_type<T>(),
+            doc.SignalLogger.sample_times.doc)
+        .def(
+            "data",
+            [](const SignalLogger<T>* self) {
+              // Reference.
+              return CopyIfNotPodType(self->data());
+            },
+            return_value_policy_for_scalar_type<T>(), doc.SignalLogger.data.doc)
         .def("reset", &SignalLogger<T>::reset, doc.SignalLogger.reset.doc);
+
+    AddTemplateFunction(m, "LogOutput", &LogOutput<T>, GetPyParam<T>(),
+        py::arg("src"), py::arg("builder"),
+        // Keep alive, ownership: `return` keeps `builder` alive.
+        py::keep_alive<0, 2>(),
+        // See #11531 for why `py_rvp::reference` is needed.
+        py_rvp::reference, doc.LogOutput.doc);
 
     DefineTemplateClassWithDefault<StateInterpolatorWithDiscreteDerivative<T>,
         Diagram<T>>(m, "StateInterpolatorWithDiscreteDerivative",
@@ -424,12 +476,6 @@ PYBIND11_MODULE(primitives, m) {
 
   m.def("IsObservable", &IsObservable, py::arg("sys"),
       py::arg("threshold") = std::nullopt, doc.IsObservable.doc);
-
-  m.def("LogOutput", &LogOutput<double>, py::arg("src"), py::arg("builder"),
-      // Keep alive, ownership: `return` keeps `builder` alive.
-      py::keep_alive<0, 2>(),
-      // See #11531 for why `py_rvp::reference` is needed.
-      py_rvp::reference, doc.LogOutput.doc);
 
   // TODO(eric.cousineau): Add more systems as needed.
 }

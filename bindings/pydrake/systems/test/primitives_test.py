@@ -8,10 +8,14 @@ from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue
 from pydrake.symbolic import Expression, Variable
-from pydrake.systems.analysis import Simulator
+from pydrake.systems.analysis import (
+    Simulator,
+    Simulator_,
+)
 from pydrake.systems.framework import (
     BasicVector,
     DiagramBuilder,
+    DiagramBuilder_,
     VectorBase,
 )
 from pydrake.systems.test.test_util import (
@@ -97,32 +101,40 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(WrapToSystem_)
         self._check_instantiations(ZeroOrderHold_)
 
-    def test_signal_logger(self):
+    @numpy_compare.check_nonsymbolic_types
+    def test_signal_logger(self, T):
         # Log the output of a simple diagram containing a constant
         # source and an integrator.
-        builder = DiagramBuilder()
-        kValue = 2.4
-        source = builder.AddSystem(ConstantVectorSource([kValue]))
+        builder = DiagramBuilder_[T]()
+        kValue = T(2.4)
+        source = builder.AddSystem(ConstantVectorSource_[T]([kValue]))
         kSize = 1
-        integrator = builder.AddSystem(Integrator(kSize))
-        logger_per_step = builder.AddSystem(SignalLogger(kSize))
+        integrator = builder.AddSystem(Integrator_[T](kSize))
+        logger_per_step = builder.AddSystem(SignalLogger_[T](kSize))
         builder.Connect(source.get_output_port(0),
                         integrator.get_input_port(0))
         builder.Connect(integrator.get_output_port(0),
                         logger_per_step.get_input_port(0))
 
         # Add a redundant logger via the helper method.
-        logger_per_step_2 = LogOutput(integrator.get_output_port(0), builder)
+        if T == float:
+            logger_per_step_2 = LogOutput(
+                integrator.get_output_port(0), builder
+            )
+        else:
+            logger_per_step_2 = LogOutput[T](
+                integrator.get_output_port(0), builder
+            )
 
         # Add a periodic logger
-        logger_periodic = builder.AddSystem(SignalLogger(kSize))
+        logger_periodic = builder.AddSystem(SignalLogger_[T](kSize))
         kPeriod = 0.1
         logger_periodic.set_publish_period(kPeriod)
         builder.Connect(integrator.get_output_port(0),
                         logger_periodic.get_input_port(0))
 
         diagram = builder.Build()
-        simulator = Simulator(diagram)
+        simulator = Simulator_[T](diagram)
         kTime = 1.
         simulator.AdvanceTo(kTime)
 
@@ -132,8 +144,10 @@ class TestGeneral(unittest.TestCase):
 
         self.assertTrue(t.shape[0] > 2)
         self.assertTrue(t.shape[0] == x.shape[1])
-        self.assertAlmostEqual(x[0, -1], t[-1]*kValue, places=2)
-        np.testing.assert_array_equal(x, logger_per_step_2.data())
+        numpy_compare.assert_allclose(
+            t[-1]*kValue, x[0, -1], atol=1e-15, rtol=0
+        )
+        numpy_compare.assert_equal(x, logger_per_step_2.data())
 
         # Verify outputs of the periodic logger
         t = logger_periodic.sample_times()

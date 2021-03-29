@@ -35,17 +35,26 @@ class _Registry:
     # make intent explicit.
     # TODO(eric.cousineau): Add `assert_near` when it's necessary.
     AssertComparator = namedtuple(
-        'AssertComparator', ['assert_eq', 'assert_ne'])
+        'AssertComparator', ['assert_eq', 'assert_ne', 'assert_allclose'])
 
     def __init__(self):
         self._comparators = {}
         self._to_float = {}
 
-    def register_comparator(self, cls_a, cls_b, assert_eq, assert_ne=None):
+    def register_comparator(
+        self,
+        cls_a,
+        cls_b,
+        assert_eq,
+        assert_ne=None,
+        assert_allclose=None,
+    ):
         key = (cls_a, cls_b)
         assert key not in self._comparators, key
         assert_eq = np.vectorize(assert_eq)
-        self._comparators[key] = self.AssertComparator(assert_eq, assert_ne)
+        self._comparators[key] = self.AssertComparator(
+            assert_eq, assert_ne, assert_allclose
+        )
 
     def get_comparator_from_arrays(self, a, b):
         # Ensure all types are homogeneous.
@@ -87,7 +96,26 @@ def assert_equal(a, b):
     if a.dtype != object and b.dtype != object:
         np.testing.assert_equal(a, b)
     else:
-        _registry.get_comparator_from_arrays(a, b).assert_eq(a, b)
+        assert_eq = _registry.get_comparator_from_arrays(a, b).assert_eq
+        assert assert_eq is not None
+        assert_eq(a, b)
+
+
+def assert_allclose(a, b, atol=1e-15, rtol=0):
+    """
+    Same as `assert_equal`, but also checks for tolerances when possible.
+    """
+    a, b = map(np.asarray, (a, b))
+    if a.size == 0 and b.size == 0:
+        return
+    if a.dtype != object and b.dtype != object:
+        np.testing.assert_allclose(a, b, atol=atol, rtol=rtol)
+    else:
+        assert_allclose = (
+            _registry.get_comparator_from_arrays(a, b).assert_allclose
+        )
+        assert assert_allclose is not None
+        assert_allclose(a, b, atol=atol, rtol=rtol)
 
 
 def _raw_eq(a, b):
@@ -107,6 +135,7 @@ def assert_not_equal(a, b):
         assert_ne = _raw_ne
     else:
         assert_ne = _registry.get_comparator_from_arrays(a, b).assert_ne
+    assert assert_ne is not None
     # For this to fail, all items must have failed.
     br = np.broadcast(a, b)
     errs = []
@@ -191,9 +220,19 @@ def _register_autodiff():
                 and (a.derivatives() == b.derivatives()).all()):
             raise _UnwantedEquality(str(a.value(), b.derivatives()))
 
+    def autodiff_allclose(a, b, atol, rtol):
+        # TODO(eric.cousineau): Figure out why `.item()` is necessary here, but
+        # not above.
+        a = a.item()
+        b = b.item()
+        np.testing.assert_allclose(a.value(), b.value(), atol=atol, rtol=rtol)
+        np.testing.assert_allclose(
+            a.derivatives(), b.derivatives(), atol=atol, rtol=rtol
+        )
+
     _registry.register_to_float(AutoDiffXd, AutoDiffXd.value)
     _registry.register_comparator(
-        AutoDiffXd, AutoDiffXd, autodiff_eq, autodiff_ne)
+        AutoDiffXd, AutoDiffXd, autodiff_eq, autodiff_ne, autodiff_allclose)
 
 
 def _register_symbolic():
