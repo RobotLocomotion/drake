@@ -8,8 +8,8 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/proximity/mesh_field_linear.h"
 #include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/surface_mesh_field.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
@@ -307,7 +307,7 @@ class ContactSurface {
   }
 
   /** Returns a reference to the scalar field eₘₙ. */
-  const MeshField<T, SurfaceMesh<T>>& e_MN() const { return *e_MN_; }
+  const MeshFieldLinear<T, SurfaceMesh<T>>& e_MN() const { return *e_MN_; }
 
   // TODO(#12173): Consider NaN==NaN to be true in equality tests.
   /** Checks to see whether the given ContactSurface object is equal via deep

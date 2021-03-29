@@ -33,7 +33,7 @@ class SoftMesh {
   SoftMesh() = default;
 
   SoftMesh(std::unique_ptr<VolumeMesh<double>> mesh,
-           std::unique_ptr<VolumeMeshField<double, double>> pressure)
+           std::unique_ptr<VolumeMeshFieldLinear<double, double>> pressure)
       : mesh_(std::move(mesh)),
         pressure_(std::move(pressure)),
         bvh_(std::make_unique<Bvh<VolumeMesh<double>>>(*mesh_)) {
@@ -49,7 +49,7 @@ class SoftMesh {
     DRAKE_DEMAND(mesh_ != nullptr);
     return *mesh_;
   }
-  const VolumeMeshField<double, double>& pressure() const {
+  const VolumeMeshFieldLinear<double, double>& pressure() const {
     DRAKE_DEMAND(pressure_ != nullptr);
     return *pressure_;
   }
@@ -60,7 +60,7 @@ class SoftMesh {
 
  private:
   std::unique_ptr<VolumeMesh<double>> mesh_;
-  std::unique_ptr<VolumeMeshField<double, double>> pressure_;
+  std::unique_ptr<VolumeMeshFieldLinear<double, double>> pressure_;
   std::unique_ptr<Bvh<VolumeMesh<double>>> bvh_;
 };
 
@@ -141,7 +141,7 @@ class SoftGeometry {
 
   /* Returns a reference to the mesh's linearized pressure field -- calling
    this will throw if is_half_space() returns `true`.  */
-  const VolumeMeshField<double, double>& pressure_field() const {
+  const VolumeMeshFieldLinear<double, double>& pressure_field() const {
     if (is_half_space()) {
       throw std::runtime_error("SoftGeometry::pressure_field() cannot be "
                                "invoked for soft half space");
