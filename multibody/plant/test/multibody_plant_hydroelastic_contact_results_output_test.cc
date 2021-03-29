@@ -10,7 +10,6 @@ using Eigen::Vector3d;
 namespace drake {
 
 using geometry::ContactSurface;
-using geometry::MeshField;
 using geometry::SurfaceFace;
 using geometry::SurfaceFaceIndex;
 using geometry::SurfaceVertex;
