@@ -85,14 +85,6 @@ defaults:
     values:
       layout: "release"
 
-exclude:
-  # Bazel binaries + Python source files.
-  - gen_jekyll
-  - gen_jekyll.py
-  - jekyll_base.py
-  - serve_jekyll
-  - serve_jekyll.py
-
 kramdown:
   # https://kramdown.gettalong.org/converter/html.html#options
   auto_ids: true
