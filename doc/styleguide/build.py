@@ -55,7 +55,7 @@ def _build(*, out_dir, temp_dir):
         "--destination", out_dir,
     ])
 
-    # The nominal pages to offer for preview.
+    # The filenames to suggest as the starting points for preview.
     return ["cppguide.html", "pyguide.html"]
 
 

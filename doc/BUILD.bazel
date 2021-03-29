@@ -1,17 +1,17 @@
 # -*- python -*-
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//visibility:private"])
 
 load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
-    "drake_py_unittest",
 )
 load(
     ":defs.bzl",
     "DEFAULT_BINARY_TAGS",
     "DEFAULT_TEST_TAGS",
+    "enumerate_filegroup",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -58,34 +58,15 @@ filegroup(
 )
 
 filegroup(
-    name = "images",
-    srcs = [
-        "images/drake-dragon.png",
-        "images/drake-logo.svg",
-        "images/drake-logo-white.svg",
-        "images/jenkins_bot_reviewable_comment.png",
-    ],
-)
-
-drake_py_library(
-    name = "jekyll_base",
-    srcs = ["jekyll_base.py"],
-    tags = DEFAULT_BINARY_TAGS,
-)
-
-filegroup(
-    name = "third_party_data",
-    srcs = glob([
-        "third_party/**/*",
-    ]),
-)
-
-filegroup(
-    name = "jekyll_data",
+    name = "pages_input",
     srcs = [
         "_config.yml",
         "index.md",
         "sample_vimrc",
+        "images/drake-dragon.png",
+        "images/drake-logo.svg",
+        "images/drake-logo-white.svg",
+        "images/jenkins_bot_reviewable_comment.png",
     ] + glob([
         "_includes/*.html",
         "_includes/*.md",
@@ -94,34 +75,31 @@ filegroup(
         "_release-notes/*.md",
         "assets/**/*.css",
         "assets/**/*.js",
+        "third_party/**/*",
     ]),
     data = [
         ":favicon",
-        ":images",
-        ":third_party_data",
     ],
 )
 
+enumerate_filegroup(
+    name = "pages_input.txt",
+    data = [":pages_input"],
+)
+
 drake_py_binary(
-    name = "gen_jekyll",
-    srcs = ["gen_jekyll.py"],
+    name = "pages",
+    srcs = ["pages.py"],
     add_test_rule = 1,
-    data = [":jekyll_data"],
-    tags = DEFAULT_BINARY_TAGS,
+    data = [
+        ":pages_input",
+        ":pages_input.txt",
+    ],
     test_rule_args = ["--out_dir=<test>"],
+    test_rule_size = "medium",
     test_rule_tags = DEFAULT_TEST_TAGS,
     deps = [
-        ":jekyll_base",
-    ],
-)
-
-drake_py_binary(
-    name = "serve_jekyll",
-    srcs = ["serve_jekyll.py"],
-    data = [":jekyll_data"],
-    tags = DEFAULT_BINARY_TAGS,
-    deps = [
-        ":jekyll_base",
+        ":defs",
     ],
 )
 
@@ -129,7 +107,7 @@ drake_py_binary(
     name = "build",
     srcs = ["build.py"],
     data = [
-        ":gen_jekyll",
+        ":pages",
         "//doc/doxygen_cxx:build",
         "//doc/pydrake:gen_sphinx",
         "//doc/styleguide:build",
@@ -146,8 +124,7 @@ filegroup(
     name = "manual_binaries",
     srcs = [
         ":build",
-        ":gen_jekyll",
-        ":serve_jekyll",
+        ":pages",
         "//doc/doxygen_cxx:build",
         "//doc/pydrake:gen_sphinx",
         "//doc/pydrake:serve_sphinx",
@@ -162,14 +139,10 @@ test_suite(
     name = "manual_tests",
     tags = ["manual"],
     tests = [
-        ":gen_jekyll_test",
+        ":pages_test",
         "//doc/pydrake:gen_sphinx_test",
         "//doc/styleguide:build_test",
     ],
 )
 
-add_lint_tests(
-    python_lint_exclude = [
-        ":conf.py",
-    ],
-)
+add_lint_tests()
