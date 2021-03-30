@@ -25,18 +25,16 @@ $ ./setup/ubuntu/install_prereqs.sh --with-doc-only
 
 # Drake's main website
 
-To preview changes locally at ``http://127.0.0.1:<n>``:
+To preview changes locally:
 
 ```
-$ bazel run //doc:serve_jekyll [-- --default_port <n>]
+$ bazel run //doc:pages -- --serve
 ```
-
-If not specified, the default port is 8000.
 
 To create output in the specified out_dir:
 
 ```
-$ bazel run //doc:gen_jekyll -- --out_dir
+$ bazel run //doc:pages -- --out_dir
 ```
 
 The output directory must not already exist.
