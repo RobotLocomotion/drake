@@ -1042,9 +1042,40 @@ void VerifyMakeFromOneVector(const RotationMatrix<double>& R_AB,
     const Vector3<double>& u_A, int axis_index) {
   EXPECT_TRUE(R_AB.IsValid());
 
-  // Verify that the unit vector u_A is located in the correct column of R_AB.
+  // Verify that the three columns of R_AB (herein denoted u, v, w), have the
+  // properties specified in MakeFromOneUnitVector().
+  const Vector3<double>& u = R_AB.col(axis_index);
+  const Vector3<double>& v = R_AB.col((axis_index + 1) % 3);
+  const Vector3<double>& w = R_AB.col((axis_index + 2) % 3);
+
+  // Verify the unit vector u is located in the correct column of R_AB.
   constexpr double kTolerance = 8 * std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(CompareMatrices(u_A,  R_AB.col(axis_index), kTolerance));
+  EXPECT_TRUE(CompareMatrices(u_A, u, kTolerance));
+
+  // Denoting uₘᵢₙ as the element of u_A with smallest absolute value, verify
+  // |uₘᵢₙ| ≤ 1/√3 (the theoretical maximum of |uₘᵢₙ|) which occurs when
+  // |uₘᵢₙ| = |ux| = |uy| = |uz|, which means ux² + uy² + uz² = 3 uₘᵢₙ² = 1.
+  int i;  // Index of u_A with smallest absolute value, i.e., uₘᵢₙ = u_A(i).
+  const double u_min = u_A.cwiseAbs().minCoeff(&i);
+  EXPECT_LE(u_min + kTolerance, 1.0/std::sqrt(3));
+
+  // Verify that v(i) = 0.
+  EXPECT_EQ(v(i), 0);
+
+  // Verify w(i) is equal to the most positive component of the unit vector w.
+  int index_of_most_positive_element;
+  const double w_max = w.maxCoeff(&index_of_most_positive_element);
+  EXPECT_EQ(w_max, w(i));
+  EXPECT_GE(w_max + kTolerance, std::sqrt(3)/3);
+
+  // Verify w(i) ≈ 1 and w(j) = w(k) ≈ 0 if u_min = 0.
+  if (u_min == 0) {
+    const int j = (i + 1) % 3;
+    const int k = (j + 1) % 3;
+    EXPECT_LE(std::abs(w(i) - 1), kTolerance);
+    EXPECT_LE(std::abs(w(j)), kTolerance);
+    EXPECT_LE(std::abs(w(k)), kTolerance);
+  }
 
   // The code below is a copy/edit of code in the soon-to-be-deprecated function
   // ComputeBasisFromAxis() in the old Drake file orthogonal_bases.h. It is also

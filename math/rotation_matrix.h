@@ -283,7 +283,12 @@ class RotationMatrix {
   /// @param[in] axis_index The index of the unit vector associated with u_A,
   ///  with 0 meaning u_A is Bx, 1 meaning u_A is By, and 2 meaning u_A is Bz.
   /// @pre axis_index is 0 or 1 or 2.
-  /// @retval R_AB rotational matrix with u_A in the axis_index column of R_AB.
+  /// @retval R_AB rotation matrix whose columns form a right-handed orthogonal
+  /// basis consisting of unit vectors u, v, w with u = u_A in the axis_index
+  /// column of R_AB.  Letting i denote the index of u with smallest absolute
+  /// value which means |u(i)| is the smallest absolute element in u, then
+  /// v(i) = 0 and w(i) is the most positive component of w.  If u(i) = 0, then
+  /// w(i) = 1, w(j) = 0, w(k) = 0.
   static RotationMatrix<T> MakeFromOneVector(
       const Vector3<T>& b_A, int axis_index) {
     // Ensure b_A can be made into a unit vector (not a zero vector, NAN, etc.).
@@ -295,28 +300,34 @@ class RotationMatrix {
 
   /// (Advanced) Creates a right-handed orthonormal basis B and a rotation
   /// matrix R_AB from a given unit vector u_A.
-  /// @param[in] u_A unit vector which is expressed in frame A and represents
-  ///  either Bx or By or Bz (depending on the value of axis_index).
+  /// @param[in] u_A unit vector which is expressed in frame A and is either
+  ///  Bx or By or Bz (depending on the value of axis_index).
   /// @param[in] axis_index The index of the unit vector associated with u_A,
   ///  with 0 meaning u_A is Bx, 1 meaning u_A is By, and 2 meaning u_A is Bz.
   /// @pre axis_index is 0 or 1 or 2.
-  /// @pre u_A must be a unit vector within a tolerance of 4ε, roughly 8e-16.
+  /// @pre u_A is a unit vector within a tolerance of 4ε ≈ 8.88E-16.
   /// @note This method is designed for maximum performance and hence does not
-  /// verify the preconditions in Release builds.
-  /// @retval R_AB rotational matrix with u_A in the axis_index column of R_AB.
+  /// verify the preconditions in Release builds.  Consider MakeFromOneVector().
+  /// @retval R_AB rotation matrix.  See @retval in MakeFromOneVector().
   static RotationMatrix<T> MakeFromOneUnitVector(
       const Vector3<T>& u_A, int axis_index) {
     // In debug builds, verify axis_index is 0 or 1 or 2.
     DRAKE_ASSERT(axis_index >= 0  &&  axis_index <= 2);
 
     // In debug builds, verify u_A is within kTolerance of a unit vector.
-    // The tight value of kTolerance is based on numerical experiments/testing.
-    // Below: In debug builds, R_AB is also validated before return.
+    // The value kTolerance = 4ε ≈ 8.88E-16 is based on emperical numerical
+    // testing and is (empirically) well within the tolerance achievable by
+    // normalizing a vast range of non-zero vectors.  kTolerance = 4ε seems
+    // (empirically) to guarantee a valid RotationMatrix (see IsValid()).
     constexpr double kTolerance = 4 * std::numeric_limits<double>::epsilon();
     DRAKE_ASSERT_VOID(ThrowIfNotValidUnitVector(u_A, kTolerance));
 
     // This method forms a right-handed orthonormal basis with u_A (herein
     // abbreviated u) and two internally-constructed unit vectors v and w.
+    // Conceptually, v = a.Cross(u).normalized() and w = u.Cross(v).  However,
+    // to help this method run ≈ 3X faster than traditional algorithms, we
+    // leverage known zeros in the unit vector a (described below), streamline
+    // computation for v and w, and uses clever software techniques.
 
     // To form a unit vector v perpendicular to the given unit vector u, we use
     // the fact that a x u is guaranteed to be perpendicular to u (where a is
@@ -328,29 +339,28 @@ class RotationMatrix {
     // Because we select uₘᵢₙ as the element with the *smallest* magnitude, and
     // since |u|² = ux² + uy² + uz² = 1, we are guaranteed that for the two
     // elements that are not uₘᵢₙ, at least one must be non-zero.
-    // That guarantees that |a x u| ≠ 0.  Moreover, notice that:
+    // This logic guarantees that |a x u| ≠ 0.  Moreover, notice that:
     // If |ux| is smallest, |a x u|² = uz² + uy² = 1 - ux² = 1 - uₘᵢₙ²
     // If |uy| is smallest, |a x u|² = uz² + ux² = 1 - uy² = 1 - uₘᵢₙ²
     // If |uz| is smallest, |a x u|² = uy² + ux² = 1 - uz² = 1 - uₘᵢₙ²
-    // We define v = a x u / |a x u| = a x u / √(1 - uₘᵢₙ²) = r a x u
-    // where r = 1 /√(1 - uₘᵢₙ²).
+    // We define v = a x u / |a x u| = a x u / √(1 - uₘᵢₙ²).
 
     // By defining w = u x v, w is guaranteed to be a unit vector perpendicular
     // to both u and v and ordered so u, v, w form a right-handed set.
     // To avoid computational cost, we do not directly calculate w = u x v, but
     // instead substitute for v and do algebraic and vector simplification.
     //  w = u x v                  Next, substitute v = (a x u) / |a x u|.
-    //    = u x (a x u) / |a x u|  Now define and use r = 1 /|a x u|.
+    //    = u x (a x u) / |a x u|  Now define and use r = 1 /|a x u| (r > 0).
     //    = r u x (a x u)          Use vector triple product "bac-cab" property.
     //    = r [a(u⋅u) - u(u⋅a)]    Next, Substitute u⋅u = 1 and u⋅a = uₘᵢₙ.
     //    = r (a - uₘᵢₙ u)         This shows w is mostly in the direction of a.
-    // Notice that w is completely in the a direction if uₘᵢₙ = 0.
+    // Notice that if uₘᵢₙ = 0, then w = r a is completely in the +a direction.
     // Lastly, we efficiently form w = r(a - uₘᵢₙ u) by defining s = r uₘᵢₙ.
     // TODO(Mitiguy) Add something more than just "Then a miracle occurs.".
 
-    // The unit vector w has the following helpfully identifiable properties:
+    // The unit vectors v and w have the following identifiable properties:
     // If uᵢ (i = 0 or 1 or 2) is the element of u with smallest absolute value,
-    // then wᵢ (the iᵗʰ element of w) is the most positive element of w.
+    // vᵢ = 0 and wᵢ (the iᵗʰ element of w) is the most positive element of w.
     // If uᵢ = 0, then wᵢ = 1 and the other two elements of w are 0.
 
     // Instantiate the final rotation matrix and write directly to it instead of
@@ -364,8 +374,10 @@ class RotationMatrix {
     auto w = R_AB.R_AB_.col((axis_index + 2) % 3);
 
     // Indices i, j, k are in cyclical order: 0, 1, 2 or 1, 2, 0 or 2, 0, 1.
+    // The value of the index i is determined by identifying uₘᵢₙ = u_A(i),
+    // the element of u_A with smallest absolute value.
     int i;
-    u_A.cwiseAbs().minCoeff(&i);
+    u_A.cwiseAbs().minCoeff(&i);  // uₘᵢₙ = u_A(i).
     const int j = (i + 1) % 3;
     const int k = (j + 1) % 3;
     using std::sqrt;
@@ -375,9 +387,9 @@ class RotationMatrix {
     v(i) = 0;
     v(j) = -r * u_A(k);
     v(k) = r * u_A(j);
-    w(i) = mag_a_cross_u;
-    w(j) = s * u_A(j);
-    w(k) = s * u_A(k);
+    w(i) = mag_a_cross_u;  // w(i) is the most positive component of w.
+    w(j) = s * u_A(j);     // w(j) = 0 if uₘᵢₙ = u_A(i) = 0.
+    w(k) = s * u_A(k);     // w(k) = 0 if uₘᵢₙ = u_A(i) = 0.
 
     // In debug builds, validate the output rotation R_AB which also serves as a
     // secondary check on the validity of the input vector u_A as a unit vector.
