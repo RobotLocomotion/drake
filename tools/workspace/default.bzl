@@ -56,6 +56,7 @@ load("@drake//tools/workspace/mosek:repository.bzl", "mosek_repository")
 load("@drake//tools/workspace/net_sf_jchart2d:repository.bzl", "net_sf_jchart2d_repository")  # noqa
 load("@drake//tools/workspace/nlopt:repository.bzl", "nlopt_repository")
 load("@drake//tools/workspace/openblas:repository.bzl", "openblas_repository")
+load("@drake//tools/workspace/opencl:repository.bzl", "opencl_repository")
 load("@drake//tools/workspace/opengl:repository.bzl", "opengl_repository")
 load("@drake//tools/workspace/optitrack_driver:repository.bzl", "optitrack_driver_repository")  # noqa
 load("@drake//tools/workspace/org_apache_xmlgraphics_commons:repository.bzl", "org_apache_xmlgraphics_commons_repository")  # noqa
@@ -208,6 +209,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         nlopt_repository(name = "nlopt")
     if "openblas" not in excludes:
         openblas_repository(name = "openblas")
+    if "opencl" not in excludes:
+        opencl_repository(name = "opencl")
     if "opengl" not in excludes:
         opengl_repository(name = "opengl")
     if "optitrack_driver" not in excludes:

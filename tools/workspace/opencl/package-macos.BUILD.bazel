@@ -1,0 +1,9 @@
+# -*- python -*-
+
+licenses(["permissive"])  # OpenCL license
+
+cc_library(
+    name = "opencl",
+    linkopts = ["-framework OpenCL"],
+    visibility = ["//visibility:public"],
+)
