@@ -737,7 +737,12 @@ GTEST_TEST(PrimitiveMeshTests, MakeSquarePatch) {
     }
     const Vector3f corner = Vector3f(0.5f, 0.5f, 0.0) * kMeasure;
     EXPECT_TRUE(CompareMatrices(min_pt, -corner, kEps));
-    EXPECT_TRUE(CompareMatrices(max_pt, corner, kEps));
+    // We are using single-precision floating-point numbers. When we use AVX2
+    // + FMA with GCC on Ubuntu 18.04, it failed for the absolute tolerance
+    // kEps = 1.2e-7 with delta = -9.5e-7. That's why we increase that
+    // tolerance ten times here. Interestingly CLang was fine with the
+    // tolerance kEps.
+    EXPECT_TRUE(CompareMatrices(max_pt, corner, 10 * kEps));
 
     const auto expected_n = Vector3f::UnitZ().transpose();
     for (int v = 0; v < mesh_data.positions.rows(); ++v) {

@@ -613,15 +613,12 @@ TEST_F(ObbMakerTestOctahedron, ObbMakerCompute) {
 
   const Obb obb_F = ObbMaker(mesh_F, test_vertices_).Compute();
   EXPECT_TRUE(Contain(obb_F, mesh_F, test_vertices_));
-  // The threshold was set empirically. It is much smaller than the
-  // previous test before vertex transform.
-  EXPECT_NEAR(obb_F.CalcVolume(), 9.741, 0.001);
-
-  // Empirical tolerance for comparing unit vectors from characteristic
-  // equation AX = λX and rigid transform.
-  double kEps = 100. * std::numeric_limits<double>::epsilon();
-  EXPECT_FALSE(CompareMatrices(obb_F.pose().GetAsMatrix4(),
-                               (X_MF * obb_M.pose()).GetAsMatrix4(), kEps));
+  // Show that OBB of the rigid-tranformed octahedron has less than half the
+  // volume of OBB of the original octahedron. Therefore, our algorithm is not
+  // always optimal. This example is an Achilles heel of our method because
+  // the regular octahedron has no preferred direction in the sense of
+  // Principal Component Analysis.
+  EXPECT_LT(obb_F.CalcVolume() / obb_M.CalcVolume(), 0.5);
 }
 
 // TODO(DamrongGuoy): Update or remove this test if we improve the algorithm.
