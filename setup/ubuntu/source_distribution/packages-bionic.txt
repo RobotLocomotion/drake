@@ -29,7 +29,6 @@ libtiff5-dev
 libtinyxml-dev
 libtool
 libx11-dev
-ocl-icd-opencl-dev
 opencl-headers
 openssh-client
 patch
