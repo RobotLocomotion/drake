@@ -14,7 +14,10 @@ def _impl(repository_ctx):
             "BUILD.bazel",
         )
     elif os_result.is_ubuntu:
-        hdrs = ["CL/cl.h"]
+        hdrs = [
+            "CL/cl.h",
+            "CL/opencl.h",
+        ]
         for hdr in hdrs:
             repository_ctx.symlink(
                 "/usr/include/{}".format(hdr),
