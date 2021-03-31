@@ -260,27 +260,6 @@ class ManipulationStation : public systems::Diagram<T> {
       const multibody::Frame<T>& child_frame,
       const math::RigidTransform<double>& X_PC);
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  /// Registers an RGBD sensor. Must be called before Finalize().
-  /// @param name Name for the camera.
-  /// @param parent_frame The parent frame (frame P). The body that
-  /// @p parent_frame is attached to must have a corresponding
-  /// geometry::FrameId. Otherwise, an exception will be thrown in Finalize().
-  /// @param X_PCameraBody Transformation between frame P and the camera body.
-  /// see systems::sensors:::RgbdSensor for descriptions about how the
-  /// camera body, RGB, and depth image frames are related.
-  /// @param properties Properties for the RGBD camera.
-  /// @pydrake_mkdoc_identifier{single_properties}
-  DRAKE_DEPRECATED("2021-04-01",
-                   "CameraProperties are being deprecated. Please use the "
-                   "DepthRenderCamera variant.")
-  void RegisterRgbdSensor(
-      const std::string& name, const multibody::Frame<T>& parent_frame,
-      const math::RigidTransform<double>& X_PCameraBody,
-      const geometry::render::DepthCameraProperties& properties);
-#pragma GCC diagnostic pop
-
   /// Registers an RGBD sensor. Must be called before Finalize().
   /// @param name Name for the camera.
   /// @param parent_frame The parent frame (frame P). The body that

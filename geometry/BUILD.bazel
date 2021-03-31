@@ -25,7 +25,6 @@ drake_cc_package_library(
         ":geometry_set",
         ":geometry_state",
         ":geometry_version",
-        ":geometry_visualization",
         ":internal_frame",
         ":internal_geometry",
         ":proximity_engine",
@@ -236,22 +235,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "geometry_visualization",
-    srcs = ["geometry_visualization.cc"],
-    hdrs = ["geometry_visualization.h"],
-    deps = [
-        ":geometry_state",
-        ":scene_graph",
-        "//lcm",
-        "//lcmtypes:viewer",
-        "//math:geometric_transform",
-        "//systems/framework:diagram_builder",
-        "//systems/lcm:lcm_pubsub_system",
-        "//systems/rendering:pose_bundle_to_draw_message",
-    ],
-)
-
-drake_cc_library(
     name = "internal_frame",
     srcs = ["internal_frame.cc"],
     hdrs = ["internal_frame.h"],
@@ -440,14 +423,6 @@ drake_cc_googletest(
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "//geometry/test_utilities:dummy_render_engine",
-    ],
-)
-
-drake_cc_googletest(
-    name = "geometry_visualization_test",
-    deps = [
-        ":geometry_visualization",
-        "//common/test_utilities:expect_throws_message",
     ],
 )
 

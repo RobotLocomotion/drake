@@ -39,9 +39,7 @@ using Eigen::Map;
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using geometry::FrameId;
-using geometry::render::CameraProperties;
 using geometry::render::ColorRenderCamera;
-using geometry::render::DepthCameraProperties;
 using geometry::render::DepthRenderCamera;
 using math::RigidTransformd;
 using math::RollPitchYawd;
@@ -203,34 +201,6 @@ PYBIND11_MODULE(sensors, m) {
 
   py::class_<RgbdSensor, LeafSystem<T>> rgbd_sensor(
       m, "RgbdSensor", doc.RgbdSensor.doc);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  py::class_<RgbdSensor::CameraPoses>(
-      rgbd_sensor, "CameraPoses", doc.RgbdSensor.CameraPoses.doc_deprecated)
-      .def(DeprecatedParamInit<RgbdSensor::CameraPoses>(
-          doc.RgbdSensor.CameraPoses.doc_deprecated))
-      .def_readwrite("X_BC", &RgbdSensor::CameraPoses::X_BC)
-      .def_readwrite("X_BD", &RgbdSensor::CameraPoses::X_BD);
-
-  rgbd_sensor
-      .def(py_init_deprecated<RgbdSensor, FrameId, const RigidTransformd&,
-               const CameraProperties&, const DepthCameraProperties&,
-               const RgbdSensor::CameraPoses&, bool>(
-               doc.RgbdSensor.ctor.doc_legacy_individual_intrinsics),
-          py::arg("parent_id"), py::arg("X_PB"), py::arg("color_properties"),
-          py::arg("depth_properties"),
-          py::arg("camera_poses") = RgbdSensor::CameraPoses{},
-          py::arg("show_window") = false,
-          doc.RgbdSensor.ctor.doc_legacy_individual_intrinsics)
-      .def(py_init_deprecated<RgbdSensor, FrameId, const RigidTransformd&,
-               const DepthCameraProperties&, const RgbdSensor::CameraPoses&,
-               bool>(doc.RgbdSensor.ctor.doc_legacy_combined_intrinsics),
-          py::arg("parent_id"), py::arg("X_PB"), py::arg("properties"),
-          py::arg("camera_poses") = RgbdSensor::CameraPoses{},
-          py::arg("show_window") = false,
-          doc.RgbdSensor.ctor.doc_legacy_combined_intrinsics);
-#pragma GCC diagnostic pop
 
   rgbd_sensor
       .def(py::init<FrameId, const RigidTransformd&, ColorRenderCamera,

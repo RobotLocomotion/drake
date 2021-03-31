@@ -15,7 +15,6 @@ drake_cc_package_library(
     name = "render",
     visibility = ["//visibility:public"],
     deps = [
-        ":camera_properties",
         ":render_camera",
         ":render_engine",
         ":render_engine_vtk",
@@ -26,16 +25,10 @@ drake_cc_package_library(
 )
 
 drake_cc_library(
-    name = "camera_properties",
-    hdrs = ["camera_properties.h"],
-)
-
-drake_cc_library(
     name = "render_camera",
     srcs = ["render_camera.cc"],
     hdrs = ["render_camera.h"],
     deps = [
-        ":camera_properties",
         "//common:essential",
         "//math:geometric_transform",
         "//systems/sensors:camera_info",
@@ -49,7 +42,6 @@ drake_cc_library(
     srcs = ["render_engine.cc"],
     hdrs = ["render_engine.h"],
     deps = [
-        ":camera_properties",
         ":render_camera",
         ":render_label",
         "//common:essential",

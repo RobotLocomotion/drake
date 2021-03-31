@@ -13,7 +13,6 @@ from pydrake.examples.manipulation_station import (
 from pydrake.geometry.render import (
     ClippingRange,
     ColorRenderCamera,
-    DepthCameraProperties,
     DepthRange,
     DepthRenderCamera,
     RenderCameraCore,
@@ -199,19 +198,3 @@ class TestManipulationStation(unittest.TestCase):
         self.assertEqual(len(camera_poses), 5)
         self.assertTrue("single_sensor" in camera_poses)
         self.assertTrue("dual_sensor" in camera_poses)
-
-    def test_rgbd_sensor_registration_deprecated(self):
-        X_PC = RigidTransform(p=[1, 2, 3])
-        station = ManipulationStation(time_step=0.001)
-        station.SetupManipulationClassStation()
-        plant = station.get_multibody_plant()
-        with catch_drake_warnings(expected_count=2):
-            properties = DepthCameraProperties(10, 10, np.pi / 4, "renderer",
-                                               0.01, 5.0)
-            station.RegisterRgbdSensor("deprecated", plant.world_frame(), X_PC,
-                                       properties)
-        station.Finalize()
-        camera_poses = station.GetStaticCameraPosesInWorld()
-        # The three default cameras plus the one just added.
-        self.assertEqual(len(camera_poses), 4)
-        self.assertTrue("deprecated" in camera_poses)

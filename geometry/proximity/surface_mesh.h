@@ -131,16 +131,6 @@ class SurfaceMesh {
   using ScalarType = T;
 
   /**
-   A surface mesh has the intrinsic dimension 2.  It is embedded in 3-d space.
-   */
-  DRAKE_DEPRECATED(
-      "2021-04-01",
-      "kDim has been deemed redundant, and its usage is being dropped in "
-      "favor of using kVertexPerElement. The relationship between kDim and "
-      "kVertexPerElement is: kVertexPerElement = kDim + 1.")
-  static constexpr int kDim = 2;
-
-  /**
    Number of vertices per element. A triangle has 3 vertices.
    */
   static constexpr int kVertexPerElement = 3;

@@ -498,39 +498,6 @@ class GeometryState {
   /** Implementation of SceneGraph::RegisteredRendererNames().  */
   std::vector<std::string> RegisteredRendererNames() const;
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  /** Implementation of QueryObject::RenderColorImage().
-   @pre All poses have already been updated.  */
-  DRAKE_DEPRECATED("2021-04-01",
-                   "CameraProperties are being deprecated. Please use the "
-                   "ColorRenderCamera variant.")
-  void RenderColorImage(const render::CameraProperties& camera,
-                        FrameId parent_frame, const math::RigidTransformd& X_PC,
-                        bool show_window,
-                        systems::sensors::ImageRgba8U* color_image_out) const;
-
-  /** Implementation of QueryObject::RenderDepthImage().
-   @pre All poses have already been updated.  */
-  DRAKE_DEPRECATED("2021-04-01",
-                   "CameraProperties are being deprecated. Please use the "
-                   "DepthRenderCamera variant.")
-  void RenderDepthImage(const render::DepthCameraProperties& camera,
-                        FrameId parent_frame, const math::RigidTransformd& X_PC,
-                        systems::sensors::ImageDepth32F* depth_image_out) const;
-
-  /** Implementation of QueryObject::RenderLabelImage().
-   @pre All poses have already been updated.  */
-  DRAKE_DEPRECATED("2021-04-01",
-                   "CameraProperties are being deprecated. Please use the "
-                   "ColorRenderCamera variant.")
-  void RenderLabelImage(const render::CameraProperties& camera,
-                        FrameId parent_frame, const math::RigidTransformd& X_PC,
-                        bool show_window,
-                        systems::sensors::ImageLabel16I* label_image_out) const;
-
-#pragma GCC diagnostic pop
-
   /** Implementation of QueryObject::RenderColorImage().
    @pre All poses have already been updated.  */
   void RenderColorImage(const render::ColorRenderCamera& camera,
@@ -606,11 +573,6 @@ class GeometryState {
       dest.insert({id, X_WG_source.template cast<T>()});
     }
   }
-
-  // NOTE: This friend class is responsible for evaluating the internals of
-  // a GeometryState and translating it into the appropriate visualization
-  // mechanism.
-  friend class internal::GeometryVisualizationImpl;
 
   // Allow SceneGraph unique access to the state members to perform queries.
   friend class SceneGraph<T>;

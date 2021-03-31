@@ -889,18 +889,6 @@ void ManipulationStation<T>::RegisterWsgControllerModel(
   wsg_model_.model_instance = wsg_instance;
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-template <typename T>
-void ManipulationStation<T>::RegisterRgbdSensor(
-    const std::string& name, const multibody::Frame<T>& parent_frame,
-    const RigidTransform<double>& X_PC,
-    const geometry::render::DepthCameraProperties& properties) {
-  RegisterRgbdSensor(name, parent_frame, X_PC,
-                     geometry::render::DepthRenderCamera(properties));
-}
-#pragma GCC diagnostic pop
-
 template <typename T>
 void ManipulationStation<T>::RegisterRgbdSensor(
     const std::string& name, const multibody::Frame<T>& parent_frame,

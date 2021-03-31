@@ -99,7 +99,7 @@ class TestAll(unittest.TestCase):
             # schema
             "ToDistributionVector",
             # - render
-            "CameraProperties",
+            "ColorRenderCamera",
             # lcm
             "DrakeLcm",
             # symbolic

@@ -82,94 +82,25 @@ RenderLabel RenderEngine::GetRenderLabelOrThrow(
   return label;
 }
 
-void RenderEngine::DoRenderColorImage(const ColorRenderCamera& camera,
-                                      ImageRgba8U* color_image_out) const {
-  if (visited_color_) {
-    throw std::runtime_error(fmt::format(
-        "{}: attempting to render a color image without implementing "
-        "RenderColorImage (deprecated) or DoRenderColorImage (preferred).",
-        NiceTypeName::Get(*this)));
-  }
-  visited_color_ = true;
-  ScopeExit guard([this]() { visited_color_ = false; });
-
-  // TODO(SeanCurtis-TRI): Consider modifying this warning (and those for the
-  //  other image types) so that it only gets broadcast if the intrinsics *have*
-  //  properties that would lose information.
-  static const logging::Warn log_once(
-      "{}::DoRenderColorImage has not been implemented; attempting to use the "
-      "simple camera model variant; if the camera intrinsics have anisotropic "
-      "focal lengths or a non-centered principal point, those details will be "
-      "lost.",
-      NiceTypeName::Get(*this));
-
-  const CameraInfo& intrinsics = camera.core().intrinsics();
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  CameraProperties simple_props{intrinsics.width(), intrinsics.height(),
-                                intrinsics.fov_y(),
-                                camera.core().renderer_name()};
-  RenderColorImage(simple_props, camera.show_window(), color_image_out);
-#pragma GCC diagnostic pop
+void RenderEngine::DoRenderColorImage(const ColorRenderCamera&,
+                                      ImageRgba8U*) const {
+  throw std::runtime_error(
+      fmt::format("{}: has not implemented DoRenderColorImage().",
+                  NiceTypeName::Get(*this)));
 }
 
-void RenderEngine::DoRenderDepthImage(const DepthRenderCamera& camera,
-                                      ImageDepth32F* depth_image_out) const {
-  if (visited_depth_) {
-    throw std::runtime_error(fmt::format(
-        "{}: attempting to render a depth image without implementing "
-        "RenderDepthImage (deprecated) or DoRenderDepthImage (preferred).",
-        NiceTypeName::Get(*this)));
-  }
-  visited_depth_ = true;
-  ScopeExit guard([this]() { visited_depth_ = false; });
-
-  static const logging::Warn log_once(
-      "{}::DoRenderDepthImage has not been implemented; attempting to use the "
-      "simple camera model variant; if the camera intrinsics have anisotropic "
-      "focal lengths or a non-centered principal point, those details will be "
-      "lost.",
-      NiceTypeName::Get(*this));
-
-  const CameraInfo& intrinsics = camera.core().intrinsics();
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  DepthCameraProperties simple_props{intrinsics.width(),
-                                     intrinsics.height(),
-                                     intrinsics.fov_y(),
-                                     camera.core().renderer_name(),
-                                     camera.depth_range().min_depth(),
-                                     camera.depth_range().max_depth()};
-  RenderDepthImage(simple_props, depth_image_out);
-#pragma GCC diagnostic pop
+void RenderEngine::DoRenderDepthImage(const DepthRenderCamera&,
+                                      ImageDepth32F*) const {
+  throw std::runtime_error(
+      fmt::format("{}: has not implemented DoRenderDepthImage().",
+                  NiceTypeName::Get(*this)));
 }
 
-void RenderEngine::DoRenderLabelImage(const ColorRenderCamera& camera,
-                                      ImageLabel16I* label_image_out) const {
-  if (visited_label_) {
-    throw std::runtime_error(fmt::format(
-        "{}: attempting to render a label image without implementing "
-        "RenderLabelImage (deprecated) or DoRenderLabelImage (preferred).",
-        NiceTypeName::Get(*this)));
-  }
-  visited_label_ = true;
-  ScopeExit guard([this]() { visited_label_ = false; });
-
-  static const logging::Warn log_once(
-      "{}::DoRenderLabelImage has not been implemented; attempting to use the "
-      "simple camera model variant; if the camera intrinsics have anisotropic "
-      "focal lengths or a non-centered principal point, those details will be "
-      "lost.",
-      NiceTypeName::Get(*this));
-
-  const CameraInfo& intrinsics = camera.core().intrinsics();
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  CameraProperties simple_props{intrinsics.width(), intrinsics.height(),
-                                intrinsics.fov_y(),
-                                camera.core().renderer_name()};
-  RenderLabelImage(simple_props, camera.show_window(), label_image_out);
-#pragma GCC diagnostic pop
+void RenderEngine::DoRenderLabelImage(const ColorRenderCamera&,
+                                      ImageLabel16I*) const {
+  throw std::runtime_error(
+      fmt::format("{}: has not implemented DoRenderLabelImage().",
+                  NiceTypeName::Get(*this)));
 }
 
 void RenderEngine::SetDefaultLightPosition(const Vector3<double>&) {}

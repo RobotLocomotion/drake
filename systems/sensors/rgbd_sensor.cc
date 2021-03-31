@@ -8,7 +8,6 @@
 #include <Eigen/Dense>
 
 #include "drake/common/text_logging.h"
-#include "drake/geometry/render/camera_properties.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
@@ -26,42 +25,13 @@ using Eigen::Translation3d;
 using geometry::FrameId;
 using geometry::QueryObject;
 using geometry::SceneGraph;
-using geometry::render::CameraProperties;
 using geometry::render::ColorRenderCamera;
-using geometry::render::DepthCameraProperties;
 using geometry::render::DepthRange;
 using geometry::render::DepthRenderCamera;
 using math::RigidTransformd;
 using std::make_pair;
 using std::move;
 using std::pair;
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-RgbdSensor::RgbdSensor(FrameId parent_id, const RigidTransformd& X_PB,
-                       const CameraProperties& color_properties,
-                       const DepthCameraProperties& depth_properties,
-                       const CameraPoses& camera_poses, bool show_window)
-    : RgbdSensor(
-          parent_id, X_PB,
-          ColorRenderCamera(color_properties, show_window, camera_poses.X_BC),
-          DepthRenderCamera(depth_properties, camera_poses.X_BD)) {
-  static const logging::Warn log_once(
-      "RgbdSensor constructors that take 'CameraProperties' have been "
-      "deprecated. Please use the RenderCamera variants instead.");
-}
-
-RgbdSensor::RgbdSensor(geometry::FrameId parent_id, const RigidTransformd& X_PB,
-                       const DepthCameraProperties& properties,
-                       const CameraPoses& camera_poses, bool show_window)
-    : RgbdSensor(parent_id, X_PB,
-                 ColorRenderCamera(properties, show_window, camera_poses.X_BC),
-                 DepthRenderCamera(properties, camera_poses.X_BD)) {
-  static const logging::Warn log_once(
-      "RgbdSensor constructors that take 'CameraProperties' have been "
-      "deprecated. Please use the RenderCamera variants instead.");
-}
-#pragma GCC diagnostic pop
 
 RgbdSensor::RgbdSensor(FrameId parent_id, const RigidTransformd& X_PB,
                        const DepthRenderCamera& depth_camera,

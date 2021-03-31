@@ -991,50 +991,6 @@ std::vector<std::string> GeometryState<T>::RegisteredRendererNames() const {
   return names;
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-template <typename T>
-void GeometryState<T>::RenderColorImage(const render::CameraProperties& camera,
-                                        FrameId parent_frame,
-                                        const RigidTransformd& X_PC,
-                                        bool show_window,
-                                        ImageRgba8U* color_image_out) const {
-  const RigidTransformd X_WC = GetDoubleWorldPose(parent_frame) * X_PC;
-  const render::RenderEngine& engine =
-      GetRenderEngineOrThrow(camera.renderer_name);
-  // TODO(SeanCurtis-TRI): Invoke UpdateViewpoint() as part of a calc cache
-  //  entry. Challenge: how to do that with a parameter passed here?
-  const_cast<render::RenderEngine&>(engine).UpdateViewpoint(X_WC);
-  engine.RenderColorImage(camera, show_window, color_image_out);
-}
-
-template <typename T>
-void GeometryState<T>::RenderDepthImage(
-    const render::DepthCameraProperties& camera, FrameId parent_frame,
-    const RigidTransformd& X_PC, ImageDepth32F* depth_image_out) const {
-  const RigidTransformd X_WC = GetDoubleWorldPose(parent_frame) * X_PC;
-  const render::RenderEngine& engine =
-      GetRenderEngineOrThrow(camera.renderer_name);
-  // See note in RenderColorImage() about this const cast.
-  const_cast<render::RenderEngine&>(engine).UpdateViewpoint(X_WC);
-  engine.RenderDepthImage(camera, depth_image_out);
-}
-
-template <typename T>
-void GeometryState<T>::RenderLabelImage(const render::CameraProperties& camera,
-                                        FrameId parent_frame,
-                                        const RigidTransformd& X_PC,
-                                        bool show_window,
-                                        ImageLabel16I* label_image_out) const {
-  const RigidTransformd X_WC = GetDoubleWorldPose(parent_frame) * X_PC;
-  const render::RenderEngine& engine =
-      GetRenderEngineOrThrow(camera.renderer_name);
-  // See note in RenderColorImage() about this const cast.
-  const_cast<render::RenderEngine&>(engine).UpdateViewpoint(X_WC);
-  engine.RenderLabelImage(camera, show_window, label_image_out);
-}
-#pragma GCC diagnostic pop
-
 template <typename T>
 void GeometryState<T>::RenderColorImage(const ColorRenderCamera& camera,
                                         FrameId parent_frame,

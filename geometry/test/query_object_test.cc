@@ -17,7 +17,6 @@ namespace geometry {
 using Eigen::Vector3d;
 using math::RigidTransformd;
 using render::ColorRenderCamera;
-using render::DepthCameraProperties;
 using render::DepthRenderCamera;
 using std::make_unique;
 using std::unique_ptr;
@@ -160,12 +159,6 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   // Enumerate *all* queries to confirm they throw the proper exception.
 
   // Scalar-dependent state queries.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_DEFAULT_ERROR(default_object.X_WF(FrameId::get_new_id()));
-  EXPECT_DEFAULT_ERROR(default_object.X_PF(FrameId::get_new_id()));
-  EXPECT_DEFAULT_ERROR(default_object.X_WG(GeometryId::get_new_id()));
-#pragma GCC diagnostic pop
   EXPECT_DEFAULT_ERROR(default_object.GetPoseInWorld(FrameId::get_new_id()));
   EXPECT_DEFAULT_ERROR(default_object.GetPoseInParent(FrameId::get_new_id()));
   EXPECT_DEFAULT_ERROR(default_object.GetPoseInWorld(GeometryId::get_new_id()));
@@ -205,18 +198,6 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   ImageLabel16I label;
   EXPECT_DEFAULT_ERROR(default_object.RenderLabelImage(
       color_camera, FrameId::get_new_id(), X_WC, &label));
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  const DepthCameraProperties properties(2, 2, M_PI, "dummy_renderer", 0.1,
-                                         5.0);
-  EXPECT_DEFAULT_ERROR(default_object.RenderColorImage(
-      properties, FrameId::get_new_id(), X_WC, false, &color));
-  EXPECT_DEFAULT_ERROR(default_object.RenderDepthImage(
-      properties, FrameId::get_new_id(), X_WC, &depth));
-  EXPECT_DEFAULT_ERROR(default_object.RenderLabelImage(
-      properties, FrameId::get_new_id(), X_WC, false, &label));
-#pragma GCC diagnostic pop
 
   EXPECT_DEFAULT_ERROR(default_object.GetRenderEngineByName("dummy"));
 
