@@ -21,6 +21,7 @@ drake_cc_package_library(
         ":contact_solver_results",
         ":contact_solver_utils",
         ":linear_operator",
+        ":pgs_solver",
         ":point_contact_data",
         ":sparse_linear_operator",
         ":system_dynamics_data",
@@ -84,6 +85,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "pgs_solver",
+    srcs = [
+        "pgs_solver.cc",
+    ],
+    hdrs = [
+        "pgs_solver.h",
+    ],
+    deps = [
+        ":contact_solver",
+        ":contact_solver_utils",
+        "//common:unused",
+    ],
+)
+
+drake_cc_library(
     name = "point_contact_data",
     srcs = ["point_contact_data.cc"],
     hdrs = ["point_contact_data.h"],
@@ -130,6 +146,15 @@ drake_cc_googletest(
     deps = [
         ":linear_operator",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "pgs_solver_test",
+    deps = [
+        ":pgs_solver",
+        ":sparse_linear_operator",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
