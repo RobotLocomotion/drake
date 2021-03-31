@@ -36,7 +36,7 @@ drake_py_library(
 drake_py_binary(
     name = "gen_sphinx",
     srcs = [
-        "gen_sphinx.py",
+        "build.py",
     ],
     add_test_rule = 1,
     data = [
@@ -44,7 +44,7 @@ drake_py_binary(
         "conf.py",
     ],
     imports = ["."],
-    main = "gen_sphinx.py",
+    main = "build.py",
     tags = DEFAULT_BINARY_TAGS,
     test_rule_args = ["--out_dir=<test>"],
     test_rule_size = "medium",
