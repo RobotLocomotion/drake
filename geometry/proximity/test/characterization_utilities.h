@@ -65,8 +65,13 @@ enum Outcome { kSupported, kThrows };
  Note: the geometries enumerated here includes a Point (which is not a
  drake::Shape). */
 enum GeometryType {
+  kBox,
   kCapsule,
+  kConvex,
+  kCylinder,
   kEllipsoid,
+  kHalfSpace,
+  kMesh,
   kSphere
 };
 std::ostream& operator<<(std::ostream& out, GeometryType s);
@@ -162,14 +167,38 @@ class ShapeConfigurations : public ShapeReifier {
   //@{
 
   using ShapeReifier::ImplementGeometry;
+
+  /* Sample a face near a vertex, a vertex, and on an edge. */
+  void ImplementGeometry(const Box& box, void*) final;
+
   /* The capsule samples do *not* depend on `signed_distance`. One is located on
    one of the spherical caps, the other on the barrel.  */
   void ImplementGeometry(const Capsule& capsule, void*) final;
+
+  /* For the purpose of *this* test, the Convex is actually just a box. Its
+   sampling is that of the Box's sampling (see above).  */
+  void ImplementGeometry(const Convex& convex, void*) final;
+
+  /* Sample the cylinder on one cap face (near its edge), one sample on a
+   circular edge, and one on the barrel. The sample on the top face is
+   guaranteed to be positioned so that it is closest to all points up to the
+   requested penetration depth (assuming the cylinder is large enough).  */
+  void ImplementGeometry(const Cylinder& cylinder, void*) final;
 
   /* The sampling of the ellipsoid does *not* depend on `signed_distance`.
    The samples are simply two arbitrary points on the surface of the ellipsoid
    in different octants.  */
   void ImplementGeometry(const Ellipsoid& ellipsoid, void*) final;
+
+  /* The sampling of the half space does *not* depend on `signed_distance`.
+   The sample is at a single point near the origin. We keep it near the origin
+   so that precision problems don't get exacerbated by distance-to-origin
+   issues, but not *at* the origin so we don't get trivial zeros.  */
+  void ImplementGeometry(const HalfSpace& half_space, void*) final;
+
+  /* Simply throws; we'll defer mesh computations until they are supported
+   directly (instead of being represented by a Convex.  */
+  void ImplementGeometry(const Mesh& mesh, void*) final;
 
   /* The samples are at two arbitrary points in different octants of the sphere.
    */
@@ -192,8 +221,13 @@ class MakeFclShape : public ShapeReifier {
 
   /* Implementation of ShapeReifier interface  */
   using ShapeReifier::ImplementGeometry;
+  void ImplementGeometry(const Box& box, void*) final;
   void ImplementGeometry(const Capsule& capsule, void*) final;
+  void ImplementGeometry(const Convex& convex, void*) final;
+  void ImplementGeometry(const Cylinder& cylinder, void*) final;
   void ImplementGeometry(const Ellipsoid& ellipsoid, void*) final;
+  void ImplementGeometry(const HalfSpace& half_space, void*) final;
+  void ImplementGeometry(const Mesh& mesh, void*) final;
   void ImplementGeometry(const Sphere& sphere, void*) final;
 
   std::shared_ptr<fcl::CollisionGeometry<double>> object() const {
@@ -203,6 +237,9 @@ class MakeFclShape : public ShapeReifier {
  private:
   std::shared_ptr<fcl::CollisionGeometry<double>> object_{};
 };
+
+/* Reports if the Mesh shape is represented as a Convex shape under the hood. */
+::testing::AssertionResult MeshIsConvex();
 
 /* Creates a transform to align two planes. The planes are defined by a
  (point, normal) pair -- the point lies on the plane and the normal is
@@ -300,7 +337,7 @@ class CharacterizeResultTest : public ::testing::Test {
                 |    error    |
                 |-------------|     e = query.error
                 |             |
-               e/2            e
+               e/4            e
 
    This gives us a reasonably tight bound on the error.
 
@@ -310,10 +347,10 @@ class CharacterizeResultTest : public ::testing::Test {
                     error    |
                 -------------|     e = query.error
                              |
-                             3
+                             e
 
    If the expected error is already functionally epsilon, than having the worst
-   error being smaller than epsilon/2 is no bad thing.
+   error being smaller than epsilon/4 is no bad thing.
 
    N.B. This testing strategy is *atypical*. Rather than just asserting the
    answer is no worse than an expected level of precision, we also want to
@@ -372,9 +409,19 @@ class CharacterizeResultTest : public ::testing::Test {
 
   static std::unique_ptr<Shape> MakeShape(GeometryType shape, bool use_alt);
 
+  static Box box(bool alt = false);
+
   static Capsule capsule(bool alt = false);
 
+  static Convex convex(bool alt = false);
+
+  static Cylinder cylinder(bool alt = false);
+
   static Ellipsoid ellipsoid(bool alt = false);
+
+  static HalfSpace half_space(bool alt = false);
+
+  static Mesh mesh(bool alt = false);
 
   static Sphere sphere(bool alt = false);
 

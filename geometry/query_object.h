@@ -48,6 +48,7 @@ class SceneGraph;
  will always reproduce the same query results. This baking process is not cheap
  and should not be done without consideration.
 
+ @anchor query_object_precision_methodology
  <h2>Queries and scalar type</h2>
 
  A %QueryObject _cannot_ be converted to a different scalar type. A %QueryObject
@@ -55,12 +56,53 @@ class SceneGraph;
  of type T evaluated on a corresponding Context, also of type T.
 
  %QueryObject's support for arbitrary scalar type is incomplete. Not all queries
- support all scalar types to the same degree. In some cases the level of support
- is obvious (such as when the query is declared *explicitly* in terms of a
- double-valued scalar -- see ComputePointPairPenetration()). In other cases,
- where the query is expressed in terms of scalar `T`, the query may have
- restrictions. If a query has restricted scalar support, it is included in
- the query's documentation.
+ support all scalar types to the same degree. Furthermore, the queries are
+ typically served by *families* of algorithms. The evaluation of a query between
+ a particular pair of geometries will depend on the query, the pair of geometry
+ types involved, and the scalar type. From query to query, the treatment of
+ a geometry (or geometry pair) for a given scalar type can vary in many ways,
+ including but not limited to: ignoring the geometry, throwing an exception,
+ results with limited precision, or full, accurate support. The queries below
+ provide tables to help inform your expectations when evaluating queries. The
+ tables all use a common methodology and admit a common interpretation.
+
+ For each (query, geometry-pair, scalar) combination, we create a set of
+ geometric configurations with known answers. We evaluate the precision of the
+ query result (if supported at all) over the entire set and report the *worst*
+ observed error. This is a purely empirical approach and doesn't fully
+ characterize the families of underlying algorithms, and the reported error
+ may be misleading in that we've missed far worse latent error or that the
+ error reported doesn't well represent the average case.
+
+ The families of algorithms also differ in how their inherent errors scale with
+ the scale of the problem (e.g., size of geometries, magnitude of
+ distance/depth, etc.) Attempting to fully characterize that aspect is both
+ arduous and problematic, so, we've chosen a more *representative* approach.
+
+ Because Drake is primarily intended for robot simulation, we've created
+ geometric configurations on the scale of common robot manipulators (on the
+ order of 20cm). We position them with a known penetration depth (or separating
+ distance) of 2 mm. The error reported is the deviation from that expected
+ result.
+
+ When interpreting the tables, keep the following in mind:
+   - The table illustrates trends in *broad* strokes, only. It does not
+     represent an exhaustive analysis.
+   - If your problem involves larger geometries, greater penetration depths, or
+     larger separating distances, the error will vary. Do not assume that
+     observed error in this context is necessarily relative -- there truly is
+     that much variability in the families of algorithms.
+   - These values are an attempt to capture the *worst* case outcome. The
+     error shown is a single-signficant-digit approximation of that observed
+     error.
+   - These values may not actually represent the true worst case; discovering
+     the true worst case is generally challenging. These represent our best
+     effort to date. If you find outcomes that are worse those reported here,
+     please <a href="https://github.com/RobotLocomotion/drake/issues/new">
+     submit a bug</a>.
+   - These tables represent Drake's transient state. The eventual goal is to
+     report no more than 1e-14 error across all supportable geometry pairs
+     and scalars. At that point, the table will simply disappear.
 
  @tparam_nonsymbolic_scalar
 */
@@ -139,8 +181,6 @@ class QueryObject {
 
   //@}
 
-  // TODO(hongkai.dai): allow T=AutodiffXd and some primitive geometries
-  // collide.
   /**
    @anchor collision_queries
    @name                Collision Queries
@@ -175,15 +215,56 @@ class QueryObject {
    For two penetrating geometries g_A and g_B, it is guaranteed that they will
    map to `id_A` and `id_B` in a fixed, repeatable manner.
 
-   <h3>Scalar and Shape Support</h3>
-    - For scalar type `double`, we support all Shape-Shape pairs *except* for
-      HalfSpace-HalfSpace. In that case, half spaces are either non-colliding or
-      have an infinite amount of penetration.
-    - For scalar type AutoDiffXd, we only support query pairs Sphere-Box,
-      Sphere-Capsule, Sphere-Cylinder, Sphere-HalfSpace, and Sphere-Sphere.
+   <h3>Characterizing the returned values</h3>
 
-   For a Shape-Shape pair in collision that is *not* supported for a given
-   scalar type, an exception is thrown.
+   As discussed in the
+   @ref query_object_precision_methodology "class's documentation", these tables
+   document the support given by this query for pairs of geometry types and
+   scalar. See the description in the link for details on how to interpret the
+   tables' results. The query is symmetric with respect to shape *ordering*, the
+   pair (ShapeA, ShapeB) will be the same as (ShapeB, ShapeA), so we only fill
+   in half of each table.
+
+   |           |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid | %HalfSpace |  %Mesh  | %Sphere |
+   | --------: | :-----: | :------: | :-----: | :-------: | :--------: | :--------: | :-----: | :-----: |
+   | Box       |  2e-15  |  ░░░░░░  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Capsule   |  3e-5ᶜ  |   2e-5ᶜ  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Convex    |  2e-15ᶜ |   3e-5ᶜ  | 2e-15ᶜ  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Cylinder  |  1e-3ᶜ  |   4e-5ᶜ  |  1e-3ᶜ  |   2e-3ᶜ   |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Ellipsoid |  4e-4ᶜ  |   2e-4ᶜ  |  4e-4ᶜ  |   2e-3ᶜ   |    5e-4ᶜ   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | HalfSpace |  6e-15  |   4e-15  | 3e-15ᶜ  |   4e-15   |   3e-15    |   throwsᵃ  |  ░░░░░  |  ░░░░░  |
+   | Mesh      |    ᵇ    |    ᵇ     |    ᵇ    |     ᵇ     |      ᵇ     |     ᵇ      |    ᵇ    |  ░░░░░  |
+   | Sphere    |  3e-15  |   5e-15  |  3e-5ᶜ  |   5e-15   |    2e-4ᶜ   |   3e-15    |    ᵇ    |  5e-15  |
+   __*Table 1*__: Worst observed error (in m) for 2mm penetration between
+   geometries approximately 20cm in size for `T` = `double`.
+
+   |           |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid | %HalfSpace |  %Mesh  | %Sphere |
+   | --------: | :-----: | :------: | :-----: | :-------: | :--------: | :--------: | :-----: | :-----: |
+   | Box       | throwsᵈ |  ░░░░░░  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Capsule   | throwsᵈ | throwsᵈ  |  ░░░░░  |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Convex    | throwsᵈ | throwsᵈ  | throwsᵈ |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Cylinder  | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | Ellipsoid | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   throwsᵈ  |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
+   | HalfSpace | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   throwsᵈ  |   throwsᵃ  |  ░░░░░  |  ░░░░░  |
+   | Mesh      |    ᵇ    |    ᵇ     |    ᵇ    |     ᵇ     |      ᵇ     |     ᵇ      |    ᵇ    |  ░░░░░  |
+   | Sphere    |  2e-15  |  3e-15   | throwsᵈ |   2e-15   |   throwsᵈ  |   2e-15    |    ᵇ    |  4e-15  |
+   __*Table 2*__: Worst observed error (in m) for 2mm penetration between
+   geometries approximately 20cm in size for `T` = @ref drake::AutoDiffXd
+   "AutoDiffXd".
+
+   - ᵃ Penetration depth between two HalfSpace instances has no meaning; either
+       they don't intersect, or they have infinite penetration.
+   - ᵇ Meshes are represented by the *convex* hull of the mesh, therefore the
+       results for Mesh are assumed to be the same as for Convex.
+   - ᶜ These results are computed using an iterative algorithm. For particular
+       configurations, the solution may be correct to machine precision. The
+       values reported here are confirmed, observed worst case answers.
+   - ᵈ These results are simply not supported for
+       `T` = @ref drake::AutoDiffXd "AutoDiffXd" at this time.
+
+   <!-- Note to developers: the tests that support the assertions here are
+   located in penetration_as_point_pair_characterize_test.cc. The values in this
+   table should be reflected in the expected values there.  -->
 
    @returns A vector populated with all detected penetrations characterized as
             point pairs. The ordering of the results is guaranteed to be
@@ -191,8 +272,8 @@ class QueryObject {
             the same.
    @warning For Mesh shapes, their convex hulls are used in this query. It is
             *not* computationally efficient or particularly accurate.
-   @throws std::exception if unsupported pairs are in contact (see "Scalar
-   and Shape Support" for description of "unsupported pairs").*/
+   @throws std::exception if a Shape-Shape pair is in collision and indicated as
+           `throws` in the support table above.  */
   std::vector<PenetrationAsPointPair<T>> ComputePointPairPenetration() const;
 
   /**

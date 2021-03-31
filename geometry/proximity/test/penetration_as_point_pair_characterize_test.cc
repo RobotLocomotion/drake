@@ -59,6 +59,13 @@ class CharacterizePointPairResultTest : public CharacterizeResultTest<T> {
   }
 };
 
+/* *-Mesh has not been implemented because Mesh is represented by Convex.
+ However, this single test will detect when that condition is no longer true
+ and call for implementation of *-Mesh tests. */
+GTEST_TEST(CharacterizePointPairResultTest, MeshMesh) {
+  ASSERT_TRUE(MeshIsConvex());
+}
+
 class DoubleTest : public CharacterizePointPairResultTest<double>,
                    public testing::WithParamInterface<QueryInstance> {};
 
@@ -66,16 +73,40 @@ class DoubleTest : public CharacterizePointPairResultTest<double>,
 INSTANTIATE_TEST_SUITE_P(
     PenetrationAsPointPair, DoubleTest,
     testing::Values(
-        QueryInstance(kCapsule, kCapsule, 2e-5),
-        QueryInstance(kCapsule, kEllipsoid, 2e-4),
-        QueryInstance(kCapsule, kSphere, 3e-15),
+        QueryInstance(kBox, kBox, 2e-15),
+        QueryInstance(kBox, kCapsule, 3e-5),
+        QueryInstance(kBox, kConvex, 2e-15),
+        QueryInstance(kBox, kCylinder, 1e-3),
+        QueryInstance(kBox, kEllipsoid, 4e-4),
+        QueryInstance(kBox, kHalfSpace, 6e-15),
+        QueryInstance(kBox, kSphere, 3e-15),
 
+        QueryInstance(kCapsule, kCapsule, 2e-5),
+        QueryInstance(kCapsule, kConvex, 3e-5),
+        QueryInstance(kCapsule, kCylinder, 4e-5),
+        QueryInstance(kCapsule, kEllipsoid, 2e-4),
+        QueryInstance(kCapsule, kHalfSpace, 4e-15),
+        QueryInstance(kCapsule, kSphere, 5e-15),
+
+        QueryInstance(kConvex, kConvex, 2e-15),
+        QueryInstance(kConvex, kCylinder, 1e-3),
+        QueryInstance(kConvex, kEllipsoid, 4e-4),
+        QueryInstance(kConvex, kHalfSpace, 3e-15),
+        QueryInstance(kConvex, kSphere, 3e-5),
+
+        QueryInstance(kCylinder, kCylinder, 2e-3),
+        QueryInstance(kCylinder, kEllipsoid, 2e-3),
+        QueryInstance(kCylinder, kHalfSpace, 4e-15),
+        QueryInstance(kCylinder, kSphere, 5e-15),
 
         QueryInstance(kEllipsoid, kEllipsoid, 5e-4),
+        QueryInstance(kEllipsoid, kHalfSpace, 3e-15),
         QueryInstance(kEllipsoid, kSphere, 2e-4),
 
+        QueryInstance(kHalfSpace, kHalfSpace, kThrows),
+        QueryInstance(kHalfSpace, kSphere, 3e-15),
 
-        QueryInstance(kSphere, kSphere, 3e-15)),
+        QueryInstance(kSphere, kSphere, 5e-15)),
     QueryInstanceName);
 // clang-format on
 
@@ -90,13 +121,38 @@ class AutoDiffTest : public CharacterizePointPairResultTest<AutoDiffXd>,
 INSTANTIATE_TEST_SUITE_P(
     PenetrationAsPointPair, AutoDiffTest,
     testing::Values(
+        QueryInstance(kBox, kBox, kThrows),
+        QueryInstance(kBox, kCapsule, kThrows),
+        QueryInstance(kBox, kConvex, kThrows),
+        QueryInstance(kBox, kCylinder, kThrows),
+        QueryInstance(kBox, kEllipsoid, kThrows),
+        QueryInstance(kBox, kHalfSpace, kThrows),
+        QueryInstance(kBox, kSphere, 2e-15),
+
         QueryInstance(kCapsule, kCapsule, kThrows),
+        QueryInstance(kCapsule, kConvex, kThrows),
+        QueryInstance(kCapsule, kCylinder, kThrows),
         QueryInstance(kCapsule, kEllipsoid, kThrows),
+        QueryInstance(kCapsule, kHalfSpace, kThrows),
         QueryInstance(kCapsule, kSphere, 3e-15),
 
+        QueryInstance(kConvex, kConvex, kThrows),
+        QueryInstance(kConvex, kCylinder, kThrows),
+        QueryInstance(kConvex, kEllipsoid, kThrows),
+        QueryInstance(kConvex, kHalfSpace, kThrows),
+        QueryInstance(kConvex, kSphere, kThrows),
+
+        QueryInstance(kCylinder, kCylinder, kThrows),
+        QueryInstance(kCylinder, kEllipsoid, kThrows),
+        QueryInstance(kCylinder, kHalfSpace, kThrows),
+        QueryInstance(kCylinder, kSphere, 2e-15),
+
         QueryInstance(kEllipsoid, kEllipsoid, kThrows),
+        QueryInstance(kEllipsoid, kHalfSpace, kThrows),
         QueryInstance(kEllipsoid, kSphere, kThrows),
 
+        QueryInstance(kHalfSpace, kHalfSpace, kThrows),
+        QueryInstance(kHalfSpace, kSphere, 2e-15),
 
         QueryInstance(kSphere, kSphere, 4e-15)),
     QueryInstanceName);

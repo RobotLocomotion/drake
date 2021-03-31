@@ -25,11 +25,26 @@ using std::vector;
 
 std::ostream& operator<<(std::ostream& out, GeometryType s) {
   switch (s) {
+    case kBox:
+      out << "Box";
+      break;
     case kCapsule:
       out << "Capsule";
       break;
+    case kConvex:
+      out << "Convex";
+      break;
+    case kCylinder:
+      out << "Cylinder";
+      break;
     case kEllipsoid:
       out << "Ellipsoid";
+      break;
+    case kHalfSpace:
+      out << "HalfSpace";
+      break;
+    case kMesh:
+      out << "Mesh";
       break;
     case kSphere:
       out << "Sphere";
@@ -77,6 +92,36 @@ ShapeConfigurations<T>::ShapeConfigurations(const Shape& shape, double distance)
 }
 
 template <typename T>
+void ShapeConfigurations<T>::ImplementGeometry(const Box& box, void*) {
+  const Vector3d half_size = box.size() * 0.5;
+  // By default, we'll position the face point near the vertex, but removed
+  // based on the box's minimum measurement.
+  double edge_distance = half_size.minCoeff() * 0.25;
+  if (distance_ < 0) {
+    if (-distance_ > half_size.minCoeff()) {
+      throw std::runtime_error(
+          fmt::format("The box (with dimensions {}) isn't large enough for "
+                      "penetration depth of {}",
+                      box.size(), -distance_));
+    }
+    // If we actually need penetration, we need to make sure that the distance
+    // to the edges is *larger* than the requested depth (plus small padding).
+    edge_distance = std::max(edge_distance, -distance_) * 1.01;
+  }
+
+  // Note: neither the point on the corner nor on the edge are the closest point
+  // for *any* point on the inside of the box. The point on the face is closest
+  // up to the recorded edge_distance.
+  configs_ = vector<ShapeTangentPlane<T>>{
+      {half_size.cwiseProduct(Vector3d{1, -1, 1}),
+       Vector3d{0.5, -2, 1}.normalized(), 0, "+x/-y/+z vertex"},
+      {half_size.cwiseProduct(Vector3d{1, -1, 0.75}),
+       Vector3d{2, -2, 0}.normalized(), 0, "+x/-y edge parallel to z axis"},
+      {-half_size + Vector3d{edge_distance, edge_distance, 0},
+       Vector3d{0, 0, -1}, edge_distance, "-z face near the -x/-y vertex"}};
+}
+
+template <typename T>
 void ShapeConfigurations<T>::ImplementGeometry(const Capsule& capsule, void*) {
   if (distance_ < 0) {
     const double depth = -distance_;
@@ -103,6 +148,52 @@ void ShapeConfigurations<T>::ImplementGeometry(const Capsule& capsule, void*) {
   configs_ = vector<ShapeTangentPlane<T>>{
       {p_CB, n_barrel_C, capsule.radius(), "Capsule barrel"},
       {p_CS, n_sphere_C, capsule.radius(), "Capsule +z cap"}};
+}
+
+template <typename T>
+void ShapeConfigurations<T>::ImplementGeometry(const Convex&, void*) {
+  const Box box = CharacterizeResultTest<double>::box();
+  ImplementGeometry(box, nullptr);
+}
+
+template <typename T>
+void ShapeConfigurations<T>::ImplementGeometry(const Cylinder& cylinder,
+                                               void*) {
+  double distance_to_edge = cylinder.radius() * 0.1;
+  if (distance_ < 0) {
+    const double depth = -distance_;
+    if (depth > cylinder.radius() || depth > cylinder.length() / 2) {
+      throw std::runtime_error(
+          fmt::format("The cylinder (with radius = {} and length = {}) isn't "
+                      "large enough for penetration depth of {}",
+                      cylinder.radius(), cylinder.length(), depth));
+    }
+    distance_to_edge = 1.01 * depth;
+  }
+
+  // Point on +z cylinder cap, with +z normal.
+  // Arbitrary direction on the cylinder cap's plane.
+  const Vector3<T> dir = Vector3<T>{1.3, -0.25, 0}.normalized();
+  const T dist = cylinder.radius() - distance_to_edge;
+  const Vector3<T> Cz{0, 0, 1};
+  const Vector3<T> p_CP = dir * dist + Cz * (cylinder.length() / 2);
+  configs_.push_back({p_CP, Cz, distance_to_edge, "cylinder's +z cap"});
+
+  // Point on edge, with normal pointing outward.
+  const Vector3<T> p_CE =
+      Vector3<T>{1, 1.5, 0}.normalized() * cylinder.radius() +
+      Vector3<T>{0, 0, cylinder.length() / 2};
+  configs_.push_back(
+      {p_CE, Vector3<T>{1, 1.5, 1}.normalized(), 0, "cylinder's +z edge"});
+
+  // Point on barrel -- must be far enough away from the edge to support
+  // any penetration depth.
+  const Vector3<T> n_A = Vector3<T>{-1.5, 3, 0}.normalized();
+  const Vector3<T> p_AB =
+      n_A * cylinder.radius() +
+      Vector3<T>{0, 0, -cylinder.length() / 2 + distance_to_edge};
+  configs_.push_back(
+      {p_AB, n_A, cylinder.radius(), "the bottom half of cylinder's barrel"});
 }
 
 template <typename T>
@@ -150,6 +241,20 @@ void ShapeConfigurations<T>::ImplementGeometry(const Ellipsoid& ellipsoid,
 }
 
 template <typename T>
+void ShapeConfigurations<T>::ImplementGeometry(const HalfSpace&, void*) {
+  configs_ = vector<ShapeTangentPlane<T>>{
+      {Vector3<T>{0.3, 0.7, 0}, Vector3<T>{0, 0, 1},
+       std::numeric_limits<double>::infinity(), "near half space's origin"}};
+}
+
+template <typename T>
+void ShapeConfigurations<T>::ImplementGeometry(const Mesh&, void*) {
+  throw std::logic_error(
+      "We're assuming that Mesh is Convex; implement this when Mesh is "
+      "represented as its own thing");
+}
+
+template <typename T>
 void ShapeConfigurations<T>::ImplementGeometry(const Sphere& sphere, void*) {
   const double r = sphere.radius();
   if (distance_ < 0) {
@@ -175,8 +280,59 @@ MakeFclShape::MakeFclShape(const Shape& shape) : ShapeReifier() {
   shape.Reify(this);
 }
 
+void MakeFclShape::ImplementGeometry(const Box& box, void*) {
+  object_ = std::make_shared<fcl::Boxd>(box.size());
+}
+
 void MakeFclShape::ImplementGeometry(const Capsule& capsule, void*) {
   object_ = std::make_shared<fcl::Capsuled>(capsule.radius(), capsule.length());
+}
+
+void MakeFclShape::ImplementGeometry(const Convex&, void*) {
+  /* Note: we're ignoring the contents of the convex declaration. Instead,
+    we're outputting a mesh representing a box with known dimensions.
+
+                   3 ──────────────────┐ 7
+                   ╱│                 ╱│
+                  ╱ │                ╱ │             z    y
+                 ╱  │             5 ╱  │              │  ╱
+              1 ┌──────────────────┐   │              │ ╱
+                │   │              │   │              │╱
+                │   │              │   │              └───── x
+                │  2│──────────────│───│ 6
+                │  ╱               │  ╱
+                │ ╱                │ ╱
+                │╱                 │╱
+                └──────────────────┘
+                0                  4
+  */
+  const Box box = CharacterizeResultTest<double>::box();
+  const Vector3d half_size = box.size() / 2;
+  auto vertices = std::make_shared<vector<Vector3d>>();
+  for (double x : {-1, 1}) {
+    for (double y : {-1, 1}) {
+      for (double z : {-1, 1}) {
+        vertices->push_back(half_size.cwiseProduct(Vector3d{x, y, z}));
+      }
+    }
+  }
+  // clang-format off
+    auto faces = std::make_shared<vector<int>>(vector<int>{
+      4, 0, 4, 5, 1,   // -y face
+      4, 5, 7, 3, 1,   // +z face
+      4, 3, 7, 6, 2,   // +y face
+      4, 0, 2, 6, 4,   // -z face
+      4, 4, 6, 7, 5,   // +x face
+      4, 1, 3, 2, 0    // -x face.
+    });
+  // clang-format on
+
+  object_ = std::make_shared<fcl::Convexd>(vertices, 6, faces);
+}
+
+void MakeFclShape::ImplementGeometry(const Cylinder& cylinder, void*) {
+  object_ =
+      std::make_shared<fcl::Cylinderd>(cylinder.radius(), cylinder.length());
 }
 
 void MakeFclShape::ImplementGeometry(const Ellipsoid& ellipsoid, void*) {
@@ -184,8 +340,60 @@ void MakeFclShape::ImplementGeometry(const Ellipsoid& ellipsoid, void*) {
                                               ellipsoid.c());
 }
 
+void MakeFclShape::ImplementGeometry(const HalfSpace&, void*) {
+  object_ = std::make_shared<fcl::Halfspaced>(Vector3d{0, 0, 1}, 0);
+}
+
+void MakeFclShape::ImplementGeometry(const Mesh&, void*) {
+  throw std::logic_error(
+      "We're assuming that Mesh is Convex; implement this when Mesh is "
+      "represented as its own thing");
+}
+
 void MakeFclShape::ImplementGeometry(const Sphere& sphere, void*) {
   object_ = std::make_shared<fcl::Sphered>(sphere.radius());
+}
+
+/* Allow a sneak peek into ProximityEngine's inner workings so we can detect
+ when a Mesh is no longer represented under the hood as a Convex.  */
+class ProximityEngineTester {
+ public:
+  template <typename T>
+  static bool IsFclConvexType(const ProximityEngine<T>& engine, GeometryId id) {
+    return engine.IsFclConvexType(id);
+  }
+};
+
+
+::testing::AssertionResult MeshIsConvex() {
+  // Create a small obj in a temp directory.
+  const std::string obj_path = temp_directory() + "/tri.obj";
+  {
+    std::ofstream out(obj_path);
+    if (out.bad()) {
+      throw std::runtime_error(
+          fmt::format("Unable to write temporary obj file to: {}", obj_path));
+    }
+    out << "# Simple triangle for testing purposes\n"
+        << "v 0 0 0\n"
+        << "v 1 0 0\n"
+        << "v 0 1 0\n"
+        << "f 1 2 3\n";
+    out.close();
+  }
+
+  // Add the mesh into a proximity engine and confirm it is represented by a
+  // fcl::Convex.
+  ProximityEngine<double> engine;
+  const GeometryId id = GeometryId::get_new_id();
+  engine.AddDynamicGeometry(Convex(obj_path, 1.0), {}, id);
+  if (ProximityEngineTester::IsFclConvexType(engine, id)) {
+    return ::testing::AssertionSuccess();
+  }
+  return ::testing::AssertionFailure()
+         << "A Mesh shape is no longer represented by an fcl::Convex in "
+         << "ProximityEngine. We need to explicitly characterize Mesh-Shape "
+         << "queries for all Shape types.";
 }
 
 template <typename T>
@@ -377,7 +585,7 @@ void CharacterizeResultTest<T>::RunCharacterization(
      bound but gives a modicum of breathing room. */
     constexpr double cutoff = 4 * std::numeric_limits<double>::epsilon();
     if (query.error > cutoff) {
-      EXPECT_GT(*worst_error, query.error / 2)
+      EXPECT_GT(*worst_error, query.error / 4)
           << "Expected error is too big!"
           << "\n  " << worst_config->description
           << "\n    Expected error: " << query.error
@@ -426,14 +634,33 @@ template <typename T>
 std::unique_ptr<Shape> CharacterizeResultTest<T>::MakeShape(GeometryType shape,
                                                             bool use_alt) {
   switch (shape) {
+    case kBox:
+      return std::make_unique<Box>(box(use_alt));
     case kCapsule:
       return std::make_unique<Capsule>(capsule(use_alt));
+    case kConvex:
+      return std::make_unique<Convex>(convex(use_alt));
+    case kCylinder:
+      return std::make_unique<Cylinder>(cylinder(use_alt));
     case kEllipsoid:
       return std::make_unique<Ellipsoid>(ellipsoid(use_alt));
+    case kHalfSpace:
+      return std::make_unique<HalfSpace>(half_space(use_alt));
+    case kMesh:
+      return std::make_unique<Mesh>(mesh(use_alt));
     case kSphere:
       return std::make_unique<Sphere>(sphere(use_alt));
   }
   DRAKE_UNREACHABLE();
+}
+
+template <typename T>
+Box CharacterizeResultTest<T>::box(bool alt) {
+  if (alt) {
+    return Box{kDistance * 100, kDistance * 38, kDistance * 73};
+  } else {
+    return Box{kDistance * 37, kDistance * 100, kDistance * 43};
+  }
 }
 
 template <typename T>
@@ -446,12 +673,37 @@ Capsule CharacterizeResultTest<T>::capsule(bool alt) {
 }
 
 template <typename T>
+Convex CharacterizeResultTest<T>::convex(bool) {
+  return Convex("ignored for this test", 1.0);
+}
+
+template <typename T>
+Cylinder CharacterizeResultTest<T>::cylinder(bool alt) {
+  if (alt) {
+    return Cylinder{kDistance * 19, kDistance * 100};
+  } else {
+    return Cylinder{kDistance * 100, kDistance * 71};
+  }
+}
+
+template <typename T>
 Ellipsoid CharacterizeResultTest<T>::ellipsoid(bool alt) {
   if (alt) {
     return Ellipsoid{kDistance * 35, kDistance * 100, kDistance * 68};
   } else {
     return Ellipsoid{kDistance * 47, kDistance * 26, kDistance * 100};
   }
+}
+
+template <typename T>
+HalfSpace CharacterizeResultTest<T>::half_space(bool) {
+  return HalfSpace();
+}
+
+template <typename T>
+Mesh CharacterizeResultTest<T>::mesh(bool) {
+  throw std::logic_error(
+      "Mesh will be supported when it is no longer represented as a Convex");
 }
 
 template <typename T>
