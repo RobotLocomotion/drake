@@ -246,6 +246,11 @@ cc_library(
         ":urdfdom",
         "@ignition_math",
         "@tinyxml2",
+        # N.B. The ignition_utils library is not used as of Drkae's current
+        # version of sdformat (10.3), but it will be used by 11.0 once we
+        # upgrade.  We've pre-emptively added it here to ensure that BUILD
+        # rules are covered by Drake CI.
+        "@ignition_utils",
     ],
 )
 
