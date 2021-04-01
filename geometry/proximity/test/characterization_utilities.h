@@ -58,8 +58,8 @@ class DistanceCallback {
 
 /* Encodes the possible outcomes of performing a proximity query. For a given
  set of query parameters/scalar attempting to perform the query should either
- work or not. */
-enum Outcome { kSupported, kThrows };
+ work or not in some enumerable fashion. */
+enum Outcome { kSupported, kThrows, kIgnores };
 
 /* The types of geometries that can be considered for characterization tests.
  Note: the geometries enumerated here includes a Point (which is not a
@@ -72,6 +72,7 @@ enum GeometryType {
   kEllipsoid,
   kHalfSpace,
   kMesh,
+  kPoint,
   kSphere
 };
 std::ostream& operator<<(std::ostream& out, GeometryType s);
@@ -371,12 +372,12 @@ class CharacterizeResultTest : public ::testing::Test {
                        evaluate the callback. */
   void RunCharacterization(const QueryInstance& query, const Shape& shape_A,
                            const Shape& shape_B,
-                           const std::vector<Configuration<T>>& configs);
+                           const std::vector<Configuration<T>>& configs,
+                           bool is_symmetric = true);
 
-  /* Variant of RunCharacterization that creates a collection of configurations
-   with using the distances given by TestDistances applied to the shapes
-   implied by the query.  */
-  void RunCharacterization(const QueryInstance& query);
+  /* Evaluates the query instance. */
+  void RunCharacterization(const QueryInstance& query,
+                           bool is_symmetric = true);
 
   /* Each subclass should define the distances over which it should be
    evaluated. */
