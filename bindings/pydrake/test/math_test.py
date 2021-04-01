@@ -53,9 +53,6 @@ class TestBarycentricMesh(unittest.TestCase):
         values = mesh.MeshValuesFrom(mynorm)
         self.assertEqual(values.size, 4)
 
-    def test_wrap_to(self):
-        self.assertEqual(wrap_to(1.5, 0., 1.), .5)
-
 
 # TODO(eric.cousineau): Test wrappings against non-identity transforms.
 
@@ -349,6 +346,12 @@ class TestMath(unittest.TestCase):
             [0, 1])
         numpy_compare.assert_float_equal(
             bspline.EvaluateBasisFunctionI(i=0, parameter_value=5.7), 0.)
+
+    @numpy_compare.check_all_types
+    def test_wrap_to(self, T):
+        value = wrap_to(T(1.5), T(0.), T(1.))
+        if T != Expression:
+            self.assertEqual(value, T(.5))
 
     def test_orthonormal_basis(self):
         R = mut.ComputeBasisFromAxis(axis_index=0, axis_W=[1, 0, 0])
