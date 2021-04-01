@@ -649,6 +649,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "distance_to_point_characterize_test",
+    deps = [
+        ":characterization_utilities",
+        ":distance_to_point_callback",
+    ],
+)
+
+drake_cc_googletest(
     name = "distance_to_shape_characterize_test",
     deps = [
         ":characterization_utilities",

@@ -46,6 +46,9 @@ std::ostream& operator<<(std::ostream& out, GeometryType s) {
     case kMesh:
       out << "Mesh";
       break;
+    case kPoint:
+      out << "Point";
+      break;
     case kSphere:
       out << "Sphere";
       break;
@@ -67,6 +70,7 @@ QueryInstance::QueryInstance(GeometryType shape1_in, GeometryType shape2_in,
     : shape1(shape1_in), shape2(shape2_in), error(-1), outcome(outcome_in) {
   DRAKE_DEMAND(outcome != kSupported);
 }
+
 std::ostream& operator<<(std::ostream& out, const QueryInstance& c) {
   out << c.shape1 << " vs " << c.shape2;
   switch (c.outcome) {
@@ -75,6 +79,9 @@ std::ostream& operator<<(std::ostream& out, const QueryInstance& c) {
       break;
     case kThrows:
       out << " should throw";
+      break;
+    case kIgnores:
+      out << " should be ignored";
       break;
   }
   return out;
@@ -454,8 +461,10 @@ void CharacterizeResultTest<T>::RunCallback(
   ASSERT_EQ(callback_->GetNumResults(), 0);
   switch (query.outcome) {
     case kSupported:
+    case kIgnores:
       ASSERT_FALSE(callback_->Invoke(obj_A, obj_B, collision_filter, X_WGs));
-      ASSERT_EQ(callback_->GetNumResults(), 1) << "No results reported!";
+      ASSERT_EQ(callback_->GetNumResults(),
+                query.outcome == kSupported ? 1 : 0);
       break;
     case kThrows:
       DRAKE_ASSERT_THROWS_MESSAGE(
@@ -527,7 +536,7 @@ vector<Configuration<T>> CharacterizeResultTest<T>::MakeConfigurations(
 template <typename T>
 void CharacterizeResultTest<T>::RunCharacterization(
     const QueryInstance& query, const Shape& shape_A, const Shape& shape_B,
-    const vector<Configuration<T>>& configs) {
+    const vector<Configuration<T>>& configs, bool is_symmetric) {
   fcl::CollisionObjectd object_A = MakeFclShape(shape_A).object();
   const GeometryId id_A = EncodeData(&object_A);
 
@@ -571,7 +580,9 @@ void CharacterizeResultTest<T>::RunCharacterization(
       object_B.setTransform(convert_to_double(X_WGs.at(id_B)).GetAsIsometry3());
 
       evaluate_callback('A', &object_A, 'B', &object_B, config, X_WGs);
-      evaluate_callback('B', &object_B, 'A', &object_A, config, X_WGs);
+      if (is_symmetric) {
+        evaluate_callback('B', &object_B, 'A', &object_A, config, X_WGs);
+      }
     }
   }
 
@@ -602,12 +613,13 @@ void CharacterizeResultTest<T>::RunCharacterization(
 }
 
 template <typename T>
-void CharacterizeResultTest<T>::RunCharacterization(
-    const QueryInstance& query) {
+void CharacterizeResultTest<T>::RunCharacterization(const QueryInstance& query,
+                                                    bool is_symmetric) {
   auto shape1 = MakeShape(query.shape1, false /* use_alt */);
   auto shape2 = MakeShape(query.shape2, query.shape1 == query.shape2);
   RunCharacterization(query, *shape1, *shape2,
-                      MakeConfigurations(*shape1, *shape2, TestDistances()));
+                      MakeConfigurations(*shape1, *shape2, TestDistances()),
+                      is_symmetric);
 }
 
 template <typename T>
@@ -648,6 +660,8 @@ std::unique_ptr<Shape> CharacterizeResultTest<T>::MakeShape(GeometryType shape,
       return std::make_unique<HalfSpace>(half_space(use_alt));
     case kMesh:
       return std::make_unique<Mesh>(mesh(use_alt));
+    case kPoint:
+      return std::make_unique<Sphere>(0.0);
     case kSphere:
       return std::make_unique<Sphere>(sphere(use_alt));
   }
