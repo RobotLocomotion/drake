@@ -1034,13 +1034,12 @@ TEST_F(RotationMatrixConversionTests, AngleAxisToRotationMatrix) {
   }
 }
 
-// Utility function for verification of both RotationMatrix::MakeFromOneVector()
-// and RotationMatrix::MakeFromOneUnitVector().  This function helps test the
-// two main claims in those methods, namely that they return a valid rotation
-// matrix R_AB and that the axis_index column of R_AB is equal u_A.
+// This utility function helps verify output from
+// RotationMatrix::MakeFromOneVector() and
+// RotationMatrix::MakeFromOneUnitVector().
 void VerifyMakeFromOneVector(const RotationMatrix<double>& R_AB,
     const Vector3<double>& u_A, int axis_index) {
-  EXPECT_TRUE(R_AB.IsValid());
+  ASSERT_TRUE(R_AB.IsValid());
 
   // Verify that the three columns of R_AB (herein denoted u, v, w), have the
   // properties specified in MakeFromOneUnitVector().
@@ -1049,103 +1048,109 @@ void VerifyMakeFromOneVector(const RotationMatrix<double>& R_AB,
   const Vector3<double>& w = R_AB.col((axis_index + 2) % 3);
 
   // Verify the unit vector u is located in the correct column of R_AB.
-  constexpr double kTolerance = 8 * std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(CompareMatrices(u_A, u, kTolerance));
+  EXPECT_TRUE(CompareMatrices(u_A, u, /* kTolerance = */ 0));
 
   // Denoting uₘᵢₙ as the element of u_A with smallest absolute value, verify
   // |uₘᵢₙ| ≤ 1/√3 (the theoretical maximum of |uₘᵢₙ|) which occurs when
   // |uₘᵢₙ| = |ux| = |uy| = |uz|, which means ux² + uy² + uz² = 3 uₘᵢₙ² = 1.
-  int i;  // Index of u_A with smallest absolute value, i.e., uₘᵢₙ = u_A(i).
-  const double u_min = u_A.cwiseAbs().minCoeff(&i);
-  EXPECT_LE(u_min + kTolerance, 1.0/std::sqrt(3));
+  // Note: Here we rely on cwiseAbs().minCoeff() to produce the same index i and
+  // same value of u_min that the algorithm uses. If index i or u_min differ,
+  // this test will have to be revisited.
+  int i;  // Index of u_A with smallest absolute value, i.e., |uₘᵢₙ| = |u_A(i)|.
+  const double u_min_abs = u_A.cwiseAbs().minCoeff(&i);
 
-  // Verify that v(i) = 0.
+  // Verify v(i) = 0.
   EXPECT_EQ(v(i), 0);
 
   // Verify w(i) is equal to the most positive component of the unit vector w.
-  int index_of_most_positive_element;
-  const double w_max = w.maxCoeff(&index_of_most_positive_element);
+  const double w_max = w.maxCoeff();
   EXPECT_EQ(w_max, w(i));
-  EXPECT_GE(w_max + kTolerance, std::sqrt(3)/3);
 
-  // Verify w(i) ≈ 1 and w(j) = w(k) ≈ 0 if u_min = 0.
-  if (u_min == 0) {
+  // If u_min = 0, verify, verify w(i) ≈ 1 and w(j) = w(k) ≈ 0.
+  if (u_min_abs == 0) {
     const int j = (i + 1) % 3;
     const int k = (j + 1) % 3;
-    EXPECT_LE(std::abs(w(i) - 1), kTolerance);
-    EXPECT_LE(std::abs(w(j)), kTolerance);
-    EXPECT_LE(std::abs(w(k)), kTolerance);
+    constexpr double kTolerance = 8 * std::numeric_limits<double>::epsilon();
+    EXPECT_NEAR(w(i), 1.0, kTolerance);
+    EXPECT_EQ(std::abs(w(j)), 0);
+    EXPECT_EQ(std::abs(w(k)), 0);
   }
-
-  // The code below is a copy/edit of code in the soon-to-be-deprecated function
-  // ComputeBasisFromAxis() in the old Drake file orthogonal_bases.h. It is also
-  // similar to code found in the perp() and projectDownhillToNearestPoint()
-  // functions in the Simbody files unit_vec.h and ContactGeometry.cpp.
-  // The next code block is not critical to verify MakeFromOneUnitVector().
-  // It helps show the relationship between the older functions and the new
-  // Drake method MakeFromOneUnitVector().  It can be deleted if bothersome.
-  const Vector3<double> u_abs(u_A.cwiseAbs());
-  int minAxis;
-  u_abs.minCoeff(&minAxis);
-  Vector3<double> perpAxis = Vector3<double>::Zero();
-  perpAxis[minAxis] = 1;
-
-  // Now define additional vectors in the basis.
-  const Vector3<double> v_A = u_A.cross(perpAxis).normalized();
-  const Vector3<double> w_A = u_A.cross(v_A);
-
-  // Set the columns of the matrix similar to the old ComputeBasisFromAxis().
-  // Note: The new method MakeFromOneUnitVector() and old ComputeBasisFromAxis()
-  // have different v_A and w_A directions (differing by a negative sign).
-  Matrix3<double> m_AB;
-  m_AB.col(axis_index) = u_A;
-  m_AB.col((axis_index + 1) % 3) = -v_A;  // Notice negated direction.
-  m_AB.col((axis_index + 2) % 3) = -w_A;  // Notice negated direction.
-  EXPECT_TRUE(CompareMatrices(R_AB.matrix(), m_AB, kTolerance));
 }
 
 // Verify MakeFromOneUnitVector() and MakeFromOneVector() produce a
 // right-handed orthonormal matrix.
 GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVector) {
   RotationMatrix<double> R_AB;
-  for (int axis_index = 0; axis_index < 3; ++axis_index) {
-    // Ensure MakeFromOneVector() throws an exception if its first argument
-    // is the zero vector or a NAN vector.
-    EXPECT_THROW(RotationMatrix<double>::MakeFromOneVector(
+  int axis_index = 0;
+
+  // Ensure MakeFromOneVector() throws an exception if its first argument
+  // is the zero vector or a NAN vector.
+  EXPECT_THROW(RotationMatrix<double>::MakeFromOneVector(
+      Vector3<double>::Zero(), axis_index), std::exception);
+  EXPECT_THROW(RotationMatrix<double>::MakeFromOneVector(
+      Vector3<double>(NAN, 1, NAN), axis_index), std::exception);
+
+  // In debug builds, ensure MakeFromOneUnitVector() throws an exception if its
+  // first argument is a zero vector, NAN vector, or non-unit vector, whereas
+  // in release builds, ensure no exception is thrown.
+  if (kDrakeAssertIsArmed) {
+    EXPECT_THROW(RotationMatrix<double>::MakeFromOneUnitVector(
         Vector3<double>::Zero(), axis_index), std::exception);
-    EXPECT_THROW(RotationMatrix<double>::MakeFromOneVector(
+    EXPECT_THROW(RotationMatrix<double>::MakeFromOneUnitVector(
         Vector3<double>(NAN, 1, NAN), axis_index), std::exception);
+    EXPECT_THROW(RotationMatrix<double>::MakeFromOneUnitVector(
+        Vector3<double>(1, 2, 3), axis_index), std::exception);
+  } else {
+    EXPECT_FALSE(RotationMatrix<double>::MakeFromOneUnitVector(
+        Vector3<double>::Zero(), axis_index).IsValid());
+    EXPECT_FALSE(RotationMatrix<double>::MakeFromOneUnitVector(
+        Vector3<double>(NAN, 1, NAN), axis_index).IsValid());
+    EXPECT_FALSE(RotationMatrix<double>::MakeFromOneUnitVector(
+        Vector3<double>(1, 2, 3), axis_index).IsValid());
+  }
 
-    // In debug builds, ensure MakeFromOneUnitVector() throws an exception if
-    // its first argument is a zero vector, NAN vector, or non-unit vector.
-    if (kDrakeAssertIsArmed) {
-      EXPECT_THROW(RotationMatrix<double>::MakeFromOneUnitVector(
-          Vector3<double>::Zero(), axis_index), std::exception);
-      EXPECT_THROW(RotationMatrix<double>::MakeFromOneUnitVector(
-          Vector3<double>(NAN, 1, NAN), axis_index), std::exception);
-      EXPECT_THROW(RotationMatrix<double>::MakeFromOneUnitVector(
-          Vector3<double>(1, 2, 3), axis_index), std::exception);
-    }
+  // Test a vector with a tiny magnitude.
+  const Vector3<double> tiny_vector(1.2E-71, -3.4E-75, 5.7E-81);
+  R_AB = RotationMatrix<double>::MakeFromOneVector(tiny_vector, axis_index);
+  VerifyMakeFromOneVector(R_AB, tiny_vector.normalized(), axis_index);
 
+  // Test a vector with a huge magnitude.
+  const Vector3<double> huge_vector(1.2E82, 3.3E83, -9.8E94);
+  R_AB = RotationMatrix<double>::MakeFromOneVector(huge_vector, axis_index);
+  VerifyMakeFromOneVector(R_AB, huge_vector.normalized(), axis_index);
+
+  // Verify that MakeFromOneVector() and MakeFromOneUnitVector() yield the same
+  // results for corresponding input arguments.
+  const Vector3<double> fred(-1.23, 4.56, 7.89);  // Arbitrary vector.
+  R_AB = RotationMatrix<double>::MakeFromOneVector(fred, axis_index);
+  R_AB.IsExactlyEqualTo(RotationMatrix<double>::MakeFromOneUnitVector(
+      fred.normalized(), axis_index));
+
+  // Verify no relevant assertions are thrown when the underlying scalar type
+  // is a symbolic::Expression, as most validity checks are skipped.
+  Vector3<symbolic::Expression> u_symbolic(3, 2, 1);
+  RotationMatrix<symbolic::Expression> R_AB_symbolic =
+    RotationMatrix<symbolic::Expression>::MakeFromOneVector(u_symbolic, 0);
+  EXPECT_TRUE(R_AB_symbolic.IsValid());  // Should be a no-op (does nothing).
+
+  // Verify an assertion is thrown when there is a NAN in a symbolic vector.
+  u_symbolic = Vector3<symbolic::Expression>(3, 2, NAN);
+  EXPECT_THROW(
+      RotationMatrix<symbolic::Expression>::MakeFromOneVector(u_symbolic, 0),
+      std::exception);
+
+  for (axis_index = 0; axis_index < 3; ++axis_index) {
     // Test when [x, y, z] is used for the ith column of R_AB.
     // The range of values for x, y, z below ensure that the smallest element in
     // the input vector is sometimes 0, sometimes negative, sometimes positive.
     // The range also ensures that the input vector can have two equal small
     // components, both 0 or both negative or both positive.
-    // The starting value of -M_PI/2 for z provides a non-trivial bit pattern.
-    for (double x = -2.0; x <= 2.0; x += 1) {
-      for (double y = -2.0; y <= 2.0; y += 1) {
-        for (double z = -M_PI/2; z <= 2.2; z += 1) {
+    for (double x = -1.0; x <= 1.0; x += 1) {
+      for (double y = -1.0; y <= 1.0; y += 1) {
+        for (double z = -0.5; z <= 0.5; z += 1) {
           const Vector3<double> b_A(x, y, z);
-          const Vector3<double> u_A = b_A.normalized();
-
-          // Test MakeFromOneVector().
           R_AB = RotationMatrix<double>::MakeFromOneVector(b_A, axis_index);
           VerifyMakeFromOneVector(R_AB, b_A.normalized(), axis_index);
-
-          // Test MakeFromOneUnitVector().
-          R_AB = RotationMatrix<double>::MakeFromOneUnitVector(u_A, axis_index);
-          VerifyMakeFromOneVector(R_AB, u_A, axis_index);
         }
       }
     }
