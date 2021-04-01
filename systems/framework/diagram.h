@@ -97,11 +97,6 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   std::vector<InputPortLocator> GetInputPortLocators(
       InputPortIndex port_index) const;
 
-  /// Returns an arbitrary "locator" for one of the subsystem input ports that
-  /// were exported to the @p port_index input port for the Diagram.
-  DRAKE_DEPRECATED("2021-04-01", "Use GetInputPortLocators() instead.")
-  InputPortLocator get_input_port_locator(InputPortIndex port_index) const;
-
   /// Returns the "locator" for the subsystem output port that was exported as
   /// the @p port_index output port for the Diagram.
   const OutputPortLocator& get_output_port_locator(
