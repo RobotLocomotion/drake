@@ -302,6 +302,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("i"), py::arg("parameter_value"),
             cls_doc.EvaluateBasisFunctionI.doc);
   }
+
+  m.def("wrap_to", &wrap_to<T, T>, py::arg("value"), py::arg("low"),
+      py::arg("high"), doc.wrap_to.doc);
 }
 
 void DoScalarIndependentDefinitions(py::module m) {
@@ -312,8 +315,6 @@ void DoScalarIndependentDefinitions(py::module m) {
   // TODO(eric.cousineau): Bind remaining classes for all available scalar
   // types.
   using T = double;
-  m.def("wrap_to", &wrap_to<T, T>, py::arg("value"), py::arg("low"),
-      py::arg("high"), doc.wrap_to.doc);
   m.def(
       "ComputeBasisFromAxis",
       [](int axis_index, const Vector3<T>& axis) {
