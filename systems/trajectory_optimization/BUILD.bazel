@@ -127,6 +127,8 @@ drake_cc_googletest(
         "//systems/primitives:symbolic_vector_system",
         "//systems/primitives:trajectory_linear_system",
     ],
+    # This test times out intermittently under asan.
+    tags = ["no_asan"],
 )
 
 drake_cc_googletest(
