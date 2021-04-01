@@ -1,6 +1,6 @@
 # -*- python -*-
 
-licenses(["permissive"])  # OpenCL license
+licenses(["permissive"])  # BSD-2-Clause AND Expat
 
 cc_library(
     name = "opencl",
