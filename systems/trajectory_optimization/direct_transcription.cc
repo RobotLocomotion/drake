@@ -207,7 +207,6 @@ DirectTranscription::DirectTranscription(
                        fixed_timestep.value),
       discrete_time_system_(false) {
   DRAKE_DEMAND(context.has_only_continuous_state());
-  DRAKE_DEMAND(system->num_input_ports() <= 1);
   DRAKE_DEMAND(fixed_timestep.value > 0.0);
   if (context.num_input_ports() > 0) {
     DRAKE_DEMAND(num_inputs() == get_input_port_size(system, input_port_index));
@@ -222,9 +221,6 @@ DirectTranscription::DirectTranscription(
 
 
 void DirectTranscription::DoAddRunningCost(const symbolic::Expression& g) {
-  DRAKE_DEMAND(discrete_time_system_);  // TODO(russt): implement
-                                        // continuous-time version.
-
   // Cost = \sum_n g(n,x[n],u[n]) dt
   for (int i = 0; i < N() - 1; i++) {
     AddCost(SubstitutePlaceholderVariables(g * fixed_timestep(), i));
