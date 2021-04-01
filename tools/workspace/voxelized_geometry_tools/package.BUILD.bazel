@@ -5,8 +5,8 @@ package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "cl_hpp",
-    hdrs = ["opencl_cpp/cl.hpp"],
-    includes = ["opencl_cpp"],
+    hdrs = ["include/voxelized_geometry_tools/cl.hpp"],
+    includes = ["include"],
     deps = ["@opencl"],
 )
 
