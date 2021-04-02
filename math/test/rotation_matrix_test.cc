@@ -1050,23 +1050,19 @@ void VerifyMakeFromOneVector(const RotationMatrix<double>& R_AB,
   // Verify the unit vector u is located in the correct column of R_AB.
   EXPECT_TRUE(CompareMatrices(u_A, u, /* kTolerance = */ 0));
 
-  // Denoting uₘᵢₙ as the element of u_A with smallest absolute value, verify
-  // |uₘᵢₙ| ≤ 1/√3 (the theoretical maximum of |uₘᵢₙ|) which occurs when
-  // |uₘᵢₙ| = |ux| = |uy| = |uz|, which means ux² + uy² + uz² = 3 uₘᵢₙ² = 1.
-  // Note: Here we rely on cwiseAbs().minCoeff() to produce the same index i and
-  // same value of u_min that the algorithm uses. If index i or u_min differ,
-  // this test will have to be revisited.
+  // uₘᵢₙ is the element of u_A with smallest absolute value. In the test below,
+  // we rely on cwiseAbs().minCoeff() to produce the same index i and same value
+  // of u_min produced by the method under test. If this code below produces a
+  // different index i or u_min, this test will have to be revised.
   int i;  // Index of u_A with smallest absolute value, i.e., |uₘᵢₙ| = |u_A(i)|.
   const double u_min_abs = u_A.cwiseAbs().minCoeff(&i);
-
-  // Verify v(i) = 0.
   EXPECT_EQ(v(i), 0);
 
   // Verify w(i) is equal to the most positive component of the unit vector w.
   const double w_max = w.maxCoeff();
   EXPECT_EQ(w_max, w(i));
 
-  // If u_min = 0, verify, verify w(i) ≈ 1 and w(j) = w(k) ≈ 0.
+  // If u_min = 0, verify w(i) ≈ 1 and w(j) = w(k) ≈ 0.
   if (u_min_abs == 0) {
     const int j = (i + 1) % 3;
     const int k = (j + 1) % 3;
@@ -1094,12 +1090,21 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVector) {
   // first argument is a zero vector, NAN vector, or non-unit vector, whereas
   // in release builds, ensure no exception is thrown.
   if (kDrakeAssertIsArmed) {
+    DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneUnitVector(
+        Vector3<double>::Zero(), axis_index), std::exception,
+        "RotationMatrix::MakeFromOneUnitVector().*Zero vector detected.*");
+    DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneUnitVector(
+        Vector3<double>(NAN, 1, NAN), axis_index), std::exception,
+        "RotationMatrix::MakeFromOneUnitVector().*"
+        "Vector contains an element that is infinity or Nan.*");
     EXPECT_THROW(RotationMatrix<double>::MakeFromOneUnitVector(
-        Vector3<double>::Zero(), axis_index), std::exception);
-    EXPECT_THROW(RotationMatrix<double>::MakeFromOneUnitVector(
-        Vector3<double>(NAN, 1, NAN), axis_index), std::exception);
-    EXPECT_THROW(RotationMatrix<double>::MakeFromOneUnitVector(
-        Vector3<double>(1, 2, 3), axis_index), std::exception);
+      Vector3<double>(1, 2, 3), axis_index), std::exception);
+#if 0  // TODO(MITIGUY) Fix this.
+    DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneUnitVector(
+        Vector3<double>(1, 2, 3), axis_index), std::exception,
+        "RotationMatrix::MakeFromOneUnitVector().* "
+        "Vector is not a unit vector.*");
+#endif
   } else {
     EXPECT_FALSE(RotationMatrix<double>::MakeFromOneUnitVector(
         Vector3<double>::Zero(), axis_index).IsValid());

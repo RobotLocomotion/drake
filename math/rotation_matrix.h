@@ -291,7 +291,7 @@ class RotationMatrix {
   static RotationMatrix<T> MakeFromOneVector(
       const Vector3<T>& b_A, int axis_index) {
     // Ensure b_A can be made into a unit vector (not a zero vector, NAN, etc.).
-    ThrowIfNanOrZeroVector(b_A, __func__, __FILE__, __LINE__);
+    ThrowIfNanOrZeroVector(b_A, __func__);
     const Vector3<T> u_A = b_A.normalized();
     return MakeFromOneUnitVector(u_A, axis_index);
   }
@@ -319,8 +319,7 @@ class RotationMatrix {
     // tolerance achieved by normalizing a vast range of non-zero vectors, and
     // seems to guarantee a valid RotationMatrix() (see IsValid()).
     constexpr double kTolerance = 4 * std::numeric_limits<double>::epsilon();
-    DRAKE_ASSERT_VOID(ThrowIfNotValidUnitVector(u_A, kTolerance, __func__,
-                                                __FILE__, __LINE__));
+    DRAKE_ASSERT_VOID(ThrowIfNotValidUnitVector(u_A, kTolerance, __func__));
 
     // This method forms a right-handed orthonormal basis with u_A (herein
     // abbreviated u) and two internally-constructed unit vectors v and w.
@@ -1051,73 +1050,55 @@ class RotationMatrix {
   }
 
   static void ThrowIfZeroVector(const Vector3<T>& u,
-                                const char* function_name,
-                                const char* file_name,
-                                const int line_number) {
+                                const char* function_name) {
     if (u == Vector3<T>::Zero()) {
       std::string message = fmt::format(
-          "RotationMatrix::{}(): Zero vector detected. ({}:{}).",
-          function_name, file_name, line_number);
+          "RotationMatrix::{}(): Zero vector detected.", function_name);
       throw std::runtime_error(message);
     }
   }
 
   static void ThrowIfNanVector(const Vector3<T>& u,
-                               const char* function_name,
-                               const char* file_name,
-                               const int line_number) {
-    // if constexpr (scalar_predicate<T>::is_bool) {
-      if (!u.allFinite()) {
-        std::string message = fmt::format(
-            "RotationMatrix::{}():"
-            " Vector contains an element that is infinity or Nan. ({}:{}).",
-            function_name, file_name, line_number);
-        throw std::runtime_error(message);
-    //  }
+                               const char* function_name) {
+    if (!u.allFinite()) {
+      std::string message = fmt::format(
+          "RotationMatrix::{}():"
+          " Vector contains an element that is infinity or Nan.",
+          function_name);
+      throw std::runtime_error(message);
     }
   }
 
   static void ThrowIfNanOrZeroVector(const Vector3<T>& u,
-                                     const char* function_name,
-                                     const char* file_name,
-                                     const int line_number) {
-    ThrowIfNanVector(u, function_name, file_name, line_number);
-    ThrowIfZeroVector(u, function_name, file_name, line_number);
+                                     const char* function_name) {
+    ThrowIfNanVector(u, function_name);
+    ThrowIfZeroVector(u, function_name);
   }
 
   static void ThrowIfNotValidUnitVector(const Vector3<T>& u, double tolerance,
-                                        const char* function_name,
-                                        const char* file_name,
-                                        const int line_number) {
-    ThrowIfNanOrZeroVector(u, function_name, file_name, line_number);
+                                        const char* function_name) {
+    ThrowIfNanOrZeroVector(u, function_name);
     // Skip symbolic expressions.
     if constexpr (scalar_predicate<T>::is_bool) {
       // Give a detailed message if |u| is not within tolerance of 1.
       using std::abs;
       const T u_norm_as_T = u.norm();
       const double u_norm = ExtractDoubleOrThrow(u_norm_as_T);
-      const double abs_difference_from_one = abs(1 - u_norm);
-      if (abs_difference_from_one > tolerance) {
-#if 1
+      const double abs_deviation = abs(1 - u_norm);
+      if (abs_deviation > tolerance) {
         const double ux = ExtractDoubleOrThrow(u(0));
         const double uy = ExtractDoubleOrThrow(u(1));
         const double uz = ExtractDoubleOrThrow(u(2));
         std::string message = fmt::format(
-            "\n Error: The magnitude of vector [{:E} {:E} {:E}] deviates from "
-            "1."
+            "RotationMatrix::{}(): Error: Vector is not a unit vector."
+            "\n The magnitude of vector [{:E} {:E} {:E}] deviates from 1."
             "\n The vector's actual magnitude is {:E}."
             "\n Its deviation from 1 is {:E}."
             "\n The allowable tolerance (deviation) is {:E}."
             "\n To normalize a vector u, consider using u.normalized()."
-            "\n Calling function: RotationMatrix::{}():"
-            "\n File name: {}"
-            "\n Line number: {}",
-            ux, uy, uz, u_norm, abs_difference_from_one, tolerance,
-            function_name, file_name, line_number);
+            "\n Calling function: RotationMatrix::{}",
+            function_name, ux, uy, uz, u_norm, abs_deviation, tolerance);
         throw std::logic_error(message);
-#else
-        throw std::logic_error("hello");
-#endif
       }
     }
   }
