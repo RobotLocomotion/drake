@@ -791,7 +791,7 @@ PYBIND11_MODULE(symbolic, m) {
             return std::make_pair(M, v);
           },
           py::arg("expressions"), py::arg("vars"),
-          doc.DecomposeAffineExpressions.doc)
+          doc.DecomposeAffineExpressions.doc_4args_expressions_vars_M_v)
       .def("ExtractVariablesFromExpression",
           &symbolic::ExtractVariablesFromExpression, py::arg("e"),
           doc.ExtractVariablesFromExpression.doc)
@@ -819,9 +819,7 @@ PYBIND11_MODULE(symbolic, m) {
             symbolic::DecomposeAffineExpressions(v, &A, &b, &vars);
             return std::make_tuple(A, b, vars);
           },
-          // TODO(#14385): Use 'doc.DecomoseAffineExpressions.doc_output_vars`
-          // once we figure out why it isn't included in the output.
-          py::arg("v"), doc.DecomposeAffineExpressions.doc)
+          py::arg("v"), doc.DecomposeAffineExpressions.doc_4args_v_A_b_vars)
       .def(
           "DecomposeAffineExpression",
           [](const symbolic::Expression& e,
