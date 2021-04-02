@@ -34,6 +34,5 @@ def _impl(repository_ctx):
 
 opengl_repository = repository_rule(
     local = True,
-    configure = True,
     implementation = _impl,
 )

@@ -32,6 +32,5 @@ def _impl(repository_ctx):
 
 opencl_repository = repository_rule(
     local = True,
-    configure = True,
     implementation = _impl,
 )
