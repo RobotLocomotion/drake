@@ -1051,11 +1051,8 @@ double ProjectMatToRotMatWithAxis(const Eigen::MatrixBase<Derived>& M,
   return theta;
 }
 
-// @internal Initially, this code was in rotation_matrix.cc.  After
-// RotationMatrix was instantiated on symbolic expression, there was a linker
-// error that arose, but only during release builds and when tests in
-// rotation_matrix_test.cc used symbolic expressions.  I (Paul) spent a fair
-// amount of time trying to understand this problem (with Sherm & Sean).
+// TODO(jwnimmer-tri) Move this into the cc file, by replacing SFINAE with
+// "if constexpr".
 template <typename T>
 template <typename S>
 typename std::enable_if_t<scalar_predicate<S>::is_bool>
