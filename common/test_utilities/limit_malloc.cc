@@ -1,5 +1,7 @@
 #include "drake/common/test_utilities/limit_malloc.h"
 
+#include <signal.h>
+
 #include <atomic>
 #include <cstdlib>
 #include <iostream>
@@ -167,6 +169,13 @@ void Monitor::ObserveAllocation() {
   // TODO(jwnimmer-tri) Add more limits (requested bytes?) here.
 
   if (!failure) { return; }
+
+  // Non-fatal breakpoint action; use with helper script:
+  // tools/dynamic_analysis/dump_limit_malloc_stacks
+  if (std::getenv("DRAKE_LIMIT_MALLOC_NONFATAL_BREAKPOINT")) {
+    ::raise(SIGTRAP);
+    return;
+  }
 
   // Report an error (but re-enable malloc before doing so!).
   ActiveMonitor::reset();

@@ -1,0 +1,39 @@
+#!/bin/bash
+#
+# dump_limit_malloc_stacks: Dump all disallowed malloc stack traces
+#
+# Automates a 'gdb' session to dump stack traces from all allocations
+# disallowed by LimitMalloc. The entire session prints to stdout; use
+# redirections to save the result.
+#
+# Example:
+#
+#  $ bazel build -c dbg //my_thing:my_test
+#  $ tools/dynamic_analysis/dump_limit_malloc_stacks \
+#       bazel-bin/my_thing/my_test |& tee stacks.out
+#
+
+SCRIPT=$(mktemp)
+clean () {
+    rm $SCRIPT
+}
+trap clean EXIT
+
+cat <<eof > $SCRIPT
+set pagination off
+
+catch signal SIGTRAP
+commands
+# 'backtrace full' can crash if the data structures are too fancy.
+backtrace
+# 'signal 0' banishes the signal so we can continue.
+signal 0
+continue
+end
+
+run
+quit
+eof
+
+DRAKE_LIMIT_MALLOC_NONFATAL_BREAKPOINT=1 \
+ gdb --batch -x $SCRIPT --args "$@"
