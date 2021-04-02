@@ -100,7 +100,7 @@ void IiwaCommandReceiver::DoCalcNextUpdateTime(
   *time = context.get_time();
   auto& discrete_events = events->get_mutable_discrete_update_events();
   discrete_events.add_event(DiscreteUpdateEvent<double>(
-      [](const Context<double>& event_context, const System<double>& system,
+      [](const System<double>& system, const Context<double>& event_context,
              const DiscreteUpdateEvent<double>&,
              DiscreteValues<double>* next_values) {
         const auto& sys = dynamic_cast<const IiwaCommandReceiver&>(system);

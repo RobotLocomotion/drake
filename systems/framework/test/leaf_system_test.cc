@@ -453,7 +453,7 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
   EXPECT_EQ(witness3->CalcWitnessValue(context_), 3.0);
   auto pe = dynamic_cast<const PublishEvent<double>*>(witness3->get_event());
   ASSERT_TRUE(pe);
-  pe->handle(context_, system_);
+  pe->handle(system_, context_);
   EXPECT_TRUE(system_.publish_callback_called());
 
   auto witness4 = system_.MakeWitnessWithDiscreteUpdate();
@@ -467,7 +467,7 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
   auto de = dynamic_cast<const DiscreteUpdateEvent<double>*>(
       witness4->get_event());
   ASSERT_TRUE(de);
-  de->handle(context_, system_, nullptr);
+  de->handle(system_, context_, nullptr);
   EXPECT_TRUE(system_.discrete_update_callback_called());
 
   auto witness5 = system_.MakeWitnessWithUnrestrictedUpdate();
@@ -481,7 +481,7 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
   auto ue = dynamic_cast<const UnrestrictedUpdateEvent<double>*>(
       witness5->get_event());
   ASSERT_TRUE(ue);
-  ue->handle(context_, system_, nullptr);
+  ue->handle(system_, context_, nullptr);
   EXPECT_TRUE(system_.unrestricted_update_callback_called());
 
   auto witness6 = system_.DeclareLambdaWitnessWithoutEvent();
@@ -1654,7 +1654,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   internal::LeafCompositeEventCollection<double> leaf_events;
   {
     UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback =
-        [](const Context<double>& c, const System<double>&,
+        [](const System<double>&, const Context<double>& c,
            const Event<double>&,
            State<double>* s) { s->SetFrom(*c.CloneState()); };
 
@@ -1672,7 +1672,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   leaf_events.Clear();
   {
     UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback =
-        [](const Context<double>& c, const System<double>&,
+        [](const System<double>&, const Context<double>& c,
            const Event<double>&, State<double>* s) {
           s->SetFrom(*c.CloneState());
           s->set_continuous_state(std::make_unique<ContinuousState<double>>(
@@ -1698,7 +1698,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   leaf_events.Clear();
   {
     UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback =
-        [](const Context<double>& c, const System<double>&,
+        [](const System<double>&, const Context<double>& c,
            const Event<double>&, State<double>* s) {
           std::vector<std::unique_ptr<BasicVector<double>>> disc_data;
           s->SetFrom(*c.CloneState());
@@ -1727,7 +1727,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   leaf_events.Clear();
   {
     UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback =
-        [](const Context<double>& c, const System<double>&,
+        [](const System<double>&, const Context<double>& c,
            const Event<double>&, State<double>* s) {
           s->SetFrom(*c.CloneState());
           s->set_abstract_state(std::make_unique<AbstractValues>());
@@ -2178,7 +2178,7 @@ class TestTriggerSystem : public LeafSystem<double> {
         continue;
 
       // Call custom callback handler.
-      event.handle(context, *this);
+      event.handle(*this, context);
     }
 
     publish_count_++;
@@ -2189,8 +2189,8 @@ class TestTriggerSystem : public LeafSystem<double> {
       CompositeEventCollection<double>* events) const override {
     {
       auto data = std::make_shared<const std::string>("hello");
-      PublishEvent<double> event([data](const Context<double>& c,
-                                        const System<double>& system,
+      PublishEvent<double> event([data](const System<double>& system,
+                                        const Context<double>& c,
                                         const PublishEvent<double>& e) {
         const auto& sys = dynamic_cast<const TestTriggerSystem&>(system);
         sys.StringCallback(c, e, data);
@@ -2200,8 +2200,8 @@ class TestTriggerSystem : public LeafSystem<double> {
 
     {
       const int data = 42;
-      PublishEvent<double> event([](const Context<double>& c,
-                                    const System<double>& system,
+      PublishEvent<double> event([](const System<double>& system,
+                                    const Context<double>& c,
                                     const PublishEvent<double>& e) {
         const auto& sys = dynamic_cast<const TestTriggerSystem&>(system);
         sys.IntCallback(c, e, data);
@@ -2637,8 +2637,8 @@ GTEST_TEST(InitializationTest, InitializationTest) {
   class InitializationTestSystem : public LeafSystem<double> {
    public:
     InitializationTestSystem() {
-      PublishEvent<double> pub_event([](const Context<double>& context,
-                                        const System<double>& system,
+      PublishEvent<double> pub_event([](const System<double>& system,
+                                        const Context<double>& context,
                                         const PublishEvent<double>& event) {
         const auto& sys = dynamic_cast<const InitializationTestSystem&>(system);
         sys.InitPublish(context, event);

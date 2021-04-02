@@ -34,7 +34,7 @@ void LcmLogPlaybackSystem::DoCalcNextUpdateTime(
 
   // Prepare a callback that dispatches message(s) to all the subscribers.
   PublishEvent<double>::PublishCallback callback =
-      [](const Context<double>& callback_context, const System<double>& system,
+      [](const System<double>& system, const Context<double>& callback_context,
          const PublishEvent<double>&) {
         const auto& sys = dynamic_cast<const LcmLogPlaybackSystem&>(system);
         // Use a loop to publish all messages that occur at the exact same time.

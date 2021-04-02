@@ -724,7 +724,7 @@ class PeriodicPublishWithTimedWitnessSystem final : public LeafSystem<double> {
       1.0, 0.5, &PeriodicPublishWithTimedWitnessSystem::PublishPeriodic);
 
     // Declare the publish event for the witness trigger.
-    auto fn = [](const Context<double>& context, const System<double>& system,
+    auto fn = [](const System<double>& system, const Context<double>& context,
                  const PublishEvent<double>& witness_publish_event) {
       const auto& sys =
           dynamic_cast<const PeriodicPublishWithTimedWitnessSystem&>(system);
@@ -1359,7 +1359,7 @@ class DiscreteInputAccumulator final : public LeafSystem<double> {
 
     // Set initial condition x_0 = 0, and clear the result.
     DeclareInitializationEvent(DiscreteUpdateEvent<double>(
-        [](const Context<double>&, const System<double>& system,
+        [](const System<double>& system, const Context<double>&,
            const DiscreteUpdateEvent<double>&, DiscreteValues<double>* x_0) {
           auto& sys = const_cast<DiscreteInputAccumulator&>(
               dynamic_cast<const DiscreteInputAccumulator&>(system));
@@ -1370,8 +1370,8 @@ class DiscreteInputAccumulator final : public LeafSystem<double> {
     // Output y_n using a Drake "publish" event (occurs at the end of step n).
     DeclarePeriodicEvent(
         kPeriod, kPublishOffset,
-        PublishEvent<double>([](const Context<double>& context,
-                                const System<double>& system,
+        PublishEvent<double>([](const System<double>& system,
+                                const Context<double>& context,
                                 const PublishEvent<double>&) {
           auto& sys = const_cast<DiscreteInputAccumulator&>(
               dynamic_cast<const DiscreteInputAccumulator&>(system));
@@ -1382,8 +1382,8 @@ class DiscreteInputAccumulator final : public LeafSystem<double> {
     // at the beginning of step n+1).
     DeclarePeriodicEvent(
         kPeriod, kPublishOffset,
-        DiscreteUpdateEvent<double>([](const Context<double>& context,
-                                       const System<double>& system,
+        DiscreteUpdateEvent<double>([](const System<double>& system,
+                                       const Context<double>& context,
                                        const DiscreteUpdateEvent<double>&,
                                        DiscreteValues<double>* x_np1) {
           auto& sys = const_cast<DiscreteInputAccumulator&>(
@@ -2153,7 +2153,7 @@ GTEST_TEST(SimulatorTest, Initialization) {
     InitializationTestSystem() {
       PublishEvent<double> pub_event(
           TriggerType::kInitialization,
-          [](const Context<double>& context, const System<double>& system,
+          [](const System<double>& system, const Context<double>& context,
              const PublishEvent<double>& witness_publish_event) {
             auto& sys = const_cast<InitializationTestSystem&>(
                 dynamic_cast<const InitializationTestSystem&>(system));
@@ -2414,8 +2414,8 @@ GTEST_TEST(SimulatorTest, MissedPublishEventIssue13296) {
       const double inf = std::numeric_limits<double>::infinity();
       *next_update_time = message_is_waiting_ ? context.get_time() : inf;
       PublishEvent<double> event(
-          TriggerType::kTimed, [](const Context<double>& handler_context,
-                                  const System<double>& system,
+          TriggerType::kTimed, [](const System<double>& system,
+                                  const Context<double>& handler_context,
                                   const PublishEvent<double>& publish_event) {
             const auto& sys = dynamic_cast<const RightNowEventSystem&>(system);
             sys.MyPublishHandler(handler_context, publish_event);

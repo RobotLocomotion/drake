@@ -3511,7 +3511,7 @@ GTEST_TEST(InitializationTest, InitializationTest) {
     InitializationTestSystem() {
       PublishEvent<double> pub_event(
           TriggerType::kInitialization,
-          [](const Context<double>& context, const System<double>& system,
+          [](const System<double>& system, const Context<double>& context,
              const PublishEvent<double>& event) {
             const auto& sys =
                 dynamic_cast<const InitializationTestSystem&>(system);

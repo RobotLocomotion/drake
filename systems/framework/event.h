@@ -598,7 +598,7 @@ class PublishEvent final : public Event<T> {
   /**
    * Callback function that processes a publish event.
    */
-  typedef std::function<void(const Context<T>&, const System<T>&,
+  typedef std::function<void(const System<T>&, const Context<T>&,
                              const PublishEvent<T>&)>
       PublishCallback;
 
@@ -629,8 +629,8 @@ class PublishEvent final : public Event<T> {
    * Calls the optional callback function, if one exists, with @p context and
    * `this`.
    */
-  void handle(const Context<T>& context, const System<T>& system) const {
-    if (callback_ != nullptr) callback_(context, system, *this);
+  void handle(const System<T>& system, const Context<T>& context) const {
+    if (callback_ != nullptr) callback_(system, context, *this);
   }
 
  private:
@@ -665,7 +665,7 @@ class DiscreteUpdateEvent final : public Event<T> {
   /**
    * Callback function that processes a discrete update event.
    */
-  typedef std::function<void(const Context<T>&, const System<T>&,
+  typedef std::function<void(const System<T>&, const Context<T>&,
                              const DiscreteUpdateEvent<T>&, DiscreteValues<T>*)>
       DiscreteUpdateCallback;
 
@@ -698,10 +698,10 @@ class DiscreteUpdateEvent final : public Event<T> {
    * Calls the optional callback function, if one exists, with @p context,
    * 'this' and @p discrete_state.
    */
-  void handle(const Context<T>& context,
-              const System<T>& system,
+  void handle(const System<T>& system,
+              const Context<T>& context,
               DiscreteValues<T>* discrete_state) const {
-    if (callback_ != nullptr) callback_(context, system, *this, discrete_state);
+    if (callback_ != nullptr) callback_(system, context, *this, discrete_state);
   }
 
  private:
@@ -736,7 +736,7 @@ class UnrestrictedUpdateEvent final : public Event<T> {
   /**
    * Callback function that processes an unrestricted update event.
    */
-  typedef std::function<void(const Context<T>&, const System<T>&,
+  typedef std::function<void(const System<T>&, const Context<T>&,
                              const UnrestrictedUpdateEvent<T>&, State<T>*)>
       UnrestrictedUpdateCallback;
 
@@ -768,9 +768,9 @@ class UnrestrictedUpdateEvent final : public Event<T> {
    * Calls the optional callback function, if one exists, with @p context,
    * `this` and @p state.
    */
-  void handle(const Context<T>& context, const System<T>& system,
+  void handle(const System<T>& system, const Context<T>& context,
               State<T>* state) const {
-    if (callback_ != nullptr) callback_(context, system, *this, state);
+    if (callback_ != nullptr) callback_(system, context, *this, state);
   }
 
  private:

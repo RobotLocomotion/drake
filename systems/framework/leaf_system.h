@@ -307,8 +307,8 @@ class LeafSystem : public System<T> {
     DeclarePeriodicEvent(
         period_sec, offset_sec,
         PublishEvent<T>(TriggerType::kPeriodic, [publish](
-                                                    const Context<T>& context,
                                                     const System<T>& system,
+                                                    const Context<T>& context,
                                                     const PublishEvent<T>&) {
           // TODO(sherm1) Forward the return status.
           const auto& sys = dynamic_cast<const MySystem&>(system);
@@ -334,7 +334,7 @@ class LeafSystem : public System<T> {
         period_sec, offset_sec,
         PublishEvent<T>(
             TriggerType::kPeriodic,
-            [publish](const Context<T>& context, const System<T>& system,
+            [publish](const System<T>& system, const Context<T>& context,
                       const PublishEvent<T>&) {
               const auto& sys = dynamic_cast<const MySystem&>(system);
               (sys.*publish)(context);
@@ -375,7 +375,7 @@ class LeafSystem : public System<T> {
         period_sec, offset_sec,
         DiscreteUpdateEvent<T>(
             TriggerType::kPeriodic,
-            [update](const Context<T>& context, const System<T>& system,
+            [update](const System<T>& system, const Context<T>& context,
                      const DiscreteUpdateEvent<T>&, DiscreteValues<T>* xd) {
               // TODO(sherm1) Forward the return status.
               const auto& sys = dynamic_cast<const MySystem&>(system);
@@ -403,7 +403,7 @@ class LeafSystem : public System<T> {
         period_sec, offset_sec,
         DiscreteUpdateEvent<T>(
             TriggerType::kPeriodic,
-            [update](const Context<T>& context, const System<T>& system,
+            [update](const System<T>& system, const Context<T>& context,
                      const DiscreteUpdateEvent<T>&, DiscreteValues<T>* xd) {
               const auto& sys = dynamic_cast<const MySystem&>(system);
               (sys.*update)(context, &*xd);
@@ -441,7 +441,7 @@ class LeafSystem : public System<T> {
         period_sec, offset_sec,
         UnrestrictedUpdateEvent<T>(
             TriggerType::kPeriodic,
-            [update](const Context<T>& context, const System<T>& system,
+            [update](const System<T>& system, const Context<T>& context,
                      const UnrestrictedUpdateEvent<T>&, State<T>* x) {
               // TODO(sherm1) Forward the return status.
               const auto& sys = dynamic_cast<const MySystem&>(system);
@@ -468,7 +468,7 @@ class LeafSystem : public System<T> {
         period_sec, offset_sec,
         UnrestrictedUpdateEvent<T>(
             TriggerType::kPeriodic,
-            [update](const Context<T>& context, const System<T>& system,
+            [update](const System<T>& system, const Context<T>& context,
                      const UnrestrictedUpdateEvent<T>&, State<T>* x) {
               const auto& sys = dynamic_cast<const MySystem&>(system);
               (sys.*update)(context, &*x);
@@ -617,7 +617,7 @@ class LeafSystem : public System<T> {
 
     DeclarePerStepEvent<PublishEvent<T>>(PublishEvent<T>(
         TriggerType::kPerStep,
-        [publish](const Context<T>& context, const System<T>& system,
+        [publish](const System<T>& system, const Context<T>& context,
                   const PublishEvent<T>&) {
           // TODO(sherm1) Forward the return status.
           const auto& sys = dynamic_cast<const MySystem&>(system);
@@ -654,7 +654,7 @@ class LeafSystem : public System<T> {
 
     DeclarePerStepEvent(DiscreteUpdateEvent<T>(
         TriggerType::kPerStep,
-        [update](const Context<T>& context, const System<T>& system,
+        [update](const System<T>& system, const Context<T>& context,
                  const DiscreteUpdateEvent<T>&, DiscreteValues<T>* xd) {
           const auto& sys = dynamic_cast<const MySystem&>(system);
 
@@ -693,7 +693,7 @@ class LeafSystem : public System<T> {
 
     DeclarePerStepEvent(UnrestrictedUpdateEvent<T>(
         TriggerType::kPerStep,
-        [update](const Context<T>& context, const System<T>& system,
+        [update](const System<T>& system, const Context<T>& context,
                  const UnrestrictedUpdateEvent<T>&, State<T>* x) {
           const auto& sys = dynamic_cast<const MySystem&>(system);
           // TODO(sherm1) Forward the return status.
@@ -782,7 +782,7 @@ class LeafSystem : public System<T> {
 
     DeclareInitializationEvent<PublishEvent<T>>(PublishEvent<T>(
         TriggerType::kInitialization,
-        [publish](const Context<T>& context, const System<T>& system,
+        [publish](const System<T>& system, const Context<T>& context,
                   const PublishEvent<T>&) {
           const auto& sys = dynamic_cast<const MySystem&>(system);
           // TODO(sherm1) Forward the return status.
@@ -819,7 +819,7 @@ class LeafSystem : public System<T> {
 
     DeclareInitializationEvent(DiscreteUpdateEvent<T>(
         TriggerType::kInitialization,
-        [update](const Context<T>& context, const System<T>& system,
+        [update](const System<T>& system, const Context<T>& context,
                  const DiscreteUpdateEvent<T>&, DiscreteValues<T>* xd) {
           // TODO(sherm1) Forward the return status.
           const auto& sys = dynamic_cast<const MySystem&>(system);
@@ -857,7 +857,7 @@ class LeafSystem : public System<T> {
 
     DeclareInitializationEvent(UnrestrictedUpdateEvent<T>(
         TriggerType::kInitialization,
-        [update](const Context<T>& context, const System<T>& system,
+        [update](const System<T>& system, const Context<T>& context,
                            const UnrestrictedUpdateEvent<T>&, State<T>* x) {
           // TODO(sherm1) Forward the return status.
           const auto& sys = dynamic_cast<const MySystem&>(system);
@@ -951,7 +951,7 @@ class LeafSystem : public System<T> {
     // Instantiate the event.
     PublishEvent<T> forced(
         TriggerType::kForced,
-        [publish](const Context<T>& context, const System<T>& system,
+        [publish](const System<T>& system, const Context<T>& context,
                   const PublishEvent<T>&) {
           // TODO(sherm1) Forward the return status.
           const auto& sys = dynamic_cast<const MySystem&>(system);
@@ -989,7 +989,7 @@ class LeafSystem : public System<T> {
     // Instantiate the event.
     DiscreteUpdateEvent<T> forced(
         TriggerType::kForced,
-        [update](const Context<T>& context, const System<T>& system,
+        [update](const System<T>& system, const Context<T>& context,
                  const DiscreteUpdateEvent<T>&,
                  DiscreteValues<T>* discrete_state) {
           // TODO(sherm1) Forward the return status.
@@ -1030,7 +1030,7 @@ class LeafSystem : public System<T> {
     // Instantiate the event.
     const UnrestrictedUpdateEvent<T> forced(
         TriggerType::kForced,
-        [update](const Context<T>& context, const System<T>& system,
+        [update](const System<T>& system, const Context<T>& context,
                  const UnrestrictedUpdateEvent<T>&, State<T>* state) {
           // TODO(sherm1) Forward the return status.
           const auto& sys = dynamic_cast<const MySystem&>(system);
@@ -1683,8 +1683,8 @@ class LeafSystem : public System<T> {
           const Context<T>&, const PublishEvent<T>&) const) const {
     static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
                   "Expected to be invoked from a LeafSystem-derived system.");
-    auto fn = [publish_callback](const Context<T>& context,
-                                 const System<T>& system,
+    auto fn = [publish_callback](const System<T>& system,
+                                 const Context<T>& context,
                                  const PublishEvent<T>& publish_event) {
       const auto& sys = dynamic_cast<const MySystem&>(system);
       return (sys.*publish_callback)(context, publish_event);
@@ -1712,7 +1712,7 @@ class LeafSystem : public System<T> {
           const DiscreteUpdateEvent<T>&, DiscreteValues<T>*) const) const {
     static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
                   "Expected to be invoked from a LeafSystem-derived system.");
-    auto fn = [du_callback](const Context<T>& context, const System<T>& system,
+    auto fn = [du_callback](const System<T>& system, const Context<T>& context,
         const DiscreteUpdateEvent<T>& du_event, DiscreteValues<T>* values) {
       const auto& sys = dynamic_cast<const MySystem&>(system);
       return (sys.*du_callback)(context, du_event, values);
@@ -1740,7 +1740,7 @@ class LeafSystem : public System<T> {
           const UnrestrictedUpdateEvent<T>&, State<T>*) const) const {
     static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
                   "Expected to be invoked from a LeafSystem-derived system.");
-    auto fn = [uu_callback](const Context<T>& context, const System<T>& system,
+    auto fn = [uu_callback](const System<T>& system, const Context<T>& context,
         const UnrestrictedUpdateEvent<T>& uu_event, State<T>* state) {
       const auto& sys = dynamic_cast<const MySystem&>(system);
       return (sys.*uu_callback)(context, uu_event, state);
