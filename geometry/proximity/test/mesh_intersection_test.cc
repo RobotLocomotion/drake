@@ -1087,75 +1087,35 @@ GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidAutoDiffXd) {
   TestComputeContactSurfaceSoftRigid<AutoDiffXd>();
 }
 
-// Finds the vertex of the mesh M (SurfaceMesh or VolumeMesh) coincident with
-// point Q. It reports the index of the vertex in the mesh. This naively
-// performs an exhaustive search and is not suitable for production use. It
-// uses a tolerance 1e-14 in checking whether Q and a mesh vertex are
-// coincident.
+// Shows how to use and how to verify the main API of mesh_intersection:
+// ComputeContactSurfaceFromSoftVolumeRigidSurface(). It is not a unit test for
+// Statement Coverage, which is already accomplished by another test,
+// but it is a regression test to maintain correctness of the entire
+// mesh_intersection code, as it evolves, by rigorously verifying the end
+// result in a numerically stable way. (We do not have facilities to separate
+// regression tests from unit tests.)
 //
-// @param[in] p_MQ
-//     The position of query point Q measured and expressed in M's frame.
-// @param[in] mesh_M
-//     The mesh with vertex positions expressed in M's frame.
-// @param[out] vertex
-//     Index of the mesh's vertex coincident with Q.
-// @return
-//     true if found.
-// @tparam  SurfaceMesh or VolumeMesh
-template <class Mesh>
-bool FindVertex(Vector3d p_MQ, const Mesh& mesh_M,
-                typename Mesh::VertexIndex* vertex) {
-  for (typename Mesh::VertexIndex v(0); v < mesh_M.num_vertices(); ++v) {
-    if ((p_MQ - mesh_M.vertex(v).r_MV()).norm() < 1e-14) {
-      *vertex = v;
-      return true;
-    }
-  }
-  return false;
-}
-
-// Find the tetrahedral element of the volume mesh M that contains
-// a query point Q. It reports the index of the tetrahedral element E and the
-// barycentric coordinate b_EQ of Q in the tetrahedron E. It naively performs
-// an exhaustive search and is not suitable for production use. It handles
-// numerical roundings in limited ways.
+// In the current implementation of mesh_intersection, checking the detailed
+// triangulations of contact surfaces is not ideal because it may change
+// from one build environment to another. We were aware of this phenomenon
+// when we used SIMD AVX instructions on Linux but not on MacOS. The image
+// file mesh_intersection_test_linux_mac_contact_surface.png in
+// drake/geometry/proximity/images/ directory compare the contact surfaces
+// from the two platforms. On Linux, we had twelve triangles, but on MacOS,
+// we had fourteen triangles.
 //
-// @param[in] p_MQ
-//     The position of query point Q measured and expressed in M's frame.
-// @param[in] volume_M
-//     The volume mesh with vertex positions expressed in M's frame.
-// @param[out] element_E
-//     The index of the tetrahedral element E that contains Q.
-// @param[out] b_EQ
-//     Barycentric coordinates of the query point Q in the tetrahedral
-//     element E.
-// @return
-//     true if found.
-// @note It may incorrectly classify Q slightly outside a tetrahedron as
-//       being inside due to numerical roundings.
-bool FindElement(Vector3d p_MQ, const VolumeMesh<double>& volume_M,
-                 VolumeElementIndex* element_E,
-                 VolumeMesh<double>::Barycentric<double>* b_EQ) {
-  for (VolumeElementIndex e(0); e < volume_M.num_elements(); ++e) {
-    VolumeMesh<double>::Barycentric<double> b =
-        volume_M.CalcBarycentric(p_MQ, e);
-    if ((b.array() >= -1e-14).all()) {
-      *element_E = e;
-      *b_EQ = b;
-      return true;
-    }
-  }
-  return false;
-}
-
-// Tests ComputeContactSurfaceFromSoftVolumeRigidSurface as we move the rigid
-// geometry around. Currently uses double as the scalar type.
-// TODO(DamrongGuoy): More comprehensive tests. We should have a better way
-//  to check the SurfaceMesh in the output ContactSurface. We should apply
-//  general rotations in the pose of N w.r.t. M, instead of 90 degrees turn.
-//  We should check the scalar field and the vector field in a more
-//  comprehensive way.
-GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidMoving) {
+// Although the triangulations of the contact surface from different build
+// environments may not be the same, this regression test will show that
+// they give the same numerical integration (area-weighted sum) of relevant
+// quantities on the contact surface. The numerical integrations are the bases
+// for our applications in hydroelastic contact model.
+//
+// Ideally we would like to have the same triangulations on all build
+// environments, but it would be very difficult to achieve that in a timely
+// manner. Right now we only verify that the numerically integrated quantities
+// are the same across build environments, not the detailed triangle-by-triangle
+// quantities.
+GTEST_TEST(MeshIntersectionTest, VerifyComputeContactSurface) {
   // Soft octahedron volume S with pressure field.
   auto s_id = GeometryId::get_new_id();
   unique_ptr<VolumeMesh<double>> volume_S = OctahedronVolume<double>();
@@ -1171,94 +1131,107 @@ GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidMoving) {
   // compensate for the rounding due to general rigid transform.
   const double kEps = 1e-14;
 
-  // Pose of the soft octahedron S in World frame.
+  // Non-trivial pose of the soft octahedron S in World frame. We use a
+  // complex rigid transform here for generality, but later we will express the
+  // expected the result in frame S for convenience.
   const auto X_WS =
       RigidTransformd(RollPitchYawd(M_PI / 6., 2. * M_PI / 3., M_PI / 4.),
                       Vector3d{1., -0.5, 3.});
 
-  // Tests translation. Set the pose of the rigid pyramid R in S's frame as
-  // the one-unit downward translation, so that the apex of the rigid pyramid R
-  // is at the center of the soft octahedron S.
-  {
-    const auto X_SR = RigidTransformd(-Vector3d::UnitZ());
-    const auto X_WR = X_WS * X_SR;
-    // Contact surface C is expressed in World frame.
-    const auto contact = ComputeContactSurfaceFromSoftVolumeRigidSurface(
-        s_id, *pressure_S, bvh_volume_S, X_WS, r_id, *surface_R, bvh_surface_R,
-        X_WR);
-    // TODO(DamrongGuoy): More comprehensive checks on the mesh of the contact
-    //  surface. Here we only check the number of triangles.
-    EXPECT_EQ(12, contact->mesh_W().num_faces());
+  // This picture shows how we will set up the rigid pyramid, the soft
+  // octahedron, and their contact surface. We will pose frame R of the rigid
+  // pyramid relative to frame S of the soft octahedron using X_SR in the
+  // code below. This picture shows frame S, frame R, but not World frame.
+  //
+  //                      +Ry   +Sz
+  //                       |     |
+  //                       |     |
+  //                       ◯   ◯ ●   ●
+  //                       |  /  |  /
+  //                       ⊚ ⊚   | /
+  //                       |/    |/
+  //    +Rz----◯-----●-----◯Ro---●So---------●----+Sy
+  //                      /|    /|
+  //                     ⊚ ⊚   / |
+  //                    /  |  /  |
+  //                   ◯   ◯ ●   ●
+  //                  /     /
+  //                 /     /
+  //               +Rx   +Sx
+  //
+  //    ● vertices of the tetrahedral mesh of the soft octahedron.
+  //    ◯ vertices of the triangulated surface of the rigid pyramid.
+  //    ⊚ bounding vertices of their contact surface (interior vertices are
+  //      not shown).
+  //
+  // The image file CompliantOctahedronWithSqaureContactSurface.png in
+  // drake/geometry/proximity/images/ shows the square contact surface inside
+  // the octahedron.
+  //
+  // The tetrahedral volume mesh of the soft octahedron has one vertex at So and
+  // six vertices at 1 meter from So in ±Sx, ±Sy, ±Sz directions.
+  // The triangulated surface mesh of the rigid pyramid has one vertex at Ro
+  // and five vertices at 1 meter from Ro in ±Rx, ±Ry, and +Rz directions.
+  // Their contact surface is a triangulated surface of a square with four
+  // boundary vertices at 0.5 meter from Ro in ±Rx, ±Ry directions.
 
-    // Point Q is coincident with the center vertex of the soft mesh volume_S.
-    // The point C on the contact surface is coincident with Q. Check that the
-    // contact surface reports the same pressure at C as the volume does at Q.
-    {
-      const Vector3d p_SQ = Vector3d::Zero();
-      const Vector3d p_WQ = X_WS * p_SQ;
-      // Index of contact surface C's vertex coincident with Q.
-      SurfaceVertexIndex index_C;
-      ASSERT_TRUE(FindVertex(p_WQ, contact->mesh_W(), &index_C));
-      const double pressure_at_C = contact->e_MN().EvaluateAtVertex(index_C);
-      // Index of Q in the volume mesh.
-      VolumeVertexIndex index_Q;
-      ASSERT_TRUE(FindVertex(p_SQ, pressure_S->mesh(), &index_Q));
-      const double pressure_at_Q = pressure_S->EvaluateAtVertex(index_Q);
+  const auto X_SR =
+      RigidTransformd(RollPitchYawd(M_PI / 2., 0., 0.), Vector3d{0, -0.5, 0});
+  const RigidTransformd X_WR = X_WS * X_SR;
+  const auto contact = ComputeContactSurfaceFromSoftVolumeRigidSurface(
+      s_id, *pressure_S, bvh_volume_S, X_WS, r_id, *surface_R, bvh_surface_R,
+      X_WR);
 
-      EXPECT_NEAR(pressure_at_C, pressure_at_Q, kEps * pressure_at_Q);
-    }
+  // We will verify the result in terms of numerical integration (weighted sum)
+  // over the contact surface. We do not check the specific triangulation
+  // because the exact number of triangles may change slightly on different
+  // build environments and SIMD instruction sets.
+
+  const Vector3d kExpectCentroid_S{0, -0.5, 0};
+  const Vector3d centroid_S = X_WS.inverse() * contact->mesh_W().centroid();
+  EXPECT_TRUE(CompareMatrices(centroid_S, kExpectCentroid_S,
+                              kEps * kExpectCentroid_S.norm()));
+
+  // The contact surface is a triangulated surface of a square with 1-meter
+  // diagonal and 1/√2-meter length. Therefore, its area is 1/2 square meters.
+  const double kExpectArea = 1. / 2.;
+  EXPECT_NEAR(contact->mesh_W().total_area(), kExpectArea, kEps * kExpectArea);
+
+  const bool M_is_soft = contact->HasGradE_M();
+  const double sign_M_is_soft = M_is_soft ? 1.0 : -1.0;
+  const auto gradPressure_W = [&contact,
+                               &M_is_soft](SurfaceFaceIndex f) -> Vector3d {
+    return M_is_soft ? contact->EvaluateGradE_M_W(f)
+                     : contact->EvaluateGradE_N_W(f);
+  };
+  const auto pressure_at_face_centroid =
+      [&contact](SurfaceFaceIndex f) -> double {
+    return contact->e_MN().Evaluate(
+        f, SurfaceMesh<double>::Barycentric<double>(1. / 3., 1. / 3., 1. / 3.));
+  };
+  // Np = face normal pressure. It is a vector in the direction of face
+  //      normal with magnitude of the pressure at face centroid.
+  Vector3d sum_Np_W(0., 0., 0.);
+  // ndp = normal derivative of pressure, i.e., pressure gradient in
+  //       the direction of surface normal. It is the scalar product of the
+  //       face normal and the pressure gradient, which is constant per face.
+  double sum_ndp = 0.;
+  for (SurfaceFaceIndex f(0); f < contact->mesh_W().num_faces(); ++f) {
+    const double face_area = contact->mesh_W().area(f);
+    const Vector3d& normal_W = contact->mesh_W().face_normal(f);
+    sum_Np_W += face_area * pressure_at_face_centroid(f) * normal_W;
+    sum_ndp += sign_M_is_soft * face_area * normal_W.dot(gradPressure_W(f));
   }
 
-  // Tests rotation. First we rotate the rigid pyramid R 90 degrees around
-  // X-axis of the soft octahedron S, so R will fit in the left half, instead
-  // of the top half, of S. R's vertices will look like this in S's frame:
-  //
-  //                +Z   -X
-  //                 |   /
-  //              v2 ●  ● v3
-  //                 | /
-  //      v5      v0 |/
-  //  -Y---●---------●-----------+Y
-  //                /|
-  //               / |
-  //           v1 ●  ● v4
-  //             /   |
-  //           +X    |
-  //                -Z
-  //
-  // To avoid the "double counting" problem, we then translate R half a unit
-  // length in -Y direction of S's frame.
-  //
-  // Verify that the contact surface C passes through point Q at (0, -1/2, 0)
-  // in S's frame. Notice that Q is coincident with a vertex of C, and Q is
-  // on the middle of an edge of a tetrahedron of S.
-  //
-  {
-    const auto X_SR =
-        RigidTransformd(RollPitchYawd(M_PI / 2., 0., 0.), Vector3d{0, -0.5, 0});
-    const auto X_WR = X_WS * X_SR;
-    auto contact = ComputeContactSurfaceFromSoftVolumeRigidSurface(
-        s_id, *pressure_S, bvh_volume_S, X_WS, r_id, *surface_R, bvh_surface_R,
-        X_WR);
-    // TODO(DamrongGuoy): More comprehensive checks on the mesh of the contact
-    //  surface.  Here we only check the number of triangles.
-    EXPECT_EQ(12, contact->mesh_W().num_faces());
+  const double kExpectSumNdp = 5e6;
+  EXPECT_NEAR(sum_ndp, kExpectSumNdp, kEps * kExpectSumNdp);
 
-    const Vector3d p_SQ{0, -0.5, 0};
-    const Vector3d p_WQ = X_WS * p_SQ;
-    // Index of C's vertex coincident with Q.
-    SurfaceVertexIndex c_vertex;
-    ASSERT_TRUE(FindVertex(p_WQ, contact->mesh_W(), &c_vertex));
-    const double c_pressure = contact->e_MN().EvaluateAtVertex(c_vertex);
-
-    // Find the tetrahedral element of S containing Q.
-    VolumeElementIndex tetrahedron;
-    VolumeMesh<double>::Barycentric<double> b_Q;
-    ASSERT_TRUE(FindElement(p_SQ, pressure_S->mesh(), &tetrahedron, &b_Q));
-    const double s_pressure = pressure_S->Evaluate(tetrahedron, b_Q);
-
-    EXPECT_NEAR(c_pressure, s_pressure, kEps * s_pressure);
-  }
+  const double kExpectLengthSumNp = 2.5e6/3;
+  const Vector3d kExpectSumNp_S(0, kExpectLengthSumNp, 0);
+  const Vector3d sum_Np_S = X_WS.rotation().inverse() * sum_Np_W;
+  EXPECT_TRUE(
+      CompareMatrices(sum_Np_S, kExpectSumNp_S, kEps * kExpectLengthSumNp))
+      << "Incorrect weighted sum of normal pressure vector.";
 }
 
 // The ultimate proper spelling of mesh intersection allows for mixed scalar

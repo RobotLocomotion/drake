@@ -67,7 +67,7 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
       link3.body_frame().CalcPose(*context_, *frame_H_);
   const RigidTransform<double> X_WL3 =
       link3.body_frame().CalcPoseInWorld(*context_);
-  const RigidTransform<double> X_HL3_expected = X_WH.inverse() * X_WL3;
+  const RigidTransform<double> X_HL3_expected = X_WH.InvertAndCompose(X_WL3);
   EXPECT_TRUE(CompareMatrices(
       X_HL3.GetAsMatrix34(), X_HL3_expected.GetAsMatrix34(),
       kTolerance, MatrixCompareType::relative));
@@ -76,7 +76,7 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
       link3.body_frame().CalcRotationMatrix(*context_, *frame_H_);
   const RotationMatrix<double> R_WL3 =
       link3.body_frame().CalcRotationMatrixInWorld(*context_);
-  const RotationMatrix<double> R_HL3_expected = R_WH.inverse() * R_WL3;
+  const RotationMatrix<double> R_HL3_expected = R_WH.InvertAndCompose(R_WL3);
   EXPECT_TRUE(CompareMatrices(R_HL3.matrix(), R_HL3_expected.matrix(),
                               kTolerance, MatrixCompareType::relative));
 

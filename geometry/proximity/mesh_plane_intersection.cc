@@ -205,7 +205,7 @@ ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
     return BvttCallbackResult::Continue;
   };
 
-  const math::RigidTransform<T> X_SR = X_WS.inverse() * X_WR;
+  const math::RigidTransform<T> X_SR = X_WS.InvertAndCompose(X_WR);
   const Vector3<T>& Rz_S = X_SR.rotation().col(2);
   const Vector3<T>& p_SRo = X_SR.translation();
   // NOTE: We don't need the Plane constructor to normalize normal Pz_S. It's

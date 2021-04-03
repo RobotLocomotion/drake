@@ -16,6 +16,7 @@
 #include "drake/common/never_destroyed.h"
 #include "drake/common/symbolic.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/small_matrix_fast_methods.h"
 
 namespace drake {
 namespace math {
@@ -389,7 +390,11 @@ class RotationMatrix {
   /// @note It is possible (albeit improbable) to create an invalid rotation
   /// matrix by accumulating round-off error with a large number of multiplies.
   RotationMatrix<T>& operator*=(const RotationMatrix<T>& other) {
-    SetUnchecked(matrix() * other.matrix());
+    if constexpr (std::is_same_v<T, double>) {
+      ComposeRR(R_AB_.data(), other.matrix().data(), R_AB_.data());
+    } else {
+      SetUnchecked(matrix() * other.matrix());
+    }
     return *this;
   }
 
@@ -400,7 +405,34 @@ class RotationMatrix {
   /// @note It is possible (albeit improbable) to create an invalid rotation
   /// matrix by accumulating round-off error with a large number of multiplies.
   RotationMatrix<T> operator*(const RotationMatrix<T>& other) const {
-    return RotationMatrix<T>(matrix() * other.matrix(), true);
+    RotationMatrix<T> R_AC(DoNotInitializeMemberFields{});
+    if constexpr (std::is_same_v<T, double>) {
+      ComposeRR(R_AB_.data(), other.matrix().data(), R_AC.R_AB_.data());
+    } else {
+      R_AC.R_AB_ = matrix() * other.matrix();
+    }
+    return R_AC;
+  }
+
+  /// Calculates the product of `this` inverted times another %RotationMatrix.
+  /// If you consider `this` to be the rotation matrix R_BA, and `other` to be
+  /// R_BC, then this method returns R_AC = R_BA⁻¹ * R_BC. For T==double, this
+  /// method can be _much_ faster than inverting first and then performing the
+  /// composition.
+  /// @param[in] other %RotationMatrix that post-multiplies inverted `this`.
+  /// @retval R_AC where R_AC = this⁻¹ * other.
+  /// @note It is possible (albeit improbable) to create an invalid rotation
+  /// matrix by accumulating round-off error with a large number of multiplies.
+  RotationMatrix<T> InvertAndCompose(const RotationMatrix<T>& other) const {
+    const RotationMatrix<T>& R_BC = other;  // Nicer name.
+    RotationMatrix<T> R_AC(DoNotInitializeMemberFields{});
+    if constexpr (std::is_same_v<T, double>) {
+      ComposeRinvR(R_AB_.data(), R_BC.matrix().data(), R_AC.R_AB_.data());
+    } else {
+      const RotationMatrix<T> R_AB = inverse();
+      R_AC = R_AB * R_BC;
+    }
+    return R_AC;
   }
 
   /// Calculates `this` rotation matrix `R_AB` multiplied by an arbitrary
@@ -628,6 +660,15 @@ class RotationMatrix {
     return theta_lambda;
   }
 
+#ifndef DRAKE_DOXYGEN_CXX
+  // Constructs a RotationMatrix without initializing the underlying 3x3 matrix.
+  // Here for internal use by RigidTransform but no one else.
+  struct DoNotInitializeMemberFields{};
+  explicit RotationMatrix(DoNotInitializeMemberFields) {}
+  // Returns the Matrix3 underlying a RotationMatrix.
+  Matrix3<T>& mutable_matrix() { return R_AB_; }
+#endif
+
  private:
   // Make RotationMatrix<U> templatized on any typename U be a friend of a
   // %RotationMatrix templatized on any other typename T.
@@ -641,9 +682,6 @@ class RotationMatrix {
   static constexpr double kInternalToleranceForOrthonormality{
       128 * std::numeric_limits<double>::epsilon() };
 
-  // Constructs a RotationMatrix without initializing the underlying 3x3 matrix.
-  struct DoNotInitializeMemberFields{};
-  explicit RotationMatrix(DoNotInitializeMemberFields) {}
 
   // Constructs a %RotationMatrix from a Matrix3.  No check is performed to test
   // whether or not the parameter R is a valid rotation matrix.
