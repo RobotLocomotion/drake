@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <tuple>
 #include <unordered_map>
 #include <utility>
 
@@ -149,5 +150,30 @@ DecomposeAffineExpression(
   }
   return num_variable;
 }
+
+/** Given a vector of Expressions @p f and a list of @p parameters we define
+all additional variables in @p f to be "non-parameter variables", n.  This
+method returns a factorization of @p f into an equivalent "data matrix", W,
+which depends only on the non-parameter variables, and a "lumped parameter
+vector", α, which depends only on @p parameters: f = W(n)*α(parameters) +
+w0(n).
+
+Note: This initial implementation makes very little attempt to minimize the
+number of lumped parameters nor to avoid duplicates.  Implementing the
+simplification procedure is left as a TODO; but even this will be limited by
+the complexity of comparing two arbitrary Expressions.  See Expression::EqualTo
+for more details.  It is reasonable to provide this decomposition as is,
+because the same numerical linear algebra that will inevitably be applied to
+the data matrix to find the "identifiable lumped parameters" will perform
+precisely the simplification procedure we desired here; simplification here
+will simply allow users to form a potentially much smaller data matrix.
+
+@pre The vector @p f must be decomposable in this way (cells containing
+@p parameters may only be added or multiplied with cells containing
+non-parameter variables). */
+std::tuple<MatrixX<Expression>, VectorX<Expression>, VectorX<Expression>>
+DecomposeLumpedParameters(
+    const Eigen::Ref<const VectorX<Expression>>& f,
+    const Eigen::Ref<const VectorX<Variable>>& parameters);
 }  // namespace symbolic
 }  // namespace drake

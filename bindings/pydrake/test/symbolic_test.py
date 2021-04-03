@@ -1308,3 +1308,21 @@ class TestDecomposeQuadraticPolynomial(unittest.TestCase):
         self.assertEqual(b[x_idx], 3)
         self.assertEqual(b[y_idx], 2)
         self.assertEqual(b.shape, (2,))
+
+
+class TestDecomposeLumpedParameters(unittest.TestCase):
+    def test(self):
+        x = sym.Variable("x")
+        a = sym.Variable("a")
+        b = sym.Variable("b")
+
+        f = [a + x, a*a*x*x]
+        [W, alpha, w0] = sym.DecomposeLumpedParameters(f, [a, b])
+        self.assertTrue(W[0, 0].EqualTo(1))
+        self.assertTrue(W[0, 1].EqualTo(0))
+        self.assertTrue(W[1, 0].EqualTo(0))
+        self.assertTrue(W[1, 1].EqualTo(x*x))
+        self.assertTrue(alpha[0].EqualTo(a))
+        self.assertTrue(alpha[1].EqualTo(a*a))
+        self.assertTrue(w0[0].EqualTo(x))
+        self.assertTrue(w0[1].EqualTo(0))

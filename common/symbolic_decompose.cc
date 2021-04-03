@@ -2,6 +2,8 @@
 
 #include <stdexcept>
 #include <string>
+#include <tuple>
+#include <vector>
 
 namespace drake {
 namespace symbolic {
@@ -199,5 +201,299 @@ void DecomposeAffineExpressions(const Eigen::Ref<const VectorX<Expression>>& v,
     DecomposeAffineExpression(e_i, map_var_to_index, A->row(i), b->data() + i);
   }
 }
+
+namespace {
+
+typedef std::tuple<VectorX<Expression>, VectorX<Expression>, Expression>
+    LumpedFactorization;
+
+VectorX<Expression> Stack(const std::vector<VectorX<Expression>>& v) {
+  int size = 0;
+  for (const auto& v_i : v) {
+    size += v_i.size();
+  }
+  VectorX<Expression> S(size);
+  int offset = 0;
+  for (const auto& v_i : v) {
+    S.segment(offset, v_i.size()) = v_i;
+    offset += v_i.size();
+  }
+  return S;
+}
+
+// Visitor class to implement DecomposeLumpedParameters.
+class DecomposeLumpedParametersVisitor {
+ public:
+  LumpedFactorization Decompose(const Expression& e,
+                                const Variables& parameters) const {
+    // Note that it calls `Expression::Expand()` here.
+    return Visit(e.Expand(), parameters);
+  }
+
+ private:
+  LumpedFactorization Visit(const Expression& e,
+                            const Variables& parameters) const {
+    return VisitExpression<LumpedFactorization>(this, e, parameters);
+  }
+
+  LumpedFactorization VisitVariable(const Expression& e,
+                                    const Variables& parameters) const {
+    const Variable& var{get_variable(e)};
+    if (parameters.include(var)) {
+      // W = [1], alpha = [e], w0 = [0]
+      return LumpedFactorization{Vector1<Expression>{1}, Vector1<Expression>{e},
+                                 0};
+    } else {
+      // W = [], alpha = [], w0 = [e]
+      return LumpedFactorization{Vector0<Expression>{}, Vector0<Expression>{},
+                                 e};
+    }
+  }
+
+  LumpedFactorization VisitConstant(const Expression& e,
+                                    const Variables&) const {
+    return LumpedFactorization{Vector0<Expression>{}, Vector0<Expression>{}, e};
+  }
+
+  LumpedFactorization VisitAddition(const Expression& e,
+                                    const Variables& parameters) const {
+    std::vector<VectorX<Expression>> w;
+    std::vector<VectorX<Expression>> alpha;
+
+    // e = c₀ + ∑ᵢ (cᵢ * eᵢ)
+    //   => [c₁w₁, c₂w₂, ...]*[α₁, α₂, ...] + c₀
+    // except for matching terms.
+    Expression w0 = get_constant_in_addition(e);
+    for (const std::pair<const Expression, double>& p :
+         get_expr_to_coeff_map_in_addition(e)) {
+      const Expression& e_i{p.first};
+      const double c_i{p.second};
+      const auto [w_i, alpha_i, w0_i] = Visit(e_i, parameters);
+      w0 += c_i * w0_i;
+      // TODO(russt): Simplify here to avoid duplicates.
+      // If w_i matches w_j for j<1 up to a constant factor...
+      w.emplace_back(c_i * w_i);
+      alpha.emplace_back(alpha_i);
+    }
+    return LumpedFactorization{Stack(w), Stack(alpha), w0};
+  }
+
+  // Handle basic multiplication: e = a * b
+  LumpedFactorization SimpleMultiplication(const LumpedFactorization& a,
+                                           const LumpedFactorization& b) const {
+    const auto [w_a, alpha_a, w0_a] = a;
+    const auto [w_b, alpha_b, w0_b] = b;
+
+    // Avoid adding terms with zero coefficients, otherwise they start to
+    // accumulate quickly.
+    bool nonzero_w0a = !w0_a.EqualTo(0);
+    bool nonzero_w0b = !w0_b.EqualTo(0);
+
+    // a*b = (wa*αa + w₀a) (wb*αb + w₀b)
+    //     = w₀a*w₀b + ∑ᵢⱼ(wai*wbj * αai*αbj) + ∑ⱼw₀a*wbj*αbj + ∑ᵢw₀b*wai*αai
+    const int N = w_a.size() * w_b.size() + nonzero_w0a * w_b.size() +
+                  nonzero_w0b * w_a.size();
+    VectorX<Expression> w(N);
+    VectorX<Expression> alpha(N);
+    Expression w0 = w0_a * w0_b;
+    w.head(w_a.size() * w_b.size()) << w_a * w_b.transpose();
+    alpha.head(w_a.size() * w_b.size()) << alpha_a * alpha_b.transpose();
+    if (nonzero_w0a) {
+      const int offset = w_a.size() * w_b.size();
+      w.segment(offset, w_b.size()) = w0_a * w_b;
+      alpha.segment(offset, w_b.size()) = alpha_b;
+    }
+    if (nonzero_w0b) {
+      w.tail(w_a.size()) = w0_b * w_a;
+      alpha.tail(w_a.size()) = alpha_a;
+    }
+    // TODO(russt): Avoid duplicates.
+    return LumpedFactorization(w, alpha, w0);
+  }
+
+  LumpedFactorization VisitMultiplication(const Expression& e,
+                                          const Variables& parameters) const {
+    const double c = get_constant_in_multiplication(e);
+    LumpedFactorization f({}, {}, {c});
+
+    // e = c * ∏ᵢ pow(baseᵢ, exponentᵢ).
+    for (const std::pair<const Expression, Expression>& p :
+         get_base_to_exponent_map_in_multiplication(e)) {
+      const Expression& base_i{p.first};
+      const Expression& exponent_i{p.second};
+      const auto [w, alpha, w0] = SimpleMultiplication(
+          f, exponent_i.EqualTo(1)
+                 ? Visit(base_i, parameters)
+                 : VisitPow(pow(base_i, exponent_i), parameters));
+      // Watch out for aliasing (do I need .eval() in this case?).
+      f = LumpedFactorization{w.eval(), alpha.eval(), w0};
+    }
+
+    return f;
+  }
+
+  LumpedFactorization VisitPow(const Expression& e,
+                               const Variables& parameters) const {
+    const Expression& exponent{get_second_argument(e)};
+    const Variables vars = e.GetVariables();
+    if (vars.IsSubsetOf(parameters)) {  // All parameters.
+      return LumpedFactorization{
+          Vector1<Expression>{1}, Vector1<Expression>{e}, {0}};
+    } else if (intersect(vars, parameters).empty()) {  // All non-parameters.
+      return LumpedFactorization{{}, {}, e};
+    } else if (is_constant(exponent)) {
+      // Note(russt): I don't *think* that this code is reachable, since the
+      // Expand() called at the beginning of the decomposition will break apart
+      // cases like this.  But we can implement this if we ever determine it is
+      // needed, e.g., repeated calls to SimpleMultiplication.
+      ostringstream oss;
+      oss << e << " CAN be factored into lumped parameters, but this case has"
+          << " not been implemented yet.";
+      throw runtime_error(oss.str());
+    } else {
+      ostringstream oss;
+      oss << e << " cannot be factored into lumped parameters, since it depends"
+          << " on both parameters and non-parameter variables in a"
+          << " non-multiplicative way.";
+      throw runtime_error(oss.str());
+    }
+  }
+
+  LumpedFactorization VisitNonPolynomialTerm(
+      const Expression& e, const Variables& parameters) const {
+    // Must be either all parameters or all non-parameters.
+    const Variables& vars = e.GetVariables();
+    if (vars.IsSubsetOf(parameters)) {
+      return LumpedFactorization{
+          Vector1<Expression>{1}, Vector1<Expression>{e}, {0}};
+    } else if (intersect(vars, parameters).empty()) {
+      return LumpedFactorization{{}, {}, e};
+    } else {
+      ostringstream oss;
+      oss << e << " cannot be factored into lumped parameters, since it "
+          << "depends on both parameters and non-parameter variables.";
+      throw runtime_error(oss.str());
+    }
+  }
+
+  LumpedFactorization VisitDivision(const Expression& e,
+                                    const Variables& parameters) const {
+    return VisitNonPolynomialTerm(e, parameters);
+  }
+
+  LumpedFactorization VisitAbs(const Expression& e,
+                               const Variables& parameters) const {
+    return VisitNonPolynomialTerm(e, parameters);
+  }
+  LumpedFactorization VisitLog(const Expression& e,
+                               const Variables& parameters) const {
+    return VisitNonPolynomialTerm(e, parameters);
+  }
+  LumpedFactorization VisitExp(const Expression& e,
+                               const Variables& parameters) const {
+    return VisitNonPolynomialTerm(e, parameters);
+  }
+  LumpedFactorization VisitSqrt(const Expression& e,
+                                const Variables& parameters) const {
+    return VisitNonPolynomialTerm(e, parameters);
+  }
+  LumpedFactorization VisitSin(const Expression& e,
+                               const Variables& parameters) const {
+    return VisitNonPolynomialTerm(e, parameters);
+  }
+  LumpedFactorization VisitCos(const Expression& e,
+                               const Variables& parameters) const {
+    return VisitNonPolynomialTerm(e, parameters);
+  }
+  LumpedFactorization VisitTan(const Expression& e,
+                               const Variables& parameters) const {
+    return VisitNonPolynomialTerm(e, parameters);
+  }
+  LumpedFactorization VisitAsin(const Expression& e,
+                                const Variables& parameters) const {
+    return VisitNonPolynomialTerm(e, parameters);
+  }
+  LumpedFactorization VisitAcos(const Expression& e,
+                                const Variables& parameters) const {
+    return VisitNonPolynomialTerm(e, parameters);
+  }
+  LumpedFactorization VisitAtan(const Expression& e,
+                                const Variables& parameters) const {
+    return VisitNonPolynomialTerm(e, parameters);
+  }
+  LumpedFactorization VisitAtan2(const Expression& e,
+                                 const Variables& parameters) const {
+    return VisitNonPolynomialTerm(e, parameters);
+  }
+  LumpedFactorization VisitSinh(const Expression& e,
+                                const Variables& parameters) const {
+    return VisitNonPolynomialTerm(e, parameters);
+  }
+  LumpedFactorization VisitCosh(const Expression& e,
+                                const Variables& parameters) const {
+    return VisitNonPolynomialTerm(e, parameters);
+  }
+  LumpedFactorization VisitTanh(const Expression& e,
+                                const Variables& parameters) const {
+    return VisitNonPolynomialTerm(e, parameters);
+  }
+  LumpedFactorization VisitMin(const Expression& e,
+                               const Variables& parameters) const {
+    return VisitNonPolynomialTerm(e, parameters);
+  }
+  LumpedFactorization VisitMax(const Expression& e,
+                               const Variables& parameters) const {
+    return VisitNonPolynomialTerm(e, parameters);
+  }
+  LumpedFactorization VisitCeil(const Expression& e,
+                                const Variables& parameters) const {
+    return VisitNonPolynomialTerm(e, parameters);
+  }
+  LumpedFactorization VisitFloor(const Expression& e,
+                                 const Variables& parameters) const {
+    return VisitNonPolynomialTerm(e, parameters);
+  }
+  LumpedFactorization VisitIfThenElse(const Expression& e,
+                                      const Variables& parameters) const {
+    return VisitNonPolynomialTerm(e, parameters);
+  }
+  LumpedFactorization VisitUninterpretedFunction(
+      const Expression& e, const Variables& parameters) const {
+    return VisitNonPolynomialTerm(e, parameters);
+  }
+
+  // Makes VisitExpression a friend of this class so that it can use private
+  // methods.
+  friend LumpedFactorization drake::symbolic::VisitExpression<
+      LumpedFactorization>(const DecomposeLumpedParametersVisitor*,
+                           const Expression&, const Variables&);
+};
+
+}  // namespace
+
+std::tuple<MatrixX<Expression>, VectorX<Expression>, VectorX<Expression>>
+DecomposeLumpedParameters(
+    const Eigen::Ref<const VectorX<Expression>>& f,
+    const Eigen::Ref<const VectorX<Variable>>& parameters) {
+  const DecomposeLumpedParametersVisitor visitor{};
+  int num_lumped = 0;
+  std::vector<VectorX<Expression>> w(f.size());
+  std::vector<VectorX<Expression>> alpha(f.size());
+  VectorX<Expression> w0(f.size());
+  for (int i = 0; i < f.size(); i++) {
+    std::tie(w[i], alpha[i], w0[i]) =
+        visitor.Decompose(f[i], Variables(parameters));
+    num_lumped += w[i].size();
+  }
+  MatrixX<Expression> W = MatrixX<Expression>::Zero(f.size(), num_lumped);
+  int offset = 0;
+  for (int i = 0; i < f.size(); i++) {
+    W.block(i, offset, 1, w[i].size()) = w[i].transpose();
+    offset += w[i].size();
+  }
+  // TODO(russt): Remove duplicates.
+  return {W, Stack(alpha), w0};
+}
+
 }  // namespace symbolic
 }  // namespace drake
