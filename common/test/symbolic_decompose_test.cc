@@ -322,6 +322,118 @@ GTEST_TEST(SymbolicExtraction, DecomposeAffineExpression) {
     EXPECT_TRUE(CompareMatrices(c_expected, c, kEps));
   }
 }
+
+GTEST_TEST(SymbolicExtraction, DecomposeLumpedParameters) {
+  const Variable x("x");
+  const Variable y("y");
+  const Variable a("a");
+  const Variable b("b");
+  const Variable c("c");
+
+  {
+    // e = a + x, params = {a,b,c} should give
+    // W = [1], α = [a], w0 = [x]
+    const Expression e = a + x;
+    const auto [W, alpha, w0] = DecomposeLumpedParameters(
+        Vector1<Expression>(e), Vector3<Variable>{a, b, c});
+    EXPECT_EQ(W, Vector1<Expression>{1});
+    EXPECT_EQ(alpha, Vector1<Expression>{a});
+    EXPECT_EQ(w0, Vector1<Expression>{x});
+  }
+
+  {
+    // e = a*c*x*y, params = {a,b,c} should give
+    // W = [x*y], α = [a*c], w0 = [0]
+    const Expression e = a * c * x * y;
+    const auto [W, alpha, w0] = DecomposeLumpedParameters(
+        Vector1<Expression>(e), Vector3<Variable>{a, b, c});
+    EXPECT_EQ(W, Vector1<Expression>{x * y});
+    EXPECT_EQ(alpha, Vector1<Expression>{a * c});
+    EXPECT_EQ(w0, Vector1<Expression>{0});
+  }
+
+  {
+    // e = [a + x, a*x],  params = {a,b,c} should give
+    // W = [1; x], α = [a], w0 = [x; 0]
+    const Vector2<Expression> f(a + x, a * x);
+    const auto [W, alpha, w0] =
+        DecomposeLumpedParameters(f, Vector3<Variable>{a, b, c});
+    EXPECT_EQ(W, Vector2<Expression>(1, x));
+    EXPECT_EQ(alpha, Vector1<Expression>(a));
+    EXPECT_EQ(w0, Vector2<Expression>(x, 0));
+  }
+
+  {
+    // e = a*x*x, params = {a,b,c} should give
+    // W = [x*x], α = [a], w0 = [0]
+    const Expression e = a * x * x;
+    const auto [W, alpha, w0] = DecomposeLumpedParameters(
+        Vector1<Expression>(e), Vector3<Variable>{a, b, c});
+    EXPECT_EQ(W, Vector1<Expression>{x * x});
+    EXPECT_EQ(alpha, Vector1<Expression>{a});
+    EXPECT_EQ(w0, Vector1<Expression>{0});
+  }
+
+  {
+    // ax + bx + acy + acy² + 2, params = {a,b,c} should give
+    //   W = [x, y+y²], α = [a+b, ac], w0 = [2]
+    const Expression e = a * x + b * x + a * c * y + a * c * y * y + 2;
+    const auto [W, alpha, w0] = DecomposeLumpedParameters(
+        Vector1<Expression>(e), Vector3<Variable>{a, b, c});
+    EXPECT_EQ(W, RowVector2<Expression>(x, y + y * y));
+    EXPECT_EQ(alpha, Vector2<Expression>(a + b, a * c));
+    EXPECT_EQ(w0, Vector1<Expression>(2));
+  }
+
+  {
+    // Test non-polynomials.
+    // e = sin(a)*cos(x)+tanh(y), params = {a,b,c} should give
+    //   W = [cos(x)], α = [sin(a)], w0 = [tanh(x)]
+    const Expression e = sin(a) * cos(x) + tanh(x);
+    const auto [W, alpha, w0] = DecomposeLumpedParameters(
+        Vector1<Expression>(e), Vector3<Variable>{a, b, c});
+    EXPECT_EQ(W, Vector1<Expression>(cos(x)));
+    EXPECT_EQ(alpha, Vector1<Expression>(sin(a)));
+    EXPECT_EQ(w0, Vector1<Expression>(tanh(x)));
+  }
+
+  {
+    // Test a case that takes a power of a mixed expression.
+    // e = (a*x*sin(b))**2, params = {a,b,c} should give
+    // W = [x*x], alpha = [a*a*sin(b)*sin(b)], w0 = [0].
+    const Expression e = pow(a * sin(b) * x, 2);
+    const auto [W, alpha, w0] = DecomposeLumpedParameters(
+        Vector1<Expression>(e), Vector3<Variable>{a, b, c});
+    EXPECT_EQ(W, Vector1<Expression>(x * x));
+    EXPECT_EQ(alpha, Vector1<Expression>(a * a * sin(b) * sin(b)));
+    EXPECT_EQ(w0, Vector1<Expression>(0));
+  }
+
+  {
+    // Test a case that is not decomposable.
+    // e = sin(a*x), params = {a,b,c} should give
+    const Expression e = sin(a * x);
+    EXPECT_THROW(DecomposeLumpedParameters(Vector1<Expression>(e),
+                                           Vector3<Variable>{a, b, c}),
+                 std::exception);
+  }
+
+  {
+    // Test additional symbolic elements.
+    const Expression e = x / y + abs(x) + log(x) + exp(x) + sqrt(x) + sin(x) +
+                         cos(x) + tan(x) + asin(x) + acos(x) + atan(x) +
+                         atan2(x, y) + sinh(x) + cosh(x) + tanh(x) + min(x, y) +
+                         max(x, y) + ceil(x) + floor(x);
+    // Note: if_then_else(x>0, x, y) doesn't work because Expand is not
+    // implemented yet for ifthenelse.
+    const auto [W, alpha, w0] = DecomposeLumpedParameters(
+        Vector1<Expression>(e), Vector3<Variable>{a, b, c});
+    EXPECT_EQ(W.size(), 0);
+    EXPECT_EQ(alpha.size(), 0);
+    EXPECT_EQ(w0, Vector1<Expression>(e));
+  }
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
