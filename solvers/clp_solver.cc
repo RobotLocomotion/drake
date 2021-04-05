@@ -1,6 +1,8 @@
 #include "drake/solvers/clp_solver.h"
 
 #include <limits>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "ClpSimplex.hpp"
@@ -33,12 +35,15 @@ void ConstructClpModel(
 }
 
 template <typename C>
-void AddLinearConstraint(const MathematicalProgram& prog,
-                         const Binding<C>& linear_constraint,
-                         std::vector<Eigen::Triplet<double>>* constraint_coeffs,
-                         std::vector<double>* constraint_lower,
-                         std::vector<double>* constraint_upper,
-                         int* constraint_count) {
+void AddLinearConstraint(
+    const MathematicalProgram& prog, const Binding<C>& linear_constraint,
+    std::vector<Eigen::Triplet<double>>* constraint_coeffs,
+    std::vector<double>* constraint_lower,
+    std::vector<double>* constraint_upper, int* constraint_count,
+    std::unordered_map<Binding<Constraint>, int>* constraint_dual_start_index) {
+  const Binding<Constraint> binding_cast =
+      internal::BindingDynamicCast<Constraint>(linear_constraint);
+  constraint_dual_start_index->emplace(binding_cast, *constraint_count);
   const std::vector<int> variable_indices =
       prog.FindDecisionVariableIndices(linear_constraint.variables());
   for (int i = 0; i < linear_constraint.evaluator()->num_constraints(); ++i) {
@@ -62,7 +67,8 @@ void AddLinearConstraints(
     const MathematicalProgram& prog,
     std::vector<Eigen::Triplet<double>>* constraint_coeffs,
     std::vector<double>* constraint_lower,
-    std::vector<double>* constraint_upper) {
+    std::vector<double>* constraint_upper,
+    std::unordered_map<Binding<Constraint>, int>* constraint_dual_start_index) {
   int num_constraints = 0;
   int num_nonzero_coeff_max = 0;
   for (const auto& linear_constraint : prog.linear_constraints()) {
@@ -81,24 +87,84 @@ void AddLinearConstraints(
   constraint_coeffs->reserve(num_nonzero_coeff_max);
   int constraint_count = 0;
   for (const auto& linear_constraint : prog.linear_constraints()) {
-    AddLinearConstraint<LinearConstraint>(prog, linear_constraint,
-                                          constraint_coeffs, constraint_lower,
-                                          constraint_upper, &constraint_count);
+    AddLinearConstraint<LinearConstraint>(
+        prog, linear_constraint, constraint_coeffs, constraint_lower,
+        constraint_upper, &constraint_count, constraint_dual_start_index);
   }
   for (const auto& linear_equal_constraint :
        prog.linear_equality_constraints()) {
     AddLinearConstraint<LinearEqualityConstraint>(
         prog, linear_equal_constraint, constraint_coeffs, constraint_lower,
-        constraint_upper, &constraint_count);
+        constraint_upper, &constraint_count, constraint_dual_start_index);
   }
 }
 
-void SetSolution(const MathematicalProgram& prog, const ClpModel& model,
-                 MathematicalProgramResult* result) {
+// @param lambda The dual solution for the whole problem. This can be obtained
+// through CLP by calling getRowPrice() or getReducedCost() function.
+void SetConstraintDualSolution(
+    const Eigen::Map<const Eigen::VectorXd>& lambda,
+    const std::unordered_map<Binding<Constraint>, int>&
+        constraint_dual_start_index,
+    MathematicalProgramResult* result) {
+  for (const auto& [constraint, dual_start_index] :
+       constraint_dual_start_index) {
+    result->set_dual_solution(
+        constraint, lambda.segment(dual_start_index,
+                                   constraint.evaluator()->num_constraints()));
+  }
+}
+
+void SetBoundingBoxConstraintDualSolution(
+    const Eigen::Map<const Eigen::VectorXd>& column_dual_sol,
+    const std::unordered_map<Binding<BoundingBoxConstraint>,
+                             std::pair<std::vector<int>, std::vector<int>>>&
+        bb_con_dual_variable_indices,
+    MathematicalProgramResult* result) {
+  for (const auto& [bb_con, dual_var_indices] : bb_con_dual_variable_indices) {
+    Eigen::VectorXd bb_con_dual_sol =
+        Eigen::VectorXd::Zero(bb_con.evaluator()->num_constraints());
+    const std::vector<int>& lower_dual_indices = dual_var_indices.first;
+    const std::vector<int>& upper_dual_indices = dual_var_indices.second;
+    for (int k = 0; k < bb_con.evaluator()->num_constraints(); ++k) {
+      // At most one of the bound is active (If both the lower and upper bounds
+      // are active, then these two bounds have to be equal, then the dual
+      // solution for both bounds are the same).
+      if (lower_dual_indices[k] != -1 &&
+          column_dual_sol(lower_dual_indices[k]) > 0) {
+        // If the dual solution is positive, then the lower bound is active
+        // (according to the definition of reduced cost).
+        bb_con_dual_sol[k] = column_dual_sol[lower_dual_indices[k]];
+      } else if (upper_dual_indices[k] != -1 &&
+                 column_dual_sol(upper_dual_indices[k]) < 0) {
+        // If the dual solution is negative, then the upper bound is active
+        // (according to the definition of reduced cost).
+        bb_con_dual_sol[k] = column_dual_sol[upper_dual_indices[k]];
+      }
+    }
+
+    result->set_dual_solution(bb_con, bb_con_dual_sol);
+  }
+}
+
+void SetSolution(
+    const MathematicalProgram& prog, const ClpModel& model,
+    const std::unordered_map<Binding<Constraint>, int>&
+        constraint_dual_start_index,
+    const std::unordered_map<Binding<BoundingBoxConstraint>,
+                             std::pair<std::vector<int>, std::vector<int>>>&
+        bb_con_dual_variable_indices,
+    MathematicalProgramResult* result) {
   ClpSolverDetails& solver_details =
       result->SetSolverDetailsType<ClpSolverDetails>();
   result->set_x_val(Eigen::Map<const Eigen::VectorXd>(model.getColSolution(),
                                                       prog.num_vars()));
+  Eigen::Map<const Eigen::VectorXd> lambda(model.dualRowSolution(),
+                                           model.getNumRows());
+  SetConstraintDualSolution(lambda, constraint_dual_start_index, result);
+  Eigen::Map<const Eigen::VectorXd> column_dual_sol(model.dualColumnSolution(),
+                                                    model.getNumCols());
+  SetBoundingBoxConstraintDualSolution(column_dual_sol,
+                                       bb_con_dual_variable_indices, result);
   solver_details.status = model.status();
   SolutionResult solution_result{SolutionResult::kUnknownError};
   switch (solver_details.status) {
@@ -137,6 +203,37 @@ void SetSolution(const MathematicalProgram& prog, const ClpModel& model,
   }
   result->set_solution_result(solution_result);
   result->set_optimal_cost(objective_val);
+}
+
+// bb_con_dual_indices[bb_con] returns the indices of the dual variable for the
+// lower/upper bound of this bounding box constraint. If this bounding box
+// constraint cannot be active (some other bounding box constraint has a tighter
+// bound than this one), then its dual variable index is -1.
+// @param xlow The aggregated lower bound for all decision variables across all
+// bounding box constraints.
+// @param xupp The aggregated upper bound for all decision variables across all
+// bounding box constraints.
+void SetBoundingBoxConstraintDualIndices(
+    const MathematicalProgram& prog,
+    const Binding<BoundingBoxConstraint>& bb_con, const Eigen::VectorXd& xlow,
+    const Eigen::VectorXd& xupp,
+    std::unordered_map<Binding<BoundingBoxConstraint>,
+                       std::pair<std::vector<int>, std::vector<int>>>*
+        bbcon_dual_indices) {
+  const int num_vars = bb_con.evaluator()->num_constraints();
+  std::vector<int> lower_dual_indices(num_vars, -1);
+  std::vector<int> upper_dual_indices(num_vars, -1);
+  for (int k = 0; k < num_vars; ++k) {
+    const int idx = prog.FindDecisionVariableIndex(bb_con.variables()(k));
+    if (xlow[idx] == bb_con.evaluator()->lower_bound()(k)) {
+      lower_dual_indices[k] = idx;
+    }
+    if (xupp[idx] == bb_con.evaluator()->upper_bound()(k)) {
+      upper_dual_indices[k] = idx;
+    }
+  }
+  bbcon_dual_indices->emplace(
+      bb_con, std::make_pair(lower_dual_indices, upper_dual_indices));
 }
 
 void ParseModelExceptLinearConstraints(const MathematicalProgram& prog,
@@ -179,20 +276,28 @@ void ClpSolver::DoSolve(const MathematicalProgram& prog,
 
   std::vector<Eigen::Triplet<double>> constraint_coeffs;
   std::vector<double> constraint_lower, constraint_upper;
+  std::unordered_map<Binding<Constraint>, int> constraint_dual_start_index;
   if (!prog.linear_constraints().empty() ||
       !prog.linear_equality_constraints().empty()) {
     AddLinearConstraints(prog, &constraint_coeffs, &constraint_lower,
-                         &constraint_upper);
+                         &constraint_upper, &constraint_dual_start_index);
   }
-  // TODO(hongkai.dai@tri.global): set the dual solution indices also.
   ConstructClpModel(constraint_coeffs, constraint_lower, constraint_upper, xlow,
                     xupp, objective_coeff, constant_cost, &model);
+  std::unordered_map<Binding<BoundingBoxConstraint>,
+                     std::pair<std::vector<int>, std::vector<int>>>
+      bb_con_dual_variable_indices;
+  for (const auto& bb_con : prog.bounding_box_constraints()) {
+    SetBoundingBoxConstraintDualIndices(prog, bb_con, xlow, xupp,
+                                        &bb_con_dual_variable_indices);
+  }
 
   // Solve
   model.primal();
 
   // Set the solution
-  SetSolution(prog, model, result);
+  SetSolution(prog, model, constraint_dual_start_index,
+              bb_con_dual_variable_indices, result);
 }
 }  // namespace solvers
 }  // namespace drake
