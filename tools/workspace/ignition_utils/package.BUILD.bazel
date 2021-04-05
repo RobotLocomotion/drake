@@ -1,0 +1,118 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/workspace:cmake_configure_file.bzl",
+    "cmake_configure_file",
+)
+load(
+    "@drake//tools/workspace:generate_include_header.bzl",
+    "drake_generate_include_header",
+)
+load(
+    "@drake//tools/workspace:check_lists_consistency.bzl",
+    "check_lists_consistency",
+)
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+load("@drake//tools/workspace:generate_file.bzl", "generate_file")
+
+licenses(["notice"])  # Apache-2.0
+
+package(default_visibility = ["//visibility:private"])
+
+PROJECT_MAJOR = 1
+
+PROJECT_MINOR = 0
+
+PROJECT_PATCH = 0
+
+cmake_configure_file(
+    name = "config",
+    src = "include/ignition/utils/config.hh.in",
+    out = "include/ignition/utils/config.hh",
+    cmakelists = ["CMakeLists.txt"],
+    defines = [
+        "IGN_DESIGNATION=utils",
+        "PROJECT_VERSION_MAJOR=%d" % (PROJECT_MAJOR),
+        "PROJECT_VERSION_MINOR=%d" % (PROJECT_MINOR),
+        "PROJECT_VERSION_PATCH=%d" % (PROJECT_PATCH),
+        "PROJECT_VERSION=%d.%d" % (PROJECT_MAJOR, PROJECT_MINOR),
+        "PROJECT_VERSION_FULL=%d.%d.%d" % (PROJECT_MAJOR, PROJECT_MINOR, PROJECT_PATCH),  # noqa
+        "PROJECT_NAME_NO_VERSION=ignition-utils",
+    ],
+)
+
+generate_file(
+    name = "include/ignition/utils/Export.hh",
+    content = """
+#pragma once
+
+// IGN_DEPRECATED is defined by all ignition libraries, but the version below
+// is a simplified version.  When mixing the regular ignition libraries and
+// the drake compiled ignition libraries, the compiler throws a warning about
+// the macro being multiply defined.  We undefine it before redefining it here
+// to work around that issue.  Note that the IGNITION_UTILS_VISIBLE macro
+// shouldn't be defined multiple times, but we undefine it just in case.
+
+#ifdef IGNITION_UTILS_VISIBLE
+#undef IGNITION_UTILS_VISIBLE
+#endif
+#define IGNITION_UTILS_VISIBLE __attribute__ ((visibility("default")))
+
+#ifdef IGN_DEPRECATED
+#undef IGN_DEPRECATED
+#endif
+#define IGN_DEPRECATED(version) __attribute__ ((__deprecated__))
+    """,
+)
+
+public_headers_no_gen = [
+    "include/ignition/utils/ImplPtr.hh",
+    "include/ignition/utils/SuppressWarning.hh",
+    "include/ignition/utils/detail/DefaultOps.hh",
+    "include/ignition/utils/detail/ImplPtr.hh",
+    "include/ignition/utils/detail/SuppressWarning.hh",
+]
+
+private_headers = [
+    # Nothing here yet.
+]
+
+drake_generate_include_header(
+    name = "utilshh_genrule",
+    out = "include/ignition/utils.hh",
+    hdrs = public_headers_no_gen + [
+        "include/ignition/utils/config.hh",
+        "include/ignition/utils/Export.hh",
+    ],
+)
+
+check_lists_consistency(
+    file_list = private_headers + public_headers_no_gen,
+    glob = ["include/**/*.hh"],
+)
+
+public_headers = public_headers_no_gen + [
+    "include/ignition/utils/config.hh",
+    "include/ignition/utils/Export.hh",
+    "include/ignition/utils.hh",
+]
+
+cc_library(
+    name = "ignition_utils",
+    srcs = private_headers,
+    hdrs = public_headers,
+    includes = ["include"],
+    visibility = ["//visibility:public"],
+)
+
+install(
+    name = "install",
+    docs = [
+        "COPYING",
+        "LICENSE",
+    ],
+    visibility = ["//visibility:public"],
+)
