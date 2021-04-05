@@ -589,12 +589,6 @@ AbstractStateIndex LeafSystem<T>::DeclareAbstractState(
 }
 
 template <typename T>
-AbstractStateIndex LeafSystem<T>::DeclareAbstractState(
-    std::unique_ptr<AbstractValue> abstract_state) {
-  return this->DeclareAbstractState(*abstract_state);
-}
-
-template <typename T>
 InputPort<T>& LeafSystem<T>::DeclareVectorInputPort(
     std::variant<std::string, UseDefaultName> name,
     const BasicVector<T>& model_vector,

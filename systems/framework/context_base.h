@@ -217,18 +217,6 @@ class ContextBase : public internal::ContextMessageInterface {
   @pre `index` selects an existing input port of this Context. */
   FixedInputPortValue& FixInputPort(int index, const AbstractValue& value);
 
-  /** (Advanced) Same as above method but the value is passed by unique_ptr
-  instead of by const reference. The port will contain a copy of the `value`
-  (not retain a pointer to the `value`). */
-  DRAKE_DEPRECATED("2021-04-01",
-      "Use input_port.FixValue() instead of context.FixInputPort(), or in "
-      "rare cases if an InputPort is not available, pass the value argument "
-      "here by-value, instead of by-unique-ptr.")
-  FixedInputPortValue& FixInputPort(
-      int index, std::unique_ptr<AbstractValue> value) {
-    return FixInputPort(index, *value);
-  }
-
   /** For input port `index`, returns a const FixedInputPortValue if the port is
   fixed, otherwise nullptr.
   @pre `index` selects an existing input port of this Context. */
