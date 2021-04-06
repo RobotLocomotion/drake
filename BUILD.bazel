@@ -75,9 +75,14 @@ install_test(
         ":install",
         _INSTALL_TEST_COMMANDS,
     ],
-    # Running acceptance tests under Valgrind tools is extremely slow and of
-    # limited value, so skip them.
-    tags = ["no_valgrind_tools"],
+    tags = [
+        # Running acceptance tests under coverage (kcov) can fail for presently
+        # unknown reasons when it comes to drake_visualizer, so skip them.
+        "no_kcov",
+        # Running acceptance tests under Valgrind tools is extremely slow and
+        # of limited value, so skip them.
+        "no_valgrind_tools",
+    ],
 )
 
 add_lint_tests()
