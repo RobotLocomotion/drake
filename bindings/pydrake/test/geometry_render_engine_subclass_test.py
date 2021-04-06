@@ -20,8 +20,8 @@ class TestRenderEngineSubclass(unittest.TestCase):
 
     def test_unimplemented_rendering(self):
         """The RenderEngine API throws exceptions for derived implementations
-        that don't override DoRender*Image (or Render*Image for the deprecated
-        API). This test confirms that behavior propagates down to Python."""
+        that don't override DoRender*Image. This test confirms that behavior
+        propagates down to Python."""
         class MinimalEngine(mut.render.RenderEngine):
             """Minimal implementation of the RenderEngine virtual API"""
             def UpdateViewpoint(self, X_WC):
