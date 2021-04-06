@@ -27,6 +27,14 @@
       </collision>
       <collision name="Capsule">
         <geometry>
+          <capsule>
+            <length>1</length>
+            <radius>0.1</radius>
+          </capsule>
+        </geometry>
+      </collision>
+      <collision name="DrakeCapsule">
+        <geometry>
           <drake:capsule>
             <length>1</length>
             <radius>0.1</radius>
@@ -50,6 +58,13 @@
         </geometry>
       </collision>
       <collision name="Ellipsoid">
+        <geometry>
+          <ellipsoid>
+            <radii>1.0 2.0 3.0</radii>
+          </ellipsoid>
+        </geometry>
+      </collision>
+      <collision name="DrakeEllipsoid">
         <geometry>
           <drake:ellipsoid>
             <a>1.0</a>

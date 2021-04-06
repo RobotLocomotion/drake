@@ -166,6 +166,15 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
         return make_unique<geometry::Mesh>(file_name, scale);
       }
     }
+    case sdf::GeometryType::CAPSULE: {
+      const sdf::Capsule& shape = *sdf_geometry.CapsuleShape();
+      return make_unique<geometry::Capsule>(shape.Radius(), shape.Length());
+    }
+    case sdf::GeometryType::ELLIPSOID: {
+      const ignition::math::Vector3d& radii =
+          sdf_geometry.EllipsoidShape()->Radii();
+      return make_unique<geometry::Ellipsoid>(radii.X(), radii.Y(), radii.Z());
+    }
     case sdf::GeometryType::HEIGHTMAP: {
       return std::unique_ptr<geometry::Shape>(nullptr);
     }
@@ -205,7 +214,9 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
     case sdf::GeometryType::EMPTY:  // Also includes custom geometries.
     case sdf::GeometryType::HEIGHTMAP:
     case sdf::GeometryType::BOX:
+    case sdf::GeometryType::CAPSULE:
     case sdf::GeometryType::CYLINDER:
+    case sdf::GeometryType::ELLIPSOID:
     case sdf::GeometryType::MESH:
     case sdf::GeometryType::SPHERE: {
       // X_LC = X_LG for these geometries.
@@ -354,7 +365,9 @@ RigidTransformd MakeGeometryPoseFromSdfCollision(
     case sdf::GeometryType::EMPTY:
     case sdf::GeometryType::HEIGHTMAP:
     case sdf::GeometryType::BOX:
+    case sdf::GeometryType::CAPSULE:
     case sdf::GeometryType::CYLINDER:
+    case sdf::GeometryType::ELLIPSOID:
     case sdf::GeometryType::MESH:
     case sdf::GeometryType::SPHERE: {
       // X_LC = X_LG for these geometries.
