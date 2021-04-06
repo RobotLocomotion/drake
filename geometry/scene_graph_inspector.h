@@ -173,14 +173,6 @@ class SceneGraphInspector {
     return state_->GetName(source_id);
   }
 
-  /** Reports the name for the source with the given `id`.
-   @throws std::logic_error if `id` does not map to a registered source. */
-  DRAKE_DEPRECATED("2021-04-01", "Please use GetName(SourceId) instead.")
-  const std::string& GetSourceName(SourceId id) const {
-    DRAKE_DEMAND(state_ != nullptr);
-    return state_->GetName(id);
-  }
-
   /** Reports the number of frames registered to the source with the given
    `source_id`.
    @throws std::logic_error if `source_id` does not map to a registered source.

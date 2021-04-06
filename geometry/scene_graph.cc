@@ -82,23 +82,11 @@ class GeometryStateValue final : public Value<GeometryState<T>> {
 }  // namespace
 
 template <typename T>
-SceneGraph<T>::SceneGraph() : SceneGraph(false, 0) {}
-
-template <typename T>
-SceneGraph<T>::SceneGraph(bool data_as_state) : SceneGraph(data_as_state, 0) {}
-
-template <typename T>
-SceneGraph<T>::SceneGraph(bool data_as_state, int)
-    : LeafSystem<T>(SystemTypeTag<SceneGraph>{}),
-      data_as_state_(data_as_state) {
+SceneGraph<T>::SceneGraph()
+    : LeafSystem<T>(SystemTypeTag<SceneGraph>{}) {
   model_inspector_.set(&model_);
-  if (data_as_state_) {
-    geometry_state_index_ =
-        this->DeclareAbstractState(GeometryStateValue<T>());
-  } else {
-    geometry_state_index_ =
-        this->DeclareAbstractParameter(GeometryStateValue<T>());
-  }
+  geometry_state_index_ =
+      this->DeclareAbstractParameter(GeometryStateValue<T>());
 
   bundle_port_index_ = this->DeclareAbstractOutputPort(
                                "lcm_visualization", &SceneGraph::MakePoseBundle,
@@ -118,7 +106,7 @@ SceneGraph<T>::SceneGraph(bool data_as_state, int)
 template <typename T>
 template <typename U>
 SceneGraph<T>::SceneGraph(const SceneGraph<U>& other)
-    : SceneGraph(other.data_as_state_, 0) {
+    : SceneGraph() {
   // TODO(SeanCurtis-TRI) This is very brittle; we are essentially assuming that
   //  T = AutoDiffXd. For now, that's true. If we ever support
   //  symbolic::Expression, this U --> T conversion will have to be more
@@ -363,23 +351,11 @@ void SceneGraph<T>::ExcludeCollisionsBetween(Context<T>* context,
 }
 
 template <typename T>
-void SceneGraph<T>::SetDefaultState(const Context<T>& context,
-                                    State<T>* state) const {
-  LeafSystem<T>::SetDefaultState(context, state);
-  if (data_as_state_) {
-    state->template get_mutable_abstract_state<GeometryState<T>>(
-        geometry_state_index_) = model_;
-  }
-}
-
-template <typename T>
 void SceneGraph<T>::SetDefaultParameters(const Context<T>& context,
                                          Parameters<T>* parameters) const {
   LeafSystem<T>::SetDefaultParameters(context, parameters);
-  if (!data_as_state_) {
-    parameters->template get_mutable_abstract_parameter<GeometryState<T>>(
-        geometry_state_index_) = model_;
-  }
+  parameters->template get_mutable_abstract_parameter<GeometryState<T>>(
+      geometry_state_index_) = model_;
 }
 
 template <typename T>
@@ -515,28 +491,16 @@ void SceneGraph<T>::ThrowUnlessRegistered(SourceId source_id,
 template <typename T>
 GeometryState<T>& SceneGraph<T>::mutable_geometry_state(
     Context<T>* context) const {
-  if (data_as_state_) {
-    return context->get_mutable_state()
-        .template get_mutable_abstract_state<GeometryState<T>>(
-            geometry_state_index_);
-  } else {
-    return context->get_mutable_parameters()
-        .template get_mutable_abstract_parameter<GeometryState<T>>(
-            geometry_state_index_);
-  }
+  return context->get_mutable_parameters()
+      .template get_mutable_abstract_parameter<GeometryState<T>>(
+          geometry_state_index_);
 }
 
 template <typename T>
 const GeometryState<T>& SceneGraph<T>::geometry_state(
     const Context<T>& context) const {
-  if (data_as_state_) {
-    return context.get_state().template get_abstract_state<GeometryState<T>>(
-        geometry_state_index_);
-  } else {
-    return context.get_parameters()
-        .template get_abstract_parameter<GeometryState<T>>(
-            geometry_state_index_);
-  }
+  return context.get_parameters()
+      .template get_abstract_parameter<GeometryState<T>>(geometry_state_index_);
 }
 
 // Explicitly instantiates on the most common scalar types.

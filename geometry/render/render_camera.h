@@ -4,7 +4,6 @@
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/geometry/render/camera_properties.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/systems/sensors/camera_info.h"
 
@@ -44,15 +43,6 @@ class RenderCameraCore {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RenderCameraCore);
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  /** (Advanced) Constructs a %RenderCameraCore from the old, symmetric camera
-   representation. This constructor should only be used internally; it serves
-   as a stop gap measure until CameraProperties is fully deprecated.  */
-  RenderCameraCore(const CameraProperties& camera, double clipping_far,
-                   math::RigidTransformd X_BS = {});
-#pragma GCC diagnostic pop
-
   /** Fully-specified constructor. See the documentation on the member getter
    methods for documentation of parameters.  */
   RenderCameraCore(std::string renderer_name,
@@ -89,10 +79,6 @@ class RenderCameraCore {
   Eigen::Matrix4d CalcProjectionMatrix() const;
 
  private:
-  // Used to convert CameraProperties to RenderCameraCore; this is the legacy
-  // value used. Remove this when we remove the conversion constructor.
-  static constexpr double kClippingNear = 0.01;
-
   // See getter methods for documentation on these members.
   std::string renderer_name_;
   systems::sensors::CameraInfo intrinsics_;
@@ -110,19 +96,6 @@ class ColorRenderCamera {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ColorRenderCamera);
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  /** Constructs a %ColorRenderCamera from the old, symmetric camera
-   representation. This constructor should only be used internally; it serves
-   as a stop gap measure until CameraProperties is fully deprecated.  */
-  explicit ColorRenderCamera(const CameraProperties& camera,
-                             bool show_window = false,
-                             math::RigidTransformd X_BC = {})
-      : ColorRenderCamera(
-            RenderCameraCore(camera, kClippingFar, std::move(X_BC)),
-            show_window) {}
-#pragma GCC diagnostic pop
-
   /** Fully-specified constructor. See the documentation on the member getter
    methods for documentation of parameters.  */
   explicit ColorRenderCamera(RenderCameraCore core, bool show_window = false)
@@ -135,10 +108,6 @@ class ColorRenderCamera {
   bool show_window() const { return show_window_; }
 
  private:
-  // Used to convert CameraProperties to ColorRenderCamera; this is the legacy
-  // value used. Remove this when we remove the conversion constructor.
-  static constexpr double kClippingFar = 100;
-
   // See getter methods for documentation on these members.
   RenderCameraCore core_;
   bool show_window_{false};
@@ -181,18 +150,6 @@ class DepthRange {
 class DepthRenderCamera {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DepthRenderCamera);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  /** Constructs a %DepthRenderCamera from the old, symmetric camera
-   representation. This constructor should only be used internally; it serves
-   as a stop gap measure until CameraProperties is fully deprecated.  */
-  explicit DepthRenderCamera(const DepthCameraProperties& camera,
-                             math::RigidTransformd X_BD = {})
-      : DepthRenderCamera(
-            RenderCameraCore(camera, camera.z_far * 1.1, std::move(X_BD)),
-            DepthRange(camera.z_near, camera.z_far)) {}
-#pragma GCC diagnostic pop
 
   /** Fully-specified constructor. See the documentation on the member getter
    methods for documentation of parameters.

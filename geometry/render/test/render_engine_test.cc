@@ -380,256 +380,31 @@ GTEST_TEST(RenderEngine, DetectDoCloneFailure) {
       "probably not implemented");
 }
 
-// Test infrastructure to support deprecation efforts. After completing the
-// deprecation (2021-04-01), all of this test infrastructure can/should simply
-// go away. In the deprecation period there are three possible configurations of
-// a child RenderEngine class:
-//
-//   - Failed to implement either the old or new APIs.
-//     - This should be detected and an error thrown. See
-//       the test DetectUnimplementedRender below.
-//   - Implementation of new API (invocation of old delegates to new).
-//     - The DummyRenderEngine satisfies this case and allows detection of
-//       delegation. See the test OldApiDelegatesToNewApi
-//       below.
-//   - Implementaiton of old API (invocation of new delegates to old).
-//     - See the test NewApiDelegatesToOldApi.
-//
-// There is *technically* a fourth option, implementation of both old and new
-// APIs. If a subclass does that, then the RenderEngine API doesn't participate
-// at all and that scenario is outside the scope of the tests for RenderEngine.
-//
-// https://github.com/RobotLocomotion/drake/issues/11880
-
-// The desired behavior in the deprecation period is for the user to implement
-// DoRender*Image and calls to RenderImage(CamProperties) get automatically
-// forwarded. DummyRenderEngine has this expected implementation. Confirm
-// the forwarding. To that end, we'll confirm two things: that the DoRender*
-// function got called and that the camera provided is what we expect.
-GTEST_TEST(RenderEngine, OldApiDelegatesToNewApi) {
-  // Arbitrary image sizes that are unlikely to be hard-coded anywhere.
-  const int w = 35;
-  const int h = 45;
-
-  ImageRgba8U color(w, h);
-  ImageDepth32F depth(w, h);
-  ImageLabel16I label(w, h);
-
-  // DummyRenderEngine implements the new DoRender*Image API and *not* the old
-  // CameraProperties-based API.
-  DummyRenderEngine engine;
-
-  auto cores_equal = [](const RenderCameraCore& test,
-                        const RenderCameraCore& expected) {
-    return test.renderer_name() == expected.renderer_name() &&
-           test.clipping().near() == expected.clipping().near() &&
-           test.clipping().far() == expected.clipping().far() &&
-           CompareMatrices(
-               test.sensor_pose_in_camera_body().GetAsMatrix34(),
-               expected.sensor_pose_in_camera_body().GetAsMatrix34()) &&
-           CompareMatrices(test.intrinsics().intrinsic_matrix(),
-                           expected.intrinsics().intrinsic_matrix());
-  };
-
-  auto color_cameras_equal = [&cores_equal](const ColorRenderCamera& test,
-                                            const ColorRenderCamera& expected) {
-    return test.show_window() == expected.show_window() &&
-           cores_equal(test.core(), expected.core());
-  };
-
-  auto depth_cameras_equal = [&cores_equal](const DepthRenderCamera& test,
-                                            const DepthRenderCamera& expected) {
-    return test.depth_range().min_depth() ==
-               expected.depth_range().min_depth() &&
-           test.depth_range().max_depth() ==
-               expected.depth_range().max_depth() &&
-           cores_equal(test.core(), expected.core());
-  };
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  const DepthCameraProperties properties{w, h, M_PI / 3, "n/a", 0.25, 11.5};
-
-  engine.RenderColorImage(properties, true, &color);
-  EXPECT_EQ(engine.num_color_renders(), 1);
-  EXPECT_TRUE(color_cameras_equal(engine.last_color_camera(),
-                                  ColorRenderCamera(properties, true)));
-
-  engine.RenderColorImage(properties, false, &color);
-  EXPECT_EQ(engine.num_color_renders(), 2);
-  EXPECT_TRUE(color_cameras_equal(engine.last_color_camera(),
-                                  ColorRenderCamera(properties, false)));
-
-  engine.RenderDepthImage(properties, &depth);
-  EXPECT_EQ(engine.num_depth_renders(), 1);
-  EXPECT_TRUE(depth_cameras_equal(engine.last_depth_camera(),
-                                  DepthRenderCamera(properties)));
-
-  engine.RenderLabelImage(properties, true, &label);
-  EXPECT_EQ(engine.num_label_renders(), 1);
-  EXPECT_TRUE(color_cameras_equal(engine.last_label_camera(),
-                                  ColorRenderCamera(properties, true)));
-
-  engine.RenderLabelImage(properties, false, &label);
-  EXPECT_EQ(engine.num_label_renders(), 2);
-  EXPECT_TRUE(color_cameras_equal(engine.last_label_camera(),
-                                  ColorRenderCamera(properties, false)));
-#pragma GCC diagnostic pop
-}
-
-// Confirms that a RenderEngine that doesn't implement any rendering API is
-// detected.
-GTEST_TEST(RenderEngine, DetectUnimplementedRender) {
-  // Set up cameras and images.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  const CameraProperties cam_props(10, 10, M_PI / 4, "n/a");
-  const DepthCameraProperties depth_props(cam_props.width, cam_props.height,
-                                          cam_props.fov_y,
-                                          cam_props.renderer_name, 0.2, 8.0);
-#pragma GCC diagnostic pop
-  const ColorRenderCamera color_cam(cam_props);
-  const DepthRenderCamera depth_cam(depth_props);
-  ImageRgba8U color_image(cam_props.width, cam_props.height);
-  ImageDepth32F depth_image(depth_props.width, depth_props.height);
-  ImageLabel16I label_image(cam_props.width, cam_props.height);
-
-  // Remember, MinimumEngine has implemented no rendering logic.
+// Confirms that sub-classes that don't implement the DoRender*Image API get
+// unimplemented exceptions.
+GTEST_TEST(RenderEngine, UnimplementedRenderErrors) {
   MinimumEngine engine;
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.RenderColorImage(cam_props, false, &color_image), std::exception,
-      ".+render a color image.+RenderColorImage.+DoRenderColorImage.+");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.RenderDepthImage(depth_props, &depth_image), std::exception,
-      ".+render a depth image.+RenderDepthImage.+DoRenderDepthImage.+");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.RenderLabelImage(cam_props, false, &label_image), std::exception,
-      ".+render a label image.+RenderLabelImage.+DoRenderLabelImage.+");
-#pragma GCC diagnostic pop
-
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.RenderColorImage(color_cam, &color_image), std::exception,
-      ".+render a color image.+RenderColorImage.+DoRenderColorImage.+");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.RenderDepthImage(depth_cam, &depth_image), std::exception,
-      ".+render a depth image.+RenderDepthImage.+DoRenderDepthImage.+");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.RenderLabelImage(color_cam, &label_image), std::exception,
-      ".+render a label image.+RenderLabelImage.+DoRenderLabelImage.+");
-}
-
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
-// This class implements *only* the legacy API to validate forwarding of APIs.
-// Calls on the old API are counted, and the camera properties are cached for
-// later examination.
-class LegacyEngine final : public MinimumEngine {
- public:
-  LegacyEngine()
-      : color_props_{0, 0, 0, ""},
-        depth_props_{0, 0, 0, "", 0, 0},
-        label_props_{0, 0, 0, ""} {}
-
-  // Make sure the new API is available (even though we're not implementing it).
-  using MinimumEngine::RenderColorImage;
-  using MinimumEngine::RenderDepthImage;
-  using MinimumEngine::RenderLabelImage;
-
-  void RenderColorImage(const CameraProperties& camera, bool,
-                        ImageRgba8U*) const final {
-    ++color_count_;
-    color_props_ = camera;
-  }
-  void RenderDepthImage(const DepthCameraProperties& camera,
-                        ImageDepth32F*) const final {
-    ++depth_count_;
-    depth_props_ = camera;
-  }
-  void RenderLabelImage(const CameraProperties& camera, bool,
-                        ImageLabel16I*) const final {
-    ++label_count_;
-    label_props_ = camera;
-  }
-
-  int num_color_renders() const { return color_count_; }
-  int num_depth_renders() const { return depth_count_; }
-  int num_label_renders() const { return label_count_; }
-
-  const CameraProperties& last_color_camera_properties() const {
-    return color_props_;
-  }
-  const DepthCameraProperties& last_depth_camera_properties() const {
-    return depth_props_;
-  }
-  const CameraProperties& last_label_camera_properties() const {
-    return label_props_;
-  }
-
- private:
-  mutable int color_count_{};
-  mutable int depth_count_{};
-  mutable int label_count_{};
-  mutable CameraProperties color_props_;
-  mutable DepthCameraProperties depth_props_;
-  mutable CameraProperties label_props_;
-};
-
-// Tests the case where a RenderEngine implements the old API, but not the new
-// API. Confirms that the delegation occurs and the camera is converted as
-// expected.
-GTEST_TEST(RenderEngine, NewApiDelegatesToOldApi) {
-  const CameraInfo intrinsics{2, 2, M_PI};
+  const int w = 2;
+  const int h = 2;
+  const CameraInfo intrinsics{w, h, M_PI};
   const ColorRenderCamera color_camera{
       {"n/a", intrinsics, {0.1, 10}, RigidTransformd{}}, false};
   const DepthRenderCamera depth_camera{
       {"n/a", intrinsics, {0.1, 10}, RigidTransformd{}}, {1.0, 5.0}};
 
-  ImageRgba8U color(2, 2);
-  ImageDepth32F depth(2, 2);
-  ImageLabel16I label(2, 2);
-
-  LegacyEngine engine;
-
-  // Confirm all counters are as expected before starting.
-  ASSERT_EQ(engine.num_color_renders(), 0);
-  ASSERT_EQ(engine.num_depth_renders(), 0);
-  ASSERT_EQ(engine.num_label_renders(), 0);
-
-  auto cameras_match = [](const CameraProperties& test,
-                          const RenderCameraCore& expected) {
-    return test.width == expected.intrinsics().width() &&
-           test.height == expected.intrinsics().height() &&
-           test.fov_y == expected.intrinsics().fov_y() &&
-           test.renderer_name == expected.renderer_name();
-  };
-
-  auto depths_match = [](const DepthCameraProperties& test,
-                         const DepthRenderCamera& expected) {
-    return test.z_near == expected.depth_range().min_depth() &&
-           test.z_far == expected.depth_range().max_depth();
-  };
-
-  engine.RenderColorImage(color_camera, &color);
-  EXPECT_EQ(engine.num_color_renders(), 1);
-  EXPECT_TRUE(cameras_match(engine.last_color_camera_properties(),
-                            color_camera.core()));
-  engine.RenderDepthImage(depth_camera, &depth);
-  EXPECT_EQ(engine.num_depth_renders(), 1);
-  EXPECT_TRUE(cameras_match(engine.last_depth_camera_properties(),
-                            depth_camera.core()));
-  EXPECT_TRUE(
-      depths_match(engine.last_depth_camera_properties(), depth_camera));
-  engine.RenderLabelImage(color_camera, &label);
-  EXPECT_EQ(engine.num_label_renders(), 1);
-  EXPECT_TRUE(cameras_match(engine.last_label_camera_properties(),
-                            color_camera.core()));
+  ImageRgba8U color{w, h};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.RenderColorImage(color_camera, &color), std::runtime_error,
+      ".*MinimumEngine.* has not implemented DoRenderColorImage.+");
+  ImageDepth32F depth{w, h};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.RenderDepthImage(depth_camera, &depth), std::runtime_error,
+      ".*MinimumEngine.* has not implemented DoRenderDepthImage.+");
+  ImageLabel16I label{w, h};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.RenderLabelImage(color_camera, &label), std::runtime_error,
+      ".*MinimumEngine.* has not implemented DoRenderLabelImage.+");
 }
-#pragma GCC diagnostic pop
 
 }  // namespace
 }  // namespace render

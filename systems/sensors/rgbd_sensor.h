@@ -11,7 +11,6 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/query_object.h"
-#include "drake/geometry/render/camera_properties.h"
 #include "drake/geometry/render/render_camera.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -97,73 +96,6 @@ namespace sensors {
 class RgbdSensor final : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdSensor)
-
-  /** Specifies poses of cameras with respect ot the sensor base `B`.
-   */
-  struct DRAKE_DEPRECATED("2021-04-01",
-                   "The constructors that take poses explicitly have been "
-                   "deprecated. Pose is now part of the RenderCamera "
-                   "interface. See the RenderCamera-based RgbdSensor "
-                   "constructors.")
-  CameraPoses {
-    /** Pose of color camera `C` with respect to sensor base `B`. Defaults to
-     the identity matrix.  */
-    math::RigidTransformd X_BC;
-
-    /** Pose of depth camera `D` with respect to sensor base `B`. Defaults to
-     the identity matrix.  */
-    math::RigidTransformd X_BD;
-  };
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // These deprecated methods make use of the deprecated structs
-  // *CameraProperties and CameraPoses. So, we disable the warnings.
-
-  /** Constructs an %RgbdSensor whose frame `B` is rigidly affixed to the frame
-   P, indicated by `parent_id`, and with the given "simple" camera properties.
-   The camera is "simple" in the sense that it models a camera with a radially
-   symmetric lens and a principal point that projects onto the center of the
-   image. The camera will move as frame P moves. For a stationary camera, use
-   the frame id from SceneGraph::world_frame_id().
-
-   @param parent_id      The identifier of a parent frame `P` in
-                         geometry::SceneGraph to which this camera is rigidly
-                         affixed with pose `X_PB`.
-   @param X_PB           The pose of the camera `B` frame relative to the parent
-                         frame `P`.
-   @param color_properties Defines camera's color (and label) intrinsics and
-                           renderer.
-   @param depth_properties Defines camera's depth intrinsics and renderer.
-   @param camera_poses   The poses of the color (C) and depth camera (D) frames
-                         with respect to the sensor base (B). If omitted, all
-                         three frames will be aligned and coincident.
-   @param show_window    A flag for showing a visible window. If this is false,
-                         off-screen rendering is executed. The default is false.
-   @pydrake_mkdoc_identifier{legacy_individual_intrinsics}
-   */
-  DRAKE_DEPRECATED("2021-04-01",
-                   "CameraProperties are being deprecated. Please use the "
-                   "RenderCamera variant.")
-  RgbdSensor(geometry::FrameId parent_id,
-             const math::RigidTransformd& X_PB,
-             const geometry::render::CameraProperties& color_properties,
-             const geometry::render::DepthCameraProperties& depth_properties,
-             const CameraPoses& camera_poses = {},
-             bool show_window = false);
-
-  /** Constructs an %RgbdSensor in the same way as the above overload, but
-   using the `CameraProperties` portion of `properties` for color (and label)
-   properties, and all of `properties` for depth properties.
-   @pydrake_mkdoc_identifier{legacy_combined_intrinsics}
-   */
-  DRAKE_DEPRECATED("2021-04-01",
-                   "CameraProperties are being deprecated. Please use the "
-                   "RenderCamera variant.")
-  RgbdSensor(geometry::FrameId parent_id, const math::RigidTransformd& X_PB,
-             const geometry::render::DepthCameraProperties& properties,
-             const CameraPoses& camera_poses = {}, bool show_window = false);
-#pragma GCC diagnostic pop
 
   /** Constructs an %RgbdSensor with fully specified render camera models for
    both color/label and depth cameras.

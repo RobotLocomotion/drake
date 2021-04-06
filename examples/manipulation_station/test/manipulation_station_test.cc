@@ -386,41 +386,6 @@ GTEST_TEST(ManipulationStationTest, RegisterRgbdCameraTest) {
     EXPECT_TRUE(
         camera_poses.at("camera1").IsExactlyEqualTo(X_WF0 * X_F0F1 * X_F1C1));
   }
-
-  {
-    // Repeat the above test for the deprecated API.
-    ManipulationStation<double> dut;
-    multibody::MultibodyPlant<double>& plant =
-        dut.get_mutable_multibody_plant();
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    geometry::render::DepthCameraProperties camera_properties(
-        640, 480, M_PI_4, dut.default_renderer_name(), 0.1, 2.0);
-
-    const Eigen::Translation3d X_WF0(0, 0, 0.2);
-    const Eigen::Translation3d X_F0C0(0.3, 0.2, 0.0);
-    const auto& frame0 =
-        plant.AddFrame(std::make_unique<multibody::FixedOffsetFrame<double>>(
-            "frame0", plant.world_frame(), X_WF0));
-    dut.RegisterRgbdSensor("camera0", frame0, X_F0C0, camera_properties);
-
-    const Eigen::Translation3d X_F0F1(0, -0.1, 0.2);
-    const Eigen::Translation3d X_F1C1(-0.2, 0.2, 0.33);
-    const auto& frame1 =
-        plant.AddFrame(std::make_unique<multibody::FixedOffsetFrame<double>>(
-            "frame1", frame0, X_F0F1));
-    dut.RegisterRgbdSensor("camera1", frame1, X_F1C1, camera_properties);
-#pragma GCC diagnostic pop
-
-    std::map<std::string, math::RigidTransform<double>> camera_poses =
-        dut.GetStaticCameraPosesInWorld();
-
-    EXPECT_EQ(camera_poses.size(), 2);
-    EXPECT_TRUE(camera_poses.at("camera0").IsExactlyEqualTo(X_WF0 * X_F0C0));
-    EXPECT_TRUE(
-        camera_poses.at("camera1").IsExactlyEqualTo(X_WF0 * X_F0F1 * X_F1C1));
-  }
 }
 
 // Confirms initialization of renderers. With none specified, the default

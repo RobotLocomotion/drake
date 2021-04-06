@@ -174,8 +174,6 @@ class PerceptionProperties final : public GeometryProperties{
 
  Examples of functionality that depends on the illustration role:
    - @ref drake_visualizer_role_consumer "drake::geometry::DrakeVisualizer"
-   - @ref geometry_visualization_role_dependency
-     "drake::geometry::ConnectDrakeVisualizer()"
  */
 class IllustrationProperties final : public GeometryProperties {
  public:

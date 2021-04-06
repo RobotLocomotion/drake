@@ -72,20 +72,7 @@ PYBIND11_MODULE(manipulation_station, m) {
             py::arg("model_file"), py::arg("X_WObject"),
             cls_doc.AddManipulandFromFile.doc)
         .def("RegisterIiwaControllerModel", &Class::RegisterIiwaControllerModel,
-            cls_doc.RegisterIiwaControllerModel.doc);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def("RegisterRgbdSensor",
-        WrapDeprecated(cls_doc.RegisterRgbdSensor.doc_single_properties,
-            py::overload_cast<const std::string&, const multibody::Frame<T>&,
-                const math::RigidTransform<double>&,
-                const geometry::render::DepthCameraProperties&>(
-                &Class::RegisterRgbdSensor)),
-        cls_doc.RegisterRgbdSensor.doc_single_properties);
-#pragma GCC diagnostic pop
-
-    cls  // BR
+            cls_doc.RegisterIiwaControllerModel.doc)
         .def("RegisterRgbdSensor",
             py::overload_cast<const std::string&, const multibody::Frame<T>&,
                 const math::RigidTransform<double>&,

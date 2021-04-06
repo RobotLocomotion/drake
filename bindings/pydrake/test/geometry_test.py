@@ -97,10 +97,6 @@ class TestGeometry(unittest.TestCase):
         # the subsequent deprecation tests; it is only here to show that the
         # non-keyword call invokes the non-deprecated overload.
         self.assertTrue(inspector.SourceIsRegistered(global_source))
-        with catch_drake_warnings(expected_count=2):
-            self.assertTrue(inspector.SourceIsRegistered(id=global_source))
-            self.assertEqual(inspector.GetSourceName(source_id=global_source),
-                             "anchored")
         self.assertEqual(inspector.NumFramesForSource(source_id=global_source),
                          2)
         self.assertTrue(global_frame in inspector.FramesForSource(
@@ -209,56 +205,6 @@ class TestGeometry(unittest.TestCase):
                     source_id=global_source, geometry_id=global_geometry,
                     role=role),
                 1)
-
-    def test_connect_drake_visualizer(self):
-        # Test visualization API.
-        T = float
-        SceneGraph = mut.SceneGraph_[T]
-        DiagramBuilder = DiagramBuilder_[T]
-        Simulator = Simulator_[T]
-        lcm = DrakeLcm()
-        role = mut.Role.kIllustration
-
-        def normal(builder, scene_graph):
-            with catch_drake_warnings(expected_count=2):
-                mut.ConnectDrakeVisualizer(
-                    builder=builder, scene_graph=scene_graph,
-                    lcm=lcm, role=role)
-                mut.DispatchLoadMessage(
-                    scene_graph=scene_graph, lcm=lcm, role=role)
-
-        def port(builder, scene_graph):
-            with catch_drake_warnings(expected_count=2):
-                mut.ConnectDrakeVisualizer(
-                    builder=builder, scene_graph=scene_graph,
-                    pose_bundle_output_port=(
-                        scene_graph.get_pose_bundle_output_port()),
-                    lcm=lcm, role=role)
-                mut.DispatchLoadMessage(
-                    scene_graph=scene_graph, lcm=lcm, role=role)
-
-        for func in [normal, port]:
-            # Create subscribers.
-            load_channel = "DRAKE_VIEWER_LOAD_ROBOT"
-            draw_channel = "DRAKE_VIEWER_DRAW"
-            load_subscriber = Subscriber(
-                lcm, load_channel, lcmt_viewer_load_robot)
-            draw_subscriber = Subscriber(
-                lcm, draw_channel, lcmt_viewer_draw)
-            # Test sequence.
-            builder = DiagramBuilder()
-            scene_graph = builder.AddSystem(SceneGraph())
-            # Only load will be published by `DispatchLoadMessage`.
-            func(builder, scene_graph)
-            lcm.HandleSubscriptions(0)
-            self.assertEqual(load_subscriber.count, 1)
-            self.assertEqual(draw_subscriber.count, 0)
-            diagram = builder.Build()
-            # Load and draw will be published.
-            Simulator(diagram).Initialize()
-            lcm.HandleSubscriptions(0)
-            self.assertEqual(load_subscriber.count, 2)
-            self.assertEqual(draw_subscriber.count, 1)
 
     @numpy_compare.check_nonsymbolic_types
     def test_drake_visualizer(self, T):
@@ -600,18 +546,6 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(params.default_label, label)
         self.assertTrue((params.default_diffuse == diffuse).all())
 
-    def test_render_depth_camera_properties_deprecated(self):
-        with catch_drake_warnings(expected_count=1):
-            obj = mut.render.DepthCameraProperties(
-                width=320, height=240, fov_y=pi/6,
-                renderer_name="test_renderer", z_near=0.1, z_far=5.0)
-        self.assertEqual(obj.width, 320)
-        self.assertEqual(obj.height, 240)
-        self.assertEqual(obj.fov_y, pi/6)
-        self.assertEqual(obj.renderer_name, "test_renderer")
-        self.assertEqual(obj.z_near, 0.1)
-        self.assertEqual(obj.z_far, 5.0)
-
     def test_render_label(self):
         RenderLabel = mut.render.RenderLabel
         value = 10
@@ -662,13 +596,6 @@ class TestGeometry(unittest.TestCase):
         query_object = scene_graph.get_query_output_port().Eval(context)
 
         self.assertIsInstance(query_object.inspector(), SceneGraphInspector)
-        with catch_drake_warnings(expected_count=3):
-            self.assertIsInstance(
-                query_object.X_WF(id=frame_id), RigidTransform_[T])
-            self.assertIsInstance(
-                query_object.X_PF(id=frame_id), RigidTransform_[T])
-            self.assertIsInstance(
-                query_object.X_WG(id=geometry_id), RigidTransform_[T])
         self.assertIsInstance(
             query_object.GetPoseInWorld(frame_id=frame_id), RigidTransform_[T])
         self.assertIsInstance(
@@ -700,23 +627,6 @@ class TestGeometry(unittest.TestCase):
             query_object.ComputeSignedDistancePairClosestPoints(
                 geometry_id_A=mut.GeometryId.get_new_id(),
                 geometry_id_B=mut.GeometryId.get_new_id())
-        # TODO(SeanCurtis-TRI) Remove this call at the same time as deprecating
-        # the subsequent deprecation test; it is only here to show that the
-        # non-keyword call invokes the non-deprecated overload.
-        self.assertRaisesRegex(
-            RuntimeError,
-            r"The geometry given by id \d+ does not reference a geometry"
-            + " that can be used in a signed distance query",
-            query_object.ComputeSignedDistancePairClosestPoints,
-            mut.GeometryId.get_new_id(), mut.GeometryId.get_new_id())
-        with catch_drake_warnings(expected_count=1):
-            with self.assertRaisesRegex(
-                RuntimeError,
-                r"The geometry given by id \d+ does not reference a geometry"
-                    + " that can be used in a signed distance query"):
-                query_object.ComputeSignedDistancePairClosestPoints(
-                    id_A=mut.GeometryId.get_new_id(),
-                    id_B=mut.GeometryId.get_new_id())
 
         # Confirm rendering API returns images of appropriate type.
         camera_core = mut.render.RenderCameraCore(
@@ -740,25 +650,6 @@ class TestGeometry(unittest.TestCase):
             camera=color_camera, parent_frame=SceneGraph.world_frame_id(),
             X_PC=RigidTransform())
         self.assertIsInstance(image, ImageLabel16I)
-
-        with catch_drake_warnings(expected_count=4):
-            # One deprecation warning for constructing DepthCameraProperties
-            # and one for each invocation of Render*Image.
-            depth_camera = mut.render.DepthCameraProperties(
-                width=320, height=240, fov_y=pi/6, renderer_name=renderer_name,
-                z_near=0.1, z_far=5.0)
-            image = query_object.RenderColorImage(
-                camera=depth_camera, parent_frame=SceneGraph.world_frame_id(),
-                X_PC=RigidTransform())
-            self.assertIsInstance(image, ImageRgba8U)
-            image = query_object.RenderDepthImage(
-                camera=depth_camera, parent_frame=SceneGraph.world_frame_id(),
-                X_PC=RigidTransform())
-            self.assertIsInstance(image, ImageDepth32F)
-            image = query_object.RenderLabelImage(
-                camera=depth_camera, parent_frame=SceneGraph.world_frame_id(),
-                X_PC=RigidTransform())
-            self.assertIsInstance(image, ImageLabel16I)
 
     def test_read_obj_to_surface_mesh(self):
         mesh_path = FindResourceOrThrow("drake/geometry/test/quad_cube.obj")
@@ -922,22 +813,5 @@ class TestGeometry(unittest.TestCase):
         image = sensor.label_image_output_port().Eval(sensor_context)
         self.assertIsInstance(image, ImageLabel16I)
         self.assertEqual(current_engine.label_count, 1)
-
-        # Confirm that the CameraProperties APIs are *not* available.
-        with catch_drake_warnings(expected_count=2):
-            cam = mut.render.CameraProperties(10, 10, np.pi / 4, "")
-            depth_cam = mut.render.DepthCameraProperties(10, 10, np.pi / 4, "",
-                                                         0.1, 5)
-        with self.assertRaises(TypeError):
-            engine.RenderColorImage(
-                cam, True, ImageRgba8U(cam.width, cam.height))
-        with self.assertRaises(TypeError):
-            engine.RenderLabelImage(
-                cam, True, ImageLabel16I(cam.width, cam.height))
-
-        with self.assertRaises(TypeError):
-            engine.RenderDepthImage(
-                depth_cam, True,
-                ImageDepth32F(depth_cam.width, depth_cam.height))
 
         # TODO(eric, duy): Test more properties.

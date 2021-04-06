@@ -11,10 +11,8 @@ from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
 from pydrake.geometry import FrameId
 from pydrake.geometry.render import (
-    CameraProperties,
     ClippingRange,
     ColorRenderCamera,
-    DepthCameraProperties,
     DepthRange,
     DepthRenderCamera,
     RenderCameraCore,
@@ -273,23 +271,6 @@ class TestSensors(unittest.TestCase):
         # representation: one with color and depth explicitly specified and one
         # with only depth. We enumerate all four here.
 
-        def construct_deprecated(parent_id, X_PB):
-            # One deprecation warning for CameraPoses and one for RgbdSensor.
-            with catch_drake_warnings(expected_count=4):
-                color_properties = CameraProperties(
-                    width=width, height=height, fov_y=np.pi/6,
-                    renderer_name="renderer")
-                depth_properties = DepthCameraProperties(
-                    width=width, height=height, fov_y=np.pi/6,
-                    renderer_name="renderer", z_near=0.1, z_far=5.5)
-                camera_poses = mut.RgbdSensor.CameraPoses(
-                    X_BC=RigidTransform(), X_BD=RigidTransform())
-                return mut.RgbdSensor(parent_id=parent_id, X_PB=X_PB,
-                                      color_properties=color_properties,
-                                      depth_properties=depth_properties,
-                                      camera_poses=camera_poses,
-                                      show_window=False)
-
         def construct(parent_id, X_PB):
             color_camera = ColorRenderCamera(
                 RenderCameraCore(
@@ -303,17 +284,6 @@ class TestSensors(unittest.TestCase):
             return mut.RgbdSensor(parent_id=parent_id, X_PB=X_PB,
                                   color_camera=color_camera,
                                   depth_camera=depth_camera)
-
-        def construct_single_deprecated(parent_id, X_PB):
-            with catch_drake_warnings(expected_count=3):
-                depth_properties = DepthCameraProperties(
-                        width=width, height=height, fov_y=np.pi/6,
-                        renderer_name="renderer", z_near=0.1, z_far=5.5)
-                return mut.RgbdSensor(
-                    parent_id=parent_id, X_PB=X_PB,
-                    properties=depth_properties,
-                    camera_poses=mut.RgbdSensor.CameraPoses(),
-                    show_window=False)
 
         def construct_single(parent_id, X_PB):
             depth_camera = DepthRenderCamera(
@@ -337,9 +307,7 @@ class TestSensors(unittest.TestCase):
             self.assertEqual(camera_info.width(), width)
             self.assertEqual(camera_info.height(), height)
 
-        for constructor in [construct_deprecated, construct,
-                            construct_single_deprecated,
-                            construct_single]:
+        for constructor in [construct, construct_single]:
             sensor = constructor(parent_id, X_WB)
             check_info(sensor.color_camera_info())
             check_info(sensor.depth_camera_info())

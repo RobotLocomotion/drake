@@ -9,9 +9,7 @@ namespace geometry {
 
 using math::RigidTransform;
 using math::RigidTransformd;
-using render::CameraProperties;
 using render::ColorRenderCamera;
-using render::DepthCameraProperties;
 using render::DepthRenderCamera;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
@@ -57,15 +55,6 @@ const RigidTransform<T>& QueryObject<T>::GetPoseInWorld(
 }
 
 template <typename T>
-const RigidTransform<T>& QueryObject<T>::X_WF(FrameId id) const {
-  ThrowIfNotCallable();
-
-  FullPoseUpdate();
-  const GeometryState<T>& state = geometry_state();
-  return state.get_pose_in_world(id);
-}
-
-template <typename T>
 const RigidTransform<T>& QueryObject<T>::GetPoseInParent(
     FrameId frame_id) const {
   ThrowIfNotCallable();
@@ -76,15 +65,6 @@ const RigidTransform<T>& QueryObject<T>::GetPoseInParent(
 }
 
 template <typename T>
-const RigidTransform<T>& QueryObject<T>::X_PF(FrameId id) const {
-  ThrowIfNotCallable();
-
-  FullPoseUpdate();
-  const GeometryState<T>& state = geometry_state();
-  return state.get_pose_in_parent(id);
-}
-
-template <typename T>
 const RigidTransform<T>& QueryObject<T>::GetPoseInWorld(
     GeometryId geometry_id) const {
   ThrowIfNotCallable();
@@ -92,15 +72,6 @@ const RigidTransform<T>& QueryObject<T>::GetPoseInWorld(
   FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.get_pose_in_world(geometry_id);
-}
-
-template <typename T>
-const RigidTransform<T>& QueryObject<T>::X_WG(GeometryId id) const {
-  ThrowIfNotCallable();
-
-  FullPoseUpdate();
-  const GeometryState<T>& state = geometry_state();
-  return state.get_pose_in_world(id);
 }
 
 template <typename T>
@@ -190,23 +161,6 @@ QueryObject<T>::ComputeSignedDistanceToPoint(
   return state.ComputeSignedDistanceToPoint(p_WQ, threshold);
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-template <typename T>
-void QueryObject<T>::RenderColorImage(const CameraProperties& camera,
-                                      FrameId parent_frame,
-                                      const RigidTransformd& X_PC,
-                                      bool show_window,
-                                      ImageRgba8U* color_image_out) const {
-  ThrowIfNotCallable();
-
-  FullPoseUpdate();
-  const GeometryState<T>& state = geometry_state();
-  return state.RenderColorImage(camera, parent_frame, X_PC, show_window,
-                                color_image_out);
-}
-#pragma GCC diagnostic pop
-
 template <typename T>
 void QueryObject<T>::RenderColorImage(const ColorRenderCamera& camera,
                                       FrameId parent_frame,
@@ -219,21 +173,6 @@ void QueryObject<T>::RenderColorImage(const ColorRenderCamera& camera,
   return state.RenderColorImage(camera, parent_frame, X_PC, color_image_out);
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-template <typename T>
-void QueryObject<T>::RenderDepthImage(const DepthCameraProperties& camera,
-                                      FrameId parent_frame,
-                                      const RigidTransformd& X_PC,
-                                      ImageDepth32F* depth_image_out) const {
-  ThrowIfNotCallable();
-
-  FullPoseUpdate();
-  const GeometryState<T>& state = geometry_state();
-  return state.RenderDepthImage(camera, parent_frame, X_PC, depth_image_out);
-}
-#pragma GCC diagnostic pop
-
 template <typename T>
 void QueryObject<T>::RenderDepthImage(const DepthRenderCamera& camera,
                                       FrameId parent_frame,
@@ -245,23 +184,6 @@ void QueryObject<T>::RenderDepthImage(const DepthRenderCamera& camera,
   const GeometryState<T>& state = geometry_state();
   return state.RenderDepthImage(camera, parent_frame, X_PC, depth_image_out);
 }
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-template <typename T>
-void QueryObject<T>::RenderLabelImage(const CameraProperties& camera,
-                                      FrameId parent_frame,
-                                      const RigidTransformd& X_PC,
-                                      bool show_window,
-                                      ImageLabel16I* label_image_out) const {
-  ThrowIfNotCallable();
-
-  FullPoseUpdate();
-  const GeometryState<T>& state = geometry_state();
-  return state.RenderLabelImage(camera, parent_frame, X_PC, show_window,
-                                label_image_out);
-}
-#pragma GCC diagnostic pop
 
 template <typename T>
 void QueryObject<T>::RenderLabelImage(const ColorRenderCamera& camera,

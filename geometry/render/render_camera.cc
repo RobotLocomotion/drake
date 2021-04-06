@@ -20,16 +20,6 @@ ClippingRange::ClippingRange(double near, double far) : near_(near), far_(far) {
   }
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-RenderCameraCore::RenderCameraCore(const CameraProperties& camera,
-                                   double clipping_far, RigidTransformd X_BS)
-    : RenderCameraCore(camera.renderer_name,
-                       CameraInfo{camera.width, camera.height, camera.fov_y},
-                       ClippingRange{kClippingNear, clipping_far},
-                       std::move(X_BS)) {}
-#pragma GCC diagnostic pop
-
 Eigen::Matrix4d RenderCameraCore::CalcProjectionMatrix() const {
   /* Given the camera properties we compute the projection matrix as follows:
    (See https://strawlab.org/2011/11/05/augmented-reality-with-OpenGL/)

@@ -149,13 +149,6 @@ class VolumeMesh {
 
   using ScalarType = T;
 
-  DRAKE_DEPRECATED(
-      "2021-04-01",
-      "kDim has been deemed redundant, and its usage is being dropped in "
-      "favor of using kVertexPerElement. The relationship between kDim and "
-      "kVertexPerElement is: kVertexPerElement = kDim + 1.")
-  static constexpr int kDim = 3;
-
   /**
    Number of vertices per element. A tetrahedron has 4 vertices.
    */

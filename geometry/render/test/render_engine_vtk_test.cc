@@ -19,7 +19,6 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/geometry/render/camera_properties.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/geometry/test_utilities/dummy_render_engine.h"
 #include "drake/math/rigid_transform.h"

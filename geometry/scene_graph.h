@@ -283,28 +283,6 @@ class SceneGraph final : public systems::LeafSystem<T> {
   /** Constructs a default (empty) scene graph. */
   SceneGraph();
 
-  /** Constructs a default (empty) scene graph.
-
-   Historically, geometry data (aka GeometryState) has been stored as State in
-   the Context. This is no longer the default; now it is stored as a Parameter.
-   This deprecated constructor allows you to exercise the legacy behavior during
-   the deprecation period (by passing `true`).
-
-   The expectation is there are no current uses of SceneGraph that *require*
-   the data to be stored in State and, as such, this constructor should largely
-   go unused. If you *do* feel you require it, please post an issue so we can
-   resolve it prior to complete deprecation of this behavior.
-
-   @param data_as_state  `true` stores the data as State; `false` stores it as a
-                         Parameter.  */
-  DRAKE_DEPRECATED(
-      "2021-04-01",
-      "The choice of storing geometry data as State has been deprecated. "
-      "Please use the default constructor which sets the geometry data as a "
-      "Parameter. If this doesn't work for you please submit an issue in Drake "
-      "describing your problem.")
-  explicit SceneGraph(bool data_as_state);
-
   /** Constructor used for scalar conversions. It should only be used to convert
    _from_ double _to_ other scalar types.  */
   template <typename U>
@@ -918,31 +896,13 @@ class SceneGraph final : public systems::LeafSystem<T> {
   // evaluate inputs on the context.
   friend class QueryObject<T>;
 
-  // Special constructor to help with constructor deprecation. The public API
-  // for declaring whether the geometry data should be stored as State or
-  // Parameter is deprecated. However, during the deprecation period, we need
-  // to maintain the functionality. This private constructor allows the copy
-  // constructor to propagate deprecated behavior without throwing warnings.
-  SceneGraph(bool data_as_state, int magic_key);
-
-  // If SceneGraph has been configured to store the geometry data as state,
-  // writes the current version of the geometry data to the context's abstract
-  // state.
-  void SetDefaultState(const systems::Context<T>& context,
-                       systems::State<T>* state) const override;
-
-  // If %SceneGraph has been configured to store the geometry data as a
-  // Parameter, writes the current version of the geometry data to the context's
-  // abstract parameter.
+  // Writes the current version of the geometry data to the context's abstract
+  // parameter.
   void SetDefaultParameters(const systems::Context<T>& context,
                             systems::Parameters<T>* parameters) const override;
 
   // Helper class to register input ports for a source id.
   void MakeSourcePorts(SourceId source_id);
-
-  // Allow the load dispatch to peek into SceneGraph.
-  friend void DispatchLoadMessage(const SceneGraph<double>&,
-                                  lcm::DrakeLcmInterface*, Role role);
 
   // Sets the context into the output port value so downstream consumers can
   // perform queries.
@@ -1010,10 +970,8 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   SceneGraphInspector<T> model_inspector_;
 
-  // The geometry state is stored in the Context either as State or as a
-  // Parameter (based on data_as_state_). Either way, the stored index
-  // is its index in that block of Context data.
-  bool data_as_state_{};
+  // The geometry state is stored in the Context either as a Parameter with this
+  // index.
   int geometry_state_index_{-1};
 
   // The cache index for the pose update cache entry.
