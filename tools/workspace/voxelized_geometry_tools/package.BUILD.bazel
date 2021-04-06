@@ -3,6 +3,17 @@
 
 package(default_visibility = ["//visibility:public"])
 
+# TODO(calderpg-tri) This file is from the OpenCL C++ bindings, and is
+# "Copyright (c) 2008-2015 The Khronos Group Inc." with a notice requirement in
+# the license. Once voxelized_geometry_tools is used in production code, we
+# will need to install that notice.
+cc_library(
+    name = "cl_hpp",
+    hdrs = ["include/voxelized_geometry_tools/cl.hpp"],
+    includes = ["include"],
+    deps = ["@opencl"],
+)
+
 cc_library(
     name = "voxelized_geometry_tools",
     srcs = [
@@ -45,7 +56,7 @@ cc_library(
 cc_library(
     name = "opencl_voxelization_helpers",
     srcs = [
-        "src/voxelized_geometry_tools/dummy_opencl_voxelization_helpers.cc",
+        "src/voxelized_geometry_tools/opencl_voxelization_helpers.cc",
     ],
     hdrs = [
         "include/voxelized_geometry_tools/device_voxelization_interface.hpp",
@@ -53,6 +64,7 @@ cc_library(
     ],
     includes = ["include"],
     deps = [
+        ":cl_hpp",
         "@common_robotics_utilities",
         "@eigen",
     ],
