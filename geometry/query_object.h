@@ -547,9 +547,6 @@ class QueryObject {
    Computes the signed distances and gradients to a query point from each
    geometry in the scene.
 
-   @warning Currently supports spheres, boxes, and cylinders only. Silently
-   ignores other kinds of geometries, which will be added later.
-
    This query provides φᵢ(p), φᵢ:ℝ³→ℝ, the signed distance to the position
    p of a query point from geometry Gᵢ in the scene.  It returns an array of
    the signed distances from all geometries.
@@ -571,11 +568,24 @@ class QueryObject {
    Note that ∇φᵢ(p) is also defined on Gᵢ's surface, but we cannot use the
    above formula.
 
-   <h3>Scalar support</h3>
-   This query only supports computing distances from the point to spheres,
-   boxes, and cylinders for both `double` and `AutoDiffXd` scalar types. If
-   the SceneGraph contains any other geometry shapes, they will be silently
-   ignored.
+   <h3>Characterizing the returned values</h3>
+
+   This table is a variant of that described in this
+   @ref query_object_precision_methodology "class's documentation". The query
+   evaluates signed distance between *one* shape and a point (in contrast to
+   other queries which involve two shapes). Therefore, we don't need a matrix
+   of shape pairs, but a list of shapes. Otherwise, the methodology is the same
+   as described, with the point being represented as a zero-radius sphere.
+
+   | Scalar |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid | %HalfSpace |  %Mesh  | %Sphere |
+   | :----: | :-----: | :------: | :-----: | :-------: | :--------: | :--------: | :-----: | :-----: |
+   | double |  2e-15  |   4e-15  |    ᵃ    |   3e-15   |      ᵃ     |    5e-15   |    ᵃ    |  4e-15  |
+   | ADXd   |  1e-15  |   4e-15  |    ᵃ    |     ᵃ     |      ᵃ     |    5e-15   |    ᵃ    |  3e-15  |
+   __*Table 5*__: Worst observed error (in m) for 2mm penetration/separation
+   between geometry approximately 20cm in size and a point.
+
+   - ᵃ Unsupported geometry/scalar combinations are simply ignored; no results
+       are reported for that geometry.
 
    @note For a sphere G, the signed distance function φᵢ(p) has an undefined
    gradient vector at the center of the sphere--every point on the sphere's
@@ -611,10 +621,10 @@ class QueryObject {
    @param[in] threshold       We ignore any object beyond this distance.
                               By default, it is infinity, so we report
                               distances from the query point to every object.
-   @retval signed_distances   A vector populated with per-object signed
-                              distance values (and supporting data).
-                              See SignedDistanceToPoint.
-   */
+   @retval signed_distances   A vector populated with per-object signed distance
+                              values (and supporting data) for every supported
+                              geometry as shown in the table. See
+                              SignedDistanceToPoint. */
   std::vector<SignedDistanceToPoint<T>>
   ComputeSignedDistanceToPoint(const Vector3<T> &p_WQ,
                                const double threshold
