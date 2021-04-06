@@ -881,6 +881,19 @@ TEST_F(SymbolicExpressionTest, UnaryPlus) {
   EXPECT_PRED2(ExprEqual, Expression(var_x_), +var_x_);
 }
 
+// Confirm that Eigen::numext::not_equal_strict is appropriately specialized
+// for Expression.
+// We only need a limited set of cases because if the specialization doesn't
+// exist, this would result in a compile error.
+// This function was only introduced in eigen 3.3.5. Therefore, we only want to
+// test if the eigen version is at least that.
+#if EIGEN_VERSION_AT_LEAST(3, 3, 5)
+TEST_F(SymbolicExpressionTest, EigenNotEqualStrict) {
+  EXPECT_TRUE(Eigen::numext::not_equal_strict(c3_, c4_));
+  EXPECT_FALSE(Eigen::numext::not_equal_strict(c3_, c3_));
+}
+
+#endif
 TEST_F(SymbolicExpressionTest, UnaryMinus) {
   EXPECT_PRED2(ExprEqual, -Expression(var_x_), -var_x_);
   EXPECT_PRED2(ExprNotEqual, c3_, -c3_);
