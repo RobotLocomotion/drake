@@ -133,6 +133,16 @@ GeometryState<T>::GeometryState()
 }
 
 template <typename T>
+std::unordered_set<GeometryId> GeometryState<T>::GetGeometryIds(
+      const GeometrySet& geometry_set, const std::optional<Role>& role) const {
+  std::unordered_set<GeometryId> ids;
+  // We don't need to distinguish between anchored and dynamic ids; we'll simply
+  // accumulate them all into the same set -- so we pass ids twice.
+  CollectIds(geometry_set, &ids, &ids, role);
+  return ids;
+}
+
+template <typename T>
 int GeometryState<T>::NumGeometriesWithRole(Role role) const {
   int count = 0;
   for (const auto& pair : geometries_) {
@@ -930,7 +940,7 @@ void GeometryState<T>::ExcludeCollisionsWithin(const GeometrySet& set) {
 
   std::unordered_set<GeometryId> dynamic;
   std::unordered_set<GeometryId> anchored;
-  CollectIds(set, &dynamic, &anchored);
+  CollectIds(set, &dynamic, &anchored, Role::kProximity);
 
   geometry_version_.modify_proximity();
 
@@ -942,10 +952,10 @@ void GeometryState<T>::ExcludeCollisionsBetween(const GeometrySet& setA,
                                                 const GeometrySet& setB) {
   std::unordered_set<GeometryId> dynamic1;
   std::unordered_set<GeometryId> anchored1;
-  CollectIds(setA, &dynamic1, &anchored1);
+  CollectIds(setA, &dynamic1, &anchored1, Role::kProximity);
   std::unordered_set<GeometryId> dynamic2;
   std::unordered_set<GeometryId> anchored2;
-  CollectIds(setB, &dynamic2, &anchored2);
+  CollectIds(setB, &dynamic2, &anchored2, Role::kProximity);
 
   geometry_version_.modify_proximity();
 
@@ -1083,18 +1093,17 @@ std::unique_ptr<GeometryState<AutoDiffXd>> GeometryState<T>::ToAutoDiffXd()
 }
 
 template <typename T>
-void GeometryState<T>::CollectIds(
-    const GeometrySet& geometry_set, std::unordered_set<GeometryId>* dynamic,
-    std::unordered_set<GeometryId>* anchored) {
-  // TODO(SeanCurtis-TRI): Consider expanding this to include Role if it proves
-  // that collecting ids for *other* role-related tasks prove necessary.
+void GeometryState<T>::CollectIds(const GeometrySet& geometry_set,
+                                  std::unordered_set<GeometryId>* dynamic,
+                                  std::unordered_set<GeometryId>* anchored,
+                                  const std::optional<Role>& role) const {
   std::unordered_set<GeometryId>* target;
   for (auto frame_id : geometry_set.frames()) {
     const auto& frame = GetValueOrThrow(frame_id, frames_);
     target = frame.is_world() ? anchored : dynamic;
     for (auto geometry_id : frame.child_geometries()) {
-      InternalGeometry& geometry = geometries_[geometry_id];
-      if (geometry.has_proximity_role()) {
+      const InternalGeometry& geometry = geometries_.at(geometry_id);
+      if (!role.has_value() || geometry.has_role(*role)) {
         target->insert(geometry_id);
       }
     }
@@ -1108,7 +1117,7 @@ void GeometryState<T>::CollectIds(
           "SceneGraph: " +
           to_string(geometry_id));
     }
-    if (geometry->has_proximity_role()) {
+    if (!role.has_value() || geometry->has_role(*role)) {
       if (geometry->is_dynamic()) {
         dynamic->insert(geometry_id);
       } else {

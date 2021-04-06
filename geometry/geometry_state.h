@@ -119,6 +119,10 @@ class GeometryState {
     return ids;
   }
 
+  /** Implementation of SceneGraphInspector::GetGeometryIds().  */
+  std::unordered_set<GeometryId> GetGeometryIds(
+      const GeometrySet& geometry_set, const std::optional<Role>& role) const;
+
   /** Implementation of SceneGraphInspector::NumGeometriesWithRole().  */
   int NumGeometriesWithRole(Role role) const;
 
@@ -630,6 +634,9 @@ class GeometryState {
   // defined in terms of geometry ids *and* frame ids). If GeometrySet only
   // has GeometryIds, it is essentially a copy. Ids that can't be identified
   // will cause an exception to be thrown.
+  // The ids can be optionally filtered based on role. If `role` is nullopt,
+  // no filtering takes place. Otherwise, just those geometries with the given
+  // role will be returned.
   // TODO(SeanCurtis-TRI): Because all geometries only have a single id
   // type, we have two sets of the same id type. The compiler cannot know
   // that only anchored geometries go into the anchored set and only dynamic go
@@ -643,7 +650,8 @@ class GeometryState {
   // id type in both sets.
   void CollectIds(const GeometrySet& geometry_set,
                   std::unordered_set<GeometryId>* dynamic,
-                  std::unordered_set<GeometryId>* anchored);
+                  std::unordered_set<GeometryId>* anchored,
+                  const std::optional<Role>& role) const;
 
   // Sets the kinematic poses for the frames indicated by the given ids.
   // @param poses The frame id and pose values.
