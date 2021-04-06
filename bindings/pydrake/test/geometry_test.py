@@ -600,6 +600,49 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(params.default_label, label)
         self.assertTrue((params.default_diffuse == diffuse).all())
 
+    def test_render_engine_vtk(self):
+        self.assertIsInstance(
+            mut.render.MakeRenderEngineVtk(
+                params=mut.render.RenderEngineVtkParams()
+            ),
+            mut.render.RenderEngine,
+        )
+
+    def test_render_engine_gl_params(self):
+        # Confirm default construction of params.
+        params = mut.render.RenderEngineGlParams()
+        self.assertEqual(
+            params.default_clear_color,
+            mut.Rgba(204 / 255., 229 / 255., 255 / 255., 1.0),
+        )
+        self.assertEqual(
+            params.default_label, mut.render.RenderLabel.kUnspecified,
+        )
+        self.assertEqual(params.default_diffuse, mut.Rgba(0.9, 0.7, 0.2, 1.0))
+
+        label = mut.render.RenderLabel(10)
+        diffuse = mut.Rgba(1.0, 0.0, 0.0, 0.0)
+        params = mut.render.RenderEngineGlParams(
+            default_clear_color=diffuse,
+            default_label=label,
+            default_diffuse=diffuse,
+        )
+        self.assertEqual(params.default_clear_color, diffuse)
+        self.assertEqual(params.default_label, label)
+        self.assertEqual(params.default_diffuse, diffuse)
+
+    def test_render_engine_gl(self):
+        self.assertIsInstance(
+            mut.render.MakeRenderEngineGl(),
+            mut.render.RenderEngine,
+        )
+        self.assertIsInstance(
+            mut.render.MakeRenderEngineGl(
+                params=mut.render.RenderEngineGlParams()
+            ),
+            mut.render.RenderEngine,
+        )
+
     def test_render_depth_camera_properties_deprecated(self):
         with catch_drake_warnings(expected_count=1):
             obj = mut.render.DepthCameraProperties(

@@ -410,7 +410,23 @@ void def_geometry_render(py::module m) {
       .def_readwrite("default_diffuse", &RenderEngineVtkParams::default_diffuse,
           doc.RenderEngineVtkParams.default_diffuse.doc);
 
-  m.def("MakeRenderEngineGl", &MakeRenderEngineGl, doc.MakeRenderEngineGl.doc);
+  {
+    using Class = RenderEngineGlParams;
+    constexpr auto& cls_doc = doc.RenderEngineGlParams;
+    py::class_<Class>(m, "RenderEngineGlParams", cls_doc.doc)
+        .def(ParamInit<Class>())
+        .def_readwrite("default_clear_color", &Class::default_clear_color,
+            cls_doc.default_clear_color.doc)
+        .def_readwrite("default_diffuse", &Class::default_diffuse,
+            cls_doc.default_diffuse.doc)
+        .def_readwrite(
+            "default_label", &Class::default_label, cls_doc.default_label.doc);
+  }
+
+  m.def("MakeRenderEngineGl",
+      static_cast<std::unique_ptr<RenderEngine> (*)(RenderEngineGlParams)>(
+          &MakeRenderEngineGl),
+      py::arg("params") = RenderEngineGlParams(), doc.MakeRenderEngineGl.doc);
 
   m.def("MakeRenderEngineVtk", &MakeRenderEngineVtk, py::arg("params"),
       doc.MakeRenderEngineVtk.doc);
