@@ -87,6 +87,10 @@ class TestGeometry(unittest.TestCase):
         self.assertIsInstance(inspector.world_frame_id(), mut.FrameId)
         self.assertEqual(inspector.num_geometries(), 3)
         self.assertEqual(len(inspector.GetAllGeometryIds()), 3)
+        self.assertEqual(len(inspector.GetGeometryIds(mut.GeometrySet())), 0)
+        self.assertEqual(len(inspector.GetGeometryIds(mut.GeometrySet(),
+                                                      mut.Role.kProximity)),
+                         0)
         self.assertEqual(
             inspector.NumGeometriesWithRole(role=mut.Role.kUnassigned), 3)
         self.assertEqual(inspector.NumDynamicGeometries(), 2)

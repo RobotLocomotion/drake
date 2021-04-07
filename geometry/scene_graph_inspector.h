@@ -121,6 +121,28 @@ class SceneGraphInspector {
     return state_->GetAllGeometryIds();
   }
 
+  /** Returns the geometry ids that are *implied* by the given GeometrySet and
+   `role`. Remember that a GeometrySet can reference a FrameId in place of the
+   ids of the individual geometries affixed to it. If a `role` is provided, only
+   geometries with that role assigned will be returned, otherwise all geometries
+   will be returned.
+
+   @note Specifying `role` *can* have the effect of filtering geometries *from*
+   the given geometry_set` -- if a GeometryId is an explicit member of the
+   geometry set but does not have the requested role, it will not be contained
+   in the output.
+
+   @param geometry_set    The encoding of the set of geometries.
+   @param role            The requested role; if omitted, all geometries
+                          registered to the frame are returned.
+   @returns The requested unique geometry ids.  */
+  std::unordered_set<GeometryId> GetGeometryIds(
+      const GeometrySet& geometry_set,
+      const std::optional<Role>& role = std::nullopt) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->GetGeometryIds(geometry_set, role);
+  }
+
   /** Reports the _total_ number of geometries in the scene graph with the
    indicated role.  */
   int NumGeometriesWithRole(Role role) const {

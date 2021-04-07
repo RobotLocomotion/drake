@@ -1052,6 +1052,91 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
   EXPECT_EQ(gs_tester_.get_frame_parent_poses().size(), kFrameCount + 1);
 }
 
+// Confirms that a GeometrySet can be converted into a set of geometry ids.
+TEST_F(GeometryStateTest, GetGeometryIds) {
+  // Configure a scene where *every* geometry has a proximity role, but other
+  // geometries selectively have illustration and/or perception roles.
+  SetUpSingleSourceTree(Assign::kProximity);
+  ASSERT_LE(6, single_tree_dynamic_geometry_count());
+
+  // Frame 0 has proximity only. Frame 1 has proximity and perception.
+  PerceptionProperties perception;
+  perception.AddProperty("phong", "diffuse", Rgba{0.8, 0.8, 0.8, 1.0});
+  perception.AddProperty("label", "id", RenderLabel::kDontCare);
+  geometry_state_.AssignRole(source_id_, geometries_[2], perception);
+  geometry_state_.AssignRole(source_id_, geometries_[3], perception);
+
+  // Frame 2 has *one* geometry with illustration and proximity and one frame
+  // with all three.
+  IllustrationProperties illustration;
+  illustration.AddProperty("phong", "diffuse", Rgba{0.8, 0.8, 0.8, 1.0});
+  geometry_state_.AssignRole(source_id_, geometries_[4], illustration);
+  geometry_state_.AssignRole(source_id_, geometries_[5], illustration);
+  geometry_state_.AssignRole(source_id_, geometries_[5], perception);
+
+  // Collect up all geometries (in various categories) for convenience.
+  unordered_set<GeometryId> all_geometries(geometries_.begin(),
+                                           geometries_.end());
+  all_geometries.insert(anchored_geometry_);
+  const unordered_set<GeometryId> perception_geometries{
+      geometries_[2], geometries_[3], geometries_[5]};
+  const unordered_set<GeometryId> illustration_geometries{geometries_[4],
+                                                          geometries_[5]};
+
+  {
+    // Case: All geometries referenced solely by their parent frames.
+    unordered_set<FrameId> all_frames(frames_.begin(), frames_.end());
+    all_frames.insert(InternalFrame::world_frame_id());
+    EXPECT_EQ(
+        geometry_state_.GetGeometryIds(GeometrySet(all_frames), std::nullopt),
+        all_geometries);
+    EXPECT_EQ(geometry_state_.GetGeometryIds(GeometrySet(all_frames),
+                                             Role::kProximity),
+              all_geometries);
+    EXPECT_EQ(geometry_state_.GetGeometryIds(GeometrySet(all_frames),
+                                             Role::kPerception),
+              perception_geometries);
+    EXPECT_EQ(geometry_state_.GetGeometryIds(GeometrySet(all_frames),
+                                             Role::kIllustration),
+              illustration_geometries);
+  }
+
+  {
+    // Case: All geometries referenced explicitly; this implicitly confirms
+    // "culling" of otherwise explicitly declared GeometryIds.
+    EXPECT_EQ(geometry_state_.GetGeometryIds(GeometrySet(all_geometries),
+                                             std::nullopt),
+              all_geometries);
+    EXPECT_EQ(geometry_state_.GetGeometryIds(GeometrySet(all_geometries),
+                                             Role::kProximity),
+              all_geometries);
+    EXPECT_EQ(geometry_state_.GetGeometryIds(GeometrySet(all_geometries),
+                                             Role::kPerception),
+              perception_geometries);
+    EXPECT_EQ(geometry_state_.GetGeometryIds(GeometrySet(all_geometries),
+                                             Role::kIllustration),
+              illustration_geometries);
+  }
+
+  {
+    // Case: Redundant specification; a geometry id is included explicitly as
+    // well as its parent frame. If it *should* be included, it will appear
+    // once. If it should *not* appear, it will not be included at all.
+    EXPECT_EQ(geometry_state_.GetFrameId(geometries_[2]), frames_[1]);
+    EXPECT_EQ(geometry_state_.GetFrameId(geometries_[3]), frames_[1]);
+    const GeometrySet redundant_set({geometries_[2]}, {frames_[1]});
+    EXPECT_EQ(geometry_state_.GetGeometryIds(redundant_set, std::nullopt),
+              unordered_set<GeometryId>({geometries_[2], geometries_[3]}));
+    EXPECT_EQ(geometry_state_.GetGeometryIds(redundant_set, Role::kProximity),
+              unordered_set<GeometryId>({geometries_[2], geometries_[3]}));
+    EXPECT_EQ(geometry_state_.GetGeometryIds(redundant_set, Role::kPerception),
+              unordered_set<GeometryId>({geometries_[2], geometries_[3]}));
+    EXPECT_EQ(
+        geometry_state_.GetGeometryIds(redundant_set, Role::kIllustration),
+        unordered_set<GeometryId>());
+  }
+}
+
 // Tests the GetNum*Geometry*Methods.
 TEST_F(GeometryStateTest, GetNumGeometryTests) {
   SetUpSingleSourceTree(Assign::kProximity);

@@ -47,6 +47,7 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   inspector.all_frame_ids();
   inspector.num_geometries();
   inspector.GetAllGeometryIds();
+  inspector.GetGeometryIds(GeometrySet{});
   inspector.NumGeometriesWithRole(Role::kUnassigned);
   inspector.NumDynamicGeometries();
   inspector.NumAnchoredGeometries();

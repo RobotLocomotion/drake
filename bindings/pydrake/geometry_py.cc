@@ -403,6 +403,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.num_geometries.doc)
         .def("GetAllGeometryIds", &Class::GetAllGeometryIds,
             cls_doc.GetAllGeometryIds.doc)
+        .def("GetGeometryIds", &Class::GetGeometryIds, py::arg("geometry_set"),
+            py::arg("role") = std::nullopt, cls_doc.GetGeometryIds.doc)
         .def("NumGeometriesWithRole", &Class::NumGeometriesWithRole,
             py::arg("role"), cls_doc.NumGeometriesWithRole.doc)
         .def("NumDynamicGeometries", &Class::NumDynamicGeometries,
@@ -1164,6 +1166,9 @@ void DoScalarIndependentDefinitions(py::module m) {
     constexpr auto& cls_doc = doc.GeometrySet;
     py::class_<Class>(m, "GeometrySet", cls_doc.doc)
         .def(py::init(), doc.GeometrySet.ctor.doc);
+    // TODO(SeanCurtis-TRI) This is *useless* in python. I can only construct
+    //  an empty GeometrySet. Bind constructors and adders so that these APIs
+    //  can actually be used.
   }
 
   // GeometryVersion
