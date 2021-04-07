@@ -27,6 +27,14 @@
       </visual>
       <visual name="Capsule">
         <geometry>
+          <capsule>
+            <length>1</length>
+            <radius>0.1</radius>
+          </capsule>
+        </geometry>
+      </visual>
+      <visual name="DrakeCapsule">
+        <geometry>
           <drake:capsule>
             <length>1</length>
             <radius>0.1</radius>
@@ -50,6 +58,13 @@
         </geometry>
       </visual>
       <visual name="Ellipsoid">
+        <geometry>
+          <ellipsoid>
+            <radii>1.0 2.0 3.0</radii>
+          </ellipsoid>
+        </geometry>
+      </visual>
+      <visual name="DrakeEllipsoid">
         <geometry>
           <drake:ellipsoid>
             <a>1.0</a>
