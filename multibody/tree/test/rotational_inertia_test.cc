@@ -539,45 +539,26 @@ GTEST_TEST(RotationalInertia, ShiftOperator) {
 }
 
 // Tests that we can correctly cast a RotationalInertia<double> to a
-// RotationalInertia templated on an AutoDiffScalar type.
-// The cast from a RotationalInertia<double>, a constant, results in a
-// rotational inertia with zero gradients.
+// RotationalInertia templated on an AutoDiffXd type.
 GTEST_TEST(RotationalInertia, CastToAutoDiff) {
-  typedef Eigen::AutoDiffScalar<Vector1<double>> AutoDiff1d;
   const RotationalInertia<double> I_double(1, 2.718, 3.14);
-  const RotationalInertia<AutoDiff1d> I_autodiff(1, 2.718, 3.14);
 
-  // Verify derivatives are zero.
-  const auto& m_gradients =
-      drake::math::autoDiffToGradientMatrix(I_autodiff.get_moments());
-  EXPECT_TRUE(m_gradients.isZero(kEpsilon));
-  const auto& p_gradients =
-      drake::math::autoDiffToGradientMatrix(I_autodiff.get_products());
-  EXPECT_TRUE(p_gradients.isZero(kEpsilon));
+  // Cast from double to AutoDiff.
+  const RotationalInertia<AutoDiffXd> I_cast = I_double.cast<AutoDiffXd>();
+  const Matrix3<AutoDiffXd> I_cast_matrix = I_cast.CopyToFullMatrix3();
 
-  // Cast from double to AutoDiffScalar.
-  const RotationalInertia<AutoDiff1d> I_cast = I_double.cast<AutoDiff1d>();
-  EXPECT_TRUE(I_autodiff.IsNearlyEqualTo(I_cast, kEpsilon));
+  // Check that the values were preserved.
+  EXPECT_TRUE(CompareMatrices(
+      drake::math::autoDiffToValueMatrix(I_cast_matrix),
+      I_double.CopyToFullMatrix3()));
 
-  const Matrix3<AutoDiff1d> I_autodiff_matrix = I_cast.CopyToFullMatrix3();
-  auto I_value = drake::math::autoDiffToValueMatrix(I_autodiff_matrix);
-  I_value.resize(3, 3);
-  EXPECT_TRUE(I_value.isApprox(I_double.CopyToFullMatrix3(), kEpsilon));
-
-  MatrixXd I_gradient =
-      drake::math::autoDiffToGradientMatrix(I_autodiff_matrix);
-  ASSERT_EQ(I_gradient.rows(), 9);
-  ASSERT_EQ(I_gradient.cols(), 1);
-  I_gradient.resize(3, 3);
-  ASSERT_EQ(I_gradient.rows(), 3);
-  ASSERT_EQ(I_gradient.cols(), 3);
-
-  // Since the cast is performed from a RotationalInertia<double>, derivatives
-  // must be zero by default (no independent variables).
-  EXPECT_TRUE(I_gradient.isZero(kEpsilon));
+  // Check that the gradients are all empty.
+  EXPECT_TRUE(CompareMatrices(
+      drake::math::autoDiffToGradientMatrix(I_cast_matrix),
+      Eigen::MatrixXd(9, 0)));
 }
 
-// Tests that we can instantiate a rotational inertia with AutoDiffScalar and
+// Tests that we can instantiate a rotational inertia with AutoDiffXd and
 // we can perform some basic operations with it.
 // As an example, we define the rotational inertia I_B of a body B. The
 // orientation of this body in the world frame W is given by the time dependent
@@ -586,33 +567,37 @@ GTEST_TEST(RotationalInertia, CastToAutoDiff) {
 // We then re-express the inertia of B in the world frame and verify the value
 // of its time derivative with the expected result.
 GTEST_TEST(RotationalInertia, AutoDiff) {
-  typedef Eigen::AutoDiffScalar<Vector1<double>> AutoDiff1d;
-
   // Helper lambda to extract from a matrix of auto-diff scalar's the matrix of
   // values and the matrix of derivatives.
   auto extract_derivatives = [](
-      const Matrix3<AutoDiff1d>& M, Matrix3d& Mvalue, Matrix3d& Mdot) {
+      const Matrix3<AutoDiffXd>& M, Matrix3d& Mvalue, Matrix3d& Mdot) {
     for (int i = 0; i < 3; ++i) {
       for (int j = 0; j < 3; ++j) {
         Mvalue(i, j) = M(i, j).value();
-        Mdot(i, j) = M(i, j).derivatives()[0];
+        const int num_derivatives = M(i, j).derivatives().size();
+        DRAKE_DEMAND((num_derivatives == 0) || (num_derivatives == 1));
+        if (num_derivatives == 1) {
+          Mdot(i, j) = M(i, j).derivatives()[0];
+        } else {
+          Mdot(i, j) = 0;
+        }
       }
     }
   };
 
   // Construct a rotational inertia in the frame of a body B.
   const double Ix(1.0), Iy(2.0), Iz(3.0);
-  RotationalInertia<AutoDiff1d> I_B(Ix, Iy, Iz);
+  RotationalInertia<AutoDiffXd> I_B(Ix, Iy, Iz);
 
   // Assume B has a pose rotated +20 degrees about z with respect to the
   // world frame W. The body rotates with angular velocity wz in the z-axis.
   const double angle_value = 20 * M_PI / 180.0;
   const double wz = 1.0;  // Angular velocity in the z-axis.
 
-  AutoDiff1d angle = angle_value;
-  angle.derivatives()[0] = wz;
-  const drake::math::RotationMatrix<AutoDiff1d> R_WB =
-      drake::math::RotationMatrix<AutoDiff1d>::MakeZRotation(angle);
+  AutoDiffXd angle = angle_value;
+  angle.derivatives() = Vector1d(wz);
+  const drake::math::RotationMatrix<AutoDiffXd> R_WB =
+      drake::math::RotationMatrix<AutoDiffXd>::MakeZRotation(angle);
 
   // Split the rotational inertia into two Matrix3d; one with the values and
   // another one with the time derivatives.
@@ -630,7 +615,7 @@ GTEST_TEST(RotationalInertia, AutoDiff) {
   EXPECT_TRUE(wcross.isApprox(wcross_expected, kEpsilon));
 
   // Re-express inertia into another frame.
-  const RotationalInertia<AutoDiff1d> I_W = I_B.ReExpress(R_WB);
+  const RotationalInertia<AutoDiffXd> I_W = I_B.ReExpress(R_WB);
 
   // Extract value and derivatives of I_W into two separate matrices.
   Matrix3d Ivalue_W, Idot_W;
@@ -658,9 +643,9 @@ GTEST_TEST(RotationalInertia, AutoDiff) {
 
   // Test method that compares to inertia matrices using the original rotational
   // inertia and then the rotated/semi-unrotated rotational inertia.
-  const drake::math::RotationMatrix<AutoDiff1d> R_BW =
-      drake::math::RotationMatrix<AutoDiff1d>::MakeZRotation(-angle);
-  const RotationalInertia<AutoDiff1d> expectedI_B = I_W.ReExpress(R_BW);
+  const drake::math::RotationMatrix<AutoDiffXd> R_BW =
+      drake::math::RotationMatrix<AutoDiffXd>::MakeZRotation(-angle);
+  const RotationalInertia<AutoDiffXd> expectedI_B = I_W.ReExpress(R_BW);
   EXPECT_TRUE(expectedI_B.IsNearlyEqualTo(I_B, kEpsilon));
 }
 
