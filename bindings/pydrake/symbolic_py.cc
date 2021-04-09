@@ -832,7 +832,11 @@ PYBIND11_MODULE(symbolic, m) {
             return std::make_pair(coeffs, constant_term);
           },
           py::arg("e"), py::arg("map_var_to_index"),
-          doc.DecomposeAffineExpression.doc);
+          doc.DecomposeAffineExpression.doc)
+      .def("DecomposeLumpedParameters", &DecomposeLumpedParameters,
+          py::arg("f"), py::arg("parameters"),
+          doc.DecomposeLumpedParameters.doc);
+
   // NOLINTNEXTLINE(readability/fn_size)
 }
 }  // namespace pydrake
