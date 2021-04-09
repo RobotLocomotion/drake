@@ -2,10 +2,10 @@
 
 #include <cmath>
 #include <limits>
+#include <stdexcept>
 #include <string>
 
 #include <Eigen/Dense>
-#include <fmt/format.h>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
@@ -720,14 +720,8 @@ class RotationMatrix {
   // Throws an exception if R is not a valid %RotationMatrix.
   // @param[in] R an allegedly valid rotation matrix.
   // @note If the underlying scalar type T is non-numeric (symbolic), no
-  // validity check is made and no assertion is thrown.
-  template <typename S = T>
-  static typename std::enable_if_t<scalar_predicate<S>::is_bool>
-  ThrowIfNotValid(const Matrix3<S>& R);
-
-  template <typename S = T>
-  static typename std::enable_if_t<!scalar_predicate<S>::is_bool>
-  ThrowIfNotValid(const Matrix3<S>&) {}
+  // validity check is made and no exception is thrown.
+  static void ThrowIfNotValid(const Matrix3<T>& R);
 
   // Given an approximate rotation matrix M, finds the orthonormal matrix R
   // closest to M.  Closeness is measured with a matrix-2 norm (or equivalently
@@ -945,15 +939,14 @@ using RotationMatrixd = RotationMatrix<double>;
 /// Projects an approximate 3 x 3 rotation matrix M onto an orthonormal matrix R
 /// so that R is a rotation matrix associated with a angle-axis rotation by an
 /// angle θ about a vector direction `axis`, with `angle_lb <= θ <= angle_ub`.
-/// @tparam Derived A 3 x 3 matrix
 /// @param[in] M the matrix to be projected.
 /// @param[in] axis vector direction associated with angle-axis rotation for R.
 ///            axis can be a non-unit vector, but cannot be the zero vector.
 /// @param[in] angle_lb the lower bound of the rotation angle θ.
 /// @param[in] angle_ub the upper bound of the rotation angle θ.
 /// @return Rotation angle θ of the projected matrix, angle_lb <= θ <= angle_ub
-/// @throws std::runtime_error if M is not a 3 x 3 matrix or if
-///         axis is the zero vector or if angle_lb > angle_ub.
+/// @throws std::runtime_error if axis is the zero vector or
+///         if angle_lb > angle_ub.
 /// @note This method is useful for reconstructing a rotation matrix for a
 /// revolute joint with joint limits.
 /// @note This can be formulated as an optimization problem
@@ -990,100 +983,10 @@ using RotationMatrixd = RotationMatrix<double>;
 ///    θ = angle_ub, if sin(angle_lb + α) <  sin(angle_ub + α)
 /// </pre>
 /// @see GlobalInverseKinematics for an usage of this function.
-template <typename Derived>
-double ProjectMatToRotMatWithAxis(const Eigen::MatrixBase<Derived>& M,
+double ProjectMatToRotMatWithAxis(const Eigen::Matrix3d& M,
                                   const Eigen::Vector3d& axis,
-                                  const double angle_lb,
-                                  const double angle_ub) {
-  using Scalar = typename Derived::Scalar;
-  if (M.rows() != 3 || M.cols() != 3) {
-    throw std::runtime_error("The input matrix should be of size 3 x 3.");
-  }
-  if (angle_ub < angle_lb) {
-    throw std::runtime_error(
-        "The angle upper bound should be no smaller than the angle lower "
-            "bound.");
-  }
-  const double axis_norm = axis.norm();
-  if (axis_norm == 0) {
-    throw std::runtime_error("The axis argument cannot be the zero vector.");
-  }
-  const Vector3<Scalar> a = axis / axis_norm;
-  Eigen::Matrix3d A;
-  // clang-format off
-  A <<    0,  -a(2),   a(1),
-       a(2),      0,  -a(0),
-      -a(1),   a(0),      0;
-  // clang-format on
-  const Scalar alpha =
-      atan2(-(M.transpose() * A * A).trace(), (A.transpose() * M).trace());
-  Scalar theta{};
-  // The bounds on θ + α is [angle_lb + α, angle_ub + α].
-  if (std::isinf(angle_lb) && std::isinf(angle_ub)) {
-    theta = M_PI_2 - alpha;
-  } else if (std::isinf(angle_ub)) {
-    // First if the angle upper bound is inf, start from the angle_lb, and
-    // find the angle θ, such that θ + α = 0.5π + 2kπ
-    const int k = ceil((angle_lb + alpha - M_PI_2) / (2 * M_PI));
-    theta = (2 * k + 0.5) * M_PI - alpha;
-  } else if (std::isinf(angle_lb)) {
-    // If the angle lower bound is inf, start from the angle_ub, and find the
-    // angle θ, such that θ + α = 0.5π + 2kπ
-    const int k = floor((angle_ub + alpha - M_PI_2) / (2 * M_PI));
-    theta = (2 * k + 0.5) * M_PI - alpha;
-  } else {
-    // Now neither angle_lb nor angle_ub is inf. Check if there exists an
-    // integer k, such that 0.5π + 2kπ ∈ [angle_lb + α, angle_ub + α]
-    const int k = floor((angle_ub + alpha - M_PI_2) / (2 * M_PI));
-    const double max_sin_angle = M_PI_2 + 2 * k * M_PI;
-    if (max_sin_angle >= angle_lb + alpha) {
-      // 0.5π + 2kπ ∈ [angle_lb + α, angle_ub + α]
-      theta = max_sin_angle - alpha;
-    } else {
-      // Now the maximal is at the boundary, either θ = angle_lb or angle_ub
-      if (sin(angle_lb + alpha) >= sin(angle_ub + alpha)) {
-        theta = angle_lb;
-      } else {
-        theta = angle_ub;
-      }
-    }
-  }
-  return theta;
-}
-
-// TODO(jwnimmer-tri) Move this into the cc file, by replacing SFINAE with
-// "if constexpr".
-template <typename T>
-template <typename S>
-typename std::enable_if_t<scalar_predicate<S>::is_bool>
-RotationMatrix<T>::ThrowIfNotValid(const Matrix3<S>& R) {
-  if (!R.allFinite()) {
-    throw std::logic_error(
-        "Error: Rotation matrix contains an element that is infinity or "
-            "NaN.");
-  }
-  // If the matrix is not-orthogonal, try to give a detailed message.
-  // This is particularly important if matrix is very-near orthogonal.
-  if (!IsOrthonormal(R, get_internal_tolerance_for_orthonormality())) {
-    const T measure_of_orthonormality = GetMeasureOfOrthonormality(R);
-    const double measure = ExtractDoubleOrThrow(measure_of_orthonormality);
-    std::string message = fmt::format(
-        "Error: Rotation matrix is not orthonormal.\n"
-        "  Measure of orthonormality error: {:G}  (near-zero is good).\n"
-        "  To calculate the proper orthonormal rotation matrix closest to"
-        " the alleged rotation matrix, use the SVD (expensive) static method"
-        " RotationMatrix<T>::ProjectToRotationMatrix(), or for a less"
-        " expensive (but not necessarily closest) rotation matrix, use"
-        " RotationMatrix<T>(RotationMatrix<T>::ToQuaternion<T>(your_matrix3))."
-        " Alternatively, if using quaternions, ensure the quaternion is"
-        " normalized.", measure);
-    throw std::logic_error(message);
-  }
-  if (R.determinant() < 0) {
-    throw std::logic_error("Error: Rotation matrix determinant is negative. "
-                               "It is possible a basis is left-handed");
-  }
-}
+                                  double angle_lb,
+                                  double angle_ub);
 
 }  // namespace math
 }  // namespace drake
