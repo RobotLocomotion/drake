@@ -590,7 +590,7 @@ top-level documentation for :py:mod:`pydrake.math`.
                          " monomial_basis, type) instead. Notice that the "
                          "first input argument should be gramian instead of "
                          "grammian. This variant will be "
-                         "removed after 2021-05-01",
+                         "removed after 2021-07-01",
               static_cast<symbolic::Polynomial (MathematicalProgram::*)(
                   const Eigen::Ref<const MatrixX<symbolic::Variable>>&,
                   const Eigen::Ref<const VectorX<symbolic::Monomial>>&,
