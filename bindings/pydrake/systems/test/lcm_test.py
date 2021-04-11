@@ -10,7 +10,7 @@ import unittest
 
 import numpy as np
 
-from robotlocomotion import header_t, quaternion_t
+from drake import lcmt_header, lcmt_quaternion
 
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue
@@ -38,21 +38,21 @@ def lcm_to_json(message):
 
 class TestSystemsLcm(unittest.TestCase):
     def _model_message(self):
-        message = quaternion_t()
+        message = lcmt_quaternion()
         message.w, message.x, message.y, message.z = (1, 2, 3, 4)
         return message
 
     def _model_value_cpp(self):
-        serializer = mut._Serializer_[quaternion_t]()
+        serializer = mut._Serializer_[lcmt_quaternion]()
         model_message = self._model_message()
         model_value = serializer.CreateDefaultValue()
         serializer.Deserialize(model_message.encode(), model_value)
         return model_value
 
     def _cpp_value_to_py_message(self, value):
-        serializer = mut._Serializer_[quaternion_t]()
+        serializer = mut._Serializer_[lcmt_quaternion]()
         raw = serializer.Serialize(value)
-        return quaternion_t.decode(raw)
+        return lcmt_quaternion.decode(raw)
 
     def assert_lcm_equal(self, actual, expected):
         self.assertIsInstance(actual, type(expected))
@@ -63,7 +63,7 @@ class TestSystemsLcm(unittest.TestCase):
         self.assertNotEqual(lcm_to_json(actual), lcm_to_json(expected))
 
     def test_serializer(self):
-        dut = mut.PySerializer(quaternion_t)
+        dut = mut.PySerializer(lcmt_quaternion)
         model_message = self._model_message()
         value = dut.CreateDefaultValue()
         self.assert_lcm_not_equal(value.get_value(), model_message)
@@ -72,7 +72,7 @@ class TestSystemsLcm(unittest.TestCase):
         self.assert_lcm_equal(value.get_value(), model_message)
         # Check serialization.
         raw = dut.Serialize(value)
-        reconstruct = quaternion_t.decode(raw)
+        reconstruct = lcmt_quaternion.decode(raw)
         self.assert_lcm_equal(reconstruct, model_message)
 
     def test_serializer_cpp(self):
@@ -93,7 +93,7 @@ class TestSystemsLcm(unittest.TestCase):
     def test_subscriber(self):
         lcm = DrakeLcm()
         dut = mut.LcmSubscriberSystem.Make(
-            channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm)
+            channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm)
         model_message = self._model_message()
         lcm.Publish(channel="TEST_CHANNEL", buffer=model_message.encode())
         lcm.HandleSubscriptions(0)
@@ -104,7 +104,7 @@ class TestSystemsLcm(unittest.TestCase):
     def test_subscriber_cpp(self):
         lcm = DrakeLcm()
         dut = mut.LcmSubscriberSystem.Make(
-            channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm,
+            channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm,
             use_cpp_serializer=True)
         model_message = self._model_message()
         lcm.Publish(channel="TEST_CHANNEL", buffer=model_message.encode())
@@ -117,10 +117,10 @@ class TestSystemsLcm(unittest.TestCase):
     def test_subscriber_wait_for_message(self):
         """Checks how `WaitForMessage` works without Python threads."""
         lcm = DrakeLcm()
-        sub = mut.LcmSubscriberSystem.Make("TEST_LOOP", header_t, lcm)
-        value = AbstractValue.Make(header_t())
+        sub = mut.LcmSubscriberSystem.Make("TEST_LOOP", lcmt_header, lcm)
+        value = AbstractValue.Make(lcmt_header())
         for old_message_count in range(3):
-            message = header_t()
+            message = lcmt_header()
             message.utime = old_message_count + 1
             lcm.Publish("TEST_LOOP", message.encode())
             for attempt in range(10):
@@ -139,9 +139,9 @@ class TestSystemsLcm(unittest.TestCase):
     def test_publisher(self):
         lcm = DrakeLcm()
         dut = mut.LcmPublisherSystem.Make(
-            channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm,
+            channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm,
             publish_period=0.1)
-        subscriber = Subscriber(lcm, "TEST_CHANNEL", quaternion_t)
+        subscriber = Subscriber(lcm, "TEST_CHANNEL", lcmt_quaternion)
         model_message = self._model_message()
         self._fix_and_publish(dut, AbstractValue.Make(model_message))
         lcm.HandleSubscriptions(0)
@@ -150,9 +150,9 @@ class TestSystemsLcm(unittest.TestCase):
     def test_publisher_cpp(self):
         lcm = DrakeLcm()
         dut = mut.LcmPublisherSystem.Make(
-            channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm,
+            channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm,
             use_cpp_serializer=True)
-        subscriber = Subscriber(lcm, "TEST_CHANNEL", quaternion_t)
+        subscriber = Subscriber(lcm, "TEST_CHANNEL", lcmt_quaternion)
         model_message = self._model_message()
         model_value = self._model_value_cpp()
         self._fix_and_publish(dut, model_value)
@@ -179,7 +179,7 @@ class TestSystemsLcm(unittest.TestCase):
         lcm_system = builder.AddSystem(mut.LcmInterfaceSystem(lcm=lcm))
         # Create subscriber in the diagram.
         subscriber = builder.AddSystem(mut.LcmSubscriberSystem.Make(
-            channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm))
+            channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm))
         diagram = builder.Build()
         simulator = Simulator(diagram)
         simulator.Initialize()

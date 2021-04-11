@@ -120,7 +120,6 @@ drake_cc_googletest(
         ":robot_plan_interpolator",
         "//common:find_resource",
         "//systems/framework",
-        "@lcmtypes_robotlocomotion",
     ],
 )
 
