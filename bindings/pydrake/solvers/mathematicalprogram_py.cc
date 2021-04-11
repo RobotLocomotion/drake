@@ -1170,23 +1170,26 @@ for every column of ``prog_var_vals``. )""")
           py::overload_cast<const SolverId&, const std::string&, double>(
               &MathematicalProgram::SetSolverOption),
           py::arg("solver_id"), py::arg("solver_option"),
-          py::arg("option_value"), doc.MathematicalProgram.SetSolverOption.doc)
+          py::arg("option_value"),
+          doc.MathematicalProgram.SetSolverOption.doc_double_option)
       .def("SetSolverOption",
           py::overload_cast<const SolverId&, const std::string&, int>(
               &MathematicalProgram::SetSolverOption),
           py::arg("solver_id"), py::arg("solver_option"),
-          py::arg("option_value"), doc.MathematicalProgram.SetSolverOption.doc)
+          py::arg("option_value"),
+          doc.MathematicalProgram.SetSolverOption.doc_int_option)
       .def("SetSolverOption",
           py::overload_cast<const SolverId&, const std::string&,
               const std::string&>(&MathematicalProgram::SetSolverOption),
           py::arg("solver_id"), py::arg("solver_option"),
-          py::arg("option_value"), doc.MathematicalProgram.SetSolverOption.doc)
+          py::arg("option_value"),
+          doc.MathematicalProgram.SetSolverOption.doc_string_option)
       .def("SetSolverOption", &SetSolverOptionBySolverType<double>,
-          doc.MathematicalProgram.SetSolverOption.doc)
+          doc.MathematicalProgram.SetSolverOption.doc_double_option)
       .def("SetSolverOption", &SetSolverOptionBySolverType<int>,
-          doc.MathematicalProgram.SetSolverOption.doc)
+          doc.MathematicalProgram.SetSolverOption.doc_int_option)
       .def("SetSolverOption", &SetSolverOptionBySolverType<string>,
-          doc.MathematicalProgram.SetSolverOption.doc)
+          doc.MathematicalProgram.SetSolverOption.doc_string_option)
       .def("SetSolverOptions", &MathematicalProgram::SetSolverOptions,
           doc.MathematicalProgram.SetSolverOptions.doc)
       // TODO(m-chaturvedi) Add Pybind11 documentation.
