@@ -70,6 +70,12 @@ drake_lcm_cc_library(
 )
 
 drake_lcm_cc_library(
+    name = "header",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_header.lcm"],
+)
+
+drake_lcm_cc_library(
     name = "hydroelastic_contact_surface_for_viz",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_hydroelastic_contact_surface_for_viz.lcm"],
@@ -89,6 +95,29 @@ drake_lcm_cc_library(
     name = "hydroelastic_quadrature_per_point_data_for_viz",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_hydroelastic_quadrature_per_point_data_for_viz.lcm"],
+)
+
+drake_lcm_cc_library(
+    name = "image",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_image.lcm"],
+    deps = [":header"],
+)
+
+drake_lcm_cc_library(
+    name = "image_array",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_image_array.lcm"],
+    deps = [
+        ":header",
+        ":image",
+    ],
+)
+
+drake_lcm_cc_library(
+    name = "point",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_point.lcm"],
 )
 
 drake_lcm_cc_library(
@@ -116,6 +145,12 @@ drake_lcm_cc_library(
         "lcmt_planar_plant_state.lcm",
         "lcmt_force_torque.lcm",
     ],
+)
+
+drake_lcm_cc_library(
+    name = "quaternion",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_quaternion.lcm"],
 )
 
 drake_lcm_cc_library(
@@ -230,6 +265,11 @@ LCMTYPES_CC = [
     ":acrobot",
     ":allegro",
     ":call_python",
+    ":point",
+    ":header",
+    ":quaternion",
+    ":image",
+    ":image_array",
     ":contact_results_for_viz",
     ":drake_signal",
     ":hydroelastic_contact_surface_for_viz",
