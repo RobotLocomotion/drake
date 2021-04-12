@@ -832,6 +832,9 @@ drake_cc_googletest(
         ":mesh_plane_intersection",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//math:autodiff",
+        "//math:gradient",
+        "//math:orthonormal_basis",
     ],
 )
 
