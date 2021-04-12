@@ -139,7 +139,8 @@ class HydroelasticTractionCalculator {
 
   HydroelasticQuadraturePointData<T> CalcTractionAtPoint(
       const Data& data, geometry::SurfaceFaceIndex face_index,
-      const typename geometry::SurfaceMesh<T>::Barycentric& Q_barycentric,
+      const typename geometry::SurfaceMesh<T>::template Barycentric<T>&
+          Q_barycentric,
       double dissipation, double mu_coulomb) const;
 
   HydroelasticQuadraturePointData<T> CalcTractionAtQHelper(

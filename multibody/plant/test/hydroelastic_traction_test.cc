@@ -169,8 +169,8 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     HydroelasticQuadraturePointData<double> output =
         traction_calculator().CalcTractionAtPoint(
             calculator_data(), SurfaceFaceIndex(0),
-            SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0), dissipation,
-            mu_coulomb);
+            SurfaceMesh<double>::Barycentric<double>(1.0, 0.0, 0.0),
+            dissipation, mu_coulomb);
 
     // Compute the expected point of contact in the world frame. The class
     // definition and SetUp() note that the parameter to this test transforms

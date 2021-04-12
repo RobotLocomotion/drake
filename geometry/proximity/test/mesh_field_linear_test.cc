@@ -10,6 +10,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
 #include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/math/autodiff.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 
@@ -247,7 +248,7 @@ GTEST_TEST(MeshFieldLinearTest, EvaluateCartesianWithAndWithoutGradient) {
   {
     // Evaluating the field for points within tetrahedra.  The tolerance
     // 2e-15 is empirically determined.
-    using Barycentric = VolumeMesh<double>::Barycentric;
+    using Barycentric = VolumeMesh<double>::Barycentric<double>;
     for (const Barycentric& b_Q :
          {Barycentric{0.25, 0.25, 0.25, 0.25} /* centroid */,
           Barycentric{0.5, 0.5, 0, 0} /* on edge */,
@@ -293,6 +294,149 @@ GTEST_TEST(MeshFieldLinearTest, EvaluateCartesianWithAndWithoutGradient) {
                     tolerance);
       }
     }
+  }
+}
+
+/* A double-valued field can produce AutoDiffXd-valued results for
+ Evaluate() and EvaluateCartesian() based on the scalar type of the query point.
+ This confirms that mixing behavior. The tests work by instantiating fields and
+ various query parameters on *both* types. Then we mix and match field and
+ parameter scalars and verify the outputs. By "verify", we don't worry too much
+ about the correctness of the values and derivatives (we assume that has been
+ tested elsewhere); we're just checking that, mechanically speaking, derivatives
+ are propagating as expected. To that end, we make sure that AutoDiffXd-valued
+ parameters have at least *one* component with non-zero derivatives.
+
+ Because the scalar type of the mesh is independent of the scalar type of the
+ field, we'll simply use a double-valued mesh. */
+class ScalarMixingTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    mesh_d_ = GenerateMesh<double>();
+    std::vector<double> e_d = {0., 1., 2., 3.};
+    // We apply non-zero derivatives to the field at vertex 1, it is only
+    // referenced by triangle 0, so, it will be the only triangle that *forces*
+    // derivatives into the output.
+    std::vector<AutoDiffXd> e_ad{0, 1, 2, 3};
+    e_ad[1].derivatives().resize(3);
+    e_ad[1].derivatives() << 1, 2, 3;  // Arbitrary values.
+
+    field_d_ = std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
+        "e_d", std::move(e_d), mesh_d_.get());
+    field_ad_ =
+        std::make_unique<MeshFieldLinear<AutoDiffXd, SurfaceMesh<double>>>(
+            "e_ad", std::move(e_ad), mesh_d_.get());
+
+    p_WQ_d_ = Vector3d::Zero();
+    for (SurfaceVertexIndex v(0); v < 3; ++v) {
+      p_WQ_d_ += mesh_d_->vertex(v).r_MV();
+    }
+    p_WQ_d_ /= 3;
+    p_WQ_ad_ = math::initializeAutoDiff(p_WQ_d_);
+
+    b_d_ = Vector3d(1, 1, 1) / 3.0;
+    b_ad_ = math::initializeAutoDiff(b_d_);
+
+    centroid_value_ = 0;
+    for (SurfaceVertexIndex v(0); v < 3; ++v) {
+      centroid_value_ += field_d_->EvaluateAtVertex(v);
+    }
+    centroid_value_ /= 3;
+  }
+
+  std::unique_ptr<SurfaceMesh<double>> mesh_d_;
+  std::unique_ptr<MeshFieldLinear<double, SurfaceMesh<double>>> field_d_;
+  std::unique_ptr<MeshFieldLinear<AutoDiffXd, SurfaceMesh<double>>> field_ad_;
+
+  SurfaceFaceIndex e0_{0};
+  SurfaceFaceIndex e1_{1};
+  // The centroid of triangle 0.
+  Vector3<double> p_WQ_d_;
+  Vector3<AutoDiffXd> p_WQ_ad_;
+  // The centroid of a triangle.
+  Vector3<double> b_d_;
+  Vector3<AutoDiffXd> b_ad_;
+
+  double centroid_value_{};
+};
+
+TEST_F(ScalarMixingTest, Evaluate) {
+  constexpr double kEps = std::numeric_limits<double>::epsilon();
+
+  {
+    // Double-valued field and double-valued point: double-valued result.
+    const double v = field_d_->Evaluate(e0_, b_d_);
+    EXPECT_NEAR(v, centroid_value_, kEps);
+  }
+
+  {
+    // Double-valued field with AutoDiffXd-valued point: AutodDiffXd-valued
+    // result.
+    const AutoDiffXd v = field_d_->Evaluate(e0_, b_ad_);
+    EXPECT_EQ(v.derivatives().size(), 3);
+    EXPECT_NEAR(v.value(), centroid_value_, kEps);
+  }
+
+  {
+    // AutoDiffXd-valued field with double-valued point on triangle *with*
+    // derivatives: AutodDiffXd-valued result *with* derivatives.
+    const AutoDiffXd v0 = field_ad_->Evaluate(e0_, b_d_);
+    EXPECT_EQ(v0.derivatives().size(), 3);
+    EXPECT_NEAR(v0.value(), centroid_value_, kEps);
+
+    // AutoDiffXd-valued field with double-valued point on triangle *without*
+    // derivatives: AutodDiffXd-valued result *without* derivatives.
+    const AutoDiffXd v1 = field_ad_->Evaluate(e1_, b_d_);
+    EXPECT_EQ(v1.derivatives().size(), 0);
+    // We'll assume the *value* on this one is correct.
+  }
+
+  {
+    // AutoDiffXd-valued field with AutoDiffXd-valued point on triangle:
+    // AutodDiffXd-valued.
+    const AutoDiffXd v = field_ad_->Evaluate(e0_, b_ad_);
+    EXPECT_EQ(v.derivatives().size(), 3);
+    EXPECT_NEAR(v.value(), centroid_value_, kEps);
+  }
+}
+
+TEST_F(ScalarMixingTest, EvaluateCartesian) {
+  constexpr double kEps = std::numeric_limits<double>::epsilon();
+
+  {
+    // Double-valued field and double-valued point: double-valued result.
+    const double v = field_d_->EvaluateCartesian(e0_, p_WQ_d_);
+    EXPECT_NEAR(v, centroid_value_, kEps);
+  }
+
+  {
+    // Double-valued field with AutoDiffXd-valued point: AutodDiffXd-valued
+    // result.
+    const AutoDiffXd v = field_d_->EvaluateCartesian(e0_, p_WQ_ad_);
+    EXPECT_EQ(v.derivatives().size(), 3);
+    EXPECT_NEAR(v.value(), centroid_value_, kEps);
+  }
+
+  {
+    // AutoDiffXd-valued field with double-valued point on triangle *with*
+    // derivatives: AutodDiffXd-valued result *with* derivatives.
+    const AutoDiffXd v0 = field_ad_->EvaluateCartesian(e0_, p_WQ_d_);
+    EXPECT_EQ(v0.derivatives().size(), 3);
+    EXPECT_NEAR(v0.value(), centroid_value_, kEps);
+
+    // AutoDiffXd-valued field with double-valued point on triangle *without*
+    // derivatives: AutodDiffXd-valued result *without* derivatives.
+    const AutoDiffXd v1 = field_ad_->EvaluateCartesian(e1_, p_WQ_d_);
+    EXPECT_EQ(v1.derivatives().size(), 0);
+    // We'll assume the *value* on this one is correct.
+  }
+
+  {
+    // AutoDiffXd-valued field with AutoDiffXd-valued point on triangle:
+    // AutodDiffXd-valued.
+    const AutoDiffXd v = field_ad_->EvaluateCartesian(e0_, p_WQ_ad_);
+    EXPECT_EQ(v.derivatives().size(), 3);
+    EXPECT_NEAR(v.value(), centroid_value_, kEps);
   }
 }
 

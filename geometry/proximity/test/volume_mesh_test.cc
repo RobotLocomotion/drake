@@ -10,6 +10,7 @@
 #include "drake/common/extract_double.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
+#include "drake/math/autodiff.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
@@ -212,38 +213,37 @@ void TestCalcBarycentric() {
   const T kTolerance(1e-14);
   const VolumeElementIndex element(0);
 
+  using Barycentric = typename VolumeMesh<T>::template Barycentric<T>;
   // At the centroid of the tetrahedral element v0v1v2v3.
   {
     Vector3<T> p_M(0.25, 0.25, 0.25);
-    typename VolumeMesh<T>::Barycentric barycentric =
+    const Barycentric barycentric =
         volume_mesh->CalcBarycentric(X_WM * p_M, element);
-    typename VolumeMesh<T>::Barycentric expect_barycentric(0.25, 0.25, 0.25,
-                                                           0.25);
+    const Barycentric expect_barycentric(0.25, 0.25, 0.25, 0.25);
     EXPECT_LE((barycentric - expect_barycentric).norm(), kTolerance);
   }
   // At the centroid of the face v0v1v2.
   {
     Vector3<T> p_M(1. / 3., 1. / 3., 0.);
-    typename VolumeMesh<T>::Barycentric barycentric =
+    const Barycentric barycentric =
         volume_mesh->CalcBarycentric(X_WM * p_M, element);
-    typename VolumeMesh<T>::Barycentric expect_barycentric(1. / 3., 1. / 3.,
-                                                           1. / 3., 0.);
+    const Barycentric expect_barycentric(1. / 3., 1. / 3., 1. / 3., 0.);
     EXPECT_LE((barycentric - expect_barycentric).norm(), kTolerance);
   }
   // At the middle of the edge v0v1.
   {
     Vector3<T> p_M(0.5, 0., 0.);
-    typename VolumeMesh<T>::Barycentric barycentric =
+    const Barycentric barycentric =
         volume_mesh->CalcBarycentric(X_WM * p_M, element);
-    typename VolumeMesh<T>::Barycentric expect_barycentric(0.5, 0.5, 0., 0.);
+    const Barycentric expect_barycentric(0.5, 0.5, 0., 0.);
     EXPECT_LE((barycentric - expect_barycentric).norm(), kTolerance);
   }
   // At the vertex v3.
   {
     Vector3<T> p_M(0., 0., 1.);
-    typename VolumeMesh<T>::Barycentric barycentric =
+    const Barycentric barycentric =
         volume_mesh->CalcBarycentric(X_WM * p_M, element);
-    typename VolumeMesh<T>::Barycentric expect_barycentric(0., 0., 0., 1.);
+    const Barycentric expect_barycentric(0., 0., 0., 1.);
     EXPECT_LE((barycentric - expect_barycentric).norm(), kTolerance);
   }
 }
@@ -405,7 +405,7 @@ std::unique_ptr<VolumeMeshFieldLinear<T, T>> TestVolumeMeshFieldLinear() {
 
   // Tests evaluation of the field on the element e0 {v0, v1, v2, v3}.
   const VolumeElementIndex e0(0);
-  const typename VolumeMesh<T>::Barycentric b{0.4, 0.3, 0.2, 0.1};
+  const typename VolumeMesh<T>::template Barycentric<T> b{0.4, 0.3, 0.2, 0.1};
   const T expect_p = b(0) * f0 + b(1) * f1 + b(2) * f2 + b(3) * f3;
   EXPECT_EQ(expect_p, volume_mesh_field->Evaluate(e0, b));
 
@@ -421,7 +421,7 @@ std::unique_ptr<VolumeMeshFieldLinear<T, T>> TestVolumeMeshFieldLinear() {
   return volume_mesh_field;
 }
 
-// Test instantiation of VolumeMeshField using `double` as the underlying
+// Test instantiation of VolumeMeshFieldLinear using `double` as the underlying
 // scalar type.
 GTEST_TEST(VolumeMeshFieldTest, TestVolumeMeshFieldLinearDouble) {
   auto volume_mesh_field = TestVolumeMeshFieldLinear<double>();
@@ -432,6 +432,166 @@ GTEST_TEST(VolumeMeshFieldTest, TestVolumeMeshFieldLinearDouble) {
 // differentiation.
 GTEST_TEST(VolumeMeshFieldTest, TestVolumeMeshFieldLinearAutoDiffXd) {
   auto volume_mesh_field = TestVolumeMeshFieldLinear<AutoDiffXd>();
+}
+
+/* A double-valued mesh can produce AutoDiffXd-valued results for
+ CalcBarycentric() and CalcGradientVectorOfLinearField() based on the scalar
+ type of the query point. This confirms that mixing behavior. The tests work by
+ instantiating meshes on both scalar types and various query parameters on
+ both types. Then we mix and match mesh and parameter scalars and verify the
+ outputs. By "verify", we don't worry too much about the correctness of the
+ values and derivatives; we're just checking that, mechanically speaking,
+ derivatives are propagating as expected. We make sure that AutoDiffXd-valued
+ parameters have at least *one* value with non-zero derivatives. */
+class ScalarMixingTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    mesh_d_ = TestVolumeMesh<double>();
+
+    // We construct an AutoDiffXd-valued mesh from the double-valued mesh. We
+    // only set the derivatives for vertex 3. That means, operations on
+    // test 0 *must* have derivatives, but tet 1 may not have them.
+    std::vector<VolumeVertex<AutoDiffXd>> vertices;
+    vertices.emplace_back(mesh_d_->vertex(VolumeVertexIndex(0)).r_MV());
+    vertices.emplace_back(mesh_d_->vertex(VolumeVertexIndex(1)).r_MV());
+    vertices.emplace_back(mesh_d_->vertex(VolumeVertexIndex(2)).r_MV());
+    vertices.emplace_back(math::initializeAutoDiff(
+        mesh_d_->vertex(VolumeVertexIndex(3)).r_MV()));
+    vertices.emplace_back(mesh_d_->vertex(VolumeVertexIndex(4)).r_MV());
+    std::vector<VolumeElement> elements(mesh_d_->tetrahedra());
+
+    mesh_ad_ = std::make_unique<VolumeMesh<AutoDiffXd>>(std::move(elements),
+                                                        std::move(vertices));
+  }
+
+  std::unique_ptr<VolumeMesh<double>> mesh_d_;
+  std::unique_ptr<VolumeMesh<AutoDiffXd>> mesh_ad_;
+
+  VolumeElementIndex e0_{0};
+  VolumeElementIndex e1_{1};
+};
+
+TEST_F(ScalarMixingTest, CalcBarycentric) {
+  constexpr double kEps = std::numeric_limits<double>::epsilon();
+  Vector3<double> p_WQ_d = Vector3<double>::Zero();
+  for (VolumeVertexIndex v(0); v < 4; ++v) {
+    p_WQ_d += mesh_d_->vertex(v).r_MV();
+  }
+  p_WQ_d /= 4;
+  const Vector3<AutoDiffXd> p_WQ_ad = math::initializeAutoDiff(p_WQ_d);
+
+  const Vector4<double> b_expected = Vector4<double>{1, 1, 1, 1} / 4;
+
+  {
+    // Double-valued mesh and double-valued point: double-valued result.
+    const Vector4<double> b = mesh_d_->CalcBarycentric(p_WQ_d, e0_);
+    EXPECT_TRUE(CompareMatrices(b, b_expected, kEps));
+  }
+
+  {
+    // Double-valued mesh with AutoDiffXd-valued point: AutodDiffXd-valued
+    // result.
+    const Vector4<AutoDiffXd>& b = mesh_d_->CalcBarycentric(p_WQ_ad, e0_);
+    EXPECT_EQ(b(0).derivatives().size(), 3);
+    EXPECT_EQ(b(1).derivatives().size(), 3);
+    EXPECT_EQ(b(2).derivatives().size(), 3);
+    EXPECT_TRUE(
+        CompareMatrices(math::autoDiffToValueMatrix(b), b_expected, kEps));
+  }
+
+  {
+    // AutoDiffXd-valued mesh with double-valued point on triangle *with*
+    // derivatives: AutodDiffXd-valued result *with* derivatives.
+    const Vector4<AutoDiffXd>& b1 = mesh_ad_->CalcBarycentric(p_WQ_d, e0_);
+    EXPECT_EQ(b1(0).derivatives().size(), 3);
+    EXPECT_EQ(b1(1).derivatives().size(), 3);
+    EXPECT_EQ(b1(2).derivatives().size(), 3);
+    EXPECT_TRUE(
+        CompareMatrices(math::autoDiffToValueMatrix(b1), b_expected, kEps));
+
+    // AutoDiffXd-valued mesh with double-valued point on triangle *without*
+    // derivatives: AutodDiffXd-valued result *without* derivatives.
+    const Vector4<AutoDiffXd>& b2 = mesh_ad_->CalcBarycentric(p_WQ_d, e1_);
+    EXPECT_EQ(b2(0).derivatives().size(), 0);
+    EXPECT_EQ(b2(1).derivatives().size(), 0);
+    EXPECT_EQ(b2(2).derivatives().size(), 0);
+    // We'll assume the *value* on this one is correct.
+  }
+
+  {
+    // AutoDiffXd-valued mesh with AutoDiffXd-valued point on triangle:
+    // AutodDiffXd-valued.
+    const Vector4<AutoDiffXd>& b = mesh_ad_->CalcBarycentric(p_WQ_ad, e0_);
+    EXPECT_EQ(b(0).derivatives().size(), 3);
+    EXPECT_EQ(b(1).derivatives().size(), 3);
+    EXPECT_EQ(b(2).derivatives().size(), 3);
+    EXPECT_TRUE(
+        CompareMatrices(math::autoDiffToValueMatrix(b), b_expected, kEps));
+  }
+}
+
+TEST_F(ScalarMixingTest, CalcGradientVectorOfLinearField) {
+  constexpr double kEps = std::numeric_limits<double>::epsilon();
+  const std::array<double, 4> field_d{0, 0, 0, 1};
+  AutoDiffXd f0;
+  // Because one vertex of the AutoDiffXd-valued mesh has 3 derivatives, this
+  // must likewise have three derivatives to be compatible.
+  f0.derivatives().resize(3);
+  f0.derivatives() << 1, 2, 3;
+  const std::array<AutoDiffXd, 4> field_ad = {f0, 0, 0, 1};
+  const Vector3<double> grad_W_expected{0, 0, 1};
+
+  {
+    // Double-valued mesh and double-valued field: double-valued result.
+    const Vector3<double> grad_W =
+        mesh_d_->CalcGradientVectorOfLinearField(field_d, e0_);
+    EXPECT_TRUE(CompareMatrices(grad_W, grad_W_expected, kEps));
+  }
+
+  {
+    // Double-valued mesh with AutoDiffXd-valued field: AutodDiffXd-valued
+    // result.
+    const Vector3<AutoDiffXd>& grad_W =
+        mesh_d_->CalcGradientVectorOfLinearField(field_ad, e0_);
+    EXPECT_EQ(grad_W(0).derivatives().size(), 3);
+    EXPECT_EQ(grad_W(1).derivatives().size(), 3);
+    EXPECT_EQ(grad_W(2).derivatives().size(), 3);
+    EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(grad_W),
+                                grad_W_expected, kEps));
+  }
+
+  {
+    // AutoDiffXd-valued mesh with double-valued field on triangle *with*
+    // derivatives: AutodDiffXd-valued result *with* derivatives.
+    const Vector3<AutoDiffXd>& grad_W1 =
+        mesh_ad_->CalcGradientVectorOfLinearField(field_d, e0_);
+    EXPECT_EQ(grad_W1(0).derivatives().size(), 3);
+    EXPECT_EQ(grad_W1(1).derivatives().size(), 3);
+    EXPECT_EQ(grad_W1(2).derivatives().size(), 3);
+    EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(grad_W1),
+                                grad_W_expected, kEps));
+
+    // AutoDiffXd-valued mesh with double-valued field on triangle *without*
+    // derivatives: AutodDiffXd-valued result *without* derivatives.
+    const Vector3<AutoDiffXd>& grad_W2 =
+        mesh_ad_->CalcGradientVectorOfLinearField(field_d, e1_);
+    EXPECT_EQ(grad_W2(0).derivatives().size(), 0);
+    EXPECT_EQ(grad_W2(1).derivatives().size(), 0);
+    EXPECT_EQ(grad_W2(2).derivatives().size(), 0);
+    // We'll assume the *value* on this one is correct.
+  }
+
+  {
+    // AutoDiffXd-valued mesh with AutoDiffXd-valued field on triangle:
+    // AutodDiffXd-valued.
+    const Vector3<AutoDiffXd>& grad_W =
+        mesh_ad_->CalcGradientVectorOfLinearField(field_ad, e0_);
+    EXPECT_EQ(grad_W(0).derivatives().size(), 3);
+    EXPECT_EQ(grad_W(1).derivatives().size(), 3);
+    EXPECT_EQ(grad_W(2).derivatives().size(), 3);
+    EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(grad_W),
+                                grad_W_expected, kEps));
+  }
 }
 
 }  // namespace
