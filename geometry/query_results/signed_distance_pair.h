@@ -3,6 +3,7 @@
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
 
@@ -30,9 +31,55 @@ namespace geometry {
  */
 template <typename T>
 struct SignedDistancePair{
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SignedDistancePair)
+  // 2021-08-01 deprecation note: While deprecating the is_grad_W_unique, we
+  // cannot use the standard Drake mechanism for declaring copy and move
+  // semantics. The default implementations insist on writing to the deprecated
+  // member and the macro rebels against being enclosed in the
+  // deprecation-suppressing pragma. Once deprecation is complete restore the
+  // standard boilerplate:
+  //
+  //  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SignedDistancePair)
+  //  SignedDistancePair() = default;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  SignedDistancePair() = default;
+  /** @name Implements CopyConstructible, CopyAssignable, MoveConstructible,
+   MoveAssignable */
+  //@{
+  SignedDistancePair(const SignedDistancePair& other) = default;
+  SignedDistancePair(SignedDistancePair&& other) = default;
+  SignedDistancePair& operator=(const SignedDistancePair& other) =
+      default;
+  SignedDistancePair& operator=(SignedDistancePair&& other) =
+      default;
+  //@}
+#pragma GCC diagnostic pop
 
-  SignedDistancePair() {}
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+/* 2021-08-01 deprecation note: This constructor is wrapped in a deprecation
+ silencer because gcc will implicitly try to write to the deprecated member and
+ throw a build error. When the deprecated member is removed, we *keep* this
+ constructor, but lose the pragma manipulations (in contrast to the other
+ constructors which will just be deleted as noted). */
+  /** Constructor
+   @param a             The id of the first geometry (A).
+   @param b             The id of the second geometry (B).
+   @param p_ACa_in      The witness point on geometry A's surface, in A's frame.
+   @param p_BCb_in      The witness point on geometry B's surface, in B's frame.
+   @param dist          The signed distance between p_A and p_B.
+   @param nhat_BA_W_in  A direction of fastest increasing distance.
+   @pre nhat_BA_W_in is unit-length. */
+  SignedDistancePair(GeometryId a, GeometryId b, const Vector3<T>& p_ACa_in,
+                     const Vector3<T>& p_BCb_in, const T& dist,
+                     const Vector3<T>& nhat_BA_W_in)
+      : id_A(a),
+        id_B(b),
+        p_ACa(p_ACa_in),
+        p_BCb(p_BCb_in),
+        distance(dist),
+        nhat_BA_W(nhat_BA_W_in) {}
+#pragma GCC diagnostic pop
 
   /** Constructor
    @param a             The id of the first geometry (A).
@@ -43,6 +90,10 @@ struct SignedDistancePair{
    @param nhat_BA_W_in  A direction of fastest increasing distance.
    @param is_nhat_BA_W_unique_in  True if nhat_BA_W is unique.
    @pre nhat_BA_W_in is unit-length. */
+  DRAKE_DEPRECATED("2021-08-01",
+                   "SignedDistancePair will no longer report uniqueness. "
+                   "If you require knowledge of uniqueness, please contact the "
+                   "Drake team.")
   SignedDistancePair(GeometryId a, GeometryId b, const Vector3<T>& p_ACa_in,
                      const Vector3<T>& p_BCb_in, const T& dist,
                      const Vector3<T>& nhat_BA_W_in,
@@ -60,19 +111,15 @@ struct SignedDistancePair{
   //      DRAKE_DEMAND(nhat_BA_W.norm() == T(1.));
   {}
 
-  // TODO(DamrongGuoy): Remove this constructor when we have a full
-  //  implementation of computing nhat_BA_W in
-  //  ComputeSignedDistancePairwiseClosestPoints.  Right now many unit tests
-  //  need it.  The downside is that Python binder calls the doc for the
-  //  above constructor ctor.doc_7args and this one ctor.doc_5args (see
-  //  bindings/pydrake/geometry_py.cc).
   /** Constructor.
    We keep this constructor temporarily for backward compatibility.
    @param a         The id of the first geometry (A).
    @param b         The id of the second geometry (B).
    @param p_ACa_in  The witness point on geometry A's surface, in A's frame.
    @param p_BCb_in  The witness point on geometry B's surface, in B's frame.
-   @param dist      The signed distance between p_A and p_B.*/
+   @param dist      The signed distance between p_A and p_B. */
+  DRAKE_DEPRECATED("2021-08-01",
+                   "Please use default or full constructor instead.")
   SignedDistancePair(GeometryId a, GeometryId b, const Vector3<T>& p_ACa_in,
                      const Vector3<T>& p_BCb_in, const T& dist)
       : id_A(a),
@@ -112,7 +159,11 @@ struct SignedDistancePair{
   T distance{};
   /** A direction of fastest increasing distance. */
   Vector3<T> nhat_BA_W;
-  bool is_nhat_BA_W_unique;
+  DRAKE_DEPRECATED("2021-08-01",
+                   "SignedDistancePair will no longer report uniqueness. "
+                   "If you require knowledge of uniqueness, please contact the "
+                   "Drake team.")
+  bool is_nhat_BA_W_unique{false};
 };
 
 }  // namespace geometry

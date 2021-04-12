@@ -819,3 +819,21 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(current_engine.label_count, 1)
 
         # TODO(eric, duy): Test more properties.
+
+    def test_deprecated_struct_member(self):
+        """Tests successful deprecation of struct member"""
+        with catch_drake_warnings(expected_count=1):
+            # Initializing by referencing the deprecated field warns.
+            data = mut.SignedDistancePair(is_nhat_BA_W_unique=False)
+
+        data = mut.SignedDistancePair()
+        with catch_drake_warnings(expected_count=2):
+            # Setting the deprecated field warns.
+            data.is_nhat_BA_W_unique = False
+            _ = data.is_nhat_BA_W_unique
+
+        # Specifying all other members in constructor is fine.
+        data = mut.SignedDistancePair(id_A=mut.GeometryId.get_new_id(),
+                                      id_B=mut.GeometryId.get_new_id(),
+                                      p_ACa=[0, 0, 1], p_BCb=[1, 0, 0],
+                                      distance=13, nhat_BA_W=[0, 1, 0])
