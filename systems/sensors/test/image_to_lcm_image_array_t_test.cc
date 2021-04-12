@@ -1,16 +1,14 @@
 #include "drake/systems/sensors/image_to_lcm_image_array_t.h"
 
-#include "robotlocomotion/image_array_t.hpp"
 #include <gtest/gtest.h>
 
+#include "drake/lcmt_image_array.hpp"
 #include "drake/systems/sensors/image.h"
 
 namespace drake {
 namespace systems {
 namespace sensors {
 namespace {
-
-using robotlocomotion::image_t;
 
 const char* kColorFrameName = "color_frame_name";
 const char* kDepthFrameName = "depth_frame_name";
@@ -20,7 +18,7 @@ const char* kLabelFrameName = "label_frame_name";
 const int kImageWidth = 8;
 const int kImageHeight = 6;
 
-robotlocomotion::image_array_t SetUpInputAndOutput(
+lcmt_image_array SetUpInputAndOutput(
     ImageToLcmImageArrayT* dut, const ImageRgba8U& color_image,
     const ImageDepth32F& depth_image, const ImageLabel16I& label_image) {
   const InputPort<double>& color_image_input_port =
@@ -36,7 +34,7 @@ robotlocomotion::image_array_t SetUpInputAndOutput(
   label_image_input_port.FixValue(context.get(), label_image);
 
   return dut->image_array_t_msg_output_port().
-      Eval<robotlocomotion::image_array_t>(*context);
+      Eval<lcmt_image_array>(*context);
 }
 
 GTEST_TEST(ImageToLcmImageArrayT, ValidTest) {
@@ -46,16 +44,16 @@ GTEST_TEST(ImageToLcmImageArrayT, ValidTest) {
 
   auto Verify = [color_image, depth_image, label_image](
                    const ImageToLcmImageArrayT& dut,
-                   const robotlocomotion::image_array_t& output_image_array,
+                   const lcmt_image_array& output_image_array,
                    uint8_t compression_method) {
-    // Verifyies image_array_t
+    // Verifyies lcmt_image_array
     EXPECT_EQ(output_image_array.header.seq, 0);
     EXPECT_EQ(output_image_array.header.utime, 0);
     EXPECT_EQ(output_image_array.header.frame_name, "");
     EXPECT_EQ(output_image_array.num_images, 3);
     EXPECT_EQ(output_image_array.images.size(), 3);
 
-    // Verifyies each image_t.
+    // Verifyies each lcmt_image.
     for (auto const& image : output_image_array.images) {
       EXPECT_EQ(image.header.seq, 0);
       EXPECT_EQ(image.header.utime, 0);
@@ -69,24 +67,24 @@ GTEST_TEST(ImageToLcmImageArrayT, ValidTest) {
       int row_stride;
       int8_t pixel_format;
       int8_t channel_type;
-      if (image.pixel_format == image_t::PIXEL_FORMAT_RGBA) {
+      if (image.pixel_format == lcmt_image::PIXEL_FORMAT_RGBA) {
         frame_name = kColorFrameName;
         row_stride = color_image.width() * color_image.kNumChannels *
             sizeof(*color_image.at(0, 0));
-        pixel_format = image_t::PIXEL_FORMAT_RGBA;
-        channel_type = image_t::CHANNEL_TYPE_UINT8;
-      } else if (image.pixel_format == image_t::PIXEL_FORMAT_DEPTH) {
+        pixel_format = lcmt_image::PIXEL_FORMAT_RGBA;
+        channel_type = lcmt_image::CHANNEL_TYPE_UINT8;
+      } else if (image.pixel_format == lcmt_image::PIXEL_FORMAT_DEPTH) {
         frame_name = kDepthFrameName;
         row_stride = depth_image.width() * depth_image.kNumChannels *
             sizeof(*depth_image.at(0, 0));
-        pixel_format = image_t::PIXEL_FORMAT_DEPTH;
-        channel_type = image_t::CHANNEL_TYPE_FLOAT32;
-      } else if (image.pixel_format == image_t::PIXEL_FORMAT_LABEL) {
+        pixel_format = lcmt_image::PIXEL_FORMAT_DEPTH;
+        channel_type = lcmt_image::CHANNEL_TYPE_FLOAT32;
+      } else if (image.pixel_format == lcmt_image::PIXEL_FORMAT_LABEL) {
         frame_name = kLabelFrameName;
         row_stride = label_image.width() * label_image.kNumChannels *
             sizeof(*label_image.at(0, 0));
-        pixel_format = image_t::PIXEL_FORMAT_LABEL;
-        channel_type = image_t::CHANNEL_TYPE_INT16;
+        pixel_format = lcmt_image::PIXEL_FORMAT_LABEL;
+        channel_type = lcmt_image::CHANNEL_TYPE_INT16;
       } else {
         EXPECT_FALSE(true);
       }
@@ -103,14 +101,14 @@ GTEST_TEST(ImageToLcmImageArrayT, ValidTest) {
   auto image_array_t_compressed = SetUpInputAndOutput(
           &dut_compressed, color_image, depth_image, label_image);
   Verify(dut_compressed, image_array_t_compressed,
-         image_t::COMPRESSION_METHOD_ZLIB);
+         lcmt_image::COMPRESSION_METHOD_ZLIB);
 
   ImageToLcmImageArrayT dut_uncompressed(
       kColorFrameName, kDepthFrameName, kLabelFrameName, false);
   auto image_array_t_uncompressed = SetUpInputAndOutput(
       &dut_uncompressed, color_image, depth_image, label_image);
   Verify(dut_uncompressed, image_array_t_uncompressed,
-         image_t::COMPRESSION_METHOD_NOT_COMPRESSED);
+         lcmt_image::COMPRESSION_METHOD_NOT_COMPRESSED);
 }
 
 }  // namespace

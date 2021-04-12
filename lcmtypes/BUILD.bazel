@@ -249,7 +249,6 @@ drake_py_library(
     srcs = ["__init__.py"],
     deps = [
         ":_generated_lcmtypes_drake_py",
-        "@lcmtypes_bot2_core//:lcmtypes_bot2_core_py",
     ],
 )
 
@@ -257,7 +256,6 @@ drake_lcm_java_library(
     name = "lcmtypes_drake_java",
     lcm_package = "drake",
     lcm_srcs = glob(["*.lcm"]),
-    deps = ["@lcmtypes_bot2_core//:lcmtypes_bot2_core_java"],
 )
 
 # This should list every LCM type that is known to Drake.
@@ -294,8 +292,6 @@ drake_java_binary(
     visibility = ["//visibility:private"],
     runtime_deps = [
         ":lcmtypes_drake_java",
-        "@lcmtypes_bot2_core//:lcmtypes_bot2_core_java",
-        "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion_java",
         "@optitrack_driver//lcmtypes:lcmtypes_optitrack",
     ],
 )
@@ -342,7 +338,9 @@ install(
         ":install_drake_cc_headers",
         "//tools/workspace/optitrack_driver:install",
         "@lcm//:install",
+        # N.B. The lcmtypes_bot2_core is deprecated and will be removed.
         "@lcmtypes_bot2_core//:install",
+        # N.B. The lcmtypes_robotlocomotion is deprecated and will be removed.
         "@lcmtypes_robotlocomotion//:install",
     ],
 )

@@ -2,7 +2,6 @@
 
 #include <vector>
 
-#include "robotlocomotion/image_array_t.hpp"
 #include <png.h>
 #include <vtkImageExport.h>
 #include <vtkJPEGReader.h>
@@ -12,10 +11,8 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
+#include "drake/lcmt_image_array.hpp"
 #include "drake/systems/sensors/lcm_image_traits.h"
-
-using robotlocomotion::image_array_t;
-using robotlocomotion::image_t;
 
 namespace drake {
 namespace systems {
@@ -24,10 +21,10 @@ namespace {
 
 bool is_color_image(int8_t type) {
   switch (type) {
-    case image_t::PIXEL_FORMAT_RGB:
-    case image_t::PIXEL_FORMAT_BGR:
-    case image_t::PIXEL_FORMAT_RGBA:
-    case image_t::PIXEL_FORMAT_BGRA: {
+    case lcmt_image::PIXEL_FORMAT_RGB:
+    case lcmt_image::PIXEL_FORMAT_BGR:
+    case lcmt_image::PIXEL_FORMAT_RGBA:
+    case lcmt_image::PIXEL_FORMAT_BGRA: {
       return true;
     }
     default: {
@@ -39,8 +36,8 @@ bool is_color_image(int8_t type) {
 
 bool image_has_alpha(int8_t type) {
   switch (type) {
-    case image_t::PIXEL_FORMAT_RGBA:
-    case image_t::PIXEL_FORMAT_BGRA: {
+    case lcmt_image::PIXEL_FORMAT_RGBA:
+    case lcmt_image::PIXEL_FORMAT_BGRA: {
       return true;
     }
     default: {
@@ -72,7 +69,7 @@ void CopyNextPngBytes(png_structp png_ptr, png_bytep data, size_t length) {
 }
 
 template <PixelType kPixelType>
-bool DecompressPng(const image_t* lcm_image, Image<kPixelType>* image) {
+bool DecompressPng(const lcmt_image* lcm_image, Image<kPixelType>* image) {
   PngDecodeData decode_data;
   decode_data.data = lcm_image->data.data();
   decode_data.size = lcm_image->size;
@@ -135,7 +132,7 @@ bool DecompressPng(const image_t* lcm_image, Image<kPixelType>* image) {
 }
 
 template <PixelType kPixelType>
-bool DecompressJpeg(const image_t* lcm_image, Image<kPixelType>* image) {
+bool DecompressJpeg(const lcmt_image* lcm_image, Image<kPixelType>* image) {
   vtkNew<vtkJPEGReader> jpg_reader;
   jpg_reader->SetMemoryBuffer(
       const_cast<unsigned char*>(lcm_image->data.data()));
@@ -157,7 +154,7 @@ bool DecompressJpeg(const image_t* lcm_image, Image<kPixelType>* image) {
 }
 
 template <PixelType kPixelType>
-bool DecompressZlib(const image_t* lcm_image, Image<kPixelType>* image) {
+bool DecompressZlib(const lcmt_image* lcm_image, Image<kPixelType>* image) {
   // NOLINTNEXTLINE(runtime/int)
   unsigned long dest_len =
       image->width() * image->height() * image->kPixelSize;
@@ -174,7 +171,7 @@ bool DecompressZlib(const image_t* lcm_image, Image<kPixelType>* image) {
 }
 
 template <PixelType kPixelType>
-bool UnpackLcmImage(const image_t* lcm_image, Image<kPixelType>* image) {
+bool UnpackLcmImage(const lcmt_image* lcm_image, Image<kPixelType>* image) {
   DRAKE_DEMAND(lcm_image->pixel_format ==
                LcmPixelTraits<Image<kPixelType>::kPixelFormat>::kPixelFormat);
   DRAKE_DEMAND(lcm_image->channel_type ==
@@ -183,17 +180,17 @@ bool UnpackLcmImage(const image_t* lcm_image, Image<kPixelType>* image) {
   image->resize(lcm_image->width, lcm_image->height);
 
   switch (lcm_image->compression_method) {
-    case image_t::COMPRESSION_METHOD_NOT_COMPRESSED: {
+    case lcmt_image::COMPRESSION_METHOD_NOT_COMPRESSED: {
       memcpy(image->at(0, 0), lcm_image->data.data(), image->size());
       return true;
     }
-    case image_t::COMPRESSION_METHOD_ZLIB: {
+    case lcmt_image::COMPRESSION_METHOD_ZLIB: {
       return DecompressZlib(lcm_image, image);
     }
-    case image_t::COMPRESSION_METHOD_JPEG: {
+    case lcmt_image::COMPRESSION_METHOD_JPEG: {
       return DecompressJpeg(lcm_image, image);
     }
-    case image_t::COMPRESSION_METHOD_PNG: {
+    case lcmt_image::COMPRESSION_METHOD_PNG: {
       return DecompressPng(lcm_image, image);
     }
     default: {
@@ -212,7 +209,7 @@ bool UnpackLcmImage(const image_t* lcm_image, Image<kPixelType>* image) {
 LcmImageArrayToImages::LcmImageArrayToImages()
     : image_array_t_input_port_index_(
           this->DeclareAbstractInputPort(
-              "image_array_t", Value<image_array_t>()).get_index()),
+              "image_array_t", Value<lcmt_image_array>()).get_index()),
       color_image_output_port_index_(
           this->DeclareAbstractOutputPort(
               "color_image", &LcmImageArrayToImages::CalcColorImage)
@@ -227,10 +224,11 @@ LcmImageArrayToImages::LcmImageArrayToImages()
 
 void LcmImageArrayToImages::CalcColorImage(
     const Context<double>& context, ImageRgba8U* color_image) const {
-  const auto& images = image_array_t_input_port().Eval<image_array_t>(context);
+  const auto& images =
+      image_array_t_input_port().Eval<lcmt_image_array>(context);
 
   // Look through the image array and just grab the first color image.
-  const image_t* lcm_image = nullptr;
+  const lcmt_image* lcm_image = nullptr;
   for (int i = 0; i < images.num_images; i++) {
     if (is_color_image(images.images[i].pixel_format)) {
       lcm_image = &images.images[i];
@@ -267,12 +265,13 @@ void LcmImageArrayToImages::CalcColorImage(
 
 void LcmImageArrayToImages::CalcDepthImage(
     const Context<double>& context, ImageDepth32F* depth_image) const {
-  const auto& images = image_array_t_input_port().Eval<image_array_t>(context);
+  const auto& images =
+      image_array_t_input_port().Eval<lcmt_image_array>(context);
 
   // Look through the image array and just grab the first depth image.
-  const image_t* lcm_image = nullptr;
+  const lcmt_image* lcm_image = nullptr;
   for (int i = 0; i < images.num_images; i++) {
-    if (images.images[i].pixel_format == image_t::PIXEL_FORMAT_DEPTH) {
+    if (images.images[i].pixel_format == lcmt_image::PIXEL_FORMAT_DEPTH) {
       lcm_image = &images.images[i];
       break;
     }
@@ -285,11 +284,11 @@ void LcmImageArrayToImages::CalcDepthImage(
 
   bool is_32f = false;
   switch (lcm_image->channel_type) {
-    case image_t::CHANNEL_TYPE_UINT16: {
+    case lcmt_image::CHANNEL_TYPE_UINT16: {
       is_32f = false;
       break;
     }
-    case image_t::CHANNEL_TYPE_FLOAT32: {
+    case lcmt_image::CHANNEL_TYPE_FLOAT32: {
       is_32f = true;
       break;
     }
