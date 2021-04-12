@@ -214,6 +214,9 @@ drake_pybind_library(
     cc_deps = [
         ":lcm_pybind",
         "//bindings/pydrake:documentation_pybind",
+        "//lcmtypes:contact_results_for_viz",
+        "//lcmtypes:image_array",
+        "//lcmtypes:quaternion",
     ],
     cc_srcs = [
         "lcm_py.cc",
@@ -226,7 +229,6 @@ drake_pybind_library(
         ":module_py",
         "//bindings/pydrake:lcm_py",
         "//lcmtypes:lcmtypes_drake_py",
-        "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion_py",
     ],
     py_srcs = ["_lcm_extra.py"],
 )

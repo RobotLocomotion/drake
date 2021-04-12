@@ -2,14 +2,14 @@ import unittest
 
 from pydrake.lcm import DrakeLcm, DrakeLcmInterface, DrakeMockLcm, Subscriber
 
-from robotlocomotion import quaternion_t
+from drake import lcmt_quaternion
 
 
 class TestLcm(unittest.TestCase):
     def setUp(self):
         # Create a simple ground-truth message.
         self.wxyz = (1, 2, 3, 4)
-        quat = quaternion_t()
+        quat = lcmt_quaternion()
         quat.w, quat.x, quat.y, quat.z = self.wxyz
         self.quat = quat
         self.count = 0
@@ -22,7 +22,7 @@ class TestLcm(unittest.TestCase):
         dut.HandleSubscriptions
 
     def _handler(self, raw):
-        quat = quaternion_t.decode(raw)
+        quat = lcmt_quaternion.decode(raw)
         self.assertTupleEqual((quat.w, quat.x, quat.y, quat.z), self.wxyz)
         self.count += 1
 
@@ -37,7 +37,7 @@ class TestLcm(unittest.TestCase):
 
     def test_subscriber(self):
         lcm = DrakeLcm()
-        dut = Subscriber(lcm=lcm, channel="CHANNEL", lcm_type=quaternion_t)
+        dut = Subscriber(lcm=lcm, channel="CHANNEL", lcm_type=lcmt_quaternion)
         lcm.Publish(channel="CHANNEL", buffer=self.quat.encode())
         self.assertEqual(dut.count, 0)
         self.assertEqual(len(dut.raw), 0)

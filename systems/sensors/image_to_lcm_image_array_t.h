@@ -3,25 +3,28 @@
 #include <string>
 #include <vector>
 
-#include "robotlocomotion/image_array_t.hpp"
-
 #include "drake/common/drake_copyable.h"
+#include "drake/lcmt_image_array.hpp"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/sensors/image.h"
 #include "drake/systems/sensors/pixel_types.h"
+#include "drake/systems/sensors/robotlocomotion_compat.h"
 
 namespace drake {
 namespace systems {
 namespace sensors {
 
+// TODO(jwnimmer-tri) Throughout this filename, classname, and method names, the
+// the "_t" or "T" suffix is superfluous and should be removed.
+
 /// An ImageToLcmImageArrayT takes as input an ImageRgba8U, ImageDepth32F and
 /// ImageLabel16I. This system outputs an AbstractValue containing a
-/// `Value<robotlocomotion::image_array_t>` LCM message that defines an array
-/// of images (image_t). This message can then be sent to other processes that
+/// `Value<lcmt_image_array>` LCM message that defines an array of images
+/// (lcmt_image). This message can then be sent to other processes that
 /// sbscribe it using LcmPublisherSystem. Note that you should NOT assume any
-/// particular order of those images stored in robotlocomotion::image_array_t,
+/// particular order of those images stored in lcmt_image_array,
 /// instead check the semantic of those images with
-/// robotlocomotion::image_t::pixel_format before using them.
+/// lcmt_image::pixel_format before using them.
 class ImageToLcmImageArrayT : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ImageToLcmImageArrayT)
@@ -52,7 +55,7 @@ class ImageToLcmImageArrayT : public systems::LeafSystem<double> {
   const InputPort<double>& label_image_input_port() const;
 
   /// Returns the abstract valued output port that contains a
-  /// `Value<robotlocomotion::image_array_t>`.
+  /// `Value<lcmt_image_array>`.
   const OutputPort<double>& image_array_t_msg_output_port() const;
 
   /// Default constructor doesn't declare any ports.  Use the Add*Input()
@@ -68,7 +71,7 @@ class ImageToLcmImageArrayT : public systems::LeafSystem<double> {
 
  private:
   void CalcImageArray(const systems::Context<double>& context,
-                      robotlocomotion::image_array_t* msg) const;
+                      lcmt_image_array* msg) const;
 
   int color_image_input_port_index_{-1};
   int depth_image_input_port_index_{-1};

@@ -1,0 +1,68 @@
+package drake;
+
+// A representation of an image.
+struct lcmt_image {
+  // The timestamp and the frame name where this image is obtained.
+  lcmt_header header;
+
+  // The image width in pixels.
+  int32_t width;
+
+  // The image height in pixels.
+  int32_t height;
+
+  // The physical memory size per a single row in bytes.
+  int32_t row_stride;
+
+  // The size of `data` in bytes.
+  int32_t size;
+
+  // The data that contains actual image.
+  byte data[size];
+
+  // The boolean to denote if the data is stored in the bigendian order.
+  boolean bigendian;
+
+  // The semantic meaning of pixels.
+  int8_t pixel_format;
+
+  // The data type for a channel.
+  int8_t channel_type;
+
+  // The compression method.
+  int8_t compression_method;
+
+  // enum for pixel_format.
+  const int8_t PIXEL_FORMAT_GRAY       = 0;
+  const int8_t PIXEL_FORMAT_RGB        = 1;
+  const int8_t PIXEL_FORMAT_BGR        = 2;
+  const int8_t PIXEL_FORMAT_RGBA       = 3;
+  const int8_t PIXEL_FORMAT_BGRA       = 4;
+  const int8_t PIXEL_FORMAT_DEPTH      = 5;
+  const int8_t PIXEL_FORMAT_LABEL      = 6;
+  const int8_t PIXEL_FORMAT_MASK       = 7;
+  const int8_t PIXEL_FORMAT_DISPARITY  = 8;
+  const int8_t PIXEL_FORMAT_BAYER_BGGR = 9;
+  const int8_t PIXEL_FORMAT_BAYER_RGGB = 10;
+  const int8_t PIXEL_FORMAT_BAYER_GBRG = 11;
+  const int8_t PIXEL_FORMAT_BAYER_GRBG = 12;
+  const int8_t PIXEL_FORMAT_INVALID    = -1;
+
+  // enum for channel_type.
+  const int8_t CHANNEL_TYPE_INT8    = 0;
+  const int8_t CHANNEL_TYPE_UINT8   = 1;
+  const int8_t CHANNEL_TYPE_INT16   = 2;
+  const int8_t CHANNEL_TYPE_UINT16  = 3;
+  const int8_t CHANNEL_TYPE_INT32   = 4;
+  const int8_t CHANNEL_TYPE_UINT32  = 5;
+  const int8_t CHANNEL_TYPE_FLOAT32 = 6;
+  const int8_t CHANNEL_TYPE_FLOAT64 = 7;
+  const int8_t CHANNEL_TYPE_INVALID = -1;
+
+  // enum for compression_method.
+  const int8_t COMPRESSION_METHOD_NOT_COMPRESSED = 0;
+  const int8_t COMPRESSION_METHOD_ZLIB           = 1;
+  const int8_t COMPRESSION_METHOD_JPEG           = 2;
+  const int8_t COMPRESSION_METHOD_PNG            = 3;
+  const int8_t COMPRESSION_METHOD_INVALID        = -1;
+}

@@ -70,6 +70,12 @@ drake_lcm_cc_library(
 )
 
 drake_lcm_cc_library(
+    name = "header",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_header.lcm"],
+)
+
+drake_lcm_cc_library(
     name = "hydroelastic_contact_surface_for_viz",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_hydroelastic_contact_surface_for_viz.lcm"],
@@ -89,6 +95,29 @@ drake_lcm_cc_library(
     name = "hydroelastic_quadrature_per_point_data_for_viz",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_hydroelastic_quadrature_per_point_data_for_viz.lcm"],
+)
+
+drake_lcm_cc_library(
+    name = "image",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_image.lcm"],
+    deps = [":header"],
+)
+
+drake_lcm_cc_library(
+    name = "image_array",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_image_array.lcm"],
+    deps = [
+        ":header",
+        ":image",
+    ],
+)
+
+drake_lcm_cc_library(
+    name = "point",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_point.lcm"],
 )
 
 drake_lcm_cc_library(
@@ -116,6 +145,12 @@ drake_lcm_cc_library(
         "lcmt_planar_plant_state.lcm",
         "lcmt_force_torque.lcm",
     ],
+)
+
+drake_lcm_cc_library(
+    name = "quaternion",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_quaternion.lcm"],
 )
 
 drake_lcm_cc_library(
@@ -214,7 +249,6 @@ drake_py_library(
     srcs = ["__init__.py"],
     deps = [
         ":_generated_lcmtypes_drake_py",
-        "@lcmtypes_bot2_core//:lcmtypes_bot2_core_py",
     ],
 )
 
@@ -222,7 +256,6 @@ drake_lcm_java_library(
     name = "lcmtypes_drake_java",
     lcm_package = "drake",
     lcm_srcs = glob(["*.lcm"]),
-    deps = ["@lcmtypes_bot2_core//:lcmtypes_bot2_core_java"],
 )
 
 # This should list every LCM type that is known to Drake.
@@ -230,6 +263,11 @@ LCMTYPES_CC = [
     ":acrobot",
     ":allegro",
     ":call_python",
+    ":point",
+    ":header",
+    ":quaternion",
+    ":image",
+    ":image_array",
     ":contact_results_for_viz",
     ":drake_signal",
     ":hydroelastic_contact_surface_for_viz",
@@ -254,8 +292,6 @@ drake_java_binary(
     visibility = ["//visibility:private"],
     runtime_deps = [
         ":lcmtypes_drake_java",
-        "@lcmtypes_bot2_core//:lcmtypes_bot2_core_java",
-        "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion_java",
         "@optitrack_driver//lcmtypes:lcmtypes_optitrack",
     ],
 )
@@ -302,7 +338,9 @@ install(
         ":install_drake_cc_headers",
         "//tools/workspace/optitrack_driver:install",
         "@lcm//:install",
+        # N.B. The lcmtypes_bot2_core is deprecated and will be removed.
         "@lcmtypes_bot2_core//:install",
+        # N.B. The lcmtypes_robotlocomotion is deprecated and will be removed.
         "@lcmtypes_robotlocomotion//:install",
     ],
 )

@@ -7,10 +7,6 @@
   "Name": "drake",
   "Website": "https://drake.mit.edu/",
   "Requires": {
-    "bot2-core-lcmtypes": {
-      "Hints": ["@prefix@/lib/cmake/bot2-core-lcmtypes"],
-      "X-CMake-Find-Args": ["CONFIG"]
-    },
     "Eigen3": {
       "Version": "3.3.4",
       "X-CMake-Find-Args": ["CONFIG"]
@@ -34,10 +30,6 @@
       "Hints": ["@prefix@/lib/cmake/optitrack"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
-    "robotlocomotion-lcmtypes": {
-      "Hints": ["@prefix@/lib/cmake/robotlocomotion-lcmtypes"],
-      "X-CMake-Find-Args": ["CONFIG"]
-    },
     "spdlog": {
       "Version": "1.5",
       "Hints": ["@prefix@/lib/cmake/spdlog"],
@@ -58,13 +50,11 @@
       "Requires": [
         ":drake-lcmtypes-cpp",
         ":drake-marker",
-        "bot2-core-lcmtypes:lcmtypes_bot2-core-cpp",
         "Eigen3:Eigen",
         "fmt:fmt-header-only",
         "ignition-math6:ignition-math6",
         "lcm:lcm",
         "optitrack:optitrack-lcmtypes-cpp",
-        "robotlocomotion-lcmtypes:robotlocomotion-lcmtypes-cpp",
         "spdlog:spdlog",
         "tinyxml2:tinyxml2",
         "yaml-cpp"
