@@ -1991,7 +1991,7 @@ MultibodyPlant<T>::CalcDiscreteContactPairs(
               const Vector3<T> barycentric(xi[qp](0), xi[qp](1),
                                            1.0 - xi[qp](0) - xi[qp](1));
               // Pressure at the quadrature point.
-              const T p0 = s.EvaluateE_MN(face, barycentric);
+              const T p0 = s.e_MN().Evaluate(face, barycentric);
 
               // Force contribution by this quadrature point.
               const T fn0 = wq[qp] * Ae * p0;
