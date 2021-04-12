@@ -146,7 +146,7 @@ int do_main() {
     if ((FLAGS_color || FLAGS_depth || FLAGS_label)) {
       image_array_lcm_publisher =
           builder.template AddSystem(systems::lcm::LcmPublisherSystem::Make<
-              robotlocomotion::image_array_t>(
+              lcmt_image_array>(
               "DRAKE_RGBD_CAMERA_IMAGES", &lcm,
               1. / FLAGS_render_fps /* publish period */));
       image_array_lcm_publisher->set_name("publisher");

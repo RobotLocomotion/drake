@@ -37,7 +37,7 @@ from pydrake.systems.planar_scenegraph_visualizer import \
 
 from drake.examples.manipulation_station.differential_ik import DifferentialIK
 
-from robotlocomotion import image_array_t
+from drake import lcmt_image_array
 
 
 # TODO(russt): Generalize this and move it to pydrake.manipulation.simple_ui.
@@ -287,7 +287,7 @@ def main():
             image_array_lcm_publisher = builder.AddSystem(
                 LcmPublisherSystem.Make(
                     channel="DRAKE_RGBD_CAMERA_IMAGES",
-                    lcm_type=image_array_t,
+                    lcm_type=lcmt_image_array,
                     lcm=None,
                     publish_period=0.1,
                     use_cpp_serializer=True))

@@ -253,8 +253,6 @@ cc_library(
         "//lcmtypes:lcmtypes_drake_cc",
         "@eigen",
         "@fmt",
-        "@lcmtypes_bot2_core",
-        "@lcmtypes_robotlocomotion",
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
     ],
 )

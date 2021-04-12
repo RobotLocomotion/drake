@@ -1,12 +1,12 @@
 /// @file This program is an example of using the LcmImageArrayToImages and
 /// ImageToLcmImageArrayT systems.  It receives an incoming stream of
-/// robotlocomotion::image_array_t messages, unpacks and repacks the color and
+/// lcmt_image_array messages, unpacks and repacks the color and
 /// depth frames, and retransmits the images.  The output can be viewed in
 /// drake_visualizer.
 
-#include "robotlocomotion/image_array_t.hpp"
 #include <gflags/gflags.h>
 
+#include "drake/lcmt_image_array.hpp"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_interface_system.h"
@@ -15,8 +15,6 @@
 #include "drake/systems/sensors/image.h"
 #include "drake/systems/sensors/image_to_lcm_image_array_t.h"
 #include "drake/systems/sensors/lcm_image_array_to_images.h"
-
-using robotlocomotion::image_array_t;
 
 DEFINE_string(channel_name, "DRAKE_RGBD_CAMERA_IMAGES_IN",
               "Channel name to receive images on");
@@ -34,7 +32,7 @@ int DoMain() {
 
   auto lcm = builder.AddSystem<systems::lcm::LcmInterfaceSystem>();
   auto image_sub = builder.AddSystem(
-      systems::lcm::LcmSubscriberSystem::Make<image_array_t>(
+      systems::lcm::LcmSubscriberSystem::Make<lcmt_image_array>(
           FLAGS_channel_name, lcm));
   auto array_to_images = builder.AddSystem<LcmImageArrayToImages>();
   builder.Connect(image_sub->get_output_port(),
@@ -51,7 +49,7 @@ int DoMain() {
           "depth"));
 
   auto image_array_lcm_publisher = builder.AddSystem(
-      lcm::LcmPublisherSystem::Make<robotlocomotion::image_array_t>(
+      lcm::LcmPublisherSystem::Make<lcmt_image_array>(
           FLAGS_publish_name, lcm, 0.1 /* publish period */));
   builder.Connect(
       image_to_lcm_image_array->image_array_t_msg_output_port(),

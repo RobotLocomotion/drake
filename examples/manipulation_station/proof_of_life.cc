@@ -84,7 +84,7 @@ int do_main(int argc, char* argv[]) {
                     cam_port);
   }
   auto image_array_lcm_publisher = builder.template AddSystem(
-      systems::lcm::LcmPublisherSystem::Make<robotlocomotion::image_array_t>(
+      systems::lcm::LcmPublisherSystem::Make<lcmt_image_array>(
           "DRAKE_RGBD_CAMERA_IMAGES", nullptr,
           1.0 / 10 /* 10 fps publish period */));
   image_array_lcm_publisher->set_name("rgbd_publisher");
