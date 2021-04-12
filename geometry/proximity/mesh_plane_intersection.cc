@@ -120,7 +120,7 @@ void SliceTetWithPlane(VolumeElementIndex tet_index,
       // both have the same value. More particularly, one must be strictly
       // positive the other must be strictly non-positive.
       const T t = d_v0 / (d_v0 - d_v1);
-      const Vector3<double> p_MC = p_MV0 + t * (p_MV1 - p_MV0);
+      const Vector3<T> p_MC = p_MV0 + t * (p_MV1 - p_MV0);
       vertices_W->emplace_back(X_WM * p_MC);
       const double e0 = field_M.EvaluateAtVertex(v0);
       const double e1 = field_M.EvaluateAtVertex(v1);
@@ -164,8 +164,8 @@ std::unique_ptr<ContactSurface<T>> ComputeContactSurface(
   auto grad_eM_W = std::make_unique<std::vector<Vector3<T>>>();
   size_t old_face_count = 0;
   for (const auto& tet_index : tet_indices) {
-    const Vector3<T>& grad_eMi_W = X_WM.rotation() *
-                           mesh_field_M.EvaluateGradient(tet_index);
+    const Vector3<T>& grad_eMi_W =
+        X_WM.rotation() * mesh_field_M.EvaluateGradient(tet_index).cast<T>();
     SliceTetWithPlane(tet_index, mesh_field_M, plane_M, X_WM, &faces,
                       &vertices_W, &surface_e, &cut_edges);
     // The gradient of every triangle that arises from slicing a tet with a
@@ -206,19 +206,19 @@ ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
   };
 
   const math::RigidTransform<T> X_SR = X_WS.inverse() * X_WR;
-  const Vector3<T>& Pz_S = X_SR.rotation().col(2);
+  const Vector3<T>& Rz_S = X_SR.rotation().col(2);
   const Vector3<T>& p_SRo = X_SR.translation();
   // NOTE: We don't need the Plane constructor to normalize normal Pz_S. It's
   // sufficiently unit-length for our purposes (and even if it wasn't, we're
   // really only looking for zero *crossings* and that doesn't move with scale.
-  Plane<T> plane_S{Pz_S, p_SRo, true /* already_normalized */};
+  Plane<T> plane_S{Rz_S, p_SRo, true /* already_normalized */};
   // We need a double-valued plane for BVH culling.
-  Plane<double> plane_S_double{convert_to_double(Pz_S),
+  Plane<double> plane_S_double{convert_to_double(Rz_S),
                                convert_to_double(p_SRo),
                                true /* already_normalized */};
   // Plane is already defined in the mesh's frame; transform from plane to
   // BVH hierarchy is the identity.
-  bvh_S.Collide(plane_S_double, math::RigidTransform<T>{}, callback);
+  bvh_S.Collide(plane_S_double, math::RigidTransformd{}, callback);
 
   // Build the contact surface from the plane and the list of tetrahedron
   // indices.
@@ -226,41 +226,42 @@ ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
 }
 
 template void SliceTetWithPlane<double>(
-    VolumeElementIndex tet_index,
-    const VolumeMeshFieldLinear<double, double>& field_M,
-    const Plane<double>& plane_M, const math::RigidTransformd& X_WM,
-    std::vector<SurfaceFace>* faces,
-    std::vector<SurfaceVertex<double>>* vertices_W,
-    std::vector<double>* surface_e,
-    std::unordered_map<SortedPair<VolumeVertexIndex>, SurfaceVertexIndex>*
-        cut_edges);
+    VolumeElementIndex, const VolumeMeshFieldLinear<double, double>&,
+    const Plane<double>&, const math::RigidTransform<double>&,
+    std::vector<SurfaceFace>*, std::vector<SurfaceVertex<double>>*,
+    std::vector<double>*,
+    std::unordered_map<SortedPair<VolumeVertexIndex>, SurfaceVertexIndex>*);
+
+template void SliceTetWithPlane<AutoDiffXd>(
+    VolumeElementIndex, const VolumeMeshFieldLinear<double, double>&,
+    const Plane<AutoDiffXd>&, const math::RigidTransform<AutoDiffXd>&,
+    std::vector<SurfaceFace>*, std::vector<SurfaceVertex<AutoDiffXd>>*,
+    std::vector<AutoDiffXd>*,
+    std::unordered_map<SortedPair<VolumeVertexIndex>, SurfaceVertexIndex>*);
 
 template std::unique_ptr<ContactSurface<double>> ComputeContactSurface(
-    GeometryId mesh_id,
-    const VolumeMeshFieldLinear<double, double>& mesh_field_M,
-    GeometryId plane_id, const Plane<double>& plane_M,
-    const std::vector<VolumeElementIndex> tet_indices,
-    const math::RigidTransform<double>& X_WM);
+    GeometryId, const VolumeMeshFieldLinear<double, double>&,
+    GeometryId plane_id, const Plane<double>&,
+    const std::vector<VolumeElementIndex>, const math::RigidTransform<double>&);
+
+template std::unique_ptr<ContactSurface<AutoDiffXd>> ComputeContactSurface(
+    GeometryId, const VolumeMeshFieldLinear<double, double>&,
+    GeometryId plane_id, const Plane<AutoDiffXd>&,
+    const std::vector<VolumeElementIndex>,
+    const math::RigidTransform<AutoDiffXd>&);
 
 template std::unique_ptr<ContactSurface<double>>
 ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
-    const GeometryId id_S, const VolumeMeshFieldLinear<double, double>& field_S,
-    const Bvh<VolumeMesh<double>>& bvh_S,
-    const math::RigidTransform<double>& X_WS, const GeometryId id_R,
-    const math::RigidTransform<double>& X_WR);
+    const GeometryId, const VolumeMeshFieldLinear<double, double>&,
+    const Bvh<VolumeMesh<double>>&, const math::RigidTransform<double>&,
+    const GeometryId, const math::RigidTransform<double>&);
 
-// Create a version with AutoDiffXd so that hydroelastic_callback (and,
-// ultimately, ProximityEngine) can compile.
-template <>
-std::unique_ptr<ContactSurface<AutoDiffXd>>
+template std::unique_ptr<ContactSurface<AutoDiffXd>>
 ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
     const GeometryId, const VolumeMeshFieldLinear<double, double>&,
     const Bvh<VolumeMesh<double>>&, const math::RigidTransform<AutoDiffXd>&,
-    const GeometryId, const math::RigidTransform<AutoDiffXd>&) {
-  throw std::logic_error(
-      "AutoDiff-valued ContactSurface calculations are not currently "
-      "supported");
-}
+    const GeometryId, const math::RigidTransform<AutoDiffXd>&);
+
 
 }  // namespace internal
 }  // namespace geometry
