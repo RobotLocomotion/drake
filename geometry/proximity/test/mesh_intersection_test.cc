@@ -1060,11 +1060,11 @@ void TestComputeContactSurfaceSoftRigid() {
   //  that is officially documented as a property of the ContactSurface.
 
   // The "pressure" field is frame invariant and should be equal.
-  const typename SurfaceMesh<T>::Barycentric centroid(1. / 3., 1. / 3.,
-                                                      1. / 3.);
+  const typename SurfaceMesh<T>::template Barycentric<double> centroid(
+      1. / 3., 1. / 3., 1. / 3.);
   const SurfaceFaceIndex f_index(0);
-  EXPECT_EQ(contact_SR->EvaluateE_MN(f_index, centroid),
-            contact_RS->EvaluateE_MN(f_index, centroid));
+  EXPECT_EQ(contact_SR->e_MN().Evaluate(f_index, centroid),
+            contact_RS->e_MN().Evaluate(f_index, centroid));
 
   // The gradients for the pressure field of the soft mesh are expresssed in the
   // world frame. To determine the world transformation has taken place, we'll
@@ -1135,9 +1135,10 @@ bool FindVertex(Vector3d p_MQ, const Mesh& mesh_M,
 //       being inside due to numerical roundings.
 bool FindElement(Vector3d p_MQ, const VolumeMesh<double>& volume_M,
                  VolumeElementIndex* element_E,
-                 VolumeMesh<double>::Barycentric* b_EQ) {
+                 VolumeMesh<double>::Barycentric<double>* b_EQ) {
   for (VolumeElementIndex e(0); e < volume_M.num_elements(); ++e) {
-    VolumeMesh<double>::Barycentric b = volume_M.CalcBarycentric(p_MQ, e);
+    VolumeMesh<double>::Barycentric<double> b =
+        volume_M.CalcBarycentric(p_MQ, e);
     if ((b.array() >= -1e-14).all()) {
       *element_E = e;
       *b_EQ = b;
@@ -1198,7 +1199,7 @@ GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidMoving) {
       // Index of contact surface C's vertex coincident with Q.
       SurfaceVertexIndex index_C;
       ASSERT_TRUE(FindVertex(p_WQ, contact->mesh_W(), &index_C));
-      const double pressure_at_C = contact->EvaluateE_MN(index_C);
+      const double pressure_at_C = contact->e_MN().EvaluateAtVertex(index_C);
       // Index of Q in the volume mesh.
       VolumeVertexIndex index_Q;
       ASSERT_TRUE(FindVertex(p_SQ, pressure_S->mesh(), &index_Q));
@@ -1248,11 +1249,11 @@ GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidMoving) {
     // Index of C's vertex coincident with Q.
     SurfaceVertexIndex c_vertex;
     ASSERT_TRUE(FindVertex(p_WQ, contact->mesh_W(), &c_vertex));
-    const double c_pressure = contact->EvaluateE_MN(c_vertex);
+    const double c_pressure = contact->e_MN().EvaluateAtVertex(c_vertex);
 
     // Find the tetrahedral element of S containing Q.
     VolumeElementIndex tetrahedron;
-    VolumeMesh<double>::Barycentric b_Q;
+    VolumeMesh<double>::Barycentric<double> b_Q;
     ASSERT_TRUE(FindElement(p_SQ, pressure_S->mesh(), &tetrahedron, &b_Q));
     const double s_pressure = pressure_S->Evaluate(tetrahedron, b_Q);
 

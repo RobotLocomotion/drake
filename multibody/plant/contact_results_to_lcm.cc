@@ -131,6 +131,7 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
     }
 
     // Loop through each contact triangle on the contact surface.
+    const auto& field = contact_surface.e_MN();
     for (geometry::SurfaceFaceIndex j(0); j < surface_msg.num_triangles; ++j) {
       lcmt_hydroelastic_contact_surface_tri_for_viz& tri_msg =
           surface_msg.triangles[j];
@@ -147,11 +148,11 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
 
       // Record the pressures.
       tri_msg.pressure_A =
-          ExtractDoubleOrThrow(contact_surface.EvaluateE_MN(face.vertex(0)));
+          ExtractDoubleOrThrow(field.EvaluateAtVertex(face.vertex(0)));
       tri_msg.pressure_B =
-          ExtractDoubleOrThrow(contact_surface.EvaluateE_MN(face.vertex(1)));
+          ExtractDoubleOrThrow(field.EvaluateAtVertex(face.vertex(1)));
       tri_msg.pressure_C =
-          ExtractDoubleOrThrow(contact_surface.EvaluateE_MN(face.vertex(2)));
+          ExtractDoubleOrThrow(field.EvaluateAtVertex(face.vertex(2)));
     }
   }
 }

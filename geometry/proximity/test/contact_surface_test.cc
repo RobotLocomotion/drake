@@ -131,9 +131,10 @@ ContactSurface<T> TestContactSurface() {
   // Tests evaluation of `e` on face f0 {0, 1, 2}.
   {
     const SurfaceFaceIndex f0(0);
-    const typename SurfaceMesh<T>::Barycentric b{0.2, 0.3, 0.5};
+    const typename SurfaceMesh<T>::template Barycentric<double> b{0.2, 0.3,
+                                                                  0.5};
     const T expect_e = b(0) * e0 + b(1) * e1 + b(2) * e2;
-    EXPECT_EQ(expect_e, contact_surface.EvaluateE_MN(f0, b));
+    EXPECT_EQ(expect_e, contact_surface.e_MN().Evaluate(f0, b));
   }
   // Tests area() of triangular faces.
   {
@@ -281,8 +282,8 @@ GTEST_TEST(ContactSurfaceTest, TestCopy) {
 
   // We check evaluation of field values only at one position.
   const SurfaceFaceIndex f(0);
-  const typename SurfaceMesh<double>::Barycentric b{0.2, 0.3, 0.5};
-  EXPECT_EQ(original.EvaluateE_MN(f, b), copy.EvaluateE_MN(f, b));
+  const typename SurfaceMesh<double>::Barycentric<double> b{0.2, 0.3, 0.5};
+  EXPECT_EQ(original.e_MN().Evaluate(f, b), copy.e_MN().Evaluate(f, b));
 }
 
 // Tests the equality comparisons.
@@ -356,9 +357,9 @@ GTEST_TEST(ContactSurfaceTest, TestSwapMAndN) {
 
   // Evaluate the mesh field, once per face for an arbitrary point Q on the
   // interior of the triangle. We expect e_MN function hasn't changed.
-  const SurfaceMesh<double>::Barycentric b_Q{0.25, 0.25, 0.5};
+  const SurfaceMesh<double>::Barycentric<double> b_Q{0.25, 0.25, 0.5};
   for (SurfaceFaceIndex f(0); f < original.mesh_W().num_faces(); ++f) {
-    EXPECT_EQ(dut.EvaluateE_MN(f, b_Q), original.EvaluateE_MN(f, b_Q));
+    EXPECT_EQ(dut.e_MN().Evaluate(f, b_Q), original.e_MN().Evaluate(f, b_Q));
   }
 }
 

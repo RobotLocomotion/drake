@@ -8,6 +8,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/math/autodiff.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
@@ -221,35 +222,34 @@ void TestCalcBarycentric() {
   // account for the pose.
   const T kTolerance(1e-14);
   const SurfaceFaceIndex f0(0);
+  using Barycentric = typename SurfaceMesh<T>::template Barycentric<T>;
 
   // At v1.
   {
     const Vector3<T> p_M(15., 0., 0.);
     auto barycentric = surface_mesh_W->CalcBarycentric(X_WM * p_M, f0);
-    typename SurfaceMesh<T>::Barycentric expect_barycentric(0., 1., 0.);
+    const Barycentric expect_barycentric(0., 1., 0.);
     EXPECT_LE((barycentric - expect_barycentric).norm(), kTolerance);
   }
   // Twice closer to v0 than v1.
   {
     const Vector3<T> p_M(5., 0., 0);
     auto barycentric = surface_mesh_W->CalcBarycentric(X_WM * p_M, f0);
-    typename SurfaceMesh<T>::Barycentric expect_barycentric(2. / 3., 1. / 3.,
-                                                            0.);
+    const Barycentric expect_barycentric(2. / 3., 1. / 3., 0.);
     EXPECT_LE((barycentric - expect_barycentric).norm(), kTolerance);
   }
   // Generic position in the triangle.
   {
     const Vector3<T> p_M(10., 3., 0);
     auto barycentric = surface_mesh_W->CalcBarycentric(X_WM * p_M, f0);
-    typename SurfaceMesh<T>::Barycentric expect_barycentric(1. / 3, 7. / 15.,
-                                                            1. / 5.);
+    const Barycentric expect_barycentric(1. / 3, 7. / 15., 1. / 5.);
     EXPECT_LE((barycentric - expect_barycentric).norm(), kTolerance);
   }
   // Outside but still on the plane of the triangle.
   {
     const Vector3<T> p_M(30., 7.5, 0.);
     auto barycentric = surface_mesh_W->CalcBarycentric(X_WM * p_M, f0);
-    typename SurfaceMesh<T>::Barycentric expect_barycentric(-1., 1.5, 0.5);
+    const Barycentric expect_barycentric(-1., 1.5, 0.5);
     EXPECT_LE((barycentric - expect_barycentric).norm(), kTolerance);
   }
   // Out of the plane of the triangle but still projected into the triangle.
@@ -257,15 +257,14 @@ void TestCalcBarycentric() {
     const Vector3<T> above_midpoint(10., 3., 27.);
     auto barycentric =
         surface_mesh_W->CalcBarycentric(X_WM * above_midpoint, f0);
-    typename SurfaceMesh<T>::Barycentric expect_barycentric(1. / 3, 7. / 15.,
-                                                            1. / 5.);
+    const Barycentric expect_barycentric(1. / 3, 7. / 15., 1. / 5.);
     EXPECT_LE((barycentric - expect_barycentric).norm(), kTolerance);
   }
   // Out of the plane of the triangle and projected outside the triangle.
   {
     const Vector3<T> p_M(30., 7.5, 27.);
     auto barycentric = surface_mesh_W->CalcBarycentric(X_WM * p_M, f0);
-    typename SurfaceMesh<T>::Barycentric expect_barycentric(-1., 1.5, 0.5);
+    const Barycentric expect_barycentric(-1., 1.5, 0.5);
     EXPECT_LE((barycentric - expect_barycentric).norm(), kTolerance);
   }
 }
@@ -525,6 +524,165 @@ GTEST_TEST(SurfaceMeshTest, CalcBoundingBox) {
   const auto [center, size] = mesh->CalcBoundingBox();
   EXPECT_EQ(center, Vector3d(7.5, 7.5, 0));
   EXPECT_EQ(size, Vector3d(15, 15, 0));
+}
+
+/* A double-valued mesh can produce AutoDiffXd-valued results for
+ CalcBarycentric() and CalcCartesianFromBarycentric() based on the scalar type
+ of the query point. This confirms that mixing behavior. The tests work by
+ instantiating meshes on both scalar types and various query parameters on
+ both types. Then we mix and match mesh and parameter scalars and verify the
+ outputs. By "verify", we don't worry too much about the correctness of the
+ values and derivatives; we're just checking that, mechanically speaking,
+ derivatives are propagating as expected. We make sure that AutoDiffXd-valued
+ parameters have at least *one* value with non-zero derivatives. */
+class ScalarMixingTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    mesh_d_ = GenerateTwoTriangleMesh<double>();
+
+    // We construct an AutoDiffXd-valued mesh from the double-valued mesh. We
+    // only set the derivatives for vertex 1. That means, operations on
+    // triangle 0 *must* have derivatives, but triangle 1 may not have them.
+    std::vector<SurfaceVertex<AutoDiffXd>> vertices;
+    vertices.emplace_back(mesh_d_->vertex(SurfaceVertexIndex(0)).r_MV());
+    vertices.emplace_back(math::initializeAutoDiff(
+        mesh_d_->vertex(SurfaceVertexIndex(1)).r_MV()));
+    vertices.emplace_back(mesh_d_->vertex(SurfaceVertexIndex(2)).r_MV());
+    vertices.emplace_back(mesh_d_->vertex(SurfaceVertexIndex(3)).r_MV());
+    std::vector<SurfaceFace> faces(mesh_d_->faces());
+
+    mesh_ad_ = std::make_unique<SurfaceMesh<AutoDiffXd>>(std::move(faces),
+                                                         std::move(vertices));
+
+    p_WQ_d_ = Vector3d::Zero();
+    for (SurfaceVertexIndex v(0); v < 3; ++v) {
+      p_WQ_d_ += mesh_d_->vertex(v).r_MV();
+    }
+    p_WQ_d_ /= 3;
+    p_WQ_ad_ = math::initializeAutoDiff(p_WQ_d_);
+
+    b_expected_d_ = Vector3d(1, 1, 1) / 3.0;
+    b_expected_ad_ = math::initializeAutoDiff(b_expected_d_);
+  }
+
+  std::unique_ptr<SurfaceMesh<double>> mesh_d_;
+  std::unique_ptr<SurfaceMesh<AutoDiffXd>> mesh_ad_;
+
+  SurfaceFaceIndex e0_{0};
+  SurfaceFaceIndex e1_{1};
+  // The centroid of triangle 0.
+  Vector3<double> p_WQ_d_;
+  Vector3<AutoDiffXd> p_WQ_ad_;
+  // The centroid of a triangle.
+  Vector3<double> b_expected_d_;
+  Vector3<AutoDiffXd> b_expected_ad_;
+};
+
+TEST_F(ScalarMixingTest, CalcBarycentric) {
+  constexpr double kEps = std::numeric_limits<double>::epsilon();
+
+  {
+    // Double-valued mesh and double-valued point: double-valued result.
+    const Vector3d b = mesh_d_->CalcBarycentric(p_WQ_d_, e0_);
+    EXPECT_TRUE(CompareMatrices(b, b_expected_d_, kEps));
+  }
+
+  {
+    // Double-valued mesh with AutoDiffXd-valued point: AutodDiffXd-valued
+    // result.
+    const Vector3<AutoDiffXd>& b = mesh_d_->CalcBarycentric(p_WQ_ad_, e0_);
+    EXPECT_EQ(b(0).derivatives().size(), 3);
+    EXPECT_EQ(b(1).derivatives().size(), 3);
+    EXPECT_EQ(b(2).derivatives().size(), 3);
+    EXPECT_TRUE(
+        CompareMatrices(math::autoDiffToValueMatrix(b), b_expected_d_, kEps));
+  }
+
+  {
+    // AutoDiffXd-valued mesh with double-valued point on triangle *with*
+    // derivatives: AutodDiffXd-valued result *with* derivatives.
+    const Vector3<AutoDiffXd>& b1 = mesh_ad_->CalcBarycentric(p_WQ_d_, e0_);
+    EXPECT_EQ(b1(0).derivatives().size(), 3);
+    EXPECT_EQ(b1(1).derivatives().size(), 3);
+    EXPECT_EQ(b1(2).derivatives().size(), 3);
+    EXPECT_TRUE(
+        CompareMatrices(math::autoDiffToValueMatrix(b1), b_expected_d_, kEps));
+
+    // AutoDiffXd-valued mesh with double-valued point on triangle *without*
+    // derivatives: AutodDiffXd-valued result *without* derivatives.
+    const Vector3<AutoDiffXd>& b2 = mesh_ad_->CalcBarycentric(p_WQ_d_, e1_);
+    EXPECT_EQ(b2(0).derivatives().size(), 0);
+    EXPECT_EQ(b2(1).derivatives().size(), 0);
+    EXPECT_EQ(b2(2).derivatives().size(), 0);
+    // We'll assume the *value* on this one is correct.
+  }
+
+  {
+    // AutoDiffXd-valued mesh with AutoDiffXd-valued point on triangle:
+    // AutodDiffXd-valued.
+    const Vector3<AutoDiffXd>& b = mesh_ad_->CalcBarycentric(p_WQ_ad_, e0_);
+    EXPECT_EQ(b(0).derivatives().size(), 3);
+    EXPECT_EQ(b(1).derivatives().size(), 3);
+    EXPECT_EQ(b(2).derivatives().size(), 3);
+    EXPECT_TRUE(
+        CompareMatrices(math::autoDiffToValueMatrix(b), b_expected_d_, kEps));
+  }
+}
+
+TEST_F(ScalarMixingTest, CalcCartesianFromBarycentric) {
+  constexpr double kEps = std::numeric_limits<double>::epsilon();
+
+  {
+    // Double-valued mesh and double-valued point: double-valued result.
+    const Vector3d p_WC =
+        mesh_d_->CalcCartesianFromBarycentric(e0_, b_expected_d_);
+    EXPECT_TRUE(CompareMatrices(p_WC, p_WQ_d_, kEps));
+  }
+
+  {
+    // Double-valued mesh with AutoDiffXd-valued point: AutodDiffXd-valued
+    // result.
+    const Vector3<AutoDiffXd>& p_WC =
+        mesh_d_->CalcCartesianFromBarycentric(e0_, b_expected_ad_);
+    EXPECT_EQ(p_WC(0).derivatives().size(), 3);
+    EXPECT_EQ(p_WC(1).derivatives().size(), 3);
+    EXPECT_EQ(p_WC(2).derivatives().size(), 3);
+    EXPECT_TRUE(
+        CompareMatrices(math::autoDiffToValueMatrix(p_WC), p_WQ_d_, kEps));
+  }
+
+  {
+    // AutoDiffXd-valued mesh with double-valued point on triangle *with*
+    // derivatives: AutodDiffXd-valued result *with* derivatives.
+    const Vector3<AutoDiffXd>& p_WC1 =
+        mesh_ad_->CalcCartesianFromBarycentric(e0_, b_expected_d_);
+    EXPECT_EQ(p_WC1(0).derivatives().size(), 3);
+    EXPECT_EQ(p_WC1(1).derivatives().size(), 3);
+    EXPECT_EQ(p_WC1(2).derivatives().size(), 3);
+    EXPECT_TRUE(
+        CompareMatrices(math::autoDiffToValueMatrix(p_WC1), p_WQ_d_, kEps));
+
+    // AutoDiffXd-valued mesh with double-valued point on triangle *without*
+    // derivatives: AutodDiffXd-valued result *without* derivatives.
+    const Vector3<AutoDiffXd>& p_WC2 =
+        mesh_ad_->CalcCartesianFromBarycentric(e1_, b_expected_d_);
+    EXPECT_EQ(p_WC2(0).derivatives().size(), 0);
+    EXPECT_EQ(p_WC2(1).derivatives().size(), 0);
+    EXPECT_EQ(p_WC2(2).derivatives().size(), 0);
+    // We'll assume the *value* on this one is correct.
+  }
+
+  {
+    // AutoDiffXd-valued mesh with AutoDiffXd-valued point on triangle:
+    // AutodDiffXd-valued.
+    const Vector3<AutoDiffXd>& p_WC =
+        mesh_ad_->CalcCartesianFromBarycentric(e0_, b_expected_ad_);
+    EXPECT_EQ(p_WC(0).derivatives().size(), 3);
+    EXPECT_EQ(p_WC(1).derivatives().size(), 3);
+    EXPECT_EQ(p_WC(2).derivatives().size(), 3);
+    EXPECT_TRUE(
+        CompareMatrices(math::autoDiffToValueMatrix(p_WC), p_WQ_d_, kEps));
+  }
 }
 
 }  // namespace
