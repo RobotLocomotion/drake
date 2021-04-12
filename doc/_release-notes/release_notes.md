@@ -21,7 +21,7 @@ Latest releases are first:
 
 {% for note in site.release-notes reversed %}
 {% if note.title != "Release Notes" %}
-* <a href="{{ note.url }}.html">{{ note.title }}</a>
+* <a href="{{ note.url }}.html">{{ note.title }}</a> (released {{ note.released }})
 {% endif %}
 {% endfor %}
 
