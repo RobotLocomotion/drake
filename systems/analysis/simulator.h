@@ -836,6 +836,10 @@ class Simulator {
   // AdvanceTo(). This collection is constructed within Initialize().
   std::unique_ptr<CompositeEventCollection<T>> witnessed_events_;
 
+  // All events merged together. This collection is constructed within
+  // Initialize().
+  std::unique_ptr<CompositeEventCollection<T>> merged_events_;
+
   // Indicates when a timed or witnessed event needs to be handled on the next
   // call to AdvanceTo().
   TimeOrWitnessTriggered time_or_witness_triggered_{
