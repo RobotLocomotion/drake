@@ -40,11 +40,11 @@ def symlink_input(filegroup_resource_path, temp_dir, strip_prefix=None):
           wins, and it is valid for no prefixes to match.
     """
     assert os.path.isdir(temp_dir)
-    r = runfiles.Create()
-    with open(r.Rlocation(filegroup_resource_path)) as f:
+    manifest = runfiles.Create()
+    with open(manifest.Rlocation(filegroup_resource_path)) as f:
         input_filenames = f.read().splitlines()
     for name in input_filenames:
-        orig_name = r.Rlocation(name)
+        orig_name = manifest.Rlocation(name)
         assert os.path.exists(orig_name), name
         dest_name = name
         for prefix in (strip_prefix or []):
@@ -153,7 +153,7 @@ def _do_generate(*, build, out_dir, on_error):
     print("... done")
 
 
-def main(*, build, subdir, description):
+def main(*, build, subdir, description, supports_modules=False):
     """Reusable main() function for documentation binaries; processes
     command-line arguments and generates documentation.
 
@@ -162,6 +162,7 @@ def main(*, build, subdir, description):
       subdir: A subdirectory to use when offering preview mode on a local web
         server; this does NOT affect the --out_dir path.
       description: Main help str for argparse; typically the caller's __doc__.
+      supports_modules: Whether build() has a modules=list[str] argument.
     """
     parser = argparse.ArgumentParser(description=description)
     group = parser.add_mutually_exclusive_group()
@@ -181,15 +182,31 @@ def main(*, build, subdir, description):
     parser.add_argument(
         "--verbose", action="store_true",
         help="Echo detailed commands, progress, etc. to the console")
+    if supports_modules:
+        parser.add_argument(
+            "module", nargs="*",
+            help="Limit the generated documentation to only these modules and "
+            "their children.  When none are provided, all will be generated. "
+            "Either . or / may be used as a submodule delimiter. "
+            "Refer to https://drake.mit.edu/documentation_instructions.html "
+            "for example commands.")
     args = parser.parse_args()
     if args.verbose:
         global _verbose
         _verbose = True
+    curried_build = build
+    if supports_modules:
+        canonicalized_modules = [
+            x.replace('/', '.')
+            for x in args.module
+        ]
+        curried_build = functools.partial(
+            curried_build, modules=canonicalized_modules)
     if args.out_dir is None:
         assert args.serve
-        _do_preview(build=build, subdir=subdir, port=args.port)
+        _do_preview(build=curried_build, subdir=subdir, port=args.port)
     else:
-        _do_generate(build=build, out_dir=args.out_dir,
+        _do_generate(build=curried_build, out_dir=args.out_dir,
                      on_error=parser.error)
 
 

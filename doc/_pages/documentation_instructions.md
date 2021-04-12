@@ -53,8 +53,16 @@ $ bazel-bin/doc/doxygen_cxx/build --help  # To learn about the possible options.
 To generate the Python API documentation:
 
 ```
-$ bazel run //doc/pydrake:serve_sphinx [-- --browser=false]
+$ bazel run //doc/pydrake:build -- --serve
 ```
+
+If you only need to preview a subset of the API, you can speed up the
+rebuild by listing a subset of module names on the command line.
+
+```sh
+# Limiting preview to a subset of the modules.
+$ bazel run //doc/pydrake:build -- --serve pydrake.systems    # Only drake/systems/... Python API.
+````
 
 # Style Guide
 

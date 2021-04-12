@@ -109,7 +109,7 @@ drake_py_binary(
     data = [
         ":pages",
         "//doc/doxygen_cxx:build",
-        "//doc/pydrake:gen_sphinx",
+        "//doc/pydrake:build",
         "//doc/styleguide:build",
     ],
     tags = DEFAULT_BINARY_TAGS,
@@ -126,8 +126,7 @@ filegroup(
         ":build",
         ":pages",
         "//doc/doxygen_cxx:build",
-        "//doc/pydrake:gen_sphinx",
-        "//doc/pydrake:serve_sphinx",
+        "//doc/pydrake:build",
         "//doc/styleguide:build",
     ],
     tags = ["manual"],
@@ -140,7 +139,7 @@ test_suite(
     tags = ["manual"],
     tests = [
         ":pages_test",
-        "//doc/pydrake:gen_sphinx_test",
+        "//doc/pydrake:build_test",
         "//doc/styleguide:build_test",
     ],
 )
