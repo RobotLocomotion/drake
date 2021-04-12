@@ -17,6 +17,7 @@ using SparseMatrixd = Eigen::SparseMatrix<double>;
 using Eigen::VectorXd;
 using Triplet = Eigen::Triplet<double>;
 const double kTol = 1e-14;
+const int kMaxIterations = 50;
 
 /* A test against analytic solution for a simple contact problem:
  A single point in 3D is in contact with velocity (-1, -1, -1) in the contact
@@ -24,7 +25,7 @@ const double kTol = 1e-14;
  orthogonal directions in the contact plane and the last component is the in the
  normal direction to the contact plane. The friction coefficient is set to be
  large enough to prevent any slipping. Hence, the expected post-solve contact
- velocity is (0, 0, 0). With an arbitrary prescribed tangent matrix A, the
+ velocity is (0, 0, 0). With an arbitrarily prescribed SPD tangent matrix A, the
  contact impulse can also be analytically calculated. The test confirms that the
  results from the PGS solver matches the analytically calculated contact
  velocity and impulse. */
@@ -41,13 +42,12 @@ class PgsTest : public ::testing::Test {
       jacobian_.makeCompressed();
     }
     Jc_ = std::make_unique<SparseLinearOperator<double>>("Jc", &jacobian_);
-    penetration_depth_.resize(1);
-    penetration_depth_(0) = -1;
-    v_free_ = -1.0 * VectorXd::Ones(3);
+    v_star_ = -1.0 * VectorXd::Ones(3);
 
     Ainv_tmp_.resize(3, 3);
     {
       std::vector<Triplet> triplets;
+      // Arbitrary entries for the tangent matrix.
       triplets.emplace_back(0, 0, 12.0);
       triplets.emplace_back(1, 1, 4.0);
       triplets.emplace_back(2, 2, 3.0);
@@ -56,21 +56,44 @@ class PgsTest : public ::testing::Test {
     }
     Ainv_ = std::make_unique<SparseLinearOperator<double>>("Ainv", &Ainv_tmp_);
     dynamics_data_ =
-        std::make_unique<SystemDynamicsData<double>>(Ainv_.get(), &v_free_);
-    stiffness_ = VectorXd::Zero(1);
-    dissipation_ = VectorXd::Zero(1);
-    mu_ = 1000.0 * VectorXd::Ones(1);
-    point_data_ = std::make_unique<PointContactData<double>>(
-        &penetration_depth_, Jc_.get(), &stiffness_, &dissipation_, &mu_);
+        std::make_unique<SystemDynamicsData<double>>(Ainv_.get(), &v_star_);
+    // Stiffness dissipation and penetration depth are not used in the PGS
+    // solver and are thus set to NAN.
+    stiffness_.resize(1);
+    stiffness_(0) = NAN;
+    dissipation_.resize(1);
+    dissipation_(0) = NAN;
+    penetration_depth_.resize(1);
+    penetration_depth_(0) = NAN;
+    // Defaults to a comically large friction coefficient.
+    SetPointContactData(1000);
 
     PgsSolverParameters params;
     params.abs_tolerance = kTol;
     params.rel_tolerance = kTol;
-    params.max_iterations = 50;
+    params.max_iterations = kMaxIterations;
     pgs_.set_parameters(params);
   }
 
-  VectorXd v_free_;
+  // Set the point contact data with the given friction coefficient.
+  void SetPointContactData(double friction_coeff) {
+    mu_ = friction_coeff * VectorXd::Ones(1);
+    point_data_ = std::make_unique<PointContactData<double>>(
+        &penetration_depth_, Jc_.get(), &stiffness_, &dissipation_, &mu_);
+  }
+
+  // Check the solver status to verify the solver has converged as expected.
+  void VerifySolverStats() const {
+    const PgsSolverStats& solver_stats = pgs_.get_solver_stats();
+    EXPECT_TRUE(solver_stats.iterations < kMaxIterations);
+    EXPECT_TRUE(solver_stats.vc_err < kTol);
+    // The RMS norm of the delassus operator is larger than 1, so the impulse
+    // absolute error tolerance is even smaller than the velocity absolute error
+    // tolerance.
+    EXPECT_TRUE(solver_stats.gamma_err < kTol);
+  }
+
+  VectorXd v_star_;
   PgsSolver<double> pgs_;
   std::unique_ptr<SparseLinearOperator<double>> Ainv_;
   std::unique_ptr<SystemDynamicsData<double>> dynamics_data_;
@@ -84,10 +107,17 @@ class PgsTest : public ::testing::Test {
   VectorXd mu_;
 };
 
-TEST_F(PgsTest, Solve) {
+/* The friction coefficient is set to be large enough to prevent any slipping.
+Hence, the expected post-solve contact velocity is (0, 0, 0). With the
+arbitrarily prescribed SPD tangent matrix A, the contact impulse can also be
+analytically calculated. The test confirms that the results from the PGS solver
+matches the analytically calculated contact velocity and impulse for a contact
+in stiction. */
+TEST_F(PgsTest, Stiction) {
   // Abitrary initial guess.
   Vector3<double> v_guess(0.12, 0.34, 0.56);
-  const double dt = 0.1;
+  // dt is unused in PGS and is thus set to Nan.
+  const double dt = NAN;
   ContactSolverResults<double> result;
   EXPECT_EQ(
       pgs_.SolveWithGuess(dt, *dynamics_data_, *point_data_, v_guess, &result),
@@ -96,8 +126,31 @@ TEST_F(PgsTest, Solve) {
       CompareMatrices(result.ft, Vector2<double>(1. / 12., 1. / 4.), kTol));
   EXPECT_TRUE(CompareMatrices(result.fn, Vector1<double>(1. / 3.), kTol));
   EXPECT_TRUE(CompareMatrices(result.v_next, Vector3<double>(0, 0, 0), kTol));
+  VerifySolverStats();
 }
 
+/* The friction coefficient is set to 0 so that the tangential velocity doesn't
+change in during contact. Hence, the expected post-solve contact velocity is
+(-1.0, -1.0, 0). With the arbitrarily prescribed SPD tangent matrix A, the
+contact impulse can also be analytically calculated. The test confirms that the
+results from the PGS solver matches the analytically calculated contact velocity
+and impulse for a sliding contact. */
+TEST_F(PgsTest, Sliding) {
+  SetPointContactData(0);
+  // Abitrary initial guess.
+  Vector3<double> v_guess(0.12, 0.34, 0.56);
+  // dt is unused in PGS and is thus set to Nan.
+  const double dt = NAN;
+  ContactSolverResults<double> result;
+  EXPECT_EQ(
+      pgs_.SolveWithGuess(dt, *dynamics_data_, *point_data_, v_guess, &result),
+      ContactSolverStatus::kSuccess);
+  EXPECT_TRUE(CompareMatrices(result.ft, Vector2<double>(0, 0), kTol));
+  EXPECT_TRUE(CompareMatrices(result.fn, Vector1<double>(1. / 3.), kTol));
+  EXPECT_TRUE(
+      CompareMatrices(result.v_next, Vector3<double>(-1.0, -1.0, 0), kTol));
+  VerifySolverStats();
+}
 }  // namespace
 }  // namespace internal
 }  // namespace contact_solvers

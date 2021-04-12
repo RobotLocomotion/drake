@@ -10,10 +10,11 @@ namespace internal {
 
 struct PgsSolverParameters {
   // Over-relaxation paramter, in (0, 1]
-  double relaxation{1};
-  // Absolute contact velocity tolerance, m/s.
+  double omega{1};
+  // Absolute contact velocity tolerance, m/s. See VerifyConvergenceCriteria().
   double abs_tolerance{1.0e-4};
-  // Relative contact velocity tolerance, unitless.
+  // Relative contact velocity tolerance, unitless. See
+  // VerifyConvergenceCriteria().
   double rel_tolerance{1.0e-4};
   // Maximum number of PGS iterations.
   int max_iterations{20};
@@ -28,9 +29,9 @@ struct PgsSolverStats {
 /* Implement the Projected Gauss-Seidel contact solver described in Algorithm 1
  in [Duriez, 2005]. The implementated algorithm differs from that
  described in the paper in two major aspects.
-  1. [Duriez, 2005] uses the primal-dual pair displacement δ and force f. The
- implemented algorithm uses the primal-dual pair velocity v and impulse γ. As a
- result, the Delassus operators in the two version differ by a factor of dt².
+  1. [Duriez, 2005] uses the pair displacement δ and force f. The implemented
+ algorithm uses the pair velocity v and impulse γ. As a result, the Delassus
+ operators in the two version differ by a factor of dt².
   2. In the implemented algorithm, the convergence criterion considers the
  absolute *and* the relative error of both the change in contact velocities and
  the contact impulse.
@@ -91,7 +92,7 @@ class PgsSolver final : public ContactSolver<T> {
   struct PreProcessedData {
     // The Delassus operator.
     Eigen::SparseMatrix<T> W;
-    // The velocity in contact space before the solve.
+    // The contact velocity solution to the problem when there is no contact.
     VectorX<T> vc_star;
     // The generalized velocities before the solve.
     VectorX<T> v_star;
@@ -132,14 +133,25 @@ class PgsSolver final : public ContactSolver<T> {
 
   /* Returns true if the change in contact velocity and the change in contact
    impulse from one iteration to the next is smaller than the absolute and
-   relative error threshold.
+   relative error threshold. More specifically, the iterations are considered
+   as converged if
+
+    1. ‖vc − vc_kp‖ < abs_tolerance + rel_tolerance * ‖vc‖, and
+    2. ‖gamma − gamma_kp‖ < abs_tolerance / ‖Wᵢᵢ‖ᵣₘₛ + rel_tolerance * ‖gamma‖,
+
+   where `abs_tolerance` and `rel_tolerance` are the absolute and relative
+   tolerances specified in PgsSolverParameters and ‖Wᵢᵢ‖ᵣₘₛ is used to
+   roughly convert the contact impulses into the unit of velocities.
+
    @param num_contacts    The number of contact points.
    @param vc              The contact velocity at iteration k.
    @param vc_kp           The contact velocity at iteration k+1.
    @param gamma           The contact impulse at iteration k.
    @param gamma_kp        The contact impulse at iteration k+1.
-   @param[out] vc_err     The maximum error in contact velocity.
-   @param[out] gamma_err  The maximum error in contact impulse. */
+   @param[out] vc_err     The maximum error in contact velocity in infinity
+                          norm.
+   @param[out] gamma_err  The maximum error in contact impulse in infinity norm.
+  */
   bool VerifyConvergenceCriteria(int num_contacts, const VectorX<T>& vc,
                                  const VectorX<T>& vc_kp,
                                  const VectorX<T>& gamma,

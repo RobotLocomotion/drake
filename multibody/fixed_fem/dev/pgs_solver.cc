@@ -28,8 +28,13 @@ ContactSolverStatus PgsSolver<T>::SolveWithGuess(
 
   // Aliases to solver parameters.
   const int max_iters = parameters_.max_iterations;
-  const double omega = parameters_.relaxation;
+  const double omega = parameters_.omega;
   const int nc = contact_data.num_contacts();
+  // Early exits if there's no contact.
+  if (nc == 0) {
+    CopyContactResults(results);
+    return ContactSolverStatus::kSuccess;
+  }
 
   // Set initial guess.
   v = v_guess;
@@ -54,18 +59,17 @@ ContactSolverStatus PgsSolver<T>::SolveWithGuess(
     // each contact point in a Gauss-Seidel fashion. Namely, for each contact
     // point i, the contact impulse contribution from j is evaluated at the k's
     // iteration if j > i and is evaluated at the k+1's iteration if j < i.
-    for (int i = 0; i < nc; ++i) {
-      auto vci_kp = vc_kp.template segment<3>(3 * i);
+    for (int i = 0, i3 = 0; i < nc; ++i, i3 += 3) {  // i3 = 3 * i.
+      auto vci_kp = vc_kp.template segment<3>(i3);
       // Contribution from contact impulses 0, 1, ..., i-1.
-      vci_kp += W.block(3 * i, 0, 3, 3 * i) * gamma_kp.head(3 * i);
-      // Contribution from contact impulses i+1, i+1, ..., nc.
-      vci_kp +=
-          W.block(3 * i, 3 * i, 3, 3 * (nc - i)) * gamma.tail(3 * (nc - i));
-      const auto& gammai = gamma.template segment<3>(3 * i);
-      auto gammai_kp = gamma_kp.template segment<3>(3 * i);
+      vci_kp += W.block(i3, 0, 3, i3) * gamma_kp.head(i3);
+      // Contribution from contact impulses i+1, i+2, ..., nc.
+      vci_kp += W.block(i3, i3, 3, 3 * (nc - i)) * gamma.tail(3 * (nc - i));
+      const auto& gammai = gamma.template segment<3>(i3);
+      auto gammai_kp = gamma_kp.template segment<3>(i3);
       // Get the k+1's iteration of the contact impulse at contact point i.
-      gammai_kp = gammai -
-                  omega * Dinv.template segment<3>(3 * i).asDiagonal() * vci_kp;
+      gammai_kp =
+          gammai - omega * Dinv.template segment<3>(i3).asDiagonal() * vci_kp;
       // Project the contact impulse at contact point i into the friction cone.
       gammai_kp = ProjectImpulse(vci_kp, gammai_kp, mu(i));
     }
@@ -123,15 +127,18 @@ void PgsSolver<T>::PreProcessData(const SystemDynamicsData<T>& dynamics_data,
     // Compute scaling factors, one per contact.
     auto& Wii_norm = pre_proc_data_.Wii_norm;
     auto& Dinv = pre_proc_data_.Dinv;
+    // An arbitrary small number to prevent division by zero in the approximated
+    // inverse of Wii.
+    const double eps = 1e-14;
     for (int i = 0; i < nc; ++i) {
       // 3x3 diagonal block. It might be singular, but definitely non-zero.
       // That's why we use an RMS norm.
       const Matrix3<T> Wii = W.block(3 * i, 3 * i, 3, 3);
       Wii_norm(i) = Wii.norm() / 3;  // 3 = sqrt(9).
       // Diagonal approximation of the inverse of the Wii.
-      Dinv.template segment<3>(3 * i) =
-          Vector3<T>(2.0 / (Wii(0, 0) + Wii(1, 1)),
-                     2.0 / (Wii(0, 0) + Wii(1, 1)), 1.0 / Wii(2, 2));
+      Dinv.template segment<3>(3 * i) = Vector3<T>(
+          2.0 / (Wii(0, 0) + Wii(1, 1) + eps),
+          2.0 / (Wii(0, 0) + Wii(1, 1) + eps), 1.0 / (Wii(2, 2) + eps));
     }
   }
 }
@@ -146,37 +153,36 @@ bool PgsSolver<T>::VerifyConvergenceCriteria(
   bool converged = true;
   *vc_err = 0;
   *gamma_err = 0;
-  for (int ic = 0; ic < num_contacts; ++ic) {
-    auto within_error_bounds = [&p = parameters_](const T& error,
-                                                  const T& scale) {
-      const T bound(p.abs_tolerance + p.rel_tolerance * scale);
+  for (int ic = 0, ic3 = 0; ic < num_contacts;
+       ++ic, ic3 += 3) {  // ic3 = ic * 3
+    auto within_error_bounds = [&p = parameters_](const double& error,
+                                                  const double& scale) {
+      const double bound(p.abs_tolerance + p.rel_tolerance * scale);
       return error < bound;
     };
     // Check velocity convergence.
-    const auto vci = vc.template segment<3>(3 * ic);
-    const auto vci_kp = vc_kp.template segment<3>(3 * ic);
-    const T vc_norm = vci.norm();
-    const T vci_err = (vci_kp - vci).norm();
-    if constexpr (std::is_same_v<T, double>) {
-      *vc_err = max(*vc_err, vci_err);
-    } else {
-      *vc_err = max(*vc_err, vci_err.value());
-    }
+    const auto vci = vc.template segment<3>(ic3);
+    const auto vci_kp = vc_kp.template segment<3>(ic3);
+    const double vc_norm =
+        ExtractDoubleOrThrow(vci.template lpNorm<Eigen::Infinity>());
+    const double vci_err =
+        ExtractDoubleOrThrow((vci_kp - vci).template lpNorm<Eigen::Infinity>());
+    *vc_err = max(*vc_err, vci_err);
     if (converged && !within_error_bounds(vci_err, vc_norm)) {
       converged = false;
     }
 
-    // Check impulse convergence. Scale by an approximated Delassus operator
-    // norm so that the resulting error has the same unit as velocities.
-    const auto gi = gamma.template segment<3>(3 * ic);
-    const auto gi_kp = gamma_kp.template segment<3>(3 * ic);
-    const T g_norm = gi.norm() * Wii_norm(ic);
-    T g_err = (gi_kp - gi).norm() * Wii_norm(ic);
-    if constexpr (std::is_same_v<T, double>) {
-      *gamma_err = max(*gamma_err, g_err);
-    } else {
-      *gamma_err = max(*gamma_err, g_err.value());
-    }
+    // Check impulse convergence. The criteria is the same as that for
+    // velocities, but with an absolute tolerance inferred from the absolute
+    // tolerance for velocities:
+    // gamma_abs_tolerance = vc_abs_tolerance / ‖Wᵢ‖ᵣₘₛ.
+    const auto gi = gamma.template segment<3>(ic3);
+    const auto gi_kp = gamma_kp.template segment<3>(ic3);
+    const double g_norm = ExtractDoubleOrThrow(
+        gi.template lpNorm<Eigen::Infinity>() * Wii_norm(ic));
+    const double g_err = ExtractDoubleOrThrow(
+        (gi_kp - gi).template lpNorm<Eigen::Infinity>() * Wii_norm(ic));
+    *gamma_err = max(*gamma_err, g_err);
     if (converged && !within_error_bounds(g_err, g_norm)) {
       converged = false;
     }
