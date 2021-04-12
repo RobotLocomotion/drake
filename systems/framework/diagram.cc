@@ -846,10 +846,16 @@ void Diagram<T>::DoCalcNextUpdateTime(const Context<T>& context,
   DRAKE_DEMAND(diagram_context != nullptr);
   DRAKE_DEMAND(info != nullptr);
 
+  // To help ensure the logical const-ness of this method, demand that the
+  // buffer we will use is exactly the right size. Since the first iteration
+  // loop below overwrites all of the entries, stale values cannot leak from
+  // one invocation to the next.
+  DRAKE_DEMAND(
+      static_cast<int>(event_times_buffer_.size()) == num_subsystems());
+
   *next_update_time = std::numeric_limits<double>::infinity();
 
   // Iterate over the subsystems, and harvest the most imminent updates.
-  std::vector<T> times(num_subsystems());
   for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
     const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
     CompositeEventCollection<T>& subinfo =
@@ -857,7 +863,7 @@ void Diagram<T>::DoCalcNextUpdateTime(const Context<T>& context,
 
     const T sub_time =
         registered_systems_[i]->CalcNextUpdateTime(subcontext, &subinfo);
-    times[i] = sub_time;
+    event_times_buffer_[i] = sub_time;
 
     if (sub_time < *next_update_time) {
       *next_update_time = sub_time;
@@ -867,7 +873,7 @@ void Diagram<T>::DoCalcNextUpdateTime(const Context<T>& context,
   // For all the subsystems whose next update time is bigger than
   // next_update_time, clear their event collections.
   for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
-    if (times[i] > *next_update_time)
+    if (event_times_buffer_[i] > *next_update_time)
       info->get_mutable_subevent_collection(i).Clear();
   }
 }
@@ -1367,6 +1373,8 @@ void Diagram<T>::Initialize(std::unique_ptr<Blueprint> blueprint) {
   connection_map_ = std::move(blueprint->connection_map);
   output_port_ids_ = std::move(blueprint->output_port_ids);
   registered_systems_ = std::move(blueprint->systems);
+
+  event_times_buffer_.resize(num_subsystems());
 
   // Generate a map from the System pointer to its index in the registered
   // order.

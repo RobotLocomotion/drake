@@ -529,6 +529,12 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   // The map of subsystem inputs to inputs of this Diagram.
   std::map<InputPortLocator, InputPortIndex> input_port_map_;
 
+  // A buffer of time data for use in managing events. It is only used in
+  // DoCalcNextUpdateTime(), but is allocated at Diagram construction to avoid
+  // heap operations during simulation.  DoCalcNextUpdateTime() remains
+  // logically object-const, so this buffer is mutable to permit modification.
+  mutable std::vector<T> event_times_buffer_;
+
   // For all T, Diagram<T> considers DiagramBuilder<T> a friend, so that the
   // builder can set the internal state correctly.
   friend class DiagramBuilder<T>;
