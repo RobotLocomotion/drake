@@ -106,6 +106,7 @@ drake_py_binary(
 drake_py_binary(
     name = "build",
     srcs = ["build.py"],
+    add_test_rule = 1,
     data = [
         ":pages",
         "//doc/doxygen_cxx:build",
@@ -113,7 +114,11 @@ drake_py_binary(
         "//doc/styleguide:build",
     ],
     tags = DEFAULT_BINARY_TAGS,
+    test_rule_args = ["--out_dir=<test>"],
+    test_rule_size = "large",
+    test_rule_tags = DEFAULT_TEST_TAGS,
     deps = [
+        ":defs",
         "@bazel_tools//tools/python/runfiles",
     ],
 )
@@ -138,6 +143,7 @@ test_suite(
     name = "manual_tests",
     tags = ["manual"],
     tests = [
+        ":build_test",
         ":pages_test",
         "//doc/doxygen_cxx:build_test",
         "//doc/pydrake:build_test",
