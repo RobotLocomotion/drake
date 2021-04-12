@@ -38,17 +38,17 @@ def main():
 
     manifest = runfiles.Create()
     pages_build = manifest.Rlocation("drake/doc/pages")
-    gen_sphinx = manifest.Rlocation("drake/doc/pydrake/gen_sphinx")
-    doxygen = manifest.Rlocation("drake/doc/doxygen_cxx/build")
+    pydrake_build = manifest.Rlocation("drake/doc/pydrake/build")
+    doxygen_build = manifest.Rlocation("drake/doc/doxygen_cxx/build")
     styleguide_build = manifest.Rlocation("drake/doc/styleguide/build")
-    for item in [pages_build, gen_sphinx, doxygen, styleguide_build]:
-        assert os.path.exists(item), item
+    for item in [pages_build, pydrake_build, doxygen_build, styleguide_build]:
+        assert item and os.path.exists(item), item
 
     _check_call([pages_build, f"--out_dir={out_dir}"])
-    _check_call([gen_sphinx, f"--out_dir={out_dir}/pydrake"])
+    _check_call([pydrake_build, f"--out_dir={out_dir}/pydrake"])
     _check_call([styleguide_build, f"--out_dir={out_dir}/styleguide"])
     doxygen_scratch = f"{out_dir}/doxygen_scratch"
-    _check_call([doxygen, f"--out_dir={doxygen_scratch}"])
+    _check_call([doxygen_build, f"--out_dir={doxygen_scratch}"])
     print(f"+ mv {doxygen_scratch}/html {out_dir}/doxygen_cxx")
     os.rename(f"{doxygen_scratch}/html", f"{out_dir}/doxygen_cxx")
     print(f"+ rm -rf {doxygen_scratch}")
