@@ -846,10 +846,30 @@ void Diagram<T>::DoCalcNextUpdateTime(const Context<T>& context,
   DRAKE_DEMAND(diagram_context != nullptr);
   DRAKE_DEMAND(info != nullptr);
 
+  CacheEntryValue& value =
+      this->get_cache_entry(event_times_buffer_cache_index_)
+      .get_mutable_cache_entry_value(context);
+  auto& event_times_buffer = value.GetMutableValueOrThrow<std::vector<T>>();
+  DRAKE_DEMAND(
+      static_cast<int>(event_times_buffer.size()) == num_subsystems());
+
+  // In assert-enabled builds, enforce the invariant that no stale values in
+  // event_times_buffer are reused across invocations. In effect,
+  // event_times_buffer should have the semantics of a stack variable, despite
+  // being cache-managed heap storage. The enforcement appears in two parts: an
+  // assert-build-only clearing of the storage to invalid values, and a later
+  // assertion that the invalid values are all replaced.
+  auto set_to_nan = [](std::vector<T>* vec) {
+    std::fill(
+        vec->begin(), vec->end(),
+        std::numeric_limits<
+        typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
+  };
+  DRAKE_ASSERT_VOID(set_to_nan(&event_times_buffer));
+
   *next_update_time = std::numeric_limits<double>::infinity();
 
   // Iterate over the subsystems, and harvest the most imminent updates.
-  std::vector<T> times(num_subsystems());
   for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
     const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
     CompositeEventCollection<T>& subinfo =
@@ -857,17 +877,25 @@ void Diagram<T>::DoCalcNextUpdateTime(const Context<T>& context,
 
     const T sub_time =
         registered_systems_[i]->CalcNextUpdateTime(subcontext, &subinfo);
-    times[i] = sub_time;
+    event_times_buffer[i] = sub_time;
 
     if (sub_time < *next_update_time) {
       *next_update_time = sub_time;
     }
   }
 
+  // Check that all vector entries were replaced.
+  auto none_are_nan = [](const std::vector<T>& vec) {
+    using std::isnan;
+    return std::none_of(vec.begin(), vec.end(),
+                        [](const T& v) { return isnan(v); });
+  };
+  DRAKE_ASSERT(none_are_nan(event_times_buffer));
+
   // For all the subsystems whose next update time is bigger than
   // next_update_time, clear their event collections.
   for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
-    if (times[i] > *next_update_time)
+    if (event_times_buffer[i] > *next_update_time)
       info->get_mutable_subevent_collection(i).Clear();
   }
 }
@@ -1367,6 +1395,21 @@ void Diagram<T>::Initialize(std::unique_ptr<Blueprint> blueprint) {
   connection_map_ = std::move(blueprint->connection_map);
   output_port_ids_ = std::move(blueprint->output_port_ids);
   registered_systems_ = std::move(blueprint->systems);
+
+  // This cache entry just maintains temporary storage. It is only ever used
+  // by DoCalcNextUpdateTime(). Since this declaration of the cache entry
+  // invokes no invalidation support from the cache system, it is the
+  // responsibility of DoCalcNextUpdateTime() to ensure that no stale data is
+  // used.
+  event_times_buffer_cache_index_ =
+      this->DeclareCacheEntry(
+          "event_times_buffer",
+          [this]() {
+            std::vector<T> vec(num_subsystems());
+            return AbstractValue::Make<std::vector<T>>(vec);
+          },
+          [](const ContextBase&, AbstractValue*) { /* do nothing */ },
+          {this->nothing_ticket()}).cache_index();
 
   // Generate a map from the System pointer to its index in the registered
   // order.
