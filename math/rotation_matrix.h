@@ -291,7 +291,7 @@ class RotationMatrix {
   static RotationMatrix<T> MakeFromOneVector(
       const Vector3<T>& b_A, int axis_index) {
     // Ensure b_A can be made into a unit vector (not a zero vector, NAN, etc.).
-    ThrowIfNanOrZeroVector(b_A, __func__);
+    ThrowIfUnableToMakeUnitVectorDueToNanOrZeroVector(b_A, __func__);
     const Vector3<T> u_A = b_A.normalized();
     return MakeFromOneUnitVector(u_A, axis_index);
   }
@@ -329,8 +329,8 @@ class RotationMatrix {
 
     // To form a unit vector v perpendicular to the given unit vector u, we use
     // the fact that a x u is guaranteed to be non-zero and perpendicular to u
-    // when a ≠ ±u is a unit vector.  We choose vector a ≠ ±u by identifying
-    // uₘᵢₙ, the element of u with the smallest absolute value.
+    // when a is a unit vector and a ≠ ±u .  We choose vector a ≠ ±u by
+    // identifying uₘᵢₙ, the element of u with the smallest absolute value.
     // If |ux = uₘᵢₙ = u(0)|, set a = [1  0  0] so a x u = [0, -uz, uy].
     // If |uy = uₘᵢₙ = u(1)|, set a = [0  1  0] so a x u = [uz, 0, -ux].
     // If |uz = uₘᵢₙ = u(2)|, set a = [0  0  1] so a x u = [-uy, ux, 0].
@@ -350,21 +350,32 @@ class RotationMatrix {
     // To avoid computational cost, we do not directly calculate w = u x v, but
     // instead substitute for v and do algebraic and vector simplification.
     //  w = u x v                  Next, substitute v = (a x u) / |a x u|.
-    //    = u x (a x u) / |a x u|  Now define and use r = 1 /|a x u| (r > 0).
+    //    = u x (a x u) / |a x u|  Define r = 1 /|a x u| = 1 / √(1 - uₘᵢₙ²).
     //    = r u x (a x u)          Use vector triple product "bac-cab" property.
     //    = r [a(u⋅u) - u(u⋅a)]    Next, Substitute u⋅u = 1 and u⋅a = uₘᵢₙ.
     //    = r (a - uₘᵢₙ u)         This shows w is mostly in the direction of a.
-    // If uₘᵢₙ = 0, then w = r a is only in the +a direction (as claimed below),
-    // and since unit vector a is chosen to have two zero elements, it is clear
-    // uₘᵢₙ = 0 results in w having two zero elements.  Its 3rd element is +1.
-
-    // Lastly, we efficiently form w = r(a - uₘᵢₙ u) by defining s = r uₘᵢₙ.
-    // TODO(Mitiguy) Add something more than just "Then a miracle occurs.".
-
+    //
+    // To efficiently form w = r(a - uₘᵢₙ u) we take advantage of a pattern.
+    // If |ux| is smallest, w = ([1  0  0] - uₘᵢₙ [uₘᵢₙ  uy  uz]) / √(1 - uₘᵢₙ²)
+    //                        = [1 - uₘᵢₙ²   -uₘᵢₙ uy   -uₘᵢₙ uz] / √(1 - uₘᵢₙ²)
+    //                        = [|a x u|   -r uₘᵢₙ uy   -r uₘᵢₙ uz]
+    //                        = [|a x u|         s uy         s uz]
+    // If |uy| is smallest, w = ([0  1  0] - uₘᵢₙ [ux  uₘᵢₙ  uz]) / √(1 - uₘᵢₙ²)
+    //                        = [-uₘᵢₙ ux    1 - uₘᵢₙ²  -uₘᵢₙ uz] / √(1 - uₘᵢₙ²)
+    //                        = [-r uₘᵢₙ ux   |a x u|   -r uₘᵢₙ uz]
+    //                        = [      s ux   |a x u|         s uz]
+    // If |uz| is smallest, w = ([0  0  1] - uₘᵢₙ [ux  uy  uₘᵢₙ]) / √(1 - uₘᵢₙ²)
+    //                        = [-uₘᵢₙ ux   -uₘᵢₙ uy  1 - uₘᵢₙ² ] / √(1 - uₘᵢₙ²)
+    //                        = [-r uₘᵢₙ ux   -r uₘᵢₙ uy    |a x u|]
+    //                        = [      s ux         s uy    |a x u|]
+    // where in each of these cases, s = -r uₘᵢₙ.
+    //
     // The properties of the unit vectors v and w are summarized as follows.
     // Denoting i ∈ {0, 1, 2} as the index of u corresponding to uₘᵢₙ, then
-    // v(i) = 0 and w(i) is the most positive element of w.  If uₘᵢₙ = u(i) = 0,
-    // w(i) = 1 and the other two elements of w are 0.
+    // v(i) = 0 and w(i) is the most positive element of w.  Moreover, since
+    // w = r (a - uₘᵢₙ u), it follows that if uₘᵢₙ = 0, then w = r a is only in
+    // the +a direction and since unit vector a has two zero elements, it is
+    // clear uₘᵢₙ = 0 results in w having two zero elements and w(i) = 1.
 
     // Instantiate the final rotation matrix and write directly to it instead of
     // creating temporary values and subsequently copying.
@@ -376,7 +387,8 @@ class RotationMatrix {
     auto v = R_AB.R_AB_.col((axis_index + 1) % 3);
     auto w = R_AB.R_AB_.col((axis_index + 2) % 3);
 
-    // Indices i, j, k are in cyclical order: 0, 1, 2 or 1, 2, 0 or 2, 0, 1.
+    // Indices i, j, k are in cyclical order: 0, 1, 2 or 1, 2, 0 or 2, 0, 1 and
+    // are used to cleverly implement the previous patterns (above) for v and w.
     // The value of the index i is determined by identifying uₘᵢₙ = u_A(i),
     // the element of u_A with smallest absolute value.
     int i;
@@ -384,8 +396,8 @@ class RotationMatrix {
     const int j = (i + 1) % 3;
     const int k = (j + 1) % 3;
     using std::sqrt;
-    const T mag_a_x_u = sqrt(1 - u_A(i) * u_A(i));  // |a x u|
-    const T r = 1 / mag_a_x_u;                      // 1 / |a x u|
+    const T mag_a_x_u = sqrt(1 - u_A(i) * u_A(i));  // |a x u| = √(1 - uₘᵢₙ²)
+    const T r = 1 / mag_a_x_u;
     const T s = -r * u_A(i);
     v(i) = 0;
     v(j) = -r * u_A(k);
@@ -1049,59 +1061,20 @@ class RotationMatrix {
     return m;
   }
 
-  static void ThrowIfZeroVector(const Vector3<T>& u,
-                                const char* function_name) {
-    if (u == Vector3<T>::Zero()) {
-      std::string message = fmt::format(
-          "RotationMatrix::{}(): Zero vector detected.", function_name);
-      throw std::runtime_error(message);
-    }
-  }
+  static void ThrowIfUnableToMakeUnitVectorDueToZeroVector(
+      const Vector3<T>& u, const char* function_name);
 
-  static void ThrowIfNanVector(const Vector3<T>& u,
-                               const char* function_name) {
-    if (!u.allFinite()) {
-      std::string message = fmt::format(
-          "RotationMatrix::{}():"
-          " Vector contains an element that is infinity or Nan.",
-          function_name);
-      throw std::runtime_error(message);
-    }
-  }
+  static void ThrowIfUnableToMakeUnitVectorDueToNanVector(
+      const Vector3<T>& u, const char* function_name);
 
-  static void ThrowIfNanOrZeroVector(const Vector3<T>& u,
-                                     const char* function_name) {
-    ThrowIfNanVector(u, function_name);
-    ThrowIfZeroVector(u, function_name);
+  static void ThrowIfUnableToMakeUnitVectorDueToNanOrZeroVector(
+      const Vector3<T>& u, const char* function_name) {
+    ThrowIfUnableToMakeUnitVectorDueToNanVector(u, function_name);
+    ThrowIfUnableToMakeUnitVectorDueToZeroVector(u, function_name);
   }
 
   static void ThrowIfNotValidUnitVector(const Vector3<T>& u, double tolerance,
-                                        const char* function_name) {
-    ThrowIfNanOrZeroVector(u, function_name);
-    // Skip symbolic expressions.
-    if constexpr (scalar_predicate<T>::is_bool) {
-      // Give a detailed message if |u| is not within tolerance of 1.
-      using std::abs;
-      const T u_norm_as_T = u.norm();
-      const double u_norm = ExtractDoubleOrThrow(u_norm_as_T);
-      const double abs_deviation = abs(1 - u_norm);
-      if (abs_deviation > tolerance) {
-        const double ux = ExtractDoubleOrThrow(u(0));
-        const double uy = ExtractDoubleOrThrow(u(1));
-        const double uz = ExtractDoubleOrThrow(u(2));
-        std::string message = fmt::format(
-            "RotationMatrix::{}(): Error: Vector is not a unit vector."
-            "\n The magnitude of vector [{:E} {:E} {:E}] deviates from 1."
-            "\n The vector's actual magnitude is {:E}."
-            "\n Its deviation from 1 is {:E}."
-            "\n The allowable tolerance (deviation) is {:E}."
-            "\n To normalize a vector u, consider using u.normalized()."
-            "\n Calling function: RotationMatrix::{}",
-            function_name, ux, uy, uz, u_norm, abs_deviation, tolerance);
-        throw std::logic_error(message);
-      }
-    }
-  }
+                                        const char* function_name);
 
   // Stores the underlying rotation matrix relating two frames (e.g. A and B).
   // For speed, `R_AB_` is uninitialized (public constructors set its value).
