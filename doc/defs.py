@@ -153,7 +153,8 @@ def _do_generate(*, build, out_dir, on_error):
     print("... done")
 
 
-def main(*, build, subdir, description, supports_modules=False):
+def main(*, build, subdir, description, supports_quick=False,
+         supports_modules=False):
     """Reusable main() function for documentation binaries; processes
     command-line arguments and generates documentation.
 
@@ -162,6 +163,7 @@ def main(*, build, subdir, description, supports_modules=False):
       subdir: A subdirectory to use when offering preview mode on a local web
         server; this does NOT affect the --out_dir path.
       description: Main help str for argparse; typically the caller's __doc__.
+      supports_quick: Whether build() has a quick:bool argument.
       supports_modules: Whether build() has a modules=list[str] argument.
     """
     parser = argparse.ArgumentParser(description=description)
@@ -182,6 +184,11 @@ def main(*, build, subdir, description, supports_modules=False):
     parser.add_argument(
         "--verbose", action="store_true",
         help="Echo detailed commands, progress, etc. to the console")
+    if supports_quick:
+        parser.add_argument(
+            "--quick", action="store_true", default=False,
+            help="Omit from the output items that are slow to generate. "
+            "This yields a faster preview, but the output will be incomplete.")
     if supports_modules:
         parser.add_argument(
             "module", nargs="*",
@@ -195,6 +202,9 @@ def main(*, build, subdir, description, supports_modules=False):
         global _verbose
         _verbose = True
     curried_build = build
+    if supports_quick:
+        curried_build = functools.partial(
+            curried_build, quick=args.quick)
     if supports_modules:
         canonicalized_modules = [
             x.replace('/', '.')

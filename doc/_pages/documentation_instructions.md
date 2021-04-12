@@ -44,10 +44,7 @@ The output directory must not already exist.
 To generate the C++ API documentation:
 
 ```
-$ cd drake
-$ bazel build //doc/doxygen_cxx:build
-$ bazel-bin/doc/doxygen_cxx/build [options]
-$ bazel-bin/doc/doxygen_cxx/build --help  # To learn about the possible options.
+$ bazel run //doc/doxygen_cxx:build -- --serve
 ```
 
 To generate the Python API documentation:
@@ -61,7 +58,11 @@ rebuild by listing a subset of module names on the command line.
 
 ```sh
 # Limiting preview to a subset of the modules.
+$ bazel run //doc/doxygen_cxx:build -- --serve drake.systems  # Only drake/systems/... C++ API.
 $ bazel run //doc/pydrake:build -- --serve pydrake.systems    # Only drake/systems/... Python API.
+
+# Preview a subset of the C++ API reference, omitting expensive images, etc.
+$ bazel run //doc/doxygen_cxx:build -- --serve --quick drake.systems.framework
 ````
 
 # Style Guide
