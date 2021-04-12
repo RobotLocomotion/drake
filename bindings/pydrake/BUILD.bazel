@@ -509,7 +509,7 @@ drake_py_unittest(
     name = "lcm_test",
     deps = [
         ":lcm_py",
-        "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion_py",
+        "//lcmtypes:lcmtypes_drake_py",
     ],
 )
 

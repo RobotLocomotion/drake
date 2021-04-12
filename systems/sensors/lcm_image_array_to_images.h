@@ -5,14 +5,15 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/sensors/image.h"
+#include "drake/systems/sensors/robotlocomotion_compat.h"
 
 namespace drake {
 namespace systems {
 namespace sensors {
 
 /// An LcmImageArrayToImages takes as input an AbstractValue containing a
-/// `Value<robotlocomotion::image_array_t>` LCM message that defines an array
-/// of images (image_t).  The system has output ports for one color image as
+/// `Value<lcmt_image_array>` LCM message that defines an array
+/// of images (lcmt_image).  The system has output ports for one color image as
 /// an ImageRgba8U and one depth image as ImageDepth32F (intended to be
 /// similar to the API of RgbdCamera, though without the label image port).
 class LcmImageArrayToImages : public LeafSystem<double> {
@@ -21,8 +22,10 @@ class LcmImageArrayToImages : public LeafSystem<double> {
 
   LcmImageArrayToImages();
 
+  // TODO(jwnimmer-tri) The "_t" or "T" suffix on this method name is
+  // superfluous and should be removed.
   /// Returns the abstract valued input port that expects a
-  /// `Value<robotlocomotion::image_array_t>`.
+  /// `Value<lcmt_image_array>`.
   const InputPort<double>& image_array_t_input_port() const {
     return this->get_input_port(image_array_t_input_port_index_);
   }

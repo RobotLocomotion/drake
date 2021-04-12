@@ -4,15 +4,13 @@
 #include <string>
 #include <vector>
 
-#include "robotlocomotion/image_array_t.hpp"
-#include "robotlocomotion/image_t.hpp"
 #include <zlib.h>
 
+#include "drake/lcmt_image.hpp"
+#include "drake/lcmt_image_array.hpp"
 #include "drake/systems/sensors/lcm_image_traits.h"
 
 using std::string;
-using robotlocomotion::image_t;
-using robotlocomotion::image_array_t;
 
 namespace drake {
 namespace systems {
@@ -22,8 +20,8 @@ namespace {
 const int64_t kSecToMillisec = 1000000;
 
 template <PixelType kPixelType>
-void Compress(const Image<kPixelType>& image, image_t* msg) {
-  msg->compression_method = image_t::COMPRESSION_METHOD_ZLIB;
+void Compress(const Image<kPixelType>& image, lcmt_image* msg) {
+  msg->compression_method = lcmt_image::COMPRESSION_METHOD_ZLIB;
 
   const int source_size = image.width() * image.height() * image.kPixelSize;
   // The destination buf_size must be slightly larger than the source size.
@@ -43,8 +41,8 @@ void Compress(const Image<kPixelType>& image, image_t* msg) {
 }
 
 template <PixelType kPixelType>
-void Pack(const Image<kPixelType>& image, image_t* msg) {
-  msg->compression_method = image_t::COMPRESSION_METHOD_NOT_COMPRESSED;
+void Pack(const Image<kPixelType>& image, lcmt_image* msg) {
+  msg->compression_method = lcmt_image::COMPRESSION_METHOD_NOT_COMPRESSED;
 
   const int size = image.width() * image.height() * image.kPixelSize;
   msg->data.resize(size);
@@ -53,7 +51,7 @@ void Pack(const Image<kPixelType>& image, image_t* msg) {
 }
 
 template <PixelType kPixelType>
-void PackImageToLcmImageT(const Image<kPixelType>& image, image_t* msg,
+void PackImageToLcmImageT(const Image<kPixelType>& image, lcmt_image* msg,
                           bool do_compress) {
   // TODO(kunimatsu-tri) Fix seq here that is always set to zero.
   msg->header.seq = 0;
@@ -74,7 +72,7 @@ void PackImageToLcmImageT(const Image<kPixelType>& image, image_t* msg,
 
 void PackImageToLcmImageT(const AbstractValue& untyped_image,
                           PixelType pixel_type, int64_t utime,
-                          const string& frame_name, image_t* msg,
+                          const string& frame_name, lcmt_image* msg,
                           bool do_compress) {
   msg->header.utime = utime;
   msg->header.frame_name = frame_name;
@@ -180,7 +178,7 @@ const OutputPort<double>& ImageToLcmImageArrayT::image_array_t_msg_output_port()
 }
 
 void ImageToLcmImageArrayT::CalcImageArray(
-    const systems::Context<double>& context, image_array_t* msg) const {
+    const systems::Context<double>& context, lcmt_image_array* msg) const {
   msg->header.utime = static_cast<int64_t>(context.get_time() * kSecToMillisec);
   msg->header.frame_name.clear();
   msg->num_images = 0;
@@ -190,7 +188,7 @@ void ImageToLcmImageArrayT::CalcImageArray(
     const auto& image_value = this->get_input_port(i).
         template Eval<AbstractValue>(context);
 
-    image_t image_msg;
+    lcmt_image image_msg;
     PackImageToLcmImageT(image_value, input_port_pixel_type_[i],
                          msg->header.utime, this->get_input_port(i).get_name(),
                          &image_msg, do_compress_);

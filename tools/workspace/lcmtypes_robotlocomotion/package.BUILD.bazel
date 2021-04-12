@@ -16,6 +16,12 @@ load(
     "lcm_java_library",
     "lcm_py_library",
 )
+load(
+    "@rules_python//python:defs.bzl",
+    "py_library",
+)
+
+_DEPRECATION = "DRAKE DEPRECATED: The @lcmtypes_robotlocomotion repository is being removed from Drake on or after 2021-08-01. Downstream projects should add it to their own WORKSPACE if needed."  # noqa
 
 LCM_SRCS = glob(["lcmtypes/*.lcm"])
 
@@ -24,13 +30,15 @@ lcm_cc_library(
     includes = ["lcmtypes"],
     lcm_package = "robotlocomotion",
     lcm_srcs = LCM_SRCS,
-    deps = ["@lcmtypes_bot2_core"],
+    deprecation = _DEPRECATION,
+    deps = ["@lcmtypes_bot2_core//:lcmtypes_bot2_core_nondeprecated"],
 )
 
 lcm_java_library(
     name = "lcmtypes_robotlocomotion_java",
     lcm_package = "robotlocomotion",
     lcm_srcs = LCM_SRCS,
+    deprecation = _DEPRECATION,
     deps = ["@lcmtypes_bot2_core//:lcmtypes_bot2_core_java"],
 )
 
@@ -39,7 +47,14 @@ lcm_py_library(
     imports = ["lcmtypes"],
     lcm_package = "robotlocomotion",
     lcm_srcs = LCM_SRCS,
+    deprecation = _DEPRECATION,
     deps = ["@lcmtypes_bot2_core//:lcmtypes_bot2_core_py"],
+)
+
+py_library(
+    name = "lcmtypes_robotlocomotion_py_nondeprecated",
+    deps = ["lcmtypes_robotlocomotion_py"],
+    visibility = ["@drake_visualizer//:__pkg__"],
 )
 
 CMAKE_PACKAGE = "robotlocomotion-lcmtypes"
