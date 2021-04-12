@@ -42,7 +42,7 @@ GTEST_TEST(SimulatorLimitMallocTest,
   simulator.Initialize();
   {
     // TODO(rpoyner-tri): whittle allocations down to 0.
-    test::LimitMalloc heap_alloc_checker({.max_num_allocations = 88});
+    test::LimitMalloc heap_alloc_checker({.max_num_allocations = 20});
     simulator.AdvanceTo(1.0);
     simulator.AdvanceTo(2.0);
     simulator.AdvanceTo(3.0);
