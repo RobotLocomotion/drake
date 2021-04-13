@@ -38,10 +38,10 @@ SolverId ChooseBestSolver(const MathematicalProgram& prog) {
     return MosekSolver::id();
   } else if (IsMatch<GurobiSolver>(prog)) {
     return GurobiSolver::id();
-  } else if (IsMatch<ClpSolver>(prog)) {
-    return ClpSolver::id();
   } else if (IsMatch<OsqpSolver>(prog)) {
     return OsqpSolver::id();
+  } else if (IsMatch<ClpSolver>(prog)) {
+    return ClpSolver::id();
   } else if (IsMatch<MobyLCPSolver<double>>(prog)) {
     return MobyLcpSolverId::id();
   } else if (IsMatch<SnoptSolver>(prog)) {
