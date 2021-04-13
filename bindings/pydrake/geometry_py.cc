@@ -1176,11 +1176,55 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     using Class = GeometrySet;
     constexpr auto& cls_doc = doc.GeometrySet;
+    constexpr char extra_ctor_doc[] = "See main constructor";
+    // N.B. For containers, we use `std::vector<>` rather than abstract
+    // iterators / containers.
     py::class_<Class>(m, "GeometrySet", cls_doc.doc)
-        .def(py::init(), doc.GeometrySet.ctor.doc);
-    // TODO(SeanCurtis-TRI) This is *useless* in python. I can only construct
-    //  an empty GeometrySet. Bind constructors and adders so that these APIs
-    //  can actually be used.
+        .def(py::init(), cls_doc.ctor.doc)
+        .def(py::init<GeometryId>(), py::arg("geometry_id"), extra_ctor_doc)
+        .def(py::init<FrameId>(), py::arg("frame_id"), extra_ctor_doc)
+        .def(py::init([](std::vector<GeometryId> geometry_ids) {
+          return Class(geometry_ids);
+        }),
+            py::arg("geometry_ids"), extra_ctor_doc)
+        .def(py::init([](std::vector<FrameId> frame_ids) {
+          return Class(frame_ids);
+        }),
+            py::arg("frame_ids"), extra_ctor_doc)
+        .def(py::init([](std::vector<GeometryId> geometry_ids,
+                          std::vector<FrameId> frame_ids) {
+          return Class(geometry_ids, frame_ids);
+        }),
+            py::arg("geometry_ids"), py::arg("frame_ids"), extra_ctor_doc)
+        .def(
+            "Add",
+            [](Class* self, const GeometryId& geometry_id) {
+              self->Add(geometry_id);
+            },
+            py::arg("geometry_id"), cls_doc.Add.doc)
+        .def(
+            "Add",
+            [](Class* self, const FrameId& frame_id) { self->Add(frame_id); },
+            py::arg("frame_id"), cls_doc.Add.doc)
+        .def(
+            "Add",
+            [](Class* self, std::vector<GeometryId> geometry_ids) {
+              self->Add(geometry_ids);
+            },
+            py::arg("geometry_ids"), extra_ctor_doc)
+        .def(
+            "Add",
+            [](Class* self, std::vector<FrameId> frame_ids) {
+              self->Add(frame_ids);
+            },
+            py::arg("frame_ids"), extra_ctor_doc)
+        .def(
+            "Add",
+            [](Class* self, std::vector<GeometryId> geometry_ids,
+                std::vector<FrameId> frame_ids) {
+              self->Add(geometry_ids, frame_ids);
+            },
+            py::arg("geometry_ids"), py::arg("frame_ids"), extra_ctor_doc);
   }
 
   // GeometryVersion
