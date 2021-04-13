@@ -1,5 +1,6 @@
 ---
 title: Using older (2015) releases
+released: in 2015
 ---
 
 We cannot offer support for older releases, but we still host the binaries for

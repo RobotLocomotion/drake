@@ -218,18 +218,37 @@ void SetOsqpSolverSettings(const SolverOptions& solver_options,
       solver_options.GetOptionsDouble(OsqpSolver::id());
   const std::unordered_map<std::string, int>& options_int =
       solver_options.GetOptionsInt(OsqpSolver::id());
-  // TODO(hongkai.dai): Fill in all the fields defined in OSQPSettings.
   SetOsqpSolverSetting(options_double, "rho", &(settings->rho));
   SetOsqpSolverSetting(options_double, "sigma", &(settings->sigma));
-  SetOsqpSolverSetting(options_int, "scaling", &(settings->scaling));
   SetOsqpSolverSetting(options_int, "max_iter", &(settings->max_iter));
+  SetOsqpSolverSetting(options_double, "eps_abs", &(settings->eps_abs));
+  SetOsqpSolverSetting(options_double, "eps_rel", &(settings->eps_rel));
+  SetOsqpSolverSetting(options_double, "eps_prim_inf",
+                       &(settings->eps_prim_inf));
+  SetOsqpSolverSetting(options_double, "eps_dual_inf",
+                       &(settings->eps_dual_inf));
+  SetOsqpSolverSetting(options_double, "alpha", &(settings->alpha));
+  SetOsqpSolverSetting(options_double, "delta", &(settings->delta));
+  // Default polish to true, to get an accurate solution.
+  SetOsqpSolverSettingWithDefaultValue(options_int, "polish",
+                                       &(settings->polish), 1);
   SetOsqpSolverSetting(options_int, "polish_refine_iter",
                        &(settings->polish_refine_iter));
   SetOsqpSolverSettingWithDefaultValue(options_int, "verbose",
                                        &(settings->verbose), 0);
-  // Default polish to true, to get an accurate solution.
-  SetOsqpSolverSettingWithDefaultValue(options_int, "polish",
-                                       &(settings->polish), 1);
+  SetOsqpSolverSetting(options_int, "scaled_termination",
+                       &(settings->scaled_termination));
+  SetOsqpSolverSetting(options_int, "check_termination",
+                       &(settings->check_termination));
+  SetOsqpSolverSetting(options_int, "warm_start", &(settings->warm_start));
+  SetOsqpSolverSetting(options_int, "scaling", &(settings->scaling));
+  SetOsqpSolverSetting(options_int, "adaptive_rho", &(settings->adaptive_rho));
+  SetOsqpSolverSetting(options_double, "adaptive_rho_interval",
+                       &(settings->adaptive_rho_interval));
+  SetOsqpSolverSetting(options_double, "adaptive_rho_tolerance",
+                       &(settings->adaptive_rho_tolerance));
+  SetOsqpSolverSetting(options_double, "adaptive_rho_fraction",
+                       &(settings->adaptive_rho_fraction));
   SetOsqpSolverSetting(options_double, "time_limit", &(settings->time_limit));
 }
 

@@ -81,7 +81,10 @@ class PointShapeAutoDiffSignedDistanceTester {
         GeometryId::get_new_id(), X_WG_.cast<AutoDiffXd>(), p_WQ_ad);
 
     SignedDistanceToPoint<AutoDiffXd> result = distance_to_point(shape_);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     EXPECT_EQ(result.is_grad_W_unique, is_grad_W_unique);
+#pragma GCC diagnostic pop
     if (std::abs(result.distance.value() - expected_distance) > tolerance_) {
       error = true;
       failure << "The difference between expected distance and tested distance "
@@ -145,7 +148,9 @@ class PointShapeAutoDiffSignedDistanceTester {
               << p_WQ_val_compare.message();
     }
 
-    if (result.is_grad_W_unique) {
+    // We'll only test the derivatives of the gradient if we expect it to be
+    // unique.
+    if (is_grad_W_unique) {
       auto p_WQ_derivative_compare = CompareMatrices(
           math::autoDiffToGradientMatrix(p_WQ_ad),
           math::autoDiffToGradientMatrix(p_WQ_ad_expected), tolerance_);

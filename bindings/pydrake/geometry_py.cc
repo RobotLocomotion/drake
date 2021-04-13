@@ -769,7 +769,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "SignedDistancePair", param, doc.SignedDistancePair.doc);
     cls  // BR
-        .def(ParamInit<Class>(), doc.SignedDistancePair.ctor.doc_7args)
+        .def(ParamInit<Class>(), doc.SignedDistancePair.ctor.doc_6args)
         .def_readwrite("id_A", &SignedDistancePair<T>::id_A,
             doc.SignedDistancePair.id_A.doc)
         .def_readwrite("id_B", &SignedDistancePair<T>::id_B,
@@ -784,10 +784,22 @@ void DoScalarDependentDefinitions(py::module m, T) {
             doc.SignedDistancePair.distance.doc)
         .def_readwrite("nhat_BA_W", &SignedDistancePair<T>::nhat_BA_W,
             return_value_policy_for_scalar_type<T>(),
-            doc.SignedDistancePair.nhat_BA_W.doc)
-        .def_readwrite("is_nhat_BA_W_unique",
-            &SignedDistancePair<T>::is_nhat_BA_W_unique,
-            doc.SignedDistancePair.is_nhat_BA_W_unique.doc);
+            doc.SignedDistancePair.nhat_BA_W.doc);
+
+    constexpr char deprecated_unique_flag_doc[] =
+        "SignedDistancePair will no longer report uniqueness. If you require "
+        "knowledge of uniqueness, please contact the Drake team. This will be "
+        "removed on or after 2021-08-01.";
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.def_property(
+        "is_nhat_BA_W_unique",
+        [](const Class* self) { return self->is_nhat_BA_W_unique; },
+        [](Class* self, int value) { self->is_nhat_BA_W_unique = value; },
+        deprecated_unique_flag_doc);
+#pragma GCC diagnostic pop
+
+    DeprecateAttribute(cls, "is_nhat_BA_W_unique", deprecated_unique_flag_doc);
   }
 
   // SignedDistanceToPoint
@@ -796,7 +808,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "SignedDistanceToPoint", param, doc.SignedDistanceToPoint.doc);
     cls  // BR
-        .def(ParamInit<Class>(), doc.SignedDistanceToPoint.ctor.doc)
+        .def(ParamInit<Class>(), doc.SignedDistanceToPoint.ctor.doc_4args)
         .def_readwrite("id_G", &SignedDistanceToPoint<T>::id_G,
             doc.SignedDistanceToPoint.id_G.doc)
         .def_readwrite("p_GN", &SignedDistanceToPoint<T>::p_GN,

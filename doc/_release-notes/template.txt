@@ -1,6 +1,7 @@
 <!-- This document is the template used by tools/release_engineering/relnotes. -->
 ---
 title: Drake {version}
+released: YYYY-MM-DD
 ---
 
 # Announcements
