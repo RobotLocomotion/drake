@@ -33,6 +33,81 @@ namespace drake {
 namespace pydrake {
 namespace {
 
+template <typename T>
+class iterable_t : public py::iterable {
+  using py::iterable::iterable;
+};
+
+template <typename T>
+std::vector<T> as_vector(iterable_t<T> items) {
+  std::vector<T> out;
+  for (py::handle item : items) {
+    out.push_back(item.cast<T>());
+  }
+  return out;
+}
+
+template <typename T>
+struct iterable_t_type_caster {
+  using BaseCaster = py::detail::type_caster<py::iterable>;
+  using TCaster = py::detail::type_caster<T>;
+  using MyType = iterable_t<T>;
+
+  // Python to C++.
+  bool load(py::handle src, bool convert) {
+    if (!py::isinstance<py::iterable>(src)) {
+      return false;
+    }
+    for (py::handle src_i : src) {
+      if (!py::isinstance<T>(src_i)) {
+        return false;
+      }
+    }
+    return core_.load(src, convert);
+  }
+
+  static constexpr auto name =
+      py::detail::_("Iterable[") + TCaster::name + py::detail::_("]");
+
+  operator MyType() { return access(); }
+  template <typename U>
+  using cast_op_type = MyType;
+
+  // C++ to Python.
+  template <typename U>
+  static py::handle cast(U&& src, py::return_value_policy, py::handle) {
+    // Use template-dependent parameter to defer evaluation until this is
+    // used. Otherwise, `false` will always trigger a static assert.
+    static_assert(std::is_same_v<U, U>,
+        "Casting from C++ to Python not supported for py::iterable_t");
+    return {};
+  }
+
+ private:
+  MyType access() {
+    py::iterable h = static_cast<py::iterable>(core_);
+    return MyType(h);
+  }
+
+  BaseCaster core_;
+};
+
+}  // namespace
+}  // namespace pydrake
+}  // namespace drake
+
+namespace pybind11::detail {
+
+template <typename T>
+struct pyobject_caster<drake::pydrake::iterable_t<T>>
+    : public drake::pydrake::iterable_t_type_caster<T> {};
+
+}  // namespace pybind11::detail
+
+namespace drake {
+namespace pydrake {
+namespace {
+
 using Eigen::Vector3d;
 using geometry::GeometryId;
 using geometry::PerceptionProperties;
@@ -1176,11 +1251,56 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     using Class = GeometrySet;
     constexpr auto& cls_doc = doc.GeometrySet;
+    constexpr char extra_ctor_doc[] = "See main constructor";
+    // N.B. For containers, we use `iterable_t<>` (defined above), let
+    // pybind11 handle conversions, and then convert to `std::vector<>`.
     py::class_<Class>(m, "GeometrySet", cls_doc.doc)
-        .def(py::init(), doc.GeometrySet.ctor.doc);
-    // TODO(SeanCurtis-TRI) This is *useless* in python. I can only construct
-    //  an empty GeometrySet. Bind constructors and adders so that these APIs
-    //  can actually be used.
+        .def(py::init(), cls_doc.ctor.doc)
+        .def(py::init<GeometryId>(), py::arg("geometry_id"), extra_ctor_doc)
+        .def(py::init<FrameId>(), py::arg("frame_id"), extra_ctor_doc)
+        .def(py::init([](iterable_t<GeometryId> geometry_ids) {
+          return Class(as_vector(geometry_ids));
+        }),
+            py::arg("geometry_ids"), extra_ctor_doc)
+        .def(py::init([](iterable_t<FrameId> frame_ids) {
+          return Class(as_vector(frame_ids));
+        }),
+            py::arg("frame_ids"), extra_ctor_doc)
+        .def(py::init([](iterable_t<GeometryId> geometry_ids,
+                          iterable_t<FrameId> frame_ids) {
+          return Class(as_vector(geometry_ids), as_vector(frame_ids));
+        }),
+            py::arg("geometry_ids"), py::arg("frame_ids"), extra_ctor_doc)
+        .def(
+            "Add",
+            [](Class* self, const GeometryId& geometry_id) {
+              self->Add(geometry_id);
+            },
+            py::arg("geometry_id"), cls_doc.Add.doc)
+        .def(
+            "Add",
+            [](Class* self, const FrameId& frame_id) { self->Add(frame_id); },
+            py::arg("frame_id"), cls_doc.Add.doc)
+        // Bind std::unordered_set<> only.
+        .def(
+            "Add",
+            [](Class* self, iterable_t<GeometryId> geometry_ids) {
+              self->Add(as_vector(geometry_ids));
+            },
+            py::arg("geometry_ids"), extra_ctor_doc)
+        .def(
+            "Add",
+            [](Class* self, iterable_t<FrameId> frame_ids) {
+              self->Add(as_vector(frame_ids));
+            },
+            py::arg("frame_ids"), extra_ctor_doc)
+        .def(
+            "Add",
+            [](Class* self, iterable_t<GeometryId> geometry_ids,
+                iterable_t<FrameId> frame_ids) {
+              self->Add(as_vector(geometry_ids), as_vector(frame_ids));
+            },
+            py::arg("geometry_ids"), py::arg("frame_ids"), extra_ctor_doc);
   }
 
   // GeometryVersion

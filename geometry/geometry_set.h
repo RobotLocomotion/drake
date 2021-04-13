@@ -109,9 +109,11 @@ class GeometrySet {
   //    BinaryFilterOp(frame1, frame2);
   // Determine if this convenience justifies getting a style guide exception.
 
-  explicit GeometrySet(GeometryId id) { geometries_.insert(id); }
+  explicit GeometrySet(GeometryId geometry_id) {
+    geometry_ids_.insert(geometry_id);
+  }
 
-  explicit GeometrySet(FrameId id) { frames_.insert(id); }
+  explicit GeometrySet(FrameId frame_id) { frame_ids_.insert(frame_id); }
 
   template <typename Container>
   explicit GeometrySet(const Container& ids) {
@@ -126,23 +128,34 @@ class GeometrySet {
   }
 
   template <typename Container>
-  explicit GeometrySet(std::initializer_list<GeometryId> geometries,
-                       const Container& frames) {
-    Add(geometries);
-    Add(frames);
+  explicit GeometrySet(std::initializer_list<GeometryId> geometry_ids,
+                       const Container& frame_ids) {
+    Add(geometry_ids);
+    Add(frame_ids);
   }
 
   template <typename Container>
-  explicit GeometrySet(const Container& geometries,
-                       std::initializer_list<FrameId> frames) {
-    Add(geometries);
-    Add(frames);
+  explicit GeometrySet(const Container& geometry_ids,
+                       std::initializer_list<FrameId> frame_ids) {
+    Add(geometry_ids);
+    Add(frame_ids);
   }
 
-  explicit GeometrySet(std::initializer_list<GeometryId> geometries,
-                       std::initializer_list<FrameId> frames) {
-    Add(geometries);
-    Add(frames);
+  explicit GeometrySet(std::initializer_list<GeometryId> geometry_ids,
+                       std::initializer_list<FrameId> frame_ids) {
+    Add(geometry_ids);
+    Add(frame_ids);
+  }
+
+  template <
+      typename ContainerG,
+      typename ContainerF,
+      typename = typename std::enable_if_t<
+          std::is_same_v<typename ContainerG::value_type, GeometryId> &&
+          std::is_same_v<typename ContainerF::value_type, FrameId>>
+      >
+  GeometrySet(const ContainerG& geometry_ids, const ContainerF& frame_ids) {
+    Add(geometry_ids, frame_ids);
   }
 
   //@}
@@ -171,14 +184,14 @@ class GeometrySet {
    group.Add(f_1);
    group.Add(g_1);
 
-   std::vector<FrameId> frames{f_2, f_3, f_4};
-   group.Add(frames);
-   std::vector<GeometryId> geometries{g_2, g_3, g_4};
-   group.Add(geometries);
+   std::vector<FrameId> frame_ids{f_2, f_3, f_4};
+   group.Add(frame_ids);
+   std::vector<GeometryId> geometry_ids{g_2, g_3, g_4};
+   group.Add(geometry_ids);
 
    // This is valid, but redundant; the the ids in those vectors have already
    // been added.
-   group.Add(geometries, frames);
+   group.Add(geometry_ids, frame_ids);
 
    // Mismatched iterable types.
    std::set<FrameId> frame_set{f_5, f_6, f_7};
@@ -186,60 +199,65 @@ class GeometrySet {
    ```  */
   //@{
 
-  void Add(GeometryId geometry_id) { geometries_.insert(geometry_id); }
+  void Add(GeometryId geometry_id) { geometry_ids_.insert(geometry_id); }
 
-  void Add(FrameId frame_id) { frames_.insert(frame_id); }
-
-  template <typename Container>
-  typename std::enable_if<
-      std::is_same<typename Container::value_type, GeometryId>::value>::type
-  Add(const Container& geometries) {
-    geometries_.insert(geometries.begin(), geometries.end());
-  }
+  void Add(FrameId frame_id) { frame_ids_.insert(frame_id); }
 
   template <typename Container>
-  typename std::enable_if<
-      std::is_same<typename Container::value_type, FrameId>::value>::type
-  Add(const Container& frames) {
-    frames_.insert(frames.begin(), frames.end());
+  typename std::enable_if_t<
+      std::is_same_v<typename Container::value_type, GeometryId>>
+  Add(const Container& geometry_ids) {
+    geometry_ids_.insert(geometry_ids.begin(), geometry_ids.end());
   }
 
-  void Add(std::initializer_list<FrameId> frames) {
-    frames_.insert(frames.begin(), frames.end());
+  template <typename Container>
+  typename std::enable_if_t<
+      std::is_same_v<typename Container::value_type, FrameId>>
+  Add(const Container& frame_ids) {
+    frame_ids_.insert(frame_ids.begin(), frame_ids.end());
   }
 
-  void Add(std::initializer_list<GeometryId> geometries) {
-    geometries_.insert(geometries.begin(), geometries.end());
+  void Add(std::initializer_list<FrameId> frame_ids) {
+    frame_ids_.insert(frame_ids.begin(), frame_ids.end());
+  }
+
+  void Add(std::initializer_list<GeometryId> geometry_ids) {
+    geometry_ids_.insert(geometry_ids.begin(), geometry_ids.end());
   }
 
   template <typename ContainerG, typename ContainerF>
-  typename std::enable_if<
-      std::is_same<typename ContainerG::value_type, GeometryId>::value &&
-      std::is_same<typename ContainerF::value_type, FrameId>::value>::type
-  Add(const ContainerG& geometries, const ContainerF& frames) {
-    Add(geometries);
-    Add(frames);
+  typename std::enable_if_t<
+      std::is_same_v<typename ContainerG::value_type, GeometryId> &&
+      std::is_same_v<typename ContainerF::value_type, FrameId>>
+  Add(const ContainerG& geometry_ids, const ContainerF& frame_ids) {
+    Add(geometry_ids);
+    Add(frame_ids);
   }
 
   template <typename ContainerF>
-  typename std::enable_if<
-      std::is_same<typename ContainerF::value_type, FrameId>::value>::type
-  Add(std::initializer_list<GeometryId> geometries, const ContainerF& frames) {
-    Add(geometries);
-    Add(frames);
+  typename std::enable_if_t<
+      std::is_same_v<typename ContainerF::value_type, FrameId>>
+  Add(
+      std::initializer_list<GeometryId> geometry_ids,
+      const ContainerF& frame_ids) {
+    Add(geometry_ids);
+    Add(frame_ids);
   }
 
   template <typename ContainerG>
-  typename std::enable_if<
-      std::is_same<typename ContainerG::value_type, GeometryId>::value>::type
-  Add(const ContainerG& geometries, std::initializer_list<FrameId> frames) {
-    Add(geometries);
-    Add(frames);
+  typename std::enable_if_t<
+      std::is_same_v<typename ContainerG::value_type, GeometryId>>
+  Add(
+      const ContainerG& geometry_ids,
+      std::initializer_list<FrameId> frame_ids) {
+    Add(geometry_ids);
+    Add(frame_ids);
   }
 
   void Add(const GeometrySet& other) {
-    frames_.insert(other.frames_.begin(), other.frames_.end());
-    geometries_.insert(other.geometries_.begin(), other.geometries_.end());
+    frame_ids_.insert(other.frame_ids_.begin(), other.frame_ids_.end());
+    geometry_ids_.insert(
+        other.geometry_ids_.begin(), other.geometry_ids_.end());
   }
 
   //@}
@@ -251,36 +269,36 @@ class GeometrySet {
   friend class GeometryState;
 
   // Returns the frame ids in the set.
-  const std::unordered_set<FrameId> frames() const { return frames_; }
+  const std::unordered_set<FrameId> frames() const { return frame_ids_; }
 
   // Reports the number of frames in the set.
-  int num_frames() const { return static_cast<int>(frames_.size()); }
+  int num_frames() const { return static_cast<int>(frame_ids_.size()); }
 
   // Returns the geometry ids in the set -- these are only the geometry ids
   // explicitly added to the set and _not_ those implied by added frames.
   const std::unordered_set<GeometryId> geometries() const {
-    return geometries_;
+    return geometry_ids_;
   }
 
   // Reports the number of geometries _explicitly_ in the set. It does _not_
   // count the geometries that belong to the added frames.
   int num_geometries() const {
-    return static_cast<int>(geometries_.size());
+    return static_cast<int>(geometry_ids_.size());
   }
 
   // Reports if the given `frame_id` has been added to the group.
   bool contains(FrameId frame_id) const {
-    return frames_.count(frame_id) > 0;
+    return frame_ids_.count(frame_id) > 0;
   }
 
   // Reports if the given `geometry_id` has been *explicitly* added to the
   // group. It will *not* capture geometry ids affixed to added frames.
   bool contains(GeometryId geometry_id) const {
-    return geometries_.count(geometry_id) > 0;
+    return geometry_ids_.count(geometry_id) > 0;
   }
 
-  std::unordered_set<FrameId> frames_;
-  std::unordered_set<GeometryId> geometries_;
+  std::unordered_set<FrameId> frame_ids_;
+  std::unordered_set<GeometryId> geometry_ids_;
 };
 
 }  // namespace geometry
