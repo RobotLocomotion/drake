@@ -87,10 +87,39 @@ class TestGeometry(unittest.TestCase):
         self.assertIsInstance(inspector.world_frame_id(), mut.FrameId)
         self.assertEqual(inspector.num_geometries(), 3)
         self.assertEqual(len(inspector.GetAllGeometryIds()), 3)
-        self.assertEqual(len(inspector.GetGeometryIds(mut.GeometrySet())), 0)
-        self.assertEqual(len(inspector.GetGeometryIds(mut.GeometrySet(),
-                                                      mut.Role.kProximity)),
-                         0)
+
+        # Test both GeometrySet API as well as SceneGraphInspector's GeometrySet
+        # API.
+        empty_set = mut.GeometrySet()
+        self.assertEqual(
+            len(inspector.GetGeometryIds(empty_set)),
+            0)
+        self.assertEqual(
+            len(inspector.GetGeometryIds(empty_set, mut.Role.kProximity)),
+            0)
+        # This should all be equivalent.
+        frame_set_options = [
+            # Frame scalar.
+            mut.GeometrySet(frame=global_frame),
+            # Frame list.
+            mut.GeometrySet(frames=[global_frame]),
+            # Frame set.
+            mut.GeometrySet(frames={global_frame}),
+            # Frame set w/ (empty) geometry set.
+            mut.GeometrySet(geometries=set(), frames={global_frame}),
+            # Frame list w/ (empty) geometry list.
+            mut.GeometrySet(geometries=[], frames=[global_frame]),
+        ]
+        cur = mut.GeometrySet()
+        cur.Add(geometry=global_frame)
+        frame_set_options.append(cur)
+        cur = mut.GeometrySet()
+        cur.Add(geometries=[global_frame])
+        frame_set_options.append(cur)
+        for frame_set in frame_set_options:
+            ids = inspector.GetGeometryIds(frame_set)
+            self.assertEqual(len(ids), 2)
+
         self.assertEqual(
             inspector.NumGeometriesWithRole(role=mut.Role.kUnassigned), 3)
         self.assertEqual(inspector.NumDynamicGeometries(), 2)

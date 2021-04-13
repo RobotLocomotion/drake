@@ -109,9 +109,9 @@ class GeometrySet {
   //    BinaryFilterOp(frame1, frame2);
   // Determine if this convenience justifies getting a style guide exception.
 
-  explicit GeometrySet(GeometryId id) { geometries_.insert(id); }
+  explicit GeometrySet(GeometryId geometry) { geometries_.insert(geometry); }
 
-  explicit GeometrySet(FrameId id) { frames_.insert(id); }
+  explicit GeometrySet(FrameId frame) { frames_.insert(frame); }
 
   template <typename Container>
   explicit GeometrySet(const Container& ids) {
@@ -143,6 +143,17 @@ class GeometrySet {
                        std::initializer_list<FrameId> frames) {
     Add(geometries);
     Add(frames);
+  }
+
+  template <
+      typename ContainerG,
+      typename ContainerF,
+      typename = typename std::enable_if<
+          std::is_same<typename ContainerG::value_type, GeometryId>::value &&
+          std::is_same<typename ContainerF::value_type, FrameId>::value>::type
+      >
+  explicit GeometrySet(const ContainerG& geometries, const ContainerF& frames) {
+    Add(geometries, frames);
   }
 
   //@}
@@ -186,9 +197,9 @@ class GeometrySet {
    ```  */
   //@{
 
-  void Add(GeometryId geometry_id) { geometries_.insert(geometry_id); }
+  void Add(GeometryId geometry) { geometries_.insert(geometry); }
 
-  void Add(FrameId frame_id) { frames_.insert(frame_id); }
+  void Add(FrameId frame) { frames_.insert(frame); }
 
   template <typename Container>
   typename std::enable_if<

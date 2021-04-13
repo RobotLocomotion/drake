@@ -1176,11 +1176,37 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     using Class = GeometrySet;
     constexpr auto& cls_doc = doc.GeometrySet;
+    using IdPack = type_pack<GeometryId, FrameId>;
+    constexpr char extra_ctor_doc[] = "See main constructor";
     py::class_<Class>(m, "GeometrySet", cls_doc.doc)
-        .def(py::init(), doc.GeometrySet.ctor.doc);
-    // TODO(SeanCurtis-TRI) This is *useless* in python. I can only construct
-    //  an empty GeometrySet. Bind constructors and adders so that these APIs
-    //  can actually be used.
+        .def(py::init(), cls_doc.ctor.doc);
+        // TODO(eric.cousineau): Reflect these names to C++.
+        .def(py::init<GeometryId>(), py::arg("geometry"), extra_ctor_doc)
+        .def(py::init<FrameId>(), py::arg("frame"), extra_ctor_doc)
+        // Bind std::set<> only.
+        .def(py::init([](std::set<GeometryId> geometries) {
+          return Class(geometries);
+        }), py::arg("geometries"), extra_ctor_doc)
+        .def(py::init([](std::set<FrameId> frames) {
+          return Class(frames);
+        }), py::arg("frames"), extra_ctor_doc)
+        .def(py::init([](std::set<GeometryId> geometries, std::set<FrameId> frames) {
+          return Class(geometries, frames);
+        }), py::arg("geometries"), py::arg("frames"), extra_ctor_doc)
+        .def("Add", py::overload_cast<GeometryId>(&Class::Add)
+            py::arg("geometry"), cls_doc.Add.doc)
+        .def("Add", py::overload_cast<FrameId>(&Class::Add)
+            py::arg("frame"), cls_doc.Add.doc)
+        // Bind std::set<> only.
+        .def("Add", [](Class* self, std::set<GeometryId> geometries) {
+          self->Add(geometries);
+        }, py::arg("geometries"), extra_ctor_doc)
+        .def("Add", [](Class* self, std::set<FrameId> frames) {
+          self->Add(frames);
+        }, py::arg("frames"), extra_ctor_doc)
+        .def("Add", [](Class* self, std::set<GeometryId> geometries, std::set<FrameId> frames) {
+          self->Add(geometries, frames);
+        }, py::arg("geometries"), py::arg("frames"), extra_ctor_doc);
   }
 
   // GeometryVersion
