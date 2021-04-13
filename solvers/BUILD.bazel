@@ -1165,6 +1165,7 @@ drake_cc_googletest(
     deps = [
         ":clp_solver",
         ":linear_program_examples",
+        ":quadratic_program_examples",
     ],
 )
 
