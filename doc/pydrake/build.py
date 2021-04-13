@@ -1,9 +1,13 @@
-"""
-Generates documentation for `pydrake`.
+"""Command-line tool to generate Drake's Python API reference.
+
+For instructions, see https://drake.mit.edu/documentation_instructions.html.
 """
 
-from os.path import abspath, dirname, isabs, join
+import os
+from os.path import join
 import sys
+
+from drake.doc.defs import check_call, main, symlink_input, verbose
 
 import pydrake.all
 # TODO(eric.cousineau): Make an optional `.all` module.
@@ -22,17 +26,12 @@ from pydrake.common import (
     cpp_param,
     cpp_template,
 )
-from drake.doc.pydrake.sphinx_base import gen_main
-
-EXCLUDE = []
 
 
-def get_submodules(name):
+def _get_submodules(name):
     prefix = name + "."
-    out = []
+    result = []
     for s_name in sys.modules.keys():
-        if s_name in EXCLUDE:
-            continue
         if not s_name.startswith(prefix):
             continue
         sub = s_name[len(prefix):]
@@ -45,11 +44,25 @@ def get_submodules(name):
         # them.
         if sys.modules[s_name] is None:
             continue
-        out.append(s_name)
-    return sorted(out)
+        result.append(s_name)
+    return sorted(result)
 
 
-def has_cc_imported_symbols(name):
+def _get_pydrake_modules():
+    """Returns a list[str] of all pydrake modules that should appear in our
+    Python API reference.
+    """
+    result = []
+    worklist = ["pydrake"]
+    while worklist:
+        current = worklist.pop(0)
+        result.append(current)
+        for sub in _get_submodules(current):
+            worklist.append(sub)
+    return sorted(result)
+
+
+def _has_cc_imported_symbols(name):
     # Check for `module_py`.
     if name + "._module_py" in sys.modules:
         return True
@@ -64,12 +77,13 @@ def has_cc_imported_symbols(name):
     return False
 
 
-def write_module(f_name, name, verbose):
-    if verbose:
+def _write_module(name, f_name):
+    """Writes an rst file for module `name` into `f_name`.
+    """
+    if verbose():
         print("Write: {}".format(name))
-    subs = get_submodules(name)
+    subs = _get_submodules(name)
     with open(f_name, 'w') as f:
-        f.write(".. GENERATED FILE DO NOT EDIT\n")
         f.write("\n")
         rst_name = name.replace("_", "\\_")
         f.write("{}\n".format(rst_name))
@@ -85,31 +99,79 @@ def write_module(f_name, name, verbose):
         f.write(".. automodule:: {}\n".format(name))
         f.write("    :members:\n")
         # See if there's a corresponding private CcPybind library.
-        if has_cc_imported_symbols(name):
+        if _has_cc_imported_symbols(name):
             f.write("    :imported-members:\n")
         f.write("    :undoc-members:\n")
         f.write("    :show-inheritance:\n")
-    f_dir = dirname(f_name)
-    for sub in subs:
-        write_module(join(f_dir, sub) + ".rst", sub, verbose)
 
 
-def write_doc_modules(output_dir, verbose=False):
-    if not isabs(output_dir):
-        raise RuntimeError(
-            "Please provide an absolute path: {}".format(output_dir))
-    index_file = join(output_dir, "index.rst")
-    write_module(index_file, "pydrake", verbose)
+def _build(*, out_dir, temp_dir, modules):
+    """Generates into out_dir; writes scratch files into temp_dir.
+    Both directories must already exist and be empty.
+    If modules are provided, only generate those modules and their children.
+    """
+    assert len(os.listdir(temp_dir)) == 0
+    assert len(os.listdir(out_dir)) == 0
+
+    sphinx_build = "/usr/share/sphinx/scripts/python3/sphinx-build"
+    assert os.path.isfile(sphinx_build)
+
+    # Create a hermetic copy of our input.  This helps ensure that only files
+    # listed in BUILD.bazel will render onto the website.
+    symlink_input(
+        "drake/doc/pydrake/sphinx_input.txt", temp_dir,
+        strip_prefix=["drake/doc/"])
+    input_dir = join(temp_dir, "pydrake")
+
+    # Process the command-line request for which modules to document.
+    all_modules = _get_pydrake_modules()
+    if not modules:
+        modules_to_document = set(all_modules)
+    else:
+        modules_to_document = set()
+        for x in modules:
+            if x not in all_modules:
+                print(f"error: Unknown module '{x}'")
+                sys.exit(1)
+            # Add the requested module and its parents.
+            tokens = x.split(".")
+            while tokens:
+                modules_to_document.add(".".join(tokens))
+                tokens.pop()
+            # Add the requsted module's children.
+            for y in all_modules:
+                if y.startswith(x + "."):
+                    modules_to_document.add(y)
+
+    # Generate tables of contents.
+    for name in sorted(list(modules_to_document)):
+        if name == "pydrake":
+            rst_name = "index.rst"
+        else:
+            rst_name = name + ".rst"
+        _write_module(name, join(input_dir, rst_name))
+
+    # Run the documentation generator.
+    os.environ["LANG"] = "en_US.UTF-8"
+    check_call([
+        sphinx_build,
+        "-b", "html",  # HTML output.
+        "-a", "-E",  # Don't use caching.
+        "-N",  # Disable colored output.
+        "-T",  # Traceback (for plugin).
+        "-d", join(temp_dir, "doctrees"),
+        input_dir,
+        out_dir,
+    ])
+
+    # The filename to suggest as the starting point for preview; in this case,
+    # it's an empty filename (i.e., the index page).
+    return [""]
 
 
-def main():
-    input_dir = dirname(abspath(__file__))
-    gen_main(
-        input_dir=input_dir, strict=False, src_func=write_doc_modules)
-    # TODO(eric.cousineau): Do some simple linting if this is run under
-    # `bazel test` (e.g. scan for instances of `TemporaryName`, scan for raw
-    # C++ types in type signatures, etc).
-
-
+# TODO(eric.cousineau): Do some simple linting if this is run under `bazel
+# test` (e.g. scan for instances of `TemporaryName`, scan for raw C++ types
+# in type signatures, etc).
 if __name__ == "__main__":
-    main()
+    main(build=_build, subdir="pydrake", description=__doc__.strip(),
+         supports_modules=True)
