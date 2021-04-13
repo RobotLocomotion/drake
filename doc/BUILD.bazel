@@ -9,6 +9,7 @@ load(
 )
 load(
     ":defs.bzl",
+    "DEFAULT_BINARY_TAGS",
     "DEFAULT_TEST_TAGS",
     "enumerate_filegroup",
 )
@@ -111,16 +112,14 @@ drake_py_binary(
         "//doc/pydrake:gen_sphinx",
         "//doc/styleguide:build",
     ],
+    tags = DEFAULT_BINARY_TAGS,
     deps = [
         "@bazel_tools//tools/python/runfiles",
     ],
 )
 
 # This rule is used by our CI scripts as a single point of entry to ensure that
-# all of our documentation binaries can be built successfully.  The "manual" in
-# its name is a bit of a misnomer (these all used to be tagged as manual, but
-# we no longer need to exclude them from the build); all of these binaries are
-# part of the default `bazel build //...`.
+# all of our manually-tagged documentation binaries can be built successfully.
 filegroup(
     name = "manual_binaries",
     srcs = [
@@ -131,6 +130,7 @@ filegroup(
         "//doc/pydrake:serve_sphinx",
         "//doc/styleguide:build",
     ],
+    tags = ["manual"],
 )
 
 # This rule is used by our CI scripts as a single point of entry to ensure that

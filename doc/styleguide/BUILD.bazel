@@ -8,6 +8,7 @@ load(
 )
 load(
     "//doc:defs.bzl",
+    "DEFAULT_BINARY_TAGS",
     "DEFAULT_TEST_TAGS",
     "enumerate_filegroup",
 )
@@ -39,6 +40,7 @@ drake_py_binary(
         ":jekyll_input",
         ":jekyll_input.txt",
     ],
+    tags = DEFAULT_BINARY_TAGS,
     test_rule_args = ["--out_dir=<test>"],
     test_rule_size = "medium",
     test_rule_tags = DEFAULT_TEST_TAGS,
