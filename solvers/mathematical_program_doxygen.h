@@ -89,7 +89,7 @@
  * <tr><td> <a href="https://github.com/coin-or/Clp">
  *    CLP</a></td>
  *    <td align="center">&diams;</td>
- *    <td></td>
+ *    <td align="center">&diams;</td>
  *    <td></td>
  *    <td></td>
  *    <td></td>

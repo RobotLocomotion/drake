@@ -259,6 +259,8 @@ void QuadraticProgram2::CheckSolution(
     tol = 1E-8;
   } else if (solver_type == SolverType::kSnopt) {
     tol = 1E-6;
+  } else if (solver_type == SolverType::kClp) {
+    tol = 2E-8;
   }
   EXPECT_TRUE(CompareMatrices(result.GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));

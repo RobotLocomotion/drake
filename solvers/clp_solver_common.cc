@@ -24,7 +24,8 @@ bool ClpSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
   static const never_destroyed<ProgramAttributes> solver_capabilities(
       std::initializer_list<ProgramAttribute>{
           ProgramAttribute::kLinearEqualityConstraint,
-          ProgramAttribute::kLinearConstraint, ProgramAttribute::kLinearCost});
+          ProgramAttribute::kLinearConstraint, ProgramAttribute::kLinearCost,
+          ProgramAttribute::kQuadraticCost});
   return AreRequiredAttributesSupported(prog.required_capabilities(),
                                         solver_capabilities.access());
 }
