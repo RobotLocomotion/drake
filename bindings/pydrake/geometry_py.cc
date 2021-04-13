@@ -29,6 +29,81 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
 
+#define PRIVATE __attribute__ ((visibility("private")))
+
+namespace drake::pydrake {
+
+template <typename T>
+PRIVATE
+class iterable_t : public py::iterable {
+ public:
+  std::vector<T> to_vector() const {
+    return this->cast<std::vector<T>>();
+  }
+};
+
+template <typename T>
+PRIVATE
+struct iterable_t_type_caster {
+  using TCaster = py::detail::type_caster<T>;
+    // For simplicity, only admit `std::vector` as destination type.
+  using OutputType = std::vector<T>;
+
+  // Python to C++.
+  bool load(py::handle src, bool convert) {
+    // WARNING: This will consume the iterable. you should *not* pass an
+    // iterator! Otherwise, overload checking will eat data.
+    // TODO(eric.cousineau): Assert against iterators?
+    if (loaded_) {
+      throw py::cast_error("Internal error: value already loaded?");
+    }
+    for (py::handle src_i : src) {
+      TCaster caster_i;
+      if (!caster_i.load(src_i, convert)) {
+        // TODO(eric.cousineau): This may hurt previously consumed rvalue
+        // conversions. Figure out more intuitive fix.
+        value_.clear();
+        return false;
+      }
+      value_.push_back(caster_i.operator T&());
+    }
+    loaded_ = true;
+  }
+
+  static constexpr auto name =
+      py::detail::_("Iterable[") + TCaster::name + py::detail::_("]");
+
+  operator T&() {
+    if (!loaded_) {
+      throw py::cast_error("Internal error: value not loaded?");
+    }
+    return value_;
+  }
+
+  template <typename U>
+  using cast_op_type = py::detail::movable_cast_op_type<U>;
+
+  // C++ to Python.
+  template <typename U>
+  static py::handle cast(U&& src, py::return_value_policy, py::handle) {
+    throw py::cast_error("cast for iterable_t not yet implemented");
+  }
+
+ private:
+  bool loaded_{false};
+  OutputType value_;
+};
+
+}  // namespace drake::pydrake
+
+namespace pybind11::detail {
+
+template <typename T>
+struct type_caster<drake::pydrake::iterable_t<T>>
+    : public drake::pydrake::iterable_t_type_caster<T> {};
+
+}  // namespace detail
+
 namespace drake {
 namespace pydrake {
 namespace {
@@ -1176,36 +1251,40 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     using Class = GeometrySet;
     constexpr auto& cls_doc = doc.GeometrySet;
-    using IdPack = type_pack<GeometryId, FrameId>;
     constexpr char extra_ctor_doc[] = "See main constructor";
+    // N.B. For containers, we only bind `std::unordered_set<>` (we do *not*
+    // bind `initializer_list`), and let Python/pybind11 handle implicit type
+    // conversion (via iterables).
     py::class_<Class>(m, "GeometrySet", cls_doc.doc)
-        .def(py::init(), cls_doc.ctor.doc);
+        .def(py::init(), cls_doc.ctor.doc)
         // TODO(eric.cousineau): Reflect these names to C++.
         .def(py::init<GeometryId>(), py::arg("geometry"), extra_ctor_doc)
         .def(py::init<FrameId>(), py::arg("frame"), extra_ctor_doc)
-        // Bind std::set<> only.
-        .def(py::init([](std::set<GeometryId> geometries) {
-          return Class(geometries);
+        
+        .def(py::init([](iterable_t<GeometryId> geometries) {
+          return Class(geometries.to_vector());
         }), py::arg("geometries"), extra_ctor_doc)
-        .def(py::init([](std::set<FrameId> frames) {
-          return Class(frames);
+        .def(py::init([](iterable_t<FrameId> frames) {
+          return Class(frames.to_vector());
         }), py::arg("frames"), extra_ctor_doc)
-        .def(py::init([](std::set<GeometryId> geometries, std::set<FrameId> frames) {
-          return Class(geometries, frames);
+        .def(py::init([](iterable_t<GeometryId> geometries, iterable_t<FrameId> frames) {
+          return Class(geometries.to_vector(), frames.to_vector());
         }), py::arg("geometries"), py::arg("frames"), extra_ctor_doc)
-        .def("Add", py::overload_cast<GeometryId>(&Class::Add)
-            py::arg("geometry"), cls_doc.Add.doc)
-        .def("Add", py::overload_cast<FrameId>(&Class::Add)
-            py::arg("frame"), cls_doc.Add.doc)
-        // Bind std::set<> only.
-        .def("Add", [](Class* self, std::set<GeometryId> geometries) {
-          self->Add(geometries);
+        .def("Add", [](Class* self, const GeometryId& geometry) {
+            self->Add(geometry);
+        }, py::arg("geometry"), cls_doc.Add.doc)
+        .def("Add", [](Class* self, const FrameId& frame) {
+            self->Add(frame);
+        }, py::arg("frame"), cls_doc.Add.doc)
+        // Bind std::unordered_set<> only.
+        .def("Add", [](Class* self, iterable_t<GeometryId> geometries) {
+          self->Add(geometries.to_vector());
         }, py::arg("geometries"), extra_ctor_doc)
-        .def("Add", [](Class* self, std::set<FrameId> frames) {
-          self->Add(frames);
+        .def("Add", [](Class* self, iterable_t<FrameId> frames) {
+          self->Add(frames.to_vector());
         }, py::arg("frames"), extra_ctor_doc)
-        .def("Add", [](Class* self, std::set<GeometryId> geometries, std::set<FrameId> frames) {
-          self->Add(geometries, frames);
+        .def("Add", [](Class* self, iterable_t<GeometryId> geometries, iterable_t<FrameId> frames) {
+          self->Add(geometries.to_vector(), frames.to_vector());
         }, py::arg("geometries"), py::arg("frames"), extra_ctor_doc);
   }
 
