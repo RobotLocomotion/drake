@@ -40,6 +40,10 @@ void RotationMatrix<T>::ThrowIfNotValidUnitVector(const Vector3<T>& u,
   ThrowIfUnableToMakeUnitVectorDueToNanOrZeroVector(u, function_name);
 
   // Skip symbolic expressions.
+  // TODO(Mitiguy) This is a generally-useful method.  Consider moving it to a
+  //  into more general view in an appropriate file and also deal with symbolic
+  //  expressions that can be easily evaluated to a number, e.g., consider:
+  //  ThrowIfNotValidUnitVector(Vector3<symbolic::Expression> u_sym(3, 2, 1));
   if constexpr (scalar_predicate<T>::is_bool) {
     // Give a detailed message if |u| is not within tolerance of 1.
     using std::abs;
