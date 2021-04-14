@@ -104,7 +104,7 @@ template <typename T>
 void RotationMatrix<T>::ThrowIfUnableToMakeUnitVectorDueToZeroVector(
     const Vector3<T>& u, const char* function_name) {
   if (u == Vector3<T>::Zero()) {
-    std::string message = fmt::format(
+    const std::string message = fmt::format(
         "RotationMatrix::{}():"
         " Unable to make a unit vector from a zero vector.", function_name);
     throw std::runtime_error(message);
@@ -115,7 +115,7 @@ template <typename T>
 void RotationMatrix<T>::ThrowIfUnableToMakeUnitVectorDueToNanVector(
     const Vector3<T>& u, const char* function_name) {
   if (!u.allFinite()) {
-    std::string message = fmt::format(
+    const std::string message = fmt::format(
         "RotationMatrix::{}():"
         " Unable to make a unit vector."
         " Vector contains an element that is infinity or Nan.",
@@ -144,7 +144,7 @@ void RotationMatrix<T>::ThrowIfNotValidUnitVector(const Vector3<T>& u,
       const double ux = ExtractDoubleOrThrow(u(0));
       const double uy = ExtractDoubleOrThrow(u(1));
       const double uz = ExtractDoubleOrThrow(u(2));
-      std::string message = fmt::format(
+      const std::string message = fmt::format(
           "RotationMatrix::{}(). Vector is not a unit vector."
           " The magnitude of vector [{:E} {:E} {:E}] deviates from 1."
           " The vector's actual magnitude is {:.16f}."

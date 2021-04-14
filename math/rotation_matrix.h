@@ -282,8 +282,8 @@ class RotationMatrix {
   /// element of w is 1 and the other two elements are 0.
   /// @param[in] b_A vector expressed in frame A that when normalized as
   ///  u = b_A.normalized() represents Bx or By or Bz (depending on axis_index).
-  /// @param[in] axis_index The index of the unit vector associated with u, with
-  ///  0 meaning u is Bx, 1 meaning u is By, and 2 meaning u is Bz.
+  /// @param[in] axis_index The index ∈ {0, 1, 2} of the unit vector associated
+  ///  with u_A, 0 means u_A is Bx, 1 means u_A is By, and 2 means u_A is Bz.
   /// @pre axis_index is 0 or 1 or 2.
   /// @throws std::exception if b_A cannot be made into a unit vector.
   /// @see MakeFromOneUnitVector() if you want to avoid normalization.
@@ -300,8 +300,8 @@ class RotationMatrix {
   /// unit vector u_A, returned as a rotation matrix R_AB.
   /// @param[in] u_A unit vector which is expressed in frame A and is either
   ///  Bx or By or Bz (depending on the value of axis_index).
-  /// @param[in] axis_index The index of the unit vector associated with u_A,
-  ///  with 0 meaning u_A is Bx, 1 meaning u_A is By, and 2 meaning u_A is Bz.
+  /// @param[in] axis_index The index ∈ {0, 1, 2} of the unit vector associated
+  ///  with u_A, 0 means u_A is Bx, 1 means u_A is By, and 2 means u_A is Bz.
   /// @pre axis_index is 0 or 1 or 2.
   /// @pre u_A is a unit vector within a tolerance of 4ε ≈ 8.88E-16.
   /// @throws std::exception in Debug builds if u_A is not a unit vector.

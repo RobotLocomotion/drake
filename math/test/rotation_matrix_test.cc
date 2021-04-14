@@ -1074,7 +1074,7 @@ void VerifyMakeFromOneVector(const RotationMatrix<double>& R_AB,
 // or throws appropriate exceptions in Debug builds.
 GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVector) {
   RotationMatrix<double> R_AB;
-  int axis_index = 0;
+  constexpr int axis_index = 0;
 
   // Verify MakeFromOneUnitVector() throws an exception in Debug builds if its
   // first argument is a zero vector, NAN vector, or non-unit vector, whereas
