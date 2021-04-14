@@ -13,7 +13,6 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
-#include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
@@ -1104,47 +1103,6 @@ GTEST_TEST(SimulatorTest, ExampleDiscreteSystem) {
                     "1: 10 (0.02)\n"
                     "2: 20 (0.04)\n"
                     "3: 30 (0.06)\n");
-}
-
-class ExamplePublishingSystem final : public LeafSystem<double> {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExamplePublishingSystem)
-
-  ExamplePublishingSystem() {
-    DeclarePerStepPublishEvent(
-        &ExamplePublishingSystem::Update);
-  }
-
- private:
-  systems::EventStatus Update(const systems::Context<double>&) const {
-    return systems::EventStatus::Succeeded();
-  }
-};
-
-
-// Tests that heap allocations do not occur from Simulator and the systems
-// framework for systems that do unrestricted updates and do not have continuous
-// state.
-GTEST_TEST(SimulatorTest,
-           NoHeapAllocsInSimulatorForSystemsWithoutContinuousState) {
-  // Build a Diagram containing the Example system so we can test both Diagrams
-  // and LeafSystems at once.
-  DiagramBuilder<double> builder;
-  builder.AddSystem<ExamplePublishingSystem>();
-  auto diagram = builder.Build();
-
-  // Create a Simulator and use it to advance time until t=3.
-  Simulator<double> simulator(*diagram);
-  // Trigger first (and only allowable) heap allocation.
-  simulator.Initialize();
-  {
-    // TODO(rpoyner-tri): whittle allocations down to 0.
-    test::LimitMalloc heap_alloc_checker({.max_num_allocations = 88});
-    simulator.AdvanceTo(1.0);
-    simulator.AdvanceTo(2.0);
-    simulator.AdvanceTo(3.0);
-    simulator.AdvancePendingEvents();
-  }
 }
 
 // A hybrid discrete-continuous system:
