@@ -73,19 +73,20 @@ GTEST_TEST(MeshFieldLinearTest, TestDoCloneWithMesh) {
 
   auto mesh1 = GenerateMesh<double>();
   std::vector<FieldValue> e_values = {0., 1., 2., 3.};
-  auto original =
-      std::make_unique<MeshFieldLineard>("e", std::move(e_values), mesh1.get());
+  MeshFieldLineard original("e", std::move(e_values), mesh1.get());
 
   MeshType mesh2 = *mesh1;
-  auto clone_base = original->CloneAndSetMesh(&mesh2);
-  auto clone = dynamic_cast<MeshFieldLineard*>(clone_base.get());
+  std::unique_ptr<MeshFieldLineard> clone = original.CloneAndSetMesh(&mesh2);
 
   // Check uniqueness.
-  EXPECT_NE(original.get(), clone);
+  EXPECT_NE(&original, clone.get());
+  EXPECT_EQ(&mesh2, &clone->mesh());
+  EXPECT_NE(&original.mesh(), &clone->mesh());
 
   // Check equivalence.
-  EXPECT_EQ(original->name(), clone->name());
-  EXPECT_EQ(original->values(), clone->values());
+  EXPECT_EQ(original.name(), clone->name());
+  EXPECT_EQ(original.values(), clone->values());
+  // TODO(SeanCurtis-TRI) We haven't tested gradients_ or values_at_Mo_.
 }
 
 // Tests Equal.

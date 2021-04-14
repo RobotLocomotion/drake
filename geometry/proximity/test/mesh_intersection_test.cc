@@ -43,7 +43,7 @@ class SurfaceVolumeIntersectorTester {
                                                 surface_N, X_MN);
   }
   bool IsFaceNormalAlongPressureGradient(
-      const VolumeMeshField<T, T>& volume_field_M,
+      const VolumeMeshFieldLinear<T, T>& volume_field_M,
       const SurfaceMesh<T>& surface_N, const math::RigidTransform<T>& X_MN,
       const VolumeElementIndex& tet_index, const SurfaceFaceIndex& tri_index) {
     return intersect_.IsFaceNormalAlongPressureGradient(

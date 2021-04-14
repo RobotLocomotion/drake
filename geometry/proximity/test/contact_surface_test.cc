@@ -9,8 +9,8 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/proximity/mesh_field.h"
 #include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/surface_mesh_field.h"
 #include "drake/math/rigid_transform.h"
 
 // TODO(DamrongGuoy): Move to geometry/query_results/test/.
@@ -302,16 +302,12 @@ GTEST_TEST(ContactSurfaceTest, TestEqual) {
   // Equal mesh, Different pressure field.
   // First, copy the mesh.
   auto mesh2 = make_unique<SurfaceMesh<double>>(surface.mesh_W());
-  // TODO(DamrongGuoy): Remove this cast when we remove MeshField and use
-  //  only MeshFieldLinear.
-  auto field = dynamic_cast<const SurfaceMeshFieldLinear<double, double>*>(
-                   &surface.e_MN());
-  DRAKE_DEMAND(field);
+  const SurfaceMeshFieldLinear<double, double>& field = surface.e_MN();
   // Then, copy the field values and change it.
-  vector<double> field2_values(field->values());
+  vector<double> field2_values(field.values());
   field2_values.at(0) += 2.0;
   auto field2 = make_unique<SurfaceMeshFieldLinear<double, double>>(
-                    field->name(), move(field2_values), mesh2.get());
+                    field.name(), move(field2_values), mesh2.get());
   auto surface2 = ContactSurface<double>(surface.id_M(), surface.id_N(),
                                          move(mesh2), move(field2));
   EXPECT_FALSE(surface.Equal(surface2));
