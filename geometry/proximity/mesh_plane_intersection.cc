@@ -4,7 +4,6 @@
 #include <utility>
 
 #include "drake/geometry/proximity/contact_surface_utility.h"
-#include "drake/geometry/proximity/surface_mesh_field.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 
 namespace drake {

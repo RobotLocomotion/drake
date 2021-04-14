@@ -12,8 +12,8 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/proximity/bvh.h"
+#include "drake/geometry/proximity/mesh_field_linear.h"
 #include "drake/geometry/proximity/surface_mesh.h"
-#include "drake/geometry/proximity/volume_mesh_field.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/shape_specification.h"
 

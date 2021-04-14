@@ -343,15 +343,8 @@ drake_cc_library(
 
 drake_cc_library(
     name = "mesh_field",
-    srcs = [
-        "surface_mesh_field.cc",
-        "volume_mesh_field.cc",
-    ],
-    hdrs = [
-        "mesh_field_linear.h",
-        "surface_mesh_field.h",
-        "volume_mesh_field.h",
-    ],
+    srcs = ["mesh_field_linear.cc"],
+    hdrs = ["mesh_field_linear.h"],
     deps = [
         ":surface_mesh",
         ":volume_mesh",
@@ -538,13 +531,8 @@ drake_cc_library(
 
 drake_cc_library(
     name = "volume_mesh",
-    srcs = [
-        "volume_mesh.cc",
-    ],
-    hdrs = [
-        "volume_mesh.h",
-        "volume_mesh_field.h",
-    ],
+    srcs = ["volume_mesh.cc"],
+    hdrs = ["volume_mesh.h"],
     deps = [
         "//common",
         "//geometry:geometry_ids",

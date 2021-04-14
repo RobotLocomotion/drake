@@ -144,19 +144,7 @@ class MeshFieldLinear {
           same as the number of vertices of the mesh.
    */
   MeshFieldLinear(std::string name, std::vector<T>&& values,
-                  const MeshType* mesh, bool calculate_gradient = true)
-      : mesh_(mesh), name_(std::move(name)), values_(std::move(values)) {
-    DRAKE_DEMAND(mesh_ != nullptr);
-    DRAKE_DEMAND(static_cast<int>(values_.size()) ==
-                 this->mesh().num_vertices());
-    if (calculate_gradient) {
-      CalcGradientField();
-      CalcValueAtMeshOriginForAllElements();
-      DRAKE_DEMAND(mesh->num_elements() == static_cast<int>(gradients_.size()));
-      DRAKE_DEMAND(mesh->num_elements() ==
-                   static_cast<int>(values_at_Mo_.size()));
-    }
-  }
+                  const MeshType* mesh, bool calculate_gradient = true);
 
   /** Evaluates the field value at a vertex.
    @param v The index of the vertex.
@@ -228,17 +216,11 @@ class MeshFieldLinear {
   /** Copy to a new %MeshFieldLinear and set the new %MeshFieldLinear to use a
    new compatible mesh. %MeshFieldLinear needs a mesh to operate; however,
    %MeshFieldLinear does not own the mesh. In fact, several %MeshFieldLinear
-   objects can use the same mesh.  */
+   objects can use the same mesh.
+
+   @pre `new_mesh` has the same number of vertices as this field's `mesh().  */
   [[nodiscard]] std::unique_ptr<MeshFieldLinear> CloneAndSetMesh(
-      const MeshType* new_mesh) const {
-    DRAKE_DEMAND(new_mesh != nullptr);
-    DRAKE_DEMAND(new_mesh->num_vertices() == mesh_->num_vertices());
-    // TODO(DamrongGuoy): Check that the `new_mesh` is equivalent to the
-    //  current `mesh_M_`.
-    std::unique_ptr<MeshFieldLinear> new_mesh_field = CloneWithNullMesh();
-    new_mesh_field->mesh_ = new_mesh;
-    return new_mesh_field;
-  }
+      const MeshType* new_mesh) const;
 
   const MeshType& mesh() const { return *mesh_; }
   const std::string& name() const { return name_; }
@@ -251,19 +233,7 @@ class MeshFieldLinear {
    @param field The field for comparison.
    @returns `true` if the given field is equal.
    */
-  bool Equal(const MeshFieldLinear<T, MeshType>& field) const {
-    if (!this->mesh().Equal(field.mesh())) return false;
-
-    // Check field value at each vertex.
-    for (typename MeshType::VertexIndex i(0); i < this->mesh().num_vertices();
-         ++i) {
-      if (values_.at(i) != field.values_.at(i)) return false;
-    }
-    if (gradients_ != field.gradients_) return false;
-    if (values_at_Mo_ != field.values_at_Mo_) return false;
-    // All checks passed.
-    return true;
-  }
+  bool Equal(const MeshFieldLinear<T, MeshType>& field) const;
 
  private:
   // Clones MeshFieldLinear data under the assumption that the mesh
@@ -271,40 +241,13 @@ class MeshFieldLinear {
   [[nodiscard]] std::unique_ptr<MeshFieldLinear<T, MeshType>>
   CloneWithNullMesh() const { return std::make_unique<MeshFieldLinear>(*this); }
 
-  void CalcGradientField() {
-    gradients_.clear();
-    gradients_.reserve(this->mesh().num_elements());
-    for (typename MeshType::ElementIndex e(0); e < this->mesh().num_elements();
-         ++e) {
-      gradients_.push_back(CalcGradientVector(e));
-    }
-  }
+  void CalcGradientField();
 
-  Vector3<T> CalcGradientVector(typename MeshType::ElementIndex e) const {
-    std::array<T, MeshType::kVertexPerElement> u;
-    for (int i = 0; i < MeshType::kVertexPerElement; ++i) {
-      u[i] = values_[this->mesh().element(e).vertex(i)];
-    }
-    return this->mesh().CalcGradientVectorOfLinearField(u, e);
-  }
+  Vector3<T> CalcGradientVector(typename MeshType::ElementIndex e) const;
 
-  void CalcValueAtMeshOriginForAllElements() {
-    values_at_Mo_.clear();
-    values_at_Mo_.reserve(this->mesh().num_elements());
-    for (typename MeshType::ElementIndex e(0); e < this->mesh().num_elements();
-         ++e) {
-      values_at_Mo_.push_back(CalcValueAtMeshOrigin(e));
-    }
-  }
+  void CalcValueAtMeshOriginForAllElements();
 
-  T CalcValueAtMeshOrigin(typename MeshType::ElementIndex e) const {
-    DRAKE_DEMAND(e < gradients_.size());
-    const typename MeshType::VertexIndex v0 = this->mesh().element(e).vertex(0);
-    const Vector3<T>& p_MV0 = this->mesh().vertex(v0).r_MV();
-    // f(V₀) = ∇fᵉ⋅p_MV₀ + fᵉ(Mo)
-    // fᵉ(Mo) = f(V₀) - ∇fᵉ⋅p_MV₀
-    return values_[v0] - gradients_[e].dot(p_MV0);
-  }
+  T CalcValueAtMeshOrigin(typename MeshType::ElementIndex e) const;
 
   // We use `reset_on_copy` so that the default copy constructor resets
   // the pointer to null when a MeshFieldLinear is copied.
@@ -323,6 +266,31 @@ class MeshFieldLinear {
   // frame M of the mesh. Notice that Mo may or may not lie inside elements_[i].
   std::vector<T> values_at_Mo_;
 };
+
+/** A convenience alias for instantiating a MeshFieldLinear on a VolumeMesh.
+ @tparam FieldValue  A valid Eigen scalar or vector of valid Eigen scalars for
+                     the field value.
+ @tparam T  A valid Eigen scalar for mesh coordinates.
+ */
+template <typename FieldValue, typename T>
+using VolumeMeshFieldLinear = MeshFieldLinear<FieldValue, VolumeMesh<T>>;
+
+/** A convenience alias for instantiating a MeshFieldLinear on a SurfaceMesh.
+ @tparam FieldValue  A valid Eigen scalar or vector of valid Eigen scalars for
+                     the field value.
+ @tparam T  A valid Eigen scalar for mesh coordinates.
+ */
+template <typename FieldValue, typename T>
+using SurfaceMeshFieldLinear = MeshFieldLinear<FieldValue, SurfaceMesh<T>>;
+
+/* N.B. These explicit instantiations preclude the possibility of mixed-scalar
+ types (e.g., double-valued mesh with AutoDiffXd-valued field), and
+ vector-valued scalar fields. If and when the need comes up, we'll reformulate
+ it. */
+extern template class MeshFieldLinear<double, VolumeMesh<double>>;
+extern template class MeshFieldLinear<AutoDiffXd, VolumeMesh<AutoDiffXd>>;
+extern template class MeshFieldLinear<double, SurfaceMesh<double>>;
+extern template class MeshFieldLinear<AutoDiffXd, SurfaceMesh<AutoDiffXd>>;
 
 }  // namespace geometry
 }  // namespace drake

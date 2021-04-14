@@ -6,8 +6,8 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/distance_to_point_callback.h"
+#include "drake/geometry/proximity/mesh_field_linear.h"
 #include "drake/geometry/proximity/volume_mesh.h"
-#include "drake/geometry/proximity/volume_mesh_field.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
 

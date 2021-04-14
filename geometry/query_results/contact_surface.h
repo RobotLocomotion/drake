@@ -8,8 +8,8 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/proximity/mesh_field_linear.h"
 #include "drake/geometry/proximity/surface_mesh.h"
-#include "drake/geometry/proximity/surface_mesh_field.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {

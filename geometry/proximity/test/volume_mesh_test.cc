@@ -9,7 +9,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/geometry/proximity/volume_mesh_field.h"
+#include "drake/geometry/proximity/mesh_field_linear.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {

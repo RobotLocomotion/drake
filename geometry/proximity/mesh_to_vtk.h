@@ -2,10 +2,9 @@
 
 #include <string>
 
+#include "drake/geometry/proximity/mesh_field_linear.h"
 #include "drake/geometry/proximity/surface_mesh.h"
-#include "drake/geometry/proximity/surface_mesh_field.h"
 #include "drake/geometry/proximity/volume_mesh.h"
-#include "drake/geometry/proximity/volume_mesh_field.h"
 
 namespace drake {
 namespace geometry {
