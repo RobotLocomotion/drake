@@ -70,7 +70,7 @@ void ThrowIfPoseFrameSpecified(sdf::ElementPtr element) {
     if (!frame_name.empty()) {
       throw std::runtime_error(
           "<pose relative_to='{non-empty}'/> is presently not supported "
-          "in <inertial/> or <model/> tags.");
+          "in <model/> tags.");
     }
   }
 }
@@ -446,9 +446,12 @@ std::string LoadSdf(
   data_source.DemandExactlyOne();
 
   std::string root_dir;
+  sdf::ParserConfig parser_config = sdf::ParserConfig::GlobalConfig();
+  parser_config.SetWarningsPolicy(sdf::EnforcementPolicy::ERR);
+
   if (data_source.file_name) {
     const std::string full_path = GetFullPath(*data_source.file_name);
-    ThrowAnyErrors(root->Load(full_path));
+    ThrowAnyErrors(root->Load(full_path, parser_config));
     // Uses the directory holding the SDF to be the root directory
     // in which to search for files referenced within the SDF file.
     size_t found = full_path.find_last_of("/\\");
@@ -461,7 +464,8 @@ std::string LoadSdf(
     }
   } else {
     DRAKE_DEMAND(data_source.file_contents);
-    ThrowAnyErrors(root->LoadSdfString(*data_source.file_contents));
+    ThrowAnyErrors(
+        root->LoadSdfString(*data_source.file_contents, parser_config));
   }
 
   return root_dir;

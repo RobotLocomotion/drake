@@ -897,12 +897,20 @@ GTEST_TEST(SdfParser, TestSupportedFrames) {
 </model>)");
 }
 
-void FailWithUnsupportedRelativeTo(const std::string& inner) {
+void FailWithUnsupportedRelativeToInModel(const std::string& inner) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       ParseTestString(inner),
       std::runtime_error,
       R"(<pose relative_to='\{non-empty\}'/> is presently not supported )"
-      R"(in <inertial/> or <model/> tags.)");
+      R"(in <model/> tags.)");
+}
+
+void FailWithUnsupportedRelativeToInInertial(const std::string& inner) {
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(inner),
+      std::runtime_error,
+      R"([\s\S]*XML Attribute\[relative_to\] in element\[pose\] not defined )"
+      R"(in SDF[\.\s\S]*)");
 }
 
 void FailWithInvalidWorld(const std::string& inner) {
@@ -948,12 +956,12 @@ GTEST_TEST(SdfParser, TestUnsupportedFrames) {
 )", bad_name));
   }
 
-  FailWithUnsupportedRelativeTo(R"(
+  FailWithUnsupportedRelativeToInModel(R"(
 <model name='bad'>
   <pose relative_to='invalid_usage'/>
   <link name='dont_crash_plz'/>  <!-- Need at least one frame -->
 </model>)");
-  FailWithUnsupportedRelativeTo(R"(
+  FailWithUnsupportedRelativeToInInertial(R"(
 <model name='bad'>
   <frame name='my_frame'/>
   <link name='a'>
