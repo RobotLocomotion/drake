@@ -30,15 +30,21 @@ ContactSolverStatus PgsSolver<T>::SolveWithGuess(
   const int max_iters = parameters_.max_iterations;
   const double omega = parameters_.omega;
   const int nc = contact_data.num_contacts();
+
+  // Set initial guess for impulses.
+  gamma.setZero();
+
   // Early exits if there's no contact.
   if (nc == 0) {
+    // The velocity post contact is the same as that for pre-contact if there's
+    // no contact.
+    v = v_star;
     CopyContactResults(results);
     return ContactSolverStatus::kSuccess;
   }
 
-  // Set initial guess.
+  // Set initial guess for velocities.
   v = v_guess;
-  gamma.setZero();  // We don't know any better.
 
   // Below we use index k to denote the iteration. Hereinafter we'll adopt the
   // convention of appending a trailing _kp ("k plus") to refer to the next
@@ -127,18 +133,17 @@ void PgsSolver<T>::PreProcessData(const SystemDynamicsData<T>& dynamics_data,
     // Compute scaling factors, one per contact.
     auto& Wii_norm = pre_proc_data_.Wii_norm;
     auto& Dinv = pre_proc_data_.Dinv;
-    // An arbitrary small number to prevent division by zero in the approximated
-    // inverse of Wii.
-    const double eps = 1e-14;
+    using std::max;
     for (int i = 0; i < nc; ++i) {
       // 3x3 diagonal block. It might be singular, but definitely non-zero.
       // That's why we use an RMS norm.
       const Matrix3<T> Wii = W.block(3 * i, 3 * i, 3, 3);
       Wii_norm(i) = Wii.norm() / 3;  // 3 = sqrt(9).
       // Diagonal approximation of the inverse of the Wii.
-      Dinv.template segment<3>(3 * i) = Vector3<T>(
-          2.0 / (Wii(0, 0) + Wii(1, 1) + eps),
-          2.0 / (Wii(0, 0) + Wii(1, 1) + eps), 1.0 / (Wii(2, 2) + eps));
+      Dinv.template segment<3>(3 * i) =
+          Vector3<T>(1.0 / max((Wii(0, 0) + Wii(1, 1)) / 2, Wii_norm(i)),
+                     1.0 / max((Wii(0, 0) + Wii(1, 1)) / 2, Wii_norm(i)),
+                     1.0 / (max(Wii(2, 2), Wii_norm(i))));
     }
   }
 }

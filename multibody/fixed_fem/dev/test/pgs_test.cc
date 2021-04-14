@@ -32,6 +32,32 @@ const int kMaxIterations = 50;
 class PgsTest : public ::testing::Test {
  protected:
   void SetUp() override {
+    SetSystemDynamicsData();
+
+    PgsSolverParameters params;
+    params.abs_tolerance = kTol;
+    params.rel_tolerance = kTol;
+    params.max_iterations = kMaxIterations;
+    pgs_.set_parameters(params);
+  }
+
+  // Set the point contact data for a situation with no contact points.
+  void SetZeroPointContactData() {
+    jacobian_.resize(0, 0);
+    Jc_ = std::make_unique<SparseLinearOperator<double>>("Jc", &jacobian_);
+    // Stiffness dissipation and penetration depth are not used in the PGS
+    // solver and are thus set to NAN.
+    stiffness_.resize(0);
+    dissipation_.resize(0);
+    penetration_depth_.resize(0);
+    mu_.resize(0);
+    point_data_ = std::make_unique<PointContactData<double>>(
+        &penetration_depth_, Jc_.get(), &stiffness_, &dissipation_, &mu_);
+  }
+
+  // Set the point contact data with a single contact point with the given
+  // friction coefficient.
+  void SetSinglePointContactData(double friction_coeff) {
     jacobian_.resize(3, 3);
     {
       std::vector<Triplet> triplets;
@@ -42,8 +68,21 @@ class PgsTest : public ::testing::Test {
       jacobian_.makeCompressed();
     }
     Jc_ = std::make_unique<SparseLinearOperator<double>>("Jc", &jacobian_);
-    v_star_ = -1.0 * VectorXd::Ones(3);
+    // Stiffness dissipation and penetration depth are not used in the PGS
+    // solver and are thus set to NAN.
+    stiffness_.resize(1);
+    stiffness_(0) = NAN;
+    dissipation_.resize(1);
+    dissipation_(0) = NAN;
+    penetration_depth_.resize(1);
+    penetration_depth_(0) = NAN;
+    mu_ = friction_coeff * VectorXd::Ones(1);
+    point_data_ = std::make_unique<PointContactData<double>>(
+        &penetration_depth_, Jc_.get(), &stiffness_, &dissipation_, &mu_);
+  }
 
+  void SetSystemDynamicsData() {
+    v_star_ = -1.0 * VectorXd::Ones(3);
     Ainv_tmp_.resize(3, 3);
     {
       std::vector<Triplet> triplets;
@@ -57,40 +96,18 @@ class PgsTest : public ::testing::Test {
     Ainv_ = std::make_unique<SparseLinearOperator<double>>("Ainv", &Ainv_tmp_);
     dynamics_data_ =
         std::make_unique<SystemDynamicsData<double>>(Ainv_.get(), &v_star_);
-    // Stiffness dissipation and penetration depth are not used in the PGS
-    // solver and are thus set to NAN.
-    stiffness_.resize(1);
-    stiffness_(0) = NAN;
-    dissipation_.resize(1);
-    dissipation_(0) = NAN;
-    penetration_depth_.resize(1);
-    penetration_depth_(0) = NAN;
-    // Defaults to a comically large friction coefficient.
-    SetPointContactData(1000);
-
-    PgsSolverParameters params;
-    params.abs_tolerance = kTol;
-    params.rel_tolerance = kTol;
-    params.max_iterations = kMaxIterations;
-    pgs_.set_parameters(params);
-  }
-
-  // Set the point contact data with the given friction coefficient.
-  void SetPointContactData(double friction_coeff) {
-    mu_ = friction_coeff * VectorXd::Ones(1);
-    point_data_ = std::make_unique<PointContactData<double>>(
-        &penetration_depth_, Jc_.get(), &stiffness_, &dissipation_, &mu_);
   }
 
   // Check the solver status to verify the solver has converged as expected.
   void VerifySolverStats() const {
     const PgsSolverStats& solver_stats = pgs_.get_solver_stats();
     EXPECT_TRUE(solver_stats.iterations < kMaxIterations);
-    EXPECT_TRUE(solver_stats.vc_err < kTol);
-    // The RMS norm of the delassus operator is larger than 1, so the impulse
-    // absolute error tolerance is even smaller than the velocity absolute error
-    // tolerance.
-    EXPECT_TRUE(solver_stats.gamma_err < kTol);
+    // ‖vc‖∞ <= 1, so the velocity error is smaller than
+    // abs_tolerance + 1 * rel_tolerance = 2 * kTol.
+    EXPECT_TRUE(solver_stats.vc_err < 2 * kTol);
+    // The ‖W‖ᵣₘₛ > 1 and ‖gamma‖∞ <= 1/3, so the impulse error is smaller than
+    // abs_tolerance / ‖W‖ᵣₘₛ + ‖gamma‖∞ * rel_tolerance < 2 * kTol.
+    EXPECT_TRUE(solver_stats.gamma_err < 2 * kTol);
   }
 
   VectorXd v_star_;
@@ -114,6 +131,8 @@ analytically calculated. The test confirms that the results from the PGS solver
 matches the analytically calculated contact velocity and impulse for a contact
 in stiction. */
 TEST_F(PgsTest, Stiction) {
+  // Set up a large friction coefficient to ensure stiction.
+  SetSinglePointContactData(1000);
   // Abitrary initial guess.
   Vector3<double> v_guess(0.12, 0.34, 0.56);
   // dt is unused in PGS and is thus set to Nan.
@@ -136,7 +155,7 @@ contact impulse can also be analytically calculated. The test confirms that the
 results from the PGS solver matches the analytically calculated contact velocity
 and impulse for a sliding contact. */
 TEST_F(PgsTest, Sliding) {
-  SetPointContactData(0);
+  SetSinglePointContactData(0);
   // Abitrary initial guess.
   Vector3<double> v_guess(0.12, 0.34, 0.56);
   // dt is unused in PGS and is thus set to Nan.
@@ -149,6 +168,23 @@ TEST_F(PgsTest, Sliding) {
   EXPECT_TRUE(CompareMatrices(result.fn, Vector1<double>(1. / 3.), kTol));
   EXPECT_TRUE(
       CompareMatrices(result.v_next, Vector3<double>(-1.0, -1.0, 0), kTol));
+  VerifySolverStats();
+}
+
+TEST_F(PgsTest, NoContact) {
+  SetZeroPointContactData();
+  // Abitrary initial guess.
+  Vector3<double> v_guess(0.12, 0.34, 0.56);
+  // dt is unused in PGS and is thus set to Nan.
+  const double dt = NAN;
+  ContactSolverResults<double> result;
+  EXPECT_EQ(
+      pgs_.SolveWithGuess(dt, *dynamics_data_, *point_data_, v_guess, &result),
+      ContactSolverStatus::kSuccess);
+  EXPECT_EQ(result.ft.size(), 0);
+  EXPECT_EQ(result.fn.size(), 0);
+  EXPECT_TRUE(
+      CompareMatrices(result.v_next, Vector3<double>(-1.0, -1.0, -1.0), kTol));
   VerifySolverStats();
 }
 }  // namespace

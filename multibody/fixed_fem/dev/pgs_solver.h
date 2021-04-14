@@ -136,12 +136,14 @@ class PgsSolver final : public ContactSolver<T> {
    relative error threshold. More specifically, the iterations are considered
    as converged if
 
-    1. ‖vc − vc_kp‖ < abs_tolerance + rel_tolerance * ‖vc‖, and
-    2. ‖gamma − gamma_kp‖ < abs_tolerance / ‖Wᵢᵢ‖ᵣₘₛ + rel_tolerance * ‖gamma‖,
+    1. ‖vcᵢᵏ - vcᵢᵏ⁺¹‖∞ < abs_tolerance + rel_tolerance * ‖vcᵢᵏ‖∞, and
+    2. ‖γᵢᵏ − γᵢᵏ⁺¹‖∞  < abs_tolerance / ‖Wᵢᵢ‖ᵣₘₛ + rel_tolerance * ‖γᵢᵏ‖∞
 
    where `abs_tolerance` and `rel_tolerance` are the absolute and relative
-   tolerances specified in PgsSolverParameters and ‖Wᵢᵢ‖ᵣₘₛ is used to
-   roughly convert the contact impulses into the unit of velocities.
+   tolerances specified in PgsSolverParameters, ‖Wᵢᵢ‖ᵣₘₛ is used to
+   roughly convert the contact impulses into the unit of velocities, and
+   vcᵢᵏ(γᵢᵏ) stands for the i-th contact point velocity (impulse) at the k-th
+   iteration.
 
    @param num_contacts    The number of contact points.
    @param vc              The contact velocity at iteration k.
