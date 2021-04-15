@@ -3,19 +3,15 @@
 load("@drake//tools/workspace:os.bzl", "determine_os")
 load("@drake//tools/workspace:metadata.bzl", "generate_repository_metadata")
 
-def setup_pypi_wheel(
+def download_and_extract_pypi_wheel(
         repository_ctx,
         package = None,
         version = None,
         pypi_tag = None,
         blake2_256 = None,
         sha256 = None,
-        mirrors = None,
-        deps = [],
-        imports = [],
-        data = []):
-    """Downloads and unpacks a PyPI wheel and adds it to the WORKSPACE as an
-    external.
+        mirrors = None):
+    """Downloads and unpacks a PyPI wheel.
 
     Arguments:
         package: The name of the PyPI package to download [String; required].
@@ -45,9 +41,6 @@ def setup_pypi_wheel(
             three are respectively the first two characters of {blake2_256},
             second two characters of {blake2_256}, and remaining characters
             of {blake2_256}.
-
-        deps, imports, data: Additional attrs for the target in the BUILD file
-            [Optional].
     """
 
     # Validate our args.
@@ -93,6 +86,53 @@ def setup_pypi_wheel(
                         to_move,
                     ))
 
+    # Tell our mirroring scripts what we downloaded.
+    generate_repository_metadata(
+        repository_ctx,
+        repository_rule_type = "pypi_wheel",
+        package = package,
+        version = version,
+        pypi_tag = pypi_tag,
+        blake2_256 = blake2_256,
+        sha256 = sha256,
+        urls = urls,
+    )
+
+    return struct(error = None)
+
+def setup_pypi_wheel(
+        repository_ctx,
+        package = None,
+        version = None,
+        pypi_tag = None,
+        blake2_256 = None,
+        sha256 = None,
+        mirrors = None,
+        deps = [],
+        imports = [],
+        data = []):
+    """Downloads and unpacks a PyPI wheel and adds it to the WORKSPACE as an
+    external.
+
+    Arguments:
+        package, version, pypi_tag, blake2_256, sha256, mirrors: Arguments to
+            be passed to download_and_extract_pypi_wheel() [Required].
+
+        deps, imports, data: Additional attrs for the target in the BUILD file
+            [Optional].
+    """
+
+    # Download and extract the wheel.
+    download_and_extract_pypi_wheel(
+        repository_ctx,
+        package = package,
+        version = version,
+        pypi_tag = pypi_tag,
+        blake2_256 = blake2_256,
+        sha256 = sha256,
+        mirrors = mirrors,
+    )
+
     # Create the BUILD file.
     BUILD = """
 load("@drake//tools/skylark:py.bzl", "py_library")
@@ -112,17 +152,5 @@ py_library(
         imports = imports,
     )
     repository_ctx.file("BUILD.bazel", BUILD)
-
-    # Tell our mirroring scripts what we downloaded.
-    generate_repository_metadata(
-        repository_ctx,
-        repository_rule_type = "pypi_wheel",
-        package = package,
-        version = version,
-        pypi_tag = pypi_tag,
-        blake2_256 = blake2_256,
-        sha256 = sha256,
-        urls = urls,
-    )
 
     return struct(error = None)
