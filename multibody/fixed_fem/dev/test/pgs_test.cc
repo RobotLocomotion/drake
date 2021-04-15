@@ -125,11 +125,11 @@ class PgsTest : public ::testing::Test {
 };
 
 /* The friction coefficient is set to be large enough to prevent any slipping.
-Hence, the expected post-solve contact velocity is (0, 0, 0). With the
-arbitrarily prescribed SPD tangent matrix A, the contact impulse can also be
-analytically calculated. The test confirms that the results from the PGS solver
-matches the analytically calculated contact velocity and impulse for a contact
-in stiction. */
+ Hence, the expected post-solve contact velocity is (0, 0, 0). With the
+ arbitrarily prescribed SPD tangent matrix A, the contact impulse can also be
+ analytically calculated. The test confirms that the results from the PGS solver
+ matches the analytically calculated contact velocity and impulse for a contact
+ in stiction. */
 TEST_F(PgsTest, Stiction) {
   // Set up a large friction coefficient to ensure stiction.
   SetSinglePointContactData(1000);
@@ -145,15 +145,17 @@ TEST_F(PgsTest, Stiction) {
       CompareMatrices(result.ft, Vector2<double>(1. / 12., 1. / 4.), kTol));
   EXPECT_TRUE(CompareMatrices(result.fn, Vector1<double>(1. / 3.), kTol));
   EXPECT_TRUE(CompareMatrices(result.v_next, Vector3<double>(0, 0, 0), kTol));
+  EXPECT_TRUE(CompareMatrices(
+      result.tau_contact, Vector3<double>(1. / 12., 1. / 4., 1. / 3.), kTol));
   VerifySolverStats();
 }
 
 /* The friction coefficient is set to 0 so that the tangential velocity doesn't
-change in during contact. Hence, the expected post-solve contact velocity is
-(-1.0, -1.0, 0). With the arbitrarily prescribed SPD tangent matrix A, the
-contact impulse can also be analytically calculated. The test confirms that the
-results from the PGS solver matches the analytically calculated contact velocity
-and impulse for a sliding contact. */
+ change in during contact. Hence, the expected post-solve contact velocity is
+ (-1.0, -1.0, 0). With the arbitrarily prescribed SPD tangent matrix A, the
+ contact impulse can also be analytically calculated. The test confirms that the
+ results from the PGS solver matches the analytically calculated contact
+ velocity and impulse for a sliding contact. */
 TEST_F(PgsTest, Sliding) {
   SetSinglePointContactData(0);
   // Abitrary initial guess.
@@ -168,16 +170,23 @@ TEST_F(PgsTest, Sliding) {
   EXPECT_TRUE(CompareMatrices(result.fn, Vector1<double>(1. / 3.), kTol));
   EXPECT_TRUE(
       CompareMatrices(result.v_next, Vector3<double>(-1.0, -1.0, 0), kTol));
+  EXPECT_TRUE(CompareMatrices(result.tau_contact,
+                              Vector3<double>(0, 0, 1. / 3.), kTol));
   VerifySolverStats();
 }
 
+/* The solver exits early if there the number of contact is zero. Tests that the
+ contact solver result in this case is as expected. */
 TEST_F(PgsTest, NoContact) {
-  SetZeroPointContactData();
-  // Abitrary initial guess.
-  Vector3<double> v_guess(0.12, 0.34, 0.56);
-  // dt is unused in PGS and is thus set to Nan.
+  // Solve a non trivial problem first.
+  const Vector3<double> v_guess(0.12, 0.34, 0.56);
+  SetSinglePointContactData(0);
   const double dt = NAN;
   ContactSolverResults<double> result;
+  pgs_.SolveWithGuess(dt, *dynamics_data_, *point_data_, v_guess, &result);
+
+  // Now solve a problem with no contact.
+  SetZeroPointContactData();
   EXPECT_EQ(
       pgs_.SolveWithGuess(dt, *dynamics_data_, *point_data_, v_guess, &result),
       ContactSolverStatus::kSuccess);
@@ -185,6 +194,8 @@ TEST_F(PgsTest, NoContact) {
   EXPECT_EQ(result.fn.size(), 0);
   EXPECT_TRUE(
       CompareMatrices(result.v_next, Vector3<double>(-1.0, -1.0, -1.0), kTol));
+  EXPECT_TRUE(
+      CompareMatrices(result.tau_contact, Vector3<double>::Zero(), kTol));
   VerifySolverStats();
 }
 }  // namespace

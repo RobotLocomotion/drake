@@ -34,11 +34,13 @@ ContactSolverStatus PgsSolver<T>::SolveWithGuess(
   // Set initial guess for impulses.
   gamma.setZero();
 
-  // Early exits if there's no contact.
+  // Early exit if there's no contact.
   if (nc == 0) {
     // The velocity post contact is the same as that for pre-contact if there's
     // no contact.
     v = v_star;
+    // Generalized contact force is zero if there's no contact.
+    tau_c_.setZero();
     CopyContactResults(results);
     return ContactSolverStatus::kSuccess;
   }
@@ -139,7 +141,10 @@ void PgsSolver<T>::PreProcessData(const SystemDynamicsData<T>& dynamics_data,
       // That's why we use an RMS norm.
       const Matrix3<T> Wii = W.block(3 * i, 3 * i, 3, 3);
       Wii_norm(i) = Wii.norm() / 3;  // 3 = sqrt(9).
-      // Diagonal approximation of the inverse of the Wii.
+      // Diagonal approximation of the inverse of the Wii. We want a diagonal
+      // approximation that represents the tangential and normal components of
+      // the Delassus operator block, but limit them with Wii_norm to avoid
+      // division by zero.
       Dinv.template segment<3>(3 * i) =
           Vector3<T>(1.0 / max((Wii(0, 0) + Wii(1, 1)) / 2, Wii_norm(i)),
                      1.0 / max((Wii(0, 0) + Wii(1, 1)) / 2, Wii_norm(i)),

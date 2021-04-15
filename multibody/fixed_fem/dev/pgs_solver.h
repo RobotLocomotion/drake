@@ -127,7 +127,8 @@ class PgsSolver final : public ContactSolver<T> {
     results->tau_contact = tau_c_;
   }
 
-  /* Compute preprocessed data that remains constant in SolveWithGuess(). */
+  /* Set the scratch data to correct sizes and compute preprocessed data that
+   remains constant in SolveWithGuess(). */
   void PreProcessData(const SystemDynamicsData<T>& dynamics_data,
                       const PointContactData<T>& contact_data);
 
