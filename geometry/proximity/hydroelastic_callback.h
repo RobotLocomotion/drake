@@ -117,7 +117,8 @@ std::unique_ptr<ContactSurface<T>> DispatchRigidSoftCalculation(
     }
   } else {
     // soft cannot be a half space; so this must be mesh-mesh.
-    const VolumeMeshField<double, double>& field_S = soft.pressure_field();
+    const VolumeMeshFieldLinear<double, double>& field_S =
+        soft.pressure_field();
     const Bvh<VolumeMesh<double>>& bvh_S = soft.bvh();
     const SurfaceMesh<double>& mesh_R = rigid.mesh();
     const Bvh<SurfaceMesh<double>>& bvh_R = rigid.bvh();

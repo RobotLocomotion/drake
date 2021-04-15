@@ -132,6 +132,16 @@ GTEST_TEST(GeometrySetTests, ConversionConstructor) {
                     "Geometry vector, frame initializer list constructor");
   ExpectContainsAll(tester11, frame_vector,
                     "Geometry vector, frame initializer list constructor");
+
+  GeometrySet set12(geometry_list, frame_list);
+  GeometrySetTester tester12(&set12);
+  EXPECT_EQ(tester12.num_frames(), static_cast<int>(frame_vector.size()));
+  EXPECT_EQ(tester12.num_geometries(),
+            static_cast<int>(geometry_vector.size()));
+  ExpectContainsAll(tester12, geometry_vector,
+                    "Geometry vector, frame vector");
+  ExpectContainsAll(tester12, frame_vector,
+                    "Geometry vector, frame vector");
 }
 
 GTEST_TEST(GeometrySetTests, SingleFrameAdd) {
