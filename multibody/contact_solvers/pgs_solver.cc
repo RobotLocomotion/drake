@@ -1,4 +1,4 @@
-#include "drake/multibody/fixed_fem/dev/pgs_solver.h"
+#include "drake/multibody/contact_solvers/pgs_solver.h"
 
 #include <algorithm>
 

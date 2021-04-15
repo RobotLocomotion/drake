@@ -407,21 +407,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "pgs_solver",
-    srcs = [
-        "pgs_solver.cc",
-    ],
-    hdrs = [
-        "pgs_solver.h",
-    ],
-    deps = [
-        "//common:unused",
-        "//multibody/contact_solvers:contact_solver",
-        "//multibody/contact_solvers:contact_solver_utils",
-    ],
-)
-
-drake_cc_library(
     name = "quadrature",
     hdrs = [
         "quadrature.h",
@@ -706,15 +691,6 @@ drake_cc_googletest(
         ":dummy_element",
         ":newmark_scheme",
         "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "pgs_test",
-    deps = [
-        ":pgs_solver",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/contact_solvers:sparse_linear_operator",
     ],
 )
 

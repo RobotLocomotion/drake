@@ -4,8 +4,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/multibody/contact_solvers/pgs_solver.h"
 #include "drake/multibody/contact_solvers/sparse_linear_operator.h"
-#include "drake/multibody/fixed_fem/dev/pgs_solver.h"
 
 namespace drake {
 namespace multibody {
