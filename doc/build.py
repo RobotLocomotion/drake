@@ -8,7 +8,6 @@ import argparse
 import os.path
 from pathlib import Path
 import shlex
-import shutil
 import subprocess
 import urllib.parse
 
@@ -47,12 +46,7 @@ def main():
     _check_call([pages_build, f"--out_dir={out_dir}"])
     _check_call([pydrake_build, f"--out_dir={out_dir}/pydrake"])
     _check_call([styleguide_build, f"--out_dir={out_dir}/styleguide"])
-    doxygen_scratch = f"{out_dir}/doxygen_scratch"
-    _check_call([doxygen_build, f"--out_dir={doxygen_scratch}"])
-    print(f"+ mv {doxygen_scratch}/html {out_dir}/doxygen_cxx")
-    os.rename(f"{doxygen_scratch}/html", f"{out_dir}/doxygen_cxx")
-    print(f"+ rm -rf {doxygen_scratch}")
-    shutil.rmtree(doxygen_scratch)
+    _check_call([doxygen_build, f"--out_dir={out_dir}/doxygen_cxx"])
 
     _build_sitemap(out_dir)
 
