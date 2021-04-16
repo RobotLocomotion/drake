@@ -730,6 +730,38 @@ GTEST_TEST(RigidTransform, TestMemoryLayoutOfRigidTransformDouble) {
   EXPECT_EQ(sizeof(X), 12 * sizeof(double));
 }
 
+// Test the stream insertion operator to write into a stream.
+GTEST_TEST(RollPitchYaw, ShiftOperatorIntoStream) {
+  // Test stream insertion for RigidTransform<double>.
+  const RollPitchYaw<double> rpy_double(0.2, 0.3, 0.4);
+  const Vector3<double> xyz_double(0.4, 0.3, 0.2);
+  const RigidTransform<double> X_double(rpy_double, xyz_double);
+  std::stringstream streamA;  streamA << X_double;
+  std::string rpy_expected_string = "rpy = [0.2 0.3 0.4] xyz = [0.4 0.3 0.2]";
+  EXPECT_EQ(rpy_expected_string, streamA.str());
+
+  // Test stream insertion for RigidTransform<AutoDiffXd>.
+  const RollPitchYaw<AutoDiffXd> rpy_autodiff(0.5, 0.6, 0.7);
+  const Vector3<AutoDiffXd> xyz_autodiff(0.7, 0.6, 0.5);
+  const RigidTransform<AutoDiffXd> X_autodiff(rpy_autodiff, xyz_autodiff);
+  std::stringstream streamB;  streamB << X_autodiff;
+  rpy_expected_string = "rpy = [0.5 0.6 0.7] xyz = [0.7 0.6 0.5]";
+  EXPECT_EQ(rpy_expected_string, streamB.str());
+
+#if 0
+  // Test stream insertion for RigidTransform<symbolic::Expression>.
+  const symbolic::Variable roll("roll"), pitch("pitch"), yaw("yaw"),
+                           x("x"), y("y"), z("z");
+  const RollPitchYaw<symbolic::Expression> rpy_symbolic(roll, pitch, yaw);
+  const Vector3<symbolic::Expression> xyz_symbolic(x, y, z);
+  const RigidTransform<symbolic::Expression> X_symbolic(rpy_symbolic,
+                                                        xyz_symbolic);
+  std::stringstream streamC;  streamC << X_symbolic;
+  rpy_expected_string = "rpy = [roll pitch yaw] xyz = [x y z]";
+  EXPECT_EQ(rpy_expected_string, streamC.str());
+#endif
+}
+
 }  // namespace
 }  // namespace math
 }  // namespace drake

@@ -475,24 +475,21 @@ GTEST_TEST(RollPitchYaw, SymbolicTest) {
 // Test the stream insertion operator to write into a stream.
 GTEST_TEST(RollPitchYaw, ShiftOperatorIntoStream) {
   // Test stream insertion for RollPitchYaw<double>.
-  std::stringstream streamA;
   const RollPitchYaw<double> rpy_double(0.2, 0.3, 0.4);
-  streamA << rpy_double;
+  std::stringstream streamA;  streamA << rpy_double;
   std::string rpy_expected_string = "rpy = [0.2 0.3 0.4]";
   EXPECT_EQ(rpy_expected_string, streamA.str());
 
   // Test stream insertion for RollPitchYaw<AutoDiffXd>.
-  std::stringstream streamB;
   const RollPitchYaw<AutoDiffXd> rpy_autodiff(0.5, 0.6, 0.7);
-  streamB << rpy_autodiff;
+  std::stringstream streamB;  streamB << rpy_autodiff;
   rpy_expected_string = "rpy = [0.5 0.6 0.7]";
   EXPECT_EQ(rpy_expected_string, streamB.str());
 
   // Test stream insertion for RollPitchYaw<symbolic::Expression>.
-  std::stringstream streamC;
   const symbolic::Variable r("roll"), p("pitch"), y("yaw");
   const RollPitchYaw<symbolic::Expression> rpy_symbolic(r, p, y);
-  streamC << rpy_symbolic;
+  std::stringstream streamC;  streamC << rpy_symbolic;
   rpy_expected_string = "rpy = [roll pitch yaw]";
   EXPECT_EQ(rpy_expected_string, streamC.str());
 }

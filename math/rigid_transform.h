@@ -613,6 +613,19 @@ static_assert(sizeof(RigidTransform<double>) == 12 * sizeof(double),
     "Low-level optimizations depend on RigidTransform<double> being "
     "stored as 12 sequential doubles in memory.");
 
+/// Stream insertion operator to write an instance of RigidTransform into a
+/// `std::ostream`. Especially useful for debugging.
+/// @relates RigidTransform.
+template <typename T>
+inline std::ostream& operator<<(std::ostream& out, const RigidTransform<T>& X) {
+  const RotationMatrix<T>& R = X.rotation();
+  const RollPitchYaw<T> rpy(R);
+  const Vector3<T>& p = X.translation();
+  out << rpy;
+  out << " xyz = [" << p(0) << " " << p(1) << " " << p(2) << "]";
+  return out;
+}
+
 /// Abbreviation (alias/typedef) for a RigidTransform double scalar type.
 /// @relates RigidTransform
 using RigidTransformd = RigidTransform<double>;
