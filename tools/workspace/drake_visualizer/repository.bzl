@@ -98,7 +98,7 @@ py_library(
         # Drake targets for these messages.  If this problem is not fixed
         # prior to the deprecation removal date, we'll have to keep the 
         # dependency around for a little while longer until it is fixed.
-        "@lcmtypes_bot2_core//:lcmtypes_bot2_core_py",
+        "@lcmtypes_bot2_core//:lcmtypes_bot2_core_py_nondeprecated",
         "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion_py_nondeprecated",  # noqa
         # TODO(eric.cousineau): Expose VTK Python libraries here for Linux.
     ],
