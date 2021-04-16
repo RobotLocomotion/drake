@@ -60,6 +60,8 @@ if ! command -v pip3.9 &>/dev/null; then
   exit 2
 fi
 
+pip3.9 install --upgrade --requirement "${BASH_SOURCE%/*}/requirements.txt"
+
 if [[ "${with_test_only}" -eq 1 ]]; then
   pip3.9 install --upgrade --requirement \
     "${BASH_SOURCE%/*}/requirements-test-only.txt"

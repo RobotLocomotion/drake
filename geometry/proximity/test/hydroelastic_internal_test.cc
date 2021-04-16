@@ -93,7 +93,7 @@ GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
     // Grab raw pointers so we can determine that their ownership changes due to
     // move semantics.
     const VolumeMesh<double>* const mesh_ptr = &start.mesh();
-    const VolumeMeshField<double, double>* const pressure_ptr =
+    const VolumeMeshFieldLinear<double, double>* const pressure_ptr =
         &start.pressure();
     const Bvh<VolumeMesh<double>>* const bvh_ptr = &start.bvh();
 
@@ -184,7 +184,7 @@ GTEST_TEST(SoftGeometryTest, TestCopyMoveAssignConstruct) {
     // Grab raw pointers so we can determine that their ownership changes due to
     // move semantics.
     const VolumeMesh<double>* const mesh_ptr = &start.mesh();
-    const VolumeMeshField<double, double>* const pressure_ptr =
+    const VolumeMeshFieldLinear<double, double>* const pressure_ptr =
         &start.pressure_field();
     const Bvh<VolumeMesh<double>>* const bvh_ptr = &start.bvh();
 

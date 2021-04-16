@@ -10,7 +10,6 @@ load(
 )
 load(
     "//doc:defs.bzl",
-    "DEFAULT_BINARY_TAGS",
     "DEFAULT_TEST_TAGS",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
@@ -38,7 +37,6 @@ drake_py_binary(
         "@bazel_tools//tools/python/runfiles",
         "@doxygen",
     ],
-    tags = DEFAULT_BINARY_TAGS,
     visibility = ["//doc:__pkg__"],
 )
 

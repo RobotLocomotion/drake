@@ -2599,16 +2599,39 @@ class MathematicalProgram {
       const Eigen::Ref<const Eigen::MatrixXd>& decision_variables_new_values,
       EigenPtr<Eigen::VectorXd> values) const;
 
+  /**
+   * @anchor set_solver_option
+   * @name Set solver options
+   * Set the options (parameters) for a specific solver. Refer to SolverOptions
+   * class for more details on the supported options of each solver.
+   */
+
+  //@{
+  /**
+   * See @ref set_solver_option for more details.
+   * Set the double-valued options.
+   * @pydrake_mkdoc_identifier{double_option}
+   */
   void SetSolverOption(const SolverId& solver_id,
                        const std::string& solver_option, double option_value) {
     solver_options_.SetOption(solver_id, solver_option, option_value);
   }
 
+  /**
+   * See @ref set_solver_option for more details.
+   * Set the integer-valued options.
+   * @pydrake_mkdoc_identifier{int_option}
+   */
   void SetSolverOption(const SolverId& solver_id,
                        const std::string& solver_option, int option_value) {
     solver_options_.SetOption(solver_id, solver_option, option_value);
   }
 
+  /**
+   * See @ref set_solver_option for more details.
+   * Set the string-valued options.
+   * @pydrake_mkdoc_identifier{string_option}
+   */
   void SetSolverOption(const SolverId& solver_id,
                        const std::string& solver_option,
                        const std::string& option_value) {
@@ -2622,6 +2645,7 @@ class MathematicalProgram {
   void SetSolverOptions(const SolverOptions& solver_options) {
     solver_options_ = solver_options;
   }
+  //@}
 
   /**
    * Returns the solver options stored inside MathematicalProgram.

@@ -344,12 +344,12 @@ drake_cc_library(
 drake_cc_library(
     name = "mesh_field",
     srcs = [
-        "mesh_field.cc",
-        "mesh_field_linear.cc",
+        "surface_mesh_field.cc",
+        "volume_mesh_field.cc",
     ],
     hdrs = [
-        "mesh_field.h",
         "mesh_field_linear.h",
+        "surface_mesh_field.h",
         "volume_mesh_field.h",
     ],
     deps = [
@@ -792,13 +792,6 @@ drake_cc_googletest(
         ":mesh_field",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
-    ],
-)
-
-drake_cc_googletest(
-    name = "mesh_field_test",
-    deps = [
-        ":mesh_field",
     ],
 )
 

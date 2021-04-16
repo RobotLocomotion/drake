@@ -22,7 +22,6 @@ drake_cc_library(
         "//common:find_resource",
         "//multibody/plant",
         "//systems/lcm:lcm_interface_system",
-        "@lcmtypes_robotlocomotion",
     ],
 )
 

@@ -2,12 +2,11 @@
 
 #include <utility>
 
-#include "robotlocomotion/image_array_t.hpp"
-
 #include "drake/common/find_resource.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
+#include "drake/lcmt_image_array.hpp"
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
 #include "drake/manipulation/kuka_iiwa/iiwa_command_sender.h"
@@ -29,7 +28,6 @@ using Eigen::Isometry3d;
 using Eigen::Vector3d;
 using multibody::MultibodyPlant;
 using multibody::Parser;
-using robotlocomotion::image_array_t;
 
 // TODO(russt): Consider taking DrakeLcmInterface as an argument instead of
 // (only) constructing one internally.
@@ -111,7 +109,7 @@ ManipulationStationHardwareInterface::ManipulationStationHardwareInterface(
 
   for (const std::string& name : camera_names_) {
     auto camera_subscriber = builder.AddSystem(
-        systems::lcm::LcmSubscriberSystem::Make<image_array_t>(
+        systems::lcm::LcmSubscriberSystem::Make<lcmt_image_array>(
             "DRAKE_RGBD_CAMERA_IMAGES_" + name, lcm));
     auto array_to_images =
         builder.AddSystem<systems::sensors::LcmImageArrayToImages>();

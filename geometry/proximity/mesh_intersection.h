@@ -6,9 +6,9 @@
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/bvh.h"
-#include "drake/geometry/proximity/mesh_field_linear.h"
 #include "drake/geometry/proximity/posed_half_space.h"
 #include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/surface_mesh_field.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
 #include "drake/geometry/query_results/contact_surface.h"
@@ -79,7 +79,7 @@ class SurfaceVolumeIntersector {
        The output surface mesh may have duplicate vertices.
    */
   void SampleVolumeFieldOnSurface(
-      const VolumeMeshField<T, T>& volume_field_M,
+      const VolumeMeshFieldLinear<T, T>& volume_field_M,
       const Bvh<VolumeMesh<T>>& bvh_M, const SurfaceMesh<T>& surface_N,
       const Bvh<SurfaceMesh<T>>& bvh_N, const math::RigidTransform<T>& X_MN,
       std::unique_ptr<SurfaceMesh<T>>* surface_MN_M,
@@ -287,7 +287,7 @@ class SurfaceVolumeIntersector {
             See @ref module_contact_surface.
    */
   static bool IsFaceNormalAlongPressureGradient(
-      const VolumeMeshField<T, T>& volume_field_M,
+      const VolumeMeshFieldLinear<T, T>& volume_field_M,
       const SurfaceMesh<T>& surface_N, const math::RigidTransform<T>& X_MN,
       const VolumeElementIndex& tet_index, const SurfaceFaceIndex& tri_index);
 
@@ -354,7 +354,7 @@ class SurfaceVolumeIntersector {
 template <typename T>
 std::unique_ptr<ContactSurface<T>>
 ComputeContactSurfaceFromSoftVolumeRigidSurface(
-    const GeometryId id_S, const VolumeMeshField<T, T>& field_S,
+    const GeometryId id_S, const VolumeMeshFieldLinear<T, T>& field_S,
     const Bvh<VolumeMesh<T>>& bvh_S, const math::RigidTransform<T>& X_WS,
     const GeometryId id_R, const SurfaceMesh<T>& mesh_R,
     const Bvh<SurfaceMesh<T>>& bvh_R, const math::RigidTransform<T>& X_WR);
@@ -379,7 +379,7 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
 // templated version of this function.)
 std::unique_ptr<ContactSurface<AutoDiffXd>>
 ComputeContactSurfaceFromSoftVolumeRigidSurface(
-    const GeometryId, const VolumeMeshField<double, double>&,
+    const GeometryId, const VolumeMeshFieldLinear<double, double>&,
     const Bvh<VolumeMesh<double>>&, const math::RigidTransform<AutoDiffXd>&,
     const GeometryId, const SurfaceMesh<double>&,
     const Bvh<SurfaceMesh<double>>&, const math::RigidTransform<AutoDiffXd>&);

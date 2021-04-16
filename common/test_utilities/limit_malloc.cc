@@ -1,5 +1,7 @@
 #include "drake/common/test_utilities/limit_malloc.h"
 
+#include <signal.h>
+
 #include <atomic>
 #include <cstdlib>
 #include <iostream>
@@ -9,6 +11,28 @@
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
+
+// Analyze the cases where heap hooks should be compiled and linked. Avoid
+// Apple platforms; also avoid ASan builds (spelled various ways for different
+// compilers). For ASan background, see #14901.
+#define DRAKE_INSTALL_HEAP_HOOKS 1
+
+#ifdef __APPLE__
+#  undef DRAKE_INSTALL_HEAP_HOOKS
+#  define DRAKE_INSTALL_HEAP_HOOKS 0
+#elif defined(__has_feature)
+// Detect ASan the clang way.
+#  if __has_feature(address_sanitizer)
+#    undef DRAKE_INSTALL_HEAP_HOOKS
+#    define DRAKE_INSTALL_HEAP_HOOKS 0
+#  endif
+#elif defined(__SANITIZE_ADDRESS__)
+// Detect ASan the gcc way.
+#  if __SANITIZE_ADDRESS__
+#    undef DRAKE_INSTALL_HEAP_HOOKS
+#    define DRAKE_INSTALL_HEAP_HOOKS 0
+#  endif
+#endif
 
 // Functions that are called during dl_init must not use the sanitizer runtime.
 #ifdef __clang__
@@ -28,7 +52,8 @@ namespace {
 // LimitMalloc does not work properly with some configurations. Check this
 // predicate and disarm to avoid erroneous results.
 bool IsSupportedConfiguration() {
-  static const bool is_supported{!std::getenv("LSAN_OPTIONS") &&
+  static const bool is_supported{DRAKE_INSTALL_HEAP_HOOKS &&
+                                 !std::getenv("LSAN_OPTIONS") &&
                                  !std::getenv("VALGRIND_OPTS")};
   return is_supported;
 }
@@ -168,6 +193,15 @@ void Monitor::ObserveAllocation() {
 
   if (!failure) { return; }
 
+  // Non-fatal breakpoint action; use with helper script:
+  // tools/dynamic_analysis/dump_limit_malloc_stacks
+  const auto break_env = std::getenv("DRAKE_LIMIT_MALLOC_NONFATAL_BREAKPOINT");
+  // Use the action if the environment variable is defined and not empty.
+  if (!!break_env && *break_env != '\0') {
+    ::raise(SIGTRAP);
+    return;
+  }
+
   // Report an error (but re-enable malloc before doing so!).
   ActiveMonitor::reset();
   std::cerr << "abort due to malloc #" << observed
@@ -223,7 +257,9 @@ LimitMalloc::~LimitMalloc() {
 }  // namespace test
 }  // namespace drake
 
-#ifndef __APPLE__
+
+// Optionally compile the code that places the heap hooks.
+#if DRAKE_INSTALL_HEAP_HOOKS
 // https://www.gnu.org/software/libc/manual/html_node/Replacing-malloc.html#Replacing-malloc
 extern "C" void* __libc_malloc(size_t);
 extern "C" void* __libc_free(void*);
@@ -264,3 +300,4 @@ static void EvaluateMinNumAllocations(int observed, int min_num_allocations) {}
 #endif
 
 #undef DRAKE_NO_SANITIZE
+#undef DRAKE_INSTALL_HEAP_HOOKS

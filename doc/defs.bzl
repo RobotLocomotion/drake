@@ -5,14 +5,6 @@
 # within @drake//doc/...).
 
 # Unless `setup/ubuntu/install_prereqs.sh --with-doc-only` has been run, most
-# targets in //doc/... will fail to build, so by default we'll disable them.
-#
-# A developer will have to explicitly opt-in in order to build these.
-DEFAULT_BINARY_TAGS = [
-    "manual",
-]
-
-# Unless `setup/ubuntu/install_prereqs.sh --with-doc-only` has been run, most
 # tests in //doc/... will fail to pass, so by default we'll disable them.
 #
 # A developer will have to explicitly opt-in in order to test these.

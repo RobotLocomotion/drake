@@ -15,9 +15,6 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":hydroelastic_engine",
-        ":hydroelastic_field",
-        ":hydroelastic_field_sphere",
-        ":level_set_field",
     ],
 )
 
@@ -33,35 +30,6 @@ drake_cc_library(
         "//geometry:scene_graph",
         "//geometry:scene_graph_inspector",
     ],
-)
-
-drake_cc_library(
-    name = "hydroelastic_field",
-    hdrs = [
-        "hydroelastic_field.h",
-    ],
-    deps = [
-        "//common:essential",
-        "//geometry/proximity:mesh_field",
-    ],
-)
-
-drake_cc_library(
-    name = "hydroelastic_field_sphere",
-    hdrs = [
-        "hydroelastic_field_sphere.h",
-    ],
-    deps = [
-        ":hydroelastic_field",
-        "//common:essential",
-        "//geometry/proximity:make_sphere_mesh",
-    ],
-)
-
-drake_cc_library(
-    name = "level_set_field",
-    hdrs = ["level_set_field.h"],
-    deps = ["//common:essential"],
 )
 
 drake_cc_googletest(

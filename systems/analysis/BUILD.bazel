@@ -449,6 +449,18 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "simulator_limit_malloc_test",
+    # TODO(#14901): This usage of LimitMalloc does not play nicely with Asan.
+    tags = ["no_asan"],
+    deps = [
+        ":simulator",
+        "//common/test_utilities:limit_malloc",
+        "//systems/framework:diagram_builder",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_googletest(
     name = "simulator_denorm_test",
     # Valgrind core does not support the floating point register
     # instructions that this test uses.

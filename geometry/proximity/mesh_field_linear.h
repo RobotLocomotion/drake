@@ -10,8 +10,8 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/reset_on_copy.h"
 #include "drake/common/sorted_pair.h"
-#include "drake/geometry/proximity/mesh_field.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 
@@ -19,7 +19,7 @@ namespace drake {
 namespace geometry {
 
 /**
- %MeshFieldLinear represents a continuous piecewise-linear scalar field f
+ %MeshFieldLinear represents a continuous piecewise-linear scalar field `f`
  defined on a (triangular or tetrahedral) mesh; the field value changes
  linearly within each element E (triangle or tetrahedron), and the gradient
  ∇f is constant within each element. The field is continuous across adjacent
@@ -91,14 +91,14 @@ namespace geometry {
  @tparam MeshType    the type of the meshes: SurfaceMesh or VolumeMesh.
  */
 template <class T, class MeshType>
-class MeshFieldLinear final : public MeshField<T, MeshType> {
+class MeshFieldLinear {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MeshFieldLinear)
 
   /** Constructs a MeshFieldLinear.
    @param name    The name of the field variable.
    @param values  The field value at each vertex of the mesh.
-   @param mesh    The mesh M to which this MeshField refers.
+   @param mesh    The mesh M to which this field refers.
    @param calculate_gradient Calculate gradient field when true, default is
                   true. Calculating gradient allows EvaluateCartesian() to
                   evaluate the field directly instead of converting
@@ -145,8 +145,8 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
    */
   MeshFieldLinear(std::string name, std::vector<T>&& values,
                   const MeshType* mesh, bool calculate_gradient = true)
-      : MeshField<T, MeshType>(mesh),
-        name_(std::move(name)), values_(std::move(values)) {
+      : mesh_(mesh), name_(std::move(name)), values_(std::move(values)) {
+    DRAKE_DEMAND(mesh_ != nullptr);
     DRAKE_DEMAND(static_cast<int>(values_.size()) ==
                  this->mesh().num_vertices());
     if (calculate_gradient) {
@@ -158,12 +158,19 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
     }
   }
 
-  T EvaluateAtVertex(typename MeshType::VertexIndex v) const final {
+  /** Evaluates the field value at a vertex.
+   @param v The index of the vertex.
+   */
+  const T& EvaluateAtVertex(typename MeshType::VertexIndex v) const {
     return values_[v];
   }
 
+  /** Evaluates the field value at a location on an element.
+   @param e The index of the element.
+   @param b The barycentric coordinates.
+   */
   T Evaluate(typename MeshType::ElementIndex e,
-             const typename MeshType::Barycentric& b) const final {
+             const typename MeshType::Barycentric& b) const {
     const auto& element = this->mesh().element(e);
     T value = b[0] * values_[element.vertex(0)];
     for (int i = 1; i < MeshType::kVertexPerElement; ++i) {
@@ -184,7 +191,7 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
                coordinates. M is the frame of the mesh.
    */
   T EvaluateCartesian(typename MeshType::ElementIndex e,
-                      const typename MeshType::Cartesian& p_MQ) const final {
+                      const typename MeshType::Cartesian& p_MQ) const {
     if (gradients_.size() == 0) {
       return Evaluate(e, this->mesh().CalcBarycentric(p_MQ, e));
     } else {
@@ -218,37 +225,42 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
     }
   }
 
+  /** Copy to a new %MeshFieldLinear and set the new %MeshFieldLinear to use a
+   new compatible mesh. %MeshFieldLinear needs a mesh to operate; however,
+   %MeshFieldLinear does not own the mesh. In fact, several %MeshFieldLinear
+   objects can use the same mesh.  */
+  [[nodiscard]] std::unique_ptr<MeshFieldLinear> CloneAndSetMesh(
+      const MeshType* new_mesh) const {
+    DRAKE_DEMAND(new_mesh != nullptr);
+    DRAKE_DEMAND(new_mesh->num_vertices() == mesh_->num_vertices());
+    // TODO(DamrongGuoy): Check that the `new_mesh` is equivalent to the
+    //  current `mesh_M_`.
+    std::unique_ptr<MeshFieldLinear> new_mesh_field = CloneWithNullMesh();
+    new_mesh_field->mesh_ = new_mesh;
+    return new_mesh_field;
+  }
+
+  const MeshType& mesh() const { return *mesh_; }
   const std::string& name() const { return name_; }
   const std::vector<T>& values() const { return values_; }
 
   // TODO(#12173): Consider NaN==NaN to be true in equality tests.
-  // TODO(DamrongGuoy): Change the type of parameter `field` from MeshField
-  //  to MeshFieldLinear. We will need to change the callers of this function
-  //  too.
   /** Checks to see whether the given MeshFieldLinear object is equal via deep
    exact comparison. The name of the objects are exempt from this comparison.
    NaNs are treated as not equal as per the IEEE standard.
    @param field The field for comparison.
    @returns `true` if the given field is equal.
-   @note Requires `MeshField field` to be MeshFieldLinear.
    */
-  bool Equal(const MeshField<T, MeshType>& field) const {
+  bool Equal(const MeshFieldLinear<T, MeshType>& field) const {
     if (!this->mesh().Equal(field.mesh())) return false;
-
-    const auto* field_linear =
-        dynamic_cast<const MeshFieldLinear<T, MeshType>*>(&field);
-    // TODO(DamrongGuoy): This shouldn't be a DRAKE_DEMAND, it should simply
-    //  return false and should come before comparing meshes.
-    DRAKE_DEMAND(field_linear);
 
     // Check field value at each vertex.
     for (typename MeshType::VertexIndex i(0); i < this->mesh().num_vertices();
          ++i) {
-      if (values_.at(i) != field_linear->values_.at(i))
-        return false;
+      if (values_.at(i) != field.values_.at(i)) return false;
     }
-    if (gradients_ != field_linear->gradients_) return false;
-    if (values_at_Mo_ != field_linear->values_at_Mo_) return false;
+    if (gradients_ != field.gradients_) return false;
+    if (values_at_Mo_ != field.values_at_Mo_) return false;
     // All checks passed.
     return true;
   }
@@ -256,15 +268,47 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
  private:
   // Clones MeshFieldLinear data under the assumption that the mesh
   // pointer is null.
-  [[nodiscard]] std::unique_ptr<MeshField<T, MeshType>>
-  DoCloneWithNullMesh() const final {
-    return std::make_unique<MeshFieldLinear>(*this);
-  }
-  void CalcGradientField();
-  Vector3<T> CalcGradientVector(typename MeshType::ElementIndex e) const;
+  [[nodiscard]] std::unique_ptr<MeshFieldLinear<T, MeshType>>
+  CloneWithNullMesh() const { return std::make_unique<MeshFieldLinear>(*this); }
 
-  void CalcValueAtMeshOriginForAllElements();
-  T CalcValueAtMeshOrigin(typename MeshType::ElementIndex e) const;
+  void CalcGradientField() {
+    gradients_.clear();
+    gradients_.reserve(this->mesh().num_elements());
+    for (typename MeshType::ElementIndex e(0); e < this->mesh().num_elements();
+         ++e) {
+      gradients_.push_back(CalcGradientVector(e));
+    }
+  }
+
+  Vector3<T> CalcGradientVector(typename MeshType::ElementIndex e) const {
+    std::array<T, MeshType::kVertexPerElement> u;
+    for (int i = 0; i < MeshType::kVertexPerElement; ++i) {
+      u[i] = values_[this->mesh().element(e).vertex(i)];
+    }
+    return this->mesh().CalcGradientVectorOfLinearField(u, e);
+  }
+
+  void CalcValueAtMeshOriginForAllElements() {
+    values_at_Mo_.clear();
+    values_at_Mo_.reserve(this->mesh().num_elements());
+    for (typename MeshType::ElementIndex e(0); e < this->mesh().num_elements();
+         ++e) {
+      values_at_Mo_.push_back(CalcValueAtMeshOrigin(e));
+    }
+  }
+
+  T CalcValueAtMeshOrigin(typename MeshType::ElementIndex e) const {
+    DRAKE_DEMAND(e < gradients_.size());
+    const typename MeshType::VertexIndex v0 = this->mesh().element(e).vertex(0);
+    const Vector3<T>& p_MV0 = this->mesh().vertex(v0).r_MV();
+    // f(V₀) = ∇fᵉ⋅p_MV₀ + fᵉ(Mo)
+    // fᵉ(Mo) = f(V₀) - ∇fᵉ⋅p_MV₀
+    return values_[v0] - gradients_[e].dot(p_MV0);
+  }
+
+  // We use `reset_on_copy` so that the default copy constructor resets
+  // the pointer to null when a MeshFieldLinear is copied.
+  reset_on_copy<const MeshType*> mesh_;
 
   std::string name_;
   // The field values are indexed in the same way as vertices, i.e.,
@@ -279,18 +323,6 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
   // frame M of the mesh. Notice that Mo may or may not lie inside elements_[i].
   std::vector<T> values_at_Mo_;
 };
-
-/**
- @tparam FieldValue  a valid Eigen scalar for field values.
- @tparam T  a valid Eigen scalar for coordinates.
- */
-template <typename FieldValue, typename T>
-using SurfaceMeshFieldLinear = MeshFieldLinear<FieldValue, SurfaceMesh<T>>;
-
-extern template class MeshFieldLinear<double, SurfaceMesh<double>>;
-extern template class MeshFieldLinear<AutoDiffXd, SurfaceMesh<AutoDiffXd>>;
-extern template class MeshFieldLinear<double, VolumeMesh<double>>;
-extern template class MeshFieldLinear<AutoDiffXd, VolumeMesh<AutoDiffXd>>;
 
 }  // namespace geometry
 }  // namespace drake

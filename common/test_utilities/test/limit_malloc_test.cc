@@ -130,6 +130,21 @@ TEST_P(LimitMallocTest, MinLimitTest) {
   }
 }
 
+TEST_P(LimitMallocTest, AvoidAsanTest) {
+  // ASan instrumentation hooks strdup() and returns storage from a separate
+  // heap. If our hooks are not removed entirely, the alien storage is handed
+  // to libc free(), with disastrous results. See #14901.
+  //
+  // If this test fails, it will abort deep in the call stack of free().
+  {
+    LimitMalloc guard({.max_num_allocations = 1, .min_num_allocations = 1});
+    auto* p = ::strdup("something");
+    // Fool the optimizer into not deleting all the code here.
+    ASSERT_NE(p, nullptr);
+    ::free(p);
+  }
+}
+
 TEST_P(LimitMallocDeathTest, MaxLimitTest) {
   ::testing::FLAGS_gtest_death_test_style = "threadsafe";
   const auto expected_message =

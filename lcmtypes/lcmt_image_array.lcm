@@ -1,0 +1,19 @@
+package drake;
+
+// This is used for sending and/or receiving multiple images at the same time.
+struct lcmt_image_array {
+  // The timestamp and the frame name.
+  // The timestamp holds when this data is packed. It's convenient to store
+  // the latest timestamp among the timestamps in `images` since it is possible
+  // for each of `images` having different timestamps if their camera's shutters
+  // are not synchronized.
+  // The `frame_name` can be empty if each image_t in `images` contains the
+  // information in it.
+  lcmt_header header;
+
+  // The number of images.
+  int32_t num_images;
+
+  // An array of image_t.
+  lcmt_image images[num_images];
+}
