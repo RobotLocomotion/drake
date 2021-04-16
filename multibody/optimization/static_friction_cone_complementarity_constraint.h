@@ -113,6 +113,8 @@ class StaticFrictionConeComplementarityNonlinearConstraint
  * @return binding The binding containing the nonlinear constraints (1)-(4).
  * @pre Both `q_vars` and `lambda_vars` have been added to `prog` before calling
  * this function.
+ *
+ * @ingroup solver_evaluators
  */
 solvers::Binding<internal::StaticFrictionConeComplementarityNonlinearConstraint>
 AddStaticFrictionConeComplementarityConstraint(

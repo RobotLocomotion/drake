@@ -27,6 +27,8 @@ namespace multibody {
  *   R_AB = I + sinθ â + (1-cosθ)â²
  * where
  *   trace(R_AB) = 2cos(θ) + 1 ≥ 2cos(θ_bound) + 1
+ *
+ * @ingroup solver_evaluators
  */
 class OrientationConstraint : public solvers::Constraint {
  public:

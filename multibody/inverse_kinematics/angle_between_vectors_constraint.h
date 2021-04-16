@@ -15,6 +15,8 @@ namespace multibody {
  * normalization (a_unit_A has unit length), and b_unit_B as `b` expressed in
  * frame B after normalization, the constraint is
  *   cos(θ_upper) ≤ a_unit_Aᵀ * R_AB * b_unit_B ≤ cos(θ_lower)
+ *
+ * @ingroup solver_evaluators
  */
 class AngleBetweenVectorsConstraint : public solvers::Constraint {
  public:

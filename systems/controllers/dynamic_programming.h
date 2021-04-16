@@ -102,7 +102,7 @@ struct DynamicProgrammingOptions {
 /// in through @p simulator) and a single vector output (which is the input
 /// of the system passed in through @p simulator).
 ///
-/// @ingroup control_systems
+/// @ingroup control
 std::pair<std::unique_ptr<BarycentricMeshSystem<double>>, Eigen::RowVectorXd>
 FittedValueIteration(
     Simulator<double>* simulator,

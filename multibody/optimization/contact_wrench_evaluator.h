@@ -144,6 +144,8 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
  * The contact wrench is τ_AB_W = 0, f_AB_W = λ
  * Namely we assume that λ is the contact force from A to B, applied directly
  * at B's witness point.
+ *
+ * @ingroup solver_evaluators
  */
 class ContactWrenchFromForceInWorldFrameEvaluator final
     : public ContactWrenchEvaluator {

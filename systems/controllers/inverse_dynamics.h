@@ -27,6 +27,7 @@ namespace controllers {
  * @see Constructors for descriptions of how (and which) forces are incorporated
  *      into the inverse dynamics computation.
  *
+ * @ingroup control_systems
  * @tparam_double_only
  */
 template <typename T>

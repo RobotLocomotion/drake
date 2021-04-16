@@ -21,6 +21,8 @@ namespace multibody {
  * The approach is described in Global Inverse Kinematics via Mixed-integer
  * Convex Optimization by Hongkai Dai, Gregory Izatt and Russ Tedrake,
  * International Journal of Robotics Research, 2019.
+ *
+ * @ingroup planning
  */
 class GlobalInverseKinematics {
  public:

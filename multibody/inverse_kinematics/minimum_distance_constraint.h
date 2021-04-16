@@ -63,6 +63,8 @@ approximation of max(d). We require that dₘᵢₙ < d_influence. The input sca
 (dᵢ - d_influence)/(d_influence - dₘᵢₙ) ensures that at the boundary of the
 feasible set (when dᵢ == dₘᵢₙ), we evaluate the penalty function at -1, where it
 is required to have a non-zero gradient.
+
+@ingroup solver_evaluators
 */
 class MinimumDistanceConstraint final : public solvers::Constraint {
  public:

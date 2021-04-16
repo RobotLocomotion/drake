@@ -278,6 +278,8 @@ class DifferentialInverseKinematicsParameters {
  * constants.
  * @return If the solver successfully finds a solution, joint_velocities will
  * be set to v, otherwise it will be nullopt.
+ *
+ * @ingroup planning
  */
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const Eigen::Ref<const VectorX<double>>& q_current,
@@ -303,6 +305,8 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * constants.
  * @return If the solver successfully finds a solution, joint_velocities will
  * be set to v, otherwise it will be nullopt.
+ *
+ * @ingroup planning
  */
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const multibody::MultibodyPlant<double>& robot,
@@ -327,6 +331,8 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * constants.
  * @return If the solver successfully finds a solution, joint_velocities will
  * be set to v, otherwise it will be nullopt.
+ *
+ * @ingroup planning
  */
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const multibody::MultibodyPlant<double>& robot,

@@ -11,6 +11,8 @@ namespace multibody {
 /**
  * Constrain that the distance between a point P1 on frame B1 and another point
  * P2 on frame B2 is within a range [distance_lower, distance_upper].
+ *
+ * @ingroup solver_evaluators
  */
 class PointToPointDistanceConstraint : public solvers::Constraint {
  public:

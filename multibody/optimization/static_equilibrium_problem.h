@@ -27,6 +27,8 @@ namespace multibody {
  * 5. q within the joint limit.
  * TODO(hongkai.dai): add the bounds on the input u, and other position
  * constraint (such as unit length constraint on quaternion).
+ *
+ * @ingroup planning
  */
 class StaticEquilibriumProblem {
  public:
