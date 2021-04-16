@@ -12,6 +12,28 @@
 #include <type_traits>
 #include <utility>
 
+// Analyze the cases where heap hooks should be compiled and linked. Avoid
+// Apple platforms; also avoid ASan builds (spelled various ways for different
+// compilers). For ASan background, see #14901.
+#define DRAKE_INSTALL_HEAP_HOOKS 1
+
+#ifdef __APPLE__
+#  undef DRAKE_INSTALL_HEAP_HOOKS
+#  define DRAKE_INSTALL_HEAP_HOOKS 0
+#elif defined(__has_feature)
+// Detect ASan the clang way.
+#  if __has_feature(address_sanitizer)
+#    undef DRAKE_INSTALL_HEAP_HOOKS
+#    define DRAKE_INSTALL_HEAP_HOOKS 0
+#  endif
+#elif defined(__SANITIZE_ADDRESS__)
+// Detect ASan the gcc way.
+#  if __SANITIZE_ADDRESS__
+#    undef DRAKE_INSTALL_HEAP_HOOKS
+#    define DRAKE_INSTALL_HEAP_HOOKS 0
+#  endif
+#endif
+
 // Functions that are called during dl_init must not use the sanitizer runtime.
 #ifdef __clang__
 #define DRAKE_NO_SANITIZE __attribute__((no_sanitize("address")))
@@ -30,7 +52,8 @@ namespace {
 // LimitMalloc does not work properly with some configurations. Check this
 // predicate and disarm to avoid erroneous results.
 bool IsSupportedConfiguration() {
-  static const bool is_supported{!std::getenv("LSAN_OPTIONS") &&
+  static const bool is_supported{DRAKE_INSTALL_HEAP_HOOKS &&
+                                 !std::getenv("LSAN_OPTIONS") &&
                                  !std::getenv("VALGRIND_OPTS")};
   return is_supported;
 }
@@ -234,7 +257,9 @@ LimitMalloc::~LimitMalloc() {
 }  // namespace test
 }  // namespace drake
 
-#ifndef __APPLE__
+
+// Optionally compile the code that places the heap hooks.
+#if DRAKE_INSTALL_HEAP_HOOKS
 // https://www.gnu.org/software/libc/manual/html_node/Replacing-malloc.html#Replacing-malloc
 extern "C" void* __libc_malloc(size_t);
 extern "C" void* __libc_free(void*);
@@ -275,3 +300,4 @@ static void EvaluateMinNumAllocations(int observed, int min_num_allocations) {}
 #endif
 
 #undef DRAKE_NO_SANITIZE
+#undef DRAKE_INSTALL_HEAP_HOOKS
