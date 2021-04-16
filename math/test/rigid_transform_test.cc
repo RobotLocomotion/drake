@@ -748,18 +748,22 @@ GTEST_TEST(RollPitchYaw, ShiftOperatorIntoStream) {
   rpy_expected_string = "rpy = [0.5 0.6 0.7] xyz = [0.7 0.6 0.5]";
   EXPECT_EQ(rpy_expected_string, streamB.str());
 
-#if 0
   // Test stream insertion for RigidTransform<symbolic::Expression>.
-  const symbolic::Variable roll("roll"), pitch("pitch"), yaw("yaw"),
-                           x("x"), y("y"), z("z");
+  // Note: The following message appears when I (Mitiguy) tried to use
+  // const symbolic::Expression roll("roll), pitch("pitch), yaw ("yaw");
+  // Failure C++ exception with description "The following environment does not
+  // have an entry for the variable roll" thrown in the test body.
+  // To avoid this message, I think roll, pitch, yaw must be evaluatable to
+  // numbers -- due to how a RollPitchYaw is calculated from a rotation matrix.
+  const symbolic::Expression roll(0.9), pitch(0.8), yaw(0.7);
+  const symbolic::Variable x("x"), y("y"), z("z");
   const RollPitchYaw<symbolic::Expression> rpy_symbolic(roll, pitch, yaw);
   const Vector3<symbolic::Expression> xyz_symbolic(x, y, z);
   const RigidTransform<symbolic::Expression> X_symbolic(rpy_symbolic,
                                                         xyz_symbolic);
   std::stringstream streamC;  streamC << X_symbolic;
-  rpy_expected_string = "rpy = [roll pitch yaw] xyz = [x y z]";
+  rpy_expected_string = "rpy = [0.9 0.8 0.7] xyz = [x y z]";
   EXPECT_EQ(rpy_expected_string, streamC.str());
-#endif
 }
 
 }  // namespace
