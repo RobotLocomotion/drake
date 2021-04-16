@@ -650,6 +650,18 @@ class RollPitchYaw {
   static constexpr double kGimbalLockToleranceCosPitchAngle = 0.008;
 };
 
+/// Stream insertion operator to write an instance of RollPitchYaw into a
+/// `std::ostream`. Especially useful for debugging.
+/// @relates RollPitchYaw.
+template <typename T>
+inline std::ostream& operator<<(std::ostream& out, const RollPitchYaw<T>& rpy) {
+  const T& roll = rpy.roll_angle();
+  const T& pitch = rpy.pitch_angle();
+  const T& yaw = rpy.yaw_angle();
+  out << "rpy = [" << roll << " " << pitch << " " << yaw << "]";
+  return out;
+}
+
 /// Abbreviation (alias/typedef) for a RollPitchYaw double scalar type.
 /// @relates RollPitchYaw
 using RollPitchYawd = RollPitchYaw<double>;
