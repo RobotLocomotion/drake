@@ -94,10 +94,8 @@ def _build_sitemap(site_dir: str) -> None:
             location = relative_path.parent.as_posix() + "/"
         else:
             location = relative_path.as_posix()
-            location = urllib.parse.urljoin(ROOT_URL,
-                                            urllib.parse.quote(location))
         loc = ET.SubElement(url, "loc")
-        loc.text = location
+        loc.text = urllib.parse.urljoin(ROOT_URL, urllib.parse.quote(location))
     sitemap = ET.ElementTree(urlset)
     sitemap.write(os.path.join(site_dir, "sitemap.xml"),
                   encoding="utf-8",
