@@ -10,6 +10,8 @@ namespace drake {
 namespace multibody {
 /**
  * Constrains the quaternion to have a unit length.
+ *
+ * @ingroup solver_evaluators
  */
 class UnitQuaternionConstraint : public solvers::Constraint {
  public:

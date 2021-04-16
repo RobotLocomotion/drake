@@ -134,7 +134,7 @@ System<T>::IsDifferenceEquationSystem()) by solving the differential Riccati
 equation and richer specification of the objective are anticipated (they are
 listed in the code as TODOs).
 
-@ingroup control_systems
+@ingroup control
 */
 FiniteHorizonLinearQuadraticRegulatorResult
 FiniteHorizonLinearQuadraticRegulator(

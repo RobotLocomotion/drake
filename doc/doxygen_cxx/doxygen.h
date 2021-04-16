@@ -1,4 +1,6 @@
 
+namespace drake {
+
 /**
 @mainpage
 <h3>Overview</h3>
@@ -47,6 +49,23 @@ only updated nightly.</p>
   @defgroup technical_notes Technical Notes
 */
 
+namespace solvers {
+/**
+  @{
+    @defgroup solver_evaluators Costs and Constraints
+
+    Most simple costs and constraints can be added directly to a
+    MathematicalProgram through the MathematicalProgram::AddCost() and
+    MathematicalProgram::AddConstraint() interfaces and their specializations.
+
+    We also provide a number of classes for common and/or more complex costs
+    and constraints, such as those built on the multibody::MultibodyPlant API.
+
+    @ingroup solvers
+  @}
+*/
+} // namespace solvers
+
 /**
   @defgroup accuracy_and_tolerance Accuracy, Tolerance, and Precision
   @ingroup terminology_and_notation
@@ -75,6 +94,22 @@ only updated nightly.</p>
    @defgroup identification System Identification
  @}
  */
+
+/** @addtogroup control
+ @{
+   A collection of algorithms for synthesizing feedback control.
+
+   A number of control design algorithms can also be found in @ref control_systems (if the design produces a systems::System).
+ @}
+*/
+
+/** @addtogroup planning
+ @{
+   A collection of algorithms for finding configurations and/or trajectories of dynamical systems.
+
+   Many planning algorithms make heavy use of solvers::MathematicalProgram and the numerous @ref solver_evaluators.  There are also some useful classes in @ref manipulation_systems.
+ @}
+*/
 
 /** @addtogroup technical_notes
 
@@ -183,3 +218,5 @@ only updated nightly.</p>
    Section 3.3. https://dx.doi.org/10.1016/j.piutam.2011.04.023
  @}
  */
+
+} // namespace drake

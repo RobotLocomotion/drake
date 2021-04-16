@@ -16,6 +16,8 @@ namespace planner {
 /**
  * A wrapper class around the IK planner. This class improves IK's usability by
  * handling constraint relaxing and multiple initial guesses internally.
+ *
+ * @ingroup planning
  */
 class ConstraintRelaxingIk {
  public:

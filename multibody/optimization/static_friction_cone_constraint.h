@@ -23,6 +23,8 @@ namespace multibody {
  *
  * The bound variables for this constraint is x = [q;λ], where q is the
  * generalized position, and λ is the parameterization of the contact wrench.
+ *
+ * @ingroup solver_evaluators
  */
 class StaticFrictionConeConstraint : public solvers::Constraint {
  public:

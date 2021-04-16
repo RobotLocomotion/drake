@@ -12,6 +12,8 @@ namespace multibody {
 /**
  * Constrains the distance between a pair of geometries to be within a range
  * [distance_lower, distance_upper].
+ *
+ * @ingroup solver_evaluators
  */
 class DistanceConstraint : public solvers::Constraint {
  public:

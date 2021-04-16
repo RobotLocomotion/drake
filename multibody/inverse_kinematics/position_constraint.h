@@ -12,6 +12,8 @@ namespace multibody {
  * Constrains the position of a point Q, rigidly attached to a frame B, to be
  * within a bounding box measured and expressed in frame A. Namely
  * p_AQ_lower <= p_AQ <= p_AQ_upper.
+ *
+ * @ingroup solver_evaluators
  */
 class PositionConstraint : public solvers::Constraint {
  public:

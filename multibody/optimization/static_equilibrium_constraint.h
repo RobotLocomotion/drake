@@ -16,6 +16,8 @@ namespace multibody {
 
 /**
  * Impose the static equilibrium constraint 0 = τ_g + Bu + ∑J_WBᵀ(q) * Fapp_B_W
+ *
+ * @ingroup solver_evaluators
  */
 class StaticEquilibriumConstraint final : public solvers::Constraint {
  public:

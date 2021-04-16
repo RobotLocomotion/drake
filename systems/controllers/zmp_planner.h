@@ -66,6 +66,8 @@ namespace controllers {
  * for real-time ZMP gait generation and feedback stabilization,"
  * 2015 IEEE-RAS 15th International Conference on Humanoid Robots (Humanoids),
  * Seoul, 2015, pp. 936-940.
+ *
+ * @ingroup planning
  */
 class ZMPPlanner {
  public:

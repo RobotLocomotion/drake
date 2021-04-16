@@ -15,6 +15,8 @@ namespace multibody {
  * Solves an inverse kinematics (IK) problem on a MultibodyPlant, to find the
  * postures of the robot satisfying certain constraints.
  * The decision variables include the generalized position of the robot.
+ *
+ * @ingroup planning
  */
 class InverseKinematics {
  public:

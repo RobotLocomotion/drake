@@ -36,6 +36,8 @@ namespace trajectory_optimization {
 /// This class assumes that there are a fixed number (N) time steps/samples, and
 /// that the trajectory is discretized into timesteps h (N-1 of these), state x
 /// (N of these), and control input u (N of these).
+///
+/// @ingroup planning
 class MultipleShooting : public solvers::MathematicalProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultipleShooting)

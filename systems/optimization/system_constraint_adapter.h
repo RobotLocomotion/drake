@@ -16,6 +16,8 @@ namespace systems {
  * (and System<symbolic::Expression> if possible), and store these systems (of
  * different scalar types) inside this class. Using this class with a system
  * that cannot be converted to System<AutoDiffXd> will cause a runtime error.
+ *
+ * @ingroup solver_evaluators
  */
 class SystemConstraintAdapter {
  public:
