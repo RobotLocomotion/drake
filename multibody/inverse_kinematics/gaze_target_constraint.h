@@ -21,6 +21,8 @@ namespace multibody {
  *   (p_ST_Aᵀ * n_unit_A)² ≥ (cosθ)²p_ST_Aᵀ * p_ST_A
  * where p_ST_A is the vector from S to T, expressed in frame A. n_unit_A is the
  * unit length directional vector representing the center ray of the cone.
+ *
+ * @ingroup solver_evaluators
  */
 class GazeTargetConstraint : public solvers::Constraint {
  public:

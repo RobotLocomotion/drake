@@ -24,6 +24,7 @@ namespace trajectory_optimization {
 /// achieve a 3rd order integration accuracy.
 ///
 /// Note: This algorithm only works with the continuous states of a system.
+/// @ingroup planning
 class DirectCollocation : public MultipleShooting {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectCollocation)
@@ -93,6 +94,7 @@ class DirectCollocation : public MultipleShooting {
 /// Note that the DirectCollocation implementation allocates only ONE of
 /// these constraints, but binds that constraint multiple times (with
 /// different decision variables, along the trajectory).
+/// @ingroup solver_evaluators
 class DirectCollocationConstraint : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectCollocationConstraint)

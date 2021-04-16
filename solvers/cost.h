@@ -16,6 +16,8 @@ namespace solvers {
 
 /**
  * Provides an abstract base for all costs.
+ *
+ * @ingroup solver_evaluators
  */
 class Cost : public EvaluatorBase {
  public:

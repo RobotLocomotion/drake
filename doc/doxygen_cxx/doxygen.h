@@ -1,4 +1,6 @@
 
+namespace drake {
+
 /**
 @mainpage
 <h3>Overview</h3>
@@ -33,9 +35,8 @@ out the Doxygen C++ documentation</a></p>
 <p>Drake's Doxygen documentation is
 <a href="https://drake.mit.edu">hosted online</a> for the master branch, but is
 only updated nightly.</p>
-
-
 */
+
 // Define groups here so we can control the ordering.
 /**
   @defgroup terminology_and_notation Drake Terminology and Notation
@@ -50,46 +51,6 @@ only updated nightly.</p>
 /**
   @defgroup accuracy_and_tolerance Accuracy, Tolerance, and Precision
   @ingroup terminology_and_notation
-*/
-
-/**
-  @defgroup multibody_notation Multibody Terminology and Notation
-  @ingroup terminology_and_notation
-*/
-
-/**
-  @defgroup constraint_overview Multibody Dynamics Constraints
-  @ingroup multibody
-*/
-
-// TODO(russt): Take a thorough pass through the algorithms group
-// documentation, adding brief descriptions of each and tagging the relevant
-// algorithms throughout the code.
-/** @addtogroup algorithms
- @{
-   @defgroup simulation Simulation
-   @defgroup analysis Analysis
-   @defgroup planning Planning
-   @defgroup control Feedback Control Design
-   @defgroup estimation State Estimation
-   @defgroup identification System Identification
- @}
- */
-
-/** @addtogroup technical_notes
-
- @{
-
- @defgroup templates Template MetaProgramming
-
- <p>Drake's C++ libraries use a small amount of template metaprogramming to
-  enable more advanced features (autodiff, symbolic computation, etc).  We
-  have tried to avoid users having to be expert template programmers, but this
-  is a good reference if you'd like to
-  <a href="http://www.generic-programming.org/languages/cpp/techniques.php">
-  learn more about generic programming</a>.</p>
-
- @}
 */
 
 /** @addtogroup accuracy_and_tolerance
@@ -182,4 +143,83 @@ only updated nightly.</p>
  - [1] M. Sherman, A. Seth, S. Delp. Procedia IUTAM 2:241-261 (2011),
    Section 3.3. https://dx.doi.org/10.1016/j.piutam.2011.04.023
  @}
+*/
+
+/**
+  @defgroup multibody_notation Multibody Terminology and Notation
+  @ingroup terminology_and_notation
+*/
+
+namespace solvers {
+/**
+  @{
+    @defgroup solver_evaluators Costs and Constraints
+
+    Most simple costs and constraints can be added directly to a
+    MathematicalProgram through the MathematicalProgram::AddCost() and
+    MathematicalProgram::AddConstraint() interfaces and their specializations.
+
+    We also provide a number of classes for common and/or more complex costs
+    and constraints, such as those built on the multibody::MultibodyPlant API.
+
+    @ingroup solvers
+  @}
+*/
+} // namespace solvers
+
+/**
+  @defgroup constraint_overview Multibody Dynamics Constraints
+  @ingroup multibody
+*/
+
+// TODO(russt): Take a thorough pass through the algorithms group
+// documentation, adding brief descriptions of each and tagging the relevant
+// algorithms throughout the code.
+/** @addtogroup algorithms
+ @{
+   @defgroup simulation Simulation
+   @defgroup analysis Analysis
+   @defgroup planning Planning
+   @defgroup control Feedback Control Design
+   @defgroup estimation State Estimation
+   @defgroup identification System Identification
+ @}
  */
+
+/** @addtogroup planning
+ @{
+   A collection of algorithms for finding configurations and/or trajectories of
+   dynamical systems.
+
+   Many planning algorithms make heavy use of solvers::MathematicalProgram and
+   the numerous @ref solver_evaluators.  There are also some useful classes in
+   @ref manipulation_systems.
+ @}
+*/
+
+/** @addtogroup control
+ @{
+   A collection of algorithms for synthesizing feedback control.
+
+   A number of control design algorithms can also be found in @ref
+   control_systems (if the design produces a systems::System).
+ @}
+*/
+
+/** @addtogroup technical_notes
+
+ @{
+
+ @defgroup templates Template MetaProgramming
+
+ <p>Drake's C++ libraries use a small amount of template metaprogramming to
+  enable more advanced features (autodiff, symbolic computation, etc).  We
+  have tried to avoid users having to be expert template programmers, but this
+  is a good reference if you'd like to
+  <a href="http://www.generic-programming.org/languages/cpp/techniques.php">
+  learn more about generic programming</a>.</p>
+
+ @}
+*/
+
+} // namespace drake
