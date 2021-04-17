@@ -26,7 +26,8 @@ class PoseSliders(LeafSystem):
     on one slider for each of roll, pitch, yaw, x, y, and z.  This can be used,
     for instance, as an interface to teleoperate the end-effector of a robot.
 
-    System YAML
+    .. pydrake_system::
+
         name: PoseSliders
         output_ports:
         - pose
@@ -176,7 +177,8 @@ class WidgetSystem(LeafSystem):
     A system that outputs the ``value``s (converted to ``float``) from
     ipywidgets.
 
-    System YAML
+    .. pydrake_system::
+
       name: WidgetSystem
       output_ports:
       - widget_group_0
