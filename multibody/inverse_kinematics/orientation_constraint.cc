@@ -56,27 +56,11 @@ OrientationConstraint::OrientationConstraint(
   }
 }
 
-template <typename T>
-void EvalConstraintGradient(const systems::Context<T>&,
-                            const MultibodyPlant<T>&,
-                            const Frame<T>&,
-                            const Frame<T>&,
-                            const math::RotationMatrix<double>&,
-                            const math::RotationMatrix<T>& R_AB,
-                            const Vector3<T>&,
-                            const Eigen::Ref<const VectorX<T>>&,
-                            VectorX<T>* y) {
-  (*y)(0) = R_AB.matrix().trace();
-}
-
 void EvalConstraintGradient(
     const systems::Context<double>& context,
-    const MultibodyPlant<double>& plant,
-    const Frame<double>& frameAbar,
-    const Frame<double>& frameBbar,
-    const math::RotationMatrix<double>& R_AbarA,
-    const math::RotationMatrix<double>& R_AB,
-    const Vector3<double>& r_AB,
+    const MultibodyPlant<double>& plant, const Frame<double>& frameAbar,
+    const Frame<double>& frameBbar, const math::RotationMatrix<double>& R_AbarA,
+    const math::RotationMatrix<double>& R_AB, const Vector3<double>& r_AB,
     const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) {
   // The constraint function is
   //  g(q) = tr(R_AB(q)).
@@ -137,8 +121,12 @@ void DoEvalGeneric(const MultibodyPlant<T>& plant, systems::Context<T>* context,
   const Vector3<T> r_AB{m(1, 2) - m(2, 1),
                         m(2, 0) - m(0, 2),
                         m(0, 1) - m(1, 0)};
-  EvalConstraintGradient(*context, plant, frameAbar, frameBbar, R_AbarA,
-                         R_AB, r_AB, x, y);
+  if constexpr (std::is_same_v<T, S>) {
+    (*y)(0) = R_AB.matrix().trace();
+  } else {
+    EvalConstraintGradient(*context, plant, frameAbar, frameBbar, R_AbarA, R_AB,
+                           r_AB, x, y);
+  }
 }
 
 void OrientationConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
