@@ -65,7 +65,6 @@ const MultibodyPlant<T>& RefFromPtrOrThrow(
   if (plant == nullptr) throw std::invalid_argument("plant is nullptr.");
   return *plant;
 }
-
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

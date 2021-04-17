@@ -6,6 +6,7 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/inverse_kinematics/angle_between_vectors_constraint.h"
+#include "drake/multibody/inverse_kinematics/com_position_constraint.h"
 #include "drake/multibody/inverse_kinematics/distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/gaze_target_constraint.h"
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
@@ -334,6 +335,41 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
             py::keep_alive<1, 8>(), ctor_doc_ad);
+  }
+
+  {
+    using Class = ComPositionConstraint;
+    constexpr auto& cls_doc = doc.ComPositionConstraint;
+    using Ptr = std::shared_ptr<Class>;
+    py::class_<Class, Constraint, Ptr>(m, "ComPositionConstraint", cls_doc.doc)
+        .def(py::init([](const MultibodyPlant<double>* plant,
+                          const std::optional<std::vector<ModelInstanceIndex>>&
+                              model_instances,
+                          const Frame<double>& expressed_frame,
+                          systems::Context<double>* plant_context) {
+          return std::make_unique<Class>(
+              plant, model_instances, expressed_frame, plant_context);
+        }),
+            py::arg("plant"), py::arg("model_instances"),
+            py::arg("expressed_frame"), py::arg("plant_context"),
+            // Keep alive, reference: `self` keeps `plant` alive.
+            py::keep_alive<1, 2>(),
+            // Keep alive, reference: `self` keeps `plant_context` alive.
+            py::keep_alive<1, 5>(), cls_doc.ctor.doc_ctor_double)
+        .def(py::init([](const MultibodyPlant<AutoDiffXd>* plant,
+                          const std::optional<std::vector<ModelInstanceIndex>>&
+                              model_instances,
+                          const Frame<AutoDiffXd>& expressed_frame,
+                          systems::Context<AutoDiffXd>* plant_context) {
+          return std::make_unique<Class>(
+              plant, model_instances, expressed_frame, plant_context);
+        }),
+            py::arg("plant"), py::arg("model_instances"),
+            py::arg("expressed_frame"), py::arg("plant_context"),
+            // Keep alive, reference: `self` keeps `plant` alive.
+            py::keep_alive<1, 2>(),
+            // Keep alive, reference: `self` keeps `plant_context` alive.
+            py::keep_alive<1, 5>(), cls_doc.ctor.doc_ctor_autodiff);
   }
 
   {
