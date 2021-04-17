@@ -14,7 +14,8 @@ class DifferentialIK(LeafSystem):
     initialize the initial position commands to match the initial
     configuration of the robot.
 
-    System YAML
+    .. pydrake_system::
+
         name: DifferentialIK
         input_ports:
         - X_WE_desired
