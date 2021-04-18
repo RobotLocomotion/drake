@@ -14,6 +14,8 @@ namespace multibody {
  * position q, expressed in a frame E. p_EC ∈ ℝ³ is the variable representing
  * robot CoM (C) position expressed in frame E. The evaluated variables are
  * [q;r], where q is the generalized position vector of the entire plant.
+ *
+ * @ingroup solver_evaluators
  */
 class ComPositionConstraint final : public solvers::Constraint {
  public:

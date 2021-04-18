@@ -3,7 +3,10 @@ import typing
 
 import numpy as np
 
-from pydrake.multibody.optimization import StaticEquilibriumProblem
+from pydrake.multibody.optimization import (
+    StaticEquilibriumProblem,
+    CentroidalMomentumConstraint
+)
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph,
     CoulombFriction
@@ -182,3 +185,17 @@ class TestStaticEquilibriumProblem(unittest.TestCase):
                 result.get_x_val())
             result = snopt_solver.Solve(dut.prog())
             self.assertTrue(result.is_success())
+
+
+class TestCentroidalMomentumConstraint(unittest.TestCase):
+    def test_autodiff_constructor(self):
+        # test with 2 boxes.
+        masses = [1., 2]
+        box_sizes = [np.array([0.1, 0.1, 0.1]), np.array([0.1, 0.1, 0.2])]
+        plant, _, _, _, _, _ = construct_environment(masses, box_sizes)
+        plant_context = plant.CreateDefaultContext()
+        dut = CentroidalMomentumConstraint(plant, None, plant_context)
+        self.assertIsInstance(dut, mp.Constraint)
+        self.assertEqual(
+            dut.num_vars(), plant.num_positions() + plant.num_velocities() + 6)
+        self.assertEqual(dut.num_constraints(), 6)
