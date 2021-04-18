@@ -630,7 +630,8 @@ class MeshcatPointCloudVisualizer(LeafSystem):
         viz = meshcat.Visualizer()
         pc_viz = builder.AddSystem(MeshcatPointCloudVisualizer(viz))
 
-    System YAML
+    .. pydrake_system::
+
         name: MeshcatPointCloudVisualizer
         input_ports:
         - point_cloud_P

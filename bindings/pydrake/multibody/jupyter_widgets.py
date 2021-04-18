@@ -23,7 +23,8 @@ class JointSliders(VectorSystem):
     floating-base "mobilizers") are held constant at the default value
     obtained from robot.CreateDefaultContext().
 
-    System YAML
+    .. pydrake_system::
+
         name: JointSliders
         output_ports:
         - positions

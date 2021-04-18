@@ -44,7 +44,8 @@ def _ConcatenatePointClouds(points_dict, colors_dict):
 
 class PointCloudConcatenation(LeafSystem):
     """
-    System YAML
+    .. pydrake_system::
+
         name: PointCloudConcatenation
         input_ports:
         - point_cloud_CiSi_id0

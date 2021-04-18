@@ -22,7 +22,8 @@ class SystemSliders(VectorSystem):
     @warning: Do not close the slider GUI while running a simulation. It will
     cause the simulation to crash.
 
-    System YAML
+    .. pydrake_system::
+
         name: SystemSliders
         output_ports:
         - slider_positions
