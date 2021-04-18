@@ -1,9 +1,13 @@
 import unittest
 import typing
+from collections import namedtuple
 
 import numpy as np
 
-from pydrake.multibody.optimization import StaticEquilibriumProblem
+from pydrake.multibody.optimization import (
+    StaticEquilibriumProblem,
+    CentroidalMomentumConstraint
+)
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph,
     CoulombFriction
@@ -22,6 +26,10 @@ from pydrake.geometry import (
 )
 from pydrake.math import RigidTransform
 from pydrake.autodiffutils import AutoDiffXd
+
+Environment = namedtuple("Environment", [
+    "plant", "scene_graph", "diagram", "boxes", "ground_geometry_id",
+    "boxes_geometry_id"])
 
 
 def construct_environment(masses: typing.List, box_sizes: typing.List):
@@ -80,8 +88,10 @@ def construct_environment(masses: typing.List, box_sizes: typing.List):
     plant.Finalize()
     diagram = builder.Build()
 
-    return plant, scene_graph, diagram, boxes, ground_geometry_id,\
-        boxes_geometry_id
+    return Environment(
+        plant=plant, scene_graph=scene_graph, diagram=diagram, boxes=boxes,
+        ground_geometry_id=ground_geometry_id,
+        boxes_geometry_id=boxes_geometry_id)
 
 
 def split_se3(q_se3):
@@ -100,23 +110,21 @@ class TestStaticEquilibriumProblem(unittest.TestCase):
         # Test with a single box.
         masses = [1.]
         box_sizes = [np.array([0.1, 0.1, 0.1])]
-        plant, scene_graph, diagram, boxes, ground_geometry_id,\
-            boxes_geometry_id = construct_environment(
-                masses, box_sizes)
-        diagram_context = diagram.CreateDefaultContext()
-        plant_context = diagram.GetMutableSubsystemContext(
-            plant, diagram_context)
+        env = construct_environment(masses, box_sizes)
+        diagram_context = env.diagram.CreateDefaultContext()
+        plant_context = env.diagram.GetMutableSubsystemContext(
+            env.plant, diagram_context)
         # Ignore the collision between box-box, since currently Drake doesn't
         # support box-box collision with AutoDiffXd.
         ignored_collision_pairs = {(
-            ground_geometry_id, boxes_geometry_id[0])}
+            env.ground_geometry_id, env.boxes_geometry_id[0])}
         dut = StaticEquilibriumProblem(
-            plant, plant_context, ignored_collision_pairs)
+            env.plant, plant_context, ignored_collision_pairs)
 
         # Add the constraint that the quaternion should have unit length.
         box_quat, box_xyz = split_se3(dut.q_vars())
         ik.AddUnitQuaternionConstraintOnPlant(
-            plant, dut.q_vars(), dut.get_mutable_prog())
+            env.plant, dut.q_vars(), dut.get_mutable_prog())
 
         dut.get_mutable_prog().SetInitialGuess(
             box_quat, np.array([0.5, 0.5, 0.5, 0.5]))
@@ -140,29 +148,27 @@ class TestStaticEquilibriumProblem(unittest.TestCase):
         # test with 2 boxes.
         masses = [1., 2]
         box_sizes = [np.array([0.1, 0.1, 0.1]), np.array([0.1, 0.1, 0.2])]
-        plant, scene_graph, diagram, boxes, ground_geometry_id,\
-            boxes_geometry_id = construct_environment(
-                masses, box_sizes)
-        diagram_context = diagram.CreateDefaultContext()
-        plant_context = diagram.GetMutableSubsystemContext(
-            plant, diagram_context)
+        env = construct_environment(masses, box_sizes)
+        diagram_context = env.diagram.CreateDefaultContext()
+        plant_context = env.diagram.GetMutableSubsystemContext(
+            env.plant, diagram_context)
         # Ignore the collision between box-box, since currently Drake doesn't
         # support box-box collision with AutoDiffXd.
         ignored_collision_pairs = set()
-        for i in range(len(boxes_geometry_id)):
+        for i in range(len(env.boxes_geometry_id)):
             ignored_collision_pairs.add(tuple((
-                ground_geometry_id, boxes_geometry_id[i])))
-            for j in range(i+1, len(boxes_geometry_id)):
+                env.ground_geometry_id, env.boxes_geometry_id[i])))
+            for j in range(i+1, len(env.boxes_geometry_id)):
                 ignored_collision_pairs.add(tuple(
-                    (boxes_geometry_id[i], boxes_geometry_id[j])))
+                    (env.boxes_geometry_id[i], env.boxes_geometry_id[j])))
 
         dut = StaticEquilibriumProblem(
-            plant, plant_context, ignored_collision_pairs)
+            env.plant, plant_context, ignored_collision_pairs)
 
         # Add the constraint that the quaternion should have unit length.
         ik.AddUnitQuaternionConstraintOnPlant(
-            plant, dut.q_vars(), dut.get_mutable_prog())
-        for i in range(len(boxes)):
+            env.plant, dut.q_vars(), dut.get_mutable_prog())
+        for i in range(len(env.boxes)):
             box_quaternion_start = 7 * i
             box_quat, box_xyz = split_se3(
                 dut.q_vars()[box_quaternion_start:box_quaternion_start+7])
@@ -182,3 +188,20 @@ class TestStaticEquilibriumProblem(unittest.TestCase):
                 result.get_x_val())
             result = snopt_solver.Solve(dut.prog())
             self.assertTrue(result.is_success())
+
+
+class TestCentroidalMomentumConstraint(unittest.TestCase):
+    def test_autodiff_constructor(self):
+        # test with 2 boxes.
+        masses = [1., 2]
+        box_sizes = [np.array([0.1, 0.1, 0.1]), np.array([0.1, 0.1, 0.2])]
+        env = construct_environment(masses, box_sizes)
+        plant_context = env.plant.CreateDefaultContext()
+        dut = CentroidalMomentumConstraint(
+            plant=env.plant, model_instances=None, plant_context=plant_context,
+            angular_only=False)
+        self.assertIsInstance(dut, mp.Constraint)
+        self.assertEqual(
+            dut.num_vars(),
+            env.plant.num_positions() + env.plant.num_velocities() + 6)
+        self.assertEqual(dut.num_constraints(), 6)

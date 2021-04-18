@@ -22,8 +22,7 @@ bool AreAutoDiffVecXdEqual(const Eigen::Ref<const AutoDiffVecXd>& a,
  * Check if the generalized positions in @p context are the same as @p q.
  * If they are not the same, then reset @p context's generalized positions
  * to @p q. Otherwise, leave @p context unchanged.
- * The intention is to avoid dirtying the computation cache, given it is
- * ticket-based rather than hash-based.
+ * The intention is to avoid dirtying the computation cache unnecessarily.
  */
 void UpdateContextConfiguration(drake::systems::Context<double>* context,
                                 const MultibodyPlant<double>& plant,
@@ -36,6 +35,25 @@ void UpdateContextConfiguration(drake::systems::Context<double>* context,
 void UpdateContextConfiguration(systems::Context<AutoDiffXd>* context,
                                 const MultibodyPlant<AutoDiffXd>& plant,
                                 const Eigen::Ref<const AutoDiffVecXd>& q);
+
+/*
+ * Check if the generalized positions and velocities in @p context are the
+ * same as @p q_v. If they are not the same, then reset @p context's generalized
+ * positions and velocities to @p q_v. Otherwise, leave @p context unchanged.
+ * The intention is to avoid dirtying the computation cache unnecessarily.
+ */
+void UpdateContextPositionsAndVelocities(
+    systems::Context<double>* context, const MultibodyPlant<double>& plant,
+    const Eigen::Ref<const Eigen::VectorXd>& q_v);
+
+void UpdateContextPositionsAndVelocities(
+    systems::Context<double>* context, const MultibodyPlant<double>& plant,
+    const Eigen::Ref<const AutoDiffVecXd>& q_v);
+
+void UpdateContextPositionsAndVelocities(
+    systems::Context<AutoDiffXd>* context,
+    const MultibodyPlant<AutoDiffXd>& plant,
+    const Eigen::Ref<const AutoDiffVecXd>& q_v);
 
 /*
  * Normalize an Eigen vector of doubles. This function is used in the
