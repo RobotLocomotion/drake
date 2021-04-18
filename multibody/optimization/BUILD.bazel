@@ -14,6 +14,7 @@ drake_cc_package_library(
     name = "optimization",
     visibility = ["//visibility:public"],
     deps = [
+        ":centroidal_momentum_constraint",
         ":contact_wrench",
         ":contact_wrench_evaluator",
         ":manipulator_equation_constraint",
@@ -22,6 +23,17 @@ drake_cc_package_library(
         ":static_equilibrium_problem",
         ":static_friction_cone_complementarity_constraint",
         ":static_friction_cone_constraint",
+    ],
+)
+
+drake_cc_library(
+    name = "centroidal_momentum_constraint",
+    srcs = ["centroidal_momentum_constraint.cc"],
+    hdrs = ["centroidal_momentum_constraint.h"],
+    deps = [
+        "//multibody/inverse_kinematics:kinematic_constraint",
+        "//multibody/plant",
+        "//solvers:constraint",
     ],
 )
 
@@ -213,6 +225,14 @@ drake_cc_googletest(
         ":optimization_with_contact_utilities",
         ":sliding_friction_complementarity_constraint",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "centroidal_momentum_constraint_test",
+    deps = [
+        ":centroidal_momentum_constraint",
+        "//multibody/inverse_kinematics:inverse_kinematics_test_utilities",
     ],
 )
 
