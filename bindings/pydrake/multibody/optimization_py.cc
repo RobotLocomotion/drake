@@ -5,6 +5,7 @@
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/multibody/optimization/centroidal_momentum_constraint.h"
 #include "drake/multibody/optimization/static_equilibrium_problem.h"
 
 namespace drake {
@@ -21,6 +22,28 @@ PYBIND11_MODULE(optimization, m) {
   py::module::import("pydrake.math");
   py::module::import("pydrake.multibody.plant");
   py::module::import("pydrake.solvers.mathematicalprogram");
+
+  {
+    using Class = CentroidalMomentumConstraint;
+    constexpr auto& cls_doc = doc.CentroidalMomentumConstraint;
+    using Ptr = std::shared_ptr<Class>;
+    py::class_<Class, solvers::Constraint, Ptr>(
+        m, "CentroidalMomentumConstraint", cls_doc.doc)
+        .def(py::init([](const MultibodyPlant<AutoDiffXd>* plant,
+                          std::optional<std::vector<ModelInstanceIndex>>
+                              model_instances,
+                          systems::Context<AutoDiffXd>* plant_context,
+                          bool angular_only) {
+          return std::make_unique<Class>(
+              plant, model_instances, plant_context, angular_only);
+        }),
+            py::arg("plant"), py::arg("model_instances"),
+            py::arg("plant_context"), py::arg("angular_only"),
+            // Keep alive, reference: `self` keeps `plant` alive.
+            py::keep_alive<1, 2>(),
+            // Keep alive, reference: `self` keeps `plant_context` alive.
+            py::keep_alive<1, 4>(), cls_doc.ctor.doc);
+  }
 
   {
     py::class_<ContactWrench>(m, "ContactWrench", doc.ContactWrench.doc)

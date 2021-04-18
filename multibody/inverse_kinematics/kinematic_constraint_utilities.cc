@@ -45,6 +45,31 @@ void UpdateContextConfiguration(systems::Context<AutoDiffXd>* context,
   }
 }
 
+void UpdateContextPositionsAndVelocities(
+    systems::Context<double>* context, const MultibodyPlant<double>& plant,
+    const Eigen::Ref<const Eigen::VectorXd>& q_v) {
+  DRAKE_ASSERT(context);
+  if (q_v != plant.GetPositionsAndVelocities(*context)) {
+    plant.SetPositionsAndVelocities(context, q_v);
+  }
+}
+
+void UpdateContextPositionsAndVelocities(
+    systems::Context<double>* context, const MultibodyPlant<double>& plant,
+    const Eigen::Ref<const AutoDiffVecXd>& q_v) {
+  return UpdateContextPositionsAndVelocities(context, plant,
+                                             math::autoDiffToValueMatrix(q_v));
+}
+
+void UpdateContextPositionsAndVelocities(
+    systems::Context<AutoDiffXd>* context,
+    const MultibodyPlant<AutoDiffXd>& plant,
+    const Eigen::Ref<const AutoDiffVecXd>& q_v) {
+  DRAKE_ASSERT(context);
+  if (!AreAutoDiffVecXdEqual(q_v, plant.GetPositionsAndVelocities(*context))) {
+    plant.SetPositionsAndVelocities(context, q_v);
+  }
+}
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
