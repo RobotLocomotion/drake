@@ -1,11 +1,13 @@
 #include "drake/multibody/parsing/process_model_directives.h"
 
 #include <memory>
+#include <stdexcept>
 
 #include <gtest/gtest.h>
 
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/parsing/scoped_names.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -149,6 +151,15 @@ GTEST_TEST(ProcessModelDirectivesTest, SmokeTestInjectWeldError) {
       EXPECT_TRUE(frame_name.find("error") == std::string::npos);
     }
   }
+}
+
+// Make sure we have good error messages.
+GTEST_TEST(ProcessModelDirectivesTest, ErrorMessages) {
+  // When the user gives a bogus filename, at minimum we must echo it back to
+  // them so they know what failed.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      LoadModelDirectives("no-such-file.yaml"), std::exception,
+      ".*no-such-file.yaml.*");
 }
 
 }  // namespace
