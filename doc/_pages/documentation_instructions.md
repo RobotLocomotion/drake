@@ -44,11 +44,17 @@ The output directory must not already exist.
 To generate the C++ API documentation:
 
 ```
-$ cd drake
-$ bazel build //doc/doxygen_cxx:build
-$ bazel-bin/doc/doxygen_cxx/build [options]
-$ bazel-bin/doc/doxygen_cxx/build --help  # To learn about the possible options.
+$ bazel run //doc/doxygen_cxx:build -- --serve
 ```
+
+If you only need to preview a subset of the API, you can speed up the
+rebuild by listing a subset of module names on the command line:
+
+```
+$ bazel run //doc/doxygen_cxx:build -- --serve drake/math
+```
+
+You may also specify ``--quick`` to skip the image generation.
 
 To generate the Python API documentation:
 

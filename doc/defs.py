@@ -156,7 +156,8 @@ def _do_generate(*, build, out_dir, on_error):
     print("... done")
 
 
-def main(*, build, subdir, description, supports_modules=False):
+def main(*, build, subdir, description, supports_modules=False,
+         supports_quick=False):
     """Reusable main() function for documentation binaries; processes
     command-line arguments and generates documentation.
 
@@ -166,6 +167,7 @@ def main(*, build, subdir, description, supports_modules=False):
         server; this does NOT affect the --out_dir path.
       description: Main help str for argparse; typically the caller's __doc__.
       supports_modules: Whether build() has a modules=list[str] argument.
+      supports_quick: Whether build() has a quick=bool argument.
     """
     parser = argparse.ArgumentParser(description=description)
     group = parser.add_mutually_exclusive_group()
@@ -190,8 +192,13 @@ def main(*, build, subdir, description, supports_modules=False):
             "module", nargs="*",
             help="Limit the generated documentation to only these modules and "
             "their children.  When none are provided, all will be generated. "
-            "Refer to https://drake.mit.edu/documentation_instructions.html "
-            "for example commands.")
+            "For example, specify drake.math or drake/math for the C++ "
+            "module, or pydrake.math or pydrake/math for the Python module.")
+    if supports_quick:
+        parser.add_argument(
+            "--quick", action="store_true", default=False,
+            help="Omit from the output items that are slow to generate. "
+            "This yields a faster preview, but the output will be incomplete.")
     args = parser.parse_args()
     if args.verbose:
         global _verbose
@@ -204,6 +211,9 @@ def main(*, build, subdir, description, supports_modules=False):
         ]
         curried_build = functools.partial(
             curried_build, modules=canonicalized_modules)
+    if supports_quick:
+        curried_build = functools.partial(
+            curried_build, quick=args.quick)
     if args.out_dir is None:
         assert args.serve
         _do_preview(build=curried_build, subdir=subdir, port=args.port)
