@@ -69,17 +69,6 @@ GazeTargetConstraint::GazeTargetConstraint(
   }
 }
 
-template <typename T>
-void EvalConstraintGradient(const systems::Context<T>&,
-                            const MultibodyPlant<T>&, const Frame<T>&,
-                            const Frame<T>&, const Eigen::Vector3d&,
-                            const Eigen::Vector3d&, const Vector3<T>&, const T&,
-                            const Vector2<T>& g,
-                            const Eigen::Ref<const VectorX<T>>&,
-                            VectorX<T>* y) {
-  *y = g;
-}
-
 void EvalConstraintGradient(
     const systems::Context<double>& context,
     const MultibodyPlant<double>& plant, const Frame<double>& frameA,
@@ -131,8 +120,13 @@ void DoEvalGeneric(const MultibodyPlant<T>& plant, systems::Context<T>* context,
   const Vector2<T> g{
       p_dot_n,
       p_dot_n * p_dot_n - cos_cone_half_angle_squared_times_p.dot(p_ST_A)};
-  EvalConstraintGradient(*context, plant, frameA, frameB, p_BT, n_A,
-                         cos_cone_half_angle_squared_times_p, p_dot_n, g, x, y);
+  if constexpr (std::is_same_v<T, S>) {
+    *y = g;
+  } else {
+    EvalConstraintGradient(*context, plant, frameA, frameB, p_BT, n_A,
+                           cos_cone_half_angle_squared_times_p, p_dot_n, g, x,
+                           y);
+  }
 }
 
 void GazeTargetConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,

@@ -50,7 +50,7 @@ class OrientationConstraint : public solvers::Constraint {
    *   orientation and frame B's orientation. It is denoted as θ_bound in the
    *   class documentation. `theta_bound` is in radians.
    * @param plant_context The Context that has been allocated for this
-   *   `tree`. We will update the context when evaluating the constraint.
+   *   `plant`. We will update the context when evaluating the constraint.
    *   `plant_context` should be alive during the lifetime of this constraint.
    * @throws std::invalid_argument if `plant` is nullptr.
    * @throws std::logic_error if `frameAbar` or `frameBbar` does not belong to

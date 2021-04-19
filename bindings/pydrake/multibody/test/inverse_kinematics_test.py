@@ -459,6 +459,15 @@ class TestConstraints(unittest.TestCase):
         self.assertIsInstance(constraint, mp.Constraint)
 
     @check_type_variables
+    def test_com_constraint(self, variables):
+        constraint = ik.ComPositionConstraint(
+            plant=variables.plant,
+            model_instances=None,
+            expressed_frame=variables.plant.world_frame(),
+            plant_context=variables.plant_context)
+        self.assertIsInstance(constraint, mp.Constraint)
+
+    @check_type_variables
     def test_orientation_constraint(self, variables):
         constraint = ik.OrientationConstraint(
             plant=variables.plant,
