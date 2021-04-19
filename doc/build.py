@@ -91,11 +91,11 @@ def _build_sitemap(site_dir: str) -> None:
         url = ET.SubElement(urlset, "url")
         if relative_path.name == "index.html":
             # sitemap.xml should only include canonical urls.
-            location = relative_path.parent.as_posix() + "/"
+            relative_location = relative_path.parent.as_posix() + "/"
         else:
-            location = relative_path.as_posix()
-            location = urllib.parse.urljoin(ROOT_URL,
-                                            urllib.parse.quote(location))
+            relative_location = relative_path.as_posix()
+        location = urllib.parse.urljoin(ROOT_URL,
+                                        urllib.parse.quote(relative_location))
         loc = ET.SubElement(url, "loc")
         loc.text = location
     sitemap = ET.ElementTree(urlset)
