@@ -749,23 +749,16 @@ GTEST_TEST(RollPitchYaw, ShiftOperatorIntoStream) {
   EXPECT_EQ(expected_string, streamB.str());
 
   // Test stream insertion for RigidTransform<symbolic::Expression>.
-  // Note: The following error message appears when I (Mitiguy) instead use
-  // const symbolic::Expression roll("roll), pitch("pitch), yaw ("yaw");
-  // Failure C++ exception with description
-  // "The following environment does not have an entry for the variable roll".
-  // To avoid this message, I think roll, pitch, yaw must be evaluatable to
-  // numbers -- due to how a RollPitchYaw is calculated from a rotation matrix.
-  const symbolic::Expression roll(0.1), pitch(0.2), yaw(0.3);
+  // Note: A numerical process calculates RollPitchYaw from a RotationMatrix.
+  const symbolic::Expression roll(0.125), pitch(0.25), yaw(0.5);
   const symbolic::Variable x("x"), y("y"), z("z");
   const RollPitchYaw<symbolic::Expression> rpy_symbolic(roll, pitch, yaw);
   const Vector3<symbolic::Expression> xyz_symbolic(x, y, z);
   const RigidTransform<symbolic::Expression> X_symbolic(rpy_symbolic,
                                                         xyz_symbolic);
   std::stringstream streamC;  streamC << X_symbolic;
-  // Not sure why, but there are round-off problems with rpy_symbolic.
-  const std::string expected_substring = "] xyz = [x y z]";
-  const std::string actual_string = streamC.str();
-  EXPECT_TRUE(actual_string.find(expected_substring) != std::string::npos);
+  expected_string = "rpy = [symbolic] xyz = [x y z]";
+  EXPECT_EQ(expected_string, streamC.str());
 }
 
 }  // namespace
