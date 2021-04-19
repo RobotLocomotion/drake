@@ -27,6 +27,7 @@ struct TimeStep {
 /// control and input at every sample time in the trajectory, and one-step
 /// of numerical integration provides the dynamic constraints between those
 /// decision variables.
+/// @ingroup planning
 class DirectTranscription : public MultipleShooting {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectTranscription)

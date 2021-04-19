@@ -159,6 +159,8 @@ class SlidingFrictionComplementarityNonlinearConstraint
  * @return (sliding_friction_complementarity_constraint,
  * static_friction_cone_constraint), the pair of constraint that imposes (1)-(4)
  * and (6) in @ref sliding_friction_complementarity_constraint.
+ *
+ * @ingroup solver_evaluators
  */
 std::pair<solvers::Binding<
               internal::SlidingFrictionComplementarityNonlinearConstraint>,
@@ -179,6 +181,8 @@ AddSlidingFrictionComplementarityExplicitContactConstraint(
  * AddSlidingFrictionComplementarityExplicitContactConstraint(). The difference
  * is that the returned argument includes the nonlinear complementarity binding
  * 0 ≤ φ(q) ⊥ fₙ≥ 0, which imposes the constraint for implicit contact.
+ *
+ * @ingroup solver_evaluators
  */
 std::pair<solvers::Binding<
               internal::SlidingFrictionComplementarityNonlinearConstraint>,

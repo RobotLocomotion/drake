@@ -39,6 +39,8 @@ namespace solvers {
  *
  * It should support evaluating the constraint, and adding it to an optimization
  * problem.
+ *
+ * @ingroup solver_evaluators
  */
 class Constraint : public EvaluatorBase {
  public:
