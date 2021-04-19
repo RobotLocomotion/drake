@@ -139,6 +139,7 @@ test_suite(
     tags = ["manual"],
     tests = [
         ":pages_test",
+        "//doc/doxygen_cxx:build_test",
         "//doc/pydrake:build_test",
         "//doc/styleguide:build_test",
     ],
