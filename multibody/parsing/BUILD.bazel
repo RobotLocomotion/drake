@@ -291,6 +291,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":process_model_directives",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

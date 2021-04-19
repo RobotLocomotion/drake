@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <utility>
 
@@ -243,6 +244,11 @@ void ProcessModelDirectives(
 
 ModelDirectives LoadModelDirectives(const std::string& filename) {
   drake::log()->debug("LoadModelDirectives: {}", filename);
+
+  if (!fs::exists({filename})) {
+    throw std::runtime_error(fmt::format(
+        "No such file {} during LoadModelDirectives", filename));
+  }
 
   // TODO(ggould-tri) This should use the YamlLoadWithDefaults mechanism
   // instead once that is ported to drake.
