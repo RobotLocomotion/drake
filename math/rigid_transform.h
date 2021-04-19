@@ -623,8 +623,8 @@ inline std::ostream& operator<<(std::ostream& out, const RigidTransform<T>& X) {
      const RollPitchYaw<T> rpy(R);
      out << rpy;
   } else {
-    // TODO(Mitiguy) An exception is thrown if the code above uses symbolics.
-    //  The thrown exception can be seen with this related test:
+    // TODO(Mitiguy) An exception would be thrown if the code above used a
+    //  symbolic type T. The thrown exception can be seen via this related test:
     //  const symbolic::Variable roll("roll"), pitch("pitch"), yaw("yaw");
     //  const RollPitchYaw<symbolic::Expression> rpy_symbolic(roll, pitch, yaw);
     //  const RotationMatrix<symbolic::Expression> R(rpy_symbolic);
@@ -636,10 +636,10 @@ inline std::ostream& operator<<(std::ostream& out, const RigidTransform<T>& X) {
     //  Perhaps add clever programming to test whether the rotation matrix
     //  underlying RigidTransform X can be evaluated to numbers without an
     //  "environment" so that the calculated RollPitchYaw can output numbers.
-    out << "rpy = [symbolic]";
+    out << "rpy = symbolic";
   }
   const Vector3<T>& p = X.translation();
-  out << " xyz = [" << p(0) << " " << p(1) << " " << p(2) << "]";
+  out << " xyz = " << p(0) << " " << p(1) << " " << p(2);
   return out;
 }
 

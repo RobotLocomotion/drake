@@ -731,13 +731,13 @@ GTEST_TEST(RigidTransform, TestMemoryLayoutOfRigidTransformDouble) {
 }
 
 // Test the stream insertion operator to write into a stream.
-GTEST_TEST(RollPitchYaw, ShiftOperatorIntoStream) {
+GTEST_TEST(RigidTransform, StreamInsertionOperatorForRigidTransform) {
   // Test stream insertion for RigidTransform<double>.
   const RollPitchYaw<double> rpy_double(0.125, 0.25, 0.5);
   const Vector3<double> xyz_double(4, 3, 2);
   const RigidTransform<double> X_double(rpy_double, xyz_double);
   std::stringstream streamA;  streamA << X_double;
-  std::string expected_string = "rpy = [0.125 0.25 0.5] xyz = [4 3 2]";
+  std::string expected_string = "rpy = 0.125 0.25 0.5 xyz = 4 3 2";
   EXPECT_EQ(expected_string, streamA.str());
 
   // Test stream insertion for RigidTransform<AutoDiffXd>.
@@ -745,7 +745,7 @@ GTEST_TEST(RollPitchYaw, ShiftOperatorIntoStream) {
   const Vector3<AutoDiffXd> xyz_autodiff(7, 6, 5);
   const RigidTransform<AutoDiffXd> X_autodiff(rpy_autodiff, xyz_autodiff);
   std::stringstream streamB;  streamB << X_autodiff;
-  expected_string = "rpy = [0.125 0.25 0.5] xyz = [7 6 5]";
+  expected_string = "rpy = 0.125 0.25 0.5 xyz = 7 6 5";
   EXPECT_EQ(expected_string, streamB.str());
 
   // Test stream insertion for RigidTransform<symbolic::Expression>.
@@ -757,7 +757,7 @@ GTEST_TEST(RollPitchYaw, ShiftOperatorIntoStream) {
   const RigidTransform<symbolic::Expression> X_symbolic(rpy_symbolic,
                                                         xyz_symbolic);
   std::stringstream streamC;  streamC << X_symbolic;
-  expected_string = "rpy = [symbolic] xyz = [x y z]";
+  expected_string = "rpy = symbolic xyz = x y z";
   EXPECT_EQ(expected_string, streamC.str());
 }
 

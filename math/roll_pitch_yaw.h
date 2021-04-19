@@ -658,7 +658,7 @@ inline std::ostream& operator<<(std::ostream& out, const RollPitchYaw<T>& rpy) {
   const T& roll = rpy.roll_angle();
   const T& pitch = rpy.pitch_angle();
   const T& yaw = rpy.yaw_angle();
-  out << "rpy = [" << roll << " " << pitch << " " << yaw << "]";
+  out << "rpy = " << roll << " " << pitch << " " << yaw;
   return out;
 }
 
