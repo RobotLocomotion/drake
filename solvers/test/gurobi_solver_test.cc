@@ -5,6 +5,8 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/filesystem.h"
+#include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/mathematical_program.h"
@@ -374,6 +376,25 @@ GTEST_TEST(GurobiTest, GurobiErrorCode) {
     const int Q_NOT_PSD{10020};
     EXPECT_EQ(result.get_solver_details<GurobiSolver>().error_code,
               Q_NOT_PSD);
+  }
+}
+
+GTEST_TEST(GurobiTest, LogFile) {
+  // Test setting gurobi log file.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+  prog.AddQuadraticCost(x[0] * x[0] + 2 * x[1] * x[1]);
+  prog.AddBoundingBoxConstraint(0, 1, x);
+  prog.AddLinearEqualityConstraint(x[0] + x[1] + 2 * x[2] == 1);
+
+  GurobiSolver solver;
+  if (solver.available()) {
+    SolverOptions solver_options;
+    const std::string log_file = temp_directory() + "/gurobi.log";
+    EXPECT_FALSE(filesystem::exists({log_file}));
+    solver_options.SetOption(solver.id(), "LogFile", log_file);
+    const auto result = solver.Solve(prog, {}, solver_options);
+    EXPECT_TRUE(filesystem::exists({log_file}));
   }
 }
 
