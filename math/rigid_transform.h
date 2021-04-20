@@ -624,9 +624,9 @@ inline std::ostream& operator<<(std::ostream& out, const RigidTransform<T>& X) {
      out << rpy;
   } else {
     // TODO(Mitiguy) Update this code pending resolution of issue #14926.
-    //  Test if the symbolic rotation matrix underlying RigidTransform X can be
-    //  evaluated to real numbers (doubles) without an "environment" so that a
-    //  RollPitchYaw can output real numbers (doubles).
+    //  Test if the symbolic RotationMatrix underlying RigidTransform X can be
+    //  evaluated to real numbers (doubles) without an "environment" so that the
+    //  RotationMatrix can be converted to RollPitchYaw with real numbers.
     out << "rpy = symbolic";
   }
   const Vector3<T>& p = X.translation();
