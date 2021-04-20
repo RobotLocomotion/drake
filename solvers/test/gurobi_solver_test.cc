@@ -5,6 +5,8 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/filesystem.h"
+#include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/mathematical_program.h"
@@ -392,8 +394,12 @@ GTEST_TEST(GurobiTest, SolutionPool) {
     // pool as large as he wants, and the solver will try to find all possible
     // solutions.
     solver_options.SetOption(solver.id(), "PoolSolutions", 3);
+    const std::string log_file = temp_directory() + "gurobi.log";
+    EXPECT_FALSE(filesystem::exists({log_file}));
+    solver_options.SetOption(solver.id(), "LogFile", log_file);
     MathematicalProgramResult result;
     solver.Solve(prog, {}, solver_options, &result);
+    EXPECT_TRUE(filesystem::exists({log_file}));
     // The problem has only two set of solutions, either b = [0, 1] and b = [1,
     // 0].
     EXPECT_EQ(result.num_suboptimal_solution(), 2);

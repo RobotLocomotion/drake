@@ -1011,6 +1011,11 @@ void GurobiSolver::DoSolve(
       error = GRBsetintparam(model_env, it.first.c_str(), it.second);
     }
   }
+  for (const auto& it : merged_options.GetOptionsStr(id())) {
+    if (!error) {
+      error = GRBsetstrparam(model_env, it.first.c_str(), it.second.c_str());
+    }
+  }
 
   for (int i = 0; i < static_cast<int>(prog.num_vars()); ++i) {
     if (!error && !std::isnan(initial_guess(i))) {
