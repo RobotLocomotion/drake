@@ -473,7 +473,7 @@ GTEST_TEST(RollPitchYaw, SymbolicTest) {
 
 
 // Test the stream insertion operator to write into a stream.
-GTEST_TEST(RollPitchYaw, StreamInsertionOperatorForRollPitchYaw) {
+GTEST_TEST(RollPitchYaw, StreamInsertionOperator) {
   // Test stream insertion for RollPitchYaw<double>.
   const RollPitchYaw<double> rpy_double(0.2, 0.3, 0.4);
   std::stringstream streamA;  streamA << rpy_double;

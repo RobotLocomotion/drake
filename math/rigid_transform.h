@@ -623,19 +623,10 @@ inline std::ostream& operator<<(std::ostream& out, const RigidTransform<T>& X) {
      const RollPitchYaw<T> rpy(R);
      out << rpy;
   } else {
-    // TODO(Mitiguy) An exception would be thrown if the code above used a
-    //  symbolic type T. The thrown exception can be seen via this related test:
-    //  const symbolic::Variable roll("roll"), pitch("pitch"), yaw("yaw");
-    //  const RollPitchYaw<symbolic::Expression> rpy_symbolic(roll, pitch, yaw);
-    //  const RotationMatrix<symbolic::Expression> R(rpy_symbolic);
-    //  const RollPitchYaw<symbolic::Expression> rpy_exception(R);
-    //  Failure C++ exception with description
-    //  "The following environment does not have an entry for the variable roll"
-    //  However, no exeption is thrown when roll, pitch, yaw are declared as:
-    //  const symbolic::Expression roll(0.125), pitch(0.25), yaw(0.5);
-    //  Perhaps add clever programming to test whether the rotation matrix
-    //  underlying RigidTransform X can be evaluated to numbers without an
-    //  "environment" so that the calculated RollPitchYaw can output numbers.
+    // TODO(Mitiguy) Update this code pending resolution of issue #14926.
+    //  Test if the symbolic rotation matrix underlying RigidTransform X can be
+    //  evaluated to real numbers (doubles) without an "environment" so that a
+    //  RollPitchYaw can output real numbers (doubles).
     out << "rpy = symbolic";
   }
   const Vector3<T>& p = X.translation();

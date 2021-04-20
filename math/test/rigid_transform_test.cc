@@ -4,6 +4,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 
 namespace drake {
 namespace math {
@@ -731,7 +732,7 @@ GTEST_TEST(RigidTransform, TestMemoryLayoutOfRigidTransformDouble) {
 }
 
 // Test the stream insertion operator to write into a stream.
-GTEST_TEST(RigidTransform, StreamInsertionOperatorForRigidTransform) {
+GTEST_TEST(RigidTransform, StreamInsertionOperator) {
   // Test stream insertion for RigidTransform<double>.
   const RollPitchYaw<double> rpy_double(0.125, 0.25, 0.5);
   const Vector3<double> xyz_double(4, 3, 2);
@@ -750,15 +751,33 @@ GTEST_TEST(RigidTransform, StreamInsertionOperatorForRigidTransform) {
 
   // Test stream insertion for RigidTransform<symbolic::Expression>.
   // Note: A numerical process calculates RollPitchYaw from a RotationMatrix.
-  const symbolic::Expression roll(0.125), pitch(0.25), yaw(0.5);
   const symbolic::Variable x("x"), y("y"), z("z");
-  const RollPitchYaw<symbolic::Expression> rpy_symbolic(roll, pitch, yaw);
   const Vector3<symbolic::Expression> xyz_symbolic(x, y, z);
-  const RigidTransform<symbolic::Expression> X_symbolic(rpy_symbolic,
-                                                        xyz_symbolic);
+  const symbolic::Expression roll(0.125), pitch(0.25), yaw(0.5);
+  RollPitchYaw<symbolic::Expression> rpy_symbolic(roll, pitch, yaw);
+  RigidTransform<symbolic::Expression> X_symbolic(rpy_symbolic, xyz_symbolic);
   std::stringstream streamC;  streamC << X_symbolic;
   expected_string = "rpy = symbolic xyz = x y z";
   EXPECT_EQ(expected_string, streamC.str());
+
+  // TODO(Mitiguy) Per issue #14926, add clever programming so the function
+  //  std::ostream& operator<<(std::ostream& out, const RigidTransform<T>& X)
+  //  can test whether the rotation matrix underlying RigidTransform X can be
+  //  evaluated to real numbers without an "environment" so that the calculated
+  //  RollPitchYaw rpy can output numbers. For now, show the work-around is to
+  //  output "rpy = symbolic ..." and show exception associated with problem.
+  const symbolic::Variable vroll("roll"), vpitch("pitch"), vyaw("yaw");
+  rpy_symbolic = RollPitchYaw<symbolic::Expression>(vroll, vpitch, vyaw);
+  X_symbolic = RigidTransform<symbolic::Expression>(rpy_symbolic, xyz_symbolic);
+  std::stringstream streamD;  streamD << X_symbolic;
+  expected_string = "rpy = symbolic xyz = x y z";
+  EXPECT_EQ(expected_string, streamD.str());
+  const RotationMatrix<symbolic::Expression>& R = X_symbolic.rotation();
+  // TODO(Mitiguy) Per issue #14927, provide a better exception message.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      streamC << RollPitchYaw<symbolic::Expression>(R), std::exception,
+      "The following environment does not have an entry "
+      "for the variable roll\\n\\n");
 }
 
 }  // namespace
