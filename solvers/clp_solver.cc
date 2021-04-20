@@ -18,8 +18,10 @@ void ConstructClpModel(
     const std::vector<Eigen::Triplet<double>>& constraint_coeffs,
     const std::vector<double>& constraint_lower,
     const std::vector<double>& constraint_upper, const Eigen::VectorXd& xlow,
-    const Eigen::VectorXd& xupp, const Eigen::VectorXd& objective_coeff,
-    double constant_cost, ClpModel* model) {
+    const Eigen::VectorXd& xupp,
+    const Eigen::SparseMatrix<double>& quadratic_matrix,
+    const Eigen::VectorXd& objective_coeff, double constant_cost,
+    ClpModel* model) {
   Eigen::SparseMatrix<double> constraint_mat(constraint_lower.size(),
                                              xlow.rows());
   constraint_mat.setFromTriplets(constraint_coeffs.begin(),
@@ -31,6 +33,11 @@ void ConstructClpModel(
                      xlow.data(), xupp.data(), objective_coeff.data(),
                      constraint_lower.data(), constraint_upper.data(),
                      nullptr /* rowObjective=nullptr */);
+  if (quadratic_matrix.nonZeros() > 0) {
+    model->loadQuadraticObjective(
+        quadratic_matrix.cols(), quadratic_matrix.outerIndexPtr(),
+        quadratic_matrix.innerIndexPtr(), quadratic_matrix.valuePtr());
+  }
   model->setObjectiveOffset(-constant_cost);
 }
 
@@ -236,22 +243,49 @@ void SetBoundingBoxConstraintDualIndices(
       bb_con, std::make_pair(lower_dual_indices, upper_dual_indices));
 }
 
-void ParseModelExceptLinearConstraints(const MathematicalProgram& prog,
-                                       Eigen::VectorXd* xlow,
-                                       Eigen::VectorXd* xupp,
-                                       Eigen::VectorXd* objective_coeff,
-                                       double* constant_cost) {
+void ParseModelExceptLinearConstraints(
+    const MathematicalProgram& prog, Eigen::VectorXd* xlow,
+    Eigen::VectorXd* xupp, Eigen::SparseMatrix<double>* quadratic_matrix,
+    Eigen::VectorXd* objective_coeff, double* constant_cost) {
   // Construct model using loadProblem function.
   DRAKE_ASSERT(xlow->rows() == prog.num_vars());
   DRAKE_ASSERT(xupp->rows() == prog.num_vars());
   AggregateBoundingBoxConstraints(prog, xlow, xupp);
   Eigen::SparseVector<double> linear_coeff;
-  VectorX<symbolic::Variable> vars;
-  AggregateLinearCosts(prog.linear_costs(), &linear_coeff, &vars,
-                       constant_cost);
-  DRAKE_ASSERT(objective_coeff->rows() == prog.num_vars());
+  VectorX<symbolic::Variable> quadratic_vars, linear_vars;
+  Eigen::SparseMatrix<double> Q_lower;
+  AggregateQuadraticAndLinearCosts(prog.quadratic_costs(), prog.linear_costs(),
+                                   &Q_lower, &quadratic_vars, &linear_coeff,
+                                   &linear_vars, constant_cost);
+  // We need to convert 0.5 * quadratic_var.dot(Q_lower * quadratic_var) to
+  // 0.5 * x.dot(quadratic_matrix * x), where x is the vector of all the
+  // decision variables. To do so, we first map each entry of quadratic_var to
+  // its corresponding entry in x.
+  std::unordered_map<symbolic::Variable::Id, int> quadratic_var_to_index;
+  for (int i = 0; i < quadratic_vars.rows(); ++i) {
+    quadratic_var_to_index.emplace(
+        quadratic_vars(i).get_id(),
+        prog.FindDecisionVariableIndex(quadratic_vars(i)));
+  }
+  std::vector<Eigen::Triplet<double>> quadratic_matrix_triplets;
+  quadratic_matrix_triplets.reserve(Q_lower.nonZeros());
+  for (int col = 0; col < Q_lower.outerSize(); ++col) {
+    const int x_col_index =
+        quadratic_var_to_index.at(quadratic_vars(col).get_id());
+    for (Eigen::SparseMatrix<double>::InnerIterator it(Q_lower, col); it;
+         ++it) {
+      const int x_row_index =
+          quadratic_var_to_index.at(quadratic_vars(it.row()).get_id());
+      quadratic_matrix_triplets.emplace_back(x_row_index, x_col_index,
+                                             it.value());
+    }
+  }
+  quadratic_matrix->setFromTriplets(quadratic_matrix_triplets.begin(),
+                                    quadratic_matrix_triplets.end());
+
+  objective_coeff->resize(prog.num_vars());
   for (Eigen::SparseVector<double>::InnerIterator it(linear_coeff); it; ++it) {
-    (*objective_coeff)(prog.FindDecisionVariableIndex(vars(it.row()))) =
+    (*objective_coeff)(prog.FindDecisionVariableIndex(linear_vars(it.row()))) =
         it.value();
   }
 }
@@ -270,9 +304,11 @@ void ClpSolver::DoSolve(const MathematicalProgram& prog,
   Eigen::VectorXd xlow(prog.num_vars());
   Eigen::VectorXd xupp(prog.num_vars());
   Eigen::VectorXd objective_coeff = Eigen::VectorXd::Zero(prog.num_vars());
+  Eigen::SparseMatrix<double> quadratic_matrix(prog.num_vars(),
+                                               prog.num_vars());
   double constant_cost{0.};
-  ParseModelExceptLinearConstraints(prog, &xlow, &xupp, &objective_coeff,
-                                    &constant_cost);
+  ParseModelExceptLinearConstraints(prog, &xlow, &xupp, &quadratic_matrix,
+                                    &objective_coeff, &constant_cost);
 
   std::vector<Eigen::Triplet<double>> constraint_coeffs;
   std::vector<double> constraint_lower, constraint_upper;
@@ -283,7 +319,8 @@ void ClpSolver::DoSolve(const MathematicalProgram& prog,
                          &constraint_upper, &constraint_dual_start_index);
   }
   ConstructClpModel(constraint_coeffs, constraint_lower, constraint_upper, xlow,
-                    xupp, objective_coeff, constant_cost, &model);
+                    xupp, quadratic_matrix, objective_coeff, constant_cost,
+                    &model);
   std::unordered_map<Binding<BoundingBoxConstraint>,
                      std::pair<std::vector<int>, std::vector<int>>>
       bb_con_dual_variable_indices;
