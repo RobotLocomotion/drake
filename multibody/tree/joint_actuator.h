@@ -147,8 +147,9 @@ class JointActuator final
   /// approximation is reasonable for high gear ratios but less so for small
   /// gear ratios (see [Featherstone, 2008], Chapter 9.6 on gears).
   ///
-  /// @image html multibody/tree/images/GearBoxSchematic.png width=50%
-  /// @image html multibody/tree/images/GearedMotorAPiqselsComCC0.jpg width=50%
+  /// @image html drake/multibody/tree/images/GearBoxSchematic.png width=50%
+  /// <!-- NOLINTNEXTLINE(whitespace/line_length) -->
+  /// @image html drake/multibody/tree/images/GearedMotorAPiqselsComCC0.jpg width=50%
   ///
   /// #### Actuated revolute joints
   /// For an actuator driving a revolute joint, the reflected inertia can be

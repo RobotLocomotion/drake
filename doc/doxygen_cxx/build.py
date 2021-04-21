@@ -60,7 +60,9 @@ def _symlink_headers(*, drake_workspace, temp_dir, modules):
             subdir = os.path.relpath(dirpath, drake_workspace)
             os.makedirs(join(temp_dir, "drake", subdir))
             for item in files:
-                if (module.startswith("drake.doc") or item.endswith(".h")):
+                if any([module.startswith("drake.doc"),
+                        "images" in subdir,
+                        item.endswith(".h")]):
                     dest = join(temp_dir, "drake", subdir, item)
                     if not os.path.exists(dest):
                         os.symlink(join(dirpath, item), dest)

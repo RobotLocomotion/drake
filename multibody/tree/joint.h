@@ -27,7 +27,7 @@ namespace multibody {
 /// A %Joint is a model of a physical kinematic constraint between two bodies,
 /// a constraint that in the real physical system does not specify a tree
 /// ordering.
-/// @image html multibody/plant/images/BodyParentChildJoint.png width=50%
+/// @image html drake/multibody/plant/images/BodyParentChildJoint.png width=50%
 ///
 /// In Drake we define a frame F rigidly attached to the parent body P with pose
 /// `X_PF` and a frame M rigidly attached to the child body B with pose `X_BM`.

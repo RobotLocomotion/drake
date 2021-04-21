@@ -116,8 +116,8 @@ struct DoorHingeConfig {
 /// process can be really slow because of the default `motion_threshold` is
 /// set to be very small. You can change the `motion_threshold` parameter to
 /// adjust the time.
-/// @image html multibody/tree/images/torque_vs_angle.svg "Figure 1"
-/// @image html multibody/tree/images/torque_vs_velocity.svg "Figure 2"
+/// @image html drake/multibody/tree/images/torque_vs_angle.svg "Figure 1"
+/// @image html drake/multibody/tree/images/torque_vs_velocity.svg "Figure 2"
 ///
 /// @tparam_default_scalar
 template <typename T>
