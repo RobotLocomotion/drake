@@ -486,7 +486,10 @@ drake_cc_library(
 drake_cc_library(
     name = "plane",
     hdrs = ["plane.h"],
-    deps = ["//common:essential"],
+    deps = [
+        ":mesh_traits",
+        "//common:essential",
+    ],
 )
 
 drake_cc_library(
@@ -916,6 +919,7 @@ drake_cc_googletest(
         ":plane",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//math:autodiff",
     ],
 )
 
@@ -925,6 +929,7 @@ drake_cc_googletest(
         ":posed_half_space",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//math:autodiff",
     ],
 )
 
