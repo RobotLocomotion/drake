@@ -25,7 +25,8 @@ template <typename T> class Body;
 /// (in an angle-axis sense) between the unit vectors of frame A and frame C.
 /// Frame B is a "floating" frame in the sense that it is calculated from the
 /// position and orientation of frames A and C (B is not welded to the bushing).
-/// @image html multibody/tree/images/LinearBushingRollPitchYaw.png width=80%
+/// <!-- NOLINTNEXTLINE(whitespace/line_length) -->
+/// @image html drake/multibody/tree/images/LinearBushingRollPitchYaw.png width=80%
 ///
 /// The set of forces on frame C from the bushing is equivalent to a
 /// torque 𝐭 on frame C and a force 𝐟 applied to a point Cp of C.

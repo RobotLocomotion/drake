@@ -914,7 +914,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// and _child_ bodies. The parent/child ordering defines the sign conventions
   /// for the generalized coordinates and the coordinate ordering for multi-DOF
   /// joints.
-  /// @image html multibody/plant/images/BodyParentChildJointCM.png width=50%
+  /// <!-- NOLINTNEXTLINE(whitespace/line_length) -->
+  /// @image html drake/multibody/plant/images/BodyParentChildJointCM.png width=50%
   /// Note: The previous figure also shows Pcm which is body P's center of mass
   /// and point Bcm which is body B's center of mass.
   ///

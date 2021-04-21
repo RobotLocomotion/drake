@@ -277,7 +277,7 @@ with a non-adhesive contact model.
 A more substantial discussion on the kinematics of contact can be found in
 @ref Pfeiffer1996 "[Pfeiffer 1996]", Ch. 4.
 
-@image html multibody/constraint/images/colliding-boxes.png "Figure 1: Illustration of the interpretation of non-interpenetration constraints when two boxes are interpenetrating (right). The boxes prior to contact are shown at left, and are shown in the middle figure at the initial time of contact; the surface normal n̂ is shown in this figure as well. The bodies interpenetrate over time as the constraint becomes violated (e.g., by constraint drift). Nevertheless, n̂ is tracked over time from its initial direction (and definition relative to the blue body). σ represents the signed distance the bodies must be translated along n̂ so that they are osculating (kissing)."
+@image html drake/multibody/constraint/images/colliding-boxes.png "Figure 1: Illustration of the interpretation of non-interpenetration constraints when two boxes are interpenetrating (right). The boxes prior to contact are shown at left, and are shown in the middle figure at the initial time of contact; the surface normal n̂ is shown in this figure as well. The bodies interpenetrate over time as the constraint becomes violated (e.g., by constraint drift). Nevertheless, n̂ is tracked over time from its initial direction (and definition relative to the blue body). σ represents the signed distance the bodies must be translated along n̂ so that they are osculating (kissing)."
 
 <h4>Constraint softening</h4>
 As discussed in @ref discretization, the non-interpenetration

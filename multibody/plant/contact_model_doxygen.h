@@ -126,7 +126,7 @@ frame C with origin at `Co`. The C frame's z-axis is aligned along the normal n�
 we limit our discussion to the force `f` acting on `A` at `Co` (such that `-f`
 acts on `B` at `Co`).
 
-@image html multibody/plant/images/simple_contact.png "Figure 1: Illustration of contact between two spheres."
+@image html drake/multibody/plant/images/simple_contact.png "Figure 1: Illustration of contact between two spheres."
 
 The computation of the contact force is most naturally discussed in the
 contact frame `C` (shown in Figure 1).
@@ -343,7 +343,7 @@ Next topic: @ref contact_engineering
                       fₚ
       Figure 2: Idealized Stiction/Sliding Friction Model
  -->
- @image html multibody/plant/images/ideal_stiction.png "Figure 2: Idealized Stiction/Sliding Friction Model"
+ @image html drake/multibody/plant/images/ideal_stiction.png "Figure 2: Idealized Stiction/Sliding Friction Model"
 
  In _idealized_ stiction, tangent force `fₜ` is equal and opposite
  to the pushing force `fₚ` up to the point where that force is sufficient to
@@ -379,7 +379,7 @@ Next topic: @ref contact_engineering
 
    Figure 3: Stribeck function for stiction.
  -->
- @image html multibody/plant/images/stribeck.png "Figure 3: Stribeck function for stiction"
+ @image html drake/multibody/plant/images/stribeck.png "Figure 3: Stribeck function for stiction"
 
  The Stribeck model is a variation of Coulomb friction, where the frictional
  (aka _tangential_) force is proportional to the normal force as:
