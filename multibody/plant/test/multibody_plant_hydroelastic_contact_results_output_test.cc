@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/examples/multibody/rolling_sphere/make_rolling_sphere_plant.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/math/autodiff.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram_builder.h"
 
@@ -96,7 +98,6 @@ class HydroelasticContactResultsOutputTester : public ::testing::Test {
   MultibodyPlant<double>* plant_{};
   systems::Context<double>* plant_context_{};
 
- private:
   std::unique_ptr<systems::Diagram<double>> diagram_{};
   std::unique_ptr<systems::Context<double>> diagram_context_{};
 };
@@ -228,6 +229,89 @@ TEST_F(HydroelasticContactResultsOutputTester, Traction) {
         (quadrature_point_datum.traction_Aq_W - expected_traction).norm(), 0,
         tol);
   }
+}
+
+// Checks that an AutoDiffXd-valued plant will have forces with appropriate
+// derivatives. In this case, the "correctness" of derivatives are not
+// extensively evaluated. We're merely looking for indicators that things
+// are correct (presence and size of derivatives, and expected values as far
+// as convenient).
+TEST_F(HydroelasticContactResultsOutputTester, AutoDiffXdSupport) {
+  std::unique_ptr<systems::System<AutoDiffXd>> system_ad =
+      diagram_->ToAutoDiffXd();
+  systems::Diagram<AutoDiffXd>* diagram_ad =
+      dynamic_cast<systems::Diagram<AutoDiffXd>*>(system_ad.get());
+  auto context_ad = diagram_ad->CreateDefaultContext();
+  const auto& plant_ad = dynamic_cast<const MultibodyPlant<AutoDiffXd>&>(
+      diagram_ad->GetSubsystemByName(plant_->get_name()));
+  systems::Context<AutoDiffXd>& plant_context_ad =
+      diagram_ad->GetMutableSubsystemContext(plant_ad, context_ad.get());
+
+  // Set the sphere's pose. We know the sphere's radius = 1, we want contact.
+  // We'll leave a zero velocity.
+  const double z0 = 0.95;
+  const Vector3d p_WBo{0, 0, z0};
+  const math::RigidTransform<AutoDiffXd> X_WB(math::initializeAutoDiff(p_WBo));
+  plant_ad.SetFreeBodyPose(&plant_context_ad, plant_ad.GetBodyByName("Ball"),
+                           X_WB);
+
+  const auto& query_object =
+      plant_ad.get_geometry_query_input_port()
+          .template Eval<geometry::QueryObject<AutoDiffXd>>(plant_context_ad);
+
+  // Compute the contact surface using the hydroelastic engine. We'll use this
+  // as a reality check; make sure that the underlying contact surface has
+  // derivatives as expected.
+  std::vector<geometry::ContactSurface<AutoDiffXd>> contact_surfaces =
+      query_object.ComputeContactSurfaces();
+
+  ASSERT_EQ(contact_surfaces.size(), 1);
+  // The area has derivatives (three) and the area only changes magnitude based
+  // on p_WBo.z.
+  const AutoDiffXd area = contact_surfaces[0].mesh_W().total_area();
+  ASSERT_EQ(area.derivatives().size(), 3);
+  ASSERT_NEAR(area.derivatives()[0], 0, 1e-15);
+  ASSERT_NEAR(area.derivatives()[1], 0, 1e-15);
+  // The area shrinks *quickly* as the sphere moves up.
+  ASSERT_LT(area.derivatives()[2], -1);
+
+  // Now we actually compute the forces.
+  const ContactResults<AutoDiffXd>& contact_results =
+      plant_ad.get_contact_results_output_port()
+          .Eval<ContactResults<AutoDiffXd>>(plant_context_ad);
+  DRAKE_DEMAND(contact_results.num_hydroelastic_contacts() == 1);
+
+  const auto& contact_info = contact_results.hydroelastic_contact_info(0);
+
+  // The translational force should *definitely* depend on p_WBo. So, the x-,
+  // y-, and z-components should have a full set of derivatives and should look
+  // like:
+  //
+  //                    │ 0 0 0 |
+  //   ∂f_Ac_W/∂p_WBo = │ 0 0 0 │, a = -k f_Ac_W.z(), for some positive k.
+  //                    | 0 0 a │
+  //
+  // In other words, the force direction depends solely on the half space normal
+  // direction (and not on p_WBo). However, moving p_WBo in the Wz direction
+  // will separate the sphere and half space, reducing penetration and reducing
+  // the force in the normal direction. The rate is a function of the rate of
+  // change of the area, and we're not going to get into that detail here. We'll
+  // simply confirm the sign. Since f_Ac_W must point *into* the half space, it
+  // points in the -Wz direction, so f_Ac_W.z() is negative; we expect `a` to be
+  // positive.
+  const auto& f_Ac_W = contact_info.F_Ac_W().translational();
+  EXPECT_EQ(f_Ac_W.x().derivatives().size(), 3);
+  EXPECT_EQ(f_Ac_W.y().derivatives().size(), 3);
+  EXPECT_EQ(f_Ac_W.z().derivatives().size(), 3);
+  constexpr double kEps = std::numeric_limits<double>::epsilon();
+  EXPECT_LT(f_Ac_W.z().value(), 0);
+  EXPECT_TRUE(
+      CompareMatrices(f_Ac_W.x().derivatives(), Vector3d{0, 0, 0}, kEps));
+  EXPECT_TRUE(
+      CompareMatrices(f_Ac_W.y().derivatives(), Vector3d{0, 0, 0}, kEps));
+  EXPECT_NEAR(f_Ac_W.z().derivatives()[0], 0, kEps);
+  EXPECT_NEAR(f_Ac_W.z().derivatives()[1], 0, kEps);
+  EXPECT_GT(f_Ac_W.z().derivatives()[2], kEps);
 }
 
 }  // namespace
