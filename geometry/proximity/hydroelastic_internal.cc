@@ -105,8 +105,8 @@ void Geometries::MakeShape(const ShapeType& shape, const ReifyData& data) {
       auto hydro_geometry = MakeSoftRepresentation(shape, data.properties);
       if (hydro_geometry) AddGeometry(data.id, move(*hydro_geometry));
     } break;
-    default:
-      // kUndefined requires no action.
+    case HydroelasticType::kUndefined:
+      // No action required.
       break;
   }
 }

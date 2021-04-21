@@ -693,6 +693,7 @@ drake_cc_googletest(
     deps = [
         ":hydroelastic_callback",
         "//common/test_utilities",
+        "//math:autodiff",
     ],
 )
 
