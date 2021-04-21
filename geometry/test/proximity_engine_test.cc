@@ -15,6 +15,7 @@
 #include "drake/geometry/proximity/hydroelastic_callback.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/shape_specification.h"
+#include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
@@ -255,8 +256,8 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
       drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj"),
       1.0 /* scale */};
 
-  // Case: Soft sphere and rigid mesh with AutoDiffXd -- contact would be a
-  // contact surface; throws for now.
+  // Case: Soft sphere and rigid mesh with AutoDiffXd -- confirm the contact
+  // surface has derivatives.
   {
     ProximityEngine<double> engine_d;
     const auto X_WGs_d = PopulateEngine(&engine_d, sphere, anchored, soft, mesh,
@@ -264,18 +265,43 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
 
     const auto engine_ad = engine_d.ToAutoDiffXd();
     unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs_ad;
+    bool added_derivatives = false;
     for (const auto& [id, X_WG_d] : X_WGs_d) {
-      X_WGs_ad[id] = RigidTransform<AutoDiffXd>(X_WG_d.GetAsMatrix34());
+      if (!added_derivatives) {
+        // We'll set the derivatives on p_WGo for the first geometry; all others
+        // we'll pass through.
+        const Vector3<AutoDiffXd> p_WGo =
+            math::initializeAutoDiff(X_WG_d.translation());
+        X_WGs_ad[id] = RigidTransform<AutoDiffXd>(
+            X_WG_d.rotation().cast<AutoDiffXd>(), p_WGo);
+        added_derivatives = true;
+      } else {
+        X_WGs_ad[id] = RigidTransform<AutoDiffXd>(X_WG_d.GetAsMatrix34());
+      }
     }
 
     std::vector<ContactSurface<AutoDiffXd>> surfaces;
     std::vector<PenetrationAsPointPair<AutoDiffXd>> point_pairs;
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        engine_ad->ComputeContactSurfacesWithFallback(X_WGs_ad, &surfaces,
-                                                      &point_pairs),
-        std::exception,
-        "Penetration queries between shapes 'Sphere' and 'Convex' are not "
-        "supported for scalar type drake::AutoDiffXd");
+    // We assume that ComputeContactSurfacesWithFallback() exercises the same
+    // code as ComputeContactSurfaces(); they both pass through the hydroelastic
+    // callback. So, exercising one is "sufficient". If they ever deviate in
+    // execution (i.e., there were to no longer share the same callback), this
+    // test would have to be elaborated.
+    engine_ad->ComputeContactSurfacesWithFallback(X_WGs_ad, &surfaces,
+                                                  &point_pairs);
+    EXPECT_EQ(surfaces.size(), 1);
+    EXPECT_EQ(point_pairs.size(), 0);
+    // We'll poke *one* quantity of the surface mesh to confirm it has
+    // derivatives. We won't consider the *value*, just the existence as proof
+    // that it has been wired up to code that has already tested value.
+    EXPECT_EQ(surfaces[0]
+                  .mesh_W()
+                  .vertex(SurfaceVertexIndex(0))
+                  .r_MV()
+                  .x()
+                  .derivatives()
+                  .size(),
+              3);
   }
 
   // Case: Rigid sphere and mesh with AutoDiffXd -- contact would be a point
@@ -294,8 +320,8 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
     std::vector<PenetrationAsPointPair<AutoDiffXd>> point_pairs;
     engine_ad->ComputeContactSurfacesWithFallback(X_WGs_ad, &surfaces,
                                                   &point_pairs);
-    EXPECT_EQ(surfaces.size(), 0u);
-    EXPECT_EQ(point_pairs.size(), 1u);
+    EXPECT_EQ(surfaces.size(), 0);
+    EXPECT_EQ(point_pairs.size(), 1);
   }
 }
 

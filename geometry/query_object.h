@@ -264,17 +264,19 @@ class QueryObject {
   std::vector<PenetrationAsPointPair<T>> ComputePointPairPenetration() const;
 
   /**
-   Reports pairwise intersections and characterizes each non-empty
-   intersection as a ContactSurface for hydroelastic contact model.
-   The computation is subject to collision filtering.
+   Reports pairwise intersections and characterizes each non-empty intersection
+   as a ContactSurface for hydroelastic contact model. The computation is
+   subject to collision filtering.
 
    For two intersecting geometries g_A and g_B, it is guaranteed that they will
    map to `id_A` and `id_B` in a fixed, repeatable manner, where `id_A` and
    `id_B` are GeometryId's of geometries g_A and g_B respectively.
 
-   In the current incarnation, this function represents a simple implementation.
+   In the current incarnation, this function represents an incomplete
+   implementation. That has several implications, as described below:
 
-     - This table shows the supported shapes and compliance modes.
+     - This table shows which shapes can be declared for use in hydroelastic
+       contact, and what compliance can be assigned.
 
        |   Shape   | Soft  | Rigid |
        | :-------: | :---: | :---- |
@@ -287,22 +289,24 @@ class QueryObject {
        | Mesh      |  no   |  yes  |
        | Convex    |  no   |  yes  |
 
-     - One geometry must be soft, and the other must be rigid. There is no
-       support for soft-soft collision or rigid-rigid collision. If such
-       pairs collide, an exception will be thrown. More particularly, if such
-       a pair *cannot be culled* an exception will be thrown. No exception
-       is thrown if the pair has been filtered.
+     - We do not currently support contact between two geometries with the
+       *same* compliance; one geometry *must* be soft, and the other *must* be
+       rigid. If geometries with the same compliance collide, an exception will
+       be thrown. More particularly, if such a geometry pair *cannot be culled*
+       an exception will be thrown. No exception is thrown if the pair has been
+       filtered.
      - The elasticity modulus E (N/m^2) of each geometry is set in
        ProximityProperties (see AddContactMaterial()).
      - The tessellation of the corresponding meshes is controlled by the
-       resolution hint, as defined by AddSoftHydroelasticProperties() and
-       AddRigidHydroelasticProperties().
+       resolution hint (where appropriate), as defined by
+       AddSoftHydroelasticProperties() and AddRigidHydroelasticProperties().
 
    <h3>Scalar support</h3>
 
-   This method provides support only for double. Attempting to invoke this
-   method with T = AutoDiffXd will throw an exception if there are unsupported
-   geometry pairs (like box-to-box) that couldn't be culled.
+   This method provides support for both double and AutoDiffXd. Like with the
+   other proximity queries, derivatives can only be introduced via geometry
+   *poses*. We cannot differentiate w.r.t. geometric properties (e.g., radius,
+   length, etc.)
 
    @returns A vector populated with all detected intersections characterized as
             contact surfaces. The ordering of the results is guaranteed to be
@@ -314,44 +318,30 @@ class QueryObject {
    intersection as a ContactSurface _where possible_ and as a
    PenetrationAsPointPair where not.
 
-   This is a hybrid contact algorithm. It allows for the contact surface
-   penetration result where possible, but automatically provides a fallback for
-   where a ContactSurface cannot be defined.
-
-   The fallback cannot guarantee success in all cases. Meshes have limited
-   support in the proximity role; they are supported in the contact surface
-   computation but _ignored_ in the point pair collision query. If a mesh is
-   in contact with another shape that _cannot_ be resolved as a contact surface
-   (e.g., rigid mesh vs another rigid shape), this computation will throw as
-   there is no fallback functionality for mesh-shape.
-
-   Because point pairs can only be computed for double-valued systems, this can
-   also only support double-valued ContactSurface instances.
+   This method can be thought of as a combination of ComputeContactSurfaces()
+   and ComputePointPairPenetration(). For each geometry pair, we attempt to
+   compute a ContactSurface. If that fails, rather than throwing, we attempt to
+   characterize the contact as a point pair. If that fails, we throw. See the
+   documentation of those constituent methods to understand the circumstances
+   in which they fail.
 
    The ordering of the _added_ results is guaranteed to be consistent -- for
    fixed geometry poses, the results will remain the same.
 
-   @warning Invoking this with T = AutoDiffXd may throw an exception. The logic
-   controlling when this throws is subtle; it is dependent on the behavior when
-   T = double. For T = double, contact between a colliding pair of geometries
-   (g1, g2) will be reported as either ContactSurface or PenetrationAsPointPair
-   (depending on the geometry properties). The guiding principle is that a
-   contact should always be characterized with the same collision type
-   (regardless of scalar type). If that collision type is not supported for a
-   particular scalar, this query throws.
-   - If (g1, g2) produces a ContactSurface for T = double, T = AutoDiffXd will
-     definitely throw.
-   - If (g1, g2) produces a PenetrationAsPointPair for T = double,
-     T = AutoDiffXd will throw under the same conditions as documented in
-     ComputePointPairPenetration().
+   <h3>Scalar support</h3>
+
+   The scalar support is a combination of the scalar support offered by
+   ComputeContactSurfaces() and ComputePointPairPenetration(). This method
+   supports double and AutoDiffXd to the extent that those constituent methods
+   do.
 
    @param[out] surfaces     The vector that contact surfaces will be added to.
                             The vector will _not_ be cleared.
    @param[out] point_pairs  The vector that fall back point pair data will be
                             added to. The vector will _not_ be cleared.
    @pre Neither `surfaces` nor `point_pairs` is nullptr.
-   @throws if T = AutoDiffXd and unsupported object (like box-to-box) actually
-   collides. */
+   @throws std::exception for the reasons described in ComputeContactSurfaces()
+                          and ComputePointPairPenetration(). */
   void ComputeContactSurfacesWithFallback(
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<T>>* point_pairs) const;
