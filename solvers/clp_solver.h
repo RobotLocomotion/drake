@@ -24,6 +24,11 @@ struct ClpSolverDetails {
   int status;
 };
 
+/**
+ * A wrapper to call CLP using Drake's MathematicalProgram.
+ * @note Currently our ClpSolver has a memory issue when solving a QP. The user
+ * should be aware of this risk.
+ */
 class ClpSolver final : public SolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ClpSolver)
