@@ -8,6 +8,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
+#include "drake/geometry/proximity/mesh_traits.h"
 
 namespace drake {
 namespace geometry {
@@ -77,8 +78,14 @@ class Plane {
   /* Computes the height of Point Q relative to the plane. A positive height
    indicates the point lies _above_ the plane; negative height indicates
    _below_. The point must be measured and expressed in the same frame as the
-   plane.   */
-  T CalcHeight(const Vector3<T>& p_FQ) const {
+   plane.
+
+   The return type depends on both the plane's scalar type `T` and the given
+   query point's scalar type `U`. See
+   @ref drake::geometry::promoted_numerical "promoted_numerical_t" for details.
+   */
+  template <typename U = T>
+  promoted_numerical_t<U, T> CalcHeight(const Vector3<U>& p_FQ) const {
     return nhat_F_.dot(p_FQ) - displacement_;
   }
 

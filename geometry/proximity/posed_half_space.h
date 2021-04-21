@@ -5,6 +5,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
+#include "drake/geometry/proximity/mesh_traits.h"
 #include "drake/geometry/proximity/plane.h"
 
 namespace drake {
@@ -46,8 +47,14 @@ class PosedHalfSpace {
   /* Computes the signed distance to the point Q (measured and expressed in
    Frame F). If Q's signed distance is positive, it lies outside the half space.
    If it is negative, it lies inside. If it is zero, it lies on the boundary
-   plane of the half space.  */
-  T CalcSignedDistance(const Vector3<T>& p_FQ) const {
+   plane of the half space.
+
+   The return type depends on both the half space's scalar type `T` and the
+   given query point's scalar type `U`. See
+   @ref drake::geometry::promoted_numerical "promoted_numerical_t" for details.
+   */
+  template <typename U = T>
+  promoted_numerical_t<U, T> CalcSignedDistance(const Vector3<U>& p_FQ) const {
     return plane_.CalcHeight(p_FQ);
   }
 
