@@ -387,6 +387,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     BuildTreeFromReference(dynamic_tree_, object_map, &engine->dynamic_tree_);
     BuildTreeFromReference(anchored_tree_, object_map, &engine->anchored_tree_);
 
+    engine->hydroelastic_geometries_ = this->hydroelastic_geometries_;
+    engine->distance_tolerance_ = this->distance_tolerance_;
+
     return engine;
   }
 
