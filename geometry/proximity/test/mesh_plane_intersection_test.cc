@@ -1830,7 +1830,7 @@ TEST_F(MeshPlaneDerivativesTest, FaceNormalsWrtOrientation) {
       /* Confirm the normal direction. */
       EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(tri_n_W),
                                   plane_n_W, 5 * kEps));
-      /* Confirm the normal gradient w.r.t. position. */
+      /* Confirm the normal gradient w.r.t. theta. */
       EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(tri_n_W),
                                   Vector3d::Zero(), 10 * kEps));
     }
