@@ -281,7 +281,7 @@ class QueryObject {
        | Sphere    |  yes  |  yes  |
        | Cylinder  |  yes  |  yes  |
        | Box       |  yes  |  yes  |
-       | Capsule   |  no   |  no   |
+       | Capsule   |  yes  |  yes  |
        | Ellipsoid |  yes  |  yes  |
        | HalfSpace |  yes  |  yes  |
        | Mesh      |  no   |  yes  |
