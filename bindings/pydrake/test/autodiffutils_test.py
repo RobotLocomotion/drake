@@ -257,3 +257,46 @@ class TestAutoDiffXd(unittest.TestCase):
                                       np.array([2, 3]).reshape((2, 1)))
         np.testing.assert_array_equal(autoDiffToGradientMatrix(c),
                                       np.array(c_grad))
+
+    def test_autodiff_equal_to(self):
+        a = AD(1.0, [1.0, 2.0])
+        b = AD(1.0, [3.0, 4.0])
+        # Test expected contract in terms of `np.vectorize` and derivatives.
+        np.testing.assert_array_equal(
+            mut.autodiff_equal_to(a, a),
+            True,
+        )
+        np.testing.assert_array_equal(
+            mut.autodiff_equal_to([a, a], a),
+            [True, True],
+        )
+        np.testing.assert_array_equal(
+            mut.autodiff_equal_to(a, b),
+            False,
+        )
+        np.testing.assert_array_equal(
+            mut.autodiff_equal_to([a], [b]),
+            [False],
+        )
+        with self.assertRaises(AssertionError):
+            mut.autodiff_equal_to(a, 1.0)
+
+        # Test contract for `semantic=True`.
+        empty_deriv = AD(1.0)
+        zero_deriv1 = AD(1.0, [0.0])
+        zero_deriv2 = AD(1.0, [0.0, 0.0])
+        nonzero_deriv2 = AD(1.0, [0.0, 1e-8])
+        self.assertTrue(mut.autodiff_equal_to(empty_deriv, empty_deriv))
+        self.assertFalse(mut.autodiff_equal_to(empty_deriv, zero_deriv1))
+        self.assertTrue(
+            mut.autodiff_equal_to(empty_deriv, zero_deriv1, semantic=True)
+        )
+        self.assertTrue(
+            mut.autodiff_equal_to(empty_deriv, zero_deriv2, semantic=True)
+        )
+        self.assertFalse(
+            mut.autodiff_equal_to(zero_deriv1, zero_deriv2, semantic=True)
+        )
+        self.assertFalse(
+            mut.autodiff_equal_to(empty_deriv, nonzero_deriv2, semantic=True)
+        )
