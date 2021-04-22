@@ -138,8 +138,9 @@ void PackageMap::AddPackageIfNew(const string& package_name,
         "PackageMap: Adding package://{}: {}", package_name, path);
     Add(package_name, path);
   } else {
+    // Don't warn if we've found the same path with a different spelling.
     const string existing_path = GetPath(package_name);
-    if (path != existing_path) {
+    if (!filesystem::equivalent(existing_path, path)) {
       drake::log()->warn(
           "PackageMap is ignoring newly-found path \"{}\" for package \"{}\""
           " and will continue using the previously-known path at \"{}\".",
