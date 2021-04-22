@@ -7,6 +7,7 @@
 
 #include "ClpSimplex.hpp"
 
+#include "drake/common/text_logging.h"
 #include "drake/solvers/aggregate_costs_constraints.h"
 
 namespace drake {
@@ -34,6 +35,9 @@ void ConstructClpModel(
                      constraint_lower.data(), constraint_upper.data(),
                      nullptr /* rowObjective=nullptr */);
   if (quadratic_matrix.nonZeros() > 0) {
+    static const logging::Warn log_once(
+        "Currently CLP solver has a memory issue when solving a QP. The user "
+        "should be aware of this risk.");
     model->loadQuadraticObjective(
         quadratic_matrix.cols(), quadratic_matrix.outerIndexPtr(),
         quadratic_matrix.innerIndexPtr(), quadratic_matrix.valuePtr());
