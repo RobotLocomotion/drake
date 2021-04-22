@@ -6,6 +6,8 @@
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/hydroelastic_traction_calculator.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -24,6 +26,7 @@ using geometry::SurfaceMesh;
 using geometry::SurfaceVertex;
 using geometry::SurfaceVertexIndex;
 using math::RigidTransform;
+using math::RigidTransformd;
 using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
@@ -556,11 +559,107 @@ TEST_P(MultibodyPlantHydroelasticTractionTests,
   EXPECT_NEAR(tau_Bo_Y[2], 0.0, tol());
 }
 
+// Friend class which provides access to HydroelasticTractionCalculator's
+// private method.
+class HydroelasticTractionCalculatorTester {
+ public:
+  template <typename T>
+  static HydroelasticQuadraturePointData<T> CalcTractionAtQHelper(
+      const HydroelasticTractionCalculator<T>& calculator,
+      const typename HydroelasticTractionCalculator<T>::Data& data,
+      geometry::SurfaceFaceIndex face_index, const T& e,
+      const Vector3<T>& nhat_W, double dissipation, double mu_coulomb,
+      const Vector3<T>& p_WQ) {
+    return calculator.CalcTractionAtQHelper(data, face_index, e, nhat_W,
+                                            dissipation, mu_coulomb, p_WQ);
+  }
+};
+
+// This is a direct test of the underlying helper function CalcTractionAtQHelper
+// and how it responds to interesting cases with derivatives. Specifically,
+// we need to make sure that zero relative velocity does *not* lead to
+// NaN-valued derivatives.
+GTEST_TEST(HydroelasticTractionCalculatorTest,
+           CalcTractionAtQHelperDerivatives) {
+  HydroelasticTractionCalculator<AutoDiffXd> calculator;
+
+  RigidTransform<AutoDiffXd> X_WA(
+      math::initializeAutoDiff(Vector3<double>(0, 0, 1)));
+  RigidTransform<AutoDiffXd> X_WB;
+
+  // For this test, we need just enough contact surface so that the mesh can
+  // report a centroid point (part of Data constructor).
+  const Vector3<AutoDiffXd> p_WC =
+      (X_WA.translation() + X_WB.translation()) / 2;
+  std::vector<SurfaceVertex<AutoDiffXd>> vertices;
+  vertices.emplace_back(p_WC + Vector3<AutoDiffXd>(0.5, 0.5, 0));
+  vertices.emplace_back(p_WC + Vector3<AutoDiffXd>(-0.5, 0, 0.5));
+  vertices.emplace_back(p_WC + Vector3<AutoDiffXd>(0, -0.5, -0.5));
+
+  std::vector<SurfaceFace> faces({SurfaceFace{
+      SurfaceVertexIndex(0), SurfaceVertexIndex(1), SurfaceVertexIndex(2)}});
+  auto mesh_W = std::make_unique<geometry::SurfaceMesh<AutoDiffXd>>(
+      std::move(faces), std::move(vertices));
+  // Note: these values are garbage. They merely allow us to instantiate the
+  // field so the Data can be instantiated. The *actual* field value passed
+  // to CalcTractionAtQHelper is found below.
+  std::vector<AutoDiffXd> values{0, 0, 0};
+  auto field = std::make_unique<
+      geometry::SurfaceMeshFieldLinear<AutoDiffXd, AutoDiffXd>>(
+      "junk", std::move(values), mesh_W.get(), false);
+  geometry::ContactSurface<AutoDiffXd> surface(
+      geometry::GeometryId::get_new_id(), geometry::GeometryId::get_new_id(),
+      std::move(mesh_W), std::move(field));
+
+  // Parameters for CalcTractionAtQHelper().
+  const geometry::SurfaceFaceIndex f0(0);
+  const Vector3<AutoDiffXd>& nhat_W = surface.mesh_W().face_normal(f0);
+  const AutoDiffXd e = 1e5;
+  const double dissipation = 0.1;
+  const double mu_coulomb = 1.0;
+
+  // Case: nothing is moving, so the relative velocity is zero.
+  SpatialVelocity<AutoDiffXd> V_WA{Vector3<AutoDiffXd>::Zero(),
+                                   Vector3<AutoDiffXd>::Zero()};
+  SpatialVelocity<AutoDiffXd> V_WB(V_WA);
+  HydroelasticTractionCalculator<AutoDiffXd>::Data data(X_WA, X_WB, V_WA, V_WB,
+                                                        &surface);
+
+  auto point_data =
+      HydroelasticTractionCalculatorTester::CalcTractionAtQHelper<AutoDiffXd>(
+          calculator, data, f0, e, nhat_W, dissipation, mu_coulomb, p_WC);
+
+  // Note: we're differentiating w.r.t. p_WAo, the normal direction does *not*
+  // change, so the Jacobean of nhat_W is all zeros. We'll do a quick reality
+  // check to confirm this.
+  //
+  // This is relevant, because the traction_Aq_W is computed *using* the normal.
+  // So, derivatives on nhat_W are what propagate to become derivatives on
+  // traction_Aq_W. In this case, the zeros should win out. This confirms that
+  // we get well-defined (non-NaN) derivatives even when relative velocity is
+  // zero.
+  //
+  // Note: if derivatives didn't propagate down to traction_Aq_W, then the
+  // call to math::autoDiffToGradientMatrix() would produce a 3x0 matrix which
+  // would fail the call to CompareMatrices(). So, we know that the zero matrix
+  // is the result of the chain rule, properly applied. However, to be doubly
+  // sure, we'll also test the size of the derivatives() vectors.
+  const Matrix3<double> zeros = Matrix3<double>::Zero();
+  EXPECT_TRUE(
+      CompareMatrices(math::autoDiffToGradientMatrix(nhat_W), zeros, 1e-15));
+  EXPECT_EQ(point_data.traction_Aq_W.x().derivatives().size(), 3);
+  EXPECT_EQ(point_data.traction_Aq_W.y().derivatives().size(), 3);
+  EXPECT_EQ(point_data.traction_Aq_W.z().derivatives().size(), 3);
+  const Matrix3<double> grad_traction_Aq_W =
+      math::autoDiffToGradientMatrix(point_data.traction_Aq_W);
+  EXPECT_TRUE(CompareMatrices(grad_traction_Aq_W, zeros));
+}
+
 // This fixture defines a contacting configuration between a box and a
 // half-space in a local frame, Y. See MultibodyPlantHydroelasticTractionTests
 // class documentation for a description of Frame Y.
-class HydroelasticReportingTests :
-public ::testing::TestWithParam<RigidTransform<double>> {
+class HydroelasticReportingTests
+    : public ::testing::TestWithParam<RigidTransform<double>> {
  public:
   const ContactSurface<double>& contact_surface() const {
       return *contact_surface_;
