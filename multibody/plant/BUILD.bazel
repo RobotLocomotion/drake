@@ -265,6 +265,8 @@ drake_cc_googletest(
         ":hydroelastic_traction",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
+        "//math:autodiff",
+        "//math:gradient",
         "//multibody/parsing",
     ],
 )

@@ -132,6 +132,7 @@ class HydroelasticTractionCalculator {
   // HydroelasticTractionCalculator in HydroelasticReportingTests if we have
   // to "friend" too many testing functions.
   // To allow GTEST to test private functions.
+  friend class HydroelasticTractionCalculatorTester;
   friend class MultibodyPlantHydroelasticTractionTests;
   friend class HydroelasticReportingTests;
   friend class HydroelasticReportingTests_LinearTraction_Test;
