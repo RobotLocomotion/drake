@@ -222,16 +222,15 @@ HydroelasticTractionCalculator<T>::CalcTractionAtQHelper(
   using std::atan;
   using std::sqrt;
   const T squared_vt = traction_data.vt_BqAq_W.squaredNorm();
-  const T norm_vt = sqrt(squared_vt);
-  const T soft_norm_vt = sqrt(squared_vt +
-      vslip_regularizer_ * vslip_regularizer_);
+  const T soft_norm_vt =
+      sqrt(squared_vt + vslip_regularizer_ * vslip_regularizer_);
 
   // Get the regularized direction of slip.
   const Vector3<T> vt_hat_BqAq_W = traction_data.vt_BqAq_W / soft_norm_vt;
 
   // Compute the traction.
   const T frictional_scalar = mu_coulomb * normal_traction *
-      2.0 / M_PI * atan(norm_vt / T(vslip_regularizer_));
+      2.0 / M_PI * atan(soft_norm_vt / T(vslip_regularizer_));
   traction_data.traction_Aq_W = nhat_W * normal_traction -
       vt_hat_BqAq_W * frictional_scalar;
 
