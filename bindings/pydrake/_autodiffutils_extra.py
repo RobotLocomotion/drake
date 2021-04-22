@@ -36,3 +36,18 @@ def initializeAutoDiffTuple(*args):
         deriv_num_start += np.asarray(arg).size
 
     return tuple(autodiff_tuple)
+
+
+@np.vectorize
+def autodiff_equal_to(a, b):
+    """
+    Provides a structural equality check for arrays of AutoDiffXd scalars.
+    """
+    assert isinstance(a, AutoDiffXd), type(a)
+    assert isinstance(b, AutoDiffXd), type(b)
+    if a.value() == b.value():
+        da = a.derivatives()
+        db = b.derivatives()
+        if da.shape == db.shape and (da == db).all():
+            return True
+    return False

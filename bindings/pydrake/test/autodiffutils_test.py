@@ -257,3 +257,25 @@ class TestAutoDiffXd(unittest.TestCase):
                                       np.array([2, 3]).reshape((2, 1)))
         np.testing.assert_array_equal(autoDiffToGradientMatrix(c),
                                       np.array(c_grad))
+
+    def test_autodiff_equal_to(self):
+        a = AD(1.0, [1.0, 2.0])
+        b = AD(1.0, [3.0, 4.0])
+        np.testing.assert_array_equal(
+            mut.autodiff_equal_to(a, a),
+            True,
+        )
+        np.testing.assert_array_equal(
+            mut.autodiff_equal_to([a, a], a),
+            [True, True],
+        )
+        np.testing.assert_array_equal(
+            mut.autodiff_equal_to(a, b),
+            False,
+        )
+        np.testing.assert_array_equal(
+            mut.autodiff_equal_to([a], [b]),
+            [False],
+        )
+        with self.assertRaises(AssertionError):
+            mut.autodiff_equal_to(a, 1.0)
