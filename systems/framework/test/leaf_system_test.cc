@@ -452,7 +452,7 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
   EXPECT_EQ(witness3->CalcWitnessValue(context_), 3.0);
   auto pe = dynamic_cast<const PublishEvent<double>*>(witness3->get_event());
   ASSERT_TRUE(pe);
-  pe->handle(context_);
+  pe->handle(system_, context_);
   EXPECT_TRUE(system_.publish_callback_called());
 
   auto witness4 = system_.MakeWitnessWithDiscreteUpdate();
@@ -2223,7 +2223,7 @@ class TestTriggerSystem : public LeafSystem<double> {
         continue;
 
       // Call custom callback handler.
-      event->handle(context);
+      event->handle(*this, context);
     }
 
     publish_count_++;
