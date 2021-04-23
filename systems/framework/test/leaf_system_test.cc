@@ -466,7 +466,7 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
   auto de = dynamic_cast<const DiscreteUpdateEvent<double>*>(
       witness4->get_event());
   ASSERT_TRUE(de);
-  de->handle(context_, nullptr);
+  de->handle(system_, context_, nullptr);
   EXPECT_TRUE(system_.discrete_update_callback_called());
 
   auto witness5 = system_.MakeWitnessWithUnrestrictedUpdate();
@@ -480,7 +480,7 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
   auto ue = dynamic_cast<const UnrestrictedUpdateEvent<double>*>(
       witness5->get_event());
   ASSERT_TRUE(ue);
-  ue->handle(context_, nullptr);
+  ue->handle(system_, context_, nullptr);
   EXPECT_TRUE(system_.unrestricted_update_callback_called());
 
   auto witness6 = system_.DeclareLambdaWitnessWithoutEvent();
