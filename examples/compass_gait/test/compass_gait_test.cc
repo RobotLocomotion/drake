@@ -201,7 +201,7 @@ GTEST_TEST(CompassGaitTest, TestCollisionDynamics) {
   auto next_context = cg.CreateDefaultContext();
   dynamic_cast<const systems::UnrestrictedUpdateEvent<double>*>(
       foot_collision->get_event())
-      ->handle(*context, &next_context->get_mutable_state());
+      ->handle(cg, *context, &next_context->get_mutable_state());
 
   const double angular_momentum_after =
       CalcAngularMomentum(cg, *next_context, true);
