@@ -10,30 +10,37 @@ namespace drake {
 namespace systems {
 namespace {
 
-class ExamplePublishingSystem final : public LeafSystem<double> {
+class EventfulSystem final : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExamplePublishingSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EventfulSystem)
 
-  ExamplePublishingSystem() {
-    DeclarePerStepPublishEvent(
-        &ExamplePublishingSystem::Update);
+  EventfulSystem() {
+    // These events were found to cause allocations at AdvanceTo() as
+    // originally implemented.
+    DeclarePeriodicPublishEvent(0.7, 0.0, &EventfulSystem::Update);
+    DeclarePerStepPublishEvent(&EventfulSystem::Update);
+
+    // These events were not found to allocate at AdvanceTo(); they are
+    // included for completeness.
+    DeclareInitializationPublishEvent(&EventfulSystem::Update);
+    DeclareForcedPublishEvent(&EventfulSystem::Update);
   }
 
  private:
-  systems::EventStatus Update(const systems::Context<double>&) const {
-    return systems::EventStatus::Succeeded();
+  EventStatus Update(const Context<double>&) const {
+    return EventStatus::Succeeded();
   }
 };
 
 // Tests that heap allocations do not occur from Simulator and the systems
-// framework for systems that do unrestricted updates and do not have continuous
-// state.
+// framework for systems that do various event updates and do not have
+// continuous state.
 GTEST_TEST(SimulatorLimitMallocTest,
            NoHeapAllocsInSimulatorForSystemsWithoutContinuousState) {
-  // Build a Diagram containing the Example system so we can test both Diagrams
+  // Build a Diagram containing the test system so we can test both Diagrams
   // and LeafSystems at once.
   DiagramBuilder<double> builder;
-  builder.AddSystem<ExamplePublishingSystem>();
+  builder.AddSystem<EventfulSystem>();
   auto diagram = builder.Build();
 
   // Create a Simulator and use it to advance time until t=3.
@@ -42,7 +49,7 @@ GTEST_TEST(SimulatorLimitMallocTest,
   simulator.Initialize();
   {
     // TODO(rpoyner-tri): whittle allocations down to 0.
-    test::LimitMalloc heap_alloc_checker({.max_num_allocations = 16});
+    test::LimitMalloc heap_alloc_checker({.max_num_allocations = 58});
     simulator.AdvanceTo(1.0);
     simulator.AdvanceTo(2.0);
     simulator.AdvanceTo(3.0);
