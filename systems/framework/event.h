@@ -13,6 +13,9 @@
 namespace drake {
 namespace systems {
 
+// Forward declaration to avoid circular dependencies.
+template <typename T> class System;
+
 /** @defgroup events_description System Events
     @ingroup systems
 
@@ -568,8 +571,9 @@ struct PeriodicEventDataComparator {
 
 /**
  * This class represents a publish event. It has an optional callback function
- * to do custom handling of this event given const Context and const
- * PublishEvent object references. @see System::Publish for more details.
+ * (two forms are supported) to do custom handling of this event. @see
+ * System::Publish for more details. @see LeafSystem for more convenient
+ * interfaces to publish events via theDeclare*PublishEvent() methods.
  */
 template <typename T>
 class PublishEvent final : public Event<T> {
@@ -580,10 +584,22 @@ class PublishEvent final : public Event<T> {
   bool is_discrete_update() const override { return false; }
 
   /**
-   * Callback function that processes a publish event.
+   * Callback function that processes a publish event. Receives const
+   * references to the context and this publish event.
    */
   typedef std::function<void(const Context<T>&, const PublishEvent<T>&)>
       PublishCallback;
+
+  /**
+   * Callback function that processes a publish event. Receives const
+   * references to the system, the context, and this publish event.
+   */
+  // Implementation note: this form can help avoid heap allocations induced in
+  // std::function by lambdas with multiple captures. However, the callback
+  // will typically need to down-cast the system reference to recover the
+  // derived system type.
+  typedef std::function<void(const System<T>&, const Context<T>&,
+                             const PublishEvent<T>&)> SystemCallback;
 
   /// Makes a PublishEvent with no trigger type, no event data, and
   /// no specified callback function.
@@ -594,6 +610,11 @@ class PublishEvent final : public Event<T> {
   explicit PublishEvent(const PublishCallback& callback)
       : Event<T>(), callback_(callback) {}
 
+  /// Makes a PublishEvent with no trigger type, no event data, and
+  /// the specified system callback function.
+  explicit PublishEvent(const SystemCallback& system_callback)
+      : Event<T>(), system_callback_(system_callback) {}
+
   // Note: Users should not be calling these.
   #if !defined(DRAKE_DOXYGEN_CXX)
   // Makes a PublishEvent with `trigger_type`, no event data, and
@@ -601,6 +622,12 @@ class PublishEvent final : public Event<T> {
   PublishEvent(const TriggerType& trigger_type,
                const PublishCallback& callback)
       : Event<T>(trigger_type), callback_(callback) {}
+
+  // Makes a PublishEvent with `trigger_type`, no event data, and
+  // system callback function `system_callback`, which can be null.
+  PublishEvent(const TriggerType& trigger_type,
+               const SystemCallback& system_callback)
+      : Event<T>(trigger_type), system_callback_(system_callback) {}
 
   // Makes a PublishEvent with `trigger_type`, no event data, and
   // no specified callback function.
@@ -611,9 +638,27 @@ class PublishEvent final : public Event<T> {
   /**
    * Calls the optional callback function, if one exists, with @p context and
    * `this`.
+   * @pre No system callback is set.
    */
   void handle(const Context<T>& context) const {
-    if (callback_ != nullptr) callback_(context, *this);
+    DRAKE_ASSERT(system_callback_ == nullptr);
+    if (callback_ != nullptr) {
+      callback_(context, *this);
+    }
+  }
+
+  /**
+   * Calls the optional callback or system callback function, if one exists,
+   * with @p system, @p context, and `this`.
+   */
+  void handle(const System<T>& system, const Context<T>& context) const {
+    // At most one callback can be set.
+    DRAKE_ASSERT(callback_ == nullptr || system_callback_ == nullptr);
+    if (callback_ != nullptr) {
+      callback_(context, *this);
+    } else if (system_callback_ != nullptr) {
+      system_callback_(system, context, *this);
+    }
   }
 
  private:
@@ -631,8 +676,11 @@ class PublishEvent final : public Event<T> {
     return new PublishEvent(*this);
   }
 
-  // Optional callback function that handles this publish event.
+  // Optional callback functions that handle this publish event. At most one
+  // callback can be set; whichever one is set will be invoked. It is valid for
+  // no callback to be set.
   PublishCallback callback_{nullptr};
+  SystemCallback system_callback_{nullptr};
 };
 
 /**
