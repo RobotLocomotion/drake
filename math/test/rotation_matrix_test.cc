@@ -1093,8 +1093,10 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVector) {
     DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneUnitVector(
         Vector3<double>(1, 2, 3), axis_index), std::exception,
             ".* Vector is not a unit vector.*");
+    constexpr double kTolerance_sqrt =
+        std::sqrt(std::numeric_limits<double>::epsilon());
     DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneUnitVector(
-        Vector3<double>(1, 2, 3), axis_index), std::exception,
+        Vector3<double>(1, 0, 8 * kTolerance_sqrt), axis_index), std::exception,
         "RotationMatrix::MakeFromOneUnitVector().* "
         "Vector is not a unit vector[^]+");
   } else {
@@ -1122,24 +1124,52 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneVector) {
 
   // Verify MakeFromOneVector() throws an exception if its first argument is
   // the zero vector or a NAN vector (in either Debug or Release builds).
-  EXPECT_THROW(RotationMatrix<double>::MakeFromOneVector(
-      Vector3<double>::Zero(), axis_index), std::exception);
-  EXPECT_THROW(RotationMatrix<double>::MakeFromOneVector(
-      Vector3<double>(NAN, 1, NAN), axis_index), std::exception);
+  DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneVector(
+      Vector3<double>::Zero(), axis_index), std::exception,
+          "RotationMatrix::MakeFromOneVector().*Unable to make a unit vector "
+        "from a zero vector.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneVector(
+      Vector3<double>(NAN, 1, NAN), axis_index), std::exception,
+      "RotationMatrix::MakeFromOneVector().*"
+      " Unable to make a unit vector."
+      " Vector contains an element that is infinity or Nan.*");
 
-  // Verify a vector with a tiny magnitude works as anticipated.
-  const Vector3<double> tiny_vector(1.2E-71, -3.4E-75, 5.7E-81);
-  R_AB = RotationMatrix<double>::MakeFromOneVector(tiny_vector, axis_index);
-  VerifyMakeFromOneVector(R_AB, tiny_vector.normalized(), axis_index);
+  Vector3<symbolic::Expression> u_symbolic(0, 0, 0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+        RotationMatrix<symbolic::Expression>::MakeFromOneVector(
+            u_symbolic, axis_index), std::exception,
+        "RotationMatrix::MakeFromOneVector().*Unable to make a unit vector "
+        "from a zero vector.*");
 
-  // Verify a vector with a huge magnitude works as anticipated.
-  const Vector3<double> huge_vector(1.2E82, 3.3E83, -9.8E94);
-  R_AB = RotationMatrix<double>::MakeFromOneVector(huge_vector, axis_index);
-  VerifyMakeFromOneVector(R_AB, huge_vector.normalized(), axis_index);
+  // Verify a vector with a small magnitude works as anticipated.
+  const Vector3<double> small_vector(1.2E-11, -3.4E-12, 5.6E-13);
+  R_AB = RotationMatrix<double>::MakeFromOneVector(small_vector, axis_index);
+  VerifyMakeFromOneVector(R_AB, small_vector.normalized(), axis_index);
+
+  // Verify a vector with a tiny magnitude throws an exception.
+  const Vector3<double> tiny_vector(1.2E-71, -3.4E-75, 5.6E-81);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RotationMatrix<double>::MakeFromOneVector(tiny_vector, axis_index),
+      std::exception,
+       "RotationMatrix::MakeFromOneVector().* "
+       "Vector's magnitude is too small[^]+");
+
+  // Verify a vector with a large magnitude works as anticipated.
+  const Vector3<double> large_vector(1.2E11, 3.4E12, -5.6E13);
+  R_AB = RotationMatrix<double>::MakeFromOneVector(large_vector, axis_index);
+  VerifyMakeFromOneVector(R_AB, large_vector.normalized(), axis_index);
+
+  // Verify a vector with a huge magnitude throws an exception.
+  const Vector3<double> huge_vector(1.2E21, 3.4E42, -5.6E63);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RotationMatrix<double>::MakeFromOneVector(huge_vector, axis_index),
+      std::exception,
+       "RotationMatrix::MakeFromOneVector().* "
+       "Vector's magnitude is too big[^]+");
 
   // Verify no relevant assertions are thrown when the underlying scalar type
   // is a symbolic::Expression, as most validity checks are skipped.
-  Vector3<symbolic::Expression> u_symbolic(3, 2, 1);
+  u_symbolic = Vector3<symbolic::Expression>(3, 2, 1);
   RotationMatrix<symbolic::Expression> R_AB_symbolic =
       RotationMatrix<symbolic::Expression>::MakeFromOneVector(u_symbolic, 2);
   EXPECT_TRUE(R_AB_symbolic.IsValid());  // Should be a no-op (does nothing).
@@ -1150,7 +1180,7 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneVector) {
       RotationMatrix<symbolic::Expression>::MakeFromOneVector(u_symbolic, 0),
       std::exception, "NaN is detected during Symbolic computation.");
 
-  std::vector<Vector3<double>> test_vectors {
+  const std::vector<Vector3<double>> test_vectors {
     Vector3<double>{0, 1, 2},        // u_min = ux = 0
     Vector3<double>{2, 0, 1},        // u_min = uy = 0
     Vector3<double>{1, 2, 0},        // u_min = uz = 0
@@ -1162,7 +1192,7 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneVector) {
   };
 
   for (axis_index = 0; axis_index < 2;  axis_index++) {
-    for (Vector3<double>& b_A : test_vectors) {
+    for (const Vector3<double>& b_A : test_vectors) {
       R_AB = RotationMatrix<double>::MakeFromOneVector(b_A, axis_index);
       VerifyMakeFromOneVector(R_AB, b_A.normalized(), axis_index);
     }

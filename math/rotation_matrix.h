@@ -286,12 +286,12 @@ class RotationMatrix {
   ///  with u_A, 0 means u_A is Bx, 1 means u_A is By, and 2 means u_A is Bz.
   /// @pre axis_index is 0 or 1 or 2.
   /// @throws std::exception if b_A cannot be made into a unit vector.
-  /// @see MakeFromOneUnitVector() if you want to avoid normalization.
+  /// @see MakeFromOneUnitVector() if b_A is known to already be unit length.
   /// @retval R_AB the rotation matrix with properties as described above.
   static RotationMatrix<T> MakeFromOneVector(
       const Vector3<T>& b_A, int axis_index) {
     // Ensure b_A can be made into a unit vector (not a zero vector, NAN, etc.).
-    ThrowIfUnableToMakeUnitVectorDueToNanOrZeroVector(b_A, __func__);
+    ThrowIfUnableToNormalizeToUnitVector(b_A, __func__);
     const Vector3<T> u_A = b_A.normalized();
     return MakeFromOneUnitVector(u_A, axis_index);
   }
@@ -339,11 +339,16 @@ class RotationMatrix {
     // elements that are not uₘᵢₙ, at least one must be non-zero.
 
     // We define v = a x u / |a x u|.  From our choice of the unit vector a:
-    // if |ux| is smallest, |a x u|² = uz² + uy² = 1 - ux² = 1 - uₘᵢₙ²
-    // if |uy| is smallest, |a x u|² = uz² + ux² = 1 - uy² = 1 - uₘᵢₙ²
-    // if |uz| is smallest, |a x u|² = uy² + ux² = 1 - uz² = 1 - uₘᵢₙ²
+    // If |ux| is smallest, |a x u|² = uz² + uy² = 1 - ux² = 1 - uₘᵢₙ²
+    // If |uy| is smallest, |a x u|² = uz² + ux² = 1 - uy² = 1 - uₘᵢₙ²
+    // If |uz| is smallest, |a x u|² = uy² + ux² = 1 - uz² = 1 - uₘᵢₙ²
     // The pattern shows that regardless of which element is uₘᵢₙ, in all cases,
-    // |a x u| = √(1 - uₘᵢₙ²), hence v = a x u / √(1 - uₘᵢₙ²).
+    // |a x u| = √(1 - uₘᵢₙ²), hence v = a x u / √(1 - uₘᵢₙ²) which is written
+    // as v = r a x u by defining r = 1 / √(1 - uₘᵢₙ².  In view of a x u above:
+    //
+    // If |ux| is smallest, v = r a x u = [0, -r uz, r uy].
+    // If |uy| is smallest, v = [r uz, 0, -r ux].
+    // If |uz| is smallest, v = [-r uy, r ux, 0].
 
     // By defining w = u x v, w is guaranteed to be a unit vector perpendicular
     // to both u and v and ordered so u, v, w form a right-handed set.
@@ -355,20 +360,20 @@ class RotationMatrix {
     //    = r [a(u⋅u) - u(u⋅a)]    Next, Substitute u⋅u = 1 and u⋅a = uₘᵢₙ.
     //    = r (a - uₘᵢₙ u)         This shows w is mostly in the direction of a.
     //
-    // To efficiently form w = r(a - uₘᵢₙ u) we take advantage of a pattern.
+    // By examining the value of w = r(a - uₘᵢₙ u) for each possible value of
+    // uₘᵢₙ, a pattern emerges. Below we substitute and simplify for the ux case
+    // (analogous results for the uy and uz cases are summarized further below):
+    //
     // If |ux| is smallest, w = ([1  0  0] - uₘᵢₙ [uₘᵢₙ  uy  uz]) / √(1 - uₘᵢₙ²)
     //                        = [1 - uₘᵢₙ²   -uₘᵢₙ uy   -uₘᵢₙ uz] / √(1 - uₘᵢₙ²)
     //                        = [|a x u|   -r uₘᵢₙ uy   -r uₘᵢₙ uz]
     //                        = [|a x u|         s uy         s uz]
-    // If |uy| is smallest, w = ([0  1  0] - uₘᵢₙ [ux  uₘᵢₙ  uz]) / √(1 - uₘᵢₙ²)
-    //                        = [-uₘᵢₙ ux    1 - uₘᵢₙ²  -uₘᵢₙ uz] / √(1 - uₘᵢₙ²)
-    //                        = [-r uₘᵢₙ ux   |a x u|   -r uₘᵢₙ uz]
-    //                        = [      s ux   |a x u|         s uz]
-    // If |uz| is smallest, w = ([0  0  1] - uₘᵢₙ [ux  uy  uₘᵢₙ]) / √(1 - uₘᵢₙ²)
-    //                        = [-uₘᵢₙ ux   -uₘᵢₙ uy  1 - uₘᵢₙ² ] / √(1 - uₘᵢₙ²)
-    //                        = [-r uₘᵢₙ ux   -r uₘᵢₙ uy    |a x u|]
-    //                        = [      s ux         s uy    |a x u|]
-    // where in each of these cases, s = -r uₘᵢₙ.
+    //
+    // where s = -r uₘᵢₙ.  Summarizing the pattern for all three axes gives:
+    //
+    // If |ux| is smallest, w = [|a x u|      s uy         s uz ]
+    // If |uy| is smallest, w = [  s ux     |a x u|        s uz ]
+    // If |uz| is smallest, w = [  s ux       s uy       |a x u|]
     //
     // The properties of the unit vectors v and w are summarized as follows.
     // Denoting i ∈ {0, 1, 2} as the index of u corresponding to uₘᵢₙ, then
@@ -1055,16 +1060,32 @@ class RotationMatrix {
     return m;
   }
 
+
+  // param[in] v a vector with expected magnitude too_small ≤ |v| ≤ too_big.
+  // param[in] too_small a small non-negative number (e.g., 1E-13) that is
+  //   less than or equal to the smallest expected value for |v|.
+  // param[in] too_big a large non-negative number (e.g., 1E+13) that is
+  //   larger than or equal to the largest expected value for |v|.
+  // param[in] function_name name of method to be part of the exception message.
+  // @throws std::exception if |v\ < too_small or |v\ > too_big.
+  static void ThrowIfVectorMagnitudeTooSmallOrLarge(
+      const Vector3<T>& v, const char* function_name,
+      double too_small, double too_big);
+
   static void ThrowIfUnableToMakeUnitVectorDueToZeroVector(
       const Vector3<T>& u, const char* function_name);
 
   static void ThrowIfUnableToMakeUnitVectorDueToNanVector(
       const Vector3<T>& u, const char* function_name);
 
-  static void ThrowIfUnableToMakeUnitVectorDueToNanOrZeroVector(
+  static void ThrowIfUnableToNormalizeToUnitVector(
       const Vector3<T>& u, const char* function_name) {
     ThrowIfUnableToMakeUnitVectorDueToNanVector(u, function_name);
     ThrowIfUnableToMakeUnitVectorDueToZeroVector(u, function_name);
+    constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
+    constexpr double too_small = 512 * kEpsilon;  // ≈ 1.1E-13
+    constexpr double too_big = 1 / kEpsilon;      // ≈ 4.5E+15.
+    ThrowIfVectorMagnitudeTooSmallOrLarge(u, function_name, too_small, too_big);
   }
 
   static void ThrowIfNotValidUnitVector(const Vector3<T>& u, double tolerance,
