@@ -291,7 +291,7 @@ class RotationMatrix {
   static RotationMatrix<T> MakeFromOneVector(
       const Vector3<T>& b_A, int axis_index) {
     // Ensure b_A can be made into a unit vector (not a zero vector, NAN, etc.).
-    ThrowIfUnableToNormalizeToUnitVector(b_A, __func__);
+    ThrowIfUnableToNormalize(b_A, __func__);
     const Vector3<T> u_A = b_A.normalized();
     return MakeFromOneUnitVector(u_A, axis_index);
   }
@@ -1079,8 +1079,8 @@ class RotationMatrix {
   static void ThrowIfVectorContainsNaN(const Vector3<T>& v,
                                        const char* function_name);
 
-  static void ThrowIfUnableToNormalizeToUnitVector(const Vector3<T>& u,
-                                                   const char* function_name) {
+  static void ThrowIfUnableToNormalize(const Vector3<T>& u,
+                                       const char* function_name) {
     ThrowIfVectorContainsNaN(u, function_name);
     ThrowIfVectorIsZeroVector(u, function_name);
     constexpr double too_small = 1.0E-13, too_big = 1.0E+13;

@@ -155,7 +155,7 @@ void RotationMatrix<T>::ThrowIfVectorContainsNaN(const Vector3<T>& v,
 template <typename T>
 void RotationMatrix<T>::ThrowIfInvalidUnitVector(const Vector3<T>& u,
     double tolerance, const char* function_name) {
-  ThrowIfUnableToNormalizeToUnitVector(u, function_name);
+  ThrowIfUnableToNormalize(u, function_name);
 
   // Skip symbolic expressions.
   // TODO(Mitiguy) This is a generally-useful method.  Consider moving it
