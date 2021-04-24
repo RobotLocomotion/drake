@@ -36,3 +36,37 @@ def initializeAutoDiffTuple(*args):
         deriv_num_start += np.asarray(arg).size
 
     return tuple(autodiff_tuple)
+
+
+@np.vectorize
+def autodiff_equal_to(a, b, *, semantic=False):
+    """
+    Provides a structural equality check for arrays of AutoDiffXd scalars, i.e.
+    returns True if both the values and derivates are equal.
+
+    Arguments:
+        a, b:
+            Arrays to compare.
+        semantic:
+            If False, performs *literal* comparison, meaning the value and
+            derivatives must match in both value and shape.
+            If True, performs *semantic* comparison, meaning that empty
+            derivatives is equivalent to purely zero-valued derivatives.
+            Note: Zero-valued derivatives of different size are *not*
+            equivalent.
+    """
+    assert isinstance(a, AutoDiffXd), type(a)
+    assert isinstance(b, AutoDiffXd), type(b)
+    if a.value() == b.value():
+        da = a.derivatives()
+        db = b.derivatives()
+        if da.shape == db.shape and (da == db).all():
+            return True
+        da_empty = da.size == 0
+        db_empty = db.size == 0
+        if semantic and (da_empty or db_empty):
+            da_zero = (da == 0.0).all()
+            db_zero = (db == 0.0).all()
+            if (da_zero and db_empty) or (da_empty and db_zero):
+                return True
+    return False
