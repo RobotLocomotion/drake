@@ -1083,20 +1083,19 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVector) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         RotationMatrix<double>::MakeFromOneUnitVector(
             Vector3<double>::Zero(), axis_index), std::exception,
-        "RotationMatrix::MakeFromOneUnitVector().*Unable to make a unit vector "
-        "from a zero vector.*");
+        "RotationMatrix::MakeFromOneUnitVector().* was passed a zero vector.*");
     DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneUnitVector(
         Vector3<double>(NAN, 1, NAN), axis_index), std::exception,
-        "RotationMatrix::MakeFromOneUnitVector().*"
-        " Unable to make a unit vector."
-        " Vector contains an element that is infinity or Nan.*");
+        "RotationMatrix::MakeFromOneUnitVector().* was passed an invalid vector"
+        " argument.  There is a NaN or infinity in the vector[^]+");
     DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneUnitVector(
         Vector3<double>(1, 2, 3), axis_index), std::exception,
-            ".* Vector is not a unit vector.*");
-    constexpr double kTolerance_sqrt =
+        "RotationMatrix::MakeFromOneUnitVector().* "
+        "Vector is not a unit vector[^]+");
+    const double kToleranceSqrt  =
         std::sqrt(std::numeric_limits<double>::epsilon());
     DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneUnitVector(
-        Vector3<double>(1, 0, 8 * kTolerance_sqrt), axis_index), std::exception,
+        Vector3<double>(1, 0, 8 * kToleranceSqrt), axis_index), std::exception,
         "RotationMatrix::MakeFromOneUnitVector().* "
         "Vector is not a unit vector[^]+");
   } else {
@@ -1126,20 +1125,16 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneVector) {
   // the zero vector or a NAN vector (in either Debug or Release builds).
   DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneVector(
       Vector3<double>::Zero(), axis_index), std::exception,
-          "RotationMatrix::MakeFromOneVector().*Unable to make a unit vector "
-        "from a zero vector.*");
+          "RotationMatrix::MakeFromOneVector().* was passed a zero vector.*");
   DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneVector(
       Vector3<double>(NAN, 1, NAN), axis_index), std::exception,
-      "RotationMatrix::MakeFromOneVector().*"
-      " Unable to make a unit vector."
-      " Vector contains an element that is infinity or Nan.*");
-
+        "RotationMatrix::MakeFromOneVector().* was passed an invalid vector"
+        " argument.  There is a NaN or infinity in the vector[^]+");
   Vector3<symbolic::Expression> u_symbolic(0, 0, 0);
   DRAKE_EXPECT_THROWS_MESSAGE(
         RotationMatrix<symbolic::Expression>::MakeFromOneVector(
             u_symbolic, axis_index), std::exception,
-        "RotationMatrix::MakeFromOneVector().*Unable to make a unit vector "
-        "from a zero vector.*");
+        "RotationMatrix::MakeFromOneVector().* was passed a zero vector.*");
 
   // Verify a vector with a small magnitude works as anticipated.
   const Vector3<double> small_vector(1.2E-11, -3.4E-12, 5.6E-13);
@@ -1151,11 +1146,11 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneVector) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       RotationMatrix<double>::MakeFromOneVector(tiny_vector, axis_index),
       std::exception,
-       "RotationMatrix::MakeFromOneVector().* "
-       "Vector's magnitude is too small[^]+");
+      "RotationMatrix::MakeFromOneVector().* "
+      "Vector's magnitude is too small[^]+");
 
   // Verify a vector with a large magnitude works as anticipated.
-  const Vector3<double> large_vector(1.2E11, 3.4E12, -5.6E13);
+  const Vector3<double> large_vector(1.2E9, 3.4E10, -5.6E11);
   R_AB = RotationMatrix<double>::MakeFromOneVector(large_vector, axis_index);
   VerifyMakeFromOneVector(R_AB, large_vector.normalized(), axis_index);
 
@@ -1164,8 +1159,8 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneVector) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       RotationMatrix<double>::MakeFromOneVector(huge_vector, axis_index),
       std::exception,
-       "RotationMatrix::MakeFromOneVector().* "
-       "Vector's magnitude is too big[^]+");
+      "RotationMatrix::MakeFromOneVector().* "
+      "Vector's magnitude is too big[^]+");
 
   // Verify no relevant assertions are thrown when the underlying scalar type
   // is a symbolic::Expression, as most validity checks are skipped.

@@ -24,7 +24,7 @@ void RotationMatrix<T>::ThrowIfNotValid(const Matrix3<T>& R) {
       const double measure = ExtractDoubleOrThrow(measure_of_orthonormality);
       std::string message = fmt::format(
           "Error: Rotation matrix is not orthonormal.\n"
-          "  Measure of orthonormality error: {:G}  (near-zero is good).\n"
+          "  Measure of orthonormality error: {}  (near-zero is good).\n"
           "  To calculate the proper orthonormal rotation matrix closest to"
           " the alleged rotation matrix, use the SVD (expensive) static method"
           " RotationMatrix<T>::ProjectToRotationMatrix(), or for a less"
@@ -113,10 +113,9 @@ void RotationMatrix<T>::ThrowIfVectorMagnitudeTooSmallOrLarge(
         const double vx = ExtractDoubleOrThrow(v(0));
         const double vy = ExtractDoubleOrThrow(v(1));
         const double vz = ExtractDoubleOrThrow(v(2));
-        const std::string small_big =  v_norm < too_small ? "small" : "big";
         const std::string message = fmt::format(
             "RotationMatrix::{}(). Vector's magnitude is too {}."
-            " The magnitude of vector [{:G} {:G} {:G}] is {:.16G}."
+            " The magnitude of vector [{} {} {}] is {}."
             " To normalize a vector v, consider using v.normalized().",
             function_name, v_norm < too_small ? "small" : "big",
             vx, vy, vz, v_norm);
@@ -124,47 +123,45 @@ void RotationMatrix<T>::ThrowIfVectorMagnitudeTooSmallOrLarge(
       }
     }
   } else {
-    unused(v);
-    unused(function_name);
-    unused(too_small);
-    unused(too_big);
+    unused(v, function_name, too_small, too_big);
   }
 }
 
 template <typename T>
-void RotationMatrix<T>::ThrowIfUnableToMakeUnitVectorDueToZeroVector(
-    const Vector3<T>& u, const char* function_name) {
-  if (u == Vector3<T>::Zero()) {
+void RotationMatrix<T>::ThrowIfVectorIsZeroVector(const Vector3<T>& v,
+                                                  const char* function_name) {
+  if (v == Vector3<T>::Zero()) {
     const std::string message = fmt::format(
-        "RotationMatrix::{}():"
-        " Unable to make a unit vector from a zero vector.", function_name);
+        "RotationMatrix::{}() was passed a zero vector.", function_name);
     throw std::runtime_error(message);
   }
 }
 
 template <typename T>
-void RotationMatrix<T>::ThrowIfUnableToMakeUnitVectorDueToNanVector(
-    const Vector3<T>& u, const char* function_name) {
-  if (!u.allFinite()) {
+void RotationMatrix<T>::ThrowIfVectorContainsNaN(const Vector3<T>& v,
+                                                 const char* function_name) {
+  if (!v.allFinite() && scalar_predicate<T>::is_bool) {
+    const double vx = ExtractDoubleOrThrow(v(0));
+    const double vy = ExtractDoubleOrThrow(v(1));
+    const double vz = ExtractDoubleOrThrow(v(2));
     const std::string message = fmt::format(
-        "RotationMatrix::{}():"
-        " Unable to make a unit vector."
-        " Vector contains an element that is infinity or Nan.",
-        function_name);
+        "RotationMatrix::{}() was passed an invalid vector argument.  There is"
+        " a NaN or infinity in the vector [{} {} {}].",
+        function_name, vx, vy, vz);
     throw std::runtime_error(message);
   }
 }
 
 template <typename T>
-void RotationMatrix<T>::ThrowIfNotValidUnitVector(const Vector3<T>& u,
+void RotationMatrix<T>::ThrowIfInvalidUnitVector(const Vector3<T>& u,
     double tolerance, const char* function_name) {
   ThrowIfUnableToNormalizeToUnitVector(u, function_name);
 
   // Skip symbolic expressions.
-  // TODO(Mitiguy) This is a generally-useful method.  Consider moving it to a
-  //  into more general view in an appropriate file and also deal with symbolic
+  // TODO(Mitiguy) This is a generally-useful method.  Consider moving it
+  //  into public view in an appropriate file and also deal with symbolic
   //  expressions that can be easily evaluated to a number, e.g., consider:
-  //  ThrowIfNotValidUnitVector(Vector3<symbolic::Expression> u_sym(3, 2, 1));
+  //  ThrowIfInvalidUnitVector(Vector3<symbolic::Expression> u_sym(3, 2, 1));
   if constexpr (scalar_predicate<T>::is_bool) {
     // Give a detailed message if |u| is not within tolerance of 1.
     const T u_norm_as_T = u.norm();
@@ -176,10 +173,10 @@ void RotationMatrix<T>::ThrowIfNotValidUnitVector(const Vector3<T>& u,
       const double uz = ExtractDoubleOrThrow(u(2));
       const std::string message = fmt::format(
           "RotationMatrix::{}(). Vector is not a unit vector."
-          " The magnitude of vector [{:G} {:G} {:G}] deviates from 1."
-          " The vector's actual magnitude is {:.16f}."
-          " Its deviation from 1 is {:G}."
-          " The allowable tolerance (deviation) is {:G}."
+          " The magnitude of vector [{} {} {}] deviates from 1."
+          " The vector's actual magnitude is {}."
+          " Its deviation from 1 is {}."
+          " The allowable tolerance (deviation) is {}."
           " To normalize a vector u, consider using u.normalized().",
           function_name, ux, uy, uz, u_norm, abs_deviation, tolerance);
       throw std::logic_error(message);

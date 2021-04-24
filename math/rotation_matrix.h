@@ -319,7 +319,7 @@ class RotationMatrix {
     // tolerance achieved by normalizing a vast range of non-zero vectors, and
     // seems to guarantee a valid RotationMatrix() (see IsValid()).
     constexpr double kTolerance = 4 * std::numeric_limits<double>::epsilon();
-    DRAKE_ASSERT_VOID(ThrowIfNotValidUnitVector(u_A, kTolerance, __func__));
+    DRAKE_ASSERT_VOID(ThrowIfInvalidUnitVector(u_A, kTolerance, __func__));
 
     // This method forms a right-handed orthonormal basis with u_A (herein
     // abbreviated u) and two internally-constructed unit vectors v and w.
@@ -331,9 +331,9 @@ class RotationMatrix {
     // the fact that a x u is guaranteed to be non-zero and perpendicular to u
     // when a is a unit vector and a ≠ ±u .  We choose vector a ≠ ±u by
     // identifying uₘᵢₙ, the element of u with the smallest absolute value.
-    // If |ux = uₘᵢₙ = u(0)|, set a = [1  0  0] so a x u = [0, -uz, uy].
-    // If |uy = uₘᵢₙ = u(1)|, set a = [0  1  0] so a x u = [uz, 0, -ux].
-    // If |uz = uₘᵢₙ = u(2)|, set a = [0  0  1] so a x u = [-uy, ux, 0].
+    // If |ux = uₘᵢₙ = u(0)|, set a = [1  0  0] so a x u = [0  -uz  uy].
+    // If |uy = uₘᵢₙ = u(1)|, set a = [0  1  0] so a x u = [uz  0  -ux].
+    // If |uz = uₘᵢₙ = u(2)|, set a = [0  0  1] so a x u = [-uy  ux  0].
     // Because we select uₘᵢₙ as the element with the *smallest* magnitude, and
     // since |u|² = ux² + uy² + uz² = 1, we are guaranteed that for the two
     // elements that are not uₘᵢₙ, at least one must be non-zero.
@@ -346,9 +346,9 @@ class RotationMatrix {
     // |a x u| = √(1 - uₘᵢₙ²), hence v = a x u / √(1 - uₘᵢₙ²) which is written
     // as v = r a x u by defining r = 1 / √(1 - uₘᵢₙ².  In view of a x u above:
     //
-    // If |ux| is smallest, v = r a x u = [0, -r uz, r uy].
-    // If |uy| is smallest, v = [r uz, 0, -r ux].
-    // If |uz| is smallest, v = [-r uy, r ux, 0].
+    // If |ux| is smallest, v = r a x u = [    0   -r uz    r uy].
+    // If |uy| is smallest, v =           [ r uz       0   -r ux].
+    // If |uz| is smallest, v =           [-r uy    r ux       0].
 
     // By defining w = u x v, w is guaranteed to be a unit vector perpendicular
     // to both u and v and ordered so u, v, w form a right-handed set.
@@ -362,14 +362,14 @@ class RotationMatrix {
     //
     // By examining the value of w = r(a - uₘᵢₙ u) for each possible value of
     // uₘᵢₙ, a pattern emerges. Below we substitute and simplify for the ux case
-    // (analogous results for the uy and uz cases are summarized further below):
+    // (analogous results for the uy and uz cases are shown further below):
     //
     // If |ux| is smallest, w = ([1  0  0] - uₘᵢₙ [uₘᵢₙ  uy  uz]) / √(1 - uₘᵢₙ²)
     //                        = [1 - uₘᵢₙ²   -uₘᵢₙ uy   -uₘᵢₙ uz] / √(1 - uₘᵢₙ²)
     //                        = [|a x u|   -r uₘᵢₙ uy   -r uₘᵢₙ uz]
     //                        = [|a x u|         s uy         s uz]
     //
-    // where s = -r uₘᵢₙ.  Summarizing the pattern for all three axes gives:
+    // where s = -r uₘᵢₙ.  The results for w for all three axes show a pattern:
     //
     // If |ux| is smallest, w = [|a x u|      s uy         s uz ]
     // If |uy| is smallest, w = [  s ux     |a x u|        s uz ]
@@ -1067,29 +1067,28 @@ class RotationMatrix {
   // param[in] too_big a large non-negative number (e.g., 1E+13) that is
   //   larger than or equal to the largest expected value for |v|.
   // param[in] function_name name of method to be part of the exception message.
-  // @throws std::exception if |v\ < too_small or |v\ > too_big.
-  static void ThrowIfVectorMagnitudeTooSmallOrLarge(
-      const Vector3<T>& v, const char* function_name,
-      double too_small, double too_big);
+  // @throws std::exception if |v| < too_small or |v| > too_big.
+  static void ThrowIfVectorMagnitudeTooSmallOrLarge(const Vector3<T>& v,
+                                                    const char* function_name,
+                                                    double too_small,
+                                                    double too_big);
 
-  static void ThrowIfUnableToMakeUnitVectorDueToZeroVector(
-      const Vector3<T>& u, const char* function_name);
+  static void ThrowIfVectorIsZeroVector(const Vector3<T>& u,
+                                        const char* function_name);
 
-  static void ThrowIfUnableToMakeUnitVectorDueToNanVector(
-      const Vector3<T>& u, const char* function_name);
+  static void ThrowIfVectorContainsNaN(const Vector3<T>& v,
+                                       const char* function_name);
 
-  static void ThrowIfUnableToNormalizeToUnitVector(
-      const Vector3<T>& u, const char* function_name) {
-    ThrowIfUnableToMakeUnitVectorDueToNanVector(u, function_name);
-    ThrowIfUnableToMakeUnitVectorDueToZeroVector(u, function_name);
-    constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
-    constexpr double too_small = 512 * kEpsilon;  // ≈ 1.1E-13
-    constexpr double too_big = 1 / kEpsilon;      // ≈ 4.5E+15.
+  static void ThrowIfUnableToNormalizeToUnitVector(const Vector3<T>& u,
+                                                   const char* function_name) {
+    ThrowIfVectorContainsNaN(u, function_name);
+    ThrowIfVectorIsZeroVector(u, function_name);
+    constexpr double too_small = 1.0E-13, too_big = 1.0E+13;
     ThrowIfVectorMagnitudeTooSmallOrLarge(u, function_name, too_small, too_big);
   }
 
-  static void ThrowIfNotValidUnitVector(const Vector3<T>& u, double tolerance,
-                                        const char* function_name);
+  static void ThrowIfInvalidUnitVector(const Vector3<T>& u, double tolerance,
+                                       const char* function_name);
 
   // Stores the underlying rotation matrix relating two frames (e.g. A and B).
   // For speed, `R_AB_` is uninitialized (public constructors set its value).
