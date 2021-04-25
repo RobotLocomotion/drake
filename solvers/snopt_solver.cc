@@ -1178,21 +1178,27 @@ void SolveWithGivenOptions(
   }
 
   for (const auto& it : snopt_options_double) {
-    int errors;
+    int errors = 0;
     Snopt::snsetr(
         it.first.c_str(), it.first.length(), it.second, &errors,
         storage.iw(), storage.leniw(),
         storage.rw(), storage.lenrw());
-    // TODO(hongkai.dai): report the error in SnoptSolverDetails.
+    if (errors > 0) {
+      throw std::runtime_error("Error setting Snopt double parameter " +
+                               it.first);
+    }
   }
 
   for (const auto& it : snopt_options_int) {
-    int errors;
+    int errors = 0;
     Snopt::snseti(
         it.first.c_str(), it.first.length(), it.second, &errors,
         storage.iw(), storage.leniw(),
         storage.rw(), storage.lenrw());
-    // TODO(hongkai.dai): report the error in SnoptSolverDetails.
+    if (errors > 0) {
+      throw std::runtime_error("Error setting Snopt integer parameter " +
+                               it.first);
+    }
   }
 
   for (const auto& it : snopt_options_string) {
@@ -1206,6 +1212,10 @@ void SolveWithGivenOptions(
         option_string.c_str(), option_string.length(), &errors,
         storage.iw(), storage.leniw(),
         storage.rw(), storage.lenrw());
+    if (errors > 0) {
+      throw std::runtime_error("Error setting Snopt string parameter " +
+                               it.first);
+    }
   }
 
   int Cold = 0;
