@@ -459,11 +459,23 @@ class TestConstraints(unittest.TestCase):
         self.assertIsInstance(constraint, mp.Constraint)
 
     @check_type_variables
-    def test_com_constraint(self, variables):
+    def test_com_position_constraint(self, variables):
         constraint = ik.ComPositionConstraint(
             plant=variables.plant,
             model_instances=None,
             expressed_frame=variables.plant.world_frame(),
+            plant_context=variables.plant_context)
+        self.assertIsInstance(constraint, mp.Constraint)
+
+    @check_type_variables
+    def test_com_in_polyhedron_constraint(self, variables):
+        constraint = ik.ComInPolyhedronConstraint(
+            plant=variables.plant,
+            model_instances=None,
+            expressed_frame=variables.plant.world_frame(),
+            A=np.array([[1., 2., 3.], [0., 1., 2.]]),
+            lb=np.array([0.1, 0.5]),
+            ub=np.array([1.1, 1.5]),
             plant_context=variables.plant_context)
         self.assertIsInstance(constraint, mp.Constraint)
 
