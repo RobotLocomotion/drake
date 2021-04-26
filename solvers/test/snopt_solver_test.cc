@@ -11,6 +11,7 @@
 #include "drake/common/filesystem.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/test/linear_program_examples.h"
@@ -494,6 +495,34 @@ GTEST_TEST(SnoptSolverTest, EckhardtDualSolution) {
   SnoptSolver solver;
   TestEckhardtDualSolution(solver, Eigen::Vector3d(1., 1., 5.));
 }
+
+GTEST_TEST(SnoptSolverTest, BadIntegerParameter) {
+  SnoptSolver solver;
+  MathematicalProgram prog;
+  prog.SetSolverOption(solver.solver_id(), "not an option", 15);
+  DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog),
+      std::exception,
+      "Error setting Snopt integer parameter not an option");
+}
+
+GTEST_TEST(SnoptSolverTest, BadDoubleParameter) {
+  SnoptSolver solver;
+  MathematicalProgram prog;
+  prog.SetSolverOption(solver.solver_id(), "not an option", 15.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog),
+      std::exception,
+      "Error setting Snopt double parameter not an option");
+}
+
+GTEST_TEST(SnoptSolverTest, BadStringParameter) {
+  SnoptSolver solver;
+  MathematicalProgram prog;
+  prog.SetSolverOption(solver.solver_id(), "not an option", "test");
+  DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog),
+      std::exception,
+      "Error setting Snopt string parameter not an option");
+}
+
 
 }  // namespace test
 }  // namespace solvers
