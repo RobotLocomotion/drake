@@ -225,6 +225,7 @@ class ContactResultMaker final : public LeafSystem<double> {
       surface_msg.triangles.resize(surface_msg.num_triangles);
 
       // Loop through each contact triangle on the contact surface.
+      const auto& field = surfaces[i].e_MN();
       for (SurfaceFaceIndex j(0); j < surface_msg.num_triangles; ++j) {
         lcmt_hydroelastic_contact_surface_tri_for_viz& tri_msg =
             surface_msg.triangles[j];
@@ -239,9 +240,9 @@ class ContactResultMaker final : public LeafSystem<double> {
         write_double3(vB.r_MV(), tri_msg.p_WB);
         write_double3(vC.r_MV(), tri_msg.p_WC);
 
-        tri_msg.pressure_A = surfaces[i].EvaluateE_MN(face.vertex(0));
-        tri_msg.pressure_B = surfaces[i].EvaluateE_MN(face.vertex(1));
-        tri_msg.pressure_C = surfaces[i].EvaluateE_MN(face.vertex(2));
+        tri_msg.pressure_A = field.EvaluateAtVertex(face.vertex(0));
+        tri_msg.pressure_B = field.EvaluateAtVertex(face.vertex(1));
+        tri_msg.pressure_C = field.EvaluateAtVertex(face.vertex(2));
       }
     }
 

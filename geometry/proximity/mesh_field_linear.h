@@ -12,6 +12,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/reset_on_copy.h"
 #include "drake/common/sorted_pair.h"
+#include "drake/geometry/proximity/mesh_traits.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 
@@ -166,13 +167,22 @@ class MeshFieldLinear {
   }
 
   /** Evaluates the field value at a location on an element.
+
+   The return type depends on both the field's scalar type `T` and the
+   Barycentric coordinate type `B`.  See
+   @ref drake::geometry::promoted_numerical "promoted_numerical_t" for details.
+
    @param e The index of the element.
    @param b The barycentric coordinates.
+   @tparam B The scalar type for the barycentric coordinate.
    */
-  T Evaluate(typename MeshType::ElementIndex e,
-             const typename MeshType::Barycentric& b) const {
+  template <typename B>
+  promoted_numerical_t<B, T> Evaluate(
+      typename MeshType::ElementIndex e,
+      // NOLINTNEXTLINE(runtime/references): "template Bar..." confuses cpplint.
+      const typename MeshType::template Barycentric<B>& b) const {
     const auto& element = this->mesh().element(e);
-    T value = b[0] * values_[element.vertex(0)];
+    promoted_numerical_t<B, T> value = b[0] * values_[element.vertex(0)];
     for (int i = 1; i < MeshType::kVertexPerElement; ++i) {
       value += b[i] * values_[element.vertex(i)];
     }
@@ -186,12 +196,18 @@ class MeshFieldLinear {
    If gradients have been calculated, it evaluates the field value directly.
    Otherwise, it converts Cartesian coordinates to barycentric coordinates
    for barycentric interpolation.
+
+   The return type depends on both the field's scalar type `T` and the
+   Cartesian coordinate type `C`.  See
+   @ref drake::geometry::promoted_numerical "promoted_numerical_t" for details.
+
    @param e The index of the element.
    @param p_MQ The position of point Q expressed in frame M, in Cartesian
                coordinates. M is the frame of the mesh.
    */
-  T EvaluateCartesian(typename MeshType::ElementIndex e,
-                      const typename MeshType::Cartesian& p_MQ) const {
+  template <typename C>
+  promoted_numerical_t<C, T> EvaluateCartesian(
+      typename MeshType::ElementIndex e, const Vector3<C>& p_MQ) const {
     if (gradients_.size() == 0) {
       return Evaluate(e, this->mesh().CalcBarycentric(p_MQ, e));
     } else {

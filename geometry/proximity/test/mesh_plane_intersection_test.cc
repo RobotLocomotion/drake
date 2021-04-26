@@ -440,7 +440,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
     for (const auto& V_W : vertices_W_) {
       const Vector3d& p_WV = V_W.r_MV();
       const Vector3d& p_FV = X_FW * p_WV;
-      const VolumeMesh<double>::Barycentric b_V =
+      const VolumeMesh<double>::Barycentric<double> b_V =
           field_F.mesh().CalcBarycentric(p_FV, tet_index);
       for (int i = 0; i < 4; ++i) {
         if (!(b_V(i) >= -kEps && b_V(i) <= 1 + kEps)) {

@@ -13,6 +13,7 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/type_safe_index.h"
+#include "drake/geometry/proximity/mesh_traits.h"
 
 namespace drake {
 namespace geometry {
@@ -162,6 +163,15 @@ class VolumeMesh {
    */
   using ElementIndex = VolumeElementIndex;
 
+  // TODO(SeanCurtis-TRI) This is very dissatisfying. The alias contained in a
+  //  templated class doesn't depend on the class template parameter, but
+  //  depends on some non-template-dependent property (kVertexPerElement).
+  //  That means we *apparently* have different types:
+  //    VolumeMesh<double>::Barycentric<double>
+  //    VolumeMesh<AutoDiffXd>::Barycentric<double>
+  // But, ultimately both become Vector4d and, because they are simply aliases,
+  // are interchangable. It would be nice to have some way of formulating this
+  // that *doesn't* imply dependency on the scalar type of VolumeMesh.
   /** Type of barycentric coordinates on a tetrahedral element. Barycentric
    coordinates (b₀, b₁, b₂, b₃) satisfy b₀ + b₁ + b₂ + b₃ = 1. It corresponds
    to a position in the space. If all bᵢ >= 0, it corresponds to a position
@@ -170,12 +180,8 @@ class VolumeMesh {
    could calculate one of the bᵢ from the others; however, there is no
    standard way to omit one of the coordinates.
   */
-  using Barycentric = Vector<T, kVertexPerElement>;
-
-  /** Type of Cartesian coordinates. Mesh consumers can use it in conversion
-   from Cartesian coordinates to barycentric coordinates.
-   */
-  using Cartesian = Vector<T, 3>;
+  template <typename U = T>
+  using Barycentric = Vector<U, kVertexPerElement>;
 
   //@}
 
@@ -249,15 +255,22 @@ class VolumeMesh {
   }
 
   /** Calculate barycentric coordinates with respect to the tetrahedron `e`
-   of the point Q'. This operation is expensive compared with going from
+   of the point Q. This operation is expensive compared with going from
    barycentric to Cartesian.
+
+   The return type depends on both the mesh's vertex position scalar type `T`
+   and the Cartesian coordinate type `C` of the query point.  See
+   @ref drake::geometry::promoted_numerical "promoted_numerical_t" for details.
+
    @param p_MQ  A position expressed in the frame M of the mesh.
    @param e     The index of a tetrahedral element.
    @note  If p_MQ is outside the tetrahedral element, the barycentric
           coordinates (b₀, b₁, b₂, b₃) still satisfy b₀ + b₁ + b₂ + b₃ = 1;
           however, some bᵢ will be negative.
    */
-  Barycentric CalcBarycentric(const Cartesian& p_MQ, ElementIndex e) const {
+  template <typename C>
+  Barycentric<promoted_numerical_t<T, C>> CalcBarycentric(
+      const Vector3<C>& p_MQ, ElementIndex e) const {
     // We have two conditions to satisfy.
     // 1. b₀ + b₁ + b₂ + b₃ = 1
     // 2. b₀*v0 + b₁*v1 + b₂*v2 + b₃*v3 = p_M.
@@ -270,14 +283,14 @@ class VolumeMesh {
     //
     // q = p_M - v0 = b₀*u0 + b₁*u1 + b₂*u2 + b₃*u3
     //              = 0 + b₁*u1 + b₂*u2 + b₃*u3
-
-    Matrix4<T> A;
+    using ReturnType = promoted_numerical_t<T, C>;
+    Matrix4<ReturnType> A;
     for (int i = 0; i < 4; ++i) {
-      A.col(i) << T(1.0), vertex(element(e).vertex(i)).r_MV();
+      A.col(i) << ReturnType(1.0), vertex(element(e).vertex(i)).r_MV();
     }
-    Vector4<T> b;
-    b << T(1.0), p_MQ;
-    Barycentric b_Q = A.partialPivLu().solve(b);
+    Vector4<ReturnType> b;
+    b << ReturnType(1.0), p_MQ;
+    const Vector4<ReturnType> b_Q = A.partialPivLu().solve(b);
     // TODO(DamrongGuoy): Save the inverse of the matrix instead of
     //  calculating it on the fly. We can reduce to 3x3 system too.  See
     //  issue #11653.
@@ -312,12 +325,17 @@ class VolumeMesh {
    Field u is defined by the four field values `field_value[i]` at the i-th
    vertex of the tetrahedron. The gradient ∇u is expressed in the coordinates
    frame of this mesh M.
+
+   The return type depends on both the mesh's vertex position scalar type `T`
+   and the given field's scalar type `FieldValue`.  See
+   @ref drake::geometry::promoted_numerical "promoted_numerical_t" for details.
    */
   template <typename FieldValue>
-  Vector3<FieldValue> CalcGradientVectorOfLinearField(
+  Vector3<promoted_numerical_t<T, FieldValue>> CalcGradientVectorOfLinearField(
       const std::array<FieldValue, 4>& field_value,
       VolumeElementIndex e) const {
-    Vector3<FieldValue> gradu_M = field_value[0] * CalcGradBarycentric(e, 0);
+    using ReturnType = promoted_numerical_t<T, FieldValue>;
+    Vector3<ReturnType> gradu_M = field_value[0] * CalcGradBarycentric(e, 0);
     for (int i = 1; i < 4; ++i) {
       gradu_M += field_value[i] * CalcGradBarycentric(e, i);
     }

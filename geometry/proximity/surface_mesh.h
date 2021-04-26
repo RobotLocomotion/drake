@@ -11,6 +11,7 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/type_safe_index.h"
+#include "drake/geometry/proximity/mesh_traits.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
@@ -145,6 +146,15 @@ class SurfaceMesh {
    */
   using ElementIndex = SurfaceFaceIndex;
 
+  // TODO(SeanCurtis-TRI) This is very dissatisfying. The alias contained in a
+  //  templated class doesn't depend on the class template parameter, but
+  //  depends on some non-template-dependent property (kVertexPerElement).
+  //  That means we *apparently* have different types:
+  //    SurfaceMesh<double>::Barycentric<double>
+  //    SurfaceMesh<AutoDiffXd>::Barycentric<double>
+  // But, ultimately both become Vector3d and, because they are simply aliases,
+  // are interchangable. It would be nice to have some way of formulating this
+  // that *doesn't* imply dependency on the scalar type of SurfaceMesh.
   /**
    Type of barycentric coordinates on a triangular element. Barycentric
    coordinates (b₀, b₁, b₂) satisfy b₀ + b₁ + b₂ = 1. It corresponds to a
@@ -157,12 +167,8 @@ class SurfaceMesh {
 
    The barycentric coordinates for a point Q are notated a b_Q.
    */
-  using Barycentric = Vector<T, kVertexPerElement>;
-
-  /** Type of Cartesian coordinates. Mesh consumers can use it in conversion
-   from Cartesian coordinates to barycentric coordinates.
-   */
-  using Cartesian = Vector<T, 3>;
+  template <typename U = T>
+  using Barycentric = Vector<U, kVertexPerElement>;
 
   /** Returns the triangular element identified by a given index.
     @param e   The index of the triangular element.
@@ -280,16 +286,21 @@ class SurfaceMesh {
   /**
    Maps the barycentric coordinates `Q_barycentric` of a point Q in
    `element_index` to its position vector p_MQ.
+
+   The return type depends on both the mesh's vertex position scalar type `T`
+   and the Barycentric coordinate type `B` of the query point.  See
+   @ref drake::geometry::promoted_numerical "promoted_numerical_t" for details.
    */
-  Vector3<T> CalcCartesianFromBarycentric(
-      ElementIndex element_index, const Barycentric& b_Q) const {
+  template <typename B>
+  Vector3<promoted_numerical_t<T, B>> CalcCartesianFromBarycentric(
+      ElementIndex element_index, const Barycentric<B>& b_Q) const {
     const SurfaceVertex<T> va = vertex(element(element_index).vertex(0));
     const SurfaceVertex<T> vb = vertex(element(element_index).vertex(1));
     const SurfaceVertex<T> vc = vertex(element(element_index).vertex(2));
 
     // This is just a linear transformation between the two coordinates,
     // Cartesian (C) and Barycentric (B). Form the transformation matrix:
-    Matrix3<T> T_CB;
+    Matrix3<promoted_numerical_t<T, B>> T_CB;
     T_CB.col(0) = va.r_MV();
     T_CB.col(1) = vb.r_MV();
     T_CB.col(2) = vc.r_MV();
@@ -301,6 +312,11 @@ class SurfaceMesh {
    of the point Q'. Q' is the projection of the provided point Q on the plane
    of triangle `f`. If Q lies on the plane, Q = Q'. This operation is expensive
    compared with going from barycentric to Cartesian.
+
+   The return type depends on both the mesh's vertex position scalar type `T`
+   and the Cartesian coordinate type `C` of the query point.  See
+   @ref drake::geometry::promoted_numerical "promoted_numerical_t" for details.
+
    @param p_MQ   The position of point Q measured and expressed in the mesh's
                  frame M.
    @param f      The index of a triangular face.
@@ -310,7 +326,9 @@ class SurfaceMesh {
           (b₀, b₁, b₂) still satisfy b₀ + b₁ + b₂ = 1; however, some bᵢ will be
           negative.
    */
-  Barycentric CalcBarycentric(const Cartesian& p_MQ, SurfaceFaceIndex f) const {
+  template <typename C>
+  Vector3<promoted_numerical_t<T, C>> CalcBarycentric(
+      const Vector3<C>& p_MQ, SurfaceFaceIndex f) const {
     const Vector3<T>& v0 = vertex(element(f).vertex(0)).r_MV();
     const Vector3<T>& v1 = vertex(element(f).vertex(1)).r_MV();
     const Vector3<T>& v2 = vertex(element(f).vertex(2)).r_MV();
@@ -332,15 +350,16 @@ class SurfaceMesh {
     //
     // return Barycentric (1-b₁-b₂, b₁, b₂)
     //
-    Eigen::Matrix<T, 3, 2> A;
+    using ReturnType = promoted_numerical_t<T, C>;
+    Eigen::Matrix<ReturnType, 3, 2> A;
     A.col(0) << v1 - v0;
     A.col(1) << v2 - v0;
-    Vector2<T> solution = A.colPivHouseholderQr().solve(p_MQ - v0);
+    Vector2<ReturnType> solution = A.colPivHouseholderQr().solve(p_MQ - v0);
 
-    const T& b1 = solution(0);
-    const T& b2 = solution(1);
-    const T b0 = T(1.) - b1 - b2;
-    return Barycentric(b0, b1, b2);
+    const ReturnType& b1 = solution(0);
+    const ReturnType& b2 = solution(1);
+    const ReturnType b0 = T(1.) - b1 - b2;
+    return {b0, b1, b2};
   }
   // TODO(DamrongGuoy): Investigate alternative calculation suggested by
   //  Alejandro Castro:

@@ -132,15 +132,15 @@ SpatialForce<T> HydroelasticTractionCalculator<T>::
 template <typename T>
 HydroelasticQuadraturePointData<T>
 HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
-    const Data& data,
-    SurfaceFaceIndex face_index,
-    const typename SurfaceMesh<T>::Barycentric& Q_barycentric,
+    const Data& data, SurfaceFaceIndex face_index,
+    // NOLINTNEXTLINE(runtime/references): "template Bar..." confuses cpplint.
+    const typename SurfaceMesh<T>::template Barycentric<T>& Q_barycentric,
     double dissipation, double mu_coulomb) const {
   // Compute the point of contact in the world frame.
   const Vector3<T> p_WQ = data.surface.mesh_W().CalcCartesianFromBarycentric(
       face_index, Q_barycentric);
 
-  const T e = data.surface.EvaluateE_MN(face_index, Q_barycentric);
+  const T e = data.surface.e_MN().Evaluate(face_index, Q_barycentric);
 
   // Contact surfaces are documented to have face normals that point *out of* N
   // and *into* M -- which is the face normal of the contact surface (as
