@@ -169,7 +169,12 @@ class Box final : public Shape {
   Vector3<double> size_;
 };
 
-/** Definition of a capsule. It is centered in its canonical frame with the
+/** Definition of a capsule. The capsule can be thought of as a cylinder with
+ spherical caps attached. The capsule's length refers to the length of the
+ cylindrical region, and the radius applies to both the cylinder and spherical
+ caps. A capsule with zero length is a sphere of the given radius. And a capsule
+ with zero radius is a line segment with the given length. The capsule is
+ defined in its canonical frame C, centered on the frame origin and with the
  length of the capsule parallel with the frame's z-axis. */
 class Capsule final : public Shape {
  public:
