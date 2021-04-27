@@ -533,7 +533,7 @@ TEST_F(ScalarMixingTest, CalcBarycentric) {
 TEST_F(ScalarMixingTest, CalcGradientVectorOfLinearField) {
   constexpr double kEps = std::numeric_limits<double>::epsilon();
   const std::array<double, 4> field_d{0, 0, 0, 1};
-  AutoDiffXd f0;
+  AutoDiffXd f0{0};
   // Because one vertex of the AutoDiffXd-valued mesh has 3 derivatives, this
   // must likewise have three derivatives to be compatible.
   f0.derivatives().resize(3);
@@ -551,7 +551,7 @@ TEST_F(ScalarMixingTest, CalcGradientVectorOfLinearField) {
   {
     // Double-valued mesh with AutoDiffXd-valued field: AutodDiffXd-valued
     // result.
-    const Vector3<AutoDiffXd>& grad_W =
+    const Vector3<AutoDiffXd> grad_W =
         mesh_d_->CalcGradientVectorOfLinearField(field_ad, e0_);
     EXPECT_EQ(grad_W(0).derivatives().size(), 3);
     EXPECT_EQ(grad_W(1).derivatives().size(), 3);
@@ -563,7 +563,7 @@ TEST_F(ScalarMixingTest, CalcGradientVectorOfLinearField) {
   {
     // AutoDiffXd-valued mesh with double-valued field on triangle *with*
     // derivatives: AutodDiffXd-valued result *with* derivatives.
-    const Vector3<AutoDiffXd>& grad_W1 =
+    const Vector3<AutoDiffXd> grad_W1 =
         mesh_ad_->CalcGradientVectorOfLinearField(field_d, e0_);
     EXPECT_EQ(grad_W1(0).derivatives().size(), 3);
     EXPECT_EQ(grad_W1(1).derivatives().size(), 3);
@@ -573,7 +573,7 @@ TEST_F(ScalarMixingTest, CalcGradientVectorOfLinearField) {
 
     // AutoDiffXd-valued mesh with double-valued field on triangle *without*
     // derivatives: AutodDiffXd-valued result *without* derivatives.
-    const Vector3<AutoDiffXd>& grad_W2 =
+    const Vector3<AutoDiffXd> grad_W2 =
         mesh_ad_->CalcGradientVectorOfLinearField(field_d, e1_);
     EXPECT_EQ(grad_W2(0).derivatives().size(), 0);
     EXPECT_EQ(grad_W2(1).derivatives().size(), 0);
@@ -584,7 +584,7 @@ TEST_F(ScalarMixingTest, CalcGradientVectorOfLinearField) {
   {
     // AutoDiffXd-valued mesh with AutoDiffXd-valued field on triangle:
     // AutodDiffXd-valued.
-    const Vector3<AutoDiffXd>& grad_W =
+    const Vector3<AutoDiffXd> grad_W =
         mesh_ad_->CalcGradientVectorOfLinearField(field_ad, e0_);
     EXPECT_EQ(grad_W(0).derivatives().size(), 3);
     EXPECT_EQ(grad_W(1).derivatives().size(), 3);
