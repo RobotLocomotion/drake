@@ -639,6 +639,7 @@ class TestPlant(unittest.TestCase):
                                     M_BBo_B=spatial_inertia)
         body_b = plant.AddRigidBody(name="body_b",
                                     M_BBo_B=spatial_inertia)
+        linear_spring_index = ForceElementIndex(plant.num_force_elements())
         linear_spring = plant.AddForceElement(LinearSpringDamper(
             bodyA=body_a, p_AP=[0., 0., 0.],
             bodyB=body_b, p_BQ=[0., 0., 0.],
@@ -651,9 +652,11 @@ class TestPlant(unittest.TestCase):
                 name="revolve_joint", frame_on_parent=body_a.body_frame(),
                 frame_on_child=body_b.body_frame(), axis=[0, 0, 1],
                 damping=0.))
+        revolute_spring_index = ForceElementIndex(plant.num_force_elements())
         revolute_spring = plant.AddForceElement(RevoluteSpring(
             joint=revolute_joint, nominal_angle=0.1, stiffness=100.))
         door_hinge_config = DoorHingeConfig()
+        door_hinge_index = ForceElementIndex(plant.num_force_elements())
         door_hinge = plant.AddForceElement(DoorHinge(
             joint=revolute_joint, config=door_hinge_config))
 
@@ -661,6 +664,7 @@ class TestPlant(unittest.TestCase):
         torque_damping = np.array([1.0, 1.1, 1.2])
         force_stiffness = np.array([20.0, 21.0, 22.0])
         force_damping = np.array([2.0, 2.1, 2.2])
+        bushing_index = ForceElementIndex(plant.num_force_elements())
         bushing = plant.AddForceElement(LinearBushingRollPitchYaw(
             frameA=body_a.body_frame(),
             frameC=body_b.body_frame(),
@@ -741,6 +745,16 @@ class TestPlant(unittest.TestCase):
         numpy_compare.assert_float_equal(
             bushing.GetForceDampingConstants(context=context),
             2 * force_damping)
+
+        # Test get_force_element().
+        self.assertIs(plant.get_force_element(linear_spring_index),
+                      linear_spring)
+        self.assertIs(plant.get_force_element(revolute_spring_index),
+                      revolute_spring)
+        self.assertIs(plant.get_force_element(door_hinge_index),
+                      door_hinge)
+        self.assertIs(plant.get_force_element(bushing_index),
+                      bushing)
 
     @numpy_compare.check_all_types
     def test_multibody_gravity_default(self, T):
