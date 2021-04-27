@@ -722,7 +722,7 @@ ModelInstanceIndex AddModelFromSpecification(
   std::string canonical_link_name = model.CanonicalLinkName();
   if (canonical_link_name.empty()) {
     // TODO(eric.cousineau): Should libsdformat auto-resolve this?
-    DRAKE_DEMAND(model.LinkCount() > 0);
+    DRAKE_THROW_UNLESS(model.LinkCount() > 0);
     canonical_link_name = model.LinkByIndex(0)->Name();
   }
   const Frame<double>& canonical_link_frame = plant->GetFrameByName(
@@ -823,12 +823,16 @@ ModelInstanceIndex AddModelFromSdf(
 
   std::string root_dir = LoadSdf(&root, data_source);
 
-  if (root.ModelCount() != 1) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  const uint64_t model_count = root.ModelCount();
+#pragma GCC diagnostic pop
+  if (model_count != 1) {
     throw std::runtime_error("File must have a single <model> element.");
   }
 
   // Get the only model in the file.
-  const sdf::Model& model = *root.ModelByIndex(0);
+  const sdf::Model& model = *root.Model();
 
   if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
     plant->RegisterAsSourceForSceneGraph(scene_graph);
@@ -854,7 +858,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
   std::string root_dir = LoadSdf(&root, data_source);
 
   // Throw an error if there are no models or worlds.
-  if (root.ModelCount() == 0 && root.WorldCount() == 0) {
+  if (root.Model() == nullptr && root.WorldCount() == 0) {
     throw std::runtime_error(
         "File must have at least one <model>, or <world> with one "
         "child <model> element.");
@@ -866,7 +870,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
   }
 
   // Do not allow a <world> to have a <model> sibling.
-  if (root.ModelCount() > 0 && root.WorldCount() > 0) {
+  if (root.Model() != nullptr && root.WorldCount() > 0) {
     throw std::runtime_error("A <world> and <model> cannot be siblings.");
   }
 
@@ -877,12 +881,26 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
   std::vector<ModelInstanceIndex> model_instances;
 
   // At this point there should be only Models or a single World at the Root
-  // levelt.
-  if (root.ModelCount() > 0) {
+  // level.
+  if (root.Model() != nullptr) {
     // Load all the models at the root level.
-    for (uint64_t i = 0; i < root.ModelCount(); ++i) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    const uint64_t model_count = root.ModelCount();
+#pragma GCC diagnostic pop
+    if (model_count != 1) {
+      static const logging::Warn log_once(
+        "The feature to load multiple models from a single SDFormat model file "
+        "in Drake is deprecated, and will be removed on or around 2021-08-01. "
+        "If you need multiple root-level models, please use an SDFormat world "
+        "file.");
+    }
+    for (uint64_t i = 0; i < model_count; ++i) {
       // Get the model.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
       const sdf::Model& model = *root.ModelByIndex(i);
+#pragma GCC diagnostic pop
       model_instances.push_back(AddModelFromSpecification(
             model, model.Name(), plant, package_map, root_dir));
     }

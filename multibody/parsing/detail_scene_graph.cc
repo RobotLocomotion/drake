@@ -166,6 +166,15 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
         return make_unique<geometry::Mesh>(file_name, scale);
       }
     }
+    case sdf::GeometryType::CAPSULE: {
+      const sdf::Capsule& shape = *sdf_geometry.CapsuleShape();
+      return make_unique<geometry::Capsule>(shape.Radius(), shape.Length());
+    }
+    case sdf::GeometryType::ELLIPSOID: {
+      const ignition::math::Vector3d& radii =
+          sdf_geometry.EllipsoidShape()->Radii();
+      return make_unique<geometry::Ellipsoid>(radii.X(), radii.Y(), radii.Z());
+    }
     case sdf::GeometryType::HEIGHTMAP: {
       return std::unique_ptr<geometry::Shape>(nullptr);
     }
@@ -205,7 +214,9 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
     case sdf::GeometryType::EMPTY:  // Also includes custom geometries.
     case sdf::GeometryType::HEIGHTMAP:
     case sdf::GeometryType::BOX:
+    case sdf::GeometryType::CAPSULE:
     case sdf::GeometryType::CYLINDER:
+    case sdf::GeometryType::ELLIPSOID:
     case sdf::GeometryType::MESH:
     case sdf::GeometryType::SPHERE: {
       // X_LC = X_LG for these geometries.
@@ -252,7 +263,7 @@ IllustrationProperties MakeVisualPropertiesFromSdfVisual(
   // written to the geometry properties. This breaks the ability of the
   // downstream consumer to supply its own defaults (because it can't
   // distinguish between a value that was specified by the user and one that was
-  // provided by sdformat's default value.
+  // provided by sdformat's default value).
 
   // The existence of a visual element will *always* require an
   // IllustrationProperties instance. How we populate it depends on the material
@@ -304,8 +315,8 @@ IllustrationProperties MakeVisualPropertiesFromSdfVisual(
 
   // TODO(SeanCurtis-TRI): Including this property in illustration properties is
   //  a bit misleading; it isn't used by illustration, but we're not currently
-  //  parsing illustration and perception propeprties separately. So, we stash
-  //  them in the illustration propepties relying on it to be ignored by
+  //  parsing illustration and perception properties separately. So, we stash
+  //  them in the illustration properties relying on it to be ignored by
   //  illustration consumers but copied over to the perception properties.
   const string kAcceptingTag = "drake:accepting_renderer";
   if (visual_element->HasElement(kAcceptingTag)) {
@@ -354,7 +365,9 @@ RigidTransformd MakeGeometryPoseFromSdfCollision(
     case sdf::GeometryType::EMPTY:
     case sdf::GeometryType::HEIGHTMAP:
     case sdf::GeometryType::BOX:
+    case sdf::GeometryType::CAPSULE:
     case sdf::GeometryType::CYLINDER:
+    case sdf::GeometryType::ELLIPSOID:
     case sdf::GeometryType::MESH:
     case sdf::GeometryType::SPHERE: {
       // X_LC = X_LG for these geometries.
