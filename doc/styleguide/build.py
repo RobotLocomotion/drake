@@ -31,7 +31,7 @@ def _add_title(*, temp_dir, filename, title):
 def _build(*, out_dir, temp_dir):
     """Callback function that implements the bulk of main().
     Generates into out_dir; writes scratch files into temp_dir.
-    Both directories must already exist and be empty.
+    As a precondition, both directories must already exist and be empty.
     """
     # Create a hermetic copy of our input.  This helps ensure that only files
     # listed in BUILD.bazel will render onto the website.
