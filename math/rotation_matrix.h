@@ -277,21 +277,31 @@ class RotationMatrix {
 
   /// Creates a 3D right-handed orthonormal basis B from a given vector b_A,
   /// returned as a rotation matrix R_AB. It consists of orthogonal unit vectors
-  /// u, v, w where u is the normalized b_A in the axis_index column of R_AB and
-  /// v has one element which is zero.  If an element of b_A is zero, then one
-  /// element of w is 1 and the other two elements are 0.
+  /// u_A, v_A, w_A where u_A is the normalized b_A in the axis_index column of
+  /// R_AB and v_A has one element which is zero.  If an element of b_A is zero,
+  /// then one element of w_A is 1 and the other two elements are 0.
   /// @param[in] b_A vector expressed in frame A that when normalized as
-  ///  u = b_A.normalized() represents Bx or By or Bz (depending on axis_index).
+  /// u_A = b_A.normalized() represents Bx, By, or Bz (depending on axis_index).
   /// @param[in] axis_index The index ∈ {0, 1, 2} of the unit vector associated
   ///  with u_A, 0 means u_A is Bx, 1 means u_A is By, and 2 means u_A is Bz.
   /// @pre axis_index is 0 or 1 or 2.
-  /// @throws std::exception if b_A cannot be made into a unit vector.
+  /// @throws std::exception if b_A cannot be made into a unit vector, e.g.,
+  /// if b_A contains a NaN or b_A is a zero vector or |b_A| is nearly zero.
   /// @see MakeFromOneUnitVector() if b_A is known to already be unit length.
   /// @retval R_AB the rotation matrix with properties as described above.
   static RotationMatrix<T> MakeFromOneVector(
       const Vector3<T>& b_A, int axis_index) {
-    // Ensure b_A can be made into a unit vector (not a zero vector, NAN, etc.).
-    ThrowIfUnableToNormalize(b_A, __func__);
+    // Test if b_A is a good candidate for a unit vector, e.g., b_A is not a
+    // zero vector, or a vector with NAN elements or |b_A| seems too small.
+
+    // Throw an exception if b_A is a poor candidate to become a unit vector,
+    // e.g., b_A contains a NAN element or it is a zero vector or |b_A| is tiny.
+    ThrowIfVectorContainsNonFinite(b_A, __func__);
+    ThrowIfZeroVector(b_A, __func__);
+    // The tolerance 1.0E-10 is a heuristic (rule of thumb) that is guided by
+    // an expected small physical dimensions in a robotic systems.  Numbers
+    // smaller than this tolerance are probably user or developer errors.
+    ThrowIfVectorMagnitudeLessThanTolerance(b_A, __func__, 1.0E-10);
     const Vector3<T> u_A = b_A.normalized();
     return MakeFromOneUnitVector(u_A, axis_index);
   }
@@ -303,8 +313,8 @@ class RotationMatrix {
   /// @param[in] axis_index The index ∈ {0, 1, 2} of the unit vector associated
   ///  with u_A, 0 means u_A is Bx, 1 means u_A is By, and 2 means u_A is Bz.
   /// @pre axis_index is 0 or 1 or 2.
-  /// @pre u_A is a unit vector within a tolerance of 4ε ≈ 8.88E-16.
-  /// @throws std::exception in Debug builds if u_A is not a unit vector.
+  /// @throws std::exception in Debug builds if u_A is not a unit vector, i.e.,
+  /// |u_A| is not within a tolerance of 4ε ≈ 8.88E-16 to 1.0.
   /// @note This method is designed for maximum performance and does not verify
   ///  u_A as a unit vector in Release builds.  Consider MakeFromOneVector().
   /// @retval R_AB the rotation matrix whose properties are described in
@@ -321,8 +331,9 @@ class RotationMatrix {
     constexpr double kTolerance = 4 * std::numeric_limits<double>::epsilon();
     DRAKE_ASSERT_VOID(ThrowIfInvalidUnitVector(u_A, kTolerance, __func__));
 
-    // This method forms a right-handed orthonormal basis with u_A (herein
-    // abbreviated u) and two internally-constructed unit vectors v and w.
+    // This method forms a right-handed orthonormal basis with u_A and two
+    // internally-constructed unit vectors v_A and w_A.
+    // Herein u_A, v_A, w_A are abbreviated u, v, w, respectively.
     // Conceptually, v = a x u / |a x u| and w = u x v where unit vector a is
     // chosen so it is not parallel to u.  To speed this method, we judiciously
     // choose the unit vector a and simplify the algebra as described below.
@@ -331,9 +342,9 @@ class RotationMatrix {
     // the fact that a x u is guaranteed to be non-zero and perpendicular to u
     // when a is a unit vector and a ≠ ±u .  We choose vector a ≠ ±u by
     // identifying uₘᵢₙ, the element of u with the smallest absolute value.
-    // If |ux = uₘᵢₙ = u(0)|, set a = [1  0  0] so a x u = [0  -uz  uy].
-    // If |uy = uₘᵢₙ = u(1)|, set a = [0  1  0] so a x u = [uz  0  -ux].
-    // If |uz = uₘᵢₙ = u(2)|, set a = [0  0  1] so a x u = [-uy  ux  0].
+    // If uₘᵢₙ = ux = u(0), set a = [1  0  0] so a x u = [0  -uz  uy].
+    // If uₘᵢₙ = uy = u(1), set a = [0  1  0] so a x u = [uz  0  -ux].
+    // If uₘᵢₙ = uz = u(2), set a = [0  0  1] so a x u = [-uy  ux  0].
     // Because we select uₘᵢₙ as the element with the *smallest* magnitude, and
     // since |u|² = ux² + uy² + uz² = 1, we are guaranteed that for the two
     // elements that are not uₘᵢₙ, at least one must be non-zero.
@@ -344,7 +355,7 @@ class RotationMatrix {
     // If |uz| is smallest, |a x u|² = uy² + ux² = 1 - uz² = 1 - uₘᵢₙ²
     // The pattern shows that regardless of which element is uₘᵢₙ, in all cases,
     // |a x u| = √(1 - uₘᵢₙ²), hence v = a x u / √(1 - uₘᵢₙ²) which is written
-    // as v = r a x u by defining r = 1 / √(1 - uₘᵢₙ².  In view of a x u above:
+    // as v = r a x u by defining r = 1 / √(1 - uₘᵢₙ²).  In view of a x u above:
     //
     // If |ux| is smallest, v = r a x u = [    0   -r uz    r uy].
     // If |uy| is smallest, v =           [ r uz       0   -r ux].
@@ -400,6 +411,11 @@ class RotationMatrix {
     u_A.cwiseAbs().minCoeff(&i);  // uₘᵢₙ = u_A(i).
     const int j = (i + 1) % 3;
     const int k = (j + 1) % 3;
+
+    // uₘᵢₙ is the element of the unit vector u with smallest absolute value,
+    // hence uₘᵢₙ² has the range 0 ≤ uₘᵢₙ² ≤ 1/3.  Thus the argument (1 - uₘᵢₙ²)
+    // to the following sqrt function has range 2/3 ≤ (1 - uₘᵢₙ²) ≤ 1.0.
+    // √(1 - uₘᵢₙ²) should not encounter sqrt(0) or sqrt(negative_number).
     using std::sqrt;
     const T mag_a_x_u = sqrt(1 - u_A(i) * u_A(i));  // |a x u| = √(1 - uₘᵢₙ²)
     const T r = 1 / mag_a_x_u;
@@ -408,8 +424,9 @@ class RotationMatrix {
     v(j) = -r * u_A(k);
     v(k) = r * u_A(j);
     w(i) = mag_a_x_u;   // w(i) is the most positive component of w.
-    w(j) = s * u_A(j);  // w(j) = 0 if uₘᵢₙ = u_A(i) = 0.
-    w(k) = s * u_A(k);  // w(k) = 0 if uₘᵢₙ = u_A(i) = 0.
+    w(j) = s * u_A(j);  // w(j) = w(k) = 0 if uₘᵢₙ (that is, u_A(i)) is zero.
+    w(k) = s * u_A(k);
+
 
     return R_AB;
   }
@@ -1060,32 +1077,20 @@ class RotationMatrix {
     return m;
   }
 
-
-  // param[in] v a vector with expected magnitude too_small ≤ |v| ≤ too_big.
-  // param[in] too_small a small non-negative number (e.g., 1E-13) that is
-  //   less than or equal to the smallest expected value for |v|.
-  // param[in] too_big a large non-negative number (e.g., 1E+13) that is
-  //   larger than or equal to the largest expected value for |v|.
+  // param[in] v a vector with an expected magnitude |v| ≥ tolerance.
+  // param[in] tolerance a small non-negative number (e.g., 1E-13) that is
+  //   equal to the smallest allowed value for |v|.
   // param[in] function_name name of method to be part of the exception message.
-  // @throws std::exception if |v| < too_small or |v| > too_big.
-  static void ThrowIfVectorMagnitudeTooSmallOrLarge(const Vector3<T>& v,
-                                                    const char* function_name,
-                                                    double too_small,
-                                                    double too_big);
+  // @throws std::exception if |v| < tolerance.
+  static void ThrowIfVectorMagnitudeLessThanTolerance(const Vector3<T>& v,
+                                                      const char* function_name,
+                                                      double tolerance);
 
-  static void ThrowIfVectorIsZeroVector(const Vector3<T>& u,
-                                        const char* function_name);
+  static void ThrowIfZeroVector(const Vector3<T>& u,
+                                const char* function_name);
 
-  static void ThrowIfVectorContainsNaN(const Vector3<T>& v,
-                                       const char* function_name);
-
-  static void ThrowIfUnableToNormalize(const Vector3<T>& u,
-                                       const char* function_name) {
-    ThrowIfVectorContainsNaN(u, function_name);
-    ThrowIfVectorIsZeroVector(u, function_name);
-    constexpr double too_small = 1.0E-13, too_big = 1.0E+13;
-    ThrowIfVectorMagnitudeTooSmallOrLarge(u, function_name, too_small, too_big);
-  }
+  static void ThrowIfVectorContainsNonFinite(const Vector3<T>& v,
+                                             const char* function_name);
 
   static void ThrowIfInvalidUnitVector(const Vector3<T>& u, double tolerance,
                                        const char* function_name);

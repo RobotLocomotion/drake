@@ -1034,18 +1034,17 @@ TEST_F(RotationMatrixConversionTests, AngleAxisToRotationMatrix) {
   }
 }
 
-// This utility test function helps verify the results of MakeFromOneVector().
+// This utility test function helps verify results from MakeFromOneUnitVector().
 // 1. Verifies rotation matrix R_AB is a valid rotation matrix.
 // 2. Verifies unit vector u_A appears in the axis_index column of R_AB.
-// 3. Verifies other properties of R_AB which are described in the user
-//    documentation and developer comments in MakeFromOneVector() and
-//    MakeFromOneUnitVector().
-void VerifyMakeFromOneVector(const RotationMatrix<double>& R_AB,
-                             const Vector3<double>& u_A, int axis_index) {
+// 3. Verifies v_A and w_A (the columns that follow u_A in a cyclical manner)
+//    satisfy various properties which are described in the tests below.
+void VerifyMakeFromOneUnitVector(const RotationMatrix<double>& R_AB,
+                                 const Vector3<double>& u_A, int axis_index) {
   ASSERT_TRUE(R_AB.IsValid());
 
-  // Verify that the three columns of R_AB (herein denoted u, v, w), have the
-  // properties specified in MakeFromOneUnitVector().
+  // Designate u, v, w, as the three columns of R_AB that have cyclical order
+  // starting with u being the column in the axis_index column of R_AB.
   const Vector3<double>& u = R_AB.col(axis_index);
   const Vector3<double>& v = R_AB.col((axis_index + 1) % 3);
   const Vector3<double>& w = R_AB.col((axis_index + 2) % 3);
@@ -1059,13 +1058,13 @@ void VerifyMakeFromOneVector(const RotationMatrix<double>& R_AB,
   // different index i or u_min, this test will have to be revised.
   int i;  // Index of u_A with smallest absolute value, i.e., |uₘᵢₙ| = |u_A(i)|.
   const double u_min_abs = u_A.cwiseAbs().minCoeff(&i);
-  EXPECT_EQ(v(i), 0);
+  EXPECT_EQ(v(i), 0);  // Verify v(i) = 0, which is a property of v and R_AB.
 
   // Verify w(i) is equal to the most positive component of the unit vector w.
   const double w_max = w.maxCoeff();
   EXPECT_EQ(w_max, w(i));
 
-  // If u_min = 0, verify w(i) ≈ 1 and w(j) = w(k) ≈ 0.
+  // Verify that if u_min = 0, w(i) ≈ 1 and w(j) = w(k) ≈ 0.
   if (u_min_abs == 0) {
     const int j = (i + 1) % 3;
     const int k = (j + 1) % 3;
@@ -1075,21 +1074,50 @@ void VerifyMakeFromOneVector(const RotationMatrix<double>& R_AB,
   }
 }
 
-// Verify that the "advanced" method MakeFromOneUnitVector() throws appropriate
-// exceptions in Debug builds, does not throw exceptions in Release builds and
-// produces the same results as MakeFromOneVector().  The tests herein for this
-// this "advanced" method MakeFromOneUnitVector() intentionally do few direct
-// mathematical tests since the "advanced" method s always called by the "basic"
-// method MakeFromOneVector() -- which is mathematically tested in a subsequent
-// GTEST_TEST.   A mathematical test of results from MakeFromOneVector() is
-// always a test of MakeFromOneUnitVector(), but not vice-versa.
+// Verify that the "advanced" method MakeFromOneUnitVector() and the "basic"
+// method MakeFromOneVector() produce the same results and that they produce a
+// valid right-handed orthonormal matrix with appropriate properties (described
+// above in the utility test function VerifyMakeFromOneVector()).  This test
+// compares results from both methods for a set of test vectors that span a
+// relevant combination of u_min.
 GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVector) {
-  RotationMatrix<double> R_AB;
-  constexpr int axis_index = 0;
+  const std::vector<Vector3<double>> test_vectors {
+    Vector3<double>{0, 1, 2},        // u_min = ux = 0
+    Vector3<double>{2, 0, 1},        // u_min = uy = 0
+    Vector3<double>{1, 2, 0},        // u_min = uz = 0
+    Vector3<double>{2, -0.5, -1},    // u_min < 0
+    Vector3<double>{-2, 0.5, 1},     // u_min > 0
+    Vector3<double>{-0.5, 0.5, 1},   // u_min tie, different signs
+    Vector3<double>{-0.5, -0.5, 1},  // u_min tie, both -
+    Vector3<double>{0.5, 0.5, 1},    // u_min tie, both +
+  };
 
-  // Verify MakeFromOneUnitVector() throws an exception in Debug builds if its
-  // first argument is a zero vector, NAN vector, or non-unit vector, whereas
-  // verify no exception is thrown in Release builds (for faster runtime speed).
+  for (int axis_index = 0; axis_index < 2;  axis_index++) {
+    for (const Vector3<double>& b_A : test_vectors) {
+      const Vector3<double> u_A = b_A.normalized();
+      // Verify MakeFromOneUnitVector() produces a right-handed orthonormal
+      // matrix R_AB with appropriate properties.
+      const RotationMatrix<double> R_AB =
+          RotationMatrix<double>::MakeFromOneUnitVector(u_A, axis_index);
+      VerifyMakeFromOneUnitVector(R_AB, u_A, axis_index);
+
+      // Verify MakeFromOneVector() and MakeFromOneUnitVector() yield identical
+      // results for corresponding input arguments.
+      const RotationMatrix<double> R_AB_basic =
+          RotationMatrix<double>::MakeFromOneVector(b_A, axis_index);
+      EXPECT_TRUE(CompareMatrices(R_AB.matrix(), R_AB_basic.matrix()));
+    }
+  }
+}
+
+// Verify that the "advanced" method MakeFromOneUnitVector() throws appropriate
+// exceptions in Debug builds and does not throw exceptions in Release builds.
+// Specifically, verify this method throws an exception in Debug builds if its
+// first argument is a zero vector, is a vector with a NAN element, or is a
+// vector whose magnitude is not ≈ 1.0.  Verify no exception is thrown in
+// Release builds (for faster runtime speed).
+GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVectorExceptions) {
+  constexpr int axis_index = 0;
   if (kDrakeAssertIsArmed) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         RotationMatrix<double>::MakeFromOneUnitVector(
@@ -1117,27 +1145,14 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVector) {
     EXPECT_FALSE(RotationMatrix<double>::MakeFromOneUnitVector(
         Vector3<double>(1, 2, 3), axis_index).IsValid());
   }
-
-  // Verify MakeFromOneVector() and MakeFromOneUnitVector() yield the same
-  // results for corresponding input arguments.
-  const Vector3<double> fred(-1.23, 4.56, 7.89);  // Arbitrary vector.
-  R_AB = RotationMatrix<double>::MakeFromOneVector(fred, axis_index);
-  R_AB.IsExactlyEqualTo(RotationMatrix<double>::MakeFromOneUnitVector(
-      fred.normalized(), axis_index));
 }
 
-// Verify MakeFromOneVector() produces a valid right-handed orthonormal matrix
-// or throws appropriate assertions in Debug or Release builds.  Since the
-// "advanced" method MakeFromOneUnitVector() is always called by the "basic"
-// MakeFromOneVector(), tests for the "advanced" method are performed indirectly
-// through the tests for the "basic" method below.  Also, see the utility test
-// function VerifyMakeFromOneVector() above for more info.
-GTEST_TEST(RotationMatrixTest, MakeFromOneVector) {
-  RotationMatrix<double> R_AB;
-  int axis_index = 0;
-
-  // Verify MakeFromOneVector() throws an exception if its first argument is
-  // the zero vector or a NAN vector (in either Debug or Release builds).
+// Verify MakeFromOneVector() throws appropriate assertions in both Debug and
+// Release builds, which includes throwing an exception if its first argument is
+// the zero vector or is a vector with a NaN element, or is a vector whose
+// magnitude is ≈ 0.0.
+GTEST_TEST(RotationMatrixTest, MakeFromOneVectorExceptions) {
+  constexpr int axis_index = 0;
   DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneVector(
       Vector3<double>::Zero(), axis_index), std::exception,
       "RotationMatrix::MakeFromOneVector().* was passed a zero vector.*");
@@ -1151,9 +1166,10 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneVector) {
       "RotationMatrix::MakeFromOneVector().* was passed a zero vector.*");
 
   // Verify a vector with a small magnitude works as anticipated.
-  const Vector3<double> small_vector(1.2E-11, -3.4E-12, 5.6E-13);
-  R_AB = RotationMatrix<double>::MakeFromOneVector(small_vector, axis_index);
-  VerifyMakeFromOneVector(R_AB, small_vector.normalized(), axis_index);
+  const Vector3<double> small_vector(1.2E-9, -3.4E-9, 5.6E-9);
+  RotationMatrix<double> R_AB =
+      RotationMatrix<double>::MakeFromOneVector(small_vector, axis_index);
+  VerifyMakeFromOneUnitVector(R_AB, small_vector.normalized(), axis_index);
 
   // Verify a vector with a tiny magnitude throws an exception.
   const Vector3<double> tiny_vector(1.2E-71, -3.4E-75, 5.6E-81);
@@ -1163,49 +1179,26 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneVector) {
       "RotationMatrix::MakeFromOneVector().*"
       "Vector's magnitude is too small[^]+");
 
-  // Verify a vector with a large magnitude works as anticipated.
-  const Vector3<double> large_vector(1.2E9, 3.4E10, -5.6E11);
-  R_AB = RotationMatrix<double>::MakeFromOneVector(large_vector, axis_index);
-  VerifyMakeFromOneVector(R_AB, large_vector.normalized(), axis_index);
-
-  // Verify a vector with a huge magnitude throws an exception.
+  // Verify a vector with a huge magnitude works as anticipated.
   const Vector3<double> huge_vector(1.2E21, 3.4E42, -5.6E63);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      RotationMatrix<double>::MakeFromOneVector(huge_vector, axis_index),
-      std::exception,
-      "RotationMatrix::MakeFromOneVector().* "
-      "Vector's magnitude is too big[^]+");
+  R_AB = RotationMatrix<double>::MakeFromOneVector(huge_vector, axis_index);
+  VerifyMakeFromOneUnitVector(R_AB, huge_vector.normalized(), axis_index);
 
   // Verify no relevant assertions are thrown when the underlying scalar type
   // is a symbolic::Expression, as most validity checks are skipped.
   Vector3<symbolic::Expression> u_symbolic(3, 2, 1);
-  RotationMatrix<symbolic::Expression> R_AB_symbolic =
-      RotationMatrix<symbolic::Expression>::MakeFromOneVector(u_symbolic, 2);
-  EXPECT_TRUE(R_AB_symbolic.IsValid());  // Should be a no-op (does nothing).
+  EXPECT_NO_THROW(
+      RotationMatrix<symbolic::Expression>::MakeFromOneVector(u_symbolic, 2));
 
-  // Verify an assertion is thrown when there is a NAN in a symbolic vector.
+  // Verify that a assertion is thrown when there is a NAN in u_symbolic.
+  // Note:  As of now, this assertion is not thrown by a method in the
+  // RotationMatrix class, instead it is thrown by somewhere else in Drake.
+  // TODO(Mitiguy) See if there is a way to get a better message that is thrown
+  //  by the RotationMatrix class.
   u_symbolic = Vector3<symbolic::Expression>(3, 2, NAN);
   DRAKE_EXPECT_THROWS_MESSAGE(
       RotationMatrix<symbolic::Expression>::MakeFromOneVector(u_symbolic, 0),
       std::exception, "NaN is detected during Symbolic computation.");
-
-  const std::vector<Vector3<double>> test_vectors {
-    Vector3<double>{0, 1, 2},        // u_min = ux = 0
-    Vector3<double>{2, 0, 1},        // u_min = uy = 0
-    Vector3<double>{1, 2, 0},        // u_min = uz = 0
-    Vector3<double>{2, -0.5, -1},    // u_min < 0
-    Vector3<double>{-2, 0.5, 1},     // u_min > 0
-    Vector3<double>{-0.5, 0.5, 1},   // u_min tie, different signs
-    Vector3<double>{-0.5, -0.5, 1},  // u_min tie, both -
-    Vector3<double>{0.5, 0.5, 1},    // u_min tie, both +
-  };
-
-  for (axis_index = 0; axis_index < 2;  axis_index++) {
-    for (const Vector3<double>& b_A : test_vectors) {
-      R_AB = RotationMatrix<double>::MakeFromOneVector(b_A, axis_index);
-      VerifyMakeFromOneVector(R_AB, b_A.normalized(), axis_index);
-    }
-  }
 }
 
 }  // namespace

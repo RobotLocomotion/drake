@@ -100,36 +100,33 @@ double ProjectMatToRotMatWithAxis(const Eigen::Matrix3d& M,
   return theta;
 }
 
-
 template <typename T>
-void RotationMatrix<T>::ThrowIfVectorMagnitudeTooSmallOrLarge(
-    const Vector3<T>& v, const char* function_name,
-    double too_small, double too_big) {
+void RotationMatrix<T>::ThrowIfVectorMagnitudeLessThanTolerance(
+    const Vector3<T>& v, const char* function_name, double tolerance) {
   if constexpr (scalar_predicate<T>::is_bool) {
     if (v.allFinite()) {
       const T v_norm_as_T = v.norm();
       const double v_norm = ExtractDoubleOrThrow(v_norm_as_T);
-      if (v_norm < too_small || v_norm > too_big) {
+      if (v_norm < tolerance) {
         const double vx = ExtractDoubleOrThrow(v(0));
         const double vy = ExtractDoubleOrThrow(v(1));
         const double vz = ExtractDoubleOrThrow(v(2));
         const std::string message = fmt::format(
-            "RotationMatrix::{}(). Vector's magnitude is too {}."
-            " The magnitude of vector [{} {} {}] is {}."
+            "RotationMatrix::{}(). Vector's magnitude is too small."
+            " The magnitude of the vector {} {} {} is {}."
             " To normalize a vector v, consider using v.normalized().",
-            function_name, v_norm < too_small ? "small" : "big",
-            vx, vy, vz, v_norm);
+            function_name, vx, vy, vz, v_norm);
         throw std::logic_error(message);
       }
     }
   } else {
-    unused(v, function_name, too_small, too_big);
+    unused(v, function_name, tolerance);
   }
 }
 
 template <typename T>
-void RotationMatrix<T>::ThrowIfVectorIsZeroVector(const Vector3<T>& v,
-                                                  const char* function_name) {
+void RotationMatrix<T>::ThrowIfZeroVector(const Vector3<T>& v,
+                                          const char* function_name) {
   if (v == Vector3<T>::Zero()) {
     const std::string message = fmt::format(
         "RotationMatrix::{}() was passed a zero vector.", function_name);
@@ -138,24 +135,31 @@ void RotationMatrix<T>::ThrowIfVectorIsZeroVector(const Vector3<T>& v,
 }
 
 template <typename T>
-void RotationMatrix<T>::ThrowIfVectorContainsNaN(const Vector3<T>& v,
-                                                 const char* function_name) {
-  if (!v.allFinite() && scalar_predicate<T>::is_bool) {
-    const double vx = ExtractDoubleOrThrow(v(0));
-    const double vy = ExtractDoubleOrThrow(v(1));
-    const double vz = ExtractDoubleOrThrow(v(2));
-    const std::string message = fmt::format(
-        "RotationMatrix::{}() was passed an invalid vector argument.  There is"
-        " a NaN or infinity in the vector [{} {} {}].",
-        function_name, vx, vy, vz);
-    throw std::runtime_error(message);
+void RotationMatrix<T>::ThrowIfVectorContainsNonFinite(
+    const Vector3<T>& v, const char* function_name) {
+  if constexpr (scalar_predicate<T>::is_bool) {
+    if (!v.allFinite()) {
+      const double vx = ExtractDoubleOrThrow(v(0));
+      const double vy = ExtractDoubleOrThrow(v(1));
+      const double vz = ExtractDoubleOrThrow(v(2));
+      const std::string message = fmt::format(
+          "RotationMatrix::{}() was passed an invalid vector argument.  There"
+          " is a NaN or infinity in the vector {} {} {}.",
+          function_name, vx, vy, vz);
+      throw std::runtime_error(message);
+    }
+  } else {
+    unused(v, function_name);
   }
 }
 
 template <typename T>
 void RotationMatrix<T>::ThrowIfInvalidUnitVector(const Vector3<T>& u,
     double tolerance, const char* function_name) {
-  ThrowIfUnableToNormalize(u, function_name);
+  // Throw a nicely worded exception if u is not a unit vector because
+  // u contains a NAN element or u is a zero vector.
+  ThrowIfVectorContainsNonFinite(u, function_name);
+  ThrowIfZeroVector(u, function_name);
 
   // Skip symbolic expressions.
   // TODO(Mitiguy) This is a generally-useful method.  Consider moving it
@@ -173,7 +177,7 @@ void RotationMatrix<T>::ThrowIfInvalidUnitVector(const Vector3<T>& u,
       const double uz = ExtractDoubleOrThrow(u(2));
       const std::string message = fmt::format(
           "RotationMatrix::{}(). Vector is not a unit vector."
-          " The magnitude of vector [{} {} {}] deviates from 1."
+          " The magnitude of vector {} {} {} deviates from 1."
           " The vector's actual magnitude is {}."
           " Its deviation from 1 is {}."
           " The allowable tolerance (deviation) is {}."
