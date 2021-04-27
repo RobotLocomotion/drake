@@ -4,6 +4,7 @@
 #include <memory>
 #include <optional>
 #include <sstream>
+#include <vector>
 
 #include "fmt/ostream.h"
 #include <gtest/gtest.h>
@@ -182,8 +183,9 @@ GTEST_TEST(SceneGraphParserDetail, MakeBoxFromSdfGeometry) {
   EXPECT_EQ(box->size(), Vector3d(1.0, 2.0, 3.0));
 }
 
-// Verify MakeShapeFromSdfGeometry can make a capsule from an sdf::Geometry.
-GTEST_TEST(SceneGraphParserDetail, MakeCapsuleFromSdfGeometry) {
+// Verify MakeShapeFromSdfGeometry can make a Drake capsule from an
+// sdf::Geometry.
+GTEST_TEST(SceneGraphParserDetail, MakeDrakeCapsuleFromSdfGeometry) {
   unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
       "<drake:capsule>"
       "  <radius>0.5</radius>"
@@ -198,7 +200,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeCapsuleFromSdfGeometry) {
 }
 
 // Verify MakeShapeFromSdfGeometry checks for invalid capsules.
-GTEST_TEST(SceneGraphParserDetail, CheckInvalidCapsules) {
+GTEST_TEST(SceneGraphParserDetail, CheckInvalidDrakeCapsules) {
   unique_ptr<sdf::Geometry> no_radius_geometry = MakeSdfGeometryFromString(
       "<drake:capsule>"
       "  <length>1.2</length>"
@@ -217,6 +219,21 @@ GTEST_TEST(SceneGraphParserDetail, CheckInvalidCapsules) {
       "Element <length> is required within element <drake:capsule>.");
 }
 
+// Verify MakeShapeFromSdfGeometry can make a capsule from an sdf::Geometry.
+GTEST_TEST(SceneGraphParserDetail, MakeCapsuleFromSdfGeometry) {
+  unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
+      "<capsule>"
+      "  <radius>0.5</radius>"
+      "  <length>1.2</length>"
+      "</capsule>");
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(
+      *sdf_geometry, NoopResolveFilename);
+  const Capsule* capsule = dynamic_cast<const Capsule*>(shape.get());
+  ASSERT_NE(capsule, nullptr);
+  EXPECT_EQ(capsule->radius(), 0.5);
+  EXPECT_EQ(capsule->length(), 1.2);
+}
+
 // Verify MakeShapeFromSdfGeometry can make a cylinder from an sdf::Geometry.
 GTEST_TEST(SceneGraphParserDetail, MakeCylinderFromSdfGeometry) {
   unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
@@ -232,8 +249,9 @@ GTEST_TEST(SceneGraphParserDetail, MakeCylinderFromSdfGeometry) {
   EXPECT_EQ(cylinder->length(), 1.2);
 }
 
-// Verify MakeShapeFromSdfGeometry can make an ellipsoid from an sdf::Geometry.
-GTEST_TEST(SceneGraphParserDetail, MakeEllipsoidFromSdfGeometry) {
+// Verify MakeShapeFromSdfGeometry can make a Drake ellipsoid from an
+// sdf::Geometry.
+GTEST_TEST(SceneGraphParserDetail, MakeDrakeEllipsoidFromSdfGeometry) {
   unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
       "<drake:ellipsoid>"
       "  <a>0.5</a>"
@@ -278,6 +296,22 @@ GTEST_TEST(SceneGraphParserDetail, CheckInvalidEllipsoids) {
       MakeShapeFromSdfGeometry(*no_c_geometry, NoopResolveFilename),
       std::runtime_error,
       "Element <c> is required within element <drake:ellipsoid>.");
+}
+
+
+// Verify MakeShapeFromSdfGeometry can make an ellipsoid from an sdf::Geometry.
+GTEST_TEST(SceneGraphParserDetail, MakeEllipsoidFromSdfGeometry) {
+  unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
+      "<ellipsoid>"
+      "  <radii>0.5 1.2 0.9</radii>"
+      "</ellipsoid>");
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(
+      *sdf_geometry, NoopResolveFilename);
+  const Ellipsoid* ellipsoid = dynamic_cast<const Ellipsoid*>(shape.get());
+  ASSERT_NE(ellipsoid, nullptr);
+  EXPECT_EQ(ellipsoid->a(), 0.5);
+  EXPECT_EQ(ellipsoid->b(), 1.2);
+  EXPECT_EQ(ellipsoid->c(), 0.9);
 }
 
 // Verify MakeShapeFromSdfGeometry can make a sphere from an sdf::Geometry.
@@ -806,20 +840,15 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
                              emissive, kLocalMap));
   }
 
-  // TODO(SeanCurtis-TRI): The following tests capture current behavior for
-  // sdformat. The behavior isn't necessarily desirable and an issue has been
-  // filed.
-  // https://github.com/osrf/sdformat/issues/193
-  // When this issue gets resolved, modify these tests accordingly.
-
-  // sdformat maps the diffuse values into a `Color` using the following rules:
-  //   1. Truncate to no more than four values (more than 4 values are simply
-  //      ignored).
-  //   2. If fewer than four, use 1 for a default alpha value and zero for
-  //      default r, g, b values.
-
-  // Case: Too many channel values -- truncate.
-  {
+  // Note: As of https://github.com/osrf/sdformat/pull/519, sdformat is doing
+  // more work in validating otherwise invalid color declarations. When sdformat
+  // deems a color to be invalid, we don't get the corresponding property. This
+  // confirms such cases.
+  std::vector<std::string> bad_diffuse_strings{
+      "    <diffuse>0.25 1 0.5 0.25 2</diffuse>",  // Too many values.
+      "    <diffuse>0 1</diffuse>",                // Too few values.
+      "    <diffuse>-0.1 255 65025 2</diffuse>"};  // Out of range values.
+  for (const auto& bad_diffuse : bad_diffuse_strings) {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         "<visual name='some_link_visual'>"
         "  <pose>0 0 0 0 0 0</pose>"
@@ -828,61 +857,12 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
         "      <radius>1</radius>"
         "    </sphere>"
         "  </geometry>"
-        "  <material>"
-        "    <diffuse>0.25 1 0.5 0.25 2</diffuse>"
+        "  <material>" + bad_diffuse +
         "  </material>"
         "</visual>");
     IllustrationProperties material =
         MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
-    Vector4<double> expected_diffuse{0.25, 1, 0.5, 0.25};
-    EXPECT_TRUE(expect_phong(material, true, expected_diffuse, {}, {}, {}, {}));
-  }
-
-  // Case: Too few channel values -- fill in with 0 for b and 1 for alpha.
-  {
-    unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
-        "<visual name='some_link_visual'>"
-        "  <pose>0 0 0 0 0 0</pose>"
-        "  <geometry>"
-        "    <sphere>"
-        "      <radius>1</radius>"
-        "    </sphere>"
-        "  </geometry>"
-        "  <material>"
-        "    <diffuse>0 1</diffuse>"
-        "  </material>"
-        "</visual>");
-    IllustrationProperties material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
-    Vector4<double> expected_diffuse{0, 1, 1, 1};
-    EXPECT_TRUE(expect_phong(material, true, expected_diffuse, {}, {}, {}, {}));
-  }
-
-  // Case: Values out of range:
-  //  A (alpha) simply gets clamped to the range [0, 1]
-  //  For each individual element in R, G, B:
-  //    Negative values are set to zero.
-  //    Values > 1 are divided by 255
-  // This test *must* show that these rules (from libsdformat) do not
-  // guarantee valid values.
-  {
-    unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
-        "<visual name='some_link_visual'>"
-        "  <pose>0 0 0 0 0 0</pose>"
-        "  <geometry>"
-        "    <sphere>"
-        "      <radius>1</radius>"
-        "    </sphere>"
-        "  </geometry>"
-        "  <material>"
-        "    <diffuse>-0.1 255 65025 2</diffuse>"
-        "  </material>"
-        "</visual>");
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename),
-        std::runtime_error,
-        "All values must be within the range \\[0, 1\\]. Values provided: "
-        "\\(r=0(\\.0)?, g=1(\\.0)?, b=255(\\.0)?, a=1(\\.0)?\\)");
+    EXPECT_TRUE(expect_phong(material, false, {}, {}, {}, {}, {}));
   }
 }
 
@@ -902,7 +882,7 @@ GTEST_TEST(SceneGraphParseDetail, AcceptingRenderers) {
         "    </sphere>"
         "  </geometry>"
         "  <material>"
-        "    <diffuse>0.25 1 0.5 0.25 2</diffuse>"
+        "    <diffuse>0.25 1 0.5 0.25</diffuse>"
         "  </material>"
         "</visual>");
     IllustrationProperties material =
@@ -921,7 +901,7 @@ GTEST_TEST(SceneGraphParseDetail, AcceptingRenderers) {
         "    </sphere>"
         "  </geometry>"
         "  <material>"
-        "    <diffuse>0.25 1 0.5 0.25 2</diffuse>"
+        "    <diffuse>0.25 1 0.5 0.25</diffuse>"
         "  </material>"
         "  <drake:accepting_renderer>renderer1</drake:accepting_renderer>"
         "</visual>");
@@ -945,7 +925,7 @@ GTEST_TEST(SceneGraphParseDetail, AcceptingRenderers) {
         "    </sphere>"
         "  </geometry>"
         "  <material>"
-        "    <diffuse>0.25 1 0.5 0.25 2</diffuse>"
+        "    <diffuse>0.25 1 0.5 0.25</diffuse>"
         "  </material>"
         "  <drake:accepting_renderer>renderer1</drake:accepting_renderer>"
         "  <drake:accepting_renderer>renderer2</drake:accepting_renderer>"
@@ -970,7 +950,7 @@ GTEST_TEST(SceneGraphParseDetail, AcceptingRenderers) {
         "    </sphere>"
         "  </geometry>"
         "  <material>"
-        "    <diffuse>0.25 1 0.5 0.25 2</diffuse>"
+        "    <diffuse>0.25 1 0.5 0.25</diffuse>"
         "  </material>"
         "  <drake:accepting_renderer> </drake:accepting_renderer>"
         "</visual>");

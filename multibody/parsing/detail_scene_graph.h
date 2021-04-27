@@ -86,7 +86,9 @@ std::unique_ptr<geometry::GeometryInstance> MakeGeometryInstanceFromSdfVisual(
  below). If any of `ambient`, `diffuse`, `specular`, or `emissive` tags are
  missing, that property will be omitted from the property set and the impact
  of those missing properties will depend on the downstream consumers documented
- handling of missing parameters.
+ handling of missing parameters. If any of the tags are malformed, sdformat
+ will treat those properties as "missing" and they will not be included in
+ the property set.
 
  <!-- TODO(SeanCurtis-TRI): Consider changing the behavior for unspecified tags
  to provide the material value as specified in the current (12/11/18) sdf

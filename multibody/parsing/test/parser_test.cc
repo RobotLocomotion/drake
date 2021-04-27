@@ -151,7 +151,7 @@ GTEST_TEST(FileParserTest, BadStringTest) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       Parser(&plant).AddModelFromString("bad", "sdf"),
       std::exception,
-      ".*\n.*Unable to SDF string.*");
+      ".*\n.*Unable to read SDF string.*");
 
   // Malformed URDF string is an error.
   DRAKE_EXPECT_THROWS_MESSAGE(

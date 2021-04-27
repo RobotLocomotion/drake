@@ -25,7 +25,19 @@
           </box>
         </geometry>
       </collision>
+      <!-- This element is for testing the standard <capsule> spelling. -->
+      <!-- Immediately below, we also test the <drake:capsule> spelling. -->
       <collision name="Capsule">
+        <geometry>
+          <capsule>
+            <length>1</length>
+            <radius>0.1</radius>
+          </capsule>
+        </geometry>
+      </collision>
+      <!-- This element is for testing the <drake:capsule> spelling. -->
+      <!-- Immediately above, we tested the standard <capsule> spelling. -->
+      <collision name="DrakeCapsule">
         <geometry>
           <drake:capsule>
             <length>1</length>
@@ -49,7 +61,18 @@
           </cylinder>
         </geometry>
       </collision>
+      <!-- This element is for testing the standard <ellipsoid> spelling. -->
+      <!-- Immediately below, we also test the <drake:ellipsoid> spelling. -->
       <collision name="Ellipsoid">
+        <geometry>
+          <ellipsoid>
+            <radii>1.0 2.0 3.0</radii>
+          </ellipsoid>
+        </geometry>
+      </collision>
+      <!-- This element is for testing the <drake:ellipsoid> spelling. -->
+      <!-- Immediately above, we tested the standard <ellipsoid> spelling. -->
+      <collision name="DrakeEllipsoid">
         <geometry>
           <drake:ellipsoid>
             <a>1.0</a>
