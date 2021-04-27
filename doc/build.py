@@ -1,54 +1,95 @@
 """Command-line tool to generate the full drake.mit.edu website contents.
 
-For now, this tool is only intended to be used by Drake's CI tooling.  In the
-future, we will enhance and document it for developer use.
+For instructions, see https://drake.mit.edu/documentation_instructions.html.
 """
 
-import argparse
 import os.path
 from pathlib import Path
-import shlex
-import subprocess
+import sys
 import urllib.parse
 
 from bazel_tools.tools.python.runfiles import runfiles
 import lxml.etree as ET
 
-
-def _check_call(args):
-    print("+ " + " ".join([shlex.quote(x) for x in args]), flush=True)
-    proc = subprocess.run(args, stderr=subprocess.STDOUT)
-    proc.check_returncode()
+from drake.doc.defs import check_call, main
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description=__doc__.strip())
-    parser.add_argument(
-        "--out_dir", type=str, metavar="DIR", required=True,
-        help="Output directory. Must be an absolute path and must not exist.")
+def _build(*, out_dir, temp_dir, quick, modules):
+    """Callback function that implements the bulk of main().
+    Generates into out_dir; writes scratch files into temp_dir.
+    As a precondition, both directories must already exist and be empty.
 
-    args = parser.parse_args()
-    out_dir = args.out_dir
-    if not os.path.isabs(out_dir):
-        parser.error(f"--out_dir={out_dir} is not an absolute path")
-    if os.path.exists(out_dir):
-        parser.error(f"--out_dir={out_dir} already exists")
-
+    If provided, the given modules can be either API reference modules such as
+    "drake.math" (C++) or "pydrake.math" (Python), or else the name of website
+    sections such as "pages", "styleguide", "pydrake", "doxygen_cxx", or etc.
+    """
+    # Find all of our helper tools.
     manifest = runfiles.Create()
     pages_build = manifest.Rlocation("drake/doc/pages")
+    styleguide_build = manifest.Rlocation("drake/doc/styleguide/build")
     pydrake_build = manifest.Rlocation("drake/doc/pydrake/build")
     doxygen_build = manifest.Rlocation("drake/doc/doxygen_cxx/build")
-    styleguide_build = manifest.Rlocation("drake/doc/styleguide/build")
-    for item in [pages_build, pydrake_build, doxygen_build, styleguide_build]:
+    for item in [pages_build, styleguide_build, pydrake_build, doxygen_build]:
         assert item and os.path.exists(item), item
 
-    _check_call([pages_build, f"--out_dir={out_dir}"])
-    _check_call([pydrake_build, f"--out_dir={out_dir}/pydrake"])
-    _check_call([styleguide_build, f"--out_dir={out_dir}/styleguide"])
-    _check_call([doxygen_build, f"--out_dir={out_dir}/doxygen_cxx"])
+    # Figure out which modules to ask for from each helper tool.
+    do_pages = True
+    do_styleguide = True
+    do_pydrake = True
+    do_doxygen = True
+    do_sitemap = True
+    pydrake_modules = []
+    doxygen_modules = []
+    if modules:
+        do_pages = False
+        do_styleguide = False
+        do_pydrake = False
+        do_doxygen = False
+        do_sitemap = False
+    for module in modules:
+        if module in ["pages"]:
+            do_pages = True
+        elif module in ["styleguide", "cppguide", "pyguide"]:
+            do_styleguide = True
+        elif module in ["pydrake"]:
+            do_pydrake = True
+        elif module in ["doxygen_cxx", "doxygen", "cxx"]:
+            do_doxygen = True
+        elif module in ["sitemap"]:
+            do_sitemap = True
+        elif module.startswith("pydrake."):
+            do_pydrake = True
+            pydrake_modules.append(module)
+        elif module.startswith("drake."):
+            do_doxygen = True
+            doxygen_modules.append(module)
+        else:
+            print(f"error: Unknown module '{module}'")
+            sys.exit(1)
 
-    _build_sitemap(out_dir)
+    # Invoke all of our helper tools.
+    if do_pages:
+        check_call([pages_build, f"--out_dir={out_dir}"])
+    if do_styleguide:
+        check_call([styleguide_build, f"--out_dir={out_dir}/styleguide"])
+    if do_pydrake:
+        check_call([pydrake_build, f"--out_dir={out_dir}/pydrake"]
+                   + pydrake_modules)
+    if do_doxygen:
+        maybe_quick = ["--quick"] if quick else []
+        check_call([doxygen_build, f"--out_dir={out_dir}/doxygen_cxx"]
+                   + doxygen_modules + maybe_quick)
+    if do_sitemap:
+        _build_sitemap(out_dir)
+
+    # The filenames to suggest as the starting point for preview.
+    result = []
+    result.append("") if do_pages else None
+    result.append("styleguide/cppguide.html") if do_styleguide else None
+    result.append("styleguide/pyguide.html") if do_styleguide else None
+    result.append("pydrake/") if do_pydrake else None
+    result.append("doxygen_cxx/") if do_doxygen else None
+    return result
 
 
 def _build_sitemap(site_dir: str) -> None:
@@ -100,4 +141,5 @@ def _build_sitemap(site_dir: str) -> None:
 
 
 if __name__ == '__main__':
-    main()
+    main(build=_build, subdir="", description=__doc__.strip(),
+         supports_modules=True, supports_quick=True)

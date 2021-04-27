@@ -107,7 +107,7 @@ def _write_module(name, f_name):
 
 def _build(*, out_dir, temp_dir, modules):
     """Generates into out_dir; writes scratch files into temp_dir.
-    Both directories must already exist and be empty.
+    As a precondition, both directories must already exist and be empty.
     If modules are provided, only generate those modules and their children.
     """
     assert len(os.listdir(temp_dir)) == 0

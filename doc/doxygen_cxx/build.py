@@ -103,7 +103,7 @@ def _generate_doxyfile(*, manifest, out_dir, temp_dir, dot):
 
 def _build(*, out_dir, temp_dir, modules, quick):
     """Generates into out_dir; writes scratch files into temp_dir.
-    Both directories must already exist and be empty.
+    As a precondition, both directories must already exist and be empty.
     """
     manifest = runfiles.Create()
 
