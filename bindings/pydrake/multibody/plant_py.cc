@@ -735,7 +735,17 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("body"), cls_doc.GetBodiesWeldedTo.doc)
         .def("GetTopologyGraphvizString", &Class::GetTopologyGraphvizString,
-            cls_doc.GetTopologyGraphvizString.doc);
+            cls_doc.GetTopologyGraphvizString.doc)
+        .def("get_force_element", &Class::get_force_element,
+            py::arg("force_element_index"), py_rvp::reference_internal,
+            cls_doc.get_force_element.doc)
+        .def(
+            "GetForceElement",
+            [](Class * self, ForceElementIndex force_element_index) -> auto& {
+              return self->GetForceElement(force_element_index);
+            },
+            py::arg("force_element_index"), py_rvp::reference_internal,
+            cls_doc.GetForceElement.doc);
     // Geometry.
     cls  // BR
         .def("RegisterAsSourceForSceneGraph",
