@@ -40,9 +40,7 @@ drake_py_binary(
         ":jekyll_input.txt",
     ],
     test_rule_args = ["--out_dir=<test>"],
-    test_rule_size = "medium",
     test_rule_tags = DEFAULT_TEST_TAGS,
-    test_rule_timeout = "short",
     visibility = ["//doc:__pkg__"],
     deps = [
         "//doc:defs",
