@@ -413,9 +413,9 @@ class RotationMatrix {
     const int k = (j + 1) % 3;
 
     // uₘᵢₙ is the element of the unit vector u with smallest absolute value,
-    // hence uₘᵢₙ² has the range 0 ≤ uₘᵢₙ² ≤ 1/3.  Thus the argument (1 - uₘᵢₙ²)
-    // to the following sqrt function has range 2/3 ≤ (1 - uₘᵢₙ²) ≤ 1.0.
-    // √(1 - uₘᵢₙ²) should not encounter sqrt(0) or sqrt(negative_number).
+    // hence uₘᵢₙ² has the range 0 ≤ uₘᵢₙ² ≤ 1/3.  Thus for √(1 - uₘᵢₙ²), the
+    // argument (1 - uₘᵢₙ²) has range 2/3 ≤ (1 - uₘᵢₙ²) ≤ 1.0.
+    // Hence, √(1 - uₘᵢₙ²) should not encounter √(0) or √(negative_number).
     using std::sqrt;
     const T mag_a_x_u = sqrt(1 - u_A(i) * u_A(i));  // |a x u| = √(1 - uₘᵢₙ²)
     const T r = 1 / mag_a_x_u;
