@@ -89,13 +89,16 @@ SDFORMAT_MOST_PUBLIC_HDRS = [
     "include/sdf/Atmosphere.hh",
     "include/sdf/Box.hh",
     "include/sdf/Camera.hh",
+    "include/sdf/Capsule.hh",
     "include/sdf/Collision.hh",
     "include/sdf/Console.hh",
     "include/sdf/Cylinder.hh",
     "include/sdf/Element.hh",
+    "include/sdf/Ellipsoid.hh",
     "include/sdf/Error.hh",
     "include/sdf/Exception.hh",
     "include/sdf/Filesystem.hh",
+    "include/sdf/ForceTorque.hh",
     "include/sdf/Frame.hh",
     "include/sdf/Geometry.hh",
     "include/sdf/Gui.hh",
@@ -128,6 +131,14 @@ SDFORMAT_MOST_PUBLIC_HDRS = [
     "include/sdf/World.hh",
     "include/sdf/parser.hh",
     "include/sdf/system_util.hh",
+    # XXX
+    "include/sdf/InterfaceElements.hh",
+    "include/sdf/InterfaceFrame.hh",
+    "include/sdf/InterfaceJoint.hh",
+    "include/sdf/InterfaceLink.hh",
+    "include/sdf/InterfaceModel.hh",
+    "include/sdf/InterfaceModelPoseGraph.hh",
+    "include/sdf/ParserConfig.hh",
 ]
 
 # Generates sdf.hh, which consists of #include statements for all of the public
@@ -177,17 +188,19 @@ cc_library(
         "src/Atmosphere.cc",
         "src/Box.cc",
         "src/Camera.cc",
+        "src/Capsule.cc",
         "src/Collision.cc",
         "src/Console.cc",
         "src/Converter.cc",
         "src/Converter.hh",
         "src/Cylinder.cc",
         "src/Element.cc",
+        "src/Ellipsoid.cc",
         "src/EmbeddedSdf.hh",
         "src/Error.cc",
         "src/Exception.cc",
-        "src/ExceptionPrivate.hh",
         "src/Filesystem.cc",
+        "src/ForceTorque.cc",
         "src/Frame.cc",
         "src/FrameSemantics.cc",
         "src/FrameSemantics.hh",
@@ -215,6 +228,7 @@ cc_library(
         "src/SDFExtension.hh",
         "src/SDFImplPrivate.hh",
         "src/Scene.cc",
+        "src/ScopedGraph.hh",
         "src/SemanticPose.cc",
         "src/Sensor.cc",
         "src/Sky.cc",
@@ -232,6 +246,13 @@ cc_library(
         "src/parser_urdf.cc",
         "src/parser_urdf.hh",
         ":src/EmbeddedSdf.cc",
+        # XXX
+        "src/InterfaceFrame.cc",
+        "src/InterfaceJoint.cc",
+        "src/InterfaceLink.cc",
+        "src/InterfaceModel.cc",
+        "src/InterfaceModelPoseGraph.cc",
+        "src/ParserConfig.cc",
     ],
     hdrs = SDFORMAT_ALL_PUBLIC_HDRS,
     # TODO(jamiesnape): Enable visibility after resolving warnings such as
@@ -245,12 +266,8 @@ cc_library(
     deps = [
         ":urdfdom",
         "@ignition_math",
-        "@tinyxml2",
-        # N.B. The ignition_utils library is not used as of Drake's current
-        # version of sdformat (10.3), but it will be used by 11.0 once we
-        # upgrade.  We've pre-emptively added it here to ensure that the
-        # ignition_utils BUILD rules are covered by Drake's CI.
         "@ignition_utils",
+        "@tinyxml2",
     ],
 )
 
