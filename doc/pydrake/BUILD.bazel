@@ -46,8 +46,11 @@ drake_py_binary(
         ":sphinx_input",
         ":sphinx_input.txt",
     ],
-    test_rule_args = ["--out_dir=<test>"],
-    test_rule_size = "medium",
+    test_rule_args = [
+        "--out_dir=<test>",
+        # Only generate some modules, so that the test provides quick feedback.
+        "pydrake.math",
+    ],
     test_rule_tags = DEFAULT_TEST_TAGS,
     visibility = ["//doc:__pkg__"],
     deps = [
