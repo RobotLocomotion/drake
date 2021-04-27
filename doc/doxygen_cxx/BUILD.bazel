@@ -68,10 +68,13 @@ drake_py_binary(
         "@bazel_tools//tools/python/runfiles",
         "@doxygen",
     ],
-    test_rule_args = ["--out_dir=<test>"],
-    test_rule_size = "medium",
+    test_rule_args = [
+        "--out_dir=<test>",
+        # Only generate some modules, so that the test provides quick feedback.
+        "--quick",
+        "drake/math",
+    ],
     test_rule_tags = DEFAULT_TEST_TAGS,
-    test_rule_timeout = "long",
     visibility = ["//doc:__pkg__"],
     deps = [
         "//doc:defs",
