@@ -639,6 +639,7 @@ class TestPlant(unittest.TestCase):
                                     M_BBo_B=spatial_inertia)
         body_b = plant.AddRigidBody(name="body_b",
                                     M_BBo_B=spatial_inertia)
+        linear_spring_index = ForceElementIndex(plant.num_force_elements())
         linear_spring = plant.AddForceElement(LinearSpringDamper(
             bodyA=body_a, p_AP=[0., 0., 0.],
             bodyB=body_b, p_BQ=[0., 0., 0.],
@@ -741,6 +742,11 @@ class TestPlant(unittest.TestCase):
         numpy_compare.assert_float_equal(
             bushing.GetForceDampingConstants(context=context),
             2 * force_damping)
+
+        # Test get_force_element().
+        self.assertIs(
+            plant.get_force_element(force_element_index=linear_spring_index),
+            linear_spring)
 
     @numpy_compare.check_all_types
     def test_multibody_gravity_default(self, T):
