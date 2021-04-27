@@ -1292,6 +1292,24 @@ class MultibodyTree {
       EigenPtr<MatrixX<T>> p_AQi) const;
 
   // See MultibodyPlant method.
+  T CalcTotalMass(const systems::Context<T>& context) const;
+
+  // See MultibodyPlant method.
+  T CalcTotalMass(const systems::Context<T>& context,
+                  const std::vector<ModelInstanceIndex>& model_instances) const;
+
+  // Calculates the total mass of all bodies specified by body_indexes.
+  // @param[in] context Contains the state of the model.
+  // @param[in] body_indexes  The vector of selected bodies.  This method does
+  // not distinguish between welded, joint connected, or floating bodies.
+  // @throws std::exception if body_indexes is empty or body_indexes has no body
+  // except world_body().
+  // @throws std::exception if mₛ ≤ 0 (mₛ is the mass of the system S).
+  // @note The world_body() is ignored.
+  T CalcTotalMass(const systems::Context<T>& context,
+                  const std::vector<BodyIndex>& body_indexes) const;
+
+  // See MultibodyPlant method.
   Vector3<T> CalcCenterOfMassPositionInWorld(
       const systems::Context<T>& context) const;
 

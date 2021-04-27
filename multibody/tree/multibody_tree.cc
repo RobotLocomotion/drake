@@ -1239,6 +1239,74 @@ void MultibodyTree<T>::CalcPointsPositions(
 }
 
 template <typename T>
+T MultibodyTree<T>::CalcTotalMass(const systems::Context<T>& context) const {
+  if (!(num_bodies() > 1)) {
+    throw std::runtime_error(
+        "CalcTotalMass(): This MultibodyPlant contains only "
+        "the world_body() so its total mass is undefined.");
+  }
+
+  std::vector<ModelInstanceIndex> model_instances;
+  for (ModelInstanceIndex model_instance_index(1);
+       model_instance_index < num_model_instances(); ++model_instance_index)
+    model_instances.push_back(model_instance_index);
+
+  return CalcTotalMass(context, model_instances);
+}
+
+template <typename T>
+T MultibodyTree<T>::CalcTotalMass(
+    const systems::Context<T>& context,
+    const std::vector<ModelInstanceIndex>& model_instances) const {
+  if (!(num_model_instances() > 1)) {
+    throw std::runtime_error(
+        "CalcTotalMass(): This MultibodyPlant contains only "
+        "the world_body() so its total mass is undefined.");
+  }
+
+  std::vector<BodyIndex> body_indexes;
+  for (auto model_instance : model_instances) {
+    const std::vector<BodyIndex> body_index_in_instance =
+        GetBodyIndices(model_instance);
+    for (BodyIndex body_index : body_index_in_instance)
+      body_indexes.push_back(body_index);
+  }
+
+  return CalcTotalMass(context, body_indexes);
+}
+
+template <typename T>
+T MultibodyTree<T>::CalcTotalMass(
+    const systems::Context<T>& context,
+    const std::vector<BodyIndex>& body_indexes) const {
+  if (!(num_bodies() > 1)) {
+    throw std::logic_error(
+        "CalcTotalMass(): This MultibodyPlant contains only "
+        "the world_body() so its total mass is undefined.");
+  }
+  if (body_indexes.empty()) {
+    throw std::logic_error(
+        "CalcTotalMass(): There were no bodies specified. "
+        "You must provide at least one selected body.");
+  }
+
+  T total_mass = 0;
+  for (BodyIndex body_index : body_indexes) {
+    if (body_index == 0) continue;
+    const Body<T>& body = get_body(body_index);
+    const T& body_mass = body.get_mass(context);
+    total_mass += body_mass;
+  }
+
+  if (total_mass <= 0) {
+    throw std::logic_error(
+        "CalcTotalMass(): The system's total mass must be greater than zero.");
+  }
+
+  return total_mass;
+}
+
+template <typename T>
 Vector3<T> MultibodyTree<T>::CalcCenterOfMassPositionInWorld(
     const systems::Context<T>& context) const {
   if (!(num_bodies() > 1)) {

@@ -2398,6 +2398,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().CalcRelativeRotationMatrix(context,
                                                       frame_F, frame_G);
   }
+  /// Calculates the total mass of all bodies in this MultibodyPlant.
+  /// @param[in] context Contains the state of the model.
+  /// @throws std::exception if `this` has no body except world_body().
+  /// @throws std::exception if mₛ ≤ 0 (mₛ is the mass of `this` system S).
+  /// @note The world_body() is ignored.
+  Vector3<T> CalcTotalMass(const systems::Context<T>& context) const {
+    this->ValidateContext(context);
+    return internal_tree().CalcTotalMass(context);
+  }
 
   /// Given the positions `p_BQi` for a set of points `Qi` measured and
   /// expressed in a frame B, this method computes the positions `p_AQi(q)` of
@@ -2438,6 +2447,21 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     DRAKE_DEMAND(p_AQi != nullptr);
     return internal_tree().CalcPointsPositions(
         context, frame_B, p_BQi, frame_A, p_AQi);
+  }
+
+  /// Calculates the total mass of all bodies contained in model_instances.
+  /// @param[in] context Contains the state of the model.
+  /// @param[in] model_instances Vector of selected model instances. This method
+  /// does not distinguish between welded, joint connected, or floating bodies.
+  /// @throws std::exception if model_instance only has world_model_instance(),
+  /// i.e., model_instances has no body except world_body().
+  /// @throws std::exception if mₛ ≤ 0 (mₛ is the mass of the system S).
+  /// @note The world_body() is ignored.
+  Vector3<T> CalcTotalMass(
+      const systems::Context<T>& context,
+      const std::vector<ModelInstanceIndex>& model_instances) const {
+    this->ValidateContext(context);
+    return internal_tree().CalcTotalMass(context, model_instances);
   }
 
   /// Calculates the position vector from the world origin Wo to the center of

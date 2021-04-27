@@ -16,6 +16,17 @@ namespace drake {
 namespace multibody {
 namespace {
 
+GTEST_TEST(EmptyMultibodyPlantTotalMassTest, CalcTotalMass) {
+  MultibodyPlant<double> plant(0.0);
+  plant.Finalize();
+  auto context_ = plant.CreateDefaultContext();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.CalcTotalMass(*context_),
+      std::exception,
+      "CalcTotalMass\\(\\): This MultibodyPlant contains "
+      "only the world_body\\(\\) so its total mass is undefined.");
+  }
+
 GTEST_TEST(EmptyMultibodyPlantCenterOfMassTest, CalcCenterOfMassPosition) {
   MultibodyPlant<double> plant(0.0);
   plant.Finalize();
@@ -155,6 +166,79 @@ class MultibodyPlantCenterOfMassTest : public ::testing::Test {
   Eigen::Vector3d p_SScm_S_;
   Eigen::Vector3d p_TTcm_T_;
 };
+
+TEST_F(MultibodyPlantTotalMassTest, CalcTotalMass) {
+  // Verify the plant's total mass makes sense.
+  double system_mass = plant_.CalcTotalMass(*context_);
+  double expected_mass = mass_S_ + mass_T_;
+  // Allow for 3 bits (2^3 = 8) of error.
+  const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(system_mass == expected_mass);
+
+  // Ensure CalcTotalMass() throw an exception for empty model_instances.
+  std::vector<ModelInstanceIndex> model_instances;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_.CalcTotalMass(*context_, model_instances),
+      std::exception,
+      "CalcTotalMass\\(\\): There were no bodies specified. "
+      "You must provide at least one selected body.");
+
+  // Ensure an exception is thrown when a model instance has one world body.
+  const ModelInstanceIndex world_model_instance =
+      multibody::world_model_instance();
+  std::vector<ModelInstanceIndex> world_model_instance_array;
+  world_model_instance_array.push_back(world_model_instance);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_.CalcTotalMass(*context_, world_model_instance_array),
+      std::exception,
+      "CalcTotalMass\\(\\): This system only "
+      "contains the world_body\\(\\) so its center of mass is undefined.");
+
+  // Ensure an exception is thrown when a model instance has two world bodies.
+  world_model_instance_array.push_back(world_model_instance);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_.CalcTotalMass(*context_, world_model_instance_array),
+      std::exception,
+      "CalcTotalMass\\(\\): This system only "
+      "contains the world_body\\(\\) so its center of mass is undefined.");
+
+  // Try one instance in model_instances.
+  model_instances.push_back(triangle_instance_);
+  double triangle_mass = plant_.CalcTotalMass(*context_, model_instances);
+  expected_mass = mass_T_;
+  EXPECT_TRUE(triangle_mass == expected_mass);
+
+  // Verify CalcTotalMass() works for 2 instances in model_instances.
+  model_instances.push_back(sphere_instance_);
+  expected_mass = mass_S_ + mass_T_;
+  double two_instances_mass = plant_.CalcTotalMass(*context_, model_instances);
+  EXPECT_TRUE(two_instances_mass == expected_mass));
+
+  // Ensure center of mass methods throw an exception if total mass ≤ 0.
+  set_mass_sphere(0.0);
+  set_mass_triangle(0.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_.CalcTotalMass(*context_, model_instances),
+      std::exception,
+      "CalcTotalMass\\(\\): The "
+      "system's total mass must be greater than zero.");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_.CalcTotalMass(*context_, model_instances),
+      std::exception,
+      "CalcTotalMass\\(\\): The "
+      "system's total mass must be greater than zero.");
+
+  // Ensure an exception is thrown if there is an invalid ModelInstanceIndex.
+  ModelInstanceIndex error_index(10);
+  model_instances.push_back(error_index);
+  EXPECT_THROW(plant_.CalcTotalMass(*context_, model_instances),
+               std::exception);
+  EXPECT_THROW(plant_.CalcTotalMass(*context_, model_instances),
+               std::exception);
+}
+
+
 
 TEST_F(MultibodyPlantCenterOfMassTest, CenterOfMassPosition) {
   // Verify the plant's default center of mass position makes sense.
