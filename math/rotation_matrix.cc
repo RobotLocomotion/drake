@@ -101,36 +101,27 @@ double ProjectMatToRotMatWithAxis(const Eigen::Matrix3d& M,
 }
 
 template <typename T>
-void RotationMatrix<T>::ThrowIfVectorMagnitudeLessThanTolerance(
-    const Vector3<T>& v, const char* function_name, double tolerance) {
+void RotationMatrix<T>::ThrowUnlessVectorMagnitudeIsBigEnough(
+    const Vector3<T>& v, const char* function_name, double min_magnitude) {
   if constexpr (scalar_predicate<T>::is_bool) {
     if (v.allFinite()) {
       const T v_norm_as_T = v.norm();
       const double v_norm = ExtractDoubleOrThrow(v_norm_as_T);
-      if (v_norm < tolerance) {
+      if (v_norm < min_magnitude) {
         const double vx = ExtractDoubleOrThrow(v(0));
         const double vy = ExtractDoubleOrThrow(v(1));
         const double vz = ExtractDoubleOrThrow(v(2));
         const std::string message = fmt::format(
-            "RotationMatrix::{}(). Vector's magnitude is too small."
-            " The magnitude of the vector {} {} {} is {}."
-            " To normalize a vector v, consider using v.normalized().",
-            function_name, vx, vy, vz, v_norm);
+            "RotationMatrix::{}(). The vector {} {} {} with magnitude {},"
+            " is smaller than the required minimum value {}. "
+            " If you are confident that this vector v's direction is"
+            " meaningful, pass v.normalized() in place of v.",
+            function_name, vx, vy, vz, v_norm, min_magnitude);
         throw std::logic_error(message);
       }
     }
   } else {
-    unused(v, function_name, tolerance);
-  }
-}
-
-template <typename T>
-void RotationMatrix<T>::ThrowIfZeroVector(const Vector3<T>& v,
-                                          const char* function_name) {
-  if (v == Vector3<T>::Zero()) {
-    const std::string message = fmt::format(
-        "RotationMatrix::{}() was passed a zero vector.", function_name);
-    throw std::runtime_error(message);
+    unused(v, function_name, min_magnitude);
   }
 }
 
@@ -159,7 +150,6 @@ void RotationMatrix<T>::ThrowIfInvalidUnitVector(const Vector3<T>& u,
   // Throw a nicely worded exception if u is not a unit vector because
   // u contains a NAN element or u is a zero vector.
   ThrowIfVectorContainsNonFinite(u, function_name);
-  ThrowIfZeroVector(u, function_name);
 
   // Skip symbolic expressions.
   // TODO(Mitiguy) This is a generally-useful method.  Consider moving it

@@ -1113,16 +1113,12 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVector) {
 // Verify that the "advanced" method MakeFromOneUnitVector() throws appropriate
 // exceptions in Debug builds and does not throw exceptions in Release builds.
 // Specifically, verify this method throws an exception in Debug builds if its
-// first argument is a zero vector, is a vector with a NAN element, or is a
+// first argument is a a vector with a NAN on infinity element, or is a
 // vector whose magnitude is not ≈ 1.0.  Verify no exception is thrown in
 // Release builds (for faster runtime speed).
 GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVectorExceptions) {
   constexpr int axis_index = 0;
   if (kDrakeAssertIsArmed) {
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        RotationMatrix<double>::MakeFromOneUnitVector(
-        Vector3<double>::Zero(), axis_index), std::exception,
-        "RotationMatrix::MakeFromOneUnitVector().* was passed a zero vector.*");
     DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneUnitVector(
         Vector3<double>(NAN, 1, NAN), axis_index), std::exception,
         "RotationMatrix::MakeFromOneUnitVector().* was passed an invalid vector"
@@ -1131,10 +1127,15 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVectorExceptions) {
         Vector3<double>(1, 2, 3), axis_index), std::exception,
         "RotationMatrix::MakeFromOneUnitVector().* "
         "Vector is not a unit vector[^]+");
-    const double kToleranceSqrt  =
-        std::sqrt(std::numeric_limits<double>::epsilon());
+    // This method throws if the alleged unit vector v's magnitude differs from
+    // 1.0 by 4*kEpsilon. The value for kTolSqrt is motivated by a Taylor series
+    // |v| = √(1² + kTolSqrt²) ≈ 1 + 0.5*kTolSqrt² ... ≈ 1 + 0.5*kTol.
+    // Setting 0.5 * kTol = 4 * kEpsilon leads to kTol = 8 * kEpsilon, which
+    // means kTolSqrt = √(kTol) = √(8 * kEpsilon) = √(8) * √(kEpsilon).
+    // Herein we conservatively make kTolSqrt = 8 * √(kEpsilon).
+    const double kTolSqrt = 8 * std::sqrt(kEpsilon);
     DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneUnitVector(
-        Vector3<double>(1, 0, 8 * kToleranceSqrt), axis_index), std::exception,
+         Vector3<double>(1, 0, kTolSqrt), axis_index), std::exception,
         "RotationMatrix::MakeFromOneUnitVector().* "
         "Vector is not a unit vector[^]+");
   } else {
@@ -1149,35 +1150,30 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVectorExceptions) {
 
 // Verify MakeFromOneVector() throws appropriate assertions in both Debug and
 // Release builds, which includes throwing an exception if its first argument is
-// the zero vector or is a vector with a NaN element, or is a vector whose
-// magnitude is ≈ 0.0.
+// is a vector with a NaN or is a vector whose magnitude is less than 1.0E-10.
 GTEST_TEST(RotationMatrixTest, MakeFromOneVectorExceptions) {
   constexpr int axis_index = 0;
-  DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneVector(
-      Vector3<double>::Zero(), axis_index), std::exception,
-      "RotationMatrix::MakeFromOneVector().* was passed a zero vector.*");
+
+  // Verify a vector that contains a NaN throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneVector(
       Vector3<double>(NAN, 1, NAN), axis_index), std::exception,
       "RotationMatrix::MakeFromOneVector().* was passed an invalid vector"
       " argument.  There is a NaN or infinity in the vector[^]+");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      RotationMatrix<symbolic::Expression>::MakeFromOneVector(
-      Vector3<symbolic::Expression>(0, 0, 0), axis_index), std::exception,
-      "RotationMatrix::MakeFromOneVector().* was passed a zero vector.*");
 
-  // Verify a vector with a small magnitude works as anticipated.
-  const Vector3<double> small_vector(1.2E-9, -3.4E-9, 5.6E-9);
-  RotationMatrix<double> R_AB =
-      RotationMatrix<double>::MakeFromOneVector(small_vector, axis_index);
-  VerifyMakeFromOneUnitVector(R_AB, small_vector.normalized(), axis_index);
-
-  // Verify a vector with a tiny magnitude throws an exception.
-  const Vector3<double> tiny_vector(1.2E-71, -3.4E-75, 5.6E-81);
+  // Verify a vector whose magnitude is slightly too small throws an exception.
+  constexpr double kTolerance = 2 * std::numeric_limits<double>::epsilon();
+  const Vector3<double> too_small_vector(1.0E-10 - kTolerance, 0, 0);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      RotationMatrix<double>::MakeFromOneVector(tiny_vector, axis_index),
+      RotationMatrix<double>::MakeFromOneVector(too_small_vector, axis_index),
       std::exception,
-      "RotationMatrix::MakeFromOneVector().*"
-      "Vector's magnitude is too small[^]+");
+      "RotationMatrix::MakeFromOneVector().* The vector.*"
+      "is smaller than the required minimum value[^]+");
+
+  // Verify a vector with a magnitude that is barely over tolerance works.
+  const Vector3<double> ok_small_vector(1.0E-10 + kTolerance, 0, 0);
+  RotationMatrix<double> R_AB =
+      RotationMatrix<double>::MakeFromOneVector(ok_small_vector, axis_index);
+  VerifyMakeFromOneUnitVector(R_AB, ok_small_vector.normalized(), axis_index);
 
   // Verify a vector with a huge magnitude works as anticipated.
   const Vector3<double> huge_vector(1.2E21, 3.4E42, -5.6E63);
