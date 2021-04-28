@@ -152,6 +152,52 @@ class HydroelasticTractionCalculator {
       const Data& data, const Vector3<T>& p_WQ,
       const Vector3<T>& traction_Aq_W) const;
 
+  // Computes the function f(x) = atan(x)/x given x² as input. Function
+  // atan(x)/x is continuously differentiable everywhere, including
+  // x = 0. While this is true analytically, automatic differentiation methods
+  // such as AutoDiffXd do not simplify the underlying mathematical expressions
+  // as we would by hand. This leads to expressions that are ill-formed at
+  // x = 0 and lead to NaN results. Since in our regularized friction model x is
+  // the dimensionless norm of a vector, which entails a square root, the naive
+  // implementation explicitly writing atan(x)/x leads to a 1/sqrt(x) term that
+  // is ill-formed at x=0. This term goes away when the final expression for the
+  // derivatives is simplified by hand.
+  // This hand crafted method computes an expression of f(x) = atan(x)/x that
+  // leads to the exact result of f(x) and its derivative, modulo machine
+  // epsilon (in double precision).
+  static T CalcAtanXOverXFromXSquared(const T& x_squared) {
+    // N.B. We use a compile time iff statement below to provide distinct
+    // implementations for numeric and non-numeric scalar types. Numeric scalar
+    // types such as double and AutoDiffXd must use the numeric implementation
+    // continuous to machine epsilon. Non-numeric types such as
+    // symbolic::Expression must use the true expression atan(x)/x.
+    if constexpr (scalar_predicate<T>::is_bool) {
+      // We are protecting the computation near x = 0 specifically so that
+      // numerical values (say double and AutoDiffXd) do not lead to ill-formed
+      // expressions with divisions by zero.
+      if (x_squared < 1.0e-8) {  // x < 1e-4
+        // The taylor expansions for y(x) atan(x)/x and its first derivatives
+        // are:
+        //   y(x) = 1 - x²/3 +  x⁴/5 + O(x⁶), O(x⁶)  = x⁶/7
+        //   y'(x) =   -2x/3 + 4x³/5 + O(x⁵), O'(x⁵) = 6x⁵/7
+        // We can compute the relative error in the approxmation as the quotient
+        // of the leading terms in the Taylor expansion with the actual value.
+        // At x = 1e-4 this amount to the following error estimations:
+        //  O(x⁶) / y(x)  = 1.43e-25
+        // O'(x⁵) / y'(x) = 1.29e-16
+        // which is below (double) machine epsilon for both.
+        // Therefore CalcAtanXOverXFromXSquared() is continuous "within machine
+        // precision".
+        // N.B. We use Horner's method to evaluate the polynomial expression.
+        return 1.0 - x_squared * (1.0 / 3.0 - x_squared / 5.0);
+      }
+    }
+    using std::atan;
+    using std::sqrt;
+    const T x = sqrt(x_squared);
+    return atan(x) / x;
+  }
+
   // The parameter (in m/s) for regularizing the Coulomb friction model.
   double vslip_regularizer_{};
 };
