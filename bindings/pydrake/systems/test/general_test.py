@@ -441,9 +441,14 @@ class TestGeneral(unittest.TestCase):
             # Reuse simulator over the same time interval, without
             # initialization events.
             context.SetTime(0.)
-            simulator.Initialize(InitializeParams(
-                suppress_initialization_events=True))
+            params = InitializeParams(suppress_initialization_events=True)
+            simulator.Initialize(params)
             simulator.AdvanceTo(1)
+
+            # Check repr while we're here.
+            self.assertEqual(repr(params), "".join([
+                "InitializeParams("
+                "suppress_initialization_events=True)"]))
 
     def test_copy(self):
         # Copy a context using `deepcopy` or `clone`.
@@ -881,3 +886,6 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(adder1.get_name(), "adder1")
         adder2 = builder.AddNamedSystem(name="adder2", system=Adder(5, 8))
         self.assertEqual(adder2.get_name(), "adder2")
+
+    def test_module_constants(self):
+        self.assertEqual(repr(kUseDefaultName), "kUseDefaultName")

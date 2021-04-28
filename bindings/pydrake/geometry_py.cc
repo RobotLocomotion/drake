@@ -976,13 +976,22 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     using Class = DrakeVisualizerParams;
     constexpr auto& cls_doc = doc.DrakeVisualizerParams;
-    py::class_<Class>(m, "DrakeVisualizerParams", cls_doc.doc)
+    py::class_<Class>(
+        m, "DrakeVisualizerParams", py::dynamic_attr(), cls_doc.doc)
         .def(ParamInit<Class>())
         .def_readwrite("publish_period", &DrakeVisualizerParams::publish_period,
             cls_doc.publish_period.doc)
         .def_readwrite("role", &DrakeVisualizerParams::role, cls_doc.role.doc)
         .def_readwrite("default_color", &DrakeVisualizerParams::default_color,
-            cls_doc.default_color.doc);
+            cls_doc.default_color.doc)
+        .def("__repr__", [](const Class& self) {
+          return py::str(
+              "DrakeVisualizerParams("
+              "publish_period={}, "
+              "role={}, "
+              "default_color={})")
+              .format(self.publish_period, self.role, self.default_color);
+        });
   }
 
   // Shape constructors

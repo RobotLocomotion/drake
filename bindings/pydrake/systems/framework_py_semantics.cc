@@ -51,8 +51,11 @@ void DefineFrameworkPySemantics(py::module m) {
   using namespace drake::systems;
   constexpr auto& doc = pydrake_doc.drake.systems;
 
-  py::class_<UseDefaultName> use_default_name_cls(
-      m, "UseDefaultName", doc.UseDefaultName.doc);
+  {
+    using Class = UseDefaultName;
+    py::class_<Class>(m, "UseDefaultName", doc.UseDefaultName.doc)
+        .def("__repr__", [](const Class&) { return "kUseDefaultName"; });
+  }
   m.attr("kUseDefaultName") = kUseDefaultName;
 
   py::enum_<PortDataType>(m, "PortDataType")

@@ -22,6 +22,12 @@ class TestPerception(unittest.TestCase):
         self.assertEqual(fields, fields)
         fields_none = mut.Fields(enum.kNone)
         self.assertNotEqual(fields, fields_none)
+        # TODO(jwnimmer-tri) Ideally, these would map back to the bitwise
+        # constants, but for now this works; the ctor accepts bare ints.
+        self.assertEqual(repr(fields_none), "Fields(base_fields=0)")
+        self.assertEqual(repr(fields), "Fields(base_fields=2)")
+        repr_and_back = eval(repr(fields), dict(Fields=mut.Fields))
+        self.assertEqual(repr_and_back.base_fields(), enum.kXYZs)
 
     def check_array(self, x, dtype_expected, shape_expected):
         x = np.asarray(x)
