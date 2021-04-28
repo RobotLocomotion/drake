@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+<robot xmlns="https://drake.mit.edu" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="CollisionRemoverTest">
+
+  <!-- Two 1m pendula, rotating in the xz plane, hang at +/- 25cm along x from
+       the origin.  A 10cm brick sits between them. -->
+
+  <link name="pendulum_1_base"/>
+  <joint name="base_weld_1" type="fixed">
+    <parent link="world"/>
+    <child link="pendulum_1_base"/>
+    <origin xyz="-0.25 0 0"/>
+  </joint>
+  <link name="pendulum_1_arm">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 -.5"/>
+      <mass value="1"/>
+      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
+    </inertial>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 -.5"/>
+      <geometry>
+        <cylinder length="1" radius=".001"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="pendulum_1_theta" type="continuous">
+    <parent link="pendulum_1_base"/>
+    <child link="pendulum_1_arm"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+
+  <link name="pendulum_2_base"/>
+  <joint name="base_weld_2" type="fixed">
+    <parent link="world"/>
+    <child link="pendulum_2_base"/>
+    <origin xyz="0.25 0 0"/>
+  </joint>
+  <link name="pendulum_2_arm">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 -.5"/>
+      <mass value="1"/>
+      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
+    </inertial>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 -.5"/>
+      <geometry>
+        <cylinder length="1" radius=".001"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="pendulum_2_theta" type="continuous">
+    <parent link="pendulum_2_base"/>
+    <child link="pendulum_2_arm"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+
+  <link name="floating_brick">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
+    </inertial>
+    <collision>
+      <geometry>
+        <box size="0.1 0.1 0.1"/>
+      </geometry>
+    </collision>
+ </link>
+</robot>
