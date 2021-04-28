@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+#include <list>
 #include <memory>
 #include <stdexcept>
 #include <utility>
@@ -134,7 +136,15 @@ class EventCollection {
    * does not permit adding new events. Derived classes must implement this
    * method to add the specified event to the homogeneous event collection.
    */
+  DRAKE_DEPRECATED("2021-09-01", "Use AddEvent instead.")
   virtual void add_event(std::unique_ptr<EventType> event) = 0;
+
+  /**
+   * Adds an event to this collection, or throws if the concrete collection
+   * does not permit adding new events. Derived classes must implement this
+   * method to add the specified event to the homogeneous event collection.
+   */
+  virtual void AddEvent(const EventType& event) = 0;
 
  protected:
   /**
@@ -184,6 +194,13 @@ class DiagramEventCollection final : public EventCollection<EventType> {
    */
   void add_event(std::unique_ptr<EventType>) override {
     throw std::logic_error("DiagramEventCollection::add_event is not allowed");
+  }
+
+  /**
+   * Throws if called, because no events should be added at the Diagram level.
+   */
+  void AddEvent(const EventType&) override {
+    throw std::logic_error("DiagramEventCollection::AddEvent is not allowed");
   }
 
   /**
@@ -306,7 +323,10 @@ class LeafEventCollection final : public EventCollection<EventType> {
   /**
    * Constructor.
    */
-  LeafEventCollection() = default;
+  LeafEventCollection() {
+    events_storage_.emplace_back();
+    DRAKE_ASSERT_VOID(CheckInvariant());
+  }
 
   /**
    * Static method that generates a LeafEventCollection with exactly
@@ -316,8 +336,8 @@ class LeafEventCollection final : public EventCollection<EventType> {
   static std::unique_ptr<LeafEventCollection<EventType>>
   MakeForcedEventCollection() {
     auto ret = std::make_unique<LeafEventCollection<EventType>>();
-    auto event = std::make_unique<EventType>(EventType::TriggerType::kForced);
-    ret->add_event(std::move(event));
+    EventType event(EventType::TriggerType::kForced);
+    ret->AddEvent(event);
     return ret;
   }
 
@@ -334,8 +354,27 @@ class LeafEventCollection final : public EventCollection<EventType> {
    */
   void add_event(std::unique_ptr<EventType> event) override {
     DRAKE_DEMAND(event != nullptr);
-    owned_events_.push_back(std::move(event));
-    events_.push_back(owned_events_.back().get());
+    AddEvent(*event);
+  }
+
+  /**
+   * Add `event` to the existing collection.
+   */
+  void AddEvent(const EventType& event) override {
+    DRAKE_ASSERT_VOID(CheckInvariant());
+    auto it = std::next(events_storage_.begin(), last_block_);
+    if (it->size == kStride) {
+      last_block_++;
+      if (last_block_ == static_cast<int>(events_storage_.size())) {
+        events_storage_.emplace_back();
+      }
+      it++;
+    }
+    auto& block = *it;
+    int index = block.size++;
+    block.entries[index] = event;
+    events_.push_back(&block.entries[index]);
+    DRAKE_ASSERT_VOID(CheckInvariant());
   }
 
   /**
@@ -347,13 +386,20 @@ class LeafEventCollection final : public EventCollection<EventType> {
    * Removes all events from this collection.
    */
   void Clear() override {
-    owned_events_.clear();
+    DRAKE_ASSERT_VOID(CheckInvariant());
+    // Empty the contents of the storage, but retain the memory, to avoid
+    // allocations across cycles of adding and clearing.
+    for (auto& block : events_storage_) {
+      block.size = 0;
+    }
+    last_block_ = 0;
     events_.clear();
+    DRAKE_ASSERT_VOID(CheckInvariant());
   }
 
  protected:
   /**
-   * All events in `other_collection` are concatanated to this.
+   * All events in `other_collection` are concatenated to this.
    *
    * Here is an example. Suppose this collection stores the following events:
    * <pre>
@@ -377,15 +423,54 @@ class LeafEventCollection final : public EventCollection<EventType> {
 
     const std::vector<const EventType*>& other_events = other.get_events();
     for (const EventType* other_event : other_events) {
-      this->add_event(static_pointer_cast<EventType>(other_event->Clone()));
+      this->AddEvent(*other_event);
     }
   }
 
  private:
-  // Owned event unique pointers.
-  std::vector<std::unique_ptr<EventType>> owned_events_;
+  // Design note: this storage scheme preserves a pre-existing public API,
+  // while avoiding almost all heap operations during simulation advance
+  // steps. Since the API supports iteration by means of a vector of pointers
+  // to underlying storage, it is necessary to either track invalidation of the
+  // pointers, or guarantee they never become invalid. The implementation can
+  // choose the second (guarantee) strategy, because the collection only
+  // supports monotonic growth via AddEvent(), or total reset via
+  // Clear(). Hence, there is no need to support arbitrary out-of-order
+  // insertion and deletion. We only need to choose an underlying storage
+  // container that guarantees not to invalidate iterators, as long as we
+  // abstain from deletions. The std::list container fits these
+  // requirements. To mitigate allocation and storage overhead, the list is
+  // made up of Blocks that contain a fixed size array and size counter. To
+  // mitigate allocations, we always allocate at least one Block, and only
+  // allocate when the first one overflows.
 
-  // Points to the corresponding unique pointers. This is primarily used for
+  // Assert if the representation invariant is violated.
+  //
+  // This check should pass at exit of any constructor, entry of the
+  // destructor, and entry and exit of any public method. It is moderately
+  // expensive, so should be restricted to non-optimized builds.
+  void CheckInvariant() const;
+
+  // The granularity of event storage allocation, expressed as a number of
+  // events. Chosen to be large enough that most systems won't need to allocate
+  // during simulation advance steps.
+  // TODO(rpoyner-tri): consider some empirical study to tune the size of
+  // kStride.
+  static constexpr int kStride = 32;
+
+  // A unit of event storage allocation, along with a size to denote the number
+  // of occupied entries.
+  struct Block {
+    int size{0};
+    std::array<EventType, kStride> entries;
+  };
+
+  // Invariant: Blocks are only ever added to storage. The last_block_ tracks
+  // which block is active for adding entries.
+  int last_block_{0};
+  std::list<Block> events_storage_;
+
+  // Points to the corresponding storage entries. This is primarily used for
   // get_events().
   std::vector<const EventType*> events_;
 };
