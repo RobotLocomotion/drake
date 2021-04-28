@@ -5,8 +5,9 @@ from collections import namedtuple
 import numpy as np
 
 from pydrake.multibody.optimization import (
-    StaticEquilibriumProblem,
-    CentroidalMomentumConstraint
+    CentroidalMomentumConstraint,
+    QuaternionEulerIntegrationConstraint,
+    StaticEquilibriumProblem
 )
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph,
@@ -205,3 +206,9 @@ class TestCentroidalMomentumConstraint(unittest.TestCase):
             dut.num_vars(),
             env.plant.num_positions() + env.plant.num_velocities() + 6)
         self.assertEqual(dut.num_constraints(), 6)
+
+
+class TestQuaternionEulerIntegrationConstraint(unittest.TestCase):
+    def test(self):
+        dut = QuaternionEulerIntegrationConstraint()
+        self.assertIsInstance(dut, mp.Constraint)
