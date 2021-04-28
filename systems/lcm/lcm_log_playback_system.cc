@@ -43,8 +43,8 @@ void LcmLogPlaybackSystem::DoCalcNextUpdateTime(
 
   // Schedule a publish event at the next message time.
   *time = next_message_time;
-  events->get_mutable_publish_events().add_event(
-      std::make_unique<systems::PublishEvent<double>>(
+  events->get_mutable_publish_events().AddEvent(
+      systems::PublishEvent<double>(
           TriggerType::kTimed, callback));
 }
 
