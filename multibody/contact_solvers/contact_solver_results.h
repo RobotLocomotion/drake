@@ -1,4 +1,5 @@
 #pragma once
+#include <vector>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
@@ -44,6 +45,12 @@ struct ContactSolverResults {
 
   // Vector of generalized forces due to contact, of size `nv`.
   VectorX<T> tau_contact;
+
+  // A temporary solution to store deformable velocities as deformable objects
+  // don't participate in contact solve yet.
+  // TODO(xuchenhan-tri): Remove this data member and store the deformable
+  // velocity at the next time step in v_next.
+  std::vector<VectorX<T>> deformable_v_next;
 };
 
 }  // namespace internal

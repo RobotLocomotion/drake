@@ -7,14 +7,9 @@ namespace drake {
 namespace multibody {
 namespace fixed_fem {
 template <typename T>
-SoftsimSystem<T>::SoftsimSystem(double dt) : dt_(dt) {
-  DRAKE_DEMAND(dt > 0);
-  vertex_positions_port_ =
-      this->DeclareAbstractOutputPort("vertex_positions",
-                                      &SoftsimSystem::CopyVertexPositionsOut)
-          .get_index();
-  this->DeclarePeriodicDiscreteUpdateEvent(dt, 0,
-                                           &SoftsimSystem::AdvanceOneTimeStep);
+SoftsimSystem<T>::SoftsimSystem(MultibodyPlant<T>* mbp)
+    : multibody::internal::DeformableSolverBase<T>(mbp) {
+  DRAKE_DEMAND(this->dt() > 0);
 }
 
 template <typename T>
@@ -40,6 +35,9 @@ SoftBodyIndex SoftsimSystem<T>::RegisterDeformableBody(
                                                    config);
       break;
   }
+  const auto& deformable_state = next_fem_states_.back();
+  this->DeclareDeformableState(deformable_state->q(), deformable_state->qdot(),
+                               deformable_state->qddot());
   return body_index;
 }
 
@@ -104,19 +102,13 @@ void SoftsimSystem<T>::RegisterDeformableBodyHelper(
 
   const DampingModel<T> damping_model(config.mass_damping_coefficient(),
                                       config.stiffness_damping_coefficient());
-  auto fem_model = std::make_unique<FemModelType>(dt_);
+  auto fem_model = std::make_unique<FemModelType>(this->dt());
   ConstitutiveModelType constitutive_model(config.youngs_modulus(),
                                            config.poisson_ratio());
   fem_model->AddDynamicElasticityElementsFromTetMesh(
       mesh, constitutive_model, config.mass_density(), damping_model);
-  fem_model->SetGravity(gravity_);
+  fem_model->SetGravity(this->gravity());
   const StateType state = fem_model->MakeFemState();
-  const int num_dofs = state.num_generalized_positions();
-  VectorX<T> discrete_state(num_dofs * 3);
-  discrete_state.head(num_dofs) = state.q();
-  discrete_state.segment(num_dofs, num_dofs) = state.qdot();
-  discrete_state.tail(num_dofs) = state.qddot();
-  this->DeclareDiscreteState(discrete_state);
 
   prev_fem_states_.emplace_back(std::make_unique<StateType>(state));
   next_fem_states_.emplace_back(std::make_unique<StateType>(state));
@@ -127,58 +119,34 @@ void SoftsimSystem<T>::RegisterDeformableBodyHelper(
 }
 
 template <typename T>
-void SoftsimSystem<T>::AdvanceOneTimeStep(
-    const systems::Context<T>& context,
-    systems::DiscreteValues<T>* next_states) const {
-  const systems::DiscreteValues<T>& all_discrete_states =
-      context.get_discrete_state();
-  for (int i = 0; i < num_bodies(); ++i) {
-    /* Extract q, qdot and qddot from context. */
-    const systems::BasicVector<T>& discrete_state =
-        all_discrete_states.get_vector(i);
-    const auto& discrete_value = discrete_state.get_value();
-    const int num_dofs = discrete_value.size() / 3;
-    const auto& q = discrete_value.head(num_dofs);
-    const auto& qdot = discrete_value.segment(num_dofs, num_dofs);
-    const auto& qddot = discrete_value.tail(num_dofs);
-    /* Set up FemState and advance to the next time step. */
-    FemStateBase<T>& prev_fem_state = *prev_fem_states_[i];
-    FemStateBase<T>& next_fem_state = *next_fem_states_[i];
-    prev_fem_state.SetQ(q);
-    prev_fem_state.SetQdot(qdot);
-    prev_fem_state.SetQddot(qddot);
-    // TODO(xuchenhan-tri): FemState needs a SetFrom() method. Setting
-    //  DiscreteValues from FemStateBase (and vice-versa) should also be made
-    //  more compact.
-    next_fem_state.SetQ(q);
-    next_fem_state.SetQdot(qdot);
-    next_fem_state.SetQddot(qddot);
-    fem_solvers_[i]->AdvanceOneTimeStep(prev_fem_state, &next_fem_state);
-    /* Copy new state to output variable. */
-    systems::BasicVector<T>& next_discrete_state =
-        next_states->get_mutable_vector(i);
-    Eigen::VectorBlock<VectorX<T>> next_discrete_value =
-        next_discrete_state.get_mutable_value();
-    next_discrete_value.head(num_dofs) = next_fem_state.q();
-    next_discrete_value.segment(num_dofs, num_dofs) = next_fem_state.qdot();
-    next_discrete_value.tail(num_dofs) = next_fem_state.qddot();
-  }
-}
-
-template <typename T>
-void SoftsimSystem<T>::CopyVertexPositionsOut(
-    const systems::Context<T>& context, std::vector<VectorX<T>>* output) const {
-  output->resize(num_bodies());
-  const systems::DiscreteValues<T>& all_discrete_states =
-      context.get_discrete_state();
-  for (int i = 0; i < num_bodies(); ++i) {
-    const systems::BasicVector<T>& discrete_state =
-        all_discrete_states.get_vector(i);
-    const auto& discrete_value = discrete_state.get_value();
-    const int num_dofs = discrete_value.size() / 3;
-    const auto& q = discrete_value.head(num_dofs);
-    (*output)[i] = q;
-  }
+VectorX<T> SoftsimSystem<T>::CalcFreeMotion(const VectorX<T>& state0,
+                                            int deformable_body_index) const {
+  DRAKE_DEMAND(0 <= deformable_body_index &&
+               deformable_body_index < num_bodies());
+  const int num_dofs = state0.size() / 3;
+  const auto& q = state0.head(num_dofs);
+  const auto& qdot = state0.segment(num_dofs, num_dofs);
+  const auto& qddot = state0.tail(num_dofs);
+  /* Set up FemState and advance to the next time step. */
+  FemStateBase<T>& prev_fem_state = *prev_fem_states_[deformable_body_index];
+  FemStateBase<T>& next_fem_state = *next_fem_states_[deformable_body_index];
+  prev_fem_state.SetQ(q);
+  prev_fem_state.SetQdot(qdot);
+  prev_fem_state.SetQddot(qddot);
+  // TODO(xuchenhan-tri): FemState needs a SetFrom() method. Setting
+  //  DiscreteValues from FemStateBase (and vice-versa) should also be made
+  //  more compact.
+  next_fem_state.SetQ(q);
+  next_fem_state.SetQdot(qdot);
+  next_fem_state.SetQddot(qddot);
+  fem_solvers_[deformable_body_index]->AdvanceOneTimeStep(prev_fem_state,
+                                                          &next_fem_state);
+  /* Copy new state to output variable. */
+  VectorX<T> next_state(3 * num_dofs);
+  next_state.head(num_dofs) = next_fem_state.q();
+  next_state.segment(num_dofs, num_dofs) = next_fem_state.qdot();
+  next_state.tail(num_dofs) = next_fem_state.qddot();
+  return next_state;
 }
 }  // namespace fixed_fem
 }  // namespace multibody

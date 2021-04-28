@@ -14,6 +14,7 @@
 #include "drake/multibody/fixed_fem/dev/fem_solver.h"
 #include "drake/multibody/fixed_fem/dev/linear_simplex_element.h"
 #include "drake/multibody/fixed_fem/dev/simplex_gaussian_quadrature.h"
+#include "drake/multibody/plant/deformable_solver_base.h"
 #include "drake/systems/framework/leaf_system.h"
 namespace drake {
 namespace multibody {
@@ -55,13 +56,14 @@ namespace fixed_fem {
 
  @tparam_non_symbolic T.*/
 template <typename T>
-class SoftsimSystem final : public systems::LeafSystem<T> {
+class SoftsimSystem final
+    : public multibody::internal::DeformableSolverBase<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SoftsimSystem)
 
   /* Construct a %SoftsimSystem with the fixed prescribed discrete time step.
    @pre dt > 0. */
-  explicit SoftsimSystem(double dt);
+  explicit SoftsimSystem(multibody::MultibodyPlant<T>* mbp);
 
   // TODO(xuchenhan-tri): Identify deformable bodies with actual identifiers,
   //  which would make deleting deformable bodies easier to track in the future.
@@ -83,12 +85,6 @@ class SoftsimSystem final : public systems::LeafSystem<T> {
   void SetWallBoundaryCondition(SoftBodyIndex body_id, const Vector3<T>& p_WQ,
                                 const Vector3<T>& n_W,
                                 double distance_tolerance = 1e-6);
-
-  double dt() const { return dt_; }
-
-  const systems::OutputPort<T>& get_vertex_positions_output_port() const {
-    return systems::System<T>::get_output_port(vertex_positions_port_);
-  }
 
   /** Returns the number of deformable bodies in the %SoftsimSystem. */
   int num_bodies() const { return initial_meshes_.size(); }
@@ -115,19 +111,9 @@ class SoftsimSystem final : public systems::LeafSystem<T> {
                                     std::string name,
                                     const DeformableBodyConfig<T>& config);
 
-  /* Advance the dynamics of all registered bodies by one time step and store
-   the states at the new time step in the given `next_states`. */
-  void AdvanceOneTimeStep(const systems::Context<T>& context,
-                          systems::DiscreteValues<T>* next_states) const;
+  VectorX<T> CalcFreeMotion(const VectorX<T>& state0,
+                            int deformable_body_index) const final;
 
-  /* Copies the generalized positions of each body to the given `output`.
-   The order of the body positions follows that in which the bodies were
-   added. */
-  void CopyVertexPositionsOut(const systems::Context<T>& context,
-                              std::vector<VectorX<T>>* output) const;
-
-  double dt_{0};
-  const Vector3<T> gravity_{0, 0, -9.81};
   /* Scratch space for the time n and time n+1 FEM states to avoid repeated
    allocation. */
   mutable std::vector<std::unique_ptr<FemStateBase<T>>> prev_fem_states_{};
@@ -138,8 +124,6 @@ class SoftsimSystem final : public systems::LeafSystem<T> {
   std::vector<std::unique_ptr<FemSolver<T>>> fem_solvers_{};
   /* Names of all registered bodies. */
   std::vector<std::string> names_{};
-  /* Port Indexes. */
-  systems::OutputPortIndex vertex_positions_port_;
 };
 }  // namespace fixed_fem
 }  // namespace multibody

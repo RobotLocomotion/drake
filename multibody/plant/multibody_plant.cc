@@ -2083,18 +2083,36 @@ void MultibodyPlant<T>::CalcTamsiResults(
     contact_solvers::internal::ContactSolverResults<T>* results) const {
   // Assert this method was called on a context storing discrete state.
   this->ValidateContext(context0);
-  DRAKE_ASSERT(context0.num_discrete_state_groups() == 1);
   DRAKE_ASSERT(context0.num_continuous_states() == 0);
 
   const int nq = this->num_positions();
   const int nv = this->num_velocities();
+  const int num_deformable_bodies = deformable_state_indexes_.size();
 
-  // Quick exit if there are no moving objects.
+  std::vector<VectorX<T>> deformable_v_star(num_deformable_bodies);
+  if (num_deformable_bodies > 0) {
+    DRAKE_DEMAND(deformable_solver_ != nullptr);
+    for (int i = 0; i < num_deformable_bodies; ++i) {
+      const auto& deformable_state_i =
+          context0.get_discrete_state(deformable_state_indexes_[i]).get_value();
+      const VectorX<T> x_star =
+          deformable_solver_->CalcFreeMotion(deformable_state_i, i);
+      const int num_dofs = x_star.size() / 3;
+      deformable_v_star[i] = x_star.segment(num_dofs, num_dofs);
+    }
+  }
+  // TODO(xuchenhan-tri): Account for deformable contact.
+  // Without contact, the free motion velocity is the final velocity.
+  results->deformable_v_next = deformable_v_star;
+
+  // Quick exit if there are no rigid moving objects.
   if (nv == 0) return;
 
   // Get the system state as raw Eigen vectors
   // (solution at the previous time step).
-  auto x0 = context0.get_discrete_state(0).get_value();
+  const systems::DiscreteStateIndex rigid_state_index =
+      this->get_discrete_state_index_or_throw();
+  auto x0 = context0.get_discrete_state(rigid_state_index).get_value();
   VectorX<T> q0 = x0.topRows(nq);
   VectorX<T> v0 = x0.bottomRows(nv);
 
@@ -2462,11 +2480,28 @@ void MultibodyPlant<T>::DoCalcForwardDynamicsDiscrete(
 
   // Retrieve the solution velocity for the next time step.
   const VectorX<T>& v_next = solver_results.v_next;
+  const std::vector<VectorX<T>>& deformable_v_next =
+      solver_results.deformable_v_next;
 
-  auto x0 = context0.get_discrete_state(0).get_value();
+  const systems::DiscreteStateIndex rigid_state_index =
+      this->get_discrete_state_index_or_throw();
+  auto x0 = context0.get_discrete_state(rigid_state_index).get_value();
   const VectorX<T> v0 = x0.bottomRows(this->num_velocities());
-
   ac->get_mutable_vdot() = (v_next - v0) / time_step();
+
+  const int num_deformable_bodies = deformable_state_indexes_.size();
+  std::vector<VectorX<T>>& deformable_vdot = ac->get_mutable_deformable_vdot();
+  deformable_vdot.resize(num_deformable_bodies);
+  for (int i = 0; i < num_deformable_bodies; ++i) {
+    const auto& deformable_x0 =
+        context0.get_discrete_state(deformable_state_indexes_[i]).get_value();
+    const int num_dofs = deformable_x0.size() / 3;
+    const auto& deformable_v0 = deformable_x0.segment(num_dofs, num_dofs);
+    const auto& deformable_a0 = deformable_x0.tail(num_dofs);
+    deformable_vdot[i] =
+        2.0 * (deformable_v_next[i] - deformable_v0) / time_step() -
+        deformable_a0;
+  }
 
   // N.B. Pool of spatial accelerations indexed by BodyNodeIndex.
   internal_tree().CalcSpatialAccelerationsFromVdot(
@@ -2484,18 +2519,43 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   // Get the system state as raw Eigen vectors
   // (solution at the previous time step).
-  auto x0 = context0.get_discrete_state(0).get_value();
+  const auto rigid_state_index = this->get_discrete_state_index_or_throw();
+  auto x0 = context0.get_discrete_state(rigid_state_index).get_value();
   VectorX<T> q0 = x0.topRows(this->num_positions());
   VectorX<T> v0 = x0.bottomRows(this->num_velocities());
+  const int num_deformable_bodies = deformable_state_indexes_.size();
+  std::vector<VectorX<T>> deformable_q0(num_deformable_bodies);
+  std::vector<VectorX<T>> deformable_v0(num_deformable_bodies);
+  std::vector<VectorX<T>> deformable_a0(num_deformable_bodies);
+  for (int i = 0; i < num_deformable_bodies; ++i) {
+    const auto& deformable_x0 =
+        context0.get_discrete_state(deformable_state_indexes_[i]).get_value();
+    const int num_dofs = deformable_x0.size() / 3;
+    deformable_q0[i] = deformable_x0.head(num_dofs);
+    deformable_v0[i] = deformable_x0.segment(num_dofs, num_dofs);
+    deformable_a0[i] = deformable_x0.tail(num_dofs);
+  }
 
   // For a discrete model this evaluates vdot = (v_next - v0)/time_step() and
   // includes contact forces.
   const VectorX<T>& vdot = this->EvalForwardDynamics(context0).get_vdot();
+  const std::vector<VectorX<T>>& deformable_vdot =
+      this->EvalForwardDynamics(context0).get_deformable_vdot();
 
   // TODO(amcastro-tri): Consider replacing this by:
   //   const VectorX<T>& v_next = solver_results.v_next;
   // to avoid additional vector operations.
   const VectorX<T>& v_next = v0 + time_step() * vdot;
+  std::vector<VectorX<T>> deformable_v_next(num_deformable_bodies);
+  std::vector<VectorX<T>> deformable_q_next(num_deformable_bodies);
+  for (int i = 0; i < num_deformable_bodies; ++i) {
+    deformable_v_next[i] =
+        deformable_v0[i] +
+        time_step() * (0.5 * deformable_vdot[i] + 0.5 * deformable_a0[i]);
+    deformable_q_next[i] = deformable_q0[i] +
+                           0.5 * time_step() * deformable_v0[i] +
+                           0.5 * time_step() * deformable_v_next[i];
+  }
 
   VectorX<T> qdot_next(this->num_positions());
   MapVelocityToQDot(context0, v_next, &qdot_next);
@@ -2503,7 +2563,15 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   VectorX<T> x_next(this->num_multibody_states());
   x_next << q_next, v_next;
-  updates->get_mutable_vector(0).SetFromVector(x_next);
+  updates->get_mutable_vector(rigid_state_index).SetFromVector(x_next);
+  for (int i = 0; i < num_deformable_bodies; ++i) {
+    const int num_dofs = deformable_q_next[i].size();
+    VectorX<T> deformable_x_next(3 * num_dofs);
+    deformable_x_next << deformable_q_next[i], deformable_v_next[i],
+        deformable_vdot[i];
+    updates->get_mutable_vector(deformable_state_indexes_[i])
+        .SetFromVector(deformable_x_next);
+  }
 }
 
 template<typename T>
@@ -2706,8 +2774,29 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                                   &MultibodyPlant<T>::CopyContactResultsOutput,
                                   {contact_results_cache_entry.ticket()})
                               .get_index();
+
+  deformable_vertex_positions_output_port_ =
+      this->DeclareAbstractOutputPort(
+              "deformable_vertex_positions",
+              &MultibodyPlant<T>::CopyDeformableVertexPositionsOutput,
+              {this->xd_ticket()})
+          .get_index();
 }
 
+template <typename T>
+void MultibodyPlant<T>::DeclareDeformableState(const VectorX<T>& q,
+                                               const VectorX<T>& qdot,
+                                               const VectorX<T>& qddot) {
+  const int num_dofs = q.size();
+  DRAKE_DEMAND(num_dofs == qdot.size());
+  DRAKE_DEMAND(num_dofs == qddot.size());
+  VectorX<T> deformable_x(3 * num_dofs);
+  deformable_x.head(num_dofs) = q;
+  deformable_x.segment(num_dofs, num_dofs) = qdot;
+  deformable_x.tail(num_dofs) = qddot;
+  deformable_state_indexes_.emplace_back(
+      this->DeclareDiscreteState(deformable_x));
+}
 template <typename T>
 void MultibodyPlant<T>::DeclareCacheEntries() {
   DRAKE_DEMAND(this->is_finalized());

@@ -89,6 +89,17 @@ class AccelerationKinematicsCache {
     return vdot_;
   }
 
+  // Returns a constant reference to the deformable accelerations for all
+  // deformable_bodies.
+  const std::vector<VectorX<T>>& get_deformable_vdot() const {
+    return deformable_vdot_;
+  }
+
+  // Mutable version of get_deformable_vdot().
+  std::vector<VectorX<T>>& get_mutable_deformable_vdot() {
+    return deformable_vdot_;
+  }
+
  private:
   // Pools store entries in the same order that multibody tree nodes are
   // ordered in the tree, i.e. in BFT (Breadth-First Traversal) order. Therefore
@@ -121,6 +132,7 @@ class AccelerationKinematicsCache {
   // Number of body nodes in the corresponding MultibodyTree.
   std::vector<SpatialAcceleration<T>> A_WB_pool_;  // Indexed by BodyNodeIndex.
   VectorX<T> vdot_;
+  std::vector<VectorX<T>> deformable_vdot_;
 };
 
 }  // namespace internal

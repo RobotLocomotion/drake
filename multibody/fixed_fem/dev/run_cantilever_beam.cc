@@ -26,6 +26,7 @@ bazel-bin/multibody/fixed_fem/dev/run_cantilever_beam
 #include "drake/multibody/fixed_fem/dev/deformable_visualizer.h"
 #include "drake/multibody/fixed_fem/dev/mesh_utilities.h"
 #include "drake/multibody/fixed_fem/dev/softsim_system.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/simulator_gflags.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -61,9 +62,12 @@ int DoMain() {
   const double dt = 1.0 / 60.0;
   DRAKE_DEMAND(FLAGS_dx > 0);
   const double dx = std::min(0.1, FLAGS_dx);
-  auto* softsim_system = builder.AddSystem<SoftsimSystem<double>>(dt);
-  const geometry::Box box(1.5, 0.2, 0.2);
+  auto* plant = builder.AddSystem<multibody::MultibodyPlant<double>>(dt);
+  plant->set_deformable_solver(std::make_unique<SoftsimSystem<double>>(plant));
+  SoftsimSystem<double>& deformable_solver =
+      static_cast<SoftsimSystem<double>&>(plant->mutable_deformable_solver());
 
+  const geometry::Box box(1.5, 0.2, 0.2);
   /* Set up the corotated bar. */
   const math::RigidTransform<double> translation_left(
       Vector3<double>(0, -0.5, 0));
@@ -77,8 +81,8 @@ int DoMain() {
   const geometry::VolumeMesh<double> nonlinear_bar_geometry =
       MakeDiamondCubicBoxVolumeMesh<double>(box, dx, translation_left);
   const SoftBodyIndex nonlinear_bar_body_index =
-      softsim_system->RegisterDeformableBody(nonlinear_bar_geometry,
-                                             "Corotated", nonlinear_bar_config);
+      deformable_solver.RegisterDeformableBody(
+          nonlinear_bar_geometry, "Corotated", nonlinear_bar_config);
 
   /* Set up the linear bar. */
   DeformableBodyConfig<double> linear_bar_config(nonlinear_bar_config);
@@ -88,20 +92,23 @@ int DoMain() {
   const geometry::VolumeMesh<double> linear_bar_geometry =
       MakeDiamondCubicBoxVolumeMesh<double>(box, dx, translation_right);
   const SoftBodyIndex linear_bar_body_index =
-      softsim_system->RegisterDeformableBody(linear_bar_geometry, "Linear",
-                                             linear_bar_config);
+      deformable_solver.RegisterDeformableBody(linear_bar_geometry, "Linear",
+                                               linear_bar_config);
 
   /* Plug the two bars in to a wall. */
   const Vector3<double> wall_origin(-0.75, 0, 0);
   const Vector3<double> wall_normal(1, 0, 0);
-  softsim_system->SetWallBoundaryCondition(nonlinear_bar_body_index,
-                                           wall_origin, wall_normal);
-  softsim_system->SetWallBoundaryCondition(linear_bar_body_index, wall_origin,
-                                           wall_normal);
+  deformable_solver.SetWallBoundaryCondition(nonlinear_bar_body_index,
+                                             wall_origin, wall_normal);
+  deformable_solver.SetWallBoundaryCondition(linear_bar_body_index, wall_origin,
+                                             wall_normal);
+  plant->Finalize();
 
   auto& visualizer = *builder.AddSystem<DeformableVisualizer>(
-      1.0 / 60.0, softsim_system->names(), softsim_system->initial_meshes());
-  builder.Connect(*softsim_system, visualizer);
+      1.0 / 60.0, deformable_solver.names(),
+      deformable_solver.initial_meshes());
+  builder.Connect(plant->get_deformable_vertex_positions_output_port(),
+                  visualizer.get_input_port());
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();
   auto simulator =

@@ -282,6 +282,7 @@ drake_cc_library(
         ":simplex_gaussian_quadrature",
         "//common:essential",
         "//geometry/proximity:volume_mesh",
+        "//multibody/plant",
         "//systems/framework:leaf_system",
     ],
 )
