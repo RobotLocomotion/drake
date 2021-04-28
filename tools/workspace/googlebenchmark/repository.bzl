@@ -8,13 +8,7 @@ def googlebenchmark_repository(
     github_archive(
         name = name,
         repository = "google/benchmark",
-        commit = "v1.5.2",
-        sha256 = "dccbdab796baa1043f04982147e67bb6e118fe610da2c65f88912d73987e700c",  # noqa
+        commit = "v1.5.3",
+        sha256 = "e4fbb85eec69e6668ad397ec71a3a3ab165903abe98a8327db920b94508f720e",  # noqa
         mirrors = mirrors,
-        patches = [
-            # Suppress warnings from compiling Google Benchmark due to the
-            # deprecated CSVReporter.
-            # See: https://github.com/google/benchmark/issues/927.
-            "@drake//tools/workspace/googlebenchmark:no_deprecated_declarations.patch",  # noqa
-        ],
     )
