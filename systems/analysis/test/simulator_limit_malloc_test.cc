@@ -76,7 +76,7 @@ GTEST_TEST(SimulatorLimitMallocTest,
     // heap-free simulation after initialization, given careful system
     // construction.
     // TODO(rpoyner-tri): whittle allocations down to 0.
-    test::LimitMalloc heap_alloc_checker({.max_num_allocations = 84});
+    test::LimitMalloc heap_alloc_checker({.max_num_allocations = 63});
     simulator.AdvanceTo(1.0);
     simulator.AdvanceTo(2.0);
     simulator.AdvanceTo(3.0);
