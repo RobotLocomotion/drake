@@ -24,6 +24,7 @@
 #include "drake/multibody/plant/contact_jacobians.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
+#include "drake/multibody/plant/deformable_solver_base.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
 #include "drake/multibody/plant/tamsi_solver.h"
 #include "drake/multibody/topology/multibody_graph.h"
@@ -64,6 +65,10 @@ struct HydroelasticContactInfoAndBodySpatialForces {
   std::vector<HydroelasticContactInfo<T>> contact_info;
 };
 
+// (Experimental) Attorney-client pattern to provide deformable solver limited
+// "friend" access to MultibodyPlant.
+template <typename T>
+class MultibodyPlantDeformableSolverAttorney;
 }  // namespace internal
 
 // TODO(amcastro-tri): Add a section on contact models in
@@ -701,6 +706,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Returns the output port of frames' poses to communicate with a
   /// SceneGraph.
   const systems::OutputPort<T>& get_geometry_poses_output_port() const;
+
+#ifndef DRAKE_DOXYGEN_CXX
+  // (Experimental) Returns the output port of the deformable mesh vertex
+  // positions.
+  const systems::OutputPort<T>& get_deformable_vertex_positions_output_port()
+      const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    return this->get_output_port(deformable_vertex_positions_output_port_);
+  }
+#endif
   /// @} <!-- Input and output ports -->
 
   /// @anchor mbp_construction
@@ -3815,6 +3830,31 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
   /// @} <!-- Introspection -->
 
+#ifndef DRAKE_DOXYGEN_CXX
+  // (Experimental) set_softsim_base() should only be called by advanced
+  // developers experimenting with deformable simulation. We choose not to show
+  // it in public documentations rather than making it private with friends.
+  // Connects `this` plant to the given deformable utility class to allow for
+  // experimentation with deformable simulation.
+  // @pre deformable_solver != nullptr.
+  void set_deformable_solver(
+      std::unique_ptr<internal::DeformableSolverBase<T>> deformable_solver) {
+    DRAKE_DEMAND(deformable_solver != nullptr);
+    deformable_solver_ = std::move(deformable_solver);
+  }
+
+  const internal::DeformableSolverBase<T>& deformable_solver() const {
+    DRAKE_DEMAND(deformable_solver_ != nullptr);
+    return *deformable_solver_;
+  }
+
+  internal::DeformableSolverBase<T>& mutable_deformable_solver() {
+    DRAKE_DEMAND(deformable_solver_ != nullptr);
+    return *deformable_solver_;
+  }
+
+#endif
+
   using internal::MultibodyTreeSystem<T>::is_discrete;
   using internal::MultibodyTreeSystem<T>::EvalPositionKinematics;
   using internal::MultibodyTreeSystem<T>::EvalVelocityKinematics;
@@ -3828,6 +3868,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Friend class to facilitate testing.
   friend class MultibodyPlantTester;
+
+  // (Experimental) Use the attorney-client pattern to expose a limited set
+  // of private method/data to the deformable solver.
+    friend class internal::MultibodyPlantDeformableSolverAttorney<T>;
 
   // This struct stores in one single place all indexes related to
   // MultibodyPlant specific cache entries. These are initialized at Finalize()
@@ -3978,6 +4022,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Helper method to declare state, cache entries, and ports after Finalize().
   void DeclareStateCacheAndPorts();
+
+  // (Experimental) Declares an discrete state whose model value is populated
+  // with the give `q`, `qdot` and `qddot`.
+  void DeclareDeformableState(const VectorX<T>& q, const VectorX<T>& qdot,
+                              const VectorX<T>& qddot);
 
   // Declare the system-level cache entries specific to MultibodyPlant.
   void DeclareCacheEntries();
@@ -4275,6 +4324,22 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void CopyContactResultsOutput(
       const systems::Context<T>& context,
       ContactResults<T>* contact_results) const;
+
+  /* (Experimental) Copies the vertex positions of each deformable body to the
+   given `output`. The order of the body positions follows that in which the
+   bodies were added. */
+  void CopyDeformableVertexPositionsOutput(
+      const systems::Context<T>& context,
+      std::vector<VectorX<T>>* output) const {
+    output->resize(deformable_state_indexes_.size());
+    for (int i = 0; i < static_cast<int>(output->size()); ++i) {
+      const auto& state_vector =
+          context.get_discrete_state(deformable_state_indexes_[i]).get_value();
+      const int num_dofs = state_vector.size() / 3;
+      const auto& q = state_vector.head(num_dofs);
+      (*output)[i] = q;
+    }
+  }
 
   // Helper to evaluate if a GeometryId corresponds to a collision model.
   bool is_collision_geometry(geometry::GeometryId id) const {
@@ -4629,6 +4694,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   std::vector<systems::OutputPortIndex>
       instance_generalized_contact_forces_output_ports_;
 
+  // (Experimental) Index for the output port of deformable vertex positions.
+  systems::OutputPortIndex deformable_vertex_positions_output_port_;
+
+  // (Experimental) Index for the deformable states.
+  std::vector<systems::DiscreteStateIndex> deformable_state_indexes_;
+
   // A graph representing the body/joint topology of the multibody plant (Not
   // to be confused with the spanning-tree model we will build for analysis.)
   internal::MultibodyGraph multibody_graph_;
@@ -4652,6 +4723,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Vector (with size num_bodies()) of default poses for each body. This is
   // only used if Body::is_floating() is true.
   std::vector<math::RigidTransform<double>> X_WB_default_list_;
+
+  // (Experimental) Owned softsim utilities.
+  std::unique_ptr<internal::DeformableSolverBase<T>> deformable_solver_;
 };
 
 /// @cond

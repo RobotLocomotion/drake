@@ -301,6 +301,17 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override;
 
+  /* Returns the DiscreteStateIndex for the one and only discrete state if the
+  system is discrete. Throws otherwise. */
+  systems::DiscreteStateIndex get_discrete_state_index_or_throw() const {
+    if (!is_discrete_) {
+      throw std::logic_error(
+          "The MultibodyTreeSystem is modeled as a continuous system and there "
+          "does not exist any discrete state.");
+    }
+    return discrete_state_index_;
+  }
+
  private:
   // This is only meaningful in continuous mode.
   void DoCalcTimeDerivatives(
@@ -491,6 +502,10 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
 
   // Used to enforce "finalize once" restriction for protected-API users.
   bool already_finalized_{false};
+
+  // The discrete state index for the one and only discrete state if the system
+  // is discrete.
+  systems::DiscreteStateIndex discrete_state_index_;
 };
 
 /* Access internal tree outside of MultibodyTreeSystem. */

@@ -22,7 +22,8 @@ namespace internal {
 // Acceleration kinematics results include:
 // - Spatial acceleration `A_WB` for each body B in the model as measured and
 //   expressed in the world frame W.
-// - Generalized accelerations `vdot` for the entire model.
+// - Generalized accelerations `vdot` for the entire rigid model.
+// - Generalized accelerations `deformable_vdot` for the deformable bodies.
 //
 // @tparam_default_scalar
 template <typename T>
@@ -31,11 +32,11 @@ class AccelerationKinematicsCache {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AccelerationKinematicsCache)
 
   // Constructs an acceleration kinematics cache entry for the given
-  // MultibodyTreeTopology.
-  // In Release builds specific entries are left uninitialized resulting in a
-  // zero cost operation. However in Debug builds those entries are set to NaN
-  // so that operations using this uninitialized cache entry fail fast, easing
-  // bug detection.
+  // MultibodyTreeTopology. The deformable accelerations are initialized to be
+  // empty. In Release builds specific entries are left uninitialized resulting
+  // in a zero cost operation. However in Debug builds those entries are set to
+  // NaN so that operations using this uninitialized cache entry fail fast,
+  // easing bug detection.
   explicit AccelerationKinematicsCache(const MultibodyTreeTopology& topology) {
     Allocate(topology);
     DRAKE_ASSERT_VOID(InitializeToNaN());
@@ -44,6 +45,7 @@ class AccelerationKinematicsCache {
     // World's acceleration is always zero.
     A_WB_pool_[world_index()].SetZero();
     vdot_.setZero();
+    deformable_vdot_.resize(0);
   }
 
   // For the body B associated with node @p body_node_index, returns A_WB,
@@ -79,7 +81,7 @@ class AccelerationKinematicsCache {
   }
 
   // Returns a constant reference to the generalized accelerations `vdot` for
-  // the entire model.
+  // the entire rigid model.
   const VectorX<T>& get_vdot() const {
     return vdot_;
   }
@@ -87,6 +89,17 @@ class AccelerationKinematicsCache {
   // Mutable version of get_vdot().
   VectorX<T>& get_mutable_vdot() {
     return vdot_;
+  }
+
+  // Returns a constant reference to the deformable accelerations for all
+  // deformable bodies.
+  const std::vector<VectorX<T>>& get_deformable_vdot() const {
+    return deformable_vdot_;
+  }
+
+  // Mutable version of get_deformable_vdot().
+  std::vector<VectorX<T>>& get_mutable_deformable_vdot() {
+    return deformable_vdot_;
   }
 
  private:
@@ -121,6 +134,7 @@ class AccelerationKinematicsCache {
   // Number of body nodes in the corresponding MultibodyTree.
   std::vector<SpatialAcceleration<T>> A_WB_pool_;  // Indexed by BodyNodeIndex.
   VectorX<T> vdot_;
+  std::vector<VectorX<T>> deformable_vdot_;
 };
 
 }  // namespace internal

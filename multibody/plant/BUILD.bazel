@@ -56,10 +56,14 @@ drake_cc_library(
 drake_cc_library(
     name = "multibody_plant_core",
     srcs = [
+        "deformable_solver_base.cc",
         "multibody_plant.cc",
+        "multibody_plant_deformable_solver_attorney.cc",
     ],
     hdrs = [
+        "deformable_solver_base.h",
         "multibody_plant.h",
+        "multibody_plant_deformable_solver_attorney.h",
     ],
     visibility = ["//visibility:private"],
     deps = [
