@@ -672,9 +672,9 @@ class PublishEvent final : public Event<T> {
  private:
   void DoAddToComposite(TriggerType trigger_type,
                         CompositeEventCollection<T>* events) const final {
-    auto event = std::unique_ptr<PublishEvent<T>>(this->DoClone());
-    event->set_trigger_type(trigger_type);
-    events->add_publish_event(std::move(event));
+    PublishEvent event(*this);
+    event.set_trigger_type(trigger_type);
+    events->AddPublishEvent(std::move(event));
   }
 
   // Clones PublishEvent-specific data.
@@ -780,9 +780,9 @@ class DiscreteUpdateEvent final : public Event<T> {
  private:
   void DoAddToComposite(TriggerType trigger_type,
                         CompositeEventCollection<T>* events) const final {
-    auto event = std::unique_ptr<DiscreteUpdateEvent<T>>(this->DoClone());
-    event->set_trigger_type(trigger_type);
-    events->add_discrete_update_event(std::move(event));
+    DiscreteUpdateEvent<T> event(*this);
+    event.set_trigger_type(trigger_type);
+    events->AddDiscreteUpdateEvent(std::move(event));
   }
 
   // Clones DiscreteUpdateEvent-specific data.
@@ -888,9 +888,9 @@ class UnrestrictedUpdateEvent final : public Event<T> {
  private:
   void DoAddToComposite(TriggerType trigger_type,
                         CompositeEventCollection<T>* events) const final {
-    auto event = std::unique_ptr<UnrestrictedUpdateEvent<T>>(this->DoClone());
-    event->set_trigger_type(trigger_type);
-    events->add_unrestricted_update_event(std::move(event));
+    UnrestrictedUpdateEvent<T> event(*this);
+    event.set_trigger_type(trigger_type);
+    events->AddUnrestrictedUpdateEvent(std::move(event));
   }
 
   // Clones event data specific to UnrestrictedUpdateEvent.
