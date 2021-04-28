@@ -943,7 +943,7 @@ class LeafSystem : public System<T> {
     DRAKE_DEMAND(publish != nullptr);
 
     // Instantiate the event.
-    auto forced = std::make_unique<PublishEvent<T>>(
+    PublishEvent<T> forced(
         TriggerType::kForced,
         [this_ptr, publish](const Context<T>& context, const PublishEvent<T>&) {
           // TODO(sherm1) Forward the return status.
@@ -951,7 +951,7 @@ class LeafSystem : public System<T> {
         });
 
     // Add the event to the collection of forced publish events.
-    this->get_mutable_forced_publish_events().add_event(std::move(forced));
+    this->get_mutable_forced_publish_events().AddEvent(std::move(forced));
   }
 
   /** Declares a function that is called whenever a user directly calls
@@ -981,7 +981,7 @@ class LeafSystem : public System<T> {
     DRAKE_DEMAND(update != nullptr);
 
     // Instantiate the event.
-    auto forced = std::make_unique<DiscreteUpdateEvent<T>>(
+    DiscreteUpdateEvent<T> forced(
         TriggerType::kForced,
         [this_ptr, update](const Context<T>& context,
                            const DiscreteUpdateEvent<T>&,
@@ -992,7 +992,7 @@ class LeafSystem : public System<T> {
         });
 
     // Add the event to the collection of forced discrete update events.
-    this->get_mutable_forced_discrete_update_events().add_event(
+    this->get_mutable_forced_discrete_update_events().AddEvent(
         std::move(forced));
   }
 
@@ -1023,7 +1023,7 @@ class LeafSystem : public System<T> {
     DRAKE_DEMAND(update != nullptr);
 
     // Instantiate the event.
-    auto forced = std::make_unique<UnrestrictedUpdateEvent<T>>(
+    UnrestrictedUpdateEvent<T> forced(
         TriggerType::kForced,
         [this_ptr, update](const Context<T>& context,
                            const UnrestrictedUpdateEvent<T>&, State<T>* state) {
@@ -1032,7 +1032,7 @@ class LeafSystem : public System<T> {
         });
 
     // Add the event to the collection of forced unrestricted update events.
-    this->get_mutable_forced_unrestricted_update_events().add_event(
+    this->get_mutable_forced_unrestricted_update_events().AddEvent(
         std::move(forced));
   }
   //@}
