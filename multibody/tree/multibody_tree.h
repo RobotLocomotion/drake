@@ -1300,12 +1300,10 @@ class MultibodyTree {
 
   // Calculates the total mass of all bodies specified by body_indexes.
   // @param[in] context Contains the state of the model.
-  // @param[in] body_indexes  The vector of selected bodies.  This method does
+  // @param[in] body_indexes The vector of selected bodies. This method does
   // not distinguish between welded, joint connected, or floating bodies.
-  // @throws std::exception if body_indexes is empty or body_indexes has no body
-  // except world_body().
-  // @throws std::exception if mₛ ≤ 0 (mₛ is the mass of the system S).
-  // @note The world_body() is ignored.
+  // @retval The total mass of all bodies or 0 if body_indexes is empty.
+  // @note The mass of the world_body() does not contribute to the total mass.
   T CalcTotalMass(const systems::Context<T>& context,
                   const std::vector<BodyIndex>& body_indexes) const;
 
