@@ -60,15 +60,6 @@ if [[ "${with_update}" -eq 1 ]]; then
   binary_distribution_called_update=1
 fi
 
-# TODO(jamiesnape): Remove lines tapping robotlocomotion/director and
-# uninstalling numpy@1.19.4 and scipy@1.5.4 on or after 2021-05-01.
-brew tap robotlocomotion/director
-brew uninstall --force $(cat <<EOF
-robotlocomotion/director/scipy@1.5.4
-robotlocomotion/director/numpy@1.19.4
-EOF
-)
-
 brew bundle --file="${BASH_SOURCE%/*}/Brewfile" --no-lock
 
 if ! command -v pip3.9 &>/dev/null; then
@@ -76,4 +67,4 @@ if ! command -v pip3.9 &>/dev/null; then
   exit 2
 fi
 
-pip3.9 install --upgrade --requirement "${BASH_SOURCE%/*}/requirements.txt"
+pip3.9 install -r "${BASH_SOURCE%/*}/requirements.txt"
