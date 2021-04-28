@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/math/orthonormal_basis.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/triangle_quadrature/gaussian_triangle_quadrature_rule.h"
@@ -218,21 +219,30 @@ HydroelasticTractionCalculator<T>::CalcTractionAtQHelper(
   // Get the slip velocity at the point.
   traction_data.vt_BqAq_W = v_BqAq_W - nhat_W * vn_BqAq_W;
 
-  // Determine the traction using a soft-norm.
-  using std::atan;
-  using std::sqrt;
-  const T squared_vt = traction_data.vt_BqAq_W.squaredNorm();
-  const T soft_norm_vt =
-      sqrt(squared_vt + vslip_regularizer_ * vslip_regularizer_);
-
-  // Get the regularized direction of slip.
-  const Vector3<T> vt_hat_BqAq_W = traction_data.vt_BqAq_W / soft_norm_vt;
+  // We write our regularized model of friction as:
+  //   fₜ =−μᵣ(‖vₜ‖) vₜ/‖vₜ‖ fₙ
+  // where the regularized friction coefficient is computed as:
+  //   μᵣ(‖vₜ‖) = μ 2/π atan(‖vₜ‖/vₛ)
+  // The above expressions cannot even be evaluated at vₜ = 0. We solve this
+  // issue by grouping terms on ‖vₜ‖ as:
+  //   fₜ =−μ 2/π vₜ/vₛ (atan(‖vₜ‖/vₛ)/(‖vₜ‖/vₛ)) fₙ
+  // and defining atan_over_x = atan(x)/x, with x = ‖vₜ‖/vₛ we write:
+  //   fₜ =−μ 2/π vₜ/vₛ atan_over_x(‖vₜ‖/vₛ) fₙ
+  // We then make the observation that the function atan(x)/x is continuosly
+  // differentiable (that is the limits from both sides are exist and are
+  // unique) and therefore we can write a custom implementation that avoids
+  // division by zero at x = 0. This custom implementaiton is provided by
+  // CalcAtanXOverXFromXSquared().
+  const Vector3<T>& vt_BqAq_W = traction_data.vt_BqAq_W;
+  const double vs_squared = vslip_regularizer_ * vslip_regularizer_;
+  const T x_squared = vt_BqAq_W.squaredNorm() / vs_squared;
+  const T regularized_friction =
+      mu_coulomb * CalcAtanXOverXFromXSquared(x_squared) * 2.0 / M_PI /
+      vslip_regularizer_ * normal_traction;  // [Ns/m].
+  const Vector3<T> ft_Aq_W = -regularized_friction * vt_BqAq_W;
 
   // Compute the traction.
-  const T frictional_scalar = mu_coulomb * normal_traction *
-      2.0 / M_PI * atan(soft_norm_vt / T(vslip_regularizer_));
-  traction_data.traction_Aq_W = nhat_W * normal_traction -
-      vt_hat_BqAq_W * frictional_scalar;
+  traction_data.traction_Aq_W = nhat_W * normal_traction + ft_Aq_W;
 
   return traction_data;
 }
