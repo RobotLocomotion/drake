@@ -313,6 +313,21 @@ LeafSystem<T>::LeafSystem(SystemScalarConverter converter)
       AllocateForcedDiscreteUpdateEventCollection());
   this->set_forced_unrestricted_update_events(
       AllocateForcedUnrestrictedUpdateEventCollection());
+
+  // This cache entry just maintains temporary storage. It is only ever used
+  // by DoCalcNextUpdateTime(). Since this declaration of the cache entry
+  // invokes no invalidation support from the cache system, it is the
+  // responsibility of DoCalcNextUpdateTime() to ensure that no stale data is
+  // used.
+  next_events_cache_index_ =
+      this->DeclareCacheEntry(
+          "next_events",
+          []() {
+            std::vector<const Event<T>*> vec;
+            return AbstractValue::Make<std::vector<const Event<T>*>>(vec);
+          },
+          [](const ContextBase&, AbstractValue*) { /* do nothing */ },
+          {this->nothing_ticket()}).cache_index();
 }
 
 template <typename T>
@@ -350,9 +365,17 @@ void LeafSystem<T>::DoCalcNextUpdateTime(
     return;
   }
 
+  // Use a cached vector to calculate which events to fire. Clear it to ensure
+  // that no data values leak between invocations.
+  CacheEntryValue& value =
+      this->get_cache_entry(next_events_cache_index_)
+      .get_mutable_cache_entry_value(context);
+  auto& next_events =
+      value.GetMutableValueOrThrow<std::vector<const Event<T>*>>();
+  next_events.clear();
+
   // Find the minimum next sample time across all declared periodic events,
   // and store the set of declared events that will occur at that time.
-  std::vector<const Event<T>*> next_events;
   for (const auto& event_pair : periodic_events_) {
     const PeriodicEventData& event_data = event_pair.first;
     const Event<T>* const event = event_pair.second.get();
