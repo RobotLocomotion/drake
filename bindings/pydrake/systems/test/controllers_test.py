@@ -337,6 +337,13 @@ class TestControllers(unittest.TestCase):
         self.assertIsNone(options.ud)
         self.assertEqual(options.input_port_index,
                          InputPortSelection.kUseFirstInputIfItExists)
+        self.assertRegex(repr(options), "".join([
+            r"FiniteHorizonLinearQuadraticRegulatorOptions\(",
+            # Don't be particular about numpy's whitespace in Qf.
+            r"Qf=\[\[ *1\. *0\.\]\s*\[ *0\. *1\.\]\], "
+            r"N=None, ",
+            r"input_port_index=",
+            r"InputPortSelection.kUseFirstInputIfItExists\)"]))
 
         context = double_integrator.CreateDefaultContext()
         double_integrator.get_input_port(0).FixValue(context, 0.0)

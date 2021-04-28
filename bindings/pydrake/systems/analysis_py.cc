@@ -64,7 +64,11 @@ PYBIND11_MODULE(analysis, m) {
         .def(ParamInit<Class>())
         .def_readwrite("suppress_initialization_events",
             &Class::suppress_initialization_events,
-            cls_doc.suppress_initialization_events.doc);
+            cls_doc.suppress_initialization_events.doc)
+        .def("__repr__", [](const Class& self) {
+          return py::str("InitializeParams(suppress_initialization_events={})")
+              .format(self.suppress_initialization_events);
+        });
   }
 
   auto bind_scalar_types = [m](auto dummy) {
@@ -253,7 +257,14 @@ PYBIND11_MODULE(analysis, m) {
             doc.RegionOfAttractionOptions.lyapunov_candidate.doc)
         .def_readwrite("state_variables",
             &RegionOfAttractionOptions::state_variables,
-            doc.RegionOfAttractionOptions.state_variables.doc);
+            doc.RegionOfAttractionOptions.state_variables.doc)
+        .def("__repr__", [](const RegionOfAttractionOptions& self) {
+          return py::str(
+              "RegionOfAttractionOptions("
+              "lyapunov_candidate={}, "
+              "state_variables={})")
+              .format(self.lyapunov_candidate, self.state_variables);
+        });
 
     m.def("RegionOfAttraction", &RegionOfAttraction, py::arg("system"),
         py::arg("context"), py::arg("options") = RegionOfAttractionOptions(),

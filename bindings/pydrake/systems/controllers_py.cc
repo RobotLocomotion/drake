@@ -265,8 +265,17 @@ PYBIND11_MODULE(controllers, m) {
           doc.FiniteHorizonLinearQuadraticRegulatorOptions.N.doc)
       .def_readwrite("input_port_index",
           &FiniteHorizonLinearQuadraticRegulatorOptions::input_port_index,
-          doc.FiniteHorizonLinearQuadraticRegulatorOptions.input_port_index
-              .doc);
+          doc.FiniteHorizonLinearQuadraticRegulatorOptions.input_port_index.doc)
+      .def("__repr__",
+          [](const FiniteHorizonLinearQuadraticRegulatorOptions& self) {
+            return py::str(
+                "FiniteHorizonLinearQuadraticRegulatorOptions("
+                "Qf={}, "
+                "N={}, "
+                "input_port_index={})")
+                .format(self.Qf, self.N, self.input_port_index);
+          });
+
   DefReadWriteKeepAlive(&fhlqr_options, "x0",
       &FiniteHorizonLinearQuadraticRegulatorOptions::x0,
       doc.FiniteHorizonLinearQuadraticRegulatorOptions.x0.doc);

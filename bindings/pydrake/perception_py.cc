@@ -43,7 +43,10 @@ void init_pc_flags(py::module m) {
         .def(py::self | py::self)
         .def(py::self & py::self)
         .def(py::self == py::self)
-        .def(py::self != py::self);
+        .def(py::self != py::self)
+        .def("__repr__", [](const Class& self) {
+          return py::str("Fields(base_fields={})").format(self.base_fields());
+        });
   }
 }
 

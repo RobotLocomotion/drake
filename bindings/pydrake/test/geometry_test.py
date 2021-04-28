@@ -292,6 +292,11 @@ class TestGeometry(unittest.TestCase):
         params = mut.DrakeVisualizerParams(
             publish_period=0.1, role=mut.Role.kIllustration,
             default_color=mut.Rgba(0.1, 0.2, 0.3, 0.4))
+        self.assertEqual(repr(params), "".join([
+            "DrakeVisualizerParams("
+            "publish_period=0.1, "
+            "role=Role.kIllustration, "
+            "default_color=Rgba(r=0.1, g=0.2, b=0.3, a=0.4))"]))
 
         # Add some subscribers to detect message broadcast.
         load_channel = "DRAKE_VIEWER_LOAD_ROBOT"
