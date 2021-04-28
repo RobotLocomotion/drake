@@ -1,3 +1,5 @@
+#include <fstream>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -573,7 +575,90 @@ class HydroelasticTractionCalculatorTester {
     return calculator.CalcTractionAtQHelper(data, face_index, e, nhat_W,
                                             dissipation, mu_coulomb, p_WQ);
   }
+
+  template <typename T>
+  static T CalcAtanXOverXFromXSquared(const T& x_squared) {
+    return HydroelasticTractionCalculator<T>::CalcAtanXOverXFromXSquared(
+        x_squared);
+  }
 };
+
+GTEST_TEST(HydroelasticTractionCalculatorTest,
+           CalcAtanXOverXFromXSquared_AutoDiffXd) {
+  using std::atan;
+
+  // Arbitrary values where to sample atan(x)/x. We intentionally avoid zero and
+  // values close to zero since our testing reference, atan(x)/x, is ill defined
+  // there with large round-off errors. Round-off errors amplify further for
+  // derivatives computed with AutoDiffXd since AutoDiffXd does not simplify
+  // expressions to minimizer round-off errors but simply uses the chain rule,
+  // leading to expressions that are suboptimal.
+  //
+  // Our implementation of CalcAtanXOverXFromXSquared() uses a Taylor expansion
+  // for values of x < 0.12, so that the function is valid even at x = 0. For
+  // x >= 0.12 CalcAtanXOverXFromXSquared() simply returns atan(x)/x and we
+  // expect a perfect match. Therefore we choose these sample values so that
+  // first three show the progression of error after we've crossed the line x =
+  // 0.12 and move closer to zero. The last two show where the line is and
+  // that the answers exactly match thereafter.
+  // For a detailed discussion on how the cutoff is chosen and on how reference
+  // values are obtained with Variable Precision Arithmetic, please refer to
+  // Drake issue #15029.
+  std::vector<double> x_samples = {1e-6, 1e-4, 0.119999, 0.12, 0.120001, 1.0};
+  std::vector<double> df_ref = {-0.000000666666666665866666666667523809518933,
+                                -0.0000666666658666666752380951492063501156,
+                                -0.0786379815978989977854295807539066059,
+                                -0.0786386145752911896973786153090645626,
+                                -0.0786392475521360928119456981478271152,
+                                -0.285398163397448309615660845819875721};
+  // Expected precissio after detailed study in Drake issue #15029.
+  std::vector<double> dfdx_expected_precision(
+      x_samples.size(), std::numeric_limits<double>::epsilon());
+  // Near x=0.12 we observe the maximum round-off error, all below 1e-15.
+  dfdx_expected_precision[2] = 1.0e-15;  // @ x = 0.12-1e-6
+  dfdx_expected_precision[3] = 1.0e-15;  // @ x = 0.12
+  dfdx_expected_precision[4] = 1.0e-15;  // @ x = 0.12+1e-16
+
+  for (size_t i = 0; i < x_samples.size(); ++i) {
+    const double sample = x_samples[i];
+    const AutoDiffXd x(sample, 1.0, 0);
+    const AutoDiffXd x2 = x * x;
+    const AutoDiffXd fx =
+        HydroelasticTractionCalculatorTester::CalcAtanXOverXFromXSquared<
+            AutoDiffXd>(x2);
+
+    const AutoDiffXd fx_ref = atan(x) / x;
+
+    // Function values should be exactly equal in double precision.
+    EXPECT_NEAR(fx.value(), fx_ref.value(),
+                std::numeric_limits<double>::epsilon());
+
+    // Compare against analytical derivative.
+    EXPECT_NEAR(fx.derivatives()[0], df_ref[i], dfdx_expected_precision[i]);
+  }
+
+  // We separately verify CalcAtanXOverXFromXSquared() at x = 0 since AutoDiffXd
+  // of atan(x)/x is ill formed.
+  const AutoDiffXd x0(0.0, 1.0, 0);
+  const AutoDiffXd x0_squared = x0 * x0;
+  const AutoDiffXd fx0 =
+      HydroelasticTractionCalculatorTester::CalcAtanXOverXFromXSquared<
+          AutoDiffXd>(x0_squared);
+  EXPECT_NEAR(fx0.value(), 1.0, std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(fx0.derivatives()[0], 0.0,
+              std::numeric_limits<double>::epsilon());
+}
+
+GTEST_TEST(HydroelasticTractionCalculatorTest,
+           CalcAtanXOverXFromXSquared_Symbolic) {
+  symbolic::Variable x("x");
+  const symbolic::Expression x2 = x * x;
+  const symbolic::Expression fx =
+      HydroelasticTractionCalculatorTester::CalcAtanXOverXFromXSquared<
+          symbolic::Expression>(x2);
+  const symbolic::Expression fx_expected = atan(abs(x)) / abs(x);
+  EXPECT_EQ(fx, fx_expected);
+}
 
 // This is a direct test of the underlying helper function CalcTractionAtQHelper
 // and how it responds to interesting cases with derivatives. Specifically,

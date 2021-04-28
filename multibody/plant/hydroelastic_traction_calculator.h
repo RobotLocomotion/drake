@@ -153,6 +153,21 @@ class HydroelasticTractionCalculator {
       const Data& data, const Vector3<T>& p_WQ,
       const Vector3<T>& traction_Aq_W) const;
 
+  // Computes the function f(x) = atan(x)/x given x² as input. Function
+  // atan(x)/x is continuously differentiable everywhere, including
+  // x = 0. While this is true analytically, automatic differentiation methods
+  // such as AutoDiffXd do not simplify the underlying mathematical expressions
+  // as we would by hand. This leads to expressions that are ill-formed at
+  // x = 0 and lead to NaN results. Since in our regularized friction model x is
+  // the dimensionless norm of a vector, which entails a square root, the naive
+  // implementation explicitly writing atan(x)/x leads to a 1/sqrt(x) term that
+  // is ill-formed at x=0. This term goes away when the final expression for the
+  // derivatives is simplified by hand.
+  // This hand crafted method computes an expression of f(x) = atan(x)/x that
+  // leads to the exact result of f(x) and its derivative, modulo machine
+  // epsilon (in double precision).
+  static T CalcAtanXOverXFromXSquared(const T& x_squared);
+
   // The parameter (in m/s) for regularizing the Coulomb friction model.
   double vslip_regularizer_{};
 };
