@@ -314,6 +314,38 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
     return topology_.floating_velocities_start;
   }
 
+  /// Returns a string suffix (e.g. to be appended to the name()) to identify
+  /// the `k`th position in the floating base. @p position_index_in_body must
+  /// be in [0, 7) if `has_quaternion_dofs()` is true, otherwise in [0, 6).
+  /// @throws std::exception if is_floating() is false.
+  /// @throws std::exception if called pre-finalize, see
+  /// MultibodyPlant::Finalize().
+  std::string floating_position_suffix(int position_index_in_body) const {
+    DRAKE_BODY_THROW_IF_NOT_FINALIZED();
+    DRAKE_DEMAND(is_floating());
+    if (has_quaternion_dofs()) {
+      DRAKE_DEMAND(0 <= position_index_in_body && position_index_in_body < 7);
+    } else {
+      DRAKE_DEMAND(0 <= position_index_in_body && position_index_in_body < 6);
+    }
+    return this->get_parent_tree().get_mobilizer(
+      topology_.inboard_mobilizer).position_suffix(position_index_in_body);
+  }
+
+  /// Returns a string suffix (e.g. to be appended to the name()) to identify
+  /// the `k`th velocity in the floating base. @p velocity_index_in_body must
+  /// be in [0,6).
+  /// @throws std::exception if is_floating() is false.
+  /// @throws std::exception if called pre-finalize, see
+  /// MultibodyPlant::Finalize().
+  std::string floating_velocity_suffix(int velocity_index_in_body) const {
+    DRAKE_BODY_THROW_IF_NOT_FINALIZED();
+    DRAKE_DEMAND(is_floating());
+    DRAKE_DEMAND(0 <= velocity_index_in_body && velocity_index_in_body < 6);
+    return this->get_parent_tree().get_mobilizer(
+      topology_.inboard_mobilizer).velocity_suffix(velocity_index_in_body);
+  }
+
   /// Returns the default mass (not Context dependent) for `this` body.
   /// In general, the mass for a body can be a parameter of the model that can
   /// be retrieved with the method get_mass(). When the mass of a body is a

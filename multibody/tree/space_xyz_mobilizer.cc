@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <stdexcept>
+#include <string>
 
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -11,6 +12,35 @@
 namespace drake {
 namespace multibody {
 namespace internal {
+
+template <typename T>
+std::string SpaceXYZMobilizer<T>::position_suffix(
+  int position_index_in_mobilizer) const {
+  switch (position_index_in_mobilizer) {
+    case 0:
+      return "qx";
+    case 1:
+      return "qy";
+    case 2:
+      return "qz";
+  }
+  throw std::runtime_error("SpaceXYZMobilizer has only 3 positions.");
+}
+
+template <typename T>
+std::string SpaceXYZMobilizer<T>::velocity_suffix(
+  int velocity_index_in_mobilizer) const {
+  switch (velocity_index_in_mobilizer) {
+    case 0:
+      return "wx";
+    case 1:
+      return "wy";
+    case 2:
+      return "wz";
+  }
+  throw std::runtime_error(
+    "SpaceXYZMobilizer has only 3 velocities.");
+}
 
 template <typename T>
 Vector3<T> SpaceXYZMobilizer<T>::get_angles(
