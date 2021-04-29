@@ -76,7 +76,12 @@ GTEST_TEST(ObjToSurfaceMeshTest, TinyObjToSurfaceFaces) {
 GTEST_TEST(ObjToSurfaceMeshTest, ReadObjToSurfaceMesh) {
   const std::string filename =
       FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
-  SurfaceMesh<double> surface = ReadObjToSurfaceMesh(filename);
+  const auto fail_on_warning = [](std::string_view message) {
+    throw std::runtime_error(fmt::format(
+        "Unexpected warning: {}", message));
+  };
+  SurfaceMesh<double> surface = ReadObjToSurfaceMesh(
+    filename, 1.0, fail_on_warning);
 
   ASSERT_EQ(surface.num_vertices(), 8);
   ASSERT_EQ(surface.num_faces(), 12);
