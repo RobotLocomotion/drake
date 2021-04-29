@@ -168,6 +168,15 @@ void AddPolygonToMeshDataAsOneTriangle(
     const std::vector<Vector3<T>>& polygon_F, const Vector3<T>& nhat_F,
     std::vector<SurfaceFace>* faces, std::vector<SurfaceVertex<T>>* vertices_F);
 
+enum class ContactPolygonRepresentation {
+  // Each contact polygon is subdivided into triangles sharing the centroid
+  // of the polygon.
+  kCentroidSubdivision,
+
+  // Use one representative triangle for each contact polygon.
+  kSingleTriangle
+};
+
 /* Determines if the indicated triangle has a face normal that is "in the
  direction" of the given normal.
 

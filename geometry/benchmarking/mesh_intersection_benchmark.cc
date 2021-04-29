@@ -238,8 +238,9 @@ BENCHMARK_DEFINE_F(MeshIntersectionBenchmark, RigidSoftMesh)
   std::vector<Vector3<double>> grad_eM_Ms;
   for (auto _ : state) {
     SurfaceVolumeIntersector<double>().SampleVolumeFieldOnSurface(
-        field_S_, bvh_S, mesh_R_, bvh_R, X_SR_, &surface_SR, &e_SR,
-        &grad_eM_Ms);
+        field_S_, bvh_S, mesh_R_, bvh_R, X_SR_,
+        ContactPolygonRepresentation::kCentroidSubdivision,
+        &surface_SR, &e_SR, &grad_eM_Ms);
   }
   RecordContactSurfaceResult(surface_SR.get(), "RigidSoftMesh", state);
 }

@@ -123,7 +123,8 @@ std::unique_ptr<ContactSurface<T>> DispatchRigidSoftCalculation(
     const Bvh<Obb, SurfaceMesh<double>>& bvh_R = rigid.bvh();
 
     return ComputeContactSurfaceFromSoftVolumeRigidSurface(
-        id_S, field_S, bvh_S, X_WS, id_R, mesh_R, bvh_R, X_WR);
+        id_S, field_S, bvh_S, X_WS, id_R, mesh_R, bvh_R, X_WR,
+        ContactPolygonRepresentation::kCentroidSubdivision);
   }
 }
 
