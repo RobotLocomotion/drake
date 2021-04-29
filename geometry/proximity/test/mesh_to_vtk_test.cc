@@ -76,10 +76,12 @@ unique_ptr<ContactSurface<double>> BoxContactSurface() {
   // The rigid box intersects the soft box in a unit cube at the corner
   // (2.0, 2.0, 1.0).
   RigidTransformd X_WR(Vector3d{3., 3., 1.});
+  const bool triangulate_polygon = true;
 
   return ComputeContactSurfaceFromSoftVolumeRigidSurface(
       GeometryId::get_new_id(), field_S, bvh_volume_S, X_WS,
-      GeometryId::get_new_id(), surface_R, bvh_surface_R, X_WR);
+      GeometryId::get_new_id(), surface_R, bvh_surface_R, X_WR,
+      triangulate_polygon);
 }
 
 GTEST_TEST(MeshToVtkTest, BoxContactSurfacePressure) {

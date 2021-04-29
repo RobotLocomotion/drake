@@ -236,10 +236,11 @@ BENCHMARK_DEFINE_F(MeshIntersectionBenchmark, RigidSoftMesh)
   std::unique_ptr<SurfaceMesh<double>> surface_SR;
   std::unique_ptr<SurfaceMeshFieldLinear<double, double>> e_SR;
   std::vector<Vector3<double>> grad_eM_Ms;
+  const bool triangulate_polygon = true;
   for (auto _ : state) {
     SurfaceVolumeIntersector<double>().SampleVolumeFieldOnSurface(
-        field_S_, bvh_S, mesh_R_, bvh_R, X_SR_, &surface_SR, &e_SR,
-        &grad_eM_Ms);
+        field_S_, bvh_S, mesh_R_, bvh_R, X_SR_, triangulate_polygon,
+        &surface_SR, &e_SR, &grad_eM_Ms);
   }
   RecordContactSurfaceResult(surface_SR.get(), "RigidSoftMesh", state);
 }
