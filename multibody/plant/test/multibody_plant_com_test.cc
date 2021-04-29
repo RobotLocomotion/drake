@@ -162,7 +162,7 @@ TEST_F(MultibodyPlantCenterOfMassTest, CalcTotalMass) {
   double mass_expected = mass_S_ + mass_T_;
   EXPECT_TRUE(mass_system == mass_expected);
 
-  // Check CalcTotalMass() returns 0 if model instances only has 1 world body.
+  // Verify CalcTotalMass() returns 0 if model instances only has 1 world body.
   const ModelInstanceIndex world_model_instance =
       multibody::world_model_instance();
   std::vector<ModelInstanceIndex> world_model_instance_array;
@@ -178,7 +178,7 @@ TEST_F(MultibodyPlantCenterOfMassTest, CalcTotalMass) {
   mass_expected = 0.0;
   EXPECT_TRUE(mass_zero == mass_expected);
 
-  // Ensure CalcTotalMass() return 0 for empty model_instances.
+  // Verify CalcTotalMass() returns 0 for empty model_instances.
   std::vector<ModelInstanceIndex> model_instances;
   mass_zero = plant_.CalcTotalMass(*context_, model_instances);
   mass_expected = 0.0;
@@ -193,8 +193,14 @@ TEST_F(MultibodyPlantCenterOfMassTest, CalcTotalMass) {
   // Verify CalcTotalMass() works for 2 instances in model_instances.
   model_instances.push_back(sphere_instance_);
   mass_expected = mass_S_ + mass_T_;
-  double mass_two_instances = plant_.CalcTotalMass(*context_, model_instances);
-  EXPECT_TRUE(mass_two_instances == mass_expected);
+  double mass_2_instances = plant_.CalcTotalMass(*context_, model_instances);
+  EXPECT_TRUE(mass_2_instances == mass_expected);
+
+  // Verify CalcTotalMass() works for 3 instances (with 2 sphere_instances).
+  model_instances.push_back(sphere_instance_);
+  mass_expected = 2 * mass_S_ + mass_T_;
+  double mass_3_instances = plant_.CalcTotalMass(*context_, model_instances);
+  EXPECT_TRUE(mass_3_instances == mass_expected);
 
   // Verify we are able to determine if the total mass = 0.
   set_mass_sphere(0.0);

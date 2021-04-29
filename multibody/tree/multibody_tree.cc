@@ -1240,37 +1240,30 @@ void MultibodyTree<T>::CalcPointsPositions(
 
 template <typename T>
 T MultibodyTree<T>::CalcTotalMass(const systems::Context<T>& context) const {
-  std::vector<ModelInstanceIndex> model_instances;
-  for (ModelInstanceIndex model_instance_index(1);
-       model_instance_index < num_model_instances(); ++model_instance_index)
-    model_instances.push_back(model_instance_index);
-  return CalcTotalMass(context, model_instances);
+  T total_mass = 0;
+  for (BodyIndex body_index{1}; body_index < num_bodies(); ++body_index) {
+    const Body<T>& body = get_body(body_index);
+    const T& body_mass = body.get_mass(context);
+    total_mass += body_mass;
+  }
+  return total_mass;
 }
 
 template <typename T>
 T MultibodyTree<T>::CalcTotalMass(
     const systems::Context<T>& context,
     const std::vector<ModelInstanceIndex>& model_instances) const {
-  std::vector<BodyIndex> body_indexes;
+  T total_mass = 0;
   for (auto model_instance : model_instances) {
     const std::vector<BodyIndex> body_index_in_instance =
         GetBodyIndices(model_instance);
-    for (BodyIndex body_index : body_index_in_instance)
-      body_indexes.push_back(body_index);
-  }
-  return CalcTotalMass(context, body_indexes);
-}
-
-template <typename T>
-T MultibodyTree<T>::CalcTotalMass(
-    const systems::Context<T>& context,
-    const std::vector<BodyIndex>& body_indexes) const {
-  T total_mass = 0;
-  for (BodyIndex body_index : body_indexes) {
-    if (body_index == 0) continue;
-    const Body<T>& body = get_body(body_index);
-    const T& body_mass = body.get_mass(context);
-    total_mass += body_mass;
+    for (BodyIndex body_index : body_index_in_instance) {
+      if (body_index != 0) {
+        const Body<T>& body = get_body(body_index);
+        const T& body_mass = body.get_mass(context);
+        total_mass += body_mass;
+      }
+    }
   }
   return total_mass;
 }
