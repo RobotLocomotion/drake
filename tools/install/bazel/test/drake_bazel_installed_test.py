@@ -16,9 +16,9 @@ def main():
 
     # TODO(jamiesnape): Automatically keep this synchronized with the version
     # used by @drake (or the nearest stable version).
-    rules_python_commit = "0.1.0"
+    rules_python_commit = "0.2.0"
     rules_python_url = f"https://github.com/bazelbuild/rules_python/archive/{rules_python_commit}.tar.gz"  # noqa
-    rules_python_sha256 = "48f7e716f4098b85296ad93f5a133baf712968c13fbc2fdf3a6136158fe86eac"  # noqa
+    rules_python_sha256 = "0d25ab1c7b18b3f48d1bff97bfa70c1625438b40c5f661946fb43eca4ba9d9dd"  # noqa
 
     with open(join(scratch_dir, "WORKSPACE"), "w") as f:
         f.write(f"""
