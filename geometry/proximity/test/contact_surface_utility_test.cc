@@ -470,6 +470,29 @@ TEST_F(ContactSurfaceUtilityTest, AddPolygonToMeshData) {
   // egregious error would be obvious during visualization.
 }
 
+// Tests the overload of CalcPolygonCentroid() that takes a polygon represented
+// as an ordered list of positional vectors. We only perform a simple test here
+// and assume its correctness follows from the extensive tests of the other
+// version.
+GTEST_TEST(ContactSurfaceUtility, CalcPolygonCentroidFromVertexPositions) {
+  const vector<Vector3d> p_FVs{Vector3d::UnitX(), Vector3d::UnitY(),
+                               Vector3d::UnitZ()};
+  const Vector3d n_F = Vector3d(1., 1., 1.);
+  const Vector3d p_FC = CalcPolygonCentroid<double>(p_FVs, n_F);
+  const Vector3d p_FC_expected(1. / 3., 1. / 3., 1. / 3.);
+  const double kEps = std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(p_FC, p_FC_expected, 10. * kEps));
+}
+
+GTEST_TEST(ContactSurfaceUtility, CalcPolygonArea) {
+  const vector<Vector3d> p_FVs{Vector3d::Zero(), Vector3d::UnitX(),
+                               Vector3d::UnitY()};
+  const double area = CalcPolygonArea(p_FVs);
+  const double kExpectedArea = 0.5;
+  const double kEps = std::numeric_limits<double>::epsilon();
+  EXPECT_NEAR(area, kExpectedArea, kEps);
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace geometry
