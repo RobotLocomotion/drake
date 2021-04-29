@@ -10,6 +10,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/math/autodiff.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
@@ -468,6 +469,99 @@ TEST_F(ContactSurfaceUtilityTest, AddPolygonToMeshData) {
   // would pass. We can consider making the test more robust to exclude this
   // possibility but are currently implicitly relying on the idea that such an
   // egregious error would be obvious during visualization.
+}
+
+// Tests the overload of CalcPolygonCentroid() that takes a polygon represented
+// as an ordered list of positional vectors. We only perform a simple test here
+// and assume its correctness follows from the extensive tests of the other
+// version.
+GTEST_TEST(ContactSurfaceUtility, CalcPolygonCentroidFromVertexPositions) {
+  const vector<Vector3d> p_FVs{Vector3d::UnitX(), Vector3d::UnitY(),
+                               Vector3d::UnitZ()};
+  const Vector3d n_F = Vector3d(1., 1., 1.);
+  const Vector3d p_FC = CalcPolygonCentroid<double>(p_FVs, n_F);
+  const Vector3d p_FC_expected(1. / 3., 1. / 3., 1. / 3.);
+  const double kEps = std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(p_FC, p_FC_expected, 10. * kEps));
+}
+
+// Tests calculation of area of a polygon. We use a polygon with some
+// collinear vertices to test for robustness.
+GTEST_TEST(ContactSurfaceUtility, CalcPolygonArea) {
+  // We will use a general frame F for robustness, but the set up will be in
+  // frame M for convenience.
+  const RigidTransformd X_FM{
+      AngleAxisd{-9 * M_PI / 7, Vector3d{1, 2, 3}.normalized()},
+      Vector3d{0.5, 0.75, -1.25}};
+
+  vector<Vector3d> p_FVs;
+  Vector3d nhat_F;
+  {
+    // This pentagon V₀V₁V₂V₃V₄ has three collinear vertices. Its sub-triangle
+    // V₀V₁V₂ has zero area.
+    //
+    //       My
+    //       |                    ● V₃(3,2,0)
+    //       │
+    //       │
+    //    V₄ ●
+    //       |
+    //       │
+    //    V₀ ●──────●──────●────── Mx
+    //              V₁     V₂
+    const vector<Vector3d> p_MVs{Vector3d::Zero(), Vector3d::UnitX(),
+                                 2. * Vector3d::UnitX(), Vector3d{3., 2., 0.},
+                                 Vector3d::UnitY()};
+
+    nhat_F = X_FM.rotation().col(2);
+    std::transform(
+        p_MVs.begin(), p_MVs.end(), std::back_inserter(p_FVs),
+        [&X_FM](const Vector3d& p_MV) -> Vector3d { return X_FM * p_MV; });
+  }
+
+  const double area = CalcPolygonArea(p_FVs, nhat_F);
+  // The pentagon V₀V₁V₂V₃V₄ has the same area as the quadrilateral V₀V₂V₃V₄.
+  const double kExpectedArea = 3.5;
+  const double kEps = std::numeric_limits<double>::epsilon();
+  const double kTolerance = 4. * kEps * kExpectedArea;
+  EXPECT_NEAR(area, kExpectedArea, kTolerance);
+}
+
+// Tests a corner case for calculating area of a polygon with AutoDiffXd when
+// the polygon has zero area.
+GTEST_TEST(ContactSurfaceUtility, CalcPolygonArea_AutoDiffWithZeroArea) {
+  using Vector3ad = Vector3<AutoDiffXd>;
+  //
+  //    Fy
+  //    ^
+  //    |        The face normal nhat_F is perpendicular to the screen
+  //    |        in Fz direction.
+  //    |
+  //    +---●---●---●---> Fx
+  //        V₀  V₁  V₂
+  //
+  // The triangle has zero area because its three vertices are collinear. We
+  // will use AutoDiff to calculate the area derivative with respect to
+  // the position of V₀.
+  //
+  // Notice that we initializeAutoDiff() for V₀ only, so we will expect
+  // derivatives.size() == 3 for the three coordinates of V₀.
+  const vector<Vector3ad> p_FVs{math::initializeAutoDiff(Vector3d::UnitX()),
+                                Vector3ad::UnitX() * 2, Vector3ad::UnitX() * 3};
+  const Vector3ad nhat_F = Vector3ad::UnitZ();
+
+  const AutoDiffXd area = CalcPolygonArea(p_FVs, nhat_F);
+  EXPECT_EQ(area.value(), 0.);
+
+  ASSERT_EQ(area.derivatives().size(), 3u);
+  // Confirms that none of the three derivatives are NaN. In fact, the following
+  // expected derivatives confirm that moving V₀ in Fy direction will increase
+  // area the most. This is because the triangle is flat along Fx, and we fix
+  // the unit face normal nhat_F in Fz direction. Moving V₀ along Fx direction
+  // will keep the triangle flat. Moving V₀ along Fz direction will increase
+  // the triangle's area, but its projection along nhat_F is still flat.
+  const Vector3d kExpectDerivatives{0, 0.5, 0};
+  EXPECT_TRUE(CompareMatrices(area.derivatives(), kExpectDerivatives));
 }
 
 }  // namespace
