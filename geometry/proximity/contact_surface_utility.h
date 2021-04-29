@@ -44,6 +44,21 @@ Vector3<T> CalcPolygonCentroid(
     const Vector3<T>& n_F,
     const std::vector<SurfaceVertex<T>>& vertices_F);
 
+/* Overload that takes a polygon represented as an ordered list of positional
+ vectors `p_FVs` of its vertices, each measured and expressed in frame F.
+ */
+template <typename T>
+Vector3<T> CalcPolygonCentroid(
+    const std::vector<Vector3<T>>& p_FVs,
+    const Vector3<T>& n_F);
+
+/* Calculates area of a planar convex polygon represented as an ordered list
+ of positional vectors `p_FVs` of its vertices, each measured and expressed
+ in frame F.
+ */
+template <typename T>
+T CalcPolygonArea(const std::vector<Vector3<T>>& p_FVs);
+
 // TODO(SeanCurtis-TRI): Consider creating an overload of this that *computes*
 //  the normal and then invokes this one for contexts where they don't have the
 //  normal convenient.
@@ -84,6 +99,45 @@ void AddPolygonToMeshData(
     std::vector<SurfaceFace>* faces,
     std::vector<SurfaceVertex<T>>* vertices_F);
 
+/* Adds a representative triangle of a convex polygon to the given set of
+ `faces` and `vertices`. The triangle has the same centroid, area, and normal
+ vector as the polygon.  Three new vertices of the representative triangle are
+ introduced into `vertices`.
+
+ If the input polygon is a triangle, we will use that triangle as the
+ representative triangle. If the input polygon is not a triangle, the
+ choice of the representative triangle is arbitrary subject to the constraint
+ in the previous paragraph.
+
+ In debug builds, this method will do _expensive_ validation of its parameters.
+
+ @param[in] polygon_F
+     The input polygon is represented by positions of its three or more
+     vertices in frame F. This polygon is _not_ in `faces` or `vertices`.
+
+ @param[in] n_F
+     The face normal to the polygon, expressed in frame F.
+
+ @param[out] faces
+     The new triangle is added into `faces` with its winding defined by `n_F`.
+
+ @param[out] vertices_F
+     The set of vertex positions to be extended, each vertex is measured and
+     expressed in frame F. Three vertices will be added.
+
+ @pre `faces` and `vertices_F` are not `nullptr`.
+ @pre `polygon_F.size()` >= 3.
+ @pre `polygon_F` is planar.
+ @pre `n_F` has unit length.
+ @tparam T  The computational scalar type. Only supports double and AutoDiffXd.
+
+ @note This internal function is an intermediate solution to support the new
+ query for discrete hydroelastics. It may disappear in the future.
+ */
+template <typename T>
+void AddPolygonToMeshDataAsOneTriangle(
+    const std::vector<Vector3<T>>& polygon_F, const Vector3<T>& n_F,
+    std::vector<SurfaceFace>* faces, std::vector<SurfaceVertex<T>>* vertices_F);
 
 /* Determines if the indicated triangle has a face normal that is "in the
  direction" of the given normal.
