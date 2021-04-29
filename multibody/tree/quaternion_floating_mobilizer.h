@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
@@ -48,6 +49,11 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   bool is_floating() const override { return true; }
 
   bool has_quaternion_dofs() const override { return true; }
+
+  // Overloads to define the suffix names for the position and velocity
+  // elements.
+  std::string position_suffix(int position_index_in_mobilizer) const final;
+  std::string velocity_suffix(int velocity_index_in_mobilizer) const final;
 
   // @name Methods to get and set the state for a QuaternionFloatingMobilizer
   // @{

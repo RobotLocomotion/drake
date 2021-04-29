@@ -284,6 +284,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.floating_positions_start.doc)
         .def("floating_velocities_start", &Class::floating_velocities_start,
             cls_doc.floating_velocities_start.doc)
+        .def("floating_position_suffix", &Class::floating_position_suffix,
+            cls_doc.floating_position_suffix.doc)
+        .def("floating_velocity_suffix", &Class::floating_velocity_suffix,
+            cls_doc.floating_velocity_suffix.doc)
         .def("get_default_mass", &Class::get_default_mass,
             cls_doc.get_default_mass.doc)
         .def("get_mass", &Class::get_mass, py::arg("context"),
@@ -371,6 +375,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("num_positions", &Class::num_positions, cls_doc.num_positions.doc)
         .def("num_velocities", &Class::num_velocities,
             cls_doc.num_velocities.doc)
+        .def("position_suffix", &Class::position_suffix,
+            cls_doc.position_suffix.doc)
+        .def("velocity_suffix", &Class::velocity_suffix,
+            cls_doc.velocity_suffix.doc)
         .def("GetOnePosition", &Class::GetOnePosition, py::arg("context"),
             cls_doc.GetOnePosition.doc)
         .def("GetOneVelocity", &Class::GetOneVelocity, py::arg("context"),

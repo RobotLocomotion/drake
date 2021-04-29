@@ -230,6 +230,13 @@ TEST_F(UniversalJointTest, SetVelocityAndAccelerationLimits) {
                               "upper_limits.array\\(\\)\\).all\\(\\)' failed.");
 }
 
+TEST_F(UniversalJointTest, NameSuffix) {
+  EXPECT_EQ(joint_->position_suffix(0), "qx");
+  EXPECT_EQ(joint_->position_suffix(1), "qy");
+  EXPECT_EQ(joint_->velocity_suffix(0), "wx");
+  EXPECT_EQ(joint_->velocity_suffix(1), "wy");
+}
+
 TEST_F(UniversalJointTest, DefaultAngles) {
   const Vector2d lower_limit_angles = Vector2d::Constant(kPositionLowerLimit);
   const Vector2d upper_limit_angles = Vector2d::Constant(kPositionUpperLimit);
