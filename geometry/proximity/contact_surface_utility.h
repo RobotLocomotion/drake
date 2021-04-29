@@ -111,6 +111,51 @@ void AddPolygonToMeshData(
     std::vector<SurfaceFace>* faces,
     std::vector<SurfaceVertex<T>>* vertices_F);
 
+/* Adds a representative triangle of a convex polygon to the given set of
+ `faces` and `vertices`. The triangle has the same centroid, area, and normal
+ vector as the polygon.  Three vertices of the representative triangle are
+ introduced into `vertices`.
+
+ The exact choice of the representative triangle is arbitrary subject to the
+ constraints in the previous paragraph.
+
+ In debug builds, this method will do _expensive_ validation of its parameters.
+
+ @param[in] polygon_F
+     The input polygon is represented by position vectors of its vertices,
+     measured and expressed in frame F. This polygon is _not_ in `faces` or
+     `vertices`.
+ @param[in] n_F
+     The vector that is perpendicular to the polygon, expressed in frame F.
+ @param[out] faces
+     The new triangle is added into `faces` with the same orientation (same
+     normal vector) as the input polygon.
+ @param[out] vertices_F
+     The set of vertex positions to be extended, each vertex is measured and
+     expressed in frame F. Three vertices will be added.
+
+ @pre `faces` and `vertices_F` are not `nullptr`.
+ @pre `polygon_F.size()` >= 3.
+ @pre The polygon is planar.
+ @pre `n_F` is perpendicular to the polygon.
+ @pre `n_F` has non-trivial length.
+ @pre The winding of `polygon_F` is consistent with the direction of `n_F`.
+      They must respect the right-hand rule. Otherwise, the representative
+      triangle may have its normal in the opposite direction of the polygon's
+      normal.
+ @tparam T  The computational scalar type. Only supports double and AutoDiffXd.
+
+ @note This internal function is an intermediate solution to support the new
+ query for discrete hydroelastics. It will disappear in the future.
+
+ @note This function has a stronger precondition for `n_F` compared to
+ AddPolygonToMeshData().
+ */
+template <typename T>
+void AddPolygonToMeshDataAsOneTriangle(
+    const std::vector<Vector3<T>>& polygon_F, const Vector3<T>& n_F,
+    std::vector<SurfaceFace>* faces, std::vector<SurfaceVertex<T>>* vertices_F);
+
 /* Determines if the indicated triangle has a face normal that is "in the
  direction" of the given normal.
 

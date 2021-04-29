@@ -270,6 +270,82 @@ void AddPolygonToMeshData(
 }
 
 template <typename T>
+void AddPolygonToMeshDataAsOneTriangle(
+    const std::vector<Vector3<T>>& polygon_F, const Vector3<T>& n_F,
+    std::vector<SurfaceFace>* faces,
+    std::vector<SurfaceVertex<T>>* vertices_F) {
+  DRAKE_DEMAND(faces != nullptr);
+  DRAKE_DEMAND(vertices_F != nullptr);
+  DRAKE_DEMAND(polygon_F.size() >= 3);
+
+  // Locations of the three vertices of the representative triangle.
+  Vector3<T> p_FVs[3];
+  if (polygon_F.size() == 3) {
+    p_FVs[0] = polygon_F[0];
+    p_FVs[1] = polygon_F[1];
+    p_FVs[2] = polygon_F[2];
+  } else {
+    Vector3<T> p_FC = CalcPolygonCentroid(polygon_F, n_F);
+    T polygon_area = CalcPolygonArea(polygon_F);
+
+    // We will set the representative triangle as an isosceles right triangle
+    // in a local frame G such that its third basis vector Gz_F, expressed in
+    // frame F, is the same as the face normal vector n_F. The three vertices
+    // of the triangle are at the origin, on Gx axis, and on Gy axis, as
+    // shown in the following picture (Gz points outward from the screen).
+    //
+    //           Gy
+    //           ^
+    //           |
+    //           |
+    //        V₂ ●
+    //           x x
+    //           x x x
+    //        l  x x x x
+    //           x x x x x
+    //   V₀ = Go ● x x x x ● -----> Gx
+    //               l     V₁
+    //
+    // The two sides of the triangle in Gx and Gy directions have the same
+    // length l such that the triangle has the same area as the polygon:
+    //      l²/2 = polygon_area
+    //      l    = √(2 * polygon_area)
+    const T l = sqrt(T(2.) * polygon_area);
+
+    // Pass axis_index = 2, so that Gz_F = R_FG.col(2) = n_F.normalized().
+    const auto R_FG = math::RotationMatrix<T>::MakeFromOneVector(n_F, 2);
+    const Vector3<T> Gx_F = R_FG.col(0);
+    const Vector3<T> Gy_F = R_FG.col(1);
+
+    const Vector3<T> p_GoV1_F = l * Gx_F;
+    const Vector3<T> p_GoV2_F = l * Gy_F;
+
+    // Centroid of the triangle V₀V₁V₂ coincides with the centroid of the
+    // polygon at C. The centroid of the triangle is at the average of the
+    // positional vectors of its three vertices:
+    //    p_GC = (p_GV₀ + p_GV₁ + p_GV₂) / 3,
+    // and, by construction, vertex V₀ is at the origin of frame G:
+    //         = ((0,0,0) + p_GV₁ + p_GV₂) / 3
+    //         = (p_GV₁ + p_GV₂) / 3
+    // The same thing is true as expressed in frame F below.
+    const Vector3<T> p_GoC_F = (p_GoV1_F + p_GoV2_F) / 3.;
+    const Vector3<T> p_CGo_F = -p_GoC_F;
+    const Vector3<T> p_FG = p_FC + p_CGo_F;
+
+    p_FVs[0] = p_FG;  // V₀ is at the origin of frame G.
+    p_FVs[1] = p_FG + p_GoV1_F;
+    p_FVs[2] = p_FG + p_GoV2_F;
+  }
+
+  const int n = vertices_F->size();
+  const int v[3] = {n, n + 1, n + 2};
+  faces->emplace_back(v);
+  vertices_F->emplace_back(p_FVs[0]);
+  vertices_F->emplace_back(p_FVs[1]);
+  vertices_F->emplace_back(p_FVs[2]);
+}
+
+template <typename T>
 bool IsFaceNormalInNormalDirection(const Vector3<T>& normal_F,
                                    const SurfaceMesh<T>& surface_M,
                                    SurfaceFaceIndex tri_index,
@@ -323,6 +399,14 @@ template void AddPolygonToMeshData(
     const Vector3<AutoDiffXd>& n_F,
     std::vector<SurfaceFace>* faces,
     std::vector<SurfaceVertex<AutoDiffXd>>* vertices_F);
+
+template void AddPolygonToMeshDataAsOneTriangle(
+    const std::vector<Vector3<double>>&, const Vector3<double>&,
+    std::vector<SurfaceFace>*, std::vector<SurfaceVertex<double>>*);
+
+template void AddPolygonToMeshDataAsOneTriangle(
+    const std::vector<Vector3<AutoDiffXd>>&, const Vector3<AutoDiffXd>&,
+    std::vector<SurfaceFace>*, std::vector<SurfaceVertex<AutoDiffXd>>*);
 
 template bool IsFaceNormalInNormalDirection(
     const Vector3<double>& normal_F, const SurfaceMesh<double>& surface_M,

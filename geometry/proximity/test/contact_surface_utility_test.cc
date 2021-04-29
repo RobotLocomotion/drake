@@ -523,6 +523,126 @@ GTEST_TEST(ContactSurfaceUtility, CalcPolygonArea) {
   EXPECT_NEAR(area, kExpectedArea, kTolerance);
 }
 
+// Verify that a representative triangle of a polygon satisfies these
+// properties:
+//
+//   1. The triangle has the same area as the polygon.
+//   2. The triangle has the same centroid as the polygon.
+//   3. The triangle has winding that produces the same normal as the polygon.
+//
+// @param[in] triangle_index
+//     Index into `faces` of the representative triangle.
+// @param[in] faces
+//     Set of faces that contain the representative triangle.
+// @param[in] vertices_F
+//     Set of vertices of the `faces`, whose positional vectors are expressed
+//     in frame F.
+// @param[in] polygon_F
+//     The polygon is represented by position vectors of its vertices,
+//     measured and expressed in frame F.
+// @param[in] polygon_normal_F
+//     The unit normal vector of the polygon, expressed in frame F. We assume
+//     the winding of the polygon vertices is consistent with this normal
+//     vector.
+void VerifyRepresentativeTriangle(
+    SurfaceFaceIndex triangle_index, const vector<SurfaceFace>& faces,
+    const vector<SurfaceVertex<double>>& vertices_F,
+    const vector<Vector3d>& polygon_F, const Vector3d& polygon_normal_F) {
+  const SurfaceFace& face = faces[triangle_index];
+  const int num_vertices = vertices_F.size();
+  ASSERT_LT(face.vertex(0), num_vertices);
+  ASSERT_LT(face.vertex(1), num_vertices);
+  ASSERT_LT(face.vertex(2), num_vertices);
+
+  // The notation r_MV() does not work well. Here frame M is actually frame F.
+  const Vector3d p_FV0 = vertices_F[face.vertex(0)].r_MV();
+  const Vector3d p_FV1 = vertices_F[face.vertex(1)].r_MV();
+  const Vector3d p_FV2 = vertices_F[face.vertex(2)].r_MV();
+  const vector<Vector3d> triangle_F{p_FV0, p_FV1, p_FV2};
+
+  // We will scale this machine epsilon according to the quantities that need
+  // tolerance. All the scaling below is empirical without formal analysis.
+  const double kEps = std::numeric_limits<double>::epsilon();
+
+  const double triangle_area = CalcPolygonArea(triangle_F);
+  const double polygon_area = CalcPolygonArea(polygon_F);
+  const double area_tolerance = std::max(kEps * polygon_area, kEps);
+  EXPECT_NEAR(triangle_area, polygon_area, area_tolerance);
+
+  const Vector3d triangle_normal_F =
+      (p_FV1 - p_FV0).cross(p_FV2 - p_FV0).normalized();
+  const double normal_tolerance = 16. * kEps;
+  EXPECT_TRUE(
+      CompareMatrices(triangle_normal_F, polygon_normal_F, normal_tolerance));
+
+  const Vector3d triangle_centroid_F =
+      CalcPolygonCentroid(triangle_F, triangle_normal_F);
+  const Vector3d polygon_centroid_F =
+      CalcPolygonCentroid(polygon_F, polygon_normal_F);
+  const double centroid_tolerance =
+      std::max(kEps * polygon_centroid_F.norm(), kEps);
+  EXPECT_TRUE(CompareMatrices(triangle_centroid_F, polygon_centroid_F,
+                              centroid_tolerance));
+}
+
+// This confirms that in adding a representative triangle of a polygon to
+// existing mesh data, the triangle satisfies the properties mentioned in the
+// API contract.
+GTEST_TEST(ContactSurfaceUtility, AddPolygonToMeshDataAsOneTriangle) {
+  // The robust test will be done in a general frame F, but the set up will be
+  // in a convenient frame M.
+  const RigidTransformd X_FM{
+      AngleAxisd{-9 * M_PI / 7, Vector3d{1, 2, 3}.normalized()},
+      Vector3d{0.5, 0.75, -1.25}};
+
+  const vector<Vector3d> polygon_M[2]{
+      {// A triangle is a special case of a polygon.
+       Vector3d::Zero(), 2. * Vector3d::UnitX(), 3. * Vector3d::UnitY()},
+      {// This is the same convex quadrilateral in the test of
+       // AddPolygonToMeshData().
+       //
+       //             y
+       //
+       //             │   o
+       //             o    v2
+       //           v3│
+       //             │
+       //             │
+       // ────────────┼────o───────── x
+       //             │     v1
+       //       o     │
+       //       v0    │
+       //             │
+       Vector3d{-1.5, -0.25, 0}, Vector3d{1, 0, 0}, Vector3d{0.75, 1.25, 0},
+       Vector3d{0, 1, 0}}};
+  // Both polygon_M[0] and polygon_M[1] have the same normal vector.
+  const Vector3d polygon_normal_M = Vector3d::UnitZ();
+  const Vector3d polygon_normal_F = X_FM.rotation() * polygon_normal_M;
+  vector<Vector3d> polygon_F[2];
+  for (int i = 0; i < 2; ++i) {
+    std::transform(
+        polygon_M[i].begin(), polygon_M[i].end(),
+        std::back_inserter(polygon_F[i]),
+        [&X_FM](const Vector3d& v_M) -> Vector3d { return X_FM * v_M; });
+  }
+
+  vector<SurfaceFace> faces;
+  vector<SurfaceVertex<double>> vertices_F;
+  for (int i = 0; i < 2; ++i) {
+    AddPolygonToMeshDataAsOneTriangle<double>(polygon_F[i], polygon_normal_F,
+                                              &faces, &vertices_F);
+    int num_faces = faces.size();
+    int num_vertices = vertices_F.size();
+    const int expected_num_faces = i + 1;
+    const int expected_num_vertices = 3 * expected_num_faces;
+    EXPECT_EQ(num_faces, expected_num_faces);
+    EXPECT_EQ(num_vertices, expected_num_vertices);
+
+    VerifyRepresentativeTriangle(SurfaceFaceIndex(i), faces, vertices_F,
+                                 polygon_F[i], polygon_normal_F);
+  }
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace geometry
