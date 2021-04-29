@@ -2,6 +2,7 @@
 
 #include <istream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "drake/geometry/proximity/surface_mesh.h"
@@ -19,12 +20,17 @@ namespace geometry {
      A valid file name with absolute path or relative path.
  @param scale
      An optional scale to coordinates.
+ @param on_warning
+     An optional callback that will receive warning message(s) encountered
+     while reading the mesh.  When not provided, drake::log() will be used.
  @throws std::runtime_error if `filename` doesn't have a valid file path, or the
      file has no faces.
  @return surface mesh
  */
-SurfaceMesh<double> ReadObjToSurfaceMesh(const std::string& filename,
-                                         double scale = 1.0);
+SurfaceMesh<double> ReadObjToSurfaceMesh(
+    const std::string& filename,
+    double scale = 1.0,
+    std::function<void(std::string_view)> on_warning = {});
 
 /**
  Overload of @ref ReadObjToSurfaceMesh(const std::string&, double) with the
