@@ -87,6 +87,14 @@ class WeldJoint final : public Joint<T> {
     return 0;
   }
 
+  std::string do_get_position_suffix(int index) const override {
+    return get_mobilizer()->position_suffix(index);
+  }
+
+  std::string do_get_velocity_suffix(int index) const override {
+    return get_mobilizer()->velocity_suffix(index);
+  }
+
   void do_set_default_positions(const VectorX<double>&) override { return; }
 
   // Joint<T> overrides:

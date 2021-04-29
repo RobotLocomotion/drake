@@ -3217,6 +3217,20 @@ GTEST_TEST(StateSelection, FloatingBodies) {
   // Assert that the mug is a free body before moving on with this assumption.
   ASSERT_TRUE(mug.is_floating());
   ASSERT_TRUE(mug.has_quaternion_dofs());
+  EXPECT_EQ(mug.floating_position_suffix(0), "qw");
+  EXPECT_EQ(mug.floating_position_suffix(1), "qx");
+  EXPECT_EQ(mug.floating_position_suffix(2), "qy");
+  EXPECT_EQ(mug.floating_position_suffix(3), "qz");
+  EXPECT_EQ(mug.floating_position_suffix(4), "x");
+  EXPECT_EQ(mug.floating_position_suffix(5), "y");
+  EXPECT_EQ(mug.floating_position_suffix(6), "z");
+  EXPECT_EQ(mug.floating_velocity_suffix(0), "wx");
+  EXPECT_EQ(mug.floating_velocity_suffix(1), "wy");
+  EXPECT_EQ(mug.floating_velocity_suffix(2), "wz");
+  EXPECT_EQ(mug.floating_velocity_suffix(3), "vx");
+  EXPECT_EQ(mug.floating_velocity_suffix(4), "vy");
+  EXPECT_EQ(mug.floating_velocity_suffix(5), "vz");
+
 
   // The "world" is not considered as a free body.
   EXPECT_FALSE(plant.world_body().is_floating());

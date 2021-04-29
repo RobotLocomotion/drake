@@ -302,6 +302,14 @@ class PlanarJoint final : public Joint<T> {
 
   int do_get_num_positions() const final { return 3; }
 
+  std::string do_get_position_suffix(int index) const override {
+    return get_mobilizer()->position_suffix(index);
+  }
+
+  std::string do_get_velocity_suffix(int index) const override {
+    return get_mobilizer()->velocity_suffix(index);
+  }
+
   void do_set_default_positions(
       const VectorX<double>& default_positions) final {
     if (this->has_implementation()) {
