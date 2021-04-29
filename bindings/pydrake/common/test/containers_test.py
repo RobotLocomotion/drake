@@ -92,6 +92,7 @@ class TestNamedView(unittest.TestCase):
         a = np.array([1, 2])
         self.assertTrue(is_same_array(a, a))
         self.assertTrue(is_same_array(a, np.asarray(a)))
+        self.assertTrue(is_same_array(a[:1], a[:1]))
         b = a.copy()
         self.assertFalse(is_same_array(a, b))
 
@@ -113,3 +114,58 @@ class TestNamedView(unittest.TestCase):
         np.testing.assert_equal(value, [3, 3])
         self.assertEqual(repr(view), "MyView(a=3, b=3)")
         self.assertEqual(str(view), repr(view))
+
+    def test_nested(self):
+        MyNestedView = namedview(
+            "MyNestedView",
+            [namedview("a_", ["x", "y"]), "b", namedview("c_", ["qw", "qx"])],
+        )
+        self.assertEqual(
+            MyNestedView.get_fields(),
+            ("a.x", "a.y", "b", "c.qw", "c.qx"),
+        )
+        self.assertEqual(
+            MyNestedView.get_fields(flat=False),
+            ("a", "b", "c"),
+        )
+        # TODO(eric): Make work.
+        # # - Test user-friendly constructor.
+        # MyNestedView2 = namedview(
+        #     "MyNestedView2",
+        #     ["a.x", "a.y", "b", "c.qw", "c.qx"],
+        # )
+        # self.assertEqual(
+        #     MyNestedView.get_fields(),
+        #     MyNestedView2.get_fields(),
+        # )
+        # self.assertEqual(
+        #     MyNestedView.get_fields(flat=True),
+        #     MyNestedView2.get_fields(flat=True),
+        # )
+
+        value = np.array([1, 2, 3, 4, 5])
+        view = MyNestedView(value)
+        self.assertEqual(
+            (
+                view.a.x,
+                view.a.y,
+                view.b,
+                view.c.qw,
+                view.c.qx,
+            ),
+            (
+                1,
+                2,
+                3,
+                4,
+                5,
+            ),
+        )
+        self.assertTrue(is_same_array(value, np.asarray(view)))
+        self.assertTrue(is_same_array(value[0:2], np.asarray(view.a)))
+        self.assertTrue(is_same_array(value[3:], np.asarray(view.c)))
+        subview_a_cls = type(view.a)
+        self.assertTrue(issubclass(subview_a_cls, NamedViewBase))
+        # Weird, but meh.
+        self.assertEqual(subview_a_cls.__name__, "a_")
+        self.assertEqual(subview_a_cls.get_fields(), ("x", "y"))
