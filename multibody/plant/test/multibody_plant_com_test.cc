@@ -159,8 +159,7 @@ class MultibodyPlantCenterOfMassTest : public ::testing::Test {
 TEST_F(MultibodyPlantCenterOfMassTest, CalcTotalMass) {
   // Verify the plant's total mass makes sense.
   const double mass_system = plant_.CalcTotalMass(*context_);
-  double mass_expected = mass_S_ + mass_T_;
-  EXPECT_TRUE(mass_system == mass_expected);
+  EXPECT_TRUE(mass_system == mass_S_ + mass_T_);
 
   // Verify CalcTotalMass() returns 0 if model instances only has 1 world body.
   const ModelInstanceIndex world_model_instance =
@@ -169,47 +168,40 @@ TEST_F(MultibodyPlantCenterOfMassTest, CalcTotalMass) {
   world_model_instance_array.push_back(world_model_instance);
   double mass_zero =
       plant_.CalcTotalMass(*context_, world_model_instance_array);
-  mass_expected = 0.0;
-  EXPECT_TRUE(mass_zero == mass_expected);
+  EXPECT_TRUE(mass_zero == 0.0);
 
   // Check CalcTotalMass() returns 0 if model instances has only 2 world bodies.
   world_model_instance_array.push_back(world_model_instance);
   mass_zero = plant_.CalcTotalMass(*context_, world_model_instance_array);
-  mass_expected = 0.0;
-  EXPECT_TRUE(mass_zero == mass_expected);
+  EXPECT_TRUE(mass_zero == 0.0);
 
   // Verify CalcTotalMass() returns 0 for empty model_instances.
   std::vector<ModelInstanceIndex> model_instances;
   mass_zero = plant_.CalcTotalMass(*context_, model_instances);
-  mass_expected = 0.0;
-  EXPECT_TRUE(mass_zero == mass_expected);
+  EXPECT_TRUE(mass_zero == 0.0);
 
   // Verify CalcTotalMass() works for 1 instances in model_instances.
   model_instances.push_back(triangle_instance_);
   const double mass_triangle = plant_.CalcTotalMass(*context_, model_instances);
-  mass_expected = mass_T_;
-  EXPECT_TRUE(mass_triangle == mass_expected);
+  EXPECT_TRUE(mass_triangle == mass_T_);
 
   // Verify CalcTotalMass() works for 2 instances in model_instances.
   model_instances.push_back(sphere_instance_);
-  mass_expected = mass_S_ + mass_T_;
   double mass_2_instances = plant_.CalcTotalMass(*context_, model_instances);
-  EXPECT_TRUE(mass_2_instances == mass_expected);
+  EXPECT_TRUE(mass_2_instances == mass_S_ + mass_T_);
 
   // Verify CalcTotalMass() works for 3 instances (with 2 sphere_instances).
   model_instances.push_back(sphere_instance_);
-  mass_expected = 2 * mass_S_ + mass_T_;
   double mass_3_instances = plant_.CalcTotalMass(*context_, model_instances);
-  EXPECT_TRUE(mass_3_instances == mass_expected);
+  EXPECT_TRUE(mass_3_instances == mass_S_ + mass_S_ + mass_T_);
 
   // Verify we are able to determine if the total mass = 0.
   set_mass_sphere(0.0);
   set_mass_triangle(0.0);
-  mass_expected = 0.0;
   mass_zero = plant_.CalcTotalMass(*context_);
-  EXPECT_TRUE(mass_zero == mass_expected);
+  EXPECT_TRUE(mass_zero == 0.0);
   mass_zero = plant_.CalcTotalMass(*context_, model_instances);
-  EXPECT_TRUE(mass_zero == mass_expected);
+  EXPECT_TRUE(mass_zero == 0.0);
 
   // Ensure an exception is thrown if there is an invalid ModelInstanceIndex.
   ModelInstanceIndex error_index(10);
