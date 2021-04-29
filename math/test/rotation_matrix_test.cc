@@ -1123,12 +1123,12 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVectorExceptions) {
   if (kDrakeAssertIsArmed) {
     DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneUnitVector(
         Vector3<double>(NAN, 1, NAN), axis_index), std::exception,
-        "RotationMatrix::MakeFromOneUnitVector().* was passed an invalid vector"
-        " argument.  There is a NaN or infinity in the vector[^]+");
+      "RotationMatrix::MakeFromOneUnitVector.* requires a unit-length vector"
+      "[^]+ nan 1.0 nan[^]+ is not less than or equal to .+");
     DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneUnitVector(
         Vector3<double>(1, 2, 3), axis_index), std::exception,
-        "RotationMatrix::MakeFromOneUnitVector().* "
-        "Vector is not a unit vector[^]+");
+      "RotationMatrix::MakeFromOneUnitVector.* requires a unit-length vector"
+      "[^]+ 1.0 2.0 3.0[^]+ is not less than or equal to .+");
     // Verify MakeFromOneUnitVector() throws an exception if the magnitude of
     // its unit vector argument u differs from 1.0 by more than 4 * kEpsilon.
     // The value below for kTolSqrt is motivated by a Taylor series
@@ -1139,8 +1139,8 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVectorExceptions) {
     double kTolSqrt = 8 * std::sqrt(kEpsilon);  // Large enough to throw.
     DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneUnitVector(
          Vector3<double>(1, 0, kTolSqrt), axis_index), std::exception,
-        "RotationMatrix::MakeFromOneUnitVector().* "
-        "Vector is not a unit vector[^]+");
+      "RotationMatrix::MakeFromOneUnitVector.* requires a unit-length vector"
+      "[^]+ is not less than or equal to .+");
     // Verify MakeFromOneUnitVector() does not throw an exception if
     // |u| < 4 * kEpsilon, which means kTolSqrt < √(8) * √(kEpsilon).
     kTolSqrt = 2 * std::sqrt(kEpsilon);  // Small enough to not throw.
@@ -1161,21 +1161,31 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVectorExceptions) {
 // non-finite element (e.g., a NaN) or is a vector whose magnitude < 1.0E-10.
 GTEST_TEST(RotationMatrixTest, MakeFromOneVectorExceptions) {
   constexpr int axis_index = 0;
+  constexpr double kInf = std::numeric_limits<double>::infinity();
 
-  // Verify a vector that contains a NaN throws an exception.
+  // Vector with Nan throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneVector(
       Vector3<double>(NAN, 1, NAN), axis_index), std::exception,
-      "RotationMatrix::MakeFromOneVector().* was passed an invalid vector"
-      " argument.  There is a NaN or infinity in the vector[^]+");
+      "RotationMatrix::MakeFromOneVector.* cannot normalize the given vector"
+      "[^]+ nan 1.0 nan[^]+ If you are confident that v's direction is "
+      "meaningful, pass v.normalized.. in place of v.");
 
-  // Verify a vector whose magnitude is slightly too small throws an exception.
+  // Vector with infinity throws an exception.
+  DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneVector(
+      Vector3<double>(kInf, 1, 0), axis_index), std::exception,
+      "RotationMatrix::MakeFromOneVector.* cannot normalize the given vector"
+      "[^]+ inf 1.0 0[^]+ If you are confident that v's direction is "
+      "meaningful, pass v.normalized.. in place of v.");
+
+  // Vector too small throws.
   constexpr double kTolerance = 2 * std::numeric_limits<double>::epsilon();
   const Vector3<double> too_small_vector(1.0E-10 - kTolerance, 0, 0);
   DRAKE_EXPECT_THROWS_MESSAGE(
       RotationMatrix<double>::MakeFromOneVector(too_small_vector, axis_index),
       std::exception,
-      "RotationMatrix::MakeFromOneVector().* The vector.*"
-      "is smaller than the required minimum value[^]+");
+      "RotationMatrix::MakeFromOneVector.* cannot normalize the given vector"
+      "[^]+ If you are confident that v's direction is meaningful, pass "
+      "v.normalized.. in place of v.");
 
   // Verify a vector with a magnitude that is barely over tolerance works.
   const Vector3<double> ok_small_vector(1.0E-10 + kTolerance, 0, 0);

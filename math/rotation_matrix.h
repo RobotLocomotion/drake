@@ -291,12 +291,7 @@ class RotationMatrix {
   /// @retval R_AB the rotation matrix with properties as described above.
   static RotationMatrix<T> MakeFromOneVector(
       const Vector3<T>& b_A, int axis_index) {
-    // Throw an exception if b_A cannot be made into a unit vector because
-    // b_A contains a NaN or infinity or |b_A| < 1.0E-10.
-    // The number 1.0E-10 is a heuristic (rule of thumb) that is guided by
-    // an expected small physical dimensions in a robotic systems.  Numbers
-    // smaller than this are probably user or developer errors.
-    ThrowUnlessVectorMagnitudeIsBigEnough(b_A, __func__, 1.0E-10);
+    ThrowIfUnnormalizable(b_A, __func__);
     const Vector3<T> u_A = b_A.normalized();
     return MakeFromOneUnitVector(u_A, axis_index);
   }
@@ -316,15 +311,9 @@ class RotationMatrix {
   /// MakeFromOneVector().
   static RotationMatrix<T> MakeFromOneUnitVector(
       const Vector3<T>& u_A, int axis_index) {
-    // In debug builds, verify axis_index is 0 or 1 or 2.
+    // In debug builds, verify axis_index is 0 or 1 or 2 and u_A is unit length.
     DRAKE_ASSERT(axis_index >= 0  &&  axis_index <= 2);
-
-    // In debug builds, verify u_A is within kTolerance of a unit vector.
-    // The value of kTolerance was determined empirically, is well within the
-    // tolerance achieved by normalizing a vast range of non-zero vectors, and
-    // seems to guarantee a valid RotationMatrix() (see IsValid()).
-    constexpr double kTolerance = 4 * std::numeric_limits<double>::epsilon();
-    DRAKE_ASSERT_VOID(ThrowIfInvalidUnitVector(u_A, kTolerance, __func__));
+    DRAKE_ASSERT_VOID(ThrowIfNotUnitLength(u_A, __func__));
 
     // This method forms a right-handed orthonormal basis with u_A and two
     // internally-constructed unit vectors v_A and w_A.
@@ -1074,22 +1063,21 @@ class RotationMatrix {
     return m;
   }
 
-  // param[in] v a vector with an allowed magnitude |v| ≥ min_magnitude.
-  // param[in] min_magnitude a small non-negative number (e.g., 1E-10) that is
-  //   equal to the smallest allowed value for |v|.
-  // param[in] function_name name of method to be part of the exception message.
-  // @throws std::exception if |v| < min_magnitude.
-  // @note the absence of a thrown exception is not a guarantee that v can be
-  //   normalized, e.g., v may contain a NaN and this method will not throw.
-  static void ThrowUnlessVectorMagnitudeIsBigEnough(const Vector3<T>& v,
-                                                    const char* function_name,
-                                                    double min_magnitude);
+  // Throws if v is not unit length. It must have a measurable magnitude within
+  // 4 epsilon of 1.
+  // @param v               The vector to test.
+  // @param function_name   The name of the calling function; included in the
+  //                        exception message.
+  static void ThrowIfNotUnitLength(const Vector3<T>& v,
+                                   const char* function_name);
 
-  static void ThrowIfVectorContainsNonFinite(const Vector3<T>& v,
-                                             const char* function_name);
-
-  static void ThrowIfInvalidUnitVector(const Vector3<T>& u, double tolerance,
-                                       const char* function_name);
+  // Throws if v cannot be "safely" normalized. It must have a finite,
+  // measurable magnitude greather than 1e-10.
+  // @param v               The vector to test.
+  // @param function_name   The name of the calling function; included in the
+  //                        exception message.
+  static void ThrowIfUnnormalizable(const Vector3<T>& v,
+                                    const char* function_name);
 
   // Stores the underlying rotation matrix relating two frames (e.g. A and B).
   // For speed, `R_AB_` is uninitialized (public constructors set its value).

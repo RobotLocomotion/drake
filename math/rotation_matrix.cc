@@ -101,81 +101,55 @@ double ProjectMatToRotMatWithAxis(const Eigen::Matrix3d& M,
 }
 
 template <typename T>
-void RotationMatrix<T>::ThrowUnlessVectorMagnitudeIsBigEnough(
-    const Vector3<T>& v, const char* function_name, double min_magnitude) {
+void RotationMatrix<T>::ThrowIfNotUnitLength(const Vector3<T>& v,
+                                             const char* function_name) {
   if constexpr (scalar_predicate<T>::is_bool) {
-    ThrowIfVectorContainsNonFinite(v, function_name);
-    const T v_norm_as_T = v.norm();
-    const double v_norm = ExtractDoubleOrThrow(v_norm_as_T);
-    if (v_norm < min_magnitude) {
-      const double vx = ExtractDoubleOrThrow(v(0));
-      const double vy = ExtractDoubleOrThrow(v(1));
-      const double vz = ExtractDoubleOrThrow(v(2));
-      const std::string message = fmt::format(
-          "RotationMatrix::{}(). The vector {} {} {} with magnitude {},"
-          " is smaller than the required minimum value {}. "
-          " If you are confident that this vector v's direction is"
-          " meaningful, pass v.normalized() in place of v.",
-          function_name, vx, vy, vz, v_norm, min_magnitude);
-      throw std::logic_error(message);
-    }
-  } else {
-    unused(v, function_name, min_magnitude);
-  }
-}
-
-template <typename T>
-void RotationMatrix<T>::ThrowIfVectorContainsNonFinite(
-    const Vector3<T>& v, const char* function_name) {
-  if constexpr (scalar_predicate<T>::is_bool) {
-    if (!v.allFinite()) {
-      const double vx = ExtractDoubleOrThrow(v(0));
-      const double vy = ExtractDoubleOrThrow(v(1));
-      const double vz = ExtractDoubleOrThrow(v(2));
-      const std::string message = fmt::format(
-          "RotationMatrix::{}() was passed an invalid vector argument.  There"
-          " is a NaN or infinity in the vector {} {} {}.",
-          function_name, vx, vy, vz);
-      throw std::runtime_error(message);
-    }
+    // The value of kEps was determined empirically, is well within the
+    // tolerance achieved by normalizing a vast range of non-zero vectors, and
+    // seems to guarantee a valid RotationMatrix() (see IsValid()).
+    constexpr double kEps = 4 * std::numeric_limits<double>::epsilon();
+    const double norm = ExtractDoubleOrThrow(v.norm());
+    const double error = std::abs(1.0 - norm);
+    // If v contains non-finite values (NaN or inf), this test must fail.
+    if (error <= kEps) return;
+    throw std::logic_error(
+        fmt::format("RotationMatrix::{}() requires a unit-length vector.\n"
+                    "         v: {} {} {}\n"
+                    "       |v|: {}\n"
+                    " |1 - |v||: {} is not less than or equal to {}.",
+                    function_name, ExtractDoubleOrThrow(v.x()),
+                    ExtractDoubleOrThrow(v.y()), ExtractDoubleOrThrow(v.z()),
+                    norm, error, kEps));
   } else {
     unused(v, function_name);
   }
 }
 
 template <typename T>
-void RotationMatrix<T>::ThrowIfInvalidUnitVector(const Vector3<T>& u,
-    double tolerance, const char* function_name) {
-  // Throw a nicely worded exception if u is not a unit vector because
-  // u contains a NAN element or u is a zero vector.
-  ThrowIfVectorContainsNonFinite(u, function_name);
-
-  // Skip symbolic expressions.
-  // TODO(Mitiguy) This is a generally-useful method.  Consider moving it
-  //  into public view in an appropriate file and also deal with symbolic
-  //  expressions that can be easily evaluated to a number, e.g., consider:
-  //  ThrowIfInvalidUnitVector(Vector3<symbolic::Expression> u_sym(3, 2, 1));
+void RotationMatrix<T>::ThrowIfUnnormalizable(const Vector3<T>& v,
+                                              const char* function_name) {
   if constexpr (scalar_predicate<T>::is_bool) {
-    // Give a detailed message if |u| is not within tolerance of 1.
-    const T u_norm_as_T = u.norm();
-    const double u_norm = ExtractDoubleOrThrow(u_norm_as_T);
-    const double abs_deviation = std::abs(1.0 - u_norm);
-    if (abs_deviation > tolerance) {
-      const double ux = ExtractDoubleOrThrow(u(0));
-      const double uy = ExtractDoubleOrThrow(u(1));
-      const double uz = ExtractDoubleOrThrow(u(2));
-      const std::string message = fmt::format(
-          "RotationMatrix::{}(). Vector is not a unit vector."
-          " The magnitude of vector {} {} {} deviates from 1."
-          " The vector's actual magnitude is {}."
-          " Its deviation from 1 is {}."
-          " The allowable tolerance (deviation) is {}."
-          " To normalize a vector u, consider using u.normalized().",
-          function_name, ux, uy, uz, u_norm, abs_deviation, tolerance);
-      throw std::logic_error(message);
-    }
+    // The number 1.0E-10 is a heuristic (rule of thumb) that is guided by
+    // an expected small physical dimensions in a robotic systems.  Numbers
+    // smaller than this are probably user or developer errors.
+    constexpr double kMinMagnitude = 1e-10;
+    constexpr double kInf = std::numeric_limits<double>::infinity();
+    const double norm = ExtractDoubleOrThrow(v.norm());
+    // If v contains non-finite values (NaN or inf), this test must fail.
+    if (norm >= kMinMagnitude && norm < kInf)return;
+    throw std::logic_error(
+        fmt::format("RotationMatrix::{}() cannot normalize the given vector.\n"
+                    "   v: {} {} {}\n"
+                    " |v|: {}\n"
+                    " The measures must be finite and the vector must have a"
+                    " magnitude of at least {} to automatically normalize. If"
+                    " you are confident that v's direction is meaningful, pass"
+                    " v.normalized() in place of v.",
+                    function_name, ExtractDoubleOrThrow(v.x()),
+                    ExtractDoubleOrThrow(v.y()), ExtractDoubleOrThrow(v.z()),
+                    norm, kMinMagnitude));
   } else {
-    drake::unused(tolerance);
+    unused(v, function_name);
   }
 }
 
