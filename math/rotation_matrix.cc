@@ -104,21 +104,20 @@ template <typename T>
 void RotationMatrix<T>::ThrowUnlessVectorMagnitudeIsBigEnough(
     const Vector3<T>& v, const char* function_name, double min_magnitude) {
   if constexpr (scalar_predicate<T>::is_bool) {
-    if (v.allFinite()) {
-      const T v_norm_as_T = v.norm();
-      const double v_norm = ExtractDoubleOrThrow(v_norm_as_T);
-      if (v_norm < min_magnitude) {
-        const double vx = ExtractDoubleOrThrow(v(0));
-        const double vy = ExtractDoubleOrThrow(v(1));
-        const double vz = ExtractDoubleOrThrow(v(2));
-        const std::string message = fmt::format(
-            "RotationMatrix::{}(). The vector {} {} {} with magnitude {},"
-            " is smaller than the required minimum value {}. "
-            " If you are confident that this vector v's direction is"
-            " meaningful, pass v.normalized() in place of v.",
-            function_name, vx, vy, vz, v_norm, min_magnitude);
-        throw std::logic_error(message);
-      }
+    ThrowIfVectorContainsNonFinite(v, function_name);
+    const T v_norm_as_T = v.norm();
+    const double v_norm = ExtractDoubleOrThrow(v_norm_as_T);
+    if (v_norm < min_magnitude) {
+      const double vx = ExtractDoubleOrThrow(v(0));
+      const double vy = ExtractDoubleOrThrow(v(1));
+      const double vz = ExtractDoubleOrThrow(v(2));
+      const std::string message = fmt::format(
+          "RotationMatrix::{}(). The vector {} {} {} with magnitude {},"
+          " is smaller than the required minimum value {}. "
+          " If you are confident that this vector v's direction is"
+          " meaningful, pass v.normalized() in place of v.",
+          function_name, vx, vy, vz, v_norm, min_magnitude);
+      throw std::logic_error(message);
     }
   } else {
     unused(v, function_name, min_magnitude);

@@ -1036,9 +1036,15 @@ TEST_F(RotationMatrixConversionTests, AngleAxisToRotationMatrix) {
 
 // This utility test function helps verify results from MakeFromOneUnitVector().
 // 1. Verifies rotation matrix R_AB is a valid rotation matrix.
-// 2. Verifies unit vector u_A appears in the axis_index column of R_AB.
-// 3. Verifies v_A and w_A (the columns that follow u_A in a cyclical manner)
-//    satisfy various properties which are described in the tests below.
+// 2. For the two arguments u_A (a unit vector) and axis_index ∈ {0, 1, 2}
+//    that are passed to MakeFromOneUnitVector(), verify u_A is equal to the
+//    axis_index column of R_AB.
+// 3. Denoting i ∈ {0, 1, 2} as the element index in u_A associated with u_min
+//    (the element of u_A with smallest absolute value), verify v(i) = 0
+//    where v is the column of R_AB that follows u_A (in a cyclical sense).
+// 4. Verify w(i) is the most positive component of the unit vector w
+//    where w is the column of R_AB that follows v (in a cyclical sense).
+// 5. Verify that if u_min = 0, w(i) ≈ 1 and the other two elements of w are 0.
 void VerifyMakeFromOneUnitVector(const RotationMatrix<double>& R_AB,
                                  const Vector3<double>& u_A, int axis_index) {
   ASSERT_TRUE(R_AB.IsValid());
@@ -1075,11 +1081,9 @@ void VerifyMakeFromOneUnitVector(const RotationMatrix<double>& R_AB,
 }
 
 // Verify that the "advanced" method MakeFromOneUnitVector() and the "basic"
-// method MakeFromOneVector() produce the same results and that they produce a
-// valid right-handed orthonormal matrix with appropriate properties (described
-// above in the utility test function VerifyMakeFromOneVector()).  This test
-// compares results from both methods for a set of test vectors that span a
-// relevant combination of u_min.
+// method MakeFromOneVector() produce the same results, pass the verification
+// tests in VerifyMakeFromOneUnitVector(), and do so for a set of test vectors
+// that span a relevant combination of u_min (u_min is defined above).
 GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVector) {
   const std::vector<Vector3<double>> test_vectors {
     Vector3<double>{0, 1, 2},        // u_min = ux = 0
@@ -1110,12 +1114,10 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVector) {
   }
 }
 
-// Verify that the "advanced" method MakeFromOneUnitVector() throws appropriate
-// exceptions in Debug builds and does not throw exceptions in Release builds.
-// Specifically, verify this method throws an exception in Debug builds if its
-// first argument is a a vector with a NAN on infinity element, or is a
-// vector whose magnitude is not ≈ 1.0.  Verify no exception is thrown in
-// Release builds (for faster runtime speed).
+// Verify that the "advanced" method MakeFromOneUnitVector() throws an exception
+// in Debug builds if its first argument is a vector with a non-finite element
+// (e.g., a NaN) or is a vector whose magnitude is not within ≈ 1.0.  Verify no
+// exception is thrown in Release builds (for faster runtime speed).
 GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVectorExceptions) {
   constexpr int axis_index = 0;
   if (kDrakeAssertIsArmed) {
@@ -1127,17 +1129,23 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVectorExceptions) {
         Vector3<double>(1, 2, 3), axis_index), std::exception,
         "RotationMatrix::MakeFromOneUnitVector().* "
         "Vector is not a unit vector[^]+");
-    // This method throws if the alleged unit vector v's magnitude differs from
-    // 1.0 by 4*kEpsilon. The value for kTolSqrt is motivated by a Taylor series
-    // |v| = √(1² + kTolSqrt²) ≈ 1 + 0.5*kTolSqrt² ... ≈ 1 + 0.5*kTol.
+    // Verify MakeFromOneUnitVector() throws an exception if the magnitude of
+    // its unit vector argument u differs from 1.0 by more than 4 * kEpsilon.
+    // The value below for kTolSqrt is motivated by a Taylor series
+    // |u| = √(1² + kTolSqrt²) ≈ 1 + 0.5*kTolSqrt² ... ≈ 1 + 0.5*kTol.
     // Setting 0.5 * kTol = 4 * kEpsilon leads to kTol = 8 * kEpsilon, which
     // means kTolSqrt = √(kTol) = √(8 * kEpsilon) = √(8) * √(kEpsilon).
-    // Herein we conservatively make kTolSqrt = 8 * √(kEpsilon).
-    const double kTolSqrt = 8 * std::sqrt(kEpsilon);
+    // We conservatively make kTolSqrt = 8 * √(kEpsilon) to ensure it throws.
+    double kTolSqrt = 8 * std::sqrt(kEpsilon);  // Large enough to throw.
     DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneUnitVector(
          Vector3<double>(1, 0, kTolSqrt), axis_index), std::exception,
         "RotationMatrix::MakeFromOneUnitVector().* "
         "Vector is not a unit vector[^]+");
+    // Verify MakeFromOneUnitVector() does not throw an exception if
+    // |u| < 4 * kEpsilon, which means kTolSqrt < √(8) * √(kEpsilon).
+    kTolSqrt = 2 * std::sqrt(kEpsilon);  // Small enough to not throw.
+    EXPECT_NO_THROW(RotationMatrix<double>::MakeFromOneUnitVector(
+         Vector3<double>(1, 0, kTolSqrt), axis_index));
   } else {
     EXPECT_FALSE(RotationMatrix<double>::MakeFromOneUnitVector(
         Vector3<double>::Zero(), axis_index).IsValid());
@@ -1148,9 +1156,9 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVectorExceptions) {
   }
 }
 
-// Verify MakeFromOneVector() throws appropriate assertions in both Debug and
-// Release builds, which includes throwing an exception if its first argument is
-// is a vector with a NaN or is a vector whose magnitude is less than 1.0E-10.
+// Verify that the "basic" method MakeFromOneVector() throws an exception in
+// both Debug and Release builds if its first argument is a vector with a
+// non-finite element (e.g., a NaN) or is a vector whose magnitude < 1.0E-10.
 GTEST_TEST(RotationMatrixTest, MakeFromOneVectorExceptions) {
   constexpr int axis_index = 0;
 
@@ -1186,15 +1194,25 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneVectorExceptions) {
   EXPECT_NO_THROW(
       RotationMatrix<symbolic::Expression>::MakeFromOneVector(u_symbolic, 2));
 
-  // Verify that a assertion is thrown when there is a NAN in u_symbolic.
-  // Note:  As of now, this assertion is not thrown by a method in the
-  // RotationMatrix class, instead it is thrown by somewhere else in Drake.
+  // Verify that a assertion is thrown when there is a NAN in u_symbolic or a
+  // symbolic::Variable in u_symbolic and there is no associated environment.
+  // Note:  As of now, thse assertion are not thrown by a method in the
+  // RotationMatrix class, instead there are thrown somewhere else in Drake.
   // TODO(Mitiguy) See if there is a way to get a better message that is thrown
   //  by the RotationMatrix class.
   u_symbolic = Vector3<symbolic::Expression>(3, 2, NAN);
   DRAKE_EXPECT_THROWS_MESSAGE(
       RotationMatrix<symbolic::Expression>::MakeFromOneVector(u_symbolic, 0),
       std::exception, "NaN is detected during Symbolic computation.");
+
+  u_symbolic = Vector3<symbolic::Expression>({symbolic::Variable("x"),
+                                              symbolic::Variable("y"),
+                                              symbolic::Variable("z")});
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RotationMatrix<symbolic::Expression>::MakeFromOneVector(u_symbolic, 0),
+      std::exception,
+      "The following environment does not have an entry for the variable "
+      "x\\n\\n");
 }
 
 }  // namespace

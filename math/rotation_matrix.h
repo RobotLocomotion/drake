@@ -296,7 +296,6 @@ class RotationMatrix {
     // The number 1.0E-10 is a heuristic (rule of thumb) that is guided by
     // an expected small physical dimensions in a robotic systems.  Numbers
     // smaller than this are probably user or developer errors.
-    ThrowIfVectorContainsNonFinite(b_A, __func__);
     ThrowUnlessVectorMagnitudeIsBigEnough(b_A, __func__, 1.0E-10);
     const Vector3<T> u_A = b_A.normalized();
     return MakeFromOneUnitVector(u_A, axis_index);
@@ -412,9 +411,9 @@ class RotationMatrix {
     // hence uₘᵢₙ² has the range 0 ≤ uₘᵢₙ² ≤ 1/3.  Thus for √(1 - uₘᵢₙ²), the
     // argument (1 - uₘᵢₙ²) has range 2/3 ≤ (1 - uₘᵢₙ²) ≤ 1.0.
     // Hence, √(1 - uₘᵢₙ²) should not encounter √(0) or √(negative_number).
-    // Since √(0) cannot occur, calculations such as √(x) are safe for type
-    // T = AutoDiffXd because we avoid NaN in derivative calculations such as
-    // d( √(x), x ) = 0.5 / √(x).  No divide-by-zero will occur since x ≠ 0.
+    // Since √(0) cannot occur, the calculation √(1 - uₘᵢₙ²) is safe for type
+    // T = AutoDiffXd because we avoid NaN in derivative calculations.
+    // Reminder: ∂(√(x)/∂x = 0.5/√(x) will not have a NaN if x > 0.
     using std::sqrt;
     const T mag_a_x_u = sqrt(1 - u_A(i) * u_A(i));  // |a x u| = √(1 - uₘᵢₙ²)
     const T r = 1 / mag_a_x_u;
@@ -425,7 +424,6 @@ class RotationMatrix {
     w(i) = mag_a_x_u;   // w(i) is the most positive component of w.
     w(j) = s * u_A(j);  // w(j) = w(k) = 0 if uₘᵢₙ (that is, u_A(i)) is zero.
     w(k) = s * u_A(k);
-
 
     return R_AB;
   }
@@ -1081,6 +1079,8 @@ class RotationMatrix {
   //   equal to the smallest allowed value for |v|.
   // param[in] function_name name of method to be part of the exception message.
   // @throws std::exception if |v| < min_magnitude.
+  // @note the absence of a thrown exception is not a guarantee that v can be
+  //   normalized, e.g., v may contain a NaN and this method will not throw.
   static void ThrowUnlessVectorMagnitudeIsBigEnough(const Vector3<T>& v,
                                                     const char* function_name,
                                                     double min_magnitude);
