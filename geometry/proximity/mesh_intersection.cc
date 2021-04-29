@@ -297,6 +297,7 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
     const SurfaceMesh<double>& surface_N,
     const Bvh<Obb, SurfaceMesh<double>>& bvh_N,
     const math::RigidTransform<T>& X_MN,
+    bool triangulate_polygon,
     std::unique_ptr<SurfaceMesh<T>>* surface_MN_M,
     std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN,
     std::vector<Vector3<T>>* grad_eM_Ms) {
@@ -318,7 +319,7 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
   const math::RigidTransform<double> X_MN_d = convert_to_double(X_MN);
   auto callback = [&volume_field_M, &surface_N, &surface_faces,
                    &surface_vertices_M, &surface_e, &mesh_M, &X_MN_d, &X_MN,
-                   &contact_polygon, grad_eM_Ms,
+                   &contact_polygon, grad_eM_Ms, triangulate_polygon,
                    this](VolumeElementIndex tet_index,
                          SurfaceFaceIndex tri_index) -> BvttCallbackResult {
     if (!this->IsFaceNormalAlongPressureGradient(
@@ -344,20 +345,26 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
     if (poly_vertex_count < 3) return BvttCallbackResult::Continue;
 
     const int num_previous_vertices = surface_vertices_M.size();
-    // Add the new polygon vertices to the mesh vertices and construct a
-    // polygon from the vertex indices.
-    contact_polygon.clear();
-    for (int i = 0; i < poly_vertex_count; ++i) {
-      contact_polygon.emplace_back(surface_vertices_M.size());
-      surface_vertices_M.emplace_back(polygon_vertices_M[i]);
+    if (triangulate_polygon) {
+      // Add the new polygon vertices to the mesh vertices and construct a
+      // polygon from the vertex indices.
+      contact_polygon.clear();
+      for (int i = 0; i < poly_vertex_count; ++i) {
+        contact_polygon.emplace_back(surface_vertices_M.size());
+        surface_vertices_M.emplace_back(polygon_vertices_M[i]);
+      }
     }
     const Vector3<T> nhat_M =
         X_MN.rotation() * surface_N.face_normal(tri_index).cast<T>();
 
     size_t old_count = surface_faces.size();
-    AddPolygonToMeshData(contact_polygon, nhat_M, &surface_faces,
-                         &surface_vertices_M);
-
+    if (triangulate_polygon) {
+      AddPolygonToMeshData(contact_polygon, nhat_M, &surface_faces,
+                           &surface_vertices_M);
+    } else {
+      AddPolygonToMeshDataAsOneTriangle(polygon_vertices_M, nhat_M,
+                                        &surface_faces, &surface_vertices_M);
+    }
     // TODO(SeanCurtis-TRI) Consider rolling this operation into
     // AddPolygonToMeshData to eliminate the extra pass through triangles.
     const Vector3<double>& grad_eMi_M =
@@ -367,8 +374,7 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
     }
 
     const int num_current_vertices = surface_vertices_M.size();
-    // Calculate values of the pressure field and the normal field at the
-    // new vertices.
+    // Calculate values of the pressure field at the new vertices.
     for (int v = num_previous_vertices; v < num_current_vertices; ++v) {
       const Vector3<T>& r_MV = surface_vertices_M[v].r_MV();
       const T pressure = volume_field_M.EvaluateCartesian(tet_index, r_MV);
@@ -396,7 +402,8 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const math::RigidTransform<T>& X_WS, const GeometryId id_R,
     const SurfaceMesh<double>& mesh_R,
     const Bvh<Obb, SurfaceMesh<double>>& bvh_R,
-    const math::RigidTransform<T>& X_WR) {
+    const math::RigidTransform<T>& X_WR,
+    bool triangulate_polygon) {
   // TODO(SeanCurtis-TRI): This function is insufficiently templated. Generally,
   //  there are three types of scalars: the pose scalar, the mesh field *value*
   //  scalar, and the mesh vertex-position scalar. However, short term, it is
@@ -419,7 +426,8 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
   std::vector<Vector3<T>> grad_eS_S;
 
   SurfaceVolumeIntersector<T>().SampleVolumeFieldOnSurface(
-      field_S, bvh_S, mesh_R, bvh_R, X_SR, &surface_SR, &e_SR, &grad_eS_S);
+      field_S, bvh_S, mesh_R, bvh_R, X_SR, triangulate_polygon,
+      &surface_SR, &e_SR, &grad_eS_S);
 
   if (surface_SR == nullptr) return nullptr;
 
@@ -459,7 +467,8 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const GeometryId, const VolumeMeshFieldLinear<double, double>&,
     const Bvh<Obb, VolumeMesh<double>>&, const math::RigidTransform<double>&,
     const GeometryId, const SurfaceMesh<double>&,
-    const Bvh<Obb, SurfaceMesh<double>>&, const math::RigidTransform<double>&);
+    const Bvh<Obb, SurfaceMesh<double>>&, const math::RigidTransform<double>&,
+    bool);
 
 template std::unique_ptr<ContactSurface<AutoDiffXd>>
 ComputeContactSurfaceFromSoftVolumeRigidSurface(
@@ -467,7 +476,7 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const Bvh<Obb, VolumeMesh<double>>&,
     const math::RigidTransform<AutoDiffXd>&, const GeometryId,
     const SurfaceMesh<double>&, const Bvh<Obb, SurfaceMesh<double>>&,
-    const math::RigidTransform<AutoDiffXd>&);
+    const math::RigidTransform<AutoDiffXd>&, bool);
 
 }  // namespace internal
 }  // namespace geometry
