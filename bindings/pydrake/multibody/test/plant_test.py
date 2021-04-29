@@ -430,6 +430,12 @@ class TestPlant(unittest.TestCase):
         # The test_multibody_dynamics already covers GetForceInWorld,
         # AddInForce, AddInForceInWorld.
 
+        # Also test these body api methods which require a finalized plant.
+        for i in range(7):
+            self.assertIsNotNone(dut.floating_position_suffix(i))
+        for i in range(6):
+            self.assertIsNotNone(dut.floating_velocity_suffix(i))
+
     def _test_joint_api(self, T, joint):
         Joint = Joint_[T]
         Body = Body_[T]
@@ -1620,6 +1626,11 @@ class TestPlant(unittest.TestCase):
                 actuator.set_actuation_vector(
                     u_instance=np.array([0.2]), u=u)
                 numpy_compare.assert_float_equal(u, [0.2])
+
+            for p in range(joint.num_positions()):
+                self.assertIsNotNone(joint.position_suffix(p))
+            for v in range(joint.num_velocities()):
+                self.assertIsNotNone(joint.velocity_suffix(v))
 
             uniform_random = Variable(
                 name="uniform_random",
