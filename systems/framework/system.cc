@@ -813,14 +813,7 @@ std::unique_ptr<System<AutoDiffXd>> System<T>::ToAutoDiffXd() const {
 
 template <typename T>
 std::unique_ptr<System<AutoDiffXd>> System<T>::ToAutoDiffXdMaybe() const {
-  using U = AutoDiffXd;
-  auto result = system_scalar_converter_.Convert<U, T>(*this);
-  if (result) {
-    for (const auto& item : external_constraints_) {
-      result->AddExternalConstraint(item);
-    }
-  }
-  return result;
+  return ToScalarTypeMaybe<AutoDiffXd>();
 }
 
 template <typename T>
@@ -831,14 +824,7 @@ std::unique_ptr<System<symbolic::Expression>> System<T>::ToSymbolic() const {
 template <typename T>
 std::unique_ptr<System<symbolic::Expression>>
 System<T>::ToSymbolicMaybe() const {
-  using U = symbolic::Expression;
-  auto result = system_scalar_converter_.Convert<U, T>(*this);
-  if (result) {
-    for (const auto& item : external_constraints_) {
-      result->AddExternalConstraint(item);
-    }
-  }
-  return result;
+  return ToScalarTypeMaybe<symbolic::Expression>();
 }
 
 template <typename T>
@@ -1232,6 +1218,13 @@ const BasicVector<T>* System<T>::EvalBasicVectorInputImpl(
   return basic_vector;
 }
 
+template <typename T>
+void System<T>::AddExternalConstraints(
+    const std::vector<ExternalSystemConstraint>& constraints) {
+  for (const auto& item : constraints) {
+    AddExternalConstraint(item);
+  }
+}
 }  // namespace systems
 }  // namespace drake
 
