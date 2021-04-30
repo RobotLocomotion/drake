@@ -135,7 +135,7 @@ class MeshcatVisualizer(LeafSystem):
                  prefix="drake",
                  zmq_url="default",
                  open_browser=None,
-                 frames_to_draw={},
+                 frames_to_draw=[],
                  frames_opacity=1.,
                  axis_length=0.15,
                  axis_radius=0.006,
@@ -163,12 +163,12 @@ class MeshcatVisualizer(LeafSystem):
                 default web browser.  The default value of None will open the
                 browser iff a new meshcat server is created as a subprocess.
                 Set to False to disable this.
-            frames_to_draw: a dictionary describing which body frames to draw.
-                It is keyed on the names of model instances, and the values are
-                sets of the names of the bodies whose body frames are shown.
-                For example, if we want to draw the frames of body "A" and
-                "B" in model instance "1", then frames_to_draw is
-                    {"1": {"A", "B"}}.
+            frames_to_draw: a list or array containing pydrake.geometry.FrameId
+                for which body frames to draw. Note that these are frames
+                registered within the scene_graph. For multibody frames, users
+                may obtain the ids from plant using GetBodyFrameIdIfExists.
+                Currently, frames that are not body frames are not supported
+                as they do not exist in the scene_graph yet.
             frames_opacity, axis_length and axis_radius are the opacity, length
                 and radius of the coordinate axes to be drawn.
             delete_prefix_on_load: Specifies whether we should delete the
@@ -244,7 +244,7 @@ class MeshcatVisualizer(LeafSystem):
         self._dynamic_frames = []
 
         # drawing coordinate frames
-        self.frames_to_draw = frames_to_draw
+        self.frames_to_draw = set(frames_to_draw)
         self.frames_opacity = frames_opacity
         self.axis_length = axis_length
         self.axis_radius = axis_radius
@@ -415,11 +415,28 @@ class MeshcatVisualizer(LeafSystem):
                 geometry_vis.set_object(geom, material)
                 geometry_vis.set_transform(X_FG)
 
+                if frame_id in self.frames_to_draw:
+                    AddTriad(
+                        self.vis,
+                        name=name,
+                        prefix=self.prefix + "/" + name,
+                        length=self.axis_length,
+                        radius=self.axis_radius,
+                        opacity=self.frames_opacity
+                    )
+                    self.frames_to_draw.remove(frame_id)
+
             if frame_id != inspector.world_frame_id():
                 self._dynamic_frames.append({
                     "id": frame_id,
                     "name": name,
                 })
+
+        # Loop through the input frames_to_draw list and warn the user if the
+        # frame_id does not exist in the scene graph.
+        for frame_id in self.frames_to_draw:
+            warnings.warn(f"Non-existent frame {frame_id} ignored")
+            continue
 
     def DoPublish(self, context, event):
 
