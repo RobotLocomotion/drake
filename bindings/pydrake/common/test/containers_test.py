@@ -96,7 +96,20 @@ class TestNamedView(unittest.TestCase):
         b = a.copy()
         self.assertFalse(is_same_array(a, b))
 
-    def test_array(self):
+    def test_negative(self):
+        with self.assertRaises(RuntimeError) as cm:
+            namedview("bad", [1])
+        self.assertIn("`str` or a `namedview`", str(cm.exception))
+        with self.assertRaises(RuntimeError) as cm:
+            namedview("bad", ["a_"])
+        self.assertIn("str fields cannot end with `_`", str(cm.exception))
+        with self.assertRaises(RuntimeError) as cm:
+            namedview("bad", [namedview("a", [])])
+        self.assertIn(
+            "Nested subview class name must end with `_`", str(cm.exception)
+        )
+
+    def test_array_basic(self):
         MyView = namedview("MyView", ["a", "b"])
         self.assertTrue(issubclass(MyView, NamedViewBase))
         self.assertEqual(MyView.__name__, "MyView")
@@ -115,6 +128,32 @@ class TestNamedView(unittest.TestCase):
         self.assertEqual(repr(view), "MyView(a=3, b=3)")
         self.assertEqual(str(view), repr(view))
 
+    def test_array_flexibility(self):
+        MyView = namedview("MyView", ["a", "b"])
+        # Ensure that we do not constrain shape (beyond first dim) and dytpe.
+        x_float = np.array([1.0, 2.0])
+        view = MyView(x_float)
+        self.assertIsInstance(view.a, float)
+        self.assertIsInstance(view.b, float)
+
+        x_int = np.array([1, 2], dtype=int)
+        view = MyView(x_int)
+        self.assertIsInstance(view.a, np.int64)
+        self.assertIsInstance(view.b, np.int64)
+
+        x_object = np.array([("crazy",), None], dtype=object)
+        view = MyView(x_object)
+        self.assertIsInstance(view.a, tuple)
+        self.assertIs(view.b, None)
+
+        x_multidim = np.array([
+            [1, 2, 3],
+            [4, 5, 6],
+        ])
+        view = MyView(x_multidim)
+        np.testing.assert_equal(view.a, [1, 2, 3])
+        np.testing.assert_equal(view.b, [4, 5, 6])
+
     def test_nested(self):
         MyNestedView = namedview(
             "MyNestedView",
@@ -128,6 +167,7 @@ class TestNamedView(unittest.TestCase):
             MyNestedView.get_fields(flat=False),
             ("a", "b", "c"),
         )
+        self.assertEqual(MyNestedView.size, 5)
         # TODO(eric): Make work.
         # # - Test user-friendly constructor.
         # MyNestedView2 = namedview(
@@ -166,6 +206,38 @@ class TestNamedView(unittest.TestCase):
         self.assertTrue(is_same_array(value[3:], np.asarray(view.c)))
         subview_a_cls = type(view.a)
         self.assertTrue(issubclass(subview_a_cls, NamedViewBase))
+        self.assertIs(subview_a_cls, MyNestedView.a_)
         # Weird, but meh.
         self.assertEqual(subview_a_cls.__name__, "a_")
         self.assertEqual(subview_a_cls.get_fields(), ("x", "y"))
+        self.assertEqual(
+            repr(view),
+            "MyNestedView(a.x=1, a.y=2, b=3, c.qw=4, c.qx=5)"
+        )
+        self.assertEqual(
+            repr(view.a),
+            "MyNestedView.a_(x=1, y=2)",
+        )
+
+        # Briefly test multi-nesting.
+        MyMultiNestedView = namedview(
+            "MyMultiNestedView",
+            [
+                namedview("a_", [
+                    namedview("b_", [
+                        namedview("c_", ["x", "y"]),
+                    ]),
+                ])
+            ],
+        )
+        self.assertEqual(MyMultiNestedView.size, 2)
+        self.assertEqual(
+            MyMultiNestedView.get_fields(),
+            ("a.b.c.x", "a.b.c.y"),
+        )
+        view = MyMultiNestedView([1, 2])
+        self.assertEqual(
+            repr(view.a.b),
+            # TODO(eric.cousineau): Fix qualname via nesting.
+            "a_.b_(c.x=1, c.y=2)",
+        )

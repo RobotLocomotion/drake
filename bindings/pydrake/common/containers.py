@@ -124,10 +124,6 @@ class NamedViewBase:
         else:
             return cls._field_names
 
-    @_classproperty
-    def size(cls):
-        return cls._size
-
     def __getitem__(self, i):
         return self._value[i]
 
@@ -140,8 +136,12 @@ class NamedViewBase:
             raise AttributeError("Cannot add attributes!")
         object.__setattr__(self, name, value)
 
+    @_classproperty
+    def size(cls):
+        return cls._size
+
     def __len__(self):
-        return len(self._value)
+        return self._size
 
     def __iter__(self):
         return iter(self._value)
@@ -156,20 +156,22 @@ class NamedViewBase:
         value_strs = []
         for i, field in enumerate(self._field_names_flat):
             value_strs.append("{}={}".format(field, repr(self[i])))
-        return "{}({})".format(self.__class__.__name__, ", ".join(value_strs))
+        return "{}({})".format(
+            self.__class__.__qualname__, ", ".join(value_strs)
+        )
 
     @staticmethod
-    def _item_property(i):
+    def _property_to_access_scalar(i):
         # Maps an item (at a given index) to a property.
         return property(
             fget=lambda self: self[i],
             fset=lambda self, value: self.__setitem__(i, value))
 
     @staticmethod
-    def _subview_property(view_cls, slice_):
+    def _property_to_access_subview(subview_cls, slice_):
         return property(
             # Return view of slice.
-            fget=lambda self: view_cls(self[slice_]),
+            fget=lambda self: subview_cls(self[slice_]),
             # Just set value.
             fset=lambda self, value: self.__setitem__(slice_, value))
 
@@ -205,6 +207,16 @@ def namedview(name, fields):
     is instantiated, it must be given the object that it will be a proxy for.
     Similar to ``namedtuple``.
 
+    The following aspects apply:
+
+    - This only constrains the *leading* dimension of the array (thus you could
+      have a shape of ``(N, ...)``).
+    - This does *not* constrain the dtype. This wrapped array can an np.ndarray
+      of any dtype (e.g. ``dtype=float``, ``dtype=object``).
+    - Field names cannot end with ``_``.
+    - Nested subviews must end with ``_`` (so that we can add the class without
+      colliding with the property).
+
     Example::
         MyView = namedview("MyView", ('a', 'b'))
 
@@ -214,10 +226,13 @@ def namedview(name, fields):
         value[1] = 100  # `view` is now [10, 100]
         view[:] = 3  # `value` is now [3, 3]
 
-    For more details, see ``NamedViewBase``.
+    For additional API and implementation details, see ``NamedViewBase``.
     """
-    base_cls = (NamedViewBase,)
-    type_dict = dict()
+    # TODO(eric.cousineau): The requirement that subviews must end with `_`
+    # precludes composition of predefined views. Should relax this in the
+    # future for simplicity.
+    base_cls = NamedViewBase
+    view_cls_dict = dict()
     size = 0
     field_names = []
     field_names_flat = []
@@ -225,29 +240,47 @@ def namedview(name, fields):
     for field in fields:
         i = size
         if isinstance(field, str):
-            name_f = field
-            size_f = 1
-            prop = NamedViewBase._item_property(i)
-            field_names.append(name_f)
-            field_names_flat.append(name_f)
-        elif issubclass(field, NamedViewBase):
-            view_cls = field
-            size_f = view_cls.size
-            slice_ = slice(size, size + size_f)
-            prop = NamedViewBase._subview_property(view_cls, slice_)
-            assert view_cls.__name__.endswith("_"), view_cls
-            name_f = view_cls.__name__[:-1]
-            field_names.append(name_f)
+            field_name = field
+            if field_name.endswith("_"):
+                raise RuntimeError(
+                    f"str fields cannot end with `_`: {field_name}"
+                )
+            field_names.append(field_name)
+            field_names_flat.append(field_name)
+            field_size = 1
+            prop = NamedViewBase._property_to_access_scalar(i)
+        elif isinstance(field, type) and issubclass(field, NamedViewBase):
+            subview_cls = field
+            subview_name = subview_cls.__name__
+            if not subview_name.endswith("_"):
+                raise RuntimeError(
+                    f"Nested subview class name must end with `_`: "
+                    f"{subview_cls}"
+                )
+            field_name = subview_name[:-1]
+            field_names.append(field_name)
             field_names_flat += [
-                f"{name_f}.{x}"
-                for x in view_cls.get_fields()
+                f"{field_name}.{x}"
+                for x in subview_cls.get_fields()
             ]
+            field_size = subview_cls.size
+            slice_ = slice(size, size + field_size)
+            prop = NamedViewBase._property_to_access_subview(
+                subview_cls, slice_
+            )
+            # Ensure that we can now access the subview cls via the main view
+            # cls.
+            subview_cls.__qualname__ = f"{name}.{subview_name}"
+            view_cls_dict[subview_name] = subview_cls
         else:
-            assert False, repr(field)
-        size += size_f
-        type_dict[name_f] = prop
-    type_dict["_size"] = size
-    type_dict["_field_names"] = tuple(field_names)
-    type_dict["_field_names_flat"] = tuple(field_names_flat)
-    cls = type(name, base_cls, type_dict)
-    return cls
+            raise RuntimeError(
+                f"Fields must either be a `str` or a `namedview`: "
+                f"{repr(field)}"
+            )
+        size += field_size
+        view_cls_dict[field_name] = prop
+    view_cls_dict["_size"] = size
+    view_cls_dict["_field_names"] = tuple(field_names)
+    view_cls_dict["_field_names_flat"] = tuple(field_names_flat)
+    view_cls = type(name, (base_cls,), view_cls_dict)
+    return view_cls
