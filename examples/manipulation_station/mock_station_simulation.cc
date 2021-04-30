@@ -24,6 +24,7 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/primitives/matrix_gain.h"
+#include "drake/systems/sensors/image_to_lcm_image_array_t.h"
 
 namespace drake {
 namespace examples {
@@ -45,6 +46,8 @@ DEFINE_double(duration, std::numeric_limits<double>::infinity(),
 DEFINE_string(setup, "manipulation_class",
               "Manipulation station type to simulate. "
               "Can be {manipulation_class, clutter_clearing}");
+DEFINE_bool(publish_cameras, false,
+            "Whether to publish camera images to LCM");
 
 int do_main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -141,7 +144,33 @@ int do_main(int argc, char* argv[]) {
   builder.Connect(wsg_status->get_output_port(0),
                   wsg_status_publisher->get_input_port());
 
-  // TODO(russt): Publish the camera outputs.
+  // Publish the camera outputs.
+  if (FLAGS_publish_cameras) {
+    auto image_encoder = builder.AddSystem<
+        systems::sensors::ImageToLcmImageArrayT>();
+    for (const auto& camera_name : station->get_camera_names()) {
+      // RGB
+      const std::string rgb_name = "camera_" + camera_name + "_rgb_image";
+      const auto& rgb_output = station->GetOutputPort(rgb_name);
+      const auto& rgb_input =
+          image_encoder->DeclareImageInputPort<
+              systems::sensors::PixelType::kRgba8U>(rgb_name);
+      builder.Connect(rgb_output, rgb_input);
+      // Depth
+      const std::string depth_name = "camera_" + camera_name + "_depth_image";
+      const auto& depth_output = station->GetOutputPort(depth_name);
+      const auto& depth_input =
+          image_encoder->DeclareImageInputPort<
+              systems::sensors::PixelType::kDepth16U>(depth_name);
+      builder.Connect(depth_output, depth_input);
+    }
+    const double fps = 30.0;
+    auto image_publisher = builder.AddSystem(
+        systems::lcm::LcmPublisherSystem::Make<drake::lcmt_image_array>(
+            "DRAKE_RGBD_CAMERA_IMAGES", lcm, 1.0 / fps));
+    builder.Connect(image_encoder->image_array_t_msg_output_port(),
+                    image_publisher->get_input_port());
+  }
 
   auto diagram = builder.Build();
 
