@@ -1075,6 +1075,11 @@ class SystemBase : public internal::SystemMessageInterface {
   check(s) given by ValidateContext have failed. */
   [[noreturn]] void ThrowValidateContextMismatch(const ContextBase&) const;
 
+  /** (Internal use only) Throws a std::exception for unsupported scalar type
+  conversions. */
+  [[noreturn]] static void ThrowUnsupportedScalarConversion(
+      const SystemBase& from, const std::string& destination_type_name);
+
   /** This method must be invoked from within derived class DoAllocateContext()
   implementations right after the concrete Context object has been allocated.
   It allocates cache entries, sets up all intra-Context dependencies, and marks

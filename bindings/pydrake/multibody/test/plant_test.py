@@ -121,18 +121,12 @@ def get_index_class(cls, T):
 
 
 # Permits parametric scalar type conversion.
-# TODO(eric.cousineau): Consider hoisting this to `test_utilities` or adding
-# `System.ToType[T]`.
 def to_type(system, T):
     assert isinstance(system, System_[float])
     if T == float:
         return system
-    elif T == AutoDiffXd:
-        return system.ToAutoDiffXd()
-    elif T == Expression:
-        return system.ToSymbolic()
     else:
-        assert False, "Invalid type, {}".format(T)
+        return system.ToScalarType[T]()
 
 
 class TestPlant(unittest.TestCase):

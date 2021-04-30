@@ -2058,6 +2058,30 @@ GTEST_TEST(FeedthroughTest, SymbolicSparsityWithoutScalarConversion) {
   EXPECT_EQ(system.GetDirectFeedthroughs(), expected);
 }
 
+// Sanity check ToScalarTypeMaybe, to show which type conversions
+// should or should not succeed.
+GTEST_TEST(LeafSystemScalarConverterTest, TemplateSupportedConversions) {
+  SymbolicSparsitySystem<double> dut;
+
+  EXPECT_EQ(dut.ToScalarTypeMaybe<double>(), nullptr);
+  EXPECT_NE(dut.ToScalarTypeMaybe<AutoDiffXd>(), nullptr);
+  EXPECT_NE(dut.ToScalarTypeMaybe<symbolic::Expression>(), nullptr);
+
+  auto autodiff = dut.ToScalarTypeMaybe<AutoDiffXd>();
+  ASSERT_NE(autodiff, nullptr);
+
+  EXPECT_NE(autodiff->ToScalarTypeMaybe<double>(), nullptr);
+  EXPECT_EQ(autodiff->ToScalarTypeMaybe<AutoDiffXd>(), nullptr);
+  EXPECT_NE(autodiff->ToScalarTypeMaybe<symbolic::Expression>(), nullptr);
+
+  auto symbolic = dut.ToScalarTypeMaybe<symbolic::Expression>();
+  ASSERT_NE(symbolic, nullptr);
+
+  EXPECT_NE(symbolic->ToScalarTypeMaybe<double>(), nullptr);
+  EXPECT_NE(symbolic->ToScalarTypeMaybe<AutoDiffXd>(), nullptr);
+  EXPECT_EQ(symbolic->ToScalarTypeMaybe<symbolic::Expression>(), nullptr);
+}
+
 // Sanity check the default implementation of ToAutoDiffXd, for cases that
 // should succeed.
 GTEST_TEST(LeafSystemScalarConverterTest, AutoDiffYes) {
@@ -2070,11 +2094,20 @@ GTEST_TEST(LeafSystemScalarConverterTest, AutoDiffYes) {
   ASSERT_NE(clone, nullptr);
   EXPECT_EQ(clone->get_name(), "special_name");
 
+  clone = System<double>::ToScalarType<AutoDiffXd>(dut);
+  ASSERT_NE(clone, nullptr);
+  EXPECT_EQ(clone->get_name(), "special_name");
+
   // Instance method that reports failures via exception.
   EXPECT_NE(dut.ToAutoDiffXd(), nullptr);
+  EXPECT_NE(dut.ToScalarType<AutoDiffXd>(), nullptr);
 
   // Instance method that reports failures via nullptr.
   auto maybe = dut.ToAutoDiffXdMaybe();
+  ASSERT_NE(maybe, nullptr);
+  EXPECT_EQ(maybe->get_name(), "special_name");
+
+  maybe = dut.ToScalarTypeMaybe<AutoDiffXd>();
   ASSERT_NE(maybe, nullptr);
   EXPECT_EQ(maybe->get_name(), "special_name");
 
@@ -2092,12 +2125,15 @@ GTEST_TEST(LeafSystemScalarConverterTest, AutoDiffNo) {
 
   // Static method.
   EXPECT_THROW(System<double>::ToAutoDiffXd(dut), std::exception);
+  EXPECT_THROW(System<double>::ToScalarType<AutoDiffXd>(dut), std::exception);
 
   // Instance method that reports failures via exception.
   EXPECT_THROW(dut.ToAutoDiffXd(), std::exception);
+  EXPECT_THROW(dut.ToScalarType<AutoDiffXd>(), std::exception);
 
   // Instance method that reports failures via nullptr.
   EXPECT_EQ(dut.ToAutoDiffXdMaybe(), nullptr);
+  EXPECT_EQ(dut.ToScalarTypeMaybe<AutoDiffXd>(), nullptr);
 }
 
 // Sanity check the default implementation of ToSymbolic, for cases that
@@ -2112,11 +2148,20 @@ GTEST_TEST(LeafSystemScalarConverterTest, SymbolicYes) {
   ASSERT_NE(clone, nullptr);
   EXPECT_EQ(clone->get_name(), "special_name");
 
+  clone = System<double>::ToScalarType<symbolic::Expression>(dut);
+  ASSERT_NE(clone, nullptr);
+  EXPECT_EQ(clone->get_name(), "special_name");
+
   // Instance method that reports failures via exception.
   EXPECT_NE(dut.ToSymbolic(), nullptr);
+  EXPECT_NE(dut.ToScalarType<symbolic::Expression>(), nullptr);
 
   // Instance method that reports failures via nullptr.
   auto maybe = dut.ToSymbolicMaybe();
+  ASSERT_NE(maybe, nullptr);
+  EXPECT_EQ(maybe->get_name(), "special_name");
+
+  maybe = dut.ToScalarTypeMaybe<symbolic::Expression>();
   ASSERT_NE(maybe, nullptr);
   EXPECT_EQ(maybe->get_name(), "special_name");
 }
@@ -2128,12 +2173,16 @@ GTEST_TEST(LeafSystemScalarConverterTest, SymbolicNo) {
 
   // Static method.
   EXPECT_THROW(System<double>::ToSymbolic(dut), std::exception);
+  EXPECT_THROW(System<double>::ToScalarType<symbolic::Expression>(dut),
+               std::exception);
 
   // Instance method that reports failures via exception.
   EXPECT_THROW(dut.ToSymbolic(), std::exception);
+  EXPECT_THROW(dut.ToScalarType<symbolic::Expression>(), std::exception);
 
   // Instance method that reports failures via nullptr.
   EXPECT_EQ(dut.ToSymbolicMaybe(), nullptr);
+  EXPECT_EQ(dut.ToScalarTypeMaybe<symbolic::Expression>(), nullptr);
 }
 
 GTEST_TEST(GraphvizTest, Attributes) {

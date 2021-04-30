@@ -86,16 +86,20 @@ class TestScalarConversion(unittest.TestCase):
         for T, U in SystemScalarConverter.SupportedConversionPairs:
             system_U = Example_[U](100)
             self.assertIs(system_U.copied_from, None)
-            if T == AutoDiffXd:
-                method = LeafSystem_[U].ToAutoDiffXd
-            elif T == Expression:
-                method = LeafSystem_[U].ToSymbolic
-            else:
-                continue
-            system_T = method(system_U)
+            system_T = system_U.ToScalarType[T]()
             self.assertIsInstance(system_T, Example_[T])
             self.assertEqual(system_T.value, 100)
             self.assertIs(system_T.copied_from, system_U)
+            if T == AutoDiffXd:
+                system_ad = system_U.ToAutoDiffXd()
+                self.assertIsInstance(system_ad, Example_[T])
+                self.assertEqual(system_ad.value, 100)
+                self.assertIs(system_ad.copied_from, system_U)
+            if T == Expression:
+                system_sym = system_U.ToSymbolic()
+                self.assertIsInstance(system_sym, Example_[T])
+                self.assertEqual(system_sym.value, 100)
+                self.assertIs(system_sym.copied_from, system_U)
 
     def test_example_system_in_diagram(self):
         system_f = Example(value=10)
