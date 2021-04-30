@@ -1,5 +1,5 @@
 """
-Visualize LCM images from robotlocomotion `image_array_t` and `image_t`.
+Visualize LCM images from `lcmt_image_array` and `lcmt_image`.
 
 Example usage:
 
@@ -33,7 +33,7 @@ from director.timercallback import TimerCallback
 import PythonQt
 from PythonQt import QtGui
 
-import robotlocomotion as rl
+from drake import lcmt_image, lcmt_image_array
 
 from _drake_visualizer_builtin_scripts import scoped_singleton_func
 
@@ -268,7 +268,7 @@ class DrakeLcmImageViewer:
         print("DrakeLcmImageViewer: Defer setup until '{}' is received".format(
             self._channel))
         self._defer_sub = lcmUtils.captureMessageCallback(
-            self._channel, rl.image_array_t, callback)
+            self._channel, lcmt_image_array, callback)
 
 
 def create_image(w, h, num_channels=1, dtype=np.uint8):
@@ -343,34 +343,34 @@ def vtk_SetInputData(obj, input):
         obj.SetInputData(input)
 
 
-def decode_image_t(msg, image_in=None):
+def decode_lcmt_image(msg, image_in=None):
     """
-    Decodes `image_t` to vtkImageData, using an existing image if it is
+    Decodes `lcmt_image` to vtkImageData, using an existing image if it is
     compatible.
     """
-    rli = rl.image_t
+    enums = lcmt_image
     w = msg.width
     h = msg.height
     pixel_desc = (msg.pixel_format, msg.channel_type)
-    if pixel_desc == (rli.PIXEL_FORMAT_RGBA, rli.CHANNEL_TYPE_UINT8):
+    if pixel_desc == (enums.PIXEL_FORMAT_RGBA, enums.CHANNEL_TYPE_UINT8):
         num_channels = 4
         dtype = np.uint8
-    elif pixel_desc == (rli.PIXEL_FORMAT_DEPTH, rli.CHANNEL_TYPE_FLOAT32):
+    elif pixel_desc == (enums.PIXEL_FORMAT_DEPTH, enums.CHANNEL_TYPE_FLOAT32):
         num_channels = 1
         dtype = np.float32
-    elif pixel_desc == (rli.PIXEL_FORMAT_DEPTH, rli.CHANNEL_TYPE_UINT16):
+    elif pixel_desc == (enums.PIXEL_FORMAT_DEPTH, enums.CHANNEL_TYPE_UINT16):
         num_channels = 1
         dtype = np.uint16
-    elif pixel_desc == (rli.PIXEL_FORMAT_LABEL, rli.CHANNEL_TYPE_INT16):
+    elif pixel_desc == (enums.PIXEL_FORMAT_LABEL, enums.CHANNEL_TYPE_INT16):
         num_channels = 1
         dtype = np.int16
     else:
         raise RuntimeError("Unsupported pixel type: {}".format(pixel_desc))
     bytes_per_pixel = np.dtype(dtype).itemsize * num_channels
     assert msg.row_stride == msg.width * bytes_per_pixel, msg.row_stride
-    if msg.compression_method == rli.COMPRESSION_METHOD_NOT_COMPRESSED:
+    if msg.compression_method == enums.COMPRESSION_METHOD_NOT_COMPRESSED:
         data_bytes = msg.data
-    elif msg.compression_method == rli.COMPRESSION_METHOD_ZLIB:
+    elif msg.compression_method == enums.COMPRESSION_METHOD_ZLIB:
         # TODO(eric.cousineau): Consider using `data`s buffer, if possible.
         # Can decompress() somehow use an existing buffer in Python?
         data_bytes = zlib.decompress(msg.data)
@@ -402,14 +402,14 @@ class LcmImageHandler(ImageHandler):
 
     def receive_message(self, msg):
         """
-        Receives and decodes `image_t` message into `vtkImageData`.
+        Receives and decodes `lcmt_image` message into `vtkImageData`.
         """
         # TODO(eric.cousineau): Consider moving decode logic.
         with self.lock:
             self.utime = msg.header.utime
-            self._image = decode_image_t(msg, self._image)
+            self._image = decode_lcmt_image(msg, self._image)
             self._is_depth_image = (msg.pixel_format
-                                    == rl.image_t.PIXEL_FORMAT_DEPTH)
+                                    == lcmt_image.PIXEL_FORMAT_DEPTH)
 
     def update_image(self, image_out):
         """
@@ -432,8 +432,8 @@ class LcmImageHandler(ImageHandler):
 
 class LcmImageArraySubscriber:
     """
-    Provides a connection between the LCM `image_array_t` channel and LCM image
-    handlers.
+    Provides a connection between the LCM `lcmt_image_array` channel and LCM
+    image handlers.
     """
     def __init__(self, channel=DEFAULT_CHANNEL, frame_names=[]):
         self._channel = channel
@@ -442,7 +442,7 @@ class LcmImageArraySubscriber:
         for frame_name in self._frame_names:
             self._handlers[frame_name] = LcmImageHandler()
         self._subscriber = lcmUtils.addSubscriber(
-            channel, rl.image_array_t, self._on_message)
+            channel, lcmt_image_array, self._on_message)
 
     def get_handlers(self):
         """ Returns ordered list of handlers. """

@@ -6,7 +6,8 @@ from director import applogic
 from director import objectmodel as om
 from director import transformUtils
 from director import visualization as vis
-import robotlocomotion as lcmrobotlocomotion
+
+from drake import lcmt_viewer_draw
 
 from _drake_visualizer_builtin_scripts import scoped_singleton_func
 
@@ -57,7 +58,7 @@ class FramesVisualizer:
 
         self._subscriber = lcmUtils.addSubscriber(
             'DRAKE_DRAW_FRAMES.*',
-            messageClass=lcmrobotlocomotion.viewer_draw_t,
+            messageClass=lcmt_viewer_draw,
             callback=self._handle_message,
             callbackNeedsChannel=True)
         self._subscriber.setNotifyAllMessagesEnabled(True)
