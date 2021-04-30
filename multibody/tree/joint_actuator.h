@@ -214,14 +214,15 @@ class JointActuator final
 
   /// Sets the associated rotor inertia value for this actuator in `context`.
   /// See @ref reflected_inertia.
-  void SetRotorInertia(systems::Context<T>* context, const T& rotor_inertia) {
+  void SetRotorInertia(systems::Context<T>* context,
+                       const T& rotor_inertia) const {
     context->get_mutable_numeric_parameter(rotor_inertia_parameter_index_)[0] =
         rotor_inertia;
   }
 
   /// Sets the associated gear ratio value for this actuator in `context`.
   /// See @ref reflected_inertia.
-  void SetGearRatio(systems::Context<T>* context, const T& gear_ratio) {
+  void SetGearRatio(systems::Context<T>* context, const T& gear_ratio) const {
     context->get_mutable_numeric_parameter(gear_ratio_parameter_index_)[0] =
         gear_ratio;
   }
