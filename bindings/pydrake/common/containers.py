@@ -1,5 +1,8 @@
 """Provides extensions for containers of Drake-related objects."""
 
+from collections import Counter
+from enum import Enum
+
 import numpy as np
 
 
@@ -176,29 +179,95 @@ class NamedViewBase:
             fset=lambda self, value: self.__setitem__(slice_, value))
 
 
-def _maybe_unflatten(fields):
-    # TODO(eric.cousineau): Finish this.
-    assert False
-    is_nested_via_str = None
+class _NestMode(Enum):
+    NoNesting = 1
+    ViaStrWithPeriod = 2
+    ViaSubview = 3
+
+
+def _check_fields_and_nest_mode(fields):
+    nest_mode = _NestMode.NoNesting
+    # Ensure we're all unique.
+    duplicates = {}
+    counter = Counter(fields)
+    for key, count in counter.items():
+        if count > 1:
+            duplicates[key] = count
+    if len(duplicates) > 0:
+        raise RuntimeError(
+            f"Duplicate (non-unique) fields:\n"
+            f"  {repr(duplicates)}"
+        )
+    # First, check nesting mode.
     for field in fields:
         # Consistency.
-        is_nested_via_str_i = False
-        bad_mixed = False
-        if isinstance(field, NamedViewBase):
-            bad_mixed = (is_nested_via_str in (None, False))
-            is_nested_via_str = False
-        elif "." in field:
-            bad_mixed = (is_nested_via_str in (None, True))
-            is_nested_via_str_i = True
-            is_nested_via_str = True
-        if bad_mixed:
+        is_mixed = False
+        if isinstance(field, type) and issubclass(field, NamedViewBase):
+            is_mixed = (nest_mode == _NestMode.ViaStrWithPeriod)
+            nest_mode = _NestMode.ViaSubview
+        elif isinstance(field, str):
+            if len(field) == 0:
+                raise RuntimeError("Field names cannot be empty")
+            # TODO(eric.cousineau): Validate via regex.
+            if "." in field:
+                is_mixed = (nest_mode == _NestMode.ViaSubview)
+                nest_mode = _NestMode.ViaStrWithPeriod
+        else:
             raise RuntimeError(
-                "Nested fields must be specified in a consistent fashion: "
-                "either use strings with '.', or nested namedview()")
+                f"Fields must either be a `str` or a `namedview`: "
+                f"{repr(field)}"
+            )
+        if is_mixed:
+            raise RuntimeError(
+                f"Nested fields must be specified consistently. Either "
+                f"use `str` with '.', or nested `namedview`: "
+                f"{repr(fields)}"
+            )
+    return nest_mode
 
-        if is_nested_via_str_i:
-            # Consume all tokens
-            ...
+
+def _unflatten_fields(fields):
+    """
+    Nodes are either non-leaf or leaf; cannot intermix.
+    """
+    i = 0
+    parsed_fields = []
+    # Record root-level fields parsed; if we re-encounter the same field, then
+    # there was a non-contiguous nesting.
+    # We know this because our check above checks against naive duplicates.
+    root_names = set()
+    while i < len(fields):
+        field = fields[i]
+        pieces = field.split(".")
+        name = pieces[0]
+        if name in root_names:
+            raise RuntimeError(
+                f"A nested field was specified non-contiguously, which "
+                f"is invalid: {name}"
+            )
+        root_names.add(name)
+        if len(pieces) > 1:
+            # Consume all tokens that begin with this one (including current
+            # token), but strip off prefix. Do naive recursion (ineffecient,
+            # but meh).
+            subfields = []
+            while i < len(fields):
+                next_field = fields[i]
+                next_pieces = next_field.split(".")
+                if next_pieces[0] == name:
+                    subfield = ".".join(next_pieces[1:])
+                    subfields.append(subfield)
+                    i += 1
+                else:
+                    break
+            assert len(subfields) >= 1  # should be true
+            subfields = _unflatten_fields(subfields)
+            subview = namedview(f"{name}_", subfields)
+            parsed_fields.append(subview)
+        else:
+            i += 1
+            parsed_fields.append(field)
+    return parsed_fields
 
 
 def namedview(name, fields):
@@ -231,12 +300,16 @@ def namedview(name, fields):
     # TODO(eric.cousineau): The requirement that subviews must end with `_`
     # precludes composition of predefined views. Should relax this in the
     # future for simplicity.
+    if len(fields) == 0:
+        raise RuntimeError("Cannot create empty namedview.")
     base_cls = NamedViewBase
     view_cls_dict = dict()
     size = 0
     field_names = []
     field_names_flat = []
-    # fields = _maybe_unflatten(fields)
+    nest_mode = _check_fields_and_nest_mode(fields)
+    if nest_mode == _NestMode.ViaStrWithPeriod:
+        fields = _unflatten_fields(fields)
     for field in fields:
         i = size
         if isinstance(field, str):
@@ -245,6 +318,7 @@ def namedview(name, fields):
                 raise RuntimeError(
                     f"str fields cannot end with `_`: {field_name}"
                 )
+            assert "." not in field_name, repr(field)
             field_names.append(field_name)
             field_names_flat.append(field_name)
             field_size = 1
@@ -273,10 +347,7 @@ def namedview(name, fields):
             subview_cls.__qualname__ = f"{name}.{subview_name}"
             view_cls_dict[subview_name] = subview_cls
         else:
-            raise RuntimeError(
-                f"Fields must either be a `str` or a `namedview`: "
-                f"{repr(field)}"
-            )
+            assert False, repr((field, fields))
         size += field_size
         view_cls_dict[field_name] = prop
     view_cls_dict["_size"] = size

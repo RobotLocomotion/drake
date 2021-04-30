@@ -96,20 +96,53 @@ class TestNamedView(unittest.TestCase):
         b = a.copy()
         self.assertFalse(is_same_array(a, b))
 
-    def test_negative(self):
+    def test_view_negative(self):
+        # Empty.
+        with self.assertRaises(RuntimeError) as cm:
+            namedview("bad", [])
+        self.assertIn("empty", str(cm.exception))
+        # Non-str or subview.
         with self.assertRaises(RuntimeError) as cm:
             namedview("bad", [1])
         self.assertIn("`str` or a `namedview`", str(cm.exception))
+        # Bad naming of field.
         with self.assertRaises(RuntimeError) as cm:
             namedview("bad", ["a_"])
         self.assertIn("str fields cannot end with `_`", str(cm.exception))
+        # Bad naming of subview.
         with self.assertRaises(RuntimeError) as cm:
-            namedview("bad", [namedview("a", [])])
+            namedview("bad", [namedview("a", ["x"])])
         self.assertIn(
             "Nested subview class name must end with `_`", str(cm.exception)
         )
+        # Duplicates.
+        with self.assertRaises(RuntimeError) as cm:
+            namedview("bad", ["a", "a"])
+        self.assertIn("Duplicate (non-unique)", str(cm.exception))
+        # Mixed nest-via-str and nest-via-subview.
+        with self.assertRaises(RuntimeError) as cm:
+            namedview("bad", ["a.x", namedview("b_", ["y"])])
+        self.assertIn("specified consistently", str(cm.exception))
+        # Non-contiguous nest-via-str.
+        with self.assertRaises(RuntimeError) as cm:
+            namedview("bad", ["a.x", "b", "a.y"])
+        self.assertIn("non-contiguous", str(cm.exception))
 
-    def test_array_basic(self):
+    def assert_same_field_structure(self, view_cls_a, view_cls_b):
+        # Checks that flat and non-flat view of fields are the same.
+        self.assertEqual(
+            view_cls_a.get_fields(),
+            view_cls_b.get_fields(),
+        )
+        self.assertEqual(
+            view_cls_a.get_fields(flat=False),
+            view_cls_b.get_fields(flat=False),
+        )
+
+    def test_view_basic(self):
+        """
+        Tests basics of aliasing and meta-programming contracts.
+        """
         MyView = namedview("MyView", ["a", "b"])
         self.assertTrue(issubclass(MyView, NamedViewBase))
         self.assertEqual(MyView.__name__, "MyView")
@@ -128,14 +161,16 @@ class TestNamedView(unittest.TestCase):
         self.assertEqual(repr(view), "MyView(a=3, b=3)")
         self.assertEqual(str(view), repr(view))
 
-    def test_array_flexibility(self):
+    def test_view_flexibility(self):
+        """
+        Ensures that we do not constrain shape (beyond first dim) or dytpe.
+        """
         MyView = namedview("MyView", ["a", "b"])
-        # Ensure that we do not constrain shape (beyond first dim) and dytpe.
         x_float = np.array([1.0, 2.0])
         view = MyView(x_float)
         self.assertIsInstance(view.a, float)
         self.assertIsInstance(view.b, float)
-
+        # int64
         x_int = np.array([1, 2], dtype=int)
         view = MyView(x_int)
         self.assertIsInstance(view.a, np.int64)
@@ -146,6 +181,7 @@ class TestNamedView(unittest.TestCase):
         self.assertIsInstance(view.a, tuple)
         self.assertIs(view.b, None)
 
+        # Multidimensional.
         x_multidim = np.array([
             [1, 2, 3],
             [4, 5, 6],
@@ -154,7 +190,7 @@ class TestNamedView(unittest.TestCase):
         np.testing.assert_equal(view.a, [1, 2, 3])
         np.testing.assert_equal(view.b, [4, 5, 6])
 
-    def test_nested(self):
+    def test_subview(self):
         MyNestedView = namedview(
             "MyNestedView",
             [namedview("a_", ["x", "y"]), "b", namedview("c_", ["qw", "qx"])],
@@ -168,20 +204,12 @@ class TestNamedView(unittest.TestCase):
             ("a", "b", "c"),
         )
         self.assertEqual(MyNestedView.size, 5)
-        # TODO(eric): Make work.
-        # # - Test user-friendly constructor.
-        # MyNestedView2 = namedview(
-        #     "MyNestedView2",
-        #     ["a.x", "a.y", "b", "c.qw", "c.qx"],
-        # )
-        # self.assertEqual(
-        #     MyNestedView.get_fields(),
-        #     MyNestedView2.get_fields(),
-        # )
-        # self.assertEqual(
-        #     MyNestedView.get_fields(flat=True),
-        #     MyNestedView2.get_fields(flat=True),
-        # )
+        # - Test user-friendly constructor.
+        MyNestedView2 = namedview(
+            "MyNestedView2",
+            ["a.x", "a.y", "b", "c.qw", "c.qx"],
+        )
+        self.assert_same_field_structure(MyNestedView, MyNestedView2)
 
         value = np.array([1, 2, 3, 4, 5])
         view = MyNestedView(value)
@@ -201,9 +229,6 @@ class TestNamedView(unittest.TestCase):
                 5,
             ),
         )
-        self.assertTrue(is_same_array(value, np.asarray(view)))
-        self.assertTrue(is_same_array(value[0:2], np.asarray(view.a)))
-        self.assertTrue(is_same_array(value[3:], np.asarray(view.c)))
         subview_a_cls = type(view.a)
         self.assertTrue(issubclass(subview_a_cls, NamedViewBase))
         self.assertIs(subview_a_cls, MyNestedView.a_)
@@ -218,6 +243,18 @@ class TestNamedView(unittest.TestCase):
             repr(view.a),
             "MyNestedView.a_(x=1, y=2)",
         )
+
+        self.assertTrue(is_same_array(value, np.asarray(view)))
+        self.assertTrue(is_same_array(value[0:2], np.asarray(view.a)))
+        self.assertTrue(is_same_array(value[3:], np.asarray(view.c)))
+
+        # Mutate.
+        value[3:] = 0
+        np.testing.assert_array_equal(view, [1, 2, 3, 0, 0])
+        view.c = [10, 20]
+        np.testing.assert_array_equal(value, [1, 2, 3, 10, 20])
+        view.c[1] = 100
+        np.testing.assert_array_equal(value, [1, 2, 3, 10, 100])
 
         # Briefly test multi-nesting.
         MyMultiNestedView = namedview(
@@ -241,3 +278,8 @@ class TestNamedView(unittest.TestCase):
             # TODO(eric.cousineau): Fix qualname via nesting.
             "a_.b_(c.x=1, c.y=2)",
         )
+        MyMultiNestedView2 = namedview(
+            "MyMultiNestedView2",
+            ("a.b.c.x", "a.b.c.y"),
+        )
+        self.assert_same_field_structure(MyMultiNestedView, MyMultiNestedView2)
