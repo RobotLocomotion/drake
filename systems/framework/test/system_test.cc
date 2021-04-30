@@ -515,14 +515,24 @@ TEST_F(SystemTest, TransmogrifyNotSupported) {
   // Use the static method.
   EXPECT_THROW(System<double>::ToAutoDiffXd<System>(system_), std::exception);
   EXPECT_THROW(System<double>::ToSymbolic<System>(system_), std::exception);
+  EXPECT_THROW(System<double>::ToScalarType<AutoDiffXd>(system_),
+               std::exception);
+  EXPECT_THROW(
+      System<double>::ToScalarType<symbolic::Expression>(system_),
+      std::exception);
 
   // Use the instance method that throws.
   EXPECT_THROW(system_.ToAutoDiffXd(), std::exception);
   EXPECT_THROW(system_.ToSymbolic(), std::exception);
+  EXPECT_THROW(system_.ToScalarType<AutoDiffXd>(), std::exception);
+  EXPECT_THROW(system_.ToScalarType<symbolic::Expression>(),
+               std::exception);
 
   // Use the instance method that returns nullptr.
   EXPECT_EQ(system_.ToAutoDiffXdMaybe(), nullptr);
   EXPECT_EQ(system_.ToSymbolicMaybe(), nullptr);
+  EXPECT_EQ(system_.ToScalarTypeMaybe<AutoDiffXd>(), nullptr);
+  EXPECT_EQ(system_.ToScalarTypeMaybe<symbolic::Expression>(), nullptr);
 
   // Spot check the specific converter object.
   EXPECT_FALSE((
