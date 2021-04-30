@@ -135,7 +135,7 @@ class MeshcatVisualizer(LeafSystem):
                  prefix="drake",
                  zmq_url="default",
                  open_browser=None,
-                 frames_to_draw={},
+                 frames_to_draw=[],
                  frames_opacity=1.,
                  axis_length=0.15,
                  axis_radius=0.006,
