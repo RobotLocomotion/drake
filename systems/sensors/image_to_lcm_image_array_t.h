@@ -25,9 +25,15 @@ namespace sensors {
 /// particular order of those images stored in lcmt_image_array,
 /// instead check the semantic of those images with
 /// lcmt_image::pixel_format before using them.
+///
+/// @note The output message's header field `seq` is always zero.
 class ImageToLcmImageArrayT : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ImageToLcmImageArrayT)
+
+  /// Constructs an empty system with no input ports.
+  /// After construction, use DeclareImageInputPort() to add inputs.
+  explicit ImageToLcmImageArrayT(bool do_compress = false);
 
   /// An %ImageToLcmImageArrayT constructor.  Declares three input ports --
   /// one color image, one depth image, and one label image.
@@ -57,10 +63,6 @@ class ImageToLcmImageArrayT : public systems::LeafSystem<double> {
   /// Returns the abstract valued output port that contains a
   /// `Value<lcmt_image_array>`.
   const OutputPort<double>& image_array_t_msg_output_port() const;
-
-  /// Default constructor doesn't declare any ports.  Use the Add*Input()
-  /// methods to declare them.
-  explicit ImageToLcmImageArrayT(bool do_compress = false);
 
   template <PixelType kPixelType>
   const InputPort<double>& DeclareImageInputPort(const std::string& name) {
