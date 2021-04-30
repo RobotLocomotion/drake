@@ -29,6 +29,8 @@ class MobilizerImpl2x2 : public MobilizerImpl<T, 2, 2> {};
 template <typename T>
 class MobilizerImpl3x3 : public MobilizerImpl<T, 3, 3> {};
 template <typename T>
+class MobilizerImpl6x6 : public MobilizerImpl<T, 6, 6> {};
+template <typename T>
 class MobilizerImpl7x6 : public MobilizerImpl<T, 7, 6> {};
 
 }  // namespace internal
@@ -43,5 +45,7 @@ DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::internal::MobilizerImpl2x2)
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::internal::MobilizerImpl3x3)
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::internal::MobilizerImpl6x6)
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::internal::MobilizerImpl7x6)
