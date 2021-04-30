@@ -163,12 +163,9 @@ class MeshcatVisualizer(LeafSystem):
                 default web browser.  The default value of None will open the
                 browser iff a new meshcat server is created as a subprocess.
                 Set to False to disable this.
-            frames_to_draw: a dictionary describing which body frames to draw.
-                It is keyed on the names of model instances, and the values are
-                sets of the names of the bodies whose body frames are shown.
-                For example, if we want to draw the frames of body "A" and
-                "B" in model instance "1", then frames_to_draw is
-                    {"1": {"A", "B"}}.
+            frames_to_draw: a list or array containing pydrake.geometry.FrameId
+                for which body frames to draw. Users may obtain the ids from
+                plant using GetBodyFrameIdIfExists.
             frames_opacity, axis_length and axis_radius are the opacity, length
                 and radius of the coordinate axes to be drawn.
             delete_prefix_on_load: Specifies whether we should delete the
@@ -415,27 +412,28 @@ class MeshcatVisualizer(LeafSystem):
                 geometry_vis.set_object(geom, material)
                 geometry_vis.set_transform(X_FG)
 
-                frame_name = inspector.GetName(frame_id)
-                # Plot only when frame belongs to a robot.
-                if ("::" in frame_name):
-                    robot_name, link_name = frame_name.split("::")
-
-                    if (robot_name in self.frames_to_draw.keys()
-                            and link_name in self.frames_to_draw[robot_name]):
-                        AddTriad(
-                            self.vis,
-                            name="frame",
-                            prefix=self.prefix + "/" + name,
-                            length=self.axis_length,
-                            radius=self.axis_radius,
-                            opacity=self.frames_opacity
-                        )
+                if frame_id in self.frames_to_draw:
+                    AddTriad(
+                        self.vis,
+                        name="frame",
+                        prefix=self.prefix + "/" + name,
+                        length=self.axis_length,
+                        radius=self.axis_radius,
+                        opacity=self.frames_opacity
+                    )
 
             if frame_id != inspector.world_frame_id():
                 self._dynamic_frames.append({
                     "id": frame_id,
                     "name": name,
                 })
+
+        # Loop through the input frames_to_draw list and warn the user if the
+        # frame_id does not exist in the scene graph.
+        for frame_id in self.frames_to_draw:
+            if (frame_id not in inspector.all_frame_ids()):
+                warnings.warn(f"Non-existent frame {frame_id} ignored")
+                continue
 
     def DoPublish(self, context, event):
 
