@@ -168,7 +168,8 @@ class NamedViewBase:
         # Maps an item (at a given index) to a property.
         return property(
             fget=lambda self: self[i],
-            fset=lambda self, value: self.__setitem__(i, value))
+            fset=lambda self, value: self.__setitem__(i, value),
+        )
 
     @staticmethod
     def _property_to_access_subview(subview_cls, slice_):
@@ -176,7 +177,10 @@ class NamedViewBase:
             # Return view of slice.
             fget=lambda self: subview_cls(self[slice_]),
             # Just set value.
-            fset=lambda self, value: self.__setitem__(slice_, value))
+            fset=lambda self, value: (
+                self.__setitem__(slice_, np.asarray(value))
+            ),
+        )
 
 
 class _NestMode(Enum):
@@ -248,7 +252,7 @@ def _unflatten_fields(fields):
         root_names.add(name)
         if len(pieces) > 1:
             # Consume all tokens that begin with this one (including current
-            # token), but strip off prefix. Do naive recursion (ineffecient,
+            # token), but strip off prefix. Do naive recursion (inefficient,
             # but meh).
             subfields = []
             while i < len(fields):
@@ -260,7 +264,7 @@ def _unflatten_fields(fields):
                     i += 1
                 else:
                     break
-            assert len(subfields) >= 1  # should be true
+            assert len(subfields) >= 1  # Since we include current token.
             subfields = _unflatten_fields(subfields)
             subview = namedview(f"{name}_", subfields)
             parsed_fields.append(subview)

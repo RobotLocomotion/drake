@@ -256,6 +256,12 @@ class TestNamedView(unittest.TestCase):
         view.c[1] = 100
         np.testing.assert_array_equal(value, [1, 2, 3, 10, 100])
 
+        # - Ensure we can also mix assignment directly from other views.
+        value_2 = np.array([-1, -2, -3, -4, -5])
+        view_2 = MyNestedView(value_2)
+        view.c = view_2.c
+        np.testing.assert_array_equal(value, [1, 2, 3, -4, -5])
+
         # Briefly test multi-nesting.
         MyMultiNestedView = namedview(
             "MyMultiNestedView",
