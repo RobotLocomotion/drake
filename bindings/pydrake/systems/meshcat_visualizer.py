@@ -415,11 +415,10 @@ class MeshcatVisualizer(LeafSystem):
                 geometry_vis.set_object(geom, material)
                 geometry_vis.set_transform(X_FG)
 
-                link_name = inspector.GetName(frame_id)
-                # Plot only when link belongs to a robot.
-                if ("::" in link_name):
-                    robot_name, link_name = inspector.GetName(
-                        frame_id).split("::")
+                frame_name = inspector.GetName(frame_id)
+                # Plot only when frame belongs to a robot.
+                if ("::" in frame_name):
+                    robot_name, link_name = frame_name.split("::")
 
                     if (robot_name in self.frames_to_draw.keys()
                             and link_name in self.frames_to_draw[robot_name]):
