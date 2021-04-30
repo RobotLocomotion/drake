@@ -1,9 +1,10 @@
 import time
 
-import bot_core as lcmbotcore
 from director import lcmUtils
 from director import applogic
 from director.visualization import updateText
+
+import drake
 
 from _drake_visualizer_builtin_scripts import scoped_singleton_func
 
@@ -26,7 +27,7 @@ class TimeVisualizer:
 
         self._subscriber = lcmUtils.addSubscriber(
             'DRAKE_VIEWER_DRAW',
-            messageClass=lcmbotcore.viewer_draw_t,
+            messageClass=drake.lcmt_viewer_draw,
             callback=self.handle_message)
 
     def remove_subscriber(self):
