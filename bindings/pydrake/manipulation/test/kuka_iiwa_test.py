@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import pydrake.manipulation.iiwa as mut
+import pydrake.manipulation.kuka_iiwa as mut
 
 import unittest
 import numpy as np
@@ -9,7 +9,7 @@ from pydrake.systems.framework import InputPort, OutputPort
 
 
 class TestKukaIiwa(unittest.TestCase):
-    def test_iiwa_lcm(self):
+    def test_kuka_iiwa_lcm(self):
         command_rec = mut.IiwaCommandReceiver()
         self.assertIsInstance(
             command_rec.get_message_input_port(), InputPort)
@@ -54,5 +54,5 @@ class TestKukaIiwa(unittest.TestCase):
         self.assertIsInstance(
             status_send.get_torque_external_input_port(), InputPort)
 
-    def test_iiwa_api(self):
+    def test_kuka_iiwa_api(self):
         self.assertEqual(mut.get_iiwa_max_joint_velocities().shape, (7,))

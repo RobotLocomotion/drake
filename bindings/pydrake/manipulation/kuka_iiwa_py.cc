@@ -13,7 +13,7 @@
 namespace drake {
 namespace pydrake {
 
-PYBIND11_MODULE(iiwa, m) {
+PYBIND11_MODULE(kuka_iiwa, m) {
   using drake::systems::Diagram;
   using drake::systems::LeafSystem;
 

@@ -33,12 +33,12 @@ drake_py_library(
 )
 
 drake_pybind_library(
-    name = "iiwa_py",
+    name = "kuka_iiwa_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:eigen_pybind",
     ],
-    cc_srcs = ["iiwa_py.cc"],
+    cc_srcs = ["kuka_iiwa_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
@@ -79,7 +79,7 @@ drake_py_library(
 )
 
 PY_LIBRARIES_WITH_INSTALL = [
-    ":iiwa_py",
+    ":kuka_iiwa_py",
     ":planner_py",
     ":schunk_wsg_py",
 ]
@@ -90,9 +90,9 @@ PY_LIBRARIES = [
 ]
 
 drake_py_unittest(
-    name = "iiwa_test",
+    name = "kuka_iiwa_test",
     deps = [
-        ":iiwa_py",
+        ":kuka_iiwa_py",
         "//bindings/pydrake/multibody",
     ],
 )
