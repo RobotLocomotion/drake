@@ -89,8 +89,10 @@ PYBIND11_MODULE(optimization, m) {
     using Ptr = std::shared_ptr<Class>;
     py::class_<Class, solvers::Constraint, Ptr>(
         m, "QuaternionEulerIntegrationConstraint", cls_doc.doc)
-        .def(py::init([]() { return std::make_unique<Class>(); }),
-            cls_doc.ctor.doc);
+        .def(py::init([](bool allow_quaternion_negation) {
+          return std::make_unique<Class>(allow_quaternion_negation);
+        }),
+            py::arg("allow_quaternion_negation"), cls_doc.ctor.doc);
   }
 }
 }  // namespace

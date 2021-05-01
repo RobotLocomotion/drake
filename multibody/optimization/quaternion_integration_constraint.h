@@ -11,21 +11,25 @@ namespace multibody {
  * velocity ω from quaternion z₁ to quaternion z₂ within time interval h. Namely
  * we want to enforce the relationship that z₂ and Δz⊗z₁ represent the same
  * orientation, where Δz is the quaternion [cos(|ω|h/2), ω/|ω|*sin(|ω|h/2)], and
- * ⊗ is the Hamiltonian product between quaternions. Notice that Δz contains the
- * term ω/|ω|, which could cause division-by-zero problem. To avoid this
- * problem, we replace the term ω/|ω| with ω/(|ω|+ε) where ε is a very small
- * number.
+ * ⊗ is the Hamiltonian product between quaternions.
  *
- * Mathematically, the constraint we impose is
+ * It is well-known that for any quaternion z, its element-wise negation -z
+ * correspond to the same rotation matrix as z does. One way to undertand this
+ * is that -z represents the rotation that first rotate the frame by a
+ * quaternion z, and then continue to rotate about that axis for 360 degress. We
+ * provide the option @p allow_quaternion_negation flag, that if set to
+ * true, then we require that the quaternion z₂ = ±Δz⊗z₁. Otherwise we require
+ * z₂ = Δz⊗z₁. Mathematically, the constraint we impose is
  *
- *     (z₂⊗z₁*) • Δz = 1
+ *     If allow_quaternion_negation = true:
+ *     (z₂ • (Δz⊗z₁))² = 1
+ *     else
+ *     z₂ • (Δz⊗z₁) = 1
  *
- * where z₁* is the conjugate of the quaternion z₁. The term z₂⊗ z₁* computes
- * the unit quaternion representing the orientation difference between z₁ and
- * z₂.
  * The operation • is the dot product between two quaternions, which computes
- * the cosine of the half angle between these two orientations. Hence dot
- * product equals to 1 means the two quaternions represent the same orientation.
+ * the cosine of the half angle between these two orientations. Dot product
+ * equals to ±1 means that angle between the two quaternions are 2kπ, hence they
+ * represent the same orientation.
  * @note The constraint is not differentiable at ω=0 (due to the
  * non-differentiability of |ω| at ω = 0). So it is better to initialize the
  * angular velocity to a non-zero value in the optimization.
@@ -38,7 +42,19 @@ class QuaternionEulerIntegrationConstraint final : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuaternionEulerIntegrationConstraint)
 
-  QuaternionEulerIntegrationConstraint();
+  /**
+   * @param allow_quaternion_negation. Refer to the class documentation. If set
+   * to true, then we regard a quaternion z and its elementwise negation -z to
+   * represent the same orientation, and impose the constraint
+   *
+   *     ((z₂⊗z₁*) • Δz)² = 1
+   *
+   * otherwise, we impose the constraint
+   *
+   *     (z₂⊗z₁*) • Δz = 1
+   */
+  explicit QuaternionEulerIntegrationConstraint(
+      bool negate_quaternion_same_orientation);
 
   ~QuaternionEulerIntegrationConstraint() override {}
 
@@ -52,6 +68,8 @@ class QuaternionEulerIntegrationConstraint final : public solvers::Constraint {
     return vars;
   }
 
+  bool allow_quaternion_negation() const { return allow_quaternion_negation_; }
+
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const override;
@@ -61,6 +79,8 @@ class QuaternionEulerIntegrationConstraint final : public solvers::Constraint {
 
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
+
+  bool allow_quaternion_negation_;
 };
 }  // namespace multibody
 }  // namespace drake
