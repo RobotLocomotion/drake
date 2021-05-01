@@ -14,47 +14,79 @@ namespace drake {
 namespace multibody {
 const double kEps = std::numeric_limits<double>::epsilon();
 
-template <typename T>
-T DifferentiableNorm(const Vector3<T>& x) {
-  if constexpr (std::is_same_v<T, AutoDiffXd>) {
-    const Eigen::Vector3d x_val = math::autoDiffToValueMatrix(x);
-    const double norm_val = x_val.norm();
-    if (norm_val > 100 * kEps) {
-      return x.norm();
-    } else {
-      return AutoDiffXd(norm_val,
-                        math::autoDiffToGradientMatrix(x).transpose() * x_val /
-                            (norm_val + 10 * kEps));
-    }
-  } else {
-    return x.norm();
-  }
+GTEST_TEST(TestDiffferentiableNorm, test_double) {
+  EXPECT_NEAR(internal::DifferentiableNorm(Eigen::Vector3d(1, 0, 0)), 1., kEps);
+}
+
+GTEST_TEST(TestDiffferentiableNorm, test_autodiff) {
+  Eigen::Matrix3Xd x_grad(3, 1);
+  x_grad << 1, 2, 3;
+  Vector3<AutoDiffXd> x = math::initializeAutoDiffGivenGradientMatrix(
+      Eigen::Vector3d(1, 0, 0), x_grad);
+  AutoDiffXd norm = internal::DifferentiableNorm(x);
+  AutoDiffXd norm_expected = x.norm();
+  EXPECT_NEAR(norm.value(), norm_expected.value(), 10 * kEps);
+  EXPECT_TRUE(CompareMatrices(norm.derivatives(), norm_expected.derivatives(),
+                              10 * kEps));
+
+  // Test when x is zero.
+  x = math::initializeAutoDiffGivenGradientMatrix(Eigen::Vector3d::Zero(),
+                                                  x_grad);
+  norm = internal::DifferentiableNorm(x);
+  EXPECT_NEAR(norm.value(), 0., 10 * kEps);
+  EXPECT_TRUE(CompareMatrices(norm.derivatives(), Vector1d::Zero(), 10 * kEps));
 }
 
 // Evaluate the left-hand side of the constraint
-// dot_product(z₂⊗ z₁*, Δz) = 1
-// where Δz = [cos(|ω|h/2), ω/(|ω|)sin(|ω|h/2)]
+//
+//     If allow_quaternion_negation = true:
+//     (z₂ • (Δz⊗z₁))² = 1
+//     else
+//     z₂ • (Δz⊗z₁) = 1
+// where Δz = [cos(|ω|h/2), ω/|ω|sin(|ω|h/2)]
+// We compute the term Δz⊗z₁ using an alternative approach
+// Δz⊗z₁ = exp(Ah/2)*z₁
+// where A is the skew-symmetric matrix
+// A = [0, -ω_x, -ω_y, -ω_z]
+//     [ω_x,  0, -ω_z,  ω_y]
+//     [ω_y, ω_z,   0, -ω_x]
+//     [ω_z, -ω_y, ω_x,   0]
+// We can show that exp(Ah) = cos(|ω|h/2)* I + sin(|ω|h/2)/|ω| * A
 template <typename T>
 Vector1<T> EvalQuaternionIntegration(
     const Eigen::Quaternion<T>& quat1, const Eigen::Quaternion<T>& quat2,
-    const Eigen::Ref<const Vector3<T>>& angular_vel, const T& h) {
-  const Eigen::Quaternion<T> quat2_times_quat1_conj =
-      quat2 * (quat1.conjugate());
+    const Eigen::Ref<const Vector3<T>>& angular_vel, const T& h,
+    bool allow_quaternion_negation) {
   Vector1<T> ret;
   using std::cos;
   using std::sin;
-  const T angular_vel_norm = DifferentiableNorm<T>(angular_vel);
-  Vector3<T> delta_z_vec;
+  const T angular_vel_norm = internal::DifferentiableNorm<T>(angular_vel);
+  Matrix4<T> A;
+  // clang-format off
+  A << 0, -angular_vel(0), -angular_vel(1), -angular_vel(2),
+       angular_vel(0), 0, -angular_vel(2), angular_vel(1),
+       angular_vel(1), angular_vel(2), 0, -angular_vel(0),
+       angular_vel(2), -angular_vel(1), angular_vel(0), 0;
+  // clang-format on
+  Matrix4<T> exp_half_Ah;
   if (ExtractDoubleOrThrow(angular_vel_norm) == 0) {
-    delta_z_vec = angular_vel * h / 2;
+    exp_half_Ah =
+        cos(angular_vel_norm * h / 2) * Eigen::Matrix4d::Identity() + h / 2 * A;
   } else {
-    delta_z_vec =
-        angular_vel * sin(angular_vel_norm * h / 2) / angular_vel_norm;
+    exp_half_Ah = cos(angular_vel_norm * h / 2) * Eigen::Matrix4d::Identity() +
+                  sin(angular_vel_norm * h / 2) / angular_vel_norm * A;
   }
-  const T delta_z_w = cos(angular_vel_norm * h / 2);
-  const Eigen::Quaternion<T> delta_z(delta_z_w, delta_z_vec(0), delta_z_vec(1),
-                                     delta_z_vec(2));
-  ret(0) = quat2_times_quat1_conj.dot(delta_z);
+  const Vector4<T> delta_z_times_quat1_vec4 =
+      exp_half_Ah * Vector4<T>(quat1.w(), quat1.x(), quat1.y(), quat1.z());
+  const Eigen::Quaternion<T> delta_z_times_quat1(
+      delta_z_times_quat1_vec4(0), delta_z_times_quat1_vec4(1),
+      delta_z_times_quat1_vec4(2), delta_z_times_quat1_vec4(3));
+  if (allow_quaternion_negation) {
+    using std::pow;
+    ret(0) = pow(quat2.dot(delta_z_times_quat1), 2);
+  } else {
+    ret(0) = quat2.dot(delta_z_times_quat1);
+  }
   return ret;
 }
 
@@ -67,8 +99,8 @@ void TestEval(const QuaternionEulerIntegrationConstraint& dut,
   const auto y_expected = EvalQuaternionIntegration<double>(
       Eigen::Quaterniond(quat1(0), quat1(1), quat1(2), quat1(3)),
       Eigen::Quaterniond(quat2(0), quat2(1), quat2(2), quat2(3)), angular_vel,
-      h);
-  EXPECT_TRUE(CompareMatrices(y, y_expected));
+      h, dut.allow_quaternion_negation());
+  EXPECT_TRUE(CompareMatrices(y, y_expected, 10 * kEps));
 
   // Check Eval with autodiff. Use arbitrary gradient.
   Eigen::MatrixXd x_grad(12, 2);
@@ -84,34 +116,62 @@ void TestEval(const QuaternionEulerIntegrationConstraint& dut,
   const auto y_ad_expected = EvalQuaternionIntegration<AutoDiffXd>(
       Eigen::Quaternion<AutoDiffXd>(x_ad(0), x_ad(1), x_ad(2), x_ad(3)),
       Eigen::Quaternion<AutoDiffXd>(x_ad(4), x_ad(5), x_ad(6), x_ad(7)),
-      x_ad.segment<3>(8), x_ad(11));
+      x_ad.segment<3>(8), x_ad(11), dut.allow_quaternion_negation());
   EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(y_ad),
-                              math::autoDiffToValueMatrix(y_ad_expected)));
+                              math::autoDiffToValueMatrix(y_ad_expected),
+                              10 * kEps));
   EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(y_ad),
                               math::autoDiffToGradientMatrix(y_ad_expected),
                               10 * kEps));
 }
 
 GTEST_TEST(QuaternionEulerIntegrationConstraintTest, TestEval) {
-  const QuaternionEulerIntegrationConstraint dut{};
-  EXPECT_EQ(dut.num_vars(), 12);
-  EXPECT_EQ(dut.num_constraints(), 1);
-  EXPECT_TRUE(CompareMatrices(dut.lower_bound(), Vector1d::Ones()));
-  EXPECT_TRUE(CompareMatrices(dut.upper_bound(), Vector1d::Ones()));
+  for (bool allow_quaternion_negation : {true, false}) {
+    const QuaternionEulerIntegrationConstraint dut{allow_quaternion_negation};
+    EXPECT_EQ(dut.num_vars(), 12);
+    EXPECT_EQ(dut.num_constraints(), 1);
+    EXPECT_TRUE(CompareMatrices(dut.lower_bound(), Vector1d::Ones()));
+    EXPECT_TRUE(CompareMatrices(dut.upper_bound(), Vector1d::Ones()));
 
-  const Eigen::Vector4d quat1 =
-      Eigen::Vector4d(0.3, 0.5, 0.2, 0.1).normalized();
-  const Eigen::Vector4d quat2 =
-      Eigen::Vector4d(1.3, -.5, -0.7, 0.6).normalized();
-  const Eigen::Vector3d angular_vel(0.2, 0.5, -1.2);
-  const double h{0.4};
-  TestEval(dut, quat1, quat2, angular_vel, h);
+    const Eigen::Vector4d quat1 =
+        Eigen::Vector4d(0.3, 0.5, 0.2, 0.1).normalized();
+    const Eigen::Vector4d quat2 =
+        Eigen::Vector4d(1.3, -.5, -0.7, 0.6).normalized();
+    const Eigen::Vector3d angular_vel(0.2, 0.5, -1.2);
+    const double h{0.4};
+    TestEval(dut, quat1, quat2, angular_vel, h);
 
-  // Now test angular_vel = 0
-  TestEval(dut, quat1, quat2, Eigen::Vector3d::Zero(), h);
+    // Now test angular_vel = 0
+    TestEval(dut, quat1, quat2, Eigen::Vector3d::Zero(), h);
 
-  // Now test h = 0
-  TestEval(dut, quat1, quat2, angular_vel, 0);
+    // Now test h = 0
+    TestEval(dut, quat1, quat2, angular_vel, 0);
+  }
+}
+
+GTEST_TEST(QuaternionEulerIntegrationConstraintTest, TestEvalSymbolic) {
+  for (bool allow_quaternion_negation : {true, false}) {
+    const QuaternionEulerIntegrationConstraint dut{allow_quaternion_negation};
+    const symbolic::Variable z1_w("z1_w");
+    const symbolic::Variable z1_x("z1_x");
+    const symbolic::Variable z1_y("z1_y");
+    const symbolic::Variable z1_z("z1_z");
+    const symbolic::Variable z2_w("z2_w");
+    const symbolic::Variable z2_x("z2_x");
+    const symbolic::Variable z2_y("z2_y");
+    const symbolic::Variable z2_z("z2_z");
+    const symbolic::Variable omega_x("omega_x");
+    const symbolic::Variable omega_y("omega_y");
+    const symbolic::Variable omega_z("omega_z");
+    const symbolic::Variable h("h");
+    VectorX<symbolic::Expression> y;
+    EXPECT_NO_THROW(
+        dut.Eval(dut.ComposeVariable<symbolic::Variable>(
+                     Vector4<symbolic::Variable>(z1_w, z1_x, z1_y, z1_z),
+                     Vector4<symbolic::Variable>(z2_w, z2_x, z2_y, z2_z),
+                     Vector3<symbolic::Variable>(omega_x, omega_y, omega_z), h),
+                 &y));
+  }
 }
 
 Eigen::Quaterniond ComputeNextQuaternion(const Eigen::Quaterniond& quat_curr,
@@ -125,7 +185,21 @@ Eigen::Quaterniond ComputeNextQuaternion(const Eigen::Quaterniond& quat_curr,
   }
 }
 
-GTEST_TEST(QuaternionEulerIntegrationConstraintTest, SolveNextQuaternion) {
+void ExpectTwoQuaternionsClose(const Eigen::Quaterniond& z1,
+                               const Eigen::Quaterniond& z2, double tol,
+                               bool allow_quaternion_negation) {
+  // The two quaternions have to be unit-length.
+  DRAKE_DEMAND(std::abs(z1.coeffs().norm() - 1) < 1E-5);
+  DRAKE_DEMAND(std::abs(z2.coeffs().norm() - 1) < 1E-5);
+  const double cos_half_angle = z1.dot(z2);
+  if (allow_quaternion_negation) {
+    EXPECT_NEAR(std::abs(cos_half_angle), 1, tol);
+  } else {
+    EXPECT_NEAR(cos_half_angle, 1, tol);
+  }
+}
+
+void TestSolveNextQuaternion(bool allow_quaternion_negation) {
   // Fix quat1, angular_vel and h, solve for quat2 that satisfies the
   // constraint.
   solvers::MathematicalProgram prog{};
@@ -134,7 +208,8 @@ GTEST_TEST(QuaternionEulerIntegrationConstraintTest, SolveNextQuaternion) {
   auto angular_vel = prog.NewContinuousVariables<3>();
   auto h = prog.NewContinuousVariables<1>()(0);
 
-  auto dut = std::make_shared<QuaternionEulerIntegrationConstraint>();
+  auto dut = std::make_shared<QuaternionEulerIntegrationConstraint>(
+      allow_quaternion_negation);
   auto integration_cnstr = prog.AddConstraint(
       dut,
       dut->ComposeVariable<symbolic::Variable>(quat1, quat2, angular_vel, h));
@@ -156,6 +231,9 @@ GTEST_TEST(QuaternionEulerIntegrationConstraintTest, SolveNextQuaternion) {
   angular_vel_vals.push_back(Eigen::Vector3d(-0.4, 1.5, 0.2));
   // angular_vel = 0 is a special case.
   angular_vel_vals.push_back(Eigen::Vector3d::Zero());
+  // Also test very small angular velocity
+  angular_vel_vals.push_back(Eigen::Vector3d::Ones() * kEps);
+  angular_vel_vals.push_back(2 * Eigen::Vector3d::Ones() * kEps);
 
   // Our formulation should also work for negative time interval, hence try h =
   // -0.5
@@ -192,19 +270,21 @@ GTEST_TEST(QuaternionEulerIntegrationConstraintTest, SolveNextQuaternion) {
             Eigen::Quaterniond(quat1_val(0), quat1_val(1), quat1_val(2),
                                quat1_val(3)),
             angular_vel_val, h_val);
-        // Two quaternions represent the same orientation if their dot product
-        // (which is cos of half angle between these two orientation) is close
-        // to 1.
-        EXPECT_NEAR(Eigen::Quaterniond(quat2_sol(0), quat2_sol(1), quat2_sol(2),
-                                       quat2_sol(3))
-                        .dot(quat2_expected),
-                    1., 1E-5);
+        ExpectTwoQuaternionsClose(
+            Eigen::Quaterniond(quat2_sol(0), quat2_sol(1), quat2_sol(2),
+                               quat2_sol(3)),
+            quat2_expected, 1E-5, allow_quaternion_negation);
       }
     }
   }
 }
 
-GTEST_TEST(QuaternionEulerIntegrationConstraintTest, SolveAngularVel) {
+GTEST_TEST(QuaternionEulerIntegrationConstraintTest, SolveNextQuaternion) {
+  TestSolveNextQuaternion(true);
+  TestSolveNextQuaternion(false);
+}
+
+void TestSolveAngularVel(bool allow_quaternion_negation) {
   // Fix quat1, quat2 and h, solve for angular_vel that satisfies the
   // constraint.
   solvers::MathematicalProgram prog{};
@@ -213,7 +293,8 @@ GTEST_TEST(QuaternionEulerIntegrationConstraintTest, SolveAngularVel) {
   auto angular_vel = prog.NewContinuousVariables<3>();
   auto h = prog.NewContinuousVariables<1>()(0);
 
-  auto dut = std::make_shared<QuaternionEulerIntegrationConstraint>();
+  auto dut = std::make_shared<QuaternionEulerIntegrationConstraint>(
+      allow_quaternion_negation);
   prog.AddConstraint(dut, dut->ComposeVariable<symbolic::Variable>(
                               quat1, quat2, angular_vel, h));
 
@@ -264,16 +345,38 @@ GTEST_TEST(QuaternionEulerIntegrationConstraintTest, SolveAngularVel) {
             Eigen::Quaterniond(quat1_val(0), quat1_val(1), quat1_val(2),
                                quat1_val(3)),
             result.GetSolution(angular_vel), h_val);
-        // Two quaternions represent the same orientation if their dot product
-        // (which is cos of half angle between these two orientation) is close
-        // to 1.
-        EXPECT_NEAR(Eigen::Quaterniond(quat2_val(0), quat2_val(1), quat2_val(2),
-                                       quat2_val(3))
-                        .dot(quat2_expected),
-                    1, 1E-5);
+        ExpectTwoQuaternionsClose(
+            Eigen::Quaterniond(quat2_val(0), quat2_val(1), quat2_val(2),
+                               quat2_val(3)),
+            quat2_expected, 1E-5, allow_quaternion_negation);
       }
     }
   }
+  // Test the special case that q2 = -q1. Both q2 and q1 represent the same
+  // orientation. angular_vel = 0 should be a solution.
+  for (const auto& quat1_val : quat1_vals) {
+    quat1_cnstr.evaluator()->set_bounds(quat1_val, quat1_val);
+    quat2_cnstr.evaluator()->set_bounds(-quat1_val, -quat1_val);
+    for (const auto h_val : h_vals) {
+      h_cnstr.evaluator()->set_bounds(Vector1d(h_val), Vector1d(h_val));
+      prog.SetInitialGuess(angular_vel, Eigen::Vector3d(1, 1, 1));
+      auto result = solvers::Solve(prog);
+      EXPECT_TRUE(result.is_success());
+      const Eigen::Quaterniond quat2_expected =
+          ComputeNextQuaternion(Eigen::Quaterniond(quat1_val(0), quat1_val(1),
+                                                   quat1_val(2), quat1_val(3)),
+                                result.GetSolution(angular_vel), h_val);
+      ExpectTwoQuaternionsClose(
+          Eigen::Quaterniond(-quat1_val(0), -quat1_val(1), -quat1_val(2),
+                             -quat1_val(3)),
+          quat2_expected, 1E-5, allow_quaternion_negation);
+    }
+  }
+}
+
+GTEST_TEST(QuaternionEulerIntegrationConstraintTest, SolveAngularVel) {
+  TestSolveAngularVel(true);
+  TestSolveAngularVel(false);
 }
 
 }  // namespace multibody

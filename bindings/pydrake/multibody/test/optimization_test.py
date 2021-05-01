@@ -210,5 +210,6 @@ class TestCentroidalMomentumConstraint(unittest.TestCase):
 
 class TestQuaternionEulerIntegrationConstraint(unittest.TestCase):
     def test(self):
-        dut = QuaternionEulerIntegrationConstraint()
+        dut = QuaternionEulerIntegrationConstraint(
+            allow_quaternion_negation=True)
         self.assertIsInstance(dut, mp.Constraint)
