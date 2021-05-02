@@ -215,8 +215,10 @@ drake_pybind_library(
         ":lcm_pybind",
         "//bindings/pydrake:documentation_pybind",
         "//lcmtypes:contact_results_for_viz",
+        "//lcmtypes:iiwa",
         "//lcmtypes:image_array",
         "//lcmtypes:quaternion",
+        "//lcmtypes:schunk",
     ],
     cc_srcs = [
         "lcm_py.cc",

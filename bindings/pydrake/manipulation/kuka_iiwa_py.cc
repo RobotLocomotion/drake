@@ -1,6 +1,5 @@
 #include "pybind11/eigen.h"
 #include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -14,6 +13,12 @@ namespace drake {
 namespace pydrake {
 
 PYBIND11_MODULE(kuka_iiwa, m) {
+  using drake::manipulation::kuka_iiwa::get_iiwa_max_joint_velocities;
+  using drake::manipulation::kuka_iiwa::IiwaCommandReceiver;
+  using drake::manipulation::kuka_iiwa::IiwaCommandSender;
+  using drake::manipulation::kuka_iiwa::IiwaStatusReceiver;
+  using drake::manipulation::kuka_iiwa::IiwaStatusSender;
+  using drake::manipulation::kuka_iiwa::kIiwaArmNumJoints;
   using drake::systems::Diagram;
   using drake::systems::LeafSystem;
 
@@ -23,11 +28,10 @@ PYBIND11_MODULE(kuka_iiwa, m) {
   py::module::import("pydrake.systems.framework");
 
   {
-    using Class = manipulation::kuka_iiwa::IiwaCommandReceiver;
+    using Class = IiwaCommandReceiver;
     constexpr auto& cls_doc = doc.IiwaCommandReceiver;
     py::class_<Class, LeafSystem<double>>(m, "IiwaCommandReceiver", cls_doc.doc)
-        .def(py::init<int>(),
-            py::arg("num_joints") = manipulation::kuka_iiwa::kIiwaArmNumJoints,
+        .def(py::init<int>(), py::arg("num_joints") = kIiwaArmNumJoints,
             cls_doc.ctor.doc)
         .def("get_message_input_port", &Class::get_message_input_port,
             py_rvp::reference_internal, cls_doc.get_message_input_port.doc)
@@ -46,11 +50,10 @@ PYBIND11_MODULE(kuka_iiwa, m) {
   }
 
   {
-    using Class = manipulation::kuka_iiwa::IiwaCommandSender;
+    using Class = IiwaCommandSender;
     constexpr auto& cls_doc = doc.IiwaCommandSender;
     py::class_<Class, LeafSystem<double>>(m, "IiwaCommandSender", cls_doc.doc)
-        .def(py::init<int>(),
-            py::arg("num_joints") = manipulation::kuka_iiwa::kIiwaArmNumJoints,
+        .def(py::init<int>(), py::arg("num_joints") = kIiwaArmNumJoints,
             cls_doc.ctor.doc)
         .def("get_position_input_port", &Class::get_position_input_port,
             py_rvp::reference_internal, cls_doc.get_position_input_port.doc)
@@ -59,11 +62,10 @@ PYBIND11_MODULE(kuka_iiwa, m) {
   }
 
   {
-    using Class = manipulation::kuka_iiwa::IiwaStatusReceiver;
+    using Class = IiwaStatusReceiver;
     constexpr auto& cls_doc = doc.IiwaStatusReceiver;
     py::class_<Class, LeafSystem<double>>(m, "IiwaStatusReceiver", cls_doc.doc)
-        .def(py::init<int>(),
-            py::arg("num_joints") = manipulation::kuka_iiwa::kIiwaArmNumJoints,
+        .def(py::init<int>(), py::arg("num_joints") = kIiwaArmNumJoints,
             cls_doc.ctor.doc)
         .def("get_position_commanded_output_port",
             &Class::get_position_commanded_output_port,
@@ -90,11 +92,10 @@ PYBIND11_MODULE(kuka_iiwa, m) {
   }
 
   {
-    using Class = manipulation::kuka_iiwa::IiwaStatusSender;
+    using Class = IiwaStatusSender;
     constexpr auto& cls_doc = doc.IiwaStatusSender;
     py::class_<Class, LeafSystem<double>>(m, "IiwaStatusSender", cls_doc.doc)
-        .def(py::init<int>(),
-            py::arg("num_joints") = manipulation::kuka_iiwa::kIiwaArmNumJoints,
+        .def(py::init<int>(), py::arg("num_joints") = kIiwaArmNumJoints,
             cls_doc.ctor.doc)
         .def("get_position_commanded_input_port",
             &Class::get_position_commanded_input_port,
@@ -122,9 +123,7 @@ PYBIND11_MODULE(kuka_iiwa, m) {
   {
     m.def(
         "get_iiwa_max_joint_velocities",
-        []() {
-          return manipulation::kuka_iiwa::get_iiwa_max_joint_velocities();
-        },
+        []() { return get_iiwa_max_joint_velocities(); },
         doc.get_iiwa_max_joint_velocities.doc);
   }
 }

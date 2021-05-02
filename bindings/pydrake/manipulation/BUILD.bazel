@@ -93,7 +93,7 @@ drake_py_unittest(
     name = "kuka_iiwa_test",
     deps = [
         ":kuka_iiwa_py",
-        "//bindings/pydrake/multibody",
+        "//bindings/pydrake/systems",
     ],
 )
 
