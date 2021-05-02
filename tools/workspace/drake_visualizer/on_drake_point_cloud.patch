@@ -1,0 +1,76 @@
+Subject: Add lcmt_point_cloud subscriber to drakevisualizer
+
+--- drakevisualizer.py.orig	2021-05-01 16:56:38.205678138 -0700
++++ drakevisualizer.py	2021-05-01 17:05:30.044548791 -0700
+@@ -16,6 +16,7 @@
+ from director.fieldcontainer import FieldContainer
+ 
+ import bot_core as lcmbot
++import drake
+ 
+ # Currently, viewer lcm message types are in bot_core_lcmtypes and
+ # robotlocomotion-lcmtypes, but drake only builds bot_core_lcmtypes.
+@@ -326,6 +327,7 @@
+         self.subscribers.append(lcmUtils.addSubscriber('DRAKE_VIEWER_DRAW', lcmrl.viewer_draw_t, self.onViewerDraw))
+         self.subscribers.append(lcmUtils.addSubscriber('DRAKE_PLANAR_LIDAR_.*', lcmbot.planar_lidar_t, self.onPlanarLidar, callbackNeedsChannel=True))
+         self.subscribers.append(lcmUtils.addSubscriber('DRAKE_POINTCLOUD_.*', lcmbot.pointcloud_t, self.onPointCloud, callbackNeedsChannel=True))
++        self.subscribers.append(lcmUtils.addSubscriber('DRAKE_POINT_CLOUD_.*', drake.lcmt_point_cloud, self.onDrakePointCloud, callbackNeedsChannel=True))
+ 
+     def _removeSubscribers(self):
+         for sub in self.subscribers:
+@@ -480,21 +482,42 @@
+ 
+ 
+     def onPointCloud(self, msg, channel):
++        # N.B. This is for the bot_core message type.  Drake doesn't use this.
+         pointcloudName = channel.replace('DRAKE_POINTCLOUD_', '', 1)
+ 
+-        polyData = vnp.numpyToPolyData(np.asarray(msg.points), createVertexCells=True)
++        pointArray = np.asarray(msg.points)
+ 
+         # If the user provided color channels, then use them to colorize
+         # the pointcloud.
+         channels = {msg.channel_names[i]: msg.channels[i] for i in range(msg.n_channels)}
+         if "r" in channels and "g" in channels and "b" in channels:
+-            colorized = True
+             colorArray = np.empty((msg.n_points, 3), dtype=np.uint8)
+             for (colorIndex, color) in enumerate(["r", "g", "b"]):
+                 colorArray[:, colorIndex] = 255 * np.asarray(channels[color])
+-            vnp.addNumpyToVtk(polyData, colorArray, "rgb")
+         else:
+-            colorized = False
++            colorArray = None
++
++        self.updatePointClout(self, pointcloudName, pointArray, colorArray)
++
++    def onDrakePointCloud(self, msg, channel):
++        name = channel.replace('DRAKE_POINT_CLOUD_', '', 1)
++        pointArray = np.asarray(msg.points).T
++        colorArray = None
++        channels = {
++            name: msg.channels[i]
++            for i, name in enumerate(msg.channel_names)
++        }
++        rgb_names = ("r", "g", "b")
++        if all(color in channels for color in rgb_names):
++            colorArray = np.empty(pointArray.shape, dtype=np.uint8)
++            for i, color in enumerate(rgb_names):
++                colorArray[:, i] = 255 * np.asarray(channels[color])
++        self.updatePointCloud(name, pointArray, colorArray)
++
++    def updatePointCloud(self, pointcloudName, pointArray, colorArray):
++        polyData = vnp.numpyToPolyData(pointArray, createVertexCells=True)
++        if colorArray is not None:
++            vnp.addNumpyToVtk(polyData, colorArray, "rgb")
+ 
+         folder = self.getPointCloudFolder()
+ 
+@@ -509,7 +532,7 @@
+         else:
+             item = vis.PolyDataItem(pointcloudName, polyData, view=None)
+             item.addToView(self.view)
+-            if colorized:
++            if colorArray is not None:
+                 item._updateColorByProperty()
+                 item.setProperty("Color By", "rgb")
+             om.addToObjectModel(item, parentObj=folder)

@@ -68,10 +68,12 @@ enum class Setup { kNone, kManipulationClass, kClutterClearing, kPlanarIiwa };
 /// - camera_[NAME]_rgb_image
 /// - camera_[NAME]_depth_image
 /// - <b style="color:orange">camera_[NAME]_label_image</b>
+/// - <b style="color:orange">camera_[NAME]_point_cloud</b>
 /// - ...
 /// - camera_[NAME]_rgb_image
 /// - camera_[NAME]_depth_image
 /// - <b style="color:orange">camera_[NAME]_label_image</b>
+/// - <b style="color:orange">camera_[NAME]_point_cloud</b>
 /// - <b style="color:orange">pose_bundle</b>
 /// - <b style="color:orange">query_object</b>
 /// - <b style="color:orange">contact_results</b>
