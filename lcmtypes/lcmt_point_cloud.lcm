@@ -1,0 +1,15 @@
+package drake;
+
+struct lcmt_point_cloud {
+  // The timestamp and frame name.
+  lcmt_header header;
+
+  // The x,y,z points.
+  int32_t num_points;
+  float points[3][num_points];
+
+  // Optional supplemental channels (e.g., r,g,b).
+  int32_t num_channels;
+  string channel_names[num_channels];
+  float channels[num_channels][num_points];
+}
