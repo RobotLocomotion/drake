@@ -33,6 +33,19 @@ drake_py_library(
 )
 
 drake_pybind_library(
+    name = "kuka_iiwa_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:eigen_pybind",
+    ],
+    cc_srcs = ["kuka_iiwa_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+    ],
+)
+
+drake_pybind_library(
     name = "planner_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
@@ -66,6 +79,7 @@ drake_py_library(
 )
 
 PY_LIBRARIES_WITH_INSTALL = [
+    ":kuka_iiwa_py",
     ":planner_py",
     ":schunk_wsg_py",
 ]
@@ -74,6 +88,14 @@ PY_LIBRARIES = [
     ":module_py",
     ":simple_ui_py",
 ]
+
+drake_py_unittest(
+    name = "kuka_iiwa_test",
+    deps = [
+        ":kuka_iiwa_py",
+        "//bindings/pydrake/systems",
+    ],
+)
 
 drake_py_unittest(
     name = "planner_test",
