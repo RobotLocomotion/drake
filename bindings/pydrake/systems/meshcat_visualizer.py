@@ -164,8 +164,9 @@ class MeshcatVisualizer(LeafSystem):
                 browser iff a new meshcat server is created as a subprocess.
                 Set to False to disable this.
             frames_to_draw: a list or array containing pydrake.geometry.FrameId
-                for which body frames to draw. Users may obtain the ids from
-                plant using GetBodyFrameIdIfExists.
+                for which body frames to draw. Note that these are frames
+                registered within the scene_graph. For multibody frames, users
+                may obtain the ids from plant using GetBodyFrameIdIfExists.
             frames_opacity, axis_length and axis_radius are the opacity, length
                 and radius of the coordinate axes to be drawn.
             delete_prefix_on_load: Specifies whether we should delete the
@@ -415,7 +416,7 @@ class MeshcatVisualizer(LeafSystem):
                 if frame_id in self.frames_to_draw:
                     AddTriad(
                         self.vis,
-                        name="frame",
+                        name=name,
                         prefix=self.prefix + "/" + name,
                         length=self.axis_length,
                         radius=self.axis_radius,
