@@ -13,16 +13,13 @@ namespace drake {
 namespace pydrake {
 
 PYBIND11_MODULE(kuka_iiwa, m) {
-  using drake::manipulation::kuka_iiwa::get_iiwa_max_joint_velocities;
-  using drake::manipulation::kuka_iiwa::IiwaCommandReceiver;
-  using drake::manipulation::kuka_iiwa::IiwaCommandSender;
-  using drake::manipulation::kuka_iiwa::IiwaStatusReceiver;
-  using drake::manipulation::kuka_iiwa::IiwaStatusSender;
-  using drake::manipulation::kuka_iiwa::kIiwaArmNumJoints;
   using drake::systems::Diagram;
   using drake::systems::LeafSystem;
 
   m.doc() = "Tools for kuka iiwa.";
+
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::manipulation::kuka_iiwa;
   constexpr auto& doc = pydrake_doc.drake.manipulation.kuka_iiwa;
 
   py::module::import("pydrake.systems.framework");
@@ -57,8 +54,8 @@ PYBIND11_MODULE(kuka_iiwa, m) {
             cls_doc.ctor.doc)
         .def("get_position_input_port", &Class::get_position_input_port,
             py_rvp::reference_internal, cls_doc.get_position_input_port.doc)
-        .def("get_torque_input_port", &Class::get_position_input_port,
-            py_rvp::reference_internal, cls_doc.get_position_input_port.doc);
+        .def("get_torque_input_port", &Class::get_torque_input_port,
+            py_rvp::reference_internal, cls_doc.get_torque_input_port.doc);
   }
 
   {
