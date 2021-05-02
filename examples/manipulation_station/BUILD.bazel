@@ -96,6 +96,7 @@ drake_cc_binary(
         "//manipulation/schunk_wsg:schunk_wsg_lcm",
         "//systems/analysis:simulator",
         "//systems/lcm",
+        "//systems/sensors:image_to_lcm_image_array_t",
         "@gflags",
     ],
 )
