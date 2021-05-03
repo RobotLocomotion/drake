@@ -11,6 +11,7 @@ from pydrake.common.test_utilities.pickle_compare import assert_pickle
 
 import copy
 import math
+import textwrap
 import unittest
 
 import numpy as np
@@ -181,6 +182,18 @@ class TestMath(unittest.TestCase):
         p_AQlist = np.array([p_AQ, p_AQ]).T
         numpy_compare.assert_float_equal(
             X_AB.multiply(p_BoQ_B=p_BQlist), p_AQlist)
+        # - Repr.
+        z = repr(T(0.0))
+        i = repr(T(1.0))
+        self.assertEqual(repr(RigidTransform()), textwrap.dedent(f"""\
+        RigidTransform(
+          R=RotationMatrix([
+            [{i}, {z}, {z}],
+            [{z}, {i}, {z}],
+            [{z}, {z}, {i}],
+          ]),
+          p=[{z}, {z}, {z}],
+        )"""))
         # Test pickling.
         assert_pickle(self, X_AB, RigidTransform.GetAsMatrix4, T=T)
 
@@ -265,6 +278,15 @@ class TestMath(unittest.TestCase):
         R = RotationMatrix()
         numpy_compare.assert_equal(R.IsExactlyIdentity(), True)
         numpy_compare.assert_equal(R.IsIdentityToInternalTolerance(), True)
+        # - Repr.
+        z = repr(T(0.0))
+        i = repr(T(1.0))
+        self.assertEqual(repr(RotationMatrix()), textwrap.dedent(f"""\
+        RotationMatrix([
+          [{i}, {z}, {z}],
+          [{z}, {i}, {z}],
+          [{z}, {z}, {i}],
+        ])"""))
         # Test pickling.
         assert_pickle(self, R_AB, RotationMatrix.matrix, T=T)
 
