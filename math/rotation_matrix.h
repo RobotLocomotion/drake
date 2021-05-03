@@ -1073,6 +1073,8 @@ class RotationMatrix {
   // @param[in] v The vector to test.
   // @param[in] function_name The name of the calling function; included in the
   //   exception message.
+  // @throws std::exception if |v| cannot be verified to be within 4ε of 1.
+  //   An exception is thrown if v contains nonfinite numbers (NaN or infinity).
   // @note no exception is thrown if v is a symbolic type.
   static void ThrowIfNotUnitLength(const Vector3<T>& v,
                                    const char* function_name);
@@ -1082,7 +1084,8 @@ class RotationMatrix {
   // @param[in] v The vector to normalize.
   // @param[in] function_name The name of the calling function; included in the
   //   exception message.
-  // @throws if v contains nonfinite numbers (NaN or infinity) or |v| < 1E-10.
+  // @throws std::exception if v contains nonfinite numbers (NaN or infinity)
+  //   or |v| < 1E-10.
   // @note no exception is thrown if v is a symbolic type.
   static Vector3<T> NormalizeOrThrow(const Vector3<T>& v,
                                      const char* function_name);

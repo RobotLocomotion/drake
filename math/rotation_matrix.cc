@@ -111,7 +111,7 @@ void RotationMatrix<T>::ThrowIfNotUnitLength(const Vector3<T>& v,
     const double norm = ExtractDoubleOrThrow(v.norm());
     const double error = std::abs(1.0 - norm);
     // If v contains non-finite values (NaN or infinity), this test must fail.
-    // Note: To properly test for Nan and infinity, do not change the next
+    // Note: To properly test for NaN and infinity, do not change the next
     // logic statement to if( error > kEps).
     if ((error <= kEps) == false) {
       const double vx = ExtractDoubleOrThrow(v.x());
