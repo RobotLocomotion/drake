@@ -1122,14 +1122,25 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVector) {
 GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVectorExceptions) {
   constexpr int axis_index = 0;
   if (kDrakeAssertIsArmed) {
+    // Verify vector with Nan throws an exception.
     DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneUnitVector(
         Vector3<double>(NAN, 1, NAN), axis_index), std::exception,
       "RotationMatrix::MakeFromOneUnitVector.* requires a unit-length vector"
       "[^]+ nan 1.0 nan[^]+ is not less than or equal to .+");
+
+    // Verify vector with infinity throws an exception.
+    constexpr double kInfinity = std::numeric_limits<double>::infinity();
+    DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneUnitVector(
+        Vector3<double>(kInfinity, 1, 0), axis_index), std::exception,
+      "RotationMatrix::MakeFromOneUnitVector.* requires a unit-length vector"
+      "[^]+ inf 1.0 0[^]+ is not less than or equal to .+");
+
+    // Verify non-unit vector with infinity throws an exception.
     DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneUnitVector(
         Vector3<double>(1, 2, 3), axis_index), std::exception,
       "RotationMatrix::MakeFromOneUnitVector.* requires a unit-length vector"
       "[^]+ 1.0 2.0 3.0[^]+ is not less than or equal to .+");
+
     // Verify MakeFromOneUnitVector() throws an exception if the magnitude of
     // its unit vector argument u differs from 1.0 by more than 4 * kEpsilon.
     // The value below for kTolSqrt is motivated by a Taylor series
@@ -1142,6 +1153,7 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVectorExceptions) {
          Vector3<double>(1, 0, kTolSqrt), axis_index), std::exception,
       "RotationMatrix::MakeFromOneUnitVector.* requires a unit-length vector"
       "[^]+ is not less than or equal to .+");
+
     // Verify MakeFromOneUnitVector() does not throw an exception if
     // |u| < 4 * kEpsilon, which means kTolSqrt < √(8) * √(kEpsilon).
     kTolSqrt = 2 * std::sqrt(kEpsilon);  // Small enough to not throw.
@@ -1170,18 +1182,19 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVectorExceptions) {
 // Verify an exception is always thrown for a symbolic (non-numeric) type.
 GTEST_TEST(RotationMatrixTest, MakeFromOneVectorExceptions) {
   constexpr int axis_index = 0;
-  constexpr double kInf = std::numeric_limits<double>::infinity();
 
-  // Vector with Nan throws an exception.
+
+  // Verify vector with Nan throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneVector(
       Vector3<double>(NAN, 1, NAN), axis_index), std::exception,
       "RotationMatrix::MakeFromOneVector.* cannot normalize the given vector"
       "[^]+ nan 1.0 nan[^]+ If you are confident that v's direction is "
       "meaningful, pass v.normalized.. in place of v.");
 
-  // Vector with infinity throws an exception.
+  // Verify vector with infinity throws an exception.
+  constexpr double kInfinity = std::numeric_limits<double>::infinity();
   DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneVector(
-      Vector3<double>(kInf, 1, 0), axis_index), std::exception,
+      Vector3<double>(kInfinity, 1, 0), axis_index), std::exception,
       "RotationMatrix::MakeFromOneVector.* cannot normalize the given vector"
       "[^]+ inf 1.0 0[^]+ If you are confident that v's direction is "
       "meaningful, pass v.normalized.. in place of v.");
