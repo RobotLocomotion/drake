@@ -271,5 +271,15 @@ void SystemBase::ThrowValidateContextMismatch(
       context.GetSystemPathname()));
 }
 
+[[noreturn]] void SystemBase::ThrowUnsupportedScalarConversion(
+    const SystemBase& from, const std::string& destination_type_name) {
+  std::stringstream ss;
+  ss << "The object named [" << from.get_name() << "] of type "
+     << NiceTypeName::Get(from)
+     << " does not support scalar conversion to type ["
+     << destination_type_name <<"].";
+  throw std::logic_error(ss.str().c_str());
+}
+
 }  // namespace systems
 }  // namespace drake

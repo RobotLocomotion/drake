@@ -469,6 +469,22 @@ Note: The above is for the C++ documentation. For Python, use
 Note: The above is for the C++ documentation. For Python, use
 `witnesses = GetWitnessFunctions(context)`)"")
                 .c_str());
+    auto def_to_scalar_type = [&system_cls, doc](auto dummy) {
+      using U = decltype(dummy);
+      AddTemplateMethod(
+          system_cls, "ToScalarType",
+          [](const System<T>& self) { return self.template ToScalarType<U>(); },
+          GetPyParam<U>(), doc.System.ToScalarType.doc_0args);
+    };
+    type_visit(def_to_scalar_type, CommonScalarPack{});
+
+    auto def_to_scalar_type_maybe = [&system_cls, doc](auto dummy) {
+      using U = decltype(dummy);
+      AddTemplateMethod(system_cls, "ToScalarTypeMaybe",
+          &System<T>::template ToScalarTypeMaybe<U>, GetPyParam<U>(),
+          doc.System.ToScalarTypeMaybe.doc);
+    };
+    type_visit(def_to_scalar_type_maybe, CommonScalarPack{});
 
     using AllocCallback = typename LeafOutputPort<T>::AllocCallback;
     using CalcCallback = typename LeafOutputPort<T>::CalcCallback;

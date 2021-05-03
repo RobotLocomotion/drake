@@ -359,14 +359,25 @@ class TestGeneral(unittest.TestCase):
             system = Adder_[T](1, 1)
             # N.B. Current scalar conversion does not permit conversion to and
             # from the same type.
+            if T != float:
+                methods = [Adder_[T].ToScalarType[float],
+                           Adder_[T].ToScalarTypeMaybe[float]]
+                for method in methods:
+                    system_float = method(system)
+                    self.assertIsInstance(system_float, System_[float])
+                    self._compare_system_instances(system, system_float)
             if T != AutoDiffXd:
-                methods = [Adder_[T].ToAutoDiffXd, Adder_[T].ToAutoDiffXdMaybe]
+                methods = [Adder_[T].ToAutoDiffXd, Adder_[T].ToAutoDiffXdMaybe,
+                           Adder_[T].ToScalarType[AutoDiffXd],
+                           Adder_[T].ToScalarTypeMaybe[AutoDiffXd]]
                 for method in methods:
                     system_ad = method(system)
                     self.assertIsInstance(system_ad, System_[AutoDiffXd])
                     self._compare_system_instances(system, system_ad)
             if T != Expression:
-                methods = [Adder_[T].ToSymbolic, Adder_[T].ToSymbolicMaybe]
+                methods = [Adder_[T].ToSymbolic, Adder_[T].ToSymbolicMaybe,
+                           Adder_[T].ToScalarType[Expression],
+                           Adder_[T].ToScalarTypeMaybe[Expression]]
                 for method in methods:
                     system_sym = method(system)
                     self.assertIsInstance(system_sym, System_[Expression])

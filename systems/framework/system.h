@@ -1102,16 +1102,7 @@ class System : public SystemBase {
   related to scalar-type conversion support. */
   template <template <typename> class S = ::drake::systems::System>
   static std::unique_ptr<S<AutoDiffXd>> ToAutoDiffXd(const S<T>& from) {
-    using U = AutoDiffXd;
-    std::unique_ptr<System<U>> base_result = from.ToAutoDiffXdMaybe();
-    if (!base_result) {
-      std::stringstream ss;
-      ss << "The object named [" << from.get_name() << "] of type "
-         << NiceTypeName::Get(from) << " does not support ToAutoDiffXd.";
-      throw std::logic_error(ss.str().c_str());
-    }
-
-    return dynamic_pointer_cast_or_throw<S<U>>(std::move(base_result));
+    return System<T>::ToScalarType<AutoDiffXd>(from);
   }
 
   /** Creates a deep copy of this system exactly like ToAutoDiffXd(), but
@@ -1139,7 +1130,7 @@ class System : public SystemBase {
 
   /** Creates a deep copy of `from`, transmogrified to use the symbolic scalar
   type. The result is never nullptr.
-  @throws std::exception if this System does not support symbolic
+  @throws std::exception if `from` does not support symbolic
 
   Usage: @code
     MySystem<double> plant;
@@ -1153,16 +1144,7 @@ class System : public SystemBase {
   related to scalar-type conversion support. */
   template <template <typename> class S = ::drake::systems::System>
   static std::unique_ptr<S<symbolic::Expression>> ToSymbolic(const S<T>& from) {
-    using U = symbolic::Expression;
-    std::unique_ptr<System<U>> base_result = from.ToSymbolicMaybe();
-    if (!base_result) {
-      std::stringstream ss;
-      ss << "The object named [" << from.get_name() << "] of type "
-         << NiceTypeName::Get(from) << " does not support ToSymbolic.";
-      throw std::logic_error(ss.str().c_str());
-    }
-
-    return dynamic_pointer_cast_or_throw<S<U>>(std::move(base_result));
+    return System<T>::ToScalarType<symbolic::Expression>(from);
   }
 
   /** Creates a deep copy of this system exactly like ToSymbolic(), but returns
@@ -1188,6 +1170,73 @@ class System : public SystemBase {
   expert-level API intended for framework authors.  Most users should
   prefer the convenience helpers such as System::ToAutoDiffXd. */
   const SystemScalarConverter& get_system_scalar_converter() const;
+  //@}
+
+
+  //----------------------------------------------------------------------------
+  /** @name                Scalar type conversion by template parameter
+
+   These routines allow arbitrary scalar type conversion to be attempted. Not
+   all conversions will be supported, for various reasons.
+
+   - "Self conversions" (T=U) are not supported because the definitions would
+     be ambiguous with the (deleted) copy constructor.
+   - Derived systems may decline to support some scalar types.
+   */
+  //@{
+  /** Creates a deep copy of this System, transmogrified to use the
+  scalar type selected by a template parameter. The result is never nullptr.
+  @throws std::exception if this System does not support the destination type.
+
+  @tparam U The destination scalar type. For a list of supported types, see the
+  @ref default_scalars "default scalars".
+
+  See @ref system_scalar_conversion for detailed background and examples
+  related to scalar-type conversion support. */
+  template <typename U>
+  std::unique_ptr<System<U>> ToScalarType() const {
+    return System<T>::ToScalarType<U>(*this);
+  }
+
+  /** Creates a deep copy of `from`, transmogrified to use the scalar
+  type selected by a template parameter. The result is never nullptr.
+  @throws std::exception if `from` does not support the destination type.
+
+  Usage: @code
+    MySystem<double> plant;
+    auto sym_plant =
+      systems::System<double>::ToScalarType<symbolic::Expression>(plant);
+  @endcode
+
+  @tparam U The destination scalar type. For a list of supported types, see the
+  @ref default_scalars "default scalars".
+  @tparam S The specific System pointer type to return.
+
+  See @ref system_scalar_conversion for detailed background and examples
+  related to scalar-type conversion support. */
+  template <typename U, template <typename> class S = ::drake::systems::System>
+  static std::unique_ptr<S<U>> ToScalarType(const S<T>& from) {
+    auto base_result = from.template ToScalarTypeMaybe<U>();
+    if (!base_result) {
+      ThrowUnsupportedScalarConversion(from, NiceTypeName::Get<U>());
+    }
+
+    return dynamic_pointer_cast_or_throw<S<U>>(std::move(base_result));
+  }
+
+  /** Creates a deep copy of this system exactly like ToScalarType(), but
+  returns nullptr if this System does not support the destination type, instead
+  of throwing an exception.
+
+  @tparam U The destination scalar type. For a list of supported types, see the
+  @ref default_scalars "default scalars".
+  */
+  template <typename U>
+  std::unique_ptr<System<U>> ToScalarTypeMaybe() const {
+    auto result = system_scalar_converter_.Convert<U, T>(*this);
+    if (result) { result->AddExternalConstraints(external_constraints_); }
+    return result;
+  }
   //@}
 
   /** Gets the witness functions active for the given state.
@@ -1680,6 +1729,11 @@ class System : public SystemBase {
   // Refer to SystemImpl comments for details.
   friend class SystemImpl;
 
+  // For any T1 & T2, System<T1> considers System<T2> a friend, so that System
+  // can safely and efficiently convert scalar types. See for example
+  // System<T>::ToScalarTypeMaybe.
+  template <typename> friend class System;
+
   // Allocates an input of the leaf type that the System requires on the port
   // specified by @p input_port.  This is final in LeafSystem and Diagram.
   virtual std::unique_ptr<AbstractValue> DoAllocateInput(
@@ -1696,6 +1750,12 @@ class System : public SystemBase {
   const BasicVector<T>* EvalBasicVectorInputImpl(
       const char* func, const Context<T>& context,
       InputPortIndex port_index) const;
+
+  // Adds "external" constraints to this System.  This is a helper function to
+  // minimize inline bloat in scalar conversion; it is marked private since the
+  // signature matches the private data field type for efficiency.
+  void AddExternalConstraints(
+      const std::vector<ExternalSystemConstraint>& constraints);
 
   // The constraints_ vector encompass all constraints on this system, whether
   // they were declared by a concrete subclass during construction (e.g., by
