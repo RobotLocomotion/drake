@@ -287,6 +287,7 @@ class RotationMatrix {
   /// @pre axis_index is 0 or 1 or 2.
   /// @throws std::exception if b_A cannot be made into a unit vector because
   ///   b_A contains a NaN or infinity or |b_A| < 1.0E-10.
+  /// @throws std::exception if the underlying type is symbolic (non-numeric).
   /// @see MakeFromOneUnitVector() if b_A is known to already be unit length.
   /// @retval R_AB the rotation matrix with properties as described above.
   static RotationMatrix<T> MakeFromOneVector(
@@ -304,6 +305,7 @@ class RotationMatrix {
   /// @pre axis_index is 0 or 1 or 2.
   /// @throws std::exception in Debug builds if u_A is not a unit vector, i.e.,
   /// |u_A| is not within a tolerance of 4ε ≈ 8.88E-16 to 1.0.
+  /// @throws std::exception if the underlying type is symbolic (non-numeric).
   /// @note This method is designed for maximum performance and does not verify
   ///  u_A as a unit vector in Release builds.  Consider MakeFromOneVector().
   /// @retval R_AB the rotation matrix whose properties are described in
