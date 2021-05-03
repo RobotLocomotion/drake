@@ -1122,7 +1122,7 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVector) {
 GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVectorExceptions) {
   constexpr int axis_index = 0;
   if (kDrakeAssertIsArmed) {
-    // Verify vector with Nan throws an exception.
+    // Verify vector with NaN throws an exception.
     DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneUnitVector(
         Vector3<double>(NAN, 1, NAN), axis_index), std::exception,
       "RotationMatrix::MakeFromOneUnitVector.* requires a unit-length vector"
@@ -1135,7 +1135,7 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVectorExceptions) {
       "RotationMatrix::MakeFromOneUnitVector.* requires a unit-length vector"
       "[^]+ inf 1.0 0[^]+ is not less than or equal to .+");
 
-    // Verify non-unit vector with infinity throws an exception.
+    // Verify non-unit vector throws an exception.
     DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneUnitVector(
         Vector3<double>(1, 2, 3), axis_index), std::exception,
       "RotationMatrix::MakeFromOneUnitVector.* requires a unit-length vector"
@@ -1183,8 +1183,7 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVectorExceptions) {
 GTEST_TEST(RotationMatrixTest, MakeFromOneVectorExceptions) {
   constexpr int axis_index = 0;
 
-
-  // Verify vector with Nan throws an exception.
+  // Verify vector with NaN throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneVector(
       Vector3<double>(NAN, 1, NAN), axis_index), std::exception,
       "RotationMatrix::MakeFromOneVector.* cannot normalize the given vector"
