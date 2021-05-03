@@ -1198,7 +1198,7 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneVectorExceptions) {
       "[^]+ inf 1.0 0[^]+ If you are confident that v's direction is "
       "meaningful, pass v.normalized.. in place of v.");
 
-  // Vector too small throws.
+  // Verify that a vector that is slightly too small throws.
   constexpr double kTolerance = 2 * std::numeric_limits<double>::epsilon();
   const Vector3<double> too_small_vector(1.0E-10 - kTolerance, 0, 0);
   DRAKE_EXPECT_THROWS_MESSAGE(
