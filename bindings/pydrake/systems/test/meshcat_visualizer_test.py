@@ -124,7 +124,7 @@ class TestMeshcat(unittest.TestCase):
             frames_to_draw.append(
                 # Make sure the frames to visualize exists.
                 kuka.GetBodyFrameIdOrThrow(
-                    kuka.GetFrameByName(frame_name).body().index()
+                    kuka.GetBodyByName(frame_name).index()
                 )
             )
 
