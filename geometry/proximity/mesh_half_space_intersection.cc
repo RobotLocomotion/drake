@@ -341,10 +341,10 @@ ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
     const math::RigidTransform<T>& X_WR) {
   std::vector<SurfaceFaceIndex> tri_indices;
   tri_indices.reserve(mesh_R.num_elements());
-  const math::RotationMatrixd& R_WR = convert_to_double(X_WR).rotation();
   auto bvh_callback = [&tri_indices, &mesh_R,
                        R_WS = convert_to_double(X_WS).rotation(),
-                       &R_WR](SurfaceFaceIndex tri_index) {
+                       R_WR = convert_to_double(X_WR).rotation()](
+                          SurfaceFaceIndex tri_index) {
     // The gradient of the half space pressure field lies in the _opposite_
     // direction as its normal. Its normal is Sz. So, unit_grad_p_W = -Sz_W.
     const Eigen::Vector3d& unit_grad_p_W = -R_WS.col(2);
