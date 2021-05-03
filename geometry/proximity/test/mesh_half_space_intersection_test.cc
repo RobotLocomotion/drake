@@ -1556,7 +1556,7 @@ TEST_F(MeshHalfSpaceDerivativesTest, Pressure) {
       const Vector3d expected_dp_dRo = -E * n_W.transpose() * dV_dRo;
       const AutoDiffXd& p = surface.e_MN().EvaluateAtVertex(v);
       EXPECT_TRUE(
-          CompareMatrices(p.derivatives(), expected_dp_dRo, 2 * E * kEps));
+          CompareMatrices(p.derivatives(), expected_dp_dRo, 3 * E * kEps));
     }
   };
 
