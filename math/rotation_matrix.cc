@@ -110,24 +110,29 @@ void RotationMatrix<T>::ThrowIfNotUnitLength(const Vector3<T>& v,
     constexpr double kEps = 4 * std::numeric_limits<double>::epsilon();
     const double norm = ExtractDoubleOrThrow(v.norm());
     const double error = std::abs(1.0 - norm);
-    // If v contains non-finite values (NaN or inf), this test must fail.
-    if (error <= kEps) return;
-    throw std::logic_error(
+    // If v contains non-finite values (NaN or infinity), this test must fail.
+    // Note: To properly test for Nan and infinity, do not change the next
+    // logic statement to if( error > kEps).
+    if ((error <= kEps) == false) {
+      const double vx = ExtractDoubleOrThrow(v.x());
+      const double vy = ExtractDoubleOrThrow(v.y());
+      const double vz = ExtractDoubleOrThrow(v.z());
+      throw std::logic_error(
         fmt::format("RotationMatrix::{}() requires a unit-length vector.\n"
                     "         v: {} {} {}\n"
                     "       |v|: {}\n"
                     " |1 - |v||: {} is not less than or equal to {}.",
-                    function_name, ExtractDoubleOrThrow(v.x()),
-                    ExtractDoubleOrThrow(v.y()), ExtractDoubleOrThrow(v.z()),
-                    norm, error, kEps));
+                    function_name, vx, vy, vz, norm, error, kEps));
+    }
   } else {
     unused(v, function_name);
   }
 }
 
 template <typename T>
-void RotationMatrix<T>::ThrowIfUnnormalizable(const Vector3<T>& v,
-                                              const char* function_name) {
+Vector3<T> RotationMatrix<T>::NormalizeOrThrow(const Vector3<T>& v,
+                                               const char* function_name) {
+  Vector3<T> u;
   if constexpr (scalar_predicate<T>::is_bool) {
     // The number 1.0E-10 is a heuristic (rule of thumb) that is guided by
     // an expected small physical dimensions in a robotic systems.  Numbers
@@ -135,9 +140,15 @@ void RotationMatrix<T>::ThrowIfUnnormalizable(const Vector3<T>& v,
     constexpr double kMinMagnitude = 1e-10;
     constexpr double kInf = std::numeric_limits<double>::infinity();
     const double norm = ExtractDoubleOrThrow(v.norm());
-    // If v contains non-finite values (NaN or inf), this test must fail.
-    if (norm >= kMinMagnitude && norm < kInf)return;
-    throw std::logic_error(
+    // If v contains non-finite values (NaN or infinity), this test must fail.
+    // For IEEE 754, except NaN and infinity, everything is less than infinity.
+    if (norm >= kMinMagnitude && norm < kInf) {
+      u = v/norm;
+    } else {
+      const double vx = ExtractDoubleOrThrow(v.x());
+      const double vy = ExtractDoubleOrThrow(v.y());
+      const double vz = ExtractDoubleOrThrow(v.z());
+      throw std::logic_error(
         fmt::format("RotationMatrix::{}() cannot normalize the given vector.\n"
                     "   v: {} {} {}\n"
                     " |v|: {}\n"
@@ -145,12 +156,13 @@ void RotationMatrix<T>::ThrowIfUnnormalizable(const Vector3<T>& v,
                     " magnitude of at least {} to automatically normalize. If"
                     " you are confident that v's direction is meaningful, pass"
                     " v.normalized() in place of v.",
-                    function_name, ExtractDoubleOrThrow(v.x()),
-                    ExtractDoubleOrThrow(v.y()), ExtractDoubleOrThrow(v.z()),
-                    norm, kMinMagnitude));
+                    function_name, vx, vy, vz, norm, kMinMagnitude));
+    }
   } else {
-    unused(v, function_name);
+    unused(function_name);
+    u = v.normalized();
   }
+  return u;
 }
 
 }  // namespace math

@@ -1118,6 +1118,7 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVector) {
 // in Debug builds if its first argument is a vector with a non-finite element
 // (e.g., a NaN) or is a vector whose magnitude is not within ≈ 1.0.  Verify no
 // exception is thrown in Release builds (for faster runtime speed).
+// Verify an exception is always thrown for a symbolic (non-numeric) type.
 GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVectorExceptions) {
   constexpr int axis_index = 0;
   if (kDrakeAssertIsArmed) {
@@ -1154,11 +1155,19 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVectorExceptions) {
     EXPECT_FALSE(RotationMatrix<double>::MakeFromOneUnitVector(
         Vector3<double>(1, 2, 3), axis_index).IsValid());
   }
+
+  // Verify an exception is always thrown for a symbolic (non-numeric) type.
+  Vector3<symbolic::Expression> u_symbolic(1, 0, 0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RotationMatrix<symbolic::Expression>::MakeFromOneVector(u_symbolic,
+                                                              axis_index),
+      std::exception, "Method cannot be used with a symbolic type.");
 }
 
 // Verify that the "basic" method MakeFromOneVector() throws an exception in
 // both Debug and Release builds if its first argument is a vector with a
 // non-finite element (e.g., a NaN) or is a vector whose magnitude < 1.0E-10.
+// Verify an exception is always thrown for a symbolic (non-numeric) type.
 GTEST_TEST(RotationMatrixTest, MakeFromOneVectorExceptions) {
   constexpr int axis_index = 0;
   constexpr double kInf = std::numeric_limits<double>::infinity();
@@ -1198,31 +1207,12 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneVectorExceptions) {
   R_AB = RotationMatrix<double>::MakeFromOneVector(huge_vector, axis_index);
   VerifyMakeFromOneUnitVector(R_AB, huge_vector.normalized(), axis_index);
 
-  // Verify no relevant assertions are thrown when the underlying scalar type
-  // is a symbolic::Expression, as most validity checks are skipped.
-  Vector3<symbolic::Expression> u_symbolic(3, 2, 1);
-  EXPECT_NO_THROW(
-      RotationMatrix<symbolic::Expression>::MakeFromOneVector(u_symbolic, 2));
-
-  // Verify that a assertion is thrown when there is a NAN in u_symbolic or a
-  // symbolic::Variable in u_symbolic and there is no associated environment.
-  // Note:  As of now, thse assertion are not thrown by a method in the
-  // RotationMatrix class, instead there are thrown somewhere else in Drake.
-  // TODO(Mitiguy) See if there is a way to get a better message that is thrown
-  //  by the RotationMatrix class.
-  u_symbolic = Vector3<symbolic::Expression>(3, 2, NAN);
+  // Verify an exception is always thrown for a symbolic (non-numeric) type.
+  Vector3<symbolic::Expression> v_symbolic(3, 2, 1);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      RotationMatrix<symbolic::Expression>::MakeFromOneVector(u_symbolic, 0),
-      std::exception, "NaN is detected during Symbolic computation.");
-
-  u_symbolic = Vector3<symbolic::Expression>({symbolic::Variable("x"),
-                                              symbolic::Variable("y"),
-                                              symbolic::Variable("z")});
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      RotationMatrix<symbolic::Expression>::MakeFromOneVector(u_symbolic, 0),
-      std::exception,
-      "The following environment does not have an entry for the variable "
-      "x\\n\\n");
+      RotationMatrix<symbolic::Expression>::MakeFromOneVector(v_symbolic,
+                                                              axis_index),
+      std::exception, "Method cannot be used with a symbolic type.");
 }
 
 }  // namespace

@@ -291,8 +291,7 @@ class RotationMatrix {
   /// @retval R_AB the rotation matrix with properties as described above.
   static RotationMatrix<T> MakeFromOneVector(
       const Vector3<T>& b_A, int axis_index) {
-    ThrowIfUnnormalizable(b_A, __func__);
-    const Vector3<T> u_A = b_A.normalized();
+    const Vector3<T> u_A = NormalizeOrThrow(b_A, __func__);
     return MakeFromOneUnitVector(u_A, axis_index);
   }
 
@@ -311,9 +310,13 @@ class RotationMatrix {
   /// MakeFromOneVector().
   static RotationMatrix<T> MakeFromOneUnitVector(
       const Vector3<T>& u_A, int axis_index) {
-    // In debug builds, verify axis_index is 0 or 1 or 2 and u_A is unit length.
+    // In Debug builds, verify axis_index is 0 or 1 or 2 and u_A is unit length.
     DRAKE_ASSERT(axis_index >= 0  &&  axis_index <= 2);
     DRAKE_ASSERT_VOID(ThrowIfNotUnitLength(u_A, __func__));
+
+    if constexpr (scalar_predicate<T>::is_bool == false) {
+      throw std::logic_error("Method cannot be used with a symbolic type.");
+    }
 
     // This method forms a right-handed orthonormal basis with u_A and two
     // internally-constructed unit vectors v_A and w_A.
@@ -488,7 +491,7 @@ class RotationMatrix {
   /// - row(2) returns Az_B (Az expressed in terms of Bx, By, Bz).
   /// @param[in] index requested row index (0 <= index <= 2).
   /// @see col(), matrix()
-  /// @throws In debug builds, asserts (0 <= index <= 2).
+  /// @throws In Debug builds, asserts (0 <= index <= 2).
   /// @note For efficiency and consistency with Eigen, this method returns
   /// the same quantity returned by Eigen's row() operator.
   /// The returned quantity can be assigned in various ways, e.g., as
@@ -510,7 +513,7 @@ class RotationMatrix {
   /// - col(2) returns Bz_A (Bz expressed in terms of Ax, Ay, Az).
   /// @param[in] index requested column index (0 <= index <= 2).
   /// @see row(), matrix()
-  /// @throws In debug builds, asserts (0 <= index <= 2).
+  /// @throws In Debug builds, asserts (0 <= index <= 2).
   /// @note For efficiency and consistency with Eigen, this method returns
   /// the same quantity returned by Eigen's col() operator.
   /// The returned quantity can be assigned in various ways, e.g., as
@@ -1063,21 +1066,23 @@ class RotationMatrix {
     return m;
   }
 
-  // Throws if v is not unit length. It must have a measurable magnitude within
-  // 4 epsilon of 1.
-  // @param v               The vector to test.
-  // @param function_name   The name of the calling function; included in the
-  //                        exception message.
+  // Throws an exception if the vector v does not have a measurable magnitude
+  // within 4ε of 1 (where machine epsilon ε ≈ 2.22E-16).
+  // @param[in] v The vector to test.
+  // @param[in] function_name The name of the calling function; included in the
+  //   exception message.
+  // @note no exception is thrown if v is a symbolic type.
   static void ThrowIfNotUnitLength(const Vector3<T>& v,
                                    const char* function_name);
 
-  // Throws if v cannot be "safely" normalized. It must have a finite,
-  // measurable magnitude greather than 1e-10.
-  // @param v               The vector to test.
-  // @param function_name   The name of the calling function; included in the
-  //                        exception message.
-  static void ThrowIfUnnormalizable(const Vector3<T>& v,
-                                    const char* function_name);
+  // Returns the unit vector in the direction of v or throws an exception.
+  // @param[in] v The vector to normalize.
+  // @param[in] function_name The name of the calling function; included in the
+  //   exception message.
+  // @throws if v contains nonfinite numbers (NAN or infinity) or |v| < 1E-10.
+  // @note no exception is thrown if v is a symbolic type.
+  static Vector3<T> NormalizeOrThrow(const Vector3<T>& v,
+                                     const char* function_name);
 
   // Stores the underlying rotation matrix relating two frames (e.g. A and B).
   // For speed, `R_AB_` is uninitialized (public constructors set its value).
