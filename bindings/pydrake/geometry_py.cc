@@ -1283,11 +1283,14 @@ void DoScalarIndependentDefinitions(py::module m) {
       py_rvp::reference_internal, py::arg("diffuse"),
       doc.MakePhongIllustrationProperties.doc);
 
-  m.def("ReadObjToSurfaceMesh",
-      py::overload_cast<const std::string&, double>(
-          &geometry::ReadObjToSurfaceMesh),
+  m.def(
+      "ReadObjToSurfaceMesh",
+      [](const std::string& filename, double scale) {
+        return geometry::ReadObjToSurfaceMesh(filename, scale);
+      },
       py::arg("filename"), py::arg("scale") = 1.0,
-      doc.ReadObjToSurfaceMesh.doc_2args_filename_scale);
+      // N.B. We have not bound the optional "on_warning" argument.
+      doc.ReadObjToSurfaceMesh.doc_3args_filename_scale_on_warning);
 }
 
 void def_geometry(py::module m) {

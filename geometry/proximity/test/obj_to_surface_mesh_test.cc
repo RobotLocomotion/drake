@@ -1,5 +1,6 @@
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 
+#include <fstream>
 #include <sstream>
 #include <string>
 #include <tuple>
@@ -157,6 +158,39 @@ GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionForEmptyFile) {
   DRAKE_EXPECT_THROWS_MESSAGE(ReadObjToSurfaceMesh(&empty),
                               std::runtime_error,
                               "The Wavefront obj file has no faces.");
+}
+
+void FailOnWarning(std::string_view message) {
+  throw std::runtime_error(fmt::format("FailOnWarning: {}", message));
+}
+
+GTEST_TEST(ObjToSurfaceMeshTest, WarningCallback) {
+  // This *.obj file refers to a separate *.mtl file.  In various cases below,
+  // this may cause warnings from the parser.
+  const std::string filename =
+      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+
+  // When loaded as a stream (such that the *.mtl file is missing) with
+  // a defaulted callback, we will drake::log() but not throw.
+  {
+    std::ifstream input(filename);
+    EXPECT_NO_THROW(ReadObjToSurfaceMesh(&input, 1.0));
+  }
+
+  // When loaded as a stream (such that the *.mtl file is missing), the user-
+  // provided callback may choose to throw, and our test stub callback does so.
+  {
+    std::ifstream input(filename);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        ReadObjToSurfaceMesh(&input, 1.0, &FailOnWarning),
+        std::exception,
+        "FailOnWarning: Warning parsing Wavefront obj file : "
+        ".*CubeMaterial.*not found.*");
+  }
+
+  // When parsing using a filename, we are able to locate the *.mtl file with
+  // no warnings.
+  EXPECT_NO_THROW(ReadObjToSurfaceMesh(filename, 1.0, &FailOnWarning));
 }
 
 GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionFileHasNoFaces) {

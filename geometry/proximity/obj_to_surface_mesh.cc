@@ -2,7 +2,9 @@
 
 #include <fstream>
 #include <istream>
+#include <memory>
 #include <numeric>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -12,6 +14,7 @@
 #include <tiny_obj_loader.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/filesystem.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 
@@ -22,12 +25,6 @@ namespace {
 
 // TODO(DamrongGuoy): Refactor the tinyobj usage between here and
 //  ProximityEngine.
-
-// TODO(DamrongGuoy): Remove the guard DRAKE_DOXYGEN_CXX when we fixed
-//  issue#11130 "doxygen: Do not emit for `*.cc` files, also ignore
-//  `internal` namespace when appropriate".
-
-#ifndef DRAKE_DOXYGEN_CXX
 
 /*
  Converts vertices of tinyobj to vertices of SurfaceMesh.
@@ -111,39 +108,39 @@ void TinyObjToSurfaceFaces(const tinyobj::mesh_t& mesh,
   }
 }
 
-#endif  // #ifndef DRAKE_DOXYGEN_CXX
-
-}  // namespace
-
-SurfaceMesh<double> ReadObjToSurfaceMesh(const std::string& filename,
-                                         const double scale) {
-  std::ifstream input_stream(filename);
-  if (!input_stream.is_open()) {
-    throw std::runtime_error("Cannot open file '" + filename +"'");
-  }
-  return ReadObjToSurfaceMesh(&input_stream, scale);
-}
-
-SurfaceMesh<double> ReadObjToSurfaceMesh(std::istream* input_stream,
-                                         const double scale) {
+SurfaceMesh<double> DoReadObjToSurfaceMesh(
+    std::istream* input_stream,
+    const double scale,
+    const std::optional<std::string>& mtl_basedir,
+    const std::function<void(std::string_view)> on_warning) {
   tinyobj::attrib_t attrib;  // Used for vertices.
   std::vector<tinyobj::shape_t> shapes;  // Used for triangles.
   std::vector<tinyobj::material_t> materials;  // Not used.
   std::string warn;
   std::string err;
-  // Ignore material-library file.
-  tinyobj::MaterialReader* readMatFn = nullptr;
+  std::unique_ptr<tinyobj::MaterialReader> readMatFn;
+  if (mtl_basedir) {
+    readMatFn = std::make_unique<tinyobj::MaterialFileReader>(*mtl_basedir);
+  }
   // triangulate non-triangle faces.
   bool triangulate = true;
 
   bool ret = tinyobj::LoadObj(
-      &attrib, &shapes, &materials, &warn, &err, input_stream, readMatFn,
+      &attrib, &shapes, &materials, &warn, &err, input_stream, readMatFn.get(),
       triangulate);
   if (!ret || !err.empty()) {
     throw std::runtime_error("Error parsing Wavefront obj file : " + err);
   }
   if (!warn.empty()) {
-    drake::log()->warn("Warning parsing Wavefront obj file : {}", warn);
+    warn = "Warning parsing Wavefront obj file : " + warn;
+    if (warn.back() == '\n') {
+      warn.pop_back();
+    }
+    if (on_warning) {
+      on_warning(warn);
+    } else {
+      drake::log()->warn(warn);
+    }
   }
   if (shapes.size() == 0) {
     throw std::runtime_error("The Wavefront obj file has no faces.");
@@ -167,6 +164,31 @@ SurfaceMesh<double> ReadObjToSurfaceMesh(std::istream* input_stream,
   }
 
   return SurfaceMesh<double>(std::move(faces), std::move(vertices));
+}
+
+}  // namespace
+
+SurfaceMesh<double> ReadObjToSurfaceMesh(
+    const std::string& filename,
+    const double scale,
+    std::function<void(std::string_view)> on_warning) {
+  std::ifstream input_stream(filename);
+  if (!input_stream.is_open()) {
+    throw std::runtime_error("Cannot open file '" + filename +"'");
+  }
+  const std::string mtl_basedir =
+      filesystem::path(filename).parent_path().string() + "/";
+  return DoReadObjToSurfaceMesh(&input_stream, scale, mtl_basedir,
+                                std::move(on_warning));
+}
+
+SurfaceMesh<double> ReadObjToSurfaceMesh(
+    std::istream* input_stream,
+    const double scale,
+    std::function<void(std::string_view)> on_warning) {
+  DRAKE_THROW_UNLESS(input_stream != nullptr);
+  return DoReadObjToSurfaceMesh(input_stream, scale,
+      std::nullopt /* mtl_basedir */, std::move(on_warning));
 }
 
 }  // namespace geometry
