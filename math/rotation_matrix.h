@@ -1077,11 +1077,12 @@ class RotationMatrix {
   static void ThrowIfNotUnitLength(const Vector3<T>& v,
                                    const char* function_name);
 
-  // Returns the unit vector in the direction of v or throws an exception.
+  // Returns the unit vector in the direction of v or throws an exception if v
+  // cannot be "safely" noramlized.
   // @param[in] v The vector to normalize.
   // @param[in] function_name The name of the calling function; included in the
   //   exception message.
-  // @throws if v contains nonfinite numbers (NAN or infinity) or |v| < 1E-10.
+  // @throws if v contains nonfinite numbers (NaN or infinity) or |v| < 1E-10.
   // @note no exception is thrown if v is a symbolic type.
   static Vector3<T> NormalizeOrThrow(const Vector3<T>& v,
                                      const char* function_name);
