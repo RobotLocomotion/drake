@@ -26,6 +26,7 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/math/rigid_transform.h"
+#include "drake/multibody/math/spatial_force.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
@@ -40,6 +41,9 @@ namespace contact_surface {
 
 using Eigen::Vector3d;
 using Eigen::Vector4d;
+using geometry::AddContactMaterial;
+using geometry::AddRigidHydroelasticProperties;
+using geometry::AddSoftHydroelasticProperties;
 using geometry::Box;
 using geometry::ContactSurface;
 using geometry::Cylinder;
@@ -49,9 +53,6 @@ using geometry::FramePoseVector;
 using geometry::GeometryFrame;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
-using geometry::AddContactMaterial;
-using geometry::AddRigidHydroelasticProperties;
-using geometry::AddSoftHydroelasticProperties;
 using geometry::IllustrationProperties;
 using geometry::PenetrationAsPointPair;
 using geometry::ProximityProperties;
@@ -59,19 +60,20 @@ using geometry::QueryObject;
 using geometry::SceneGraph;
 using geometry::SourceId;
 using geometry::Sphere;
-using geometry::SurfaceMesh;
 using geometry::SurfaceFaceIndex;
+using geometry::SurfaceMesh;
 using geometry::SurfaceVertex;
 using lcm::DrakeLcm;
 using math::RigidTransformd;
+using multibody::SpatialForce;
 using std::make_unique;
 using systems::BasicVector;
 using systems::Context;
 using systems::ContinuousState;
 using systems::DiagramBuilder;
-using systems::lcm::LcmPublisherSystem;
 using systems::LeafSystem;
 using systems::Simulator;
+using systems::lcm::LcmPublisherSystem;
 
 DEFINE_double(simulation_time, 10.0,
               "Desired duration of the simulation in seconds.");
@@ -79,8 +81,9 @@ DEFINE_bool(real_time, true, "Set to false to run as fast as possible");
 DEFINE_double(length, 1.0,
               "Measure of sphere edge length -- smaller numbers produce a "
               "denser, more expensive mesh");
-DEFINE_bool(rigid_cylinder, false, "Set to true, the cylinder is given a rigid "
-                                   "hydroelastic representation");
+DEFINE_bool(rigid_cylinder, true,
+            "Set to true, the cylinders are given a rigid "
+            "hydroelastic representation");
 DEFINE_bool(hybrid, false, "Set to true to run hybrid hydroelastic");
 
 /** Places a ball at the world's origin and defines its velocity as being
@@ -114,7 +117,7 @@ class MovingBall final : public LeafSystem<double> {
     scene_graph->AssignRole(source_id_, geometry_id_, prox_props);
 
     IllustrationProperties illus_props;
-    illus_props.AddProperty("phong", "diffuse", Vector4d(0.8, 0.1, 0.1, 0.25));
+    illus_props.AddProperty("phong", "diffuse", Vector4d(0.1, 0.8, 0.1, 0.25));
     scene_graph->AssignRole(source_id_, geometry_id_, illus_props);
 
     geometry_pose_port_ =
@@ -219,10 +222,20 @@ class ContactResultMaker final : public LeafSystem<double> {
 
       surface_msg.body1_name = "Id_" + to_string(surfaces[i].id_M());
       surface_msg.body2_name = "Id_" + to_string(surfaces[i].id_N());
+      // Get the origin of the body1, which we alias as A. This assumes that A
+      // is anchored in world frame.
+      const Vector3<double> p_WAo = query_object.inspector()
+                                        .GetPoseInParent(surfaces[i].id_M())
+                                        .translation();
 
       const SurfaceMesh<double>& mesh_W = surfaces[i].mesh_W();
       surface_msg.num_triangles = mesh_W.num_faces();
       surface_msg.triangles.resize(surface_msg.num_triangles);
+      write_double3(mesh_W.centroid(), surface_msg.centroid_W);
+      // Spatial force on the body A at Ao, expressed in W, that we accumulate
+      // into.
+      SpatialForce<double> F_AAo_W(Vector3<double>::Zero(),
+                                   Vector3<double>::Zero());
 
       // Loop through each contact triangle on the contact surface.
       const auto& field = surfaces[i].e_MN();
@@ -235,6 +248,8 @@ class ContactResultMaker final : public LeafSystem<double> {
         const SurfaceVertex<double>& vA = mesh_W.vertex(face.vertex(0));
         const SurfaceVertex<double>& vB = mesh_W.vertex(face.vertex(1));
         const SurfaceVertex<double>& vC = mesh_W.vertex(face.vertex(2));
+        // The contact point P is at the centroid of the triangle.
+        const Vector3<double> p_WP = (vA.r_MV() + vB.r_MV() + vC.r_MV()) / 3.0;
 
         write_double3(vA.r_MV(), tri_msg.p_WA);
         write_double3(vB.r_MV(), tri_msg.p_WB);
@@ -243,7 +258,21 @@ class ContactResultMaker final : public LeafSystem<double> {
         tri_msg.pressure_A = field.EvaluateAtVertex(face.vertex(0));
         tri_msg.pressure_B = field.EvaluateAtVertex(face.vertex(1));
         tri_msg.pressure_C = field.EvaluateAtVertex(face.vertex(2));
+
+        // Interpolate the pressure to the centroid of the triangle.
+        const double face_pressure =
+            (tri_msg.pressure_A + tri_msg.pressure_B + tri_msg.pressure_C) /
+            3.0;
+        const double face_area = mesh_W.area(j);
+        const SpatialForce<double> F_AP_W(
+            Vector3<double>::Zero(),
+            face_pressure * face_area * mesh_W.face_normal(j));
+        // Shifts the spatial contact force from the contact point to the origin
+        // of the object and accumulates.
+        F_AAo_W += F_AP_W.Shift(p_WAo - p_WP);
       }
+      write_double3(F_AAo_W.translational(), surface_msg.force_C_W);
+      write_double3(F_AAo_W.rotational(), surface_msg.moment_C_W);
     }
 
     // Point pairs.
@@ -297,21 +326,30 @@ int do_main() {
                                Vector4d{0.5, 0.5, 0.45, 1.0});
   scene_graph.AssignRole(source_id, ground_id, illustration_box);
 
-  // Add arbitrary cylinder to bang into -- this should crash in strict
-  // hydroelastic mode, but report point contact in non-strict mode.
-  const RigidTransformd X_WC(Vector3d{0, 0, 3});
-  GeometryId can_id = scene_graph.RegisterAnchoredGeometry(
+  // Add two cylinders to bang into -- if the rigid_cylinder flag is set to
+  // false, this should crash in strict hydroelastic mode, but report point
+  // contact in non-strict mode.
+  // The purpose of having two cylinders instead of one is to verify that the
+  // duplicated contact patch visualization issue in #14578 is fixed.
+  const RigidTransformd X_WC1(Vector3d{-0.5, 0, 3});
+  const RigidTransformd X_WC2(Vector3d{0.5, 0, 3});
+  GeometryId can1_id = scene_graph.RegisterAnchoredGeometry(
       source_id, make_unique<GeometryInstance>(
-                     X_WC, make_unique<Cylinder>(0.5, 1.0), "can"));
+                     X_WC1, make_unique<Cylinder>(0.5, 1.0), "can1"));
+  GeometryId can2_id = scene_graph.RegisterAnchoredGeometry(
+      source_id, make_unique<GeometryInstance>(
+                     X_WC2, make_unique<Cylinder>(0.5, 1.0), "can2"));
   ProximityProperties proximity_cylinder;
   if (FLAGS_rigid_cylinder) {
     AddRigidHydroelasticProperties(0.5, &proximity_cylinder);
   }
-  scene_graph.AssignRole(source_id, can_id, std::move(proximity_cylinder));
+  scene_graph.AssignRole(source_id, can1_id, proximity_cylinder);
+  scene_graph.AssignRole(source_id, can2_id, proximity_cylinder);
   IllustrationProperties illustration_cylinder;
   illustration_cylinder.AddProperty("phong", "diffuse",
                                     Vector4d{0.5, 0.5, 0.45, 0.5});
-  scene_graph.AssignRole(source_id, can_id, illustration_cylinder);
+  scene_graph.AssignRole(source_id, can1_id, illustration_cylinder);
+  scene_graph.AssignRole(source_id, can2_id, illustration_cylinder);
 
   // Make and visualize contacts.
   auto& contact_results = *builder.AddSystem<ContactResultMaker>(!FLAGS_hybrid);

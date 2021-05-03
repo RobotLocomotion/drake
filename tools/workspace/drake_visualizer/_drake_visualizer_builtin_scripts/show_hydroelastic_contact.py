@@ -630,10 +630,6 @@ class HydroelasticContactVisualizer:
         # Recreates folder.
         folder = om.getOrCreateContainer(self._folder_name)
 
-        # Though strangely named, DebugData() is the object through which
-        # drawing is done in DrakeVisualizer.
-        d = DebugData()
-
         # Set the color map.
         color_map = self.create_color_map()
 
@@ -696,6 +692,10 @@ class HydroelasticContactVisualizer:
         # TODO(drum) Consider exiting early if no visualization options are
         # enabled.
         for surface in msg.hydroelastic_contacts:
+            # Though strangely named, DebugData() is the object through which
+            # drawing is done in DrakeVisualizer.
+            d = DebugData()
+
             view = applogic.getCurrentRenderView()
             # Keep track if any DebugData is written to.
             # Necessary to keep DrakeVisualizer from spewing messages to the
