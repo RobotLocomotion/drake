@@ -813,8 +813,6 @@ drake_cc_googletest(
         ":mesh_half_space_intersection",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
-        "//math:autodiff",
-        "//math:gradient",
     ],
 )
 
