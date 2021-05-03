@@ -28,6 +28,9 @@ import operator
 
 import numpy as np
 
+from pydrake.autodiffutils import AutoDiffXd as _AutoDiffXd
+from pydrake.symbolic import Expression as _Expression
+
 # As mentioned in top-level, add generic logical operators as ufuncs so that we
 # may do comparisons on arrays of any scalar type, without restriction on the
 # output type. These are added solely to work around #8315, where arrays of
@@ -41,3 +44,41 @@ eq = np.vectorize(operator.eq)
 ne = np.vectorize(operator.ne)
 ge = np.vectorize(operator.ge)
 gt = np.vectorize(operator.gt)
+
+
+def _indented_repr(o):
+    """Returns repr(o), with any lines beyond the first one indented +2."""
+    return repr(o).replace("\n", "\n  ")
+
+
+def _remove_float_suffix(typename):
+    suffix = "_[float]"
+    if typename.endswith(suffix):
+        return typename[:-len(suffix)]
+    return typename
+
+
+def _rotation_matrix_repr(R):
+    M = R.matrix().tolist()
+    return (
+        f"{_remove_float_suffix(type(R).__name__)}([\n"
+        f"  {_indented_repr(M[0])},\n"
+        f"  {_indented_repr(M[1])},\n"
+        f"  {_indented_repr(M[2])},\n"
+        f"])")
+
+
+def _rigid_transform_repr(X):
+    return (
+        f"{_remove_float_suffix(type(X).__name__)}(\n"
+        f"  R={_indented_repr(X.rotation())},\n"
+        f"  p={_indented_repr(X.translation().tolist())},\n"
+        f")")
+
+
+RotationMatrix_[float].__repr__ = _rotation_matrix_repr
+RotationMatrix_[_AutoDiffXd].__repr__ = _rotation_matrix_repr
+RotationMatrix_[_Expression].__repr__ = _rotation_matrix_repr
+RigidTransform_[float].__repr__ = _rigid_transform_repr
+RigidTransform_[_AutoDiffXd].__repr__ = _rigid_transform_repr
+RigidTransform_[_Expression].__repr__ = _rigid_transform_repr
