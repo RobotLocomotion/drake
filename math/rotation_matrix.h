@@ -1078,7 +1078,7 @@ class RotationMatrix {
                                    const char* function_name);
 
   // Returns the unit vector in the direction of v or throws an exception if v
-  // cannot be "safely" noramlized.
+  // cannot be "safely" normalized.
   // @param[in] v The vector to normalize.
   // @param[in] function_name The name of the calling function; included in the
   //   exception message.
