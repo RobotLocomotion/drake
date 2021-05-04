@@ -246,7 +246,7 @@ void System<T>::CalcTimeDerivatives(const Context<T>& context,
                                     ContinuousState<T>* derivatives) const {
   DRAKE_DEMAND(derivatives != nullptr);
   ValidateContext(context);
-  ValidateChildOfContext(derivatives);
+  ValidateCreatedForThisSystem(derivatives);
   DoCalcTimeDerivatives(context, derivatives);
 }
 
@@ -264,7 +264,7 @@ void System<T>::CalcImplicitTimeDerivativesResidual(
         this->implicit_time_derivatives_residual_size(), residual->size()));
   }
   ValidateContext(context);
-  ValidateChildOfContext(&proposed_derivatives);
+  ValidateCreatedForThisSystem(&proposed_derivatives);
   DoCalcImplicitTimeDerivativesResidual(context, proposed_derivatives,
                                         residual);
 }
