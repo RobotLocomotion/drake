@@ -104,26 +104,25 @@ template <typename T>
 void RotationMatrix<T>::ThrowIfNotUnitLength(const Vector3<T>& v,
                                              const char* function_name) {
   if constexpr (scalar_predicate<T>::is_bool) {
-    // The value of kEps was determined empirically, is well within the
+    // The value of kTolerance was determined empirically, is well within the
     // tolerance achieved by normalizing a vast range of non-zero vectors, and
     // seems to guarantee a valid RotationMatrix() (see IsValid()).
-    constexpr double kEps = 4 * std::numeric_limits<double>::epsilon();
+    constexpr double kTolerance = 4 * std::numeric_limits<double>::epsilon();
     const double norm = ExtractDoubleOrThrow(v.norm());
     const double error = std::abs(1.0 - norm);
-    // If v contains non-finite values (NaN or infinity), this test must fail.
-    // Note: To properly test for NaN and infinity, do not change the next
-    // logic statement to if( error > kEps).
-    if ((error <= kEps) == false) {
-      const double vx = ExtractDoubleOrThrow(v.x());
-      const double vy = ExtractDoubleOrThrow(v.y());
-      const double vz = ExtractDoubleOrThrow(v.z());
-      throw std::logic_error(
-        fmt::format("RotationMatrix::{}() requires a unit-length vector.\n"
-                    "         v: {} {} {}\n"
-                    "       |v|: {}\n"
-                    " |1 - |v||: {} is not less than or equal to {}.",
-                    function_name, vx, vy, vz, norm, error, kEps));
-    }
+    // If error is a finite number and error ≤ kTolerance, no exception thrown.
+    // If error is too big or error is non-finite (Nan or infinity), then the
+    // test (error <= kTolerance) evaluates to false and an exception is thrown.
+    if (error <= kTolerance) return;
+    const double vx = ExtractDoubleOrThrow(v.x());
+    const double vy = ExtractDoubleOrThrow(v.y());
+    const double vz = ExtractDoubleOrThrow(v.z());
+    throw std::logic_error(
+      fmt::format("RotationMatrix::{}() requires a unit-length vector.\n"
+                  "         v: {} {} {}\n"
+                  "       |v|: {}\n"
+                  " |1 - |v||: {} is not less than or equal to {}.",
+                  function_name, vx, vy, vz, norm, error, kTolerance));
   } else {
     unused(v, function_name);
   }
@@ -159,8 +158,10 @@ Vector3<T> RotationMatrix<T>::NormalizeOrThrow(const Vector3<T>& v,
                     function_name, vx, vy, vz, norm, kMinMagnitude));
     }
   } else {
+    // Do not use u = v.normalized() with an underlying symbolic type since
+    // normalized() is incompatible with symbolic::Expression.
+    u = v / v.norm();
     unused(function_name);
-    u = v.normalized();
   }
   return u;
 }

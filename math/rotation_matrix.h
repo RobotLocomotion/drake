@@ -317,7 +317,8 @@ class RotationMatrix {
     DRAKE_ASSERT_VOID(ThrowIfNotUnitLength(u_A, __func__));
 
     if constexpr (scalar_predicate<T>::is_bool == false) {
-      throw std::logic_error("Method cannot be used with a symbolic type.");
+      throw std::logic_error("RotationMatrix::MakeFromOneUnitVector() "
+                             "cannot be used with a symbolic type.");
     }
 
     // This method forms a right-handed orthonormal basis with u_A and two
