@@ -1,5 +1,6 @@
 #include "drake/geometry/proximity/mesh_plane_intersection.h"
 
+#include <functional>
 #include <limits>
 #include <memory>
 #include <set>
@@ -12,6 +13,9 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/contact_surface_utility.h"
+#include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
+#include "drake/math/orthonormal_basis.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 
@@ -24,6 +28,7 @@ using Eigen::AngleAxisd;
 using Eigen::Vector3d;
 using math::RigidTransform;
 using math::RigidTransformd;
+using math::RotationMatrix;
 using math::RotationMatrixd;
 using std::make_unique;
 using std::pair;
@@ -1291,24 +1296,595 @@ GTEST_TEST(MeshPlaneIntersectionTest, SoftVolumeRigidHalfSpace) {
   }
 }
 
-GTEST_TEST(MeshPlaneIntersectionTest, AutoDiffThrows) {
-  const GeometryId id_A = GeometryId::get_new_id();
-  const GeometryId id_B = GeometryId::get_new_id();
-  // Create mesh and volume mesh.
-  const VolumeMesh<double> mesh_F = TrivialVolumeMesh(RigidTransformd{});
-  const VolumeMeshFieldLinear<double, double> field_F{
-      "pressure", vector<double>{0.25, 0.5, 0.75, 1, -1}, &mesh_F};
-  const Bvh<VolumeMesh<double>> bvh_F(mesh_F);
+/* This test fixture enables some limited testing of the autodiff-valued contact
+ surface. It computes the intersection between a plane and simple tetrahedral
+ mesh (single tet).
 
-  const RigidTransform<AutoDiffXd> X_WS;
-  const RigidTransform<AutoDiffXd> X_WR;
+ We define the plane to be arbitrarily oriented and positioned in the world
+ frame.
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(id_A, field_F, bvh_F,
-                                                        X_WS, id_B, X_WR),
-      std::logic_error,
-      "AutoDiff-valued ContactSurface calculations are not currently "
-      "supported");
+ The volume mesh is a single tetrahedron with vertices at (0, 0, 0),
+ (1, 0, 0), (0, 1, 0), and (0, 0, 1) in the soft mesh frame S.
+
+              Sz
+              ┆   ╱
+           v3 ●  ╱
+              ┆ ╱
+           v0 ┆╱    v2
+     ┄┄┄┄┄┄┄┄┄●┄┄┄┄┄┄┄●┄┄┄ Sy
+             ╱┆
+            ╱ ┆
+        v1 ●  ┆
+          ╱   ┆
+        Sx
+
+ We will create a number of fixed poses of the tet w.r.t. the plane:
+
+   - horizontal slice:
+   - triangle slice:
+   - quad slice:
+
+ The function TestPositionDerivative() will pose the tetrahedral mesh and
+ compute a contact surface. It invokes a provided functor to assess the reported
+ derivatives of some arbitrary quantity of the contact surface with respect to
+ the position of the origin of frame S. */
+class MeshPlaneDerivativesTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    id_S_ = GeometryId::get_new_id();
+    /* The pressure field is arbitrary, but
+      1. its orientation doesn't lead to culling of intersection polygons, and
+      2. validation is expressed in terms of that gradient. */
+    using VI = VolumeVertexIndex;
+    vector<VolumeElement> elements({VolumeElement(VI(0), VI(1), VI(2), VI(3))});
+    using V = VolumeVertex<double>;
+    vector<V> vertices_S({V(Vector3d::Zero()), V(Vector3d::UnitX()),
+                          V(Vector3d::UnitY()), V(Vector3d::UnitZ())});
+    mesh_S_ = make_unique<VolumeMesh<double>>(std::move(elements),
+                                              std::move(vertices_S));
+    field_S_ = make_unique<VolumeMeshFieldLinear<double, double>>(
+        "pressure", vector<double>{0.25, 0.5, 0.75, 1}, mesh_S_.get());
+    bvh_S_ = std::make_unique<Bvh<VolumeMesh<double>>>(*mesh_S_);
+
+    /* Rigid plane; tilt and offset the plane so things are interesting. */
+    X_WR_ = HalfSpace::MakePose(Vector3d{1, 2, 3}.normalized(),
+                                Vector3d{0.25, 0.1, -0.2})
+                .cast<AutoDiffXd>();
+    id_R_ = GeometryId::get_new_id();
+  }
+
+  /* Creates a rotation to align two vectors: `s` and `t` such that t = Rs.
+
+   Note: If we want to differentiate w.r.t. orientation, it is imperative that
+   `s` not point in the `t` or `-t` directions.
+
+   @pre |s| = |t| = 1. */
+  static RotationMatrixd OrientTetrahedron(const Vector3d& s_F,
+                                           const Vector3d& t_F) {
+    // TODO(SeanCurtis-TRI) I stole this code from characterization_utilities.cc
+    //  One more re-use and we have the opportunity to refactor.
+
+    const double cos_theta = s_F.dot(t_F);
+    constexpr double kAlmostOne = 1 - std::numeric_limits<double>::epsilon();
+
+    /* Default to identity if s and t are already aligned. */
+    RotationMatrixd R_FA;
+    if (cos_theta < kAlmostOne) {
+      /* They aren't already parallel. */
+      if (cos_theta < -kAlmostOne) {
+        /* They are anti-parallel. We need a normal perpendicular to s_F;
+         extract it from a valid basis. */
+        const Matrix3<double> basis = math::ComputeBasisFromAxis(2, s_F);
+        const Vector3d rhat = basis.col(0);
+        R_FA = RotationMatrixd(AngleAxisd(M_PI, rhat));
+      } else {
+        const Vector3d rhat = s_F.cross(t_F).normalized();
+        R_FA = RotationMatrixd(AngleAxisd(acos(cos_theta), rhat));
+      }
+    }
+    return R_FA;
+  }
+
+  /* Indicator for the relative pose of the tet relative to the plane. See
+   class documentation for details. */
+  enum TetPose { kHorizontalSlice, kTriangleSlice, kQuadSlice };
+
+  /* Tests for an arbitrary quantity of the contact surface against multiple
+   relative poses between plane and tetrahedron. We evaluate three different
+   configurations (as documented in the function). For each configuration, we
+   invoke evaluate_quantity().
+
+   @param evaluate_quantity  A function that assess some aspect of the contact
+                             surface and its derivatives. It must be written
+                             to account for the documented relative poses
+                             between plane and mesh. The provided function
+                             should make use of googletest EXPECT_* macros to
+                             perform the assessment. */
+  void TestPositionDerivative(
+      const std::function<void(const ContactSurface<AutoDiffXd>&,
+                               const RigidTransform<AutoDiffXd>&, TetPose)>
+          evaluate_quantity) const {
+    struct Configuration {
+      std::string name;
+      Vector3d p_RS_d;
+      RotationMatrixd R_RS_d;
+      int num_faces{};
+      TetPose pose;
+    };
+    vector<Configuration> configurations;
+
+    const RigidTransformd X_WR_d = convert_to_double(X_WR_);
+    const Vector3d n_R{0, 0, 1};
+    // We want to make sure that p_SoRo is completely non-zero. So, we pick
+    // a point N on the plane offset from its origin and position the triangle
+    // with respect to that point.
+    const Vector3d p_RN{0.25, -0.3, 0};
+    const Vector3d p_RS_d(p_RN - kDepth * n_R);
+
+    {
+      /* Leave the tetrahedron unrotated, i.e. R_RS = I. The contact mesh will
+       be a "horizontal" slice of the tet: a right isosceles triangle. */
+      configurations.push_back(
+          {"Horizontal slice", p_RS_d, RotationMatrixd{}, 3, kHorizontalSlice});
+    }
+
+    {
+      /* Vertex 0 (<0, 0, 0> in S) lies kDepth units on the negative side of the
+       plane, all other vertices lie on the other side. The vector
+       Sx + Sy + Sz = <1, 1, 1> points out of vertex 0 and into the opposing
+       tetrahedral face. We'll align it with the plane normal. The contact
+       surface will be an equilateral triangle. */
+      const RotationMatrixd R_RS_d =
+          OrientTetrahedron(Vector3d{1, 1, 1}.normalized(), n_R);
+      configurations.push_back(
+          {"Single vertex penetration", p_RS_d, R_RS_d, 3, kTriangleSlice});
+    }
+
+    {
+      /* Vertices 0 and 3 (<0, 0, 1>) lie kDepth units on the negative side of
+       the plane, vertices 1 & 2 on the positive side. The vector
+       Sx + Sy = <1, 1, 0> is perpendicular to the edge spanned by V0 and V3
+       (pointing into the tetrahedron). We'll align that with the plane normal.
+       This should leave the edges (0, 3) and (1, 2) both parallel with the
+       plane. */
+      const RotationMatrixd R_RS_d =
+          OrientTetrahedron(Vector3d{1, 1, 0}.normalized(), n_R);
+
+      /* Reality check: confirm the edges *are* parallel with the plane. */
+      const RotationMatrixd R_WR_d = convert_to_double(X_WR_).rotation();
+      const RotationMatrixd R_WS_d = R_WR_d * R_RS_d;
+      const Vector3d v0_S = mesh_S_->vertex(VolumeVertexIndex(0)).r_MV();
+      const Vector3d v1_S = mesh_S_->vertex(VolumeVertexIndex(1)).r_MV();
+      const Vector3d v2_S = mesh_S_->vertex(VolumeVertexIndex(2)).r_MV();
+      const Vector3d v3_S = mesh_S_->vertex(VolumeVertexIndex(3)).r_MV();
+      const Vector3d e03_S = v3_S - v0_S;
+      const Vector3d e12_S = v2_S - v1_S;
+      const Vector3d e03_W = R_WS_d * e03_S;
+      const Vector3d e12_W = R_WS_d * e12_S;
+      const Vector3d n_W_d = R_WR_d * n_R;
+      EXPECT_NEAR(n_W_d.dot(e03_W), 0, 1e-15);
+      EXPECT_NEAR(n_W_d.dot(e12_W), 0, 1e-15);
+      configurations.push_back(
+          {"Two vertex penetration", p_RS_d, R_RS_d, 4, kQuadSlice});
+    }
+
+    for (const auto& config : configurations) {
+      const RotationMatrixd R_WS_d = X_WR_d.rotation() * config.R_RS_d;
+      const Vector3d p_WS_d = X_WR_d * config.p_RS_d;
+      const Vector3<AutoDiffXd> p_WS = math::initializeAutoDiff(p_WS_d);
+      const RigidTransform<AutoDiffXd> X_WS(R_WS_d.cast<AutoDiffXd>(), p_WS);
+
+      auto surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
+          id_S_, *field_S_, *bvh_S_, X_WS, id_R_, X_WR_);
+
+      SCOPED_TRACE(config.name);
+      ASSERT_NE(surface, nullptr);
+      ASSERT_EQ(surface->mesh_W().num_faces(), config.num_faces);
+
+      evaluate_quantity(*surface, X_WS, config.pose);
+    }
+  }
+
+  /* Given the point E which purports to lie on an edge of the tetrahedral mesh,
+   finds the edge it lies on (spanning vertices A and B) and returns p_AB_S. */
+  Vector3d GetEdgeDirInS(const Vector3d& p_SE) const {
+    // We determine the edge that E lies on with this simple metric. If E lies
+    // on edge AB, then AB⋅AE = |AB|⋅|AE|, or, to avoid square roots:
+    // (AB⋅AE)² = |AB|²⋅|AE|².
+    // This wouldn't be sufficient generally. But for this test we can make
+    // two simplifying assumptions:
+    //   1. E actually does lie on *one* of the mesh edges.
+    //   2. The edges are easily distinguishable by direction.
+    const vector<VolumeVertex<double>>& verts_S = field_S_->mesh().vertices();
+    const vector<pair<int, int>> edges{{0, 1}, {0, 2}, {0, 3},
+                                       {1, 2}, {1, 3}, {2, 3}};
+    for (const auto [a, b] : edges) {
+      const Vector3d& p_AB_S = verts_S[b].r_MV() - verts_S[a].r_MV();
+      const Vector3d p_AE_S = p_SE - verts_S[a].r_MV();
+      const double lhs = std::pow(p_AB_S.dot(p_AE_S), 2);
+      const double rhs = p_AB_S.squaredNorm() * p_AE_S.squaredNorm();
+      if (std::abs(lhs - rhs) < 1e-15) {
+        return p_AB_S;
+      }
+    }
+    throw std::logic_error(
+        "Querying for point E that isn't actually on a tet edge");
+  }
+
+  /* Soft volume mesh. */
+  GeometryId id_S_;
+  unique_ptr<VolumeMesh<double>> mesh_S_;
+  unique_ptr<VolumeMeshFieldLinear<double, double>> field_S_;
+  unique_ptr<Bvh<VolumeMesh<double>>> bvh_S_;
+
+  /* Rigid plane. No geometry is required; it's implied by the pose. */
+  RigidTransform<AutoDiffXd> X_WR_;
+  GeometryId id_R_;
+
+  /* The amount I penetrate plane into the tet.  */
+  static constexpr double kDepth = 0.25;
+};
+
+TEST_F(MeshPlaneDerivativesTest, Area) {
+  /* We'll compute the expected contact surface area (and its derivatives) by
+   decomposing it into triangles. For a triangle defined by vertices A, B, and
+   C, with triangle normal n̂ (and assuming that the triangle winding is
+   consistent with the normal direction):
+
+      Area = 0.5 * |(B - A) × (C - A)|₂
+           = 0.5 * [(B - A) × (C - A)]ᵀn̂
+           = 0.5 * [skew_sym(B - A) (C-A)]ᵀn̂
+
+        where, a x b = skew_sym(a) b and
+
+                          │  0 -a3  a2│
+            skew_sym(a) = │ a3   0 -a1│
+                          │-a2  a1   0│
+
+    ∂Area          ∂[skew_sym(B - A) (C-A)]ᵀ
+    ────── = 0.5 * ─────────────────── n̂
+      ∂So                ∂So
+
+                   │                  ∂(B - A)                    ∂(C - A) │ᵀ
+           = 0.5 * │ -skew_sym(C - A) ────────  + skew_sym(B - A) ──────── │ n̂
+                   │                    ∂So                          ∂So   │
+
+   We are *given* the quantities ∂A/∂So, ∂B/∂So, and ∂C/∂So which have been
+   independently validated by the VertexPosition test. */
+  auto evaluate_area = [X_WR = convert_to_double(this->X_WR_)](
+                           const ContactSurface<AutoDiffXd>& surface,
+                           const RigidTransform<AutoDiffXd>& X_WS_ad,
+                           TetPose pose) {
+    const auto& mesh_W = surface.mesh_W();
+
+    // For v × A, this makes a matrix V such that VA = v × A.
+    auto skew_matrix = [](const Vector3d& v) {
+      Matrix3<double> result;
+      // clang-format off
+      result <<     0, -v(2),  v(1),
+                 v(2),     0, -v(0),
+                -v(1),  v(0),   0;
+      // clang-format on
+      return result;
+    };
+
+    /* We don't want to compute the areas of the *individual* triangles in the
+     contact surface because it is triangle fan around a centroid. The fan and
+     centroid contribute nothing to the area. So, as an independent witness,
+     we'll compute the area of the *polygon* based on the vertices on the
+     perimeter. The triangles defined below are based on a priori knowledge
+     of the behavior of the mesh-plane intersection algorithm. If it changes,
+     these hard-coded indices could become invalid. A more robust solution would
+     be to *infer* the boundary polygon edges from the contact surface, but
+     that's a lot of effort for little present value. */
+    using VIndex = SurfaceVertexIndex;
+    vector<vector<VIndex>> triangles;
+    switch (pose) {
+      case TetPose::kHorizontalSlice:
+      case TetPose::kTriangleSlice:
+        triangles.emplace_back(vector<VIndex>{VIndex(0), VIndex(1), VIndex(2)});
+        break;
+      case TetPose::kQuadSlice:
+        /* This is a bit brittle and is predicated on knowledge of how
+         the intersection algorithm processes the particular geometry. If that
+         proves to be too brittle, we'll need to reconstruct this by looking
+         at the provided mesh. */
+        triangles.emplace_back(vector<VIndex>{VIndex(0), VIndex(1), VIndex(2)});
+        triangles.emplace_back(vector<VIndex>{VIndex(2), VIndex(3), VIndex(1)});
+        break;
+    }
+
+    /* The normal for the contact surface is simply the plane normal: Rz (here,
+     expressed in world). */
+    const Vector3d n_W = X_WR.rotation().col(2);
+
+    double area_expected = 0;
+    Vector3d dArea_dSo_expected = Vector3d::Zero();
+    for (const auto& tri : triangles) {
+      const auto& p_WA_ad = mesh_W.vertex(tri[0]).r_MV();
+      const auto& p_WB_ad = mesh_W.vertex(tri[1]).r_MV();
+      const auto& p_WC_ad = mesh_W.vertex(tri[2]).r_MV();
+      const Vector3d p_WA = convert_to_double(p_WA_ad);
+      const Vector3d p_WB = convert_to_double(p_WB_ad);
+      const Vector3d p_WC = convert_to_double(p_WC_ad);
+      const Matrix3<double> dA_dSo = math::autoDiffToGradientMatrix(p_WA_ad);
+      const Matrix3<double> dB_dSo = math::autoDiffToGradientMatrix(p_WB_ad);
+      const Matrix3<double> dC_dSo = math::autoDiffToGradientMatrix(p_WC_ad);
+
+      const Vector3d p_AB_W = p_WB - p_WA;
+      const Vector3d p_AC_W = p_WC - p_WA;
+      const double tri_area = 0.5 * p_AB_W.cross(p_AC_W).dot(n_W);
+      area_expected += tri_area;
+
+      const Matrix3<double> left = -skew_matrix(p_AC_W) * (dB_dSo - dA_dSo);
+      const Matrix3<double> right = skew_matrix(p_AB_W) * (dC_dSo - dA_dSo);
+      dArea_dSo_expected += 0.5 * ((left + right).transpose() * n_W);
+    }
+
+    constexpr double kEps = std::numeric_limits<double>::epsilon();
+    const AutoDiffXd& total_area = mesh_W.total_area();
+    EXPECT_NEAR(total_area.value(), area_expected, 4 * kEps);
+    EXPECT_TRUE(CompareMatrices(total_area.derivatives(), dArea_dSo_expected,
+                                4 * kEps));
+  };
+
+  TestPositionDerivative(evaluate_area);
+}
+
+TEST_F(MeshPlaneDerivativesTest, VertexPosition) {
+  /* The vertices of the contact surface *always* lie on the plane. Some of the
+   vertices come from intersecting tet edges with the plane. The remaining are
+   centroids of polygons formed by the intersection. We'll deal with those
+   vertices differently.
+
+   - For vertices at the intersection of plane and tet edge, the derivative of
+     the vertex position w.r.t. the position of the tetrahedron origin (So) is
+     (expressed in the rigid plane's frame R):
+
+                         | 1  0  -p.x |
+          ∂p_RV/∂p_RSo = | 0  1  -p.y |
+                         | 0  0   0   |
+
+     In the rigid plane's frame, the vertices can never move *off* the plane, so
+     ∂V.z/∂So_R must always be zero. ∂V.x/∂So_R and ∂V.y/∂So_R are 100% coupled
+     with the movement of So in the Rx and Ry directions, respectively. So's
+     movement in the Rz direction affects vertex position in the Rx and Ry
+     directions based on the angle between the edge and the plane normal. The
+     intersecting edge e has a component parallel to the plane and a component
+     perpendicular to the plane. We define the vector p as the ratio of movement
+     on the plane versus motion perpendicular to the plane:
+
+        p = (e − (e⋅n̂)n̂)/(e⋅n̂)
+
+     However, the derivatives reported in the test are ∂p_WV/∂p_WSo, so we have
+     to transform the expected result from the rigid plane frame to world.
+
+          ∂p_WV    ∂(R_WR⋅p_RV + p_WRo)
+         ------- = --------------------          // Expand p_WV = X_WR * p_RV.
+          ∂p_WSo         ∂p_WSo
+
+                   ∂(R_WR⋅p_RV)
+                 = -------------                 // p_WRo doesn't depend on So.
+                      ∂p_WSo
+
+                   ∂(R_WR⋅p_RV)     ∂p_RSo
+                 = ------------- * --------      // Chain rule.
+                      ∂p_RSo        ∂p_WSo
+
+                   ∂(R_WR⋅p_RV)
+                 = ------------- * R_RW          // Change of So in R is related
+                      ∂p_RSo                     // to change in W by R_RW.
+
+                           ∂p_RV
+                 = R_WR * -------- * R_RW        // R_WR doesn't depend on So.
+                           ∂p_RSo
+
+                          | 1 0 -p.x |
+                 = R_WR * | 0 1 -p.y | * R_RW    // Definition of ∂p_RV/∂p_RSo.
+                          | 0 0  0   |
+
+   - We treat centroid vertices differently. For centroids of triangles (where
+     the intersecting polygon between tet and plane is a triangle), the centroid
+     position and its derivative are simply:
+
+                 C = (v0 + v1 + v2) / 3, and
+            ∂C/∂So = (∂v0/∂So + ∂v1/∂So + ∂v2/∂So) / 3
+
+     We skip the centroid for polygons with four or more vertices. Those
+     centroids are computed by decomposing the polygon into triangles. For each
+     triangle we compute centroid and area and then define the polygon centroid
+     as a weighted average of the triangle centroids. There is no simple way to
+     validate the derivatives of this vertex, so we'll skip it for now.
+
+   Finally, this test exploits special knowledge that when a polygon with N
+   vertices is produced by intersection, N + 1 vertices are added to the contact
+   surface mesh: the polygon's N vertices followed by the centroid. In this
+   test, we can use that to implicitly recognize which vertices come from edge
+   intersections and which are centroids (combined with the fact that there's
+   only a single polygon in the contact surface mesh). */
+  auto evalute_position = [this](const ContactSurface<AutoDiffXd>& surface,
+                                 const RigidTransform<AutoDiffXd>& X_WS_ad,
+                                 TetPose pose) {
+    constexpr double kEps = 5 * std::numeric_limits<double>::epsilon();
+    using VIndex = SurfaceVertexIndex;
+
+    /* The test is set up so there is only ever a single intersecting polygon.
+     So, there is *one* centroid (the last vertex). All other vertices come
+     from intersecting a tet edge with the plane. We'll evaluate all of those
+     and then handle the centroid specially. */
+    const Vector3d n_R{0, 0, 1};
+    const SurfaceMesh<AutoDiffXd>& mesh_W = surface.mesh_W();
+    const RotationMatrixd R_WR = convert_to_double(this->X_WR_).rotation();
+    const RotationMatrixd R_RW = R_WR.inverse();
+    const RigidTransformd X_WS = convert_to_double(X_WS_ad);
+    const RotationMatrixd& R_WS = X_WS.rotation();
+    for (VIndex v(0); v < mesh_W.num_vertices() - 1; ++v) {
+      const Vector3<AutoDiffXd>& p_WV_ad = mesh_W.vertex(v).r_MV();
+      const Vector3d& p_WV = convert_to_double(p_WV_ad);
+      const Vector3d e_R = R_RW * R_WS * GetEdgeDirInS(X_WS.inverse() * p_WV);
+      const double in_normal_dir = e_R.dot(n_R);
+      // Reality check: We don't have edges lying on the plane.
+      DRAKE_DEMAND(std::abs(in_normal_dir) > 1e-10);
+      const Vector3d p = (e_R - in_normal_dir * n_R) / in_normal_dir;
+      Matrix3<double> expected_J_R;
+      // clang-format off
+      expected_J_R << 1,  0, -p.x(),
+                      0,  1, -p.y(),
+                      0,  0,  0;
+      // clang-format on
+      const Matrix3<double> expected_J_W =
+          R_WR * (expected_J_R * R_RW.matrix());
+      const Matrix3<double> J_W = math::autoDiffToGradientMatrix(p_WV_ad);
+      ASSERT_TRUE(CompareMatrices(J_W, expected_J_W, kEps));
+    }
+
+    /* Now handle the centroid. */
+    switch (pose) {
+      case kHorizontalSlice:
+      case kTriangleSlice: {
+        /* The derivative should simply be the mean of the first three. */
+        Matrix3<double> expected_J_W = Matrix3<double>::Zero();
+        for (VIndex v(0); v < 3; ++v) {
+          expected_J_W +=
+              math::autoDiffToGradientMatrix(mesh_W.vertex(v).r_MV());
+        }
+        expected_J_W /= 3;
+        const Vector3<AutoDiffXd>& p_WC = mesh_W.vertex(VIndex(3)).r_MV();
+        const Matrix3<double> J_W = math::autoDiffToGradientMatrix(p_WC);
+        EXPECT_TRUE(CompareMatrices(J_W, expected_J_W, kEps));
+        break;
+      }
+      case kQuadSlice:
+        /* We skip the centroid for the quad case. */
+        break;
+    }
+  };
+
+  TestPositionDerivative(evalute_position);
+}
+
+TEST_F(MeshPlaneDerivativesTest, FaceNormalsWrtPosition) {
+  /* Face normals should always be parallel with the plane normal. */
+  auto evaluate_normals = [X_WR = convert_to_double(this->X_WR_)](
+                              const ContactSurface<AutoDiffXd>& surface,
+                              const RigidTransform<AutoDiffXd>& X_WS, TetPose) {
+    constexpr double kEps = std::numeric_limits<double>::epsilon();
+    const auto& mesh_W = surface.mesh_W();
+    const Vector3d plane_n_W = X_WR.rotation().col(2);
+    const Matrix3<double> zeros = Matrix3<double>::Zero();
+    for (SurfaceFaceIndex f(0); f < mesh_W.num_elements(); ++f) {
+      const Vector3<AutoDiffXd>& tri_n_W = mesh_W.face_normal(f);
+      EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(tri_n_W),
+                                  plane_n_W, 2 * kEps));
+      EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(tri_n_W),
+                                  zeros, 10 * kEps));
+    }
+  };
+
+  TestPositionDerivative(evaluate_normals);
+}
+
+TEST_F(MeshPlaneDerivativesTest, FaceNormalsWrtOrientation) {
+  /* Even if the soft frame is rotated w.r.t. the rigid frame, the contact
+   surface normals should always be parallel with the plane's normal and,
+   therefore, should have zero derivatives.
+
+   This test does *not* use the TestPositionDerivative() API because that
+   differentiates with respect to p_WSo and makes assumptions about the
+   resulting mesh. For this test, we need a different derivative and different
+   assumptions, so we'll simply duplicate that portion of
+   TestPositionDerivative() that is relevant for this test. */
+
+  /* For simplicity, we'll simply differentiate w.r.t. a single scalar: a
+   rotation of θ radians around an arbitrary axis. We'll sample a few values,
+   but make sure that the mesh normal and field gradient remain sufficiently
+   aligned that we don't lose the triangle due to "backface culling".  */
+  const Vector3d v_W = Vector3d{-1, 2, -3}.normalized();
+  // Rather than aligning the tet mesh with the *origin* of the rigid frame,
+  // we pick some point (N) away from the origin, but still on the plane.
+  const Vector3<AutoDiffXd> p_WN =
+      this->X_WR_ * Vector3<AutoDiffXd>{0.25, -0.3, 0};
+  const Vector3<AutoDiffXd> plane_n_W_ad = this->X_WR_.rotation().col(2);
+  const Vector3d plane_n_W = math::autoDiffToValueMatrix(plane_n_W_ad);
+  const Vector3<AutoDiffXd> p_WS = p_WN - this->kDepth * plane_n_W_ad;
+  for (const double theta : {0.0, M_PI / 6, M_PI / 2 * 0.9, M_PI / 2 * 0.99}) {
+    AutoDiffXd theta_ad = theta;
+    theta_ad.derivatives().resize(1);
+    theta_ad.derivatives() << 1;
+    RigidTransform<AutoDiffXd> X_WS{
+        RotationMatrix<AutoDiffXd>(AngleAxis<AutoDiffXd>(theta_ad, v_W)), p_WS};
+
+    auto surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
+        this->id_S_, *this->field_S_, *this->bvh_S_, X_WS, this->id_R_,
+        this->X_WR_);
+
+    SCOPED_TRACE(fmt::format("theta = {:.5f} radians", theta));
+    ASSERT_NE(surface, nullptr);
+    /* Make sure the test doesn't pass simply because we have no triangles. */
+    const auto& mesh_W = surface->mesh_W();
+    ASSERT_GT(mesh_W.num_elements(), 0);
+
+    constexpr double kEps = std::numeric_limits<double>::epsilon();
+    for (SurfaceFaceIndex f(0); f < mesh_W.num_elements(); ++f) {
+      const Vector3<AutoDiffXd>& tri_n_W = mesh_W.face_normal(f);
+      /* Confirm the normal direction. */
+      EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(tri_n_W),
+                                  plane_n_W, 5 * kEps));
+      /* Confirm the normal gradient w.r.t. position. */
+      EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(tri_n_W),
+                                  Vector3d::Zero(), 10 * kEps));
+    }
+  }
+}
+
+TEST_F(MeshPlaneDerivativesTest, Pressure) {
+  /* Because the field is a linear field, we can think of the pressure function,
+   evaluated at point Q as p(Q) = ∇pᵀ(Q - E), such that ∇p is the gradient of
+   the pressure field and E is a point at which the pressure field is zero.
+   We'll define p_W(p_WQ) = ∇p_Wᵀ(p_WQ - p_WE) as the pressure evaluated on
+   points measured and expressed in the world frame. So,
+
+                    ∂[∇p_Wᵀ(p_WQ - p_WE)]
+      ∂p_WQ/∂p_WSo = ─────────────────────
+                           ∂p_WSo
+
+                            ∂[(p_WQ - p_WE)]
+                   = ∇p_Wᵀ ──────────────────      // ∇p_W const w.r.t. p_WSo.
+                                 ∂p_WSo
+
+                           ┌                   ┐
+                           │ ∂p_WQ      ∂p_WE  │
+                   = ∇p_Wᵀ │──────── - ────────│   // Transpose and subtraction
+                           │ ∂p_WSo     ∂p_WSo │   // are is linear operators.
+                           └                   ┘
+
+                           ┌                  ┐
+                           │ ∂p_WQ     │1 0 0││
+                   = ∇p_Wᵀ │──────── - │0 1 0││    // E affixed to Frame S.
+                           │ ∂p_WSo    │0 0 1││
+                           └                  ┘
+
+   ∂p_WQ/∂p_WSo are the derivatives that were confirmed in the VertexPosition
+   test, so we can use those to compute the expected pressure derivative. */
+  const Vector3d grad_p_S = field_S_->EvaluateGradient(VolumeElementIndex(0));
+  auto evaluate_pressure = [X_WR = convert_to_double(this->X_WR_), &grad_p_S](
+                               const ContactSurface<AutoDiffXd>& surface,
+                               const RigidTransform<AutoDiffXd>& X_WS,
+                               TetPose) {
+    constexpr double kEps = 8 * std::numeric_limits<double>::epsilon();
+    const RigidTransform<double> X_WS_d = convert_to_double(X_WS);
+    const Vector3d grad_p_W = X_WS_d.rotation() * grad_p_S;
+    for (SurfaceVertexIndex v(0); v < surface.mesh_W().num_vertices(); ++v) {
+      const Matrix3<double> dp_WQ_dp_WSo_W =
+          math::autoDiffToGradientMatrix(surface.mesh_W().vertex(v).r_MV());
+      const Vector3d dp_dp_WSo_W_expected =
+          grad_p_W.transpose() * (dp_WQ_dp_WSo_W - Matrix3<double>::Identity());
+      const AutoDiffXd& p = surface.e_MN().EvaluateAtVertex(v);
+      EXPECT_TRUE(CompareMatrices(p.derivatives(), dp_dp_WSo_W_expected, kEps));
+    }
+  };
+
+  TestPositionDerivative(evaluate_pressure);
 }
 
 }  // namespace
