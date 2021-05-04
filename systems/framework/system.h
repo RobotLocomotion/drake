@@ -1012,12 +1012,6 @@ class System : public SystemBase {
   boolean<T> CheckSystemConstraintsSatisfied(
       const Context<T>& context, double tol) const;
 
-  /** Checks that @p output is consistent with the number and size of output
-  ports declared by the system.
-  @throws std::exception unless `output` is non-null and valid for this
-  system. */
-  void CheckValidOutput(const SystemOutput<T>* output) const;
-
   /** Returns a copy of the continuous state vector x꜀ into an Eigen
   vector. */
   VectorX<T> CopyContinuousStateVector(const Context<T>& context) const;

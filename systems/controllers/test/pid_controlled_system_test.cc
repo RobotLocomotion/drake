@@ -269,13 +269,15 @@ class ConnectControllerTest : public ::testing::Test {
   double ComputePidInput() {
     auto standard_diagram = builder_.Build();
     auto context = standard_diagram->CreateDefaultContext();
-    auto output = standard_diagram->AllocateOutput();
 
+    auto plant_output =
+        standard_diagram->GetSubsystemByName(plant_->get_name())
+        .AllocateOutput();
     auto& plant_context =
         standard_diagram->GetSubsystemContext(*plant_, *context);
 
-    plant_->CalcOutput(plant_context, output.get());
-    const BasicVector<double>* output_vec = output->get_vector_data(0);
+    plant_->CalcOutput(plant_context, plant_output.get());
+    const BasicVector<double>* output_vec = plant_output->get_vector_data(0);
     const double pid_input =
         dynamic_cast<TestPlant*>(plant_)->GetInputValue(plant_context);
 
