@@ -9,6 +9,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/value.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/framework_common.h"
 
 namespace drake {
 namespace systems {
@@ -89,7 +90,16 @@ class SystemOutput {
     port_values_.emplace_back(std::move(model_value));
   }
 
+  // Gets the id of the subsystem that created this output.
+  internal::SystemId get_system_id() const { return system_id_; }
+
+  // Records the id of the subsystem that created this output.
+  void set_system_id(internal::SystemId id) { system_id_ = id; }
+
   std::vector<copyable_unique_ptr<AbstractValue>> port_values_;
+
+  // Unique id of the subsystem that created this output.
+  internal::SystemId system_id_;
 };
 
 }  // namespace systems
