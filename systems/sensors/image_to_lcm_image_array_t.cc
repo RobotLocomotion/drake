@@ -1,8 +1,6 @@
 #include "drake/systems/sensors/image_to_lcm_image_array_t.h"
 
-#include <memory>
-#include <string>
-#include <vector>
+#include <stdexcept>
 
 #include <zlib.h>
 
@@ -19,6 +17,7 @@ namespace {
 
 const int64_t kSecToMillisec = 1000000;
 
+// Overwrites the msg's compression_method, size, and data.
 template <PixelType kPixelType>
 void Compress(const Image<kPixelType>& image, lcmt_image* msg) {
   msg->compression_method = lcmt_image::COMPRESSION_METHOD_ZLIB;
@@ -26,20 +25,22 @@ void Compress(const Image<kPixelType>& image, lcmt_image* msg) {
   const int source_size = image.width() * image.height() * image.kPixelSize;
   // The destination buf_size must be slightly larger than the source size.
   // http://refspecs.linuxbase.org/LSB_3.0.0/LSB-PDA/LSB-PDA/zlib-compress2-1.html
-  size_t buf_size = source_size * 1.001 + 12;
-  std::unique_ptr<uint8_t[]> buf(new uint8_t[buf_size]);
+  std::vector<uint8_t>& dest = msg->data;
+  size_t dest_size = source_size * 1.001 + 12;
+  dest.resize(dest_size);
 
   auto compress_status = compress2(
-      buf.get(), &buf_size, reinterpret_cast<const Bytef*>(image.at(0, 0)),
+      dest.data(), &dest_size,
+      reinterpret_cast<const Bytef*>(image.at(0, 0)),
       source_size, Z_BEST_SPEED);
-
   DRAKE_DEMAND(compress_status == Z_OK);
 
-  msg->data.resize(buf_size);
-  msg->size = buf_size;
-  memcpy(&msg->data[0], buf.get(), buf_size);
+  DRAKE_DEMAND(dest_size <= dest.size());
+  dest.resize(dest_size);
+  msg->size = dest_size;
 }
 
+// Overwrites the msg's compression_method, size, and data.
 template <PixelType kPixelType>
 void Pack(const Image<kPixelType>& image, lcmt_image* msg) {
   msg->compression_method = lcmt_image::COMPRESSION_METHOD_NOT_COMPRESSED;
@@ -50,11 +51,10 @@ void Pack(const Image<kPixelType>& image, lcmt_image* msg) {
   memcpy(&msg->data[0], image.at(0, 0), size);
 }
 
+// Overwrites everything in msg except its header.
 template <PixelType kPixelType>
 void PackImageToLcmImageT(const Image<kPixelType>& image, lcmt_image* msg,
                           bool do_compress) {
-  // TODO(kunimatsu-tri) Fix seq here that is always set to zero.
-  msg->header.seq = 0;
   msg->width = image.width();
   msg->height = image.height();
   msg->row_stride = image.kPixelSize * msg->width;
@@ -70,13 +70,10 @@ void PackImageToLcmImageT(const Image<kPixelType>& image, lcmt_image* msg,
   }
 }
 
+// Overwrites everything in msg except its header.
 void PackImageToLcmImageT(const AbstractValue& untyped_image,
-                          PixelType pixel_type, int64_t utime,
-                          const string& frame_name, lcmt_image* msg,
+                          PixelType pixel_type, lcmt_image* msg,
                           bool do_compress) {
-  msg->header.utime = utime;
-  msg->header.frame_name = frame_name;
-
   switch (pixel_type) {
     case PixelType::kRgb8U: {
       const auto& image_value =
@@ -179,21 +176,33 @@ const OutputPort<double>& ImageToLcmImageArrayT::image_array_t_msg_output_port()
 
 void ImageToLcmImageArrayT::CalcImageArray(
     const systems::Context<double>& context, lcmt_image_array* msg) const {
-  msg->header.utime = static_cast<int64_t>(context.get_time() * kSecToMillisec);
-  msg->header.frame_name.clear();
-  msg->num_images = 0;
-  msg->images.clear();
-
-  for (int i = 0; i < num_input_ports(); i++) {
-    const auto& image_value = this->get_input_port(i).
+  // A best practice for filling in LCM messages is to first value-initialize
+  // the entire message to its defaults ("*msg = {}") before setting any new
+  // values.  That way, if we happen to skip over any fields, they will be
+  // zeroed out instead of leaving behind garbage from whatever the msg memory
+  // happened to contain beforehand.
+  //
+  // In our case though, image data is typically high-bandwidth, so we will
+  // carefully work to reuse our message vectors' storage instead of clearing
+  // it on every call.  (The headers are small, though, so we'll still clear
+  // them.)
+  const int64_t utime = static_cast<int64_t>(
+      context.get_time() * kSecToMillisec);
+  msg->header = {};
+  msg->header.utime = utime;
+  const int num_inputs = num_input_ports();
+  msg->num_images = num_inputs;
+  msg->images.resize(num_inputs);
+  for (int i = 0; i < num_inputs; i++) {
+    const std::string& name = this->get_input_port(i).get_name();
+    const PixelType& type = input_port_pixel_type_[i];
+    const auto& value = this->get_input_port(i).
         template Eval<AbstractValue>(context);
-
-    lcmt_image image_msg;
-    PackImageToLcmImageT(image_value, input_port_pixel_type_[i],
-                         msg->header.utime, this->get_input_port(i).get_name(),
-                         &image_msg, do_compress_);
-    msg->images.push_back(image_msg);
-    msg->num_images++;
+    lcmt_image& packed = msg->images.at(i);
+    packed.header = {};
+    packed.header.utime = utime;
+    packed.header.frame_name = name;
+    PackImageToLcmImageT(value, type, &packed, do_compress_);
   }
 }
 
