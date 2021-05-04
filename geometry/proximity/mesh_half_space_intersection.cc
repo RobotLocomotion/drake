@@ -341,9 +341,10 @@ ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
     const math::RigidTransform<T>& X_WR) {
   std::vector<SurfaceFaceIndex> tri_indices;
   tri_indices.reserve(mesh_R.num_elements());
-  const math::RotationMatrixd& R_WR = convert_to_double(X_WR).rotation();
-  auto bvh_callback = [&tri_indices, &mesh_R, &R_WS = X_WS.rotation(),
-                       &R_WR](SurfaceFaceIndex tri_index) {
+  auto bvh_callback = [&tri_indices, &mesh_R,
+                       R_WS = convert_to_double(X_WS).rotation(),
+                       R_WR = convert_to_double(X_WR).rotation()](
+                          SurfaceFaceIndex tri_index) {
     // The gradient of the half space pressure field lies in the _opposite_
     // direction as its normal. Its normal is Sz. So, unit_grad_p_W = -Sz_W.
     const Eigen::Vector3d& unit_grad_p_W = -R_WS.col(2);
@@ -359,7 +360,7 @@ ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
   //   - X_PH - pose of the hierarchy in the primitive frame or, in this
   //     context, the hierarchy of the _rigid_ mesh_R in the half space
   //     primitive: X_SR.
-  bvh_R.Collide(HalfSpace{}, X_RS.inverse(), bvh_callback);
+  bvh_R.Collide(HalfSpace{}, convert_to_double(X_RS).inverse(), bvh_callback);
 
   if (tri_indices.size() == 0) return nullptr;
 
@@ -389,7 +390,7 @@ ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
   const PosedHalfSpace<T> hs_W{X_WR.rotation() * hs_R.normal(), X_WR * p_RSo};
   vertex_pressures.reserve(mesh_W->num_vertices());
   for (SurfaceVertexIndex v(0); v < mesh_W->num_vertices(); ++v) {
-    const Vector3<double> p_WV = mesh_W->vertex(v).r_MV();
+    const Vector3<T> p_WV = mesh_W->vertex(v).r_MV();
     // The signed distance of the point is the negative of the penetration
     // depth. We can use the pressure_scale to directly compute pressure at the
     // point.
@@ -403,7 +404,7 @@ ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
   // TODO(SeanCurtis-TRI) In this case, the gradient across the contact surface
   //  is a constant. It would be good if we could exploit this and *not* copy
   //  the same vector value once per triangle.
-  const Eigen::Vector3d& unit_grad_p_W = X_WS.rotation().col(2);
+  const Vector3<T>& unit_grad_p_W = X_WS.rotation().col(2);
   auto grad_eS_W = std::make_unique<std::vector<Vector3<T>>>(
       mesh_W->num_elements(), -pressure_scale * unit_grad_p_W);
 
@@ -452,21 +453,15 @@ ConstructSurfaceMeshFromMeshHalfspaceIntersection(
 
 template std::unique_ptr<ContactSurface<double>>
 ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
-    GeometryId id_S, const math::RigidTransform<double>& X_WS,
-    double pressure_scale, GeometryId id_R, const SurfaceMesh<double>& field_R,
-    const Bvh<SurfaceMesh<double>>& bvh_R,
-    const math::RigidTransform<double>& X_WR);
+    GeometryId, const math::RigidTransform<double>&, double, GeometryId,
+    const SurfaceMesh<double>&, const Bvh<SurfaceMesh<double>>&,
+    const math::RigidTransform<double>&);
 
-template <>
-std::unique_ptr<ContactSurface<AutoDiffXd>>
+template std::unique_ptr<ContactSurface<AutoDiffXd>>
 ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
     GeometryId, const math::RigidTransform<AutoDiffXd>&, double, GeometryId,
     const SurfaceMesh<double>&, const Bvh<SurfaceMesh<double>>&,
-    const math::RigidTransform<AutoDiffXd>&) {
-  throw std::logic_error(
-      "AutoDiff-valued ContactSurface calculations are not currently "
-      "supported");
-}
+    const math::RigidTransform<AutoDiffXd>&);
 
 }  // namespace internal
 }  // namespace geometry
