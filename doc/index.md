@@ -87,6 +87,9 @@ state-of-the-art algorithms. Finally, we hope Drake provides many compelling
 examples that can help people get started and provide much needed benchmarks.
 We are excited to accept user contributions to improve the coverage.
 
+You can read more about the vision for Drake in this [blog
+post](https://medium.com/toyotaresearch/drake-model-based-design-in-the-age-of-robotics-and-machine-learning-59938c985515).
+
 We hope you find this tool useful. Please see
 [Getting Help](/getting_help.html) if you wish to share your comments,
 questions, success stories, or frustrations. And please contribute your best
