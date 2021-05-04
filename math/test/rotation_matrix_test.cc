@@ -1143,22 +1143,22 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVectorExceptions) {
 
     // Verify MakeFromOneUnitVector() throws an exception if the magnitude of
     // its unit vector argument u differs from 1.0 by more than 4 * kEpsilon.
-    // The value below for tolSqrt is motivated by a Taylor series
-    // |u| = √(1² + tolSqrt²) ≈ 1 + 0.5*tolSqrt² ... ≈ 1 + 0.5*tol.
+    // The value below for tol_Sqrt is motivated by a Taylor series
+    // |u| = √(1² + tol_Sqrt²) ≈ 1 + 0.5*tol_Sqrt² ... ≈ 1 + 0.5*tol.
     // Setting 0.5 * tol = 4 * kEpsilon leads to tol = 8 * kEpsilon, which
-    // means tolSqrt = √(tol) = √(8 * kEpsilon) = √(8) * √(kEpsilon).
-    // We conservatively make tolSqrt = 8 * √(kEpsilon) to ensure it throws.
-    double tolSqrt = 8 * std::sqrt(kEpsilon);  // Large enough to throw.
+    // means tol_Sqrt = √(tol) = √(8 * kEpsilon) = √(8) * √(kEpsilon).
+    // We conservatively make tol_Sqrt = 8 * √(kEpsilon) to ensure it throws.
+    double tol_Sqrt = 8 * std::sqrt(kEpsilon);  // Large enough to throw.
     DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneUnitVector(
-         Vector3<double>(1, 0, tolSqrt), axis_index), std::exception,
+         Vector3<double>(1, 0, tol_Sqrt), axis_index), std::exception,
       "RotationMatrix::MakeFromOneUnitVector.* requires a unit-length vector"
       "[^]+ is not less than or equal to .+");
 
     // Verify MakeFromOneUnitVector() does not throw an exception if
-    // |u| < 4 * kEpsilon, which means tolSqrt < √(8) * √(kEpsilon).
-    tolSqrt = 2 * std::sqrt(kEpsilon);  // Small enough to not throw.
-    EXPECT_NO_THROW(RotationMatrix<double>::MakeFromOneUnitVector(
-         Vector3<double>(1, 0, tolSqrt), axis_index));
+    // |u| < 4 * kEpsilon, which means tol_Sqrt < √(8) * √(kEpsilon).
+    tol_Sqrt = 2 * std::sqrt(kEpsilon);  // Small enough to not throw.
+    DRAKE_EXPECT_NO_THROW(RotationMatrix<double>::MakeFromOneUnitVector(
+         Vector3<double>(1, 0, tol_Sqrt), axis_index));
   } else {
     EXPECT_FALSE(RotationMatrix<double>::MakeFromOneUnitVector(
         Vector3<double>::Zero(), axis_index).IsValid());
@@ -1212,14 +1212,12 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneVectorExceptions) {
   // Verify a vector with a magnitude that is barely over tolerance works.
   const Vector3<double> ok_small_vector(1.0E-10 + kTolerance, 0, 0);
   RotationMatrix<double> R_AB;
-  EXPECT_NO_THROW(R_AB =
-      RotationMatrix<double>::MakeFromOneVector(ok_small_vector, axis_index));
+  R_AB = RotationMatrix<double>::MakeFromOneVector(ok_small_vector, axis_index);
   VerifyMakeFromOneUnitVector(R_AB, ok_small_vector.normalized(), axis_index);
 
   // Verify a vector with a huge magnitude works as anticipated.
   const Vector3<double> huge_vector(1.2E21, 3.4E42, -5.6E63);
-  EXPECT_NO_THROW(R_AB =
-      RotationMatrix<double>::MakeFromOneVector(huge_vector, axis_index));
+  R_AB = RotationMatrix<double>::MakeFromOneVector(huge_vector, axis_index);
   VerifyMakeFromOneUnitVector(R_AB, huge_vector.normalized(), axis_index);
 
   // Verify an exception is always thrown for a symbolic (non-numeric) type.

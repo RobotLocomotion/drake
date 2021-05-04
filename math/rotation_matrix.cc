@@ -110,19 +110,18 @@ void RotationMatrix<T>::ThrowIfNotUnitLength(const Vector3<T>& v,
     constexpr double kTolerance = 4 * std::numeric_limits<double>::epsilon();
     const double norm = ExtractDoubleOrThrow(v.norm());
     const double error = std::abs(1.0 - norm);
-    // If error is a finite number and error ≤ kTolerance, no exception thrown.
-    // If error is too big or error is non-finite (Nan or infinity), then the
-    // test (error <= kTolerance) evaluates to false and an exception is thrown.
-    if (error <= kTolerance) return;
-    const double vx = ExtractDoubleOrThrow(v.x());
-    const double vy = ExtractDoubleOrThrow(v.y());
-    const double vz = ExtractDoubleOrThrow(v.z());
-    throw std::logic_error(
-      fmt::format("RotationMatrix::{}() requires a unit-length vector.\n"
-                  "         v: {} {} {}\n"
-                  "       |v|: {}\n"
-                  " |1 - |v||: {} is not less than or equal to {}.",
-                  function_name, vx, vy, vz, norm, error, kTolerance));
+    // Throw an exception if error is non-finite (NaN or infinity) or too big.
+    if (!std::isfinite(error) || error > kTolerance) {
+      const double vx = ExtractDoubleOrThrow(v.x());
+      const double vy = ExtractDoubleOrThrow(v.y());
+      const double vz = ExtractDoubleOrThrow(v.z());
+      throw std::logic_error(
+          fmt::format("RotationMatrix::{}() requires a unit-length vector.\n"
+                      "         v: {} {} {}\n"
+                      "       |v|: {}\n"
+                      " |1 - |v||: {} is not less than or equal to {}.",
+                      function_name, vx, vy, vz, norm, error, kTolerance));
+    }
   } else {
     unused(v, function_name);
   }
@@ -137,11 +136,10 @@ Vector3<T> RotationMatrix<T>::NormalizeOrThrow(const Vector3<T>& v,
     // an expected small physical dimensions in a robotic systems.  Numbers
     // smaller than this are probably user or developer errors.
     constexpr double kMinMagnitude = 1e-10;
-    constexpr double kInf = std::numeric_limits<double>::infinity();
     const double norm = ExtractDoubleOrThrow(v.norm());
-    // If v contains non-finite values (NaN or infinity), this test must fail.
-    // For IEEE 754, except NaN and infinity, everything is less than infinity.
-    if (norm >= kMinMagnitude && norm < kInf) {
+    // Normalize the vector v if norm is finite and sufficiently large.
+    // Throw an exception if norm is non-finite (NaN or infinity) or too small.
+    if (std::isfinite(norm) && norm >= kMinMagnitude) {
       u = v/norm;
     } else {
       const double vx = ExtractDoubleOrThrow(v.x());
