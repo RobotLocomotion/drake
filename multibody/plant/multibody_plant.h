@@ -2453,7 +2453,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] context Contains the state of the model.
   /// @param[in] model_instances Vector of selected model instances. This method
   /// does not distinguish between welded, joint connected, or floating bodies.
-  /// @retval The total mass of all bodies or 0 if model_instances is empty.
+  /// @retval The total mass of all bodies belonging to a model instance in
+  ///   model_instances or 0 if model_instances is empty.
   /// @note The mass of the world_body() does not contribute to the total mass.
   T CalcTotalMass(
       const systems::Context<T>& context,
