@@ -36,12 +36,15 @@ TimeVaryingAffineSystem<T>::TimeVaryingAffineSystem(
 
   // Declare state and input/output ports.
   // Declares the state variables and (potentially) the discrete-time update.
-  if (time_period_ == 0.0) {
-    this->DeclareContinuousState(num_states_);
-  } else {
-    this->DeclareDiscreteState(num_states_);
-    this->DeclarePeriodicDiscreteUpdate(time_period_, 0.0);
+  if (num_states > 0) {
+    if (time_period_ == 0.0) {
+      this->DeclareContinuousState(num_states_);
+    } else {
+      this->DeclareDiscreteState(num_states_);
+      this->DeclarePeriodicDiscreteUpdate(time_period_, 0.0);
+    }
   }
+
   if (num_inputs_ > 0)
     this->DeclareInputPort(kVectorValued, num_inputs_);
   if (num_outputs_ > 0) {
@@ -72,6 +75,7 @@ template <typename T>
 void TimeVaryingAffineSystem<T>::configure_default_state(
     const Eigen::Ref<const VectorX<T>>& x0) {
   DRAKE_DEMAND(x0.rows() == num_states_);
+  if (num_states_ == 0) return;
   x0_ = x0;
 }
 
@@ -80,10 +84,9 @@ void TimeVaryingAffineSystem<T>::configure_random_state(
     const Eigen::Ref<const Eigen::MatrixXd>& covariance) {
   DRAKE_DEMAND(covariance.rows() == num_states_);
   DRAKE_DEMAND(covariance.cols() == num_states_);
-  if (num_states_ > 0) {
-    Sqrt_Sigma_x0_ = Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd>(covariance)
-                         .operatorSqrt();
-  }
+  if (num_states_ == 0) return;
+  Sqrt_Sigma_x0_ = Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd>(covariance)
+                        .operatorSqrt();
 }
 
 // This is the default implementation for this virtual method.
@@ -177,6 +180,8 @@ template <typename T>
 void TimeVaryingAffineSystem<T>::SetDefaultState(const Context<T>& context,
                                                  State<T>* state) const {
   unused(context);
+  if (num_states_ == 0) return;
+
   if (time_period_ == 0.0) {
     state->get_mutable_continuous_state().SetFromVector(x0_);
   } else {
@@ -189,6 +194,8 @@ void TimeVaryingAffineSystem<T>::SetRandomState(
     const Context<T>& context, State<T>* state,
     RandomGenerator* generator) const {
   unused(context);
+  if (num_states_ == 0) return;
+
   Eigen::VectorXd w(num_states_);
   std::normal_distribution<double> normal;
   for (int i = 0; i < num_states_; i++) {
@@ -305,13 +312,16 @@ unique_ptr<AffineSystem<T>> AffineSystem<T>::MakeAffineSystem(
 template <typename T>
 void AffineSystem<T>::CalcOutputY(const Context<T>& context,
                                   BasicVector<T>* output_vector) const {
-  const VectorX<T>& x = (this->time_period() == 0.)
-      ? dynamic_cast<const BasicVector<T>&>(
-          context.get_continuous_state_vector()).get_value()
-      : context.get_discrete_state().get_vector().get_value();
-
   auto y = output_vector->get_mutable_value();
-  y = C_ * x + y0_;
+  y = y0_;
+
+  if (this->num_states() > 0) {
+    const VectorX<T>& x = (this->time_period() == 0.)
+        ? dynamic_cast<const BasicVector<T>&>(
+            context.get_continuous_state_vector()).get_value()
+        : context.get_discrete_state().get_vector().get_value();
+    y += C_ * x;
+  }
 
   if (has_meaningful_D_ && this->num_inputs()) {
     const auto& u = this->get_input_port().Eval(context);
