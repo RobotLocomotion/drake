@@ -1708,7 +1708,7 @@ class System : public SystemBase {
   /** Checks whether the given object was created for this system.
   @note This method is sufficiently fast for performance sensitive code. */
   template <template <typename> class Clazz>
-  void ValidateChildOfContext(const Clazz<T>* object) const {
+  void ValidateCreatedForThisSystem(const Clazz<T>* object) const {
     DRAKE_THROW_UNLESS(object != nullptr);
     if (!object->get_system_id().is_valid()) {
       throw std::logic_error(fmt::format(
@@ -1722,6 +1722,13 @@ class System : public SystemBase {
           NiceTypeName::Get<Clazz<T>>(), this->GetSystemType(),
           this->GetSystemPathname()));
     }
+  }
+
+  template <template <typename> class Clazz>
+  DRAKE_DEPRECATED("2021-09-01",
+                   "Please use ValidateCreatedForThisSystem instead.")
+  void ValidateChildOfContext(const Clazz<T>* object) const {
+    ValidateCreatedForThisSystem(object);
   }
 
  private:
