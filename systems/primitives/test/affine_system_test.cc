@@ -270,6 +270,41 @@ GTEST_TEST(DiscreteAffineSystemTest, DiscreteTime) {
       context->get_discrete_state_vector().CopyToVector(), x0, 1e-16));
 }
 
+// Confirm that no state is declared in the Context if A is empty.
+GTEST_TEST(StatelessAffineSystemTest, StatelessTest) {
+  const Eigen::Matrix<double, 0, 0> A;
+  const Eigen::Matrix<double, 0, 2> B;
+  const Eigen::Matrix<double, 0, 1> f0;
+  const Eigen::Matrix<double, 2, 0> C;
+  const Eigen::Matrix2d D = Eigen::Matrix2d::Identity();
+  const Eigen::Vector2d y0 = Eigen::Vector2d::Ones();
+  RandomGenerator generator;
+
+  // Continuous time
+  AffineSystem<double> ct_system(A, B, f0, C, D, y0);
+  ct_system.configure_default_state(f0);
+  ct_system.configure_random_state(A);
+  auto context = ct_system.CreateDefaultContext();
+  EXPECT_TRUE(context->is_stateless());
+  ct_system.SetRandomContext(context.get(), &generator);
+  EXPECT_TRUE(context->is_stateless());
+  ct_system.get_input_port().FixValue(context.get(), Eigen::Vector2d::Ones());
+  EXPECT_TRUE(CompareMatrices(ct_system.get_output_port().Eval(*context),
+    2*Eigen::Vector2d::Ones(), 1e-16));
+
+  // Discrete time
+  AffineSystem<double> dt_system(A, B, f0, C, D, y0, 1.0);
+  context = dt_system.CreateDefaultContext();
+  dt_system.configure_default_state(f0);
+  dt_system.configure_random_state(A);
+  EXPECT_TRUE(context->is_stateless());
+  dt_system.SetRandomContext(context.get(), &generator);
+  EXPECT_TRUE(context->is_stateless());
+  dt_system.get_input_port().FixValue(context.get(), 2*Eigen::Vector2d::Ones());
+  EXPECT_TRUE(CompareMatrices(dt_system.get_output_port().Eval(*context),
+    3*Eigen::Vector2d::Ones(), 1e-16));
+}
+
 // [ẋ₁, ẋ₂]ᵀ = rotmat(t)*[x₁, x₂]ᵀ + u*[1, 1]ᵀ,
 // [y₁, y₂] = [x₁, x₂] + (u + 1)*[1, 1].
 class SimpleTimeVaryingAffineSystem : public TimeVaryingAffineSystem<double> {
