@@ -790,7 +790,7 @@ class TestPlant(unittest.TestCase):
 
         # Verify CalcTotalMass() calculates a non-zero mass.
         p_mass = plant.CalcTotalMass(context=context)
-        numpy_compare.assert_float_not_equal(p_mass, 0.)        
+        numpy_compare.assert_float_not_equal(p_mass, 0.)
         p_mass = plant.CalcTotalMass(
             context=context, model_instances=[instance])
         numpy_compare.assert_float_not_equal(p_mass, 0.)
