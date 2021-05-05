@@ -93,3 +93,8 @@ class TestPerception(unittest.TestCase):
             pixel_type=PixelType.kDepth16U,
             scale=0.001,
             fields=mut.BaseField.kXYZs | mut.BaseField.kRGBs)
+
+    def test_point_cloud_to_lcm(self):
+        dut = mut.PointCloudToLcm(frame_name="world")
+        dut.get_input_port()
+        dut.get_output_port()
