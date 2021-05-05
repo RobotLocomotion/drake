@@ -390,7 +390,14 @@ void DefineFrameworkPySemantics(py::module m) {
                  [](const typename PublishEvent<T>::PublishCallback& callback) {
                    return std::make_unique<PublishEvent<T>>(callback);
                  })),
-            py::arg("callback"), doc.PublishEvent.ctor.doc_1args)
+            py::arg("callback"), doc.PublishEvent.ctor.doc_1args_callback)
+        .def(py::init(WrapCallbacks(
+                 [](const typename PublishEvent<T>::SystemCallback&
+                         system_callback) {
+                   return std::make_unique<PublishEvent<T>>(system_callback);
+                 })),
+            py::arg("system_callback"),
+            doc.PublishEvent.ctor.doc_1args_system_callback)
         .def(
             py::init(WrapCallbacks(
                 [](const TriggerType& trigger_type,
@@ -399,6 +406,15 @@ void DefineFrameworkPySemantics(py::module m) {
                       trigger_type, callback);
                 })),
             py::arg("trigger_type"), py::arg("callback"),
+            "Users should not be calling these")
+        .def(py::init(WrapCallbacks(
+                 [](const TriggerType& trigger_type,
+                     const typename PublishEvent<T>::SystemCallback&
+                         system_callback) {
+                   return std::make_unique<PublishEvent<T>>(
+                       trigger_type, system_callback);
+                 })),
+            py::arg("trigger_type"), py::arg("system_callback"),
             "Users should not be calling these");
     DefineTemplateClassWithDefault<DiscreteUpdateEvent<T>, Event<T>>(
         m, "DiscreteUpdateEvent", GetPyParam<T>(), doc.DiscreteUpdateEvent.doc);

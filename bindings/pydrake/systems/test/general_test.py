@@ -255,8 +255,20 @@ class TestGeneral(unittest.TestCase):
 
         def callback(context, event): pass
 
+        event = PublishEvent(callback=callback)
+        self.assertIsInstance(event, Event)
         event = PublishEvent(
             trigger_type=TriggerType.kInitialization, callback=callback)
+        self.assertIsInstance(event, Event)
+        self.assertEqual(event.get_trigger_type(), TriggerType.kInitialization)
+
+        def system_callback(system, context, event): pass
+
+        event = PublishEvent(system_callback=system_callback)
+        self.assertIsInstance(event, Event)
+        event = PublishEvent(
+            trigger_type=TriggerType.kInitialization,
+            system_callback=system_callback)
         self.assertIsInstance(event, Event)
         self.assertEqual(event.get_trigger_type(), TriggerType.kInitialization)
 
