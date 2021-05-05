@@ -1395,7 +1395,7 @@ void MultibodyPlant<T>::CalcContactResultsDiscretePointPair(
   const std::vector<RotationMatrix<T>>& R_WC_set =
       EvalContactJacobians(context).R_WC_list;
   const contact_solvers::internal::ContactSolverResults<T>& solver_results =
-      EvalTamsiResults(context);
+      EvalContactSolverResults(context);
 
   const VectorX<T>& fn = solver_results.fn;
   const VectorX<T>& ft = solver_results.ft;
@@ -2075,16 +2075,24 @@ MultibodyPlant<T>::CalcDiscreteContactPairs(
   }
 }
 
-// TODO(amcastro-tri): Rename this to CalcDiscreteSolverResults(), since also
-// applicable to all of our ContactSolver classes.
 template <typename T>
-void MultibodyPlant<T>::CalcTamsiResults(
+void MultibodyPlant<T>::CalcContactSolverResults(
     const drake::systems::Context<T>& context0,
     contact_solvers::internal::ContactSolverResults<T>* results) const {
   // Assert this method was called on a context storing discrete state.
   this->ValidateContext(context0);
-  DRAKE_ASSERT(context0.num_discrete_state_groups() == 1);
   DRAKE_ASSERT(context0.num_continuous_states() == 0);
+
+  // We use the custom manager if provided.
+  // TODO(amcastro-tri): remove the entirety of the code we are bypassing here.
+  // This requires one of our custom managers to become the default
+  // MultibodyPlant manager.
+  if (contact_computation_manager_ != nullptr) {
+    contact_computation_manager_->CalcContactSolverResults(context0, results);
+    return;
+  } else {
+    DRAKE_ASSERT(context0.num_discrete_state_groups() == 1);
+  }
 
   const int nq = this->num_positions();
   const int nv = this->num_velocities();
@@ -2456,9 +2464,17 @@ void MultibodyPlant<T>::DoCalcForwardDynamicsDiscrete(
   DRAKE_DEMAND(ac != nullptr);
   DRAKE_DEMAND(is_discrete());
 
+  // TODO(amcastro-tri): remove the entirety of the code we are bypassing here.
+  // This requires one of our custom managers to become the default
+  // MultibodyPlant manager.
+  if (contact_computation_manager_) {
+    contact_computation_manager_->CalcAccelerationKinematicsCache(context0, ac);
+    return;
+  }
+
   // Evaluate contact results.
   const contact_solvers::internal::ContactSolverResults<T>& solver_results =
-      EvalTamsiResults(context0);
+      EvalContactSolverResults(context0);
 
   // Retrieve the solution velocity for the next time step.
   const VectorX<T>& v_next = solver_results.v_next;
@@ -2481,6 +2497,14 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
     const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>&,
     drake::systems::DiscreteValues<T>* updates) const {
   this->ValidateContext(context0);
+
+  // TODO(amcastro-tri): remove the entirety of the code we are bypassing here.
+  // This requires one of our custom managers to become the default
+  // MultibodyPlant manager.
+  if (contact_computation_manager_) {
+    contact_computation_manager_->CalcDiscreteValues(context0, updates);
+    return;
+  }
 
   // Get the system state as raw Eigen vectors
   // (solution at the previous time step).
@@ -2651,13 +2675,13 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
     const int instance_num_velocities = num_velocities(model_instance_index);
 
     if (is_discrete()) {
-      const auto& tamsi_solver_results_cache_entry =
-          this->get_cache_entry(cache_indexes_.tamsi_solver_results);
+      const auto& contact_solver_results_cache_entry =
+          this->get_cache_entry(cache_indexes_.contact_solver_results);
       auto calc = [this, model_instance_index](
                       const systems::Context<T>& context,
                       systems::BasicVector<T>* result) {
         const contact_solvers::internal::ContactSolverResults<T>&
-            solver_results = EvalTamsiResults(context);
+            solver_results = EvalContactSolverResults(context);
         this->CopyGeneralizedContactForcesOut(solver_results,
                                               model_instance_index, result);
       };
@@ -2666,7 +2690,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                   GetModelInstanceName(model_instance_index) +
                       "_generalized_contact_forces",
                   BasicVector<T>(instance_num_velocities), calc,
-                  {tamsi_solver_results_cache_entry.ticket()})
+                  {contact_solver_results_cache_entry.ticket()})
               .get_index();
     } else {
       const auto& generalized_contact_forces_continuous_cache_entry =
@@ -2805,7 +2829,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
         auto& tamsi_solver_cache = cache_value->get_mutable_value<
             contact_solvers::internal::ContactSolverResults<T>>();
-        this->CalcTamsiResults(context,
+        this->CalcContactSolverResults(context,
                                           &tamsi_solver_cache);
       },
       // The Correct Solution:
@@ -2830,7 +2854,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       // discrete update of these values as if zero-order held, which is what we
       // want.
       {this->xd_ticket(), this->all_parameters_ticket()});
-  cache_indexes_.tamsi_solver_results =
+  cache_indexes_.contact_solver_results =
       tamsi_solver_cache_entry.cache_index();
 
   // Cache entry for spatial forces and contact info due to hydroelastic
@@ -2873,7 +2897,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
     std::set<systems::DependencyTicket> tickets;
     if (is_discrete()) {
       tickets.insert(
-          this->cache_entry_ticket(cache_indexes_.tamsi_solver_results));
+          this->cache_entry_ticket(cache_indexes_.contact_solver_results));
     } else {
       tickets.insert(this->kinematics_ticket());
       if (use_hydroelastic) {
