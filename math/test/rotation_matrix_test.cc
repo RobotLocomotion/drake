@@ -1188,7 +1188,7 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneVectorExceptions) {
   DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneVector(
       Vector3<double>(NAN, 1, NAN), axis_index), std::exception,
       "RotationMatrix::MakeFromOneVector.* cannot normalize the given vector"
-      "[^]+ nan 1.0 nan[^]+ If you are confident that v's direction is "
+      "[^]+ nan 1.* nan[^]+ If you are confident that v's direction is "
       "meaningful, pass v.normalized.. in place of v.");
 
   // Verify vector with infinity throws an exception.
@@ -1196,7 +1196,7 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneVectorExceptions) {
   DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneVector(
       Vector3<double>(kInfinity, 1, 0), axis_index), std::exception,
       "RotationMatrix::MakeFromOneVector.* cannot normalize the given vector"
-      "[^]+ inf 1.0 0[^]+ If you are confident that v's direction is "
+      "[^]+ inf 1.* 0[^]+ If you are confident that v's direction is "
       "meaningful, pass v.normalized.. in place of v.");
 
   // Verify that a vector that is slightly too small throws.
