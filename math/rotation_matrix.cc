@@ -1,5 +1,7 @@
 #include "drake/math/rotation_matrix.h"
 
+#include <string>
+
 #include <fmt/format.h>
 
 #include "drake/common/unused.h"
@@ -22,7 +24,7 @@ void RotationMatrix<T>::ThrowIfNotValid(const Matrix3<T>& R) {
       const double measure = ExtractDoubleOrThrow(measure_of_orthonormality);
       std::string message = fmt::format(
           "Error: Rotation matrix is not orthonormal.\n"
-          "  Measure of orthonormality error: {:G}  (near-zero is good).\n"
+          "  Measure of orthonormality error: {}  (near-zero is good).\n"
           "  To calculate the proper orthonormal rotation matrix closest to"
           " the alleged rotation matrix, use the SVD (expensive) static method"
           " RotationMatrix<T>::ProjectToRotationMatrix(), or for a less"
@@ -96,6 +98,70 @@ double ProjectMatToRotMatWithAxis(const Eigen::Matrix3d& M,
     }
   }
   return theta;
+}
+
+template <typename T>
+void RotationMatrix<T>::ThrowIfNotUnitLength(const Vector3<T>& v,
+                                             const char* function_name) {
+  if constexpr (scalar_predicate<T>::is_bool) {
+    // The value of kTolerance was determined empirically, is well within the
+    // tolerance achieved by normalizing a vast range of non-zero vectors, and
+    // seems to guarantee a valid RotationMatrix() (see IsValid()).
+    constexpr double kTolerance = 4 * std::numeric_limits<double>::epsilon();
+    const double norm = ExtractDoubleOrThrow(v.norm());
+    const double error = std::abs(1.0 - norm);
+    // Throw an exception if error is non-finite (NaN or infinity) or too big.
+    if (!std::isfinite(error) || error > kTolerance) {
+      const double vx = ExtractDoubleOrThrow(v.x());
+      const double vy = ExtractDoubleOrThrow(v.y());
+      const double vz = ExtractDoubleOrThrow(v.z());
+      throw std::logic_error(
+          fmt::format("RotationMatrix::{}() requires a unit-length vector.\n"
+                      "         v: {} {} {}\n"
+                      "       |v|: {}\n"
+                      " |1 - |v||: {} is not less than or equal to {}.",
+                      function_name, vx, vy, vz, norm, error, kTolerance));
+    }
+  } else {
+    unused(v, function_name);
+  }
+}
+
+template <typename T>
+Vector3<T> RotationMatrix<T>::NormalizeOrThrow(const Vector3<T>& v,
+                                               const char* function_name) {
+  Vector3<T> u;
+  if constexpr (scalar_predicate<T>::is_bool) {
+    // The number 1.0E-10 is a heuristic (rule of thumb) that is guided by
+    // an expected small physical dimensions in a robotic systems.  Numbers
+    // smaller than this are probably user or developer errors.
+    constexpr double kMinMagnitude = 1e-10;
+    const double norm = ExtractDoubleOrThrow(v.norm());
+    // Normalize the vector v if norm is finite and sufficiently large.
+    // Throw an exception if norm is non-finite (NaN or infinity) or too small.
+    if (std::isfinite(norm) && norm >= kMinMagnitude) {
+      u = v/norm;
+    } else {
+      const double vx = ExtractDoubleOrThrow(v.x());
+      const double vy = ExtractDoubleOrThrow(v.y());
+      const double vz = ExtractDoubleOrThrow(v.z());
+      throw std::logic_error(
+        fmt::format("RotationMatrix::{}() cannot normalize the given vector.\n"
+                    "   v: {} {} {}\n"
+                    " |v|: {}\n"
+                    " The measures must be finite and the vector must have a"
+                    " magnitude of at least {} to automatically normalize. If"
+                    " you are confident that v's direction is meaningful, pass"
+                    " v.normalized() in place of v.",
+                    function_name, vx, vy, vz, norm, kMinMagnitude));
+    }
+  } else {
+    // Do not use u = v.normalized() with an underlying symbolic type since
+    // normalized() is incompatible with symbolic::Expression.
+    u = v / v.norm();
+    unused(function_name);
+  }
+  return u;
 }
 
 }  // namespace math
