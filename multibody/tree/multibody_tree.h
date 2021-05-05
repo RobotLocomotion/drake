@@ -2369,6 +2369,7 @@ class MultibodyTree {
     tree_clone->instance_name_to_index_ = this->instance_name_to_index_;
     tree_clone->instance_index_to_name_ = this->instance_index_to_name_;
     tree_clone->joint_to_mobilizer_ = this->joint_to_mobilizer_;
+    tree_clone->discrete_state_index_ = this->discrete_state_index_;
 
     // All other internals templated on T are created with the following call to
     // FinalizeInternals().
@@ -2559,6 +2560,22 @@ class MultibodyTree {
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       std::vector<Vector6<T>>* H_PB_W_cache) const;
+
+  // (Internal use only) Sets the discrete state index for the multibody
+  // state.
+  void set_discrete_state_index(systems::DiscreteStateIndex index) {
+    DRAKE_DEMAND(is_state_discrete());
+    discrete_state_index_ = index;
+  }
+
+  // (Internal use only) Returns the discrete state index for the multibody
+  // state.
+  systems::DiscreteStateIndex get_discrete_state_index() const {
+    DRAKE_DEMAND(tree_system_ != nullptr);
+    DRAKE_DEMAND(is_state_discrete());
+    DRAKE_DEMAND(topology_is_valid());
+    return discrete_state_index_;
+  }
 
  private:
   // Make MultibodyTree templated on every other scalar type a friend of
@@ -3083,6 +3100,9 @@ class MultibodyTree {
   MultibodyTreeTopology topology_;
 
   const MultibodyTreeSystem<T>* tree_system_{};
+
+  // The discrete state index for the multibody state if the system is discrete.
+  systems::DiscreteStateIndex discrete_state_index_;
 };
 
 }  // namespace internal
