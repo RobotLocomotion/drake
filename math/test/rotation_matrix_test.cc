@@ -1143,22 +1143,22 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVectorExceptions) {
 
     // Verify MakeFromOneUnitVector() throws an exception if the magnitude of
     // its unit vector argument u differs from 1.0 by more than 4 * kEpsilon.
-    // The value below for tol_Sqrt is motivated by a Taylor series
-    // |u| = √(1² + tol_Sqrt²) ≈ 1 + 0.5*tol_Sqrt² ... ≈ 1 + 0.5*tol.
+    // The value below for tol_sqrt is motivated by a Taylor series
+    // |u| = √(1² + tol_sqrt²) ≈ 1 + 0.5*tol_sqrt² ... ≈ 1 + 0.5*tol.
     // Setting 0.5 * tol = 4 * kEpsilon leads to tol = 8 * kEpsilon, which
-    // means tol_Sqrt = √(tol) = √(8 * kEpsilon) = √(8) * √(kEpsilon).
-    // We conservatively make tol_Sqrt = 8 * √(kEpsilon) to ensure it throws.
-    double tol_Sqrt = 8 * std::sqrt(kEpsilon);  // Large enough to throw.
+    // means tol_sqrt = √(tol) = √(8 * kEpsilon) = √(8) * √(kEpsilon).
+    // We conservatively make tol_sqrt = 8 * √(kEpsilon) to ensure it throws.
+    double tol_sqrt = 8 * std::sqrt(kEpsilon);  // Large enough to throw.
     DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>::MakeFromOneUnitVector(
-         Vector3<double>(1, 0, tol_Sqrt), axis_index), std::exception,
+         Vector3<double>(1, 0, tol_sqrt), axis_index), std::exception,
       "RotationMatrix::MakeFromOneUnitVector.* requires a unit-length vector"
       "[^]+ is not less than or equal to .+");
 
     // Verify MakeFromOneUnitVector() does not throw an exception if
-    // |u| < 4 * kEpsilon, which means tol_Sqrt < √(8) * √(kEpsilon).
-    tol_Sqrt = 2 * std::sqrt(kEpsilon);  // Small enough to not throw.
+    // |u| < 4 * kEpsilon, which means tol_sqrt < √(8) * √(kEpsilon).
+    tol_sqrt = 2 * std::sqrt(kEpsilon);  // Small enough to not throw.
     DRAKE_EXPECT_NO_THROW(RotationMatrix<double>::MakeFromOneUnitVector(
-         Vector3<double>(1, 0, tol_Sqrt), axis_index));
+         Vector3<double>(1, 0, tol_sqrt), axis_index));
   } else {
     EXPECT_FALSE(RotationMatrix<double>::MakeFromOneUnitVector(
         Vector3<double>::Zero(), axis_index).IsValid());
