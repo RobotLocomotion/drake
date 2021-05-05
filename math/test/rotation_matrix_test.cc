@@ -310,13 +310,13 @@ GTEST_TEST(RotationMatrix, ConstructorWithRollPitchYaw) {
                     * Eigen::AngleAxisd(r, Vector3d::UnitX())).matrix();
   const RotationMatrix<double> R_eigen(m);
   const RotationMatrix<double> R_rpy(rpy);
-  EXPECT_TRUE(R_rpy.IsNearlyEqualTo(R_eigen, kEpsilon));
+  EXPECT_TRUE(R_rpy.IsNearlyEqualTo(R_eigen, 4*kEpsilon));
 
   RotationMatrixd R1 = RotationMatrix<double>::MakeZRotation(y);
   RotationMatrixd R2 = RotationMatrix<double>::MakeYRotation(p);
   RotationMatrixd R3 = RotationMatrix<double>::MakeXRotation(r);
   RotationMatrixd R_expected = R1 * R2 * R3;
-  EXPECT_TRUE(R_rpy.IsExactlyEqualTo(R_expected));
+  EXPECT_TRUE(R_rpy.IsNearlyEqualTo(R_expected, 4*kEpsilon));
 }
 
 // Test calculating the inverse and transpose of a RotationMatrix.
@@ -367,6 +367,33 @@ GTEST_TEST(RotationMatrix, OperatorMultiplyAndIsNearlyEqualTo) {
   const Vector3d vC = R_CA * vA;  // Vector v expressed in frame C.
   const Vector3d vC_expected = m_CA * vA;
   EXPECT_TRUE(vC.isApprox(vC_expected));
+}
+
+// Retest operator* and operator*= for a non-double type (see previous test for
+// the double version). They are implemented differently for T==double vs.
+// T==any other type so we have to check at least one non-double instantiation.
+GTEST_TEST(RotationMatrix, OperatorMultiplyNonScalarType) {
+  using symbolic::Expression;
+
+  const RollPitchYaw<double> rpy0(0.2, 0.3, 0.4);
+  const RollPitchYaw<double> rpy1(-0.5, -0.6, 0.9);
+  const RotationMatrix<double> R_BAd(rpy0);
+  const RotationMatrix<double> R_CBd(rpy1);
+  const RotationMatrix<double> R_CAd = R_CBd * R_BAd;  // Already tested.
+
+  const RotationMatrix<Expression> R_BA = R_BAd.cast<Expression>();
+  const RotationMatrix<Expression> R_CB = R_CBd.cast<Expression>();
+
+  // Test infix operator*().
+  const RotationMatrix<Expression> R_CA = R_CB * R_BA;
+  const Matrix3d m_CAd = symbolic::Evaluate(R_CA.matrix());
+  EXPECT_TRUE(CompareMatrices(m_CAd, R_CAd.matrix(), 10 * kEpsilon));
+
+  // Test operator*=().
+  RotationMatrix<Expression> will_be_R_CA(R_CB);
+  will_be_R_CA *= R_BA;
+  EXPECT_TRUE(CompareMatrices(symbolic::Evaluate(will_be_R_CA.matrix()),
+                              R_CAd.matrix(), 10 * kEpsilon));
 }
 
 // Test IsOrthonormal, IsValid.
