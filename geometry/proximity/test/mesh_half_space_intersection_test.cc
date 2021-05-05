@@ -1458,7 +1458,7 @@ TEST_F(MeshHalfSpaceDerivativesTest, FaceNormalsWrtPosition) {
     for (SurfaceFaceIndex t(0); t < surface.mesh_W().num_elements(); ++t) {
       const Vector3<AutoDiffXd> n_W = surface.mesh_W().face_normal(t);
       EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(n_W),
-                                  zero_matrix, 16 * kEps));
+                                  zero_matrix, 32 * kEps));
     }
   };
 

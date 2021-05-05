@@ -24,6 +24,7 @@ drake_cc_package_library(
         ":discrete_lyapunov_equation",
         ":eigen_sparse_triplet",
         ":evenly_distributed_pts_on_sphere",
+        ":fast_pose_composition_functions",
         ":geometric_transform",
         ":gradient",
         ":gray_code",
@@ -140,6 +141,7 @@ drake_cc_library(
         "rotation_matrix.h",
     ],
     deps = [
+        ":fast_pose_composition_functions",
         "//common:default_scalars",
         "//common:drake_bool",
         "//common:essential",
@@ -267,6 +269,23 @@ drake_cc_library(
         "//common:double",
         "//common:essential",
     ],
+)
+
+# This should be compiled with Intel AVX2 and FMA enabled if possible.
+# Currently (March 2021) we can't do that on Apple even if it is Intel-based
+# due to our old Mac CI machines. Compiling for Broadwell (or later) gets
+# those instructions.
+drake_cc_library(
+    name = "fast_pose_composition_functions",
+    srcs = ["fast_pose_composition_functions.cc"],
+    hdrs = ["fast_pose_composition_functions.h"],
+    copts = select({
+        "//tools/cc_toolchain:apple": [],
+        "//conditions:default": [
+            "-march=broadwell",
+        ],
+    }),
+    deps = [],
 )
 
 # === test/ ===
@@ -504,6 +523,15 @@ drake_cc_googletest(
     name = "wrap_to_test",
     deps = [
         ":wrap_to",
+    ],
+)
+
+drake_cc_googletest(
+    name = "fast_pose_composition_functions_test",
+    deps = [
+        ":fast_pose_composition_functions",
+        "//common:essential",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
