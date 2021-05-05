@@ -21,6 +21,7 @@
 #include "drake/multibody/contact_solvers/contact_solver.h"
 #include "drake/multibody/contact_solvers/contact_solver_results.h"
 #include "drake/multibody/hydroelastics/hydroelastic_engine.h"
+#include "drake/multibody/plant/contact_computation_manager.h"
 #include "drake/multibody/plant/contact_jacobians.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
@@ -63,6 +64,9 @@ struct HydroelasticContactInfoAndBodySpatialForces {
   // of the hydroelastic model.
   std::vector<HydroelasticContactInfo<T>> contact_info;
 };
+
+// Forward declaration.
+template <typename> class MultibodyPlantAccess;
 
 }  // namespace internal
 
@@ -1587,6 +1591,44 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     SolverType* solver_ptr = solver.get();
     contact_solver_ = std::move(solver);
     return *solver_ptr;
+  }
+
+  // (Experimental) set_contact_manager() should only be called by advanced
+  // developers wanting to try out their custom time stepping strategies,
+  // including contact resolution. We choose not to show it in public
+  // documentations rather than making it private with friends.
+  // With this method MultibodyPlant takes ownership of `manager` and calls its
+  // DeclareStateCacheAndPorts() method, giving specific manager implementations
+  // a chance to declare state, cache and/or ports.
+  //
+  // @note Setting a contact manager bypasses the mechanism to set a different
+  // contact solver with set_contact_solver(). Use only on of these two
+  // experimental mechanims but never both.
+  //
+  // @param manager
+  //   After this call the new manager is used to advance discrete states.
+  // @pre manager must not be nullptr.
+  // @pre ManagerType must be a subclass of
+  // multibody::internal::ContactComputationManager.
+  // @returns a mutable reference to `manager`, now owned by `this`
+  // MultibodyPlant.
+  /// @throws std::exception if called pre-finalize. See Finalize().
+  template <class ManagerType>
+  ManagerType& set_contact_manager(std::unique_ptr<ManagerType> manager) {
+    // N.B. This requirement is really more important on the side of the
+    // manager's constructor, since most likely it'll need MBP's topology at
+    // least to build the contact problem. However, here we play safe and demand
+    // finalization right here.
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    DRAKE_DEMAND(manager != nullptr);
+    static_assert(
+        std::is_base_of<ContactComputationManager<T>, ManagerType>::value,
+        "ManagerType must be a sub-class of ContactComputationManager.");
+    ManagerType* manager_ptr = manager.get();
+    contact_computation_manager_ = std::move(manager);
+    // Give the manager a chance to declare additional state and ports.
+    manager_ptr->DeclareStateCacheAndPorts(this);
+    return *manager_ptr;
   }
 #endif
 
@@ -3854,6 +3896,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Friend class to facilitate testing.
   friend class MultibodyPlantTester;
 
+  // Friend attorney class to provide private access to those internal::
+  // implementations that need it.
+  friend struct internal::MultibodyPlantAccess<T>;
+
   // This struct stores in one single place all indexes related to
   // MultibodyPlant specific cache entries. These are initialized at Finalize()
   // when the plant declares its cache entries.
@@ -3866,7 +3912,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex hydro_fallback;
     systems::CacheIndex point_pairs;
     systems::CacheIndex spatial_contact_forces_continuous;
-    systems::CacheIndex tamsi_solver_results;
+    systems::CacheIndex contact_solver_results;
   };
 
   // Constructor to bridge testing from MultibodyTree to MultibodyPlant.
@@ -4076,19 +4122,18 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const VectorX<T>& stiffness, const VectorX<T>& damping,
       const VectorX<T>& mu, const VectorX<T>& v0, const VectorX<T>& fn0) const;
 
-  // This method uses the time stepping method described in
-  // TamsiSolver to advance the model's state stored in
-  // `context0` taking a time step of size time_step().
+  // This method performs the computation of the impulses to advance the state
+  // stored in `context0` in time.
   // Contact forces and velocities are computed and stored in `results`. See
   // ContactSolverResults for further details on the returned data.
-  void CalcTamsiResults(
+  void CalcContactSolverResults(
       const drake::systems::Context<T>& context0,
       contact_solvers::internal::ContactSolverResults<T>* results) const;
 
-  // Eval version of the method CalcTamsiResults().
-  const contact_solvers::internal::ContactSolverResults<T>& EvalTamsiResults(
-      const systems::Context<T>& context) const {
-    return this->get_cache_entry(cache_indexes_.tamsi_solver_results)
+  // Eval version of the method CalcContactSolverResults().
+  const contact_solvers::internal::ContactSolverResults<T>&
+  EvalContactSolverResults(const systems::Context<T>& context) const {
+    return this->get_cache_entry(cache_indexes_.contact_solver_results)
         .template Eval<contact_solvers::internal::ContactSolverResults<T>>(
             context);
   }
@@ -4668,6 +4713,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // When not the nullptr, this is the solver to be used for discrete updates.
   std::unique_ptr<contact_solvers::internal::ContactSolver<T>> contact_solver_;
+
+  // When not the nullptr, this manager class is used to advance discrete
+  // states.
+  // TODO(amcastro-tri): migrate the entirety of computations related to contact
+  // resolution into a default contact manager.
+  std::unique_ptr<ContactComputationManager<T>> contact_computation_manager_;
 
   hydroelastics::internal::HydroelasticEngine<T> hydroelastics_engine_;
 

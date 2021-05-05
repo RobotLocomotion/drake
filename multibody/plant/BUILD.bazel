@@ -18,6 +18,7 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":calc_distance_and_time_derivative",
+        ":contact_computation_manager",
         ":contact_jacobians",
         ":contact_results",
         ":coulomb_friction",
@@ -30,6 +31,16 @@ drake_cc_package_library(
         ":point_pair_contact_info",
         ":propeller",
         ":tamsi_solver",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_computation_manager",
+    hdrs = ["contact_computation_manager.h"],
+    deps = [
+        "//multibody/contact_solvers:contact_solver_results",
+        "//systems/framework:context",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -63,6 +74,7 @@ drake_cc_library(
     ],
     visibility = ["//visibility:private"],
     deps = [
+        ":contact_computation_manager",
         ":contact_jacobians",
         ":contact_results",
         ":coulomb_friction",
