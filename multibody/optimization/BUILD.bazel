@@ -18,6 +18,7 @@ drake_cc_package_library(
         ":contact_wrench",
         ":contact_wrench_evaluator",
         ":manipulator_equation_constraint",
+        ":quaternion_integration_constraint",
         ":sliding_friction_complementarity_constraint",
         ":static_equilibrium_constraint",
         ":static_equilibrium_problem",
@@ -158,6 +159,17 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "quaternion_integration_constraint",
+    srcs = ["quaternion_integration_constraint.cc"],
+    hdrs = ["quaternion_integration_constraint.h"],
+    deps = [
+        "//common:extract_double",
+        "//math:gradient",
+        "//solvers:constraint",
+    ],
+)
+
 drake_cc_googletest(
     name = "contact_wrench_evaluator_test",
     deps = [
@@ -233,6 +245,17 @@ drake_cc_googletest(
     deps = [
         ":centroidal_momentum_constraint",
         "//multibody/inverse_kinematics:inverse_kinematics_test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "quaternion_integration_constraint_test",
+    deps = [
+        ":quaternion_integration_constraint",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/inverse_kinematics:kinematic_constraint",
+        "//solvers:mathematical_program",
+        "//solvers:solve",
     ],
 )
 

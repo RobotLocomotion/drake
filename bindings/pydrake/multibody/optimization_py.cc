@@ -6,6 +6,7 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/optimization/centroidal_momentum_constraint.h"
+#include "drake/multibody/optimization/quaternion_integration_constraint.h"
 #include "drake/multibody/optimization/static_equilibrium_problem.h"
 
 namespace drake {
@@ -80,6 +81,18 @@ PYBIND11_MODULE(optimization, m) {
         .def("UpdateComplementarityTolerance",
             &Class::UpdateComplementarityTolerance, py::arg("tol"),
             cls_doc.UpdateComplementarityTolerance.doc);
+  }
+
+  {
+    using Class = QuaternionEulerIntegrationConstraint;
+    constexpr auto& cls_doc = doc.QuaternionEulerIntegrationConstraint;
+    using Ptr = std::shared_ptr<Class>;
+    py::class_<Class, solvers::Constraint, Ptr>(
+        m, "QuaternionEulerIntegrationConstraint", cls_doc.doc)
+        .def(py::init([](bool allow_quaternion_negation) {
+          return std::make_unique<Class>(allow_quaternion_negation);
+        }),
+            py::arg("allow_quaternion_negation"), cls_doc.ctor.doc);
   }
 }
 }  // namespace
